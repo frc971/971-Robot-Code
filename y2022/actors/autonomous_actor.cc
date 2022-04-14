@@ -19,7 +19,7 @@ DEFINE_bool(rapid_react, true,
 namespace y2022 {
 namespace actors {
 namespace {
-constexpr double kExtendIntakeGoal = -0.02;
+constexpr double kExtendIntakeGoal = -0.10;
 constexpr double kRetractIntakeGoal = 1.47;
 constexpr double kIntakeRollerVoltage = 12.0;
 constexpr double kRollerVoltage = 12.0;
@@ -107,10 +107,10 @@ void AutonomousActor::Replan() {
                    SplineDirection::kBackward),
         PlanSpline(std::bind(&AutonomousSplines::Spline2, &auto_splines_,
                              std::placeholders::_1, alliance_),
-                   SplineDirection::kForward),
+                   SplineDirection::kBackward),
         PlanSpline(std::bind(&AutonomousSplines::Spline3, &auto_splines_,
                              std::placeholders::_1, alliance_),
-                   SplineDirection::kBackward)};
+                   SplineDirection::kForward)};
     starting_position_ = rapid_react_splines_.value()[0].starting_position();
     CHECK(starting_position_);
   }
@@ -208,8 +208,7 @@ void AutonomousActor::RapidReact() {
   // Tell the superstructure a ball was preloaded
   if (!WaitForPreloaded()) return;
 
-  // Fire preloaded ball
-  set_turret_goal(constants::Values::kTurretBackIntakePos());
+  // Fire preloaded ball while driving
   set_fire_at_will(true);
   SendSuperstructureGoal();
   if (!WaitForBallsShot()) return;
@@ -221,33 +220,44 @@ void AutonomousActor::RapidReact() {
   set_fire_at_will(false);
   SendSuperstructureGoal();
 
-  // Drive and intake the 2 balls in nearest to the starting zonei
-  set_turret_goal(constants::Values::kTurretFrontIntakePos());
+  // Drive and intake the ball nearest to the starting zone.
+  // Fire while moving.
   ExtendBackIntake();
   if (!splines[0].WaitForPlan()) return;
   splines[0].Start();
-  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
+  // Distance before we don't shoot while moving.
+  if (!splines[0].WaitForSplineDistanceRemaining(0.25)) return;
 
-  // Fire the two balls once we stopped
-  RetractBackIntake();
   set_fire_at_will(true);
   SendSuperstructureGoal();
+
+  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+  // Fire the last ball we picked up when stopped.
+  SendSuperstructureGoal();
+  LOG(INFO) << "Close";
   if (!WaitForBallsShot()) return;
   LOG(INFO) << "Shot first 3 balls "
             << chrono::duration<double>(aos::monotonic_clock::now() -
                                         start_time)
                    .count()
             << 's';
-  set_fire_at_will(false);
-  SendSuperstructureGoal();
 
   // Drive to the human player station while intaking two balls.
   // Once is already placed down,
   // and one will be rolled to the robot by the human player
-  ExtendFrontIntake();
   if (!splines[1].WaitForPlan()) return;
   splines[1].Start();
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+
+  set_fire_at_will(false);
+  SendSuperstructureGoal();
+
   if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
   LOG(INFO) << "At balls 4/5 "
             << chrono::duration<double>(aos::monotonic_clock::now() -
                                         start_time)
@@ -323,11 +333,6 @@ void AutonomousActor::SendSuperstructureGoal() {
           CreateProfileParameters(*builder.fbb(), 20.0, 60.0));
 
   flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
-      turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-          *builder.fbb(), turret_goal_,
-          CreateProfileParameters(*builder.fbb(), 12.0, 20.0));
-
-  flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
       catapult_return_position_offset =
           CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
               *builder.fbb(), kCatapultReturnPosition,
@@ -352,7 +357,6 @@ void AutonomousActor::SendSuperstructureGoal() {
     superstructure_builder.add_turret_intake(*requested_intake_);
   }
   superstructure_builder.add_transfer_roller_speed(transfer_roller_voltage_);
-  superstructure_builder.add_turret(turret_offset);
   superstructure_builder.add_catapult(catapult_goal_offset);
   superstructure_builder.add_fire(fire_);
   superstructure_builder.add_preloaded(preloaded_);
@@ -400,31 +404,12 @@ void AutonomousActor::RetractBackIntake() {
   superstructure_status_fetcher_.Fetch();
   CHECK(superstructure_status_fetcher_.get());
 
-  // Don't do anything if we aren't loaded
-  if (superstructure_status_fetcher_->state() !=
-          control_loops::superstructure::SuperstructureState::LOADED &&
-      superstructure_status_fetcher_->state() !=
-          control_loops::superstructure::SuperstructureState::SHOOTING) {
-    LOG(WARNING) << "No balls to shoot";
-    return true;
-  }
-
-  // Since we're loaded, there will atleast be 1 ball to shoot
-  int num_wanted = 1;
-
-  // If we have another ball, we will shoot 2
-  if (superstructure_status_fetcher_->front_intake_has_ball() ||
-      superstructure_status_fetcher_->back_intake_has_ball()) {
-    num_wanted++;
-  }
-
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
                                       ActorBase::kLoopOffset);
   superstructure_status_fetcher_.Fetch();
   CHECK(superstructure_status_fetcher_.get() != nullptr);
-  int initial_balls = superstructure_status_fetcher_->shot_count();
-  LOG(INFO) << "Waiting for balls, started with " << initial_balls;
+
   while (true) {
     if (ShouldCancel()) {
       return false;
@@ -432,8 +417,11 @@ void AutonomousActor::RetractBackIntake() {
     phased_loop.SleepUntilNext();
     superstructure_status_fetcher_.Fetch();
     CHECK(superstructure_status_fetcher_.get() != nullptr);
-    if (superstructure_status_fetcher_->shot_count() - initial_balls >=
-        num_wanted) {
+
+    if (!superstructure_status_fetcher_->front_intake_has_ball() &&
+        !superstructure_status_fetcher_->back_intake_has_ball() &&
+        superstructure_status_fetcher_->state() ==
+            control_loops::superstructure::SuperstructureState::IDLE) {
       return true;
     }
   }

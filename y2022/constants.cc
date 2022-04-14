@@ -137,9 +137,9 @@ Values MakeValues(uint16_t team) {
       {1.9, {0.1, 19.0}},
       {2.12, {0.15, 18.8}},
       {2.9, {0.25, 19.2}},
-      {3.2, {0.28, 20.5}},
+      {3.2, {0.28, 20.3}},
 
-      {3.86, {0.35, 20.9}},
+      {3.60, {0.33, 20.3}},
       {4.9, {0.4, 21.9}},
       {5.4, {0.4, 23.9}},
       {6.0, {0.40, 25.0}},
@@ -207,24 +207,26 @@ Values MakeValues(uint16_t team) {
     case kCompTeamNumber:
       climber->potentiometer_offset = -0.0463847608752 - 0.0376876182111 +
                                       0.0629263851579 - 0.00682128836400001 +
-                                      0.0172237531191;
+                                      0.0172237531191 - 0.0172237531191;
 
       intake_front->potentiometer_offset =
           2.79628370453323 - 0.0250288114832881 + 0.577152542437606;
       intake_front->subsystem_params.zeroing_constants
           .measured_absolute_position = 0.26963366701647;
 
-      intake_back->potentiometer_offset =
-          3.1409576474047 + 0.278653334013286 + 0.00879137908308503;
+      intake_back->potentiometer_offset = 3.1409576474047 + 0.278653334013286 +
+                                          0.00879137908308503 +
+                                          0.0837134053818833;
       intake_back->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.242434593996789;
+          .measured_absolute_position = 0.15924088639178;
 
       turret->potentiometer_offset = -9.99970387166721 + 0.06415943 +
                                      0.073290115367682 - 0.0634440443622909 +
                                      0.213601224728352 + 0.0657973101027296 -
-                                     0.114726411377978;
+                                     0.114726411377978 - 0.980314029089968 -
+                                     0.0266013159299456 + 0.0631240002215899;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
-          0.39190961531060;
+          1.35180753332209;
 
       flipper_arm_left->potentiometer_offset = -6.4;
       flipper_arm_right->potentiometer_offset = 5.56;
