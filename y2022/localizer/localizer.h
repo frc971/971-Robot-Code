@@ -9,6 +9,7 @@
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/input/joystick_state_generated.h"
 #include "frc971/control_loops/drivetrain/improved_down_estimator.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/zeroing/imu_zeroer.h"
@@ -136,6 +137,9 @@ class ModelBasedLocalizer {
   AccelState accel_state() const { return current_state_.accel_state; };
 
   void set_longitudinal_offset(double offset) { long_offset_ = offset; }
+  void set_use_aggressive_image_corrections(bool aggressive) {
+    aggressive_corrections_ = aggressive;
+  }
 
   void TallyRejection(const RejectionReason reason);
 
@@ -267,6 +271,10 @@ class ModelBasedLocalizer {
   // center, negative = behind center.
   double long_offset_ = -0.15;
 
+  // Whether to use more aggressive corrections on the localizer. Only do this
+  // in teleop, since it can make spline control really jumpy.
+  bool aggressive_corrections_ = false;
+
   double last_residual_ = 0.0;
   double filtered_residual_ = 0.0;
   Eigen::Vector2d filtered_residual_accel_ = Eigen::Vector2d::Zero();
@@ -334,6 +342,7 @@ class EventLoopLocalizer {
       target_estimate_fetchers_;
   aos::Fetcher<y2022::control_loops::superstructure::Status>
       superstructure_fetcher_;
+  aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   zeroing::ImuZeroer zeroer_;
   aos::monotonic_clock::time_point last_output_send_ =
       aos::monotonic_clock::min_time;

@@ -642,7 +642,11 @@ void ModelBasedLocalizer::HandleImageMatch(
   H_model(1, kY) = 1.0;
   H_accel(0, kX) = 1.0;
   H_accel(1, kY) = 1.0;
-  R.diagonal() << 1e-2, 1e-2;
+  if (aggressive_corrections_) {
+    R.diagonal() << 1e-2, 1e-2;
+  } else {
+    R.diagonal() << 1e-0, 1e-0;
+  }
 
   const Eigen::Matrix<double, kNModelStates, 2> K_model =
       P_model_ * H_model.transpose() *
@@ -886,6 +890,8 @@ EventLoopLocalizer::EventLoopLocalizer(
           event_loop_
               ->MakeFetcher<y2022::control_loops::superstructure::Status>(
                   "/superstructure")),
+      joystick_state_fetcher_(
+          event_loop_->MakeFetcher<aos::JoystickState>("/roborio/aos")),
       zeroer_(zeroing::ImuZeroer::FaultBehavior::kTemporary),
       left_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()),
       right_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()) {
@@ -926,39 +932,44 @@ EventLoopLocalizer::EventLoopLocalizer(
             absl::StrCat("/", kPisToUse[camera_index], "/camera"));
   }
   aos::TimerHandler *estimate_timer = event_loop_->AddTimer([this]() {
-    for (size_t camera_index = 0; camera_index < kPisToUse.size();
-         ++camera_index) {
-      if (model_based_.NumQueuedImageDebugs() ==
-              ModelBasedLocalizer::kDebugBufferSize ||
-          (last_visualization_send_ + kMinVisualizationPeriod <
-           event_loop_->monotonic_now())) {
-        auto builder = visualization_sender_.MakeBuilder();
-        visualization_sender_.CheckOk(
-            builder.Send(model_based_.PopulateVisualization(builder.fbb())));
-      }
-      if (target_estimate_fetchers_[camera_index].Fetch()) {
-        const std::optional<aos::monotonic_clock::duration> monotonic_offset =
-            ClockOffset(kPisToUse[camera_index]);
-        if (!monotonic_offset.has_value()) {
-          continue;
+      joystick_state_fetcher_.Fetch();
+      const bool maybe_in_auto = (joystick_state_fetcher_.get() != nullptr)
+                                     ? joystick_state_fetcher_->autonomous()
+                                     : true;
+      model_based_.set_use_aggressive_image_corrections(!maybe_in_auto);
+      for (size_t camera_index = 0; camera_index < kPisToUse.size();
+           ++camera_index) {
+        if (model_based_.NumQueuedImageDebugs() ==
+                ModelBasedLocalizer::kDebugBufferSize ||
+            (last_visualization_send_ + kMinVisualizationPeriod <
+             event_loop_->monotonic_now())) {
+          auto builder = visualization_sender_.MakeBuilder();
+          visualization_sender_.CheckOk(
+              builder.Send(model_based_.PopulateVisualization(builder.fbb())));
         }
-        // TODO(james): Get timestamp from message contents.
-        aos::monotonic_clock::time_point capture_time(
-            target_estimate_fetchers_[camera_index]
-                .context()
-                .monotonic_remote_time -
-            monotonic_offset.value());
-        if (capture_time > target_estimate_fetchers_[camera_index]
-                               .context()
-                               .monotonic_event_time) {
-          model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
-          continue;
+        if (target_estimate_fetchers_[camera_index].Fetch()) {
+          const std::optional<aos::monotonic_clock::duration> monotonic_offset =
+              ClockOffset(kPisToUse[camera_index]);
+          if (!monotonic_offset.has_value()) {
+            continue;
+          }
+          // TODO(james): Get timestamp from message contents.
+          aos::monotonic_clock::time_point capture_time(
+              target_estimate_fetchers_[camera_index]
+                  .context()
+                  .monotonic_remote_time -
+              monotonic_offset.value());
+          if (capture_time > target_estimate_fetchers_[camera_index]
+                                 .context()
+                                 .monotonic_event_time) {
+            model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
+            continue;
+          }
+          capture_time -= pico_offset_error_;
+          model_based_.HandleImageMatch(
+              capture_time, target_estimate_fetchers_[camera_index].get(),
+              camera_index);
         }
-        capture_time -= pico_offset_error_;
-        model_based_.HandleImageMatch(
-            capture_time, target_estimate_fetchers_[camera_index].get(),
-            camera_index);
-      }
     }
   });
   event_loop_->OnRun([this, estimate_timer]() {

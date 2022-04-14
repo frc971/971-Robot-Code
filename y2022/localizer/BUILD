@@ -105,6 +105,7 @@ cc_library(
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/control_loops/drivetrain:improved_down_estimator",
         "//frc971/control_loops/drivetrain:localizer_fbs",
+        "//frc971/input:joystick_state_fbs",
         "//frc971/wpilib:imu_batch_fbs",
         "//frc971/wpilib:imu_fbs",
         "//frc971/zeroing:imu_zeroer",
