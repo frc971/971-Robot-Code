@@ -1918,6 +1918,63 @@ TEST_P(AbstractEventLoopTest, SenderTimingReport) {
   }
 }
 
+// Tests that the RawSender::Send(void*, size_t) overload tracks things properly
+// in its timing report.
+TEST_P(AbstractEventLoopTest, CopySenderTimingReport) {
+  gflags::FlagSaver flag_saver;
+  FLAGS_timing_report_ms = 1000;
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  const FlatbufferDetachedBuffer<TestMessage> kMessage =
+      JsonToFlatbuffer<TestMessage>("{}");
+
+  std::unique_ptr<aos::RawSender> sender =
+      loop2->MakeRawSender(configuration::GetChannel(
+          loop2->configuration(), "/test", "aos.TestMessage", "", nullptr));
+
+  Fetcher<timing::Report> report_fetcher =
+      loop1->MakeFetcher<timing::Report>("/aos");
+  EXPECT_FALSE(report_fetcher.Fetch());
+
+  loop2->OnRun([&]() {
+    for (int ii = 0; ii < TestChannelQueueSize(loop2.get()); ++ii) {
+      EXPECT_EQ(sender->Send(kMessage.span().data(), kMessage.span().size()),
+                RawSender::Error::kOk);
+    }
+    EXPECT_EQ(sender->Send(kMessage.span().data(), kMessage.span().size()),
+              RawSender::Error::kMessagesSentTooFast);
+  });
+  // Quit after 1 timing report, mid way through the next cycle.
+  EndEventLoop(loop2.get(), chrono::milliseconds(1500));
+
+  Run();
+
+  if (do_timing_reports() == DoTimingReports::kYes) {
+    // Check that the sent too fast actually got recorded by the timing report.
+    FlatbufferDetachedBuffer<timing::Report> primary_report =
+        FlatbufferDetachedBuffer<timing::Report>::Empty();
+    while (report_fetcher.FetchNext()) {
+      if (report_fetcher->name()->string_view() == "primary") {
+        primary_report = CopyFlatBuffer(report_fetcher.get());
+      }
+    }
+
+    EXPECT_EQ(primary_report.message().name()->string_view(), "primary");
+
+    ASSERT_NE(primary_report.message().senders(), nullptr);
+    EXPECT_EQ(primary_report.message().senders()->size(), 3);
+    EXPECT_EQ(
+        primary_report.message()
+            .senders()
+            ->Get(0)
+            ->error_counts()
+            ->Get(static_cast<size_t>(timing::SendError::MESSAGE_SENT_TOO_FAST))
+            ->count(),
+        1);
+  }
+}
+
 // Tests that senders count correctly in the timing report.
 TEST_P(AbstractEventLoopTest, WatcherTimingReport) {
   FLAGS_timing_report_ms = 1000;

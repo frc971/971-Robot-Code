@@ -244,6 +244,8 @@ class RawSender {
                        uint32_t remote_queue_index,
                        const UUID &source_boot_uuid);
 
+  void RecordSendResult(const Error error, size_t message_size);
+
   EventLoop *const event_loop_;
   const Channel *const channel_;
   const std::string ftrace_prefix_;

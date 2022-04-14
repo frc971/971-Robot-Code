@@ -61,6 +61,24 @@ RawSender::Error RawSender::DoSend(
                 realtime_remote_time, remote_queue_index, source_boot_uuid);
 }
 
+void RawSender::RecordSendResult(const Error error, size_t message_size) {
+  switch (error) {
+    case Error::kOk: {
+      if (timing_.sender) {
+        timing_.size.Add(message_size);
+        timing_.sender->mutate_count(timing_.sender->count() + 1);
+      }
+      break;
+    }
+    case Error::kMessagesSentTooFast:
+      timing_.IncrementError(timing::SendError::MESSAGE_SENT_TOO_FAST);
+      break;
+    case Error::kInvalidRedzone:
+      timing_.IncrementError(timing::SendError::INVALID_REDZONE);
+      break;
+  }
+}
+
 RawFetcher::RawFetcher(EventLoop *event_loop, const Channel *channel)
     : event_loop_(event_loop),
       channel_(channel),

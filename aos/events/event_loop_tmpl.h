@@ -143,26 +143,13 @@ inline RawSender::Error RawSender::Send(
     uint32_t remote_queue_index, const UUID &uuid) {
   const auto err = DoSend(size, monotonic_remote_time, realtime_remote_time,
                           remote_queue_index, uuid);
-  switch (err) {
-    case Error::kOk: {
-      if (timing_.sender) {
-        timing_.size.Add(size);
-        timing_.sender->mutate_count(timing_.sender->count() + 1);
-      }
-      ftrace_.FormatMessage(
-          "%.*s: sent internal: event=%" PRId64 " queue=%" PRIu32,
-          static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
-          static_cast<int64_t>(
-              monotonic_sent_time().time_since_epoch().count()),
-          sent_queue_index());
-      break;
-    }
-    case Error::kMessagesSentTooFast:
-      timing_.IncrementError(timing::SendError::MESSAGE_SENT_TOO_FAST);
-      break;
-    case Error::kInvalidRedzone:
-      timing_.IncrementError(timing::SendError::INVALID_REDZONE);
-      break;
+  RecordSendResult(err, size);
+  if (err == Error::kOk) {
+    ftrace_.FormatMessage(
+        "%.*s: sent internal: event=%" PRId64 " queue=%" PRIu32,
+        static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
+        static_cast<int64_t>(monotonic_sent_time().time_since_epoch().count()),
+        sent_queue_index());
   }
   return err;
 }
@@ -179,11 +166,8 @@ inline RawSender::Error RawSender::Send(
     uint32_t remote_queue_index, const UUID &uuid) {
   const auto err = DoSend(data, size, monotonic_remote_time,
                           realtime_remote_time, remote_queue_index, uuid);
+  RecordSendResult(err, size);
   if (err == RawSender::Error::kOk) {
-    if (timing_.sender) {
-      timing_.size.Add(size);
-      timing_.sender->mutate_count(timing_.sender->count() + 1);
-    }
     ftrace_.FormatMessage(
         "%.*s: sent external: event=%" PRId64 " queue=%" PRIu32,
         static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
@@ -206,11 +190,8 @@ inline RawSender::Error RawSender::Send(
   const size_t size = data->size();
   const auto err = DoSend(std::move(data), monotonic_remote_time,
                           realtime_remote_time, remote_queue_index, uuid);
+  RecordSendResult(err, size);
   if (err == Error::kOk) {
-    if (timing_.sender) {
-      timing_.size.Add(size);
-      timing_.sender->mutate_count(timing_.sender->count() + 1);
-    }
     ftrace_.FormatMessage(
         "%.*s: sent shared: event=%" PRId64 " queue=%" PRIu32,
         static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
