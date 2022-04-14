@@ -61,6 +61,9 @@ class ControlLoopTestTemplated : public TestBaseClass {
   void set_team_id(uint16_t team_id) { team_id_ = team_id; }
   uint16_t team_id() const { return team_id_; }
 
+  void set_alliance(aos::Alliance alliance) { alliance_ = alliance; }
+  aos::Alliance alliance() const { return alliance_; }
+
   // Sets the enabled/disabled bit and (potentially) rebroadcasts the robot
   // state messages.
   void SetEnabled(bool enabled) {
@@ -123,9 +126,9 @@ class ControlLoopTestTemplated : public TestBaseClass {
       builder.add_enabled(enabled_);
       builder.add_autonomous(false);
       builder.add_team_id(team_id_);
+      builder.add_alliance(alliance_);
 
-      CHECK_EQ(new_state.Send(builder.Finish()),
-               aos::RawSender::Error::kOk);
+      CHECK_EQ(new_state.Send(builder.Finish()), aos::RawSender::Error::kOk);
 
       last_ds_time_ = monotonic_now();
       last_enabled_ = enabled_;
@@ -165,6 +168,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
   const ::std::chrono::nanoseconds dt_;
 
   uint16_t team_id_ = 971;
+  aos::Alliance alliance_ = aos::Alliance::kInvalid;
   int32_t reader_pid_ = 1;
   double battery_voltage_ = 12.4;
 

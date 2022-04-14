@@ -42,7 +42,7 @@
       ]
     },
     {
-      "name": "/aos/remote_timestamps/roborio/superstructure/y2022-vision-BallColor",
+      "name": "/logger/aos/remote_timestamps/roborio/superstructure/y2022-vision-BallColor",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "logger",
       "logger": "NOT_LOGGED",

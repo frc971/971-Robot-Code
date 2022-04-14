@@ -88,6 +88,7 @@ cc_library(
         "//y2022:constants",
         "//y2022/control_loops/superstructure/catapult",
         "//y2022/control_loops/superstructure/turret:aiming",
+        "//y2022/vision:ball_color_fbs",
     ],
 )
 

@@ -32,6 +32,10 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
               "/drivetrain")),
       can_position_fetcher_(
           event_loop->MakeFetcher<CANPosition>("/superstructure")),
+      joystick_state_fetcher_(
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+      ball_color_fetcher_(event_loop->MakeFetcher<y2022::vision::BallColor>(
+          "/superstructure")),
       aimer_(values) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
@@ -55,9 +59,42 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
       turret_loading_goal_buffer;
   aos::FlatbufferFixedAllocatorArray<CatapultGoal, 512> catapult_goal_buffer;
+  aos::FlatbufferFixedAllocatorArray<CatapultGoal, 512>
+      catapult_discarding_goal_buffer;
 
   const aos::monotonic_clock::time_point timestamp =
       event_loop()->context().monotonic_event_time;
+
+  if (joystick_state_fetcher_.Fetch() &&
+      joystick_state_fetcher_->has_alliance()) {
+    alliance_ = joystick_state_fetcher_->alliance();
+  }
+
+  if (ball_color_fetcher_.Fetch() && ball_color_fetcher_->has_ball_color()) {
+    ball_color_ = ball_color_fetcher_->ball_color();
+  }
+
+  if (alliance_ != aos::Alliance::kInvalid &&
+      ball_color_ != aos::Alliance::kInvalid && alliance_ != ball_color_) {
+    switch (state_) {
+      case SuperstructureState::IDLE:
+        break;
+      case SuperstructureState::TRANSFERRING:
+        break;
+      case SuperstructureState::LOADING:
+        break;
+      case SuperstructureState::LOADED:
+        discarding_ball_ = true;
+        break;
+      case SuperstructureState::SHOOTING:
+        if (!fire_) {
+          // we can still tell it not to shoot into the hub
+          // and change the turret and catapult goals
+          discarding_ball_ = true;
+        }
+        break;
+    }
+  }
 
   drivetrain_status_fetcher_.Fetch();
   const float velocity = robot_velocity();
@@ -92,8 +129,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
     climber_servo = unsafe_goal->climber_servo();
 
-    turret_goal =
-        unsafe_goal->auto_aim() ? auto_aim_goal : unsafe_goal->turret();
+    turret_goal = unsafe_goal->auto_aim() && !discarding_ball_
+                      ? auto_aim_goal
+                      : unsafe_goal->turret();
 
     catapult_goal = unsafe_goal->catapult();
 
@@ -107,7 +145,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       std::optional<flatbuffers::Offset<
           frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal>>
           return_position_offset;
-      if (unsafe_goal != nullptr && unsafe_goal->has_catapult() &&
+      if (unsafe_goal->has_catapult() &&
           unsafe_goal->catapult()->has_return_position()) {
         return_position_offset = {aos::CopyFlatBuffer(
             unsafe_goal->catapult()->return_position(), catapult_goal_fbb)};
@@ -120,6 +158,27 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
       catapult_goal_buffer.Finish(builder.Finish());
       catapult_goal = &catapult_goal_buffer.message();
+    }
+
+    if (discarding_ball_) {
+      flatbuffers::FlatBufferBuilder *catapult_goal_fbb =
+          catapult_discarding_goal_buffer.fbb();
+      std::optional<flatbuffers::Offset<
+          frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal>>
+          return_position_offset;
+      if (unsafe_goal->has_catapult() &&
+          unsafe_goal->catapult()->has_return_position()) {
+        return_position_offset = {aos::CopyFlatBuffer(
+            unsafe_goal->catapult()->return_position(), catapult_goal_fbb)};
+      }
+      CatapultGoal::Builder builder(*catapult_goal_fbb);
+      builder.add_shot_position(kDiscardingPosition);
+      builder.add_shot_velocity(kDiscardingVelocity);
+      if (return_position_offset.has_value()) {
+        builder.add_return_position(return_position_offset.value());
+      }
+      catapult_discarding_goal_buffer.Finish(builder.Finish());
+      catapult_goal = &catapult_discarding_goal_buffer.message();
     }
 
     if (unsafe_goal->has_turret_intake()) {
@@ -333,6 +392,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       } else if (timestamp >
                  loading_timer_ + constants::Values::kExtraLoadingTime()) {
         state_ = SuperstructureState::LOADED;
+        // reset color and wait for a new one once we know the ball is in place
+        ball_color_ = aos::Alliance::kInvalid;
         reseating_in_catapult_ = false;
       }
       break;
@@ -346,10 +407,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           }
           turret_goal = &turret_loading_goal_buffer.message();
         }
+
         if (unsafe_goal->cancel_shot()) {
           // Cancel the shot process
           state_ = SuperstructureState::IDLE;
-        } else if (unsafe_goal->fire()) {
+        } else if (unsafe_goal->fire() || discarding_ball_) {
           // Start if we were asked to and the turret is at goal
           state_ = SuperstructureState::SHOOTING;
           prev_shot_count_ = catapult_.shot_count();
@@ -435,6 +497,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       if (catapult_.shot_count() > prev_shot_count_ && near_return_position) {
         prev_shot_count_ = catapult_.shot_count();
         fire_ = false;
+        discarding_ball_ = false;
         state_ = SuperstructureState::IDLE;
       }
 
@@ -542,6 +605,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_reseating_in_catapult(reseating_in_catapult_);
   status_builder.add_fire(fire_);
   status_builder.add_moving_too_fast(moving_too_fast);
+  status_builder.add_discarding_ball(discarding_ball_);
   status_builder.add_ready_to_fire(state_ == SuperstructureState::LOADED &&
                                    turret_near_goal && !collided);
   status_builder.add_state(state_);
