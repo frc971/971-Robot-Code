@@ -144,6 +144,8 @@ func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 	stats := db.Stats{
 		TeamNumber:       request.Team(),
 		MatchNumber:      request.Match(),
+		Round:            request.Round(),
+		CompLevel:        string(request.CompLevel()),
 		StartingQuadrant: request.StartingQuadrant(),
 		AutoBallPickedUp: [5]bool{
 			request.AutoBall1(), request.AutoBall2(), request.AutoBall3(),
@@ -294,6 +296,8 @@ func (handler requestDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *
 		response.StatsList = append(response.StatsList, &request_data_scouting_response.StatsT{
 			Team:                  stat.TeamNumber,
 			Match:                 stat.MatchNumber,
+			Round:                 stat.Round,
+			CompLevel:             stat.CompLevel,
 			StartingQuadrant:      stat.StartingQuadrant,
 			AutoBall1:             stat.AutoBallPickedUp[0],
 			AutoBall2:             stat.AutoBallPickedUp[1],
@@ -391,15 +395,14 @@ func (handler refreshMatchListHandler) ServeHTTP(w http.ResponseWriter, req *htt
 		// Add the match to the database.
 		err = handler.db.AddToMatch(db.Match{
 			MatchNumber: int32(match.MatchNumber),
-			// TODO(phil): What does Round mean?
-			Round:     1,
-			CompLevel: match.CompLevel,
-			R1:        red[0],
-			R2:        red[1],
-			R3:        red[2],
-			B1:        blue[0],
-			B2:        blue[1],
-			B3:        blue[2],
+			Round:       int32(match.SetNumber),
+			CompLevel:   match.CompLevel,
+			R1:          red[0],
+			R2:          red[1],
+			R3:          red[2],
+			B1:          blue[0],
+			B2:          blue[1],
+			B3:          blue[2],
 		})
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(

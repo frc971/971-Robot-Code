@@ -16,6 +16,9 @@ enum ClimbLevel : byte {
 table SubmitDataScouting {
     team:int (id: 0);
     match:int (id: 1);
+    round:int (id: 19);
+    comp_level:string (id: 20);
+
     missed_shots_auto:int (id: 2);
     upper_goal_auto:int (id:3);
     lower_goal_auto:int (id:4);

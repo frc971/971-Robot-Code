@@ -52,7 +52,7 @@ class TestDebugCli(unittest.TestCase):
             "event_code": event_code,
         })
         exit_code, stdout, stderr = run_debug_cli(["-refreshMatchList", json_path])
-        self.assertEqual(exit_code, 0, stderr)
+        self.assertEqual(exit_code, 0, f"{year}{event_code}: {stderr}")
         self.assertIn("(refresh_match_list_response.RefreshMatchListResponseT)", stdout)
 
     def test_submit_and_request_data_scouting(self):
@@ -62,6 +62,8 @@ class TestDebugCli(unittest.TestCase):
         json_path = write_json_request({
             "team": 100,
             "match": 1,
+            "round": 2,
+            "comp_level": "quals",
             "starting_quadrant": 3,
             "auto_ball_1": True,
             "auto_ball_2": False,
@@ -108,7 +110,9 @@ class TestDebugCli(unittest.TestCase):
             StartingQuadrant: (int32) 3,
             ClimbLevel: (request_data_scouting_response.ClimbLevel) Medium,
             DefenseReceivedRating: (int32) 4,
-            Comment: (string) (len=35) "A very inspiring and useful comment"
+            Comment: (string) (len=35) "A very inspiring and useful comment",
+            Round: (int32) 2,
+            CompLevel: (string) (len=5) "quals"
             }"""), stdout)
 
     def test_request_all_matches(self):
@@ -135,6 +139,22 @@ class TestDebugCli(unittest.TestCase):
         self.assertIn("MatchList: ([]*request_matches_for_team_response.MatchT) (len=12 cap=12) {", stdout)
         self.assertEqual(stdout.count("MatchNumber:"), 12)
         self.assertEqual(len(re.findall(r": \(int32\) 4856[,\n]", stdout)), 12)
+
+    def test_request_all_matches(self):
+        """Makes sure that we can import the match list multiple times without problems."""
+        request_all_matches_outputs = []
+        for _ in range(2):
+            self.refresh_match_list()
+
+            # RequestAllMatches has no fields.
+            json_path = write_json_request({})
+            exit_code, stdout, stderr = run_debug_cli(["-requestAllMatches", json_path])
+
+            self.assertEqual(exit_code, 0, stderr)
+            request_all_matches_outputs.append(stdout)
+
+        self.maxDiff = None
+        self.assertEqual(request_all_matches_outputs[0], request_all_matches_outputs[1])
 
 if __name__ == "__main__":
     unittest.main()

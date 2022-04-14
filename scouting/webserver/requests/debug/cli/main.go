@@ -97,6 +97,9 @@ func main() {
 
 	spew.Config.Indent = *indentPtr
 
+	// Disable pointer addresses. They're not useful for our purposes.
+	spew.Config.DisablePointerAddresses = true
+
 	// Handle the actual arguments.
 	maybePerformRequest(
 		"SubmitDataScouting",
