@@ -64,8 +64,9 @@ const ButtonLocation kClimberServo(4, 4);
 
 const ButtonLocation kIntakeFrontOut(4, 10);
 const ButtonLocation kIntakeBackOut(4, 9);
-const ButtonLocation kSpitFront(3, 3);
-const ButtonLocation kSpitBack(3, 1);
+const ButtonLocation kSpitFront(4, 8);
+const ButtonLocation kSpitBack(4, 7);
+const ButtonLocation kSpit(3, 3);
 
 const ButtonLocation kRedLocalizerReset(4, 14);
 const ButtonLocation kBlueLocalizerReset(4, 13);
@@ -232,6 +233,13 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     constexpr double kIntakePosition = -0.12;
     constexpr size_t kIntakeCounterIterations = 25;
 
+    if (data.PosEdge(kSpit)) {
+      last_front_intake_has_ball_ =
+          superstructure_status_fetcher_->front_intake_has_ball();
+      last_back_intake_has_ball_ =
+          superstructure_status_fetcher_->back_intake_has_ball();
+    }
+
     // Extend the intakes and spin the rollers.
     // Don't let this happen if there is a ball in the other intake, because
     // that would spit this one out.
@@ -249,10 +257,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
       intake_back_counter_ = kIntakeCounterIterations;
       intake_front_counter_ = 0;
-    } else if (data.IsPressed(kSpitFront)) {
+    } else if (data.IsPressed(kSpitFront) ||
+               (data.IsPressed(kSpit) && last_front_intake_has_ball_)) {
       transfer_roller_speed = -kTransferRollerSpeed;
       intake_front_counter_ = 0;
-    } else if (data.IsPressed(kSpitBack)) {
+    } else if (data.IsPressed(kSpitBack) ||
+               (data.IsPressed(kSpit) && last_back_intake_has_ball_)) {
       transfer_roller_speed = kTransferRollerSpeed;
       intake_back_counter_ = 0;
     }
@@ -361,6 +371,9 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
   size_t intake_front_counter_ = 0;
   size_t intake_back_counter_ = 0;
+
+  bool last_front_intake_has_ball_ = false;
+  bool last_back_intake_has_ball_ = false;
 };
 
 }  // namespace joysticks
