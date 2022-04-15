@@ -389,8 +389,32 @@ std::unique_ptr<LogNamer> Logger::RestartLogging(
   std::unique_ptr<LogNamer> old_log_namer = std::move(log_namer_);
   log_namer_ = std::move(log_namer);
 
+  // Now grab a representative time on both the RT and monotonic clock.  Average
+  // a monotonic clock before and after to reduce the error.
   const aos::monotonic_clock::time_point beginning_time =
       event_loop_->monotonic_now();
+  const aos::realtime_clock::time_point beginning_time_rt =
+      event_loop_->realtime_now();
+  const aos::monotonic_clock::time_point beginning_time2 =
+      event_loop_->monotonic_now();
+
+  if (beginning_time > last_synchronized_time_) {
+    LOG(WARNING) << "Took over " << polling_period_.count()
+                 << "ns to swap log_namer";
+  }
+
+  // Since we are going to log all in 1 big go, we need our log start time to be
+  // after the previous LogUntil call finished, but before 1 period after it.
+  // The best way to guarentee that is to pick a start time that is the earliest
+  // of the two.  That covers the case where the OS puts us to sleep between
+  // when we finish LogUntil and capture beginning_time.
+  const aos::monotonic_clock::time_point monotonic_start_time =
+      std::min(last_synchronized_time_, beginning_time);
+  const aos::realtime_clock::time_point realtime_start_time =
+      (beginning_time_rt + (monotonic_start_time.time_since_epoch() -
+                            ((beginning_time.time_since_epoch() +
+                              beginning_time2.time_since_epoch()) /
+                             2)));
 
   auto config_sha256 = WriteConfiguration(log_namer_.get());
 
@@ -402,8 +426,9 @@ std::unique_ptr<LogNamer> Logger::RestartLogging(
   // Note that WriteHeader updates last_synchronized_time_ to be the
   // current time when it is called, which is then the "start time"
   // of the new (restarted) log. This timestamp will be after
-  // the timestamp of the last message fetched on each channel.
-  WriteHeader();
+  // the timestamp of the last message fetched on each channel, but is carefully
+  // picked per the comment above to not violate max_out_of_order_duration.
+  WriteHeader(monotonic_start_time, realtime_start_time);
 
   const aos::monotonic_clock::time_point header_time =
       event_loop_->monotonic_now();
@@ -507,15 +532,16 @@ std::unique_ptr<LogNamer> Logger::StopLogging(
   return std::move(log_namer_);
 }
 
-void Logger::WriteHeader() {
+void Logger::WriteHeader(aos::monotonic_clock::time_point monotonic_start_time,
+                         aos::realtime_clock::time_point realtime_start_time) {
   if (configuration::MultiNode(configuration_)) {
     server_statistics_fetcher_.Fetch();
   }
 
-  const aos::monotonic_clock::time_point monotonic_start_time =
-      event_loop_->monotonic_now();
-  const aos::realtime_clock::time_point realtime_start_time =
-      event_loop_->realtime_now();
+  if (monotonic_start_time == aos::monotonic_clock::min_time) {
+    monotonic_start_time = event_loop_->monotonic_now();
+    realtime_start_time = event_loop_->realtime_now();
+  }
 
   // We need to pick a point in time to declare the log file "started".  This
   // starts here.  It needs to be after everything is fetched so that the

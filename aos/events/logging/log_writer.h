@@ -224,7 +224,10 @@ class Logger {
   // Start/Restart write configuration into LogNamer space.
   std::string WriteConfiguration(LogNamer* log_namer);
 
-  void WriteHeader();
+  void WriteHeader(aos::monotonic_clock::time_point monotonic_start_time =
+                       aos::monotonic_clock::min_time,
+                   aos::realtime_clock::time_point realtime_start_time =
+                       aos::realtime_clock::min_time);
 
   // Makes a template header for all the follower nodes.
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
