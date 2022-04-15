@@ -1328,3 +1328,36 @@ rules_foreign_cc_dependencies()
 load("//third_party/cargo:crates.bzl", "raze_fetch_remote_crates")
 
 raze_fetch_remote_crates()
+
+http_archive(
+    name = "com_github_zaphoyd_websocketpp",
+    build_file = "//third_party/websocketpp:websocketpp.BUILD",
+    sha256 = "6ce889d85ecdc2d8fa07408d6787e7352510750daa66b5ad44aacb47bea76755",
+    strip_prefix = "websocketpp-0.8.2",
+    url = "https://github.com/zaphoyd/websocketpp/archive/refs/tags/0.8.2.tar.gz",
+)
+
+http_archive(
+    name = "com_github_foxglove_ws-protocol",
+    build_file = "//third_party/foxglove_ws_protocol:foxglove_ws_protocol.BUILD",
+    patch_args = ["-p1"],
+    patches = ["//third_party/foxglove_ws_protocol:foxglove_ws_protocol.patch"],
+    sha256 = "3256f09a67419f6556778c443d332f1a4bf53ba0e7a464179bf838abffa366ab",
+    strip_prefix = "ws-protocol-releases-typescript-ws-protocol-examples-v0.0.6",
+    url = "https://github.com/foxglove/ws-protocol/archive/refs/tags/releases/typescript/ws-protocol-examples/v0.0.6.tar.gz",
+)
+
+http_archive(
+    name = "asio",
+    build_file_content = """
+cc_library(
+    name = "asio",
+    hdrs = glob(["include/asio/**/*.hpp", "include/asio/**/*.ipp", "include/asio.hpp"]),
+    visibility = ["//visibility:public"],
+    defines = ["ASIO_STANDALONE"],
+    includes = ["include/"],
+)""",
+    sha256 = "8976812c24a118600f6fcf071a20606630a69afe4c0abee3b0dea528e682c585",
+    strip_prefix = "asio-1.24.0",
+    url = "https://downloads.sourceforge.net/project/asio/asio/1.24.0%2520%2528Stable%2529/asio-1.24.0.tar.bz2",
+)

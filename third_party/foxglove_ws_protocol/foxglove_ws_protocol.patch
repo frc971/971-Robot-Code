@@ -1,0 +1,78 @@
+# Blue River-specific patches to be able to compile the websocket
+# server against boost and with our compilers/compiler flags.
+diff --git a/cpp/examples/example_server.cpp b/cpp/examples/example_server.cpp
+index c731072..e869e8f 100644
+--- a/cpp/examples/example_server.cpp
++++ b/cpp/examples/example_server.cpp
+@@ -44,7 +44,7 @@ int main() {
+   });
+
+   uint64_t i = 0;
+-  std::shared_ptr<asio::steady_timer> timer;
++  std::shared_ptr<boost::asio::steady_timer> timer;
+   std::function<void()> setTimer = [&] {
+     timer = server.getEndpoint().set_timer(200, [&](std::error_code const& ec) {
+       if (ec) {
+@@ -59,7 +59,7 @@ int main() {
+
+   setTimer();
+
+-  asio::signal_set signals(server.getEndpoint().get_io_service(), SIGINT);
++  boost::asio::signal_set signals(server.getEndpoint().get_io_service(), SIGINT);
+
+   signals.async_wait([&](std::error_code const& ec, int sig) {
+     if (ec) {
+diff --git a/cpp/foxglove-websocket/include/foxglove/websocket/server.hpp b/cpp/foxglove-websocket/include/foxglove/websocket/server.hpp
+index 16a5e83..8845971 100644
+--- a/cpp/foxglove-websocket/include/foxglove/websocket/server.hpp
++++ b/cpp/foxglove-websocket/include/foxglove/websocket/server.hpp
+@@ -1,6 +1,6 @@
+ #pragma once
+
+-#include <nlohmann/json.hpp>
++#include "single_include/nlohmann/json.hpp"
+ #include <websocketpp/config/asio_no_tls.hpp>
+ #include <websocketpp/server.hpp>
+
+@@ -84,6 +84,9 @@ public:
+   Server& operator=(Server&&) = delete;
+
+   void run();
++  size_t run_for(std::chrono::nanoseconds duration) {
++    return _server.get_io_service().run_for(duration);
++  }
+   void stop();
+
+   ChannelId addChannel(ChannelWithoutId channel);
+@@ -105,6 +108,10 @@ private:
+     std::unordered_map<SubscriptionId, ChannelId> subscriptions;
+     std::unordered_map<ChannelId, std::unordered_set<SubscriptionId>> subscriptionsByChannel;
+
++    ClientInfo(const std::string& name_, const ConnHandle& handle_)
++        : name(name_)
++        , handle(handle_) {}
++
+     ClientInfo(const ClientInfo&) = delete;
+     ClientInfo& operator=(const ClientInfo&) = delete;
+
+@@ -147,7 +154,7 @@ inline Server::Server(uint16_t port, std::string name)
+   _server.set_message_handler(std::bind(&Server::handleMessage, this, _1, _2));
+   _server.set_reuse_addr(true);
+   _server.set_listen_backlog(128);
+-  _server.listen(_port);
++  _server.listen(websocketpp::lib::asio::ip::tcp::v4(), _port);
+   _server.start_accept();
+ }
+
+@@ -174,10 +181,7 @@ inline void Server::handleConnectionOpened(ConnHandle hdl) {
+   _server.get_alog().write(
+     websocketpp::log::alevel::app,
+     "Client " + con->get_remote_endpoint() + " connected via " + con->get_resource());
+-  _clients.emplace(hdl, ClientInfo{
+-                          .name = con->get_remote_endpoint(),
+-                          .handle = hdl,
+-                        });
++  _clients.emplace(hdl, ClientInfo{con->get_remote_endpoint(), hdl});
+
+   con->send(json({
+                    {"op", "serverInfo"},

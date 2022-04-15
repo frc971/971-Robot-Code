@@ -437,6 +437,17 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "foxglove_websocket_lib",
+    srcs = ["foxglove_websocket_lib.cc"],
+    hdrs = ["foxglove_websocket_lib.h"],
+    deps = [
+        ":mcap_logger",
+        "//aos/events:event_loop",
+        "@com_github_foxglove_ws-protocol",
+    ],
+)
+
 cc_binary(
     name = "config_validator",
     testonly = True,
@@ -452,5 +463,17 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_binary(
+    name = "foxglove_websocket",
+    srcs = ["foxglove_websocket.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":foxglove_websocket_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
