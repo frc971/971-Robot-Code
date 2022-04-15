@@ -398,6 +398,15 @@
       "num_senders": 1
     },
     {
+      "name": "/logger/camera/decimated",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "logger",
+      "logger": "LOCAL_LOGGER",
+      "frequency": 2,
+      "max_size": 620000,
+      "num_senders": 2
+    },
+    {
       "name": "/pi1/camera/decimated",
       "type": "frc971.vision.CameraImage",
       "source_node": "pi1",
@@ -518,6 +527,13 @@
     {
       "name": "ball_color_detector",
       "executable_name": "ball_color_detector",
+      "nodes": [
+        "logger"
+      ]
+    },
+    {
+      "name": "image_decimator",
+      "executable_name": "image_decimator",
       "nodes": [
         "logger"
       ]
