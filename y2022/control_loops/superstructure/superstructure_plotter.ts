@@ -32,8 +32,8 @@ export function plotSuperstructure(conn: Connection, element: Element): void {
       .setColor(RED)
       .setPointSize(4.0);
   positionPlot.addMessageLine(status, ['state'])
-      .setColor(CYAN)
-      .setPointSize(1.0);
+      .setColor(PINK)
+      .setPointSize(4.0);
   positionPlot.addMessageLine(status, ['flippers_open'])
       .setColor(WHITE)
       .setPointSize(1.0);
@@ -60,6 +60,9 @@ export function plotSuperstructure(conn: Connection, element: Element): void {
   intakePlot.addMessageLine(position, ['intake_beambreak_back'])
       .setColor(PINK)
       .setPointSize(1.0);
+  intakePlot.addMessageLine(output, ['transfer_roller_voltage'])
+      .setColor(BROWN)
+      .setPointSize(3.0);
 
 
   const otherPlot =
@@ -71,6 +74,9 @@ export function plotSuperstructure(conn: Connection, element: Element): void {
 
   otherPlot.addMessageLine(status, ['catapult', 'position'])
       .setColor(PINK)
+      .setPointSize(4.0);
+  otherPlot.addMessageLine(status, ['turret', 'position'])
+      .setColor(WHITE)
       .setPointSize(4.0);
   otherPlot.addMessageLine(position, ['flipper_arm_left', 'encoder'])
       .setColor(BLUE)

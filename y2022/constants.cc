@@ -70,7 +70,7 @@ Values MakeValues(uint16_t team) {
   turret_params->zeroing_voltage = 4.0;
   turret_params->operating_voltage = 12.0;
   turret_params->zeroing_profile_params = {0.5, 2.0};
-  turret_params->default_profile_params = {15.0, 20.0};
+  turret_params->default_profile_params = {10.0, 20.0};
   turret_params->range = Values::kTurretRange();
   turret_params->make_integral_loop =
       control_loops::superstructure::turret::MakeIntegralTurretLoop;
@@ -220,13 +220,13 @@ Values MakeValues(uint16_t team) {
       intake_back->subsystem_params.zeroing_constants
           .measured_absolute_position = 0.15924088639178;
 
-      turret->potentiometer_offset = -9.99970387166721 + 0.06415943 +
-                                     0.073290115367682 - 0.0634440443622909 +
-                                     0.213601224728352 + 0.0657973101027296 -
-                                     0.114726411377978 - 0.980314029089968 -
-                                     0.0266013159299456 + 0.0631240002215899;
+      turret->potentiometer_offset =
+          -9.99970387166721 + 0.06415943 + 0.073290115367682 -
+          0.0634440443622909 + 0.213601224728352 + 0.0657973101027296 -
+          0.114726411377978 - 0.980314029089968 - 0.0266013159299456 +
+          0.0631240002215899 + 0.222882504808653;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
-          1.35180753332209;
+          1.14081767944401;
 
       flipper_arm_left->potentiometer_offset = -6.4;
       flipper_arm_right->potentiometer_offset = 5.56;

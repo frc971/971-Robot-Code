@@ -764,17 +764,26 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   SendRobotVelocity(1.0);
 
   constexpr double kTurretGoal = 2.0;
+  constexpr double kCatapultReturnPosition = -0.87;
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
             *builder.fbb(), kTurretGoal);
+    const auto catapult_return_offset =
+        CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), kCatapultReturnPosition);
+    auto catapult_builder = builder.MakeBuilder<CatapultGoal>();
+    catapult_builder.add_return_position(catapult_return_offset);
+    const auto catapult_offset = catapult_builder.Finish();
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_roller_speed_front(12.0);
     goal_builder.add_roller_speed_back(12.0);
     goal_builder.add_roller_speed_compensation(0.0);
     goal_builder.add_turret(turret_offset);
     goal_builder.add_turret_intake(RequestedIntake::kFront);
+    goal_builder.add_catapult(catapult_offset);
     builder.CheckOk(builder.Send(goal_builder.Finish()));
   }
   RunFor(std::chrono::seconds(2));
@@ -924,8 +933,8 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
             *builder.fbb(), kTurretGoal);
 
     const auto catapult_return_offset =
-        CreateStaticZeroingSingleDOFProfiledSubsystemGoal(*builder.fbb(),
-                                                          -0.87);
+        CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), kCatapultReturnPosition);
     auto catapult_builder = builder.MakeBuilder<CatapultGoal>();
     catapult_builder.add_shot_position(0.3);
     catapult_builder.add_shot_velocity(15.0);

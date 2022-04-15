@@ -299,6 +299,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
           *turret_loading_goal_buffer.fbb(), turret_loading_position));
 
+  const bool catapult_near_return_position =
+      (unsafe_goal != nullptr && unsafe_goal->has_catapult() &&
+       unsafe_goal->catapult()->has_return_position() &&
+       std::abs(unsafe_goal->catapult()->return_position()->unsafe_goal() -
+                catapult_.estimated_position()) < kCatapultGoalThreshold);
+
   const bool turret_near_goal =
       turret_goal != nullptr &&
       std::abs(turret_goal->unsafe_goal() - turret_.position()) <
@@ -354,8 +360,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
       const bool turret_near_goal =
           std::abs(turret_.estimated_position() - turret_loading_position) <
-          kTurretGoalThreshold;
-      if (!turret_near_goal) {
+          kTurretGoalLoadingThreshold;
+      if (!turret_near_goal || !catapult_near_return_position) {
         break;  // Wait for turret to reach the chosen intake
       }
 
@@ -418,6 +424,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
           // Reset opening timeout
           flipper_opening_start_time_ = timestamp;
+          loading_timer_ = timestamp;
         }
       }
       break;
@@ -486,15 +493,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         fire_ = true;
       }
 
-      const bool near_return_position =
-          (unsafe_goal != nullptr && unsafe_goal->has_catapult() &&
-           unsafe_goal->catapult()->has_return_position() &&
-           std::abs(unsafe_goal->catapult()->return_position()->unsafe_goal() -
-                    catapult_.estimated_position()) < kCatapultGoalThreshold);
-
       // Once the shot is complete and the catapult is back to its return
       // position, go back to IDLE
-      if (catapult_.shot_count() > prev_shot_count_ && near_return_position) {
+      if (catapult_.shot_count() > prev_shot_count_ ) {
         prev_shot_count_ = catapult_.shot_count();
         fire_ = false;
         discarding_ball_ = false;
@@ -509,7 +510,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       {.intake_front_position = intake_front_.estimated_position(),
        .intake_back_position = intake_back_.estimated_position(),
        .turret_position = turret_.estimated_position(),
-       .shooting = state_ == SuperstructureState::SHOOTING},
+       .shooting = (state_ == SuperstructureState::SHOOTING) ||
+                   !catapult_near_return_position},
       turret_goal);
 
   turret_.set_min_position(collision_avoidance_.min_turret_goal());
