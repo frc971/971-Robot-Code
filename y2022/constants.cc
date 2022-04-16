@@ -34,7 +34,6 @@ Values MakeValues(uint16_t team) {
 
   Values r;
 
-  // TODO(Yash): Set constants
   // Intake constants.
   auto *const intake_front = &r.intake_front;
   auto *const intake_back = &r.intake_back;
@@ -62,16 +61,24 @@ Values MakeValues(uint16_t team) {
   intake_front->subsystem_params = intake_params;
   intake_back->subsystem_params = intake_params;
 
-  // TODO(Yash): Set constants
   // Turret constants.
   auto *const turret = &r.turret;
   auto *const turret_params = &turret->subsystem_params;
+  auto *turret_range = &r.turret_range;
+
+  *turret_range = ::frc971::constants::Range{
+      .lower_hard = -7.0,  // Back Hard
+      .upper_hard = 3.4,   // Front Hard
+      .lower = -6.5,       // Back Soft
+      .upper = 3.15        // Front Soft
+  };
 
   turret_params->zeroing_voltage = 4.0;
   turret_params->operating_voltage = 12.0;
   turret_params->zeroing_profile_params = {0.5, 2.0};
   turret_params->default_profile_params = {10.0, 20.0};
-  turret_params->range = Values::kTurretRange();
+  turret_params->default_profile_params = {15.0, 20.0};
+  turret_params->range = *turret_range;
   turret_params->make_integral_loop =
       control_loops::superstructure::turret::MakeIntegralTurretLoop;
   turret_params->zeroing_constants.average_filter_size =
@@ -237,21 +244,25 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kPracticeTeamNumber:
+      // TODO(milind): calibrate once mounted
       climber->potentiometer_offset = 0.0;
-      intake_front->potentiometer_offset = 0.0;
+      intake_front->potentiometer_offset = 3.06604378582351;
       intake_front->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.0;
-      intake_back->potentiometer_offset = 0.0;
+          .measured_absolute_position = 0.318042402595181;
+      intake_back->potentiometer_offset = 3.10861174832838;
       intake_back->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.0;
-      turret->potentiometer_offset = 0.0;
+          .measured_absolute_position = 0.140554083520329;
+      turret->potentiometer_offset = -8.14418207451834 + 0.342635491808218;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
-          0.0;
-      flipper_arm_left->potentiometer_offset = 0.0;
-      flipper_arm_right->potentiometer_offset = 0.0;
+          1.15423161235124;
+      turret_range->upper = 3.0;
+      turret_params->range = *turret_range;
+      flipper_arm_left->potentiometer_offset = -4.39536583413615;
+      flipper_arm_right->potentiometer_offset = 4.36264091401229;
 
-      catapult_params->zeroing_constants.measured_absolute_position = 0.0;
-      catapult->potentiometer_offset = 0.0;
+      catapult_params->zeroing_constants.measured_absolute_position =
+          1.62909518684227;
+      catapult->potentiometer_offset = -1.52951814169821 - 0.0200812009850977;
       break;
 
     case kCodingRobotTeamNumber:

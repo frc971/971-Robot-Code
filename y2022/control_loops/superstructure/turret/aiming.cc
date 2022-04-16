@@ -8,8 +8,8 @@ namespace superstructure {
 namespace turret {
 
 using frc971::control_loops::Pose;
-using frc971::control_loops::aiming::ShotConfig;
 using frc971::control_loops::aiming::RobotState;
+using frc971::control_loops::aiming::ShotConfig;
 
 namespace {
 // If the turret is at zero, then it will be at this angle at which the shot
@@ -55,7 +55,7 @@ void Aimer::Update(const Status *status, ShotMode shot_mode) {
   // Use the previous shot distance to estimate the speed-over-ground of the
   // ball.
   current_goal_ = frc971::control_loops::aiming::AimerGoal(
-      ShotConfig{goal, shot_mode, constants_->kTurretRange(),
+      ShotConfig{goal, shot_mode, constants_->turret_range,
                  constants_->shot_velocity_interpolation_table
                      .Get(current_goal_.target_distance)
                      .shot_speed_over_ground,

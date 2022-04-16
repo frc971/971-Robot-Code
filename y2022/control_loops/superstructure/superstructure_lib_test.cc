@@ -158,7 +158,7 @@ class SuperstructureSimulation {
                 PositionSensorSimulator(
                     values->turret.subsystem_params.zeroing_constants
                         .one_revolution_distance),
-                values->turret, constants::Values::kTurretRange(),
+                values->turret, values->turret_range,
                 values->turret.subsystem_params.zeroing_constants
                     .measured_absolute_position,
                 dt_),
@@ -178,7 +178,7 @@ class SuperstructureSimulation {
     intake_front_.InitializePosition(
         constants::Values::kIntakeRange().middle());
     intake_back_.InitializePosition(constants::Values::kIntakeRange().middle());
-    turret_.InitializePosition(constants::Values::kTurretRange().middle());
+    turret_.InitializePosition(values->turret_range.middle());
     catapult_.InitializePosition(constants::Values::kCatapultRange().middle());
     climber_.InitializePosition(constants::Values::kClimberRange().middle());
 
@@ -566,7 +566,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   superstructure_plant_.intake_back()->InitializePosition(
       constants::Values::kIntakeRange().middle());
   superstructure_plant_.turret()->InitializePosition(
-      constants::Values::kTurretRange().middle());
+      values_->turret_range.middle());
   superstructure_plant_.climber()->InitializePosition(
       constants::Values::kClimberRange().middle());
   WaitUntilZeroed();
@@ -584,7 +584,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kTurretRange().lower,
+            *builder.fbb(), values_->turret_range.lower,
             CreateProfileParameters(*builder.fbb(), 1.0, 0.2));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
@@ -671,7 +671,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         turret_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kTurretRange().lower,
+            *builder.fbb(), values_->turret_range.lower,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>

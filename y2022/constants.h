@@ -44,8 +44,10 @@ struct Values {
 
   // Climber
   static constexpr ::frc971::constants::Range kClimberRange() {
-    return ::frc971::constants::Range{
-        .lower_hard = -0.01, .upper_hard = 0.59, .lower = 0.003, .upper = 0.555};
+    return ::frc971::constants::Range{.lower_hard = -0.01,
+                                      .upper_hard = 0.59,
+                                      .lower = 0.003,
+                                      .upper = 0.555};
   }
   static constexpr double kClimberPotMetersPerRevolution() {
     return 22 * 0.25 * 0.0254;
@@ -109,16 +111,7 @@ struct Values {
 
   // Turret
   PotAndAbsEncoderConstants turret;
-
-  // TODO (Yash): Constants need to be tuned
-  static constexpr ::frc971::constants::Range kTurretRange() {
-    return ::frc971::constants::Range{
-        .lower_hard = -7.0,  // Back Hard
-        .upper_hard = 3.4,   // Front Hard
-        .lower = -6.5,       // Back Soft
-        .upper = 3.15        // Front Soft
-    };
-  }
+  frc971::constants::Range turret_range;
 
   static constexpr double kTurretBackIntakePos() { return -M_PI; }
   static constexpr double kTurretFrontIntakePos() { return 0; }
