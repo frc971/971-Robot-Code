@@ -18,6 +18,11 @@ type Match struct {
 	R1, R2, R3, B1, B2, B3 int32
 }
 
+type Shift struct {
+	MatchNumber                                                      int32
+	R1scouter, R2scouter, R3scouter, B1scouter, B2scouter, B3scouter string
+}
+
 type Stats struct {
 	TeamNumber, MatchNumber, Round int32
 	CompLevel                      string
@@ -88,6 +93,27 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 	if err != nil {
 		database.Close()
 		return nil, errors.New(fmt.Sprint("Failed to create matches table: ", err))
+	}
+
+	statement, err = database.Prepare("CREATE TABLE IF NOT EXISTS shift_schedule (" +
+		"id SERIAL PRIMARY KEY, " +
+		"MatchNumber INTEGER, " +
+		"R1Scouter VARCHAR, " +
+		"R2Scouter VARCHAR, " +
+		"R3Scouter VARCHAR, " +
+		"B1Scouter VARCHAR, " +
+		"B2Scouter VARCHAR, " +
+		"B3scouter VARCHAR)")
+	if err != nil {
+		database.Close()
+		return nil, errors.New(fmt.Sprint("Failed to prepare shift schedule table creation: ", err))
+	}
+	defer statement.Close()
+
+	_, err = statement.Exec()
+	if err != nil {
+		database.Close()
+		return nil, errors.New(fmt.Sprint("Failed to create shift schedule table: ", err))
 	}
 
 	statement, err = database.Prepare("CREATE TABLE IF NOT EXISTS team_match_stats (" +
@@ -170,6 +196,15 @@ func (database *Database) Delete() error {
 		return errors.New(fmt.Sprint("Failed to drop matches table: ", err))
 	}
 
+	statement, err = database.Prepare("DROP TABLE IF EXISTS shift_schedule")
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to prepare dropping shifts table: ", err))
+	}
+	_, err = statement.Exec()
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to drop shifts table: ", err))
+	}
+
 	statement, err = database.Prepare("DROP TABLE IF EXISTS team_match_stats")
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to prepare dropping stats table: ", err))
@@ -220,6 +255,26 @@ func (database *Database) AddToMatch(m Match) error {
 		m.R1, m.R2, m.R3, m.B1, m.B2, m.B3)
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to insert into match database: ", err))
+	}
+	return nil
+}
+
+func (database *Database) AddToShift(sh Shift) error {
+	statement, err := database.Prepare("INSERT INTO shift_schedule(" +
+		"MatchNumber, " +
+		"R1scouter, R2scouter, R3scouter, B1scouter, B2scouter, B3scouter) " +
+		"VALUES (" +
+		"$1, " +
+		"$2, $3, $4, $5, $6, $7)")
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to prepare insertion into shift database: ", err))
+	}
+	defer statement.Close()
+
+	_, err = statement.Exec(sh.MatchNumber,
+		sh.R1scouter, sh.R2scouter, sh.R3scouter, sh.B1scouter, sh.B2scouter, sh.B3scouter)
+	if err != nil {
+		return errors.New(fmt.Sprint("Failed to insert into shift database: ", err))
 	}
 	return nil
 }
@@ -343,6 +398,27 @@ func (database *Database) ReturnMatches() ([]Match, error) {
 	return matches, nil
 }
 
+func (database *Database) ReturnAllShifts() ([]Shift, error) {
+	rows, err := database.Query("SELECT * FROM shift_schedule")
+	if err != nil {
+		return nil, errors.New(fmt.Sprint("Failed to select from shift: ", err))
+	}
+	defer rows.Close()
+
+	shifts := make([]Shift, 0)
+	for rows.Next() {
+		var shift Shift
+		var id int
+		err := rows.Scan(&id, &shift.MatchNumber,
+			&shift.R1scouter, &shift.R2scouter, &shift.R3scouter, &shift.B1scouter, &shift.B2scouter, &shift.B3scouter)
+		if err != nil {
+			return nil, errors.New(fmt.Sprint("Failed to scan from shift: ", err))
+		}
+		shifts = append(shifts, shift)
+	}
+	return shifts, nil
+}
+
 func (database *Database) ReturnStats() ([]Stats, error) {
 	rows, err := database.Query("SELECT * FROM team_match_stats")
 	if err != nil {
@@ -412,6 +488,27 @@ func (database *Database) QueryMatches(teamNumber_ int32) ([]Match, error) {
 		matches = append(matches, match)
 	}
 	return matches, nil
+}
+
+func (database *Database) QueryAllShifts(matchNumber_ int) ([]Shift, error) {
+	rows, err := database.Query("SELECT * FROM shift_schedule WHERE MatchNumber = $1", matchNumber_)
+	if err != nil {
+		return nil, errors.New(fmt.Sprint("Failed to select from shift for team: ", err))
+	}
+	defer rows.Close()
+
+	var shifts []Shift
+	for rows.Next() {
+		var shift Shift
+		var id int
+		err = rows.Scan(&id, &shift.MatchNumber,
+			&shift.R1scouter, &shift.R2scouter, &shift.R3scouter, &shift.B1scouter, &shift.B2scouter, &shift.B3scouter)
+		if err != nil {
+			return nil, errors.New(fmt.Sprint("Failed to scan from matches: ", err))
+		}
+		shifts = append(shifts, shift)
+	}
+	return shifts, nil
 }
 
 func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {

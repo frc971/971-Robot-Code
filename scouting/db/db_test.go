@@ -261,6 +261,41 @@ func TestQueryMatchDB(t *testing.T) {
 	}
 }
 
+func TestQueryShiftDB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	testDatabase := []Shift{
+		Shift{
+			MatchNumber: 1,
+			R1scouter:   "Bob1", R2scouter: "Bob2", R3scouter: "Bob3", B1scouter: "Alice1", B2scouter: "Alice2", B3scouter: "Alice3",
+		},
+		Shift{
+			MatchNumber: 2,
+			R1scouter:   "Bob1", R2scouter: "Bob2", R3scouter: "Bob3", B1scouter: "Alice1", B2scouter: "Alice2", B3scouter: "Alice3",
+		},
+	}
+
+	for i := 0; i < len(testDatabase); i++ {
+		err := fixture.db.AddToShift(testDatabase[i])
+		check(t, err, fmt.Sprint("Failed to add shift", i))
+	}
+
+	correct := []Shift{
+		Shift{
+			MatchNumber: 1,
+			R1scouter:   "Bob1", R2scouter: "Bob2", R3scouter: "Bob3", B1scouter: "Alice1", B2scouter: "Alice2", B3scouter: "Alice3",
+		},
+	}
+
+	got, err := fixture.db.QueryAllShifts(1)
+	check(t, err, "Failed to query shift for match 1")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Fatalf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
 func TestQueryStatsDB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
@@ -472,6 +507,34 @@ func TestOverwriteNewMatchData(t *testing.T) {
 
 	if !reflect.DeepEqual(correct, got) {
 		t.Fatalf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
+func TestAddReturnShiftDB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	correct := []Shift{
+		Shift{
+			MatchNumber: 1,
+			R1scouter:   "Bob1", R2scouter: "Bob2", R3scouter: "Bob3", B1scouter: "Alice1", B2scouter: "Alice2", B3scouter: "Alice3",
+		},
+		Shift{
+			MatchNumber: 2,
+			R1scouter:   "Bob1", R2scouter: "Bob2", R3scouter: "Bob3", B1scouter: "Alice1", B2scouter: "Alice2", B3scouter: "Alice3",
+		},
+	}
+
+	for i := 0; i < len(correct); i++ {
+		err := fixture.db.AddToShift(correct[i])
+		check(t, err, fmt.Sprint("Failed to add shift", i))
+	}
+
+	got, err := fixture.db.ReturnAllShifts()
+	check(t, err, "Failed ReturnAllShifts()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
 	}
 }
 
