@@ -54,7 +54,7 @@ export class EntryComponent {
   @Output() switchTabsEvent = new EventEmitter<string>();
   @Input() matchNumber: number = 1;
   @Input() teamNumber: number = 1;
-  @Input() round: number = 1;
+  @Input() setNumber: number = 1;
   @Input() compLevel: CompLevel = 'qm';
   autoUpperShotsMade: number = 0;
   autoLowerShotsMade: number = 0;
@@ -135,7 +135,7 @@ export class EntryComponent {
     SubmitDataScouting.startSubmitDataScouting(builder);
     SubmitDataScouting.addTeam(builder, this.teamNumber);
     SubmitDataScouting.addMatch(builder, this.matchNumber);
-    SubmitDataScouting.addRound(builder, this.round);
+    SubmitDataScouting.addSetNumber(builder, this.setNumber);
     SubmitDataScouting.addCompLevel(builder, compLevel);
     SubmitDataScouting.addMissedShotsAuto(builder, this.autoShotsMissed);
     SubmitDataScouting.addUpperGoalAuto(builder, this.autoUpperShotsMade);

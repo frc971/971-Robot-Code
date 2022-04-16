@@ -13,7 +13,7 @@ type Database struct {
 }
 
 type Match struct {
-	MatchNumber, Round     int32
+	MatchNumber, SetNumber int32
 	CompLevel              string
 	R1, R2, R3, B1, B2, B3 int32
 }
@@ -24,10 +24,10 @@ type Shift struct {
 }
 
 type Stats struct {
-	TeamNumber, MatchNumber, Round int32
-	CompLevel                      string
-	StartingQuadrant               int32
-	AutoBallPickedUp               [5]bool
+	TeamNumber, MatchNumber, SetNumber int32
+	CompLevel                          string
+	StartingQuadrant                   int32
+	AutoBallPickedUp                   [5]bool
 	// TODO(phil): Re-order auto and teleop fields so auto comes first.
 	ShotsMissed, UpperGoalShots, LowerGoalShots   int32
 	ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto int32
@@ -74,7 +74,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 
 	statement, err := database.Prepare("CREATE TABLE IF NOT EXISTS matches (" +
 		"MatchNumber INTEGER, " +
-		"Round INTEGER, " +
+		"SetNumber INTEGER, " +
 		"CompLevel VARCHAR, " +
 		"R1 INTEGER, " +
 		"R2 INTEGER, " +
@@ -82,7 +82,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		"B1 INTEGER, " +
 		"B2 INTEGER, " +
 		"B3 INTEGER, " +
-		"PRIMARY KEY (MatchNumber, Round, CompLevel))")
+		"PRIMARY KEY (MatchNumber, SetNumber, CompLevel))")
 	if err != nil {
 		database.Close()
 		return nil, errors.New(fmt.Sprint("Failed to prepare matches table creation: ", err))
@@ -119,7 +119,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 	statement, err = database.Prepare("CREATE TABLE IF NOT EXISTS team_match_stats (" +
 		"TeamNumber INTEGER, " +
 		"MatchNumber INTEGER, " +
-		"Round INTEGER, " +
+		"SetNumber INTEGER, " +
 		"CompLevel VARCHAR, " +
 		"StartingQuadrant INTEGER, " +
 		"AutoBall1PickedUp BOOLEAN, " +
@@ -138,7 +138,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		"Climbing INTEGER, " +
 		"Comment VARCHAR, " +
 		"CollectedBy VARCHAR, " +
-		"PRIMARY KEY (TeamNumber, MatchNumber, Round, CompLevel))")
+		"PRIMARY KEY (TeamNumber, MatchNumber, SetNumber, CompLevel))")
 	if err != nil {
 		database.Close()
 		return nil, errors.New(fmt.Sprint("Failed to prepare stats table creation: ", err))
@@ -238,12 +238,12 @@ func (database *Database) Delete() error {
 // This function will also populate the Stats table with six empty rows every time a match is added
 func (database *Database) AddToMatch(m Match) error {
 	statement, err := database.Prepare("INSERT INTO matches(" +
-		"MatchNumber, Round, CompLevel, " +
+		"MatchNumber, SetNumber, CompLevel, " +
 		"R1, R2, R3, B1, B2, B3) " +
 		"VALUES (" +
 		"$1, $2, $3, " +
 		"$4, $5, $6, $7, $8, $9) " +
-		"ON CONFLICT (MatchNumber, Round, CompLevel) DO UPDATE SET " +
+		"ON CONFLICT (MatchNumber, SetNumber, CompLevel) DO UPDATE SET " +
 		"R1 = EXCLUDED.R1, R2 = EXCLUDED.R2, R3 = EXCLUDED.R3, " +
 		"B1 = EXCLUDED.B1, B2 = EXCLUDED.B2, B3 = EXCLUDED.B3")
 	if err != nil {
@@ -251,7 +251,7 @@ func (database *Database) AddToMatch(m Match) error {
 	}
 	defer statement.Close()
 
-	_, err = statement.Exec(m.MatchNumber, m.Round, m.CompLevel,
+	_, err = statement.Exec(m.MatchNumber, m.SetNumber, m.CompLevel,
 		m.R1, m.R2, m.R3, m.B1, m.B2, m.B3)
 	if err != nil {
 		return errors.New(fmt.Sprint("Failed to insert into match database: ", err))
@@ -298,7 +298,7 @@ func (database *Database) AddToStats(s Stats) error {
 	}
 
 	statement, err := database.Prepare("INSERT INTO team_match_stats(" +
-		"TeamNumber, MatchNumber, Round, CompLevel, " +
+		"TeamNumber, MatchNumber, SetNumber, CompLevel, " +
 		"StartingQuadrant, " +
 		"AutoBall1PickedUp, AutoBall2PickedUp, AutoBall3PickedUp, " +
 		"AutoBall4PickedUp, AutoBall5PickedUp, " +
@@ -321,7 +321,7 @@ func (database *Database) AddToStats(s Stats) error {
 	defer statement.Close()
 
 	_, err = statement.Exec(
-		s.TeamNumber, s.MatchNumber, s.Round, s.CompLevel,
+		s.TeamNumber, s.MatchNumber, s.SetNumber, s.CompLevel,
 		s.StartingQuadrant,
 		s.AutoBallPickedUp[0], s.AutoBallPickedUp[1], s.AutoBallPickedUp[2],
 		s.AutoBallPickedUp[3], s.AutoBallPickedUp[4],
@@ -388,7 +388,7 @@ func (database *Database) ReturnMatches() ([]Match, error) {
 	matches := make([]Match, 0)
 	for rows.Next() {
 		var match Match
-		err := rows.Scan(&match.MatchNumber, &match.Round, &match.CompLevel,
+		err := rows.Scan(&match.MatchNumber, &match.SetNumber, &match.CompLevel,
 			&match.R1, &match.R2, &match.R3, &match.B1, &match.B2, &match.B3)
 		if err != nil {
 			return nil, errors.New(fmt.Sprint("Failed to scan from matches: ", err))
@@ -430,7 +430,7 @@ func (database *Database) ReturnStats() ([]Stats, error) {
 	for rows.Next() {
 		var team Stats
 		err = rows.Scan(
-			&team.TeamNumber, &team.MatchNumber, &team.Round, &team.CompLevel,
+			&team.TeamNumber, &team.MatchNumber, &team.SetNumber, &team.CompLevel,
 			&team.StartingQuadrant,
 			&team.AutoBallPickedUp[0], &team.AutoBallPickedUp[1], &team.AutoBallPickedUp[2],
 			&team.AutoBallPickedUp[3], &team.AutoBallPickedUp[4],
@@ -480,7 +480,7 @@ func (database *Database) QueryMatches(teamNumber_ int32) ([]Match, error) {
 	var matches []Match
 	for rows.Next() {
 		var match Match
-		err = rows.Scan(&match.MatchNumber, &match.Round, &match.CompLevel,
+		err = rows.Scan(&match.MatchNumber, &match.SetNumber, &match.CompLevel,
 			&match.R1, &match.R2, &match.R3, &match.B1, &match.B2, &match.B3)
 		if err != nil {
 			return nil, errors.New(fmt.Sprint("Failed to scan from matches: ", err))
@@ -522,7 +522,7 @@ func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {
 	for rows.Next() {
 		var team Stats
 		err = rows.Scan(
-			&team.TeamNumber, &team.MatchNumber, &team.Round, &team.CompLevel,
+			&team.TeamNumber, &team.MatchNumber, &team.SetNumber, &team.CompLevel,
 			&team.StartingQuadrant,
 			&team.AutoBallPickedUp[0], &team.AutoBallPickedUp[1], &team.AutoBallPickedUp[2],
 			&team.AutoBallPickedUp[3], &team.AutoBallPickedUp[4],

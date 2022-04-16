@@ -65,7 +65,7 @@ func TestAddToMatchDB(t *testing.T) {
 	correct := []Match{
 		Match{
 			MatchNumber: 7,
-			Round:       1,
+			SetNumber:   1,
 			CompLevel:   "quals",
 			R1:          9999, R2: 1000, R3: 777, B1: 0000, B2: 4321, B3: 1234,
 		},
@@ -174,7 +174,7 @@ func TestAddToStatsDB(t *testing.T) {
 	}
 
 	err := fixture.db.AddToMatch(Match{
-		MatchNumber: 7, Round: 1, CompLevel: "quals",
+		MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
 		R1: 1236, R2: 1001, R3: 777, B1: 1000, B2: 4321, B3: 1234,
 	})
 	check(t, err, "Failed to add match")
@@ -207,7 +207,7 @@ func TestAddDuplicateStats(t *testing.T) {
 	}
 
 	err := fixture.db.AddToMatch(Match{
-		MatchNumber: 7, Round: 1, CompLevel: "quals",
+		MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
 		R1: 1236, R2: 1001, R3: 777, B1: 1000, B2: 4321, B3: 1234,
 	})
 	check(t, err, "Failed to add match")
@@ -231,10 +231,10 @@ func TestQueryMatchDB(t *testing.T) {
 	defer fixture.TearDown()
 
 	testDatabase := []Match{
-		Match{MatchNumber: 2, Round: 1, CompLevel: "quals", R1: 251, R2: 169, R3: 286, B1: 253, B2: 538, B3: 149},
-		Match{MatchNumber: 4, Round: 1, CompLevel: "quals", R1: 198, R2: 135, R3: 777, B1: 999, B2: 434, B3: 698},
-		Match{MatchNumber: 3, Round: 1, CompLevel: "quals", R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262},
-		Match{MatchNumber: 6, Round: 1, CompLevel: "quals", R1: 191, R2: 132, R3: 773, B1: 994, B2: 435, B3: 696},
+		Match{MatchNumber: 2, SetNumber: 1, CompLevel: "quals", R1: 251, R2: 169, R3: 286, B1: 253, B2: 538, B3: 149},
+		Match{MatchNumber: 4, SetNumber: 1, CompLevel: "quals", R1: 198, R2: 135, R3: 777, B1: 999, B2: 434, B3: 698},
+		Match{MatchNumber: 3, SetNumber: 1, CompLevel: "quals", R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262},
+		Match{MatchNumber: 6, SetNumber: 1, CompLevel: "quals", R1: 191, R2: 132, R3: 773, B1: 994, B2: 435, B3: 696},
 	}
 
 	for i := 0; i < len(testDatabase); i++ {
@@ -244,11 +244,11 @@ func TestQueryMatchDB(t *testing.T) {
 
 	correct := []Match{
 		Match{
-			MatchNumber: 2, Round: 1, CompLevel: "quals",
+			MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
 			R1: 251, R2: 169, R3: 286, B1: 253, B2: 538, B3: 149,
 		},
 		Match{
-			MatchNumber: 3, Round: 1, CompLevel: "quals",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
 			R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262,
 		},
 	}
@@ -302,14 +302,14 @@ func TestQueryStatsDB(t *testing.T) {
 
 	testDatabase := []Stats{
 		Stats{
-			TeamNumber: 1235, MatchNumber: 94, Round: 2, CompLevel: "quals",
+			TeamNumber: 1235, MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
 			StartingQuadrant: 1,
 			AutoBallPickedUp: [5]bool{false, false, false, false, false},
 			ShotsMissed:      2, UpperGoalShots: 2, LowerGoalShots: 2,
 			ShotsMissedAuto: 2, UpperGoalAuto: 2, LowerGoalAuto: 2,
 			PlayedDefense: 2, DefenseReceivedScore: 1, Climbing: 2},
 		Stats{
-			TeamNumber: 1234, MatchNumber: 94, Round: 2, CompLevel: "quals",
+			TeamNumber: 1234, MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
 			StartingQuadrant: 2,
 			AutoBallPickedUp: [5]bool{false, false, false, false, true},
 			ShotsMissed:      4, UpperGoalShots: 4, LowerGoalShots: 4,
@@ -317,7 +317,7 @@ func TestQueryStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 1, Climbing: 2,
 		},
 		Stats{
-			TeamNumber: 1233, MatchNumber: 94, Round: 2, CompLevel: "quals",
+			TeamNumber: 1233, MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
 			StartingQuadrant: 3,
 			AutoBallPickedUp: [5]bool{false, false, false, false, false},
 			ShotsMissed:      3, UpperGoalShots: 3, LowerGoalShots: 3,
@@ -325,7 +325,7 @@ func TestQueryStatsDB(t *testing.T) {
 			PlayedDefense: 3, DefenseReceivedScore: 0, Climbing: 3,
 		},
 		Stats{
-			TeamNumber: 1232, MatchNumber: 94, Round: 2, CompLevel: "quals",
+			TeamNumber: 1232, MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
 			StartingQuadrant: 2,
 			AutoBallPickedUp: [5]bool{true, false, false, false, true},
 			ShotsMissed:      5, UpperGoalShots: 5, LowerGoalShots: 5,
@@ -333,7 +333,7 @@ func TestQueryStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 2, Climbing: 1,
 		},
 		Stats{
-			TeamNumber: 1231, MatchNumber: 94, Round: 2, CompLevel: "quals",
+			TeamNumber: 1231, MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
 			StartingQuadrant: 3,
 			AutoBallPickedUp: [5]bool{false, false, true, false, false},
 			ShotsMissed:      6, UpperGoalShots: 6, LowerGoalShots: 6,
@@ -341,7 +341,7 @@ func TestQueryStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 3, Climbing: 1,
 		},
 		Stats{
-			TeamNumber: 1239, MatchNumber: 94, Round: 2, CompLevel: "quals",
+			TeamNumber: 1239, MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
 			StartingQuadrant: 4,
 			AutoBallPickedUp: [5]bool{false, true, true, false, false},
 			ShotsMissed:      7, UpperGoalShots: 7, LowerGoalShots: 7,
@@ -351,7 +351,7 @@ func TestQueryStatsDB(t *testing.T) {
 	}
 
 	err := fixture.db.AddToMatch(Match{
-		MatchNumber: 94, Round: 1, CompLevel: "quals",
+		MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
 		R1: 1235, R2: 1234, R3: 1233, B1: 1232, B2: 1231, B3: 1239})
 	check(t, err, "Failed to add match")
 
@@ -362,7 +362,7 @@ func TestQueryStatsDB(t *testing.T) {
 
 	correct := []Stats{
 		Stats{
-			TeamNumber: 1235, MatchNumber: 94, Round: 2, CompLevel: "quals",
+			TeamNumber: 1235, MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
 			StartingQuadrant: 1,
 			AutoBallPickedUp: [5]bool{false, false, false, false, false},
 			ShotsMissed:      2, UpperGoalShots: 2, LowerGoalShots: 2,
@@ -433,23 +433,23 @@ func TestReturnMatchDB(t *testing.T) {
 
 	correct := []Match{
 		Match{
-			MatchNumber: 2, Round: 1, CompLevel: "quals",
+			MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
 			R1: 251, R2: 169, R3: 286, B1: 253, B2: 538, B3: 149,
 		},
 		Match{
-			MatchNumber: 3, Round: 1, CompLevel: "quals",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
 			R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262,
 		},
 		Match{
-			MatchNumber: 4, Round: 1, CompLevel: "quals",
+			MatchNumber: 4, SetNumber: 1, CompLevel: "quals",
 			R1: 251, R2: 169, R3: 286, B1: 653, B2: 538, B3: 149,
 		},
 		Match{
-			MatchNumber: 5, Round: 1, CompLevel: "quals",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
 			R1: 198, R2: 1421, R3: 538, B1: 26, B2: 448, B3: 262,
 		},
 		Match{
-			MatchNumber: 6, Round: 1, CompLevel: "quals",
+			MatchNumber: 6, SetNumber: 1, CompLevel: "quals",
 			R1: 251, R2: 188, R3: 286, B1: 555, B2: 538, B3: 149,
 		},
 	}
@@ -473,15 +473,15 @@ func TestOverwriteNewMatchData(t *testing.T) {
 
 	testDatabase := []Match{
 		Match{
-			MatchNumber: 1, Round: 1, CompLevel: "quals",
+			MatchNumber: 1, SetNumber: 1, CompLevel: "quals",
 			R1: 251, R2: 169, R3: 286, B1: 253, B2: 538, B3: 149,
 		},
 		Match{
-			MatchNumber: 2, Round: 1, CompLevel: "quals",
+			MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
 			R1: 198, R2: 135, R3: 777, B1: 999, B2: 434, B3: 698,
 		},
 		Match{
-			MatchNumber: 1, Round: 1, CompLevel: "quals",
+			MatchNumber: 1, SetNumber: 1, CompLevel: "quals",
 			R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262,
 		},
 	}
@@ -493,11 +493,11 @@ func TestOverwriteNewMatchData(t *testing.T) {
 
 	correct := []Match{
 		Match{
-			MatchNumber: 2, Round: 1, CompLevel: "quals",
+			MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
 			R1: 198, R2: 135, R3: 777, B1: 999, B2: 434, B3: 698,
 		},
 		Match{
-			MatchNumber: 1, Round: 1, CompLevel: "quals",
+			MatchNumber: 1, SetNumber: 1, CompLevel: "quals",
 			R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262,
 		},
 	}
@@ -584,14 +584,14 @@ func TestReturnStatsDB(t *testing.T) {
 
 	correct := []Stats{
 		Stats{
-			TeamNumber: 1235, MatchNumber: 94, Round: 1, CompLevel: "quals",
+			TeamNumber: 1235, MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
 			StartingQuadrant: 1,
 			AutoBallPickedUp: [5]bool{false, false, false, false, false},
 			ShotsMissed:      2, UpperGoalShots: 2, LowerGoalShots: 2,
 			ShotsMissedAuto: 2, UpperGoalAuto: 2, LowerGoalAuto: 2,
 			PlayedDefense: 2, DefenseReceivedScore: 3, Climbing: 2},
 		Stats{
-			TeamNumber: 1236, MatchNumber: 94, Round: 1, CompLevel: "quals",
+			TeamNumber: 1236, MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
 			StartingQuadrant: 2,
 			AutoBallPickedUp: [5]bool{false, false, false, false, true},
 			ShotsMissed:      4, UpperGoalShots: 4, LowerGoalShots: 4,
@@ -599,7 +599,7 @@ func TestReturnStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 1, Climbing: 2,
 		},
 		Stats{
-			TeamNumber: 1237, MatchNumber: 94, Round: 1, CompLevel: "quals",
+			TeamNumber: 1237, MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
 			StartingQuadrant: 3,
 			AutoBallPickedUp: [5]bool{false, false, false, false, false},
 			ShotsMissed:      3, UpperGoalShots: 3, LowerGoalShots: 3,
@@ -607,7 +607,7 @@ func TestReturnStatsDB(t *testing.T) {
 			PlayedDefense: 3, DefenseReceivedScore: 0, Climbing: 3,
 		},
 		Stats{
-			TeamNumber: 1238, MatchNumber: 94, Round: 1, CompLevel: "quals",
+			TeamNumber: 1238, MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
 			StartingQuadrant: 2,
 			AutoBallPickedUp: [5]bool{true, false, false, false, true},
 			ShotsMissed:      5, UpperGoalShots: 5, LowerGoalShots: 5,
@@ -615,7 +615,7 @@ func TestReturnStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 4, Climbing: 1,
 		},
 		Stats{
-			TeamNumber: 1239, MatchNumber: 94, Round: 1, CompLevel: "quals",
+			TeamNumber: 1239, MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
 			StartingQuadrant: 3,
 			AutoBallPickedUp: [5]bool{false, false, true, false, false},
 			ShotsMissed:      6, UpperGoalShots: 6, LowerGoalShots: 6,
@@ -623,7 +623,7 @@ func TestReturnStatsDB(t *testing.T) {
 			PlayedDefense: 7, DefenseReceivedScore: 4, Climbing: 1,
 		},
 		Stats{
-			TeamNumber: 1233, MatchNumber: 94, Round: 1, CompLevel: "quals",
+			TeamNumber: 1233, MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
 			StartingQuadrant: 4,
 			AutoBallPickedUp: [5]bool{false, true, true, false, false},
 			ShotsMissed:      7, UpperGoalShots: 7, LowerGoalShots: 7,
@@ -633,7 +633,7 @@ func TestReturnStatsDB(t *testing.T) {
 	}
 
 	err := fixture.db.AddToMatch(Match{
-		MatchNumber: 94, Round: 1, CompLevel: "quals",
+		MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
 		R1: 1235, R2: 1236, R3: 1237, B1: 1238, B2: 1239, B3: 1233})
 	check(t, err, "Failed to add match")
 

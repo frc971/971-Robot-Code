@@ -84,7 +84,7 @@ func TestSubmitDataScouting(t *testing.T) {
 	builder.Finish((&submit_data_scouting.SubmitDataScoutingT{
 		Team:                  971,
 		Match:                 1,
-		Round:                 8,
+		SetNumber:             8,
 		CompLevel:             "quals",
 		StartingQuadrant:      2,
 		AutoBall1:             true,
@@ -121,15 +121,15 @@ func TestRequestAllMatches(t *testing.T) {
 	db := MockDatabase{
 		matches: []db.Match{
 			{
-				MatchNumber: 1, Round: 1, CompLevel: "qual",
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
 				R1: 5, R2: 42, R3: 600, B1: 971, B2: 400, B3: 200,
 			},
 			{
-				MatchNumber: 2, Round: 1, CompLevel: "qual",
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
 				R1: 6, R2: 43, R3: 601, B1: 972, B2: 401, B3: 201,
 			},
 			{
-				MatchNumber: 3, Round: 1, CompLevel: "qual",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
 				R1: 7, R2: 44, R3: 602, B1: 973, B2: 402, B3: 202,
 			},
 		},
@@ -149,7 +149,7 @@ func TestRequestAllMatches(t *testing.T) {
 
 	expected := request_all_matches_response.RequestAllMatchesResponseT{
 		MatchList: []*request_all_matches_response.MatchT{
-			// MatchNumber, Round, CompLevel
+			// MatchNumber, SetNumber, CompLevel
 			// R1, R2, R3, B1, B2, B3
 			{
 				1, 1, "qual",
@@ -181,11 +181,11 @@ func TestRequestMatchesForTeam(t *testing.T) {
 	db := MockDatabase{
 		matches: []db.Match{
 			{
-				MatchNumber: 1, Round: 1, CompLevel: "qual",
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
 				R1: 5, R2: 42, R3: 600, B1: 971, B2: 400, B3: 200,
 			},
 			{
-				MatchNumber: 2, Round: 1, CompLevel: "qual",
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
 				R1: 6, R2: 43, R3: 601, B1: 972, B2: 401, B3: 201,
 			},
 		},
@@ -207,7 +207,7 @@ func TestRequestMatchesForTeam(t *testing.T) {
 
 	expected := request_matches_for_team_response.RequestMatchesForTeamResponseT{
 		MatchList: []*request_matches_for_team_response.MatchT{
-			// MatchNumber, Round, CompLevel
+			// MatchNumber, SetNumber, CompLevel
 			// R1, R2, R3, B1, B2, B3
 			{
 				1, 1, "qual",
@@ -230,7 +230,7 @@ func TestRequestDataScouting(t *testing.T) {
 	db := MockDatabase{
 		stats: []db.Stats{
 			{
-				TeamNumber: 971, MatchNumber: 1, Round: 2, CompLevel: "quals",
+				TeamNumber: 971, MatchNumber: 1, SetNumber: 2, CompLevel: "quals",
 				StartingQuadrant: 1,
 				AutoBallPickedUp: [5]bool{true, false, false, false, true},
 				ShotsMissed:      1, UpperGoalShots: 2, LowerGoalShots: 3,
@@ -239,7 +239,7 @@ func TestRequestDataScouting(t *testing.T) {
 				Comment: "a lovely comment", CollectedBy: "john",
 			},
 			{
-				TeamNumber: 972, MatchNumber: 1, Round: 4, CompLevel: "extra",
+				TeamNumber: 972, MatchNumber: 1, SetNumber: 4, CompLevel: "extra",
 				StartingQuadrant: 2,
 				AutoBallPickedUp: [5]bool{false, false, true, false, false},
 				ShotsMissed:      2, UpperGoalShots: 3, LowerGoalShots: 4,
@@ -265,7 +265,7 @@ func TestRequestDataScouting(t *testing.T) {
 	expected := request_data_scouting_response.RequestDataScoutingResponseT{
 		StatsList: []*request_data_scouting_response.StatsT{
 			{
-				Team: 971, Match: 1, Round: 2, CompLevel: "quals",
+				Team: 971, Match: 1, SetNumber: 2, CompLevel: "quals",
 				MissedShotsAuto: 4, UpperGoalAuto: 5, LowerGoalAuto: 6,
 				MissedShotsTele: 1, UpperGoalTele: 2, LowerGoalTele: 3,
 				DefenseRating:         7,
@@ -278,7 +278,7 @@ func TestRequestDataScouting(t *testing.T) {
 				Comment:          "a lovely comment",
 			},
 			{
-				Team: 972, Match: 1, Round: 4, CompLevel: "extra",
+				Team: 972, Match: 1, SetNumber: 4, CompLevel: "extra",
 				MissedShotsAuto: 5, UpperGoalAuto: 6, LowerGoalAuto: 7,
 				MissedShotsTele: 2, UpperGoalTele: 3, LowerGoalTele: 4,
 				DefenseRating:         8,
@@ -414,7 +414,7 @@ func TestRefreshMatchList(t *testing.T) {
 	expectedMatches := []db.Match{
 		{
 			MatchNumber: 1,
-			Round:       2,
+			SetNumber:   2,
 			CompLevel:   "qual",
 			R1:          100,
 			R2:          200,
