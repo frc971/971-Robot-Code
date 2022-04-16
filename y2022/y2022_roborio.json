@@ -7,11 +7,21 @@
       "frequency": 100,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes" : [
-        "imu"
+        "imu",
+        "logger"
       ],
       "destination_nodes": [
         {
           "name": "imu",
+          "priority": 5,
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
+        },
+        {
+          "name": "logger",
           "priority": 5,
           "time_to_live": 50000000,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
@@ -23,6 +33,15 @@
     },
     {
       "name": "/roborio/aos/remote_timestamps/imu/roborio/aos/aos-JoystickState",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 200,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/logger/roborio/aos/aos-JoystickState",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "roborio",
       "logger": "NOT_LOGGED",
