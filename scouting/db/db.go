@@ -39,7 +39,7 @@ type Stats struct {
 	// 3 -> "Low"
 	// 4 -> "Medium"
 	// 5 -> "High"
-	// 6 -> "Transversal"
+	// 6 -> "Traversal"
 	Climbing int32
 	// Some non-numerical data that the scout felt worth noting.
 	Comment string
