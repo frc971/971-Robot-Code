@@ -998,7 +998,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
             IntakeState::INTAKE_BACK_BALL);
   EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(),
-              constants::Values::kTurretBackIntakePos(), 0.001);
+              -constants::Values::kTurretBackIntakePos(), 0.001);
 
   // Since the intake beambreak hasn't triggered in a while, it should realize
   // the ball was lost.
@@ -1010,7 +1010,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
             IntakeState::NO_BALL);
 }
 
-TEST_F(SuperstructureTest, TestTurretUnWrapsWhenLoading) {
+TEST_F(SuperstructureTest, TestTurretWrapsWhenLoading) {
   SetEnabled(true);
   WaitUntilZeroed();
 
@@ -1032,22 +1032,21 @@ TEST_F(SuperstructureTest, TestTurretUnWrapsWhenLoading) {
   EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(), kTurretGoal,
               0.001);
 
-  superstructure_plant_.set_intake_beambreak_back(true);
+  superstructure_plant_.set_intake_beambreak_front(true);
   RunFor(dt() * 2);
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_EQ(superstructure_status_fetcher_->state(),
             SuperstructureState::TRANSFERRING);
   EXPECT_EQ(superstructure_status_fetcher_->intake_state(),
-            IntakeState::INTAKE_BACK_BALL);
+            IntakeState::INTAKE_FRONT_BALL);
 
   RunFor(std::chrono::seconds(3));
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   EXPECT_NEAR(superstructure_status_fetcher_->turret()->position(),
-              constants::Values::kTurretBackIntakePos(), 0.001);
-  // It goes to -pi instead of +pi because -pi is closest to the center of the
-  // range at -1.675.
+              -constants::Values::kTurretFrontIntakePos() - 2.0 * M_PI, 0.001);
+  // it chooses -pi because -pi is closer to -4 than positive pi
 }
 
 // Make sure that the front and back intakes are never switched
