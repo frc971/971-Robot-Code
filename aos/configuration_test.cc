@@ -95,6 +95,23 @@ TEST_F(ConfigurationDeathTest, DuplicateFile) {
       "aos/testdata/config1_bad.json");
 }
 
+// Tests that we die when we give an invalid path.
+TEST_F(ConfigurationDeathTest, NonexistentFile) {
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config =
+            ReadConfig("nonexistent/config.json");
+      },
+      "above error");
+}
+
+// Tests that we return std::nullopt when we give an invalid path.
+TEST_F(ConfigurationTest, NonexistentFileOptional) {
+  std::optional<FlatbufferDetachedBuffer<Configuration>> config =
+      MaybeReadConfig("nonexistent/config.json");
+  EXPECT_FALSE(config.has_value());
+}
+
 // Tests that we reject invalid channel names.  This means any channels with //
 // in their name, a trailing /, or regex characters.
 TEST_F(ConfigurationDeathTest, InvalidChannelName) {
@@ -891,8 +908,8 @@ TEST_F(ConfigurationTest, SourceNodeIndex) {
 TEST_F(ConfigurationDeathTest, InvalidLoggerConfig) {
   EXPECT_DEATH(
       {
-        FlatbufferDetachedBuffer<Configuration> config =
-            ReadConfig(ArtifactPath("aos/testdata/invalid_logging_configuration.json"));
+        FlatbufferDetachedBuffer<Configuration> config = ReadConfig(
+            ArtifactPath("aos/testdata/invalid_logging_configuration.json"));
       },
       "Logging timestamps without data");
 }

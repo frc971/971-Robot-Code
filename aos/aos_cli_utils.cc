@@ -36,16 +36,19 @@ bool CliUtilInfo::Initialize(
     bool expect_args) {
   // Don't generate failure output if the config doesn't exist while attempting
   // to autocomplete.
-  if (struct stat file_stat;
-      FLAGS__bash_autocomplete &&
-      (!(EndsWith(FLAGS_config, ".json") || EndsWith(FLAGS_config, ".bfbs")) ||
-       stat(FLAGS_config.c_str(), &file_stat) != 0 ||
-       (file_stat.st_mode & S_IFMT) != S_IFREG)) {
+  if (FLAGS__bash_autocomplete &&
+      (!(EndsWith(FLAGS_config, ".json") || EndsWith(FLAGS_config, ".bfbs")))) {
     std::cout << "COMPREPLY=()";
     return true;
   }
 
-  config.emplace(aos::configuration::ReadConfig(FLAGS_config));
+  config = aos::configuration::MaybeReadConfig(FLAGS_config);
+  if (FLAGS__bash_autocomplete && !config.has_value()) {
+    std::cout << "COMPREPLY=()";
+    return true;
+  }
+  CHECK(config.has_value()) << "Could not read config. See above errors.";
+
   event_loop.emplace(&config->message());
   event_loop->SkipTimingReport();
   event_loop->SkipAosLog();

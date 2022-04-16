@@ -169,7 +169,7 @@ std::string RemoveDotDots(const std::string_view filename) {
   return absl::StrJoin(split, "/");
 }
 
-FlatbufferDetachedBuffer<Configuration> ReadConfig(
+std::optional<FlatbufferDetachedBuffer<Configuration>> MaybeReadConfig(
     const std::string_view path, absl::btree_set<std::string> *visited_paths,
     const std::vector<std::string_view> &extra_import_paths) {
   std::string binary_path = MaybeReplaceExtension(path, ".json", ".bfbs");
@@ -181,11 +181,12 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
   // instead.  It is much faster to load .bfbs files than .json files.
   if (!binary_path_exists && !util::PathExists(raw_path)) {
     const bool path_is_absolute = raw_path.size() > 0 && raw_path[0] == '/';
-    if (path_is_absolute) {
-      CHECK(extra_import_paths.empty())
+    if (path_is_absolute && !extra_import_paths.empty()) {
+      LOG(ERROR)
           << "Can't specify extra import paths if attempting to read a config "
              "file from an absolute path (path is "
           << raw_path << ").";
+      return std::nullopt;
     }
 
     bool found_path = false;
@@ -204,11 +205,15 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
         break;
       }
     }
-    CHECK(found_path) << ": Failed to find file " << path << ".";
+    if (!found_path) {
+      LOG(ERROR) << ": Failed to find file " << path << ".";
+      return std::nullopt;
+    }
   }
 
-  FlatbufferDetachedBuffer<Configuration> config = ReadConfigFile(
-      binary_path_exists ? binary_path : raw_path, binary_path_exists);
+  std::optional<FlatbufferDetachedBuffer<Configuration>> config =
+      ReadConfigFile(binary_path_exists ? binary_path : raw_path,
+                     binary_path_exists);
 
   // Depth first.  Take the following example:
   //
@@ -252,15 +257,16 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
     LOG(FATAL)
         << "Already imported " << path << " (i.e. " << absolute_path
         << "). See above for the files that have already been processed.";
+    return std::nullopt;
   }
 
-  if (config.message().has_imports()) {
+  if (config->message().has_imports()) {
     // Capture the imports.
     const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *v =
-        config.message().imports();
+        config->message().imports();
 
     // And then wipe them.  This gets GCed when we merge later.
-    config.mutable_message()->clear_imports();
+    config->mutable_message()->clear_imports();
 
     // Start with an empty configuration to merge into.
     FlatbufferDetachedBuffer<Configuration> merged_config =
@@ -271,14 +277,17 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
       const std::string included_config =
           path_folder + "/" + std::string(str->string_view());
 
+      const auto optional_config =
+          MaybeReadConfig(included_config, visited_paths, extra_import_paths);
+      if (!optional_config.has_value()) {
+        return std::nullopt;
+      }
       // And them merge everything in.
-      merged_config = MergeFlatBuffers(
-          merged_config,
-          ReadConfig(included_config, visited_paths, extra_import_paths));
+      merged_config = MergeFlatBuffers(merged_config, *optional_config);
     }
 
     // Finally, merge this file in.
-    config = MergeFlatBuffers(merged_config, config);
+    config = MergeFlatBuffers(merged_config, *config);
   }
   return config;
 }
@@ -701,7 +710,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   return result;
 }
 
-FlatbufferDetachedBuffer<Configuration> ReadConfig(
+std::optional<FlatbufferDetachedBuffer<Configuration>> MaybeReadConfig(
     const std::string_view path,
     const std::vector<std::string_view> &extra_import_paths) {
   // Add the executable directory to the search path.  That makes it so that
@@ -726,17 +735,29 @@ FlatbufferDetachedBuffer<Configuration> ReadConfig(
 
   // We only want to read a file once.  So track the visited files in a set.
   absl::btree_set<std::string> visited_paths;
-  FlatbufferDetachedBuffer<Configuration> read_config =
-      ReadConfig(path, &visited_paths, extra_import_paths_with_exe);
+  std::optional<FlatbufferDetachedBuffer<Configuration>> read_config =
+      MaybeReadConfig(path, &visited_paths, extra_import_paths_with_exe);
+
+  if (read_config == std::nullopt) {
+    return read_config;
+  }
 
   // If we only read one file, and it had a .bfbs extension, it has to be a
   // fully formatted config.  Do a quick verification and return it.
   if (visited_paths.size() == 1 && EndsWith(*visited_paths.begin(), ".bfbs")) {
-    ValidateConfiguration(read_config);
+    ValidateConfiguration(*read_config);
     return read_config;
   }
 
-  return MergeConfiguration(read_config);
+  return MergeConfiguration(*read_config);
+}
+
+FlatbufferDetachedBuffer<Configuration> ReadConfig(
+    const std::string_view path,
+    const std::vector<std::string_view> &extra_import_paths) {
+  auto optional_config = MaybeReadConfig(path, extra_import_paths);
+  CHECK(optional_config) << "Could not read config. See above errors";
+  return std::move(*optional_config);
 }
 
 FlatbufferDetachedBuffer<Configuration> MergeWithConfig(
