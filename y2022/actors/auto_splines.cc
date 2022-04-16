@@ -80,5 +80,15 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::Spline3(
       alliance);
 }
 
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SplineTwoBall(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(spline_two_, builder->fbb()),
+      alliance);
+}
+
 }  // namespace actors
 }  // namespace y2022
