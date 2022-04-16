@@ -81,7 +81,14 @@ func findAllFileShas(directory string) map[string]string {
 			log.Println(err)
 			return nil
 		}
-		shaSums[hash] = "/" + strings.TrimPrefix(path, directory)
+		// We want all paths relative to the original search directory.
+		// That means we remove the search directory from the Walk()
+		// result. Also make sure that the final path doesn't start
+		// with a "/" to make it independent of whether "directory"
+		// ends with a "/" or not.
+		trimmedPath := strings.TrimPrefix(path, directory)
+		trimmedPath = strings.TrimPrefix(trimmedPath, "/")
+		shaSums[hash] = trimmedPath
 		return nil
 	})
 	if err != nil {
@@ -101,9 +108,9 @@ func HandleShaUrl(directory string, h http.Handler) http.Handler {
 		// [0] ""
 		// [1] "sha256"
 		// [2] "<checksum>"
-		// [3-] path...
-		parts := strings.Split(r.URL.Path, "/")
-		if len(parts) < 4 {
+		// [3] path...
+		parts := strings.SplitN(r.URL.Path, "/", 4)
+		if len(parts) != 4 {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -114,6 +121,14 @@ func HandleShaUrl(directory string, h http.Handler) http.Handler {
 		}
 		hash := parts[2]
 		if path, ok := shaSums[hash]; ok {
+			// The path must match what it would be without the
+			// /sha256/<checksum>/ prefix. Otherwise it's too easy
+			// to make copy-paste mistakes.
+			if path != parts[3] {
+				log.Println("Got ", parts[3], "expected", path)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 			// We found a file with this checksum. Serve that file.
 			r.URL.Path = path
 		} else {
