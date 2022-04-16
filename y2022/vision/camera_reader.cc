@@ -21,12 +21,11 @@ namespace vision {
 
 using namespace frc971::vision;
 
-const calibration::CameraCalibration *CameraReader::FindCameraCalibration()
-    const {
-  const std::string_view node_name = event_loop_->node()->name()->string_view();
-  const int team_number = aos::network::GetTeamNumber();
+const calibration::CameraCalibration *CameraReader::FindCameraCalibration(
+    const calibration::CalibrationData *calibration_data,
+    std::string_view node_name, int team_number) {
   for (const calibration::CameraCalibration *candidate :
-       *calibration_data_->camera_calibrations()) {
+       *calibration_data->camera_calibrations()) {
     if (candidate->node_name()->string_view() != node_name) {
       continue;
     }
@@ -92,9 +91,7 @@ BlobStatsToFbs(const std::vector<BlobDetector::BlobStats> blob_stats,
 
 void CameraReader::ProcessImage(cv::Mat image_mat_distorted,
                                 int64_t image_monotonic_timestamp_ns) {
-  cv::Mat image_mat;
-  cv::undistort(image_mat_distorted, image_mat, CameraIntrinsics(),
-                CameraDistCoeffs());
+  cv::Mat image_mat = UndistortImage(image_mat_distorted, undistort_maps_);
 
   BlobDetector::BlobResult blob_result;
   BlobDetector::ExtractBlobs(image_mat, &blob_result);

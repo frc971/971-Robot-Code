@@ -378,16 +378,16 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
       [](const std::pair<size_t, size_t> &a,
          const std::pair<size_t, size_t> &b) { return a.first < b.first; });
 
-  size_t middle_tape_index = 1000;
+  std::optional<size_t> middle_tape_index = std::nullopt;
   for (size_t i = 0; i < tape_indices.size(); ++i) {
     if (tape_indices[i].second == middle_blob_index_) {
       middle_tape_index = i;
     }
   }
-  CHECK_NE(middle_tape_index, 1000) << "Failed to find middle tape";
+  CHECK(middle_tape_index.has_value()) << "Failed to find middle tape";
 
   if (VLOG_IS_ON(2)) {
-    LOG(INFO) << "Middle tape is " << middle_tape_index << ", blob "
+    LOG(INFO) << "Middle tape is " << *middle_tape_index << ", blob "
               << middle_blob_index_;
     for (size_t i = 0; i < tape_indices.size(); ++i) {
       const auto distance = DistanceFromTapeIndex(
@@ -400,7 +400,7 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
 
   {
     size_t offset = 0;
-    for (size_t i = middle_tape_index + 1; i < tape_indices.size(); ++i) {
+    for (size_t i = *middle_tape_index + 1; i < tape_indices.size(); ++i) {
       tape_indices[i].first -= offset;
 
       if (tape_indices[i].first > tape_indices[i - 1].first + 1) {
@@ -412,7 +412,7 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
   }
 
   if (VLOG_IS_ON(2)) {
-    LOG(INFO) << "Middle tape is " << middle_tape_index << ", blob "
+    LOG(INFO) << "Middle tape is " << *middle_tape_index << ", blob "
               << middle_blob_index_;
     for (size_t i = 0; i < tape_indices.size(); ++i) {
       const auto distance = DistanceFromTapeIndex(
@@ -425,7 +425,7 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
 
   {
     size_t offset = 0;
-    for (size_t i = middle_tape_index; i > 0; --i) {
+    for (size_t i = *middle_tape_index; i > 0; --i) {
       tape_indices[i - 1].first -= offset;
 
       if (tape_indices[i - 1].first + 1 < tape_indices[i].first) {
@@ -440,7 +440,7 @@ bool TargetEstimator::operator()(const S *const roll, const S *const pitch,
   }
 
   if (VLOG_IS_ON(2)) {
-    LOG(INFO) << "Middle tape is " << middle_tape_index << ", blob "
+    LOG(INFO) << "Middle tape is " << *middle_tape_index << ", blob "
               << middle_blob_index_;
     for (size_t i = 0; i < tape_indices.size(); ++i) {
       const auto distance = DistanceFromTapeIndex(
@@ -566,11 +566,11 @@ size_t TargetEstimator::ClosestTape(
     size_t blob_index, const std::vector<cv::Point_<S>> &tape_points) const {
   auto distance = cv::Point_<S>(std::numeric_limits<S>::infinity(),
                                 std::numeric_limits<S>::infinity());
-  size_t final_match = 255;
+  std::optional<size_t> final_match = std::nullopt;
   if (blob_index == middle_blob_index_) {
     // Fix the middle blob so the solver can't go too far off
     final_match = tape_points.size() / 2;
-    distance = DistanceFromTapeIndex(blob_index, final_match, tape_points);
+    distance = DistanceFromTapeIndex(blob_index, *final_match, tape_points);
   } else {
     // Give the other blob_stats some freedom in case some are split into pieces
     for (auto it = tape_points.begin(); it < tape_points.end(); it++) {
@@ -585,11 +585,11 @@ size_t TargetEstimator::ClosestTape(
     }
   }
 
-  VLOG(2) << "Matched index " << blob_index << " to " << final_match
+  CHECK(final_match.has_value());
+  VLOG(2) << "Matched index " << blob_index << " to " << *final_match
           << " distance " << distance.x << " " << distance.y;
-  CHECK_NE(final_match, 255);
 
-  return final_match;
+  return *final_match;
 }
 
 void TargetEstimator::DrawProjectedHub(
