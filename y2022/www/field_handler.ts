@@ -161,9 +161,12 @@ export class FieldHandler {
 
   drawField(): void {
     const ctx = this.canvas.getContext('2d');
+    ctx.save();
+    ctx.scale(-1.0, 1.0);
     ctx.drawImage(
         this.fieldImage, 0, 0, this.fieldImage.width, this.fieldImage.height,
         -FIELD_EDGE_X, -FIELD_SIDE_Y, FIELD_LENGTH, FIELD_WIDTH);
+    ctx.restore();
   }
 
   drawCamera(
