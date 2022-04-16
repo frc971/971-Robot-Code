@@ -390,6 +390,9 @@ Catapult::Iterate(const CatapultGoal *catapult_goal, const Position *position,
         } else {
           // TODO(austin): Voltage error?
           CHECK_NOTNULL(catapult_voltage);
+          if (current_horizon_ == 1) {
+            battery_voltage = 12.0;
+          }
           *catapult_voltage = std::max(
               0.0, std::min(12.0, (*solution - 0.0 * next_X(2, 0)) * 12.0 /
                                       std::max(battery_voltage, 8.0)));

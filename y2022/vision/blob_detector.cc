@@ -133,7 +133,7 @@ void BlobDetector::FilterBlobs(BlobResult *blob_result) {
   }
 
   // Threshold for mean distance from a blob centroid to a circle.
-  constexpr double kCircleDistanceThreshold = 1.0;
+  constexpr double kCircleDistanceThreshold = 2.0;
   // We should only expect to see blobs between these angles on a circle.
   constexpr double kDegToRad = M_PI / 180.0;
   constexpr double kMinBlobAngle = 50.0 * kDegToRad;
