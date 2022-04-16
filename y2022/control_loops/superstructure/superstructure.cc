@@ -281,19 +281,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       (turret_intake_state_ == RequestedIntake::kFront
            ? constants::Values::kTurretFrontIntakePos()
            : constants::Values::kTurretBackIntakePos());
-  // Turn to the loading position as close to the current position as
-  // possible.
-  turret_loading_position =
-      turret_.estimated_position() +
-      aos::math::NormalizeAngle(turret_loading_position -
-                                turret_.estimated_position());
-  // if out of range, reset back to within +/- pi of zero.
-  if (turret_loading_position > values_->turret_range.upper ||
-      turret_loading_position < values_->turret_range.lower) {
-    turret_loading_position =
-        frc971::zeroing::Wrap(values_->turret_range.middle_soft(),
-                              turret_loading_position, 2.0 * M_PI);
-  }
+  // Turn to the loading position as close to the middle of the range as
+  // possible. Do the unwraping before we have a ball so we don't have to unwrap
+  // to shoot.
+  turret_loading_position = frc971::zeroing::Wrap(
+      values_->turret_range.middle_soft(), turret_loading_position, 2.0 * M_PI);
 
   turret_loading_goal_buffer.Finish(
       frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
@@ -357,6 +349,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
 
       turret_goal = &turret_loading_goal_buffer.message();
+      aimer_.UpdateTurretGoal(turret_loading_position);
 
       const bool turret_near_goal =
           std::abs(turret_.estimated_position() - turret_loading_position) <
@@ -495,7 +488,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
       // Once the shot is complete and the catapult is back to its return
       // position, go back to IDLE
-      if (catapult_.shot_count() > prev_shot_count_ ) {
+      if (catapult_.shot_count() > prev_shot_count_) {
         prev_shot_count_ = catapult_.shot_count();
         fire_ = false;
         discarding_ball_ = false;

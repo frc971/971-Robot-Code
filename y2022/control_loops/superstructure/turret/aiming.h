@@ -24,6 +24,9 @@ class Aimer {
 
   void Update(const Status *status, ShotMode shot_mode);
 
+  void UpdateTurretGoal(double turret_goal) {
+    goal_.mutable_message()->mutate_unsafe_goal(turret_goal);
+  }
   const Goal *TurretGoal() const { return &goal_.message(); }
 
   // Returns the distance to the goal, in meters.
