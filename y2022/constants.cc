@@ -217,15 +217,15 @@ Values MakeValues(uint16_t team) {
                                       0.0172237531191 - 0.0172237531191;
 
       intake_front->potentiometer_offset =
-          2.79628370453323 - 0.0250288114832881 + 0.577152542437606;
+          2.79628370453323 - 0.0250288114832881 + 0.577152542437606 + 0.476513825677792;
       intake_front->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.26963366701647;
+          .measured_absolute_position = 0.205422145836751;
 
-      intake_back->potentiometer_offset = 3.1409576474047 + 0.278653334013286 +
-                                          0.00879137908308503 +
-                                          0.0837134053818833;
+      intake_back->potentiometer_offset =
+          3.1409576474047 + 0.278653334013286 + 0.00879137908308503 +
+          0.0837134053818833 + 0.832945730100298 - 0.00759895654985426 - 2.03114758819475;
       intake_back->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.15924088639178;
+          .measured_absolute_position = 0.352050723370449;
 
       turret->potentiometer_offset =
           -9.99970387166721 + 0.06415943 + 0.073290115367682 -

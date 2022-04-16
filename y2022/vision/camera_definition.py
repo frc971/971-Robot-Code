@@ -105,7 +105,7 @@ def compute_extrinsic_by_pi(pi_number):
         camera_yaw = 0.0
         T = np.array([-9.5 * 0.0254, -3.5 * 0.0254, 34.5 * 0.0254])
     elif pi_number == "pi3":
-        camera_yaw = 178.5 * np.pi / 180.0
+        camera_yaw = 179.0 * np.pi / 180.0
         T = np.array([-9.5 * 0.0254, 3.5 * 0.0254, 34.5 * 0.0254])
     elif pi_number == "pi4":
         camera_yaw = -90.0 * np.pi / 180.0
