@@ -608,6 +608,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_fire(fire_);
   status_builder.add_moving_too_fast(moving_too_fast);
   status_builder.add_discarding_ball(discarding_ball_);
+  status_builder.add_collided(collided);
   status_builder.add_ready_to_fire(state_ == SuperstructureState::LOADED &&
                                    turret_near_goal && !collided);
   status_builder.add_state(state_);
