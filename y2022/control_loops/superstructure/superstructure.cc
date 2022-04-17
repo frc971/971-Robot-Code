@@ -281,11 +281,26 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       (turret_intake_state_ == RequestedIntake::kFront
            ? constants::Values::kTurretFrontIntakePos()
            : constants::Values::kTurretBackIntakePos());
-  // Turn to the loading position as close to the middle of the range as
-  // possible. Do the unwraping before we have a ball so we don't have to unwrap
-  // to shoot.
-  turret_loading_position = frc971::zeroing::Wrap(
-      values_->turret_range.middle_soft(), turret_loading_position, 2.0 * M_PI);
+  if (transitioning_second_ball_) {
+    // Turn to the loading position as close to the current position as
+    // possible since we just aimed.
+    turret_loading_position =
+        turret_.estimated_position() +
+        aos::math::NormalizeAngle(turret_loading_position -
+                                  turret_.estimated_position());
+  }
+
+  if (!transitioning_second_ball_ ||
+      (turret_loading_position > values_->turret_range.upper ||
+       turret_loading_position < values_->turret_range.lower)) {
+    // Turn to the loading position as close to the middle of the range as
+    // possible. Do the unwraping before we have a ball so we don't have to
+    // unwrap to shoot if we aren't transitioning a second ball. If we are doing
+    // the second ball, we need to reset back to the middle of the range
+    turret_loading_position =
+        frc971::zeroing::Wrap(values_->turret_range.middle_soft(),
+                              turret_loading_position, 2.0 * M_PI);
+  }
 
   turret_loading_goal_buffer.Finish(
       frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
@@ -345,6 +360,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           (turret_intake_state_ == RequestedIntake::kBack &&
            !back_intake_has_ball_)) {
         state_ = SuperstructureState::IDLE;
+        transitioning_second_ball_ = false;
         break;
       }
 
@@ -493,6 +509,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         fire_ = false;
         discarding_ball_ = false;
         state_ = SuperstructureState::IDLE;
+        transitioning_second_ball_ =
+            (front_intake_has_ball_ || back_intake_has_ball_);
       }
 
       break;
@@ -619,6 +637,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   }
   status_builder.add_front_intake_has_ball(front_intake_has_ball_);
   status_builder.add_back_intake_has_ball(back_intake_has_ball_);
+  status_builder.add_transitioning_second_ball(transitioning_second_ball_);
 
   status_builder.add_aimer(aimer_offset);
 
