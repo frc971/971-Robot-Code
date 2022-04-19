@@ -13,8 +13,10 @@ import (
 
 // Stores the TBA API key to access the API.
 type scrapingConfig struct {
-	ApiKey  string `json:"api_key"`
-	BaseUrl string `json:"base_url"`
+	ApiKey    string `json:"api_key"`
+	BaseUrl   string `json:"base_url"`
+	Year      int32  `json:"year"`
+	EventCode string `json:"event_code"`
 }
 
 // Takes in year and FIRST event code and returns requested information according to TBA.
@@ -47,9 +49,15 @@ func getJson(year int32, eventCode, configPath, category string) ([]byte, error)
 	if config.BaseUrl == "" {
 		config.BaseUrl = "https://www.thebluealliance.com"
 	}
+	if config.Year == 0 {
+		config.Year = year
+	}
+	if config.EventCode == "" {
+		config.EventCode = eventCode
+	}
 
 	// Create the TBA event key for the year and event code.
-	eventKey := strconv.Itoa(int(year)) + eventCode
+	eventKey := strconv.Itoa(int(config.Year)) + config.EventCode
 
 	// Create a get request for the match info.
 	req, err := http.NewRequest("GET", config.BaseUrl+"/api/v3/event/"+eventKey+"/"+category, nil)

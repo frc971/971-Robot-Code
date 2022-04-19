@@ -15,6 +15,7 @@ import (
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/scraping"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/rankings"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/static"
@@ -131,6 +132,9 @@ func main() {
 	scoutingServer.Start(*portPtr)
 	fmt.Println("Serving", *dirPtr, "on port", *portPtr)
 
+	scraper := rankings.RankingScraper{}
+	scraper.Start(database, 0, "", *blueAllianceConfigPtr)
+
 	// Block until the user hits Ctrl-C.
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, syscall.SIGINT)
@@ -140,5 +144,6 @@ func main() {
 
 	fmt.Println("Shutting down.")
 	scoutingServer.Stop()
+	scraper.Stop()
 	fmt.Println("Successfully shut down.")
 }
