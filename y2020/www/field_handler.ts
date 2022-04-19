@@ -1,10 +1,9 @@
 import {ByteBuffer} from 'flatbuffers';
-import {Connection} from 'org_frc971/aos/network/www/proxy';
-import * as flatbuffers_builder from 'org_frc971/external/com_github_google_flatbuffers/ts/builder';
-import {Status as DrivetrainStatus} from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_status_generated';
-import {LocalizerDebug, RejectionReason, ImageMatchDebug} from 'org_frc971/y2020/control_loops/drivetrain/localizer_debug_generated';
-import {Status as SuperstructureStatus, FlywheelControllerStatus} from 'org_frc971/y2020/control_loops/superstructure/superstructure_status_generated'
-import {ImageMatchResult} from 'org_frc971/y2020/vision/sift/sift_generated';
+import {Connection} from '../../aos/network/www/proxy';
+import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated';
+import {LocalizerDebug, RejectionReason, ImageMatchDebug} from '../control_loops/drivetrain/localizer_debug_generated';
+import {Status as SuperstructureStatus, FlywheelControllerStatus} from '../control_loops/superstructure/superstructure_status_generated'
+import {ImageMatchResult} from '../vision/sift/sift_generated';
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 

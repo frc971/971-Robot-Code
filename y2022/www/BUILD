@@ -24,6 +24,7 @@ ts_library(
         "//aos/network:connect_ts_fbs",
         "//aos/network:web_proxy_ts_fbs",
         "//aos/network/www:proxy",
+        "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
         "//y2022/control_loops/superstructure:superstructure_status_ts_fbs",
         "//y2022/localizer:localizer_output_ts_fbs",
         "//y2022/localizer:localizer_status_ts_fbs",
