@@ -1,12 +1,12 @@
-#include "aos/network/timestamp_filter.h"
+#include "aos/network/multinode_timestamp_filter.h"
 
 #include <chrono>
 
 #include "aos/configuration.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/macros.h"
-#include "aos/network/multinode_timestamp_filter.h"
 #include "aos/network/testing_time_converter.h"
+#include "aos/network/timestamp_filter.h"
 #include "gtest/gtest.h"
 
 namespace aos {
@@ -189,7 +189,7 @@ TEST(InterpolatedTimeConverterTest, RebootInterpolation) {
   const BootTimestamp me = BootTimestamp::epoch();
   const BootTimestamp me2{.boot = 1u, .time = monotonic_clock::epoch()};
 
-  //LOG(FATAL) << "TODO(austin): Test ToDistributedClock too";
+  // LOG(FATAL) << "TODO(austin): Test ToDistributedClock too";
 
   TestingTimeConverter time_converter(3u);
   size_t reboot_counter = 0;
@@ -361,8 +361,8 @@ TEST(TimestampProblemTest, SolveNewton) {
   TimestampProblem problem(2);
   problem.set_base_clock(0, ta);
   problem.set_base_clock(1, e);
-  problem.add_clock_offset_filter(0, &a, 1);
-  problem.add_clock_offset_filter(1, &b, 0);
+  problem.add_clock_offset_filter(0, &a, 1, &b);
+  problem.add_clock_offset_filter(1, &b, 0, &a);
 
   problem.Debug();
 

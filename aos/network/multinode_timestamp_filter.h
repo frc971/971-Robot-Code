@@ -47,8 +47,10 @@ class TimestampProblem {
   //   filter[a_index]->Offset(ta) + ta => t(b_index);
   void add_clock_offset_filter(size_t a_index,
                                const NoncausalTimestampFilter *filter,
-                               size_t b_index) {
-    clock_offset_filter_for_node_[a_index].emplace_back(filter, b_index);
+                               size_t b_index,
+                               const NoncausalTimestampFilter *b_filter) {
+    clock_offset_filter_for_node_[a_index].emplace_back(filter, b_index,
+                                                        b_filter);
   }
 
   // Solves the optimization problem phrased using the symmetric Netwon's method
@@ -138,10 +140,13 @@ class TimestampProblem {
   // Filter and the node index it is referencing.
   //   filter->Offset(ta) + ta => t_(b_node);
   struct FilterPair {
-    FilterPair(const NoncausalTimestampFilter *my_filter, size_t my_b_index)
-        : filter(my_filter), b_index(my_b_index) {}
+    FilterPair(const NoncausalTimestampFilter *my_filter, size_t my_b_index,
+               const NoncausalTimestampFilter *b_filter)
+        : filter(my_filter), b_index(my_b_index), b_filter(b_filter) {}
     const NoncausalTimestampFilter *const filter;
     const size_t b_index;
+
+    const NoncausalTimestampFilter *const b_filter;
   };
 
   // List of filters indexed by node.
@@ -394,10 +399,12 @@ class MultiNodeNoncausalOffsetEstimator final
   // Filter and the node index it is referencing.
   //   filter->Offset(ta) + ta => t_(b_node);
   struct FilterPair {
-    FilterPair(NoncausalTimestampFilter *my_filter, size_t my_b_index)
-        : filter(my_filter), b_index(my_b_index) {}
+    FilterPair(NoncausalTimestampFilter *my_filter, size_t my_b_index,
+               NoncausalTimestampFilter *b_filter)
+        : filter(my_filter), b_index(my_b_index), b_filter(b_filter) {}
     NoncausalTimestampFilter *const filter;
     const size_t b_index;
+    NoncausalTimestampFilter *const b_filter;
   };
   std::vector<std::vector<FilterPair>> filters_per_node_;
 

@@ -82,22 +82,11 @@ bool TimestampProblem::HasObservations(size_t node_a) const {
     // another boot.  We wouldn't bother to build a problem to solve for
     // this node otherwise.  Confirm that is true so we at least get
     // notified if that assumption falls apart.
-    bool valid = false;
-    for (const struct FilterPair &other_filter :
-         clock_offset_filter_for_node_[filter.b_index]) {
-      if (other_filter.b_index == node_a) {
-        // Found our match.  Confirm it has timestamps.
-        if (other_filter.filter->timestamps_size(
-                base_clock_[filter.b_index].boot, base_clock_[node_a].boot) !=
-            0u) {
-          valid = true;
-        }
-        break;
-      }
-    }
-    if (!valid) {
+    if (filter.b_filter == nullptr) {
       return false;
     }
+    return (filter.b_filter->timestamps_size(base_clock_[filter.b_index].boot,
+                                             base_clock_[node_a].boot) != 0u);
   }
   return true;
 }
@@ -114,20 +103,9 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
         // another boot.  We wouldn't bother to build a problem to solve for
         // this node otherwise.  Confirm that is true so we at least get
         // notified if that assumption falls apart.
-        bool valid = false;
-        for (const struct FilterPair &other_filter :
-             clock_offset_filter_for_node_[filter.b_index]) {
-          if (other_filter.b_index == i) {
-            // Found our match.  Confirm it has timestamps.
-            if (other_filter.filter->timestamps_size(
-                    base_clock_[filter.b_index].boot, base_clock_[i].boot) !=
-                0u) {
-              valid = true;
-            }
-            break;
-          }
-        }
-        if (!valid) {
+        if (filter.b_filter == nullptr ||
+            filter.b_filter->timestamps_size(base_clock_[filter.b_index].boot,
+                                             base_clock_[i].boot) == 0u) {
           Debug();
           LOG(FATAL) << "Found no timestamps in either direction between nodes "
                      << i << " and " << filter.b_index;
@@ -947,10 +925,10 @@ MultiNodeNoncausalOffsetEstimator::GetFilter(const Node *node_a,
         configuration::GetNodeIndex(logged_configuration_, node_b);
 
     // TODO(austin): Do a better job documenting which node is which here.
-    filters_per_node_[node_a_index].emplace_back(x.GetFilter(node_a),
-                                                 node_b_index);
-    filters_per_node_[node_b_index].emplace_back(x.GetFilter(node_b),
-                                                 node_a_index);
+    filters_per_node_[node_a_index].emplace_back(
+        x.GetFilter(node_a), node_b_index, x.GetFilter(node_b));
+    filters_per_node_[node_b_index].emplace_back(
+        x.GetFilter(node_b), node_a_index, x.GetFilter(node_a));
     return &x;
   } else {
     return &it->second;
@@ -1302,7 +1280,7 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
           all_live_nodes.Set(node_a_index, true);
           all_live_nodes.Set(filter.b_index, true);
           problem.add_clock_offset_filter(node_a_index, filter.filter,
-                                          filter.b_index);
+                                          filter.b_index, filter.b_filter);
 
           if (timestamp_mappers_[node_a_index] != nullptr) {
             // Now, we have cases at startup where we have a couple of points
