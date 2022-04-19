@@ -13,9 +13,9 @@
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
-DEFINE_bool(rapid_react, true,
+DEFINE_bool(rapid_react, false,
             "If true, run the main rapid react autonomous mode");
-DEFINE_bool(rapid_react_two, false,
+DEFINE_bool(rapid_react_two, true,
             "If true, run the two ball rapid react autonomous mode");
 
 namespace y2022 {
@@ -117,9 +117,12 @@ void AutonomousActor::Replan() {
     CHECK(starting_position_);
   } else if (FLAGS_rapid_react_two) {
     rapid_react_two_spline_ = {
-        PlanSpline(std::bind(&AutonomousSplines::SplineTwoBall, &auto_splines_,
+        PlanSpline(std::bind(&AutonomousSplines::SplineTwoBall1, &auto_splines_,
                              std::placeholders::_1, alliance_),
-                   SplineDirection::kBackward)};
+                   SplineDirection::kBackward),
+        PlanSpline(std::bind(&AutonomousSplines::SplineTwoBall2, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward)};
     starting_position_ = rapid_react_two_spline_.value()[0].starting_position();
     CHECK(starting_position_);
   }
@@ -328,8 +331,14 @@ void AutonomousActor::RapidReactTwo() {
   splines[0].Start();
   if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
 
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+  if (!splines[1].WaitForPlan()) return;
+  splines[1].Start();
+  if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
   // Fire the ball once we stopped
-  RetractBackIntake();
   set_fire_at_will(true);
   SendSuperstructureGoal();
   if (!WaitForBallsShot()) return;
@@ -339,6 +348,7 @@ void AutonomousActor::RapidReactTwo() {
                    .count()
             << 's';
   set_fire_at_will(false);
+  RetractBackIntake();
   SendSuperstructureGoal();
 }
 

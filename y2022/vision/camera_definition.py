@@ -90,7 +90,7 @@ def compute_extrinsic(camera_pitch, camera_yaw, T_camera, is_turret):
     return base_cam_ext, turret_cam_ext
 
 
-def compute_extrinsic_by_pi(pi_number):
+def compute_extrinsic_by_pi(pi_number, team_number):
     # Defaults for all cameras
     camera_pitch = -35.0 * np.pi / 180.0
     camera_yaw = 0.0
@@ -98,18 +98,31 @@ def compute_extrinsic_by_pi(pi_number):
     # Default camera location to robot origin
     T = np.array([0.0, 0.0, 0.0])
 
-    if pi_number == "pi1":
-        camera_yaw = 90.0 * np.pi / 180.0
-        T = np.array([-11.0 * 0.0254, 5.5 * 0.0254, 29.5 * 0.0254])
-    elif pi_number == "pi2":
-        camera_yaw = 0.0
-        T = np.array([-9.5 * 0.0254, -3.5 * 0.0254, 34.5 * 0.0254])
-    elif pi_number == "pi3":
-        camera_yaw = 179.0 * np.pi / 180.0
-        T = np.array([-9.5 * 0.0254, 3.5 * 0.0254, 34.5 * 0.0254])
-    elif pi_number == "pi4":
-        camera_yaw = -90.0 * np.pi / 180.0
-        T = np.array([-10.25 * 0.0254, -5.0 * 0.0254, 27.5 * 0.0254])
+    if team_number == 971:
+        if pi_number == "pi1":
+            camera_yaw = 90.0 * np.pi / 180.0
+            T = np.array([-11.0 * 0.0254, 5.5 * 0.0254, 29.5 * 0.0254])
+        elif pi_number == "pi2":
+            camera_yaw = 0.0
+            T = np.array([-9.5 * 0.0254, -3.5 * 0.0254, 34.5 * 0.0254])
+        elif pi_number == "pi3":
+            camera_yaw = 179.0 * np.pi / 180.0
+            T = np.array([-9.5 * 0.0254, 3.5 * 0.0254, 34.5 * 0.0254])
+        elif pi_number == "pi4":
+            camera_yaw = -90.0 * np.pi / 180.0
+            T = np.array([-10.25 * 0.0254, -5.0 * 0.0254, 27.5 * 0.0254])
+    elif team_number == 9971:
+        if pi_number == "pi1":
+            camera_yaw = 178.0 * np.pi / 180.0
+            T = np.array([0.0 * 0.0254, 8.5 * 0.0254, 34.0 * 0.0254])
+        elif pi_number == "pi2":
+            camera_yaw = 0.0
+            T = np.array([-9.0 * 0.0254, -3.5 * 0.0254, 35.5 * 0.0254])
+        elif pi_number == "pi3":
+            camera_yaw = 90.0 * np.pi / 180.0
+            T = np.array([-8.0 * 0.0254, 3.0 * 0.0254, 32.0 * 0.0254])
+    else:
+        glog.fatal("Unknown team number for extrinsics")
 
     return compute_extrinsic(camera_pitch, camera_yaw, T, is_turret)
 
@@ -155,7 +168,7 @@ def load_camera_definitions():
             camera_params = CameraParameters()
             # TODO: Need to add reading in extrinsic camera parameters from json
             camera_params.camera_ext, camera_params.turret_ext = compute_extrinsic_by_pi(
-                node_name)
+                node_name, team_number)
 
             camera_params.node_name = node_name
             camera_params.team_number = team_number

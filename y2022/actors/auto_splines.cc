@@ -80,13 +80,23 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::Spline3(
       alliance);
 }
 
-flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SplineTwoBall(
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SplineTwoBall1(
     aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
         *builder,
     aos::Alliance alliance) {
   return FixSpline(
       builder,
-      aos::CopyFlatBuffer<frc971::MultiSpline>(spline_two_, builder->fbb()),
+      aos::CopyFlatBuffer<frc971::MultiSpline>(spline_two1_, builder->fbb()),
+      alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SplineTwoBall2(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(spline_two2_, builder->fbb()),
       alliance);
 }
 
