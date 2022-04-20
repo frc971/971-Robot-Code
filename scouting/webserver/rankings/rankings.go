@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type rankingScraper struct {
+type RankingScraper struct {
 	doneChan     chan<- bool
 	checkStopped chan<- bool
 }
@@ -52,7 +52,7 @@ func getRankings(database Database, year int32, eventCode string, blueAllianceCo
 	}
 }
 
-func (scraper *rankingScraper) Start(database Database, year int32, eventCode string, blueAllianceConfig string) {
+func (scraper *RankingScraper) Start(database Database, year int32, eventCode string, blueAllianceConfig string) {
 	scraper.doneChan = make(chan bool, 1)
 	scraper.checkStopped = make(chan bool, 1)
 
@@ -79,7 +79,7 @@ func (scraper *rankingScraper) Start(database Database, year int32, eventCode st
 	}(database, year, eventCode)
 }
 
-func (scraper *rankingScraper) Stop() {
+func (scraper *RankingScraper) Stop() {
 	scraper.doneChan <- true
 
 	for {

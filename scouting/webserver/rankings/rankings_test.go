@@ -30,13 +30,13 @@ func ServeRankings(h http.Handler) http.Handler {
 
 func TestGetRankings(t *testing.T) {
 	database := MockDatabase{}
-	scraper := rankingScraper{}
+	scraper := RankingScraper{}
 	tbaServer := server.NewScoutingServer()
 	tbaServer.Handle("/", ServeRankings(http.FileServer(http.Dir("../../"))))
 	tbaServer.Start(8000)
 	defer tbaServer.Stop()
 
-	scraper.Start(&database, 2016, "nytr", "scouting_test_config.json")
+	scraper.Start(&database, 0, "", "scouting_test_config.json")
 	defer scraper.Stop()
 
 	for {
