@@ -29,11 +29,17 @@
       />
     </div>
     <div class="row">
-      <label for="round">Round</label>
-      <input [(ngModel)]="round" type="number" id="round" min="1" max="10" />
+      <label for="set_number">Set Number</label>
+      <input
+        [(ngModel)]="setNumber"
+        type="number"
+        id="set_number"
+        min="1"
+        max="10"
+      />
     </div>
     <div class="row">
-      <label for="comp_level">Round</label>
+      <label for="comp_level">Comp Level</label>
       <select [(ngModel)]="compLevel" type="number" id="comp_level">
         <option *ngFor="let level of COMP_LEVELS" [ngValue]="level">
           {{COMP_LEVEL_LABELS[level]}}
@@ -217,10 +223,10 @@
         [(ngModel)]="level"
         type="radio"
         name="level"
-        id="transversal"
-        [value]="ClimbLevel.Transversal"
+        id="traversal"
+        [value]="ClimbLevel.Traversal"
       />
-      <label for="transversal">Transversal</label>
+      <label for="traversal">Traversal</label>
       <br />
       <input
         [(ngModel)]="level"
@@ -360,7 +366,7 @@
     <ul>
       <li>Match number: {{matchNumber}}</li>
       <li>Team number: {{teamNumber}}</li>
-      <li>Round: {{round}}</li>
+      <li>SetNumber: {{setNumber}}</li>
       <li>Comp Level: {{COMP_LEVEL_LABELS[compLevel]}}</li>
     </ul>
 

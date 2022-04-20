@@ -62,7 +62,7 @@ class TestDebugCli(unittest.TestCase):
         json_path = write_json_request({
             "team": 100,
             "match": 1,
-            "round": 2,
+            "set_number": 2,
             "comp_level": "quals",
             "starting_quadrant": 3,
             "auto_ball_1": True,
@@ -111,7 +111,7 @@ class TestDebugCli(unittest.TestCase):
             ClimbLevel: (request_data_scouting_response.ClimbLevel) Medium,
             DefenseReceivedRating: (int32) 4,
             Comment: (string) (len=35) "A very inspiring and useful comment",
-            Round: (int32) 2,
+            SetNumber: (int32) 2,
             CompLevel: (string) (len=5) "quals"
             }"""), stdout)
 

@@ -144,7 +144,7 @@ func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 	stats := db.Stats{
 		TeamNumber:       request.Team(),
 		MatchNumber:      request.Match(),
-		Round:            request.Round(),
+		SetNumber:        request.SetNumber(),
 		CompLevel:        string(request.CompLevel()),
 		StartingQuadrant: request.StartingQuadrant(),
 		AutoBallPickedUp: [5]bool{
@@ -209,7 +209,7 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 	for _, match := range matches {
 		response.MatchList = append(response.MatchList, &request_all_matches_response.MatchT{
 			MatchNumber: match.MatchNumber,
-			Round:       match.Round,
+			SetNumber:   match.SetNumber,
 			CompLevel:   match.CompLevel,
 			R1:          match.R1,
 			R2:          match.R2,
@@ -252,7 +252,7 @@ func (handler requestMatchesForTeamHandler) ServeHTTP(w http.ResponseWriter, req
 	for _, match := range matches {
 		response.MatchList = append(response.MatchList, &request_all_matches_response.MatchT{
 			MatchNumber: match.MatchNumber,
-			Round:       match.Round,
+			SetNumber:   match.SetNumber,
 			CompLevel:   match.CompLevel,
 			R1:          match.R1,
 			R2:          match.R2,
@@ -296,7 +296,7 @@ func (handler requestDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *
 		response.StatsList = append(response.StatsList, &request_data_scouting_response.StatsT{
 			Team:                  stat.TeamNumber,
 			Match:                 stat.MatchNumber,
-			Round:                 stat.Round,
+			SetNumber:             stat.SetNumber,
 			CompLevel:             stat.CompLevel,
 			StartingQuadrant:      stat.StartingQuadrant,
 			AutoBall1:             stat.AutoBallPickedUp[0],
@@ -395,7 +395,7 @@ func (handler refreshMatchListHandler) ServeHTTP(w http.ResponseWriter, req *htt
 		// Add the match to the database.
 		err = handler.db.AddToMatch(db.Match{
 			MatchNumber: int32(match.MatchNumber),
-			Round:       int32(match.SetNumber),
+			SetNumber:   int32(match.SetNumber),
 			CompLevel:   match.CompLevel,
 			R1:          red[0],
 			R2:          red[1],

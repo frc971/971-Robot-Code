@@ -157,7 +157,7 @@ describe('The scouting web page', () => {
     expect(await getHeadingText()).toEqual('Team Selection');
     expect(await getValueOfInputById('match_number')).toEqual('3');
     expect(await getValueOfInputById('team_number')).toEqual('5254');
-    expect(await getValueOfInputById('round')).toEqual('2');
+    expect(await getValueOfInputById('set_number')).toEqual('2');
     expect(await getValueOfInputById('comp_level')).toEqual('3: sf');
   });
 
@@ -228,7 +228,7 @@ describe('The scouting web page', () => {
     expect(await getHeadingText()).toEqual('Team Selection');
     await setTextboxByIdTo('match_number', '2');
     await setTextboxByIdTo('team_number', '5254');
-    await setTextboxByIdTo('round', '42');
+    await setTextboxByIdTo('set_number', '42');
     await element(by.cssContainingText('option', 'Semi Finals')).click();
     await element(by.buttonText('Next')).click();
 
@@ -257,7 +257,7 @@ describe('The scouting web page', () => {
     // Validate Team Selection.
     await expectReviewFieldToBe('Match number', '2');
     await expectReviewFieldToBe('Team number', '5254');
-    await expectReviewFieldToBe('Round', '42');
+    await expectReviewFieldToBe('SetNumber', '42');
     await expectReviewFieldToBe('Comp Level', 'Semi Finals');
 
     // Validate Auto.

@@ -56,15 +56,15 @@ export class MatchListRequestor {
         if (aMatchNumber > bMatchNumber) {
           return 1;
         }
-        // Lastly, sort by round. I.e. Semi Final 1 Match 1 happens first. Then
-        // comes Semi Final 2 Match 1. Then comes Semi Final 1 Match 2. Then
+        // Lastly, sort by set number. I.e. Semi Final 1 Match 1 happens first.
+        // Then comes Semi Final 2 Match 1. Then comes Semi Final 1 Match 2. Then
         // Semi Final 2 Match 2.
-        const aRound = a.round();
-        const bRound = b.round();
-        if (aRound < bRound) {
+        const aSetNumber = a.setNumber();
+        const bSetNumber = b.setNumber();
+        if (aSetNumber < bSetNumber) {
           return -1;
         }
-        if (aRound > bRound) {
+        if (aSetNumber > bSetNumber) {
           return 1;
         }
         return 0;
