@@ -272,9 +272,13 @@ void Application::DoStart() {
 
   // argv[0] should be the program name
   args_.insert(args_.begin(), path_);
+  if (run_as_sudo_) {
+    args_.insert(args_.begin(), kSudo);
+  }
 
   std::vector<char *> cargs = CArgs();
-  execvp(path_.c_str(), cargs.data());
+  const char* path = run_as_sudo_ ? kSudo : path_.c_str();
+  execvp(path, cargs.data());
 
   // If we got here, something went wrong
   status_pipes_.write->Write(

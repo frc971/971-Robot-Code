@@ -87,6 +87,7 @@ class Application {
   void set_args(std::vector<std::string> args);
   void set_capture_stdout(bool capture);
   void set_capture_stderr(bool capture);
+  void set_run_as_sudo(bool value) { run_as_sudo_ = value; }
 
   bool autostart() const { return autostart_; }
 
@@ -106,6 +107,9 @@ class Application {
 
  private:
   typedef aos::util::ScopedPipe::PipePair PipePair;
+
+  static constexpr const char* const kSudo{"sudo"};
+
   void set_args(
       const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>
           &args);
@@ -140,6 +144,7 @@ class Application {
   std::string user_name_;
   std::optional<uid_t> user_;
   std::optional<gid_t> group_;
+  bool run_as_sudo_ = false;
 
   bool capture_stdout_ = false;
   PipePair stdout_pipes_;
