@@ -76,7 +76,8 @@ void SctpServer::SetPriorityScheduler(sctp_assoc_t assoc_id) {
   scheduler.assoc_value = SCTP_SS_PRIO;
   if (setsockopt(fd(), IPPROTO_SCTP, SCTP_STREAM_SCHEDULER, &scheduler,
                  sizeof(scheduler)) != 0) {
-    PLOG(WARNING) << "Failed to set scheduler";
+    LOG_FIRST_N(WARNING, 1) << "Failed to set scheduler: " << strerror(errno)
+                            << " [" << errno << "]";
   }
 }
 
@@ -89,7 +90,8 @@ void SctpServer::SetStreamPriority(sctp_assoc_t assoc_id, int stream_id,
   sctp_priority.stream_value = priority;
   if (setsockopt(fd(), IPPROTO_SCTP, SCTP_STREAM_SCHEDULER_VALUE,
                  &sctp_priority, sizeof(sctp_priority)) != 0) {
-    PLOG(WARNING) << "Failed to set scheduler";
+    LOG_FIRST_N(WARNING, 1) << "Failed to set scheduler: " << strerror(errno)
+                            << " [" << errno << "]";
   }
 }
 
