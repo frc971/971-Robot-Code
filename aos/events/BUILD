@@ -461,3 +461,30 @@ cc_test(
         "@com_github_google_glog//:glog",
     ],
 )
+
+cc_library(
+    name = "timing_report_dump_lib",
+    srcs = ["timing_report_dump_lib.cc"],
+    hdrs = ["timing_report_dump_lib.h"],
+    deps = ["//aos/events:event_loop"],
+)
+
+cc_binary(
+    name = "timing_report_dump",
+    srcs = ["timing_report_dump.cc"],
+    deps = [
+        ":timing_report_dump_lib",
+        "//aos:init",
+        "//aos/events/logging:log_reader",
+    ],
+)
+
+cc_binary(
+    name = "aos_timing_report_streamer",
+    srcs = ["aos_timing_report_streamer.cc"],
+    deps = [
+        ":timing_report_dump_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+    ],
+)
