@@ -119,8 +119,10 @@ bool ConfigOnly(const LogFileHeader *header) {
   if (header->has_oldest_local_unreliable_monotonic_timestamps()) return false;
   if (header->has_oldest_remote_reliable_monotonic_timestamps()) return false;
   if (header->has_oldest_local_reliable_monotonic_timestamps()) return false;
-  if (header->has_oldest_logger_remote_unreliable_monotonic_timestamps()) return false;
-  if (header->has_oldest_logger_local_unreliable_monotonic_timestamps()) return false;
+  if (header->has_oldest_logger_remote_unreliable_monotonic_timestamps())
+    return false;
+  if (header->has_oldest_logger_local_unreliable_monotonic_timestamps())
+    return false;
 
   return header->has_configuration();
 }
@@ -273,8 +275,8 @@ struct MapBoots {
 struct BootPairTimes {
   // Pair of local and remote timestamps for the oldest message forwarded to
   // this node.
-  monotonic_clock::time_point oldest_remote_monotonic_timestamp;
-  monotonic_clock::time_point oldest_local_monotonic_timestamp;
+  monotonic_clock::time_point oldest_remote_reliable_monotonic_timestamp;
+  monotonic_clock::time_point oldest_local_reliable_monotonic_timestamp;
 
   // Pair of local and remote timestamps for the oldest unreliable message
   // forwarded to this node.
@@ -283,15 +285,35 @@ struct BootPairTimes {
 };
 
 std::ostream &operator<<(std::ostream &out, const BootPairTimes &time) {
-  out << "{.oldest_remote_monotonic_timestamp="
-      << time.oldest_remote_monotonic_timestamp
-      << ", .oldest_local_monotonic_timestamp="
-      << time.oldest_local_monotonic_timestamp
+  out << "{.oldest_remote_reliable_monotonic_timestamp="
+      << time.oldest_remote_reliable_monotonic_timestamp
+      << ", .oldest_local_reliable_monotonic_timestamp="
+      << time.oldest_local_reliable_monotonic_timestamp
       << ", .oldest_remote_unreliable_monotonic_timestamp="
       << time.oldest_remote_unreliable_monotonic_timestamp
       << ", .oldest_local_unreliable_monotonic_timestamp="
       << time.oldest_local_unreliable_monotonic_timestamp << "}";
   return out;
+}
+
+aos::monotonic_clock::time_point MinLocalBootTime(const BootPairTimes &t) {
+  return std::min(t.oldest_local_unreliable_monotonic_timestamp,
+                  t.oldest_local_reliable_monotonic_timestamp);
+}
+
+aos::monotonic_clock::time_point MaxLocalBootTime(const BootPairTimes &t) {
+  if (t.oldest_local_unreliable_monotonic_timestamp !=
+      aos::monotonic_clock::max_time) {
+    if (t.oldest_local_reliable_monotonic_timestamp !=
+        aos::monotonic_clock::max_time) {
+      return std::max(t.oldest_local_unreliable_monotonic_timestamp,
+                      t.oldest_local_reliable_monotonic_timestamp);
+    } else {
+      return t.oldest_local_unreliable_monotonic_timestamp;
+    }
+  } else {
+    return t.oldest_local_reliable_monotonic_timestamp;
+  }
 }
 
 // Helper class to make it easier to sort a list of log files into
@@ -685,6 +707,25 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
                               .oldest_logger_remote_unreliable_monotonic_timestamps()
                               ->Get(node_index)))
                     : monotonic_clock::max_time;
+
+        const monotonic_clock::time_point
+            oldest_local_reliable_monotonic_timestamp =
+                log_header->message()
+                        .has_oldest_local_reliable_monotonic_timestamps()
+                    ? monotonic_clock::time_point(chrono::nanoseconds(
+                          log_header->message()
+                              .oldest_local_reliable_monotonic_timestamps()
+                              ->Get(node_index)))
+                    : monotonic_clock::max_time;
+        const monotonic_clock::time_point
+            oldest_remote_reliable_monotonic_timestamp =
+                log_header->message()
+                        .has_oldest_remote_reliable_monotonic_timestamps()
+                    ? monotonic_clock::time_point(chrono::nanoseconds(
+                          log_header->message()
+                              .oldest_remote_reliable_monotonic_timestamps()
+                              ->Get(node_index)))
+                    : monotonic_clock::max_time;
         if (boot_uuid.empty()) {
           CHECK_EQ(oldest_local_monotonic_timestamp, monotonic_clock::max_time);
           CHECK_EQ(oldest_remote_monotonic_timestamp,
@@ -697,6 +738,10 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
                    monotonic_clock::max_time);
           CHECK_EQ(oldest_logger_remote_unreliable_monotonic_timestamp,
                    monotonic_clock::max_time);
+          CHECK_EQ(oldest_local_reliable_monotonic_timestamp,
+                   monotonic_clock::max_time);
+          CHECK_EQ(oldest_remote_reliable_monotonic_timestamp,
+                   monotonic_clock::max_time);
           continue;
         }
 
@@ -708,8 +753,12 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
                    monotonic_clock::max_time);
           CHECK_EQ(oldest_remote_unreliable_monotonic_timestamp,
                    monotonic_clock::max_time);
+          CHECK_EQ(oldest_local_reliable_monotonic_timestamp,
+                   monotonic_clock::max_time);
+          CHECK_EQ(oldest_remote_reliable_monotonic_timestamp,
+                   monotonic_clock::max_time);
           if (oldest_logger_local_unreliable_monotonic_timestamp !=
-                     monotonic_clock::max_time) {
+              monotonic_clock::max_time) {
             CHECK_NE(oldest_logger_remote_unreliable_monotonic_timestamp,
                      monotonic_clock::max_time);
             // Now, we found a timestamp going the other way.  Add it in!
@@ -770,9 +819,9 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
               logger_destination_boot_times_it->second.emplace(
                   source_boot_uuid,
                   std::vector<BootPairTimes>{BootPairTimes{
-                      .oldest_remote_monotonic_timestamp =
+                      .oldest_remote_reliable_monotonic_timestamp =
                           monotonic_clock::max_time,
-                      .oldest_local_monotonic_timestamp =
+                      .oldest_local_reliable_monotonic_timestamp =
                           monotonic_clock::max_time,
                       .oldest_remote_unreliable_monotonic_timestamp =
                           oldest_logger_remote_unreliable_monotonic_timestamp,
@@ -780,9 +829,10 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
                           oldest_logger_local_unreliable_monotonic_timestamp}});
             } else {
               logger_boot_times_it->second.emplace_back(BootPairTimes{
-                  .oldest_remote_monotonic_timestamp =
-                      monotonic_clock::max_time,
-                  .oldest_local_monotonic_timestamp = monotonic_clock::max_time,
+                  .oldest_remote_reliable_monotonic_timestamp =
+                      oldest_remote_reliable_monotonic_timestamp,
+                  .oldest_local_reliable_monotonic_timestamp =
+                      oldest_local_reliable_monotonic_timestamp,
                   .oldest_remote_unreliable_monotonic_timestamp =
                       oldest_logger_remote_unreliable_monotonic_timestamp,
                   .oldest_local_unreliable_monotonic_timestamp =
@@ -819,20 +869,20 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
           // We have a new boot UUID pairing.  Copy over the data we have.
           destination_boot_times_it->second.emplace(
               boot_uuid, std::vector<BootPairTimes>{BootPairTimes{
-                             .oldest_remote_monotonic_timestamp =
-                                 oldest_remote_monotonic_timestamp,
-                             .oldest_local_monotonic_timestamp =
-                                 oldest_local_monotonic_timestamp,
+                             .oldest_remote_reliable_monotonic_timestamp =
+                                 oldest_remote_reliable_monotonic_timestamp,
+                             .oldest_local_reliable_monotonic_timestamp =
+                                 oldest_local_reliable_monotonic_timestamp,
                              .oldest_remote_unreliable_monotonic_timestamp =
                                  oldest_remote_unreliable_monotonic_timestamp,
                              .oldest_local_unreliable_monotonic_timestamp =
                                  oldest_local_unreliable_monotonic_timestamp}});
         } else {
           boot_times_it->second.emplace_back(
-              BootPairTimes{.oldest_remote_monotonic_timestamp =
-                                oldest_remote_monotonic_timestamp,
-                            .oldest_local_monotonic_timestamp =
-                                oldest_local_monotonic_timestamp,
+              BootPairTimes{.oldest_remote_reliable_monotonic_timestamp =
+                                oldest_remote_reliable_monotonic_timestamp,
+                            .oldest_local_reliable_monotonic_timestamp =
+                                oldest_local_reliable_monotonic_timestamp,
                             .oldest_remote_unreliable_monotonic_timestamp =
                                 oldest_remote_unreliable_monotonic_timestamp,
                             .oldest_local_unreliable_monotonic_timestamp =
@@ -989,34 +1039,37 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
                   << next_boot_time.oldest_local_unreliable_monotonic_timestamp
                   << " local " << source_boot_uuid;
             }
-            if (next_boot_time.oldest_local_monotonic_timestamp !=
+            if (next_boot_time.oldest_local_reliable_monotonic_timestamp !=
                 aos::monotonic_clock::max_time) {
-              VLOG(1) << "Reliable remote time "
-                      << next_boot_time.oldest_remote_monotonic_timestamp
-                      << " remote " << boot_time_list.first << " -> local time "
-                      << next_boot_time.oldest_local_monotonic_timestamp
-                      << " local " << source_boot_uuid;
+              VLOG(1)
+                  << "Reliable remote time "
+                  << next_boot_time.oldest_remote_reliable_monotonic_timestamp
+                  << " remote " << boot_time_list.first << " -> local time "
+                  << next_boot_time.oldest_local_reliable_monotonic_timestamp
+                  << " local " << source_boot_uuid;
             }
             // If we found an existing entry, update the min to be the min of
             // all records.  This lets us combine info from multiple part files.
-            if (next_boot_time.oldest_remote_monotonic_timestamp <
-                boot_time.oldest_remote_monotonic_timestamp) {
-              boot_time.oldest_remote_monotonic_timestamp =
-                  next_boot_time.oldest_remote_monotonic_timestamp;
-              boot_time.oldest_local_monotonic_timestamp =
-                  next_boot_time.oldest_local_monotonic_timestamp;
+            if (next_boot_time.oldest_remote_reliable_monotonic_timestamp <
+                boot_time.oldest_remote_reliable_monotonic_timestamp) {
+              boot_time.oldest_remote_reliable_monotonic_timestamp =
+                  next_boot_time.oldest_remote_reliable_monotonic_timestamp;
+              boot_time.oldest_local_reliable_monotonic_timestamp =
+                  next_boot_time.oldest_local_reliable_monotonic_timestamp;
             }
-            if ((next_boot_time.oldest_remote_monotonic_timestamp >
-                     max_boot_time.oldest_remote_monotonic_timestamp ||
-                 max_boot_time.oldest_remote_monotonic_timestamp ==
+
+            if ((next_boot_time.oldest_remote_reliable_monotonic_timestamp >
+                     max_boot_time.oldest_remote_reliable_monotonic_timestamp ||
+                 max_boot_time.oldest_remote_reliable_monotonic_timestamp ==
                      aos::monotonic_clock::max_time) &&
-                next_boot_time.oldest_remote_monotonic_timestamp !=
+                next_boot_time.oldest_remote_reliable_monotonic_timestamp !=
                     aos::monotonic_clock::max_time) {
-              max_boot_time.oldest_remote_monotonic_timestamp =
-                  next_boot_time.oldest_remote_monotonic_timestamp;
-              max_boot_time.oldest_local_monotonic_timestamp =
-                  next_boot_time.oldest_local_monotonic_timestamp;
+              max_boot_time.oldest_remote_reliable_monotonic_timestamp =
+                  next_boot_time.oldest_remote_reliable_monotonic_timestamp;
+              max_boot_time.oldest_local_reliable_monotonic_timestamp =
+                  next_boot_time.oldest_local_reliable_monotonic_timestamp;
             }
+
             if (next_boot_time.oldest_remote_unreliable_monotonic_timestamp <
                 boot_time.oldest_remote_unreliable_monotonic_timestamp) {
               boot_time.oldest_remote_unreliable_monotonic_timestamp =
@@ -1123,9 +1176,7 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
           // Enforce that the last time observed in the headers on the previous
           // boot is less than the first time on the next boot.  This equates to
           // there being no overlap between the two boots.
-          if (std::get<1>(boot_time)
-                  .oldest_local_unreliable_monotonic_timestamp <
-              last_boot_time) {
+          if (MinLocalBootTime(std::get<1>(boot_time)) < last_boot_time) {
             for (size_t fatal_boot_id = 0;
                  fatal_boot_id < source_boot_times.size(); ++fatal_boot_id) {
               const std::tuple<std::string, BootPairTimes, BootPairTimes>
@@ -1133,31 +1184,28 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
               const std::string &fatal_source_boot_uuid =
                   std::get<0>(fatal_boot_time);
               LOG(ERROR) << "Boot " << fatal_boot_id << ", "
-                         << fatal_source_boot_uuid << " on " << destination_node_name
-                         << " spans ["
-                         << std::get<1>(fatal_boot_time)
-                                .oldest_local_unreliable_monotonic_timestamp
+                         << fatal_source_boot_uuid << " on "
+                         << destination_node_name << " spans ["
+                         << MinLocalBootTime(std::get<1>(fatal_boot_time))
                          << ", "
-                         << std::get<2>(fatal_boot_time)
-                                .oldest_local_unreliable_monotonic_timestamp
+                         << MaxLocalBootTime(std::get<2>(fatal_boot_time))
                          << "] on source " << destination_node_name;
             }
             LOG(FATAL) << "Found overlapping boots on " << destination_node_name
                        << " source node " << destination_node_name << ", "
-                       << std::get<1>(boot_time)
-                              .oldest_local_unreliable_monotonic_timestamp
-                       << " < " << last_boot_time;
+                       << MinLocalBootTime(std::get<1>(boot_time)) << " < "
+                       << last_boot_time;
           }
 
-          last_boot_time = std::get<2>(boot_time)
-                               .oldest_local_unreliable_monotonic_timestamp;
+          last_boot_time = MaxLocalBootTime(std::get<2>(boot_time));
 
           auto source_node_boot_constraints_it =
               boot_constraints.find(destination_node_name);
           if (source_node_boot_constraints_it == boot_constraints.end()) {
             source_node_boot_constraints_it =
                 boot_constraints
-                    .insert(std::make_pair(destination_node_name, NodeBootState()))
+                    .insert(
+                        std::make_pair(destination_node_name, NodeBootState()))
                     .first;
           }
 
@@ -1779,8 +1827,7 @@ std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
            << "\",\n";
   }
   if (!file.log_start_uuid.empty()) {
-    stream << " \"log_start_uuid\": \"" << file.log_start_uuid
-           << "\",\n";
+    stream << " \"log_start_uuid\": \"" << file.log_start_uuid << "\",\n";
   }
   stream << " \"config\": \"" << file.config.get() << "\"";
   if (!file.config_sha256.empty()) {
