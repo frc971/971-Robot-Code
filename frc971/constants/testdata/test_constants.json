@@ -1,0 +1,12 @@
+{
+  "constants": [
+    {
+      "team": 971,
+      "data": {"max_roller_voltage": 12.0, "min_roller_voltage": -12.0}
+    },
+    {
+      "team": 9971,
+      "data": {"max_roller_voltage": 6.0, "min_roller_voltage": -6.0}
+    }
+  ]
+}
