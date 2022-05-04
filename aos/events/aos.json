@@ -10,6 +10,12 @@
     },
     {
       "name": "/aos",
+      "type": "aos.logging.DynamicLogCommand",
+      "frequency": 10,
+      "num_senders": 1
+    },
+    {
+      "name": "/aos",
       "type": "aos.logging.LogMessageFbs",
       "frequency": 250,
       "num_senders": 20,

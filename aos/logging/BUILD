@@ -102,3 +102,38 @@ cc_static_flatbuffer(
     target = ":log_message_fbs_reflection_out",
     visibility = ["//visibility:public"],
 )
+
+flatbuffer_cc_library(
+    name = "dynamic_log_command_fbs",
+    srcs = [
+        "dynamic_log_command.fbs",
+    ],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "dynamic_logging",
+    srcs = ["dynamic_logging.cc"],
+    hdrs = ["dynamic_logging.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":dynamic_log_command_fbs",
+        "//aos/events:shm_event_loop",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "dynamic_logging_test",
+    srcs = ["dynamic_logging_test.cc"],
+    data = [
+        "//aos/events:pingpong_config",
+    ],
+    deps = [
+        ":dynamic_logging",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+    ],
+)

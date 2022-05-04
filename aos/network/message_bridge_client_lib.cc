@@ -38,6 +38,9 @@ std::vector<int> StreamToChannel(const Configuration *config,
       const Connection *connection =
           configuration::ConnectionToNode(channel, my_node);
       if (connection != nullptr) {
+        VLOG(1) << "Channel " << channel->name()->string_view() << " "
+                << channel->type()->string_view() << " mapped to stream "
+                << stream_to_channel.size() + kControlStreams();
         stream_to_channel.emplace_back(channel_index);
       }
     }
@@ -171,6 +174,8 @@ void SctpClientConnection::MessageReceived() {
           case SCTP_SHUTDOWN_COMP:
           case SCTP_CANT_STR_ASSOC: {
             NodeDisconnected();
+            VLOG(1) << "Disconnect from " << message->PeerAddress() << " on "
+                    << sac->sac_assoc_id;
           } break;
           case SCTP_RESTART:
             LOG(FATAL) << "Never seen this before.";
@@ -188,15 +193,18 @@ void SctpClientConnection::MessageReceived() {
 }
 
 void SctpClientConnection::SendConnect() {
-  VLOG(1) << "Sending Connect";
   // Try to send the connect message.  If that fails, retry.
   if (client_.Send(kConnectStream(),
                    std::string_view(reinterpret_cast<const char *>(
                                         connect_message_.span().data()),
                                     connect_message_.span().size()),
                    0)) {
+    VLOG(1) << "Connect to " << remote_node_->hostname()->string_view()
+            << " succeeded.";
     ScheduleConnectTimeout();
   } else {
+    VLOG(1) << "Connect to " << remote_node_->hostname()->string_view()
+            << " failed.";
     NodeDisconnected();
   }
 }
@@ -225,7 +233,7 @@ void SctpClientConnection::HandleData(const Message *message) {
   const RemoteData *remote_data =
       flatbuffers::GetSizePrefixedRoot<RemoteData>(message->data());
 
-  VLOG(1) << "Got a message of size " << message->size;
+  VLOG(2) << "Got a message of size " << message->size;
   CHECK_EQ(message->size, flatbuffers::GetPrefixedSize(message->data()) +
                               sizeof(flatbuffers::uoffset_t));
   {
@@ -306,14 +314,14 @@ void SctpClientConnection::HandleData(const Message *message) {
     }
   }
 
-  VLOG(1) << "Received data of length " << message->size << " from "
+  VLOG(2) << "Received data of length " << message->size << " from "
           << message->PeerAddress();
 
-  if (VLOG_IS_ON(1)) {
+  if (VLOG_IS_ON(2)) {
     client_.LogSctpStatus(message->header.rcvinfo.rcv_assoc_id);
   }
 
-  VLOG(2) << "\tSNDRCV (stream=" << message->header.rcvinfo.rcv_sid
+  VLOG(3) << "\tSNDRCV (stream=" << message->header.rcvinfo.rcv_sid
           << " ssn=" << message->header.rcvinfo.rcv_ssn
           << " tsn=" << message->header.rcvinfo.rcv_tsn << " flags=0x"
           << std::hex << message->header.rcvinfo.rcv_flags << std::dec

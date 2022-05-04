@@ -86,7 +86,7 @@ void TimestampFilter::Set(aos::monotonic_clock::time_point monotonic_now,
 
 void TimestampFilter::Sample(aos::monotonic_clock::time_point monotonic_now,
                              chrono::nanoseconds sample_ns) {
-  VLOG(1) << "  " << this << " Sample at " << monotonic_now << " is "
+  VLOG(2) << "  " << this << " Sample at " << monotonic_now << " is "
           << sample_ns.count() << "ns, Base is " << base_offset_.count();
   CHECK_GE(monotonic_now, last_time_)
       << ": " << this << " Being asked to filter backwards in time!";
@@ -165,7 +165,7 @@ void TimestampFilter::Sample(aos::monotonic_clock::time_point monotonic_now,
         time_contribution_ = time_contribution;
       }
 
-      VLOG(1) << "  " << this << " filter sample is " << offset_;
+      VLOG(2) << "  " << this << " filter sample is " << offset_;
     }
   }
 
@@ -283,7 +283,7 @@ void ClippedAverageFilter::set_first_rev_time(
 void ClippedAverageFilter::FwdSet(
     aos::monotonic_clock::time_point monotonic_now,
     chrono::nanoseconds sample_ns) {
-  VLOG(1) << "Fwd Set";
+  VLOG(2) << "Fwd Set";
   fwd_.Set(monotonic_now, sample_ns);
   Update(monotonic_now, &last_fwd_time_);
 }
@@ -324,7 +324,7 @@ void ClippedAverageFilter::FwdSample(
 void ClippedAverageFilter::RevSet(
     aos::monotonic_clock::time_point monotonic_now,
     chrono::nanoseconds sample_ns) {
-  VLOG(1) << "Rev set";
+  VLOG(2) << "Rev set";
   rev_.Set(monotonic_now, sample_ns);
   Update(monotonic_now, &last_rev_time_);
 }
@@ -420,7 +420,7 @@ void ClippedAverageFilter::Update(
   const double hard_max = fwd_.offset();
   const double hard_min = -rev_.offset();
   const double average = (hard_max + hard_min) / 2.0;
-  VLOG(1) << this << "  Max(fwd) " << hard_max << " min(rev) " << hard_min;
+  VLOG(2) << this << "  Max(fwd) " << hard_max << " min(rev) " << hard_min;
   // We don't want to clip the offset to the hard min/max.  We really want to
   // keep it within a band around the middle.  ratio of 0.3 means stay within
   // +- 0.15 of the middle of the hard min and max.
@@ -455,7 +455,7 @@ void ClippedAverageFilter::Update(
             (offset_velocity_ -
              (fwd_.filtered_velocity() - rev_.filtered_velocity()) / 2.0);
 
-    VLOG(1) << this << "  last time " << offset_;
+    VLOG(2) << this << "  last time " << offset_;
   }
   *last_time = monotonic_now;
 

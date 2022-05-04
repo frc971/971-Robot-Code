@@ -30,6 +30,10 @@ Ping::Ping(EventLoop *event_loop)
 }
 
 void Ping::SendPing() {
+  if (last_pong_value_ != count_ && (!quiet_ || VLOG_IS_ON(1))) {
+    LOG(WARNING) << "Did not receive response to " << count_ << " within "
+                 << FLAGS_sleep_ms << "ms.";
+  }
   ++count_;
   aos::Sender<examples::Ping>::Builder builder = sender_.MakeBuilder();
   examples::Ping::Builder ping_builder = builder.MakeBuilder<examples::Ping>();
@@ -50,15 +54,17 @@ void Ping::HandlePong(const examples::Pong &pong) {
       monotonic_now - monotonic_send_time;
 
   if (last_pong_value_ + 1 != pong.value() && (!quiet_ || VLOG_IS_ON(1))) {
-    LOG(WARNING) << "Pong message lost";
+    LOG(WARNING) << "Unexpected pong value, wanted " << last_pong_value_ + 1
+                 << ", got " << pong.value();
   }
 
   if (pong.value() == count_) {
     VLOG(1) << "Elapsed time " << round_trip_time.count() << " ns "
             << FlatbufferToJson(&pong);
   } else if (!quiet_ || VLOG_IS_ON(1)) {
-    LOG(WARNING) << "Missmatched pong message, got " << FlatbufferToJson(&pong)
-                 << " expected " << count_;
+    LOG(WARNING) << "Unexpected pong response, got " << FlatbufferToJson(&pong)
+                 << " expected " << count_ << ", elapsed time "
+                 << round_trip_time.count() << " ns ";
   }
 
   last_pong_value_ = pong.value();

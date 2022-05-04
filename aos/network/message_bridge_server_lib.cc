@@ -31,7 +31,7 @@ flatbuffers::FlatBufferBuilder ChannelState::PackContext(
     const Context &context) {
   flatbuffers::FlatBufferBuilder fbb(channel_->max_size() + 100);
   fbb.ForceDefaults(true);
-  VLOG(1) << "Found " << peers_.size() << " peers on channel "
+  VLOG(2) << "Found " << peers_.size() << " peers on channel "
           << channel_->name()->string_view() << " "
           << channel_->type()->string_view() << " size " << context.size;
 
@@ -93,10 +93,10 @@ void ChannelState::SendData(SctpServer *server, const Context &context) {
       VLOG(1)
           << "No clients, rejecting. TODO(austin): do backup logging to disk";
     } else {
-      VLOG(1) << "TODO(austin): backup log to disk if this fails eventually";
+      VLOG(2) << "TODO(austin): backup log to disk if this fails eventually";
     }
   } else {
-    VLOG(1) << "Not bothering to track this message since nobody cares.";
+    VLOG(2) << "Not bothering to track this message since nobody cares.";
   }
 
   // TODO(austin): Limit the size of this queue.  Flush messages to disk
@@ -195,16 +195,23 @@ int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
 int ChannelState::NodeConnected(
     const Node *node, sctp_assoc_t assoc_id, int stream, SctpServer *server,
     aos::monotonic_clock::time_point monotonic_now) {
-  VLOG(1) << "Connected to assoc_id: " << assoc_id << " for stream " << stream;
+  VLOG(1) << "Channel " << channel_->name()->string_view() << " "
+          << channel_->type()->string_view() << " mapped to stream " << stream
+          << " for node " << node->name()->string_view() << " assoc_id "
+          << assoc_id;
   for (ChannelState::Peer &peer : peers_) {
     if (peer.connection->name()->string_view() == node->name()->string_view()) {
       // There's a peer already connected.  Disconnect them and take over.
       if (peer.sac_assoc_id != 0) {
         if (peer.sac_assoc_id == assoc_id) {
-          LOG(WARNING) << "Reconnecting with the same ID, something got lost";
+          LOG(WARNING) << "Node " << node->name()->string_view()
+                       << " reconnecting on " << assoc_id
+                       << "with the same ID, something got lost";
         } else {
-          LOG(WARNING) << "Peer " << peer.sac_assoc_id
-                       << " already connected, aborting old connection.";
+          LOG(WARNING) << "Node " << node->name()->string_view() << " "
+                       << " already connected on " << peer.sac_assoc_id
+                       << "aborting old connection and switching to "
+                       << assoc_id;
           server->Abort(peer.sac_assoc_id);
         }
       }
@@ -429,13 +436,15 @@ void MessageBridgeServer::MessageReceived() {
         switch (sac->sac_state) {
           case SCTP_COMM_UP:
             NodeConnected(sac->sac_assoc_id);
-            VLOG(1) << "Peer connected";
+            VLOG(1) << "Received up from " << message->PeerAddress() << " on "
+                    << sac->sac_assoc_id;
             break;
           case SCTP_COMM_LOST:
           case SCTP_SHUTDOWN_COMP:
           case SCTP_CANT_STR_ASSOC:
             NodeDisconnected(sac->sac_assoc_id);
-            VLOG(1) << "Disconnect";
+            VLOG(1) << "Disconnect from " << message->PeerAddress() << " on "
+                    << sac->sac_assoc_id << " state " << sac->sac_state;
             break;
           case SCTP_RESTART:
             LOG(FATAL) << "Never seen this before.";
@@ -449,7 +458,7 @@ void MessageBridgeServer::MessageReceived() {
 }
 
 void MessageBridgeServer::HandleData(const Message *message) {
-  VLOG(1) << "Received data of length " << message->size;
+  VLOG(2) << "Received data of length " << message->size;
 
   if (message->header.rcvinfo.rcv_sid == kConnectStream()) {
     // Control channel!
@@ -479,7 +488,6 @@ void MessageBridgeServer::HandleData(const Message *message) {
               connect->node(), message->header.rcvinfo.rcv_assoc_id,
               channel_index, &server_, monotonic_now);
           CHECK_NE(node_index, -1);
-
           matched = true;
           break;
         }
@@ -487,9 +495,8 @@ void MessageBridgeServer::HandleData(const Message *message) {
       if (!matched) {
         LOG(ERROR) << "Remote tried registering for unknown channel "
                    << FlatbufferToJson(channel);
-      } else {
-        ++channel_index;
       }
+      ++channel_index;
     }
     // TODO(sarah.newman): what if node_index is -1?
     server_status_.ResetFilter(node_index);
@@ -503,6 +510,9 @@ void MessageBridgeServer::HandleData(const Message *message) {
                    ->Get(node_index)
                    ->name()
                    ->string_view();
+    if (VLOG_IS_ON(1)) {
+      message->LogRcvInfo();
+    }
   } else if (message->header.rcvinfo.rcv_sid == kTimestampStream()) {
     // Message delivery
     const logger::MessageHeader *message_header =
@@ -519,10 +529,15 @@ void MessageBridgeServer::HandleData(const Message *message) {
             message->header.rcvinfo.rcv_ssn,
             absl::Span<const uint8_t>(message->data(), message->size),
             message->partial_deliveries, &server_status_);
-  }
-
-  if (VLOG_IS_ON(1)) {
+    if (VLOG_IS_ON(2)) {
+      message->LogRcvInfo();
+    }
+  } else {
     message->LogRcvInfo();
+    // TODO(sarah.newman): add some versioning concept such that if this was a
+    // fatal error, we would never get here.
+    LOG_FIRST_N(ERROR, 20) << "Unexpected stream id "
+                           << message->header.rcvinfo.rcv_sid;
   }
 }
 

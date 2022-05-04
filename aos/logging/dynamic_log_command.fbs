@@ -1,0 +1,11 @@
+namespace aos.logging;
+
+table DynamicLogCommand {
+  // Application name
+  name:string (id: 0);
+
+  // vlog level to set
+  vlog_level:int (id: 1);
+}
+
+root_type DynamicLogCommand;

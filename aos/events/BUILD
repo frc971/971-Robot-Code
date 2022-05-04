@@ -146,6 +146,7 @@ aos_config(
     src = "aos.json",
     flatbuffers = [
         ":event_loop_fbs",
+        "//aos/logging:dynamic_log_command_fbs",
         "//aos/logging:log_message_fbs",
         "//aos/starter:starter_fbs",
         "//aos/starter:starter_rpc_fbs",
