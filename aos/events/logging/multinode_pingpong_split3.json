@@ -69,6 +69,24 @@
     },
     {
       "name": "/pi1/aos",
+      "type": "aos.logging.DynamicLogCommand",
+      "logger": "LOCAL_LOGGER",
+      "source_node": "pi1"
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.logging.DynamicLogCommand",
+      "logger": "LOCAL_LOGGER",
+      "source_node": "pi2"
+    },
+    {
+      "name": "/pi3/aos",
+      "type": "aos.logging.DynamicLogCommand",
+      "logger": "LOCAL_LOGGER",
+      "source_node": "pi3"
+    },
+    {
+      "name": "/pi1/aos",
       "type": "aos.message_bridge.ClientStatistics",
       "logger": "LOCAL_LOGGER",
       "source_node": "pi1"

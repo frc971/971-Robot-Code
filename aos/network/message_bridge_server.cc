@@ -1,5 +1,6 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "aos/logging/dynamic_logging.h"
 #include "aos/network/message_bridge_server_lib.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -20,6 +21,8 @@ int Main() {
   }
 
   MessageBridgeServer app(&event_loop);
+
+  logging::DynamicLogging dynamic_logging(&event_loop);
 
   // TODO(austin): Track which messages didn't make it in time and need to be
   // logged locally and forwarded.
