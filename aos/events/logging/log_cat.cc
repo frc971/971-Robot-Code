@@ -28,6 +28,8 @@ DEFINE_bool(raw, false,
             "If true, just print the data out unsorted and unparsed");
 DEFINE_string(raw_header, "",
               "If set, the file to read the header from in raw mode");
+DEFINE_bool(distributed_clock, false,
+            "If true, print out the distributed time");
 DEFINE_bool(format_raw, true,
             "If true and --raw is specified, print out raw data, but use the "
             "schema to format the data.");
@@ -80,8 +82,9 @@ void StreamSeconds(std::ostream &stream,
 // Print the flatbuffer out to stdout, both to remove the unnecessary cruft from
 // glog and to allow the user to readily redirect just the logged output
 // independent of any debugging information on stderr.
-void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
-                  const aos::Context &context,
+void PrintMessage(const std::string_view node_name,
+                  aos::NodeEventLoopFactory *node_factory,
+                  const aos::Channel *channel, const aos::Context &context,
                   aos::FastStringBuilder *builder) {
   builder->Reset();
   CHECK(flatbuffers::Verify(*channel->schema(),
@@ -116,6 +119,11 @@ void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
               << aos::configuration::StrippedChannelToString(channel)
               << ", \"data\": " << *builder << "}" << std::endl;
   } else {
+    if (FLAGS_distributed_clock) {
+      std::cout << node_factory->ToDistributedClock(
+                       context.monotonic_event_time)
+                << " ";
+    }
     if (!node_name.empty()) {
       std::cout << node_name << " ";
     }
@@ -265,6 +273,7 @@ class NodePrinter {
               aos::SimulatedEventLoopFactory *factory,
               aos::FastStringBuilder *builder)
       : factory_(factory),
+        node_factory_(factory->GetNodeEventLoopFactory(event_loop->node())),
         event_loop_(event_loop),
         message_print_counter_(message_print_counter),
         node_name_(
@@ -323,7 +332,8 @@ class NodePrinter {
                 return;
               }
 
-              PrintMessage(node_name_, channel, context, builder_);
+              PrintMessage(node_name_, node_factory_, channel, context,
+                           builder_);
               ++(*message_print_counter_);
               if (FLAGS_count > 0 && *message_print_counter_ >= FLAGS_count) {
                 factory_->Exit();
@@ -365,6 +375,7 @@ class NodePrinter {
   };
 
   aos::SimulatedEventLoopFactory *factory_;
+  aos::NodeEventLoopFactory *node_factory_;
   aos::EventLoop *event_loop_;
 
   uint64_t *message_print_counter_ = nullptr;
