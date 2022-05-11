@@ -93,7 +93,7 @@ void LocalFileOperations::FindLogs(std::vector<std::string> *files) {
 }
 
 bool ConfigOnly(const LogFileHeader *header) {
-  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 32u);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 34u);
   if (header->has_monotonic_start_time()) return false;
   if (header->has_realtime_start_time()) return false;
   if (header->has_max_out_of_order_duration()) return false;
@@ -123,6 +123,8 @@ bool ConfigOnly(const LogFileHeader *header) {
     return false;
   if (header->has_oldest_logger_local_unreliable_monotonic_timestamps())
     return false;
+  if (header->has_logger_sha1()) return false;
+  if (header->has_logger_version()) return false;
 
   return header->has_configuration();
 }
@@ -218,6 +220,10 @@ struct UnsortedLogPartsMap {
 
   // Name from a log.  All logs below have been confirmed to match.
   std::string name;
+
+  // Logger version info from the log.
+  std::string logger_sha1;
+  std::string logger_version;
 
   // Mapping from parts_uuid, source_boot_uuid -> parts.  We have log files
   // where the parts_uuid stays constant across reboots.
@@ -411,6 +417,16 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
             ? log_header->message().name()->string_view()
             : "";
 
+    const std::string_view logger_sha1 =
+        log_header->message().has_logger_sha1()
+            ? log_header->message().logger_sha1()->string_view()
+            : "";
+
+    const std::string_view logger_version =
+        log_header->message().has_logger_version()
+            ? log_header->message().logger_version()->string_view()
+            : "";
+
     const std::string_view logger_node =
         log_header->message().has_logger_node()
             ? log_header->message().logger_node()->name()->string_view()
@@ -557,12 +573,16 @@ void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
       log_it->second.log_start_uuid = log_start_uuid;
       log_it->second.logger_instance_uuid = logger_instance_uuid;
       log_it->second.name = name;
+      log_it->second.logger_sha1 = logger_sha1;
+      log_it->second.logger_version = logger_version;
     } else {
       CHECK_EQ(log_it->second.logger_node, logger_node);
       CHECK_EQ(log_it->second.logger_boot_uuid, logger_boot_uuid);
       CHECK_EQ(log_it->second.log_start_uuid, log_start_uuid);
       CHECK_EQ(log_it->second.logger_instance_uuid, logger_instance_uuid);
       CHECK_EQ(log_it->second.name, name);
+      CHECK_EQ(log_it->second.logger_sha1, logger_sha1);
+      CHECK_EQ(log_it->second.logger_version, logger_version);
     }
 
     if (node == log_it->second.logger_node) {
@@ -1825,6 +1845,8 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
     new_file.monotonic_start_time = logs.second.monotonic_start_time;
     new_file.realtime_start_time = logs.second.realtime_start_time;
     new_file.name = logs.second.name;
+    new_file.logger_sha1 = logs.second.logger_sha1;
+    new_file.logger_version = logs.second.logger_version;
     new_file.corrupted = corrupted;
     new_file.boots = boot_counts;
     bool seen_part = false;
@@ -1993,6 +2015,15 @@ std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
   }
   if (!file.log_start_uuid.empty()) {
     stream << " \"log_start_uuid\": \"" << file.log_start_uuid << "\",\n";
+  }
+  if (!file.name.empty()) {
+    stream << " \"name\": \"" << file.name << "\",\n";
+  }
+  if (!file.logger_sha1.empty()) {
+    stream << " \"logger_sha1\": \"" << file.logger_sha1 << "\",\n";
+  }
+  if (!file.logger_version.empty()) {
+    stream << " \"logger_version\": \"" << file.logger_version << "\",\n";
   }
   stream << " \"config\": \"" << file.config.get() << "\"";
   if (!file.config_sha256.empty()) {
