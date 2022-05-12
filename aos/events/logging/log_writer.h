@@ -43,6 +43,11 @@ class Logger {
   // Overrides the name in the log file header.
   void set_name(std::string_view name) { name_ = name; }
 
+  void set_logger_sha1(std::string_view sha1) { logger_sha1_ = sha1; }
+  void set_logger_version(std::string_view version) {
+    logger_version_ = version;
+  }
+
   // Sets the callback to run after each period of data is logged. Defaults to
   // doing nothing.
   //
@@ -289,6 +294,8 @@ class Logger {
 
   // Name to save in the log file.  Defaults to hostname.
   std::string name_;
+  std::string logger_sha1_;
+  std::string logger_version_;
 
   std::function<void()> on_logged_period_ = []() {};
 

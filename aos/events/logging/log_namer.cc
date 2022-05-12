@@ -268,7 +268,7 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   const UUID &source_node_boot_uuid = state[node_index].boot_uuid;
   const Node *const source_node =
       configuration::GetNode(configuration_, node_index);
-  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 32u);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 34u);
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
@@ -288,6 +288,14 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   CHECK(header_.message().has_name());
   const flatbuffers::Offset<flatbuffers::String> name_offset =
       fbb.CreateString(header_.message().name()->string_view());
+  const flatbuffers::Offset<flatbuffers::String> logger_sha1_offset =
+      header_.message().has_logger_sha1()
+          ? fbb.CreateString(header_.message().logger_sha1()->string_view())
+          : 0;
+  const flatbuffers::Offset<flatbuffers::String> logger_version_offset =
+      header_.message().has_logger_version()
+          ? fbb.CreateString(header_.message().logger_version()->string_view())
+          : 0;
 
   CHECK(header_.message().has_log_event_uuid());
   const flatbuffers::Offset<flatbuffers::String> log_event_uuid_offset =
@@ -441,6 +449,12 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
 
   log_file_header_builder.add_name(name_offset);
+  if (!logger_sha1_offset.IsNull()) {
+    log_file_header_builder.add_logger_sha1(logger_sha1_offset);
+  }
+  if (!logger_version_offset.IsNull()) {
+    log_file_header_builder.add_logger_version(logger_version_offset);
+  }
 
   // Only add the node if we are running in a multinode configuration.
   if (!logger_node_offset.IsNull()) {

@@ -556,6 +556,10 @@ struct LoggerState {
     logger->set_polling_period(std::chrono::milliseconds(100));
     logger->set_name(
         absl::StrCat("name_prefix_", event_loop->node()->name()->str()));
+    logger->set_logger_sha1(
+        absl::StrCat("logger_sha1_", event_loop->node()->name()->str()));
+    logger->set_logger_version(
+        absl::StrCat("logger_version_", event_loop->node()->name()->str()));
     event_loop->OnRun([this, logfile_base]() {
       std::unique_ptr<MultiNodeLogNamer> namer =
           std::make_unique<MultiNodeLogNamer>(logfile_base, configuration,
@@ -991,6 +995,10 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
       EXPECT_TRUE(log_file.config);
       EXPECT_EQ(log_file.name,
                 absl::StrCat("name_prefix_", log_file.logger_node));
+      EXPECT_EQ(log_file.logger_sha1,
+                absl::StrCat("logger_sha1_", log_file.logger_node));
+      EXPECT_EQ(log_file.logger_version,
+                absl::StrCat("logger_version_", log_file.logger_node));
 
       for (const LogParts &part : log_file.parts) {
         EXPECT_NE(part.monotonic_start_time, aos::monotonic_clock::min_time)

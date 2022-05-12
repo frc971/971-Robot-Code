@@ -191,6 +191,13 @@ table LogFileHeader {
   // timestamps.
   oldest_logger_remote_unreliable_monotonic_timestamps:[int64] (id: 30);
   oldest_logger_local_unreliable_monotonic_timestamps:[int64] (id: 31);
+
+  // Logger build version.  This is normally the git sha1 that the logger was
+  // built from.
+  logger_sha1:string (id:32);
+  // Logger textual version.  This is normally the release name stamped into
+  // the binary.
+  logger_version:string (id:33);
 }
 
 // Table holding a message.

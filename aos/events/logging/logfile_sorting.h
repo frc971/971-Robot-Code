@@ -110,6 +110,10 @@ struct LogFile {
   // The name field in the log file headers.
   std::string name;
 
+  // The logger version info in the logfile headers, if available.
+  std::string logger_sha1;
+  std::string logger_version;
+
   // All the parts, unsorted.
   std::vector<LogParts> parts;
 
