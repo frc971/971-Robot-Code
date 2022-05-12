@@ -263,7 +263,7 @@ extern "C" int main(void) {
   PORTC_PCR5 = PORT_PCR_DSE | PORT_PCR_MUX(1);
 
   // Set up the CAN pins.
-#if 0
+#if 1
   // Pistol grip motor controller board.
   PORTA_PCR12 = PORT_PCR_DSE | PORT_PCR_MUX(2);
   PORTA_PCR13 = PORT_PCR_DSE | PORT_PCR_MUX(2);

@@ -13,9 +13,9 @@
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
-DEFINE_bool(rapid_react, false,
+DEFINE_bool(rapid_react, true,
             "If true, run the main rapid react autonomous mode");
-DEFINE_bool(rapid_react_two, true,
+DEFINE_bool(rapid_react_two, false,
             "If true, run the two ball rapid react autonomous mode");
 
 namespace y2022 {
@@ -240,14 +240,15 @@ void AutonomousActor::RapidReact() {
   if (!splines[0].WaitForPlan()) return;
   splines[0].Start();
   // Distance before we don't shoot while moving.
-  if (!splines[0].WaitForSplineDistanceRemaining(0.25)) return;
+  if (!splines[0].WaitForSplineDistanceRemaining(2.1)) return;
+  LOG(INFO) << "Tring to take the shot";
 
   set_fire_at_will(true);
   SendSuperstructureGoal();
 
   if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
   // Fire the last ball we picked up when stopped.
   SendSuperstructureGoal();
@@ -295,14 +296,15 @@ void AutonomousActor::RapidReact() {
   set_fire_at_will(true);
   SendSuperstructureGoal();
   if (!WaitForBallsShot()) return;
-  set_fire_at_will(false);
-  SendSuperstructureGoal();
 
   LOG(INFO) << "Took "
             << chrono::duration<double>(aos::monotonic_clock::now() -
                                         start_time)
                    .count()
             << 's';
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  set_fire_at_will(false);
+  SendSuperstructureGoal();
 }
 
 // Rapid React Two Ball Autonomous.

@@ -18,7 +18,7 @@ namespace {
 constexpr double kTurretZeroOffset = M_PI;
 
 constexpr double kMaxProfiledVelocity = 10.0;
-constexpr double kMaxProfiledAccel = 20.0;
+constexpr double kMaxProfiledAccel = 25.0;
 
 flatbuffers::DetachedBuffer MakePrefilledGoal() {
   flatbuffers::FlatBufferBuilder fbb;
