@@ -139,7 +139,10 @@ class RawSender {
  public:
   using SharedSpan = std::shared_ptr<const absl::Span<const uint8_t>>;
 
-  enum class [[nodiscard]] Error {
+  // This looks a little ugly with no space, but please leave it so clang-format
+  // doesn't keep changing it. Bug is filed at
+  // <https://github.com/llvm/llvm-project/issues/55457>.
+  enum class [[nodiscard]] Error{
       // Represents success and no error
       kOk,
 
@@ -147,7 +150,7 @@ class RawSender {
       // frequency and channel storage duration allow
       kMessagesSentTooFast,
       // Access to Redzone was attempted in Sender Queue
-      kInvalidRedzone
+      kInvalidRedzone,
   };
 
   RawSender(EventLoop *event_loop, const Channel *channel);
