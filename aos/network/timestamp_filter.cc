@@ -1207,7 +1207,7 @@ bool NoncausalTimestampFilter::Pop(BootTimestamp time) {
   bool removed = false;
   while (true) {
     CHECK_LT(pop_filter_, filters_.size());
-    BootFilter *boot_filter = &filters_[pop_filter_];
+    BootFilter *boot_filter = filters_[pop_filter_].get();
     CHECK(boot_filter != nullptr);
     size_t timestamps_size = 0;
     while ((timestamps_size = boot_filter->filter.timestamps_size()) > 2) {
@@ -1229,13 +1229,13 @@ bool NoncausalTimestampFilter::Pop(BootTimestamp time) {
 
       // There is 1 more filter, see if there is enough data in it to switch
       // over to it.
-      if (filters_[pop_filter_ + 1].filter.timestamps_size() < 2u) {
+      if (filters_[pop_filter_ + 1]->filter.timestamps_size() < 2u) {
         return removed;
       }
       if (time <
           BootTimestamp{.boot = static_cast<size_t>(boot_filter->boot.first),
                         .time = std::get<0>(
-                            filters_[pop_filter_ + 1].filter.timestamp(1))}) {
+                            filters_[pop_filter_ + 1]->filter.timestamp(1))}) {
         return removed;
       }
     }

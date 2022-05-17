@@ -301,8 +301,8 @@ class NoncausalTimestampFilter {
 
   size_t timestamps_size() const {
     size_t result = 0u;
-    for (const BootFilter &filter : filters_) {
-      result += filter.filter.timestamps_size();
+    for (const std::unique_ptr<BootFilter> &filter : filters_) {
+      result += filter->filter.timestamps_size();
     }
     return result;
   }
@@ -320,10 +320,10 @@ class NoncausalTimestampFilter {
 
   // For testing only:
   void Debug() const {
-    for (const BootFilter &filter : filters_) {
-      LOG(INFO) << NodeNames() << " boota: " << filter.boot.first << ", "
-                << filter.boot.second;
-      filter.filter.Debug();
+    for (const std::unique_ptr<BootFilter> &filter : filters_) {
+      LOG(INFO) << NodeNames() << " boota: " << filter->boot.first << ", "
+                << filter->boot.second;
+      filter->filter.Debug();
     }
   }
 
@@ -340,18 +340,18 @@ class NoncausalTimestampFilter {
 
   // Returns true if there is a full line which hasn't been observed.
   bool has_unobserved_line() const {
-    return filters_.back().filter.has_unobserved_line();
+    return filters_.back()->filter.has_unobserved_line();
   }
   // Returns the time of the second point in the unobserved line, or min_time if
   // there is no line.
   logger::BootTimestamp unobserved_line_end() const {
-    auto &f = filters_.back();
+    auto &f = *filters_.back();
     return {static_cast<size_t>(f.boot.first), f.filter.unobserved_line_end()};
   }
   // Returns the time of the second point in the unobserved line on the remote
   // node, or min_time if there is no line.
   logger::BootTimestamp unobserved_line_remote_end() const {
-    auto &f = filters_.back();
+    auto &f = *filters_.back();
     return {static_cast<size_t>(f.boot.second),
             f.filter.unobserved_line_remote_end()};
   }
@@ -367,7 +367,7 @@ class NoncausalTimestampFilter {
 
     size_t current_filter = std::max(static_cast<ssize_t>(0), current_filter_);
     while (true) {
-      const BootFilter &filter = filters_[current_filter];
+      const BootFilter &filter = *filters_[current_filter];
       std::optional<
           std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
           result = filter.filter.Observe();
@@ -400,7 +400,7 @@ class NoncausalTimestampFilter {
           std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
           result =
               current_filter_ < 0 ? std::nullopt
-                                  : filters_[current_filter_].filter.Consume();
+                                  : filters_[current_filter_]->filter.Consume();
       if (!result) {
         if (static_cast<size_t>(current_filter_ + 1) == filters_.size()) {
           return std::nullopt;
@@ -409,7 +409,7 @@ class NoncausalTimestampFilter {
           continue;
         }
       }
-      BootFilter &filter = filters_[current_filter_];
+      BootFilter &filter = *filters_[current_filter_];
       return std::make_tuple(
           logger::BootTimestamp{static_cast<size_t>(filter.boot.first),
                                 std::get<0>(*result)},
@@ -643,12 +643,12 @@ class NoncausalTimestampFilter {
   };
 
   static bool FilterLessThanUpper(const std::pair<int, int> &l,
-                                  const BootFilter &r) {
-    return l < r.boot;
+                                  const std::unique_ptr<BootFilter> &r) {
+    return l < r->boot;
   }
-  static bool FilterLessThanLower(const BootFilter &l,
+  static bool FilterLessThanLower(const std::unique_ptr<BootFilter> &l,
                                   const std::pair<int, int> &r) {
-    return l.boot < r;
+    return l->boot < r;
   }
 
  protected:
@@ -656,21 +656,23 @@ class NoncausalTimestampFilter {
     auto it =
         std::lower_bound(filters_.begin(), filters_.end(),
                          std::make_pair(boota, bootb), FilterLessThanLower);
-    if (it != filters_.end() && it->boot == std::make_pair(boota, bootb)) {
-      return &it->filter;
+    if (it != filters_.end() && (*it)->boot == std::make_pair(boota, bootb)) {
+      return &(*it)->filter;
     }
 
     if (!filters_.empty() && current_filter_ >= 0) {
       CHECK_LT(static_cast<size_t>(current_filter_), filters_.size());
-      CHECK_GE(boota, filters_[current_filter_].boot.first);
-      CHECK_GE(bootb, filters_[current_filter_].boot.second) << NodeNames();
+      CHECK_GE(boota, filters_[current_filter_]->boot.first);
+      CHECK_GE(bootb, filters_[current_filter_]->boot.second) << NodeNames();
     }
     SingleFilter *result =
         &filters_
              .emplace(std::upper_bound(filters_.begin(), filters_.end(),
                                        std::make_pair(boota, bootb),
                                        FilterLessThanUpper),
-                      std::make_pair(boota, bootb), NodeNames())
+                      std::make_unique<BootFilter>(std::make_pair(boota, bootb),
+                                                   NodeNames()))
+             ->get()
              ->filter;
 
     {
@@ -679,14 +681,14 @@ class NoncausalTimestampFilter {
       // means that both boots on both devices talked to both other boots.
       int last_boota = -1;
       int last_bootb = -1;
-      for (const BootFilter &filter : filters_) {
-        CHECK(filter.boot.first != last_boota ||
-              filter.boot.second != last_bootb)
+      for (const std::unique_ptr<BootFilter> &filter : filters_) {
+        CHECK(filter->boot.first != last_boota ||
+              filter->boot.second != last_bootb)
             << ": Boots didn't increase.";
-        CHECK_GE(filter.boot.first, last_boota);
-        CHECK_GE(filter.boot.second, last_bootb);
-        last_boota = filter.boot.first;
-        last_bootb = filter.boot.second;
+        CHECK_GE(filter->boot.first, last_boota);
+        CHECK_GE(filter->boot.second, last_bootb);
+        last_boota = filter->boot.first;
+        last_bootb = filter->boot.second;
       }
     }
     return result;
@@ -699,8 +701,8 @@ class NoncausalTimestampFilter {
     if (it == filters_.end()) {
       return nullptr;
     }
-    if (it->boot == std::make_pair(boota, bootb)) {
-      return &it->filter;
+    if (it->get()->boot == std::make_pair(boota, bootb)) {
+      return &it->get()->filter;
     } else {
       return nullptr;
     }
@@ -714,7 +716,7 @@ class NoncausalTimestampFilter {
   }
 
  private:
-  std::vector<BootFilter> filters_;
+  std::vector<std::unique_ptr<BootFilter>> filters_;
 
   ssize_t current_filter_ = -1;
 
