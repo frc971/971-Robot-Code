@@ -1,6 +1,7 @@
 #include "aos/util/mcap_logger.h"
 
 #include <iostream>
+
 #include "flatbuffers/reflection_generated.h"
 #include "gtest/gtest.h"
 

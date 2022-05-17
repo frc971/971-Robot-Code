@@ -6,12 +6,11 @@
 #include <random>
 #include <vector>
 
-#include "glog/logging.h"
-#include "gtest/gtest.h"
-
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/testing/random_seed.h"
+#include "glog/logging.h"
+#include "gtest/gtest.h"
 
 namespace aos::logger::testing {
 

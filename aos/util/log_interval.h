@@ -1,10 +1,10 @@
 #ifndef AOS_UTIL_LOG_INTERVAL_H_
 #define AOS_UTIL_LOG_INTERVAL_H_
 
+#include <string>
+
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
-
-#include <string>
 
 namespace aos {
 namespace util {

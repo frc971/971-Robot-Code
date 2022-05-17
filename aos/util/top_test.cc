@@ -28,7 +28,8 @@ class TopTest : public ::testing::Test {
         event_loop_(&config_.message()) {
     FLAGS_shm_base = shm_dir_;
 
-    // Nuke the shm dir, to ensure we aren't being affected by any preexisting tests.
+    // Nuke the shm dir, to ensure we aren't being affected by any preexisting
+    // tests.
     aos::util::UnlinkRecursive(shm_dir_);
   }
   ~TopTest() {

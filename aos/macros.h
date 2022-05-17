@@ -6,8 +6,8 @@
 // A macro to disallow the copy constructor and operator= functions
 // This should be used in the private: declarations for a class
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
-  TypeName(const TypeName&) = delete;      \
-  void operator=(const TypeName&) = delete
+  TypeName(const TypeName &) = delete;     \
+  void operator=(const TypeName &) = delete
 
 // A macro to wrap arguments to macros that contain commas.
 // Useful for DISALLOW_COPY_AND_ASSIGNing templated types with multiple template
@@ -18,7 +18,7 @@
 #define MACRO_DARG(...) (__VA_ARGS__)
 
 #ifdef __GNUC__
-#define UNUSED_VARIABLE __attribute__ ((unused))
+#define UNUSED_VARIABLE __attribute__((unused))
 #else
 #define UNUSED_VARIABLE
 #endif

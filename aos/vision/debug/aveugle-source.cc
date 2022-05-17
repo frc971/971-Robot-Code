@@ -1,9 +1,9 @@
-#include "aos/vision/debug/debug_framework.h"
-
 #include <gdk/gdk.h>
+
 #include <fstream>
 #include <string>
 
+#include "aos/vision/debug/debug_framework.h"
 #include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/image_stream.h"
 
@@ -46,9 +46,8 @@ class AveugleImageSource : public ImageSource {
           ++i_;
         }
       });
-      interface_->InstallSetExposure([this](int abs_exp) {
-          this->SetExposure(abs_exp);
-      });
+      interface_->InstallSetExposure(
+          [this](int abs_exp) { this->SetExposure(abs_exp); });
     }
     void ProcessImage(DataRef data, aos::monotonic_clock::time_point) override {
       prev_data_ = std::string(data);

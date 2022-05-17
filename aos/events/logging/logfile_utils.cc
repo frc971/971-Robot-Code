@@ -558,8 +558,8 @@ std::shared_ptr<UnpackedMessageHeader> MessageReader::ReadMessage() {
     }
 
     if (span_reader_.IsIncomplete()) {
-      LOG(ERROR) << "Unable to access some messages in " << filename()
-                 << " : " << span_reader_.TotalRead() << " bytes read, "
+      LOG(ERROR) << "Unable to access some messages in " << filename() << " : "
+                 << span_reader_.TotalRead() << " bytes read, "
                  << span_reader_.TotalConsumed() << " bytes usable."
                  << std::endl;
     }
@@ -570,15 +570,14 @@ std::shared_ptr<UnpackedMessageHeader> MessageReader::ReadMessage() {
 
   if (crash_on_corrupt_message_flag_) {
     CHECK(msg.Verify()) << "Corrupted message at offset "
-                        << total_verified_before_
-                        << " found within " << filename()
+                        << total_verified_before_ << " found within "
+                        << filename()
                         << "; set --nocrash_on_corrupt_message to see summary;"
                         << " also set --ignore_corrupt_messages to process"
                         << " anyway";
 
   } else if (!msg.Verify()) {
-    LOG(ERROR) << "Corrupted message at offset "
-               << total_verified_before_
+    LOG(ERROR) << "Corrupted message at offset " << total_verified_before_
                << " from " << filename() << std::endl;
 
     total_corrupted_ += msg_data.size();
@@ -922,14 +921,13 @@ Message *LogPartsSorter::Front() {
       size_t monotonic_remote_boot = 0xffffff;
 
       if (m->monotonic_remote_time.has_value()) {
-        const Node *node = parts().config->nodes()->Get(
-            source_node_index_[m->channel_index]);
+        const Node *node =
+            parts().config->nodes()->Get(source_node_index_[m->channel_index]);
 
         std::optional<size_t> boot = parts_message_reader_.boot_count(
             source_node_index_[m->channel_index]);
         CHECK(boot) << ": Failed to find boot for node " << MaybeNodeName(node)
-                    << ", with index "
-                    << source_node_index_[m->channel_index];
+                    << ", with index " << source_node_index_[m->channel_index];
         monotonic_remote_boot = *boot;
       }
 
@@ -1242,16 +1240,16 @@ void TimestampMapper::AddPeer(TimestampMapper *timestamp_mapper) {
 }
 
 void TimestampMapper::QueueMessage(Message *m) {
-  matched_messages_.emplace_back(TimestampedMessage{
-      .channel_index = m->channel_index,
-      .queue_index = m->queue_index,
-      .monotonic_event_time = m->timestamp,
-      .realtime_event_time = m->data->realtime_sent_time,
-      .remote_queue_index = BootQueueIndex::Invalid(),
-      .monotonic_remote_time = BootTimestamp::min_time(),
-      .realtime_remote_time = realtime_clock::min_time,
-      .monotonic_timestamp_time = BootTimestamp::min_time(),
-      .data = std::move(m->data)});
+  matched_messages_.emplace_back(
+      TimestampedMessage{.channel_index = m->channel_index,
+                         .queue_index = m->queue_index,
+                         .monotonic_event_time = m->timestamp,
+                         .realtime_event_time = m->data->realtime_sent_time,
+                         .remote_queue_index = BootQueueIndex::Invalid(),
+                         .monotonic_remote_time = BootTimestamp::min_time(),
+                         .realtime_remote_time = realtime_clock::min_time,
+                         .monotonic_timestamp_time = BootTimestamp::min_time(),
+                         .data = std::move(m->data)});
 }
 
 TimestampedMessage *TimestampMapper::Front() {
@@ -1448,13 +1446,12 @@ Message TimestampMapper::MatchingMessageFor(const Message &message) {
 
   if (remote_queue_index < data_queue->front().queue_index ||
       remote_queue_index > data_queue->back().queue_index) {
-    return Message{
-        .channel_index = message.channel_index,
-        .queue_index = remote_queue_index,
-        .timestamp = monotonic_remote_time,
-        .monotonic_remote_boot = 0xffffff,
-        .monotonic_timestamp_boot = 0xffffff,
-        .data = nullptr};
+    return Message{.channel_index = message.channel_index,
+                   .queue_index = remote_queue_index,
+                   .timestamp = monotonic_remote_time,
+                   .monotonic_remote_boot = 0xffffff,
+                   .monotonic_timestamp_boot = 0xffffff,
+                   .data = nullptr};
   }
 
   // The algorithm below is constant time with some assumptions.  We need there

@@ -1,11 +1,11 @@
 #ifndef AOS_VISION_IMAGE_IMAGE_STREAM_H_
 #define AOS_VISION_IMAGE_IMAGE_STREAM_H_
 
+#include <memory>
+
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/reader.h"
-
-#include <memory>
 
 namespace aos {
 namespace vision {

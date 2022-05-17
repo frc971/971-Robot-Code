@@ -77,9 +77,7 @@ class MutexLocker {
                  << " died but it shouldn't be able to";
     }
   }
-  ~MutexLocker() {
-    mutex_->Unlock();
-  }
+  ~MutexLocker() { mutex_->Unlock(); }
 
  private:
   Mutex *const mutex_;

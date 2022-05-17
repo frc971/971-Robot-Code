@@ -1,9 +1,9 @@
-#include "aos/vision/debug/debug_framework.h"
-
 #include <gdk/gdk.h>
+
 #include <fstream>
 #include <string>
 
+#include "aos/vision/debug/debug_framework.h"
 #include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/image_stream.h"
 

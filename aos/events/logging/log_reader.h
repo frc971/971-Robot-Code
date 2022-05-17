@@ -349,9 +349,8 @@ class LogReader {
 
     // Sets the node event loop factory for replaying into a
     // SimulatedEventLoopFactory.  Returns the EventLoop to use.
-    void SetNodeEventLoopFactory(
-        NodeEventLoopFactory *node_event_loop_factory,
-        SimulatedEventLoopFactory *event_loop_factory);
+    void SetNodeEventLoopFactory(NodeEventLoopFactory *node_event_loop_factory,
+                                 SimulatedEventLoopFactory *event_loop_factory);
 
     // Sets and gets the event loop to use.
     void set_event_loop(EventLoop *event_loop) { event_loop_ = event_loop; }

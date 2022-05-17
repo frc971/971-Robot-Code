@@ -21,8 +21,8 @@ std::ostream &operator<<(std::ostream &os, const timing::Statistic &stats) {
   // width in the output stream).
   const auto num_width = std::setw(0);
   os << std::setfill(' ') << num_width << stats.average() << " [" << num_width
-     << stats.min() << ", " << num_width << stats.max() << "] std "
-     << num_width << stats.standard_deviation();
+     << stats.min() << ", " << num_width << stats.max() << "] std " << num_width
+     << stats.standard_deviation();
   return os;
 }
 
@@ -296,7 +296,7 @@ void CombineTimers(
     }
   }
 }
-}
+}  // namespace
 
 void TimingReportDump::AccumulateReport(const timing::Report &raw_report) {
   CHECK(raw_report.has_pid());
@@ -370,7 +370,8 @@ void TimingReportDump::AccumulateReport(const timing::Report &raw_report) {
 
 const Channel *TimingReportDump::GetChannel(int index) {
   CHECK_LT(0, index);
-  CHECK_GT(event_loop_->configuration()->channels()->size(), static_cast<size_t>(index));
+  CHECK_GT(event_loop_->configuration()->channels()->size(),
+           static_cast<size_t>(index));
   return event_loop_->configuration()->channels()->Get(index);
 }
 

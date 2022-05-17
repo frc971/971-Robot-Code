@@ -2,11 +2,10 @@
 
 #include <array>
 
-#include "gflags/gflags.h"
-#include "glog/logging.h"
-
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/init.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
 
 DECLARE_int32(flush_size);
 DEFINE_string(tmpfs, "", "tmpfs with the desired size");

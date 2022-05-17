@@ -287,7 +287,6 @@ void aos_free_hook(void *ptr) {
 
 void *malloc(size_t size) __attribute__((weak, alias("aos_malloc_hook")));
 void free(void *ptr) __attribute__((weak, alias("aos_free_hook")));
-
 }
 
 void RegisterMallocHook() {

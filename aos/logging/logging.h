@@ -174,7 +174,8 @@ namespace aos {
 // base/logging.h provides its own #defines for the simpler names EQ, NE, etc.
 // This happens if, for example, those are used as token names in a
 // yacc grammar.
-AOS_DEFINE_CHECK_OP_IMPL(Check_EQ, ==)  // Compilation error with CHECK_EQ(NULL, x)?
+AOS_DEFINE_CHECK_OP_IMPL(Check_EQ,
+                         ==)  // Compilation error with CHECK_EQ(NULL, x)?
 AOS_DEFINE_CHECK_OP_IMPL(Check_NE, !=)  // Use CHECK(x == NULL) instead.
 AOS_DEFINE_CHECK_OP_IMPL(Check_LE, <=)
 AOS_DEFINE_CHECK_OP_IMPL(Check_LT, <)

@@ -1,11 +1,11 @@
 #ifndef _AOS_VISION_BLOB_STREAM_VIEW_H_
 #define _AOS_VISION_BLOB_STREAM_VIEW_H_
 
+#include <memory>
+
 #include "aos/vision/blob/range_image.h"
 #include "aos/vision/debug/debug_window.h"
 #include "aos/vision/image/image_types.h"
-
-#include <memory>
 
 namespace aos {
 namespace vision {

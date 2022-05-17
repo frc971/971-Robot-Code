@@ -129,9 +129,7 @@ TEST_F(EPollTest, BasicError) {
   // epoll_ctl manpage, this should trigger an error).
   Pipe pipe;
   int number_errors = 0;
-  epoll_.OnError(pipe.write_fd(), [&]() {
-    ++number_errors;
-  });
+  epoll_.OnError(pipe.write_fd(), [&]() { ++number_errors; });
 
   // Sanity check that we *don't* get any errors before anything interesting has
   // happened.

@@ -692,14 +692,11 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
     ASSERT_EQ(filter.timestamps_size(), 2u);
     filter.FreezeUntil(tb, {0, monotonic_clock::min_time});
 
-    EXPECT_DEATH(
-        {
-          filter.Sample(tb, oa);
-        },
-        "monotonic_now > frozen_time_ \\(0.100000000sec vs. "
-        "0.100000000sec\\) : test_a -> test_b Tried to insert "
-        "0.100000000sec before the frozen time of 0.100000000sec.  "
-        "Increase --time_estimation_buffer_seconds to greater than 0");
+    EXPECT_DEATH({ filter.Sample(tb, oa); },
+                 "monotonic_now > frozen_time_ \\(0.100000000sec vs. "
+                 "0.100000000sec\\) : test_a -> test_b Tried to insert "
+                 "0.100000000sec before the frozen time of 0.100000000sec.  "
+                 "Increase --time_estimation_buffer_seconds to greater than 0");
   }
 
   {
@@ -712,9 +709,7 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
     filter.FreezeUntil(tc, {0, monotonic_clock::min_time});
 
     EXPECT_DEATH(
-        {
-          filter.Sample(tc, oc);
-        },
+        { filter.Sample(tc, oc); },
         "test_a -> test_b Returned a horizontal line previously and then got a "
         "new sample at "
         "0.200000000sec, 0.2 seconds after the last sample at 0.000000000sec");
@@ -730,9 +725,7 @@ TEST_F(NoncausalTimestampFilterDeathTest, FrozenTimestamps) {
     filter.FreezeUntil(tc, {0, monotonic_clock::min_time});
 
     EXPECT_DEATH(
-        {
-          filter.Sample(tb, ob);
-        },
+        { filter.Sample(tb, ob); },
         "monotonic_now > frozen_time_ \\(0.100000000sec vs. "
         "0.200000000sec\\) : test_a -> test_b Tried to insert "
         "0.100000000sec before the frozen time of 0.200000000sec.  "
@@ -1041,9 +1034,10 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
 
   EXPECT_EQ(filter.Offset(t1, 0.0, 0), std::make_pair(o1, 0.0));
 
-  EXPECT_EQ(filter.Offset(
-                e + (t2.time_since_epoch() + t1.time_since_epoch()) / 2, 0.0, 0),
-            std::make_pair(o1, (o2d - o1d) / 2.));
+  EXPECT_EQ(
+      filter.Offset(e + (t2.time_since_epoch() + t1.time_since_epoch()) / 2,
+                    0.0, 0),
+      std::make_pair(o1, (o2d - o1d) / 2.));
 
   EXPECT_EQ(filter.Offset(t2, 0.0, 0), std::make_pair(o2, 0.0));
 

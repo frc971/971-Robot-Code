@@ -153,7 +153,7 @@ void Top::UpdateReadings() {
   std::set<pid_t> pids = pids_to_track_;
   // Ensure that we check on the status of every process that we are already
   // tracking.
-  for (const auto & reading : readings_) {
+  for (const auto &reading : readings_) {
     pids.insert(reading.first);
   }
   if (track_all_) {

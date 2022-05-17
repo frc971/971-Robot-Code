@@ -1,8 +1,7 @@
-#include "gflags/gflags.h"
-
 #include <sys/eventfd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
 #include <chrono>
 #include <random>
 #include <thread>
@@ -14,6 +13,7 @@
 #include "aos/logging/logging.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"
+#include "gflags/gflags.h"
 
 // This is a demo program which uses named pipes to communicate.
 // It measures both latency of a random timer thread, and latency of the

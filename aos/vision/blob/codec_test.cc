@@ -1,6 +1,7 @@
 #include "aos/vision/blob/codec.h"
 
 #include <algorithm>
+
 #include "gtest/gtest.h"
 
 namespace aos {

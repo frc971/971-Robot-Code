@@ -1,8 +1,9 @@
 #include "aos/vision/blob/transpose.h"
-#include "aos/vision/blob/test_utils.h"
 
 #include <algorithm>
 #include <string>
+
+#include "aos/vision/blob/test_utils.h"
 #include "gtest/gtest.h"
 
 namespace aos {

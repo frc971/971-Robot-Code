@@ -437,7 +437,6 @@ TEST_F(StarterdTest, DeathNoRestartTest) {
     }
   });
 
-
   SetupStarterCleanup(&starter);
 
   std::thread starterd_thread([&starter] { starter.Run(); });

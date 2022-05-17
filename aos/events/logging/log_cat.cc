@@ -315,30 +315,29 @@ class NodePrinter {
         VLOG(1) << "Listening on " << name << " " << type;
 
         CHECK_NOTNULL(channel->schema());
-        event_loop_->MakeRawWatcher(
-            channel,
-            [this, channel, start_time, end_time](const aos::Context &context,
-                                                  const void * /*message*/) {
-              if (!FLAGS_print) {
-                return;
-              }
+        event_loop_->MakeRawWatcher(channel, [this, channel, start_time,
+                                              end_time](
+                                                 const aos::Context &context,
+                                                 const void * /*message*/) {
+          if (!FLAGS_print) {
+            return;
+          }
 
-              if (!FLAGS_fetch && !started_) {
-                return;
-              }
+          if (!FLAGS_fetch && !started_) {
+            return;
+          }
 
-              if (context.monotonic_event_time < start_time ||
-                  context.monotonic_event_time > end_time) {
-                return;
-              }
+          if (context.monotonic_event_time < start_time ||
+              context.monotonic_event_time > end_time) {
+            return;
+          }
 
-              PrintMessage(node_name_, node_factory_, channel, context,
-                           builder_);
-              ++(*message_print_counter_);
-              if (FLAGS_count > 0 && *message_print_counter_ >= FLAGS_count) {
-                factory_->Exit();
-              }
-            });
+          PrintMessage(node_name_, node_factory_, channel, context, builder_);
+          ++(*message_print_counter_);
+          if (FLAGS_count > 0 && *message_print_counter_ >= FLAGS_count) {
+            factory_->Exit();
+          }
+        });
       }
     }
   }

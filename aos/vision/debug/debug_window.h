@@ -2,7 +2,9 @@
 #define AOS_VISION_DEBUG_DEBUG_WINDOW_H_
 
 #include <cairo.h>
+
 #include <functional>
+
 #include "aos/vision/debug/overlay.h"
 #include "aos/vision/image/image_types.h"
 

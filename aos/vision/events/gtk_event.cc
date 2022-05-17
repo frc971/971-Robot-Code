@@ -1,12 +1,13 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 #include <sys/epoll.h>
+
 #include <condition_variable>
 #include <mutex>
 #include <thread>
 
-#include "aos/vision/events/epoll_events.h"
 #include "aos/logging/logging.h"
+#include "aos/vision/events/epoll_events.h"
 
 namespace aos {
 namespace events {

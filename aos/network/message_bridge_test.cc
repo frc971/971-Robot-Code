@@ -457,8 +457,7 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
       examples::Ping::Builder ping_builder =
           builder.MakeBuilder<examples::Ping>();
       ping_builder.add_value(ping_count + 971);
-      EXPECT_EQ(builder.Send(ping_builder.Finish()),
-                RawSender::Error::kOk);
+      EXPECT_EQ(builder.Send(ping_builder.Finish()), RawSender::Error::kOk);
       ++ping_count;
     }
   });
@@ -1322,7 +1321,6 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
                   ->Get(0)
                   ->duplicate_packets(),
               1u);
-
 
     EXPECT_EQ(pi2_client_statistics_fetcher->connections()
                   ->Get(0)

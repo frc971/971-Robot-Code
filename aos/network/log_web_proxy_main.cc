@@ -1,7 +1,8 @@
 // Sample binary for running the web server code against a logfile.
 // This can be run by running
-// bazel run -c opt //aos/network:log_web_proxy_main -- --node node_to_replay /path/to/logfile
-// And then opening the plotting webpage at http://localhost:8080/graph.html
+// bazel run -c opt //aos/network:log_web_proxy_main -- --node node_to_replay
+// /path/to/logfile And then opening the plotting webpage at
+// http://localhost:8080/graph.html
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"

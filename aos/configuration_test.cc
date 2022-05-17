@@ -891,8 +891,8 @@ TEST_F(ConfigurationTest, SourceNodeIndex) {
 TEST_F(ConfigurationDeathTest, InvalidLoggerConfig) {
   EXPECT_DEATH(
       {
-        FlatbufferDetachedBuffer<Configuration> config =
-            ReadConfig(ArtifactPath("aos/testdata/invalid_logging_configuration.json"));
+        FlatbufferDetachedBuffer<Configuration> config = ReadConfig(
+            ArtifactPath("aos/testdata/invalid_logging_configuration.json"));
       },
       "Logging timestamps without data");
 }

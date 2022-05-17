@@ -17,6 +17,7 @@ class ExampleCompare {
 class PriorityQueueTest : public ::testing::Test {
  public:
   PriorityQueueTest() {}
+
  protected:
   PriorityQueue<int, 10, ExampleCompare> queue_;
 };

@@ -1,8 +1,7 @@
 #include "aos/util/phased_loop.h"
 
-#include "gtest/gtest.h"
-
 #include "aos/time/time.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace time {

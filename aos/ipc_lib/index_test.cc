@@ -1,7 +1,7 @@
 #include "aos/ipc_lib/index.h"
 
-#include "gtest/gtest.h"
 #include "glog/logging.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace ipc_lib {

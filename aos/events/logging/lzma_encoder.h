@@ -1,9 +1,9 @@
 #ifndef AOS_EVENTS_LOGGING_LZMA_ENCODER_H_
 #define AOS_EVENTS_LOGGING_LZMA_ENCODER_H_
 
-#include <string_view>
 #include <condition_variable>
 #include <mutex>
+#include <string_view>
 #include <thread>
 
 #include "absl/types/span.h"

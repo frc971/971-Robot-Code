@@ -28,9 +28,9 @@
 //   }  // namespace testing
 //   }  // namespace bla
 #define FORWARD_DECLARE_TEST_CASE(test_case_name, test_name) \
-    class test_case_name##_##test_name##_Test;
+  class test_case_name##_##test_name##_Test;
 #define FRIEND_TEST_NAMESPACE(test_case_name, test_name, namespace_name) \
-    friend class namespace_name::test_case_name##_##test_name##_Test
+  friend class namespace_name::test_case_name##_##test_name##_Test
 
 // Copied from googletest's gtest_prod.h. See that file for documentation.
 #define FRIEND_TEST(test_case_name, test_name) \

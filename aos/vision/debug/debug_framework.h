@@ -44,9 +44,8 @@ class FilterHarness {
   void InstallSetExposure(std::function<void(int)> set_exp) {
     set_exposure_ = set_exp;
   }
-  void SetExposure(int abs_exp) {
-    set_exposure_(abs_exp);
-  }
+  void SetExposure(int abs_exp) { set_exposure_(abs_exp); }
+
  private:
   std::function<void(int)> set_exposure_;
 };

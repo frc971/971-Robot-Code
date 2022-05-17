@@ -87,6 +87,6 @@ class Options {
   friend class Option;
 };
 
-}  // namespace options
+}  // namespace aos
 
 #endif  // AOS_UTIL_OPTIONS_H_

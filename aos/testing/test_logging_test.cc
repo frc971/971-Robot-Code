@@ -2,9 +2,8 @@
 
 #include <thread>
 
-#include "gtest/gtest.h"
-
 #include "aos/logging/logging.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

@@ -347,8 +347,9 @@ inline distributed_clock::time_point EventScheduler::distributed_now() const {
 inline monotonic_clock::time_point EventScheduler::monotonic_now() const {
   const logger::BootTimestamp t =
       FromDistributedClock(scheduler_scheduler_->distributed_now());
-  CHECK_EQ(t.boot, boot_count_) << ": " << " " << t << " d "
-                                << scheduler_scheduler_->distributed_now();
+  CHECK_EQ(t.boot, boot_count_)
+      << ": "
+      << " " << t << " d " << scheduler_scheduler_->distributed_now();
   return t.time;
 }
 

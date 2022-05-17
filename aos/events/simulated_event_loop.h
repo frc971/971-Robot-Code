@@ -212,13 +212,13 @@ class NodeEventLoopFactory {
   // args for the Main class.  Returns a pointer to the class that was started
   // if it was started, or nullptr.
   template <class Main, class... Args>
-  Main *MaybeStart(std::string_view name, Args &&... args);
+  Main *MaybeStart(std::string_view name, Args &&...args);
 
   // Starts an application regardless of if the config says to or not.  name is
   // the name of the application, and args are the constructor args for the
   // application.  Returns a pointer to the class that was started.
   template <class Main, class... Args>
-  Main *AlwaysStart(std::string_view name, Args &&... args);
+  Main *AlwaysStart(std::string_view name, Args &&...args);
 
   // Returns the simulated network delay for messages forwarded between nodes.
   std::chrono::nanoseconds network_delay() const {
@@ -326,7 +326,7 @@ class NodeEventLoopFactory {
     // application.
     template <class... Args>
     TypedApplication(NodeEventLoopFactory *node_factory, std::string_view name,
-                     Args &&... args)
+                     Args &&...args)
         : Application(node_factory, name),
           main(event_loop.get(), std::forward<Args>(args)...) {
       VLOG(1) << node_factory->scheduler_.distributed_now() << " "
@@ -345,7 +345,7 @@ class NodeEventLoopFactory {
 };
 
 template <class Main, class... Args>
-Main *NodeEventLoopFactory::MaybeStart(std::string_view name, Args &&... args) {
+Main *NodeEventLoopFactory::MaybeStart(std::string_view name, Args &&...args) {
   const aos::Application *application =
       configuration::GetApplication(configuration(), node(), name);
 
@@ -356,8 +356,7 @@ Main *NodeEventLoopFactory::MaybeStart(std::string_view name, Args &&... args) {
 }
 
 template <class Main, class... Args>
-Main *NodeEventLoopFactory::AlwaysStart(std::string_view name,
-                                        Args &&... args) {
+Main *NodeEventLoopFactory::AlwaysStart(std::string_view name, Args &&...args) {
   std::unique_ptr<TypedApplication<Main>> app =
       std::make_unique<TypedApplication<Main>>(this, name,
                                                std::forward<Args>(args)...);

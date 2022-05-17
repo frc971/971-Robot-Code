@@ -246,7 +246,8 @@ TEST(SimulatedEventLoopTest, SendAfterRunFor) {
   EXPECT_EQ(test_message_counter2.count(), 0u);
 }
 
-// Test that if we configure an event loop to be able to send too fast that we do allow it to do so.
+// Test that if we configure an event loop to be able to send too fast that we
+// do allow it to do so.
 TEST(SimulatedEventLoopTest, AllowSendTooFast) {
   SimulatedEventLoopTestFactory factory;
 
@@ -277,7 +278,8 @@ TEST(SimulatedEventLoopTest, AllowSendTooFast) {
   // And now we should start being in the sending-too-fast phase.
   for (int ii = 0; ii < queue_size; ++ii) {
     ASSERT_EQ(SendTestMessage(too_fast_message_sender), RawSender::Error::kOk);
-    ASSERT_EQ(SendTestMessage(limited_message_sender), RawSender::Error::kMessagesSentTooFast);
+    ASSERT_EQ(SendTestMessage(limited_message_sender),
+              RawSender::Error::kMessagesSentTooFast);
   }
 }
 
@@ -309,7 +311,8 @@ TEST(SimulatedEventLoopDeathTest, ExclusiveSenders) {
   // This one should succeed now that the exclusive channel is removed.
   aos::Sender<TestMessage> normal_sender =
       normal_event_loop->MakeSender<TestMessage>("/test");
-  EXPECT_DEATH(exclusive_event_loop->MakeSender<TestMessage>("/test"), "TestMessage");
+  EXPECT_DEATH(exclusive_event_loop->MakeSender<TestMessage>("/test"),
+               "TestMessage");
 }
 
 void TestSentTooFastCheckEdgeCase(

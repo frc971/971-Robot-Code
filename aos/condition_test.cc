@@ -1,25 +1,24 @@
 #include "aos/condition.h"
 
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include <atomic>
 #include <chrono>
 #include <thread>
 
-#include "gtest/gtest.h"
-
-#include "aos/time/time.h"
-#include "aos/mutex/mutex.h"
-#include "aos/testing/test_shm.h"
-#include "aos/type_traits/type_traits.h"
+#include "aos/die.h"
+#include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/core_lib.h"
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
-#include "aos/ipc_lib/aos_sync.h"
-#include "aos/die.h"
+#include "aos/mutex/mutex.h"
 #include "aos/testing/prevent_exit.h"
+#include "aos/testing/test_shm.h"
+#include "aos/time/time.h"
+#include "aos/type_traits/type_traits.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {
@@ -102,18 +101,14 @@ class ConditionTest : public ConditionTestCommon {
   ConditionTest() : shared_(static_cast<Shared *>(shm_malloc(sizeof(Shared)))) {
     new (shared_) Shared();
   }
-  ~ConditionTest() {
-    shared_->~Shared();
-  }
+  ~ConditionTest() { shared_->~Shared(); }
 
   ::aos::testing::TestSharedMemory my_shm_;
 
   Shared *const shared_;
 
  protected:
-  void SetUp() override {
-    SetDieTestMode(true);
-  }
+  void SetUp() override { SetDieTestMode(true); }
 
  private:
   DISALLOW_COPY_AND_ASSIGN(ConditionTest);
@@ -123,8 +118,8 @@ class ConditionTestProcess {
  public:
   enum class Action {
     kWaitLockStart,  // lock, delay, wait, unlock
-    kWait,  // delay, lock, wait, unlock
-    kWaitNoUnlock,  // delay, lock, wait
+    kWait,           // delay, lock, wait, unlock
+    kWaitNoUnlock,   // delay, lock, wait
   };
 
   // This amount gets added to any passed in delay to make the test repeatable.
@@ -146,9 +141,7 @@ class ConditionTestProcess {
         shared_(static_cast<Shared *>(shm_malloc(sizeof(Shared)))) {
     new (shared_) Shared();
   }
-  ~ConditionTestProcess() {
-    AOS_CHECK_EQ(child_, -1);
-  }
+  ~ConditionTestProcess() { AOS_CHECK_EQ(child_, -1); }
 
   void Start() {
     ASSERT_FALSE(shared_->started);
@@ -167,9 +160,7 @@ class ConditionTestProcess {
     }
   }
 
-  bool IsFinished() {
-    return shared_->finished;
-  }
+  bool IsFinished() { return shared_->finished; }
 
   ::testing::AssertionResult Hung() {
     if (!shared_->started) {
@@ -346,8 +337,10 @@ TEST_F(ConditionTest, SignalOne) {
   ConditionTestProcess child3(chrono::milliseconds(0),
                               ConditionTestProcess::Action::kWait,
                               &shared_->condition);
-  auto number_finished = [&]() { return (child1.IsFinished() ? 1 : 0) +
-    (child2.IsFinished() ? 1 : 0) + (child3.IsFinished() ? 1 : 0); };
+  auto number_finished = [&]() {
+    return (child1.IsFinished() ? 1 : 0) + (child2.IsFinished() ? 1 : 0) +
+           (child3.IsFinished() ? 1 : 0);
+  };
   child1.Start();
   child2.Start();
   child3.Start();

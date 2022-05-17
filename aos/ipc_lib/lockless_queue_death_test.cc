@@ -618,8 +618,7 @@ TEST(LocklessQueueTest, Death) {
       },
       [config, tid](void *raw_memory) {
         ::aos::ipc_lib::LocklessQueueMemory *const memory =
-            reinterpret_cast< ::aos::ipc_lib::LocklessQueueMemory *>(
-                raw_memory);
+            reinterpret_cast<::aos::ipc_lib::LocklessQueueMemory *>(raw_memory);
         // Confirm that we can create 2 senders (the number in the queue), and
         // send a message.  And that all the messages in the queue are valid.
         LocklessQueue queue(memory, memory, config);

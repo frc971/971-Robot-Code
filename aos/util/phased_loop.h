@@ -41,8 +41,8 @@ class PhasedLoop {
   // Returns the number of iterations which have passed (1 if this is called
   // often enough). This can be < 1 iff monotonic_now goes backwards between
   // calls.
-  int Iterate(const monotonic_clock::time_point monotonic_now =
-                  monotonic_clock::now());
+  int Iterate(
+      const monotonic_clock::time_point monotonic_now = monotonic_clock::now());
 
   // Sleeps until the next time and returns the number of iterations which have
   // passed.

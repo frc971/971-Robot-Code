@@ -3,11 +3,10 @@
 #include <string_view>
 
 #include "absl/strings/escaping.h"
-#include "gtest/gtest.h"
-
 #include "aos/json_to_flatbuffer.h"
 #include "aos/json_to_flatbuffer_generated.h"
 #include "flatbuffers/minireflect.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

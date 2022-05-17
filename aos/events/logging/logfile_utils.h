@@ -208,8 +208,9 @@ class SpanReader {
 
   size_t TotalRead() const { return total_read_; }
   size_t TotalConsumed() const { return total_consumed_; }
-  bool IsIncomplete() const { return is_finished_
-      && total_consumed_ < total_read_; }
+  bool IsIncomplete() const {
+    return is_finished_ && total_consumed_ < total_read_;
+  }
 
   // Returns a span with the data for the next message from the log file,
   // including the size.  The result is only guarenteed to be valid until
@@ -630,7 +631,8 @@ class NodeMerger {
 
   realtime_clock::time_point realtime_start_time_ = realtime_clock::max_time;
   monotonic_clock::time_point monotonic_start_time_ = monotonic_clock::max_time;
-  monotonic_clock::time_point monotonic_oldest_time_ = monotonic_clock::max_time;
+  monotonic_clock::time_point monotonic_oldest_time_ =
+      monotonic_clock::max_time;
 };
 
 // Class to concatenate multiple boots worth of logs into a single per-node

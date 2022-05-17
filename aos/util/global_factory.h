@@ -67,7 +67,7 @@ class GlobalFactory {
   class SubClassRegisterer {
    public:
     explicit SubClassRegisterer(const char *name) {
-      (*GetMap())[name] = [](FactoryArgs &&... args) {
+      (*GetMap())[name] = [](FactoryArgs &&...args) {
         return std::unique_ptr<BaseClass>(
             new SubClass(std::forward<FactoryArgs>(args)...));
       };

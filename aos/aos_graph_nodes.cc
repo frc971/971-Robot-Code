@@ -96,8 +96,8 @@ int main(int argc, char **argv) {
 
   // Write out all the nodes at the end, with their respective colors
   for (const auto &node_color : color_map) {
-    graph_out << "\t\"" << node_color.first << "\" [color=\"" << node_color.second
-              << "\"];" << std::endl;
+    graph_out << "\t\"" << node_color.first << "\" [color=\""
+              << node_color.second << "\"];" << std::endl;
   }
 
   // Close out the file

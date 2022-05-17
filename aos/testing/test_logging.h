@@ -15,7 +15,7 @@ void EnableTestLogging();
 
 // Redirect the messages enabled by EnableTestLogging() function to a file.
 // By default the messages are printed to standard output.
-void SetLogFileName(const char* filename);
+void SetLogFileName(const char *filename);
 
 // Force the messages to be printed as they are handled by the logging
 // framework. This can be useful for tests that hang where no messages would

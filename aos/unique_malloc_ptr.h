@@ -9,18 +9,18 @@ namespace internal {
 
 // Written as a functor so that it doesn't have to get passed to
 // std::unique_ptr's constructor as an argument.
-template<typename T, void(*function)(T *)>
+template <typename T, void (*function)(T *)>
 class const_wrap {
  public:
-  void operator()(const T *ptr) {
-    function(const_cast<T *>(ptr));
-  }
+  void operator()(const T *ptr) { function(const_cast<T *>(ptr)); }
 };
 
 // Wrapper function to deal with the differences between C and C++ (C++ doesn't
 // automatically convert T* to void* like C).
-template<typename T>
-void free_type(T *ptr) { ::free(reinterpret_cast<void *>(ptr)); }
+template <typename T>
+void free_type(T *ptr) {
+  ::free(reinterpret_cast<void *>(ptr));
+}
 
 }  // namespace internal
 
@@ -35,11 +35,11 @@ class unique_c_ptr
 
   // perfect forwarding of these 2 to make unique_ptr work
   template <typename... Args>
-  unique_c_ptr(Args &&... args)
+  unique_c_ptr(Args &&...args)
       : std::unique_ptr<T, internal::const_wrap<T, function>>(
             std::forward<Args>(args)...) {}
-  template<typename... Args>
-  unique_c_ptr<T, function> &operator=(Args&&... args) {
+  template <typename... Args>
+  unique_c_ptr<T, function> &operator=(Args &&...args) {
     std::unique_ptr<T, internal::const_wrap<T, function>>::operator=(
         std::forward<Args>(args)...);
     return *this;

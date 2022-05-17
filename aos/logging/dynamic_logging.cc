@@ -1,4 +1,5 @@
 #include "aos/logging/dynamic_logging.h"
+
 #include "glog/logging.h"
 
 namespace aos {

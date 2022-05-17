@@ -1,13 +1,14 @@
 #include "aos/configuration.h"
 #include "aos/events/logging/log_writer.h"
-#include "aos/init.h"
-#include "aos/json_to_flatbuffer.h"
-#include "gflags/gflags.h"
-#include "aos/testing/path.h"
 #include "aos/events/ping_lib.h"
 #include "aos/events/pong_lib.h"
+#include "aos/init.h"
+#include "aos/json_to_flatbuffer.h"
+#include "aos/testing/path.h"
+#include "gflags/gflags.h"
 
-DEFINE_string(output_folder, "", "Name of folder to write the generated logfile to.");
+DEFINE_string(output_folder, "",
+              "Name of folder to write the generated logfile to.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

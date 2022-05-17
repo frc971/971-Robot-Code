@@ -1,8 +1,9 @@
+#include "aos/logging/dynamic_logging.h"
+
 #include <sys/stat.h>
 
 #include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"
-#include "aos/logging/dynamic_logging.h"
 #include "aos/testing/path.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"

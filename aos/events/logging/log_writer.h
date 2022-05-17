@@ -135,8 +135,9 @@ class Logger {
 
   // Restart logging using a new naming scheme. Intended for log rotation.
   // Returns a unique_ptr to the prior log_namer instance.
-  std::unique_ptr<LogNamer> RestartLogging(std::unique_ptr<LogNamer> log_namer,
-                    std::optional<UUID> log_start_uuid = std::nullopt);
+  std::unique_ptr<LogNamer> RestartLogging(
+      std::unique_ptr<LogNamer> log_namer,
+      std::optional<UUID> log_start_uuid = std::nullopt);
 
   // Moves the current log location to the new name. Returns true if a change
   // was made, false otherwise.
@@ -227,7 +228,7 @@ class Logger {
   std::vector<int> event_loop_to_logged_channel_index_;
 
   // Start/Restart write configuration into LogNamer space.
-  std::string WriteConfiguration(LogNamer* log_namer);
+  std::string WriteConfiguration(LogNamer *log_namer);
 
   void WriteHeader(aos::monotonic_clock::time_point monotonic_start_time =
                        aos::monotonic_clock::min_time,
@@ -249,7 +250,8 @@ class Logger {
   void WriteMissingTimestamps();
 
   void WriteData(NewDataWriter *writer, const FetcherStruct &f);
-  void WriteTimestamps(NewDataWriter *timestamps_writer, const FetcherStruct &f);
+  void WriteTimestamps(NewDataWriter *timestamps_writer,
+                       const FetcherStruct &f);
   void WriteContent(NewDataWriter *contents_writer, const FetcherStruct &f);
 
   void WriteFetchedRecord(FetcherStruct &f);

@@ -96,6 +96,7 @@ class PriorityQueue {
   size_t next_idx(size_t idx) const { return list_[idx].upper_idx; }
   // Gets the index of the previous (lower valued) element in the queue.
   size_t prev_idx(size_t idx) const { return list_[idx].lower_idx; }
+
  private:
   struct Datum {
     // A list element with data and the indices of the next highest/lowest

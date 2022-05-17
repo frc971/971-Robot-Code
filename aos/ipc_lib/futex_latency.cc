@@ -1,8 +1,7 @@
-#include "gflags/gflags.h"
-
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
 #include <chrono>
 #include <random>
 #include <thread>
@@ -15,6 +14,7 @@
 #include "aos/mutex/mutex.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"
+#include "gflags/gflags.h"
 
 DEFINE_int32(seconds, 10, "Duration of the test to run");
 DEFINE_int32(

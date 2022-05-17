@@ -38,8 +38,12 @@ class RangeImage {
   RangeImage() {}
 
   bool operator==(const RangeImage &other) const {
-    if (min_y_ != other.min_y_) { return false; }
-    if (ranges_ != other.ranges_) { return false; }
+    if (min_y_ != other.min_y_) {
+      return false;
+    }
+    if (ranges_ != other.ranges_) {
+      return false;
+    }
     return true;
   }
   bool operator!=(const RangeImage &other) const { return !(*this == other); }

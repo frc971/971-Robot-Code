@@ -1,5 +1,6 @@
-#include <iostream>
 #include <getopt.h>
+
+#include <iostream>
 
 #include "aos/init.h"
 #include "gflags/gflags.h"
@@ -17,7 +18,7 @@ void SetShmBase(const std::string_view base) __attribute__((weak));
 namespace testing {
 
 // Actually declared/defined in //aos/testing:test_logging.
-void SetLogFileName(const char* filename) __attribute__((weak));
+void SetLogFileName(const char *filename) __attribute__((weak));
 void ForcePrintLogsDuringTests() __attribute__((weak));
 
 }  // namespace testing

@@ -1,8 +1,7 @@
 #include "aos/stl_mutex/stl_mutex.h"
 
-#include "gtest/gtest.h"
-
 #include "aos/die.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

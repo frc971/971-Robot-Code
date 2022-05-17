@@ -220,9 +220,7 @@ class LogNamer {
         UUID::FromString(header_.message().logger_node_boot_uuid());
   }
 
-  void ClearStartTimes() {
-    node_states_.clear();
-  }
+  void ClearStartTimes() { node_states_.clear(); }
 
   void SetStartTimes(size_t node_index, const UUID &boot_uuid,
                      monotonic_clock::time_point monotonic_start_time,

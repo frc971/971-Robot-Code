@@ -1,17 +1,16 @@
-#include "aos/vision/debug/debug_framework.h"
-
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 #include <fstream>
 #include <functional>
 #include <string>
 
 #include "aos/vision/blob/codec.h"
 #include "aos/vision/blob/stream_view.h"
+#include "aos/vision/debug/debug_framework.h"
 #include "aos/vision/debug/overlay.h"
-
 #include "glog/logging.h"
 
 namespace aos {

@@ -228,8 +228,8 @@ class RawMessageDelayer {
 
       // TODO(austin): Not cool.  We want to actually forward these.  This means
       // we need a more sophisticated concept of what is running.
-      // TODO(james): This fails if multiple messages are sent on the same channel
-      // within the same callback.
+      // TODO(james): This fails if multiple messages are sent on the same
+      // channel within the same callback.
       LOG(WARNING) << "Not forwarding message on "
                    << configuration::CleanedChannelToString(fetcher_->channel())
                    << " because we aren't running.  Set at "

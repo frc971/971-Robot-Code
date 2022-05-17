@@ -1,9 +1,9 @@
-#include "aos/ipc_lib/lockless_queue.h"
-
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include "aos/ipc_lib/lockless_queue.h"
 
 int main(int argc, char **argv) {
   CHECK_EQ(argc, 2);

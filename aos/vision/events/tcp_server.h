@@ -1,11 +1,11 @@
 #ifndef _AOS_VISION_EVENTS_TCP_SERVER_H_
 #define _AOS_VISION_EVENTS_TCP_SERVER_H_
 
-#include "aos/vision/events/epoll_events.h"
-#include "aos/vision/events/intrusive_free_list.h"
-
 #include <memory>
 #include <vector>
+
+#include "aos/vision/events/epoll_events.h"
+#include "aos/vision/events/intrusive_free_list.h"
 
 namespace aos {
 namespace events {

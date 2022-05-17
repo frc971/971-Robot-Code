@@ -1,9 +1,8 @@
-#include "aos/events/timing_report_dump_lib.h"
-
 #include "aos/configuration.h"
+#include "aos/events/logging/log_reader.h"
+#include "aos/events/timing_report_dump_lib.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
-#include "aos/events/logging/log_reader.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 

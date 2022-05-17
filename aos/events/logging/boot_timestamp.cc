@@ -19,8 +19,8 @@ std::ostream &operator<<(std::ostream &os,
 
 std::ostream &operator<<(std::ostream &os,
                          const struct BootQueueIndex &queue_index) {
-  return os << "{.boot=" << queue_index.boot
-            << ", .index=" << queue_index.index << "}";
+  return os << "{.boot=" << queue_index.boot << ", .index=" << queue_index.index
+            << "}";
 }
 
 }  // namespace aos::logger

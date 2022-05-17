@@ -1,15 +1,15 @@
-#include "aos/vision/debug/debug_framework.h"
-
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 #include <cstdlib>
 #include <fstream>
 #include <functional>
 #include <string>
 
 #include "aos/vision/blob/codec.h"
+#include "aos/vision/debug/debug_framework.h"
 #include "aos/vision/events/tcp_client.h"
 
 namespace aos {

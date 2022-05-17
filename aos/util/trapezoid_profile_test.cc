@@ -1,8 +1,7 @@
-#include "gtest/gtest.h"
+#include "aos/util/trapezoid_profile.h"
 
 #include "Eigen/Dense"
-
-#include "aos/util/trapezoid_profile.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace util {
@@ -20,10 +19,8 @@ class TrapezoidProfileTest : public ::testing::Test {
   }
 
   // Runs an iteration.
-  void RunIteration(double goal_position,
-                    double goal_velocity) {
-    position_ = profile_.Update(goal_position,
-                                goal_velocity);
+  void RunIteration(double goal_position, double goal_velocity) {
+    position_ = profile_.Update(goal_position, goal_velocity);
   }
 
   const Eigen::Matrix<double, 2, 1> &position() { return position_; }
@@ -33,15 +30,15 @@ class TrapezoidProfileTest : public ::testing::Test {
   ::testing::AssertionResult At(double position, double velocity) {
     static const double kDoubleNear = 0.00001;
     if (::std::abs(velocity - position_(1)) > kDoubleNear) {
-      return ::testing::AssertionFailure() << "velocity is " << position_(1) <<
-          " not " << velocity;
+      return ::testing::AssertionFailure()
+             << "velocity is " << position_(1) << " not " << velocity;
     }
     if (::std::abs(position - position_(0)) > kDoubleNear) {
-      return ::testing::AssertionFailure() << "position is " << position_(0) <<
-          " not " << position;
+      return ::testing::AssertionFailure()
+             << "position is " << position_(0) << " not " << position;
     }
-    return ::testing::AssertionSuccess() << "at " << position <<
-        " moving at " << velocity;
+    return ::testing::AssertionSuccess()
+           << "at " << position << " moving at " << velocity;
   }
 
  private:

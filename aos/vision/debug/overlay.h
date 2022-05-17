@@ -239,7 +239,7 @@ class CircleOverlay : public OverlayBase {
   std::vector<std::pair<Vector<2>, double>> circles_;
 };
 
-}  // vision
-}  // aos
+}  // namespace vision
+}  // namespace aos
 
 #endif  // _AOS_VISION_IMAGE_DEBUG_OVERLAY_H_

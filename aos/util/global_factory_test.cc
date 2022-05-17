@@ -1,4 +1,5 @@
 #include "aos/util/global_factory.h"
+
 #include "gtest/gtest.h"
 
 namespace aos {

@@ -1,7 +1,7 @@
 #ifndef AOS_EVENTS_TIMING_REPORT_DUMP_LIB_H_
 #define AOS_EVENTS_TIMING_REPORT_DUMP_LIB_H_
-#include <string>
 #include <map>
+#include <string>
 
 #include "aos/configuration.h"
 #include "aos/events/event_loop.h"
@@ -9,7 +9,6 @@
 #include "aos/json_to_flatbuffer.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
-
 
 namespace aos {
 // A class to handle printing timing report statistics in a useful format on the
@@ -32,9 +31,7 @@ class TimingReportDump {
 
   // Filter to use for application name. Currently requires that the provided
   // name exactly match the name of the application in question.
-  void ApplicationFilter(std::string_view name) {
-    name_filter_ = name;
-  }
+  void ApplicationFilter(std::string_view name) { name_filter_ = name; }
 
  private:
   void HandleTimingReport(const timing::Report &report);
@@ -62,7 +59,8 @@ class TimingReportDump {
   std::optional<std::string> name_filter_;
   // Key is pair of <process id, application name>, since neither is a unique
   // identifier across time.
-  std::map<std::pair<pid_t, std::string>, timing::ReportT> accumulated_statistics_;
+  std::map<std::pair<pid_t, std::string>, timing::ReportT>
+      accumulated_statistics_;
 };
 }  // namespace aos
 #endif  // AOS_EVENTS_TIMING_REPORT_DUMP_LIB_H_

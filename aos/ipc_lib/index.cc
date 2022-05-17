@@ -1,7 +1,7 @@
 #include "aos/ipc_lib/index.h"
 
-#include <string>
 #include <sstream>
+#include <string>
 
 namespace aos {
 namespace ipc_lib {

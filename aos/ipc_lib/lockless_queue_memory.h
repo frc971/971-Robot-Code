@@ -2,6 +2,7 @@
 #define AOS_IPC_LIB_LOCKLESS_QUEUE_MEMORY_H_
 
 #include <sys/types.h>
+
 #include <cstddef>
 
 #include "aos/ipc_lib/aos_sync.h"

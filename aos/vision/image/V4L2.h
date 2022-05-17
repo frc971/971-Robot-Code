@@ -4,10 +4,9 @@
 // This file handles including everything needed to use V4L2 and has some
 // utility functions.
 
-#include <sys/ioctl.h>
-
 #include <asm/types.h> /* for videodev2.h */
 #include <linux/videodev2.h>
+#include <sys/ioctl.h>
 
 namespace camera {
 

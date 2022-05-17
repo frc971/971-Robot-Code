@@ -208,7 +208,6 @@ void Subscriber::RunIteration() {
     return;
   }
 
-
   while (fetcher_->FetchNext()) {
     // If we aren't building up a buffer, short-circuit the FetchNext().
     if (buffer_size_ == 0) {
@@ -304,7 +303,8 @@ void Subscriber::AddListener(std::shared_ptr<ScopedDataChannel> data_channel,
       });
 }
 
-void Subscriber::RemoveListener(std::shared_ptr<ScopedDataChannel> data_channel) {
+void Subscriber::RemoveListener(
+    std::shared_ptr<ScopedDataChannel> data_channel) {
   channels_.erase(
       std::remove_if(
           channels_.begin(), channels_.end(),
@@ -636,8 +636,7 @@ void ApplicationConnection::HandleSignallingData(
         CHECK(data_channel) << ": Subscriber got destroyed before we started.";
         // Raw pointer inside the subscriber so we don't have a circular
         // reference.  AddListener will close it.
-        subscribers_[channel_index]->AddListener(data_channel,
-                                                 transfer_method);
+        subscribers_[channel_index]->AddListener(data_channel, transfer_method);
       });
 
       Subscriber *subscriber = subscribers_[channel_index].get();

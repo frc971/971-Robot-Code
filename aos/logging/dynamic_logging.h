@@ -1,6 +1,6 @@
 #include <string>
-#include "aos/events/event_loop.h"
 
+#include "aos/events/event_loop.h"
 #include "aos/logging/dynamic_log_command_generated.h"
 #include "glog/logging.h"
 

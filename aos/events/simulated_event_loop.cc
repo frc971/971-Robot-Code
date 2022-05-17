@@ -962,7 +962,8 @@ void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
 }
 
 std::optional<uint32_t> SimulatedChannel::Send(
-    std::shared_ptr<SimulatedMessage> message, CheckSentTooFast check_sent_too_fast) {
+    std::shared_ptr<SimulatedMessage> message,
+    CheckSentTooFast check_sent_too_fast) {
   const auto now = scheduler_->monotonic_now();
   // Remove times that are greater than or equal to a channel_storage_duration_
   // ago
@@ -1051,8 +1052,8 @@ RawSender::Error SimulatedSender::DoSend(
   CHECK_LE(length, message_->context.size);
   message_->context.size = length;
 
-  const std::optional<uint32_t> optional_queue_index =
-      simulated_channel_->Send(message_, simulated_event_loop_->options().check_sent_too_fast);
+  const std::optional<uint32_t> optional_queue_index = simulated_channel_->Send(
+      message_, simulated_event_loop_->options().check_sent_too_fast);
 
   // Check that we are not sending messages too fast
   if (!optional_queue_index) {

@@ -29,14 +29,16 @@ RangeImage FastYuyvYThreshold(ImageFormat fmt, const char *data,
     for (int x = 0; x < fmt.w / kChunkSize; ++x) {
       // The per-channel (YUYV) values in the current chunk.
       uint8_t chunk_channels[2 * kChunkSize];
-      memcpy(&chunk_channels[0], current_row + x * kChunkSize * 2, 2 * kChunkSize);
+      memcpy(&chunk_channels[0], current_row + x * kChunkSize * 2,
+             2 * kChunkSize);
       __builtin_prefetch(current_row + (x + 1) * kChunkSize * 2);
 
       for (int i = 0; i < kChunkSize; ++i) {
         if ((chunk_channels[i * 2] > value) != in_range) {
           const int here = x * kChunkSize + i;
           if (in_range) {
-            current_row_ranges.emplace_back(ImageRange(current_range_start, here));
+            current_row_ranges.emplace_back(
+                ImageRange(current_range_start, here));
           } else {
             current_range_start = here;
           }

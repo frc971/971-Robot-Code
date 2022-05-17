@@ -4,14 +4,13 @@
 #include <memory>
 #include <thread>
 
-#include "gtest/gtest.h"
-
 #include "aos/actions/actions.h"
 #include "aos/actions/actions_generated.h"
 #include "aos/actions/actor.h"
 #include "aos/actions/test_action_generated.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/testing/path.h"
+#include "gtest/gtest.h"
 
 namespace aos {
 namespace common {

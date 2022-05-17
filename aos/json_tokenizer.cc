@@ -378,7 +378,8 @@ Tokenizer::TokenType Tokenizer::Next() {
               ConsumeWhitespace();
               state_ = State::kExpectObjectEnd;
             } else {
-              fprintf(stderr, "Error on line %d, expected } or ,\n", linenumber_);
+              fprintf(stderr, "Error on line %d, expected } or ,\n",
+                      linenumber_);
               return TokenType::kError;
             }
             break;
@@ -387,7 +388,8 @@ Tokenizer::TokenType Tokenizer::Next() {
               ConsumeWhitespace();
               state_ = State::kExpectArrayEnd;
             } else {
-              fprintf(stderr, "Error on line %d, expected ] or ,\n", linenumber_);
+              fprintf(stderr, "Error on line %d, expected ] or ,\n",
+                      linenumber_);
               return TokenType::kError;
             }
             break;

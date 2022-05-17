@@ -46,10 +46,10 @@ void ActionQueue::Tick() {
 
 bool ActionQueue::Running() { return static_cast<bool>(current_action_); }
 
-bool ActionQueue::GetCurrentActionState(bool* has_started, bool* sent_started,
-                                        bool* sent_cancel, bool* interrupted,
-                                        uint32_t* run_value,
-                                        uint32_t* old_run_value) {
+bool ActionQueue::GetCurrentActionState(bool *has_started, bool *sent_started,
+                                        bool *sent_cancel, bool *interrupted,
+                                        uint32_t *run_value,
+                                        uint32_t *old_run_value) {
   if (current_action_) {
     current_action_->GetState(has_started, sent_started, sent_cancel,
                               interrupted, run_value, old_run_value);
@@ -58,10 +58,10 @@ bool ActionQueue::GetCurrentActionState(bool* has_started, bool* sent_started,
   return false;
 }
 
-bool ActionQueue::GetNextActionState(bool* has_started, bool* sent_started,
-                                     bool* sent_cancel, bool* interrupted,
-                                     uint32_t* run_value,
-                                     uint32_t* old_run_value) {
+bool ActionQueue::GetNextActionState(bool *has_started, bool *sent_started,
+                                     bool *sent_cancel, bool *interrupted,
+                                     uint32_t *run_value,
+                                     uint32_t *old_run_value) {
   if (next_action_) {
     next_action_->GetState(has_started, sent_started, sent_cancel, interrupted,
                            run_value, old_run_value);

@@ -159,7 +159,7 @@ TEST(SizedArrayTest, OverflowTest) {
   EXPECT_EQ(a.capacity(), 4u);
   EXPECT_TRUE(a.empty());
 
-  const int* const pre_front = a.data();
+  const int *const pre_front = a.data();
   a.assign({1, 2, 3, 4});
 
   EXPECT_EQ(a.capacity(), 4u);

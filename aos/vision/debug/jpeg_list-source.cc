@@ -1,10 +1,10 @@
-#include "aos/vision/debug/debug_framework.h"
-
-#include "aos/vision/image/image_dataset.h"
-
 #include <gdk/gdk.h>
+
 #include <fstream>
 #include <string>
+
+#include "aos/vision/debug/debug_framework.h"
+#include "aos/vision/image/image_dataset.h"
 
 namespace aos {
 namespace vision {
@@ -37,16 +37,15 @@ class JpegListImageSource : public ImageSource {
       interface_->NewJpeg(frame.data);
     } else {
       const auto &data = frame.data;
-      interface_->NewImage({640, 480},
-                           [&](ImagePtr img_data) {
-                             for (int y = 0; y < 480; ++y) {
-                               for (int x = 0; x < 640; ++x) {
-                                 uint8_t v = data[y * 640 * 2 + x * 2 + 0];
-                                 img_data.get_px(x, y) = PixelRef{v, v, v};
-                               }
-                             }
-                             return false;
-                           });
+      interface_->NewImage({640, 480}, [&](ImagePtr img_data) {
+        for (int y = 0; y < 480; ++y) {
+          for (int x = 0; x < 640; ++x) {
+            uint8_t v = data[y * 640 * 2 + x * 2 + 0];
+            img_data.get_px(x, y) = PixelRef{v, v, v};
+          }
+        }
+        return false;
+      });
     }
   }
 

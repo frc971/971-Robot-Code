@@ -13,7 +13,8 @@ extern "C" {
 
 // TODO(brians) add client requests to make helgrind useful with this code
 // <http://www.valgrind.org/docs/manual/hg-manual.html#hg-manual.client-requests>
-// and <http://www.valgrind.org/docs/manual/drd-manual.html#drd-manual.clientreqs>
+// and
+// <http://www.valgrind.org/docs/manual/drd-manual.html#drd-manual.clientreqs>
 // list the interesting ones
 
 // Have to remember to align structs containing it (recursively) to sizeof(int).
@@ -138,7 +139,7 @@ inline bool death_notification_is_held(aos_mutex *m) {
 int futex_wait(aos_futex *m) __attribute__((warn_unused_result));
 // The same as futex_wait except returns 2 if it times out.
 int futex_wait_timeout(aos_futex *m, const struct timespec *timeout)
-  __attribute__((warn_unused_result));
+    __attribute__((warn_unused_result));
 
 // Set the futex and wake up anybody waiting on it.
 // Returns the number that were woken or -1 with an error in errno.
