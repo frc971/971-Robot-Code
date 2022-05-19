@@ -178,3 +178,16 @@ karma_web_test_suite(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [":ts_test"],
 )
+
+rust_library(
+    name = "rust_in_cc_rs",
+    srcs = ["rust_in_cc.rs"],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+cc_test(
+    name = "rust_in_cc",
+    srcs = ["rust_in_cc.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [":rust_in_cc_rs"],
+)

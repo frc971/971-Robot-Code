@@ -841,6 +841,7 @@ load("@rules_rust//rust:repositories.bzl", "rust_toolchain_repository")
 
 rust_toolchain_repository(
     name = "rust",
+    allocator_library = "@//tools/rust:forward_allocator",
     edition = "2021",
     exec_triple = "x86_64-unknown-linux-gnu",
     extra_target_triples = [

@@ -132,3 +132,9 @@ rust_binary(
     ],
 )
 '''
+
+cc_library(
+    name = "forward_allocator",
+    srcs = ["forward_allocator.c"],
+    visibility = ["//visibility:public"],
+)

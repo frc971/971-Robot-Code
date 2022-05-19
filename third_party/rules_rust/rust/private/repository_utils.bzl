@@ -191,6 +191,7 @@ rust_toolchain(
     clippy_driver = "@{workspace_name}//:clippy_driver_bin",
     rustc_lib = "@{workspace_name}//:rustc_lib",
     rustc_srcs = {rustc_srcs},
+    allocator_library = {allocator_library},
     binary_ext = "{binary_ext}",
     staticlib_ext = "{staticlib_ext}",
     dylib_ext = "{dylib_ext}",
@@ -209,6 +210,7 @@ def BUILD_for_rust_toolchain(
         exec_triple,
         target_triple,
         include_rustc_srcs,
+        allocator_library,
         default_edition,
         include_rustfmt,
         stdlib_linkflags = None):
@@ -220,6 +222,7 @@ def BUILD_for_rust_toolchain(
         exec_triple (str): The rust-style target that this compiler runs on
         target_triple (str): The rust-style target triple of the tool
         include_rustc_srcs (bool, optional): Whether to download rustc's src code. This is required in order to use rust-analyzer support. Defaults to False.
+        allocator_library (str, optional): Target that provides allocator functions when rust_library targets are embedded in a cc_binary.
         default_edition (str): Default Rust edition.
         include_rustfmt (bool): Whether rustfmt is present in the toolchain.
         stdlib_linkflags (list, optional): Overriden flags needed for linking to rust
@@ -240,6 +243,9 @@ def BUILD_for_rust_toolchain(
     rustfmt_label = "None"
     if include_rustfmt:
         rustfmt_label = "\"@{workspace_name}//:rustfmt_bin\"".format(workspace_name = workspace_name)
+    allocator_library_label = "None"
+    if allocator_library:
+        allocator_library_label = "\"{allocator_library}\"".format(allocator_library = allocator_library)
 
     return _build_file_for_rust_toolchain_template.format(
         toolchain_name = name,
@@ -248,6 +254,7 @@ def BUILD_for_rust_toolchain(
         staticlib_ext = system_to_staticlib_ext(system),
         dylib_ext = system_to_dylib_ext(system),
         rustc_srcs = rustc_srcs,
+        allocator_library = allocator_library_label,
         stdlib_linkflags = stdlib_linkflags,
         system = system,
         default_edition = default_edition,
@@ -404,6 +411,7 @@ def load_rust_stdlib(ctx, target_triple):
         ),
         exec_triple = ctx.attr.exec_triple,
         include_rustc_srcs = should_include_rustc_srcs(ctx),
+        allocator_library = ctx.attr.allocator_library,
         target_triple = target_triple,
         stdlib_linkflags = stdlib_linkflags,
         workspace_name = ctx.attr.name,
