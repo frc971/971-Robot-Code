@@ -18,8 +18,14 @@ namespace aos {
 namespace configuration {
 
 // Reads a json configuration.  This includes all imports and merges.  Note:
-// duplicate imports will result in a CHECK.
+// duplicate imports or invalid paths will result in a FATAL.
 FlatbufferDetachedBuffer<Configuration> ReadConfig(
+    const std::string_view path,
+    const std::vector<std::string_view> &extra_import_paths = {});
+
+// Reads a json configuration.  This includes all imports and merges. Returns
+// std::nullopt on duplicate imports or invalid paths.
+std::optional<FlatbufferDetachedBuffer<Configuration>> MaybeReadConfig(
     const std::string_view path,
     const std::vector<std::string_view> &extra_import_paths = {});
 
