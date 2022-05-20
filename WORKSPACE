@@ -1182,3 +1182,31 @@ http_file(
     sha256 = "cf4dfcf71e20a60406aaded03a165312c1ca535b509ead90eb1846fc598137d2",
     urls = ["https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.5/mcap-linux-amd64"],
 )
+
+http_archive(
+    name = "cargo_raze",
+    patches = ["@//third_party/cargo_raze:cargo_raze.patch"],
+    sha256 = "08bfc8859ff686ecb55005a3c4a9cf790115de0abdbcc69cf57b15be0745a859",
+    strip_prefix = "cargo-raze-0.14.2",
+    url = "https://github.com/google/cargo-raze/archive/v0.14.2.tar.gz",
+)
+
+http_archive(
+    name = "rules_foreign_cc",
+    patch_args = ["-p1"],
+    patches = ["@//third_party/rules_foreign_cc:backport_d93bd96dc719760c968b54730258ad0a5b10f8fb.patch"],
+    sha256 = "69023642d5781c68911beda769f91fcbc8ca48711db935a75da7f6536b65047f",
+    strip_prefix = "rules_foreign_cc-0.6.0",
+    url = "https://github.com/bazelbuild/rules_foreign_cc/archive/0.6.0.tar.gz",
+)
+
+load("@cargo_raze//:repositories.bzl", "cargo_raze_repositories")
+
+cargo_raze_repositories()
+
+# cargo_raze_transitive_deps wants to do `rust_repositories`, which we do
+# manually to get the right platforms. rules_foreign_cc is currently the only
+# other thing it has, so just do that manually.
+load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
+
+rules_foreign_cc_dependencies()

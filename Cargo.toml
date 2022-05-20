@@ -1,0 +1,120 @@
+# A fake Cargo.toml for cargo-raze. This will not work well if you try actually
+# running cargo.
+#
+# cargo-raze generates BUILD files etc for all dependencies listed here and in the workspace
+# members. Hand-written BUILD files can then depend on the corresponding targets that they need.
+#
+# To generate BUILD files from this:
+# ```console
+# $ bazel run @cargo_raze//:raze -- --manifest-path=$(realpath Cargo.toml) --generate-lockfile
+# ```
+# To remove unnecessary redundant BUILD files afterwards:
+# ```console
+# $ bazel run //tools/rust:tweak_cargo_raze_output -- $(readlink -f .)
+# ```
+#
+# # Generated targets
+# //third_party/cargo has forwarding targets for the individual crates. Don't
+# reference the repositories by name, because those change when they're
+# upgraded. If you need to access another target, set `extra_aliased_targets`
+# for the crate.
+#
+# See here for what you can set in the package.metadata.raze sections:
+#   https://github.com/google/cargo-raze/blob/main/impl/src/settings.rs
+[package]
+name = "compile_with_bazel"
+version = "0.0.0"
+
+# Mandatory (or Cargo tooling is unhappy)
+[lib]
+path = "fake_lib.rs"
+
+[workspace]
+members = [
+	"third_party/autocxx",
+	"third_party/autocxx/engine",
+	"third_party/autocxx/parser",
+	"third_party/autocxx/gen/cmd",
+	"third_party/autocxx/macro",
+	"third_party/autocxx/integration-tests",
+	"third_party/flatbuffers/rust/flatbuffers",
+]
+
+[dependencies]
+cxx = "1.0"
+cxxbridge-macro = "1.0"
+cxxbridge-cmd = "1.0"
+uuid = "1.0"
+toml = "0.5"
+anyhow = "1.0"
+
+# For bindgen.
+bindgen = "0.58.1"
+libloading = "=0.6.3"
+
+# Bazel toolchains take care of linking the C++ standard library, so don't add
+# an extra flag via Rust by enabling the `nothing` feature. I'm not even sure
+# it would end up on the link command line, but this crate's build.rs attempts
+# to find a C++ compiler itself otherwise which definitely doesn't work.
+link-cplusplus = { version = "1.0", features = ["nothing"] }
+
+[package.metadata.raze.binary_deps]
+# Needed if we want to generate BUILD files for autocxx-gen.
+#autocxx-gen = "0.16.0"
+
+[workspace.metadata.raze]
+# `cargo raze` will generate Bazel-compatible BUILD files into this path.
+workspace_path = "//third_party/cargo"
+
+# Put the aliases in the same package as the BUILD files.
+package_aliases_dir = "third_party/cargo"
+
+# The set of targets to generate BUILD rules for.
+targets = [
+	"x86_64-unknown-linux-gnu",
+	"arm-unknown-linux-gnueabi",
+	"armv7-unknown-linux-gnueabihf",
+	"aarch64-unknown-linux-gnueabi",
+]
+
+# Reference crates by URL, instead of vendoring them all.
+genmode = "Remote"
+
+# TODO(Brian): This isn't great for being hermetic or repeatable, but it is the
+# default. A lot of the problematic crates probably have pre-written versions
+# which avoid build.rs in cargo-raze itself or elsewhere. rules_rust is another
+# place to look.
+# https://github.com/bazelbuild/rules_rust/blob/main/bindgen/raze/Cargo.toml
+default_gen_buildrs = true
+
+[package.metadata.raze.crates.cxx.'*']
+gen_buildrs = false
+additional_build_file = "third_party/cargo/cxx/include.BUILD.bazel"
+extra_aliased_targets = ["cxx_cc"]
+
+[package.metadata.raze.crates.cxxbridge-cmd.'*']
+compile_data_attr = "[\"src/gen/include/cxx.h\"]"
+extra_aliased_targets = ["cargo_bin_cxxbridge"]
+
+[package.metadata.raze.crates.cxx-gen.'*']
+compile_data_attr = "[\"src/gen/include/cxx.h\"]"
+
+[package.metadata.raze.crates.supports-hyperlinks.'*']
+compile_data_attr = "[\"README.md\"]"
+
+[package.metadata.raze.crates.supports-unicode.'*']
+compile_data_attr = "[\"README.md\"]"
+
+[package.metadata.raze.crates.autocxx.'*']
+compile_data_attr = "[\"README.md\"]"
+
+[package.metadata.raze.crates.autocxx-gen.'*']
+extra_aliased_targets = ["cargo_bin_autocxx_gen"]
+
+[package.metadata.raze.crates.bindgen.'*']
+extra_aliased_targets = ["cargo_bin_bindgen"]
+
+[package.metadata.raze.crates.log.'*']
+additional_flags = [
+	"--cfg=atomic_cas",
+]

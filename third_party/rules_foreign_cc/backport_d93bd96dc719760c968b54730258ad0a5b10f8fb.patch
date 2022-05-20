@@ -1,0 +1,82 @@
+From d93bd96dc719760c968b54730258ad0a5b10f8fb Mon Sep 17 00:00:00 2001
+From: Fabian Meumertzheim <meumertzheim@code-intelligence.com>
+Date: Tue, 5 Oct 2021 16:07:10 +0200
+Subject: [PATCH] Add flags from copts and linkopts attributes (#796)
+
+---
+ foreign_cc/private/cc_toolchain_util.bzl |  6 +++---
+ test/standard_cxx_flags_test/BUILD.bazel |  6 +++++-
+ test/standard_cxx_flags_test/tests.bzl   | 16 ++++++++++++++++
+ 3 files changed, 24 insertions(+), 4 deletions(-)
+
+diff --git a/foreign_cc/private/cc_toolchain_util.bzl b/foreign_cc/private/cc_toolchain_util.bzl
+index 9842d8c2c..6843750d7 100644
+--- a/foreign_cc/private/cc_toolchain_util.bzl
++++ b/foreign_cc/private/cc_toolchain_util.bzl
+@@ -301,9 +301,9 @@ def get_flags_info(ctx, link_output_file = None):
+         cc_toolchain = cc_toolchain_,
+     )
+ 
+-    copts = (ctx.fragments.cpp.copts + ctx.fragments.cpp.conlyopts) or []
+-    cxxopts = (ctx.fragments.cpp.copts + ctx.fragments.cpp.cxxopts) or []
+-    linkopts = ctx.fragments.cpp.linkopts or []
++    copts = (ctx.fragments.cpp.copts + ctx.fragments.cpp.conlyopts + ctx.attr.copts) or []
++    cxxopts = (ctx.fragments.cpp.copts + ctx.fragments.cpp.cxxopts + ctx.attr.copts) or []
++    linkopts = (ctx.fragments.cpp.linkopts + ctx.attr.linkopts) or []
+     defines = _defines_from_deps(ctx)
+ 
+     flags = CxxFlagsInfo(
+diff --git a/test/standard_cxx_flags_test/BUILD.bazel b/test/standard_cxx_flags_test/BUILD.bazel
+index fa41a521f..799e73c5a 100644
+--- a/test/standard_cxx_flags_test/BUILD.bazel
++++ b/test/standard_cxx_flags_test/BUILD.bazel
+@@ -1,3 +1,7 @@
+ load(":tests.bzl", "flags_test")
+ 
+-flags_test(name = "flags_test")
++flags_test(
++    name = "flags_test",
++    copts = ["-fblah4"],
++    linkopts = ["-fblah5"],
++)
+diff --git a/test/standard_cxx_flags_test/tests.bzl b/test/standard_cxx_flags_test/tests.bzl
+index 7da3aedc3..11c2d67a9 100644
+--- a/test/standard_cxx_flags_test/tests.bzl
++++ b/test/standard_cxx_flags_test/tests.bzl
+@@ -10,12 +10,26 @@ def _impl(ctx):
+ 
+     assert_contains_once(flags.cc, "-fblah0")
+     assert_contains_once(flags.cc, "-fblah2")
++    assert_contains_once(flags.cc, "-fblah4")
++    if "-fblah5" in flags.cc:
++        fail("C flags should not contain '-fblah5'")
+ 
+     assert_contains_once(flags.cxx, "-fblah0")
+     assert_contains_once(flags.cxx, "-fblah1")
++    assert_contains_once(flags.cxx, "-fblah4")
++    if "-fblah5" in flags.cxx:
++        fail("C++ flags should not contain '-fblah5'")
+ 
+     assert_contains_once(flags.cxx_linker_executable, "-fblah3")
++    assert_contains_once(flags.cxx_linker_executable, "-fblah5")
++    if "-fblah4" in flags.cxx_linker_executable:
++        fail("Executable linker flags should not contain '-fblah4'")
++
+     assert_contains_once(flags.cxx_linker_shared, "-fblah3")
++    assert_contains_once(flags.cxx_linker_shared, "-fblah5")
++    if "-fblah4" in flags.cxx_linker_shared:
++        fail("Shared linker flags should not contain '-fblah4'")
++
+     if "-fblah3" in flags.cxx_linker_static:
+         fail("Static linker flags should not contain '-fblah3'")
+ 
+@@ -44,7 +58,9 @@ def assert_contains_once(arr, value):
+ _flags_test = rule(
+     implementation = _impl,
+     attrs = {
++        "copts": attr.string_list(),
+         "deps": attr.label_list(),
++        "linkopts": attr.string_list(),
+         "out": attr.output(),
+         "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+     },
