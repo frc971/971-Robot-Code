@@ -92,6 +92,14 @@ func TestSha256(t *testing.T) {
 		t.Fatal("Failed to get data ", err)
 	}
 	expectEqual(t, resp.Status, "404 Not Found")
+
+	// Make a request with a valid checksum but invalid path and make sure
+	// we get a 400.
+	resp, err = http.Get("http://localhost:8080/sha256/553b9b29647a112136986cf93c57b988d1f12dc43d3b774f14a24e58d272dbff/not_root.txt")
+	if err != nil {
+		t.Fatal("Failed to get data ", err)
+	}
+	expectEqual(t, resp.Status, "400 Bad Request")
 }
 
 // Retrieves the data at the specified path. If an error occurs, the test case
