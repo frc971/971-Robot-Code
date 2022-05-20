@@ -124,6 +124,7 @@ def _should_use_pic(cc_toolchain, feature_configuration, crate_type):
     return False
 
 def collect_deps(
+        ctx,
         deps,
         proc_macro_deps,
         aliases,
@@ -200,6 +201,21 @@ def collect_deps(
 
     transitive_crates_depset = depset(transitive = transitive_crates)
 
+    dep_env = None
+    dep_env_files = list(ctx.files.dep_env_files)
+    if build_info:
+        if build_info.dep_env:
+            dep_env_files.append(build_info.dep_env)
+    if len(dep_env_files) > 1:
+        dep_env = ctx.actions.declare_file("_depenv/" + crate_info.output.basename)
+        ctx.actions.run_shell(
+            outputs = [dep_env],
+            inputs = dep_env_files,
+            cmd = ["cat"] + [f.path for f in dep_env_files] + [">", dep_env.path],
+        )
+    elif dep_env_files:
+        dep_env = dep_env_files[0]
+
     return (
         rust_common.dep_info(
             direct_crates = depset(direct_crates),
@@ -211,7 +227,7 @@ def collect_deps(
             transitive_crate_outputs = depset(transitive = transitive_crate_outputs),
             transitive_build_infos = depset(transitive = transitive_build_infos),
             link_search_path_files = depset(transitive = transitive_link_search_paths),
-            dep_env = build_info.dep_env if build_info else None,
+            dep_env = dep_env,
         ),
         build_info,
         depset(transitive = linkstamps),
@@ -819,6 +835,7 @@ def rustc_compile_action(
         crate_info,
         output_hash = None,
         rust_flags = [],
+        dep_env_files = [],
         force_all_deps_direct = False):
     """Create and run a rustc compile action based on the current rule's attributes
 
@@ -841,6 +858,7 @@ def rustc_compile_action(
     cc_toolchain, feature_configuration = find_cc_toolchain(ctx)
 
     dep_info, build_info, linkstamps = collect_deps(
+        ctx = ctx,
         deps = crate_info.deps,
         proc_macro_deps = crate_info.proc_macro_deps,
         aliases = crate_info.aliases,

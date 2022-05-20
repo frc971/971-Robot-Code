@@ -85,6 +85,7 @@ genmode = "Remote"
 # which avoid build.rs in cargo-raze itself or elsewhere. rules_rust is another
 # place to look.
 # https://github.com/bazelbuild/rules_rust/blob/main/bindgen/raze/Cargo.toml
+# https://github.com/google/cargo-raze/blob/main/impl/Cargo.toml
 default_gen_buildrs = true
 
 [package.metadata.raze.crates.cxx.'*']

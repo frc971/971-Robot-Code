@@ -39,12 +39,20 @@
          ],
      }),
      includes = ["zlib/include/"],
-@@ -28,6 +28,7 @@ genrule(
+@@ -28,6 +28,15 @@ genrule(
      srcs = _ZLIB_HEADERS,
      outs = _ZLIB_PREFIXED_HEADERS,
      cmd = "cp $(SRCS) $(@D)/zlib/include/",
 +    visibility = ["//visibility:public"],
  )
++
++genrule(
++    name = "dep_z_include",
++    visibility = ["//visibility:public"],
++    outs = ["dep_z_include.env"],
++    srcs = [":copy_public_headers"],
++    cmd = "echo 'DEP_Z_INCLUDE=$${pwd}/'\"$$(dirname \"$$(echo \"$(locations :copy_public_headers)\" | awk '{ print $$1 }')\")\" > $@",
++)
  
  cc_library(
 
@@ -130,19 +138,21 @@
  
  [package.metadata.raze.crates.openssl.'*']
  additional_deps = ["@cargo_raze__openssl//:openssl"]
-@@ -106,6 +106,7 @@ additional_deps = ["@cargo_raze__libgit2
+@@ -106,6 +106,8 @@ additional_deps = ["@cargo_raze__libgit2
  build_data_dependencies = [
      "@cargo_raze__libssh2//:libssh2",
      "@cargo_raze__openssl//:openssl",
 +    "@cargo_raze__zlib//:copy_public_headers",
  ]
  additional_deps = ["@cargo_raze__libssh2//:libssh2"]
++# TODO(Brian): Set buildrs_additional_environment_variables for upstreaming.
  
 
 --- third_party/cargo/remote/BUILD.libz-sys-1.1.2.bazel	2022-02-04 00:45:43.779201978 -0800
 +++ third_party/cargo/remote/BUILD.libz-sys-1.1.2.bazel	2022-02-04 00:45:57.151816346 -0800
-@@ -57,6 +57,7 @@ rust_library(
+@@ -57,6 +57,8 @@ rust_library(
      # buildifier: leave-alone
++    dep_env_files = ["@cargo_raze__zlib//:dep_z_include"],
      deps = [
          "@cargo_raze__libc__0_2_92//:libc",
 +        "@cargo_raze__zlib//:zlib",
@@ -152,15 +162,6 @@
 
 --- third_party/cargo/remote/BUILD.libssh2-sys-0.2.21.bazel	2022-02-04 00:54:43.031966734 -0800
 +++ third_party/cargo/remote/BUILD.libssh2-sys-0.2.21.bazel	2022-02-04 00:54:44.272023742 -0800
-@@ -41,6 +41,8 @@ cargo_build_script(
-     name = "libssh2_sys_build_script",
-     srcs = glob(["**/*.rs"]),
-     build_script_env = {
-+        # TODO: Custom rule that does the copy and exports a Make variable with the folder?
-+        "DEP_Z_INCLUDE": "${pwd}/bazel-out/k8-fastbuild/bin/external/cargo_raze__zlib/zlib/include",
-     },
-     crate_features = [
-     ],
 @@ -48,6 +48,7 @@ cargo_build_script(
      data = glob(["**"]) + [
          "@cargo_raze__libssh2//:libssh2",
@@ -182,3 +183,15 @@
    "i686-unknown-freebsd",
    "powerpc-unknown-linux-gnu",
 
+--- impl/BUILD.bazel	2022-05-30 01:37:24.111005507 -0700
++++ impl/BUILD.bazel	2022-05-30 01:37:22.778944267 -0700
+@@ -26,6 +26,9 @@ rust_binary(
+     edition = "2018",
+     proc_macro_deps = all_crate_deps(proc_macro = True),
+     deps = [":cargo_raze"] + all_crate_deps(),
++    # TODO: Make Rust play happy with pic vs nopic. Details at:
++    # https://github.com/bazelbuild/rules_rust/issues/118
++    rustc_flags = ["-Crelocation-model=static"],
+ )
+ 
+ _TEST_DATA = glob(["src/**/*.template"]) + [

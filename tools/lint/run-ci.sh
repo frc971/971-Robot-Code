@@ -33,7 +33,7 @@ gomod() {
     "${go}" mod tidy -e
 }
 
-update_repos() {
+update_go_repos() {
     # Clear out the go_deps.bzl file so that gazelle won't hesitate to update
     # it. Without this step gazelle would never try to remove a dependency.
     cat > "${BUILD_WORKSPACE_DIRECTORY}"/go_deps.bzl <<EOF
@@ -60,6 +60,27 @@ clean_up_go_mirrors() {
     ./tools/go/mirror_go_repos --prune
 }
 
+rustfmt() {
+    ./tools/lint/rustfmt
+}
+
+cargo_raze() {
+    local -r cargo_raze="$(readlink -f external/cargo_raze/impl/cargo_raze_bin)"
+    export CARGO="$(readlink -f external/rust/bin/cargo)"
+    export RUSTC="$(readlink -f external/rust/bin/rustc)"
+    cd "${BUILD_WORKSPACE_DIRECTORY}"
+    # Note we don't run with --generate-lockfile here. If there's a new
+    # dependency, we don't want to download it, just failing with an error
+    # is sufficient.
+    "${cargo_raze}" --manifest-path=Cargo.toml
+}
+
+tweak_cargo_raze() {
+    local -r tweaker="$(readlink -f tools/rust/tweak_cargo_raze_output)"
+    cd "${BUILD_WORKSPACE_DIRECTORY}"
+    "${tweaker}" .
+}
+
 buildifier() {
     ./tools/lint/buildifier
 }
@@ -80,10 +101,13 @@ git_status_is_clean() {
 readonly -a LINTERS=(
     gofmt
     gomod
-    update_repos
+    update_go_repos
     gazelle
     tweak_gazelle_go_deps
     clean_up_go_mirrors
+    rustfmt
+    cargo_raze
+    tweak_cargo_raze
     buildifier
     prettier
     git_status_is_clean  # This must the last linter.
@@ -91,8 +115,12 @@ readonly -a LINTERS=(
 
 failure=0
 for linter in "${LINTERS[@]}"; do
+    echo "Running ${linter}..." >&2
     if ! (eval "${linter}"); then
+        echo "LINTER FAILURE: ${linter}" >&2
         failure=1
+    else
+        echo "${linter} succeeded" >&2
     fi
 done
 

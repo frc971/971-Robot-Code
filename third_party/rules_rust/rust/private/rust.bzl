@@ -270,6 +270,7 @@ def _rust_library_common(ctx, crate_type):
         ctx = ctx,
         attr = ctx.attr,
         toolchain = toolchain,
+        dep_env_files = ctx.files.dep_env_files,
         crate_info = rust_common.create_crate_info(
             name = crate_name,
             type = crate_type,
@@ -531,6 +532,14 @@ _common_attrs = {
             stamping should the `stamp` attribute be enabled. Stamp variables
             should be wrapped in brackets in order to be resolved. E.g.
             `NAME={WORKSPACE_STATUS_VARIABLE}`.
+        """),
+        allow_files = True,
+    ),
+    "dep_env_files": attr.label_list(
+        doc = dedent("""\
+            Files containing additional environment variables to set for build scripts of direct dependencies.
+
+            See `rustc_env_files` for formatting details.
         """),
         allow_files = True,
     ),

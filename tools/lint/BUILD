@@ -12,6 +12,17 @@ sh_binary(
 )
 
 sh_binary(
+    name = "rustfmt",
+    srcs = ["rustfmt.sh"],
+    data = [
+        "@rust//:rustfmt",
+    ],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+sh_binary(
     name = "buildifier",
     srcs = ["buildifier.sh"],
     data = [
@@ -44,9 +55,12 @@ sh_binary(
         ":buildifier",
         ":gofmt",
         ":prettier",
+        ":rustfmt",
         "//:gazelle-runner",
         "//tools/go:mirror_go_repos",
         "//tools/go:tweak_gazelle_go_deps",
+        "//tools/rust:tweak_cargo_raze_output",
+        "@cargo_raze//:raze",
         "@go_sdk//:bin/go",
     ],
     env = {
