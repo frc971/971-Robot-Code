@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <functional>
 #include <iostream>
@@ -25,6 +26,9 @@ DEFINE_bool(_bash_autocomplete, false,
             "autocomplete script.");
 DEFINE_string(_bash_autocomplete_word, "",
               "Internal use: Current word being autocompleted");
+DEFINE_string(sort, "name",
+              "The name of the column to sort processes by.  "
+              "Can be \"name\", \"state\", \"pid\", or \"uptime\".");
 
 namespace {
 
@@ -85,6 +89,105 @@ void PrintKey() {
                "Uptime");
 }
 
+std::vector<const aos::starter::ApplicationStatus *> SortApplications(
+    const aos::FlatbufferVector<aos::starter::Status> &status) {
+  std::vector<const aos::starter::ApplicationStatus *> sorted_statuses;
+  for (const aos::starter::ApplicationStatus *app_status :
+       *status.message().statuses()) {
+    sorted_statuses.push_back(app_status);
+  }
+  // If --sort flag not set, then return this unsorted vector as is.
+  if (FLAGS_sort.empty()) {
+    return sorted_statuses;
+  }
+
+  // Convert --sort flag to lowercase for testing below.
+  std::transform(FLAGS_sort.begin(), FLAGS_sort.end(), FLAGS_sort.begin(),
+                 tolower);
+
+  // This function is called once for each node being reported upon, so there is
+  // no need to sort on node, it happens implicitly.
+
+  if (FLAGS_sort == "name") {
+    // Sort on name using std::string_view::operator< for lexicographic order.
+    std::sort(sorted_statuses.begin(), sorted_statuses.end(),
+              [](const aos::starter::ApplicationStatus *lhs,
+                 const aos::starter::ApplicationStatus *rhs) {
+                return lhs->name()->string_view() < rhs->name()->string_view();
+              });
+  } else if (FLAGS_sort == "state") {
+    // Sort on state first, and then name for apps in same state.
+    // ApplicationStatus::state is an enum, so need to call EnumNameState()
+    // convenience wrapper to convert enum to char*, and then wrap in
+    // std::string_view for lexicographic ordering.
+    std::sort(sorted_statuses.begin(), sorted_statuses.end(),
+              [](const aos::starter::ApplicationStatus *lhs,
+                 const aos::starter::ApplicationStatus *rhs) {
+                return (lhs->state() != rhs->state())
+                           ? (std::string_view(
+                                  aos::starter::EnumNameState(lhs->state())) <
+                              std::string_view(
+                                  aos::starter::EnumNameState(rhs->state())))
+                           : (lhs->name()->string_view() <
+                              rhs->name()->string_view());
+              });
+  } else if (FLAGS_sort == "pid") {
+    // Sort on pid first, and then name for when both apps are not running.
+    // If the app state is STOPPED, then it will not have a pid, so need to test
+    // that first. If only one app is STOPPED, then return Boolean state to put
+    // running apps before stopped.
+    std::sort(sorted_statuses.begin(), sorted_statuses.end(),
+              [](const aos::starter::ApplicationStatus *lhs,
+                 const aos::starter::ApplicationStatus *rhs) {
+                if (lhs->state() == aos::starter::State::STOPPED) {
+                  if (rhs->state() == aos::starter::State::STOPPED) {
+                    return lhs->name()->string_view() <
+                           rhs->name()->string_view();
+                  } else {
+                    return false;
+                  }
+                } else {
+                  if (rhs->state() == aos::starter::State::STOPPED) {
+                    return true;
+                  } else {
+                    return lhs->pid() < rhs->pid();
+                  }
+                }
+              });
+  } else if (FLAGS_sort == "uptime") {
+    // Sort on last_start_time first, and then name for when both apps are not
+    // running, or have exact same start time. Only use last_start_time when app
+    // is not STOPPED. If only one app is STOPPED, then return Boolean state to
+    // put running apps before stopped.
+    std::sort(
+        sorted_statuses.begin(), sorted_statuses.end(),
+        [](const aos::starter::ApplicationStatus *lhs,
+           const aos::starter::ApplicationStatus *rhs) {
+          if (lhs->state() == aos::starter::State::STOPPED) {
+            if (rhs->state() == aos::starter::State::STOPPED) {
+              return lhs->name()->string_view() < rhs->name()->string_view();
+            } else {
+              return false;
+            }
+          } else {
+            if (rhs->state() == aos::starter::State::STOPPED) {
+              return true;
+            } else {
+              return (lhs->last_start_time() == rhs->last_start_time())
+                         ? (lhs->name()->string_view() <
+                            rhs->name()->string_view())
+                         : (lhs->last_start_time() < rhs->last_start_time());
+            }
+          }
+        });
+  } else {
+    std::cerr << "Unknown sort criteria \"" << FLAGS_sort << "\"" << std::endl;
+    exit(1);
+  }
+
+  return sorted_statuses;
+}
+
 void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
                             const aos::monotonic_clock::time_point &time,
                             const aos::Node *node) {
@@ -116,8 +219,9 @@ void GetAllStarterStatus(const aos::Configuration *config) {
       const aos::FlatbufferVector<aos::starter::Status> &status =
           optional_status->second;
       const aos::monotonic_clock::time_point time = optional_status->first;
+      const auto &sorted_statuses = SortApplications(status);
       for (const aos::starter::ApplicationStatus *app_status :
-           *status.message().statuses()) {
+           sorted_statuses) {
         PrintApplicationStatus(app_status, time, node);
       }
     } else {
