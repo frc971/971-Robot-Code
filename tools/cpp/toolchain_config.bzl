@@ -179,13 +179,9 @@ def _impl(ctx):
         name = "opt_post",
         flag_sets = [
             flag_set(
-                actions = [
+                actions = all_cpp_compile_actions + [
                     ACTION_NAMES.preprocess_assemble,
                     ACTION_NAMES.c_compile,
-                    ACTION_NAMES.cpp_compile,
-                    ACTION_NAMES.cpp_header_parsing,
-                    "c++-header-preprocessing",
-                    ACTION_NAMES.cpp_module_compile,
                 ],
                 flag_groups = [flag_group(flags = ["-DAOS_DEBUG=0"])],
             ),
@@ -458,13 +454,9 @@ def _impl(ctx):
             name = "dbg",
             flag_sets = [
                 flag_set(
-                    actions = [
+                    actions = all_cpp_compile_actions + [
                         ACTION_NAMES.preprocess_assemble,
                         ACTION_NAMES.c_compile,
-                        ACTION_NAMES.cpp_compile,
-                        ACTION_NAMES.cpp_header_parsing,
-                        "c++-header-preprocessing",
-                        ACTION_NAMES.cpp_module_compile,
                     ],
                     flag_groups = [
                         flag_group(flags = ["-DAOS_DEBUG=1"]),
@@ -480,13 +472,9 @@ def _impl(ctx):
             name = "dbg",
             flag_sets = [
                 flag_set(
-                    actions = [
+                    actions = all_cpp_compile_actions + [
                         ACTION_NAMES.preprocess_assemble,
                         ACTION_NAMES.c_compile,
-                        ACTION_NAMES.cpp_compile,
-                        ACTION_NAMES.cpp_header_parsing,
-                        "c++-header-preprocessing",
-                        ACTION_NAMES.cpp_module_compile,
                     ],
                     flag_groups = [flag_group(flags = ["-fno-omit-frame-pointer"])],
                 ),
@@ -501,13 +489,9 @@ def _impl(ctx):
             name = "fastbuild",
             flag_sets = [
                 flag_set(
-                    actions = [
+                    actions = all_cpp_compile_actions + [
                         ACTION_NAMES.preprocess_assemble,
                         ACTION_NAMES.c_compile,
-                        ACTION_NAMES.cpp_compile,
-                        ACTION_NAMES.cpp_header_parsing,
-                        "c++-header-preprocessing",
-                        ACTION_NAMES.cpp_module_compile,
                     ],
                     flag_groups = [flag_group(flags = ["-DAOS_DEBUG=0"])],
                 ),
@@ -606,13 +590,9 @@ def _impl(ctx):
             enabled = True,
             flag_sets = [
                 flag_set(
-                    actions = [
+                    actions = all_cpp_compile_actions + [
                         ACTION_NAMES.preprocess_assemble,
                         ACTION_NAMES.c_compile,
-                        ACTION_NAMES.cpp_compile,
-                        ACTION_NAMES.cpp_header_parsing,
-                        "c++-header-preprocessing",
-                        ACTION_NAMES.cpp_module_compile,
                     ],
                     flag_groups = [
                         flag_group(
@@ -637,13 +617,9 @@ def _impl(ctx):
             enabled = True,
             flag_sets = [
                 flag_set(
-                    actions = [
+                    actions = all_cpp_compile_actions + [
                         ACTION_NAMES.preprocess_assemble,
                         ACTION_NAMES.c_compile,
-                        ACTION_NAMES.cpp_compile,
-                        ACTION_NAMES.cpp_header_parsing,
-                        "c++-header-preprocessing",
-                        ACTION_NAMES.cpp_module_compile,
                     ],
                     flag_groups = [
                         flag_group(
@@ -818,12 +794,7 @@ def _impl(ctx):
                     flag_groups = [flag_group(flags = ["-std=gnu99"])],
                 ),
                 flag_set(
-                    actions = [
-                        ACTION_NAMES.cpp_compile,
-                        ACTION_NAMES.cpp_header_parsing,
-                        "c++-header-preprocessing",
-                        ACTION_NAMES.cpp_module_compile,
-                    ],
+                    actions = all_cpp_compile_actions,
                     flag_groups = [
                         flag_group(
                             flags = ["-std=gnu++1z", "-fno-sized-deallocation"],
@@ -831,14 +802,10 @@ def _impl(ctx):
                     ],
                 ),
                 flag_set(
-                    actions = [
+                    actions = all_cpp_compile_actions + [
                         ACTION_NAMES.preprocess_assemble,
                         ACTION_NAMES.assemble,
                         "c++-link",
-                        ACTION_NAMES.cpp_compile,
-                        ACTION_NAMES.cpp_header_parsing,
-                        "c++-header-preprocessing",
-                        ACTION_NAMES.cpp_module_compile,
                         ACTION_NAMES.c_compile,
                     ],
                     flag_groups = [flag_group(flags = ["-pthread"])],
@@ -860,12 +827,7 @@ def _impl(ctx):
                     flag_groups = [flag_group(flags = ["--std=gnu11"])],
                 ),
                 flag_set(
-                    actions = [
-                        ACTION_NAMES.cpp_compile,
-                        ACTION_NAMES.cpp_header_parsing,
-                        "c++-header-preprocessing",
-                        ACTION_NAMES.cpp_module_compile,
-                    ],
+                    actions = all_cpp_compile_actions,
                     flag_groups = [
                         flag_group(
                             flags = ["--std=gnu++1z", "-fno-exceptions", "-fno-rtti"],
@@ -1030,12 +992,9 @@ def _impl(ctx):
                 ],
             ),
             flag_set(
-                actions = [
+                actions = all_cpp_compile_actions + [
                     ACTION_NAMES.assemble,
                     ACTION_NAMES.preprocess_assemble,
-                    ACTION_NAMES.cpp_compile,
-                    ACTION_NAMES.cpp_header_parsing,
-                    "c++-header-preprocessing",
                 ],
                 flag_groups = [flag_group(flags = ["-fno-canonical-system-headers"])],
             ),
