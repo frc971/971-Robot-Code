@@ -124,3 +124,8 @@ filegroup(
     name = "strip",
     srcs = ["bin/llvm-strip"],
 )
+
+filegroup(
+    name = "libclang",
+    srcs = ["lib/libclang.so"],
+)

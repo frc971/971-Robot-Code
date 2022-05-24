@@ -119,3 +119,16 @@ toolchain(
     toolchain = ":noop_rust_toolchain_impl",
     toolchain_type = "@rules_rust//rust:toolchain",
 )
+
+'''
+# TODO(Brian): Uncomment in the next change once dependencies exist.
+rust_binary(
+    name = "tweak_cargo_raze_output",
+    srcs = ["tweak_cargo_raze_output.rs"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//third_party/cargo:anyhow",
+        "//third_party/cargo:toml",
+    ],
+)
+'''
