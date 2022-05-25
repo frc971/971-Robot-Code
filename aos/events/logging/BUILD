@@ -267,6 +267,7 @@ cc_library(
         ":logger_fbs",
         "//aos:uuid",
         "//aos/events:event_loop",
+        "//aos/events:shm_event_loop",
         "//aos/events:simulated_event_loop",
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:multinode_timestamp_filter",
@@ -444,6 +445,26 @@ aos_config(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = ["//aos/events:aos_config"],
+)
+
+cc_test(
+    name = "realtime_replay_test",
+    srcs = ["realtime_replay_test.cc"],
+    data = [
+        "//aos/events:pingpong_config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":log_reader",
+        ":log_writer",
+        "//aos/events:ping_lib",
+        "//aos/events:pong_lib",
+        "//aos/events:shm_event_loop",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//aos/testing:tmpdir",
+    ],
 )
 
 cc_test(

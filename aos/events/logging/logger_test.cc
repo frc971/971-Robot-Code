@@ -2192,6 +2192,149 @@ TEST_P(MultinodeLoggerTest, RemapForwardedLoggedChannel) {
   reader.Deregister();
 }
 
+// Tests that we observe all the same events in log replay (for a given node)
+// whether we just register an event loop for that node or if we register a full
+// event loop factory.
+TEST_P(MultinodeLoggerTest, SingleNodeReplay) {
+  time_converter_.StartEqual();
+  constexpr chrono::milliseconds kStartupDelay(95);
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+    LoggerState pi2_logger = MakeLogger(pi2_);
+
+    event_loop_factory_.RunFor(kStartupDelay);
+
+    StartLogger(&pi1_logger);
+    StartLogger(&pi2_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+  }
+
+  LogReader full_reader(SortParts(logfiles_));
+  LogReader single_node_reader(SortParts(logfiles_));
+
+  SimulatedEventLoopFactory full_factory(full_reader.configuration());
+  SimulatedEventLoopFactory single_node_factory(
+      single_node_reader.configuration());
+  std::unique_ptr<EventLoop> replay_event_loop =
+      single_node_factory.GetNodeEventLoopFactory("pi1")->MakeEventLoop(
+          "log_reader");
+
+  full_reader.Register(&full_factory);
+  single_node_reader.Register(replay_event_loop.get());
+  single_node_factory.SkipTimingReport();
+  single_node_factory.DisableStatistics();
+
+  const Node *full_pi1 =
+      configuration::GetNode(full_factory.configuration(), "pi1");
+
+  // Confirm we can read the data on the remapped channel, just for pi1. Nothing
+  // else should have moved.
+  std::unique_ptr<EventLoop> full_event_loop =
+      full_factory.MakeEventLoop("test", full_pi1);
+  full_event_loop->SkipTimingReport();
+  full_event_loop->SkipAosLog();
+  // maps are indexed on channel index.
+  // observed_messages: {channel_index: [(message_sent_time, was_fetched),...]}
+  std::map<size_t, std::vector<std::pair<monotonic_clock::time_point, bool>>>
+      observed_messages;
+  std::map<size_t, std::unique_ptr<RawFetcher>> fetchers;
+  for (size_t ii = 0; ii < full_event_loop->configuration()->channels()->size();
+       ++ii) {
+    const Channel *channel =
+        full_event_loop->configuration()->channels()->Get(ii);
+    // We currently don't support replaying remote timestamp channels in
+    // realtime replay.
+    if (channel->name()->string_view().find("remote_timestamp") !=
+        std::string_view::npos) {
+      continue;
+    }
+    if (configuration::ChannelIsReadableOnNode(channel, full_pi1)) {
+      observed_messages[ii] = {};
+      fetchers[ii] = full_event_loop->MakeRawFetcher(channel);
+      full_event_loop->OnRun([ii, &observed_messages, &fetchers]() {
+        if (fetchers[ii]->Fetch()) {
+          observed_messages[ii].push_back(std::make_pair(
+              fetchers[ii]->context().monotonic_event_time, true));
+        }
+      });
+      full_event_loop->MakeRawNoArgWatcher(
+          channel, [ii, &observed_messages](const Context &context) {
+            observed_messages[ii].push_back(
+                std::make_pair(context.monotonic_event_time, false));
+          });
+    }
+  }
+
+  full_factory.Run();
+  fetchers.clear();
+  full_reader.Deregister();
+
+  const Node *single_node_pi1 =
+      configuration::GetNode(single_node_factory.configuration(), "pi1");
+  std::map<size_t, std::unique_ptr<RawFetcher>> single_node_fetchers;
+
+  std::unique_ptr<EventLoop> single_node_event_loop =
+      single_node_factory.MakeEventLoop("test", single_node_pi1);
+  single_node_event_loop->SkipTimingReport();
+  single_node_event_loop->SkipAosLog();
+  for (size_t ii = 0;
+       ii < single_node_event_loop->configuration()->channels()->size(); ++ii) {
+    const Channel *channel =
+        single_node_event_loop->configuration()->channels()->Get(ii);
+    single_node_factory.DisableForwarding(channel);
+    if (configuration::ChannelIsReadableOnNode(channel, single_node_pi1)) {
+      single_node_fetchers[ii] =
+          single_node_event_loop->MakeRawFetcher(channel);
+      single_node_event_loop->OnRun([channel, ii, &single_node_fetchers]() {
+        EXPECT_FALSE(single_node_fetchers[ii]->Fetch())
+            << "Single EventLoop replay doesn't support pre-loading fetchers. "
+            << configuration::StrippedChannelToString(channel);
+      });
+      single_node_event_loop->MakeRawNoArgWatcher(
+          channel, [ii, &observed_messages, channel,
+                    kStartupDelay](const Context &context) {
+            if (observed_messages[ii].empty()) {
+              FAIL() << "Observed extra message at "
+                     << context.monotonic_event_time << " on "
+                     << configuration::StrippedChannelToString(channel);
+              return;
+            }
+            const std::pair<monotonic_clock::time_point, bool> &message =
+                observed_messages[ii].front();
+            if (message.second) {
+              EXPECT_LE(message.first,
+                        context.monotonic_event_time + kStartupDelay)
+                  << "Mismatched message times " << context.monotonic_event_time
+                  << " and " << message.first << " on "
+                  << configuration::StrippedChannelToString(channel);
+            } else {
+              EXPECT_EQ(message.first,
+                        context.monotonic_event_time + kStartupDelay)
+                  << "Mismatched message times " << context.monotonic_event_time
+                  << " and " << message.first << " on "
+                  << configuration::StrippedChannelToString(channel);
+            }
+            observed_messages[ii].erase(observed_messages[ii].begin());
+          });
+    }
+  }
+
+  single_node_factory.Run();
+
+  single_node_fetchers.clear();
+
+  single_node_reader.Deregister();
+
+  for (const auto &pair : observed_messages) {
+    EXPECT_TRUE(pair.second.empty())
+        << "Missed " << pair.second.size() << " messages on "
+        << configuration::StrippedChannelToString(
+               single_node_event_loop->configuration()->channels()->Get(
+                   pair.first));
+  }
+}
+
 // Tests that we properly recreate forwarded timestamps when replaying a log.
 // This should be enough that we can then re-run the logger and get a valid log
 // back.

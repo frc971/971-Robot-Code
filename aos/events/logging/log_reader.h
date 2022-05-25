@@ -11,6 +11,7 @@
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/multinode_timestamp_filter.h"
@@ -92,6 +93,7 @@ class LogReader {
   // Creates an SimulatedEventLoopFactory accessible via event_loop_factory(),
   // and then calls Register.
   void Register();
+
   // Registers callbacks for all the events after the log file starts.  This is
   // only useful when replaying live.
   void Register(EventLoop *event_loop);
@@ -285,7 +287,9 @@ class LogReader {
   // State per node.
   class State {
    public:
-    State(std::unique_ptr<TimestampMapper> timestamp_mapper, const Node *node);
+    State(std::unique_ptr<TimestampMapper> timestamp_mapper,
+          message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters,
+          const Node *node);
 
     // Connects up the timestamp mappers.
     void AddPeer(State *peer);
@@ -302,7 +306,17 @@ class LogReader {
     size_t boot_count() const {
       // If we are replaying directly into an event loop, we can't reboot.  So
       // we will stay stuck on the 0th boot.
-      if (!node_event_loop_factory_) return 0u;
+      if (!node_event_loop_factory_) {
+        if (event_loop_ == nullptr) {
+          // If boot_count is being checked after startup for any of the
+          // non-primary nodes, then returning 0 may not be accurate (since
+          // remote nodes *can* reboot even if the EventLoop being played to
+          // can't).
+          CHECK(!started_);
+          CHECK(!stopped_);
+        }
+        return 0u;
+      }
       return node_event_loop_factory_->boot_count();
     }
 
@@ -319,8 +333,10 @@ class LogReader {
         NotifyLogfileStart();
         return;
       }
-      CHECK_GE(start_time, event_loop_->monotonic_now());
-      startup_timer_->Setup(start_time);
+      if (node_event_loop_factory_) {
+        CHECK_GE(start_time + clock_offset(), event_loop_->monotonic_now());
+      }
+      startup_timer_->Setup(start_time + clock_offset());
     }
 
     void set_startup_timer(TimerHandler *timer_handler) {
@@ -382,6 +398,7 @@ class LogReader {
     // distributed clock.
     distributed_clock::time_point ToDistributedClock(
         monotonic_clock::time_point time) {
+      CHECK(node_event_loop_factory_);
       return node_event_loop_factory_->ToDistributedClock(time);
     }
 
@@ -415,6 +432,7 @@ class LogReader {
 
     distributed_clock::time_point RemoteToDistributedClock(
         size_t channel_index, monotonic_clock::time_point time) {
+      CHECK(node_event_loop_factory_);
       return channel_source_state_[channel_index]
           ->node_event_loop_factory_->ToDistributedClock(time);
     }
@@ -425,7 +443,7 @@ class LogReader {
     }
 
     monotonic_clock::time_point monotonic_now() const {
-      return node_event_loop_factory_->monotonic_now();
+      return event_loop_->monotonic_now();
     }
 
     // Sets the number of channels.
@@ -487,11 +505,14 @@ class LogReader {
 
     // Sets the next wakeup time on the replay callback.
     void Setup(monotonic_clock::time_point next_time) {
-      timer_handler_->Setup(next_time);
+      timer_handler_->Setup(next_time + clock_offset());
     }
 
     // Sends a buffer on the provided channel index.
     bool Send(const TimestampedMessage &timestamped_message);
+
+    void SetClockOffset();
+    std::chrono::nanoseconds clock_offset() const { return clock_offset_; }
 
     // Returns a debug string for the channel merger.
     std::string DebugString() const {
@@ -582,6 +603,7 @@ class LogReader {
     // going between 2 nodes.  The second element in the tuple indicates if this
     // is the primary direction or not.
     std::vector<message_bridge::NoncausalOffsetEstimator *> filters_;
+    message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters_;
 
     // List of NodeEventLoopFactorys (or nullptr if it isn't a forwarded
     // channel) which correspond to the originating node.
@@ -597,6 +619,11 @@ class LogReader {
     // is the channel that timestamps are published to.
     absl::btree_map<const Channel *, std::shared_ptr<RemoteMessageSender>>
         timestamp_loggers_;
+
+    // Time offset between the log's monotonic clock and the current event
+    // loop's monotonic clock.  Useful when replaying logs with non-simulated
+    // event loops.
+    std::chrono::nanoseconds clock_offset_{0};
 
     std::vector<std::function<void()>> on_starts_;
     std::vector<std::function<void()>> on_ends_;
