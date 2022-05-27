@@ -5,6 +5,7 @@
 
 DEFINE_string(node, "", "Node to replay from the perspective of.");
 DEFINE_string(output_path, "/tmp/log.mcap", "Log to output.");
+DEFINE_string(mode, "json", "json or flatbuffer serialization.");
 
 // Converts an AOS log to an MCAP log that can be fed into Foxglove. To try this
 // out, run:
@@ -30,6 +31,9 @@ int main(int argc, char *argv[]) {
   std::unique_ptr<aos::EventLoop> mcap_event_loop =
       reader.event_loop_factory()->MakeEventLoop("mcap", node);
   CHECK(!FLAGS_output_path.empty());
-  aos::McapLogger relogger(mcap_event_loop.get(), FLAGS_output_path);
+  aos::McapLogger relogger(mcap_event_loop.get(), FLAGS_output_path,
+                           FLAGS_mode == "flatbuffer"
+                               ? aos::McapLogger::Serialization::kFlatbuffer
+                               : aos::McapLogger::Serialization::kJson);
   reader.event_loop_factory()->Run();
 }

@@ -30,7 +30,14 @@ nlohmann::json JsonSchemaForFlatbuffer(
 // available, to be able to support Foxglove fully.
 class McapLogger {
  public:
-  McapLogger(EventLoop *event_loop, const std::string &output_path);
+  // Whether to serialize the messages into the MCAP file as JSON or
+  // flatbuffers.
+  enum class Serialization {
+    kJson,
+    kFlatbuffer,
+  };
+  McapLogger(EventLoop *event_loop, const std::string &output_path,
+             Serialization serialization);
   ~McapLogger();
 
  private:
@@ -122,6 +129,9 @@ class McapLogger {
 
   aos::EventLoop *event_loop_;
   std::ofstream output_;
+  const Serialization serialization_;
+  size_t total_message_bytes_ = 0;
+  std::map<const Channel *, size_t> total_channel_bytes_;
   // Buffer containing serialized message data for the currently-being-built
   // chunk.
   std::stringstream current_chunk_;
@@ -136,6 +146,7 @@ class McapLogger {
       aos::monotonic_clock::min_time;
   // Count of all messages on each channel, indexed by channel ID.
   std::map<uint16_t, uint64_t> message_counts_;
+  std::map<uint16_t, std::unique_ptr<RawFetcher>> fetchers_;
   // MessageIndex's for each message. The std::map is indexed by channel ID. The
   // vector is then a series of pairs of (timestamp, offset from start of
   // current_chunk_).
