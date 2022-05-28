@@ -17,10 +17,10 @@ class Graph(Gtk.Bin):
         super(Graph, self).__init__()
         fig = Figure(figsize=(5, 4), dpi=100)
         self.axis = fig.add_subplot(111)
-        canvas = FigureCanvas(fig)  # a Gtk.DrawingArea
-        canvas.set_vexpand(True)
-        canvas.set_size_request(800, 250)
-        self.add(canvas)
+        self.canvas = FigureCanvas(fig)  # a Gtk.DrawingArea
+        self.canvas.set_vexpand(True)
+        self.canvas.set_size_request(800, 250)
+        self.add(self.canvas)
         self.queue = queue.Queue(maxsize=1)
 
         thread = threading.Thread(target=self.worker)
@@ -78,5 +78,5 @@ class Graph(Gtk.Bin):
         # the total time to drive the spline
         self.axis.xaxis.set_ticks(np.linspace(0, total_time, num=8))
 
-        # ask to be redrawn
-        self.queue_draw()
+        # redraw
+        self.canvas.draw()
