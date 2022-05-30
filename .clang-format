@@ -6,6 +6,10 @@ Language:        Cpp
 DerivePointerAlignment: false
 PointerAlignment: Right
 Standard: Cpp11
+IncludeCategories:
+    # Force node headers to be considered third-party headers.
+    - Regex:     '^<(node|v8).h>$'
+      Priority:  3
 
 ---
 Language:        JavaScript

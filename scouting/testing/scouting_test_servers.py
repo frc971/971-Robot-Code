@@ -105,6 +105,13 @@ class Runner:
         except FileNotFoundError:
             pass
 
+def discard_signal(signum, frame):
+    """A NOP handler to ignore certain signals.
+
+    We use signal.pause() to wait for a signal. That means we can't use the default handler. The
+    default handler would tear the application down without stopping child processes.
+    """
+    pass
 
 def main(argv: List[str]):
     parser = argparse.ArgumentParser()
@@ -115,6 +122,8 @@ def main(argv: List[str]):
     runner.start(args.port)
 
     # Wait until we're asked to shut down via CTRL-C or SIGTERM.
+    signal.signal(signal.SIGINT, discard_signal)
+    signal.signal(signal.SIGTERM, discard_signal)
     signal.pause()
 
     runner.stop()

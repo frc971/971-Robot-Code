@@ -63,7 +63,7 @@ _expose_minified_js = rule(
     },
 )
 
-def protractor_ts_test(name, srcs, deps = None, **kwargs):
+def protractor_ts_test(name, srcs, deps = None, data = None, **kwargs):
     """Wraps upstream protractor_web_test_suite() to reduce boilerplate.
 
     This is largely based on the upstream protractor example:
@@ -89,9 +89,14 @@ def protractor_ts_test(name, srcs, deps = None, **kwargs):
         declaration_map = True,
     )
 
+    data = (data or []) + [
+        "//tools/build_rules/js/waitpid_module",
+    ]
+
     protractor_web_test_suite(
         name = name,
         srcs = [paths.replace_extension(src, ".js") for src in srcs],
         deps = [":%s__lib" % name],
+        data = data,
         **kwargs
     )

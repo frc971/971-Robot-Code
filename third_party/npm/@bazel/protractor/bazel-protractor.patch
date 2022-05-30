@@ -1,8 +1,16 @@
 diff --git a/node_modules/@bazel/protractor/protractor-utils.js b/node_modules/@bazel/protractor/protractor-utils.js
-index 2d577b82..c5c10c22 100755
+index 2d577b8..8d721b3 100755
 --- a/node_modules/@bazel/protractor/protractor-utils.js
 +++ b/node_modules/@bazel/protractor/protractor-utils.js
-@@ -67,19 +67,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
+@@ -38,6 +38,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
+     const runfiles = require(process.env['BAZEL_NODE_RUNFILES_HELPER']);
+     const child_process = require("child_process");
+     const net = require("net");
++    const waitpid = require("./org_frc971/tools/build_rules/js/waitpid_module/waitpid_module.node");
+     function isTcpPortFree(port) {
+         return new Promise((resolve, reject) => {
+             const server = net.createServer();
+@@ -67,19 +68,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
      }
      exports.isTcpPortBound = isTcpPortBound;
      function findFreeTcpPort() {
@@ -25,7 +33,23 @@ index 2d577b82..c5c10c22 100755
      }
      exports.findFreeTcpPort = findFreeTcpPort;
      function waitForServer(port, timeout) {
-@@ -121,4 +111,4 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
+@@ -114,6 +105,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
+                     throw new Error(`Server exited with error code: ${exitCode}`);
+                 }
+             });
++
++            // FRC971 hack. Since postgres leaves files in /dev/shm, we want to
++            // shut it down as gracefully as possible.
++            process.on('exit', () => {
++                serverProcess.kill('SIGTERM');
++                console.log('protractor: Waiting for server to shut down.');
++                waitpid.waitpid(serverProcess.pid);
++                console.log('protractor: Server has shut down.');
++            });
+             // Wait for the server to be bound to the given port.
+             yield waitForServer(port, timeout);
+             return { port };
+@@ -121,4 +121,4 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
      }
      exports.runServer = runServer;
  });
