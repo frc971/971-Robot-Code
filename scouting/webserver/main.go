@@ -117,7 +117,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)
 	}
-	defer database.Close()
+	defer database.Delete()
 
 	scrapeMatchList := func(year int32, eventCode string) ([]scraping.Match, error) {
 		if *blueAllianceConfigPtr == "" {

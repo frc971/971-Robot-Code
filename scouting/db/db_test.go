@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 // Shortcut for error checking. If the specified error is non-nil, print the
@@ -26,7 +28,6 @@ type dbFixture struct {
 
 func (fixture dbFixture) TearDown() {
 	fixture.db.Delete()
-	fixture.db.Close()
 	log.Println("Shutting down testdb")
 	fixture.server.Process.Signal(os.Interrupt)
 	fixture.server.Process.Wait()
@@ -55,7 +56,15 @@ func createDatabase(t *testing.T) dbFixture {
 	}
 	log.Println("Connected to postgres.")
 
+	fixture.db.SetDebugLogLevel()
+
 	return fixture
+}
+
+func checkDeepEqual(t *testing.T, expected interface{}, actual interface{}) {
+	if !reflect.DeepEqual(expected, actual) {
+		t.Fatalf(spew.Sprintf("Got %#v,\nbut expected %#v.", actual, expected))
+	}
 }
 
 func TestAddToMatchDB(t *testing.T) {
@@ -77,9 +86,7 @@ func TestAddToMatchDB(t *testing.T) {
 	got, err := fixture.db.ReturnMatches()
 	check(t, err, "Failed ReturnMatches()")
 
-	if !reflect.DeepEqual(correct, got) {
-		t.Fatalf("Got %#v,\nbut expected %#v.", got, correct)
-	}
+	checkDeepEqual(t, correct, got)
 }
 
 func TestAddOrUpdateRankingsDB(t *testing.T) {
@@ -198,6 +205,7 @@ func TestAddDuplicateStats(t *testing.T) {
 
 	stats := Stats{
 		TeamNumber: 1236, MatchNumber: 7,
+		SetNumber: 1, CompLevel: "qual",
 		StartingQuadrant: 2,
 		AutoBallPickedUp: [5]bool{false, false, false, true, false},
 		ShotsMissed:      9, UpperGoalShots: 5, LowerGoalShots: 4,
@@ -698,25 +706,20 @@ func TestRankingsDbUpdate(t *testing.T) {
 	got, err := fixture.db.QueryRankings(125)
 	check(t, err, "Failed QueryRankings()")
 
-	if !reflect.DeepEqual(correct, got) {
-		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
-	}
+	checkDeepEqual(t, correct, got)
 }
 
 func TestNotes(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
 
-	expected := NotesData{
-		TeamNumber: 1234,
-		Notes:      []string{"Note 1", "Note 3"},
-	}
+	expected := []string{"Note 1", "Note 3"}
 
-	err := fixture.db.AddNotes(NotesData{1234, []string{"Note 1"}})
+	err := fixture.db.AddNotes(1234, "Note 1")
 	check(t, err, "Failed to add Note")
-	err = fixture.db.AddNotes(NotesData{1235, []string{"Note 2"}})
+	err = fixture.db.AddNotes(1235, "Note 2")
 	check(t, err, "Failed to add Note")
-	err = fixture.db.AddNotes(NotesData{1234, []string{"Note 3"}})
+	err = fixture.db.AddNotes(1234, "Note 3")
 	check(t, err, "Failed to add Note")
 
 	actual, err := fixture.db.QueryNotes(1234)

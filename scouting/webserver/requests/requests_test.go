@@ -324,7 +324,7 @@ func TestSubmitNotes(t *testing.T) {
 	}
 
 	expected := []db.NotesData{
-		{TeamNumber: 971, Notes: []string{"Notes"}},
+		{TeamNumber: 971, Notes: "Notes"},
 	}
 
 	if !reflect.DeepEqual(database.notes, expected) {
@@ -336,7 +336,7 @@ func TestRequestNotes(t *testing.T) {
 	database := MockDatabase{
 		notes: []db.NotesData{{
 			TeamNumber: 971,
-			Notes:      []string{"Notes"},
+			Notes:      "Notes",
 		}},
 	}
 	scoutingServer := server.NewScoutingServer()
@@ -584,18 +584,21 @@ func (database *MockDatabase) QueryStats(int) ([]db.Stats, error) {
 	return []db.Stats{}, nil
 }
 
-func (database *MockDatabase) QueryNotes(requestedTeam int32) (db.NotesData, error) {
+func (database *MockDatabase) QueryNotes(requestedTeam int32) ([]string, error) {
 	var results []string
 	for _, data := range database.notes {
 		if data.TeamNumber == requestedTeam {
-			results = append(results, data.Notes[0])
+			results = append(results, data.Notes)
 		}
 	}
-	return db.NotesData{TeamNumber: requestedTeam, Notes: results}, nil
+	return results, nil
 }
 
-func (database *MockDatabase) AddNotes(data db.NotesData) error {
-	database.notes = append(database.notes, data)
+func (database *MockDatabase) AddNotes(teamNumber int, notes string) error {
+	database.notes = append(database.notes, db.NotesData{
+		TeamNumber: int32(teamNumber),
+		Notes:      notes,
+	})
 	return nil
 }
 

@@ -66,8 +66,8 @@ type Database interface {
 	QueryMatches(int32) ([]db.Match, error)
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryStats(int) ([]db.Stats, error)
-	QueryNotes(int32) (db.NotesData, error)
-	AddNotes(db.NotesData) error
+	QueryNotes(int32) ([]string, error)
+	AddNotes(int, string) error
 }
 
 type ScrapeMatchList func(int32, string) ([]scraping.Match, error)
@@ -470,10 +470,7 @@ func (handler submitNoteScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 		return
 	}
 
-	err = handler.db.AddNotes(db.NotesData{
-		TeamNumber: request.Team(),
-		Notes:      []string{string(request.Notes())},
-	})
+	err = handler.db.AddNotes(int(request.Team()), string(request.Notes()))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert notes: %v", err))
 		return
@@ -501,14 +498,14 @@ func (handler requestNotesForTeamHandler) ServeHTTP(w http.ResponseWriter, req *
 		return
 	}
 
-	notesData, err := handler.db.QueryNotes(request.Team())
+	notes, err := handler.db.QueryNotes(request.Team())
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to query notes: %v", err))
 		return
 	}
 
 	var response RequestNotesForTeamResponseT
-	for _, data := range notesData.Notes {
+	for _, data := range notes {
 		response.Notes = append(response.Notes, &request_notes_for_team_response.NoteT{data})
 	}
 
