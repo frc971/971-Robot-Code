@@ -349,14 +349,14 @@ TEST(TimestampProblemTest, SolveNewton) {
   // Setup a time problem with an interesting shape that isn't simple and
   // parallel.
   NoncausalTimestampFilter a(node_a, node_b);
-  a.Sample(e, {0, chrono::milliseconds(1002)});
-  a.Sample(e + chrono::milliseconds(1000), {0, chrono::milliseconds(1001)});
-  a.Sample(e + chrono::milliseconds(3000), {0, chrono::milliseconds(999)});
+  a.Sample(e, {0, chrono::milliseconds(1000)});
+  a.Sample(e + chrono::milliseconds(1000), {0, chrono::milliseconds(999)});
+  a.Sample(e + chrono::milliseconds(3000), {0, chrono::milliseconds(997)});
 
   NoncausalTimestampFilter b(node_b, node_a);
-  b.Sample(e + chrono::milliseconds(1000), {0, -chrono::milliseconds(999)});
-  b.Sample(e + chrono::milliseconds(2000), {0, -chrono::milliseconds(1000)});
-  b.Sample(e + chrono::milliseconds(4000), {0, -chrono::milliseconds(1002)});
+  b.Sample(e + chrono::milliseconds(1000), {0, -chrono::milliseconds(1001)});
+  b.Sample(e + chrono::milliseconds(2000), {0, -chrono::milliseconds(1002)});
+  b.Sample(e + chrono::milliseconds(4000), {0, -chrono::milliseconds(1004)});
 
   TimestampProblem problem(2);
   problem.set_base_clock(0, ta);
@@ -375,12 +375,14 @@ TEST(TimestampProblemTest, SolveNewton) {
   std::tuple<std::vector<BootTimestamp>, size_t> result1 =
       problem.SolveNewton(points1);
   EXPECT_EQ(std::get<1>(result1), 0u);
+  EXPECT_TRUE(problem.ValidateSolution(std::get<0>(result1)));
 
   std::vector<BootTimestamp> points2(problem.size(), BootTimestamp::max_time());
   points2[1] = std::get<0>(result1)[1];
   std::tuple<std::vector<BootTimestamp>, size_t> result2 =
       problem.SolveNewton(points2);
   EXPECT_EQ(std::get<1>(result2), 1u);
+  EXPECT_TRUE(problem.ValidateSolution(std::get<0>(result2)));
 
   EXPECT_EQ(std::get<0>(result1)[0], e + chrono::seconds(1));
   EXPECT_EQ(std::get<0>(result1)[0], std::get<0>(result2)[0]);
