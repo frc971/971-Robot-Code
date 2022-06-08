@@ -38,10 +38,13 @@ inline flatbuffers::Offset<T> JsonToFlatbuffer(
 }
 
 struct JsonOptions {
-  // controls if the Json is written ouut on multiple lines or one.
+  // controls if the Json is written out on multiple lines or one.
   bool multi_line = false;
   // the contents of vectors longer than max_vector_size will be skipped.
   size_t max_vector_size = SIZE_MAX;
+  // more extensive version of multi_line that prints every single field on its
+  // own line.
+  bool max_multi_line = false;
 };
 
 // Converts a flatbuffer into a Json string.

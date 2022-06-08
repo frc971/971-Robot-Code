@@ -14,6 +14,9 @@ DEFINE_bool(fetch, false,
             "If true, fetch the current message on the channel first");
 DEFINE_bool(pretty, false,
             "If true, pretty print the messages on multiple lines");
+DEFINE_bool(
+    pretty_max, false,
+    "If true, expand every field to its own line (expands more than -pretty)");
 DEFINE_bool(print_timestamps, true, "If true, timestamps are printed.");
 DEFINE_uint64(count, 0,
               "If >0, aos_dump will exit after printing this many messages.");
@@ -44,7 +47,8 @@ void PrintMessage(const aos::Channel *channel, const aos::Context &context,
 
   aos::FlatbufferToJson(
       builder, channel->schema(), static_cast<const uint8_t *>(context.data),
-      {FLAGS_pretty, static_cast<size_t>(FLAGS_max_vector_size)});
+      {FLAGS_pretty, static_cast<size_t>(FLAGS_max_vector_size),
+       FLAGS_pretty_max});
 
   if (FLAGS_print_timestamps) {
     if (context.monotonic_remote_time != context.monotonic_event_time) {
