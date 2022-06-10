@@ -24,6 +24,7 @@ TimerFd::~TimerFd() { PCHECK(close(fd_) == 0); }
 
 void TimerFd::SetTime(monotonic_clock::time_point start,
                       monotonic_clock::duration interval) {
+  CHECK_GE(start, monotonic_clock::epoch());
   struct itimerspec new_value;
   new_value.it_interval = ::aos::time::to_timespec(interval);
   new_value.it_value = ::aos::time::to_timespec(start);

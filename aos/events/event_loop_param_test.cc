@@ -752,6 +752,14 @@ TEST_P(AbstractEventLoopDeathTest, InvalidChannelName) {
       "/test/invalid");
 }
 
+// Verify that setting up a timer before monotonic_clock::epoch() fails.
+TEST_P(AbstractEventLoopDeathTest, NegativeTimeTimer) {
+  auto loop = Make();
+  TimerHandler *time = loop->AddTimer([]() {});
+  EXPECT_DEATH(time->Setup(monotonic_clock::epoch() - std::chrono::seconds(1)),
+               "-1.000");
+}
+
 // Verify that registering a watcher twice for "/test" fails.
 TEST_P(AbstractEventLoopDeathTest, TwoWatcher) {
   auto loop = Make();

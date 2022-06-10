@@ -505,7 +505,8 @@ class LogReader {
 
     // Sets the next wakeup time on the replay callback.
     void Setup(monotonic_clock::time_point next_time) {
-      timer_handler_->Setup(next_time + clock_offset());
+      timer_handler_->Setup(
+          std::max(monotonic_now(), next_time + clock_offset()));
     }
 
     // Sends a buffer on the provided channel index.

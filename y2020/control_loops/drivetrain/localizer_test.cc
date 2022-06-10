@@ -91,7 +91,7 @@ std::vector<Eigen::Matrix<double, 4, 4>> TargetLocations() {
   return locations;
 }
 
-constexpr std::chrono::seconds kPiTimeOffset(-10);
+constexpr std::chrono::seconds kPiTimeOffset(10);
 }  // namespace
 
 namespace chrono = std::chrono;
