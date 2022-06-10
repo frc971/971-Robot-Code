@@ -161,6 +161,16 @@ static const char* DefaultLogDir() {
   return "";
 }
 
+namespace aos {
+void FatalUnsetRealtimePriority() __attribute__((weak));
+}
+
+static void MaybeUnsetRealtime() {
+  if (&aos::FatalUnsetRealtimePriority != nullptr) {
+    aos::FatalUnsetRealtimePriority();
+  }
+}
+
 GLOG_DEFINE_int32(logfile_mode, 0664, "Log file mode/permissions.");
 
 GLOG_DEFINE_string(log_dir, DefaultLogDir(),
@@ -1254,6 +1264,7 @@ void LogMessage::Init(const char* file,
       data_ = &fatal_msg_data_shared;
       data_->first_fatal_ = false;
     }
+    MaybeUnsetRealtime();
   }
 
   stream().fill('0');
@@ -1408,6 +1419,11 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   static bool already_warned_before_initgoogle = false;
 
   log_mutex.AssertHeld();
+  if (data_->severity_ == GLOG_FATAL && exit_on_dfatal) {
+    if (data_->first_fatal_) {
+      MaybeUnsetRealtime();
+    }
+  }
 
   RAW_DCHECK(data_->num_chars_to_log_ > 0 &&
              data_->message_text_[data_->num_chars_to_log_-1] == '\n', "");
@@ -1460,30 +1476,6 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   // someone else can use them (as long as they flush afterwards)
   if (data_->severity_ == GLOG_FATAL && exit_on_dfatal) {
     if (data_->first_fatal_) {
-      {
-        // Put this back on SCHED_OTHER by default.
-        DIR *dirp = opendir("/proc/self/task");
-        if (dirp) {
-          struct dirent *directory_entry;
-          while ((directory_entry = readdir(dirp)) != NULL) {
-            int thread_id = std::atoi(directory_entry->d_name);
-
-            // ignore . and .. which are zeroes for some reason
-            if (thread_id != 0) {
-              struct sched_param param;
-              param.sched_priority = 20;
-              sched_setscheduler(thread_id, SCHED_OTHER, &param);
-            }
-          }
-          closedir(dirp);
-        } else {
-          // Can't get other threads; just lower own priority.
-          struct sched_param param;
-          param.sched_priority = 20;
-          sched_setscheduler(0, SCHED_OTHER, &param);
-        }
-      }
-
       // Store crash information so that it is accessible from within signal
       // handlers that may be invoked later.
       RecordCrashReason(&crash_reason);
@@ -2130,8 +2122,10 @@ string StrError(int err) {
   return buf;
 }
 
-LogMessageFatal::LogMessageFatal(const char* file, int line) :
-    LogMessage(file, line, GLOG_FATAL) {}
+LogMessageFatal::LogMessageFatal(const char *file, int line)
+    : LogMessage(file, line, GLOG_FATAL) {
+  MaybeUnsetRealtime();
+}
 
 LogMessageFatal::LogMessageFatal(const char* file, int line,
                                  const CheckOpString& result) :
@@ -2144,8 +2138,13 @@ LogMessageFatal::~LogMessageFatal() {
 
 namespace base {
 
+static ostringstream* MakeSafeOstream() {
+  MaybeUnsetRealtime();
+  return new ostringstream;
+}
+
 CheckOpMessageBuilder::CheckOpMessageBuilder(const char *exprtext)
-    : stream_(new ostringstream) {
+    : stream_(MakeSafeOstream()) {
   *stream_ << exprtext << " (";
 }
 

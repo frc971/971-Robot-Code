@@ -50,6 +50,9 @@ void SetCurrentThreadAffinity(const cpu_set_t &cpuset);
 // Sets the current thread's realtime priority.
 void SetCurrentThreadRealtimePriority(int priority);
 
+// Unsets all threads realtime priority in preparation for exploding.
+void FatalUnsetRealtimePriority();
+
 // Sets the current thread back down to non-realtime priority.
 void UnsetCurrentThreadRealtimePriority();
 

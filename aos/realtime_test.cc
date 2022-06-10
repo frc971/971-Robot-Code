@@ -1,6 +1,10 @@
 #include "aos/realtime.h"
 
+#include "aos/init.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
+
+DECLARE_bool(die_on_malloc);
 
 namespace aos {
 namespace testing {
@@ -72,5 +76,57 @@ TEST(RealtimeTest, ScopedRealtimeRestorer) {
   CheckNotRealtime();
 }
 
+// Tests that CHECK statements give real error messages rather than die on
+// malloc.
+TEST(RealtimeDeathTest, Check) {
+  EXPECT_DEATH(
+      {
+        ScopedRealtime rt;
+        CHECK_EQ(1, 2) << ": Numbers aren't equal.";
+      },
+      "Numbers aren't equal");
+  EXPECT_DEATH(
+      {
+        ScopedRealtime rt;
+        CHECK_GT(1, 2) << ": Cute error message";
+      },
+      "Cute error message");
+}
+
+// Tests that CHECK statements give real error messages rather than die on
+// malloc.
+TEST(RealtimeDeathTest, Fatal) {
+  EXPECT_DEATH(
+      {
+        ScopedRealtime rt;
+        LOG(FATAL) << "Cute message here";
+      },
+      "Cute message here");
+}
+
+// Tests that the signal handler drops RT permission and prints out a real
+// backtrace instead of crashing on the resulting mallocs.
+TEST(RealtimeDeathTest, SignalHandler) {
+  EXPECT_DEATH(
+      {
+        ScopedRealtime rt;
+        int x = reinterpret_cast<const volatile int *>(0)[0];
+        LOG(INFO) << x;
+      },
+      "SIGSEGV \\(@0x0\\) received by PID.*stack trace:");
+}
+
 }  // namespace testing
 }  // namespace aos
+
+// We need a special gtest main to force die_on_malloc support on.  Otherwise
+// we can't test CHECK statements before turning die_on_malloc on globally.
+GTEST_API_ int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  FLAGS_logtostderr = true;
+  FLAGS_die_on_malloc = true;
+
+  aos::InitGoogle(&argc, &argv);
+
+  return RUN_ALL_TESTS();
+}

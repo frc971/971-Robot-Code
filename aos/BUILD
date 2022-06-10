@@ -540,8 +540,11 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":init",
         ":realtime",
-        "//aos/testing:googletest",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_google_googletest//:gtest",
     ],
 )
 

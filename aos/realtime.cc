@@ -1,5 +1,6 @@
 #include "aos/realtime.h"
 
+#include <dirent.h>
 #include <malloc.h>
 #include <sched.h>
 #include <sys/mman.h>
@@ -287,6 +288,33 @@ void aos_free_hook(void *ptr) {
 
 void *malloc(size_t size) __attribute__((weak, alias("aos_malloc_hook")));
 void free(void *ptr) __attribute__((weak, alias("aos_free_hook")));
+}
+
+void FatalUnsetRealtimePriority() {
+  // Drop our priority first.  We are about to do lots of work to undo
+  // everything, don't get overly clever.
+  struct sched_param param;
+  param.sched_priority = 20;
+  sched_setscheduler(0, SCHED_OTHER, &param);
+
+  is_realtime = false;
+
+  // Put all sub-tasks back to non-rt priority too.
+  DIR *dirp = opendir("/proc/self/task");
+  if (dirp) {
+    struct dirent *directory_entry;
+    while ((directory_entry = readdir(dirp)) != NULL) {
+      int thread_id = std::atoi(directory_entry->d_name);
+
+      // ignore . and .. which are zeroes for some reason
+      if (thread_id != 0) {
+        struct sched_param param;
+        param.sched_priority = 20;
+        sched_setscheduler(thread_id, SCHED_OTHER, &param);
+      }
+    }
+    closedir(dirp);
+  }
 }
 
 void RegisterMallocHook() {
