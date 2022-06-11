@@ -477,9 +477,9 @@ class TimerHandler {
  protected:
   TimerHandler(EventLoop *event_loop, std::function<void()> fn);
 
-  monotonic_clock::time_point Call(
-      std::function<monotonic_clock::time_point()> get_time,
-      monotonic_clock::time_point event_time);
+  template <typename T>
+  monotonic_clock::time_point Call(T get_time,
+                                   monotonic_clock::time_point event_time);
 
  private:
   friend class EventLoop;

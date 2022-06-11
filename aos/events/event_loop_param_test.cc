@@ -1151,6 +1151,7 @@ TEST_P(AbstractEventLoopTest, TimerChangeParameters) {
   std::vector<monotonic_clock::time_point> iteration_list;
 
   auto test_timer = loop->AddTimer([&iteration_list, &loop]() {
+    ScopedNotRealtime nrt;
     iteration_list.push_back(loop->context().monotonic_event_time);
   });
 
@@ -1181,6 +1182,7 @@ TEST_P(AbstractEventLoopTest, TimerDisable) {
   ::std::vector<::aos::monotonic_clock::time_point> iteration_list;
 
   auto test_timer = loop->AddTimer([&iteration_list, &loop]() {
+    ScopedNotRealtime nrt;
     iteration_list.push_back(loop->context().monotonic_event_time);
   });
 
@@ -2411,6 +2413,28 @@ TEST_P(AbstractEventLoopTest, NonRealtimeEventLoopTimer) {
   loop1->OnRun([&test_timer, &loop1]() {
     CheckNotRealtime();
     test_timer->Setup(loop1->monotonic_now(), ::std::chrono::milliseconds(100));
+  });
+
+  Run();
+}
+
+// Tests that a realtime event loop timer is marked realtime.
+TEST_P(AbstractEventLoopTest, RealtimeSend) {
+  auto loop1 = MakePrimary();
+
+  loop1->SetRuntimeRealtimePriority(1);
+
+  auto sender = loop1->MakeSender<TestMessage>("/test2");
+
+  loop1->OnRun([&]() {
+    CheckRealtime();
+
+    aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
+    TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
+    builder.add_value(200);
+    msg.CheckOk(msg.Send(builder.Finish()));
+
+    this->Exit();
   });
 
   Run();

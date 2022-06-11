@@ -11,7 +11,7 @@ Pong::Pong(EventLoop *event_loop)
     : event_loop_(event_loop),
       sender_(event_loop_->MakeSender<examples::Pong>("/test")) {
   event_loop_->MakeWatcher("/test", [this](const examples::Ping &ping) {
-    if (last_value_ == ping.value()) {
+    if (last_value_ == ping.value() && (!quiet_ || VLOG_IS_ON(1))) {
       LOG(WARNING) << "Duplicate ping value at " << last_value_
                    << " time difference " << ping.send_time() - last_send_time_;
     }

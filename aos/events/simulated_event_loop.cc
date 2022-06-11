@@ -15,6 +15,10 @@
 #include "aos/realtime.h"
 #include "aos/util/phased_loop.h"
 
+// TODO(austin): If someone runs a SimulatedEventLoop on a RT thread with
+// die_on_malloc set, it won't die.  Really, we need to go RT, or fall back to
+// the base thread's original RT state to be actually accurate.
+
 namespace aos {
 
 class SimulatedEventLoop;
@@ -349,6 +353,10 @@ class SimulatedSender : public RawSender {
 
   void *data() override {
     if (!message_) {
+      // This API is safe to use in a RT context on a RT system.  So annotate it
+      // accordingly.
+      ScopedNotRealtime nrt;
+
       auto [span, mutable_span] =
           MakeSharedSpan(simulated_channel_->max_size());
       message_ = SimulatedMessage::Make(simulated_channel_, span);
@@ -1032,15 +1040,16 @@ RawSender::Error SimulatedSender::DoSend(
     size_t length, monotonic_clock::time_point monotonic_remote_time,
     realtime_clock::time_point realtime_remote_time,
     uint32_t remote_queue_index, const UUID &source_boot_uuid) {
+  // The allocations in here are due to infrastructure and don't count in the
+  // no mallocs in RT code.
+  ScopedNotRealtime nrt;
+
   VLOG(1) << simulated_event_loop_->distributed_now() << " "
           << NodeName(simulated_event_loop_->node())
           << simulated_event_loop_->monotonic_now() << " "
           << simulated_event_loop_->name() << " Send "
           << configuration::StrippedChannelToString(channel());
 
-  // The allocations in here are due to infrastructure and don't count in the
-  // no mallocs in RT code.
-  ScopedNotRealtime nrt;
   CHECK_LE(length, size()) << ": Attempting to send too big a message.";
   message_->context.monotonic_event_time =
       simulated_event_loop_->monotonic_now();
@@ -1166,7 +1175,10 @@ void SimulatedTimerHandler::HandleEvent() noexcept {
     prev_logger.Swap(simulated_event_loop_->log_impl_);
   }
   if (token_ != scheduler_->InvalidToken()) {
-    scheduler_->Deschedule(token_);
+    {
+      ScopedNotRealtime nrt;
+      scheduler_->Deschedule(token_);
+    }
     token_ = scheduler_->InvalidToken();
   }
   if (repeat_offset_ != monotonic_clock::zero()) {
@@ -1186,7 +1198,10 @@ void SimulatedTimerHandler::HandleEvent() noexcept {
 void SimulatedTimerHandler::Disable() {
   simulated_event_loop_->RemoveEvent(&event_);
   if (token_ != scheduler_->InvalidToken()) {
-    scheduler_->Deschedule(token_);
+    {
+      ScopedNotRealtime nrt;
+      scheduler_->Deschedule(token_);
+    }
     token_ = scheduler_->InvalidToken();
   }
 }

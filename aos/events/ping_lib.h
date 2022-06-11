@@ -32,7 +32,7 @@ class Ping {
   // Last pong value received so we can detect missed pongs.
   int last_pong_value_ = 0;
 
-  bool quiet_ = false;
+  bool quiet_ = true;
 };
 
 }  // namespace aos

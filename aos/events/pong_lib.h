@@ -12,11 +12,15 @@ class Pong {
  public:
   Pong(EventLoop *event_loop);
 
+  void set_quiet(bool quiet) { quiet_ = quiet; }
+
  private:
   EventLoop *event_loop_;
   aos::Sender<examples::Pong> sender_;
   int32_t last_value_ = 0;
   int32_t last_send_time_ = 0;
+
+  bool quiet_ = true;
 };
 
 }  // namespace aos

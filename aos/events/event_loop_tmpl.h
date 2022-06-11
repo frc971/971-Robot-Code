@@ -201,9 +201,9 @@ inline RawSender::Error RawSender::Send(
   return err;
 }
 
+template <typename T>
 inline monotonic_clock::time_point TimerHandler::Call(
-    std::function<monotonic_clock::time_point()> get_time,
-    monotonic_clock::time_point event_time) {
+    T get_time, monotonic_clock::time_point event_time) {
   const monotonic_clock::time_point monotonic_start_time = get_time();
 
   event_loop_->SetTimerContext(event_time);
