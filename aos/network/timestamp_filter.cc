@@ -1139,6 +1139,16 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
                 << " is following and the slope would be too positive.";
         return;
       }
+
+      if ((prior_dt == chrono::nanoseconds(0) &&
+           prior_doffset == chrono::nanoseconds(0)) ||
+          (next_dt == chrono::nanoseconds(0) &&
+           next_doffset == chrono::nanoseconds(0))) {
+        VLOG(1) << node_names_ << " Ignoring timestamp "
+                << TimeString(monotonic_now, sample_ns) << " because "
+                << TimeString(*it) << " matches one of the points.";
+        return;
+      }
     }
 
     // Now, insert and start propagating forwards and backwards anything we've

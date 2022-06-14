@@ -509,21 +509,36 @@ TEST_F(NoncausalTimestampFilterTest, RandomTimeInsertion) {
 
             VLOG(1) << "Sorting randomized";
             TestingNoncausalTimestampFilter random(node_a, node_b);
-            random.Sample({0, pairs[0].first}, {0, pairs[0].second});
-            if (VLOG_IS_ON(1)) {
-              random.Debug();
+            // Test that we can add each sample correctly.
+            for (size_t actual_sample = 0; actual_sample < pairs.size();
+                 ++actual_sample) {
+              size_t starting_size = random.timestamps_size();
+              // And that when we then duplicate the previous samples, they all
+              // work.  Since re-adding the previous samples shouldn't change
+              // anything, we don't need to do it in any particular order.
+              for (size_t repeated_sample = 0;
+                   repeated_sample < actual_sample + 1; ++repeated_sample) {
+                random.Sample({0, pairs[repeated_sample].first},
+                              {0, pairs[repeated_sample].second});
+                if (VLOG_IS_ON(1)) {
+                  random.Debug();
+                }
+                if (repeated_sample < actual_sample) {
+                  // Adding everything but the last sample shouldn't change the
+                  // size any.
+                  EXPECT_EQ(starting_size, random.timestamps_size());
+                }
+              }
             }
-            random.Sample({0, pairs[1].first}, {0, pairs[1].second});
-            if (VLOG_IS_ON(1)) {
-              random.Debug();
-            }
-            random.Sample({0, pairs[2].first}, {0, pairs[2].second});
-            if (VLOG_IS_ON(1)) {
-              random.Debug();
-            }
-            random.Sample({0, pairs[3].first}, {0, pairs[3].second});
-            if (VLOG_IS_ON(1)) {
-              random.Debug();
+
+            // And now run through everything again to be sure.
+            for (size_t repeated_sample = 0; repeated_sample < pairs.size();
+                 ++repeated_sample) {
+              random.Sample({0, pairs[repeated_sample].first},
+                            {0, pairs[repeated_sample].second});
+              if (VLOG_IS_ON(1)) {
+                random.Debug();
+              }
             }
 
             if (forward.timestamps_size() != random.timestamps_size()) {
@@ -1057,6 +1072,38 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
   EXPECT_EQ(filter.Offset(t4, 0),
             (o3 + chrono::nanoseconds(static_cast<int64_t>(offset_post))));
   EXPECT_EQ(filter.Offset(t4, 0.0, 0), std::make_pair(o3, offset_post));
+}
+
+// Tests that adding duplicates gets correctly deduplicated.
+TEST_F(NoncausalTimestampFilterTest, DuplicateSample) {
+  const BootTimestamp ta{0,
+                         monotonic_clock::time_point(chrono::milliseconds(0))};
+  const BootDuration oa{0, chrono::microseconds(1)};
+
+  const BootTimestamp tb{0,
+                         monotonic_clock::time_point(chrono::milliseconds(1))};
+  const BootDuration ob{0, chrono::microseconds(0)};
+
+  const BootTimestamp tc{0,
+                         monotonic_clock::time_point(chrono::milliseconds(2))};
+  const BootDuration oc{0, chrono::microseconds(1)};
+  TestingNoncausalTimestampFilter filter(node_a, node_b);
+
+  filter.Sample(ta, oa);
+  filter.Sample(ta, oa);
+  filter.Sample(tc, oc);
+  filter.Sample(ta, oa);
+  filter.Sample(tc, oc);
+  filter.Sample(tb, ob);
+  filter.Sample(tb, ob);
+  filter.Sample(ta, oa);
+  filter.Sample(tc, oc);
+  filter.Debug();
+  EXPECT_EQ(filter.timestamps_size(), 3u);
+
+  EXPECT_EQ(filter.timestamp(0), std::make_tuple(ta, oa));
+  EXPECT_EQ(filter.timestamp(1), std::make_tuple(tb, ob));
+  EXPECT_EQ(filter.timestamp(2), std::make_tuple(tc, oc));
 }
 
 // Run a couple of points through the estimator and confirm it works.
