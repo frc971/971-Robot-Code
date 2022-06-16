@@ -1,5 +1,6 @@
 load("@rules_rust//rust:toolchain.bzl", "rust_stdlib_filegroup", "rust_toolchain")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("@rules_rust//rust:defs.bzl", "rust_binary")
 
 # We have to declare our toolchains individually to get the corect constraints
 # configured so we can robustly select the correct one for each of our
@@ -120,18 +121,16 @@ toolchain(
     toolchain_type = "@rules_rust//rust:toolchain",
 )
 
-'''
-# TODO(Brian): Uncomment in the next change once dependencies exist.
 rust_binary(
     name = "tweak_cargo_raze_output",
     srcs = ["tweak_cargo_raze_output.rs"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/cargo:anyhow",
         "//third_party/cargo:toml",
     ],
 )
-'''
 
 cc_library(
     name = "forward_allocator",
