@@ -422,7 +422,14 @@ void Application::HandleCommand(aos::starter::Command cmd) {
 bool Application::MaybeHandleSignal() {
   int status;
 
+  if (status_ == aos::starter::State::WAITING ||
+      status_ == aos::starter::State::STOPPED) {
+    // We can't possibly have received a signal meant for this process.
+    return false;
+  }
+
   // Check if the status of this process has changed
+  // The PID won't be -1 if this application has ever been run successfully
   if (pid_ == -1 || waitpid(pid_, &status, WNOHANG) != pid_) {
     return false;
   }
@@ -496,9 +503,7 @@ bool Application::MaybeHandleSignal() {
     }
     case aos::starter::State::WAITING:
     case aos::starter::State::STOPPED: {
-      LOG(FATAL)
-          << "Received signal on process that was already stopped : name: '"
-          << name_ << "' pid: " << pid_;
+      __builtin_unreachable();
       break;
     }
   }
