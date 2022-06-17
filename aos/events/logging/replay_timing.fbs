@@ -1,0 +1,16 @@
+namespace aos.timing;
+
+table MessageTiming {
+  channel:uint (id: 0);
+  // Expected and actual monotonic send times, in nanoseconds.
+  expected_send_time:int64 (id: 1);
+  actual_send_time:int64 (id: 2);
+  // expected - actual, in seconds (provides no additional information).
+  send_time_error:double (id: 3);
+}
+
+table ReplayTiming {
+  messages:[MessageTiming] (id: 0);
+}
+
+root_type ReplayTiming;

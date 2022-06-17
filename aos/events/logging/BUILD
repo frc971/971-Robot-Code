@@ -1,14 +1,29 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//aos:config.bzl", "aos_config")
+load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 
 flatbuffer_cc_library(
     name = "logger_fbs",
     srcs = ["logger.fbs"],
-    gen_reflections = 1,
+    gen_reflections = True,
     includes = [
         "//aos:configuration_fbs_includes",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_cc_library(
+    name = "replay_timing_fbs",
+    srcs = ["replay_timing.fbs"],
+    gen_reflections = True,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+cc_static_flatbuffer(
+    name = "replay_timing_schema",
+    function = "aos::timing::ReplayTimingSchema",
+    target = ":replay_timing_fbs_reflection_out",
     visibility = ["//visibility:public"],
 )
 
@@ -265,10 +280,13 @@ cc_library(
         ":log_writer",
         ":logfile_utils",
         ":logger_fbs",
+        ":replay_timing_fbs",
+        "//aos:condition",
         "//aos:uuid",
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//aos/events:simulated_event_loop",
+        "//aos/mutex",
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:multinode_timestamp_filter",
         "//aos/network:remote_message_fbs",
@@ -277,6 +295,7 @@ cc_library(
         "//aos/network:timestamp_filter",
         "//aos/time",
         "//aos/util:file",
+        "//aos/util:threaded_queue",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_google_absl//absl/strings",
     ],

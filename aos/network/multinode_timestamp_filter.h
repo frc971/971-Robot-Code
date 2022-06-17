@@ -192,7 +192,7 @@ class InterpolatedTimeConverter : public TimeConverter {
   // TODO(austin): Pop here instead of in log reader.
   void ObserveTimePassed(distributed_clock::time_point time) override;
 
-  // Queues 1 more timestammp in the interpolation list.  This is public for
+  // Queues 1 more timestamp in the interpolation list.  This is public for
   // timestamp_extractor so it can hammer on the log until everything is queued.
   std::optional<const std::tuple<distributed_clock::time_point,
                                  std::vector<logger::BootTimestamp>> *>
