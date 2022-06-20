@@ -2,6 +2,7 @@
 
 #include "aos/init.h"
 #include "glog/logging.h"
+#include "glog/raw_logging.h"
 #include "gtest/gtest.h"
 
 DECLARE_bool(die_on_malloc);
@@ -114,6 +115,16 @@ TEST(RealtimeDeathTest, SignalHandler) {
         LOG(INFO) << x;
       },
       "SIGSEGV \\(@0x0\\) received by PID.*stack trace:");
+}
+
+// Tests that RAW_LOG(FATAL) explodes properly.
+TEST(RealtimeDeathTest, RawFatal) {
+  EXPECT_DEATH(
+      {
+        ScopedRealtime rt;
+        RAW_LOG(FATAL, "Cute message here\n");
+      },
+      "Cute message here");
 }
 
 }  // namespace testing

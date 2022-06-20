@@ -66,6 +66,16 @@
 # define safe_write(fd, s, len)  write(fd, s, len)
 #endif
 
+namespace aos {
+void FatalUnsetRealtimePriority() __attribute__((weak));
+}
+
+static void MaybeUnsetRealtime() {
+  if (&aos::FatalUnsetRealtimePriority != nullptr) {
+    aos::FatalUnsetRealtimePriority();
+  }
+}
+
 _START_GOOGLE_NAMESPACE_
 
 // Data for RawLog__ below. We simply pick up the latest
@@ -152,6 +162,7 @@ void RawLog__(LogSeverity severity, const char* file, int line,
   // We write just once to avoid races with other invocations of RawLog__.
   safe_write(STDERR_FILENO, buffer, strlen(buffer));
   if (severity == GLOG_FATAL)  {
+    MaybeUnsetRealtime();
     if (!sync_val_compare_and_swap(&crashed, false, true)) {
       crash_reason.filename = file;
       crash_reason.line_number = line;
