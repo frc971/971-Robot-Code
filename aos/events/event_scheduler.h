@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "aos/events/epoll.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/boot_timestamp.h"
 #include "aos/logging/implementations.h"
@@ -277,6 +278,13 @@ class EventSchedulerScheduler {
   // exactly the same.
   void RunFor(distributed_clock::duration duration);
 
+  // Sets the realtime replay rate. A value of 1.0 will cause the scheduler to
+  // try to play events in realtime. 0.5 will run at half speed. Use infinity
+  // (the default) to run as fast as possible. This can be changed during
+  // run-time.
+  void SetReplayRate(double replay_rate) { replay_rate_ = replay_rate; }
+  internal::EPoll *epoll() { return &epoll_; }
+
   // Returns the current distributed time.
   distributed_clock::time_point distributed_now() const { return now_; }
 
@@ -328,6 +336,12 @@ class EventSchedulerScheduler {
   // Returns the next event time and scheduler on which to run it.
   std::tuple<distributed_clock::time_point, EventScheduler *> OldestEvent();
 
+  // Handles running loop_body repeatedly until complete. loop_body should
+  // return the next time at which it wants to be called, and set is_running_ to
+  // false once we should stop.
+  template <typename F>
+  void RunMaybeRealtimeLoop(F loop_body);
+
   // True if we are running.
   bool is_running_ = false;
   // The current time.
@@ -339,6 +353,9 @@ class EventSchedulerScheduler {
   std::vector<std::tuple<distributed_clock::time_point,
                          std::vector<logger::BootTimestamp>>>
       reboots_;
+
+  double replay_rate_ = std::numeric_limits<double>::infinity();
+  internal::EPoll epoll_;
 };
 
 inline distributed_clock::time_point EventScheduler::distributed_now() const {

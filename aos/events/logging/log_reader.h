@@ -231,6 +231,13 @@ class LogReader {
     exit_on_finish_ = exit_on_finish;
   }
 
+  // Sets the realtime replay rate. A value of 1.0 will cause the scheduler to
+  // try to play events in realtime. 0.5 will run at half speed. Use infinity
+  // (the default) to run as fast as possible. This can be changed during
+  // run-time.
+  // Only applies when running against a SimulatedEventLoopFactory.
+  void SetRealtimeReplayRate(double replay_rate);
+
  private:
   void Register(EventLoop *event_loop, const Node *node);
 

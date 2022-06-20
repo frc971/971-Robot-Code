@@ -2208,5 +2208,12 @@ void LogReader::State::SetClockOffset() {
   }
 }
 
+void LogReader::SetRealtimeReplayRate(double replay_rate) {
+  CHECK(event_loop_factory_ != nullptr)
+      << ": Can't set replay rate without an event loop factory (have you "
+         "called Register()?).";
+  event_loop_factory_->SetRealtimeReplayRate(replay_rate);
+}
+
 }  // namespace logger
 }  // namespace aos

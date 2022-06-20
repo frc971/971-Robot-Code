@@ -756,6 +756,10 @@ void SimulatedEventLoopFactory::set_send_delay(
   }
 }
 
+void SimulatedEventLoopFactory::SetRealtimeReplayRate(double replay_rate) {
+  scheduler_scheduler_.SetReplayRate(replay_rate);
+}
+
 void SimulatedEventLoop::MakeRawWatcher(
     const Channel *channel,
     std::function<void(const Context &channel, const void *message)> watcher) {

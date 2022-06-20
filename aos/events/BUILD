@@ -373,6 +373,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":aos_logging",
+        ":epoll",
         ":event_loop",
         ":simple_channel",
         "//aos:init",

@@ -133,6 +133,15 @@ class SimulatedEventLoopFactory {
   // starts up without stopping execution.
   void AllowApplicationCreationDuring(std::function<void()> fn);
 
+  // Sets the realtime replay rate. A value of 1.0 will cause the scheduler to
+  // try to play events in realtime. 0.5 will run at half speed. Use infinity
+  // (the default) to run as fast as possible. This can be changed during
+  // run-time.
+  void SetRealtimeReplayRate(double replay_rate);
+
+  // Access to the internal scheduler's epoll object for realtime replay.
+  internal::EPoll *scheduler_epoll() { return scheduler_scheduler_.epoll(); }
+
  private:
   friend class NodeEventLoopFactory;
 

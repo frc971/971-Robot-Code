@@ -15,7 +15,8 @@ Plotter::Plotter()
       event_loop_factory_(&config_.message()),
       event_loop_(event_loop_factory_.MakeEventLoop("plotter")),
       plot_sender_(event_loop_->MakeSender<Plot>("/analysis")),
-      web_proxy_(event_loop_.get(), aos::web_proxy::StoreHistory::kYes, -1),
+      web_proxy_(event_loop_.get(), event_loop_factory_.scheduler_epoll(),
+                 aos::web_proxy::StoreHistory::kYes, -1),
       builder_(plot_sender_.MakeBuilder()) {
   web_proxy_.SetDataPath(kDataPath);
   event_loop_->SkipTimingReport();
@@ -41,7 +42,11 @@ Plotter::Plotter()
       ColorWheelColor{.name = "white", .color = {1, 1, 1}});
 }
 
-void Plotter::Spin() { event_loop_factory_.Run(); }
+void Plotter::Spin() {
+  // Set non-infinite replay rate to avoid pegging a full CPU.
+  event_loop_factory_.SetRealtimeReplayRate(1.0);
+  event_loop_factory_.Run();
+}
 
 void Plotter::Title(std::string_view title) {
   title_ = builder_.fbb()->CreateString(title);

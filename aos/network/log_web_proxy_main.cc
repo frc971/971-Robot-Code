@@ -17,6 +17,9 @@ DEFINE_string(node, "", "Directory to serve data files from");
 DEFINE_int32(buffer_size, -1, "-1 if infinite, in # of messages / channel.");
 DEFINE_double(monotonic_start_time, -1.0, "Start time (sec)");
 DEFINE_double(monotonic_end_time, -1.0, "End time (sec)");
+DEFINE_double(
+    replay_rate, -1,
+    "-1 to replay as fast as possible; 1.0 = realtime, 0.5 = half speed.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -30,6 +33,12 @@ int main(int argc, char **argv) {
   aos::logger::LogReader reader(logfiles);
 
   reader.Register();
+
+  // If going for "as fast as possible" don't actually use infinity, because we
+  // don't want the log reading blocking our use of the epoll handlers.
+  reader.SetRealtimeReplayRate(FLAGS_replay_rate == -1.0
+                                   ? std::numeric_limits<double>::max()
+                                   : FLAGS_replay_rate);
 
   std::unique_ptr<aos::EventLoop> event_loop;
 
@@ -55,12 +64,11 @@ int main(int argc, char **argv) {
   }
 
   aos::web_proxy::WebProxy web_proxy(
-      event_loop.get(), aos::web_proxy::StoreHistory::kYes, FLAGS_buffer_size);
+      event_loop.get(),
+      reader.event_loop_factory()->scheduler_epoll(),
+      aos::web_proxy::StoreHistory::kYes, FLAGS_buffer_size);
 
   web_proxy.SetDataPath(FLAGS_data_dir.c_str());
-
-  // Keep the web proxy alive past when we finish reading the logfile.
-  reader.set_exit_on_finish(false);
 
   if (FLAGS_monotonic_end_time > 0) {
     event_loop->AddTimer([&web_proxy]() { web_proxy.StopRecording(); })
@@ -69,5 +77,12 @@ int main(int argc, char **argv) {
                 std::chrono::duration<double>(FLAGS_monotonic_end_time))));
   }
 
+  reader.event_loop_factory()->Run();
+
+  // Keep the web proxy alive past when we finish reading the logfile, but crank
+  // down the replay rate so that we don't peg our entire CPU just trying to
+  // service timers in the web proxy code.
+  reader.set_exit_on_finish(false);
+  reader.SetRealtimeReplayRate(1.0);
   reader.event_loop_factory()->Run();
 }
