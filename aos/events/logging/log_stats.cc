@@ -1,5 +1,6 @@
 #include <iomanip>
 #include <iostream>
+#include <queue>
 
 #include "absl/strings/str_format.h"
 #include "aos/events/logging/log_reader.h"
@@ -108,7 +109,8 @@ class Histogram {
 
 class ChannelStats {
  public:
-  ChannelStats(const aos::Channel *channel) : channel_(channel) {}
+  ChannelStats(const aos::Channel *channel, const aos::Configuration *config)
+      : channel_(channel), config_(config) {}
 
   // Adds a sample to the statistics.
   void Add(const aos::Context &context) {
@@ -124,6 +126,14 @@ class ChannelStats {
                          .count());
     }
     current_message_time_ = context.monotonic_event_time;
+    channel_storage_duration_messages_.push(current_message_time_);
+    while (channel_storage_duration_messages_.front() +
+               std::chrono::nanoseconds(config_->channel_storage_duration()) <=
+           current_message_time_) {
+      channel_storage_duration_messages_.pop();
+    }
+    max_messages_per_period_ = std::max(
+        max_messages_per_period_, channel_storage_duration_messages_.size());
   }
 
   std::string Percentile() const { return histogram_.Percentile(); }
@@ -138,6 +148,11 @@ class ChannelStats {
 
   double avg_messages_per_sec() const {
     return total_num_messages_ / SecondsActive();
+  }
+  double max_messages_per_sec() const {
+    return max_messages_per_period_ /
+           std::min(SecondsActive(),
+                    1e-9 * config_->channel_storage_duration());
   }
   size_t avg_message_size() const {
     return total_message_size_ / total_num_messages_;
@@ -155,6 +170,7 @@ class ChannelStats {
  private:
   // pointer to the channel for which stats are collected
   const aos::Channel *channel_;
+  const aos::Configuration *config_;
   aos::realtime_clock::time_point channel_end_time_ =
       aos::realtime_clock::min_time;
   aos::monotonic_clock::time_point first_message_time_ =
@@ -162,6 +178,11 @@ class ChannelStats {
       aos::monotonic_clock::max_time;
   aos::monotonic_clock::time_point current_message_time_ =
       aos::monotonic_clock::min_time;
+
+  // Buffer of the last N seconds of messages, for N = channel_storage_duration.
+  std::queue<aos::monotonic_clock::time_point>
+      channel_storage_duration_messages_;
+  size_t max_messages_per_period_ = 0;
 
   // channel stats to collect per channel
   int total_num_messages_ = 0;
@@ -255,7 +276,7 @@ int main(int argc, char **argv) {
     }
 
     // Add a record to the stats vector.
-    channel_stats.push_back({channel});
+    channel_stats.push_back({channel, reader.configuration()});
     // Lambda to read messages and parse for information
     stats_event_loop->MakeRawNoArgWatcher(
         channel,
@@ -297,8 +318,9 @@ int main(int argc, char **argv) {
         if (!FLAGS_excessive_size_only) {
           std::cout << "   " << channel_stats[i].total_num_messages()
                     << " msgs, " << channel_stats[i].avg_messages_per_sec()
-                    << "hz avg, " << channel_stats[i].channel()->frequency()
-                    << "hz max";
+                    << "hz avg, " << channel_stats[i].max_messages_per_sec()
+                    << "hz max, " << channel_stats[i].channel()->frequency()
+                    << "hz configured max";
         }
         std::cout << " " << channel_stats[i].avg_message_size()
                   << " bytes avg, " << channel_stats[i].avg_message_bandwidth()
