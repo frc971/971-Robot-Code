@@ -1,0 +1,6 @@
+namespace scouting.webserver.requests;
+
+table SubmitShiftScheduleResponse {
+}
+
+root_type SubmitShiftScheduleResponse;

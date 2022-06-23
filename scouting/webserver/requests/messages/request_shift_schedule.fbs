@@ -1,0 +1,6 @@
+namespace scouting.webserver.requests;
+
+table RequestShiftSchedule {
+}
+
+root_type RequestShiftSchedule;

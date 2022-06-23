@@ -16,6 +16,10 @@ FILE_NAMES = (
     "submit_notes_response",
     "request_notes_for_team",
     "request_notes_for_team_response",
+    "request_shift_schedule",
+    "request_shift_schedule_response",
+    "submit_shift_schedule",
+    "submit_shift_schedule_response",
 )
 
 filegroup(

@@ -15,8 +15,10 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule_response"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
@@ -142,4 +144,16 @@ func RequestNotes(server string, requestBytes []byte) (*request_notes_for_team_r
 	return sendMessage[request_notes_for_team_response.RequestNotesForTeamResponseT](
 		server+"/requests/request/notes_for_team", requestBytes,
 		request_notes_for_team_response.GetRootAsRequestNotesForTeamResponse)
+}
+
+func RequestShiftSchedule(server string, requestBytes []byte) (*request_shift_schedule_response.RequestShiftScheduleResponseT, error) {
+	return sendMessage[request_shift_schedule_response.RequestShiftScheduleResponseT](
+		server+"/requests/request/shift_schedule", requestBytes,
+		request_shift_schedule_response.GetRootAsRequestShiftScheduleResponse)
+}
+
+func SubmitShiftSchedule(server string, requestBytes []byte) (*submit_shift_schedule_response.SubmitShiftScheduleResponseT, error) {
+	return sendMessage[submit_shift_schedule_response.SubmitShiftScheduleResponseT](
+		server+"/requests/submit/shift_schedule", requestBytes,
+		submit_shift_schedule_response.GetRootAsSubmitShiftScheduleResponse)
 }

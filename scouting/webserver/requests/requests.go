@@ -23,10 +23,14 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -45,15 +49,22 @@ type SubmitNotes = submit_notes.SubmitNotes
 type SubmitNotesResponseT = submit_notes_response.SubmitNotesResponseT
 type RequestNotesForTeam = request_notes_for_team.RequestNotesForTeam
 type RequestNotesForTeamResponseT = request_notes_for_team_response.RequestNotesForTeamResponseT
+type RequestShiftSchedule = request_shift_schedule.RequestShiftSchedule
+type RequestShiftScheduleResponseT = request_shift_schedule_response.RequestShiftScheduleResponseT
+type SubmitShiftSchedule = submit_shift_schedule.SubmitShiftSchedule
+type SubmitShiftScheduleResponseT = submit_shift_schedule_response.SubmitShiftScheduleResponseT
 
 // The interface we expect the database abstraction to conform to.
 // We use an interface here because it makes unit testing easier.
 type Database interface {
 	AddToMatch(db.Match) error
+	AddToShift(db.Shift) error
 	AddToStats(db.Stats) error
 	ReturnMatches() ([]db.Match, error)
+	ReturnAllShifts() ([]db.Shift, error)
 	ReturnStats() ([]db.Stats, error)
 	QueryMatches(int32) ([]db.Match, error)
+	QueryAllShifts(int) ([]db.Shift, error)
 	QueryStats(int) ([]db.Stats, error)
 	QueryNotes(int32) (db.NotesData, error)
 	AddNotes(db.NotesData) error
@@ -480,6 +491,91 @@ func (handler requestNotesForTeamHandler) ServeHTTP(w http.ResponseWriter, req *
 	w.Write(builder.FinishedBytes())
 }
 
+type requestShiftScheduleHandler struct {
+	db Database
+}
+
+func (handler requestShiftScheduleHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	_, success := parseRequest(w, requestBytes, "RequestShiftSchedule", request_shift_schedule.GetRootAsRequestShiftSchedule)
+	if !success {
+		return
+	}
+
+	shiftData, err := handler.db.ReturnAllShifts()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to query shift schedule: %v", err))
+		return
+	}
+
+	var response RequestShiftScheduleResponseT
+	for _, shifts := range shiftData {
+		response.ShiftSchedule = append(response.ShiftSchedule, &request_shift_schedule_response.MatchAssignmentT{
+			MatchNumber: shifts.MatchNumber,
+			R1scouter:   shifts.R1scouter,
+			R2scouter:   shifts.R2scouter,
+			R3scouter:   shifts.R3scouter,
+			B1scouter:   shifts.B1scouter,
+			B2scouter:   shifts.B2scouter,
+			B3scouter:   shifts.B3scouter,
+		})
+	}
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
+type submitShiftScheduleHandler struct {
+	db Database
+}
+
+func (handler submitShiftScheduleHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// Get the username of the person submitting the data.
+	username := parseUsername(req)
+
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest[SubmitShiftSchedule](w, requestBytes, "SubmitShiftSchedule", submit_shift_schedule.GetRootAsSubmitShiftSchedule)
+	if !success {
+		return
+	}
+
+	log.Println("Got shift schedule from", username)
+	shift_schedule_length := request.ShiftScheduleLength()
+	for i := 0; i < shift_schedule_length; i++ {
+		var match_assignment submit_shift_schedule.MatchAssignment
+		request.ShiftSchedule(&match_assignment, i)
+		current_shift := db.Shift{
+			MatchNumber: match_assignment.MatchNumber(),
+			R1scouter:   string(match_assignment.R1scouter()),
+			R2scouter:   string(match_assignment.R2scouter()),
+			R3scouter:   string(match_assignment.R3scouter()),
+			B1scouter:   string(match_assignment.B1scouter()),
+			B2scouter:   string(match_assignment.B2scouter()),
+			B3scouter:   string(match_assignment.B3scouter()),
+		}
+		err = handler.db.AddToShift(current_shift)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit shift schedule: ", err))
+			return
+		}
+	}
+
+	builder := flatbuffers.NewBuilder(50 * 1024)
+	builder.Finish((&SubmitShiftScheduleResponseT{}).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 func HandleRequests(db Database, scrape ScrapeMatchList, scoutingServer server.ScoutingServer) {
 	scoutingServer.HandleFunc("/requests", unknown)
 	scoutingServer.Handle("/requests/submit/data_scouting", submitDataScoutingHandler{db})
@@ -489,4 +585,6 @@ func HandleRequests(db Database, scrape ScrapeMatchList, scoutingServer server.S
 	scoutingServer.Handle("/requests/refresh_match_list", refreshMatchListHandler{db, scrape})
 	scoutingServer.Handle("/requests/submit/submit_notes", submitNoteScoutingHandler{db})
 	scoutingServer.Handle("/requests/request/notes_for_team", requestNotesForTeamHandler{db})
+	scoutingServer.Handle("/requests/submit/shift_schedule", submitShiftScheduleHandler{db})
+	scoutingServer.Handle("/requests/request/shift_schedule", requestShiftScheduleHandler{db})
 }

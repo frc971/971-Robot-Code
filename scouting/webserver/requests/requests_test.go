@@ -20,9 +20,12 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -355,6 +358,113 @@ func TestRequestNotes(t *testing.T) {
 	}
 }
 
+func TestRequestShiftSchedule(t *testing.T) {
+	db := MockDatabase{
+		shiftSchedule: []db.Shift{
+			{
+				MatchNumber: 1,
+				R1scouter:   "Bob",
+				R2scouter:   "James",
+				R3scouter:   "Robert",
+				B1scouter:   "Alice",
+				B2scouter:   "Mary",
+				B3scouter:   "Patricia",
+			},
+			{
+				MatchNumber: 2,
+				R1scouter:   "Liam",
+				R2scouter:   "Noah",
+				R3scouter:   "Oliver",
+				B1scouter:   "Emma",
+				B2scouter:   "Charlotte",
+				B3scouter:   "Amelia",
+			},
+		},
+	}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&db, scrapeEmtpyMatchList, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_shift_schedule.RequestShiftScheduleT{}).Pack(builder))
+
+	response, err := debug.RequestShiftSchedule("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request shift schedule: ", err)
+	}
+
+	expected := request_shift_schedule_response.RequestShiftScheduleResponseT{
+		ShiftSchedule: []*request_shift_schedule_response.MatchAssignmentT{
+			{
+				MatchNumber: 1,
+				R1scouter:   "Bob",
+				R2scouter:   "James",
+				R3scouter:   "Robert",
+				B1scouter:   "Alice",
+				B2scouter:   "Mary",
+				B3scouter:   "Patricia",
+			},
+			{
+				MatchNumber: 2,
+				R1scouter:   "Liam",
+				R2scouter:   "Noah",
+				R3scouter:   "Oliver",
+				B1scouter:   "Emma",
+				B2scouter:   "Charlotte",
+				B3scouter:   "Amelia",
+			},
+		},
+	}
+	if len(expected.ShiftSchedule) != len(response.ShiftSchedule) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+	for i, match := range expected.ShiftSchedule {
+		if !reflect.DeepEqual(*match, *response.ShiftSchedule[i]) {
+			t.Fatal("Expected for shift schedule", i, ":", *match, ", but got:", *response.ShiftSchedule[i])
+		}
+	}
+}
+
+func TestSubmitShiftSchedule(t *testing.T) {
+	database := MockDatabase{}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&database, scrapeEmtpyMatchList, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&submit_shift_schedule.SubmitShiftScheduleT{
+		ShiftSchedule: []*submit_shift_schedule.MatchAssignmentT{
+			{MatchNumber: 1,
+				R1scouter: "Bob",
+				R2scouter: "James",
+				R3scouter: "Robert",
+				B1scouter: "Alice",
+				B2scouter: "Mary",
+				B3scouter: "Patricia"},
+		},
+	}).Pack(builder))
+
+	_, err := debug.SubmitShiftSchedule("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to submit shift schedule: ", err)
+	}
+
+	expected := []db.Shift{
+		{MatchNumber: 1,
+			R1scouter: "Bob",
+			R2scouter: "James",
+			R3scouter: "Robert",
+			B1scouter: "Alice",
+			B2scouter: "Mary",
+			B3scouter: "Patricia"},
+	}
+	if !reflect.DeepEqual(expected, database.shiftSchedule) {
+		t.Fatal("Expected ", expected, ", but got:", database.shiftSchedule)
+	}
+}
+
 // Validates that we can download the schedule from The Blue Alliance.
 func TestRefreshMatchList(t *testing.T) {
 	scrapeMockSchedule := func(int32, string) ([]scraping.Match, error) {
@@ -433,9 +543,10 @@ func TestRefreshMatchList(t *testing.T) {
 // needed for your tests.
 
 type MockDatabase struct {
-	matches []db.Match
-	stats   []db.Stats
-	notes   []db.NotesData
+	matches       []db.Match
+	stats         []db.Stats
+	notes         []db.NotesData
+	shiftSchedule []db.Shift
 }
 
 func (database *MockDatabase) AddToMatch(match db.Match) error {
@@ -486,6 +597,19 @@ func (database *MockDatabase) QueryNotes(requestedTeam int32) (db.NotesData, err
 func (database *MockDatabase) AddNotes(data db.NotesData) error {
 	database.notes = append(database.notes, data)
 	return nil
+}
+
+func (database *MockDatabase) AddToShift(data db.Shift) error {
+	database.shiftSchedule = append(database.shiftSchedule, data)
+	return nil
+}
+
+func (database *MockDatabase) ReturnAllShifts() ([]db.Shift, error) {
+	return database.shiftSchedule, nil
+}
+
+func (database *MockDatabase) QueryAllShifts(int) ([]db.Shift, error) {
+	return []db.Shift{}, nil
 }
 
 // Returns an empty match list from the fake The Blue Alliance scraping.
