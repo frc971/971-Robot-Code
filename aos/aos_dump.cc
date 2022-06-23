@@ -20,6 +20,9 @@ DEFINE_uint64(count, 0,
 DEFINE_int32(rate_limit, 0,
              "The minimum amount of time to wait in milliseconds before "
              "sending another message");
+DEFINE_int32(timeout, -1,
+             "The max time in milliseconds to wait for messages before "
+             "exiting.  -1 means forever, 0 means don't wait.");
 
 namespace {
 
@@ -100,6 +103,10 @@ int main(int argc, char **argv) {
       return 0;
     }
 
+    if (FLAGS_timeout == 0) {
+      continue;
+    }
+
     cli_info.event_loop->MakeRawWatcher(
         channel,
         [channel, &str_builder, &cli_info, &message_count, &next_send_time](
@@ -116,6 +123,21 @@ int main(int argc, char **argv) {
               cli_info.event_loop->Exit();
             }
           }
+        });
+  }
+
+  if (FLAGS_timeout == 0) {
+    return 0;
+  }
+
+  if (FLAGS_timeout > 0) {
+    aos::TimerHandler *handle = cli_info.event_loop->AddTimer(
+        [event_loop = &cli_info.event_loop.value()]() { event_loop->Exit(); });
+
+    cli_info.event_loop->OnRun(
+        [handle, event_loop = &cli_info.event_loop.value()]() {
+          handle->Setup(event_loop->monotonic_now() +
+                        std::chrono::milliseconds(FLAGS_timeout));
         });
   }
 
