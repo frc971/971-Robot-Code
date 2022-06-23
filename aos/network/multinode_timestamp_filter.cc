@@ -57,8 +57,8 @@ bool TimestampProblem::HasObservations(size_t node_a) const {
       for (const struct FilterPair &filter :
            clock_offset_filter_for_node_[node_b]) {
         if (filter.b_index == node_a) {
-          if (filter.filter->timestamps_size(base_clock_[node_b].boot,
-                                             base_clock_[node_a].boot) == 0u) {
+          if (filter.filter->timestamps_empty(base_clock_[node_b].boot,
+                                              base_clock_[node_a].boot)) {
             // Found one without data, explode.
             return false;
           }
@@ -73,8 +73,8 @@ bool TimestampProblem::HasObservations(size_t node_a) const {
        clock_offset_filter_for_node_[node_a]) {
     // There's something in this direction, so we don't need to check the
     // opposite direction to confirm we have observations.
-    if (filter.filter->timestamps_size(
-            base_clock_[node_a].boot, base_clock_[filter.b_index].boot) != 0u) {
+    if (!filter.filter->timestamps_empty(
+            base_clock_[node_a].boot, base_clock_[filter.b_index].boot)) {
       continue;
     }
 
@@ -85,8 +85,8 @@ bool TimestampProblem::HasObservations(size_t node_a) const {
     if (filter.b_filter == nullptr) {
       return false;
     }
-    return (filter.b_filter->timestamps_size(base_clock_[filter.b_index].boot,
-                                             base_clock_[node_a].boot) != 0u);
+    return !filter.b_filter->timestamps_empty(base_clock_[filter.b_index].boot,
+                                              base_clock_[node_a].boot);
   }
   return true;
 }
@@ -97,15 +97,15 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
     for (const struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
       // There's nothing in this direction, so there will be nothing to
       // validate.
-      if (filter.filter->timestamps_size(
-              base_clock_[i].boot, base_clock_[filter.b_index].boot) == 0u) {
+      if (filter.filter->timestamps_empty(
+              base_clock_[i].boot, base_clock_[filter.b_index].boot)) {
         // For a boot to exist, we need to have some observations between it and
         // another boot.  We wouldn't bother to build a problem to solve for
         // this node otherwise.  Confirm that is true so we at least get
         // notified if that assumption falls apart.
         if (filter.b_filter == nullptr ||
-            filter.b_filter->timestamps_size(base_clock_[filter.b_index].boot,
-                                             base_clock_[i].boot) == 0u) {
+            filter.b_filter->timestamps_empty(base_clock_[filter.b_index].boot,
+                                              base_clock_[i].boot)) {
           Debug();
           LOG(FATAL) << "Found no timestamps in either direction between nodes "
                      << i << " and " << filter.b_index;
@@ -133,7 +133,7 @@ Eigen::VectorXd TimestampProblem::Gradient(
       // Especially when reboots are involved, it isn't guarenteed that there
       // will be timestamps going both ways.  In this case, we want to avoid the
       // cost.
-      if (!filter.filter->timestamps_size(base_clock_[i].boot,
+      if (filter.filter->timestamps_empty(base_clock_[i].boot,
                                           base_clock_[filter.b_index].boot)) {
         continue;
       }

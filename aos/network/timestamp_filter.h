@@ -318,6 +318,16 @@ class NoncausalTimestampFilter {
     }
   }
 
+  // Returns true if there are no timestamps available for the provide boots.
+  bool timestamps_empty(const size_t boota, const size_t bootb) const {
+    const SingleFilter *f = maybe_filter(boota, bootb);
+    if (f == nullptr) {
+      return true;
+    } else {
+      return f->timestamps_empty();
+    }
+  }
+
   // For testing only:
   void Debug() const {
     for (const std::unique_ptr<BootFilter> &filter : filters_) {
@@ -549,6 +559,7 @@ class NoncausalTimestampFilter {
     }
 
     size_t timestamps_size() const { return timestamps_.size(); }
+    bool timestamps_empty() const { return timestamps_.empty(); }
 
     std::tuple<aos::monotonic_clock::time_point, std::chrono::nanoseconds>
     timestamp(size_t i) const {
