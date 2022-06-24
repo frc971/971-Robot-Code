@@ -390,11 +390,15 @@ TEST(TimestampProblemTest, SolveNewton) {
 
   // Confirm that the error is almost equal for both directions.  The solution
   // is an integer solution, so there will be a little bit of error left over.
-  EXPECT_NEAR(a.OffsetError(std::get<0>(result1)[0], 0.0,
-                            std::get<0>(result1)[1], 0.0) -
-                  b.OffsetError(std::get<0>(result1)[1], 0.0,
-                                std::get<0>(result1)[0], 0.0),
-              0.0, 0.5);
+  EXPECT_NEAR(
+      a.OffsetError(NoncausalTimestampFilter::Pointer(),
+                    std::get<0>(result1)[0], 0.0, std::get<0>(result1)[1], 0.0)
+              .second -
+          b.OffsetError(NoncausalTimestampFilter::Pointer(),
+                        std::get<0>(result1)[1], 0.0, std::get<0>(result1)[0],
+                        0.0)
+              .second,
+      0.0, 0.5);
 }
 
 }  // namespace testing

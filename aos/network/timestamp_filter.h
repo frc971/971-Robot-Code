@@ -243,6 +243,9 @@ class ClippedAverageFilter {
 // double portion.  All the functions are subtracting the large times in integer
 // precision and handling the remainder with double precision.
 class NoncausalTimestampFilter {
+ private:
+  struct BootFilter;
+
  public:
   NoncausalTimestampFilter(const Node *node_a, const Node *node_b)
       : node_a_(node_a), node_b_(node_b) {}
@@ -268,27 +271,71 @@ class NoncausalTimestampFilter {
       delete;
   ~NoncausalTimestampFilter();
 
+  // A class used to hold all the state information required for identifying a
+  // point and caching decisions.
+  class Pointer {
+   public:
+    Pointer() = default;
+
+    Pointer(
+        const BootFilter *boot_filter, size_t index,
+        std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> t0,
+        std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> t1)
+        : boot_filter_(boot_filter), index_(index), t0_(t0), t1_(t1) {}
+
+    // For testing.
+    bool operator==(const Pointer &other) const {
+      return other.boot_filter_ == boot_filter_ && other.index_ == index_ &&
+             other.t0_ == t0_ && other.t1_ == t1_;
+    }
+
+   private:
+    friend class NoncausalTimestampFilter;
+
+    // The filter which this timestamp came from.
+    const BootFilter *boot_filter_ = nullptr;
+    // The index for t0 into the timestamps list.
+    size_t index_ = 0;
+    // The two bounding timestamps.  They will be equal if time last querried
+    // time was outside the extents of our timestamps.  These are mostly used to
+    // make sure the underlying filter didn't change between when the pointer is
+    // created, and re-looked-up.
+    std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> t0_ =
+        std::make_tuple(monotonic_clock::min_time, std::chrono::nanoseconds(0));
+    std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> t1_ =
+        std::make_tuple(monotonic_clock::min_time, std::chrono::nanoseconds(0));
+  };
+
   // Returns the error between the offset in the provided timestamps, and the
-  // offset at ta.
-  double OffsetError(logger::BootTimestamp ta_base, double ta,
-                     logger::BootTimestamp tb_base, double tb) const {
-    return filter(ta_base.boot, tb_base.boot)
-        ->OffsetError(ta_base.time, ta, tb_base.time, tb);
+  // offset at ta.  Also returns a pointer to the timestamps used for the
+  // lookup to be passed back in again for a more efficient second lookup.
+  std::pair<Pointer, double> OffsetError(Pointer pointer,
+                                         logger::BootTimestamp ta_base,
+                                         double ta,
+                                         logger::BootTimestamp tb_base,
+                                         double tb) const {
+    const BootFilter *boot_filter = filter(pointer, ta_base.boot, tb_base.boot);
+    std::pair<Pointer, double> result = boot_filter->filter.OffsetError(
+        pointer, ta_base.time, ta, tb_base.time, tb);
+    result.first.boot_filter_ = boot_filter;
+    return result;
   }
   // Returns the string representation of 2 * OffsetError(ta, tb)
-  std::string DebugOffsetError(logger::BootTimestamp ta_base, double ta,
-                               logger::BootTimestamp tb_base, double tb,
-                               size_t node_a, size_t node_b) const;
+  std::string DebugOffsetError(Pointer pointer, logger::BootTimestamp ta_base,
+                               double ta, logger::BootTimestamp tb_base,
+                               double tb, size_t node_a, size_t node_b) const;
 
   // Confirms that the solution meets the constraints.  Returns true on success.
-  bool ValidateSolution(logger::BootTimestamp ta,
+  bool ValidateSolution(Pointer pointer, logger::BootTimestamp ta,
                         logger::BootTimestamp tb) const {
-    return filter(ta.boot, tb.boot)->ValidateSolution(ta.time, tb.time);
+    return filter(pointer, ta.boot, tb.boot)
+        ->filter.ValidateSolution(pointer, ta.time, tb.time);
   }
-  bool ValidateSolution(logger::BootTimestamp ta_base, double ta,
-                        logger::BootTimestamp tb_base, double tb) const {
-    return filter(ta_base.boot, tb_base.boot)
-        ->ValidateSolution(ta_base.time, ta, tb_base.time, tb);
+  bool ValidateSolution(Pointer pointer, logger::BootTimestamp ta_base,
+                        double ta, logger::BootTimestamp tb_base,
+                        double tb) const {
+    return filter(pointer, ta_base.boot, tb_base.boot)
+        ->filter.ValidateSolution(pointer, ta_base.time, ta, tb_base.time, tb);
   }
 
   // Adds a new sample to our filtered timestamp list.
@@ -310,21 +357,21 @@ class NoncausalTimestampFilter {
   // Returns the number of timestamps for a specific boot.  This is useful to
   // determine if there are observations in this direction or not.
   size_t timestamps_size(const size_t boota, const size_t bootb) const {
-    const SingleFilter *f = maybe_filter(boota, bootb);
+    const BootFilter *f = maybe_filter(boota, bootb);
     if (f == nullptr) {
       return 0u;
     } else {
-      return f->timestamps_size();
+      return f->filter.timestamps_size();
     }
   }
 
   // Returns true if there are no timestamps available for the provide boots.
   bool timestamps_empty(const size_t boota, const size_t bootb) const {
-    const SingleFilter *f = maybe_filter(boota, bootb);
+    const BootFilter *f = maybe_filter(boota, bootb);
     if (f == nullptr) {
       return true;
     } else {
-      return f->timestamps_empty();
+      return f->filter.timestamps_empty();
     }
   }
 
@@ -343,9 +390,9 @@ class NoncausalTimestampFilter {
                    logger::BootTimestamp remote_monotonic_now) {
     // TODO(austin): CHECK that all older boots are fully frozen.
     filter(node_monotonic_now.boot, remote_monotonic_now.boot)
-        ->FreezeUntil(node_monotonic_now.time);
+        ->filter.FreezeUntil(node_monotonic_now.time);
     filter(node_monotonic_now.boot, remote_monotonic_now.boot)
-        ->FreezeUntilRemote(remote_monotonic_now.time);
+        ->filter.FreezeUntilRemote(remote_monotonic_now.time);
   }
 
   // Returns true if there is a full line which hasn't been observed.
@@ -431,39 +478,58 @@ class NoncausalTimestampFilter {
   // Public for testing.
   // Returns the offset for the point in time, using the timestamps in the deque
   // to form a polyline used to interpolate.
-  logger::BootDuration Offset(logger::BootTimestamp ta,
+  logger::BootDuration Offset(Pointer pointer, logger::BootTimestamp ta,
                               size_t sample_boot) const {
-    return {sample_boot, filter(ta.boot, sample_boot)->Offset(ta.time)};
+    return {
+        sample_boot,
+        filter(ta.boot, sample_boot)->filter.Offset(pointer, ta.time).second};
   }
 
-  std::pair<logger::BootDuration, double> Offset(logger::BootTimestamp ta_base,
+  std::pair<logger::BootDuration, double> Offset(Pointer pointer,
+                                                 logger::BootTimestamp ta_base,
                                                  double ta,
                                                  size_t sample_boot) const {
-    std::pair<std::chrono::nanoseconds, double> result =
-        filter(ta_base.boot, sample_boot)->Offset(ta_base.time, ta);
-    return std::make_pair(logger::BootDuration{sample_boot, result.first},
-                          result.second);
+    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> result =
+        filter(ta_base.boot, sample_boot)
+            ->filter.Offset(pointer, ta_base.time, ta);
+    return std::make_pair(
+        logger::BootDuration{sample_boot, result.second.first},
+        result.second.second);
   }
 
   // Assuming that there are at least 2 points in timestamps_, finds the 2
   // matching points.
-  std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
-            std::tuple<logger::BootTimestamp, logger::BootDuration>>
-  FindTimestamps(logger::BootTimestamp ta, size_t sample_boot) const {
-    std::pair<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
-              std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-        result = filter(ta.boot, sample_boot)->FindTimestamps(ta.time);
+  std::pair<Pointer,
+            std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
+                      std::tuple<logger::BootTimestamp, logger::BootDuration>>>
+  FindTimestamps(Pointer pointer, logger::BootTimestamp ta,
+                 size_t sample_boot) const {
+    const BootFilter *boot_filter = filter(ta.boot, sample_boot);
+    std::pair<
+        Pointer,
+        std::pair<
+            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>>
+        result = boot_filter->filter.FindTimestamps(pointer, ta.time);
+    result.first.boot_filter_ = boot_filter;
     return std::make_pair(
-        std::make_tuple(
-            logger::BootTimestamp{ta.boot, std::get<0>(result.first)},
-            logger::BootDuration{sample_boot, std::get<1>(result.first)}),
-        std::make_tuple(
-            logger::BootTimestamp{ta.boot, std::get<0>(result.second)},
-            logger::BootDuration{sample_boot, std::get<1>(result.second)}));
+        result.first,
+        std::make_pair(
+            std::make_tuple(
+                logger::BootTimestamp{ta.boot,
+                                      std::get<0>(result.second.first)},
+                logger::BootDuration{sample_boot,
+                                     std::get<1>(result.second.first)}),
+            std::make_tuple(
+                logger::BootTimestamp{ta.boot,
+                                      std::get<0>(result.second.second)},
+                logger::BootDuration{sample_boot,
+                                     std::get<1>(result.second.second)})));
   }
-  std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
-            std::tuple<logger::BootTimestamp, logger::BootDuration>>
-  FindTimestamps(logger::BootTimestamp ta_base, double ta,
+  std::pair<Pointer,
+            std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
+                      std::tuple<logger::BootTimestamp, logger::BootDuration>>>
+  FindTimestamps(Pointer pointer, logger::BootTimestamp ta_base, double ta,
                  size_t sample_boot) const;
 
   static std::chrono::nanoseconds InterpolateOffset(
@@ -514,26 +580,36 @@ class NoncausalTimestampFilter {
     SingleFilter operator=(const SingleFilter &) = delete;
     ~SingleFilter();
 
-    std::pair<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
-              std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-    FindTimestamps(monotonic_clock::time_point ta) const;
-    std::pair<std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
-              std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
-    FindTimestamps(monotonic_clock::time_point ta_base, double ta) const;
+    std::pair<
+        Pointer,
+        std::pair<
+            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>>
+    FindTimestamps(Pointer pointer, monotonic_clock::time_point ta) const;
+    std::pair<
+        Pointer,
+        std::pair<
+            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
+            std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>>
+    FindTimestamps(Pointer pointer, monotonic_clock::time_point ta_base,
+                   double ta) const;
 
     // Check whether the given timestamp falls within our current samples
     bool IsOutsideSamples(monotonic_clock::time_point ta_base, double ta) const;
     // Check whether the given timestamp lies after our current samples
     bool IsAfterSamples(monotonic_clock::time_point ta_base, double ta) const;
-    std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>
+    std::pair<Pointer,
+              std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
     GetReferenceTimestamp(monotonic_clock::time_point ta_base, double ta) const;
 
-    std::chrono::nanoseconds Offset(monotonic_clock::time_point ta) const;
-    std::pair<std::chrono::nanoseconds, double> Offset(
-        monotonic_clock::time_point ta_base, double ta) const;
-    double OffsetError(aos::monotonic_clock::time_point ta_base, double ta,
-                       aos::monotonic_clock::time_point tb_base,
-                       double tb) const;
+    std::pair<Pointer, std::chrono::nanoseconds> Offset(
+        Pointer pointer, monotonic_clock::time_point ta) const;
+    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> Offset(
+        Pointer pointer, monotonic_clock::time_point ta_base, double ta) const;
+    std::pair<Pointer, double> OffsetError(
+        Pointer pointer, aos::monotonic_clock::time_point ta_base, double ta,
+        aos::monotonic_clock::time_point tb_base, double tb) const;
+
     bool has_unobserved_line() const;
     monotonic_clock::time_point unobserved_line_end() const;
     monotonic_clock::time_point unobserved_line_remote_end() const;
@@ -599,9 +675,10 @@ class NoncausalTimestampFilter {
     }
     // Confirms that the solution meets the constraints.  Returns true on
     // success.
-    bool ValidateSolution(aos::monotonic_clock::time_point ta,
+    bool ValidateSolution(Pointer pointer, aos::monotonic_clock::time_point ta,
                           aos::monotonic_clock::time_point tb) const;
-    bool ValidateSolution(aos::monotonic_clock::time_point ta_base, double ta,
+    bool ValidateSolution(Pointer pointer,
+                          aos::monotonic_clock::time_point ta_base, double ta,
                           aos::monotonic_clock::time_point tb_base,
                           double tb) const;
 
@@ -663,12 +740,12 @@ class NoncausalTimestampFilter {
   }
 
  protected:
-  SingleFilter *filter(int boota, int bootb) {
+  BootFilter *filter(int boota, int bootb) {
     auto it =
         std::lower_bound(filters_.begin(), filters_.end(),
                          std::make_pair(boota, bootb), FilterLessThanLower);
     if (it != filters_.end() && (*it)->boot == std::make_pair(boota, bootb)) {
-      return &(*it)->filter;
+      return it->get();
     }
 
     if (!filters_.empty() && current_filter_ >= 0) {
@@ -676,15 +753,14 @@ class NoncausalTimestampFilter {
       CHECK_GE(boota, filters_[current_filter_]->boot.first);
       CHECK_GE(bootb, filters_[current_filter_]->boot.second) << NodeNames();
     }
-    SingleFilter *result =
-        &filters_
-             .emplace(std::upper_bound(filters_.begin(), filters_.end(),
-                                       std::make_pair(boota, bootb),
-                                       FilterLessThanUpper),
-                      std::make_unique<BootFilter>(std::make_pair(boota, bootb),
-                                                   NodeNames()))
-             ->get()
-             ->filter;
+    BootFilter *result =
+        filters_
+            .emplace(std::upper_bound(filters_.begin(), filters_.end(),
+                                      std::make_pair(boota, bootb),
+                                      FilterLessThanUpper),
+                     std::make_unique<BootFilter>(std::make_pair(boota, bootb),
+                                                  NodeNames()))
+            ->get();
 
     {
       // Confirm we don't have boots go backwards.
@@ -705,7 +781,7 @@ class NoncausalTimestampFilter {
     return result;
   }
 
-  const SingleFilter *maybe_filter(int boota, int bootb) const {
+  const BootFilter *maybe_filter(int boota, int bootb) const {
     auto it =
         std::lower_bound(filters_.begin(), filters_.end(),
                          std::make_pair(boota, bootb), FilterLessThanLower);
@@ -713,14 +789,31 @@ class NoncausalTimestampFilter {
       return nullptr;
     }
     if (it->get()->boot == std::make_pair(boota, bootb)) {
-      return &it->get()->filter;
+      return it->get();
     } else {
       return nullptr;
     }
   }
 
-  const SingleFilter *filter(int boota, int bootb) const {
-    const SingleFilter *result = maybe_filter(boota, bootb);
+  const BootFilter *maybe_filter(Pointer pointer, int boota, int bootb) const {
+    if (pointer.boot_filter_ != nullptr &&
+        pointer.boot_filter_->boot.first == static_cast<int>(boota) &&
+        pointer.boot_filter_->boot.second == static_cast<int>(bootb)) {
+      return pointer.boot_filter_;
+    }
+
+    return maybe_filter(boota, bootb);
+  }
+
+  const BootFilter *filter(int boota, int bootb) const {
+    const BootFilter *result = maybe_filter(boota, bootb);
+    CHECK(result != nullptr)
+        << NodeNames() << " Failed to find " << boota << ", " << bootb;
+    return result;
+  }
+
+  const BootFilter *filter(Pointer pointer, int boota, int bootb) const {
+    const BootFilter *result = maybe_filter(pointer, boota, bootb);
     CHECK(result != nullptr)
         << NodeNames() << " Failed to find " << boota << ", " << bootb;
     return result;

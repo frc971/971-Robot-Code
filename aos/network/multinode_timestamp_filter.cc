@@ -73,8 +73,8 @@ bool TimestampProblem::HasObservations(size_t node_a) const {
        clock_offset_filter_for_node_[node_a]) {
     // There's something in this direction, so we don't need to check the
     // opposite direction to confirm we have observations.
-    if (!filter.filter->timestamps_empty(
-            base_clock_[node_a].boot, base_clock_[filter.b_index].boot)) {
+    if (!filter.filter->timestamps_empty(base_clock_[node_a].boot,
+                                         base_clock_[filter.b_index].boot)) {
       continue;
     }
 
@@ -97,8 +97,8 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
     for (const struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
       // There's nothing in this direction, so there will be nothing to
       // validate.
-      if (filter.filter->timestamps_empty(
-              base_clock_[i].boot, base_clock_[filter.b_index].boot)) {
+      if (filter.filter->timestamps_empty(base_clock_[i].boot,
+                                          base_clock_[filter.b_index].boot)) {
         // For a boot to exist, we need to have some observations between it and
         // another boot.  We wouldn't bother to build a problem to solve for
         // this node otherwise.  Confirm that is true so we at least get
@@ -113,9 +113,9 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
         continue;
       }
       const bool iteration = filter.filter->ValidateSolution(
-          solution[i], solution[filter.b_index]);
+          filter.pointer, solution[i], solution[filter.b_index]);
       if (!iteration) {
-        filter.filter->ValidateSolution(solution[i], 0.0,
+        filter.filter->ValidateSolution(filter.pointer, solution[i], 0.0,
                                         solution[filter.b_index], 0.0);
       }
 
@@ -126,10 +126,10 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
 }
 
 Eigen::VectorXd TimestampProblem::Gradient(
-    const Eigen::Ref<Eigen::VectorXd> time_offsets) const {
+    const Eigen::Ref<Eigen::VectorXd> time_offsets) {
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(live_nodes_);
   for (size_t i = 0; i < clock_offset_filter_for_node_.size(); ++i) {
-    for (const struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
+    for (struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
       // Especially when reboots are involved, it isn't guarenteed that there
       // will be timestamps going both ways.  In this case, we want to avoid the
       // cost.
@@ -162,12 +162,12 @@ Eigen::VectorXd TimestampProblem::Gradient(
       // extra factor, the solution will be the same (or close enough).
       constexpr double kMinNetworkDelay = 2.0;
 
-      const double error =
-          2.0 * (filter.filter->OffsetError(base_clock_[i],
-                                            time_offsets(a_solution_index),
-                                            base_clock_[filter.b_index],
-                                            time_offsets(b_solution_index)) -
-                 kMinNetworkDelay);
+      const std::pair<NoncausalTimestampFilter::Pointer, double> offset_error =
+          filter.filter->OffsetError(
+              filter.pointer, base_clock_[i], time_offsets(a_solution_index),
+              base_clock_[filter.b_index], time_offsets(b_solution_index));
+      const double error = 2.0 * (offset_error.second - kMinNetworkDelay);
+      filter.pointer = offset_error.first;
 
       grad(a_solution_index) += -error;
       grad(b_solution_index) += error;
@@ -202,7 +202,7 @@ Eigen::MatrixXd TimestampProblem::Hessian(
 
 std::tuple<Eigen::VectorXd, size_t> TimestampProblem::Newton(
     const Eigen::Ref<Eigen::VectorXd> time_offsets,
-    const std::vector<logger::BootTimestamp> &points) const {
+    const std::vector<logger::BootTimestamp> &points) {
   CHECK_GT(live_nodes_, 0u) << ": No live nodes to solve for.";
   // TODO(austin): Each of the DCost functions does a binary search of the
   // timestamps list.  By the time we have computed the gradient and Hessian,
@@ -454,12 +454,12 @@ void TimestampProblem::Debug() {
         // report.
         gradients[i].emplace_back(
             std::string("- ") +
-            filter.filter->DebugOffsetError(base_clock_[i], 0.0,
+            filter.filter->DebugOffsetError(filter.pointer, base_clock_[i], 0.0,
                                             base_clock_[filter.b_index], 0.0, i,
                                             filter.b_index));
         gradients[filter.b_index].emplace_back(filter.filter->DebugOffsetError(
-            base_clock_[i], 0.0, base_clock_[filter.b_index], 0.0, i,
-            filter.b_index));
+            filter.pointer, base_clock_[i], 0.0, base_clock_[filter.b_index],
+            0.0, i, filter.b_index));
       }
     }
   }

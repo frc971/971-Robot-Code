@@ -104,8 +104,7 @@ class TimestampProblem {
   // Returns the Hessian of the cost function at time_offsets.
   Eigen::MatrixXd Hessian(const Eigen::Ref<Eigen::VectorXd> time_offsets) const;
   // Returns the gradient of the cost function at time_offsets.
-  Eigen::VectorXd Gradient(
-      const Eigen::Ref<Eigen::VectorXd> time_offsets) const;
+  Eigen::VectorXd Gradient(const Eigen::Ref<Eigen::VectorXd> time_offsets);
 
   // Returns the newton step of the timestamp problem, and the node which was
   // used for the equality constraint.  The last term is the scalar on the
@@ -113,7 +112,7 @@ class TimestampProblem {
   // actual newton step.
   std::tuple<Eigen::VectorXd, size_t> Newton(
       const Eigen::Ref<Eigen::VectorXd> time_offsets,
-      const std::vector<logger::BootTimestamp> &points) const;
+      const std::vector<logger::BootTimestamp> &points);
 
   void MaybeUpdateNodeMapping();
 
@@ -147,6 +146,8 @@ class TimestampProblem {
     const size_t b_index;
 
     const NoncausalTimestampFilter *const b_filter;
+
+    NoncausalTimestampFilter::Pointer pointer;
   };
 
   // List of filters indexed by node.
