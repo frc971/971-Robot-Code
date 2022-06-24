@@ -19,6 +19,11 @@ struct BootDuration {
     return {boot, duration + d};
   }
 
+  BootDuration operator-() const { return {boot, -duration}; }
+  BootDuration operator-(monotonic_clock::duration d) const {
+    return {boot, duration - d};
+  }
+
   bool operator==(const BootDuration &m2) const {
     return boot == m2.boot && duration == m2.duration;
   }

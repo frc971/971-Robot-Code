@@ -25,6 +25,9 @@ inline constexpr double kMaxVelocity() {
   return static_cast<double>(MaxVelocityRatio::num) /
          static_cast<double>(MaxVelocityRatio::den);
 }
+inline constexpr std::chrono::nanoseconds kMinNetworkDelay() {
+  return std::chrono::nanoseconds(2);
+}
 
 // This class handles filtering differences between clocks across a network.
 //
@@ -304,38 +307,58 @@ class NoncausalTimestampFilter {
         std::make_tuple(monotonic_clock::min_time, std::chrono::nanoseconds(0));
     std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> t1_ =
         std::make_tuple(monotonic_clock::min_time, std::chrono::nanoseconds(0));
+
+    // List of points and their associated times going the other way.
+    std::vector<std::pair<size_t, std::tuple<monotonic_clock::time_point,
+                                             std::chrono::nanoseconds>>>
+        other_points_;
   };
 
   // Returns the error between the offset in the provided timestamps, and the
   // offset at ta.  Also returns a pointer to the timestamps used for the
   // lookup to be passed back in again for a more efficient second lookup.
-  std::pair<Pointer, double> OffsetError(Pointer pointer,
+  std::pair<Pointer, double> OffsetError(const NoncausalTimestampFilter *other,
+                                         Pointer pointer,
                                          logger::BootTimestamp ta_base,
                                          double ta,
                                          logger::BootTimestamp tb_base,
                                          double tb) const {
     const BootFilter *boot_filter = filter(pointer, ta_base.boot, tb_base.boot);
+    const SingleFilter *other_filter =
+        other == nullptr
+            ? nullptr
+            : other->maybe_single_filter(tb_base.boot, ta_base.boot);
     std::pair<Pointer, double> result = boot_filter->filter.OffsetError(
-        pointer, ta_base.time, ta, tb_base.time, tb);
+        other_filter, pointer, ta_base.time, ta, tb_base.time, tb);
     result.first.boot_filter_ = boot_filter;
     return result;
   }
   // Returns the string representation of 2 * OffsetError(ta, tb)
-  std::string DebugOffsetError(Pointer pointer, logger::BootTimestamp ta_base,
+  std::string DebugOffsetError(const NoncausalTimestampFilter *other,
+                               Pointer pointer, logger::BootTimestamp ta_base,
                                double ta, logger::BootTimestamp tb_base,
                                double tb, size_t node_a, size_t node_b) const;
 
   // Confirms that the solution meets the constraints.  Returns true on success.
-  bool ValidateSolution(Pointer pointer, logger::BootTimestamp ta,
+  bool ValidateSolution(const NoncausalTimestampFilter *other, Pointer pointer,
+                        logger::BootTimestamp ta,
                         logger::BootTimestamp tb) const {
+    const SingleFilter *other_filter =
+        other == nullptr ? nullptr
+                         : other->maybe_single_filter(tb.boot, ta.boot);
     return filter(pointer, ta.boot, tb.boot)
-        ->filter.ValidateSolution(pointer, ta.time, tb.time);
+        ->filter.ValidateSolution(other_filter, pointer, ta.time, tb.time);
   }
-  bool ValidateSolution(Pointer pointer, logger::BootTimestamp ta_base,
-                        double ta, logger::BootTimestamp tb_base,
-                        double tb) const {
+  bool ValidateSolution(const NoncausalTimestampFilter *other, Pointer pointer,
+                        logger::BootTimestamp ta_base, double ta,
+                        logger::BootTimestamp tb_base, double tb) const {
+    const SingleFilter *other_filter =
+        other == nullptr
+            ? nullptr
+            : other->maybe_single_filter(tb_base.boot, ta_base.boot);
     return filter(pointer, ta_base.boot, tb_base.boot)
-        ->filter.ValidateSolution(pointer, ta_base.time, ta, tb_base.time, tb);
+        ->filter.ValidateSolution(other_filter, pointer, ta_base.time, ta,
+                                  tb_base.time, tb);
   }
 
   // Adds a new sample to our filtered timestamp list.
@@ -416,6 +439,10 @@ class NoncausalTimestampFilter {
   // Returns the next timestamp in the queue if available without incrementing
   // the pointer.  This, Consume, and FreezeUntil work together to allow
   // tracking and freezing timestamps which have been combined externally.
+  //
+  // This doesn't report the virtual points added by the opposite filter
+  // because solving for them doesn't add any additional value.  We will already
+  // be solving the other direction.
   std::optional<std::tuple<logger::BootTimestamp, logger::BootDuration>>
   Observe() const {
     if (filters_.size() == 0u) {
@@ -478,20 +505,29 @@ class NoncausalTimestampFilter {
   // Public for testing.
   // Returns the offset for the point in time, using the timestamps in the deque
   // to form a polyline used to interpolate.
-  logger::BootDuration Offset(Pointer pointer, logger::BootTimestamp ta,
+  logger::BootDuration Offset(const NoncausalTimestampFilter *other,
+                              Pointer pointer, logger::BootTimestamp ta,
                               size_t sample_boot) const {
-    return {
-        sample_boot,
-        filter(ta.boot, sample_boot)->filter.Offset(pointer, ta.time).second};
+    return {sample_boot,
+            filter(ta.boot, sample_boot)
+                ->filter
+                .Offset(other == nullptr
+                            ? nullptr
+                            : &other->filter(sample_boot, ta.boot)->filter,
+                        pointer, ta.time)
+                .second};
   }
 
-  std::pair<logger::BootDuration, double> Offset(Pointer pointer,
-                                                 logger::BootTimestamp ta_base,
-                                                 double ta,
-                                                 size_t sample_boot) const {
+  std::pair<logger::BootDuration, double> Offset(
+      const NoncausalTimestampFilter *other, Pointer pointer,
+      logger::BootTimestamp ta_base, double ta, size_t sample_boot) const {
     std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> result =
         filter(ta_base.boot, sample_boot)
-            ->filter.Offset(pointer, ta_base.time, ta);
+            ->filter.Offset(
+                other == nullptr
+                    ? nullptr
+                    : &other->filter(sample_boot, ta_base.boot)->filter,
+                pointer, ta_base.time, ta);
     return std::make_pair(
         logger::BootDuration{sample_boot, result.second.first},
         result.second.second);
@@ -502,15 +538,18 @@ class NoncausalTimestampFilter {
   std::pair<Pointer,
             std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
                       std::tuple<logger::BootTimestamp, logger::BootDuration>>>
-  FindTimestamps(Pointer pointer, logger::BootTimestamp ta,
-                 size_t sample_boot) const {
+  FindTimestamps(const NoncausalTimestampFilter *other, Pointer pointer,
+                 logger::BootTimestamp ta, size_t sample_boot) const {
     const BootFilter *boot_filter = filter(ta.boot, sample_boot);
     std::pair<
         Pointer,
         std::pair<
             std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
             std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>>
-        result = boot_filter->filter.FindTimestamps(pointer, ta.time);
+        result = boot_filter->filter.FindTimestamps(
+            other == nullptr ? nullptr
+                             : &other->filter(sample_boot, ta.boot)->filter,
+            pointer, ta.time);
     result.first.boot_filter_ = boot_filter;
     return std::make_pair(
         result.first,
@@ -529,7 +568,8 @@ class NoncausalTimestampFilter {
   std::pair<Pointer,
             std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
                       std::tuple<logger::BootTimestamp, logger::BootDuration>>>
-  FindTimestamps(Pointer pointer, logger::BootTimestamp ta_base, double ta,
+  FindTimestamps(const NoncausalTimestampFilter *other, Pointer pointer,
+                 logger::BootTimestamp ta_base, double ta,
                  size_t sample_boot) const;
 
   static std::chrono::nanoseconds InterpolateOffset(
@@ -585,14 +625,15 @@ class NoncausalTimestampFilter {
         std::pair<
             std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
             std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>>
-    FindTimestamps(Pointer pointer, monotonic_clock::time_point ta) const;
+    FindTimestamps(const SingleFilter *other, Pointer pointer,
+                   monotonic_clock::time_point ta) const;
     std::pair<
         Pointer,
         std::pair<
             std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
             std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>>
-    FindTimestamps(Pointer pointer, monotonic_clock::time_point ta_base,
-                   double ta) const;
+    FindTimestamps(const SingleFilter *other, Pointer pointer,
+                   monotonic_clock::time_point ta_base, double ta) const;
 
     // Check whether the given timestamp falls within our current samples
     bool IsOutsideSamples(monotonic_clock::time_point ta_base, double ta) const;
@@ -603,11 +644,14 @@ class NoncausalTimestampFilter {
     GetReferenceTimestamp(monotonic_clock::time_point ta_base, double ta) const;
 
     std::pair<Pointer, std::chrono::nanoseconds> Offset(
-        Pointer pointer, monotonic_clock::time_point ta) const;
+        const SingleFilter *other, Pointer pointer,
+        monotonic_clock::time_point ta) const;
     std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> Offset(
-        Pointer pointer, monotonic_clock::time_point ta_base, double ta) const;
+        const SingleFilter *other, Pointer pointer,
+        monotonic_clock::time_point ta_base, double ta) const;
     std::pair<Pointer, double> OffsetError(
-        Pointer pointer, aos::monotonic_clock::time_point ta_base, double ta,
+        const SingleFilter *other, Pointer pointer,
+        aos::monotonic_clock::time_point ta_base, double ta,
         aos::monotonic_clock::time_point tb_base, double tb) const;
 
     bool has_unobserved_line() const;
@@ -675,9 +719,10 @@ class NoncausalTimestampFilter {
     }
     // Confirms that the solution meets the constraints.  Returns true on
     // success.
-    bool ValidateSolution(Pointer pointer, aos::monotonic_clock::time_point ta,
+    bool ValidateSolution(const SingleFilter *other, Pointer pointer,
+                          aos::monotonic_clock::time_point ta,
                           aos::monotonic_clock::time_point tb) const;
-    bool ValidateSolution(Pointer pointer,
+    bool ValidateSolution(const SingleFilter *other, Pointer pointer,
                           aos::monotonic_clock::time_point ta_base, double ta,
                           aos::monotonic_clock::time_point tb_base,
                           double tb) const;
@@ -817,6 +862,21 @@ class NoncausalTimestampFilter {
     CHECK(result != nullptr)
         << NodeNames() << " Failed to find " << boota << ", " << bootb;
     return result;
+  }
+
+  static std::pair<
+      Pointer,
+      std::pair<
+          std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
+          std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>>
+  InterpolateWithOtherFilter(
+      Pointer pointer, monotonic_clock::time_point ta,
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> t0,
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> t1);
+
+  const SingleFilter *maybe_single_filter(int boota, int bootb) const {
+    const BootFilter *boot_filter = maybe_filter(boota, bootb);
+    return boot_filter == nullptr ? nullptr : &boot_filter->filter;
   }
 
  private:

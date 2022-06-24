@@ -4297,6 +4297,58 @@ TEST(MissingDirectionTest, OneDirectionAfterRebootReliable) {
   ConfirmReadable(filenames);
 }
 
+// Tests that we properly handle what used to be a time violation in one
+// direction.  This can occur when one direction goes down after sending some
+// data, but the other keeps working.  The down direction ends up resolving to a
+// straight line in the noncausal filter, where the direction which is still up
+// can cross that line.  Really, time progressed along just fine but we assumed
+// that the offset was a line when it could have deviated by up to 1ms/second.
+TEST_P(MultinodeLoggerTest, OneDirectionTimeDrift) {
+  std::vector<std::string> filenames;
+
+  CHECK_EQ(pi1_index_, 0u);
+  CHECK_EQ(pi2_index_, 1u);
+
+  time_converter_.AddNextTimestamp(
+      distributed_clock::epoch(),
+      {BootTimestamp::epoch(), BootTimestamp::epoch()});
+
+  const chrono::nanoseconds before_disconnect_duration =
+      time_converter_.AddMonotonic(
+          {chrono::milliseconds(1000), chrono::milliseconds(1000)});
+
+  const chrono::nanoseconds test_duration =
+      time_converter_.AddMonotonic(
+          {chrono::milliseconds(1000), chrono::milliseconds(1000)}) +
+      time_converter_.AddMonotonic(
+          {chrono::milliseconds(10000),
+           chrono::milliseconds(10000) - chrono::milliseconds(5)}) +
+      time_converter_.AddMonotonic(
+          {chrono::milliseconds(10000),
+           chrono::milliseconds(10000) + chrono::milliseconds(5)});
+
+  const std::string kLogfile =
+      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+  util::UnlinkRecursive(kLogfile);
+
+  {
+    LoggerState pi2_logger = MakeLogger(pi2_);
+    pi2_logger.StartLogger(kLogfile);
+    event_loop_factory_.RunFor(before_disconnect_duration);
+
+    pi2_->Disconnect(pi1_->node());
+
+    event_loop_factory_.RunFor(test_duration);
+    pi2_->Connect(pi1_->node());
+
+    event_loop_factory_.RunFor(chrono::milliseconds(5000));
+    pi2_logger.AppendAllFilenames(&filenames);
+  }
+
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  ConfirmReadable(filenames);
+}
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos
