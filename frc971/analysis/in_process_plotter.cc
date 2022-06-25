@@ -63,7 +63,8 @@ void Plotter::YLabel(std::string_view label) {
 }
 
 void Plotter::AddLine(const std::vector<double> &x,
-                      const std::vector<double> &y, std::string_view label) {
+                      const std::vector<double> &y, std::string_view label,
+                      std::string_view line_style) {
   CHECK_EQ(x.size(), y.size());
   CHECK(!position_.IsNull())
       << "You must call AddFigure() before calling AddLine().";
@@ -83,10 +84,20 @@ void Plotter::AddLine(const std::vector<double> &x,
   const Color *color = &color_wheel_.at(color_wheel_position_);
   color_wheel_position_ = (color_wheel_position_ + 1) % color_wheel_.size();
 
+  LineStyle::Builder style_builder = builder_.MakeBuilder<LineStyle>();
+  if (line_style.find('*') != line_style.npos) {
+    style_builder.add_point_size(3.0);
+  } else {
+    style_builder.add_point_size(0.0);
+  }
+  style_builder.add_draw_line(line_style.find('-') != line_style.npos);
+  const flatbuffers::Offset<LineStyle> style_offset = style_builder.Finish();
+
   auto line_builder = builder_.MakeBuilder<Line>();
   line_builder.add_label(label_offset);
   line_builder.add_points(points_offset);
   line_builder.add_color(color);
+  line_builder.add_style(style_offset);
   lines_.push_back(line_builder.Finish());
 }
 

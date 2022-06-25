@@ -43,7 +43,7 @@ class Plotter {
   void AddFigure(std::string_view title = "", double width = 900,
                  double height = 400);
   void AddLine(const std::vector<double> &x, const std::vector<double> &y,
-               std::string_view label = "");
+               std::string_view label = "", std::string_view line_style = "*-");
   void ShareXAxis(bool share) { share_x_axis_ = share; }
   void XLabel(std::string_view label);
   void YLabel(std::string_view label);

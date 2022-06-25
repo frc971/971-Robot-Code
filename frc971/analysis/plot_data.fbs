@@ -27,10 +27,16 @@ struct Color {
   b:float (id: 2);
 }
 
+table LineStyle {
+  point_size:float (id: 0);
+  draw_line:bool (id: 1);
+}
+
 table Line {
   label:string (id: 0);
   points:[Point] (id: 1);
   color:Color (id: 2);
+  style:LineStyle (id: 3);
 }
 
 table Figure {

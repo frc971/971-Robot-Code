@@ -79,6 +79,14 @@ export function plotData(conn: Connection, parentDiv: Element) {
               line.setColor(
                   [lineFb.color().r(), lineFb.color().g(), lineFb.color().b()]);
             }
+            if (lineFb.style()) {
+              if (lineFb.style().pointSize() !== null) {
+                line.setPointSize(lineFb.style().pointSize());
+              }
+              if (lineFb.style().drawLine() !== null) {
+                line.setDrawLine(lineFb.style().drawLine());
+              }
+            }
             line.setPoints(points);
           }
         }
