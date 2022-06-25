@@ -190,6 +190,31 @@ TEST_F(ConfigurationTest, GetChannel) {
               aos::testing::FlatbufferEq(ExpectedLocation()));
 }
 
+// Tests that we can do reverse-lookups of channel names.
+TEST_F(ConfigurationTest, GetChannelAliases) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig(ArtifactPath("aos/testdata/config1.json"));
+
+  // Test a basic lookup first.
+  EXPECT_THAT(
+      GetChannelAliases(&config.message(), "/foo", ".aos.bar", "app1", nullptr),
+      ::testing::UnorderedElementsAre("/foo", "/batman", "/bar"));
+  EXPECT_THAT(
+      GetChannelAliases(&config.message(), "/bar", ".aos.bar", "app1", nullptr),
+      ::testing::UnorderedElementsAre("/batman", "/bar"));
+  EXPECT_THAT(GetChannelAliases(&config.message(), "/batman", ".aos.bar",
+                                "app1", nullptr),
+              ::testing::UnorderedElementsAre("/batman"));
+  // /bar (deliberately) does not get included because of the ordering in the
+  // map.
+  EXPECT_THAT(
+      GetChannelAliases(&config.message(), "/foo", ".aos.bar", "", nullptr),
+      ::testing::UnorderedElementsAre("/foo", "/batman"));
+  EXPECT_THAT(
+      GetChannelAliases(&config.message(), "/foo", ".aos.bar", "app2", nullptr),
+      ::testing::UnorderedElementsAre("/foo", "/batman", "/baz"));
+}
+
 // Tests that we can lookup a location with node specific maps.
 TEST_F(ConfigurationTest, GetChannelMultinode) {
   FlatbufferDetachedBuffer<Configuration> config =
@@ -219,6 +244,34 @@ TEST_F(ConfigurationTest, GetChannelMultinode) {
 
   // And then that it fails when the node changes.
   EXPECT_EQ(GetChannel(config, "/batman3", ".aos.bar", "app1", pi2), nullptr);
+}
+
+// Tests that reverse channel lookup on a multi-node config (including with
+// wildcards) works.
+TEST_F(ConfigurationTest, GetChannelAliasesMultinode) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig(ArtifactPath("aos/testdata/good_multinode.json"));
+
+  const Node *pi1 = GetNode(&config.message(), "pi1");
+  const Node *pi2 = GetNode(&config.message(), "pi2");
+
+  EXPECT_THAT(
+      GetChannelAliases(&config.message(), "/foo", ".aos.bar", "app1", pi1),
+      ::testing::UnorderedElementsAre("/foo", "/batman", "/batman2", "/batman3",
+                                      "/magic/string"));
+
+  EXPECT_THAT(
+      GetChannelAliases(&config.message(), "/foo", ".aos.baz", "app1", pi1),
+      ::testing::UnorderedElementsAre("/foo", "/batman3", "/magic/string"));
+
+  EXPECT_THAT(
+      GetChannelAliases(&config.message(), "/foo/testing", ".aos.bar", "", pi1),
+      ::testing::UnorderedElementsAre("/foo/testing", "/magic/string/testing"));
+
+  EXPECT_THAT(
+      GetChannelAliases(&config.message(), "/foo/testing", ".aos.bar", "app1",
+                        pi2),
+      ::testing::UnorderedElementsAre("/foo/testing", "/magic/string/testing"));
 }
 
 // Tests that we can lookup a location with type specific maps.

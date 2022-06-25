@@ -91,6 +91,23 @@ inline const Channel *GetChannel(const Configuration *config,
                     channel->type()->string_view(), application_name, node);
 }
 
+// Returns a list of all the channel names that can be used to refer to the
+// specified channel on the given node/application. this allows a reverse-lookup
+// of any renames that happen.
+// Does not perform forwards-lookup first.
+std::set<std::string> GetChannelAliases(const Configuration *config,
+                                        std::string_view name,
+                                        std::string_view type,
+                                        const std::string_view application_name,
+                                        const Node *node);
+inline std::set<std::string> GetChannelAliases(
+    const Configuration *config, const Channel *channel,
+    const std::string_view application_name, const Node *node) {
+  return GetChannelAliases(config, channel->name()->string_view(),
+                           channel->type()->string_view(), application_name,
+                           node);
+}
+
 // Returns the channel index (or dies) of channel in the provided config.
 size_t ChannelIndex(const Configuration *config, const Channel *channel);
 
