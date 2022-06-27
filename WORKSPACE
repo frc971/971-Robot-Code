@@ -1043,8 +1043,8 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 """,
-    sha256 = "e0ccaa7f793e44638e9f89570e00f146073a98a5928e0b547146c8184488bb19",
-    urls = ["https://www.frc971.org/Build-Dependencies/lzma_amd64.tar.gz"],
+    sha256 = "6fa0ad579b78bd41a0133024c34063b140442dd2ad4201fd2bf4c55229e7c13f",
+    urls = ["https://www.frc971.org/Build-Dependencies/lzma_amd64-2.tar.gz"],
 )
 
 # //debian:lzma_arm64
