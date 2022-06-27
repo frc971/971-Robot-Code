@@ -300,7 +300,9 @@ void ObjectToString(
   const int child_tree_depth = tree_depth + 1;
 
   bool wrap = false;
-  if (json_options.multi_line) {
+  if (json_options.max_multi_line) {
+    wrap = true;
+  } else if (json_options.multi_line) {
     // Check whether this object has objects, vectors, or floats inside of it
     for (const reflection::Field *field : *obj->fields()) {
       if (ShouldCauseWrapping(field->type()->base_type())) {
