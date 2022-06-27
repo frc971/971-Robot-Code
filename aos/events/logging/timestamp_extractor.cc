@@ -161,6 +161,7 @@ int Main(int argc, char **argv) {
     if (!next_timestamp) {
       break;
     }
+    multinode_estimator.ObserveTimePassed(std::get<0>(*next_timestamp.value()));
   }
 
   LOG(INFO) << "Done";
