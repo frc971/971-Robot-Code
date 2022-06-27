@@ -77,6 +77,9 @@ TEST(RealtimeTest, ScopedRealtimeRestorer) {
   CheckNotRealtime();
 }
 
+// Malloc hooks don't work with asan/msan.
+#if !__has_feature(address_sanitizer) && !__has_feature(memory_sanitizer)
+
 // Tests that CHECK statements give real error messages rather than die on
 // malloc.
 TEST(RealtimeDeathTest, Check) {
@@ -127,6 +130,8 @@ TEST(RealtimeDeathTest, RawFatal) {
       "Cute message here");
 }
 
+#endif
+
 }  // namespace testing
 }  // namespace aos
 
@@ -135,7 +140,10 @@ TEST(RealtimeDeathTest, RawFatal) {
 GTEST_API_ int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   FLAGS_logtostderr = true;
+
+#if !__has_feature(address_sanitizer) && !__has_feature(memory_sanitizer)
   FLAGS_die_on_malloc = true;
+#endif
 
   aos::InitGoogle(&argc, &argv);
 
