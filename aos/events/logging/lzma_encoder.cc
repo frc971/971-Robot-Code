@@ -2,6 +2,8 @@
 
 #include "glog/logging.h"
 
+DEFINE_int32(lzma_threads, 1, "Number of threads to use for encoding");
+
 namespace aos::logger {
 namespace {
 
@@ -48,16 +50,32 @@ bool LzmaCodeIsOk(lzma_ret status, std::string_view filename = "") {
 
 }  // namespace
 
-LzmaEncoder::LzmaEncoder(const uint32_t compression_preset)
+LzmaEncoder::LzmaEncoder(const uint32_t compression_preset, size_t block_size)
     : stream_(LZMA_STREAM_INIT), compression_preset_(compression_preset) {
   CHECK_GE(compression_preset_, 0u)
       << ": Compression preset must be in the range [0, 9].";
   CHECK_LE(compression_preset_, 9u)
       << ": Compression preset must be in the range [0, 9].";
 
-  lzma_ret status =
-      lzma_easy_encoder(&stream_, compression_preset_, LZMA_CHECK_CRC64);
-  CHECK(LzmaCodeIsOk(status));
+  if (FLAGS_lzma_threads <= 1) {
+    lzma_ret status =
+        lzma_easy_encoder(&stream_, compression_preset_, LZMA_CHECK_CRC64);
+    CHECK(LzmaCodeIsOk(status));
+  } else {
+    lzma_mt mt_options;
+    memset(&mt_options, 0, sizeof(mt_options));
+    mt_options.threads = FLAGS_lzma_threads;
+    mt_options.block_size = block_size;
+    // Compress for at most 100 ms before relinquishing control back to the main
+    // thread.
+    mt_options.timeout = 100;
+    mt_options.preset = compression_preset_;
+    mt_options.filters = nullptr;
+    mt_options.check = LZMA_CHECK_CRC64;
+    lzma_ret status = lzma_stream_encoder_mt(&stream_, &mt_options);
+    CHECK(LzmaCodeIsOk(status));
+  }
+
   stream_.avail_out = 0;
   VLOG(2) << "LzmaEncoder: Initialization succeeded.";
 }

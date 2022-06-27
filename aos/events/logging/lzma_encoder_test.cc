@@ -5,12 +5,37 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+DECLARE_int32(lzma_threads);
+
 namespace aos::logger::testing {
+
+INSTANTIATE_TEST_SUITE_P(
+    MtLzma, BufferEncoderTest,
+    ::testing::Combine(::testing::Values([]() {
+                         FLAGS_lzma_threads = 3;
+                         return std::make_unique<LzmaEncoder>(2, 4096);
+                       }),
+                       ::testing::Values([](std::string_view filename) {
+                         return std::make_unique<LzmaDecoder>(filename);
+                       }),
+                       ::testing::Range(0, 100)));
+
+INSTANTIATE_TEST_SUITE_P(
+    MtLzmaThreaded, BufferEncoderTest,
+    ::testing::Combine(::testing::Values([]() {
+                         FLAGS_lzma_threads = 3;
+                         return std::make_unique<LzmaEncoder>(5, 4096);
+                       }),
+                       ::testing::Values([](std::string_view filename) {
+                         return std::make_unique<ThreadedLzmaDecoder>(filename);
+                       }),
+                       ::testing::Range(0, 100)));
 
 INSTANTIATE_TEST_SUITE_P(
     Lzma, BufferEncoderTest,
     ::testing::Combine(::testing::Values([]() {
-                         return std::make_unique<LzmaEncoder>(2);
+                         FLAGS_lzma_threads = 1;
+                         return std::make_unique<LzmaEncoder>(2, 4096);
                        }),
                        ::testing::Values([](std::string_view filename) {
                          return std::make_unique<LzmaDecoder>(filename);
@@ -20,7 +45,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     LzmaThreaded, BufferEncoderTest,
     ::testing::Combine(::testing::Values([]() {
-                         return std::make_unique<LzmaEncoder>(2);
+                         FLAGS_lzma_threads = 1;
+                         return std::make_unique<LzmaEncoder>(5, 4096);
                        }),
                        ::testing::Values([](std::string_view filename) {
                          return std::make_unique<ThreadedLzmaDecoder>(filename);

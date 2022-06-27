@@ -18,8 +18,10 @@ namespace aos::logger {
 // Encodes buffers using liblzma.
 class LzmaEncoder final : public DetachedBufferEncoder {
  public:
-  // Initializes the LZMA stream and encoder.
-  explicit LzmaEncoder(uint32_t compression_preset);
+  // Initializes the LZMA stream and encoder.  The block size is the block size
+  // used by the multithreaded encoder for batching.  A block size of 0 tells
+  // lzma to pick it's favorite block size.
+  explicit LzmaEncoder(uint32_t compression_preset, size_t block_size = 0);
   LzmaEncoder(const LzmaEncoder &) = delete;
   LzmaEncoder(LzmaEncoder &&other) = delete;
   LzmaEncoder &operator=(const LzmaEncoder &) = delete;
@@ -36,7 +38,7 @@ class LzmaEncoder final : public DetachedBufferEncoder {
   size_t queue_size() const final { return queue_.size(); }
 
  private:
-  static constexpr size_t kEncodedBufferSizeBytes{4096};
+  static constexpr size_t kEncodedBufferSizeBytes{4096 * 10};
 
   void RunLzmaCode(lzma_action action);
 
