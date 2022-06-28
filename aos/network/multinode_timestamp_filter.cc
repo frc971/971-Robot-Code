@@ -127,9 +127,12 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
   return success;
 }
 
-Eigen::VectorXd TimestampProblem::Gradient(
-    const Eigen::Ref<Eigen::VectorXd> time_offsets) {
-  Eigen::VectorXd grad = Eigen::VectorXd::Zero(live_nodes_);
+TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
+      const Eigen::Ref<Eigen::VectorXd> time_offsets) {
+  Derivitives result;
+  result.gradient = Eigen::VectorXd::Zero(live_nodes_);
+  result.hessian = Eigen::MatrixXd::Zero(live_nodes_, live_nodes_);
+
   for (size_t i = 0; i < clock_offset_filter_for_node_.size(); ++i) {
     for (struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
       // Especially when reboots are involved, it isn't guarenteed that there
@@ -172,52 +175,31 @@ Eigen::VectorXd TimestampProblem::Gradient(
       const double error = 2.0 * (offset_error.second - kMinNetworkDelay);
       filter.pointer = offset_error.first;
 
-      grad(a_solution_index) += -error;
-      grad(b_solution_index) += error;
-    }
-  }
-  return grad;
-}
-
-Eigen::MatrixXd TimestampProblem::Hessian(
-    const Eigen::Ref<Eigen::VectorXd> /*time_offsets*/) const {
-  Eigen::MatrixXd hessian = Eigen::MatrixXd::Zero(live_nodes_, live_nodes_);
-
-  for (size_t i = 0; i < clock_offset_filter_for_node_.size(); ++i) {
-    for (const struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
-      // If the gradient is 0, the hessian should also be 0.
-      if (filter.filter->timestamps_empty(base_clock_[i].boot,
-                                          base_clock_[filter.b_index].boot)) {
-        continue;
-      }
+      result.gradient(a_solution_index) += -error;
+      result.gradient(b_solution_index) += error;
 
       // Reminder, our cost function has the following form.
       //   ((tb - (1 + ma) ta - ba)^2
       // We are ignoring the slope when taking the derivative and applying the
       // chain rule to keep the gradient smooth.  This means that the Hessian is
       // 2 for d^2 cost/dta^2 and d^2 cost/dtb^2
-      const size_t a_solution_index = NodeToFullSolutionIndex(i);
-      const size_t b_solution_index = NodeToFullSolutionIndex(filter.b_index);
-      hessian(a_solution_index, a_solution_index) += 2;
-      hessian(b_solution_index, a_solution_index) += -2;
-      hessian(a_solution_index, b_solution_index) =
-          hessian(b_solution_index, a_solution_index);
-      hessian(b_solution_index, b_solution_index) += 2;
+      result.hessian(a_solution_index, a_solution_index) += 2;
+      result.hessian(b_solution_index, a_solution_index) += -2;
+      result.hessian(a_solution_index, b_solution_index) =
+          result.hessian(b_solution_index, a_solution_index);
+      result.hessian(b_solution_index, b_solution_index) += 2;
     }
   }
 
-  return hessian;
+  return result;
 }
 
 std::tuple<Eigen::VectorXd, size_t> TimestampProblem::Newton(
     const Eigen::Ref<Eigen::VectorXd> time_offsets,
     const std::vector<logger::BootTimestamp> &points) {
   CHECK_GT(live_nodes_, 0u) << ": No live nodes to solve for.";
-  // TODO(austin): Each of the DCost functions does a binary search of the
-  // timestamps list.  By the time we have computed the gradient and Hessian,
-  // we've done 5 binary searches for the same information.
-  const Eigen::VectorXd grad = Gradient(time_offsets);
-  const Eigen::MatrixXd hessian = Hessian(time_offsets);
+  const Derivitives derivitives = ComputeDerivitives(time_offsets);
+
   const Eigen::MatrixXd constraint_jacobian =
       Eigen::MatrixXd::Ones(1, live_nodes_) / static_cast<double>(live_nodes_);
   // https://www.cs.purdue.edu/homes/jhonorio/16spring-cs52000-equality.pdf
@@ -283,13 +265,13 @@ std::tuple<Eigen::VectorXd, size_t> TimestampProblem::Newton(
 
   Eigen::MatrixXd a;
   a.resize(live_nodes_ + 1, live_nodes_ + 1);
-  a.block(0, 0, live_nodes_, live_nodes_) = hessian;
+  a.block(0, 0, live_nodes_, live_nodes_) = derivitives.hessian;
   a.block(0, live_nodes_, live_nodes_, 1) = constraint_jacobian.transpose();
   a.block(live_nodes_, 0, 1, live_nodes_) = constraint_jacobian;
   a(live_nodes_, live_nodes_) = 0.0;
 
   Eigen::VectorXd b = Eigen::VectorXd::Zero(live_nodes_ + 1);
-  b.block(0, 0, live_nodes_, 1) = -grad;
+  b.block(0, 0, live_nodes_, 1) = -derivitives.gradient;
 
   // Now, we want to set b(live_nodes_) to be -time_offset for the earliest
   // clock.
@@ -350,7 +332,8 @@ std::tuple<std::vector<BootTimestamp>, size_t> TimestampProblem::SolveNewton(
           Eigen::MatrixXd::Ones(1, live_nodes_) /
           static_cast<double>(live_nodes_);
       Eigen::VectorXd adjusted_grad =
-          Gradient(data) + step(live_nodes_) * constraint_jacobian.transpose();
+          ComputeDerivitives(data).gradient +
+          step(live_nodes_) * constraint_jacobian.transpose();
 
       VLOG(2) << "Adjusted grad " << solution_number << " -> "
               << std::setprecision(12) << std::fixed << std::setfill(' ')

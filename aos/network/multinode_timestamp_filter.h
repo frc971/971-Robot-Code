@@ -101,10 +101,16 @@ class TimestampProblem {
     return solution_node;
   }
 
-  // Returns the Hessian of the cost function at time_offsets.
-  Eigen::MatrixXd Hessian(const Eigen::Ref<Eigen::VectorXd> time_offsets) const;
-  // Returns the gradient of the cost function at time_offsets.
-  Eigen::VectorXd Gradient(const Eigen::Ref<Eigen::VectorXd> time_offsets);
+  // The derivitives and other work products needed for constrained newtons
+  // method.
+  struct Derivitives {
+    Eigen::VectorXd gradient;
+    Eigen::MatrixXd hessian;
+  };
+
+  // Returns the gradient and Hessian of the cost function at time_offsets.
+  Derivitives ComputeDerivitives(
+      const Eigen::Ref<Eigen::VectorXd> time_offsets);
 
   // Returns the newton step of the timestamp problem, and the node which was
   // used for the equality constraint.  The last term is the scalar on the
