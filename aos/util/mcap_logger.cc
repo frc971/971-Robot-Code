@@ -1,6 +1,7 @@
 #include "aos/util/mcap_logger.h"
 
 #include "absl/strings/str_replace.h"
+#include "aos/configuration_schema.h"
 #include "aos/flatbuffer_merge.h"
 #include "single_include/nlohmann/json.hpp"
 
@@ -85,7 +86,29 @@ McapLogger::McapLogger(EventLoop *event_loop, const std::string &output_path,
                        Serialization serialization)
     : event_loop_(event_loop),
       output_(output_path),
-      serialization_(serialization) {
+      serialization_(serialization),
+      configuration_channel_([]() {
+        // Setup a fake Channel for providing the configuration in the MCAP
+        // file. This is included for convenience so that consumers of the MCAP
+        // file can actually dereference things like the channel indices in AOS
+        // timing reports.
+        flatbuffers::FlatBufferBuilder fbb;
+        flatbuffers::Offset<flatbuffers::String> name_offset =
+            fbb.CreateString("");
+        flatbuffers::Offset<flatbuffers::String> type_offset =
+            fbb.CreateString("aos.Configuration");
+        flatbuffers::Offset<reflection::Schema> schema_offset =
+            aos::CopyFlatBuffer(
+                aos::FlatbufferSpan<reflection::Schema>(ConfigurationSchema()),
+                &fbb);
+        Channel::Builder channel(fbb);
+        channel.add_name(name_offset);
+        channel.add_type(type_offset);
+        channel.add_schema(schema_offset);
+        fbb.Finish(channel.Finish());
+        return fbb.Release();
+      }()),
+      configuration_(CopyFlatBuffer(event_loop_->configuration())) {
   event_loop->SkipTimingReport();
   event_loop->SkipAosLog();
   CHECK(output_);
@@ -181,6 +204,20 @@ std::vector<McapLogger::SummaryOffset> McapLogger::WriteSchemasAndChannels(
     }
   }
 
+  // Manually add in a special /configuration channel.
+  if (register_handlers == RegisterHandlers::kYes) {
+    configuration_id_ = ++id;
+    event_loop_->OnRun([this]() {
+      Context config_context;
+      config_context.monotonic_event_time = event_loop_->monotonic_now();
+      config_context.queue_index = 0;
+      config_context.size = configuration_.span().size();
+      config_context.data = configuration_.span().data();
+      WriteMessage(configuration_id_, &configuration_channel_.message(),
+                   config_context, &current_chunk_);
+    });
+  }
+
   std::vector<SummaryOffset> offsets;
 
   const uint64_t schema_offset = output_.tellp();
@@ -188,6 +225,8 @@ std::vector<McapLogger::SummaryOffset> McapLogger::WriteSchemasAndChannels(
   for (const auto &pair : channels) {
     WriteSchema(pair.first, pair.second);
   }
+
+  WriteSchema(configuration_id_, &configuration_channel_.message());
 
   const uint64_t channel_offset = output_.tellp();
 
@@ -200,6 +239,13 @@ std::vector<McapLogger::SummaryOffset> McapLogger::WriteSchemasAndChannels(
     // schemas for channels that are of the same type).
     WriteChannel(pair.first, pair.first, pair.second);
   }
+
+  // Provide the configuration message on a special channel that is just named
+  // "configuration", which is guaranteed not to conflict with existing under
+  // our current naming scheme (since our current scheme will, at a minimum, put
+  // a space between the name/type of a channel).
+  WriteChannel(configuration_id_, configuration_id_,
+               &configuration_channel_.message(), "configuration");
 
   offsets.push_back({OpCode::kChannel, channel_offset,
                      static_cast<uint64_t>(output_.tellp()) - channel_offset});
@@ -267,7 +313,8 @@ void McapLogger::WriteSchema(const uint16_t id, const aos::Channel *channel) {
 }
 
 void McapLogger::WriteChannel(const uint16_t id, const uint16_t schema_id,
-                              const aos::Channel *channel) {
+                              const aos::Channel *channel,
+                              std::string_view override_name) {
   string_builder_.Reset();
   // Channel ID
   AppendInt16(&string_builder_, id);
@@ -275,8 +322,10 @@ void McapLogger::WriteChannel(const uint16_t id, const uint16_t schema_id,
   AppendInt16(&string_builder_, schema_id);
   // Topic name
   AppendString(&string_builder_,
-               absl::StrCat(channel->name()->string_view(), " ",
-                            channel->type()->string_view()));
+               override_name.empty()
+                   ? absl::StrCat(channel->name()->string_view(), " ",
+                                  channel->type()->string_view())
+                   : override_name);
   // Encoding
   switch (serialization_) {
     case Serialization::kJson:

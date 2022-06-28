@@ -1,5 +1,6 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_rust_library", "flatbuffer_ts_library")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
 
 exports_files(["aos_dump_autocomplete.sh"])
@@ -198,6 +199,13 @@ flatbuffer_cc_library(
     srcs = ["configuration.fbs"],
     gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+cc_static_flatbuffer(
+    name = "configuration_schema",
+    function = "aos::ConfigurationSchema",
+    target = ":configuration_fbs_reflection_out",
     visibility = ["//visibility:public"],
 )
 

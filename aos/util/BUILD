@@ -54,6 +54,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:configuration_fbs",
+        "//aos:configuration_schema",
         "//aos:fast_string_builder",
         "//aos:flatbuffer_utils",
         "//aos/events:event_loop",

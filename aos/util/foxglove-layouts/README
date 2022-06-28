@@ -1,0 +1,4 @@
+This folder contains JSON layouts that may be helpful for analyzing AOS-generic problems.
+
+Currently, this includes:
+* "Sent-Too-Fast Analysis": A sample layout for analyzing sent-too-fast errors.

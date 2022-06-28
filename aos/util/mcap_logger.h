@@ -95,7 +95,8 @@ class McapLogger {
   void WriteDataEnd();
   void WriteSchema(const uint16_t id, const aos::Channel *channel);
   void WriteChannel(const uint16_t id, const uint16_t schema_id,
-                    const aos::Channel *channel);
+                    const aos::Channel *channel,
+                    std::string_view override_name = "");
   void WriteMessage(uint16_t channel_id, const Channel *channel,
                     const Context &context, std::ostream *output);
   void WriteChunk();
@@ -154,6 +155,13 @@ class McapLogger {
       message_indices_;
   // ChunkIndex's for all fully written Chunks.
   std::vector<ChunkIndex> chunk_indices_;
+
+  // Metadata associated with the fake "configuration" channel that we create in
+  // order to ensure that foxglove extensions/users have access to the full
+  // configuration.
+  uint16_t configuration_id_ = 0;
+  FlatbufferDetachedBuffer<Channel> configuration_channel_;
+  FlatbufferDetachedBuffer<Configuration> configuration_;
 };
 }  // namespace aos
 #endif  // AOS_UTIL_MCAP_LOGGER_H_
