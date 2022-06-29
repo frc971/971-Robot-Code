@@ -458,6 +458,58 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
   }
 }
 
+void HandleReverseMaps(
+    const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
+    std::string_view type, const Node *node, std::set<std::string> *names) {
+  for (const Map *map : *maps) {
+    CHECK_NOTNULL(map);
+    const Channel *const match = CHECK_NOTNULL(map->match());
+    const Channel *const rename = CHECK_NOTNULL(map->rename());
+
+    // Handle type specific maps.
+    const flatbuffers::String *const match_type_string = match->type();
+    if (match_type_string != nullptr &&
+        match_type_string->string_view() != type) {
+      continue;
+    }
+
+    // Now handle node specific maps.
+    const flatbuffers::String *const match_source_node_string =
+        match->source_node();
+    if (node != nullptr && match_source_node_string != nullptr &&
+        match_source_node_string->string_view() !=
+            node->name()->string_view()) {
+      continue;
+    }
+
+    const flatbuffers::String *const match_name_string = match->name();
+    const flatbuffers::String *const rename_name_string = rename->name();
+    if (match_name_string == nullptr || rename_name_string == nullptr) {
+      continue;
+    }
+
+    const std::string rename_name = rename_name_string->str();
+    const std::string_view match_name = match_name_string->string_view();
+
+    std::set<std::string> possible_renames;
+
+    // Check if the current name(s) could have been reached using the provided
+    // rename.
+    if (match_name.back() == '*') {
+      for (const std::string &option : *names) {
+        if (option.substr(0, rename_name.size()) == rename_name) {
+          possible_renames.insert(
+              absl::StrCat(match_name.substr(0, match_name.size() - 1),
+                           option.substr(rename_name.size())));
+        }
+      }
+      names->insert(possible_renames.begin(), possible_renames.end());
+    } else if (names->count(rename_name) != 0) {
+      names->insert(std::string(match_name));
+    }
+  }
+}
+
 }  // namespace
 
 // Maps name for the provided maps.  Modifies name.
@@ -466,6 +518,9 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
 // pointers. These combine to make it a performance hotspot during many tests
 // under msan, so there is some optimizing around caching intermediates instead
 // of dereferencing the pointer multiple times.
+//
+// Deliberately not in an anonymous namespace so that the log-reading code can
+// reference it.
 void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
                 std::string *name, std::string_view type, const Node *node) {
   // For the same reason we merge configs in reverse order, we want to process
@@ -525,6 +580,25 @@ void HandleMaps(const flatbuffers::Vector<flatbuffers::Offset<aos::Map>> *maps,
     VLOG(1) << "Renamed \"" << *name << "\" to \"" << new_name << "\"";
     *name = std::move(new_name);
   }
+}
+
+std::set<std::string> GetChannelAliases(const Configuration *config,
+                                        std::string_view name,
+                                        std::string_view type,
+                                        const std::string_view application_name,
+                                        const Node *node) {
+  std::set<std::string> names{std::string(name)};
+  if (config->has_maps()) {
+    HandleReverseMaps(config->maps(), type, node, &names);
+  }
+  {
+    const Application *application =
+        GetApplication(config, node, application_name);
+    if (application != nullptr && application->has_maps()) {
+      HandleReverseMaps(application->maps(), type, node, &names);
+    }
+  }
+  return names;
 }
 
 FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
