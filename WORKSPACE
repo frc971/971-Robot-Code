@@ -1064,8 +1064,8 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 """,
-    sha256 = "18db35669ee49a5f8324a344071dd4ab553e716f385fb75747b909bd1de959f5",
-    urls = ["https://www.frc971.org/Build-Dependencies/lzma_arm64.tar.gz"],
+    sha256 = "b4ab9fd7cf3bfdb9e3fc67ac4a3c84db7f7e3c48431ccfc6e6e210f5829d17c9",
+    urls = ["https://www.frc971.org/Build-Dependencies/lzma_arm64-2.tar.gz"],
 )
 
 local_repository(
