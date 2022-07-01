@@ -260,6 +260,7 @@ class LogReader {
   void set_exit_on_finish(bool exit_on_finish) {
     exit_on_finish_ = exit_on_finish;
   }
+  bool exit_on_finish() const { return exit_on_finish_; }
 
   // Sets the realtime replay rate. A value of 1.0 will cause the scheduler to
   // try to play events in realtime. 0.5 will run at half speed. Use infinity
@@ -288,6 +289,10 @@ class LogReader {
                ? 1u
                : logged_configuration()->nodes()->size();
   }
+
+  // Handles when an individual node hits the realtime end time, exitting the
+  // entire event loop once all nodes are stopped.
+  void NoticeRealtimeEnd();
 
   const std::vector<LogFile> log_files_;
 
@@ -343,7 +348,8 @@ class LogReader {
     enum class ThreadedBuffering { kYes, kNo };
     State(std::unique_ptr<TimestampMapper> timestamp_mapper,
           message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters,
-          const Node *node, ThreadedBuffering threading,
+          std::function<void()> notice_realtime_end, const Node *node,
+          ThreadedBuffering threading,
           std::unique_ptr<const ReplayChannelIndicies> replay_channel_indicies);
 
     // Connects up the timestamp mappers.
@@ -667,6 +673,9 @@ class LogReader {
     NodeEventLoopFactory *node_event_loop_factory_ = nullptr;
     SimulatedEventLoopFactory *event_loop_factory_ = nullptr;
 
+    // Callback for when this node hits its realtime end time.
+    std::function<void()> notice_realtime_end_;
+
     std::unique_ptr<EventLoop> event_loop_unique_ptr_;
     // Event loop.
     const Node *node_ = nullptr;
@@ -784,6 +793,10 @@ class LogReader {
   // Number of nodes which still have data to send.  This is used to figure out
   // when to exit.
   size_t live_nodes_ = 0;
+
+  // Similar counter to live_nodes_, but for tracking which individual nodes are
+  // running and have yet to hit the realtime end time, if any.
+  size_t live_nodes_with_realtime_time_end_ = 0;
 
   const Configuration *remapped_configuration_ = nullptr;
   const Configuration *replay_configuration_ = nullptr;
