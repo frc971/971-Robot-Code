@@ -5,8 +5,6 @@ table Status {
   // finished. There is one field, intake_complete, which should be set to
   // true by the intake subsystem when the Goal message is requesting the intake
   // to be on and the limit sensor from the position message has been enabled.
-
-
   intake_complete:bool (id: 0);
 }
 

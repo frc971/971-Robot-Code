@@ -10,17 +10,16 @@ Basic::Basic(::aos::EventLoop *event_loop, const ::std::string &name)
 void Basic::RunIteration(const Goal *goal, const Position *position,
                          aos::Sender<Output>::Builder *output,
                          aos::Sender<Status>::Builder *status) {
-
   // FIX HERE: Set the intake_voltage to 12 Volts when
   // intake is requested (via intake in goal). Make sure not to set
   // the motor to anything but 0 V when the limit_sensor is pressed.
 
-  // This line tells the compiler to to ignore the fact that goal and
+  // This line tells the compiler to ignore the fact that goal and
   // position are not used in the code. You will need to read these messages
   // and use their values to determine the necessary output and status.
   (void)goal, (void)position;
 
-  if (output) {
+  if (output != nullptr) {
     Output::Builder builder = output->MakeBuilder<Output>();
 
     // FIX HERE: As of now, this sets the intake voltage to 0 in
@@ -33,7 +32,7 @@ void Basic::RunIteration(const Goal *goal, const Position *position,
     (void)output->Send(builder.Finish());
   }
 
-  if (status) {
+  if (status != nullptr) {
     Status::Builder builder = status->MakeBuilder<Status>();
     // FIX HERE: Fill out the Status message! In order to fill the
     // information in the message, use the add_<name of the field>() method
