@@ -3,11 +3,26 @@ import numpy as np
 import scipy.optimize
 from libspline import Spline, DistanceSpline, Trajectory
 import copy
+from dataclasses import dataclass
 
 
-class Points():
+@dataclass
+class ControlPointIndex:
+    """Class specifying the index of a control point"""
+
+    # The index of the multispline in the list of multisplines
+    multispline_index: int
+
+    # The index of the spline in the multispline
+    spline_index: int
+
+    # The index of the control point in the spline [0-5]
+    control_point_index: int
+
+
+class Multispline():
     def __init__(self):
-        self.points = []  # Holds all points not yet in spline
+        self.staged_points = []  # Holds all points not yet in spline
         self.libsplines = []  # Formatted for libspline library usage
         self.splines = []  # Formatted for drawing
         self.constraints = [  # default constraints
@@ -24,18 +39,12 @@ class Points():
         ]
 
     def __deepcopy__(self, memo):
-        new_copy = Points()
-        new_copy.points = copy.deepcopy(self.points, memo)
+        new_copy = Multispline()
+        new_copy.staged_points = copy.deepcopy(self.staged_points, memo)
         new_copy.splines = copy.deepcopy(self.splines, memo)
         new_copy.constraints = copy.deepcopy(self.constraints, memo)
         new_copy.update_lib_spline()
         return new_copy
-
-    def getPoints(self):
-        return self.points
-
-    def resetPoints(self):
-        self.points = []
 
     def getLibsplines(self):
         return self.libsplines
@@ -120,9 +129,13 @@ class Points():
             spline = Spline(np.ascontiguousarray(np.transpose(array)))
             self.libsplines.append(spline)
 
-    def nearest_distance(self, point):
-        """Finds the distance along the DistanceSpline that is closest to the
-        given point on the field"""
+    @staticmethod
+    def nearest_distance(multisplines, point):
+        """Finds the spot along the multisplines that is closest to a
+        given point on the field
+
+        Returns the closest multispline and the distance along that multispline
+        """
         def distance(t, distance_spline, point):
             return np.sum((distance_spline.XY(t) - point)**2)
 
@@ -132,29 +145,33 @@ class Points():
             return np.sum(2 * (distance_spline.XY(t) - point) *
                           distance_spline.DXY(t))
 
-        distance_spline = DistanceSpline(self.getLibsplines())
         best_result = None
+        best_multispline = None
 
-        # The optimizer finds local minima that often aren't what we want,
-        # so try from multiple locations to find a better minimum.
-        guess_points = np.linspace(0, distance_spline.Length(), num=5)
+        for multispline_index, multispline in enumerate(multisplines):
+            distance_spline = DistanceSpline(multispline.getLibsplines())
 
-        for guess in guess_points:
-            result = scipy.optimize.minimize(
-                distance,
-                guess,
-                args=(distance_spline, point),
-                bounds=((0, distance_spline.Length()), ),
-                jac=ddistance,
-            )
+            # The optimizer finds local minima that often aren't what we want,
+            # so try from multiple locations to find a better minimum.
+            guess_points = np.linspace(0, distance_spline.Length(), num=5)
 
-            if result.success and (best_result == None
-                                   or result.fun < best_result.fun):
-                best_result = result
+            for guess in guess_points:
+                result = scipy.optimize.minimize(
+                    distance,
+                    guess,
+                    args=(distance_spline, point),
+                    bounds=((0, distance_spline.Length()), ),
+                    jac=ddistance,
+                )
 
-        return best_result, distance_spline
+                if result.success and (best_result == None
+                                       or result.fun < best_result.fun):
+                    best_result = result
+                    best_multispline = multispline
 
-    def toMultiSpline(self):
+        return (best_multispline, best_result)
+
+    def toJsonObject(self):
         multi_spline = {
             "spline_count": 0,
             "spline_x": [],
@@ -170,39 +187,52 @@ class Points():
                 multi_spline["spline_y"].append(point[1])
         return multi_spline
 
-    def fromMultiSpline(self, multi_spline):
-        self.constraints = multi_spline["constraints"]
-        self.splines = []
-        self.points = []
+    @staticmethod
+    def fromJsonObject(multi_spline):
+        multispline = Multispline()
+        multispline.constraints = multi_spline["constraints"]
+        multispline.splines = []
+        multispline.staged_points = []
 
         i = 0
         for j in range(multi_spline["spline_count"]):
             # get the last point of the last spline
             # and read in another 6 points
             for i in range(i, i + 6):
-                self.points.append(
+                multispline.staged_points.append(
                     [multi_spline["spline_x"][i], multi_spline["spline_y"][i]])
-            self.splines.append(np.array(self.points))
-            self.points = []
-        self.update_lib_spline()
+            multispline.splines.append(np.array(multispline.staged_points))
+            multispline.staged_points = []
+        multispline.update_lib_spline()
+
+        return multispline
 
     def getSplines(self):
         return self.splines
 
-    def setSplines(self, spline_edit, index_of_edit, x, y):
-        self.splines[spline_edit][index_of_edit] = [x, y]
+    def setControlPoint(self, index, x, y):
+        self.splines[index.spline_index][index.control_point_index] = [x, y]
 
-    def add_point(self, x, y):
-        if (len(self.points) < 6):
-            self.points.append([x, y])
-        if (len(self.points) == 6):
-            self.splines.append(np.array(self.points))
-            self.points = []
+    def addPoint(self, x, y):
+        if (len(self.staged_points) < 6):
+            self.staged_points.append([x, y])
+        if (len(self.staged_points) == 6):
+            self.splines.append(np.array(self.staged_points))
+            self.staged_points = []
             self.update_lib_spline()
             return True
 
-    def extrapolate(self, point1, point2,
-                    point3):  # where point3 is 3rd to last point
-        self.points.append(point1)
-        self.points.append(point1 * 2 - point2)
-        self.points.append(point3 + point1 * 4 - point2 * 4)
+    def extrapolate(self):
+        """Stages 3 points extrapolated from the end of the multispline"""
+        if len(self.getSplines()) < 1: return
+
+        self.staged_points = []
+
+        spline = self.getSplines()[-1]
+        point1 = spline[5]
+        point2 = spline[4]
+        point3 = spline[3]
+
+        self.staged_points.append(point1)
+        self.staged_points.append(point1 * 2 - point2)
+        self.staged_points.append(point3 + point1 * 4 - point2 * 4)

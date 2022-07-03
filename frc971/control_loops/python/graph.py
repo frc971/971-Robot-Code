@@ -5,7 +5,7 @@ import numpy as np
 import queue
 import threading
 import copy
-from points import Points
+from multispline import Multispline
 from libspline import Spline, DistanceSpline, Trajectory
 
 from matplotlib.backends.backend_gtk3agg import (FigureCanvasGTK3Agg as
@@ -89,6 +89,10 @@ class Graph(Gtk.Bin):
 
         Can be superseded by newer points if an old one isn't finished processing.
         """
+
+        # TODO: Draw all multisplines
+        points = points[0]
+
         if not points.getLibsplines(): return
         new_copy = copy.deepcopy(points)
 

@@ -156,8 +156,8 @@ py_binary(
     srcs = [
         "color.py",
         "graph.py",
+        "multispline.py",
         "path_edit.py",
-        "points.py",
         "spline_drawing.py",
         "spline_graph.py",
         "spline_writer.py",
