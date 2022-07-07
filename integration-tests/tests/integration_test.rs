@@ -16,8 +16,8 @@ use crate::{
     },
 };
 use autocxx_integration_tests::{
-    directives_from_lists, do_run_test, do_run_test_manual, run_test, run_test_ex,
-    run_test_expect_fail, run_test_expect_fail_ex, TestError,
+    directives_from_lists, do_run_test, do_run_test_manual, run_generate_all_test, run_test,
+    run_test_ex, run_test_expect_fail, run_test_expect_fail_ex, TestError,
 };
 use indoc::indoc;
 use itertools::Itertools;
@@ -3541,20 +3541,7 @@ fn test_remove_cv_t_pathological() {
         template <class _Ty>
         using _Remove_cvref_t = remove_cv_t<remove_reference_t<_Ty>>;
     "};
-
-    let rs = quote! {};
-
-    run_test_ex(
-        "",
-        hdr,
-        rs,
-        quote! {
-            generate_all!()
-        },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -5044,15 +5031,7 @@ fn test_double_underscores_fn_namespace() {
         inline void a() {}
     };
     "};
-    run_test_ex(
-        "",
-        hdr,
-        quote! {},
-        quote! { generate_all!() },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -5941,6 +5920,7 @@ fn test_double_destruction() {
         None,
         None,
         None,
+        "unsafe_ffi",
     ) {
         Err(TestError::CppBuild(_)) => {} // be sure this fails due to a static_assert
         // rather than some runtime problem
@@ -6232,20 +6212,7 @@ fn test_bitset() {
 
         typedef bitset<1> mybitset;
     "};
-
-    let rs = quote! {};
-
-    run_test_ex(
-        "",
-        hdr,
-        rs,
-        quote! {
-            generate_all!()
-        },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -6433,18 +6400,7 @@ fn test_issue_470_492() {
             typedef std::a<b<d>::c, int, int> e;
         };
     "};
-    let rs = quote! {};
-    run_test_ex(
-        "",
-        hdr,
-        rs,
-        quote! {
-            generate_all!()
-        },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -6505,18 +6461,7 @@ fn test_std_thing() {
         }
         typedef char daft;
     "};
-    let rs = quote! {};
-    run_test_ex(
-        "",
-        hdr,
-        rs,
-        quote! {
-            generate_all!()
-        },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -6732,6 +6677,50 @@ fn test_extern_cpp_type_two_include_cpp() {
             use autocxx::prelude::*;
             let a = dependent::create_a(base::B::VARIANT).within_box();
             dependent::handle_a(&a);
+        }
+    };
+    do_run_test_manual("", hdr, rs, None, None).unwrap();
+}
+
+#[test]
+/// Tests extern_cpp_type with a type inside a namespace.
+fn test_extern_cpp_type_namespace() {
+    let hdr = indoc! {"
+        #include <cstdint>
+        namespace b {
+        struct B {
+            B() {}
+        };
+        }  // namespace b
+        struct A {
+            A() {}
+            b::B make_b() { return b::B(); }
+        };
+    "};
+    let hexathorpe = Token![#](Span::call_site());
+    let rs = quote! {
+        pub mod b {
+            autocxx::include_cpp! {
+                #hexathorpe include "input.h"
+                safety!(unsafe_ffi)
+                name!(ffi_b)
+                generate_pod!("b::B")
+            }
+            pub use ffi_b::b::B;
+        }
+        pub mod a {
+            autocxx::include_cpp! {
+                #hexathorpe include "input.h"
+                safety!(unsafe_ffi)
+                name!(ffi_a)
+                generate_pod!("A")
+                extern_cpp_type!("b::B", crate::b::B)
+            }
+            pub use ffi_a::A;
+        }
+        fn main() {
+            use autocxx::prelude::*;
+            let _ = crate::a::A::new().within_unique_ptr().as_mut().unwrap().make_b();
         }
     };
     do_run_test_manual("", hdr, rs, None, None).unwrap();
@@ -7600,6 +7589,49 @@ fn test_non_pv_subclass_simple() {
 }
 
 #[test]
+/// Tests the Rust code generated for subclasses when there's a `std` module in scope representing
+/// the C++ `std` namespace. This breaks if any of the generated Rust code fails to fully qualify
+/// its references to the Rust `std`.
+fn test_subclass_with_std() {
+    let hdr = indoc! {"
+    #include <cstdint>
+    #include <chrono>
+
+    class Observer {
+    public:
+        Observer() {}
+        virtual void foo() const {}
+        virtual ~Observer() {}
+
+        void unused(std::chrono::nanoseconds) {}
+    };
+    "};
+    run_test_ex(
+        "",
+        hdr,
+        quote! {
+            let obs = MyObserver::new_rust_owned(MyObserver { a: 3, cpp_peer: Default::default() });
+            obs.borrow().foo();
+        },
+        quote! {
+            subclass!("Observer",MyObserver)
+        },
+        None,
+        None,
+        Some(quote! {
+            use autocxx::subclass::CppSubclass;
+            use ffi::Observer_methods;
+            #[autocxx::subclass::subclass]
+            pub struct MyObserver {
+                a: u32
+            }
+            impl Observer_methods for MyObserver {
+            }
+        }),
+    );
+}
+
+#[test]
 fn test_two_subclasses() {
     let hdr = indoc! {"
     #include <cstdint>
@@ -7701,6 +7733,54 @@ fn test_two_superclasses_with_same_name_method() {
             }
         }),
     );
+}
+
+#[test]
+fn test_subclass_no_safety() {
+    let hdr = indoc! {"
+    #include <cstdint>
+
+    class Observer {
+    public:
+        Observer() {}
+        virtual void foo() = 0;
+        virtual ~Observer() {}
+    };
+    "};
+    let hexathorpe = Token![#](Span::call_site());
+    let unexpanded_rust = quote! {
+        use autocxx::prelude::*;
+
+        include_cpp!(
+            #hexathorpe include "input.h"
+            subclass!("Observer",MyObserver)
+        );
+
+        use ffi::Observer_methods;
+        #hexathorpe [autocxx::subclass::subclass]
+        pub struct MyObserver;
+        impl Observer_methods for MyObserver {
+            unsafe fn foo(&mut self) {}
+        }
+
+        use autocxx::subclass::{CppSubclass, CppPeerConstructor, CppSubclassRustPeerHolder};
+        use cxx::UniquePtr;
+        impl CppPeerConstructor<ffi::MyObserverCpp> for MyObserver {
+            fn make_peer(
+                &mut self,
+                peer_holder: CppSubclassRustPeerHolder<Self>,
+            ) -> UniquePtr<ffi::MyObserverCpp> {
+                UniquePtr::emplace(unsafe { ffi::MyObserverCpp::new(peer_holder) })
+            }
+        }
+
+        fn main() {
+            let obs = MyObserver::new_rust_owned(MyObserver { cpp_peer: Default::default() });
+            unsafe { obs.borrow_mut().foo() };
+        }
+    };
+
+    do_run_test_manual("", hdr, unexpanded_rust, None, None).unwrap()
 }
 
 #[test]
@@ -8283,6 +8363,74 @@ fn test_pv_subclass_calls() {
                 sub_d_called: bool,
                 sub_e_called: bool,
                 sub_f_called: bool,
+            }
+
+            static STATUS: Lazy<Mutex<Status>> = Lazy::new(|| Mutex::new(Status::default()));
+        }),
+    );
+}
+
+#[test]
+fn test_pv_subclass_as_superclass() {
+    let hdr = indoc! {"
+    #include <cstdint>
+    #include <memory>
+
+    class TestObserver {
+    public:
+        TestObserver() {}
+        virtual void a() const = 0;
+        virtual ~TestObserver() {}
+    };
+
+    inline void call_observer(std::unique_ptr<TestObserver> obs) { obs->a(); }
+    "};
+    run_test_ex(
+        "",
+        hdr,
+        quote! {
+            use autocxx::subclass::CppSubclass;
+            let obs = MyTestObserver::new_cpp_owned(
+                MyTestObserver::default()
+            );
+            let obs = MyTestObserver::as_TestObserver_unique_ptr(obs);
+            assert!(!Lazy::force(&STATUS).lock().unwrap().dropped);
+            ffi::call_observer(obs);
+            assert!(Lazy::force(&STATUS).lock().unwrap().sub_a_called);
+            assert!(Lazy::force(&STATUS).lock().unwrap().dropped);
+            *Lazy::force(&STATUS).lock().unwrap() = Default::default();
+        },
+        quote! {
+            generate!("call_observer")
+            subclass!("TestObserver",MyTestObserver)
+        },
+        None,
+        None,
+        Some(quote! {
+            use once_cell::sync::Lazy;
+            use std::sync::Mutex;
+
+            use ffi::TestObserver_methods;
+            #[autocxx::subclass::subclass]
+            #[derive(Default)]
+            pub struct MyTestObserver {
+            }
+            impl TestObserver_methods for MyTestObserver {
+                fn a(&self) {
+                    assert!(!Lazy::force(&STATUS).lock().unwrap().dropped);
+                    Lazy::force(&STATUS).lock().unwrap().sub_a_called = true;
+                }
+            }
+            impl Drop for MyTestObserver {
+                fn drop(&mut self) {
+                    Lazy::force(&STATUS).lock().unwrap().dropped = true;
+                }
+            }
+
+            #[derive(Default)]
+            struct Status {
+                sub_a_called: bool,
+                dropped: bool,
             }
 
             static STATUS: Lazy<Mutex<Status>> = Lazy::new(|| Mutex::new(Status::default()));
@@ -10925,15 +11073,7 @@ fn test_typedef_to_enum() {
           d e();
         };
     "};
-    run_test_ex(
-        "",
-        hdr,
-        quote! {},
-        quote! { generate_all!() },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -10948,15 +11088,7 @@ fn test_typedef_to_ns_enum() {
         };
         } // namespace
     "};
-    run_test_ex(
-        "",
-        hdr,
-        quote! {},
-        quote! { generate_all!() },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -11015,15 +11147,7 @@ fn test_array_trouble1() {
         };
         } // namespace a
     "};
-    run_test_ex(
-        "",
-        hdr,
-        quote! {},
-        quote! { generate_all!() },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -11044,15 +11168,7 @@ fn test_issue_1087a() {
           _CharT b;
         };
     "};
-    run_test_ex(
-        "",
-        hdr,
-        quote! {},
-        quote! { generate_all!() },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -11063,15 +11179,7 @@ fn test_issue_1087b() {
           b c;
         };
     "};
-    run_test_ex(
-        "",
-        hdr,
-        quote! {},
-        quote! { generate_all!() },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -11086,15 +11194,7 @@ fn test_issue_1087c() {
         }
         }
     "};
-    run_test_ex(
-        "",
-        hdr,
-        quote! {},
-        quote! { generate_all!() },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -11116,15 +11216,171 @@ fn test_issue_1089() {
         } // namespace
         } // namespace a
     "};
-    run_test_ex(
-        "",
-        hdr,
-        quote! {},
-        quote! { generate_all!() },
-        None,
-        None,
-        None,
-    );
+    run_generate_all_test(hdr);
+}
+
+/// The problem here is that 'g' doesn't get annotated with
+/// the unused_template semantic attribute.
+/// This seems to be because both g and f have template
+/// parameters, so they're all "used", but effectively cancel
+/// out and thus bindgen generates
+///   pub type g = root::b::f;
+/// So, what we should do here is spot any typedef depending
+/// on a template which takes template args, and reject that too.
+/// Probably.
+#[test]
+#[ignore] // https://github.com/google/autocxx/pull/1094
+fn test_issue_1094() {
+    let hdr = indoc! {"
+        namespace {
+        typedef int a;
+        }
+        namespace b {
+        template <typename> struct c;
+        template <typename d, d e> using f = __make_integer_seq<c, d, e>;
+        template <a e> using g = f<a, e>;
+        } // namespace b
+    "};
+    run_generate_all_test(hdr);
+}
+
+#[test]
+fn test_issue_1096a() {
+    let hdr = indoc! {"
+        namespace a {
+        class b {
+          class c;
+        };
+        } // namespace a
+    "};
+    run_generate_all_test(hdr);
+}
+
+#[test]
+fn test_issue_1096b() {
+    let hdr = indoc! {"
+        namespace a {
+        class b {
+        public:
+          class c;
+        };
+        } // namespace a
+    "};
+    run_generate_all_test(hdr);
+}
+
+#[test]
+fn test_issue_1096c() {
+    let hdr = indoc! {"
+        namespace a {
+        class b {
+        public:
+          class c {
+          public:
+            int d;
+          };
+        };
+        } // namespace a
+    "};
+    run_generate_all_test(hdr);
+}
+
+#[test]
+fn test_issue_1096d() {
+    let hdr = indoc! {"
+        namespace a {
+        class b {
+        private:
+          class c {
+          public:
+            int d;
+          };
+        };
+        } // namespace a
+    "};
+    run_generate_all_test(hdr);
+}
+
+#[test]
+fn test_issue_1096e() {
+    let hdr = indoc! {"
+        namespace a {
+        class b {
+        private:
+          enum c {
+              D,
+          };
+        };
+        } // namespace a
+    "};
+    run_generate_all_test(hdr);
+}
+
+/// Unclear why minimization resulted in this particular test case.
+#[test]
+#[ignore] // https://github.com/google/autocxx/pull/1097
+fn test_issue_1097() {
+    let hdr = indoc! {"
+        namespace rust {
+        inline namespace a {
+        class Str {
+        public:
+          ~Str();
+        };
+        } // namespace a
+        } // namespace rust
+    "};
+    run_generate_all_test(hdr);
+}
+
+#[test]
+fn test_issue_1098a() {
+    let hdr = indoc! {"
+        namespace {
+        namespace {
+        template <typename _CharT> class a {
+          typedef _CharT b;
+          b c;
+        };
+        template <typename _CharT> class d : a<_CharT> {};
+        } // namespace
+        } // namespace
+    "};
+    run_generate_all_test(hdr);
+}
+
+/// Need to spot structs like this:
+/// pub struct d<_CharT> {
+///  _base: root::a<_CharT>,
+/// }
+/// and not create concrete types where the inner type is something from
+/// the outer context.
+#[test]
+fn test_issue_1098b() {
+    let hdr = indoc! {"
+        template <typename _CharT> class a {
+          typedef _CharT b;
+          b c;
+        };
+        template <typename _CharT> class d : a<_CharT> {};
+    "};
+    run_generate_all_test(hdr);
+}
+
+#[test]
+fn test_issue_1098c() {
+    let hdr = indoc! {"
+        namespace {
+        namespace {
+        struct A {
+            int a;
+        };
+        typedef A B;
+        } // namespace
+        } // namespace
+        inline void take_b(const B&) {}
+    "};
+    run_generate_all_test(hdr);
 }
 
 #[test]
@@ -11183,6 +11439,58 @@ fn test_issue_1065b() {
     "};
     let rs = quote! {};
     run_test("", hdr, rs, &["RenderFrameHost"], &[]);
+}
+
+#[test]
+fn test_issue_1081() {
+    let hdr = indoc! {"
+        namespace libtorrent {
+        char version;
+        }
+        namespace libtorrent {
+        struct session;
+        }
+    "};
+    let rs = quote! {};
+    run_test("", hdr, rs, &["libtorrent::session"], &[]);
+}
+
+#[test]
+#[ignore] // This test passes under all normal builds. However
+          // it triggers a stack use-after-return in older versions of
+          // libclang which is only detected under ASAN (obviously it
+          // sometimes causes crashes the rest of the time).
+          // This UaR does not occur when the same code is processed
+          // with a HEAD version of clang itself as of June 2022. This
+          // may mean that the UaR has been fixed in later versions of
+          // the clang code, or that it only occurs when the code is used
+          // in a libclang context (not a plain clang compilation context).
+          // If the problem recurs, we should work out which of these is
+          // the case.
+fn test_issue_1125() {
+    let hdr = indoc! {"
+        namespace {
+        namespace {
+        template <class a> class b {
+          typedef a c;
+          struct {
+            c : sizeof(c);
+          };
+        };
+        } // namespace
+        } // namespace
+    "};
+    run_test_ex(
+        "",
+        hdr,
+        quote! {},
+        quote! {
+            generate_all!()
+        },
+        make_cpp17_adder(),
+        None,
+        None,
+    );
 }
 
 // Yet to test:
