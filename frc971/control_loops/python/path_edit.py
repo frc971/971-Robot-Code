@@ -53,7 +53,7 @@ class FieldWidget(Gtk.DrawingArea):
 
         # For the editing mode
         self.control_point_index = None
-        self.active_multispline_index = -1
+        self.active_multispline_index = 0
 
         self.zoom_transform = cairo.Matrix()
 
@@ -68,7 +68,7 @@ class FieldWidget(Gtk.DrawingArea):
         """Get the current active multispline or create a new one"""
         if not self.multisplines:
             self.multisplines.append(Multispline())
-            self.active_multispline_index = -1
+            self.active_multispline_index = len(self.multisplines) - 1
 
         return self.multisplines[self.active_multispline_index]
 
@@ -380,12 +380,16 @@ class FieldWidget(Gtk.DrawingArea):
             multispline.extrapolate()
             self.queue_draw()
         elif keyval == Gdk.KEY_m:
-            self.multisplines.append(Multispline())
-            self.active_spline_index = len(self.multisplines) - 1
             self.mode = Mode.kPlacing
+            self.active_multispline_index += 1
+            self.multisplines.insert(self.active_multispline_index,
+                                     Multispline())
 
-            multispline = self.multisplines[-2]
-            #multispline.extrapolate()
+            prev_multispline = self.multisplines[self.active_multispline_index
+                                                 - 1]
+            if prev_multispline:
+                self.active_multispline.extrapolate(
+                    prev_multispline.getSplines()[-1])
             self.queue_draw()
 
     def do_button_release_event(self, event):
@@ -400,11 +404,12 @@ class FieldWidget(Gtk.DrawingArea):
                 multispline.setControlPoint(self.control_point_index,
                                             self.mousex, self.mousey)
 
-                multispline.splineExtrapolate(
-                    self.control_point_index.spline_index)
+                Multispline.splineExtrapolate(self.multisplines,
+                                              self.control_point_index)
 
                 multispline.update_lib_spline()
                 self.graph.schedule_recalculate(self.multisplines)
+                self.queue_draw()
 
                 self.control_point_index = None
 
@@ -441,24 +446,22 @@ class FieldWidget(Gtk.DrawingArea):
                                 self.control_point_index = ControlPointIndex(
                                     index_multisplines, index_splines,
                                     index_points)
+            if self.control_point_index:
+                self.active_multispline_index = self.control_point_index.multispline_index
         self.queue_draw()
 
     def do_motion_notify_event(self, event):
-        old_x = self.mousex
-        old_y = self.mousey
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
-        dif_x = self.mousex - old_x
-        dif_y = self.mousey - old_y
-        difs = np.array([dif_x, dif_y])
+        mouse = np.array([self.mousex, self.mousey])
 
         if self.mode == Mode.kEditing and self.control_point_index != None:
             multispline = self.multisplines[
                 self.control_point_index.multispline_index]
-            multispline.updates_for_mouse_move(
-                self.control_point_index.control_point_index,
-                self.control_point_index.spline_index, self.mousex,
-                self.mousey, difs)
+
+            multispline.updates_for_mouse_move(self.multisplines,
+                                               self.control_point_index,
+                                               mouse)
 
             multispline.update_lib_spline()
             self.graph.schedule_recalculate(self.multisplines)

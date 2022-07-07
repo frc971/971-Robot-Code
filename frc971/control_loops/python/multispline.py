@@ -69,55 +69,165 @@ class Multispline():
             elif constraint["constraint_type"] == "LONGITUDINAL_ACCELERATION":
                 trajectory.SetLongitudinalAcceleration(constraint["value"])
 
-    def splineExtrapolate(self, o_spline_edit):
-        spline_edit = o_spline_edit
-        if not spline_edit == len(self.splines) - 1:
-            f = self.splines[spline_edit][5]
-            e = self.splines[spline_edit][4]
-            d = self.splines[spline_edit][3]
-            self.splines[spline_edit + 1][0] = f
-            self.splines[spline_edit + 1][1] = f * 2 + e * -1
-            self.splines[spline_edit + 1][2] = d + f * 4 + e * -4
+    @staticmethod
+    def splineExtrapolate(multisplines, index, *, snap=True):
+        multispline = multisplines[index.multispline_index]
+        spline = multispline.splines[index.spline_index]
 
-        if not spline_edit == 0:
-            a = self.splines[spline_edit][0]
-            b = self.splines[spline_edit][1]
-            c = self.splines[spline_edit][2]
-            self.splines[spline_edit - 1][5] = a
-            self.splines[spline_edit - 1][4] = a * 2 + b * -1
-            self.splines[spline_edit - 1][3] = c + a * 4 + b * -4
+        # find the adjacent splines that will be affected by this spline
 
-    def updates_for_mouse_move(self, index_of_edit, spline_edit, x, y, difs):
-        if index_of_edit > -1:
-            self.splines[spline_edit][index_of_edit] = [x, y]
+        prev_multispline = None
+        prev_spline = None
+        if index.spline_index != 0:
+            prev_spline = multispline.splines[index.spline_index - 1]
+        elif index.multispline_index != 0:
+            prev_multispline = multisplines[index.multispline_index - 1]
+            prev_spline = prev_multispline.splines[-1]
 
-            if index_of_edit == 5:
-                self.splines[spline_edit][
-                    index_of_edit -
-                    2] = self.splines[spline_edit][index_of_edit - 2] + difs
-                self.splines[spline_edit][
-                    index_of_edit -
-                    1] = self.splines[spline_edit][index_of_edit - 1] + difs
+        next_multispline = None
+        next_spline = None
+        if spline is not multispline.splines[-1]:
+            next_spline = multispline.splines[index.spline_index + 1]
+        elif multispline is not multisplines[-1]:
+            next_multispline = multisplines[index.multispline_index + 1]
+            if next_multispline.splines:
+                next_spline = next_multispline.splines[0]
 
-            if index_of_edit == 0:
-                self.splines[spline_edit][
-                    index_of_edit +
-                    2] = self.splines[spline_edit][index_of_edit + 2] + difs
-                self.splines[spline_edit][
-                    index_of_edit +
-                    1] = self.splines[spline_edit][index_of_edit + 1] + difs
+        # adjust the adjacent splines according to our smoothness constraints
+        # the three points on either side are entirely constrained by this spline
 
-            if index_of_edit == 4:
-                self.splines[spline_edit][
-                    index_of_edit -
-                    1] = self.splines[spline_edit][index_of_edit - 1] + difs
+        if next_spline is not None:
+            f = spline[5] # the end of the spline
+            e = spline[4] # determines the heading
+            d = spline[3]
+            if next_multispline is None:
+                next_spline[0] = f
+                next_spline[1] = f * 2 + e * -1
+                next_spline[2] = d + f * 4 + e * -4
+            else:
+                if snap:
+                    Multispline.snapSplines(spline, next_spline, match_first_to_second=False)
 
-            if index_of_edit == 1:
-                self.splines[spline_edit][
-                    index_of_edit +
-                    1] = self.splines[spline_edit][index_of_edit + 1] + difs
+                next_spline[0] = f
+                next_multispline.update_lib_spline()
 
-            self.splineExtrapolate(spline_edit)
+        if prev_spline is not None:
+            a = spline[0]
+            b = spline[1]
+            c = spline[2]
+            if prev_multispline is None:
+                prev_spline[5] = a
+                prev_spline[4] = a * 2 + b * -1
+                prev_spline[3] = c + a * 4 + b * -4
+            else:
+                if snap:
+                    Multispline.snapSplines(prev_spline, spline, match_first_to_second=True)
+
+                prev_spline[5] = a
+                prev_multispline.update_lib_spline()
+
+    def snapSplines(first_spline, second_spline, *, match_first_to_second):
+        """Snaps two adjacent splines together, preserving the heading from one to another.
+
+        The end of `first_spline` connects to the beginning of `second_spline`
+        The user will have their mouse one one of these splines, so we
+        only want to snap the spline that they're not holding.
+
+        They can have the same heading, or they can have opposite headings
+        which represents the robot driving that spline backwards.
+        """
+
+        # Represent the position of the second control point (controls the heading)
+        # as a vector from the end of the spline to the control point
+        first_vector = first_spline[-2] - first_spline[-1]
+        second_vector = second_spline[1] - second_spline[0]
+
+        # we want to preserve the distance
+        first_magnitude = np.linalg.norm(first_vector, ord=2)
+        second_magnitude = np.linalg.norm(second_vector, ord=2)
+
+        normalized_first = first_vector / first_magnitude
+        normalized_second = second_vector / second_magnitude
+
+        # the proposed new vector if we were to make them point the same direction
+        swapped_second = normalized_first * second_magnitude
+        swapped_first = normalized_second * first_magnitude
+
+        # they were pointing in opposite directions
+        if np.dot(first_vector, second_vector) < 0:
+
+            # rotate the new vectors 180 degrees
+            # to keep them pointing in opposite directions
+            swapped_first = -swapped_first
+            swapped_second = -swapped_second
+
+        # Calculate how far we ended up moving the second control point
+        # so we can move the third control point with it
+        change_in_first = swapped_first - first_vector
+        change_in_second = swapped_second - second_vector
+
+        # apply the changes and discard the other proposed snap
+        if match_first_to_second:
+            first_spline[-2] = swapped_first + first_spline[-1]
+            first_spline[-3] += change_in_first
+            # swapped_second doesn't get used
+        else:
+            second_spline[1] = swapped_second + second_spline[0]
+            second_spline[2] += change_in_second
+            # swapped_first doesn't get used
+
+    def updates_for_mouse_move(self, multisplines, index, mouse):
+        """Moves the control point and adjacent points to follow the mouse"""
+        if index == None: return
+        spline_edit = index.spline_index
+        index_of_edit = index.control_point_index
+
+        spline = self.splines[spline_edit]
+
+        # we want to move it to be on the mouse
+        diffs = mouse - spline[index_of_edit]
+
+        spline[index_of_edit] = mouse
+
+
+        # all three points move together with the endpoint
+        if index_of_edit == 5:
+            spline[3] += diffs
+            spline[4] += diffs
+
+            # check if the next multispline exists and has a spline
+            if index.spline_index == len(
+                    self.splines) - 1 and not index.multispline_index == len(
+                        multisplines) - 1 and len(
+                            multisplines[index.multispline_index +
+                                         1].splines) > 0:
+                # move the points that lay across the multispline boundary
+                other_spline = multisplines[index.multispline_index +
+                                            1].splines[0]
+
+                other_spline[1] += diffs
+                other_spline[2] += diffs
+
+        if index_of_edit == 0:
+            spline[2] += diffs
+            spline[1] += diffs
+
+            # check if previous multispline exists
+            if index.spline_index == 0 and not index.multispline_index == 0:
+                other_spline = multisplines[index.multispline_index -
+                                            1].splines[-1]
+
+                other_spline[3] += diffs
+                other_spline[4] += diffs
+
+        # the third point moves with the second point
+        if index_of_edit == 4:
+            spline[3] += diffs
+
+        if index_of_edit == 1:
+            spline[2] += diffs
+
+        Multispline.splineExtrapolate(multisplines, index, snap=False)
 
     def update_lib_spline(self):
         self.libsplines = []
@@ -222,13 +332,11 @@ class Multispline():
             self.update_lib_spline()
             return True
 
-    def extrapolate(self):
+    def extrapolate(self, spline):
         """Stages 3 points extrapolated from the end of the multispline"""
-        if len(self.getSplines()) < 1: return
 
         self.staged_points = []
 
-        spline = self.getSplines()[-1]
         point1 = spline[5]
         point2 = spline[4]
         point3 = spline[3]
