@@ -12,14 +12,16 @@ namespace aos {
 
 namespace chrono = std::chrono;
 
-Ping::Ping(EventLoop *event_loop)
+Ping::Ping(EventLoop *event_loop, std::string_view channel_name)
     : event_loop_(event_loop),
-      sender_(event_loop_->MakeSender<examples::Ping>("/test")) {
+      sender_(event_loop_->MakeSender<examples::Ping>(channel_name)) {
   timer_handle_ = event_loop_->AddTimer([this]() { SendPing(); });
   timer_handle_->set_name("ping");
 
-  event_loop_->MakeWatcher(
-      "/test", [this](const examples::Pong &pong) { HandlePong(pong); });
+  if (event_loop_->HasChannel<examples::Pong>(channel_name)) {
+    event_loop_->MakeWatcher(
+        channel_name, [this](const examples::Pong &pong) { HandlePong(pong); });
+  }
 
   event_loop_->OnRun([this]() {
     timer_handle_->Setup(event_loop_->monotonic_now(),

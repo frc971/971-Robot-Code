@@ -115,8 +115,14 @@ MultinodeLoggerTest::MultinodeLoggerTest()
   LOG(INFO) << "Logging data to " << logfiles_[0] << ", " << logfiles_[1]
             << " and " << logfiles_[2];
 
-  pi1_->OnStartup([this]() { pi1_->AlwaysStart<Ping>("ping"); });
-  pi2_->OnStartup([this]() { pi2_->AlwaysStart<Pong>("pong"); });
+  pi1_->OnStartup([this]() {
+    pi1_->AlwaysStart<Ping>("ping");
+    pi1_->AlwaysStart<Ping>("ping_local", "/aos");
+  });
+  pi2_->OnStartup([this]() {
+    pi2_->AlwaysStart<Pong>("pong");
+    pi2_->AlwaysStart<Ping>("ping_local", "/aos");
+  });
 }
 
 bool MultinodeLoggerTest::shared() const {

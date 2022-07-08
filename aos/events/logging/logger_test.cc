@@ -96,9 +96,6 @@ TEST_F(LoggerTest, Starts) {
   // passing in a separate config.
   LogReader reader(logfile, &config_.message());
 
-  // Confirm that we can remap logged channels to point to new buses.
-  reader.RemapLoggedChannel<aos::examples::Ping>("/test", "/original");
-
   // This sends out the fetched messages and advances time to the start of the
   // log file.
   reader.Register();
@@ -111,8 +108,8 @@ TEST_F(LoggerTest, Starts) {
   int ping_count = 10;
   int pong_count = 10;
 
-  // Confirm that the ping value matches in the remapped channel location.
-  test_event_loop->MakeWatcher("/original/test",
+  // Confirm that the ping value matches.
+  test_event_loop->MakeWatcher("/test",
                                [&ping_count](const examples::Ping &ping) {
                                  EXPECT_EQ(ping.value(), ping_count + 1);
                                  ++ping_count;
@@ -128,6 +125,7 @@ TEST_F(LoggerTest, Starts) {
 
   reader.event_loop_factory()->RunFor(std::chrono::seconds(100));
   EXPECT_EQ(ping_count, 2010);
+  EXPECT_EQ(pong_count, ping_count);
 }
 
 // Tests calling StartLogging twice.

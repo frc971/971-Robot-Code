@@ -2,6 +2,7 @@
 #define AOS_EVENTS_PING_LIB_H_
 
 #include <chrono>
+#include <string_view>
 
 #include "aos/events/event_loop.h"
 #include "aos/events/ping_generated.h"
@@ -12,7 +13,7 @@ namespace aos {
 // Class which sends out a Ping message every X ms, and times the response.
 class Ping {
  public:
-  Ping(EventLoop *event_loop);
+  Ping(EventLoop *event_loop, std::string_view channel_name = "/test");
 
   void set_quiet(bool quiet) { quiet_ = quiet; }
 

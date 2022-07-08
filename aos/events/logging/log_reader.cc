@@ -1331,45 +1331,8 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
                                    std::string_view add_prefix,
                                    std::string_view new_type,
                                    RemapConflict conflict_handling) {
-  if (replay_channels_ != nullptr) {
-    CHECK(std::find(replay_channels_->begin(), replay_channels_->end(),
-                    std::make_pair(std::string{name}, std::string{type})) !=
-          replay_channels_->end())
-        << "Attempted to remap channel " << name << " " << type
-        << " which is not included in the replay channels passed to LogReader.";
-  }
-
-  for (size_t ii = 0; ii < logged_configuration()->channels()->size(); ++ii) {
-    const Channel *const channel = logged_configuration()->channels()->Get(ii);
-    if (channel->name()->str() == name &&
-        channel->type()->string_view() == type) {
-      CHECK_EQ(0u, remapped_channels_.count(ii))
-          << "Already remapped channel "
-          << configuration::CleanedChannelToString(channel);
-      RemappedChannel remapped_channel;
-      remapped_channel.remapped_name =
-          std::string(add_prefix) + std::string(name);
-      remapped_channel.new_type = new_type;
-      const std::string_view remapped_type =
-          remapped_channel.new_type.empty() ? type : remapped_channel.new_type;
-      CheckAndHandleRemapConflict(
-          remapped_channel.remapped_name, remapped_type,
-          remapped_configuration_, conflict_handling,
-          [this, &remapped_channel, remapped_type, add_prefix,
-           conflict_handling]() {
-            RemapLoggedChannel(remapped_channel.remapped_name, remapped_type,
-                               add_prefix, "", conflict_handling);
-          });
-      remapped_channels_[ii] = std::move(remapped_channel);
-      VLOG(1) << "Remapping channel "
-              << configuration::CleanedChannelToString(channel)
-              << " to have name " << remapped_channels_[ii].remapped_name;
-      MakeRemappedConfig();
-      return;
-    }
-  }
-  LOG(FATAL) << "Unabled to locate channel with name " << name << " and type "
-             << type;
+  RemapLoggedChannel(name, type, nullptr, add_prefix, new_type,
+                     conflict_handling);
 }
 
 void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
@@ -1377,7 +1340,16 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
                                    std::string_view add_prefix,
                                    std::string_view new_type,
                                    RemapConflict conflict_handling) {
-  VLOG(1) << "Node is " << aos::FlatbufferToJson(node);
+  if (node != nullptr) {
+    VLOG(1) << "Node is " << aos::FlatbufferToJson(node);
+  }
+  if (replay_channels_ != nullptr) {
+    CHECK(std::find(replay_channels_->begin(), replay_channels_->end(),
+                    std::make_pair(std::string{name}, std::string{type})) !=
+          replay_channels_->end())
+        << "Attempted to remap channel " << name << " " << type
+        << " which is not included in the replay channels passed to LogReader.";
+  }
   const Channel *remapped_channel =
       configuration::GetChannel(logged_configuration(), name, type, "", node);
   CHECK(remapped_channel != nullptr) << ": Failed to find {\"name\": \"" << name
@@ -1408,6 +1380,7 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
     maps_.emplace_back(std::move(new_map));
   }
 
+  // Then remap the logged channel to the prefixed channel.
   const size_t channel_index =
       configuration::ChannelIndex(logged_configuration(), remapped_channel);
   CHECK_EQ(0u, remapped_channels_.count(channel_index))
@@ -1429,6 +1402,51 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
                            node, add_prefix, "", conflict_handling);
       });
   remapped_channels_[channel_index] = std::move(remapped_channel_struct);
+  MakeRemappedConfig();
+}
+
+void LogReader::RenameLoggedChannel(const std::string_view name,
+                                    const std::string_view type,
+                                    const std::string_view new_name,
+                                    const std::vector<MapT> &add_maps) {
+  RenameLoggedChannel(name, type, nullptr, new_name, add_maps);
+}
+
+void LogReader::RenameLoggedChannel(const std::string_view name,
+                                    const std::string_view type,
+                                    const Node *const node,
+                                    const std::string_view new_name,
+                                    const std::vector<MapT> &add_maps) {
+  if (node != nullptr) {
+    VLOG(1) << "Node is " << aos::FlatbufferToJson(node);
+  }
+  // First find the channel and rename it.
+  const Channel *remapped_channel =
+      configuration::GetChannel(logged_configuration(), name, type, "", node);
+  CHECK(remapped_channel != nullptr) << ": Failed to find {\"name\": \"" << name
+                                     << "\", \"type\": \"" << type << "\"}";
+  VLOG(1) << "Original {\"name\": \"" << name << "\", \"type\": \"" << type
+          << "\"}";
+  VLOG(1) << "Remapped "
+          << aos::configuration::StrippedChannelToString(remapped_channel);
+
+  const size_t channel_index =
+      configuration::ChannelIndex(logged_configuration(), remapped_channel);
+  CHECK_EQ(0u, remapped_channels_.count(channel_index))
+      << "Already remapped channel "
+      << configuration::CleanedChannelToString(remapped_channel);
+
+  RemappedChannel remapped_channel_struct;
+  remapped_channel_struct.remapped_name = new_name;
+  remapped_channel_struct.new_type.clear();
+  remapped_channels_[channel_index] = std::move(remapped_channel_struct);
+
+  // Then add any provided maps.
+  for (const MapT &map : add_maps) {
+    maps_.push_back(map);
+  }
+
+  // Finally rewrite the config.
   MakeRemappedConfig();
 }
 
@@ -1589,20 +1607,26 @@ void LogReader::MakeRemappedConfig() {
 
   // Now create the new maps.  These are second so they take effect first.
   for (const MapT &map : maps_) {
+    CHECK(!map.match->name.empty());
     const flatbuffers::Offset<flatbuffers::String> match_name_offset =
         fbb.CreateString(map.match->name);
-    const flatbuffers::Offset<flatbuffers::String> match_type_offset =
-        fbb.CreateString(map.match->type);
-    const flatbuffers::Offset<flatbuffers::String> rename_name_offset =
-        fbb.CreateString(map.rename->name);
+    flatbuffers::Offset<flatbuffers::String> match_type_offset;
+    if (!map.match->type.empty()) {
+      match_type_offset = fbb.CreateString(map.match->type);
+    }
     flatbuffers::Offset<flatbuffers::String> match_source_node_offset;
     if (!map.match->source_node.empty()) {
       match_source_node_offset = fbb.CreateString(map.match->source_node);
     }
+    CHECK(!map.rename->name.empty());
+    const flatbuffers::Offset<flatbuffers::String> rename_name_offset =
+        fbb.CreateString(map.rename->name);
     Channel::Builder match_builder(fbb);
     match_builder.add_name(match_name_offset);
-    match_builder.add_type(match_type_offset);
-    if (!map.match->source_node.empty()) {
+    if (!match_type_offset.IsNull()) {
+      match_builder.add_type(match_type_offset);
+    }
+    if (!match_source_node_offset.IsNull()) {
       match_builder.add_source_node(match_source_node_offset);
     }
     const flatbuffers::Offset<Channel> match_offset = match_builder.Finish();

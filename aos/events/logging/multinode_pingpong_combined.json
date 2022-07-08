@@ -112,6 +112,18 @@
       "num_senders": 2,
       "source_node": "pi2"
     },
+    {
+      "name": "/pi1/aos",
+      "type": "aos.examples.Ping",
+      "source_node": "pi1",
+      "frequency": 150
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.examples.Ping",
+      "source_node": "pi2",
+      "frequency": 150
+    },
     /* Forwarded to pi2 */
     {
       "name": "/test",

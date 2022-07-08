@@ -32,8 +32,7 @@ namespace logger {
 class EventNotifier;
 
 // Vector of pair of name and type of the channel
-using ReplayChannels =
-    std::vector<std::pair<std::string, std::string>>;
+using ReplayChannels = std::vector<std::pair<std::string, std::string>>;
 // Vector of channel indices
 using ReplayChannelIndices = std::vector<size_t>;
 
@@ -198,7 +197,6 @@ class LogReader {
     RemapLoggedChannel(name, T::GetFullyQualifiedName(), add_prefix, new_type,
                        conflict_handling);
   }
-
   // Remaps the provided channel, though this respects node mappings, and
   // preserves them too.  This makes it so if /aos -> /pi1/aos on one node,
   // /original/aos -> /original/pi1/aos on the same node after renaming, just
@@ -221,11 +219,40 @@ class LogReader {
                        new_type, conflict_handling);
   }
 
+  // Similar to RemapLoggedChannel(), but lets you specify a name for the new
+  // channel without constraints. This is useful when an application has been
+  // updated to use new channels but you want to support replaying old logs. By
+  // default, this will not add any maps for the new channel. Use add_maps to
+  // specify any maps you'd like added.
+  void RenameLoggedChannel(std::string_view name, std::string_view type,
+                           std::string_view new_name,
+                           const std::vector<MapT> &add_maps = {});
+  template <typename T>
+  void RenameLoggedChannel(std::string_view name, std::string_view new_name,
+                           const std::vector<MapT> &add_maps = {}) {
+    RenameLoggedChannel(name, T::GetFullyQualifiedName(), new_name, add_maps);
+  }
+  // The following overloads are more suitable for multi-node configurations,
+  // and let you rename a channel on a specific node.
+  void RenameLoggedChannel(std::string_view name, std::string_view type,
+                           const Node *node, std::string_view new_name,
+                           const std::vector<MapT> &add_maps = {});
+  template <typename T>
+  void RenameLoggedChannel(std::string_view name, const Node *node,
+                           std::string_view new_name,
+                           const std::vector<MapT> &add_maps = {}) {
+    RenameLoggedChannel(name, T::GetFullyQualifiedName(), node, new_name,
+                        add_maps);
+  }
+
   template <typename T>
   bool HasChannel(std::string_view name, const Node *node = nullptr) {
-    return configuration::GetChannel(logged_configuration(), name,
-                                     T::GetFullyQualifiedName(), "", node,
-                                     true) != nullptr;
+    return HasChannel(name, T::GetFullyQualifiedName(), node);
+  }
+  bool HasChannel(std::string_view name, std::string_view type,
+                  const Node *node) {
+    return configuration::GetChannel(logged_configuration(), name, type, "",
+                                     node, true) != nullptr;
   }
 
   template <typename T>
@@ -233,6 +260,14 @@ class LogReader {
                                const Node *node = nullptr) {
     if (HasChannel<T>(name, node)) {
       RemapLoggedChannel<T>(name, node);
+    }
+  }
+  template <typename T>
+  void MaybeRenameLoggedChannel(std::string_view name, const Node *node,
+                                std::string_view new_name,
+                                const std::vector<MapT> &add_maps = {}) {
+    if (HasChannel<T>(name, node)) {
+      RenameLoggedChannel<T>(name, node, new_name, add_maps);
     }
   }
 
