@@ -247,18 +247,19 @@ class FieldWidget(Gtk.DrawingArea):
             self.multisplines, mouse)
 
         # if the mouse is close enough, draw the robot
-        if result and result.fun < 2:
+        if result is not None and result.fun < 2:
             distance_spline = DistanceSpline(multispline.getLibsplines())
             x = result.x[0]
 
             # draw the robot to show its width
             self.draw_robot_at_point(cr, distance_spline, x)
 
-            self.graph.place_cursor(x)
-        elif self.graph.cursor:
+            multispline_index = self.multisplines.index(multispline)
+            self.graph.place_cursor(multispline_index, distance=result.x[0])
+        elif self.graph.cursor is not None:
+            multispline_index, x = self.graph.find_cursor()
             distance_spline = DistanceSpline(
-                self.multisplines[0].getLibsplines())
-            x = self.graph.find_cursor()
+                self.multisplines[multispline_index].getLibsplines())
 
             self.draw_robot_at_point(cr, distance_spline, x)
 
