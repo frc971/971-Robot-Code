@@ -187,15 +187,12 @@ class FieldWidget(Gtk.DrawingArea):
             for multispline in self.multisplines:
                 for i, point in enumerate(multispline.staged_points):
                     draw_px_x(cr, point[0], point[1], self.pxToM(2))
-            set_color(cr, palette["WHITE"])
         elif self.mode == Mode.kEditing:
-            set_color(cr, palette["BLACK"])
             if len(self.multisplines) != 0 and self.multisplines[0].getSplines(
             ):
                 self.draw_splines(cr)
 
-            for multispline in self.multisplines:
-                for i, points in enumerate(multispline.getSplines()):
+                for i, points in enumerate(self.active_multispline.getSplines()):
                     points = [np.array([x, y]) for (x, y) in points]
                     draw_control_points(cr,
                                         points,
@@ -220,27 +217,14 @@ class FieldWidget(Gtk.DrawingArea):
 
                     cr.stroke()
                     cr.set_line_width(self.pxToM(2))
-            set_color(cr, palette["WHITE"])
 
+        set_color(cr, palette["WHITE"])
         cr.paint_with_alpha(0.2)
 
         draw_px_cross(cr, self.mousex, self.mousey, self.pxToM(2))
         cr.restore()
 
     def draw_splines(self, cr):
-        for multispline in self.multisplines:
-            for i, spline in enumerate(multispline.getLibsplines()):
-                # draw lots of really small line segments to
-                # approximate the shape of the spline
-                for k in np.linspace(0.02, 1, 200):
-                    cr.move_to(*spline.Point(k - 0.008))
-                    cr.line_to(*spline.Point(k))
-                    cr.stroke()
-
-                if i == 0:
-                    self.draw_robot_at_point(cr, spline, 0)
-                self.draw_robot_at_point(cr, spline, 1)
-
         mouse = np.array((self.mousex, self.mousey))
 
         multispline, result = Multispline.nearest_distance(
@@ -265,6 +249,22 @@ class FieldWidget(Gtk.DrawingArea):
 
             multispline_index = self.multisplines.index(multispline)
             self.graph.place_cursor(multispline_index, distance=result.x[0])
+
+        for multispline in self.multisplines:
+            for i, spline in enumerate(multispline.getLibsplines()):
+                alpha = 1 if multispline == self.active_multispline else 0.2
+                set_color(cr, palette["BLACK"], alpha)
+
+                # draw lots of really small line segments to
+                # approximate the shape of the spline
+                for k in np.linspace(0.005, 1, 200):
+                    cr.move_to(*spline.Point(k - 0.008))
+                    cr.line_to(*spline.Point(k))
+                    cr.stroke()
+
+                if i == 0:
+                    self.draw_robot_at_point(cr, spline, 0)
+                self.draw_robot_at_point(cr, spline, 1)
 
     def export_json(self, file_name):
         self.path_to_export = os.path.join(
@@ -340,6 +340,8 @@ class FieldWidget(Gtk.DrawingArea):
         if should_attempt_append:
             self.attempt_append_multisplines()
         self.multisplines = []
+        self.active_multispline_index = 0
+        self.control_point_index = None
         #recalulate graph using new points
         self.graph.axis.clear()
         self.graph.queue_draw()
@@ -429,25 +431,31 @@ class FieldWidget(Gtk.DrawingArea):
                 # Find nearest
                 # Move nearest to clicked
                 cur_p = [self.mousex, self.mousey]
+
+
                 # Get the distance between each for x and y
                 # Save the index of the point closest
-                nearest = 1  # Max distance away a the selected point can be in meters
+                nearest = 0.4  # Max distance away a the selected point can be in meters
                 index_of_closest = 0
-                for index_multisplines, multispline in enumerate(
-                        self.multisplines):
-                    for index_splines, points in enumerate(
-                            multispline.getSplines()):
-                        for index_points, val in enumerate(points):
-                            distance = np.sqrt((cur_p[0] - val[0])**2 +
-                                               (cur_p[1] - val[1])**2)
-                            if distance < nearest:
-                                nearest = distance
-                                index_of_closest = index_points
-                                self.control_point_index = ControlPointIndex(
-                                    index_multisplines, index_splines,
-                                    index_points)
-            if self.control_point_index:
-                self.active_multispline_index = self.control_point_index.multispline_index
+                index_multisplines = self.active_multispline_index
+                multispline = self.active_multispline
+
+                for index_splines, points in enumerate(
+                        multispline.getSplines()):
+                    for index_points, val in enumerate(points):
+                        distance = np.sqrt((cur_p[0] - val[0])**2 +
+                                           (cur_p[1] - val[1])**2)
+                        if distance < nearest:
+                            nearest = distance
+                            index_of_closest = index_points
+                            self.control_point_index = ControlPointIndex(
+                                index_multisplines, index_splines,
+                                index_points)
+
+            multispline, result = Multispline.nearest_distance(self.multisplines, cur_p)
+            if result and result.fun < 0.1:
+                self.active_multispline_index = self.multisplines.index(multispline)
+
         self.queue_draw()
 
     def do_motion_notify_event(self, event):
