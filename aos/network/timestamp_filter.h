@@ -591,11 +591,7 @@ class NoncausalTimestampFilter {
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> /*p1*/,
       monotonic_clock::time_point ta_base, double ta);
 
-  static std::chrono::nanoseconds ExtrapolateOffset(
-      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
-      monotonic_clock::time_point /*ta_base*/, double /*ta*/);
-
-  static double ExtrapolateOffsetRemainder(
+  static std::pair<std::chrono::nanoseconds, double> ExtrapolateOffset(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
       monotonic_clock::time_point ta_base, double ta);
 
