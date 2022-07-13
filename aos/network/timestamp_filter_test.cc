@@ -980,6 +980,83 @@ TEST_F(NoncausalTimestampFilterTest, ExtrapolateOffset) {
   }
 }
 
+// Tests that all variants of BoundOffset do reasonable things.
+TEST_F(NoncausalTimestampFilterTest, BoundOffset) {
+  const monotonic_clock::time_point e = monotonic_clock::epoch();
+
+  const monotonic_clock::time_point t1 = e + chrono::nanoseconds(10000);
+  const chrono::nanoseconds o1 = chrono::nanoseconds(100);
+  //const double o1d = static_cast<double>(o1.count());
+
+  const monotonic_clock::time_point t2 = t1 + chrono::nanoseconds(100000);
+  const chrono::nanoseconds o2 = chrono::nanoseconds(150);
+  //const double o2d = static_cast<double>(o2.count());
+
+  EXPECT_EQ(NoncausalTimestampFilter::BoundOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1),
+            o1);
+  EXPECT_EQ(NoncausalTimestampFilter::BoundOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 0.0),
+            std::pair(o1, 0.0));
+
+  EXPECT_EQ(NoncausalTimestampFilter::BoundOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2),
+            o2);
+  EXPECT_EQ(NoncausalTimestampFilter::BoundOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2, 0.0),
+            std::pair(o2, 0.0));
+
+  // Iterate from before t1 to after t2 and confirm that the solution is right.
+  // We must always be >= than interpolation, and must also be equal to the max
+  // of extrapolating both.  Since the numbers are small enough (by
+  // construction!), the double calculation will be close enough that we can
+  // trust it.
+
+  for (int i = -MaxVelocityRatio::den * MaxVelocityRatio::num * 6;
+       i < MaxVelocityRatio::den * MaxVelocityRatio::num * 6 + (t2 - t1).count(); ++i) {
+    monotonic_clock::time_point ta_base = t1;
+    const double ta_orig = static_cast<double>(i) / 3.0;
+    double ta = ta_orig;
+
+    NormalizeTimestamps(&ta_base, &ta);
+    CHECK_GE(ta, 0.0);
+    CHECK_LT(ta, 1.0);
+
+    const chrono::nanoseconds expected_offset_1 =
+        NoncausalTimestampFilter::ExtrapolateOffset(std::make_tuple(t1, o1),
+                                                    ta_base);
+    const chrono::nanoseconds expected_offset_2 =
+        NoncausalTimestampFilter::ExtrapolateOffset(std::make_tuple(t2, o2),
+                                                    ta_base);
+
+    // Each of the extrapolation functions have their max at the points.  They
+    // slope up before and down after.  So, we want the max.
+    //
+    //
+    //   p0  p1                                                               |
+    //  /  \/  \                                                              |
+    // /        \                                                             |
+
+    const std::pair<chrono::nanoseconds, double> offset =
+        NoncausalTimestampFilter::BoundOffset(
+            std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base, ta);
+
+    EXPECT_EQ(std::max(expected_offset_1, expected_offset_2), offset.first);
+
+    const double expected_double_offset = std::max(
+        static_cast<double>(o1.count()) - std::abs(ta_orig) * kMaxVelocity(),
+        static_cast<double>(o2.count()) -
+            std::abs(ta_orig - (t2 - t1).count()) * kMaxVelocity());
+
+    EXPECT_NEAR(static_cast<double>(offset.first.count()) + offset.second,
+                expected_double_offset, 1e-9)
+        << ": i " << i << " t " << ta_base << " " << ta << " t1 " << t1
+        << " o1 " << o1.count() << "ns t2 " << t2 << " o2 " << o2.count()
+        << "ns Non-rounded: "
+        << std::max(expected_offset_1, expected_offset_2).count() << "ns";
+  }
+}
+
 // Tests that FindTimestamps finds timestamps in a sequence.
 TEST_F(NoncausalTimestampFilterTest, FindTimestamps) {
   const BootTimestamp e{0, monotonic_clock::epoch()};

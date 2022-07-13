@@ -838,7 +838,42 @@ double NoncausalTimestampFilter::InterpolateOffsetRemainder(
          (std::get<1>(p1) - std::get<1>(p0)).count();
 }
 
-std::pair<chrono::nanoseconds, double> NoncausalTimestampFilter::ExtrapolateOffset(
+chrono::nanoseconds NoncausalTimestampFilter::BoundOffset(
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
+    monotonic_clock::time_point ta) {
+  // We are trying to solve for worst case offset given the two known points.
+  // This is on the two worst case lines from the two points, and we switch
+  // lines at the interstection.  This is equivilent to the lowest of the two
+  // lines.
+  return std::max(NoncausalTimestampFilter::ExtrapolateOffset(p0, ta),
+                  NoncausalTimestampFilter::ExtrapolateOffset(p1, ta));
+}
+
+std::pair<chrono::nanoseconds, double> NoncausalTimestampFilter::BoundOffset(
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
+    monotonic_clock::time_point ta_base, double ta) {
+  DCHECK_GE(ta, 0.0);
+  DCHECK_LT(ta, 1.0);
+
+  const std::pair<chrono::nanoseconds, double> o0 =
+      NoncausalTimestampFilter::ExtrapolateOffset(p0, ta_base, ta);
+  const std::pair<chrono::nanoseconds, double> o1 =
+      NoncausalTimestampFilter::ExtrapolateOffset(p1, ta_base, ta);
+
+  // Want to calculate max(o0 + o0r, o1 + o1r) without precision problems.
+  if (static_cast<double>((o0.first - o1.first).count()) >
+      o1.second - o0.second) {
+    // Ok, o0 is now > o1.  We want the max, so return o0.
+    return o0;
+  } else {
+    return o1;
+  }
+}
+
+std::pair<chrono::nanoseconds, double>
+NoncausalTimestampFilter::ExtrapolateOffset(
     std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
     monotonic_clock::time_point ta_base, double ta) {
   DCHECK_GE(ta, 0.0);

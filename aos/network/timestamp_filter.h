@@ -16,9 +16,6 @@
 namespace aos {
 namespace message_bridge {
 
-// TODO<jim>: Should do something to help with precision, like make it an
-// integer and divide by the value (e.g., / 1000)
-
 // Max velocity to clamp the filter to in seconds/second.
 typedef std::ratio<1, 1000> MaxVelocityRatio;
 inline constexpr double kMaxVelocity() {
@@ -577,6 +574,11 @@ class NoncausalTimestampFilter {
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p1,
       monotonic_clock::time_point ta);
 
+  static std::chrono::nanoseconds BoundOffset(
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p1,
+      monotonic_clock::time_point ta);
+
   static std::chrono::nanoseconds ExtrapolateOffset(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
       monotonic_clock::time_point ta);
@@ -589,6 +591,11 @@ class NoncausalTimestampFilter {
   static double InterpolateOffsetRemainder(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> /*p0*/,
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> /*p1*/,
+      monotonic_clock::time_point ta_base, double ta);
+
+  static std::pair<std::chrono::nanoseconds, double> BoundOffset(
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
+      std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p1,
       monotonic_clock::time_point ta_base, double ta);
 
   static std::pair<std::chrono::nanoseconds, double> ExtrapolateOffset(
