@@ -673,39 +673,42 @@ NoncausalTimestampFilter::SingleFilter::FindTimestamps(
                             monotonic_clock::time_point ta) {
                            return ta > std::get<0>(t) + std::get<1>(t);
                          });
-    auto other_t1_it = std::upper_bound(
-        other_t0_it, other->timestamps_.end(), std::get<0>(pointer.t1_),
-        [](monotonic_clock::time_point ta,
-           std::tuple<aos::monotonic_clock::time_point,
-                      std::chrono::nanoseconds>
-               t) { return ta < std::get<0>(t) + std::get<1>(t); });
+    if (other_t0_it != other->timestamps_.end()) {
+      auto other_t1_it = std::upper_bound(
+          other_t0_it, other->timestamps_.end(), std::get<0>(pointer.t1_),
+          [](monotonic_clock::time_point ta,
+             std::tuple<aos::monotonic_clock::time_point,
+                        std::chrono::nanoseconds>
+                 t) { return ta < std::get<0>(t) + std::get<1>(t); });
 
-    if (std::get<0>(*other_t0_it) + std::get<1>(*other_t0_it) <
-        std::get<0>(pointer.t1_)) {
-      pointer.other_points_.clear();
+      if (std::get<0>(*other_t0_it) + std::get<1>(*other_t0_it) <
+          std::get<0>(pointer.t1_)) {
+        pointer.other_points_.clear();
 
-      // Now, we've got a range.  [other_t0_it, other_t1_it).
-      for (auto other_it = other_t0_it; other_it != other_t1_it; ++other_it) {
-        const std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>
-            flipped_point =
-                std::make_tuple(std::get<0>(*other_it) + std::get<1>(*other_it),
-                                -std::get<1>(*other_it) - kMinNetworkDelay());
+        // Now, we've got a range.  [other_t0_it, other_t1_it).
+        for (auto other_it = other_t0_it; other_it != other_t1_it; ++other_it) {
+          const std::tuple<monotonic_clock::time_point,
+                           std::chrono::nanoseconds>
+              flipped_point = std::make_tuple(
+                  std::get<0>(*other_it) + std::get<1>(*other_it),
+                  -std::get<1>(*other_it) - kMinNetworkDelay());
 
-        // If the new point from the opposite direction filter is below the
-        // interpolated value at that point, then the opposite direction point
-        // defines a new min and we should take it.
-        if (NoncausalTimestampFilter::InterpolateOffset(
-                pointer.t0_, pointer.t1_, std::get<0>(flipped_point)) >
-            std::get<1>(flipped_point)) {
-          // Add it to the list of points to consider.
-          pointer.other_points_.emplace_back(std::make_pair(
-              std::distance(other->timestamps_.begin(), other_it),
-              flipped_point));
+          // If the new point from the opposite direction filter is below the
+          // interpolated value at that point, then the opposite direction point
+          // defines a new min and we should take it.
+          if (NoncausalTimestampFilter::InterpolateOffset(
+                  pointer.t0_, pointer.t1_, std::get<0>(flipped_point)) >
+              std::get<1>(flipped_point)) {
+            // Add it to the list of points to consider.
+            pointer.other_points_.emplace_back(std::make_pair(
+                std::distance(other->timestamps_.begin(), other_it),
+                flipped_point));
+          }
         }
-      }
 
-      if (pointer.other_points_.size() > 0) {
-        return InterpolateWithOtherFilter(pointer, ta, t0, t1);
+        if (pointer.other_points_.size() > 0) {
+          return InterpolateWithOtherFilter(pointer, ta, t0, t1);
+        }
       }
     }
 
