@@ -187,7 +187,7 @@ cc_test(
     srcs = [
         "lzma_encoder_test.cc",
     ],
-    shard_count = 4,
+    shard_count = 8,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":buffer_encoder_param_test",
