@@ -15,6 +15,8 @@
 DEFINE_string(data_dir, "www", "Directory to serve data files from");
 DEFINE_string(node, "", "Directory to serve data files from");
 DEFINE_int32(buffer_size, -1, "-1 if infinite, in # of messages / channel.");
+DEFINE_double(monotonic_start_time, -1.0, "Start time (sec)");
+DEFINE_double(monotonic_end_time, -1.0, "End time (sec)");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -43,6 +45,15 @@ int main(int argc, char **argv) {
 
   event_loop->SkipTimingReport();
 
+  if (FLAGS_monotonic_start_time > 0) {
+    event_loop->AddTimer([&reader]() { reader.event_loop_factory()->Exit(); })
+        ->Setup(aos::monotonic_clock::time_point(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::duration<double>(FLAGS_monotonic_start_time))));
+
+    reader.event_loop_factory()->Run();
+  }
+
   aos::web_proxy::WebProxy web_proxy(
       event_loop.get(), aos::web_proxy::StoreHistory::kYes, FLAGS_buffer_size);
 
@@ -50,6 +61,13 @@ int main(int argc, char **argv) {
 
   // Keep the web proxy alive past when we finish reading the logfile.
   reader.set_exit_on_finish(false);
+
+  if (FLAGS_monotonic_end_time > 0) {
+    event_loop->AddTimer([&web_proxy]() { web_proxy.StopRecording(); })
+        ->Setup(aos::monotonic_clock::time_point(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::duration<double>(FLAGS_monotonic_end_time))));
+  }
 
   reader.event_loop_factory()->Run();
 }
