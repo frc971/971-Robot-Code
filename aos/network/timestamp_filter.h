@@ -535,8 +535,9 @@ class NoncausalTimestampFilter {
   std::pair<Pointer,
             std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
                       std::tuple<logger::BootTimestamp, logger::BootDuration>>>
-  FindTimestamps(const NoncausalTimestampFilter *other, Pointer pointer,
-                 logger::BootTimestamp ta, size_t sample_boot) const {
+  FindTimestamps(const NoncausalTimestampFilter *other, bool use_other,
+                 Pointer pointer, logger::BootTimestamp ta,
+                 size_t sample_boot) const {
     const BootFilter *boot_filter = filter(ta.boot, sample_boot);
     std::pair<
         Pointer,
@@ -546,7 +547,7 @@ class NoncausalTimestampFilter {
         result = boot_filter->filter.FindTimestamps(
             other == nullptr ? nullptr
                              : &other->filter(sample_boot, ta.boot)->filter,
-            pointer, ta.time);
+            use_other, pointer, ta.time);
     result.first.boot_filter_ = boot_filter;
     return std::make_pair(
         result.first,
@@ -565,8 +566,8 @@ class NoncausalTimestampFilter {
   std::pair<Pointer,
             std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
                       std::tuple<logger::BootTimestamp, logger::BootDuration>>>
-  FindTimestamps(const NoncausalTimestampFilter *other, Pointer pointer,
-                 logger::BootTimestamp ta_base, double ta,
+  FindTimestamps(const NoncausalTimestampFilter *other, bool use_other,
+                 Pointer pointer, logger::BootTimestamp ta_base, double ta,
                  size_t sample_boot) const;
 
   static std::chrono::nanoseconds InterpolateOffset(
@@ -628,14 +629,14 @@ class NoncausalTimestampFilter {
         std::pair<
             std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
             std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>>
-    FindTimestamps(const SingleFilter *other, Pointer pointer,
+    FindTimestamps(const SingleFilter *other, bool use_other, Pointer pointer,
                    monotonic_clock::time_point ta) const;
     std::pair<
         Pointer,
         std::pair<
             std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
             std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>>
-    FindTimestamps(const SingleFilter *other, Pointer pointer,
+    FindTimestamps(const SingleFilter *other, bool use_other, Pointer pointer,
                    monotonic_clock::time_point ta_base, double ta) const;
 
     // Check whether the given timestamp falls within our current samples
@@ -873,7 +874,7 @@ class NoncausalTimestampFilter {
           std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>,
           std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>>
   InterpolateWithOtherFilter(
-      Pointer pointer, monotonic_clock::time_point ta,
+      Pointer pointer, bool use_other, monotonic_clock::time_point ta,
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> t0,
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> t1);
 
