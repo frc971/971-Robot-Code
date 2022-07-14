@@ -797,11 +797,9 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
 
   const monotonic_clock::time_point t1 = e + chrono::nanoseconds(10000);
   const chrono::nanoseconds o1 = chrono::nanoseconds(100);
-  const double o1d = static_cast<double>(o1.count());
 
   const monotonic_clock::time_point t2 = t1 + chrono::nanoseconds(1000);
   const chrono::nanoseconds o2 = chrono::nanoseconds(150);
-  const double o2d = static_cast<double>(o2.count());
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1),
@@ -818,10 +816,10 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
             o2);
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2, 0.0),
-            o1);
+            o2);
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2, 0.0),
-            o2d - o1d);
+            0.0);
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
@@ -830,55 +828,101 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(500), 0.0),
-            o1);
+            o1 + chrono::nanoseconds(25));
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(500), 0.0),
-            25.);
+            0.0);
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(-200)),
             chrono::nanoseconds(90));
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, -200.),
-            o1);
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                t1 - chrono::nanoseconds(200), 0.0),
+            o1 - chrono::nanoseconds(10));
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, -200.),
-            -10.);
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                t1 - chrono::nanoseconds(200), 0.0),
+            0.0);
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(200)),
             chrono::nanoseconds(110));
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 200.),
-            o1);
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                t1 + chrono::nanoseconds(200), 0.0),
+            o1 + chrono::nanoseconds(10));
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 200.),
-            10.);
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                t1 + chrono::nanoseconds(200), 0.0),
+            0.0);
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(800)),
             chrono::nanoseconds(140));
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 800.),
-            o1);
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                t1 + chrono::nanoseconds(800), 0.0),
+            o1 + chrono::nanoseconds(40));
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 800.),
-            40.);
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                t1 + chrono::nanoseconds(800), 0.0),
+            0.0);
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(1200)),
             chrono::nanoseconds(160));
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 1200.),
-            o1);
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                t1 + chrono::nanoseconds(1200), 0.0),
+            o1 + chrono::nanoseconds(60));
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 1200.),
-            60.);
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
+                t1 + chrono::nanoseconds(1200), 0.0),
+            0.0);
+
+  for (int i = -MaxVelocityRatio::den * MaxVelocityRatio::num * 6;
+       i <
+       MaxVelocityRatio::den * MaxVelocityRatio::num * 6 + (t2 - t1).count();
+       ++i) {
+    monotonic_clock::time_point ta_base = t1;
+    const double ta_orig = static_cast<double>(i) / 3.0;
+    double ta = ta_orig;
+
+    NormalizeTimestamps(&ta_base, &ta);
+    CHECK_GE(ta, 0.0);
+    CHECK_LT(ta, 1.0);
+
+    const chrono::nanoseconds expected_offset =
+        NoncausalTimestampFilter::InterpolateOffset(
+            std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base);
+
+    EXPECT_EQ(expected_offset, NoncausalTimestampFilter::InterpolateOffset(
+                                   std::make_tuple(t1, o1),
+                                   std::make_tuple(t2, o2), ta_base, ta));
+
+    const double expected_double_offset =
+        static_cast<double>(o1.count()) +
+        static_cast<double>(ta_orig) / static_cast<double>((t2 - t1).count()) *
+            (o2 - o1).count();
+
+    EXPECT_NEAR(
+        static_cast<double>(
+            NoncausalTimestampFilter::InterpolateOffset(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base, ta)
+                .count()) +
+            NoncausalTimestampFilter::InterpolateOffsetRemainder(
+                std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base, ta),
+        expected_double_offset, 1e-9)
+        << ": i " << i << " t " << ta_base << " " << ta << " t1 " << t1
+        << " o1 " << o1.count() << "ns t2 " << t2 << " o2 " << o2.count()
+        << "ns Non-rounded: " << expected_offset.count() << "ns";
+  }
 }
 
 // Tests that all variants of ExtrapolateOffset do reasonable things.
@@ -986,21 +1030,19 @@ TEST_F(NoncausalTimestampFilterTest, BoundOffset) {
 
   const monotonic_clock::time_point t1 = e + chrono::nanoseconds(10000);
   const chrono::nanoseconds o1 = chrono::nanoseconds(100);
-  //const double o1d = static_cast<double>(o1.count());
 
   const monotonic_clock::time_point t2 = t1 + chrono::nanoseconds(100000);
   const chrono::nanoseconds o2 = chrono::nanoseconds(150);
-  //const double o2d = static_cast<double>(o2.count());
 
-  EXPECT_EQ(NoncausalTimestampFilter::BoundOffset(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1),
+  EXPECT_EQ(NoncausalTimestampFilter::BoundOffset(std::make_tuple(t1, o1),
+                                                  std::make_tuple(t2, o2), t1),
             o1);
   EXPECT_EQ(NoncausalTimestampFilter::BoundOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 0.0),
             std::pair(o1, 0.0));
 
-  EXPECT_EQ(NoncausalTimestampFilter::BoundOffset(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2),
+  EXPECT_EQ(NoncausalTimestampFilter::BoundOffset(std::make_tuple(t1, o1),
+                                                  std::make_tuple(t2, o2), t2),
             o2);
   EXPECT_EQ(NoncausalTimestampFilter::BoundOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2, 0.0),
@@ -1013,7 +1055,9 @@ TEST_F(NoncausalTimestampFilterTest, BoundOffset) {
   // trust it.
 
   for (int i = -MaxVelocityRatio::den * MaxVelocityRatio::num * 6;
-       i < MaxVelocityRatio::den * MaxVelocityRatio::num * 6 + (t2 - t1).count(); ++i) {
+       i <
+       MaxVelocityRatio::den * MaxVelocityRatio::num * 6 + (t2 - t1).count();
+       ++i) {
     monotonic_clock::time_point ta_base = t1;
     const double ta_orig = static_cast<double>(i) / 3.0;
     double ta = ta_orig;
@@ -1238,17 +1282,17 @@ TEST_F(NoncausalTimestampFilterTest, FindTimestampsWithOther) {
 
   // Confirm the problem statement is reasonable...  We've had enough trouble
   // here in the past.
-  EXPECT_TRUE(
-      filter_a.ValidateSolution(&filter_b, Pointer(), t1_a, t1_a + o1_a + chrono::nanoseconds(1)));
-  EXPECT_TRUE(
-      filter_a.ValidateSolution(&filter_b, Pointer(), t2_a, t2_a + o2_a + chrono::nanoseconds(1)));
+  EXPECT_TRUE(filter_a.ValidateSolution(&filter_b, Pointer(), t1_a,
+                                        t1_a + o1_a + chrono::nanoseconds(1)));
+  EXPECT_TRUE(filter_a.ValidateSolution(&filter_b, Pointer(), t2_a,
+                                        t2_a + o2_a + chrono::nanoseconds(1)));
 
-  EXPECT_TRUE(
-      filter_b.ValidateSolution(&filter_a, Pointer(), t1_b, t1_b + o1_b + chrono::nanoseconds(1)));
-  EXPECT_TRUE(
-      filter_b.ValidateSolution(&filter_a, Pointer(), t2_b, t2_b + o2_b + chrono::nanoseconds(1)));
-  EXPECT_TRUE(
-      filter_b.ValidateSolution(&filter_a, Pointer(), t3_b, t3_b + o3_b + chrono::nanoseconds(1)));
+  EXPECT_TRUE(filter_b.ValidateSolution(&filter_a, Pointer(), t1_b,
+                                        t1_b + o1_b + chrono::nanoseconds(1)));
+  EXPECT_TRUE(filter_b.ValidateSolution(&filter_a, Pointer(), t2_b,
+                                        t2_b + o2_b + chrono::nanoseconds(1)));
+  EXPECT_TRUE(filter_b.ValidateSolution(&filter_a, Pointer(), t3_b,
+                                        t3_b + o3_b + chrono::nanoseconds(1)));
 
   // Before the start
   result = filter_a.FindTimestamps(&filter_b, Pointer(),
@@ -1310,15 +1354,12 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
   // doesn't modify the timestamps.
   const BootTimestamp t1 = e + chrono::nanoseconds(1000);
   const BootDuration o1{0, chrono::nanoseconds(100)};
-  const double o1d = static_cast<double>(o1.duration.count());
 
   const BootTimestamp t2 = e + chrono::microseconds(2000);
   const BootDuration o2{0, chrono::nanoseconds(150)};
-  const double o2d = static_cast<double>(o2.duration.count());
 
   const BootTimestamp t3 = e + chrono::microseconds(3000);
   const BootDuration o3{0, chrono::nanoseconds(50)};
-  const double o3d = static_cast<double>(o3.duration.count());
 
   const BootTimestamp t4 = e + chrono::microseconds(4000);
 
@@ -1362,7 +1403,7 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
       filter.Offset(nullptr, Pointer(),
                     e + (t2.time_since_epoch() + t1.time_since_epoch()) / 2,
                     0.0, 0),
-      std::make_pair(o1, (o2d - o1d) / 2.));
+      std::make_pair(o1 + (o2 - o1) / 2, 0.0));
 
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t2, 0.0, 0),
             std::make_pair(o2, 0.0));
@@ -1371,7 +1412,7 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
       filter.Offset(nullptr, Pointer(),
                     e + (t2.time_since_epoch() + t3.time_since_epoch()) / 2,
                     0.0, 0),
-      std::make_pair(o2, (o2d + o3d) / 2. - o2d));
+      std::make_pair((o2 + o3) / 2, 0.0));
 
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t3, 0.0, 0),
             std::make_pair(o3, 0.0));

@@ -801,24 +801,12 @@ chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
 
 chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
     std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
-    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> /*p1*/,
-    monotonic_clock::time_point /*ta_base*/, double /*ta*/) {
-  // For the double variant, we want to split the result up into a large integer
-  // portion, and the rest.  We want to do this without introducing numerical
-  // precision problems.
-  //
-  // One way would be to carefully compute the integer portion, and then compute
-  // the double portion in such a way that the two are guaranteed to add up
-  // correctly.
-  //
-  // The simpler way is to simply just use the offset from p0 as the integer
-  // portion, and make the rest be the double portion.  It will get us most of
-  // the way there for a lot less work, and we can revisit if this breaks down.
-  //
-  // oa = p0.o + (ta - p0.t) * (p1.o - p0.o) / (p1.t - p0.t)
-  //      ^^^^
-  // TODO(austin): Use 128 bit math and the remainder to be more accurate here.
-  return std::get<1>(p0);
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
+    monotonic_clock::time_point ta_base, double ta) {
+  DCHECK_GE(ta, 0.0);
+  DCHECK_LT(ta, 1.0);
+
+  return InterpolateOffset(p0, p1, ta_base);
 }
 
 double NoncausalTimestampFilter::InterpolateOffsetRemainder(
@@ -827,15 +815,19 @@ double NoncausalTimestampFilter::InterpolateOffsetRemainder(
     monotonic_clock::time_point ta_base, double ta) {
   const chrono::nanoseconds time_in = ta_base - std::get<0>(p0);
   const chrono::nanoseconds dt = std::get<0>(p1) - std::get<0>(p0);
+  const chrono::nanoseconds doffset = std::get<1>(p1) - std::get<1>(p0);
 
-  // The remainder then is the rest of the equation.
-  //
-  // oa = p0.o + (ta - p0.t) * (p1.o - p0.o) / (p1.t - p0.t)
-  //             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  // TODO(austin): Use 128 bit math and the remainder to be more accurate here.
-  return static_cast<double>(ta + time_in.count()) /
-         static_cast<double>(dt.count()) *
-         (std::get<1>(p1) - std::get<1>(p0)).count();
+  // Compute the remainder of the division in InterpolateOffset above, and then
+  // use double math to compute it accurately.
+  absl::int128 numerator =
+      absl::int128(time_in.count()) * absl::int128(doffset.count());
+  numerator += numerator > 0 ? absl::int128(dt.count() / 2)
+                             : -absl::int128(dt.count() / 2);
+  return static_cast<double>(numerator % absl::int128(dt.count())) /
+             dt.count() +
+         (numerator > 0 ? -0.5 : 0.5) +
+         ta * static_cast<double>(doffset.count()) /
+             static_cast<double>(dt.count());
 }
 
 chrono::nanoseconds NoncausalTimestampFilter::BoundOffset(
