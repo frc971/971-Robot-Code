@@ -776,6 +776,17 @@ chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
     std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
     std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
     monotonic_clock::time_point ta) {
+  return InterpolateOffset(p0, p1, ta, 0.0).first;
+}
+
+std::pair<chrono::nanoseconds, double>
+NoncausalTimestampFilter::InterpolateOffset(
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
+    monotonic_clock::time_point ta_base, double ta) {
+  DCHECK_GE(ta, 0.0);
+  DCHECK_LT(ta, 1.0);
+
   // Given 2 points defining a line and the time along that line, interpolate.
   //
   // ta may be massive, but the points will be close, so compute everything
@@ -787,47 +798,31 @@ chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
   //
   // Add (or subtract, integer division rounds towards 0...) 0.5 ((dt / 2) / dt)
   // to the numerator to round to the nearest number rather than round down.
-  const chrono::nanoseconds time_in = ta - std::get<0>(p0);
-  const chrono::nanoseconds dt = std::get<0>(p1) - std::get<0>(p0);
-
-  absl::int128 numerator =
-      absl::int128(time_in.count()) *
-      absl::int128((std::get<1>(p1) - std::get<1>(p0)).count());
-  numerator += numerator > 0 ? absl::int128(dt.count() / 2)
-                             : -absl::int128(dt.count() / 2);
-  return std::get<1>(p0) + chrono::nanoseconds(static_cast<int64_t>(
-                               numerator / absl::int128(dt.count())));
-}
-
-chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
-    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
-    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
-    monotonic_clock::time_point ta_base, double ta) {
-  DCHECK_GE(ta, 0.0);
-  DCHECK_LT(ta, 1.0);
-
-  return InterpolateOffset(p0, p1, ta_base);
-}
-
-double NoncausalTimestampFilter::InterpolateOffsetRemainder(
-    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
-    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
-    monotonic_clock::time_point ta_base, double ta) {
   const chrono::nanoseconds time_in = ta_base - std::get<0>(p0);
   const chrono::nanoseconds dt = std::get<0>(p1) - std::get<0>(p0);
   const chrono::nanoseconds doffset = std::get<1>(p1) - std::get<1>(p0);
 
-  // Compute the remainder of the division in InterpolateOffset above, and then
-  // use double math to compute it accurately.
   absl::int128 numerator =
       absl::int128(time_in.count()) * absl::int128(doffset.count());
   numerator += numerator > 0 ? absl::int128(dt.count() / 2)
                              : -absl::int128(dt.count() / 2);
-  return static_cast<double>(numerator % absl::int128(dt.count())) /
-             dt.count() +
-         (numerator > 0 ? -0.5 : 0.5) +
-         ta * static_cast<double>(doffset.count()) /
-             static_cast<double>(dt.count());
+
+  const chrono::nanoseconds integer =
+      std::get<1>(p0) + chrono::nanoseconds(static_cast<int64_t>(
+                            numerator / absl::int128(dt.count())));
+  // Compute the remainder of the division in InterpolateOffset above, and
+  // then use double math to compute it accurately.  Since integer math rounds
+  // down, we need to undo the rounding to get the double remainder.  Add or
+  // subtract dt/2/dt (0.5) to undo the addition.
+  //
+  // We have good tests which confirm for small offsets this matches nicely. For
+  // large offsets, the 128 bit math will take care of us.
+  const double remainder =
+      static_cast<double>(numerator % absl::int128(dt.count())) / dt.count() +
+      (numerator > 0 ? -0.5 : 0.5) +
+      ta * static_cast<double>(doffset.count()) /
+          static_cast<double>(dt.count());
+  return std::make_pair(integer, remainder);
 }
 
 chrono::nanoseconds NoncausalTimestampFilter::BoundOffset(
@@ -973,11 +968,8 @@ NoncausalTimestampFilter::SingleFilter::Offset(
   // lookup.
   return std::make_pair(
       points.first,
-      std::make_pair(
-          NoncausalTimestampFilter::InterpolateOffset(
-              points.second.first, points.second.second, ta_base, ta),
-          NoncausalTimestampFilter::InterpolateOffsetRemainder(
-              points.second.first, points.second.second, ta_base, ta)));
+      NoncausalTimestampFilter::InterpolateOffset(
+          points.second.first, points.second.second, ta_base, ta));
 }
 
 std::pair<Pointer, double> NoncausalTimestampFilter::SingleFilter::OffsetError(
@@ -1111,16 +1103,14 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
       std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
                 std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>>
       points = FindTimestamps(other, pointer, ta_base, ta);
-  const chrono::nanoseconds offset_base =
+  const std::pair<chrono::nanoseconds, double> offset =
       NoncausalTimestampFilter::InterpolateOffset(
           points.second.first, points.second.second, ta_base, ta);
-  const double offset = NoncausalTimestampFilter::InterpolateOffsetRemainder(
-      points.second.first, points.second.second, ta_base, ta);
   // See below for why this is a >=
-  if (static_cast<double>((offset_base + ta_base - tb_base).count()) >=
-      tb - offset - ta) {
+  if (static_cast<double>((offset.first + ta_base - tb_base).count()) >=
+      tb - offset.second - ta) {
     LOG(ERROR) << node_names_ << " "
-               << TimeString(ta_base, ta, offset_base, offset)
+               << TimeString(ta_base, ta, offset.first, offset.second)
                << " > solution time " << tb_base << ", " << tb;
     LOG(ERROR) << "Bracketing times are " << TimeString(points.second.first)
                << " and " << TimeString(points.second.second);

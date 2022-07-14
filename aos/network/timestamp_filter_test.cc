@@ -806,20 +806,14 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
             o1);
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 0.0),
-            o1);
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 0.0),
-            0.0);
+            std::make_pair(o1, 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2),
             o2);
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2, 0.0),
-            o2);
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2, 0.0),
-            0.0);
+            std::make_pair(o2, 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
@@ -828,11 +822,7 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(500), 0.0),
-            o1 + chrono::nanoseconds(25));
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
-                t1 + chrono::nanoseconds(500), 0.0),
-            0.0);
+            std::make_pair(o1 + chrono::nanoseconds(25), 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
@@ -841,11 +831,7 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 - chrono::nanoseconds(200), 0.0),
-            o1 - chrono::nanoseconds(10));
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
-                t1 - chrono::nanoseconds(200), 0.0),
-            0.0);
+            std::make_pair(o1 - chrono::nanoseconds(10), 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
@@ -854,11 +840,7 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(200), 0.0),
-            o1 + chrono::nanoseconds(10));
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
-                t1 + chrono::nanoseconds(200), 0.0),
-            0.0);
+            std::make_pair(o1 + chrono::nanoseconds(10), 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
@@ -867,11 +849,7 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(800), 0.0),
-            o1 + chrono::nanoseconds(40));
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
-                t1 + chrono::nanoseconds(800), 0.0),
-            0.0);
+            std::make_pair(o1 + chrono::nanoseconds(40), 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
@@ -880,11 +858,7 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(1200), 0.0),
-            o1 + chrono::nanoseconds(60));
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
-                t1 + chrono::nanoseconds(1200), 0.0),
-            0.0);
+            std::make_pair(o1 + chrono::nanoseconds(60), 0.0));
 
   for (int i = -MaxVelocityRatio::den * MaxVelocityRatio::num * 6;
        i <
@@ -902,23 +876,18 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
         NoncausalTimestampFilter::InterpolateOffset(
             std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base);
 
-    EXPECT_EQ(expected_offset, NoncausalTimestampFilter::InterpolateOffset(
-                                   std::make_tuple(t1, o1),
-                                   std::make_tuple(t2, o2), ta_base, ta));
+    const std::pair<chrono::nanoseconds, double> offset =
+        NoncausalTimestampFilter::InterpolateOffset(
+            std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base, ta);
+    EXPECT_EQ(expected_offset, offset.first);
 
     const double expected_double_offset =
         static_cast<double>(o1.count()) +
         static_cast<double>(ta_orig) / static_cast<double>((t2 - t1).count()) *
             (o2 - o1).count();
 
-    EXPECT_NEAR(
-        static_cast<double>(
-            NoncausalTimestampFilter::InterpolateOffset(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base, ta)
-                .count()) +
-            NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base, ta),
-        expected_double_offset, 1e-9)
+    EXPECT_NEAR(static_cast<double>(offset.first.count()) + offset.second,
+                expected_double_offset, 1e-9)
         << ": i " << i << " t " << ta_base << " " << ta << " t1 " << t1
         << " o1 " << o1.count() << "ns t2 " << t2 << " o2 " << o2.count()
         << "ns Non-rounded: " << expected_offset.count() << "ns";
