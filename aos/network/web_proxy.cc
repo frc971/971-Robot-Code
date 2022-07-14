@@ -59,7 +59,7 @@ WebsocketHandler::WebsocketHandler(::seasocks::Server *server,
   }
   TimerHandler *const timer = event_loop_->AddTimer([this]() {
     for (auto &subscriber : subscribers_) {
-      if (subscriber) subscriber->RunIteration();
+      if (subscriber) subscriber->RunIteration(recording_);
     }
   });
 
@@ -201,54 +201,58 @@ WebProxy::~WebProxy() {
   global_epoll = nullptr;
 }
 
-void Subscriber::RunIteration() {
-  if (channels_.empty() && (buffer_size_ == 0 || !store_history_)) {
-    fetcher_->Fetch();
-    message_buffer_.clear();
-    return;
-  }
+void WebProxy::StopRecording() { websocket_handler_->StopRecording(); }
 
-  while (fetcher_->FetchNext()) {
-    // If we aren't building up a buffer, short-circuit the FetchNext().
-    if (buffer_size_ == 0) {
+void Subscriber::RunIteration(bool fetch_new) {
+  if (fetch_new) {
+    if (channels_.empty() && (buffer_size_ == 0 || !store_history_)) {
       fetcher_->Fetch();
+      message_buffer_.clear();
+      return;
     }
-    Message message;
-    message.index = fetcher_->context().queue_index;
-    VLOG(2) << "Packing a message with " << GetPacketCount(fetcher_->context())
-            << "packets";
-    for (int packet_index = 0;
-         packet_index < GetPacketCount(fetcher_->context()); ++packet_index) {
-      // Pack directly into the mbuffer.  This is admittedly a bit painful.
-      const size_t packet_size =
-          PackedMessageSize(fetcher_->context(), packet_index);
-      struct mbuf *mbuffer = mbuf_alloc(packet_size);
 
-      {
-        // Wrap a pre-allocated builder around the mbuffer.
-        PreallocatedAllocator allocator(mbuf_buf(mbuffer), packet_size);
-        flatbuffers::FlatBufferBuilder fbb(packet_size, &allocator);
-        flatbuffers::Offset<MessageHeader> message_offset = PackMessage(
-            &fbb, fetcher_->context(), channel_index_, packet_index);
-        fbb.Finish(message_offset);
-
-        // Now, the flatbuffer is built from the back to the front.  So any
-        // extra memory will be at the front.  Setup the end and start pointers
-        // on the mbuf.
-        mbuf_set_end(mbuffer, packet_size);
-        mbuf_set_pos(mbuffer, packet_size - fbb.GetSize());
+    while (fetcher_->FetchNext()) {
+      // If we aren't building up a buffer, short-circuit the FetchNext().
+      if (buffer_size_ == 0) {
+        fetcher_->Fetch();
       }
+      Message message;
+      message.index = fetcher_->context().queue_index;
+      VLOG(2) << "Packing a message with "
+              << GetPacketCount(fetcher_->context()) << "packets";
+      for (int packet_index = 0;
+           packet_index < GetPacketCount(fetcher_->context()); ++packet_index) {
+        // Pack directly into the mbuffer.  This is admittedly a bit painful.
+        const size_t packet_size =
+            PackedMessageSize(fetcher_->context(), packet_index);
+        struct mbuf *mbuffer = mbuf_alloc(packet_size);
 
-      message.data.emplace_back(
-          std::shared_ptr<struct mbuf>(mbuffer, mem_deref));
-    }
-    message_buffer_.push_back(std::move(message));
-    // If we aren't keeping a buffer, then we should only do one iteration of
-    // the while loop--otherwise, if additional messages arrive between the
-    // first FetchNext() and the second iteration then we can end up behaving
-    // poorly (since we do a Fetch() when buffer_size_ == 0).
-    if (buffer_size_ == 0) {
-      break;
+        {
+          // Wrap a pre-allocated builder around the mbuffer.
+          PreallocatedAllocator allocator(mbuf_buf(mbuffer), packet_size);
+          flatbuffers::FlatBufferBuilder fbb(packet_size, &allocator);
+          flatbuffers::Offset<MessageHeader> message_offset = PackMessage(
+              &fbb, fetcher_->context(), channel_index_, packet_index);
+          fbb.Finish(message_offset);
+
+          // Now, the flatbuffer is built from the back to the front.  So any
+          // extra memory will be at the front.  Setup the end and start
+          // pointers on the mbuf.
+          mbuf_set_end(mbuffer, packet_size);
+          mbuf_set_pos(mbuffer, packet_size - fbb.GetSize());
+        }
+
+        message.data.emplace_back(
+            std::shared_ptr<struct mbuf>(mbuffer, mem_deref));
+      }
+      message_buffer_.push_back(std::move(message));
+      // If we aren't keeping a buffer, then we should only do one iteration of
+      // the while loop--otherwise, if additional messages arrive between the
+      // first FetchNext() and the second iteration then we can end up behaving
+      // poorly (since we do a Fetch() when buffer_size_ == 0).
+      if (buffer_size_ == 0) {
+        break;
+      }
     }
   }
   for (auto &conn : channels_) {

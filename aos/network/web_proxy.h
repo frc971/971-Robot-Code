@@ -41,6 +41,10 @@ class WebsocketHandler : public ::seasocks::WebSocket::Handler {
   void onData(::seasocks::WebSocket *sock, const uint8_t *data,
               size_t size) override;
   void onDisconnect(::seasocks::WebSocket *sock) override;
+  // Stops recording data, even if the event loop continues running. This allows
+  // us to continue serving the webserver + websocket server, without having to
+  // load more actual data.
+  void StopRecording() { recording_ = false; }
 
  private:
   ::seasocks::Server *server_;
@@ -51,6 +55,8 @@ class WebsocketHandler : public ::seasocks::WebSocket::Handler {
       connections_;
 
   EventLoop *const event_loop_;
+  // Whether to pay attention to new messages.
+  bool recording_ = true;
 };
 
 // Wrapper class that manages the seasocks server and WebsocketHandler.
@@ -74,6 +80,9 @@ class WebProxy {
   ~WebProxy();
 
   void SetDataPath(const char *path) { server_.setStaticPath(path); }
+
+  // Stops recording data. Useful for setting end times in log replay.
+  void StopRecording();
 
  private:
   WebProxy(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
@@ -121,7 +130,12 @@ class Subscriber {
         store_history_(store_history == StoreHistory::kYes),
         buffer_size_(buffer_size) {}
 
-  void RunIteration();
+  // Runs a single iteration of going through and fetching new data as needed
+  // and servicing any WebRTC channels that are requesting messages.
+  // fetch_new specifies whether we should actually attempt to retrieve new data
+  // on the channel--if false, will only worry about sending existing data to
+  // any clients.
+  void RunIteration(bool fetch_new);
 
   void AddListener(std::shared_ptr<ScopedDataChannel> data_channel,
                    TransferMethod transfer_method);
