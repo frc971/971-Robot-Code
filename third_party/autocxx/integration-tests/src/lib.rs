@@ -21,7 +21,7 @@ use autocxx_engine::{
 use log::info;
 use once_cell::sync::OnceCell;
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, TokenStreamExt};
+use quote::{format_ident, quote, TokenStreamExt};
 use syn::Token;
 use tempfile::{tempdir, TempDir};
 
@@ -56,6 +56,7 @@ fn configure_builder(b: &mut BuilderBuild) -> &mut BuilderBuild {
 pub enum RsFindMode {
     AutocxxRs,
     AutocxxRsArchive,
+    AutocxxRsFile,
 }
 
 /// API to test building pre-generated files.
@@ -169,6 +170,10 @@ impl LinkableTryBuilder {
                 "AUTOCXX_RS_JSON_ARCHIVE",
                 self.temp_dir.path().join("gen.rs.json"),
             ),
+            RsFindMode::AutocxxRsFile => std::env::set_var(
+                "AUTOCXX_RS_FILE",
+                self.temp_dir.path().join("gen0.include.rs"),
+            ),
         };
         std::panic::catch_unwind(|| {
             let test_cases = trybuild::TestCases::new();
@@ -200,6 +205,7 @@ pub fn run_test(
         None,
         None,
         None,
+        "unsafe_ffi",
     )
     .unwrap()
 }
@@ -254,8 +260,21 @@ pub fn run_test_ex(
         builder_modifier,
         code_checker,
         extra_rust,
+        "unsafe_ffi",
     )
     .unwrap()
+}
+
+pub fn run_generate_all_test(header_code: &str) {
+    run_test_ex(
+        "",
+        header_code,
+        quote! {},
+        quote! { generate_all!() },
+        None,
+        None,
+        None,
+    );
 }
 
 pub fn run_test_expect_fail(
@@ -273,6 +292,7 @@ pub fn run_test_expect_fail(
         None,
         None,
         None,
+        "unsafe_ffi",
     )
     .expect_err("Unexpected success");
 }
@@ -294,6 +314,7 @@ pub fn run_test_expect_fail_ex(
         builder_modifier,
         code_checker,
         extra_rust,
+        "unsafe_ffi",
     )
     .expect_err("Unexpected success");
 }
@@ -343,14 +364,16 @@ pub fn do_run_test(
     builder_modifier: Option<BuilderModifier>,
     rust_code_checker: Option<CodeChecker>,
     extra_rust: Option<TokenStream>,
+    safety_policy: &str,
 ) -> Result<(), TestError> {
     let hexathorpe = Token![#](Span::call_site());
+    let safety_policy = format_ident!("{}", safety_policy);
     let unexpanded_rust = quote! {
             use autocxx::prelude::*;
 
             include_cpp!(
                 #hexathorpe include "input.h"
-                safety!(unsafe_ffi)
+                safety!(#safety_policy)
                 #directives
             );
 

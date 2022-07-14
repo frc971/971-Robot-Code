@@ -15,9 +15,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cxx = "1.0.54"
-autocxx = { path = "../..", version="0.22.0" }
+cxx = "1.0.68"
+autocxx = { path = "../..", version="0.22.3" }
 
 [build-dependencies]
-autocxx-build = { path = "../../gen/build", version="0.22.0" }
+autocxx-build = { path = "../../gen/build", version="0.22.3" }
 miette = { version="4.3", features = [ "fancy" ] }

@@ -17,13 +17,14 @@ pub(crate) mod unqualify;
 use indexmap::map::IndexMap as HashMap;
 use indexmap::set::IndexSet as HashSet;
 
-use autocxx_parser::{ExternCppType, IncludeCppConfig, RustFun};
+use autocxx_parser::{ExternCppType, IncludeCppConfig, RustFun, UnsafePolicy};
 
 use itertools::Itertools;
 use proc_macro2::{Span, TokenStream};
 use syn::{
     parse_quote, punctuated::Punctuated, token::Comma, Attribute, Expr, FnArg, ForeignItem,
-    ForeignItemFn, Ident, ImplItem, Item, ItemForeignMod, ItemMod, TraitItem, TypePath,
+    ForeignItemFn, Ident, ImplItem, Item, ItemForeignMod, ItemMod, Lifetime, TraitItem, Type,
+    TypePath,
 };
 
 use crate::{
@@ -61,10 +62,16 @@ use super::{
 use super::{convert_error::ErrorContext, ConvertError};
 use quote::quote;
 
+#[derive(Clone, Hash, PartialEq, Eq)]
+struct ImplBlockKey {
+    ty: Type,
+    lifetime: Option<Lifetime>,
+}
+
 /// An entry which needs to go into an `impl` block for a given type.
 struct ImplBlockDetails {
     item: ImplItem,
-    ty: Ident,
+    ty: ImplBlockKey,
 }
 
 struct TraitImplBlockDetails {
@@ -130,10 +137,96 @@ fn get_string_items() -> Vec<Item> {
     .to_vec()
 }
 
+fn get_cppref_items() -> Vec<Item> {
+    [
+        Item::Struct(parse_quote! {
+            #[repr(transparent)]
+            pub struct CppRef<'a, T>(pub *const T, pub ::std::marker::PhantomData<&'a T>);
+        }),
+        Item::Impl(parse_quote! {
+            impl<'a, T> autocxx::CppRef<'a, T> for CppRef<'a, T> {
+                fn as_ptr(&self) -> *const T {
+                    self.0
+                }
+            }
+        }),
+        Item::Struct(parse_quote! {
+            #[repr(transparent)]
+            pub struct CppMutRef<'a, T>(pub *mut T, pub ::std::marker::PhantomData<&'a T>);
+        }),
+        Item::Impl(parse_quote! {
+            impl<'a, T> autocxx::CppRef<'a, T> for CppMutRef<'a, T> {
+                fn as_ptr(&self) -> *const T {
+                    self.0
+                }
+            }
+        }),
+        Item::Impl(parse_quote! {
+            impl<'a, T> autocxx::CppMutRef<'a, T> for CppMutRef<'a, T> {
+                fn as_mut_ptr(&self) -> *mut T {
+                    self.0
+                }
+            }
+        }),
+        Item::Impl(parse_quote! {
+            impl<'a, T: ::cxx::private::UniquePtrTarget> CppMutRef<'a, T> {
+                /// Create a const C++ reference from this mutable C++ reference.
+                pub fn as_cpp_ref(&self) -> CppRef<'a, T> {
+                    use autocxx::CppRef;
+                    CppRef(self.as_ptr(), ::std::marker::PhantomData)
+                }
+            }
+        }),
+        Item::Struct(parse_quote! {
+            /// "Pins" a `UniquePtr` to an object, so that C++-compatible references can be created.
+            /// See [`::autocxx::CppPin`]
+            #[repr(transparent)]
+            pub struct CppUniquePtrPin<T: ::cxx::private::UniquePtrTarget>(::cxx::UniquePtr<T>);
+        }),
+        Item::Impl(parse_quote! {
+            impl<'a, T: 'a + ::cxx::private::UniquePtrTarget> autocxx::CppPin<'a, T> for CppUniquePtrPin<T>
+            {
+                type CppRef = CppRef<'a, T>;
+                type CppMutRef = CppMutRef<'a, T>;
+                fn as_ptr(&self) -> *const T {
+                    // TODO add as_ptr to cxx to avoid the ephemeral reference
+                    self.0.as_ref().unwrap() as *const T
+                }
+                fn as_mut_ptr(&mut self) -> *mut T {
+                    unsafe { ::std::pin::Pin::into_inner_unchecked(self.0.as_mut().unwrap()) as *mut T  }
+                }
+                fn as_cpp_ref(&self) -> Self::CppRef {
+                    CppRef(self.as_ptr(), ::std::marker::PhantomData)
+                }
+                fn as_cpp_mut_ref(&mut self) -> Self::CppMutRef {
+                    CppMutRef(self.as_mut_ptr(), ::std::marker::PhantomData)
+                }
+            }
+        }),
+        Item::Impl(parse_quote! {
+            impl<T: ::cxx::private::UniquePtrTarget> CppUniquePtrPin<T> {
+                pub fn new(item: ::cxx::UniquePtr<T>) -> Self {
+                    Self(item)
+                }
+            }
+        }),
+        Item::Fn(parse_quote! {
+            /// Pin this item so that we can create C++ references to it.
+            /// This makes it impossible to hold Rust references because Rust
+            /// references are fundamentally incompatible with C++ references.
+            pub fn cpp_pin_uniqueptr<T: ::cxx::private::UniquePtrTarget> (item: ::cxx::UniquePtr<T>) -> CppUniquePtrPin<T> {
+                CppUniquePtrPin::new(item)
+            }
+        })
+    ]
+    .to_vec()
+}
+
 /// Type which handles generation of Rust code.
 /// In practice, much of the "generation" involves connecting together
 /// existing lumps of code within the Api structures.
 pub(crate) struct RsCodeGenerator<'a> {
+    unsafe_policy: &'a UnsafePolicy,
     include_list: &'a [String],
     bindgen_mod: ItemMod,
     original_name_map: CppNameMap,
@@ -145,12 +238,14 @@ impl<'a> RsCodeGenerator<'a> {
     /// Generate code for a set of APIs that was discovered during parsing.
     pub(crate) fn generate_rs_code(
         all_apis: ApiVec<FnPhase>,
+        unsafe_policy: &'a UnsafePolicy,
         include_list: &'a [String],
         bindgen_mod: ItemMod,
         config: &'a IncludeCppConfig,
         header_name: Option<String>,
     ) -> Vec<Item> {
         let c = Self {
+            unsafe_policy,
             include_list,
             bindgen_mod,
             original_name_map: original_name_map_from_apis(&all_apis),
@@ -219,6 +314,9 @@ impl<'a> RsCodeGenerator<'a> {
         let mut extern_rust_mod_items = extern_rust_mod_items.into_iter().flatten().collect();
         // And a list of global items to include at the top level.
         let mut all_items: Vec<Item> = all_items.into_iter().flatten().collect();
+        if self.config.unsafe_policy.requires_cpprefs() {
+            all_items.append(&mut get_cppref_items())
+        }
         // And finally any C++ we need to generate. And by "we" I mean autocxx not cxx.
         let has_additional_cpp_needs = additional_cpp_needs.into_iter().any(std::convert::identity);
         extern_c_mod_items.extend(self.build_include_foreign_items(has_additional_cpp_needs));
@@ -357,23 +455,24 @@ impl<'a> RsCodeGenerator<'a> {
     }
 
     fn append_uses_for_ns(&mut self, items: &mut Vec<Item>, ns: &Namespace) {
+        let mut imports_from_super = vec!["cxxbridge"];
+        if !self.config.exclude_utilities() {
+            imports_from_super.push("ToCppString");
+        }
+        if self.config.unsafe_policy.requires_cpprefs() {
+            imports_from_super.extend(["CppRef", "CppMutRef"]);
+        }
+        let imports_from_super = imports_from_super.into_iter().map(make_ident);
         let super_duper = std::iter::repeat(make_ident("super")); // I'll get my coat
         let supers = super_duper.clone().take(ns.depth() + 2);
         items.push(Item::Use(parse_quote! {
             #[allow(unused_imports)]
             use self::
                 #(#supers)::*
-            ::cxxbridge;
+            ::{
+                #(#imports_from_super),*
+            };
         }));
-        if !self.config.exclude_utilities() {
-            let supers = super_duper.clone().take(ns.depth() + 2);
-            items.push(Item::Use(parse_quote! {
-                #[allow(unused_imports)]
-                use self::
-                    #(#supers)::*
-                ::ToCppString;
-            }));
-        }
         let supers = super_duper.take(ns.depth() + 1);
         items.push(Item::Use(parse_quote! {
             #[allow(unused_imports)]
@@ -407,8 +506,10 @@ impl<'a> RsCodeGenerator<'a> {
             }
         }
         for (ty, entries) in impl_entries_by_type.into_iter() {
+            let lt = ty.lifetime.map(|lt| quote! { < #lt > });
+            let ty = ty.ty;
             output_items.push(Item::Impl(parse_quote! {
-                impl #ty {
+                impl #lt #ty {
                     #(#entries)*
                 }
             }))
@@ -487,6 +588,7 @@ impl<'a> RsCodeGenerator<'a> {
                 analysis,
                 cpp_call_name,
                 non_pod_types,
+                self.config,
             ),
             Api::Const { const_item, .. } => RsCodegenResult {
                 bindgen_mod_items: vec![Item::Const(const_item)],
@@ -609,8 +711,11 @@ impl<'a> RsCodeGenerator<'a> {
                 name, superclass, ..
             } => {
                 let methods = associated_methods.get(&superclass);
-                let generate_peer_constructor =
-                    subclasses_with_a_single_trivial_constructor.contains(&name.0.name);
+                let generate_peer_constructor = subclasses_with_a_single_trivial_constructor.contains(&name.0.name) &&
+                    // TODO: Create an UnsafeCppPeerConstructor trait for calling an unsafe
+                    // constructor instead? Need to create unsafe versions of everything that uses
+                    // it too.
+                    matches!(self.unsafe_policy, UnsafePolicy::AllFunctionsSafe);
                 self.generate_subclass(name, &superclass, methods, generate_peer_constructor)
             }
             Api::ExternCppType {
@@ -723,6 +828,10 @@ impl<'a> RsCodeGenerator<'a> {
         extern_c_mod_items.push(parse_quote! {
             fn #as_mut_id(self: Pin<&mut #cpp_id>) -> Pin<&mut #super_cxxxbridge_id>;
         });
+        let as_unique_ptr_id = make_ident(format!("{}_As_{}_UniquePtr", cpp_id, super_name));
+        extern_c_mod_items.push(parse_quote! {
+            fn #as_unique_ptr_id(u: UniquePtr<#cpp_id>) -> UniquePtr<#super_cxxxbridge_id>;
+        });
         bindgen_mod_items.push(parse_quote! {
             impl AsRef<#super_path> for super::super::super::#id {
                 fn as_ref(&self) -> &cxxbridge::#super_cxxxbridge_id {
@@ -737,6 +846,14 @@ impl<'a> RsCodeGenerator<'a> {
                 pub fn pin_mut(&mut self) -> ::std::pin::Pin<&mut cxxbridge::#super_cxxxbridge_id> {
                     use autocxx::subclass::CppSubclass;
                     self.peer_mut().#as_mut_id()
+                }
+            }
+        });
+        let rs_as_unique_ptr_id = make_ident(format!("as_{}_unique_ptr", super_name));
+        bindgen_mod_items.push(parse_quote! {
+            impl super::super::super::#id {
+                pub fn #rs_as_unique_ptr_id(u: cxx::UniquePtr<#cpp_id>) -> cxx::UniquePtr<cxxbridge::#super_cxxxbridge_id> {
+                    cxxbridge::#as_unique_ptr_id(u)
                 }
             }
         });
@@ -813,7 +930,7 @@ impl<'a> RsCodeGenerator<'a> {
                         .as_ref()
                         .#borrow()
                         .expect(#reentrancy_panic_msg);
-                    let r = std::ops::#deref_ty::#deref_call(& #mut_token b);
+                    let r = ::std::ops::#deref_ty::#deref_call(& #mut_token b);
                     #methods_trait :: #method_name
                         (r,
                         #args)
@@ -1012,7 +1129,7 @@ impl<'a> RsCodeGenerator<'a> {
         rust_path: TypePath,
         ns_depth: usize,
     ) -> RsCodegenResult {
-        let id = name.get_final_ident();
+        let id = name.type_path_from_root();
         let super_duper = std::iter::repeat(make_ident("super"));
         let supers = super_duper.take(ns_depth + 2);
         let use_statement = parse_quote! {
@@ -1057,7 +1174,10 @@ impl<'a> RsCodeGenerator<'a> {
                         fn #method(_uhoh: autocxx::BindingGenerationFailure) {
                         }
                     },
-                    ty: self_ty,
+                    ty: ImplBlockKey {
+                        ty: parse_quote! { #self_ty },
+                        lifetime: None,
+                    },
                 })),
                 None,
                 None,

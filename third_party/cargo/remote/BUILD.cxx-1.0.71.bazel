@@ -1,0 +1,84 @@
+"""
+@generated
+cargo-raze crate build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+
+# buildifier: disable=load
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+# buildifier: disable=load
+load(
+    "@rules_rust//rust:defs.bzl",
+    "rust_binary",
+    "rust_library",
+    "rust_proc_macro",
+    "rust_test",
+)
+
+package(default_visibility = [
+    # Public for visibility by "@raze__crate__version//" targets.
+    #
+    # Prefer access through "//third_party/cargo", which limits external
+    # visibility to explicit Cargo.toml dependencies.
+    "//visibility:public",
+])
+
+licenses([
+    "notice",  # MIT from expression "MIT OR Apache-2.0"
+])
+
+# Generated Targets
+
+# Unsupported target "build-script-build" with type "custom-build" omitted
+
+rust_library(
+    name = "cxx",
+    srcs = glob(["**/*.rs"]),
+    crate_features = [
+        "alloc",
+        "default",
+        "std",
+    ],
+    crate_root = "src/lib.rs",
+    data = [],
+    edition = "2018",
+    proc_macro_deps = [
+        "@raze__cxxbridge_macro__1_0_71//:cxxbridge_macro",
+    ],
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    tags = [
+        "cargo-raze",
+        "crate-name=cxx",
+        "manual",
+    ],
+    version = "1.0.71",
+    # buildifier: leave-alone
+    deps = [
+        "@raze__link_cplusplus__1_0_6//:link_cplusplus",
+    ],
+)
+
+# Unsupported target "compiletest" with type "test" omitted
+
+# Unsupported target "cxx_gen" with type "test" omitted
+
+# Unsupported target "cxx_string" with type "test" omitted
+
+# Unsupported target "test" with type "test" omitted
+
+# Unsupported target "unique_ptr" with type "test" omitted
+
+# Additional content from third_party/cargo/cxx/include.BUILD.bazel
+# This file is included in the BUILD for the cxx crate, to export its header
+# file for C++ code to depend on.
+cc_library(
+    name = "cxx_cc",
+    visibility = ["//visibility:public"],
+    hdrs = ["include/cxx.h"],
+    srcs = ["src/cxx.cc"],
+    includes = ["include"],
+)

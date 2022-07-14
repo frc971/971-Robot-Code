@@ -15,15 +15,17 @@ You will need:
 
 The rest of this 'getting started' section assumes Cargo - if you're using something else, see the [building](building.md) section.
 
-First, add `autocxx` *and `cxx`* to your `dependencies` and `autocxx-build` to your `build-dependencies` in your `Cargo.toml`.
+First, add `autocxx` *and `cxx`* to your `dependencies` and `autocxx-build` to your `build-dependencies` in your `Cargo.toml`. **You must specify both.**
+
+
 
 ```toml
 [dependencies]
-autocxx = "0.22.0"
+autocxx = "0.22.3"
 cxx = "1.0"
 
 [build-dependencies]
-autocxx-build = "0.22.0"
+autocxx-build = "0.22.3"
 miette = { version="4.3", features=["fancy"] } # optional but gives nicer error messages!
 ```
 

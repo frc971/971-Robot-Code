@@ -54,7 +54,6 @@ pub(crate) enum CppVisibility {
 
 /// Details about a C++ struct.
 pub(crate) struct StructDetails {
-    pub(crate) vis: CppVisibility,
     pub(crate) item: ItemStruct,
     pub(crate) layout: Option<Layout>,
     pub(crate) has_rvalue_reference_fields: bool,
@@ -712,4 +711,11 @@ impl<T: AnalysisPhase> Api<T> {
     {
         Ok(Box::new(std::iter::once(Api::Enum { name, item })))
     }
+}
+
+/// Whether a type is a pointer of some kind.
+pub(crate) enum Pointerness {
+    Not,
+    ConstPtr,
+    MutPtr,
 }
