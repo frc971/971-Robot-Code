@@ -22,7 +22,7 @@ def main(argv: Sequence[Text]):
         subprocess.run([args.generate_log, "--output_folder", log_name]).check_returncode()
         # Run with a really small chunk size, to force a multi-chunk file.
         subprocess.run(
-            [args.log_to_mcap, "--output_path", mcap_name, "--mcap_chunk_size", "1000",
+            [args.log_to_mcap, "--output_path", mcap_name, "--mcap_chunk_size", "1000", "--mode", "json",
              log_name]).check_returncode()
         # MCAP attempts to find $HOME/.mcap.yaml, and dies on $HOME not existing. So
         # give it an arbitrary config location (it seems to be fine with a non-existent config).
