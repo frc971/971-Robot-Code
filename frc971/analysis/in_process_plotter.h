@@ -40,8 +40,8 @@ class Plotter {
 
   // Sets the title for the current set of plots; if you
   void Title(std::string_view title);
-  void AddFigure(std::string_view title = "", double width = 900,
-                 double height = 400);
+  void AddFigure(std::string_view title = "", double width = 0,
+                 double height = 0);
   void AddLine(const std::vector<double> &x, const std::vector<double> &y,
                std::string_view label = "", std::string_view line_style = "*-");
   void ShareXAxis(bool share) { share_x_axis_ = share; }

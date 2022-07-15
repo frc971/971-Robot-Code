@@ -58,6 +58,7 @@ import {plotDemo} from 'org_frc971/aos/network/www/demo_plot';
 import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
 
 const rootDiv = document.createElement('div');
+rootDiv.style.width = '100%';
 document.body.appendChild(rootDiv);
 
 const helpDiv = document.createElement('div');
@@ -99,6 +100,7 @@ const plotDiv = document.createElement('div');
 plotDiv.style.top = (plotSelect.getBoundingClientRect().bottom + 10).toString();
 plotDiv.style.left = '0';
 plotDiv.style.position = 'absolute';
+plotDiv.style.width = '100%';
 rootDiv.appendChild(plotDiv);
 
 // The master list of all the plots that we provide. For a given config, it

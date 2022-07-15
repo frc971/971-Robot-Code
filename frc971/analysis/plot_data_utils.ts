@@ -42,8 +42,20 @@ export function plotData(conn: Connection, parentDiv: Element) {
         for (let ii = 0; ii < plotFb.figuresLength(); ++ii) {
           const figure = plotFb.figures(ii);
           const figureDiv = document.createElement('div');
-          figureDiv.style.width = figure.position().width().toString() + "px";
-          figureDiv.style.height = figure.position().height().toString() + "px";
+          if (figure.position().width() == 0) {
+            figureDiv.style.width = '100%';
+          } else {
+            figureDiv.style.width = figure.position().width().toString() + 'px';
+          }
+          if (figure.position().height() == 0) {
+            // TODO(austin): I don't know the css for 100%, excluding other
+            // stuff in the div...  Just go with a little less for now, it's
+            // good enough and quite helpful.
+            figureDiv.style.height = '97%';
+          } else {
+            figureDiv.style.height =
+                figure.position().height().toString() + 'px';
+          }
           figureDiv.style.position = 'relative';
           div.appendChild(figureDiv);
           const plot = new Plot(figureDiv);
@@ -89,6 +101,13 @@ export function plotData(conn: Connection, parentDiv: Element) {
             }
             line.setPoints(points);
           }
+        }
+
+        // If this is the first new element (ignoring the placeholder up top),
+        // select it by default.
+        if (plotSelect.length == 2) {
+          plotSelect.value = name;
+          plotSelect.dispatchEvent(new Event('input'));
         }
       });
 }
