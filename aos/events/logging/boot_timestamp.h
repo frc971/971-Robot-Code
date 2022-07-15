@@ -101,6 +101,11 @@ struct BootTimestamp {
   BootTimestamp operator+(BootDuration d) const {
     return {boot, time + d.duration};
   }
+
+  BootDuration operator-(BootTimestamp t) const {
+    CHECK_EQ(t.boot, boot);
+    return {boot, time - t.time};
+  }
 };
 
 // Structure to hold both a boot and queue index.  Queue indices reset after

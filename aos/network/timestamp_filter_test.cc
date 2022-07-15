@@ -34,6 +34,49 @@ class TestingNoncausalTimestampFilter : public NoncausalTimestampFilter {
     return std::make_tuple(BootTimestamp{0, std::get<0>(result)},
                            BootDuration{0, std::get<1>(result)});
   }
+
+  logger::BootDuration Offset(const TestingNoncausalTimestampFilter *other,
+                              Pointer pointer, logger::BootTimestamp ta,
+                              size_t sample_boot) const {
+    return {sample_boot,
+            filter(ta.boot, sample_boot)
+                ->filter
+                .Offset(other == nullptr
+                            ? nullptr
+                            : &other->filter(sample_boot, ta.boot)->filter,
+                        pointer, ta.time)
+                .second};
+  }
+
+  std::pair<logger::BootDuration, double> Offset(
+      const TestingNoncausalTimestampFilter *other, Pointer pointer,
+      logger::BootTimestamp ta_base, double ta, size_t sample_boot) const {
+    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> result =
+        filter(ta_base.boot, sample_boot)
+            ->filter.Offset(
+                other == nullptr
+                    ? nullptr
+                    : &other->filter(sample_boot, ta_base.boot)->filter,
+                pointer, ta_base.time, ta);
+    return std::make_pair(
+        logger::BootDuration{sample_boot, result.second.first},
+        result.second.second);
+  }
+
+  std::pair<logger::BootDuration, double> BoundsOffset(
+      const TestingNoncausalTimestampFilter *other, Pointer pointer,
+      logger::BootTimestamp ta_base, double ta, size_t sample_boot) const {
+    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> result =
+        filter(ta_base.boot, sample_boot)
+            ->filter.BoundsOffset(
+                other == nullptr
+                    ? nullptr
+                    : &other->filter(sample_boot, ta_base.boot)->filter,
+                pointer, ta_base.time, ta);
+    return std::make_pair(
+        logger::BootDuration{sample_boot, result.second.first},
+        result.second.second);
+  }
 };
 
 void NormalizeTimestamps(monotonic_clock::time_point *ta_base, double *ta) {
@@ -1110,8 +1153,8 @@ TEST_F(NoncausalTimestampFilterTest, FindTimestamps) {
             filter.FindTimestamps(nullptr, true, result.first,
                                   e - chrono::microseconds(10), 0.9, 0));
 
-  result =
-      filter.FindTimestamps(nullptr, true, Pointer(), e + chrono::microseconds(0), 0);
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
+                                 e + chrono::microseconds(0), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
                               ::testing::Eq(std::make_tuple(t2, o2))));
@@ -1415,6 +1458,8 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t1, 0), o1);
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t1, 0.0, 0),
             std::make_pair(o1, 0.0));
+  EXPECT_EQ(filter.BoundsOffset(nullptr, Pointer(), t1, 0.0, 0),
+            std::make_pair(o1, 0.0));
   // Check if we ask for something away from point that we get an offset
   // based on the MaxVelocity allowed
   const double offset_pre = -(t1.time - e.time).count() * kMaxVelocity();
@@ -1422,6 +1467,10 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
             o1 + chrono::nanoseconds(static_cast<int64_t>(offset_pre)));
   EXPECT_EQ(
       filter.Offset(nullptr, Pointer(), e, 0.0, 0),
+      std::make_pair(o1 + chrono::nanoseconds(static_cast<int64_t>(offset_pre)),
+                     0.0));
+  EXPECT_EQ(
+      filter.BoundsOffset(nullptr, Pointer(), e, 0.0, 0),
       std::make_pair(o1 + chrono::nanoseconds(static_cast<int64_t>(offset_pre)),
                      0.0));
 
@@ -1432,13 +1481,23 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
       filter.Offset(nullptr, Pointer(), t2, 0.0, 0),
       std::make_pair(
           o1 + chrono::nanoseconds(static_cast<int64_t>(offset_post)), 0.0));
+  EXPECT_EQ(
+      filter.BoundsOffset(nullptr, Pointer(), t2, 0.0, 0),
+      std::make_pair(
+          o1 + chrono::nanoseconds(static_cast<int64_t>(offset_post)), 0.0));
 
   filter.Sample(t2, o2);
   filter.Sample(t3, o3);
 
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t1, 0), o1);
+  EXPECT_EQ(filter.BoundsOffset(nullptr, Pointer(), t1, 0.0, 0),
+            std::make_pair(o1, 0.0));
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t2, 0), o2);
+  EXPECT_EQ(filter.BoundsOffset(nullptr, Pointer(), t2, 0.0, 0),
+            std::make_pair(o2, 0.0));
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t3, 0), o3);
+  EXPECT_EQ(filter.BoundsOffset(nullptr, Pointer(), t3, 0.0, 0),
+            std::make_pair(o3, 0.0));
 
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t1, 0.0, 0),
             std::make_pair(o1, 0.0));
@@ -1476,6 +1535,9 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
       filter.Offset(nullptr, Pointer(), t4, 0.0, 0),
       std::make_pair(
           o3 + chrono::nanoseconds(static_cast<int64_t>(offset_post)), 0.0));
+
+  EXPECT_EQ(filter.BoundsOffset(nullptr, Pointer(), t2 + (t3 - t2) / 2, 0.0, 0),
+            std::make_pair(o2 - chrono::nanoseconds(500), 0.0));
 }
 
 // Tests that adding duplicates gets correctly deduplicated.
