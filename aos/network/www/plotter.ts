@@ -978,6 +978,11 @@ export class Plot {
   }
 
   handleMouseDown(event: MouseEvent) {
+    for (let plot of this.linkedXAxes) {
+      plot.autoFollow = false;
+    }
+    this.autoFollow = false;
+
     const button = transitionButton(event);
     switch (button) {
       case PAN_BUTTON:
