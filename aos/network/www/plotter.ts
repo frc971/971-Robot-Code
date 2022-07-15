@@ -1119,6 +1119,7 @@ export class Plot {
   resetZoom() {
     const minValues = this.drawer.minValues();
     const maxValues = this.drawer.maxValues();
+    const kScalar = 0.05;
     for (const plot of this.linkedXAxes) {
       const otherMin = plot.drawer.minValues();
       const otherMax = plot.drawer.maxValues();
@@ -1137,10 +1138,18 @@ export class Plot {
     if (minValues[0] == maxValues[0]) {
       minValues[0] -= 1;
       maxValues[0] += 1;
+    } else {
+      const width = maxValues[0] - minValues[0];
+      maxValues[0] += width * kScalar;
+      minValues[0] -= width * kScalar;
     }
     if (minValues[1] == maxValues[1]) {
       minValues[1] -= 1;
       maxValues[1] += 1;
+    } else {
+      const height = maxValues[1] - minValues[1];
+      maxValues[1] += height * kScalar;
+      minValues[1] -= height * kScalar;
     }
     if (this.defaultYRange != null) {
       minValues[1] = this.defaultYRange[0];
