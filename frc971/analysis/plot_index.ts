@@ -97,7 +97,7 @@ const plotSelect = document.createElement('select');
 rootDiv.appendChild(plotSelect);
 
 const plotDiv = document.createElement('div');
-plotDiv.style.top = (plotSelect.getBoundingClientRect().bottom + 10).toString();
+plotDiv.style.marginTop = '10px';
 plotDiv.style.left = '0';
 plotDiv.style.position = 'absolute';
 plotDiv.style.width = '100%';
