@@ -6,7 +6,7 @@ namespace frc971 {
 namespace analysis {
 
 namespace {
-const char *kDataPath = "frc971/analysis";
+const char *kDataPath = "frc971/analysis/cpp_plot";
 const char *kConfigPath = "frc971/analysis/plotter.json";
 }  // namespace
 

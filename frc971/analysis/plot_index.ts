@@ -55,7 +55,6 @@ import {plotLocalizer as plot2022Localizer} from
 import {plotVision as plot2022Vision} from
     'org_frc971/y2022/vision/vision_plotter'
 import {plotDemo} from 'org_frc971/aos/network/www/demo_plot';
-import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
 
 const rootDiv = document.createElement('div');
 rootDiv.style.width = '100%';
@@ -126,7 +125,6 @@ const plotIndex = new Map<string, PlotState>([
   ['2022 Intake Back', new PlotState(plotDiv, plot2022IntakeBack)],
   ['2022 Climber', new PlotState(plotDiv, plot2022Climber)],
   ['2022 Turret', new PlotState(plotDiv, plot2022Turret)],
-  ['C++ Plotter', new PlotState(plotDiv, plotData)],
   ['Y2021 3rd Robot Superstructure', new PlotState(plotDiv, plot2021Superstructure)],
 ]);
 

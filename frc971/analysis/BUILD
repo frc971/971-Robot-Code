@@ -37,7 +37,6 @@ ts_library(
     srcs = ["plot_index.ts"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":plot_data_utils",
         "//aos:configuration_ts_fbs",
         "//aos/network/www:demo_plot",
         "//aos/network/www:proxy",
@@ -146,7 +145,7 @@ cc_library(
     hdrs = ["in_process_plotter.h"],
     data = [
         ":plotter",
-        ":plotter_files",
+        "//frc971/analysis/cpp_plot:cpp_plot_files",
     ],
     deps = [
         ":plot_data_fbs",
