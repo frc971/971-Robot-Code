@@ -3,7 +3,7 @@
     {
       "name": "/analysis",
       "type": "frc971.analysis.Plot",
-      "max_size": 10000000
+      "max_size": 1000000000
     }
   ],
   "imports": [
