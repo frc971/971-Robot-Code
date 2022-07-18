@@ -3,6 +3,7 @@ import numpy as np
 from libspline import Spline, DistanceSpline, Trajectory
 import copy
 
+
 class Points():
     def __init__(self):
         self.points = []  # Holds all points not yet in spline
