@@ -497,3 +497,13 @@ flatbuffer_cc_library(
     gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
+
+cc_binary(
+    name = "timestamp_plot",
+    srcs = ["timestamp_plot.cc"],
+    deps = [
+        "//aos:init",
+        "//frc971/analysis:in_process_plotter",
+        "@com_google_absl//absl/strings",
+    ],
+)
