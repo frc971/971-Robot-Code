@@ -19,15 +19,26 @@ Plotter::Plotter()
       builder_(plot_sender_.MakeBuilder()) {
   web_proxy_.SetDataPath(kDataPath);
   event_loop_->SkipTimingReport();
-  color_wheel_.push_back(Color(1, 0, 0));
-  color_wheel_.push_back(Color(0, 1, 0));
-  color_wheel_.push_back(Color(0, 0, 1));
-  color_wheel_.push_back(Color(1, 1, 0));
-  color_wheel_.push_back(Color(0, 1, 1));
-  color_wheel_.push_back(Color(1, 0, 1));
-  color_wheel_.push_back(Color(1, 0.6, 0));
-  color_wheel_.push_back(Color(0.6, 0.3, 0));
-  color_wheel_.push_back(Color(1, 1, 1));
+
+  color_wheel_.emplace_back(ColorWheelColor{.name = "red", .color = {1, 0, 0}});
+  color_wheel_.emplace_back(
+      ColorWheelColor{.name = "green", .color = {0, 1, 0}});
+  color_wheel_.emplace_back(
+      ColorWheelColor{.name = "purple", .color = {0.54, 0.3, 0.75}});
+  color_wheel_.emplace_back(
+      ColorWheelColor{.name = "blue", .color = {0, 0, 1}});
+  color_wheel_.emplace_back(
+      ColorWheelColor{.name = "yellow", .color = {1, 1, 0}});
+  color_wheel_.emplace_back(
+      ColorWheelColor{.name = "teal", .color = {0, 1, 1}});
+  color_wheel_.emplace_back(
+      ColorWheelColor{.name = "pink", .color = {1, 0, 1}});
+  color_wheel_.emplace_back(
+      ColorWheelColor{.name = "orange", .color = {1, 0.6, 0}});
+  color_wheel_.emplace_back(
+      ColorWheelColor{.name = "brown", .color = {0.6, 0.3, 0}});
+  color_wheel_.emplace_back(
+      ColorWheelColor{.name = "white", .color = {1, 1, 1}});
 }
 
 void Plotter::Spin() { event_loop_factory_.Run(); }
@@ -63,15 +74,14 @@ void Plotter::YLabel(std::string_view label) {
 }
 
 void Plotter::AddLine(const std::vector<double> &x,
-                      const std::vector<double> &y, std::string_view label,
-                      std::string_view line_style) {
+                      const std::vector<double> &y, LineOptions options) {
   CHECK_EQ(x.size(), y.size());
   CHECK(!position_.IsNull())
       << "You must call AddFigure() before calling AddLine().";
 
   flatbuffers::Offset<flatbuffers::String> label_offset;
-  if (!label.empty()) {
-    label_offset = builder_.fbb()->CreateString(label);
+  if (!options.label.empty()) {
+    label_offset = builder_.fbb()->CreateString(options.label);
   }
 
   std::vector<Point> points;
@@ -81,16 +91,28 @@ void Plotter::AddLine(const std::vector<double> &x,
   const flatbuffers::Offset<flatbuffers::Vector<const Point *>> points_offset =
       builder_.fbb()->CreateVectorOfStructs(points);
 
-  const Color *color = &color_wheel_.at(color_wheel_position_);
-  color_wheel_position_ = (color_wheel_position_ + 1) % color_wheel_.size();
+  const Color *color;
+  if (options.color.empty()) {
+    color = &color_wheel_.at(color_wheel_position_).color;
+    color_wheel_position_ = (color_wheel_position_ + 1) % color_wheel_.size();
+  } else {
+    auto it = std::find_if(
+        color_wheel_.begin(), color_wheel_.end(),
+        [options_color = options.color](const ColorWheelColor &color) {
+          return color.name == options_color;
+        });
+    CHECK(it != color_wheel_.end()) << ": Failed to find " << options.color;
+    color = &(it->color);
+  }
 
   LineStyle::Builder style_builder = builder_.MakeBuilder<LineStyle>();
-  if (line_style.find('*') != line_style.npos) {
+  if (options.line_style.find('*') != options.line_style.npos) {
     style_builder.add_point_size(3.0);
   } else {
     style_builder.add_point_size(0.0);
   }
-  style_builder.add_draw_line(line_style.find('-') != line_style.npos);
+  style_builder.add_draw_line(options.line_style.find('-') !=
+                              options.line_style.npos);
   const flatbuffers::Offset<LineStyle> style_offset = style_builder.Finish();
 
   auto line_builder = builder_.MakeBuilder<Line>();
@@ -132,8 +154,7 @@ void Plotter::Publish() {
   plot_builder.add_title(title_);
   plot_builder.add_figures(figures_offset);
 
-  CHECK_EQ(builder_.Send(plot_builder.Finish()),
-           aos::RawSender::Error::kOk);
+  CHECK_EQ(builder_.Send(plot_builder.Finish()), aos::RawSender::Error::kOk);
 
   builder_ = plot_sender_.MakeBuilder();
 

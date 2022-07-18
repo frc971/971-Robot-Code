@@ -42,14 +42,30 @@ class Plotter {
   void Title(std::string_view title);
   void AddFigure(std::string_view title = "", double width = 0,
                  double height = 0);
+  struct LineOptions {
+    std::string_view label = "";
+    std::string_view line_style = "*-";
+    std::string_view color = "";
+  };
+
   void AddLine(const std::vector<double> &x, const std::vector<double> &y,
-               std::string_view label = "", std::string_view line_style = "*-");
+               std::string_view label) {
+    AddLine(x, y, LineOptions{.label = label});
+  }
+  void AddLine(const std::vector<double> &x, const std::vector<double> &y,
+               std::string_view label, std::string_view line_style) {
+    AddLine(x, y, LineOptions{.label = label, .line_style = line_style});
+  }
+  void AddLine(const std::vector<double> &x, const std::vector<double> &y,
+               LineOptions options);
+
   void ShareXAxis(bool share) { share_x_axis_ = share; }
   void XLabel(std::string_view label);
   void YLabel(std::string_view label);
   void Publish();
 
   void Spin();
+
  private:
   void MaybeFinishFigure();
 
@@ -70,8 +86,13 @@ class Plotter {
   std::vector<flatbuffers::Offset<Figure>> figures_;
   std::vector<flatbuffers::Offset<Line>> lines_;
 
+  struct ColorWheelColor {
+    std::string name;
+    Color color;
+  };
+
   size_t color_wheel_position_ = 0;
-  std::vector<Color> color_wheel_;
+  std::vector<ColorWheelColor> color_wheel_;
 };
 
 }  // namespace analysis
