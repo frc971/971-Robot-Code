@@ -97,6 +97,18 @@ TEST_F(JsonToFlatbufferTest, Nan) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_double\": -nan }"));
 }
 
+// Tests that unicode is handled correctly
+TEST_F(JsonToFlatbufferTest, Unicode) {
+  EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"\\uF672\" }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"\\uEFEF\" }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"helloworld\\uD83E\\uDE94\" }"));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"\\uD83C\\uDF32\" }"));
+  EXPECT_FALSE(JsonAndBack("{ \"foo_string\": \"\\uP890\" }"));
+  EXPECT_FALSE(JsonAndBack("{ \"foo_string\": \"\\u!FA8\" }"));
+  EXPECT_FALSE(JsonAndBack("{ \"foo_string\": \"\\uF89\" }"));
+  EXPECT_FALSE(JsonAndBack("{ \"foo_string\": \"\\uD83C\" }"));
+}
+
 // Tests that we can handle decimal points.
 TEST_F(JsonToFlatbufferTest, DecimalPoint) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 5.1 }"));

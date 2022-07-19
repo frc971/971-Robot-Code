@@ -341,6 +341,7 @@ cc_library(
     hdrs = ["json_tokenizer.h"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
     ],

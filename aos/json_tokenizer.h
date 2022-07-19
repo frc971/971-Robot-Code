@@ -4,6 +4,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "flatbuffers/util.h"
 
 namespace aos {
 
@@ -72,6 +73,10 @@ class Tokenizer {
   // and false otherwise.
   // data_ is unconditionally updated.
   void ConsumeWhitespace();
+  // Consumes a unicode out of data_.  Populates s with the unicode.  Returns
+  // true if a valid unicode was found, and false otherwise. data_ is updated
+  // only on success.
+  bool ConsumeUnicode(::std::string *s);
 
   // State for the parsing state machine.
   enum class State {
@@ -89,6 +94,11 @@ class Tokenizer {
   std::string_view data_;
   // Current line number used for printing debug.
   int linenumber_ = 0;
+
+  // Surrogate pairs i.e. high surrogates (\ud000 - \ud8ff) combined
+  // with low surrogates (\udc00 - \udfff) cannot be interpreted when
+  // they do not appear as a part of the pair.
+  int unicode_high_surrogate_ = -1;
 
   // Stack used to track which object type we were in when we recursed.
   enum class ObjectType {

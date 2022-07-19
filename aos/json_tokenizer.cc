@@ -91,6 +91,11 @@ bool Tokenizer::ConsumeString(::std::string *s) {
       // " is the end, declare victory.
       if (Char() == '"') {
         ConsumeChar();
+        if (unicode_high_surrogate_ != -1) {
+          fprintf(stderr, "Invalid unicode - Unpaired high surrogate\n");
+          data_ = original;
+          return false;
+        }
         return true;
       } else {
         ConsumeChar();
@@ -116,11 +121,11 @@ bool Tokenizer::ConsumeString(::std::string *s) {
         } else if (Char() == 't') {
           *s += "\t";
         } else if (Char() == 'u') {
-          // TODO(austin): Unicode should be valid, but I really don't care to
-          // do this now...
-          fprintf(stderr, "Unexpected unicode on line %d\n", linenumber_);
-          data_ = original;
-          return false;
+          if (!ConsumeUnicode(s)) {
+            fprintf(stderr, "Invalid unicode on line %d\n", linenumber_);
+            data_ = original;
+            return false;
+          }
         }
       }
       // And skip the escaped character.
@@ -129,6 +134,68 @@ bool Tokenizer::ConsumeString(::std::string *s) {
 
     ConsumeChar();
   }
+}
+
+bool Tokenizer::ConsumeUnicode(::std::string *s) {
+  // Under no conditions is it acceptible to run out of data while parsing a
+  // unicode.  Any AtEnd checks should confirm that.
+  uint32_t val;
+
+  // Consume unicode representation
+  ConsumeChar();
+
+  char target[5];
+
+  // Valid unicode is 4 hex digits so evaluate the next 4 characters
+  for (int count = 0; count < 4; count++) {
+    // If there is no data or data is an invalid char, return false
+    if (AtEnd()) {
+      return false;
+    }
+
+    if (!isxdigit(Char())) {
+      return false;
+    }
+
+    target[count] = Char();
+
+    // Do not consume the last character
+    if (count == 3) {
+      break;
+    }
+
+    ConsumeChar();
+  }
+  target[4] = '\0';
+
+  // References: flatbuffers/src/idl_parser.cpp
+  val = flatbuffers::StringToUInt(target, 16);
+
+  if (val >= 0xD800 && val <= 0xDBFF) {
+    if (unicode_high_surrogate_ != -1) {
+      fprintf(stderr, "Invalid unicode - Multiple high surrogates\n");
+      return false;
+    } else {
+      unicode_high_surrogate_ = static_cast<int>(val);
+    }
+  } else if (val >= 0xDC00 && val <= 0xDFFF) {
+    if (unicode_high_surrogate_ == -1) {
+      fprintf(stderr, "Invalid unicode - Unpaired low surrogate\n");
+      return false;
+    } else {
+      int code_point =
+          0x10000 + ((unicode_high_surrogate_ & 0x03FF) << 10) + (val & 0x03FF);
+      flatbuffers::ToUTF8(code_point, s);
+      unicode_high_surrogate_ = -1;
+    }
+  } else {
+    if (unicode_high_surrogate_ != -1) {
+      fprintf(stderr, "Invalid unicode - Unpaired high surrogate\n");
+      return false;
+    }
+    flatbuffers::ToUTF8(static_cast<int>(val), s);
+  }
+  return true;
 }
 
 bool Tokenizer::ConsumeNumber(::std::string *s) {
