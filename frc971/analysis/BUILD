@@ -70,11 +70,21 @@ rollup_bundle(
     ],
 )
 
+genrule(
+    name = "copy_css",
+    srcs = [
+        "//aos/network/www:styles.css",
+    ],
+    outs = ["styles.css"],
+    cmd = "cp $< $@",
+)
+
 filegroup(
     name = "plotter_files",
     srcs = [
         "index.html",
         "plot_index_bundle.min.js",
+        "styles.css",
     ],
 )
 

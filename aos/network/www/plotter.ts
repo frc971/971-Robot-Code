@@ -297,92 +297,107 @@ function buttonPressed(event: MouseEvent, button: MouseButton): boolean {
 export class Legend {
   // Location, in pixels, of the legend in the text canvas.
   private location: number[] = [0, 0];
-  constructor(private ctx: CanvasRenderingContext2D, private lines: Line[]) {
-    this.location = [80, 30];
+  constructor(private lines: Line[], private legend: HTMLDivElement) {
+    this.setPosition([80, 30]);
   }
 
   setPosition(location: number[]): void {
     this.location = location;
+    this.legend.style.left = location[0] + 'px';
+    this.legend.style.top = location[1] + 'px';
   }
 
   draw(): void {
-    this.ctx.save();
+    // First, figure out if anything has changed.  The legend is created and
+    // then titles are changed afterwords, so we have to do this lazily.
+    let needsUpdate = false;
+    {
+      let child = 0;
+      for (let line of this.lines) {
+        if (line.label() === null) {
+          continue;
+        }
 
-    this.ctx.translate(this.location[0], this.location[1]);
+        if (child >= this.legend.children.length) {
+          needsUpdate = true;
+          break;
+        }
 
-    // Space between rows of the legend.
-    const step = 20;
-
-    let maxWidth = 0;
-
-    // In the legend, we render both a small line of the appropriate color as
-    // well as the text label--start/endPoint are the relative locations of the
-    // endpoints of the miniature line within the row, and textStart is where
-    // we begin rendering the text within the row.
-    const startPoint = [0, 0];
-    const endPoint = [10, -10];
-    const textStart = endPoint[0] + 5;
-
-    // Calculate how wide the legend needs to be to fit all the text.
-    this.ctx.textAlign = 'left';
-    let numLabels = 0;
-    for (let line of this.lines) {
-      if (line.label() === null) {
-        continue;
+        // Make sure both have text in the right spot.  Don't be too picky since
+        // nothing should really be changing here, and it's handy to let the
+        // user edit the HTML for testing.
+        if (this.legend.children[child].lastChild.textContent.length == 0 &&
+            line.label().length != 0) {
+          needsUpdate = true;
+          break;
+        }
+        child += 1;
       }
-      ++numLabels;
-      const width =
-          textStart + this.ctx.measureText(line.label()).actualBoundingBoxRight;
-      maxWidth = Math.max(width, maxWidth);
-    }
 
-    if (numLabels === 0) {
-      this.ctx.restore();
+      // If we got through everything, we should be pointed past the last child.
+      // If not, more children exists than lines.
+      if (child != this.legend.children.length) {
+        needsUpdate = true;
+      }
+    }
+    if (!needsUpdate) {
       return;
     }
 
-    // Total height of the body of the legend.
-    const height = step * numLabels;
+    // Nuke the old legend.
+    while (this.legend.firstChild) {
+      this.legend.removeChild(this.legend.firstChild);
+    }
 
-    // Set the legend background to be white and opaque.
-    this.ctx.fillStyle = 'rgba(255, 255, 255, 1.0)';
-    const backgroundBuffer = 5;
-    this.ctx.fillRect(
-        -backgroundBuffer, 0, maxWidth + 2.0 * backgroundBuffer,
-        height + backgroundBuffer);
-
-    // Go through each line and render the little lines and text for each Line.
+    // Now, build up a new legend.
     for (let line of this.lines) {
       if (line.label() === null) {
         continue;
       }
-      this.ctx.translate(0, step);
+
+      // The legend is a div containing both a canvas for the style/color, and a
+      // div for the text.  Make those, color in the canvas, and add it to the
+      // page.
+      let l = document.createElement('div');
+      l.classList.add('aos_legend_line');
+      let text = document.createElement('div');
+      text.textContent = line.label();
+
+      l.appendChild(text);
+      this.legend.appendChild(l);
+
+      let c = document.createElement('canvas');
+      c.width = text.offsetHeight;
+      c.height = text.offsetHeight;
+
+      const linestyleContext = c.getContext("2d");
+      linestyleContext.clearRect(0, 0, c.width, c.height);
+
       const color = line.color();
-      this.ctx.strokeStyle = `rgb(${255.0 * color[0]}, ${255.0 * color[1]}, ${255.0 * color[2]})`;
-      this.ctx.fillStyle = this.ctx.strokeStyle;
-      if (line.drawLine()) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(startPoint[0], startPoint[1]);
-        this.ctx.lineTo(endPoint[0], endPoint[1]);
-        this.ctx.closePath();
-        this.ctx.stroke();
-      }
+      linestyleContext.strokeStyle = `rgb(${255.0 * color[0]}, ${
+          255.0 * color[1]}, ${255.0 * color[2]})`;
+      linestyleContext.fillStyle = linestyleContext.strokeStyle;
+
       const pointSize = line.pointSize();
-      if (pointSize > 0) {
-        this.ctx.fillRect(
-            startPoint[0] - pointSize / 2.0, startPoint[1] - pointSize / 2.0,
-            pointSize, pointSize);
-        this.ctx.fillRect(
-            endPoint[0] - pointSize / 2.0, endPoint[1] - pointSize / 2.0,
-            pointSize, pointSize);
+      const kDistanceIn = pointSize / 2.0;
+
+      if (line.drawLine()) {
+        linestyleContext.beginPath();
+        linestyleContext.moveTo(0, 0);
+        linestyleContext.lineTo(c.height, c.width);
+        linestyleContext.closePath();
+        linestyleContext.stroke();
       }
 
-      this.ctx.fillStyle = 'black';
-      this.ctx.textAlign = 'left';
-      this.ctx.fillText(line.label(), textStart, 0);
-    }
+      if (pointSize > 0) {
+        linestyleContext.fillRect(0, 0, pointSize, pointSize);
+        linestyleContext.fillRect(
+            c.height - 1 - pointSize, c.width - 1 - pointSize, pointSize,
+            pointSize);
+      }
 
-    this.ctx.restore();
+      l.prepend(c);
+    }
   }
 }
 
@@ -440,7 +455,7 @@ export class LineDrawer {
     return divideVec(subtractVec(canvasPos, this.zoom.offset), this.zoom.scale);
   }
 
-  // Tehse return the max/min rendered points, in plot-space (this is helpful
+  // These return the max/min rendered points, in plot-space (this is helpful
   // for drawing axis labels).
   maxVisiblePoint(): number[] {
     return this.canvasToPlotCoordinates([1.0, 1.0]);
@@ -850,6 +865,7 @@ class AxisLabels {
 export class Plot {
   private canvas = document.createElement('canvas');
   private textCanvas = document.createElement('canvas');
+  private legendDiv = document.createElement('div');
   private lineDrawerContext: WebGLRenderingContext;
   private drawer: LineDrawer;
   private static keysPressed:
@@ -873,24 +889,20 @@ export class Plot {
   constructor(wrapperDiv: HTMLDivElement) {
     wrapperDiv.appendChild(this.canvas);
     wrapperDiv.appendChild(this.textCanvas);
+    this.legendDiv.classList.add('aos_legend');
+    wrapperDiv.appendChild(this.legendDiv);
     this.lastTimeMs = (new Date()).getTime();
 
     this.canvas.style.paddingLeft = this.axisLabelBuffer.left.toString() + "px";
     this.canvas.style.paddingRight = this.axisLabelBuffer.right.toString() + "px";
     this.canvas.style.paddingTop = this.axisLabelBuffer.top.toString() + "px";
     this.canvas.style.paddingBottom = this.axisLabelBuffer.bottom.toString() + "px";
-    this.canvas.style.width = "100%";
-    this.canvas.style.height = "100%";
-    this.canvas.style.boxSizing = "border-box";
+    this.canvas.classList.add('aos_plot');
 
-    this.canvas.style.position = 'absolute';
     this.lineDrawerContext = this.canvas.getContext('webgl');
     this.drawer = new LineDrawer(this.lineDrawerContext);
 
-    this.textCanvas.style.position = 'absolute';
-    this.textCanvas.style.width = "100%";
-    this.textCanvas.style.height = "100%";
-    this.textCanvas.style.pointerEvents = 'none';
+    this.textCanvas.classList.add('aos_plot_text');
 
     this.canvas.addEventListener('dblclick', (e) => {
       this.handleDoubleClick(e);
@@ -922,7 +934,7 @@ export class Plot {
     const textCtx = this.textCanvas.getContext("2d");
     this.axisLabels =
         new AxisLabels(textCtx, this.drawer, this.axisLabelBuffer);
-    this.legend = new Legend(textCtx, this.drawer.getLines());
+    this.legend = new Legend(this.drawer.getLines(), this.legendDiv);
 
     this.zoomRectangle = this.getDrawer().addLine(false);
     this.zoomRectangle.setColor(Colors.WHITE);

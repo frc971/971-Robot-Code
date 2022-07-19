@@ -2,6 +2,8 @@ load("@npm//@bazel/typescript:index.bzl", "ts_library")
 load("//tools/build_rules:js.bzl", "rollup_bundle")
 load("//aos:config.bzl", "aos_config")
 
+exports_files(["styles.css"])
+
 filegroup(
     name = "files",
     srcs = glob([

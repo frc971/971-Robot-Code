@@ -23,10 +23,21 @@ rollup_bundle(
     ],
 )
 
+genrule(
+    name = "copy_css",
+    srcs = [
+        "//aos/network/www:styles.css",
+    ],
+    outs = ["styles.css"],
+    cmd = "cp $< $@",
+)
+
 filegroup(
     name = "cpp_plot_files",
     srcs = [
+        "cpp_plot_bundle.js",
         "cpp_plot_bundle.min.js",
         "index.html",
+        "styles.css",
     ],
 )
