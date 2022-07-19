@@ -105,6 +105,7 @@ export class Line {
   private colorLocation: WebGLUniformLocation | null;
   private pointSizeLocation: WebGLUniformLocation | null;
   private _label: string|null = null;
+  private _hidden: boolean = false;
   constructor(
       private readonly ctx: WebGLRenderingContext,
       private readonly program: WebGLProgram,
@@ -190,6 +191,15 @@ export class Line {
     }
   }
 
+  hidden(): boolean {
+    return this._hidden;
+  }
+
+  setHidden(hidden: boolean) {
+    this._hasUpdate = true;
+    this._hidden = hidden;
+  }
+
   getPoints(): Point[] {
     return this.points;
   }
@@ -217,6 +227,10 @@ export class Line {
   draw() {
     this._hasUpdate = false;
     if (this.points.length === 0) {
+      return;
+    }
+
+    if (this._hidden) {
       return;
     }
 
@@ -297,7 +311,9 @@ function buttonPressed(event: MouseEvent, button: MouseButton): boolean {
 export class Legend {
   // Location, in pixels, of the legend in the text canvas.
   private location: number[] = [0, 0];
-  constructor(private lines: Line[], private legend: HTMLDivElement) {
+  constructor(
+      private plot: Plot, private lines: Line[],
+      private legend: HTMLDivElement) {
     this.setPosition([80, 30]);
   }
 
@@ -395,6 +411,17 @@ export class Legend {
             c.height - 1 - pointSize, c.width - 1 - pointSize, pointSize,
             pointSize);
       }
+
+      c.addEventListener('click', (e) => {
+        if (!line.hidden()) {
+          l.classList.add('aos_legend_line_hidden');
+        } else {
+          l.classList.remove('aos_legend_line_hidden');
+        }
+
+        line.setHidden(!line.hidden());
+        this.plot.draw();
+      });
 
       l.prepend(c);
     }
@@ -934,7 +961,7 @@ export class Plot {
     const textCtx = this.textCanvas.getContext("2d");
     this.axisLabels =
         new AxisLabels(textCtx, this.drawer, this.axisLabelBuffer);
-    this.legend = new Legend(this.drawer.getLines(), this.legendDiv);
+    this.legend = new Legend(this, this.drawer.getLines(), this.legendDiv);
 
     this.zoomRectangle = this.getDrawer().addLine(false);
     this.zoomRectangle.setColor(Colors.WHITE);

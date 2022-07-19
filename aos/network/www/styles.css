@@ -42,3 +42,7 @@
   vertical-align: middle;
   pointer-events: all;
 }
+
+.aos_legend_line_hidden {
+  filter: contrast(0.75);
+}
