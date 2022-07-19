@@ -48,10 +48,7 @@ export function plotData(conn: Connection, parentDiv: Element) {
             figureDiv.style.width = figure.position().width().toString() + 'px';
           }
           if (figure.position().height() == 0) {
-            // TODO(austin): I don't know the css for 100%, excluding other
-            // stuff in the div...  Just go with a little less for now, it's
-            // good enough and quite helpful.
-            figureDiv.style.height = '97%';
+            figureDiv.style.height = '100%';
           } else {
             figureDiv.style.height =
                 figure.position().height().toString() + 'px';

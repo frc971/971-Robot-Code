@@ -33,16 +33,29 @@
   font-size: 12;
 }
 
-.aos_legend_line div {
+.aos_legend_line>div {
   display: inline-block;
   vertical-align: middle;
   margin-left: 5px;
 }
-.aos_legend_line canvas {
+.aos_legend_line>canvas {
   vertical-align: middle;
   pointer-events: all;
 }
 
 .aos_legend_line_hidden {
   filter: contrast(0.75);
+}
+
+.aos_cpp_plot {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  align-items: flex-start;
+}
+
+.aos_cpp_plot>div {
+  flex: 1;
+  width: 100%;
 }

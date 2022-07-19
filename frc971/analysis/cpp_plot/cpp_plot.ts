@@ -4,7 +4,7 @@ import {Connection} from 'org_frc971/aos/network/www/proxy';
 import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
 
 const rootDiv = document.createElement('div');
-rootDiv.style.width = '100%';
+rootDiv.classList.add('aos_cpp_plot');
 document.body.appendChild(rootDiv);
 
 const conn = new Connection();
