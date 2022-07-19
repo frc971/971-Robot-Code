@@ -73,7 +73,7 @@ class MessageBridgeServerStatus {
   }
 
   // Disables sending out any statistics messages.
-  void DisableStatistics();
+  void DisableStatistics(bool destroy_senders);
   // Enables sending out any statistics messages.
   void EnableStatistics();
 

@@ -54,7 +54,10 @@ class MessageBridgeClientStatus {
   void Connect(int client_index);
 
   // Disables sending out any statistics messages.
-  void DisableStatistics();
+  // If destroy_sender is set, will clear the ClientStatistics Sender.
+  // EnableStatistics cannot be called again if destroy_sender is set. This is
+  // used by the LogReader to enforce one-sender-per-channel checks.
+  void DisableStatistics(bool destroy_sender);
   // Enables sending out any statistics messages.
   void EnableStatistics();
 

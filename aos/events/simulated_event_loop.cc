@@ -949,7 +949,27 @@ void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
   CHECK(allow_new_senders_)
       << ": Attempted to create a new sender on exclusive channel "
       << configuration::StrippedChannelToString(channel_);
-  if (event_loop->options().exclusive_senders == ExclusiveSenders::kYes) {
+  std::optional<ExclusiveSenders> per_channel_option;
+  for (const std::pair<const aos::Channel *, ExclusiveSenders> &per_channel :
+       event_loop->options().per_channel_exclusivity) {
+    if (per_channel.first->name()->string_view() ==
+            channel_->name()->string_view() &&
+        per_channel.first->type()->string_view() ==
+            channel_->type()->string_view()) {
+      CHECK(!per_channel_option.has_value())
+          << ": Channel " << configuration::StrippedChannelToString(channel_)
+          << " listed twice in per-channel list.";
+      per_channel_option = per_channel.second;
+    }
+  }
+  if (!per_channel_option.has_value()) {
+    // This could just as easily be implemented by setting
+    // per_channel_option to the global setting when we initialize it, but
+    // then we'd lose track of whether a given channel appears twice in
+    // the list.
+    per_channel_option = event_loop->options().exclusive_senders;
+  }
+  if (per_channel_option.value() == ExclusiveSenders::kYes) {
     CHECK_EQ(0, sender_count_)
         << ": Attempted to add an exclusive sender on a channel with existing "
            "senders: "
@@ -1466,7 +1486,14 @@ void SimulatedEventLoopFactory::DisableForwarding(const Channel *channel) {
 
 void SimulatedEventLoopFactory::DisableStatistics() {
   CHECK(bridge_) << ": Can't disable statistics without a message bridge.";
-  bridge_->DisableStatistics();
+  bridge_->DisableStatistics(
+      message_bridge::SimulatedMessageBridge::DestroySenders::kNo);
+}
+
+void SimulatedEventLoopFactory::PermanentlyDisableStatistics() {
+  CHECK(bridge_) << ": Can't disable statistics without a message bridge.";
+  bridge_->DisableStatistics(
+      message_bridge::SimulatedMessageBridge::DestroySenders::kYes);
 }
 
 void SimulatedEventLoopFactory::EnableStatistics() {

@@ -35,8 +35,10 @@ class SimulatedMessageBridge {
   // Disables generating and sending the messages which message_gateway sends.
   // The messages are the ClientStatistics, ServerStatistics and Timestamp
   // messages.
-  void DisableStatistics();
-  void DisableStatistics(const Node *node);
+  enum class DestroySenders { kNo, kYes };
+  void DisableStatistics(DestroySenders destroy_senders = DestroySenders::kNo);
+  void DisableStatistics(const Node *node,
+                         DestroySenders destroy_senders = DestroySenders::kNo);
   void EnableStatistics();
   void EnableStatistics(const Node *node);
 
@@ -55,13 +57,16 @@ class SimulatedMessageBridge {
     }
     State(const State &state) = delete;
 
-    void DisableStatistics() {
+    void DisableStatistics(DestroySenders destroy_senders) {
       disable_statistics_ = true;
+      destroy_senders_ = destroy_senders;
       if (server_status) {
-        server_status->DisableStatistics();
+        server_status->DisableStatistics(destroy_senders ==
+                                         DestroySenders::kYes);
       }
       if (client_status) {
-        client_status->DisableStatistics();
+        client_status->DisableStatistics(destroy_senders ==
+                                         DestroySenders::kYes);
       }
     }
 
@@ -88,7 +93,8 @@ class SimulatedMessageBridge {
       // logfiles.
       SetEventLoop(node_factory_->MakeEventLoop(
           "message_bridge", {NodeEventLoopFactory::CheckSentTooFast::kNo,
-                             NodeEventLoopFactory::ExclusiveSenders::kNo}));
+                             NodeEventLoopFactory::ExclusiveSenders::kNo,
+                             {}}));
     }
 
     void SetEventLoop(std::unique_ptr<aos::EventLoop> loop);
@@ -218,7 +224,9 @@ class SimulatedMessageBridge {
     std::vector<RawMessageDelayer *> destination_delayers_;
 
     bool disable_statistics_ = false;
+    DestroySenders destroy_senders_ = DestroySenders::kNo;
   };
+
   // Map of nodes to event loops.  This is a member variable so that the
   // lifetime of the event loops matches the lifetime of the bridge.
   std::map<const Node *, State> event_loop_map_;

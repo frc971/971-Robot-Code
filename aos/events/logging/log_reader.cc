@@ -528,6 +528,48 @@ void LogReader::State::RunOnEnd() {
   }
 }
 
+std::vector<
+    std::pair<const aos::Channel *, NodeEventLoopFactory::ExclusiveSenders>>
+LogReader::State::NonExclusiveChannels() {
+  CHECK_NOTNULL(node_event_loop_factory_);
+  const aos::Configuration *config = node_event_loop_factory_->configuration();
+  std::vector<
+      std::pair<const aos::Channel *, NodeEventLoopFactory::ExclusiveSenders>>
+      result{// Timing reports can be sent by logged and replayed applications.
+             {aos::configuration::GetChannel(config, "/aos",
+                                             "aos.timing.Report", "", node_),
+              NodeEventLoopFactory::ExclusiveSenders::kNo},
+             // AOS_LOG may be used in the log and in replay.
+             {aos::configuration::GetChannel(
+                  config, "/aos", "aos.logging.LogMessageFbs", "", node_),
+              NodeEventLoopFactory::ExclusiveSenders::kNo}};
+  for (const Node *const node : configuration::GetNodes(config)) {
+    if (node == nullptr) {
+      break;
+    }
+    const Channel *const old_timestamp_channel = aos::configuration::GetChannel(
+        config,
+        absl::StrCat("/aos/remote_timestamps/", node->name()->string_view()),
+        "aos.message_bridge.RemoteMessage", "", node_);
+    // The old-style remote timestamp channel can be populated from any
+    // channel, simulated or replayed.
+    if (old_timestamp_channel != nullptr) {
+      result.push_back(std::make_pair(
+          old_timestamp_channel, NodeEventLoopFactory::ExclusiveSenders::kNo));
+    }
+  }
+  // Remove any channels that weren't found due to not existing in the
+  // config.
+  for (size_t ii = 0; ii < result.size();) {
+    if (result[ii].first == nullptr) {
+      result.erase(result.begin() + ii);
+    } else {
+      ++ii;
+    }
+  }
+  return result;
+}
+
 void LogReader::Register() {
   event_loop_factory_unique_ptr_ =
       std::make_unique<SimulatedEventLoopFactory>(configuration());
@@ -647,7 +689,7 @@ void LogReader::RegisterWithoutStarting(
 
     // If we are replaying a log, we don't want a bunch of redundant messages
     // from both the real message bridge and simulated message bridge.
-    event_loop_factory_->DisableStatistics();
+    event_loop_factory_->PermanentlyDisableStatistics();
   }
 
   // Write pseudo start times out to file now that we are all setup.

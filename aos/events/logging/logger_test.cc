@@ -181,6 +181,46 @@ TEST_F(LoggerDeathTest, ExtraStart) {
   }
 }
 
+// Tests that we die if the replayer attempts to send on a logged channel.
+TEST_F(LoggerDeathTest, DieOnDuplicateReplayChannels) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(
+          ArtifactPath("aos/events/pingpong_config.json"));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  const ::std::string tmpdir = aos::testing::TestTmpDir();
+  const ::std::string base_name = tmpdir + "/logfile";
+  const ::std::string config_file =
+      absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
+  const ::std::string logfile = base_name + ".part0.bfbs";
+  // Remove the log file.
+  unlink(config_file.c_str());
+  unlink(logfile.c_str());
+
+  LOG(INFO) << "Logging data to " << logfile;
+
+  {
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory.MakeEventLoop("logger");
+
+    Logger logger(logger_event_loop.get());
+    logger.set_separate_config(false);
+    logger.set_polling_period(std::chrono::milliseconds(100));
+    logger.StartLoggingLocalNamerOnRun(base_name);
+
+    event_loop_factory.RunFor(chrono::seconds(2));
+  }
+
+  LogReader reader(logfile);
+
+  reader.Register();
+
+  std::unique_ptr<EventLoop> test_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("log_reader");
+
+  EXPECT_DEATH(test_event_loop->MakeSender<examples::Ping>("/test"),
+               "exclusive channel.*examples.Ping");
+}
+
 // Tests calling StopLogging twice.
 TEST_F(LoggerDeathTest, ExtraStop) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
@@ -442,7 +482,8 @@ TEST(SingleNodeLoggerNoFixtureTest, ReadTooFast) {
     std::unique_ptr<EventLoop> ping_spammer_event_loop =
         event_loop_factory.GetNodeEventLoopFactory(nullptr)->MakeEventLoop(
             "ping_spammer", {NodeEventLoopFactory::CheckSentTooFast::kNo,
-                             NodeEventLoopFactory::ExclusiveSenders::kNo});
+                             NodeEventLoopFactory::ExclusiveSenders::kNo,
+                             {}});
     aos::Sender<examples::Ping> ping_sender =
         ping_spammer_event_loop->MakeSender<examples::Ping>("/test");
 
@@ -2216,14 +2257,14 @@ TEST_P(MultinodeLoggerTest, SingleNodeReplay) {
   SimulatedEventLoopFactory full_factory(full_reader.configuration());
   SimulatedEventLoopFactory single_node_factory(
       single_node_reader.configuration());
+  single_node_factory.SkipTimingReport();
+  single_node_factory.DisableStatistics();
   std::unique_ptr<EventLoop> replay_event_loop =
       single_node_factory.GetNodeEventLoopFactory("pi1")->MakeEventLoop(
           "log_reader");
 
   full_reader.Register(&full_factory);
   single_node_reader.Register(replay_event_loop.get());
-  single_node_factory.SkipTimingReport();
-  single_node_factory.DisableStatistics();
 
   const Node *full_pi1 =
       configuration::GetNode(full_factory.configuration(), "pi1");

@@ -453,7 +453,8 @@ class LogReader {
       // ensure we are remapping channels correctly.
       event_loop_unique_ptr_ = node_event_loop_factory_->MakeEventLoop(
           "log_reader", {NodeEventLoopFactory::CheckSentTooFast::kNo,
-                         NodeEventLoopFactory::ExclusiveSenders::kNo});
+                         NodeEventLoopFactory::ExclusiveSenders::kYes,
+                         NonExclusiveChannels()});
       return event_loop_unique_ptr_.get();
     }
 
@@ -619,6 +620,12 @@ class LogReader {
       // queue indices are assumed to be contiguous through this range.
       uint32_t actual_queue_index = 0xffffffff;
     };
+
+    // Returns a list of channels which LogReader will send on but which may
+    // *also* get sent on by other applications in replay.
+    std::vector<
+        std::pair<const aos::Channel *, NodeEventLoopFactory::ExclusiveSenders>>
+    NonExclusiveChannels();
 
     // Stores all the timestamps that have been sent on this channel.  This is
     // only done for channels which are forwarded and on the node which

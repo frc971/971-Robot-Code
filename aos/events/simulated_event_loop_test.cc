@@ -262,7 +262,8 @@ TEST(SimulatedEventLoopTest, AllowSendTooFast) {
       simulated_event_loop_factory.GetNodeEventLoopFactory(nullptr)
           ->MakeEventLoop("too_fast_sender",
                           {NodeEventLoopFactory::CheckSentTooFast::kNo,
-                           NodeEventLoopFactory::ExclusiveSenders::kNo});
+                           NodeEventLoopFactory::ExclusiveSenders::kNo,
+                           {}});
   aos::Sender<TestMessage> too_fast_message_sender =
       too_fast_event_loop->MakeSender<TestMessage>("/test");
 
@@ -292,9 +293,13 @@ TEST(SimulatedEventLoopDeathTest, ExclusiveSenders) {
 
   ::std::unique_ptr<EventLoop> exclusive_event_loop =
       simulated_event_loop_factory.GetNodeEventLoopFactory(nullptr)
-          ->MakeEventLoop("too_fast_sender",
-                          {NodeEventLoopFactory::CheckSentTooFast::kYes,
-                           NodeEventLoopFactory::ExclusiveSenders::kYes});
+          ->MakeEventLoop(
+              "too_fast_sender",
+              {NodeEventLoopFactory::CheckSentTooFast::kYes,
+               NodeEventLoopFactory::ExclusiveSenders::kYes,
+               {{configuration::GetChannel(factory.configuration(), "/test1",
+                                           "aos.TestMessage", "", nullptr),
+                 NodeEventLoopFactory::ExclusiveSenders::kNo}}});
   exclusive_event_loop->SkipAosLog();
   exclusive_event_loop->SkipTimingReport();
   ::std::unique_ptr<EventLoop> normal_event_loop =
@@ -313,6 +318,12 @@ TEST(SimulatedEventLoopDeathTest, ExclusiveSenders) {
       normal_event_loop->MakeSender<TestMessage>("/test");
   EXPECT_DEATH(exclusive_event_loop->MakeSender<TestMessage>("/test"),
                "TestMessage");
+
+  // And check an explicitly exempted channel:
+  aos::Sender<TestMessage> non_exclusive_sender =
+      exclusive_event_loop->MakeSender<TestMessage>("/test1");
+  aos::Sender<TestMessage> non_exclusive_sender_regular_event_loop =
+      normal_event_loop->MakeSender<TestMessage>("/test1");
 }
 
 void TestSentTooFastCheckEdgeCase(

@@ -120,6 +120,9 @@ class SimulatedEventLoopFactory {
 
   // Disables the messages sent by the simulated message gateway.
   void DisableStatistics();
+  // Disables statistics sent by the simulated message gateway, and prevents
+  // EnableStatistcs from ever being called again (used by LogReader).
+  void PermanentlyDisableStatistics();
   // Enables the messages sent by the simulated message gateway.
   void EnableStatistics();
 
@@ -175,14 +178,18 @@ class NodeEventLoopFactory {
   struct EventLoopOptions {
     CheckSentTooFast check_sent_too_fast;
     ExclusiveSenders exclusive_senders;
+    // per_channel_exclusivity is used to list any exceptions to the overall
+    // exclusive_senders policy for this event loop.
+    std::vector<std::pair<const aos::Channel *, ExclusiveSenders>>
+        per_channel_exclusivity;
   };
 
   // Takes the name for the event loop and a struct of options for selecting
   // what checks to run for the event loop in question.
   std::unique_ptr<EventLoop> MakeEventLoop(
       std::string_view name,
-      EventLoopOptions options = EventLoopOptions{CheckSentTooFast::kYes,
-                                                  ExclusiveSenders::kNo});
+      EventLoopOptions options = EventLoopOptions{
+          CheckSentTooFast::kYes, ExclusiveSenders::kNo, {}});
 
   // Returns the node that this factory is running as, or nullptr if this is a
   // single node setup.
