@@ -372,15 +372,18 @@ TEST(TimestampProblemTest, SolveNewton) {
   std::vector<BootTimestamp> points1(problem.size(), BootTimestamp::max_time());
   points1[0] = e + chrono::seconds(1);
 
-  std::tuple<std::vector<BootTimestamp>, size_t> result1 =
-      problem.SolveNewton(points1);
+  constexpr size_t kMaxIterations = 200u;
+  std::tuple<std::vector<BootTimestamp>, size_t, size_t> result1 =
+      problem.SolveNewton(points1, kMaxIterations);
+  EXPECT_LT(std::get<2>(result1), kMaxIterations);
   EXPECT_EQ(std::get<1>(result1), 0u);
   EXPECT_TRUE(problem.ValidateSolution(std::get<0>(result1)));
 
   std::vector<BootTimestamp> points2(problem.size(), BootTimestamp::max_time());
   points2[1] = std::get<0>(result1)[1];
-  std::tuple<std::vector<BootTimestamp>, size_t> result2 =
-      problem.SolveNewton(points2);
+  std::tuple<std::vector<BootTimestamp>, size_t, size_t> result2 =
+      problem.SolveNewton(points2, kMaxIterations);
+  EXPECT_LT(std::get<2>(result1), kMaxIterations);
   EXPECT_EQ(std::get<1>(result2), 1u);
   EXPECT_TRUE(problem.ValidateSolution(std::get<0>(result2)));
 

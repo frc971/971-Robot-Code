@@ -307,9 +307,9 @@ std::tuple<Eigen::VectorXd, size_t> TimestampProblem::Newton(
                                              solution_node);
 }
 
-std::tuple<std::vector<BootTimestamp>, size_t> TimestampProblem::SolveNewton(
-    const std::vector<logger::BootTimestamp> &points) {
-  constexpr int kMaxIterations = 200;
+std::tuple<std::vector<BootTimestamp>, size_t, size_t>
+TimestampProblem::SolveNewton(const std::vector<logger::BootTimestamp> &points,
+                              const size_t max_iterations) {
   MaybeUpdateNodeMapping();
   for (size_t i = 0; i < points.size(); ++i) {
     if (points[i] != logger::BootTimestamp::max_time()) {
@@ -318,7 +318,7 @@ std::tuple<std::vector<BootTimestamp>, size_t> TimestampProblem::SolveNewton(
   }
   Eigen::VectorXd data = Eigen::VectorXd::Zero(live_nodes_);
 
-  int solution_number = 0;
+  size_t iteration = 0;
   size_t solution_node;
   while (true) {
     Eigen::VectorXd step;
@@ -335,12 +335,12 @@ std::tuple<std::vector<BootTimestamp>, size_t> TimestampProblem::SolveNewton(
           ComputeDerivitives(data).gradient +
           step(live_nodes_) * constraint_jacobian.transpose();
 
-      VLOG(2) << "Adjusted grad " << solution_number << " -> "
+      VLOG(2) << "Adjusted grad " << iteration << " -> "
               << std::setprecision(12) << std::fixed << std::setfill(' ')
               << adjusted_grad.transpose().format(kHeavyFormat);
     }
 
-    VLOG(2) << "Step " << solution_number << " -> " << std::setprecision(12)
+    VLOG(2) << "Step " << iteration << " -> " << std::setprecision(12)
             << std::fixed << std::setfill(' ')
             << step.transpose().format(kHeavyFormat);
     // We got there if the max step is small (this is strongly correlated to the
@@ -357,7 +357,7 @@ std::tuple<std::vector<BootTimestamp>, size_t> TimestampProblem::SolveNewton(
 
     data += step.block(0, 0, live_nodes_, 1);
 
-    ++solution_number;
+    ++iteration;
 
     // We are doing all our math with both an int64 base and a double offset.
     // This lets us handle large offsets while retaining precision down to the
@@ -376,11 +376,23 @@ std::tuple<std::vector<BootTimestamp>, size_t> TimestampProblem::SolveNewton(
         base_clock_[j].time += chrono::nanoseconds(dsolution);
         data(solution_index) -= dsolution;
       }
+      if (live(j)) {
+        VLOG(2) << "live  "
+                << base_clock_[j].time +
+                       std::chrono::nanoseconds(static_cast<int64_t>(
+                           std::round(data(NodeToFullSolutionIndex(j)))))
+                << " "
+                << (data(NodeToFullSolutionIndex(j)) -
+                    std::round(data(NodeToFullSolutionIndex(j))))
+                << " (unrounded: " << data(NodeToFullSolutionIndex(j)) << ")";
+      } else {
+        VLOG(2) << "dead  " << aos::monotonic_clock::min_time;
+      }
     }
 
     // And finally, don't let us iterate forever.  If it isn't converging,
     // report back.
-    if (solution_number > kMaxIterations) {
+    if (iteration > max_iterations) {
       break;
     }
   }
@@ -388,7 +400,7 @@ std::tuple<std::vector<BootTimestamp>, size_t> TimestampProblem::SolveNewton(
   for (size_t i = 0; i < points.size(); ++i) {
     if (points[i] != logger::BootTimestamp::max_time()) {
       VLOG(2) << "Solving for node " << i << " of " << points[i] << " in "
-              << solution_number << " cycles";
+              << iteration << " cycles";
     }
   }
   std::vector<BootTimestamp> result(size());
@@ -398,20 +410,24 @@ std::tuple<std::vector<BootTimestamp>, size_t> TimestampProblem::SolveNewton(
       result[i].time = base_clock(i).time +
                        std::chrono::nanoseconds(static_cast<int64_t>(
                            std::round(data(NodeToFullSolutionIndex(i)))));
-      VLOG(2) << "live  " << result[i] << " "
-              << (data(NodeToFullSolutionIndex(i)) -
-                  std::round(data(NodeToFullSolutionIndex(i))))
-              << " (unrounded: " << data(NodeToFullSolutionIndex(i)) << ")";
+      if (VLOG_IS_ON(2) || iteration > max_iterations) {
+        LOG(INFO) << "live  " << result[i] << " "
+                  << (data(NodeToFullSolutionIndex(i)) -
+                      std::round(data(NodeToFullSolutionIndex(i))))
+                  << " (unrounded: " << data(NodeToFullSolutionIndex(i)) << ")";
+      }
     } else {
       result[i] = BootTimestamp::min_time();
-      VLOG(2) << "dead  " << result[i];
+      if (VLOG_IS_ON(2) || iteration > max_iterations) {
+        LOG(INFO) << "dead  " << result[i];
+      }
     }
   }
-  if (solution_number > kMaxIterations) {
-    LOG(FATAL) << "Failed to converge.";
+  if (iteration > max_iterations) {
+    LOG(ERROR) << "Failed to converge.";
   }
 
-  return std::make_pair(std::move(result), solution_node);
+  return std::make_tuple(std::move(result), solution_node, iteration);
 }
 
 void TimestampProblem::MaybeUpdateNodeMapping() {
@@ -796,12 +812,31 @@ MultiNodeNoncausalOffsetEstimator::MultiNodeNoncausalOffsetEstimator(
   }
 }
 
-MultiNodeNoncausalOffsetEstimator::~MultiNodeNoncausalOffsetEstimator() {
+void MultiNodeNoncausalOffsetEstimator::FlushAndClose(bool destructor) {
+  // Write out all the data in our filters.
   FlushAllSamples(true);
   if (fp_) {
     fclose(fp_);
     fp_ = NULL;
   }
+
+  if (filter_fps_.size() != 0 && !destructor) {
+    size_t node_a_index = 0;
+    for (const auto &filters : filters_per_node_) {
+      for (const auto &filter : filters) {
+        while (true) {
+          std::optional<std::tuple<logger::BootTimestamp, logger::BootDuration>>
+              sample = filter.filter->Consume();
+          if (!sample) {
+            break;
+          }
+          WriteFilter(filter.filter, *sample);
+        }
+      }
+      ++node_a_index;
+    }
+  }
+
   if (filter_fps_.size() != 0) {
     for (std::vector<FILE *> &filter_fp : filter_fps_) {
       for (FILE *&fp : filter_fp) {
@@ -820,6 +855,7 @@ MultiNodeNoncausalOffsetEstimator::~MultiNodeNoncausalOffsetEstimator() {
       }
     }
   }
+
   if (all_done_) {
     size_t node_a_index = 0;
     for (const auto &filters : filters_per_node_) {
@@ -848,6 +884,10 @@ MultiNodeNoncausalOffsetEstimator::~MultiNodeNoncausalOffsetEstimator() {
       }
     }
   }
+}
+
+MultiNodeNoncausalOffsetEstimator::~MultiNodeNoncausalOffsetEstimator() {
+  FlushAndClose(true);
 }
 
 UUID MultiNodeNoncausalOffsetEstimator::boot_uuid(size_t node_index,
@@ -1554,8 +1594,14 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
       problem->set_base_clock(node_index, {base_times[node_index].boot,
                                            base_times[node_index].time + dt});
     }
-    std::tuple<std::vector<BootTimestamp>, size_t> solution =
-        problem->SolveNewton(points);
+    std::tuple<std::vector<BootTimestamp>, size_t, size_t> solution =
+        problem->SolveNewton(points, kMaxIterations);
+
+    if (std::get<2>(solution) > kMaxIterations) {
+      UpdateSolution(std::move(std::get<0>(solution)));
+      FlushAndClose(false);
+      LOG(FATAL) << "Failed to converge.";
+    }
 
     if (!problem->ValidateSolution(std::get<0>(solution))) {
       LOG(WARNING) << "Invalid solution, constraints not met.";
@@ -1564,6 +1610,8 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
       }
       problem->Debug();
       if (!skip_order_validation_) {
+        UpdateSolution(std::move(std::get<0>(solution)));
+        FlushAndClose(false);
         LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
                       "Use at your own risk.";
       }
@@ -1607,6 +1655,8 @@ void MultiNodeNoncausalOffsetEstimator::CheckInvalidDistance(
   if (skip_order_validation_) {
     LOG(ERROR) << "Skipping because --skip_order_validation";
   } else {
+    UpdateSolution(solution);
+    FlushAndClose(false);
     LOG(FATAL) << "Please investigate.  Use --max_invalid_distance_ns="
                << invalid_distance.count() << " to ignore this.";
   }
@@ -1701,8 +1751,14 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
       continue;
     }
 
-    std::tuple<std::vector<BootTimestamp>, size_t> solution =
-        problem->SolveNewton(points);
+    std::tuple<std::vector<BootTimestamp>, size_t, size_t> solution =
+        problem->SolveNewton(points, kMaxIterations);
+
+    if (std::get<2>(solution) > kMaxIterations) {
+      UpdateSolution(std::move(std::get<0>(solution)));
+      FlushAndClose(false);
+      LOG(FATAL) << "Failed to converge.";
+    }
 
     // Bypass checking if order validation is turned off.  This lets us dump a
     // CSV file so we can view the problem and figure out what to do.  The
@@ -1714,6 +1770,8 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
       }
       problem->Debug();
       if (!skip_order_validation_) {
+        UpdateSolution(std::get<0>(solution));
+        FlushAndClose(false);
         LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
                       "Use at your own risk.";
       }
@@ -1797,6 +1855,72 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
     }
   }
   return std::make_tuple(next_filter, std::move(result_times), solution_index);
+}
+
+void MultiNodeNoncausalOffsetEstimator::UpdateSolution(
+    std::vector<BootTimestamp> result_times) {
+  // Now, figure out what distributed should be.  It should move at the rate of
+  // the max elapsed time so that conversions to and from it don't round to bad
+  // values.
+  const chrono::nanoseconds dt = MaxElapsedTime(last_monotonics_, result_times);
+  last_distributed_ += dt;
+  for (size_t i = 0; i < result_times.size(); ++i) {
+    if (result_times[i] == BootTimestamp::min_time()) {
+      // Found an unknown node.  Move its time along by the amount the
+      // distributed clock moved.
+      result_times[i] = last_monotonics_[i] + dt;
+    }
+  }
+  last_monotonics_ = std::move(result_times);
+
+  if (fp_) {
+    fprintf(
+        fp_, "%.9f",
+        chrono::duration<double>(last_distributed_.time_since_epoch()).count());
+    for (const BootTimestamp t : last_monotonics_) {
+      fprintf(fp_, ", %.9f",
+              chrono::duration<double>(t.time.time_since_epoch()).count());
+    }
+    fprintf(fp_, "\n");
+  }
+}
+
+void MultiNodeNoncausalOffsetEstimator::WriteFilter(
+    NoncausalTimestampFilter *next_filter,
+    std::tuple<logger::BootTimestamp, logger::BootDuration> sample) {
+  if (filter_fps_.size() > 0 && next_filter) {
+    const int node_a_index =
+        configuration::GetNodeIndex(configuration(), next_filter->node_a());
+    const int node_b_index =
+        configuration::GetNodeIndex(configuration(), next_filter->node_b());
+
+    FILE *fp = filter_fps_[node_a_index][node_b_index];
+    if (fp == nullptr) {
+      fp = filter_fps_[node_a_index][node_b_index] = fopen(
+          absl::StrCat("/tmp/timestamp_noncausal_",
+                       next_filter->node_a()->name()->string_view(), "_",
+                       next_filter->node_b()->name()->string_view(), ".csv")
+              .c_str(),
+          "w");
+      fprintf(fp, "time_since_start,sample_ns,filtered_offset\n");
+    }
+
+    if (last_monotonics_[node_a_index].boot == std::get<0>(sample).boot) {
+      fprintf(fp, "%.9f, %.9f, %.9f\n",
+              std::chrono::duration_cast<std::chrono::duration<double>>(
+                  last_distributed_.time_since_epoch() +
+                  std::get<0>(sample).time - last_monotonics_[node_a_index].time)
+                  .count(),
+              std::chrono::duration_cast<std::chrono::duration<double>>(
+                  std::get<0>(sample).time.time_since_epoch())
+                  .count(),
+              std::chrono::duration_cast<std::chrono::duration<double>>(
+                  std::get<1>(sample).duration)
+                  .count());
+    } else {
+      LOG(WARNING) << "Not writing point, missmatched boot.";
+    }
+  }
 }
 
 std::optional<
@@ -1920,19 +2044,8 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     }
   }
 
-  // Now, figure out what distributed should be.  It should move at the rate of
-  // the max elapsed time so that conversions to and from it don't round to bad
-  // values.
-  const chrono::nanoseconds dt = MaxElapsedTime(last_monotonics_, result_times);
-  last_distributed_ += dt;
-  for (size_t i = 0; i < result_times.size(); ++i) {
-    if (result_times[i] == BootTimestamp::min_time()) {
-      // Found an unknown node.  Move its time along by the amount the
-      // distributed clock moved.
-      result_times[i] = last_monotonics_[i] + dt;
-    }
-  }
-  last_monotonics_ = std::move(result_times);
+  UpdateSolution(std::move(result_times));
+  WriteFilter(next_filter, sample);
 
   // And freeze everything.
   {
@@ -1946,45 +2059,6 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     }
   }
 
-  if (filter_fps_.size() > 0 && next_filter) {
-    const int node_a_index =
-        configuration::GetNodeIndex(configuration(), next_filter->node_a());
-    const int node_b_index =
-        configuration::GetNodeIndex(configuration(), next_filter->node_b());
-
-    FILE *fp = filter_fps_[node_a_index][node_b_index];
-    if (fp == nullptr) {
-      fp = filter_fps_[node_a_index][node_b_index] = fopen(
-          absl::StrCat("/tmp/timestamp_noncausal_",
-                       next_filter->node_a()->name()->string_view(), "_",
-                       next_filter->node_b()->name()->string_view(), ".csv")
-              .c_str(),
-          "w");
-      fprintf(fp, "time_since_start,sample_ns,filtered_offset\n");
-    }
-
-    fprintf(fp, "%.9f, %.9f, %.9f\n",
-            std::chrono::duration_cast<std::chrono::duration<double>>(
-                last_distributed_.time_since_epoch())
-                .count(),
-            std::chrono::duration_cast<std::chrono::duration<double>>(
-                std::get<0>(sample).time.time_since_epoch())
-                .count(),
-            std::chrono::duration_cast<std::chrono::duration<double>>(
-                std::get<1>(sample).duration)
-                .count());
-  }
-
-  if (fp_) {
-    fprintf(
-        fp_, "%.9f",
-        chrono::duration<double>(last_distributed_.time_since_epoch()).count());
-    for (const BootTimestamp t : last_monotonics_) {
-      fprintf(fp_, ", %.9f",
-              chrono::duration<double>(t.time.time_since_epoch()).count());
-    }
-    fprintf(fp_, "\n");
-  }
   FlushAllSamples(false);
   return std::make_tuple(last_distributed_, last_monotonics_);
 }
