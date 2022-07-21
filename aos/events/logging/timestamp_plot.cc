@@ -6,18 +6,51 @@
 
 using frc971::analysis::Plotter;
 
+DEFINE_bool(all, false, "If true, plot *all* the nodes at once");
+DEFINE_bool(bounds, false, "If true, plot the noncausal bounds too.");
+DEFINE_bool(samples, true, "If true, plot the samples too.");
+
+DEFINE_string(offsets, "",
+              "Offsets to add to the monotonic clock for each node.  Use the "
+              "format of node=offset,node=offest");
+
 // Simple C++ application to read the CSV files and use the in process plotter
 // to plot them.  This smokes the pants off gnuplot in terms of interactivity.
 
 namespace aos {
+
+// Returns all the nodes.
+std::vector<std::string> Nodes() {
+  const std::string start_time_file = aos::util::ReadFileToStringOrDie(
+      "/tmp/timestamp_noncausal_starttime.csv");
+  std::vector<std::string_view> nodes = absl::StrSplit(start_time_file, '\n');
+
+  std::vector<std::string> formatted_nodes;
+  for (const std::string_view n : nodes) {
+    if (n == "") {
+      continue;
+    }
+
+    std::vector<std::string_view> l = absl::StrSplit(n, ", ");
+    CHECK_EQ(l.size(), 2u) << "'" << n << "'";
+    formatted_nodes.emplace_back(l[0]);
+  }
+
+  return formatted_nodes;
+}
+
+std::string SampleFile(std::string_view node1, std::string_view node2) {
+  return absl::StrCat("/tmp/timestamp_noncausal_", node1, "_", node2,
+                      "_samples.csv");
+}
 
 std::pair<std::vector<double>, std::vector<double>> ReadSamples(
     std::string_view node1, std::string_view node2, bool flip) {
   std::vector<double> samplefile12_t;
   std::vector<double> samplefile12_o;
 
-  const std::string file = aos::util::ReadFileToStringOrDie(absl::StrCat(
-      "/tmp/timestamp_noncausal_", node1, "_", node2, "_samples.csv"));
+  const std::string file =
+      aos::util::ReadFileToStringOrDie(SampleFile(node1, node2));
   bool first = true;
   std::vector<std::string_view> lines = absl::StrSplit(file, '\n');
   samplefile12_t.reserve(lines.size());
@@ -42,7 +75,78 @@ std::pair<std::vector<double>, std::vector<double>> ReadSamples(
   return std::make_pair(samplefile12_t, samplefile12_o);
 }
 
-std::pair<std::vector<double>, std::vector<double>> ReadLines(
+void Offset(std::vector<double> *v, double offset) {
+  for (double &x : *v) {
+    x += offset;
+  }
+}
+
+// Returns all the nodes which talk to each other.
+std::vector<std::pair<std::string, std::string>> NodeConnections() {
+  const std::vector<std::string> nodes = Nodes();
+  std::vector<std::pair<std::string, std::string>> result;
+  for (size_t i = 1; i < nodes.size(); ++i) {
+    for (size_t j = 0; j < i; ++j) {
+      const std::string_view node1 = nodes[j];
+      const std::string_view node2 = nodes[i];
+      if (aos::util::PathExists(SampleFile(node1, node2))) {
+        result.emplace_back(node1, node2);
+        LOG(INFO) << "Found pairing " << node1 << ", " << node2;
+      }
+    }
+  }
+  return result;
+}
+
+// Class to encapsulate the plotter state to make it easy to plot multiple
+// connections.
+class NodePlotter {
+ public:
+  NodePlotter() : nodes_(Nodes()) {
+    plotter_.AddFigure("Time");
+    if (!FLAGS_offsets.empty()) {
+      for (std::string_view nodeoffset : absl::StrSplit(FLAGS_offsets, ',')) {
+        std::vector<std::string_view> node_offset =
+            absl::StrSplit(nodeoffset, '=');
+        CHECK_EQ(node_offset.size(), 2u);
+        double o;
+        CHECK(absl::SimpleAtod(node_offset[1], &o));
+        offset_.emplace(std::string(node_offset[0]), o);
+      }
+    }
+  }
+
+  void AddNodes(std::string_view node1, std::string_view node2);
+
+  void Serve() {
+    plotter_.Publish();
+    plotter_.Spin();
+  }
+
+ private:
+  std::pair<std::vector<double>, std::vector<double>> ReadLines(
+      std::string_view node1, std::string_view node2, bool flip);
+
+  std::pair<std::vector<double>, std::vector<double>> ReadOffset(
+      std::string_view node1, std::string_view node2);
+
+  double TimeOffset(std::string_view node) {
+    auto it = offset_.find(std::string(node));
+    if (it == offset_.end()) {
+      return 0.0;
+    } else {
+      return it->second;
+    }
+  }
+
+  std::map<std::string, double> offset_;
+
+  Plotter plotter_;
+
+  std::vector<std::string> nodes_;
+};
+
+std::pair<std::vector<double>, std::vector<double>> NodePlotter::ReadLines(
     std::string_view node1, std::string_view node2, bool flip) {
   std::vector<double> samplefile12_t;
   std::vector<double> samplefile12_o;
@@ -73,28 +177,18 @@ std::pair<std::vector<double>, std::vector<double>> ReadLines(
   return std::make_pair(samplefile12_t, samplefile12_o);
 }
 
-std::pair<std::vector<double>, std::vector<double>> ReadOffset(
+std::pair<std::vector<double>, std::vector<double>> NodePlotter::ReadOffset(
     std::string_view node1, std::string_view node2) {
   int node1_index = -1;
   int node2_index = -1;
 
   {
-    const std::string start_time_file = aos::util::ReadFileToStringOrDie(
-        "/tmp/timestamp_noncausal_starttime.csv");
-    std::vector<std::string_view> nodes = absl::StrSplit(start_time_file, '\n');
-
     int index = 0;
-    for (const std::string_view n : nodes) {
-      if (n == "") {
-        continue;
-      }
-
-      std::vector<std::string_view> l = absl::StrSplit(n, ", ");
-      CHECK_EQ(l.size(), 2u) << "'" << n << "'";
-      if (l[0] == node1) {
+    for (const std::string &n : nodes_) {
+      if (n == node1) {
         node1_index = index;
       }
-      if (l[0] == node2) {
+      if (n == node2) {
         node2_index = index;
       }
       ++index;
@@ -134,20 +228,28 @@ std::pair<std::vector<double>, std::vector<double>> ReadOffset(
   return std::make_pair(offsetfile_t, offsetfile_o);
 }
 
-void AddNodes(Plotter *plotter, std::string_view node1,
-              std::string_view node2) {
-  const std::pair<std::vector<double>, std::vector<double>> samplefile12 =
+void NodePlotter::AddNodes(std::string_view node1, std::string_view node2) {
+  const double offset1 = TimeOffset(node1);
+  const double offset2 = TimeOffset(node2);
+
+  std::pair<std::vector<double>, std::vector<double>> samplefile12 =
       ReadSamples(node1, node2, false);
-  const std::pair<std::vector<double>, std::vector<double>> samplefile21 =
+  std::pair<std::vector<double>, std::vector<double>> samplefile21 =
       ReadSamples(node2, node1, true);
 
-  const std::pair<std::vector<double>, std::vector<double>> noncausalfile12 =
+  std::pair<std::vector<double>, std::vector<double>> noncausalfile12 =
       ReadLines(node1, node2, false);
-  const std::pair<std::vector<double>, std::vector<double>> noncausalfile21 =
+  std::pair<std::vector<double>, std::vector<double>> noncausalfile21 =
       ReadLines(node2, node1, true);
 
-  const std::pair<std::vector<double>, std::vector<double>> offsetfile =
+  std::pair<std::vector<double>, std::vector<double>> offsetfile =
       ReadOffset(node1, node2);
+
+  Offset(&samplefile12.second, offset2 - offset1);
+  Offset(&samplefile21.second, offset2 - offset1);
+  Offset(&noncausalfile12.second, offset2 - offset1);
+  Offset(&noncausalfile21.second, offset2 - offset1);
+  Offset(&offsetfile.second, offset2 - offset1);
 
   CHECK_EQ(samplefile12.first.size(), samplefile12.second.size());
   CHECK_EQ(samplefile21.first.size(), samplefile21.second.size());
@@ -157,56 +259,65 @@ void AddNodes(Plotter *plotter, std::string_view node1,
   LOG(INFO) << samplefile12.first.size() + samplefile21.first.size() +
                    noncausalfile12.first.size() + noncausalfile21.first.size()
             << " points";
-  plotter->AddLine(
-      samplefile12.first, samplefile12.second,
-      Plotter::LineOptions{.label = absl::StrCat("sample ", node1, " ", node2),
-                           .line_style = "*",
-                           .color = "purple"});
-  plotter->AddLine(
-      samplefile21.first, samplefile21.second,
-      Plotter::LineOptions{.label = absl::StrCat("sample ", node2, " ", node1),
-                           .line_style = "*",
-                           .color = "green"});
 
-  plotter->AddLine(
-      noncausalfile12.first, noncausalfile12.second,
-      Plotter::LineOptions{.label = absl::StrCat("nc ", node1, " ", node2),
-                           .line_style = "-",
-                           .color = "blue"});
-  plotter->AddLine(
-      noncausalfile21.first, noncausalfile21.second,
-      Plotter::LineOptions{.label = absl::StrCat("nc ", node2, " ", node1),
-                           .line_style = "-",
-                           .color = "orange"});
-
-  plotter->AddLine(offsetfile.first, offsetfile.second,
+  plotter_.AddLine(offsetfile.first, offsetfile.second,
                    Plotter::LineOptions{
                        .label = absl::StrCat("filter ", node2, " ", node1),
                        // TODO(austin): roboRIO compiler wants all the fields
                        // filled out, but other compilers don't...  Sigh.
                        .line_style = "*-",
-                       .color = "yellow"});
+                       .color = "yellow",
+                       .point_size = 2.0});
+
+  if (FLAGS_samples) {
+    plotter_.AddLine(samplefile12.first, samplefile12.second,
+                     Plotter::LineOptions{
+                         .label = absl::StrCat("sample ", node1, " ", node2),
+                         .line_style = "*",
+                         .color = "purple",
+                     });
+    plotter_.AddLine(samplefile21.first, samplefile21.second,
+                     Plotter::LineOptions{
+                         .label = absl::StrCat("sample ", node2, " ", node1),
+                         .line_style = "*",
+                         .color = "green",
+                     });
+  }
+
+  if (FLAGS_bounds) {
+    plotter_.AddLine(
+        noncausalfile12.first, noncausalfile12.second,
+        Plotter::LineOptions{.label = absl::StrCat("nc ", node1, " ", node2),
+                             .line_style = "-",
+                             .color = "blue"});
+    plotter_.AddLine(
+        noncausalfile21.first, noncausalfile21.second,
+        Plotter::LineOptions{.label = absl::StrCat("nc ", node2, " ", node1),
+                             .line_style = "-",
+                             .color = "orange"});
+  }
 }
 
 int Main(int argc, const char *const *argv) {
-  CHECK_EQ(argc, 3);
+  NodePlotter plotter;
 
-  LOG(INFO) << argv[1];
-  LOG(INFO) << argv[2];
+  if (FLAGS_all) {
+    for (std::pair<std::string, std::string> ab : NodeConnections()) {
+      plotter.AddNodes(ab.first, ab.second);
+    }
+  } else {
+    CHECK_EQ(argc, 3);
 
-  // TODO(austin): Find all node pairs and plot them...
+    LOG(INFO) << argv[1];
+    LOG(INFO) << argv[2];
 
-  const std::string_view node1 = argv[1];
-  const std::string_view node2 = argv[2];
+    const std::string_view node1 = argv[1];
+    const std::string_view node2 = argv[2];
 
-  Plotter plotter;
-  plotter.AddFigure("Time");
+    plotter.AddNodes(node1, node2);
+  }
 
-  AddNodes(&plotter, node1, node2);
-
-  plotter.Publish();
-
-  plotter.Spin();
+  plotter.Serve();
 
   return 0;
 }

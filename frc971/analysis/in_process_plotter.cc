@@ -107,7 +107,7 @@ void Plotter::AddLine(const std::vector<double> &x,
 
   LineStyle::Builder style_builder = builder_.MakeBuilder<LineStyle>();
   if (options.line_style.find('*') != options.line_style.npos) {
-    style_builder.add_point_size(3.0);
+    style_builder.add_point_size(options.point_size);
   } else {
     style_builder.add_point_size(0.0);
   }

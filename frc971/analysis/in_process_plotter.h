@@ -46,6 +46,7 @@ class Plotter {
     std::string_view label = "";
     std::string_view line_style = "*-";
     std::string_view color = "";
+    double point_size = 3.0;
   };
 
   void AddLine(const std::vector<double> &x, const std::vector<double> &y,
