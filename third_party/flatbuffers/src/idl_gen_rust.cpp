@@ -1644,6 +1644,10 @@ class RustGenerator : public BaseGenerator {
     code_ += "  }";
     code_ += "}";
     code_ += "";
+    code_ += "impl<'a, 'b> flatbuffers::FollowWith<'a> for {{STRUCT_TY}}<'b> {";
+    code_ += "  type Inner = {{STRUCT_TY}}<'a>;";
+    code_ += "}";
+    code_ += "";
     code_ += "impl<'a> {{STRUCT_TY}}<'a> {";
 
     // Generate field id constants.

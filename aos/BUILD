@@ -1,4 +1,5 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_ts_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_rust_library", "flatbuffer_ts_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 exports_files(["aos_dump_autocomplete.sh"])
 
@@ -260,6 +261,14 @@ flatbuffer_cc_library(
     visibility = ["//aos:__subpackages__"],
 )
 
+flatbuffer_rust_library(
+    name = "json_to_flatbuffer_rust_fbs",
+    srcs = ["json_to_flatbuffer.fbs"],
+    crate_name = "aos_json_to_flatbuffer_fbs",
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    visibility = ["//aos:__subpackages__"],
+)
+
 cc_library(
     name = "flatbuffer_utils",
     srcs = ["flatbuffer_utils.cc"],
@@ -386,6 +395,25 @@ cc_library(
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+rust_library(
+    name = "flatbuffers_rs",
+    srcs = ["flatbuffers.rs"],
+    crate_name = "aos_flatbuffers",
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_google_flatbuffers//rust",
+    ],
+)
+
+rust_test(
+    name = "flatbuffers_rs_test",
+    crate = ":flatbuffers_rs",
+    deps = [
+        ":json_to_flatbuffer_rust_fbs",
     ],
 )
 
