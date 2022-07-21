@@ -769,37 +769,7 @@ bool NoncausalTimestampFilter::SingleFilter::IsAfterSamples(
 chrono::nanoseconds NoncausalTimestampFilter::ExtrapolateOffset(
     std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
     monotonic_clock::time_point ta) {
-  const chrono::nanoseconds dt = ta - std::get<0>(p0);
-  if (dt <= std::chrono::nanoseconds(0)) {
-    // Extrapolate backwards, using the (positive) MaxVelocity slope
-    // We've been asked to extrapolate the offset to a time before our first
-    // sample point.  To be conservative, we'll return an extrapolated
-    // offset that is less than (less tight an estimate of the network delay)
-    // than our sample offset, bound by the max slew velocity we allow
-    //       p0
-    //      /
-    //     /
-    //   ta
-    // Since dt < 0, we shift by dt * slope to get that value
-    return std::get<1>(p0) +
-           chrono::nanoseconds(static_cast<int64_t>(
-               (absl::int128(dt.count() - MaxVelocityRatio::den / 2) *
-                absl::int128(MaxVelocityRatio::num)) /
-               absl::int128(MaxVelocityRatio::den)));
-  } else {
-    // Extrapolate forwards, using the (negative) MaxVelocity slope
-    // Same concept, except going foward past our last (most recent) sample:
-    //       pN
-    //         |
-    //          |
-    //           ta
-    // Since dt > 0, we shift by - dt * slope to get that value
-    return std::get<1>(p0) -
-           chrono::nanoseconds(static_cast<int64_t>(
-               (absl::int128(dt.count() + MaxVelocityRatio::den / 2) *
-                absl::int128(MaxVelocityRatio::num)) /
-               absl::int128(MaxVelocityRatio::den)));
-  }
+  return ExtrapolateOffset(p0, ta, 0.0).first;
 }
 
 chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
@@ -831,24 +801,12 @@ chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
 
 chrono::nanoseconds NoncausalTimestampFilter::InterpolateOffset(
     std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
-    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> /*p1*/,
-    monotonic_clock::time_point /*ta_base*/, double /*ta*/) {
-  // For the double variant, we want to split the result up into a large integer
-  // portion, and the rest.  We want to do this without introducing numerical
-  // precision problems.
-  //
-  // One way would be to carefully compute the integer portion, and then compute
-  // the double portion in such a way that the two are guaranteed to add up
-  // correctly.
-  //
-  // The simpler way is to simply just use the offset from p0 as the integer
-  // portion, and make the rest be the double portion.  It will get us most of
-  // the way there for a lot less work, and we can revisit if this breaks down.
-  //
-  // oa = p0.o + (ta - p0.t) * (p1.o - p0.o) / (p1.t - p0.t)
-  //      ^^^^
-  // TODO(austin): Use 128 bit math and the remainder to be more accurate here.
-  return std::get<1>(p0);
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
+    monotonic_clock::time_point ta_base, double ta) {
+  DCHECK_GE(ta, 0.0);
+  DCHECK_LT(ta, 1.0);
+
+  return InterpolateOffset(p0, p1, ta_base);
 }
 
 double NoncausalTimestampFilter::InterpolateOffsetRemainder(
@@ -857,42 +815,111 @@ double NoncausalTimestampFilter::InterpolateOffsetRemainder(
     monotonic_clock::time_point ta_base, double ta) {
   const chrono::nanoseconds time_in = ta_base - std::get<0>(p0);
   const chrono::nanoseconds dt = std::get<0>(p1) - std::get<0>(p0);
+  const chrono::nanoseconds doffset = std::get<1>(p1) - std::get<1>(p0);
 
-  // The remainder then is the rest of the equation.
-  //
-  // oa = p0.o + (ta - p0.t) * (p1.o - p0.o) / (p1.t - p0.t)
-  //             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  // TODO(austin): Use 128 bit math and the remainder to be more accurate here.
-  return static_cast<double>(ta + time_in.count()) /
-         static_cast<double>(dt.count()) *
-         (std::get<1>(p1) - std::get<1>(p0)).count();
+  // Compute the remainder of the division in InterpolateOffset above, and then
+  // use double math to compute it accurately.
+  absl::int128 numerator =
+      absl::int128(time_in.count()) * absl::int128(doffset.count());
+  numerator += numerator > 0 ? absl::int128(dt.count() / 2)
+                             : -absl::int128(dt.count() / 2);
+  return static_cast<double>(numerator % absl::int128(dt.count())) /
+             dt.count() +
+         (numerator > 0 ? -0.5 : 0.5) +
+         ta * static_cast<double>(doffset.count()) /
+             static_cast<double>(dt.count());
 }
 
-chrono::nanoseconds NoncausalTimestampFilter::ExtrapolateOffset(
-    std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
-    monotonic_clock::time_point /*ta_base*/, double /*ta*/) {
-  // TODO(austin): 128 bit math again? ...
-  // For this version, use the base offset from p0 as the base for the offset
-  return std::get<1>(p0);
+chrono::nanoseconds NoncausalTimestampFilter::BoundOffset(
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
+    monotonic_clock::time_point ta) {
+  // We are trying to solve for worst case offset given the two known points.
+  // This is on the two worst case lines from the two points, and we switch
+  // lines at the interstection.  This is equivilent to the lowest of the two
+  // lines.
+  return std::max(NoncausalTimestampFilter::ExtrapolateOffset(p0, ta),
+                  NoncausalTimestampFilter::ExtrapolateOffset(p1, ta));
 }
 
-double NoncausalTimestampFilter::ExtrapolateOffsetRemainder(
+std::pair<chrono::nanoseconds, double> NoncausalTimestampFilter::BoundOffset(
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p0,
+    std::tuple<monotonic_clock::time_point, chrono::nanoseconds> p1,
+    monotonic_clock::time_point ta_base, double ta) {
+  DCHECK_GE(ta, 0.0);
+  DCHECK_LT(ta, 1.0);
+
+  const std::pair<chrono::nanoseconds, double> o0 =
+      NoncausalTimestampFilter::ExtrapolateOffset(p0, ta_base, ta);
+  const std::pair<chrono::nanoseconds, double> o1 =
+      NoncausalTimestampFilter::ExtrapolateOffset(p1, ta_base, ta);
+
+  // Want to calculate max(o0 + o0r, o1 + o1r) without precision problems.
+  if (static_cast<double>((o0.first - o1.first).count()) >
+      o1.second - o0.second) {
+    // Ok, o0 is now > o1.  We want the max, so return o0.
+    return o0;
+  } else {
+    return o1;
+  }
+}
+
+std::pair<chrono::nanoseconds, double>
+NoncausalTimestampFilter::ExtrapolateOffset(
     std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
     monotonic_clock::time_point ta_base, double ta) {
-  // Compute the remainder portion of this offset
-  // oa = p0.o +/- ((ta + ta_base) - p0.t)) * kMaxVelocity()
-  //               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  // But compute (ta + ta_base - p0.t) as (ta + (ta_base - p0.t))
-  // to handle numerical precision
-  const chrono::nanoseconds time_in = ta_base - std::get<0>(p0);
-  const double dt = static_cast<double>(ta + time_in.count());
-  if (dt < 0.0) {
-    // Extrapolate backwards with max (positive) slope (which means
-    // the returned offset should be negative)
-    return dt * kMaxVelocity();
+  DCHECK_GE(ta, 0.0);
+  DCHECK_LT(ta, 1.0);
+  // Since the point (p0) is an integer, we now can guarantee that ta won't put
+  // us on a different side of p0.  This is because ta is between 0 and 1, and
+  // always positive.  Compute the integer and double portions and return them.
+  const chrono::nanoseconds dt = ta_base - std::get<0>(p0);
+
+  if (dt < std::chrono::nanoseconds(0)) {
+    // Extrapolate backwards, using the (positive) MaxVelocity slope
+    // We've been asked to extrapolate the offset to a time before our first
+    // sample point.  To be conservative, we'll return an extrapolated
+    // offset that is less than (less tight an estimate of the network delay)
+    // than our sample offset, bound by the max slew velocity we allow
+    //       p0
+    //      /
+    //     /
+    //   ta
+    // Since dt < 0, we shift by dt * slope to get that value
+    //
+    // Take the remainder of the math in ExtrapolateOffset above and compute it
+    // with floating point math.  Our tests are good enough to confirm that this
+    // works as designed.
+    const absl::int128 numerator =
+        (absl::int128(dt.count() - MaxVelocityRatio::den / 2) *
+         absl::int128(MaxVelocityRatio::num));
+    return std::make_pair(
+        std::get<1>(p0) + chrono::nanoseconds(static_cast<int64_t>(
+                              numerator / absl::int128(MaxVelocityRatio::den))),
+        static_cast<double>(numerator % absl::int128(MaxVelocityRatio::den)) /
+                static_cast<double>(MaxVelocityRatio::den) +
+            0.5 + ta * kMaxVelocity());
   } else {
-    // Extrapolate forwards with max (negative) slope
-    return -dt * kMaxVelocity();
+    // Extrapolate forwards, using the (negative) MaxVelocity slope
+    // Same concept, except going foward past our last (most recent) sample:
+    //       pN
+    //         |
+    //          |
+    //           ta
+    // Since dt > 0, we shift by - dt * slope to get that value
+    //
+    // Take the remainder of the math in ExtrapolateOffset above and compute it
+    // with floating point math.  Our tests are good enough to confirm that this
+    // works as designed.
+    const absl::int128 numerator =
+        absl::int128(dt.count() + MaxVelocityRatio::den / 2) *
+        absl::int128(MaxVelocityRatio::num);
+    return std::make_pair(
+        std::get<1>(p0) - chrono::nanoseconds(static_cast<int64_t>(
+                              numerator / absl::int128(MaxVelocityRatio::den))),
+        -static_cast<double>(numerator % absl::int128(MaxVelocityRatio::den)) /
+                static_cast<double>(MaxVelocityRatio::den) +
+            0.5 - ta * kMaxVelocity());
   }
 }
 
@@ -931,12 +958,9 @@ NoncausalTimestampFilter::SingleFilter::Offset(
     std::pair<Pointer,
               std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds>>
         reference_timestamp = GetReferenceTimestamp(ta_base, ta);
-    return std::make_pair(
-        reference_timestamp.first,
-        std::make_pair(NoncausalTimestampFilter::ExtrapolateOffset(
-                           reference_timestamp.second, ta_base, ta),
-                       NoncausalTimestampFilter::ExtrapolateOffsetRemainder(
-                           reference_timestamp.second, ta_base, ta)));
+    return std::make_pair(reference_timestamp.first,
+                          NoncausalTimestampFilter::ExtrapolateOffset(
+                              reference_timestamp.second, ta_base, ta));
   }
 
   std::pair<
@@ -1061,25 +1085,22 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
     auto reference_timestamp = GetReferenceTimestamp(ta_base, ta);
 
     // Special case size = 1 or ta before first timestamp, so we extrapolate
-    const chrono::nanoseconds offset_base =
+    const std::pair<chrono::nanoseconds, double> offset =
         NoncausalTimestampFilter::ExtrapolateOffset(reference_timestamp.second,
                                                     ta_base, ta);
-    const double offset_remainder =
-        NoncausalTimestampFilter::ExtrapolateOffsetRemainder(
-            reference_timestamp.second, ta_base, ta);
 
     // We want to do offset + ta > tb, but we need to do it with minimal
     // numerical precision problems.
     // See below for why this is a >=
-    if (static_cast<double>((offset_base + ta_base - tb_base).count()) >=
-        tb - ta - offset_remainder) {
+    if (static_cast<double>((offset.first + ta_base - tb_base).count()) >=
+        tb - ta - offset.second) {
       LOG(ERROR) << node_names_ << " "
-                 << TimeString(ta_base, ta, offset_base, offset_remainder)
+                 << TimeString(ta_base, ta, offset.first, offset.second)
                  << " > solution time "
                  << tb_base + chrono::nanoseconds(
                                   static_cast<int64_t>(std::round(tb)))
                  << ", " << tb - std::round(tb) << " foo";
-      LOG(INFO) << "Remainder " << offset_remainder;
+      LOG(INFO) << "Remainder " << offset.second;
       return false;
     }
     return true;
