@@ -1283,7 +1283,8 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
     // adheres to our +- velocity constraint. If the point is less than the max
     // negative slope, the point violates our constraint and will never be worth
     // considering.  Ignore it.
-    if (doffset < -dt * kMaxVelocity()) {
+    if (absl::int128(doffset.count()) * absl::int128(MaxVelocityRatio::den) <
+        -absl::int128(dt.count()) * absl::int128(MaxVelocityRatio::num)) {
       VLOG(1) << std::setprecision(1) << std::fixed << node_names_
               << " Rejected sample of " << TimeString(monotonic_now, sample_ns)
               << " because " << doffset.count() << " < "
@@ -1317,7 +1318,10 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
     //
     // In this case, point 3 is now violating our constraint and we need to
     // remove it.  This is the non-causal part of the filter.
-    while (dt * kMaxVelocity() < doffset && timestamps_.size() > 1u) {
+    while (absl::int128(dt.count()) * absl::int128(MaxVelocityRatio::num) <
+               absl::int128(doffset.count()) *
+                   absl::int128(MaxVelocityRatio::den) &&
+           timestamps_.size() > 1u) {
       CHECK(!frozen(std::get<0>(back)))
           << ": " << node_names_ << " Can't pop an already frozen sample "
           << TimeString(back) << " while inserting "
@@ -1386,7 +1390,9 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
         const chrono::nanoseconds dt = std::get<0>(*second) - monotonic_now;
         const chrono::nanoseconds doffset = std::get<1>(*second) - sample_ns;
 
-        if (doffset < -dt * kMaxVelocity()) {
+        if (absl::int128(doffset.count()) *
+                absl::int128(MaxVelocityRatio::den) <
+            -absl::int128(dt.count()) * absl::int128(MaxVelocityRatio::num)) {
           VLOG(1) << node_names_ << " Removing redundant sample of "
                   << TimeString(*second) << " because "
                   << TimeString(timestamps_.front())
@@ -1413,7 +1419,9 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
           const chrono::nanoseconds doffset =
               std::get<1>(*third) - std::get<1>(*second);
 
-          if (doffset > dt * kMaxVelocity()) {
+          if (absl::int128(doffset.count()) *
+                  absl::int128(MaxVelocityRatio::den) >
+              absl::int128(dt.count()) * absl::int128(MaxVelocityRatio::num)) {
             VLOG(1) << node_names_ << " Removing invalid sample of "
                     << TimeString(*second) << " because " << TimeString(*third)
                     << " would make the slope too positive.";
@@ -1437,14 +1445,19 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
       chrono::nanoseconds next_doffset = std::get<1>(*it) - sample_ns;
 
       // If we are worse than either the previous or next point, discard.
-      if (prior_doffset < -prior_dt * kMaxVelocity()) {
+      if (absl::int128(prior_doffset.count()) *
+              absl::int128(MaxVelocityRatio::den) <
+          absl::int128(-prior_dt.count()) *
+              absl::int128(MaxVelocityRatio::num)) {
         VLOG(1) << node_names_ << " Ignoring timestamp "
                 << TimeString(monotonic_now, sample_ns) << " because "
                 << TimeString(*(it - 1))
                 << " is before and the slope would be too negative.";
         return;
       }
-      if (next_doffset > next_dt * kMaxVelocity()) {
+      if (absl::int128(next_doffset.count()) *
+              absl::int128(MaxVelocityRatio::den) >
+          absl::int128(next_dt.count()) * absl::int128(MaxVelocityRatio::num)) {
         VLOG(1) << node_names_ << " Ignoring timestamp "
                 << TimeString(monotonic_now, sample_ns) << " because "
                 << TimeString(*it)
@@ -1483,7 +1496,10 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
         const chrono::nanoseconds next_doffset =
             std::get<1>(*next_it) - std::get<1>(*middle_it);
 
-        if (next_doffset < -next_dt * kMaxVelocity()) {
+        if (absl::int128(next_doffset.count()) *
+                absl::int128(MaxVelocityRatio::den) <
+            absl::int128(-next_dt.count()) *
+                absl::int128(MaxVelocityRatio::num)) {
           VLOG(1) << node_names_
                   << " Next slope is too negative, removing next point "
                   << TimeString(*next_it);
@@ -1502,7 +1518,10 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
         const chrono::nanoseconds prior_doffset =
             std::get<1>(*middle_it) - std::get<1>(*prior_it);
 
-        if (prior_doffset > prior_dt * kMaxVelocity()) {
+        if (absl::int128(prior_doffset.count()) *
+                absl::int128(MaxVelocityRatio::den) >
+            absl::int128(prior_dt.count()) *
+                absl::int128(MaxVelocityRatio::num)) {
           CHECK(!frozen(std::get<0>(*prior_it)))
               << ": " << node_names_
               << " Can't pop an already frozen sample.  Increase "
