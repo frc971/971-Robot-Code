@@ -20,6 +20,11 @@ DEFINE_bool(timestamps_to_csv, false,
 DEFINE_int32(max_invalid_distance_ns, 0,
              "The max amount of time we will let the solver go backwards.");
 
+DEFINE_bool(bounds_offset_error, false,
+            "If true, use the offset to the bounds for solving instead of to "
+            "the interpolation lines.  This seems to make startup a bit "
+            "better, but won't track the middle as well.");
+
 namespace aos {
 namespace message_bridge {
 namespace {
@@ -178,10 +183,18 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
 
       const std::pair<NoncausalTimestampFilter::Pointer,
                       std::pair<chrono::nanoseconds, double>>
-          offset_error = filter.filter->OffsetError(
-              filter.b_filter, filter.pointer, base_clock_[i],
-              time_offsets(a_solution_index), base_clock_[filter.b_index],
-              time_offsets(b_solution_index));
+          offset_error =
+              FLAGS_bounds_offset_error
+                  ? filter.filter->BoundsOffsetError(
+                        filter.b_filter, filter.pointer, base_clock_[i],
+                        time_offsets(a_solution_index),
+                        base_clock_[filter.b_index],
+                        time_offsets(b_solution_index))
+                  : filter.filter->OffsetError(filter.b_filter, filter.pointer,
+                                               base_clock_[i],
+                                               time_offsets(a_solution_index),
+                                               base_clock_[filter.b_index],
+                                               time_offsets(b_solution_index));
       filter.pointer = offset_error.first;
 
       const std::pair<chrono::nanoseconds, double> error =
