@@ -311,6 +311,28 @@ TEST_F(NoncausalTimestampFilterTest, ClippedSample) {
   }
 
   {
+    const BootTimestamp ta_close{
+        0, monotonic_clock::time_point(chrono::nanoseconds(0))};
+    const BootTimestamp tb_close{
+        0, monotonic_clock::time_point(chrono::nanoseconds(1999))};
+
+    // Confirm that we round the first point correctly.  We should always round
+    // the slope down to avoid invalid slopes.
+    TestingNoncausalTimestampFilter filter(node_a, node_b);
+
+    filter.Sample(ta_close, {0, chrono::microseconds(-10)});
+    filter.Debug();
+    filter.Sample(tb_close, {0, chrono::microseconds(0)});
+    filter.Debug();
+    ASSERT_EQ(filter.timestamps_size(), 2u);
+
+    EXPECT_EQ(std::get<1>(filter.timestamp(0)),
+              (BootDuration{0, -chrono::nanoseconds(1)}));
+    EXPECT_EQ(std::get<1>(filter.timestamp(1)),
+              (BootDuration{0, chrono::nanoseconds(0)}));
+  }
+
+  {
     // Too much positive slope removes points.
     TestingNoncausalTimestampFilter filter(node_a, node_b);
 

@@ -703,7 +703,7 @@ class NoncausalTimestampFilter {
               std::get<1>(timestamps_[1]) -
               aos::monotonic_clock::duration(
                   static_cast<aos::monotonic_clock::duration::rep>(
-                      absl::int128(dt.count() + MaxVelocityRatio::den / 2) *
+                      absl::int128(dt.count()) *
                       absl::int128(MaxVelocityRatio::num) /
                       absl::int128(MaxVelocityRatio::den)));
 
