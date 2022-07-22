@@ -1,0 +1,14 @@
+include "frc971/control_loops/control_loops.fbs";
+include "frc971/control_loops/profiled_subsystem.fbs";
+
+namespace y2022_bot3.control_loops.superstructure;
+
+table Status {
+  // All subsystems know their location.
+  zeroed:bool (id: 0);
+
+  // If true, we have aborted. This is the or of all subsystem estops.
+  estopped:bool (id: 1);
+}
+
+root_type Status;
