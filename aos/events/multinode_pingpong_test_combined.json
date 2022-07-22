@@ -250,6 +250,20 @@
           "time_to_live": 5000000
         }
       ]
+    },
+    {
+      "name": "/reliable2",
+      "type": "aos.examples.Ping",
+      "source_node": "pi2",
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi2"],
+          "time_to_live": 0
+        }
+      ]
     }
   ],
   "maps": [

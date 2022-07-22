@@ -396,6 +396,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":simulated_event_loop",
+        "//aos/network:testing_time_converter",
         "//aos/testing:googletest",
         "@com_github_google_glog//:glog",
     ],

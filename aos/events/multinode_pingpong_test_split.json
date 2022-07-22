@@ -163,6 +163,12 @@
       "source_node": "pi1"
     },
     {
+      "name": "/pi2/aos/remote_timestamps/pi1/reliable2/aos-examples-Ping",
+      "type": "aos.message_bridge.RemoteMessage",
+      "logger": "NOT_LOGGED",
+      "source_node": "pi2"
+    },
+    {
       "name": "/pi1/aos",
       "type": "aos.timing.Report",
       "source_node": "pi1",
@@ -264,6 +270,20 @@
           "priority": 1,
           "timestamp_logger": "LOCAL_LOGGER",
           "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/reliable2",
+      "type": "aos.examples.Ping",
+      "source_node": "pi2",
+      "destination_nodes": [
+        {
+          "name": "pi1",
+          "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": ["pi2"],
+          "time_to_live": 0
         }
       ]
     }

@@ -138,7 +138,6 @@ class RawMessageDelayer {
     if (fetcher_->context().data == nullptr || sent_) {
       return;
     }
-    CHECK(!timer_scheduled_);
 
     // Send at startup.  It is the best we can do.
     const monotonic_clock::time_point monotonic_delivered_time =
@@ -737,6 +736,25 @@ void SimulatedMessageBridge::State::SetEventLoop(
     for (RawMessageDelayer *destination_delayer : destination_delayers_) {
       if (destination_delayer->time_to_live() == 0) {
         destination_delayer->ScheduleReliable();
+      }
+    }
+    // Note: This exists to work around the fact that some users like to be able
+    // to send reliable messages while execution is stopped, creating a
+    // situation where the following sequencing can occur:
+    // 1) <While stopped> Send a reliable message on Node A (to be forwarded to
+    //    Node B).
+    // 2) Node B starts up.
+    // 3) Anywhere from 0 to N seconds later, Node A starts up.
+    //
+    // In this case, we need the reliable message to make it to Node B, but it
+    // also shouldn't make it to Node B until Node A has started up.
+    //
+    // Ideally, if the user were to wait for the Node B OnRun callbacks to send
+    // the message, then that would trigger the watchers in the delayers.
+    // However, we so far have continued to support Sending while stopped....
+    for (RawMessageDelayer *source_delayer : source_delayers_) {
+      if (source_delayer->time_to_live() == 0) {
+        source_delayer->ScheduleReliable();
       }
     }
   });
