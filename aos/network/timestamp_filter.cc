@@ -1005,7 +1005,8 @@ NoncausalTimestampFilter::SingleFilter::BoundsOffset(
                                           points.second.second, ta_base, ta));
 }
 
-std::pair<Pointer, double> NoncausalTimestampFilter::SingleFilter::OffsetError(
+std::pair<Pointer, std::pair<chrono::nanoseconds, double>>
+NoncausalTimestampFilter::SingleFilter::OffsetError(
     const SingleFilter *other, Pointer pointer,
     aos::monotonic_clock::time_point ta_base, double ta,
     aos::monotonic_clock::time_point tb_base, double tb) const {
@@ -1018,12 +1019,11 @@ std::pair<Pointer, double> NoncausalTimestampFilter::SingleFilter::OffsetError(
   // Compute the integer portion first, and the double portion second.  Subtract
   // the results of each.  This handles large offsets without losing precision.
   return std::make_pair(
-      offset.first,
-      static_cast<double>(((tb_base - ta_base) - offset.second.first).count()) +
-          ((tb - ta) - offset.second.second));
+      offset.first, std::make_pair(((tb_base - ta_base) - offset.second.first),
+                                   (tb - ta) - offset.second.second));
 }
 
-std::pair<Pointer, double>
+std::pair<Pointer, std::pair<chrono::nanoseconds, double>>
 NoncausalTimestampFilter::SingleFilter::BoundsOffsetError(
     const SingleFilter *other, Pointer pointer,
     aos::monotonic_clock::time_point ta_base, double ta,
@@ -1037,9 +1037,8 @@ NoncausalTimestampFilter::SingleFilter::BoundsOffsetError(
   // Compute the integer portion first, and the double portion second.  Subtract
   // the results of each.  This handles large offsets without losing precision.
   return std::make_pair(
-      offset.first,
-      static_cast<double>(((tb_base - ta_base) - offset.second.first).count()) +
-          ((tb - ta) - offset.second.second));
+      offset.first, std::make_pair((tb_base - ta_base) - offset.second.first,
+                                   (tb - ta) - offset.second.second));
 }
 
 std::string NoncausalTimestampFilter::DebugOffsetError(
@@ -1161,8 +1160,8 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
                 std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>>
       points = FindTimestamps(other, false, pointer, ta_base, ta);
   const std::pair<chrono::nanoseconds, double> offset =
-      NoncausalTimestampFilter::BoundOffset(
-          points.second.first, points.second.second, ta_base, ta);
+      NoncausalTimestampFilter::BoundOffset(points.second.first,
+                                            points.second.second, ta_base, ta);
   // See below for why this is a >=
   if (static_cast<double>((offset.first + ta_base - tb_base).count()) >=
       tb - offset.second - ta) {

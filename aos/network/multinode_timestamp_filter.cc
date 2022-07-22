@@ -130,7 +130,16 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
 TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
       const Eigen::Ref<Eigen::VectorXd> time_offsets) {
   Derivitives result;
+
+  // We get back both interger and double remainders for the gradient.  We then
+  // add them all up.  Rather than doing that purely as doubles, let's save up
+  // both, compute the result, then convert the remainder to doubles.  This is a
+  // bigger issue at the start when we are extrapolating a lot, and the offsets
+  // can be quite large in each direction.
+  Eigen::Matrix<chrono::nanoseconds, Eigen::Dynamic, 1> intgrad =
+      Eigen::Matrix<chrono::nanoseconds, Eigen::Dynamic, 1>::Zero(live_nodes_);
   result.gradient = Eigen::VectorXd::Zero(live_nodes_);
+
   result.hessian = Eigen::MatrixXd::Zero(live_nodes_, live_nodes_);
 
   for (size_t i = 0; i < clock_offset_filter_for_node_.size(); ++i) {
@@ -167,28 +176,51 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
       // extra factor, the solution will be the same (or close enough).
       constexpr double kMinNetworkDelay = 2.0;
 
-      const std::pair<NoncausalTimestampFilter::Pointer, double> offset_error =
-          filter.filter->OffsetError(
+      const std::pair<NoncausalTimestampFilter::Pointer,
+                      std::pair<chrono::nanoseconds, double>>
+          offset_error = filter.filter->OffsetError(
               filter.b_filter, filter.pointer, base_clock_[i],
               time_offsets(a_solution_index), base_clock_[filter.b_index],
               time_offsets(b_solution_index));
-      const double error = 2.0 * (offset_error.second - kMinNetworkDelay);
       filter.pointer = offset_error.first;
 
-      result.gradient(a_solution_index) += -error;
-      result.gradient(b_solution_index) += error;
+      const std::pair<chrono::nanoseconds, double> error =
+          std::make_pair(offset_error.second.first,
+                         offset_error.second.second - kMinNetworkDelay);
+
+      std::pair<chrono::nanoseconds, double> grad;
+      double hess;
+
+      grad = std::make_pair(2 * error.first, 2 * error.second);
+      hess = 2.0;
+
+      intgrad(a_solution_index) += -grad.first;
+      intgrad(b_solution_index) += grad.first;
+      result.gradient(a_solution_index) += -grad.second;
+      result.gradient(b_solution_index) += grad.second;
+
+      VLOG(2) << "  Filter pair "
+              << filter.filter->node_a()->name()->string_view() << "("
+              << a_solution_index << ") -> "
+              << filter.filter->node_b()->name()->string_view() << "("
+              << b_solution_index << "): " << std::setprecision(12)
+              << error.first.count() << " + " << error.second;
 
       // Reminder, our cost function has the following form.
       //   ((tb - (1 + ma) ta - ba)^2
       // We are ignoring the slope when taking the derivative and applying the
-      // chain rule to keep the gradient smooth.  This means that the Hessian is
-      // 2 for d^2 cost/dta^2 and d^2 cost/dtb^2
-      result.hessian(a_solution_index, a_solution_index) += 2;
-      result.hessian(b_solution_index, a_solution_index) += -2;
+      // chain rule to keep the gradient smooth.  This means that the Hessian
+      // is 2 for d^2 cost/dta^2 and d^2 cost/dtb^2
+      result.hessian(a_solution_index, a_solution_index) += hess;
+      result.hessian(b_solution_index, a_solution_index) += -hess;
       result.hessian(a_solution_index, b_solution_index) =
           result.hessian(b_solution_index, a_solution_index);
-      result.hessian(b_solution_index, b_solution_index) += 2;
+      result.hessian(b_solution_index, b_solution_index) += hess;
     }
+  }
+
+  for (int i = 0; i < intgrad.rows(); ++i) {
+    result.gradient(i) += static_cast<double>(intgrad(i).count());
   }
 
   return result;
@@ -377,7 +409,7 @@ TimestampProblem::SolveNewton(const std::vector<logger::BootTimestamp> &points,
         data(solution_index) -= dsolution;
       }
       if (live(j)) {
-        VLOG(2) << "live  "
+        VLOG(2) << "    live  "
                 << base_clock_[j].time +
                        std::chrono::nanoseconds(static_cast<int64_t>(
                            std::round(data(NodeToFullSolutionIndex(j)))))
@@ -386,7 +418,7 @@ TimestampProblem::SolveNewton(const std::vector<logger::BootTimestamp> &points,
                     std::round(data(NodeToFullSolutionIndex(j))))
                 << " (unrounded: " << data(NodeToFullSolutionIndex(j)) << ")";
       } else {
-        VLOG(2) << "dead  " << aos::monotonic_clock::min_time;
+        VLOG(2) << "    dead  " << aos::monotonic_clock::min_time;
       }
     }
 

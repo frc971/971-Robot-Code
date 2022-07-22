@@ -1043,7 +1043,6 @@ TEST_F(NoncausalTimestampFilterTest, ExtrapolateOffset) {
         NoncausalTimestampFilter::ExtrapolateOffset(std::make_tuple(t1, o1),
                                                     ta_base);
 
-
     std::pair<chrono::nanoseconds, double> offset =
         NoncausalTimestampFilter::ExtrapolateOffset(std::make_tuple(t1, o1),
                                                     ta_base, ta);
@@ -1433,24 +1432,26 @@ TEST_F(NoncausalTimestampFilterTest, ValidateSolution) {
   EXPECT_TRUE(filter_a.ValidateSolution(&filter_b, Pointer(), t2_a, 0.0,
                                         t2_a + o2_a, 0.00001));
   EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), t2_a,
-                                        t2_a + o2_a - chrono::nanoseconds(1)));
+                                         t2_a + o2_a - chrono::nanoseconds(1)));
   EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), t2_a, 0.0,
                                          t2_a + o2_a, -0.00001));
 
   // Now that we've checked the control points, check in the middle to confirm
   // it looks like we are using BoundOffset rather than interpolate.
-  EXPECT_TRUE(filter_a.ValidateSolution(&filter_b, Pointer(), tmid_a,
-                                        tmid_a + omid_a + chrono::nanoseconds(1)));
+  EXPECT_TRUE(filter_a.ValidateSolution(
+      &filter_b, Pointer(), tmid_a, tmid_a + omid_a + chrono::nanoseconds(1)));
   EXPECT_TRUE(filter_a.ValidateSolution(&filter_b, Pointer(), tmid_a, 0.0,
                                         tmid_a + omid_a, 0.00001));
 
-  EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), tbefore_a,
-                                        tbefore_a + obefore_a - chrono::nanoseconds(1)));
+  EXPECT_FALSE(filter_a.ValidateSolution(
+      &filter_b, Pointer(), tbefore_a,
+      tbefore_a + obefore_a - chrono::nanoseconds(1)));
   EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), tbefore_a, 0.0,
                                          tbefore_a + obefore_a, -0.00001));
 
-  EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), tafter_a,
-                                        tafter_a + oafter_a - chrono::nanoseconds(1)));
+  EXPECT_FALSE(
+      filter_a.ValidateSolution(&filter_b, Pointer(), tafter_a,
+                                tafter_a + oafter_a - chrono::nanoseconds(1)));
   EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), tafter_a, 0.0,
                                          tafter_a + oafter_a, -0.00001));
 }
