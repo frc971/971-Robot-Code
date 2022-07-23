@@ -86,7 +86,7 @@ alias(
 
 alias(
     name = "clap",
-    actual = "@raze__clap__3_2_11//:clap",
+    actual = "@raze__clap__3_2_12//:clap",
     tags = [
         "cargo-raze",
         "manual",
@@ -150,6 +150,15 @@ alias(
 alias(
     name = "env_logger",
     actual = "@raze__env_logger__0_9_0//:env_logger",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "futures",
+    actual = "@raze__futures__0_3_21//:futures",
     tags = [
         "cargo-raze",
         "manual",

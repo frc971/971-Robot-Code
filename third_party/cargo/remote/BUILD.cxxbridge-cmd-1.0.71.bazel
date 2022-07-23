@@ -54,7 +54,7 @@ rust_binary(
     # buildifier: leave-alone
     deps = [
         ":cxxbridge_cmd",
-        "@raze__clap__3_2_11//:clap",
+        "@raze__clap__3_2_12//:clap",
         "@raze__codespan_reporting__0_11_1//:codespan_reporting",
         "@raze__proc_macro2__1_0_40//:proc_macro2",
         "@raze__quote__1_0_20//:quote",
@@ -82,7 +82,7 @@ rust_library(
     version = "1.0.71",
     # buildifier: leave-alone
     deps = [
-        "@raze__clap__3_2_11//:clap",
+        "@raze__clap__3_2_12//:clap",
         "@raze__codespan_reporting__0_11_1//:codespan_reporting",
         "@raze__proc_macro2__1_0_40//:proc_macro2",
         "@raze__quote__1_0_20//:quote",

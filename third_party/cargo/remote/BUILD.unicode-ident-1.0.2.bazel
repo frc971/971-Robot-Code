@@ -26,7 +26,7 @@ package(default_visibility = [
 ])
 
 licenses([
-    "notice",  # MIT from expression "MIT OR Apache-2.0"
+    "notice",  # MIT from expression "(MIT OR Apache-2.0) AND Unicode-DFS-2016"
 ])
 
 # Generated Targets
@@ -49,7 +49,7 @@ rust_library(
         "crate-name=unicode-ident",
         "manual",
     ],
-    version = "1.0.1",
+    version = "1.0.2",
     # buildifier: leave-alone
     deps = [
     ],

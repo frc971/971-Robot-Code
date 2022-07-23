@@ -38,14 +38,15 @@ load(
 )
 
 cargo_build_script(
-    name = "proc_macro2_build_script",
+    name = "futures_channel_build_script",
     srcs = glob(["**/*.rs"]),
     build_script_env = {
     },
     crate_features = [
-        "default",
-        "proc-macro",
-        "span-locations",
+        "alloc",
+        "futures-sink",
+        "sink",
+        "std",
     ],
     crate_root = "build.rs",
     data = glob(["**"]),
@@ -57,19 +58,22 @@ cargo_build_script(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.40",
+    version = "0.3.21",
     visibility = ["//visibility:private"],
     deps = [
     ],
 )
 
+# Unsupported target "sync_mpsc" with type "bench" omitted
+
 rust_library(
-    name = "proc_macro2",
+    name = "futures_channel",
     srcs = glob(["**/*.rs"]),
     crate_features = [
-        "default",
-        "proc-macro",
-        "span-locations",
+        "alloc",
+        "futures-sink",
+        "sink",
+        "std",
     ],
     crate_root = "src/lib.rs",
     data = [],
@@ -79,23 +83,22 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
-        "crate-name=proc-macro2",
+        "crate-name=futures-channel",
         "manual",
     ],
-    version = "1.0.40",
+    version = "0.3.21",
     # buildifier: leave-alone
     deps = [
-        ":proc_macro2_build_script",
-        "@raze__unicode_ident__1_0_2//:unicode_ident",
+        ":futures_channel_build_script",
+        "@raze__futures_core__0_3_21//:futures_core",
+        "@raze__futures_sink__0_3_21//:futures_sink",
     ],
 )
 
-# Unsupported target "comments" with type "test" omitted
+# Unsupported target "channel" with type "test" omitted
 
-# Unsupported target "features" with type "test" omitted
+# Unsupported target "mpsc" with type "test" omitted
 
-# Unsupported target "marker" with type "test" omitted
+# Unsupported target "mpsc-close" with type "test" omitted
 
-# Unsupported target "test" with type "test" omitted
-
-# Unsupported target "test_fmt" with type "test" omitted
+# Unsupported target "oneshot" with type "test" omitted
