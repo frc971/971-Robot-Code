@@ -43,6 +43,12 @@ class GridWindow(Gtk.Window):
     def undo_func(self, *args):
         self.field.undo()
 
+    def new_spline_clicked(self, *args):
+        self.field.new_spline()
+
+    def new_multispline_clicked(self, *args):
+        self.field.new_multispline()
+
     def long_changed(self, button):
         value = self.long_input.get_value()
         self.field.active_multispline.setConstraint(
@@ -84,7 +90,7 @@ class GridWindow(Gtk.Window):
         self.method_connect("key-release-event", self.field.do_key_press_event)
 
         self.file_name_box = Gtk.Entry()
-        self.file_name_box.set_size_request(200, 40)
+        self.file_name_box.set_size_request(50, 40)
         self.file_name_box.set_text(FIELD.field_id + ".json")
         self.file_name_box.set_editable(True)
 
@@ -139,20 +145,29 @@ class GridWindow(Gtk.Window):
             self.field.active_multispline.getConstraint("VOLTAGE"))
 
         self.output_json = Gtk.Button.new_with_label("Export")
-        self.output_json.set_size_request(100, 40)
+        self.output_json.set_size_request(50, 40)
         self.output_json.connect("clicked", self.output_json_clicked)
 
         self.input_json = Gtk.Button.new_with_label("Import")
-        self.input_json.set_size_request(100, 40)
+        self.input_json.set_size_request(50, 40)
         self.input_json.connect("clicked", self.input_json_clicked)
 
         self.clear = Gtk.Button.new_with_label("Clear")
-        self.clear.set_size_request(100, 40)
+        self.clear.set_size_request(50, 40)
         self.clear.connect("clicked", self.clear_clicked)
 
         self.undo = Gtk.Button.new_with_label("Undo (Ctrl + Z)")
-        self.undo.set_size_request(100, 40)
+        self.undo.set_size_request(50, 40)
         self.undo.connect("clicked", self.undo_func)
+
+        self.new_spline = Gtk.Button.new_with_label("Add Spline")
+        self.new_spline.set_size_request(50, 40)
+        self.new_spline.connect("clicked", self.new_spline_clicked)
+
+        self.new_multispline = Gtk.Button.new_with_label("Add Multispline")
+        self.new_multispline.set_size_request(50, 40)
+        self.new_multispline.connect("clicked", self.new_multispline_clicked)
+
         #Dropdown feature
         self.label = Gtk.Label()
         self.label.set_text("Change Field:")
@@ -189,12 +204,14 @@ class GridWindow(Gtk.Window):
         container.attach(limitControls, 5, 1, 1, 1)
 
         jsonControls = Gtk.FlowBox()
-        jsonControls.set_min_children_per_line(5)
+        jsonControls.set_min_children_per_line(7)
         jsonControls.add(self.file_name_box)
         jsonControls.add(self.output_json)
         jsonControls.add(self.input_json)
         jsonControls.add(self.clear)
         jsonControls.add(self.undo)
+        jsonControls.add(self.new_spline)
+        jsonControls.add(self.new_multispline)
         container.attach(jsonControls, 1, 0, 1, 1)
 
         container.attach(self.label, 4, 0, 1, 1)

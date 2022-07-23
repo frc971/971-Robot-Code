@@ -375,16 +375,24 @@ class FieldWidget(Gtk.DrawingArea):
         keyval = Gdk.keyval_to_lower(event.keyval)
         if keyval == Gdk.KEY_z and event.state & Gdk.ModifierType.CONTROL_MASK:
             self.undo()
-        # TODO: This should be a button
+
         if keyval == Gdk.KEY_p:
-            self.mode = Mode.kPlacing
-            # F0 = A1
-            # B1 = 2F0 - E0
-            # C1= d0 + 4F0 - 4E0
-            multispline = self.active_multispline
-            multispline.extrapolate()
-            self.queue_draw()
+            self.new_spline()
         elif keyval == Gdk.KEY_m:
+            self.new_multispline()
+
+    def new_spline(self):
+        self.mode = Mode.kPlacing
+        # F0 = A1
+        # B1 = 2F0 - E0
+        # C1= d0 + 4F0 - 4E0
+        multispline = self.active_multispline
+        if len(multispline.getSplines()) != 0:
+            multispline.extrapolate(multispline.getSplines()[-1])
+        self.queue_draw()
+
+    def new_multispline(self):
+        if len(self.active_multispline.getSplines()) != 0:
             self.mode = Mode.kPlacing
             self.active_multispline_index += 1
             self.multisplines.insert(self.active_multispline_index,
@@ -392,7 +400,7 @@ class FieldWidget(Gtk.DrawingArea):
 
             prev_multispline = self.multisplines[self.active_multispline_index
                                                  - 1]
-            if prev_multispline:
+            if len(prev_multispline.getSplines()) != 0:
                 self.active_multispline.extrapolate(
                     prev_multispline.getSplines()[-1])
             self.queue_draw()
