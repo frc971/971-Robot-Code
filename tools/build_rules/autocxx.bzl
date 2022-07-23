@@ -87,7 +87,9 @@ def _autocxx_library_gen_impl(ctx):
     out_env_file = ctx.actions.declare_file("%s/rustc_env" % gendir)
     ctx.actions.write(
         output = out_env_file,
-        content = "AUTOCXX_RS_JSON_ARCHIVE=%s" % out_rs_json.path,
+        # The first path is valid for rust_library/rust_binary/rust_test/etc, the second one
+        # is valid for rust_doc_test due to working directory differences.
+        content = "AUTOCXX_RS_JSON_ARCHIVE=%s:%s" % (out_rs_json.path, out_rs_json.short_path),
     )
 
     out_h = ctx.actions.declare_file("%s_cxxgen.h" % ctx.label.name.rstrip("__gen"))

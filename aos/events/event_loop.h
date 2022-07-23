@@ -159,6 +159,8 @@ class RawSender {
 
   virtual ~RawSender();
 
+  // Returns the buffer to write new messages into. This is always valid, and
+  // may change after calling any of the Send functions.
   virtual void *data() = 0;
   virtual size_t size() = 0;
 

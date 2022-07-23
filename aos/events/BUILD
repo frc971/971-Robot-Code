@@ -1,6 +1,8 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_rust_library", "flatbuffer_ts_library")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
+load("//tools/build_rules:autocxx.bzl", "autocxx_library")
+load("@rules_rust//rust:defs.bzl", "rust_doc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -44,6 +46,18 @@ flatbuffer_ts_library(
     name = "ping_ts_fbs",
     srcs = ["ping.fbs"],
     target_compatible_with = ["@platforms//os:linux"],
+)
+
+flatbuffer_rust_library(
+    name = "ping_rust_fbs",
+    srcs = ["ping.fbs"],
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
+)
+
+flatbuffer_rust_library(
+    name = "pong_rust_fbs",
+    srcs = ["pong.fbs"],
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
 )
 
 flatbuffer_cc_library(
@@ -103,6 +117,79 @@ cc_library(
         "//aos/util:phased_loop",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_google_absl//absl/container:btree",
+    ],
+)
+
+cc_library(
+    name = "event_loop_runtime_cc",
+    hdrs = [
+        "event_loop_runtime.h",
+    ],
+    deps = [
+        ":event_loop",
+        "//aos:for_rust",
+        "//third_party/cargo:cxx_cc",
+    ],
+)
+
+autocxx_library(
+    name = "event_loop_runtime",
+    srcs = ["event_loop_runtime.rs"],
+    crate_name = "aos_events_event_loop_runtime",
+    libs = [
+        ":event_loop_runtime_cc",
+    ],
+    override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
+    rs_deps = [
+        "@com_github_google_flatbuffers//rust",
+        "//third_party/cargo:uuid",
+        "//third_party/cargo:futures",
+        "//third_party/cargo:thiserror",
+    ],
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:configuration_rs",
+        "//aos:uuid_rs",
+    ],
+)
+
+rust_doc_test(
+    name = "event_loop_runtime_doc_test",
+    crate = ":event_loop_runtime",
+    deps = [
+        ":pong_rust_fbs",
+    ],
+)
+
+autocxx_library(
+    name = "event_loop_runtime_test_lib_rs",
+    testonly = True,
+    srcs = ["event_loop_runtime_test_lib.rs"],
+    libs = [
+        ":event_loop",
+    ],
+    override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
+    rs_deps = [
+        ":event_loop_runtime",
+        ":ping_rust_fbs",
+        ":pong_rust_fbs",
+    ],
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
+)
+
+cc_test(
+    name = "event_loop_runtime_test",
+    srcs = ["event_loop_runtime_test.cc"],
+    data = [":pingpong_config"],
+    deps = [
+        ":event_loop_runtime_test_lib_rs",
+        ":ping_fbs",
+        ":pong_fbs",
+        ":simulated_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "@com_github_google_glog//:glog",
     ],
 )
 

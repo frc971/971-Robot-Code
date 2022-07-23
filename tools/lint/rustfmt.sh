@@ -23,5 +23,5 @@ rust_files=($(git ls-tree --name-only --full-tree -r @ \
 
 # If we have any Rust files, format them.
 if ((${#rust_files[@]} > 0)); then
-    exec "${RUSTFMT}" "${rust_files[@]}"
+    exec "${RUSTFMT}" --edition=2021 "${rust_files[@]}"
 fi
