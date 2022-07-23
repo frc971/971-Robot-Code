@@ -1,5 +1,6 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_rust_library", "flatbuffer_ts_library")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("//tools/build_rules:autocxx.bzl", "autocxx_library")
 
 exports_files(["aos_dump_autocomplete.sh"])
 
@@ -222,6 +223,14 @@ flatbuffer_py_library(
     visibility = ["//visibility:public"],
 )
 
+flatbuffer_rust_library(
+    name = "configuration_rust_fbs",
+    srcs = ["configuration.fbs"],
+    crate_name = "aos_configuration_fbs",
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "configuration",
     srcs = [
@@ -244,6 +253,51 @@ cc_library(
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",
     ],
+)
+
+cc_library(
+    name = "configuration_for_rust",
+    srcs = [
+        "configuration_for_rust.cc",
+    ],
+    hdrs = [
+        "configuration_for_rust.h",
+    ],
+    deps = [
+        ":configuration",
+        ":for_rust",
+        "//third_party/cargo:cxx_cc",
+    ],
+)
+
+autocxx_library(
+    name = "configuration_rs",
+    srcs = ["configuration.rs"],
+    crate_name = "aos_configuration",
+    libs = [
+        ":configuration",
+        ":configuration_for_rust",
+        ":configuration_fbs",
+    ],
+    override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":configuration_rust_fbs",
+        ":flatbuffers_rs",
+        "//third_party/cargo:thiserror",
+    ],
+)
+
+rust_test(
+    name = "configuration_rs_test",
+    crate = ":configuration_rs",
+    data = [
+        "//aos/testdata:test_configs",
+    ],
+    # TODO: Make Rust play happy with pic vs nopic. Details at:
+    # https://github.com/bazelbuild/rules_rust/issues/118
+    rustc_flags = ["-Crelocation-model=static"],
 )
 
 flatbuffer_ts_library(
@@ -635,5 +689,16 @@ cc_binary(
         "//aos/time",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "for_rust",
+    hdrs = [
+        "for_rust.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//third_party/cargo:cxx_cc",
     ],
 )
