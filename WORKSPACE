@@ -297,7 +297,9 @@ register_toolchains(
     "//tools/rust:rust-toolchain-x86",
     "//tools/rust:rust-toolchain-armv7",
     "//tools/rust:rust-toolchain-arm64",
-    "//tools/rust:rust-toolchain-roborio",
+    # TODO(Brian): Make this work. See the comment on
+    # //tools/platforms:linux_roborio for details.
+    #"//tools/rust:rust-toolchain-roborio",
     "//tools/rust:noop_rust_toolchain",
     "//tools/ts:noop_node_toolchain",
 )
@@ -849,9 +851,9 @@ rust_toolchain_repository(
         "armv7-unknown-linux-gnueabihf",
         "aarch64-unknown-linux-gnu",
     ],
-    rustfmt_version = "1.58.1",
+    rustfmt_version = "1.62.0",
     toolchain_name_prefix = "toolchain_for",
-    version = "1.58.1",
+    version = "1.62.0",
 )
 
 load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")

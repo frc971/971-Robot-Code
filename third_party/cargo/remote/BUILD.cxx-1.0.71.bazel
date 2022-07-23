@@ -81,4 +81,5 @@ cc_library(
     hdrs = ["include/cxx.h"],
     srcs = ["src/cxx.cc"],
     includes = ["include"],
+    target_compatible_with = ["@//tools/platforms/rust:has_support"],
 )
