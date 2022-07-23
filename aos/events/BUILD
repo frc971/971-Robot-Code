@@ -2,7 +2,7 @@ load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library",
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
-load("@rules_rust//rust:defs.bzl", "rust_doc_test")
+load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -474,6 +474,56 @@ cc_library(
         "//aos/network:timestamp_channel",
         "//aos/util:phased_loop",
         "@com_google_absl//absl/container:btree",
+    ],
+)
+
+cc_library(
+    name = "simulated_event_loop_for_rust",
+    hdrs = ["simulated_event_loop_for_rust.h"],
+    deps = [
+        ":simulated_event_loop",
+        "//aos:for_rust",
+        "//third_party/cargo:cxx_cc",
+    ],
+)
+
+autocxx_library(
+    name = "simulated_event_loop_rs",
+    srcs = ["simulated_event_loop.rs"],
+    crate_name = "aos_events_simulated_event_loop",
+    libs = [
+        ":simulated_event_loop",
+        ":simulated_event_loop_for_rust",
+    ],
+    override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
+    rs_deps = [
+        "@com_github_google_flatbuffers//rust",
+        "//aos:configuration_rust_fbs",
+        "//aos:flatbuffers_rs",
+        "//third_party/cargo:futures",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":event_loop_runtime",
+        "//aos:configuration_rs",
+        "//aos:uuid_rs",
+    ],
+)
+
+rust_test(
+    name = "simulated_event_loop_rs_test",
+    crate = ":simulated_event_loop_rs",
+    data = [
+        ":multinode_pingpong_test_combined_config",
+    ],
+    # TODO: Make Rust play happy with pic vs nopic. Details at:
+    # https://github.com/bazelbuild/rules_rust/issues/118
+    rustc_flags = ["-Crelocation-model=static"],
+    deps = [
+        ":ping_rust_fbs",
+        "//aos:init_rs",
+        "//third_party/cargo:futures",
+        "@rules_rust//tools/runfiles",
     ],
 )
 
