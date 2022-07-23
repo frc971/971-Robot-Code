@@ -36,6 +36,7 @@ class GridWindow(Gtk.Window):
 
     def undo_func(self, *args):
         self.field.undo()
+
     def long_changed(self, button):
         value = self.long_input.get_value()
         self.field.points.setConstraint("LONGITUDINAL_ACCELERATION", value)

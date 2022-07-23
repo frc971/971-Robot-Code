@@ -12,6 +12,7 @@ from matplotlib.backends.backend_gtk3agg import (FigureCanvasGTK3Agg as
                                                  FigureCanvas)
 from matplotlib.figure import Figure
 
+
 class Graph(Gtk.Bin):
     def __init__(self):
         super(Graph, self).__init__()
@@ -35,7 +36,7 @@ class Graph(Gtk.Bin):
         try:
             self.queue.get_nowait()
         except queue.Empty:
-            pass # was already empty
+            pass  # was already empty
 
         # replace with new request
         self.queue.put_nowait(new_copy)
