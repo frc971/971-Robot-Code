@@ -1,0 +1,16 @@
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+rust_library(
+    name = "rust",
+    srcs = glob(["flatbuffers/**/*.rs"]),
+    crate_name = "flatbuffers",
+    crate_root = "flatbuffers/src/lib.rs",
+    edition = "2018",
+    version = "2.1.1",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@//third_party/cargo:bitflags",
+        "@//third_party/cargo:smallvec",
+        "@//third_party/cargo:thiserror",
+    ],
+)

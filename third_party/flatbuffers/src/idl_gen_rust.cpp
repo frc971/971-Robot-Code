@@ -366,6 +366,7 @@ class RustGenerator : public BaseGenerator {
       if (symbol.generated) continue;
       code_.Clear();
       code_ += "// " + std::string(FlatBuffersGeneratedWarning());
+      code_ += "#![allow(unused_imports)]";
       code_ += "extern crate flatbuffers;";
       code_ += "use std::mem;";
       code_ += "use std::cmp::Ordering;";
