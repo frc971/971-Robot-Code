@@ -34,6 +34,49 @@ class TestingNoncausalTimestampFilter : public NoncausalTimestampFilter {
     return std::make_tuple(BootTimestamp{0, std::get<0>(result)},
                            BootDuration{0, std::get<1>(result)});
   }
+
+  logger::BootDuration Offset(const TestingNoncausalTimestampFilter *other,
+                              Pointer pointer, logger::BootTimestamp ta,
+                              size_t sample_boot) const {
+    return {sample_boot,
+            filter(ta.boot, sample_boot)
+                ->filter
+                .Offset(other == nullptr
+                            ? nullptr
+                            : &other->filter(sample_boot, ta.boot)->filter,
+                        pointer, ta.time)
+                .second};
+  }
+
+  std::pair<logger::BootDuration, double> Offset(
+      const TestingNoncausalTimestampFilter *other, Pointer pointer,
+      logger::BootTimestamp ta_base, double ta, size_t sample_boot) const {
+    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> result =
+        filter(ta_base.boot, sample_boot)
+            ->filter.Offset(
+                other == nullptr
+                    ? nullptr
+                    : &other->filter(sample_boot, ta_base.boot)->filter,
+                pointer, ta_base.time, ta);
+    return std::make_pair(
+        logger::BootDuration{sample_boot, result.second.first},
+        result.second.second);
+  }
+
+  std::pair<logger::BootDuration, double> BoundsOffset(
+      const TestingNoncausalTimestampFilter *other, Pointer pointer,
+      logger::BootTimestamp ta_base, double ta, size_t sample_boot) const {
+    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> result =
+        filter(ta_base.boot, sample_boot)
+            ->filter.BoundsOffset(
+                other == nullptr
+                    ? nullptr
+                    : &other->filter(sample_boot, ta_base.boot)->filter,
+                pointer, ta_base.time, ta);
+    return std::make_pair(
+        logger::BootDuration{sample_boot, result.second.first},
+        result.second.second);
+  }
 };
 
 void NormalizeTimestamps(monotonic_clock::time_point *ta_base, double *ta) {
@@ -806,20 +849,14 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
             o1);
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 0.0),
-            o1);
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t1, 0.0),
-            0.0);
+            std::make_pair(o1, 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2),
             o2);
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2, 0.0),
-            o2);
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), t2, 0.0),
-            0.0);
+            std::make_pair(o2, 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
@@ -828,11 +865,7 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(500), 0.0),
-            o1 + chrono::nanoseconds(25));
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
-                t1 + chrono::nanoseconds(500), 0.0),
-            0.0);
+            std::make_pair(o1 + chrono::nanoseconds(25), 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
@@ -841,11 +874,7 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 - chrono::nanoseconds(200), 0.0),
-            o1 - chrono::nanoseconds(10));
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
-                t1 - chrono::nanoseconds(200), 0.0),
-            0.0);
+            std::make_pair(o1 - chrono::nanoseconds(10), 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
@@ -854,11 +883,7 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(200), 0.0),
-            o1 + chrono::nanoseconds(10));
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
-                t1 + chrono::nanoseconds(200), 0.0),
-            0.0);
+            std::make_pair(o1 + chrono::nanoseconds(10), 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
@@ -867,11 +892,7 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(800), 0.0),
-            o1 + chrono::nanoseconds(40));
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
-                t1 + chrono::nanoseconds(800), 0.0),
-            0.0);
+            std::make_pair(o1 + chrono::nanoseconds(40), 0.0));
 
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
@@ -880,11 +901,7 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
   EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffset(
                 std::make_tuple(t1, o1), std::make_tuple(t2, o2),
                 t1 + chrono::nanoseconds(1200), 0.0),
-            o1 + chrono::nanoseconds(60));
-  EXPECT_EQ(NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2),
-                t1 + chrono::nanoseconds(1200), 0.0),
-            0.0);
+            std::make_pair(o1 + chrono::nanoseconds(60), 0.0));
 
   for (int i = -MaxVelocityRatio::den * MaxVelocityRatio::num * 6;
        i <
@@ -902,23 +919,18 @@ TEST_F(NoncausalTimestampFilterTest, InterpolateOffset) {
         NoncausalTimestampFilter::InterpolateOffset(
             std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base);
 
-    EXPECT_EQ(expected_offset, NoncausalTimestampFilter::InterpolateOffset(
-                                   std::make_tuple(t1, o1),
-                                   std::make_tuple(t2, o2), ta_base, ta));
+    const std::pair<chrono::nanoseconds, double> offset =
+        NoncausalTimestampFilter::InterpolateOffset(
+            std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base, ta);
+    EXPECT_EQ(expected_offset, offset.first);
 
     const double expected_double_offset =
         static_cast<double>(o1.count()) +
         static_cast<double>(ta_orig) / static_cast<double>((t2 - t1).count()) *
             (o2 - o1).count();
 
-    EXPECT_NEAR(
-        static_cast<double>(
-            NoncausalTimestampFilter::InterpolateOffset(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base, ta)
-                .count()) +
-            NoncausalTimestampFilter::InterpolateOffsetRemainder(
-                std::make_tuple(t1, o1), std::make_tuple(t2, o2), ta_base, ta),
-        expected_double_offset, 1e-9)
+    EXPECT_NEAR(static_cast<double>(offset.first.count()) + offset.second,
+                expected_double_offset, 1e-9)
         << ": i " << i << " t " << ta_base << " " << ta << " t1 " << t1
         << " o1 " << o1.count() << "ns t2 " << t2 << " o2 " << o2.count()
         << "ns Non-rounded: " << expected_offset.count() << "ns";
@@ -1124,122 +1136,122 @@ TEST_F(NoncausalTimestampFilterTest, FindTimestamps) {
   filter.Sample(t2, o2);
   filter.Sample(t3, o3);
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e - chrono::microseconds(10), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
                               ::testing::Eq(std::make_tuple(t2, o2))));
-  EXPECT_EQ(result, filter.FindTimestamps(nullptr, result.first,
+  EXPECT_EQ(result, filter.FindTimestamps(nullptr, true, result.first,
                                           e - chrono::microseconds(10), 0));
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e - chrono::microseconds(10), 0.9, 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
                               ::testing::Eq(std::make_tuple(t2, o2))));
   EXPECT_EQ(result,
-            filter.FindTimestamps(nullptr, result.first,
+            filter.FindTimestamps(nullptr, true, result.first,
                                   e - chrono::microseconds(10), 0.9, 0));
 
-  result =
-      filter.FindTimestamps(nullptr, Pointer(), e + chrono::microseconds(0), 0);
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
+                                 e + chrono::microseconds(0), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
                               ::testing::Eq(std::make_tuple(t2, o2))));
-  EXPECT_EQ(result, filter.FindTimestamps(nullptr, result.first,
+  EXPECT_EQ(result, filter.FindTimestamps(nullptr, true, result.first,
                                           e + chrono::microseconds(0), 0));
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e + chrono::microseconds(0), 0.8, 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
                               ::testing::Eq(std::make_tuple(t2, o2))));
-  EXPECT_EQ(result, filter.FindTimestamps(nullptr, result.first,
+  EXPECT_EQ(result, filter.FindTimestamps(nullptr, true, result.first,
                                           e + chrono::microseconds(0), 0.8, 0));
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e + chrono::microseconds(100), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
                               ::testing::Eq(std::make_tuple(t2, o2))));
-  EXPECT_EQ(result, filter.FindTimestamps(nullptr, result.first,
+  EXPECT_EQ(result, filter.FindTimestamps(nullptr, true, result.first,
                                           e + chrono::microseconds(100), 0));
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e + chrono::microseconds(100), 0.7, 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t1, o1)),
                               ::testing::Eq(std::make_tuple(t2, o2))));
   EXPECT_EQ(result,
-            filter.FindTimestamps(nullptr, result.first,
+            filter.FindTimestamps(nullptr, true, result.first,
                                   e + chrono::microseconds(100), 0.7, 0));
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e + chrono::microseconds(1000), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
                               ::testing::Eq(std::make_tuple(t3, o3))));
-  EXPECT_EQ(result, filter.FindTimestamps(nullptr, result.first,
+  EXPECT_EQ(result, filter.FindTimestamps(nullptr, true, result.first,
 
                                           e + chrono::microseconds(1000), 0));
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e + chrono::microseconds(1000), 0.0, 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
                               ::testing::Eq(std::make_tuple(t3, o3))));
   EXPECT_EQ(result,
-            filter.FindTimestamps(nullptr, result.first,
+            filter.FindTimestamps(nullptr, true, result.first,
                                   e + chrono::microseconds(1000), 0.0, 0));
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e + chrono::microseconds(1500), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
                               ::testing::Eq(std::make_tuple(t3, o3))));
-  EXPECT_EQ(result, filter.FindTimestamps(nullptr, result.first,
+  EXPECT_EQ(result, filter.FindTimestamps(nullptr, true, result.first,
                                           e + chrono::microseconds(1500), 0));
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e + chrono::microseconds(1500), 0.0, 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
                               ::testing::Eq(std::make_tuple(t3, o3))));
   EXPECT_EQ(result,
-            filter.FindTimestamps(nullptr, result.first,
+            filter.FindTimestamps(nullptr, true, result.first,
                                   e + chrono::microseconds(1500), 0.0, 0));
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e + chrono::microseconds(2000), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
                               ::testing::Eq(std::make_tuple(t3, o3))));
-  EXPECT_EQ(result, filter.FindTimestamps(nullptr, result.first,
+  EXPECT_EQ(result, filter.FindTimestamps(nullptr, true, result.first,
                                           e + chrono::microseconds(2000), 0));
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e + chrono::microseconds(2000), 0.1, 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
                               ::testing::Eq(std::make_tuple(t3, o3))));
   EXPECT_EQ(result,
-            filter.FindTimestamps(nullptr, result.first,
+            filter.FindTimestamps(nullptr, true, result.first,
                                   e + chrono::microseconds(2000), 0.1, 0));
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e + chrono::microseconds(2500), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
                               ::testing::Eq(std::make_tuple(t3, o3))));
-  EXPECT_EQ(result, filter.FindTimestamps(nullptr, result.first,
+  EXPECT_EQ(result, filter.FindTimestamps(nullptr, true, result.first,
                                           e + chrono::microseconds(2500), 0));
 
-  result = filter.FindTimestamps(nullptr, Pointer(),
+  result = filter.FindTimestamps(nullptr, true, Pointer(),
                                  e + chrono::microseconds(2500), 0.0, 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t2, o2)),
                               ::testing::Eq(std::make_tuple(t3, o3))));
   EXPECT_EQ(result,
-            filter.FindTimestamps(nullptr, result.first,
+            filter.FindTimestamps(nullptr, true, result.first,
                                   e + chrono::microseconds(2500), 0.0, 0));
 }
 
@@ -1295,55 +1307,130 @@ TEST_F(NoncausalTimestampFilterTest, FindTimestampsWithOther) {
                                         t3_b + o3_b + chrono::nanoseconds(1)));
 
   // Before the start
-  result = filter_a.FindTimestamps(&filter_b, Pointer(),
+  result = filter_a.FindTimestamps(&filter_b, true, Pointer(),
                                    e - chrono::microseconds(10), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t1_a, o1_a)),
                               ::testing::Eq(std::make_tuple(
                                   t2_b + o2_b, -o2_b - kMinNetworkDelay()))));
-  EXPECT_EQ(result, filter_a.FindTimestamps(&filter_b, result.first,
+  EXPECT_EQ(result, filter_a.FindTimestamps(&filter_b, true, result.first,
                                             e - chrono::microseconds(10), 0));
 
   // Before the first opposite point.
-  result = filter_a.FindTimestamps(&filter_b, Pointer(),
+  result = filter_a.FindTimestamps(&filter_b, true, Pointer(),
                                    e + chrono::microseconds(10), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(t1_a, o1_a)),
                               ::testing::Eq(std::make_tuple(
                                   t2_b + o2_b, -o2_b - kMinNetworkDelay()))));
-  EXPECT_EQ(result, filter_a.FindTimestamps(&filter_b, result.first,
+  EXPECT_EQ(result, filter_a.FindTimestamps(&filter_b, true, result.first,
                                             e + chrono::microseconds(10), 0));
 
   // Between the two opposite points.
-  result = filter_a.FindTimestamps(&filter_b, Pointer(),
+  result = filter_a.FindTimestamps(&filter_b, true, Pointer(),
                                    e + chrono::microseconds(250), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(
                                   t2_b + o2_b, -o2_b - kMinNetworkDelay())),
                               ::testing::Eq(std::make_tuple(
                                   t3_b + o3_b, -o3_b - kMinNetworkDelay()))));
-  EXPECT_EQ(result, filter_a.FindTimestamps(&filter_b, result.first,
+  EXPECT_EQ(result, filter_a.FindTimestamps(&filter_b, true, result.first,
                                             e + chrono::microseconds(250), 0));
 
   // After the last opposite point.
-  result = filter_a.FindTimestamps(&filter_b, Pointer(),
+  result = filter_a.FindTimestamps(&filter_b, true, Pointer(),
                                    e + chrono::microseconds(450), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(
                                   t3_b + o3_b, -o3_b - kMinNetworkDelay())),
                               ::testing::Eq(std::make_tuple(t2_a, o2_a))));
-  EXPECT_EQ(result, filter_a.FindTimestamps(&filter_b, result.first,
+  EXPECT_EQ(result, filter_a.FindTimestamps(&filter_b, true, result.first,
                                             e + chrono::microseconds(450), 0));
 
   // And after the end.
-  result = filter_a.FindTimestamps(&filter_b, Pointer(),
+  result = filter_a.FindTimestamps(&filter_b, true, Pointer(),
                                    e + chrono::microseconds(1100), 0);
   EXPECT_THAT(result.second,
               ::testing::Pair(::testing::Eq(std::make_tuple(
                                   t3_b + o3_b, -o3_b - kMinNetworkDelay())),
                               ::testing::Eq(std::make_tuple(t2_a, o2_a))));
-  EXPECT_EQ(result, filter_a.FindTimestamps(&filter_b, result.first,
+  EXPECT_EQ(result, filter_a.FindTimestamps(&filter_b, true, result.first,
                                             e + chrono::microseconds(1100), 0));
+
+  // And make sure that the FindTimestamps with "use_other==false" flag will
+  // return the same answer as no filter.
+  for (BootTimestamp t = t1_a - chrono::microseconds(500);
+       t < t2_a + chrono::microseconds(500); t += chrono::microseconds(100)) {
+    EXPECT_EQ(filter_a.FindTimestamps(&filter_b, false, Pointer(), t, 0),
+              filter_a.FindTimestamps(nullptr, true, Pointer(), t, 0));
+  }
+}
+
+// Tests that we can validate a solution reasonably.
+TEST_F(NoncausalTimestampFilterTest, ValidateSolution) {
+  const BootTimestamp e{0, monotonic_clock::epoch()};
+  // Note: t1, t2, t3 need to be picked such that the slop is small so filter
+  // doesn't modify the timestamps.
+  const BootTimestamp t1_a = e + chrono::nanoseconds(0);
+  const BootDuration o1_a{0, chrono::nanoseconds(100)};
+  const BootTimestamp t2_a = e + chrono::microseconds(1000);
+  const BootDuration o2_a{0, chrono::nanoseconds(100)};
+
+  const BootTimestamp tmid_a = e + chrono::microseconds(500);
+  const BootDuration omid_a{0, chrono::nanoseconds(-400)};
+
+  const BootTimestamp tbefore_a = e - chrono::microseconds(500);
+  const BootDuration obefore_a{0, chrono::nanoseconds(-400)};
+  const BootTimestamp tafter_a = e + chrono::microseconds(1500);
+  const BootDuration oafter_a{0, chrono::nanoseconds(-400)};
+
+  TestingNoncausalTimestampFilter filter_a(node_a, node_b);
+  TestingNoncausalTimestampFilter filter_b(node_b, node_a);
+
+  std::pair<Pointer,
+            std::pair<std::tuple<logger::BootTimestamp, logger::BootDuration>,
+                      std::tuple<logger::BootTimestamp, logger::BootDuration>>>
+      result;
+
+  filter_a.Sample(t1_a, o1_a);
+  filter_a.Sample(t2_a, o2_a);
+
+  // At the control points, we should see that the boundary is right at the
+  // edge.
+  EXPECT_TRUE(filter_a.ValidateSolution(&filter_b, Pointer(), t1_a,
+                                        t1_a + o1_a + chrono::nanoseconds(1)));
+  EXPECT_TRUE(filter_a.ValidateSolution(&filter_b, Pointer(), t1_a, 0.0,
+                                        t1_a + o1_a, 0.00001));
+  EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), t1_a,
+                                         t1_a + o1_a - chrono::nanoseconds(1)));
+  EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), t1_a, 0.0,
+                                         t1_a + o1_a, -0.0001));
+
+  EXPECT_TRUE(filter_a.ValidateSolution(&filter_b, Pointer(), t2_a,
+                                        t2_a + o2_a + chrono::nanoseconds(1)));
+  EXPECT_TRUE(filter_a.ValidateSolution(&filter_b, Pointer(), t2_a, 0.0,
+                                        t2_a + o2_a, 0.00001));
+  EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), t2_a,
+                                        t2_a + o2_a - chrono::nanoseconds(1)));
+  EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), t2_a, 0.0,
+                                         t2_a + o2_a, -0.00001));
+
+  // Now that we've checked the control points, check in the middle to confirm
+  // it looks like we are using BoundOffset rather than interpolate.
+  EXPECT_TRUE(filter_a.ValidateSolution(&filter_b, Pointer(), tmid_a,
+                                        tmid_a + omid_a + chrono::nanoseconds(1)));
+  EXPECT_TRUE(filter_a.ValidateSolution(&filter_b, Pointer(), tmid_a, 0.0,
+                                        tmid_a + omid_a, 0.00001));
+
+  EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), tbefore_a,
+                                        tbefore_a + obefore_a - chrono::nanoseconds(1)));
+  EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), tbefore_a, 0.0,
+                                         tbefore_a + obefore_a, -0.00001));
+
+  EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), tafter_a,
+                                        tafter_a + oafter_a - chrono::nanoseconds(1)));
+  EXPECT_FALSE(filter_a.ValidateSolution(&filter_b, Pointer(), tafter_a, 0.0,
+                                         tafter_a + oafter_a, -0.00001));
 }
 
 // Tests that Offset returns results indicative of it calling InterpolateOffset
@@ -1371,6 +1458,8 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t1, 0), o1);
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t1, 0.0, 0),
             std::make_pair(o1, 0.0));
+  EXPECT_EQ(filter.BoundsOffset(nullptr, Pointer(), t1, 0.0, 0),
+            std::make_pair(o1, 0.0));
   // Check if we ask for something away from point that we get an offset
   // based on the MaxVelocity allowed
   const double offset_pre = -(t1.time - e.time).count() * kMaxVelocity();
@@ -1378,6 +1467,10 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
             o1 + chrono::nanoseconds(static_cast<int64_t>(offset_pre)));
   EXPECT_EQ(
       filter.Offset(nullptr, Pointer(), e, 0.0, 0),
+      std::make_pair(o1 + chrono::nanoseconds(static_cast<int64_t>(offset_pre)),
+                     0.0));
+  EXPECT_EQ(
+      filter.BoundsOffset(nullptr, Pointer(), e, 0.0, 0),
       std::make_pair(o1 + chrono::nanoseconds(static_cast<int64_t>(offset_pre)),
                      0.0));
 
@@ -1388,13 +1481,23 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
       filter.Offset(nullptr, Pointer(), t2, 0.0, 0),
       std::make_pair(
           o1 + chrono::nanoseconds(static_cast<int64_t>(offset_post)), 0.0));
+  EXPECT_EQ(
+      filter.BoundsOffset(nullptr, Pointer(), t2, 0.0, 0),
+      std::make_pair(
+          o1 + chrono::nanoseconds(static_cast<int64_t>(offset_post)), 0.0));
 
   filter.Sample(t2, o2);
   filter.Sample(t3, o3);
 
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t1, 0), o1);
+  EXPECT_EQ(filter.BoundsOffset(nullptr, Pointer(), t1, 0.0, 0),
+            std::make_pair(o1, 0.0));
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t2, 0), o2);
+  EXPECT_EQ(filter.BoundsOffset(nullptr, Pointer(), t2, 0.0, 0),
+            std::make_pair(o2, 0.0));
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t3, 0), o3);
+  EXPECT_EQ(filter.BoundsOffset(nullptr, Pointer(), t3, 0.0, 0),
+            std::make_pair(o3, 0.0));
 
   EXPECT_EQ(filter.Offset(nullptr, Pointer(), t1, 0.0, 0),
             std::make_pair(o1, 0.0));
@@ -1432,6 +1535,9 @@ TEST_F(NoncausalTimestampFilterTest, Offset) {
       filter.Offset(nullptr, Pointer(), t4, 0.0, 0),
       std::make_pair(
           o3 + chrono::nanoseconds(static_cast<int64_t>(offset_post)), 0.0));
+
+  EXPECT_EQ(filter.BoundsOffset(nullptr, Pointer(), t2 + (t3 - t2) / 2, 0.0, 0),
+            std::make_pair(o2 - chrono::nanoseconds(500), 0.0));
 }
 
 // Tests that adding duplicates gets correctly deduplicated.

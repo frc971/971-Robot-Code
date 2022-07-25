@@ -90,11 +90,21 @@ struct BootTimestamp {
   BootTimestamp operator+(monotonic_clock::duration d) const {
     return {boot, time + d};
   }
+
+  BootTimestamp operator+=(monotonic_clock::duration d) {
+    time += d;
+    return *this;
+  }
   BootTimestamp operator-(monotonic_clock::duration d) const {
     return {boot, time - d};
   }
   BootTimestamp operator+(BootDuration d) const {
     return {boot, time + d.duration};
+  }
+
+  BootDuration operator-(BootTimestamp t) const {
+    CHECK_EQ(t.boot, boot);
+    return {boot, time - t.time};
   }
 };
 
