@@ -57,8 +57,8 @@ class TimestampProblem {
   // solver and returns the optimal time on each node, along with the node which
   // constrained the problem.  points is the list of potential constraint
   // points, and the solver uses the earliest point.
-  std::tuple<std::vector<logger::BootTimestamp>, size_t> SolveNewton(
-      const std::vector<logger::BootTimestamp> &points);
+  std::tuple<std::vector<logger::BootTimestamp>, size_t, size_t> SolveNewton(
+      const std::vector<logger::BootTimestamp> &points, size_t max_iterations);
 
   // Validates the solution, returning true if it meets all the constraints, and
   // false otherwise.
@@ -345,6 +345,8 @@ class MultiNodeNoncausalOffsetEstimator final
   const aos::Configuration *configuration() const { return configuration_; }
 
  private:
+  static constexpr int kMaxIterations = 400;
+
   struct CandidateTimes {
     logger::BootTimestamp next_node_time = logger::BootTimestamp::max_time();
     logger::BootDuration next_node_duration = logger::BootDuration::max_time();
@@ -388,6 +390,18 @@ class MultiNodeNoncausalOffsetEstimator final
 
   // Writes all samples to disk.
   void FlushAllSamples(bool finish);
+
+  // Adds the solution to last_distributed_.
+  void UpdateSolution(
+      std::vector<logger::BootTimestamp> result_times);
+
+  void WriteFilter(
+      NoncausalTimestampFilter *next_filter,
+      std::tuple<logger::BootTimestamp, logger::BootDuration> sample);
+
+  // Writes everything to disk anc closes it all out in preparation for either
+  // destruction or crashing.
+  void FlushAndClose(bool destructor);
 
   const Configuration *configuration_;
   const Configuration *logged_configuration_;
