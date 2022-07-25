@@ -1042,6 +1042,7 @@ impl<'a> RsCodeGenerator<'a> {
                         extern_c_mod_items: vec![
                             self.generate_cxxbridge_type(name, false, doc_attrs)
                         ],
+                        bridge_items: create_impl_items(&id, movable, destroyable, self.config),
                         bindgen_mod_items,
                         materializations,
                         ..Default::default()
