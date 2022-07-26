@@ -181,11 +181,11 @@ std::optional<FlatbufferDetachedBuffer<Configuration>> MaybeReadConfig(
   // instead.  It is much faster to load .bfbs files than .json files.
   if (!binary_path_exists && !util::PathExists(raw_path)) {
     const bool path_is_absolute = raw_path.size() > 0 && raw_path[0] == '/';
-    if (path_is_absolute && !extra_import_paths.empty()) {
-      LOG(ERROR)
-          << "Can't specify extra import paths if attempting to read a config "
-             "file from an absolute path (path is "
-          << raw_path << ").";
+    if (path_is_absolute) {
+      // Nowhere else to look up an absolute path, so fail now. Note that we
+      // always have at least one extra import path based on /proc/self/exe, so
+      // warning about those paths existing isn't helpful.
+      LOG(ERROR) << ": Failed to find file " << path << ".";
       return std::nullopt;
     }
 
