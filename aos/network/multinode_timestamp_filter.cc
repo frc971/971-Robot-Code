@@ -527,6 +527,13 @@ void TimestampProblem::MaybeUpdateNodeMapping() {
   live_nodes_ = live_node_index;
   live_constraints_ = LiveConstraintsCount();
   node_mapping_valid_ = true;
+
+  // Reset the cached state each time we solve.
+  for (size_t i = 0u; i < clock_offset_filter_for_node_.size(); ++i) {
+    for (struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
+      filter.pointer = NoncausalTimestampFilter::Pointer();
+    }
+  }
 }
 
 void TimestampProblem::Debug() {
