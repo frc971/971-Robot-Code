@@ -141,19 +141,19 @@ apache_wrapper(
 rust_library(
     name = "hello_lib",
     srcs = ["hello_lib.rs"],
-    target_compatible_with = ["@platforms//os:linux"],
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
 )
 
 rust_test(
     name = "hello_lib_test",
     crate = ":hello_lib",
-    target_compatible_with = ["@platforms//os:linux"],
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
 )
 
 rust_binary(
     name = "rust_hello",
     srcs = ["rust_hello.rs"],
-    target_compatible_with = ["@platforms//os:linux"],
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
     deps = [":hello_lib"],
 )
 
@@ -182,7 +182,7 @@ karma_web_test_suite(
 rust_library(
     name = "rust_in_cc_rs",
     srcs = ["rust_in_cc.rs"],
-    target_compatible_with = ["@platforms//os:linux"],
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
 )
 
 cc_test(

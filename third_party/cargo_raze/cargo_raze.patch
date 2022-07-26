@@ -95,12 +95,13 @@
 
 --- third_party/libssh2/BUILD.libssh2.bazel	2022-02-04 00:03:43.831120614 -0800
 +++ third_party/libssh2/BUILD.libssh2.bazel	2022-02-04 00:04:19.100745883 -0800
-@@ -29,6 +29,14 @@ cmake(
+@@ -29,6 +29,15 @@ cmake(
          "@rules_rust//rust/platform:windows": ["ssh2.lib"],
          "//conditions:default": ["libssh2.a"],
      }),
 +    copts = [
 +        "-Wno-cast-qual",
++        # See https://github.com/openbsd/src/commit/04a2240bd8f465bcae6b595d912af3e2965856de, it's a false positive.
 +        "-Wno-sizeof-array-div",
 +        "-Wno-unused-parameter",
 +        "-DHAVE_SNPRINTF=1",
@@ -162,6 +163,15 @@
 
 --- third_party/cargo/remote/BUILD.libssh2-sys-0.2.21.bazel	2022-02-04 00:54:43.031966734 -0800
 +++ third_party/cargo/remote/BUILD.libssh2-sys-0.2.21.bazel	2022-02-04 00:54:44.272023742 -0800
+@@ -41,6 +41,8 @@ cargo_build_script(
+     name = "libssh2_sys_build_script",
+     srcs = glob(["**/*.rs"]),
+     build_script_env = {
++        # See https://github.com/openbsd/src/commit/04a2240bd8f465bcae6b595d912af3e2965856de, it's a false positive.
++        "CFLAGS": "-Wno-sizeof-array-div",
+     },
+     crate_features = [
+     ],
 @@ -48,6 +48,7 @@ cargo_build_script(
      data = glob(["**"]) + [
          "@cargo_raze__libssh2//:libssh2",

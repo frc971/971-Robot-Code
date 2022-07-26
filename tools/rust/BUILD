@@ -98,7 +98,7 @@ rust_toolchain(
     exec_triple = "none",
     os = "none",
     rust_doc = ":noop_error_exit",
-    rust_lib = ":empty_stdlib",
+    rust_std = ":empty_stdlib",
     rustc = ":noop_error_exit",
     rustc_lib = ":noop_error_exit",
     rustc_srcs = None,
@@ -124,7 +124,7 @@ toolchain(
 rust_binary(
     name = "tweak_cargo_raze_output",
     srcs = ["tweak_cargo_raze_output.rs"],
-    target_compatible_with = ["@platforms//os:linux"],
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
     visibility = ["//visibility:public"],
     deps = [
         "//third_party/cargo:anyhow",

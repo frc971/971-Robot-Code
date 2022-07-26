@@ -42,7 +42,12 @@ platform(
         "@platforms//cpu:armv7",
         "//tools/platforms/hardware:roborio",
         "//tools/platforms/go:lacks_support",
-        "//tools/platforms/rust:has_support",
+        # TODO(Brian): This almost works, but cxx assumes llvm-ld's linking
+        # behavior and doesn't have an easy way to support GNU ld. See
+        # https://github.com/dtolnay/cxx/pull/1069 for a bit more explanation.
+        # Bazel needs to group multiple things into a single cc_library to
+        # handle that, need to figure out how to do that here or switch linkers.
+        "//tools/platforms/rust:lacks_support",
         "//tools/platforms/nodejs:lacks_support",
     ],
 )
