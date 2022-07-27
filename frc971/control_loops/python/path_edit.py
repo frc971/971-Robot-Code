@@ -9,7 +9,7 @@ import numpy as np
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gtk, GLib
 import cairo
-from libspline import Spline
+from libspline import Spline, DistanceSpline
 import enum
 import json
 from constants import FIELD
@@ -107,103 +107,42 @@ class FieldWidget(Gtk.DrawingArea):
     def mToPx(self, m):
         return m / self.pxToM_scale()
 
-    def draw_robot_at_point(self, cr, i, p, spline):
-        p1 = [spline.Point(i)[0], spline.Point(i)[1]]
-        p2 = [spline.Point(i + p)[0], spline.Point(i + p)[1]]
+    def draw_robot_at_point(self, cr, spline, t):
+        """Draws the robot at a point along a Spline or DistanceSpline"""
 
-        #Calculate Robot
-        distance = np.sqrt((p2[1] - p1[1])**2 + (p2[0] - p1[0])**2)
-        x_difference_o = p2[0] - p1[0]
-        y_difference_o = p2[1] - p1[1]
-        x_difference = x_difference_o * (self.field.robot.length /
-                                         2) / distance
-        y_difference = y_difference_o * (self.field.robot.length /
-                                         2) / distance
+        # we accept both Spline and DistanceSpline
+        if type(spline) is Spline:
+            point = spline.Point(t)
+            theta = spline.Theta(t)
+        elif type(spline) is DistanceSpline:
+            point = spline.XY(t)
+            theta = spline.Theta(t)
+        else:
+            raise TypeError(
+                f"expected Spline or DistanceSpline (got {type(spline)})")
 
-        front_middle = []
-        front_middle.append(p1[0] + x_difference)
-        front_middle.append(p1[1] + y_difference)
+        # Transform so that +y is forward along the spline
+        transform = cairo.Matrix()
+        transform.translate(*point)
+        transform.rotate(theta - np.pi / 2)
 
-        back_middle = []
-        back_middle.append(p1[0] - x_difference)
-        back_middle.append(p1[1] - y_difference)
+        cr.save()
+        cr.set_matrix(transform.multiply(cr.get_matrix()))
 
-        slope = [-(1 / x_difference_o) / (1 / y_difference_o)]
-        angle = np.arctan(slope)
-
-        x_difference = np.sin(angle[0]) * (self.field.robot.width / 2)
-        y_difference = np.cos(angle[0]) * (self.field.robot.width / 2)
-
-        front_1 = []
-        front_1.append(front_middle[0] - x_difference)
-        front_1.append(front_middle[1] - y_difference)
-
-        front_2 = []
-        front_2.append(front_middle[0] + x_difference)
-        front_2.append(front_middle[1] + y_difference)
-
-        back_1 = []
-        back_1.append(back_middle[0] - x_difference)
-        back_1.append(back_middle[1] - y_difference)
-
-        back_2 = []
-        back_2.append(back_middle[0] + x_difference)
-        back_2.append(back_middle[1] + y_difference)
-
-        x_difference = x_difference_o * (self.field.robot.length / 2 +
-                                         ROBOT_SIDE_TO_BALL_CENTER) / distance
-        y_difference = y_difference_o * (self.field.robot.length / 2 +
-                                         ROBOT_SIDE_TO_BALL_CENTER) / distance
-
-        #Calculate Ball
-        ball_center = []
-        ball_center.append(p1[0] + x_difference)
-        ball_center.append(p1[1] + y_difference)
-
-        x_difference = x_difference_o * (self.field.robot.length / 2 +
-                                         ROBOT_SIDE_TO_HATCH_PANEL) / distance
-        y_difference = y_difference_o * (self.field.robot.length / 2 +
-                                         ROBOT_SIDE_TO_HATCH_PANEL) / distance
-
-        #Calculate Panel
-        panel_center = []
-        panel_center.append(p1[0] + x_difference)
-        panel_center.append(p1[1] + y_difference)
-
-        x_difference = np.sin(angle[0]) * (HATCH_PANEL_WIDTH / 2)
-        y_difference = np.cos(angle[0]) * (HATCH_PANEL_WIDTH / 2)
-
-        panel_1 = []
-        panel_1.append(panel_center[0] + x_difference)
-        panel_1.append(panel_center[1] + y_difference)
-
-        panel_2 = []
-        panel_2.append(panel_center[0] - x_difference)
-        panel_2.append(panel_center[1] - y_difference)
-
-        #Draw Robot
-        cr.move_to(front_1[0], front_1[1])
-        cr.line_to(back_1[0], back_1[1])
-        cr.line_to(back_2[0], back_2[1])
-        cr.line_to(front_2[0], front_2[1])
-        cr.line_to(front_1[0], front_1[1])
-
+        # Draw Robot
+        set_color(cr, palette["BLACK"])
+        cr.rectangle(-self.field.robot.width / 2, -self.field.robot.length / 2,
+                     self.field.robot.width, self.field.robot.length)
         cr.stroke()
 
         #Draw Ball
         set_color(cr, palette["ORANGE"], 0.5)
-        cr.move_to(back_middle[0], back_middle[1])
-        cr.line_to(ball_center[0], ball_center[1])
-        cr.arc(ball_center[0], ball_center[1], BALL_RADIUS, 0, 2 * np.pi)
+        cr.arc(0, self.field.robot.length / 2 + BALL_RADIUS, BALL_RADIUS, 0,
+               2 * np.pi)
         cr.stroke()
 
-        #Draw Panel
-        set_color(cr, palette["YELLOW"], 0.5)
-        cr.move_to(panel_1[0], panel_1[1])
-        cr.line_to(panel_2[0], panel_2[1])
-
-        cr.stroke()
-        cr.set_source_rgba(0, 0, 0, 1)
+        # undo the transform
+        cr.restore()
 
     def do_draw(self, cr):  # main
         cr.set_matrix(
@@ -254,17 +193,17 @@ class FieldWidget(Gtk.DrawingArea):
                     first_tangent = p0 + 2.0 * (p1 - p0)
                     second_tangent = p5 + 2.0 * (p4 - p5)
                     cr.set_source_rgb(0, 0.5, 0)
-                    cr.move_to(p0[0], p0[1])
+                    cr.move_to(*p0)
                     cr.set_line_width(self.pxToM(1.0))
-                    cr.line_to(first_tangent[0], first_tangent[1])
-                    cr.move_to(first_tangent[0], first_tangent[1])
-                    cr.line_to(p2[0], p2[1])
+                    cr.line_to(*first_tangent)
+                    cr.move_to(*first_tangent)
+                    cr.line_to(*p2)
 
-                    cr.move_to(p5[0], p5[1])
-                    cr.line_to(second_tangent[0], second_tangent[1])
+                    cr.move_to(*p5)
+                    cr.line_to(*second_tangent)
 
-                    cr.move_to(second_tangent[0], second_tangent[1])
-                    cr.line_to(p3[0], p3[1])
+                    cr.move_to(*second_tangent)
+                    cr.line_to(*p3)
 
                     cr.stroke()
                     cr.set_line_width(self.pxToM(2))
@@ -278,14 +217,21 @@ class FieldWidget(Gtk.DrawingArea):
     def draw_splines(self, cr):
         for i, spline in enumerate(self.points.getLibsplines()):
             for k in np.linspace(0.02, 1, 200):
-                cr.move_to(
-                    spline.Point(k - 0.008)[0],
-                    spline.Point(k - 0.008)[1])
-                cr.line_to(spline.Point(k)[0], spline.Point(k)[1])
+                cr.move_to(*spline.Point(k - 0.008))
+                cr.line_to(*spline.Point(k))
                 cr.stroke()
             if i == 0:
-                self.draw_robot_at_point(cr, 0, 0.008, spline)
-            self.draw_robot_at_point(cr, 1, 0.008, spline)
+                self.draw_robot_at_point(cr, spline, 0)
+            self.draw_robot_at_point(cr, spline, 1)
+
+        mouse = np.array((self.mousex, self.mousey))
+
+        # Find the distance along the spline that is closest to the mouse
+        result, distance_spline = self.points.nearest_distance(mouse)
+
+        # if the mouse is close enough, draw the robot to show its width
+        if result and result.fun < 2:
+            self.draw_robot_at_point(cr, distance_spline, result.x)
 
     def export_json(self, file_name):
         self.path_to_export = os.path.join(

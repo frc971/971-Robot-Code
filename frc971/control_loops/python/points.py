@@ -1,5 +1,6 @@
 from constants import *
 import numpy as np
+import scipy.optimize
 from libspline import Spline, DistanceSpline, Trajectory
 import copy
 
@@ -118,6 +119,40 @@ class Points():
                 array[j, 1] = point[1]
             spline = Spline(np.ascontiguousarray(np.transpose(array)))
             self.libsplines.append(spline)
+
+    def nearest_distance(self, point):
+        """Finds the distance along the DistanceSpline that is closest to the
+        given point on the field"""
+        def distance(t, distance_spline, point):
+            return np.sum((distance_spline.XY(t) - point)**2)
+
+        # We know the derivative of the function,
+        # so scipy doesn't need to compute it every time
+        def ddistance(t, distance_spline, point):
+            return np.sum(2 * (distance_spline.XY(t) - point) *
+                          distance_spline.DXY(t))
+
+        distance_spline = DistanceSpline(self.getLibsplines())
+        best_result = None
+
+        # The optimizer finds local minima that often aren't what we want,
+        # so try from multiple locations to find a better minimum.
+        guess_points = np.linspace(0, distance_spline.Length(), num=5)
+
+        for guess in guess_points:
+            result = scipy.optimize.minimize(
+                distance,
+                guess,
+                args=(distance_spline, point),
+                bounds=((0, distance_spline.Length()), ),
+                jac=ddistance,
+            )
+
+            if result.success and (best_result == None
+                                   or result.fun < best_result.fun):
+                best_result = result
+
+        return best_result, distance_spline
 
     def toMultiSpline(self):
         multi_spline = {
