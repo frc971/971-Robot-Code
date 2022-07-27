@@ -36,6 +36,7 @@ class FieldWidget(Gtk.DrawingArea):
 
         self.points = Points()
         self.graph = Graph()
+        self.graph.cursor_watcher = self
         self.set_vexpand(True)
         self.set_hexpand(True)
         # list of multisplines
@@ -232,6 +233,14 @@ class FieldWidget(Gtk.DrawingArea):
         # if the mouse is close enough, draw the robot to show its width
         if result and result.fun < 2:
             self.draw_robot_at_point(cr, distance_spline, result.x)
+            self.graph.place_cursor(result.x[0])
+        elif self.graph.cursor:
+            x = self.graph.find_cursor()
+            self.draw_robot_at_point(cr, distance_spline, x)
+
+            # clear the cursor each draw so that it does not persist
+            # after you move off the spline
+            self.graph.cursor = None
 
     def export_json(self, file_name):
         self.path_to_export = os.path.join(
