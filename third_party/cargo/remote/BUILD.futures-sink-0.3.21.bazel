@@ -32,10 +32,11 @@ licenses([
 # Generated Targets
 
 rust_library(
-    name = "os_str_bytes",
+    name = "futures_sink",
     srcs = glob(["**/*.rs"]),
     crate_features = [
-        "raw_os_str",
+        "alloc",
+        "std",
     ],
     crate_root = "src/lib.rs",
     data = [],
@@ -45,10 +46,10 @@ rust_library(
     ],
     tags = [
         "cargo-raze",
-        "crate-name=os_str_bytes",
+        "crate-name=futures-sink",
         "manual",
     ],
-    version = "6.1.0",
+    version = "0.3.21",
     # buildifier: leave-alone
     deps = [
     ],

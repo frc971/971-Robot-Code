@@ -50,6 +50,6 @@ rust_library(
     version = "0.2.4",
     # buildifier: leave-alone
     deps = [
-        "@raze__os_str_bytes__6_1_0//:os_str_bytes",
+        "@raze__os_str_bytes__6_2_0//:os_str_bytes",
     ],
 )

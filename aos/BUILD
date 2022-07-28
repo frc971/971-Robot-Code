@@ -396,7 +396,7 @@ cc_test(
     ],
     data = [
         "//aos/events:pingpong_config",
-        "//aos/events:pong.bfbs",
+        "//aos/events:pong_fbs_reflection_out",
         "//aos/testdata:test_configs",
     ],
     target_compatible_with = ["@platforms//os:linux"],

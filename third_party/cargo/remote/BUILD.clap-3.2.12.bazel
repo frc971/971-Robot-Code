@@ -58,7 +58,7 @@ rust_binary(
         "crate-name=stdio-fixture",
         "manual",
     ],
-    version = "3.2.11",
+    version = "3.2.12",
     # buildifier: leave-alone
     deps = [
         ":clap",
@@ -200,7 +200,7 @@ rust_library(
         "crate-name=clap",
         "manual",
     ],
-    version = "3.2.11",
+    version = "3.2.12",
     # buildifier: leave-alone
     deps = [
         "@raze__atty__0_2_14//:atty",

@@ -14,6 +14,46 @@ Run with `--help` for more on usage.  To see a graphical visualization, pipe the
 aos_graph_nodes | dot -Tx11
 ```
 
+### Rust
+
+AOS has experimental rust support. This involves creating Rust wrappers for all of the relevant
+C++ types. There must be exactly one wrapper for each type, or you will get confusing errors about
+trying to convert Rust types with very similar names (in different crates though) when you try
+using them together. To standardize this, we have some conventions.
+
+We use autocxx to generate the raw wrappers. Sometimes autocxx needs tweaked C++ signatures to
+generate usable Rust bindings. These go in a separate C++ file with a `_for_rust` suffix, and have
+functions with `ForRust` suffixes.
+
+We want to pass around pointers and references to the autocxx-generated flatbuffers types so we can
+create byte slices to use with the Rust versions, but we ignore many of the flatbuffers types needed
+to wrap individual methods. Some of them are tricky to wrap.
+
+Converting between the autocxx-generated and rustc-generated flatbuffers types is tricky. The Rust
+flatbuffers API is based on slices, but the C++ API that autocxx is wrapping just uses pointers. We
+can convert from a Rust flatbuffer to its C++ equivalent pretty easily, but going the other way
+doesn't work. To maximize flexibility, each C++ wrapper module exposes APIs that take
+autocxx-generated types and provide convenient conversions for the types belonging to that module.
+Flatbuffers returned from C++ by value (typically in a `aos::Flatbuffer`) get returned as Rust
+`aos_flatbuffers::Flatbuffer` objects, while ones being returned from C++ by pointer (or reference)
+are exposed as the autocxx types.
+
+For the file `aos/xyz.fbs`, Rust wrappers go in `aos/xyz.rs`. The Rust flatbuffers generated
+code will be in `aos/xyz_fbs.rs`.
+
+For the file `aos/abc.h`, Rust wrappers go in `aos/abc.rs`. These wrappers may be more sophisticated
+than simple unsafe wrappers, but they should avoid adding additional functionality. Any additional
+C++ code goes in `aos/abc_for_rust.h`/`aos/abc_for_rust.cc`.
+
+All Rust functions intended to be called from other files gets exported outside of the `ffi`
+module. In some cases, this is just giving the raw autocxx wrappers a new name. In other cases,
+these wrappers can attach lifetimes etc and be safe. This makes it clear which functions and
+types are being exported, because autocxx generates a lot of wrappers. Do not just make the
+entire `ffi` module, or any of its submodules, public.
+
+Rust modules map to Bazel rules. This means we end up lots of Rust modules. We name them like
+`aos_events_event_loop` for all the code in `aos/events/event_loop.rs`.
+
 ### NOTES
 
 Some functions need to be in separate translation units in order for them to be guaranteed to work. As the C standard says,

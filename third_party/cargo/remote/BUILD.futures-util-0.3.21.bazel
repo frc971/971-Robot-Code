@@ -38,14 +38,24 @@ load(
 )
 
 cargo_build_script(
-    name = "proc_macro2_build_script",
+    name = "futures_util_build_script",
     srcs = glob(["**/*.rs"]),
     build_script_env = {
     },
     crate_features = [
-        "default",
-        "proc-macro",
-        "span-locations",
+        "alloc",
+        "async-await",
+        "async-await-macro",
+        "channel",
+        "futures-channel",
+        "futures-io",
+        "futures-macro",
+        "futures-sink",
+        "io",
+        "memchr",
+        "sink",
+        "slab",
+        "std",
     ],
     crate_root = "build.rs",
     data = glob(["**"]),
@@ -57,45 +67,60 @@ cargo_build_script(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.40",
+    version = "0.3.21",
     visibility = ["//visibility:private"],
     deps = [
     ],
 )
 
+# Unsupported target "flatten_unordered" with type "bench" omitted
+
+# Unsupported target "futures_unordered" with type "bench" omitted
+
 rust_library(
-    name = "proc_macro2",
+    name = "futures_util",
     srcs = glob(["**/*.rs"]),
     crate_features = [
-        "default",
-        "proc-macro",
-        "span-locations",
+        "alloc",
+        "async-await",
+        "async-await-macro",
+        "channel",
+        "futures-channel",
+        "futures-io",
+        "futures-macro",
+        "futures-sink",
+        "io",
+        "memchr",
+        "sink",
+        "slab",
+        "std",
     ],
     crate_root = "src/lib.rs",
     data = [],
     edition = "2018",
+    proc_macro_deps = [
+        "@raze__futures_macro__0_3_21//:futures_macro",
+    ],
     rustc_flags = [
         "--cap-lints=allow",
     ],
     tags = [
         "cargo-raze",
-        "crate-name=proc-macro2",
+        "crate-name=futures-util",
         "manual",
     ],
-    version = "1.0.40",
+    version = "0.3.21",
     # buildifier: leave-alone
     deps = [
-        ":proc_macro2_build_script",
-        "@raze__unicode_ident__1_0_2//:unicode_ident",
+        ":futures_util_build_script",
+        "@raze__futures_channel__0_3_21//:futures_channel",
+        "@raze__futures_core__0_3_21//:futures_core",
+        "@raze__futures_io__0_3_21//:futures_io",
+        "@raze__futures_sink__0_3_21//:futures_sink",
+        "@raze__futures_task__0_3_21//:futures_task",
+        "@raze__memchr__2_5_0//:memchr",
+        "@raze__pin_project_lite__0_2_9//:pin_project_lite",
+        "@raze__pin_utils__0_1_0//:pin_utils",
+        "@raze__slab__0_4_6//:slab",
     ],
 )
-
-# Unsupported target "comments" with type "test" omitted
-
-# Unsupported target "features" with type "test" omitted
-
-# Unsupported target "marker" with type "test" omitted
-
-# Unsupported target "test" with type "test" omitted
-
-# Unsupported target "test_fmt" with type "test" omitted

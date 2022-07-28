@@ -5,6 +5,7 @@ load("//tools/build_rules:apache.bzl", "apache_wrapper")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
 load("@npm//@bazel/typescript:index.bzl", "ts_library")
 load("@npm//@bazel/concatjs:index.bzl", "karma_web_test_suite")
+load("//tools/build_rules:autocxx.bzl", "autocxx_library")
 
 cc_test(
     name = "gflags_build_test",
@@ -119,7 +120,11 @@ go_binary(
 
 go_library(
     name = "build_tests_lib",
-    srcs = ["hello.go"],
+    srcs = [
+        "hello.go",
+        # Not sure why gazelle wants this here?
+        "hello_autocxx.h",
+    ],
     importpath = "github.com/frc971/971-Robot-Code/build_tests",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:private"],
@@ -190,4 +195,28 @@ cc_test(
     srcs = ["rust_in_cc.cc"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [":rust_in_cc_rs"],
+)
+
+cc_library(
+    name = "hello_autocxx_cc",
+    hdrs = [
+        "hello_autocxx.h",
+    ],
+)
+
+autocxx_library(
+    name = "hello_autocxx",
+    srcs = ["hello_autocxx.rs"],
+    libs = [":hello_autocxx_cc"],
+    override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
+)
+
+rust_test(
+    name = "hello_autocxx_test",
+    crate = ":hello_autocxx",
+    # TODO: Make Rust play happy with pic vs nopic. Details at:
+    # https://github.com/bazelbuild/rules_rust/issues/118
+    rustc_flags = ["-Crelocation-model=static"],
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
 )
