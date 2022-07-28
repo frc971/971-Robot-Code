@@ -5,7 +5,7 @@ import numpy as np
 import queue
 import threading
 import copy
-from points import Points
+from multispline import Multispline
 from libspline import Spline, DistanceSpline, Trajectory
 
 from matplotlib.backends.backend_gtk3agg import (FigureCanvasGTK3Agg as
@@ -49,20 +49,35 @@ class Graph(Gtk.Bin):
         cursor_index = int(self.cursor / self.dt)
         # use the time to index into the position data
         distance_at_cursor = self.data[0][cursor_index - 1]
-        return distance_at_cursor
+        multispline_index = int(self.data[5][cursor_index - 1])
+        return (multispline_index, distance_at_cursor)
 
-    def place_cursor(self, distance):
+    def place_cursor(self, multispline_index, distance):
         """Places the cursor at a certain distance along the spline"""
         if self.data is None:
             return
-        # convert distance along spline to time along trajectory
-        index = np.searchsorted(self.data[0], distance, side='left')
+
+        # find the section that is the current multispline
+        start_of_multispline = np.searchsorted(self.data[5],
+                                               multispline_index,
+                                               side='left')
+        end_of_multispline = np.searchsorted(self.data[5],
+                                             multispline_index,
+                                             side='right')
+        multispline_region = self.data[0][
+            start_of_multispline:end_of_multispline]
+
+        # convert distance along this multispline to time along trajectory
+        index = np.searchsorted(multispline_region, distance,
+                                side='left') + start_of_multispline
         time = index * self.dt
+
         self.cursor = time
         self.redraw_cursor()
 
     def on_mouse_move(self, event):
         """Updates the cursor and all the canvases that watch it on mouse move"""
+
         if self.data is None:
             return
         total_steps_taken = self.data.shape[1]
@@ -84,13 +99,13 @@ class Graph(Gtk.Bin):
         self.cursor_line = self.axis.axvline(self.cursor)
         self.canvas.draw_idle()
 
-    def schedule_recalculate(self, points):
+    def schedule_recalculate(self, multisplines):
         """Submits points to be graphed
 
         Can be superseded by newer points if an old one isn't finished processing.
         """
-        if not points.getLibsplines(): return
-        new_copy = copy.deepcopy(points)
+
+        new_copy = copy.deepcopy(multisplines)
 
         # empty the queue
         try:
@@ -105,23 +120,43 @@ class Graph(Gtk.Bin):
         while True:
             self.recalculate_graph(self.queue.get())
 
-    def recalculate_graph(self, points):
-        if not points.getLibsplines(): return
+    def recalculate_graph(self, multisplines):
+        if len(multisplines) == 0: return
 
         # call C++ wrappers to calculate the trajectory
-        distance_spline = DistanceSpline(points.getLibsplines())
-        traj = Trajectory(distance_spline)
-        points.addConstraintsToTrajectory(traj)
-        traj.Plan()
-        self.data = traj.GetPlanXVA(self.dt)
-        if self.data is None: return
+        full_data = None
+
+        for multispline_index, multispline in enumerate(multisplines):
+            multispline.update_lib_spline()
+            if len(multispline.getLibsplines()) == 0: continue
+            distanceSpline = DistanceSpline(multispline.getLibsplines())
+            traj = Trajectory(distanceSpline)
+            multispline.addConstraintsToTrajectory(traj)
+            traj.Plan()
+            XVA = traj.GetPlanXVA(self.dt)
+            if XVA is None: continue
+            position, _, _ = XVA
+
+            voltages = np.transpose([traj.Voltage(x) for x in position])
+
+            data = np.append(XVA, voltages, axis=0)
+
+            indicies = np.full((1, XVA.shape[1]), multispline_index, dtype=int)
+            data = np.append(data, indicies, axis=0)
+
+            if full_data is not None:
+                full_data = np.append(full_data, data, axis=1)
+            else:
+                full_data = data
+
+        if full_data is None: return
+        self.data = full_data
 
         # extract values to be graphed
-        total_steps_taken = self.data.shape[1]
+        total_steps_taken = full_data.shape[1]
         total_time = self.dt * total_steps_taken
         times = np.linspace(0, total_time, num=total_steps_taken)
-        position, velocity, acceleration = self.data
-        left_voltage, right_voltage = zip(*(traj.Voltage(x) for x in position))
+        position, velocity, acceleration, left_voltage, right_voltage, _ = full_data
 
         # update graph
         self.axis.clear()

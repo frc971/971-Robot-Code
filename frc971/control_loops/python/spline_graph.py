@@ -21,7 +21,7 @@ class GridWindow(Gtk.Window):
         self.connect(event, handler)
 
     def clear_clicked(self, button):
-        self.field.clear_graph()
+        self.field.clear()
 
     def output_json_clicked(self, button):
         self.field.export_json(self.file_name_box.get_text())
@@ -29,31 +29,36 @@ class GridWindow(Gtk.Window):
     def input_json_clicked(self, button):
         self.field.import_json(self.file_name_box.get_text())
         self.long_input.set_value(
-            self.field.points.getConstraint("LONGITUDINAL_ACCELERATION"))
+            self.field.active_multispline.getConstraint(
+                "LONGITUDINAL_ACCELERATION"))
         self.lat_input.set_value(
-            self.field.points.getConstraint("LATERAL_ACCELERATION"))
-        self.vol_input.set_value(self.field.points.getConstraint("VOLTAGE"))
+            self.field.active_multispline.getConstraint(
+                "LATERAL_ACCELERATION"))
+        self.vol_input.set_value(
+            self.field.active_multispline.getConstraint("VOLTAGE"))
 
     def undo_func(self, *args):
         self.field.undo()
 
     def long_changed(self, button):
         value = self.long_input.get_value()
-        self.field.points.setConstraint("LONGITUDINAL_ACCELERATION", value)
-        self.field.graph.schedule_recalculate(self.field.points)
+        self.field.active_multispline.setConstraint(
+            "LONGITUDINAL_ACCELERATION", value)
+        self.field.graph.schedule_recalculate(self.field.multisplines)
 
     def lat_changed(self, button):
         value = self.lat_input.get_value()
-        self.field.points.setConstraint("LATERAL_ACCELERATION", value)
-        self.field.graph.schedule_recalculate(self.field.points)
+        self.field.active_multispline.setConstraint("LATERAL_ACCELERATION",
+                                                    value)
+        self.field.graph.schedule_recalculate(self.field.multisplines)
 
     def vel_changed(self, button):
         value = self.vel_input.get_value()
 
     def vol_changed(self, button):
         value = self.vol_input.get_value()
-        self.field.points.setConstraint("VOLTAGE", value)
-        self.field.graph.schedule_recalculate(self.field.points)
+        self.field.active_multispline.setConstraint("VOLTAGE", value)
+        self.field.graph.schedule_recalculate(self.field.multisplines)
 
     def input_combobox_choice(self, combo):
         text = combo.get_active_text()
@@ -90,7 +95,8 @@ class GridWindow(Gtk.Window):
         self.long_label = Gtk.Label()
         self.long_label.set_text("Longitudinal Acceleration Restriction")
         self.long_input.set_value(
-            self.field.points.getConstraint("LONGITUDINAL_ACCELERATION"))
+            self.field.active_multispline.getConstraint(
+                "LONGITUDINAL_ACCELERATION"))
 
         self.lat_input = Gtk.SpinButton()
         self.lat_input.set_size_request(100, 20)
@@ -102,7 +108,8 @@ class GridWindow(Gtk.Window):
         self.lat_label = Gtk.Label()
         self.lat_label.set_text("Lateral Acceleration Restriction")
         self.lat_input.set_value(
-            self.field.points.getConstraint("LATERAL_ACCELERATION"))
+            self.field.active_multispline.getConstraint(
+                "LATERAL_ACCELERATION"))
 
         self.vel_input = Gtk.SpinButton()
         self.vel_input.set_size_request(100, 20)
@@ -125,7 +132,8 @@ class GridWindow(Gtk.Window):
         self.vol_input.connect("value-changed", self.vol_changed)
         self.vol_label = Gtk.Label()
         self.vol_label.set_text("Voltage Restriction")
-        self.vol_input.set_value(self.field.points.getConstraint("VOLTAGE"))
+        self.vol_input.set_value(
+            self.field.active_multispline.getConstraint("VOLTAGE"))
 
         self.output_json = Gtk.Button.new_with_label("Export")
         self.output_json.set_size_request(100, 40)

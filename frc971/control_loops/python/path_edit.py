@@ -12,11 +12,12 @@ import cairo
 from libspline import Spline, DistanceSpline
 import enum
 import json
+import copy
 from constants import FIELD
 from constants import get_json_folder
 from constants import ROBOT_SIDE_TO_BALL_CENTER, ROBOT_SIDE_TO_HATCH_PANEL, HATCH_PANEL_WIDTH, BALL_RADIUS
 from drawing_constants import set_color, draw_px_cross, draw_px_x, display_text, draw_control_points
-from points import Points
+from multispline import Multispline, ControlPointIndex
 import time
 
 
@@ -34,13 +35,12 @@ class FieldWidget(Gtk.DrawingArea):
         self.set_size_request(self.mToPx(self.field.width),
                               self.mToPx(self.field.length))
 
-        self.points = Points()
+        self.multisplines = []
         self.graph = Graph()
         self.graph.cursor_watcher = self
         self.set_vexpand(True)
         self.set_hexpand(True)
-        # list of multisplines
-        self.multispline_stack = []
+        self.undo_history = []
         # init field drawing
         # add default spline for testing purposes
         # init editing / viewing modes and pointer location
@@ -52,9 +52,8 @@ class FieldWidget(Gtk.DrawingArea):
                                            'points_for_pathedit.json')
 
         # For the editing mode
-        self.index_of_edit = -1  # Can't be zero beause array starts at 0
-        self.held_x = 0
-        self.spline_edit = -1
+        self.control_point_index = None
+        self.active_multispline_index = -1
 
         self.zoom_transform = cairo.Matrix()
 
@@ -63,6 +62,15 @@ class FieldWidget(Gtk.DrawingArea):
                         | Gdk.EventMask.BUTTON_RELEASE_MASK
                         | Gdk.EventMask.POINTER_MOTION_MASK
                         | Gdk.EventMask.SCROLL_MASK)
+
+    @property
+    def active_multispline(self):
+        """Get the current active multispline or create a new one"""
+        if not self.multisplines:
+            self.multisplines.append(Multispline())
+            self.active_multispline_index = -1
+
+        return self.multisplines[self.active_multispline_index]
 
     def set_field(self, field):
         self.field = field
@@ -176,14 +184,18 @@ class FieldWidget(Gtk.DrawingArea):
         cr.set_line_width(self.pxToM(1))
         if self.mode == Mode.kPlacing or self.mode == Mode.kViewing:
             set_color(cr, palette["BLACK"])
-            for i, point in enumerate(self.points.getPoints()):
-                draw_px_x(cr, point[0], point[1], self.pxToM(2))
+            for multispline in self.multisplines:
+                for i, point in enumerate(multispline.staged_points):
+                    draw_px_x(cr, point[0], point[1], self.pxToM(2))
             set_color(cr, palette["WHITE"])
         elif self.mode == Mode.kEditing:
             set_color(cr, palette["BLACK"])
-            if self.points.getSplines():
+            if len(self.multisplines) != 0 and self.multisplines[0].getSplines(
+            ):
                 self.draw_splines(cr)
-                for i, points in enumerate(self.points.getSplines()):
+
+            for multispline in self.multisplines:
+                for i, points in enumerate(multispline.getSplines()):
                     points = [np.array([x, y]) for (x, y) in points]
                     draw_control_points(cr,
                                         points,
@@ -216,29 +228,42 @@ class FieldWidget(Gtk.DrawingArea):
         cr.restore()
 
     def draw_splines(self, cr):
-        for i, spline in enumerate(self.points.getLibsplines()):
-            for k in np.linspace(0.02, 1, 200):
-                cr.move_to(*spline.Point(k - 0.008))
-                cr.line_to(*spline.Point(k))
-                cr.stroke()
-            if i == 0:
-                self.draw_robot_at_point(cr, spline, 0)
-            self.draw_robot_at_point(cr, spline, 1)
+        for multispline in self.multisplines:
+            for i, spline in enumerate(multispline.getLibsplines()):
+                # draw lots of really small line segments to
+                # approximate the shape of the spline
+                for k in np.linspace(0.02, 1, 200):
+                    cr.move_to(*spline.Point(k - 0.008))
+                    cr.line_to(*spline.Point(k))
+                    cr.stroke()
+
+                if i == 0:
+                    self.draw_robot_at_point(cr, spline, 0)
+                self.draw_robot_at_point(cr, spline, 1)
 
         mouse = np.array((self.mousex, self.mousey))
 
-        # Find the distance along the spline that is closest to the mouse
-        result, distance_spline = self.points.nearest_distance(mouse)
+        multispline, result = Multispline.nearest_distance(
+            self.multisplines, mouse)
 
-        # if the mouse is close enough, draw the robot to show its width
-        if result and result.fun < 2:
-            self.draw_robot_at_point(cr, distance_spline, result.x)
-            self.graph.place_cursor(result.x[0])
-        elif self.graph.cursor:
-            x = self.graph.find_cursor()
+        # if the mouse is close enough, draw the robot
+        if result is not None and result.fun < 2:
+            distance_spline = DistanceSpline(multispline.getLibsplines())
+            x = result.x[0]
+
+            # draw the robot to show its width
             self.draw_robot_at_point(cr, distance_spline, x)
 
-            # clear the cursor each draw so that it does not persist
+            multispline_index = self.multisplines.index(multispline)
+            self.graph.place_cursor(multispline_index, distance=result.x[0])
+        elif self.graph.cursor is not None:
+            multispline_index, x = self.graph.find_cursor()
+            distance_spline = DistanceSpline(
+                self.multisplines[multispline_index].getLibsplines())
+
+            self.draw_robot_at_point(cr, distance_spline, x)
+
+            # clear the cursor each draw so it doesn't persist
             # after you move off the spline
             self.graph.cursor = None
 
@@ -251,10 +276,12 @@ class FieldWidget(Gtk.DrawingArea):
         )
 
         # Will export to json file
-        multi_spline = self.points.toMultiSpline()
-        print(multi_spline)
+        multisplines_object = [
+            multispline.toJsonObject() for multispline in self.multisplines
+        ]
+        print(multisplines_object)
         with open(self.path_to_export, mode='w') as points_file:
-            json.dump(multi_spline, points_file)
+            json.dump(multisplines_object, points_file)
 
     def import_json(self, file_name):
         self.path_to_export = os.path.join(
@@ -267,41 +294,53 @@ class FieldWidget(Gtk.DrawingArea):
         # import from json file
         print("LOADING LOAD FROM " + file_name)  # Load takes a few seconds
         with open(self.path_to_export) as points_file:
-            multi_spline = json.load(points_file)
+            multisplines_object = json.load(points_file)
+
+        self.attempt_append_multisplines()
+
+        # TODO: Export multisplines in different files
+        if type(multisplines_object) is dict:
+            multisplines_object = [multisplines_object]
+        else:
+            self.multisplines = []
 
         # if people messed with the spline json,
         # it might not be the right length
         # so give them a nice error message
-        try:  # try to salvage as many segments of the spline as possible
-            self.points.fromMultiSpline(multi_spline)
-        except IndexError:
-            # check if they're both 6+5*(k-1) long
-            expected_length = 6 + 5 * (multi_spline["spline_count"] - 1)
-            x_len = len(multi_spline["spline_x"])
-            y_len = len(multi_spline["spline_x"])
-            if x_len is not expected_length:
-                print(
-                    "Error: spline x values were not the expected length; expected {} got {}"
-                    .format(expected_length, x_len))
-            elif y_len is not expected_length:
-                print(
-                    "Error: spline y values were not the expected length; expected {} got {}"
-                    .format(expected_length, y_len))
+        for multispline_object in multisplines_object:
+            print(multispline_object)
+            try:  # try to salvage as many segments of the spline as possible
+                self.multisplines.append(
+                    Multispline.fromJsonObject(multispline_object))
+            except IndexError:
+                # check if they're both 6+5*(k-1) long
+                expected_length = 6 + 5 * (multispline_object["spline_count"] -
+                                           1)
+                x_len = len(multispline_object["spline_x"])
+                y_len = len(multispline_object["spline_x"])
+                if x_len is not expected_length:
+                    print(
+                        "Error: spline x values were not the expected length; expected {} got {}"
+                        .format(expected_length, x_len))
+                elif y_len is not expected_length:
+                    print(
+                        "Error: spline y values were not the expected length; expected {} got {}"
+                        .format(expected_length, y_len))
 
         print("SPLINES LOADED")
         self.mode = Mode.kEditing
         self.queue_draw()
-        self.graph.schedule_recalculate(self.points)
+        self.graph.schedule_recalculate(self.multisplines)
 
-    def attempt_append_multispline(self):
-        if (len(self.multispline_stack) == 0
-                or self.points.toMultiSpline() != self.multispline_stack[-1]):
-            self.multispline_stack.append(self.points.toMultiSpline())
+    def attempt_append_multisplines(self):
+        if len(self.undo_history
+               ) == 0 or self.multisplines != self.undo_history[-1]:
+            self.undo_history.append(copy.deepcopy(self.multisplines))
 
-    def clear_graph(self, should_attempt_append=True):
+    def clear(self, should_attempt_append=True):
         if should_attempt_append:
-            self.attempt_append_multispline()
-        self.points = Points()
+            self.attempt_append_multisplines()
+        self.multisplines = []
         #recalulate graph using new points
         self.graph.axis.clear()
         self.graph.queue_draw()
@@ -312,20 +351,20 @@ class FieldWidget(Gtk.DrawingArea):
 
     def undo(self):
         try:
-            self.multispline_stack.pop()
+            self.undo_history.pop()
         except IndexError:
             return
-        if len(self.multispline_stack) == 0:
-            self.clear_graph(
-                should_attempt_append=False)  #clear, don't do anything
+        if len(self.undo_history) == 0:
+            self.clear(should_attempt_append=False)  #clear, don't do anything
             return
-        multispline = self.multispline_stack[-1]
-        if multispline['spline_count'] > 0:
-            self.points.fromMultiSpline(multispline)
+        if len(self.multisplines) > 0 and not any(
+                multispline.staged_points
+                for multispline in self.multisplines):
             self.mode = Mode.kEditing
         else:
             self.mode = Mode.kPlacing
-            self.clear_graph(should_attempt_append=False)
+            self.clear(should_attempt_append=False)
+        self.multisplines = copy.deepcopy(self.undo_history[-1])
         self.queue_draw()
 
     def do_key_press_event(self, event):
@@ -338,43 +377,50 @@ class FieldWidget(Gtk.DrawingArea):
             # F0 = A1
             # B1 = 2F0 - E0
             # C1= d0 + 4F0 - 4E0
-            spline_index = len(self.points.getSplines()) - 1
-            self.points.resetPoints()
-            self.points.extrapolate(
-                self.points.getSplines()[len(self.points.getSplines()) - 1][5],
-                self.points.getSplines()[len(self.points.getSplines()) - 1][4],
-                self.points.getSplines()[len(self.points.getSplines()) - 1][3])
+            multispline = self.active_multispline
+            multispline.extrapolate()
+            self.queue_draw()
+        elif keyval == Gdk.KEY_m:
+            self.multisplines.append(Multispline())
+            self.active_spline_index = len(self.multisplines) - 1
+            self.mode = Mode.kPlacing
+
+            multispline = self.multisplines[-2]
+            #multispline.extrapolate()
             self.queue_draw()
 
     def do_button_release_event(self, event):
-        self.attempt_append_multispline()
+        self.attempt_append_multisplines()
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
         if self.mode == Mode.kEditing:
-            if self.index_of_edit > -1:
-                self.points.setSplines(self.spline_edit, self.index_of_edit,
-                                       self.mousex, self.mousey)
+            if self.control_point_index != None:
+                multispline = self.multisplines[
+                    self.control_point_index.multispline_index]
 
-                self.points.splineExtrapolate(self.spline_edit)
+                multispline.setControlPoint(self.control_point_index,
+                                            self.mousex, self.mousey)
 
-                self.points.update_lib_spline()
-                self.graph.schedule_recalculate(self.points)
+                multispline.splineExtrapolate(
+                    self.control_point_index.spline_index)
 
-                self.index_of_edit = -1
-                self.spline_edit = -1
+                multispline.update_lib_spline()
+                self.graph.schedule_recalculate(self.multisplines)
+
+                self.control_point_index = None
 
     def do_button_press_event(self, event):
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
 
         if self.mode == Mode.kPlacing:
-            if self.points.add_point(self.mousex, self.mousey):
+            if self.active_multispline.addPoint(self.mousex, self.mousey):
                 self.mode = Mode.kEditing
-                self.graph.schedule_recalculate(self.points)
+                self.graph.schedule_recalculate(self.multisplines)
         elif self.mode == Mode.kEditing:
-            # Now after index_of_edit is not -1, the point is selected, so
-            # user can click for new point
-            if self.index_of_edit == -1:
+            # Now after we have no control point index,
+            # the user can click for new point
+            if self.control_point_index == None:
                 # Get clicked point
                 # Find nearest
                 # Move nearest to clicked
@@ -383,19 +429,19 @@ class FieldWidget(Gtk.DrawingArea):
                 # Save the index of the point closest
                 nearest = 1  # Max distance away a the selected point can be in meters
                 index_of_closest = 0
-                for index_splines, points in enumerate(
-                        self.points.getSplines()):
-                    for index_points, val in enumerate(points):
-                        distance = np.sqrt((cur_p[0] - val[0])**2 +
-                                           (cur_p[1] - val[1])**2)
-                        if distance < nearest:
-                            nearest = distance
-                            index_of_closest = index_points
-                            print("Nearest: " + str(nearest))
-                            print("Index: " + str(index_of_closest))
-                            self.index_of_edit = index_of_closest
-                            self.spline_edit = index_splines
-                            self.held_x = self.mousex
+                for index_multisplines, multispline in enumerate(
+                        self.multisplines):
+                    for index_splines, points in enumerate(
+                            multispline.getSplines()):
+                        for index_points, val in enumerate(points):
+                            distance = np.sqrt((cur_p[0] - val[0])**2 +
+                                               (cur_p[1] - val[1])**2)
+                            if distance < nearest:
+                                nearest = distance
+                                index_of_closest = index_points
+                                self.control_point_index = ControlPointIndex(
+                                    index_multisplines, index_splines,
+                                    index_points)
         self.queue_draw()
 
     def do_motion_notify_event(self, event):
@@ -407,13 +453,16 @@ class FieldWidget(Gtk.DrawingArea):
         dif_y = self.mousey - old_y
         difs = np.array([dif_x, dif_y])
 
-        if self.mode == Mode.kEditing and self.spline_edit != -1:
-            self.points.updates_for_mouse_move(self.index_of_edit,
-                                               self.spline_edit, self.mousex,
-                                               self.mousey, difs)
+        if self.mode == Mode.kEditing and self.control_point_index != None:
+            multispline = self.multisplines[
+                self.control_point_index.multispline_index]
+            multispline.updates_for_mouse_move(
+                self.control_point_index.control_point_index,
+                self.control_point_index.spline_index, self.mousex,
+                self.mousey, difs)
 
-            self.points.update_lib_spline()
-            self.graph.schedule_recalculate(self.points)
+            multispline.update_lib_spline()
+            self.graph.schedule_recalculate(self.multisplines)
         self.queue_draw()
 
     def do_scroll_event(self, event):
