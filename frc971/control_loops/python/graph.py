@@ -47,6 +47,8 @@ class Graph(Gtk.Bin):
         if self.data is None:
             return None
         cursor_index = int(self.cursor / self.dt)
+        if cursor_index > self.data.size:
+            return None
         # use the time to index into the position data
         distance_at_cursor = self.data[0][cursor_index - 1]
         multispline_index = int(self.data[5][cursor_index - 1])

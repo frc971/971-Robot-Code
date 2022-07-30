@@ -246,17 +246,7 @@ class FieldWidget(Gtk.DrawingArea):
         multispline, result = Multispline.nearest_distance(
             self.multisplines, mouse)
 
-        # if the mouse is close enough, draw the robot
-        if result is not None and result.fun < 2:
-            distance_spline = DistanceSpline(multispline.getLibsplines())
-            x = result.x[0]
-
-            # draw the robot to show its width
-            self.draw_robot_at_point(cr, distance_spline, x)
-
-            multispline_index = self.multisplines.index(multispline)
-            self.graph.place_cursor(multispline_index, distance=result.x[0])
-        elif self.graph.cursor is not None:
+        if self.graph.cursor is not None and self.graph.data is not None:
             multispline_index, x = self.graph.find_cursor()
             distance_spline = DistanceSpline(
                 self.multisplines[multispline_index].getLibsplines())
@@ -266,6 +256,15 @@ class FieldWidget(Gtk.DrawingArea):
             # clear the cursor each draw so it doesn't persist
             # after you move off the spline
             self.graph.cursor = None
+        elif result is not None and result.fun < 2:
+            distance_spline = DistanceSpline(multispline.getLibsplines())
+            x = result.x[0]
+
+            # draw the robot to show its width
+            self.draw_robot_at_point(cr, distance_spline, x)
+
+            multispline_index = self.multisplines.index(multispline)
+            self.graph.place_cursor(multispline_index, distance=result.x[0])
 
     def export_json(self, file_name):
         self.path_to_export = os.path.join(
