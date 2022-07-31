@@ -1028,6 +1028,14 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/MarkupSafe-1.1.1.tar.gz",
 )
 
+http_archive(
+    name = "python_yapf",
+    build_file = "@//debian:python_yapf.BUILD",
+    sha256 = "410ed0f592c898d75d73f7792aee6569bdbc0b57bc72b417c722c17f41f66b12",
+    strip_prefix = "yapf-0.32.0",
+    url = "https://github.com/google/yapf/archive/refs/tags/v0.32.0.tar.gz",
+)
+
 # //debian:lzma_amd64
 http_archive(
     name = "lzma_amd64",

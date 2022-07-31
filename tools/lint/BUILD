@@ -35,6 +35,17 @@ sh_binary(
 )
 
 sh_binary(
+    name = "yapf",
+    srcs = ["yapf.sh"],
+    data = [
+        "@python_yapf",
+    ],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+sh_binary(
     name = "prettier",
     srcs = ["prettier.sh"],
     data = [
@@ -56,6 +67,7 @@ sh_binary(
         ":gofmt",
         ":prettier",
         ":rustfmt",
+        ":yapf",
         "//:gazelle-runner",
         "//tools/go:mirror_go_repos",
         "//tools/go:tweak_gazelle_go_deps",

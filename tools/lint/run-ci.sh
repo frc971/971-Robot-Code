@@ -89,6 +89,10 @@ prettier() {
     ./tools/lint/prettier
 }
 
+yapf() {
+    ./tools/lint/yapf
+}
+
 git_status_is_clean() {
     cd "${BUILD_WORKSPACE_DIRECTORY}"
     if ! git diff --quiet; then
@@ -110,6 +114,7 @@ readonly -a LINTERS=(
     tweak_cargo_raze
     buildifier
     prettier
+    yapf
     git_status_is_clean  # This must the last linter.
 )
 
