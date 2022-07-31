@@ -6,6 +6,7 @@ import gi
 from path_edit import FieldWidget
 from basic_window import RunApp
 from constants import FIELDS, FIELD, SCREEN_SIZE
+
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gtk, GLib
 import cairo
@@ -14,7 +15,9 @@ import os
 
 
 class GridWindow(Gtk.Window):
+
     def method_connect(self, event, cb):
+
         def handler(obj, *args):
             cb(*args)
 

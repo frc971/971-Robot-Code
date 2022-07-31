@@ -58,7 +58,8 @@ def display_text(cr, text, widtha, heighta, widthb, heightb):
     cr.show_text(text)
     cr.scale(widthb, -heightb)
 
+
 def draw_points(cr, p, size):
     for i in range(0, len(p)):
-        draw_px_cross(cr, p[i][0], p[i][1], size, Color(
-            0, np.sqrt(0.2 * i), 0))
+        draw_px_cross(cr, p[i][0], p[i][1], size,
+                      Color(0, np.sqrt(0.2 * i), 0))

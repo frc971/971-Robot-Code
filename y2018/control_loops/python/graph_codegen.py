@@ -23,16 +23,16 @@ def add_edge(cc_file, name, segment, index, reverse):
         alpha_unitizer = "(::Eigen::Matrix<double, 2, 2>() << %f, %f, %f, %f).finished()" % (
             segment.alpha_unitizer[0, 0], segment.alpha_unitizer[0, 1],
             segment.alpha_unitizer[1, 0], segment.alpha_unitizer[1, 1])
-    cc_file.append( "  trajectories->emplace_back(%s," % (vmax))
-    cc_file.append( "                             %s," % (alpha_unitizer))
+    cc_file.append("  trajectories->emplace_back(%s," % (vmax))
+    cc_file.append("                             %s," % (alpha_unitizer))
     if reverse:
         cc_file.append(
             "                             Trajectory(Path::Reversed(%s()), 0.005));"
             % (path_function_name(str(name))))
     else:
         cc_file.append(
-            "                             Trajectory(%s(), 0.005));"
-            % (path_function_name(str(name))))
+            "                             Trajectory(%s(), 0.005));" %
+            (path_function_name(str(name))))
 
     start_index = None
     end_index = None
@@ -45,15 +45,15 @@ def add_edge(cc_file, name, segment, index, reverse):
     if reverse:
         start_index, end_index = end_index, start_index
 
-    cc_file.append("  edges.push_back(SearchGraph::Edge{%s(), %s()," %
-                   (index_function_name(start_index),
-                    index_function_name(end_index)))
     cc_file.append(
-        "                     (trajectories->back().trajectory.path().length() + 0.2)});")
+        "  edges.push_back(SearchGraph::Edge{%s(), %s()," %
+        (index_function_name(start_index), index_function_name(end_index)))
+    cc_file.append(
+        "                     (trajectories->back().trajectory.path().length() + 0.2)});"
+    )
 
     # TODO(austin): Allow different vmaxes for different paths.
-    cc_file.append(
-        "  trajectories->back().trajectory.OptimizeTrajectory(")
+    cc_file.append("  trajectories->back().trajectory.OptimizeTrajectory(")
     cc_file.append("      trajectories->back().alpha_unitizer,")
     cc_file.append("      trajectories->back().vmax);")
     cc_file.append("")
@@ -116,15 +116,16 @@ def main(argv):
         h_file.append("")
         h_file.append("constexpr uint32_t %s() { return %d; }" %
                       (index_function_name(point[1]), index))
-        h_file.append(
-            "inline ::Eigen::Matrix<double, 2, 1> %sPoint() {" % point[1])
+        h_file.append("inline ::Eigen::Matrix<double, 2, 1> %sPoint() {" %
+                      point[1])
         h_file.append(
             "  return (::Eigen::Matrix<double, 2, 1>() << %f, %f).finished();"
             % (numpy.pi / 2.0 - point[0][0], numpy.pi / 2.0 - point[0][1]))
         h_file.append("}")
 
     front_points = [
-        index_function_name(point[1]) + "()" for point in graph_generate.front_points
+        index_function_name(point[1]) + "()"
+        for point in graph_generate.front_points
     ]
     h_file.append("")
     h_file.append("constexpr ::std::array<uint32_t, %d> FrontPoints() {" %
@@ -134,7 +135,8 @@ def main(argv):
     h_file.append("}")
 
     back_points = [
-        index_function_name(point[1]) + "()" for point in graph_generate.back_points
+        index_function_name(point[1]) + "()"
+        for point in graph_generate.back_points
     ]
     h_file.append("")
     h_file.append("constexpr ::std::array<uint32_t, %d> BackPoints() {" %
@@ -149,10 +151,10 @@ def main(argv):
     for name, segment in list(enumerate(graph_generate.unnamed_segments)) + [
         (x.name, x) for x in graph_generate.named_segments
     ]:
-        h_file.append(
-            "::std::unique_ptr<Path> %s();" % path_function_name(name))
-        cc_file.append(
-            "::std::unique_ptr<Path> %s() {" % path_function_name(name))
+        h_file.append("::std::unique_ptr<Path> %s();" %
+                      path_function_name(name))
+        cc_file.append("::std::unique_ptr<Path> %s() {" %
+                       path_function_name(name))
         cc_file.append("  return ::std::unique_ptr<Path>(new Path({")
         for point in segment.ToThetaPoints():
             cc_file.append("      {{%.12f, %.12f, %.12f," %
@@ -188,7 +190,8 @@ def main(argv):
                    "::std::vector<TrajectoryAndParams> *trajectories,")
     cc_file.append("                            "
                    "const ::Eigen::Matrix<double, 2, 2> &alpha_unitizer,")
-    cc_file.append("                            " "double vmax) {")
+    cc_file.append("                            "
+                   "double vmax) {")
     cc_file.append("  ::std::vector<SearchGraph::Edge> edges;")
 
     index = 0
@@ -202,8 +205,8 @@ def main(argv):
         add_edge(cc_file, name, segment, index, True)
         index += 1
 
-    cc_file.append("  return SearchGraph(%d, ::std::move(edges));" % len(
-        graph_generate.points))
+    cc_file.append("  return SearchGraph(%d, ::std::move(edges));" %
+                   len(graph_generate.points))
     cc_file.append("}")
 
     h_file.append("")

@@ -27,12 +27,15 @@ kClimber = linear_system.LinearSystemParams(
     kalman_q_voltage=35.0,
     kalman_r_position=0.05)
 
+
 def main(argv):
     if FLAGS.plot:
         R = numpy.matrix([[0.2], [0.0]])
         linear_system.PlotKick(kClimber, R, plant_params=kClimber)
-        linear_system.PlotMotion(
-            kClimber, R, max_velocity=5.0, plant_params=kClimber)
+        linear_system.PlotMotion(kClimber,
+                                 R,
+                                 max_velocity=5.0,
+                                 plant_params=kClimber)
 
     # Write the generated constants out to a file.
     if len(argv) != 5:
@@ -41,8 +44,8 @@ def main(argv):
         )
     else:
         namespaces = ['y2022', 'control_loops', 'superstructure', 'climber']
-        linear_system.WriteLinearSystem(kClimber,
-                                        argv[1:3], argv[3:5], namespaces)
+        linear_system.WriteLinearSystem(kClimber, argv[1:3], argv[3:5],
+                                        namespaces)
 
 
 if __name__ == '__main__':

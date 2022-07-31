@@ -20,6 +20,7 @@ def RungeKutta(f, x, dt):
 
 
 class Dynamics(object):
+
     def __init__(self, dt):
         self.dt = dt
 
@@ -61,28 +62,29 @@ class Dynamics(object):
             [[self.G1 * self.Kt / self.R, 0.0],
              [0.0, self.G2 * self.kNumDistalMotors * self.Kt / self.R]])
         self.K4 = numpy.matrix(
-            [[self.G1 * self.G1 * self.Kt / (self.Kv * self.R), 0.0], [
-                0.0, self.G2 * self.G2 * self.Kt * self.kNumDistalMotors /
-                (self.Kv * self.R)
-            ]])
+            [[self.G1 * self.G1 * self.Kt / (self.Kv * self.R), 0.0],
+             [
+                 0.0, self.G2 * self.G2 * self.Kt * self.kNumDistalMotors /
+                 (self.Kv * self.R)
+             ]])
 
         # These constants are for the Extended Kalman Filter
         # Q is the covariance of the X values.  Use the square of the standard
         # deviation of the error accumulated each time step.
-        self.Q_x_covariance = numpy.matrix([[0.001**2,0.0,0.0,0.0,0.0,0.0],
-                                       [0.0,0.001**2,0.0,0.0,0.0,0.0],
-                                       [0.0,0.0,0.001**2,0.0,0.0,0.0],
-                                       [0.0,0.0,0.0,0.001**2,0.0,0.0],
-                                       [0.0,0.0,0.0,0.0,10.0**2,0.0],
-                                       [0.0,0.0,0.0,0.0,0.0,10.0**2]])
+        self.Q_x_covariance = numpy.matrix(
+            [[0.001**2, 0.0, 0.0, 0.0, 0.0, 0.0],
+             [0.0, 0.001**2, 0.0, 0.0, 0.0, 0.0],
+             [0.0, 0.0, 0.001**2, 0.0, 0.0, 0.0],
+             [0.0, 0.0, 0.0, 0.001**2, 0.0, 0.0],
+             [0.0, 0.0, 0.0, 0.0, 10.0**2, 0.0],
+             [0.0, 0.0, 0.0, 0.0, 0.0, 10.0**2]])
         # R is the covariance of the Z values.  Increase the responsiveness to
         # changes by reducing coresponding term in the R matrix.
-        self.R_y_covariance = numpy.matrix([[0.01**2, 0.0],[0.0, 0.01**2]])
+        self.R_y_covariance = numpy.matrix([[0.01**2, 0.0], [0.0, 0.01**2]])
         # H is the jacobian of the h(x) measurement prediction function
-        self.H_h_jacobian = numpy.matrix([[1.0,0.0,0.0,0.0,0.0,0.0],
-                                          [0.0,0.0,1.0,0.0,0.0,0.0]])
+        self.H_h_jacobian = numpy.matrix([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                          [0.0, 0.0, 1.0, 0.0, 0.0, 0.0]])
         self.Identity_matrix = numpy.matrix(numpy.identity(6))
-
 
     def discrete_dynamics_ekf_predict(self, X_hat, P_covariance_estimate, U,
                                       sim_dt):
@@ -108,8 +110,8 @@ class Dynamics(object):
         # Predict step
         #   Compute the state trasition matrix using the Jacobian of state
         #   estimate
-        F_k = numerical_jacobian_x(self.unbounded_discrete_dynamics_ekf,
-          X_hat, U)
+        F_k = numerical_jacobian_x(self.unbounded_discrete_dynamics_ekf, X_hat,
+                                   U)
         #   State estimate
         X_hat = self.unbounded_discrete_dynamics_ekf(X_hat, U, sim_dt)
         #   Covariance estimate
@@ -134,7 +136,7 @@ class Dynamics(object):
         # Update step
         #   Measurement residual error of proximal and distal
         #   joint angles.
-        Y_hat = Y_reading - numpy.matrix([[X_hat[0,0]],[X_hat[2,0]]])
+        Y_hat = Y_reading - numpy.matrix([[X_hat[0, 0]], [X_hat[2, 0]]])
         #   Residual covariance
         S = self.H_h_jacobian * P_covariance_estimate * self.H_h_jacobian.T + \
           self.R_y_covariance
@@ -144,8 +146,8 @@ class Dynamics(object):
         #   Updated state estimate
         X_hat = X_hat + Kalman_gain * Y_hat
         #   Updated covariance estimate
-        P_covariance_estimate = (self.Identity_matrix -
-          Kalman_gain * self.H_h_jacobian) * P_covariance_estimate
+        P_covariance_estimate = (self.Identity_matrix - Kalman_gain *
+                                 self.H_h_jacobian) * P_covariance_estimate
         return X_hat, P_covariance_estimate
 
     def NormilizedMatriciesForState(self, X):
@@ -158,8 +160,8 @@ class Dynamics(object):
         c = numpy.cos(X[0, 0] - X[2, 0])
 
         # K1 * d^2 theta/dt^2 + K2 * d theta/dt = torque
-        K1 = numpy.matrix(
-            [[self.alpha, c * self.beta], [c * self.beta, self.gamma]])
+        K1 = numpy.matrix([[self.alpha, c * self.beta],
+                           [c * self.beta, self.gamma]])
 
         K2 = numpy.matrix([[0.0, s * self.beta], [-s * self.beta, 0.0]])
 
@@ -183,8 +185,8 @@ class Dynamics(object):
         """
         K1, K2, K3, K4 = self.MatriciesForState(X)
 
-        return numpy.linalg.inv(K3) * (
-            K1 * alpha_t + K2 * omega_t + K4 * omega_t)
+        return numpy.linalg.inv(K3) * (K1 * alpha_t + K2 * omega_t +
+                                       K4 * omega_t)
 
     def ff_u_distance(self, trajectory, distance):
         """Computes the feed forward U at the distance on the trajectory.
@@ -252,15 +254,15 @@ class Dynamics(object):
                              [accel[1, 0]], [0.0], [0.0]])
 
     def unbounded_discrete_dynamics(self, X, U, dt=None):
-        return RungeKutta(lambda startingX: self.dynamics(startingX, U), X,
-                          dt or self.dt)
+        return RungeKutta(lambda startingX: self.dynamics(startingX, U), X, dt
+                          or self.dt)
 
     def unbounded_discrete_dynamics_ekf(self, X, U, dt=None):
         return RungeKutta(lambda startingX: self.dynamics_ekf(startingX, U), X,
                           dt or self.dt)
 
     def discrete_dynamics(self, X, U, dt=None):
-        assert((numpy.abs(U) <= (12.0 + 1e-6)).all())
+        assert ((numpy.abs(U) <= (12.0 + 1e-6)).all())
         return self.unbounded_discrete_dynamics(X, U, dt)
 
 
@@ -324,8 +326,8 @@ def K_at_state(dynamics, x, u):
     q_vel = 4.0
     Q = numpy.matrix(
         numpy.diag([
-            1.0 / (q_pos**2.0), 1.0 / (q_vel**2.0), 1.0 / (q_pos**2.0), 1.0 / (
-                q_vel**2.0)
+            1.0 / (q_pos**2.0), 1.0 / (q_vel**2.0), 1.0 / (q_pos**2.0),
+            1.0 / (q_vel**2.0)
         ]))
 
     R = numpy.matrix(numpy.diag([1.0 / (12.0**2.0), 1.0 / (12.0**2.0)]))
@@ -335,19 +337,21 @@ def K_at_state(dynamics, x, u):
 
     return controls.dlqr(final_A, final_B, Q, R)
 
+
 def get_encoder_values(X):
-  """Returns simulated encoder readings.
+    """Returns simulated encoder readings.
 
   This method returns the encoder readings.  For now simply use values from X
   with some noise added in to make the simulation more interesting.
   """
-  introduced_random_measurement_noise = 0.005
-  introduced_random_measurement_noise = 0.05
-  theta1_measured = X[0,0] + introduced_random_measurement_noise * \
-    2.0 * ( numpy.random.random() - 0.5 )
-  theta2_measured = X[2,0] + introduced_random_measurement_noise * \
-    2.0 * ( numpy.random.random() - 0.5 )
-  return numpy.matrix([[theta1_measured ],[theta2_measured]])
+    introduced_random_measurement_noise = 0.005
+    introduced_random_measurement_noise = 0.05
+    theta1_measured = X[0,0] + introduced_random_measurement_noise * \
+      2.0 * ( numpy.random.random() - 0.5 )
+    theta2_measured = X[2,0] + introduced_random_measurement_noise * \
+      2.0 * ( numpy.random.random() - 0.5 )
+    return numpy.matrix([[theta1_measured], [theta2_measured]])
+
 
 class Trajectory:
     """This class represents a trajectory in theta space."""
@@ -358,8 +362,12 @@ class Trajectory:
             numpy.matrix([[numpy.pi / 2.0 - x[0]], [numpy.pi / 2.0 - x[1]]])
             for x in self.path_points
         ]
-        self._omegas = [numpy.matrix([[-x[2]], [-x[3]]]) for x in self.path_points]
-        self._alphas = [numpy.matrix([[-x[4]], [-x[5]]]) for x in self.path_points]
+        self._omegas = [
+            numpy.matrix([[-x[2]], [-x[3]]]) for x in self.path_points
+        ]
+        self._alphas = [
+            numpy.matrix([[-x[4]], [-x[5]]]) for x in self.path_points
+        ]
         self.path_step_size = path_step_size
         self.point_distances = [0.0]
         last_point = self._thetas[0]
@@ -389,8 +397,9 @@ class Trajectory:
             return points[0]
         elif distance >= self._length:
             return points[-1]
-        after_index = numpy.searchsorted(
-            self.point_distances, distance, side='right')
+        after_index = numpy.searchsorted(self.point_distances,
+                                         distance,
+                                         side='right')
         before_index = after_index - 1
         return (distance - self.point_distances[before_index]) / (
             self.point_distances[after_index] -
@@ -420,15 +429,15 @@ class Trajectory:
             alpha = self.alpha(distance)
             X = numpy.matrix([[theta[0, 0]], [0.0], [theta[1, 0]], [0.0]])
             K1, K2, K3, K4 = dynamics.NormilizedMatriciesForState(X)
-            omega_square = numpy.matrix(
-                [[omega[0, 0], 0.0], [0.0, omega[1, 0]]])
+            omega_square = numpy.matrix([[omega[0, 0], 0.0],
+                                         [0.0, omega[1, 0]]])
             # Here, we can say that
             #   d^2/dt^2 theta = d^2/dd^2 theta(d) * (d d/dt)^2
             # Normalize so that the max accel is 1, and take magnitudes. This
             # gives us the max velocity we can be at each point due to
             # curvature.
-            vk1 = numpy.linalg.inv(K3) * (
-                K1 * alpha + K2 * omega_square * omega)
+            vk1 = numpy.linalg.inv(K3) * (K1 * alpha +
+                                          K2 * omega_square * omega)
             vk2 = numpy.linalg.inv(K3) * K4 * omega
             ddots = []
             for c in [-vmax, vmax]:
@@ -470,8 +479,8 @@ class Trajectory:
 
         voltage_accel_list = []
         for c in [-vmax, vmax]:
-            for a, b in [(k_constant[0, 0], k_scalar[0, 0]), (k_constant[1, 0],
-                                                              k_scalar[1, 0])]:
+            for a, b in [(k_constant[0, 0], k_scalar[0, 0]),
+                         (k_constant[1, 0], k_scalar[1, 0])]:
                 # This time, we are doing the other pass.  So, find all
                 # the decelerations (and flip them) to find the prior
                 # velocity.
@@ -483,14 +492,16 @@ class Trajectory:
                 filtered_voltage_accel_list.append(a)
 
         goal_acceleration = numpy.sqrt(
-            max(0.0, 1.0 -
+            max(
+                0.0, 1.0 -
                 (numpy.linalg.norm(alpha_unitizer * alpha) * velocity *
                  velocity)**2.0)) / numpy.linalg.norm(alpha_unitizer * omega)
         if filtered_voltage_accel_list:
             # TODO(austin): The max of the list seems right, but I'm
             # not seeing many lists with a size > 1, so it's hard to
             # tell.  Max is conservative, for sure.
-            goal_acceleration = min(-max(filtered_voltage_accel_list), goal_acceleration)
+            goal_acceleration = min(-max(filtered_voltage_accel_list),
+                                    goal_acceleration)
         return goal_acceleration
 
     def back_trajectory_pass(self, previous_pass, dynamics, alpha_unitizer,
@@ -516,8 +527,8 @@ class Trajectory:
 
                 integration_step_size = self.path_step_size / float(num_steps)
                 int_d += integration_step_size
-                int_vel = numpy.sqrt(2.0 * int_accel_t * integration_step_size
-                                     + int_vel * int_vel)
+                int_vel = numpy.sqrt(2.0 * int_accel_t *
+                                     integration_step_size + int_vel * int_vel)
             max_dvelocity_back_pass[index] = min(
                 int_vel, max_dvelocity_back_pass[index])
         return max_dvelocity_back_pass
@@ -539,17 +550,18 @@ class Trajectory:
         omega_square = numpy.matrix([[omega[0, 0], 0.0], [0.0, omega[1, 0]]])
 
         k_constant = numpy.linalg.inv(K3) * (
-            (K1 * alpha + K2 * omega_square * omega
-             ) * goal_velocity * goal_velocity + K4 * omega * goal_velocity)
+            (K1 * alpha + K2 * omega_square * omega) * goal_velocity *
+            goal_velocity + K4 * omega * goal_velocity)
         k_scalar = numpy.linalg.inv(K3) * K1 * omega
         voltage_accel_list = []
         for c in [-vmax, vmax]:
-            for a, b in [(k_constant[0, 0], k_scalar[0, 0]), (k_constant[1, 0],
-                                                              k_scalar[1, 0])]:
+            for a, b in [(k_constant[0, 0], k_scalar[0, 0]),
+                         (k_constant[1, 0], k_scalar[1, 0])]:
                 voltage_accel_list.append((c - a) / b)
 
         goal_acceleration = numpy.sqrt(
-            max(0.0, 1.0 -
+            max(
+                0.0, 1.0 -
                 (numpy.linalg.norm(alpha_unitizer * alpha) * goal_velocity *
                  goal_velocity)**2.0)) / numpy.linalg.norm(
                      alpha_unitizer * omega)
@@ -564,8 +576,8 @@ class Trajectory:
             # TODO(austin): The max of the list seems right, but I'm not
             # seeing many lists with a size > 1, so it's hard to tell.
             # Min is conservative, for sure.
-            goal_acceleration = min(
-                min(filtered_voltage_accel_list), goal_acceleration)
+            goal_acceleration = min(min(filtered_voltage_accel_list),
+                                    goal_acceleration)
 
         return goal_acceleration
 
@@ -592,8 +604,8 @@ class Trajectory:
 
                 integration_step_size = self.path_step_size / float(num_steps)
                 int_d += integration_step_size
-                int_vel = numpy.sqrt(2.0 * int_accel_t * integration_step_size
-                                      + int_vel * int_vel)
+                int_vel = numpy.sqrt(2.0 * int_accel_t *
+                                     integration_step_size + int_vel * int_vel)
 
             max_dvelocity_forward_pass[index] = min(
                 int_vel, max_dvelocity_forward_pass[index])
@@ -623,11 +635,12 @@ class Trajectory:
 
     def interpolate_velocity(self, d, d0, d1, v0, v1):
         if v0 + v1 > 0:
-            return numpy.sqrt(v0 * v0 +
-                              (v1 * v1 - v0 * v0) * (d - d0) / (d1 - d0))
+            return numpy.sqrt(v0 * v0 + (v1 * v1 - v0 * v0) * (d - d0) /
+                              (d1 - d0))
         else:
-            return -numpy.sqrt(v0 * v0 +
-                               (v1 * v1 - v0 * v0) * (d - d0) / (d1 - d0))
+            return -numpy.sqrt(v0 * v0 + (v1 * v1 - v0 * v0) * (d - d0) /
+                               (d1 - d0))
+
     def get_dvelocity(self, d):
         """Computes the path distance velocity of the plan as a function of the distance."""
         after_index = numpy.argmax(self.distance_array > d)
@@ -662,8 +675,8 @@ class Trajectory:
         if d > self._length:
             return numpy.matrix(numpy.zeros((2, 1)))
         return self.alpha(d) * (
-            (velocity or self.get_dvelocity(d))**2.0) + self.omega(d) * (
-                acceleration or self.get_dacceleration(d))
+            (velocity or self.get_dvelocity(d))**
+            2.0) + self.omega(d) * (acceleration or self.get_dacceleration(d))
 
     def R(self, d, velocity=None):
         theta_t = self.theta(d)
@@ -682,21 +695,17 @@ def U_saturation_search(goal_distance, last_goal_distance, goal_velocity,
     # TODO(austin): use computed forward dynamics velocity here.
     theta_t = trajectory.theta(saturation_goal_distance)
     saturation_goal_velocity = trajectory.interpolate_velocity(
-        saturation_goal_distance, last_goal_distance,
-        goal_distance, last_goal_velocity, goal_velocity)
+        saturation_goal_distance, last_goal_distance, goal_distance,
+        last_goal_velocity, goal_velocity)
     saturation_goal_acceleration = trajectory.interpolate_acceleration(
-        last_goal_distance, goal_distance, last_goal_velocity,
-        goal_velocity)
-    omega_t = trajectory.omega_t(
-        saturation_goal_distance,
-        velocity=saturation_goal_velocity)
-    alpha_t = trajectory.alpha_t(
-        saturation_goal_distance,
-        velocity=saturation_goal_velocity,
-        acceleration=saturation_goal_acceleration)
-    R = trajectory.R(
-        saturation_goal_distance,
-        velocity=saturation_goal_velocity)
+        last_goal_distance, goal_distance, last_goal_velocity, goal_velocity)
+    omega_t = trajectory.omega_t(saturation_goal_distance,
+                                 velocity=saturation_goal_velocity)
+    alpha_t = trajectory.alpha_t(saturation_goal_distance,
+                                 velocity=saturation_goal_velocity,
+                                 acceleration=saturation_goal_acceleration)
+    R = trajectory.R(saturation_goal_distance,
+                     velocity=saturation_goal_velocity)
     U_ff = numpy.clip(dynamics.ff_u(R, omega_t, alpha_t), -12.0, 12.0)
     return U_ff + K * (
         R - X), saturation_goal_velocity, saturation_goal_acceleration
@@ -767,12 +776,15 @@ def main():
     alpha0_max = 40.0
     alpha1_max = 60.0
 
-    alpha_unitizer = numpy.matrix(
-        [[1.0 / alpha0_max, 0.0], [0.0, 1.0 / alpha1_max]])
+    alpha_unitizer = numpy.matrix([[1.0 / alpha0_max, 0.0],
+                                   [0.0, 1.0 / alpha1_max]])
 
     # Compute the trajectory taking into account our velocity, acceleration
     # and voltage constraints.
-    trajectory.compute_trajectory(dynamics, alpha_unitizer, distance_array, vmax=vmax)
+    trajectory.compute_trajectory(dynamics,
+                                  alpha_unitizer,
+                                  distance_array,
+                                  vmax=vmax)
 
     print 'Computed trajectory'
 
@@ -820,8 +832,8 @@ def main():
     theta_t = trajectory.theta(goal_distance)
     X = numpy.matrix([[theta_t[0, 0]], [0.0], [theta_t[1, 0]], [0.0]])
     # X_hat is for the Extended Kalman Filter state estimate
-    X_hat = numpy.matrix([[theta_t[0, 0]], [0.0], [theta_t[1, 0]],
-      [0.0], [0.0], [0.0]])
+    X_hat = numpy.matrix([[theta_t[0, 0]], [0.0], [theta_t[1, 0]], [0.0],
+                          [0.0], [0.0]])
     # P is the Covariance Estimate for the Etended Kalman Filter
     P_covariance_estimate = dynamics.Q_x_covariance.copy()
 
@@ -856,10 +868,9 @@ def main():
         t_array.append(t)
         theta_t = trajectory.theta(goal_distance)
         omega_t = trajectory.omega_t(goal_distance, velocity=goal_velocity)
-        alpha_t = trajectory.alpha_t(
-            goal_distance,
-            velocity=goal_velocity,
-            acceleration=goal_acceleration)
+        alpha_t = trajectory.alpha_t(goal_distance,
+                                     velocity=goal_velocity,
+                                     acceleration=goal_acceleration)
 
         theta0_goal_t_array.append(theta_t[0, 0])
         theta1_goal_t_array.append(theta_t[1, 0])
@@ -887,7 +898,7 @@ def main():
         # available.  For now, simulate the sensor reading by using the X
         # position and adding some noise to it.
         X_hat, P_covariance_estimate = dynamics.discrete_dynamics_ekf_update(
-          X_hat, P_covariance_estimate, sim_dt, get_encoder_values(X))
+            X_hat, P_covariance_estimate, sim_dt, get_encoder_values(X))
 
         R = trajectory.R(goal_distance, velocity=goal_velocity)
         U_ff = numpy.clip(dynamics.ff_u(R, omega_t, alpha_t), -12.0, 12.0)
@@ -927,8 +938,9 @@ def main():
                     fraction_along_path += step_size
             print "Fraction", fraction_along_path, "at", goal_distance, "rad,", t, "sec", goal_velocity
 
-            goal_distance = ((goal_distance - last_goal_distance) *
-                             fraction_along_path + last_goal_distance)
+            goal_distance = (
+                (goal_distance - last_goal_distance) * fraction_along_path +
+                last_goal_distance)
             goal_velocity = saturation_goal_velocity
             goal_acceleration = saturation_goal_acceleration
 
@@ -965,8 +977,7 @@ def main():
         # Push Extended Kalman filter state forwards.
         # Predict step - call for each time step
         X_hat, P_covariance_estimate = dynamics.discrete_dynamics_ekf_predict(
-          X_hat, P_covariance_estimate, U, sim_dt)
-
+            X_hat, P_covariance_estimate, U, sim_dt)
 
         if abs(goal_distance - trajectory.length()) < 1e-2:
             # If we go backwards along the path near the goal, snap us to the
@@ -999,12 +1010,15 @@ def main():
 
     pylab.figure()
     pylab.title("Path Velocity Plan")
-    pylab.plot(
-        distance_array, trajectory.max_dvelocity_unfiltered, label="pass0")
-    pylab.plot(
-        distance_array, trajectory.max_dvelocity_back_pass, label="passb")
-    pylab.plot(
-        distance_array, trajectory.max_dvelocity_forward_pass, label="passf")
+    pylab.plot(distance_array,
+               trajectory.max_dvelocity_unfiltered,
+               label="pass0")
+    pylab.plot(distance_array,
+               trajectory.max_dvelocity_back_pass,
+               label="passb")
+    pylab.plot(distance_array,
+               trajectory.max_dvelocity_forward_pass,
+               label="passf")
     pylab.legend(loc='center')
     pylab.legend()
 
@@ -1062,10 +1076,13 @@ def main():
 
     pylab.figure()
     pylab.title("Disturbance Force from Extended Kalman Filter State Values")
-    pylab.plot(t_array, torque_disturbance_0_hat_array, label="torque_disturbance_0_hat")
-    pylab.plot(t_array, torque_disturbance_1_hat_array, label="torque_disturbance_1_hat")
+    pylab.plot(t_array,
+               torque_disturbance_0_hat_array,
+               label="torque_disturbance_0_hat")
+    pylab.plot(t_array,
+               torque_disturbance_1_hat_array,
+               label="torque_disturbance_1_hat")
     pylab.legend()
-
 
     pylab.show()
 

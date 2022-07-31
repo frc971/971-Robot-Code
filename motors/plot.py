@@ -3,9 +3,7 @@
 import numpy
 from matplotlib import pylab
 
-data = numpy.loadtxt('/tmp/jkalsdjflsd.csv',
-                     delimiter=',',
-                     skiprows=1)
+data = numpy.loadtxt('/tmp/jkalsdjflsd.csv', delimiter=',', skiprows=1)
 x = range(len(data))
 
 pylab.subplot(1, 1, 1)

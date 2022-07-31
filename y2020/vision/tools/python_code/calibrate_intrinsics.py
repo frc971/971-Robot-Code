@@ -10,6 +10,7 @@ import time
 
 # From: https://pynative.com/python-serialize-numpy-ndarray-into-json/
 class NumpyArrayEncoder(json.JSONEncoder):
+
     def default(self, obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -24,8 +25,8 @@ class NumpyArrayEncoder(json.JSONEncoder):
 def get_robot_info(hostname):
     hostname_split = hostname.split("-")
     if hostname_split[0] != "pi":
-        print(
-            "ERROR: expected hostname to start with pi!  Got '%s'" % hostname)
+        print("ERROR: expected hostname to start with pi!  Got '%s'" %
+              hostname)
         quit()
 
     team_number = int(hostname_split[1])

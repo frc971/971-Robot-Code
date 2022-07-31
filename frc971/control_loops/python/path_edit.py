@@ -6,6 +6,7 @@ from color import palette
 from graph import Graph
 import gi
 import numpy as np
+
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gtk, GLib
 import cairo
@@ -29,6 +30,7 @@ class Mode(enum.Enum):
 
 class FieldWidget(Gtk.DrawingArea):
     """Create a GTK+ widget on which we will draw using Cairo"""
+
     def __init__(self):
         super(FieldWidget, self).__init__()
         self.set_field(FIELD)
@@ -192,7 +194,8 @@ class FieldWidget(Gtk.DrawingArea):
             ):
                 self.draw_splines(cr)
 
-                for i, points in enumerate(self.active_multispline.getSplines()):
+                for i, points in enumerate(
+                        self.active_multispline.getSplines()):
                     points = [np.array([x, y]) for (x, y) in points]
                     draw_control_points(cr,
                                         points,
@@ -432,7 +435,6 @@ class FieldWidget(Gtk.DrawingArea):
                 # Move nearest to clicked
                 cur_p = [self.mousex, self.mousey]
 
-
                 # Get the distance between each for x and y
                 # Save the index of the point closest
                 nearest = 0.4  # Max distance away a the selected point can be in meters
@@ -452,9 +454,11 @@ class FieldWidget(Gtk.DrawingArea):
                                 index_multisplines, index_splines,
                                 index_points)
 
-            multispline, result = Multispline.nearest_distance(self.multisplines, cur_p)
+            multispline, result = Multispline.nearest_distance(
+                self.multisplines, cur_p)
             if result and result.fun < 0.1:
-                self.active_multispline_index = self.multisplines.index(multispline)
+                self.active_multispline_index = self.multisplines.index(
+                    multispline)
 
         self.queue_draw()
 
@@ -468,8 +472,7 @@ class FieldWidget(Gtk.DrawingArea):
                 self.control_point_index.multispline_index]
 
             multispline.updates_for_mouse_move(self.multisplines,
-                                               self.control_point_index,
-                                               mouse)
+                                               self.control_point_index, mouse)
 
             multispline.update_lib_spline()
             self.graph.schedule_recalculate(self.multisplines)

@@ -15,6 +15,7 @@ def MakePoint(*args):
 
 
 class TestHPolytope(unittest.TestCase):
+
     def setUp(self):
         """Builds a simple box polytope."""
         self.H = numpy.matrix([[1, 0], [-1, 0], [0, 1], [0, -1]])
@@ -43,14 +44,12 @@ class TestHPolytope(unittest.TestCase):
         ]
 
         for inside_point in inside_points:
-            self.assertTrue(
-                self.p.IsInside(inside_point),
-                msg='Point is' + str(inside_point))
+            self.assertTrue(self.p.IsInside(inside_point),
+                            msg='Point is' + str(inside_point))
 
         for outside_point in outside_points:
-            self.assertFalse(
-                self.p.IsInside(outside_point),
-                msg='Point is' + str(outside_point))
+            self.assertFalse(self.p.IsInside(outside_point),
+                             msg='Point is' + str(outside_point))
 
     def AreVertices(self, p, vertices):
         """Checks that all the vertices are on corners of the set."""
@@ -80,10 +79,10 @@ class TestHPolytope(unittest.TestCase):
                     found_points.add(actual_index)
                     break
 
-        self.assertEqual(
-            len(found_points),
-            actual.shape[0],
-            msg="Expected:\n" + str(expected) + "\nActual:\n" + str(actual))
+        self.assertEqual(len(found_points),
+                         actual.shape[0],
+                         msg="Expected:\n" + str(expected) + "\nActual:\n" +
+                         str(actual))
 
     def test_Skewed_Nonsym_Vertices(self):
         """Tests the vertices of a severely skewed space."""

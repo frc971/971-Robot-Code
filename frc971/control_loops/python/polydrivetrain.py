@@ -98,6 +98,7 @@ def DoCoerceGoal(region, K, w, R):
 
 
 class VelocityDrivetrainModel(control_loop.ControlLoop):
+
     def __init__(self,
                  drivetrain_params,
                  left_low=True,
@@ -109,25 +110,27 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
             right_low=right_low,
             drivetrain_params=drivetrain_params)
         self.dt = drivetrain_params.dt
-        self.A_continuous = numpy.matrix(
-            [[
-                self._drivetrain.A_continuous[1, 1],
-                self._drivetrain.A_continuous[1, 3]
-            ],
-             [
-                 self._drivetrain.A_continuous[3, 1],
-                 self._drivetrain.A_continuous[3, 3]
-             ]])
+        self.A_continuous = numpy.matrix([[
+            self._drivetrain.A_continuous[1, 1],
+            self._drivetrain.A_continuous[1, 3]
+        ],
+                                          [
+                                              self._drivetrain.A_continuous[3,
+                                                                            1],
+                                              self._drivetrain.A_continuous[3,
+                                                                            3]
+                                          ]])
 
-        self.B_continuous = numpy.matrix(
-            [[
-                self._drivetrain.B_continuous[1, 0],
-                self._drivetrain.B_continuous[1, 1]
-            ],
-             [
-                 self._drivetrain.B_continuous[3, 0],
-                 self._drivetrain.B_continuous[3, 1]
-             ]])
+        self.B_continuous = numpy.matrix([[
+            self._drivetrain.B_continuous[1, 0],
+            self._drivetrain.B_continuous[1, 1]
+        ],
+                                          [
+                                              self._drivetrain.B_continuous[3,
+                                                                            0],
+                                              self._drivetrain.B_continuous[3,
+                                                                            1]
+                                          ]])
         self.C = numpy.matrix(numpy.eye(2))
         self.D = numpy.matrix(numpy.zeros((2, 2)))
 
@@ -141,20 +144,22 @@ class VelocityDrivetrainModel(control_loop.ControlLoop):
         # Build a kalman filter for the velocity.  We don't care what the gains
         # are, but the hybrid kalman filter that we want to write to disk to get
         # access to A_continuous and B_continuous needs this for completeness.
-        self.Q_continuous = numpy.matrix([[(0.5**2.0), 0.0], [0.0, (0.5
-                                                                    **2.0)]])
-        self.R_continuous = numpy.matrix([[(0.1**2.0), 0.0], [0.0, (0.1
-                                                                    **2.0)]])
+        self.Q_continuous = numpy.matrix([[(0.5**2.0), 0.0], [0.0,
+                                                              (0.5**2.0)]])
+        self.R_continuous = numpy.matrix([[(0.1**2.0), 0.0], [0.0,
+                                                              (0.1**2.0)]])
         self.PlaceObserverPoles(drivetrain_params.observer_poles)
-        _, _, self.Q, self.R = controls.kalmd(
-            A_continuous=self.A_continuous,
-            B_continuous=self.B_continuous,
-            Q_continuous=self.Q_continuous,
-            R_continuous=self.R_continuous,
-            dt=self.dt)
+        _, _, self.Q, self.R = controls.kalmd(A_continuous=self.A_continuous,
+                                              B_continuous=self.B_continuous,
+                                              Q_continuous=self.Q_continuous,
+                                              R_continuous=self.R_continuous,
+                                              dt=self.dt)
 
-        self.KalmanGain, self.P_steady_state = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.P_steady_state = controls.kalman(A=self.A,
+                                                               B=self.B,
+                                                               C=self.C,
+                                                               Q=self.Q,
+                                                               R=self.R)
 
         self.G_high = self._drivetrain.G_high
         self.G_low = self._drivetrain.G_low
@@ -277,12 +282,12 @@ class VelocityDrivetrain(object):
         low_omega = (wheel_velocity / self.CurrentDrivetrain().G_low /
                      self.CurrentDrivetrain().r)
         #print gear_name, "Motor Energy Difference.", 0.5 * 0.000140032647 * (low_omega * low_omega - high_omega * high_omega), "joules"
-        high_torque = (
-            (12.0 - high_omega / self.CurrentDrivetrain().Kv) *
-            self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().resistance)
-        low_torque = (
-            (12.0 - low_omega / self.CurrentDrivetrain().Kv) *
-            self.CurrentDrivetrain().Kt / self.CurrentDrivetrain().resistance)
+        high_torque = ((12.0 - high_omega / self.CurrentDrivetrain().Kv) *
+                       self.CurrentDrivetrain().Kt /
+                       self.CurrentDrivetrain().resistance)
+        low_torque = ((12.0 - low_omega / self.CurrentDrivetrain().Kv) *
+                      self.CurrentDrivetrain().Kt /
+                      self.CurrentDrivetrain().resistance)
         high_power = high_torque * high_omega
         low_power = low_torque * low_omega
         #if should_print:
@@ -357,19 +362,18 @@ class VelocityDrivetrain(object):
 
         self.left_gear = self.right_gear = True
         if True:
-            self.left_gear = self.ComputeGear(
-                self.X[0, 0],
-                should_print=True,
-                current_gear=self.left_gear,
-                gear_name="left")
-            self.right_gear = self.ComputeGear(
-                self.X[1, 0],
-                should_print=True,
-                current_gear=self.right_gear,
-                gear_name="right")
+            self.left_gear = self.ComputeGear(self.X[0, 0],
+                                              should_print=True,
+                                              current_gear=self.left_gear,
+                                              gear_name="left")
+            self.right_gear = self.ComputeGear(self.X[1, 0],
+                                               should_print=True,
+                                               current_gear=self.right_gear,
+                                               gear_name="right")
             if self.IsInGear(self.left_gear):
-                self.left_cim.X[0, 0] = self.MotorRPM(
-                    self.left_shifter_position, self.X[0, 0])
+                self.left_cim.X[0,
+                                0] = self.MotorRPM(self.left_shifter_position,
+                                                   self.X[0, 0])
 
             if self.IsInGear(self.right_gear):
                 self.right_cim.X[0, 0] = self.MotorRPM(
@@ -422,23 +426,23 @@ class VelocityDrivetrain(object):
             self.boxed_R = CoerceGoal(R_poly, equality_k, equality_w, self.R)
 
             FF_volts = self.CurrentDrivetrain().FF * self.boxed_R
-            self.U_ideal = self.CurrentDrivetrain().K * (
-                self.boxed_R - self.X) + FF_volts
+            self.U_ideal = self.CurrentDrivetrain().K * (self.boxed_R -
+                                                         self.X) + FF_volts
         else:
             glog.debug('Not all in gear')
             if not self.IsInGear(self.left_gear) and not self.IsInGear(
                     self.right_gear):
                 # TODO(austin): Use battery volts here.
-                R_left = self.MotorRPM(self.left_shifter_position,
-                                       self.X[0, 0])
+                R_left = self.MotorRPM(self.left_shifter_position, self.X[0,
+                                                                          0])
                 self.U_ideal[0, 0] = numpy.clip(
                     self.left_cim.K * (R_left - self.left_cim.X) +
                     R_left / self.left_cim.Kv, self.left_cim.U_min,
                     self.left_cim.U_max)
                 self.left_cim.Update(self.U_ideal[0, 0])
 
-                R_right = self.MotorRPM(self.right_shifter_position,
-                                        self.X[1, 0])
+                R_right = self.MotorRPM(self.right_shifter_position, self.X[1,
+                                                                            0])
                 self.U_ideal[1, 0] = numpy.clip(
                     self.right_cim.K * (R_right - self.right_cim.X) +
                     R_right / self.right_cim.Kv, self.right_cim.U_min,
@@ -473,19 +477,18 @@ def WritePolyDrivetrain(drivetrain_files,
                         drivetrain_params,
                         scalar_type='double'):
     vdrivetrain = VelocityDrivetrain(drivetrain_params)
-    hybrid_vdrivetrain = VelocityDrivetrain(
-        drivetrain_params, name="HybridVelocityDrivetrain")
+    hybrid_vdrivetrain = VelocityDrivetrain(drivetrain_params,
+                                            name="HybridVelocityDrivetrain")
     if isinstance(year_namespace, list):
         namespaces = year_namespace
     else:
         namespaces = [year_namespace, 'control_loops', 'drivetrain']
-    dog_loop_writer = control_loop.ControlLoopWriter(
-        "VelocityDrivetrain", [
-            vdrivetrain.drivetrain_low_low, vdrivetrain.drivetrain_low_high,
-            vdrivetrain.drivetrain_high_low, vdrivetrain.drivetrain_high_high
-        ],
-        namespaces=namespaces,
-        scalar_type=scalar_type)
+    dog_loop_writer = control_loop.ControlLoopWriter("VelocityDrivetrain", [
+        vdrivetrain.drivetrain_low_low, vdrivetrain.drivetrain_low_high,
+        vdrivetrain.drivetrain_high_low, vdrivetrain.drivetrain_high_high
+    ],
+                                                     namespaces=namespaces,
+                                                     scalar_type=scalar_type)
 
     dog_loop_writer.Write(drivetrain_files[0], drivetrain_files[1])
 
@@ -503,8 +506,8 @@ def WritePolyDrivetrain(drivetrain_files,
 
     hybrid_loop_writer.Write(hybrid_files[0], hybrid_files[1])
 
-    cim_writer = control_loop.ControlLoopWriter(
-        "CIM", [CIM()], scalar_type=scalar_type)
+    cim_writer = control_loop.ControlLoopWriter("CIM", [CIM()],
+                                                scalar_type=scalar_type)
 
     cim_writer.Write(motor_files[0], motor_files[1])
 

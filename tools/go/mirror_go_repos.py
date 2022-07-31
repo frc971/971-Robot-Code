@@ -20,15 +20,20 @@ import org_frc971.tools.go.mirror_lib
 
 GO_DEPS_WWWW_DIR = "/var/www/html/files/frc971/Build-Dependencies/go_deps"
 
+
 def compute_sha256(filepath: str) -> str:
     """Computes the SHA256 of a file at the specified location."""
     with open(filepath, "rb") as file:
         contents = file.read()
     return hashlib.sha256(contents).hexdigest()
 
+
 def get_existing_mirrored_repos(ssh_host: str) -> Dict[str, str]:
     """Gathers information about the libraries that are currently mirrored."""
-    run_result = subprocess.run(["ssh", ssh_host, f"bash -c 'sha256sum {GO_DEPS_WWWW_DIR}/*'"], check=True, stdout=subprocess.PIPE)
+    run_result = subprocess.run(
+        ["ssh", ssh_host, f"bash -c 'sha256sum {GO_DEPS_WWWW_DIR}/*'"],
+        check=True,
+        stdout=subprocess.PIPE)
 
     existing_mirrored_repos = {}
     for line in run_result.stdout.decode("utf-8").splitlines():
@@ -37,10 +42,10 @@ def get_existing_mirrored_repos(ssh_host: str) -> Dict[str, str]:
 
     return existing_mirrored_repos
 
-def download_repos(
-        repos: Dict[str, str],
-        existing_mirrored_repos: Dict[str, str],
-        tar: tarfile.TarFile) -> Dict[str, str]:
+
+def download_repos(repos: Dict[str, str], existing_mirrored_repos: Dict[str,
+                                                                        str],
+                   tar: tarfile.TarFile) -> Dict[str, str]:
     """Downloads the not-yet-mirrored repos into a tarball."""
     cached_info = {}
 
@@ -52,7 +57,8 @@ def download_repos(
 
         download_result = subprocess.run(
             ["external/go_sdk/bin/go", "mod", "download", "-json", module],
-            check=True, stdout=subprocess.PIPE)
+            check=True,
+            stdout=subprocess.PIPE)
         if download_result.returncode != 0:
             print("Failed to download file.")
             return 1
@@ -81,6 +87,7 @@ def download_repos(
 
     return cached_info
 
+
 def copy_to_host_and_unpack(filename: str, ssh_host: str) -> None:
     subprocess.run(["scp", filename, f"{ssh_host}:"], check=True)
 
@@ -94,7 +101,10 @@ def copy_to_host_and_unpack(filename: str, ssh_host: str) -> None:
     ])
 
     print("You might be asked for your sudo password shortly.")
-    subprocess.run(["ssh", "-t", ssh_host, f"sudo -u www-data bash -c '{command}'"], check=True)
+    subprocess.run(
+        ["ssh", "-t", ssh_host, f"sudo -u www-data bash -c '{command}'"],
+        check=True)
+
 
 def main(argv):
     parser = argparse.ArgumentParser()
@@ -113,12 +123,15 @@ def main(argv):
               "Build-Dependencies files live. Only specify this if you have "
               "access to the server."))
     parser.add_argument("--go_deps_bzl", type=str, default="go_deps.bzl")
-    parser.add_argument("--go_mirrors_bzl", type=str, default="tools/go/go_mirrors.bzl")
+    parser.add_argument("--go_mirrors_bzl",
+                        type=str,
+                        default="tools/go/go_mirrors.bzl")
     args = parser.parse_args(argv[1:])
 
     os.chdir(os.environ["BUILD_WORKSPACE_DIRECTORY"])
 
-    repos = org_frc971.tools.go.mirror_lib.parse_go_repositories(args.go_deps_bzl)
+    repos = org_frc971.tools.go.mirror_lib.parse_go_repositories(
+        args.go_deps_bzl)
 
     if args.ssh_host:
         existing_mirrored_repos = get_existing_mirrored_repos(args.ssh_host)
@@ -129,7 +142,8 @@ def main(argv):
 
     if args.prune:
         # Delete all mirror info that is not needed anymore.
-        existing_cache_info = org_frc971.tools.go.mirror_lib.parse_go_mirror_info(args.go_mirrors_bzl)
+        existing_cache_info = org_frc971.tools.go.mirror_lib.parse_go_mirror_info(
+            args.go_mirrors_bzl)
         cached_info = {}
         for repo in repos:
             try:
@@ -151,10 +165,12 @@ def main(argv):
         if args.ssh_host and num_not_already_mirrored:
             copy_to_host_and_unpack("go_deps.tar", args.ssh_host)
         else:
-            print("Skipping mirroring because of lack of --ssh_host or there's "
-                  "nothing to actually mirror.")
+            print(
+                "Skipping mirroring because of lack of --ssh_host or there's "
+                "nothing to actually mirror.")
 
-    org_frc971.tools.go.mirror_lib.write_go_mirror_info(args.go_mirrors_bzl, cached_info)
+    org_frc971.tools.go.mirror_lib.write_go_mirror_info(
+        args.go_mirrors_bzl, cached_info)
 
     return exit_code
 

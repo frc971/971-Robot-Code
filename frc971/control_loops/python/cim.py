@@ -5,6 +5,7 @@ import numpy
 
 
 class CIM(control_loop.ControlLoop):
+
     def __init__(self):
         super(CIM, self).__init__("CIM")
         # Stall Torque in N m

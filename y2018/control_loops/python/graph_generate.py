@@ -195,6 +195,7 @@ def back_to_xy_loop(lines):
 
 # Segment in angle space.
 class AngleSegment:
+
     def __init__(self, start, end, name=None, alpha_unitizer=None, vmax=None):
         """Creates an angle segment.
 
@@ -321,8 +322,8 @@ def spline_eval(start, control1, control2, end, alpha):
     a = alpha_blend(start, control1, alpha)
     b = alpha_blend(control1, control2, alpha)
     c = alpha_blend(control2, end, alpha)
-    return alpha_blend(
-        alpha_blend(a, b, alpha), alpha_blend(b, c, alpha), alpha)
+    return alpha_blend(alpha_blend(a, b, alpha), alpha_blend(b, c, alpha),
+                       alpha)
 
 
 def subdivide_spline(start, control1, control2, end):
@@ -333,6 +334,7 @@ def subdivide_spline(start, control1, control2, end):
 
 
 class SplineSegment:
+
     def __init__(self,
                  start,
                  control1,
@@ -350,10 +352,9 @@ class SplineSegment:
         self.vmax = vmax
 
     def __repr__(self):
-        return "SplineSegment(%s, %s, %s, %s)" % (repr(self.start),
-                                                  repr(self.control1),
-                                                  repr(self.control2),
-                                                  repr(self.end))
+        return "SplineSegment(%s, %s, %s, %s)" % (repr(
+            self.start), repr(self.control1), repr(
+                self.control2), repr(self.end))
 
     def DrawTo(self, cr, theta_version):
         if theta_version:
@@ -364,9 +365,8 @@ class SplineSegment:
             end = get_xy(self.end)
 
             draw_lines(cr, [
-                to_theta(
-                    spline_eval(start, control1, control2, end, alpha),
-                    c_i_select)
+                to_theta(spline_eval(start, control1, control2, end, alpha),
+                         c_i_select)
                 for alpha in subdivide_spline(start, control1, control2, end)
             ])
             cr.move_to(self.start[0] + theta_end_circle_size, self.start[1])
@@ -418,6 +418,7 @@ def get_derivs(t_prev, t, t_next):
 
 
 class ThetaSplineSegment:
+
     def __init__(self,
                  start,
                  control1,
@@ -435,10 +436,9 @@ class ThetaSplineSegment:
         self.vmax = vmax
 
     def __repr__(self):
-        return "ThetaSplineSegment(%s, %s, &s, %s)" % (repr(self.start),
-                                                       repr(self.control1),
-                                                       repr(self.control2),
-                                                       repr(self.end))
+        return "ThetaSplineSegment(%s, %s, &s, %s)" % (repr(
+            self.start), repr(self.control1), repr(
+                self.control2), repr(self.end))
 
     def DrawTo(self, cr, theta_version):
         if (theta_version):
@@ -485,30 +485,36 @@ tall_box_y = 0.125
 short_box_x = 0.431
 short_box_y = 0.082
 
-ready_above_box = to_theta_with_circular_index(
-    tall_box_x, tall_box_y + 0.08, circular_index=-1)
-tall_box_grab = to_theta_with_circular_index(
-    tall_box_x, tall_box_y, circular_index=-1)
-short_box_grab = to_theta_with_circular_index(
-    short_box_x, short_box_y, circular_index=-1)
+ready_above_box = to_theta_with_circular_index(tall_box_x,
+                                               tall_box_y + 0.08,
+                                               circular_index=-1)
+tall_box_grab = to_theta_with_circular_index(tall_box_x,
+                                             tall_box_y,
+                                             circular_index=-1)
+short_box_grab = to_theta_with_circular_index(short_box_x,
+                                              short_box_y,
+                                              circular_index=-1)
 
 # TODO(austin): Drive the front/back off the same numbers a bit better.
 front_high_box = to_theta_with_circular_index(0.378, 2.46, circular_index=-1)
-front_middle3_box = to_theta_with_circular_index(
-    0.700, 2.125, circular_index=-1.000000)
-front_middle2_box = to_theta_with_circular_index(
-    0.700, 2.268, circular_index=-1)
-front_middle1_box = to_theta_with_circular_index(
-    0.800, 1.915, circular_index=-1)
+front_middle3_box = to_theta_with_circular_index(0.700,
+                                                 2.125,
+                                                 circular_index=-1.000000)
+front_middle2_box = to_theta_with_circular_index(0.700,
+                                                 2.268,
+                                                 circular_index=-1)
+front_middle1_box = to_theta_with_circular_index(0.800,
+                                                 1.915,
+                                                 circular_index=-1)
 front_low_box = to_theta_with_circular_index(0.87, 1.572, circular_index=-1)
 back_high_box = to_theta_with_circular_index(-0.75, 2.48, circular_index=0)
-back_middle2_box = to_theta_with_circular_index(
-    -0.700, 2.27, circular_index=0)
-back_middle1_box = to_theta_with_circular_index(
-    -0.800, 1.93, circular_index=0)
+back_middle2_box = to_theta_with_circular_index(-0.700, 2.27, circular_index=0)
+back_middle1_box = to_theta_with_circular_index(-0.800, 1.93, circular_index=0)
 back_low_box = to_theta_with_circular_index(-0.87, 1.64, circular_index=0)
 
-back_extra_low_box = to_theta_with_circular_index(-0.87, 1.52, circular_index=0)
+back_extra_low_box = to_theta_with_circular_index(-0.87,
+                                                  1.52,
+                                                  circular_index=0)
 
 front_switch = to_theta_with_circular_index(0.88, 0.967, circular_index=-1)
 back_switch = to_theta_with_circular_index(-0.88, 0.967, circular_index=-2)
@@ -517,26 +523,20 @@ neutral = to_theta_with_circular_index(0.0, 0.33, circular_index=-1)
 
 up = to_theta_with_circular_index(0.0, 2.547, circular_index=-1)
 
-front_switch_auto = to_theta_with_circular_index(
-    0.750, 2.20, circular_index=-1.000000)
+front_switch_auto = to_theta_with_circular_index(0.750,
+                                                 2.20,
+                                                 circular_index=-1.000000)
 
-duck = numpy.array(
-    [numpy.pi / 2.0 - 0.92, numpy.pi / 2.0 - 4.26])
+duck = numpy.array([numpy.pi / 2.0 - 0.92, numpy.pi / 2.0 - 4.26])
 
-starting = numpy.array(
-    [numpy.pi / 2.0 - 0.593329, numpy.pi / 2.0 - 3.749631])
-vertical_starting = numpy.array(
-    [numpy.pi / 2.0, -numpy.pi / 2.0])
+starting = numpy.array([numpy.pi / 2.0 - 0.593329, numpy.pi / 2.0 - 3.749631])
+vertical_starting = numpy.array([numpy.pi / 2.0, -numpy.pi / 2.0])
 
-self_hang = numpy.array(
-    [numpy.pi / 2.0 - 0.191611, numpy.pi / 2.0])
-partner_hang = numpy.array(
-    [numpy.pi / 2.0 - (-0.30), numpy.pi / 2.0])
+self_hang = numpy.array([numpy.pi / 2.0 - 0.191611, numpy.pi / 2.0])
+partner_hang = numpy.array([numpy.pi / 2.0 - (-0.30), numpy.pi / 2.0])
 
-above_hang = numpy.array(
-    [numpy.pi / 2.0 - 0.14, numpy.pi / 2.0 - (-0.165)])
-below_hang = numpy.array(
-    [numpy.pi / 2.0 - 0.39, numpy.pi / 2.0 - (-0.517)])
+above_hang = numpy.array([numpy.pi / 2.0 - 0.14, numpy.pi / 2.0 - (-0.165)])
+below_hang = numpy.array([numpy.pi / 2.0 - 0.39, numpy.pi / 2.0 - (-0.517)])
 
 up_c1 = to_theta((0.63, 1.17), circular_index=-1)
 up_c2 = to_theta((0.65, 1.62), circular_index=-1)
@@ -603,24 +603,24 @@ def expand_points(points, max_distance):
         num_points = int(numpy.ceil(norm / max_distance))
         last_iteration_point = previous_point
         for subindex in range(1, num_points):
-            subpoint = to_theta(
-                alpha_blend(previous_point_xy, point_xy,
-                            float(subindex) / num_points),
-                circular_index=circular_index)
-            result_points.append((subpoint, '%s%dof%d' % (name, subindex,
-                                                          num_points)))
+            subpoint = to_theta(alpha_blend(previous_point_xy, point_xy,
+                                            float(subindex) / num_points),
+                                circular_index=circular_index)
+            result_points.append(
+                (subpoint, '%s%dof%d' % (name, subindex, num_points)))
             result_paths.append(
                 XYSegment(last_iteration_point, subpoint, vmax=6.0))
             if (last_iteration_point != previous_point).any():
                 result_paths.append(XYSegment(previous_point, subpoint))
             if subindex == num_points - 1:
-              result_paths.append(XYSegment(subpoint, point, vmax=6.0))
+                result_paths.append(XYSegment(subpoint, point, vmax=6.0))
             else:
-              result_paths.append(XYSegment(subpoint, point))
+                result_paths.append(XYSegment(subpoint, point))
             last_iteration_point = subpoint
         result_points.append((point, name))
 
     return result_points, result_paths
+
 
 front_points, front_paths = expand_points(sparse_front_points, 0.06)
 back_points, back_paths = expand_points(sparse_back_points, 0.06)
@@ -650,7 +650,6 @@ ready_to_up_c2 = numpy.array([1.792962, 0.198329])
 front_switch_auto_c1 = numpy.array([1.792857, -0.372768])
 front_switch_auto_c2 = numpy.array([1.861885, -0.273664])
 
-
 # We need to define critical points so we can create paths connecting them.
 # TODO(austin): Attach velocities to the slow ones.
 ready_to_back_low_c1 = numpy.array([2.524325, 0.046417])
@@ -670,30 +669,58 @@ long_alpha_unitizer = numpy.matrix([[1.0 / 17.0, 0.0], [0.0, 1.0 / 17.0]])
 neutral_to_back_c1 = numpy.array([0.702527, -2.618276])
 neutral_to_back_c2 = numpy.array([0.526914, -3.109691])
 
-
 named_segments = [
-    ThetaSplineSegment(neutral, neutral_to_back_c1, neutral_to_back_c2, back_switch, "BackSwitch"),
-
-    ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_high_c2, back_high_box, "NeutralBoxToHigh", alpha_unitizer=long_alpha_unitizer),
-    ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_high_c2, back_middle2_box, "NeutralBoxToMiddle2", long_alpha_unitizer),
-    ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_low_c2, back_middle1_box, "NeutralBoxToMiddle1", long_alpha_unitizer),
-    ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_low_c2, back_low_box, "NeutralBoxToLow", long_alpha_unitizer),
-
-    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1, tall_to_back_high_c2, back_high_box, "ReadyBoxToHigh", long_alpha_unitizer),
-    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1, tall_to_back_high_c2, back_middle2_box, "ReadyBoxToMiddle2", long_alpha_unitizer),
-    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1, tall_to_back_low_c2, back_middle1_box, "ReadyBoxToMiddle1", long_alpha_unitizer),
-    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1, tall_to_back_low_c2, back_low_box, "ReadyBoxToLow", long_alpha_unitizer),
-
-    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1, tall_to_back_high_c2, back_high_box, "ShortBoxToHigh", long_alpha_unitizer),
-    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1, tall_to_back_high_c2, back_middle2_box, "ShortBoxToMiddle2", long_alpha_unitizer),
-    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1, tall_to_back_low_c2, back_middle1_box, "ShortBoxToMiddle1", long_alpha_unitizer),
-    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1, tall_to_back_low_c2, back_low_box, "ShortBoxToLow", long_alpha_unitizer),
-
-    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1, tall_to_back_high_c2, back_high_box, "TallBoxToHigh", long_alpha_unitizer),
-    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1, tall_to_back_high_c2, back_middle2_box, "TallBoxToMiddle2", long_alpha_unitizer),
-    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1, tall_to_back_low_c2, back_middle1_box, "TallBoxToMiddle1", long_alpha_unitizer),
-    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1, tall_to_back_low_c2, back_low_box, "TallBoxToLow", long_alpha_unitizer),
-
+    ThetaSplineSegment(neutral, neutral_to_back_c1, neutral_to_back_c2,
+                       back_switch, "BackSwitch"),
+    ThetaSplineSegment(neutral,
+                       neutral_to_back_low_c1,
+                       tall_to_back_high_c2,
+                       back_high_box,
+                       "NeutralBoxToHigh",
+                       alpha_unitizer=long_alpha_unitizer),
+    ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_high_c2,
+                       back_middle2_box, "NeutralBoxToMiddle2",
+                       long_alpha_unitizer),
+    ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_low_c2,
+                       back_middle1_box, "NeutralBoxToMiddle1",
+                       long_alpha_unitizer),
+    ThetaSplineSegment(neutral, neutral_to_back_low_c1, tall_to_back_low_c2,
+                       back_low_box, "NeutralBoxToLow", long_alpha_unitizer),
+    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1,
+                       tall_to_back_high_c2, back_high_box, "ReadyBoxToHigh",
+                       long_alpha_unitizer),
+    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1,
+                       tall_to_back_high_c2, back_middle2_box,
+                       "ReadyBoxToMiddle2", long_alpha_unitizer),
+    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1,
+                       tall_to_back_low_c2, back_middle1_box,
+                       "ReadyBoxToMiddle1", long_alpha_unitizer),
+    ThetaSplineSegment(ready_above_box, ready_to_back_low_c1,
+                       tall_to_back_low_c2, back_low_box, "ReadyBoxToLow",
+                       long_alpha_unitizer),
+    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1,
+                       tall_to_back_high_c2, back_high_box, "ShortBoxToHigh",
+                       long_alpha_unitizer),
+    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1,
+                       tall_to_back_high_c2, back_middle2_box,
+                       "ShortBoxToMiddle2", long_alpha_unitizer),
+    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1,
+                       tall_to_back_low_c2, back_middle1_box,
+                       "ShortBoxToMiddle1", long_alpha_unitizer),
+    ThetaSplineSegment(short_box_grab, tall_to_back_low_c1,
+                       tall_to_back_low_c2, back_low_box, "ShortBoxToLow",
+                       long_alpha_unitizer),
+    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1,
+                       tall_to_back_high_c2, back_high_box, "TallBoxToHigh",
+                       long_alpha_unitizer),
+    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1,
+                       tall_to_back_high_c2, back_middle2_box,
+                       "TallBoxToMiddle2", long_alpha_unitizer),
+    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1, tall_to_back_low_c2,
+                       back_middle1_box, "TallBoxToMiddle1",
+                       long_alpha_unitizer),
+    ThetaSplineSegment(tall_box_grab, tall_to_back_low_c1, tall_to_back_low_c2,
+                       back_low_box, "TallBoxToLow", long_alpha_unitizer),
     SplineSegment(neutral, ready_above_box_c1, ready_above_box_c2,
                   ready_above_box, "ReadyToNeutral"),
     XYSegment(ready_above_box, tall_box_grab, "ReadyToTallBox", vmax=6.0),
@@ -713,32 +740,29 @@ named_segments = [
 ]
 
 unnamed_segments = [
-    SplineSegment(neutral, front_switch_auto_c1, front_switch_auto_c2, front_switch_auto),
+    SplineSegment(neutral, front_switch_auto_c1, front_switch_auto_c2,
+                  front_switch_auto),
     SplineSegment(tall_box_grab, ready_to_up_c1, ready_to_up_c2, up),
     SplineSegment(short_box_grab, ready_to_up_c1, ready_to_up_c2, up),
     SplineSegment(ready_above_box, ready_to_up_c1, ready_to_up_c2, up),
     ThetaSplineSegment(duck, duck_c1, duck_c2, neutral),
     SplineSegment(neutral, front_switch_c1, front_switch_c2, front_switch),
-
     XYSegment(ready_above_box, front_low_box),
     XYSegment(ready_above_box, front_switch),
     XYSegment(ready_above_box, front_middle1_box),
     XYSegment(ready_above_box, front_middle2_box),
     XYSegment(ready_above_box, front_middle3_box),
-    SplineSegment(ready_above_box, ready_to_up_c1, ready_to_up_c2, front_high_box),
-
+    SplineSegment(ready_above_box, ready_to_up_c1, ready_to_up_c2,
+                  front_high_box),
     AngleSegment(starting, vertical_starting),
     AngleSegment(vertical_starting, neutral),
-
     XYSegment(neutral, front_low_box),
     XYSegment(up, front_high_box),
     XYSegment(up, front_middle2_box),
-
     XYSegment(front_middle3_box, up),
     XYSegment(front_middle3_box, front_high_box),
     XYSegment(front_middle3_box, front_middle2_box),
     XYSegment(front_middle3_box, front_middle1_box),
-
     XYSegment(up, front_middle1_box),
     XYSegment(up, front_low_box),
     XYSegment(front_high_box, front_middle2_box),
@@ -760,7 +784,6 @@ unnamed_segments = [
     XYSegment(back_middle2_box, back_middle1_box),
     XYSegment(back_middle2_box, back_low_box),
     XYSegment(back_middle1_box, back_low_box),
-
     AngleSegment(up, above_hang),
     AngleSegment(above_hang, below_hang),
     AngleSegment(up, below_hang),

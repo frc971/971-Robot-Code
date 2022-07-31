@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import gi
+
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import GLib
@@ -13,6 +14,7 @@ identity = cairo.Matrix()
 
 # Override the matrix of a cairo context.
 class OverrideMatrix(object):
+
     def __init__(self, cr, matrix):
         self.cr = cr
         self.matrix = matrix

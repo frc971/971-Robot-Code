@@ -47,5 +47,6 @@ def main(argv):
         # Write the generated constants out to a file.
         drivetrain.WriteDrivetrain(argv[1:3], argv[3:5], 'y2019', kDrivetrain)
 
+
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

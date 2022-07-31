@@ -51,8 +51,8 @@ class Claw(control_loop.ControlLoop):
         # Input is [bottom power, top power - bottom power * J_top / J_bottom]
         # Motor time constants. difference_bottom refers to the constant for how the
         # bottom velocity affects the difference of the top and bottom velocities.
-        self.common_motor_constant = -self.Kt / self.Kv / (
-            self.G * self.G * self.R)
+        self.common_motor_constant = -self.Kt / self.Kv / (self.G * self.G *
+                                                           self.R)
         self.bottom_bottom = self.common_motor_constant / self.J_bottom
         self.difference_bottom = -self.common_motor_constant * (
             1 / self.J_bottom - 1 / self.J_top)
@@ -96,7 +96,8 @@ class Claw(control_loop.ControlLoop):
                                                    self.B_continuous, self.dt)
 
         self.A_bottom, self.B_bottom = controls.c2d(self.A_bottom_cont,
-                                                    self.B_bottom_cont, self.dt)
+                                                    self.B_bottom_cont,
+                                                    self.dt)
         self.A_diff, self.B_diff = controls.c2d(self.A_diff_cont,
                                                 self.B_diff_cont, self.dt)
 
@@ -135,12 +136,12 @@ class Claw(control_loop.ControlLoop):
         glog.debug(str(lstsq_A))
         glog.debug('det %s', str(numpy.linalg.det(lstsq_A)))
 
-        out_x = numpy.linalg.lstsq(
-            lstsq_A,
-            numpy.matrix([[self.A[1, 2]], [self.A[3, 2]]]),
-            rcond=None)[0]
-        self.K[1, 2] = -lstsq_A[0, 0] * (
-            self.K[0, 2] - out_x[0]) / lstsq_A[0, 1] + out_x[1]
+        out_x = numpy.linalg.lstsq(lstsq_A,
+                                   numpy.matrix([[self.A[1, 2]],
+                                                 [self.A[3, 2]]]),
+                                   rcond=None)[0]
+        self.K[1, 2] = -lstsq_A[0, 0] * (self.K[0, 2] -
+                                         out_x[0]) / lstsq_A[0, 1] + out_x[1]
 
         glog.debug('K unaugmented')
         glog.debug(str(self.K))
@@ -181,8 +182,9 @@ class Claw(control_loop.ControlLoop):
         X_ss[2, 0] = 1 / (1 - A[2, 2]) * B[2, 0] * U[0, 0]
         #X_ss[3, 0] = X_ss[3, 0] * A[3, 3] + X_ss[2, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
         #X_ss[3, 0] * (1 - A[3, 3]) = X_ss[2, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
-        X_ss[3, 0] = 1 / (1 - A[3, 3]) * (
-            X_ss[2, 0] * A[3, 2] + B[3, 1] * U[1, 0] + B[3, 0] * U[0, 0])
+        X_ss[3,
+             0] = 1 / (1 - A[3, 3]) * (X_ss[2, 0] * A[3, 2] +
+                                       B[3, 1] * U[1, 0] + B[3, 0] * U[0, 0])
         #X_ss[3, 0] = 1 / (1 - A[3, 3]) / (1 - A[2, 2]) * B[2, 0] * U[0, 0] * A[3, 2] + B[3, 0] * U[0, 0] + B[3, 1] * U[1, 0]
         X_ss[0, 0] = A[0, 2] * X_ss[2, 0] + B[0, 0] * U[0, 0]
         X_ss[1, 0] = (A[1, 2] * X_ss[2, 0]) + (A[1, 3] * X_ss[3, 0]) + (
@@ -247,7 +249,8 @@ class ClawDeltaU(Claw):
         self.rpl = .05
         self.ipl = 0.008
         self.PlaceObserverPoles([
-            self.rpl + 1j * self.ipl, 0.10, 0.09, self.rpl - 1j * self.ipl, 0.90
+            self.rpl + 1j * self.ipl, 0.10, 0.09, self.rpl - 1j * self.ipl,
+            0.90
         ])
         #print "A is"
         #print self.A
@@ -284,8 +287,8 @@ def ScaleU(claw, U, K, error):
         numpy.matrix([[1, 0], [-1, 0], [0, 1], [0, -1]]),
         numpy.matrix([[12], [12], [12], [12]]))
 
-    if (bottom_u > claw.U_max[0, 0] or bottom_u < claw.U_min[0, 0] or
-            top_u > claw.U_max[0, 0] or top_u < claw.U_min[0, 0]):
+    if (bottom_u > claw.U_max[0, 0] or bottom_u < claw.U_min[0, 0]
+            or top_u > claw.U_max[0, 0] or top_u < claw.U_min[0, 0]):
 
         position_K = K[:, 0:2]
         velocity_K = K[:, 2:]
@@ -501,8 +504,8 @@ def main(argv):
     else:
         namespaces = ['y2014', 'control_loops', 'claw']
         claw = Claw('Claw')
-        loop_writer = control_loop.ControlLoopWriter(
-            'Claw', [claw], namespaces=namespaces)
+        loop_writer = control_loop.ControlLoopWriter('Claw', [claw],
+                                                     namespaces=namespaces)
         loop_writer.AddConstant(
             control_loop.Constant('kClawMomentOfInertiaRatio', '%f',
                                   claw.J_top / claw.J_bottom))

@@ -17,17 +17,17 @@ try:
 except gflags.DuplicateFlagError:
     pass
 
-kIntake = angular_system.AngularSystemParams(
-    name='Intake',
-    motor=control_loop.BAG(),
-    G=(12.0 / 24.0) * (1.0 / 5.0) * (1.0 / 5.0) * (16.0 / 32.0),
-    J=8 * 0.139 * 0.139,
-    q_pos=0.40,
-    q_vel=20.0,
-    kalman_q_pos=0.12,
-    kalman_q_vel=2.0,
-    kalman_q_voltage=4.0,
-    kalman_r_position=0.05)
+kIntake = angular_system.AngularSystemParams(name='Intake',
+                                             motor=control_loop.BAG(),
+                                             G=(12.0 / 24.0) * (1.0 / 5.0) *
+                                             (1.0 / 5.0) * (16.0 / 32.0),
+                                             J=8 * 0.139 * 0.139,
+                                             q_pos=0.40,
+                                             q_vel=20.0,
+                                             kalman_q_pos=0.12,
+                                             kalman_q_vel=2.0,
+                                             kalman_q_voltage=4.0,
+                                             kalman_r_position=0.05)
 
 
 def main(argv):

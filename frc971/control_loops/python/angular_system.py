@@ -9,6 +9,7 @@ import glog
 
 
 class AngularSystemParams(object):
+
     def __init__(self,
                  name,
                  motor,
@@ -20,7 +21,7 @@ class AngularSystemParams(object):
                  kalman_q_vel,
                  kalman_q_voltage,
                  kalman_r_position,
-                 radius = None,
+                 radius=None,
                  dt=0.00505):
         """Constructs an AngularSystemParams object.
 
@@ -44,6 +45,7 @@ class AngularSystemParams(object):
 
 
 class AngularSystem(control_loop.ControlLoop):
+
     def __init__(self, params, name="AngularSystem"):
         super(AngularSystem, self).__init__(name)
         self.params = params
@@ -61,8 +63,8 @@ class AngularSystem(control_loop.ControlLoop):
 
         # State is [position, velocity]
         # Input is [Voltage]
-        C1 = self.motor.Kt / (
-            self.G * self.G * self.motor.resistance * self.J * self.motor.Kv)
+        C1 = self.motor.Kt / (self.G * self.G * self.motor.resistance *
+                              self.J * self.motor.Kv)
         C2 = self.motor.Kt / (self.G * self.J * self.motor.resistance)
 
         self.A_continuous = numpy.matrix([[0, 1], [0, -C1]])
@@ -86,8 +88,9 @@ class AngularSystem(control_loop.ControlLoop):
         if self.params.radius is not None:
             glog.debug('Stall force: %f (N)',
                        self.motor.stall_torque / self.G / self.params.radius)
-            glog.debug('Stall force: %f (lbf)',
-                       self.motor.stall_torque / self.G / self.params.radius * 0.224809)
+            glog.debug(
+                'Stall force: %f (lbf)', self.motor.stall_torque / self.G /
+                self.params.radius * 0.224809)
 
         glog.debug('Stall acceleration: %f (rad/s^2)',
                    self.motor.stall_torque / self.G / self.J)
@@ -117,8 +120,11 @@ class AngularSystem(control_loop.ControlLoop):
 
         self.R = numpy.matrix([[(self.params.kalman_r_position**2.0)]])
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
 
         glog.debug('Kal %s', repr(self.KalmanGain))
 
@@ -131,6 +137,7 @@ class AngularSystem(control_loop.ControlLoop):
 
 
 class IntegralAngularSystem(AngularSystem):
+
     def __init__(self, params, name="IntegralAngularSystem"):
         super(IntegralAngularSystem, self).__init__(params, name=name)
 
@@ -153,13 +160,16 @@ class IntegralAngularSystem(AngularSystem):
 
         self.Q = numpy.matrix([[(self.params.kalman_q_pos**2.0), 0.0, 0.0],
                                [0.0, (self.params.kalman_q_vel**2.0), 0.0],
-                               [0.0, 0.0, (self.params.kalman_q_voltage
-                                           **2.0)]])
+                               [0.0, 0.0,
+                                (self.params.kalman_q_voltage**2.0)]])
 
         self.R = numpy.matrix([[(self.params.kalman_r_position**2.0)]])
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
 
         self.K_unaugmented = self.K
         self.K = numpy.matrix(numpy.zeros((1, 3)))
@@ -232,10 +242,10 @@ def RunTest(plant,
         offset_plot.append(observer.X_hat[2, 0])
         x_hat_plot.append(observer.X_hat[0, 0])
 
-        next_goal = numpy.concatenate(
-            (profile.Update(end_goal[0, 0], end_goal[1, 0]),
-             numpy.matrix(numpy.zeros((1, 1)))),
-            axis=0)
+        next_goal = numpy.concatenate((profile.Update(
+            end_goal[0, 0], end_goal[1, 0]), numpy.matrix(numpy.zeros(
+                (1, 1)))),
+                                      axis=0)
 
         ff_U = controller.Kff * (next_goal - observer.A * goal)
 
@@ -252,8 +262,8 @@ def RunTest(plant,
 
         U[0, 0] = numpy.clip(U[0, 0], -vbat, vbat)
 
-        motor_current = (U[0, 0] - plant.X[1, 0] / plant.G / plant.motor.Kv
-                         ) / plant.motor.resistance
+        motor_current = (U[0, 0] - plant.X[1, 0] / plant.G /
+                         plant.motor.Kv) / plant.motor.resistance
         motor_current_plot.append(motor_current)
         battery_current = U[0, 0] * motor_current / 12.0
         battery_current_plot.append(battery_current)
@@ -281,8 +291,8 @@ def RunTest(plant,
         goal = controller.A * goal + controller.B * ff_U
 
         if U[0, 0] != U_uncapped[0, 0]:
-            profile.MoveCurrentState(
-                numpy.matrix([[goal[0, 0]], [goal[1, 0]]]))
+            profile.MoveCurrentState(numpy.matrix([[goal[0, 0]], [goal[1,
+                                                                       0]]]))
 
     glog.debug('Time: %f', t_plot[-1])
     glog.debug('goal_error %s', repr(end_goal - goal))
@@ -330,15 +340,14 @@ def PlotStep(params, R, plant_params=None):
     initial_X = numpy.matrix([[0.0], [0.0]])
     augmented_R = numpy.matrix(numpy.zeros((3, 1)))
     augmented_R[0:2, :] = R
-    RunTest(
-        plant,
-        end_goal=augmented_R,
-        controller=controller,
-        observer=observer,
-        duration=2.0,
-        use_profile=False,
-        kick_time=1.0,
-        kick_magnitude=0.0)
+    RunTest(plant,
+            end_goal=augmented_R,
+            controller=controller,
+            observer=observer,
+            duration=2.0,
+            use_profile=False,
+            kick_time=1.0,
+            kick_magnitude=0.0)
 
 
 def PlotKick(params, R, plant_params=None):
@@ -357,15 +366,14 @@ def PlotKick(params, R, plant_params=None):
     initial_X = numpy.matrix([[0.0], [0.0]])
     augmented_R = numpy.matrix(numpy.zeros((3, 1)))
     augmented_R[0:2, :] = R
-    RunTest(
-        plant,
-        end_goal=augmented_R,
-        controller=controller,
-        observer=observer,
-        duration=2.0,
-        use_profile=False,
-        kick_time=1.0,
-        kick_magnitude=2.0)
+    RunTest(plant,
+            end_goal=augmented_R,
+            controller=controller,
+            observer=observer,
+            duration=2.0,
+            use_profile=False,
+            kick_time=1.0,
+            kick_magnitude=2.0)
 
 
 def PlotMotion(params,
@@ -391,15 +399,14 @@ def PlotMotion(params,
     initial_X = numpy.matrix([[0.0], [0.0]])
     augmented_R = numpy.matrix(numpy.zeros((3, 1)))
     augmented_R[0:2, :] = R
-    RunTest(
-        plant,
-        end_goal=augmented_R,
-        controller=controller,
-        observer=observer,
-        duration=2.0,
-        use_profile=True,
-        max_velocity=max_velocity,
-        max_acceleration=max_acceleration)
+    RunTest(plant,
+            end_goal=augmented_R,
+            controller=controller,
+            observer=observer,
+            duration=2.0,
+            use_profile=True,
+            max_velocity=max_velocity,
+            max_acceleration=max_acceleration)
 
 
 def WriteAngularSystem(params, plant_files, controller_files, year_namespaces):
@@ -431,8 +438,9 @@ def WriteAngularSystem(params, plant_files, controller_files, year_namespaces):
         integral_angular_systems.append(
             IntegralAngularSystem(params, 'Integral' + params.name))
 
-    loop_writer = control_loop.ControlLoopWriter(
-        name, angular_systems, namespaces=year_namespaces)
+    loop_writer = control_loop.ControlLoopWriter(name,
+                                                 angular_systems,
+                                                 namespaces=year_namespaces)
     loop_writer.AddConstant(
         control_loop.Constant('kOutputRatio', '%f', angular_systems[0].G))
     loop_writer.AddConstant(

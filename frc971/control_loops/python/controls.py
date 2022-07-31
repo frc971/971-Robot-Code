@@ -33,8 +33,8 @@ def dplace(A, B, poles):
   Returns:
     numpy.matrix(m x n), K
   """
-    return scipy.signal.place_poles(
-        A=A, B=B, poles=numpy.array(poles)).gain_matrix
+    return scipy.signal.place_poles(A=A, B=B,
+                                    poles=numpy.array(poles)).gain_matrix
 
 
 def c2d(A, B, dt):
@@ -48,8 +48,8 @@ def c2d(A, B, dt):
     em_upper = numpy.hstack((a, b))
 
     # Need to stack zeros under the a and b matrices
-    em_lower = numpy.hstack((numpy.zeros((b.shape[1], a.shape[0])),
-                             numpy.zeros((b.shape[1], b.shape[1]))))
+    em_lower = numpy.hstack((numpy.zeros(
+        (b.shape[1], a.shape[0])), numpy.zeros((b.shape[1], b.shape[1]))))
 
     em = numpy.vstack((em_upper, em_lower))
     ms = scipy.linalg.expm(dt * em)
@@ -164,8 +164,8 @@ def kalmd(A_continuous, B_continuous, Q_continuous, R_continuous, dt):
         axis=0)
     phi = numpy.matrix(scipy.linalg.expm(M * dt))
     phi12 = phi[0:number_of_states, number_of_states:(2 * number_of_states)]
-    phi22 = phi[number_of_states:2 * number_of_states, number_of_states:2 *
-                number_of_states]
+    phi22 = phi[number_of_states:2 * number_of_states,
+                number_of_states:2 * number_of_states]
     Q_discrete = phi22.T * phi12
     Q_discrete = (Q_discrete + Q_discrete.T) / 2.0
     R_discrete = R_continuous / dt

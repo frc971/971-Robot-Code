@@ -135,8 +135,11 @@ class IntegralShooter(Shooter):
         r_pos = 0.05
         self.R = numpy.matrix([[(r_pos**2.0)]])
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
         self.L = self.A * self.KalmanGain
 
         self.K_unaugmented = self.K
@@ -256,12 +259,11 @@ def main(argv):
 
     initial_X = numpy.matrix([[0.0], [0.0]])
     R = numpy.matrix([[0.0], [100.0], [0.0]])
-    scenario_plotter.run_test(
-        shooter,
-        goal=R,
-        controller_shooter=shooter_controller,
-        observer_shooter=observer_shooter,
-        iterations=200)
+    scenario_plotter.run_test(shooter,
+                              goal=R,
+                              controller_shooter=shooter_controller,
+                              observer_shooter=observer_shooter,
+                              iterations=200)
 
     if FLAGS.plot:
         scenario_plotter.Plot()
@@ -271,8 +273,8 @@ def main(argv):
     else:
         namespaces = ['y2016', 'control_loops', 'shooter']
         shooter = Shooter('Shooter')
-        loop_writer = control_loop.ControlLoopWriter(
-            'Shooter', [shooter], namespaces=namespaces)
+        loop_writer = control_loop.ControlLoopWriter('Shooter', [shooter],
+                                                     namespaces=namespaces)
         loop_writer.Write(argv[1], argv[2])
 
         integral_shooter = IntegralShooter('IntegralShooter')

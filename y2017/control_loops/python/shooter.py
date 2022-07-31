@@ -204,8 +204,8 @@ class IntegralShooter(Shooter):
 
         glog.debug('A: \n%s', repr(self.A_continuous))
         glog.debug('eig(A): \n%s', repr(scipy.linalg.eig(self.A_continuous)))
-        glog.debug('schur(A): \n%s', repr(
-            scipy.linalg.schur(self.A_continuous)))
+        glog.debug('schur(A): \n%s',
+                   repr(scipy.linalg.schur(self.A_continuous)))
         glog.debug('A_dt(A): \n%s', repr(self.A))
 
         q_pos = 0.01
@@ -220,15 +220,17 @@ class IntegralShooter(Shooter):
         r_pos = 0.0003
         self.R_continuous = numpy.matrix([[(r_pos**2.0)]])
 
-        _, _, self.Q, self.R = controls.kalmd(
-            A_continuous=self.A_continuous,
-            B_continuous=self.B_continuous,
-            Q_continuous=self.Q_continuous,
-            R_continuous=self.R_continuous,
-            dt=self.dt)
+        _, _, self.Q, self.R = controls.kalmd(A_continuous=self.A_continuous,
+                                              B_continuous=self.B_continuous,
+                                              Q_continuous=self.Q_continuous,
+                                              R_continuous=self.R_continuous,
+                                              dt=self.dt)
 
-        self.KalmanGain, self.P_steady_state = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.P_steady_state = controls.kalman(A=self.A,
+                                                               B=self.B,
+                                                               C=self.C,
+                                                               Q=self.Q,
+                                                               R=self.R)
         self.L = self.A * self.KalmanGain
 
         self.K_unaugmented = self.K
@@ -363,13 +365,12 @@ def main(argv):
         shooter_controller = IntegralShooter()
         observer_shooter_hybrid = IntegralShooter()
 
-        scenario_plotter_int.run_test(
-            shooter,
-            goal=R,
-            controller_shooter=shooter_controller,
-            observer_shooter=observer_shooter_hybrid,
-            iterations=iterations,
-            hybrid_obs=True)
+        scenario_plotter_int.run_test(shooter,
+                                      goal=R,
+                                      controller_shooter=shooter_controller,
+                                      observer_shooter=observer_shooter_hybrid,
+                                      iterations=iterations,
+                                      hybrid_obs=True)
 
         scenario_plotter_int.Plot()
 
@@ -380,8 +381,8 @@ def main(argv):
     else:
         namespaces = ['y2017', 'control_loops', 'superstructure', 'shooter']
         shooter = Shooter('Shooter')
-        loop_writer = control_loop.ControlLoopWriter(
-            'Shooter', [shooter], namespaces=namespaces)
+        loop_writer = control_loop.ControlLoopWriter('Shooter', [shooter],
+                                                     namespaces=namespaces)
         loop_writer.AddConstant(
             control_loop.Constant('kFreeSpeed', '%f', shooter.free_speed))
         loop_writer.AddConstant(

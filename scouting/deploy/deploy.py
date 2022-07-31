@@ -3,6 +3,7 @@ from pathlib import Path
 import subprocess
 import sys
 
+
 def main(argv):
     """Installs the scouting application on the scouting server."""
     parser = argparse.ArgumentParser()
@@ -23,11 +24,16 @@ def main(argv):
 
     # Copy the .deb to the scouting server, install it, and delete it again.
     subprocess.run(["rsync", "-L", args.deb, f"{args.host}:/tmp/{deb.name}"],
-                   check=True, stdin=sys.stdin)
+                   check=True,
+                   stdin=sys.stdin)
     subprocess.run(f"ssh -tt {args.host} sudo dpkg -i /tmp/{deb.name}",
-                   shell=True, check=True, stdin=sys.stdin)
+                   shell=True,
+                   check=True,
+                   stdin=sys.stdin)
     subprocess.run(f"ssh {args.host} rm -f /tmp/{deb.name}",
-                   shell=True, check=True, stdin=sys.stdin)
+                   shell=True,
+                   check=True,
+                   stdin=sys.stdin)
 
 
 if __name__ == "__main__":

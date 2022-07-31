@@ -4,6 +4,7 @@ import os
 
 
 class Constant(object):
+
     def __init__(self, name, formatt, value, comment=None):
         self.name = name
         self.formatt = formatt
@@ -25,6 +26,7 @@ class Constant(object):
 
 
 class ControlLoopWriter(object):
+
     def __init__(self,
                  gain_schedule_name,
                  loops,
@@ -76,8 +78,9 @@ class ControlLoopWriter(object):
         return self._namespaces[0]
 
     def _HeaderGuard(self, header_file):
-        return ('_'.join([namespace.upper() for namespace in self._namespaces])
-                + '_' + os.path.basename(header_file).upper().replace(
+        return ('_'.join([namespace.upper()
+                          for namespace in self._namespaces]) + '_' +
+                os.path.basename(header_file).upper().replace(
                     '.', '_').replace('/', '_') + '_')
 
     def Write(self, header_file, cc_file):
@@ -163,17 +166,17 @@ class ControlLoopWriter(object):
                 fd.write(loop.DumpObserverHeader(self._ObserverCoeffType()))
                 fd.write('\n')
 
-            fd.write('%s Make%sPlant();\n\n' % (self._PlantType(),
-                                                self._gain_schedule_name))
+            fd.write('%s Make%sPlant();\n\n' %
+                     (self._PlantType(), self._gain_schedule_name))
 
-            fd.write('%s Make%sController();\n\n' % (self._ControllerType(),
-                                                     self._gain_schedule_name))
+            fd.write('%s Make%sController();\n\n' %
+                     (self._ControllerType(), self._gain_schedule_name))
 
-            fd.write('%s Make%sObserver();\n\n' % (self._ObserverType(),
-                                                   self._gain_schedule_name))
+            fd.write('%s Make%sObserver();\n\n' %
+                     (self._ObserverType(), self._gain_schedule_name))
 
-            fd.write('%s Make%sLoop();\n\n' % (self._LoopType(),
-                                               self._gain_schedule_name))
+            fd.write('%s Make%sLoop();\n\n' %
+                     (self._LoopType(), self._gain_schedule_name))
 
             fd.write(self._namespace_end)
             fd.write('\n\n')
@@ -182,8 +185,8 @@ class ControlLoopWriter(object):
     def WriteCC(self, header_file_name, cc_file):
         """Writes the cc file to the file named cc_file."""
         with open(cc_file, 'w') as fd:
-            fd.write('#include \"%s/%s\"\n' % (os.path.join(*self._namespaces),
-                                               header_file_name))
+            fd.write('#include \"%s/%s\"\n' %
+                     (os.path.join(*self._namespaces), header_file_name))
             fd.write('\n')
             fd.write('#include <chrono>\n')
             fd.write('#include <vector>\n')
@@ -208,19 +211,20 @@ class ControlLoopWriter(object):
                                       self._scalar_type))
                 fd.write('\n')
 
-            fd.write('%s Make%sPlant() {\n' % (self._PlantType(),
-                                               self._gain_schedule_name))
+            fd.write('%s Make%sPlant() {\n' %
+                     (self._PlantType(), self._gain_schedule_name))
             fd.write('  ::std::vector< ::std::unique_ptr<%s>> plants(%d);\n' %
                      (self._PlantCoeffType(), len(self._loops)))
             for index, loop in enumerate(self._loops):
-                fd.write('  plants[%d] = ::std::unique_ptr<%s>(new %s(%s));\n'
-                         % (index, self._PlantCoeffType(),
-                            self._PlantCoeffType(), loop.PlantFunction()))
+                fd.write(
+                    '  plants[%d] = ::std::unique_ptr<%s>(new %s(%s));\n' %
+                    (index, self._PlantCoeffType(), self._PlantCoeffType(),
+                     loop.PlantFunction()))
             fd.write('  return %s(std::move(plants));\n' % self._PlantType())
             fd.write('}\n\n')
 
-            fd.write('%s Make%sController() {\n' % (self._ControllerType(),
-                                                    self._gain_schedule_name))
+            fd.write('%s Make%sController() {\n' %
+                     (self._ControllerType(), self._gain_schedule_name))
             fd.write(
                 '  ::std::vector< ::std::unique_ptr<%s>> controllers(%d);\n' %
                 (self._ControllerCoeffType(), len(self._loops)))
@@ -233,21 +237,22 @@ class ControlLoopWriter(object):
                      self._ControllerType())
             fd.write('}\n\n')
 
-            fd.write('%s Make%sObserver() {\n' % (self._ObserverType(),
-                                                  self._gain_schedule_name))
-            fd.write('  ::std::vector< ::std::unique_ptr<%s>> observers(%d);\n'
-                     % (self._ObserverCoeffType(), len(self._loops)))
+            fd.write('%s Make%sObserver() {\n' %
+                     (self._ObserverType(), self._gain_schedule_name))
+            fd.write(
+                '  ::std::vector< ::std::unique_ptr<%s>> observers(%d);\n' %
+                (self._ObserverCoeffType(), len(self._loops)))
             for index, loop in enumerate(self._loops):
                 fd.write(
-                    '  observers[%d] = ::std::unique_ptr<%s>(new %s(%s));\n'
-                    % (index, self._ObserverCoeffType(),
-                       self._ObserverCoeffType(), loop.ObserverFunction()))
-            fd.write(
-                '  return %s(std::move(observers));\n' % self._ObserverType())
+                    '  observers[%d] = ::std::unique_ptr<%s>(new %s(%s));\n' %
+                    (index, self._ObserverCoeffType(),
+                     self._ObserverCoeffType(), loop.ObserverFunction()))
+            fd.write('  return %s(std::move(observers));\n' %
+                     self._ObserverType())
             fd.write('}\n\n')
 
-            fd.write('%s Make%sLoop() {\n' % (self._LoopType(),
-                                              self._gain_schedule_name))
+            fd.write('%s Make%sLoop() {\n' %
+                     (self._LoopType(), self._gain_schedule_name))
             fd.write(
                 '  return %s(Make%sPlant(), Make%sController(), Make%sObserver());\n'
                 % (self._LoopType(), self._gain_schedule_name,
@@ -259,6 +264,7 @@ class ControlLoopWriter(object):
 
 
 class ControlLoop(object):
+
     def __init__(self, name):
         """Constructs a control loop object.
 
@@ -291,7 +297,8 @@ class ControlLoop(object):
         self.X = numpy.matrix(numpy.zeros((self.A.shape[0], 1)))
         self.Y = self.C * self.X
         self.X_hat = numpy.matrix(numpy.zeros((self.A.shape[0], 1)))
-        self.last_U = numpy.matrix(numpy.zeros((self.B.shape[1], max(1, self.delayed_u))))
+        self.last_U = numpy.matrix(
+            numpy.zeros((self.B.shape[1], max(1, self.delayed_u))))
 
     def PlaceControllerPoles(self, poles):
         """Places the controller poles.
@@ -368,8 +375,8 @@ class ControlLoop(object):
                     if '.' not in write_type and 'e' not in write_type:
                         write_type += '.0'
                     write_type += 'f'
-                ans.append(
-                    '  %s(%d, %d) = %s;\n' % (matrix_name, x, y, write_type))
+                ans.append('  %s(%d, %d) = %s;\n' %
+                           (matrix_name, x, y, write_type))
 
         return ''.join(ans)
 
@@ -389,8 +396,8 @@ class ControlLoop(object):
             string, The function which will create the object.
         """
         ans = [
-            '%s Make%sPlantCoefficients() {\n' % (plant_coefficient_type,
-                                                  self._name)
+            '%s Make%sPlantCoefficients() {\n' %
+            (plant_coefficient_type, self._name)
         ]
 
         ans.append(self._DumpMatrix('C', self.C, scalar_type))
@@ -402,11 +409,11 @@ class ControlLoop(object):
         if plant_coefficient_type.startswith('StateFeedbackPlant'):
             ans.append(self._DumpMatrix('A', self.A, scalar_type))
             ans.append(self._DumpMatrix('B', self.B, scalar_type))
-            ans.append(
-                '  const std::chrono::nanoseconds dt(%d);\n' % (self.dt * 1e9))
-            ans.append(
-                '  return %s'
-                '(A, B, C, D, U_max, U_min, dt, %s);\n' % (plant_coefficient_type, delayed_u_string))
+            ans.append('  const std::chrono::nanoseconds dt(%d);\n' %
+                       (self.dt * 1e9))
+            ans.append('  return %s'
+                       '(A, B, C, D, U_max, U_min, dt, %s);\n' %
+                       (plant_coefficient_type, delayed_u_string))
         elif plant_coefficient_type.startswith('StateFeedbackHybridPlant'):
             ans.append(
                 self._DumpMatrix('A_continuous', self.A_continuous,
@@ -414,9 +421,10 @@ class ControlLoop(object):
             ans.append(
                 self._DumpMatrix('B_continuous', self.B_continuous,
                                  scalar_type))
-            ans.append('  return %s'
-                       '(A_continuous, B_continuous, C, D, U_max, U_min, %s);\n' %
-                       (plant_coefficient_type, delayed_u_string))
+            ans.append(
+                '  return %s'
+                '(A_continuous, B_continuous, C, D, U_max, U_min, %s);\n' %
+                (plant_coefficient_type, delayed_u_string))
         else:
             glog.fatal('Unsupported plant type %s', plant_coefficient_type)
 
@@ -521,8 +529,8 @@ class ControlLoop(object):
                 self._DumpMatrix('P_steady_state', self.P_steady_state,
                                  scalar_type))
             ans.append(
-                '  return %s(Q_continuous, R_continuous, P_steady_state, %s);\n' %
-                (observer_coefficient_type, delayed_u_string))
+                '  return %s(Q_continuous, R_continuous, P_steady_state, %s);\n'
+                % (observer_coefficient_type, delayed_u_string))
         else:
             glog.fatal('Unsupported observer type %s',
                        observer_coefficient_type)
@@ -532,6 +540,7 @@ class ControlLoop(object):
 
 
 class HybridControlLoop(ControlLoop):
+
     def __init__(self, name):
         super(HybridControlLoop, self).__init__(name=name)
 
@@ -569,6 +578,7 @@ class HybridControlLoop(ControlLoop):
 
 
 class CIM(object):
+
     def __init__(self):
         # Stall Torque in N m
         self.stall_torque = 2.42
@@ -581,13 +591,14 @@ class CIM(object):
         # Resistance of the motor
         self.resistance = 12.0 / self.stall_current
         # Motor velocity constant
-        self.Kv = (
-            self.free_speed / (12.0 - self.resistance * self.free_current))
+        self.Kv = (self.free_speed /
+                   (12.0 - self.resistance * self.free_current))
         # Torque constant
         self.Kt = self.stall_torque / self.stall_current
 
 
 class MiniCIM(object):
+
     def __init__(self):
         # Stall Torque in N m
         self.stall_torque = 1.41
@@ -600,8 +611,8 @@ class MiniCIM(object):
         # Resistance of the motor
         self.resistance = 12.0 / self.stall_current
         # Motor velocity constant
-        self.Kv = (
-            self.free_speed / (12.0 - self.resistance * self.free_current))
+        self.Kv = (self.free_speed /
+                   (12.0 - self.resistance * self.free_current))
         # Torque constant
         self.Kt = self.stall_torque / self.stall_current
 
@@ -610,6 +621,7 @@ class MiniCIM(object):
 
 
 class NMotor(object):
+
     def __init__(self, motor, n):
         """Gangs together n motors."""
         self.motor = motor
@@ -625,6 +637,7 @@ class NMotor(object):
 
 
 class Vex775Pro(object):
+
     def __init__(self):
         # Stall Torque in N m
         self.stall_torque = 0.71
@@ -637,8 +650,8 @@ class Vex775Pro(object):
         # Resistance of the motor
         self.resistance = 12.0 / self.stall_current
         # Motor velocity constant
-        self.Kv = (
-            self.free_speed / (12.0 - self.resistance * self.free_current))
+        self.Kv = (self.free_speed /
+                   (12.0 - self.resistance * self.free_current))
         # Torque constant
         self.Kt = self.stall_torque / self.stall_current
         # Motor inertia in kg m^2
@@ -659,8 +672,8 @@ class BAG(object):
         # Resistance of the motor (Ohms)
         self.resistance = 12.0 / self.stall_current
         # Motor velocity constant (radians / (sec * volt))
-        self.Kv = (
-            self.free_speed / (12.0 - self.resistance * self.free_current))
+        self.Kv = (self.free_speed /
+                   (12.0 - self.resistance * self.free_current))
         # Torque constant (N * m / A)
         self.Kt = self.stall_torque / self.stall_current
         # Motor inertia in kg m^2
@@ -668,6 +681,7 @@ class BAG(object):
 
 
 class MN3510(object):
+
     def __init__(self):
         # http://www.robotshop.com/en/t-motor-navigator-mn3510-360kv-brushless-motor.html#Specifications
         # Free Current in Amps
@@ -702,8 +716,8 @@ class Falcon(object):
         # Resistance of the motor, divided by 2 to account for the 2 motors
         self.resistance = 12.0 / self.stall_current
         # Motor velocity constant
-        self.Kv = (
-            self.free_speed / (12.0 - self.resistance * self.free_current))
+        self.Kv = (self.free_speed /
+                   (12.0 - self.resistance * self.free_current))
         # Torque constant
         self.Kt = self.stall_torque / self.stall_current
         # Motor inertia in kg m^2

@@ -16,10 +16,10 @@ kDrivetrain = drivetrain.DrivetrainParams(
     J=6.0,
     mass=58.0,
     # TODO(austin): Measure radius a bit better.
-    robot_radius= 0.39,
-    wheel_radius= 3/39.37,
+    robot_radius=0.39,
+    wheel_radius=3 / 39.37,
     motor_type=control_loop.Falcon(),
-    num_motors = 3,
+    num_motors=3,
     G=8.0 / 80.0,
     q_pos=0.24,
     q_vel=2.5,
@@ -40,7 +40,8 @@ def main(argv):
         print("Expected .h file name and .cc file name")
     else:
         # Write the generated constants out to a file.
-        drivetrain.WriteDrivetrain(argv[1:3], argv[3:5], 'y2021_bot3', kDrivetrain)
+        drivetrain.WriteDrivetrain(argv[1:3], argv[3:5], 'y2021_bot3',
+                                   kDrivetrain)
 
 
 if __name__ == '__main__':

@@ -74,8 +74,9 @@ def main(argv):
                 cv2.destroyAllWindows()
         fd.close()
 
-    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
-        objpoints, imgpoints, grey.shape[::-1], None, None)
+    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints,
+                                                       grey.shape[::-1], None,
+                                                       None)
     newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (rows, cols),
                                                       1, (rows, cols))
 

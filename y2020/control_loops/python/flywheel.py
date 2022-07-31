@@ -7,6 +7,7 @@ import glog
 
 
 class FlywheelParams(object):
+
     def __init__(self,
                  name,
                  motor,
@@ -31,6 +32,7 @@ class FlywheelParams(object):
 
 
 class VelocityFlywheel(control_loop.HybridControlLoop):
+
     def __init__(self, params, name="Flywheel"):
         super(VelocityFlywheel, self).__init__(name=name)
         self.params = params
@@ -76,6 +78,7 @@ class VelocityFlywheel(control_loop.HybridControlLoop):
 
 
 class Flywheel(VelocityFlywheel):
+
     def __init__(self, params, name="Flywheel"):
         super(Flywheel, self).__init__(params, name=name)
 
@@ -112,6 +115,7 @@ class Flywheel(VelocityFlywheel):
 
 
 class IntegralFlywheel(Flywheel):
+
     def __init__(self, params, name="IntegralFlywheel"):
         super(IntegralFlywheel, self).__init__(params, name=name)
 
@@ -124,7 +128,6 @@ class IntegralFlywheel(Flywheel):
 
         self.B_continuous = numpy.matrix(numpy.zeros((3, 1)))
         self.B_continuous[0:2, 0] = self.B_continuous_unaugmented
-
 
         # states
         # [position, velocity, voltage_error]
@@ -146,24 +149,26 @@ class IntegralFlywheel(Flywheel):
         q_vel = self.params.q_vel
         q_voltage = self.params.q_voltage
         self.Q_continuous = numpy.matrix([[(q_pos**2.0), 0.0, 0.0],
-                               [0.0, (q_vel**2.0), 0.0],
-                               [0.0, 0.0, (q_voltage**2.0)]])
+                                          [0.0, (q_vel**2.0), 0.0],
+                                          [0.0, 0.0, (q_voltage**2.0)]])
 
         r_pos = self.params.r_pos
         self.R_continuous = numpy.matrix([[(r_pos**2.0)]])
 
-        _, _, self.Q, self.R = controls.kalmd(
-            A_continuous=self.A_continuous,
-            B_continuous=self.B_continuous,
-            Q_continuous=self.Q_continuous,
-            R_continuous=self.R_continuous,
-            dt=self.dt)
+        _, _, self.Q, self.R = controls.kalmd(A_continuous=self.A_continuous,
+                                              B_continuous=self.B_continuous,
+                                              Q_continuous=self.Q_continuous,
+                                              R_continuous=self.R_continuous,
+                                              dt=self.dt)
 
         glog.debug('Q_discrete %s' % (str(self.Q)))
         glog.debug('R_discrete %s' % (str(self.R)))
 
-        self.KalmanGain, self.P_steady_state = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.P_steady_state = controls.kalman(A=self.A,
+                                                               B=self.B,
+                                                               C=self.C,
+                                                               Q=self.Q,
+                                                               R=self.R)
         self.L = self.A * self.KalmanGain
 
         self.K_unaugmented = self.K
@@ -283,34 +288,32 @@ def WriteFlywheel(params, plant_files, controller_files, namespace):
         for index, param in enumerate(params):
             flywheels.append(Flywheel(param, name=param.name + str(index)))
             integral_flywheels.append(
-                IntegralFlywheel(
-                    param, name='Integral' + param.name + str(index)))
+                IntegralFlywheel(param,
+                                 name='Integral' + param.name + str(index)))
     else:
         name = params.name
         flywheels.append(Flywheel(params, params.name))
         integral_flywheels.append(
             IntegralFlywheel(params, name='Integral' + params.name))
 
-    loop_writer = control_loop.ControlLoopWriter(
-        name, flywheels, namespaces=namespace)
+    loop_writer = control_loop.ControlLoopWriter(name,
+                                                 flywheels,
+                                                 namespaces=namespace)
     loop_writer.AddConstant(
-        control_loop.Constant('kOutputRatio', '%f',
-                              flywheels[0].G))
+        control_loop.Constant('kOutputRatio', '%f', flywheels[0].G))
     loop_writer.AddConstant(
         control_loop.Constant('kFreeSpeed', '%f',
                               flywheels[0].motor.free_speed))
     loop_writer.AddConstant(
-        control_loop.Constant(
-            'kBemf',
-            '%f',
-            flywheels[0].motor.Kv * flywheels[0].G,
-            comment="// Radians/sec / volt"))
+        control_loop.Constant('kBemf',
+                              '%f',
+                              flywheels[0].motor.Kv * flywheels[0].G,
+                              comment="// Radians/sec / volt"))
     loop_writer.AddConstant(
-        control_loop.Constant(
-            'kResistance',
-            '%f',
-            flywheels[0].motor.resistance,
-            comment="// Ohms"))
+        control_loop.Constant('kResistance',
+                              '%f',
+                              flywheels[0].motor.resistance,
+                              comment="// Ohms"))
     loop_writer.Write(plant_files[0], plant_files[1])
 
     integral_loop_writer = control_loop.ControlLoopWriter(

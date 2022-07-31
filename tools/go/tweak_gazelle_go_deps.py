@@ -14,22 +14,27 @@ import textwrap
 
 import org_frc971.tools.go.mirror_lib
 
+
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("go_deps_bzl", type=str)
     args = parser.parse_args(argv[1:])
 
-    repos = org_frc971.tools.go.mirror_lib.parse_go_repositories(args.go_deps_bzl)
+    repos = org_frc971.tools.go.mirror_lib.parse_go_repositories(
+        args.go_deps_bzl)
 
     with open(args.go_deps_bzl, "w") as file:
-        file.write(textwrap.dedent("""\
+        file.write(
+            textwrap.dedent("""\
             # This file is auto-generated. Do not edit.
             load("//tools/go:mirrored_go_deps.bzl", "maybe_override_go_dep")
 
             def go_dependencies():
             """))
         for repo in repos:
-            file.write(textwrap.indent(textwrap.dedent(f"""\
+            file.write(
+                textwrap.indent(
+                    textwrap.dedent(f"""\
                 maybe_override_go_dep(
                     name = "{repo['name']}",
                     importpath = "{repo['importpath']}",
@@ -37,6 +42,7 @@ def main(argv):
                     version = "{repo['version']}",
                 )
                 """), " " * 4))
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

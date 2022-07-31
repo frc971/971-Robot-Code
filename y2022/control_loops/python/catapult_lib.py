@@ -13,6 +13,7 @@ CatapultParams = angular_system.AngularSystemParams
 
 # TODO(austin): This is mostly the same as angular_system.  Can we either wrap an angular_system or assign it?
 class Catapult(angular_system.AngularSystem):
+
     def __init__(self, params, name="Catapult"):
         super(Catapult, self).__init__(params, name)
         # Signal that we have a 2 cycle output delay to compensate for in
@@ -23,6 +24,7 @@ class Catapult(angular_system.AngularSystem):
 
 
 class IntegralCatapult(angular_system.IntegralAngularSystem):
+
     def __init__(self, params, name="IntegralCatapult"):
         super(IntegralCatapult, self).__init__(params, name=name)
         # Signal that we have a 2 cycle output delay to compensate for in

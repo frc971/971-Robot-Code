@@ -17,17 +17,16 @@ try:
 except gflags.DuplicateFlagError:
     pass
 
-kControlPanel = angular_system.AngularSystemParams(
-    name='ControlPanel',
-    motor=control_loop.BAG(),
-    G=1.0,
-    J=0.000009,
-    q_pos=0.20,
-    q_vel=5.0,
-    kalman_q_pos=0.12,
-    kalman_q_vel=2.0,
-    kalman_q_voltage=4.0,
-    kalman_r_position=0.05)
+kControlPanel = angular_system.AngularSystemParams(name='ControlPanel',
+                                                   motor=control_loop.BAG(),
+                                                   G=1.0,
+                                                   J=0.000009,
+                                                   q_pos=0.20,
+                                                   q_vel=5.0,
+                                                   kalman_q_pos=0.12,
+                                                   kalman_q_vel=2.0,
+                                                   kalman_q_voltage=4.0,
+                                                   kalman_r_position=0.05)
 
 
 def main(argv):
@@ -42,7 +41,9 @@ def main(argv):
             'Expected .h file name and .cc file name for the control_panel and integral control_panel.'
         )
     else:
-        namespaces = ['y2020', 'control_loops', 'superstructure', 'control_panel']
+        namespaces = [
+            'y2020', 'control_loops', 'superstructure', 'control_panel'
+        ]
         angular_system.WriteAngularSystem(kControlPanel, argv[1:3], argv[3:5],
                                           namespaces)
 

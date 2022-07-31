@@ -22,6 +22,7 @@ target_radius_default = 12.
 
 
 class TargetData:
+
     def __init__(self, filename=None):
         if filename:
             self.image_filename = dtd.bazel_name_fix(filename)

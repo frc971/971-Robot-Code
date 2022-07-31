@@ -4,6 +4,7 @@ import numpy
 import sys
 import calib_sensors
 
+
 def manual_calibrate():
     #  38  27 -84
     #  36 -64  39
@@ -20,11 +21,12 @@ def manual_calibrate():
     transform = I * numpy.linalg.inv(Is)
     return transform
 
+
 def main():
     transform = manual_calibrate()
 
     if len(sys.argv) > 1:
-      transform = calib_sensors.calibrate(sys.argv[1:])
+        transform = calib_sensors.calibrate(sys.argv[1:])
 
     print("#ifndef MOTORS_FET12_CURRENT_MATRIX_")
     print("#define MOTORS_FET12_CURRENT_MATRIX_")
@@ -35,7 +37,8 @@ def main():
     print("namespace motors {")
     print("")
     print(
-        "inline ::std::array<float, 3> DecoupleCurrents(int16_t currents[3]) {")
+        "inline ::std::array<float, 3> DecoupleCurrents(int16_t currents[3]) {"
+    )
     print("  ::std::array<float, 3> ans;")
 
     for i in range(3):
@@ -53,6 +56,7 @@ def main():
     print("#endif  // MOTORS_FET12_CURRENT_MATRIX_")
 
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main())

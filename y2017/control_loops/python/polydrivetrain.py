@@ -12,20 +12,22 @@ __author__ = 'Austin Schuh (austin.linux@gmail.com)'
 FLAGS = gflags.FLAGS
 
 try:
-  gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
+    gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 except gflags.DuplicateFlagError:
-  pass
+    pass
+
 
 def main(argv):
-  if FLAGS.plot:
-    polydrivetrain.PlotPolyDrivetrainMotions(drivetrain.kDrivetrain)
-  elif len(argv) != 7:
-    glog.fatal('Expected .h file name and .cc file name')
-  else:
-    polydrivetrain.WritePolyDrivetrain(argv[1:3], argv[3:5], argv[5:7], 'y2017',
-                                       drivetrain.kDrivetrain)
+    if FLAGS.plot:
+        polydrivetrain.PlotPolyDrivetrainMotions(drivetrain.kDrivetrain)
+    elif len(argv) != 7:
+        glog.fatal('Expected .h file name and .cc file name')
+    else:
+        polydrivetrain.WritePolyDrivetrain(argv[1:3], argv[3:5], argv[5:7],
+                                           'y2017', drivetrain.kDrivetrain)
+
 
 if __name__ == '__main__':
-  argv = FLAGS(sys.argv)
-  glog.init()
-  sys.exit(main(argv))
+    argv = FLAGS(sys.argv)
+    glog.init()
+    sys.exit(main(argv))

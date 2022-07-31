@@ -25,17 +25,17 @@ except gflags.DuplicateFlagError:
 # Wrist with hatch
 #  0.446
 
-kWrist = angular_system.AngularSystemParams(
-    name='Wrist',
-    motor=control_loop.BAG(),
-    G=(6.0 / 60.0) * (20.0 / 100.0) * (24.0 / 84.0),
-    J=0.30,
-    q_pos=0.20,
-    q_vel=5.0,
-    kalman_q_pos=0.12,
-    kalman_q_vel=2.0,
-    kalman_q_voltage=4.0,
-    kalman_r_position=0.05)
+kWrist = angular_system.AngularSystemParams(name='Wrist',
+                                            motor=control_loop.BAG(),
+                                            G=(6.0 / 60.0) * (20.0 / 100.0) *
+                                            (24.0 / 84.0),
+                                            J=0.30,
+                                            q_pos=0.20,
+                                            q_vel=5.0,
+                                            kalman_q_pos=0.12,
+                                            kalman_q_vel=2.0,
+                                            kalman_q_voltage=4.0,
+                                            kalman_r_position=0.05)
 
 kWristBall = copy.copy(kWrist)
 kWristBall.J = 0.4007

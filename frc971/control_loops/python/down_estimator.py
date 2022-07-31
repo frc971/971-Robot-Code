@@ -18,6 +18,7 @@ gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
 
 class DownEstimator(control_loop.ControlLoop):
+
     def __init__(self, name='DownEstimator'):
         super(DownEstimator, self).__init__(name)
         self.dt = 0.005
@@ -47,8 +48,11 @@ class DownEstimator(control_loop.ControlLoop):
         self.U_min = numpy.matrix([[-numpy.pi]])
         self.K = numpy.matrix(numpy.zeros((1, 2)))
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
 
         self.L = self.A * self.KalmanGain
 
@@ -93,8 +97,8 @@ def main(argv):
         angle = math.pi / 2
         velocity = 1
         for i in range(100):
-            measured_velocity = velocity + (
-                random.random() - 0.5) * 0.01 + 0.05
+            measured_velocity = velocity + (random.random() -
+                                            0.5) * 0.01 + 0.05
             estimator.Predict(measured_velocity)
             estimator.Update(
                 math.sin(angle) + (random.random() - 0.5) * 0.02, 0,
@@ -115,8 +119,9 @@ def main(argv):
         glog.error("Expected .h file name and .cc file name")
     else:
         namespaces = ['frc971', 'control_loops', 'drivetrain']
-        kf_loop_writer = control_loop.ControlLoopWriter(
-            "DownEstimator", [estimator], namespaces=namespaces)
+        kf_loop_writer = control_loop.ControlLoopWriter("DownEstimator",
+                                                        [estimator],
+                                                        namespaces=namespaces)
         kf_loop_writer.Write(argv[1], argv[2])
 
 

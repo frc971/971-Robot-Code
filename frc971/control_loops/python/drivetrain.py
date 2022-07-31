@@ -9,6 +9,7 @@ import glog
 
 
 class DrivetrainParams(object):
+
     def __init__(self,
                  J,
                  mass,
@@ -109,6 +110,7 @@ class DrivetrainParams(object):
 
 
 class Drivetrain(control_loop.ControlLoop):
+
     def __init__(self,
                  drivetrain_params,
                  name="Drivetrain",
@@ -192,8 +194,8 @@ class Drivetrain(control_loop.ControlLoop):
 
         # Resistance of the motor, divided by the number of motors.
         # Motor velocity constant
-        self.Kv = (
-            self.free_speed / (12.0 - self.resistance * self.free_current))
+        self.Kv = (self.free_speed /
+                   (12.0 - self.resistance * self.free_current))
         # Torque constant
         self.Kt = self.stall_torque / self.stall_current
 
@@ -206,10 +208,10 @@ class Drivetrain(control_loop.ControlLoop):
         self.msnr = self.robot_radius_l / ( self.robot_radius_r * self.mass ) - \
             self.robot_radius_l * self.robot_radius_r / self.J
         # The calculations which we will need for A and B.
-        self.tcl = self.Kt / self.Kv / (
-            self.Gl * self.Gl * self.resistance * self.r * self.r)
-        self.tcr = self.Kt / self.Kv / (
-            self.Gr * self.Gr * self.resistance * self.r * self.r)
+        self.tcl = self.Kt / self.Kv / (self.Gl * self.Gl * self.resistance *
+                                        self.r * self.r)
+        self.tcr = self.Kt / self.Kv / (self.Gr * self.Gr * self.resistance *
+                                        self.r * self.r)
         self.mpl = self.Kt / (self.Gl * self.resistance * self.r)
         self.mpr = self.Kt / (self.Gr * self.resistance * self.r)
 
@@ -268,6 +270,7 @@ class Drivetrain(control_loop.ControlLoop):
 
 
 class KFDrivetrain(Drivetrain):
+
     def __init__(self,
                  drivetrain_params,
                  name="KFDrivetrain",
@@ -323,31 +326,36 @@ class KFDrivetrain(Drivetrain):
                                                    self.B_continuous, self.dt)
 
         if self.has_imu:
-            self.C = numpy.matrix(
-                [[1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0],
-                 [
-                     0, -0.5 / drivetrain_params.robot_radius, 0,
-                     0.5 / drivetrain_params.robot_radius, 0, 0, 0
-                 ], [0, 0, 0, 0, 0, 0, 0]])
+            self.C = numpy.matrix([[1, 0, 0, 0, 0, 0, 0],
+                                   [0, 0, 1, 0, 0, 0, 0],
+                                   [
+                                       0,
+                                       -0.5 / drivetrain_params.robot_radius,
+                                       0, 0.5 / drivetrain_params.robot_radius,
+                                       0, 0, 0
+                                   ], [0, 0, 0, 0, 0, 0, 0]])
             gravity = 9.8
             self.C[3, 0:6] = 0.5 * (self.A_continuous[1, 0:6] +
                                     self.A_continuous[3, 0:6]) / gravity
 
-            self.D = numpy.matrix(
-                [[0, 0], [0, 0], [0, 0],
-                 [
-                     0.5 * (self.B_continuous[1, 0] + self.B_continuous[3, 0])
-                     / gravity,
-                     0.5 * (self.B_continuous[1, 1] + self.B_continuous[3, 1])
-                     / gravity
-                 ]])
+            self.D = numpy.matrix([
+                [0, 0], [0, 0], [0, 0],
+                [
+                    0.5 * (self.B_continuous[1, 0] + self.B_continuous[3, 0]) /
+                    gravity,
+                    0.5 * (self.B_continuous[1, 1] + self.B_continuous[3, 1]) /
+                    gravity
+                ]
+            ])
         else:
-            self.C = numpy.matrix(
-                [[1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0],
-                 [
-                     0, -0.5 / drivetrain_params.robot_radius, 0,
-                     0.5 / drivetrain_params.robot_radius, 0, 0, 0
-                 ]])
+            self.C = numpy.matrix([[1, 0, 0, 0, 0, 0, 0],
+                                   [0, 0, 1, 0, 0, 0, 0],
+                                   [
+                                       0,
+                                       -0.5 / drivetrain_params.robot_radius,
+                                       0, 0.5 / drivetrain_params.robot_radius,
+                                       0, 0, 0
+                                   ]])
 
             self.D = numpy.matrix([[0, 0], [0, 0], [0, 0]])
 
@@ -378,14 +386,17 @@ class KFDrivetrain(Drivetrain):
                                    [0.0, 0.0, (r_gyro**2.0)]])
 
         # Solving for kf gains.
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
 
         # If we don't have an IMU, pad various matrices with zeros so that
         # we can still have 4 measurement outputs.
         if not self.has_imu:
-            self.KalmanGain = numpy.hstack((self.KalmanGain,
-                                            numpy.matrix(numpy.zeros((7, 1)))))
+            self.KalmanGain = numpy.hstack(
+                (self.KalmanGain, numpy.matrix(numpy.zeros((7, 1)))))
             self.C = numpy.vstack((self.C, numpy.matrix(numpy.zeros((1, 7)))))
             self.D = numpy.vstack((self.D, numpy.matrix(numpy.zeros((1, 2)))))
             Rtmp = numpy.zeros((4, 4))
@@ -415,8 +426,8 @@ class KFDrivetrain(Drivetrain):
         self.Qff[2, 2] = 1.0 / qff_pos**2.0
         self.Qff[3, 3] = 1.0 / qff_vel**2.0
         self.Kff = numpy.matrix(numpy.zeros((2, 7)))
-        self.Kff[0:2, 0:4] = controls.TwoStateFeedForwards(
-            self.B[0:4, :], self.Qff)
+        self.Kff[0:2,
+                 0:4] = controls.TwoStateFeedForwards(self.B[0:4, :], self.Qff)
 
         self.InitializeState()
 
@@ -428,59 +439,50 @@ def WriteDrivetrain(drivetrain_files,
                     scalar_type='double'):
 
     # Write the generated constants out to a file.
-    drivetrain_low_low = Drivetrain(
-        name="DrivetrainLowLow",
-        left_low=True,
-        right_low=True,
-        drivetrain_params=drivetrain_params)
-    drivetrain_low_high = Drivetrain(
-        name="DrivetrainLowHigh",
-        left_low=True,
-        right_low=False,
-        drivetrain_params=drivetrain_params)
-    drivetrain_high_low = Drivetrain(
-        name="DrivetrainHighLow",
-        left_low=False,
-        right_low=True,
-        drivetrain_params=drivetrain_params)
-    drivetrain_high_high = Drivetrain(
-        name="DrivetrainHighHigh",
-        left_low=False,
-        right_low=False,
-        drivetrain_params=drivetrain_params)
+    drivetrain_low_low = Drivetrain(name="DrivetrainLowLow",
+                                    left_low=True,
+                                    right_low=True,
+                                    drivetrain_params=drivetrain_params)
+    drivetrain_low_high = Drivetrain(name="DrivetrainLowHigh",
+                                     left_low=True,
+                                     right_low=False,
+                                     drivetrain_params=drivetrain_params)
+    drivetrain_high_low = Drivetrain(name="DrivetrainHighLow",
+                                     left_low=False,
+                                     right_low=True,
+                                     drivetrain_params=drivetrain_params)
+    drivetrain_high_high = Drivetrain(name="DrivetrainHighHigh",
+                                      left_low=False,
+                                      right_low=False,
+                                      drivetrain_params=drivetrain_params)
 
-    kf_drivetrain_low_low = KFDrivetrain(
-        name="KFDrivetrainLowLow",
-        left_low=True,
-        right_low=True,
-        drivetrain_params=drivetrain_params)
-    kf_drivetrain_low_high = KFDrivetrain(
-        name="KFDrivetrainLowHigh",
-        left_low=True,
-        right_low=False,
-        drivetrain_params=drivetrain_params)
-    kf_drivetrain_high_low = KFDrivetrain(
-        name="KFDrivetrainHighLow",
-        left_low=False,
-        right_low=True,
-        drivetrain_params=drivetrain_params)
-    kf_drivetrain_high_high = KFDrivetrain(
-        name="KFDrivetrainHighHigh",
-        left_low=False,
-        right_low=False,
-        drivetrain_params=drivetrain_params)
+    kf_drivetrain_low_low = KFDrivetrain(name="KFDrivetrainLowLow",
+                                         left_low=True,
+                                         right_low=True,
+                                         drivetrain_params=drivetrain_params)
+    kf_drivetrain_low_high = KFDrivetrain(name="KFDrivetrainLowHigh",
+                                          left_low=True,
+                                          right_low=False,
+                                          drivetrain_params=drivetrain_params)
+    kf_drivetrain_high_low = KFDrivetrain(name="KFDrivetrainHighLow",
+                                          left_low=False,
+                                          right_low=True,
+                                          drivetrain_params=drivetrain_params)
+    kf_drivetrain_high_high = KFDrivetrain(name="KFDrivetrainHighHigh",
+                                           left_low=False,
+                                           right_low=False,
+                                           drivetrain_params=drivetrain_params)
 
     if isinstance(year_namespace, list):
         namespaces = year_namespace
     else:
         namespaces = [year_namespace, 'control_loops', 'drivetrain']
-    dog_loop_writer = control_loop.ControlLoopWriter(
-        "Drivetrain", [
-            drivetrain_low_low, drivetrain_low_high, drivetrain_high_low,
-            drivetrain_high_high
-        ],
-        namespaces=namespaces,
-        scalar_type=scalar_type)
+    dog_loop_writer = control_loop.ControlLoopWriter("Drivetrain", [
+        drivetrain_low_low, drivetrain_low_high, drivetrain_high_low,
+        drivetrain_high_high
+    ],
+                                                     namespaces=namespaces,
+                                                     scalar_type=scalar_type)
     dog_loop_writer.AddConstant(
         control_loop.Constant("kDt", "%f", drivetrain_low_low.dt))
     dog_loop_writer.AddConstant(
@@ -522,20 +524,20 @@ def WriteDrivetrain(drivetrain_files,
 
     dog_loop_writer.Write(drivetrain_files[0], drivetrain_files[1])
 
-    kf_loop_writer = control_loop.ControlLoopWriter(
-        "KFDrivetrain", [
-            kf_drivetrain_low_low, kf_drivetrain_low_high,
-            kf_drivetrain_high_low, kf_drivetrain_high_high
-        ],
-        namespaces=namespaces,
-        scalar_type=scalar_type)
+    kf_loop_writer = control_loop.ControlLoopWriter("KFDrivetrain", [
+        kf_drivetrain_low_low, kf_drivetrain_low_high, kf_drivetrain_high_low,
+        kf_drivetrain_high_high
+    ],
+                                                    namespaces=namespaces,
+                                                    scalar_type=scalar_type)
     kf_loop_writer.Write(kf_drivetrain_files[0], kf_drivetrain_files[1])
 
 
 def PlotDrivetrainMotions(drivetrain_params):
     # Test out the voltage error.
-    drivetrain = KFDrivetrain(
-        left_low=False, right_low=False, drivetrain_params=drivetrain_params)
+    drivetrain = KFDrivetrain(left_low=False,
+                              right_low=False,
+                              drivetrain_params=drivetrain_params)
     close_loop_left = []
     close_loop_right = []
     left_power = []
@@ -562,8 +564,9 @@ def PlotDrivetrainMotions(drivetrain_params):
     pylab.show()
 
     # Simulate the response of the system to a step input.
-    drivetrain = KFDrivetrain(
-        left_low=False, right_low=False, drivetrain_params=drivetrain_params)
+    drivetrain = KFDrivetrain(left_low=False,
+                              right_low=False,
+                              drivetrain_params=drivetrain_params)
     simulated_left = []
     simulated_right = []
     for _ in range(100):
@@ -579,8 +582,9 @@ def PlotDrivetrainMotions(drivetrain_params):
     pylab.show()
 
     # Simulate forwards motion.
-    drivetrain = KFDrivetrain(
-        left_low=False, right_low=False, drivetrain_params=drivetrain_params)
+    drivetrain = KFDrivetrain(left_low=False,
+                              right_low=False,
+                              drivetrain_params=drivetrain_params)
     close_loop_left = []
     close_loop_right = []
     left_power = []

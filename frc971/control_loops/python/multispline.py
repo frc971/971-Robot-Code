@@ -21,6 +21,7 @@ class ControlPointIndex:
 
 
 class Multispline():
+
     def __init__(self):
         self.staged_points = []  # Holds all points not yet in spline
         self.libsplines = []  # Formatted for libspline library usage
@@ -97,8 +98,8 @@ class Multispline():
         # the three points on either side are entirely constrained by this spline
 
         if next_spline is not None:
-            f = spline[5] # the end of the spline
-            e = spline[4] # determines the heading
+            f = spline[5]  # the end of the spline
+            e = spline[4]  # determines the heading
             d = spline[3]
             if next_multispline is None:
                 next_spline[0] = f
@@ -106,7 +107,9 @@ class Multispline():
                 next_spline[2] = d + f * 4 + e * -4
             else:
                 if snap:
-                    Multispline.snapSplines(spline, next_spline, match_first_to_second=False)
+                    Multispline.snapSplines(spline,
+                                            next_spline,
+                                            match_first_to_second=False)
 
                 next_spline[0] = f
                 next_multispline.update_lib_spline()
@@ -121,7 +124,9 @@ class Multispline():
                 prev_spline[3] = c + a * 4 + b * -4
             else:
                 if snap:
-                    Multispline.snapSplines(prev_spline, spline, match_first_to_second=True)
+                    Multispline.snapSplines(prev_spline,
+                                            spline,
+                                            match_first_to_second=True)
 
                 prev_spline[5] = a
                 prev_multispline.update_lib_spline()
@@ -189,7 +194,6 @@ class Multispline():
 
         spline[index_of_edit] = mouse
 
-
         # all three points move together with the endpoint
         if index_of_edit == 5:
             spline[3] += diffs
@@ -246,6 +250,7 @@ class Multispline():
 
         Returns the closest multispline and the distance along that multispline
         """
+
         def distance(t, distance_spline, point):
             return np.sum((distance_spline.XY(t) - point)**2)
 

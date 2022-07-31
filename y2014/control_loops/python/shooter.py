@@ -264,8 +264,9 @@ def main(argv):
 
     sprung_shooter = SprungShooterDeltaU()
     shooter = ShooterDeltaU()
-    loop_writer = control_loop.ControlLoopWriter(
-        "Shooter", [sprung_shooter, shooter], namespaces=namespaces)
+    loop_writer = control_loop.ControlLoopWriter("Shooter",
+                                                 [sprung_shooter, shooter],
+                                                 namespaces=namespaces)
 
     loop_writer.AddConstant(
         control_loop.Constant("kMaxExtension", "%f",

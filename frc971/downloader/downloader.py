@@ -31,19 +31,19 @@ def install(ssh_target, pkg, ssh_path, scp_path):
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--target",
-        type=str,
-        default="roborio-971-frc.local",
-        help="Target to deploy code to.")
-    parser.add_argument(
-        "--type",
-        type=str,
-        choices=["roborio", "pi"],
-        required=True,
-        help="Target type for deployment")
-    parser.add_argument(
-        "srcs", type=str, nargs='+', help="List of files to copy over")
+    parser.add_argument("--target",
+                        type=str,
+                        default="roborio-971-frc.local",
+                        help="Target to deploy code to.")
+    parser.add_argument("--type",
+                        type=str,
+                        choices=["roborio", "pi"],
+                        required=True,
+                        help="Target type for deployment")
+    parser.add_argument("srcs",
+                        type=str,
+                        nargs='+',
+                        help="List of files to copy over")
     args = parser.parse_args(argv[1:])
 
     srcs = args.srcs
@@ -52,9 +52,8 @@ def main(argv):
 
     result = re.match("(?:([^:@]+)@)?([^:@]+)(?::([^:@]+))?", destination)
     if not result:
-        print(
-            "Not sure how to parse destination \"%s\"!" % destination,
-            file=sys.stderr)
+        print("Not sure how to parse destination \"%s\"!" % destination,
+              file=sys.stderr)
         return 1
     user = None
     if result.group(1):

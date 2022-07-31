@@ -1,4 +1,5 @@
 import gi
+
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 import numpy as np
@@ -14,6 +15,7 @@ from matplotlib.figure import Figure
 
 
 class Graph(Gtk.Bin):
+
     def __init__(self):
         super(Graph, self).__init__()
         fig = Figure(figsize=(5, 4), dpi=100)

@@ -6,6 +6,7 @@ from frc971.analysis.py_log_reader import LogReader
 
 
 class LogReaderTest(unittest.TestCase):
+
     def setUp(self):
         self.reader = LogReader("external/sample_logfile/file/log.fbs")
         # A list of all the channels in the logfile--this is used to confirm that
@@ -13,16 +14,14 @@ class LogReaderTest(unittest.TestCase):
         self.all_channels = [
             ("/aos", "aos.JoystickState"), ("/aos", "aos.RobotState"),
             ("/aos", "aos.timing.Report"), ("/aos", "frc971.PDPValues"),
-            ("/aos",
-             "frc971.wpilib.PneumaticsToLog"), ("/autonomous",
-                                                "aos.common.actions.Status"),
+            ("/aos", "frc971.wpilib.PneumaticsToLog"),
+            ("/autonomous", "aos.common.actions.Status"),
             ("/autonomous", "frc971.autonomous.AutonomousMode"),
-            ("/autonomous", "frc971.autonomous.Goal"), ("/camera",
-                                                        "y2019.CameraLog"),
+            ("/autonomous", "frc971.autonomous.Goal"),
+            ("/camera", "y2019.CameraLog"),
             ("/camera", "y2019.control_loops.drivetrain.CameraFrame"),
-            ("/drivetrain",
-             "frc971.IMUValues"), ("/drivetrain",
-                                   "frc971.control_loops.drivetrain.Goal"),
+            ("/drivetrain", "frc971.IMUValues"),
+            ("/drivetrain", "frc971.control_loops.drivetrain.Goal"),
             ("/drivetrain",
              "frc971.control_loops.drivetrain.LocalizerControl"),
             ("/drivetrain", "frc971.control_loops.drivetrain.Output"),
@@ -31,9 +30,8 @@ class LogReaderTest(unittest.TestCase):
             ("/drivetrain", "frc971.sensors.GyroReading"),
             ("/drivetrain",
              "y2019.control_loops.drivetrain.TargetSelectorHint"),
-            ("/superstructure",
-             "y2019.StatusLight"), ("/superstructure",
-                                    "y2019.control_loops.superstructure.Goal"),
+            ("/superstructure", "y2019.StatusLight"),
+            ("/superstructure", "y2019.control_loops.superstructure.Goal"),
             ("/superstructure", "y2019.control_loops.superstructure.Output"),
             ("/superstructure", "y2019.control_loops.superstructure.Position"),
             ("/superstructure", "y2019.control_loops.superstructure.Status")

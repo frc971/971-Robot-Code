@@ -20,7 +20,7 @@ import numpy as np
 import os
 import sys
 
-_num_rects = 3 # can be 3 or 2, can be specified in commang line arg
+_num_rects = 3  # can be 3 or 2, can be specified in commang line arg
 
 _path = Path(Letter.kA, Alliance.kRed, [Rect(None, None, None, None)])
 
@@ -29,20 +29,24 @@ _rect_index = 0
 
 _fig, _img_ax = plt.subplots()
 
-_txt = _img_ax.text(0, 0, "", size = 10, backgroundcolor = "white")
+_txt = _img_ax.text(0, 0, "", size=10, backgroundcolor="white")
 
 _confirm = Button(plt.axes([0.7, 0.05, 0.1, 0.075]), "Confirm")
 _cancel = Button(plt.axes([0.81, 0.05, 0.1, 0.075]), "Cancel")
 _submit = Button(plt.axes([0.4, 0.05, 0.1, 0.1]), "Submit")
 
+
 def draw_txt(txt):
-    txt.set_text("Click on top left point and bottom right point for rect #%u" % (_rect_index + 1))
+    txt.set_text(
+        "Click on top left point and bottom right point for rect #%u" %
+        (_rect_index + 1))
     txt.set_color(_path.alliance.value)
 
 
 def on_confirm(event):
     global _rect_index
-    if _path.rects[_rect_index].x1 != None and _path.rects[_rect_index].x2 != None:
+    if _path.rects[_rect_index].x1 != None and _path.rects[
+            _rect_index].x2 != None:
         _confirm.ax.set_visible(False)
         _cancel.ax.set_visible(False)
         _rect_index += 1
@@ -53,6 +57,7 @@ def on_confirm(event):
             draw_txt(_txt)
             _path.rects.append(Rect(None, None, None, None))
         plt.show()
+
 
 def on_cancel(event):
     global _rect_index
@@ -66,6 +71,7 @@ def on_cancel(event):
         _path.rects[_rect_index].y2 = None
         plt.show()
 
+
 def on_submit(event):
     plt.close("all")
     dict = None
@@ -74,9 +80,12 @@ def on_submit(event):
         dict[_path.letter.name] = {}
     if _path.alliance.name not in dict[_path.letter.name]:
         dict[_path.letter.name][_path.alliance.name] = []
-    dict[_path.letter.name][_path.alliance.name] = [rect.to_list() for rect in _path.rects]
+    dict[_path.letter.name][_path.alliance.name] = [
+        rect.to_list() for rect in _path.rects
+    ]
     with open(RECTS_JSON_PATH, 'w') as rects_json:
-        json.dump(dict, rects_json, indent = 2)
+        json.dump(dict, rects_json, indent=2)
+
 
 # Clears rect on screen
 def clear_rect():
@@ -84,6 +93,7 @@ def clear_rect():
         glog.error("There were no patches found in _img_ax")
     else:
         _img_ax.patches[-1].remove()
+
 
 def on_click(event):
     # This gets called for each click of the rectangle corners,
@@ -94,9 +104,11 @@ def on_click(event):
     # the bounds of the axis
     if _rect_index < _num_rects and event.xdata != None and event.ydata != None:
         if _path.rects[_rect_index].x1 == None:
-            _path.rects[_rect_index].x1, _path.rects[_rect_index].y1 = int(event.xdata), int(event.ydata)
+            _path.rects[_rect_index].x1, _path.rects[_rect_index].y1 = int(
+                event.xdata), int(event.ydata)
         elif _path.rects[_rect_index].x2 == None:
-            _path.rects[_rect_index].x2, _path.rects[_rect_index].y2 = int(event.xdata), int(event.ydata)
+            _path.rects[_rect_index].x2, _path.rects[_rect_index].y2 = int(
+                event.xdata), int(event.ydata)
             if _path.rects[_rect_index].x2 < _path.rects[_rect_index].x1:
                 tmp = _path.rects[_rect_index].x1
                 _path.rects[_rect_index].x1 = _path.rects[_rect_index].x2
@@ -106,19 +118,26 @@ def on_click(event):
                 _path.rects[_rect_index].y1 = _path.rects[_rect_index].y2
                 _path.rects[_rect_index].y2 = tmp
 
-            _img_ax.add_patch(patches.Rectangle((_path.rects[_rect_index].x1, _path.rects[_rect_index].y1),
-                _path.rects[_rect_index].x2 - _path.rects[_rect_index].x1,
-                _path.rects[_rect_index].y2 - _path.rects[_rect_index].y1,
-                edgecolor = 'r', linewidth = 1, facecolor="none"))
+            _img_ax.add_patch(
+                patches.Rectangle(
+                    (_path.rects[_rect_index].x1, _path.rects[_rect_index].y1),
+                    _path.rects[_rect_index].x2 - _path.rects[_rect_index].x1,
+                    _path.rects[_rect_index].y2 - _path.rects[_rect_index].y1,
+                    edgecolor='r',
+                    linewidth=1,
+                    facecolor="none"))
             _confirm.ax.set_visible(True)
             _cancel.ax.set_visible(True)
             plt.show()
     else:
-        glog.info("Either submitted or user pressed out of the bounds of the axis")
+        glog.info(
+            "Either submitted or user pressed out of the bounds of the axis")
+
 
 def setup_button(button, on_clicked):
     button.on_clicked(on_clicked)
     button.ax.set_visible(False)
+
 
 def setup_ui():
     _img_ax.imshow(capture_img())
@@ -131,11 +150,12 @@ def setup_ui():
     draw_txt(_txt)
     plt.show()
 
+
 def view_rects():
 
     rects_dict = load_json()
-    if (_path.letter.name in rects_dict and
-        _path.alliance.name in rects_dict[_path.letter.name]):
+    if (_path.letter.name in rects_dict
+            and _path.alliance.name in rects_dict[_path.letter.name]):
         _confirm.ax.set_visible(False)
         _cancel.ax.set_visible(False)
         _submit.ax.set_visible(False)
@@ -143,20 +163,26 @@ def view_rects():
 
         for rect_list in rects_dict[_path.letter.name][_path.alliance.name]:
             rect = Rect.from_list(rect_list)
-            _img_ax.add_patch(patches.Rectangle((rect.x1, rect.y1),
-                rect.x2 - rect.x1, rect.y2 - rect.y1,
-                edgecolor = 'r', linewidth = 1, facecolor="none"))
+            _img_ax.add_patch(
+                patches.Rectangle((rect.x1, rect.y1),
+                                  rect.x2 - rect.x1,
+                                  rect.y2 - rect.y1,
+                                  edgecolor='r',
+                                  linewidth=1,
+                                  facecolor="none"))
         plt.show()
     else:
         glog.error("Could not find path %s %s in rects.json",
-            _path.alliance.value, _path.letter.value)
+                   _path.alliance.value, _path.letter.value)
+
 
 def main(argv):
     global _num_rects
 
     glog.setLevel("INFO")
-    opts = getopt.getopt(argv[1 : ], "a:l:n:",
-                        ["alliance = ", "letter = ", "_num_rects = ", "view"])[0]
+    opts = getopt.getopt(
+        argv[1:], "a:l:n:",
+        ["alliance = ", "letter = ", "_num_rects = ", "view"])[0]
     view = False
     for opt, arg in opts:
         if opt in ["-a", "--alliance"]:

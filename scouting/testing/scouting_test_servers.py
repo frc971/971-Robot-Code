@@ -18,6 +18,7 @@ import sys
 import time
 from typing import List
 
+
 def wait_for_server(port: int):
     """Waits for the server at the specified port to respond to TCP connections."""
     while True:
@@ -30,31 +31,37 @@ def wait_for_server(port: int):
             connection.close()
             time.sleep(0.01)
 
+
 def create_db_config(tmpdir: Path) -> Path:
     config = tmpdir / "db_config.json"
-    config.write_text(json.dumps({
-        "username": "test",
-        "password": "password",
-        "port": 5432,
-    }))
+    config.write_text(
+        json.dumps({
+            "username": "test",
+            "password": "password",
+            "port": 5432,
+        }))
     return config
+
 
 def create_tba_config(tmpdir: Path) -> Path:
     # Configure the scouting webserver to scrape data from our fake TBA
     # server.
     config = tmpdir / "scouting_config.json"
-    config.write_text(json.dumps({
-        "api_key": "dummy_key_that_is_not_actually_used_in_this_test",
-        "base_url": "http://localhost:7000",
-    }))
+    config.write_text(
+        json.dumps({
+            "api_key": "dummy_key_that_is_not_actually_used_in_this_test",
+            "base_url": "http://localhost:7000",
+        }))
     return config
+
 
 def set_up_tba_api_dir(tmpdir: Path, year: int, event_code: str):
     tba_api_dir = tmpdir / "api" / "v3" / "event" / f"{year}{event_code}"
     tba_api_dir.mkdir(parents=True, exist_ok=True)
     (tba_api_dir / "matches").write_text(
-        Path(f"scouting/scraping/test_data/{year}_{event_code}.json").read_text()
-    )
+        Path(f"scouting/scraping/test_data/{year}_{event_code}.json").
+        read_text())
+
 
 class Runner:
     """Helps manage the services we need for testing the scouting app."""
@@ -105,6 +112,7 @@ class Runner:
         except FileNotFoundError:
             pass
 
+
 def discard_signal(signum, frame):
     """A NOP handler to ignore certain signals.
 
@@ -113,9 +121,12 @@ def discard_signal(signum, frame):
     """
     pass
 
+
 def main(argv: List[str]):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, help="The port for the actual web server.")
+    parser.add_argument("--port",
+                        type=int,
+                        help="The port for the actual web server.")
     args = parser.parse_args(argv[1:])
 
     runner = Runner()

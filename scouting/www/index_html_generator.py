@@ -5,8 +5,10 @@ import hashlib
 import sys
 from pathlib import Path
 
+
 def compute_sha256(filepath):
     return hashlib.sha256(filepath.read_bytes()).hexdigest()
+
 
 def main(argv):
     parser = argparse.ArgumentParser()
@@ -20,9 +22,9 @@ def main(argv):
     bundle_sha256 = compute_sha256(bundle_path)
 
     output = template.format(
-        MAIN_BUNDLE_FILE = f"/sha256/{bundle_sha256}/{bundle_path.name}",
-    )
+        MAIN_BUNDLE_FILE=f"/sha256/{bundle_sha256}/{bundle_path.name}", )
     Path(args.output).write_text(output)
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

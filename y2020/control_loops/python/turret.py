@@ -18,17 +18,18 @@ try:
 except gflags.DuplicateFlagError:
     pass
 
-kTurret = angular_system.AngularSystemParams(
-    name='Turret',
-    motor=control_loop.MiniCIM(),
-    G=(26.0 / 150.0) * (14.0 / 60.0) * (20.0 / 60.0),
-    J=0.20,
-    q_pos=0.30,
-    q_vel=4.5,
-    kalman_q_pos=0.12,
-    kalman_q_vel=10.0,
-    kalman_q_voltage=20.0,
-    kalman_r_position=0.05)
+kTurret = angular_system.AngularSystemParams(name='Turret',
+                                             motor=control_loop.MiniCIM(),
+                                             G=(26.0 / 150.0) * (14.0 / 60.0) *
+                                             (20.0 / 60.0),
+                                             J=0.20,
+                                             q_pos=0.30,
+                                             q_vel=4.5,
+                                             kalman_q_pos=0.12,
+                                             kalman_q_vel=10.0,
+                                             kalman_q_voltage=20.0,
+                                             kalman_r_position=0.05)
+
 
 def main(argv):
     if FLAGS.plot:
@@ -38,13 +39,11 @@ def main(argv):
 
     # Write the generated constants out to a file.
     if len(argv) != 5:
-        glog.fatal(
-            'Expected .h file name and .cc file name for the turret.'
-        )
+        glog.fatal('Expected .h file name and .cc file name for the turret.')
     else:
         namespaces = ['y2020', 'control_loops', 'superstructure', 'turret']
-        angular_system.WriteAngularSystem([kTurret],
-                                          argv[1:3], argv[3:5], namespaces)
+        angular_system.WriteAngularSystem([kTurret], argv[1:3], argv[3:5],
+                                          namespaces)
 
 
 if __name__ == '__main__':

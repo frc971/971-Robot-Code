@@ -46,9 +46,8 @@ class Spline:
         assert points.shape == (2, 6)
         self.__points = points
         self.__spline = ct.c_void_p(
-            libSpline.NewSpline(
-                np.ctypeslib.as_ctypes(self.__points[0]),
-                np.ctypeslib.as_ctypes(self.__points[1])))
+            libSpline.NewSpline(np.ctypeslib.as_ctypes(self.__points[0]),
+                                np.ctypeslib.as_ctypes(self.__points[1])))
 
     def __del__(self):
         libSpline.deleteSpline(self.__spline)
@@ -58,9 +57,8 @@ class Spline:
         self.__points[1, index] = y
         libSpline.deleteSpline(self.__spline)
         self.__spline = ct.c_void_p(
-            libSpline.newSpline(
-                np.ctypeslib.as_ctypes(self.__points[0]),
-                np.ctypeslib.as_ctypes(self.__points[1])))
+            libSpline.newSpline(np.ctypeslib.as_ctypes(self.__points[0]),
+                                np.ctypeslib.as_ctypes(self.__points[1])))
 
     def Point(self, alpha):
         result = np.zeros(2)

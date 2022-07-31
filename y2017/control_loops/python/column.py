@@ -37,12 +37,12 @@ class ColumnController(control_loop.ControlLoop):
         self.A_continuous = numpy.matrix(numpy.zeros((3, 3)))
         self.B_continuous = numpy.matrix(numpy.zeros((3, 2)))
 
-        self.A_continuous[0, 0] = -(
-            self.indexer.Kt / self.indexer.Kv /
-            (self.indexer.J * self.indexer.resistance * self.indexer.G *
-             self.indexer.G) + self.turret.Kt / self.turret.Kv /
-            (self.indexer.J * self.turret.resistance * self.turret.G *
-             self.turret.G))
+        self.A_continuous[0, 0] = -(self.indexer.Kt / self.indexer.Kv /
+                                    (self.indexer.J * self.indexer.resistance *
+                                     self.indexer.G * self.indexer.G) +
+                                    self.turret.Kt / self.turret.Kv /
+                                    (self.indexer.J * self.turret.resistance *
+                                     self.turret.G * self.turret.G))
         self.A_continuous[0, 2] = self.turret.Kt / self.turret.Kv / (
             self.indexer.J * self.turret.resistance * self.turret.G *
             self.turret.G)
@@ -142,8 +142,11 @@ class Column(ColumnController):
         r_pos = 0.05
         self.R = numpy.matrix([[(r_pos**2.0), 0.0], [0.0, (r_pos**2.0)]])
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
         self.L = self.A * self.KalmanGain
 
         self.InitializeState()
@@ -209,8 +212,11 @@ class IntegralColumn(Column):
         r_pos = 0.05
         self.R = numpy.matrix([[(r_pos**2.0), 0.0], [0.0, (r_pos**2.0)]])
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
         self.L = self.A * self.KalmanGain
 
         self.InitializeState()
@@ -282,12 +288,13 @@ class ScenarioPlotter(object):
             self.x_hat.append(observer_column.X_hat[0, 0])
 
             next_goal = numpy.concatenate(
-                (end_goal[0:2, :], profile.Update(
-                    end_goal[2, 0], end_goal[3, 0]), end_goal[4:6, :]),
+                (end_goal[0:2, :],
+                 profile.Update(end_goal[2, 0],
+                                end_goal[3, 0]), end_goal[4:6, :]),
                 axis=0)
 
-            ff_U = controller_column.Kff * (
-                next_goal - observer_column.A * goal)
+            ff_U = controller_column.Kff * (next_goal -
+                                            observer_column.A * goal)
             fb_U = controller_column.K * (goal - observer_column.X_hat)
             self.turret_error.append((goal[2, 0] - column.X[2, 0]) * 100.0)
             self.ui_fb.append(fb_U[0, 0])
@@ -373,12 +380,11 @@ def main(argv):
 
     initial_X = numpy.matrix([[0.0], [0.0], [0.0], [0.0]])
     R = numpy.matrix([[0.0], [10.0], [5.0], [0.0], [0.0], [0.0]])
-    scenario_plotter.run_test(
-        column,
-        end_goal=R,
-        controller_column=column_controller,
-        observer_column=observer_column,
-        iterations=400)
+    scenario_plotter.run_test(column,
+                              end_goal=R,
+                              controller_column=column_controller,
+                              observer_column=observer_column,
+                              iterations=400)
 
     if FLAGS.plot:
         scenario_plotter.Plot()
@@ -388,8 +394,8 @@ def main(argv):
     else:
         namespaces = ['y2017', 'control_loops', 'superstructure', 'column']
         column = Column('Column')
-        loop_writer = control_loop.ControlLoopWriter(
-            'Column', [column], namespaces=namespaces)
+        loop_writer = control_loop.ControlLoopWriter('Column', [column],
+                                                     namespaces=namespaces)
         loop_writer.AddConstant(
             control_loop.Constant('kIndexerFreeSpeed', '%f',
                                   column.indexer.free_speed))
@@ -405,15 +411,15 @@ def main(argv):
 
         # IntegralColumn controller 1 will disable the indexer.
         integral_column = IntegralColumn('IntegralColumn')
-        disabled_integral_column = IntegralColumn(
-            'DisabledIntegralColumn', disable_indexer=True)
+        disabled_integral_column = IntegralColumn('DisabledIntegralColumn',
+                                                  disable_indexer=True)
         integral_loop_writer = control_loop.ControlLoopWriter(
             'IntegralColumn', [integral_column, disabled_integral_column],
             namespaces=namespaces)
         integral_loop_writer.Write(argv[3], argv[4])
 
-        stuck_integral_column = IntegralColumn(
-            'StuckIntegralColumn', voltage_error_noise=8.0)
+        stuck_integral_column = IntegralColumn('StuckIntegralColumn',
+                                               voltage_error_noise=8.0)
         stuck_integral_loop_writer = control_loop.ControlLoopWriter(
             'StuckIntegralColumn', [stuck_integral_column],
             namespaces=namespaces)

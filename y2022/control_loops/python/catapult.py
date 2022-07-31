@@ -40,7 +40,6 @@ J_bar = 1.0 / 3.0 * M_bar * lever**2.0
 M_cup = (1750 * 0.0254 * 0.04 * 2 * math.pi * (ball_diameter / 2.)**2.0)
 J_cup = M_cup * lever**2.0 + M_cup * (ball_diameter / 2.)**2.0
 
-
 J = (0.0 * J_ball + J_bar + J_cup * 0.0)
 JEmpty = (J_bar + J_cup * 0.0)
 
@@ -83,6 +82,7 @@ kCatapultEmpty = catapult_lib.CatapultParams(
 # We really want our cost function to be robust so that we can tolerate the
 # battery not delivering like we want at the end.
 
+
 def quadratic_cost(catapult, X_initial, X_final, horizon):
     Q_final = numpy.matrix([[10000.0, 0.0], [0.0, 10000.0]])
 
@@ -98,28 +98,32 @@ def quadratic_cost(catapult, X_initial, X_final, horizon):
 
     P_final = 2.0 * Bf.transpose() * Q_final * Bf
     q_final = (2.0 * (Af * X_initial - X_final).transpose() * Q_final *
-         Bf).transpose()
+               Bf).transpose()
 
     constant_final = (Af * X_initial - X_final).transpose() * Q_final * (
         Af * X_initial - X_final)
 
-    m = numpy.matrix([[catapult.A[1, 1] ** (n + 1)] for n in range(horizon)])
+    m = numpy.matrix([[catapult.A[1, 1]**(n + 1)] for n in range(horizon)])
     M = Bs[1:horizon * 2:2, :]
 
-    W = numpy.matrix(numpy.identity(horizon) - numpy.eye(horizon, horizon, -1)) / catapult.dt
+    W = numpy.matrix(
+        numpy.identity(horizon) -
+        numpy.eye(horizon, horizon, -1)) / catapult.dt
     w = -numpy.matrix(numpy.eye(horizon, 1, 0)) / catapult.dt
 
-
     Pi = numpy.diag([
-        (0.01 ** 2.0) + (0.02 * max(0.0, 20 - (horizon - n)) / 20.0) ** 2.0 for n in range(horizon)
+        (0.01**2.0) + (0.02 * max(0.0, 20 - (horizon - n)) / 20.0)**2.0
+        for n in range(horizon)
     ])
 
     P_accel = 2.0 * M.transpose() * W.transpose() * Pi * W * M
-    q_accel = 2.0 * (((W * m + w) * X_initial[1, 0]).transpose() * Pi * W * M).transpose()
+    q_accel = 2.0 * ((
+        (W * m + w) * X_initial[1, 0]).transpose() * Pi * W * M).transpose()
     constant_accel = ((W * m + w) * X_initial[1, 0]).transpose() * Pi * (
         (W * m + w) * X_initial[1, 0])
 
-    return ((P_accel + P_final), (q_accel + q_final), (constant_accel + constant_final))
+    return ((P_accel + P_final), (q_accel + q_final),
+            (constant_accel + constant_final))
 
 
 def new_cost(catapult, X_initial, X_final, u):
@@ -138,25 +142,28 @@ def new_cost(catapult, X_initial, X_final, u):
 
     P_final = 2.0 * Bf.transpose() * Q_final * Bf
     q_final = (2.0 * (Af * X_initial - X_final).transpose() * Q_final *
-         Bf).transpose()
+               Bf).transpose()
 
     constant_final = (Af * X_initial - X_final).transpose() * Q_final * (
         Af * X_initial - X_final)
 
-    m = numpy.matrix([[catapult.A[1, 1] ** (n + 1)] for n in range(len(u))])
+    m = numpy.matrix([[catapult.A[1, 1]**(n + 1)] for n in range(len(u))])
     M = Bs[1:len(u) * 2:2, :]
 
-    W = numpy.matrix(numpy.identity(len(u)) - numpy.eye(len(u), len(u), -1)) / catapult.dt
+    W = numpy.matrix(numpy.identity(len(u)) -
+                     numpy.eye(len(u), len(u), -1)) / catapult.dt
     w = -numpy.matrix(numpy.eye(len(u), 1, 0)) * X_initial[1, 0] / catapult.dt
 
     accel = W * (M * u_matrix + m * X_initial[1, 0]) + w
 
     Pi = numpy.diag([
-        (0.01 ** 2.0) + (0.02 * max(0.0, 20 - (len(u) - n)) / 20.0) ** 2.0 for n in range(len(u))
+        (0.01**2.0) + (0.02 * max(0.0, 20 - (len(u) - n)) / 20.0)**2.0
+        for n in range(len(u))
     ])
 
     P_accel = 2.0 * M.transpose() * W.transpose() * Pi * W * M
-    q_accel = 2.0 * ((W * m * X_initial[1, 0] + w).transpose() * Pi * W * M).transpose()
+    q_accel = 2.0 * (
+        (W * m * X_initial[1, 0] + w).transpose() * Pi * W * M).transpose()
     constant_accel = (W * m * X_initial[1, 0] +
                       w).transpose() * Pi * (W * m * X_initial[1, 0] + w)
 
@@ -205,6 +212,7 @@ def mpc_cost(catapult, X_initial, X_final, u_matrix):
 
 def SolveCatapult(catapult, X_initial, X_final, u):
     """ Solves for the optimal action given a seed, state, and target """
+
     def vbat_constraint(z, i):
         return 12.0 - z[i]
 
@@ -213,12 +221,10 @@ def SolveCatapult(catapult, X_initial, X_final, u):
 
     P, q, c = quadratic_cost(catapult, X_initial, X_final, len(u))
 
-
     def mpc_cost2(u_solver):
         u_matrix = numpy.matrix(u_solver).transpose()
         cost = mpc_cost(catapult, X_initial, X_final, u_solver)
         return cost
-
 
     def mpc_cost3(u_solver):
         u_matrix = numpy.matrix(u_solver).transpose()
@@ -267,7 +273,6 @@ def CatapultProblem():
     u = [0.0] * kHorizon
     X_initial = numpy.matrix([[0.0], [0.0]])
     X_final = numpy.matrix([[2.0], [25.0]])
-
 
     X_initial = numpy.matrix([[0.0], [0.0]])
     X = X_initial.copy()
@@ -382,7 +387,8 @@ def main(argv):
         )
     else:
         namespaces = ['y2022', 'control_loops', 'superstructure', 'catapult']
-        catapult_lib.WriteCatapult([kCatapultWithBall, kCatapultEmpty], argv[1:3], argv[3:5], namespaces)
+        catapult_lib.WriteCatapult([kCatapultWithBall, kCatapultEmpty],
+                                   argv[1:3], argv[3:5], namespaces)
     return 0
 
 

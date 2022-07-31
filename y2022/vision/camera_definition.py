@@ -28,6 +28,7 @@ def bazel_name_fix(filename):
 
 
 class CameraIntrinsics:
+
     def __init__(self):
         self.camera_matrix = []
         self.dist_coeffs = []
@@ -36,12 +37,14 @@ class CameraIntrinsics:
 
 
 class CameraExtrinsics:
+
     def __init__(self):
         self.R = []
         self.T = []
 
 
 class CameraParameters:
+
     def __init__(self):
         self.camera_int = CameraIntrinsics()
         self.camera_ext = CameraExtrinsics()

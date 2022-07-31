@@ -11,6 +11,7 @@ import base64
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import os
 
+
 def parse_auth(authorization):
     auth_type, auth_info = authorization.split(" ", maxsplit=1)
     if auth_type != "Basic":
@@ -18,7 +19,9 @@ def parse_auth(authorization):
     username, _ = base64.b64decode(auth_info).decode().split(":", 1)
     return username
 
+
 class Server(BaseHTTPRequestHandler):
+
     def _set_response(self):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
@@ -34,6 +37,7 @@ class Server(BaseHTTPRequestHandler):
         username = parse_auth(self.headers["Authorization"])
         self._write(f"Hello, {username}")
 
+
 def main():
     port = int(os.environ["APACHE_WRAPPED_PORT"])
     server_address = ("", port)
@@ -43,6 +47,7 @@ def main():
     except KeyboardInterrupt:
         pass
     httpd.server_close()
+
 
 if __name__ == "__main__":
     main()

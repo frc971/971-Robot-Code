@@ -44,8 +44,8 @@ class Arm(control_loop.ControlLoop):
 
         self.A_continuous = numpy.matrix(numpy.zeros((4, 4)))
         self.A_continuous[0:2, 0:2] = self._shoulder.A_continuous
-        self.A_continuous[2:4, 0:2] = (
-            self._shoulder.A_continuous - self._shooter.A_continuous)
+        self.A_continuous[2:4, 0:2] = (self._shoulder.A_continuous -
+                                       self._shooter.A_continuous)
         self.A_continuous[2:4, 2:4] = self._shooter.A_continuous
 
         self.B_continuous = numpy.matrix(numpy.zeros((4, 2)))
@@ -131,8 +131,11 @@ class Arm(control_loop.ControlLoop):
         self.R[0, 0] = r_voltage**2.0
         self.R[1, 1] = r_voltage**2.0
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
         self.L = self.A * self.KalmanGain
 
         self.U_max = numpy.matrix([[12.0], [12.0]])
@@ -182,8 +185,11 @@ class IntegralArm(Arm):
         self.R[0, 0] = r_pos**2.0
         self.R[1, 1] = r_pos**2.0
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
         self.L = self.A * self.KalmanGain
 
         self.K_unaugmented = self.K
@@ -365,20 +371,19 @@ class ScenarioPlotter(object):
         pylab.plot(self.t, self.x_shooter, label='x shooter')
         pylab.plot(self.t, self.x_hat_shooter, label='x_hat shooter')
         pylab.plot(self.t, self.goal_x_shooter, label='goal x shooter')
-        pylab.plot(
-            self.t,
-            map(operator.add, self.x_shooter, self.x_shoulder),
-            label='x shooter ground')
-        pylab.plot(
-            self.t,
-            map(operator.add, self.x_hat_shooter, self.x_hat_shoulder),
-            label='x_hat shooter ground')
+        pylab.plot(self.t,
+                   map(operator.add, self.x_shooter, self.x_shoulder),
+                   label='x shooter ground')
+        pylab.plot(self.t,
+                   map(operator.add, self.x_hat_shooter, self.x_hat_shoulder),
+                   label='x_hat shooter ground')
         pylab.legend()
 
         pylab.subplot(3, 1, 2)
         pylab.plot(self.t, self.u_shoulder, label='u shoulder')
-        pylab.plot(
-            self.t, self.offset_shoulder, label='voltage_offset shoulder')
+        pylab.plot(self.t,
+                   self.offset_shoulder,
+                   label='voltage_offset shoulder')
         pylab.plot(self.t, self.u_shooter, label='u shooter')
         pylab.plot(self.t, self.offset_shooter, label='voltage_offset shooter')
         pylab.legend()
@@ -401,8 +406,8 @@ def main(argv):
     J_decelerating = 7
 
     arm = Arm(name='AcceleratingArm', J=J_accelerating)
-    arm_integral_controller = IntegralArm(
-        name='AcceleratingIntegralArm', J=J_accelerating)
+    arm_integral_controller = IntegralArm(name='AcceleratingIntegralArm',
+                                          J=J_accelerating)
     arm_observer = IntegralArm()
 
     # Test moving the shoulder with constant separation.
@@ -418,12 +423,11 @@ def main(argv):
     arm.X = initial_X[0:4, 0]
     arm_observer.X = initial_X
 
-    scenario_plotter.run_test(
-        arm=arm,
-        end_goal=R,
-        iterations=300,
-        controller=arm_integral_controller,
-        observer=arm_observer)
+    scenario_plotter.run_test(arm=arm,
+                              end_goal=R,
+                              iterations=300,
+                              controller=arm_integral_controller,
+                              observer=arm_observer)
 
     if len(argv) != 5:
         glog.fatal(
@@ -432,8 +436,9 @@ def main(argv):
     else:
         namespaces = ['y2016', 'control_loops', 'superstructure']
         decelerating_arm = Arm(name='DeceleratingArm', J=J_decelerating)
-        loop_writer = control_loop.ControlLoopWriter(
-            'Arm', [arm, decelerating_arm], namespaces=namespaces)
+        loop_writer = control_loop.ControlLoopWriter('Arm',
+                                                     [arm, decelerating_arm],
+                                                     namespaces=namespaces)
         loop_writer.Write(argv[1], argv[2])
 
         decelerating_integral_arm_controller = IntegralArm(

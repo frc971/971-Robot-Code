@@ -30,11 +30,10 @@ def main(argv):
         glog.error("Expected .h file name and .cc file name")
     else:
         # Write the generated constants out to a file.
-        drivetrain.WriteDrivetrain(
-            argv[1:3],
-            argv[3:5], ['motors', 'seems_reasonable'],
-            kDrivetrain,
-            scalar_type='float')
+        drivetrain.WriteDrivetrain(argv[1:3],
+                                   argv[3:5], ['motors', 'seems_reasonable'],
+                                   kDrivetrain,
+                                   scalar_type='float')
 
 
 if __name__ == '__main__':

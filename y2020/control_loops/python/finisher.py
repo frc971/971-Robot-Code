@@ -22,13 +22,16 @@ G = 44.0 / 40.0
 J = 0.00507464
 J = 0.0035
 
+
 def AddResistance(motor, resistance):
     motor.resistance += resistance
     return motor
 
+
 def ScaleKv(motor, scale):
     motor.Kv *= scale
     return motor
+
 
 # The position and velocity are measured for the final wheel.
 kFinisher = flywheel.FlywheelParams(

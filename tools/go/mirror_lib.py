@@ -13,6 +13,7 @@ def read_file(filepath: str) -> str:
     with open(filepath, "r") as file:
         return file.read()
 
+
 def parse_go_repositories(filepath: str) -> List[Dict[str, str]]:
     """Parses the top-level go_deps.bzl file.
 
@@ -53,7 +54,8 @@ def parse_go_mirror_info(filepath: str) -> Dict[str, Dict[str, str]]:
     return global_data["GO_MIRROR_INFO"]
 
 
-def write_go_mirror_info(filepath: str, mirror_info: Dict[str, Dict[str, str]]):
+def write_go_mirror_info(filepath: str, mirror_info: Dict[str, Dict[str,
+                                                                    str]]):
     """Saves the specified mirror_info as GO_MIRROR_INFO into tools/go/go_mirrors.bzl."""
     with open(filepath, "w") as file:
         file.write("# This file is auto-generated. Do not edit.\n")
@@ -64,9 +66,10 @@ def write_go_mirror_info(filepath: str, mirror_info: Dict[str, Dict[str, str]]):
 
     # Properly format the file now so that the linter doesn't complain.
     r = runfiles.Create()
-    subprocess.run(
-        [
-            r.Rlocation("com_github_bazelbuild_buildtools/buildifier/buildifier_/buildifier"),
-            filepath,
-        ],
-        check=True)
+    subprocess.run([
+        r.Rlocation(
+            "com_github_bazelbuild_buildtools/buildifier/buildifier_/buildifier"
+        ),
+        filepath,
+    ],
+                   check=True)

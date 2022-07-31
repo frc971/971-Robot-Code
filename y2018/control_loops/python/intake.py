@@ -105,8 +105,11 @@ class Intake(control_loop.ControlLoop):
         r_nm = 0.025
         self.R = numpy.matrix(numpy.diag([(r_nm**2.0), (r_nm**2.0)]))
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
 
         # The box formed by U_min and U_max must encompass all possible values,
         # or else Austin's code gets angry.
@@ -181,8 +184,9 @@ class DelayedIntake(Intake):
 
         self.R = numpy.matrix([[(1.0 / (12.0**2.0))]])
 
-        self.K_transformed = controls.dlqr(
-            self.A_transformed, self.B_transformed, self.Q_lqr, self.R)
+        self.K_transformed = controls.dlqr(self.A_transformed,
+                                           self.B_transformed, self.Q_lqr,
+                                           self.R)
 
         # Write the controller back out in the absolute coordinate system.
         self.K = numpy.hstack(
@@ -215,8 +219,11 @@ class DelayedIntake(Intake):
                    repr(numpy.linalg.eig(self.A - self.B * self.K)[0]),
                    self._name)
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
 
         self.InitializeState()
 
@@ -359,11 +366,10 @@ def main(argv):
     observer_intake.X_hat[0, 0] = intake.X[0, 0]
 
     # Test moving the intake with constant separation.
-    scenario_plotter.run_test(
-        intake,
-        controller_intake=intake_controller,
-        observer_intake=observer_intake,
-        iterations=200)
+    scenario_plotter.run_test(intake,
+                              controller_intake=intake_controller,
+                              observer_intake=observer_intake,
+                              iterations=200)
 
     if FLAGS.plot:
         scenario_plotter.Plot()
@@ -376,8 +382,8 @@ def main(argv):
     else:
         namespaces = ['y2018', 'control_loops', 'superstructure', 'intake']
         intake = Intake('Intake')
-        loop_writer = control_loop.ControlLoopWriter(
-            'Intake', [intake], namespaces=namespaces)
+        loop_writer = control_loop.ControlLoopWriter('Intake', [intake],
+                                                     namespaces=namespaces)
         loop_writer.AddConstant(
             control_loop.Constant('kGearRatio', '%f', intake.G))
         loop_writer.AddConstant(
@@ -387,8 +393,9 @@ def main(argv):
         loop_writer.Write(argv[1], argv[2])
 
         delayed_intake = DelayedIntake('DelayedIntake')
-        loop_writer = control_loop.ControlLoopWriter(
-            'DelayedIntake', [delayed_intake], namespaces=namespaces)
+        loop_writer = control_loop.ControlLoopWriter('DelayedIntake',
+                                                     [delayed_intake],
+                                                     namespaces=namespaces)
         loop_writer.Write(argv[3], argv[4])
 
 

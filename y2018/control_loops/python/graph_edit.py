@@ -7,6 +7,7 @@ from frc971.control_loops.python.color import Color, palette
 import random
 import gi
 import numpy
+
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gtk
 import cairo
@@ -70,8 +71,8 @@ lines1 = [
 
 # right hand side lines
 lines2 = [(joint_center[0] + derr, 0.3048), (0.422275, 0.3048),
-          (0.422275, 0.1397), (0.826135, 0.1397), (0.826135,
-                                                   inter_y(0.826135))]
+          (0.422275, 0.1397), (0.826135, 0.1397),
+          (0.826135, inter_y(0.826135))]
 
 t1_min = get_angle((32.525 - 4.0) * 0.0254)
 t2_min = -7.0 / 4.0 * numpy.pi
@@ -119,8 +120,8 @@ lines_theta = lines1_theta + lines2_theta
 
 p1 = Polygon(lines_theta)
 
-p2 = Polygon([(t1_min, t2_min), (t1_max, t2_min), (t1_max, t2_max), (t1_min,
-                                                                     t2_max)])
+p2 = Polygon([(t1_min, t2_min), (t1_max, t2_min), (t1_max, t2_max),
+              (t1_min, t2_max)])
 
 # Fully computed theta constrints.
 lines_theta = list(p1.intersection(p2).exterior.coords)
@@ -157,7 +158,6 @@ def get_closest(prev, cur, pt):
             abs(dpx * pdx + dpy * pdy)
 
 
-
 def closest_segment(lines, pt):
     c_pt, c_pt_dist = get_closest(lines[-1], lines[0], pt)
     for i in range(1, len(lines)):
@@ -172,6 +172,7 @@ def closest_segment(lines, pt):
 
 # Create a GTK+ widget on which we will draw using Cairo
 class Silly(basic_window.BaseWindow):
+
     def __init__(self):
         super(Silly, self).__init__()
 
@@ -230,6 +231,7 @@ class Silly(basic_window.BaseWindow):
             self.window.queue_draw()
 
     def method_connect(self, event, cb):
+
         def handler(obj, *args):
             cb(*args)
 
@@ -332,7 +334,8 @@ class Silly(basic_window.BaseWindow):
                 cr.stroke()
 
         if not self.theta_version:
-            theta1, theta2 = to_theta(self.last_pos, self.circular_index_select)
+            theta1, theta2 = to_theta(self.last_pos,
+                                      self.circular_index_select)
             x, y = joint_center[0], joint_center[1]
             cr.move_to(x, y)
 
@@ -473,16 +476,16 @@ class Silly(basic_window.BaseWindow):
         else:
             self.segments[0].control2 = self.now_segment_pt
 
-        print('Clicked at theta: %s' % (repr(self.now_segment_pt,)))
+        print('Clicked at theta: %s' % (repr(self.now_segment_pt, )))
         if not self.theta_version:
             print('Clicked at xy, circular index: (%f, %f, %f)' %
                   (self.last_pos[0], self.last_pos[1],
                    self.circular_index_select))
 
-        print('c1: numpy.array([%f, %f])' % (self.segments[0].control1[0],
-                                             self.segments[0].control1[1]))
-        print('c2: numpy.array([%f, %f])' % (self.segments[0].control2[0],
-                                             self.segments[0].control2[1]))
+        print('c1: numpy.array([%f, %f])' %
+              (self.segments[0].control1[0], self.segments[0].control1[1]))
+        print('c2: numpy.array([%f, %f])' %
+              (self.segments[0].control2[0], self.segments[0].control2[1]))
 
         self.redraw()
 

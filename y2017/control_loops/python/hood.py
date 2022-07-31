@@ -118,8 +118,11 @@ class Hood(control_loop.ControlLoop):
         r_volts = 0.025
         self.R = numpy.matrix([[(r_volts**2.0)]])
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
 
         glog.debug('Kal %s', repr(self.KalmanGain))
         self.L = self.A * self.KalmanGain
@@ -165,8 +168,11 @@ class IntegralHood(Hood):
         r_pos = 0.001
         self.R = numpy.matrix([[(r_pos**2.0)]])
 
-        self.KalmanGain, self.Q_steady = controls.kalman(
-            A=self.A, B=self.B, C=self.C, Q=self.Q, R=self.R)
+        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
+                                                         B=self.B,
+                                                         C=self.C,
+                                                         Q=self.Q,
+                                                         R=self.R)
         self.L = self.A * self.KalmanGain
 
         self.K_unaugmented = self.K
@@ -244,7 +250,8 @@ class ScenarioPlotter(object):
 
             ff_U = controller_hood.Kff * (next_goal - observer_hood.A * goal)
 
-            U_uncapped = controller_hood.K * (goal - observer_hood.X_hat) + ff_U
+            U_uncapped = controller_hood.K * (goal -
+                                              observer_hood.X_hat) + ff_U
             U = U_uncapped.copy()
             U[0, 0] = numpy.clip(U[0, 0], -vbat, vbat)
             self.x.append(hood.X[0, 0])
@@ -310,12 +317,11 @@ def main(argv):
     # Test moving the hood with constant separation.
     initial_X = numpy.matrix([[0.0], [0.0]])
     R = numpy.matrix([[numpy.pi / 4.0], [0.0], [0.0]])
-    scenario_plotter.run_test(
-        hood,
-        end_goal=R,
-        controller_hood=hood_controller,
-        observer_hood=observer_hood,
-        iterations=200)
+    scenario_plotter.run_test(hood,
+                              end_goal=R,
+                              controller_hood=hood_controller,
+                              observer_hood=observer_hood,
+                              iterations=200)
 
     if FLAGS.plot:
         scenario_plotter.Plot()
@@ -328,8 +334,8 @@ def main(argv):
     else:
         namespaces = ['y2017', 'control_loops', 'superstructure', 'hood']
         hood = Hood('Hood')
-        loop_writer = control_loop.ControlLoopWriter(
-            'Hood', [hood], namespaces=namespaces)
+        loop_writer = control_loop.ControlLoopWriter('Hood', [hood],
+                                                     namespaces=namespaces)
         loop_writer.AddConstant(
             control_loop.Constant('kFreeSpeed', '%f', hood.free_speed))
         loop_writer.AddConstant(
@@ -340,7 +346,8 @@ def main(argv):
         integral_loop_writer = control_loop.ControlLoopWriter(
             'IntegralHood', [integral_hood], namespaces=namespaces)
         integral_loop_writer.AddConstant(
-            control_loop.Constant('kLastReduction', '%f', integral_hood.last_G))
+            control_loop.Constant('kLastReduction', '%f',
+                                  integral_hood.last_G))
         integral_loop_writer.Write(argv[3], argv[4])
 
 

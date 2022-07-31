@@ -23,10 +23,12 @@ img_ret = field_display.plot_bot_on_field(None, (0, 255, 0), T_w_cam)
 
 # Create fake set of points relative to camera capture (target) frame
 # at +/- 1 meter in x, 5 meter depth, and every 1 meter in y from 0 to 4m (above the camera, so negative y values)
-pts_3d_target = np.array(
-    [[-1., 0., depth], [1., 0., depth], [-1., -1., depth], [1., -1., depth],
-     [-1., -2., depth], [0., -2., depth], [1., -2., depth], [-1., -3., depth],
-     [1., -3., depth], [-1., -4., depth], [1., -4., depth]])
+pts_3d_target = np.array([[-1., 0., depth], [1., 0., depth], [-1., -1., depth],
+                          [1., -1., depth], [-1., -2.,
+                                             depth], [0., -2., depth],
+                          [1., -2., depth], [-1., -3.,
+                                             depth], [1., -3., depth],
+                          [-1., -4., depth], [1., -4., depth]])
 
 # Ground truth shift of camera from (cam) to (cam2), to compute projections
 R_cam_cam2_gt = np.array([[0., 0.2, 0.2]]).T
@@ -46,9 +48,10 @@ T_cam_cam2_gt_inv = -R_cam_cam2_gt_mat_inv.dot(T_cam_cam2_gt)
 #pts_proj_3d = cam_mat.dot(pts_3d_target_shifted.T).T
 #pts_proj_2d = np.divide(pts_proj_3d[:,0:2],(pts_proj_3d[:,2].reshape(-1,1)))
 
-pts_proj_2d_cam2, jac_2d = cv2.projectPoints(
-    pts_3d_target, R_cam_cam2_gt_mat_inv, T_cam_cam2_gt_inv, cam_mat,
-    dist_coeffs)
+pts_proj_2d_cam2, jac_2d = cv2.projectPoints(pts_3d_target,
+                                             R_cam_cam2_gt_mat_inv,
+                                             T_cam_cam2_gt_inv, cam_mat,
+                                             dist_coeffs)
 
 # Now, solve for the pose using the original 3d points (pts_3d_T_t) and the projections from the new location
 retval, R_cam2_cam_est, T_cam2_cam_est, inliers = cv2.solvePnPRansac(

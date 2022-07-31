@@ -22,6 +22,7 @@ def write_json_request(content: Dict[str, Any]):
     json_path.write_text(json.dumps(content))
     return json_path
 
+
 def run_debug_cli(args: List[str]):
     run_result = subprocess.run(
         ["scouting/webserver/requests/debug/cli/cli_/cli"] + args,
@@ -51,46 +52,71 @@ class TestDebugCli(unittest.TestCase):
             "year": year,
             "event_code": event_code,
         })
-        exit_code, stdout, stderr = run_debug_cli(["-refreshMatchList", json_path])
+        exit_code, stdout, stderr = run_debug_cli(
+            ["-refreshMatchList", json_path])
         self.assertEqual(exit_code, 0, f"{year}{event_code}: {stderr}")
-        self.assertIn("(refresh_match_list_response.RefreshMatchListResponseT)", stdout)
+        self.assertIn(
+            "(refresh_match_list_response.RefreshMatchListResponseT)", stdout)
 
     def test_submit_and_request_data_scouting(self):
         self.refresh_match_list(year=2020, event_code="fake")
 
         # First submit some data to be added to the database.
         json_path = write_json_request({
-            "team": 100,
-            "match": 1,
-            "set_number": 2,
-            "comp_level": "quals",
-            "starting_quadrant": 3,
-            "auto_ball_1": True,
-            "auto_ball_2": False,
-            "auto_ball_3": False,
-            "auto_ball_4": False,
-            "auto_ball_5": True,
-            "missed_shots_auto": 10,
-            "upper_goal_auto": 11,
-            "lower_goal_auto": 12,
-            "missed_shots_tele": 13,
-            "upper_goal_tele": 14,
-            "lower_goal_tele": 15,
-            "defense_rating": 3,
-            "defense_received_rating": 4,
-            "climb_level": "Medium",
-            "comment": "A very inspiring and useful comment",
+            "team":
+            100,
+            "match":
+            1,
+            "set_number":
+            2,
+            "comp_level":
+            "quals",
+            "starting_quadrant":
+            3,
+            "auto_ball_1":
+            True,
+            "auto_ball_2":
+            False,
+            "auto_ball_3":
+            False,
+            "auto_ball_4":
+            False,
+            "auto_ball_5":
+            True,
+            "missed_shots_auto":
+            10,
+            "upper_goal_auto":
+            11,
+            "lower_goal_auto":
+            12,
+            "missed_shots_tele":
+            13,
+            "upper_goal_tele":
+            14,
+            "lower_goal_tele":
+            15,
+            "defense_rating":
+            3,
+            "defense_received_rating":
+            4,
+            "climb_level":
+            "Medium",
+            "comment":
+            "A very inspiring and useful comment",
         })
-        exit_code, _, stderr = run_debug_cli(["-submitDataScouting", json_path])
+        exit_code, _, stderr = run_debug_cli(
+            ["-submitDataScouting", json_path])
         self.assertEqual(exit_code, 0, stderr)
 
         # Now request the data back with zero indentation. That let's us
         # validate the data easily.
         json_path = write_json_request({})
-        exit_code, stdout, stderr = run_debug_cli(["-requestDataScouting", json_path, "-indent="])
+        exit_code, stdout, stderr = run_debug_cli(
+            ["-requestDataScouting", json_path, "-indent="])
 
         self.assertEqual(exit_code, 0, stderr)
-        self.assertIn(textwrap.dedent("""\
+        self.assertIn(
+            textwrap.dedent("""\
             {
             Team: (int32) 100,
             Match: (int32) 1,
@@ -120,10 +146,13 @@ class TestDebugCli(unittest.TestCase):
 
         # RequestAllMatches has no fields.
         json_path = write_json_request({})
-        exit_code, stdout, stderr = run_debug_cli(["-requestAllMatches", json_path])
+        exit_code, stdout, stderr = run_debug_cli(
+            ["-requestAllMatches", json_path])
 
         self.assertEqual(exit_code, 0, stderr)
-        self.assertIn("MatchList: ([]*request_all_matches_response.MatchT) (len=90 cap=90) {", stdout)
+        self.assertIn(
+            "MatchList: ([]*request_all_matches_response.MatchT) (len=90 cap=90) {",
+            stdout)
         self.assertEqual(stdout.count("MatchNumber:"), 90)
 
     def test_request_matches_for_team(self):
@@ -132,11 +161,14 @@ class TestDebugCli(unittest.TestCase):
         json_path = write_json_request({
             "team": 4856,
         })
-        exit_code, stdout, stderr = run_debug_cli(["-requestMatchesForTeam", json_path])
+        exit_code, stdout, stderr = run_debug_cli(
+            ["-requestMatchesForTeam", json_path])
 
         # Team 4856 has 12 matches.
         self.assertEqual(exit_code, 0, stderr)
-        self.assertIn("MatchList: ([]*request_matches_for_team_response.MatchT) (len=12 cap=12) {", stdout)
+        self.assertIn(
+            "MatchList: ([]*request_matches_for_team_response.MatchT) (len=12 cap=12) {",
+            stdout)
         self.assertEqual(stdout.count("MatchNumber:"), 12)
         self.assertEqual(len(re.findall(r": \(int32\) 4856[,\n]", stdout)), 12)
 
@@ -148,13 +180,16 @@ class TestDebugCli(unittest.TestCase):
 
             # RequestAllMatches has no fields.
             json_path = write_json_request({})
-            exit_code, stdout, stderr = run_debug_cli(["-requestAllMatches", json_path])
+            exit_code, stdout, stderr = run_debug_cli(
+                ["-requestAllMatches", json_path])
 
             self.assertEqual(exit_code, 0, stderr)
             request_all_matches_outputs.append(stdout)
 
         self.maxDiff = None
-        self.assertEqual(request_all_matches_outputs[0], request_all_matches_outputs[1])
+        self.assertEqual(request_all_matches_outputs[0],
+                         request_all_matches_outputs[1])
+
 
 if __name__ == "__main__":
     unittest.main()

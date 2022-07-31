@@ -9,6 +9,7 @@ from libspline import Spline, DistanceSpline, Trajectory
 
 
 class TestSpline(unittest.TestCase):
+
     def testSimpleSpline(self):
         points = np.array([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
                            [2.0, 3.0, 4.0, 5.0, 6.0, 7.0]])
@@ -18,6 +19,7 @@ class TestSpline(unittest.TestCase):
 
 
 class TestDistanceSpline(unittest.TestCase):
+
     def testDistanceSpline(self):
         points = np.array([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
                            [2.0, 3.0, 4.0, 5.0, 6.0, 7.0]])
@@ -27,6 +29,7 @@ class TestDistanceSpline(unittest.TestCase):
 
 
 class TestTrajectory(unittest.TestCase):
+
     def testTrajectory(self):
         points = np.array([[1.0, 2.0, 3.0, 4.0, 5.0, 5.0],
                            [2.0, 3.0, 4.0, 5.0, 6.0, 7.0]])

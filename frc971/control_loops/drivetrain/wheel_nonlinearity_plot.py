@@ -7,14 +7,14 @@ from matplotlib import pylab
 import numpy
 
 if __name__ == '__main__':
-  x = numpy.arange(-1, 1, 0.01)
+    x = numpy.arange(-1, 1, 0.01)
 
-  for nonlin in numpy.arange(0.2, 1.0, 0.1):
-    angular_range = numpy.pi * nonlin / 2.0
-    newx1 = numpy.sin(x * angular_range) / numpy.sin(angular_range)
-    newx2 = numpy.sin(newx1 * angular_range) / numpy.sin(angular_range)
+    for nonlin in numpy.arange(0.2, 1.0, 0.1):
+        angular_range = numpy.pi * nonlin / 2.0
+        newx1 = numpy.sin(x * angular_range) / numpy.sin(angular_range)
+        newx2 = numpy.sin(newx1 * angular_range) / numpy.sin(angular_range)
 
-    pylab.plot(x, newx2, label="nonlin %f" % nonlin)
+        pylab.plot(x, newx2, label="nonlin %f" % nonlin)
 
-  pylab.legend()
-  pylab.show()
+    pylab.legend()
+    pylab.show()

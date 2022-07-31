@@ -28,8 +28,10 @@ def draw_polygon(image, polygon, color=(255, 0, 0), close_polygon=False):
         image = cv2.circle(image, (point[0], point[1]), 5, (255, 0, 0), -1)
     if (len(polygon) > 1):
         np_poly = np.array(polygon)
-        image = cv2.polylines(
-            image, [np_poly], close_polygon, color, thickness=3)
+        image = cv2.polylines(image, [np_poly],
+                              close_polygon,
+                              color,
+                              thickness=3)
     return image
 
 
@@ -249,7 +251,8 @@ def bazel_name_fix(filename):
     try:
         from bazel_tools.tools.python.runfiles import runfiles
         r = runfiles.Create()
-        ret_name = r.Rlocation('org_frc971/y2020/vision/tools/python_code/' + filename)
+        ret_name = r.Rlocation('org_frc971/y2020/vision/tools/python_code/' +
+                               filename)
     except:
         pass
 

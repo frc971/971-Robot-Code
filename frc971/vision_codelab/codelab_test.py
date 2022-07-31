@@ -8,6 +8,7 @@ import codelab
 
 # TODO(milind): this should be integrated with bazel
 class TestCodelab(unittest.TestCase):
+
     def codelab_test(self, alliance, letter=None, img_path=None):
         if img_path is None:
             img_path = "%s_%s.png" % (alliance.name.lower(),

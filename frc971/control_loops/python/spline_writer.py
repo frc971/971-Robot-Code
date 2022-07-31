@@ -3,6 +3,7 @@ import numpy as np
 
 
 class SplineWriter(object):
+
     def __init__(self, namespaces=None, filename="auto_splines.cc"):
         if namespaces:
             self._namespaces = namespaces

@@ -20,7 +20,7 @@ except gflags.DuplicateFlagError:
 kIntake = angular_system.AngularSystemParams(
     name='Intake',
     motor=control_loop.BAG(),
-    G=(1.0 / 7.0) * (1.0 / 4.0) * (1.0 / 4.0)* (18.0 / 38.0),
+    G=(1.0 / 7.0) * (1.0 / 4.0) * (1.0 / 4.0) * (18.0 / 38.0),
     # Suneel: Sampled moment of inertia at 6 different positions
     # J = the average of the six.
     # 1. 0.686
