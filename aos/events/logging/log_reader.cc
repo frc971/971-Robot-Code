@@ -550,7 +550,7 @@ LogReader::State::NonExclusiveChannels() {
     const Channel *const old_timestamp_channel = aos::configuration::GetChannel(
         config,
         absl::StrCat("/aos/remote_timestamps/", node->name()->string_view()),
-        "aos.message_bridge.RemoteMessage", "", node_);
+        "aos.message_bridge.RemoteMessage", "", node_, /*quiet=*/true);
     // The old-style remote timestamp channel can be populated from any
     // channel, simulated or replayed.
     if (old_timestamp_channel != nullptr) {
