@@ -1,0 +1,14 @@
+{
+  "channels":
+  [
+    {
+      "name": "/constants",
+      "type":"frc971.constants.testdata.ConstantsData",
+      "frequency": 3
+    }
+  ],
+  "imports":
+  [
+    "../../../aos/events/aos.json"
+  ]
+}
