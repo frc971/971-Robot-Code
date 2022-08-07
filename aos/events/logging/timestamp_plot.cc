@@ -64,7 +64,9 @@ std::pair<std::vector<double>, std::vector<double>> ReadSamples(
     }
 
     std::vector<std::string_view> l = absl::StrSplit(n, ", ");
-    CHECK_EQ(l.size(), 4u);
+    if (l.size() != 4u) {
+      continue;
+    }
     double t;
     double o;
     CHECK(absl::SimpleAtod(l[0], &t));
@@ -166,7 +168,9 @@ std::pair<std::vector<double>, std::vector<double>> NodePlotter::ReadLines(
     }
 
     std::vector<std::string_view> l = absl::StrSplit(n, ", ");
-    CHECK_EQ(l.size(), 3u);
+    if (l.size() != 3u) {
+      continue;
+    }
     double t;
     double o;
     CHECK(absl::SimpleAtod(l[0], &t));
