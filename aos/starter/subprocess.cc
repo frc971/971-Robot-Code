@@ -270,10 +270,13 @@ void Application::DoStart() {
     stderr_pipes_.write.reset();
   }
 
-  // argv[0] should be the program name
-  args_.insert(args_.begin(), path_);
   if (run_as_sudo_) {
+    // For sudo we must supply the actual path
+    args_.insert(args_.begin(), path_);
     args_.insert(args_.begin(), kSudo);
+  } else {
+    // argv[0] should be the program name
+    args_.insert(args_.begin(), name_);
   }
 
   std::vector<char *> cargs = CArgs();
