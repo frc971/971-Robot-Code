@@ -58,6 +58,10 @@ class Application {
   Application(const aos::Application *application, aos::EventLoop *event_loop,
               std::function<void()> on_change);
 
+  // executable_name is the actual executable path.
+  // When sudo is not used, name is used as argv[0] when exec'ing
+  // executable_name. When sudo is used it's not possible to pass in a
+  // distinct argv[0].
   Application(std::string_view name, std::string_view executable_name,
               aos::EventLoop *event_loop, std::function<void()> on_change);
 
