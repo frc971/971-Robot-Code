@@ -9,6 +9,14 @@ table Status {
 
   // If true, we have aborted. This is the or of all subsystem estops.
   estopped:bool (id: 1);
+
+  // Estimated Angles + Velocities of the Intake
+  intake:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
+
+  // Statuses of Two Climbing Arms
+  climber_right:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 3);
+
+  climber_left:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 4);
 }
 
 root_type Status;
