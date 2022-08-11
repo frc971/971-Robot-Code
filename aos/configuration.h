@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include <chrono>
 #include <cstdint>
 #include <string_view>
 
@@ -202,6 +203,14 @@ const Application *GetApplication(const Configuration *config,
 // Returns true if the provided application should start on the provided node.
 bool ApplicationShouldStart(const Configuration *config, const Node *my_node,
                             const Application *application);
+
+// Returns the number of messages in the queue.
+int QueueSize(const Configuration *config, const Channel *channel);
+int QueueSize(size_t frequency,
+              std::chrono::nanoseconds channel_storage_duration);
+
+// Returns the number of scratch buffers in the queue.
+int QueueScratchBufferSize(const Channel *channel);
 
 // TODO(austin): GetSchema<T>(const Flatbuffer<Configuration> &config);
 

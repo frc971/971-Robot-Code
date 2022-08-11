@@ -104,7 +104,7 @@ void PageFaultDataRead(const char *data, size_t size) {
 }
 
 ipc_lib::LocklessQueueConfiguration MakeQueueConfiguration(
-    const Channel *channel, std::chrono::seconds channel_storage_duration) {
+    const Configuration *configuration, const Channel *channel) {
   ipc_lib::LocklessQueueConfiguration config;
 
   config.num_watchers = channel->num_watchers();
@@ -112,7 +112,7 @@ ipc_lib::LocklessQueueConfiguration MakeQueueConfiguration(
   // The value in the channel will default to 0 if readers are configured to
   // copy.
   config.num_pinners = channel->num_readers();
-  config.queue_size = channel_storage_duration.count() * channel->frequency();
+  config.queue_size = configuration::QueueSize(configuration, channel);
   config.message_data_size = channel->max_size();
 
   return config;
@@ -120,9 +120,9 @@ ipc_lib::LocklessQueueConfiguration MakeQueueConfiguration(
 
 class MMappedQueue {
  public:
-  MMappedQueue(std::string_view shm_base, const Channel *channel,
-               std::chrono::seconds channel_storage_duration)
-      : config_(MakeQueueConfiguration(channel, channel_storage_duration)) {
+  MMappedQueue(std::string_view shm_base, const Configuration *config,
+               const Channel *channel)
+      : config_(MakeQueueConfiguration(config, channel)) {
     std::string path = ShmPath(shm_base, channel);
 
     size_ = ipc_lib::LocklessQueueMemorySize(config_);
@@ -240,10 +240,7 @@ class SimpleShmFetcher {
                             const Channel *channel)
       : event_loop_(event_loop),
         channel_(channel),
-        lockless_queue_memory_(
-            shm_base, channel,
-            chrono::ceil<chrono::seconds>(chrono::nanoseconds(
-                event_loop->configuration()->channel_storage_duration()))),
+        lockless_queue_memory_(shm_base, event_loop->configuration(), channel),
         reader_(lockless_queue_memory_.queue()) {
     context_.data = nullptr;
     // Point the queue index at the next index to read starting now.  This
@@ -517,10 +514,7 @@ class ShmSender : public RawSender {
   explicit ShmSender(std::string_view shm_base, EventLoop *event_loop,
                      const Channel *channel)
       : RawSender(event_loop, channel),
-        lockless_queue_memory_(
-            shm_base, channel,
-            chrono::ceil<chrono::seconds>(chrono::nanoseconds(
-                event_loop->configuration()->channel_storage_duration()))),
+        lockless_queue_memory_(shm_base, event_loop->configuration(), channel),
         lockless_queue_sender_(VerifySender(
             ipc_lib::LocklessQueueSender::Make(
                 lockless_queue_memory_.queue(),
@@ -1219,10 +1213,7 @@ absl::Span<const char> ShmEventLoop::GetWatcherSharedMemory(
 
 int ShmEventLoop::NumberBuffers(const Channel *channel) {
   CheckCurrentThread();
-  return MakeQueueConfiguration(
-             channel, chrono::ceil<chrono::seconds>(chrono::nanoseconds(
-                          configuration()->channel_storage_duration())))
-      .num_messages();
+  return MakeQueueConfiguration(configuration(), channel).num_messages();
 }
 
 absl::Span<char> ShmEventLoop::GetShmSenderSharedMemory(
