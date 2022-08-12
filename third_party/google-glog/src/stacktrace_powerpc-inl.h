@@ -35,7 +35,7 @@
 //    http://www.linux-foundation.org/spec/ELF/ppc64/PPC-elf64abi-1.9.html#STACK
 // Linux has similar code: http://patchwork.ozlabs.org/linuxppc/patch?id=8882
 
-#include <stdio.h>
+#include <cstdio>
 #include <stdint.h>   // for uintptr_t
 #include "stacktrace.h"
 
@@ -47,7 +47,7 @@ _START_GOOGLE_NAMESPACE_
 // "STRICT_UNWINDING") to reduce the chance that a bad pointer is returned.
 template<bool STRICT_UNWINDING>
 static void **NextStackFrame(void **old_sp) {
-  void **new_sp = (void **) *old_sp;
+  void **new_sp = static_cast<void **>(*old_sp);
 
   // Check that the transition from frame pointer old_sp to frame
   // pointer new_sp isn't clearly bogus
@@ -114,7 +114,7 @@ int GetStackTrace(void** result, int max_depth, int skip_count) {
 #elif defined(__APPLE__) || ((defined(__linux) || defined(__linux__)) && defined(__PPC64__))
       // This check is in case the compiler doesn't define _CALL_AIX/etc.
       result[n++] = *(sp+2);
-#elif defined(__linux)
+#elif defined(__linux) || defined(__OpenBSD__)
       // This check is in case the compiler doesn't define _CALL_SYSV.
       result[n++] = *(sp+1);
 #else

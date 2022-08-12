@@ -37,11 +37,11 @@
 #if defined(HAVE_PTHREAD)
 # include <pthread.h>
 #endif
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <csignal>
+#include <cstdio>
+#include <cstdlib>
 #include <string>
-#include "glog/logging.h"
+#include <glog/logging.h>
 
 #ifdef HAVE_LIB_GFLAGS
 #include <gflags/gflags.h>
@@ -54,9 +54,10 @@ static void* DieInThread(void*) {
   // We assume pthread_t is an integral number or a pointer, rather
   // than a complex struct.  In some environments, pthread_self()
   // returns an uint64 but in some other environments pthread_self()
-  // returns a pointer.  Hence we use C-style cast here, rather than
-  // reinterpret/static_cast, to support both types of environments.
-  fprintf(stderr, "0x%lx is dying\n", (long)pthread_self());
+  // returns a pointer.
+  fprintf(
+      stderr, "0x%px is dying\n",
+      static_cast<const void*>(reinterpret_cast<const char*>(pthread_self())));
   // Use volatile to prevent from these to be optimized away.
   volatile int a = 0;
   volatile int b = 1 / a;
@@ -64,7 +65,7 @@ static void* DieInThread(void*) {
   return NULL;
 }
 
-static void WriteToStdout(const char* data, int size) {
+static void WriteToStdout(const char* data, size_t size) {
   if (write(STDOUT_FILENO, data, size) < 0) {
     // Ignore errors.
   }

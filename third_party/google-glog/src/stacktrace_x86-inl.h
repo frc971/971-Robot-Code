@@ -33,12 +33,12 @@
 
 #include "utilities.h"   // for OS_* macros
 
-#if !defined(OS_WINDOWS)
+#if !defined(GLOG_OS_WINDOWS)
 #include <unistd.h>
 #include <sys/mman.h>
 #endif
 
-#include <stdio.h>  // for NULL
+#include <cstdio>  // for NULL
 #include "stacktrace.h"
 
 _START_GOOGLE_NAMESPACE_
@@ -49,7 +49,7 @@ _START_GOOGLE_NAMESPACE_
 // "STRICT_UNWINDING") to reduce the chance that a bad pointer is returned.
 template<bool STRICT_UNWINDING>
 static void **NextStackFrame(void **old_sp) {
-  void **new_sp = (void **) *old_sp;
+  void **new_sp = static_cast<void **>(*old_sp);
 
   // Check that the transition from frame pointer old_sp to frame
   // pointer new_sp isn't clearly bogus
@@ -58,23 +58,28 @@ static void **NextStackFrame(void **old_sp) {
     // at a greater address that the current one.
     if (new_sp <= old_sp) return NULL;
     // Assume stack frames larger than 100,000 bytes are bogus.
-    if ((uintptr_t)new_sp - (uintptr_t)old_sp > 100000) return NULL;
+    if (reinterpret_cast<uintptr_t>(new_sp) -
+            reinterpret_cast<uintptr_t>(old_sp) >
+        100000)
+      return NULL;
   } else {
     // In the non-strict mode, allow discontiguous stack frames.
     // (alternate-signal-stacks for example).
     if (new_sp == old_sp) return NULL;
     // And allow frames upto about 1MB.
-    if ((new_sp > old_sp)
-        && ((uintptr_t)new_sp - (uintptr_t)old_sp > 1000000)) return NULL;
+    if ((new_sp > old_sp) && (reinterpret_cast<uintptr_t>(new_sp) -
+                                  reinterpret_cast<uintptr_t>(old_sp) >
+                              1000000))
+      return NULL;
   }
-  if ((uintptr_t)new_sp & (sizeof(void *) - 1)) return NULL;
+  if (reinterpret_cast<uintptr_t>(new_sp) & (sizeof(void *) - 1)) return NULL;
 #ifdef __i386__
   // On 64-bit machines, the stack pointer can be very close to
   // 0xffffffff, so we explicitly check for a pointer into the
   // last two pages in the address space
   if ((uintptr_t)new_sp >= 0xffffe000) return NULL;
 #endif
-#if !defined(OS_WINDOWS)
+#if !defined(GLOG_OS_WINDOWS)
   if (!STRICT_UNWINDING) {
     // Lax sanity checks cause a crash in 32-bit tcmalloc/crash_reason_test
     // on AMD-based machines with VDSO-enabled kernels.
@@ -82,9 +87,12 @@ static void **NextStackFrame(void **old_sp) {
     // Note: NextStackFrame<false>() is only called while the program
     //       is already on its last leg, so it's ok to be slow here.
     static int page_size = getpagesize();
-    void *new_sp_aligned = (void *)((uintptr_t)new_sp & ~(page_size - 1));
-    if (msync(new_sp_aligned, page_size, MS_ASYNC) == -1)
+    void *new_sp_aligned =
+        reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(new_sp) &
+                                 static_cast<uintptr_t>(~(page_size - 1)));
+    if (msync(new_sp_aligned, static_cast<size_t>(page_size), MS_ASYNC) == -1) {
       return NULL;
+    }
   }
 #endif
   return new_sp;
@@ -127,7 +135,7 @@ int GetStackTrace(void** result, int max_depth, int skip_count) {
 
   int n = 0;
   while (sp && n < max_depth) {
-    if (*(sp+1) == (void *)0) {
+    if (*(sp + 1) == NULL) {
       // In 64-bit code, we often see a frame that
       // points to itself and has a return address of 0.
       break;
