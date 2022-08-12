@@ -29,6 +29,8 @@
 
 namespace aos {
 namespace {
+namespace chrono = std::chrono;
+
 bool EndsWith(std::string_view str, std::string_view end) {
   if (str.size() < end.size()) {
     return false;
@@ -357,6 +359,12 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
         LOG(FATAL) << "Invalid channel name " << c->name()->string_view()
                    << ", can only use [-a-zA-Z0-9_/]";
       }
+
+      CHECK_LT(QueueSize(&config.message(), c) + QueueScratchBufferSize(c),
+               std::numeric_limits<uint16_t>::max())
+          << ": More messages/second configured than the queue can hold on "
+          << CleanedChannelToString(c) << ", " << c->frequency() << "hz for "
+          << config.message().channel_storage_duration() << "ns";
 
       if (c->has_logger_nodes()) {
         // Confirm that we don't have duplicate logger nodes.
@@ -1562,6 +1570,23 @@ std::vector<size_t> SourceNodeIndex(const Configuration *config) {
     }
   }
   return result;
+}
+
+int QueueSize(const Configuration *config, const Channel *channel) {
+  return QueueSize(channel->frequency(),
+                   chrono::nanoseconds(config->channel_storage_duration()));
+}
+
+int QueueSize(size_t frequency, chrono::nanoseconds channel_storage_duration) {
+  // Use integer arithmetic and round up at all cost.
+  return static_cast<int>(
+      (999999999 + static_cast<int64_t>(frequency) *
+                       static_cast<int64_t>(channel_storage_duration.count())) /
+      static_cast<int64_t>(1000000000));
+}
+
+int QueueScratchBufferSize(const Channel *channel) {
+  return channel->num_readers() + channel->num_senders();
 }
 
 }  // namespace configuration

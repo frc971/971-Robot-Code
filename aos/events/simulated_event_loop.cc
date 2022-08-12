@@ -185,10 +185,8 @@ class SimulatedChannel {
 
   // The number of messages we pretend to have in the queue.
   int queue_size() const {
-    return channel()->frequency() *
-           std::chrono::duration_cast<std::chrono::duration<double>>(
-               channel_storage_duration_)
-               .count();
+    return configuration::QueueSize(channel()->frequency(),
+                                    channel_storage_duration_);
   }
 
   std::chrono::nanoseconds channel_storage_duration() const {
@@ -197,10 +195,7 @@ class SimulatedChannel {
 
   // The number of extra buffers (beyond the queue) we pretend to have.
   int number_scratch_buffers() const {
-    // We need to start creating messages before we know how many
-    // senders+readers we'll have, so we need to just pick something which is
-    // always big enough.
-    return 50;
+    return configuration::QueueScratchBufferSize(channel());
   }
 
   int number_buffers() const { return queue_size() + number_scratch_buffers(); }
@@ -256,12 +251,12 @@ class SimulatedChannel {
   const Channel *channel() const { return channel_; }
 
   void CountSenderCreated() {
-    CheckBufferCount();
     if (sender_count_ >= channel()->num_senders()) {
       LOG(FATAL) << "Failed to create sender on "
                  << configuration::CleanedChannelToString(channel())
                  << ", too many senders.";
     }
+    CheckBufferCount();
     ++sender_count_;
   }
 

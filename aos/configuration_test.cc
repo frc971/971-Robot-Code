@@ -16,6 +16,7 @@ namespace configuration {
 namespace testing {
 
 using aos::testing::ArtifactPath;
+namespace chrono = std::chrono;
 
 class ConfigurationTest : public ::testing::Test {
  public:
@@ -986,6 +987,28 @@ TEST_F(ConfigurationDeathTest, DuplicateLoggerNodes) {
             ArtifactPath("aos/testdata/duplicate_logger_nodes.json"));
       },
       "Found duplicate logger_nodes in");
+}
+
+// Tests that we properly compute the queue size for the provided duration.
+TEST_F(ConfigurationTest, QueueSize) {
+  EXPECT_EQ(QueueSize(100, chrono::seconds(2)), 200);
+  EXPECT_EQ(QueueSize(200, chrono::seconds(2)), 400);
+  EXPECT_EQ(QueueSize(100, chrono::seconds(6)), 600);
+  EXPECT_EQ(QueueSize(100, chrono::milliseconds(10)), 1);
+  EXPECT_EQ(QueueSize(100, chrono::milliseconds(10) - chrono::nanoseconds(1)),
+            1);
+  EXPECT_EQ(QueueSize(100, chrono::milliseconds(10) - chrono::nanoseconds(2)),
+            1);
+}
+
+// Tests that we compute scratch buffer size correctly too.
+TEST_F(ConfigurationTest, QueueScratchBufferSize) {
+  const aos::FlatbufferDetachedBuffer<Channel> channel =
+      JsonToFlatbuffer<Channel>(
+          "{ \"name\": \"/foo\", \"type\": \".aos.bar\", \"num_readers\": 5, "
+          "\"num_senders\": 10 }");
+
+  EXPECT_EQ(QueueScratchBufferSize(&channel.message()), 15);
 }
 
 }  // namespace testing
