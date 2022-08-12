@@ -1,0 +1,235 @@
+{
+  "channels": [
+    {
+      "name": "/imu/aos",
+      "type": "aos.timing.Report",
+      "source_node": "imu",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 4096
+    },
+    {
+      "name": "/imu/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "imu",
+      "frequency": 200,
+      "num_senders": 20
+    },
+    {
+      "name": "/imu/aos",
+      "type": "aos.starter.Status",
+      "source_node": "imu",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "frequency": 50,
+      "num_senders": 20,
+      "logger_nodes": [
+        "roborio"
+      ],
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 5,
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/roborio/imu/aos/aos-starter-Status",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 100,
+      "source_node": "imu",
+      "max_size": 208
+    },
+    {
+      "name": "/imu/aos",
+      "type": "aos.starter.StarterRpc",
+      "source_node": "imu",
+      "frequency": 10,
+      "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio"
+      ],
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 5,
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/roborio/imu/aos/aos-starter-StarterRpc",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "imu",
+      "max_size": 208
+    },
+    {
+      "name": "/imu/aos",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "imu",
+      "frequency": 10,
+      "num_senders": 2
+    },
+    {
+      "name": "/imu/aos",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "imu",
+      "frequency": 20,
+      "num_senders": 2
+    },
+    {
+      "name": "/imu/aos",
+      "type": "aos.logging.DynamicLogCommand",
+      "source_node": "imu",
+      "frequency": 10,
+      "num_senders": 2
+    },
+    {
+      "name": "/imu/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "imu",
+      "frequency": 15,
+      "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio"
+      ],
+      "max_size": 400,
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/roborio/imu/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "imu",
+      "max_size": 208
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/logger/imu/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "imu",
+      "max_size": 208
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/imu/roborio/aos/aos-starter-StarterRpc",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/imu/roborio/aos/aos-starter-Status",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/localizer",
+      "type": "frc971.IMUValuesBatch",
+      "source_node": "imu",
+      "frequency": 2200,
+      "max_size": 1600,
+      "num_senders": 2
+    }
+  ],
+  "applications": [
+    {
+      "name": "message_bridge_client",
+      "executable_name": "message_bridge_client",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "localizer",
+      "executable_name": "localizer_main",
+      /* TODO(james): Remove this once confident in the accelerometer code. */
+      "args": ["--ignore_accelerometer"],
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "imu",
+      "executable_name": "imu_main",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "message_bridge_server",
+      "executable_name": "message_bridge_server",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "localizer_logger",
+      "executable_name": "logger_main",
+      "args": ["--logging_folder", "", "--snappy_compress"],
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "web_proxy",
+      "executable_name": "web_proxy_main",
+      "nodes": [
+        "imu"
+      ]
+    }
+  ],
+  "maps": [
+    {
+      "match": {
+        "name": "/aos*",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name": "/imu/aos"
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "name": "imu",
+      "hostname": "imu",
+      "hostnames": [
+        "pi-971-5",
+        "pi-7971-5",
+        "pi-8971-5",
+        "pi-9971-5"
+      ],
+      "port": 9971
+    },
+    {
+      "name": "roborio"
+    }
+  ]
+}
