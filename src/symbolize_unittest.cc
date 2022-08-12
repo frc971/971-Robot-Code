@@ -31,15 +31,16 @@
 //
 // Unit tests for functions in symbolize.cc.
 
-#include "utilities.h"
+#include "symbolize.h"
 
-#include <signal.h>
+#include <glog/logging.h>
+
+#include <csignal>
 #include <iostream>
 
-#include "glog/logging.h"
-#include "symbolize.h"
-#include "googletest.h"
 #include "config.h"
+#include "googletest.h"
+#include "utilities.h"
 
 #ifdef HAVE_LIB_GFLAGS
 #include <gflags/gflags.h>
@@ -49,10 +50,18 @@ using namespace GFLAGS_NAMESPACE;
 using namespace std;
 using namespace GOOGLE_NAMESPACE;
 
+// Avoid compile error due to "cast between pointer-to-function and
+// pointer-to-object is an extension" warnings.
+#if defined(__GNUG__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 #if defined(HAVE_STACKTRACE)
 
 #define always_inline
 
+#if defined(__ELF__) || defined(GLOG_OS_WINDOWS) || defined(GLOG_OS_CYGWIN)
 // A wrapper function for Symbolize() to make the unit test simple.
 static const char *TrySymbolize(void *pc) {
   static char symbol[4096];
@@ -62,6 +71,7 @@ static const char *TrySymbolize(void *pc) {
     return NULL;
   }
 }
+#endif
 
 # if defined(__ELF__)
 
@@ -70,7 +80,7 @@ static const char *TrySymbolize(void *pc) {
 #if defined(__GNUC__) && !defined(__OPENCC__)
 #  if __GNUC__ >= 4
 #    define TEST_WITH_MODERN_GCC
-#    if __i386__  // always_inline isn't supported for x86_64 with GCC 4.1.0.
+#    if defined(__i386__) && __i386__  // always_inline isn't supported for x86_64 with GCC 4.1.0.
 #      undef always_inline
 #      define always_inline __attribute__((always_inline))
 #      define HAVE_ALWAYS_INLINE
@@ -87,12 +97,16 @@ extern "C" {
 void nonstatic_func();
 void nonstatic_func() {
   volatile int a = 0;
-  ++a;
+  // NOTE: In C++20, increment of object of volatile-qualified type is
+  // deprecated.
+  a = a + 1;
 }
 
 static void static_func() {
   volatile int a = 0;
-  ++a;
+  // NOTE: In C++20, increment of object of volatile-qualified type is
+  // deprecated.
+  a = a + 1;
 }
 }
 
@@ -105,10 +119,14 @@ TEST(Symbolize, Symbolize) {
 
   // The name of an internal linkage symbol is not specified; allow either a
   // mangled or an unmangled name here.
-  const char *static_func_symbol = TrySymbolize((void *)(&static_func));
+  const char *static_func_symbol =
+      TrySymbolize(reinterpret_cast<void *>(&static_func));
+
+#if !defined(_MSC_VER) || !defined(NDEBUG)
   CHECK(NULL != static_func_symbol);
   EXPECT_TRUE(strcmp("static_func", static_func_symbol) == 0 ||
               strcmp("static_func()", static_func_symbol) == 0);
+#endif
 
   EXPECT_TRUE(NULL == TrySymbolize(NULL));
 }
@@ -119,7 +137,9 @@ struct Foo {
 
 void ATTRIBUTE_NOINLINE Foo::func(int x) {
   volatile int a = x;
-  ++a;
+  // NOTE: In C++20, increment of object of volatile-qualified type is
+  // deprecated.
+  a = a + 1;
 }
 
 // With a modern GCC, Symbolize() should return demangled symbol
@@ -127,7 +147,9 @@ void ATTRIBUTE_NOINLINE Foo::func(int x) {
 #ifdef TEST_WITH_MODERN_GCC
 TEST(Symbolize, SymbolizeWithDemangling) {
   Foo::func(100);
+#if !defined(_MSC_VER) || !defined(NDEBUG)
   EXPECT_STREQ("Foo::func()", TrySymbolize((void *)(&Foo::func)));
+#endif
 }
 #endif
 
@@ -152,9 +174,9 @@ static void *g_pc_to_symbolize;
 static char g_symbolize_buffer[4096];
 static char *g_symbolize_result;
 
-static void EmptySignalHandler(int signo) {}
+static void EmptySignalHandler(int /*signo*/) {}
 
-static void SymbolizeSignalHandler(int signo) {
+static void SymbolizeSignalHandler(int /*signo*/) {
   if (Symbolize(g_pc_to_symbolize, g_symbolize_buffer,
                 sizeof(g_symbolize_buffer))) {
     g_symbolize_result = g_symbolize_buffer;
@@ -275,7 +297,7 @@ TEST(Symbolize, SymbolizeStackConsumption) {
   int stack_consumed;
   const char* symbol;
 
-  symbol = SymbolizeStackConsumption((void *)(&nonstatic_func),
+  symbol = SymbolizeStackConsumption(reinterpret_cast<void *>(&nonstatic_func),
                                      &stack_consumed);
   EXPECT_STREQ("nonstatic_func", symbol);
   EXPECT_GT(stack_consumed, 0);
@@ -283,7 +305,7 @@ TEST(Symbolize, SymbolizeStackConsumption) {
 
   // The name of an internal linkage symbol is not specified; allow either a
   // mangled or an unmangled name here.
-  symbol = SymbolizeStackConsumption((void *)(&static_func),
+  symbol = SymbolizeStackConsumption(reinterpret_cast<void *>(&static_func),
                                      &stack_consumed);
   CHECK(NULL != symbol);
   EXPECT_TRUE(strcmp("static_func", symbol) == 0 ||
@@ -298,7 +320,8 @@ TEST(Symbolize, SymbolizeWithDemanglingStackConsumption) {
   int stack_consumed;
   const char* symbol;
 
-  symbol = SymbolizeStackConsumption((void *)(&Foo::func), &stack_consumed);
+  symbol = SymbolizeStackConsumption(reinterpret_cast<void *>(&Foo::func),
+                                     &stack_consumed);
 
   EXPECT_STREQ("Foo::func()", symbol);
   EXPECT_GT(stack_consumed, 0);
@@ -331,8 +354,11 @@ static void ATTRIBUTE_NOINLINE TestWithPCInsideNonInlineFunction() {
 #if defined(TEST_X86_32_AND_64) && defined(HAVE_ATTRIBUTE_NOINLINE)
   void *pc = non_inline_func();
   const char *symbol = TrySymbolize(pc);
+
+#if !defined(_MSC_VER) || !defined(NDEBUG)
   CHECK(symbol != NULL);
   CHECK_STREQ(symbol, "non_inline_func");
+#endif
   cout << "Test case TestWithPCInsideNonInlineFunction passed." << endl;
 #endif
 }
@@ -341,8 +367,11 @@ static void ATTRIBUTE_NOINLINE TestWithPCInsideInlineFunction() {
 #if defined(TEST_X86_32_AND_64) && defined(HAVE_ALWAYS_INLINE)
   void *pc = inline_func();  // Must be inlined.
   const char *symbol = TrySymbolize(pc);
+
+#if !defined(_MSC_VER) || !defined(NDEBUG)
   CHECK(symbol != NULL);
   CHECK_STREQ(symbol, __FUNCTION__);
+#endif
   cout << "Test case TestWithPCInsideInlineFunction passed." << endl;
 #endif
 }
@@ -353,13 +382,16 @@ static void ATTRIBUTE_NOINLINE TestWithReturnAddress() {
 #if defined(HAVE_ATTRIBUTE_NOINLINE)
   void *return_address = __builtin_return_address(0);
   const char *symbol = TrySymbolize(return_address);
+
+#if !defined(_MSC_VER) || !defined(NDEBUG)
   CHECK(symbol != NULL);
   CHECK_STREQ(symbol, "main");
+#endif
   cout << "Test case TestWithReturnAddress passed." << endl;
 #endif
 }
 
-# elif defined(OS_WINDOWS) || defined(OS_CYGWIN)
+# elif defined(GLOG_OS_WINDOWS) || defined(GLOG_OS_CYGWIN)
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -372,13 +404,18 @@ struct Foo {
 
 __declspec(noinline) void Foo::func(int x) {
   volatile int a = x;
-  ++a;
+  // NOTE: In C++20, increment of object of volatile-qualified type is
+  // deprecated.
+  a = a + 1;
 }
 
 TEST(Symbolize, SymbolizeWithDemangling) {
   Foo::func(100);
   const char* ret = TrySymbolize((void *)(&Foo::func));
+
+#if defined(HAVE_DBGHELP) && !defined(NDEBUG)
   EXPECT_STREQ("public: static void __cdecl Foo::func(int)", ret);
+#endif
 }
 
 __declspec(noinline) void TestWithReturnAddress() {
@@ -390,8 +427,10 @@ __declspec(noinline) void TestWithReturnAddress() {
 #endif
 	  ;
   const char *symbol = TrySymbolize(return_address);
+#if !defined(_MSC_VER) || !defined(NDEBUG)
   CHECK(symbol != NULL);
   CHECK_STREQ(symbol, "main");
+#endif
   cout << "Test case TestWithReturnAddress passed." << endl;
 }
 # endif  // __ELF__
@@ -401,7 +440,7 @@ int main(int argc, char **argv) {
   FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
   InitGoogleTest(&argc, argv);
-#if defined(HAVE_SYMBOLIZE)
+#if defined(HAVE_SYMBOLIZE) && defined(HAVE_STACKTRACE)
 # if defined(__ELF__)
   // We don't want to get affected by the callback interface, that may be
   // used to install some callback function at InitGoogle() time.
@@ -411,10 +450,10 @@ int main(int argc, char **argv) {
   TestWithPCInsideNonInlineFunction();
   TestWithReturnAddress();
   return RUN_ALL_TESTS();
-# elif defined(OS_WINDOWS) || defined(OS_CYGWIN)
+# elif defined(GLOG_OS_WINDOWS) || defined(GLOG_OS_CYGWIN)
   TestWithReturnAddress();
   return RUN_ALL_TESTS();
-# else  // OS_WINDOWS
+# else  // GLOG_OS_WINDOWS
   printf("PASS (no symbolize_unittest support)\n");
   return 0;
 # endif  // __ELF__
@@ -423,3 +462,7 @@ int main(int argc, char **argv) {
   return 0;
 #endif  // HAVE_SYMBOLIZE
 }
+
+#if defined(__GNUG__)
+#pragma GCC diagnostic pop
+#endif

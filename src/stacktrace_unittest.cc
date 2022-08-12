@@ -29,14 +29,14 @@
 
 #include "utilities.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include "config.h"
 #include "base/commandlineflags.h"
-#include "glog/logging.h"
+#include <glog/logging.h>
 #include "stacktrace.h"
 
-#ifdef HAVE_EXECINFO_H
+#ifdef HAVE_EXECINFO_BACKTRACE_SYMBOLS
 # include <execinfo.h>
 #endif
 
@@ -111,6 +111,11 @@ static void CheckRetAddrIsInFunction(void *ret_addr, const AddressRange &range)
 
 //-----------------------------------------------------------------------//
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-label-as-value"
+#endif
+
 void ATTRIBUTE_NOINLINE CheckStackTrace(int);
 static void ATTRIBUTE_NOINLINE CheckStackTraceLeaf(void) {
   const int STACK_LEN = 10;
@@ -126,12 +131,19 @@ static void ATTRIBUTE_NOINLINE CheckStackTraceLeaf(void) {
   CHECK_LE(size, STACK_LEN);
 
   if (1) {
-#ifdef HAVE_EXECINFO_H
+#ifdef HAVE_EXECINFO_BACKTRACE_SYMBOLS
     char **strings = backtrace_symbols(stack, size);
     printf("Obtained %d stack frames.\n", size);
-    for (int i = 0; i < size; i++)
+    for (int i = 0; i < size; i++) {
       printf("%s %p\n", strings[i], stack[i]);
-    printf("CheckStackTrace() addr: %p\n", &CheckStackTrace);
+    }
+
+    union {
+      void (*p1)(int);
+      void* p2;
+    } p = {&CheckStackTrace};
+
+    printf("CheckStackTrace() addr: %p\n", p.p2);
     free(strings);
 #endif
   }
@@ -152,41 +164,60 @@ static void ATTRIBUTE_NOINLINE CheckStackTrace4(int i) {
   ADJUST_ADDRESS_RANGE_FROM_RA(&expected_range[2]);
   INIT_ADDRESS_RANGE(CheckStackTrace4, start, end, &expected_range[1]);
   DECLARE_ADDRESS_LABEL(start);
-  for (int j = i; j >= 0; j--)
+  for (int j = i; j >= 0; j--) {
     CheckStackTraceLeaf();
+  }
   DECLARE_ADDRESS_LABEL(end);
 }
 static void ATTRIBUTE_NOINLINE CheckStackTrace3(int i) {
   ADJUST_ADDRESS_RANGE_FROM_RA(&expected_range[3]);
   INIT_ADDRESS_RANGE(CheckStackTrace3, start, end, &expected_range[2]);
   DECLARE_ADDRESS_LABEL(start);
-  for (int j = i; j >= 0; j--)
+  for (int j = i; j >= 0; j--) {
     CheckStackTrace4(j);
+  }
   DECLARE_ADDRESS_LABEL(end);
 }
 static void ATTRIBUTE_NOINLINE CheckStackTrace2(int i) {
   ADJUST_ADDRESS_RANGE_FROM_RA(&expected_range[4]);
   INIT_ADDRESS_RANGE(CheckStackTrace2, start, end, &expected_range[3]);
   DECLARE_ADDRESS_LABEL(start);
-  for (int j = i; j >= 0; j--)
+  for (int j = i; j >= 0; j--) {
     CheckStackTrace3(j);
+  }
   DECLARE_ADDRESS_LABEL(end);
 }
 static void ATTRIBUTE_NOINLINE CheckStackTrace1(int i) {
   ADJUST_ADDRESS_RANGE_FROM_RA(&expected_range[5]);
   INIT_ADDRESS_RANGE(CheckStackTrace1, start, end, &expected_range[4]);
   DECLARE_ADDRESS_LABEL(start);
-  for (int j = i; j >= 0; j--)
+  for (int j = i; j >= 0; j--) {
     CheckStackTrace2(j);
+  }
   DECLARE_ADDRESS_LABEL(end);
 }
+
+#ifndef __GNUC__
+// On non-GNU environment, we use the address of `CheckStackTrace` to
+// guess the address range of this function. This guess is wrong for
+// non-static function on Windows. This is probably because
+// `&CheckStackTrace` returns the address of a trampoline like PLT,
+// not the actual address of `CheckStackTrace`.
+// See https://github.com/google/glog/issues/421 for the detail.
+static
+#endif
 void ATTRIBUTE_NOINLINE CheckStackTrace(int i) {
   INIT_ADDRESS_RANGE(CheckStackTrace, start, end, &expected_range[5]);
   DECLARE_ADDRESS_LABEL(start);
-  for (int j = i; j >= 0; j--)
+  for (int j = i; j >= 0; j--) {
     CheckStackTrace1(j);
+  }
   DECLARE_ADDRESS_LABEL(end);
 }
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 //-----------------------------------------------------------------------//
 
