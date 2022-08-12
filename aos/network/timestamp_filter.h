@@ -311,29 +311,31 @@ class NoncausalTimestampFilter {
         other_points_;
   };
 
-  // Returns the error between the offset in the provided timestamps, and the
-  // offset at ta.  Also returns a pointer to the timestamps used for the
-  // lookup to be passed back in again for a more efficient second lookup.
-  std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> OffsetError(
-      const NoncausalTimestampFilter *other, Pointer pointer,
-      logger::BootTimestamp ta_base, double ta, logger::BootTimestamp tb_base,
-      double tb) const {
+  // Returns the error between the offset in the provided timestamps, the
+  // offset at ta, and d error/dta.  Also returns a pointer to the timestamps
+  // used for the lookup to be passed back in again for a more efficient second
+  // lookup.
+  std::pair<Pointer, std::tuple<std::chrono::nanoseconds, double, double>>
+  OffsetError(const NoncausalTimestampFilter *other, Pointer pointer,
+              logger::BootTimestamp ta_base, double ta,
+              logger::BootTimestamp tb_base, double tb) const {
     const BootFilter *boot_filter = filter(pointer, ta_base.boot, tb_base.boot);
     const SingleFilter *other_filter =
         other == nullptr
             ? nullptr
             : other->maybe_single_filter(tb_base.boot, ta_base.boot);
-    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> result =
-        boot_filter->filter.OffsetError(other_filter, pointer, ta_base.time, ta,
-                                        tb_base.time, tb);
+    std::pair<Pointer, std::tuple<std::chrono::nanoseconds, double, double>>
+        result = boot_filter->filter.OffsetError(
+            other_filter, pointer, ta_base.time, ta, tb_base.time, tb);
     result.first.boot_filter_ = boot_filter;
     return result;
   }
 
-  // Returns the error between the offset in the provided timestamps, and the
-  // bounds offset at ta.  Also returns a pointer to the timestamps used for the
-  // lookup to be passed back in again for a more efficient second lookup.
-  std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>>
+  // Returns the error between the offset in the provided timestamps, the
+  // bounds offset at ta, and d error/dta.  Also returns a pointer to the
+  // timestamps used for the lookup to be passed back in again for a more
+  // efficient second lookup.
+  std::pair<Pointer, std::tuple<std::chrono::nanoseconds, double, double>>
   BoundsOffsetError(const NoncausalTimestampFilter *other, Pointer pointer,
                     logger::BootTimestamp ta_base, double ta,
                     logger::BootTimestamp tb_base, double tb) const {
@@ -342,8 +344,8 @@ class NoncausalTimestampFilter {
         other == nullptr
             ? nullptr
             : other->maybe_single_filter(tb_base.boot, ta_base.boot);
-    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> result =
-        boot_filter->filter.BoundsOffsetError(
+    std::pair<Pointer, std::tuple<std::chrono::nanoseconds, double, double>>
+        result = boot_filter->filter.BoundsOffsetError(
             other_filter, pointer, ta_base.time, ta, tb_base.time, tb);
     result.first.boot_filter_ = boot_filter;
     return result;
@@ -573,17 +575,17 @@ class NoncausalTimestampFilter {
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
       monotonic_clock::time_point ta);
 
-  static std::pair<std::chrono::nanoseconds, double> InterpolateOffset(
+  static std::tuple<std::chrono::nanoseconds, double, double> InterpolateOffset(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p1,
       monotonic_clock::time_point ta_base, double ta);
 
-  static std::pair<std::chrono::nanoseconds, double> BoundOffset(
+  static std::tuple<std::chrono::nanoseconds, double, double> BoundOffset(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p1,
       monotonic_clock::time_point ta_base, double ta);
 
-  static std::pair<std::chrono::nanoseconds, double> ExtrapolateOffset(
+  static std::tuple<std::chrono::nanoseconds, double, double> ExtrapolateOffset(
       std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> p0,
       monotonic_clock::time_point ta_base, double ta);
 
@@ -634,20 +636,20 @@ class NoncausalTimestampFilter {
     std::pair<Pointer, std::chrono::nanoseconds> Offset(
         const SingleFilter *other, Pointer pointer,
         monotonic_clock::time_point ta) const;
-    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> Offset(
-        const SingleFilter *other, Pointer pointer,
-        monotonic_clock::time_point ta_base, double ta) const;
+    std::pair<Pointer, std::tuple<std::chrono::nanoseconds, double, double>>
+    Offset(const SingleFilter *other, Pointer pointer,
+           monotonic_clock::time_point ta_base, double ta) const;
 
-    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>>
+    std::pair<Pointer, std::tuple<std::chrono::nanoseconds, double, double>>
     BoundsOffset(const SingleFilter *other, Pointer pointer,
                  monotonic_clock::time_point ta_base, double ta) const;
 
-    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>> OffsetError(
-        const SingleFilter *other, Pointer pointer,
-        aos::monotonic_clock::time_point ta_base, double ta,
-        aos::monotonic_clock::time_point tb_base, double tb) const;
+    std::pair<Pointer, std::tuple<std::chrono::nanoseconds, double, double>>
+    OffsetError(const SingleFilter *other, Pointer pointer,
+                aos::monotonic_clock::time_point ta_base, double ta,
+                aos::monotonic_clock::time_point tb_base, double tb) const;
 
-    std::pair<Pointer, std::pair<std::chrono::nanoseconds, double>>
+    std::pair<Pointer, std::tuple<std::chrono::nanoseconds, double, double>>
     BoundsOffsetError(const SingleFilter *other, Pointer pointer,
                       aos::monotonic_clock::time_point ta_base, double ta,
                       aos::monotonic_clock::time_point tb_base,
