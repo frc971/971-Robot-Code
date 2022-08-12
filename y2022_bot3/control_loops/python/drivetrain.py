@@ -40,7 +40,8 @@ def main(argv):
         print("Expected .h file name and .cc file name")
     else:
         # Write the generated constants out to a file.
-        drivetrain.WriteDrivetrain(argv[1:3], argv[3:5], 'y2022_bot3', kDrivetrain)
+        drivetrain.WriteDrivetrain(argv[1:3], argv[3:5], 'y2022_bot3',
+                                   kDrivetrain)
 
 
 if __name__ == '__main__':
