@@ -1,6 +1,17 @@
 namespace y2022_bot3.control_loops.superstructure;
 
 table Output {
+
+  // Voltage of the climber falcons, - is down + is up
+  climber_voltage_right:double (id: 0);
+  climber_voltage_left:double (id: 1);
+
+  // Intake joint voltage.
+  intake_voltage:double (id: 2);
+
+  // Intake roller voltage, positive is pulling into the robot
+  roller_voltage:double (id: 3);
+
 }
 
 root_type Output;

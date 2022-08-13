@@ -3,6 +3,17 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 namespace y2022_bot3.control_loops.superstructure;
 
 table Goal {
+
+  // Height of the climber arms above rest point.
+  climber_left:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 0);
+  climber_right:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 1);
+
+  // Goal angle of intake joint.
+  intake:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 2);
+
+  // Intake roller voltage, positive is pulling into the robot.
+  roller_speed:double (id: 3);
+
 }
 
 root_type Goal;

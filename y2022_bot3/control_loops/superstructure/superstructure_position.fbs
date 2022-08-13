@@ -3,6 +3,14 @@ include "frc971/control_loops/control_loops.fbs";
 namespace y2022_bot3.control_loops.superstructure;
 
 table Position {
+
+  // Position of climber arms, positive is up.
+  climber_right:frc971.PotAndAbsolutePosition (id: 0);
+  climber_left:frc971.PotAndAbsolutePosition (id: 1);
+
+  // Zero for the intake position value is horizontal, positive is up.
+  intake:frc971.PotAndAbsolutePosition (id: 2);
+
 }
 
 root_type Position;
