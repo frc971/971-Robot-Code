@@ -369,7 +369,7 @@ void TimingReportDump::AccumulateReport(const timing::Report &raw_report) {
 }
 
 const Channel *TimingReportDump::GetChannel(int index) {
-  CHECK_LT(0, index);
+  CHECK_LE(0, index);
   CHECK_GT(event_loop_->configuration()->channels()->size(),
            static_cast<size_t>(index));
   return event_loop_->configuration()->channels()->Get(index);
