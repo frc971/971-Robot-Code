@@ -77,8 +77,22 @@ double drivetrain_velocity_translate(double in) {
          control_loops::drivetrain::kWheelRadius;
 }
 
-constexpr double kMaxFastEncoderPulsesPerSecond =
-    Values::kMaxDrivetrainEncoderPulsesPerSecond();
+double intake_pot_translate(double voltage) {
+  return voltage * Values::kIntakePotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
+         (2 * M_PI /*radians*/);
+}
+
+double climber_pot_translate(double voltage) {
+  return voltage * Values::kClimberPotRatio() *
+         (3.0 /*turns*/ / 5.0 /*volts*/) *
+         Values::kClimberPotMetersPerRevolution();
+}
+
+// TODO(niko): Might have to move these to medium once we know the actual values
+constexpr double kMaxFastEncoderPulsesPerSecond = std::max(
+    {Values::kMaxDrivetrainEncoderPulsesPerSecond(),
+     Values::kMaxIntakeEncoderPulsesPerSecond(),
+     Values::kMaxClimberEncoderPulsesPerSecond()});
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
 constexpr double kMaxMediumEncoderPulsesPerSecond = 0;
@@ -135,11 +149,93 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     imu_yaw_rate_reader_.set_input(imu_yaw_rate_input_.get());
   }
 
+  void set_intake_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    fast_encoder_filter_.Add(encoder.get());
+    intake_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_intake_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    intake_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_intake_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    intake_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_climber_encoder_right(::std::unique_ptr<frc::Encoder> encoder) {
+    fast_encoder_filter_.Add(encoder.get());
+    climber_encoder_right_.set_encoder(::std::move(encoder));
+  }
+
+  void set_climber_right_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    climber_encoder_right_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_climber_right_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    climber_encoder_right_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_climber_encoder_left(::std::unique_ptr<frc::Encoder> encoder) {
+    fast_encoder_filter_.Add(encoder.get());
+    climber_encoder_left_.set_encoder(::std::move(encoder));
+  }
+
+  void set_climber_left_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    climber_encoder_left_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_climber_left_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    climber_encoder_left_.set_potentiometer(::std::move(potentiometer));
+  }
+
   void RunIteration() override {
     {
       auto builder = superstructure_position_sender_.MakeBuilder();
+
+      // Climbers
+      frc971::PotAndAbsolutePositionT climber_right;
+      CopyPosition(climber_encoder_right_, &climber_right,
+                   Values::kClimberEncoderCountsPerRevolution(),
+                   (Values::kClimberEncoderRatio() *
+                     Values::kClimberEncoderCountsPerRevolution()) /
+                    (2.0 * M_PI),
+                   climber_pot_translate, true,
+                   values_->climber_right.potentiometer_offset);
+
+      frc971::PotAndAbsolutePositionT climber_left;
+      CopyPosition(climber_encoder_left_, &climber_left,
+                   Values::kClimberEncoderCountsPerRevolution(),
+                   (Values::kClimberEncoderRatio() *
+                     Values::kClimberEncoderCountsPerRevolution()) /
+                    (2.0 * M_PI),
+                   climber_pot_translate, true,
+                   values_->climber_left.potentiometer_offset);
+
+      // Intake
+      frc971::PotAndAbsolutePositionT intake;
+      CopyPosition(intake_encoder_, &intake,
+                   Values::kIntakeEncoderCountsPerRevolution(),
+                   Values::kIntakeEncoderRatio(), intake_pot_translate, true,
+                   values_->intake.potentiometer_offset);
+
+      flatbuffers::Offset<frc971::PotAndAbsolutePosition> intake_offset =
+          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &intake);
+      flatbuffers::Offset<frc971::PotAndAbsolutePosition> climber_offset_right =
+          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &climber_right);
+      flatbuffers::Offset<frc971::PotAndAbsolutePosition> climber_offset_left =
+          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &climber_left);
+
       superstructure::Position::Builder position_builder =
           builder.MakeBuilder<superstructure::Position>();
+      position_builder.add_intake(intake_offset);
+      position_builder.add_climber_right(climber_offset_right);
+      position_builder.add_climber_left(climber_offset_left);
       builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
@@ -233,6 +329,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::unique_ptr<frc::DigitalInput> imu_heading_input_, imu_yaw_rate_input_;
 
   frc971::wpilib::DMAPulseWidthReader imu_heading_reader_, imu_yaw_rate_reader_;
+
+  frc971::wpilib::AbsoluteEncoderAndPotentiometer intake_encoder_,
+      climber_encoder_left_, climber_encoder_right_;
 };
 
 class SuperstructureWriter
@@ -335,6 +434,22 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(9));
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(8));
+
+    sensor_reader.set_intake_encoder(make_encoder(2));
+    sensor_reader.set_climber_encoder_right(make_encoder(3));
+    sensor_reader.set_climber_encoder_left(make_encoder(4));
+
+    sensor_reader.set_intake_absolute_pwm(make_unique<frc::DigitalInput>(0));
+    sensor_reader.set_climber_right_absolute_pwm(
+        make_unique<frc::DigitalInput>(1));
+    sensor_reader.set_climber_left_absolute_pwm(
+        make_unique<frc::DigitalInput>(2));
+
+    sensor_reader.set_intake_potentiometer(make_unique<frc::AnalogInput>(0));
+    sensor_reader.set_climber_right_potentiometer(
+        make_unique<frc::AnalogInput>(1));
+    sensor_reader.set_climber_left_potentiometer(
+        make_unique<frc::AnalogInput>(2));
 
     AddLoop(&sensor_reader_event_loop);
 
