@@ -4,12 +4,13 @@
 * [rust_doc](#rust_doc)
 * [rust_doc_test](#rust_doc_test)
 
-<a id="#rust_doc"></a>
+<a id="rust_doc"></a>
 
 ## rust_doc
 
 <pre>
-rust_doc(<a href="#rust_doc-name">name</a>, <a href="#rust_doc-crate">crate</a>, <a href="#rust_doc-html_after_content">html_after_content</a>, <a href="#rust_doc-html_before_content">html_before_content</a>, <a href="#rust_doc-html_in_header">html_in_header</a>, <a href="#rust_doc-markdown_css">markdown_css</a>)
+rust_doc(<a href="#rust_doc-name">name</a>, <a href="#rust_doc-crate">crate</a>, <a href="#rust_doc-html_after_content">html_after_content</a>, <a href="#rust_doc-html_before_content">html_before_content</a>, <a href="#rust_doc-html_in_header">html_in_header</a>, <a href="#rust_doc-markdown_css">markdown_css</a>,
+         <a href="#rust_doc-rustc_flags">rustc_flags</a>)
 </pre>
 
 Generates code documentation.
@@ -60,14 +61,15 @@ Running `bazel build //hello_lib:hello_lib_doc` will build a zip file containing
 | <a id="rust_doc-html_before_content"></a>html_before_content |  File to add in <code>&lt;body&gt;</code>, before content.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | optional | None |
 | <a id="rust_doc-html_in_header"></a>html_in_header |  File to add to <code>&lt;head&gt;</code>.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | optional | None |
 | <a id="rust_doc-markdown_css"></a>markdown_css |  CSS files to include via <code>&lt;link&gt;</code> in a rendered Markdown file.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
+| <a id="rust_doc-rustc_flags"></a>rustc_flags |  List of compiler flags passed to <code>rustc</code>.<br><br>These strings are subject to Make variable expansion for predefined source/output path variables like <code>$location</code>, <code>$execpath</code>, and <code>$rootpath</code>. This expansion is useful if you wish to pass a generated file of arguments to rustc: <code>@$(location //package:target)</code>.   | List of strings | optional | [] |
 
 
-<a id="#rust_doc_test"></a>
+<a id="rust_doc_test"></a>
 
 ## rust_doc_test
 
 <pre>
-rust_doc_test(<a href="#rust_doc_test-name">name</a>, <a href="#rust_doc_test-crate">crate</a>)
+rust_doc_test(<a href="#rust_doc_test-name">name</a>, <a href="#rust_doc_test-crate">crate</a>, <a href="#rust_doc_test-deps">deps</a>)
 </pre>
 
 Runs Rust documentation tests.
@@ -115,5 +117,6 @@ Running `bazel test //hello_lib:hello_lib_doc_test` will run all documentation t
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="rust_doc_test-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/docs/build-ref.html#name">Name</a> | required |  |
 | <a id="rust_doc_test-crate"></a>crate |  The label of the target to generate code documentation for. <code>rust_doc_test</code> can generate HTML code documentation for the source files of <code>rust_library</code> or <code>rust_binary</code> targets.   | <a href="https://bazel.build/docs/build-ref.html#labels">Label</a> | required |  |
+| <a id="rust_doc_test-deps"></a>deps |  List of other libraries to be linked to this library target.<br><br>These can be either other <code>rust_library</code> targets or <code>cc_library</code> targets if linking a native library.   | <a href="https://bazel.build/docs/build-ref.html#labels">List of labels</a> | optional | [] |
 
 

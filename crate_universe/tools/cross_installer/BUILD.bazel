@@ -1,4 +1,4 @@
-load("@crate_index//:defs.bzl", "aliases", "all_crate_deps")
+load("@cui//:defs.bzl", "aliases", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_binary")
 load(":cross_installer_deps.bzl", "cross_binary")
 
@@ -14,11 +14,12 @@ rust_binary(
     data = [
         "Cross.toml",
         ":cross",
-        "@rules_rust//rust/toolchain:current_exec_cargo_files",
+        "@rules_rust//rust/toolchain:current_cargo_files",
     ],
+    edition = "2018",
     proc_macro_deps = all_crate_deps(proc_macro = True),
     rustc_env = {
-        "CARGO": "$(rootpath @rules_rust//rust/toolchain:current_exec_cargo_files)",
+        "CARGO": "$(rootpath @rules_rust//rust/toolchain:current_cargo_files)",
         "CROSS_BIN": "$(rootpath :cross)",
         "CROSS_CONFIG": "$(rootpath :Cross.toml)",
     },
@@ -28,10 +29,7 @@ rust_binary(
 cross_binary(name = "cross")
 
 filegroup(
-    name = "distro",
-    srcs = [
-        "BUILD.bazel",
-        "Cargo.toml",
-    ],
+    name = "bzl_srcs",
+    srcs = glob(["**/*.bzl"]),
     visibility = ["//crate_universe/tools:__pkg__"],
 )

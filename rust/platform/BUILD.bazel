@@ -17,10 +17,3 @@ bzl_library(
     srcs = glob(["**/*.bzl"]),
     visibility = ["//rust:__subpackages__"],
 )
-
-alias(
-    name = "rules",
-    actual = ":bzl_lib",
-    deprecation = "Please use the `@rules_rust//platform:bzl_lib` target instead",
-    visibility = ["//rust:__subpackages__"],
-)

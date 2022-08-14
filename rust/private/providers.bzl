@@ -22,12 +22,14 @@ CrateInfo = provider(
         "deps": "depset[DepVariantInfo]: This crate's (rust or cc) dependencies' providers.",
         "edition": "str: The edition of this crate.",
         "is_test": "bool: If the crate is being compiled in a test context",
+        "metadata": "File: The rmeta file produced for this crate. It is optional.",
         "name": "str: The name of this crate.",
         "output": "File: The output File that will be produced, depends on crate type.",
         "owner": "Label: The label of the target that produced this CrateInfo",
         "proc_macro_deps": "depset[DepVariantInfo]: This crate's rust proc_macro dependencies' providers.",
         "root": "File: The source File entrypoint to this crate, eg. lib.rs",
         "rustc_env": "Dict[String, String]: Additional `\"key\": \"value\"` environment variables to set for rustc.",
+        "rustc_env_files": "[File]: Files containing additional environment variables to set for rustc.",
         "srcs": "depset[File]: All source Files that are part of the crate.",
         "type": (
             "str: The type of this crate " +
@@ -49,6 +51,7 @@ DepInfo = provider(
         "transitive_build_infos": "depset[BuildInfo]",
         "transitive_crate_outputs": "depset[File]: All transitive crate outputs.",
         "transitive_crates": "depset[CrateInfo]",
+        "transitive_metadata_outputs": "depset[File]: All transitive metadata dependencies (.rmeta, for crates that provide them) and all transitive object dependencies (.rlib) for crates that don't provide metadata.",
         "transitive_noncrates": "depset[LinkerInput]: All transitive dependencies that aren't crates.",
     },
 )
@@ -89,10 +92,12 @@ StdLibInfo = provider(
         "between_core_and_std_files": "List[File]: `.a` files related to all modules except `adler`, `alloc`, `compiler_builtins`, `core`, and `std`.",
         "core_files": "List[File]: `.a` files related to the `core` and `adler` modules",
         "dot_a_files": "Depset[File]: Generated `.a` files",
+        "memchr_files": "Depset[File]: `.a` files associated with the `memchr` module.",
         "self_contained_files": "List[File]: All `.o` files from the `self-contained` directory.",
         "srcs": "List[Target]: All targets from the original `srcs` attribute.",
         "std_files": "Depset[File]: `.a` files associated with the `std` module.",
         "std_rlibs": "List[File]: All `.rlib` files",
+        "test_files": "Depset[File]: `.a` files associated with the `test` module.",
     },
 )
 
@@ -105,5 +110,17 @@ ClippyInfo = provider(
     doc = "Provides information on a clippy run.",
     fields = {
         "output": "File with the clippy output.",
+    },
+)
+
+TestCrateInfo = provider(
+    doc = "A wrapper around a CrateInfo. " +
+          "Certain rule types, like rust_static_library and rust_shared_library " +
+          "are not intended for consumption by other Rust targets, and should not " +
+          "provide a CrateInfo. However, one should still be able to write a rust_test " +
+          "for them. Thus, we create a CrateInfo, but do not advertise it as such, " +
+          "but rather through this provider, that rust_test understands.",
+    fields = {
+        "crate": "CrateInfo: The underlying CrateInfo of the dependency",
     },
 )

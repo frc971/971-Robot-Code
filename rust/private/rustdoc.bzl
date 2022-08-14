@@ -37,8 +37,10 @@ def _strip_crate_info_output(crate_info):
         aliases = crate_info.aliases,
         # This crate info should have no output
         output = None,
+        metadata = None,
         edition = crate_info.edition,
         rustc_env = crate_info.rustc_env,
+        rustc_env_files = crate_info.rustc_env_files,
         is_test = crate_info.is_test,
         compile_data = crate_info.compile_data,
     )
@@ -90,6 +92,8 @@ def rustdoc_compile_action(
         crate_info = crate_info,
         dep_info = dep_info,
         build_info = build_info,
+        # If this is a rustdoc test, we need to depend on rlibs rather than .rmeta.
+        force_depend_on_objects = is_test,
     )
 
     # Since this crate is not actually producing the output described by the
@@ -118,6 +122,7 @@ def rustdoc_compile_action(
         emit = [],
         remap_path_prefix = None,
         force_link = True,
+        force_depend_on_objects = is_test,
     )
 
     # Because rustdoc tests compile tests outside of the sandbox, the sysroot
@@ -281,9 +286,19 @@ rust_doc = rule(
             doc = "CSS files to include via `<link>` in a rendered Markdown file.",
             allow_files = [".css"],
         ),
+        "rustc_flags": attr.string_list(
+            doc = dedent("""\
+                List of compiler flags passed to `rustc`.
+
+                These strings are subject to Make variable expansion for predefined
+                source/output path variables like `$location`, `$execpath`, and
+                `$rootpath`. This expansion is useful if you wish to pass a generated
+                file of arguments to rustc: `@$(location //package:target)`.
+            """),
+        ),
         "_cc_toolchain": attr.label(
             doc = "In order to use find_cpp_toolchain, you must define the '_cc_toolchain' attribute on your rule or aspect.",
-            default = "@bazel_tools//tools/cpp:current_cc_toolchain",
+            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
         "_dir_zipper": attr.label(
             doc = "A tool that orchestrates the creation of zip archives for rustdoc outputs.",
@@ -311,7 +326,7 @@ rust_doc = rule(
         "rust_doc_zip": "%{name}.zip",
     },
     toolchains = [
-        str(Label("//rust:toolchain")),
+        str(Label("//rust:toolchain_type")),
         "@bazel_tools//tools/cpp:toolchain_type",
     ],
     incompatible_use_toolchain_transition = True,

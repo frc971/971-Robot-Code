@@ -1,15 +1,19 @@
 """Common utilities useful for unifying the behavior of different parts of `cargo-bazel`."""
 
 # buildifier: disable=bzl-visibility
-load(
-    "//cargo/private:cargo_utils.bzl",
-    _get_host_triple = "get_host_triple",
-    _rust_get_rust_tools = "get_rust_tools",
-)
+load("//cargo/private:cargo_utils.bzl", _rust_get_rust_tools = "get_rust_tools")
+load("//rust/platform:triple.bzl", _get_host_triple = "get_host_triple")
 
 get_host_triple = _get_host_triple
 
 CARGO_BAZEL_ISOLATED = "CARGO_BAZEL_ISOLATED"
+CARGO_BAZEL_REPIN = "CARGO_BAZEL_REPIN"
+REPIN = "REPIN"
+
+REPIN_ENV_VARS = [
+    CARGO_BAZEL_REPIN,
+    REPIN,
+]
 
 _EXECUTE_ERROR_MESSAGE = """\
 Command {args} failed with exit code {exit_code}.

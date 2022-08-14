@@ -15,11 +15,54 @@
 # buildifier: disable=module-docstring
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
-load("//wasm_bindgen/raze:crates.bzl", "rules_rust_wasm_bindgen_fetch_remote_crates")
+load("//wasm_bindgen/3rdparty/crates:defs.bzl", "crate_repositories")
+
+WASM_BINDGEN_VERSION = "0.2.81"
+
+# buildifier: disable=unnamed-macro
+def rust_wasm_bindgen_dependencies():
+    """Declare dependencies needed for the `rules_rust` [wasm-bindgen][wb] rules.
+
+    [wb]: https://github.com/rustwasm/wasm-bindgen
+    """
+
+    maybe(
+        http_archive,
+        name = "rules_rust_wasm_bindgen_cli",
+        sha256 = "b255b6ab0d645af253319a990ad1f62e9efe2e72d353155f30834c10ecdb0af3",
+        urls = ["https://crates.io/api/v1/crates/wasm-bindgen-cli/{}/download".format(WASM_BINDGEN_VERSION)],
+        type = "tar.gz",
+        strip_prefix = "wasm-bindgen-cli-{}".format(WASM_BINDGEN_VERSION),
+        build_file = Label("//wasm_bindgen/3rdparty:BUILD.wasm-bindgen-cli.bazel"),
+    )
+
+    maybe(
+        http_archive,
+        name = "rules_nodejs",
+        sha256 = "017e2348bb8431156d5cf89b6f502c2e7fcffc568729f74f89e4a12bd8279e90",
+        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/5.5.2/rules_nodejs-core-5.5.2.tar.gz"],
+    )
+
+    crate_repositories()
+
+# buildifier: disable=unnamed-macro
+def rust_wasm_bindgen_register_toolchains(register_toolchains = True):
+    """Registers the default toolchains for the `rules_rust` [wasm-bindgen][wb] rules.
+
+    [wb]: https://github.com/rustwasm/wasm-bindgen
+
+    Args:
+        register_toolchains (bool, optional): Whether or not to register toolchains.
+    """
+
+    if register_toolchains:
+        native.register_toolchains(str(Label("//wasm_bindgen:default_wasm_bindgen_toolchain")))
 
 # buildifier: disable=unnamed-macro
 def rust_wasm_bindgen_repositories(register_default_toolchain = True):
     """Declare dependencies needed for [rust_wasm_bindgen](#rust_wasm_bindgen).
+
+    **Deprecated**: Use [rust_wasm_bindgen_dependencies](#rust_wasm_bindgen_depednencies) and [rust_wasm_bindgen_register_toolchains](#rust_wasm_bindgen_register_toolchains).
 
     Args:
         register_default_toolchain (bool, optional): If True, the default [rust_wasm_bindgen_toolchain](#rust_wasm_bindgen_toolchain)
@@ -27,14 +70,6 @@ def rust_wasm_bindgen_repositories(register_default_toolchain = True):
             that were generated using [cargo raze](https://github.com/google/cargo-raze). These will also be loaded.
     """
 
-    maybe(
-        http_archive,
-        name = "build_bazel_rules_nodejs",
-        sha256 = "ddb78717b802f8dd5d4c01c340ecdc007c8ced5c1df7db421d0df3d642ea0580",
-        urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/4.6.0/rules_nodejs-4.6.0.tar.gz"],
-    )
+    rust_wasm_bindgen_dependencies()
 
-    # Load dependencies of the default toolchain and register it.
-    if register_default_toolchain:
-        rules_rust_wasm_bindgen_fetch_remote_crates()
-        native.register_toolchains(str(Label("//wasm_bindgen:default_wasm_bindgen_toolchain")))
+    rust_wasm_bindgen_register_toolchains(register_toolchains = register_default_toolchain)

@@ -7,9 +7,3 @@ bzl_library(
     srcs = glob(["**/*.bzl"]),
     deps = ["//cargo/private:bzl_lib"],
 )
-
-alias(
-    name = "rules",
-    actual = ":bzl_lib",
-    deprecation = "Please use the `@rules_rust//cargo:bzl_lib` target instead",
-)

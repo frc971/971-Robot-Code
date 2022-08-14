@@ -9,7 +9,7 @@ load("//rust/private:providers.bzl", "BuildInfo", "CrateInfo", "DepInfo", "DepVa
 load("//rust/private:rustc.bzl", "rustc_compile_action")
 
 def _with_modified_crate_name_impl(ctx):
-    toolchain = ctx.toolchains[Label("//rust:toolchain")]
+    toolchain = ctx.toolchains[Label("//rust:toolchain_type")]
 
     crate_root = ctx.attr.src.files.to_list()[0]
     output_hash = repr(hash(crate_root.path))
@@ -57,19 +57,26 @@ with_modified_crate_name = rule(
     implementation = _with_modified_crate_name_impl,
     attrs = {
         "deps": attr.label_list(),
-        "src": attr.label(allow_single_file = [".rs"]),
-        "_cc_toolchain": attr.label(
-            default = "@bazel_tools//tools/cpp:current_cc_toolchain",
+        "src": attr.label(
+            allow_single_file = [".rs"],
         ),
-        "_error_format": attr.label(default = "@rules_rust//:error_format"),
+        "_cc_toolchain": attr.label(
+            default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
+        ),
+        "_error_format": attr.label(
+            default = Label("//:error_format"),
+        ),
         "_process_wrapper": attr.label(
-            default = Label("@rules_rust//util/process_wrapper"),
+            default = Label("//util/process_wrapper"),
             executable = True,
             allow_single_file = True,
             cfg = "exec",
         ),
     },
-    toolchains = ["@rules_rust//rust:toolchain", "@bazel_tools//tools/cpp:toolchain_type"],
+    toolchains = [
+        "@rules_rust//rust:toolchain_type",
+        "@bazel_tools//tools/cpp:toolchain_type",
+    ],
     incompatible_use_toolchain_transition = True,
     fragments = ["cpp"],
 )

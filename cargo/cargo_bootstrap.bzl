@@ -1,7 +1,8 @@
 """The `cargo_bootstrap` rule is used for bootstrapping cargo binaries in a repository rule."""
 
-load("//cargo/private:cargo_utils.bzl", "get_host_triple", "get_rust_tools")
+load("//cargo/private:cargo_utils.bzl", "get_rust_tools")
 load("//rust:defs.bzl", "rust_common")
+load("//rust/platform:triple.bzl", "get_host_triple")
 
 _CARGO_BUILD_MODES = [
     "release",
@@ -203,7 +204,7 @@ def _cargo_bootstrap_repository_impl(repository_ctx):
 
     # In addition to platform specific environment variables, a common set (indicated by `*`) will always
     # be gathered.
-    environment = dict(_collect_environ(repository_ctx, "*").items() + _collect_environ(repository_ctx, host_triple.triple).items())
+    environment = dict(_collect_environ(repository_ctx, "*").items() + _collect_environ(repository_ctx, host_triple.str).items())
 
     built_binary = cargo_bootstrap(
         repository_ctx = repository_ctx,
@@ -272,7 +273,7 @@ cargo_bootstrap_repository = repository_rule(
                 "`{triple}` (eg. 'x86_64-unknown-linux-gnu'), `{arch}` (eg. 'aarch64'), `{vendor}` (eg. 'unknown'), " +
                 "`{system}` (eg. 'darwin'), and `{tool}` (eg. 'rustc.exe') will be replaced in the string if present."
             ),
-            default = "@rust_{system}_{arch}//:bin/{tool}",
+            default = "@rust_{system}_{arch}__{triple}_tools//:bin/{tool}",
         ),
         "rust_toolchain_repository_template": attr.string(
             doc = "**Deprecated**: Please use `rust_toolchain_cargo_template` and `rust_toolchain_rustc_template`",
@@ -283,7 +284,7 @@ cargo_bootstrap_repository = repository_rule(
                 "`{triple}` (eg. 'x86_64-unknown-linux-gnu'), `{arch}` (eg. 'aarch64'), `{vendor}` (eg. 'unknown'), " +
                 "`{system}` (eg. 'darwin'), and `{tool}` (eg. 'rustc.exe') will be replaced in the string if present."
             ),
-            default = "@rust_{system}_{arch}//:bin/{tool}",
+            default = "@rust_{system}_{arch}__{triple}_tools//:bin/{tool}",
         ),
         "srcs": attr.label_list(
             doc = "Souce files of the crate to build. Passing source files here can be used to trigger rebuilds when changes are made",

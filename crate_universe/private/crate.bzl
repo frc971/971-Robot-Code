@@ -65,11 +65,13 @@ def _annotation(
         additive_build_file = None,
         additive_build_file_content = None,
         build_script_data = None,
+        build_script_tools = None,
         build_script_data_glob = None,
         build_script_deps = None,
         build_script_env = None,
         build_script_proc_macro_deps = None,
         build_script_rustc_env = None,
+        build_script_toolchains = None,
         compile_data = None,
         compile_data_glob = None,
         crate_features = None,
@@ -93,6 +95,7 @@ def _annotation(
         additive_build_file (str, optional): A file containing extra contents to write to the bottom of
             generated BUILD files.
         build_script_data (list, optional): A list of labels to add to a crate's `cargo_build_script::data` attribute.
+        build_script_tools (list, optional): A list of labels to add to a crate's `cargo_build_script::tools` attribute.
         build_script_data_glob (list, optional): A list of glob patterns to add to a crate's `cargo_build_script::data`
             attribute.
         build_script_deps (list, optional): A list of labels to add to a crate's `cargo_build_script::deps` attribute.
@@ -102,6 +105,7 @@ def _annotation(
             `cargo_build_script::proc_macro_deps` attribute.
         build_script_rustc_env (dict, optional): Additional environment variables to set on a crate's
             `cargo_build_script::env` attribute.
+        build_script_toolchains (list, optional): A list of labels to set on a crates's `cargo_build_script::toolchains` attribute.
         compile_data (list, optional): A list of labels to add to a crate's `rust_library::compile_data` attribute.
         compile_data_glob (list, optional): A list of glob patterns to add to a crate's `rust_library::compile_data`
             attribute.
@@ -142,11 +146,13 @@ def _annotation(
             additive_build_file = additive_build_file,
             additive_build_file_content = additive_build_file_content,
             build_script_data = build_script_data,
+            build_script_tools = build_script_tools,
             build_script_data_glob = build_script_data_glob,
             build_script_deps = build_script_deps,
             build_script_env = build_script_env,
             build_script_proc_macro_deps = build_script_proc_macro_deps,
             build_script_rustc_env = build_script_rustc_env,
+            build_script_toolchains = build_script_toolchains,
             compile_data = compile_data,
             compile_data_glob = compile_data_glob,
             crate_features = crate_features,

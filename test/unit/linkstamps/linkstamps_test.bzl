@@ -2,7 +2,7 @@
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
+load("//rust:defs.bzl", "rust_binary", "rust_common", "rust_library", "rust_test")
 load("//test/unit:common.bzl", "assert_action_mnemonic")
 
 def _is_running_on_linux(ctx):
@@ -20,7 +20,13 @@ def _supports_linkstamps_test(ctx):
     linkstamp_out = linkstamp_action.outputs.to_list()[0]
     asserts.equals(env, linkstamp_out.basename, "linkstamp.o")
     tut_out = tut.files.to_list()[0]
-    expected_linkstamp_path = tut_out.dirname + "/_objs/" + tut_out.basename + "/test/unit/linkstamps/linkstamp.o"
+    is_test = tut[rust_common.crate_info].is_test
+    workspace_prefix = "" if ctx.workspace_name == "rules_rust" else "/external/rules_rust"
+
+    # Rust compilation outputs coming from a test are put in test-{hash} directory
+    # which we need to remove in order to obtain the linkstamp file path.
+    dirname = "/".join(tut_out.dirname.split("/")[:-1]) if is_test else tut_out.dirname
+    expected_linkstamp_path = dirname + "/_objs/" + tut_out.basename + workspace_prefix + "/test/unit/linkstamps/linkstamp.o"
     asserts.equals(
         env,
         linkstamp_out.path,
@@ -67,6 +73,7 @@ def _linkstamps_test():
     rust_binary(
         name = "some_rust_binary",
         srcs = ["foo.rs"],
+        edition = "2018",
         deps = [":cc_lib_with_linkstamp"],
     )
 
@@ -78,12 +85,14 @@ def _linkstamps_test():
     rust_library(
         name = "some_rust_library_with_linkstamp_transitively",
         srcs = ["foo.rs"],
+        edition = "2018",
         deps = [":cc_lib_with_linkstamp"],
     )
 
     rust_binary(
         name = "some_rust_binary_with_linkstamp_transitively",
         srcs = ["foo.rs"],
+        edition = "2018",
         deps = [":some_rust_library_with_linkstamp_transitively"],
     )
 
@@ -100,6 +109,7 @@ def _linkstamps_test():
     rust_binary(
         name = "some_rust_binary_with_multiple_paths_to_a_linkstamp",
         srcs = ["foo.rs"],
+        edition = "2018",
         deps = [":cc_lib_with_linkstamp", ":cc_lib_with_linkstamp_transitively"],
     )
 
@@ -111,6 +121,7 @@ def _linkstamps_test():
     rust_test(
         name = "some_rust_test1",
         srcs = ["foo.rs"],
+        edition = "2018",
         deps = [":cc_lib_with_linkstamp"],
     )
 
@@ -122,6 +133,7 @@ def _linkstamps_test():
     rust_test(
         name = "some_rust_test2",
         srcs = ["foo.rs"],
+        edition = "2018",
         deps = [":cc_lib_with_linkstamp"],
     )
 

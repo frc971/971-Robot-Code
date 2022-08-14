@@ -6,37 +6,47 @@ package(default_visibility = ["//visibility:public"])
 
 alias(
     name = "protoc_gen_rust",
-    actual = "//proto/raze:cargo_bin_protoc_gen_rust",
+    actual = "//proto/3rdparty/crates:protobuf-codegen__protoc-gen-rust",
 )
 
 alias(
     name = "protoc_gen_rust_grpc",
-    actual = "//proto/raze:cargo_bin_protoc_gen_rust_grpc",
+    actual = "//proto/3rdparty/crates:grpc-compiler__protoc-gen-rust-grpc",
 )
 
-toolchain_type(name = "toolchain")
+toolchain_type(
+    name = "toolchain_type",
+)
+
+alias(
+    name = "toolchain",
+    actual = "toolchain_type",
+    deprecation = "instead use `@rules_rust//proto:toolchain_type`",
+    tags = ["manual"],
+)
 
 rust_binary(
     name = "optional_output_wrapper",
     srcs = ["optional_output_wrapper.rs"],
+    edition = "2018",
     visibility = ["//visibility:public"],
 )
 
 toolchain(
     name = "default-proto-toolchain",
     toolchain = ":default-proto-toolchain-impl",
-    toolchain_type = "@rules_rust//proto:toolchain",
+    toolchain_type = "@rules_rust//proto:toolchain_type",
 )
 
-rust_proto_toolchain(name = "default-proto-toolchain-impl")
+rust_proto_toolchain(
+    name = "default-proto-toolchain-impl",
+    edition = "2018",
+)
 
 bzl_library(
     name = "bzl_lib",
-    srcs = glob(["**/*.bzl"]) + ["//proto/raze:crates.bzl"],
-)
-
-alias(
-    name = "rules",
-    actual = ":bzl_lib",
-    deprecation = "Please use the `@rules_rust//proto:bzl_lib` target instead",
+    srcs = glob(["**/*.bzl"]),
+    deps = [
+        "//proto/3rdparty:bzl_lib",
+    ],
 )

@@ -3,23 +3,29 @@ load("//bindgen:bindgen.bzl", "rust_bindgen_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
-toolchain_type(name = "bindgen_toolchain")
-
-bzl_library(
-    name = "bzl_lib",
-    srcs = glob(["**/*.bzl"]) + ["//bindgen/raze:crates.bzl"],
-    deps = ["//rust:bzl_lib"],
+toolchain_type(
+    name = "toolchain_type",
 )
 
 alias(
-    name = "rules",
-    actual = ":bzl_lib",
-    deprecation = "Please use the `@rules_rust//bindgen:bzl_lib` target instead",
+    name = "bindgen_toolchain",
+    actual = "toolchain_type",
+    deprecation = "instead use `@rules_rust//bindgen:toolchain_type`",
+    tags = ["manual"],
+)
+
+bzl_library(
+    name = "bzl_lib",
+    srcs = glob(["**/*.bzl"]),
+    deps = [
+        "//bindgen/3rdparty:bzl_lib",
+        "//rust:bzl_lib",
+    ],
 )
 
 rust_bindgen_toolchain(
     name = "default_bindgen_toolchain_impl",
-    bindgen = "//bindgen/raze:cargo_bin_bindgen",
+    bindgen = "//bindgen/3rdparty:bindgen",
     clang = select({
         "//rust/platform:osx": "@bindgen_clang_osx//:clang",
         "//conditions:default": "@bindgen_clang_linux//:clang",
@@ -37,5 +43,5 @@ rust_bindgen_toolchain(
 toolchain(
     name = "default_bindgen_toolchain",
     toolchain = "default_bindgen_toolchain_impl",
-    toolchain_type = "//bindgen:bindgen_toolchain",
+    toolchain_type = "//bindgen:toolchain_type",
 )

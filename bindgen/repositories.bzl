@@ -12,21 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# buildifier: disable=module-docstring
+"""Dependencies for the Rust `bindgen` rules"""
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
-load("//bindgen/raze:crates.bzl", "rules_rust_bindgen_fetch_remote_crates")
+load("//bindgen/3rdparty/crates:defs.bzl", "crate_repositories")
 
 # buildifier: disable=unnamed-macro
-def rust_bindgen_repositories():
+def rust_bindgen_dependencies():
     """Declare dependencies needed for bindgen."""
 
     # nb. The bindgen rule itself should work on any platform.
     _bindgen_clang_repositories()
 
-    rules_rust_bindgen_fetch_remote_crates()
+    crate_repositories()
 
-    native.register_toolchains(str(Label("//bindgen:default_bindgen_toolchain")))
+# buildifier: disable=unnamed-macro
+def rust_bindgen_register_toolchains(register_toolchains = True):
+    """Registers the default toolchains for the `rules_rust` [bindgen][bg] rules.
+
+    [bg]: https://rust-lang.github.io/rust-bindgen/
+
+    Args:
+        register_toolchains (bool, optional): Whether or not to register toolchains.
+    """
+    if register_toolchains:
+        native.register_toolchains(str(Label("//bindgen:default_bindgen_toolchain")))
+
+# buildifier: disable=unnamed-macro
+def rust_bindgen_repositories():
+    """**Deprecated**: Instead use [rust_bindgen_dependencies](#rust_bindgen_dependencies) and [rust_bindgen_register_toolchains](#rust_bindgen_register_toolchains)"""
+
+    rust_bindgen_dependencies()
+    rust_bindgen_register_toolchains()
 
 _COMMON_WORKSPACE = """\
 workspace(name = "{}")

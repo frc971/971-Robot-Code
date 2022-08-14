@@ -1,8 +1,8 @@
 """Unit tests for crate names."""
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
-load("//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
-load("//test/unit:common.bzl", "assert_argv_contains")
+load("//rust:defs.bzl", "rust_binary", "rust_library", "rust_shared_library", "rust_static_library", "rust_test")
+load("//test/unit:common.bzl", "assert_argv_contains", "assert_argv_contains_prefix_not")
 
 def _default_crate_name_library_test_impl(ctx):
     env = analysistest.begin(ctx)
@@ -48,7 +48,7 @@ def _custom_crate_name_test_test_impl(ctx):
 
 def _invalid_default_crate_name_test_impl(ctx):
     env = analysistest.begin(ctx)
-    asserts.expect_failure(env, "contains invalid character(s): /")
+    asserts.expect_failure(env, "contains invalid character(s): @")
     return analysistest.end(env)
 
 def _invalid_custom_crate_name_test_impl(ctx):
@@ -68,7 +68,20 @@ def _slib_library_name_test_impl(ctx):
     """
     env = analysistest.begin(ctx)
     tut = analysistest.target_under_test(env)
+    assert_argv_contains(env, tut.actions[0], "--codegen=metadata=-2102077805")
     assert_argv_contains(env, tut.actions[0], "--codegen=extra-filename=-2102077805")
+    return analysistest.end(env)
+
+def _no_extra_filename_test_impl(ctx):
+    """Check that no extra filename is used.
+
+    Args:
+      ctx: rule context.
+    """
+    env = analysistest.begin(ctx)
+    tut = analysistest.target_under_test(env)
+    assert_argv_contains_prefix_not(env, tut.actions[0], "--codegen=metadata=")
+    assert_argv_contains_prefix_not(env, tut.actions[0], "--codegen=extra-filename=")
     return analysistest.end(env)
 
 default_crate_name_library_test = analysistest.make(
@@ -100,44 +113,54 @@ invalid_custom_crate_name_test = analysistest.make(
 slib_library_name_test = analysistest.make(
     _slib_library_name_test_impl,
 )
+no_extra_filename_test = analysistest.make(
+    _no_extra_filename_test_impl,
+)
 
 def _crate_name_test():
     rust_library(
-        name = "default-crate-name-library",
+        name = "default/crate-name-library",
         srcs = ["lib.rs"],
+        edition = "2018",
     )
 
     rust_library(
         name = "custom-crate-name-library",
         crate_name = "custom_name",
         srcs = ["lib.rs"],
+        edition = "2018",
     )
 
     rust_binary(
-        name = "default-crate-name-binary",
+        name = "default/crate-name-binary",
         srcs = ["main.rs"],
+        edition = "2018",
     )
 
     rust_binary(
         name = "custom-crate-name-binary",
         crate_name = "custom_name",
         srcs = ["main.rs"],
+        edition = "2018",
     )
 
     rust_test(
-        name = "default-crate-name-test",
+        name = "default/crate-name-test",
         srcs = ["main.rs"],
+        edition = "2018",
     )
 
     rust_test(
         name = "custom-crate-name-test",
         crate_name = "custom_name",
         srcs = ["main.rs"],
+        edition = "2018",
     )
 
     rust_library(
-        name = "invalid/default-crate-name",
+        name = "invalid@default-crate-name",
         srcs = ["lib.rs"],
+        edition = "2018",
         tags = ["manual", "norustfmt"],
     )
 
@@ -145,12 +168,26 @@ def _crate_name_test():
         name = "invalid-custom-crate-name",
         crate_name = "hyphens-not-allowed",
         srcs = ["lib.rs"],
+        edition = "2018",
         tags = ["manual", "norustfmt"],
     )
 
     rust_library(
         name = "slib",
         srcs = ["slib.rs"],
+        edition = "2018",
+    )
+
+    rust_shared_library(
+        name = "shared_lib",
+        srcs = ["lib.rs"],
+        edition = "2018",
+    )
+
+    rust_static_library(
+        name = "static_lib",
+        srcs = ["lib.rs"],
+        edition = "2018",
     )
 
     slib_library_name_test(
@@ -160,7 +197,7 @@ def _crate_name_test():
 
     default_crate_name_library_test(
         name = "default_crate_name_library_test",
-        target_under_test = ":default-crate-name-library",
+        target_under_test = ":default/crate-name-library",
     )
 
     custom_crate_name_library_test(
@@ -170,7 +207,7 @@ def _crate_name_test():
 
     default_crate_name_binary_test(
         name = "default_crate_name_binary_test",
-        target_under_test = ":default-crate-name-binary",
+        target_under_test = ":default/crate-name-binary",
     )
 
     custom_crate_name_binary_test(
@@ -180,7 +217,7 @@ def _crate_name_test():
 
     default_crate_name_test_test(
         name = "default_crate_name_test_test",
-        target_under_test = ":default-crate-name-test",
+        target_under_test = ":default/crate-name-test",
     )
 
     custom_crate_name_test_test(
@@ -190,12 +227,22 @@ def _crate_name_test():
 
     invalid_default_crate_name_test(
         name = "invalid_default_crate_name_test",
-        target_under_test = ":invalid/default-crate-name",
+        target_under_test = ":invalid@default-crate-name",
     )
 
     invalid_custom_crate_name_test(
         name = "invalid_custom_crate_name_test",
         target_under_test = ":invalid-custom-crate-name",
+    )
+
+    no_extra_filename_test(
+        name = "no_extra_filename_for_shared_library_test",
+        target_under_test = ":shared_lib",
+    )
+
+    no_extra_filename_test(
+        name = "no_extra_filename_for_static_library_test",
+        target_under_test = ":static_lib",
     )
 
 def crate_name_test_suite(name):

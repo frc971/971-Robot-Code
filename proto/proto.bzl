@@ -44,7 +44,7 @@ load("//rust:defs.bzl", "rust_common")
 load("//rust/private:rustc.bzl", "rustc_compile_action")
 
 # buildifier: disable=bzl-visibility
-load("//rust/private:utils.bzl", "compute_crate_name", "determine_output_hash", "find_toolchain", "transform_deps")
+load("//rust/private:utils.bzl", "can_build_metadata", "compute_crate_name", "determine_output_hash", "find_toolchain", "transform_deps")
 
 RustProtoInfo = provider(
     doc = "Rust protobuf provider info",
@@ -186,7 +186,7 @@ def _rust_proto_compile(protos, descriptor_sets, imports, crate_name, ctx, is_gr
     """
 
     # Create all the source in a specific folder
-    proto_toolchain = ctx.toolchains[Label("//proto:toolchain")]
+    proto_toolchain = ctx.toolchains[Label("//proto:toolchain_type")]
     output_dir = "%s.%s.rust" % (crate_name, "grpc" if is_grpc else "proto")
 
     # Generate the proto stubs
@@ -212,6 +212,13 @@ def _rust_proto_compile(protos, descriptor_sets, imports, crate_name, ctx, is_gr
         crate_name,
         output_hash,
     ))
+    rust_metadata = None
+    if can_build_metadata(toolchain, ctx, "rlib"):
+        rust_metadata = ctx.actions.declare_file("%s/lib%s-%s.rmeta" % (
+            output_dir,
+            crate_name,
+            output_hash,
+        ))
 
     # Gather all dependencies for compilation
     compile_action_deps = depset(
@@ -234,6 +241,7 @@ def _rust_proto_compile(protos, descriptor_sets, imports, crate_name, ctx, is_gr
             proc_macro_deps = depset([]),
             aliases = {},
             output = rust_lib,
+            metadata = rust_metadata,
             edition = proto_toolchain.edition,
             rustc_env = {},
             is_test = False,
@@ -319,8 +327,8 @@ rust_proto_library = rule(
     fragments = ["cpp"],
     host_fragments = ["cpp"],
     toolchains = [
-        str(Label("//proto:toolchain")),
-        str(Label("//rust:toolchain")),
+        str(Label("//proto:toolchain_type")),
+        str(Label("//rust:toolchain_type")),
         "@bazel_tools//tools/cpp:toolchain_type",
     ],
     # TODO: Remove once (bazelbuild/bazel#11584) is closed and the rules use
@@ -397,8 +405,8 @@ rust_grpc_library = rule(
     fragments = ["cpp"],
     host_fragments = ["cpp"],
     toolchains = [
-        str(Label("//proto:toolchain")),
-        str(Label("//rust:toolchain")),
+        str(Label("//proto:toolchain_type")),
+        str(Label("//rust:toolchain_type")),
         "@bazel_tools//tools/cpp:toolchain_type",
     ],
     # TODO: Remove once (bazelbuild/bazel#11584) is closed and the rules use
