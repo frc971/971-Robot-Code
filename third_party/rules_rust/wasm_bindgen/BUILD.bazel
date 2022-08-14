@@ -3,27 +3,33 @@ load("//wasm_bindgen:wasm_bindgen.bzl", "rust_wasm_bindgen_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
-toolchain_type(name = "wasm_bindgen_toolchain")
-
-bzl_library(
-    name = "bzl_lib",
-    srcs = glob(["**/*.bzl"]) + ["//wasm_bindgen/raze:crates.bzl"],
-    deps = ["//rust:bzl_lib"],
+toolchain_type(
+    name = "toolchain_type",
 )
 
 alias(
-    name = "rules",
-    actual = ":bzl_lib",
-    deprecation = "Please use the `@rules_rust//wasm_bindgen:bzl_lib` target instead",
+    name = "wasm_bindgen_toolchain",
+    actual = "toolchain_type",
+    deprecation = "instead use `@rules_rust//wasm_bindgen:toolchain_type`",
+    tags = ["manual"],
+)
+
+bzl_library(
+    name = "bzl_lib",
+    srcs = glob(["**/*.bzl"]),
+    deps = [
+        "//rust:bzl_lib",
+        "//wasm_bindgen/3rdparty:bzl_lib",
+    ],
 )
 
 rust_wasm_bindgen_toolchain(
     name = "default_wasm_bindgen_toolchain_impl",
-    bindgen = "//wasm_bindgen/raze:cargo_bin_wasm_bindgen",
+    bindgen = "@rules_rust//wasm_bindgen/3rdparty:wasm_bindgen_cli",
 )
 
 toolchain(
     name = "default_wasm_bindgen_toolchain",
     toolchain = "default_wasm_bindgen_toolchain_impl",
-    toolchain_type = "//wasm_bindgen:wasm_bindgen_toolchain",
+    toolchain_type = "//wasm_bindgen:toolchain_type",
 )

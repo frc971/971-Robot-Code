@@ -17,6 +17,7 @@ _SUPPORTED_CPU_ARCH = [
     "powerpc",
     "s390x",
     "x86_64",
+    "riscv32",
 ]
 
 _SUPPORTED_SYSTEMS = [

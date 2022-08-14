@@ -101,8 +101,8 @@ pub struct CommonAttributes {
     #[serde(skip_serializing_if = "SelectStringList::should_skip_serializing")]
     pub rustc_env_files: SelectStringList,
 
-    #[serde(skip_serializing_if = "SelectStringList::should_skip_serializing")]
-    pub rustc_flags: SelectStringList,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub rustc_flags: Vec<String>,
 
     pub version: String,
 
@@ -179,6 +179,9 @@ pub struct BuildScriptAttributes {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<String>,
+
+    #[serde(skip_serializing_if = "BTreeSet::is_empty")]
+    pub toolchains: BTreeSet<String>,
 }
 
 impl Default for BuildScriptAttributes {
@@ -198,6 +201,7 @@ impl Default for BuildScriptAttributes {
             rustc_env_files: Default::default(),
             tools: Default::default(),
             links: Default::default(),
+            toolchains: Default::default(),
         }
     }
 }
@@ -417,12 +421,8 @@ impl CrateContext {
             }
 
             // Rustc flags
-            // TODO: SelectList is currently backed by `BTreeSet` which is generally incorrect
-            // for rustc flags. Should SelectList be refactored?
             if let Some(extra) = &crate_extra.rustc_flags {
-                for data in extra.iter() {
-                    self.common_attrs.rustc_flags.insert(data.clone(), None);
-                }
+                self.common_attrs.rustc_flags.append(&mut extra.clone());
             }
 
             // Rustc env
@@ -453,6 +453,20 @@ impl CrateContext {
                 if let Some(extra) = &crate_extra.build_script_data {
                     for data in extra {
                         attrs.data.insert(data.clone(), None);
+                    }
+                }
+
+                // Tools
+                if let Some(extra) = &crate_extra.build_script_tools {
+                    for data in extra {
+                        attrs.tools.insert(data.clone(), None);
+                    }
+                }
+
+                // Toolchains
+                if let Some(extra) = &crate_extra.build_script_toolchains {
+                    for data in extra {
+                        attrs.toolchains.insert(data.clone());
                     }
                 }
 
@@ -563,11 +577,10 @@ impl CrateContext {
                         let crate_name = sanitize_module_name(&target.name);
 
                         // Locate the crate's root source file relative to the package root normalized for unix
-                        let crate_root =
-                            pathdiff::diff_paths(target.src_path.to_string(), package_root).map(
-                                // Normalize the path so that it always renders the same regardless of platform
-                                |root| root.to_string_lossy().replace("\\", "/"),
-                            );
+                        let crate_root = pathdiff::diff_paths(&target.src_path, package_root).map(
+                            // Normalize the path so that it always renders the same regardless of platform
+                            |root| root.to_string_lossy().replace('\\', "/"),
+                        );
 
                         // Conditionally check to see if the dependencies is a build-script target
                         if include_build_scripts && kind == "custom-build" {

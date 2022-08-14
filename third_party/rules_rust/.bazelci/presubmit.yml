@@ -7,25 +7,25 @@ default_linux_targets: &default_linux_targets
   # TODO: Switch manual tag to platform constraint after bazel 4.0.
   - "//test/versioned_dylib:versioned_dylib_test"
 default_macos_targets: &default_macos_targets
+  - "--"
   - "//..."
 default_windows_targets: &default_windows_targets
   - "--" # Allows negative patterns; hack for https://github.com/bazelbuild/continuous-integration/pull/245
   - "//..."
   - "-//bindgen/..."
   - "-//test/proto/..."
-  - "-//tools/rust_analyzer/..."
-  - "-//test/rustfmt/..."
+  - "-//test/unit/pipelined_compilation/..."
 crate_universe_vendor_example_targets: &crate_universe_vendor_example_targets
+  - "//vendor_external:crates_vendor"
   - "//vendor_local_manifests:crates_vendor"
   - "//vendor_local_pkgs:crates_vendor"
   - "//vendor_remote_manifests:crates_vendor_manifests"
   - "//vendor_remote_pkgs:crates_vendor_pkgs"
-cc_binary_example_targets: &cc_binary_example_targets
-  - "//..."
 tasks:
   ubuntu2004:
     build_targets: *default_linux_targets
     test_targets: *default_linux_targets
+    coverage_targets: *default_linux_targets
   rbe_ubuntu1604:
     shell_commands:
       - sed -i 's/^# load("@bazelci_rules/load("@bazelci_rules/' WORKSPACE.bazel
@@ -40,6 +40,7 @@ tasks:
   macos:
     build_targets: *default_macos_targets
     test_targets: *default_macos_targets
+    coverage_targets: *default_macos_targets
     build_flags: *aspects_flags
   windows:
     build_flags:
@@ -123,8 +124,18 @@ tasks:
       - "--config=rustfmt"
       - "--config=clippy"
       - "--repo_env=CC=clang"
-      # TODO(hlopko): Make this work (some tests were failing)
-      # - "--linkopt=-fuse-ld=lld"
+    build_targets: *default_linux_targets
+    test_targets: *default_linux_targets
+  ubuntu2004_clang_lld:
+    name: With Clang and LLD
+    platform: ubuntu2004
+    shell_commands:
+      - "sudo apt -y update && sudo apt -y install lld"
+    build_flags:
+      - "--config=rustfmt"
+      - "--config=clippy"
+      - "--repo_env=CC=clang"
+      - "--linkopt=-fuse-ld=lld"
     build_targets: *default_linux_targets
     test_targets: *default_linux_targets
   ubuntu2004_rolling_clang:
@@ -134,21 +145,19 @@ tasks:
       - "--config=rustfmt"
       - "--config=clippy"
       - "--repo_env=CC=clang"
-      # TODO(hlopko): Make this work (some tests were failing)
-      # - "--linkopt=-fuse-ld=lld"
     build_targets: *default_linux_targets
     test_targets: *default_linux_targets
     soft_fail: yes
     bazel: "rolling"
   ubuntu1804:
     name: "Min Bazel Version"
-    bazel: "4.0.0"
+    bazel: "5.0.0"
     platform: ubuntu1804
     build_targets: *default_linux_targets
     test_targets: *default_linux_targets
   ubuntu1804_with_aspects:
     name: "Min Bazel Version With Aspects"
-    bazel: "4.0.0"
+    bazel: "5.0.0"
     platform: ubuntu1804
     build_targets: *default_linux_targets
     test_targets: *default_linux_targets
@@ -188,6 +197,31 @@ tasks:
     name: Examples
     platform: ubuntu2004
     working_directory: examples
+    build_targets:
+      - "//..."
+    test_targets:
+      - "//..."
+    build_flags: *aspects_flags
+  ubuntu2004_examples_clang:
+    name: Examples with Clang
+    platform: ubuntu2004
+    working_directory: examples
+    build_flags:
+      - "--repo_env=CC=clang"
+    build_targets:
+      - "//..."
+    test_targets:
+      - "//..."
+    build_flags: *aspects_flags
+  ubuntu2004_examples_clang_lld:
+    name: Examples with Clang and LLD
+    platform: ubuntu2004
+    shell_commands:
+      - "sudo apt -y update && sudo apt -y install lld"
+    working_directory: examples
+    build_flags:
+      - "--repo_env=CC=clang"
+      - "--linkopt=-fuse-ld=lld"
     build_targets:
       - "//..."
     test_targets:
@@ -299,52 +333,18 @@ tasks:
       - "//..."
     test_targets:
       - "//..."
-  cc_binary_examples_ubuntu2004:
-    name: Crate Universe Examples
+  cc_common_link_ubuntu2004:
+    name: Build via cc_common.link
     platform: ubuntu2004
-    working_directory: examples/cc_binary
-    run_targets: *cc_binary_example_targets
+    working_directory: test/cc_common_link
     build_targets:
       - "//..."
     test_targets:
       - "//..."
-    build_flags: *aspects_flags
-  cc_binary_rbe_ubuntu1604:
-    name: Crate Universe Examples
-    platform: rbe_ubuntu1604
-    working_directory: examples/cc_binary
-    shell_commands:
-      - sed -i 's/^# load("@bazelci_rules/load("@bazelci_rules/' WORKSPACE.bazel
-      - sed -i 's/^# rbe_preconfig/rbe_preconfig/' WORKSPACE.bazel
-    run_targets: *cc_binary_example_targets
-    build_targets:
-      - "//..."
-    test_targets:
-      - "//..."
-    build_flags: *aspects_flags
-  cc_binary_examples_macos:
-    name: Crate Universe Examples
-    platform: macos
-    working_directory: examples/cc_binary
-    run_targets: *cc_binary_example_targets
-    build_targets:
-      - "//..."
-    test_targets:
-      - "//..."
-    build_flags: *aspects_flags
-  cc_binary_examples_windows:
-    name: Crate Universe Examples
-    platform: windows
-    working_directory: examples/cc_binary
-    batch_commands:
-      - echo startup --windows_enable_symlinks >> user.bazelrc
-      - echo build --enable_runfiles >> user.bazelrc  # this is not enabled by default on windows and is necessary for the cargo build scripts
-    run_targets: *cc_binary_example_targets
-    build_flags: *aspects_flags
-    build_targets:
-      - "//..."
-    test_targets:
-      - "//..."
+    build_flags:
+      - "--@rules_rust//rust/settings:experimental_use_cc_common_link=True"
+
+
 buildifier:
   version: latest
   warnings: "all"

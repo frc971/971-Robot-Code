@@ -66,8 +66,8 @@ rustfmt() {
 
 cargo_raze() {
     local -r cargo_raze="$(readlink -f external/cargo_raze/impl/cargo_raze_bin)"
-    export CARGO="$(readlink -f external/rust/bin/cargo)"
-    export RUSTC="$(readlink -f external/rust/bin/rustc)"
+    export CARGO="$(readlink -f external/rust__x86_64-unknown-linux-gnu_tools/bin/cargo)"
+    export RUSTC="$(readlink -f external/rust__x86_64-unknown-linux-gnu_tools/bin/rustc)"
     cd "${BUILD_WORKSPACE_DIRECTORY}"
     # Note we don't run with --generate-lockfile here. If there's a new
     # dependency, we don't want to download it, just failing with an error

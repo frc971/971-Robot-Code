@@ -1,11 +1,12 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//rust:defs.bzl", "rust_library", "rust_proc_macro", "rust_test")
 
 # buildifier: disable=bzl-visibility
-load("//rust/private:transitions.bzl", "with_import_macro_bootstrapping_mode")
+load("//rust/private:transitions.bzl", "alias_with_import_macro_bootstrapping_mode")
 
-with_import_macro_bootstrapping_mode(
+alias_with_import_macro_bootstrapping_mode(
     name = "import_macro",
-    target = "import_macro_impl",
+    actual = ":import_macro_impl",
 )
 
 rust_proc_macro(
@@ -14,9 +15,10 @@ rust_proc_macro(
         "import.rs",
     ],
     crate_name = "import",
+    edition = "2018",
     deps = [
         ":import_internal",
-        "//util/import/raze:syn",
+        "//util/import/3rdparty/crates:syn",
     ],
 )
 
@@ -25,12 +27,13 @@ rust_library(
     srcs = [
         "import_internal.rs",
     ],
+    edition = "2018",
     deps = [
-        "//util/import/raze:aho_corasick",
-        "//util/import/raze:lazy_static",
-        "//util/import/raze:proc_macro2",
-        "//util/import/raze:quote",
-        "//util/import/raze:syn",
+        "//util/import/3rdparty/crates:aho-corasick",
+        "//util/import/3rdparty/crates:lazy_static",
+        "//util/import/3rdparty/crates:proc-macro2",
+        "//util/import/3rdparty/crates:quote",
+        "//util/import/3rdparty/crates:syn",
         "//util/label",
     ],
 )
@@ -38,8 +41,9 @@ rust_library(
 rust_test(
     name = "import_internal_test",
     crate = ":import_internal",
+    edition = "2018",
     deps = [
-        "//util/import/raze:quickcheck",
+        "//util/import/3rdparty/crates:quickcheck",
     ],
 )
 
@@ -67,7 +71,7 @@ config_setting(
     },
 )
 
-sh_binary(
+cc_binary(
     name = "fake_import_macro_impl",
-    srcs = ["fake_import_macro_impl.sh"],
+    srcs = ["fake_import_macro_impl.cc"],
 )

@@ -1,7 +1,11 @@
 # buildifier: disable=module-docstring
-load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "C_COMPILE_ACTION_NAME")
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "CPP_COMPILE_ACTION_NAME", "C_COMPILE_ACTION_NAME")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("//rust:defs.bzl", "rust_binary", "rust_common")
+
+# buildifier: disable=bzl-visibility
+load("//rust/private:providers.bzl", _DepInfo = "DepInfo")
 
 # buildifier: disable=bzl-visibility
 load("//rust/private:rustc.bzl", "BuildInfo", "get_compilation_mode_opts", "get_linker_and_args")
@@ -9,7 +13,7 @@ load("//rust/private:rustc.bzl", "BuildInfo", "get_compilation_mode_opts", "get_
 # buildifier: disable=bzl-visibility
 load("//rust/private:utils.bzl", "dedent", "expand_dict_value_locations", "find_cc_toolchain", "find_toolchain", "name_to_crate_name")
 
-def get_cc_compile_env(cc_toolchain, feature_configuration):
+def get_cc_compile_args_and_env(cc_toolchain, feature_configuration):
     """Gather cc environment variables from the given `cc_toolchain`
 
     Args:
@@ -17,17 +21,49 @@ def get_cc_compile_env(cc_toolchain, feature_configuration):
         feature_configuration (FeatureConfiguration): Class used to construct command lines from CROSSTOOL features.
 
     Returns:
-        dict: Returns environment variables to be set for given action.
+        tuple: A tuple of the following items:
+            - (sequence): A flattened C command line flags for given action.
+            - (sequence): A flattened CXX command line flags for given action.
+            - (dict): C environment variables to be set for given action.
     """
     compile_variables = cc_common.create_compile_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
     )
-    return cc_common.get_environment_variables(
+    cc_c_args = cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
         action_name = C_COMPILE_ACTION_NAME,
         variables = compile_variables,
     )
+    cc_cxx_args = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = CPP_COMPILE_ACTION_NAME,
+        variables = compile_variables,
+    )
+    cc_env = cc_common.get_environment_variables(
+        feature_configuration = feature_configuration,
+        action_name = C_COMPILE_ACTION_NAME,
+        variables = compile_variables,
+    )
+    return cc_c_args, cc_cxx_args, cc_env
+
+def _pwd_flags(args):
+    """Prefix execroot-relative paths of known arguments with ${pwd}.
+
+    Args:
+        args (list): List of tool arguments.
+
+    Returns:
+        list: The modified argument list.
+    """
+    res = []
+    for arg in args:
+        s, opt, path = arg.partition("--sysroot=")
+        if s == "" and not paths.is_absolute(path):
+            res.append("{}${{pwd}}/{}".format(opt, path))
+        else:
+            res.append(arg)
+    return res
 
 def _build_script_impl(ctx):
     """The implementation for the `_build_script_run` rule.
@@ -69,6 +105,7 @@ def _build_script_impl(ctx):
         "CARGO_MANIFEST_DIR": manifest_dir,
         "CARGO_PKG_NAME": pkg_name,
         "HOST": toolchain.exec_triple,
+        "NUM_JOBS": "1",
         "OPT_LEVEL": compilation_mode_opt_level,
         "RUSTC": toolchain.rustc.path,
         "TARGET": toolchain.target_flag_value,
@@ -96,10 +133,10 @@ def _build_script_impl(ctx):
     linker, link_args, linker_env = get_linker_and_args(ctx, ctx.attr, cc_toolchain, feature_configuration, None)
     env.update(**linker_env)
     env["LD"] = linker
-    env["LDFLAGS"] = " ".join(link_args)
+    env["LDFLAGS"] = " ".join(_pwd_flags(link_args))
 
     # MSVC requires INCLUDE to be set
-    cc_env = get_cc_compile_env(cc_toolchain, feature_configuration)
+    cc_c_args, cc_cxx_args, cc_env = get_cc_compile_args_and_env(cc_toolchain, feature_configuration)
     include = cc_env.get("INCLUDE")
     if include:
         env["INCLUDE"] = include
@@ -114,8 +151,12 @@ def _build_script_impl(ctx):
         ar_executable = cc_toolchain.ar_executable
         if ar_executable:
             env["AR"] = ar_executable
-        if cc_toolchain.sysroot:
-            env["SYSROOT"] = cc_toolchain.sysroot
+
+        # Populate CFLAGS and CXXFLAGS that cc-rs relies on when building from source, in particular
+        # to determine the deployment target when building for apple platforms (`macosx-version-min`
+        # for example, itself derived from the `macos_minimum_os` Bazel argument).
+        env["CFLAGS"] = " ".join(_pwd_flags(cc_c_args))
+        env["CXXFLAGS"] = " ".join(_pwd_flags(cc_cxx_args))
 
     # Inform build scripts of rustc flags
     # https://github.com/rust-lang/cargo/issues/9600
@@ -126,6 +167,9 @@ def _build_script_impl(ctx):
 
     for f in ctx.attr.crate_features:
         env["CARGO_FEATURE_" + f.upper().replace("-", "_")] = "1"
+
+    # Add environment variables from the Rust toolchain.
+    env.update(toolchain.env)
 
     env.update(expand_dict_value_locations(
         ctx,
@@ -258,7 +302,7 @@ _build_script_run = rule(
     },
     fragments = ["cpp"],
     toolchains = [
-        str(Label("//rust:toolchain")),
+        str(Label("//rust:toolchain_type")),
         "@bazel_tools//tools/cpp:toolchain_type",
     ],
     incompatible_use_toolchain_transition = True,
@@ -394,3 +438,61 @@ def _name_to_pkg_name(name):
     if name.endswith("_build_script"):
         return name[:-len("_build_script")]
     return name
+
+def _cargo_dep_env_implementation(ctx):
+    empty_file = ctx.actions.declare_file(ctx.label.name + ".empty_file")
+    empty_dir = ctx.actions.declare_directory(ctx.label.name + ".empty_dir")
+    ctx.actions.write(
+        output = empty_file,
+        content = "",
+    )
+    ctx.actions.run(
+        outputs = [empty_dir],
+        executable = "true",
+    )
+    return [
+        DefaultInfo(files = depset(ctx.files.src)),
+        BuildInfo(
+            dep_env = empty_file,
+            flags = empty_file,
+            link_flags = empty_file,
+            link_search_paths = empty_file,
+            out_dir = empty_dir,
+            rustc_env = empty_file,
+        ),
+        _DepInfo(
+            dep_env = ctx.file.src,
+            direct_crates = depset(),
+            link_search_path_files = depset(),
+            transitive_build_infos = depset(),
+            transitive_crate_outputs = depset(),
+            transitive_crates = depset(),
+            transitive_noncrates = depset(),
+        ),
+    ]
+
+cargo_dep_env = rule(
+    implementation = _cargo_dep_env_implementation,
+    doc = (
+        "A rule for generating variables for dependent `cargo_build_script`s " +
+        "without a build script. This is useful for using Bazel rules instead " +
+        "of a build script, while also generating configuration information " +
+        "for build scripts which depend on this crate."
+    ),
+    attrs = {
+        "src": attr.label(
+            doc = dedent("""\
+                File containing additional environment variables to set for build scripts of direct dependencies.
+
+                This has the same effect as a `cargo_build_script` which prints
+                `cargo:VAR=VALUE` lines, but without requiring a build script.
+
+                This files should  contain a single variable per line, of format
+                `NAME=value`, and newlines may be included in a value by ending a
+                line with a trailing back-slash (`\\\\`).
+            """),
+            allow_single_file = True,
+            mandatory = True,
+        ),
+    },
+)

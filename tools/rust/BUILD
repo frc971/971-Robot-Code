@@ -16,7 +16,7 @@ toolchain(
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
     ],
-    toolchain = "@rust//:toolchain_for_x86_64-unknown-linux-gnu_impl",
+    toolchain = "@rust__x86_64-unknown-linux-gnu_tools//:rust_toolchain",
     toolchain_type = "@rules_rust//rust:toolchain",
 )
 
@@ -33,7 +33,7 @@ toolchain(
         # subtle order dependencies.
         "//tools/platforms/hardware:raspberry_pi",
     ],
-    toolchain = "@rust//:toolchain_for_armv7-unknown-linux-gnueabihf_impl",
+    toolchain = "@rust__armv7-unknown-linux-gnueabihf_tools//:rust_toolchain",
     toolchain_type = "@rules_rust//rust:toolchain",
 )
 
@@ -47,7 +47,7 @@ toolchain(
         "@platforms//os:linux",
         "@platforms//cpu:arm64",
     ],
-    toolchain = "@rust//:toolchain_for_aarch64-unknown-linux-gnu_impl",
+    toolchain = "@rust__aarch64-unknown-linux-gnu_tools//:rust_toolchain",
     toolchain_type = "@rules_rust//rust:toolchain",
 )
 
@@ -62,7 +62,7 @@ toolchain(
         "@platforms//cpu:armv7",
         "//tools/platforms/hardware:roborio",
     ],
-    toolchain = "@rust//:toolchain_for_arm-unknown-linux-gnueabi_impl",
+    toolchain = "@rust__arm-unknown-linux-gnueabi_tools//:rust_toolchain",
     toolchain_type = "@rules_rust//rust:toolchain",
 )
 

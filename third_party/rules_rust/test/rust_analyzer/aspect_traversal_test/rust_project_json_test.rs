@@ -12,6 +12,10 @@ mod tests {
 
         for dep in &[
             "lib_dep",
+            "actual_dep",
+            "dep_of_aliased_dep",
+            "custom_actual_dep",
+            "dep_of_custom_aliased_dep",
             "extra_test_dep",
             "proc_macro_dep",
             "extra_proc_macro_dep",

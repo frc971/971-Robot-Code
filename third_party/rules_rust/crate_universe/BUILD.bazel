@@ -1,32 +1,16 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-load("@crate_index//:defs.bzl", "aliases", "all_crate_deps")
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_doc", "rust_library", "rust_test")
+load("@cui//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_doc", "rust_doc_test", "rust_library", "rust_test")
 load("//crate_universe:version.bzl", "VERSION")
 
 exports_files(
     glob(["src/**"]) + [
         "Cargo.toml",
         "Cargo.lock",
-        "Cargo.Bazel.lock",
         "defs.bzl",
+        "docs.bzl",
     ],
     visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "distro",
-    srcs = glob(["*.bzl"]) + [
-        ":rust_srcs",
-        "//crate_universe/3rdparty:distro",
-        "//crate_universe/private:distro",
-        "//crate_universe/tools:distro",
-        "BUILD.bazel",
-        "Cargo.Bazel.lock",
-        "Cargo.lock",
-        "Cargo.toml",
-        "README.md",
-    ],
-    visibility = ["//:__subpackages__"],
 )
 
 filegroup(
@@ -34,6 +18,7 @@ filegroup(
     srcs = glob(["*.bzl"]) + [
         "//crate_universe/3rdparty:bzl_srcs",
         "//crate_universe/private:bzl_srcs",
+        "//crate_universe/tools:bzl_srcs",
     ],
     visibility = ["//visibility:public"],
 )
@@ -54,11 +39,6 @@ filegroup(
     visibility = ["//:__subpackages__"],
 )
 
-TAGS = [
-    # https://github.com/rust-lang/rust-clippy/issues/8470
-    "noclippy",
-]
-
 rust_library(
     name = "cargo_bazel",
     srcs = glob(
@@ -70,8 +50,13 @@ rust_library(
         include = ["src/**"],
         exclude = ["src/**/*.rs"],
     ),
+    edition = "2018",
     proc_macro_deps = all_crate_deps(proc_macro = True),
-    tags = TAGS,
+    # This target embeds additional, stamping related information (see
+    # https://docs.bazel.build/versions/main/user-manual.html#workspace_status
+    # for more information). Set stamp = -1 to indicate that it should respect
+    # the value of the --stamp comandline flag.
+    stamp = -1,
     version = VERSION,
     visibility = ["//visibility:public"],
     deps = all_crate_deps(normal = True),
@@ -80,7 +65,7 @@ rust_library(
 rust_binary(
     name = "cargo_bazel_bin",
     srcs = ["src/main.rs"],
-    tags = TAGS,
+    edition = "2018",
     version = VERSION,
     visibility = ["//visibility:public"],
     deps = [":cargo_bazel"],
@@ -97,17 +82,17 @@ rust_test(
     aliases = aliases(),
     crate = ":cargo_bazel",
     data = glob(["test_data/**"]) + [
-        "@rules_rust//rust/toolchain:current_exec_cargo_files",
-        "@rules_rust//rust/toolchain:current_exec_rustc_files",
+        "@rules_rust//rust/toolchain:current_cargo_files",
+        "@rules_rust//rust/toolchain:current_rustc_files",
+        "//crate_universe/test_data/serialized_configs",
     ],
     proc_macro_deps = all_crate_deps(
         proc_macro_dev = True,
     ),
     rustc_env = {
-        "CARGO": "$(rootpath @rules_rust//rust/toolchain:current_exec_cargo_files)",
-        "RUSTC": "$(rootpath @rules_rust//rust/toolchain:current_exec_rustc_files)",
+        "CARGO": "$(rootpath @rules_rust//rust/toolchain:current_cargo_files)",
+        "RUSTC": "$(rootpath @rules_rust//rust/toolchain:current_rustc_files)",
     },
-    tags = TAGS,
     deps = [
         "@rules_rust//tools/runfiles",
     ] + all_crate_deps(
@@ -121,10 +106,7 @@ rust_doc(
     visibility = ["//visibility:public"],
 )
 
-# `rust_doc_test` does not currently work. See:
-# https://github.com/bazelbuild/rules_rust/issues/980
-#
-# rust_doc_test(
-#     name = "rustdoc_test",
-#     crate = ":cargo_bazel",
-# )
+rust_doc_test(
+    name = "rustdoc_test",
+    crate = ":cargo_bazel",
+)

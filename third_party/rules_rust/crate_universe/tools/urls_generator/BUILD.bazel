@@ -1,18 +1,9 @@
-load("@crate_index//:defs.bzl", "aliases", "all_crate_deps")
+load("@cui//:defs.bzl", "aliases", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_binary")
 
 exports_files(
     ["Cargo.toml"],
     visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "distro",
-    srcs = [
-        "BUILD.bazel",
-        "Cargo.toml",
-    ],
-    visibility = ["//crate_universe/tools:__pkg__"],
 )
 
 rust_binary(
@@ -22,6 +13,7 @@ rust_binary(
     compile_data = [
         "//crate_universe/private:urls.bzl",
     ],
+    edition = "2018",
     proc_macro_deps = all_crate_deps(proc_macro = True),
     rustc_env = {
         "MODULE_ROOT_PATH": "$(rootpath //crate_universe/private:urls.bzl)",

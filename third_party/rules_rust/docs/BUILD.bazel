@@ -8,11 +8,12 @@ bzl_library(
     name = "docs_deps",
     srcs = [
         "@bazel_tools//tools:bzl_srcs",
-        "@build_bazel_rules_nodejs//:bzl",
         "@com_google_protobuf//:bzl_srcs",
+        "@rules_nodejs//nodejs:bzl",
     ],
     deps = [
         "@bazel_skylib//lib:paths",
+        "@bazel_skylib//lib:selects",
         "@bazel_skylib//rules:common_settings",
         "@rules_proto//proto:defs",
         "@rules_proto//proto:repositories",
@@ -53,6 +54,7 @@ PAGES = dict([
             "rust_test",
             "rust_test_suite",
             "error_format",
+            "extra_rustc_flag",
             "extra_rustc_flags",
             "capture_clippy_output",
         ],
@@ -69,15 +71,17 @@ PAGES = dict([
         name = "rust_analyzer",
         header_template = ":rust_analyzer.vm",
         symbols = [
-            "rust_analyzer",
             "rust_analyzer_aspect",
+            "rust_analyzer_toolchain",
         ],
     ),
     page(
         name = "rust_bindgen",
+        header_template = ":rust_bindgen.vm",
         symbols = [
             "rust_bindgen_library",
-            "rust_bindgen_repositories",
+            "rust_bindgen_dependencies",
+            "rust_bindgen_register_toolchains",
             "rust_bindgen_toolchain",
             "rust_bindgen",
         ],
@@ -126,6 +130,7 @@ PAGES = dict([
             "rust_stdlib_filegroup",
             "rust_toolchain_repository_proxy",
             "rust_toolchain_repository",
+            "rust_toolchain_tools_repository",
             "rust_toolchain",
         ],
     ),
@@ -133,7 +138,8 @@ PAGES = dict([
         name = "rust_wasm_bindgen",
         header_template = ":rust_wasm_bindgen.vm",
         symbols = [
-            "rust_wasm_bindgen_repositories",
+            "rust_wasm_bindgen_dependencies",
+            "rust_wasm_bindgen_register_toolchains",
             "rust_wasm_bindgen_toolchain",
             "rust_wasm_bindgen",
         ],
@@ -183,7 +189,7 @@ stardoc(
 stardoc(
     name = "crate_universe",
     out = "crate_universe.md",
-    input = "@rules_rust//crate_universe:defs.bzl",
+    input = "@rules_rust//crate_universe:docs.bzl",
     deps = [":all_docs"],
 )
 

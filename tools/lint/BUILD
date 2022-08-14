@@ -15,7 +15,7 @@ sh_binary(
     name = "rustfmt",
     srcs = ["rustfmt.sh"],
     data = [
-        "@rust//:rustfmt",
+        "@rust__x86_64-unknown-linux-gnu_tools//:rustfmt",
     ],
     deps = [
         "@bazel_tools//tools/bash/runfiles",

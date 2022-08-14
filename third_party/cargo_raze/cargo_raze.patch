@@ -11,7 +11,7 @@
 -        "@rules_rust//rust/platform:x86_64-pc-windows-msvc": "@rust_windows_x86_64//:cargo",
 -        "@rules_rust//rust/platform:x86_64-unknown-linux-gnu": "@rust_linux_x86_64//:cargo",
 -    }),
-+    actual = "@rust//:cargo",
++    actual = "@rust__x86_64-unknown-linux-gnu_tools//:cargo",
  )
  
  alias(
@@ -23,13 +23,21 @@
 -        "@rules_rust//rust/platform:x86_64-pc-windows-msvc": "@rust_windows_x86_64//:rustc",
 -        "@rules_rust//rust/platform:x86_64-unknown-linux-gnu": "@rust_linux_x86_64//:rustc",
 -    }),
-+    actual = "@rust//:rustc",
++    actual = "@rust__x86_64-unknown-linux-gnu_tools//:rustc",
  )
  
  sh_binary(
 
 --- third_party/zlib/BUILD.zlib.bazel	2022-02-03 01:26:46.756187851 -0800
 +++ third_party/zlib/BUILD.zlib.bazel	2022-02-03 01:26:58.048702010 -0800
+@@ -1,6 +1,7 @@
+ # Copied from https://github.com/protocolbuffers/protobuf/blob/master/third_party/zlib.BUILD
+ 
+ load("@rules_cc//cc:defs.bzl", "cc_library")
++load("@rules_rust//cargo:cargo_build_script.bzl", "cargo_dep_env")
+ 
+ licenses(["notice"])  # BSD/MIT-like license (for zlib)
+ 
 @@ -58,6 +58,8 @@ cc_library(
          "//conditions:default": [
              "-Wno-unused-variable",
@@ -39,7 +47,7 @@
          ],
      }),
      includes = ["zlib/include/"],
-@@ -28,6 +28,15 @@ genrule(
+@@ -28,6 +28,20 @@ genrule(
      srcs = _ZLIB_HEADERS,
      outs = _ZLIB_PREFIXED_HEADERS,
      cmd = "cp $(SRCS) $(@D)/zlib/include/",
@@ -47,11 +55,16 @@
  )
 +
 +genrule(
-+    name = "dep_z_include",
-+    visibility = ["//visibility:public"],
++    name = "gen_dep_z_include",
 +    outs = ["dep_z_include.env"],
 +    srcs = [":copy_public_headers"],
 +    cmd = "echo 'DEP_Z_INCLUDE=$${pwd}/'\"$$(dirname \"$$(echo \"$(locations :copy_public_headers)\" | awk '{ print $$1 }')\")\" > $@",
++)
++
++cargo_dep_env(
++    name = "dep_z_include",
++    src = "dep_z_include.env",
++    visibility = ["//visibility:public"],
 +)
  
  cc_library(
@@ -153,10 +166,10 @@
 +++ third_party/cargo/remote/BUILD.libz-sys-1.1.2.bazel	2022-02-04 00:45:57.151816346 -0800
 @@ -57,6 +57,8 @@ rust_library(
      # buildifier: leave-alone
-+    dep_env_files = ["@cargo_raze__zlib//:dep_z_include"],
      deps = [
          "@cargo_raze__libc__0_2_92//:libc",
 +        "@cargo_raze__zlib//:zlib",
++        "@cargo_raze__zlib//:dep_z_include",
      ] + selects.with_or({
          # cfg(target_env = "msvc")
          (

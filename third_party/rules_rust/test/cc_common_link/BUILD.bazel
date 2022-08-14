@@ -1,0 +1,36 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
+
+cc_library(
+    name = "allocator_library",
+    srcs = ["allocator_library.cc"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "cclinkstampdep",
+    linkstamp = "cclinkstampdep.cc",
+)
+
+rust_library(
+    name = "rdep",
+    srcs = ["rdep.rs"],
+    edition = "2021",
+)
+
+rust_binary(
+    name = "bin",
+    srcs = ["bin.rs"],
+    edition = "2021",
+    deps = [
+        ":cclinkstampdep",
+        ":rdep",
+    ],
+)
+
+rust_test(
+    name = "test",
+    srcs = ["test.rs"],
+    edition = "2021",
+    deps = [":rdep"],
+)

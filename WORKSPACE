@@ -834,14 +834,23 @@ http_archive(
     urls = ["https://github.com/bazelbuild/rules_webtesting/releases/download/0.3.5/rules_webtesting.tar.gz"],
 )
 
+http_archive(
+    name = "rules_rust_tinyjson",
+    build_file = "@rules_rust//util/process_wrapper:BUILD.tinyjson.bazel",
+    sha256 = "1a8304da9f9370f6a6f9020b7903b044aa9ce3470f300a1fba5bc77c78145a16",
+    strip_prefix = "tinyjson-2.3.0",
+    type = "tar.gz",
+    url = "https://crates.io/api/v1/crates/tinyjson/2.3.0/download",
+)
+
 local_repository(
     name = "rules_rust",
     path = "third_party/rules_rust",
 )
 
-load("@rules_rust//rust:repositories.bzl", "rust_toolchain_repository")
+load("@rules_rust//rust:repositories.bzl", "rust_repository_set")
 
-rust_toolchain_repository(
+rust_repository_set(
     name = "rust",
     allocator_library = "@//tools/rust:forward_allocator",
     edition = "2021",
@@ -851,8 +860,8 @@ rust_toolchain_repository(
         "armv7-unknown-linux-gnueabihf",
         "aarch64-unknown-linux-gnu",
     ],
+    register_toolchain = False,
     rustfmt_version = "1.62.0",
-    toolchain_name_prefix = "toolchain_for",
     version = "1.62.0",
 )
 

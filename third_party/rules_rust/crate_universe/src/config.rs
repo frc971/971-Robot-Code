@@ -8,7 +8,7 @@ use std::path::Path;
 use std::{fmt, fs};
 
 use anyhow::Result;
-use cargo_lock::package::source::GitReference;
+use cargo_lock::package::GitReference;
 use cargo_metadata::Package;
 use semver::VersionReq;
 use serde::de::Visitor;
@@ -72,6 +72,9 @@ pub struct RenderConfig {
     /// Eg. `@rules_rust//rust/platform:{triple}`.
     #[serde(default = "default_platforms_template")]
     pub platforms_template: String,
+
+    /// The command to use for regenerating generated files.
+    pub regen_command: String,
 
     /// An optional configuration for rendirng content to be rendered into repositories.
     pub vendor_mode: Option<VendorMode>,
@@ -211,6 +214,10 @@ pub struct CrateAnnotations {
     /// [rustc_env](https://bazelbuild.github.io/rules_rust/cargo.html#cargo_build_script-rustc_env) attribute.
     pub build_script_rustc_env: Option<BTreeMap<String, String>>,
 
+    /// Additional labels to pass to a build script's
+    /// [toolchains](https://bazel.build/reference/be/common-definitions#common-attributes) attribute.
+    pub build_script_toolchains: Option<BTreeSet<String>>,
+
     /// A scratch pad used to write arbitrary text to target BUILD files.
     pub additive_build_file_content: Option<String>,
 
@@ -302,6 +309,7 @@ impl Add for CrateAnnotations {
             build_script_data_glob: joined_extra_member!(self.build_script_data_glob, rhs.build_script_data_glob, BTreeSet::new, BTreeSet::extend),
             build_script_env: joined_extra_member!(self.build_script_env, rhs.build_script_env, BTreeMap::new, BTreeMap::extend),
             build_script_rustc_env: joined_extra_member!(self.build_script_rustc_env, rhs.build_script_rustc_env, BTreeMap::new, BTreeMap::extend),
+            build_script_toolchains: joined_extra_member!(self.build_script_toolchains, rhs.build_script_toolchains, BTreeSet::new, BTreeSet::extend),
             additive_build_file_content: joined_extra_member!(self.additive_build_file_content, rhs.additive_build_file_content, String::new, concat_string),
             shallow_since,
             patch_args: joined_extra_member!(self.patch_args, rhs.patch_args, Vec::new, Vec::extend),
@@ -491,5 +499,36 @@ mod test {
 
         id.version = "<1".to_owned();
         assert!(!id.matches(&package));
+    }
+
+    #[test]
+    fn deserialize_config() {
+        let runfiles = runfiles::Runfiles::create().unwrap();
+        let path = runfiles
+            .rlocation("rules_rust/crate_universe/test_data/serialized_configs/config.json");
+
+        let content = std::fs::read_to_string(path).unwrap();
+
+        let config: Config = serde_json::from_str(&content).unwrap();
+
+        // Annotations
+        let annotation = config
+            .annotations
+            .get(&CrateId::new("rand".to_owned(), "0.8.5".to_owned()))
+            .unwrap();
+        assert_eq!(
+            annotation.crate_features,
+            Some(BTreeSet::from(["small_rng".to_owned()]))
+        );
+
+        // Global settings
+        assert!(config.cargo_config.is_none());
+        assert!(!config.generate_build_scripts);
+
+        // Render Config
+        assert_eq!(
+            config.rendering.platforms_template,
+            "//custom/platform:{triple}"
+        );
     }
 }

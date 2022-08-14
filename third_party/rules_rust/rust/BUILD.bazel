@@ -10,7 +10,14 @@ exports_files([
 ])
 
 toolchain_type(
+    name = "toolchain_type",
+)
+
+alias(
     name = "toolchain",
+    actual = "toolchain_type",
+    deprecation = "instead use `@rules_rust//rust:toolchain_type`",
+    tags = ["manual"],
 )
 
 bzl_library(
@@ -21,10 +28,4 @@ bzl_library(
         "//rust/private:bzl_lib",
         "//rust/settings:bzl_lib",
     ],
-)
-
-alias(
-    name = "rules",
-    actual = ":bzl_lib",
-    deprecation = "Please use the `@rules_rust//rust:bzl_lib` target instead",
 )

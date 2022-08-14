@@ -14,8 +14,6 @@
 
 """Toolchain for compiling rust stubs from protobuf and gRPC."""
 
-load("//rust:defs.bzl", "rust_common")
-
 # buildifier: disable=bzl-visibility
 load("//rust/private:utils.bzl", "name_to_crate_name")
 
@@ -131,14 +129,14 @@ def _rust_proto_toolchain_impl(ctx):
 
 # Default dependencies needed to compile protobuf stubs.
 PROTO_COMPILE_DEPS = [
-    Label("//proto/raze:protobuf"),
+    Label("//proto/3rdparty/crates:protobuf"),
 ]
 
 # Default dependencies needed to compile gRPC stubs.
 GRPC_COMPILE_DEPS = PROTO_COMPILE_DEPS + [
-    Label("//proto/raze:grpc"),
-    Label("//proto/raze:tls_api"),
-    Label("//proto/raze:tls_api_stub"),
+    Label("//proto/3rdparty/crates:grpc"),
+    Label("//proto/3rdparty/crates:tls-api"),
+    Label("//proto/3rdparty/crates:tls-api-stub"),
 ]
 
 rust_proto_toolchain = rule(
@@ -146,7 +144,6 @@ rust_proto_toolchain = rule(
     attrs = {
         "edition": attr.string(
             doc = "The edition used by the generated rust source.",
-            default = rust_common.default_edition,
         ),
         "grpc_compile_deps": attr.label_list(
             doc = "The crates the generated grpc libraries depends on.",
