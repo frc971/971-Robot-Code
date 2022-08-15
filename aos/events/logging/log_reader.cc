@@ -1226,7 +1226,7 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
           next_time + std::chrono::duration_cast<std::chrono::nanoseconds>(
                           std::chrono::duration<double>(
                               FLAGS_threaded_look_ahead_seconds)));
-      state->SetClockOffset();
+      state->MaybeSetClockOffset();
       state->Setup(next_time.time);
       state->SetupStartupTimer();
     });
@@ -2235,7 +2235,7 @@ void LogReader::State::NotifyFlagEnd() {
   }
 }
 
-void LogReader::State::SetClockOffset() {
+void LogReader::State::MaybeSetClockOffset() {
   if (node_event_loop_factory_ == nullptr) {
     // If not running with simulated event loop, set the monotonic clock
     // offset.

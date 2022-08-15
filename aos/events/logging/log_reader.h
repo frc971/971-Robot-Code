@@ -3,11 +3,12 @@
 
 #include <chrono>
 #include <deque>
-#include <string_view>
 #include <queue>
+#include <string_view>
 #include <tuple>
 #include <vector>
 
+#include "aos/condition.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
@@ -15,15 +16,14 @@
 #include "aos/events/logging/replay_timing_generated.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/events/simulated_event_loop.h"
+#include "aos/mutex/mutex.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/multinode_timestamp_filter.h"
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
-#include "aos/uuid.h"
 #include "aos/util/threaded_queue.h"
-#include "aos/mutex/mutex.h"
-#include "aos/condition.h"
+#include "aos/uuid.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos {
@@ -540,7 +540,7 @@ class LogReader {
     // Sends a buffer on the provided channel index.
     bool Send(const TimestampedMessage &timestamped_message);
 
-    void SetClockOffset();
+    void MaybeSetClockOffset();
     std::chrono::nanoseconds clock_offset() const { return clock_offset_; }
 
     // Returns a debug string for the channel merger.
@@ -584,9 +584,8 @@ class LogReader {
     void QueueThreadUntil(BootTimestamp time);
 
    private:
-    void TrackMessageSendTiming(
-        const RawSender &sender,
-        monotonic_clock::time_point expected_send_time);
+    void TrackMessageSendTiming(const RawSender &sender,
+                                monotonic_clock::time_point expected_send_time);
     void SendMessageTimings();
     // Log file.
     std::unique_ptr<TimestampMapper> timestamp_mapper_;
