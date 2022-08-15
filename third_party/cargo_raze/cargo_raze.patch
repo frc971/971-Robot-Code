@@ -193,6 +193,14 @@
      ],
      edition = "2015",
      links = "ssh2",
+@@ -67,6 +67,7 @@ cargo_build_script(
+         "@cargo_raze__cc__1_0_67//:cc",
+         "@cargo_raze__libz_sys__1_1_2//:libz_sys",
+         "@cargo_raze__pkg_config__0_3_19//:pkg_config",
++        "@cargo_raze__zlib//:dep_z_include",
+     ] + selects.with_or({
+         # cfg(target_env = "msvc")
+         (
 
 --- impl/src/util.rs	2022-02-06 17:53:29.535707368 -0800
 +++ impl/src/util.rs	2022-02-06 17:55:22.513000536 -0800
