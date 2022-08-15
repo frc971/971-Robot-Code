@@ -39,4 +39,25 @@ void InitGoogle(int *argc, char ***argv) {
   initialized = true;
 }
 
+void InitFromRust(const char *argv0) {
+  CHECK(!IsInitialized()) << "Only initialize once.";
+
+  FLAGS_logtostderr = true;
+
+  google::InitGoogleLogging(argv0);
+
+  // TODO(Brian): Provide a way for Rust to configure C++ flags.
+  char fake_argv0_val[] = "rust";
+  char *fake_argv0 = fake_argv0_val;
+  char **fake_argv = &fake_argv0;
+  int fake_argc = 1;
+  gflags::ParseCommandLineFlags(&fake_argc, &fake_argv, true);
+
+  // TODO(Brian): Where should Rust binaries be configured to write coredumps?
+
+  // TODO(Brian): Figure out what to do with allocator hooks for C++ and Rust.
+
+  initialized = true;
+}
+
 }  // namespace aos

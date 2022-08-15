@@ -178,6 +178,18 @@ cc_library(
     ],
 )
 
+autocxx_library(
+    name = "init_rs",
+    srcs = ["init.rs"],
+    crate_name = "aos_init",
+    libs = [
+        ":init",
+    ],
+    override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "realtime",
     srcs = [
