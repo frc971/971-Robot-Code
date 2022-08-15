@@ -156,6 +156,23 @@ class SimulatedWatcher : public WatcherState, public EventScheduler::Event {
   SimulatedChannel *simulated_channel_ = nullptr;
 };
 
+class SimulatedFactoryExitHandle : public ExitHandle {
+ public:
+  SimulatedFactoryExitHandle(SimulatedEventLoopFactory *factory)
+      : factory_(factory) {
+    ++factory_->exit_handle_count_;
+  }
+  ~SimulatedFactoryExitHandle() override {
+    CHECK_GT(factory_->exit_handle_count_, 0);
+    --factory_->exit_handle_count_;
+  }
+
+  void Exit() override { factory_->Exit(); }
+
+ private:
+  SimulatedEventLoopFactory *const factory_;
+};
+
 class SimulatedChannel {
  public:
   explicit SimulatedChannel(const Channel *channel,
@@ -1273,7 +1290,10 @@ SimulatedEventLoopFactory::SimulatedEventLoopFactory(
   }
 }
 
-SimulatedEventLoopFactory::~SimulatedEventLoopFactory() {}
+SimulatedEventLoopFactory::~SimulatedEventLoopFactory() {
+  CHECK_EQ(0, exit_handle_count_)
+      << ": All ExitHandles must be destroyed before the factory";
+}
 
 NodeEventLoopFactory *SimulatedEventLoopFactory::GetNodeEventLoopFactory(
     std::string_view node) {
@@ -1454,6 +1474,10 @@ void SimulatedEventLoopFactory::Run() {
 }
 
 void SimulatedEventLoopFactory::Exit() { scheduler_scheduler_.Exit(); }
+
+std::unique_ptr<ExitHandle> SimulatedEventLoopFactory::MakeExitHandle() {
+  return std::make_unique<SimulatedFactoryExitHandle>(this);
+}
 
 void SimulatedEventLoopFactory::DisableForwarding(const Channel *channel) {
   CHECK(bridge_) << ": Can't disable forwarding without a message bridge.";

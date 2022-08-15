@@ -22,6 +22,7 @@ class ShmPhasedLoopHandler;
 class ShmSender;
 class SimpleShmFetcher;
 class ShmFetcher;
+class ShmExitHandle;
 
 }  // namespace shm_event_loop_internal
 
@@ -47,6 +48,8 @@ class ShmEventLoop : public EventLoop {
   void Run();
   // Exits the event loop.  Async safe.
   void Exit();
+
+  std::unique_ptr<ExitHandle> MakeExitHandle();
 
   aos::monotonic_clock::time_point monotonic_now() const override {
     return aos::monotonic_clock::now();
@@ -138,6 +141,7 @@ class ShmEventLoop : public EventLoop {
   friend class shm_event_loop_internal::ShmSender;
   friend class shm_event_loop_internal::SimpleShmFetcher;
   friend class shm_event_loop_internal::ShmFetcher;
+  friend class shm_event_loop_internal::ShmExitHandle;
 
   using EventLoop::SendTimingReport;
 
@@ -164,6 +168,8 @@ class ShmEventLoop : public EventLoop {
       const aos::RawFetcher *fetcher) const;
 
   const UUID boot_uuid_;
+
+  int exit_handle_count_ = 0;
 
   // Capture the --shm_base flag at construction time.  This makes it much
   // easier to make different shared memory regions for doing things like

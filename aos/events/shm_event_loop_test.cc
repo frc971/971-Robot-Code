@@ -425,6 +425,14 @@ TEST_P(ShmEventLoopDeathTest, NextMessageNotAvailableNoRunNoTimingReports) {
   TestNextMessageNotAvailableNoRun(true);
 }
 
+// Test that an ExitHandle outliving its EventLoop is caught.
+TEST_P(ShmEventLoopDeathTest, ExitHandleOutlivesEventLoop) {
+  auto loop1 = factory()->MakePrimary("loop1");
+  auto exit_handle = static_cast<ShmEventLoop *>(loop1.get())->MakeExitHandle();
+  EXPECT_DEATH(loop1.reset(),
+               "All ExitHandles must be destroyed before the ShmEventLoop");
+}
+
 // TODO(austin): Test that missing a deadline with a timer recovers as expected.
 
 INSTANTIATE_TEST_SUITE_P(ShmEventLoopCopyTest, ShmEventLoopTest,
