@@ -109,47 +109,50 @@ class EventScheduler {
   // Returns an iterator to the event
   Token Schedule(monotonic_clock::time_point time, Event *callback);
 
-  // Schedules a callback when the event scheduler starts.
+  // Schedules a callback whenever the event scheduler starts, after we have
+  // entered the running state. Callbacks are cleared after being called once.
+  // Will not get called until a node starts (a node does not start until its
+  // monotonic clock has reached at least monotonic_clock::epoch()).
   void ScheduleOnRun(std::function<void()> callback) {
     on_run_.emplace_back(std::move(callback));
   }
 
-  // Schedules a callback when the event scheduler starts.
+  // Schedules a callback whenever the event scheduler starts, before we have
+  // entered the running state. Callbacks are cleared after being called once.
+  // Will not get called until a node starts (a node does not start until its
+  // monotonic clock has reached at least monotonic_clock::epoch()).
   void ScheduleOnStartup(std::function<void()> callback) {
     on_startup_.emplace_back(std::move(callback));
   }
 
+  // Schedules a callback for whenever a node reboots, after we have exited the
+  // running state. Does not get called when the event scheduler stops (unless
+  // it is stopping to execute the reboot).
   void set_on_shutdown(std::function<void()> callback) {
     on_shutdown_ = std::move(callback);
   }
 
+  // Identical to ScheduleOnStartup, except that only one callback may get set
+  // and it will not be cleared after being called.
   void set_started(std::function<void()> callback) {
     started_ = std::move(callback);
   }
 
+  // Schedules a callback for whenever the scheduler exits the running state
+  // (running will be false during the callback). This includes both node
+  // reboots and the end of regular execution. Will not be called if the node
+  // never started.
   void set_stopped(std::function<void()> callback) {
     stopped_ = std::move(callback);
   }
-
-  std::function<void()> started_;
-  std::function<void()> stopped_;
-  std::function<void()> on_shutdown_;
 
   Token InvalidToken() { return events_list_.end(); }
 
   // Deschedule an event by its iterator
   void Deschedule(Token token);
 
-  // Runs the OnRun callbacks.
-  void RunOnRun();
-
-  // Runs the OnStartup callbacks.
-  void RunOnStartup() noexcept;
-
   // Runs the Started callback.
-  void RunStarted();
-  // Runs the Started callback.
-  void RunStopped();
+  void MaybeRunStopped();
 
   // Returns true if events are being handled.
   inline bool is_running() const;
@@ -186,12 +189,24 @@ class EventScheduler {
 
   size_t node_index() const { return node_index_; }
 
+ private:
+  friend class EventSchedulerScheduler;
+
+  // Runs the OnRun callbacks.
+  void RunOnRun();
+
+  // Runs the OnStartup callbacks.
+  void RunOnStartup() noexcept;
+
+  // Runs the Started callback.
+  void RunStarted();
+
   // For implementing reboots.
   void Shutdown();
   void Startup();
 
- private:
-  friend class EventSchedulerScheduler;
+  void MaybeRunOnStartup();
+  void MaybeRunOnRun();
 
   // Current execution time.
   monotonic_clock::time_point monotonic_now_ = monotonic_clock::epoch();
@@ -213,6 +228,15 @@ class EventScheduler {
   // same time converter be used for all the nodes, and the node index
   // distinguish which one.
   size_t node_index_ = 0;
+
+  // Whether this individual scheduler is currently running.
+  bool is_running_ = false;
+  // Whether we have called all the startup handlers during this boot.
+  bool called_started_ = false;
+
+  std::function<void()> started_;
+  std::function<void()> stopped_;
+  std::function<void()> on_shutdown_;
 
   // Converts time by doing nothing to it.
   class UnityConverter final : public TimeConverter {
@@ -271,8 +295,6 @@ class EventSchedulerScheduler {
   // Stops running.
   void Exit() { is_running_ = false; }
 
-  bool is_running() const { return is_running_; }
-
   // Runs for a duration on the distributed clock.  Time on the distributed
   // clock should be very representative of time on each node, but won't be
   // exactly the same.
@@ -285,25 +307,15 @@ class EventSchedulerScheduler {
   void SetReplayRate(double replay_rate) { replay_rate_ = replay_rate; }
   internal::EPoll *epoll() { return &epoll_; }
 
+  // Run until time.  fn_realtime_offset is a function that returns the
+  // realtime offset.
+  // Returns true if it ran until time (i.e., Exit() was not called before
+  // end_time).
+  bool RunUntil(realtime_clock::time_point end_time, EventScheduler *scheduler,
+                std::function<std::chrono::nanoseconds()> fn_realtime_offset);
+
   // Returns the current distributed time.
   distributed_clock::time_point distributed_now() const { return now_; }
-
-  void RunOnStartup() {
-    CHECK(!is_running_);
-    for (EventScheduler *scheduler : schedulers_) {
-      scheduler->RunOnStartup();
-    }
-    for (EventScheduler *scheduler : schedulers_) {
-      scheduler->RunStarted();
-    }
-  }
-
-  void RunStopped() {
-    CHECK(!is_running_);
-    for (EventScheduler *scheduler : schedulers_) {
-      scheduler->RunStopped();
-    }
-  }
 
   void SetTimeConverter(TimeConverter *time_converter) {
     time_converter->set_reboot_found(
@@ -322,16 +334,10 @@ class EventSchedulerScheduler {
   void TemporarilyStopAndRun(std::function<void()> fn);
 
  private:
-  // Handles running the OnRun functions.
-  void RunOnRun() {
-    CHECK(!is_running_);
-    is_running_ = true;
-    for (EventScheduler *scheduler : schedulers_) {
-      scheduler->RunOnRun();
-    }
-  }
-
   void Reboot();
+
+  void MaybeRunStopped();
+  void MaybeRunOnStartup();
 
   // Returns the next event time and scheduler on which to run it.
   std::tuple<distributed_clock::time_point, EventScheduler *> OldestEvent();
@@ -370,9 +376,7 @@ inline monotonic_clock::time_point EventScheduler::monotonic_now() const {
   return t.time;
 }
 
-inline bool EventScheduler::is_running() const {
-  return scheduler_scheduler_->is_running();
-}
+inline bool EventScheduler::is_running() const { return is_running_; }
 
 }  // namespace aos
 

@@ -753,8 +753,7 @@ TEST_P(AbstractEventLoopDeathTest, InvalidChannelName) {
 }
 
 // Verify that setting up a timer before monotonic_clock::epoch() fails.
-// TODO(james): Re-enable when LogReader handles startup correctly.
-TEST_P(AbstractEventLoopDeathTest, DISABLED_NegativeTimeTimer) {
+TEST_P(AbstractEventLoopDeathTest, NegativeTimeTimer) {
   auto loop = Make();
   TimerHandler *time = loop->AddTimer([]() {});
   EXPECT_DEATH(time->Setup(monotonic_clock::epoch() - std::chrono::seconds(1)),

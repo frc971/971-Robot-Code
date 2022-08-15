@@ -4533,6 +4533,73 @@ TEST_P(MultinodeLoggerTest, OneDirectionTimeDrift) {
   ConfirmReadable(filenames);
 }
 
+// Tests that we can replay a logfile that has timestamps such that at least one
+// node's epoch is at a positive distributed_clock (and thus will have to be
+// booted after the other node(s)).
+TEST_P(MultinodeLoggerTest, StartOneNodeBeforeOther) {
+  std::vector<std::string> filenames;
+
+  CHECK_EQ(pi1_index_, 0u);
+  CHECK_EQ(pi2_index_, 1u);
+
+  time_converter_.AddNextTimestamp(
+      distributed_clock::epoch(),
+      {BootTimestamp::epoch(), BootTimestamp::epoch()});
+
+  const chrono::nanoseconds before_reboot_duration = chrono::milliseconds(1000);
+  time_converter_.RebootAt(
+      0, distributed_clock::time_point(before_reboot_duration));
+
+  const chrono::nanoseconds test_duration = time_converter_.AddMonotonic(
+      {chrono::milliseconds(10000), chrono::milliseconds(10000)});
+
+  const std::string kLogfile =
+      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+  util::UnlinkRecursive(kLogfile);
+
+  pi2_->Disconnect(pi1_->node());
+  pi1_->Disconnect(pi2_->node());
+
+  {
+    LoggerState pi2_logger = MakeLogger(pi2_);
+
+    pi2_logger.StartLogger(kLogfile);
+    event_loop_factory_.RunFor(before_reboot_duration);
+
+    pi2_->Connect(pi1_->node());
+    pi1_->Connect(pi2_->node());
+
+    event_loop_factory_.RunFor(test_duration);
+
+    pi2_logger.AppendAllFilenames(&filenames);
+  }
+
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  ConfirmReadable(filenames);
+
+  {
+    LogReader reader(sorted_parts);
+    SimulatedEventLoopFactory replay_factory(reader.configuration());
+    reader.RegisterWithoutStarting(&replay_factory);
+
+    NodeEventLoopFactory *const replay_node =
+        reader.event_loop_factory()->GetNodeEventLoopFactory("pi1");
+
+    std::unique_ptr<EventLoop> test_event_loop =
+        replay_node->MakeEventLoop("test_reader");
+    replay_node->OnStartup([replay_node]() {
+      // Check that we didn't boot until at least t=0.
+      CHECK_LE(monotonic_clock::epoch(), replay_node->monotonic_now());
+    });
+    test_event_loop->OnRun([&test_event_loop]() {
+      // Check that we didn't boot until at least t=0.
+      EXPECT_LE(monotonic_clock::epoch(), test_event_loop->monotonic_now());
+    });
+    reader.event_loop_factory()->Run();
+    reader.Deregister();
+  }
+}
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos
