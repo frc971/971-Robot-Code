@@ -695,6 +695,30 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "uuid_for_rust",
+    hdrs = ["uuid_for_rust.h"],
+    deps = [
+        ":uuid",
+    ],
+)
+
+autocxx_library(
+    name = "uuid_rs",
+    srcs = ["uuid.rs"],
+    crate_name = "aos_uuid",
+    libs = [
+        ":uuid",
+        ":uuid_for_rust",
+    ],
+    override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
+    rs_deps = [
+        "//third_party/cargo:uuid",
+    ],
+    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    visibility = ["//visibility:public"],
+)
+
 cc_binary(
     name = "aos_graph_channels",
     srcs = [
