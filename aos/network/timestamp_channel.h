@@ -59,6 +59,8 @@ class ChannelTimestampSender {
 
   aos::Sender<RemoteMessage> *SenderForChannel(const Channel *channel,
                                                const Connection *connection);
+  void ClearSenderForChannel(const Channel *channel,
+                             const Connection *connection);
 
  private:
   aos::EventLoop *event_loop_;

@@ -385,3 +385,24 @@ py_library(
     visibility = ["//visibility:public"],
     deps = ["//aos:python_init"],
 )
+
+cc_library(
+    name = "threaded_queue",
+    hdrs = [
+        "threaded_queue.h",
+        "threaded_queue_tmpl.h",
+    ],
+    deps = [
+        "//aos:condition",
+        "//aos/mutex",
+    ],
+)
+
+cc_test(
+    name = "threaded_queue_test",
+    srcs = ["threaded_queue_test.cc"],
+    deps = [
+        ":threaded_queue",
+        "//aos/testing:googletest",
+    ],
+)

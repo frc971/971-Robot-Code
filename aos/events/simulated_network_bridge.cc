@@ -32,6 +32,10 @@ class RawMessageDelayer {
   bool forwarding_disabled() const { return forwarding_disabled_; }
   void set_forwarding_disabled(bool forwarding_disabled) {
     forwarding_disabled_ = forwarding_disabled;
+    if (!forwarding_disabled_) {
+      CHECK(timestamp_logger_ == nullptr);
+      CHECK(sender_ == nullptr);
+    }
   }
 
   void SetFetchEventLoop(aos::EventLoop *fetch_event_loop,
@@ -50,7 +54,8 @@ class RawMessageDelayer {
       server_connection_ =
           server_status_->FindServerConnection(send_node_factory_->node());
     }
-    if (delivery_time_is_logged_ && timestamp_loggers != nullptr) {
+    if (delivery_time_is_logged_ && timestamp_loggers != nullptr &&
+        !forwarding_disabled_) {
       timestamp_logger_ =
           timestamp_loggers->SenderForChannel(channel_, connection_);
     } else {
@@ -79,7 +84,7 @@ class RawMessageDelayer {
                         MessageBridgeClientStatus *client_status) {
     sent_ = false;
     send_event_loop_ = send_event_loop;
-    if (send_event_loop_) {
+    if (send_event_loop_ && !forwarding_disabled_) {
       sender_ = send_event_loop_->MakeRawSender(channel_);
     } else {
       sender_ = nullptr;
@@ -561,16 +566,17 @@ void SimulatedMessageBridge::SetState(const Node *source,
   destination_state->second.SetClientState(source, state);
 }
 
-void SimulatedMessageBridge::DisableStatistics() {
+void SimulatedMessageBridge::DisableStatistics(DestroySenders destroy_senders) {
   for (std::pair<const Node *const, State> &state : event_loop_map_) {
-    state.second.DisableStatistics();
+    state.second.DisableStatistics(destroy_senders);
   }
 }
 
-void SimulatedMessageBridge::DisableStatistics(const Node *node) {
+void SimulatedMessageBridge::DisableStatistics(const Node *node,
+                                               DestroySenders destroy_senders) {
   auto it = event_loop_map_.find(node);
   CHECK(it != event_loop_map_.end());
-  it->second.DisableStatistics();
+  it->second.DisableStatistics(destroy_senders);
 }
 
 void SimulatedMessageBridge::EnableStatistics() {
@@ -625,7 +631,7 @@ void SimulatedMessageBridge::State::SetEventLoop(
   timestamp_loggers = ChannelTimestampSender(event_loop.get());
   server_status = std::make_unique<MessageBridgeServerStatus>(event_loop.get());
   if (disable_statistics_) {
-    server_status->DisableStatistics();
+    server_status->DisableStatistics(destroy_senders_ == DestroySenders::kYes);
   }
 
   {
@@ -659,7 +665,7 @@ void SimulatedMessageBridge::State::SetEventLoop(
   }
   client_status = std::make_unique<MessageBridgeClientStatus>(event_loop.get());
   if (disable_statistics_) {
-    client_status->DisableStatistics();
+    client_status->DisableStatistics(destroy_senders_ == DestroySenders::kYes);
   }
 
   for (size_t i = 0;
@@ -701,8 +707,16 @@ void SimulatedMessageBridge::State::SetEventLoop(
             configuration::ConnectionDeliveryTimeIsLoggedOnNode(
                 connection, event_loop->node());
 
+        const RawMessageDelayer *delayer = nullptr;
+        for (const RawMessageDelayer *candidate : source_delayers_) {
+          if (candidate->channel() == channel) {
+            delayer = candidate;
+          }
+        }
+
         // And the timestamps are then logged back by us again.
-        if (!delivery_time_is_logged) {
+        if (!delivery_time_is_logged ||
+            CHECK_NOTNULL(delayer)->forwarding_disabled()) {
           continue;
         }
 

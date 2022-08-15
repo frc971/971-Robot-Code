@@ -219,12 +219,16 @@ void MessageBridgeClientStatus::SampleFilter(
   filter->Sample(monotonic_delivered_time, offset);
 }
 
-void MessageBridgeClientStatus::DisableStatistics() {
+void MessageBridgeClientStatus::DisableStatistics(bool destroy_sender) {
   statistics_timer_->Disable();
   send_ = false;
+  if (destroy_sender) {
+    sender_ = aos::Sender<ClientStatistics>();
+  }
 }
 
 void MessageBridgeClientStatus::EnableStatistics() {
+  CHECK(sender_.valid());
   send_ = true;
   statistics_timer_->Setup(event_loop_->monotonic_now() + kStatisticsPeriod,
                            kStatisticsPeriod);

@@ -411,13 +411,19 @@ void MessageBridgeServerStatus::Tick() {
   }
 }
 
-void MessageBridgeServerStatus::DisableStatistics() {
+void MessageBridgeServerStatus::DisableStatistics(bool destroy_senders) {
   send_ = false;
   statistics_timer_->Disable();
+  if (destroy_senders) {
+    sender_ = aos::Sender<ServerStatistics>();
+    timestamp_sender_ = aos::Sender<Timestamp>();
+  }
 }
 
 void MessageBridgeServerStatus::EnableStatistics() {
   send_ = true;
+  CHECK(sender_.valid());
+  CHECK(timestamp_sender_.valid());
   statistics_timer_->Setup(event_loop_->monotonic_now() + kPingPeriod,
                            kPingPeriod);
 }

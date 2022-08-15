@@ -4,6 +4,7 @@
 #include <chrono>
 #include <deque>
 #include <string_view>
+#include <queue>
 #include <tuple>
 #include <vector>
 
@@ -11,6 +12,8 @@
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
+#include "aos/events/logging/replay_timing_generated.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/multinode_timestamp_filter.h"
@@ -18,6 +21,9 @@
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
 #include "aos/uuid.h"
+#include "aos/util/threaded_queue.h"
+#include "aos/mutex/mutex.h"
+#include "aos/condition.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos {
@@ -92,9 +98,18 @@ class LogReader {
   // Creates an SimulatedEventLoopFactory accessible via event_loop_factory(),
   // and then calls Register.
   void Register();
+
   // Registers callbacks for all the events after the log file starts.  This is
   // only useful when replaying live.
   void Register(EventLoop *event_loop);
+
+  // Sets a sender that should be used for tracking timing statistics. If not
+  // set, no statistics will be recorded.
+  void set_timing_accuracy_sender(
+      const Node *node, aos::Sender<timing::ReplayTiming> timing_sender) {
+    states_[configuration::GetNodeIndex(configuration(), node)]
+        ->set_timing_accuracy_sender(std::move(timing_sender));
+  }
 
   // Called whenever a log file starts for a node.
   void OnStart(std::function<void()> fn);
@@ -216,6 +231,13 @@ class LogReader {
     exit_on_finish_ = exit_on_finish;
   }
 
+  // Sets the realtime replay rate. A value of 1.0 will cause the scheduler to
+  // try to play events in realtime. 0.5 will run at half speed. Use infinity
+  // (the default) to run as fast as possible. This can be changed during
+  // run-time.
+  // Only applies when running against a SimulatedEventLoopFactory.
+  void SetRealtimeReplayRate(double replay_rate);
+
  private:
   void Register(EventLoop *event_loop, const Node *node);
 
@@ -285,7 +307,13 @@ class LogReader {
   // State per node.
   class State {
    public:
-    State(std::unique_ptr<TimestampMapper> timestamp_mapper, const Node *node);
+    // Whether we should spin up a separate thread for buffering up messages.
+    // Only allowed in realtime replay--see comments on threading_ member for
+    // details.
+    enum class ThreadedBuffering { kYes, kNo };
+    State(std::unique_ptr<TimestampMapper> timestamp_mapper,
+          message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters,
+          const Node *node, ThreadedBuffering threading);
 
     // Connects up the timestamp mappers.
     void AddPeer(State *peer);
@@ -297,12 +325,25 @@ class LogReader {
     TimestampedMessage PopOldest();
 
     // Returns the monotonic time of the oldest message.
-    BootTimestamp OldestMessageTime();
+    BootTimestamp SingleThreadedOldestMessageTime();
+    // Returns the monotonic time of the oldest message, handling querying the
+    // separate thread of ThreadedBuffering was set.
+    BootTimestamp MultiThreadedOldestMessageTime();
 
     size_t boot_count() const {
       // If we are replaying directly into an event loop, we can't reboot.  So
       // we will stay stuck on the 0th boot.
-      if (!node_event_loop_factory_) return 0u;
+      if (!node_event_loop_factory_) {
+        if (event_loop_ == nullptr) {
+          // If boot_count is being checked after startup for any of the
+          // non-primary nodes, then returning 0 may not be accurate (since
+          // remote nodes *can* reboot even if the EventLoop being played to
+          // can't).
+          CHECK(!started_);
+          CHECK(!stopped_);
+        }
+        return 0u;
+      }
       return node_event_loop_factory_->boot_count();
     }
 
@@ -319,8 +360,10 @@ class LogReader {
         NotifyLogfileStart();
         return;
       }
-      CHECK_GE(start_time, event_loop_->monotonic_now());
-      startup_timer_->Setup(start_time);
+      if (node_event_loop_factory_) {
+        CHECK_GE(start_time + clock_offset(), event_loop_->monotonic_now());
+      }
+      startup_timer_->Setup(start_time + clock_offset());
     }
 
     void set_startup_timer(TimerHandler *timer_handler) {
@@ -382,6 +425,7 @@ class LogReader {
     // distributed clock.
     distributed_clock::time_point ToDistributedClock(
         monotonic_clock::time_point time) {
+      CHECK(node_event_loop_factory_);
       return node_event_loop_factory_->ToDistributedClock(time);
     }
 
@@ -409,12 +453,14 @@ class LogReader {
       // ensure we are remapping channels correctly.
       event_loop_unique_ptr_ = node_event_loop_factory_->MakeEventLoop(
           "log_reader", {NodeEventLoopFactory::CheckSentTooFast::kNo,
-                         NodeEventLoopFactory::ExclusiveSenders::kNo});
+                         NodeEventLoopFactory::ExclusiveSenders::kYes,
+                         NonExclusiveChannels()});
       return event_loop_unique_ptr_.get();
     }
 
     distributed_clock::time_point RemoteToDistributedClock(
         size_t channel_index, monotonic_clock::time_point time) {
+      CHECK(node_event_loop_factory_);
       return channel_source_state_[channel_index]
           ->node_event_loop_factory_->ToDistributedClock(time);
     }
@@ -425,7 +471,7 @@ class LogReader {
     }
 
     monotonic_clock::time_point monotonic_now() const {
-      return node_event_loop_factory_->monotonic_now();
+      return event_loop_->monotonic_now();
     }
 
     // Sets the number of channels.
@@ -487,11 +533,15 @@ class LogReader {
 
     // Sets the next wakeup time on the replay callback.
     void Setup(monotonic_clock::time_point next_time) {
-      timer_handler_->Setup(next_time);
+      timer_handler_->Setup(
+          std::max(monotonic_now(), next_time + clock_offset()));
     }
 
     // Sends a buffer on the provided channel index.
     bool Send(const TimestampedMessage &timestamped_message);
+
+    void SetClockOffset();
+    std::chrono::nanoseconds clock_offset() const { return clock_offset_; }
 
     // Returns a debug string for the channel merger.
     std::string DebugString() const {
@@ -522,7 +572,22 @@ class LogReader {
       return last_message_[channel_index];
     }
 
+    void set_timing_accuracy_sender(
+        aos::Sender<timing::ReplayTiming> timing_sender) {
+      timing_statistics_sender_ = std::move(timing_sender);
+      OnEnd([this]() { SendMessageTimings(); });
+    }
+
+    // If running with ThreadedBuffering::kYes, will start the processing thread
+    // and queue up messages until the specified time. No-op of
+    // ThreadedBuffering::kNo is set. Should only be called once.
+    void QueueThreadUntil(BootTimestamp time);
+
    private:
+    void TrackMessageSendTiming(
+        const RawSender &sender,
+        monotonic_clock::time_point expected_send_time);
+    void SendMessageTimings();
     // Log file.
     std::unique_ptr<TimestampMapper> timestamp_mapper_;
 
@@ -556,6 +621,12 @@ class LogReader {
       uint32_t actual_queue_index = 0xffffffff;
     };
 
+    // Returns a list of channels which LogReader will send on but which may
+    // *also* get sent on by other applications in replay.
+    std::vector<
+        std::pair<const aos::Channel *, NodeEventLoopFactory::ExclusiveSenders>>
+    NonExclusiveChannels();
+
     // Stores all the timestamps that have been sent on this channel.  This is
     // only done for channels which are forwarded and on the node which
     // initially sends the message.  Compress using ranges and offsets.
@@ -582,6 +653,7 @@ class LogReader {
     // going between 2 nodes.  The second element in the tuple indicates if this
     // is the primary direction or not.
     std::vector<message_bridge::NoncausalOffsetEstimator *> filters_;
+    message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters_;
 
     // List of NodeEventLoopFactorys (or nullptr if it isn't a forwarded
     // channel) which correspond to the originating node.
@@ -598,14 +670,46 @@ class LogReader {
     absl::btree_map<const Channel *, std::shared_ptr<RemoteMessageSender>>
         timestamp_loggers_;
 
+    // Time offset between the log's monotonic clock and the current event
+    // loop's monotonic clock.  Useful when replaying logs with non-simulated
+    // event loops.
+    std::chrono::nanoseconds clock_offset_{0};
+
     std::vector<std::function<void()>> on_starts_;
     std::vector<std::function<void()>> on_ends_;
 
-    bool stopped_ = false;
-    bool started_ = false;
+    std::atomic<bool> stopped_ = false;
+    std::atomic<bool> started_ = false;
 
     bool found_last_message_ = false;
     std::vector<bool> last_message_;
+
+    std::vector<timing::MessageTimingT> send_timings_;
+    aos::Sender<timing::ReplayTiming> timing_statistics_sender_;
+
+    // Protects access to any internal state after Run() is called. Designed
+    // assuming that only one node is actually executing in replay.
+    // Threading design:
+    // * The worker passed to message_queuer_ has full ownership over all
+    //   the log-reading code, timestamp filters, last_queued_message_, etc.
+    // * The main thread should only have exclusive access to the replay
+    //   event loop and associated features (mainly senders).
+    //   It will pop an item out of the queue (which does maintain a shared_ptr
+    //   reference which may also be being used by the message_queuer_ thread,
+    //   but having shared_ptr's accessing the same memory from
+    //   separate threads is permissible).
+    // Enabling this in simulation is currently infeasible due to a lack of
+    // synchronization in the MultiNodeNoncausalOffsetEstimator. Essentially,
+    // when the message_queuer_ thread attempts to read/pop messages from the
+    // timestamp_mapper_, it will end up calling callbacks that update the
+    // internal state of the MultiNodeNoncausalOffsetEstimator. Simultaneously,
+    // the event scheduler that is running in the main thread to orchestrate the
+    // simulation will be querying the estimator to know what the clocks on the
+    // various nodes are at, leading to potential issues.
+    ThreadedBuffering threading_;
+    std::optional<BootTimestamp> last_queued_message_;
+    std::optional<util::ThreadedQueue<TimestampedMessage, BootTimestamp>>
+        message_queuer_;
   };
 
   // Node index -> State.

@@ -77,6 +77,8 @@ class WebProxy {
            int per_channel_buffer_size_bytes);
   WebProxy(aos::ShmEventLoop *event_loop, StoreHistory store_history,
            int per_channel_buffer_size_bytes);
+  WebProxy(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
+           StoreHistory store_history, int per_channel_buffer_size_bytes);
   ~WebProxy();
 
   void SetDataPath(const char *path) { server_.setStaticPath(path); }
@@ -85,9 +87,6 @@ class WebProxy {
   void StopRecording();
 
  private:
-  WebProxy(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
-           StoreHistory store_history, int per_channel_buffer_size_bytes);
-
   aos::internal::EPoll internal_epoll_;
   aos::internal::EPoll *const epoll_;
   ::seasocks::Server server_;
