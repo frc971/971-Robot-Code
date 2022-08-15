@@ -341,6 +341,21 @@ pub type SizePrefixedFlatbuffer<T, Storage> = MaybePrefixedFlatbuffer<T, Storage
 /// storing references to the flatbuffer anywhere it's a strict increase in flexibility.
 pub type DynFlatbuffer<'buf, T> = Box<dyn Flatbuffer<T> + 'buf>;
 
+/// Transmutes the in-memory flatbuffer data to a type. This is only useful if `T` is a C++-style
+/// flatbuffer generated class, it doesn't match the layout of any type in any language.
+///
+/// It is strongly recommended to explicitly specify `T` using the turbofish operator when using
+/// this function. Mismatches of the type are very bad and leaving it implicit is error prone.
+///
+/// # Safety
+///
+/// This is extremely unsafe. `T` has to be something expecting a flatbuffer table of the correct
+/// type as its address.
+pub unsafe fn transmute_table_to<'a, T>(table: &flatbuffers::Table<'a>) -> &'a T {
+    let address = &table.buf[table.loc];
+    std::mem::transmute(address)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

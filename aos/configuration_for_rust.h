@@ -10,9 +10,11 @@ const Channel *GetChannelForRust(const Configuration *config, rust::Str name,
                                  rust::Str type, rust::Str application_name,
                                  const Node *node);
 
+const Node *GetNodeForRust(const Configuration *config, rust::Str name);
+
 // Returns a Configuration flatbuffer. Returns an empty vector on errors.
-// TODO: It would be nice to return more detailed errors (not found vs could not
-// parse vs merging error).
+// TODO(Brian): It would be nice to return more detailed errors (not found vs
+// could not parse vs merging error).
 rust::Vec<uint8_t> MaybeReadConfigForRust(
     rust::Str path, rust::Slice<const rust::Str> extra_import_paths);
 
