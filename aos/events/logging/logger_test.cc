@@ -4600,6 +4600,96 @@ TEST_P(MultinodeLoggerTest, StartOneNodeBeforeOther) {
   }
 }
 
+// Tests that when we have a loop without all the logs at all points in time, we
+// can sort it properly.
+TEST(MultinodeLoggerLoopTest, DISABLED_Loop) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ArtifactPath(
+          "aos/events/logging/multinode_pingpong_triangle_split_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+  NodeEventLoopFactory *const pi2 =
+      event_loop_factory.GetNodeEventLoopFactory("pi2");
+  NodeEventLoopFactory *const pi3 =
+      event_loop_factory.GetNodeEventLoopFactory("pi3");
+
+  const std::string kLogfile1_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile1/";
+  const std::string kLogfile2_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile2/";
+  const std::string kLogfile3_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile3/";
+  util::UnlinkRecursive(kLogfile1_1);
+  util::UnlinkRecursive(kLogfile2_1);
+  util::UnlinkRecursive(kLogfile3_1);
+
+  {
+    // Make pi1 boot before everything else.
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch(),
+        {BootTimestamp::epoch(),
+         BootTimestamp::epoch() - chrono::milliseconds(100),
+         BootTimestamp::epoch() - chrono::milliseconds(300)});
+  }
+
+  // We want to setup a situation such that 2 of the 3 legs of the loop are very
+  // confident about time being X, and the third leg is pulling the average off
+  // to one side.
+  //
+  // It's easiest to visualize this in timestamp_plotter.
+
+  std::vector<std::string> filenames;
+  {
+    // Have pi1 send out a reliable message at startup.  This sets up a long
+    // forwarding time message at the start to bias time.
+    std::unique_ptr<EventLoop> pi1_event_loop = pi1->MakeEventLoop("ping");
+    {
+      aos::Sender<examples::Ping> ping_sender =
+          pi1_event_loop->MakeSender<examples::Ping>("/reliable");
+
+      aos::Sender<examples::Ping>::Builder builder = ping_sender.MakeBuilder();
+      examples::Ping::Builder ping_builder =
+          builder.MakeBuilder<examples::Ping>();
+      CHECK_EQ(builder.Send(ping_builder.Finish()), RawSender::Error::kOk);
+    }
+
+    // Wait a while so there's enough data to let the worst case be rather off.
+    event_loop_factory.RunFor(chrono::seconds(1000));
+
+    // Now start a receiving node first.  This sets up 2 tight bounds between 2
+    // of the nodes.
+    LoggerState pi2_logger = LoggerState::MakeLogger(
+        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+    pi2_logger.StartLogger(kLogfile2_1);
+
+    event_loop_factory.RunFor(chrono::seconds(100));
+
+    // And now start the third leg.
+    LoggerState pi3_logger = LoggerState::MakeLogger(
+        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+    pi3_logger.StartLogger(kLogfile3_1);
+
+    LoggerState pi1_logger = LoggerState::MakeLogger(
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+    pi1_logger.StartLogger(kLogfile1_1);
+
+    event_loop_factory.RunFor(chrono::seconds(100));
+
+    pi1_logger.AppendAllFilenames(&filenames);
+    pi2_logger.AppendAllFilenames(&filenames);
+    pi3_logger.AppendAllFilenames(&filenames);
+  }
+
+  // Make sure we can read this.
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  auto result = ConfirmReadable(filenames);
+}
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos
