@@ -439,7 +439,8 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
           switch (connection->timestamp_logger()) {
             case LoggerConfig::LOCAL_LOGGER:
             case LoggerConfig::NOT_LOGGED:
-              CHECK(!connection->has_timestamp_logger_nodes());
+              CHECK(!connection->has_timestamp_logger_nodes())
+                  << ": " << CleanedChannelToString(c);
               break;
             case LoggerConfig::REMOTE_LOGGER:
             case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
