@@ -1856,6 +1856,7 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
           std::optional<std::tuple<logger::BootTimestamp, logger::BootDuration>>
               result = next_node_filter->Consume();
           CHECK(result);
+          WriteFilter(next_node_filter, *result);
           next_node_filter->Pop(std::get<0>(*result) -
                                 time_estimation_buffer_seconds_);
         }
@@ -2061,17 +2062,22 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
                     << (last_monotonics_[i].time - result_times[i].time).count()
                     << "ns";
         }
+        UpdateSolution(std::move(result_times));
+        WriteFilter(next_filter, sample);
+        FlushAndClose(false);
         LOG(FATAL)
             << "Found a solution before the last returned solution on node "
             << solution_node_index;
         break;
       case TimeComparison::kEq:
+        WriteFilter(next_filter, sample);
         return NextTimestamp();
       case TimeComparison::kInvalid: {
         const chrono::nanoseconds invalid_distance =
             InvalidDistance(last_monotonics_, result_times);
         if (invalid_distance <=
             chrono::nanoseconds(FLAGS_max_invalid_distance_ns)) {
+          WriteFilter(next_filter, sample);
           return NextTimestamp();
         }
         LOG(INFO) << "Times can't be compared by " << invalid_distance.count()
@@ -2083,6 +2089,9 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
                     << (last_monotonics_[i].time - result_times[i].time).count()
                     << "ns";
         }
+        UpdateSolution(std::move(result_times));
+        WriteFilter(next_filter, sample);
+        FlushAndClose(false);
         LOG(FATAL) << "Please investigate.  Use --max_invalid_distance_ns="
                    << invalid_distance.count() << " to ignore this.";
       } break;
