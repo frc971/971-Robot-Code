@@ -10,6 +10,71 @@
 
 namespace aos::starter {
 
+// RAII class to become root and restore back to the original user and group
+// afterwards.
+class Sudo {
+ public:
+  Sudo() {
+    // Save what we were.
+    PCHECK(getresuid(&ruid_, &euid_, &suid_) == 0);
+    PCHECK(getresgid(&rgid_, &egid_, &sgid_) == 0);
+
+    // Become root.
+    PCHECK(setresuid(/* ruid */ 0 /* root */, /* euid */ 0, /* suid */ 0) == 0)
+        << ": Failed to become root";
+    PCHECK(setresgid(/* ruid */ 0 /* root */, /* euid */ 0, /* suid */ 0) == 0)
+        << ": Failed to become root";
+  }
+
+  ~Sudo() {
+    // And recover.
+    PCHECK(setresgid(rgid_, egid_, sgid_) == 0);
+    PCHECK(setresuid(ruid_, euid_, suid_) == 0);
+  }
+
+  uid_t ruid_, euid_, suid_;
+  gid_t rgid_, egid_, sgid_;
+};
+
+MemoryCGroup::MemoryCGroup(std::string_view name)
+    : cgroup_(absl::StrCat("/sys/fs/cgroup/memory/aos_", name)) {
+  Sudo sudo;
+  int ret = mkdir(cgroup_.c_str(), 0755);
+
+  if (ret != 0) {
+    if (errno == EEXIST) {
+      PCHECK(remove(cgroup_.c_str()) == 0)
+          << ": Failed to remove previous cgroup " << cgroup_;
+      ret = mkdir(cgroup_.c_str(), 0755);
+    }
+  }
+
+  if (ret != 0) {
+    PLOG(FATAL) << ": Failed to create cgroup aos_" << cgroup_
+                << ", do you have permission?";
+  }
+}
+
+void MemoryCGroup::AddTid(pid_t pid) {
+  if (pid == 0) {
+    pid = getpid();
+  }
+  Sudo sudo;
+  util::WriteStringToFileOrDie(absl::StrCat(cgroup_, "/tasks").c_str(),
+                               std::to_string(pid));
+}
+
+void MemoryCGroup::SetLimit(std::string_view limit_name, uint64_t limit_value) {
+  Sudo sudo;
+  util::WriteStringToFileOrDie(absl::StrCat(cgroup_, "/", limit_name).c_str(),
+                               std::to_string(limit_value));
+}
+
+MemoryCGroup::~MemoryCGroup() {
+  Sudo sudo;
+  PCHECK(rmdir(absl::StrCat(cgroup_).c_str()) == 0);
+}
+
 SignalListener::SignalListener(aos::ShmEventLoop *loop,
                                std::function<void(signalfd_siginfo)> callback)
     : SignalListener(loop, callback,
@@ -82,6 +147,10 @@ Application::Application(const aos::Application *application,
   if (application->has_args()) {
     set_args(*application->args());
   }
+
+  if (application->has_memory_limit() && application->memory_limit() > 0) {
+    SetMemoryLimit(application->memory_limit());
+  }
 }
 
 void Application::DoStart() {
@@ -131,6 +200,10 @@ void Application::DoStart() {
     }
     on_change_();
     return;
+  }
+
+  if (memory_cgroup_) {
+    memory_cgroup_->AddTid();
   }
 
   // Since we are the child process, clear our read-side of all the pipes.

@@ -35,6 +35,22 @@ class SignalListener {
   DISALLOW_COPY_AND_ASSIGN(SignalListener);
 };
 
+// Class to use the V1 cgroup API to limit memory usage.
+class MemoryCGroup {
+ public:
+  MemoryCGroup(std::string_view name);
+  ~MemoryCGroup();
+
+  // Adds a thread ID to be managed by the cgroup.
+  void AddTid(pid_t pid = 0);
+
+  // Sets the provided limit to the provided value.
+  void SetLimit(std::string_view limit_name, uint64_t limit_value);
+
+ private:
+  std::string cgroup_;
+};
+
 // Manages a running process, allowing starting and stopping, and restarting
 // automatically.
 class Application {
@@ -79,6 +95,14 @@ class Application {
   const std::string &GetStdout();
   const std::string &GetStderr();
   std::optional<int> exit_code() const { return exit_code_; }
+
+  // Sets the memory limit for the application to the provided limit.
+  void SetMemoryLimit(size_t limit) {
+    if (!memory_cgroup_) {
+      memory_cgroup_ = std::make_unique<MemoryCGroup>(name_);
+    }
+    memory_cgroup_->SetLimit("memory.limit_in_bytes", limit);
+  }
 
  private:
   typedef aos::util::ScopedPipe::PipePair PipePair;
@@ -143,6 +167,8 @@ class Application {
       *child_status_handler_;
 
   std::function<void()> on_change_;
+
+  std::unique_ptr<MemoryCGroup> memory_cgroup_;
 
   DISALLOW_COPY_AND_ASSIGN(Application);
 };
