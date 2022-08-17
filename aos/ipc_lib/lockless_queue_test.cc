@@ -211,8 +211,8 @@ TEST_F(LocklessQueueTest, WakeUpThreads) {
   Event ready2;
 
   // Start the thread.
-  ::std::thread t1([this, &ready1]() { RunUntilWakeup(&ready1, 5); });
-  ::std::thread t2([this, &ready2]() { RunUntilWakeup(&ready2, 4); });
+  ::std::thread t1([this, &ready1]() { RunUntilWakeup(&ready1, 2); });
+  ::std::thread t2([this, &ready2]() { RunUntilWakeup(&ready2, 1); });
 
   ready1.Wait();
   ready2.Wait();
@@ -330,20 +330,27 @@ TEST_F(LocklessQueueTest, SendRace) {
 
 namespace {
 
-// Temporarily pins the current thread to CPUs 0 and 1.
+// Temporarily pins the current thread to the first 2 available CPUs.
 // This speeds up the test on some machines a lot (~4x). It also preserves
 // opportunities for the 2 threads to race each other.
 class PinForTest {
  public:
   PinForTest() {
-    PCHECK(sched_getaffinity(0, sizeof(old_), &old_) == 0);
-    cpu_set_t new_set;
-    CPU_ZERO(&new_set);
-    CPU_SET(0, &new_set);
-    CPU_SET(1, &new_set);
-    PCHECK(sched_setaffinity(0, sizeof(new_set), &new_set) == 0);
+    cpu_set_t cpus = GetCurrentThreadAffinity();
+    old_ = cpus;
+    int number_found = 0;
+    for (int i = 0; i < CPU_SETSIZE; ++i) {
+      if (CPU_ISSET(i, &cpus)) {
+        if (number_found < 2) {
+          ++number_found;
+        } else {
+          CPU_CLR(i, &cpus);
+        }
+      }
+    }
+    SetCurrentThreadAffinity(cpus);
   }
-  ~PinForTest() { PCHECK(sched_setaffinity(0, sizeof(old_), &old_) == 0); }
+  ~PinForTest() { SetCurrentThreadAffinity(old_); }
 
  private:
   cpu_set_t old_;
