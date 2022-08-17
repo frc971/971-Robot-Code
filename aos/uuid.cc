@@ -120,12 +120,6 @@ void UUID::CopyTo(char *result) const {
   ToHex(&data_[10], result + 24, 6);
 }
 
-UUID UUID::Zero() {
-  UUID result;
-  std::memset(result.data_.data(), 0, result.data_.size());
-  return result;
-}
-
 UUID UUID::FromString(const flatbuffers::String *str) {
   return FromString(str->string_view());
 }

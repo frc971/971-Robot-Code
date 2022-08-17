@@ -6,6 +6,7 @@
 #include <string>
 
 #include "absl/types/span.h"
+#include "aos/thread_local.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos {
@@ -21,7 +22,11 @@ class UUID {
   static UUID Random();
 
   // Returns a uuid with all '0's.
-  static UUID Zero();
+  static constexpr UUID Zero() {
+    UUID result;
+    std::memset(result.data_.data(), 0, result.data_.size());
+    return result;
+  }
 
   // Converts a string UUID of the form 00000000-0000-0000-0000-000000000000 to
   // a UUID.
@@ -37,7 +42,12 @@ class UUID {
 
   // Default constructor which builds an uninitialized UUID.  Use one of the
   // static methods if you want something more useful.
-  UUID() {}
+  constexpr UUID() : data_() {}
+  constexpr UUID(const UUID &uuid) : data_(uuid.data_) {}
+
+  void operator=(const UUID &other) {
+    memcpy(data_.data(), other.data_.data(), kDataSize);
+  }
 
   // Packs this UUID into a flatbuffer as a string.
   flatbuffers::Offset<flatbuffers::String> PackString(
@@ -51,6 +61,19 @@ class UUID {
   // Packs the UUID bytes directly into a vector.
   flatbuffers::Offset<flatbuffers::Vector<uint8_t>> PackVector(
       flatbuffers::FlatBufferBuilder *fbb) const;
+
+  // Returns a human-readable string representing this UUID.
+  //
+  // This is done without any memory allocation, which means it's returned in a
+  // thread-local buffer.
+  //
+  // Be careful using this. It's mostly useful for low-level tracing of UUIDs
+  // through the system.
+  const char *thread_local_string() const {
+    AOS_THREAD_LOCAL char buffer[kStringSize + 1];
+    CopyTo(buffer);
+    return buffer;
+  }
 
   // Returns the underlying UUID data.
   absl::Span<const uint8_t> span() const {
