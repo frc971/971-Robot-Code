@@ -27,6 +27,7 @@ class SimulatedChannel;
 
 class NodeEventLoopFactory;
 class SimulatedEventLoop;
+class SimulatedFactoryExitHandle;
 namespace message_bridge {
 class SimulatedMessageBridge;
 }
@@ -94,6 +95,8 @@ class SimulatedEventLoopFactory {
   // loop handler.
   void Exit();
 
+  std::unique_ptr<ExitHandle> MakeExitHandle();
+
   const std::vector<const Node *> &nodes() const { return nodes_; }
 
   // Sets the simulated send delay for all messages sent within a single node.
@@ -147,6 +150,7 @@ class SimulatedEventLoopFactory {
 
  private:
   friend class NodeEventLoopFactory;
+  friend class SimulatedFactoryExitHandle;
 
   const Configuration *const configuration_;
   EventSchedulerScheduler scheduler_scheduler_;
@@ -159,6 +163,8 @@ class SimulatedEventLoopFactory {
   std::vector<std::unique_ptr<NodeEventLoopFactory>> node_factories_;
 
   std::vector<const Node *> nodes_;
+
+  int exit_handle_count_ = 0;
 };
 
 // This class holds all the state required to be a single node.

@@ -509,6 +509,22 @@ class ShmFetcher : public RawFetcher {
   SimpleShmFetcher simple_shm_fetcher_;
 };
 
+class ShmExitHandle : public ExitHandle {
+ public:
+  ShmExitHandle(ShmEventLoop *event_loop) : event_loop_(event_loop) {
+    ++event_loop_->exit_handle_count_;
+  }
+  ~ShmExitHandle() override {
+    CHECK_GT(event_loop_->exit_handle_count_, 0);
+    --event_loop_->exit_handle_count_;
+  }
+
+  void Exit() override { event_loop_->Exit(); }
+
+ private:
+  ShmEventLoop *const event_loop_;
+};
+
 class ShmSender : public RawSender {
  public:
   explicit ShmSender(std::string_view shm_base, EventLoop *event_loop,
@@ -1171,6 +1187,10 @@ void ShmEventLoop::Run() {
 
 void ShmEventLoop::Exit() { epoll_.Quit(); }
 
+std::unique_ptr<ExitHandle> ShmEventLoop::MakeExitHandle() {
+  return std::make_unique<ShmExitHandle>(this);
+}
+
 ShmEventLoop::~ShmEventLoop() {
   CheckCurrentThread();
   // Force everything with a registered fd with epoll to be destroyed now.
@@ -1179,6 +1199,8 @@ ShmEventLoop::~ShmEventLoop() {
   watchers_.clear();
 
   CHECK(!is_running()) << ": ShmEventLoop destroyed while running";
+  CHECK_EQ(0, exit_handle_count_)
+      << ": All ExitHandles must be destroyed before the ShmEventLoop";
 }
 
 void ShmEventLoop::SetRuntimeRealtimePriority(int priority) {

@@ -863,6 +863,28 @@ class EventLoop {
   absl::btree_set<const Channel *> taken_watchers_, taken_senders_;
 };
 
+// Interface for terminating execution of an EventLoop.
+//
+// Prefer this over binding a lambda to an Exit() method when passing ownership
+// in complicated ways because implementations should have assertions to catch
+// it outliving the object it's referring to, instead of having a
+// use-after-free.
+//
+// This is not exposed by EventLoop directly because different EventLoop
+// implementations provide this functionality at different scopes, or possibly
+// not at all.
+class ExitHandle {
+ public:
+  ExitHandle() = default;
+  virtual ~ExitHandle() = default;
+
+  // Exits some set of event loops. Details depend on the implementation.
+  //
+  // This means no more events will be processed, but any currently being
+  // processed will finish.
+  virtual void Exit() = 0;
+};
+
 }  // namespace aos
 
 #include "aos/events/event_loop_tmpl.h"  // IWYU pragma: export

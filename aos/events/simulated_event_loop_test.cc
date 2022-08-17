@@ -2052,6 +2052,19 @@ TEST(SimulatedEventLoopDeathTest, EventLoopOutlivesReboot) {
   EXPECT_DEATH({ factory.RunFor(dt * 2); }, "Event loop");
 }
 
+// Test that an ExitHandle outliving its factory is caught.
+TEST(SimulatedEventLoopDeathTest, ExitHandleOutlivesFactory) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(
+          ArtifactPath("aos/events/multinode_pingpong_test_split_config.json"));
+  auto factory = std::make_unique<SimulatedEventLoopFactory>(&config.message());
+  NodeEventLoopFactory *pi1 = factory->GetNodeEventLoopFactory("pi1");
+  std::unique_ptr<EventLoop> loop = pi1->MakeEventLoop("foo");
+  auto exit_handle = factory->MakeExitHandle();
+  EXPECT_DEATH(factory.reset(),
+               "All ExitHandles must be destroyed before the factory");
+}
+
 // Tests that messages don't survive a reboot of a node.
 TEST(SimulatedEventLoopTest, ChannelClearedOnReboot) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =

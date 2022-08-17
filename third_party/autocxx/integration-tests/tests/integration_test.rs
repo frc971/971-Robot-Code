@@ -9430,6 +9430,43 @@ fn test_abstract_up() {
 }
 
 #[test]
+fn test_abstract_up_multiple_bridge() {
+    let hdr = indoc! {"
+    #include <memory>
+    class A {
+    public:
+        virtual void foo() const = 0;
+        virtual ~A() {}
+    };
+    class B : public A {
+    public:
+        void foo() const {}
+    };
+    inline std::unique_ptr<A> get_a() { return std::make_unique<B>(); }
+    "};
+    let hexathorpe = Token![#](Span::call_site());
+    let rs = quote! {
+        autocxx::include_cpp! {
+            #hexathorpe include "input.h"
+            safety!(unsafe_ffi)
+            generate!("A")
+        }
+        autocxx::include_cpp! {
+            #hexathorpe include "input.h"
+            safety!(unsafe_ffi)
+            name!(ffi2)
+            extern_cpp_type!("A", crate::ffi::A)
+            generate!("get_a")
+        }
+        fn main() {
+            let a = ffi2::get_a();
+            a.foo();
+        }
+    };
+    do_run_test_manual("", hdr, rs, None, None).unwrap();
+}
+
+#[test]
 fn test_abstract_private() {
     let hdr = indoc! {"
     #include <memory>
