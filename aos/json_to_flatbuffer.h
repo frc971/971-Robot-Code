@@ -102,7 +102,8 @@ inline void WriteFlatbufferToFile(std::string_view filename,
             std::ostreambuf_iterator<char>(file));
 }
 
-// Parses a file as JSON and returns the corresponding Flatbuffer, or dies.
+// Parses a file as JSON and returns the corresponding Flatbuffer. Dies if
+// reading the file fails, returns an empty buffer if the contents are invalid.
 template <typename T>
 inline FlatbufferDetachedBuffer<T> JsonFileToFlatbuffer(
     const std::string_view path) {
