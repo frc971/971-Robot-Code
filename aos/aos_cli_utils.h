@@ -14,6 +14,7 @@ struct CliUtilInfo {
   // event_loop will be filled out before channel_filter is called.
   bool Initialize(int *argc, char ***argv,
                   std::function<bool(const aos::Channel *)> channel_filter,
+                  std::string_view channel_filter_description,
                   bool expect_args);
 
   std::optional<aos::FlatbufferDetachedBuffer<aos::Configuration>> config;
