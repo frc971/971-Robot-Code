@@ -705,11 +705,22 @@ class EventLoop {
   // Sets the scheduler priority to run the event loop at.  This may not be
   // called after we go into "real-time-mode".
   virtual void SetRuntimeRealtimePriority(int priority) = 0;
-  virtual int priority() const = 0;
+  // Defaults to 0 if this loop will not run realtime.
+  virtual int runtime_realtime_priority() const = 0;
+
+  static cpu_set_t DefaultAffinity() {
+    cpu_set_t result;
+    for (int i = 0; i < CPU_SETSIZE; ++i) {
+      CPU_SET(i, &result);
+    }
+    return result;
+  }
 
   // Sets the scheduler affinity to run the event loop with. This may only be
   // called before Run().
   virtual void SetRuntimeAffinity(const cpu_set_t &cpuset) = 0;
+  // Defaults to DefaultAffinity() if this loop will not run pinned.
+  virtual const cpu_set_t &runtime_affinity() const = 0;
 
   // Fetches new messages from the provided channel (path, type).
   //

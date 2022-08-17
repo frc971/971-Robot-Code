@@ -81,7 +81,8 @@ class ShmEventLoop : public EventLoop {
   const std::string_view name() const override { return name_; }
   const Node *node() const override { return node_; }
 
-  int priority() const override { return priority_; }
+  int runtime_realtime_priority() const override { return priority_; }
+  const cpu_set_t &runtime_affinity() const override { return affinity_; }
   const UUID &boot_uuid() const override { return boot_uuid_; }
 
   // Returns the epoll loop used to run the event loop.
@@ -140,14 +141,6 @@ class ShmEventLoop : public EventLoop {
   friend class shm_event_loop_internal::ShmFetcher;
 
   using EventLoop::SendTimingReport;
-
-  static cpu_set_t DefaultAffinity() {
-    cpu_set_t result;
-    for (int i = 0; i < CPU_SETSIZE; ++i) {
-      CPU_SET(i, &result);
-    }
-    return result;
-  }
 
   void CheckCurrentThread() const;
 

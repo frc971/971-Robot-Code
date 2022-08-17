@@ -649,7 +649,7 @@ class SimulatedEventLoop : public EventLoop {
       if (log_impl_) {
         prev_logger.Swap(log_impl_);
       }
-      ScopedMarkRealtimeRestorer rt(priority() > 0);
+      ScopedMarkRealtimeRestorer rt(runtime_realtime_priority() > 0);
       SetTimerContext(monotonic_now());
       on_run();
     });
@@ -669,10 +669,12 @@ class SimulatedEventLoop : public EventLoop {
     priority_ = priority;
   }
 
-  int priority() const override { return priority_; }
+  int runtime_realtime_priority() const override { return priority_; }
+  const cpu_set_t &runtime_affinity() const override { return affinity_; }
 
-  void SetRuntimeAffinity(const cpu_set_t & /*cpuset*/) override {
+  void SetRuntimeAffinity(const cpu_set_t &affinity) override {
     CHECK(!is_running()) << ": Cannot set affinity while running.";
+    affinity_ = affinity;
   }
 
   void Setup() {
@@ -728,6 +730,7 @@ class SimulatedEventLoop : public EventLoop {
   ::std::string name_;
 
   int priority_ = 0;
+  cpu_set_t affinity_ = DefaultAffinity();
 
   std::chrono::nanoseconds send_delay_;
 
@@ -908,7 +911,8 @@ void SimulatedWatcher::HandleEvent() noexcept {
   }
 
   {
-    ScopedMarkRealtimeRestorer rt(simulated_event_loop_->priority() > 0);
+    ScopedMarkRealtimeRestorer rt(
+        simulated_event_loop_->runtime_realtime_priority() > 0);
     DoCallCallback([monotonic_now]() { return monotonic_now; }, context);
   }
 
@@ -1210,7 +1214,8 @@ void SimulatedTimerHandler::HandleEvent() noexcept {
   }
 
   {
-    ScopedMarkRealtimeRestorer rt(simulated_event_loop_->priority() > 0);
+    ScopedMarkRealtimeRestorer rt(
+        simulated_event_loop_->runtime_realtime_priority() > 0);
     Call([monotonic_now]() { return monotonic_now; }, monotonic_now);
   }
 }
@@ -1255,7 +1260,8 @@ void SimulatedPhasedLoopHandler::HandleEvent() noexcept {
   }
 
   {
-    ScopedMarkRealtimeRestorer rt(simulated_event_loop_->priority() > 0);
+    ScopedMarkRealtimeRestorer rt(
+        simulated_event_loop_->runtime_realtime_priority() > 0);
     Call([monotonic_now]() { return monotonic_now; },
          [this](monotonic_clock::time_point sleep_time) {
            Schedule(sleep_time);

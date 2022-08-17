@@ -562,8 +562,9 @@ class ShmSender : public RawSender {
         << ": Somebody wrote outside the buffer of their message on channel "
         << configuration::CleanedChannelToString(channel());
 
-    wake_upper_.Wakeup(event_loop()->is_running() ? event_loop()->priority()
-                                                  : 0);
+    wake_upper_.Wakeup(event_loop()->is_running()
+                           ? event_loop()->runtime_realtime_priority()
+                           : 0);
     return CheckLocklessQueueResult(result);
   }
 
@@ -585,8 +586,9 @@ class ShmSender : public RawSender {
         << ": Somebody wrote outside the buffer of their message on "
            "channel "
         << configuration::CleanedChannelToString(channel());
-    wake_upper_.Wakeup(event_loop()->is_running() ? event_loop()->priority()
-                                                  : 0);
+    wake_upper_.Wakeup(event_loop()->is_running()
+                           ? event_loop()->runtime_realtime_priority()
+                           : 0);
 
     return CheckLocklessQueueResult(result);
   }
@@ -649,7 +651,7 @@ class ShmWatcherState : public WatcherState {
   void Startup(EventLoop *event_loop) override {
     event_loop_->CheckCurrentThread();
     simple_shm_fetcher_.PointAtNextQueueIndex();
-    CHECK(RegisterWakeup(event_loop->priority()));
+    CHECK(RegisterWakeup(event_loop->runtime_realtime_priority()));
   }
 
   // Returns true if there is new data available.
