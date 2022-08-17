@@ -856,6 +856,8 @@ class EventLoop {
   // Sets context_ for a timed event which is supposed to happen at the provided
   // time.
   void SetTimerContext(monotonic_clock::time_point monotonic_event_time);
+  // Clears context_ so it only has invalid times and elements in it.
+  void ClearContext();
 
  private:
   virtual pid_t GetTid() = 0;

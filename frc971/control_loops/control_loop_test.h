@@ -7,6 +7,7 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/network/testing_time_converter.h"
 #include "aos/testing/test_logging.h"
 #include "aos/time/time.h"
 #include "frc971/input/joystick_state_generated.h"
@@ -27,16 +28,31 @@ class ControlLoopTestTemplated : public TestBaseClass {
  public:
   ControlLoopTestTemplated(
       aos::FlatbufferDetachedBuffer<aos::Configuration> configuration,
-      ::std::chrono::nanoseconds dt = kTimeTick)
+      ::std::chrono::nanoseconds dt = kTimeTick,
+      std::vector<std::vector<aos::logger::BootTimestamp>> times = {})
       : configuration_(std::move(configuration)),
+        time_converter_(
+            aos::configuration::NodesCount(&configuration_.message())),
         event_loop_factory_(&configuration_.message()),
-        dt_(dt),
-        robot_status_event_loop_(MakeEventLoop(
-            "robot_status",
-            aos::configuration::MultiNode(event_loop_factory_.configuration())
-                ? aos::configuration::GetNode(
-                      event_loop_factory_.configuration(), "roborio")
-                : nullptr)) {
+        dt_(dt) {
+    event_loop_factory()->SetTimeConverter(&time_converter_);
+
+    // We need to setup the time converter before any event loop has been
+    // created.  Otherwise, the event loop will read the boot uuid and we'll be
+    // unable to change it.
+    if (times.empty()) {
+      time_converter_.StartEqual();
+    } else {
+      for (const std::vector<aos::logger::BootTimestamp> &time : times) {
+        time_converter_.AddMonotonic(time);
+      }
+    }
+    robot_status_event_loop_ = MakeEventLoop(
+        "robot_status",
+        aos::configuration::MultiNode(event_loop_factory_.configuration())
+            ? aos::configuration::GetNode(event_loop_factory_.configuration(),
+                                          "roborio")
+            : nullptr);
     aos::testing::EnableTestLogging();
     robot_state_sender_ =
         robot_status_event_loop_->MakeSender<::aos::RobotState>("/aos");
@@ -112,6 +128,10 @@ class ControlLoopTestTemplated : public TestBaseClass {
     return &event_loop_factory_;
   }
 
+  aos::message_bridge::TestingTimeConverter *time_converter() {
+    return &time_converter_;
+  }
+
  private:
   // Sends out all of the required queue messages.
   void SendJoystickState() {
@@ -162,6 +182,8 @@ class ControlLoopTestTemplated : public TestBaseClass {
   static constexpr ::std::chrono::milliseconds kDSPacketTime{20};
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> configuration_;
+
+  aos::message_bridge::TestingTimeConverter time_converter_;
 
   aos::SimulatedEventLoopFactory event_loop_factory_;
 

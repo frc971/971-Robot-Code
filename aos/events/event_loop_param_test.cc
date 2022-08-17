@@ -2562,6 +2562,17 @@ TEST_P(AbstractEventLoopTest, RealtimeEventLoopWatcher) {
 TEST_P(AbstractEventLoopTest, SetContextOnRun) {
   auto loop = MakePrimary();
 
+  EXPECT_EQ(loop->context().monotonic_event_time, monotonic_clock::min_time);
+  EXPECT_EQ(loop->context().monotonic_remote_time, monotonic_clock::min_time);
+  EXPECT_EQ(loop->context().realtime_event_time, realtime_clock::min_time);
+  EXPECT_EQ(loop->context().realtime_remote_time, realtime_clock::min_time);
+  EXPECT_EQ(loop->context().source_boot_uuid, loop->boot_uuid());
+  EXPECT_EQ(loop->context().queue_index, 0xffffffffu);
+  EXPECT_EQ(loop->context().remote_queue_index, 0xffffffffu);
+  EXPECT_EQ(loop->context().size, 0u);
+  EXPECT_EQ(loop->context().data, nullptr);
+  EXPECT_EQ(loop->context().buffer_index, -1);
+
   // We want to check that monotonic event time is before monotonic now
   // called inside of callback, but after time point obtained callback.
   aos::monotonic_clock::time_point monotonic_event_time_on_run;
@@ -2574,6 +2585,7 @@ TEST_P(AbstractEventLoopTest, SetContextOnRun) {
     EXPECT_EQ(loop->context().realtime_remote_time, realtime_clock::min_time);
     EXPECT_EQ(loop->context().source_boot_uuid, loop->boot_uuid());
     EXPECT_EQ(loop->context().queue_index, 0xffffffffu);
+    EXPECT_EQ(loop->context().remote_queue_index, 0xffffffffu);
     EXPECT_EQ(loop->context().size, 0u);
     EXPECT_EQ(loop->context().data, nullptr);
     EXPECT_EQ(loop->context().buffer_index, -1);
@@ -2585,6 +2597,17 @@ TEST_P(AbstractEventLoopTest, SetContextOnRun) {
       loop->monotonic_now();
   Run();
   EXPECT_GE(monotonic_event_time_on_run, before_run_time);
+
+  EXPECT_EQ(loop->context().monotonic_event_time, monotonic_clock::min_time);
+  EXPECT_EQ(loop->context().monotonic_remote_time, monotonic_clock::min_time);
+  EXPECT_EQ(loop->context().realtime_event_time, realtime_clock::min_time);
+  EXPECT_EQ(loop->context().realtime_remote_time, realtime_clock::min_time);
+  EXPECT_EQ(loop->context().source_boot_uuid, loop->boot_uuid());
+  EXPECT_EQ(loop->context().queue_index, 0xffffffffu);
+  EXPECT_EQ(loop->context().remote_queue_index, 0xffffffffu);
+  EXPECT_EQ(loop->context().size, 0u);
+  EXPECT_EQ(loop->context().data, nullptr);
+  EXPECT_EQ(loop->context().buffer_index, -1);
 }
 
 // Tests that watchers fail when created on the wrong node.

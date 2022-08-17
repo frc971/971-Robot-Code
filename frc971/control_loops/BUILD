@@ -17,6 +17,7 @@ cc_library(
         "//aos:flatbuffers",
         "//aos:json_to_flatbuffer",
         "//aos/events:simulated_event_loop",
+        "//aos/network:testing_time_converter",
         "//aos/testing:googletest",
         "//aos/testing:test_logging",
         "//aos/time",

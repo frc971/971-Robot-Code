@@ -572,6 +572,7 @@ class SimulatedEventLoop : public EventLoop {
         tid_(tid),
         startup_tracker_(std::make_shared<StartupTracker>()),
         options_(options) {
+    ClearContext();
     startup_tracker_->loop = this;
     scheduler_->ScheduleOnStartup([startup_tracker = startup_tracker_]() {
       if (startup_tracker->loop) {
@@ -669,6 +670,7 @@ class SimulatedEventLoop : public EventLoop {
       ScopedMarkRealtimeRestorer rt(runtime_realtime_priority() > 0);
       SetTimerContext(monotonic_now());
       on_run();
+      ClearContext();
     });
   }
 
@@ -931,6 +933,7 @@ void SimulatedWatcher::HandleEvent() noexcept {
     ScopedMarkRealtimeRestorer rt(
         simulated_event_loop_->runtime_realtime_priority() > 0);
     DoCallCallback([monotonic_now]() { return monotonic_now; }, context);
+    simulated_event_loop_->ClearContext();
   }
 
   msgs_.pop_front();
@@ -1234,6 +1237,7 @@ void SimulatedTimerHandler::HandleEvent() noexcept {
     ScopedMarkRealtimeRestorer rt(
         simulated_event_loop_->runtime_realtime_priority() > 0);
     Call([monotonic_now]() { return monotonic_now; }, monotonic_now);
+    simulated_event_loop_->ClearContext();
   }
 }
 
@@ -1283,6 +1287,7 @@ void SimulatedPhasedLoopHandler::HandleEvent() noexcept {
          [this](monotonic_clock::time_point sleep_time) {
            Schedule(sleep_time);
          });
+    simulated_event_loop_->ClearContext();
   }
 }
 

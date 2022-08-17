@@ -227,6 +227,7 @@ ShmEventLoop::ShmEventLoop(const Configuration *configuration)
       name_(FLAGS_application_name),
       node_(MaybeMyNode(configuration)) {
   CHECK(IsInitialized()) << ": Need to initialize AOS first.";
+  ClearContext();
   if (configuration->has_nodes()) {
     CHECK(node_ != nullptr) << ": Couldn't find node in config.";
   }
@@ -1185,6 +1186,7 @@ void ShmEventLoop::Run() {
   // the event loop so the book keeping matches.  Do this in the thread that
   // created the timing reporter.
   timing_report_sender_.reset();
+  ClearContext();
 }
 
 void ShmEventLoop::Exit() { epoll_.Quit(); }

@@ -5,7 +5,6 @@
 #include "aos/events/logging/log_writer.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/team_number.h"
-#include "aos/network/testing_time_converter.h"
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
@@ -107,8 +106,13 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
       : frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig(
                 "y2020/control_loops/drivetrain/simulation_config.json"),
-            GetTest2020DrivetrainConfig().dt),
-        time_converter_(aos::configuration::NodesCount(configuration())),
+            GetTest2020DrivetrainConfig().dt,
+            {{BootTimestamp::epoch() + kPiTimeOffset,
+              BootTimestamp::epoch() + kPiTimeOffset,
+              BootTimestamp::epoch() + kPiTimeOffset,
+              BootTimestamp::epoch() + kPiTimeOffset,
+              BootTimestamp::epoch() + kPiTimeOffset,
+              BootTimestamp::epoch() + kPiTimeOffset, BootTimestamp::epoch()}}),
         roborio_(aos::configuration::GetNode(configuration(), "roborio")),
         pi1_(aos::configuration::GetNode(configuration(), "pi1")),
         test_event_loop_(MakeEventLoop("test", roborio_)),
@@ -138,16 +142,8 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
         drivetrain_plant_event_loop_(MakeEventLoop("plant", roborio_)),
         drivetrain_plant_(drivetrain_plant_event_loop_.get(), dt_config_),
         last_frame_(monotonic_now()) {
-    event_loop_factory()->SetTimeConverter(&time_converter_);
     CHECK_EQ(aos::configuration::GetNodeIndex(configuration(), roborio_), 6);
     CHECK_EQ(aos::configuration::GetNodeIndex(configuration(), pi1_), 1);
-    time_converter_.AddMonotonic({BootTimestamp::epoch() + kPiTimeOffset,
-                                  BootTimestamp::epoch() + kPiTimeOffset,
-                                  BootTimestamp::epoch() + kPiTimeOffset,
-                                  BootTimestamp::epoch() + kPiTimeOffset,
-                                  BootTimestamp::epoch() + kPiTimeOffset,
-                                  BootTimestamp::epoch() + kPiTimeOffset,
-                                  BootTimestamp::epoch()});
     set_team_id(frc971::control_loops::testing::kTeamNumber);
     set_battery_voltage(12.0);
 
@@ -350,8 +346,6 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
       camera_delay_queue_.pop();
     }
   }
-
-  aos::message_bridge::TestingTimeConverter time_converter_;
 
   const aos::Node *const roborio_;
   const aos::Node *const pi1_;
