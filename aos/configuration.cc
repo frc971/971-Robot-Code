@@ -1288,6 +1288,10 @@ bool NodeHasTag(const Node *node, std::string_view tag) {
     return true;
   }
 
+  if (!node->has_tags()) {
+    return false;
+  }
+
   const auto *const tags = node->tags();
   return std::find_if(tags->begin(), tags->end(),
                       [tag](const flatbuffers::String *candidate) {

@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
             return aos::configuration::ChannelIsReadableOnNode(
                 channel, cli_info.event_loop->node());
           },
-          true)) {
+          "channel is readeable on node", true)) {
     return 0;
   }
 

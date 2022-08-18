@@ -33,7 +33,7 @@ bool EndsWith(std::string_view str, std::string_view ending) {
 bool CliUtilInfo::Initialize(
     int *argc, char ***argv,
     std::function<bool(const aos::Channel *)> channel_filter,
-    bool expect_args) {
+    std::string_view channel_filter_description, bool expect_args) {
   // Don't generate failure output if the config doesn't exist while attempting
   // to autocomplete.
   if (FLAGS__bash_autocomplete &&
@@ -87,12 +87,10 @@ bool CliUtilInfo::Initialize(
     std::vector<const aos::Channel *> found_channels_now;
     bool found_exact = false;
     for (const aos::Channel *channel : *channels) {
-      if (!FLAGS_all && !channel_filter(channel)) {
-        continue;
-      }
       if (channel->name()->c_str() != channel_name) {
         continue;
       }
+
       if (channel->type()->string_view() == message_type) {
         if (!found_exact) {
           found_channels_now.clear();
@@ -103,6 +101,14 @@ bool CliUtilInfo::Initialize(
       } else {
         continue;
       }
+
+      if (!FLAGS_all && !channel_filter(channel)) {
+        LOG(FATAL) << "matched channel does not pass the channel filter: \""
+                   << channel_filter_description
+                   << "\" [matched channel info]: "
+                   << configuration::CleanedChannelToString(channel);
+      }
+
       found_channels_now.push_back(channel);
     }
 

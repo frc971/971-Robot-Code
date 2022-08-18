@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
             return aos::configuration::ChannelIsSendableOnNode(
                 channel, cli_info.event_loop->node());
           },
-          false)) {
+          "channel is sendable on node", false)) {
     return 0;
   }
   if (cli_info.found_channels.size() > 1) {
