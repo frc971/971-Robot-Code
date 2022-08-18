@@ -56,7 +56,7 @@ def gen_embedded(name, srcs, visibility = None, target_compatible_with = None):
             ":%s__do_gen" % name,
         ],
         deps = [
-            "@//third_party/seasocks",
+            "//third_party/seasocks",
         ],
         target_compatible_with = target_compatible_with,
     )
