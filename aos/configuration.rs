@@ -2,7 +2,7 @@ use std::{path::Path, ptr};
 
 use thiserror::Error;
 
-use aos_configuration_fbs::aos::Configuration as RustConfiguration;
+use aos_configuration_fbs::aos::{Channel as RustChannel, Configuration as RustConfiguration};
 use aos_flatbuffers::{transmute_table_to, NonSizePrefixedFlatbuffer};
 
 autocxx::include_cpp! (
@@ -20,6 +20,11 @@ block!("flatbuffers::Verifier")
 
 generate!("aos::configuration::GetChannelForRust")
 generate!("aos::configuration::GetNodeForRust")
+
+generate!("aos::configuration::HasChannelTypeForRust")
+generate!("aos::configuration::GetChannelTypeForRust")
+generate!("aos::configuration::HasChannelNameForRust")
+generate!("aos::configuration::GetChannelNameForRust")
 );
 
 #[cxx::bridge]
@@ -103,6 +108,28 @@ pub trait ConfigurationExt<'a>: Into<&'a Configuration> {
 }
 
 impl<'a, T: Into<&'a Configuration>> ConfigurationExt<'a> for T {}
+
+impl<'a> Into<&'a Channel> for RustChannel<'a> {
+    fn into(self) -> &'a Channel {
+        unsafe { transmute_table_to(&self._tab) }
+    }
+}
+
+pub trait ChannelExt<'a>: Into<&'a Channel> {
+    fn type_(self) -> Option<&'a str> {
+        let c = self.into();
+        ffi::aos::configuration::HasChannelTypeForRust(c)
+            .then(move || ffi::aos::configuration::GetChannelTypeForRust(c))
+    }
+
+    fn name(self) -> Option<&'a str> {
+        let c = self.into();
+        ffi::aos::configuration::HasChannelNameForRust(c)
+            .then(move || ffi::aos::configuration::GetChannelNameForRust(c))
+    }
+}
+
+impl<'a, T: Into<&'a Channel>> ChannelExt<'a> for T {}
 
 /// # Panics
 ///
