@@ -44,7 +44,13 @@ struct Values {
         subsystem_params;
     double potentiometer_offset;
   };
+
+  // Intake rollers
+  static constexpr double kIntakeRollerSupplyCurrentLimit() { return 40.0; }
+  static constexpr double kIntakeRollerStatorCurrentLimit() { return 60.0; }
+
 };
+
 // Creates and returns a Values instance for the constants.
 // Should be called before realtime because this allocates memory.
 // Only the first call to either of these will be used.

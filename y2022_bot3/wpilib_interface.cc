@@ -242,10 +242,45 @@ class SuperstructureWriter
       : frc971::wpilib::LoopOutputHandler<superstructure::Output>(
             event_loop, "/superstructure") {}
 
- private:
-  void Stop() override { AOS_LOG(WARNING, "Superstructure output too old.\n"); }
+  void set_intake_roller_falcon(
+      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+    intake_roller_falcon_ = std::move(t);
+    intake_roller_falcon_->ConfigSupplyCurrentLimit(
+        {true, Values::kIntakeRollerSupplyCurrentLimit(),
+         Values::kIntakeRollerSupplyCurrentLimit(), 0});
+    intake_roller_falcon_->ConfigStatorCurrentLimit(
+        {true, Values::kIntakeRollerStatorCurrentLimit(),
+         Values::kIntakeRollerStatorCurrentLimit(), 0});
+  }
 
-  void Write(const superstructure::Output &output) override { (void)output; }
+  void set_climber_falcon_left(std::unique_ptr<frc::TalonFX> t) {
+    climber_falcon_left_ = std::move(t);
+  }
+
+  void set_climber_falcon_right(std::unique_ptr<frc::TalonFX> t) {
+    climber_falcon_right_ = std::move(t);
+  }
+
+  void set_intake_falcon(std::unique_ptr<frc::TalonFX> t) {
+    intake_falcon_ = std::move(t);
+  }
+
+ private:
+  void Stop() override {
+    AOS_LOG(WARNING, "Superstructure output too old.\n");
+    climber_falcon_left_->SetDisabled();
+    climber_falcon_right_->SetDisabled();
+    intake_falcon_->SetDisabled();
+    intake_roller_falcon_->Set(
+        ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+  }
+
+  void Write(const superstructure::Output &output) override {
+    WritePwm(output.climber_voltage_left(), climber_falcon_left_.get());
+    WritePwm(output.climber_voltage_right(), climber_falcon_right_.get());
+    WritePwm(output.intake_voltage(), intake_falcon_.get());
+    WriteCan(output.roller_voltage(), intake_roller_falcon_.get());
+  }
 
   static void WriteCan(const double voltage,
                        ::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
@@ -259,6 +294,11 @@ class SuperstructureWriter
     motor->SetSpeed(std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) /
                     12.0);
   }
+
+  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
+      intake_roller_falcon_;
+  ::std::unique_ptr<::frc::TalonFX> climber_falcon_left_, climber_falcon_right_,
+      intake_falcon_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -307,7 +347,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), true);
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
-
+    superstructure_writer.set_climber_falcon_left(make_unique<frc::TalonFX>(2));
+    superstructure_writer.set_climber_falcon_right(
+        make_unique<frc::TalonFX>(3));
+    superstructure_writer.set_intake_falcon(make_unique<frc::TalonFX>(4));
+    superstructure_writer.set_intake_roller_falcon(
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
     AddLoop(&output_event_loop);
 
     // Thread 5.
