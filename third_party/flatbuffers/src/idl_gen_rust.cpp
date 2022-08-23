@@ -1566,12 +1566,16 @@ class RustGenerator : public BaseGenerator {
 
   // Generates a fully-qualified name getter for use with --gen-name-strings
   void GenFullyQualifiedNameGetter(const StructDef &struct_def,
-                                   const std::string &name) {
+                                   const std::string &name, bool is_struct) {
     const std::string fully_qualified_name =
         struct_def.defined_namespace->GetFullyQualifiedName(name);
-    code_ += "  pub const fn get_fully_qualified_name() -> &'static str {";
+    code_ += "impl flatbuffers::FullyQualifiedName for {{STRUCT_TY}}\\";
+    if (!is_struct) { code_ += "<'_>\\"; }
+    code_ += "{";
+    code_ += "  fn get_fully_qualified_name() -> &'static str {";
     code_ += "    \"" + fully_qualified_name + "\"";
     code_ += "  }";
+    code_ += "}";
     code_ += "";
   }
 
@@ -1658,10 +1662,6 @@ class RustGenerator : public BaseGenerator {
           "{{OFFSET_VALUE}};";
     });
     code_ += "";
-
-    if (parser_.opts.generate_name_strings) {
-      GenFullyQualifiedNameGetter(struct_def, struct_def.name);
-    }
 
     code_ += "  #[inline]";
     code_ +=
@@ -1917,6 +1917,10 @@ class RustGenerator : public BaseGenerator {
     });
     code_ += "}";  // End of table impl.
     code_ += "";
+
+    if (parser_.opts.generate_name_strings) {
+      GenFullyQualifiedNameGetter(struct_def, struct_def.name, false);
+    }
 
     // Generate Verifier;
     code_ += "impl flatbuffers::Verifiable for {{STRUCT_TY}}<'_> {";
@@ -2735,10 +2739,6 @@ class RustGenerator : public BaseGenerator {
     code_ += "  }";
     code_ += "";
 
-    if (parser_.opts.generate_name_strings) {
-      GenFullyQualifiedNameGetter(struct_def, struct_def.name);
-    }
-
     // Generate accessor methods for the struct.
     ForAllStructFields(struct_def, [&](const FieldDef &field) {
       this->GenComment(field.doc_comment);
@@ -2848,6 +2848,10 @@ class RustGenerator : public BaseGenerator {
 
     code_ += "}";  // End impl Struct methods.
     code_ += "";
+
+    if (parser_.opts.generate_name_strings) {
+      GenFullyQualifiedNameGetter(struct_def, struct_def.name, true);
+    }
 
     // Generate Struct Object.
     if (parser_.opts.generate_object_based_api) {

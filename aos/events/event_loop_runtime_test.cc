@@ -9,7 +9,8 @@
 namespace aos::events::testing {
 namespace {
 
-void MakeAndTestApplication(int value) {
+template <typename F>
+void MakeAndTestApplication(int value, F constructor) {
   const int32_t starting_count = completed_test_count();
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(
@@ -20,7 +21,7 @@ void MakeAndTestApplication(int value) {
   auto pong_fetcher = ping_event_loop->MakeFetcher<examples::Pong>("/test");
   const auto rust_event_loop = factory.MakeEventLoop("pong");
   {
-    auto test_application = make_test_application(rust_event_loop.get());
+    auto test_application = constructor(rust_event_loop.get());
     int iteration = 0;
     ping_event_loop
         ->AddTimer([&]() {
@@ -51,11 +52,18 @@ void MakeAndTestApplication(int value) {
 
 }  // namespace
 
-TEST(EventLoopRustTest, TestApplicationOnce) { MakeAndTestApplication(971); }
+TEST(EventLoopRustTest, TestApplicationOnce) {
+  MakeAndTestApplication(971, &make_test_application);
+}
 
 TEST(EventLoopRustTest, TestApplicationTwice) {
-  MakeAndTestApplication(971);
-  MakeAndTestApplication(254);
+  MakeAndTestApplication(971, &make_test_application);
+  MakeAndTestApplication(254, &make_test_application);
+}
+
+TEST(EventLoopRustTest, TestTypedApplicationTwice) {
+  MakeAndTestApplication(971, &make_typed_test_application);
+  MakeAndTestApplication(254, &make_typed_test_application);
 }
 
 }  // namespace aos::events::testing

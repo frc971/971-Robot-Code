@@ -51,11 +51,14 @@ use autocxx::{
     WithinBox,
 };
 use cxx::UniquePtr;
+use flatbuffers::{root_unchecked, Follow, FollowWith, FullyQualifiedName};
 use futures::{future::FusedFuture, never::Never};
 use thiserror::Error;
 use uuid::Uuid;
 
-pub use aos_configuration::{Channel, ChannelLookupError, Configuration, ConfigurationExt, Node};
+pub use aos_configuration::{Channel, Configuration, Node};
+use aos_configuration::{ChannelLookupError, ConfigurationExt};
+
 pub use aos_uuid::UUID;
 
 autocxx::include_cpp! (
@@ -176,20 +179,40 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
         self.0.as_mut().event_loop()
     }
 
-    // TODO(Brian): Expose `name`. Need to sort out the lifetimes. C++ can reallocate the pointer
-    // independent of Rust. Use it in `get_raw_channel` instead of passing the name in.
+    /// Returns a reference to the name of this EventLoop.
+    ///
+    /// TODO(Brian): Come up with a nice way to expose this safely, without memory allocations, for
+    /// logging etc.
+    ///
+    /// # Safety
+    ///
+    /// The result must not be used after C++ could change it. Unfortunately C++ can change this
+    /// name from most places, so you should be really careful what you do with the result.
+    pub unsafe fn raw_name(&self) -> &str {
+        self.0.name()
+    }
 
     pub fn get_raw_channel(
         &self,
         name: &str,
         typename: &str,
-        application_name: &str,
     ) -> Result<&'event_loop Channel, ChannelLookupError> {
-        self.configuration()
-            .get_channel(name, typename, application_name, self.node())
+        self.configuration().get_channel(
+            name,
+            typename,
+            // SAFETY: We're not calling any EventLoop methods while C++ is using this for the
+            // channel lookup.
+            unsafe { self.raw_name() },
+            self.node(),
+        )
     }
 
-    // TODO(Brian): `get_channel<T>`.
+    pub fn get_channel<T: FullyQualifiedName>(
+        &self,
+        name: &str,
+    ) -> Result<&'event_loop Channel, ChannelLookupError> {
+        self.get_raw_channel(name, T::get_fully_qualified_name())
+    }
 
     /// Starts running the given `task`, which may not return (as specified by its type). If you
     /// want your task to stop, return the result of awaiting [`futures::future::pending`], which
@@ -347,6 +370,23 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
         RawWatcher(unsafe { self.0.as_mut().MakeWatcher(channel) }.within_box())
     }
 
+    /// Provides type-safe async blocking access to messages on a channel. `T` should be a
+    /// generated flatbuffers table type, the lifetime parameter does not matter, using `'static`
+    /// is easiest.
+    ///
+    /// # Panics
+    ///
+    /// Dropping `self` before the returned object is dropped will panic.
+    pub fn make_watcher<T>(&mut self, channel_name: &str) -> Result<Watcher<T>, ChannelLookupError>
+    where
+        for<'a> T: FollowWith<'a>,
+        for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>,
+        T: FullyQualifiedName,
+    {
+        let channel = self.get_channel::<T>(channel_name)?;
+        Ok(Watcher(self.make_raw_watcher(channel), PhantomData))
+    }
+
     /// Note that the `'event_loop` input lifetime is intentional. The C++ API requires that it is
     /// part of `self.configuration()`, which will always have this lifetime.
     ///
@@ -357,6 +397,21 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
         // SAFETY: `channel` is valid for the necessary lifetime, all other requirements fall under
         // the usual autocxx heuristics.
         RawSender(unsafe { self.0.as_mut().MakeSender(channel) }.within_box())
+    }
+
+    /// Allows sending messages on a channel with a type-safe API.
+    ///
+    /// # Panics
+    ///
+    /// Dropping `self` before the returned object is dropped will panic.
+    pub fn make_sender<T>(&mut self, channel_name: &str) -> Result<Sender<T>, ChannelLookupError>
+    where
+        for<'a> T: FollowWith<'a>,
+        for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>,
+        T: FullyQualifiedName,
+    {
+        let channel = self.get_channel::<T>(channel_name)?;
+        Ok(Sender(self.make_raw_sender(channel), PhantomData))
     }
 
     /// Note that the `'event_loop` input lifetime is intentional. The C++ API requires that it is
@@ -371,16 +426,29 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
         RawFetcher(unsafe { self.0.as_mut().MakeFetcher(channel) }.within_box())
     }
 
+    /// Provides type-safe access to messages on a channel, without the ability to wait for a new
+    /// one. This provides APIs to get the latest message, and to follow along and retrieve each
+    /// message in order.
+    ///
+    /// # Panics
+    ///
+    /// Dropping `self` before the returned object is dropped will panic.
+    pub fn make_fetcher<T>(&mut self, channel_name: &str) -> Result<Fetcher<T>, ChannelLookupError>
+    where
+        for<'a> T: FollowWith<'a>,
+        for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>,
+        T: FullyQualifiedName,
+    {
+        let channel = self.get_channel::<T>(channel_name)?;
+        Ok(Fetcher(self.make_raw_fetcher(channel), PhantomData))
+    }
+
     // TODO(Brian): Expose timers and phased loops. Should we have `sleep`-style methods for those,
     // instead of / in addition to mirroring C++ with separate setup and wait?
 
     // TODO(Brian): Expose OnRun. That should only be called once, so coalesce and have it return
     // immediately afterwards.
 }
-
-// SAFETY: If this outlives the parent EventLoop, the C++ code will LOG(FATAL).
-#[repr(transparent)]
-pub struct RawWatcher(Pin<Box<ffi::aos::WatcherForRust>>);
 
 /// Provides async blocking access to messages on a channel. This will return every message on the
 /// channel, in order.
@@ -408,6 +476,10 @@ pub struct RawWatcher(Pin<Box<ffi::aos::WatcherForRust>>);
 /// https://blog.rust-lang.org/2022/08/05/nll-by-default.html#looking-forward-what-can-we-expect-for-the-borrow-checker-of-the-future
 /// We get around that one by moving the unbounded lifetime from the pointer dereference into the
 /// function with the if statement.
+// SAFETY: If this outlives the parent EventLoop, the C++ code will LOG(FATAL).
+#[repr(transparent)]
+pub struct RawWatcher(Pin<Box<ffi::aos::WatcherForRust>>);
+
 impl RawWatcher {
     /// Returns a Future to await the next value. This can be canceled (ie dropped) at will,
     /// without skipping any messages.
@@ -500,18 +572,187 @@ impl FusedFuture for RawWatcherNext<'_> {
     }
 }
 
-// SAFETY: If this outlives the parent EventLoop, the C++ code will LOG(FATAL).
-#[repr(transparent)]
-pub struct RawFetcher(Pin<Box<ffi::aos::FetcherForRust>>);
+/// Provides async blocking access to messages on a channel. This will return every message on the
+/// channel, in order.
+///
+/// Use [`EventLoopRuntime::make_watcher`] to create one of these.
+///
+/// This is the same concept as [`futures::stream::Stream`], but can't follow that API for technical
+/// reasons. See [`RawWatcher`]'s documentation for details.
+pub struct Watcher<T>(RawWatcher, PhantomData<*mut T>)
+where
+    for<'a> T: FollowWith<'a>,
+    for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>;
+
+impl<T> Watcher<T>
+where
+    for<'a> T: FollowWith<'a>,
+    for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>,
+{
+    /// Returns a Future to await the next value. This can be canceled (ie dropped) at will,
+    /// without skipping any messages.
+    ///
+    /// Remember not to call `poll` after it returns `Poll::Ready`, just like any other future. You
+    /// will need to call this function again to get the succeeding message.
+    ///
+    /// # Examples
+    ///
+    /// The common use case is immediately awaiting the next message:
+    /// ```
+    /// # use pong_rust_fbs::aos::examples::Pong;
+    /// # async fn await_message(mut watcher: aos_events_event_loop_runtime::Watcher<Pong<'static>>) {
+    /// println!("received: {:?}", watcher.next().await);
+    /// # }
+    /// ```
+    ///
+    /// You can also await the first message from any of a set of channels:
+    /// ```
+    /// # use pong_rust_fbs::aos::examples::Pong;
+    /// # async fn select(
+    /// #     mut watcher1: aos_events_event_loop_runtime::Watcher<Pong<'static>>,
+    /// #     mut watcher2: aos_events_event_loop_runtime::Watcher<Pong<'static>>,
+    /// # ) {
+    /// futures::select! {
+    ///     message1 = watcher1.next() => println!("channel 1: {:?}", message1),
+    ///     message2 = watcher2.next() => println!("channel 2: {:?}", message2),
+    /// }
+    /// # }
+    /// ```
+    ///
+    /// Note that due to the returned object borrowing the `self` reference, the borrow checker will
+    /// enforce only having a single of these returned objects at a time. Drop the previous message
+    /// before asking for the next one. That means this will not compile:
+    /// ```compile_fail
+    /// # use pong_rust_fbs::aos::examples::Pong;
+    /// # async fn compile_check(mut watcher: aos_events_event_loop_runtime::Watcher<Pong<'static>>) {
+    /// let first = watcher.next();
+    /// let second = watcher.next();
+    /// first.await;
+    /// # }
+    /// ```
+    /// and nor will this:
+    /// ```compile_fail
+    /// # use pong_rust_fbs::aos::examples::Pong;
+    /// # async fn compile_check(mut watcher: aos_events_event_loop_runtime::Watcher<Pong<'static>>) {
+    /// let first = watcher.next().await;
+    /// watcher.next();
+    /// println!("still have: {:?}", first);
+    /// # }
+    /// ```
+    /// but this is fine:
+    /// ```
+    /// # use pong_rust_fbs::aos::examples::Pong;
+    /// # async fn compile_check(mut watcher: aos_events_event_loop_runtime::Watcher<Pong<'static>>) {
+    /// let first = watcher.next().await;
+    /// println!("have: {:?}", first);
+    /// watcher.next();
+    /// # }
+    /// ```
+    pub fn next(&mut self) -> WatcherNext<'_, <T as FollowWith<'_>>::Inner> {
+        WatcherNext(self.0.next(), PhantomData)
+    }
+}
+
+/// The type returned from [`Watcher::next`], see there for details.
+pub struct WatcherNext<'watcher, T>(RawWatcherNext<'watcher>, PhantomData<*mut T>)
+where
+    T: Follow<'watcher> + 'watcher;
+
+impl<'watcher, T> Future for WatcherNext<'watcher, T>
+where
+    T: Follow<'watcher> + 'watcher,
+{
+    type Output = TypedContext<'watcher, T>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
+        Pin::new(&mut self.get_mut().0).poll(cx).map(|context|
+                 // SAFETY: The Watcher this was created from verified that the channel is the
+                 // right type, and the C++ guarantees that the buffer's type matches.
+                 TypedContext(context, PhantomData))
+    }
+}
+
+impl<'watcher, T> FusedFuture for WatcherNext<'watcher, T>
+where
+    T: Follow<'watcher> + 'watcher,
+{
+    fn is_terminated(&self) -> bool {
+        self.0.is_terminated()
+    }
+}
+
+/// A wrapper around [`Context`] which exposes the flatbuffer message with the appropriate type.
+pub struct TypedContext<'a, T>(
+    // SAFETY: This must have a message, and it must be a valid `T` flatbuffer.
+    Context<'a>,
+    PhantomData<*mut T>,
+)
+where
+    T: Follow<'a> + 'a;
+
+// TODO(Brian): Add the realtime timestamps here.
+impl<'a, T> TypedContext<'a, T>
+where
+    T: Follow<'a> + 'a,
+{
+    pub fn message(&self) -> Option<T::Inner> {
+        self.0.data().map(|data| {
+            // SAFETY: C++ guarantees that this is a valid flatbuffer. We guarantee it's the right
+            // type based on invariants for our type.
+            unsafe { root_unchecked::<T>(data) }
+        })
+    }
+
+    pub fn monotonic_event_time(&self) -> MonotonicInstant {
+        self.0.monotonic_event_time()
+    }
+    pub fn monotonic_remote_time(&self) -> MonotonicInstant {
+        self.0.monotonic_remote_time()
+    }
+    pub fn queue_index(&self) -> u32 {
+        self.0.queue_index()
+    }
+    pub fn remote_queue_index(&self) -> u32 {
+        self.0.remote_queue_index()
+    }
+    pub fn buffer_index(&self) -> i32 {
+        self.0.buffer_index()
+    }
+    pub fn source_boot_uuid(&self) -> &Uuid {
+        self.0.source_boot_uuid()
+    }
+}
+
+impl<'a, T> fmt::Debug for TypedContext<'a, T>
+where
+    T: Follow<'a> + 'a,
+    T::Inner: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // TODO(Brian): Add the realtime timestamps here.
+        f.debug_struct("TypedContext")
+            .field("monotonic_event_time", &self.monotonic_event_time())
+            .field("monotonic_remote_time", &self.monotonic_remote_time())
+            .field("queue_index", &self.queue_index())
+            .field("remote_queue_index", &self.remote_queue_index())
+            .field("message", &self.message())
+            .field("buffer_index", &self.buffer_index())
+            .field("source_boot_uuid", &self.source_boot_uuid())
+            .finish()
+    }
+}
 
 /// Provides access to messages on a channel, without the ability to wait for a new one. This
-/// provides APIs to get the latest message at some time, and to follow along and retrieve each
-/// message in order.
+/// provides APIs to get the latest message, and to follow along and retrieve each message in order.
 ///
 /// Use [`EventLoopRuntime::make_raw_fetcher`] to create one of these.
 ///
 /// This is the non-typed API, which is mainly useful for reflection and does not provide safe APIs
 /// for actually interpreting messages. You probably want a [`Fetcher`] instead.
+// SAFETY: If this outlives the parent EventLoop, the C++ code will LOG(FATAL).
+#[repr(transparent)]
+pub struct RawFetcher(Pin<Box<ffi::aos::FetcherForRust>>);
+
 impl RawFetcher {
     pub fn fetch_next(&mut self) -> bool {
         self.0.as_mut().FetchNext()
@@ -526,9 +767,37 @@ impl RawFetcher {
     }
 }
 
-// SAFETY: If this outlives the parent EventLoop, the C++ code will LOG(FATAL).
-#[repr(transparent)]
-pub struct RawSender(Pin<Box<ffi::aos::SenderForRust>>);
+/// Provides access to messages on a channel, without the ability to wait for a new one. This
+/// provides APIs to get the latest message, and to follow along and retrieve each message in order.
+///
+/// Use [`EventLoopRuntime::make_fetcher`] to create one of these.
+pub struct Fetcher<T>(
+    // SAFETY: This must produce messages of type `T`.
+    RawFetcher,
+    PhantomData<*mut T>,
+)
+where
+    for<'a> T: FollowWith<'a>,
+    for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>;
+
+impl<T> Fetcher<T>
+where
+    for<'a> T: FollowWith<'a>,
+    for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>,
+{
+    pub fn fetch_next(&mut self) -> bool {
+        self.0.fetch_next()
+    }
+    pub fn fetch(&mut self) -> bool {
+        self.0.fetch()
+    }
+
+    pub fn context(&self) -> TypedContext<'_, <T as FollowWith<'_>>::Inner> {
+        // SAFETY: We verified that this is the correct type, and C++ guarantees that the buffer's
+        // type matches.
+        TypedContext(self.0.context(), PhantomData)
+    }
+}
 
 /// Allows sending messages on a channel.
 ///
@@ -536,6 +805,10 @@ pub struct RawSender(Pin<Box<ffi::aos::SenderForRust>>);
 /// for actually creating messages to send. You probably want a [`Sender`] instead.
 ///
 /// Use [`EventLoopRuntime::make_raw_sender`] to create one of these.
+// SAFETY: If this outlives the parent EventLoop, the C++ code will LOG(FATAL).
+#[repr(transparent)]
+pub struct RawSender(Pin<Box<ffi::aos::SenderForRust>>);
+
 impl RawSender {
     fn buffer(&mut self) -> &mut [u8] {
         // SAFETY: This is a valid slice, and `u8` doesn't have any alignment requirements.
@@ -595,14 +868,6 @@ impl RawSender {
     }
 }
 
-#[derive(Clone, Copy, Eq, PartialEq, Debug, Error)]
-pub enum SendError {
-    #[error("messages have been sent too fast on this channel")]
-    MessagesSentTooFast,
-    #[error("invalid redzone data, shared memory corruption detected")]
-    InvalidRedzone,
-}
-
 /// Used for building a message. See [`RawSender::make_builder`] for details.
 pub struct RawBuilder<'sender> {
     raw_sender: &'sender mut RawSender,
@@ -634,6 +899,98 @@ impl<'sender> RawBuilder<'sender> {
             FfiError::kInvalidRedzone => Err(SendError::InvalidRedzone),
         }
     }
+}
+
+/// Allows sending messages on a channel with a type-safe API.
+///
+/// Use [`EventLoopRuntime::make_raw_sender`] to create one of these.
+pub struct Sender<T>(
+    // SAFETY: This must accept messages of type `T`.
+    RawSender,
+    PhantomData<*mut T>,
+)
+where
+    for<'a> T: FollowWith<'a>,
+    for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>;
+
+impl<T> Sender<T>
+where
+    for<'a> T: FollowWith<'a>,
+    for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>,
+{
+    /// Returns an object which can be used to build a message.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use pong_rust_fbs::aos::examples::{Pong, PongBuilder};
+    /// # fn compile_check(mut sender: aos_events_event_loop_runtime::Sender<Pong<'static>>) {
+    /// let mut builder = sender.make_builder();
+    /// let pong = PongBuilder::new(builder.fbb()).finish();
+    /// builder.send(pong);
+    /// # }
+    /// ```
+    ///
+    /// You can bail out of building a message and build another one:
+    /// ```
+    /// # use pong_rust_fbs::aos::examples::{Pong, PongBuilder};
+    /// # fn compile_check(mut sender: aos_events_event_loop_runtime::Sender<Pong<'static>>) {
+    /// let mut builder1 = sender.make_builder();
+    /// builder1.fbb();
+    /// let mut builder2 = sender.make_builder();
+    /// let pong = PongBuilder::new(builder2.fbb()).finish();
+    /// builder2.send(pong);
+    /// # }
+    /// ```
+    /// but you cannot build two messages at the same time with a single builder:
+    /// ```compile_fail
+    /// # use pong_rust_fbs::aos::examples::{Pong, PongBuilder};
+    /// # fn compile_check(mut sender: aos_events_event_loop_runtime::Sender<Pong<'static>>) {
+    /// let mut builder1 = sender.make_builder();
+    /// let mut builder2 = sender.make_builder();
+    /// PongBuilder::new(builder2.fbb()).finish();
+    /// PongBuilder::new(builder1.fbb()).finish();
+    /// # }
+    /// ```
+    pub fn make_builder(&mut self) -> Builder<T> {
+        Builder(self.0.make_builder(), PhantomData)
+    }
+}
+
+/// Used for building a message. See [`Sender::make_builder`] for details.
+pub struct Builder<'sender, T>(
+    // SAFETY: This must accept messages of type `T`.
+    RawBuilder<'sender>,
+    PhantomData<*mut T>,
+)
+where
+    for<'a> T: FollowWith<'a>,
+    for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>;
+
+impl<'sender, T> Builder<'sender, T>
+where
+    for<'a> T: FollowWith<'a>,
+    for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>,
+{
+    pub fn fbb(&mut self) -> &mut flatbuffers::FlatBufferBuilder<'sender> {
+        self.0.fbb()
+    }
+
+    pub fn send<'a>(
+        self,
+        root: flatbuffers::WIPOffset<<T as FollowWith<'a>>::Inner>,
+    ) -> Result<(), SendError> {
+        // SAFETY: We guarantee this is the right type based on invariants for our type.
+        unsafe { self.0.send(root) }
+    }
+}
+
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Error)]
+pub enum SendError {
+    #[error("messages have been sent too fast on this channel")]
+    MessagesSentTooFast,
+    #[error("invalid redzone data, shared memory corruption detected")]
+    InvalidRedzone,
 }
 
 #[repr(transparent)]

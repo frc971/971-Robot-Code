@@ -43,6 +43,7 @@ DEFAULT_FLATC_GO_ARGS = [
 DEFAULT_FLATC_RUST_ARGS = [
     "--gen-object-api",
     "--require-explicit-ids",
+    "--gen-name-strings",
 ]
 
 DEFAULT_FLATC_TS_ARGS = [
