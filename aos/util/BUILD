@@ -54,6 +54,28 @@ cc_binary(
 )
 
 cc_library(
+    name = "error_counter",
+    hdrs = ["error_counter.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "error_counter_test",
+    srcs = ["error_counter_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":error_counter",
+        "//aos:flatbuffers",
+        "//aos/events:event_loop_fbs",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
     name = "mcap_logger",
     srcs = ["mcap_logger.cc"],
     hdrs = ["mcap_logger.h"],

@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "aos/events/event_loop_generated.h"
+#include "aos/util/error_counter.h"
 
 namespace aos {
 namespace internal {
@@ -79,9 +80,9 @@ struct RawFetcherTiming {
 
 // Class to hold timing information for a raw sender.
 struct RawSenderTiming {
-  static constexpr size_t kNumErrors =
-      static_cast<int>(timing::SendError::MAX) -
-      static_cast<int>(timing::SendError::MIN) + 1;
+  typedef util::ErrorCounter<timing::SendError, timing::SendErrorCount>
+      ErrorCounter;
+  static constexpr size_t kNumErrors = ErrorCounter::kNumErrors;
 
   RawSenderTiming(int new_channel_index) : channel_index(new_channel_index) {}
 
@@ -90,8 +91,6 @@ struct RawSenderTiming {
   void IncrementError(timing::SendError error);
   // Sanity check that the enum values are such that we can just use the enum
   // values themselves as array indices without anything weird happening.
-  static_assert(0 == static_cast<int>(timing::SendError::MIN),
-                "Expected error enum values to start at zero.");
   static_assert(
       sizeof(std::invoke_result<decltype(timing::EnumValuesSendError)>::type) /
               sizeof(timing::SendError) ==
@@ -101,6 +100,7 @@ struct RawSenderTiming {
   const int channel_index;
   timing::Sender *sender = nullptr;
   internal::TimingStatistic size;
+  ErrorCounter error_counter;
 };
 
 // Class to hold timing information for timers.
