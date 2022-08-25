@@ -43,11 +43,9 @@ class UUID {
   // Default constructor which builds an uninitialized UUID.  Use one of the
   // static methods if you want something more useful.
   constexpr UUID() : data_() {}
-  constexpr UUID(const UUID &uuid) : data_(uuid.data_) {}
+  constexpr UUID(const UUID &uuid) = default;
 
-  void operator=(const UUID &other) {
-    memcpy(data_.data(), other.data_.data(), kDataSize);
-  }
+  constexpr UUID &operator=(const UUID &other) = default;
 
   // Packs this UUID into a flatbuffer as a string.
   flatbuffers::Offset<flatbuffers::String> PackString(
