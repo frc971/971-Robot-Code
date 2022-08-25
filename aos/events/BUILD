@@ -122,6 +122,9 @@ cc_library(
 
 cc_library(
     name = "event_loop_runtime_cc",
+    srcs = [
+        "event_loop_runtime.cc",
+    ],
     hdrs = [
         "event_loop_runtime.h",
     ],

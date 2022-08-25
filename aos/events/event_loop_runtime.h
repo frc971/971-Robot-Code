@@ -124,20 +124,36 @@ class FetcherForRust {
   const std::unique_ptr<RawFetcher> fetcher_;
 };
 
+class EventLoopRuntime;
+
+class OnRunForRust {
+ public:
+  OnRunForRust(EventLoopRuntime *runtime);
+  ~OnRunForRust();
+
+  bool is_running() const;
+
+ private:
+  EventLoopRuntime *const runtime_;
+};
+
 class EventLoopRuntime {
  public:
   EventLoopRuntime(EventLoop *event_loop) : event_loop_(event_loop) {}
-  ~EventLoopRuntime() = default;
+  ~EventLoopRuntime() {
+    CHECK_EQ(child_count_, 0)
+        << ": Some child objects were not destroyed first";
+  }
 
   EventLoop *event_loop() { return event_loop_; }
 
   void spawn(std::unique_ptr<ApplicationFuture> task) {
     CHECK(!task_) << ": May only call spawn once";
     task_ = std::move(task);
-    // TODO(Brian): Do this once we've got OnRun support.
-    // DoPoll();
-    // TODO(Brian): Once we have OnRun support, should this move there or stay
-    // here unconditionally?
+    DoPoll();
+    // Just do this unconditionally, so we don't have to keep track of each
+    // OnRun to only do it once. If Rust doesn't use OnRun, it's harmless to do
+    // an extra poll.
     event_loop_->OnRun([this] { DoPoll(); });
   }
 
@@ -145,6 +161,8 @@ class EventLoopRuntime {
     return event_loop_->configuration();
   }
   const Node *node() const { return event_loop_->node(); }
+
+  bool is_running() const { return event_loop_->is_running(); }
 
   // autocxx generates broken C++ code for `time_point`, see
   // https://github.com/google/autocxx/issues/787.
@@ -175,7 +193,11 @@ class EventLoopRuntime {
     return FetcherForRust(event_loop_->MakeRawFetcher(channel));
   }
 
+  OnRunForRust MakeOnRun() { return OnRunForRust(this); }
+
  private:
+  friend class OnRunForRust;
+
   // Polls the top-level future once. This is what all the callbacks should do.
   void DoPoll() {
     if (task_) {
@@ -186,6 +208,8 @@ class EventLoopRuntime {
   EventLoop *const event_loop_;
 
   std::unique_ptr<ApplicationFuture> task_;
+
+  int child_count_ = 0;
 };
 
 }  // namespace aos

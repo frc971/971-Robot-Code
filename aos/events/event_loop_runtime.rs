@@ -71,6 +71,7 @@ generate!("aos::WatcherForRust")
 generate!("aos::RawSender_Error")
 generate!("aos::SenderForRust")
 generate!("aos::FetcherForRust")
+generate!("aos::OnRunForRust")
 generate!("aos::EventLoopRuntime")
 
 subclass!("aos::ApplicationFuture", RustApplicationFuture)
@@ -218,9 +219,8 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// want your task to stop, return the result of awaiting [`futures::future::pending`], which
     /// will never complete. `task` will not be polled after the underlying `aos::EventLoop` exits.
     ///
-    /// TODO(Brian): Make this paragraph true:
-    /// Note that task will be polled immediately. If you want to defer work until the event loop
-    /// starts running, await TODO in the task.
+    /// Note that task will be polled immediately, to give it a chance to initialize. If you want to
+    /// defer work until the event loop starts running, await [`on_run`] in the task.
     ///
     /// # Panics
     ///
@@ -446,8 +446,17 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     // TODO(Brian): Expose timers and phased loops. Should we have `sleep`-style methods for those,
     // instead of / in addition to mirroring C++ with separate setup and wait?
 
-    // TODO(Brian): Expose OnRun. That should only be called once, so coalesce and have it return
-    // immediately afterwards.
+    /// Returns a Future to wait until the underlying EventLoop is running. Once this resolves, all
+    /// subsequent code will have any realtime scheduling applied. This means it can rely on
+    /// consistent timing, but it can no longer create any EventLoop child objects or do anything
+    /// else non-realtime.
+    pub fn on_run(&mut self) -> OnRun {
+        OnRun(self.0.as_mut().MakeOnRun().within_box())
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.0.is_running()
+    }
 }
 
 /// Provides async blocking access to messages on a channel. This will return every message on the
@@ -1049,6 +1058,23 @@ impl<'context> Context<'context> {
         // SAFETY: `self` has a valid C++ object. C++ guarantees that the return value will be
         // valid until something changes the context, which is `'context`.
         Uuid::from_bytes_ref(&self.0.source_boot_uuid)
+    }
+}
+
+/// The type returned from [`EventLoopRuntime::on_run`], see there for details.
+// SAFETY: If this outlives the parent EventLoop, the C++ code will LOG(FATAL).
+#[repr(transparent)]
+pub struct OnRun(Pin<Box<ffi::aos::OnRunForRust>>);
+
+impl Future for OnRun {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, _: &mut std::task::Context) -> Poll<()> {
+        if self.0.is_running() {
+            Poll::Ready(())
+        } else {
+            Poll::Pending
+        }
     }
 }
 

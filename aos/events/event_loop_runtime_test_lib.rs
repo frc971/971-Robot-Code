@@ -35,6 +35,10 @@ mod tests {
         })
     }
 
+    fn started_test_count() -> u32 {
+        GLOBAL_STATE.with(|g| g.borrow().on_run_count)
+    }
+
     pub struct TestApplication<'event_loop> {
         _runtime: EventLoopRuntime<'event_loop>,
         raw_ping_fetcher: RawFetcher,
@@ -51,8 +55,9 @@ mod tests {
                     .get_raw_channel("/test", "aos.examples.Pong")
                     .expect("Should have Pong channel"),
             );
+            let on_run = runtime.on_run();
             runtime.spawn(async move {
-                // TODO(Brian): Wait for OnRun here.
+                on_run.await;
                 GLOBAL_STATE.with(|g| {
                     let g = &mut *g.borrow_mut();
                     assert_eq!(g.creation_count, g.drop_count + 1);
@@ -163,8 +168,9 @@ mod tests {
         fn new(mut runtime: EventLoopRuntime<'event_loop>) -> Self {
             let mut ping_watcher = runtime.make_watcher::<Ping<'static>>("/test").unwrap();
             let mut pong_sender = runtime.make_sender::<Pong<'static>>("/test").unwrap();
+            let on_run = runtime.on_run();
             runtime.spawn(async move {
-                // TODO(Brian): Wait for OnRun here.
+                on_run.await;
                 GLOBAL_STATE.with(|g| {
                     let g = &mut *g.borrow_mut();
                     assert_eq!(g.creation_count, g.drop_count + 1);
@@ -275,6 +281,7 @@ mod tests {
             ) -> Box<TypedTestApplication<'static>>;
 
             fn completed_test_count() -> u32;
+            fn started_test_count() -> u32;
         }
 
         extern "Rust" {

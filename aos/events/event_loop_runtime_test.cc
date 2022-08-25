@@ -42,7 +42,9 @@ void MakeAndTestApplication(int value, F constructor) {
         ->Setup(
             ping_event_loop->monotonic_now() + std::chrono::milliseconds(10),
             std::chrono::milliseconds(10));
+    ASSERT_EQ(starting_count, started_test_count());
     factory.Run();
+    ASSERT_EQ(starting_count + 1, started_test_count());
     EXPECT_EQ(2, iteration);
   }
   ASSERT_EQ(starting_count + 1, completed_test_count());
