@@ -12,13 +12,18 @@ const Channel *GetChannelForRust(const Configuration *config, rust::Str name,
                     RustStrToStringView(application_name), node);
 }
 
+const Node *GetNodeForRust(const Configuration *config, rust::Str name) {
+  return GetNode(config, RustStrToStringView(name));
+}
+
 rust::Vec<uint8_t> MaybeReadConfigForRust(
     rust::Str path, rust::Slice<const rust::Str> extra_import_paths) {
   std::vector<std::string_view> cc_extra_import_paths;
   for (const rust::Str &extra_import_path : extra_import_paths) {
     cc_extra_import_paths.push_back(RustStrToStringView(extra_import_path));
   }
-  const auto cc_result = MaybeReadConfig(RustStrToStringView(path));
+  const auto cc_result =
+      MaybeReadConfig(RustStrToStringView(path), cc_extra_import_paths);
   rust::Vec<uint8_t> result;
   if (cc_result) {
     result.reserve(cc_result->span().size());
