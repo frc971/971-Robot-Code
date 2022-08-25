@@ -233,8 +233,11 @@ class FieldWidget(Gtk.DrawingArea):
         multispline, result = Multispline.nearest_distance(
             self.multisplines, mouse)
 
-        if self.graph.cursor is not None and self.graph.data is not None:
-            multispline_index, x = self.graph.find_cursor()
+        if self.graph.cursor is not None:
+            cursor = self.graph.find_cursor()
+            if cursor is None:
+                return
+            multispline_index, x = cursor
             distance_spline = DistanceSpline(
                 self.multisplines[multispline_index].getLibsplines())
 
