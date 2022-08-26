@@ -1870,8 +1870,15 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
               result = next_node_filter->Consume();
           CHECK(result);
           WriteFilter(next_node_filter, *result);
-          next_node_filter->Pop(std::get<0>(*result) -
-                                time_estimation_buffer_seconds_);
+
+          // We shouldn't pop since we don't know if this is the oldest one or
+          // not, and this won't happen often.  Worst case, we leave 1 timestamp
+          // queued up that we don't need.
+          //
+          // We could get more clever and only pop it if it "matches" the
+          // eventual result, but I suspect the code to do that will be more
+          // expensive than tackling it when it is actually time to pop it given
+          // the frequency of the issue.
         }
       } break;
     }
