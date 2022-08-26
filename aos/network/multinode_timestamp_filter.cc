@@ -17,6 +17,8 @@ DEFINE_bool(timestamps_to_csv, false,
             "of CSV files in /tmp/.  This should only be needed when debugging "
             "time synchronization.");
 
+DEFINE_string(timestamp_csv_folder, "/tmp", "Folder to drop CSVs in");
+
 DEFINE_int32(max_invalid_distance_ns, 0,
              "The max amount of time we will let the solver go backwards.");
 
@@ -47,6 +49,13 @@ using aos::logger::BootTimestamp;
 
 const Eigen::IOFormat kHeavyFormat(Eigen::StreamPrecision, Eigen::DontAlignCols,
                                    ", ", ";\n", "[", "]", "[", "]");
+
+template <class... Args>
+std::string CsvPath(Args &&...args) {
+  return absl::StrCat(FLAGS_timestamp_csv_folder, "/",
+                      std::forward<Args>(args)...);
+}
+
 }  // namespace
 
 size_t TimestampProblem::solve_number_ = 0u;
@@ -889,7 +898,7 @@ MultiNodeNoncausalOffsetEstimator::MultiNodeNoncausalOffsetEstimator(
   filters_per_node_.resize(NodesCount());
   last_monotonics_.resize(NodesCount(), BootTimestamp::epoch());
   if (FLAGS_timestamps_to_csv && multi_node) {
-    fp_ = fopen("/tmp/timestamp_noncausal_offsets.csv", "w");
+    fp_ = fopen(CsvPath("timestamp_noncausal_offsets.csv").c_str(), "w");
     fprintf(fp_, "# distributed");
     for (const Node *node : configuration::GetNodes(logged_configuration)) {
       fprintf(fp_, ", %s", node->name()->c_str());
@@ -1017,7 +1026,8 @@ void MultiNodeNoncausalOffsetEstimator::Start(
 void MultiNodeNoncausalOffsetEstimator::Start(
     std::vector<monotonic_clock::time_point> times) {
   if (FLAGS_timestamps_to_csv) {
-    std::fstream s("/tmp/timestamp_noncausal_starttime.csv", s.trunc | s.out);
+    std::fstream s(CsvPath("timestamp_noncausal_starttime.csv").c_str(),
+                   s.trunc | s.out);
     CHECK(s.is_open());
     for (const Node *node : configuration::GetNodes(configuration())) {
       const size_t node_index =
@@ -2005,27 +2015,28 @@ void MultiNodeNoncausalOffsetEstimator::WriteFilter(
 
     FILE *fp = filter_fps_[node_a_index][node_b_index];
     if (fp == nullptr) {
-      fp = filter_fps_[node_a_index][node_b_index] = fopen(
-          absl::StrCat("/tmp/timestamp_noncausal_",
-                       next_filter->node_a()->name()->string_view(), "_",
-                       next_filter->node_b()->name()->string_view(), ".csv")
-              .c_str(),
-          "w");
+      fp = filter_fps_[node_a_index][node_b_index] =
+          fopen(CsvPath("timestamp_noncausal_",
+                        next_filter->node_a()->name()->string_view(), "_",
+                        next_filter->node_b()->name()->string_view(), ".csv")
+                    .c_str(),
+                "w");
       fprintf(fp, "time_since_start,sample_ns,filtered_offset\n");
     }
 
     if (last_monotonics_[node_a_index].boot == std::get<0>(sample).boot) {
-      fprintf(fp, "%.9f, %.9f, %.9f\n",
-              std::chrono::duration_cast<std::chrono::duration<double>>(
-                  last_distributed_.time_since_epoch() +
-                  std::get<0>(sample).time - last_monotonics_[node_a_index].time)
-                  .count(),
-              std::chrono::duration_cast<std::chrono::duration<double>>(
-                  std::get<0>(sample).time.time_since_epoch())
-                  .count(),
-              std::chrono::duration_cast<std::chrono::duration<double>>(
-                  std::get<1>(sample).duration)
-                  .count());
+      fprintf(
+          fp, "%.9f, %.9f, %.9f\n",
+          std::chrono::duration_cast<std::chrono::duration<double>>(
+              last_distributed_.time_since_epoch() + std::get<0>(sample).time -
+              last_monotonics_[node_a_index].time)
+              .count(),
+          std::chrono::duration_cast<std::chrono::duration<double>>(
+              std::get<0>(sample).time.time_since_epoch())
+              .count(),
+          std::chrono::duration_cast<std::chrono::duration<double>>(
+              std::get<1>(sample).duration)
+              .count());
     } else {
       LOG(WARNING) << "Not writing point, missmatched boot.";
     }
@@ -2193,19 +2204,19 @@ void MultiNodeNoncausalOffsetEstimator::FlushAllSamples(bool finish) {
       FILE *samples_fp = sample_fps_[node_index][sending_node_index];
       if (samples_fp == nullptr) {
         samples_fp = sample_fps_[node_index][sending_node_index] =
-            fopen(absl::StrCat("/tmp/timestamp_noncausal_",
-                               logged_configuration()
-                                   ->nodes()
-                                   ->Get(node_index)
-                                   ->name()
-                                   ->string_view(),
-                               "_",
-                               logged_configuration()
-                                   ->nodes()
-                                   ->Get(sending_node_index)
-                                   ->name()
-                                   ->string_view(),
-                               "_samples.csv")
+            fopen(CsvPath("timestamp_noncausal_",
+                          logged_configuration()
+                              ->nodes()
+                              ->Get(node_index)
+                              ->name()
+                              ->string_view(),
+                          "_",
+                          logged_configuration()
+                              ->nodes()
+                              ->Get(sending_node_index)
+                              ->name()
+                              ->string_view(),
+                          "_samples.csv")
                       .c_str(),
                   "w");
         fprintf(samples_fp,
