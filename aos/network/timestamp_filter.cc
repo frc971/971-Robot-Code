@@ -1077,15 +1077,20 @@ std::string NoncausalTimestampFilter::DebugOffsetError(
         slope, std::get<1>(reference_timestamp.second).count(), note);
   }
 
+  // FindTimestamps expects nullptr if we don't have the other direction.  But,
+  // any of the indirections to go get it might also be nullptr.  So keep
+  // checking if it's safe to continue, or give up and return nullptr.
+  const BootFilter *other_boot_filter =
+      other == nullptr ? nullptr : maybe_filter(tb_base.boot, ta_base.boot);
+  const SingleFilter *other_filter =
+      other_boot_filter == nullptr ? nullptr : &other_boot_filter->filter;
+
   std::pair<std::tuple<monotonic_clock::time_point, chrono::nanoseconds>,
             std::tuple<monotonic_clock::time_point, chrono::nanoseconds>>
-      points = f->filter
-                   .FindTimestamps(
-                       other == nullptr
-                           ? nullptr
-                           : &other->filter(tb_base.boot, ta_base.boot)->filter,
-                       true, pointer, ta_base.time, ta)
-                   .second;
+      points =
+          f->filter
+              .FindTimestamps(other_filter, true, pointer, ta_base.time, ta)
+              .second;
 
   // As a reminder, our cost function is essentially:
   //   ((tb - ta - (ma ta + ba))^2
