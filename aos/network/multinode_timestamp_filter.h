@@ -62,7 +62,8 @@ class TimestampProblem {
 
   // Validates the solution, returning true if it meets all the constraints, and
   // false otherwise.
-  bool ValidateSolution(std::vector<logger::BootTimestamp> solution);
+  bool ValidateSolution(std::vector<logger::BootTimestamp> solution,
+                        bool quiet);
   // Returns true if the provide node has observations to solve for the
   // provided boots.  This may happen when we are trying to solve for a reboot
   // to see if it is next, and haven't queued far enough.

@@ -360,23 +360,24 @@ class NoncausalTimestampFilter {
   // Confirms that the solution meets the constraints.  Returns true on success.
   bool ValidateSolution(const NoncausalTimestampFilter *other, Pointer pointer,
                         logger::BootTimestamp ta,
-                        logger::BootTimestamp tb) const {
+                        logger::BootTimestamp tb, bool quiet) const {
     const SingleFilter *other_filter =
         other == nullptr ? nullptr
                          : other->maybe_single_filter(tb.boot, ta.boot);
     return filter(pointer, ta.boot, tb.boot)
-        ->filter.ValidateSolution(other_filter, pointer, ta.time, tb.time);
+        ->filter.ValidateSolution(other_filter, pointer, ta.time, tb.time, quiet);
   }
   bool ValidateSolution(const NoncausalTimestampFilter *other, Pointer pointer,
                         logger::BootTimestamp ta_base, double ta,
-                        logger::BootTimestamp tb_base, double tb) const {
+                        logger::BootTimestamp tb_base, double tb,
+                        bool quiet) const {
     const SingleFilter *other_filter =
         other == nullptr
             ? nullptr
             : other->maybe_single_filter(tb_base.boot, ta_base.boot);
     return filter(pointer, ta_base.boot, tb_base.boot)
         ->filter.ValidateSolution(other_filter, pointer, ta_base.time, ta,
-                                  tb_base.time, tb);
+                                  tb_base.time, tb, quiet);
   }
 
   // Adds a new sample to our filtered timestamp list.
@@ -722,11 +723,11 @@ class NoncausalTimestampFilter {
     // success.
     bool ValidateSolution(const SingleFilter *other, Pointer pointer,
                           aos::monotonic_clock::time_point ta,
-                          aos::monotonic_clock::time_point tb) const;
+                          aos::monotonic_clock::time_point tb, bool quiet) const;
     bool ValidateSolution(const SingleFilter *other, Pointer pointer,
                           aos::monotonic_clock::time_point ta_base, double ta,
                           aos::monotonic_clock::time_point tb_base,
-                          double tb) const;
+                          double tb, bool quiet) const;
 
     void Sample(monotonic_clock::time_point monotonic_now,
                 std::chrono::nanoseconds sample_ns);
