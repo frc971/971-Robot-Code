@@ -192,26 +192,33 @@ int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
   return -1;
 }
 
-int ChannelState::NodeConnected(
-    const Node *node, sctp_assoc_t assoc_id, int stream, SctpServer *server,
-    aos::monotonic_clock::time_point monotonic_now) {
+int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
+                                int stream, SctpServer *server,
+                                aos::monotonic_clock::time_point monotonic_now,
+                                std::vector<sctp_assoc_t> *reconnected) {
   VLOG(1) << "Channel " << channel_->name()->string_view() << " "
           << channel_->type()->string_view() << " mapped to stream " << stream
           << " for node " << node->name()->string_view() << " assoc_id "
           << assoc_id;
   for (ChannelState::Peer &peer : peers_) {
+    // The node name is the most reliable method of detecting the same peer
+    // because in a multihomed system, the same IP address may not always be
+    // used to connect.
     if (peer.connection->name()->string_view() == node->name()->string_view()) {
       // There's a peer already connected.  Disconnect them and take over.
-      if (peer.sac_assoc_id != 0) {
+      if (peer.sac_assoc_id != 0 &&
+          (std::find(reconnected->begin(), reconnected->end(),
+                     peer.sac_assoc_id) == reconnected->end())) {
+        reconnected->push_back(peer.sac_assoc_id);
         if (peer.sac_assoc_id == assoc_id) {
-          LOG(WARNING) << "Node " << node->name()->string_view()
-                       << " reconnecting on " << assoc_id
-                       << "with the same ID, something got lost";
+          LOG_EVERY_T(WARNING, 0.025)
+              << "Node " << node->name()->string_view() << " reconnecting on "
+              << assoc_id << " with the same ID, something got lost";
         } else {
-          LOG(WARNING) << "Node " << node->name()->string_view() << " "
-                       << " already connected on " << peer.sac_assoc_id
-                       << "aborting old connection and switching to "
-                       << assoc_id;
+          LOG_EVERY_T(WARNING, 0.025)
+              << "Node " << node->name()->string_view() << " "
+              << " already connected on " << peer.sac_assoc_id
+              << " aborting old connection and switching to " << assoc_id;
           server->Abort(peer.sac_assoc_id);
         }
       }
@@ -480,6 +487,14 @@ void MessageBridgeServer::HandleData(const Message *message) {
     // Account for the control channel and delivery times channel.
     size_t channel_index = kControlStreams();
     int node_index = -1;
+    // TODO(sarah.newman): it would be better to do a refactor so that peers
+    // don't belong to channels. I am trying to do a quick hack to reduce the
+    // number of log messages without potentially losing information because the
+    // number of messages is overwhelming right now at first boot. This also
+    // should mean that we only send a single abort per association change,
+    // which is more correct behavior.
+    std::vector<sctp_assoc_t> reconnected;
+    reconnected.reserve(connect->channels_to_transfer()->size());
     for (const Channel *channel : *connect->channels_to_transfer()) {
       bool matched = false;
       for (std::unique_ptr<ChannelState> &channel_state : channels_) {
@@ -489,7 +504,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
         if (channel_state->Matches(channel)) {
           node_index = channel_state->NodeConnected(
               connect->node(), message->header.rcvinfo.rcv_assoc_id,
-              channel_index, &server_, monotonic_now);
+              channel_index, &server_, monotonic_now, &reconnected);
           CHECK_NE(node_index, -1);
           matched = true;
           break;

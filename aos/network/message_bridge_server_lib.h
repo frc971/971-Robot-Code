@@ -64,10 +64,13 @@ class ChannelState {
 
   // Needs to be called when a node (might have) disconnected.
   // Returns the node index which [dis]connected, or -1 if it didn't match.
+  // reconnected is a vector of associations which have already connected.
+  // This will potentially grow to the number of associations as we find reconnects.
   int NodeDisconnected(sctp_assoc_t assoc_id);
   int NodeConnected(const Node *node, sctp_assoc_t assoc_id, int stream,
                     SctpServer *server,
-                    aos::monotonic_clock::time_point monotonic_now);
+                    aos::monotonic_clock::time_point monotonic_now,
+                    std::vector<sctp_assoc_t> *reconnected);
 
   // Adds a new peer.
   void AddPeer(const Connection *connection, int node_index,

@@ -52,7 +52,8 @@ void SctpClient::SetPriorityScheduler(sctp_assoc_t assoc_id) {
   scheduler.assoc_value = SCTP_SS_PRIO;
   if (setsockopt(fd(), IPPROTO_SCTP, SCTP_STREAM_SCHEDULER, &scheduler,
                  sizeof(scheduler)) != 0) {
-    PLOG(WARNING) << "Failed to set scheduler";
+    LOG_FIRST_N(WARNING, 1) << "Failed to set scheduler: " << strerror(errno)
+                            << " [" << errno << "]";
   }
 }
 
