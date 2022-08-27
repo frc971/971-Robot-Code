@@ -117,11 +117,19 @@ class TimestampProblem {
   struct Derivitives {
     Eigen::VectorXd gradient;
     Eigen::MatrixXd hessian;
+
+    // A
+    Eigen::MatrixXd A;
+    // Ax - b
+    Eigen::MatrixXd Axmb;
+    // Node picked for Axmb
+    size_t solution_node = std::numeric_limits<size_t>::max();
   };
 
   // Returns the gradient and Hessian of the cost function at time_offsets.
   Derivitives ComputeDerivitives(
-      const Eigen::Ref<Eigen::VectorXd> time_offsets);
+      const Eigen::Ref<const Eigen::VectorXd> time_offsets,
+      const std::vector<logger::BootTimestamp> &points, bool quiet);
 
   // Returns the newton step of the timestamp problem, and the node which was
   // used for the equality constraint.  The last term is the scalar on the
@@ -129,7 +137,7 @@ class TimestampProblem {
   // actual newton step.
   std::tuple<Eigen::VectorXd, size_t> Newton(
       const Eigen::Ref<Eigen::VectorXd> time_offsets,
-      const std::vector<logger::BootTimestamp> &points);
+      const std::vector<logger::BootTimestamp> &points, size_t iteration);
 
   void MaybeUpdateNodeMapping();
 
