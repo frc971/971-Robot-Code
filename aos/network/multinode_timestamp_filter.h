@@ -65,6 +65,11 @@ class TimestampProblem {
   std::tuple<std::vector<logger::BootTimestamp>, size_t, size_t> SolveNewton(
       const std::vector<logger::BootTimestamp> &points, size_t max_iterations);
 
+  // Solves the optimization problem with constraints!
+  std::tuple<std::vector<logger::BootTimestamp>, size_t, size_t>
+  SolveConstrainedNewton(const std::vector<logger::BootTimestamp> &points,
+                         size_t max_iterations);
+
   // Validates the solution, returning true if it meets all the constraints, and
   // false otherwise.
   bool ValidateSolution(std::vector<logger::BootTimestamp> solution,
@@ -118,6 +123,28 @@ class TimestampProblem {
     Eigen::VectorXd gradient;
     Eigen::MatrixXd hessian;
 
+    // f
+    Eigen::MatrixXd f;
+    // df
+    Eigen::MatrixXd df;
+    // Slope limited df. This is used as part of computing Rt to avoid
+    // discontinuities across segment boundaries in lambda, and therefor Rt.
+    Eigen::MatrixXd df_slope_limited;
+
+    // ddf is assumed to be 0 because for the linear constraint distance
+    // function we are using, it is actually 0, and by assuming it is zero
+    // rather than passing it through as 0 to the solver, we can save enough CPU
+    // to make it worth it.
+
+    // TODO(austin): An unconstrained solver is going to be faster than a
+    // constrained solver (rather significantly faster).  The cost of getting it
+    // wrong is relatively small, and we can always re-solve with the
+    // constrained solver.  So, switch solvers when we get a constrained
+    // solution where no constraints are active, or an unconstrained solution
+    // with an invalidated constraint as a peformance boost?
+    //
+    // In that case, do we actually want to actually allocate and compute f?
+
     // A
     Eigen::MatrixXd A;
     // Ax - b
@@ -131,6 +158,21 @@ class TimestampProblem {
       const Eigen::Ref<const Eigen::VectorXd> time_offsets,
       const std::vector<logger::BootTimestamp> &points, bool quiet);
 
+  // Prints out the provided derivitives for debugging.
+  void PrintDerivitives(const Derivitives &derivitives,
+                        const Eigen::Ref<const Eigen::VectorXd> y,
+                        std::string_view prefix);
+
+  // Returns the constrained newtons step, t_inverse, and Rt.
+  std::tuple<Eigen::VectorXd, double, Eigen::VectorXd> ConstrainedNewton(
+      const Eigen::Ref<const Eigen::VectorXd> y, const Derivitives &derivitives,
+      size_t iteration);
+
+  // Adds our slack variable to our constrained problem derivitives.
+  Derivitives AddConstraintSlackVariable(
+      const Derivitives &derivitives,
+      const Eigen::Ref<const Eigen::VectorXd> y);
+
   // Returns the newton step of the timestamp problem, and the node which was
   // used for the equality constraint.  The last term is the scalar on the
   // equality constraint.  This needs to be removed from the solution to get the
@@ -138,6 +180,16 @@ class TimestampProblem {
   std::tuple<Eigen::VectorXd, size_t> Newton(
       const Eigen::Ref<Eigen::VectorXd> time_offsets,
       const std::vector<logger::BootTimestamp> &points, size_t iteration);
+
+  static constexpr double kAlpha = -0.15;
+  static constexpr double kBeta = 0.5;
+  static constexpr double kMu = 2.0;
+  static constexpr double kEpsilonF = 1e-4;
+  static constexpr double kEpsilon = 1e-2;
+
+  // Returns the modified KKT conditions (11.53 in Convex Optimization)
+  Eigen::VectorXd Rt(const Derivitives &derivitives,
+                     Eigen::Ref<const Eigen::VectorXd> y, double t);
 
   void MaybeUpdateNodeMapping();
 
