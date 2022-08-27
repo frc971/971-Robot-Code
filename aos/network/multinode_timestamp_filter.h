@@ -89,6 +89,8 @@ class TimestampProblem {
     return count;
   }
 
+  size_t my_solve_number() const { return my_solve_number_; }
+
  private:
   size_t SolutionNode(const std::vector<logger::BootTimestamp> &points) const {
     size_t solution_node = std::numeric_limits<size_t>::max();
@@ -159,6 +161,12 @@ class TimestampProblem {
 
   // List of filters indexed by node.
   std::vector<std::vector<FilterPair>> clock_offset_filter_for_node_;
+
+  // The solve number for this instance of the problem.
+  size_t my_solve_number_;
+
+  // The global solve number counter used to deterministically find problems.
+  static size_t solve_number_;
 };
 
 // Helpers to convert times between the monotonic and distributed clocks for

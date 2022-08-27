@@ -20,10 +20,23 @@ DEFINE_bool(timestamps_to_csv, false,
 DEFINE_int32(max_invalid_distance_ns, 0,
              "The max amount of time we will let the solver go backwards.");
 
+DEFINE_int32(debug_solve_number, -1,
+             "If nonzero, print out all the state for the provided solve "
+             "number.  This is typically used by solving once, taking note of "
+             "which solution failed to converge, and then re-running with "
+             "debug turned on for just that problem.");
+
 DEFINE_bool(bounds_offset_error, false,
             "If true, use the offset to the bounds for solving instead of to "
             "the interpolation lines.  This seems to make startup a bit "
             "better, but won't track the middle as well.");
+
+#define SOLVE_VLOG_IS_ON(v)                                               \
+  (VLOG_IS_ON(v) ||                                                       \
+   (static_cast<int32_t>(my_solve_number_) == FLAGS_debug_solve_number && \
+    FLAGS_debug_solve_number != -1))
+
+#define SOLVE_VLOG(v) LOG_IF(INFO, SOLVE_VLOG_IS_ON(v))
 
 namespace aos {
 namespace message_bridge {
@@ -36,12 +49,15 @@ const Eigen::IOFormat kHeavyFormat(Eigen::StreamPrecision, Eigen::DontAlignCols,
                                    ", ", ";\n", "[", "]", "[", "]");
 }  // namespace
 
+size_t TimestampProblem::solve_number_ = 0u;
+
 TimestampProblem::TimestampProblem(size_t count) {
   CHECK_GT(count, 1u);
   clock_offset_filter_for_node_.resize(count);
   base_clock_.resize(count);
   live_.resize(count, true);
   node_mapping_.resize(count, 0);
+  my_solve_number_ = solve_number_++;
 }
 
 // TODO(austin): Add a rate of change constraint from the last sample.  1
@@ -357,9 +373,10 @@ std::tuple<std::vector<BootTimestamp>, size_t, size_t>
 TimestampProblem::SolveNewton(const std::vector<logger::BootTimestamp> &points,
                               const size_t max_iterations) {
   MaybeUpdateNodeMapping();
+  SOLVE_VLOG(2) << "Starting to solve problem number " << my_solve_number_;
   for (size_t i = 0; i < points.size(); ++i) {
     if (points[i] != logger::BootTimestamp::max_time()) {
-      VLOG(2) << "Solving for node " << i << " at " << points[i];
+      SOLVE_VLOG(2) << "Solving for node " << i << " at " << points[i];
     }
   }
   Eigen::VectorXd data = Eigen::VectorXd::Zero(live_nodes_);
@@ -423,16 +440,17 @@ TimestampProblem::SolveNewton(const std::vector<logger::BootTimestamp> &points,
         data(solution_index) -= dsolution;
       }
       if (live(j)) {
-        VLOG(2) << "    live  "
-                << base_clock_[j].time +
-                       std::chrono::nanoseconds(static_cast<int64_t>(
-                           std::round(data(NodeToFullSolutionIndex(j)))))
-                << " "
-                << (data(NodeToFullSolutionIndex(j)) -
-                    std::round(data(NodeToFullSolutionIndex(j))))
-                << " (unrounded: " << data(NodeToFullSolutionIndex(j)) << ")";
+        SOLVE_VLOG(2) << "    live  "
+                      << base_clock_[j].time +
+                             std::chrono::nanoseconds(static_cast<int64_t>(
+                                 std::round(data(NodeToFullSolutionIndex(j)))))
+                      << " "
+                      << (data(NodeToFullSolutionIndex(j)) -
+                          std::round(data(NodeToFullSolutionIndex(j))))
+                      << " (unrounded: " << data(NodeToFullSolutionIndex(j))
+                      << ")";
       } else {
-        VLOG(2) << "    dead  " << aos::monotonic_clock::min_time;
+        SOLVE_VLOG(2) << "    dead  " << aos::monotonic_clock::min_time;
       }
     }
 
@@ -445,8 +463,8 @@ TimestampProblem::SolveNewton(const std::vector<logger::BootTimestamp> &points,
 
   for (size_t i = 0; i < points.size(); ++i) {
     if (points[i] != logger::BootTimestamp::max_time()) {
-      VLOG(2) << "Solving for node " << i << " of " << points[i] << " in "
-              << iteration << " cycles";
+      SOLVE_VLOG(2) << "Solving for node " << i << " of " << points[i] << " in "
+                    << iteration << " cycles";
     }
   }
   std::vector<BootTimestamp> result(size());
