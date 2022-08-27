@@ -39,14 +39,16 @@ DEFINE_bool(
     "This should only be set to false when trying to see if future problems "
     "would be solvable.  This won't process a valid log");
 
-DEFINE_bool(attempt_simultaneous_constrained_solve, false,
+DEFINE_bool(attempt_simultaneous_constrained_solve, true,
             "If true, try the simultaneous, constrained solver.  If false, "
             "only solve constrained problems sequentially.");
+
+DEFINE_int32(solve_verbosity, 1, "Verbosity to use when debugging the solver.");
 
 #define SOLVE_VLOG_IS_ON(v)                                               \
   (VLOG_IS_ON(v) ||                                                       \
    (static_cast<int32_t>(my_solve_number_) == FLAGS_debug_solve_number && \
-    FLAGS_debug_solve_number != -1))
+    v <= FLAGS_solve_verbosity))
 
 #define SOLVE_VLOG(v) LOG_IF(INFO, SOLVE_VLOG_IS_ON(v))
 
@@ -59,7 +61,7 @@ using aos::logger::BootTimestamp;
 
 const Eigen::IOFormat kHeavyFormat(Eigen::StreamPrecision, 0, ", ",
                                    ",\n                                        "
-                                   "                                        ",
+                                   "                                     ",
                                    "[", "]", "[", "]");
 
 template <class... Args>
@@ -643,6 +645,7 @@ TimestampProblem::Derivitives TimestampProblem::AddConstraintSlackVariable(
   result.Axmb = Eigen::MatrixXd::Zero(derivitives.A.rows() + 1, 1);
   result.Axmb.block(0, 0, derivitives.A.rows(), 1) = derivitives.Axmb;
   result.Axmb(derivitives.A.rows(), 0) = y(derivitives.hessian.rows());
+  result.solution_node = derivitives.solution_node;
 
   return result;
 }
@@ -673,7 +676,7 @@ Eigen::VectorXd TimestampProblem::Rt(const Derivitives &derivitives,
       derivitives.gradient + derivitives.df_slope_limited.transpose() * lambda +
       derivitives.A.transpose() * v;
 
-  SOLVE_VLOG(1) << "   r_dual: " << std::setprecision(12) << std::fixed
+  SOLVE_VLOG(3) << "    r_dual: " << std::setprecision(12) << std::fixed
                 << std::setfill(' ')
                 << derivitives.gradient.transpose().format(kHeavyFormat)
                 << " + "
@@ -772,39 +775,38 @@ TimestampProblem::ConstrainedNewton(const Eigen::Ref<const Eigen::VectorXd> y,
 
 void TimestampProblem::PrintDerivitives(
     const Derivitives &derivitives, const Eigen::Ref<const Eigen::VectorXd> y,
-    std::string_view prefix) {
+    std::string_view prefix, int verbosity) {
   const Eigen::Ref<const Eigen::VectorXd> x =
       y.block(0, 0, derivitives.hessian.rows(), 1);
   const Eigen::Ref<const Eigen::VectorXd> lambda =
       y.block(x.rows(), 0, derivitives.f.rows(), 1);
 
-  if (SOLVE_VLOG_IS_ON(1)) {
+  if (SOLVE_VLOG_IS_ON(verbosity)) {
     Eigen::IOFormat heavy = kHeavyFormat;
-    if (prefix.size() > 0u) {
-      heavy.rowSeparator =
-          kHeavyFormat.rowSeparator + std::string(prefix.size(), ' ');
-    }
+    heavy.rowSeparator =
+        kHeavyFormat.rowSeparator +
+        std::string(absl::StrCat(getpid()).size() + prefix.size(), ' ');
 
     const Eigen::Ref<const Eigen::VectorXd> v =
         y.block(x.rows() + lambda.rows(), 0, derivitives.A.rows(), 1);
-    SOLVE_VLOG(1) << "   " << prefix
-                  << "x: " << x.transpose().format(kHeavyFormat) << " "
-                  << prefix
-                  << "lambda: " << lambda.transpose().format(kHeavyFormat)
-                  << " " << prefix
-                  << "v: " << v.transpose().format(kHeavyFormat);
-    SOLVE_VLOG(1) << "  " << prefix << "hessian:     "
-                  << derivitives.hessian.format(kHeavyFormat);
-    SOLVE_VLOG(1) << "  " << prefix << "gradient:    "
-                  << derivitives.gradient.format(kHeavyFormat);
-    SOLVE_VLOG(1) << "  " << prefix
-                  << "A:           " << derivitives.A.format(kHeavyFormat);
-    SOLVE_VLOG(1) << "  " << prefix
-                  << "Ax-b:        " << derivitives.Axmb.format(kHeavyFormat);
-    SOLVE_VLOG(1) << "  " << prefix
-                  << "f:           " << derivitives.f.format(kHeavyFormat);
-    SOLVE_VLOG(1) << "  " << prefix
-                  << "df:          " << derivitives.df.format(kHeavyFormat);
+    SOLVE_VLOG(verbosity) << "   " << prefix
+                          << "x: " << x.transpose().format(heavy) << " "
+                          << prefix << "lambda: "
+                          << lambda.transpose().format(heavy) << " "
+                          << prefix
+                          << "v: " << v.transpose().format(heavy);
+    SOLVE_VLOG(verbosity) << "  " << prefix << "hessian:     "
+                          << derivitives.hessian.format(heavy);
+    SOLVE_VLOG(verbosity) << "  " << prefix << "gradient:    "
+                          << derivitives.gradient.format(heavy);
+    SOLVE_VLOG(verbosity) << "  " << prefix << "A:           "
+                          << derivitives.A.format(heavy);
+    SOLVE_VLOG(verbosity) << "  " << prefix << "Ax-b:        "
+                          << derivitives.Axmb.format(heavy);
+    SOLVE_VLOG(verbosity) << "  " << prefix << "f:           "
+                          << derivitives.f.format(heavy);
+    SOLVE_VLOG(verbosity) << "  " << prefix << "df:          "
+                          << derivitives.df.format(heavy);
   }
 }
 
@@ -892,7 +894,7 @@ TimestampProblem::SolveConstrainedNewton(
       }
     }
 
-    PrintDerivitives(derivitives, y, "");
+    PrintDerivitives(derivitives, y, "", 1);
 
     // Figure out our descent direction.
     Eigen::VectorXd dy;
@@ -943,16 +945,16 @@ TimestampProblem::SolveConstrainedNewton(
 
     s *= 0.99;
 
-    SOLVE_VLOG(1) << "  s is " << s;
+    SOLVE_VLOG(1) << "  After lambda line search, s is " << s;
 
     const Eigen::Ref<const Eigen::VectorXd> dx = dy.block(0, 0, x.rows(), 1);
     const Eigen::Ref<const Eigen::VectorXd> dv =
         dy.block(x.rows() + lambda.rows(), 0, v.rows(), 1);
 
-    SOLVE_VLOG(2) << "  Step " << iteration << " -> " << std::setprecision(12)
-                  << std::fixed << std::setfill(' ')
+    SOLVE_VLOG(3) << "  Initial step " << iteration << " -> "
+                  << std::setprecision(12) << std::fixed << std::setfill(' ')
                   << dy.transpose().format(kHeavyFormat);
-    SOLVE_VLOG(2) << "   rt_orig ->                                        "
+    SOLVE_VLOG(3) << "   rt ->                                        "
                   << std::setprecision(12) << std::fixed << std::setfill(' ')
                   << rt_orig.transpose().format(kHeavyFormat);
 
@@ -978,16 +980,11 @@ TimestampProblem::SolveConstrainedNewton(
       const Eigen::Ref<const Eigen::VectorXd> next_v = next_y.block(
           next_x.rows() + next_lambda.rows(), 0, next_derivitives.A.rows(), 1);
 
-      PrintDerivitives(next_derivitives, next_y, "next_");
+      SOLVE_VLOG(1) << "    next_rt(" << iteration << ") is " << rt.norm()
+                    << " -> " << std::setprecision(12) << std::fixed
+                    << std::setfill(' ') << rt.transpose().format(kHeavyFormat);
 
-      SOLVE_VLOG(1) << "  next_rt is " << rt.norm() << " -> "
-                    << std::setprecision(12) << std::fixed << std::setfill(' ')
-                    << rt.transpose().format(kHeavyFormat);
-
-      SOLVE_VLOG(1) << "  For s " << s << ", " << rt.norm() << " vs orig "
-                    << rt_orig.norm() << ", drt -> " << std::setprecision(12)
-                    << std::fixed << std::setfill(' ')
-                    << (rt_orig - rt).transpose().format(kHeavyFormat);
+      PrintDerivitives(next_derivitives, next_y, "next_", 3);
 
       // TODO(austin): If we end up growing the residual too many times in a
       // row, then stop searching?  Quan thinks we can be more clever here.
@@ -996,26 +993,28 @@ TimestampProblem::SolveConstrainedNewton(
       // cross our constraint.  Since Axmb isn't perfectly convex, let ourselves
       // get worse until it gets close to converging.
       if (next_derivitives.f.maxCoeff() > 0.0) {
-        SOLVE_VLOG(1) << "   f(" << iteration << ") -> "
-                      << next_derivitives.f.maxCoeff()
+        SOLVE_VLOG(1) << "   f_next > 0.0  -> " << next_derivitives.f.maxCoeff()
                       << ", continuing line search.";
         s *= kBeta;
       } else if (next_derivitives.Axmb.squaredNorm() < 0.1 &&
                  rt.squaredNorm() >
                      std::pow(1.0 - kAlpha * s, 2.0) * rt_orig_squared_norm) {
+        SOLVE_VLOG(1) << "   |Rt| > |Rt+1| " << rt.norm() << " >  "
+                      << rt_orig.norm() << ", drt -> " << std::setprecision(12)
+                      << std::fixed << std::setfill(' ')
+                      << (rt_orig - rt).transpose().format(kHeavyFormat);
         s *= kBeta;
       } else {
         break;
       }
     }
 
-    SOLVE_VLOG(1) << "s is now " << s;
+    SOLVE_VLOG(1) << "  Terminated line search with s " << s << ", "
+                  << rt.norm() << "(|Rt+1|) < " << rt_orig.norm() << "(|Rt|)";
     y = next_y;
 
     const Eigen::Ref<const Eigen::VectorXd> next_lambda =
         y.block(x.rows(), 0, lambda.rows(), 1);
-
-    SOLVE_VLOG(1) << "S is now " << s << " after line search";
 
     // See if we hit our convergence criteria.
     const double r_primal_squared_norm =
@@ -1032,23 +1031,23 @@ TimestampProblem::SolveConstrainedNewton(
         if (next_nu < kEpsilon) {
           break;
         } else {
-          SOLVE_VLOG(1) << "nu(" << iteration << ") -> " << next_nu << " < "
+          SOLVE_VLOG(1) << "  nu(" << iteration << ") -> " << next_nu << " < "
                         << kEpsilon << ", not done yet";
         }
 
       } else {
-        SOLVE_VLOG(1) << "r_dual(" << iteration << ") -> "
+        SOLVE_VLOG(1) << "  r_dual(" << iteration << ") -> "
                       << std::sqrt(r_dual_squared_norm) << " < " << kEpsilonF
                       << ", not done yet";
       }
     } else {
-      SOLVE_VLOG(1) << "r_primal(" << iteration << ") -> "
+      SOLVE_VLOG(1) << "  r_primal(" << iteration << ") -> "
                     << std::sqrt(r_primal_squared_norm) << " < " << kEpsilonF
                     << ", not done yet";
     }
-    SOLVE_VLOG(1) << "step(" << iteration << ") "
+    SOLVE_VLOG(1) << "  step(" << iteration << ") "
                   << (s * dy).transpose().format(kHeavyFormat);
-    SOLVE_VLOG(1) << "y(" << iteration << ") is now "
+    SOLVE_VLOG(1) << " y(" << iteration << ") is now "
                   << y.transpose().format(kHeavyFormat);
 
     // Very import, use the last set of derivitives we picked for our new y for
@@ -1076,7 +1075,7 @@ TimestampProblem::SolveConstrainedNewton(
           updated = true;
         }
 
-        SOLVE_VLOG(2) << "    live  "
+        SOLVE_VLOG(2) << "    live " << points[j].time << " vs solution "
                       << base_clock_[j].time +
                              std::chrono::nanoseconds(static_cast<int64_t>(
                                  std::round(y(NodeToFullSolutionIndex(j)))))
@@ -1086,7 +1085,14 @@ TimestampProblem::SolveConstrainedNewton(
                       << " (unrounded: " << y(NodeToFullSolutionIndex(j)) << ")"
                       << (updated ? (std::string(" updated ") +
                                      std::to_string(dsolution))
-                                  : std::string(""));
+                                  : std::string(""))
+                      << " dt "
+                      << (points[j].time -
+                          (base_clock_[j].time +
+                           std::chrono::nanoseconds(static_cast<int64_t>(
+                               std::round(y(NodeToFullSolutionIndex(j)))))))
+                             .count()
+                      << "ns";
       } else {
         SOLVE_VLOG(2) << "    dead  " << aos::monotonic_clock::min_time;
       }
@@ -1099,13 +1105,6 @@ TimestampProblem::SolveConstrainedNewton(
     }
   }
 
-  for (size_t i = 0; i < points.size(); ++i) {
-    if (points[i] != logger::BootTimestamp::max_time()) {
-      SOLVE_VLOG(2) << "Solving for node " << i << " of " << points[i] << " in "
-                    << iteration << " cycles";
-    }
-  }
-
   // Format up the results.
   std::vector<BootTimestamp> result(size());
   for (size_t i = 0; i < size(); ++i) {
@@ -1115,15 +1114,22 @@ TimestampProblem::SolveConstrainedNewton(
           base_clock(i).time + std::chrono::nanoseconds(static_cast<int64_t>(
                                    std::round(y(NodeToFullSolutionIndex(i)))));
       if (iteration > max_iterations || SOLVE_VLOG_IS_ON(2)) {
-        LOG(INFO) << "live  " << result[i] << " "
+        LOG(INFO) << "    live " << points[i].time << " vs solution "
+                  << result[i].time << " "
                   << (y(NodeToFullSolutionIndex(i)) -
                       std::round(y(NodeToFullSolutionIndex(i))))
-                  << " (unrounded: " << y(NodeToFullSolutionIndex(i)) << ")";
+                  << " (unrounded: " << y(NodeToFullSolutionIndex(i)) << ") dt "
+                  << (points[i].time -
+                      (base_clock_[i].time +
+                       std::chrono::nanoseconds(static_cast<int64_t>(
+                           std::round(y(NodeToFullSolutionIndex(i)))))))
+                         .count()
+                  << "ns";
       }
     } else {
       result[i] = BootTimestamp::min_time();
       if (iteration > max_iterations || SOLVE_VLOG_IS_ON(2)) {
-        LOG(INFO) << "dead  " << result[i];
+        LOG(INFO) << "  dead  " << result[i];
       }
     }
   }
@@ -2758,6 +2764,16 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     return std::nullopt;
   }
 
+  {
+    size_t index = 0;
+    for (auto t : result_times) {
+      VLOG(1)
+          << "Time: " << t << " "
+          << logged_configuration_->nodes()->Get(index)->name()->string_view();
+      ++index;
+    }
+  }
+
   std::tuple<logger::BootTimestamp, logger::BootDuration> sample;
   if (first_solution_) {
     first_solution_ = false;
@@ -2772,12 +2788,16 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     if (next_filter) {
       // This isn't a start time because we have a corresponding filter.
       sample = *next_filter->Consume();
+      VLOG(1) << "Sample is " << std::get<0>(sample) << " from "
+              << next_filter->node_a()->name()->string_view();
       next_filter->Pop(std::get<0>(sample) - time_estimation_buffer_seconds_);
     }
   } else {
     if (next_filter) {
       // This isn't a start time because we have a corresponding filter.
       sample = *next_filter->Consume();
+      VLOG(1) << "Sample is " << std::get<0>(sample) << " from "
+              << next_filter->node_a()->name()->string_view();
       next_filter->Pop(std::get<0>(sample) - time_estimation_buffer_seconds_);
     }
     // We found a good sample, so consume it.  If it is a duplicate, we still

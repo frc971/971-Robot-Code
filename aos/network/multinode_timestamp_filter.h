@@ -161,7 +161,7 @@ class TimestampProblem {
   // Prints out the provided derivitives for debugging.
   void PrintDerivitives(const Derivitives &derivitives,
                         const Eigen::Ref<const Eigen::VectorXd> y,
-                        std::string_view prefix);
+                        std::string_view prefix, int verbosity);
 
   // Returns the constrained newtons step, t_inverse, and Rt.
   std::tuple<Eigen::VectorXd, double, Eigen::VectorXd> ConstrainedNewton(
