@@ -13,10 +13,14 @@ def _cc_toolchain_flags(ctx, cc_toolchain):
         feature_configuration = feature_configuration,
         action_name = ACTION_NAMES.cpp_compile,
     )
+    preprocessor_defines = []
+    for lib in ctx.attr.libs:
+        preprocessor_defines.append(lib[CcInfo].compilation_context.defines)
     compile_variables = cc_common.create_compile_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
         user_compile_flags = ctx.fragments.cpp.copts + ctx.fragments.cpp.cxxopts,
+        preprocessor_defines = depset(transitive = preprocessor_defines),
     )
     command_line = cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,

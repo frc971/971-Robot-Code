@@ -32,7 +32,7 @@
 #include "utilities.h"
 
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <iomanip>
 #include <string>
 #ifdef HAVE_UNISTD_H
@@ -45,11 +45,12 @@
 # include <sys/utsname.h>  // For uname.
 #endif
 #include <dirent.h>
+#include <ctime>
 #include <fcntl.h>
 #include <cstdio>
 #include <iostream>
-#include <stdarg.h>
-#include <stdlib.h>
+#include <cstdarg>
+#include <cstdlib>
 #ifdef HAVE_PWD_H
 # include <pwd.h>
 #endif
@@ -57,15 +58,24 @@
 # include <syslog.h>
 #endif
 #include <vector>
-#include <errno.h>                   // for errno
+#include <cerrno>                   // for errno
 #include <sstream>
+#ifdef GLOG_OS_WINDOWS
+#include "windows/dirent.h"
+#else
+#include <dirent.h> // for automatic removal of old logs
+#endif
 #include "base/commandlineflags.h"        // to get the program name
-#include "glog/logging.h"
-#include "glog/raw_logging.h"
+#include <glog/logging.h>
+#include <glog/raw_logging.h>
 #include "base/googleinit.h"
 
 #ifdef HAVE_STACKTRACE
 # include "stacktrace.h"
+#endif
+
+#ifdef __ANDROID__
+#include <android/log.h>
 #endif
 
 using std::string;
@@ -104,13 +114,20 @@ static bool BoolFromEnv(const char *varname, bool defval) {
   return memchr("tTyY1\0", valstr[0], 6) != NULL;
 }
 
+GLOG_DEFINE_bool(timestamp_in_logfile_name,
+                 BoolFromEnv("GOOGLE_TIMESTAMP_IN_LOGFILE_NAME", true),
+                 "put a timestamp at the end of the log file name");
 GLOG_DEFINE_bool(logtostderr, BoolFromEnv("GOOGLE_LOGTOSTDERR", false),
                  "log messages go to stderr instead of logfiles");
 GLOG_DEFINE_bool(alsologtostderr, BoolFromEnv("GOOGLE_ALSOLOGTOSTDERR", false),
                  "log messages go to stderr in addition to logfiles");
 GLOG_DEFINE_bool(colorlogtostderr, false,
                  "color messages logged to stderr (if supported by terminal)");
-#ifdef OS_LINUX
+GLOG_DEFINE_bool(colorlogtostdout, false,
+                 "color messages logged to stdout (if supported by terminal)");
+GLOG_DEFINE_bool(logtostdout, BoolFromEnv("GOOGLE_LOGTOSTDOUT", false),
+                 "log messages go to stdout instead of logfiles");
+#ifdef GLOG_OS_LINUX
 GLOG_DEFINE_bool(drop_log_memory, true, "Drop in-memory buffers of log contents. "
                  "Logs can grow very quickly and they are rarely read before they "
                  "need to be evicted from memory. Instead, drop them from memory "
@@ -132,6 +149,8 @@ GLOG_DEFINE_string(alsologtoemail, "",
                    "in addition to logfiles");
 GLOG_DEFINE_bool(log_prefix, true,
                  "Prepend the log prefix to the start of each log line");
+GLOG_DEFINE_bool(log_year_in_prefix, true,
+                 "Include the year in the log prefix");
 GLOG_DEFINE_int32(minloglevel, 0, "Messages logged at a lower level than this don't "
                   "actually get logged anywhere");
 GLOG_DEFINE_int32(logbuflevel, 0,
@@ -140,11 +159,15 @@ GLOG_DEFINE_int32(logbuflevel, 0,
                   " ...)");
 GLOG_DEFINE_int32(logbufsecs, 30,
                   "Buffer log messages for at most this many seconds");
+
+GLOG_DEFINE_int32(logcleansecs, 60 * 5, // every 5 minutes
+                  "Clean overdue logs every this many seconds");
+
 GLOG_DEFINE_int32(logemaillevel, 999,
                   "Email log messages logged at this level or higher"
                   " (0 means email all; 3 means email FATAL only;"
                   " ...)");
-GLOG_DEFINE_string(logmailer, "/bin/mail",
+GLOG_DEFINE_string(logmailer, "",
                    "Mailer used to send logging email");
 
 // Compute the default value for --log_dir
@@ -179,9 +202,9 @@ GLOG_DEFINE_string(log_dir, DefaultLogDir(),
 GLOG_DEFINE_string(log_link, "", "Put additional links to the log "
                    "files in this directory");
 
-GLOG_DEFINE_int32(max_log_size, 1800,
-                  "approx. maximum log file size (in MB). A value of 0 will "
-                  "be silently overridden to 1.");
+GLOG_DEFINE_uint32(max_log_size, 1800,
+                   "approx. maximum log file size (in MB). A value of 0 will "
+                   "be silently overridden to 1.");
 
 GLOG_DEFINE_bool(stop_logging_if_full_disk, false,
                  "Stop attempting to log to disk if the disk is full.");
@@ -189,11 +212,14 @@ GLOG_DEFINE_bool(stop_logging_if_full_disk, false,
 GLOG_DEFINE_string(log_backtrace_at, "",
                    "Emit a backtrace when logging at file:linenum.");
 
+GLOG_DEFINE_bool(log_utc_time, false,
+    "Use UTC time for logging.");
+
 // TODO(hamaji): consider windows
 #define PATH_SEPARATOR '/'
 
 #ifndef HAVE_PREAD
-#if defined(OS_WINDOWS)
+#if defined(GLOG_OS_WINDOWS)
 #include <basetsd.h>
 #define ssize_t SSIZE_T
 #endif
@@ -231,12 +257,12 @@ static ssize_t pwrite(int fd, void* buf, size_t count, off_t offset) {
 static void GetHostName(string* hostname) {
 #if defined(HAVE_SYS_UTSNAME_H)
   struct utsname buf;
-  if (0 != uname(&buf)) {
+  if (uname(&buf) < 0) {
     // ensure null termination on failure
     *buf.nodename = '\0';
   }
   *hostname = buf.nodename;
-#elif defined(OS_WINDOWS)
+#elif defined(GLOG_OS_WINDOWS)
   char buf[MAX_COMPUTERNAME_LENGTH + 1];
   DWORD len = MAX_COMPUTERNAME_LENGTH + 1;
   if (GetComputerNameA(buf, &len)) {
@@ -253,7 +279,7 @@ static void GetHostName(string* hostname) {
 // Returns true iff terminal supports using colors in output.
 static bool TerminalSupportsColor() {
   bool term_supports_color = false;
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
   // on Windows TERM variable is usually not set, but the console does
   // support colors.
   term_supports_color = true;
@@ -307,7 +333,7 @@ static GLogColor SeverityToColor(LogSeverity severity) {
   return color;
 }
 
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
 
 // Returns the character attribute for the given color.
 static WORD GetColorAttribute(GLogColor color) {
@@ -332,11 +358,13 @@ static const char* GetAnsiColorCode(GLogColor color) {
   return NULL; // stop warning about return type.
 }
 
-#endif  // OS_WINDOWS
+#endif  // GLOG_OS_WINDOWS
 
 // Safely get max_log_size, overriding to 1 if it somehow gets defined as 0
-static int32 MaxLogSize() {
-  return (FLAGS_max_log_size > 0 ? FLAGS_max_log_size : 1);
+static uint32 MaxLogSize() {
+  return (FLAGS_max_log_size > 0 && FLAGS_max_log_size < 4096
+              ? FLAGS_max_log_size
+              : 1);
 }
 
 // An arbitrary limit on the length of a single log message.  This
@@ -358,8 +386,6 @@ struct LogMessage::LogMessageData  {
     std::vector<std::string>* outvec_; // NULL or vector to push message onto
     std::string* message_;             // NULL or string to write message into
   };
-  time_t timestamp_;            // Time of creation of LogMessage
-  struct ::tm tm_time_;         // Time of creation of LogMessage
   size_t num_prefix_chars_;     // # of chars of prefix in this message
   size_t num_chars_to_log_;     // # of chars of msg to send to log
   size_t num_chars_to_syslog_;  // # of chars of msg to send to syslog
@@ -403,6 +429,15 @@ static bool SendEmailInternal(const char*dest, const char *subject,
 base::Logger::~Logger() {
 }
 
+#ifdef GLOG_CUSTOM_PREFIX_SUPPORT
+namespace  {
+  // Optional user-configured callback to print custom prefixes.
+  CustomPrefixCallback custom_prefix_callback = NULL;
+  // User-provided data to pass to the callback:
+  void* custom_prefix_callback_data = NULL;
+}
+#endif
+
 namespace {
 
 // Encapsulates all file-system related state
@@ -414,7 +449,7 @@ class LogFileObject : public base::Logger {
   virtual void Write(bool force_flush, // Should we force a flush here?
                      time_t timestamp,  // Timestamp for this entry
                      const char* message,
-                     int message_len);
+                     size_t message_len);
 
   // Configuration options
   void SetBasename(const char* basename);
@@ -451,12 +486,49 @@ class LogFileObject : public base::Logger {
   uint32 file_length_;
   unsigned int rollover_attempt_;
   int64 next_flush_time_;         // cycle count at which to flush log
+  WallTime start_time_;
 
   // Actually create a logfile using the value of base_filename_ and the
-  // supplied argument time_pid_string
+  // optional argument time_pid_string
   // REQUIRES: lock_ is held
   bool CreateLogfile(const string& time_pid_string);
 };
+
+// Encapsulate all log cleaner related states
+class LogCleaner {
+ public:
+  LogCleaner();
+
+  // Setting overdue_days to 0 days will delete all logs.
+  void Enable(unsigned int overdue_days);
+  void Disable();
+
+  // update next_cleanup_time_
+  void UpdateCleanUpTime();
+
+  void Run(bool base_filename_selected,
+           const string& base_filename,
+           const string& filename_extension);
+
+  bool enabled() const { return enabled_; }
+
+ private:
+  vector<string> GetOverdueLogNames(string log_directory, unsigned int days,
+                                    const string& base_filename,
+                                    const string& filename_extension) const;
+
+  bool IsLogFromCurrentProject(const string& filepath,
+                               const string& base_filename,
+                               const string& filename_extension) const;
+
+  bool IsLogLastModifiedOver(const string& filepath, unsigned int days) const;
+
+  bool enabled_;
+  unsigned int overdue_days_;
+  int64 next_cleanup_time_;         // cycle count at which to clean overdue log
+};
+
+LogCleaner log_cleaner;
 
 }  // namespace
 
@@ -496,12 +568,12 @@ class LogDestination {
 
  private:
   LogDestination(LogSeverity severity, const char* base_filename);
-  ~LogDestination() { }
+  ~LogDestination();
 
   // Take a log message of a particular severity and log it to stderr
   // iff it's of a high enough severity to deserve it.
   static void MaybeLogToStderr(LogSeverity severity, const char* message,
-			       size_t len);
+			       size_t message_len, size_t prefix_len);
 
   // Take a log message of a particular severity and log it to email
   // iff it's of a high enough severity to deserve it.
@@ -520,12 +592,9 @@ class LogDestination {
                                const char* message, size_t len);
 
   // Send logging info to all registered sinks.
-  static void LogToSinks(LogSeverity severity,
-                         const char *full_filename,
-                         const char *base_filename,
-                         int line,
-                         const struct ::tm* tm_time,
-                         const char* message,
+  static void LogToSinks(LogSeverity severity, const char* full_filename,
+                         const char* base_filename, int line,
+                         const LogMessageTime& logmsgtime, const char* message,
                          size_t message_len);
 
   // Wait for all registered sinks via WaitTillSent
@@ -580,6 +649,13 @@ LogDestination::LogDestination(LogSeverity severity,
                                const char* base_filename)
   : fileobject_(severity, base_filename),
     logger_(&fileobject_) {
+}
+
+LogDestination::~LogDestination() {
+  if (logger_ && logger_ != &fileobject_) {
+    // Delete user-specified logger set via SetLogger().
+    delete logger_;
+  }
 }
 
 inline void LogDestination::FlushLogFilesUnsafe(int min_severity) {
@@ -638,13 +714,7 @@ inline void LogDestination::RemoveLogSink(LogSink *destination) {
   MutexLock l(&sink_mutex_);
   // This doesn't keep the sinks in order, but who cares?
   if (sinks_) {
-    for (int i = sinks_->size() - 1; i >= 0; i--) {
-      if ((*sinks_)[i] == destination) {
-        (*sinks_)[i] = (*sinks_)[sinks_->size() - 1];
-        sinks_->pop_back();
-        break;
-      }
-    }
+    sinks_->erase(std::remove(sinks_->begin(), sinks_->end(), destination), sinks_->end());
   }
 }
 
@@ -684,41 +754,61 @@ inline void LogDestination::SetEmailLogging(LogSeverity min_severity,
   LogDestination::addresses_ = addresses;
 }
 
-static void ColoredWriteToStderr(LogSeverity severity,
-                                 const char* message, size_t len) {
-  const GLogColor color =
-      (LogDestination::terminal_supports_color() && FLAGS_colorlogtostderr) ?
-      SeverityToColor(severity) : COLOR_DEFAULT;
+static void ColoredWriteToStderrOrStdout(FILE* output, LogSeverity severity,
+                                         const char* message, size_t len) {
+  bool is_stdout = (output == stdout);
+  const GLogColor color = (LogDestination::terminal_supports_color() &&
+                           ((!is_stdout && FLAGS_colorlogtostderr) ||
+                            (is_stdout && FLAGS_colorlogtostdout)))
+                              ? SeverityToColor(severity)
+                              : COLOR_DEFAULT;
 
   // Avoid using cerr from this module since we may get called during
   // exit code, and cerr may be partially or fully destroyed by then.
   if (COLOR_DEFAULT == color) {
-    fwrite(message, len, 1, stderr);
+    fwrite(message, len, 1, output);
     return;
   }
-#ifdef OS_WINDOWS
-  const HANDLE stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
+#ifdef GLOG_OS_WINDOWS
+  const HANDLE output_handle =
+      GetStdHandle(is_stdout ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE);
 
   // Gets the current text color.
   CONSOLE_SCREEN_BUFFER_INFO buffer_info;
-  GetConsoleScreenBufferInfo(stderr_handle, &buffer_info);
+  GetConsoleScreenBufferInfo(output_handle, &buffer_info);
   const WORD old_color_attrs = buffer_info.wAttributes;
 
   // We need to flush the stream buffers into the console before each
   // SetConsoleTextAttribute call lest it affect the text that is already
   // printed but has not yet reached the console.
-  fflush(stderr);
-  SetConsoleTextAttribute(stderr_handle,
+  fflush(output);
+  SetConsoleTextAttribute(output_handle,
                           GetColorAttribute(color) | FOREGROUND_INTENSITY);
-  fwrite(message, len, 1, stderr);
-  fflush(stderr);
+  fwrite(message, len, 1, output);
+  fflush(output);
   // Restores the text color.
-  SetConsoleTextAttribute(stderr_handle, old_color_attrs);
+  SetConsoleTextAttribute(output_handle, old_color_attrs);
 #else
-  fprintf(stderr, "\033[0;3%sm", GetAnsiColorCode(color));
-  fwrite(message, len, 1, stderr);
-  fprintf(stderr, "\033[m");  // Resets the terminal to default.
-#endif  // OS_WINDOWS
+  fprintf(output, "\033[0;3%sm", GetAnsiColorCode(color));
+  fwrite(message, len, 1, output);
+  fprintf(output, "\033[m");  // Resets the terminal to default.
+#endif  // GLOG_OS_WINDOWS
+}
+
+static void ColoredWriteToStdout(LogSeverity severity, const char* message,
+                                 size_t len) {
+  FILE* output = stdout;
+  // We also need to send logs to the stderr when the severity is
+  // higher or equal to the stderr threshold.
+  if (severity >= FLAGS_stderrthreshold) {
+    output = stderr;
+  }
+  ColoredWriteToStderrOrStdout(output, severity, message, len);
+}
+
+static void ColoredWriteToStderr(LogSeverity severity, const char* message,
+                                 size_t len) {
+  ColoredWriteToStderrOrStdout(stderr, severity, message, len);
 }
 
 static void WriteToStderr(const char* message, size_t len) {
@@ -728,12 +818,26 @@ static void WriteToStderr(const char* message, size_t len) {
 }
 
 inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
-					     const char* message, size_t len) {
+					     const char* message, size_t message_len, size_t prefix_len) {
   if ((severity >= FLAGS_stderrthreshold) || FLAGS_alsologtostderr) {
-    ColoredWriteToStderr(severity, message, len);
-#ifdef OS_WINDOWS
+    ColoredWriteToStderr(severity, message, message_len);
+#ifdef GLOG_OS_WINDOWS
+    (void) prefix_len;
     // On Windows, also output to the debugger
-    ::OutputDebugStringA(string(message,len).c_str());
+    ::OutputDebugStringA(message);
+#elif defined(__ANDROID__)
+    // On Android, also output to logcat
+    const int android_log_levels[NUM_SEVERITIES] = {
+      ANDROID_LOG_INFO,
+      ANDROID_LOG_WARN,
+      ANDROID_LOG_ERROR,
+      ANDROID_LOG_FATAL,
+    };
+    __android_log_write(android_log_levels[severity],
+                        glog_internal_namespace_::ProgramInvocationShortName(),
+                        message + prefix_len);
+#else
+    (void) prefix_len;
 #endif
   }
 }
@@ -778,27 +882,28 @@ inline void LogDestination::LogToAllLogfiles(LogSeverity severity,
                                              time_t timestamp,
                                              const char* message,
                                              size_t len) {
-
-  if ( FLAGS_logtostderr ) {           // global flag: never log to file
+  if (FLAGS_logtostdout) {  // global flag: never log to file
+    ColoredWriteToStdout(severity, message, len);
+  } else if (FLAGS_logtostderr) {  // global flag: never log to file
     ColoredWriteToStderr(severity, message, len);
   } else {
-    for (int i = severity; i >= 0; --i)
+    for (int i = severity; i >= 0; --i) {
       LogDestination::MaybeLogToLogfile(i, timestamp, message, len);
+    }
   }
 }
 
 inline void LogDestination::LogToSinks(LogSeverity severity,
-                                       const char *full_filename,
-                                       const char *base_filename,
-                                       int line,
-                                       const struct ::tm* tm_time,
+                                       const char* full_filename,
+                                       const char* base_filename, int line,
+                                       const LogMessageTime& logmsgtime,
                                        const char* message,
                                        size_t message_len) {
   ReaderMutexLock l(&sink_mutex_);
   if (sinks_) {
-    for (int i = sinks_->size() - 1; i >= 0; i--) {
+    for (size_t i = sinks_->size(); i-- > 0; ) {
       (*sinks_)[i]->send(severity, full_filename, base_filename,
-                         line, tm_time, message, message_len);
+                         line, logmsgtime, message, message_len);
     }
   }
 }
@@ -806,7 +911,7 @@ inline void LogDestination::LogToSinks(LogSeverity severity,
 inline void LogDestination::WaitForSinks(LogMessage::LogMessageData* data) {
   ReaderMutexLock l(&sink_mutex_);
   if (sinks_) {
-    for (int i = sinks_->size() - 1; i >= 0; i--) {
+    for (size_t i = sinks_->size(); i-- > 0; ) {
       (*sinks_)[i]->WaitTillSent();
     }
   }
@@ -840,6 +945,35 @@ void LogDestination::DeleteLogDestinations() {
 
 namespace {
 
+std::string g_application_fingerprint;
+
+} // namespace
+
+void SetApplicationFingerprint(const std::string& fingerprint) {
+  g_application_fingerprint = fingerprint;
+}
+
+namespace {
+
+// Directory delimiter; Windows supports both forward slashes and backslashes
+#ifdef GLOG_OS_WINDOWS
+const char possible_dir_delim[] = {'\\', '/'};
+#else
+const char possible_dir_delim[] = {'/'};
+#endif
+
+string PrettyDuration(int secs) {
+  std::stringstream result;
+  int mins = secs / 60;
+  int hours = mins / 60;
+  mins = mins % 60;
+  secs = secs % 60;
+  result.fill('0');
+  result << hours << ':' << setw(2) << mins << ':' << setw(2) << secs;
+  return result.str();
+}
+
+
 LogFileObject::LogFileObject(LogSeverity severity,
                              const char* base_filename)
   : base_filename_selected_(base_filename != NULL),
@@ -852,7 +986,8 @@ LogFileObject::LogFileObject(LogSeverity severity,
     dropped_mem_length_(0),
     file_length_(0),
     rollover_attempt_(kRolloverAttemptFrequency-1),
-    next_flush_time_(0) {
+    next_flush_time_(0),
+    start_time_(WallTime_Now()) {
   assert(severity >= 0);
   assert(severity < NUM_SEVERITIES);
 }
@@ -914,23 +1049,65 @@ void LogFileObject::FlushUnlocked(){
 }
 
 bool LogFileObject::CreateLogfile(const string& time_pid_string) {
-  string string_filename = base_filename_+filename_extension_+
-                           time_pid_string;
+  string string_filename = base_filename_;
+  if (FLAGS_timestamp_in_logfile_name) {
+    string_filename += time_pid_string;
+  }
+  string_filename += filename_extension_;
   const char* filename = string_filename.c_str();
-  int fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, FLAGS_logfile_mode);
+  //only write to files, create if non-existant.
+  int flags = O_WRONLY | O_CREAT;
+  if (FLAGS_timestamp_in_logfile_name) {
+    //demand that the file is unique for our timestamp (fail if it exists).
+    flags = flags | O_EXCL;
+  }
+  int fd = open(filename, flags, static_cast<mode_t>(FLAGS_logfile_mode));
   if (fd == -1) return false;
 #ifdef HAVE_FCNTL
   // Mark the file close-on-exec. We don't really care if this fails
   fcntl(fd, F_SETFD, FD_CLOEXEC);
+
+  // Mark the file as exclusive write access to avoid two clients logging to the
+  // same file. This applies particularly when !FLAGS_timestamp_in_logfile_name
+  // (otherwise open would fail because the O_EXCL flag on similar filename).
+  // locks are released on unlock or close() automatically, only after log is
+  // released.
+  // This will work after a fork as it is not inherited (not stored in the fd).
+  // Lock will not be lost because the file is opened with exclusive lock (write)
+  // and we will never read from it inside the process.
+  // TODO windows implementation of this (as flock is not available on mingw).
+  static struct flock w_lock;
+
+  w_lock.l_type = F_WRLCK;
+  w_lock.l_start = 0;
+  w_lock.l_whence = SEEK_SET;
+  w_lock.l_len = 0;
+
+  int wlock_ret = fcntl(fd, F_SETLK, &w_lock);
+  if (wlock_ret == -1) {
+      close(fd); //as we are failing already, do not check errors here
+      return false;
+  }
 #endif
 
+  //fdopen in append mode so if the file exists it will fseek to the end
   file_ = fdopen(fd, "a");  // Make a FILE*.
   if (file_ == NULL) {  // Man, we're screwed!
     close(fd);
-    unlink(filename);  // Erase the half-baked evidence: an unusable log file
+    if (FLAGS_timestamp_in_logfile_name) {
+      unlink(filename);  // Erase the half-baked evidence: an unusable log file, only if we just created it.
+    }
     return false;
   }
-
+#ifdef GLOG_OS_WINDOWS
+  // https://github.com/golang/go/issues/27638 - make sure we seek to the end to append
+  // empirically replicated with wine over mingw build
+  if (!FLAGS_timestamp_in_logfile_name) {
+    if (fseek(file_, 0, SEEK_END) != 0) {
+      return false;
+    }
+  }
+#endif
   // We try to create a symlink called <program_name>.<severity>,
   // which is easier to use.  (Every time we create a new logfile,
   // we destroy the old symlink and create a new one, so it always
@@ -942,11 +1119,11 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
     const string linkname =
       symlink_basename_ + '.' + LogSeverityNames[severity_];
     string linkpath;
-    if ( slash ) linkpath = string(filename, slash-filename+1);  // get dirname
+    if ( slash ) linkpath = string(filename, static_cast<size_t>(slash-filename+1));  // get dirname
     linkpath += linkname;
     unlink(linkpath.c_str());                    // delete old one if it exists
 
-#if defined(OS_WINDOWS)
+#if defined(GLOG_OS_WINDOWS)
     // TODO(hamaji): Create lnk file on Windows?
 #elif defined(HAVE_UNISTD_H)
     // We must have unistd.h.
@@ -975,7 +1152,7 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
 void LogFileObject::Write(bool force_flush,
                           time_t timestamp,
                           const char* message,
-                          int message_len) {
+                          size_t message_len) {
   MutexLock l(&lock_);
 
   // We don't log if the base_name_ is "" (which means "don't write")
@@ -983,12 +1160,11 @@ void LogFileObject::Write(bool force_flush,
     return;
   }
 
-  if (static_cast<int>(file_length_ >> 20) >= MaxLogSize() ||
-      PidHasChanged()) {
+  if (file_length_ >> 20U >= MaxLogSize() || PidHasChanged()) {
     if (file_ != NULL) fclose(file_);
     file_ = NULL;
     file_length_ = bytes_since_flush_ = dropped_mem_length_ = 0;
-    rollover_attempt_ = kRolloverAttemptFrequency-1;
+    rollover_attempt_ = kRolloverAttemptFrequency - 1;
   }
 
   // If there's no destination file, make one before outputting
@@ -1000,7 +1176,11 @@ void LogFileObject::Write(bool force_flush,
     rollover_attempt_ = 0;
 
     struct ::tm tm_time;
-    localtime_r(&timestamp, &tm_time);
+    if (FLAGS_log_utc_time) {
+      gmtime_r(&timestamp, &tm_time);
+    } else {
+      localtime_r(&timestamp, &tm_time);
+    }
 
     // The logfile's filename will have the date/time & pid in it
     ostringstream time_pid_stream;
@@ -1084,14 +1264,23 @@ void LogFileObject::Write(bool force_flush,
                        << ' '
                        << setw(2) << tm_time.tm_hour << ':'
                        << setw(2) << tm_time.tm_min << ':'
-                       << setw(2) << tm_time.tm_sec << '\n'
+                       << setw(2) << tm_time.tm_sec << (FLAGS_log_utc_time ? " UTC\n" : "\n")
                        << "Running on machine: "
-                       << LogDestination::hostname() << '\n'
-                       << "Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu "
+                       << LogDestination::hostname() << '\n';
+
+    if(!g_application_fingerprint.empty()) {
+      file_header_stream << "Application fingerprint: " << g_application_fingerprint << '\n';
+    }
+    const char* const date_time_format = FLAGS_log_year_in_prefix
+                                             ? "yyyymmdd hh:mm:ss.uuuuuu"
+                                             : "mmdd hh:mm:ss.uuuuuu";
+    file_header_stream << "Running duration (h:mm:ss): "
+                       << PrettyDuration(static_cast<int>(WallTime_Now() - start_time_)) << '\n'
+                       << "Log line format: [IWEF]" << date_time_format << " "
                        << "threadid file:line] msg" << '\n';
     const string& file_header_string = file_header_stream.str();
 
-    const int header_len = file_header_string.size();
+    const size_t header_len = file_header_string.size();
     fwrite(file_header_string.data(), 1, header_len, file_);
     file_length_ += header_len;
     bytes_since_flush_ += header_len;
@@ -1115,8 +1304,9 @@ void LogFileObject::Write(bool force_flush,
       bytes_since_flush_ += message_len;
     }
   } else {
-    if ( CycleClock_Now() >= next_flush_time_ )
+    if (CycleClock_Now() >= next_flush_time_) {
       stop_writing = false;  // check to see if disk has free space.
+    }
     return;  // no need to flush
   }
 
@@ -1126,26 +1316,226 @@ void LogFileObject::Write(bool force_flush,
        (bytes_since_flush_ >= 1000000) ||
        (CycleClock_Now() >= next_flush_time_) ) {
     FlushUnlocked();
-#ifdef OS_LINUX
+#ifdef GLOG_OS_LINUX
     // Only consider files >= 3MiB
-    if (FLAGS_drop_log_memory && file_length_ >= (3 << 20)) {
+    if (FLAGS_drop_log_memory && file_length_ >= (3U << 20U)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
       // of the log file and to avoid page rounding issue on linux < 4.7
-      uint32 total_drop_length = (file_length_ & ~((1 << 20) - 1)) - (1 << 20);
+      uint32 total_drop_length =
+          (file_length_ & ~((1U << 20U) - 1U)) - (1U << 20U);
       uint32 this_drop_length = total_drop_length - dropped_mem_length_;
-      if (this_drop_length >= (2 << 20)) {
+      if (this_drop_length >= (2U << 20U)) {
         // Only advise when >= 2MiB to drop
-        posix_fadvise(fileno(file_), dropped_mem_length_, this_drop_length,
+# if defined(__ANDROID__) && defined(__ANDROID_API__) && (__ANDROID_API__ < 21)
+        // 'posix_fadvise' introduced in API 21:
+        // * https://android.googlesource.com/platform/bionic/+/6880f936173081297be0dc12f687d341b86a4cfa/libc/libc.map.txt#732
+# else
+        posix_fadvise(fileno(file_), static_cast<off_t>(dropped_mem_length_),
+                      static_cast<off_t>(this_drop_length),
                       POSIX_FADV_DONTNEED);
+# endif
         dropped_mem_length_ = total_drop_length;
       }
     }
 #endif
+
+    // Remove old logs
+    if (log_cleaner.enabled()) {
+      log_cleaner.Run(base_filename_selected_,
+                      base_filename_,
+                      filename_extension_);
+    }
   }
 }
 
-}  // namespace
+LogCleaner::LogCleaner() : enabled_(false), overdue_days_(7), next_cleanup_time_(0) {}
 
+void LogCleaner::Enable(unsigned int overdue_days) {
+  enabled_ = true;
+  overdue_days_ = overdue_days;
+}
+
+void LogCleaner::Disable() {
+  enabled_ = false;
+}
+
+void LogCleaner::UpdateCleanUpTime() {
+  const int64 next = (FLAGS_logcleansecs
+                      * 1000000);  // in usec
+  next_cleanup_time_ = CycleClock_Now() + UsecToCycles(next);
+}
+
+void LogCleaner::Run(bool base_filename_selected,
+                     const string& base_filename,
+                     const string& filename_extension) {
+  assert(enabled_);
+  assert(!base_filename_selected || !base_filename.empty());
+
+  // avoid scanning logs too frequently
+  if (CycleClock_Now() < next_cleanup_time_) {
+    return;
+  }
+  UpdateCleanUpTime();
+
+  vector<string> dirs;
+
+  if (!base_filename_selected) {
+    dirs = GetLoggingDirectories();
+  } else {
+    size_t pos = base_filename.find_last_of(possible_dir_delim, string::npos,
+                                            sizeof(possible_dir_delim));
+    if (pos != string::npos) {
+      string dir = base_filename.substr(0, pos + 1);
+      dirs.push_back(dir);
+    } else {
+      dirs.push_back(".");
+    }
+  }
+
+  for (size_t i = 0; i < dirs.size(); i++) {
+    vector<string> logs = GetOverdueLogNames(dirs[i],
+                                             overdue_days_,
+                                             base_filename,
+                                             filename_extension);
+    for (size_t j = 0; j < logs.size(); j++) {
+      static_cast<void>(unlink(logs[j].c_str()));
+    }
+  }
+}
+
+vector<string> LogCleaner::GetOverdueLogNames(
+    string log_directory, unsigned int days, const string& base_filename,
+    const string& filename_extension) const {
+  // The names of overdue logs.
+  vector<string> overdue_log_names;
+
+  // Try to get all files within log_directory.
+  DIR *dir;
+  struct dirent *ent;
+
+  if ((dir = opendir(log_directory.c_str()))) {
+    while ((ent = readdir(dir))) {
+      if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
+        continue;
+      }
+
+      string filepath = ent->d_name;
+      const char* const dir_delim_end =
+          possible_dir_delim + sizeof(possible_dir_delim);
+
+      if (!log_directory.empty() &&
+          std::find(possible_dir_delim, dir_delim_end,
+                    log_directory[log_directory.size() - 1]) != dir_delim_end) {
+        filepath = log_directory + filepath;
+      }
+
+      if (IsLogFromCurrentProject(filepath, base_filename, filename_extension) &&
+          IsLogLastModifiedOver(filepath, days)) {
+        overdue_log_names.push_back(filepath);
+      }
+    }
+    closedir(dir);
+  }
+
+  return overdue_log_names;
+}
+
+bool LogCleaner::IsLogFromCurrentProject(const string& filepath,
+                                         const string& base_filename,
+                                         const string& filename_extension) const {
+  // We should remove duplicated delimiters from `base_filename`, e.g.,
+  // before: "/tmp//<base_filename>.<create_time>.<pid>"
+  // after:  "/tmp/<base_filename>.<create_time>.<pid>"
+  string cleaned_base_filename;
+
+  const char* const dir_delim_end =
+      possible_dir_delim + sizeof(possible_dir_delim);
+
+  size_t real_filepath_size = filepath.size();
+  for (size_t i = 0; i < base_filename.size(); ++i) {
+    const char& c = base_filename[i];
+
+    if (cleaned_base_filename.empty()) {
+      cleaned_base_filename += c;
+    } else if (std::find(possible_dir_delim, dir_delim_end, c) ==
+                   dir_delim_end ||
+               (!cleaned_base_filename.empty() &&
+                c != cleaned_base_filename[cleaned_base_filename.size() - 1])) {
+      cleaned_base_filename += c;
+    }
+  }
+
+  // Return early if the filename doesn't start with `cleaned_base_filename`.
+  if (filepath.find(cleaned_base_filename) != 0) {
+    return false;
+  }
+
+  // Check if in the string `filename_extension` is right next to
+  // `cleaned_base_filename` in `filepath` if the user
+  // has set a custom filename extension.
+  if (!filename_extension.empty()) {
+    if (cleaned_base_filename.size() >= real_filepath_size) {
+      return false;
+    }
+    // for origin version, `filename_extension` is middle of the `filepath`.
+    string ext = filepath.substr(cleaned_base_filename.size(), filename_extension.size());
+    if (ext == filename_extension) {
+      cleaned_base_filename += filename_extension;
+    }
+    else {
+      // for new version, `filename_extension` is right of the `filepath`.
+      if (filename_extension.size() >= real_filepath_size) {
+        return false;
+      }
+      real_filepath_size = filepath.size() - filename_extension.size();
+      if (filepath.substr(real_filepath_size) != filename_extension) {
+        return false;
+      }
+    }
+  }
+
+  // The characters after `cleaned_base_filename` should match the format:
+  // YYYYMMDD-HHMMSS.pid
+  for (size_t i = cleaned_base_filename.size(); i < real_filepath_size; i++) {
+    const char& c = filepath[i];
+
+    if (i <= cleaned_base_filename.size() + 7) { // 0 ~ 7 : YYYYMMDD
+      if (c < '0' || c > '9') { return false; }
+
+    } else if (i == cleaned_base_filename.size() + 8) { // 8: -
+      if (c != '-') { return false; }
+
+    } else if (i <= cleaned_base_filename.size() + 14) { // 9 ~ 14: HHMMSS
+      if (c < '0' || c > '9') { return false; }
+
+    } else if (i == cleaned_base_filename.size() + 15) { // 15: .
+      if (c != '.') { return false; }
+
+    } else if (i >= cleaned_base_filename.size() + 16) { // 16+: pid
+      if (c < '0' || c > '9') { return false; }
+    }
+  }
+
+  return true;
+}
+
+bool LogCleaner::IsLogLastModifiedOver(const string& filepath,
+                                       unsigned int days) const {
+  // Try to get the last modified time of this file.
+  struct stat file_stat;
+
+  if (stat(filepath.c_str(), &file_stat) == 0) {
+    const time_t seconds_in_a_day = 60 * 60 * 24;
+    time_t last_modified_time = file_stat.st_mtime;
+    time_t current_time = time(NULL);
+    return difftime(current_time, last_modified_time) > days * seconds_in_a_day;
+  }
+
+  // If failed to get file stat, don't return true!
+  return false;
+}
+
+}  // namespace
 
 // Static log data space to avoid alloc failures in a LOG(FATAL)
 //
@@ -1165,7 +1555,7 @@ static LogMessage::LogMessageData fatal_msg_data_shared;
 // allocations).
 static GLOG_THREAD_LOCAL_STORAGE bool thread_data_available = true;
 
-#ifdef HAVE_ALIGNED_STORAGE
+#if defined(HAVE_ALIGNED_STORAGE) && __cplusplus >= 201103L
 static GLOG_THREAD_LOCAL_STORAGE
     std::aligned_storage<sizeof(LogMessage::LogMessageData),
                          alignof(LogMessage::LogMessageData)>::type thread_msg_data;
@@ -1180,7 +1570,7 @@ LogMessage::LogMessageData::LogMessageData()
 }
 
 LogMessage::LogMessage(const char* file, int line, LogSeverity severity,
-                       int ctr, void (LogMessage::*send_method)())
+                       int64 ctr, void (LogMessage::*send_method)())
     : allocated_(NULL) {
   Init(file, line, severity, send_method);
   data_->stream_.set_ctr(ctr);
@@ -1267,7 +1657,6 @@ void LogMessage::Init(const char* file,
     MaybeUnsetRealtime();
   }
 
-  stream().fill('0');
   data_->preserved_errno_ = errno;
   data_->severity_ = severity;
   data_->line_ = line;
@@ -1275,10 +1664,8 @@ void LogMessage::Init(const char* file,
   data_->sink_ = NULL;
   data_->outvec_ = NULL;
   WallTime now = WallTime_Now();
-  data_->timestamp_ = static_cast<time_t>(now);
-  localtime_r(&data_->timestamp_, &data_->tm_time_);
-  int usecs = static_cast<int>((now - data_->timestamp_) * 1000000);
-  RawLog__SetLastTime(data_->tm_time_, usecs);
+  time_t timestamp_now = static_cast<time_t>(now);
+  logmsgtime_ = LogMessageTime(timestamp_now, now);
 
   data_->num_chars_to_log_ = 0;
   data_->num_chars_to_syslog_ = 0;
@@ -1287,23 +1674,45 @@ void LogMessage::Init(const char* file,
   data_->has_been_flushed_ = false;
 
   // If specified, prepend a prefix to each line.  For example:
-  //    I1018 160715 f5d4fbb0 logging.cc:1153]
-  //    (log level, GMT month, date, time, thread_id, file basename, line)
+  //    I20201018 160715 f5d4fbb0 logging.cc:1153]
+  //    (log level, GMT year, month, date, time, thread_id, file basename, line)
   // We exclude the thread_id for the default thread.
   if (FLAGS_log_prefix && (line != kNoLogPrefix)) {
-    stream() << LogSeverityNames[severity][0]
-             << setw(2) << 1+data_->tm_time_.tm_mon
-             << setw(2) << data_->tm_time_.tm_mday
-             << ' '
-             << setw(2) << data_->tm_time_.tm_hour  << ':'
-             << setw(2) << data_->tm_time_.tm_min   << ':'
-             << setw(2) << data_->tm_time_.tm_sec   << "."
-             << setw(6) << usecs
-             << ' '
-             << setfill(' ') << setw(5)
-             << static_cast<unsigned int>(GetTID()) << setfill('0')
-             << ' '
-             << data_->basename_ << ':' << data_->line_ << "] ";
+      std::ios saved_fmt(NULL);
+      saved_fmt.copyfmt(stream());
+      stream().fill('0');
+    #ifdef GLOG_CUSTOM_PREFIX_SUPPORT
+      if (custom_prefix_callback == NULL) {
+    #endif
+          stream() << LogSeverityNames[severity][0];
+          if (FLAGS_log_year_in_prefix) {
+            stream() << setw(4) << 1900 + logmsgtime_.year();
+          }
+          stream() << setw(2) << 1 + logmsgtime_.month()
+                   << setw(2) << logmsgtime_.day()
+                   << ' '
+                   << setw(2) << logmsgtime_.hour() << ':'
+                   << setw(2) << logmsgtime_.min() << ':'
+                   << setw(2) << logmsgtime_.sec() << "."
+                   << setw(6) << logmsgtime_.usec()
+                   << ' '
+                   << setfill(' ') << setw(5)
+                   << static_cast<unsigned int>(GetTID()) << setfill('0')
+                   << ' '
+                   << data_->basename_ << ':' << data_->line_ << "] ";
+    #ifdef GLOG_CUSTOM_PREFIX_SUPPORT
+      } else {
+        custom_prefix_callback(
+                stream(),
+                LogMessageInfo(LogSeverityNames[severity],
+                               data_->basename_, data_->line_, GetTID(),
+                               logmsgtime_),
+                custom_prefix_callback_data
+                );
+        stream() << " ";
+      }
+    #endif
+      stream().copyfmt(saved_fmt);
   }
   data_->num_prefix_chars_ = data_->stream_.pcount();
 
@@ -1311,13 +1720,17 @@ void LogMessage::Init(const char* file,
     char fileline[128];
     snprintf(fileline, sizeof(fileline), "%s:%d", data_->basename_, line);
 #ifdef HAVE_STACKTRACE
-    if (!strcmp(FLAGS_log_backtrace_at.c_str(), fileline)) {
+    if (FLAGS_log_backtrace_at == fileline) {
       string stacktrace;
       DumpStackTraceToString(&stacktrace);
       stream() << " (stacktrace:\n" << stacktrace << ") ";
     }
 #endif
   }
+}
+
+const LogMessageTime& LogMessage::getLogMessageTime() const {
+  return logmsgtime_;
 }
 
 LogMessage::~LogMessage() {
@@ -1346,8 +1759,9 @@ ostream& LogMessage::stream() {
 // Flush buffered message, called by the destructor, or any other function
 // that needs to synchronize the log.
 void LogMessage::Flush() {
-  if (data_->has_been_flushed_ || data_->severity_ < FLAGS_minloglevel)
+  if (data_->has_been_flushed_ || data_->severity_ < FLAGS_minloglevel) {
     return;
+  }
 
   data_->num_chars_to_log_ = data_->stream_.pcount();
   data_->num_chars_to_syslog_ =
@@ -1367,6 +1781,7 @@ void LogMessage::Flush() {
     original_final_char = data_->message_text_[data_->num_chars_to_log_];
     data_->message_text_[data_->num_chars_to_log_++] = '\n';
   }
+  data_->message_text_[data_->num_chars_to_log_] = '\0';
 
   // Prevent any subtle race conditions by wrapping a mutex lock around
   // the actual logging action per se.
@@ -1405,7 +1820,7 @@ static char fatal_message[256];
 
 void ReprintFatalMessage() {
   if (fatal_message[0]) {
-    const int n = strlen(fatal_message);
+    const size_t n = strlen(fatal_message);
     if (!FLAGS_logtostderr) {
       // Also write to stderr (don't color to avoid terminal checks)
       WriteToStderr(fatal_message, n);
@@ -1440,34 +1855,39 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   // global flag: never log to file if set.  Also -- don't log to a
   // file if we haven't parsed the command line flags to get the
   // program name.
-  if (FLAGS_logtostderr || !IsGoogleLoggingInitialized()) {
-    ColoredWriteToStderr(data_->severity_,
-                         data_->message_text_, data_->num_chars_to_log_);
+  if (FLAGS_logtostderr || FLAGS_logtostdout || !IsGoogleLoggingInitialized()) {
+    if (FLAGS_logtostdout) {
+      ColoredWriteToStdout(data_->severity_, data_->message_text_,
+                           data_->num_chars_to_log_);
+    } else {
+      ColoredWriteToStderr(data_->severity_, data_->message_text_,
+                           data_->num_chars_to_log_);
+    }
 
     // this could be protected by a flag if necessary.
     LogDestination::LogToSinks(data_->severity_,
                                data_->fullname_, data_->basename_,
-                               data_->line_, &data_->tm_time_,
+                               data_->line_, logmsgtime_,
                                data_->message_text_ + data_->num_prefix_chars_,
                                (data_->num_chars_to_log_ -
-                                data_->num_prefix_chars_ - 1));
+                                data_->num_prefix_chars_ - 1) );
   } else {
-
     // log this message to all log files of severity <= severity_
-    LogDestination::LogToAllLogfiles(data_->severity_, data_->timestamp_,
+    LogDestination::LogToAllLogfiles(data_->severity_, logmsgtime_.timestamp(),
                                      data_->message_text_,
                                      data_->num_chars_to_log_);
 
     LogDestination::MaybeLogToStderr(data_->severity_, data_->message_text_,
-                                     data_->num_chars_to_log_);
+                                     data_->num_chars_to_log_,
+                                     data_->num_prefix_chars_);
     LogDestination::MaybeLogToEmail(data_->severity_, data_->message_text_,
                                     data_->num_chars_to_log_);
     LogDestination::LogToSinks(data_->severity_,
                                data_->fullname_, data_->basename_,
-                               data_->line_, &data_->tm_time_,
+                               data_->line_, logmsgtime_,
                                data_->message_text_ + data_->num_prefix_chars_,
                                (data_->num_chars_to_log_
-                                - data_->num_prefix_chars_ - 1));
+                                - data_->num_prefix_chars_ - 1) );
     // NOTE: -1 removes trailing \n
   }
 
@@ -1482,17 +1902,18 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
       SetCrashReason(&crash_reason);
 
       // Store shortened fatal message for other logs and GWQ status
-      const int copy = min<int>(data_->num_chars_to_log_,
+      const size_t copy = min(data_->num_chars_to_log_,
                                 sizeof(fatal_message)-1);
       memcpy(fatal_message, data_->message_text_, copy);
       fatal_message[copy] = '\0';
-      fatal_time = data_->timestamp_;
+      fatal_time = logmsgtime_.timestamp();
     }
 
-    if (!FLAGS_logtostderr) {
+    if (!FLAGS_logtostderr && !FLAGS_logtostdout) {
       for (int i = 0; i < NUM_SEVERITIES; ++i) {
-        if ( LogDestination::log_destinations_[i] )
+        if (LogDestination::log_destinations_[i]) {
           LogDestination::log_destinations_[i]->logger_->Write(true, 0, "", 0);
+        }
       }
     }
 
@@ -1508,6 +1929,12 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     if (write(STDERR_FILENO, message, strlen(message)) < 0) {
       // Ignore errors.
     }
+#if defined(__ANDROID__)
+    // ANDROID_LOG_FATAL as this message is of FATAL severity.
+    __android_log_write(ANDROID_LOG_FATAL,
+                        glog_internal_namespace_::ProgramInvocationShortName(),
+                        message);
+#endif
     Fail();
   }
 }
@@ -1526,28 +1953,11 @@ void LogMessage::RecordCrashReason(
 #endif
 }
 
-#ifdef HAVE___ATTRIBUTE__
-# define ATTRIBUTE_NORETURN __attribute__((noreturn))
-#else
-# define ATTRIBUTE_NORETURN
-#endif
+GLOG_EXPORT logging_fail_func_t g_logging_fail_func =
+    reinterpret_cast<logging_fail_func_t>(&abort);
 
-#if defined(OS_WINDOWS)
-__declspec(noreturn)
-#endif
-static void logging_fail() ATTRIBUTE_NORETURN;
-
-static void logging_fail() {
-  abort();
-}
-
-typedef void (*logging_fail_func_t)() ATTRIBUTE_NORETURN;
-
-GOOGLE_GLOG_DLL_DECL
-logging_fail_func_t g_logging_fail_func = &logging_fail;
-
-void InstallFailureFunction(void (*fail_func)()) {
-  g_logging_fail_func = (logging_fail_func_t)fail_func;
+void InstallFailureFunction(logging_fail_func_t fail_func) {
+  g_logging_fail_func = fail_func;
 }
 
 void LogMessage::Fail() {
@@ -1560,10 +1970,10 @@ void LogMessage::SendToSink() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     RAW_DCHECK(data_->num_chars_to_log_ > 0 &&
                data_->message_text_[data_->num_chars_to_log_-1] == '\n', "");
     data_->sink_->send(data_->severity_, data_->fullname_, data_->basename_,
-                       data_->line_, &data_->tm_time_,
+                       data_->line_, logmsgtime_,
                        data_->message_text_ + data_->num_prefix_chars_,
                        (data_->num_chars_to_log_ -
-                        data_->num_prefix_chars_ - 1));
+                        data_->num_prefix_chars_ - 1) );
   }
 }
 
@@ -1580,7 +1990,7 @@ void LogMessage::SaveOrSendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
                data_->message_text_[data_->num_chars_to_log_-1] == '\n', "");
     // Omit prefix of message and trailing newline when recording in outvec_.
     const char *start = data_->message_text_ + data_->num_prefix_chars_;
-    int len = data_->num_chars_to_log_ - data_->num_prefix_chars_ - 1;
+    size_t len = data_->num_chars_to_log_ - data_->num_prefix_chars_ - 1;
     data_->outvec_->push_back(string(start, len));
   } else {
     SendToLog();
@@ -1593,7 +2003,7 @@ void LogMessage::WriteToStringAndLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
                data_->message_text_[data_->num_chars_to_log_-1] == '\n', "");
     // Omit prefix of message and trailing newline when writing to message_.
     const char *start = data_->message_text_ + data_->num_prefix_chars_;
-    int len = data_->num_chars_to_log_ - data_->num_prefix_chars_ - 1;
+    size_t len = data_->num_chars_to_log_ - data_->num_prefix_chars_ - 1;
     data_->message_->assign(start, len);
   }
   SendToLog();
@@ -1653,10 +2063,9 @@ ostream& operator<<(ostream &os, const PRIVATE_Counter&) {
 }
 
 ErrnoLogMessage::ErrnoLogMessage(const char* file, int line,
-                                 LogSeverity severity, int ctr,
+                                 LogSeverity severity, int64 ctr,
                                  void (LogMessage::*send_method)())
-    : LogMessage(file, line, severity, ctr, send_method) {
-}
+    : LogMessage(file, line, severity, ctr, send_method) {}
 
 ErrnoLogMessage::~ErrnoLogMessage() {
   // Don't access errno directly because it may have been altered
@@ -1684,30 +2093,57 @@ void SetLogSymlink(LogSeverity severity, const char* symlink_basename) {
 LogSink::~LogSink() {
 }
 
+void LogSink::send(LogSeverity severity, const char* full_filename,
+                   const char* base_filename, int line,
+                   const LogMessageTime& time, const char* message,
+                   size_t message_len) {
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif  // __GNUC__
+  send(severity, full_filename, base_filename, line, &time.tm(), message,
+       message_len);
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
+#endif  // __GNUC__
+}
+
+void LogSink::send(LogSeverity severity, const char* full_filename,
+                   const char* base_filename, int line, const std::tm* t,
+                   const char* message, size_t message_len) {
+  (void)severity;
+  (void)full_filename;
+  (void)base_filename;
+  (void)line;
+  (void)t;
+  (void)message;
+  (void)message_len;
+}
+
 void LogSink::WaitTillSent() {
   // noop default
 }
 
 string LogSink::ToString(LogSeverity severity, const char* file, int line,
-                         const struct ::tm* tm_time,
-                         const char* message, size_t message_len) {
+                         const LogMessageTime& logmsgtime, const char* message,
+                         size_t message_len) {
   ostringstream stream(string(message, message_len));
   stream.fill('0');
 
-  // FIXME(jrvb): Updating this to use the correct value for usecs
-  // requires changing the signature for both this method and
-  // LogSink::send().  This change needs to be done in a separate CL
-  // so subclasses of LogSink can be updated at the same time.
-  int usecs = 0;
-
   stream << LogSeverityNames[severity][0]
-         << setw(2) << 1+tm_time->tm_mon
-         << setw(2) << tm_time->tm_mday
+         << setw(4) << 1900 + logmsgtime.year()
+         << setw(2) << 1 + logmsgtime.month()
+         << setw(2) << logmsgtime.day()
          << ' '
-         << setw(2) << tm_time->tm_hour << ':'
-         << setw(2) << tm_time->tm_min << ':'
-         << setw(2) << tm_time->tm_sec << '.'
-         << setw(6) << usecs
+         << setw(2) << logmsgtime.hour() << ':'
+         << setw(2) << logmsgtime.min() << ':'
+         << setw(2) << logmsgtime.sec() << '.'
+         << setw(6) << logmsgtime.usec()
          << ' '
          << setfill(' ') << setw(5) << GetTID() << setfill('0')
          << ' '
@@ -1769,6 +2205,7 @@ void SetExitOnDFatal(bool value) {
 }  // namespace internal
 }  // namespace base
 
+#ifndef GLOG_OS_EMSCRIPTEN
 // Shell-escaping as we need to shell out ot /bin/mail.
 static const char kDontNeedShellEscapeChars[] =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -1803,13 +2240,14 @@ static string ShellEscape(const string& src) {
   }
   return result;
 }
-
+#endif
 
 // use_logging controls whether the logging functions LOG/VLOG are used
 // to log errors.  It should be set to false when the caller holds the
 // log_mutex.
 static bool SendEmailInternal(const char*dest, const char *subject,
                               const char*body, bool use_logging) {
+#ifndef GLOG_OS_EMSCRIPTEN
   if (dest && *dest) {
     if ( use_logging ) {
       VLOG(1) << "Trying to send TITLE:" << subject
@@ -1819,16 +2257,23 @@ static bool SendEmailInternal(const char*dest, const char *subject,
               subject, body, dest);
     }
 
+    string logmailer = FLAGS_logmailer;
+    if (logmailer.empty()) {
+        logmailer = "/bin/mail";
+    }
     string cmd =
-        FLAGS_logmailer + " -s" +
+        logmailer + " -s" +
         ShellEscape(subject) + " " + ShellEscape(dest);
-    VLOG(4) << "Mailing command: " << cmd;
+    if (use_logging) {
+        VLOG(4) << "Mailing command: " << cmd;
+    }
 
     FILE* pipe = popen(cmd.c_str(), "w");
     if (pipe != NULL) {
       // Add the body if we have one
-      if (body)
+      if (body) {
         fwrite(body, sizeof(char), strlen(body), pipe);
+      }
       bool ok = pclose(pipe) != -1;
       if ( !ok ) {
         if ( use_logging ) {
@@ -1848,6 +2293,13 @@ static bool SendEmailInternal(const char*dest, const char *subject,
       }
     }
   }
+#else
+  (void)dest;
+  (void)subject;
+  (void)body;
+  (void)use_logging;
+  LOG(WARNING) << "Email support not available; not sending message";
+#endif
   return false;
 }
 
@@ -1857,7 +2309,7 @@ bool SendEmail(const char*dest, const char *subject, const char*body){
 
 static void GetTempDirectories(vector<string>* list) {
   list->clear();
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
   // On windows we'll try to find a directory in this order:
   //   C:/Documents & Settings/whomever/TEMP (or whatever GetTempPath() is)
   //   C:/TMP/
@@ -1913,10 +2365,10 @@ const vector<string>& GetLoggingDirectories() {
 
     if ( !FLAGS_log_dir.empty() ) {
       // A dir was specified, we should use it
-      logging_directories_list->push_back(FLAGS_log_dir.c_str());
+      logging_directories_list->push_back(FLAGS_log_dir);
     } else {
       GetTempDirectories(logging_directories_list);
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
       char tmp[MAX_PATH];
       if (GetWindowsDirectoryA(tmp, MAX_PATH))
         logging_directories_list->push_back(tmp);
@@ -1950,16 +2402,16 @@ void GetExistingTempDirectories(vector<string>* list) {
   }
 }
 
-void TruncateLogFile(const char *path, int64 limit, int64 keep) {
+void TruncateLogFile(const char *path, uint64 limit, uint64 keep) {
 #ifdef HAVE_UNISTD_H
   struct stat statbuf;
   const int kCopyBlockSize = 8 << 10;
   char copybuf[kCopyBlockSize];
-  int64 read_offset, write_offset;
+  off_t read_offset, write_offset;
   // Don't follow symlinks unless they're our own fd symlinks in /proc
   int flags = O_RDWR;
   // TODO(hamaji): Support other environments.
-#ifdef OS_LINUX
+#ifdef GLOG_OS_LINUX
   const char *procfd_prefix = "/proc/self/fd/";
   if (strncmp(procfd_prefix, path, strlen(procfd_prefix))) flags |= O_NOFOLLOW;
 #endif
@@ -1991,18 +2443,18 @@ void TruncateLogFile(const char *path, int64 limit, int64 keep) {
   // See if the path refers to a regular file bigger than the
   // specified limit
   if (!S_ISREG(statbuf.st_mode)) goto out_close_fd;
-  if (statbuf.st_size <= limit)  goto out_close_fd;
-  if (statbuf.st_size <= keep) goto out_close_fd;
+  if (statbuf.st_size <= static_cast<off_t>(limit))  goto out_close_fd;
+  if (statbuf.st_size <= static_cast<off_t>(keep)) goto out_close_fd;
 
   // This log file is too large - we need to truncate it
   LOG(INFO) << "Truncating " << path << " to " << keep << " bytes";
 
   // Copy the last "keep" bytes of the file to the beginning of the file
-  read_offset = statbuf.st_size - keep;
+  read_offset = statbuf.st_size - static_cast<off_t>(keep);
   write_offset = 0;
-  int bytesin, bytesout;
+  ssize_t bytesin, bytesout;
   while ((bytesin = pread(fd, copybuf, sizeof(copybuf), read_offset)) > 0) {
-    bytesout = pwrite(fd, copybuf, bytesin, write_offset);
+    bytesout = pwrite(fd, copybuf, static_cast<size_t>(bytesin), write_offset);
     if (bytesout == -1) {
       PLOG(ERROR) << "Unable to write to " << path;
       break;
@@ -2029,12 +2481,12 @@ void TruncateLogFile(const char *path, int64 limit, int64 keep) {
   (void)limit;
   (void)keep;
 #endif
-}
+ }
 
 void TruncateStdoutStderr() {
 #ifdef HAVE_UNISTD_H
-  int64 limit = MaxLogSize() << 20;
-  int64 keep = 1 << 20;
+  uint64 limit = MaxLogSize() << 20U;
+  uint64 keep = 1U << 20U;
   TruncateLogFile("/proc/self/fd/1", limit, keep);
   TruncateLogFile("/proc/self/fd/2", limit, keep);
 #else
@@ -2101,7 +2553,7 @@ int posix_strerror_r(int err, char *buf, size_t len) {
       return 0;
     } else {
       buf[0] = '\000';
-#if defined(OS_MACOSX) || defined(OS_FREEBSD) || defined(OS_OPENBSD)
+#if defined(GLOG_OS_MACOSX) || defined(GLOG_OS_FREEBSD) || defined(GLOG_OS_OPENBSD)
       if (reinterpret_cast<intptr_t>(rc) < sys_nerr) {
         // This means an error on MacOSX or FreeBSD.
         return -1;
@@ -2169,7 +2621,7 @@ void MakeCheckOpValueString(std::ostream* os, const char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "char value " << (short)v;
+    (*os) << "char value " << static_cast<short>(v);
   }
 }
 
@@ -2178,7 +2630,7 @@ void MakeCheckOpValueString(std::ostream* os, const signed char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "signed char value " << (short)v;
+    (*os) << "signed char value " << static_cast<short>(v);
   }
 }
 
@@ -2187,19 +2639,88 @@ void MakeCheckOpValueString(std::ostream* os, const unsigned char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "unsigned char value " << (unsigned short)v;
+    (*os) << "unsigned char value " << static_cast<unsigned short>(v);
   }
 }
+
+#if defined(HAVE_CXX11_NULLPTR_T) && __cplusplus >= 201103L
+template <>
+void MakeCheckOpValueString(std::ostream* os, const std::nullptr_t& /*v*/) {
+  (*os) << "nullptr";
+}
+#endif // defined(HAVE_CXX11_NULLPTR_T)
 
 void InitGoogleLogging(const char* argv0) {
   glog_internal_namespace_::InitGoogleLoggingUtilities(argv0);
 }
+
+#ifdef GLOG_CUSTOM_PREFIX_SUPPORT
+void InitGoogleLogging(const char* argv0,
+                       CustomPrefixCallback prefix_callback,
+                       void* prefix_callback_data) {
+  custom_prefix_callback = prefix_callback;
+  custom_prefix_callback_data = prefix_callback_data;
+  InitGoogleLogging(argv0);
+}
+#endif
 
 void ShutdownGoogleLogging() {
   glog_internal_namespace_::ShutdownGoogleLoggingUtilities();
   LogDestination::DeleteLogDestinations();
   delete logging_directories_list;
   logging_directories_list = NULL;
+}
+
+void EnableLogCleaner(unsigned int overdue_days) {
+  log_cleaner.Enable(overdue_days);
+}
+
+void DisableLogCleaner() {
+  log_cleaner.Disable();
+}
+
+LogMessageTime::LogMessageTime()
+    : time_struct_(), timestamp_(0), usecs_(0), gmtoffset_(0) {}
+
+LogMessageTime::LogMessageTime(std::tm t) {
+  std::time_t timestamp = std::mktime(&t);
+  init(t, timestamp, 0);
+}
+
+LogMessageTime::LogMessageTime(std::time_t timestamp, WallTime now) {
+  std::tm t;
+  if (FLAGS_log_utc_time)
+    gmtime_r(&timestamp, &t);
+  else
+    localtime_r(&timestamp, &t);
+  init(t, timestamp, now);
+}
+
+void LogMessageTime::init(const std::tm& t, std::time_t timestamp,
+                          WallTime now) {
+  time_struct_ = t;
+  timestamp_ = timestamp;
+  usecs_ = static_cast<int32>((now - timestamp) * 1000000);
+
+  CalcGmtOffset();
+}
+
+void LogMessageTime::CalcGmtOffset() {
+  std::tm gmt_struct;
+  int isDst = 0;
+  if ( FLAGS_log_utc_time ) {
+    localtime_r(&timestamp_, &gmt_struct);
+    isDst = gmt_struct.tm_isdst;
+    gmt_struct = time_struct_;
+  } else {
+    isDst = time_struct_.tm_isdst;
+    gmtime_r(&timestamp_, &gmt_struct);
+  }
+
+  time_t gmt_sec = mktime(&gmt_struct);
+  const long hour_secs = 3600;
+  // If the Daylight Saving Time(isDst) is active subtract an hour from the current timestamp.
+  gmtoffset_ = static_cast<long int>(timestamp_ - gmt_sec + (isDst ? hour_secs : 0) ) ;
 }
 
 _END_GOOGLE_NAMESPACE_

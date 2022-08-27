@@ -117,7 +117,7 @@ TEST(RealtimeDeathTest, SignalHandler) {
         int x = reinterpret_cast<const volatile int *>(0)[0];
         LOG(INFO) << x;
       },
-      "SIGSEGV \\(@0x0\\) received by PID.*stack trace:");
+      "\\*\\*\\* Aborted at .*");
 }
 
 // Tests that RAW_LOG(FATAL) explodes properly.

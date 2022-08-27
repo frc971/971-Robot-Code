@@ -37,17 +37,15 @@
 
 #include "utilities.h"
 
-#include <ctype.h>
-#include <setjmp.h>
-#include <time.h>
-
+#include <cctype>
+#include <csetjmp>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
 #include <map>
 #include <sstream>
 #include <string>
 #include <vector>
-
-#include <stdio.h>
-#include <stdlib.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -58,30 +56,39 @@
 
 #include "base/commandlineflags.h"
 
+#if __cplusplus < 201103L && !defined(_MSC_VER)
+#define GOOGLE_GLOG_THROW_BAD_ALLOC throw (std::bad_alloc)
+#else
+#define GOOGLE_GLOG_THROW_BAD_ALLOC
+#endif
+
 using std::map;
 using std::string;
 using std::vector;
 
 _START_GOOGLE_NAMESPACE_
 
-extern GOOGLE_GLOG_DLL_DECL void (*g_logging_fail_func)();
+extern GLOG_EXPORT void (*g_logging_fail_func)();
 
 _END_GOOGLE_NAMESPACE_
 
-#undef GOOGLE_GLOG_DLL_DECL
-#define GOOGLE_GLOG_DLL_DECL
+#undef GLOG_EXPORT
+#define GLOG_EXPORT
 
 static inline string GetTempDir() {
-#ifndef OS_WINDOWS
-  return "/tmp";
-#else
-  char tmp[MAX_PATH];
-  GetTempPathA(MAX_PATH, tmp);
-  return tmp;
-#endif
+  vector<string> temp_directories_list;
+  google::GetExistingTempDirectories(&temp_directories_list);
+
+  if (temp_directories_list.empty()) {
+    fprintf(stderr, "No temporary directory found\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Use first directory from list of existing temporary directories.
+  return temp_directories_list.front();
 }
 
-#if defined(OS_WINDOWS) && defined(_MSC_VER) && !defined(TEST_SRC_DIR)
+#if defined(GLOG_OS_WINDOWS) && defined(_MSC_VER) && !defined(TEST_SRC_DIR)
 // The test will run in glog/vsproject/<project name>
 // (e.g., glog/vsproject/logging_unittest).
 static const char TEST_SRC_DIR[] = "../..";
@@ -118,11 +125,20 @@ void InitGoogleTest(int*, char**) {}
 
 // The following is some bare-bones testing infrastructure
 
+#define EXPECT_NEAR(val1, val2, abs_error)                                     \
+  do {                                                                         \
+    if (abs(val1 - val2) > abs_error) {                                        \
+      fprintf(stderr, "Check failed: %s within %s of %s\n", #val1, #abs_error, \
+              #val2);                                                          \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  } while (0)
+
 #define EXPECT_TRUE(cond)                               \
   do {                                                  \
     if (!(cond)) {                                      \
       fprintf(stderr, "Check failed: %s\n", #cond);     \
-      exit(1);                                          \
+      exit(EXIT_FAILURE);                               \
     }                                                   \
   } while (0)
 
@@ -132,7 +148,7 @@ void InitGoogleTest(int*, char**) {}
   do {                                                                  \
     if (!((val1) op (val2))) {                                          \
       fprintf(stderr, "Check failed: %s %s %s\n", #val1, #op, #val2);   \
-      exit(1);                                                          \
+      exit(EXIT_FAILURE);                                               \
     }                                                                   \
   } while (0)
 
@@ -145,7 +161,7 @@ void InitGoogleTest(int*, char**) {}
   do {                                                          \
     if (!isnan(arg)) {                                          \
       fprintf(stderr, "Check failed: isnan(%s)\n", #arg);       \
-      exit(1);                                                  \
+      exit(EXIT_FAILURE);                                       \
     }                                                           \
   } while (0)
 
@@ -153,7 +169,7 @@ void InitGoogleTest(int*, char**) {}
   do {                                                          \
     if (!isinf(arg)) {                                          \
       fprintf(stderr, "Check failed: isinf(%s)\n", #arg);       \
-      exit(1);                                                  \
+      exit(EXIT_FAILURE);                                       \
     }                                                           \
   } while (0)
 
@@ -161,7 +177,7 @@ void InitGoogleTest(int*, char**) {}
   do {                                                                  \
     if (((val1) < (val2) - 0.001 || (val1) > (val2) + 0.001)) {         \
       fprintf(stderr, "Check failed: %s == %s\n", #val1, #val2);        \
-      exit(1);                                                          \
+      exit(EXIT_FAILURE);                                               \
     }                                                                   \
   } while (0)
 
@@ -169,7 +185,7 @@ void InitGoogleTest(int*, char**) {}
   do {                                                                  \
     if (strcmp((val1), (val2)) != 0) {                                  \
       fprintf(stderr, "Check failed: streq(%s, %s)\n", #val1, #val2);   \
-      exit(1);                                                          \
+      exit(EXIT_FAILURE);                                               \
     }                                                                   \
   } while (0)
 
@@ -190,7 +206,8 @@ static inline int RUN_ALL_TESTS() {
   for (it = g_testlist.begin(); it != g_testlist.end(); ++it) {
     (*it)();
   }
-  fprintf(stderr, "Passed %d tests\n\nPASS\n", (int)g_testlist.size());
+  fprintf(stderr, "Passed %d tests\n\nPASS\n",
+          static_cast<int>(g_testlist.size()));
   return 0;
 }
 
@@ -207,7 +224,7 @@ static inline void CalledAbort() {
   longjmp(g_jmp_buf, 1);
 }
 
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
 // TODO(hamaji): Death test somehow doesn't work in Windows.
 #define ASSERT_DEATH(fn, msg)
 #else
@@ -222,7 +239,7 @@ static inline void CalledAbort() {
     g_logging_fail_func = original_logging_fail_func;                   \
     if (!g_called_abort) {                                              \
       fprintf(stderr, "Function didn't die (%s): %s\n", msg, #fn);      \
-      exit(1);                                                          \
+      exit(EXIT_FAILURE);                                               \
     }                                                                   \
   } while (0)
 #endif
@@ -258,10 +275,17 @@ static inline void RunSpecifiedBenchmarks() {
        ++iter) {
     clock_t start = clock();
     iter->second(iter_cnt);
-    double elapsed_ns =
-        ((double)clock() - start) / CLOCKS_PER_SEC * 1000*1000*1000;
+    double elapsed_ns = (static_cast<double>(clock()) - start) /
+                        CLOCKS_PER_SEC * 1000 * 1000 * 1000;
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat="
+#endif
     printf("%s\t%8.2lf\t%10d\n",
            iter->first.c_str(), elapsed_ns / iter_cnt, iter_cnt);
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
   }
   puts("");
 }
@@ -329,6 +353,9 @@ static inline void CaptureTestOutput(int fd, const string & filename) {
   CHECK(s_captured_streams[fd] == NULL);
   s_captured_streams[fd] = new CapturedStream(fd, filename);
 }
+static inline void CaptureTestStdout() {
+  CaptureTestOutput(STDOUT_FILENO, FLAGS_test_tmpdir + "/captured.out");
+}
 static inline void CaptureTestStderr() {
   CaptureTestOutput(STDERR_FILENO, FLAGS_test_tmpdir + "/captured.err");
 }
@@ -385,12 +412,16 @@ static inline string GetCapturedTestStderr() {
   return GetCapturedTestOutput(STDERR_FILENO);
 }
 
-// Check if the string is [IWEF](\d{4}|DATE)
+static const std::size_t kLoggingPrefixLength = 9;
+
+// Check if the string is [IWEF](\d{8}|YEARDATE)
 static inline bool IsLoggingPrefix(const string& s) {
-  if (s.size() != 5) return false;
+  if (s.size() != kLoggingPrefixLength) {
+    return false;
+  }
   if (!strchr("IWEF", s[0])) return false;
-  for (int i = 1; i <= 4; ++i) {
-    if (!isdigit(s[i]) && s[i] != "DATE"[i-1]) return false;
+  for (size_t i = 1; i <= 8; ++i) {
+    if (!isdigit(s[i]) && s[i] != "YEARDATE"[i-1]) return false;
   }
   return true;
 }
@@ -398,20 +429,25 @@ static inline bool IsLoggingPrefix(const string& s) {
 // Convert log output into normalized form.
 //
 // Example:
-//     I0102 030405 logging_unittest.cc:345] RAW: vlog -1
-//  => IDATE TIME__ logging_unittest.cc:LINE] RAW: vlog -1
+//     I20200102 030405 logging_unittest.cc:345] RAW: vlog -1
+//  => IYEARDATE TIME__ logging_unittest.cc:LINE] RAW: vlog -1
 static inline string MungeLine(const string& line) {
-  std::istringstream iss(line);
   string before, logcode_date, time, thread_lineinfo;
-  iss >> logcode_date;
-  while (!IsLoggingPrefix(logcode_date)) {
-    before += " " + logcode_date;
-    if (!(iss >> logcode_date)) {
-      // We cannot find the header of log output.
-      return before;
+  std::size_t begin_of_logging_prefix = 0;
+  for (; begin_of_logging_prefix + kLoggingPrefixLength < line.size();
+       ++begin_of_logging_prefix) {
+    if (IsLoggingPrefix(
+            line.substr(begin_of_logging_prefix, kLoggingPrefixLength))) {
+      break;
     }
   }
-  if (!before.empty()) before += " ";
+  if (begin_of_logging_prefix + kLoggingPrefixLength >= line.size()) {
+    return line;
+  } else if (begin_of_logging_prefix > 0) {
+    before = line.substr(0, begin_of_logging_prefix - 1);
+  }
+  std::istringstream iss(line.substr(begin_of_logging_prefix));
+  iss >> logcode_date;
   iss >> time;
   iss >> thread_lineinfo;
   CHECK(!thread_lineinfo.empty());
@@ -428,7 +464,7 @@ static inline string MungeLine(const string& line) {
   thread_lineinfo = thread_lineinfo.substr(0, index+1) + "LINE]";
   string rest;
   std::getline(iss, rest);
-  return (before + logcode_date[0] + "DATE TIME__ " + thread_lineinfo +
+  return (before + logcode_date[0] + "YEARDATE TIME__ " + thread_lineinfo +
           MungeLine(rest));
 }
 
@@ -437,7 +473,7 @@ static inline void StringReplace(string* str,
                           const string& newsub) {
   size_t pos = str->find(oldsub);
   if (pos != string::npos) {
-    str->replace(pos, oldsub.size(), newsub.c_str());
+    str->replace(pos, oldsub.size(), newsub);
   }
 }
 
@@ -448,10 +484,11 @@ static inline string Munge(const string& filename) {
   string result;
   while (fgets(buf, 4095, fp)) {
     string line = MungeLine(buf);
-    char null_str[256];
-    char ptr_str[256];
-    sprintf(null_str, "%p", static_cast<void*>(NULL));
-    sprintf(ptr_str, "%p", reinterpret_cast<void*>(PTR_TEST_VALUE));
+    const size_t str_size = 256;
+    char null_str[str_size];
+    char ptr_str[str_size];
+    snprintf(null_str, str_size, "%p", static_cast<void*>(NULL));
+    snprintf(ptr_str, str_size, "%p", reinterpret_cast<void*>(PTR_TEST_VALUE));
 
     StringReplace(&line, "__NULLP__", null_str);
     StringReplace(&line, "__PTRTEST__", ptr_str);
@@ -473,9 +510,13 @@ static inline void WriteToFile(const string& body, const string& file) {
   fclose(fp);
 }
 
-static inline bool MungeAndDiffTestStderr(const string& golden_filename) {
-  CapturedStream* cap = s_captured_streams[STDERR_FILENO];
-  CHECK(cap) << ": did you forget CaptureTestStderr()?";
+static inline bool MungeAndDiffTest(const string& golden_filename,
+                                    CapturedStream* cap) {
+  if (cap == s_captured_streams[STDOUT_FILENO]) {
+    CHECK(cap) << ": did you forget CaptureTestStdout()?";
+  } else {
+    CHECK(cap) << ": did you forget CaptureTestStderr()?";
+  }
 
   cap->StopCapture();
 
@@ -489,7 +530,7 @@ static inline bool MungeAndDiffTestStderr(const string& golden_filename) {
     WriteToFile(golden, munged_golden);
     string munged_captured = cap->filename() + ".munged";
     WriteToFile(captured, munged_captured);
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
     string diffcmd("fc " + munged_golden + " " + munged_captured);
 #else
     string diffcmd("diff -u " + munged_golden + " " + munged_captured);
@@ -503,6 +544,14 @@ static inline bool MungeAndDiffTestStderr(const string& golden_filename) {
   }
   LOG(INFO) << "Diff was successful";
   return true;
+}
+
+static inline bool MungeAndDiffTestStderr(const string& golden_filename) {
+  return MungeAndDiffTest(golden_filename, s_captured_streams[STDERR_FILENO]);
+}
+
+static inline bool MungeAndDiffTestStdout(const string& golden_filename) {
+  return MungeAndDiffTest(golden_filename, s_captured_streams[STDOUT_FILENO]);
 }
 
 // Save flags used from logging_unittest.cc.
@@ -531,12 +580,12 @@ class Thread {
   virtual ~Thread() {}
 
   void SetJoinable(bool) {}
-#if defined(OS_WINDOWS) && !defined(OS_CYGWIN)
+#if defined(GLOG_OS_WINDOWS) && !defined(GLOG_OS_CYGWIN)
   void Start() {
     handle_ = CreateThread(NULL,
                            0,
-                           (LPTHREAD_START_ROUTINE)&Thread::InvokeThread,
-                           (LPVOID)this,
+                           &Thread::InvokeThreadW,
+                           this,
                            0,
                            &th_);
     CHECK(handle_) << "CreateThread";
@@ -560,11 +609,15 @@ class Thread {
 
  private:
   static void* InvokeThread(void* self) {
-    ((Thread*)self)->Run();
+    (static_cast<Thread*>(self))->Run();
     return NULL;
   }
 
-#if defined(OS_WINDOWS) && !defined(OS_CYGWIN)
+#if defined(GLOG_OS_WINDOWS) && !defined(GLOG_OS_CYGWIN)
+  static DWORD __stdcall InvokeThreadW(LPVOID self) {
+    InvokeThread(self);
+    return 0;
+  }
   HANDLE handle_;
   DWORD th_;
 #else
@@ -572,9 +625,14 @@ class Thread {
 #endif
 };
 
-static inline void SleepForMilliseconds(int t) {
-#ifndef OS_WINDOWS
+static inline void SleepForMilliseconds(unsigned t) {
+#ifndef GLOG_OS_WINDOWS
+# if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 199309L
+  const struct timespec req = {0, t * 1000 * 1000};
+  nanosleep(&req, NULL);
+# else
   usleep(t * 1000);
+# endif
 #else
   Sleep(t);
 #endif
@@ -586,21 +644,29 @@ void (*g_new_hook)() = NULL;
 
 _END_GOOGLE_NAMESPACE_
 
-void* operator new(size_t size) {
+void* operator new(size_t size) GOOGLE_GLOG_THROW_BAD_ALLOC {
   if (GOOGLE_NAMESPACE::g_new_hook) {
     GOOGLE_NAMESPACE::g_new_hook();
   }
   return malloc(size);
 }
 
-void* operator new[](size_t size) {
+void* operator new[](size_t size) GOOGLE_GLOG_THROW_BAD_ALLOC {
   return ::operator new(size);
 }
 
-void operator delete(void* p) {
+void operator delete(void* p) throw() {
   free(p);
 }
 
-void operator delete[](void* p) {
+void operator delete(void* p, size_t) throw() {
+  ::operator delete(p);
+}
+
+void operator delete[](void* p) throw() {
+  ::operator delete(p);
+}
+
+void operator delete[](void* p, size_t) throw() {
   ::operator delete(p);
 }

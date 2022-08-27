@@ -17,20 +17,19 @@ namespace aos {
 namespace web_proxy {
 
 // TODO(austin): This doesn't allow streaming data in.
-#define CHECK_RAWRTC(x)                            \
-  [&]() {                                          \
-    enum rawrtc_code r = x;                        \
-    return CHECK(r == RAWRTC_CODE_SUCCESS)         \
-           << " actual " << rawrtc_code_to_str(r); \
+#define CHECK_RAWRTC(x)                                                     \
+  [&]() {                                                                   \
+    enum rawrtc_code r = x;                                                 \
+    CHECK(r == RAWRTC_CODE_SUCCESS) << " actual " << rawrtc_code_to_str(r); \
   }()
 
-#define CHECK_RAWRTC_IGNORE(x, i)           \
-  [&]() {                                   \
-    enum rawrtc_code r = x;                 \
-    for (auto w : i) {                      \
-      if (w == r) return;                   \
-    }                                       \
-    return CHECK(r == RAWRTC_CODE_SUCCESS); \
+#define CHECK_RAWRTC_IGNORE(x, i)    \
+  [&]() {                            \
+    enum rawrtc_code r = x;          \
+    for (auto w : i) {               \
+      if (w == r) return;            \
+    }                                \
+    CHECK(r == RAWRTC_CODE_SUCCESS); \
   }()
 
 // Wrapper around a RawRTC data channel to manage it's lifetime and provide C++

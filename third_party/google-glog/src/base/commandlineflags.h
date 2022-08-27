@@ -1,10 +1,10 @@
 // Copyright (c) 2008, Google Inc.
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//
 //     * Redistributions of source code must retain the above copyright
 // notice, this list of conditions and the following disclaimer.
 //     * Redistributions in binary form must reproduce the above
@@ -14,7 +14,7 @@
 //     * Neither the name of Google Inc. nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -49,9 +49,9 @@
 #define BASE_COMMANDLINEFLAGS_H__
 
 #include "config.h"
+#include <cstdlib>               // for getenv
+#include <cstring>               // for memchr
 #include <string>
-#include <string.h>               // for memchr
-#include <stdlib.h>               // for getenv
 
 #ifdef HAVE_LIB_GFLAGS
 
@@ -59,18 +59,18 @@
 
 #else
 
-#include "glog/logging.h"
+#include <glog/logging.h>
 
-#define DECLARE_VARIABLE(type, shorttype, name, tn)                     \
-  namespace fL##shorttype {                                             \
-    extern GOOGLE_GLOG_DLL_DECL type FLAGS_##name;                      \
-  }                                                                     \
+#define DECLARE_VARIABLE(type, shorttype, name, tn) \
+  namespace fL##shorttype {                         \
+    extern GLOG_EXPORT type FLAGS_##name;           \
+  }                                                 \
   using fL##shorttype::FLAGS_##name
-#define DEFINE_VARIABLE(type, shorttype, name, value, meaning, tn)      \
-  namespace fL##shorttype {                                             \
-    GOOGLE_GLOG_DLL_DECL type FLAGS_##name(value);                      \
-    char FLAGS_no##name;                                                \
-  }                                                                     \
+#define DEFINE_VARIABLE(type, shorttype, name, value, meaning, tn) \
+  namespace fL##shorttype {                                        \
+    GLOG_EXPORT type FLAGS_##name(value);                          \
+    char FLAGS_no##name;                                           \
+  }                                                                \
   using fL##shorttype::FLAGS_##name
 
 // bool specialization
@@ -85,19 +85,27 @@
 #define DEFINE_int32(name, value, meaning) \
   DEFINE_VARIABLE(GOOGLE_NAMESPACE::int32, I, name, value, meaning, int32)
 
+// uint32 specialization
+#ifndef DECLARE_uint32
+#define DECLARE_uint32(name) \
+  DECLARE_VARIABLE(GOOGLE_NAMESPACE::uint32, U, name, uint32)
+#endif // DECLARE_uint64
+#define DEFINE_uint32(name, value, meaning) \
+  DEFINE_VARIABLE(GOOGLE_NAMESPACE::uint32, U, name, value, meaning, uint32)
+
 // Special case for string, because we have to specify the namespace
 // std::string, which doesn't play nicely with our FLAG__namespace hackery.
-#define DECLARE_string(name)                                            \
-  namespace fLS {                                                       \
-    extern GOOGLE_GLOG_DLL_DECL std::string& FLAGS_##name;              \
-  }                                                                     \
+#define DECLARE_string(name)                    \
+  namespace fLS {                               \
+  extern GLOG_EXPORT std::string& FLAGS_##name; \
+  }                                             \
   using fLS::FLAGS_##name
-#define DEFINE_string(name, value, meaning)                             \
-  namespace fLS {                                                       \
-    std::string FLAGS_##name##_buf(value);                              \
-    GOOGLE_GLOG_DLL_DECL std::string& FLAGS_##name = FLAGS_##name##_buf; \
-    char FLAGS_no##name;                                                \
-  }                                                                     \
+#define DEFINE_string(name, value, meaning)                   \
+  namespace fLS {                                             \
+  std::string FLAGS_##name##_buf(value);                      \
+  GLOG_EXPORT std::string& FLAGS_##name = FLAGS_##name##_buf; \
+  char FLAGS_no##name;                                        \
+  }                                                           \
   using fLS::FLAGS_##name
 
 #endif  // HAVE_LIB_GFLAGS
@@ -115,6 +123,9 @@
 #define GLOG_DEFINE_int32(name, value, meaning) \
   DEFINE_int32(name, EnvToInt("GLOG_" #name, value), meaning)
 
+#define GLOG_DEFINE_uint32(name, value, meaning) \
+  DEFINE_uint32(name, EnvToUInt("GLOG_" #name, value), meaning)
+
 #define GLOG_DEFINE_string(name, value, meaning) \
   DEFINE_string(name, EnvToString("GLOG_" #name, value), meaning)
 
@@ -129,5 +140,8 @@
 
 #define EnvToInt(envname, dflt)  \
   (!getenv(envname) ? (dflt) : strtol(getenv(envname), NULL, 10))
+
+#define EnvToUInt(envname, dflt)  \
+  (!getenv(envname) ? (dflt) : strtoul(getenv(envname), NULL, 10))
 
 #endif  // BASE_COMMANDLINEFLAGS_H__
