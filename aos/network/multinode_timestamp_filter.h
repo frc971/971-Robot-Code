@@ -40,7 +40,12 @@ class TimestampProblem {
   size_t size() const { return base_clock_.size(); }
 
   // Sets and gets the base time for a node.
-  void set_base_clock(size_t i, logger::BootTimestamp t) { base_clock_[i] = t; }
+  void set_base_clock(size_t i, logger::BootTimestamp t) {
+    // Valid boots is potentially invalidated here, let's just wipe our cache.
+    // This won't happen during a solve.
+    node_mapping_valid_ = false;
+    base_clock_[i] = t;
+  }
   logger::BootTimestamp base_clock(size_t i) const { return base_clock_[i]; }
 
   // Adds a timestamp filter from a -> b.
@@ -90,6 +95,9 @@ class TimestampProblem {
   }
 
  private:
+  // Returns the number of live constraints.
+  size_t LiveConstraintsCount() const;
+
   size_t SolutionNode(const std::vector<logger::BootTimestamp> &points) const {
     size_t solution_node = std::numeric_limits<size_t>::max();
     for (size_t i = 0; i < points.size(); ++i) {
@@ -142,6 +150,8 @@ class TimestampProblem {
   std::vector<size_t> node_mapping_;
   // The number of live nodes there are.
   size_t live_nodes_ = 0;
+  // Number of constraints in play.
+  size_t live_constraints_ = 0;
 
   // Filter and the node index it is referencing.
   //   filter->Offset(ta) + ta => t_(b_node);
