@@ -1125,11 +1125,12 @@ std::string NoncausalTimestampFilter::NodeNames() const {
 bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
     const SingleFilter *other, Pointer pointer,
     aos::monotonic_clock::time_point ta_base, double ta,
-    aos::monotonic_clock::time_point tb_base, double tb, bool quiet) const {
+    aos::monotonic_clock::time_point tb_base, double tb, bool validate_popped,
+    bool quiet) const {
   NormalizeTimestamps(&ta_base, &ta);
   NormalizeTimestamps(&tb_base, &tb);
   CHECK_GT(timestamps_size(), 0u);
-  if (ta_base < std::get<0>(timestamp(0)) && has_popped_) {
+  if (ta_base < std::get<0>(timestamp(0)) && has_popped_ && validate_popped) {
     if (!quiet || VLOG_IS_ON(1)) {
       LOG(ERROR) << node_names_ << " O(" << ta_base << ", " << ta
                  << ") is before the start and we have forgotten the answer.";
@@ -1199,9 +1200,9 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
 bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
     const SingleFilter *other, Pointer pointer,
     aos::monotonic_clock::time_point ta, aos::monotonic_clock::time_point tb,
-    bool quiet) const {
+    bool validate_popped, bool quiet) const {
   CHECK_GT(timestamps_size(), 0u);
-  if (ta < std::get<0>(timestamp(0)) && has_popped_) {
+  if (ta < std::get<0>(timestamp(0)) && has_popped_ && validate_popped) {
     if (!quiet || VLOG_IS_ON(1)) {
       LOG(ERROR) << node_names_ << " O(" << ta
                  << ") is before the start and we have forgotten the answer.";
@@ -1724,6 +1725,7 @@ void NoncausalTimestampFilter::SingleFilter::FreezeUntilRemote(
 void NoncausalTimestampFilter::SingleFilter::PopFront() {
   // If we drop data, we shouldn't add anything before that point.
   frozen_time_ = std::max(frozen_time_, std::get<0>(timestamp(0)));
+  VLOG(1) << "Popped " << std::get<0>(timestamps_[0]);
   timestamps_.pop_front();
   has_popped_ = true;
   if (next_to_consume_ > 0u) {

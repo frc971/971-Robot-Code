@@ -66,9 +66,18 @@ class TimestampProblem {
       const std::vector<logger::BootTimestamp> &points, size_t max_iterations);
 
   // Solves the optimization problem with constraints!
+  //
+  // If constraint_indices is provided, that's the indices of the constraints to
+  // use in the problem solution.
   std::tuple<std::vector<logger::BootTimestamp>, size_t, size_t>
   SolveConstrainedNewton(const std::vector<logger::BootTimestamp> &points,
                          size_t max_iterations);
+
+  std::tuple<std::vector<logger::BootTimestamp>, size_t, size_t,
+             std::vector<size_t>, bool>
+  SolveConstrainedNewton(const std::vector<logger::BootTimestamp> &points,
+                         size_t max_iterations,
+                         const absl::Span<size_t> constraint_indices);
 
   // Validates the solution, returning true if it meets all the constraints, and
   // false otherwise.
@@ -156,7 +165,8 @@ class TimestampProblem {
   // Returns the gradient and Hessian of the cost function at time_offsets.
   Derivitives ComputeDerivitives(
       const Eigen::Ref<const Eigen::VectorXd> time_offsets,
-      const std::vector<logger::BootTimestamp> &points, bool quiet);
+      const std::vector<logger::BootTimestamp> &points, bool quiet, bool all,
+      absl::Span<size_t> active_constraints);
 
   // Prints out the provided derivitives for debugging.
   void PrintDerivitives(const Derivitives &derivitives,
