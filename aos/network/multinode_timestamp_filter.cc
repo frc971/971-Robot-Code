@@ -653,20 +653,25 @@ distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
 
   // Now, find the corresponding timestamps.  Search from the back since that's
   // where most of the times we care about will be.
-  size_t index = times_.size() - 2u;
-  while (index > 0u) {
-    // TODO(austin): Binary search.
-    if (std::get<1>(times_[index])[node_index] <= time) {
-      break;
-    }
-    --index;
-  }
+  auto search = std::upper_bound(
+      times_.rbegin() + 1, times_.rend() - 1, time,
+      [node_index](BootTimestamp time,
+                   const std::tuple<distributed_clock::time_point,
+                                    std::vector<logger::BootTimestamp>> &t) {
+        return std::get<1>(t)[node_index] <= time;
+      });
 
   // Interpolate with the two of these.
-  const distributed_clock::time_point d0 = std::get<0>(times_[index]);
-  const distributed_clock::time_point d1 = std::get<0>(times_[index + 1]);
-  const BootTimestamp t0 = std::get<1>(times_[index])[node_index];
-  const BootTimestamp t1 = std::get<1>(times_[index + 1])[node_index];
+  const std::tuple<distributed_clock::time_point,
+                        std::vector<logger::BootTimestamp>> &p0 = *search;
+  const std::tuple<distributed_clock::time_point,
+                        std::vector<logger::BootTimestamp>> &p1 = *(search - 1);
+
+  const distributed_clock::time_point d0 =  std::get<0>(p0);
+  const distributed_clock::time_point d1 = std::get<0>(p1);
+
+  const BootTimestamp t0 = std::get<1>(p0)[node_index];
+  const BootTimestamp t1 = std::get<1>(p1)[node_index];
 
   if (time > t1) {
     const distributed_clock::time_point result = (time.time - t1.time) + d1;
@@ -729,22 +734,29 @@ BootTimestamp InterpolatedTimeConverter::FromDistributedClock(
 
   // Now, find the corresponding timestamps.  Search from the back since that's
   // where most of the times we care about will be.
-  size_t index = times_.size() - 2u;
-  while (index > 0u) {
-    // If we are searching across a reboot, we want both the before and after
-    // time.  We will be asked to solve for the after, so make sure when a time
-    // matches exactly, we pick the time before, not the time after.
-    if (std::get<0>(times_[index]) < time) {
-      break;
-    }
-    --index;
-  }
+  auto search = std::upper_bound(
+      times_.rbegin() + 1, times_.rend() - 1, time,
+      [](distributed_clock::time_point time,
+         const std::tuple<distributed_clock::time_point,
+                          std::vector<logger::BootTimestamp>> &t) {
+        // If we are searching across a reboot, we want both
+        // the before and after time.  We will be asked to
+        // solve for the after, so make sure when a time
+        // matches exactly, we pick the time before, not the
+        // time after.
+        return std::get<0>(t) < time;
+      });
+
+  const std::tuple<distributed_clock::time_point,
+                   std::vector<logger::BootTimestamp>> &p0 = *search;
+  const std::tuple<distributed_clock::time_point,
+                   std::vector<logger::BootTimestamp>> &p1 = *(search - 1);
 
   // Interpolate with the two of these.
-  const distributed_clock::time_point d0 = std::get<0>(times_[index]);
-  const distributed_clock::time_point d1 = std::get<0>(times_[index + 1]);
-  const BootTimestamp t0 = std::get<1>(times_[index])[node_index];
-  const BootTimestamp t1 = std::get<1>(times_[index + 1])[node_index];
+  const distributed_clock::time_point d0 = std::get<0>(p0);
+  const distributed_clock::time_point d1 = std::get<0>(p1);
+  const BootTimestamp t0 = std::get<1>(p0)[node_index];
+  const BootTimestamp t1 = std::get<1>(p1)[node_index];
 
   if (time == d1) {
     if (boot_count == t1.boot) {
