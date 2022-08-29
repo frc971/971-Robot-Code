@@ -35,18 +35,29 @@ void EventScheduler::Deschedule(EventScheduler::Token token) {
   events_list_.erase(token);
 }
 
-aos::monotonic_clock::time_point EventScheduler::OldestEvent() {
+std::pair<distributed_clock::time_point, monotonic_clock::time_point>
+EventScheduler::OldestEvent() {
   // If we haven't started yet, schedule a special event for the epoch to allow
   // ourselves to boot.
   if (!called_started_) {
-    return aos::monotonic_clock::epoch();
+    if (!cached_epoch_) {
+      cached_epoch_ = ToDistributedClock(monotonic_clock::epoch());
+    }
+    return std::make_pair(*cached_epoch_, monotonic_clock::epoch());
   }
 
   if (events_list_.empty()) {
-    return monotonic_clock::max_time;
+    return std::make_pair(distributed_clock::max_time,
+                          monotonic_clock::max_time);
   }
 
-  return events_list_.begin()->first;
+  const monotonic_clock::time_point monotonic_time = events_list_.begin()->first;
+  if (cached_event_list_monotonic_time_ != monotonic_time) {
+    cached_event_list_time_ = ToDistributedClock(monotonic_time);
+    cached_event_list_monotonic_time_ = monotonic_time;
+  }
+
+  return std::make_pair(cached_event_list_time_, monotonic_time);
 }
 
 void EventScheduler::Shutdown() {
@@ -194,8 +205,8 @@ bool EventSchedulerScheduler::RunUntil(
 
       // We have to nudge our time back to the distributed time
       // corresponding to our desired realtime time.
-      const aos::monotonic_clock::time_point end_monotonic =
-          aos::monotonic_clock::epoch() + end_time.time_since_epoch() -
+      const monotonic_clock::time_point end_monotonic =
+          monotonic_clock::epoch() + end_time.time_since_epoch() -
           fn_realtime_offset();
       const aos::distributed_clock::time_point end_time_distributed =
           scheduler->ToDistributedClock(end_monotonic);
@@ -429,13 +440,11 @@ EventSchedulerScheduler::OldestEvent() {
   // TODO(austin): Don't linearly search...  But for N=3, it is probably the
   // fastest way to do this.
   for (EventScheduler *scheduler : schedulers_) {
-    const monotonic_clock::time_point monotonic_event_time =
-        scheduler->OldestEvent();
-    if (monotonic_event_time != monotonic_clock::max_time) {
-      const distributed_clock::time_point event_time =
-          scheduler->ToDistributedClock(monotonic_event_time);
-      if (event_time < min_event_time) {
-        min_event_time = event_time;
+    const std::pair<distributed_clock::time_point, monotonic_clock::time_point>
+        event_time = scheduler->OldestEvent();
+    if (event_time.second != monotonic_clock::max_time) {
+      if (event_time.first < min_event_time) {
+        min_event_time = event_time.first;
         min_scheduler = scheduler;
       }
     }
