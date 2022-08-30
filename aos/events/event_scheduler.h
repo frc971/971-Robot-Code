@@ -158,7 +158,8 @@ class EventScheduler {
   inline bool is_running() const;
 
   // Returns the timestamp of the next event to trigger.
-  monotonic_clock::time_point OldestEvent();
+  std::pair<distributed_clock::time_point, monotonic_clock::time_point>
+  OldestEvent();
   // Handles the next event.
   void CallOldestEvent();
 
@@ -233,6 +234,11 @@ class EventScheduler {
   bool is_running_ = false;
   // Whether we have called all the startup handlers during this boot.
   bool called_started_ = false;
+  std::optional<distributed_clock::time_point> cached_epoch_;
+  monotonic_clock::time_point cached_event_list_monotonic_time_ =
+      monotonic_clock::max_time;
+  distributed_clock::time_point cached_event_list_time_ =
+      distributed_clock::max_time;
 
   std::function<void()> started_;
   std::function<void()> stopped_;
