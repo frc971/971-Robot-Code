@@ -1120,13 +1120,15 @@ std::string NoncausalTimestampFilter::NodeNames() const {
 bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
     const SingleFilter *other, Pointer pointer,
     aos::monotonic_clock::time_point ta_base, double ta,
-    aos::monotonic_clock::time_point tb_base, double tb) const {
+    aos::monotonic_clock::time_point tb_base, double tb, bool quiet) const {
   NormalizeTimestamps(&ta_base, &ta);
   NormalizeTimestamps(&tb_base, &tb);
   CHECK_GT(timestamps_size(), 0u);
   if (ta_base < std::get<0>(timestamp(0)) && has_popped_) {
-    LOG(ERROR) << node_names_ << " O(" << ta_base << ", " << ta
-               << ") is before the start and we have forgotten the answer.";
+    if (!quiet || VLOG_IS_ON(1)) {
+      LOG(ERROR) << node_names_ << " O(" << ta_base << ", " << ta
+                 << ") is before the start and we have forgotten the answer.";
+    }
     return false;
   }
   if (IsOutsideSamples(ta_base, ta)) {
@@ -1145,14 +1147,16 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
     if (static_cast<double>(
             (std::get<0>(offset) + ta_base - tb_base).count()) >=
         tb - ta - std::get<1>(offset)) {
-      LOG(ERROR) << node_names_ << " "
-                 << TimeString(ta_base, ta, std::get<0>(offset),
-                               std::get<1>(offset))
-                 << " > solution time "
-                 << tb_base + chrono::nanoseconds(
-                                  static_cast<int64_t>(std::round(tb)))
-                 << ", " << tb - std::round(tb) << " foo";
-      LOG(INFO) << "Remainder " << std::get<1>(offset);
+      if (!quiet || VLOG_IS_ON(1)) {
+        LOG(ERROR) << node_names_ << " "
+                   << TimeString(ta_base, ta, std::get<0>(offset),
+                                 std::get<1>(offset))
+                   << " > solution time "
+                   << tb_base + chrono::nanoseconds(
+                                    static_cast<int64_t>(std::round(tb)))
+                   << ", " << tb - std::round(tb) << " foo";
+        LOG(INFO) << "Remainder " << std::get<1>(offset);
+      }
       return false;
     }
     return true;
@@ -1174,12 +1178,14 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
   // See below for why this is a >=
   if (static_cast<double>((std::get<0>(offset) + ta_base - tb_base).count()) >=
       tb - std::get<1>(offset) - ta) {
-    LOG(ERROR) << node_names_ << " "
-               << TimeString(ta_base, ta, std::get<0>(offset),
-                             std::get<1>(offset))
-               << " > solution time " << tb_base << ", " << tb;
-    LOG(ERROR) << "Bracketing times are " << TimeString(points.second.first)
-               << " and " << TimeString(points.second.second);
+    if (!quiet || VLOG_IS_ON(1)) {
+      LOG(ERROR) << node_names_ << " "
+                 << TimeString(ta_base, ta, std::get<0>(offset),
+                               std::get<1>(offset))
+                 << " > solution time " << tb_base << ", " << tb;
+      LOG(ERROR) << "Bracketing times are " << TimeString(points.second.first)
+                 << " and " << TimeString(points.second.second);
+    }
     return false;
   }
   return true;
@@ -1187,12 +1193,14 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
 
 bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
     const SingleFilter *other, Pointer pointer,
-    aos::monotonic_clock::time_point ta,
-    aos::monotonic_clock::time_point tb) const {
+    aos::monotonic_clock::time_point ta, aos::monotonic_clock::time_point tb,
+    bool quiet) const {
   CHECK_GT(timestamps_size(), 0u);
   if (ta < std::get<0>(timestamp(0)) && has_popped_) {
-    LOG(ERROR) << node_names_ << " O(" << ta
-               << ") is before the start and we have forgotten the answer.";
+    if (!quiet || VLOG_IS_ON(1)) {
+      LOG(ERROR) << node_names_ << " O(" << ta
+                 << ") is before the start and we have forgotten the answer.";
+    }
     return false;
   }
 
@@ -1209,8 +1217,10 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
     // way to preserve order well enough to have causality preserved when things
     // happen at the same point in time.
     if (offset + ta >= tb) {
-      LOG(ERROR) << node_names_ << " " << TimeString(ta, offset)
-                 << " > solution time " << tb;
+      if (!quiet || VLOG_IS_ON(1)) {
+        LOG(ERROR) << node_names_ << " " << TimeString(ta, offset)
+                   << " > solution time " << tb;
+      }
       return false;
     }
     return true;
@@ -1228,10 +1238,12 @@ bool NoncausalTimestampFilter::SingleFilter::ValidateSolution(
   // way to preserve order well enough to have causality preserved when things
   // happen at the same point in time.
   if (offset + ta >= tb) {
-    LOG(ERROR) << node_names_ << " " << TimeString(ta, offset)
-               << " > solution time " << tb;
-    LOG(ERROR) << "Bracketing times are " << TimeString(points.second.first)
-               << " and " << TimeString(points.second.second);
+    if (!quiet || VLOG_IS_ON(1)) {
+      LOG(ERROR) << node_names_ << " " << TimeString(ta, offset)
+                 << " > solution time " << tb;
+      LOG(ERROR) << "Bracketing times are " << TimeString(points.second.first)
+                 << " and " << TimeString(points.second.second);
+    }
     return false;
   }
   return true;

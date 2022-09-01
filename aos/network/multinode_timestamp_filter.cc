@@ -96,7 +96,8 @@ bool TimestampProblem::HasObservations(size_t node_a) const {
   return true;
 }
 
-bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
+bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution,
+                                        bool quiet) {
   bool success = true;
   for (size_t i = 0u; i < clock_offset_filter_for_node_.size(); ++i) {
     for (const struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
@@ -119,11 +120,11 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution) {
       }
       const bool iteration = filter.filter->ValidateSolution(
           filter.b_filter, filter.pointer, solution[i],
-          solution[filter.b_index]);
+          solution[filter.b_index], quiet);
       if (!iteration) {
         filter.filter->ValidateSolution(filter.b_filter, filter.pointer,
                                         solution[i], 0.0,
-                                        solution[filter.b_index], 0.0);
+                                        solution[filter.b_index], 0.0, quiet);
       }
 
       success = success && iteration;
@@ -1660,7 +1661,7 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
       LOG(FATAL) << "Failed to converge.";
     }
 
-    if (!problem->ValidateSolution(std::get<0>(solution))) {
+    if (!problem->ValidateSolution(std::get<0>(solution), false)) {
       LOG(WARNING) << "Invalid solution, constraints not met.";
       for (size_t i = 0; i < std::get<0>(solution).size(); ++i) {
         LOG(INFO) << "  " << std::get<0>(solution)[i];
@@ -1820,7 +1821,7 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
     // Bypass checking if order validation is turned off.  This lets us dump a
     // CSV file so we can view the problem and figure out what to do.  The
     // results won't make sense.
-    if (!problem->ValidateSolution(std::get<0>(solution))) {
+    if (!problem->ValidateSolution(std::get<0>(solution), false)) {
       LOG(WARNING) << "Invalid solution, constraints not met.";
       for (size_t i = 0; i < std::get<0>(solution).size(); ++i) {
         LOG(INFO) << "  " << std::get<0>(solution)[i];
