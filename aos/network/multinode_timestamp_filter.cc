@@ -198,13 +198,13 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
       // extra factor, the solution will be the same (or close enough).
       constexpr double kMinNetworkDelay = 2.0;
 
-      const std::pair<NoncausalTimestampFilter::Pointer,
-                      std::tuple<chrono::nanoseconds, double, double>>
+      std::pair<NoncausalTimestampFilter::Pointer,
+                std::tuple<chrono::nanoseconds, double, double>>
           offset_error =
               FLAGS_bounds_offset_error
                   ? filter.filter->BoundsOffsetError(
-                        filter.b_filter, filter.pointer, base_clock_[i],
-                        time_offsets(a_solution_index),
+                        filter.b_filter, std::move(filter.pointer),
+                        base_clock_[i], time_offsets(a_solution_index),
                         base_clock_[filter.b_index],
                         time_offsets(b_solution_index))
                   : filter.filter->OffsetError(filter.b_filter, filter.pointer,
@@ -212,7 +212,7 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
                                                time_offsets(a_solution_index),
                                                base_clock_[filter.b_index],
                                                time_offsets(b_solution_index));
-      filter.pointer = offset_error.first;
+      filter.pointer = std::move(offset_error.first);
 
       const std::pair<chrono::nanoseconds, double> error =
           std::make_pair(std::get<0>(offset_error.second),
