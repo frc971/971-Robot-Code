@@ -44,7 +44,16 @@
 //!     a lending stream. This is very close to lending iterators, which is one of the motivating
 //!     examples for generic associated types (https://github.com/rust-lang/rust/issues/44265).
 
-use std::{fmt, future::Future, marker::PhantomData, pin::Pin, slice, task::Poll, time::Duration};
+use std::{
+    fmt,
+    future::Future,
+    marker::PhantomData,
+    panic::{catch_unwind, AssertUnwindSafe},
+    pin::Pin,
+    slice,
+    task::Poll,
+    time::Duration,
+};
 
 use autocxx::{
     subclass::{is_subclass, CppSubclass},
@@ -98,12 +107,15 @@ pub struct RustApplicationFuture {
 }
 
 impl ffi::aos::ApplicationFuture_methods for RustApplicationFuture {
-    fn Poll(&mut self) {
-        // This is always allowed because it can never create a value of type `Ready<Never>` to
-        // return, so it must always return `Pending`. That also means the value it returns doesn't
-        // mean anything, so we ignore it.
-        let _ =
-            Pin::new(&mut self.future).poll(&mut std::task::Context::from_waker(&panic_waker()));
+    fn Poll(&mut self) -> bool {
+        catch_unwind(AssertUnwindSafe(|| {
+            // This is always allowed because it can never create a value of type `Ready<Never>` to
+            // return, so it must always return `Pending`. That also means the value it returns doesn't
+            // mean anything, so we ignore it.
+            let _ = Pin::new(&mut self.future)
+                .poll(&mut std::task::Context::from_waker(&panic_waker()));
+        }))
+        .is_ok()
     }
 }
 
@@ -341,7 +353,7 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// # }
     /// ```
     pub fn spawn(&mut self, task: impl Future<Output = Never> + 'event_loop) {
-        self.0.as_mut().spawn(RustApplicationFuture::new(task));
+        self.0.as_mut().Spawn(RustApplicationFuture::new(task));
     }
 
     pub fn configuration(&self) -> &'event_loop Configuration {

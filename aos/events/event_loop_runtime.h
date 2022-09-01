@@ -71,7 +71,9 @@ class ApplicationFuture {
   // Calls a Rust `Future::poll`, with a waker that will panic if used. Because
   // our Future's Output is Never, the inner Rust implementation can only return
   // Poll::Pending, which is equivalent to void.
-  virtual void Poll() = 0;
+  //
+  // Returns true if it succeeded, or false if the Rust code paniced.
+  virtual bool Poll() = 0;
 };
 
 // Similar to Rust's `Stream<Item = const Option&>`.
@@ -141,14 +143,16 @@ class EventLoopRuntime {
  public:
   EventLoopRuntime(EventLoop *event_loop) : event_loop_(event_loop) {}
   ~EventLoopRuntime() {
+    // Do this first, because it may hold child objects.
+    task_.reset();
     CHECK_EQ(child_count_, 0)
         << ": Some child objects were not destroyed first";
   }
 
   EventLoop *event_loop() { return event_loop_; }
 
-  void spawn(std::unique_ptr<ApplicationFuture> task) {
-    CHECK(!task_) << ": May only call spawn once";
+  void Spawn(std::unique_ptr<ApplicationFuture> task) {
+    CHECK(!task_) << ": May only call Spawn once";
     task_ = std::move(task);
     DoPoll();
     // Just do this unconditionally, so we don't have to keep track of each
@@ -201,7 +205,7 @@ class EventLoopRuntime {
   // Polls the top-level future once. This is what all the callbacks should do.
   void DoPoll() {
     if (task_) {
-      task_->Poll();
+      CHECK(task_->Poll()) << ": Rust panic, aborting";
     }
   }
 

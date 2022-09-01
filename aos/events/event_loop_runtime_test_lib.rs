@@ -269,6 +269,48 @@ mod tests {
         Box::new(TypedTestApplication::new(EventLoopRuntime::new(event_loop)))
     }
 
+    struct PanicApplication<'event_loop> {
+        _runtime: EventLoopRuntime<'event_loop>,
+    }
+
+    impl<'event_loop> PanicApplication<'event_loop> {
+        fn new(mut runtime: EventLoopRuntime<'event_loop>) -> Self {
+            runtime.spawn(async move {
+                panic!("Test Rust panic");
+            });
+
+            Self { _runtime: runtime }
+        }
+    }
+
+    unsafe fn make_panic_application(event_loop: *mut EventLoop) -> Box<PanicApplication<'static>> {
+        Box::new(PanicApplication::new(EventLoopRuntime::new(event_loop)))
+    }
+
+    struct PanicOnRunApplication<'event_loop> {
+        _runtime: EventLoopRuntime<'event_loop>,
+    }
+
+    impl<'event_loop> PanicOnRunApplication<'event_loop> {
+        fn new(mut runtime: EventLoopRuntime<'event_loop>) -> Self {
+            let on_run = runtime.on_run();
+            runtime.spawn(async move {
+                on_run.await;
+                panic!("Test Rust panic");
+            });
+
+            Self { _runtime: runtime }
+        }
+    }
+
+    unsafe fn make_panic_on_run_application(
+        event_loop: *mut EventLoop,
+    ) -> Box<PanicOnRunApplication<'static>> {
+        Box::new(PanicOnRunApplication::new(EventLoopRuntime::new(
+            event_loop,
+        )))
+    }
+
     #[cxx::bridge(namespace = "aos::events::testing")]
     mod ffi_bridge {
         extern "Rust" {
@@ -279,6 +321,14 @@ mod tests {
             unsafe fn make_typed_test_application(
                 event_loop: *mut EventLoop,
             ) -> Box<TypedTestApplication<'static>>;
+
+            unsafe fn make_panic_application(
+                event_loop: *mut EventLoop,
+            ) -> Box<PanicApplication<'static>>;
+
+            unsafe fn make_panic_on_run_application(
+                event_loop: *mut EventLoop,
+            ) -> Box<PanicOnRunApplication<'static>>;
 
             fn completed_test_count() -> u32;
             fn started_test_count() -> u32;
@@ -296,6 +346,14 @@ mod tests {
 
             fn before_sending(&mut self);
             fn after_sending(&mut self);
+        }
+
+        extern "Rust" {
+            type PanicApplication<'a>;
+        }
+
+        extern "Rust" {
+            type PanicOnRunApplication<'a>;
         }
 
         unsafe extern "C++" {

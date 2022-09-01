@@ -68,4 +68,24 @@ TEST(EventLoopRustTest, TestTypedApplicationTwice) {
   MakeAndTestApplication(254, &make_typed_test_application);
 }
 
+TEST(EventLoopRustDeathTest, PanicImmediately) {
+  const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(
+          aos::testing::ArtifactPath("aos/events/pingpong_config.json"));
+  SimulatedEventLoopFactory factory{&config.message()};
+  const auto rust_event_loop = factory.MakeEventLoop("pong");
+  EXPECT_DEATH(make_panic_application(rust_event_loop.get()),
+               "Test Rust panic.*Rust panic, aborting");
+}
+
+TEST(EventLoopRustDeathTest, PanicOnRun) {
+  const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(
+          aos::testing::ArtifactPath("aos/events/pingpong_config.json"));
+  SimulatedEventLoopFactory factory{&config.message()};
+  const auto rust_event_loop = factory.MakeEventLoop("pong");
+  auto application = make_panic_on_run_application(rust_event_loop.get());
+  EXPECT_DEATH(factory.Run(), "Test Rust panic.*Rust panic, aborting");
+}
+
 }  // namespace aos::events::testing
