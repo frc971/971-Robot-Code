@@ -149,6 +149,23 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution,
   return success;
 }
 
+size_t TimestampProblem::LiveConstraintsCount() const {
+  size_t result = 0;
+  for (size_t i = 0; i < clock_offset_filter_for_node_.size(); ++i) {
+    for (const struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
+      // Especially when reboots are involved, it isn't guarenteed that there
+      // will be timestamps going both ways.  In this case, we want to avoid the
+      // cost.
+      if (filter.filter->timestamps_empty(base_clock_[i].boot,
+                                          base_clock_[filter.b_index].boot)) {
+        continue;
+      }
+      ++result;
+    }
+  }
+  return result;
+}
+
 TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
       const Eigen::Ref<Eigen::VectorXd> time_offsets) {
   Derivitives result;
@@ -508,6 +525,7 @@ void TimestampProblem::MaybeUpdateNodeMapping() {
     }
   }
   live_nodes_ = live_node_index;
+  live_constraints_ = LiveConstraintsCount();
   node_mapping_valid_ = true;
 }
 
