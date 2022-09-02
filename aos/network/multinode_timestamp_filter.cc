@@ -561,11 +561,13 @@ void TimestampProblem::Debug() {
         gradients[i].emplace_back(
             std::string("- ") +
             filter.filter->DebugOffsetError(
-                filter.b_filter, filter.pointer, base_clock_[i], 0.0,
-                base_clock_[filter.b_index], 0.0, i, filter.b_index));
+                filter.b_filter, NoncausalTimestampFilter::Pointer(),
+                base_clock_[i], 0.0, base_clock_[filter.b_index], 0.0, i,
+                filter.b_index));
         gradients[filter.b_index].emplace_back(filter.filter->DebugOffsetError(
-            filter.b_filter, filter.pointer, base_clock_[i], 0.0,
-            base_clock_[filter.b_index], 0.0, i, filter.b_index));
+            filter.b_filter, NoncausalTimestampFilter::Pointer(),
+            base_clock_[i], 0.0, base_clock_[filter.b_index], 0.0, i,
+            filter.b_index));
       }
     }
   }
