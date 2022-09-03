@@ -18,6 +18,9 @@
 #include "y2022_bot3/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022_bot3/control_loops/superstructure/superstructure_status_generated.h"
 
+using frc971::CreateProfileParameters;
+using frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
+using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::input::driver_station::ButtonLocation;
 using frc971::input::driver_station::ControlBit;
 using frc971::input::driver_station::JoystickAxis;
@@ -28,6 +31,10 @@ namespace input {
 namespace joysticks {
 
 namespace superstructure = y2022_bot3::control_loops::superstructure;
+
+// TODO(niko): add a climber button
+const ButtonLocation kIntake(4, 10);
+const ButtonLocation kSpit(4, 9);
 
 class Reader : public ::frc971::input::ActionJoystickInput {
  public:
@@ -45,11 +52,46 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   void AutoEnded() override { AOS_LOG(INFO, "Auto ended.\n"); }
 
   void HandleTeleop(
-      const ::frc971::input::driver_station::Data & /*data*/) override {
+      const ::frc971::input::driver_station::Data &data) override {
     superstructure_status_fetcher_.Fetch();
     if (!superstructure_status_fetcher_.get()) {
       AOS_LOG(ERROR, "Got no superstructure status message.\n");
       return;
+    }
+    constexpr double kIntakeOutPosition = 0.0;
+    constexpr double kIntakeInPosition = 1.47;
+
+    double roller_speed = 0.0;
+    double intake_pos = kIntakeInPosition;
+
+    if (data.IsPressed(kIntake) || data.IsPressed(kSpit)) {
+      intake_pos = kIntakeOutPosition;
+
+      if (data.IsPressed(kIntake)) {
+        roller_speed = 12.0;
+      } else {
+        roller_speed = -12.0;
+      }
+    }
+
+    {
+      auto builder = superstructure_goal_sender_.MakeBuilder();
+
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          intake_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+              *builder.fbb(), intake_pos,
+              CreateProfileParameters(*builder.fbb(), 8.0, 40.0));
+
+      superstructure::Goal::Builder superstructure_goal_builder =
+          builder.MakeBuilder<superstructure::Goal>();
+
+      superstructure_goal_builder.add_intake(intake_offset);
+      superstructure_goal_builder.add_roller_speed(roller_speed);
+
+      if (builder.Send(superstructure_goal_builder.Finish()) !=
+          aos::RawSender::Error::kOk) {
+        AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
+      }
     }
   }
 
