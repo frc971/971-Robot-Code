@@ -15,3 +15,8 @@
 # run "vagrant up".
 /vm/.vagrant/
 /vm/workspace.vdi
+
+# Ignore temporary files for building Python wheels.
+/tools/python/venv/
+/tools/python/wheelhouse/
+/tools/python/wheelhouse_tmp/

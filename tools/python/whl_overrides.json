@@ -1,0 +1,70 @@
+{
+    "certifi==2022.9.14": {
+        "sha256": "e232343de1ab72c2aa521b625c80f699e356830fd0e2c620b465b304b17b0516",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/certifi-2022.9.14-py3-none-any.whl"
+    },
+    "charset-normalizer==2.1.1": {
+        "sha256": "83e9a75d1911279afd89352c68b45348559d1fc0506b054b346651b5e7fee29f",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/charset_normalizer-2.1.1-py3-none-any.whl"
+    },
+    "cycler==0.11.0": {
+        "sha256": "3a27e95f763a428a739d2add979fa7494c912a32c17c4c38c4d5f082cad165a3",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/cycler-0.11.0-py3-none-any.whl"
+    },
+    "fonttools==4.28.5": {
+        "sha256": "edf251d5d2cc0580d5f72de4621c338d8c66c5f61abb50cf486640f73c8194d5",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/fonttools-4.28.5-py3-none-any.whl"
+    },
+    "idna==3.4": {
+        "sha256": "90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/idna-3.4-py3-none-any.whl"
+    },
+    "kiwisolver==1.3.2": {
+        "sha256": "30fa008c172355c7768159983a7270cb23838c4d7db73d6c0f6b60dde0d432c6",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/kiwisolver-1.3.2-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl"
+    },
+    "matplotlib==3.5.1": {
+        "sha256": "87900c67c0f1728e6db17c6809ec05c025c6624dcf96a8020326ea15378fe8e7",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/matplotlib-3.5.1-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl"
+    },
+    "numpy==1.21.5": {
+        "sha256": "c293d3c0321996cd8ffe84215ffe5d269fd9d1d12c6f4ffe2b597a7c30d3e593",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/numpy-1.21.5-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl"
+    },
+    "packaging==21.3": {
+        "sha256": "ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/packaging-21.3-py3-none-any.whl"
+    },
+    "pillow==8.4.0": {
+        "sha256": "b8831cb7332eda5dc89b21a7bce7ef6ad305548820595033a4b03cf3091235ed",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/Pillow-8.4.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    },
+    "pkginfo==1.8.3": {
+        "sha256": "848865108ec99d4901b2f7e84058b6e7660aae8ae10164e015a6dcf5b242a594",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pkginfo-1.8.3-py2.py3-none-any.whl"
+    },
+    "pyparsing==3.0.6": {
+        "sha256": "04ff808a5b90911829c55c4e26f75fa5ca8a2f5f36aa3a51f68e27033341d3e4",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pyparsing-3.0.6-py3-none-any.whl"
+    },
+    "python-dateutil==2.8.2": {
+        "sha256": "961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/python_dateutil-2.8.2-py2.py3-none-any.whl"
+    },
+    "requests==2.28.1": {
+        "sha256": "8fefa2a1a1365bf5520aac41836fbee479da67864514bdb821f31ce07ce65349",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/requests-2.28.1-py3-none-any.whl"
+    },
+    "scipy==1.7.3": {
+        "sha256": "5d1cc2c19afe3b5a546ede7e6a44ce1ff52e443d12b231823268019f608b9b12",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/scipy-1.7.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    },
+    "six==1.16.0": {
+        "sha256": "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/six-1.16.0-py2.py3-none-any.whl"
+    },
+    "urllib3==1.26.12": {
+        "sha256": "b930dd878d5a8afb066a637fbb35144fe7901e3b209d1cd4f524bd0e9deee997",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/urllib3-1.26.12-py2.py3-none-any.whl"
+    }
+}

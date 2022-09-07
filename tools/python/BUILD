@@ -75,3 +75,12 @@ toolchain(
     toolchain = ":upstream_py_runtime",
     toolchain_type = "@rules_python//python:toolchain_type",
 )
+
+py_binary(
+    name = "mirror_pip_packages",
+    srcs = ["mirror_pip_packages.py"],
+    deps = [
+        "@pip//pkginfo",
+        "@pip//requests",
+    ],
+)

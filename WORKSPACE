@@ -309,6 +309,8 @@ load("//tools/ci:repo_defs.bzl", "ci_configure")
 
 ci_configure(name = "ci_configure")
 
+load("@ci_configure//:ci.bzl", "RUNNING_IN_CI")
+
 http_archive(
     name = "platforms",
     sha256 = "2c8d8347427e6bb0ba7cf9f933c08fe2be2b62ff2454546ad852f7bf267aad87",
@@ -403,6 +405,10 @@ http_archive(
 
 http_archive(
     name = "rules_python",
+    patch_args = ["-p1"],
+    patches = [
+        "//third_party:rules_python/0001-Support-overriding-individual-packages.patch",
+    ],
     sha256 = "b593d13bb43c94ce94b483c2858e53a9b811f6f10e1e0eedc61073bd90e58d9c",
     strip_prefix = "rules_python-0.12.0",
     url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.12.0.tar.gz",
@@ -421,7 +427,9 @@ load("@rules_python//python:pip.bzl", "pip_parse")
 
 pip_parse(
     name = "pip_deps",
+    overrides = "//tools/python:whl_overrides.json",
     python_interpreter_target = python_interpreter,
+    require_overrides = RUNNING_IN_CI,
     requirements_lock = "//tools/python:requirements.lock.txt",
 )
 
