@@ -9,6 +9,9 @@ def aos_config(name, src, flatbuffers = [], deps = [], visibility = None, teston
     _aos_config(
         name = name,
         src = src,
+        config_json = name + ".json",
+        config_stripped = name + ".stripped.json",
+        config_binary = name + ".bfbs",
         deps = deps,
         flatbuffers = [expand_label(flatbuffer) + "_reflection_out" for flatbuffer in flatbuffers],
         visibility = visibility,
@@ -17,9 +20,9 @@ def aos_config(name, src, flatbuffers = [], deps = [], visibility = None, teston
     )
 
 def _aos_config_impl(ctx):
-    config = ctx.actions.declare_file(ctx.label.name + ".json")
-    stripped_config = ctx.actions.declare_file(ctx.label.name + ".stripped.json")
-    binary_config = ctx.actions.declare_file(ctx.label.name + ".bfbs")
+    config = ctx.outputs.config_json
+    stripped_config = ctx.outputs.config_stripped
+    binary_config = ctx.outputs.config_binary
 
     flatbuffers_depset = depset(
         ctx.files.flatbuffers,
@@ -59,6 +62,9 @@ def _aos_config_impl(ctx):
 
 _aos_config = rule(
     attrs = {
+        "config_json": attr.output(mandatory = True),
+        "config_stripped": attr.output(mandatory = True),
+        "config_binary": attr.output(mandatory = True),
         "_config_flattener": attr.label(
             executable = True,
             cfg = "host",

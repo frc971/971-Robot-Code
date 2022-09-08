@@ -24,7 +24,7 @@ flatbuffer_cc_library(
 
 aos_config(
     name = "aos_config",
-    src = "aos_config.json",
+    src = "test_config.json",
     flatbuffers = [
         "//frc971/constants/testdata:constants_data_fbs",
         "//frc971/constants/testdata:constants_list_fbs",
