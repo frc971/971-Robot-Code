@@ -5,7 +5,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "gflags/gflags.h"
 
-DEFINE_string(config, "/app/aos_config.json", "The path to the config to use.");
+DEFINE_string(config, "aos_config.json", "The path to the config to use.");
 DEFINE_string(application, "",
               "Application filter to use. Empty for no filter.");
 DEFINE_bool(stream, true, "Stream out all the timing reports that we receive.");
