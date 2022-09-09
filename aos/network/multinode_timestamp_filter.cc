@@ -176,7 +176,8 @@ size_t TimestampProblem::LiveConstraintsCount() const {
 }
 
 TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
-      const Eigen::Ref<Eigen::VectorXd> time_offsets) {
+    const Eigen::Ref<const Eigen::VectorXd> time_offsets,
+    const std::vector<logger::BootTimestamp> &points, bool quiet) {
   Derivitives result;
 
   // We get back both interger and double remainders for the gradient.  We then
@@ -189,6 +190,11 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
   result.gradient = Eigen::VectorXd::Zero(live_nodes_);
 
   result.hessian = Eigen::MatrixXd::Zero(live_nodes_, live_nodes_);
+
+  // Constrain the average of the times.
+  result.A =
+      Eigen::MatrixXd::Ones(1, live_nodes_) / static_cast<double>(live_nodes_);
+  result.Axmb = Eigen::VectorXd::Zero(1);
 
   for (size_t i = 0; i < clock_offset_filter_for_node_.size(); ++i) {
     for (struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
@@ -255,12 +261,14 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
       result.gradient(a_solution_index) += -grad.second;
       result.gradient(b_solution_index) += grad.second;
 
-      VLOG(2) << "  Filter pair "
-              << filter.filter->node_a()->name()->string_view() << "("
-              << a_solution_index << ") -> "
-              << filter.filter->node_b()->name()->string_view() << "("
-              << b_solution_index << "): " << std::setprecision(12)
-              << error.first.count() << " + " << error.second;
+      if (!quiet) {
+        SOLVE_VLOG(3) << "  Filter pair "
+                      << filter.filter->node_a()->name()->string_view() << "("
+                      << a_solution_index << ") -> "
+                      << filter.filter->node_b()->name()->string_view() << "("
+                      << b_solution_index << "): " << std::setprecision(12)
+                      << error.first.count() << " + " << error.second;
+      }
 
       // Reminder, our cost function has the following form.
       //   ((tb - (1 + ma) ta - ba)^2
@@ -279,18 +287,53 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
     result.gradient(i) += static_cast<double>(intgrad(i).count());
   }
 
+  // Now, we want to set A x - b to be -time_offset for the earliest
+  // clock.
+  //
+  // To save ourselves a fair amount of compute, we can take the min here.  That
+  // will drive us back the furthest back in time for all provided nodes without
+  // having to solve N times and look for the earliest solution.
+  for (size_t i = 0; i < points.size(); ++i) {
+    if (points[i] == logger::BootTimestamp::max_time()) {
+      continue;
+    }
+
+    CHECK_EQ(points[i].boot, base_clock(i).boot);
+    const double candidate_b =
+        chrono::duration<double, std::nano>(points[i].time - base_clock(i).time)
+            .count() -
+        time_offsets(NodeToFullSolutionIndex(i));
+    if ((result.Axmb.rows() != 0 && candidate_b < -result.Axmb(0, 0)) ||
+        result.solution_node == std::numeric_limits<size_t>::max()) {
+      if (!quiet) {
+        SOLVE_VLOG(1) << "  Node " << i << ", desired solution time "
+                      << points[i] << ", base_clock " << base_clock(i)
+                      << ", error " << candidate_b << " time offset "
+                      << time_offsets(NodeToFullSolutionIndex(i));
+      }
+      if (result.Axmb.rows() != 0) {
+        result.Axmb(0, 0) = -candidate_b;
+      }
+      result.solution_node = i;
+    }
+  }
+
+  CHECK_NE(result.solution_node, std::numeric_limits<size_t>::max())
+      << ": No solution nodes, please investigate";
+
   return result;
 }
 
 std::tuple<Eigen::VectorXd, size_t> TimestampProblem::Newton(
     const Eigen::Ref<Eigen::VectorXd> time_offsets,
-    const std::vector<logger::BootTimestamp> &points) {
+    const std::vector<logger::BootTimestamp> &points, size_t iteration) {
   CHECK_GT(live_nodes_, 0u) << ": No live nodes to solve for.";
-  const Derivitives derivitives = ComputeDerivitives(time_offsets);
+  const Derivitives derivitives =
+      ComputeDerivitives(time_offsets, points, false);
 
-  const Eigen::MatrixXd constraint_jacobian =
-      Eigen::MatrixXd::Ones(1, live_nodes_) / static_cast<double>(live_nodes_);
   // https://www.cs.purdue.edu/homes/jhonorio/16spring-cs52000-equality.pdf
+  // https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf chapter 10 is good
+  // too.
   //
   // Queue long explanation for why this is the right math...
   //
@@ -354,45 +397,37 @@ std::tuple<Eigen::VectorXd, size_t> TimestampProblem::Newton(
   Eigen::MatrixXd a;
   a.resize(live_nodes_ + 1, live_nodes_ + 1);
   a.block(0, 0, live_nodes_, live_nodes_) = derivitives.hessian;
-  a.block(0, live_nodes_, live_nodes_, 1) = constraint_jacobian.transpose();
-  a.block(live_nodes_, 0, 1, live_nodes_) = constraint_jacobian;
+  a.block(0, live_nodes_, live_nodes_, 1) = derivitives.A.transpose();
+  a.block(live_nodes_, 0, 1, live_nodes_) = derivitives.A;
   a(live_nodes_, live_nodes_) = 0.0;
 
   Eigen::VectorXd b = Eigen::VectorXd::Zero(live_nodes_ + 1);
   b.block(0, 0, live_nodes_, 1) = -derivitives.gradient;
+  b(live_nodes_) = -derivitives.Axmb(0, 0);
 
-  // Now, we want to set b(live_nodes_) to be -time_offset for the earliest
-  // clock.
-  //
-  // To save ourselves a fair amount of compute, we can take the min here.  That
-  // will drive us back the furthest back in time for all provided nodes without
-  // having to solve N times and look for the earliest solution.
-  size_t solution_node = std::numeric_limits<size_t>::max();
-  for (size_t i = 0; i < points.size(); ++i) {
-    if (points[i] == logger::BootTimestamp::max_time()) {
-      continue;
-    }
+  VLOG(2) << "A: " << a.format(kHeavyFormat);
+  VLOG(2) << "b: " << b.format(kHeavyFormat);
 
-    CHECK_EQ(points[i].boot, base_clock(i).boot);
-    const double candidate_b =
-        chrono::duration<double, std::nano>(points[i].time - base_clock(i).time)
-            .count() -
-        time_offsets(NodeToFullSolutionIndex(i));
-    if (candidate_b < b(live_nodes_) ||
-        solution_node == std::numeric_limits<size_t>::max()) {
-      VLOG(2) << "Node " << i << ", solution time " << points[i]
-              << ", base_clock " << base_clock(i) << ", error " << candidate_b
-              << " time offset " << time_offsets(NodeToFullSolutionIndex(i));
-      b(live_nodes_) = candidate_b;
-      solution_node = i;
-    }
+  Eigen::VectorXd step = a.colPivHouseholderQr().solve(b);
+
+  if (VLOG_IS_ON(2)) {
+    // Print out the gradient ignoring the component removed by the equality
+    // constraint.  This tells us what gradient we are depending to try to
+    // finish our solution.
+    const Eigen::MatrixXd constraint_jacobian =
+        Eigen::MatrixXd::Ones(1, live_nodes_) /
+        static_cast<double>(live_nodes_);
+    Eigen::VectorXd adjusted_grad =
+        derivitives.gradient +
+        step(live_nodes_) * constraint_jacobian.transpose();
+
+    SOLVE_VLOG(2) << "Adjusted grad " << iteration << " -> "
+                  << std::setprecision(12) << std::fixed << std::setfill(' ')
+                  << adjusted_grad.transpose().format(kHeavyFormat);
   }
 
-  CHECK_NE(solution_node, std::numeric_limits<size_t>::max())
-      << ": No solution nodes, please investigate";
-
-  return std::tuple<Eigen::VectorXd, size_t>(a.colPivHouseholderQr().solve(b),
-                                             solution_node);
+  return std::tuple<Eigen::VectorXd, size_t>(std::move(step),
+                                             derivitives.solution_node);
 }
 
 std::tuple<std::vector<BootTimestamp>, size_t, size_t>
@@ -411,27 +446,14 @@ TimestampProblem::SolveNewton(const std::vector<logger::BootTimestamp> &points,
   size_t solution_node;
   while (true) {
     Eigen::VectorXd step;
-    std::tie(step, solution_node) = Newton(data, points);
+    std::tie(step, solution_node) = Newton(data, points, iteration);
 
-    if (VLOG_IS_ON(2)) {
-      // Print out the gradient ignoring the component removed by the equality
-      // constraint.  This tells us what gradient we are depending to try to
-      // finish our solution.
-      const Eigen::MatrixXd constraint_jacobian =
-          Eigen::MatrixXd::Ones(1, live_nodes_) /
-          static_cast<double>(live_nodes_);
-      Eigen::VectorXd adjusted_grad =
-          ComputeDerivitives(data).gradient +
-          step(live_nodes_) * constraint_jacobian.transpose();
+    SOLVE_VLOG(2) << "Step " << iteration << " -> " << std::setprecision(12)
+                  << std::fixed << std::setfill(' ')
+                  << step.transpose().format(kHeavyFormat);
 
-      VLOG(2) << "Adjusted grad " << iteration << " -> "
-              << std::setprecision(12) << std::fixed << std::setfill(' ')
-              << adjusted_grad.transpose().format(kHeavyFormat);
-    }
+    // We now have a search direction.  Line search and go.
 
-    VLOG(2) << "Step " << iteration << " -> " << std::setprecision(12)
-            << std::fixed << std::setfill(' ')
-            << step.transpose().format(kHeavyFormat);
     // We got there if the max step is small (this is strongly correlated to the
     // gradient since the Hessian is constant), and our solution node's time is
     // also close.
@@ -514,7 +536,7 @@ TimestampProblem::SolveNewton(const std::vector<logger::BootTimestamp> &points,
     }
   }
   if (iteration > max_iterations) {
-    LOG(ERROR) << "Failed to converge.";
+    LOG(ERROR) << "Failed to converge on solve " << my_solve_number_;
   }
 
   return std::make_tuple(std::move(result), solution_node, iteration);
