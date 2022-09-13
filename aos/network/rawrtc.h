@@ -7,7 +7,7 @@
 extern "C" {
 #include <rawrtc.h>
 
-#include "external/com_github_rawrtc_rawrtc_common/include/rawrtcc/utils.h"
+#include "rawrtcc/utils.h"
 }
 
 #include "flatbuffers/flatbuffers.h"

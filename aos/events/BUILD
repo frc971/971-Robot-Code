@@ -382,7 +382,7 @@ cc_library(
 cc_test(
     name = "shm_event_loop_test",
     srcs = ["shm_event_loop_test.cc"],
-    shard_count = 16,
+    shard_count = 24,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event_loop_param_test",
