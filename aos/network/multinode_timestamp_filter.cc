@@ -33,12 +33,35 @@ DEFINE_bool(bounds_offset_error, false,
             "the interpolation lines.  This seems to make startup a bit "
             "better, but won't track the middle as well.");
 
-#define SOLVE_VLOG_IS_ON(v)                                               \
-  (VLOG_IS_ON(v) ||                                                       \
-   (static_cast<int32_t>(my_solve_number_) == FLAGS_debug_solve_number && \
-    FLAGS_debug_solve_number != -1))
+DEFINE_bool(
+    crash_on_solve_failure, true,
+    "If true, crash when the solver fails to converge.  If false, keep going.  "
+    "This should only be set to false when trying to see if future problems "
+    "would be solvable.  This won't process a valid log");
 
-#define SOLVE_VLOG(v) LOG_IF(INFO, SOLVE_VLOG_IS_ON(v))
+DEFINE_bool(attempt_simultaneous_constrained_solve, true,
+            "If true, try the simultaneous, constrained solver.  If false, "
+            "only solve constrained problems sequentially.");
+
+DEFINE_bool(
+    remove_unlikely_constraints, true,
+    "If true, when solving, try with our best guess at which constraints will "
+    "be relevant and resolve if that proves wrong with an updated set.  For "
+    "expensive problems, this reduces solve time significantly.");
+
+DEFINE_int32(solve_verbosity, 1, "Verbosity to use when debugging the solver.");
+
+DEFINE_bool(constrained_solve, true,
+            "If true, use the constrained solver.  If false, only solve "
+            "unconstrained.");
+
+#define SOLVE_VLOG_IS_ON(solve_number, v)                             \
+  (VLOG_IS_ON(v) ||                                                   \
+   (static_cast<int32_t>(solve_number) == FLAGS_debug_solve_number && \
+    v <= FLAGS_solve_verbosity))
+
+#define SOLVE_VLOG(solve_number, v) \
+  LOG_IF(INFO, SOLVE_VLOG_IS_ON(solve_number, v))
 
 namespace aos {
 namespace message_bridge {
@@ -47,18 +70,21 @@ namespace chrono = std::chrono;
 using aos::logger::BootDuration;
 using aos::logger::BootTimestamp;
 
-const Eigen::IOFormat kHeavyFormat(Eigen::StreamPrecision, Eigen::DontAlignCols,
-                                   ", ", ";\n", "[", "]", "[", "]");
+const Eigen::IOFormat kHeavyFormat(Eigen::StreamPrecision, 0, ", ",
+                                   ",\n                                        "
+                                   "                                     ",
+                                   "[", "]", "[", "]");
 
 template <class... Args>
 std::string CsvPath(Args &&...args) {
   return absl::StrCat(FLAGS_timestamp_csv_folder, "/",
                       std::forward<Args>(args)...);
 }
-
 }  // namespace
 
-size_t TimestampProblem::solve_number_ = 0u;
+size_t NewtonSolver::solve_number_ = 0u;
+
+NewtonSolver::NewtonSolver() : my_solve_number_(solve_number_++) {}
 
 TimestampProblem::TimestampProblem(size_t count) {
   CHECK_GT(count, 1u);
@@ -66,7 +92,6 @@ TimestampProblem::TimestampProblem(size_t count) {
   base_clock_.resize(count);
   live_.resize(count, true);
   node_mapping_.resize(count, 0);
-  my_solve_number_ = solve_number_++;
 }
 
 // TODO(austin): Add a rate of change constraint from the last sample.  1
@@ -103,8 +128,8 @@ bool TimestampProblem::HasObservations(size_t node_a) const {
        clock_offset_filter_for_node_[node_a]) {
     // There's something in this direction, so we don't need to check the
     // opposite direction to confirm we have observations.
-    if (!filter.filter->timestamps_empty(
-            base_clock_[node_a].boot, base_clock_[filter.b_index].boot)) {
+    if (!filter.filter->timestamps_empty(base_clock_[node_a].boot,
+                                         base_clock_[filter.b_index].boot)) {
       continue;
     }
 
@@ -128,8 +153,8 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution,
     for (const struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
       // There's nothing in this direction, so there will be nothing to
       // validate.
-      if (filter.filter->timestamps_empty(
-              base_clock_[i].boot, base_clock_[filter.b_index].boot)) {
+      if (filter.filter->timestamps_empty(base_clock_[i].boot,
+                                          base_clock_[filter.b_index].boot)) {
         // For a boot to exist, we need to have some observations between it and
         // another boot.  We wouldn't bother to build a problem to solve for
         // this node otherwise.  Confirm that is true so we at least get
@@ -145,11 +170,11 @@ bool TimestampProblem::ValidateSolution(std::vector<BootTimestamp> solution,
       }
       const bool iteration = filter.filter->ValidateSolution(
           filter.b_filter, filter.pointer, solution[i],
-          solution[filter.b_index], quiet);
+          solution[filter.b_index], true, quiet);
       if (!iteration) {
-        filter.filter->ValidateSolution(filter.b_filter, filter.pointer,
-                                        solution[i], 0.0,
-                                        solution[filter.b_index], 0.0, quiet);
+        filter.filter->ValidateSolution(
+            filter.b_filter, filter.pointer, solution[i], 0.0,
+            solution[filter.b_index], 0.0, true, quiet);
       }
 
       success = success && iteration;
@@ -175,10 +200,71 @@ size_t TimestampProblem::LiveConstraintsCount() const {
   return result;
 }
 
-TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
-    const Eigen::Ref<const Eigen::VectorXd> time_offsets,
-    const std::vector<logger::BootTimestamp> &points, bool quiet) {
-  Derivitives result;
+Problem::Derivatives TimestampProblem::ComputeDerivatives(
+    size_t solve_number, const Eigen::Ref<const Eigen::VectorXd> time_offsets,
+    bool quiet, bool all, const absl::Span<const size_t> active_constraints) {
+  // Queue long explanation for why this is the right math...
+  //
+  // Our cost function is piecewise quadratic and simple by design.  It should
+  // also be almost convex.  This means it is equivalent for us to drive the
+  // gradient to 0 to find the corresponding times on all nodes.
+  //
+  // This gets us close but doesn't let us solve for the time corresponding to a
+  // specific time on one node on all the nodes.
+  //
+  // To do this, we want a Newton solver which works for equality constraints.
+  //   argmin f(x)
+  //   subject to {A x = b}
+  //
+  // More specifically, we want a version of this which will start with
+  // infeasible initial solutions.
+  //
+  // The newton step for this is
+  //   X(n+1) = X(n) + xnt
+  //
+  //   [Hessian(cost(X(n))) A^T] [xnt] = [-grad(cost(X(n)))]
+  //   [A                     0] [w]     [-A X(n) + b      ]
+  //
+  // It turns out that w is the dual newton step.  But we don't actually need to
+  // track the dual problem to solve our problem except to show that the dual
+  // problem has also converged.
+  //
+  // We could set A to [1, 0, 0, ...] and force a single clock to a specific
+  // time.  But, that will result in the optimal solution being different
+  // depending on which node is picked.
+  //
+  // Instead, let's solve for the average clock instead.  This will be always
+  // symmetric, and we can drive the goal for that clock to make any individual
+  // clock have the right time.  That would be a solver wrapped around a solver.
+  //
+  // Turns out, we can do that by combining the iterations.  If we set A to
+  // [1/n, 1/n, 1/n ...], and b to the distributed clock, that would drive our
+  // states such that the distributed clock will be what we want.  If we instead
+  // leave A the same, but set (-A X(n) + b) to be ( - [1, 0, 0...] * X(n) +
+  // goal_clock), we will drive the distributed clock to be what it needs to be
+  // to set a node's clock to the right time.
+  //
+  // This ends up working surprisingly well.  A toy problem with 2 line segments
+  // and 2 nodes converges in 2 iterations.
+  //
+  // To ensure reliable convergence, we want to make 1 adjustment to the above
+  // problem statement.
+  //
+  // d cost/dta =>
+  //   2 * (tb - (1 + ma) ta - ba) * (-(1 + ma))
+  //
+  // This means that as you move between line segments with different slopes,
+  // you end up with step changes in the gradient.  Solvers like continuous
+  // derivatives.  But, we don't really care if this is an exact solution to the
+  // cost problem.  We just care that it is close to a solution to the cost
+  // problem and more importantly well behaved.
+  //
+  // The simple fix is to ignore the slope when applying the chain rule.  This
+  // makes the derivative just be the distance to the line, which is a
+  // continuous function.  Newtons method then converges really really easily
+  // every time.
+  CHECK_GT(states(), 0u) << ": No live nodes to solve for.";
+  Problem::Derivatives result;
 
   // We get back both interger and double remainders for the gradient.  We then
   // add them all up.  Rather than doing that purely as doubles, let's save up
@@ -186,15 +272,26 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
   // bigger issue at the start when we are extrapolating a lot, and the offsets
   // can be quite large in each direction.
   Eigen::Matrix<chrono::nanoseconds, Eigen::Dynamic, 1> intgrad =
-      Eigen::Matrix<chrono::nanoseconds, Eigen::Dynamic, 1>::Zero(live_nodes_);
-  result.gradient = Eigen::VectorXd::Zero(live_nodes_);
+      Eigen::Matrix<chrono::nanoseconds, Eigen::Dynamic, 1>::Zero(states());
+  result.gradient = Eigen::VectorXd::Zero(states());
 
-  result.hessian = Eigen::MatrixXd::Zero(live_nodes_, live_nodes_);
+  result.hessian = Eigen::MatrixXd::Zero(states(), states());
 
   // Constrain the average of the times.
   result.A =
-      Eigen::MatrixXd::Ones(1, live_nodes_) / static_cast<double>(live_nodes_);
+      Eigen::MatrixXd::Ones(1, states()) / static_cast<double>(states());
   result.Axmb = Eigen::VectorXd::Zero(1);
+
+  if (active_constraints.size() > 0 || all) {
+    const size_t constraints =
+        all ? inequality_constraints_ : active_constraints.size();
+    result.f = Eigen::MatrixXd::Zero(constraints, 1);
+    result.df = Eigen::MatrixXd::Zero(constraints, states());
+    result.df_slope_limited = Eigen::MatrixXd::Zero(constraints, states());
+  }
+
+  size_t constraint_index = 0;
+  size_t result_constraint_index = 0;
 
   for (size_t i = 0; i < clock_offset_filter_for_node_.size(); ++i) {
     for (struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
@@ -244,17 +341,52 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
                                                time_offsets(a_solution_index),
                                                base_clock_[filter.b_index],
                                                time_offsets(b_solution_index));
-      filter.pointer = std::move(offset_error.first);
+
+      std::pair<NoncausalTimestampFilter::Pointer,
+                std::tuple<chrono::nanoseconds, double, double>>
+          bounds_offset_error = filter.filter->BoundsOffsetError(
+              filter.b_filter, std::move(offset_error.first), base_clock_[i],
+              time_offsets(a_solution_index), base_clock_[filter.b_index],
+              time_offsets(b_solution_index));
+
+      filter.pointer = std::move(bounds_offset_error.first);
 
       const std::pair<chrono::nanoseconds, double> error =
           std::make_pair(std::get<0>(offset_error.second),
                          std::get<1>(offset_error.second) - kMinNetworkDelay);
 
-      std::pair<chrono::nanoseconds, double> grad;
-      double hess;
+      const double bounds_error =
+          (std::get<0>(bounds_offset_error.second).count() +
+           std::get<1>(bounds_offset_error.second) - kMinNetworkDelay);
 
-      grad = std::make_pair(2 * error.first, 2 * error.second);
-      hess = 2.0;
+      // We need f(X) <= 0 to be our constraint.  But, remember, OffsetError is:
+      //   (tb - ta) - O(ta)
+      // With a bit of reshuffling, we quickly see that for an invalid offset
+      // (see ValidateSolution for what is invalid), offset + ta >= tb, we end
+      // up with a negative value of f(X).  So, flip the sign to match the
+      // conventions.
+      if (all ||
+          (result_constraint_index < active_constraints.size() &&
+           active_constraints[result_constraint_index] == constraint_index)) {
+        result.f(result_constraint_index, 0) = -bounds_error;
+
+        result.df(result_constraint_index, a_solution_index) +=
+            1.0 + std::get<2>(bounds_offset_error.second);
+        result.df(result_constraint_index, b_solution_index) -= 1.0;
+
+        // Now, return a slope limited version of our constraint derivitive.
+        result.df_slope_limited(result_constraint_index, a_solution_index) +=
+            1.0 + kMaxVelocity();
+        result.df_slope_limited(result_constraint_index, b_solution_index) -=
+            1.0;
+        ++result_constraint_index;
+      }
+
+      // TODO(austin): A loss function here would be nice to let us deweight
+      // outliers more.  Something logarithmic.
+      const std::pair<chrono::nanoseconds, double> grad =
+          std::make_pair(2 * error.first, 2 * error.second);
+      const double hess = 2.0;
 
       intgrad(a_solution_index) += -grad.first;
       intgrad(b_solution_index) += grad.first;
@@ -262,12 +394,13 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
       result.gradient(b_solution_index) += grad.second;
 
       if (!quiet) {
-        SOLVE_VLOG(3) << "  Filter pair "
-                      << filter.filter->node_a()->name()->string_view() << "("
-                      << a_solution_index << ") -> "
-                      << filter.filter->node_b()->name()->string_view() << "("
-                      << b_solution_index << "): " << std::setprecision(12)
-                      << error.first.count() << " + " << error.second;
+        SOLVE_VLOG(solve_number, 3)
+            << "  Filter pair "
+            << filter.filter->node_a()->name()->string_view() << "("
+            << a_solution_index << ") -> "
+            << filter.filter->node_b()->name()->string_view() << "("
+            << b_solution_index << "): " << std::setprecision(12)
+            << error.first.count() << " + " << error.second;
       }
 
       // Reminder, our cost function has the following form.
@@ -280,6 +413,8 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
       result.hessian(a_solution_index, b_solution_index) =
           result.hessian(b_solution_index, a_solution_index);
       result.hessian(b_solution_index, b_solution_index) += hess;
+
+      ++constraint_index;
     }
   }
 
@@ -293,23 +428,23 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
   // To save ourselves a fair amount of compute, we can take the min here.  That
   // will drive us back the furthest back in time for all provided nodes without
   // having to solve N times and look for the earliest solution.
-  for (size_t i = 0; i < points.size(); ++i) {
-    if (points[i] == logger::BootTimestamp::max_time()) {
+  for (size_t i = 0; i < points_.size(); ++i) {
+    if (points_[i] == logger::BootTimestamp::max_time()) {
       continue;
     }
 
-    CHECK_EQ(points[i].boot, base_clock(i).boot);
-    const double candidate_b =
-        chrono::duration<double, std::nano>(points[i].time - base_clock(i).time)
-            .count() -
-        time_offsets(NodeToFullSolutionIndex(i));
+    CHECK_EQ(points_[i].boot, base_clock(i).boot);
+    const double candidate_b = chrono::duration<double, std::nano>(
+                                   points_[i].time - base_clock(i).time)
+                                   .count() -
+                               time_offsets(NodeToFullSolutionIndex(i));
     if ((result.Axmb.rows() != 0 && candidate_b < -result.Axmb(0, 0)) ||
         result.solution_node == std::numeric_limits<size_t>::max()) {
       if (!quiet) {
-        SOLVE_VLOG(1) << "  Node " << i << ", desired solution time "
-                      << points[i] << ", base_clock " << base_clock(i)
-                      << ", error " << candidate_b << " time offset "
-                      << time_offsets(NodeToFullSolutionIndex(i));
+        SOLVE_VLOG(solve_number, 1)
+            << "  Node " << i << ", desired solution time " << points_[i]
+            << ", base_clock " << base_clock(i) << ", error " << candidate_b
+            << " time offset " << time_offsets(NodeToFullSolutionIndex(i));
       }
       if (result.Axmb.rows() != 0) {
         result.Axmb(0, 0) = -candidate_b;
@@ -324,149 +459,91 @@ TimestampProblem::Derivitives TimestampProblem::ComputeDerivitives(
   return result;
 }
 
-std::tuple<Eigen::VectorXd, size_t> TimestampProblem::Newton(
-    const Eigen::Ref<Eigen::VectorXd> time_offsets,
-    const std::vector<logger::BootTimestamp> &points, size_t iteration) {
-  CHECK_GT(live_nodes_, 0u) << ": No live nodes to solve for.";
-  const Derivitives derivitives =
-      ComputeDerivitives(time_offsets, points, false);
-
+Eigen::VectorXd NewtonSolver::Newton(const Problem::Derivatives &derivatives,
+                                     size_t iteration) {
   // https://www.cs.purdue.edu/homes/jhonorio/16spring-cs52000-equality.pdf
   // https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf chapter 10 is good
   // too.
-  //
-  // Queue long explanation for why this is the right math...
-  //
-  // Our cost function is piecewise quadratic and simple by design.  It should
-  // also be convex.  This means it is equivalent for us to drive the gradient
-  // to 0 to find the corresponding times on all nodes.
-  //
-  // This gets us close but doesn't let us solve for the time corresponding to a
-  // specific time on one node on all the nodes.
-  //
-  // To do this, we want a Newton solver which works for equality constraints.
-  //   argmin f(x) subject to {A x = b}
-  // More specifically, we want a version of this which will start with
-  // infeasible initial solutions.
-  //
-  // The newton step for this is
-  //   X(n+1) = X(n) + xnt
-  //
-  //   [Hessian(cost(X(n))) A^T] [xnt] = [-grad(cost(X(n)))]
-  //   [A                     0] [w]     [-A X(n) + b      ]
-  //
-  // It turns out that w is the dual newton step.  But we don't actually need to
-  // track the dual problem to solve our problem except to show that the dual
-  // problem has also converged.
-  //
-  // We could set A to [1, 0, 0, ...] and force a single clock to a specific
-  // time.  But, that will result in the optimal solution being different
-  // depending on which node is picked.
-  //
-  // Instead, let's solve for the average clock instead.  This will be always
-  // symmetric, and we can drive the goal for that clock to make any individual
-  // clock have the right time.  That would be a solver wrapped around a solver.
-  //
-  // Turns out, we can do that by combining the iterations.  If we set A to
-  // [1/n, 1/n, 1/n ...], and b to the distributed clock, that would drive our
-  // states such that the distributed clock will be what we want.  If we instead
-  // leave A the same, but set (-A X(n) + b) to be ( - [1, 0, 0...] * X(n) +
-  // goal_clock), we will drive the distributed clock to be what it needs to be
-  // to set a node's clock to the right time.
-  //
-  // This ends up working surprisingly well.  A toy problem with 2 line segments
-  // and 2 nodes converges in 2 iterations.
-  //
-  // To ensure reliable convergence, we want to make 1 adjustment to the above
-  // problem statement.
-  //
-  // d cost/dta =>
-  //   2 * (tb - (1 + ma) ta - ba) * (-(1 + ma))
-  //
-  // This means that as you move between line segments with different slopes,
-  // you end up with step changes in the gradient.  Solvers like continuous
-  // derivatives.  But, we don't really care if this is an exact solution to the
-  // cost problem.  We just care that it is close to a solution to the cost
-  // problem and more importantly well behaved.
-  //
-  // The simple fix is to ignore the slope when applying the chain rule.  This
-  // makes the derivative just be the distance to the line, which is a
-  // continuous function.  Newtons method then converges really really easily
-  // every time.
 
   Eigen::MatrixXd a;
-  a.resize(live_nodes_ + 1, live_nodes_ + 1);
-  a.block(0, 0, live_nodes_, live_nodes_) = derivitives.hessian;
-  a.block(0, live_nodes_, live_nodes_, 1) = derivitives.A.transpose();
-  a.block(live_nodes_, 0, 1, live_nodes_) = derivitives.A;
-  a(live_nodes_, live_nodes_) = 0.0;
+  a.resize(derivatives.gradient.rows() + derivatives.A.rows(),
+           derivatives.gradient.rows() + derivatives.A.rows());
+  a.block(0, 0, derivatives.gradient.rows(), derivatives.gradient.rows()) =
+      derivatives.hessian;
+  a.block(0, derivatives.gradient.rows(), derivatives.gradient.rows(),
+          derivatives.A.rows()) = derivatives.A.transpose();
+  a.block(derivatives.gradient.rows(), 0, derivatives.A.rows(),
+          derivatives.gradient.rows()) = derivatives.A;
+  a(derivatives.gradient.rows(), derivatives.gradient.rows()) = 0.0;
 
-  Eigen::VectorXd b = Eigen::VectorXd::Zero(live_nodes_ + 1);
-  b.block(0, 0, live_nodes_, 1) = -derivitives.gradient;
-  b(live_nodes_) = -derivitives.Axmb(0, 0);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(a.rows());
+  b.block(0, 0, derivatives.gradient.rows(), 1) = -derivatives.gradient;
+  if (derivatives.Axmb.rows()) {
+    b.block(derivatives.gradient.rows(), 0, derivatives.Axmb.rows(), 1) =
+        -derivatives.Axmb;
+  }
 
   VLOG(2) << "A: " << a.format(kHeavyFormat);
   VLOG(2) << "b: " << b.format(kHeavyFormat);
 
   Eigen::VectorXd step = a.colPivHouseholderQr().solve(b);
 
-  if (VLOG_IS_ON(2)) {
+  if (SOLVE_VLOG_IS_ON(my_solve_number_, 2)) {
     // Print out the gradient ignoring the component removed by the equality
     // constraint.  This tells us what gradient we are depending to try to
     // finish our solution.
     const Eigen::MatrixXd constraint_jacobian =
-        Eigen::MatrixXd::Ones(1, live_nodes_) /
-        static_cast<double>(live_nodes_);
+        Eigen::MatrixXd::Ones(1, derivatives.gradient.rows()) /
+        static_cast<double>(derivatives.gradient.rows());
     Eigen::VectorXd adjusted_grad =
-        derivitives.gradient +
-        step(live_nodes_) * constraint_jacobian.transpose();
+        derivatives.gradient +
+        step(derivatives.gradient.rows()) * constraint_jacobian.transpose();
 
-    SOLVE_VLOG(2) << "Adjusted grad " << iteration << " -> "
-                  << std::setprecision(12) << std::fixed << std::setfill(' ')
-                  << adjusted_grad.transpose().format(kHeavyFormat);
+    SOLVE_VLOG(my_solve_number_, 2)
+        << "Adjusted grad " << iteration << " -> " << std::setprecision(12)
+        << std::fixed << std::setfill(' ')
+        << adjusted_grad.transpose().format(kHeavyFormat);
   }
 
-  return std::tuple<Eigen::VectorXd, size_t>(std::move(step),
-                                             derivitives.solution_node);
+  return step;
 }
 
-std::tuple<std::vector<BootTimestamp>, size_t, size_t>
-TimestampProblem::SolveNewton(const std::vector<logger::BootTimestamp> &points,
-                              const size_t max_iterations) {
-  MaybeUpdateNodeMapping();
-  SOLVE_VLOG(2) << "Starting to solve problem number " << my_solve_number_;
-  for (size_t i = 0; i < points.size(); ++i) {
-    if (points[i] != logger::BootTimestamp::max_time()) {
-      SOLVE_VLOG(2) << "Solving for node " << i << " at " << points[i];
-    }
-  }
-  Eigen::VectorXd data = Eigen::VectorXd::Zero(live_nodes_);
+std::tuple<Eigen::VectorXd, size_t, size_t> NewtonSolver::SolveNewton(
+    Problem *problem, const size_t max_iterations) {
+  SOLVE_VLOG(my_solve_number_, 2)
+      << "Starting to solve problem number " << my_solve_number_;
+
+  problem->Prepare(my_solve_number_);
+
+  Eigen::VectorXd data = Eigen::VectorXd::Zero(problem->states());
 
   size_t iteration = 0;
   size_t solution_node;
   while (true) {
-    Eigen::VectorXd step;
-    std::tie(step, solution_node) = Newton(data, points, iteration);
+    const Problem::Derivatives derivatives = problem->ComputeDerivatives(
+        my_solve_number_, data, false, false, absl::Span<const size_t>());
+    const Eigen::VectorXd step = Newton(derivatives, iteration);
+    solution_node = derivatives.solution_node;
 
-    SOLVE_VLOG(2) << "Step " << iteration << " -> " << std::setprecision(12)
-                  << std::fixed << std::setfill(' ')
-                  << step.transpose().format(kHeavyFormat);
+    SOLVE_VLOG(my_solve_number_, 2)
+        << "Step " << iteration << " -> " << std::setprecision(12) << std::fixed
+        << std::setfill(' ') << step.transpose().format(kHeavyFormat);
 
     // We now have a search direction.  Line search and go.
 
     // We got there if the max step is small (this is strongly correlated to the
     // gradient since the Hessian is constant), and our solution node's time is
     // also close.
-    if (step.block(0, 0, live_nodes_, 1).lpNorm<Eigen::Infinity>() < 1e-4 &&
-        std::abs(
-            chrono::duration<double, std::nano>(points[solution_node].time -
-                                                base_clock(solution_node).time)
-                .count() -
-            data(NodeToFullSolutionIndex(solution_node))) < 1e-4) {
+
+    // Grad is < epsilon.
+    // Dual is < epsilon too.
+    if (step.block(0, 0, problem->states(), 1).lpNorm<Eigen::Infinity>() <
+            1e-4 &&
+        derivatives.Axmb.squaredNorm() < 1e-8) {
       break;
     }
 
-    data += step.block(0, 0, live_nodes_, 1);
+    data += step.block(0, 0, problem->states(), 1);
 
     ++iteration;
 
@@ -479,28 +556,7 @@ TimestampProblem::SolveNewton(const std::vector<logger::BootTimestamp> &points,
     // determine that the double is getting too big, we can move that
     // information to the int64 base clock.  Threshold this to not be *too* big
     // since it makes it hard to debug as the data keeps jumping around.
-    for (size_t j = 0; j < size(); ++j) {
-      const size_t solution_index = NodeToFullSolutionIndex(j);
-      if (live(j) && std::abs(data(solution_index)) > 1000) {
-        int64_t dsolution =
-            static_cast<int64_t>(std::round(data(solution_index)));
-        base_clock_[j].time += chrono::nanoseconds(dsolution);
-        data(solution_index) -= dsolution;
-      }
-      if (live(j)) {
-        SOLVE_VLOG(2) << "    live  "
-                      << base_clock_[j].time +
-                             std::chrono::nanoseconds(static_cast<int64_t>(
-                                 std::round(data(NodeToFullSolutionIndex(j)))))
-                      << " "
-                      << (data(NodeToFullSolutionIndex(j)) -
-                          std::round(data(NodeToFullSolutionIndex(j))))
-                      << " (unrounded: " << data(NodeToFullSolutionIndex(j))
-                      << ")";
-      } else {
-        SOLVE_VLOG(2) << "    dead  " << aos::monotonic_clock::min_time;
-      }
-    }
+    problem->Update(my_solve_number_, data);
 
     // And finally, don't let us iterate forever.  If it isn't converging,
     // report back.
@@ -509,60 +565,730 @@ TimestampProblem::SolveNewton(const std::vector<logger::BootTimestamp> &points,
     }
   }
 
-  for (size_t i = 0; i < points.size(); ++i) {
-    if (points[i] != logger::BootTimestamp::max_time()) {
-      SOLVE_VLOG(2) << "Solving for node " << i << " of " << points[i] << " in "
-                    << iteration << " cycles";
-    }
+  if (iteration > max_iterations) {
+    LOG(ERROR) << "Failed to converge on solve " << my_solve_number();
   }
+
+  SOLVE_VLOG(my_solve_number_, 1)
+      << "Took " << iteration << " iterations to solve.";
+  return std::make_tuple(std::move(data), solution_node, iteration);
+}
+
+Problem::Derivatives NewtonSolver::AddConstraintSlackVariable(
+    const Problem::Derivatives &derivatives,
+    const Eigen::Ref<const Eigen::VectorXd> y) {
+  // See ConstrainedNewton() for an explanation of how we are changing the
+  // problem statement.
+  //
+  //   minimize f0(X, s)
+  //     subject to f(X) <= s
+  //                 A X  = b
+  //                   s  = 0
+  Problem::Derivatives result;
+
+  // There's no extra cost hessian as part of the new slack variable, since it
+  // isn't in the cost function, f0.
+  result.hessian = Eigen::MatrixXd::Zero(derivatives.hessian.rows() + 1,
+                                         derivatives.hessian.rows() + 1);
+  result.hessian.block(0, 0, derivatives.hessian.rows(),
+                       derivatives.hessian.rows()) = derivatives.hessian;
+
+  // And the gradient of that cost is also zero.
+  result.gradient = Eigen::VectorXd::Zero(derivatives.gradient.rows() + 1);
+
+  result.gradient.block(0, 0, derivatives.gradient.rows(),
+                        derivatives.gradient.cols()) = derivatives.gradient;
+
+  // Subtract the new slack variable from f(x).
+  result.f = derivatives.f.array() - y(derivatives.gradient.rows(), 0);
+
+  // And the derivitive of f(x) - s * Ones with respect to s is -1.
+  result.df = -1.0 * Eigen::MatrixXd::Ones(derivatives.df.rows(),
+                                           derivatives.df.cols() + 1);
+  result.df.block(0, 0, derivatives.df.rows(), derivatives.df.cols()) =
+      derivatives.df;
+
+  result.df_slope_limited =
+      -1.0 * Eigen::MatrixXd::Ones(derivatives.df_slope_limited.rows(),
+                                   derivatives.df_slope_limited.cols() + 1);
+  result.df_slope_limited.block(0, 0, derivatives.df_slope_limited.rows(),
+                                derivatives.df_slope_limited.cols()) =
+      derivatives.df_slope_limited;
+
+  // And add in s = 0 into A.
+  result.A = Eigen::MatrixXd::Zero(derivatives.A.rows() + 1,
+                                   derivatives.hessian.rows() + 1);
+  result.A.block(0, 0, derivatives.A.rows(), derivatives.hessian.rows()) =
+      derivatives.A;
+  result.A(derivatives.A.rows(), derivatives.hessian.rows()) = 1;
+
+  result.Axmb = Eigen::MatrixXd::Zero(derivatives.A.rows() + 1, 1);
+  result.Axmb.block(0, 0, derivatives.A.rows(), 1) = derivatives.Axmb;
+  result.Axmb(derivatives.A.rows(), 0) = y(derivatives.hessian.rows());
+  result.solution_node = derivatives.solution_node;
+
+  return result;
+}
+
+Eigen::VectorXd NewtonSolver::Rt(const Problem::Derivatives &derivatives,
+                                 Eigen::Ref<const Eigen::VectorXd> y,
+                                 double t_inverse) {
+  const Eigen::Ref<const Eigen::VectorXd> x =
+      y.block(0, 0, derivatives.hessian.rows(), 1);
+  const Eigen::Ref<const Eigen::VectorXd> lambda =
+      y.block(derivatives.hessian.rows(), 0, derivatives.f.rows(), 1);
+  const Eigen::Ref<const Eigen::VectorXd> v = y.block(
+      derivatives.hessian.rows() + lambda.rows(), 0, derivatives.A.rows(), 1);
+
+  Eigen::VectorXd result(y.rows());
+
+  // r_dual -> \grad f_0(X) + Df(x)^T \lambda + A^T v
+  //
+  // We need to lie slightly about the problem statement to get it to converge.
+  // We need the decent direction (in ConstrainedNewton) to use the exact
+  // derivative of f(x) so we will descend following the constraints when we are
+  // next to a constraint to avoid getting stuck with line search.  But, we need
+  // the value it is trying to converge to (this, Rt), to not have step changes
+  // across constraint line segment boundaries.  If we lie here and pick the
+  // worst case slope (the slope_limited slope), then there will be no step
+  // change across boundaries.
+  result.block(0, 0, x.rows(), 1) =
+      derivatives.gradient + derivatives.df_slope_limited.transpose() * lambda +
+      derivatives.A.transpose() * v;
+
+  SOLVE_VLOG(my_solve_number_, 3)
+      << "    r_dual: " << std::setprecision(12) << std::fixed
+      << std::setfill(' ')
+      << derivatives.gradient.transpose().format(kHeavyFormat) << " + "
+      << (derivatives.df_slope_limited.transpose() * lambda)
+             .transpose()
+             .format(kHeavyFormat)
+      << " + " << (v.transpose() * derivatives.A).format(kHeavyFormat);
+
+  // r_cent -> -diag(\lambda) f(x) - 1 / t * \bold{1}
+  result.block(x.rows(), 0, lambda.rows(), 1) =
+      -lambda.array() * derivatives.f.array() - t_inverse;
+
+  // r_primal -> A X - b
+  result.block(x.rows() + lambda.rows(), 0, v.rows(), 1) = derivatives.Axmb;
+
+  return result;
+}
+
+std::tuple<Eigen::VectorXd, double, Eigen::VectorXd>
+NewtonSolver::ConstrainedNewton(const Eigen::Ref<const Eigen::VectorXd> y,
+                                const Problem::Derivatives &derivatives,
+                                size_t /*iteration*/) {
+  // TODO(austin): Can we take a problem directly without
+  // AddConstraintSlackVariable being called on it and fill everything in?
+  // That'll avoid a bunch of allocations and coppies of rather sizable
+  // matricies.
+  //
+  // I think I want to do it as another review after everything works with the
+  // more obviously verifiable solution.
+
+  const Eigen::Ref<const Eigen::VectorXd> x =
+      y.block(0, 0, derivatives.hessian.rows(), 1);
+
+  const Eigen::Ref<const Eigen::VectorXd> lambda =
+      y.block(x.rows(), 0, derivatives.f.rows(), 1);
+
+  const Eigen::Ref<const Eigen::VectorXd> v =
+      y.block(x.rows() + lambda.rows(), 0, derivatives.A.rows(), 1);
+
+  // https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf chapter 11.7 is good.
+  //
+  // See the unconstrained solver above for the equality and cost explination.
+  //
+  // We need to add constraints.  Remember, our problem is of the form:
+  //
+  //   minimize f0(X)
+  //     subject to f(X) <= 0
+  //                 A X  = b
+  //
+  // Unfortunately, we need a feasible X to start with.  A big part of the
+  // problem is finding a feasible X.  But, we can easily augment our problem to
+  // make it feasible.
+  //
+  //   minimize f0(X, s)
+  //     subject to f(X) <= s
+  //                 A X  = b
+  //                   s  = 0
+  //
+  // s becomes part of X, and then the original solver works.  We can pick an
+  // arbitrarily large S to start with, mainly max(f(X), 0).  We are feasible
+  // when s == 0.
+  //
+  // Since our constraints are linear, we don't need the second derivitive of
+  // the constraints.  The equations below remove those to save the CPU usage.
+  const double nu = -(derivatives.f.transpose() * lambda)(0, 0);
+  const double t_inverse = nu / (kMu * lambda.rows());
+
+  // Now, build up the step direction matrix to solve.
+  Eigen::MatrixXd m1 = Eigen::MatrixXd::Zero(y.rows(), y.rows());
+  m1.block(0, 0, x.rows(), x.rows()) = derivatives.hessian;
+  // TODO(austin): Slope constrained or leave it stock?
+  m1.block(0, x.rows(), x.rows(), lambda.rows()) = derivatives.df.transpose();
+
+  m1.block(0, x.rows() + lambda.rows(), x.rows(), v.rows()) =
+      derivatives.A.transpose();
+
+  m1.block(x.rows(), 0, lambda.rows(), x.rows()) =
+      -(Eigen::DiagonalMatrix<double, Eigen::Dynamic>(lambda) * derivatives.df);
+
+  m1.block(x.rows(), x.rows(), lambda.rows(), lambda.rows()) =
+      Eigen::DiagonalMatrix<double, Eigen::Dynamic>(-derivatives.f);
+
+  m1.block(x.rows() + lambda.rows(), 0, v.rows(), x.rows()) = derivatives.A;
+
+  SOLVE_VLOG(my_solve_number_, 3)
+      << "   m1:         " << m1.format(kHeavyFormat);
+
+  Eigen::VectorXd rt = Rt(derivatives, y, t_inverse);
+  SOLVE_VLOG(my_solve_number_, 2)
+      << "   rt: " << rt.norm() << " " << rt.transpose().format(kHeavyFormat);
+
+  Eigen::VectorXd dy = m1.colPivHouseholderQr().solve(-rt);
+  return std::tuple<Eigen::VectorXd, double, Eigen::VectorXd>(
+      std::move(dy), t_inverse, std::move(rt));
+}
+
+void NewtonSolver::PrintDerivatives(const Problem::Derivatives &derivatives,
+                                    const Eigen::Ref<const Eigen::VectorXd> y,
+                                    std::string_view prefix, int verbosity) {
+  const Eigen::Ref<const Eigen::VectorXd> x =
+      y.block(0, 0, derivatives.hessian.rows(), 1);
+  const Eigen::Ref<const Eigen::VectorXd> lambda =
+      y.block(x.rows(), 0, derivatives.f.rows(), 1);
+
+  if (SOLVE_VLOG_IS_ON(my_solve_number_, verbosity)) {
+    Eigen::IOFormat heavy = kHeavyFormat;
+    heavy.rowSeparator =
+        kHeavyFormat.rowSeparator +
+        std::string(absl::StrCat(getpid()).size() + prefix.size(), ' ');
+
+    const Eigen::Ref<const Eigen::VectorXd> v =
+        y.block(x.rows() + lambda.rows(), 0, derivatives.A.rows(), 1);
+    SOLVE_VLOG(my_solve_number_, verbosity)
+        << "   " << prefix << "x: " << x.transpose().format(heavy);
+    SOLVE_VLOG(my_solve_number_, verbosity)
+        << "   " << prefix << "lambda: " << lambda.transpose().format(heavy);
+    SOLVE_VLOG(my_solve_number_, verbosity)
+        << "   " << prefix << "v: " << v.transpose().format(heavy);
+    SOLVE_VLOG(my_solve_number_, verbosity)
+        << "  " << prefix
+        << "hessian:     " << derivatives.hessian.format(heavy);
+    SOLVE_VLOG(my_solve_number_, verbosity)
+        << "  " << prefix
+        << "gradient:    " << derivatives.gradient.format(heavy);
+    SOLVE_VLOG(my_solve_number_, verbosity)
+        << "  " << prefix << "A:           " << derivatives.A.format(heavy);
+    SOLVE_VLOG(my_solve_number_, verbosity)
+        << "  " << prefix << "Ax-b:        " << derivatives.Axmb.format(heavy);
+    SOLVE_VLOG(my_solve_number_, verbosity)
+        << "  " << prefix << "f:           " << derivatives.f.format(heavy);
+    SOLVE_VLOG(my_solve_number_, verbosity)
+        << "  " << prefix << "df:          " << derivatives.df.format(heavy);
+  }
+}
+
+std::vector<BootTimestamp> TimestampProblem::PackResults(
+    bool print, const Eigen::Ref<const Eigen::VectorXd> y) {
   std::vector<BootTimestamp> result(size());
+
   for (size_t i = 0; i < size(); ++i) {
     if (live(i)) {
       result[i].boot = base_clock(i).boot;
-      result[i].time = base_clock(i).time +
+      result[i].time =
+          base_clock(i).time + std::chrono::nanoseconds(static_cast<int64_t>(
+                                   std::round(y(NodeToFullSolutionIndex(i)))));
+      if (print) {
+        LOG(INFO) << "    live " << points_[i] << " vs solution "
+                  << result[i].time << " "
+                  << (y(NodeToFullSolutionIndex(i)) -
+                      std::round(y(NodeToFullSolutionIndex(i))))
+                  << " (unrounded: " << y(NodeToFullSolutionIndex(i)) << ") dt "
+                  << (points_[i].time -
+                      (base_clock_[i].time +
                        std::chrono::nanoseconds(static_cast<int64_t>(
-                           std::round(data(NodeToFullSolutionIndex(i)))));
-      if (VLOG_IS_ON(2) || iteration > max_iterations) {
-        LOG(INFO) << "live  " << result[i] << " "
-                  << (data(NodeToFullSolutionIndex(i)) -
-                      std::round(data(NodeToFullSolutionIndex(i))))
-                  << " (unrounded: " << data(NodeToFullSolutionIndex(i)) << ")";
+                           std::round(y(NodeToFullSolutionIndex(i)))))))
+                         .count()
+                  << "ns";
       }
     } else {
       result[i] = BootTimestamp::min_time();
-      if (VLOG_IS_ON(2) || iteration > max_iterations) {
-        LOG(INFO) << "dead  " << result[i];
+      if (print) {
+        LOG(INFO) << "  dead  " << result[i];
       }
     }
   }
-  if (iteration > max_iterations) {
-    LOG(ERROR) << "Failed to converge on solve " << my_solve_number_;
+
+  return result;
+}
+
+bool TimestampProblem::AddConstraints(
+    size_t solve_number, const std::vector<BootTimestamp> &result,
+    std::vector<size_t> *new_active_constraints) {
+  bool updated = false;
+  {
+    // TODO(austin): Make this a function.
+    size_t constraint_index = 0;
+    for (size_t i = 0u; i < clock_offset_filter_for_node_.size(); ++i) {
+      for (const struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
+        // There's nothing in this direction, so there will be nothing to
+        // validate.
+        if (filter.filter->timestamps_empty(base_clock_[i].boot,
+                                            base_clock_[filter.b_index].boot)) {
+          continue;
+        }
+
+        // See if this constraint had trouble.  Note: we don't care if it is
+        // before the last solution.  If it influences the result, it will
+        // change the solution and we'll need to re-solve anyways.  There's a
+        // big validation that happens afterwards which will pick up if we are
+        // before the start.
+        const bool iteration = filter.filter->ValidateSolution(
+            filter.b_filter, filter.pointer, result[i], result[filter.b_index],
+            false, !SOLVE_VLOG_IS_ON(solve_number, 2));
+        if (!iteration) {
+          // Ok, we found a violated constraint.  Add it to the list.
+          updated = true;
+          CHECK(std::find(new_active_constraints->begin(),
+                          new_active_constraints->end(),
+                          constraint_index) == new_active_constraints->end())
+              << " while solving " << solve_number << " constraint index "
+              << constraint_index;
+
+          SOLVE_VLOG(solve_number, 1)
+              << " Found a violated constraint at index " << constraint_index
+              << " on problem " << solve_number;
+          new_active_constraints->insert(
+              std::upper_bound(new_active_constraints->begin(),
+                               new_active_constraints->end(), constraint_index),
+              constraint_index);
+        }
+
+        ++constraint_index;
+      }
+    }
+
+    CHECK_EQ(constraint_index, inequality_constraints_);
+  }
+  return updated;
+}
+
+std::tuple<std::vector<BootTimestamp>, Eigen::VectorXd, size_t, size_t>
+SolveConstrainedNewton(NewtonSolver *solver, TimestampProblem *problem,
+                       const size_t max_iterations) {
+  std::vector<size_t> active_constraints;
+
+  while (true) {
+    Eigen::VectorXd y;
+    size_t iteration;
+    size_t solution_node;
+    std::vector<size_t> new_active_constraints;
+
+    std::tie(y, solution_node, iteration, new_active_constraints) =
+        solver->SolveConstrainedNewton(problem, max_iterations,
+                                       active_constraints);
+
+    std::vector<BootTimestamp> result =
+        problem->PackResults(iteration > max_iterations ||
+                                 SOLVE_VLOG_IS_ON(solver->my_solve_number(), 2),
+                             y);
+
+    const bool valid = !problem->AddConstraints(
+        solver->my_solve_number(), result, &new_active_constraints);
+
+    if (valid ||
+        active_constraints.size() == problem->inequality_constraints()) {
+      return std::make_tuple(std::move(result), std::move(y), solution_node,
+                             iteration);
+    } else {
+      CHECK(new_active_constraints != active_constraints);
+      active_constraints = std::move(new_active_constraints);
+      SOLVE_VLOG(solver->my_solve_number(), 1)
+          << "Constraint indices changed, solving again with more constraints.";
+    }
+  }
+}
+
+std::tuple<Eigen::VectorXd, size_t, size_t, std::vector<size_t>>
+NewtonSolver::SolveConstrainedNewton(
+    Problem *problem, const size_t max_iterations,
+    const absl::Span<const size_t> original_active_constraints) {
+  // Implement a primal-dual interior point method solver.
+  //
+  // https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf chapter 11.7 has a
+  // good description.  It is worth having the book open when reading this code.
+  SOLVE_VLOG(my_solve_number_, 2)
+      << "Starting to solve problem number " << my_solve_number_;
+
+  problem->Prepare(my_solve_number_);
+
+  Eigen::VectorXd y;
+  size_t iteration = 0;
+  size_t solution_node;
+
+  std::vector<size_t> active_constraints;
+
+  {
+    const Problem::Derivatives derivatives = AddConstraintSlackVariable(
+        problem->ComputeDerivatives(my_solve_number_,
+                                    Eigen::VectorXd::Zero(problem->states()),
+                                    false, true, absl::Span<const size_t>()),
+        Eigen::VectorXd::Zero(problem->states() + 1));
+
+    size_t original_constraint_index = 0;
+    for (size_t i = 0; i < static_cast<size_t>(derivatives.f.rows()); ++i) {
+      if (original_constraint_index < original_active_constraints.size() &&
+          original_active_constraints[original_constraint_index] == i) {
+        SOLVE_VLOG(my_solve_number_, 1)
+            << " Considering constraint " << i << " from before";
+        active_constraints.emplace_back(i);
+        ++original_constraint_index;
+      } else if (derivatives.f(i) > 0.0 || !FLAGS_remove_unlikely_constraints) {
+        SOLVE_VLOG(my_solve_number_, 1) << " Considering constraint " << i;
+        active_constraints.emplace_back(i);
+      }
+    }
+
+    // Assume the initial times we are solving for are decent, and our equality
+    // constraints are good.
+    y = Eigen::VectorXd::Zero(derivatives.hessian.rows() +
+                              active_constraints.size() + derivatives.A.rows());
+
+    // Initialize our slack variable to the max constraint plus a little bit so
+    // our inequality constraints are all satisfied at the start.
+    for (int i = 0; i < derivatives.f.rows(); ++i) {
+      y(derivatives.hessian.rows() - 1, 0) =
+          std::max(y(derivatives.hessian.rows() - 1, 0), derivatives.f(i)) + 1;
+    }
+
+    // Initialize our inequality constraint legrange multipliers to be about the
+    // size of the violation of the constraint.  The slope is ~1 for each, so it
+    // should work out to be about the right order of magnitude.
+    for (size_t i = 0; i < active_constraints.size(); ++i) {
+      y(derivatives.gradient.rows() + i) =
+          std::max(derivatives.f(active_constraints[i]), 1.0);
+    }
+
+    SOLVE_VLOG(my_solve_number_, 1)
+        << "S initial is " << y(derivatives.hessian.rows() - 1, 0);
+    SOLVE_VLOG(my_solve_number_, 1)
+        << "Y initial is " << y.transpose().format(kHeavyFormat);
   }
 
-  return std::make_tuple(std::move(result), solution_node, iteration);
+  Problem::Derivatives derivatives = AddConstraintSlackVariable(
+      problem->ComputeDerivatives(my_solve_number_, y, false, false,
+                                  active_constraints),
+      y);
+  while (true) {
+    SOLVE_VLOG(my_solve_number_, 1) << "Starting iteration " << iteration;
+    // Now that we have all the derivatives computed, we can start to execute
+    // this step.
+    //
+    // Note: we don't want to recompute them here.  For the first iteration, we
+    // compute them outside the loop.  For any subsequent iterations, as part of
+    // line search, we compute the derivatives to compute Rt.  So, we can just
+    // reuse the final line search step's derivatives.
+
+    solution_node = derivatives.solution_node;
+    SOLVE_VLOG(my_solve_number_, 1) << "   y(" << iteration << ") is "
+                                    << y.transpose().format(kHeavyFormat);
+
+    // Round lambda so when we get super close to 0, we treat it just as 0. This
+    // helps the matrix inversion be more accurate.  We also don't care about
+    // accuracy that badly to need to care about lambda < 1e-12.  Our
+    // constraints have a jacobian with a slope of ~1, so this would correspond
+    // to a constraint violation of 1e-12 which is a rounding error at this
+    // point given we only need < 0.5 ns precision.
+    {
+      Eigen::Ref<Eigen::VectorXd> lambda =
+          y.block(derivatives.hessian.rows(), 0, derivatives.f.rows(), 1);
+      for (int i = 0; i < lambda.rows(); ++i) {
+        if (std::abs(lambda(i)) < 1e-12) {
+          lambda(i) = 0.0;
+        }
+      }
+    }
+
+    PrintDerivatives(derivatives, y, "", 1);
+
+    // Figure out our descent direction.
+    Eigen::VectorXd dy;
+    Eigen::VectorXd rt_orig;
+    double t_inverse;
+    std::tie(dy, t_inverse, rt_orig) =
+        ConstrainedNewton(y, derivatives, iteration);
+    SOLVE_VLOG(my_solve_number_, 1) << "   t " << 1.0 / t_inverse;
+
+    double s = 1.0;
+
+    const Eigen::Ref<const Eigen::VectorXd> x =
+        y.block(0, 0, derivatives.hessian.rows(), 1);
+    const Eigen::Ref<const Eigen::VectorXd> lambda =
+        y.block(x.rows(), 0, derivatives.f.rows(), 1);
+    Eigen::Ref<Eigen::VectorXd> dlambda =
+        dy.block(x.rows(), 0, lambda.rows(), 1);
+
+    const Eigen::Ref<const Eigen::VectorXd> v =
+        y.block(x.rows() + lambda.rows(), 0, derivatives.A.rows(), 1);
+
+    // Now, time to do line search.
+    //
+    // Start by keeping lambda positive.  Make sure our step doesn't let lambda
+    // cross 0.
+    for (int i = 0; i < dlambda.rows(); ++i) {
+      if (lambda(i) + s * dlambda(i) < 0.0) {
+        // Ignore tiny steps in lambda.  They cause issues when we get really
+        // close to having our constraints met but haven't converged the rest of
+        // the problem and start to run into rounding issues in the matrix solve
+        // portion.
+        if (dlambda(i) < 0.0 && dlambda(i) > -1e-12) {
+          SOLVE_VLOG(my_solve_number_, 1)
+              << "  lambda(" << i << ") " << lambda(i) << " + " << s << " * "
+              << dlambda(i) << " -> s would be now " << -lambda(i) / dlambda(i);
+          dlambda(i) = 0.0;
+          SOLVE_VLOG(my_solve_number_, 1)
+              << "  dy -> " << std::setprecision(12) << std::fixed
+              << std::setfill(' ') << dy.transpose().format(kHeavyFormat);
+          continue;
+        }
+        SOLVE_VLOG(my_solve_number_, 1)
+            << "  lambda(" << i << ") " << lambda(i) << " + " << s << " * "
+            << dlambda(i) << " -> s now " << -lambda(i) / dlambda(i);
+        s = -lambda(i) / dlambda(i);
+      }
+    }
+
+    s *= 0.999;
+
+    SOLVE_VLOG(my_solve_number_, 1) << "  After lambda line search, s is " << s;
+
+    const Eigen::Ref<const Eigen::VectorXd> dx = dy.block(0, 0, x.rows(), 1);
+    const Eigen::Ref<const Eigen::VectorXd> dv =
+        dy.block(x.rows() + lambda.rows(), 0, v.rows(), 1);
+
+    SOLVE_VLOG(my_solve_number_, 3)
+        << "  Initial step " << iteration << " -> " << std::setprecision(12)
+        << std::fixed << std::setfill(' ')
+        << dy.transpose().format(kHeavyFormat);
+    SOLVE_VLOG(my_solve_number_, 3)
+        << "   rt ->                                        "
+        << std::setprecision(12) << std::fixed << std::setfill(' ')
+        << rt_orig.transpose().format(kHeavyFormat);
+
+    const double rt_orig_squared_norm = rt_orig.squaredNorm();
+
+    // Now, do the rest of line search to make sure we don't increase Rt.
+    Eigen::VectorXd rt;
+    Eigen::VectorXd next_y;
+    Problem::Derivatives next_derivatives;
+    while (true) {
+      next_y = y + s * dy;
+
+      next_derivatives = AddConstraintSlackVariable(
+          problem->ComputeDerivatives(my_solve_number_, next_y, true, false,
+                                      active_constraints),
+          next_y);
+
+      rt = Rt(next_derivatives, next_y, t_inverse);
+
+      const Eigen::Ref<const Eigen::VectorXd> next_x =
+          next_y.block(0, 0, next_derivatives.hessian.rows(), 1);
+      const Eigen::Ref<const Eigen::VectorXd> next_lambda =
+          next_y.block(next_x.rows(), 0, next_derivatives.f.rows(), 1);
+
+      const Eigen::Ref<const Eigen::VectorXd> next_v = next_y.block(
+          next_x.rows() + next_lambda.rows(), 0, next_derivatives.A.rows(), 1);
+
+      SOLVE_VLOG(my_solve_number_, 1)
+          << "    next_rt(" << iteration << ") is " << rt.norm() << " -> "
+          << std::setprecision(12) << std::fixed << std::setfill(' ')
+          << rt.transpose().format(kHeavyFormat);
+
+      PrintDerivatives(next_derivatives, next_y, "next_", 3);
+
+      // TODO(austin): If we end up growing the residual too many times in a
+      // row, then stop searching?  Quan thinks we can be more clever here.
+      //
+      // Keep stepping until we don't grow the residual, and until we don't
+      // cross our constraint.  Since Axmb isn't perfectly convex, let ourselves
+      // get worse until it gets close to converging.
+      if (next_derivatives.f.maxCoeff() > 0.0) {
+        SOLVE_VLOG(my_solve_number_, 1)
+            << "   f_next > 0.0  -> " << next_derivatives.f.maxCoeff()
+            << ", continuing line search.";
+        s *= kBeta;
+      } else if (next_derivatives.Axmb.squaredNorm() < 0.1 &&
+                 rt.squaredNorm() >
+                     std::pow(1.0 - kAlpha * s, 2.0) * rt_orig_squared_norm) {
+        SOLVE_VLOG(my_solve_number_, 1)
+            << "   |Rt| > |Rt+1| " << rt.norm() << " >  " << rt_orig.norm()
+            << ", drt -> " << std::setprecision(12) << std::fixed
+            << std::setfill(' ')
+            << (rt_orig - rt).transpose().format(kHeavyFormat);
+        s *= kBeta;
+      } else {
+        break;
+      }
+    }
+
+    SOLVE_VLOG(my_solve_number_, 1)
+        << "  Terminated line search with s " << s << ", " << rt.norm()
+        << "(|Rt+1|) < " << rt_orig.norm() << "(|Rt|)";
+    y = next_y;
+
+    const Eigen::Ref<const Eigen::VectorXd> next_lambda =
+        y.block(x.rows(), 0, lambda.rows(), 1);
+
+    // See if we hit our convergence criteria.
+    const double r_primal_squared_norm =
+        rt.block(x.rows() + lambda.rows(), 0, v.rows(), 1).squaredNorm();
+    SOLVE_VLOG(my_solve_number_, 1)
+        << "  rt_next(" << iteration << ") is " << rt.norm() << " -> "
+        << std::setprecision(12) << std::fixed << std::setfill(' ')
+        << rt.transpose().format(kHeavyFormat);
+    if (r_primal_squared_norm < kEpsilonF * kEpsilonF) {
+      const double r_dual_squared_norm =
+          rt.block(0, 0, x.rows(), 1).squaredNorm();
+      if (r_dual_squared_norm < kEpsilonF * kEpsilonF) {
+        const double next_nu =
+            -(next_derivatives.f.transpose() * next_lambda)(0, 0);
+        if (next_nu < kEpsilon) {
+          break;
+        } else {
+          SOLVE_VLOG(my_solve_number_, 1)
+              << "  nu(" << iteration << ") -> " << next_nu << " < " << kEpsilon
+              << ", not done yet";
+        }
+
+      } else {
+        SOLVE_VLOG(my_solve_number_, 1)
+            << "  r_dual(" << iteration << ") -> "
+            << std::sqrt(r_dual_squared_norm) << " < " << kEpsilonF
+            << ", not done yet";
+      }
+    } else {
+      SOLVE_VLOG(my_solve_number_, 1) << "  r_primal(" << iteration << ") -> "
+                                      << std::sqrt(r_primal_squared_norm)
+                                      << " < " << kEpsilonF << ", not done yet";
+    }
+    SOLVE_VLOG(my_solve_number_, 1)
+        << "  step(" << iteration << ") "
+        << (s * dy).transpose().format(kHeavyFormat);
+    SOLVE_VLOG(my_solve_number_, 1) << " y(" << iteration << ") is now "
+                                    << y.transpose().format(kHeavyFormat);
+
+    // Very import, use the last set of derivatives we picked for our new y for
+    // the next iteration.
+    derivatives = std::move(next_derivatives);
+    ++iteration;
+
+    // Notify the problem that y updated.  This gives it a hook to pull digits
+    // out of y if needed.
+    problem->Update(my_solve_number_, y);
+
+    // And finally, don't let us iterate forever.  If it isn't converging,
+    // report back.
+    if (iteration > max_iterations) {
+      break;
+    }
+  }
+
+  if (iteration > max_iterations) {
+    LOG(FATAL) << "Failed to converge on solve " << my_solve_number_;
+  }
+
+  return std::make_tuple(std::move(y), solution_node, iteration,
+                         std::move(active_constraints));
 }
 
 void TimestampProblem::MaybeUpdateNodeMapping() {
   if (node_mapping_valid_) {
     return;
   }
-  size_t live_node_index = 0;
+  size_t states_count = 0;
   for (size_t i = 0; i < node_mapping_.size(); ++i) {
     if (live(i)) {
-      node_mapping_[i] = live_node_index;
-      ++live_node_index;
+      node_mapping_[i] = states_count;
+      ++states_count;
     } else {
       node_mapping_[i] = std::numeric_limits<size_t>::max();
     }
   }
-  live_nodes_ = live_node_index;
-  live_constraints_ = LiveConstraintsCount();
+  states_ = states_count;
+  inequality_constraints_ = LiveConstraintsCount();
   node_mapping_valid_ = true;
 
   // Reset the cached state each time we solve.
   for (size_t i = 0u; i < clock_offset_filter_for_node_.size(); ++i) {
     for (struct FilterPair &filter : clock_offset_filter_for_node_[i]) {
       filter.pointer = NoncausalTimestampFilter::Pointer();
+    }
+  }
+}
+
+void TimestampProblem::Prepare(size_t solve_number) {
+  MaybeUpdateNodeMapping();
+
+  CHECK_GT(states(), 0u) << ": No live nodes to solve for.";
+
+  for (size_t i = 0; i < points_.size(); ++i) {
+    if (points_[i] != logger::BootTimestamp::max_time()) {
+      SOLVE_VLOG(solve_number, 2)
+          << "Solving for node " << i << " at " << points_[i];
+    }
+  }
+}
+
+void TimestampProblem::Update(size_t solve_number,
+                              Eigen::Ref<Eigen::VectorXd> data) {
+  // We are doing all our math with both an int64 base and a double offset.
+  // This lets us handle large offsets while retaining precision down to the
+  // nanosecond easily.
+  //
+  // Some problems start out with a poor initial solution.  This is
+  // especially true for the first solution.  Because we control the solver,
+  // as we determine that the double is getting too big, we can move that
+  // information to the int64 base clock.  Threshold this to not be *too*
+  // big since it makes it hard to debug as the data keeps jumping around.
+  for (size_t j = 0; j < size(); ++j) {
+    const size_t solution_index = NodeToFullSolutionIndex(j);
+    if (live(j)) {
+      bool updated = false;
+      int64_t dsolution = 0;
+      if (std::abs(data(solution_index)) > 100) {
+        dsolution = static_cast<int64_t>(std::round(data(solution_index)));
+        base_clock_[j].time += chrono::nanoseconds(dsolution);
+        data(solution_index) -= dsolution;
+        updated = true;
+      }
+
+      SOLVE_VLOG(solve_number, 2)
+          << "    live " << points_[j].time << " vs solution "
+          << base_clock_[j].time +
+                 std::chrono::nanoseconds(static_cast<int64_t>(
+                     std::round(data(NodeToFullSolutionIndex(j)))))
+          << " "
+          << (data(NodeToFullSolutionIndex(j)) -
+              std::round(data(NodeToFullSolutionIndex(j))))
+          << " (unrounded: " << data(NodeToFullSolutionIndex(j)) << ")"
+          << (updated ? (std::string(" updated ") + std::to_string(dsolution))
+                      : std::string(""))
+          << " dt "
+          << (points_[j].time -
+              (base_clock_[j].time +
+               std::chrono::nanoseconds(static_cast<int64_t>(
+                   std::round(data(NodeToFullSolutionIndex(j)))))))
+                 .count()
+          << "ns";
+    } else {
+      SOLVE_VLOG(solve_number, 2)
+          << "    dead  " << aos::monotonic_clock::min_time;
+      SOLVE_VLOG(solve_number, 2)
+          << "    dead  " << aos::monotonic_clock::min_time;
     }
   }
 }
@@ -740,11 +1466,11 @@ distributed_clock::time_point InterpolatedTimeConverter::ToDistributedClock(
 
   // Interpolate with the two of these.
   const std::tuple<distributed_clock::time_point,
-                        std::vector<logger::BootTimestamp>> &p0 = *search;
+                   std::vector<logger::BootTimestamp>> &p0 = *search;
   const std::tuple<distributed_clock::time_point,
-                        std::vector<logger::BootTimestamp>> &p1 = *(search - 1);
+                   std::vector<logger::BootTimestamp>> &p1 = *(search - 1);
 
-  const distributed_clock::time_point d0 =  std::get<0>(p0);
+  const distributed_clock::time_point d0 = std::get<0>(p0);
   const distributed_clock::time_point d1 = std::get<0>(p1);
 
   const BootTimestamp t0 = std::get<1>(p0)[node_index];
@@ -1729,32 +2455,81 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
       problem->set_base_clock(node_index, {base_times[node_index].boot,
                                            base_times[node_index].time + dt});
     }
-    std::tuple<std::vector<BootTimestamp>, size_t, size_t> solution =
-        problem->SolveNewton(points, kMaxIterations);
+    problem->set_points(points);
 
-    if (std::get<2>(solution) > kMaxIterations) {
-      UpdateSolution(std::move(std::get<0>(solution)));
+    Eigen::VectorXd solution_y;
+    size_t iterations;
+    NewtonSolver solver;
+    std::tie(solution_y, solution_index, iterations) =
+        solver.SolveNewton(problem, kMaxIterations);
+    std::vector<BootTimestamp> solution =
+        problem->PackResults(iterations > kMaxIterations ||
+                                 SOLVE_VLOG_IS_ON(solver.my_solve_number(), 2),
+                             solution_y);
+
+    if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
+      UpdateSolution(std::move(solution));
       FlushAndClose(false);
       LOG(FATAL) << "Failed to converge.";
     }
 
-    if (!problem->ValidateSolution(std::get<0>(solution), false)) {
-      LOG(WARNING) << "Invalid solution, constraints not met.";
-      for (size_t i = 0; i < std::get<0>(solution).size(); ++i) {
-        LOG(INFO) << "  " << std::get<0>(solution)[i];
-      }
-      problem->Debug();
-      if (!skip_order_validation_) {
-        UpdateSolution(std::move(std::get<0>(solution)));
-        FlushAndClose(false);
-        LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
-                      "Use at your own risk.";
+    if (!problem->ValidateSolution(solution, true)) {
+      if (!FLAGS_constrained_solve) {
+        problem->ValidateSolution(solution, false);
+        LOG(WARNING) << "Invalid solution, constraints not met for problem "
+                     << solver.my_solve_number();
+        for (size_t i = 0; i < solution.size(); ++i) {
+          LOG(INFO) << "  " << solution[i];
+        }
+        problem->Debug();
+        if (!skip_order_validation_) {
+          UpdateSolution(solution);
+          FlushAndClose(false);
+          LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
+                        "Use at your own risk.";
+        }
+      } else {
+        // Aw, our initial attempt to solve failed.  Now, let's try again with
+        // constriants.
+        for (size_t node_index = 0; node_index < base_times.size();
+             ++node_index) {
+          problem->set_base_clock(node_index, solution[node_index]);
+        }
+
+        if (!FLAGS_attempt_simultaneous_constrained_solve) {
+          VLOG(1) << "Falling back to sequential constrained Newton.";
+          return SequentialSolution(problem, candidate_times, base_times);
+        }
+
+        problem->set_points(points);
+        std::tie(solution, solution_y, solution_index, iterations) =
+            SolveConstrainedNewton(&solver, problem, kMaxIterations);
+
+        if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
+          UpdateSolution(std::move(solution));
+          FlushAndClose(false);
+          LOG(FATAL) << "Failed to converge for problem "
+                     << solver.my_solve_number();
+        }
+        if (!problem->ValidateSolution(solution, false)) {
+          LOG(WARNING) << "Invalid solution, constraints not met for problem "
+                       << solver.my_solve_number();
+          for (size_t i = 0; i < solution.size(); ++i) {
+            LOG(INFO) << "  " << solution[i];
+          }
+          problem->Debug();
+          if (!skip_order_validation_) {
+            UpdateSolution(solution);
+            FlushAndClose(false);
+            LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
+                          "Use at your own risk.";
+          }
+        }
       }
     }
 
-    result_times = std::move(std::get<0>(solution));
-    next_filter = candidate_times[std::get<1>(solution)].next_node_filter;
-    solution_index = std::get<1>(solution);
+    result_times = std::move(solution);
+    next_filter = candidate_times[solution_index].next_node_filter;
   }
 
   return std::make_tuple(next_filter, std::move(result_times), solution_index);
@@ -1872,13 +2647,6 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
       }
     }
 
-    std::vector<BootTimestamp> points(problem->size(),
-                                      BootTimestamp::max_time());
-    if (VLOG_IS_ON(2)) {
-      problem->Debug();
-    }
-    points[node_a_index] = next_node_time;
-
     if (!problem->HasObservations(node_a_index)) {
       VLOG(1) << "No observations, checking if there's a filter";
       CHECK(next_node_filter == nullptr)
@@ -1886,49 +2654,103 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
       continue;
     }
 
-    std::tuple<std::vector<BootTimestamp>, size_t, size_t> solution =
-        problem->SolveNewton(points, kMaxIterations);
+    std::vector<BootTimestamp> points(problem->size(),
+                                      BootTimestamp::max_time());
+    if (VLOG_IS_ON(2)) {
+      problem->Debug();
+    }
+    points[node_a_index] = next_node_time;
 
-    if (std::get<2>(solution) > kMaxIterations) {
-      UpdateSolution(std::move(std::get<0>(solution)));
+    problem->set_points(points);
+
+    NewtonSolver solver;
+    Eigen::VectorXd solution_y;
+    size_t iterations;
+    size_t my_solution_index;
+    std::tie(solution_y, my_solution_index, iterations) =
+        solver.SolveNewton(problem, kMaxIterations);
+    std::vector<BootTimestamp> solution =
+        problem->PackResults(iterations > kMaxIterations ||
+                                 SOLVE_VLOG_IS_ON(solver.my_solve_number(), 2),
+                             solution_y);
+
+    if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
+      UpdateSolution(std::move(solution));
       FlushAndClose(false);
-      LOG(FATAL) << "Failed to converge.";
+      LOG(FATAL) << "Failed to converge for problem "
+                 << solver.my_solve_number();
     }
 
     // Bypass checking if order validation is turned off.  This lets us dump a
     // CSV file so we can view the problem and figure out what to do.  The
     // results won't make sense.
-    if (!problem->ValidateSolution(std::get<0>(solution), false)) {
-      LOG(WARNING) << "Invalid solution, constraints not met.";
-      for (size_t i = 0; i < std::get<0>(solution).size(); ++i) {
-        LOG(INFO) << "  " << std::get<0>(solution)[i];
-      }
-      problem->Debug();
-      if (!skip_order_validation_) {
-        UpdateSolution(std::get<0>(solution));
-        FlushAndClose(false);
-        LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
-                      "Use at your own risk.";
+    if (!problem->ValidateSolution(solution, true)) {
+      if (!FLAGS_constrained_solve) {
+        // Do it non-quiet now.
+        problem->ValidateSolution(solution, false);
+
+        LOG(WARNING) << "Invalid solution, constraints not met for problem "
+                     << solver.my_solve_number();
+        for (size_t i = 0; i < solution.size(); ++i) {
+          LOG(INFO) << "  " << solution[i];
+        }
+        problem->Debug();
+        if (!skip_order_validation_) {
+          UpdateSolution(solution);
+          FlushAndClose(false);
+          LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
+                        "Use at your own risk.";
+        }
+      } else {
+        // Seed with our last solution.
+        for (size_t node_index = 0; node_index < base_times.size();
+             ++node_index) {
+          problem->set_base_clock(node_index, solution[node_index]);
+        }
+        // And now resolve constrained.
+        problem->set_points(points);
+        std::tie(solution, solution_y, solution_index, iterations) =
+            SolveConstrainedNewton(&solver, problem, kMaxIterations);
+
+        if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
+          UpdateSolution(std::move(solution));
+          FlushAndClose(false);
+          LOG(FATAL) << "Failed to converge for problem "
+                     << solver.my_solve_number();
+        }
+        if (!problem->ValidateSolution(solution, false)) {
+          LOG(WARNING) << "Invalid solution, constraints not met for problem "
+                       << solver.my_solve_number();
+          for (size_t i = 0; i < solution.size(); ++i) {
+            LOG(INFO) << "  " << solution[i];
+          }
+          problem->Debug();
+          if (!skip_order_validation_) {
+            UpdateSolution(solution);
+            FlushAndClose(false);
+            LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
+                          "Use at your own risk.";
+          }
+        }
       }
     }
 
     if (VLOG_IS_ON(1)) {
-      VLOG(1) << "Candidate std::get<0>(solution) for node " << node_a_index
-              << " is";
-      for (size_t i = 0; i < std::get<0>(solution).size(); ++i) {
-        VLOG(1) << "  " << std::get<0>(solution)[i];
+      VLOG(1) << "Candidate solution for node " << node_a_index << " is";
+      for (size_t i = 0; i < solution.size(); ++i) {
+        VLOG(1) << "  " << solution[i];
       }
     }
 
     if (result_times.empty()) {
       // This is the first solution candidate, so don't bother comparing.
-      result_times = std::move(std::get<0>(solution));
+      result_times = std::move(solution);
       next_filter = next_node_filter;
       solution_index = node_a_index;
       continue;
     }
 
-    switch (CompareTimes(result_times, std::get<0>(solution))) {
+    switch (CompareTimes(result_times, solution)) {
       // The old solution is before or at the new solution.  This means that
       // the old solution is a better result, so ignore this one.
       case TimeComparison::kBefore:
@@ -1936,12 +2758,12 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
         break;
       case TimeComparison::kAfter:
         // The new solution is better!  Save it.
-        result_times = std::move(std::get<0>(solution));
+        result_times = std::move(solution);
         next_filter = next_node_filter;
         solution_index = node_a_index;
         break;
       case TimeComparison::kInvalid: {
-        CheckInvalidDistance(result_times, std::get<0>(solution));
+        CheckInvalidDistance(result_times, solution);
         if (next_node_filter) {
           std::optional<std::tuple<logger::BootTimestamp, logger::BootDuration>>
               result = next_node_filter->Consume();
@@ -2122,6 +2944,16 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     return std::nullopt;
   }
 
+  {
+    size_t index = 0;
+    for (auto t : result_times) {
+      VLOG(1)
+          << "Time: " << t << " "
+          << logged_configuration_->nodes()->Get(index)->name()->string_view();
+      ++index;
+    }
+  }
+
   std::tuple<logger::BootTimestamp, logger::BootDuration> sample;
   if (first_solution_) {
     first_solution_ = false;
@@ -2136,12 +2968,16 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     if (next_filter) {
       // This isn't a start time because we have a corresponding filter.
       sample = *next_filter->Consume();
+      VLOG(1) << "Sample is " << std::get<0>(sample) << " from "
+              << next_filter->node_a()->name()->string_view();
       next_filter->Pop(std::get<0>(sample) - time_estimation_buffer_seconds_);
     }
   } else {
     if (next_filter) {
       // This isn't a start time because we have a corresponding filter.
       sample = *next_filter->Consume();
+      VLOG(1) << "Sample is " << std::get<0>(sample) << " from "
+              << next_filter->node_a()->name()->string_view();
       next_filter->Pop(std::get<0>(sample) - time_estimation_buffer_seconds_);
     }
     // We found a good sample, so consume it.  If it is a duplicate, we still

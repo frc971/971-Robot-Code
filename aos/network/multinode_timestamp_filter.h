@@ -18,6 +18,148 @@
 namespace aos {
 namespace message_bridge {
 
+// Problem description for NewtonSolver.
+class Problem {
+ public:
+  // The derivatives and other work products needed for both the constrained and
+  // unconstrained newtons method.
+  struct Derivatives {
+    Eigen::VectorXd gradient;
+    Eigen::MatrixXd hessian;
+
+    // Inequality function f
+    Eigen::MatrixXd f;
+    // df
+    Eigen::MatrixXd df;
+    // Slope limited df. This is used as part of computing the modified KKT
+    // conditions to avoid discontinuities across segment boundaries in lambda,
+    // and therefor Rt.  See Rt in the .cc file for more info.
+    Eigen::MatrixXd df_slope_limited;
+
+    // ddf is assumed to be 0 because for the linear constraint distance
+    // function we are using, it is actually 0, and by assuming it is zero
+    // rather than passing it through as 0 to the solver, we can save enough CPU
+    // to make it worth it.
+
+    // A
+    Eigen::MatrixXd A;
+    // Ax - b
+    Eigen::MatrixXd Axmb;
+    // Node picked for Axmb
+    size_t solution_node = std::numeric_limits<size_t>::max();
+  };
+
+  // Computes the derivatives of the cost function.
+  // If quiet is true, ComputeDerivatives shouldn't print anything.  If all is
+  // true, all inequality constraints are populated, otherwise only the
+  // constraint indices (indexed into the list of all constraints) provided are
+  // referenced.
+  virtual Derivatives ComputeDerivatives(
+      size_t solve_number, const Eigen::Ref<const Eigen::VectorXd> y,
+      bool quiet, bool all,
+      const absl::Span<const size_t> active_constraints) = 0;
+
+  // Prepares the problem to be solved.  This is called when the problem is
+  // started before any derivatives are computed.
+  virtual void Prepare(size_t my_solve_number) = 0;
+
+  // Observes (and potentially modifies y) for a new y.
+  virtual void Update(size_t solve_number, Eigen::Ref<Eigen::VectorXd> y) = 0;
+
+  // Returns the number of states.
+  size_t states() const { return states_; }
+
+  // Returns the number of inequality constraints.
+  size_t inequality_constraints() const { return inequality_constraints_; }
+
+ protected:
+  size_t states_ = 0;
+  size_t inequality_constraints_ = 0;
+};
+
+// Implements a solver for various Problems.
+class NewtonSolver {
+ public:
+  // Ratio to let the cost increase when line searching.  A small increase is
+  // fine since we aren't perfectly convex.
+  static constexpr double kAlpha = -0.15;
+  // Line search step parameter.
+  static constexpr double kBeta = 0.5;
+  static constexpr double kMu = 2.0;
+  // Terminal condition for the primal problem (equality constraints) and dual
+  // (gradient + inequality constraints).
+  static constexpr double kEpsilonF = 1e-4;
+  // Terminal condition for nu, the surrogate duality gap.
+  static constexpr double kEpsilon = 1e-2;
+
+  NewtonSolver();
+
+  // Returns which solve number this is.  This increments each time NewtonSolver
+  // is constructed, and is only used for debugging.
+  size_t my_solve_number() const { return my_solve_number_; }
+
+  // Solves a problem using an infeasible start unconstrained Newtons method
+  // solver.  There is no line search.
+  //
+  // minimize     f0(x)
+  //  subject to  A x = 0
+  //
+  // Returns the solution, the solution_node field from the final derivatives,
+  // and the number of iterations it took
+  std::tuple<Eigen::VectorXd, size_t, size_t> SolveNewton(
+      Problem *problem, const size_t max_iterations);
+
+  // Solves a problem using an infeasible start  Primal-dual interior-point
+  // method solver. Only respects the constraint indices provided and which are
+  // violated by the initial x(0).
+  //
+  // minimize     f0(x)
+  //  subject to  f(x) <=0
+  //              A x = 0
+  //
+  // Returns the solution, the solution_node field from the final derivatives,
+  // the number of iterations it took, and a list of the constraints actually
+  // used in the solution.
+  std::tuple<Eigen::VectorXd, size_t, size_t, std::vector<size_t>>
+  SolveConstrainedNewton(Problem *problem, size_t max_iterations,
+                         const absl::Span<const size_t> constraint_indices);
+
+  // Adds our slack variable to our constrained problem derivatives.
+  static Problem::Derivatives AddConstraintSlackVariable(
+      const Problem::Derivatives &derivatives,
+      const Eigen::Ref<const Eigen::VectorXd> y);
+
+ private:
+  // Returns the modified KKT conditions
+  // (11.53 in Convex Optimization,
+  //  https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf)
+  Eigen::VectorXd Rt(const Problem::Derivatives &derivatives,
+                     Eigen::Ref<const Eigen::VectorXd> y, double t);
+
+  // Returns the constrained newtons step, t_inverse, and Rt.
+  std::tuple<Eigen::VectorXd, double, Eigen::VectorXd> ConstrainedNewton(
+      const Eigen::Ref<const Eigen::VectorXd> y,
+      const Problem::Derivatives &derivatives, size_t iteration);
+
+  // Prints out the provided derivatives for debugging.
+  void PrintDerivatives(const Problem::Derivatives &derivatives,
+                        const Eigen::Ref<const Eigen::VectorXd> y,
+                        std::string_view prefix, int verbosity);
+
+  // Returns the newton step of the timestamp problem, and the node which was
+  // used for the equality constraint.  The last term is the scalar on the
+  // equality constraint.  This needs to be removed from the solution to get the
+  // actual newton step.
+  Eigen::VectorXd Newton(const Problem::Derivatives &derivatives,
+                         size_t iteration);
+
+  // The solve number for this instance of the problem.
+  size_t my_solve_number_;
+
+  // The global solve number counter used to deterministically find problems.
+  static size_t solve_number_;
+};
+
 // A condensed representation of the time estimation problem statement.  This is
 // designed to not have the concept of a Node object, or anything, just
 // measurement pairs and indices.
@@ -33,7 +175,7 @@ namespace message_bridge {
 //
 // To make this object reusable, it has a solution_node index which specifies
 // which of the nodes is treated as an input and not solved for.
-class TimestampProblem {
+class TimestampProblem : public Problem {
  public:
   TimestampProblem(size_t count);
 
@@ -58,12 +200,9 @@ class TimestampProblem {
                                                         b_filter);
   }
 
-  // Solves the optimization problem phrased using the symmetric Netwon's method
-  // solver and returns the optimal time on each node, along with the node which
-  // constrained the problem.  points is the list of potential constraint
-  // points, and the solver uses the earliest point.
-  std::tuple<std::vector<logger::BootTimestamp>, size_t, size_t> SolveNewton(
-      const std::vector<logger::BootTimestamp> &points, size_t max_iterations);
+  // Adds both base_clock_ and y together to produce the final answer.
+  std::vector<logger::BootTimestamp> PackResults(
+      bool print, const Eigen::Ref<const Eigen::VectorXd> y);
 
   // Validates the solution, returning true if it meets all the constraints, and
   // false otherwise.
@@ -94,7 +233,26 @@ class TimestampProblem {
     return count;
   }
 
-  size_t my_solve_number() const { return my_solve_number_; }
+  // Sets the points to solve an equality constraint to.
+  void set_points(const absl::Span<const logger::BootTimestamp> points) {
+    points_ = points;
+  }
+
+  // Adds the violated constraints from result to new_constraint_indices.
+  // Returns true if anything was added.
+  bool AddConstraints(size_t solve_number,
+                      const std::vector<logger::BootTimestamp> &result,
+                      std::vector<size_t> *new_constraint_indices);
+
+  // Returns all the derivatives of the cost function at the provide
+  // time_offsets using the symmetric problem definition.  If quiet is
+  // specificed, nothing is printed. If all is specified, all the constraints
+  // are considered, otherwise, only the constraint indices in active_constraint
+  // are considered.
+  Problem::Derivatives ComputeDerivatives(
+      size_t solve_number, const Eigen::Ref<const Eigen::VectorXd> time_offsets,
+      bool quiet, bool all,
+      const absl::Span<const size_t> active_constraints) override;
 
  private:
   // Returns the number of live constraints.
@@ -112,32 +270,13 @@ class TimestampProblem {
     return solution_node;
   }
 
-  // The derivitives and other work products needed for constrained newtons
-  // method.
-  struct Derivitives {
-    Eigen::VectorXd gradient;
-    Eigen::MatrixXd hessian;
+  // Sets the problem up to be ready to solve.  Caches anything we need during
+  // the solve.
+  void Prepare(size_t my_solve_number) override;
 
-    // A
-    Eigen::MatrixXd A;
-    // Ax - b
-    Eigen::MatrixXd Axmb;
-    // Node picked for Axmb
-    size_t solution_node = std::numeric_limits<size_t>::max();
-  };
-
-  // Returns the gradient and Hessian of the cost function at time_offsets.
-  Derivitives ComputeDerivitives(
-      const Eigen::Ref<const Eigen::VectorXd> time_offsets,
-      const std::vector<logger::BootTimestamp> &points, bool quiet);
-
-  // Returns the newton step of the timestamp problem, and the node which was
-  // used for the equality constraint.  The last term is the scalar on the
-  // equality constraint.  This needs to be removed from the solution to get the
-  // actual newton step.
-  std::tuple<Eigen::VectorXd, size_t> Newton(
-      const Eigen::Ref<Eigen::VectorXd> time_offsets,
-      const std::vector<logger::BootTimestamp> &points, size_t iteration);
+  // Updates base_clock_ if y is too big to keep the solution small.  Updates y
+  // to account for any change.
+  void Update(size_t solve_number, Eigen::Ref<Eigen::VectorXd> y) override;
 
   void MaybeUpdateNodeMapping();
 
@@ -158,10 +297,6 @@ class TimestampProblem {
   bool node_mapping_valid_ = false;
   // Mapping from a node index to an index in the solution.
   std::vector<size_t> node_mapping_;
-  // The number of live nodes there are.
-  size_t live_nodes_ = 0;
-  // Number of constraints in play.
-  size_t live_constraints_ = 0;
 
   // Filter and the node index it is referencing.
   //   filter->Offset(ta) + ta => t_(b_node);
@@ -180,11 +315,9 @@ class TimestampProblem {
   // List of filters indexed by node.
   std::vector<std::vector<FilterPair>> clock_offset_filter_for_node_;
 
-  // The solve number for this instance of the problem.
-  size_t my_solve_number_;
+  // Points to solve equality constraints to.
+  absl::Span<const logger::BootTimestamp> points_;
 
-  // The global solve number counter used to deterministically find problems.
-  static size_t solve_number_;
 };
 
 // Helpers to convert times between the monotonic and distributed clocks for

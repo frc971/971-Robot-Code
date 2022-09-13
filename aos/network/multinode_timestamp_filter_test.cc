@@ -331,6 +331,90 @@ TEST(InterpolatedTimeConverterTest, SingleNodeTime) {
   EXPECT_TRUE(time_converter.NextTimestamp());
 }
 
+class SquareProblem : public Problem {
+ public:
+  SquareProblem() : Problem() {
+    inequality_constraints_ = 4u;
+    states_ = 2u;
+  }
+
+  void Prepare(size_t my_solve_number) override {
+    LOG(INFO) << "Starting solve " << my_solve_number;
+  }
+
+  void Update(size_t /*solve_number*/,
+              Eigen::Ref<Eigen::VectorXd> /*y*/) override {}
+
+  Derivatives ComputeDerivatives(
+      size_t /*solve_number*/, const Eigen::Ref<const Eigen::VectorXd> y,
+      bool quiet, bool all,
+      const absl::Span<const size_t> active_constraints) override {
+    Eigen::Matrix<double, 2, 2> Q = Eigen::DiagonalMatrix<double, 2>(1.0, 2.0);
+    Eigen::Matrix<double, 4, 2> H;
+
+    // Box constraint from -1 <= x(0) <= 5, and 1 <= x(1) <= 5
+    H << 1.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, -1.0;
+    Eigen::Matrix<double, 4, 1> k;
+    k << 5.0, 1.0, 5.0, -1.0;
+
+    Derivatives result;
+    result.solution_node = 0;
+    result.hessian = 2.0 * Q;
+    result.gradient = 2.0 * Q * y.block<2, 1>(0, 0);
+
+    if (all || active_constraints.size() != 0u) {
+      if (!all) {
+        CHECK_EQ(active_constraints.size(), 4u);
+      }
+      result.f = H * y.block<2, 1>(0, 0) - k;
+      result.df = H;
+      result.df_slope_limited = result.df;
+    }
+
+    result.A = Eigen::MatrixXd::Zero(1, 2);
+    // Set x0 = x1
+    result.A(0, 0) = 1.0;
+    result.A(0, 1) = -1.0;
+
+    result.Axmb = result.A * y.block<2, 1>(0, 0);
+
+    if (!quiet) {
+      VLOG(2) << Q;
+    }
+
+    return result;
+  }
+};
+
+// Tests that our solver can solve a toy problem with known answers.
+TEST(TimestampProblemTest, SolveToyNewton) {
+  SquareProblem problem;
+
+  NewtonSolver solver;
+  Eigen::VectorXd y;
+  size_t solution_node;
+  size_t iterations;
+  std::tie(y, solution_node, iterations) = solver.SolveNewton(&problem, 20);
+
+  EXPECT_NEAR(y(0), 0.0, 1e-6);
+  EXPECT_NEAR(y(1), 0.0, 1e-6);
+
+  std::vector<size_t> constraints;
+  for (size_t i = 0; i < problem.inequality_constraints(); ++i) {
+    constraints.emplace_back(i);
+  }
+
+  std::vector<size_t> used_constraints;
+  std::tie(y, solution_node, iterations, used_constraints) =
+      solver.SolveConstrainedNewton(&problem, 20, constraints);
+
+  LOG(INFO) << y.transpose();
+
+  EXPECT_EQ(constraints, used_constraints);
+  EXPECT_NEAR(y(0), 1.0, 1e-3);
+  EXPECT_NEAR(y(1), 1.0, 1e-3);
+}
+
 // Tests that our Newtons method solver returns consistent answers for a simple
 // problem or two.  Also confirm that the residual error to the constraints
 // looks sane, meaning it is centered.
@@ -373,38 +457,84 @@ TEST(TimestampProblemTest, SolveNewton) {
   points1[0] = e + chrono::seconds(1);
 
   constexpr size_t kMaxIterations = 200u;
-  std::tuple<std::vector<BootTimestamp>, size_t, size_t> result1 =
-      problem.SolveNewton(points1, kMaxIterations);
+  problem.set_points(points1);
+
+  NewtonSolver solver1;
+  const std::tuple<Eigen::VectorXd, size_t, size_t> result1 =
+      solver1.SolveNewton(&problem, kMaxIterations);
+  const std::vector<logger::BootTimestamp> times1 =
+      problem.PackResults(false, std::get<0>(result1));
   EXPECT_LT(std::get<2>(result1), kMaxIterations);
   EXPECT_EQ(std::get<1>(result1), 0u);
-  EXPECT_TRUE(problem.ValidateSolution(std::get<0>(result1), false));
+  EXPECT_TRUE(problem.ValidateSolution(times1, false));
 
   std::vector<BootTimestamp> points2(problem.size(), BootTimestamp::max_time());
-  points2[1] = std::get<0>(result1)[1];
-  std::tuple<std::vector<BootTimestamp>, size_t, size_t> result2 =
-      problem.SolveNewton(points2, kMaxIterations);
+  points2[1] = times1[1];
+  problem.set_points(points2);
+  NewtonSolver solver2;
+  std::tuple<Eigen::VectorXd, size_t, size_t> result2 =
+      solver2.SolveNewton(&problem, kMaxIterations);
+  const std::vector<logger::BootTimestamp> times2 =
+      problem.PackResults(false, std::get<0>(result2));
   EXPECT_LT(std::get<2>(result1), kMaxIterations);
   EXPECT_EQ(std::get<1>(result2), 1u);
-  EXPECT_TRUE(problem.ValidateSolution(std::get<0>(result2), false));
+  EXPECT_TRUE(problem.ValidateSolution(times2, false));
 
-  EXPECT_EQ(std::get<0>(result1)[0], e + chrono::seconds(1));
-  EXPECT_EQ(std::get<0>(result1)[0], std::get<0>(result2)[0]);
-  EXPECT_EQ(std::get<0>(result1)[1], std::get<0>(result2)[1]);
+  EXPECT_EQ(times1[0], e + chrono::seconds(1));
+  EXPECT_EQ(times1[0], times2[0]);
+  EXPECT_EQ(times1[1], times2[1]);
 
   // Confirm that the error is almost equal for both directions.  The solution
   // is an integer solution, so there will be a little bit of error left over.
   std::tuple<chrono::nanoseconds, double, double> a_error =
-      a.OffsetError(nullptr, NoncausalTimestampFilter::Pointer(),
-                    std::get<0>(result1)[0], 0.0, std::get<0>(result1)[1], 0.0)
+      a.OffsetError(nullptr, NoncausalTimestampFilter::Pointer(), times1[0],
+                    0.0, times1[1], 0.0)
           .second;
   std::tuple<chrono::nanoseconds, double, double> b_error =
-      b.OffsetError(nullptr, NoncausalTimestampFilter::Pointer(),
-                    std::get<0>(result1)[1], 0.0, std::get<0>(result1)[0], 0.0)
+      b.OffsetError(nullptr, NoncausalTimestampFilter::Pointer(), times1[1],
+                    0.0, times1[0], 0.0)
           .second;
   EXPECT_NEAR(static_cast<double>(
                   (std::get<0>(a_error) - std::get<0>(b_error)).count()) +
                   (std::get<1>(a_error) - std::get<1>(b_error)),
               0.0, 0.5);
+
+  // Confirm the derivatives for the solution make sense.
+  Problem::Derivatives derivatives = problem.ComputeDerivatives(
+      0, std::get<0>(result2), true, true, absl::Span<const size_t>());
+
+  // Hessian should be fixed and pretty simple.
+  Eigen::Matrix<double, 2, 2> expected_hessian;
+  expected_hessian << 4, -4, -4, 4;
+  EXPECT_NEAR((derivatives.hessian - expected_hessian).norm(), 0.0, 1e-6)
+      << derivatives.hessian;
+
+  // It's the solution, gradient should be small.
+  EXPECT_NEAR(derivatives.gradient.norm(), 0.0, 1e-6) << derivatives.gradient;
+
+  Eigen::Matrix<double, 2, 1> expected_f;
+  expected_f << -1500248.1249374687, -1500248.1249374687;
+  EXPECT_NEAR((derivatives.f - expected_f).norm(), 0.0, 1e-6) << derivatives.f;
+
+  // A -> 1/n for each element.
+  Eigen::Matrix<double, 1, 2> expected_A;
+  expected_A << 0.5, 0.5;
+  EXPECT_NEAR((derivatives.A - expected_A).norm(), 0.0, 1e-12) << derivatives.A;
+
+  // Ax - b -> 0 at the solution.
+  EXPECT_NEAR(derivatives.Axmb.norm(), 0.0, 1e-4) << derivatives.Axmb;
+
+  // And df is well defined.
+  Eigen::Matrix<double, 2, 2> expected_df;
+  expected_df << (1.0 - kMaxVelocity()), -1, -1, (1 - kMaxVelocity());
+  EXPECT_NEAR((derivatives.df - expected_df).norm(), 0.0, 1e-12)
+      << derivatives.df;
+
+  Eigen::Matrix<double, 2, 2> expected_df_slope_limited;
+  expected_df_slope_limited << 1.0 + kMaxVelocity(), -1, -1, 1 + kMaxVelocity();
+  EXPECT_NEAR((derivatives.df_slope_limited - expected_df_slope_limited).norm(),
+              0.0, 1e-12)
+      << derivatives.df_slope_limited;
 }
 
 }  // namespace testing

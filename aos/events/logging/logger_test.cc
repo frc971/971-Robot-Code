@@ -4602,7 +4602,7 @@ TEST_P(MultinodeLoggerTest, StartOneNodeBeforeOther) {
 
 // Tests that when we have a loop without all the logs at all points in time, we
 // can sort it properly.
-TEST(MultinodeLoggerLoopTest, DISABLED_Loop) {
+TEST(MultinodeLoggerLoopTest, Loop) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_triangle_split_config.json"));
