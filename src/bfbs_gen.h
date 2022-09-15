@@ -24,19 +24,21 @@
 
 namespace flatbuffers {
 
-void ForAllEnums(
+namespace {
+
+static void ForAllEnums(
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
     std::function<void(const reflection::Enum *)> func) {
   for (auto it = enums->cbegin(); it != enums->cend(); ++it) { func(*it); }
 }
 
-void ForAllObjects(
+static void ForAllObjects(
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *objects,
     std::function<void(const reflection::Object *)> func) {
   for (auto it = objects->cbegin(); it != objects->cend(); ++it) { func(*it); }
 }
 
-void ForAllEnumValues(const reflection::Enum *enum_def,
+static void ForAllEnumValues(const reflection::Enum *enum_def,
                       std::function<void(const reflection::EnumVal *)> func) {
   for (auto it = enum_def->values()->cbegin(); it != enum_def->values()->cend();
        ++it) {
@@ -44,7 +46,7 @@ void ForAllEnumValues(const reflection::Enum *enum_def,
   }
 }
 
-void ForAllDocumentation(
+static void ForAllDocumentation(
     const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>
         *documentation,
     std::function<void(const flatbuffers::String *)> func) {
@@ -73,10 +75,6 @@ static bool IsStructOrTable(const reflection::BaseType base_type) {
   return base_type == reflection::Obj;
 }
 
-static bool IsScalar(const reflection::BaseType base_type) {
-  return base_type >= reflection::UType && base_type <= reflection::Double;
-}
-
 static bool IsFloatingPoint(const reflection::BaseType base_type) {
   return base_type == reflection::Float || base_type == reflection::Double;
 }
@@ -93,21 +91,7 @@ static bool IsVector(const reflection::BaseType base_type) {
   return base_type == reflection::Vector;
 }
 
-static std::string Denamespace(const flatbuffers::String *name,
-                               std::string &ns) {
-  const size_t pos = name->str().find_last_of('.');
-  if (pos == std::string::npos) {
-    ns = "";
-    return name->str();
-  }
-  ns = name->str().substr(0, pos);
-  return name->str().substr(pos + 1);
-}
-
-static std::string Denamespace(const flatbuffers::String *name) {
-  std::string ns;
-  return Denamespace(name, ns);
-}
+} // namespace
 
 // A concrete base Flatbuffer Generator that specific language generators can
 // derive from.

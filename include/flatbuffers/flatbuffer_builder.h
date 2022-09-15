@@ -18,6 +18,7 @@
 #define FLATBUFFERS_FLATBUFFER_BUILDER_H_
 
 #include <functional>
+#include <initializer_list>
 
 #include "flatbuffers/allocator.h"
 #include "flatbuffers/array.h"
@@ -357,7 +358,7 @@ class FlatBufferBuilder {
     // If you get this assert, a corresponding StartTable wasn't called.
     FLATBUFFERS_ASSERT(nested);
     // Write the vtable offset, which is the start of any Table.
-    // We fill it's value later.
+    // We fill its value later.
     auto vtableoffsetloc = PushElement<soffset_t>(0);
     // Write a vtable, which consists entirely of voffset_t elements.
     // It starts with the number of offsets, followed by a type id, followed
@@ -442,6 +443,7 @@ class FlatBufferBuilder {
   // Aligns such that when "len" bytes are written, an object can be written
   // after it with "alignment" without padding.
   void PreAlign(size_t len, size_t alignment) {
+    if (len == 0) return;
     TrackMinAlign(alignment);
     buf_.fill(PaddingBytes(GetSize() + len, alignment));
   }
@@ -577,7 +579,7 @@ class FlatBufferBuilder {
   /// @param[in] str A const pointer to a `String` struct to add to the buffer.
   /// @return Returns the offset in the buffer where the string starts
   Offset<String> CreateSharedString(const String *str) {
-    return CreateSharedString(str->c_str(), str->size());
+    return str ? CreateSharedString(str->c_str(), str->size()) : 0;
   }
 
   /// @cond FLATBUFFERS_INTERNAL
@@ -600,12 +602,14 @@ class FlatBufferBuilder {
   // This is useful when storing a nested_flatbuffer in a vector of bytes,
   // or when storing SIMD floats, etc.
   void ForceVectorAlignment(size_t len, size_t elemsize, size_t alignment) {
+    if (len == 0) return;
     FLATBUFFERS_ASSERT(VerifyAlignmentRequirements(alignment));
     PreAlign(len * elemsize, alignment);
   }
 
   // Similar to ForceVectorAlignment but for String fields.
   void ForceStringAlignment(size_t len, size_t alignment) {
+    if (len == 0) return;
     FLATBUFFERS_ASSERT(VerifyAlignmentRequirements(alignment));
     PreAlign((len + 1) * sizeof(char), alignment);
   }
@@ -650,6 +654,16 @@ class FlatBufferBuilder {
   /// where the vector is stored.
   template<typename T, class C> Offset<Vector<T>> CreateVector(const C &array) {
     return CreateVector(array.data(), array.size());
+  }
+
+  /// @brief Serialize an initializer list into a FlatBuffer `vector`.
+  /// @tparam T The data type of the initializer list elements.
+  /// @param[in] v The value of the initializer list.
+  /// @return Returns a typed `Offset` into the serialized data indicating
+  /// where the vector is stored.
+  template<typename T>
+  Offset<Vector<T>> CreateVector(std::initializer_list<T> v) {
+    return CreateVector(v.begin(), v.size());
   }
 
   template<typename T>
@@ -716,21 +730,24 @@ class FlatBufferBuilder {
     return CreateVector(elems);
   }
 
-  /// @brief Serialize a `std::vector<std::string>` into a FlatBuffer `vector`.
+  /// @brief Serialize a `std::vector<StringType>` into a FlatBuffer `vector`.
+  /// whereas StringType is any type that is accepted by the CreateString()
+  /// overloads.
   /// This is a convenience function for a common case.
   /// @param v A const reference to the `std::vector` to serialize into the
   /// buffer as a `vector`.
   /// @return Returns a typed `Offset` into the serialized data indicating
   /// where the vector is stored.
-  template<typename Alloc = std::allocator<std::string>>
+  template<typename StringType = std::string,
+           typename Alloc = std::allocator<StringType>>
   Offset<Vector<Offset<String>>> CreateVectorOfStrings(
-      const std::vector<std::string, Alloc> &v) {
+      const std::vector<StringType, Alloc> &v) {
     return CreateVectorOfStrings(v.cbegin(), v.cend());
   }
 
   /// @brief Serialize a collection of Strings into a FlatBuffer `vector`.
   /// This is a convenience function for a common case.
-  /// @param begin The begining iterator of the collection
+  /// @param begin The beginning iterator of the collection
   /// @param end The ending iterator of the collection
   /// @return Returns a typed `Offset` into the serialized data indicating
   /// where the vector is stored.
@@ -740,7 +757,7 @@ class FlatBufferBuilder {
     auto scratch_buffer_usage = size * sizeof(Offset<String>);
     // If there is not enough space to store the offsets, there definitely won't
     // be enough space to store all the strings. So ensuring space for the
-    // scratch region is OK, for it it fails, it would have failed later.
+    // scratch region is OK, for if it fails, it would have failed later.
     buf_.ensure_space(scratch_buffer_usage);
     for (auto it = begin; it != end; ++it) {
       buf_.scratch_push_small(CreateString(*it));

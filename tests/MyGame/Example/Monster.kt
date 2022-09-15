@@ -874,7 +874,7 @@ class Monster : Table() {
          return compareStrings(__offset(10, o1, _bb), __offset(10, o2, _bb), _bb)
     }
     companion object {
-        fun validateVersion() = Constants.FLATBUFFERS_2_0_0()
+        fun validateVersion() = Constants.FLATBUFFERS_2_0_8()
         fun getRootAsMonster(_bb: ByteBuffer): Monster = getRootAsMonster(_bb, Monster())
         fun getRootAsMonster(_bb: ByteBuffer, obj: Monster): Monster {
             _bb.order(ByteOrder.LITTLE_ENDIAN)
@@ -885,7 +885,10 @@ class Monster : Table() {
         fun addPos(builder: FlatBufferBuilder, pos: Int) = builder.addStruct(0, pos, 0)
         fun addMana(builder: FlatBufferBuilder, mana: Short) = builder.addShort(1, mana, 150)
         fun addHp(builder: FlatBufferBuilder, hp: Short) = builder.addShort(2, hp, 100)
-        fun addName(builder: FlatBufferBuilder, name: Int) = builder.addOffset(3, name, 0)
+        fun addName(builder: FlatBufferBuilder, name: Int)  {
+            builder.addOffset(name)
+            builder.slot(3)
+        }
         fun addInventory(builder: FlatBufferBuilder, inventory: Int) = builder.addOffset(5, inventory, 0)
         fun createInventoryVector(builder: FlatBufferBuilder, data: UByteArray) : Int {
             builder.startVector(1, data.size, 1)
