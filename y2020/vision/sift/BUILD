@@ -1,5 +1,6 @@
 load(":fast_gaussian.bzl", "fast_gaussian")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_ts_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 # Note that this file is also used directly by :fast_gaussian_halide_generator,
 # without any dependencies added here.

@@ -1,4 +1,5 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_rust_library", "flatbuffer_ts_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_rust_library")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")

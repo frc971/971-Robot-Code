@@ -141,7 +141,9 @@ class BaseGenerator {
   std::string WrapInNameSpace(const Namespace *ns,
                               const std::string &name, bool js_ts = false) const;
 
-  std::string WrapInNameSpace(const Definition &def, bool js_ts = false) const;
+  std::string WrapInNameSpace(const Definition &def,
+                              const std::string &suffix = "",
+                              bool js_ts = false) const;
 
   std::string GetNameSpace(const Definition &def) const;
 

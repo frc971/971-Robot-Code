@@ -1,4 +1,5 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_rust_library", "flatbuffer_ts_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_rust_library")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")

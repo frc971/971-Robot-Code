@@ -1,5 +1,6 @@
 load("@npm//@bazel/typescript:index.bzl", "ts_library")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 
 package(default_visibility = ["//visibility:public"])

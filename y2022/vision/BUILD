@@ -1,4 +1,5 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_ts_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("@npm//@bazel/typescript:index.bzl", "ts_library")
 
 flatbuffer_cc_library(

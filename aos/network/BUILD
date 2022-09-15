@@ -1,7 +1,8 @@
 load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
 load("//aos:config.bzl", "aos_config")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_ts_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 package(default_visibility = ["//visibility:public"])
 

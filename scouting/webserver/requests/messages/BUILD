@@ -1,4 +1,5 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_go_library", "flatbuffer_ts_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_go_library")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 FILE_NAMES = (
     "error_response",
