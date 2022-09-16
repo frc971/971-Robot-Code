@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "aos/configuration.h"
-#include "aos/events/shm_event_loop.h"
+#include "aos/ipc_lib/memory_mapped_queue.h"
 #include "aos/ipc_lib/signalfd.h"
 #include "aos/macros.h"
 #include "aos/starter/starter_generated.h"
@@ -61,6 +61,11 @@ class Starter {
 
   void SendStatus();
 
+  // Creates a MemoryMappedQueue for the given channel, to pre-allocate shared
+  // memory to give this process credit for the memory instead of any other
+  // process that accesses it.
+  void AddChannel(const aos::Channel *channel);
+
   const std::string config_path_;
   const aos::Configuration *config_msg_;
 
@@ -73,6 +78,12 @@ class Starter {
   const int max_status_count_;
 
   std::unordered_map<std::string, Application> applications_;
+  std::vector<std::unique_ptr<aos::ipc_lib::MemoryMappedQueue>> shm_queues_;
+
+  // Capture the --shm_base flag at construction time.  This makes it much
+  // easier to make different shared memory regions for doing things like
+  // multi-node tests.
+  std::string shm_base_;
 
   // Set to true on cleanup to block rpc commands and ensure cleanup only
   // happens once.
