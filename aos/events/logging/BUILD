@@ -48,6 +48,10 @@ cc_library(
         "logfile_sorting.h",
         "logfile_utils.h",
     ],
+    copts = select({
+        "//tools:cpu_k8": ["-DENABLE_S3=1"],
+        "//conditions:default": ["-DENABLE_S3=0"],
+    }),
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
@@ -69,7 +73,10 @@ cc_library(
         "@com_google_absl//absl/types:span",
         "@boringssl//:crypto",
     ] + select({
-        "//tools:cpu_k8": [":lzma_encoder"],
+        "//tools:cpu_k8": [
+            ":s3_fetcher",
+            ":lzma_encoder",
+        ],
         "//tools:cpu_arm64": [":lzma_encoder"],
         "//conditions:default": [],
     }),
@@ -196,6 +203,27 @@ cc_library(
         "//third_party:lzma",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "s3_fetcher",
+    srcs = [
+        "s3_fetcher.cc",
+    ],
+    hdrs = [
+        "s3_fetcher.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":buffer_encoder",
+        "//aos/containers:resizeable_buffer",
+        "@aws_sdk//:core",
+        "@aws_sdk//:s3",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:span",
     ],
 )

@@ -504,4 +504,6 @@ generate_deb_tarball(
 
 exports_files([
     "ssh_wrapper.sh",
+    "curl.BUILD",
+    "BUILD.zlib.bazel",
 ])

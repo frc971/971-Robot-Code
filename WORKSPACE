@@ -1231,6 +1231,41 @@ local_repository(
     path = "third_party/com_github_nlohmann_json",
 )
 
+# https://curl.haxx.se/download/curl-7.69.1.tar.gz
+http_archive(
+    name = "com_github_curl_curl",
+    build_file = "//debian:curl.BUILD",
+    sha256 = "01ae0c123dee45b01bbaef94c0bc00ed2aec89cb2ee0fd598e0d302a6b5e0a98",
+    strip_prefix = "curl-7.69.1",
+    url = "https://www.frc971.org/Build-Dependencies/curl-7.69.1.tar.gz",
+)
+
+http_archive(
+    # No official name exists.  Names used in our external dependencies include
+    # zlib, madler_zlib, com_github_madler_zlib.
+    name = "zlib",
+    build_file = "//debian:BUILD.zlib.bazel",
+    sha256 = "629380c90a77b964d896ed37163f5c3a34f6e6d897311f1df2a7016355c45eff",
+    strip_prefix = "zlib-1.2.11",
+    urls = [
+        "https://github.com/madler/zlib/archive/v1.2.11.tar.gz",
+    ],
+)
+
+# This one is tricky to get an archive because it has recursive submodules. These semi-automated steps do work though:
+# git clone -b version1.9 --recurse-submodules --depth=1 https://github.com/aws/aws-sdk-cpp
+# cd aws-sdk-cpp
+# echo bsdtar -a -cf aws_sdk-version.tar.gz --ignore-zeros @\<\(git archive HEAD\) $(git submodule foreach --recursive --quiet 'echo @\<\(cd $displaypath \&\& git archive HEAD --prefix=$displaypath/\)')
+# Now run the command that printed, and the output will be at aws_sdk-version.tar.gz.
+http_archive(
+    name = "aws_sdk",
+    build_file = "//debian:aws_sdk.BUILD",
+    patch_args = ["-p1"],
+    patches = ["//debian:aws_sdk.patch"],
+    sha256 = "1a2668722e5b5b2608a6ab21c876c1d98b5fd8c7d613129ced9561f5520817dc",
+    url = "https://www.frc971.org/Build-Dependencies/aws_sdk-19.0.0-RC1.tar.gz",
+)
+
 http_file(
     name = "com_github_foxglove_mcap_mcap",
     executable = True,

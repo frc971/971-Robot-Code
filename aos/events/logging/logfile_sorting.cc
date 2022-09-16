@@ -16,14 +16,17 @@
 #include "openssl/sha.h"
 #include "sys/stat.h"
 
+#if ENABLE_S3
+#include "aos/events/logging/s3_fetcher.h"
+#endif
+
 DEFINE_bool(quiet_sorting, false,
             "If true, sort with minimal messages about truncated files.");
 
 namespace aos {
 namespace logger {
-namespace chrono = std::chrono;
-
 namespace {
+namespace chrono = std::chrono;
 
 // Check if string ends with ending
 bool EndsWith(std::string_view str, std::string_view ending) {
@@ -62,7 +65,36 @@ bool IsValidFilename(std::string_view filename) {
          EndsWith(filename, ".bfbs.sz");
 }
 
+#if ENABLE_S3
+class S3FileOperations final : public FileOperations {
+ public:
+  S3FileOperations(std::string_view url) : object_urls_(ListS3Objects(url)) {}
+
+  bool Exists() override { return !object_urls_.empty(); }
+  void FindLogs(std::vector<std::string> *files) override {
+    // We already have a recursive listing, so just grab all the objects from
+    // there.
+    for (const std::string &object_url : object_urls_) {
+      if (IsValidFilename(object_url)) {
+        files->push_back(object_url);
+      }
+    }
+  }
+
+ private:
+  const std::vector<std::string> object_urls_;
+};
+#endif
+
 std::unique_ptr<FileOperations> MakeFileOperations(std::string_view filename) {
+  static constexpr std::string_view kS3 = "s3:";
+  if (filename.substr(0, kS3.size()) == kS3) {
+#if ENABLE_S3
+    return std::make_unique<S3FileOperations>(filename);
+#else
+    LOG(FATAL) << "Reading files from S3 not supported on this platform";
+#endif
+  }
   if (filename.find("://") != filename.npos) {
     LOG(FATAL) << "This looks like a URL of an unknown type: " << filename;
   }
@@ -391,7 +423,7 @@ struct PartsSorter {
 void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
   // Now extract everything into our datastructures above for sorting.
   for (const std::string &part : parts) {
-    if (part_readers.size() > 200) {
+    if (part_readers.size() > 50) {
       // Don't leave arbitrary numbers of readers open, because they each take
       // resources, so close a big batch at once periodically.
       part_readers.clear();

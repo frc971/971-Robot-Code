@@ -28,6 +28,9 @@
 #if ENABLE_LZMA
 #include "aos/events/logging/lzma_encoder.h"
 #endif
+#if ENABLE_S3
+#include "aos/events/logging/s3_fetcher.h"
+#endif
 
 DEFINE_int32(flush_size, 128 * 1024,
              "Number of outstanding bytes to allow before flushing to disk.");
@@ -862,7 +865,16 @@ size_t PackMessageInline(uint8_t *buffer, const Context &context,
 
 SpanReader::SpanReader(std::string_view filename, bool quiet)
     : filename_(filename) {
-  decoder_ = std::make_unique<DummyDecoder>(filename);
+  static constexpr std::string_view kS3 = "s3:";
+  if (filename.substr(0, kS3.size()) == kS3) {
+#if ENABLE_S3
+    decoder_ = std::make_unique<S3Fetcher>(filename);
+#else
+    LOG(FATAL) << "Reading files from S3 not supported on this platform";
+#endif
+  } else {
+    decoder_ = std::make_unique<DummyDecoder>(filename);
+  }
 
   static constexpr std::string_view kXz = ".xz";
   static constexpr std::string_view kSnappy = SnappyDecoder::kExtension;

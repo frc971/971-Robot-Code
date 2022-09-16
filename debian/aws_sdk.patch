@@ -1,0 +1,92 @@
+Submodule crt/aws-crt-cpp contains modified content
+Submodule crt/aws-c-cal contains modified content
+diff --git a/crt/aws-crt-cpp/crt/aws-c-cal/source/unix/openssl_platform_init.c b/crt/aws-crt-cpp/crt/aws-c-cal/source/unix/openssl_platform_init.c
+index 761455b..fc434ba 100644
+--- a/crt/aws-crt-cpp/crt/aws-c-cal/source/unix/openssl_platform_init.c
++++ b/crt/aws-crt-cpp/crt/aws-c-cal/source/unix/openssl_platform_init.c
+@@ -34,7 +34,7 @@ struct openssl_evp_md_ctx_table *g_aws_openssl_evp_md_ctx_table = NULL;
+ /* 1.1 */
+ extern HMAC_CTX *HMAC_CTX_new(void) __attribute__((weak)) __attribute__((used));
+ extern void HMAC_CTX_free(HMAC_CTX *) __attribute__((weak)) __attribute__((used));
+-extern int HMAC_CTX_reset(HMAC_CTX *) __attribute__((weak)) __attribute__((used));
++//extern int HMAC_CTX_reset(HMAC_CTX *) __attribute__((weak)) __attribute__((used));
+ 
+ /* 1.0.2 */
+ extern void HMAC_CTX_init(HMAC_CTX *) __attribute__((weak)) __attribute__((used));
+@@ -43,8 +43,8 @@ extern void HMAC_CTX_cleanup(HMAC_CTX *) __attribute__((weak)) __attribute__((us
+ /* common */
+ extern int HMAC_Update(HMAC_CTX *, const unsigned char *, size_t) __attribute__((weak)) __attribute__((used));
+ extern int HMAC_Final(HMAC_CTX *, unsigned char *, unsigned int *) __attribute__((weak)) __attribute__((used));
+-extern int HMAC_Init_ex(HMAC_CTX *, const void *, int, const EVP_MD *, ENGINE *) __attribute__((weak))
+-__attribute__((used));
++//extern int HMAC_Init_ex(HMAC_CTX *, const void *, int, const EVP_MD *, ENGINE *) __attribute__((weak))
++//__attribute__((used));
+ 
+ /* libcrypto 1.1 stub for init */
+ static void s_hmac_ctx_init_noop(HMAC_CTX *ctx) {
+@@ -393,9 +393,9 @@ void aws_cal_platform_init(struct aws_allocator *allocator) {
+         }
+     }
+ 
+-    if (!CRYPTO_get_id_callback()) {
+-        CRYPTO_set_id_callback(s_id_fn);
+-    }
++    //if (!CRYPTO_get_id_callback()) {
++        //CRYPTO_set_id_callback(s_id_fn);
++    //}
+ }
+ 
+ void aws_cal_platform_clean_up(void) {
+@@ -408,9 +408,9 @@ void aws_cal_platform_clean_up(void) {
+         aws_mem_release(s_libcrypto_allocator, s_libcrypto_locks);
+     }
+ 
+-    if (CRYPTO_get_id_callback() == s_id_fn) {
+-        CRYPTO_set_id_callback(NULL);
+-    }
++    //if (CRYPTO_get_id_callback() == s_id_fn) {
++        //CRYPTO_set_id_callback(NULL);
++    //}
+ }
+ #if !defined(__GNUC__) || (__GNUC__ >= 4 && __GNUC_MINOR__ > 1)
+ #    pragma GCC diagnostic pop
+Submodule crt/s2n contains modified content
+diff --git a/crt/aws-crt-cpp/crt/s2n/utils/s2n_asn1_time.c b/crt/aws-crt-cpp/crt/s2n/utils/s2n_asn1_time.c
+index 84dbc6df..d3566b81 100755
+--- a/crt/aws-crt-cpp/crt/s2n/utils/s2n_asn1_time.c
++++ b/crt/aws-crt-cpp/crt/s2n/utils/s2n_asn1_time.c
+@@ -46,7 +46,7 @@ typedef enum parser_state {
+ } parser_state;
+ 
+ static inline long get_gmt_offset(struct tm *t) {
+-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__ANDROID__) || defined(ANDROID) || defined(__APPLE__) && defined(__MACH__)
++#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__ANDROID__) || defined(ANDROID) || defined(__APPLE__) && defined(__MACH__) || defined(__USE_MISC)
+     return t->tm_gmtoff;
+ #else
+     return t->__tm_gmtoff;
+diff --git a/crt/aws-crt-cpp/crt/s2n/utils/s2n_init.c b/crt/aws-crt-cpp/crt/s2n/utils/s2n_init.c
+index 0f79f959..ae8122fb 100644
+--- a/crt/aws-crt-cpp/crt/s2n/utils/s2n_init.c
++++ b/crt/aws-crt-cpp/crt/s2n/utils/s2n_init.c
+@@ -45,7 +45,7 @@ int s2n_init(void)
+     GUARD_POSIX(s2n_security_policies_init());
+     GUARD_POSIX(s2n_config_defaults_init());
+     GUARD_POSIX(s2n_extension_type_init());
+-    GUARD_AS_POSIX(s2n_pq_init());
++    //GUARD_AS_POSIX(s2n_pq_init());
+ 
+     S2N_ERROR_IF(atexit(s2n_cleanup_atexit) != 0, S2N_ERR_ATEXIT);
+ 
+diff --git a/crt/aws-crt-cpp/crt/aws-c-common/include/aws/common/private/lookup3.inl b/crt/aws-crt-cpp/crt/aws-c-common/include/aws/common/private/lookup3.inl
+index 0f79f959..ae8122fb 100644
+--- a/crt/aws-crt-cpp/crt/aws-c-common/include/aws/common/private/lookup3.inl
++++ b/crt/aws-crt-cpp/crt/aws-c-common/include/aws/common/private/lookup3.inl
+@@ -533,7 +533,7 @@
+      * "CPROVER check pop". The masking trick does make the hash noticably
+      * faster for short strings (like English words).
+      */
+-#ifndef VALGRIND
++#if !defined(VALGRIND) && !__has_feature(address_sanitizer) && !__has_feature(memory_sanitizer)
+ #ifdef CBMC
+ #    pragma CPROVER check push
+ #    pragma CPROVER check disable "pointer"

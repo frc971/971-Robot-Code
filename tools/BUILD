@@ -56,6 +56,13 @@ config_setting(
 )
 
 config_setting(
+    name = "cpu_armv7",
+    constraint_values = [
+        "@platforms//cpu:armv7",
+    ],
+)
+
+config_setting(
     name = "cpu_arm64",
     constraint_values = ["@platforms//cpu:arm64"],
 )
