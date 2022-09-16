@@ -4,7 +4,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <iostream>
+
+#include "aos/configuration.h"
+#include "aos/events/shm_event_loop.h"
+#include "aos/events/simulated_event_loop.h"
+#include "aos/time/time.h"
 
 DEFINE_string(config, "aos_config.json", "File path of aos configuration");
 
@@ -21,11 +27,34 @@ DEFINE_bool(all, false,
 namespace aos {
 namespace {
 
+namespace chrono = std::chrono;
+
 bool EndsWith(std::string_view str, std::string_view ending) {
   const std::size_t offset = str.size() - ending.size();
   return str.size() >= ending.size() &&
          std::equal(str.begin() + offset, str.end(), ending.begin(),
                     ending.end());
+}
+
+void StreamSeconds(std::ostream &stream,
+                   const aos::monotonic_clock::time_point now) {
+  if (now < monotonic_clock::epoch()) {
+    chrono::seconds seconds =
+        chrono::duration_cast<chrono::seconds>(now.time_since_epoch());
+
+    stream << "-" << -seconds.count() << "." << std::setfill('0')
+           << std::setw(9)
+           << chrono::duration_cast<chrono::nanoseconds>(seconds -
+                                                         now.time_since_epoch())
+                  .count();
+  } else {
+    chrono::seconds seconds =
+        chrono::duration_cast<chrono::seconds>(now.time_since_epoch());
+    stream << seconds.count() << "." << std::setfill('0') << std::setw(9)
+           << chrono::duration_cast<chrono::nanoseconds>(
+                  now.time_since_epoch() - seconds)
+                  .count();
+  }
 }
 
 }  // namespace
@@ -177,6 +206,89 @@ void CliUtilInfo::Autocomplete(
     }
   }
   std::cout << ')';
+}
+
+void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
+                  const aos::Context &context, aos::FastStringBuilder *builder,
+                  PrintOptions options) {
+  // Print the flatbuffer out to stdout, both to remove the
+  // unnecessary cruft from glog and to allow the user to readily
+  // redirect just the logged output independent of any debugging
+  // information on stderr.
+
+  builder->Reset();
+
+  CHECK(flatbuffers::Verify(*channel->schema(),
+                            *channel->schema()->root_table(),
+                            static_cast<const uint8_t *>(context.data),
+                            static_cast<size_t>(context.size)))
+      << ": Corrupted flatbuffer on " << channel->name()->c_str() << " "
+      << channel->type()->c_str();
+
+  aos::FlatbufferToJson(
+      builder, channel->schema(), static_cast<const uint8_t *>(context.data),
+      {options.pretty, static_cast<size_t>(options.max_vector_size),
+       options.pretty_max, options.use_hex});
+
+  if (options.json) {
+    std::cout << "{";
+    if (!node_name.empty()) {
+      std::cout << "\"node\": \"" << node_name << "\", ";
+    }
+    std::cout << "\"monotonic_event_time\": ";
+    StreamSeconds(std::cout, context.monotonic_event_time);
+    std::cout << ", \"realtime_event_time\": \"" << context.realtime_event_time
+              << "\", ";
+
+    if (context.monotonic_remote_time != context.monotonic_event_time) {
+      std::cout << "\"monotonic_remote_time\": ";
+      StreamSeconds(std::cout, context.monotonic_remote_time);
+      std::cout << ", \"realtime_remote_time\": \""
+                << context.realtime_remote_time << "\", ";
+    }
+
+    std::cout << "\"channel\": "
+              << aos::configuration::StrippedChannelToString(channel)
+              << ", \"data\": " << *builder << "}\n";
+  } else {
+    if (!node_name.empty()) {
+      std::cout << node_name << " ";
+    }
+
+    if (options.print_timestamps) {
+      if (context.monotonic_remote_time != context.monotonic_event_time) {
+        std::cout << context.realtime_event_time << " ("
+                  << context.monotonic_event_time << ") sent "
+                  << context.realtime_remote_time << " ("
+                  << context.monotonic_remote_time << ") "
+                  << channel->name()->c_str() << ' ' << channel->type()->c_str()
+                  << ": " << *builder << "\n";
+      } else {
+        std::cout << context.realtime_event_time << " ("
+                  << context.monotonic_event_time << ") "
+                  << channel->name()->c_str() << ' ' << channel->type()->c_str()
+                  << ": " << *builder << "\n";
+      }
+    } else {
+      std::cout << *builder << '\n';
+    }
+  }
+}
+
+void PrintMessage(const aos::Channel *channel, const aos::Context &context,
+                  aos::FastStringBuilder *builder, PrintOptions options) {
+  PrintMessage("", channel, context, builder, options);
+}
+
+void PrintMessage(const std::string_view node_name,
+                  aos::NodeEventLoopFactory *node_factory,
+                  const aos::Channel *channel, const aos::Context &context,
+                  aos::FastStringBuilder *builder, PrintOptions options) {
+  if (!options.json && options.distributed_clock) {
+    std::cout << node_factory->ToDistributedClock(context.monotonic_event_time)
+              << " ";
+  }
+  PrintMessage(node_name, channel, context, builder, options);
 }
 
 }  // namespace aos

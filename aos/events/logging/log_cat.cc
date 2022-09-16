@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "absl/strings/escaping.h"
+#include "aos/aos_cli_utils.h"
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
@@ -33,10 +34,14 @@ DEFINE_bool(distributed_clock, false,
 DEFINE_bool(format_raw, true,
             "If true and --raw is specified, print out raw data, but use the "
             "schema to format the data.");
-DEFINE_int32(max_vector_size, 100,
+DEFINE_int64(max_vector_size, 100,
              "If positive, vectors longer than this will not be printed");
 DEFINE_bool(pretty, false,
             "If true, pretty print the messages on multiple lines");
+DEFINE_bool(
+    pretty_max, false,
+    "If true, expand every field to its own line (expands more than -pretty)");
+DEFINE_bool(print_timestamps, true, "If true, timestamps are printed.");
 DEFINE_bool(print, true,
             "If true, actually print the messages.  If false, discard them, "
             "confirming they can be parsed.");
@@ -58,94 +63,6 @@ DEFINE_bool(use_hex, false, "Are integers in the messages printed in hex notatio
 
 using aos::monotonic_clock;
 namespace chrono = std::chrono;
-
-void StreamSeconds(std::ostream &stream,
-                   const aos::monotonic_clock::time_point now) {
-  if (now < monotonic_clock::epoch()) {
-    chrono::seconds seconds =
-        chrono::duration_cast<chrono::seconds>(now.time_since_epoch());
-
-    stream << "-" << -seconds.count() << "." << std::setfill('0')
-           << std::setw(9)
-           << chrono::duration_cast<chrono::nanoseconds>(seconds -
-                                                         now.time_since_epoch())
-                  .count();
-  } else {
-    chrono::seconds seconds =
-        chrono::duration_cast<chrono::seconds>(now.time_since_epoch());
-    stream << seconds.count() << "." << std::setfill('0') << std::setw(9)
-           << chrono::duration_cast<chrono::nanoseconds>(
-                  now.time_since_epoch() - seconds)
-                  .count();
-  }
-}
-
-// Print the flatbuffer out to stdout, both to remove the unnecessary cruft from
-// glog and to allow the user to readily redirect just the logged output
-// independent of any debugging information on stderr.
-void PrintMessage(const std::string_view node_name,
-                  aos::NodeEventLoopFactory *node_factory,
-                  const aos::Channel *channel, const aos::Context &context,
-                  aos::FastStringBuilder *builder) {
-  builder->Reset();
-  CHECK(flatbuffers::Verify(*channel->schema(),
-                            *channel->schema()->root_table(),
-                            static_cast<const uint8_t *>(context.data),
-                            static_cast<size_t>(context.size)))
-      << ": Corrupted flatbuffer on " << channel->name()->c_str() << " "
-      << channel->type()->c_str();
-
-  aos::FlatbufferToJson(
-      builder, channel->schema(), static_cast<const uint8_t *>(context.data),
-      {.multi_line = FLAGS_pretty,
-       .max_vector_size = static_cast<size_t>(FLAGS_max_vector_size),
-       .max_multi_line = false,
-       .use_hex = FLAGS_use_hex});
-
-  if (FLAGS_json) {
-    std::cout << "{";
-    if (!node_name.empty()) {
-      std::cout << "\"node\": \"" << node_name << "\", ";
-    }
-    std::cout << "\"monotonic_event_time\": ";
-    StreamSeconds(std::cout, context.monotonic_event_time);
-    std::cout << ", \"realtime_event_time\": \"" << context.realtime_event_time
-              << "\", ";
-
-    if (context.monotonic_remote_time != context.monotonic_event_time) {
-      std::cout << "\"monotonic_remote_time\": ";
-      StreamSeconds(std::cout, context.monotonic_remote_time);
-      std::cout << ", \"realtime_remote_time\": \""
-                << context.realtime_remote_time << "\", ";
-    }
-
-    std::cout << "\"channel\": "
-              << aos::configuration::StrippedChannelToString(channel)
-              << ", \"data\": " << *builder << "}" << std::endl;
-  } else {
-    if (FLAGS_distributed_clock) {
-      std::cout << node_factory->ToDistributedClock(
-                       context.monotonic_event_time)
-                << " ";
-    }
-    if (!node_name.empty()) {
-      std::cout << node_name << " ";
-    }
-    if (context.monotonic_remote_time != context.monotonic_event_time) {
-      std::cout << context.realtime_event_time << " ("
-                << context.monotonic_event_time << ") sent "
-                << context.realtime_remote_time << " ("
-                << context.monotonic_remote_time << ") "
-                << channel->name()->c_str() << ' ' << channel->type()->c_str()
-                << ": " << *builder << std::endl;
-    } else {
-      std::cout << context.realtime_event_time << " ("
-                << context.monotonic_event_time << ") "
-                << channel->name()->c_str() << ' ' << channel->type()->c_str()
-                << ": " << *builder << std::endl;
-    }
-  }
-}
 
 // Prints out raw log parts to stdout.
 int PrintRaw(int argc, char **argv) {
@@ -336,7 +253,17 @@ class NodePrinter {
             return;
           }
 
-          PrintMessage(node_name_, node_factory_, channel, context, builder_);
+          PrintMessage(
+              node_name_, node_factory_, channel, context, builder_,
+              {
+                  .pretty = FLAGS_pretty,
+                  .max_vector_size = static_cast<size_t>(FLAGS_max_vector_size),
+                  .pretty_max = FLAGS_pretty_max,
+                  .print_timestamps = FLAGS_print_timestamps,
+                  .json = FLAGS_json,
+                  .distributed_clock = FLAGS_distributed_clock,
+                  .use_hex = FLAGS_use_hex,
+              });
           ++(*message_print_counter_);
           if (FLAGS_count > 0 && *message_print_counter_ >= FLAGS_count) {
             factory_->Exit();

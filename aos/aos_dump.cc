@@ -8,8 +8,9 @@
 #include "aos/json_to_flatbuffer.h"
 #include "gflags/gflags.h"
 
-DEFINE_int32(max_vector_size, 100,
+DEFINE_int64(max_vector_size, 100,
              "If positive, vectors longer than this will not be printed");
+DEFINE_bool(json, false, "If true, print fully valid JSON");
 DEFINE_bool(fetch, false,
             "If true, fetch the current message on the channel first");
 DEFINE_bool(pretty, false,
@@ -27,46 +28,6 @@ DEFINE_int32(timeout, -1,
              "The max time in milliseconds to wait for messages before "
              "exiting.  -1 means forever, 0 means don't wait.");
 DEFINE_bool(use_hex, false, "Are integers in the messages printed in hex notation.");
-
-namespace {
-
-void PrintMessage(const aos::Channel *channel, const aos::Context &context,
-                  aos::FastStringBuilder *builder) {
-  // Print the flatbuffer out to stdout, both to remove the
-  // unnecessary cruft from glog and to allow the user to readily
-  // redirect just the logged output independent of any debugging
-  // information on stderr.
-
-  builder->Reset();
-
-  CHECK(flatbuffers::Verify(*channel->schema(),
-                            *channel->schema()->root_table(),
-                            static_cast<const uint8_t *>(context.data),
-                            static_cast<size_t>(context.size)))
-      << ": Corrupted flatbuffer on " << channel->name()->c_str() << " "
-      << channel->type()->c_str();
-
-  aos::FlatbufferToJson(
-      builder, channel->schema(), static_cast<const uint8_t *>(context.data),
-      {FLAGS_pretty, static_cast<size_t>(FLAGS_max_vector_size),
-       FLAGS_pretty_max, FLAGS_use_hex});
-
-  if (FLAGS_print_timestamps) {
-    if (context.monotonic_remote_time != context.monotonic_event_time) {
-      std::cout << context.realtime_remote_time << " ("
-                << context.monotonic_remote_time << ") delivered "
-                << context.realtime_event_time << " ("
-                << context.monotonic_event_time << "): " << *builder << '\n';
-    } else {
-      std::cout << context.realtime_event_time << " ("
-                << context.monotonic_event_time << "): " << *builder << '\n';
-    }
-  } else {
-    std::cout << *builder << '\n';
-  }
-}
-
-}  // namespace
 
 int main(int argc, char **argv) {
   gflags::SetUsageMessage(
@@ -94,12 +55,23 @@ int main(int argc, char **argv) {
 
   aos::monotonic_clock::time_point next_send_time =
       aos::monotonic_clock::min_time;
+
   for (const aos::Channel *channel : cli_info.found_channels) {
     if (FLAGS_fetch) {
       const std::unique_ptr<aos::RawFetcher> fetcher =
           cli_info.event_loop->MakeRawFetcher(channel);
       if (fetcher->Fetch()) {
-        PrintMessage(channel, fetcher->context(), &str_builder);
+        PrintMessage(
+            channel, fetcher->context(), &str_builder,
+            {
+                .pretty = FLAGS_pretty,
+                .max_vector_size = static_cast<size_t>(FLAGS_max_vector_size),
+                .pretty_max = FLAGS_pretty_max,
+                .print_timestamps = FLAGS_print_timestamps,
+                .json = FLAGS_json,
+                .distributed_clock = false,
+                .use_hex = FLAGS_use_hex,
+            });
         ++message_count;
       }
     }
@@ -120,7 +92,17 @@ int main(int argc, char **argv) {
             if (FLAGS_count > 0 && message_count >= FLAGS_count) {
               return;
             }
-            PrintMessage(channel, context, &str_builder);
+            PrintMessage(channel, context, &str_builder,
+                         {
+                             .pretty = FLAGS_pretty,
+                             .max_vector_size =
+                                 static_cast<size_t>(FLAGS_max_vector_size),
+                             .pretty_max = FLAGS_pretty_max,
+                             .print_timestamps = FLAGS_print_timestamps,
+                             .json = FLAGS_json,
+                             .distributed_clock = false,
+                             .use_hex = FLAGS_use_hex,
+                         });
             ++message_count;
             next_send_time = context.monotonic_event_time +
                              std::chrono::milliseconds(FLAGS_rate_limit);
