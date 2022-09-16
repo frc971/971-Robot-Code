@@ -221,6 +221,9 @@ inline const char *EnumNameAdvancedFeatures(AdvancedFeatures e) {
 
 struct TypeT : public flatbuffers::NativeTable {
   typedef Type TableType;
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.TypeT";
+  }
   reflection::BaseType base_type = reflection::BaseType::None;
   reflection::BaseType element = reflection::BaseType::None;
   int32_t index = -1;
@@ -236,6 +239,9 @@ struct Type FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
     return TypeTypeTable();
   }
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.Type";
+  }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_BASE_TYPE = 4,
     VT_ELEMENT = 6,
@@ -247,22 +253,76 @@ struct Type FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   reflection::BaseType base_type() const {
     return static_cast<reflection::BaseType>(GetField<int8_t>(VT_BASE_TYPE, 0));
   }
+  bool mutate_base_type(reflection::BaseType _base_type = static_cast<reflection::BaseType>(0)) {
+    return SetField<int8_t>(VT_BASE_TYPE, static_cast<int8_t>(_base_type), 0);
+  }
+  void clear_base_type() {
+    ClearField(VT_BASE_TYPE);
+  }
+  bool has_base_type() const {
+    return CheckField(VT_BASE_TYPE);
+  }
   reflection::BaseType element() const {
     return static_cast<reflection::BaseType>(GetField<int8_t>(VT_ELEMENT, 0));
+  }
+  bool mutate_element(reflection::BaseType _element = static_cast<reflection::BaseType>(0)) {
+    return SetField<int8_t>(VT_ELEMENT, static_cast<int8_t>(_element), 0);
+  }
+  void clear_element() {
+    ClearField(VT_ELEMENT);
+  }
+  bool has_element() const {
+    return CheckField(VT_ELEMENT);
   }
   int32_t index() const {
     return GetField<int32_t>(VT_INDEX, -1);
   }
+  bool mutate_index(int32_t _index = -1) {
+    return SetField<int32_t>(VT_INDEX, _index, -1);
+  }
+  void clear_index() {
+    ClearField(VT_INDEX);
+  }
+  bool has_index() const {
+    return CheckField(VT_INDEX);
+  }
   uint16_t fixed_length() const {
     return GetField<uint16_t>(VT_FIXED_LENGTH, 0);
+  }
+  bool mutate_fixed_length(uint16_t _fixed_length = 0) {
+    return SetField<uint16_t>(VT_FIXED_LENGTH, _fixed_length, 0);
+  }
+  void clear_fixed_length() {
+    ClearField(VT_FIXED_LENGTH);
+  }
+  bool has_fixed_length() const {
+    return CheckField(VT_FIXED_LENGTH);
   }
   /// The size (octets) of the `base_type` field.
   uint32_t base_size() const {
     return GetField<uint32_t>(VT_BASE_SIZE, 4);
   }
+  bool mutate_base_size(uint32_t _base_size = 4) {
+    return SetField<uint32_t>(VT_BASE_SIZE, _base_size, 4);
+  }
+  void clear_base_size() {
+    ClearField(VT_BASE_SIZE);
+  }
+  bool has_base_size() const {
+    return CheckField(VT_BASE_SIZE);
+  }
   /// The size (octets) of the `element` field, if present.
   uint32_t element_size() const {
     return GetField<uint32_t>(VT_ELEMENT_SIZE, 0);
+  }
+  bool mutate_element_size(uint32_t _element_size = 0) {
+    return SetField<uint32_t>(VT_ELEMENT_SIZE, _element_size, 0);
+  }
+  void clear_element_size() {
+    ClearField(VT_ELEMENT_SIZE);
+  }
+  bool has_element_size() const {
+    return CheckField(VT_ELEMENT_SIZE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -339,6 +399,9 @@ flatbuffers::Offset<Type> CreateType(flatbuffers::FlatBufferBuilder &_fbb, const
 
 struct KeyValueT : public flatbuffers::NativeTable {
   typedef KeyValue TableType;
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.KeyValueT";
+  }
   std::string key{};
   std::string value{};
 };
@@ -350,12 +413,24 @@ struct KeyValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
     return KeyValueTypeTable();
   }
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.KeyValue";
+  }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_KEY = 4,
     VT_VALUE = 6
   };
   const flatbuffers::String *key() const {
     return GetPointer<const flatbuffers::String *>(VT_KEY);
+  }
+  flatbuffers::String *mutable_key() {
+    return GetPointer<flatbuffers::String *>(VT_KEY);
+  }
+  void clear_key() {
+    ClearField(VT_KEY);
+  }
+  bool has_key() const {
+    return CheckField(VT_KEY);
   }
   bool KeyCompareLessThan(const KeyValue *o) const {
     return *key() < *o->key();
@@ -365,6 +440,15 @@ struct KeyValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   const flatbuffers::String *value() const {
     return GetPointer<const flatbuffers::String *>(VT_VALUE);
+  }
+  flatbuffers::String *mutable_value() {
+    return GetPointer<flatbuffers::String *>(VT_VALUE);
+  }
+  void clear_value() {
+    ClearField(VT_VALUE);
+  }
+  bool has_value() const {
+    return CheckField(VT_VALUE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -432,9 +516,12 @@ flatbuffers::Offset<KeyValue> CreateKeyValue(flatbuffers::FlatBufferBuilder &_fb
 
 struct EnumValT : public flatbuffers::NativeTable {
   typedef EnumVal TableType;
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.EnumValT";
+  }
   std::string name{};
   int64_t value = 0;
-  std::unique_ptr<reflection::TypeT> union_type{};
+  flatbuffers::unique_ptr<reflection::TypeT> union_type{};
   std::vector<std::string> documentation{};
   EnumValT() = default;
   EnumValT(const EnumValT &o);
@@ -449,6 +536,9 @@ struct EnumVal FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
     return EnumValTypeTable();
   }
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.EnumVal";
+  }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_VALUE = 6,
@@ -458,8 +548,26 @@ struct EnumVal FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
+  flatbuffers::String *mutable_name() {
+    return GetPointer<flatbuffers::String *>(VT_NAME);
+  }
+  void clear_name() {
+    ClearField(VT_NAME);
+  }
+  bool has_name() const {
+    return CheckField(VT_NAME);
+  }
   int64_t value() const {
     return GetField<int64_t>(VT_VALUE, 0);
+  }
+  bool mutate_value(int64_t _value = 0) {
+    return SetField<int64_t>(VT_VALUE, _value, 0);
+  }
+  void clear_value() {
+    ClearField(VT_VALUE);
+  }
+  bool has_value() const {
+    return CheckField(VT_VALUE);
   }
   bool KeyCompareLessThan(const EnumVal *o) const {
     return value() < o->value();
@@ -470,8 +578,26 @@ struct EnumVal FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const reflection::Type *union_type() const {
     return GetPointer<const reflection::Type *>(VT_UNION_TYPE);
   }
+  reflection::Type *mutable_union_type() {
+    return GetPointer<reflection::Type *>(VT_UNION_TYPE);
+  }
+  void clear_union_type() {
+    ClearField(VT_UNION_TYPE);
+  }
+  bool has_union_type() const {
+    return CheckField(VT_UNION_TYPE);
+  }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *documentation() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *mutable_documentation() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
+  void clear_documentation() {
+    ClearField(VT_DOCUMENTATION);
+  }
+  bool has_documentation() const {
+    return CheckField(VT_DOCUMENTATION);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -557,11 +683,14 @@ flatbuffers::Offset<EnumVal> CreateEnumVal(flatbuffers::FlatBufferBuilder &_fbb,
 
 struct EnumT : public flatbuffers::NativeTable {
   typedef Enum TableType;
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.EnumT";
+  }
   std::string name{};
-  std::vector<std::unique_ptr<reflection::EnumValT>> values{};
+  std::vector<flatbuffers::unique_ptr<reflection::EnumValT>> values{};
   bool is_union = false;
-  std::unique_ptr<reflection::TypeT> underlying_type{};
-  std::vector<std::unique_ptr<reflection::KeyValueT>> attributes{};
+  flatbuffers::unique_ptr<reflection::TypeT> underlying_type{};
+  std::vector<flatbuffers::unique_ptr<reflection::KeyValueT>> attributes{};
   std::vector<std::string> documentation{};
   std::string declaration_file{};
   EnumT() = default;
@@ -577,6 +706,9 @@ struct Enum FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
     return EnumTypeTable();
   }
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.Enum";
+  }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_VALUES = 6,
@@ -589,6 +721,15 @@ struct Enum FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
+  flatbuffers::String *mutable_name() {
+    return GetPointer<flatbuffers::String *>(VT_NAME);
+  }
+  void clear_name() {
+    ClearField(VT_NAME);
+  }
+  bool has_name() const {
+    return CheckField(VT_NAME);
+  }
   bool KeyCompareLessThan(const Enum *o) const {
     return *name() < *o->name();
   }
@@ -598,21 +739,75 @@ struct Enum FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<reflection::EnumVal>> *values() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::EnumVal>> *>(VT_VALUES);
   }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::EnumVal>> *mutable_values() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::EnumVal>> *>(VT_VALUES);
+  }
+  void clear_values() {
+    ClearField(VT_VALUES);
+  }
+  bool has_values() const {
+    return CheckField(VT_VALUES);
+  }
   bool is_union() const {
     return GetField<uint8_t>(VT_IS_UNION, 0) != 0;
+  }
+  bool mutate_is_union(bool _is_union = 0) {
+    return SetField<uint8_t>(VT_IS_UNION, static_cast<uint8_t>(_is_union), 0);
+  }
+  void clear_is_union() {
+    ClearField(VT_IS_UNION);
+  }
+  bool has_is_union() const {
+    return CheckField(VT_IS_UNION);
   }
   const reflection::Type *underlying_type() const {
     return GetPointer<const reflection::Type *>(VT_UNDERLYING_TYPE);
   }
+  reflection::Type *mutable_underlying_type() {
+    return GetPointer<reflection::Type *>(VT_UNDERLYING_TYPE);
+  }
+  void clear_underlying_type() {
+    ClearField(VT_UNDERLYING_TYPE);
+  }
+  bool has_underlying_type() const {
+    return CheckField(VT_UNDERLYING_TYPE);
+  }
   const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *attributes() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *mutable_attributes() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
+  }
+  void clear_attributes() {
+    ClearField(VT_ATTRIBUTES);
+  }
+  bool has_attributes() const {
+    return CheckField(VT_ATTRIBUTES);
   }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *documentation() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
   }
+  flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *mutable_documentation() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
+  void clear_documentation() {
+    ClearField(VT_DOCUMENTATION);
+  }
+  bool has_documentation() const {
+    return CheckField(VT_DOCUMENTATION);
+  }
   /// File that this Enum is declared in.
   const flatbuffers::String *declaration_file() const {
     return GetPointer<const flatbuffers::String *>(VT_DECLARATION_FILE);
+  }
+  flatbuffers::String *mutable_declaration_file() {
+    return GetPointer<flatbuffers::String *>(VT_DECLARATION_FILE);
+  }
+  void clear_declaration_file() {
+    ClearField(VT_DECLARATION_FILE);
+  }
+  bool has_declaration_file() const {
+    return CheckField(VT_DECLARATION_FILE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -732,8 +927,11 @@ flatbuffers::Offset<Enum> CreateEnum(flatbuffers::FlatBufferBuilder &_fbb, const
 
 struct FieldT : public flatbuffers::NativeTable {
   typedef Field TableType;
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.FieldT";
+  }
   std::string name{};
-  std::unique_ptr<reflection::TypeT> type{};
+  flatbuffers::unique_ptr<reflection::TypeT> type{};
   uint16_t id = 0;
   uint16_t offset = 0;
   int64_t default_integer = 0;
@@ -741,7 +939,7 @@ struct FieldT : public flatbuffers::NativeTable {
   bool deprecated = false;
   bool required = false;
   bool key = false;
-  std::vector<std::unique_ptr<reflection::KeyValueT>> attributes{};
+  std::vector<flatbuffers::unique_ptr<reflection::KeyValueT>> attributes{};
   std::vector<std::string> documentation{};
   bool optional = false;
   uint16_t padding = 0;
@@ -757,6 +955,9 @@ struct Field FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   struct Traits;
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
     return FieldTypeTable();
+  }
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.Field";
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
@@ -776,6 +977,15 @@ struct Field FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
+  flatbuffers::String *mutable_name() {
+    return GetPointer<flatbuffers::String *>(VT_NAME);
+  }
+  void clear_name() {
+    ClearField(VT_NAME);
+  }
+  bool has_name() const {
+    return CheckField(VT_NAME);
+  }
   bool KeyCompareLessThan(const Field *o) const {
     return *name() < *o->name();
   }
@@ -785,39 +995,147 @@ struct Field FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const reflection::Type *type() const {
     return GetPointer<const reflection::Type *>(VT_TYPE);
   }
+  reflection::Type *mutable_type() {
+    return GetPointer<reflection::Type *>(VT_TYPE);
+  }
+  void clear_type() {
+    ClearField(VT_TYPE);
+  }
+  bool has_type() const {
+    return CheckField(VT_TYPE);
+  }
   uint16_t id() const {
     return GetField<uint16_t>(VT_ID, 0);
+  }
+  bool mutate_id(uint16_t _id = 0) {
+    return SetField<uint16_t>(VT_ID, _id, 0);
+  }
+  void clear_id() {
+    ClearField(VT_ID);
+  }
+  bool has_id() const {
+    return CheckField(VT_ID);
   }
   uint16_t offset() const {
     return GetField<uint16_t>(VT_OFFSET, 0);
   }
+  bool mutate_offset(uint16_t _offset = 0) {
+    return SetField<uint16_t>(VT_OFFSET, _offset, 0);
+  }
+  void clear_offset() {
+    ClearField(VT_OFFSET);
+  }
+  bool has_offset() const {
+    return CheckField(VT_OFFSET);
+  }
   int64_t default_integer() const {
     return GetField<int64_t>(VT_DEFAULT_INTEGER, 0);
+  }
+  bool mutate_default_integer(int64_t _default_integer = 0) {
+    return SetField<int64_t>(VT_DEFAULT_INTEGER, _default_integer, 0);
+  }
+  void clear_default_integer() {
+    ClearField(VT_DEFAULT_INTEGER);
+  }
+  bool has_default_integer() const {
+    return CheckField(VT_DEFAULT_INTEGER);
   }
   double default_real() const {
     return GetField<double>(VT_DEFAULT_REAL, 0.0);
   }
+  bool mutate_default_real(double _default_real = 0.0) {
+    return SetField<double>(VT_DEFAULT_REAL, _default_real, 0.0);
+  }
+  void clear_default_real() {
+    ClearField(VT_DEFAULT_REAL);
+  }
+  bool has_default_real() const {
+    return CheckField(VT_DEFAULT_REAL);
+  }
   bool deprecated() const {
     return GetField<uint8_t>(VT_DEPRECATED, 0) != 0;
+  }
+  bool mutate_deprecated(bool _deprecated = 0) {
+    return SetField<uint8_t>(VT_DEPRECATED, static_cast<uint8_t>(_deprecated), 0);
+  }
+  void clear_deprecated() {
+    ClearField(VT_DEPRECATED);
+  }
+  bool has_deprecated() const {
+    return CheckField(VT_DEPRECATED);
   }
   bool required() const {
     return GetField<uint8_t>(VT_REQUIRED, 0) != 0;
   }
+  bool mutate_required(bool _required = 0) {
+    return SetField<uint8_t>(VT_REQUIRED, static_cast<uint8_t>(_required), 0);
+  }
+  void clear_required() {
+    ClearField(VT_REQUIRED);
+  }
+  bool has_required() const {
+    return CheckField(VT_REQUIRED);
+  }
   bool key() const {
     return GetField<uint8_t>(VT_KEY, 0) != 0;
+  }
+  bool mutate_key(bool _key = 0) {
+    return SetField<uint8_t>(VT_KEY, static_cast<uint8_t>(_key), 0);
+  }
+  void clear_key() {
+    ClearField(VT_KEY);
+  }
+  bool has_key() const {
+    return CheckField(VT_KEY);
   }
   const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *attributes() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
   }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *mutable_attributes() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
+  }
+  void clear_attributes() {
+    ClearField(VT_ATTRIBUTES);
+  }
+  bool has_attributes() const {
+    return CheckField(VT_ATTRIBUTES);
+  }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *documentation() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *mutable_documentation() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
+  void clear_documentation() {
+    ClearField(VT_DOCUMENTATION);
+  }
+  bool has_documentation() const {
+    return CheckField(VT_DOCUMENTATION);
   }
   bool optional() const {
     return GetField<uint8_t>(VT_OPTIONAL, 0) != 0;
   }
+  bool mutate_optional(bool _optional = 0) {
+    return SetField<uint8_t>(VT_OPTIONAL, static_cast<uint8_t>(_optional), 0);
+  }
+  void clear_optional() {
+    ClearField(VT_OPTIONAL);
+  }
+  bool has_optional() const {
+    return CheckField(VT_OPTIONAL);
+  }
   /// Number of padding octets to always add after this field. Structs only.
   uint16_t padding() const {
     return GetField<uint16_t>(VT_PADDING, 0);
+  }
+  bool mutate_padding(uint16_t _padding = 0) {
+    return SetField<uint16_t>(VT_PADDING, _padding, 0);
+  }
+  void clear_padding() {
+    ClearField(VT_PADDING);
+  }
+  bool has_padding() const {
+    return CheckField(VT_PADDING);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -979,12 +1297,15 @@ flatbuffers::Offset<Field> CreateField(flatbuffers::FlatBufferBuilder &_fbb, con
 
 struct ObjectT : public flatbuffers::NativeTable {
   typedef Object TableType;
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.ObjectT";
+  }
   std::string name{};
-  std::vector<std::unique_ptr<reflection::FieldT>> fields{};
+  std::vector<flatbuffers::unique_ptr<reflection::FieldT>> fields{};
   bool is_struct = false;
   int32_t minalign = 0;
   int32_t bytesize = 0;
-  std::vector<std::unique_ptr<reflection::KeyValueT>> attributes{};
+  std::vector<flatbuffers::unique_ptr<reflection::KeyValueT>> attributes{};
   std::vector<std::string> documentation{};
   std::string declaration_file{};
   ObjectT() = default;
@@ -1000,6 +1321,9 @@ struct Object FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
     return ObjectTypeTable();
   }
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.Object";
+  }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_FIELDS = 6,
@@ -1013,6 +1337,15 @@ struct Object FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
+  flatbuffers::String *mutable_name() {
+    return GetPointer<flatbuffers::String *>(VT_NAME);
+  }
+  void clear_name() {
+    ClearField(VT_NAME);
+  }
+  bool has_name() const {
+    return CheckField(VT_NAME);
+  }
   bool KeyCompareLessThan(const Object *o) const {
     return *name() < *o->name();
   }
@@ -1022,24 +1355,87 @@ struct Object FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<reflection::Field>> *fields() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::Field>> *>(VT_FIELDS);
   }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::Field>> *mutable_fields() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::Field>> *>(VT_FIELDS);
+  }
+  void clear_fields() {
+    ClearField(VT_FIELDS);
+  }
+  bool has_fields() const {
+    return CheckField(VT_FIELDS);
+  }
   bool is_struct() const {
     return GetField<uint8_t>(VT_IS_STRUCT, 0) != 0;
+  }
+  bool mutate_is_struct(bool _is_struct = 0) {
+    return SetField<uint8_t>(VT_IS_STRUCT, static_cast<uint8_t>(_is_struct), 0);
+  }
+  void clear_is_struct() {
+    ClearField(VT_IS_STRUCT);
+  }
+  bool has_is_struct() const {
+    return CheckField(VT_IS_STRUCT);
   }
   int32_t minalign() const {
     return GetField<int32_t>(VT_MINALIGN, 0);
   }
+  bool mutate_minalign(int32_t _minalign = 0) {
+    return SetField<int32_t>(VT_MINALIGN, _minalign, 0);
+  }
+  void clear_minalign() {
+    ClearField(VT_MINALIGN);
+  }
+  bool has_minalign() const {
+    return CheckField(VT_MINALIGN);
+  }
   int32_t bytesize() const {
     return GetField<int32_t>(VT_BYTESIZE, 0);
+  }
+  bool mutate_bytesize(int32_t _bytesize = 0) {
+    return SetField<int32_t>(VT_BYTESIZE, _bytesize, 0);
+  }
+  void clear_bytesize() {
+    ClearField(VT_BYTESIZE);
+  }
+  bool has_bytesize() const {
+    return CheckField(VT_BYTESIZE);
   }
   const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *attributes() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
   }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *mutable_attributes() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
+  }
+  void clear_attributes() {
+    ClearField(VT_ATTRIBUTES);
+  }
+  bool has_attributes() const {
+    return CheckField(VT_ATTRIBUTES);
+  }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *documentation() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *mutable_documentation() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
+  void clear_documentation() {
+    ClearField(VT_DOCUMENTATION);
+  }
+  bool has_documentation() const {
+    return CheckField(VT_DOCUMENTATION);
   }
   /// File that this Object is declared in.
   const flatbuffers::String *declaration_file() const {
     return GetPointer<const flatbuffers::String *>(VT_DECLARATION_FILE);
+  }
+  flatbuffers::String *mutable_declaration_file() {
+    return GetPointer<flatbuffers::String *>(VT_DECLARATION_FILE);
+  }
+  void clear_declaration_file() {
+    ClearField(VT_DECLARATION_FILE);
+  }
+  bool has_declaration_file() const {
+    return CheckField(VT_DECLARATION_FILE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1165,10 +1561,13 @@ flatbuffers::Offset<Object> CreateObject(flatbuffers::FlatBufferBuilder &_fbb, c
 
 struct RPCCallT : public flatbuffers::NativeTable {
   typedef RPCCall TableType;
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.RPCCallT";
+  }
   std::string name{};
-  std::unique_ptr<reflection::ObjectT> request{};
-  std::unique_ptr<reflection::ObjectT> response{};
-  std::vector<std::unique_ptr<reflection::KeyValueT>> attributes{};
+  flatbuffers::unique_ptr<reflection::ObjectT> request{};
+  flatbuffers::unique_ptr<reflection::ObjectT> response{};
+  std::vector<flatbuffers::unique_ptr<reflection::KeyValueT>> attributes{};
   std::vector<std::string> documentation{};
   RPCCallT() = default;
   RPCCallT(const RPCCallT &o);
@@ -1183,6 +1582,9 @@ struct RPCCall FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
     return RPCCallTypeTable();
   }
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.RPCCall";
+  }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_REQUEST = 6,
@@ -1193,6 +1595,15 @@ struct RPCCall FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
+  flatbuffers::String *mutable_name() {
+    return GetPointer<flatbuffers::String *>(VT_NAME);
+  }
+  void clear_name() {
+    ClearField(VT_NAME);
+  }
+  bool has_name() const {
+    return CheckField(VT_NAME);
+  }
   bool KeyCompareLessThan(const RPCCall *o) const {
     return *name() < *o->name();
   }
@@ -1202,14 +1613,50 @@ struct RPCCall FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const reflection::Object *request() const {
     return GetPointer<const reflection::Object *>(VT_REQUEST);
   }
+  reflection::Object *mutable_request() {
+    return GetPointer<reflection::Object *>(VT_REQUEST);
+  }
+  void clear_request() {
+    ClearField(VT_REQUEST);
+  }
+  bool has_request() const {
+    return CheckField(VT_REQUEST);
+  }
   const reflection::Object *response() const {
     return GetPointer<const reflection::Object *>(VT_RESPONSE);
+  }
+  reflection::Object *mutable_response() {
+    return GetPointer<reflection::Object *>(VT_RESPONSE);
+  }
+  void clear_response() {
+    ClearField(VT_RESPONSE);
+  }
+  bool has_response() const {
+    return CheckField(VT_RESPONSE);
   }
   const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *attributes() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
   }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *mutable_attributes() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
+  }
+  void clear_attributes() {
+    ClearField(VT_ATTRIBUTES);
+  }
+  bool has_attributes() const {
+    return CheckField(VT_ATTRIBUTES);
+  }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *documentation() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *mutable_documentation() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
+  void clear_documentation() {
+    ClearField(VT_DOCUMENTATION);
+  }
+  bool has_documentation() const {
+    return CheckField(VT_DOCUMENTATION);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1309,9 +1756,12 @@ flatbuffers::Offset<RPCCall> CreateRPCCall(flatbuffers::FlatBufferBuilder &_fbb,
 
 struct ServiceT : public flatbuffers::NativeTable {
   typedef Service TableType;
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.ServiceT";
+  }
   std::string name{};
-  std::vector<std::unique_ptr<reflection::RPCCallT>> calls{};
-  std::vector<std::unique_ptr<reflection::KeyValueT>> attributes{};
+  std::vector<flatbuffers::unique_ptr<reflection::RPCCallT>> calls{};
+  std::vector<flatbuffers::unique_ptr<reflection::KeyValueT>> attributes{};
   std::vector<std::string> documentation{};
   std::string declaration_file{};
   ServiceT() = default;
@@ -1327,6 +1777,9 @@ struct Service FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
     return ServiceTypeTable();
   }
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.Service";
+  }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_CALLS = 6,
@@ -1337,6 +1790,15 @@ struct Service FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
+  flatbuffers::String *mutable_name() {
+    return GetPointer<flatbuffers::String *>(VT_NAME);
+  }
+  void clear_name() {
+    ClearField(VT_NAME);
+  }
+  bool has_name() const {
+    return CheckField(VT_NAME);
+  }
   bool KeyCompareLessThan(const Service *o) const {
     return *name() < *o->name();
   }
@@ -1346,15 +1808,51 @@ struct Service FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<reflection::RPCCall>> *calls() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::RPCCall>> *>(VT_CALLS);
   }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::RPCCall>> *mutable_calls() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::RPCCall>> *>(VT_CALLS);
+  }
+  void clear_calls() {
+    ClearField(VT_CALLS);
+  }
+  bool has_calls() const {
+    return CheckField(VT_CALLS);
+  }
   const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *attributes() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *mutable_attributes() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
+  }
+  void clear_attributes() {
+    ClearField(VT_ATTRIBUTES);
+  }
+  bool has_attributes() const {
+    return CheckField(VT_ATTRIBUTES);
   }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *documentation() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
   }
+  flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *mutable_documentation() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_DOCUMENTATION);
+  }
+  void clear_documentation() {
+    ClearField(VT_DOCUMENTATION);
+  }
+  bool has_documentation() const {
+    return CheckField(VT_DOCUMENTATION);
+  }
   /// File that this Service is declared in.
   const flatbuffers::String *declaration_file() const {
     return GetPointer<const flatbuffers::String *>(VT_DECLARATION_FILE);
+  }
+  flatbuffers::String *mutable_declaration_file() {
+    return GetPointer<flatbuffers::String *>(VT_DECLARATION_FILE);
+  }
+  void clear_declaration_file() {
+    ClearField(VT_DECLARATION_FILE);
+  }
+  bool has_declaration_file() const {
+    return CheckField(VT_DECLARATION_FILE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1455,6 +1953,9 @@ flatbuffers::Offset<Service> CreateService(flatbuffers::FlatBufferBuilder &_fbb,
 
 struct SchemaFileT : public flatbuffers::NativeTable {
   typedef SchemaFile TableType;
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.SchemaFileT";
+  }
   std::string filename{};
   std::vector<std::string> included_filenames{};
 };
@@ -1469,6 +1970,9 @@ struct SchemaFile FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
     return SchemaFileTypeTable();
   }
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.SchemaFile";
+  }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_FILENAME = 4,
     VT_INCLUDED_FILENAMES = 6
@@ -1476,6 +1980,15 @@ struct SchemaFile FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   /// Filename, relative to project root.
   const flatbuffers::String *filename() const {
     return GetPointer<const flatbuffers::String *>(VT_FILENAME);
+  }
+  flatbuffers::String *mutable_filename() {
+    return GetPointer<flatbuffers::String *>(VT_FILENAME);
+  }
+  void clear_filename() {
+    ClearField(VT_FILENAME);
+  }
+  bool has_filename() const {
+    return CheckField(VT_FILENAME);
   }
   bool KeyCompareLessThan(const SchemaFile *o) const {
     return *filename() < *o->filename();
@@ -1486,6 +1999,15 @@ struct SchemaFile FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   /// Names of included files, relative to project root.
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *included_filenames() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_INCLUDED_FILENAMES);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *mutable_included_filenames() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_INCLUDED_FILENAMES);
+  }
+  void clear_included_filenames() {
+    ClearField(VT_INCLUDED_FILENAMES);
+  }
+  bool has_included_filenames() const {
+    return CheckField(VT_INCLUDED_FILENAMES);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1554,14 +2076,17 @@ flatbuffers::Offset<SchemaFile> CreateSchemaFile(flatbuffers::FlatBufferBuilder 
 
 struct SchemaT : public flatbuffers::NativeTable {
   typedef Schema TableType;
-  std::vector<std::unique_ptr<reflection::ObjectT>> objects{};
-  std::vector<std::unique_ptr<reflection::EnumT>> enums{};
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.SchemaT";
+  }
+  std::vector<flatbuffers::unique_ptr<reflection::ObjectT>> objects{};
+  std::vector<flatbuffers::unique_ptr<reflection::EnumT>> enums{};
   std::string file_ident{};
   std::string file_ext{};
-  std::unique_ptr<reflection::ObjectT> root_table{};
-  std::vector<std::unique_ptr<reflection::ServiceT>> services{};
+  flatbuffers::unique_ptr<reflection::ObjectT> root_table{};
+  std::vector<flatbuffers::unique_ptr<reflection::ServiceT>> services{};
   reflection::AdvancedFeatures advanced_features = static_cast<reflection::AdvancedFeatures>(0);
-  std::vector<std::unique_ptr<reflection::SchemaFileT>> fbs_files{};
+  std::vector<flatbuffers::unique_ptr<reflection::SchemaFileT>> fbs_files{};
   SchemaT() = default;
   SchemaT(const SchemaT &o);
   SchemaT(SchemaT&&) FLATBUFFERS_NOEXCEPT = default;
@@ -1574,6 +2099,9 @@ struct Schema FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   struct Traits;
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
     return SchemaTypeTable();
+  }
+  static FLATBUFFERS_CONSTEXPR_CPP11 const char *GetFullyQualifiedName() {
+    return "reflection.Schema";
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_OBJECTS = 4,
@@ -1588,28 +2116,100 @@ struct Schema FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *objects() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *>(VT_OBJECTS);
   }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *mutable_objects() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::Object>> *>(VT_OBJECTS);
+  }
+  void clear_objects() {
+    ClearField(VT_OBJECTS);
+  }
+  bool has_objects() const {
+    return CheckField(VT_OBJECTS);
+  }
   const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *>(VT_ENUMS);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *mutable_enums() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *>(VT_ENUMS);
+  }
+  void clear_enums() {
+    ClearField(VT_ENUMS);
+  }
+  bool has_enums() const {
+    return CheckField(VT_ENUMS);
   }
   const flatbuffers::String *file_ident() const {
     return GetPointer<const flatbuffers::String *>(VT_FILE_IDENT);
   }
+  flatbuffers::String *mutable_file_ident() {
+    return GetPointer<flatbuffers::String *>(VT_FILE_IDENT);
+  }
+  void clear_file_ident() {
+    ClearField(VT_FILE_IDENT);
+  }
+  bool has_file_ident() const {
+    return CheckField(VT_FILE_IDENT);
+  }
   const flatbuffers::String *file_ext() const {
     return GetPointer<const flatbuffers::String *>(VT_FILE_EXT);
+  }
+  flatbuffers::String *mutable_file_ext() {
+    return GetPointer<flatbuffers::String *>(VT_FILE_EXT);
+  }
+  void clear_file_ext() {
+    ClearField(VT_FILE_EXT);
+  }
+  bool has_file_ext() const {
+    return CheckField(VT_FILE_EXT);
   }
   const reflection::Object *root_table() const {
     return GetPointer<const reflection::Object *>(VT_ROOT_TABLE);
   }
+  reflection::Object *mutable_root_table() {
+    return GetPointer<reflection::Object *>(VT_ROOT_TABLE);
+  }
+  void clear_root_table() {
+    ClearField(VT_ROOT_TABLE);
+  }
+  bool has_root_table() const {
+    return CheckField(VT_ROOT_TABLE);
+  }
   const flatbuffers::Vector<flatbuffers::Offset<reflection::Service>> *services() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::Service>> *>(VT_SERVICES);
   }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::Service>> *mutable_services() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::Service>> *>(VT_SERVICES);
+  }
+  void clear_services() {
+    ClearField(VT_SERVICES);
+  }
+  bool has_services() const {
+    return CheckField(VT_SERVICES);
+  }
   reflection::AdvancedFeatures advanced_features() const {
     return static_cast<reflection::AdvancedFeatures>(GetField<uint64_t>(VT_ADVANCED_FEATURES, 0));
+  }
+  bool mutate_advanced_features(reflection::AdvancedFeatures _advanced_features = static_cast<reflection::AdvancedFeatures>(0)) {
+    return SetField<uint64_t>(VT_ADVANCED_FEATURES, static_cast<uint64_t>(_advanced_features), 0);
+  }
+  void clear_advanced_features() {
+    ClearField(VT_ADVANCED_FEATURES);
+  }
+  bool has_advanced_features() const {
+    return CheckField(VT_ADVANCED_FEATURES);
   }
   /// All the files used in this compilation. Files are relative to where
   /// flatc was invoked.
   const flatbuffers::Vector<flatbuffers::Offset<reflection::SchemaFile>> *fbs_files() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::SchemaFile>> *>(VT_FBS_FILES);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::SchemaFile>> *mutable_fbs_files() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::SchemaFile>> *>(VT_FBS_FILES);
+  }
+  void clear_fbs_files() {
+    ClearField(VT_FBS_FILES);
+  }
+  bool has_fbs_files() const {
+    return CheckField(VT_FBS_FILES);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1828,7 +2428,7 @@ inline flatbuffers::Offset<KeyValue> CreateKeyValue(flatbuffers::FlatBufferBuild
   (void)_o;
   struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const KeyValueT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _key = _fbb.CreateString(_o->key);
-  auto _value = _o->value.empty() ? 0 : _fbb.CreateString(_o->value);
+  auto _value = _o->value.empty() ? _fbb.CreateSharedString("") : _fbb.CreateString(_o->value);
   return reflection::CreateKeyValue(
       _fbb,
       _key,
@@ -1875,8 +2475,8 @@ inline void EnumVal::UnPackTo(EnumValT *_o, const flatbuffers::resolver_function
   (void)_resolver;
   { auto _e = name(); if (_e) _o->name = _e->str(); }
   { auto _e = value(); _o->value = _e; }
-  { auto _e = union_type(); if (_e) { if(_o->union_type) { _e->UnPackTo(_o->union_type.get(), _resolver); } else { _o->union_type = std::unique_ptr<reflection::TypeT>(_e->UnPack(_resolver)); } } }
-  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } }
+  { auto _e = union_type(); if (_e) { if(_o->union_type) { _e->UnPackTo(_o->union_type.get(), _resolver); } else { _o->union_type = flatbuffers::unique_ptr<reflection::TypeT>(_e->UnPack(_resolver)); } } else if (_o->union_type) { _o->union_type.reset(); } }
+  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } else { _o->documentation.resize(0); } }
 }
 
 inline flatbuffers::Offset<EnumVal> EnumVal::Pack(flatbuffers::FlatBufferBuilder &_fbb, const EnumValT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -1890,7 +2490,7 @@ inline flatbuffers::Offset<EnumVal> CreateEnumVal(flatbuffers::FlatBufferBuilder
   auto _name = _fbb.CreateString(_o->name);
   auto _value = _o->value;
   auto _union_type = _o->union_type ? CreateType(_fbb, _o->union_type.get(), _rehasher) : 0;
-  auto _documentation = _o->documentation.size() ? _fbb.CreateVectorOfStrings(_o->documentation) : 0;
+  auto _documentation = _fbb.CreateVectorOfStrings(_o->documentation);
   return reflection::CreateEnumVal(
       _fbb,
       _name,
@@ -1903,10 +2503,10 @@ inline flatbuffers::Offset<EnumVal> CreateEnumVal(flatbuffers::FlatBufferBuilder
 inline bool operator==(const EnumT &lhs, const EnumT &rhs) {
   return
       (lhs.name == rhs.name) &&
-      (lhs.values == rhs.values) &&
+      (lhs.values.size() == rhs.values.size() && std::equal(lhs.values.cbegin(), lhs.values.cend(), rhs.values.cbegin(), [](flatbuffers::unique_ptr<reflection::EnumValT> const &a, flatbuffers::unique_ptr<reflection::EnumValT> const &b) { return (a == b) || (a && b && *a == *b); })) &&
       (lhs.is_union == rhs.is_union) &&
       ((lhs.underlying_type == rhs.underlying_type) || (lhs.underlying_type && rhs.underlying_type && *lhs.underlying_type == *rhs.underlying_type)) &&
-      (lhs.attributes == rhs.attributes) &&
+      (lhs.attributes.size() == rhs.attributes.size() && std::equal(lhs.attributes.cbegin(), lhs.attributes.cend(), rhs.attributes.cbegin(), [](flatbuffers::unique_ptr<reflection::KeyValueT> const &a, flatbuffers::unique_ptr<reflection::KeyValueT> const &b) { return (a == b) || (a && b && *a == *b); })) &&
       (lhs.documentation == rhs.documentation) &&
       (lhs.declaration_file == rhs.declaration_file);
 }
@@ -1923,9 +2523,9 @@ inline EnumT::EnumT(const EnumT &o)
         documentation(o.documentation),
         declaration_file(o.declaration_file) {
   values.reserve(o.values.size());
-  for (const auto &v : o.values) { values.emplace_back((v) ? new reflection::EnumValT(*v) : nullptr); }
+  for (const auto &values_ : o.values) { values.emplace_back((values_) ? new reflection::EnumValT(*values_) : nullptr); }
   attributes.reserve(o.attributes.size());
-  for (const auto &v : o.attributes) { attributes.emplace_back((v) ? new reflection::KeyValueT(*v) : nullptr); }
+  for (const auto &attributes_ : o.attributes) { attributes.emplace_back((attributes_) ? new reflection::KeyValueT(*attributes_) : nullptr); }
 }
 
 inline EnumT &EnumT::operator=(EnumT o) FLATBUFFERS_NOEXCEPT {
@@ -1949,11 +2549,11 @@ inline void Enum::UnPackTo(EnumT *_o, const flatbuffers::resolver_function_t *_r
   (void)_o;
   (void)_resolver;
   { auto _e = name(); if (_e) _o->name = _e->str(); }
-  { auto _e = values(); if (_e) { _o->values.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->values[_i]) { _e->Get(_i)->UnPackTo(_o->values[_i].get(), _resolver); } else { _o->values[_i] = std::unique_ptr<reflection::EnumValT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
+  { auto _e = values(); if (_e) { _o->values.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->values[_i]) { _e->Get(_i)->UnPackTo(_o->values[_i].get(), _resolver); } else { _o->values[_i] = flatbuffers::unique_ptr<reflection::EnumValT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->values.resize(0); } }
   { auto _e = is_union(); _o->is_union = _e; }
-  { auto _e = underlying_type(); if (_e) { if(_o->underlying_type) { _e->UnPackTo(_o->underlying_type.get(), _resolver); } else { _o->underlying_type = std::unique_ptr<reflection::TypeT>(_e->UnPack(_resolver)); } } }
-  { auto _e = attributes(); if (_e) { _o->attributes.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->attributes[_i]) { _e->Get(_i)->UnPackTo(_o->attributes[_i].get(), _resolver); } else { _o->attributes[_i] = std::unique_ptr<reflection::KeyValueT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
-  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } }
+  { auto _e = underlying_type(); if (_e) { if(_o->underlying_type) { _e->UnPackTo(_o->underlying_type.get(), _resolver); } else { _o->underlying_type = flatbuffers::unique_ptr<reflection::TypeT>(_e->UnPack(_resolver)); } } else if (_o->underlying_type) { _o->underlying_type.reset(); } }
+  { auto _e = attributes(); if (_e) { _o->attributes.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->attributes[_i]) { _e->Get(_i)->UnPackTo(_o->attributes[_i].get(), _resolver); } else { _o->attributes[_i] = flatbuffers::unique_ptr<reflection::KeyValueT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->attributes.resize(0); } }
+  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } else { _o->documentation.resize(0); } }
   { auto _e = declaration_file(); if (_e) _o->declaration_file = _e->str(); }
 }
 
@@ -1969,9 +2569,9 @@ inline flatbuffers::Offset<Enum> CreateEnum(flatbuffers::FlatBufferBuilder &_fbb
   auto _values = _fbb.CreateVector<flatbuffers::Offset<reflection::EnumVal>> (_o->values.size(), [](size_t i, _VectorArgs *__va) { return CreateEnumVal(*__va->__fbb, __va->__o->values[i].get(), __va->__rehasher); }, &_va );
   auto _is_union = _o->is_union;
   auto _underlying_type = _o->underlying_type ? CreateType(_fbb, _o->underlying_type.get(), _rehasher) : 0;
-  auto _attributes = _o->attributes.size() ? _fbb.CreateVector<flatbuffers::Offset<reflection::KeyValue>> (_o->attributes.size(), [](size_t i, _VectorArgs *__va) { return CreateKeyValue(*__va->__fbb, __va->__o->attributes[i].get(), __va->__rehasher); }, &_va ) : 0;
-  auto _documentation = _o->documentation.size() ? _fbb.CreateVectorOfStrings(_o->documentation) : 0;
-  auto _declaration_file = _o->declaration_file.empty() ? 0 : _fbb.CreateString(_o->declaration_file);
+  auto _attributes = _fbb.CreateVector<flatbuffers::Offset<reflection::KeyValue>> (_o->attributes.size(), [](size_t i, _VectorArgs *__va) { return CreateKeyValue(*__va->__fbb, __va->__o->attributes[i].get(), __va->__rehasher); }, &_va );
+  auto _documentation = _fbb.CreateVectorOfStrings(_o->documentation);
+  auto _declaration_file = _o->declaration_file.empty() ? _fbb.CreateSharedString("") : _fbb.CreateString(_o->declaration_file);
   return reflection::CreateEnum(
       _fbb,
       _name,
@@ -1995,7 +2595,7 @@ inline bool operator==(const FieldT &lhs, const FieldT &rhs) {
       (lhs.deprecated == rhs.deprecated) &&
       (lhs.required == rhs.required) &&
       (lhs.key == rhs.key) &&
-      (lhs.attributes == rhs.attributes) &&
+      (lhs.attributes.size() == rhs.attributes.size() && std::equal(lhs.attributes.cbegin(), lhs.attributes.cend(), rhs.attributes.cbegin(), [](flatbuffers::unique_ptr<reflection::KeyValueT> const &a, flatbuffers::unique_ptr<reflection::KeyValueT> const &b) { return (a == b) || (a && b && *a == *b); })) &&
       (lhs.documentation == rhs.documentation) &&
       (lhs.optional == rhs.optional) &&
       (lhs.padding == rhs.padding);
@@ -2020,7 +2620,7 @@ inline FieldT::FieldT(const FieldT &o)
         optional(o.optional),
         padding(o.padding) {
   attributes.reserve(o.attributes.size());
-  for (const auto &v : o.attributes) { attributes.emplace_back((v) ? new reflection::KeyValueT(*v) : nullptr); }
+  for (const auto &attributes_ : o.attributes) { attributes.emplace_back((attributes_) ? new reflection::KeyValueT(*attributes_) : nullptr); }
 }
 
 inline FieldT &FieldT::operator=(FieldT o) FLATBUFFERS_NOEXCEPT {
@@ -2050,7 +2650,7 @@ inline void Field::UnPackTo(FieldT *_o, const flatbuffers::resolver_function_t *
   (void)_o;
   (void)_resolver;
   { auto _e = name(); if (_e) _o->name = _e->str(); }
-  { auto _e = type(); if (_e) { if(_o->type) { _e->UnPackTo(_o->type.get(), _resolver); } else { _o->type = std::unique_ptr<reflection::TypeT>(_e->UnPack(_resolver)); } } }
+  { auto _e = type(); if (_e) { if(_o->type) { _e->UnPackTo(_o->type.get(), _resolver); } else { _o->type = flatbuffers::unique_ptr<reflection::TypeT>(_e->UnPack(_resolver)); } } else if (_o->type) { _o->type.reset(); } }
   { auto _e = id(); _o->id = _e; }
   { auto _e = offset(); _o->offset = _e; }
   { auto _e = default_integer(); _o->default_integer = _e; }
@@ -2058,8 +2658,8 @@ inline void Field::UnPackTo(FieldT *_o, const flatbuffers::resolver_function_t *
   { auto _e = deprecated(); _o->deprecated = _e; }
   { auto _e = required(); _o->required = _e; }
   { auto _e = key(); _o->key = _e; }
-  { auto _e = attributes(); if (_e) { _o->attributes.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->attributes[_i]) { _e->Get(_i)->UnPackTo(_o->attributes[_i].get(), _resolver); } else { _o->attributes[_i] = std::unique_ptr<reflection::KeyValueT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
-  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } }
+  { auto _e = attributes(); if (_e) { _o->attributes.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->attributes[_i]) { _e->Get(_i)->UnPackTo(_o->attributes[_i].get(), _resolver); } else { _o->attributes[_i] = flatbuffers::unique_ptr<reflection::KeyValueT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->attributes.resize(0); } }
+  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } else { _o->documentation.resize(0); } }
   { auto _e = optional(); _o->optional = _e; }
   { auto _e = padding(); _o->padding = _e; }
 }
@@ -2081,8 +2681,8 @@ inline flatbuffers::Offset<Field> CreateField(flatbuffers::FlatBufferBuilder &_f
   auto _deprecated = _o->deprecated;
   auto _required = _o->required;
   auto _key = _o->key;
-  auto _attributes = _o->attributes.size() ? _fbb.CreateVector<flatbuffers::Offset<reflection::KeyValue>> (_o->attributes.size(), [](size_t i, _VectorArgs *__va) { return CreateKeyValue(*__va->__fbb, __va->__o->attributes[i].get(), __va->__rehasher); }, &_va ) : 0;
-  auto _documentation = _o->documentation.size() ? _fbb.CreateVectorOfStrings(_o->documentation) : 0;
+  auto _attributes = _fbb.CreateVector<flatbuffers::Offset<reflection::KeyValue>> (_o->attributes.size(), [](size_t i, _VectorArgs *__va) { return CreateKeyValue(*__va->__fbb, __va->__o->attributes[i].get(), __va->__rehasher); }, &_va );
+  auto _documentation = _fbb.CreateVectorOfStrings(_o->documentation);
   auto _optional = _o->optional;
   auto _padding = _o->padding;
   return reflection::CreateField(
@@ -2106,11 +2706,11 @@ inline flatbuffers::Offset<Field> CreateField(flatbuffers::FlatBufferBuilder &_f
 inline bool operator==(const ObjectT &lhs, const ObjectT &rhs) {
   return
       (lhs.name == rhs.name) &&
-      (lhs.fields == rhs.fields) &&
+      (lhs.fields.size() == rhs.fields.size() && std::equal(lhs.fields.cbegin(), lhs.fields.cend(), rhs.fields.cbegin(), [](flatbuffers::unique_ptr<reflection::FieldT> const &a, flatbuffers::unique_ptr<reflection::FieldT> const &b) { return (a == b) || (a && b && *a == *b); })) &&
       (lhs.is_struct == rhs.is_struct) &&
       (lhs.minalign == rhs.minalign) &&
       (lhs.bytesize == rhs.bytesize) &&
-      (lhs.attributes == rhs.attributes) &&
+      (lhs.attributes.size() == rhs.attributes.size() && std::equal(lhs.attributes.cbegin(), lhs.attributes.cend(), rhs.attributes.cbegin(), [](flatbuffers::unique_ptr<reflection::KeyValueT> const &a, flatbuffers::unique_ptr<reflection::KeyValueT> const &b) { return (a == b) || (a && b && *a == *b); })) &&
       (lhs.documentation == rhs.documentation) &&
       (lhs.declaration_file == rhs.declaration_file);
 }
@@ -2128,9 +2728,9 @@ inline ObjectT::ObjectT(const ObjectT &o)
         documentation(o.documentation),
         declaration_file(o.declaration_file) {
   fields.reserve(o.fields.size());
-  for (const auto &v : o.fields) { fields.emplace_back((v) ? new reflection::FieldT(*v) : nullptr); }
+  for (const auto &fields_ : o.fields) { fields.emplace_back((fields_) ? new reflection::FieldT(*fields_) : nullptr); }
   attributes.reserve(o.attributes.size());
-  for (const auto &v : o.attributes) { attributes.emplace_back((v) ? new reflection::KeyValueT(*v) : nullptr); }
+  for (const auto &attributes_ : o.attributes) { attributes.emplace_back((attributes_) ? new reflection::KeyValueT(*attributes_) : nullptr); }
 }
 
 inline ObjectT &ObjectT::operator=(ObjectT o) FLATBUFFERS_NOEXCEPT {
@@ -2155,12 +2755,12 @@ inline void Object::UnPackTo(ObjectT *_o, const flatbuffers::resolver_function_t
   (void)_o;
   (void)_resolver;
   { auto _e = name(); if (_e) _o->name = _e->str(); }
-  { auto _e = fields(); if (_e) { _o->fields.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->fields[_i]) { _e->Get(_i)->UnPackTo(_o->fields[_i].get(), _resolver); } else { _o->fields[_i] = std::unique_ptr<reflection::FieldT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
+  { auto _e = fields(); if (_e) { _o->fields.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->fields[_i]) { _e->Get(_i)->UnPackTo(_o->fields[_i].get(), _resolver); } else { _o->fields[_i] = flatbuffers::unique_ptr<reflection::FieldT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->fields.resize(0); } }
   { auto _e = is_struct(); _o->is_struct = _e; }
   { auto _e = minalign(); _o->minalign = _e; }
   { auto _e = bytesize(); _o->bytesize = _e; }
-  { auto _e = attributes(); if (_e) { _o->attributes.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->attributes[_i]) { _e->Get(_i)->UnPackTo(_o->attributes[_i].get(), _resolver); } else { _o->attributes[_i] = std::unique_ptr<reflection::KeyValueT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
-  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } }
+  { auto _e = attributes(); if (_e) { _o->attributes.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->attributes[_i]) { _e->Get(_i)->UnPackTo(_o->attributes[_i].get(), _resolver); } else { _o->attributes[_i] = flatbuffers::unique_ptr<reflection::KeyValueT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->attributes.resize(0); } }
+  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } else { _o->documentation.resize(0); } }
   { auto _e = declaration_file(); if (_e) _o->declaration_file = _e->str(); }
 }
 
@@ -2177,9 +2777,9 @@ inline flatbuffers::Offset<Object> CreateObject(flatbuffers::FlatBufferBuilder &
   auto _is_struct = _o->is_struct;
   auto _minalign = _o->minalign;
   auto _bytesize = _o->bytesize;
-  auto _attributes = _o->attributes.size() ? _fbb.CreateVector<flatbuffers::Offset<reflection::KeyValue>> (_o->attributes.size(), [](size_t i, _VectorArgs *__va) { return CreateKeyValue(*__va->__fbb, __va->__o->attributes[i].get(), __va->__rehasher); }, &_va ) : 0;
-  auto _documentation = _o->documentation.size() ? _fbb.CreateVectorOfStrings(_o->documentation) : 0;
-  auto _declaration_file = _o->declaration_file.empty() ? 0 : _fbb.CreateString(_o->declaration_file);
+  auto _attributes = _fbb.CreateVector<flatbuffers::Offset<reflection::KeyValue>> (_o->attributes.size(), [](size_t i, _VectorArgs *__va) { return CreateKeyValue(*__va->__fbb, __va->__o->attributes[i].get(), __va->__rehasher); }, &_va );
+  auto _documentation = _fbb.CreateVectorOfStrings(_o->documentation);
+  auto _declaration_file = _o->declaration_file.empty() ? _fbb.CreateSharedString("") : _fbb.CreateString(_o->declaration_file);
   return reflection::CreateObject(
       _fbb,
       _name,
@@ -2198,7 +2798,7 @@ inline bool operator==(const RPCCallT &lhs, const RPCCallT &rhs) {
       (lhs.name == rhs.name) &&
       ((lhs.request == rhs.request) || (lhs.request && rhs.request && *lhs.request == *rhs.request)) &&
       ((lhs.response == rhs.response) || (lhs.response && rhs.response && *lhs.response == *rhs.response)) &&
-      (lhs.attributes == rhs.attributes) &&
+      (lhs.attributes.size() == rhs.attributes.size() && std::equal(lhs.attributes.cbegin(), lhs.attributes.cend(), rhs.attributes.cbegin(), [](flatbuffers::unique_ptr<reflection::KeyValueT> const &a, flatbuffers::unique_ptr<reflection::KeyValueT> const &b) { return (a == b) || (a && b && *a == *b); })) &&
       (lhs.documentation == rhs.documentation);
 }
 
@@ -2213,7 +2813,7 @@ inline RPCCallT::RPCCallT(const RPCCallT &o)
         response((o.response) ? new reflection::ObjectT(*o.response) : nullptr),
         documentation(o.documentation) {
   attributes.reserve(o.attributes.size());
-  for (const auto &v : o.attributes) { attributes.emplace_back((v) ? new reflection::KeyValueT(*v) : nullptr); }
+  for (const auto &attributes_ : o.attributes) { attributes.emplace_back((attributes_) ? new reflection::KeyValueT(*attributes_) : nullptr); }
 }
 
 inline RPCCallT &RPCCallT::operator=(RPCCallT o) FLATBUFFERS_NOEXCEPT {
@@ -2235,10 +2835,10 @@ inline void RPCCall::UnPackTo(RPCCallT *_o, const flatbuffers::resolver_function
   (void)_o;
   (void)_resolver;
   { auto _e = name(); if (_e) _o->name = _e->str(); }
-  { auto _e = request(); if (_e) { if(_o->request) { _e->UnPackTo(_o->request.get(), _resolver); } else { _o->request = std::unique_ptr<reflection::ObjectT>(_e->UnPack(_resolver)); } } }
-  { auto _e = response(); if (_e) { if(_o->response) { _e->UnPackTo(_o->response.get(), _resolver); } else { _o->response = std::unique_ptr<reflection::ObjectT>(_e->UnPack(_resolver)); } } }
-  { auto _e = attributes(); if (_e) { _o->attributes.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->attributes[_i]) { _e->Get(_i)->UnPackTo(_o->attributes[_i].get(), _resolver); } else { _o->attributes[_i] = std::unique_ptr<reflection::KeyValueT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
-  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } }
+  { auto _e = request(); if (_e) { if(_o->request) { _e->UnPackTo(_o->request.get(), _resolver); } else { _o->request = flatbuffers::unique_ptr<reflection::ObjectT>(_e->UnPack(_resolver)); } } else if (_o->request) { _o->request.reset(); } }
+  { auto _e = response(); if (_e) { if(_o->response) { _e->UnPackTo(_o->response.get(), _resolver); } else { _o->response = flatbuffers::unique_ptr<reflection::ObjectT>(_e->UnPack(_resolver)); } } else if (_o->response) { _o->response.reset(); } }
+  { auto _e = attributes(); if (_e) { _o->attributes.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->attributes[_i]) { _e->Get(_i)->UnPackTo(_o->attributes[_i].get(), _resolver); } else { _o->attributes[_i] = flatbuffers::unique_ptr<reflection::KeyValueT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->attributes.resize(0); } }
+  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } else { _o->documentation.resize(0); } }
 }
 
 inline flatbuffers::Offset<RPCCall> RPCCall::Pack(flatbuffers::FlatBufferBuilder &_fbb, const RPCCallT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -2252,8 +2852,8 @@ inline flatbuffers::Offset<RPCCall> CreateRPCCall(flatbuffers::FlatBufferBuilder
   auto _name = _fbb.CreateString(_o->name);
   auto _request = _o->request ? CreateObject(_fbb, _o->request.get(), _rehasher) : 0;
   auto _response = _o->response ? CreateObject(_fbb, _o->response.get(), _rehasher) : 0;
-  auto _attributes = _o->attributes.size() ? _fbb.CreateVector<flatbuffers::Offset<reflection::KeyValue>> (_o->attributes.size(), [](size_t i, _VectorArgs *__va) { return CreateKeyValue(*__va->__fbb, __va->__o->attributes[i].get(), __va->__rehasher); }, &_va ) : 0;
-  auto _documentation = _o->documentation.size() ? _fbb.CreateVectorOfStrings(_o->documentation) : 0;
+  auto _attributes = _fbb.CreateVector<flatbuffers::Offset<reflection::KeyValue>> (_o->attributes.size(), [](size_t i, _VectorArgs *__va) { return CreateKeyValue(*__va->__fbb, __va->__o->attributes[i].get(), __va->__rehasher); }, &_va );
+  auto _documentation = _fbb.CreateVectorOfStrings(_o->documentation);
   return reflection::CreateRPCCall(
       _fbb,
       _name,
@@ -2267,8 +2867,8 @@ inline flatbuffers::Offset<RPCCall> CreateRPCCall(flatbuffers::FlatBufferBuilder
 inline bool operator==(const ServiceT &lhs, const ServiceT &rhs) {
   return
       (lhs.name == rhs.name) &&
-      (lhs.calls == rhs.calls) &&
-      (lhs.attributes == rhs.attributes) &&
+      (lhs.calls.size() == rhs.calls.size() && std::equal(lhs.calls.cbegin(), lhs.calls.cend(), rhs.calls.cbegin(), [](flatbuffers::unique_ptr<reflection::RPCCallT> const &a, flatbuffers::unique_ptr<reflection::RPCCallT> const &b) { return (a == b) || (a && b && *a == *b); })) &&
+      (lhs.attributes.size() == rhs.attributes.size() && std::equal(lhs.attributes.cbegin(), lhs.attributes.cend(), rhs.attributes.cbegin(), [](flatbuffers::unique_ptr<reflection::KeyValueT> const &a, flatbuffers::unique_ptr<reflection::KeyValueT> const &b) { return (a == b) || (a && b && *a == *b); })) &&
       (lhs.documentation == rhs.documentation) &&
       (lhs.declaration_file == rhs.declaration_file);
 }
@@ -2283,9 +2883,9 @@ inline ServiceT::ServiceT(const ServiceT &o)
         documentation(o.documentation),
         declaration_file(o.declaration_file) {
   calls.reserve(o.calls.size());
-  for (const auto &v : o.calls) { calls.emplace_back((v) ? new reflection::RPCCallT(*v) : nullptr); }
+  for (const auto &calls_ : o.calls) { calls.emplace_back((calls_) ? new reflection::RPCCallT(*calls_) : nullptr); }
   attributes.reserve(o.attributes.size());
-  for (const auto &v : o.attributes) { attributes.emplace_back((v) ? new reflection::KeyValueT(*v) : nullptr); }
+  for (const auto &attributes_ : o.attributes) { attributes.emplace_back((attributes_) ? new reflection::KeyValueT(*attributes_) : nullptr); }
 }
 
 inline ServiceT &ServiceT::operator=(ServiceT o) FLATBUFFERS_NOEXCEPT {
@@ -2307,9 +2907,9 @@ inline void Service::UnPackTo(ServiceT *_o, const flatbuffers::resolver_function
   (void)_o;
   (void)_resolver;
   { auto _e = name(); if (_e) _o->name = _e->str(); }
-  { auto _e = calls(); if (_e) { _o->calls.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->calls[_i]) { _e->Get(_i)->UnPackTo(_o->calls[_i].get(), _resolver); } else { _o->calls[_i] = std::unique_ptr<reflection::RPCCallT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
-  { auto _e = attributes(); if (_e) { _o->attributes.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->attributes[_i]) { _e->Get(_i)->UnPackTo(_o->attributes[_i].get(), _resolver); } else { _o->attributes[_i] = std::unique_ptr<reflection::KeyValueT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
-  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } }
+  { auto _e = calls(); if (_e) { _o->calls.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->calls[_i]) { _e->Get(_i)->UnPackTo(_o->calls[_i].get(), _resolver); } else { _o->calls[_i] = flatbuffers::unique_ptr<reflection::RPCCallT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->calls.resize(0); } }
+  { auto _e = attributes(); if (_e) { _o->attributes.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->attributes[_i]) { _e->Get(_i)->UnPackTo(_o->attributes[_i].get(), _resolver); } else { _o->attributes[_i] = flatbuffers::unique_ptr<reflection::KeyValueT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->attributes.resize(0); } }
+  { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } else { _o->documentation.resize(0); } }
   { auto _e = declaration_file(); if (_e) _o->declaration_file = _e->str(); }
 }
 
@@ -2322,10 +2922,10 @@ inline flatbuffers::Offset<Service> CreateService(flatbuffers::FlatBufferBuilder
   (void)_o;
   struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const ServiceT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _name = _fbb.CreateString(_o->name);
-  auto _calls = _o->calls.size() ? _fbb.CreateVector<flatbuffers::Offset<reflection::RPCCall>> (_o->calls.size(), [](size_t i, _VectorArgs *__va) { return CreateRPCCall(*__va->__fbb, __va->__o->calls[i].get(), __va->__rehasher); }, &_va ) : 0;
-  auto _attributes = _o->attributes.size() ? _fbb.CreateVector<flatbuffers::Offset<reflection::KeyValue>> (_o->attributes.size(), [](size_t i, _VectorArgs *__va) { return CreateKeyValue(*__va->__fbb, __va->__o->attributes[i].get(), __va->__rehasher); }, &_va ) : 0;
-  auto _documentation = _o->documentation.size() ? _fbb.CreateVectorOfStrings(_o->documentation) : 0;
-  auto _declaration_file = _o->declaration_file.empty() ? 0 : _fbb.CreateString(_o->declaration_file);
+  auto _calls = _fbb.CreateVector<flatbuffers::Offset<reflection::RPCCall>> (_o->calls.size(), [](size_t i, _VectorArgs *__va) { return CreateRPCCall(*__va->__fbb, __va->__o->calls[i].get(), __va->__rehasher); }, &_va );
+  auto _attributes = _fbb.CreateVector<flatbuffers::Offset<reflection::KeyValue>> (_o->attributes.size(), [](size_t i, _VectorArgs *__va) { return CreateKeyValue(*__va->__fbb, __va->__o->attributes[i].get(), __va->__rehasher); }, &_va );
+  auto _documentation = _fbb.CreateVectorOfStrings(_o->documentation);
+  auto _declaration_file = _o->declaration_file.empty() ? _fbb.CreateSharedString("") : _fbb.CreateString(_o->declaration_file);
   return reflection::CreateService(
       _fbb,
       _name,
@@ -2357,7 +2957,7 @@ inline void SchemaFile::UnPackTo(SchemaFileT *_o, const flatbuffers::resolver_fu
   (void)_o;
   (void)_resolver;
   { auto _e = filename(); if (_e) _o->filename = _e->str(); }
-  { auto _e = included_filenames(); if (_e) { _o->included_filenames.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->included_filenames[_i] = _e->Get(_i)->str(); } } }
+  { auto _e = included_filenames(); if (_e) { _o->included_filenames.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->included_filenames[_i] = _e->Get(_i)->str(); } } else { _o->included_filenames.resize(0); } }
 }
 
 inline flatbuffers::Offset<SchemaFile> SchemaFile::Pack(flatbuffers::FlatBufferBuilder &_fbb, const SchemaFileT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -2369,7 +2969,7 @@ inline flatbuffers::Offset<SchemaFile> CreateSchemaFile(flatbuffers::FlatBufferB
   (void)_o;
   struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const SchemaFileT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _filename = _fbb.CreateString(_o->filename);
-  auto _included_filenames = _o->included_filenames.size() ? _fbb.CreateVectorOfStrings(_o->included_filenames) : 0;
+  auto _included_filenames = _fbb.CreateVectorOfStrings(_o->included_filenames);
   return reflection::CreateSchemaFile(
       _fbb,
       _filename,
@@ -2379,14 +2979,14 @@ inline flatbuffers::Offset<SchemaFile> CreateSchemaFile(flatbuffers::FlatBufferB
 
 inline bool operator==(const SchemaT &lhs, const SchemaT &rhs) {
   return
-      (lhs.objects == rhs.objects) &&
-      (lhs.enums == rhs.enums) &&
+      (lhs.objects.size() == rhs.objects.size() && std::equal(lhs.objects.cbegin(), lhs.objects.cend(), rhs.objects.cbegin(), [](flatbuffers::unique_ptr<reflection::ObjectT> const &a, flatbuffers::unique_ptr<reflection::ObjectT> const &b) { return (a == b) || (a && b && *a == *b); })) &&
+      (lhs.enums.size() == rhs.enums.size() && std::equal(lhs.enums.cbegin(), lhs.enums.cend(), rhs.enums.cbegin(), [](flatbuffers::unique_ptr<reflection::EnumT> const &a, flatbuffers::unique_ptr<reflection::EnumT> const &b) { return (a == b) || (a && b && *a == *b); })) &&
       (lhs.file_ident == rhs.file_ident) &&
       (lhs.file_ext == rhs.file_ext) &&
       ((lhs.root_table == rhs.root_table) || (lhs.root_table && rhs.root_table && *lhs.root_table == *rhs.root_table)) &&
-      (lhs.services == rhs.services) &&
+      (lhs.services.size() == rhs.services.size() && std::equal(lhs.services.cbegin(), lhs.services.cend(), rhs.services.cbegin(), [](flatbuffers::unique_ptr<reflection::ServiceT> const &a, flatbuffers::unique_ptr<reflection::ServiceT> const &b) { return (a == b) || (a && b && *a == *b); })) &&
       (lhs.advanced_features == rhs.advanced_features) &&
-      (lhs.fbs_files == rhs.fbs_files);
+      (lhs.fbs_files.size() == rhs.fbs_files.size() && std::equal(lhs.fbs_files.cbegin(), lhs.fbs_files.cend(), rhs.fbs_files.cbegin(), [](flatbuffers::unique_ptr<reflection::SchemaFileT> const &a, flatbuffers::unique_ptr<reflection::SchemaFileT> const &b) { return (a == b) || (a && b && *a == *b); }));
 }
 
 inline bool operator!=(const SchemaT &lhs, const SchemaT &rhs) {
@@ -2400,13 +3000,13 @@ inline SchemaT::SchemaT(const SchemaT &o)
         root_table((o.root_table) ? new reflection::ObjectT(*o.root_table) : nullptr),
         advanced_features(o.advanced_features) {
   objects.reserve(o.objects.size());
-  for (const auto &v : o.objects) { objects.emplace_back((v) ? new reflection::ObjectT(*v) : nullptr); }
+  for (const auto &objects_ : o.objects) { objects.emplace_back((objects_) ? new reflection::ObjectT(*objects_) : nullptr); }
   enums.reserve(o.enums.size());
-  for (const auto &v : o.enums) { enums.emplace_back((v) ? new reflection::EnumT(*v) : nullptr); }
+  for (const auto &enums_ : o.enums) { enums.emplace_back((enums_) ? new reflection::EnumT(*enums_) : nullptr); }
   services.reserve(o.services.size());
-  for (const auto &v : o.services) { services.emplace_back((v) ? new reflection::ServiceT(*v) : nullptr); }
+  for (const auto &services_ : o.services) { services.emplace_back((services_) ? new reflection::ServiceT(*services_) : nullptr); }
   fbs_files.reserve(o.fbs_files.size());
-  for (const auto &v : o.fbs_files) { fbs_files.emplace_back((v) ? new reflection::SchemaFileT(*v) : nullptr); }
+  for (const auto &fbs_files_ : o.fbs_files) { fbs_files.emplace_back((fbs_files_) ? new reflection::SchemaFileT(*fbs_files_) : nullptr); }
 }
 
 inline SchemaT &SchemaT::operator=(SchemaT o) FLATBUFFERS_NOEXCEPT {
@@ -2430,14 +3030,14 @@ inline SchemaT *Schema::UnPack(const flatbuffers::resolver_function_t *_resolver
 inline void Schema::UnPackTo(SchemaT *_o, const flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = objects(); if (_e) { _o->objects.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->objects[_i]) { _e->Get(_i)->UnPackTo(_o->objects[_i].get(), _resolver); } else { _o->objects[_i] = std::unique_ptr<reflection::ObjectT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
-  { auto _e = enums(); if (_e) { _o->enums.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->enums[_i]) { _e->Get(_i)->UnPackTo(_o->enums[_i].get(), _resolver); } else { _o->enums[_i] = std::unique_ptr<reflection::EnumT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
+  { auto _e = objects(); if (_e) { _o->objects.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->objects[_i]) { _e->Get(_i)->UnPackTo(_o->objects[_i].get(), _resolver); } else { _o->objects[_i] = flatbuffers::unique_ptr<reflection::ObjectT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->objects.resize(0); } }
+  { auto _e = enums(); if (_e) { _o->enums.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->enums[_i]) { _e->Get(_i)->UnPackTo(_o->enums[_i].get(), _resolver); } else { _o->enums[_i] = flatbuffers::unique_ptr<reflection::EnumT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->enums.resize(0); } }
   { auto _e = file_ident(); if (_e) _o->file_ident = _e->str(); }
   { auto _e = file_ext(); if (_e) _o->file_ext = _e->str(); }
-  { auto _e = root_table(); if (_e) { if(_o->root_table) { _e->UnPackTo(_o->root_table.get(), _resolver); } else { _o->root_table = std::unique_ptr<reflection::ObjectT>(_e->UnPack(_resolver)); } } }
-  { auto _e = services(); if (_e) { _o->services.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->services[_i]) { _e->Get(_i)->UnPackTo(_o->services[_i].get(), _resolver); } else { _o->services[_i] = std::unique_ptr<reflection::ServiceT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
+  { auto _e = root_table(); if (_e) { if(_o->root_table) { _e->UnPackTo(_o->root_table.get(), _resolver); } else { _o->root_table = flatbuffers::unique_ptr<reflection::ObjectT>(_e->UnPack(_resolver)); } } else if (_o->root_table) { _o->root_table.reset(); } }
+  { auto _e = services(); if (_e) { _o->services.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->services[_i]) { _e->Get(_i)->UnPackTo(_o->services[_i].get(), _resolver); } else { _o->services[_i] = flatbuffers::unique_ptr<reflection::ServiceT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->services.resize(0); } }
   { auto _e = advanced_features(); _o->advanced_features = _e; }
-  { auto _e = fbs_files(); if (_e) { _o->fbs_files.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->fbs_files[_i]) { _e->Get(_i)->UnPackTo(_o->fbs_files[_i].get(), _resolver); } else { _o->fbs_files[_i] = std::unique_ptr<reflection::SchemaFileT>(_e->Get(_i)->UnPack(_resolver)); }; } } }
+  { auto _e = fbs_files(); if (_e) { _o->fbs_files.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->fbs_files[_i]) { _e->Get(_i)->UnPackTo(_o->fbs_files[_i].get(), _resolver); } else { _o->fbs_files[_i] = flatbuffers::unique_ptr<reflection::SchemaFileT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->fbs_files.resize(0); } }
 }
 
 inline flatbuffers::Offset<Schema> Schema::Pack(flatbuffers::FlatBufferBuilder &_fbb, const SchemaT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -2450,12 +3050,12 @@ inline flatbuffers::Offset<Schema> CreateSchema(flatbuffers::FlatBufferBuilder &
   struct _VectorArgs { flatbuffers::FlatBufferBuilder *__fbb; const SchemaT* __o; const flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
   auto _objects = _fbb.CreateVector<flatbuffers::Offset<reflection::Object>> (_o->objects.size(), [](size_t i, _VectorArgs *__va) { return CreateObject(*__va->__fbb, __va->__o->objects[i].get(), __va->__rehasher); }, &_va );
   auto _enums = _fbb.CreateVector<flatbuffers::Offset<reflection::Enum>> (_o->enums.size(), [](size_t i, _VectorArgs *__va) { return CreateEnum(*__va->__fbb, __va->__o->enums[i].get(), __va->__rehasher); }, &_va );
-  auto _file_ident = _o->file_ident.empty() ? 0 : _fbb.CreateString(_o->file_ident);
-  auto _file_ext = _o->file_ext.empty() ? 0 : _fbb.CreateString(_o->file_ext);
+  auto _file_ident = _o->file_ident.empty() ? _fbb.CreateSharedString("") : _fbb.CreateString(_o->file_ident);
+  auto _file_ext = _o->file_ext.empty() ? _fbb.CreateSharedString("") : _fbb.CreateString(_o->file_ext);
   auto _root_table = _o->root_table ? CreateObject(_fbb, _o->root_table.get(), _rehasher) : 0;
-  auto _services = _o->services.size() ? _fbb.CreateVector<flatbuffers::Offset<reflection::Service>> (_o->services.size(), [](size_t i, _VectorArgs *__va) { return CreateService(*__va->__fbb, __va->__o->services[i].get(), __va->__rehasher); }, &_va ) : 0;
+  auto _services = _fbb.CreateVector<flatbuffers::Offset<reflection::Service>> (_o->services.size(), [](size_t i, _VectorArgs *__va) { return CreateService(*__va->__fbb, __va->__o->services[i].get(), __va->__rehasher); }, &_va );
   auto _advanced_features = _o->advanced_features;
-  auto _fbs_files = _o->fbs_files.size() ? _fbb.CreateVector<flatbuffers::Offset<reflection::SchemaFile>> (_o->fbs_files.size(), [](size_t i, _VectorArgs *__va) { return CreateSchemaFile(*__va->__fbb, __va->__o->fbs_files[i].get(), __va->__rehasher); }, &_va ) : 0;
+  auto _fbs_files = _fbb.CreateVector<flatbuffers::Offset<reflection::SchemaFile>> (_o->fbs_files.size(), [](size_t i, _VectorArgs *__va) { return CreateSchemaFile(*__va->__fbb, __va->__o->fbs_files[i].get(), __va->__rehasher); }, &_va );
   return reflection::CreateSchema(
       _fbb,
       _objects,
@@ -2818,6 +3418,14 @@ inline const reflection::Schema *GetSizePrefixedSchema(const void *buf) {
   return flatbuffers::GetSizePrefixedRoot<reflection::Schema>(buf);
 }
 
+inline Schema *GetMutableSchema(void *buf) {
+  return flatbuffers::GetMutableRoot<Schema>(buf);
+}
+
+inline reflection::Schema *GetMutableSizePrefixedSchema(void *buf) {
+  return flatbuffers::GetMutableSizePrefixedRoot<reflection::Schema>(buf);
+}
+
 inline const char *SchemaIdentifier() {
   return "BFBS";
 }
@@ -2858,16 +3466,16 @@ inline void FinishSizePrefixedSchemaBuffer(
   fbb.FinishSizePrefixed(root, SchemaIdentifier());
 }
 
-inline std::unique_ptr<reflection::SchemaT> UnPackSchema(
+inline flatbuffers::unique_ptr<reflection::SchemaT> UnPackSchema(
     const void *buf,
     const flatbuffers::resolver_function_t *res = nullptr) {
-  return std::unique_ptr<reflection::SchemaT>(GetSchema(buf)->UnPack(res));
+  return flatbuffers::unique_ptr<reflection::SchemaT>(GetSchema(buf)->UnPack(res));
 }
 
-inline std::unique_ptr<reflection::SchemaT> UnPackSizePrefixedSchema(
+inline flatbuffers::unique_ptr<reflection::SchemaT> UnPackSizePrefixedSchema(
     const void *buf,
     const flatbuffers::resolver_function_t *res = nullptr) {
-  return std::unique_ptr<reflection::SchemaT>(GetSizePrefixedSchema(buf)->UnPack(res));
+  return flatbuffers::unique_ptr<reflection::SchemaT>(GetSizePrefixedSchema(buf)->UnPack(res));
 }
 
 }  // namespace reflection
