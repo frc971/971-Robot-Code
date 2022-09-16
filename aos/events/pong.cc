@@ -6,7 +6,7 @@
 #include "aos/init.h"
 #include "glog/logging.h"
 
-DEFINE_string(config, "aos/events/pingpong_config.json", "Path to the config.");
+DEFINE_string(config, "pingpong_config.json", "Path to the config.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
