@@ -293,6 +293,7 @@ register_toolchains(
     # Find a good way to select between these two M4F toolchains.
     #"//tools/cpp:cc-toolchain-cortex-m4f-k22",
     "//tools/python:python_toolchain",
+    "//tools/python:upstream_python_toolchain",
     "//tools/go:noop_go_toolchain",
     "//tools/rust:rust-toolchain-x86",
     "//tools/rust:rust-toolchain-armv7",
@@ -400,13 +401,39 @@ http_archive(
     ],
 )
 
-# Note that rules_python is currently only imported to make googletest happy.
-# TODO: add frc971.org URL
 http_archive(
     name = "rules_python",
-    sha256 = "895fa3b03898d7708eb50ed34dcfb71c07866433df6912a6ff4f4fb473048f99",
-    strip_prefix = "rules_python-2b1d6beb4d5d8f59d629597e30e9aa519182d9a9",
-    url = "https://github.com/bazelbuild/rules_python/archive/2b1d6beb4d5d8f59d629597e30e9aa519182d9a9.tar.gz",
+    sha256 = "b593d13bb43c94ce94b483c2858e53a9b811f6f10e1e0eedc61073bd90e58d9c",
+    strip_prefix = "rules_python-0.12.0",
+    url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.12.0.tar.gz",
+)
+
+load("@rules_python//python:repositories.bzl", "python_register_toolchains")
+
+python_register_toolchains(
+    name = "python3_9",
+    python_version = "3.9",
+    register_toolchains = False,
+)
+
+load("@python3_9//:defs.bzl", python_interpreter = "interpreter")
+load("@rules_python//python:pip.bzl", "pip_parse")
+
+pip_parse(
+    name = "pip_deps",
+    python_interpreter_target = python_interpreter,
+    requirements_lock = "//tools/python:requirements.lock.txt",
+)
+
+# Load the starlark macro which will define your dependencies.
+load("@pip_deps//:requirements.bzl", install_pip_deps = "install_deps")
+
+install_pip_deps()
+
+load("//tools/python:repo_defs.bzl", "pip_configure")
+
+pip_configure(
+    name = "pip",
 )
 
 new_local_repository(

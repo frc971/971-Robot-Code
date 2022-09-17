@@ -19,22 +19,26 @@ export PYTHONDONTWRITEBYTECODE=1
 # example in a genrule the Python runtime is in the runfiles folder of the
 # tool, not of the genrule.
 # TODO(philipp): Is there a better way to do this?
-BASE_PATH=""
+PYTHON_BIN=""
 for path in ${PYTHONPATH//:/ }; do
-  if [[ "$path" == *.runfiles/python_repo ]]; then
-    BASE_PATH="$path"
-    export LD_LIBRARY_PATH="$path"/lib/x86_64-linux-gnu:"$path"/usr/lib:"$path"/usr/lib/x86_64-linux-gnu:"$path"/../matplotlib_repo/usr/lib
+  if [[ "$path" == *.runfiles/python3_9_x86_64-unknown-linux-gnu ]]; then
+    PYTHON_BIN="$path"/bin/python3
+    export LD_LIBRARY_PATH="$path"/lib
+    break
+  elif [[ "$path" == *.runfiles/python_repo ]]; then
+    PYTHON_BIN="$path"/usr/bin/python3
+    LD_LIBRARY_PATH="${path}/lib/x86_64-linux-gnu:${path}/usr/lib:${path}/usr/lib/x86_64-linux-gnu:${path}/../matplotlib_repo/usr/lib"
+    LD_LIBRARY_PATH+=":${path}/usr/lib/lapack:${path}/usr/lib/libblas:${path}/../matplotlib_repo/rpathed3/usr/lib:${path}/usr/lib/x86_64-linux-gnu/lapack:${path}/usr/lib/x86_64-linux-gnu/blas"
+    export LD_LIBRARY_PATH
     break
   fi
 done
 
-if [[ -z "$BASE_PATH" ]]; then
+if [[ -z "$PYTHON_BIN" ]]; then
   echo "Could not find Python base path." >&2
   echo "More sophisticated logic may be needed." >&2
   exit 1
 fi
 
-export LD_LIBRARY_PATH="${BASE_PATH}/usr/lib/lapack:${BASE_PATH}/usr/lib/libblas:${BASE_PATH}/usr/lib/x86_64-linux-gnu:${BASE_PATH}/../matplotlib_repo/rpathed3/usr/lib:${BASE_PATH}/usr/lib/x86_64-linux-gnu/lapack:${BASE_PATH}/usr/lib/x86_64-linux-gnu/blas"
-
 # Prevent Python from importing the host's installed packages.
-exec "$BASE_PATH"/usr/bin/python3 -sS "$@"
+exec "$PYTHON_BIN" -sS "$@"

@@ -198,7 +198,10 @@ def build_matplotlib(version, tkinter_py_version = None, copy_shared_files = Tru
             ".",
             "usr/lib/python" + tkinter_py_version,
         ],
-        target_compatible_with = ["@platforms//cpu:x86_64"],
+        target_compatible_with = [
+            "@platforms//cpu:x86_64",
+            "@//tools/platforms/python:debian_bundled_python",
+        ],
         visibility = ["//visibility:public"],
         deps = [
             "@python_repo//:numpy",

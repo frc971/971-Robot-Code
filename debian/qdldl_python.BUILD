@@ -6,6 +6,9 @@ py_library(
         exclude = ["**/*.py"],
     ),
     imports = ["."],
+    target_compatible_with = [
+        "@//tools/platforms/python:debian_bundled_python",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "@python_repo//:numpy",

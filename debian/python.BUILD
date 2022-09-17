@@ -75,6 +75,7 @@ py_library(
     target_compatible_with = [
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
+        "@//tools/platforms/python:debian_bundled_python",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -101,6 +102,7 @@ py_library(
     target_compatible_with = [
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
+        "@//tools/platforms/python:debian_bundled_python",
     ],
     visibility = ["//visibility:public"],
 )
