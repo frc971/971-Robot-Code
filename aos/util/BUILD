@@ -1,6 +1,12 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("config_validator_macro.bzl", "config_validator_rule")
 
 package(default_visibility = ["//visibility:public"])
+
+config_validator_rule(
+    name = "config_validator_test",
+    config = "//aos/events:pingpong_config",
+)
 
 cc_library(
     name = "bitpacking",
@@ -404,5 +410,23 @@ cc_test(
     deps = [
         ":threaded_queue",
         "//aos/testing:googletest",
+    ],
+)
+
+cc_binary(
+    name = "config_validator",
+    testonly = True,
+    srcs = ["config_validator.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:init",
+        "//aos:json_to_flatbuffer",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/events/logging:log_writer",
+        "//aos/testing:googletest",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_google_googletest//:gtest",
     ],
 )
