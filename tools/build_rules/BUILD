@@ -10,7 +10,7 @@ py_binary(
     srcs = ["jinja2_generator.py"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
-    deps = ["@python_jinja2"],
+    deps = ["@pip//jinja2"],
 )
 
 py_binary(
@@ -22,5 +22,5 @@ py_binary(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
-    deps = ["@python_jinja2"],
+    deps = ["@pip//jinja2"],
 )

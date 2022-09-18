@@ -11,8 +11,8 @@ py_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "@python_repo//:numpy",
-        "@python_repo//:scipy",
+        "@pip//numpy",
+        "@pip//scipy",
         "@qdldl_amd64//:python_qdldl",
     ],
 )

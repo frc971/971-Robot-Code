@@ -10,7 +10,10 @@ cc_library(
         "usr/include/",
         "usr/include/python3.9/",
     ],
-    target_compatible_with = ["@platforms//cpu:x86_64"],
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@//tools/platforms/python:debian_bundled_python",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -28,6 +31,9 @@ cc_library(
     ],
     includes = [
         "usr/lib/python3/dist-packages/numpy/f2py/src/",
+    ],
+    target_compatible_with = [
+        "@//tools/platforms/python:debian_bundled_python",
     ],
     visibility = ["//visibility:public"],
     deps = [

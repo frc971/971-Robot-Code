@@ -11,7 +11,8 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
   { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
 # --- end runfiles.bash initialization v2 ---
 
-readonly YAPF="$(rlocation python_yapf/python_yapf)"
+YAPF="$(rlocation pip_deps_yapf/rules_python_wheel_entry_point_yapf)"
+readonly YAPF
 
 # Run everything from the root of the tree.
 cd "${BUILD_WORKSPACE_DIRECTORY}"

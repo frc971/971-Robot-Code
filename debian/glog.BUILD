@@ -5,6 +5,6 @@ py_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//external:python-gflags",
+        "@pip//python_gflags",
     ],
 )

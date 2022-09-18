@@ -204,6 +204,6 @@ def build_matplotlib(version, tkinter_py_version = None, copy_shared_files = Tru
         ],
         visibility = ["//visibility:public"],
         deps = [
-            "@python_repo//:numpy",
+            "@pip//numpy",
         ],
     )

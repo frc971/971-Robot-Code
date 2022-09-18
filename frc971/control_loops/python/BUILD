@@ -26,10 +26,10 @@ py_binary(
     legacy_create_init = False,
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//glog",
+        "@pip//matplotlib",
+        "@pip//python_gflags",
     ],
 )
 
@@ -48,8 +48,8 @@ py_library(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-glog",
-        "@python_repo//:scipy",
+        "@pip//glog",
+        "@pip//scipy",
     ],
 )
 
@@ -76,7 +76,7 @@ py_binary(
     deps = [
         ":controls",
         ":python_init",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//matplotlib",
     ],
 )
 
@@ -89,7 +89,7 @@ py_library(
     deps = [
         ":controls",
         ":python_init",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//matplotlib",
     ],
 )
 
@@ -116,7 +116,7 @@ py_test(
     deps = [
         ":libspline",
         ":python_init",
-        "@python_repo//:numpy",
+        "@pip//numpy",
     ],
 )
 
@@ -130,8 +130,8 @@ py_library(
         ":controls",
         ":drivetrain",
         ":python_init",
-        "//external:python-glog",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//glog",
+        "@pip//matplotlib",
     ],
 )
 
@@ -152,7 +152,7 @@ py_library(
         ":controls",
         "//aos/util:py_trapezoid_profile",
         "//frc971/control_loops:python_init",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//matplotlib",
     ],
 )
 
@@ -165,7 +165,7 @@ py_library(
         ":controls",
         "//aos/util:py_trapezoid_profile",
         "//frc971/control_loops:python_init",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//matplotlib",
     ],
 )
 
@@ -193,8 +193,10 @@ py_binary(
         ":drawing_constants",
         ":libspline",
         ":python_init",
-        "@matplotlib_repo//:matplotlib3",
-        "@python_gtk",
+        "@pip//matplotlib",
+        "@pip//numpy",
+        "@pip//pygobject",
+        "@pip//scipy",
     ],
 )
 
@@ -208,7 +210,7 @@ py_library(
     deps = [
         ":constants",
         ":python_init",
-        "@python_gtk",
+        "@pip//pygobject",
     ],
 )
 
@@ -235,7 +237,7 @@ py_binary(
         ":controls",
         ":linear_system",
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )

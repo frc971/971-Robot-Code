@@ -9,9 +9,9 @@ py_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:drivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -25,9 +25,9 @@ py_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:polydrivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -39,11 +39,11 @@ py_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
         "//frc971/control_loops/python:drivetrain",
         "//frc971/control_loops/python:polydrivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -57,10 +57,10 @@ py_binary(
     deps = [
         ":polydrivetrain_lib",
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//glog",
+        "@pip//matplotlib",
+        "@pip//python_gflags",
     ],
 )
 
@@ -73,10 +73,10 @@ py_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//glog",
+        "@pip//matplotlib",
+        "@pip//python_gflags",
     ],
 )
 
@@ -89,10 +89,10 @@ py_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//glog",
+        "@pip//matplotlib",
+        "@pip//python_gflags",
     ],
 )
 

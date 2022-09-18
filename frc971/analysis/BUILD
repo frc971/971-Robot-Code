@@ -17,8 +17,8 @@ cc_binary(
         "//aos/events:shm_event_loop",
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_reader",
+        "//third_party/python",
         "@com_github_google_glog//:glog",
-        "@python_repo//:python3.9_lib",
     ],
 )
 

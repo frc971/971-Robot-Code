@@ -259,7 +259,7 @@ py_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":sift_fbs_python",
-        "@opencv_contrib_nonfree_amd64//:python_opencv",
+        "@pip//opencv_python",
     ],
 )
 
