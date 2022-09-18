@@ -105,12 +105,15 @@ def map_virtual_packages(packages):
         yield package
 
 
-def download_deps(apt_args, packages, excludes, force_includes):
+def download_deps(apt_args, packages, excludes, force_includes,
+                  force_excludes):
     deps = get_all_deps(apt_args, packages)
     exclude_deps = get_all_deps(apt_args, excludes)
     deps -= exclude_deps
     force_include_deps = get_all_deps(apt_args, force_includes)
     deps |= force_include_deps
+    force_exclude_deps = get_all_deps(apt_args, force_excludes)
+    deps -= force_exclude_deps
     env = dict(os.environ)
     del env['LD_LIBRARY_PATH']
     subprocess.check_call([b"apt-get"] + [a.encode('utf-8')
@@ -173,6 +176,13 @@ def main(argv):
         action="append",
         help=
         "Force include this and its dependencies. Even if listed in excludes.")
+    parser.add_argument(
+        "--force-exclude",
+        type=str,
+        action="append",
+        help=
+        "Force exclude this and its dependencies. Even if listed via --force-include."
+    )
     parser.add_argument("--arch",
                         type=str,
                         default="amd64",
@@ -214,7 +224,8 @@ def main(argv):
     # Exclude common packages that don't make sense to include in everything all
     # the time.
     excludes += _ALWAYS_EXCLUDE
-    download_deps(apt_args, args.package, excludes, args.force_include)
+    download_deps(apt_args, args.package, excludes, args.force_include,
+                  args.force_exclude)
     fixup_files()
     print_file_list()
     print("Your packages are all in %s" % folder)

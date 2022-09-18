@@ -24,7 +24,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 # 6. Add a new "new_http_archive" entry to the WORKSPACE file for the tarball
 #    you just uploaded.
 
-def download_packages(name, packages, excludes = [], force_includes = [], target_compatible_with = None):
+def download_packages(name, packages, excludes = [], force_includes = [], force_excludes = [], target_compatible_with = None):
     """Downloads a set of packages as well as their dependencies.
 
     You can also specify excludes in case some of the dependencies are meta
@@ -34,10 +34,17 @@ def download_packages(name, packages, excludes = [], force_includes = [], target
     list to use in a .bzl file. Once you have the packages on
     https://www.frc971.org/Build-Dependencies/ you can add them to a to
     combine_packages rule.
+
+    force_includes lets you include packages that are excluded by default. The
+    dependencies of these force-included packages are also force-included. To
+    counter-act that, you can use "force_excludes". The force-excluded packages
+    are excluded even if they're pulled in as a dependency from a
+    "force_includes" package.
     """
     package_list = " ".join(packages)
     excludes_list = " ".join(["--exclude=%s" % e for e in excludes])
     force_includes = " ".join(["--force-include=%s" % i for i in force_includes])
+    force_excludes = " ".join(["--force-exclude=%s" % e for e in force_excludes])
     native.genrule(
         name = name + "_gen",
         outs = ["%s.sh" % name],
@@ -58,8 +65,8 @@ source "$${RUNFILES_DIR:-/dev/null}/$$f" 2>/dev/null || \\
 # --- end runfiles.bash initialization v2 ---
 
 
-exec "$$(rlocation org_frc971/debian/download_packages)" %s %s %s "$$@"
-END""" % (force_includes, excludes_list, package_list),
+exec "$$(rlocation org_frc971/debian/download_packages)" %s %s %s %s "$$@"
+END""" % (force_includes, force_excludes, excludes_list, package_list),
         target_compatible_with = target_compatible_with,
     )
     native.sh_binary(

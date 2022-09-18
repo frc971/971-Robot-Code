@@ -56,6 +56,10 @@ load(
     python_gtk_debs = "files",
 )
 load(
+    "//debian:gtk_runtime.bzl",
+    gtk_runtime_debs = "files",
+)
+load(
     "//debian:opencv_arm64.bzl",
     opencv_arm64_debs = "files",
 )
@@ -126,6 +130,8 @@ generate_repositories_for_debs(matplotlib_debs)
 generate_repositories_for_debs(arm_frc_gnueabi_deps_debs)
 
 generate_repositories_for_debs(python_gtk_debs)
+
+generate_repositories_for_debs(gtk_runtime_debs)
 
 generate_repositories_for_debs(opencv_arm64_debs)
 
@@ -681,6 +687,13 @@ http_archive(
     build_file = "@//debian:python_gtk.BUILD",
     sha256 = "36db18fc2b2c9012312b5d1cdc3d392d7e9756040f759ea50cb623fea29ae817",
     url = "https://www.frc971.org/Build-Dependencies/python_gtk-4.tar.gz",
+)
+
+http_archive(
+    name = "gtk_runtime",
+    build_file = "@//debian:gtk_runtime.BUILD",
+    sha256 = "934693e64bfe63f0c55cdf432fe183eb077d6875d4d6a3dce4e47dbe7e20f5a9",
+    url = "https://www.frc971.org/Build-Dependencies/gtk_runtime-3.tar.gz",
 )
 
 # Downloaded from
