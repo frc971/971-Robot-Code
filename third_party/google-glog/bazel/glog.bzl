@@ -95,6 +95,8 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
         "-DHAVE_SYS_SYSCALL_H",
         # For src/logging.cc to create symlinks.
         "-DHAVE_UNISTD_H",
+        "-DHAVE_EXECINFO_H",
+        "-DHAVE_EXECINFO_BACKTRACE",
         "-fvisibility-inlines-hidden",
         "-fvisibility=hidden",
     ]
