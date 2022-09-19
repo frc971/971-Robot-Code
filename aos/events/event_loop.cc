@@ -389,19 +389,13 @@ void EventLoop::UpdateTimingReport() {
 
   // Pre-fill in the defaults for senders.
   std::vector<flatbuffers::Offset<timing::Sender>> sender_offsets;
-  for (const RawSender *sender : senders_) {
+  for (RawSender *sender : senders_) {
     flatbuffers::Offset<timing::Statistic> size_offset =
         timing::CreateStatistic(fbb);
 
-    std::vector<flatbuffers::Offset<timing::SendErrorCount>>
-        error_count_offsets;
-    for (size_t ii = 0; ii < internal::RawSenderTiming::kNumErrors; ++ii) {
-      error_count_offsets.push_back(timing::CreateSendErrorCount(
-          fbb, timing::EnumValuesSendError()[ii], 0));
-    }
     const flatbuffers::Offset<
         flatbuffers::Vector<flatbuffers::Offset<timing::SendErrorCount>>>
-        error_counts_offset = fbb.CreateVector(error_count_offsets);
+        error_counts_offset = sender->timing_.error_counter.Initialize(&fbb);
 
     timing::Sender::Builder sender_builder(fbb);
 

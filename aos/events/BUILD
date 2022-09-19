@@ -24,10 +24,8 @@ flatbuffer_cc_library(
     name = "event_loop_fbs",
     srcs = ["event_loop.fbs"],
     gen_reflections = 1,
-    includes = [
-        "//aos:configuration_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//aos:configuration_fbs"],
 )
 
 cc_static_flatbuffer(
@@ -341,6 +339,7 @@ cc_library(
     deps = [
         ":event_loop_fbs",
         "//aos:configuration",
+        "//aos/util:error_counter",
         "@com_github_google_glog//:glog",
     ],
 )
