@@ -310,6 +310,7 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":log_reader",
+        "//aos:aos_cli_utils",
         "//aos:configuration",
         "//aos:init",
         "//aos:json_to_flatbuffer",

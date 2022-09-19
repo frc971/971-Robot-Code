@@ -542,6 +542,7 @@ cc_library(
         ":configuration",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "//aos/events:simulated_event_loop",
         "@com_github_google_glog//:glog",
     ],
 )

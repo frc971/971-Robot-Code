@@ -3,9 +3,39 @@
 
 #include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
+#include "aos/events/simulated_event_loop.h"
 #include "gflags/gflags.h"
 
 namespace aos {
+
+struct PrintOptions {
+  // Format the JSON with the pretty option.
+  bool pretty;
+  // Max vector size to skip expanding.
+  size_t max_vector_size;
+  // Put everything on a separate line instead of keeping small messages
+  // together.
+  bool pretty_max;
+  // Print the timestamps.
+  bool print_timestamps;
+  // Make everything JSON compliant.
+  bool json;
+  // Print the distributed clock.
+  bool distributed_clock;
+  // Print numbers out in hex.
+  bool use_hex;
+};
+
+// Print the flatbuffer out to stdout, both to remove the unnecessary cruft from
+// glog and to allow the user to readily redirect just the logged output
+// independent of any debugging information on stderr.
+void PrintMessage(const std::string_view node_name,
+                  aos::NodeEventLoopFactory *node_factory,
+                  const aos::Channel *channel, const aos::Context &context,
+                  aos::FastStringBuilder *builder, PrintOptions options);
+
+void PrintMessage(const aos::Channel *channel, const aos::Context &context,
+                  aos::FastStringBuilder *builder, PrintOptions options);
 
 // The information needed by the main function of a CLI tool.
 struct CliUtilInfo {
