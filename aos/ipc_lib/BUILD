@@ -168,14 +168,19 @@ cc_library(
     srcs = [
         "lockless_queue.cc",
         "lockless_queue_memory.h",
+        "memory_mapped_queue.cc",
     ],
-    hdrs = ["lockless_queue.h"],
+    hdrs = [
+        "lockless_queue.h",
+        "memory_mapped_queue.h",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":aos_sync",
         ":data_alignment",
         ":index",
+        "//aos:configuration",
         "//aos:realtime",
         "//aos:uuid",
         "//aos/time",

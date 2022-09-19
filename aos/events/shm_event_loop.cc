@@ -1,10 +1,8 @@
 #include "aos/events/shm_event_loop.h"
 
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include <algorithm>
 #include <atomic>
@@ -12,13 +10,13 @@
 #include <iterator>
 #include <stdexcept>
 
-#include "absl/strings/str_cat.h"
 #include "aos/events/aos_logging.h"
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop_generated.h"
 #include "aos/events/timing_statistics.h"
 #include "aos/init.h"
 #include "aos/ipc_lib/lockless_queue.h"
+#include "aos/ipc_lib/memory_mapped_queue.h"
 #include "aos/realtime.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/util/file.h"
@@ -56,158 +54,6 @@ void SetShmBase(const std::string_view base) {
 
 namespace {
 
-std::string ShmFolder(std::string_view shm_base, const Channel *channel) {
-  CHECK(channel->has_name());
-  CHECK_EQ(channel->name()->string_view()[0], '/');
-  return absl::StrCat(shm_base, channel->name()->string_view(), "/");
-}
-std::string ShmPath(std::string_view shm_base, const Channel *channel) {
-  CHECK(channel->has_type());
-  return ShmFolder(shm_base, channel) + channel->type()->str() + ".v4";
-}
-
-void PageFaultDataWrite(char *data, size_t size) {
-  // This just has to divide the actual page size. Being smaller will make this
-  // a bit slower than necessary, but not much. 1024 is a pretty conservative
-  // choice (most pages are probably 4096).
-  static constexpr size_t kPageSize = 1024;
-  const size_t pages = (size + kPageSize - 1) / kPageSize;
-  for (size_t i = 0; i < pages; ++i) {
-    char zero = 0;
-    // We need to ensure there's a writable pagetable entry, but avoid modifying
-    // the data.
-    //
-    // Even if you lock the data into memory, some kernels still seem to lazily
-    // create the actual pagetable entries. This means we need to somehow
-    // "write" to the page.
-    //
-    // Also, this takes place while other processes may be concurrently
-    // opening/initializing the memory, so we need to avoid corrupting that.
-    //
-    // This is the simplest operation I could think of which achieves that:
-    // "store 0 if it's already 0".
-    __atomic_compare_exchange_n(&data[i * kPageSize], &zero, 0, true,
-                                __ATOMIC_RELAXED, __ATOMIC_RELAXED);
-  }
-}
-
-void PageFaultDataRead(const char *data, size_t size) {
-  // This just has to divide the actual page size. Being smaller will make this
-  // a bit slower than necessary, but not much. 1024 is a pretty conservative
-  // choice (most pages are probably 4096).
-  static constexpr size_t kPageSize = 1024;
-  const size_t pages = (size + kPageSize - 1) / kPageSize;
-  for (size_t i = 0; i < pages; ++i) {
-    // We need to ensure there's a readable pagetable entry.
-    __atomic_load_n(&data[i * kPageSize], __ATOMIC_RELAXED);
-  }
-}
-
-ipc_lib::LocklessQueueConfiguration MakeQueueConfiguration(
-    const Configuration *configuration, const Channel *channel) {
-  ipc_lib::LocklessQueueConfiguration config;
-
-  config.num_watchers = channel->num_watchers();
-  config.num_senders = channel->num_senders();
-  // The value in the channel will default to 0 if readers are configured to
-  // copy.
-  config.num_pinners = channel->num_readers();
-  config.queue_size = configuration::QueueSize(configuration, channel);
-  config.message_data_size = channel->max_size();
-
-  return config;
-}
-
-class MMappedQueue {
- public:
-  MMappedQueue(std::string_view shm_base, const Configuration *config,
-               const Channel *channel)
-      : config_(MakeQueueConfiguration(config, channel)) {
-    std::string path = ShmPath(shm_base, channel);
-
-    size_ = ipc_lib::LocklessQueueMemorySize(config_);
-
-    util::MkdirP(path, FLAGS_permissions);
-
-    // There are 2 cases.  Either the file already exists, or it does not
-    // already exist and we need to create it.  Start by trying to create it. If
-    // that fails, the file has already been created and we can open it
-    // normally..  Once the file has been created it will never be deleted.
-    int fd = open(path.c_str(), O_RDWR | O_CREAT | O_EXCL,
-                  O_CLOEXEC | FLAGS_permissions);
-    if (fd == -1 && errno == EEXIST) {
-      VLOG(1) << path << " already created.";
-      // File already exists.
-      fd = open(path.c_str(), O_RDWR, O_CLOEXEC);
-      PCHECK(fd != -1) << ": Failed to open " << path;
-      while (true) {
-        struct stat st;
-        PCHECK(fstat(fd, &st) == 0);
-        if (st.st_size != 0) {
-          CHECK_EQ(static_cast<size_t>(st.st_size), size_)
-              << ": Size of " << path
-              << " doesn't match expected size of backing queue file.  Did the "
-                 "queue definition change?";
-          break;
-        } else {
-          // The creating process didn't get around to it yet.  Give it a bit.
-          std::this_thread::sleep_for(std::chrono::milliseconds(10));
-          VLOG(1) << path << " is zero size, waiting";
-        }
-      }
-    } else {
-      VLOG(1) << "Created " << path;
-      PCHECK(fd != -1) << ": Failed to open " << path;
-      PCHECK(ftruncate(fd, size_) == 0);
-    }
-
-    data_ = mmap(NULL, size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    PCHECK(data_ != MAP_FAILED);
-    const_data_ = mmap(NULL, size_, PROT_READ, MAP_SHARED, fd, 0);
-    PCHECK(const_data_ != MAP_FAILED);
-    PCHECK(close(fd) == 0);
-    PageFaultDataWrite(static_cast<char *>(data_), size_);
-    PageFaultDataRead(static_cast<const char *>(const_data_), size_);
-
-    ipc_lib::InitializeLocklessQueueMemory(memory(), config_);
-  }
-
-  ~MMappedQueue() {
-    PCHECK(munmap(data_, size_) == 0);
-    PCHECK(munmap(const_cast<void *>(const_data_), size_) == 0);
-  }
-
-  ipc_lib::LocklessQueueMemory *memory() const {
-    return reinterpret_cast<ipc_lib::LocklessQueueMemory *>(data_);
-  }
-
-  const ipc_lib::LocklessQueueMemory *const_memory() const {
-    return reinterpret_cast<const ipc_lib::LocklessQueueMemory *>(const_data_);
-  }
-
-  const ipc_lib::LocklessQueueConfiguration &config() const { return config_; }
-
-  ipc_lib::LocklessQueue queue() const {
-    return ipc_lib::LocklessQueue(const_memory(), memory(), config());
-  }
-
-  absl::Span<char> GetMutableSharedMemory() const {
-    return absl::Span<char>(static_cast<char *>(data_), size_);
-  }
-
-  absl::Span<const char> GetConstSharedMemory() const {
-    return absl::Span<const char>(static_cast<const char *>(const_data_),
-                                  size_);
-  }
-
- private:
-  const ipc_lib::LocklessQueueConfiguration config_;
-
-  size_t size_;
-  void *data_;
-  const void *const_data_;
-};
-
 const Node *MaybeMyNode(const Configuration *configuration) {
   if (!configuration->has_nodes()) {
     return nullptr;
@@ -215,8 +61,6 @@ const Node *MaybeMyNode(const Configuration *configuration) {
 
   return configuration::GetMyNode(configuration);
 }
-
-namespace chrono = ::std::chrono;
 
 }  // namespace
 
@@ -241,7 +85,8 @@ class SimpleShmFetcher {
                             const Channel *channel)
       : event_loop_(event_loop),
         channel_(channel),
-        lockless_queue_memory_(shm_base, event_loop->configuration(), channel),
+        lockless_queue_memory_(shm_base, FLAGS_permissions,
+                               event_loop->configuration(), channel),
         reader_(lockless_queue_memory_.queue()) {
     context_.data = nullptr;
     // Point the queue index at the next index to read starting now.  This
@@ -450,7 +295,7 @@ class SimpleShmFetcher {
 
   aos::ShmEventLoop *event_loop_;
   const Channel *const channel_;
-  MMappedQueue lockless_queue_memory_;
+  ipc_lib::MemoryMappedQueue lockless_queue_memory_;
   ipc_lib::LocklessQueueReader reader_;
   // This being nullopt indicates we're not looking for wakeups right now.
   std::optional<ipc_lib::LocklessQueueWatcher> watcher_;
@@ -531,7 +376,8 @@ class ShmSender : public RawSender {
   explicit ShmSender(std::string_view shm_base, EventLoop *event_loop,
                      const Channel *channel)
       : RawSender(event_loop, channel),
-        lockless_queue_memory_(shm_base, event_loop->configuration(), channel),
+        lockless_queue_memory_(shm_base, FLAGS_permissions,
+                               event_loop->configuration(), channel),
         lockless_queue_sender_(VerifySender(
             ipc_lib::LocklessQueueSender::Make(
                 lockless_queue_memory_.queue(),
@@ -638,7 +484,7 @@ class ShmSender : public RawSender {
                << static_cast<int>(result);
   }
 
-  MMappedQueue lockless_queue_memory_;
+  ipc_lib::MemoryMappedQueue lockless_queue_memory_;
   ipc_lib::LocklessQueueSender lockless_queue_sender_;
   ipc_lib::LocklessQueueWakeUpper wake_upper_;
 };
@@ -751,7 +597,7 @@ class ShmTimerHandler final : public TimerHandler {
       return;
     }
 
-    if (repeat_offset_ == chrono::seconds(0)) {
+    if (repeat_offset_ == std::chrono::seconds(0)) {
       timerfd_.Disable();
     } else {
       // Compute how many cycles have elapsed and schedule the next iteration
@@ -765,7 +611,7 @@ class ShmTimerHandler final : public TimerHandler {
       // Update the heap and schedule the timerfd wakeup.
       event_.set_event_time(base_);
       shm_event_loop_->AddEvent(&event_);
-      timerfd_.SetTime(base_, chrono::seconds(0));
+      timerfd_.SetTime(base_, std::chrono::seconds(0));
     }
   }
 
@@ -1239,7 +1085,8 @@ absl::Span<const char> ShmEventLoop::GetWatcherSharedMemory(
 
 int ShmEventLoop::NumberBuffers(const Channel *channel) {
   CheckCurrentThread();
-  return MakeQueueConfiguration(configuration(), channel).num_messages();
+  return ipc_lib::MakeQueueConfiguration(configuration(), channel)
+      .num_messages();
 }
 
 absl::Span<char> ShmEventLoop::GetShmSenderSharedMemory(

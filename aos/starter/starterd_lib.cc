@@ -8,6 +8,13 @@
 #include "glog/logging.h"
 #include "glog/stl_logging.h"
 
+// FLAGS_shm_base is defined elsewhere, declare it here so it can be used
+// to override the shared memory folder for unit testing.
+DECLARE_string(shm_base);
+// FLAGS_permissions is defined elsewhere, declare it here so it can be used
+// to set the file permissions on the shared memory block.
+DECLARE_uint32(permissions);
+
 namespace aos {
 namespace starter {
 
@@ -32,6 +39,7 @@ Starter::Starter(const aos::Configuration *event_loop_config)
       max_status_count_(
           event_loop_.GetChannel<aos::starter::Status>("/aos")->frequency() -
           1),
+      shm_base_(FLAGS_shm_base),
       listener_(&event_loop_,
                 [this](signalfd_siginfo signal) { OnSignal(signal); }),
       top_(&event_loop_) {
@@ -67,6 +75,8 @@ Starter::Starter(const aos::Configuration *event_loop_config)
     }
   }
 
+  // Catalogue all the applications for this node, so we can keep an eye on
+  // them.
   if (config_msg_->has_applications()) {
     const flatbuffers::Vector<flatbuffers::Offset<aos::Application>>
         *applications = config_msg_->applications();
@@ -85,6 +95,19 @@ Starter::Starter(const aos::Configuration *event_loop_config)
     } else {
       for (const aos::Application *application : *applications) {
         AddApplication(application);
+      }
+    }
+  }
+
+  // Catalogue all the intranode channels for this node, and create
+  // MemoryMappedQueues for each one to allocate the shared memory before
+  // spawning any shasta process.
+  if (config_msg_->has_channels()) {
+    const aos::Node *this_node = event_loop_.node();
+    std::vector<const aos::Channel *> intranode_channels;
+    for (const aos::Channel *channel : *config_msg_->channels()) {
+      if (aos::configuration::ChannelIsReadableOnNode(channel, this_node)) {
+        AddChannel(channel);
       }
     }
   }
@@ -218,6 +241,15 @@ void Starter::SendStatus() {
   aos::starter::Status::Builder status_builder(*builder.fbb());
   status_builder.add_statuses(statuses_fbs);
   builder.CheckOk(builder.Send(status_builder.Finish()));
+}
+
+void Starter::AddChannel(const aos::Channel *channel) {
+  CHECK_NOTNULL(channel);
+  shm_queues_.emplace_back(std::make_unique<aos::ipc_lib::MemoryMappedQueue>(
+      shm_base_, FLAGS_permissions, event_loop_.configuration(), channel));
+  VLOG(1) << "Created MemoryMappedQueue for "
+          << aos::configuration::StrippedChannelToString(channel) << " under "
+          << shm_base_;
 }
 
 }  // namespace starter
