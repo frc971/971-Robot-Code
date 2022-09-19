@@ -26,6 +26,7 @@ DEFINE_int32(rate_limit, 0,
 DEFINE_int32(timeout, -1,
              "The max time in milliseconds to wait for messages before "
              "exiting.  -1 means forever, 0 means don't wait.");
+DEFINE_bool(use_hex, false, "Are integers in the messages printed in hex notation.");
 
 namespace {
 
@@ -48,7 +49,7 @@ void PrintMessage(const aos::Channel *channel, const aos::Context &context,
   aos::FlatbufferToJson(
       builder, channel->schema(), static_cast<const uint8_t *>(context.data),
       {FLAGS_pretty, static_cast<size_t>(FLAGS_max_vector_size),
-       FLAGS_pretty_max});
+       FLAGS_pretty_max, FLAGS_use_hex});
 
   if (FLAGS_print_timestamps) {
     if (context.monotonic_remote_time != context.monotonic_event_time) {

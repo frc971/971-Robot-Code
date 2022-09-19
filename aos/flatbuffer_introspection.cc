@@ -11,34 +11,47 @@ namespace {
 using reflection::BaseType;
 
 void IntToString(int64_t val, reflection::BaseType type,
-                 FastStringBuilder *out) {
+                 FastStringBuilder *out, bool use_hex) {
+  // For 1-byte types in hex mode, we need to cast to 2 bytes to get the desired output and
+  // not unprintable characters.
+  if (use_hex) {
+    if (BaseType::UByte == type) {
+      out->AppendInt(static_cast<uint16_t>(val), true);
+      return;
+    }
+    if (BaseType::Byte == type) {
+      out->AppendInt(static_cast<int16_t>(val), true);
+      return;
+    }
+  }
+
   switch (type) {
     case BaseType::Bool:
       out->AppendBool(static_cast<bool>(val));
       break;
     case BaseType::UByte:
-      out->AppendInt(static_cast<uint8_t>(val));
+      out->AppendInt(static_cast<uint8_t>(val), use_hex);
       break;
     case BaseType::Byte:
-      out->AppendInt(static_cast<int8_t>(val));
+      out->AppendInt(static_cast<int8_t>(val), use_hex);
       break;
     case BaseType::Short:
-      out->AppendInt(static_cast<int16_t>(val));
+      out->AppendInt(static_cast<int16_t>(val), use_hex);
       break;
     case BaseType::UShort:
-      out->AppendInt(static_cast<uint16_t>(val));
+      out->AppendInt(static_cast<uint16_t>(val), use_hex);
       break;
     case BaseType::Int:
-      out->AppendInt(static_cast<int32_t>(val));
+      out->AppendInt(static_cast<int32_t>(val), use_hex);
       break;
     case BaseType::UInt:
-      out->AppendInt(static_cast<uint32_t>(val));
+      out->AppendInt(static_cast<uint32_t>(val), use_hex);
       break;
     case BaseType::Long:
-      out->AppendInt(static_cast<int64_t>(val));
+      out->AppendInt(static_cast<int64_t>(val), use_hex);
       break;
     case BaseType::ULong:
-      out->AppendInt(static_cast<uint64_t>(val));
+      out->AppendInt(static_cast<uint64_t>(val), use_hex);
       break;
     default:
       out->Append("null");
@@ -84,7 +97,7 @@ std::string_view EnumToString(
 void IntOrEnumToString(
     int64_t val, const reflection::Type *type,
     const flatbuffers::Vector<flatbuffers::Offset<reflection::Enum>> *enums,
-    FastStringBuilder *out) {
+    FastStringBuilder *out, bool use_hex = false) {
   // Check if integer is an enum and print string, otherwise fallback to
   // printing as int.
   if (type->index() > -1 && type->index() < (int32_t)enums->size()) {
@@ -104,9 +117,9 @@ void IntOrEnumToString(
   } else {
     if (type->base_type() == BaseType::Vector ||
         type->base_type() == BaseType::Array) {
-      IntToString(val, type->element(), out);
+      IntToString(val, type->element(), out, use_hex);
     } else {
-      IntToString(val, type->base_type(), out);
+      IntToString(val, type->base_type(), out, use_hex);
     }
   }
 }
@@ -150,7 +163,7 @@ void FieldToString(
     case BaseType::UInt:
     case BaseType::Long:
     case BaseType::ULong:
-      IntOrEnumToString(GetAnyFieldI(*table, *field), type, enums, out);
+      IntOrEnumToString(GetAnyFieldI(*table, *field), type, enums, out, json_options.use_hex);
       break;
     case BaseType::Float:
     case BaseType::Double:
@@ -228,7 +241,7 @@ void FieldToString(
           if (flatbuffers::IsInteger(elem_type)) {
             IntOrEnumToString(
                 flatbuffers::GetAnyVectorElemI(vector, elem_type, i), type,
-                enums, out);
+                enums, out, json_options.use_hex);
           } else if (flatbuffers::IsFloat(elem_type)) {
             FloatToString(flatbuffers::GetAnyVectorElemF(vector, elem_type, i),
                           elem_type, out);

@@ -54,6 +54,7 @@ DEFINE_double(monotonic_start_time, 0.0,
 DEFINE_double(monotonic_end_time, 0.0,
               "If set, only print messages sent at or before this many seconds "
               "after epoch.");
+DEFINE_bool(use_hex, false, "Are integers in the messages printed in hex notation.");
 
 using aos::monotonic_clock;
 namespace chrono = std::chrono;
@@ -96,7 +97,10 @@ void PrintMessage(const std::string_view node_name,
 
   aos::FlatbufferToJson(
       builder, channel->schema(), static_cast<const uint8_t *>(context.data),
-      {FLAGS_pretty, static_cast<size_t>(FLAGS_max_vector_size)});
+      {.multi_line = FLAGS_pretty,
+       .max_vector_size = static_cast<size_t>(FLAGS_max_vector_size),
+       .max_multi_line = false,
+       .use_hex = FLAGS_use_hex});
 
   if (FLAGS_json) {
     std::cout << "{";

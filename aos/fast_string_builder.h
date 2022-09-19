@@ -37,7 +37,7 @@ class FastStringBuilder {
 
   // Append integer to result, converted to string representation.
   template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-  void AppendInt(T val);
+  void AppendInt(T val, bool use_hex = false);
 
   void Append(std::string_view);
 
@@ -70,11 +70,18 @@ class FastStringBuilder {
 };
 
 template <typename T, typename>
-void FastStringBuilder::AppendInt(T val) {
-  std::size_t index = str_.size();
-  Resize(absl::numbers_internal::kFastToBufferSize);
-  char *end = absl::numbers_internal::FastIntToBuffer(val, str_.data() + index);
-  str_.resize(end - str_.data());
+void FastStringBuilder::AppendInt(T val, bool use_hex) {
+  if (use_hex) {
+    // This is not fast like the decimal path, but hex should be used in limited cases.
+    std::stringstream ss;
+    ss << std::hex << val;
+    str_ += ss.str();
+  } else {
+    std::size_t index = str_.size();
+    Resize(absl::numbers_internal::kFastToBufferSize);
+    char *end = absl::numbers_internal::FastIntToBuffer(val, str_.data() + index);
+    str_.resize(end - str_.data());
+  }
 }
 
 }  // namespace aos

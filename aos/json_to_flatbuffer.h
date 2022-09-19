@@ -45,6 +45,8 @@ struct JsonOptions {
   // more extensive version of multi_line that prints every single field on its
   // own line.
   bool max_multi_line = false;
+  // Will integers be printed in hexadecimal form instead of decimal.
+  bool use_hex = false;
 };
 
 // Converts a flatbuffer into a Json string.
