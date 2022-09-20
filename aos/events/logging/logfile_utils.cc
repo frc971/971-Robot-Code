@@ -846,6 +846,7 @@ std::ostream &operator<<(std::ostream &os, const UnpackedMessageHeader &m) {
   if (m.has_monotonic_timestamp_time) {
     os << ", .monotonic_timestamp_time=" << m.monotonic_timestamp_time;
   }
+  os << "}";
   return os;
 }
 
@@ -884,6 +885,8 @@ std::ostream &operator<<(std::ostream &os, const TimestampedMessage &m) {
   }
   if (m.data != nullptr) {
     os << ", .data=" << *m.data;
+  } else {
+    os << ", .data=nullptr";
   }
   os << "}";
   return os;

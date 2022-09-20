@@ -2718,7 +2718,7 @@ TEST_F(SortingDeathTest, FightingNodes) {
         const std::vector<LogFile> parts =
             SortParts({logfile0_, logfile1_, logfile2_, logfile3_});
       },
-      "Found overlapping boots on");
+      "found overlapping boots on");
 }
 
 // Tests that we MessageReader blows up on a bad message.
