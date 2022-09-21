@@ -253,18 +253,20 @@ Values MakeValues(uint16_t team) {
 
     case kPracticeTeamNumber:
       // TODO(milind): calibrate once mounted
-      climber->potentiometer_offset = 0.0;
-      intake_front->potentiometer_offset = 3.06604378582351;
+      climber->potentiometer_offset = -0.1209073362519;
+      intake_front->potentiometer_offset = 3.06604378582351 - 0.60745632979918;
       intake_front->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.318042402595181;
-      intake_back->potentiometer_offset = 3.10861174832838;
+          .measured_absolute_position = 0.143667561169188;
+      intake_back->potentiometer_offset = 3.10861174832838 + 0.431432052414186;
       intake_back->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.140554083520329;
-      turret->potentiometer_offset =
-          -8.14418207451834 + 0.342635491808218 - 0.944807955598189;
+          .measured_absolute_position = 0.210881638218534;
+      turret->potentiometer_offset = -8.14418207451834 + 0.342635491808218 -
+                                     0.944807955598189 - 0.0718028442723373 -
+                                     0.0793332946417493 + 0.12075077167351;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
-          0.524976896930003;
-      turret_range->upper = 3.0;
+          0.582199286385208;
+      turret_range->upper = 2.48;
+      turret_range->lower = -6.30;
       turret_params->range = *turret_range;
       flipper_arm_left->potentiometer_offset = -4.39536583413615;
       flipper_arm_right->potentiometer_offset = 4.36264091401229;
