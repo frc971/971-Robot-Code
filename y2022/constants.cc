@@ -252,6 +252,26 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kPracticeTeamNumber:
+      r.shot_interpolation_table = InterpolationTable<Values::ShotParams>({
+          {1.0, {0.08, 20.0}},
+          {1.6, {0.08, 20.0}},
+          {1.9, {0.11, 20.0}},
+          {2.12, {0.15, 20.5}},
+          {2.9, {0.27, 20.2}},
+
+          {3.2, {0.29, 20.6}},
+
+          {3.60, {0.36, 21.0}},
+          {4.50, {0.41, 22.7}},
+          {4.9, {0.42, 23.3}},
+          {5.4, {0.42, 24.6}},
+
+          {6.0, {0.42, 26.25}},
+          {7.0, {0.39, 28.25}},
+
+          {10.0, {0.39, 28.25}},
+      });
+
       // TODO(milind): calibrate once mounted
       climber->potentiometer_offset = -0.1209073362519;
       intake_front->potentiometer_offset = 3.06604378582351 - 0.60745632979918;
