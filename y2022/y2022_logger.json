@@ -549,7 +549,7 @@
   "nodes": [
     {
       "name": "logger",
-      "hostname": "logger",
+      "hostname": "pi6",
       "hostnames": [
         "pi-971-6",
         "pi-9971-6",

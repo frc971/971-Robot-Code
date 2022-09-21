@@ -21,14 +21,6 @@ namespace constants {
 
 const int Values::kZeroingSampleSize;
 
-namespace {
-
-const uint16_t kCompTeamNumber = 971;
-const uint16_t kPracticeTeamNumber = 9971;
-const uint16_t kCodingRobotTeamNumber = 7971;
-
-}  // namespace
-
 Values MakeValues(uint16_t team) {
   LOG(INFO) << "creating a Constants for team: " << team;
 
@@ -182,6 +174,8 @@ Values MakeValues(uint16_t team) {
         });
   }
 
+  Values::BallColorParams *const ball_color = &r.ball_color;
+
   switch (team) {
     // A set of constants for tests.
     case 1:
@@ -211,6 +205,11 @@ Values MakeValues(uint16_t team) {
 
       catapult_params->zeroing_constants.measured_absolute_position = 0.0;
       catapult->potentiometer_offset = 0.0;
+
+      ball_color->reference_red = {0, 0, 1, 1};
+      ball_color->reference_blue = {0, 0, 1, 1};
+      ball_color->ball_location = {0, 0, 1, 1};
+
       break;
 
     case kCompTeamNumber:
@@ -249,6 +248,11 @@ Values MakeValues(uint16_t team) {
       catapult_params->zeroing_constants.measured_absolute_position =
           1.71723370408082;
       catapult->potentiometer_offset = -2.03383240293769;
+
+      ball_color->reference_red = {440, 150, 50, 130};
+      ball_color->reference_blue = {440, 350, 30, 100};
+      ball_color->ball_location = {100, 400, 140, 50};
+
       break;
 
     case kPracticeTeamNumber:
@@ -299,6 +303,11 @@ Values MakeValues(uint16_t team) {
       catapult_params->zeroing_constants.measured_absolute_position =
           1.62909518684227;
       catapult->potentiometer_offset = -1.52951814169821 - 0.0200812009850977;
+
+      ball_color->reference_red = {526, 75, 110, 220};
+      ball_color->reference_blue = {526, 340, 110, 100};
+      ball_color->ball_location = {40, 440, 200, 30};
+
       break;
 
     case kCodingRobotTeamNumber:
@@ -328,6 +337,11 @@ Values MakeValues(uint16_t team) {
 
       catapult_params->zeroing_constants.measured_absolute_position = 0.0;
       catapult->potentiometer_offset = 0.0;
+
+      ball_color->reference_red = {0, 0, 1, 1};
+      ball_color->reference_blue = {0, 0, 1, 1};
+      ball_color->ball_location = {0, 0, 1, 1};
+
       break;
 
     default:

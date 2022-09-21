@@ -325,8 +325,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2022/aos_config.json"),
             std::chrono::microseconds(5050)),
-        values_(std::make_shared<constants::Values>(constants::MakeValues(
-            frc971::control_loops::testing::kTeamNumber))),
+        values_(std::make_shared<constants::Values>(constants::MakeValues())),
         roborio_(aos::configuration::GetNode(configuration(), "roborio")),
         logger_pi_(aos::configuration::GetNode(configuration(), "logger")),
         superstructure_event_loop(MakeEventLoop("Superstructure", roborio_)),

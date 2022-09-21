@@ -33,9 +33,10 @@ class BallColorTest : public ::testing::Test {
             event_loop_factory_.MakeEventLoop("Superstructure", roborio_)),
         ball_color_fetcher_(superstructure_event_loop_->MakeFetcher<BallColor>(
             "/superstructure")),
-        image_sender_(camera_event_loop_->MakeSender<CameraImage>("/camera"))
-
-  {}
+        image_sender_(camera_event_loop_->MakeSender<CameraImage>("/camera")),
+        detector_(color_detector_event_loop_.get(),
+                  std::make_shared<const constants::Values>(
+                      constants::MakeValues(constants::kCompTeamNumber))) {}
 
   // copied from camera_reader.cc
   void SendImage(cv::Mat bgr_image) {
@@ -84,6 +85,8 @@ class BallColorTest : public ::testing::Test {
   ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop_;
   aos::Fetcher<BallColor> ball_color_fetcher_;
   aos::Sender<CameraImage> image_sender_;
+
+  BallColorDetector detector_;
 };
 
 TEST_F(BallColorTest, DetectColorFromTestImage) {
@@ -92,7 +95,7 @@ TEST_F(BallColorTest, DetectColorFromTestImage) {
 
   ASSERT_TRUE(bgr_image.data != nullptr);
 
-  aos::Alliance detected_color = BallColorDetector::DetectColor(bgr_image);
+  aos::Alliance detected_color = detector_.DetectColor(bgr_image);
 
   EXPECT_EQ(detected_color, aos::Alliance::kRed);
 }
@@ -101,8 +104,6 @@ TEST_F(BallColorTest, DetectColorFromTestImageInEventLoop) {
   cv::Mat bgr_image =
       cv::imread("y2022/vision/test_ball_color_image.jpg", cv::IMREAD_COLOR);
   ASSERT_TRUE(bgr_image.data != nullptr);
-
-  BallColorDetector detector(color_detector_event_loop_.get());
 
   camera_event_loop_->OnRun([this, bgr_image]() { SendImage(bgr_image); });
 
@@ -128,13 +129,13 @@ TEST_F(BallColorTest, TestAreas) {
   ASSERT_TRUE(bgr_image.data != nullptr);
 
   cv::Rect reference_red = BallColorDetector::RescaleRect(
-      bgr_image, BallColorDetector::kReferenceRed(),
+      bgr_image, detector_.reference_red(),
       BallColorDetector::kMeasurementsImageSize());
   cv::Rect reference_blue = BallColorDetector::RescaleRect(
-      bgr_image, BallColorDetector::kReferenceBlue(),
+      bgr_image, detector_.reference_blue(),
       BallColorDetector::kMeasurementsImageSize());
   cv::Rect ball_location = BallColorDetector::RescaleRect(
-      bgr_image, BallColorDetector::kBallLocation(),
+      bgr_image, detector_.ball_location(),
       BallColorDetector::kMeasurementsImageSize());
 
   cv::rectangle(bgr_image, reference_red, cv::Scalar(0, 0, 255));

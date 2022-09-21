@@ -199,10 +199,10 @@ cc_library(
         ":ball_color_fbs",
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
-        "//aos/network:team_number",
         "//frc971/input:joystick_state_fbs",
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
+        "//y2022:constants",
     ],
 )
 

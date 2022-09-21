@@ -15,8 +15,19 @@
 namespace y2022 {
 namespace vision {
 
-BallColorDetector::BallColorDetector(aos::EventLoop *event_loop)
-    : ball_color_sender_(event_loop->MakeSender<BallColor>("/superstructure")) {
+namespace {
+cv::Rect ArrayToRect(const std::array<int, 4> &values) {
+  return cv::Rect{values[0], values[1], values[2], values[3]};
+}
+}  // namespace
+
+BallColorDetector::BallColorDetector(
+    aos::EventLoop *event_loop, std::shared_ptr<const constants::Values> values)
+    : ball_color_sender_(event_loop->MakeSender<BallColor>("/superstructure")),
+      values_(values),
+      reference_red_(ArrayToRect(values_->ball_color.reference_red)),
+      reference_blue_(ArrayToRect(values_->ball_color.reference_blue)),
+      ball_location_(ArrayToRect(values_->ball_color.ball_location)) {
   event_loop->MakeWatcher("/camera", [this](const CameraImage &camera_image) {
     this->ProcessImage(camera_image);
   });
@@ -42,22 +53,20 @@ aos::Alliance BallColorDetector::DetectColor(cv::Mat image) {
   cv::cvtColor(image, hsv, cv::COLOR_BGR2HSV);
 
   // Look at 3 chunks of the image
-  cv::Mat reference_red =
-      BallColorDetector::SubImage(hsv, BallColorDetector::kReferenceRed());
+  cv::Mat reference_red_mat = BallColorDetector::SubImage(hsv, reference_red_);
 
-  cv::Mat reference_blue =
-      BallColorDetector::SubImage(hsv, BallColorDetector::kReferenceBlue());
-  cv::Mat ball_location =
-      BallColorDetector::SubImage(hsv, BallColorDetector::kBallLocation());
+  cv::Mat reference_blue_mat =
+      BallColorDetector::SubImage(hsv, reference_blue_);
+  cv::Mat ball_location_mat = BallColorDetector::SubImage(hsv, ball_location_);
 
   // OpenCV HSV hues go from [0 to 179]
   // Average the average color of each patch in both directions
   // Rejecting pixels that have too low saturation or to bright or dark value
   // And dealing with the wrapping of the red hues by shifting the wrap to be
   // around 90 instead of 180. 90 is a color we don't care about.
-  double red = BallColorDetector::mean_hue(reference_red);
-  double blue = BallColorDetector::mean_hue(reference_blue);
-  double ball = BallColorDetector::mean_hue(ball_location);
+  double red = BallColorDetector::mean_hue(reference_red_mat);
+  double blue = BallColorDetector::mean_hue(reference_blue_mat);
+  double ball = BallColorDetector::mean_hue(ball_location_mat);
 
   // Just look at the hue values for distance
   const double distance_to_blue = std::abs(ball - blue);

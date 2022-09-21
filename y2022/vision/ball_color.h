@@ -6,6 +6,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "frc971/input/joystick_state_generated.h"
 #include "frc971/vision/vision_generated.h"
+#include "y2022/constants.h"
 #include "y2022/vision/ball_color_generated.h"
 
 namespace y2022 {
@@ -20,10 +21,7 @@ class BallColorDetector {
  public:
   // The size image that the reference rectangles were measure with
   // These constants will be scaled if the image sent is not the same size
-  static const cv::Size kMeasurementsImageSize() { return {640, 480}; };
-  static const cv::Rect kReferenceRed() { return {440, 150, 50, 130}; };
-  static const cv::Rect kReferenceBlue() { return {440, 350, 30, 100}; };
-  static const cv::Rect kBallLocation() { return {100, 400, 140, 50}; };
+  static const cv::Size kMeasurementsImageSize() { return {640, 480}; }
 
   // Constants used to filter out pixels that don't have good color information
   static constexpr double kMinSaturation = 128;
@@ -32,7 +30,8 @@ class BallColorDetector {
 
   static constexpr double kMaxHueDistance = 10;
 
-  BallColorDetector(aos::EventLoop *event_loop);
+  BallColorDetector(aos::EventLoop *event_loop,
+                    std::shared_ptr<const constants::Values> values);
 
   void ProcessImage(const CameraImage &camera_image);
 
@@ -42,7 +41,11 @@ class BallColorDetector {
   // the average hue of each patch but discard pixels that we deem not colorful
   // enough. Then we decide whether the ball color looks close enough to either
   // of the reference colors. If no good color is detected, outputs kInvalid.
-  static aos::Alliance DetectColor(cv::Mat image);
+  aos::Alliance DetectColor(cv::Mat image);
+
+  cv::Rect reference_red() const { return reference_red_; }
+  cv::Rect reference_blue() const { return reference_blue_; }
+  cv::Rect ball_location() const { return ball_location_; }
 
   static cv::Mat SubImage(cv::Mat image, cv::Rect location);
 
@@ -52,6 +55,12 @@ class BallColorDetector {
 
  private:
   aos::Sender<BallColor> ball_color_sender_;
+
+  std::shared_ptr<const constants::Values> values_;
+
+  const cv::Rect reference_red_;
+  const cv::Rect reference_blue_;
+  const cv::Rect ball_location_;
 };
 }  // namespace vision
 }  // namespace y2022

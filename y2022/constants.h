@@ -20,6 +20,10 @@ using ::frc971::shooter_interpolation::InterpolationTable;
 namespace y2022 {
 namespace constants {
 
+constexpr uint16_t kCompTeamNumber = 971;
+constexpr uint16_t kPracticeTeamNumber = 9971;
+constexpr uint16_t kCodingRobotTeamNumber = 7971;
+
 struct Values {
   static const int kZeroingSampleSize = 200;
 
@@ -233,6 +237,15 @@ struct Values {
   InterpolationTable<ShotParams> shot_interpolation_table;
 
   InterpolationTable<ShotVelocityParams> shot_velocity_interpolation_table;
+
+  struct BallColorParams {
+    // Rects stored as {x, y, width, height}
+    std::array<int, 4> reference_red;
+    std::array<int, 4> reference_blue;
+    std::array<int, 4> ball_location;
+  };
+
+  BallColorParams ball_color;
 };
 
 // Creates and returns a Values instance for the constants.
