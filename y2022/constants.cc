@@ -262,11 +262,11 @@ Values MakeValues(uint16_t team) {
           .measured_absolute_position = 0.210881638218534;
       turret->potentiometer_offset = -8.14418207451834 + 0.342635491808218 -
                                      0.944807955598189 - 0.0718028442723373 -
-                                     0.0793332946417493 + 0.12075077167351;
+                                     0.0793332946417493 + 0.233707527214682;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
-          0.582199286385208;
-      turret_range->upper = 2.48;
-      turret_range->lower = -6.30;
+          0.417361401417553;
+      turret_range->upper = 2.66;
+      turret_range->lower = -6.79;
       turret_params->range = *turret_range;
       flipper_arm_left->potentiometer_offset = -4.39536583413615;
       flipper_arm_right->potentiometer_offset = 4.36264091401229;
