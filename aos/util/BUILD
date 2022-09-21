@@ -333,6 +333,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":file",
+        "//aos:realtime",
         "//aos/testing:googletest",
     ],
 )

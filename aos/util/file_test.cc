@@ -4,6 +4,9 @@
 #include <string>
 
 #include "gtest/gtest.h"
+#include "aos/realtime.h"
+
+DECLARE_bool(die_on_malloc);
 
 namespace aos {
 namespace util {
@@ -36,6 +39,21 @@ TEST(FileTest, PathExistsTest) {
   WriteStringToFileOrDie(test_file, "abc");
 
   EXPECT_TRUE(PathExists(test_file));
+}
+
+// Basic test of reading a normal file.
+TEST(FileTest, ReadNormalFileNoMalloc) {
+  const ::std::string tmpdir(getenv("TEST_TMPDIR"));
+  const ::std::string test_file = tmpdir + "/test_file";
+  ASSERT_EQ(0, system(("echo 971 > " + test_file).c_str()));
+
+  FileReader reader(test_file);
+
+  FLAGS_die_on_malloc = true;
+  RegisterMallocHook();
+  aos::ScopedRealtime realtime;
+  EXPECT_EQ("971\n", reader.ReadContents());
+  EXPECT_EQ(971, reader.ReadInt());
 }
 
 }  // namespace testing
