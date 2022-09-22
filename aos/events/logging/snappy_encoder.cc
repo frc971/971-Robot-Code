@@ -1,7 +1,7 @@
 #include "aos/events/logging/snappy_encoder.h"
 
 #include "aos/util/crc32.h"
-#include "external/snappy/snappy.h"
+#include "snappy.h"
 
 namespace aos::logger {
 // Snappy file format is a series of chunks. Each chunk consists of:

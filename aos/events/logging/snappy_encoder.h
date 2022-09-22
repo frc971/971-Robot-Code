@@ -7,9 +7,9 @@
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/events/logging/buffer_encoder.h"
 #include "aos/events/logging/logger_generated.h"
-#include "external/snappy/snappy-sinksource.h"
-#include "external/snappy/snappy.h"
 #include "flatbuffers/flatbuffers.h"
+#include "snappy-sinksource.h"
+#include "snappy.h"
 
 namespace aos::logger {
 
