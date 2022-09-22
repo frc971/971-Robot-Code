@@ -100,7 +100,8 @@
     {
       "name": "/pi1/aos/remote_timestamps/pi2/pi1/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
-      "logger": "NOT_LOGGED",
+      /* Log one remote timestamp channel to ensure everythings still works. */
+      "logger": "LOCAL_LOGGER",
       "num_senders": 2,
       "source_node": "pi1"
     },

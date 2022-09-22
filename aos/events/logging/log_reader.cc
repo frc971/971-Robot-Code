@@ -288,6 +288,10 @@ LogReader::LogReader(std::vector<LogFile> log_files,
               RemoteMessage::GetFullyQualifiedName(), "", node, true);
 
           if (timestamp_channel != nullptr) {
+            // If for some reason a timestamp channel is not NOT_LOGGED (which
+            // is unusual), then remap the channel so that the replayed channel
+            // doesn't overlap with the special separate replay we do for
+            // timestamps.
             if (timestamp_channel->logger() != LoggerConfig::NOT_LOGGED) {
               RemapLoggedChannel<RemoteMessage>(
                   timestamp_channel->name()->string_view(), node);
@@ -1278,9 +1282,40 @@ void LogReader::Deregister() {
   event_loop_factory_ = nullptr;
 }
 
+namespace {
+// Checks if the specified channel name/type exists in the config and, depending
+// on the value of conflict_handling, calls conflict_handler or just dies.
+template <typename F>
+void CheckAndHandleRemapConflict(std::string_view new_name,
+                                 std::string_view new_type,
+                                 const Configuration *config,
+                                 LogReader::RemapConflict conflict_handling,
+                                 F conflict_handler) {
+  const Channel *existing_channel =
+      configuration::GetChannel(config, new_name, new_type, "", nullptr, true);
+  if (existing_channel != nullptr) {
+    switch (conflict_handling) {
+      case LogReader::RemapConflict::kDisallow:
+        LOG(FATAL)
+            << "Channel "
+            << configuration::StrippedChannelToString(existing_channel)
+            << " is already used--you can't remap a logged channel to it.";
+        break;
+      case LogReader::RemapConflict::kCascade:
+        LOG(INFO) << "Automatically remapping "
+                  << configuration::StrippedChannelToString(existing_channel)
+                  << " to avoid conflicts.";
+        conflict_handler();
+        break;
+    }
+  }
+}
+}  // namespace
+
 void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
                                    std::string_view add_prefix,
-                                   std::string_view new_type) {
+                                   std::string_view new_type,
+                                   RemapConflict conflict_handling) {
   for (size_t ii = 0; ii < logged_configuration()->channels()->size(); ++ii) {
     const Channel *const channel = logged_configuration()->channels()->Get(ii);
     if (channel->name()->str() == name &&
@@ -1292,6 +1327,16 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
       remapped_channel.remapped_name =
           std::string(add_prefix) + std::string(name);
       remapped_channel.new_type = new_type;
+      const std::string_view remapped_type =
+          remapped_channel.new_type.empty() ? type : remapped_channel.new_type;
+      CheckAndHandleRemapConflict(
+          remapped_channel.remapped_name, remapped_type,
+          remapped_configuration_, conflict_handling,
+          [this, &remapped_channel, remapped_type, add_prefix,
+           conflict_handling]() {
+            RemapLoggedChannel(remapped_channel.remapped_name, remapped_type,
+                               add_prefix, "", conflict_handling);
+          });
       remapped_channels_[ii] = std::move(remapped_channel);
       VLOG(1) << "Remapping channel "
               << configuration::CleanedChannelToString(channel)
@@ -1307,7 +1352,8 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
 void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
                                    const Node *node,
                                    std::string_view add_prefix,
-                                   std::string_view new_type) {
+                                   std::string_view new_type,
+                                   RemapConflict conflict_handling) {
   VLOG(1) << "Node is " << aos::FlatbufferToJson(node);
   const Channel *remapped_channel =
       configuration::GetChannel(logged_configuration(), name, type, "", node);
@@ -1350,6 +1396,15 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
       std::string(add_prefix) +
       std::string(remapped_channel->name()->string_view());
   remapped_channel_struct.new_type = new_type;
+  const std::string_view remapped_type = new_type.empty() ? type : new_type;
+  CheckAndHandleRemapConflict(
+      remapped_channel_struct.remapped_name, remapped_type,
+      remapped_configuration_, conflict_handling,
+      [this, &remapped_channel_struct, remapped_type, node, add_prefix,
+       conflict_handling]() {
+        RemapLoggedChannel(remapped_channel_struct.remapped_name, remapped_type,
+                           node, add_prefix, "", conflict_handling);
+      });
   remapped_channels_[channel_index] = std::move(remapped_channel_struct);
   MakeRemappedConfig();
 }

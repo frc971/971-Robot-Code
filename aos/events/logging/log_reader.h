@@ -156,18 +156,36 @@ class LogReader {
   void SetEndTime(std::string end_time);
   void SetEndTime(realtime_clock::time_point end_time);
 
+  // Enum to use for indicating how RemapLoggedChannel behaves when there is
+  // already a channel with the remapped name (e.g., as may happen when
+  // replaying a logfile that was itself generated from replay).
+  enum class RemapConflict {
+    // LOG(FATAL) on conflicts in remappings.
+    kDisallow,
+    // If we run into a conflict, attempt to remap the channel we would be
+    // overriding (and continue to do so if remapping *that* channel also
+    // generates a conflict).
+    // This will mean that if we repeatedly replay a log, we will end up
+    // stacking more and more /original's on the start of the oldest version
+    // of the channels.
+    kCascade
+  };
+
   // Causes the logger to publish the provided channel on a different name so
   // that replayed applications can publish on the proper channel name without
   // interference. This operates on raw channel names, without any node or
   // application specific mappings.
-  void RemapLoggedChannel(std::string_view name, std::string_view type,
-                          std::string_view add_prefix = "/original",
-                          std::string_view new_type = "");
+  void RemapLoggedChannel(
+      std::string_view name, std::string_view type,
+      std::string_view add_prefix = "/original", std::string_view new_type = "",
+      RemapConflict conflict_handling = RemapConflict::kCascade);
   template <typename T>
-  void RemapLoggedChannel(std::string_view name,
-                          std::string_view add_prefix = "/original",
-                          std::string_view new_type = "") {
-    RemapLoggedChannel(name, T::GetFullyQualifiedName(), add_prefix, new_type);
+  void RemapLoggedChannel(
+      std::string_view name, std::string_view add_prefix = "/original",
+      std::string_view new_type = "",
+      RemapConflict conflict_handling = RemapConflict::kCascade) {
+    RemapLoggedChannel(name, T::GetFullyQualifiedName(), add_prefix, new_type,
+                       conflict_handling);
   }
 
   // Remaps the provided channel, though this respects node mappings, and
@@ -179,16 +197,17 @@ class LogReader {
   // TODO(austin): If you have 2 nodes remapping something to the same channel,
   // this doesn't handle that.  No use cases exist yet for that, so it isn't
   // being done yet.
-  void RemapLoggedChannel(std::string_view name, std::string_view type,
-                          const Node *node,
-                          std::string_view add_prefix = "/original",
-                          std::string_view new_type = "");
+  void RemapLoggedChannel(
+      std::string_view name, std::string_view type, const Node *node,
+      std::string_view add_prefix = "/original", std::string_view new_type = "",
+      RemapConflict conflict_handling = RemapConflict::kCascade);
   template <typename T>
-  void RemapLoggedChannel(std::string_view name, const Node *node,
-                          std::string_view add_prefix = "/original",
-                          std::string_view new_type = "") {
+  void RemapLoggedChannel(
+      std::string_view name, const Node *node,
+      std::string_view add_prefix = "/original", std::string_view new_type = "",
+      RemapConflict conflict_handling = RemapConflict::kCascade) {
     RemapLoggedChannel(name, T::GetFullyQualifiedName(), node, add_prefix,
-                       new_type);
+                       new_type, conflict_handling);
   }
 
   template <typename T>

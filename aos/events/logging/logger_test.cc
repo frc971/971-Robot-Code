@@ -566,11 +566,14 @@ struct ConfigParams {
   bool shared;
   // sha256 of the config.
   std::string_view sha256;
+  // sha256 of the relogged config
+  std::string_view relogged_sha256;
 };
 
 std::ostream &operator<<(std::ostream &ostream, const ConfigParams &params) {
   ostream << "{config: \"" << params.config << "\", shared: " << params.shared
-          << ", sha256: \"" << params.sha256 << "\"}";
+          << ", sha256: \"" << params.sha256 << "\", relogged_sha256: \""
+          << params.relogged_sha256 << "\"}";
   return ostream;
 }
 
@@ -754,8 +757,8 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
       unlink((file + ".xz").c_str());
     }
 
-    for (const auto &file :
-         MakeLogFiles(tmp_dir_ + "/relogged1", tmp_dir_ + "/relogged2")) {
+    for (const auto &file : MakeLogFiles(tmp_dir_ + "/relogged1",
+                                         tmp_dir_ + "/relogged2", 3, 3, true)) {
       unlink(file.c_str());
     }
 
@@ -775,12 +778,14 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
   std::vector<std::string> MakeLogFiles(std::string logfile_base1,
                                         std::string logfile_base2,
                                         size_t pi1_data_count = 3,
-                                        size_t pi2_data_count = 3) {
+                                        size_t pi2_data_count = 3,
+                                        bool relogged_config = false) {
+    std::string_view sha256 = relogged_config
+                                  ? std::get<0>(GetParam()).relogged_sha256
+                                  : std::get<0>(GetParam()).sha256;
     std::vector<std::string> result;
-    result.emplace_back(absl::StrCat(
-        logfile_base1, "_", std::get<0>(GetParam()).sha256, Extension()));
-    result.emplace_back(absl::StrCat(
-        logfile_base2, "_", std::get<0>(GetParam()).sha256, Extension()));
+    result.emplace_back(absl::StrCat(logfile_base1, "_", sha256, Extension()));
+    result.emplace_back(absl::StrCat(logfile_base2, "_", sha256, Extension()));
     for (size_t i = 0; i < pi1_data_count; ++i) {
       result.emplace_back(
           absl::StrCat(logfile_base1, "_pi1_data.part", i, Extension()));
@@ -1322,24 +1327,40 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
                                     "aos.message_bridge.ServerStatistics", 1),
                     std::make_tuple("/test", "aos.examples.Ping", 1)))
         << " : " << logfiles_[2];
-    EXPECT_THAT(
-        CountChannelsData(config, logfiles_[3]),
-        UnorderedElementsAre(
-            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 1),
-            std::make_tuple("/pi1/aos", "aos.message_bridge.ClientStatistics",
-                            1)))
-        << " : " << logfiles_[3];
-    EXPECT_THAT(
-        CountChannelsData(config, logfiles_[4]),
-        UnorderedElementsAre(
-            std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 199),
-            std::make_tuple("/pi1/aos", "aos.message_bridge.ServerStatistics",
-                            20),
-            std::make_tuple("/pi1/aos", "aos.message_bridge.ClientStatistics",
-                            199),
-            std::make_tuple("/pi1/aos", "aos.timing.Report", 40),
-            std::make_tuple("/test", "aos.examples.Ping", 2000)))
-        << " : " << logfiles_[4];
+    {
+      std::vector<std::tuple<std::string, std::string, int>> channel_counts = {
+          std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 1),
+          std::make_tuple("/pi1/aos", "aos.message_bridge.ClientStatistics",
+                          1)};
+      if (!std::get<0>(GetParam()).shared) {
+        channel_counts.push_back(
+            std::make_tuple("/pi1/aos/remote_timestamps/pi2/pi1/aos/"
+                            "aos-message_bridge-Timestamp",
+                            "aos.message_bridge.RemoteMessage", 1));
+      }
+      EXPECT_THAT(CountChannelsData(config, logfiles_[3]),
+                  ::testing::UnorderedElementsAreArray(channel_counts))
+          << " : " << logfiles_[3];
+    }
+    {
+      std::vector<std::tuple<std::string, std::string, int>> channel_counts = {
+          std::make_tuple("/pi1/aos", "aos.message_bridge.Timestamp", 199),
+          std::make_tuple("/pi1/aos", "aos.message_bridge.ServerStatistics",
+                          20),
+          std::make_tuple("/pi1/aos", "aos.message_bridge.ClientStatistics",
+                          199),
+          std::make_tuple("/pi1/aos", "aos.timing.Report", 40),
+          std::make_tuple("/test", "aos.examples.Ping", 2000)};
+      if (!std::get<0>(GetParam()).shared) {
+        channel_counts.push_back(
+            std::make_tuple("/pi1/aos/remote_timestamps/pi2/pi1/aos/"
+                            "aos-message_bridge-Timestamp",
+                            "aos.message_bridge.RemoteMessage", 199));
+      }
+      EXPECT_THAT(CountChannelsData(config, logfiles_[4]),
+                  ::testing::UnorderedElementsAreArray(channel_counts))
+          << " : " << logfiles_[4];
+    }
     // Timestamps for pong
     EXPECT_THAT(CountChannelsTimestamp(config, logfiles_[2]),
                 UnorderedElementsAre())
@@ -2111,9 +2132,18 @@ TEST_P(MultinodeLoggerTest, RemapLoggedChannel) {
   log_reader_factory.set_send_delay(chrono::microseconds(0));
 
   std::vector<const Channel *> remapped_channels = reader.RemappedChannels();
-  ASSERT_EQ(remapped_channels.size(), 1u);
+  // Note: An extra channel gets remapped automatically due to a timestamp
+  // channel being LOCAL_LOGGER'd.
+  ASSERT_EQ(remapped_channels.size(), std::get<0>(GetParam()).shared ? 1u : 2u);
   EXPECT_EQ(remapped_channels[0]->name()->string_view(), "/original/pi1/aos");
   EXPECT_EQ(remapped_channels[0]->type()->string_view(), "aos.timing.Report");
+  if (!std::get<0>(GetParam()).shared) {
+    EXPECT_EQ(remapped_channels[1]->name()->string_view(),
+              "/original/pi1/aos/remote_timestamps/pi2/pi1/aos/"
+              "aos-message_bridge-Timestamp");
+    EXPECT_EQ(remapped_channels[1]->type()->string_view(),
+              "aos.message_bridge.RemoteMessage");
+  }
 
   reader.Register(&log_reader_factory);
 
@@ -2285,9 +2315,12 @@ TEST_P(MultinodeLoggerTest, SingleNodeReplay) {
     const Channel *channel =
         full_event_loop->configuration()->channels()->Get(ii);
     // We currently don't support replaying remote timestamp channels in
-    // realtime replay.
+    // realtime replay (unless the remote timestamp channel was not NOT_LOGGED,
+    // in which case it gets auto-remapped and replayed on a /original channel).
     if (channel->name()->string_view().find("remote_timestamp") !=
-        std::string_view::npos) {
+            std::string_view::npos &&
+        channel->name()->string_view().find("/original") ==
+            std::string_view::npos) {
       continue;
     }
     if (configuration::ChannelIsReadableOnNode(channel, full_pi1)) {
@@ -2640,8 +2673,19 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
   // And verify that we can run the LogReader over the relogged files without
   // hitting any fatal errors.
   {
-    LogReader relogged_reader(SortParts(
-        MakeLogFiles(tmp_dir_ + "/relogged1", tmp_dir_ + "/relogged2")));
+    LogReader relogged_reader(SortParts(MakeLogFiles(
+        tmp_dir_ + "/relogged1", tmp_dir_ + "/relogged2", 3, 3, true)));
+    relogged_reader.Register();
+
+    relogged_reader.event_loop_factory()->Run();
+  }
+  // And confirm that we can read the logged file using the reader's
+  // configuration.
+  {
+    LogReader relogged_reader(
+        SortParts(MakeLogFiles(tmp_dir_ + "/relogged1", tmp_dir_ + "/relogged2",
+                               3, 3, true)),
+        reader.configuration());
     relogged_reader.Register();
 
     relogged_reader.event_loop_factory()->Run();
@@ -3703,27 +3747,29 @@ TEST_P(MultinodeLoggerTest, DeadNode) {
 constexpr std::string_view kCombinedConfigSha1(
     "46f8daa7d84eb999c8d3584b79f4a289fd46e3a0b47a08bdbee9c7e3b89b4aff");
 constexpr std::string_view kSplitConfigSha1(
-    "2558663e9414383e264510ce733505a40be99d2f43e299819417944f06b899ea");
+    "53978a9c089e8f5a525503ce18aca6146a7a9dee450b6067580ed952a1ff08dd");
+constexpr std::string_view kReloggedSplitConfigSha1(
+    "037fb89ada330db8908314b26bc7d96a6b3264984c189471d23b70ab6443ff96");
 
 INSTANTIATE_TEST_SUITE_P(
     All, MultinodeLoggerTest,
-    ::testing::Combine(::testing::Values(
-                           ConfigParams{
-                               "multinode_pingpong_combined_config.json", true,
-                               kCombinedConfigSha1},
-                           ConfigParams{"multinode_pingpong_split_config.json",
-                                        false, kSplitConfigSha1}),
-                       ::testing::ValuesIn(SupportedCompressionAlgorithms())));
+    ::testing::Combine(
+        ::testing::Values(
+            ConfigParams{"multinode_pingpong_combined_config.json", true,
+                         kCombinedConfigSha1, kCombinedConfigSha1},
+            ConfigParams{"multinode_pingpong_split_config.json", false,
+                         kSplitConfigSha1, kReloggedSplitConfigSha1}),
+        ::testing::ValuesIn(SupportedCompressionAlgorithms())));
 
 INSTANTIATE_TEST_SUITE_P(
     All, MultinodeLoggerDeathTest,
-    ::testing::Combine(::testing::Values(
-                           ConfigParams{
-                               "multinode_pingpong_combined_config.json", true,
-                               kCombinedConfigSha1},
-                           ConfigParams{"multinode_pingpong_split_config.json",
-                                        false, kSplitConfigSha1}),
-                       ::testing::ValuesIn(SupportedCompressionAlgorithms())));
+    ::testing::Combine(
+        ::testing::Values(
+            ConfigParams{"multinode_pingpong_combined_config.json", true,
+                         kCombinedConfigSha1, kCombinedConfigSha1},
+            ConfigParams{"multinode_pingpong_split_config.json", false,
+                         kSplitConfigSha1, kReloggedSplitConfigSha1}),
+        ::testing::ValuesIn(SupportedCompressionAlgorithms())));
 
 // Tests that we can relog with a different config.  This makes most sense when
 // you are trying to edit a log and want to use channel renaming + the original
