@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "absl/strings/str_join.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
@@ -141,6 +142,16 @@ bool HasNewTimestamps(const LogFileHeader *header) {
     CHECK(!header->has_oldest_local_unreliable_monotonic_timestamps());
     return false;
   }
+}
+
+std::string ConcatenateParts(
+    const std::vector<std::pair<std::string, int>> &parts) {
+  std::vector<std::string_view> stringview_parts;
+  stringview_parts.reserve(parts.size());
+  for (const std::pair<std::string, int> &p : parts) {
+    stringview_parts.emplace_back(p.first);
+  }
+  return absl::StrCat("[\"", absl::StrJoin(stringview_parts, "\", \""), "\"]");
 }
 
 }  // namespace
@@ -1318,14 +1329,15 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
                 CHECK_NE(
                     std::get<1>(a).oldest_local_reliable_monotonic_timestamp,
                     std::get<1>(b).oldest_local_reliable_monotonic_timestamp)
-                    << ": The same reliable message has been forwarded to both "
-                       "boots.  This is ambiguous, please investigate.";
+                    << ": Broken logic, the same reliable message has been "
+                       "forwarded to both boots.  This is ambiguous, please "
+                       "investigate.";
                 return std::get<1>(a)
                            .oldest_local_reliable_monotonic_timestamp <
                        std::get<1>(b).oldest_local_reliable_monotonic_timestamp;
               } else {
-                LOG(FATAL) << "Unable to compare timestamps " << std::get<1>(a)
-                           << ", " << std::get<1>(b);
+                LOG(FATAL) << "Broken logic, unable to compare timestamps "
+                           << std::get<1>(a) << ", " << std::get<1>(b);
               }
             });
 
@@ -1362,8 +1374,9 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
                          << MaxLocalBootTime(std::get<2>(fatal_boot_time))
                          << "] on remote " << remote_node_name;
             }
-            LOG(FATAL) << "Found overlapping boots on " << remote_node_name
-                       << " remote node " << remote_node_name << ", "
+            LOG(FATAL) << "Broken log, found overlapping boots on "
+                       << remote_node_name << " remote node "
+                       << remote_node_name << ", "
                        << MinLocalBootTime(std::get<1>(boot_time)) << " < "
                        << last_boot_time;
           }
@@ -1882,11 +1895,25 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
       new_parts.parts.reserve(parts.second.parts.size());
       {
         int last_parts_index = -1;
+        std::string_view last_part_name;
         for (std::pair<std::string, int> &p : parts.second.parts) {
           CHECK_LT(last_parts_index, p.second)
-              << ": Found duplicate parts in '" << new_parts.parts.back()
+              << ": Broken log, Found duplicate parts in '" << last_part_name
               << "' and '" << p.first << "'";
+          if (last_parts_index != -1) {
+            if (p.second != last_parts_index + 1) {
+              LOG(FATAL) << "Broken log, missing part files between \""
+                         << last_part_name << "\" and \"" << p.first
+                         << "\", found "
+                         << ConcatenateParts(parts.second.parts);
+            }
+          }
           last_parts_index = p.second;
+          last_part_name = p.first;
+        }
+
+        // Now that we are happy that it works, move them all.
+        for (std::pair<std::string, int> &p : parts.second.parts) {
           new_parts.parts.emplace_back(std::move(p.first));
         }
       }

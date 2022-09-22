@@ -3643,6 +3643,41 @@ TEST_P(MultinodeLoggerTest, DuplicateLogFiles) {
   EXPECT_DEATH({ SortParts(duplicates); }, "Found duplicate parts in");
 }
 
+// Tests that we explode if someone loses a part out of the middle of a log.
+TEST_P(MultinodeLoggerTest, MissingPartsFromMiddle) {
+  time_converter_.AddMonotonic(
+      {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+
+    StartLogger(&pi1_logger);
+    aos::monotonic_clock::time_point last_rotation_time =
+        pi1_logger.event_loop->monotonic_now();
+    pi1_logger.logger->set_on_logged_period([&] {
+      const auto now = pi1_logger.event_loop->monotonic_now();
+      if (now > last_rotation_time + std::chrono::seconds(5)) {
+        pi1_logger.logger->Rotate();
+        last_rotation_time = now;
+      }
+    });
+
+    event_loop_factory_.RunFor(chrono::milliseconds(10000));
+  }
+
+  std::vector<std::string> missing_parts;
+
+  missing_parts.emplace_back(logfile_base1_ + "_pi1_data.part0" + Extension());
+  missing_parts.emplace_back(logfile_base1_ + "_pi1_data.part2" + Extension());
+  missing_parts.emplace_back(absl::StrCat(
+      logfile_base1_, "_", std::get<0>(GetParam()).sha256, Extension()));
+
+  EXPECT_DEATH({ SortParts(missing_parts); },
+               "Broken log, missing part files between");
+}
+
 // Tests that we properly handle a dead node.  Do this by just disconnecting it
 // and only using one nodes of logs.
 TEST_P(MultinodeLoggerTest, DeadNode) {
