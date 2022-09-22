@@ -2,6 +2,7 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/flatbuffer_merge.h"
+#include "aos/network/team_number.h"
 #include "frc971/zeroing/wrap.h"
 #include "y2022/control_loops/superstructure/collision_avoidance.h"
 
@@ -579,7 +580,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     output_struct.flipper_arms_voltage = flipper_arms_voltage;
     if (climber_servo) {
       output_struct.climber_servo_left = 0.5;
-      output_struct.climber_servo_right = 1.0;
+      output_struct.climber_servo_right =
+          (aos::network::GetTeamNumber() == constants::kCompTeamNumber ? 1.0
+                                                                       : 0.5);
     } else {
       output_struct.climber_servo_left = 1.0;
       output_struct.climber_servo_right = 0.0;
