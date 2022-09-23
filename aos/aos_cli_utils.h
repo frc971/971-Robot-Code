@@ -37,6 +37,36 @@ void PrintMessage(const std::string_view node_name,
 void PrintMessage(const aos::Channel *channel, const aos::Context &context,
                   aos::FastStringBuilder *builder, PrintOptions options);
 
+// RAII class to manage printing out sequences of messages, and to print them
+// all in a JSON array properly.
+class Printer {
+ public:
+  Printer(PrintOptions options, bool flush);
+  ~Printer();
+
+  // Number of messages that have been printed.
+  uint64_t message_count() const { return message_count_; }
+
+  // Prints a message.
+  void PrintMessage(const std::string_view node_name,
+                    aos::NodeEventLoopFactory *node_factory,
+                    const aos::Channel *channel, const aos::Context &context);
+  void PrintMessage(const aos::Channel *channel, const aos::Context &context);
+
+ private:
+  // Builder to make printing fast
+  aos::FastStringBuilder str_builder_;
+
+  // Number of messages
+  uint64_t message_count_ = 0;
+
+  // Options for printing.
+  const PrintOptions options_;
+
+  // If true, use std::endl to flush stdout, otherwise write a "\n"
+  const bool flush_;
+};
+
 // The information needed by the main function of a CLI tool.
 struct CliUtilInfo {
   // If this returns true, main should return immediately with 0.

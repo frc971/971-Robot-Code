@@ -249,7 +249,7 @@ void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
 
     std::cout << "\"channel\": "
               << aos::configuration::StrippedChannelToString(channel)
-              << ", \"data\": " << *builder << "}\n";
+              << ", \"data\": " << *builder << "}";
   } else {
     if (!node_name.empty()) {
       std::cout << node_name << " ";
@@ -262,15 +262,15 @@ void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
                   << context.realtime_remote_time << " ("
                   << context.monotonic_remote_time << ") "
                   << channel->name()->c_str() << ' ' << channel->type()->c_str()
-                  << ": " << *builder << "\n";
+                  << ": " << *builder;
       } else {
         std::cout << context.realtime_event_time << " ("
                   << context.monotonic_event_time << ") "
                   << channel->name()->c_str() << ' ' << channel->type()->c_str()
-                  << ": " << *builder << "\n";
+                  << ": " << *builder;
       }
     } else {
-      std::cout << *builder << '\n';
+      std::cout << *builder;
     }
   }
 }
@@ -289,6 +289,70 @@ void PrintMessage(const std::string_view node_name,
               << " ";
   }
   PrintMessage(node_name, channel, context, builder, options);
+}
+
+Printer::Printer(PrintOptions options, bool flush)
+    : options_(options), flush_(flush) {
+  if (options_.json) {
+    std::cout << "[";
+  }
+}
+
+Printer::~Printer() {
+  if (options_.json) {
+    if (message_count_ > 0) {
+      std::cout << "\n]\n";
+    } else {
+      std::cout << "]\n";
+    }
+  }
+}
+
+void Printer::PrintMessage(const std::string_view node_name,
+                           aos::NodeEventLoopFactory *node_factory,
+                           const aos::Channel *channel,
+                           const aos::Context &context) {
+  if (options_.json) {
+    if (message_count_ != 0) {
+      std::cout << ",\n  ";
+    } else {
+      std::cout << "\n  ";
+    }
+  }
+
+  aos::PrintMessage(node_name, node_factory, channel, context, &str_builder_,
+                    options_);
+
+  if (!options_.json) {
+    if (flush_) {
+      std::cout << std::endl;
+    } else {
+      std::cout << "\n";
+    }
+  }
+  ++message_count_;
+}
+
+void Printer::PrintMessage(const aos::Channel *channel,
+                           const aos::Context &context) {
+  if (options_.json) {
+    if (message_count_ != 0) {
+      std::cout << ",\n  ";
+    } else {
+      std::cout << "\n  ";
+    }
+  }
+
+  aos::PrintMessage(channel, context, &str_builder_, options_);
+
+  if (!options_.json) {
+    if (flush_) {
+      std::cout << std::endl;
+    } else {
+      std::cout << "\n";
+    }
+  }
+  ++message_count_;
 }
 
 }  // namespace aos

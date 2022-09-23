@@ -27,7 +27,8 @@ DEFINE_int32(rate_limit, 0,
 DEFINE_int32(timeout, -1,
              "The max time in milliseconds to wait for messages before "
              "exiting.  -1 means forever, 0 means don't wait.");
-DEFINE_bool(use_hex, false, "Are integers in the messages printed in hex notation.");
+DEFINE_bool(use_hex, false,
+            "Are integers in the messages printed in hex notation.");
 
 int main(int argc, char **argv) {
   gflags::SetUsageMessage(
@@ -51,32 +52,32 @@ int main(int argc, char **argv) {
 
   uint64_t message_count = 0;
 
-  aos::FastStringBuilder str_builder;
-
   aos::monotonic_clock::time_point next_send_time =
       aos::monotonic_clock::min_time;
+
+  aos::Printer printer(
+      {
+          .pretty = FLAGS_pretty,
+          .max_vector_size = static_cast<size_t>(FLAGS_max_vector_size),
+          .pretty_max = FLAGS_pretty_max,
+          .print_timestamps = FLAGS_print_timestamps,
+          .json = FLAGS_json,
+          .distributed_clock = false,
+          .use_hex = FLAGS_use_hex,
+      },
+      /*flush*/ true);
 
   for (const aos::Channel *channel : cli_info.found_channels) {
     if (FLAGS_fetch) {
       const std::unique_ptr<aos::RawFetcher> fetcher =
           cli_info.event_loop->MakeRawFetcher(channel);
       if (fetcher->Fetch()) {
-        PrintMessage(
-            channel, fetcher->context(), &str_builder,
-            {
-                .pretty = FLAGS_pretty,
-                .max_vector_size = static_cast<size_t>(FLAGS_max_vector_size),
-                .pretty_max = FLAGS_pretty_max,
-                .print_timestamps = FLAGS_print_timestamps,
-                .json = FLAGS_json,
-                .distributed_clock = false,
-                .use_hex = FLAGS_use_hex,
-            });
+        printer.PrintMessage(channel, fetcher->context());
         ++message_count;
       }
     }
 
-    if (FLAGS_count > 0 && message_count >= FLAGS_count) {
+    if (FLAGS_count > 0 && printer.message_count() >= FLAGS_count) {
       return 0;
     }
 
@@ -85,28 +86,17 @@ int main(int argc, char **argv) {
     }
 
     cli_info.event_loop->MakeRawWatcher(
-        channel,
-        [channel, &str_builder, &cli_info, &message_count, &next_send_time](
-            const aos::Context &context, const void * /*message*/) {
+        channel, [channel, &printer, &cli_info, &next_send_time](
+                     const aos::Context &context, const void * /*message*/) {
           if (context.monotonic_event_time > next_send_time) {
-            if (FLAGS_count > 0 && message_count >= FLAGS_count) {
+            if (FLAGS_count > 0 && printer.message_count() >= FLAGS_count) {
               return;
             }
-            PrintMessage(channel, context, &str_builder,
-                         {
-                             .pretty = FLAGS_pretty,
-                             .max_vector_size =
-                                 static_cast<size_t>(FLAGS_max_vector_size),
-                             .pretty_max = FLAGS_pretty_max,
-                             .print_timestamps = FLAGS_print_timestamps,
-                             .json = FLAGS_json,
-                             .distributed_clock = false,
-                             .use_hex = FLAGS_use_hex,
-                         });
-            ++message_count;
+
+            printer.PrintMessage(channel, context);
             next_send_time = context.monotonic_event_time +
                              std::chrono::milliseconds(FLAGS_rate_limit);
-            if (FLAGS_count > 0 && message_count >= FLAGS_count) {
+            if (FLAGS_count > 0 && printer.message_count() >= FLAGS_count) {
               cli_info.event_loop->Exit();
             }
           }

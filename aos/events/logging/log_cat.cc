@@ -59,7 +59,8 @@ DEFINE_double(monotonic_start_time, 0.0,
 DEFINE_double(monotonic_end_time, 0.0,
               "If set, only print messages sent at or before this many seconds "
               "after epoch.");
-DEFINE_bool(use_hex, false, "Are integers in the messages printed in hex notation.");
+DEFINE_bool(use_hex, false,
+            "Are integers in the messages printed in hex notation.");
 
 using aos::monotonic_clock;
 namespace chrono = std::chrono;
@@ -200,18 +201,16 @@ int PrintRaw(int argc, char **argv) {
 // This class prints out all data from a node on a boot.
 class NodePrinter {
  public:
-  NodePrinter(aos::EventLoop *event_loop, uint64_t *message_print_counter,
-              aos::SimulatedEventLoopFactory *factory,
-              aos::FastStringBuilder *builder)
+  NodePrinter(aos::EventLoop *event_loop,
+              aos::SimulatedEventLoopFactory *factory, aos::Printer *printer)
       : factory_(factory),
         node_factory_(factory->GetNodeEventLoopFactory(event_loop->node())),
         event_loop_(event_loop),
-        message_print_counter_(message_print_counter),
         node_name_(
             event_loop_->node() == nullptr
                 ? ""
                 : std::string(event_loop->node()->name()->string_view())),
-        builder_(builder) {
+        printer_(printer) {
     event_loop_->SkipTimingReport();
     event_loop_->SkipAosLog();
 
@@ -253,6 +252,9 @@ class NodePrinter {
           if (!FLAGS_print) {
             return;
           }
+          if (FLAGS_count > 0 && printer_->message_count() >= FLAGS_count) {
+            return;
+          }
 
           if (!FLAGS_fetch && !started_) {
             return;
@@ -263,19 +265,8 @@ class NodePrinter {
             return;
           }
 
-          PrintMessage(
-              node_name_, node_factory_, channel, context, builder_,
-              {
-                  .pretty = FLAGS_pretty,
-                  .max_vector_size = static_cast<size_t>(FLAGS_max_vector_size),
-                  .pretty_max = FLAGS_pretty_max,
-                  .print_timestamps = FLAGS_print_timestamps,
-                  .json = FLAGS_json,
-                  .distributed_clock = FLAGS_distributed_clock,
-                  .use_hex = FLAGS_use_hex,
-              });
-          ++(*message_print_counter_);
-          if (FLAGS_count > 0 && *message_print_counter_ >= FLAGS_count) {
+          printer_->PrintMessage(node_name_, node_factory_, channel, context);
+          if (FLAGS_count > 0 && printer_->message_count() >= FLAGS_count) {
             factory_->Exit();
           }
         });
@@ -318,13 +309,11 @@ class NodePrinter {
   aos::NodeEventLoopFactory *node_factory_;
   aos::EventLoop *event_loop_;
 
-  uint64_t *message_print_counter_ = nullptr;
-
   std::string node_name_;
 
   bool started_ = false;
 
-  aos::FastStringBuilder *builder_;
+  aos::Printer *printer_ = nullptr;
 };
 
 int main(int argc, char **argv) {
@@ -393,9 +382,17 @@ int main(int argc, char **argv) {
     }
   }
 
-  aos::FastStringBuilder builder;
-
-  uint64_t message_print_counter = 0;
+  aos::Printer printer(
+      {
+          .pretty = FLAGS_pretty,
+          .max_vector_size = static_cast<size_t>(FLAGS_max_vector_size),
+          .pretty_max = FLAGS_pretty_max,
+          .print_timestamps = FLAGS_print_timestamps,
+          .json = FLAGS_json,
+          .distributed_clock = FLAGS_distributed_clock,
+          .use_hex = FLAGS_use_hex,
+      },
+      false);
 
   std::vector<NodePrinter *> printers;
   printers.resize(aos::configuration::NodesCount(reader.configuration()),
@@ -413,12 +410,11 @@ int main(int argc, char **argv) {
     // notified when the log starts and stops.
     aos::NodeEventLoopFactory *node_factory =
         event_loop_factory.GetNodeEventLoopFactory(node);
-    node_factory->OnStartup([&event_loop_factory, node_factory,
-                             &message_print_counter, &builder, &printers,
-                             node_index]() {
-      printers[node_index] = node_factory->AlwaysStart<NodePrinter>(
-          "printer", &message_print_counter, &event_loop_factory, &builder);
-    });
+    node_factory->OnStartup(
+        [&event_loop_factory, node_factory, &printer, &printers, node_index]() {
+          printers[node_index] = node_factory->AlwaysStart<NodePrinter>(
+              "printer", &event_loop_factory, &printer);
+        });
     node_factory->OnShutdown(
         [&printers, node_index]() { printers[node_index] = nullptr; });
 
