@@ -273,7 +273,7 @@ Values MakeValues(uint16_t team) {
       });
 
       // TODO(milind): calibrate once mounted
-      climber->potentiometer_offset = -0.1209073362519;
+      climber->potentiometer_offset = -0.1209073362519 + 0.0760598;
       intake_front->potentiometer_offset = 3.06604378582351 - 0.60745632979918;
       intake_front->subsystem_params.zeroing_constants
           .measured_absolute_position = 0.143667561169188;
