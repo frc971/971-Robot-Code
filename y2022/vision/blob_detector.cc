@@ -118,13 +118,15 @@ void BlobDetector::FilterBlobs(BlobResult *blob_result) {
     constexpr double kAspectRatioThreshold = 2.0;
     constexpr double kMinArea = 10;
     constexpr size_t kMinNumPoints = 2;
+    constexpr size_t kMaxNumPoints = 50;
 
     // Remove all blobs that are at the bottom of the image, have a different
     // aspect ratio than the tape, or have too little area or points.
     if ((std::abs(1.0 - kTapeAspectRatio / stats_it->aspect_ratio) <
          kAspectRatioThreshold) &&
         (stats_it->area >= kMinArea) &&
-        (stats_it->num_points >= kMinNumPoints)) {
+        (stats_it->num_points >= kMinNumPoints) &&
+        (stats_it->num_points <= kMaxNumPoints)) {
       filtered_blobs.push_back(*blob_it);
       filtered_stats.push_back(*stats_it);
     }
