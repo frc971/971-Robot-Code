@@ -102,20 +102,20 @@ export class FieldHandler {
       // Visualization message is reliable so that we can see *all* the vision
       // matches.
       this.connection.addReliableHandler(
-          '/localizer', LocalizerVisualization.getFullyQualifiedName(),
+          '/localizer', "frc971.controls.LocalizerVisualization",
           (data) => {
             this.handleLocalizerDebug(data);
           });
       this.connection.addHandler(
-          '/drivetrain', DrivetrainStatus.getFullyQualifiedName(), (data) => {
+          '/drivetrain', "frc971.control_loops.drivetrain.Status", (data) => {
             this.handleDrivetrainStatus(data);
           });
       this.connection.addHandler(
-          '/localizer', LocalizerOutput.getFullyQualifiedName(), (data) => {
+               '/localizer', "frc971.controls.LocalizerOutput", (data) => {
             this.handleLocalizerOutput(data);
           });
       this.connection.addHandler(
-          '/superstructure', SuperstructureStatus.getFullyQualifiedName(),
+          '/superstructure', "y2022.control_loops.superstructure.Status",
           (data) => {
             this.handleSuperstructureStatus(data);
           });
