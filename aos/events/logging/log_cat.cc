@@ -66,7 +66,17 @@ namespace chrono = std::chrono;
 
 // Prints out raw log parts to stdout.
 int PrintRaw(int argc, char **argv) {
-  if (argc != 2) {
+  if (argc == 1) {
+    CHECK(!FLAGS_raw_header.empty());
+    aos::logger::MessageReader raw_header_reader(FLAGS_raw_header);
+    std::cout << aos::FlatbufferToJson(raw_header_reader.raw_log_file_header(),
+                                       {.multi_line = FLAGS_pretty,
+                                        .max_vector_size = static_cast<size_t>(
+                                            FLAGS_max_vector_size)})
+              << std::endl;
+    return 0;
+  }
+  if (argc != 2 && argc != 1) {
     LOG(FATAL) << "Expected 1 logfile as an argument.";
   }
   aos::logger::SpanReader reader(argv[1]);
