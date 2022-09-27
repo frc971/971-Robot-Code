@@ -3428,7 +3428,9 @@ CheckedError Parser::DoParse(const char *source, const char **include_paths,
 
     if (included_files_.find(source_hash) == included_files_.end()) {
       included_files_[source_hash] = include_filename ? include_filename : "";
-      files_included_per_file_[source_filename] = std::set<IncludedFile>();
+      files_included_per_file_[include_filename ? include_filename
+                                                : source_filename] =
+          std::set<IncludedFile>();
     } else {
       return NoError();
     }
@@ -3480,7 +3482,9 @@ CheckedError Parser::DoParse(const char *source, const char **include_paths,
         IncludedFile included_file;
         included_file.filename = filepath;
         included_file.schema_name = name;
-        files_included_per_file_[source_filename].insert(included_file);
+        files_included_per_file_[include_filename ? include_filename
+                                                  : source_filename]
+            .insert(included_file);
       }
 
       std::string contents;
