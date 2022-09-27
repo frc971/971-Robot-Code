@@ -272,25 +272,24 @@ Values MakeValues(uint16_t team) {
           {10.0, {0.39, 28.25}},
       });
 
-      // TODO(milind): calibrate once mounted
       climber->potentiometer_offset = -0.1209073362519 + 0.0760598;
       intake_front->potentiometer_offset = 3.06604378582351 - 0.60745632979918;
       intake_front->subsystem_params.zeroing_constants
           .measured_absolute_position = 0.143667561169188;
-      intake_back->potentiometer_offset = 3.10861174832838 + 0.431432052414186 -
-                                          0.171422335492571 +
-                                          0.0414174770317617;
+      intake_back->potentiometer_offset =
+          3.10861174832838 + 0.431432052414186 - 0.171422335492571 +
+          0.0414174770317617 + 0.0908883523752557 - 0.0632767010207473;
       intake_back->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.33350955486723;
+          .measured_absolute_position = 0.404628372743507;
 
       turret->potentiometer_offset =
           -8.14418207451834 + 0.342635491808218 - 0.944807955598189 -
           0.0718028442723373 - 0.0793332946417493 + 0.233707527214682 +
           0.0828349540635251 + 0.677740533247017 - 0.0828349540635251 -
           0.0903654044329345 - 0.105426305171759 - 0.150609007388226 -
-          0.0338870266623506;
+          0.0338870266623506 - 0.0677740533247011;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
-          1.43911620174213;
+          1.50798193457968;
       turret_range->upper = 2.9;
       turret_range->lower = -6.4;
       turret_params->range = *turret_range;
