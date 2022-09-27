@@ -50,6 +50,16 @@ export function plotSuperstructure(conn: Connection, element: Element): void {
       .setColor(PINK)
       .setPointSize(1.0);
 
+  const goalPlot =
+      aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
+  goalPlot.plot.getAxisLabels().setTitle('Goal');
+  goalPlot.plot.getAxisLabels().setXLabel(TIME);
+  goalPlot.plot.getAxisLabels().setYLabel('value');
+  goalPlot.plot.setDefaultYRange([-1.0, 2.0]);
+  goalPlot.addMessageLine(goal, ['fire']).setColor(RED).setPointSize(1.0);
+  goalPlot.addMessageLine(goal, ['auto_aim']).setColor(BLUE).setPointSize(1.0);
+
+
   const shotCountPlot =
       aosPlotter.addPlot(element, [DEFAULT_WIDTH, DEFAULT_HEIGHT / 2]);
   shotCountPlot.plot.getAxisLabels().setTitle('Shot Count');
