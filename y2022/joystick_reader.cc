@@ -230,7 +230,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     constexpr double kRollerSpeed = 12.0;
     constexpr double kTransferRollerSpeed = 12.0;
-    constexpr double kIntakePosition = -0.12;
+    constexpr double kIntakePosition = -0.14;
     constexpr size_t kIntakeCounterIterations = 25;
 
     if (data.PosEdge(kSpit)) {
