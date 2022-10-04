@@ -21,7 +21,7 @@ build --custom_malloc=//tools/cpp:malloc
 
 # Shortcuts for selecting the target platform.
 build:k8 --platforms=//tools/platforms:linux_x86
-build:k8_upstream_python --platforms=//tools/platforms:linux_x86_upstream_python
+build:k8_upstream_python --platforms=//tools/platforms:linux_x86_upstream_python --host_platform=//tools/platforms:linux_x86_upstream_python
 build:roborio --platforms=//tools/platforms:linux_roborio
 build:roborio --platform_suffix=-roborio
 build:armv7 --platforms=//tools/platforms:linux_armv7
