@@ -1,0 +1,5 @@
+site_name: AOS
+theme: readthedocs
+markdown_extensions:
+  - smarty
+  - footnotes
