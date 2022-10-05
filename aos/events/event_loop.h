@@ -42,13 +42,13 @@ struct Context {
   // Timers and PhasedLoops.
   realtime_clock::time_point realtime_event_time;
 
+  // The rest are only valid for Watchers and Fetchers.
+
   // For a single-node configuration, these two are identical to *_event_time.
   // In a multinode configuration, these are the times that the message was
   // sent on the original node.
   monotonic_clock::time_point monotonic_remote_time;
   realtime_clock::time_point realtime_remote_time;
-
-  // The rest are only valid for Watchers and Fetchers.
 
   // Index in the queue.
   uint32_t queue_index;
@@ -405,6 +405,8 @@ class Sender {
   Builder MakeBuilder();
 
   // Sends a prebuilt flatbuffer.
+  // This will copy the data out of the provided flatbuffer, and so does not
+  // have to correspond to an existing Builder.
   RawSender::Error Send(const NonSizePrefixedFlatbuffer<T> &flatbuffer);
 
   // Sends a prebuilt flatbuffer which was detached from a Builder created via
@@ -417,6 +419,9 @@ class Sender {
   // Returns the name of the underlying queue.
   const Channel *channel() const { return sender_->channel(); }
 
+  // Returns true if the Sender is a valid Sender. If you, e.g., are using
+  // TryMakeSender, then you must check valid() before attempting to use the
+  // Sender.
   // TODO(austin): Deprecate the operator bool.
   operator bool() const { return sender_ ? true : false; }
   bool valid() const { return static_cast<bool>(sender_); }

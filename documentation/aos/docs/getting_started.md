@@ -49,8 +49,7 @@ We will do all our work in a new folder. Let us create a new top-level
 To keep this example tractable, it functions in a "single-node" world. Most AOS
 users actually operate in a multi-node world. This is discussed later.
 
-<!--
-<!-- TODO: link to said discussion. --> -->
+<!-- TODO: link to said discussion. -->
 
 ### Defining FlatBuffer Messages
 
@@ -283,8 +282,7 @@ must be unique per channel, but it is possible to both have multiple channels
 with the same name but different types and channels with different names but the same types.
 Note that the `type` field will always use the fully-qualified type name (i.e., it includes
 the namespace). The frequency is a strict maximum---messages cannot be sent any faster.
-
-<!-- TODO: Link to discussion on frequency/sent-too-fast. -->
+See [Sent Too Fast](/reference#sent-too-fast) for details on max frequencies.
 
 There is also a `max_size` channel value that allows you to increase the allowable
 size (in bytes) for messages sent on the channel.
@@ -482,10 +480,9 @@ defined. For a `.fbs` file named `foo.fbs`, the resulting header will be named
 ```
 
 By convention, the top-level class for an AOS application will take, as the
-first argument to its constructor, an `aos::EventLoop*`. The EventLoop will be
+first argument to its constructor, an `aos::EventLoop*`. The
+[EventLoop](/reference#eventloop-interface) will be
 used for all the application's interactions with the rest of the AOS system.
-
-<!-- TODO: link to something explaining EventLoop's. -->
 
 In `ping_lib.cc`:
 
@@ -570,7 +567,8 @@ methods and the resulting builders to construct a `Ping` message with a count
 and current time. We then actually send it out, checking to ensure that there
 were no errors encountered while attempting to send the message.
 
-<!-- TODO: link to section on FlatBuffers -->
+See [FlatBuffers](/flatbuffers) for more details on working with FlatBuffers in
+AOS.
 
 ```cpp
 void Ping::HandlePong(const examples::Pong &pong) {
