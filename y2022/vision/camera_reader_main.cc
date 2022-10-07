@@ -8,9 +8,9 @@
 DECLARE_bool(use_outdoors);
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_double(duty_cycle, 0.65, "Duty cycle of the LEDs");
-DEFINE_uint32(exposure, 5,
+DEFINE_uint32(exposure, 3,
               "Exposure time, in 100us increments; 0 implies auto exposure");
-DEFINE_uint32(outdoors_exposure, 13,
+DEFINE_uint32(outdoors_exposure, 2,
               "Exposure time when using --use_outdoors, in 100us increments; 0 "
               "implies auto exposure");
 
@@ -42,7 +42,13 @@ void CameraReaderMain() {
   const uint32_t exposure =
       (FLAGS_use_outdoors ? FLAGS_outdoors_exposure : FLAGS_exposure);
   if (exposure > 0) {
+    LOG(INFO) << "Setting camera to Manual Exposure mode with exposure = "
+              << exposure << " or " << static_cast<double>(exposure) / 10.0
+              << " ms";
     v4l2_reader.SetExposure(exposure);
+  } else {
+    LOG(INFO) << "Setting camera to use Auto Exposure";
+    v4l2_reader.UseAutoExposure();
   }
 
   CameraReader camera_reader(&event_loop, &calibration_data.message(),

@@ -20,6 +20,12 @@ V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
   // First, clean up after anybody else who left the device streaming.
   StreamOff();
 
+  // Don't know why this magic call to SetExposure is required (before the
+  // camera settings are configured) to make things work on boot of the pi, but
+  // it seems to be-- without it, the image exposure is wrong (too dark). Note--
+  // any valid value seems to work-- just choosing 1 for now
+  SetExposure(1);
+
   {
     struct v4l2_format format;
     memset(&format, 0, sizeof(format));
@@ -27,7 +33,8 @@ V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
     format.fmt.pix.width = cols_;
     format.fmt.pix.height = rows_;
     format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-    // This means we want to capture from a progressive (non-interlaced) source.
+    // This means we want to capture from a progressive (non-interlaced)
+    // source.
     format.fmt.pix.field = V4L2_FIELD_NONE;
     PCHECK(Ioctl(VIDIOC_S_FMT, &format) == 0);
     CHECK_EQ(static_cast<int>(format.fmt.pix.width), cols_);
