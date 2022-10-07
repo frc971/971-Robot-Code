@@ -54,6 +54,14 @@ void PrintTable(std::ostream *os, std::string_view prefix,
 
 // Spacing to use for indentation.
 const std::string kIndent = "  ";
+
+std::string MaybeNodeName(std::string_view prefix_if_node,
+                               const aos::Node *node) {
+  if (node == nullptr) {
+    return "";
+  }
+  return absl::StrCat(prefix_if_node, node->name()->string_view());
+}
 }  // namespace
 
 void TimingReportDump::PrintTimers(
@@ -174,7 +182,7 @@ void TimingReportDump::PrintReport(const timing::Report &report) {
               << " timing report(s) in " << report.name()->string_view();
   }
   std::cout << report.name()->string_view() << "[" << report.pid() << "] ("
-            << event_loop_->node()->name()->string_view() << ") ("
+            << MaybeNodeName("", event_loop_->node()) << ") ("
             << event_loop_->context().monotonic_event_time << ","
             << event_loop_->context().realtime_event_time << "):" << std::endl;
   if (report.has_watchers() && report.watchers()->size() > 0) {
@@ -197,8 +205,8 @@ void TimingReportDump::PrintReport(const timing::Report &report) {
 TimingReportDump::~TimingReportDump() {
   if (accumulate_ == AccumulateStatistics::kYes) {
     if (accumulated_statistics_.size() > 0) {
-      std::cout << "\nAccumulated timing reports for node "
-                << event_loop_->node()->name()->string_view() << ":\n\n";
+      std::cout << "\nAccumulated timing reports "
+                << MaybeNodeName(" for node ", event_loop_->node()) << ":\n\n";
     }
     for (const auto &pair : accumulated_statistics_) {
       flatbuffers::FlatBufferBuilder fbb;
