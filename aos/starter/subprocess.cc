@@ -43,7 +43,7 @@ MemoryCGroup::MemoryCGroup(std::string_view name)
 
   if (ret != 0) {
     if (errno == EEXIST) {
-      PCHECK(remove(cgroup_.c_str()) == 0)
+      PCHECK(rmdir(cgroup_.c_str()) == 0)
           << ": Failed to remove previous cgroup " << cgroup_;
       ret = mkdir(cgroup_.c_str(), 0755);
     }
