@@ -514,6 +514,7 @@ cc_test(
         "configuration_test.cc",
     ],
     data = [
+        "//aos/events:ping_fbs_reflection_out",
         "//aos/events:pingpong_config",
         "//aos/events:pong_fbs_reflection_out",
         "//aos/testdata:test_configs",
@@ -521,6 +522,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":configuration",
+        "//aos/events:ping_fbs",
         "//aos/testing:flatbuffer_eq",
         "//aos/testing:googletest",
         "//aos/testing:path",

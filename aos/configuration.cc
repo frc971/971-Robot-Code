@@ -68,7 +68,6 @@ FlatbufferDetachedBuffer<Configuration> ReadConfigFile(std::string_view path,
 }
 
 }  // namespace
-
 // Define the compare and equal operators for Channel and Application so we can
 // insert them in the btree below.
 bool operator<(const FlatbufferDetachedBuffer<Channel> &lhs,
@@ -1592,6 +1591,31 @@ int QueueSize(size_t frequency, chrono::nanoseconds channel_storage_duration) {
 
 int QueueScratchBufferSize(const Channel *channel) {
   return channel->num_readers() + channel->num_senders();
+}
+
+// Searches through configurations for schemas that include a certain type
+const reflection::Schema *GetSchema(const Configuration *config,
+                                    std::string_view schema_type) {
+  if (config->has_channels()) {
+    std::vector<flatbuffers::Offset<Channel>> channel_offsets;
+    for (const Channel *c : *config->channels()) {
+      if (schema_type == c->type()->string_view()) {
+        return c->schema();
+      }
+    }
+  }
+  return nullptr;
+}
+
+// Copy schema reflection into detached flatbuffer
+std::optional<FlatbufferDetachedBuffer<reflection::Schema>>
+GetSchemaDetachedBuffer(const Configuration *config,
+                        std::string_view schema_type) {
+  const reflection::Schema *found_schema = GetSchema(config, schema_type);
+  if (found_schema == nullptr) {
+    return std::nullopt;
+  }
+  return RecursiveCopyFlatBuffer(found_schema);
 }
 
 }  // namespace configuration
