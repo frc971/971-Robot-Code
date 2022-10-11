@@ -37,6 +37,9 @@ class UUID {
   // transformation.
   static UUID FromVector(const flatbuffers::Vector<uint8_t> *data);
 
+  // Initializes new UUID from data.
+  static UUID FromSpan(absl::Span<const uint8_t> data);
+
   // Returns the boot UUID for the current linux computer.
   static UUID BootUUID();
 
