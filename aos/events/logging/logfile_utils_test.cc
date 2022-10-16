@@ -25,6 +25,7 @@ namespace logger {
 namespace testing {
 namespace chrono = std::chrono;
 using aos::testing::ArtifactPath;
+using aos::message_bridge::RemoteMessage;
 
 // Adapter class to make it easy to test DetachedBufferWriter without adding
 // test only boilerplate to DetachedBufferWriter.
@@ -2874,6 +2875,42 @@ class InlinePackMessage : public ::testing::Test {
     return context;
   }
 
+  aos::monotonic_clock::time_point RandomMonotonic() {
+    std::uniform_int_distribution<int64_t> time_distribution(
+        0, std::numeric_limits<int64_t>::max());
+    return aos::monotonic_clock::epoch() +
+           chrono::nanoseconds(time_distribution(random_number_generator_));
+  }
+
+  aos::SizePrefixedFlatbufferDetachedBuffer<message_bridge::RemoteMessage>
+  RandomRemoteMessage() {
+    std::uniform_int_distribution<uint8_t> uint8_distribution(
+        std::numeric_limits<uint8_t>::min(),
+        std::numeric_limits<uint8_t>::max());
+
+    std::uniform_int_distribution<int64_t> time_distribution(
+        std::numeric_limits<int64_t>::min(),
+        std::numeric_limits<int64_t>::max());
+
+    flatbuffers::FlatBufferBuilder fbb;
+    message_bridge::RemoteMessage::Builder builder(fbb);
+    builder.add_queue_index(uint8_distribution(random_number_generator_));
+
+    builder.add_monotonic_sent_time(
+        time_distribution(random_number_generator_));
+    builder.add_realtime_sent_time(time_distribution(random_number_generator_));
+    builder.add_monotonic_remote_time(
+        time_distribution(random_number_generator_));
+    builder.add_realtime_remote_time(
+        time_distribution(random_number_generator_));
+
+    builder.add_remote_queue_index(
+        uint8_distribution(random_number_generator_));
+
+    fbb.FinishSizePrefixed(builder.Finish());
+    return fbb.Release();
+  }
+
   std::vector<uint8_t> RandomData() {
     std::vector<uint8_t> result;
     std::uniform_int_distribution<int> length_distribution(1, 32);
@@ -2966,8 +3003,50 @@ TEST_F(InlinePackMessage, Equivilent) {
   }
 }
 
-// TODO(austin): I need a method to cpoy the RemoteMessage without mallocing
-// too.
+// Tests that all variations of PackMessage are equivilent to the inline
+// PackMessage used to avoid allocations.
+TEST_F(InlinePackMessage, RemoteEquivilent) {
+  aos::FlatbufferVector<reflection::Schema> schema =
+      FileToFlatbuffer<reflection::Schema>(
+          ArtifactPath("aos/events/logging/logger.bfbs"));
+  std::uniform_int_distribution<uint8_t> uint8_distribution(
+      std::numeric_limits<uint8_t>::min(), std::numeric_limits<uint8_t>::max());
+
+  for (int i = 0; i < 100; ++i) {
+    aos::SizePrefixedFlatbufferDetachedBuffer<RemoteMessage> random_msg =
+        RandomRemoteMessage();
+    const size_t channel_index = uint8_distribution(random_number_generator_);
+    const monotonic_clock::time_point monotonic_timestamp_time =
+        RandomMonotonic();
+
+    flatbuffers::FlatBufferBuilder fbb;
+    fbb.ForceDefaults(true);
+    fbb.FinishSizePrefixed(PackRemoteMessage(
+        &fbb, &random_msg.message(), channel_index, monotonic_timestamp_time));
+
+    VLOG(1) << absl::BytesToHexString(std::string_view(
+        reinterpret_cast<const char *>(fbb.GetBufferSpan().data()),
+        fbb.GetBufferSpan().size()));
+
+    // Make sure that both the builder and inline method agree on sizes.
+    ASSERT_EQ(fbb.GetSize(), PackRemoteMessageSize());
+
+    // Initialize the buffer to something nonzer to make sure all the padding
+    // bytes are set to 0.
+    std::vector<uint8_t> repacked_message(PackRemoteMessageSize(), 67);
+
+    // And verify packing inline works as expected.
+    EXPECT_EQ(
+        repacked_message.size(),
+        PackRemoteMessageInline(repacked_message.data(), &random_msg.message(),
+                                channel_index, monotonic_timestamp_time));
+    EXPECT_EQ(absl::Span<uint8_t>(repacked_message),
+              absl::Span<uint8_t>(fbb.GetBufferSpan().data(),
+                                  fbb.GetBufferSpan().size()))
+        << AnnotateBinaries(schema, "aos/events/logging/logger.bfbs",
+                            fbb.GetBufferSpan());
+  }
+}
 
 }  // namespace testing
 }  // namespace logger

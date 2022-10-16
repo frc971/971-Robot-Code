@@ -825,6 +825,7 @@ void Logger::WriteContent(NewDataWriter *contents_writer,
     const auto start = event_loop_->monotonic_now();
     // And now handle the special message contents channel.  Copy the
     // message into a FlatBufferBuilder and save it to disk.
+    //
     // TODO(austin): We can be more efficient here when we start to
     // care...
     flatbuffers::FlatBufferBuilder fbb;
@@ -834,38 +835,20 @@ void Logger::WriteContent(NewDataWriter *contents_writer,
         flatbuffers::GetRoot<RemoteMessage>(f.fetcher->context().data);
 
     CHECK(msg->has_boot_uuid()) << ": " << aos::FlatbufferToJson(msg);
-
-    logger::MessageHeader::Builder message_header_builder(fbb);
-
     // TODO(austin): This needs to check the channel_index and confirm
     // that it should be logged before squirreling away the timestamp to
     // disk.  We don't want to log irrelevant timestamps.
 
-    // Note: this must match the same order as MessageBridgeServer and
-    // PackMessage.  We want identical headers to have identical
-    // on-the-wire formats to make comparing them easier.
-
     // Translate from the channel index that the event loop uses to the
     // channel index in the log file.
-    message_header_builder.add_channel_index(
-        event_loop_to_logged_channel_index_[msg->channel_index()]);
-
-    message_header_builder.add_queue_index(msg->queue_index());
-    message_header_builder.add_monotonic_sent_time(msg->monotonic_sent_time());
-    message_header_builder.add_realtime_sent_time(msg->realtime_sent_time());
-
-    message_header_builder.add_monotonic_remote_time(
-        msg->monotonic_remote_time());
-    message_header_builder.add_realtime_remote_time(
-        msg->realtime_remote_time());
-    message_header_builder.add_remote_queue_index(msg->remote_queue_index());
+    const int channel_index =
+        event_loop_to_logged_channel_index_[msg->channel_index()];
 
     const aos::monotonic_clock::time_point monotonic_timestamp_time =
         f.fetcher->context().monotonic_event_time;
-    message_header_builder.add_monotonic_timestamp_time(
-        monotonic_timestamp_time.time_since_epoch().count());
 
-    fbb.FinishSizePrefixed(message_header_builder.Finish());
+    fbb.FinishSizePrefixed(
+        PackRemoteMessage(&fbb, msg, channel_index, monotonic_timestamp_time));
     const auto end = event_loop_->monotonic_now();
     RecordCreateMessageTime(start, end, f);
 

@@ -23,6 +23,7 @@
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/flatbuffers.h"
+#include "aos/network/remote_message_generated.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos::logger {
@@ -193,6 +194,17 @@ class DetachedBufferWriter {
   aos::monotonic_clock::time_point last_flush_time_ =
       aos::monotonic_clock::min_time;
 };
+
+// Repacks the provided RemoteMessage into fbb.
+flatbuffers::Offset<MessageHeader> PackRemoteMessage(
+    flatbuffers::FlatBufferBuilder *fbb,
+    const message_bridge::RemoteMessage *msg, int channel_index,
+    const aos::monotonic_clock::time_point monotonic_timestamp_time);
+
+constexpr flatbuffers::uoffset_t PackRemoteMessageSize() { return 96u; }
+size_t PackRemoteMessageInline(
+    uint8_t *data, const message_bridge::RemoteMessage *msg, int channel_index,
+    const aos::monotonic_clock::time_point monotonic_timestamp_time);
 
 // Packes a message pointed to by the context into a MessageHeader.
 flatbuffers::Offset<MessageHeader> PackMessage(

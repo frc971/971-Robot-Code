@@ -285,6 +285,128 @@ void DetachedBufferWriter::FlushAtThreshold(
   }
 }
 
+// Do the magic dance to convert the endianness of the data and append it to the
+// buffer.
+namespace {
+
+// TODO(austin): Look at the generated code to see if building the header is
+// efficient or not.
+template <typename T>
+uint8_t *Push(uint8_t *buffer, const T data) {
+  const T endian_data = flatbuffers::EndianScalar<T>(data);
+  std::memcpy(buffer, &endian_data, sizeof(T));
+  return buffer + sizeof(T);
+}
+
+uint8_t *PushBytes(uint8_t *buffer, const void *data, size_t size) {
+  std::memcpy(buffer, data, size);
+  return buffer + size;
+}
+
+uint8_t *Pad(uint8_t *buffer, size_t padding) {
+  std::memset(buffer, 0, padding);
+  return buffer + padding;
+}
+}  // namespace
+
+flatbuffers::Offset<MessageHeader> PackRemoteMessage(
+    flatbuffers::FlatBufferBuilder *fbb,
+    const message_bridge::RemoteMessage *msg, int channel_index,
+    const aos::monotonic_clock::time_point monotonic_timestamp_time) {
+  logger::MessageHeader::Builder message_header_builder(*fbb);
+  // Note: this must match the same order as MessageBridgeServer and
+  // PackMessage.  We want identical headers to have identical
+  // on-the-wire formats to make comparing them easier.
+
+  message_header_builder.add_channel_index(channel_index);
+
+  message_header_builder.add_queue_index(msg->queue_index());
+  message_header_builder.add_monotonic_sent_time(msg->monotonic_sent_time());
+  message_header_builder.add_realtime_sent_time(msg->realtime_sent_time());
+
+  message_header_builder.add_monotonic_remote_time(
+      msg->monotonic_remote_time());
+  message_header_builder.add_realtime_remote_time(msg->realtime_remote_time());
+  message_header_builder.add_remote_queue_index(msg->remote_queue_index());
+
+  message_header_builder.add_monotonic_timestamp_time(
+      monotonic_timestamp_time.time_since_epoch().count());
+
+  return message_header_builder.Finish();
+}
+
+size_t PackRemoteMessageInline(
+    uint8_t *buffer, const message_bridge::RemoteMessage *msg,
+    int channel_index,
+    const aos::monotonic_clock::time_point monotonic_timestamp_time) {
+  const flatbuffers::uoffset_t message_size = PackRemoteMessageSize();
+
+  // clang-format off
+  // header:
+  //   +0x00 | 5C 00 00 00             | UOffset32  | 0x0000005C (92) Loc: +0x5C                | size prefix
+  buffer = Push<flatbuffers::uoffset_t>(
+      buffer, message_size - sizeof(flatbuffers::uoffset_t));
+  //   +0x04 | 20 00 00 00             | UOffset32  | 0x00000020 (32) Loc: +0x24                | offset to root table `aos.logger.MessageHeader`
+  buffer = Push<flatbuffers::uoffset_t>(buffer, 0x20);
+  //
+  // padding:
+  //   +0x08 | 00 00 00 00 00 00       | uint8_t[6] | ......                                    | padding
+  buffer = Pad(buffer, 6);
+  //
+  // vtable (aos.logger.MessageHeader):
+  //   +0x0E | 16 00                   | uint16_t   | 0x0016 (22)                               | size of this vtable
+  buffer = Push<flatbuffers::voffset_t>(buffer, 0x16);
+  //   +0x10 | 3C 00                   | uint16_t   | 0x003C (60)                               | size of referring table
+  buffer = Push<flatbuffers::voffset_t>(buffer, 0x3c);
+  //   +0x12 | 38 00                   | VOffset16  | 0x0038 (56)                               | offset to field `channel_index` (id: 0)
+  buffer = Push<flatbuffers::voffset_t>(buffer, 0x38);
+  //   +0x14 | 2C 00                   | VOffset16  | 0x002C (44)                               | offset to field `monotonic_sent_time` (id: 1)
+  buffer = Push<flatbuffers::voffset_t>(buffer, 0x2c);
+  //   +0x16 | 24 00                   | VOffset16  | 0x0024 (36)                               | offset to field `realtime_sent_time` (id: 2)
+  buffer = Push<flatbuffers::voffset_t>(buffer, 0x24);
+  //   +0x18 | 34 00                   | VOffset16  | 0x0034 (52)                               | offset to field `queue_index` (id: 3)
+  buffer = Push<flatbuffers::voffset_t>(buffer, 0x34);
+  //   +0x1A | 00 00                   | VOffset16  | 0x0000 (0)                                | offset to field `data` (id: 4) <null> (Vector)
+  buffer = Push<flatbuffers::voffset_t>(buffer, 0x00);
+  //   +0x1C | 1C 00                   | VOffset16  | 0x001C (28)                               | offset to field `monotonic_remote_time` (id: 5)
+  buffer = Push<flatbuffers::voffset_t>(buffer, 0x1c);
+  //   +0x1E | 14 00                   | VOffset16  | 0x0014 (20)                               | offset to field `realtime_remote_time` (id: 6)
+  buffer = Push<flatbuffers::voffset_t>(buffer, 0x14);
+  //   +0x20 | 10 00                   | VOffset16  | 0x0010 (16)                               | offset to field `remote_queue_index` (id: 7)
+  buffer = Push<flatbuffers::voffset_t>(buffer, 0x10);
+  //   +0x22 | 04 00                   | VOffset16  | 0x0004 (4)                                | offset to field `monotonic_timestamp_time` (id: 8)
+  buffer = Push<flatbuffers::voffset_t>(buffer, 0x04);
+  //
+  // root_table (aos.logger.MessageHeader):
+  //   +0x24 | 16 00 00 00             | SOffset32  | 0x00000016 (22) Loc: +0x0E                | offset to vtable
+  buffer = Push<flatbuffers::uoffset_t>(buffer, 0x16);
+  //   +0x28 | F6 0B D8 11 A4 A8 B1 71 | int64_t    | 0x71B1A8A411D80BF6 (8192514619791117302)  | table field `monotonic_timestamp_time` (Long)
+  buffer = Push<int64_t>(buffer,
+                         monotonic_timestamp_time.time_since_epoch().count());
+  //   +0x30 | 00 00 00 00             | uint8_t[4] | ....                                      | padding
+  // TODO(austin): Can we re-arrange the order to ditch the padding?
+  // (Answer is yes, but what is the impact elsewhere?  It will change the
+  // binary format)
+  buffer = Pad(buffer, 4);
+  //   +0x34 | 75 00 00 00             | uint32_t   | 0x00000075 (117)                          | table field `remote_queue_index` (UInt)
+  buffer = Push<uint32_t>(buffer, msg->remote_queue_index());
+  //   +0x38 | AA B0 43 0A 35 BE FA D2 | int64_t    | 0xD2FABE350A43B0AA (-3244071446552268630) | table field `realtime_remote_time` (Long)
+  buffer = Push<int64_t>(buffer, msg->realtime_remote_time());
+  //   +0x40 | D5 40 30 F3 C1 A7 26 1D | int64_t    | 0x1D26A7C1F33040D5 (2100550727665467605)  | table field `monotonic_remote_time` (Long)
+  buffer = Push<int64_t>(buffer, msg->monotonic_remote_time());
+  //   +0x48 | 5B 25 32 A1 4A E8 46 CA | int64_t    | 0xCA46E84AA132255B (-3871151422448720549) | table field `realtime_sent_time` (Long)
+  buffer = Push<int64_t>(buffer, msg->realtime_sent_time());
+  //   +0x50 | 49 7D 45 1F 8C 36 6B A3 | int64_t    | 0xA36B368C1F457D49 (-6671178447571288759) | table field `monotonic_sent_time` (Long)
+  buffer = Push<int64_t>(buffer, msg->monotonic_sent_time());
+  //   +0x58 | 33 00 00 00             | uint32_t   | 0x00000033 (51)                           | table field `queue_index` (UInt)
+  buffer = Push<uint32_t>(buffer, msg->queue_index());
+  //   +0x5C | 76 00 00 00             | uint32_t   | 0x00000076 (118)                          | table field `channel_index` (UInt)
+  buffer = Push<uint32_t>(buffer, channel_index);
+  // clang-format on
+
+  return message_size;
+}
+
 flatbuffers::Offset<MessageHeader> PackMessage(
     flatbuffers::FlatBufferBuilder *fbb, const Context &context,
     int channel_index, LogType log_type) {
@@ -471,30 +593,6 @@ flatbuffers::uoffset_t PackMessageSize(LogType log_type,
   }
   LOG(FATAL);
 }
-
-// Do the magic dance to convert the endianness of the data and append it to the
-// buffer.
-namespace {
-
-// TODO(austin): Look at the generated code to see if building the header is
-// efficient or not.
-template <typename T>
-uint8_t *Push(uint8_t *buffer, const T data) {
-  const T endian_data = flatbuffers::EndianScalar<T>(data);
-  std::memcpy(buffer, &endian_data, sizeof(T));
-  return buffer + sizeof(T);
-}
-
-uint8_t *PushBytes(uint8_t *buffer, const void *data, size_t size) {
-  std::memcpy(buffer, data, size);
-  return buffer + size;
-}
-
-uint8_t *Pad(uint8_t *buffer, size_t padding) {
-  std::memset(buffer, 0, padding);
-  return buffer + padding;
-}
-}  // namespace
 
 size_t PackMessageInline(uint8_t *buffer, const Context &context,
                          int channel_index, LogType log_type) {
