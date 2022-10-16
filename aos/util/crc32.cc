@@ -49,11 +49,11 @@ const uint32_t kCrc32Table[256] = {
     0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d};
 }
 
-uint32_t ComputeCrc32(const absl::Span<uint8_t> data) {
+uint32_t ComputeCrc32(const absl::Span<const uint8_t> data) {
   return AccumulateCrc32(data, std::nullopt);
 }
 
-uint32_t AccumulateCrc32(const absl::Span<uint8_t> data,
+uint32_t AccumulateCrc32(const absl::Span<const uint8_t> data,
                          std::optional<uint32_t> current_checksum) {
   uint32_t crc =
       current_checksum.has_value() ? current_checksum.value() : 0xFF'FF'FF'FF;
