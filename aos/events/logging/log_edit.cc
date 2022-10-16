@@ -22,17 +22,20 @@ int main(int argc, char **argv) {
   gflags::SetUsageMessage(R"(This tool lets us manipulate log files.)");
   aos::InitGoogle(&argc, &argv);
 
-  std::string header =
+  std::string header_json_path =
       FLAGS_header.empty() ? (FLAGS_logfile + "_header.json") : FLAGS_header;
 
   if (FLAGS_replace) {
-    const ::std::string header_json = aos::util::ReadFileToStringOrDie(header);
+    const ::std::string header_json =
+        aos::util::ReadFileToStringOrDie(header_json_path);
     flatbuffers::FlatBufferBuilder fbb;
     fbb.ForceDefaults(true);
-    flatbuffers::Offset<aos::logger::LogFileHeader> header =
+    flatbuffers::Offset<aos::logger::LogFileHeader> header_offset =
         aos::JsonToFlatbuffer<aos::logger::LogFileHeader>(header_json, &fbb);
 
-    fbb.FinishSizePrefixed(header);
+    fbb.FinishSizePrefixed(header_offset);
+    aos::SizePrefixedFlatbufferDetachedBuffer<aos::logger::LogFileHeader>
+        header(fbb.Release());
 
     const std::string orig_path = FLAGS_logfile + ".orig";
     PCHECK(rename(FLAGS_logfile.c_str(), orig_path.c_str()) == 0);
@@ -42,7 +45,7 @@ int main(int argc, char **argv) {
 
     aos::logger::DetachedBufferWriter buffer_writer(
         FLAGS_logfile, std::make_unique<aos::logger::DummyEncoder>());
-    buffer_writer.QueueSizedFlatbuffer(&fbb, aos::monotonic_clock::min_time);
+    buffer_writer.QueueSpan(header.span());
 
     while (true) {
       absl::Span<const uint8_t> msg_data = span_reader.ReadMessage();
@@ -55,7 +58,7 @@ int main(int argc, char **argv) {
   } else {
     aos::logger::MessageReader reader(FLAGS_logfile);
     aos::util::WriteStringToFileOrDie(
-        header,
+        header_json_path,
         aos::FlatbufferToJson(reader.log_file_header(), {.multi_line = true}));
   }
 
