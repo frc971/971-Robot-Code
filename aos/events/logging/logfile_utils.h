@@ -199,6 +199,17 @@ flatbuffers::Offset<MessageHeader> PackMessage(
     flatbuffers::FlatBufferBuilder *fbb, const Context &context,
     int channel_index, LogType log_type);
 
+// Returns the size that the packed message from PackMessage or
+// PackMessageInline will be.
+flatbuffers::uoffset_t PackMessageSize(LogType log_type,
+                                       const Context &context);
+
+// Packs the provided message pointed to by context into the provided buffer.
+// This is equivalent to PackMessage, but doesn't require allocating a
+// FlatBufferBuilder underneath.
+size_t PackMessageInline(uint8_t *data, const Context &contex,
+                         int channel_index, LogType log_type);
+
 // Class to read chunks out of a log file.
 class SpanReader {
  public:

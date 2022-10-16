@@ -49,7 +49,7 @@ cc_library(
         "//:flatc_headers",
     ],
     strip_include_prefix = "/include",
-    visibility = ["//:__pkg__"],
+    visibility = ["//visibility:public"],
     deps = [
         ":flatbuffers",
     ],
