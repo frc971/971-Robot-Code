@@ -17,6 +17,17 @@ namespace logger {
 namespace testing {
 namespace chrono = std::chrono;
 
+// Adapter class to make it easy to test DetachedBufferWriter without adding
+// test only boilerplate to DetachedBufferWriter.
+class TestDetachedBufferWriter : public DetachedBufferWriter {
+ public:
+  TestDetachedBufferWriter(std::string_view filename)
+      : DetachedBufferWriter(filename, std::make_unique<DummyEncoder>()) {}
+  void WriteSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer) {
+    QueueSpan(absl::Span<const uint8_t>(buffer.data(), buffer.size()));
+  }
+};
+
 // Creates a size prefixed flatbuffer from json.
 template <typename T>
 SizePrefixedFlatbufferDetachedBuffer<T> JsonToSizedFlatbuffer(
@@ -38,7 +49,7 @@ TEST(SpanReaderTest, ReadWrite) {
       JsonToSizedFlatbuffer<TestMessage>(R"({ "value": 2 })");
 
   {
-    DetachedBufferWriter writer(logfile, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile);
     writer.QueueSpan(m1.span());
     writer.QueueSpan(m2.span());
   }
@@ -71,7 +82,7 @@ TEST(MessageReaderTest, ReadWrite) {
           R"({ "channel_index": 0, "monotonic_sent_time": 2 })");
 
   {
-    DetachedBufferWriter writer(logfile, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile);
     writer.QueueSpan(config.span());
     writer.QueueSpan(m1.span());
     writer.QueueSpan(m2.span());
@@ -120,7 +131,7 @@ TEST(PartsMessageReaderDeathTest, TooFarOutOfOrder) {
           R"({ "channel_index": 0, "monotonic_sent_time": -1 })");
 
   {
-    DetachedBufferWriter writer(logfile0, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile0);
     writer.QueueSpan(config0.span());
     writer.QueueSpan(m1.span());
     writer.QueueSpan(m2.span());
@@ -173,12 +184,12 @@ TEST(PartsMessageReaderTest, ReadWrite) {
           R"({ "channel_index": 0, "monotonic_sent_time": 2 })");
 
   {
-    DetachedBufferWriter writer(logfile0, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile0);
     writer.QueueSpan(config0.span());
     writer.QueueSpan(m1.span());
   }
   {
-    DetachedBufferWriter writer(logfile1, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile1);
     writer.QueueSpan(config1.span());
     writer.QueueSpan(m2.span());
   }
@@ -559,15 +570,15 @@ using TimestampMapperTest = SortingElementTest;
 TEST_F(LogPartsSorterTest, Pull) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile0_);
     writer.QueueSpan(config0_.span());
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 1, 0x105));
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1901), 1, 0x107));
   }
 
@@ -617,17 +628,17 @@ TEST_F(LogPartsSorterTest, Pull) {
 TEST_F(LogPartsSorterTest, WayBeforeStart) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile0_);
     writer.QueueSpan(config0_.span());
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e - chrono::milliseconds(500), 0, 0x005));
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e - chrono::milliseconds(10), 2, 0x005));
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e - chrono::milliseconds(1000), 1, 0x105));
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1901), 1, 0x107));
   }
 
@@ -669,16 +680,16 @@ TEST_F(LogPartsSorterTest, WayBeforeStart) {
 TEST_F(LogPartsSorterDeathTest, Pull) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile0_);
     writer.QueueSpan(config0_.span());
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 1, 0x105));
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2001), 0, 0x006));
     // The following message is too far out of order and will trigger the CHECK.
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1900), 1, 0x107));
   }
 
@@ -705,19 +716,19 @@ TEST_F(LogPartsSorterDeathTest, Pull) {
 TEST_F(NodeMergerTest, TwoFileMerger) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config1_.span());
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer1.QueueSizedFlatbuffer(
+    writer1.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1001), 1, 0x105));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
-    writer1.QueueSizedFlatbuffer(
+    writer1.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1002), 1, 0x106));
 
     // Make a duplicate!
@@ -726,7 +737,7 @@ TEST_F(NodeMergerTest, TwoFileMerger) {
     writer0.QueueSpan(msg.span());
     writer1.QueueSpan(msg.span());
 
-    writer1.QueueSizedFlatbuffer(
+    writer1.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(3002), 1, 0x107));
   }
 
@@ -793,40 +804,40 @@ TEST_F(NodeMergerTest, TwoFileMerger) {
 TEST_F(NodeMergerTest, TwoFileTimestampMerger) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config1_.span());
 
     // Neither has it.
     MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005);
-    writer0.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer0.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100)));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100)));
 
     // First only has it.
     MakeLogMessage(e + chrono::milliseconds(1001), 0, 0x006);
-    writer0.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer0.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1001), 0, chrono::seconds(100),
         e + chrono::nanoseconds(971)));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1001), 0, chrono::seconds(100)));
 
     // Second only has it.
     MakeLogMessage(e + chrono::milliseconds(1002), 0, 0x007);
-    writer0.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer0.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1002), 0, chrono::seconds(100)));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1002), 0, chrono::seconds(100),
         e + chrono::nanoseconds(972)));
 
     // Both have it.
     MakeLogMessage(e + chrono::milliseconds(1003), 0, 0x008);
-    writer0.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer0.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1003), 0, chrono::seconds(100),
         e + chrono::nanoseconds(973)));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1003), 0, chrono::seconds(100),
         e + chrono::nanoseconds(973)));
   }
@@ -874,24 +885,24 @@ TEST_F(NodeMergerTest, TwoFileTimestampMerger) {
 TEST_F(TimestampMapperTest, ReadNode0First) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config2_.span());
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(2000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(3000), 0, 0x007));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(3000), 0, chrono::seconds(100)));
   }
 
@@ -1017,26 +1028,26 @@ TEST_F(TimestampMapperTest, ReadNode0First) {
 TEST_F(TimestampMapperTest, MessageWithTimestampTime) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config4_.span());
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100),
         e + chrono::nanoseconds(971)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(2000), 0, chrono::seconds(100),
         e + chrono::nanoseconds(5458)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(3000), 0, 0x007));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(3000), 0, chrono::seconds(100)));
   }
 
@@ -1143,24 +1154,24 @@ TEST_F(TimestampMapperTest, MessageWithTimestampTime) {
 TEST_F(TimestampMapperTest, ReadNode1First) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config2_.span());
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(2000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(3000), 0, 0x007));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(3000), 0, chrono::seconds(100)));
   }
 
@@ -1263,23 +1274,23 @@ TEST_F(TimestampMapperTest, ReadNode1First) {
 TEST_F(TimestampMapperTest, ReadMissingDataBefore) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config2_.span());
 
     MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005);
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(2000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(3000), 0, 0x007));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(3000), 0, chrono::seconds(100)));
   }
 
@@ -1346,23 +1357,23 @@ TEST_F(TimestampMapperTest, ReadMissingDataBefore) {
 TEST_F(TimestampMapperTest, ReadMissingDataAfter) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config2_.span());
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(2000), 0, chrono::seconds(100)));
 
     MakeLogMessage(e + chrono::milliseconds(3000), 0, 0x007);
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(3000), 0, chrono::seconds(100)));
   }
 
@@ -1428,14 +1439,14 @@ TEST_F(TimestampMapperTest, ReadMissingDataAfter) {
 TEST_F(TimestampMapperTest, ReadMissingDataMiddle) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config2_.span());
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100)));
 
     // Create both the timestamp and message, but don't log them, simulating a
@@ -1444,9 +1455,9 @@ TEST_F(TimestampMapperTest, ReadMissingDataMiddle) {
     MakeTimestampMessage(e + chrono::milliseconds(2000), 0,
                          chrono::seconds(100));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(3000), 0, 0x007));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(3000), 0, chrono::seconds(100)));
   }
 
@@ -1498,29 +1509,29 @@ TEST_F(TimestampMapperTest, ReadMissingDataMiddle) {
 TEST_F(TimestampMapperTest, ReadSameTimestamp) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config2_.span());
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(2000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x007));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(2000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(3000), 0, 0x008));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(3000), 0, chrono::seconds(100)));
   }
 
@@ -1581,11 +1592,11 @@ TEST_F(TimestampMapperTest, ReadSameTimestamp) {
 TEST_F(TimestampMapperTest, StartTime) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config1_.span());
-    DetachedBufferWriter writer2(logfile2_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer2(logfile2_);
     writer2.QueueSpan(config3_.span());
   }
 
@@ -1608,23 +1619,23 @@ TEST_F(TimestampMapperTest, StartTime) {
 TEST_F(TimestampMapperTest, NoPeer) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config2_.span());
 
     MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005);
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(2000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(3000), 0, 0x007));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(3000), 0, chrono::seconds(100)));
   }
 
@@ -1675,29 +1686,29 @@ TEST_F(TimestampMapperTest, NoPeer) {
 TEST_F(TimestampMapperTest, QueueUntilNode0) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(config0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(config2_.span());
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x006));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x007));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(2000), 0, chrono::seconds(100)));
 
-    writer0.QueueSizedFlatbuffer(
+    writer0.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(3000), 0, 0x008));
-    writer1.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(3000), 0, chrono::seconds(100)));
   }
 
@@ -1917,11 +1928,11 @@ class BootMergerTest : public SortingElementTest {
 // happened second, but not in a way that is robust to multiple nodes rebooting.
 TEST_F(BootMergerTest, OldReboot) {
   {
-    DetachedBufferWriter writer(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile0_);
     writer.QueueSpan(boot0_.span());
   }
   {
-    DetachedBufferWriter writer(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile1_);
     writer.QueueSpan(boot1_.span());
   }
 
@@ -1943,19 +1954,19 @@ TEST_F(BootMergerTest, OldReboot) {
 TEST_F(BootMergerTest, SortAcrossReboot) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile0_);
     writer.QueueSpan(boot0_.span());
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 1, 0x105));
   }
   {
-    DetachedBufferWriter writer(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile1_);
     writer.QueueSpan(boot1_.span());
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(100), 0, 0x006));
-    writer.QueueSizedFlatbuffer(
+    writer.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(200), 1, 0x106));
   }
 
@@ -2104,34 +2115,34 @@ class RebootTimestampMapperTest : public SortingElementTest {
 TEST_F(RebootTimestampMapperTest, ReadNode0First) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0a(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0a(logfile0_);
     writer0a.QueueSpan(boot0a_.span());
-    DetachedBufferWriter writer0b(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0b(logfile1_);
     writer0b.QueueSpan(boot0b_.span());
-    DetachedBufferWriter writer1a(logfile2_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1a(logfile2_);
     writer1a.QueueSpan(boot1a_.span());
-    DetachedBufferWriter writer1b(logfile3_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1b(logfile3_);
     writer1b.QueueSpan(boot1b_.span());
 
-    writer0a.QueueSizedFlatbuffer(
+    writer0a.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(1000), 0, 0x005));
-    writer1a.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1a.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(100),
         e + chrono::milliseconds(1001)));
 
-    writer1b.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1b.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(1000), 0, chrono::seconds(21),
         e + chrono::milliseconds(2001)));
 
-    writer0b.QueueSizedFlatbuffer(
+    writer0b.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(2000), 0, 0x006));
-    writer1b.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1b.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(2000), 0, chrono::seconds(20),
         e + chrono::milliseconds(2001)));
 
-    writer0b.QueueSizedFlatbuffer(
+    writer0b.WriteSizedFlatbuffer(
         MakeLogMessage(e + chrono::milliseconds(3000), 0, 0x007));
-    writer1b.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer1b.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::milliseconds(3000), 0, chrono::seconds(20),
         e + chrono::milliseconds(3001)));
   }
@@ -2323,32 +2334,32 @@ TEST_F(RebootTimestampMapperTest, ReadNode0First) {
 TEST_F(RebootTimestampMapperTest, Node2Reboot) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
-    DetachedBufferWriter writer0a(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0a(logfile0_);
     writer0a.QueueSpan(boot0a_.span());
-    DetachedBufferWriter writer0b(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0b(logfile1_);
     writer0b.QueueSpan(boot0b_.span());
-    DetachedBufferWriter writer1a(logfile2_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1a(logfile2_);
     writer1a.QueueSpan(boot1a_.span());
-    DetachedBufferWriter writer1b(logfile3_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1b(logfile3_);
     writer1b.QueueSpan(boot1b_.span());
 
-    writer1a.QueueSizedFlatbuffer(MakeLogMessage(
+    writer1a.WriteSizedFlatbuffer(MakeLogMessage(
         e + chrono::seconds(100) + chrono::milliseconds(1000), 3, 0x005));
-    writer0a.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer0a.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::seconds(100) + chrono::milliseconds(1000), 3,
         chrono::seconds(-100),
         e + chrono::seconds(100) + chrono::milliseconds(1001)));
 
-    writer1b.QueueSizedFlatbuffer(MakeLogMessage(
+    writer1b.WriteSizedFlatbuffer(MakeLogMessage(
         e + chrono::seconds(20) + chrono::milliseconds(2000), 3, 0x006));
-    writer0b.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer0b.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::seconds(20) + chrono::milliseconds(2000), 3,
         chrono::seconds(-20),
         e + chrono::seconds(20) + chrono::milliseconds(2001)));
 
-    writer1b.QueueSizedFlatbuffer(MakeLogMessage(
+    writer1b.WriteSizedFlatbuffer(MakeLogMessage(
         e + chrono::seconds(20) + chrono::milliseconds(3000), 3, 0x007));
-    writer0b.QueueSizedFlatbuffer(MakeTimestampMessage(
+    writer0b.WriteSizedFlatbuffer(MakeTimestampMessage(
         e + chrono::seconds(20) + chrono::milliseconds(3000), 3,
         chrono::seconds(-20),
         e + chrono::seconds(20) + chrono::milliseconds(3001)));
@@ -2703,13 +2714,13 @@ class SortingDeathTest : public SortingElementTest {
 // die in sorting instead of failing to estimate time.
 TEST_F(SortingDeathTest, FightingNodes) {
   {
-    DetachedBufferWriter writer0(logfile0_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer0(logfile0_);
     writer0.QueueSpan(part0_.span());
-    DetachedBufferWriter writer1(logfile1_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer1(logfile1_);
     writer1.QueueSpan(part1_.span());
-    DetachedBufferWriter writer2(logfile2_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer2(logfile2_);
     writer2.QueueSpan(part2_.span());
-    DetachedBufferWriter writer3(logfile3_, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer3(logfile3_);
     writer3.QueueSpan(part3_.span());
   }
 
@@ -2744,7 +2755,7 @@ TEST(MessageReaderConfirmCrash, ReadWrite) {
   absl::Span<uint8_t> m3_span(garbage);
 
   {
-    DetachedBufferWriter writer(logfile, std::make_unique<DummyEncoder>());
+    TestDetachedBufferWriter writer(logfile);
     writer.QueueSpan(config.span());
     writer.QueueSpan(m1.span());
     writer.QueueSpan(m2.span());
