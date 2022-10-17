@@ -92,4 +92,26 @@ TEST(ResizeableBufferTest, PushBackLargeNonEmpty) {
               ::testing::ElementsAreArray(expected));
 }
 
+TEST(ResizeableBufferTest, Reserve) {
+  ResizeableBuffer buffer;
+  EXPECT_EQ(buffer.size(), 0u);
+  EXPECT_EQ(buffer.capacity(), 0u);
+
+  buffer.reserve(10u);
+  EXPECT_EQ(buffer.size(), 0u);
+  EXPECT_EQ(buffer.capacity(), 10u);
+
+  buffer.reserve(1u);
+  EXPECT_EQ(buffer.size(), 0u);
+  EXPECT_EQ(buffer.capacity(), 10u);
+
+  buffer.resize(20u);
+  EXPECT_EQ(buffer.size(), 20u);
+  EXPECT_EQ(buffer.capacity(), 20u);
+
+  buffer.reserve(30u);
+  EXPECT_EQ(buffer.size(), 20u);
+  EXPECT_EQ(buffer.capacity(), 30u);
+}
+
 }  // namespace aos::testing

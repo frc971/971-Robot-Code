@@ -42,6 +42,12 @@ class ResizeableBuffer {
   size_t size() const { return size_; }
   size_t capacity() const { return capacity_; }
 
+  void reserve(size_t new_size) {
+    if (new_size > capacity_) {
+      Allocate(new_size);
+    }
+  }
+
   void resize(size_t new_size) {
     if (new_size > capacity_) {
       Allocate(new_size);
