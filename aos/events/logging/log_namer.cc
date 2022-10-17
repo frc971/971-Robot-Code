@@ -547,43 +547,6 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   return result;
 }
 
-NewDataWriter *LocalLogNamer::MakeWriter(const Channel *channel) {
-  CHECK(configuration::ChannelIsSendableOnNode(channel, node()))
-      << ": " << configuration::CleanedChannelToString(channel);
-  return &data_writer_;
-}
-
-void LocalLogNamer::Rotate(const Node *node) {
-  CHECK(node == this->node());
-  data_writer_.Rotate();
-}
-
-void LocalLogNamer::WriteConfiguration(
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-    std::string_view config_sha256) {
-  const std::string filename = absl::StrCat(base_name_, config_sha256, ".bfbs");
-
-  std::unique_ptr<DetachedBufferWriter> writer =
-      std::make_unique<DetachedBufferWriter>(
-          filename, std::make_unique<aos::logger::DummyEncoder>());
-  writer->QueueSizedFlatbuffer(header->Release());
-}
-
-NewDataWriter *LocalLogNamer::MakeTimestampWriter(const Channel *channel) {
-  CHECK(configuration::ChannelIsReadableOnNode(channel, node_))
-      << ": Message is not delivered to this node.";
-  CHECK(node_ != nullptr) << ": Can't log timestamps in a single node world";
-  CHECK(configuration::ConnectionDeliveryTimeIsLoggedOnNode(channel, node_,
-                                                            node_))
-      << ": Delivery times aren't logged for this channel on this node.";
-  return &data_writer_;
-}
-
-NewDataWriter *LocalLogNamer::MakeForwardedTimestampWriter(
-    const Channel * /*channel*/, const Node * /*node*/) {
-  LOG(FATAL) << "Can't log forwarded timestamps in a singe log file.";
-  return nullptr;
-}
 MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
                                      EventLoop *event_loop)
     : MultiNodeLogNamer(base_name, event_loop->configuration(), event_loop,

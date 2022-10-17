@@ -51,7 +51,7 @@ TEST_F(RealtimeLoggerTest, RealtimeReplay) {
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger.StartLoggingLocalNamerOnRun(base_name);
+    logger.StartLoggingOnRun(base_name);
     event_loop_factory_.RunFor(std::chrono::milliseconds(2000));
   }
 
