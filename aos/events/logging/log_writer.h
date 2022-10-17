@@ -321,10 +321,6 @@ class Logger {
   // Last time that data was written for all channels to disk.
   monotonic_clock::time_point last_synchronized_time_;
 
-  // Max size that the header has consumed.  This much extra data will be
-  // reserved in the builder to avoid reallocating.
-  size_t max_header_size_ = 0;
-
   // If true, write the message header into a separate file.
   bool separate_config_ = true;
 

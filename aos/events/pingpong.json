@@ -1,10 +1,14 @@
 {
   "applications": [
     {
-      "name": "ping"
+      "name": "ping",
+      "executable_name": "./ping",
+      "args": ["--config=aos_config.json"]
     },
     {
-      "name": "pong"
+      "name": "pong",
+      "executable_name": "./pong",
+      "args": ["--config=aos_config.json"]
     }
   ],
   "channels": [

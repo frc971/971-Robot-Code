@@ -24,6 +24,8 @@ if __name__ == '__main__':
     parser.add_argument("ping", help="Location of ping")
     parser.add_argument("pong", help="Location of pong")
     parser.add_argument("starter_cmd", help="Location of starter_cmd")
+    parser.add_argument("aos_dump", help="Location of aos_dump")
+    parser.add_argument("logger_main", help="Location of logger_main")
     args = parser.parse_args()
 
     # Copy all the interesting files into a temporary directory and run
@@ -38,6 +40,8 @@ if __name__ == '__main__':
         shutil.copy(args.ping, tmpdir + "/ping")
         shutil.copy(args.pong, tmpdir + "/pong")
         shutil.copy(args.starter_cmd, tmpdir + "/starter_cmd")
+        shutil.copy(args.aos_dump, tmpdir + "/aos_dump")
+        shutil.copy(args.logger_main, tmpdir + "/logger_main")
         print(f"Running starter from {tmpdir}")
 
         print(f"\n\nTo run starter_cmd, do:\ncd {tmpdir}\n./starter_cmd\n\n")

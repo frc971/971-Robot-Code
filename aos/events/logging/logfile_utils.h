@@ -50,7 +50,7 @@ class DetachedBufferWriter {
   struct already_out_of_space_t {};
 
   DetachedBufferWriter(std::string_view filename,
-                       std::unique_ptr<DetachedBufferEncoder> encoder);
+                       std::unique_ptr<DataEncoder> encoder);
   // Creates a dummy instance which won't even open a file. It will act as if
   // opening the file ran out of space immediately.
   DetachedBufferWriter(already_out_of_space_t) : ran_out_of_space_(true) {}
@@ -73,23 +73,8 @@ class DetachedBufferWriter {
   // Triggers a flush if there's enough data queued up.
   //
   // Steals the detached buffer from it.
-  void QueueSizedFlatbuffer(flatbuffers::FlatBufferBuilder *fbb,
-                            aos::monotonic_clock::time_point now) {
-    QueueSizedFlatbuffer(fbb->Release(), now);
-  }
-  // May steal the backing storage of buffer, or may leave it alone.
-  void QueueSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer,
-                            aos::monotonic_clock::time_point now) {
-    QueueSizedFlatbuffer(std::move(buffer));
-    FlushAtThreshold(now);
-  }
-  // Unconditionally queues the buffer.
-  void QueueSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer) {
-    if (ran_out_of_space_) {
-      return;
-    }
-    encoder_->Encode(std::move(buffer));
-  }
+  void CopyMessage(DataEncoder::Copier *coppier,
+                   aos::monotonic_clock::time_point now);
 
   // Queues up data in span. May copy or may write it to disk immediately.
   void QueueSpan(absl::Span<const uint8_t> span);
@@ -173,7 +158,7 @@ class DetachedBufferWriter {
   void FlushAtThreshold(aos::monotonic_clock::time_point now);
 
   std::string filename_;
-  std::unique_ptr<DetachedBufferEncoder> encoder_;
+  std::unique_ptr<DataEncoder> encoder_;
 
   int fd_ = -1;
   bool ran_out_of_space_ = false;
@@ -213,8 +198,7 @@ flatbuffers::Offset<MessageHeader> PackMessage(
 
 // Returns the size that the packed message from PackMessage or
 // PackMessageInline will be.
-flatbuffers::uoffset_t PackMessageSize(LogType log_type,
-                                       const Context &context);
+flatbuffers::uoffset_t PackMessageSize(LogType log_type, size_t data_size);
 
 // Packs the provided message pointed to by context into the provided buffer.
 // This is equivalent to PackMessage, but doesn't require allocating a

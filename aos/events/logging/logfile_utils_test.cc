@@ -31,8 +31,11 @@ using aos::message_bridge::RemoteMessage;
 // test only boilerplate to DetachedBufferWriter.
 class TestDetachedBufferWriter : public DetachedBufferWriter {
  public:
+  // Pick a max size that is rather conservative.
+  static constexpr size_t kMaxMessageSize = 128 * 1024;
   TestDetachedBufferWriter(std::string_view filename)
-      : DetachedBufferWriter(filename, std::make_unique<DummyEncoder>()) {}
+      : DetachedBufferWriter(filename,
+                             std::make_unique<DummyEncoder>(kMaxMessageSize)) {}
   void WriteSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer) {
     QueueSpan(absl::Span<const uint8_t>(buffer.data(), buffer.size()));
   }
@@ -2983,12 +2986,13 @@ TEST_F(InlinePackMessage, Equivilent) {
           fbb.GetBufferSpan().size()));
 
       // Make sure that both the builder and inline method agree on sizes.
-      ASSERT_EQ(fbb.GetSize(), PackMessageSize(type, context))
+      ASSERT_EQ(fbb.GetSize(), PackMessageSize(type, context.size))
           << "log type " << static_cast<int>(type);
 
       // Initialize the buffer to something nonzero to make sure all the padding
       // bytes are set to 0.
-      std::vector<uint8_t> repacked_message(PackMessageSize(type, context), 67);
+      std::vector<uint8_t> repacked_message(PackMessageSize(type, context.size),
+                                            67);
 
       // And verify packing inline works as expected.
       EXPECT_EQ(repacked_message.size(),

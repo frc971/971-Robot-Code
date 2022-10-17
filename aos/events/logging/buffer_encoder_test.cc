@@ -13,13 +13,26 @@ namespace aos::logger::testing {
 
 class DummyEncoderTest : public BufferEncoderBaseTest {};
 
-// Tests that buffers are enqueued without any changes.
+// Tests that buffers are concatenated without being modified.
 TEST_F(DummyEncoderTest, QueuesBuffersAsIs) {
-  DummyEncoder encoder;
+  DummyEncoder encoder(BufferEncoderBaseTest::kMaxMessageSize);
   const auto expected = CreateAndEncode(100, &encoder);
+  std::vector<uint8_t> data = Flatten(expected);
 
   auto queue = encoder.queue();
-  EXPECT_THAT(queue, ::testing::ElementsAreArray(expected));
+  ASSERT_EQ(queue.size(), 1u);
+  EXPECT_EQ(queue[0], absl::Span<const uint8_t>(data));
+}
+
+// Tests that buffers are concatenated without being modified.
+TEST_F(DummyEncoderTest, CoppiesBuffersAsIs) {
+  DummyEncoder encoder(BufferEncoderBaseTest::kMaxMessageSize);
+  const auto expected = CreateAndEncode(100, &encoder);
+  std::vector<uint8_t> data = Flatten(expected);
+
+  auto queue = encoder.queue();
+  ASSERT_EQ(queue.size(), 1u);
+  EXPECT_EQ(queue[0], absl::Span<const uint8_t>(data));
 }
 
 // Checks that DummyDecoder can read into a buffer.
@@ -94,8 +107,8 @@ TEST(DummyDecoderTest, ReadsRepeatedlyIntoSmallerBuffer) {
 
 INSTANTIATE_TEST_SUITE_P(
     Dummy, BufferEncoderTest,
-    ::testing::Combine(::testing::Values([]() {
-                         return std::make_unique<DummyEncoder>();
+    ::testing::Combine(::testing::Values([](size_t max_buffer_size) {
+                         return std::make_unique<DummyEncoder>(max_buffer_size);
                        }),
                        ::testing::Values([](std::string_view filename) {
                          return std::make_unique<DummyDecoder>(filename);

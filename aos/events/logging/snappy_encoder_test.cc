@@ -9,8 +9,8 @@ namespace aos::logger::testing {
 
 INSTANTIATE_TEST_SUITE_P(
     Snappy, BufferEncoderTest,
-    ::testing::Combine(::testing::Values([]() {
-                         return std::make_unique<SnappyEncoder>();
+    ::testing::Combine(::testing::Values([](size_t max_message_size) {
+                         return std::make_unique<SnappyEncoder>(max_message_size);
                        }),
                        ::testing::Values([](std::string_view filename) {
                          return std::make_unique<SnappyDecoder>(filename);

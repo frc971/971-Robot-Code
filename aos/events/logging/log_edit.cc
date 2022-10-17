@@ -18,6 +18,11 @@ DEFINE_string(
     "If provided, this is the path to the JSON with the log file header.  If "
     "not provided, _header.json will be appended to --logfile.");
 
+DEFINE_int32(
+    max_message_size, 128 * 1024 * 1024,
+    "Max size of a message to be written.  This sets the buffers inside "
+    "the encoders.");
+
 int main(int argc, char **argv) {
   gflags::SetUsageMessage(R"(This tool lets us manipulate log files.)");
   aos::InitGoogle(&argc, &argv);
@@ -44,7 +49,8 @@ int main(int argc, char **argv) {
     CHECK(!span_reader.ReadMessage().empty()) << ": Empty header, aborting";
 
     aos::logger::DetachedBufferWriter buffer_writer(
-        FLAGS_logfile, std::make_unique<aos::logger::DummyEncoder>());
+        FLAGS_logfile,
+        std::make_unique<aos::logger::DummyEncoder>(FLAGS_max_message_size));
     buffer_writer.QueueSpan(header.span());
 
     while (true) {

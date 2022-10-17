@@ -15,10 +15,12 @@ int main(int argc, char **argv) {
   FLAGS_flush_size = 1;
   CHECK(!FLAGS_tmpfs.empty()) << ": Must specify a tmpfs location";
 
-  aos::logger::DetachedBufferWriter writer(
-      FLAGS_tmpfs + "/file", std::make_unique<aos::logger::DummyEncoder>());
   std::array<uint8_t, 10240> data;
   data.fill(0);
+
+  aos::logger::DetachedBufferWriter writer(
+      FLAGS_tmpfs + "/file",
+      std::make_unique<aos::logger::DummyEncoder>(data.size()));
   for (int i = 0; i < 8; ++i) {
     writer.QueueSpan(data);
     CHECK(!writer.ran_out_of_space()) << ": " << i;

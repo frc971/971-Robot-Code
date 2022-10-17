@@ -16,12 +16,15 @@
 namespace aos::logger {
 
 // Encodes buffers using liblzma.
-class LzmaEncoder final : public DetachedBufferEncoder {
+class LzmaEncoder final : public DataEncoder {
  public:
+  static constexpr std::string_view kExtension = ".xz";
+
   // Initializes the LZMA stream and encoder.  The block size is the block size
   // used by the multithreaded encoder for batching.  A block size of 0 tells
   // lzma to pick it's favorite block size.
-  explicit LzmaEncoder(uint32_t compression_preset, size_t block_size = 0);
+  explicit LzmaEncoder(size_t max_message_size, uint32_t compression_preset,
+                       size_t block_size = 0);
   LzmaEncoder(const LzmaEncoder &) = delete;
   LzmaEncoder(LzmaEncoder &&other) = delete;
   LzmaEncoder &operator=(const LzmaEncoder &) = delete;
@@ -29,16 +32,21 @@ class LzmaEncoder final : public DetachedBufferEncoder {
   // Gracefully shuts down the encoder.
   ~LzmaEncoder() final;
 
-  void Encode(flatbuffers::DetachedBuffer &&in) final;
+  bool HasSpace(size_t /*request*/) const override {
+    // Since the underlying lzma encoder handles buffering, we always have
+    // space.
+    return true;
+  }
+  void Encode(Copier *copy) final;
   void Finish() final;
   void Clear(int n) final;
-  std::vector<absl::Span<const uint8_t>> queue() const final;
+  absl::Span<const absl::Span<const uint8_t>> queue() final;
   size_t queued_bytes() const final;
   size_t total_bytes() const final { return total_bytes_; }
   size_t queue_size() const final { return queue_.size(); }
 
  private:
-  static constexpr size_t kEncodedBufferSizeBytes{4096 * 10};
+  static constexpr size_t kEncodedBufferSizeBytes{1024 * 128};
 
   void RunLzmaCode(lzma_action action);
 
@@ -49,6 +57,11 @@ class LzmaEncoder final : public DetachedBufferEncoder {
   // Total bytes that resulted from encoding raw data since the last call to
   // Reset.
   size_t total_bytes_ = 0;
+
+  // Buffer that messages get coppied into for encoding.
+  ResizeableBuffer input_buffer_;
+
+  std::vector<absl::Span<const uint8_t>> return_queue_;
 };
 
 // Decompresses data with liblzma.
