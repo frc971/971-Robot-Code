@@ -286,57 +286,6 @@ class LogNamer {
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>::Empty();
 };
 
-// Local log namer is a simple version which only names things
-// "base_name.part#.bfbs" and increments the part number.  It doesn't support
-// any other log type.
-class LocalLogNamer : public LogNamer {
- public:
-  LocalLogNamer(std::string_view base_name, aos::EventLoop *event_loop,
-                const aos::Node *node)
-      : LogNamer(event_loop->configuration(), event_loop, node),
-        base_name_(base_name),
-        data_writer_(
-            this, node, event_loop->node(),
-            [this](NewDataWriter *writer) {
-              writer->writer = std::make_unique<DetachedBufferWriter>(
-                  absl::StrCat(base_name_, ".part", writer->parts_index(),
-                               ".bfbs"),
-                  std::make_unique<aos::logger::DummyEncoder>());
-            },
-            [](NewDataWriter * /*writer*/) {}) {}
-
-  LocalLogNamer(const LocalLogNamer &) = delete;
-  LocalLogNamer(LocalLogNamer &&) = delete;
-  LocalLogNamer &operator=(const LocalLogNamer &) = delete;
-  LocalLogNamer &operator=(LocalLogNamer &&) = delete;
-
-  ~LocalLogNamer() override = default;
-
-  std::string_view base_name() const final { return base_name_; }
-
-  void set_base_name(std::string_view base_name) final {
-    base_name_ = base_name;
-  }
-
-  NewDataWriter *MakeWriter(const Channel *channel) override;
-
-  void Rotate(const Node *node) override;
-
-  NewDataWriter *MakeTimestampWriter(const Channel *channel) override;
-
-  NewDataWriter *MakeForwardedTimestampWriter(const Channel * /*channel*/,
-                                              const Node * /*node*/) override;
-
-  void WriteConfiguration(
-      aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> *header,
-      std::string_view config_sha256) override;
-
- private:
-  std::string base_name_;
-
-  NewDataWriter data_writer_;
-};
-
 // Log namer which uses a config and a base name to name a bunch of files.
 class MultiNodeLogNamer : public LogNamer {
  public:

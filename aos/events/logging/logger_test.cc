@@ -84,7 +84,7 @@ TEST_F(LoggerTest, Starts) {
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string config =
       absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
-  const ::std::string logfile = base_name + ".part0.bfbs";
+  const ::std::string logfile = base_name + "_data.part0.bfbs";
   // Remove it.
   unlink(config.c_str());
   unlink(logfile.c_str());
@@ -100,7 +100,7 @@ TEST_F(LoggerTest, Starts) {
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger.StartLoggingLocalNamerOnRun(base_name);
+    logger.StartLoggingOnRun(base_name);
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
   }
 
@@ -148,11 +148,11 @@ TEST_F(LoggerDeathTest, ExtraStart) {
   const ::std::string base_name1 = tmpdir + "/logfile1";
   const ::std::string config1 =
       absl::StrCat(base_name1, kSingleConfigSha256, ".bfbs");
-  const ::std::string logfile1 = base_name1 + ".part0.bfbs";
+  const ::std::string logfile1 = base_name1 + "_data.part0.bfbs";
   const ::std::string base_name2 = tmpdir + "/logfile2";
   const ::std::string config2 =
       absl::StrCat(base_name2, kSingleConfigSha256, ".bfbs");
-  const ::std::string logfile2 = base_name2 + ".part0.bfbs";
+  const ::std::string logfile2 = base_name2 + "_data.part0.bfbs";
   unlink(logfile1.c_str());
   unlink(config1.c_str());
   unlink(logfile2.c_str());
@@ -168,15 +168,16 @@ TEST_F(LoggerDeathTest, ExtraStart) {
 
     Logger logger(logger_event_loop.get());
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger_event_loop->OnRun([base_name1, base_name2, &logger_event_loop,
-                              &logger]() {
-      logger.StartLogging(std::make_unique<LocalLogNamer>(
-          base_name1, logger_event_loop.get(), logger_event_loop->node()));
-      EXPECT_DEATH(
-          logger.StartLogging(std::make_unique<LocalLogNamer>(
-              base_name2, logger_event_loop.get(), logger_event_loop->node())),
-          "Already logging");
-    });
+    logger_event_loop->OnRun(
+        [base_name1, base_name2, &logger_event_loop, &logger]() {
+          logger.StartLogging(std::make_unique<MultiNodeLogNamer>(
+              base_name1, logger_event_loop->configuration(),
+              logger_event_loop.get(), logger_event_loop->node()));
+          EXPECT_DEATH(logger.StartLogging(std::make_unique<MultiNodeLogNamer>(
+                           base_name2, logger_event_loop->configuration(),
+                           logger_event_loop.get(), logger_event_loop->node())),
+                       "Already logging");
+        });
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
   }
 }
@@ -191,7 +192,7 @@ TEST_F(LoggerDeathTest, DieOnDuplicateReplayChannels) {
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string config_file =
       absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
-  const ::std::string logfile = base_name + ".part0.bfbs";
+  const ::std::string logfile = base_name + "_data.part0.bfbs";
   // Remove the log file.
   unlink(config_file.c_str());
   unlink(logfile.c_str());
@@ -205,7 +206,7 @@ TEST_F(LoggerDeathTest, DieOnDuplicateReplayChannels) {
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger.StartLoggingLocalNamerOnRun(base_name);
+    logger.StartLoggingOnRun(base_name);
 
     event_loop_factory.RunFor(chrono::seconds(2));
   }
@@ -244,8 +245,9 @@ TEST_F(LoggerDeathTest, ExtraStop) {
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
     logger_event_loop->OnRun([base_name, &logger_event_loop, &logger]() {
-      logger.StartLogging(std::make_unique<LocalLogNamer>(
-          base_name, logger_event_loop.get(), logger_event_loop->node()));
+      logger.StartLogging(std::make_unique<MultiNodeLogNamer>(
+          base_name, logger_event_loop->configuration(),
+          logger_event_loop.get(), logger_event_loop->node()));
       logger.StopLogging(aos::monotonic_clock::min_time);
       EXPECT_DEATH(logger.StopLogging(aos::monotonic_clock::min_time),
                    "Not logging right now");
@@ -260,11 +262,11 @@ TEST_F(LoggerTest, StartsTwice) {
   const ::std::string base_name1 = tmpdir + "/logfile1";
   const ::std::string config1 =
       absl::StrCat(base_name1, kSingleConfigSha256, ".bfbs");
-  const ::std::string logfile1 = base_name1 + ".part0.bfbs";
+  const ::std::string logfile1 = base_name1 + "_data.part0.bfbs";
   const ::std::string base_name2 = tmpdir + "/logfile2";
   const ::std::string config2 =
       absl::StrCat(base_name2, kSingleConfigSha256, ".bfbs");
-  const ::std::string logfile2 = base_name2 + ".part0.bfbs";
+  const ::std::string logfile2 = base_name2 + "_data.part0.bfbs";
   unlink(logfile1.c_str());
   unlink(config1.c_str());
   unlink(logfile2.c_str());
@@ -281,13 +283,15 @@ TEST_F(LoggerTest, StartsTwice) {
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger.StartLogging(std::make_unique<LocalLogNamer>(
-        base_name1, logger_event_loop.get(), logger_event_loop->node()));
+    logger.StartLogging(std::make_unique<MultiNodeLogNamer>(
+        base_name1, logger_event_loop->configuration(), logger_event_loop.get(),
+        logger_event_loop->node()));
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
     logger.StopLogging(logger_event_loop->monotonic_now());
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
-    logger.StartLogging(std::make_unique<LocalLogNamer>(
-        base_name2, logger_event_loop.get(), logger_event_loop->node()));
+    logger.StartLogging(std::make_unique<MultiNodeLogNamer>(
+        base_name2, logger_event_loop->configuration(), logger_event_loop.get(),
+        logger_event_loop->node()));
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
   }
 
@@ -330,8 +334,8 @@ TEST_F(LoggerTest, RotatedLogFile) {
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string config =
       absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
-  const ::std::string logfile0 = base_name + ".part0.bfbs";
-  const ::std::string logfile1 = base_name + ".part1.bfbs";
+  const ::std::string logfile0 = base_name + "_data.part0.bfbs";
+  const ::std::string logfile1 = base_name + "_data.part1.bfbs";
   // Remove it.
   unlink(config.c_str());
   unlink(logfile0.c_str());
@@ -348,7 +352,7 @@ TEST_F(LoggerTest, RotatedLogFile) {
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger.StartLoggingLocalNamerOnRun(base_name);
+    logger.StartLoggingOnRun(base_name);
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
     logger.Rotate();
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
@@ -450,7 +454,7 @@ TEST_F(LoggerTest, ManyMessages) {
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger.StartLoggingLocalNamerOnRun(base_name);
+    logger.StartLoggingOnRun(base_name);
 
     event_loop_factory_.RunFor(chrono::milliseconds(1000));
   }
@@ -466,7 +470,7 @@ TEST(SingleNodeLoggerNoFixtureTest, ReadTooFast) {
   const ::std::string base_name = tmpdir + "/logfile";
   const ::std::string config_file =
       absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
-  const ::std::string logfile = base_name + ".part0.bfbs";
+  const ::std::string logfile = base_name + "_data.part0.bfbs";
   // Remove the log file.
   unlink(config_file.c_str());
   unlink(logfile.c_str());
@@ -513,7 +517,7 @@ TEST(SingleNodeLoggerNoFixtureTest, ReadTooFast) {
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
-    logger.StartLoggingLocalNamerOnRun(base_name);
+    logger.StartLoggingOnRun(base_name);
 
     event_loop_factory.RunFor(kSendPeriod * max_legal_messages * 2);
   }

@@ -71,7 +71,7 @@ class DrivetrainTest : public ::frc971::testing::ControlLoopTest {
       unlink(FLAGS_output_file.c_str());
       logger_event_loop_ = MakeEventLoop("logger");
       logger_ = std::make_unique<aos::logger::Logger>(logger_event_loop_.get());
-      logger_->StartLoggingLocalNamerOnRun(FLAGS_output_file);
+      logger_->StartLoggingOnRun(FLAGS_output_file);
     }
 
     // Run for enough time to allow the gyro/imu zeroing code to run.
