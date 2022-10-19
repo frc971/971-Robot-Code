@@ -484,6 +484,9 @@ class TimerHandler {
   // Stop future calls to callback().
   virtual void Disable() = 0;
 
+  // Check if the timer is disabled
+  virtual bool IsDisabled() = 0;
+
   // Sets and gets the name of the timer.  Set this if you want a descriptive
   // name in the timing report.
   void set_name(std::string_view name) { name_ = std::string(name); }
