@@ -38,6 +38,23 @@ const COMP_LEVEL_LABELS: Record<CompLevel, string> = {
   f: 'Finals',
 };
 
+const IMAGES_ARRAY = [
+  {
+    id: 'field_quadrants_image',
+    original_image:
+      '/sha256/cbb99a057a2504e80af526dae7a0a04121aed84c56a6f4889e9576fe1c20c61e/pictures/field/quadrants.jpeg',
+    reversed_image:
+      '/sha256/2c67fffbb722e9a7d0e1d270f1aad7f39a2dc8493c2e7ad1ae50bd6fa52d5bb7/pictures/field/reversed_quadrants.jpeg',
+  },
+  {
+    id: 'field_balls_image',
+    original_image:
+      '/sha256/e095cc8a75d804b0e2070e0a941fab37154176756d4c1a775e53cc48c3a732b9/pictures/field/balls.jpeg',
+    reversed_image:
+      '/sha256/fe4a4605c03598611c583d4dcdf28e06a056a17302ae91f5c527568966d95f3a/pictures/field/reversed_balls.jpeg',
+  },
+];
+
 @Component({
   selector: 'app-entry',
   templateUrl: './entry.ng.html',
@@ -122,6 +139,14 @@ export class EntryComponent {
     this.scrollToTop();
   }
 
+  flipImages() {
+    for (let obj of IMAGES_ARRAY) {
+      let img = document.getElementById(obj.id) as HTMLImageElement;
+      img.src = img.src.endsWith(obj.original_image)
+        ? obj.reversed_image
+        : obj.original_image;
+    }
+  }
   private scrollToTop() {
     this.header.nativeElement.scrollIntoView();
   }

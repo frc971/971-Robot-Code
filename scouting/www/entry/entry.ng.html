@@ -54,8 +54,12 @@
   </div>
 
   <div *ngSwitchCase="'Auto'" id="auto" class="container-fluid">
+    <button class="buttons" id="switch_field_button" (click)="flipImages()">
+      Flip
+    </button>
     <div class="row">
       <img
+        id="field_quadrants_image"
         src="/sha256/cbb99a057a2504e80af526dae7a0a04121aed84c56a6f4889e9576fe1c20c61e/pictures/field/quadrants.jpeg"
         alt="Quadrants Image"
       />
@@ -97,8 +101,9 @@
     </div>
     <div class="row">
       <img
+        id="field_balls_image"
         src="/sha256/e095cc8a75d804b0e2070e0a941fab37154176756d4c1a775e53cc48c3a732b9/pictures/field/balls.jpeg"
-        alt="Image"
+        alt="Balls Image"
       />
       <form>
         <!--Choice for each ball location-->

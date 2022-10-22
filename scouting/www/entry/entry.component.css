@@ -15,3 +15,12 @@ textarea {
 button {
   touch-action: manipulation;
 }
+
+#switchFldbtn {
+  width: 15%;
+  display: block;
+  margin: 0 auto;
+  box-shadow: 2px 2px 1px #ccc;
+  max-width: 105px;
+  text-align: center;
+}
