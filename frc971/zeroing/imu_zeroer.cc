@@ -28,7 +28,6 @@ bool ReadingHasFaults(const IMUValues &values) {
 ImuZeroer::ImuZeroer(FaultBehavior fault_behavior)
     : fault_behavior_(fault_behavior) {
   gyro_average_.setZero();
-  accel_average_.setZero();
   last_gyro_sample_.setZero();
   last_accel_sample_.setZero();
 }
@@ -47,8 +46,7 @@ std::optional<Eigen::Vector3d> ImuZeroer::ZeroedGyro() const {
 
 std::optional<Eigen::Vector3d> ImuZeroer::ZeroedAccel() const {
   return Faulted() ? std::nullopt
-                   : std::make_optional<Eigen::Vector3d>(last_accel_sample_ -
-                                                         accel_average_);
+                   : std::make_optional<Eigen::Vector3d>(last_accel_sample_);
 }
 
 Eigen::Vector3d ImuZeroer::GyroOffset() const { return gyro_average_; }
@@ -129,9 +127,9 @@ ImuZeroer::PopulateStatus(flatbuffers::FlatBufferBuilder *fbb) const {
   builder.add_gyro_y_average(GyroOffset().y());
   builder.add_gyro_z_average(GyroOffset().z());
 
-  builder.add_accel_x_average(accel_average_.x());
-  builder.add_accel_y_average(accel_average_.y());
-  builder.add_accel_z_average(accel_average_.z());
+  builder.add_accel_x_average(accel_averager_.GetAverage()[0]);
+  builder.add_accel_y_average(accel_averager_.GetAverage()[1]);
+  builder.add_accel_z_average(accel_averager_.GetAverage()[2]);
 
   return builder.Finish();
 }

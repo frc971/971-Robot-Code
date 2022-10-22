@@ -70,7 +70,6 @@ class ImuZeroer {
   Averager<double, kSamplesToAverage, 3> accel_averager_;
   // The average zero position of the gyro.
   Eigen::Vector3d gyro_average_;
-  Eigen::Vector3d accel_average_;
   Eigen::Vector3d last_gyro_sample_;
   Eigen::Vector3d last_accel_sample_;
 
