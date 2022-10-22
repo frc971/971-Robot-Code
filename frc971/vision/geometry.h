@@ -1,11 +1,11 @@
-#ifndef Y2022_VISION_GEOMETRY_H_
-#define Y2022_VISION_GEOMETRY_H_
+#ifndef FRC971_VISION_GEOMETRY_H_
+#define FRC971_VISION_GEOMETRY_H_
 
 #include "aos/util/math.h"
 #include "glog/logging.h"
 #include "opencv2/core/types.hpp"
 
-namespace y2022::vision {
+namespace frc971::vision {
 
 // Linear equation in the form y = mx + b
 struct SlopeInterceptLine {
@@ -131,6 +131,6 @@ struct Circle {
   }
 };
 
-}  // namespace y2022::vision
+}  // namespace frc971::vision
 
-#endif  // Y2022_VISION_GEOMETRY_H_
+#endif  // FRC971_VISION_GEOMETRY_H_

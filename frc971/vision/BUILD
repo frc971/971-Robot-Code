@@ -86,3 +86,28 @@ cc_library(
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
+
+cc_library(
+    name = "geometry_lib",
+    hdrs = [
+        "geometry.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/util:math",
+        "//third_party:opencv",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "geometry_test",
+    srcs = [
+        "geometry_test.cc",
+    ],
+    deps = [
+        ":geometry_lib",
+        "//aos/testing:googletest",
+    ],
+)

@@ -1,4 +1,4 @@
-#include "y2022/vision/geometry.h"
+#include "frc971/vision/geometry.h"
 
 #include <cmath>
 
@@ -6,7 +6,7 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-namespace y2022::vision::testing {
+namespace frc971::vision::testing {
 
 TEST(GeometryTest, SlopeInterceptLine) {
   // Test a normal line
@@ -108,4 +108,4 @@ TEST(GeometryTest, Circle) {
   }
 }
 
-}  // namespace y2022::vision::testing
+}  // namespace frc971::vision::testing
