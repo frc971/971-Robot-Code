@@ -1,14 +1,22 @@
 #include "aos/events/logging/logfile_utils.h"
 
 #include <chrono>
+#include <random>
 #include <string>
 
+#include "absl/strings/escaping.h"
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/test_message_generated.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/testing/path.h"
+#include "aos/testing/random_seed.h"
 #include "aos/testing/tmpdir.h"
+#include "aos/util/file.h"
+#include "external/com_github_google_flatbuffers/src/annotated_binary_text_gen.h"
+#include "external/com_github_google_flatbuffers/src/binary_annotator.h"
+#include "flatbuffers/reflection_generated.h"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
 
@@ -16,6 +24,8 @@ namespace aos {
 namespace logger {
 namespace testing {
 namespace chrono = std::chrono;
+using aos::testing::ArtifactPath;
+using aos::message_bridge::RemoteMessage;
 
 // Adapter class to make it easy to test DetachedBufferWriter without adding
 // test only boilerplate to DetachedBufferWriter.
@@ -2828,6 +2838,213 @@ TEST(MessageReaderConfirmCrash, ReadWrite) {
     EXPECT_EQ(reader.newest_timestamp(),
               monotonic_clock::time_point(chrono::nanoseconds(4)));
     EXPECT_FALSE(reader.ReadMessage());
+  }
+}
+
+class InlinePackMessage : public ::testing::Test {
+ protected:
+  aos::Context RandomContext() {
+    data_ = RandomData();
+    std::uniform_int_distribution<uint32_t> uint32_distribution(
+        std::numeric_limits<uint32_t>::min(),
+        std::numeric_limits<uint32_t>::max());
+
+    std::uniform_int_distribution<int64_t> time_distribution(
+        std::numeric_limits<int64_t>::min(),
+        std::numeric_limits<int64_t>::max());
+
+    aos::Context context;
+    context.monotonic_event_time =
+        aos::monotonic_clock::epoch() +
+        chrono::nanoseconds(time_distribution(random_number_generator_));
+    context.realtime_event_time =
+        aos::realtime_clock::epoch() +
+        chrono::nanoseconds(time_distribution(random_number_generator_));
+
+    context.monotonic_remote_time =
+        aos::monotonic_clock::epoch() +
+        chrono::nanoseconds(time_distribution(random_number_generator_));
+    context.realtime_remote_time =
+        aos::realtime_clock::epoch() +
+        chrono::nanoseconds(time_distribution(random_number_generator_));
+
+    context.queue_index = uint32_distribution(random_number_generator_);
+    context.remote_queue_index = uint32_distribution(random_number_generator_);
+    context.size = data_.size();
+    context.data = data_.data();
+    return context;
+  }
+
+  aos::monotonic_clock::time_point RandomMonotonic() {
+    std::uniform_int_distribution<int64_t> time_distribution(
+        0, std::numeric_limits<int64_t>::max());
+    return aos::monotonic_clock::epoch() +
+           chrono::nanoseconds(time_distribution(random_number_generator_));
+  }
+
+  aos::SizePrefixedFlatbufferDetachedBuffer<message_bridge::RemoteMessage>
+  RandomRemoteMessage() {
+    std::uniform_int_distribution<uint8_t> uint8_distribution(
+        std::numeric_limits<uint8_t>::min(),
+        std::numeric_limits<uint8_t>::max());
+
+    std::uniform_int_distribution<int64_t> time_distribution(
+        std::numeric_limits<int64_t>::min(),
+        std::numeric_limits<int64_t>::max());
+
+    flatbuffers::FlatBufferBuilder fbb;
+    message_bridge::RemoteMessage::Builder builder(fbb);
+    builder.add_queue_index(uint8_distribution(random_number_generator_));
+
+    builder.add_monotonic_sent_time(
+        time_distribution(random_number_generator_));
+    builder.add_realtime_sent_time(time_distribution(random_number_generator_));
+    builder.add_monotonic_remote_time(
+        time_distribution(random_number_generator_));
+    builder.add_realtime_remote_time(
+        time_distribution(random_number_generator_));
+
+    builder.add_remote_queue_index(
+        uint8_distribution(random_number_generator_));
+
+    fbb.FinishSizePrefixed(builder.Finish());
+    return fbb.Release();
+  }
+
+  std::vector<uint8_t> RandomData() {
+    std::vector<uint8_t> result;
+    std::uniform_int_distribution<int> length_distribution(1, 32);
+    std::uniform_int_distribution<uint8_t> data_distribution(
+        std::numeric_limits<uint8_t>::min(),
+        std::numeric_limits<uint8_t>::max());
+
+    const size_t length = length_distribution(random_number_generator_);
+
+    result.reserve(length);
+    for (size_t i = 0; i < length; ++i) {
+      result.emplace_back(data_distribution(random_number_generator_));
+    }
+    return result;
+  }
+
+  std::mt19937 random_number_generator_{
+      std::mt19937(::aos::testing::RandomSeed())};
+
+  std::vector<uint8_t> data_;
+};
+
+// Uses the binary schema to annotate a provided flatbuffer.  Returns the
+// annotated flatbuffer.
+std::string AnnotateBinaries(
+    const aos::NonSizePrefixedFlatbuffer<reflection::Schema> &schema,
+    const std::string &schema_filename,
+    flatbuffers::span<uint8_t> binary_data) {
+  flatbuffers::BinaryAnnotator binary_annotator(
+      schema.span().data(), schema.span().size(), binary_data.data(),
+      binary_data.size());
+
+  auto annotations = binary_annotator.Annotate();
+
+  flatbuffers::AnnotatedBinaryTextGenerator text_generator(
+      flatbuffers::AnnotatedBinaryTextGenerator::Options{}, annotations,
+      binary_data.data(), binary_data.size());
+
+  text_generator.Generate(aos::testing::TestTmpDir() + "/foo.bfbs",
+                          schema_filename);
+
+  return aos::util::ReadFileToStringOrDie(aos::testing::TestTmpDir() +
+                                          "/foo.afb");
+}
+
+// Tests that all variations of PackMessage are equivalent to the inline
+// PackMessage used to avoid allocations.
+TEST_F(InlinePackMessage, Equivilent) {
+  std::uniform_int_distribution<uint32_t> uint32_distribution(
+      std::numeric_limits<uint32_t>::min(),
+      std::numeric_limits<uint32_t>::max());
+  aos::FlatbufferVector<reflection::Schema> schema =
+      FileToFlatbuffer<reflection::Schema>(
+          ArtifactPath("aos/events/logging/logger.bfbs"));
+
+  for (const LogType type :
+       {LogType::kLogMessage, LogType::kLogDeliveryTimeOnly,
+        LogType::kLogMessageAndDeliveryTime, LogType::kLogRemoteMessage}) {
+    for (int i = 0; i < 100; ++i) {
+      aos::Context context = RandomContext();
+      const uint32_t channel_index =
+          uint32_distribution(random_number_generator_);
+
+      flatbuffers::FlatBufferBuilder fbb;
+      fbb.ForceDefaults(true);
+      fbb.FinishSizePrefixed(PackMessage(&fbb, context, channel_index, type));
+
+      VLOG(1) << absl::BytesToHexString(std::string_view(
+          reinterpret_cast<const char *>(fbb.GetBufferSpan().data()),
+          fbb.GetBufferSpan().size()));
+
+      // Make sure that both the builder and inline method agree on sizes.
+      ASSERT_EQ(fbb.GetSize(), PackMessageSize(type, context))
+          << "log type " << static_cast<int>(type);
+
+      // Initialize the buffer to something nonzero to make sure all the padding
+      // bytes are set to 0.
+      std::vector<uint8_t> repacked_message(PackMessageSize(type, context), 67);
+
+      // And verify packing inline works as expected.
+      EXPECT_EQ(repacked_message.size(),
+                PackMessageInline(repacked_message.data(), context,
+                                  channel_index, type));
+      EXPECT_EQ(absl::Span<uint8_t>(repacked_message),
+                absl::Span<uint8_t>(fbb.GetBufferSpan().data(),
+                                    fbb.GetBufferSpan().size()))
+          << AnnotateBinaries(schema, "aos/events/logging/logger.bfbs",
+                              fbb.GetBufferSpan());
+    }
+  }
+}
+
+// Tests that all variations of PackMessage are equivilent to the inline
+// PackMessage used to avoid allocations.
+TEST_F(InlinePackMessage, RemoteEquivilent) {
+  aos::FlatbufferVector<reflection::Schema> schema =
+      FileToFlatbuffer<reflection::Schema>(
+          ArtifactPath("aos/events/logging/logger.bfbs"));
+  std::uniform_int_distribution<uint8_t> uint8_distribution(
+      std::numeric_limits<uint8_t>::min(), std::numeric_limits<uint8_t>::max());
+
+  for (int i = 0; i < 100; ++i) {
+    aos::SizePrefixedFlatbufferDetachedBuffer<RemoteMessage> random_msg =
+        RandomRemoteMessage();
+    const size_t channel_index = uint8_distribution(random_number_generator_);
+    const monotonic_clock::time_point monotonic_timestamp_time =
+        RandomMonotonic();
+
+    flatbuffers::FlatBufferBuilder fbb;
+    fbb.ForceDefaults(true);
+    fbb.FinishSizePrefixed(PackRemoteMessage(
+        &fbb, &random_msg.message(), channel_index, monotonic_timestamp_time));
+
+    VLOG(1) << absl::BytesToHexString(std::string_view(
+        reinterpret_cast<const char *>(fbb.GetBufferSpan().data()),
+        fbb.GetBufferSpan().size()));
+
+    // Make sure that both the builder and inline method agree on sizes.
+    ASSERT_EQ(fbb.GetSize(), PackRemoteMessageSize());
+
+    // Initialize the buffer to something nonzer to make sure all the padding
+    // bytes are set to 0.
+    std::vector<uint8_t> repacked_message(PackRemoteMessageSize(), 67);
+
+    // And verify packing inline works as expected.
+    EXPECT_EQ(
+        repacked_message.size(),
+        PackRemoteMessageInline(repacked_message.data(), &random_msg.message(),
+                                channel_index, monotonic_timestamp_time));
+    EXPECT_EQ(absl::Span<uint8_t>(repacked_message),
+              absl::Span<uint8_t>(fbb.GetBufferSpan().data(),
+                                  fbb.GetBufferSpan().size()))
+        << AnnotateBinaries(schema, "aos/events/logging/logger.bfbs",
+                            fbb.GetBufferSpan());
   }
 }
 

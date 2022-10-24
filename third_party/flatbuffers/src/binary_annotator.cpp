@@ -149,30 +149,65 @@ std::map<uint64_t, BinarySection> BinaryAnnotator::Annotate() {
 }
 
 uint64_t BinaryAnnotator::BuildHeader(const uint64_t header_offset) {
-  const auto root_table_offset = ReadScalar<uint32_t>(header_offset);
+  std::vector<BinaryRegion> regions;
+  const std::optional<uoffset_t> maybe_size =
+      ReadScalar<uoffset_t>(header_offset);
 
-  if (!root_table_offset.has_value()) {
+  if (!maybe_size.has_value()) {
     // This shouldn't occur, since we validate the min size of the buffer
     // before. But for completion sake, we shouldn't read passed the binary end.
     return std::numeric_limits<uint64_t>::max();
   }
 
-  std::vector<BinaryRegion> regions;
-  uint64_t offset = header_offset;
+  // We are size prefixed if the size matches the length of the buffer.
+  // TODO(austin): should this be a flag?
+  const bool size_prefixed = *maybe_size + sizeof(uoffset_t) >= binary_length_;
+  const size_t size_prefixed_offset = size_prefixed ? sizeof(uoffset_t) : 0u;
+
+  if (size_prefixed) {
+    BinaryRegionComment root_size_comment;
+    root_size_comment.type = BinaryRegionCommentType::SizePrefix;
+
+    const bool invalid_size_prefix =
+        *maybe_size + sizeof(uoffset_t) != binary_length_;
+    if (invalid_size_prefix) {
+      SetError(root_size_comment, BinaryRegionStatus::ERROR_INCOMPLETE_BINARY);
+    }
+
+    regions.push_back(MakeBinaryRegion(header_offset, sizeof(uint32_t),
+                                       BinaryRegionType::UOffset, 0,
+                                       maybe_size.value(), root_size_comment));
+
+    if (invalid_size_prefix) {
+      AddSection(header_offset, MakeBinarySection("", BinarySectionType::Header,
+                                                  std::move(regions)));
+      return std::numeric_limits<uint64_t>::max();
+    }
+  }
+
+  const auto root_table_offset =
+      ReadScalar<uint32_t>(header_offset + size_prefixed_offset);
+
+  if (!root_table_offset.has_value()) {
+    // This should only occur if we were size prefixed.
+    return std::numeric_limits<uint64_t>::max();
+  }
+
+  uint64_t offset = header_offset + size_prefixed_offset;
   // TODO(dbaileychess): sized prefixed value
 
   BinaryRegionComment root_offset_comment;
   root_offset_comment.type = BinaryRegionCommentType::RootTableOffset;
   root_offset_comment.name = schema_->root_table()->name()->str();
 
-  if (!IsValidOffset(root_table_offset.value())) {
+  if (!IsValidOffset(root_table_offset.value() + size_prefixed_offset)) {
     SetError(root_offset_comment,
              BinaryRegionStatus::ERROR_OFFSET_OUT_OF_BINARY);
   }
 
-  regions.push_back(
-      MakeBinaryRegion(offset, sizeof(uint32_t), BinaryRegionType::UOffset, 0,
-                       root_table_offset.value(), root_offset_comment));
+  regions.push_back(MakeBinaryRegion(
+      offset, sizeof(uint32_t), BinaryRegionType::UOffset, 0,
+      root_table_offset.value() + size_prefixed_offset, root_offset_comment));
   offset += sizeof(uint32_t);
 
   if (IsValidRead(offset, flatbuffers::kFileIdentifierLength) &&
@@ -191,7 +226,7 @@ uint64_t BinaryAnnotator::BuildHeader(const uint64_t header_offset) {
   AddSection(header_offset, MakeBinarySection("", BinarySectionType::Header,
                                               std::move(regions)));
 
-  return root_table_offset.value();
+  return root_table_offset.value() + size_prefixed_offset;
 }
 
 void BinaryAnnotator::BuildVTable(const uint64_t vtable_offset,
@@ -1388,7 +1423,7 @@ void BinaryAnnotator::FixMissingSections() {
 
   // Handle the case where there are still bytes left in the binary that are
   // unaccounted for.
-  if (offset < binary_length_) {
+  if (offset <= binary_length_) {
     const uint64_t pad_bytes = binary_length_ - offset + 1;
     sections_to_insert.push_back(
         GenerateMissingSection(offset - 1, pad_bytes, binary_));

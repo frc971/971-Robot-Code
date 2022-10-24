@@ -61,6 +61,7 @@ cc_library(
         "//aos:flatbuffers",
         "//aos/containers:resizeable_buffer",
         "//aos/events:event_loop",
+        "//aos/network:remote_message_fbs",
         "//aos/util:file",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_flatbuffers//:flatbuffers",
@@ -557,12 +558,20 @@ cc_test(
 cc_test(
     name = "logfile_utils_test",
     srcs = ["logfile_utils_test.cc"],
+    data = [
+        ":logger_fbs_reflection_out",
+        "//aos/network:remote_message_fbs_reflection_out",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":logfile_utils",
+        ":logger_fbs",
         ":test_message_fbs",
         "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//aos/testing:random_seed",
         "//aos/testing:tmpdir",
+        "@com_github_google_flatbuffers//src:flatc_library",
     ],
 )
 

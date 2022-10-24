@@ -23,6 +23,7 @@
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/flatbuffers.h"
+#include "aos/network/remote_message_generated.h"
 #include "flatbuffers/flatbuffers.h"
 
 namespace aos::logger {
@@ -194,10 +195,32 @@ class DetachedBufferWriter {
       aos::monotonic_clock::min_time;
 };
 
+// Repacks the provided RemoteMessage into fbb.
+flatbuffers::Offset<MessageHeader> PackRemoteMessage(
+    flatbuffers::FlatBufferBuilder *fbb,
+    const message_bridge::RemoteMessage *msg, int channel_index,
+    const aos::monotonic_clock::time_point monotonic_timestamp_time);
+
+constexpr flatbuffers::uoffset_t PackRemoteMessageSize() { return 96u; }
+size_t PackRemoteMessageInline(
+    uint8_t *data, const message_bridge::RemoteMessage *msg, int channel_index,
+    const aos::monotonic_clock::time_point monotonic_timestamp_time);
+
 // Packes a message pointed to by the context into a MessageHeader.
 flatbuffers::Offset<MessageHeader> PackMessage(
     flatbuffers::FlatBufferBuilder *fbb, const Context &context,
     int channel_index, LogType log_type);
+
+// Returns the size that the packed message from PackMessage or
+// PackMessageInline will be.
+flatbuffers::uoffset_t PackMessageSize(LogType log_type,
+                                       const Context &context);
+
+// Packs the provided message pointed to by context into the provided buffer.
+// This is equivalent to PackMessage, but doesn't require allocating a
+// FlatBufferBuilder underneath.
+size_t PackMessageInline(uint8_t *data, const Context &contex,
+                         int channel_index, LogType log_type);
 
 // Class to read chunks out of a log file.
 class SpanReader {
