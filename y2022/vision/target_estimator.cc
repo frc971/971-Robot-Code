@@ -4,7 +4,7 @@
 #include "aos/time/time.h"
 #include "ceres/ceres.h"
 #include "frc971/control_loops/quaternion_utils.h"
-#include "geometry.h"
+#include "frc971/vision/geometry.h"
 #include "opencv2/core/core.hpp"
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/features2d.hpp"
@@ -156,9 +156,9 @@ void TargetEstimator::Solve(
 
   CHECK_GE(blob_stats_.size(), 3) << "Expected at least 3 blobs";
 
-  const auto circle =
-      Circle::Fit({blob_stats_[0].centroid, blob_stats_[1].centroid,
-                   blob_stats_[2].centroid});
+  const auto circle = frc971::vision::Circle::Fit({blob_stats_[0].centroid,
+                                                   blob_stats_[1].centroid,
+                                                   blob_stats_[2].centroid});
   CHECK(circle.has_value());
 
   max_blob_area_ = 0.0;

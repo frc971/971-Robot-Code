@@ -6,10 +6,10 @@
 
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
+#include "frc971/vision/geometry.h"
 #include "opencv2/features2d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include "y2022/vision/geometry.h"
 
 DEFINE_bool(
     use_outdoors, true,
@@ -142,7 +142,7 @@ void BlobDetector::FilterBlobs(BlobResult *blob_result) {
   constexpr double kMaxBlobAngle = M_PI - kMinBlobAngle;
   std::vector<std::vector<cv::Point>> blob_circle;
   std::vector<BlobStats> blob_circle_stats;
-  Circle circle;
+  frc971::vision::Circle circle;
 
   // If we see more than this number of blobs after filtering based on
   // color/size, the circle fit may detect noise so just return no blobs.
@@ -167,9 +167,10 @@ void BlobDetector::FilterBlobs(BlobResult *blob_result) {
           filtered_blobs[j], filtered_blobs[k], filtered_blobs[l]};
       std::vector<BlobStats> current_stats{filtered_stats[j], filtered_stats[k],
                                            filtered_stats[l]};
-      const std::optional<Circle> current_circle =
-          Circle::Fit({current_stats[0].centroid, current_stats[1].centroid,
-                       current_stats[2].centroid});
+      const std::optional<frc971::vision::Circle> current_circle =
+          frc971::vision::Circle::Fit({current_stats[0].centroid,
+                                       current_stats[1].centroid,
+                                       current_stats[2].centroid});
 
       // Make sure that a circle could be created from the points
       if (!current_circle) {
