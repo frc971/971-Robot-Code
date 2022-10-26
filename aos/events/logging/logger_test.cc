@@ -540,7 +540,8 @@ TEST(SingleNodeLoggerNoFixtureTest, ReadTooFast) {
 
 struct CompressionParams {
   std::string_view extension;
-  std::function<std::unique_ptr<DetachedBufferEncoder>()> encoder_factory;
+  std::function<std::unique_ptr<DataEncoder>(size_t max_message_size)>
+      encoder_factory;
 };
 
 std::ostream &operator<<(std::ostream &ostream,
@@ -550,12 +551,19 @@ std::ostream &operator<<(std::ostream &ostream,
 }
 
 std::vector<CompressionParams> SupportedCompressionAlgorithms() {
-  return {{"", []() { return std::make_unique<DummyEncoder>(); }},
+  return {{"",
+           [](size_t max_message_size) {
+             return std::make_unique<DummyEncoder>(max_message_size);
+           }},
           {SnappyDecoder::kExtension,
-           []() { return std::make_unique<SnappyEncoder>(); }},
+           [](size_t max_message_size) {
+             return std::make_unique<SnappyEncoder>(max_message_size);
+           }},
 #ifdef LZMA
           {LzmaDecoder::kExtension,
-           []() { return std::make_unique<LzmaEncoder>(3); }}
+           [](size_t max_message_size) {
+             return std::make_unique<LzmaEncoder>(max_message_size, 3);
+           }}
 #endif  // LZMA
   };
 }

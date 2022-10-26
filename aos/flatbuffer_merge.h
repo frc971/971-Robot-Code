@@ -12,7 +12,7 @@ namespace aos {
 // Merges 2 flat buffers with the provided type table into the builder.  Returns
 // the offset to the flatbuffers.
 // One or both of t1 and t2 must be non-null.  If one is null, this method
-// coppies instead of merging.
+// copies instead of merging.
 flatbuffers::Offset<flatbuffers::Table> MergeFlatBuffers(
     const flatbuffers::TypeTable *typetable, const flatbuffers::Table *t1,
     const flatbuffers::Table *t2, flatbuffers::FlatBufferBuilder *fbb);

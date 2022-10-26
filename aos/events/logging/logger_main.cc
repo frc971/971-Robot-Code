@@ -3,6 +3,9 @@
 
 #include "aos/configuration.h"
 #include "aos/events/logging/log_writer.h"
+#ifdef LZMA
+#include "aos/events/logging/lzma_encoder.h"
+#endif
 #include "aos/events/logging/snappy_encoder.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
@@ -18,8 +21,16 @@ DEFINE_bool(skip_renicing, false,
 
 DEFINE_bool(snappy_compress, false, "If true, compress log data using snappy.");
 
+#ifdef LZMA
+DEFINE_bool(xz_compress, false, "If true, compress log data using xz.");
+#endif
+
 DEFINE_double(rotate_every, 0.0,
               "If set, rotate the logger after this many seconds");
+
+#ifdef LZMA
+DEFINE_int32(xz_compression_level, 9, "Compression level for the LZMA Encoder");
+#endif
 
 int main(int argc, char *argv[]) {
   gflags::SetUsageMessage(
@@ -41,8 +52,17 @@ int main(int argc, char *argv[]) {
 
   if (FLAGS_snappy_compress) {
     log_namer->set_extension(aos::logger::SnappyDecoder::kExtension);
-    log_namer->set_encoder_factory(
-        []() { return std::make_unique<aos::logger::SnappyEncoder>(); });
+    log_namer->set_encoder_factory([](size_t max_message_size) {
+      return std::make_unique<aos::logger::SnappyEncoder>(max_message_size);
+    });
+#ifdef LZMA
+  } else if (FLAGS_xz_compress) {
+    log_namer->set_extension(aos::logger::LzmaEncoder::kExtension);
+    log_namer->set_encoder_factory([](size_t max_message_size) {
+      return std::make_unique<aos::logger::LzmaEncoder>(
+          max_message_size, FLAGS_xz_compression_level);
+    });
+#endif
   }
 
   aos::monotonic_clock::time_point last_rotation_time =

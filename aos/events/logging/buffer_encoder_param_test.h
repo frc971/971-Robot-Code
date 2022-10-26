@@ -14,23 +14,54 @@
 
 namespace aos::logger::testing {
 
-// Contains some helpful infrastructure for testing DetachedBufferEncoder
+// Contains some helpful infrastructure for testing DataEncoder
 // implementations.
 class BufferEncoderBaseTest : public ::testing::Test {
  public:
+  static constexpr size_t kMaxMessageSize = 2 * 1024 * 1024;
+
+  class DetachedBufferCopier : public DataEncoder::Copier {
+   public:
+    DetachedBufferCopier(flatbuffers::DetachedBuffer &&data)
+        : DataEncoder::Copier(data.size()), data_(std::move(data)) {}
+
+    size_t Copy(uint8_t *data) final {
+      std::memcpy(data, data_.data(), data_.size());
+      return data_.size();
+    }
+
+   private:
+    const flatbuffers::DetachedBuffer data_;
+  };
+
   // Creates and encodes n random buffers, returning a copy of the encoded data.
-  std::vector<std::vector<uint8_t>> CreateAndEncode(
-      int n, DetachedBufferEncoder *encoder) {
+  std::vector<std::vector<uint8_t>> CreateAndEncode(int n,
+                                                    DataEncoder *encoder) {
     std::vector<std::vector<uint8_t>> result;
     for (int i = 0; i < n; i++) {
       flatbuffers::DetachedBuffer buffer = CreateRandomBuffer();
       result.emplace_back(buffer.data(), buffer.data() + buffer.size());
-      encoder->Encode(std::move(buffer));
+      LOG(INFO) << "Encoding " << buffer.size();
+      CHECK(encoder->HasSpace(buffer.size()))
+          << ": The test isn't smart enough to flush, figure out what to do. "
+             "Has "
+          << encoder->queued_bytes() << ", encoding " << buffer.size();
+
+      DetachedBufferCopier coppier(std::move(buffer));
+      encoder->Encode(&coppier);
     }
     return result;
   }
 
   // Returns the total size of a vector full of objects with a size() method.
+  template <typename T>
+  static size_t TotalSize(const absl::Span<T> buffers) {
+    size_t result = 0;
+    for (const auto &v : buffers) {
+      result += v.size();
+    }
+    return result;
+  }
   template <typename T>
   static size_t TotalSize(const std::vector<T> &buffers) {
     size_t result = 0;
@@ -86,7 +117,7 @@ class BufferEncoderBaseTest : public ::testing::Test {
       std::mt19937(::aos::testing::RandomSeed())};
 };
 
-// Tests some generic properties for any DetachedBufferEncoder+DataDecoder
+// Tests some generic properties for any DataEncoder+DataDecoder
 // implementation pair.
 //
 // First and second test parameters are methods to create instances of the
@@ -95,13 +126,13 @@ class BufferEncoderBaseTest : public ::testing::Test {
 class BufferEncoderTest
     : public BufferEncoderBaseTest,
       public ::testing::WithParamInterface<std::tuple<
-          std::function<std::unique_ptr<DetachedBufferEncoder>()>,
+          std::function<std::unique_ptr<DataEncoder>(size_t)>,
           std::function<std::unique_ptr<DataDecoder>(std::string_view)>, int>> {
  public:
   BufferEncoderTest() { Reseed(std::get<2>(GetParam())); }
 
-  std::unique_ptr<DetachedBufferEncoder> MakeEncoder() const {
-    return std::get<0>(GetParam())();
+  std::unique_ptr<DataEncoder> MakeEncoder() const {
+    return std::get<0>(GetParam())(BufferEncoderBaseTest::kMaxMessageSize);
   }
   std::unique_ptr<DataDecoder> MakeDecoder(std::string_view filename) const {
     return std::get<1>(GetParam())(filename);

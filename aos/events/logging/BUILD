@@ -117,6 +117,8 @@ cc_library(
     deps = [
         ":logger_fbs",
         "//aos:configuration_fbs",
+        "//aos:flatbuffers",
+        "//aos/containers:resizeable_buffer",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/types:span",
@@ -397,6 +399,11 @@ cc_binary(
     srcs = [
         "logger_main.cc",
     ],
+    copts = select({
+        "//tools:cpu_k8": ["-DLZMA=1"],
+        "//tools:cpu_arm64": ["-DLZMA=1"],
+        "//conditions:default": [],
+    }),
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [

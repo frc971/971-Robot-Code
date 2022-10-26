@@ -681,7 +681,7 @@ NewtonSolver::ConstrainedNewton(const Eigen::Ref<const Eigen::VectorXd> y,
                                 size_t /*iteration*/) {
   // TODO(austin): Can we take a problem directly without
   // AddConstraintSlackVariable being called on it and fill everything in?
-  // That'll avoid a bunch of allocations and coppies of rather sizable
+  // That'll avoid a bunch of allocations and copies of rather sizable
   // matricies.
   //
   // I think I want to do it as another review after everything works with the

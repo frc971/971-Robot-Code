@@ -188,12 +188,16 @@ py_binary(
         "$(rootpath //aos/events:ping)",
         "$(rootpath //aos/events:pong)",
         "$(rootpath :aos_starter)",
+        "$(rootpath //aos:aos_dump)",
+        "$(rootpath //aos/events/logging:logger_main)",
     ],
     data = [
         ":aos_starter",
         ":starterd",
+        "//aos:aos_dump",
         "//aos/events:ping",
         "//aos/events:pingpong_config",
         "//aos/events:pong",
+        "//aos/events/logging:logger_main",
     ],
 )

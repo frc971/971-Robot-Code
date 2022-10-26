@@ -11,9 +11,10 @@ namespace aos::logger::testing {
 
 INSTANTIATE_TEST_SUITE_P(
     MtLzma, BufferEncoderTest,
-    ::testing::Combine(::testing::Values([]() {
+    ::testing::Combine(::testing::Values([](size_t max_message_size) {
                          FLAGS_lzma_threads = 3;
-                         return std::make_unique<LzmaEncoder>(2, 4096);
+                         return std::make_unique<LzmaEncoder>(max_message_size,
+                                                              2, 4096);
                        }),
                        ::testing::Values([](std::string_view filename) {
                          return std::make_unique<LzmaDecoder>(filename);
@@ -22,9 +23,10 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(
     MtLzmaThreaded, BufferEncoderTest,
-    ::testing::Combine(::testing::Values([]() {
+    ::testing::Combine(::testing::Values([](size_t max_message_size) {
                          FLAGS_lzma_threads = 3;
-                         return std::make_unique<LzmaEncoder>(5, 4096);
+                         return std::make_unique<LzmaEncoder>(max_message_size,
+                                                              5, 4096);
                        }),
                        ::testing::Values([](std::string_view filename) {
                          return std::make_unique<ThreadedLzmaDecoder>(filename);
@@ -33,9 +35,10 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(
     Lzma, BufferEncoderTest,
-    ::testing::Combine(::testing::Values([]() {
+    ::testing::Combine(::testing::Values([](size_t max_message_size) {
                          FLAGS_lzma_threads = 1;
-                         return std::make_unique<LzmaEncoder>(2, 4096);
+                         return std::make_unique<LzmaEncoder>(max_message_size,
+                                                              2, 4096);
                        }),
                        ::testing::Values([](std::string_view filename) {
                          return std::make_unique<LzmaDecoder>(filename);
@@ -44,9 +47,10 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(
     LzmaThreaded, BufferEncoderTest,
-    ::testing::Combine(::testing::Values([]() {
+    ::testing::Combine(::testing::Values([](size_t max_message_size) {
                          FLAGS_lzma_threads = 1;
-                         return std::make_unique<LzmaEncoder>(5, 4096);
+                         return std::make_unique<LzmaEncoder>(max_message_size,
+                                                              5, 4096);
                        }),
                        ::testing::Values([](std::string_view filename) {
                          return std::make_unique<ThreadedLzmaDecoder>(filename);
@@ -63,7 +67,8 @@ TEST_F(BufferEncoderBaseTest, CorruptedBuffer) {
   std::vector<std::vector<uint8_t>> encoded_buffers;
   {
     const int encode_chunks = quantity_distribution(*random_number_generator());
-    const auto encoder = std::make_unique<LzmaEncoder>(2);
+    const auto encoder = std::make_unique<LzmaEncoder>(
+        BufferEncoderBaseTest::kMaxMessageSize, 2);
     encoded_buffers = CreateAndEncode(encode_chunks, encoder.get());
     encoder->Finish();
 
