@@ -231,9 +231,11 @@ bool MarkRealtime(bool realtime) {
     // For some applications (generally tools built for the host in Bazel), we
     // don't have malloc hooks available, but we also don't go realtime.  Delay
     // complaining in that case until we try to go RT and it matters.
+#if !__has_feature(address_sanitizer) && !__has_feature(memory_sanitizer)
     CHECK(has_malloc_hook)
         << ": Failed to register required malloc hooks before going realtime.  "
            "Disable --die_on_malloc to continue.";
+#endif
   }
   const bool prior = is_realtime;
   is_realtime = realtime;
