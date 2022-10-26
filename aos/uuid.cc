@@ -133,6 +133,14 @@ UUID UUID::FromVector(const flatbuffers::Vector<uint8_t> *data) {
   return result;
 }
 
+UUID UUID::FromSpan(absl::Span<const uint8_t> data) {
+  CHECK_EQ(data.size(), kDataSize);
+
+  UUID result;
+  std::copy(data.begin(), data.end(), result.data_.begin());
+  return result;
+}
+
 UUID UUID::FromString(std::string_view str) {
   CHECK_EQ(str.size(), kStringSize);
 
