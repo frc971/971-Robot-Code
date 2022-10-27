@@ -187,7 +187,10 @@ autocxx_library(
         ":init",
     ],
     override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
     visibility = ["//visibility:public"],
 )
 
@@ -248,7 +251,10 @@ flatbuffer_rust_library(
     name = "configuration_rust_fbs",
     srcs = ["configuration.fbs"],
     crate_name = "aos_configuration_fbs",
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
     visibility = ["//visibility:public"],
 )
 
@@ -301,7 +307,10 @@ autocxx_library(
         ":configuration_fbs",
     ],
     override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         ":configuration_rust_fbs",
@@ -340,7 +349,10 @@ flatbuffer_rust_library(
     name = "json_to_flatbuffer_rust_fbs",
     srcs = ["json_to_flatbuffer.fbs"],
     crate_name = "aos_json_to_flatbuffer_fbs",
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
     visibility = ["//aos:__subpackages__"],
 )
 
@@ -478,7 +490,10 @@ rust_library(
     name = "flatbuffers_rs",
     srcs = ["flatbuffers.rs"],
     crate_name = "aos_flatbuffers",
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_google_flatbuffers//rust",
@@ -718,7 +733,10 @@ autocxx_library(
     rs_deps = [
         "//third_party/cargo:uuid",
     ],
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
     visibility = ["//visibility:public"],
 )
 
