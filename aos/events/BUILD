@@ -50,13 +50,19 @@ flatbuffer_ts_library(
 flatbuffer_rust_library(
     name = "ping_rust_fbs",
     srcs = ["ping.fbs"],
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
 )
 
 flatbuffer_rust_library(
     name = "pong_rust_fbs",
     srcs = ["pong.fbs"],
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
 )
 
 flatbuffer_cc_library(
@@ -148,7 +154,10 @@ autocxx_library(
         "//third_party/cargo:futures",
         "//third_party/cargo:thiserror",
     ],
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
     visibility = ["//visibility:public"],
     deps = [
         "//aos:configuration_rs",
@@ -159,6 +168,7 @@ autocxx_library(
 rust_doc_test(
     name = "event_loop_runtime_doc_test",
     crate = ":event_loop_runtime",
+    target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":pong_rust_fbs",
     ],
@@ -177,7 +187,10 @@ autocxx_library(
         ":ping_rust_fbs",
         ":pong_rust_fbs",
     ],
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
 )
 
 cc_test(

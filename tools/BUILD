@@ -82,6 +82,27 @@ config_setting(
     values = {"define": "have_ubsan=true"},
 )
 
+config_setting(
+    name = "has_msan",
+    values = {"define": "have_msan=true"},
+)
+
+config_setting(
+    name = "cpu_k8_msan",
+    constraint_values = ["@platforms//cpu:x86_64"],
+    values = {
+        "define": "have_msan=true",
+    },
+)
+
+config_setting(
+    name = "cpu_k8_no_msan",
+    constraint_values = ["@platforms//cpu:x86_64"],
+    flag_values = {
+        "@io_bazel_rules_go//go/config:msan": "false",
+    },
+)
+
 nodejs_binary(
     name = "tsc_wrapped_with_angular",
     data = [
