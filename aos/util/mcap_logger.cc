@@ -83,10 +83,11 @@ nlohmann::json JsonSchemaForFlatbuffer(const FlatbufferType &type,
 }
 
 McapLogger::McapLogger(EventLoop *event_loop, const std::string &output_path,
-                       Serialization serialization)
+                       Serialization serialization, CanonicalChannelNames canonical_channels)
     : event_loop_(event_loop),
       output_(output_path),
       serialization_(serialization),
+      canonical_channels_(canonical_channels),
       configuration_channel_([]() {
         // Setup a fake Channel for providing the configuration in the MCAP
         // file. This is included for convenience so that consumers of the MCAP
@@ -321,11 +322,34 @@ void McapLogger::WriteChannel(const uint16_t id, const uint16_t schema_id,
   // Schema ID
   AppendInt16(&string_builder_, schema_id);
   // Topic name
-  AppendString(&string_builder_,
-               override_name.empty()
-                   ? absl::StrCat(channel->name()->string_view(), " ",
-                                  channel->type()->string_view())
-                   : override_name);
+  std::string topic_name(override_name);
+  if (topic_name.empty()) {
+    switch (canonical_channels_) {
+      case CanonicalChannelNames::kCanonical:
+        topic_name = absl::StrCat(channel->name()->string_view(), " ",
+                                  channel->type()->string_view());
+        break;
+      case CanonicalChannelNames::kShortened: {
+        std::set<std::string> names = configuration::GetChannelAliases(
+            event_loop_->configuration(), channel, event_loop_->name(),
+            event_loop_->node());
+        std::string_view shortest_name;
+        for (const std::string &name : names) {
+          if (shortest_name.empty() || name.size() < shortest_name.size()) {
+            shortest_name = name;
+          }
+        }
+        if (shortest_name != channel->name()->string_view()) {
+          VLOG(1) << "Shortening " << channel->name()->string_view() << " "
+                  << channel->type()->string_view() << " to " << shortest_name;
+        }
+        topic_name = absl::StrCat(shortest_name, " ",
+                                  channel->type()->string_view());
+        break;
+      }
+    }
+  }
+  AppendString(&string_builder_, topic_name);
   // Encoding
   switch (serialization_) {
     case Serialization::kJson:

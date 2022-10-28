@@ -36,8 +36,18 @@ class McapLogger {
     kJson,
     kFlatbuffer,
   };
+  // Whether to attempt to shorten channel names.
+  enum class CanonicalChannelNames {
+    // Just use the full, unambiguous, channel names.
+    kCanonical,
+    // Use GetChannelAliases() to determine the shortest possible name for the
+    // channel for the current node, and use that in the MCAP file. This makes
+    // it so that the channels in the resulting file are more likely to match
+    // the channel names that are used in "real" applications.
+    kShortened,
+  };
   McapLogger(EventLoop *event_loop, const std::string &output_path,
-             Serialization serialization);
+             Serialization serialization, CanonicalChannelNames canonical_channels);
   ~McapLogger();
 
  private:
@@ -131,6 +141,7 @@ class McapLogger {
   aos::EventLoop *event_loop_;
   std::ofstream output_;
   const Serialization serialization_;
+  const CanonicalChannelNames canonical_channels_;
   size_t total_message_bytes_ = 0;
   std::map<const Channel *, size_t> total_channel_bytes_;
   // Buffer containing serialized message data for the currently-being-built
