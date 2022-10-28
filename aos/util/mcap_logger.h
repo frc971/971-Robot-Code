@@ -97,6 +97,27 @@ class McapLogger {
     // together (note that they are required to be contiguous).
     uint64_t message_index_size;
   };
+  // Maintains the state of a single Chunk. In order to maximize read performance,
+  // we currently maintain separate chunks for each channel so that, in order to
+  // read a given channel, only data associated with that channel nead be read.
+  struct ChunkStatus {
+    // Buffer containing serialized message data for the currently-being-built
+    // chunk.
+    std::stringstream data;
+    // Earliest message observed in this chunk.
+    std::optional<aos::monotonic_clock::time_point> earliest_message;
+    // Latest message observed in this chunk.
+    std::optional<aos::monotonic_clock::time_point> latest_message;
+    // MessageIndex's for each message. The std::map is indexed by channel ID.
+    // The vector is then a series of pairs of (timestamp, offset from start of
+    // data).
+    // Note that currently this will only ever have one entry, for the channel
+    // that this chunk corresponds to. However, the standard provides for there
+    // being more than one channel per chunk and so we still have some code that
+    // supports that.
+    std::map<uint16_t, std::vector<std::pair<uint64_t, uint64_t>>>
+        message_indices;
+  };
   enum class RegisterHandlers { kYes, kNo };
   // Helpers to write each type of relevant record.
   void WriteMagic();
@@ -108,8 +129,8 @@ class McapLogger {
                     const aos::Channel *channel,
                     std::string_view override_name = "");
   void WriteMessage(uint16_t channel_id, const Channel *channel,
-                    const Context &context, std::ostream *output);
-  void WriteChunk();
+                    const Context &context, ChunkStatus *chunk);
+  void WriteChunk(ChunkStatus *chunk);
 
   // The helpers for writing records which appear in the Summary section will
   // return SummaryOffset's so that they can be referenced in the SummaryOffset
@@ -144,26 +165,18 @@ class McapLogger {
   const CanonicalChannelNames canonical_channels_;
   size_t total_message_bytes_ = 0;
   std::map<const Channel *, size_t> total_channel_bytes_;
-  // Buffer containing serialized message data for the currently-being-built
-  // chunk.
-  std::stringstream current_chunk_;
   FastStringBuilder string_builder_;
 
   // Earliest message observed in this logfile.
   std::optional<aos::monotonic_clock::time_point> earliest_message_;
-  // Earliest message observed in the current chunk.
-  std::optional<aos::monotonic_clock::time_point> earliest_chunk_message_;
-  // Latest message observed.
-  aos::monotonic_clock::time_point latest_message_ =
-      aos::monotonic_clock::min_time;
+  // Latest message observed in this logfile.
+  aos::monotonic_clock::time_point latest_message_ = aos::monotonic_clock::min_time;
   // Count of all messages on each channel, indexed by channel ID.
   std::map<uint16_t, uint64_t> message_counts_;
   std::map<uint16_t, std::unique_ptr<RawFetcher>> fetchers_;
-  // MessageIndex's for each message. The std::map is indexed by channel ID. The
-  // vector is then a series of pairs of (timestamp, offset from start of
-  // current_chunk_).
-  std::map<uint16_t, std::vector<std::pair<uint64_t, uint64_t>>>
-      message_indices_;
+  // All currently-being-built chunks. Indexed by channel ID. This is used to
+  // segregate channels into separate chunks to support more efficient reading.
+  std::map<uint16_t, ChunkStatus> current_chunks_;
   // ChunkIndex's for all fully written Chunks.
   std::vector<ChunkIndex> chunk_indices_;
 

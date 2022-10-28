@@ -122,8 +122,10 @@ McapLogger::McapLogger(EventLoop *event_loop, const std::string &output_path,
 
 McapLogger::~McapLogger() {
   // If we have any data remaining, write one last chunk.
-  if (current_chunk_.tellp() > 0) {
-    WriteChunk();
+  for (auto &pair : current_chunks_) {
+    if (pair.second.data.tellp() > 0) {
+      WriteChunk(&pair.second);
+    }
   }
   WriteDataEnd();
 
@@ -190,16 +192,17 @@ std::vector<McapLogger::SummaryOffset> McapLogger::WriteSchemasAndChannels(
       message_counts_[id] = 0;
       event_loop_->MakeRawWatcher(
           channel, [this, id, channel](const Context &context, const void *) {
-            WriteMessage(id, channel, context, &current_chunk_);
-            if (static_cast<uint64_t>(current_chunk_.tellp()) >
+            ChunkStatus *chunk = &current_chunks_[id];
+            WriteMessage(id, channel, context, chunk);
+            if (static_cast<uint64_t>(chunk->data.tellp()) >
                 FLAGS_mcap_chunk_size) {
-              WriteChunk();
+              WriteChunk(chunk);
             }
           });
       fetchers_[id] = event_loop_->MakeRawFetcher(channel);
       event_loop_->OnRun([this, id, channel]() {
         if (FLAGS_fetch && fetchers_[id]->Fetch()) {
-          WriteMessage(id, channel, fetchers_[id]->context(), &current_chunk_);
+          WriteMessage(id, channel, fetchers_[id]->context(), &current_chunks_[id]);
         }
       });
     }
@@ -215,7 +218,7 @@ std::vector<McapLogger::SummaryOffset> McapLogger::WriteSchemasAndChannels(
       config_context.size = configuration_.span().size();
       config_context.data = configuration_.span().data();
       WriteMessage(configuration_id_, &configuration_channel_.message(),
-                   config_context, &current_chunk_);
+                   config_context, &current_chunks_[configuration_id_]);
     });
   }
 
@@ -366,7 +369,7 @@ void McapLogger::WriteChannel(const uint16_t id, const uint16_t schema_id,
 }
 
 void McapLogger::WriteMessage(uint16_t channel_id, const Channel *channel,
-                              const Context &context, std::ostream *output) {
+                              const Context &context, ChunkStatus *chunk) {
   CHECK_NOTNULL(context.data);
 
   message_counts_[channel_id]++;
@@ -377,12 +380,13 @@ void McapLogger::WriteMessage(uint16_t channel_id, const Channel *channel,
     earliest_message_ =
         std::min(context.monotonic_event_time, earliest_message_.value());
   }
-  if (!earliest_chunk_message_.has_value()) {
-    earliest_chunk_message_ = context.monotonic_event_time;
+  if (!chunk->earliest_message.has_value()) {
+    chunk->earliest_message = context.monotonic_event_time;
   } else {
-    earliest_chunk_message_ =
-        std::min(context.monotonic_event_time, earliest_chunk_message_.value());
+    chunk->earliest_message =
+        std::min(context.monotonic_event_time, chunk->earliest_message.value());
   }
+  chunk->latest_message = context.monotonic_event_time;
   latest_message_ = context.monotonic_event_time;
 
   string_builder_.Reset();
@@ -420,11 +424,12 @@ void McapLogger::WriteMessage(uint16_t channel_id, const Channel *channel,
   total_message_bytes_ += context.size;
   total_channel_bytes_[channel] += context.size;
 
-  message_indices_[channel_id].push_back(std::make_pair<uint64_t, uint64_t>(
-      context.monotonic_event_time.time_since_epoch().count(),
-      output->tellp()));
+  chunk->message_indices[channel_id].push_back(
+      std::make_pair<uint64_t, uint64_t>(
+          context.monotonic_event_time.time_since_epoch().count(),
+          chunk->data.tellp()));
 
-  WriteRecord(OpCode::kMessage, string_builder_.Result(), output);
+  WriteRecord(OpCode::kMessage, string_builder_.Result(), &chunk->data);
 }
 
 void McapLogger::WriteRecord(OpCode op, std::string_view record,
@@ -436,18 +441,20 @@ void McapLogger::WriteRecord(OpCode op, std::string_view record,
   *ostream << record;
 }
 
-void McapLogger::WriteChunk() {
+void McapLogger::WriteChunk(ChunkStatus *chunk) {
   string_builder_.Reset();
 
-  CHECK(earliest_chunk_message_.has_value());
+  CHECK(chunk->earliest_message.has_value());
   const uint64_t chunk_offset = output_.tellp();
   AppendInt64(&string_builder_,
-              earliest_chunk_message_->time_since_epoch().count());
-  AppendInt64(&string_builder_, latest_message_.time_since_epoch().count());
+              chunk->earliest_message->time_since_epoch().count());
+  CHECK(chunk->latest_message.has_value());
+  AppendInt64(&string_builder_,
+              chunk->latest_message.value().time_since_epoch().count());
 
-  std::string chunk_records = current_chunk_.str();
+  std::string chunk_records = chunk->data.str();
   // Reset the chunk buffer.
-  current_chunk_.str("");
+  chunk->data.str("");
 
   const uint64_t records_size = chunk_records.size();
   // Uncompressed chunk size.
@@ -460,19 +467,19 @@ void McapLogger::WriteChunk() {
 
   std::map<uint16_t, uint64_t> index_offsets;
   const uint64_t message_index_start = output_.tellp();
-  for (const auto &indices : message_indices_) {
+  for (const auto &indices : chunk->message_indices) {
     index_offsets[indices.first] = output_.tellp();
     string_builder_.Reset();
     AppendInt16(&string_builder_, indices.first);
     AppendMessageIndices(&string_builder_, indices.second);
     WriteRecord(OpCode::kMessageIndex, string_builder_.Result());
   }
-  message_indices_.clear();
+  chunk->message_indices.clear();
   chunk_indices_.push_back(ChunkIndex{
-      earliest_chunk_message_.value(), latest_message_, chunk_offset,
+      chunk->earliest_message.value(), chunk->latest_message.value(), chunk_offset,
       message_index_start - chunk_offset, records_size, index_offsets,
       static_cast<uint64_t>(output_.tellp()) - message_index_start});
-  earliest_chunk_message_.reset();
+  chunk->earliest_message.reset();
 }
 
 McapLogger::SummaryOffset McapLogger::WriteStatistics() {
