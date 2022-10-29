@@ -124,6 +124,13 @@ def main(argv: List[str]) -> Optional[int]:
               "extreme caution! This may easily cause issues with building "
               "older commits. Use this only if you know what you're doing."))
     parser.add_argument(
+        "-l",
+        "--local_test",
+        action="store_true",
+        help=("If set, generate the URL overrides pointing at the generated "
+              "local files. Incompatible with --ssh_host. This is useful for "
+              "iterating on generated wheel files."))
+    parser.add_argument(
         "--ssh_host",
         type=str,
         help=("The SSH host to copy the downloaded Go repositories to. This "
@@ -166,6 +173,10 @@ def main(argv: List[str]) -> Optional[int]:
     override_information = {}
     for wheel in sorted(wheels):
         wheel_url = f"{WHEELHOUSE_MIRROR_URL}/{wheel.name}"
+        if args.local_test:
+            override_url = f"file://{wheel.resolve()}"
+        else:
+            override_url = wheel_url
         sha256 = compute_file_sha256(wheel)
 
         # Check if we already have the wheel uploaded. If so, download that one
@@ -175,10 +186,13 @@ def main(argv: List[str]) -> Optional[int]:
         wheel_found, sha256_on_mirror = search_for_uploaded_wheel(
             wheel, wheel_url)
 
+        if args.local_test:
+            wheel_found = False
+
         if args.force:
             if wheel_found and sha256 != sha256_on_mirror:
                 print(
-                    f"WARNING: The next upload wheel change sha256 for {wheel}!"
+                    f"WARNING: The next upload will change sha256 for {wheel}!"
                 )
             wheels_to_be_uploaded.append(wheel)
         else:
@@ -192,7 +206,7 @@ def main(argv: List[str]) -> Optional[int]:
         # requirements.lock.txt file uses.
         info = Wheel(wheel)
         override_information[f"{info.name.lower()}=={info.version}"] = {
-            "url": wheel_url,
+            "url": override_url,
             "sha256": sha256,
         }
 
