@@ -20,8 +20,7 @@ from typing import List, Optional, Tuple
 import requests
 from pkginfo import Wheel
 
-PYTHON_VERSION = 39
-PLAT = "manylinux_2_28"
+PLAT = "manylinux_2_31"
 ARCH = "x86_64"
 WHEELHOUSE_MIRROR_URL = "https://software.frc971.org/Build-Dependencies/wheelhouse"
 PY_DEPS_WWWW_DIR = "/var/www/html/files/frc971/Build-Dependencies/wheelhouse"
@@ -145,6 +144,18 @@ def main(argv: List[str]) -> Optional[int]:
 
     python_dir = root_dir / "tools" / "python"
 
+    container_tag = f"pip-compile:{caller}"
+
+    subprocess.run([
+        "docker",
+        "build",
+        "--file=generate_pip_packages.Dockerfile",
+        f"--tag={container_tag}",
+        ".",
+    ],
+                   cwd=python_dir,
+                   check=True)
+
     # Run the wheel generation script inside the docker container provided by
     # the pypa/manylinux project.
     # https://github.com/pypa/manylinux/
@@ -154,11 +165,10 @@ def main(argv: List[str]) -> Optional[int]:
         "-it",
         "-v",
         f"{python_dir}:/opt/971_build/",
-        f"quay.io/pypa/{PLAT}_{ARCH}",
+        container_tag,
         "/opt/971_build/generate_pip_packages_in_docker.sh",
         PLAT,
         ARCH,
-        str(PYTHON_VERSION),
         str(caller_id),
     ],
                    check=True)
