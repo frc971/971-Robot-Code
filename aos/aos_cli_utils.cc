@@ -228,7 +228,7 @@ void PrintMessage(const std::string_view node_name, const aos::Channel *channel,
   aos::FlatbufferToJson(
       builder, channel->schema(), static_cast<const uint8_t *>(context.data),
       {options.pretty, static_cast<size_t>(options.max_vector_size),
-       options.pretty_max, options.use_hex});
+       options.pretty_max, options.hex});
 
   if (options.json) {
     std::cout << "{";

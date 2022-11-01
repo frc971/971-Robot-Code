@@ -23,7 +23,7 @@ struct PrintOptions {
   // Print the distributed clock.
   bool distributed_clock;
   // Print numbers out in hex.
-  bool use_hex;
+  bool hex;
 };
 
 // Print the flatbuffer out to stdout, both to remove the unnecessary cruft from

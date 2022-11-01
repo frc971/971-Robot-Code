@@ -27,7 +27,7 @@ DEFINE_int32(rate_limit, 0,
 DEFINE_int32(timeout, -1,
              "The max time in milliseconds to wait for messages before "
              "exiting.  -1 means forever, 0 means don't wait.");
-DEFINE_bool(use_hex, false,
+DEFINE_bool(hex, false,
             "Are integers in the messages printed in hex notation.");
 
 int main(int argc, char **argv) {
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
           .print_timestamps = FLAGS_print_timestamps,
           .json = FLAGS_json,
           .distributed_clock = false,
-          .use_hex = FLAGS_use_hex,
+          .hex = FLAGS_hex,
       },
       /*flush*/ true);
 

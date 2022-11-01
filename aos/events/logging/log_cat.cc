@@ -59,7 +59,7 @@ DEFINE_double(monotonic_start_time, 0.0,
 DEFINE_double(monotonic_end_time, 0.0,
               "If set, only print messages sent at or before this many seconds "
               "after epoch.");
-DEFINE_bool(use_hex, false,
+DEFINE_bool(hex, false,
             "Are integers in the messages printed in hex notation.");
 
 using aos::monotonic_clock;
@@ -390,7 +390,7 @@ int main(int argc, char **argv) {
           .print_timestamps = FLAGS_print_timestamps,
           .json = FLAGS_json,
           .distributed_clock = FLAGS_distributed_clock,
-          .use_hex = FLAGS_use_hex,
+          .hex = FLAGS_hex,
       },
       false);
 
