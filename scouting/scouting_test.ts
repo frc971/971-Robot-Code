@@ -301,20 +301,25 @@ describe('The scouting web page', () => {
     await element(by.buttonText('Next')).click();
     expect(await getHeadingText()).toEqual('Auto');
 
-    // We expect 2 fully loaded images.
-    browser
-      .executeAsyncScript(function (callback) {
-        let images = document.getElementsByTagName('img');
-        let numLoaded = 0;
-        for (let i = 0; i < images.length; i += 1) {
-          if (images[i].naturalWidth > 0) {
-            numLoaded += 1;
+    // We expect 2 fully loaded images for each of the orientations.
+    // 2 images for the original orientation and 2 images for the flipped orientation.
+    for (let i = 0; i < 2; i++) {
+      browser
+        .executeAsyncScript(function (callback) {
+          let images = document.getElementsByTagName('img');
+          let numLoaded = 0;
+          for (let i = 0; i < images.length; i += 1) {
+            if (images[i].naturalWidth > 0) {
+              numLoaded += 1;
+            }
           }
-        }
-        callback(numLoaded);
-      })
-      .then(function (numLoaded) {
-        expect(numLoaded).toBe(2);
-      });
+          callback(numLoaded);
+        })
+        .then(function (numLoaded) {
+          expect(numLoaded).toBe(2);
+        });
+
+      await element(by.buttonText('Flip')).click();
+    }
   });
 });
