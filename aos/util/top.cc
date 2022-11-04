@@ -172,6 +172,7 @@ void Top::UpdateReadings() {
         pids.insert(pid);
       }
     }
+    closedir(dir);
   }
 
   for (const pid_t pid : pids) {
