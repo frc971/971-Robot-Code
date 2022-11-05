@@ -20,10 +20,9 @@ set -o pipefail
 
 readonly PLAT="$1"
 readonly ARCH="$2"
-readonly PYTHON_VERSION="$3"
-readonly CALLER_ID="$4"
+readonly CALLER_ID="$3"
 
-readonly PYTHON_BIN="/opt/python/cp${PYTHON_VERSION}-cp${PYTHON_VERSION}/bin/python3"
+readonly PYTHON_BIN="/opt/python/bin/python3"
 
 # Try to make the wheels reproducible by telling them we're in 1980.
 # Unfortunately, this is insufficient due to a pip bug.
@@ -51,7 +50,7 @@ pushd "${SCRIPT_DIR}"/venv
 
 source venv/bin/activate
 
-readonly -a PIP_BIN=("${PYTHON_BIN}" -m pip)
+readonly -a PIP_BIN=(pip)
 
 # Might be useful for debugging.
 "${PIP_BIN[@]}" --version
@@ -60,6 +59,7 @@ mkdir "${SCRIPT_DIR}"/wheelhouse
 
 # Get wheels for everything. Everything is stored in a temporary wheelhouse in
 # case we need to run the "auditwheel" tool against them.
+"${PIP_BIN[@]}" install wheel
 "${PIP_BIN[@]}" wheel \
   --no-deps \
   -r "${SCRIPT_DIR}/requirements.lock.txt" \
@@ -98,6 +98,7 @@ done
 # libraries into the wheel itself. The list of system libraries that will not
 # get grafted is here:
 # https://peps.python.org/pep-0599/#the-manylinux2014-policy
+"${PIP_BIN[@]}" install auditwheel
 for wheel in "${wheels_built_from_source[@]}"; do
   wheel_path="${SCRIPT_DIR}/wheelhouse_tmp/${wheel}"
   echo "Repairing wheel ${wheel}"

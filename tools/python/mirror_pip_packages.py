@@ -20,8 +20,7 @@ from typing import List, Optional, Tuple
 import requests
 from pkginfo import Wheel
 
-PYTHON_VERSION = 39
-PLAT = "manylinux_2_28"
+PLAT = "manylinux_2_31"
 ARCH = "x86_64"
 WHEELHOUSE_MIRROR_URL = "https://software.frc971.org/Build-Dependencies/wheelhouse"
 PY_DEPS_WWWW_DIR = "/var/www/html/files/frc971/Build-Dependencies/wheelhouse"
@@ -124,6 +123,13 @@ def main(argv: List[str]) -> Optional[int]:
               "extreme caution! This may easily cause issues with building "
               "older commits. Use this only if you know what you're doing."))
     parser.add_argument(
+        "-l",
+        "--local_test",
+        action="store_true",
+        help=("If set, generate the URL overrides pointing at the generated "
+              "local files. Incompatible with --ssh_host. This is useful for "
+              "iterating on generated wheel files."))
+    parser.add_argument(
         "--ssh_host",
         type=str,
         help=("The SSH host to copy the downloaded Go repositories to. This "
@@ -138,6 +144,18 @@ def main(argv: List[str]) -> Optional[int]:
 
     python_dir = root_dir / "tools" / "python"
 
+    container_tag = f"pip-compile:{caller}"
+
+    subprocess.run([
+        "docker",
+        "build",
+        "--file=generate_pip_packages.Dockerfile",
+        f"--tag={container_tag}",
+        ".",
+    ],
+                   cwd=python_dir,
+                   check=True)
+
     # Run the wheel generation script inside the docker container provided by
     # the pypa/manylinux project.
     # https://github.com/pypa/manylinux/
@@ -147,11 +165,10 @@ def main(argv: List[str]) -> Optional[int]:
         "-it",
         "-v",
         f"{python_dir}:/opt/971_build/",
-        f"quay.io/pypa/{PLAT}_{ARCH}",
+        container_tag,
         "/opt/971_build/generate_pip_packages_in_docker.sh",
         PLAT,
         ARCH,
-        str(PYTHON_VERSION),
         str(caller_id),
     ],
                    check=True)
@@ -166,6 +183,10 @@ def main(argv: List[str]) -> Optional[int]:
     override_information = {}
     for wheel in sorted(wheels):
         wheel_url = f"{WHEELHOUSE_MIRROR_URL}/{wheel.name}"
+        if args.local_test:
+            override_url = f"file://{wheel.resolve()}"
+        else:
+            override_url = wheel_url
         sha256 = compute_file_sha256(wheel)
 
         # Check if we already have the wheel uploaded. If so, download that one
@@ -175,10 +196,13 @@ def main(argv: List[str]) -> Optional[int]:
         wheel_found, sha256_on_mirror = search_for_uploaded_wheel(
             wheel, wheel_url)
 
+        if args.local_test:
+            wheel_found = False
+
         if args.force:
             if wheel_found and sha256 != sha256_on_mirror:
                 print(
-                    f"WARNING: The next upload wheel change sha256 for {wheel}!"
+                    f"WARNING: The next upload will change sha256 for {wheel}!"
                 )
             wheels_to_be_uploaded.append(wheel)
         else:
@@ -192,7 +216,7 @@ def main(argv: List[str]) -> Optional[int]:
         # requirements.lock.txt file uses.
         info = Wheel(wheel)
         override_information[f"{info.name.lower()}=={info.version}"] = {
-            "url": wheel_url,
+            "url": override_url,
             "sha256": sha256,
         }
 
