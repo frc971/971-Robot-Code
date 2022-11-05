@@ -40,8 +40,12 @@ compile_pip_requirements(
     tags = [
         # The test pings pypi.org to make sure that the lock file matches the
         # requirements file.
-        # TODO(phil): Disable this if it's too flaky.
         "requires-network",
+        # The test causes some packages' setup.py to be executed which can
+        # execute arbitrary code. Sometimes they look for compilers etc. That's
+        # not good for our hermeticity assumptions. Disable the test lock file
+        # test for now.
+        "manual",
     ],
 )
 

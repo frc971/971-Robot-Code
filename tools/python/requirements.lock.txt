@@ -41,7 +41,9 @@ importlib-metadata==5.0.0 \
 jinja2==3.1.2 \
     --hash=sha256:31351a702a408a9e7595a8fc6150fc3f43bb6bf7e319770cbc0db9df9437e852 \
     --hash=sha256:6088930bfe239f0e6710546ab9c19c9ef35e29792895fed6e6e31a023a182a61
-    # via mkdocs
+    # via
+    #   -r tools/python/requirements.txt
+    #   mkdocs
 kiwisolver==1.3.2 \
     --hash=sha256:0007840186bacfaa0aba4466d5890334ea5938e0bb7e28078a0eb0e63b5b59d5 \
     --hash=sha256:19554bd8d54cf41139f376753af1a644b63c9ca93f8f72009d50a2080f870f77 \
@@ -213,7 +215,37 @@ numpy==1.21.5 \
     # via
     #   -r tools/python/requirements.txt
     #   matplotlib
+    #   opencv-python
+    #   osqp
+    #   qdldl
     #   scipy
+opencv-python==4.6.0.66 \
+    --hash=sha256:0dc82a3d8630c099d2f3ac1b1aabee164e8188db54a786abb7a4e27eba309440 \
+    --hash=sha256:5af8ba35a4fcb8913ffb86e92403e9a656a4bff4a645d196987468f0f8947875 \
+    --hash=sha256:6e32af22e3202748bd233ed8f538741876191863882eba44e332d1a34993165b \
+    --hash=sha256:c5bfae41ad4031e66bb10ec4a0a2ffd3e514d092652781e8b1ac98d1b59f1158 \
+    --hash=sha256:dbdc84a9b4ea2cbae33861652d25093944b9959279200b7ae0badd32439f74de \
+    --hash=sha256:e6e448b62afc95c5b58f97e87ef84699e6607fe5c58730a03301c52496005cae \
+    --hash=sha256:f482e78de6e7b0b060ff994ffd859bddc3f7f382bb2019ef157b0ea8ca8712f5
+    # via -r tools/python/requirements.txt
+osqp==0.6.2.post5 \
+    --hash=sha256:26664bd4238f0f92642f532b23e61efba810a6debba0b3117300749f801e9c25 \
+    --hash=sha256:4ca601c5008600b3e0a408339be21f9d626c497b0b0c4dbe4ffe6d6dbbed1b9f \
+    --hash=sha256:51a315e02a4cb42e1911047ec6b2a44b67a269d4b5d37d7ee737654206915c82 \
+    --hash=sha256:648cb4e34caf0ee948b34a1d0b184f5233e30009090884e0d75503f868bf7b1f \
+    --hash=sha256:73a307a93fa7ab68b610e08637c95940070a27f11fda5a2e7a7095cfaff3f0ef \
+    --hash=sha256:77408f93ed261581fe498505c69480fb8584c8c0da2a2cd0710bb4bae0c872f5 \
+    --hash=sha256:8003fc363f707daa46fef3af548e6a580372154d6cd49a7bf2f569ba5f807d15 \
+    --hash=sha256:8c2e40e6788b860887d584a9929ad1c0e436aab8f82bb24da7b165034cb04017 \
+    --hash=sha256:908d42fb5d1d9cb36d74a8f3db69384ed1813f1a3e755367557395ce7cf05e16 \
+    --hash=sha256:b1e30d6fa10ed11a95023d7308ec1588de3f5b049d09a4d0cc49e057f8e9ce47 \
+    --hash=sha256:b2fa17aae42a7ed498ec261b33f262bb4b3605e7e8464062159d9fae817f0d61 \
+    --hash=sha256:c07602c8747ce7a177d091bb6d47ce8f214997a86b7577ddee4adae43e9ac92f \
+    --hash=sha256:c23bb95e6f72c6b253737edb9e4ef47ceccc3d891c287041ed5fe5f173d317bb \
+    --hash=sha256:c7b3ae95221ad6f607dc4a69f36b7a0c71ca434ce85dcbf5cfa084770be5b249 \
+    --hash=sha256:c9470c5d58535d31080cb693568916a3e837f09dfa94819a85284b36b3626738 \
+    --hash=sha256:ff71646bc9d55c5b3a72cc9b4197e51c36d25d8b2bb81f975d3ce7772ff188ec
+    # via -r tools/python/requirements.txt
 packaging==21.3 \
     --hash=sha256:dd47c42927d89ab911e606518907cc2d3a1f38bbd026385970643f9c5b8ecfeb \
     --hash=sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522
@@ -266,6 +298,20 @@ pillow==8.4.0 \
 pkginfo==1.8.3 \
     --hash=sha256:848865108ec99d4901b2f7e84058b6e7660aae8ae10164e015a6dcf5b242a594 \
     --hash=sha256:a84da4318dd86f870a9447a8c98340aa06216bfc6f2b7bdc4b8766984ae1867c
+    # via -r tools/python/requirements.txt
+pycairo==1.21.0 \
+    --hash=sha256:251907f18a552df938aa3386657ff4b5a4937dde70e11aa042bc297957f4b74b \
+    --hash=sha256:26b72b813c6f9d495f71057eab89c13e70a21c92360e9265abc049e0a931fa39 \
+    --hash=sha256:31e1c4850db03201d33929cbe1905ce1b33202683ebda7bb0d4dba489115066b \
+    --hash=sha256:4357f20a6b1de8f1e8072a74ff68ab4c9a0ae698cd9f5c0f2b2cdd9b28b635f6 \
+    --hash=sha256:44a2ecf34968de07b3b9dfdcdbccbd25aa3cab267200f234f84e81481a73bbf6 \
+    --hash=sha256:6d37375aab9f2bb6136f076c19815d72108383baae89fbc0d6cb8e5092217d02 \
+    --hash=sha256:70936b19f967fa3cb3cd200c2608911227fa5d09dae21c166f64bc15e714ee41 \
+    --hash=sha256:dace6b356c476de27f8e1522428ac21a799c225703f746e2957d441f885dcb6c \
+    --hash=sha256:f63c153a9ea3d21aff85e2caeee4b0c5d566b2368b4ed64826020d12953d76a4
+    # via pygobject
+pygobject==3.42.2 \
+    --hash=sha256:21524cef33100c8fd59dc135948b703d79d303e368ce71fa60521cc971cd8aa7
     # via -r tools/python/requirements.txt
 pyparsing==3.0.6 \
     --hash=sha256:04ff808a5b90911829c55c4e26f75fa5ca8a2f5f36aa3a51f68e27033341d3e4 \
@@ -327,6 +373,24 @@ pyyaml-env-tag==0.1 \
     --hash=sha256:70092675bda14fdec33b31ba77e7543de9ddc88f2e5b99160396572d11525bdb \
     --hash=sha256:af31106dec8a4d68c60207c1886031cbf839b68aa7abccdb19868200532c2069
     # via mkdocs
+qdldl==0.1.5.post2 \
+    --hash=sha256:05b3079837c0ec86136b4a29b3842eab7bfc7a5517d751a3e5d0d5c111a2e523 \
+    --hash=sha256:15d0fbff31aa19195b135ca934cf75025d46a275d915eebb7c11a7d16e148096 \
+    --hash=sha256:227fe8988a86b9f9ed341ad20d11502789b4d05bceddb09a47dbb24b08d79966 \
+    --hash=sha256:408a34b735be5425dc088cdebb1129f0f5d8cc9fd8c888fc9ed0bd1a02a65d6f \
+    --hash=sha256:438b303b8b7b95531d93b457657ec89e742bd90c9a72da1eebfb51095007922c \
+    --hash=sha256:5269f40521b12941f1334a162f8f06375df6a89f0f90d8a758ae3b83b8931b18 \
+    --hash=sha256:53b19b8509f529fa6fdc8f869f6172d5c89587b657aa24d958d339de3bc47a73 \
+    --hash=sha256:655f5e83c9e46f2d9b32508852d92b6e8fa6d166a6f48960aac54e81cd578417 \
+    --hash=sha256:7daf7ad1bfff1da71da06e82d5147bdb1ac866581617d8f06cc4eeda48e2a149 \
+    --hash=sha256:879cd43b41babda79d4896f6b5a79dfbf96be5f13489553c793659116a2e9ce4 \
+    --hash=sha256:ab77ca440cbca98377e3ade32860c8d7e4fa97759d6266759a7e2f718ec4ded1 \
+    --hash=sha256:ae054e987066ae861c0bc648a7cdd523cfb1849353bc9b1591ecbf2a55ca8b7d \
+    --hash=sha256:ae0b70e7599dd58ef16d6500947b8d2bdd4272ffbbd2ebf5c516691fdfb82212 \
+    --hash=sha256:d6f0f55bb853f10e3a2025193af2d1cc202697cc7985fe7785d681114c5b3cdb \
+    --hash=sha256:fa7057d8888ea8ebba859da8b25d40e10e2f12013f6b0b033c9ab6e68cd10763 \
+    --hash=sha256:ffbdd5bd07f2340ad2ce01d44cc95223ffa256136ac5dc32f4f80926701640fb
+    # via osqp
 requests==2.28.1 \
     --hash=sha256:7c5599b102feddaa661c826c56ab4fee28bfd17f5abca1ebbe3e7f19d7c97983 \
     --hash=sha256:8fefa2a1a1365bf5520aac41836fbee479da67864514bdb821f31ce07ce65349
@@ -361,7 +425,10 @@ scipy==1.7.3 \
     --hash=sha256:eef93a446114ac0193a7b714ce67659db80caf940f3232bad63f4c7a81bc18df \
     --hash=sha256:f7eaea089345a35130bc9a39b89ec1ff69c208efa97b3f8b25ea5d4c41d88094 \
     --hash=sha256:f99d206db1f1ae735a8192ab93bd6028f3a42f6fa08467d37a14eb96c9dd34a3
-    # via -r tools/python/requirements.txt
+    # via
+    #   -r tools/python/requirements.txt
+    #   osqp
+    #   qdldl
 six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254

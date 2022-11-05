@@ -26,6 +26,22 @@ WHEELHOUSE_MIRROR_URL = "https://software.frc971.org/Build-Dependencies/wheelhou
 PY_DEPS_WWWW_DIR = "/var/www/html/files/frc971/Build-Dependencies/wheelhouse"
 
 
+def sanitize_name(name: str) -> str:
+    """Sanitizes a package name so it's consistent across all use cases.
+
+    pip is really inconsistent about using real package names vs. whatever
+    users typed into the requirements file. It feels random.
+    Everything is lower-cased and dashes are replaced by underscores.
+
+    Args:
+        name: The name to sanitize.
+
+    Returns:
+        The sanitized name.
+    """
+    return name.lower().replace("-", "_").replace(".", "_")
+
+
 def compute_sha256(data: bytes) -> str:
     """Computes the sha256 checksum of a bytes sequence.
 
@@ -215,7 +231,7 @@ def main(argv: List[str]) -> Optional[int]:
         # We use lower-case for the package names here because that's what the
         # requirements.lock.txt file uses.
         info = Wheel(wheel)
-        override_information[f"{info.name.lower()}=={info.version}"] = {
+        override_information[f"{sanitize_name(info.name)}=={info.version}"] = {
             "url": override_url,
             "sha256": sha256,
         }

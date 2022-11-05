@@ -1,9 +1,13 @@
 # After updating this file, run:
 # $ bazel run //tools/python:requirements.update
 
+jinja2
 matplotlib
+mkdocs
 numpy
+opencv-python
+osqp
 pkginfo
+pygobject
 requests
 scipy
-mkdocs

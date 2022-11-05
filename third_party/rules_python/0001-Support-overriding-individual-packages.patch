@@ -1,13 +1,13 @@
-From 843248c52d335f7ed51209cd7eee009a743b3488 Mon Sep 17 00:00:00 2001
+From edb6d0447edf6b6116c8aff73cde6117abbaf706 Mon Sep 17 00:00:00 2001
 From: Philipp Schrader <philipp.schrader@gmail.com>
 Date: Sun, 11 Sep 2022 22:04:47 -0700
 Subject: [PATCH] Support overriding individual packages
 
 ---
  .../extract_wheels/extract_single_wheel.py    | 60 ++++++++++---------
- .../parse_requirements_to_bzl.py              | 42 ++++++++++++-
+ .../parse_requirements_to_bzl.py              | 44 +++++++++++++-
  python/pip_install/pip_repository.bzl         | 34 +++++++++++
- 3 files changed, 107 insertions(+), 29 deletions(-)
+ 3 files changed, 109 insertions(+), 29 deletions(-)
 
 diff --git a/python/pip_install/extract_wheels/extract_single_wheel.py b/python/pip_install/extract_wheels/extract_single_wheel.py
 index a7cc672..26d4368 100644
@@ -89,7 +89,7 @@ index a7cc672..26d4368 100644
      name, extras_for_pkg = requirements._parse_requirement_for_extra(args.requirement)
      extras = {name: extras_for_pkg} if extras_for_pkg and name else dict()
 diff --git a/python/pip_install/extract_wheels/parse_requirements_to_bzl.py b/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
-index 5762cf5..07642ca 100644
+index 5762cf5..46a94f5 100644
 --- a/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
 +++ b/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
 @@ -4,7 +4,7 @@ import shlex
@@ -133,15 +133,17 @@ index 5762cf5..07642ca 100644
  
          def _clean_name(name):
              return name.replace("-", "_").replace(".", "_").lower()
-@@ -160,10 +169,20 @@ def generate_parsed_requirements_contents(
+@@ -160,10 +169,22 @@ def generate_parsed_requirements_contents(
  
          def install_deps():
              for name, requirement in _packages:
-+                override_name = requirement.split(" ")[0]
-+                override = _overrides.get(override_name)
++                override_entry = requirement.split(" ")[0]
++                override_name, _, version = override_entry.partition("==")
++                override_key = "%s==%s" % (_clean_name(override_name), version)
++                override = _overrides.get(override_key)
 +                if not override:
 +                    if _require_overrides:
-+                        fail("Failed to find an override for \\"{{}}\\" in the \\"overrides\\" JSON file".format(override_name))
++                        fail("Failed to find an override for \\"{{}}\\" in the \\"overrides\\" JSON file".format(override_key))
 +                    else:
 +                        override = _NOP_OVERRIDE
 +
@@ -154,7 +156,7 @@ index 5762cf5..07642ca 100644
                      **_config
                  )
          """.format(
-@@ -178,6 +197,8 @@ def generate_parsed_requirements_contents(
+@@ -178,6 +199,8 @@ def generate_parsed_requirements_contents(
              repo_names_and_reqs=repo_names_and_reqs,
              repo_prefix=repo_prefix,
              wheel_file_label=bazel.WHEEL_FILE_LABEL,
@@ -163,7 +165,7 @@ index 5762cf5..07642ca 100644
          )
      )
  
-@@ -234,6 +255,16 @@ If set, it will take precedence over python_interpreter.",
+@@ -234,6 +257,16 @@ If set, it will take precedence over python_interpreter.",
          type=annotation.annotations_map_from_str_path,
          help="A json encoded file containing annotations for rendered packages.",
      )
@@ -180,7 +182,7 @@ index 5762cf5..07642ca 100644
      arguments.parse_common_args(parser)
      args = parser.parse_args()
  
-@@ -259,6 +290,11 @@ If set, it will take precedence over python_interpreter.",
+@@ -259,6 +292,11 @@ If set, it will take precedence over python_interpreter.",
              }
          )
  
@@ -192,7 +194,7 @@ index 5762cf5..07642ca 100644
      output.write(
          textwrap.dedent(
              """\
-@@ -278,6 +314,8 @@ If set, it will take precedence over python_interpreter.",
+@@ -278,6 +316,8 @@ If set, it will take precedence over python_interpreter.",
              repo_prefix=args.repo_prefix,
              whl_library_args=whl_library_args,
              annotations=annotated_requirements,
