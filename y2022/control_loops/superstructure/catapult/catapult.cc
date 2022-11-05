@@ -67,7 +67,8 @@ void MPCProblem::SetState(Eigen::Matrix<double, 2, 1> X_initial,
                           Eigen::Matrix<double, 2, 1> X_final) {
   X_initial_ = X_initial;
   X_final_ = X_final;
-  objective_vector_ =
+  // If we mark this noalias(), it won't re-allocate the vector each time.
+  objective_vector_.noalias() =
       X_initial(1, 0) * accel_q_ + final_q_ * (Af_ * X_initial - X_final);
 
   auto status = solver_.SetObjectiveVector(objective_vector_);
