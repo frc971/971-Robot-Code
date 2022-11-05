@@ -1,9 +1,7 @@
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
 
 #include "Eigen/Dense"
-
 #include "aos/json_to_flatbuffer.h"
-
 #include "aos/realtime.h"
 #include "aos/util/math.h"
 #include "frc971/control_loops/control_loops_generated.h"
@@ -18,6 +16,11 @@ namespace drivetrain {
 
 SplineDrivetrain::SplineDrivetrain(const DrivetrainConfig<double> &dt_config)
     : dt_config_(dt_config),
+      velocity_drivetrain_(
+          std::make_shared<StateFeedbackLoop<2, 2, 2, double,
+                                             StateFeedbackHybridPlant<2, 2, 2>,
+                                             HybridKalman<2, 2, 2>>>(
+              dt_config_.make_hybrid_drivetrain_velocity_loop())),
       current_xva_(Eigen::Vector3d::Zero()),
       next_xva_(Eigen::Vector3d::Zero()),
       next_U_(Eigen::Vector2d::Zero()) {}
@@ -73,8 +76,8 @@ void SplineDrivetrain::DeleteTrajectory(const fb::Trajectory *trajectory) {
 }
 
 void SplineDrivetrain::AddTrajectory(const fb::Trajectory *trajectory) {
-  trajectories_.emplace_back(
-      std::make_unique<FinishedTrajectory>(dt_config_, trajectory));
+  trajectories_.emplace_back(std::make_unique<FinishedTrajectory>(
+      dt_config_, trajectory, velocity_drivetrain_));
   UpdateSplineHandles();
 }
 

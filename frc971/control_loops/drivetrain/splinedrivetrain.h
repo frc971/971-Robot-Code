@@ -88,6 +88,11 @@ class SplineDrivetrain {
 
   const DrivetrainConfig<double> dt_config_;
 
+  std::shared_ptr<
+      StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
+                        HybridKalman<2, 2, 2>>>
+      velocity_drivetrain_;
+
   bool executing_spline_ = false;
 
   // TODO(james): Sort out construction to avoid so much dynamic memory

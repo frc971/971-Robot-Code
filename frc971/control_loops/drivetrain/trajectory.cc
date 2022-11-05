@@ -33,11 +33,15 @@ float DefaultConstraint(ConstraintType type) {
 }
 }  // namespace
 
-FinishedTrajectory::FinishedTrajectory(const DrivetrainConfig<double> &config,
-                                       const fb::Trajectory *buffer)
+FinishedTrajectory::FinishedTrajectory(
+    const DrivetrainConfig<double> &config, const fb::Trajectory *buffer,
+    std::shared_ptr<
+        StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
+                          HybridKalman<2, 2, 2>>>
+        velocity_drivetrain)
     : BaseTrajectory(CHECK_NOTNULL(CHECK_NOTNULL(buffer->spline())->spline())
                          ->constraints(),
-                     config),
+                     config, std::move(velocity_drivetrain)),
       buffer_(buffer),
       spline_(*buffer_->spline()) {}
 
@@ -77,15 +81,12 @@ void BaseTrajectory::K345(const double x, Eigen::Matrix<double, 2, 1> *K3,
 
 BaseTrajectory::BaseTrajectory(
     const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
-    const DrivetrainConfig<double> &config)
-    : velocity_drivetrain_(
-          std::unique_ptr<StateFeedbackLoop<2, 2, 2, double,
-                                            StateFeedbackHybridPlant<2, 2, 2>,
-                                            HybridKalman<2, 2, 2>>>(
-              new StateFeedbackLoop<2, 2, 2, double,
-                                    StateFeedbackHybridPlant<2, 2, 2>,
-                                    HybridKalman<2, 2, 2>>(
-                  config.make_hybrid_drivetrain_velocity_loop()))),
+    const DrivetrainConfig<double> &config,
+    std::shared_ptr<
+        StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
+                          HybridKalman<2, 2, 2>>>
+        velocity_drivetrain)
+    : velocity_drivetrain_(std::move(velocity_drivetrain)),
       config_(config),
       robot_radius_l_(config.robot_radius),
       robot_radius_r_(config.robot_radius),
