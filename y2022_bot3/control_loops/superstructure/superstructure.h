@@ -31,6 +31,16 @@ class Superstructure
                           std::shared_ptr<const constants::Values> values,
                           const ::std::string &name = "/superstructure");
 
+  inline const PotAndAbsoluteEncoderSubsystem &intake() const {
+    return intake_;
+  }
+  inline const PotAndAbsoluteEncoderSubsystem &climber_left() const {
+    return climber_left_;
+  }
+  inline const PotAndAbsoluteEncoderSubsystem &climber_right() const {
+    return climber_right_;
+  }
+
  protected:
   virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
                             aos::Sender<Output>::Builder *output,
@@ -38,6 +48,10 @@ class Superstructure
 
  private:
   std::shared_ptr<const constants::Values> values_;
+
+  PotAndAbsoluteEncoderSubsystem climber_left_;
+  PotAndAbsoluteEncoderSubsystem climber_right_;
+  PotAndAbsoluteEncoderSubsystem intake_;
 
   aos::Fetcher<frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
