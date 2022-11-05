@@ -109,6 +109,8 @@ genrule(
     outs = [
         "pictures/field/balls.jpeg",
         "pictures/field/quadrants.jpeg",
+        "pictures/field/reversed_quadrants.jpeg",
+        "pictures/field/reversed_balls.jpeg",
     ],
     cmd = "cp $(SRCS) $(@D)/pictures/field/",
 )

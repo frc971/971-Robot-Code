@@ -8,6 +8,8 @@ filegroup(
     srcs = [
         "balls.jpeg",
         "quadrants.jpeg",
+        "reversed_balls.jpeg",
+        "reversed_quadrants.jpeg",
     ],
     visibility = ["//visibility:public"],
 )

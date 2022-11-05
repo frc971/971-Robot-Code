@@ -44,7 +44,7 @@ const IMAGES_ARRAY = [
     original_image:
       '/sha256/cbb99a057a2504e80af526dae7a0a04121aed84c56a6f4889e9576fe1c20c61e/pictures/field/quadrants.jpeg',
     reversed_image:
-      '/sha256/2c67fffbb722e9a7d0e1d270f1aad7f39a2dc8493c2e7ad1ae50bd6fa52d5bb7/pictures/field/reversed_quadrants.jpeg',
+      '/sha256/ee4d24cf6b850158aa64e2b301c31411cb28f88a247a8916abb97214bb251eb5/pictures/field/reversed_quadrants.jpeg',
   },
   {
     id: 'field_balls_image',
