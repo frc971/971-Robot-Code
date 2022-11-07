@@ -131,23 +131,23 @@ Values MakeValues(uint16_t team) {
 
   // Interpolation table for comp and practice robots
   r.shot_interpolation_table = InterpolationTable<Values::ShotParams>({
-      {1.0, {0.05, 19.4}},
-      {1.6, {0.05, 19.4}},
-      {1.9, {0.1, 19.4}},
-      {2.12, {0.13, 19.4}},
-      {2.9, {0.24, 19.9}},
+      {1.0, {0.12, 19.4}},
+      {1.6, {0.12, 19.4}},
+      {1.9, {0.17, 19.4}},
+      {2.12, {0.21, 19.4}},
+      {2.9, {0.30, 19.9}},
 
-      {3.2, {0.26, 20.7}},
+      {3.2, {0.33, 20.1}},
 
-      {3.60, {0.33, 20.9}},
-      {4.50, {0.38, 22.5}},
-      {4.9, {0.4, 22.9}},
-      {5.4, {0.4, 23.9}},
+      {3.60, {0.39, 20.65}},
+      {4.50, {0.44, 22.3}},
+      {4.9, {0.43, 22.75}}, // up to here
+      {5.4, {0.43, 23.85}},
 
-      {6.0, {0.40, 25.4}},
-      {7.0, {0.37, 28.1}},
+      {6.0, {0.42, 25.3}},
+      {7.0, {0.40, 27.7}},
 
-      {10.0, {0.37, 28.1}},
+      {10.0, {0.40, 27.7}},
   });
 
   if (false) {
@@ -238,12 +238,21 @@ Values MakeValues(uint16_t team) {
           0.0634440443622909 + 0.213601224728352 + 0.0657973101027296 -
           0.114726411377978 - 0.980314029089968 - 0.0266013159299456 +
           0.0631240002215899 + 0.222882504808653 + 0.0370686419434252 -
-          0.0965027214840068 - 0.126737479717192;
+          0.0965027214840068 - 0.126737479717192 - 0.0773753775457 +
+          2.8132444751306;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
-          1.3081068967929;
+          1.16683731504739;
 
       flipper_arm_left->potentiometer_offset = -6.4;
       flipper_arm_right->potentiometer_offset = 5.56;
+
+      *turret_range = ::frc971::constants::Range{
+          .lower_hard = -7.0,  // Back Hard
+          .upper_hard = 3.4,   // Front Hard
+          .lower = -6.4,       // Back Soft
+          .upper = 2.9         // Front Soft
+      };
+      turret_params->range = *turret_range;
 
       catapult_params->zeroing_constants.measured_absolute_position =
           1.71723370408082;
@@ -256,6 +265,8 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kPracticeTeamNumber:
+      catapult_params->range.lower = -0.885;
+
       r.shot_interpolation_table = InterpolationTable<Values::ShotParams>({
           {1.0, {0.08, 20.0}},
           {1.6, {0.08, 20.0}},
@@ -276,7 +287,8 @@ Values MakeValues(uint16_t team) {
           {10.0, {0.39, 28.25}},
       });
 
-      climber->potentiometer_offset = -0.1209073362519 + 0.0760598;
+      climber->potentiometer_offset =
+          -0.1209073362519 + 0.0760598 - 0.0221716219244 - 0.00321684;
       intake_front->potentiometer_offset = 3.06604378582351 - 0.60745632979918;
       intake_front->subsystem_params.zeroing_constants
           .measured_absolute_position = 0.143667561169188;
@@ -291,14 +303,18 @@ Values MakeValues(uint16_t team) {
           0.0718028442723373 - 0.0793332946417493 + 0.233707527214682 +
           0.0828349540635251 + 0.677740533247017 - 0.0828349540635251 -
           0.0903654044329345 - 0.105426305171759 - 0.150609007388226 -
-          0.0338870266623506 - 0.0677740533247011;
+          0.0338870266623506 - 0.0677740533247011 - 0.135548106649404 - 0.6852;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
-          1.50798193457968;
-      turret_range->upper = 2.9;
-      turret_range->lower = -6.4;
+          0.8306;
+      *turret_range = ::frc971::constants::Range{
+          .lower_hard = -7.0,  // Back Hard
+          .upper_hard = 3.4,   // Front Hard
+          .lower = -6.4,       // Back Soft
+          .upper = 2.9         // Front Soft
+      };
       turret_params->range = *turret_range;
-      flipper_arm_left->potentiometer_offset = -4.39536583413615;
-      flipper_arm_right->potentiometer_offset = 4.36264091401229;
+      flipper_arm_left->potentiometer_offset = -4.39536583413615 - 0.108401297910291;
+      flipper_arm_right->potentiometer_offset = 4.36264091401229 + 0.175896445665755;
 
       catapult_params->zeroing_constants.measured_absolute_position =
           1.62909518684227;
