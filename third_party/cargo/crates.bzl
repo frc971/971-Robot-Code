@@ -963,6 +963,15 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
+        name = "raze__rustc_version__0_4_0",
+        url = "https://crates.io/api/v1/crates/rustc_version/0.4.0/download",
+        type = "tar.gz",
+        strip_prefix = "rustc_version-0.4.0",
+        build_file = Label("//third_party/cargo/remote:BUILD.rustc_version-0.4.0.bazel"),
+    )
+
+    maybe(
+        http_archive,
         name = "raze__rustversion__1_0_8",
         url = "https://crates.io/api/v1/crates/rustversion/1.0.8/download",
         type = "tar.gz",
@@ -979,6 +988,15 @@ def raze_fetch_remote_crates():
         sha256 = "f3f6f92acf49d1b98f7a81226834412ada05458b7364277387724a237f062695",
         strip_prefix = "ryu-1.0.10",
         build_file = Label("//third_party/cargo/remote:BUILD.ryu-1.0.10.bazel"),
+    )
+
+    maybe(
+        http_archive,
+        name = "raze__semver__1_0_14",
+        url = "https://crates.io/api/v1/crates/semver/1.0.14/download",
+        type = "tar.gz",
+        strip_prefix = "semver-1.0.14",
+        build_file = Label("//third_party/cargo/remote:BUILD.semver-1.0.14.bazel"),
     )
 
     maybe(

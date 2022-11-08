@@ -56,6 +56,7 @@ table EnumVal {
     object:Object (id: 2, deprecated);
     union_type:Type (id: 3);
     documentation:[string] (id: 4);
+    attributes:[KeyValue] (id: 5);
 }
 
 table Enum {
@@ -83,7 +84,7 @@ table Field {
     documentation:[string] (id: 10);
     optional:bool = false (id: 11);
     /// Number of padding octets to always add after this field. Structs only.
-    padding:uint16 = 0 (id: 12); 
+    padding:uint16 = 0 (id: 12);
 }
 
 table Object {  // Used for both tables and structs.
