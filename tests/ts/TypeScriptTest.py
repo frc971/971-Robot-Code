@@ -61,7 +61,7 @@ check_call(["npm", "install", "--silent"])
 
 print("Invoking flatc...")
 flatc(
-    options=["--ts", "--gen-name-strings", "--gen-mutable", "--gen-object-api"],
+    options=["--ts", "--reflect-names", "--gen-name-strings", "--gen-mutable", "--gen-object-api"],
     schema="../monster_test.fbs",
     include="../include_test",
 )
@@ -74,18 +74,18 @@ flatc(
 )
 
 flatc(
-    options=["--ts", "--gen-name-strings", "--gen-mutable", "--gen-object-api"],
+    options=["--ts", "--reflect-names", "--gen-name-strings", "--gen-mutable", "--gen-object-api"],
     schema="../union_vector/union_vector.fbs",
     prefix="union_vector",
 )
 
 flatc(
-    options=["--ts", "--gen-name-strings"],
+    options=["--ts", "--reflect-names", "--gen-name-strings"],
     schema="../optional_scalars.fbs",
 )
 
 flatc(
-    options=["--ts", "--gen-name-strings", "--gen-mutable", "--gen-object-api"],
+    options=["--ts", "--reflect-names", "--gen-name-strings", "--gen-mutable", "--gen-object-api"],
     schema=[
         "typescript_keywords.fbs",
         "test_dir/typescript_include.fbs",
@@ -96,8 +96,15 @@ flatc(
 )
 
 flatc(
+    options=["--ts", "--reflect-names", "--ts-flat-files", "--gen-name-strings", "--gen-object-api"],
+    schema="arrays_test_complex/arrays_test_complex.fbs",
+    prefix="arrays_test_complex"
+)
+
+flatc(
     options=[
         "--ts",
+        "--reflect-names",
         "--gen-name-strings",
         "--gen-mutable",
         "--gen-object-api",
@@ -121,3 +128,4 @@ print("Running TypeScript Tests...")
 check_call(NODE_CMD + ["JavaScriptTest"])
 check_call(NODE_CMD + ["JavaScriptUnionVectorTest"])
 check_call(NODE_CMD + ["JavaScriptFlexBuffersTest"])
+check_call(NODE_CMD + ["JavaScriptComplexArraysTest"])

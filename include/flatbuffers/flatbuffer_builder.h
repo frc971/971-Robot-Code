@@ -17,6 +17,7 @@
 #ifndef FLATBUFFERS_FLATBUFFER_BUILDER_H_
 #define FLATBUFFERS_FLATBUFFER_BUILDER_H_
 
+#include <algorithm>
 #include <functional>
 #include <initializer_list>
 
@@ -449,7 +450,7 @@ class FlatBufferBuilder {
   }
   template<typename T> void PreAlign(size_t len) {
     AssertScalarT<T>();
-    PreAlign(len, sizeof(T));
+    PreAlign(len, AlignOf<T>());
   }
   /// @endcond
 
@@ -589,11 +590,15 @@ class FlatBufferBuilder {
     return PushElement(static_cast<uoffset_t>(len));
   }
 
-  void StartVector(size_t len, size_t elemsize) {
+  void StartVector(size_t len, size_t elemsize, size_t alignment) {
     NotNested();
     nested = true;
     PreAlign<uoffset_t>(len * elemsize);
-    PreAlign(len * elemsize, elemsize);  // Just in case elemsize > uoffset_t.
+    PreAlign(len * elemsize, alignment);  // Just in case elemsize > uoffset_t.
+  }
+
+  template<typename T> void StartVector(size_t len) {
+    return StartVector(len, sizeof(T), AlignOf<T>());
   }
 
   // Call this right before StartVector/CreateVector if you want to force the
@@ -627,7 +632,7 @@ class FlatBufferBuilder {
     // If this assert hits, you're specifying a template argument that is
     // causing the wrong overload to be selected, remove it.
     AssertScalarT<T>();
-    StartVector(len, sizeof(T));
+    StartVector<T>(len);
     if (len == 0) { return Offset<Vector<T>>(EndVector(len)); }
     // clang-format off
     #if FLATBUFFERS_LITTLEENDIAN
@@ -668,7 +673,7 @@ class FlatBufferBuilder {
 
   template<typename T>
   Offset<Vector<Offset<T>>> CreateVector(const Offset<T> *v, size_t len) {
-    StartVector(len, sizeof(Offset<T>));
+    StartVector<Offset<T>>(len);
     for (auto i = len; i > 0;) { PushElement(v[--i]); }
     return Offset<Vector<Offset<T>>>(EndVector(len));
   }
@@ -688,7 +693,7 @@ class FlatBufferBuilder {
   // an array. Instead, read elements manually.
   // Background: https://isocpp.org/blog/2012/11/on-vectorbool
   Offset<Vector<uint8_t>> CreateVector(const std::vector<bool> &v) {
-    StartVector(v.size(), sizeof(uint8_t));
+    StartVector<uint8_t>(v.size());
     for (auto i = v.size(); i > 0;) {
       PushElement(static_cast<uint8_t>(v[--i]));
     }
@@ -762,7 +767,7 @@ class FlatBufferBuilder {
     for (auto it = begin; it != end; ++it) {
       buf_.scratch_push_small(CreateString(*it));
     }
-    StartVector(size, sizeof(Offset<String>));
+    StartVector<Offset<String>>(size);
     for (auto i = 1; i <= size; i++) {
       // Note we re-evaluate the buf location each iteration to account for any
       // underlying buffer resizing that may occur.
@@ -782,7 +787,7 @@ class FlatBufferBuilder {
   /// where the vector is stored.
   template<typename T>
   Offset<Vector<const T *>> CreateVectorOfStructs(const T *v, size_t len) {
-    StartVector(len * sizeof(T) / AlignOf<T>(), AlignOf<T>());
+    StartVector(len * sizeof(T) / AlignOf<T>(), sizeof(T), AlignOf<T>());
     if (len > 0) {
       PushBytes(reinterpret_cast<const uint8_t *>(v), sizeof(T) * len);
     }
@@ -1025,14 +1030,20 @@ class FlatBufferBuilder {
   /// written to at a later time to serialize the data into a `vector`
   /// in the buffer.
   uoffset_t CreateUninitializedVector(size_t len, size_t elemsize,
-                                      uint8_t **buf) {
+                                      size_t alignment, uint8_t **buf) {
     NotNested();
-    StartVector(len, elemsize);
+    StartVector(len, elemsize, alignment);
     buf_.make_space(len * elemsize);
     auto vec_start = GetSize();
     auto vec_end = EndVector(len);
     *buf = buf_.data_at(vec_start);
     return vec_end;
+  }
+
+  FLATBUFFERS_ATTRIBUTE([[deprecated("call the version above instead")]])
+  uoffset_t CreateUninitializedVector(size_t len, size_t elemsize,
+                                      uint8_t **buf) {
+    return CreateUninitializedVector(len, elemsize, elemsize, buf);
   }
 
   /// @brief Specialized version of `CreateVector` for non-copying use cases.
@@ -1046,14 +1057,14 @@ class FlatBufferBuilder {
   template<typename T>
   Offset<Vector<T>> CreateUninitializedVector(size_t len, T **buf) {
     AssertScalarT<T>();
-    return CreateUninitializedVector(len, sizeof(T),
+    return CreateUninitializedVector(len, sizeof(T), AlignOf<T>(),
                                      reinterpret_cast<uint8_t **>(buf));
   }
 
   template<typename T>
   Offset<Vector<const T *>> CreateUninitializedVectorOfStructs(size_t len,
                                                                T **buf) {
-    return CreateUninitializedVector(len, sizeof(T),
+    return CreateUninitializedVector(len, sizeof(T), AlignOf<T>(),
                                      reinterpret_cast<uint8_t **>(buf));
   }
 
@@ -1064,7 +1075,7 @@ class FlatBufferBuilder {
   Offset<Vector<T>> CreateVectorScalarCast(const U *v, size_t len) {
     AssertScalarT<T>();
     AssertScalarT<U>();
-    StartVector(len, sizeof(T));
+    StartVector<T>(len);
     for (auto i = len; i > 0;) { PushElement(static_cast<T>(v[--i])); }
     return Offset<Vector<T>>(EndVector(len));
   }
@@ -1173,7 +1184,7 @@ class FlatBufferBuilder {
   // Allocates space for a vector of structures.
   // Must be completed with EndVectorOfStructs().
   template<typename T> T *StartVectorOfStructs(size_t vector_size) {
-    StartVector(vector_size * sizeof(T) / AlignOf<T>(), AlignOf<T>());
+    StartVector(vector_size * sizeof(T) / AlignOf<T>(), sizeof(T), AlignOf<T>());
     return reinterpret_cast<T *>(buf_.make_space(vector_size * sizeof(T)));
   }
 

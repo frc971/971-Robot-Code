@@ -17,6 +17,7 @@
 #ifndef FLATBUFFERS_IDL_H_
 #define FLATBUFFERS_IDL_H_
 
+#include <algorithm>
 #include <functional>
 #include <map>
 #include <memory>
@@ -382,7 +383,14 @@ struct EnumVal {
   Offset<reflection::EnumVal> Serialize(FlatBufferBuilder *builder,
                                         const Parser &parser) const;
 
-  bool Deserialize(const Parser &parser, const reflection::EnumVal *val);
+  bool Deserialize(Parser &parser, const reflection::EnumVal *val);
+
+  flatbuffers::Offset<
+      flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>>>
+  SerializeAttributes(FlatBufferBuilder *builder, const Parser &parser) const;
+
+  bool DeserializeAttributes(Parser &parser,
+                             const Vector<Offset<reflection::KeyValue>> *attrs);
 
   uint64_t GetAsUInt64() const { return static_cast<uint64_t>(value); }
   int64_t GetAsInt64() const { return value; }
@@ -392,6 +400,7 @@ struct EnumVal {
   std::string name;
   std::vector<std::string> doc_comment;
   Type union_type;
+  SymbolTable<Value> attributes;
 
  private:
   friend EnumDef;
@@ -480,11 +489,11 @@ inline bool IsVector(const Type &type) {
   return type.base_type == BASE_TYPE_VECTOR;
 }
 
-inline bool IsVectorOfStruct(const Type& type) {
+inline bool IsVectorOfStruct(const Type &type) {
   return IsVector(type) && IsStruct(type.VectorType());
 }
 
-inline bool IsVectorOfTable(const Type& type) {
+inline bool IsVectorOfTable(const Type &type) {
   return IsVector(type) && IsTable(type.VectorType());
 }
 
@@ -634,6 +643,7 @@ struct IDLOptions {
   bool json_nested_legacy_flatbuffers;
   bool ts_flat_file;
   bool no_leak_private_annotations;
+  bool require_json_eof;
 
   // Possible options for the more general generator below.
   enum Language {
@@ -653,6 +663,7 @@ struct IDLOptions {
     kRust = 1 << 14,
     kKotlin = 1 << 15,
     kSwift = 1 << 16,
+    kNim = 1 << 17,
     kMAX
   };
 
@@ -734,6 +745,7 @@ struct IDLOptions {
         json_nested_legacy_flatbuffers(false),
         ts_flat_file(false),
         no_leak_private_annotations(false),
+        require_json_eof(true),
         mini_reflect(IDLOptions::kNone),
         require_explicit_ids(false),
         rust_serialize(false),
@@ -896,6 +908,9 @@ class Parser : public ParserState {
 
   bool ParseJson(const char *json, const char *json_filename = nullptr);
 
+  // Returns the number of characters were consumed when parsing a JSON string.
+  std::ptrdiff_t BytesConsumed() const;
+   
   // Set the root type. May override the one set in the schema.
   bool SetRootType(const char *name);
 
@@ -1016,6 +1031,7 @@ class Parser : public ParserState {
   FLATBUFFERS_CHECKED_ERROR ParseService(const char *filename);
   FLATBUFFERS_CHECKED_ERROR ParseProtoFields(StructDef *struct_def,
                                              bool isextend, bool inside_oneof);
+  FLATBUFFERS_CHECKED_ERROR ParseProtoMapField(StructDef *struct_def);
   FLATBUFFERS_CHECKED_ERROR ParseProtoOption();
   FLATBUFFERS_CHECKED_ERROR ParseProtoKey();
   FLATBUFFERS_CHECKED_ERROR ParseProtoDecl();

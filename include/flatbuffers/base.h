@@ -32,7 +32,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#if defined(ARDUINO) && !defined(ARDUINOSTL_M_H)
+#if defined(ARDUINO) && !defined(ARDUINOSTL_M_H) && defined(__AVR__)
   #include <utility.h>
 #else
   #include <utility>
@@ -138,9 +138,9 @@
   #endif
 #endif // !defined(FLATBUFFERS_LITTLEENDIAN)
 
-#define FLATBUFFERS_VERSION_MAJOR 2
-#define FLATBUFFERS_VERSION_MINOR 0
-#define FLATBUFFERS_VERSION_REVISION 8
+#define FLATBUFFERS_VERSION_MAJOR 22
+#define FLATBUFFERS_VERSION_MINOR 10
+#define FLATBUFFERS_VERSION_REVISION 26
 #define FLATBUFFERS_STRING_EXPAND(X) #X
 #define FLATBUFFERS_STRING(X) FLATBUFFERS_STRING_EXPAND(X)
 namespace flatbuffers {
