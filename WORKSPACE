@@ -1266,11 +1266,22 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/aws_sdk-19.0.0-RC1.tar.gz",
 )
 
+# Source code of LZ4 (files under lib/) are under BSD 2-Clause.
+# The rest of the repository (build information, documentation, etc.) is under GPLv2.
+# We only care about the lib/ subfolder anyways, and strip out any other files.
+http_archive(
+    name = "com_github_lz4_lz4",
+    build_file = "//debian:BUILD.lz4.bazel",
+    sha256 = "0b0e3aa07c8c063ddf40b082bdf7e37a1562bda40a0ff5272957f3e987e0e54b",
+    strip_prefix = "lz4-1.9.4/lib",
+    url = "https://github.com/lz4/lz4/archive/refs/tags/v1.9.4.tar.gz",
+)
+
 http_file(
     name = "com_github_foxglove_mcap_mcap",
     executable = True,
-    sha256 = "cf4dfcf71e20a60406aaded03a165312c1ca535b509ead90eb1846fc598137d2",
-    urls = ["https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.5/mcap-linux-amd64"],
+    sha256 = "ae745dd09cf4c9570c1c038a72630c07b073f0ed4b05983d64108ff748a40d3f",
+    urls = ["https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.22/mcap-linux-amd64"],
 )
 
 http_archive(

@@ -86,6 +86,7 @@ cc_library(
         "//aos:fast_string_builder",
         "//aos:flatbuffer_utils",
         "//aos/events:event_loop",
+        "@com_github_lz4_lz4//:lz4",
         "@com_github_nlohmann_json//:json",
     ],
 )

@@ -46,8 +46,14 @@ class McapLogger {
     // the channel names that are used in "real" applications.
     kShortened,
   };
+  // Chunk compression to use in the MCAP file.
+  enum class Compression {
+    kNone,
+    kLz4,
+  };
   McapLogger(EventLoop *event_loop, const std::string &output_path,
-             Serialization serialization, CanonicalChannelNames canonical_channels);
+             Serialization serialization,
+             CanonicalChannelNames canonical_channels, Compression compression);
   ~McapLogger();
 
  private:
@@ -87,8 +93,10 @@ class McapLogger {
     uint64_t offset;
     // Total size of the Chunk, in bytes.
     uint64_t chunk_size;
-    // Total size of the records portion of the Chunk, in bytes.
+    // Total uncompressed size of the records portion of the Chunk, in bytes.
     uint64_t records_size;
+    // Total size of the records portion of the Chunk, when compressed
+    uint64_t records_size_compressed;
     // Mapping of channel IDs to the MessageIndex entry for that channel within
     // the referenced Chunk. The MessageIndex is referenced by an offset from
     // the start of the file.
@@ -96,10 +104,13 @@ class McapLogger {
     // Total size, in bytes, of all the MessageIndex entries for this Chunk
     // together (note that they are required to be contiguous).
     uint64_t message_index_size;
+    // Compression used in this Chunk.
+    Compression compression;
   };
-  // Maintains the state of a single Chunk. In order to maximize read performance,
-  // we currently maintain separate chunks for each channel so that, in order to
-  // read a given channel, only data associated with that channel nead be read.
+  // Maintains the state of a single Chunk. In order to maximize read
+  // performance, we currently maintain separate chunks for each channel so
+  // that, in order to read a given channel, only data associated with that
+  // channel nead be read.
   struct ChunkStatus {
     // Buffer containing serialized message data for the currently-being-built
     // chunk.
@@ -163,6 +174,7 @@ class McapLogger {
   std::ofstream output_;
   const Serialization serialization_;
   const CanonicalChannelNames canonical_channels_;
+  const Compression compression_;
   size_t total_message_bytes_ = 0;
   std::map<const Channel *, size_t> total_channel_bytes_;
   FastStringBuilder string_builder_;
@@ -170,7 +182,8 @@ class McapLogger {
   // Earliest message observed in this logfile.
   std::optional<aos::monotonic_clock::time_point> earliest_message_;
   // Latest message observed in this logfile.
-  aos::monotonic_clock::time_point latest_message_ = aos::monotonic_clock::min_time;
+  aos::monotonic_clock::time_point latest_message_ =
+      aos::monotonic_clock::min_time;
   // Count of all messages on each channel, indexed by channel ID.
   std::map<uint16_t, uint64_t> message_counts_;
   std::map<uint16_t, std::unique_ptr<RawFetcher>> fetchers_;
@@ -186,6 +199,9 @@ class McapLogger {
   uint16_t configuration_id_ = 0;
   FlatbufferDetachedBuffer<Channel> configuration_channel_;
   FlatbufferDetachedBuffer<Configuration> configuration_;
+
+  // Memory buffer to use for compressing data.
+  std::vector<uint8_t> compression_buffer_;
 };
 }  // namespace aos
 #endif  // AOS_UTIL_MCAP_LOGGER_H_

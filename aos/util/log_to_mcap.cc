@@ -10,6 +10,7 @@ DEFINE_bool(
     canonical_channel_names, false,
     "If set, use full channel names; by default, will shorten names to be the "
     "shortest possible version of the name (e.g., /aos instead of /pi/aos).");
+DEFINE_bool(compress, true, "Whether to use LZ4 compression in MCAP file.");
 
 // Converts an AOS log to an MCAP log that can be fed into Foxglove. To try this
 // out, run:
@@ -58,6 +59,8 @@ int main(int argc, char *argv[]) {
                                  : aos::McapLogger::Serialization::kJson,
       FLAGS_canonical_channel_names
           ? aos::McapLogger::CanonicalChannelNames::kCanonical
-          : aos::McapLogger::CanonicalChannelNames::kShortened);
+          : aos::McapLogger::CanonicalChannelNames::kShortened,
+      FLAGS_compress ? aos::McapLogger::Compression::kLz4
+                     : aos::McapLogger::Compression::kNone);
   reader.event_loop_factory()->Run();
 }

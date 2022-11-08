@@ -1,0 +1,22 @@
+licenses(["notice"])
+
+cc_library(
+    name = "lz4",
+    srcs = [
+        "lz4.c",
+        "lz4frame.c",
+        "lz4hc.c",
+        "xxhash.c",
+    ],
+    hdrs = [
+        # lz4hc.c tries to #include lz4.c....
+        "lz4.c",
+        "lz4.h",
+        "lz4frame.h",
+        "lz4hc.h",
+        "xxhash.h",
+    ],
+    include_prefix = "lz4",
+    includes = ["."],
+    visibility = ["//visibility:public"],
+)
