@@ -186,7 +186,7 @@
       "name": "/pi{{ NUM }}/camera",
       "type": "y2022.vision.TargetEstimate",
       "source_node": "pi{{ NUM }}",
-      "frequency": 40,
+      "frequency": 80,
       "num_senders": 2,
       "max_size": 40000,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
@@ -358,7 +358,7 @@
   "applications": [
     {
       "name": "message_bridge_client",
-      "executable_name": "message_bridge_client",
+      "executable_name": "message_bridge_client.sh",
       "args": ["--rt_priority=16"],
       "nodes": [
         "pi{{ NUM }}"

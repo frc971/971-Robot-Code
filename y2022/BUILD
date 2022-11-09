@@ -47,6 +47,7 @@ robot_downloader(
     ],
     data = [
         ":aos_config",
+        ":message_bridge_client.sh",
         "//y2022/image_streamer:image_streamer_start",
     ],
     dirs = [
