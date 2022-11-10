@@ -370,6 +370,9 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
         MonotonicInstant(self.0.monotonic_now())
     }
 
+    pub fn realtime_now(&self) -> RealtimeInstant {
+        RealtimeInstant(self.0.realtime_now())
+    }
     /// Note that the `'event_loop` input lifetime is intentional. The C++ API requires that it is
     /// part of `self.configuration()`, which will always have this lifetime.
     ///
@@ -711,7 +714,6 @@ pub struct TypedContext<'a, T>(
 where
     T: Follow<'a> + 'a;
 
-// TODO(Brian): Add the realtime timestamps here.
 impl<'a, T> TypedContext<'a, T>
 where
     T: Follow<'a> + 'a,
@@ -729,6 +731,12 @@ where
     }
     pub fn monotonic_remote_time(&self) -> MonotonicInstant {
         self.0.monotonic_remote_time()
+    }
+    pub fn realtime_event_time(&self) -> RealtimeInstant {
+        self.0.realtime_event_time()
+    }
+    pub fn realtime_remote_time(&self) -> RealtimeInstant {
+        self.0.realtime_remote_time()
     }
     pub fn queue_index(&self) -> u32 {
         self.0.queue_index()
@@ -750,10 +758,11 @@ where
     T::Inner: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // TODO(Brian): Add the realtime timestamps here.
         f.debug_struct("TypedContext")
             .field("monotonic_event_time", &self.monotonic_event_time())
             .field("monotonic_remote_time", &self.monotonic_remote_time())
+            .field("realtime_event_time", &self.realtime_event_time())
+            .field("realtime_remote_time", &self.realtime_remote_time())
             .field("queue_index", &self.queue_index())
             .field("remote_queue_index", &self.remote_queue_index())
             .field("message", &self.message())
@@ -1020,10 +1029,11 @@ pub struct Context<'context>(&'context ffi::aos::Context);
 
 impl fmt::Debug for Context<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // TODO(Brian): Add the realtime timestamps here.
         f.debug_struct("Context")
             .field("monotonic_event_time", &self.monotonic_event_time())
             .field("monotonic_remote_time", &self.monotonic_remote_time())
+            .field("realtime_event_time", &self.realtime_event_time())
+            .field("realtime_remote_time", &self.realtime_remote_time())
             .field("queue_index", &self.queue_index())
             .field("remote_queue_index", &self.remote_queue_index())
             .field("size", &self.data().map(|data| data.len()))
@@ -1033,7 +1043,6 @@ impl fmt::Debug for Context<'_> {
     }
 }
 
-// TODO(Brian): Add the realtime timestamps here.
 impl<'context> Context<'context> {
     pub fn monotonic_event_time(self) -> MonotonicInstant {
         MonotonicInstant(self.0.monotonic_event_time)
@@ -1041,6 +1050,14 @@ impl<'context> Context<'context> {
 
     pub fn monotonic_remote_time(self) -> MonotonicInstant {
         MonotonicInstant(self.0.monotonic_remote_time)
+    }
+
+    pub fn realtime_event_time(self) -> RealtimeInstant {
+        RealtimeInstant(self.0.realtime_event_time)
+    }
+
+    pub fn realtime_remote_time(self) -> RealtimeInstant {
+        RealtimeInstant(self.0.realtime_remote_time)
     }
 
     pub fn queue_index(self) -> u32 {
@@ -1093,9 +1110,6 @@ impl Future for OnRun {
 /// Represents a `aos::monotonic_clock::time_point` in a natural Rust way. This
 /// is intended to have the same API as [`std::time::Instant`], any missing
 /// functionality can be added if useful.
-///
-/// TODO(Brian): Do RealtimeInstant too. Use a macro? Integer as a generic
-/// parameter to distinguish them? Or just copy/paste?
 #[repr(transparent)]
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct MonotonicInstant(i64);
@@ -1120,6 +1134,34 @@ impl MonotonicInstant {
 }
 
 impl fmt::Debug for MonotonicInstant {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.duration_since_epoch().fmt(f)
+    }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub struct RealtimeInstant(i64);
+
+impl RealtimeInstant {
+    pub const MIN_TIME: Self = Self(i64::MIN);
+
+    pub fn is_min_time(self) -> bool {
+        self == Self::MIN_TIME
+    }
+
+    pub fn duration_since_epoch(self) -> Option<Duration> {
+        if self.is_min_time() {
+            None
+        } else {
+            Some(Duration::from_nanos(self.0.try_into().expect(
+                "monotonic_clock::time_point should always be after the epoch",
+            )))
+        }
+    }
+}
+
+impl fmt::Debug for RealtimeInstant {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.duration_since_epoch().fmt(f)
     }
