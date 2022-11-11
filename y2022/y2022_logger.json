@@ -502,7 +502,7 @@
   "applications": [
     {
       "name": "logger_message_bridge_client",
-      "executable_name": "message_bridge_client",
+      "executable_name": "message_bridge_client.sh",
       "args": ["--rmem=8388608", "--rt_priority=16"],
       "nodes": [
         "logger"
