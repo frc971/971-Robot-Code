@@ -339,22 +339,22 @@ func parseTeamKey(teamKey string) (int, error) {
 	teamKey = strings.TrimPrefix(teamKey, "frc")
 	magnitude := 0
 	if strings.HasSuffix(teamKey, "A") {
-		magnitude = 9
+		magnitude = 0
 		teamKey = strings.TrimSuffix(teamKey, "A")
 	} else if strings.HasSuffix(teamKey, "B") {
-		magnitude = 8
+		magnitude = 9
 		teamKey = strings.TrimSuffix(teamKey, "B")
 	} else if strings.HasSuffix(teamKey, "C") {
-		magnitude = 7
+		magnitude = 8
 		teamKey = strings.TrimSuffix(teamKey, "C")
 	} else if strings.HasSuffix(teamKey, "D") {
-		magnitude = 6
+		magnitude = 7
 		teamKey = strings.TrimSuffix(teamKey, "D")
 	} else if strings.HasSuffix(teamKey, "E") {
-		magnitude = 5
+		magnitude = 6
 		teamKey = strings.TrimSuffix(teamKey, "E")
 	} else if strings.HasSuffix(teamKey, "F") {
-		magnitude = 4
+		magnitude = 5
 		teamKey = strings.TrimSuffix(teamKey, "F")
 	}
 
