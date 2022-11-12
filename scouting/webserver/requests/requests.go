@@ -337,7 +337,31 @@ func (handler requestDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *
 func parseTeamKey(teamKey string) (int, error) {
 	// TBA prefixes teams with "frc". Not sure why. Get rid of that.
 	teamKey = strings.TrimPrefix(teamKey, "frc")
-	return strconv.Atoi(teamKey)
+	magnitude := 0
+	if strings.HasSuffix(teamKey, "A") {
+		magnitude = 10000
+		teamKey = strings.TrimSuffix(teamKey, "A")
+	} else if strings.HasSuffix(teamKey, "B") {
+		magnitude = 20000
+		teamKey = strings.TrimSuffix(teamKey, "B")
+	} else if strings.HasSuffix(teamKey, "C") {
+		magnitude = 30000
+		teamKey = strings.TrimSuffix(teamKey, "C")
+	} else if strings.HasSuffix(teamKey, "D") {
+		magnitude = 40000
+		teamKey = strings.TrimSuffix(teamKey, "D")
+	} else if strings.HasSuffix(teamKey, "E") {
+		magnitude = 50000
+		teamKey = strings.TrimSuffix(teamKey, "E")
+	} else if strings.HasSuffix(teamKey, "F") {
+		magnitude = 60000
+		teamKey = strings.TrimSuffix(teamKey, "F")
+	}
+	result, err := strconv.Atoi(teamKey)
+	if err == nil {
+		result += magnitude
+	}
+	return result, err
 }
 
 // Parses the alliance data from the specified match and returns the three red
