@@ -339,28 +339,30 @@ func parseTeamKey(teamKey string) (int, error) {
 	teamKey = strings.TrimPrefix(teamKey, "frc")
 	magnitude := 0
 	if strings.HasSuffix(teamKey, "A") {
-		magnitude = 10000
+		magnitude = 9
 		teamKey = strings.TrimSuffix(teamKey, "A")
 	} else if strings.HasSuffix(teamKey, "B") {
-		magnitude = 20000
+		magnitude = 8
 		teamKey = strings.TrimSuffix(teamKey, "B")
 	} else if strings.HasSuffix(teamKey, "C") {
-		magnitude = 30000
+		magnitude = 7
 		teamKey = strings.TrimSuffix(teamKey, "C")
 	} else if strings.HasSuffix(teamKey, "D") {
-		magnitude = 40000
+		magnitude = 6
 		teamKey = strings.TrimSuffix(teamKey, "D")
 	} else if strings.HasSuffix(teamKey, "E") {
-		magnitude = 50000
+		magnitude = 5
 		teamKey = strings.TrimSuffix(teamKey, "E")
 	} else if strings.HasSuffix(teamKey, "F") {
-		magnitude = 60000
+		magnitude = 4
 		teamKey = strings.TrimSuffix(teamKey, "F")
 	}
-	result, err := strconv.Atoi(teamKey)
-	if err == nil {
-		result += magnitude
+
+	if magnitude != 0 {
+		teamKey = strconv.Itoa(magnitude) + teamKey
 	}
+
+	result, err := strconv.Atoi(teamKey)
 	return result, err
 }
 
