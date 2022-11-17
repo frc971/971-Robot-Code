@@ -89,6 +89,37 @@ cc_library(
 )
 
 cc_library(
+    name = "target_mapper",
+    srcs = ["target_mapper.cc"],
+    hdrs = ["target_mapper.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":geometry_lib",
+        "//aos/events:simulated_event_loop",
+        "//frc971/control_loops:control_loop",
+        "//frc971/vision/ceres:pose_graph_2d_lib",
+        "//third_party:opencv",
+        "@com_google_ceres_solver//:ceres",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_test(
+    name = "target_mapper_test",
+    srcs = [
+        "target_mapper_test.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":target_mapper",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:random_seed",
+    ],
+)
+
+cc_library(
     name = "geometry_lib",
     hdrs = [
         "geometry.h",
