@@ -715,11 +715,11 @@ func TestNotes(t *testing.T) {
 
 	expected := []string{"Note 1", "Note 3"}
 
-	err := fixture.db.AddNotes(1234, "Note 1")
+	err := fixture.db.AddNotes(NotesData{TeamNumber: 1234, Notes: "Note 1", GoodDriving: true, BadDriving: false, SketchyClimb: false, SolidClimb: true, GoodDefense: false, BadDefense: true})
 	check(t, err, "Failed to add Note")
-	err = fixture.db.AddNotes(1235, "Note 2")
+	err = fixture.db.AddNotes(NotesData{TeamNumber: 1235, Notes: "Note 2", GoodDriving: false, BadDriving: true, SketchyClimb: false, SolidClimb: true, GoodDefense: false, BadDefense: false})
 	check(t, err, "Failed to add Note")
-	err = fixture.db.AddNotes(1234, "Note 3")
+	err = fixture.db.AddNotes(NotesData{TeamNumber: 1234, Notes: "Note 3", GoodDriving: true, BadDriving: false, SketchyClimb: false, SolidClimb: true, GoodDefense: true, BadDefense: false})
 	check(t, err, "Failed to add Note")
 
 	actual, err := fixture.db.QueryNotes(1234)

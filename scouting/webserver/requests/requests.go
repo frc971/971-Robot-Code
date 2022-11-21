@@ -67,7 +67,7 @@ type Database interface {
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryStats(int) ([]db.Stats, error)
 	QueryNotes(int32) ([]string, error)
-	AddNotes(int, string) error
+	AddNotes(db.NotesData) error
 }
 
 type ScrapeMatchList func(int32, string) ([]scraping.Match, error)
@@ -470,7 +470,16 @@ func (handler submitNoteScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 		return
 	}
 
-	err = handler.db.AddNotes(int(request.Team()), string(request.Notes()))
+	err = handler.db.AddNotes(db.NotesData{
+		TeamNumber:   request.Team(),
+		Notes:        string(request.Notes()),
+		GoodDriving:  bool(request.GoodDriving()),
+		BadDriving:   bool(request.BadDriving()),
+		SketchyClimb: bool(request.SketchyClimb()),
+		SolidClimb:   bool(request.SolidClimb()),
+		GoodDefense:  bool(request.GoodDefense()),
+		BadDefense:   bool(request.BadDefense()),
+	})
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert notes: %v", err))
 		return

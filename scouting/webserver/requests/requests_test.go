@@ -314,8 +314,14 @@ func TestSubmitNotes(t *testing.T) {
 
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&submit_notes.SubmitNotesT{
-		Team:  971,
-		Notes: "Notes",
+		Team:         971,
+		Notes:        "Notes",
+		GoodDriving:  true,
+		BadDriving:   false,
+		SketchyClimb: true,
+		SolidClimb:   false,
+		GoodDefense:  true,
+		BadDefense:   false,
 	}).Pack(builder))
 
 	_, err := debug.SubmitNotes("http://localhost:8080", builder.FinishedBytes())
@@ -324,7 +330,16 @@ func TestSubmitNotes(t *testing.T) {
 	}
 
 	expected := []db.NotesData{
-		{TeamNumber: 971, Notes: "Notes"},
+		{
+			TeamNumber:   971,
+			Notes:        "Notes",
+			GoodDriving:  true,
+			BadDriving:   false,
+			SketchyClimb: true,
+			SolidClimb:   false,
+			GoodDefense:  true,
+			BadDefense:   false,
+		},
 	}
 
 	if !reflect.DeepEqual(database.notes, expected) {
@@ -335,8 +350,14 @@ func TestSubmitNotes(t *testing.T) {
 func TestRequestNotes(t *testing.T) {
 	database := MockDatabase{
 		notes: []db.NotesData{{
-			TeamNumber: 971,
-			Notes:      "Notes",
+			TeamNumber:   971,
+			Notes:        "Notes",
+			GoodDriving:  true,
+			BadDriving:   false,
+			SketchyClimb: true,
+			SolidClimb:   false,
+			GoodDefense:  true,
+			BadDefense:   false,
 		}},
 	}
 	scoutingServer := server.NewScoutingServer()
@@ -594,11 +615,8 @@ func (database *MockDatabase) QueryNotes(requestedTeam int32) ([]string, error) 
 	return results, nil
 }
 
-func (database *MockDatabase) AddNotes(teamNumber int, notes string) error {
-	database.notes = append(database.notes, db.NotesData{
-		TeamNumber: int32(teamNumber),
-		Notes:      notes,
-	})
+func (database *MockDatabase) AddNotes(data db.NotesData) error {
+	database.notes = append(database.notes, data)
 	return nil
 }
 

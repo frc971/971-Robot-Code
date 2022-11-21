@@ -6,7 +6,6 @@
   width: calc(100% - 20px);
 }
 
-.buttons {
-  display: flex;
-  justify-content: space-between;
+.container-main {
+  padding-left: 20px;
 }

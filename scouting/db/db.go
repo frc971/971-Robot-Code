@@ -67,9 +67,15 @@ type Stats struct {
 }
 
 type NotesData struct {
-	ID         uint `gorm:"primaryKey"`
-	TeamNumber int32
-	Notes      string
+	ID           uint `gorm:"primaryKey"`
+	TeamNumber   int32
+	Notes        string
+	GoodDriving  bool
+	BadDriving   bool
+	SketchyClimb bool
+	SolidClimb   bool
+	GoodDefense  bool
+	BadDefense   bool
 }
 
 type Ranking struct {
@@ -253,10 +259,16 @@ func (database *Database) QueryRankings(TeamNumber int) ([]Ranking, error) {
 	return rankins, result.Error
 }
 
-func (database *Database) AddNotes(teamNumber int, data string) error {
+func (database *Database) AddNotes(data NotesData) error {
 	result := database.Create(&NotesData{
-		TeamNumber: int32(teamNumber),
-		Notes:      data,
+		TeamNumber:   data.TeamNumber,
+		Notes:        data.Notes,
+		GoodDriving:  data.GoodDriving,
+		BadDriving:   data.BadDriving,
+		SketchyClimb: data.SketchyClimb,
+		SolidClimb:   data.SolidClimb,
+		GoodDefense:  data.GoodDefense,
+		BadDefense:   data.BadDefense,
 	})
 	return result.Error
 }

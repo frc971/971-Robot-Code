@@ -2,9 +2,9 @@
 
 <ng-container [ngSwitch]="section">
   <div *ngSwitchCase="'TeamSelection'">
-    <label for="team_number_notes">Team Number</label>
+    <label class="label" for="team_number_notes">Team Number</label>
     <input
-      [(ngModel)]="teamNumber"
+      [(ngModel)]="teamNumberSelection"
       type="number"
       id="team_number_notes"
       min="1"
@@ -14,17 +14,85 @@
   </div>
 
   <div *ngSwitchCase="'Data'">
-    <h3>Scouting team: {{teamNumber}}</h3>
-    <ul *ngFor="let note of notes">
-      <li class="note">{{ note.data }}</li>
-    </ul>
-    <textarea class="text-input" [(ngModel)]="newData"></textarea>
-    <div class="buttons">
-      <button class="btn btn-primary" (click)="changeTeam()">
-        Change team
-      </button>
-      <button class="btn btn-primary" (click)="submitData()">Submit</button>
+    <div class="container-main" *ngFor="let team of newData; let i = index">
+      <div class="pt-2 pb-2">
+        <div class="d-flex flex-row">
+          <div>
+            <button
+              class="btn bg-transparent ml-10 md-5"
+              (click)="removeTeam(i)"
+            >
+              &#10006;
+              <!--X Symbol-->
+            </button>
+          </div>
+          <div><h3>{{team.teamNumber}}</h3></div>
+        </div>
+        <div class="">
+          <textarea
+            class="text-input"
+            [(ngModel)]="newData[i].notesData"
+          ></textarea>
+        </div>
+        <!--Key Word Checkboxes-->
+        <!--Row 1 (Prevent Overflow on mobile by splitting checkboxes into 2 rows)-->
+        <!--Slice KEYWORD_CHECKBOX_LABELS using https://angular.io/api/common/SlicePipe-->
+        <div class="d-flex flex-row justify-content-around">
+          <div
+            *ngFor="let key of Object.keys(KEYWORD_CHECKBOX_LABELS) | slice:0:((Object.keys(KEYWORD_CHECKBOX_LABELS).length)/2); let k = index"
+          >
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                [(ngModel)]="newData[i]['keywordsData'][key]"
+                type="checkbox"
+                id="{{KEYWORD_CHECKBOX_LABELS[key]}}_{{i}}"
+                name="{{KEYWORD_CHECKBOX_LABELS[key]}}"
+              />
+              <label
+                class="form-check-label"
+                for="{{KEYWORD_CHECKBOX_LABELS[key]}}_{{i}}"
+              >
+                {{KEYWORD_CHECKBOX_LABELS[key]}}
+              </label>
+              <br />
+            </div>
+          </div>
+        </div>
+        <!--Row 2 (Prevent Overflow on mobile by splitting checkboxes into 2 rows)-->
+        <div class="d-flex flex-row justify-content-around">
+          <div
+            *ngFor="let key of Object.keys(KEYWORD_CHECKBOX_LABELS) | slice:3:(Object.keys(KEYWORD_CHECKBOX_LABELS).length); let k = index"
+          >
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                [(ngModel)]="newData[i]['keywordsData'][key]"
+                type="checkbox"
+                id="{{KEYWORD_CHECKBOX_LABELS[key]}}"
+                name="{{KEYWORD_CHECKBOX_LABELS[key]}}"
+              />
+              <label
+                class="form-check-label"
+                for="{{KEYWORD_CHECKBOX_LABELS[key]}}"
+              >
+                {{KEYWORD_CHECKBOX_LABELS[key]}}
+              </label>
+              <br />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex flex-row justify-content-center pt-2">
+      <div>
+        <button class="btn btn-secondary" (click)="addTeam()">Add team</button>
+      </div>
+      <div>
+        <button class="btn btn-success" (click)="submitData()">Submit</button>
+      </div>
     </div>
   </div>
+
   <div class="error">{{errorMessage}}</div>
 </ng-container>

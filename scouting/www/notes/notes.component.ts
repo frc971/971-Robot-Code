@@ -9,11 +9,57 @@ import {
 import {SubmitNotes} from 'org_frc971/scouting/webserver/requests/messages/submit_notes_generated';
 import {SubmitNotesResponse} from 'org_frc971/scouting/webserver/requests/messages/submit_notes_response_generated';
 
+/*
+For new games, the keywords being used will likely need to be updated.
+To update the keywords complete the following: 
+  1) Update the Keywords Interface and KEYWORD_CHECKBOX_LABELS in notes.component.ts
+    The keys of Keywords and KEYWORD_CHECKBOX_LABELS should match.
+  2) In notes.component.ts, update the setTeamNumber() method with the new keywords.
+  3) Add/Edit the new keywords in /scouting/webserver/requests/messages/submit_notes.fbs.
+  4) In notes.component.ts, update the submitData() method with the newKeywords 
+    so that it matches the updated flatbuffer
+  5) In db.go, update the NotesData struct and the 
+    AddNotes method with the new keywords        
+  6) In db_test.go update the TestNotes method so the test uses the keywords
+  7) Update the submitNoteScoutingHandler in requests.go with the new keywords
+  8) Finally, update the corresponding test in requests_test.go (TestSubmitNotes)
+  
+  Note: If you change the number of keywords you might need to 
+    update how they are displayed in notes.ng.html 
+*/
+
+// TeamSelection: Display form to add a team to the teams being scouted.
+// Data: Display the note textbox and keyword selection form
+// for all the teams being scouted.
 type Section = 'TeamSelection' | 'Data';
 
-interface Note {
-  readonly data: string;
+// Every keyword checkbox corresponds to a boolean.
+// If the boolean is True, the checkbox is selected
+// and the note scout saw that the robot being scouted
+// displayed said property (ex. Driving really well -> goodDriving)
+interface Keywords {
+  goodDriving: boolean;
+  badDriving: boolean;
+  sketchyClimb: boolean;
+  solidClimb: boolean;
+  goodDefense: boolean;
+  badDefense: boolean;
 }
+
+interface Input {
+  teamNumber: number;
+  notesData: string;
+  keywordsData: Keywords;
+}
+
+const KEYWORD_CHECKBOX_LABELS = {
+  goodDriving: 'Good Driving',
+  badDriving: 'Bad Driving',
+  solidClimb: 'Solid Climb',
+  sketchyClimb: 'Sketchy Climb',
+  goodDefense: 'Good Defense',
+  badDefense: 'Bad Defense',
+} as const;
 
 @Component({
   selector: 'frc971-notes',
@@ -21,76 +67,88 @@ interface Note {
   styleUrls: ['../common.css', './notes.component.css'],
 })
 export class Notes {
+  // Re-export KEYWORD_CHECKBOX_LABELS so that we can
+  // use it in the checkbox properties.
+  readonly KEYWORD_CHECKBOX_LABELS = KEYWORD_CHECKBOX_LABELS;
+
+  // Necessary in order to iterate the keys of KEYWORD_CHECKBOX_LABELS.
+  Object = Object;
+
   section: Section = 'TeamSelection';
-  notes: Note[] = [];
 
   errorMessage = '';
+  teamNumberSelection: number = 971;
 
-  teamNumber: number = 971;
-  newData = '';
+  // Data inputted by user is stored in this array.
+  // Includes the team number, notes, and keyword selection.
+  newData: Input[] = [];
 
-  async setTeamNumber() {
-    const builder = new Builder();
-    RequestNotesForTeam.startRequestNotesForTeam(builder);
-    RequestNotesForTeam.addTeam(builder, this.teamNumber);
-    builder.finish(RequestNotesForTeam.endRequestNotesForTeam(builder));
+  setTeamNumber() {
+    let data: Input = {
+      teamNumber: this.teamNumberSelection,
+      notesData: '',
+      keywordsData: {
+        goodDriving: false,
+        badDriving: false,
+        solidClimb: false,
+        sketchyClimb: false,
+        goodDefense: false,
+        badDefense: false,
+      },
+    };
 
-    const buffer = builder.asUint8Array();
-    const res = await fetch('/requests/request/notes_for_team', {
-      method: 'POST',
-      body: buffer,
-    });
+    this.newData.push(data);
+    this.section = 'Data';
+  }
 
-    const resBuffer = await res.arrayBuffer();
-    const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
-
-    if (res.ok) {
-      this.notes = [];
-      const parsedResponse =
-        RequestNotesForTeamResponse.getRootAsRequestNotesForTeamResponse(
-          fbBuffer
-        );
-      for (let i = 0; i < parsedResponse.notesLength(); i++) {
-        const fbNote = parsedResponse.notes(i);
-        this.notes.push({data: fbNote.data()});
-      }
-      this.section = 'Data';
+  removeTeam(index: number) {
+    this.newData.splice(index, 1);
+    if (this.newData.length == 0) {
+      this.section = 'TeamSelection';
     } else {
-      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
-
-      const errorMessage = parsedResponse.errorMessage();
-      this.errorMessage = `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
+      this.section = 'Data';
     }
   }
 
-  changeTeam() {
+  addTeam() {
     this.section = 'TeamSelection';
   }
 
   async submitData() {
-    const builder = new Builder();
-    const dataFb = builder.createString(this.newData);
-    builder.finish(
-      SubmitNotes.createSubmitNotes(builder, this.teamNumber, dataFb)
-    );
+    for (let i = 0; i < this.newData.length; i++) {
+      const builder = new Builder();
+      const dataFb = builder.createString(this.newData[i].notesData);
+      builder.finish(
+        SubmitNotes.createSubmitNotes(
+          builder,
+          this.newData[i].teamNumber,
+          dataFb,
+          this.newData[i].keywordsData.goodDriving,
+          this.newData[i].keywordsData.badDriving,
+          this.newData[i].keywordsData.sketchyClimb,
+          this.newData[i].keywordsData.solidClimb,
+          this.newData[i].keywordsData.goodDefense,
+          this.newData[i].keywordsData.badDefense
+        )
+      );
 
-    const buffer = builder.asUint8Array();
-    const res = await fetch('/requests/submit/submit_notes', {
-      method: 'POST',
-      body: buffer,
-    });
+      const buffer = builder.asUint8Array();
+      const res = await fetch('/requests/submit/submit_notes', {
+        method: 'POST',
+        body: buffer,
+      });
 
-    if (res.ok) {
-      this.newData = '';
-      this.errorMessage = '';
-      await this.setTeamNumber();
-    } else {
-      const resBuffer = await res.arrayBuffer();
-      const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
-      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
-
-      const errorMessage = parsedResponse.errorMessage();
-      this.errorMessage = `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
+      if (!res.ok) {
+        const resBuffer = await res.arrayBuffer();
+        const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
+        const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
+        const errorMessage = parsedResponse.errorMessage();
+        this.errorMessage = `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
+      }
     }
+
+    this.newData = [];
+    this.errorMessage = '';
+    this.section = 'TeamSelection';
   }
 }
