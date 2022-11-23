@@ -1,0 +1,29 @@
+include "../../configuration.fbs";
+
+namespace aos;
+
+// A flatbuffer table to store the RemapChannel used inside ReplayConfig
+table RemapChannel {
+  // table Channel defined in configuration.fbs
+  // Specify the old channel's name, type and other contents of the table
+  channel:Channel(id : 0);
+  // A prefix used for remapping the channel from /channel_name to
+  // /prefix/channel_name
+  prefix:string(id : 1);
+  // new type for the remapped channel
+  new_type:string(id : 2);
+}
+
+// A flatbuffer message to store the replay config
+// This is used to replay a log with specific applications, active nodes and
+// remaps the channels if needed
+table ReplayConfig {
+  // applications on which log needs to be replayed
+  applications:[Application](id : 0);
+  // Specify the nodes which need to be replayed
+  active_nodes:[Node](id : 1);
+// Specify the channels in the config which need to be remapped
+  remap_channels:[RemapChannel](id : 2);
+}
+
+root_type ReplayConfig;
