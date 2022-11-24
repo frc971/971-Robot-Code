@@ -48,7 +48,10 @@ class FieldWidget(Gtk.DrawingArea):
         # init editing / viewing modes and pointer location
         self.mode = Mode.kPlacing
         self.mousex = 0
+        self.lastx = 0
         self.mousey = 0
+        self.lasty = 0
+        self.drag_start = None
         self.module_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         self.path_to_export = os.path.join(self.module_path,
                                            'points_for_pathedit.json')
@@ -406,6 +409,8 @@ class FieldWidget(Gtk.DrawingArea):
             self.queue_draw()
 
     def do_button_release_event(self, event):
+        self.drag_start = None
+
         self.attempt_append_multisplines()
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
@@ -429,6 +434,9 @@ class FieldWidget(Gtk.DrawingArea):
     def do_button_press_event(self, event):
         self.mousex, self.mousey = self.input_transform.transform_point(
             event.x, event.y)
+
+        self.lastx = event.x
+        self.lasty = event.y
 
         if self.mode == Mode.kPlacing:
             if self.active_multispline.addPoint(self.mousex, self.mousey):
@@ -462,6 +470,9 @@ class FieldWidget(Gtk.DrawingArea):
                                 index_multisplines, index_splines,
                                 index_points)
 
+                if self.control_point_index == None:
+                    self.drag_start = (event.x, event.y)
+
             multispline, result = Multispline.nearest_distance(
                 self.multisplines, cur_p)
             if result and result.fun < 0.1:
@@ -484,6 +495,14 @@ class FieldWidget(Gtk.DrawingArea):
 
             multispline.update_lib_spline()
             self.graph.schedule_recalculate(self.multisplines)
+
+        if self.mode == Mode.kEditing and self.drag_start != None and self.control_point_index == None:
+
+            self.zoom_transform.translate(event.x - self.lastx,
+                                          event.y - self.lasty)
+            self.lastx = event.x
+            self.lasty = event.y
+
         self.queue_draw()
 
     def do_scroll_event(self, event):
@@ -505,9 +524,9 @@ class FieldWidget(Gtk.DrawingArea):
         scale = (self.field.width + scale_by) / self.field.width
 
         # This restricts the amount it can be scaled.
-        if self.zoom_transform.xx <= 0.5:
+        if self.zoom_transform.xx <= 0.05:
             scale = max(scale, 1)
-        elif self.zoom_transform.xx >= 16:
+        elif self.zoom_transform.xx >= 32:
             scale = min(scale, 1)
 
         # undo the scaled translation that the old zoom transform did
