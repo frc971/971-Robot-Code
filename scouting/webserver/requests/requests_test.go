@@ -24,6 +24,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
@@ -560,14 +561,44 @@ func TestRefreshMatchList(t *testing.T) {
 	}
 }
 
+func TestSubmitDriverRanking(t *testing.T) {
+	database := MockDatabase{}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&database, scrapeEmtpyMatchList, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&submit_driver_ranking.SubmitDriverRankingT{
+		MatchNumber: 36,
+		Rank1:       1234,
+		Rank2:       1235,
+		Rank3:       1236,
+	}).Pack(builder))
+
+	_, err := debug.SubmitDriverRanking("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to submit driver ranking: ", err)
+	}
+
+	expected := []db.DriverRankingData{
+		{MatchNumber: 36, Rank1: 1234, Rank2: 1235, Rank3: 1236},
+	}
+
+	if !reflect.DeepEqual(database.driver_ranking, expected) {
+		t.Fatal("Submitted notes did not match", expected, database.notes)
+	}
+}
+
 // A mocked database we can use for testing. Add functionality to this as
 // needed for your tests.
 
 type MockDatabase struct {
-	matches       []db.Match
-	stats         []db.Stats
-	notes         []db.NotesData
-	shiftSchedule []db.Shift
+	matches        []db.Match
+	stats          []db.Stats
+	notes          []db.NotesData
+	shiftSchedule  []db.Shift
+	driver_ranking []db.DriverRankingData
 }
 
 func (database *MockDatabase) AddToMatch(match db.Match) error {
@@ -631,6 +662,11 @@ func (database *MockDatabase) ReturnAllShifts() ([]db.Shift, error) {
 
 func (database *MockDatabase) QueryAllShifts(int) ([]db.Shift, error) {
 	return []db.Shift{}, nil
+}
+
+func (database *MockDatabase) AddDriverRanking(data db.DriverRankingData) error {
+	database.driver_ranking = append(database.driver_ranking, data)
+	return nil
 }
 
 // Returns an empty match list from the fake The Blue Alliance scraping.

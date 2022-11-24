@@ -1,0 +1,8 @@
+namespace scouting.webserver.requests;
+
+table SubmitDriverRankingResponse {
+    // empty response
+}
+
+root_type SubmitDriverRankingResponse;
+

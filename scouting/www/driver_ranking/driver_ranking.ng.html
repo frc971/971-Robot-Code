@@ -1,0 +1,51 @@
+<h2>Driver Ranking</h2>
+
+<ng-container [ngSwitch]="section">
+  <div *ngSwitchCase="'TeamSelection'">
+    <label for="match_number_selection">Match Number</label>
+    <input
+      [(ngModel)]="match_number"
+      type="number"
+      id="match_number_selection"
+      min="1"
+      max="9999"
+    />
+    <br />
+    <br />
+    <label>Team Numbers</label>
+    <input
+      *ngFor="let x of [1,2,3]; let i = index;"
+      [(ngModel)]="team_ranking[i]"
+      type="number"
+      min="1"
+      max="9999"
+    />
+    <button class="btn btn-primary" (click)="setTeamNumbers()">Select</button>
+  </div>
+  <div *ngSwitchCase="'Data'">
+    <h4>Match #{{match_number}}</h4>
+    <div *ngFor="let team_key of team_ranking; let i = index">
+      <div class="d-flex flex-row justify-content-center pt-2">
+        <div class="d-flex flex-row">
+          <h4 class="align-self-center">{{i + 1}}</h4>
+          <h1 class="align-self-center">{{team_key}}</h1>
+        </div>
+        <button class="btn btn-success" (click)="rankUp(i)">&uarr;</button>
+        <!--&uarr; is the html code for an up arrow-->
+        <button class="btn btn-danger" (click)="rankDown(i)">&darr;</button>
+        <!--&darr; is the html code for a down arrow-->
+      </div>
+    </div>
+    <div class="d-flex flex-row justify-content-center pt-2">
+      <div>
+        <button class="btn btn-secondary" (click)="editTeams()">
+          Edit Teams
+        </button>
+      </div>
+      <div>
+        <button class="btn btn-success" (click)="submitData()">Submit</button>
+      </div>
+    </div>
+  </div>
+  <div class="error">{{errorMessage}}</div>
+</ng-container>

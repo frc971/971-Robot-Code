@@ -32,6 +32,8 @@ exports_files([
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response //scouting/webserver/requests/messages:request_shift_schedule_response_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule //scouting/webserver/requests/messages:submit_shift_schedule_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule_response //scouting/webserver/requests/messages:submit_shift_schedule_response_go_fbs
+# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking //scouting/webserver/requests/messages:submit_driver_ranking_go_fbs
+# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response //scouting/webserver/requests/messages:submit_driver_ranking_response_go_fbs
 
 gazelle(
     name = "gazelle",

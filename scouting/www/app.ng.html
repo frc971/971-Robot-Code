@@ -40,6 +40,15 @@
   <li class="nav-item">
     <a
       class="nav-link"
+      [class.active]="tabIs('DriverRanking')"
+      (click)="switchTabToGuarded('DriverRanking')"
+    >
+      Driver Ranking
+    </a>
+  </li>
+  <li class="nav-item">
+    <a
+      class="nav-link"
       [class.active]="tabIs('ImportMatchList')"
       (click)="switchTabToGuarded('ImportMatchList')"
     >
@@ -80,6 +89,7 @@
     *ngSwitchCase="'Entry'"
   ></app-entry>
   <frc971-notes *ngSwitchCase="'Notes'"></frc971-notes>
+  <app-driver-ranking *ngSwitchCase="'DriverRanking'"></app-driver-ranking>
   <app-import-match-list
     *ngSwitchCase="'ImportMatchList'"
   ></app-import-match-list>

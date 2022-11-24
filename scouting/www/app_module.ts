@@ -9,6 +9,7 @@ import {MatchListModule} from './match_list/match_list.module';
 import {NotesModule} from './notes/notes.module';
 import {ShiftScheduleModule} from './shift_schedule/shift_schedule.module';
 import {ViewModule} from './view/view.module';
+import {DriverRankingModule} from './driver_ranking/driver_ranking.module';
 
 @NgModule({
   declarations: [App],
@@ -20,6 +21,7 @@ import {ViewModule} from './view/view.module';
     ImportMatchListModule,
     MatchListModule,
     ShiftScheduleModule,
+    DriverRankingModule,
     ViewModule,
   ],
   exports: [App],

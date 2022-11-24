@@ -4,6 +4,7 @@ type Tab =
   | 'MatchList'
   | 'Notes'
   | 'Entry'
+  | 'DriverRanking'
   | 'ImportMatchList'
   | 'ShiftSchedule'
   | 'View';
