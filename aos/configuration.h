@@ -212,7 +212,20 @@ int QueueSize(size_t frequency,
 // Returns the number of scratch buffers in the queue.
 int QueueScratchBufferSize(const Channel *channel);
 
-// TODO(austin): GetSchema<T>(const Flatbuffer<Configuration> &config);
+// Searches through configurations for schemas that include a certain type.
+const reflection::Schema *GetSchema(const Configuration *config,
+                                    std::string_view schema_type);
+
+// GetSchema template
+template <typename T>
+const reflection::Schema *GetSchema(const Configuration *config) {
+  return GetSchema(config, T::GetFullyQualifiedName());
+}
+
+// Copy schema reflection into detached flatbuffer
+std::optional<FlatbufferDetachedBuffer<reflection::Schema>>
+GetSchemaDetachedBuffer(const Configuration *config,
+                        std::string_view schema_type);
 
 }  // namespace configuration
 
@@ -222,6 +235,7 @@ bool operator<(const FlatbufferDetachedBuffer<Channel> &lhs,
                const FlatbufferDetachedBuffer<Channel> &rhs);
 bool operator==(const FlatbufferDetachedBuffer<Channel> &lhs,
                 const FlatbufferDetachedBuffer<Channel> &rhs);
+
 }  // namespace aos
 
 #endif  // AOS_CONFIGURATION_H_

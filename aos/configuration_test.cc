@@ -1,6 +1,7 @@
 #include "aos/configuration.h"
 
 #include "absl/strings/strip.h"
+#include "aos/events/ping_generated.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/flatbuffer_eq.h"
 #include "aos/testing/path.h"
@@ -1007,8 +1008,45 @@ TEST_F(ConfigurationTest, QueueScratchBufferSize) {
       JsonToFlatbuffer<Channel>(
           "{ \"name\": \"/foo\", \"type\": \".aos.bar\", \"num_readers\": 5, "
           "\"num_senders\": 10 }");
-
   EXPECT_EQ(QueueScratchBufferSize(&channel.message()), 15);
+}
+
+// Tests that GetSchema returns schema of specified type
+TEST_F(ConfigurationTest, GetSchema) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig(ArtifactPath("aos/events/pingpong_config.json"));
+  FlatbufferVector<reflection::Schema> expected_schema =
+      FileToFlatbuffer<reflection::Schema>(
+          ArtifactPath("aos/events/ping.bfbs"));
+  EXPECT_EQ(FlatbufferToJson(GetSchema(&config.message(), "aos.examples.Ping")),
+            FlatbufferToJson(expected_schema));
+  EXPECT_EQ(GetSchema(&config.message(), "invalid_name"), nullptr);
+}
+
+// Tests that GetSchema template returns schema of specified type
+TEST_F(ConfigurationTest, GetSchemaTemplate) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig(ArtifactPath("aos/events/pingpong_config.json"));
+  FlatbufferVector<reflection::Schema> expected_schema =
+      FileToFlatbuffer<reflection::Schema>(
+          ArtifactPath("aos/events/ping.bfbs"));
+  EXPECT_EQ(FlatbufferToJson(GetSchema<aos::examples::Ping>(&config.message())),
+            FlatbufferToJson(expected_schema));
+}
+
+// Tests that GetSchemaDetachedBuffer returns detached buffer of specified type
+TEST_F(ConfigurationTest, GetSchemaDetachedBuffer) {
+  FlatbufferDetachedBuffer<Configuration> config =
+      ReadConfig(ArtifactPath("aos/events/pingpong_config.json"));
+  FlatbufferVector<reflection::Schema> expected_schema =
+      FileToFlatbuffer<reflection::Schema>(
+          ArtifactPath("aos/events/ping.bfbs"));
+  EXPECT_EQ(FlatbufferToJson(
+                GetSchemaDetachedBuffer(&config.message(), "aos.examples.Ping")
+                    .value()),
+            FlatbufferToJson(expected_schema));
+  EXPECT_EQ(GetSchemaDetachedBuffer(&config.message(), "invalid_name"),
+            std::nullopt);
 }
 
 }  // namespace testing
