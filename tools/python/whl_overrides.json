@@ -131,6 +131,10 @@
         "sha256": "4f4e1c4aa54fb86316a62a87b3378c025e228178d55481d30d857c6c438897d6",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/watchdog-2.1.9-py3-none-manylinux2014_x86_64.whl"
     },
+    "yapf==0.32.0": {
+        "sha256": "8fea849025584e486fd06d6ba2bed717f396080fd3cc236ba10cb97c4c51cf32",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/yapf-0.32.0-py2.py3-none-any.whl"
+    },
     "zipp==3.8.1": {
         "sha256": "47c40d7fe183a6f21403a199b3e4192cca5774656965b0a4988ad2f8feb5f009",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/zipp-3.8.1-py3-none-any.whl"
