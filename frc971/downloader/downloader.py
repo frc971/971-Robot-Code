@@ -75,6 +75,25 @@ def main(argv):
     ssh_path = "external/ssh/ssh"
     scp_path = "external/ssh/scp"
 
+    # install jq
+    try:
+        subprocess.check_call([ssh_path, ssh_target, "jq", "--version"],
+                              stdout=subprocess.DEVNULL)
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 127:
+            print("Didn't find jq on roboRIO, installing jq.")
+            install(ssh_target, "jq-lic_1.5-r0.35_cortexa9-vfpv3.ipk", 'extra',
+                    ssh_path, scp_path)
+            install(ssh_target, "libonig-lic_5.9.6-r0.27_cortexa9-vfpv3.ipk",
+                    'extra', ssh_path, scp_path)
+            install(ssh_target, "libonig2_5.9.6-r0.27_cortexa9-vfpv3.ipk",
+                    'extra', ssh_path, scp_path)
+            install(ssh_target, "jq_1.5-r0.35_cortexa9-vfpv3.ipk", 'extra',
+                    ssh_path, scp_path)
+
+            subprocess.check_call([ssh_path, ssh_target, "jq", "--version"],
+                                  stdout=subprocess.DEVNULL)
+
     # Since rsync is pretty fixed in what it can do, build up a temporary
     # directory with the exact contents we want the target to have.  This
     # is faster than multiple SSH connections.
