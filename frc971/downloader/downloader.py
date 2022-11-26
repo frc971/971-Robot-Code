@@ -14,10 +14,10 @@ import os
 import shutil
 
 
-def install(ssh_target, pkg, ssh_path, scp_path):
+def install(ssh_target, pkg, channel, ssh_path, scp_path):
     """Installs a package from NI on the ssh target."""
     print("Installing", pkg)
-    PKG_URL = "http://download.ni.com/ni-linux-rt/feeds/2015/arm/ipk/cortexa9-vfpv3/" + pkg
+    PKG_URL = f"http://download.ni.com/ni-linux-rt/feeds/academic/2023/arm/{channel}/cortexa9-vfpv3/{pkg}"
     subprocess.check_call(["wget", PKG_URL, "-O", pkg])
     try:
         subprocess.check_call(
@@ -129,12 +129,12 @@ def main(argv):
         except subprocess.CalledProcessError as e:
             if e.returncode == 127 or e.returncode == 12:
                 print("Unconfigured roboRIO, installing rsync.")
-                install(ssh_target, "libattr1_2.4.47-r0.36_cortexa9-vfpv3.ipk",
-                        ssh_path, scp_path)
-                install(ssh_target, "libacl1_2.2.52-r0.36_cortexa9-vfpv3.ipk",
-                        ssh_path, scp_path)
-                install(ssh_target, "rsync_3.1.0-r0.7_cortexa9-vfpv3.ipk",
-                        ssh_path, scp_path)
+                install(ssh_target, "libacl1_2.2.52-r0.310_cortexa9-vfpv3.ipk",
+                        'main', ssh_path, scp_path)
+                install(ssh_target, "rsync-lic_3.1.3-r0.23_cortexa9-vfpv3.ipk",
+                        'extra', ssh_path, scp_path)
+                install(ssh_target, "rsync_3.1.3-r0.23_cortexa9-vfpv3.ipk",
+                        'extra', ssh_path, scp_path)
                 subprocess.check_call(rsync_cmd)
             elif e.returncode == 11:
                 # Directory wasn't created, make it and try again.  This keeps the happy path fast.

@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # Note: this should be run from within bazel
+#       and before /home/admin/bin is created by :download_stripped
 
 set -Eeuo pipefail
 
