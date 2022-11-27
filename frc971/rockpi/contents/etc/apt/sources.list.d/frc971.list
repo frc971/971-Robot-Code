@@ -1,0 +1,1 @@
+deb [trusted=yes] https://software.frc971.org/Build-Dependencies/gstreamer_bullseye_arm64_deps ./
