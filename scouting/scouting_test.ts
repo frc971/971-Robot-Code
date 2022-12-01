@@ -322,4 +322,36 @@ describe('The scouting web page', () => {
       await element(by.buttonText('Flip')).click();
     }
   });
+
+  it('should: submit note scouting for multiple teams', async () => {
+    // Navigate to Notes Page.
+    await loadPage();
+    await element(by.cssContainingText('.nav-link', 'Notes')).click();
+    expect(await element(by.id('page-title')).getText()).toEqual('Notes');
+
+    // Add first team.
+    await setTextboxByIdTo('team_number_notes', '1234');
+    await element(by.buttonText('Select')).click();
+
+    // Add note and select keyword for first team.
+    expect(await element(by.id('team-key-1')).getText()).toEqual('1234');
+    await element(by.id('text-input-1')).sendKeys('Good Driving');
+    await element(by.id('Good Driving_0')).click();
+
+    // Navigate to add team selection and add another team.
+    await element(by.id('add-team-button')).click();
+    await setTextboxByIdTo('team_number_notes', '1235');
+    await element(by.buttonText('Select')).click();
+
+    // Add note and select keyword for second team.
+    expect(await element(by.id('team-key-2')).getText()).toEqual('1235');
+    await element(by.id('text-input-2')).sendKeys('Bad Driving');
+    await element(by.id('Bad Driving_1')).click();
+
+    // Submit Notes.
+    await element(by.buttonText('Submit')).click();
+    expect(await element(by.id('team_number_label')).getText()).toEqual(
+      'Team Number'
+    );
+  });
 });
