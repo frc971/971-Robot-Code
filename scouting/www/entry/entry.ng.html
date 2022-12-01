@@ -254,10 +254,6 @@
       </label>
       <br />
     </form>
-    <div class="row">
-      <h4>Comments</h4>
-      <textarea [(ngModel)]="comment" id="comment"></textarea>
-    </div>
     <div class="buttons">
       <button class="btn btn-primary" (click)="prevSection()">Back</button>
       <button class="btn btn-primary" (click)="nextSection()">Next</button>
@@ -360,6 +356,15 @@
       </form>
     </div>
 
+    <div class="row">
+      <h4>General Comments About Match</h4>
+      <textarea
+        [(ngModel)]="comment"
+        id="comment"
+        placeholder="optional"
+      ></textarea>
+    </div>
+
     <div class="buttons">
       <button class="btn btn-primary" (click)="prevSection()">Back</button>
       <button class="btn btn-primary" (click)="nextSection()">Next</button>
@@ -398,7 +403,6 @@
     <h4>Climb</h4>
     <ul>
       <li>Climb Level: {{level | levelToString}}</li>
-      <li>Comments: {{comment}}</li>
     </ul>
 
     <h4>Other</h4>
@@ -410,6 +414,7 @@
       <li>Battery died: {{batteryDied}}</li>
       <li>Broke (mechanically): {{mechanicallyBroke}}</li>
       <li>Lost coms: {{lostComs}}</li>
+      <li>Comments: {{comment}}</li>
     </ul>
 
     <span class="error_message">{{ errorMessage }}</span>

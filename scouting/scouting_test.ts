@@ -241,7 +241,6 @@ describe('The scouting web page', () => {
 
     expect(await getHeadingText()).toEqual('Climb');
     await element(by.id('high')).click();
-    await setTextboxByIdTo('comment', 'A very useful comment here.');
     await element(by.buttonText('Next')).click();
 
     expect(await getHeadingText()).toEqual('Other');
@@ -249,6 +248,7 @@ describe('The scouting web page', () => {
     await adjustNthSliderBy(1, 1);
     await element(by.id('no_show')).click();
     await element(by.id('mechanically_broke')).click();
+    await setTextboxByIdTo('comment', 'A very useful comment here.');
     await element(by.buttonText('Next')).click();
 
     expect(await getHeadingText()).toEqual('Review and Submit');
@@ -273,7 +273,6 @@ describe('The scouting web page', () => {
 
     // Validate Climb.
     await expectReviewFieldToBe('Climb Level', 'High');
-    await expectReviewFieldToBe('Comments', 'A very useful comment here.');
 
     // Validate Other.
     await expectReviewFieldToBe('Defense Played On Rating', '3');
@@ -282,6 +281,7 @@ describe('The scouting web page', () => {
     await expectReviewFieldToBe('Never moved', 'false');
     await expectReviewFieldToBe('Battery died', 'false');
     await expectReviewFieldToBe('Broke (mechanically)', 'true');
+    await expectReviewFieldToBe('Comments', 'A very useful comment here.');
 
     await element(by.buttonText('Submit')).click();
     await browser.wait(
