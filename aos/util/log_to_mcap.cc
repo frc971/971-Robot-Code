@@ -41,8 +41,8 @@ int main(int argc, char *argv[]) {
   }
 
   aos::logger::LogReader reader(logfiles);
-
-  reader.Register();
+  aos::SimulatedEventLoopFactory factory(reader.configuration());
+  reader.RegisterWithoutStarting(&factory);
 
   const aos::Node *node =
       (replay_node.empty() ||
@@ -63,4 +63,5 @@ int main(int argc, char *argv[]) {
       FLAGS_compress ? aos::McapLogger::Compression::kLz4
                      : aos::McapLogger::Compression::kNone);
   reader.event_loop_factory()->Run();
+  reader.Deregister();
 }
