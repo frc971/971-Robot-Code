@@ -86,7 +86,7 @@ export class Notes {
   setTeamNumber() {
     let data: Input = {
       teamNumber: this.teamNumberSelection,
-      notesData: '',
+      notesData: 'Auto: \nTeleop: \nEngame: ',
       keywordsData: {
         goodDriving: false,
         badDriving: false,
@@ -118,6 +118,7 @@ export class Notes {
     for (let i = 0; i < this.newData.length; i++) {
       const builder = new Builder();
       const dataFb = builder.createString(this.newData[i].notesData);
+
       builder.finish(
         SubmitNotes.createSubmitNotes(
           builder,
