@@ -29,9 +29,19 @@
           <div><h3>{{team.teamNumber}}</h3></div>
         </div>
         <div class="">
+          <!--
+          Note Input Text Areas.
+          ID property is used for keyboard shorcuts to focus
+          on the corresponding text area.
+          The data-toggle and title properties are
+          used for bootstrap tooltips.
+          -->
           <textarea
             class="text-input"
+            id="text-input-{{i+1}}"
             [(ngModel)]="newData[i].notesData"
+            data-toggle="tooltip"
+            title="Ctrl + {{i+1}}"
           ></textarea>
         </div>
         <!--Key Word Checkboxes-->
