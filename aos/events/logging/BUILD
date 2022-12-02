@@ -543,6 +543,7 @@ cc_test(
     name = "realtime_replay_test",
     srcs = ["realtime_replay_test.cc"],
     data = [
+        ":multinode_pingpong_combined_config",
         "//aos/events:pingpong_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],

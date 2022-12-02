@@ -233,13 +233,17 @@ class EventNotifier {
 };
 
 LogReader::LogReader(std::string_view filename,
-                     const Configuration *replay_configuration)
-    : LogReader(SortParts({std::string(filename)}), replay_configuration) {}
+                     const Configuration *replay_configuration,
+                     const ReplayChannels *replay_channels)
+    : LogReader(SortParts({std::string(filename)}), replay_configuration,
+                replay_channels) {}
 
 LogReader::LogReader(std::vector<LogFile> log_files,
-                     const Configuration *replay_configuration)
+                     const Configuration *replay_configuration,
+                     const ReplayChannels *replay_channels)
     : log_files_(std::move(log_files)),
-      replay_configuration_(replay_configuration) {
+      replay_configuration_(replay_configuration),
+      replay_channels_(replay_channels) {
   SetStartTime(FLAGS_start_time);
   SetEndTime(FLAGS_end_time);
 
@@ -258,6 +262,11 @@ LogReader::LogReader(std::vector<LogFile> log_files,
         CHECK_EQ(config, log_file.config.get());
       }
     }
+  }
+
+  if (replay_channels_ != nullptr) {
+    CHECK(!replay_channels_->empty()) << "replay_channels is empty which means "
+                                         "no messages will get replayed.";
   }
 
   MakeRemappedConfig();
@@ -444,6 +453,7 @@ void LogReader::State::QueueThreadUntil(BootTimestamp time) {
                 std::nullopt, false,
                 last_queued_message_ == BootTimestamp::max_time()};
           }
+
           TimestampedMessage *message = timestamp_mapper_->Front();
           // Upon reaching the end of the log, exit.
           if (message == nullptr) {
@@ -452,6 +462,7 @@ void LogReader::State::QueueThreadUntil(BootTimestamp time) {
                                        BootTimestamp>::PushResult{std::nullopt,
                                                                   false, true};
           }
+
           last_queued_message_ = message->monotonic_event_time;
           const util::ThreadedQueue<TimestampedMessage,
                                     BootTimestamp>::PushResult result{
@@ -606,7 +617,8 @@ void LogReader::RegisterWithoutStarting(
         filtered_parts.size() == 0u
             ? nullptr
             : std::make_unique<TimestampMapper>(std::move(filtered_parts)),
-        filters_.get(), node, State::ThreadedBuffering::kNo);
+        filters_.get(), node, State::ThreadedBuffering::kNo,
+        MaybeMakeReplayChannelIndicies(node));
     State *state = states_[node_index].get();
     state->SetNodeEventLoopFactory(
         event_loop_factory_->GetNodeEventLoopFactory(node),
@@ -647,6 +659,7 @@ void LogReader::RegisterWithoutStarting(
     if (state->SingleThreadedOldestMessageTime() == BootTimestamp::max_time()) {
       continue;
     }
+
     ++live_nodes_;
 
     NodeEventLoopFactory *node_factory =
@@ -795,7 +808,8 @@ void LogReader::Register(EventLoop *event_loop) {
         filtered_parts.size() == 0u
             ? nullptr
             : std::make_unique<TimestampMapper>(std::move(filtered_parts)),
-        filters_.get(), node, State::ThreadedBuffering::kYes);
+        filters_.get(), node, State::ThreadedBuffering::kYes,
+        MaybeMakeReplayChannelIndicies(node));
     State *state = states_[node_index].get();
 
     state->SetChannelCount(logged_configuration()->channels()->size());
@@ -1316,6 +1330,13 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
                                    std::string_view add_prefix,
                                    std::string_view new_type,
                                    RemapConflict conflict_handling) {
+  if (replay_channels_ != nullptr) {
+    CHECK(std::find(replay_channels_->begin(), replay_channels_->end(),
+                    std::make_pair(name, type)) != replay_channels_->end())
+        << "Attempted to remap channel " << name << " " << type
+        << " which is not included in the replay channels passed to LogReader.";
+  }
+
   for (size_t ii = 0; ii < logged_configuration()->channels()->size(); ++ii) {
     const Channel *const channel = logged_configuration()->channels()->Get(ii);
     if (channel->name()->str() == name &&
@@ -1646,6 +1667,31 @@ void LogReader::MakeRemappedConfig() {
   // TODO(austin): Lazily re-build to save CPU?
 }
 
+std::unique_ptr<const ReplayChannelIndicies>
+LogReader::MaybeMakeReplayChannelIndicies(const Node *node) {
+  if (replay_channels_ == nullptr) {
+    return nullptr;
+  } else {
+    std::unique_ptr<ReplayChannelIndicies> replay_channel_indicies =
+        std::make_unique<ReplayChannelIndicies>();
+    for (auto const &channel : *replay_channels_) {
+      const Channel *ch = configuration::GetChannel(
+          logged_configuration(), channel.first, channel.second, "", node);
+      if (ch == nullptr) {
+        LOG(WARNING) << "Channel: " << channel.first << " " << channel.second
+                     << " not found in configuration for node: "
+                     << node->name()->string_view() << " Skipping ...";
+        continue;
+      }
+      const size_t channel_index =
+          configuration::ChannelIndex(logged_configuration(), ch);
+      replay_channel_indicies->emplace_back(channel_index);
+    }
+    std::sort(replay_channel_indicies->begin(), replay_channel_indicies->end());
+    return replay_channel_indicies;
+  }
+}
+
 std::vector<const Channel *> LogReader::RemappedChannels() const {
   std::vector<const Channel *> result;
   result.reserve(remapped_channels_.size());
@@ -1699,11 +1745,24 @@ const Channel *LogReader::RemapChannel(const EventLoop *event_loop,
 LogReader::State::State(
     std::unique_ptr<TimestampMapper> timestamp_mapper,
     message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters,
-    const Node *node, LogReader::State::ThreadedBuffering threading)
+    const Node *node, LogReader::State::ThreadedBuffering threading,
+    std::unique_ptr<const ReplayChannelIndicies> replay_channel_indicies)
     : timestamp_mapper_(std::move(timestamp_mapper)),
       node_(node),
       multinode_filters_(multinode_filters),
-      threading_(threading) {}
+      threading_(threading),
+      replay_channel_indicies_(std::move(replay_channel_indicies)) {
+  if (replay_channel_indicies_ != nullptr) {
+    timestamp_mapper_->set_replay_channels_callback(
+        [filter = replay_channel_indicies_.get()](
+            const TimestampedMessage &message) -> bool {
+          auto const begin = filter->cbegin();
+          auto const end = filter->cend();
+          // TODO: benchmark strategies for channel_index matching
+          return std::binary_search(begin, end, message.channel_index);
+        });
+  }
+}
 
 void LogReader::State::AddPeer(State *peer) {
   if (timestamp_mapper_ && peer->timestamp_mapper_) {
@@ -2131,6 +2190,7 @@ LogReader::RemoteMessageSender *LogReader::State::RemoteTimestampSender(
 }
 
 TimestampedMessage LogReader::State::PopOldest() {
+  // multithreaded
   if (message_queuer_.has_value()) {
     std::optional<TimestampedMessage> message = message_queuer_->Pop();
     CHECK(message.has_value()) << ": Unexpectedly ran out of messages.";
@@ -2139,7 +2199,7 @@ TimestampedMessage LogReader::State::PopOldest() {
         std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::duration<double>(FLAGS_threaded_look_ahead_seconds)));
     return message.value();
-  } else {
+  } else {  // single threaded
     CHECK(timestamp_mapper_ != nullptr);
     TimestampedMessage *result_ptr = timestamp_mapper_->Front();
     CHECK(result_ptr != nullptr);
