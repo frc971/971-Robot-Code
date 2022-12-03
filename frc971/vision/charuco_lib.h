@@ -15,6 +15,9 @@
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
 
+DECLARE_bool(visualize);
+DECLARE_string(target_type);
+
 namespace frc971 {
 namespace vision {
 
@@ -41,14 +44,16 @@ class CameraCalibration {
   const sift::CameraCalibration *camera_calibration_;
 };
 
-// Class to call a function with a cv::Mat and age when an image shows up on the
-// provided channel.  This hides all the conversions and wrangling needed to
-// view the image.
+// Helper class to call a function with a cv::Mat and age when an image shows up
+// on the provided channel.  This hides all the conversions and wrangling needed
+// to view the image.
+// Can connect this with HandleImage function from CharucoExtrator for
+// full-service callback functionality
 class ImageCallback {
  public:
-  ImageCallback(
-      aos::EventLoop *event_loop, std::string_view channel,
-      std::function<void(cv::Mat, aos::monotonic_clock::time_point)> &&fn);
+  ImageCallback(aos::EventLoop *event_loop, std::string_view channel,
+                std::function<void(cv::Mat, aos::monotonic_clock::time_point)>
+                    &&handle_image_fn);
 
  private:
   aos::EventLoop *event_loop_;
@@ -65,16 +70,25 @@ class CharucoExtractor {
   //   cv::Mat -> image with overlays drawn on it.
   //   monotonic_clock::time_point -> Time on this node when this image was
   //                                  captured.
-  //   std::vector<int> -> charuco_ids
-  //   std::vector<cv::Point2f> -> charuco_corners
+  //   std::vector<Vec4i> -> target ids (aruco/april in first slot of Vec4i)
+  // NOTE: We use Vec4i since that stores the ids for the charuco diamond target
+  //   std::vector<std::vector<cv::Point2f>> -> charuco_corners
   //   bool -> true if rvec/tvec is valid.
-  //   Eigen::Vector3d -> rvec
-  //   Eigen::Vector3d -> tvec
+  //   std::vector<Eigen::Vector3d> -> rvec
+  //   std::vector<Eigen::Vector3d> -> tvec
+  // NOTE: we return as a vector since all but charuco boards could have
+  // multiple targets in an image; for charuco boards, there should be just one
+  // element
   CharucoExtractor(
       aos::EventLoop *event_loop, std::string_view pi,
       std::function<void(cv::Mat, aos::monotonic_clock::time_point,
-                         std::vector<int>, std::vector<cv::Point2f>, bool,
-                         Eigen::Vector3d, Eigen::Vector3d)> &&fn);
+                         std::vector<cv::Vec4i>,
+                         std::vector<std::vector<cv::Point2f>>, bool,
+                         std::vector<Eigen::Vector3d>,
+                         std::vector<Eigen::Vector3d>)> &&handle_charuco_fn);
+
+  // Handles the image by detecting the charuco board in it.
+  void HandleImage(cv::Mat rgb_image, aos::monotonic_clock::time_point eof);
 
   // Returns the aruco dictionary in use.
   cv::Ptr<cv::aruco::Dictionary> dictionary() const { return dictionary_; }
@@ -87,8 +101,20 @@ class CharucoExtractor {
   const cv::Mat dist_coeffs() const { return dist_coeffs_; }
 
  private:
-  // Handles the image by detecting the charuco board in it.
-  void HandleImage(cv::Mat rgb_image, aos::monotonic_clock::time_point eof);
+  // Creates the dictionary, board, and other parameters for the appropriate
+  // (ch)aruco target
+  void SetupTargetData();
+
+  // Draw the axes from the pose(s) on the image
+  void DrawTargetPoses(cv::Mat rgb_image, std::vector<cv::Vec3d> rvecs,
+                       std::vector<cv::Vec3d> tvecs);
+
+  // Helper function to convert rotation (rvecs) and translation (tvecs) vectors
+  // into Eigen vectors and store in corresponding vectors
+  void PackPoseResults(std::vector<cv::Vec3d> &rvecs,
+                       std::vector<cv::Vec3d> &tvecs,
+                       std::vector<Eigen::Vector3d> *rvecs_eigen,
+                       std::vector<Eigen::Vector3d> *tvecs_eigen);
 
   aos::EventLoop *event_loop_;
   CameraCalibration calibration_;
@@ -96,18 +122,26 @@ class CharucoExtractor {
   cv::Ptr<cv::aruco::Dictionary> dictionary_;
   cv::Ptr<cv::aruco::CharucoBoard> board_;
 
+  // Length of a side of the aruco marker
+  double marker_length_;
+  // Length of a side of the checkerboard squares (around the marker)
+  double square_length_;
+
+  // Intrinsic calibration matrix
   const cv::Mat camera_matrix_;
+  // Intrinsic calibration matrix as Eigen::Matrix3d
   const Eigen::Matrix3d eigen_camera_matrix_;
+  // Intrinsic distortion coefficients
   const cv::Mat dist_coeffs_;
 
+  // Index number of the raspberry pi
   const std::optional<uint16_t> pi_number_;
 
-  ImageCallback image_callback_;
-
   // Function to call.
-  std::function<void(cv::Mat, aos::monotonic_clock::time_point,
-                     std::vector<int>, std::vector<cv::Point2f>, bool,
-                     Eigen::Vector3d, Eigen::Vector3d)>
+  std::function<void(
+      cv::Mat, aos::monotonic_clock::time_point, std::vector<cv::Vec4i>,
+      std::vector<std::vector<cv::Point2f>>, bool, std::vector<Eigen::Vector3d>,
+      std::vector<Eigen::Vector3d>)>
       handle_charuco_;
 };
 

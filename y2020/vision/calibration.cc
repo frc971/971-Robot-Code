@@ -38,11 +38,21 @@ class Calibration {
             event_loop, pi,
             [this](cv::Mat rgb_image,
                    const aos::monotonic_clock::time_point eof,
-                   std::vector<int> charuco_ids,
-                   std::vector<cv::Point2f> charuco_corners, bool valid,
-                   Eigen::Vector3d rvec_eigen, Eigen::Vector3d tvec_eigen) {
+                   std::vector<cv::Vec4i> charuco_ids,
+                   std::vector<std::vector<cv::Point2f>> charuco_corners,
+                   bool valid, std::vector<Eigen::Vector3d> rvecs_eigen,
+                   std::vector<Eigen::Vector3d> tvecs_eigen) {
               HandleCharuco(rgb_image, eof, charuco_ids, charuco_corners, valid,
-                            rvec_eigen, tvec_eigen);
+                            rvecs_eigen, tvecs_eigen);
+            }),
+        image_callback_(
+            event_loop,
+            absl::StrCat(
+                "/pi", std::to_string(aos::network::ParsePiNumber(pi).value()),
+                "/camera"),
+            [this](cv::Mat rgb_image,
+                   const aos::monotonic_clock::time_point eof) {
+              charuco_extractor_.HandleImage(rgb_image, eof);
             }) {
     CHECK(pi_number_) << ": Invalid pi number " << pi
                       << ", failed to parse pi number";
@@ -50,13 +60,16 @@ class Calibration {
     CHECK(std::regex_match(camera_id_, re))
         << ": Invalid camera_id '" << camera_id_
         << "', should be of form YY-NN";
+    CHECK_EQ(FLAGS_target_type, "charuco")
+        << "Intrinsic calibration only works with Charuco board";
   }
 
   void HandleCharuco(cv::Mat rgb_image,
                      const aos::monotonic_clock::time_point /*eof*/,
-                     std::vector<int> charuco_ids,
-                     std::vector<cv::Point2f> charuco_corners, bool valid,
-                     Eigen::Vector3d rvec_eigen, Eigen::Vector3d tvec_eigen) {
+                     std::vector<cv::Vec4i> charuco_ids,
+                     std::vector<std::vector<cv::Point2f>> charuco_corners,
+                     bool valid, std::vector<Eigen::Vector3d> rvecs_eigen,
+                     std::vector<Eigen::Vector3d> tvecs_eigen) {
     // Reduce resolution displayed on remote viewer to prevent lag
     cv::resize(rgb_image, rgb_image,
                cv::Size(rgb_image.cols / 2, rgb_image.rows / 2));
@@ -78,12 +91,17 @@ class Calibration {
     if (!valid) {
       return;
     }
+    CHECK(tvecs_eigen.size() == 1)
+        << "Charuco board should only return one translational pose";
+    CHECK(rvecs_eigen.size() == 1)
+        << "Charuco board should only return one rotational pose";
     // Calibration calculates rotation and translation delta from last image
     // stored to automatically capture next image
 
     Eigen::Affine3d H_board_camera =
-        Eigen::Translation3d(tvec_eigen) *
-        Eigen::AngleAxisd(rvec_eigen.norm(), rvec_eigen / rvec_eigen.norm());
+        Eigen::Translation3d(tvecs_eigen[0]) *
+        Eigen::AngleAxisd(rvecs_eigen[0].norm(),
+                          rvecs_eigen[0] / rvecs_eigen[0].norm());
     Eigen::Affine3d H_camera_board_ = H_board_camera.inverse();
     Eigen::Affine3d H_delta = H_board_camera * prev_H_camera_board_;
 
@@ -97,8 +115,8 @@ class Calibration {
     bool store_image = false;
     double percent_motion =
         std::max<double>(r_norm / kDeltaRThreshold, t_norm / kDeltaTThreshold);
-    LOG(INFO) << all_charuco_ids_.size() << ": Moved " << percent_motion
-              << "% of what's needed";
+    LOG(INFO) << "Captured: " << all_charuco_ids_.size() << " points; Moved "
+              << percent_motion << "% of what's needed";
     // Verify that camera has moved enough from last stored image
     if (r_norm > kDeltaRThreshold || t_norm > kDeltaTThreshold) {
       // frame_ refers to deltas between current and last captured image
@@ -118,9 +136,10 @@ class Calibration {
           frame_r_norm < kFrameDeltaRLimit && frame_t_norm < kFrameDeltaTLimit;
       double percent_stop = std::max<double>(frame_r_norm / kFrameDeltaRLimit,
                                              frame_t_norm / kFrameDeltaTLimit);
-      LOG(INFO) << all_charuco_ids_.size() << ": Moved enough ("
-                << percent_motion << "%); Need to stop (last motion was "
-                << percent_stop << "%";
+      LOG(INFO) << "Captured: " << all_charuco_ids_.size()
+                << "points; Moved enough (" << percent_motion
+                << "%); Need to stop (last motion was " << percent_stop
+                << "% of limit; needs to be < 1 to capture)";
     }
     prev_image_H_camera_board_ = H_camera_board_;
 
@@ -128,8 +147,13 @@ class Calibration {
       if (valid) {
         prev_H_camera_board_ = H_camera_board_;
 
-        all_charuco_ids_.emplace_back(std::move(charuco_ids));
-        all_charuco_corners_.emplace_back(std::move(charuco_corners));
+        // Unpack the Charuco ids from Vec4i
+        std::vector<int> charuco_ids_int;
+        for (cv::Vec4i charuco_id : charuco_ids) {
+          charuco_ids_int.emplace_back(charuco_id[0]);
+        }
+        all_charuco_ids_.emplace_back(std::move(charuco_ids_int));
+        all_charuco_corners_.emplace_back(std::move(charuco_corners[0]));
 
         if (r_norm > kDeltaRThreshold) {
           LOG(INFO) << "Triggered by rotation delta = " << r_norm << " > "
@@ -164,7 +188,8 @@ class Calibration {
           img_size, cameraMatrix, distCoeffs, rvecs, tvecs,
           stdDeviationsIntrinsics, stdDeviationsExtrinsics, perViewErrors,
           calibration_flags);
-      CHECK_LE(reprojection_error, 1.0) << ": Reproduction error is bad.";
+      CHECK_LE(reprojection_error, 1.0)
+          << ": Reproduction error is bad-- greater than 1 pixel.";
       LOG(INFO) << "Reprojection Error is " << reprojection_error;
 
       flatbuffers::FlatBufferBuilder fbb;
@@ -246,6 +271,7 @@ class Calibration {
   Eigen::Affine3d prev_image_H_camera_board_;
 
   CharucoExtractor charuco_extractor_;
+  ImageCallback image_callback_;
 };
 
 namespace {

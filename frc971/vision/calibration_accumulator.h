@@ -84,14 +84,18 @@ class Calibration {
               aos::EventLoop *image_event_loop, aos::EventLoop *imu_event_loop,
               std::string_view pi, CalibrationData *data);
 
-  // Processes a charuco detection.
+  // Processes a charuco detection that is returned from charuco_lib.
+  // For a valid detection(s), it stores camera observation
+  // Also optionally displays and saves annotated images based on visualize and
+  // save_path flags, respectively
   void HandleCharuco(cv::Mat rgb_image,
                      const aos::monotonic_clock::time_point eof,
-                     std::vector<int> /*charuco_ids*/,
-                     std::vector<cv::Point2f> /*charuco_corners*/, bool valid,
-                     Eigen::Vector3d rvec_eigen, Eigen::Vector3d tvec_eigen);
+                     std::vector<cv::Vec4i> /*charuco_ids*/,
+                     std::vector<std::vector<cv::Point2f>> /*charuco_corners*/,
+                     bool valid, std::vector<Eigen::Vector3d> rvecs_eigen,
+                     std::vector<Eigen::Vector3d> tvecs_eigen);
 
-  // Processes an IMU reading.
+  // Processes an IMU reading by storing for later processing
   void HandleIMU(const frc971::IMUValues *imu);
 
  private:
@@ -101,6 +105,7 @@ class Calibration {
   aos::NodeEventLoopFactory *imu_factory_;
 
   CharucoExtractor charuco_extractor_;
+  ImageCallback image_callback_;
 
   CalibrationData *data_;
 

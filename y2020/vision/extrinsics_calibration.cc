@@ -9,6 +9,7 @@
 #include "aos/time/time.h"
 #include "aos/util/file.h"
 #include "frc971/control_loops/quaternion_utils.h"
+#include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/vision_generated.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"

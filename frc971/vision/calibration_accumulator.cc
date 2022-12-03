@@ -1,15 +1,16 @@
 #include "frc971/vision/calibration_accumulator.h"
 
+#include <algorithm>
+#include <limits>
+#include <opencv2/highgui/highgui.hpp>
+
 #include "Eigen/Dense"
 #include "aos/events/simulated_event_loop.h"
+#include "aos/network/team_number.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/wpilib/imu_batch_generated.h"
-
-#include <algorithm>
-#include <limits>
-#include <opencv2/highgui/highgui.hpp>
 
 DEFINE_bool(display_undistorted, false,
             "If true, display the undistorted image.");
@@ -123,11 +124,20 @@ Calibration::Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
       charuco_extractor_(
           image_event_loop_, pi,
           [this](cv::Mat rgb_image, monotonic_clock::time_point eof,
-                 std::vector<int> charuco_ids,
-                 std::vector<cv::Point2f> charuco_corners, bool valid,
-                 Eigen::Vector3d rvec_eigen, Eigen::Vector3d tvec_eigen) {
+                 std::vector<cv::Vec4i> charuco_ids,
+                 std::vector<std::vector<cv::Point2f>> charuco_corners,
+                 bool valid, std::vector<Eigen::Vector3d> rvecs_eigen,
+                 std::vector<Eigen::Vector3d> tvecs_eigen) {
             HandleCharuco(rgb_image, eof, charuco_ids, charuco_corners, valid,
-                          rvec_eigen, tvec_eigen);
+                          rvecs_eigen, tvecs_eigen);
+          }),
+      image_callback_(
+          image_event_loop_,
+          absl::StrCat("/pi",
+                       std::to_string(aos::network::ParsePiNumber(pi).value()),
+                       "/camera"),
+          [this](cv::Mat rgb_image, const monotonic_clock::time_point eof) {
+            charuco_extractor_.HandleImage(rgb_image, eof);
           }),
       data_(data) {
   imu_factory_->OnShutdown([]() { cv::destroyAllWindows(); });
@@ -159,15 +169,17 @@ Calibration::Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
       });
 }
 
-void Calibration::HandleCharuco(cv::Mat rgb_image,
-                                const monotonic_clock::time_point eof,
-                                std::vector<int> /*charuco_ids*/,
-                                std::vector<cv::Point2f> /*charuco_corners*/,
-                                bool valid, Eigen::Vector3d rvec_eigen,
-                                Eigen::Vector3d tvec_eigen) {
+void Calibration::HandleCharuco(
+    cv::Mat rgb_image, const monotonic_clock::time_point eof,
+    std::vector<cv::Vec4i> /*charuco_ids*/,
+    std::vector<std::vector<cv::Point2f>> /*charuco_corners*/, bool valid,
+    std::vector<Eigen::Vector3d> rvecs_eigen,
+    std::vector<Eigen::Vector3d> tvecs_eigen) {
   if (valid) {
-    data_->AddCameraPose(image_factory_->ToDistributedClock(eof), rvec_eigen,
-                         tvec_eigen);
+    CHECK(rvecs_eigen.size() > 0) << "Require at least one target detected";
+    // We only use one (the first) target detected for calibration
+    data_->AddCameraPose(image_factory_->ToDistributedClock(eof),
+                         rvecs_eigen[0], tvecs_eigen[0]);
 
     Eigen::IOFormat HeavyFmt(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]",
                              "[", "]");
@@ -177,20 +189,23 @@ void Calibration::HandleCharuco(cv::Mat rgb_image,
             image_event_loop_->monotonic_now() - eof)
             .count();
     VLOG(1) << std::fixed << std::setprecision(6) << "Age: " << age_double
-            << ", Pose is R:" << rvec_eigen.transpose().format(HeavyFmt)
-            << "\nT:" << tvec_eigen.transpose().format(HeavyFmt);
+            << ", Pose is R:" << rvecs_eigen[0].transpose().format(HeavyFmt)
+            << "\nT:" << tvecs_eigen[0].transpose().format(HeavyFmt);
   }
 
-  cv::imshow("Display", rgb_image);
+  if (FLAGS_visualize) {
+    if (FLAGS_display_undistorted) {
+      const cv::Size image_size(rgb_image.cols, rgb_image.rows);
+      cv::Mat undistorted_rgb_image(image_size, CV_8UC3);
+      cv::undistort(rgb_image, undistorted_rgb_image,
+                    charuco_extractor_.camera_matrix(),
+                    charuco_extractor_.dist_coeffs());
 
-  if (FLAGS_display_undistorted) {
-    const cv::Size image_size(rgb_image.cols, rgb_image.rows);
-    cv::Mat undistorted_rgb_image(image_size, CV_8UC3);
-    cv::undistort(rgb_image, undistorted_rgb_image,
-                  charuco_extractor_.camera_matrix(),
-                  charuco_extractor_.dist_coeffs());
+      cv::imshow("Display undist", undistorted_rgb_image);
+    }
 
-    cv::imshow("Display undist", undistorted_rgb_image);
+    cv::imshow("Display", rgb_image);
+    cv::waitKey(1);
   }
 
   if (FLAGS_save_path != "") {

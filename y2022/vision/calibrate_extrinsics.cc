@@ -17,7 +17,6 @@
 
 DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
 DEFINE_bool(plot, false, "Whether to plot the resulting data.");
-DEFINE_bool(visualize, false, "Whether to visualize the resulting data.");
 DEFINE_bool(turret, true, "If true, the camera is on the turret");
 
 namespace frc971 {

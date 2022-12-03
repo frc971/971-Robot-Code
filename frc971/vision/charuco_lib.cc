@@ -17,13 +17,17 @@
 #include "y2020/vision/sift/sift_training_generated.h"
 #include "y2020/vision/tools/python_code/sift_training_data.h"
 
-DEFINE_uint32(min_targets, 10,
-              "The mininum number of targets required to match.");
-DEFINE_bool(large_board, true, "If true, use the large calibration board.");
-DEFINE_bool(coarse_pattern, true, "If true, use coarse arucos; else, use fine");
 DEFINE_string(board_template_path, "",
               "If specified, write an image to the specified path for the "
               "charuco board pattern.");
+DEFINE_bool(coarse_pattern, true, "If true, use coarse arucos; else, use fine");
+DEFINE_bool(large_board, true, "If true, use the large calibration board.");
+DEFINE_uint32(
+    min_charucos, 10,
+    "The mininum number of aruco targets in charuco board required to match.");
+DEFINE_string(target_type, "charuco",
+              "Type of target: april_tag|aruco|charuco|charuco_diamond");
+DEFINE_bool(visualize, false, "Whether to visualize the resulting data.");
 
 namespace frc971 {
 namespace vision {
@@ -87,7 +91,8 @@ const sift::CameraCalibration *CameraCalibration::FindCameraCalibration(
 
 ImageCallback::ImageCallback(
     aos::EventLoop *event_loop, std::string_view channel,
-    std::function<void(cv::Mat, monotonic_clock::time_point)> &&fn)
+    std::function<void(cv::Mat, monotonic_clock::time_point)> &&handle_image_fn)
+
     : event_loop_(event_loop),
       server_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
@@ -97,7 +102,7 @@ ImageCallback::ImageCallback(
           event_loop_->GetChannel<CameraImage>(channel)
               ->source_node()
               ->string_view())),
-      handle_image_(std::move(fn)) {
+      handle_image_(std::move(handle_image_fn)) {
   event_loop_->MakeWatcher(channel, [this](const CameraImage &image) {
     const monotonic_clock::time_point eof_source_node =
         monotonic_clock::time_point(
@@ -150,47 +155,142 @@ ImageCallback::ImageCallback(
   });
 }
 
+void CharucoExtractor::SetupTargetData() {
+  // TODO(Jim): Put correct values here
+  marker_length_ = 0.15;
+  square_length_ = 0.1651;
+
+  // Only charuco board has a board associated with it
+  board_ = static_cast<cv::Ptr<cv::aruco::CharucoBoard>>(NULL);
+
+  if (FLAGS_target_type == "charuco" || FLAGS_target_type == "aruco") {
+    dictionary_ = cv::aruco::getPredefinedDictionary(
+        FLAGS_large_board ? cv::aruco::DICT_5X5_250 : cv::aruco::DICT_6X6_250);
+
+    if (FLAGS_target_type == "charuco") {
+      LOG(INFO) << "Using " << (FLAGS_large_board ? " large " : " small ")
+                << " charuco board with "
+                << (FLAGS_coarse_pattern ? "coarse" : "fine") << " pattern";
+      board_ =
+          (FLAGS_large_board
+               ? (FLAGS_coarse_pattern ? cv::aruco::CharucoBoard::create(
+                                             12, 9, 0.06, 0.04666, dictionary_)
+                                       : cv::aruco::CharucoBoard::create(
+                                             25, 18, 0.03, 0.0233, dictionary_))
+               : (FLAGS_coarse_pattern ? cv::aruco::CharucoBoard::create(
+                                             7, 5, 0.04, 0.025, dictionary_)
+                                       // TODO(jim): Need to figure out what
+                                       // size is for small board, fine pattern
+                                       : cv::aruco::CharucoBoard::create(
+                                             7, 5, 0.03, 0.0233, dictionary_)));
+      if (!FLAGS_board_template_path.empty()) {
+        cv::Mat board_image;
+        board_->draw(cv::Size(600, 500), board_image, 10, 1);
+        cv::imwrite(FLAGS_board_template_path, board_image);
+      }
+    }
+  } else if (FLAGS_target_type == "charuco_diamond") {
+    // TODO<Jim>: Measure this
+    marker_length_ = 0.15;
+    square_length_ = 0.1651;
+    dictionary_ = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_250);
+  } else if (FLAGS_target_type == "april_tag") {
+    // Current printout is supposed to be 200mm
+    // TODO<Jim>: Verify this
+    square_length_ = 0.2;
+    dictionary_ =
+        cv::aruco::getPredefinedDictionary(cv::aruco::DICT_APRILTAG_36h11);
+  } else {
+    // Bail out if it's not a supported target
+    LOG(FATAL) << "Target type undefined: " << FLAGS_target_type
+               << " vs. april_tag|aruco|charuco|charuco_diamond";
+  }
+}
+
+void CharucoExtractor::DrawTargetPoses(cv::Mat rgb_image,
+                                       std::vector<cv::Vec3d> rvecs,
+                                       std::vector<cv::Vec3d> tvecs) {
+  const Eigen::Matrix<double, 3, 4> camera_projection =
+      Eigen::Matrix<double, 3, 4>::Identity();
+
+  int x_coord = 10;
+  int y_coord = 0;
+  // draw axis for each marker
+  for (uint i = 0; i < rvecs.size(); i++) {
+    Eigen::Vector3d rvec_eigen, tvec_eigen;
+    cv::cv2eigen(rvecs[i], rvec_eigen);
+    cv::cv2eigen(tvecs[i], tvec_eigen);
+
+    Eigen::Quaternion<double> rotation(
+        frc971::controls::ToQuaternionFromRotationVector(rvec_eigen));
+    Eigen::Translation3d translation(tvec_eigen);
+
+    const Eigen::Affine3d board_to_camera = translation * rotation;
+
+    Eigen::Vector3d result = eigen_camera_matrix_ * camera_projection *
+                             board_to_camera * Eigen::Vector3d::Zero();
+
+    // Found that drawAxis hangs if you try to draw with z values too
+    // small (trying to draw axes at inifinity)
+    // TODO<Jim>: Explore what real thresholds for this should be;
+    // likely Don't need to get rid of negative values
+    if (result.z() < 0.01) {
+      LOG(INFO) << "Skipping, due to z value too small: " << result.z();
+    } else {
+      result /= result.z();
+      if (FLAGS_target_type == "charuco") {
+        cv::aruco::drawAxis(rgb_image, camera_matrix_, dist_coeffs_, rvecs[i],
+                            tvecs[i], 0.1);
+      } else {
+        cv::drawFrameAxes(rgb_image, camera_matrix_, dist_coeffs_, rvecs[i],
+                          tvecs[i], 0.1);
+      }
+    }
+    std::stringstream ss;
+    ss << "tvec[" << i << "] = " << tvecs[i];
+    y_coord += 25;
+    cv::putText(rgb_image, ss.str(), cv::Point(x_coord, y_coord),
+                cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 255));
+    ss.str("");
+    ss << "rvec[" << i << "] = " << rvecs[i];
+    y_coord += 25;
+    cv::putText(rgb_image, ss.str(), cv::Point(x_coord, y_coord),
+                cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 255));
+  }
+}
+
+void CharucoExtractor::PackPoseResults(
+    std::vector<cv::Vec3d> &rvecs, std::vector<cv::Vec3d> &tvecs,
+    std::vector<Eigen::Vector3d> *rvecs_eigen,
+    std::vector<Eigen::Vector3d> *tvecs_eigen) {
+  for (cv::Vec3d rvec : rvecs) {
+    Eigen::Vector3d rvec_eigen = Eigen::Vector3d::Zero();
+    cv::cv2eigen(rvec, rvec_eigen);
+    rvecs_eigen->emplace_back(rvec_eigen);
+  }
+
+  for (cv::Vec3d tvec : tvecs) {
+    Eigen::Vector3d tvec_eigen = Eigen::Vector3d::Zero();
+    cv::cv2eigen(tvec, tvec_eigen);
+    tvecs_eigen->emplace_back(tvec_eigen);
+  }
+}
+
 CharucoExtractor::CharucoExtractor(
     aos::EventLoop *event_loop, std::string_view pi,
-    std::function<void(cv::Mat, monotonic_clock::time_point, std::vector<int>,
-                       std::vector<cv::Point2f>, bool, Eigen::Vector3d,
-                       Eigen::Vector3d)> &&fn)
+    std::function<void(cv::Mat, monotonic_clock::time_point,
+                       std::vector<cv::Vec4i>,
+                       std::vector<std::vector<cv::Point2f>>, bool,
+                       std::vector<Eigen::Vector3d>,
+                       std::vector<Eigen::Vector3d>)> &&handle_charuco_fn)
     : event_loop_(event_loop),
       calibration_(SiftTrainingData(), pi),
-      dictionary_(cv::aruco::getPredefinedDictionary(
-          FLAGS_large_board ? cv::aruco::DICT_5X5_250
-                            : cv::aruco::DICT_6X6_250)),
-      board_(
-          FLAGS_large_board
-              ? (FLAGS_coarse_pattern ? cv::aruco::CharucoBoard::create(
-                                            12, 9, 0.06, 0.04666, dictionary_)
-                                      : cv::aruco::CharucoBoard::create(
-                                            25, 18, 0.03, 0.0233, dictionary_))
-              : (FLAGS_coarse_pattern ? cv::aruco::CharucoBoard::create(
-                                            7, 5, 0.04, 0.025, dictionary_)
-                                      // TODO(jim): Need to figure out what size
-                                      // is for small board, fine pattern
-                                      : cv::aruco::CharucoBoard::create(
-                                            7, 5, 0.03, 0.0233, dictionary_))),
       camera_matrix_(calibration_.CameraIntrinsics()),
       eigen_camera_matrix_(calibration_.CameraIntrinsicsEigen()),
       dist_coeffs_(calibration_.CameraDistCoeffs()),
       pi_number_(aos::network::ParsePiNumber(pi)),
-      image_callback_(
-          event_loop,
-          absl::StrCat("/pi", std::to_string(pi_number_.value()), "/camera"),
-          [this](cv::Mat rgb_image, const monotonic_clock::time_point eof) {
-            HandleImage(rgb_image, eof);
-          }),
-      handle_charuco_(std::move(fn)) {
-  LOG(INFO) << "Using " << (FLAGS_large_board ? "large" : "small")
-            << " board with " << (FLAGS_coarse_pattern ? "coarse" : "fine")
-            << " pattern";
-  if (!FLAGS_board_template_path.empty()) {
-    cv::Mat board_image;
-    board_->draw(cv::Size(600, 500), board_image, 10, 1);
-    cv::imwrite(FLAGS_board_template_path, board_image);
-  }
+      handle_charuco_(std::move(handle_charuco_fn)) {
+  SetupTargetData();
 
   LOG(INFO) << "Camera matrix " << camera_matrix_;
   LOG(INFO) << "Distortion Coefficients " << dist_coeffs_;
@@ -207,99 +307,143 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
       std::chrono::duration_cast<std::chrono::duration<double>>(
           event_loop_->monotonic_now() - eof)
           .count();
+
+  // Set up the variables we'll use in the callback function
+  bool valid = false;
+  // Return a list of poses; for Charuco Board there will be just one
+  std::vector<Eigen::Vector3d> rvecs_eigen;
+  std::vector<Eigen::Vector3d> tvecs_eigen;
+
+  // ids and corners for initial aruco marker detections
   std::vector<int> marker_ids;
   std::vector<std::vector<cv::Point2f>> marker_corners;
 
-  cv::aruco::detectMarkers(rgb_image, board_->dictionary, marker_corners,
-                           marker_ids);
+  // ids and corners for final, refined board / marker detections
+  // Using Vec4i type since it supports Charuco Diamonds
+  // And overloading it using 1st int in Vec4i for others target types
+  std::vector<cv::Vec4i> result_ids;
+  std::vector<std::vector<cv::Point2f>> result_corners;
 
-  std::vector<cv::Point2f> charuco_corners;
-  std::vector<int> charuco_ids;
-  bool valid = false;
-  Eigen::Vector3d rvec_eigen = Eigen::Vector3d::Zero();
-  Eigen::Vector3d tvec_eigen = Eigen::Vector3d::Zero();
+  // Do initial marker detection; this is the same for all target types
+  cv::aruco::detectMarkers(rgb_image, dictionary_, marker_corners, marker_ids);
+  cv::aruco::drawDetectedMarkers(rgb_image, marker_corners, marker_ids);
 
-  // If at least one marker detected
-  if (marker_ids.size() >= FLAGS_min_targets) {
-    // Run everything twice, once with the calibration, and once
-    // without. This lets us both calibrate, and also print out the pose
-    // real time with the previous calibration.
-    cv::aruco::interpolateCornersCharuco(marker_corners, marker_ids, rgb_image,
-                                         board_, charuco_corners, charuco_ids);
+  VLOG(2) << "Handle Image, with target type = " << FLAGS_target_type << " and "
+          << marker_ids.size() << " markers detected initially";
 
-    std::vector<cv::Point2f> charuco_corners_with_calibration;
-    std::vector<int> charuco_ids_with_calibration;
+  if (marker_ids.size() == 0) {
+    VLOG(2) << "Didn't find any markers";
+  } else {
+    if (FLAGS_target_type == "charuco") {
+      std::vector<int> charuco_ids;
+      std::vector<cv::Point2f> charuco_corners;
 
-    cv::aruco::interpolateCornersCharuco(
-        marker_corners, marker_ids, rgb_image, board_,
-        charuco_corners_with_calibration, charuco_ids_with_calibration,
-        camera_matrix_, dist_coeffs_);
+      // If enough aruco markers detected for the Charuco board
+      if (marker_ids.size() >= FLAGS_min_charucos) {
+        // Run everything twice, once with the calibration, and once
+        // without. This lets us both collect data to calibrate the
+        // intrinsics of the camera (to determine the intrinsics from
+        // multiple samples), and also to use data from a previous/stored
+        // calibration to determine a more accurate pose in real time (used
+        // for extrinsics calibration)
+        cv::aruco::interpolateCornersCharuco(marker_corners, marker_ids,
+                                             rgb_image, board_, charuco_corners,
+                                             charuco_ids);
 
-    cv::aruco::drawDetectedMarkers(rgb_image, marker_corners, marker_ids);
+        std::vector<cv::Point2f> charuco_corners_with_calibration;
+        std::vector<int> charuco_ids_with_calibration;
 
-    if (charuco_ids.size() >= FLAGS_min_targets) {
-      cv::aruco::drawDetectedCornersCharuco(rgb_image, charuco_corners,
-                                            charuco_ids, cv::Scalar(255, 0, 0));
+        // This call uses a previous intrinsic calibration to get more
+        // accurate marker locations, for a better pose estimate
+        cv::aruco::interpolateCornersCharuco(
+            marker_corners, marker_ids, rgb_image, board_,
+            charuco_corners_with_calibration, charuco_ids_with_calibration,
+            camera_matrix_, dist_coeffs_);
 
-      cv::Vec3d rvec, tvec;
-      valid = cv::aruco::estimatePoseCharucoBoard(
-          charuco_corners_with_calibration, charuco_ids_with_calibration,
-          board_, camera_matrix_, dist_coeffs_, rvec, tvec);
+        if (charuco_ids.size() >= FLAGS_min_charucos) {
+          cv::aruco::drawDetectedCornersCharuco(
+              rgb_image, charuco_corners, charuco_ids, cv::Scalar(255, 0, 0));
 
-      // if charuco pose is valid
-      if (valid) {
-        cv::cv2eigen(rvec, rvec_eigen);
-        cv::cv2eigen(tvec, tvec_eigen);
+          cv::Vec3d rvec, tvec;
+          valid = cv::aruco::estimatePoseCharucoBoard(
+              charuco_corners_with_calibration, charuco_ids_with_calibration,
+              board_, camera_matrix_, dist_coeffs_, rvec, tvec);
 
-        Eigen::Quaternion<double> rotation(
-            frc971::controls::ToQuaternionFromRotationVector(rvec_eigen));
-        Eigen::Translation3d translation(tvec_eigen);
+          // if charuco pose is valid, return pose, with ids and corners
+          if (valid) {
+            std::vector<cv::Vec3d> rvecs, tvecs;
+            rvecs.emplace_back(rvec);
+            tvecs.emplace_back(tvec);
+            DrawTargetPoses(rgb_image, rvecs, tvecs);
 
-        const Eigen::Affine3d board_to_camera = translation * rotation;
-
-        Eigen::Matrix<double, 3, 4> camera_projection =
-            Eigen::Matrix<double, 3, 4>::Identity();
-        Eigen::Vector3d result = eigen_camera_matrix_ * camera_projection *
-                                 board_to_camera * Eigen::Vector3d::Zero();
-
-        // Found that drawAxis hangs if you try to draw with z values too small
-        // (trying to draw axes at inifinity)
-        // TODO<Jim>: Explore what real thresholds for this should be; likely
-        // Don't need to get rid of negative values
-        if (result.z() < 0.01) {
-          LOG(INFO) << "Skipping, due to z value too small: " << result.z();
-          valid = false;
+            PackPoseResults(rvecs, tvecs, &rvecs_eigen, &tvecs_eigen);
+            // Store the corners without calibration, since we use them to
+            // do calibration
+            result_corners.emplace_back(charuco_corners);
+            for (auto id : charuco_ids) {
+              result_ids.emplace_back(cv::Vec4i{id, 0, 0, 0});
+            }
+          } else {
+            VLOG(2) << "Age: " << age_double << ", invalid charuco board pose";
+          }
         } else {
-          result /= result.z();
-          cv::circle(rgb_image, cv::Point(result.x(), result.y()), 4,
-                     cv::Scalar(255, 255, 255), 0, cv::LINE_8);
-
-          cv::aruco::drawAxis(rgb_image, camera_matrix_, dist_coeffs_, rvec,
-                              tvec, 0.1);
+          VLOG(2) << "Age: " << age_double << ", not enough charuco IDs, got "
+                  << charuco_ids.size() << ", needed " << FLAGS_min_charucos;
         }
-        std::stringstream ss;
-        ss << "tvec = " << tvec << "; |t| = " << tvec_eigen.norm();
-        cv::putText(rgb_image, ss.str(), cv::Point(10, 25),
-                    cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 255));
-        ss.str("");
-        ss << "rvec = " << rvec;
-        cv::putText(rgb_image, ss.str(), cv::Point(10, 50),
-                    cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 255));
       } else {
-        VLOG(2) << "Age: " << age_double << ", invalid pose";
+        VLOG(2) << "Age: " << age_double
+                << ", not enough marker IDs for charuco board, got "
+                << marker_ids.size() << ", needed " << FLAGS_min_charucos;
+      }
+    } else if (FLAGS_target_type == "april_tag" ||
+               FLAGS_target_type == "aruco") {
+      // estimate pose for april tags doesn't return valid, so marking true
+      valid = true;
+      std::vector<cv::Vec3d> rvecs, tvecs;
+      cv::aruco::estimatePoseSingleMarkers(marker_corners, square_length_,
+                                           camera_matrix_, dist_coeffs_, rvecs,
+                                           tvecs);
+      DrawTargetPoses(rgb_image, rvecs, tvecs);
+
+      PackPoseResults(rvecs, tvecs, &rvecs_eigen, &tvecs_eigen);
+      for (uint i = 0; i < marker_ids.size(); i++) {
+        result_ids.emplace_back(cv::Vec4i{marker_ids[i], 0, 0, 0});
+      }
+      result_corners = marker_corners;
+    } else if (FLAGS_target_type == "charuco_diamond") {
+      // Extract the diamonds associated with the markers
+      std::vector<cv::Vec4i> diamond_ids;
+      std::vector<std::vector<cv::Point2f>> diamond_corners;
+      cv::aruco::detectCharucoDiamond(rgb_image, marker_corners, marker_ids,
+                                      square_length_ / marker_length_,
+                                      diamond_corners, diamond_ids);
+
+      // Check to see if we found any diamond targets
+      if (diamond_ids.size() > 0) {
+        cv::aruco::drawDetectedDiamonds(rgb_image, diamond_corners,
+                                        diamond_ids);
+
+        // estimate pose for diamonds doesn't return valid, so marking true
+        valid = true;
+        std::vector<cv::Vec3d> rvecs, tvecs;
+        cv::aruco::estimatePoseSingleMarkers(diamond_corners, square_length_,
+                                             camera_matrix_, dist_coeffs_,
+                                             rvecs, tvecs);
+        DrawTargetPoses(rgb_image, rvecs, tvecs);
+
+        PackPoseResults(rvecs, tvecs, &rvecs_eigen, &tvecs_eigen);
+        result_ids = diamond_ids;
+        result_corners = diamond_corners;
+      } else {
+        VLOG(2) << "Found aruco markers, but no charuco diamond targets";
       }
     } else {
-      VLOG(2) << "Age: " << age_double << ", not enough charuco IDs, got "
-              << charuco_ids.size() << ", needed " << FLAGS_min_targets;
+      LOG(FATAL) << "Unknown target type: " << FLAGS_target_type;
     }
-  } else {
-    VLOG(2) << "Age: " << age_double << ", not enough marker IDs, got "
-            << marker_ids.size() << ", needed " << FLAGS_min_targets;
-    cv::aruco::drawDetectedMarkers(rgb_image, marker_corners, marker_ids);
   }
 
-  handle_charuco_(rgb_image, eof, charuco_ids, charuco_corners, valid,
-                  rvec_eigen, tvec_eigen);
+  handle_charuco_(rgb_image, eof, result_ids, result_corners, valid,
+                  rvecs_eigen, tvecs_eigen);
 }
 
 }  // namespace vision
