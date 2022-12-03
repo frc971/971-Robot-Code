@@ -328,9 +328,9 @@ cc_binary(
 )
 
 cc_binary(
-    name = "extrinsics_calibration",
+    name = "calibrate_extrinsics",
     srcs = [
-        "extrinsics_calibration.cc",
+        "calibrate_extrinsics.cc",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
@@ -339,6 +339,7 @@ cc_binary(
         "//aos/events/logging:log_reader",
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/vision:extrinsics_calibration",
+        "//third_party:opencv",
         "//y2022/control_loops/superstructure:superstructure_status_fbs",
     ],
 )

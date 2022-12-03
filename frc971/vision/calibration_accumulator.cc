@@ -1,20 +1,21 @@
 #include "frc971/vision/calibration_accumulator.h"
 
-#include <opencv2/aruco/charuco.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/features2d.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-
 #include "Eigen/Dense"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/quaternion_utils.h"
-#include "frc971/wpilib/imu_batch_generated.h"
 #include "frc971/vision/charuco_lib.h"
+#include "frc971/wpilib/imu_batch_generated.h"
+
+#include <algorithm>
+#include <limits>
+#include <opencv2/highgui/highgui.hpp>
 
 DEFINE_bool(display_undistorted, false,
             "If true, display the undistorted image.");
+DEFINE_string(save_path, "", "Where to store annotated images");
+DEFINE_bool(save_valid_only, false,
+            "If true, only save images with valid pose estimates");
 
 namespace frc971 {
 namespace vision {
@@ -27,59 +28,83 @@ constexpr double kG = 9.807;
 void CalibrationData::AddCameraPose(
     distributed_clock::time_point distributed_now, Eigen::Vector3d rvec,
     Eigen::Vector3d tvec) {
-  // Always start with IMU reading...
-  if (!imu_points_.empty() && imu_points_[0].first < distributed_now) {
+  // Always start with IMU (or turret) reading...
+  // Note, we may not have a turret, so need to handle that case
+  // If we later get a turret point, then we handle removal of camera points in
+  // AddTurret
+  if ((!imu_points_.empty() && imu_points_[0].first < distributed_now) &&
+      (turret_points_.empty() || turret_points_[0].first < distributed_now)) {
     rot_trans_points_.emplace_back(distributed_now, std::make_pair(rvec, tvec));
   }
 }
 
 void CalibrationData::AddImu(distributed_clock::time_point distributed_now,
                              Eigen::Vector3d gyro, Eigen::Vector3d accel) {
-  imu_points_.emplace_back(distributed_now, std::make_pair(gyro, accel));
+  double zero_threshold = 1e-12;
+  // We seem to be getting 0 readings on IMU, so ignore for now
+  // TODO<Jim>: I think this has been resolved in HandleIMU, but want to leave
+  // this here just in case there are other ways this could happen
+  if ((fabs(accel(0)) < zero_threshold) && (fabs(accel(1)) < zero_threshold) &&
+      (fabs(accel(2)) < zero_threshold)) {
+    LOG(FATAL) << "Ignoring zero value from IMU accelerometer: " << accel
+               << " (gyro is " << gyro << ")";
+  } else {
+    imu_points_.emplace_back(distributed_now, std::make_pair(gyro, accel));
+  }
 }
 
 void CalibrationData::AddTurret(
     aos::distributed_clock::time_point distributed_now, Eigen::Vector2d state) {
-  // We want the turret to be known too when solving.  But, we don't know if we
-  // are going to have a turret until we get the first reading.  In that case,
-  // blow away any camera readings from before.
-  while (!rot_trans_points_.empty() &&
-         rot_trans_points_[0].first < distributed_now) {
-    rot_trans_points_.erase(rot_trans_points_.begin());
+  // We want the turret to be known too when solving.  But, we don't know if
+  // we are going to have a turret until we get the first reading.  In that
+  // case, blow away any camera readings from before.
+  // NOTE: Since the IMU motion is independent of the turret position, we don't
+  // need to remove the IMU readings before the turret
+  if (turret_points_.empty()) {
+    while (!rot_trans_points_.empty() &&
+           rot_trans_points_[0].first < distributed_now) {
+      LOG(INFO) << "Erasing, distributed " << distributed_now;
+      rot_trans_points_.erase(rot_trans_points_.begin());
+    }
   }
   turret_points_.emplace_back(distributed_now, state);
 }
 
 void CalibrationData::ReviewData(CalibrationDataObserver *observer) const {
-  size_t next_imu_point = 0;
   size_t next_camera_point = 0;
-  while (true) {
-    if (next_imu_point != imu_points_.size()) {
-      // There aren't that many combinations, so just brute force them all
-      // rather than being too clever.
-      if (next_camera_point != rot_trans_points_.size()) {
-        if (imu_points_[next_imu_point].first >
-            rot_trans_points_[next_camera_point].first) {
-          // Camera!
-          observer->UpdateCamera(rot_trans_points_[next_camera_point].first,
-                                 rot_trans_points_[next_camera_point].second);
-          ++next_camera_point;
-        } else {
-          // IMU!
-          observer->UpdateIMU(imu_points_[next_imu_point].first,
-                              imu_points_[next_imu_point].second);
-          ++next_imu_point;
-        }
+  size_t next_imu_point = 0;
+  size_t next_turret_point = 0;
+
+  // Just go until one of the data streams runs out.  We lose a few points, but
+  // it makes the logic much easier
+  while (
+      next_camera_point != rot_trans_points_.size() &&
+      next_imu_point != imu_points_.size() &&
+      (turret_points_.empty() || next_turret_point != turret_points_.size())) {
+    // If camera_point is next, update it
+    if ((rot_trans_points_[next_camera_point].first <=
+         imu_points_[next_imu_point].first) &&
+        (turret_points_.empty() ||
+         (rot_trans_points_[next_camera_point].first <=
+          turret_points_[next_turret_point].first))) {
+      // Camera!
+      observer->UpdateCamera(rot_trans_points_[next_camera_point].first,
+                             rot_trans_points_[next_camera_point].second);
+      ++next_camera_point;
+    } else {
+      // If it's not the camera, check if IMU is next
+      if (turret_points_.empty() || (imu_points_[next_imu_point].first <=
+                                     turret_points_[next_turret_point].first)) {
+        // IMU!
+        observer->UpdateIMU(imu_points_[next_imu_point].first,
+                            imu_points_[next_imu_point].second);
+        ++next_imu_point;
       } else {
-        if (next_camera_point != rot_trans_points_.size()) {
-          // Camera!
-          observer->UpdateCamera(rot_trans_points_[next_camera_point].first,
-                                 rot_trans_points_[next_camera_point].second);
-          ++next_camera_point;
-        } else {
-          // Nothing left for either list of points, so we are done.
-          break;
-        }
+        // If it's not IMU or camera, and turret_points is not empty, it must be
+        // the turret!
+        observer->UpdateTurret(turret_points_[next_turret_point].first,
+                               turret_points_[next_turret_point].second);
+        ++next_turret_point;
       }
     }
   }
@@ -107,8 +132,24 @@ Calibration::Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
       data_(data) {
   imu_factory_->OnShutdown([]() { cv::destroyAllWindows(); });
 
+  // Check for IMUValuesBatch topic on both /localizer and /drivetrain channels,
+  // since both are valid/possible
+  std::string imu_channel;
+  if (imu_event_loop->HasChannel<frc971::IMUValuesBatch>("/localizer")) {
+    imu_channel = "/localizer";
+  } else if (imu_event_loop->HasChannel<frc971::IMUValuesBatch>(
+                 "/drivetrain")) {
+    imu_channel = "/drivetrain";
+  } else {
+    LOG(FATAL) << "Couldn't find channel with IMU data for either localizer or "
+                  "drivtrain";
+  }
+
+  VLOG(2) << "Listening for " << frc971::IMUValuesBatch::GetFullyQualifiedName()
+          << " on channel: " << imu_channel;
+
   imu_event_loop_->MakeWatcher(
-      "/drivetrain", [this](const frc971::IMUValuesBatch &imu) {
+      imu_channel, [this](const frc971::IMUValuesBatch &imu) {
         if (!imu.has_readings()) {
           return;
         }
@@ -128,19 +169,6 @@ void Calibration::HandleCharuco(cv::Mat rgb_image,
     data_->AddCameraPose(image_factory_->ToDistributedClock(eof), rvec_eigen,
                          tvec_eigen);
 
-    // Z -> up
-    // Y -> away from cameras 2 and 3
-    // X -> left
-    Eigen::Vector3d imu(last_value_.accelerometer_x,
-                        last_value_.accelerometer_y,
-                        last_value_.accelerometer_z);
-
-    Eigen::Quaternion<double> imu_to_camera(
-        Eigen::AngleAxisd(-0.5 * M_PI, Eigen::Vector3d::UnitX()));
-
-    Eigen::Quaternion<double> board_to_world(
-        Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitX()));
-
     Eigen::IOFormat HeavyFmt(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]",
                              "[", "]");
 
@@ -148,9 +176,9 @@ void Calibration::HandleCharuco(cv::Mat rgb_image,
         std::chrono::duration_cast<std::chrono::duration<double>>(
             image_event_loop_->monotonic_now() - eof)
             .count();
-    LOG(INFO) << std::fixed << std::setprecision(6) << "Age: " << age_double
-              << ", Pose is R:" << rvec_eigen.transpose().format(HeavyFmt)
-              << " T:" << tvec_eigen.transpose().format(HeavyFmt);
+    VLOG(1) << std::fixed << std::setprecision(6) << "Age: " << age_double
+            << ", Pose is R:" << rvec_eigen.transpose().format(HeavyFmt)
+            << "\nT:" << tvec_eigen.transpose().format(HeavyFmt);
   }
 
   cv::imshow("Display", rgb_image);
@@ -164,10 +192,28 @@ void Calibration::HandleCharuco(cv::Mat rgb_image,
 
     cv::imshow("Display undist", undistorted_rgb_image);
   }
+
+  if (FLAGS_save_path != "") {
+    if (!FLAGS_save_valid_only || valid) {
+      static int img_count = 0;
+      std::string image_name = absl::StrFormat("/img_%06d.png", img_count);
+      std::string path = FLAGS_save_path + image_name;
+      VLOG(2) << "Saving image to " << path;
+      cv::imwrite(path, rgb_image);
+      img_count++;
+    }
+  }
 }
 
 void Calibration::HandleIMU(const frc971::IMUValues *imu) {
-  VLOG(1) << "IMU " << imu;
+  // Need to check for valid values, since we sometimes don't get them
+  if (!imu->has_gyro_x() || !imu->has_gyro_y() || !imu->has_gyro_z() ||
+      !imu->has_accelerometer_x() || !imu->has_accelerometer_y() ||
+      !imu->has_accelerometer_z()) {
+    return;
+  }
+
+  VLOG(2) << "IMU " << imu;
   imu->UnPackTo(&last_value_);
   Eigen::Vector3d gyro(last_value_.gyro_x, last_value_.gyro_y,
                        last_value_.gyro_z);

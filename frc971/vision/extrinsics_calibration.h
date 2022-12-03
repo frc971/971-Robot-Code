@@ -42,6 +42,11 @@ void Solve(const CalibrationData &data,
 void Plot(const CalibrationData &data,
           const CalibrationParameters &calibration_parameters);
 
+// Shows the evolution of the calibration over time by visualizing relevant
+// coordinate frames in a virtual camera view
+void Visualize(const CalibrationData &data,
+               const CalibrationParameters &calibration_parameters);
+
 }  // namespace vision
 }  // namespace frc971
 

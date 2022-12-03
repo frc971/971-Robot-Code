@@ -56,7 +56,9 @@ class CalibrationData {
 
   size_t camera_samples_size() const { return rot_trans_points_.size(); }
 
-  size_t turret_samples() const { return turret_points_.size(); }
+  size_t imu_samples_size() const { return imu_points_.size(); }
+
+  size_t turret_samples_size() const { return turret_points_.size(); }
 
  private:
   std::vector<std::pair<aos::distributed_clock::time_point,

@@ -79,6 +79,7 @@ cc_library(
         "//aos/events/logging:log_reader",
         "//frc971/analysis:in_process_plotter",
         "//frc971/control_loops/drivetrain:improved_down_estimator",
+        "//frc971/vision:visualize_robot",
         "//frc971/wpilib:imu_batch_fbs",
         "//frc971/wpilib:imu_fbs",
         "//third_party:opencv",
@@ -141,5 +142,38 @@ cc_test(
     deps = [
         ":geometry_lib",
         "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
+    name = "visualize_robot",
+    srcs = [
+        "visualize_robot.cc",
+    ],
+    hdrs = [
+        "visualize_robot.h",
+    ],
+    deps = [
+        "//aos:init",
+        "//third_party:opencv",
+        "@com_google_absl//absl/strings:str_format",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_binary(
+    name = "visualize_robot_sample",
+    srcs = [
+        "visualize_robot_sample.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:init",
+        "//frc971/vision:visualize_robot",
+        "//third_party:opencv",
+        "@com_github_google_glog//:glog",
+        "@com_google_ceres_solver//:ceres",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )

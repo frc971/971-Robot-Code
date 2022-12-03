@@ -6,6 +6,13 @@
 #include "frc971/control_loops/runge_kutta.h"
 #include "frc971/vision/calibration_accumulator.h"
 #include "frc971/vision/charuco_lib.h"
+#include "frc971/vision/visualize_robot.h"
+
+#include <opencv2/core.hpp>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 namespace frc971 {
 namespace vision {
@@ -79,17 +86,9 @@ class CeresPoseFilter : public CalibrationDataObserver {
   virtual void ObserveCameraUpdate(
       distributed_clock::time_point /*t*/,
       Eigen::Vector3d /*board_to_camera_rotation*/,
+      Eigen::Vector3d /*board_to_camera_translation*/,
       Eigen::Quaternion<Scalar> /*imu_to_world_rotation*/,
-      Affine3s /*imu_to_world*/) {}
-
-  void UpdateTurret(distributed_clock::time_point t,
-                    Eigen::Vector2d state) override {
-    state_ = state;
-    state_time_ = t;
-  }
-
-  Eigen::Vector2d state_ = Eigen::Vector2d::Zero();
-  distributed_clock::time_point state_time_ = distributed_clock::min_time;
+      Affine3s /*imu_to_world*/, double /*turret_angle*/) {}
 
   // Observes a camera measurement by applying a kalman filter correction and
   // accumulating up the error associated with the step.
@@ -100,8 +99,9 @@ class CeresPoseFilter : public CalibrationDataObserver {
     const double pivot_angle =
         state_time_ == distributed_clock::min_time
             ? 0.0
-            : state_(0) +
-                  state_(1) * chrono::duration<double>(t - state_time_).count();
+            : turret_state_(0) +
+                  turret_state_(1) *
+                      chrono::duration<double>(t - state_time_).count();
 
     const Eigen::Quaternion<Scalar> board_to_camera_rotation(
         frc971::controls::ToQuaternionFromRotationVector(rt.first)
@@ -143,9 +143,12 @@ class CeresPoseFilter : public CalibrationDataObserver {
     H(2, 2) = static_cast<Scalar>(1.0);
     const Eigen::Matrix<Scalar, 3, 1> y = z - H * x_hat_;
 
+    // TODO<Jim>: Need to understand dependence on this-- solutions vary by 20cm
+    // when changing from 0.01 -> 0.1
+    double obs_noise_var = ::std::pow(0.01, 2);
     const Eigen::Matrix<double, 3, 3> R =
-        (::Eigen::DiagonalMatrix<double, 3>().diagonal() << ::std::pow(0.01, 2),
-         ::std::pow(0.01, 2), ::std::pow(0.01, 2))
+        (::Eigen::DiagonalMatrix<double, 3>().diagonal() << obs_noise_var,
+         obs_noise_var, obs_noise_var)
             .finished()
             .asDiagonal();
 
@@ -163,7 +166,8 @@ class CeresPoseFilter : public CalibrationDataObserver {
         Eigen::Matrix<Scalar, 3, 1>(error.x(), error.y(), error.z()));
     position_errors_.emplace_back(y);
 
-    ObserveCameraUpdate(t, rt.first, imu_to_world_rotation, imu_to_world);
+    ObserveCameraUpdate(t, rt.first, rt.second, imu_to_world_rotation,
+                        imu_to_world, pivot_angle);
   }
 
   virtual void ObserveIMUUpdate(
@@ -179,7 +183,22 @@ class CeresPoseFilter : public CalibrationDataObserver {
     ObserveIMUUpdate(t, wa);
   }
 
+  virtual void ObserveTurretUpdate(distributed_clock::time_point /*t*/,
+                                   Eigen::Vector2d /*turret_state*/) {}
+
+  void UpdateTurret(distributed_clock::time_point t,
+                    Eigen::Vector2d state) override {
+    turret_state_ = state;
+    state_time_ = t;
+
+    ObserveTurretUpdate(t, state);
+  }
+
+  Eigen::Vector2d turret_state_ = Eigen::Vector2d::Zero();
+  distributed_clock::time_point state_time_ = distributed_clock::min_time;
+
   const Eigen::Quaternion<Scalar> &orientation() const { return orientation_; }
+  const Eigen::Matrix<Scalar, 6, 1> &get_x_hat() const { return x_hat_; }
 
   size_t num_errors() const { return errors_.size(); }
   Scalar errorx(size_t i) const { return errors_[i].x(); }
@@ -373,73 +392,253 @@ class PoseFilter : public CeresPoseFilter<double> {
       vz.emplace_back(x_hat(5));
     }
 
+    // TODO<Jim>: Could probably still do a bit more work on naming
+    // conventions and what is being shown here
     frc971::analysis::Plotter plotter;
-    plotter.AddFigure("position");
-    plotter.AddLine(times_, rx, "x_hat(0)");
-    plotter.AddLine(times_, ry, "x_hat(1)");
-    plotter.AddLine(times_, rz, "x_hat(2)");
-    plotter.AddLine(camera_times_, camera_x_, "Camera x");
-    plotter.AddLine(camera_times_, camera_y_, "Camera y");
-    plotter.AddLine(camera_times_, camera_z_, "Camera z");
-    plotter.AddLine(camera_times_, camera_error_x_, "Camera error x");
-    plotter.AddLine(camera_times_, camera_error_y_, "Camera error y");
-    plotter.AddLine(camera_times_, camera_error_z_, "Camera error z");
+    plotter.AddFigure("bot (imu) position");
+    plotter.AddLine(times_, x, "x_hat(0)");
+    plotter.AddLine(times_, y, "x_hat(1)");
+    plotter.AddLine(times_, z, "x_hat(2)");
     plotter.Publish();
 
-    plotter.AddFigure("error");
-    plotter.AddLine(times_, rx, "x_hat(0)");
-    plotter.AddLine(times_, ry, "x_hat(1)");
-    plotter.AddLine(times_, rz, "x_hat(2)");
-    plotter.AddLine(camera_times_, camera_error_x_, "Camera error x");
-    plotter.AddLine(camera_times_, camera_error_y_, "Camera error y");
-    plotter.AddLine(camera_times_, camera_error_z_, "Camera error z");
+    plotter.AddFigure("bot (imu) rotation");
+    plotter.AddLine(camera_times_, imu_rot_x_, "bot (imu) rot x");
+    plotter.AddLine(camera_times_, imu_rot_y_, "bot (imu) rot y");
+    plotter.AddLine(camera_times_, imu_rot_z_, "bot (imu) rot z");
+    plotter.Publish();
+
+    plotter.AddFigure("rotation error");
+    plotter.AddLine(camera_times_, rotation_error_x_, "Error x");
+    plotter.AddLine(camera_times_, rotation_error_y_, "Error y");
+    plotter.AddLine(camera_times_, rotation_error_z_, "Error z");
+    plotter.Publish();
+
+    plotter.AddFigure("translation error");
+    plotter.AddLine(camera_times_, translation_error_x_, "Error x");
+    plotter.AddLine(camera_times_, translation_error_y_, "Error y");
+    plotter.AddLine(camera_times_, translation_error_z_, "Error z");
     plotter.Publish();
 
     plotter.AddFigure("imu");
-    plotter.AddLine(camera_times_, world_gravity_x_, "world_gravity(0)");
-    plotter.AddLine(camera_times_, world_gravity_y_, "world_gravity(1)");
-    plotter.AddLine(camera_times_, world_gravity_z_, "world_gravity(2)");
-    plotter.AddLine(imu_times_, imu_x_, "imu x");
-    plotter.AddLine(imu_times_, imu_y_, "imu y");
-    plotter.AddLine(imu_times_, imu_z_, "imu z");
-    plotter.AddLine(times_, rx, "rotation x");
-    plotter.AddLine(times_, ry, "rotation y");
-    plotter.AddLine(times_, rz, "rotation z");
+    plotter.AddLine(imu_times_, imu_rate_x_, "imu gyro x");
+    plotter.AddLine(imu_times_, imu_rate_y_, "imu gyro y");
+    plotter.AddLine(imu_times_, imu_rate_z_, "imu gyro z");
+    plotter.AddLine(imu_times_, imu_accel_x_, "imu accel x");
+    plotter.AddLine(imu_times_, imu_accel_y_, "imu accel y");
+    plotter.AddLine(imu_times_, imu_accel_z_, "imu accel z");
+    plotter.AddLine(camera_times_, accel_minus_gravity_x_,
+                    "accel_minus_gravity(0)");
+    plotter.AddLine(camera_times_, accel_minus_gravity_y_,
+                    "accel_minus_gravity(1)");
+    plotter.AddLine(camera_times_, accel_minus_gravity_z_,
+                    "accel_minus_gravity(2)");
     plotter.Publish();
 
-    plotter.AddFigure("raw");
-    plotter.AddLine(imu_times_, imu_x_, "imu x");
-    plotter.AddLine(imu_times_, imu_y_, "imu y");
-    plotter.AddLine(imu_times_, imu_z_, "imu z");
-    plotter.AddLine(imu_times_, imu_ratex_, "omega x");
-    plotter.AddLine(imu_times_, imu_ratey_, "omega y");
-    plotter.AddLine(imu_times_, imu_ratez_, "omega z");
-    plotter.AddLine(camera_times_, raw_camera_x_, "Camera x");
-    plotter.AddLine(camera_times_, raw_camera_y_, "Camera y");
-    plotter.AddLine(camera_times_, raw_camera_z_, "Camera z");
+    plotter.AddFigure("raw camera observations");
+    plotter.AddLine(camera_times_, raw_camera_rot_x_, "Camera rot x");
+    plotter.AddLine(camera_times_, raw_camera_rot_y_, "Camera rot y");
+    plotter.AddLine(camera_times_, raw_camera_rot_z_, "Camera rot z");
+    plotter.AddLine(camera_times_, raw_camera_trans_x_, "Camera trans x");
+    plotter.AddLine(camera_times_, raw_camera_trans_y_, "Camera trans y");
+    plotter.AddLine(camera_times_, raw_camera_trans_z_, "Camera trans z");
     plotter.Publish();
 
-    plotter.AddFigure("xyz vel");
-    plotter.AddLine(times_, x, "x");
-    plotter.AddLine(times_, y, "y");
-    plotter.AddLine(times_, z, "z");
+    plotter.AddFigure("xyz pos, vel estimates");
+    plotter.AddLine(times_, x, "x (x_hat(0))");
+    plotter.AddLine(times_, y, "y (x_hat(1))");
+    plotter.AddLine(times_, z, "z (x_hat(2))");
     plotter.AddLine(times_, vx, "vx");
     plotter.AddLine(times_, vy, "vy");
     plotter.AddLine(times_, vz, "vz");
-    plotter.AddLine(camera_times_, camera_position_x_, "Camera x");
-    plotter.AddLine(camera_times_, camera_position_y_, "Camera y");
-    plotter.AddLine(camera_times_, camera_position_z_, "Camera z");
+    plotter.AddLine(camera_times_, imu_position_x_, "x pos from board");
+    plotter.AddLine(camera_times_, imu_position_y_, "y pos from board");
+    plotter.AddLine(camera_times_, imu_position_z_, "z pos from board");
     plotter.Publish();
 
+    // If we've got 'em, plot 'em
+    if (turret_times_.size() > 0) {
+      plotter.AddFigure("Turret angle");
+      plotter.AddLine(turret_times_, turret_angles_, "turret angle");
+      plotter.Publish();
+    }
+
     plotter.Spin();
+  }
+
+  void Visualize(const CalibrationParameters &calibration_parameters) {
+    // Set up virtual camera for visualization
+    VisualizeRobot vis_robot;
+
+    // Set virtual viewing point 10 meters above the origin, rotated so the
+    // camera faces straight down
+    Eigen::Translation3d camera_trans(0, 0, 10.0);
+    Eigen::AngleAxisd camera_rot(M_PI, Eigen::Vector3d::UnitX());
+    Eigen::Affine3d camera_viewpoint = camera_trans * camera_rot;
+    vis_robot.SetViewpoint(camera_viewpoint);
+
+    // Create camera with origin in center, and focal length suitable to fit
+    // robot visualization fully in view
+    int image_width = 500;
+    double focal_length = 1000.0;
+    double intr[] = {focal_length, 0.0,          image_width / 2.0,
+                     0.0,          focal_length, image_width / 2.0,
+                     0.0,          0.0,          1.0};
+    cv::Mat camera_mat = cv::Mat(3, 3, CV_64FC1, intr);
+    cv::Mat dist_coeffs = cv::Mat(1, 5, CV_64F, 0.0);
+    vis_robot.SetCameraParameters(camera_mat);
+    vis_robot.SetDistortionCoefficients(dist_coeffs);
+
+    /*
+    // Draw an initial visualization
+    Eigen::Vector3d T_world_imu_vec =
+        calibration_parameters.initial_state.block<3, 1>(0, 0);
+    Eigen::Translation3d T_world_imu(T_world_imu_vec);
+    Eigen::Affine3d H_world_imu =
+        T_world_imu * calibration_parameters.initial_orientation;
+
+    vis_robot.DrawFrameAxes(H_world_imu, "imu");
+
+    Eigen::Quaterniond R_imu_pivot(calibration_parameters.pivot_to_imu);
+    Eigen::Translation3d T_imu_pivot(
+        calibration_parameters.pivot_to_imu_translation);
+    Eigen::Affine3d H_imu_pivot = T_imu_pivot * R_imu_pivot;
+    Eigen::Affine3d H_world_pivot = H_world_imu * H_imu_pivot;
+    vis_robot.DrawFrameAxes(H_world_pivot, "pivot");
+
+    Eigen::Affine3d H_imupivot_camerapivot(
+        Eigen::AngleAxisd(1.5, Eigen::Vector3d::UnitZ()));
+    Eigen::Quaterniond R_camera_pivot(calibration_parameters.pivot_to_camera);
+    Eigen::Translation3d T_camera_pivot(
+        calibration_parameters.pivot_to_camera_translation);
+    Eigen::Affine3d H_camera_pivot = T_camera_pivot * R_camera_pivot;
+    Eigen::Affine3d H_world_camera = H_world_imu * H_imu_pivot *
+                                     H_imupivot_camerapivot *
+                                     H_camera_pivot.inverse();
+    vis_robot.DrawFrameAxes(H_world_camera, "camera");
+
+    cv::imshow("Original poses", image_mat);
+    cv::waitKey();
+    */
+
+    uint current_state_index = 0;
+    uint current_turret_index = 0;
+    for (uint i = 0; i < camera_times_.size() - 1; i++) {
+      // reset image each frame
+      cv::Mat image_mat =
+          cv::Mat::zeros(cv::Size(image_width, image_width), CV_8UC3);
+      vis_robot.SetImage(image_mat);
+
+      // Jump to state closest to current camera_time
+      while (camera_times_[i] > times_[current_state_index] &&
+             current_state_index < times_.size()) {
+        current_state_index++;
+      }
+
+      // H_world_imu: map from world origin to imu (robot) frame
+      Eigen::Vector3d T_world_imu_vec =
+          x_hats_[current_state_index].block<3, 1>(0, 0);
+      Eigen::Translation3d T_world_imu(T_world_imu_vec);
+      Eigen::Affine3d H_world_imu =
+          T_world_imu * orientations_[current_state_index];
+
+      vis_robot.DrawFrameAxes(H_world_imu, "imu_kf");
+
+      // H_world_pivot: map from world origin to pivot point
+      // Do this via the imu (using H_world_pivot = H_world_imu * H_imu_pivot)
+      Eigen::Quaterniond R_imu_pivot(calibration_parameters.pivot_to_imu);
+      Eigen::Translation3d T_imu_pivot(
+          calibration_parameters.pivot_to_imu_translation);
+      Eigen::Affine3d H_imu_pivot = T_imu_pivot * R_imu_pivot;
+      Eigen::Affine3d H_world_pivot = H_world_imu * H_imu_pivot;
+      vis_robot.DrawFrameAxes(H_world_pivot, "pivot");
+
+      // Jump to turret sample closest to current camera_time
+      while (turret_times_.size() > 0 &&
+             camera_times_[i] > turret_times_[current_turret_index] &&
+             current_turret_index < turret_times_.size()) {
+        current_turret_index++;
+      }
+
+      // Draw the camera frame
+
+      Eigen::Affine3d H_imupivot_camerapivot(Eigen::Matrix4d::Identity());
+      if (turret_angles_.size() > 0) {
+        // Need to rotate by the turret angle in the middle of all this
+        H_imupivot_camerapivot = Eigen::Affine3d(Eigen::AngleAxisd(
+            turret_angles_[current_turret_index], Eigen::Vector3d::UnitZ()));
+      }
+
+      // H_world_camera: map from world origin to camera frame
+      // Via imu->pivot->pivot rotation
+      Eigen::Quaterniond R_camera_pivot(calibration_parameters.pivot_to_camera);
+      Eigen::Translation3d T_camera_pivot(
+          calibration_parameters.pivot_to_camera_translation);
+      Eigen::Affine3d H_camera_pivot = T_camera_pivot * R_camera_pivot;
+      Eigen::Affine3d H_world_camera = H_world_imu * H_imu_pivot *
+                                       H_imupivot_camerapivot *
+                                       H_camera_pivot.inverse();
+      vis_robot.DrawFrameAxes(H_world_camera, "camera");
+
+      // H_world_board: board location from world reference frame
+      // Uses the estimate from camera-> board, on top of H_world_camera
+      Eigen::Quaterniond R_camera_board(
+          frc971::controls::ToQuaternionFromRotationVector(
+              board_to_camera_rotations_[i]));
+      Eigen::Translation3d T_camera_board(board_to_camera_translations_[i]);
+      Eigen::Affine3d H_camera_board = T_camera_board * R_camera_board;
+      Eigen::Affine3d H_world_board = H_world_camera * H_camera_board;
+
+      vis_robot.DrawFrameAxes(H_world_board, "board est");
+
+      // H_world_board_solve: board in world frame based on solver
+      // Find world -> board via solved parameter of H_world_board
+      // (parameter "board_to_world" and assuming origin of board frame is
+      // coincident with origin of world frame, i.e., T_world_board == 0)
+      Eigen::Quaterniond R_world_board_solve(
+          calibration_parameters.board_to_world);
+      Eigen::Translation3d T_world_board_solve(Eigen::Vector3d(0, 0, 0));
+      Eigen::Affine3d H_world_board_solve =
+          T_world_board_solve * R_world_board_solve;
+
+      vis_robot.DrawFrameAxes(H_world_board_solve, "board_solve");
+
+      // H_world_imu_from_board: imu location in world frame, via the board
+      // Determine the imu location via the board_to_world solved
+      // transformation
+      Eigen::Affine3d H_world_imu_from_board =
+          H_world_board_solve * H_camera_board.inverse() * H_camera_pivot *
+          H_imupivot_camerapivot.inverse() * H_imu_pivot.inverse();
+
+      vis_robot.DrawFrameAxes(H_world_imu_from_board, "imu_board");
+
+      // These errors should match up with the residuals in the optimizer
+      // (Note: rotation seems to differ by sign, but that's OK in residual)
+      Eigen::Affine3d error = H_world_imu_from_board.inverse() * H_world_imu;
+      Eigen::Vector3d trans_error =
+          H_world_imu_from_board.translation() - H_world_imu.translation();
+      Eigen::Quaterniond error_rot(error.rotation());
+      VLOG(1) << "Error: \n"
+              << "Rotation: " << error_rot.coeffs().transpose() << "\n"
+              << "Translation: " << trans_error.transpose();
+
+      cv::imshow("Live", image_mat);
+      cv::waitKey(50);
+
+      if (i % 200 == 0) {
+        LOG(INFO) << "Pausing at step " << i;
+        cv::waitKey();
+      }
+    }
+    LOG(INFO) << "Finished visualizing robot.  Press any key to continue";
+    cv::waitKey();
   }
 
   void ObserveIntegrated(distributed_clock::time_point t,
                          Eigen::Matrix<double, 6, 1> x_hat,
                          Eigen::Quaternion<double> orientation,
                          Eigen::Matrix<double, 6, 6> p) override {
-    VLOG(1) << t << " -> " << p;
-    VLOG(1) << t << " xhat -> " << x_hat.transpose();
+    VLOG(2) << t << " -> " << p;
+    VLOG(2) << t << " xhat -> " << x_hat.transpose();
     times_.emplace_back(chrono::duration<double>(t.time_since_epoch()).count());
     x_hats_.emplace_back(x_hat);
     orientations_.emplace_back(orientation);
@@ -448,83 +647,126 @@ class PoseFilter : public CeresPoseFilter<double> {
   void ObserveIMUUpdate(
       distributed_clock::time_point t,
       std::pair<Eigen::Vector3d, Eigen::Vector3d> wa) override {
-    imu_times_.emplace_back(chrono::duration<double>(t.time_since_epoch()).count());
-    imu_ratex_.emplace_back(wa.first.x());
-    imu_ratey_.emplace_back(wa.first.y());
-    imu_ratez_.emplace_back(wa.first.z());
-    imu_x_.emplace_back(wa.second.x());
-    imu_y_.emplace_back(wa.second.y());
-    imu_z_.emplace_back(wa.second.z());
+    imu_times_.emplace_back(
+        chrono::duration<double>(t.time_since_epoch()).count());
+    imu_rate_x_.emplace_back(wa.first.x());
+    imu_rate_y_.emplace_back(wa.first.y());
+    imu_rate_z_.emplace_back(wa.first.z());
+    imu_accel_x_.emplace_back(wa.second.x());
+    imu_accel_y_.emplace_back(wa.second.y());
+    imu_accel_z_.emplace_back(wa.second.z());
 
     last_accel_ = wa.second;
   }
 
   void ObserveCameraUpdate(distributed_clock::time_point t,
                            Eigen::Vector3d board_to_camera_rotation,
+                           Eigen::Vector3d board_to_camera_translation,
                            Eigen::Quaternion<double> imu_to_world_rotation,
-                           Eigen::Affine3d imu_to_world) override {
-    raw_camera_x_.emplace_back(board_to_camera_rotation(0, 0));
-    raw_camera_y_.emplace_back(board_to_camera_rotation(1, 0));
-    raw_camera_z_.emplace_back(board_to_camera_rotation(2, 0));
+                           Eigen::Affine3d imu_to_world,
+                           double turret_angle) override {
+    board_to_camera_rotations_.emplace_back(board_to_camera_rotation);
+    board_to_camera_translations_.emplace_back(board_to_camera_translation);
 
-    Eigen::Matrix<double, 3, 1> rotation_vector =
-        frc971::controls::ToRotationVectorFromQuaternion(imu_to_world_rotation);
     camera_times_.emplace_back(
         chrono::duration<double>(t.time_since_epoch()).count());
 
-    Eigen::Matrix<double, 3, 1> camera_error =
+    raw_camera_rot_x_.emplace_back(board_to_camera_rotation(0, 0));
+    raw_camera_rot_y_.emplace_back(board_to_camera_rotation(1, 0));
+    raw_camera_rot_z_.emplace_back(board_to_camera_rotation(2, 0));
+
+    raw_camera_trans_x_.emplace_back(board_to_camera_translation(0, 0));
+    raw_camera_trans_y_.emplace_back(board_to_camera_translation(1, 0));
+    raw_camera_trans_z_.emplace_back(board_to_camera_translation(2, 0));
+
+    Eigen::Matrix<double, 3, 1> rotation_vector =
+        frc971::controls::ToRotationVectorFromQuaternion(imu_to_world_rotation);
+    imu_rot_x_.emplace_back(rotation_vector(0, 0));
+    imu_rot_y_.emplace_back(rotation_vector(1, 0));
+    imu_rot_z_.emplace_back(rotation_vector(2, 0));
+
+    Eigen::Matrix<double, 3, 1> rotation_error =
         frc971::controls::ToRotationVectorFromQuaternion(
             imu_to_world_rotation.inverse() * orientation());
 
-    camera_x_.emplace_back(rotation_vector(0, 0));
-    camera_y_.emplace_back(rotation_vector(1, 0));
-    camera_z_.emplace_back(rotation_vector(2, 0));
+    rotation_error_x_.emplace_back(rotation_error(0, 0));
+    rotation_error_y_.emplace_back(rotation_error(1, 0));
+    rotation_error_z_.emplace_back(rotation_error(2, 0));
 
-    camera_error_x_.emplace_back(camera_error(0, 0));
-    camera_error_y_.emplace_back(camera_error(1, 0));
-    camera_error_z_.emplace_back(camera_error(2, 0));
+    Eigen::Matrix<double, 3, 1> imu_pos = get_x_hat().block<3, 1>(0, 0);
+    Eigen::Translation3d T_world_imu(imu_pos);
+    Eigen::Affine3d H_world_imu = T_world_imu * orientation();
+    Eigen::Affine3d H_error = imu_to_world.inverse() * H_world_imu;
 
-    const Eigen::Vector3d world_gravity =
+    Eigen::Matrix<double, 3, 1> translation_error = H_error.translation();
+    translation_error_x_.emplace_back(translation_error(0, 0));
+    translation_error_y_.emplace_back(translation_error(1, 0));
+    translation_error_z_.emplace_back(translation_error(2, 0));
+
+    const Eigen::Vector3d accel_minus_gravity =
         imu_to_world_rotation * last_accel_ -
         Eigen::Vector3d(0, 0, kGravity) * gravity_scalar();
 
-    const Eigen::Vector3d camera_position =
-        imu_to_world * Eigen::Vector3d::Zero();
+    accel_minus_gravity_x_.emplace_back(accel_minus_gravity.x());
+    accel_minus_gravity_y_.emplace_back(accel_minus_gravity.y());
+    accel_minus_gravity_z_.emplace_back(accel_minus_gravity.z());
 
-    world_gravity_x_.emplace_back(world_gravity.x());
-    world_gravity_y_.emplace_back(world_gravity.y());
-    world_gravity_z_.emplace_back(world_gravity.z());
+    const Eigen::Vector3d imu_position = imu_to_world * Eigen::Vector3d::Zero();
 
-    camera_position_x_.emplace_back(camera_position.x());
-    camera_position_y_.emplace_back(camera_position.y());
-    camera_position_z_.emplace_back(camera_position.z());
+    imu_position_x_.emplace_back(imu_position.x());
+    imu_position_y_.emplace_back(imu_position.y());
+    imu_position_z_.emplace_back(imu_position.z());
+
+    turret_angles_from_camera_.emplace_back(turret_angle);
+    imu_to_world_save_.emplace_back(imu_to_world);
+  }
+
+  void ObserveTurretUpdate(distributed_clock::time_point t,
+                           Eigen::Vector2d turret_state) override {
+    turret_times_.emplace_back(
+        chrono::duration<double>(t.time_since_epoch()).count());
+    turret_angles_.emplace_back(turret_state(0));
   }
 
   std::vector<double> camera_times_;
-  std::vector<double> camera_x_;
-  std::vector<double> camera_y_;
-  std::vector<double> camera_z_;
-  std::vector<double> raw_camera_x_;
-  std::vector<double> raw_camera_y_;
-  std::vector<double> raw_camera_z_;
-  std::vector<double> camera_error_x_;
-  std::vector<double> camera_error_y_;
-  std::vector<double> camera_error_z_;
+  std::vector<double> imu_rot_x_;
+  std::vector<double> imu_rot_y_;
+  std::vector<double> imu_rot_z_;
+  std::vector<double> raw_camera_rot_x_;
+  std::vector<double> raw_camera_rot_y_;
+  std::vector<double> raw_camera_rot_z_;
+  std::vector<double> raw_camera_trans_x_;
+  std::vector<double> raw_camera_trans_y_;
+  std::vector<double> raw_camera_trans_z_;
+  std::vector<double> rotation_error_x_;
+  std::vector<double> rotation_error_y_;
+  std::vector<double> rotation_error_z_;
+  std::vector<double> translation_error_x_;
+  std::vector<double> translation_error_y_;
+  std::vector<double> translation_error_z_;
+  std::vector<Eigen::Vector3d> board_to_camera_rotations_;
+  std::vector<Eigen::Vector3d> board_to_camera_translations_;
 
-  std::vector<double> world_gravity_x_;
-  std::vector<double> world_gravity_y_;
-  std::vector<double> world_gravity_z_;
-  std::vector<double> imu_x_;
-  std::vector<double> imu_y_;
-  std::vector<double> imu_z_;
-  std::vector<double> camera_position_x_;
-  std::vector<double> camera_position_y_;
-  std::vector<double> camera_position_z_;
+  std::vector<double> turret_angles_from_camera_;
+  std::vector<Eigen::Affine3d> imu_to_world_save_;
+
+  std::vector<double> imu_position_x_;
+  std::vector<double> imu_position_y_;
+  std::vector<double> imu_position_z_;
 
   std::vector<double> imu_times_;
-  std::vector<double> imu_ratex_;
-  std::vector<double> imu_ratey_;
-  std::vector<double> imu_ratez_;
+  std::vector<double> imu_rate_x_;
+  std::vector<double> imu_rate_y_;
+  std::vector<double> imu_rate_z_;
+  std::vector<double> accel_minus_gravity_x_;
+  std::vector<double> accel_minus_gravity_y_;
+  std::vector<double> accel_minus_gravity_z_;
+  std::vector<double> imu_accel_x_;
+  std::vector<double> imu_accel_y_;
+  std::vector<double> imu_accel_z_;
+
+  std::vector<double> turret_times_;
+  std::vector<double> turret_angles_;
 
   std::vector<double> times_;
   std::vector<Eigen::Matrix<double, 6, 1>> x_hats_;
@@ -549,6 +791,8 @@ struct CostFunctor {
                   const S *const pivot_to_imu_translation_ptr,
                   const S *const gravity_scalar_ptr,
                   const S *const accelerometer_bias_ptr, S *residual) const {
+    const aos::monotonic_clock::time_point start_time =
+        aos::monotonic_clock::now();
     Eigen::Quaternion<S> initial_orientation(
         initial_orientation_ptr[3], initial_orientation_ptr[0],
         initial_orientation_ptr[1], initial_orientation_ptr[2]);
@@ -585,17 +829,31 @@ struct CostFunctor {
         pivot_to_imu_translation, *gravity_scalar_ptr, accelerometer_bias);
     data->ReviewData(&filter);
 
+    // Since the angular error scale is bounded by 1 (quaternion, so unit
+    // vector, scaled by sin(alpha)), I found it necessary to scale the
+    // angular error to have it properly balance with the translational error
+    double ang_error_scale = 5.0;
     for (size_t i = 0; i < filter.num_errors(); ++i) {
-      residual[3 * i + 0] = filter.errorx(i);
-      residual[3 * i + 1] = filter.errory(i);
-      residual[3 * i + 2] = filter.errorz(i);
+      residual[3 * i + 0] = ang_error_scale * filter.errorx(i);
+      residual[3 * i + 1] = ang_error_scale * filter.errory(i);
+      residual[3 * i + 2] = ang_error_scale * filter.errorz(i);
     }
 
+    double trans_error_scale = 1.0;
     for (size_t i = 0; i < filter.num_perrors(); ++i) {
-      residual[3 * filter.num_errors() + 3 * i + 0] = filter.errorpx(i);
-      residual[3 * filter.num_errors() + 3 * i + 1] = filter.errorpy(i);
-      residual[3 * filter.num_errors() + 3 * i + 2] = filter.errorpz(i);
+      residual[3 * filter.num_errors() + 3 * i + 0] =
+          trans_error_scale * filter.errorpx(i);
+      residual[3 * filter.num_errors() + 3 * i + 1] =
+          trans_error_scale * filter.errorpy(i);
+      residual[3 * filter.num_errors() + 3 * i + 2] =
+          trans_error_scale * filter.errorpz(i);
     }
+
+    LOG(INFO) << "Cost function calc took "
+              << chrono::duration<double>(aos::monotonic_clock::now() -
+                                          start_time)
+                     .count()
+              << " seconds";
 
     return true;
   }
@@ -630,6 +888,8 @@ void Solve(const CalibrationData &data,
   }
 
   {
+    // The turret's Z rotation is redundant with the camera's mounting z
+    // rotation since it's along the rotation axis.
     ceres::CostFunction *turret_z_cost_function =
         new ceres::AutoDiffCostFunction<PenalizeQuaternionZ, 1, 4>(
             new PenalizeQuaternionZ());
@@ -639,7 +899,8 @@ void Solve(const CalibrationData &data,
   }
 
   if (calibration_parameters->has_pivot) {
-    // Constrain Z.
+    // Constrain Z since it's along the rotation axis and therefore
+    // redundant.
     problem.SetParameterization(
         calibration_parameters->pivot_to_imu_translation.data(),
         new ceres::SubsetParameterization(3, {2}));
@@ -655,6 +916,9 @@ void Solve(const CalibrationData &data,
       quaternion_local_parameterization);
   problem.SetParameterization(
       calibration_parameters->pivot_to_camera.coeffs().data(),
+      quaternion_local_parameterization);
+  problem.SetParameterization(
+      calibration_parameters->pivot_to_imu.coeffs().data(),
       quaternion_local_parameterization);
   problem.SetParameterization(
       calibration_parameters->board_to_world.coeffs().data(),
@@ -678,40 +942,13 @@ void Solve(const CalibrationData &data,
   ceres::Solver::Options options;
   options.minimizer_progress_to_stdout = true;
   options.gradient_tolerance = 1e-12;
-  options.function_tolerance = 1e-16;
+  options.function_tolerance = 1e-6;
   options.parameter_tolerance = 1e-12;
   ceres::Solver::Summary summary;
   Solve(options, &problem, &summary);
   LOG(INFO) << summary.FullReport();
-
-  LOG(INFO) << "initial_orientation "
-            << calibration_parameters->initial_orientation.coeffs().transpose();
-  LOG(INFO) << "pivot_to_imu "
-            << calibration_parameters->pivot_to_imu.coeffs().transpose();
-  LOG(INFO) << "pivot_to_imu(rotation) "
-            << frc971::controls::ToRotationVectorFromQuaternion(
-                   calibration_parameters->pivot_to_imu)
-                   .transpose();
-  LOG(INFO) << "pivot_to_camera "
-            << calibration_parameters->pivot_to_camera.coeffs().transpose();
-  LOG(INFO) << "pivot_to_camera(rotation) "
-            << frc971::controls::ToRotationVectorFromQuaternion(
-                   calibration_parameters->pivot_to_camera)
-                   .transpose();
-  LOG(INFO) << "gyro_bias " << calibration_parameters->gyro_bias.transpose();
-  LOG(INFO) << "board_to_world "
-            << calibration_parameters->board_to_world.coeffs().transpose();
-  LOG(INFO) << "board_to_world(rotation) "
-            << frc971::controls::ToRotationVectorFromQuaternion(
-                   calibration_parameters->board_to_world)
-                   .transpose();
-  LOG(INFO) << "pivot_to_imu_translation "
-            << calibration_parameters->pivot_to_imu_translation.transpose();
-  LOG(INFO) << "pivot_to_camera_translation "
-            << calibration_parameters->pivot_to_camera_translation.transpose();
-  LOG(INFO) << "gravity " << kGravity * calibration_parameters->gravity_scalar;
-  LOG(INFO) << "accelerometer bias "
-            << calibration_parameters->accelerometer_bias.transpose();
+  LOG(INFO) << "Solution is " << (summary.IsSolutionUsable() ? "" : "NOT ")
+            << "usable";
 }
 
 void Plot(const CalibrationData &data,
@@ -728,6 +965,22 @@ void Plot(const CalibrationData &data,
                     calibration_parameters.accelerometer_bias);
   data.ReviewData(&filter);
   filter.Plot();
+}
+
+void Visualize(const CalibrationData &data,
+               const CalibrationParameters &calibration_parameters) {
+  PoseFilter filter(calibration_parameters.initial_orientation,
+                    calibration_parameters.pivot_to_camera,
+                    calibration_parameters.pivot_to_imu,
+                    calibration_parameters.gyro_bias,
+                    calibration_parameters.initial_state,
+                    calibration_parameters.board_to_world,
+                    calibration_parameters.pivot_to_camera_translation,
+                    calibration_parameters.pivot_to_imu_translation,
+                    calibration_parameters.gravity_scalar,
+                    calibration_parameters.accelerometer_bias);
+  data.ReviewData(&filter);
+  filter.Visualize(calibration_parameters);
 }
 
 }  // namespace vision

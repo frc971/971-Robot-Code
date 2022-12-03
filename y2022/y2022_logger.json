@@ -462,6 +462,38 @@
       ]
     },
     {
+      "name": "/pi3/camera",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "pi3",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "logger"
+      ],
+      "destination_nodes": [
+        {
+          "name": "logger",
+          "priority": 3,
+          "time_to_live": 500000000
+        }
+      ]
+    },
+    {
+      "name": "/localizer",
+      "type": "frc971.IMUValuesBatch",
+      "source_node": "imu",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "logger"
+      ],
+      "destination_nodes": [
+        {
+          "name": "logger",
+          "priority": 3,
+          "time_to_live": 500000000
+        }
+      ]
+    },
+    {
       "name": "/pi4/camera/decimated",
       "type": "frc971.vision.CameraImage",
       "source_node": "pi4",

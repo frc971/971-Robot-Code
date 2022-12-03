@@ -277,8 +277,16 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
           cv::aruco::drawAxis(rgb_image, camera_matrix_, dist_coeffs_, rvec,
                               tvec, 0.1);
         }
+        std::stringstream ss;
+        ss << "tvec = " << tvec << "; |t| = " << tvec_eigen.norm();
+        cv::putText(rgb_image, ss.str(), cv::Point(10, 25),
+                    cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 255));
+        ss.str("");
+        ss << "rvec = " << rvec;
+        cv::putText(rgb_image, ss.str(), cv::Point(10, 50),
+                    cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(255, 255, 255));
       } else {
-        LOG(INFO) << "Age: " << age_double << ", invalid pose";
+        VLOG(2) << "Age: " << age_double << ", invalid pose";
       }
     } else {
       VLOG(2) << "Age: " << age_double << ", not enough charuco IDs, got "
