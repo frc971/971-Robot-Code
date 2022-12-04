@@ -1,0 +1,24 @@
+namespace frc971.vision;
+
+// Represents 3d pose of an april tag on the field.
+table TargetPoseFbs {
+  // AprilTag ID of this target
+  id:uint64 (id: 0);
+
+  // Pose of target relative to field origin.
+  // NOTE: As of now, we only solve for the 2d pose (x, y, yaw)
+  // and all other values will be 0.
+  x:double (id: 1);
+  y:double (id: 2);
+  z:double (id: 3);
+
+  roll:double (id: 4);
+  pitch:double (id: 5);
+  yaw:double (id: 6);
+}
+
+// Map of all target poses on a field.
+// This would be solved for by TargetMapper
+table TargetMap {
+  target_poses:[TargetPoseFbs] (id: 0);
+}

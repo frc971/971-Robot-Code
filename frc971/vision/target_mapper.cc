@@ -207,6 +207,18 @@ ceres::examples::Constraint2d DataAdapter::ComputeTargetConstraint(
 }
 
 TargetMapper::TargetMapper(
+    std::string_view target_poses_path,
+    std::vector<ceres::examples::Constraint2d> target_constraints)
+    : target_constraints_(target_constraints) {
+  aos::FlatbufferDetachedBuffer<TargetMap> target_map =
+      aos::JsonFileToFlatbuffer<TargetMap>(target_poses_path);
+  for (const auto *target_pose_fbs : *target_map.message().target_poses()) {
+    target_poses_[target_pose_fbs->id()] = ceres::examples::Pose2d{
+        target_pose_fbs->x(), target_pose_fbs->y(), target_pose_fbs->yaw()};
+  }
+}
+
+TargetMapper::TargetMapper(
     std::map<TargetId, ceres::examples::Pose2d> target_poses,
     std::vector<ceres::examples::Constraint2d> target_constraints)
     : target_poses_(target_poses), target_constraints_(target_constraints) {}
@@ -220,15 +232,6 @@ std::optional<TargetMapper::TargetPose> TargetMapper::GetTargetPoseById(
   }
 
   return std::nullopt;
-}
-
-// Taken from ceres/examples/slam/pose_graph_2d/pose_graph_2d.cc
-void TargetMapper::OutputPoses(
-    const std::map<int, ceres::examples::Pose2d> &poses) {
-  for (const auto &pair : poses) {
-    std::cout << pair.first << ": " << pair.second.x << " " << pair.second.y
-              << ' ' << pair.second.yaw_radians << std::endl;
-  }
 }
 
 // Taken from ceres/examples/slam/pose_graph_2d/pose_graph_2d.cc
@@ -306,19 +309,49 @@ bool TargetMapper::SolveOptimizationProblem(ceres::Problem *problem) {
   ceres::Solver::Summary summary;
   ceres::Solve(options, problem, &summary);
 
-  std::cout << summary.FullReport() << '\n';
+  LOG(INFO) << summary.FullReport() << '\n';
 
   return summary.IsSolutionUsable();
 }
 
-void TargetMapper::Solve() {
+void TargetMapper::Solve(std::optional<std::string_view> output_path) {
   ceres::Problem problem;
   BuildOptimizationProblem(&target_poses_, target_constraints_, &problem);
 
   CHECK(SolveOptimizationProblem(&problem))
       << "The solve was not successful, exiting.";
 
-  OutputPoses(target_poses_);
+  // TODO(milind): add origin to first target offset to all poses
+
+  auto map_json = MapToJson();
+  VLOG(1) << "Solved target poses: " << map_json;
+  if (output_path.has_value()) {
+    LOG(INFO) << "Writing map to file: " << output_path.value();
+    aos::util::WriteStringToFileOrDie(output_path.value(), map_json);
+  }
+}
+
+std::string TargetMapper::MapToJson() const {
+  flatbuffers::FlatBufferBuilder fbb;
+
+  // Convert poses to flatbuffers
+  std::vector<flatbuffers::Offset<TargetPoseFbs>> target_poses_fbs;
+  for (const auto &[id, pose] : target_poses_) {
+    TargetPoseFbs::Builder target_pose_builder(fbb);
+    target_pose_builder.add_id(id);
+    target_pose_builder.add_x(id);
+    target_pose_builder.add_y(id);
+    target_pose_builder.add_yaw(id);
+
+    target_poses_fbs.emplace_back(target_pose_builder.Finish());
+  }
+
+  flatbuffers::Offset<TargetMap> target_map_offset =
+      CreateTargetMap(fbb, fbb.CreateVector(target_poses_fbs));
+
+  return aos::FlatbufferToJson(
+      flatbuffers::GetMutableTemporaryPointer(fbb, target_map_offset),
+      {.multi_line = true});
 }
 
 }  // namespace frc971::vision

@@ -5,6 +5,7 @@
 
 #include "aos/events/simulated_event_loop.h"
 #include "frc971/vision/ceres/types.h"
+#include "frc971/vision/target_map_generated.h"
 
 namespace frc971::vision {
 
@@ -18,17 +19,27 @@ class TargetMapper {
 
   struct TargetPose {
     TargetId id;
+    // TOOD(milind): switch everything to 3d once we're more confident in 2d
+    // solving
     ceres::examples::Pose2d pose;
   };
 
-  // target_poses are initial guesses for the actual locations of the targets on
-  // the field.
+  // target_poses_path is the path to a TargetMap json with initial guesses for
+  // the actual locations of the targets on the field.
   // target_constraints are the deltas between consecutive target detections,
   // and are usually prepared by the DataAdapter class below.
+  TargetMapper(std::string_view target_poses_path,
+               std::vector<ceres::examples::Constraint2d> target_constraints);
+  // Alternate constructor for tests.
+  // Takes in the actual intial guesses instead of a file containing them
   TargetMapper(std::map<TargetId, ceres::examples::Pose2d> target_poses,
                std::vector<ceres::examples::Constraint2d> target_constraints);
 
-  void Solve();
+  // If output_path is set, the map will be saved to that file as a json
+  void Solve(std::optional<std::string_view> output_path = std::nullopt);
+
+  // Prints target poses into a TargetMap flatbuffer json
+  std::string MapToJson() const;
 
   static std::optional<TargetPose> GetTargetPoseById(
       std::vector<TargetPose> target_poses, TargetId target_id);
@@ -38,9 +49,6 @@ class TargetMapper {
   }
 
  private:
-  // Output the poses to std::cout with format: ID: x y yaw_radians.
-  static void OutputPoses(const std::map<int, ceres::examples::Pose2d> &poses);
-
   // Constructs the nonlinear least squares optimization problem from the
   // pose graph constraints.
   void BuildOptimizationProblem(
