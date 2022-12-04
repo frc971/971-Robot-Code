@@ -195,11 +195,11 @@ void CharucoExtractor::SetupTargetData() {
     square_length_ = 0.1651;
     dictionary_ = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_250);
   } else if (FLAGS_target_type == "april_tag") {
-    // Current printout is supposed to be 200mm
-    // TODO<Jim>: Verify this
-    square_length_ = 0.2;
+    // Tag will be 6 in (15.24 cm) according to
+    // https://www.firstinspires.org/robotics/frc/blog/2022-2023-approved-devices-rules-preview-and-vision-target-update
+    square_length_ = 0.1524;
     dictionary_ =
-        cv::aruco::getPredefinedDictionary(cv::aruco::DICT_APRILTAG_36h11);
+        cv::aruco::getPredefinedDictionary(cv::aruco::DICT_APRILTAG_16h5);
   } else {
     // Bail out if it's not a supported target
     LOG(FATAL) << "Target type undefined: " << FLAGS_target_type
