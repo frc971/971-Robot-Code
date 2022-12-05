@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, HostListener} from '@angular/core';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
 import {RequestNotesForTeam} from 'org_frc971/scouting/webserver/requests/messages/request_notes_for_team_generated';
@@ -82,6 +82,29 @@ export class Notes {
   // Data inputted by user is stored in this array.
   // Includes the team number, notes, and keyword selection.
   newData: Input[] = [];
+
+  // Keyboard shortcuts to switch between text areas.
+  // Listens for Ctrl + number and focuses on the
+  // corresponding textbox.
+  // More Info: https://angular.io/api/core/HostListener
+
+  @HostListener('window:keyup', ['$event'])
+  onEvent(event: KeyboardEvent) {
+    if (event.ctrlKey) {
+      if (event.code.includes('Digit')) {
+        this.handleFocus(event.key);
+      }
+    }
+  }
+
+  handleFocus(digit: string) {
+    let textArea = <HTMLInputElement>(
+      document.getElementById('text-input-' + digit)
+    );
+    if (textArea != null) {
+      textArea.focus();
+    }
+  }
 
   setTeamNumber() {
     let data: Input = {
