@@ -354,4 +354,41 @@ describe('The scouting web page', () => {
       'Team Number'
     );
   });
+
+  it('should: switch note text boxes with keyboard shortcuts', async () => {
+    // Navigate to Notes Page.
+    await loadPage();
+    await element(by.cssContainingText('.nav-link', 'Notes')).click();
+    expect(await element(by.id('page-title')).getText()).toEqual('Notes');
+
+    // Add first team.
+    await setTextboxByIdTo('team_number_notes', '1234');
+    await element(by.buttonText('Select')).click();
+
+    // Add second team.
+    await element(by.id('add-team-button')).click();
+    await setTextboxByIdTo('team_number_notes', '1235');
+    await element(by.buttonText('Select')).click();
+
+    // Add third team.
+    await element(by.id('add-team-button')).click();
+    await setTextboxByIdTo('team_number_notes', '1236');
+    await element(by.buttonText('Select')).click();
+
+    for (let i = 1; i <= 3; i++) {
+      // Press Control + i
+      // Keyup Control for future actions.
+      browser
+        .actions()
+        .keyDown(protractor.Key.CONTROL)
+        .sendKeys(i.toString())
+        .keyUp(protractor.Key.CONTROL)
+        .perform();
+
+      // Expect text input to be focused.
+      expect(
+        await browser.driver.switchTo().activeElement().getAttribute('id')
+      ).toEqual('text-input-' + i);
+    }
+  });
 });
