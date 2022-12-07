@@ -16,6 +16,7 @@ ts_library(
     use_angular_plugin = True,
     visibility = ["//visibility:public"],
     deps = [
+        "//scouting/www/driver_ranking",
         "//scouting/www/entry",
         "//scouting/www/import_match_list",
         "//scouting/www/match_list",

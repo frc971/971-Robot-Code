@@ -729,3 +729,33 @@ func TestNotes(t *testing.T) {
 		t.Errorf("Got %#v,\nbut expected %#v.", actual, expected)
 	}
 }
+
+func TestDriverRanking(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	expected := []DriverRankingData{
+		{ID: 1, MatchNumber: 12, Rank1: 1234, Rank2: 1235, Rank3: 1236},
+		{ID: 2, MatchNumber: 12, Rank1: 1236, Rank2: 1235, Rank3: 1234},
+	}
+
+	err := fixture.db.AddDriverRanking(
+		DriverRankingData{MatchNumber: 12, Rank1: 1234, Rank2: 1235, Rank3: 1236},
+	)
+	check(t, err, "Failed to add Driver Ranking")
+	err = fixture.db.AddDriverRanking(
+		DriverRankingData{MatchNumber: 12, Rank1: 1236, Rank2: 1235, Rank3: 1234},
+	)
+	check(t, err, "Failed to add Driver Ranking")
+	err = fixture.db.AddDriverRanking(
+		DriverRankingData{MatchNumber: 13, Rank1: 1235, Rank2: 1234, Rank3: 1236},
+	)
+	check(t, err, "Failed to add Driver Ranking")
+
+	actual, err := fixture.db.QueryDriverRanking(12)
+	check(t, err, "Failed to get Driver Ranking")
+
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Got %#v,\nbut expected %#v.", actual, expected)
+	}
+}

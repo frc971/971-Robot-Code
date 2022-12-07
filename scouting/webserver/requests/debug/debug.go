@@ -17,6 +17,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule_response"
 	flatbuffers "github.com/google/flatbuffers/go"
@@ -156,4 +157,10 @@ func SubmitShiftSchedule(server string, requestBytes []byte) (*submit_shift_sche
 	return sendMessage[submit_shift_schedule_response.SubmitShiftScheduleResponseT](
 		server+"/requests/submit/shift_schedule", requestBytes,
 		submit_shift_schedule_response.GetRootAsSubmitShiftScheduleResponse)
+}
+
+func SubmitDriverRanking(server string, requestBytes []byte) (*submit_driver_ranking_response.SubmitDriverRankingResponseT, error) {
+	return sendMessage[submit_driver_ranking_response.SubmitDriverRankingResponseT](
+		server+"/requests/submit/submit_driver_ranking", requestBytes,
+		submit_driver_ranking_response.GetRootAsSubmitDriverRankingResponse)
 }

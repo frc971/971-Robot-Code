@@ -1,0 +1,10 @@
+namespace scouting.webserver.requests;
+
+table SubmitDriverRanking {
+    matchNumber:int (id: 0);
+    rank1:int (id: 1);
+    rank2:int (id: 2);
+    rank3:int (id: 3);
+}
+
+root_type SubmitDriverRanking;

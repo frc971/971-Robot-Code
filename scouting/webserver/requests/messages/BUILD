@@ -21,6 +21,8 @@ FILE_NAMES = (
     "request_shift_schedule_response",
     "submit_shift_schedule",
     "submit_shift_schedule_response",
+    "submit_driver_ranking",
+    "submit_driver_ranking_response",
 )
 
 filegroup(

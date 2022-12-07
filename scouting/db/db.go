@@ -84,6 +84,20 @@ type Ranking struct {
 	Rank, Dq           int32
 }
 
+type DriverRankingData struct {
+	// Each entry in the table is a single scout's ranking.
+	// Multiple scouts can submit a driver ranking for the same
+	// teams in the same match.
+	// The teams being ranked are stored in Rank1, Rank2, Rank3,
+	// Rank1 being the best driving and Rank3 being the worst driving.
+
+	ID          uint `gorm:"primaryKey"`
+	MatchNumber int32
+	Rank1       int32
+	Rank2       int32
+	Rank3       int32
+}
+
 // Opens a database at the specified port on localhost. We currently don't
 // support connecting to databases on other hosts.
 func NewDatabase(user string, password string, port int) (*Database, error) {
@@ -99,7 +113,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&Match{}, &Shift{}, &Stats{}, &NotesData{}, &Ranking{})
+	err = database.AutoMigrate(&Match{}, &Shift{}, &Stats{}, &NotesData{}, &Ranking{}, &DriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -271,4 +285,20 @@ func (database *Database) AddNotes(data NotesData) error {
 		BadDefense:   data.BadDefense,
 	})
 	return result.Error
+}
+
+func (database *Database) AddDriverRanking(data DriverRankingData) error {
+	result := database.Create(&DriverRankingData{
+		MatchNumber: data.MatchNumber,
+		Rank1:       data.Rank1,
+		Rank2:       data.Rank2,
+		Rank3:       data.Rank3,
+	})
+	return result.Error
+}
+
+func (database *Database) QueryDriverRanking(MatchNumber int) ([]DriverRankingData, error) {
+	var data []DriverRankingData
+	result := database.Where("match_number = ?", MatchNumber).Find(&data)
+	return data, result.Error
 }

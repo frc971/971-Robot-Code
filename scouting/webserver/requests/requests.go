@@ -27,6 +27,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule"
@@ -53,6 +55,8 @@ type RequestShiftSchedule = request_shift_schedule.RequestShiftSchedule
 type RequestShiftScheduleResponseT = request_shift_schedule_response.RequestShiftScheduleResponseT
 type SubmitShiftSchedule = submit_shift_schedule.SubmitShiftSchedule
 type SubmitShiftScheduleResponseT = submit_shift_schedule_response.SubmitShiftScheduleResponseT
+type SubmitDriverRanking = submit_driver_ranking.SubmitDriverRanking
+type SubmitDriverRankingResponseT = submit_driver_ranking_response.SubmitDriverRankingResponseT
 
 // The interface we expect the database abstraction to conform to.
 // We use an interface here because it makes unit testing easier.
@@ -68,6 +72,7 @@ type Database interface {
 	QueryStats(int) ([]db.Stats, error)
 	QueryNotes(int32) ([]string, error)
 	AddNotes(db.NotesData) error
+	AddDriverRanking(db.DriverRankingData) error
 }
 
 type ScrapeMatchList func(int32, string) ([]scraping.Match, error)
@@ -608,6 +613,40 @@ func (handler submitShiftScheduleHandler) ServeHTTP(w http.ResponseWriter, req *
 	w.Write(builder.FinishedBytes())
 }
 
+type SubmitDriverRankingHandler struct {
+	db Database
+}
+
+func (handler SubmitDriverRankingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "SubmitDriverRanking", submit_driver_ranking.GetRootAsSubmitDriverRanking)
+	if !success {
+		return
+	}
+
+	err = handler.db.AddDriverRanking(db.DriverRankingData{
+		MatchNumber: request.MatchNumber(),
+		Rank1:       request.Rank1(),
+		Rank2:       request.Rank2(),
+		Rank3:       request.Rank3(),
+	})
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert driver ranking: %v", err))
+		return
+	}
+
+	var response SubmitDriverRankingResponseT
+	builder := flatbuffers.NewBuilder(10)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 func HandleRequests(db Database, scrape ScrapeMatchList, scoutingServer server.ScoutingServer) {
 	scoutingServer.HandleFunc("/requests", unknown)
 	scoutingServer.Handle("/requests/submit/data_scouting", submitDataScoutingHandler{db})
@@ -619,4 +658,5 @@ func HandleRequests(db Database, scrape ScrapeMatchList, scoutingServer server.S
 	scoutingServer.Handle("/requests/request/notes_for_team", requestNotesForTeamHandler{db})
 	scoutingServer.Handle("/requests/submit/shift_schedule", submitShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/request/shift_schedule", requestShiftScheduleHandler{db})
+	scoutingServer.Handle("/requests/submit/submit_driver_ranking", SubmitDriverRankingHandler{db})
 }
