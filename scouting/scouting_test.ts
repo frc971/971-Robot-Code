@@ -391,4 +391,39 @@ describe('The scouting web page', () => {
       ).toEqual('text-input-' + i);
     }
   });
+  it('should: submit driver ranking', async () => {
+    // Navigate to Driver Ranking Page.
+    await loadPage();
+    await element(by.cssContainingText('.nav-link', 'Driver Ranking')).click();
+    expect(await element(by.id('page-title')).getText()).toEqual(
+      'Driver Ranking'
+    );
+
+    // Input match and team numbers.
+    await setTextboxByIdTo('match_number_selection', '11');
+    await setTextboxByIdTo('team_input_0', '123');
+    await setTextboxByIdTo('team_input_1', '456');
+    await setTextboxByIdTo('team_input_2', '789');
+    await element(by.id('select_button')).click();
+
+    // Verify match and team key input.
+    expect(await element(by.id('match_number_heading')).getText()).toEqual(
+      'Match #11'
+    );
+    expect(await element(by.id('team_key_label_0')).getText()).toEqual('123');
+    expect(await element(by.id('team_key_label_1')).getText()).toEqual('456');
+    expect(await element(by.id('team_key_label_2')).getText()).toEqual('789');
+
+    // Rank teams.
+    await element(by.id('up_button_2')).click();
+    await element(by.id('down_button_0')).click();
+
+    // Verify ranking change.
+    expect(await element(by.id('team_key_label_0')).getText()).toEqual('789');
+    expect(await element(by.id('team_key_label_1')).getText()).toEqual('123');
+    expect(await element(by.id('team_key_label_2')).getText()).toEqual('456');
+
+    // Submit.
+    await element(by.id('submit_button')).click();
+  });
 });
