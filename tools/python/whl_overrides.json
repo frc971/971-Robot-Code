@@ -1,7 +1,7 @@
 {
-    "certifi==2022.9.14": {
-        "sha256": "e232343de1ab72c2aa521b625c80f699e356830fd0e2c620b465b304b17b0516",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/certifi-2022.9.14-py3-none-any.whl"
+    "certifi==2022.9.24": {
+        "sha256": "90c1a32f1d68f940488354e36370f6cca89f0f106db09518524c88d6ed83f382",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/certifi-2022.9.24-py3-none-any.whl"
     },
     "charset_normalizer==2.1.1": {
         "sha256": "83e9a75d1911279afd89352c68b45348559d1fc0506b054b346651b5e7fee29f",
@@ -11,13 +11,17 @@
         "sha256": "bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/click-8.1.3-py3-none-any.whl"
     },
+    "contourpy==1.0.6": {
+        "sha256": "1dedf4c64185a216c35eb488e6f433297c660321275734401760dafaeb0ad5c2",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/contourpy-1.0.6-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    },
     "cycler==0.11.0": {
         "sha256": "3a27e95f763a428a739d2add979fa7494c912a32c17c4c38c4d5f082cad165a3",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/cycler-0.11.0-py3-none-any.whl"
     },
-    "fonttools==4.28.5": {
-        "sha256": "edf251d5d2cc0580d5f72de4621c338d8c66c5f61abb50cf486640f73c8194d5",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/fonttools-4.28.5-py3-none-any.whl"
+    "fonttools==4.38.0": {
+        "sha256": "820466f43c8be8c3009aef8b87e785014133508f0de64ec469e4efb643ae54fb",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/fonttools-4.38.0-py3-none-any.whl"
     },
     "ghp_import==2.1.0": {
         "sha256": "8337dd7b50877f163d4c0289bc1f1c7f127550241988d568c1db512c4324a619",
@@ -27,17 +31,17 @@
         "sha256": "90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/idna-3.4-py3-none-any.whl"
     },
-    "importlib_metadata==5.0.0": {
-        "sha256": "ddb0e35065e8938f867ed4928d0ae5bf2a53b7773871bfe6bcc7e4fcdc7dea43",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/importlib_metadata-5.0.0-py3-none-any.whl"
+    "importlib_metadata==5.1.0": {
+        "sha256": "d84d17e21670ec07990e1044a99efe8d615d860fd176fc29ef5c306068fda313",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/importlib_metadata-5.1.0-py3-none-any.whl"
     },
     "jinja2==3.1.2": {
         "sha256": "6088930bfe239f0e6710546ab9c19c9ef35e29792895fed6e6e31a023a182a61",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/Jinja2-3.1.2-py3-none-any.whl"
     },
-    "kiwisolver==1.3.2": {
-        "sha256": "30fa008c172355c7768159983a7270cb23838c4d7db73d6c0f6b60dde0d432c6",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/kiwisolver-1.3.2-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl"
+    "kiwisolver==1.4.4": {
+        "sha256": "7c43e1e1206cd421cd92e6b3280d4385d41d7166b3ed577ac20444b6995a445f",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/kiwisolver-1.4.4-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl"
     },
     "markdown==3.3.7": {
         "sha256": "f5da449a6e1c989a4cea2631aa8ee67caa5a2ef855d551c88f9e309f4634c621",
@@ -47,53 +51,53 @@
         "sha256": "56442863ed2b06d19c37f94d999035e15ee982988920e12a5b4ba29b62ad1f77",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/MarkupSafe-2.1.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     },
-    "matplotlib==3.5.1": {
-        "sha256": "87900c67c0f1728e6db17c6809ec05c025c6624dcf96a8020326ea15378fe8e7",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/matplotlib-3.5.1-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl"
+    "matplotlib==3.6.2": {
+        "sha256": "795ad83940732b45d39b82571f87af0081c120feff2b12e748d96bb191169e33",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/matplotlib-3.6.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     },
     "mergedeep==1.3.4": {
         "sha256": "70775750742b25c0d8f36c55aed03d24c3384d17c951b3175d898bd778ef0307",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/mergedeep-1.3.4-py3-none-any.whl"
     },
-    "mkdocs==1.4.0": {
-        "sha256": "ce057e9992f017b8e1496b591b6c242cbd34c2d406e2f9af6a19b97dd6248faa",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/mkdocs-1.4.0-py3-none-any.whl"
+    "mkdocs==1.4.2": {
+        "sha256": "c8856a832c1e56702577023cd64cc5f84948280c1c0fcc6af4cd39006ea6aa8c",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/mkdocs-1.4.2-py3-none-any.whl"
     },
-    "numpy==1.21.5": {
-        "sha256": "c293d3c0321996cd8ffe84215ffe5d269fd9d1d12c6f4ffe2b597a7c30d3e593",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/numpy-1.21.5-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl"
+    "numpy==1.23.5": {
+        "sha256": "33161613d2269025873025b33e879825ec7b1d831317e68f4f2f0f84ed14c719",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/numpy-1.23.5-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     },
     "opencv_python==4.6.0.66": {
         "sha256": "dbdc84a9b4ea2cbae33861652d25093944b9959279200b7ae0badd32439f74de",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/opencv_python-4.6.0.66-cp36-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     },
-    "osqp==0.6.2.post5": {
-        "sha256": "8003fc363f707daa46fef3af548e6a580372154d6cd49a7bf2f569ba5f807d15",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/osqp-0.6.2.post5-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    "osqp==0.6.2.post8": {
+        "sha256": "22724b3ac4eaf17582e3ff35cb6660c026e71138f27fc21dbae4f1dc60904c64",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/osqp-0.6.2.post8-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     },
     "packaging==21.3": {
         "sha256": "ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/packaging-21.3-py3-none-any.whl"
     },
-    "pillow==8.4.0": {
-        "sha256": "b8831cb7332eda5dc89b21a7bce7ef6ad305548820595033a4b03cf3091235ed",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/Pillow-8.4.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    "pillow==9.3.0": {
+        "sha256": "97aabc5c50312afa5e0a2b07c17d4ac5e865b250986f8afe2b02d772567a380c",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/Pillow-9.3.0-cp39-cp39-manylinux_2_28_x86_64.whl"
     },
     "pkginfo==1.8.3": {
         "sha256": "848865108ec99d4901b2f7e84058b6e7660aae8ae10164e015a6dcf5b242a594",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pkginfo-1.8.3-py2.py3-none-any.whl"
     },
-    "pycairo==1.21.0": {
-        "sha256": "c1fc681494d470c6af4864991ea406d1344680af69e060af06f7e8391c756ac0",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pycairo-1.21.0-cp39-cp39-manylinux_2_31_x86_64.whl"
+    "pycairo==1.22.0": {
+        "sha256": "6d8325547b2ee5476d317045ca5824901309cc5444dced73bd7d1262b3e18b83",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pycairo-1.22.0-cp39-cp39-manylinux_2_31_x86_64.whl"
     },
     "pygobject==3.42.2": {
-        "sha256": "0ccbc4a4d8e3697a060fcff16f7c28780b429052e63277ab4efd78ae2ff0b110",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/PyGObject-3.42.2-cp39-cp39-manylinux_2_31_x86_64.whl"
+        "sha256": "c11807320f696b07525b97800570e80a6563a649f2950d66501e13474e5c3a36",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/PyGObject-3.42.2-cp39-cp39-linux_x86_64.whl"
     },
-    "pyparsing==3.0.6": {
-        "sha256": "04ff808a5b90911829c55c4e26f75fa5ca8a2f5f36aa3a51f68e27033341d3e4",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pyparsing-3.0.6-py3-none-any.whl"
+    "pyparsing==3.0.9": {
+        "sha256": "5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/pyparsing-3.0.9-py3-none-any.whl"
     },
     "python_dateutil==2.8.2": {
         "sha256": "961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9",
@@ -115,24 +119,28 @@
         "sha256": "8fefa2a1a1365bf5520aac41836fbee479da67864514bdb821f31ce07ce65349",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/requests-2.28.1-py3-none-any.whl"
     },
-    "scipy==1.7.3": {
-        "sha256": "5d1cc2c19afe3b5a546ede7e6a44ce1ff52e443d12b231823268019f608b9b12",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/scipy-1.7.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    "scipy==1.9.3": {
+        "sha256": "c68db6b290cbd4049012990d7fe71a2abd9ffbe82c0056ebe0f01df8be5436b0",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/scipy-1.9.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     },
     "six==1.16.0": {
         "sha256": "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/six-1.16.0-py2.py3-none-any.whl"
     },
-    "urllib3==1.26.12": {
-        "sha256": "b930dd878d5a8afb066a637fbb35144fe7901e3b209d1cd4f524bd0e9deee997",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/urllib3-1.26.12-py2.py3-none-any.whl"
+    "urllib3==1.26.13": {
+        "sha256": "47cc05d99aaa09c9e72ed5809b60e7ba354e64b59c9c173ac3018642d8bb41fc",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/urllib3-1.26.13-py2.py3-none-any.whl"
     },
     "watchdog==2.1.9": {
         "sha256": "4f4e1c4aa54fb86316a62a87b3378c025e228178d55481d30d857c6c438897d6",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/watchdog-2.1.9-py3-none-manylinux2014_x86_64.whl"
     },
-    "zipp==3.8.1": {
-        "sha256": "47c40d7fe183a6f21403a199b3e4192cca5774656965b0a4988ad2f8feb5f009",
-        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/zipp-3.8.1-py3-none-any.whl"
+    "yapf==0.32.0": {
+        "sha256": "8fea849025584e486fd06d6ba2bed717f396080fd3cc236ba10cb97c4c51cf32",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/yapf-0.32.0-py2.py3-none-any.whl"
+    },
+    "zipp==3.11.0": {
+        "sha256": "83a28fcb75844b5c0cdaf5aa4003c2d728c77e05f5aeabe8e95e56727005fbaa",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/zipp-3.11.0-py3-none-any.whl"
     }
 }

@@ -101,6 +101,17 @@ done
 "${PIP_BIN[@]}" install auditwheel
 for wheel in "${wheels_built_from_source[@]}"; do
   wheel_path="${SCRIPT_DIR}/wheelhouse_tmp/${wheel}"
+
+  # Skip the pygobject wheel for now. I have no idea why, but repairing it will
+  # prevent it from finding certain files. Possibly some issue with paths
+  # relative to the .so file.
+  # TODO(phil): Figure out what's wrong with the repaired wheel.
+  if [[ "${wheel}" == PyGObject-*.whl ]]; then
+    echo "Not repairing ${wheel} because of issues."
+    cp "${wheel_path}" "${SCRIPT_DIR}"/wheelhouse/
+    continue
+  fi
+
   echo "Repairing wheel ${wheel}"
   if ! auditwheel show "${wheel_path}"; then
     echo "Assuming ${wheel} is a non-platform wheel. Skipping."

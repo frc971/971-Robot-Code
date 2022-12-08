@@ -51,6 +51,10 @@ load(
     python_gtk_debs = "files",
 )
 load(
+    ":gtk_runtime.bzl",
+    gtk_runtime_debs = "files",
+)
+load(
     ":opencv_arm64.bzl",
     opencv_arm64_debs = "files",
 )
@@ -152,6 +156,33 @@ download_packages(
     ],
     packages = [
         "apache2",
+    ],
+)
+
+download_packages(
+    name = "download_gtk_runtime",
+    excludes = [
+        "libstdc++6",
+        "lsb-base",
+        "libglib2.0-dev-bin",
+        "fonts-freefont",
+        "gsettings-backend",
+        "libpng-dev",
+        "libz-dev",
+        "libstdc++-dev",
+        "libc6-dev",
+    ],
+    # Since "libglib2.0-0" pulls in glibc, we need to forcibly remove it again.
+    force_excludes = [
+        "libc6",
+        "libgcc-s1",
+    ],
+    force_includes = [
+        "libglib2.0-0",
+    ],
+    packages = [
+        "gir1.2-gtk-3.0",
+        "libgtk-3-dev",
     ],
 )
 
@@ -387,6 +418,12 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "python_gtk",
     files = python_gtk_debs,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+generate_deb_tarball(
+    name = "gtk_runtime",
+    files = gtk_runtime_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

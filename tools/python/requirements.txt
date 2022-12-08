@@ -11,3 +11,4 @@ pkginfo
 pygobject
 requests
 scipy
+yapf
