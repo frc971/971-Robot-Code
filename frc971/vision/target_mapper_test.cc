@@ -12,6 +12,7 @@ namespace frc971::vision {
 namespace {
 constexpr double kToleranceMeters = 0.05;
 constexpr double kToleranceRadians = 0.05;
+constexpr std::string_view kFieldName = "test";
 }  // namespace
 
 #define EXPECT_POSE_NEAR(pose1, pose2)             \
@@ -219,7 +220,7 @@ TEST(TargetMapperTest, TwoTargetsOneConstraint) {
           .first;
 
   frc971::vision::TargetMapper mapper(target_poses, target_constraints);
-  mapper.Solve();
+  mapper.Solve(kFieldName);
 
   ASSERT_EQ(mapper.target_poses().size(), 2);
   EXPECT_POSE_NEAR(mapper.target_poses()[0], MakePose(5.0, 0.0, M_PI));
@@ -253,7 +254,7 @@ TEST(TargetMapperTest, TwoTargetsTwoConstraints) {
           .first;
 
   frc971::vision::TargetMapper mapper(target_poses, target_constraints);
-  mapper.Solve();
+  mapper.Solve(kFieldName);
 
   ASSERT_EQ(mapper.target_poses().size(), 2);
   EXPECT_POSE_NEAR(mapper.target_poses()[0], MakePose(5.0, 0.0, M_PI));
@@ -284,7 +285,7 @@ TEST(TargetMapperTest, TwoTargetsOneNoisyConstraint) {
           .first;
 
   frc971::vision::TargetMapper mapper(target_poses, target_constraints);
-  mapper.Solve();
+  mapper.Solve(kFieldName);
 
   ASSERT_EQ(mapper.target_poses().size(), 2);
   EXPECT_POSE_NEAR(mapper.target_poses()[0], MakePose(5.0, 0.0, M_PI));
@@ -375,7 +376,7 @@ TEST(TargetMapperTest, MultiTargetCircleMotion) {
                                          timestamped_target_detections)
           .first;
   frc971::vision::TargetMapper mapper(target_poses, target_constraints);
-  mapper.Solve();
+  mapper.Solve(kFieldName);
 
   for (auto [target_pose_id, mapper_target_pose] : mapper.target_poses()) {
     TargetMapper::TargetPose actual_target_pose =
@@ -399,7 +400,7 @@ TEST(TargetMapperTest, MultiTargetCircleMotion) {
 
   frc971::vision::TargetMapper mapper_bad_poses(target_poses,
                                                 target_constraints);
-  mapper_bad_poses.Solve();
+  mapper_bad_poses.Solve(kFieldName);
 
   for (auto [target_pose_id, mapper_target_pose] :
        mapper_bad_poses.target_poses()) {

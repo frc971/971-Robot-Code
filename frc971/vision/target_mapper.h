@@ -35,11 +35,13 @@ class TargetMapper {
   TargetMapper(std::map<TargetId, ceres::examples::Pose2d> target_poses,
                std::vector<ceres::examples::Constraint2d> target_constraints);
 
-  // If output_path is set, the map will be saved to that file as a json
-  void Solve(std::optional<std::string_view> output_path = std::nullopt);
+  // Solves for the target map. If output_dir is set, the map will be saved to
+  // output_dir/field_name.json
+  void Solve(std::string_view field_name,
+             std::optional<std::string_view> output_dir = std::nullopt);
 
   // Prints target poses into a TargetMap flatbuffer json
-  std::string MapToJson() const;
+  std::string MapToJson(std::string_view field_name) const;
 
   static std::optional<TargetPose> GetTargetPoseById(
       std::vector<TargetPose> target_poses, TargetId target_id);

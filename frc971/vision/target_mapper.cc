@@ -314,7 +314,8 @@ bool TargetMapper::SolveOptimizationProblem(ceres::Problem *problem) {
   return summary.IsSolutionUsable();
 }
 
-void TargetMapper::Solve(std::optional<std::string_view> output_path) {
+void TargetMapper::Solve(std::string_view field_name,
+                         std::optional<std::string_view> output_dir) {
   ceres::Problem problem;
   BuildOptimizationProblem(&target_poses_, target_constraints_, &problem);
 
@@ -323,15 +324,18 @@ void TargetMapper::Solve(std::optional<std::string_view> output_path) {
 
   // TODO(milind): add origin to first target offset to all poses
 
-  auto map_json = MapToJson();
+  auto map_json = MapToJson(field_name);
   VLOG(1) << "Solved target poses: " << map_json;
-  if (output_path.has_value()) {
-    LOG(INFO) << "Writing map to file: " << output_path.value();
-    aos::util::WriteStringToFileOrDie(output_path.value(), map_json);
+
+  if (output_dir.has_value()) {
+    std::string output_path =
+        absl::StrCat(output_dir.value(), "/", field_name, ".json");
+    LOG(INFO) << "Writing map to file: " << output_path;
+    aos::util::WriteStringToFileOrDie(output_path, map_json);
   }
 }
 
-std::string TargetMapper::MapToJson() const {
+std::string TargetMapper::MapToJson(std::string_view field_name) const {
   flatbuffers::FlatBufferBuilder fbb;
 
   // Convert poses to flatbuffers
@@ -346,8 +350,9 @@ std::string TargetMapper::MapToJson() const {
     target_poses_fbs.emplace_back(target_pose_builder.Finish());
   }
 
-  flatbuffers::Offset<TargetMap> target_map_offset =
-      CreateTargetMap(fbb, fbb.CreateVector(target_poses_fbs));
+  const auto field_name_offset = fbb.CreateString(field_name);
+  flatbuffers::Offset<TargetMap> target_map_offset = CreateTargetMap(
+      fbb, fbb.CreateVector(target_poses_fbs), field_name_offset);
 
   return aos::FlatbufferToJson(
       flatbuffers::GetMutableTemporaryPointer(fbb, target_map_offset),
