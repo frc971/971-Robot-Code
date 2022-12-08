@@ -89,6 +89,14 @@ cc_library(
     ],
 )
 
+flatbuffer_cc_library(
+    name = "target_map_fbs",
+    srcs = ["target_map.fbs"],
+    gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "target_mapper",
     srcs = ["target_mapper.cc"],
@@ -97,6 +105,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":geometry_lib",
+        ":target_map_fbs",
         "//aos/events:simulated_event_loop",
         "//frc971/control_loops:control_loop",
         "//frc971/vision/ceres:pose_graph_2d_lib",
