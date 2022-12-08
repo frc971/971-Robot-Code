@@ -6,7 +6,7 @@ class TestPipImports(unittest.TestCase):
 
     def test_version(self):
         """Validates that we are using the version specified in rules_python."""
-        self.assertEqual(sys.version_info[0:3], (3, 9, 13))
+        self.assertEqual(sys.version_info[0:3], (3, 9, 15))
 
     def test_imports(self):
         """Validates that we can import pip packages from pypi.org."""
