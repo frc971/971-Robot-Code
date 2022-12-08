@@ -1333,7 +1333,8 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
                                    RemapConflict conflict_handling) {
   if (replay_channels_ != nullptr) {
     CHECK(std::find(replay_channels_->begin(), replay_channels_->end(),
-                    std::make_pair(std::string{name}, std::string{type})) != replay_channels_->end())
+                    std::make_pair(std::string{name}, std::string{type})) !=
+          replay_channels_->end())
         << "Attempted to remap channel " << name << " " << type
         << " which is not included in the replay channels passed to LogReader.";
   }
@@ -1755,7 +1756,10 @@ LogReader::State::State(
       multinode_filters_(multinode_filters),
       threading_(threading),
       replay_channel_indices_(std::move(replay_channel_indices)) {
-  if (replay_channel_indices_ != nullptr) {
+  // If timestamp_mapper_ is nullptr, then there are no log parts associated
+  // with this node. If there are no log parts for the node, there will be no
+  // log data, and so we do not need to worry about the replay channel filters.
+  if (replay_channel_indices_ != nullptr && timestamp_mapper_ != nullptr) {
     timestamp_mapper_->set_replay_channels_callback(
         [filter = replay_channel_indices_.get()](
             const TimestampedMessage &message) -> bool {

@@ -1,6 +1,9 @@
 #include "aos/events/logging/log_reader_utils.h"
 
 #include "aos/events/logging/multinode_logger_test_lib.h"
+#include "aos/events/ping_lib.h"
+#include "aos/events/pong_lib.h"
+#include "aos/testing/tmpdir.h"
 
 namespace aos::logger::testing {
 
@@ -75,5 +78,52 @@ TEST_P(MultinodeLoggerOneConfigTest, ChannelsInLogTest) {
 
   // There no fetcher channels, check for none
   ASSERT_EQ(channels.fetchers.value().size(), 0);
+}
+
+// Test to run log reader with replay channels via simulated event loop
+TEST_P(MultinodeLoggerOneConfigTest, SingleNodeLogReplay) {
+  time_converter_.StartEqual();
+  std::vector<std::string> actual_filenames;
+  const std::string kLogfile1_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile1/";
+  util::UnlinkRecursive(kLogfile1_1);
+
+  {
+    LoggerState pi1_logger = MakeLoggerState(
+        pi1_, &event_loop_factory_, SupportedCompressionAlgorithms()[0]);
+    pi2_->DisableStatistics();
+    pi2_->Disconnect(pi1_->node());
+    pi1_->Disconnect(pi2_->node());
+    pi1_logger.StartLogger(kLogfile1_1);
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+    pi1_logger.AppendAllFilenames(&actual_filenames);
+  }
+
+  ReplayChannels replay_channels{{"/test", "aos.examples.Ping"}};
+  LogReader reader(logger::SortParts(actual_filenames), &config_.message(),
+                   &replay_channels);
+  SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+  int ping_count = 0;
+  int pong_count = 0;
+
+  // This sends out the fetched messages and advances time to the start of the
+  // log file.
+  reader.Register(&log_reader_factory);
+
+  const Node *pi1 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi1");
+
+  std::unique_ptr<EventLoop> pi1_event_loop =
+      log_reader_factory.MakeEventLoop("test", pi1);
+  pi1_event_loop->MakeWatcher(
+      "/test", [&ping_count](const examples::Ping &) { ++ping_count; });
+  pi1_event_loop->MakeWatcher(
+      "/test", [&pong_count](const examples::Pong &) { ++pong_count; });
+
+  int sent_messages = 1999;
+  reader.event_loop_factory()->Run();
+  EXPECT_EQ(ping_count, sent_messages);
+  EXPECT_EQ(pong_count, 0);
+  reader.Deregister();
 }
 }  // namespace aos::logger::testing
