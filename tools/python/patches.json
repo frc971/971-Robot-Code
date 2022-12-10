@@ -1,0 +1,14 @@
+{
+    "matplotlib": {
+        "patches": [
+            "//third_party:python/matplotlib/init.patch"
+        ],
+        "patch_args": ["-p1"]
+    },
+    "pygobject": {
+        "patches": [
+            "//third_party:python/pygobject/init.patch"
+        ],
+        "patch_args": ["-p1"]
+    }
+}

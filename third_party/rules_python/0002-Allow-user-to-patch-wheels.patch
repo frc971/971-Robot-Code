@@ -1,0 +1,333 @@
+From f828c9aad94b56655b352c4bed9b475d7430865e Mon Sep 17 00:00:00 2001
+From: Philipp Schrader <philipp.schrader@gmail.com>
+Date: Sat, 24 Sep 2022 15:56:33 -0700
+Subject: [PATCH] Allow user to patch wheels
+
+There are two parts here. First we need to let the user inject patches
+to specific wheels. We do that via a new JSON file that can be
+specified in the WORKSPACE via the `patch_spec` attribute.
+The second part is to allow the user to inject `deps` in the specific
+wheels. This is important because the patches for the wheels may want
+to pull in other libraries that the wheel normally does not depend on.
+The `deps` injection is done via a new attribute on the annotation.
+
+I submitted a PR to rules_python for the `deps` injection part here:
+https://github.com/bazelbuild/rules_python/pull/853
+However, the maintainers would like to take a different approach for
+which I will write a proposal. The approach here will not be what's
+eventually upstreamed.
+---
+ .../pip_install/extract_wheels/annotation.py  |  5 +++
+ python/pip_install/extract_wheels/bazel.py    | 13 +++++++-
+ .../extract_wheels/extract_single_wheel.py    | 29 +++++++++++++++++
+ .../parse_requirements_to_bzl.py              | 25 ++++++++++++++-
+ python/pip_install/pip_repository.bzl         | 31 ++++++++++++++++++-
+ 5 files changed, 100 insertions(+), 3 deletions(-)
+
+diff --git a/python/pip_install/extract_wheels/annotation.py b/python/pip_install/extract_wheels/annotation.py
+index 48aaa80..fe8b4dc 100644
+--- a/python/pip_install/extract_wheels/annotation.py
++++ b/python/pip_install/extract_wheels/annotation.py
+@@ -19,6 +19,7 @@ class Annotation(OrderedDict):
+             "data",
+             "data_exclude_glob",
+             "srcs_exclude_glob",
++            "deps",
+         ):
+             if field not in content:
+                 missing.append(field)
+@@ -61,6 +62,10 @@ class Annotation(OrderedDict):
+     def srcs_exclude_glob(self) -> List[str]:
+         return self["srcs_exclude_glob"]
+ 
++    @property
++    def deps(self) -> List[str]:
++        return self["deps"]
++
+ 
+ class AnnotationsMap:
+     """A mapping of python package names to [Annotation]"""
+diff --git a/python/pip_install/extract_wheels/bazel.py b/python/pip_install/extract_wheels/bazel.py
+index 8f442c9..f4b7f26 100644
+--- a/python/pip_install/extract_wheels/bazel.py
++++ b/python/pip_install/extract_wheels/bazel.py
+@@ -2,6 +2,7 @@
+ import json
+ import os
+ import shutil
++import subprocess
+ import textwrap
+ from pathlib import Path
+ from typing import Dict, Iterable, List, Optional, Set
+@@ -335,6 +336,9 @@ def extract_wheel(
+     incremental: bool = False,
+     incremental_dir: Path = Path("."),
+     annotation: Optional[annotation.Annotation] = None,
++    patches: Optional[List[os.PathLike]] = None,
++    patch_args: Optional[List[os.PathLike]] = None,
++    patch_tool: Optional[str] = "patch",
+ ) -> Optional[str]:
+     """Extracts wheel into given directory and creates py_library and filegroup targets.
+ 
+@@ -415,6 +419,7 @@ def extract_wheel(
+         data = []
+         data_exclude = pip_data_exclude
+         srcs_exclude = []
++        deps = []
+         if annotation:
+             for src, dest in annotation.copy_files.items():
+                 data.append(dest)
+@@ -427,6 +432,7 @@ def extract_wheel(
+             data.extend(annotation.data)
+             data_exclude.extend(annotation.data_exclude_glob)
+             srcs_exclude.extend(annotation.srcs_exclude_glob)
++            deps.extend('"%s"' % dep for dep in annotation.deps)
+             if annotation.additive_build_content:
+                 additional_content.append(annotation.additive_build_content)
+ 
+@@ -434,7 +440,7 @@ def extract_wheel(
+             name=PY_LIBRARY_LABEL
+             if incremental
+             else sanitise_name(whl.name, repo_prefix),
+-            dependencies=sanitised_dependencies,
++            dependencies=sanitised_dependencies + deps,
+             whl_file_deps=sanitised_wheel_file_dependencies,
+             data_exclude=data_exclude,
+             data=data,
+@@ -444,6 +450,11 @@ def extract_wheel(
+         )
+         build_file.write(contents)
+ 
++    if patches:
++        base_cmd = [patch_tool] + (patch_args or []) + ["--input"]
++        for patch in patches:
++            subprocess.run(base_cmd + [patch], check=True, cwd=directory)
++
+     if not incremental:
+         os.remove(whl.path)
+         return f"//{directory}"
+diff --git a/python/pip_install/extract_wheels/extract_single_wheel.py b/python/pip_install/extract_wheels/extract_single_wheel.py
+index 8742d25..50a1243 100644
+--- a/python/pip_install/extract_wheels/extract_single_wheel.py
++++ b/python/pip_install/extract_wheels/extract_single_wheel.py
+@@ -1,4 +1,5 @@
+ import argparse
++import contextlib
+ import errno
+ import glob
+ import os
+@@ -35,6 +36,16 @@ def configure_reproducible_wheels() -> None:
+         os.environ["PYTHONHASHSEED"] = "0"
+ 
+ 
++@contextlib.contextmanager
++def chdir_context(new_cwd: os.PathLike) -> None:
++    old_cwd = os.getcwd()
++    try:
++        os.chdir(new_cwd)
++        yield
++    finally:
++        os.chdir(old_cwd)
++
++
+ def main() -> None:
+     parser = argparse.ArgumentParser(
+         description="Build and/or fetch a single wheel based on the requirement passed in"
+@@ -55,6 +66,21 @@ def main() -> None:
+         action="store_true",
+         help="If set, skips the pip download step. The .whl file is assumbed to be downloaded by bazel.",
+     )
++    parser.add_argument(
++        "--patch-file",
++        action="append",
++        help="The patch files to apply. Can be repeated for multiple patches.",
++    )
++    parser.add_argument(
++        "--patch-arg",
++        action="append",
++        help="Arguments to pass to the patch tool. Can be repeated for multiple arguments.",
++    )
++    parser.add_argument(
++        "--patch-tool",
++        type=str,
++        help="Path of the patch tool to execute for applying patches.",
++    )
+     arguments.parse_common_args(parser)
+     args = parser.parse_args()
+     deserialized_args = dict(vars(args))
+@@ -104,6 +130,9 @@ def main() -> None:
+         incremental=True,
+         repo_prefix=args.repo_prefix,
+         annotation=args.annotation,
++        patches=args.patch_file,
++        patch_args=args.patch_arg,
++        patch_tool=args.patch_tool,
+     )
+ 
+ 
+diff --git a/python/pip_install/extract_wheels/parse_requirements_to_bzl.py b/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
+index 60936a9..3dd179b 100644
+--- a/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
++++ b/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
+@@ -88,6 +88,7 @@ def parse_whl_library_args(args: argparse.Namespace) -> Dict[str, Any]:
+         "bzlmod",
+         "overrides",
+         "require_overrides",
++        "patch_spec",
+     ):
+         if arg in whl_library_args:
+             whl_library_args.pop(arg)
+@@ -104,6 +105,7 @@ def generate_parsed_requirements_contents(
+     bzlmod: bool = False,
+     overrides: Optional[Dict[str, Dict[str, str]]] = None,
+     require_overrides: bool = False,
++    patch_spec: Optional[Dict[str, Dict[str, str]]] = None,
+ ) -> str:
+     """
+     Parse each requirement from the requirements_lock file, and prepare arguments for each
+@@ -147,13 +149,19 @@ def generate_parsed_requirements_contents(
+                     else:
+                         override = _NOP_OVERRIDE
+ 
++                clean_name = _clean_name(override_name.split("=")[0])
++                patch_attributes = _patch_spec.get(clean_name, {{}})
++
+                 whl_library(
+                     name = name,
+                     requirement = requirement,
+                     annotation = _get_annotation(requirement),
+                     url = override["url"],
+                     sha256 = override["sha256"],
+-                    **whl_config
++                    **dict(
++                        patch_attributes.items() +
++                        _config.items(),
++                    )
+                 )
+ """
+     return textwrap.dedent(
+@@ -172,6 +180,7 @@ def generate_parsed_requirements_contents(
+         _bzlmod = {bzlmod}
+         _overrides = {overrides}
+         _require_overrides = {require_overrides}
++        _patch_spec = {patch_spec}
+ 
+         _NOP_OVERRIDE = {{
+             "url": None,
+@@ -229,6 +238,7 @@ def generate_parsed_requirements_contents(
+             bzlmod=bzlmod,
+             overrides=overrides or {},
+             require_overrides=require_overrides,
++            patch_spec=patch_spec or {},
+         )
+     )
+ 
+@@ -301,6 +311,13 @@ If set, it will take precedence over python_interpreter.",
+         action="store_true",
+         help="If set, requires that every requirement has a URL override in the --overrides JSON file.",
+     )
++    parser.add_argument(
++        "--patch_spec",
++        type=Path,
++        help=("A json encoded file containing patch specifications for packages. "
++              "Keys are the normalized names of packages. "
++              "Values are objects with keys 'patches', 'patch_args', and 'patch_tool'."),
++    )
+     arguments.parse_common_args(parser)
+     args = parser.parse_args()
+ 
+@@ -331,6 +348,11 @@ If set, it will take precedence over python_interpreter.",
+     else:
+         overrides = None
+ 
++    if args.patch_spec:
++        patch_spec = json.loads(args.patch_spec.read_text())
++    else:
++        patch_spec = None
++
+     output.write(
+         textwrap.dedent(
+             """\
+@@ -355,6 +377,7 @@ If set, it will take precedence over python_interpreter.",
+             bzlmod=args.bzlmod,
+             overrides=overrides,
+             require_overrides=args.require_overrides,
++            patch_spec=patch_spec,
+         )
+     )
+ 
+diff --git a/python/pip_install/pip_repository.bzl b/python/pip_install/pip_repository.bzl
+index 5af0731..bf7f99a 100644
+--- a/python/pip_install/pip_repository.bzl
++++ b/python/pip_install/pip_repository.bzl
+@@ -327,6 +327,9 @@ def _pip_repository_impl(rctx):
+         args += ["--overrides", overrides_file]
+     if rctx.attr.require_overrides:
+         args += ["--require-overrides"]
++    if rctx.attr.patch_spec:
++        patch_spec_file = rctx.path(rctx.attr.patch_spec).realpath
++        args += ["--patch_spec", patch_spec_file]
+     progress_message = "Parsing requirements to starlark"
+ 
+     args += ["--repo", rctx.attr.name, "--repo-prefix", rctx.attr.repo_prefix]
+@@ -460,6 +463,10 @@ we do not create the install_deps() macro.
+         default = False,
+         doc = "If True, every requirement must have an entry in the \"overrides\" JSON file.",
+     ),
++    "patch_spec": attr.label(
++        allow_single_file = True,
++        doc = "A JSON file containing patches for various modules. TBD",
++    ),
+     "requirements": attr.label(
+         allow_single_file = True,
+         doc = "A 'requirements.txt' pip requirements file.",
+@@ -562,6 +569,12 @@ def _whl_library_impl(rctx):
+         if not download_result.success:
+             fail("Failed to download {}".format(rctx.attr.url))
+         args.append("--pre-downloaded")
++    if rctx.attr.patches:
++        patch_files = [str(rctx.path(path).realpath) for path in rctx.attr.patches]
++        args.extend(["--patch-file=" + file for file in patch_files] + [
++            "--patch-tool",
++            rctx.attr.patch_tool,
++        ] + ["--patch-arg=" + arg for arg in rctx.attr.patch_args])
+ 
+     args = _parse_optional_attrs(rctx, args)
+ 
+@@ -604,6 +617,20 @@ whl_library_attrs = {
+             "Optionally set this when using the 'url' parameter. " +
+             "Must be the expected checksum of the downloaded file."
+         ),
++    ),
++    "patches": attr.label_list(
++        doc = (
++            "The patch files to apply. List of strings, Labels, or paths. " +
++            "The paths within the files are relative to the 'site-packages' directory " +
++            "into which the wheel is extracted."
++        ),
++    ),
++    "patch_args": attr.string_list(
++        doc = "Arguments to pass to the patch tool. List of strings.",
++    ),
++    "patch_tool": attr.string(
++        doc = "Path of the patch tool to execute for applying patches. String.",
++        default = "patch",
+     )
+ }
+ 
+@@ -624,7 +651,8 @@ def package_annotation(
+         copy_executables = {},
+         data = [],
+         data_exclude_glob = [],
+-        srcs_exclude_glob = []):
++        srcs_exclude_glob = [],
++        deps = []):
+     """Annotations to apply to the BUILD file content from package generated from a `pip_repository` rule.
+ 
+     [cf]: https://github.com/bazelbuild/bazel-skylib/blob/main/docs/copy_file_doc.md
+@@ -650,4 +678,5 @@ def package_annotation(
+         data = data,
+         data_exclude_glob = data_exclude_glob,
+         srcs_exclude_glob = srcs_exclude_glob,
++        deps = deps,
+     ))

@@ -23,7 +23,11 @@ PYTHON_BIN=""
 for path in ${PYTHONPATH//:/ }; do
   if [[ "$path" == *.runfiles/python3_9_x86_64-unknown-linux-gnu ]]; then
     PYTHON_BIN="$path"/bin/python3
-    export LD_LIBRARY_PATH="$path"/lib
+    LD_LIBRARY_PATH=":${path}/lib"
+    LD_LIBRARY_PATH+=":${path}/../gtk_runtime/lib/x86_64-linux-gnu"
+    LD_LIBRARY_PATH+=":${path}/../gtk_runtime/usr/lib/x86_64-linux-gnu"
+    LD_LIBRARY_PATH+=":${path}/../gtk_runtime/usr/lib"
+    export LD_LIBRARY_PATH
     break
   elif [[ "$path" == *.runfiles/python_repo ]]; then
     PYTHON_BIN="$path"/usr/bin/python3

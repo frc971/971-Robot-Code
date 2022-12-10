@@ -232,3 +232,20 @@ py_test(
         "@pip//scipy",
     ],
 )
+
+py_binary(
+    name = "pygobject_example",
+    srcs = ["pygobject_example.py"],
+    deps = [
+        "@pip//pygobject",
+    ],
+)
+
+py_binary(
+    name = "matplotlib_example",
+    srcs = ["matplotlib_example.py"],
+    deps = [
+        "@pip//matplotlib",
+        "@pip//pygobject",
+    ],
+)
