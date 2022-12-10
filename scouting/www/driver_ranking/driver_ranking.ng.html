@@ -1,4 +1,4 @@
-<h2>Driver Ranking</h2>
+<h2 id="page-title">Driver Ranking</h2>
 
 <ng-container [ngSwitch]="section">
   <div *ngSwitchCase="'TeamSelection'">
@@ -19,20 +19,43 @@
       type="number"
       min="1"
       max="9999"
+      id="team_input_{{i}}"
     />
-    <button class="btn btn-primary" (click)="setTeamNumbers()">Select</button>
+    <button
+      class="btn btn-primary"
+      (click)="setTeamNumbers()"
+      id="select_button"
+    >
+      Select
+    </button>
   </div>
   <div *ngSwitchCase="'Data'">
-    <h4>Match #{{match_number}}</h4>
+    <h4 id="match_number_heading">Match #{{match_number}}</h4>
     <div *ngFor="let team_key of team_ranking; let i = index">
       <div class="d-flex flex-row justify-content-center pt-2">
         <div class="d-flex flex-row">
-          <h4 class="align-self-center">{{i + 1}}</h4>
-          <h1 class="align-self-center">{{team_key}}</h1>
+          <h4 class="align-self-center" id="team_rank_label_{{i}}">
+            {{i + 1}}
+          </h4>
+          <h1 class="align-self-center" id="team_key_label_{{i}}">
+            {{team_key}}
+          </h1>
         </div>
-        <button class="btn btn-success" (click)="rankUp(i)">&uarr;</button>
+        <button
+          class="btn btn-success"
+          (click)="rankUp(i)"
+          id="up_button_{{i}}"
+        >
+          &uarr;
+        </button>
         <!--&uarr; is the html code for an up arrow-->
-        <button class="btn btn-danger" (click)="rankDown(i)">&darr;</button>
+        <button
+          class="btn btn-danger"
+          (click)="rankDown(i)"
+          id="down_button_{{i}}"
+        >
+          &darr;
+        </button>
         <!--&darr; is the html code for a down arrow-->
       </div>
     </div>
@@ -43,7 +66,13 @@
         </button>
       </div>
       <div>
-        <button class="btn btn-success" (click)="submitData()">Submit</button>
+        <button
+          class="btn btn-success"
+          (click)="submitData()"
+          id="submit_button"
+        >
+          Submit
+        </button>
       </div>
     </div>
   </div>
