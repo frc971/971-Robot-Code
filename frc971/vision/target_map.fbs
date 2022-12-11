@@ -21,4 +21,7 @@ table TargetPoseFbs {
 // This would be solved for by TargetMapper
 table TargetMap {
   target_poses:[TargetPoseFbs] (id: 0);
+
+  // Unique name of the field
+  field_name:string (id: 1);
 }
