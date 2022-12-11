@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name "PI-Power-Board")(type "KiCad")(uri "/home/scott/Documents/Projects/FRC/PI-Power-Board/PI-Power-Board.pretty")(options "")(descr ""))
+  (lib (name "PI-PowerBoard")(type "KiCad")(uri "${KIPRJMOD}/PI-PowerBoard.pretty")(options "")(descr ""))
+)

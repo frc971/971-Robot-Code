@@ -1,0 +1,2793 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>/home/scottberman/Documents/Projects/FRC971/RKPI4-Power/PI-Power-Board/PI-Power-Board.kicad_sch</source>
+    <date>Tue 06 Dec 2022 05:25:53 PM PST</date>
+    <tool>Eeschema 6.0.9-8da3e8f707~117~ubuntu20.04.1</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>Pi Power Board 2</title>
+        <company>971 Spartan Robotics</company>
+        <rev>1</rev>
+        <date>2022-11-11</date>
+        <source>PI-Power-Board.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="2" name="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/">
+      <title_block>
+        <title>Pi Power Board 2</title>
+        <company>971 Spartan Robotics</company>
+        <rev>1</rev>
+        <date>2022-11-11</date>
+        <source>power-supply.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="3" name="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/">
+      <title_block>
+        <title>Pi Power Board 2</title>
+        <company>971 Spartan Robotics</company>
+        <rev>1</rev>
+        <date>2022-11-11</date>
+        <source>can-fd.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="4" name="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/">
+      <title_block>
+        <title>Pi Power Board 2</title>
+        <company>971 Spartan Robotics</company>
+        <rev>1</rev>
+        <date>2022-11-11</date>
+        <source>IMUdriver.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="5" name="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/">
+      <title_block>
+        <title>Pi Power Board 2</title>
+        <company>971 Spartan Robotics</company>
+        <rev>1</rev>
+        <date>2022-11-11</date>
+        <source>3V3-3V0-power-supply.kicad_sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="D1">
+      <value>+5V</value>
+      <footprint>LED_SMD:LED_1206_3216Metric</footprint>
+      <fields>
+        <field name="MFG">Everlight Electronics Co Ltd</field>
+        <field name="MFG P/N">QTLP650D4TR</field>
+      </fields>
+      <libsource lib="Device" part="LED" description="Light emitting diode"/>
+      <property name="MFG" value="Everlight Electronics Co Ltd"/>
+      <property name="MFG P/N" value="QTLP650D4TR"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>adc12139-031d-4a9a-9398-46d045726e3e</tstamps>
+    </comp>
+    <comp ref="J1">
+      <value>PI Header</value>
+      <footprint>PI-Power-Board:M20-782045</footprint>
+      <fields>
+        <field name="MFG">Harwin Inc</field>
+        <field name="MFG P/N">M20-7812045</field>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x40_Male" description="Generic connector, single row, 01x40, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="MFG" value="Harwin Inc"/>
+      <property name="MFG P/N" value="M20-7812045"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cb140511-16a6-4a72-80bb-fd9f96e6a097</tstamps>
+    </comp>
+    <comp ref="J2">
+      <value>UART</value>
+      <footprint>PI-Power-Board:70555-0002</footprint>
+      <datasheet>https://www.molex.com/pdm_docs/sd/705550001_sd.pdf</datasheet>
+      <fields>
+        <field name="MFG">Molex</field>
+        <field name="MFG P/N">70555-0002</field>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x03_Male" description="Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="MFG" value="Molex"/>
+      <property name="MFG P/N" value="70555-0002"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4cf53ab2-55ae-4a00-b1ec-48114e2eb3fe</tstamps>
+    </comp>
+    <comp ref="J3">
+      <value>IMU SPI</value>
+      <footprint>PI-Power-Board:70555-0011</footprint>
+      <datasheet>https://www.molex.com/pdm_docs/sd/705550001_sd.pdf</datasheet>
+      <fields>
+        <field name="MFG">Molex</field>
+        <field name="MFG P/N">70555-0011</field>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x12_Male" description="Generic connector, single row, 01x12, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="MFG" value="Molex"/>
+      <property name="MFG P/N" value="70555-0011"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2d7c06e7-df44-4db2-9de5-7aa01575cf88</tstamps>
+    </comp>
+    <comp ref="J4">
+      <value>CAN</value>
+      <footprint>PI-Power-Board:70555-0001</footprint>
+      <datasheet>https://www.molex.com/pdm_docs/sd/705550001_sd.pdf</datasheet>
+      <fields>
+        <field name="MFG">Molex</field>
+        <field name="MFG P/N">70555-0001</field>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x02_Male" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="MFG" value="Molex"/>
+      <property name="MFG P/N" value="70555-0001"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>88f2f77c-971d-4a41-9c0c-fc07fe05565e</tstamps>
+    </comp>
+    <comp ref="J5">
+      <value>POWER</value>
+      <footprint>PI-Power-Board:70555-0003</footprint>
+      <datasheet>https://www.molex.com/pdm_docs/sd/705550003_sd.pdf</datasheet>
+      <fields>
+        <field name="MFG">Molex</field>
+        <field name="MFG P/N">70555-0003</field>
+      </fields>
+      <libsource lib="Connector" part="Conn_01x04_Male" description="Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="MFG" value="Molex"/>
+      <property name="MFG P/N" value="70555-0003"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2d961f62-7669-4724-bcf2-c539ca3dd7b8</tstamps>
+    </comp>
+    <comp ref="R5">
+      <value>0R-1206</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC1206JR-070RL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC1206JR-070RL"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c2c3e196-4e18-417f-a501-d7e0b815b037</tstamps>
+    </comp>
+    <comp ref="R14">
+      <value>0R-1206</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC1206JR-070RL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC1206JR-070RL"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>504eef95-ff41-4659-b452-655c05c78cf3</tstamps>
+    </comp>
+    <comp ref="R15">
+      <value>0R-1206</value>
+      <footprint>Resistor_SMD:R_1206_3216Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC1206JR-070RL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC1206JR-070RL"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>d2c652ec-a628-4c21-a37d-12296010b38e</tstamps>
+    </comp>
+    <comp ref="R18">
+      <value>499R-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-07499RL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-07499RL"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>def36a85-90d3-4ef0-96f8-a44712dc3cb2</tstamps>
+    </comp>
+    <comp ref="R19">
+      <value>1.0k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-071KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-071KL"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>efdafbe2-139d-45df-95d5-3fe39103eab0</tstamps>
+    </comp>
+    <comp ref="TP1">
+      <value>+3.0V</value>
+      <footprint>TestPoint:TestPoint_Keystone_5000-5004_Miniature</footprint>
+      <datasheet>https://www.keyelco.com/userAssets/file/M65p56.pdf</datasheet>
+      <fields>
+        <field name="MFG">Keystone Electronics</field>
+        <field name="MFG P/N">5002</field>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="MFG" value="Keystone Electronics"/>
+      <property name="MFG P/N" value="5002"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2a86930d-5bf7-4ef4-82b0-6ddd576bff5e</tstamps>
+    </comp>
+    <comp ref="TP2">
+      <value>V_{BAT}</value>
+      <footprint>TestPoint:TestPoint_Keystone_5000-5004_Miniature</footprint>
+      <datasheet>https://www.keyelco.com/userAssets/file/M65p56.pdf</datasheet>
+      <fields>
+        <field name="MFG">Keystone Electronics</field>
+        <field name="MFG P/N">5002</field>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="MFG" value="Keystone Electronics"/>
+      <property name="MFG P/N" value="5002"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b82ed5d8-bf97-4695-887f-d062ab580459</tstamps>
+    </comp>
+    <comp ref="TP3">
+      <value>+3.3V</value>
+      <footprint>TestPoint:TestPoint_Keystone_5000-5004_Miniature</footprint>
+      <datasheet>https://www.keyelco.com/userAssets/file/M65p56.pdf</datasheet>
+      <fields>
+        <field name="MFG">Keystone Electronics</field>
+        <field name="MFG P/N">5002</field>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="MFG" value="Keystone Electronics"/>
+      <property name="MFG P/N" value="5002"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a46efeaa-6b27-4647-9e20-7a3e883d92f3</tstamps>
+    </comp>
+    <comp ref="TP4">
+      <value>+5V</value>
+      <footprint>TestPoint:TestPoint_Keystone_5000-5004_Miniature</footprint>
+      <datasheet>https://www.keyelco.com/userAssets/file/M65p56.pdf</datasheet>
+      <fields>
+        <field name="MFG">Keystone Electronics</field>
+        <field name="MFG P/N">5002</field>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="MFG" value="Keystone Electronics"/>
+      <property name="MFG P/N" value="5002"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>0eec6763-afec-47a1-bfc5-ca1b02396e23</tstamps>
+    </comp>
+    <comp ref="TP5">
+      <value>GND</value>
+      <footprint>TestPoint:TestPoint_Keystone_5000-5004_Miniature</footprint>
+      <datasheet>https://www.keyelco.com/userAssets/file/M65p56.pdf</datasheet>
+      <fields>
+        <field name="MFG">Keystone Electronics</field>
+        <field name="MFG P/N">5002</field>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="MFG" value="Keystone Electronics"/>
+      <property name="MFG P/N" value="5002"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="PI-Power-Board.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>910acf10-9949-4a81-8a2c-81bb9717194b</tstamps>
+    </comp>
+    <comp ref="C2">
+      <value>0.015uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">YAGEO</field>
+        <field name="MFG P/N">CC0603KRX7R9BB153</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="YAGEO"/>
+      <property name="MFG P/N" value="CC0603KRX7R9BB153"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>6b21d704-2dde-46f4-98c3-e64020fc4a1f</tstamps>
+    </comp>
+    <comp ref="C3">
+      <value>330pF-5%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Murata</field>
+        <field name="MFG P/N">GCM1885C2A331FA16D</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Murata"/>
+      <property name="MFG P/N" value="GCM1885C2A331FA16D"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>37c9c248-5eb9-4fe3-9095-142fe14f47e4</tstamps>
+    </comp>
+    <comp ref="C4">
+      <value>47pF-5%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10C470JB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10C470JB8NNNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>baa3dc8f-ed1e-41a0-b7b8-222c85797e27</tstamps>
+    </comp>
+    <comp ref="C9">
+      <value>22uF-25V-10%-1210</value>
+      <footprint>Capacitor_SMD:C_1210_3225Metric</footprint>
+      <fields>
+        <field name="MFG">Murata</field>
+        <field name="MFG P/N">GRM32ER61E226KE15L</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Murata"/>
+      <property name="MFG P/N" value="GRM32ER61E226KE15L"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>b700a1f5-337a-41ab-9ea0-2c2af072317c</tstamps>
+    </comp>
+    <comp ref="C10">
+      <value>22uF-25V-10%-1210</value>
+      <footprint>Capacitor_SMD:C_1210_3225Metric</footprint>
+      <fields>
+        <field name="MFG">Murata</field>
+        <field name="MFG P/N">GRM32ER61E226KE15L</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Murata"/>
+      <property name="MFG P/N" value="GRM32ER61E226KE15L"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>9b6d9042-a53f-425d-b2c2-357193d3248e</tstamps>
+    </comp>
+    <comp ref="C11">
+      <value>22uF-25V-10%-1210</value>
+      <footprint>Capacitor_SMD:C_1210_3225Metric</footprint>
+      <fields>
+        <field name="MFG">Murata</field>
+        <field name="MFG P/N">GRM32ER61E226KE15L</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Murata"/>
+      <property name="MFG P/N" value="GRM32ER61E226KE15L"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>66b57125-ca17-4368-b430-c6138030f6ac</tstamps>
+    </comp>
+    <comp ref="C12">
+      <value>22uF-10V-10%-0805</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL21A226KPCLRNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL21A226KPCLRNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>ad15a420-8e1a-4dad-bc75-a0e26641a9bc</tstamps>
+    </comp>
+    <comp ref="C13">
+      <value>22uF-10V-10%-0805</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL21A226KPCLRNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL21A226KPCLRNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>8c9f5182-9d53-4b65-8e92-34cb1fbc522c</tstamps>
+    </comp>
+    <comp ref="C14">
+      <value>22uF-10V-10%-0805</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL21A226KPCLRNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL21A226KPCLRNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>3d27e4ed-dae2-44ee-ab35-782dcb561f87</tstamps>
+    </comp>
+    <comp ref="C15">
+      <value>22uF-25V-10%-1210</value>
+      <footprint>Capacitor_SMD:C_1210_3225Metric</footprint>
+      <fields>
+        <field name="MFG">Murata</field>
+        <field name="MFG P/N">GRM32ER61E226KE15L</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Murata"/>
+      <property name="MFG P/N" value="GRM32ER61E226KE15L"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>103abe72-bb8e-4720-8dbc-c7794b92d086</tstamps>
+    </comp>
+    <comp ref="C23">
+      <value>0.015uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">YAGEO</field>
+        <field name="MFG P/N">CC0603KRX7R9BB153</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="YAGEO"/>
+      <property name="MFG P/N" value="CC0603KRX7R9BB153"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>73d092d4-54ff-495d-9383-67e7008430f3</tstamps>
+    </comp>
+    <comp ref="C24">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>672549ac-03f4-4900-bee1-de2f300b3802</tstamps>
+    </comp>
+    <comp ref="C26">
+      <value>47pF-5%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10C470JB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10C470JB8NNNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>c6643319-a942-4c42-b584-719e58d278ab</tstamps>
+    </comp>
+    <comp ref="C27">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>ffe3dc8d-4c62-4860-a43f-3a38ecf0a112</tstamps>
+    </comp>
+    <comp ref="C29">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>f265405c-cd87-4bdf-a1bd-073123e8e700</tstamps>
+    </comp>
+    <comp ref="C30">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>d0d9d510-1b03-444e-a966-2b9a2052ed7d</tstamps>
+    </comp>
+    <comp ref="C31">
+      <value>1.0uF-10%-10V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B105KP8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B105KP8NNNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>314a5e2a-0841-451c-ad9f-276f1b46b6d6</tstamps>
+    </comp>
+    <comp ref="C32">
+      <value>22uF-25V-10%-1210</value>
+      <footprint>Capacitor_SMD:C_1210_3225Metric</footprint>
+      <fields>
+        <field name="MFG">Murata</field>
+        <field name="MFG P/N">GRM32ER61E226KE15L</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Murata"/>
+      <property name="MFG P/N" value="GRM32ER61E226KE15L"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>65984a89-8380-48da-8b12-d88d80ec2869</tstamps>
+    </comp>
+    <comp ref="C33">
+      <value>22uF-25V-10%-1210</value>
+      <footprint>Capacitor_SMD:C_1210_3225Metric</footprint>
+      <fields>
+        <field name="MFG">Murata</field>
+        <field name="MFG P/N">GRM32ER61E226KE15L</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Murata"/>
+      <property name="MFG P/N" value="GRM32ER61E226KE15L"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>9ab12f65-eb76-468b-8f68-f22c559f65c5</tstamps>
+    </comp>
+    <comp ref="C34">
+      <value>22uF-25V-10%-1210</value>
+      <footprint>Capacitor_SMD:C_1210_3225Metric</footprint>
+      <fields>
+        <field name="MFG">Murata</field>
+        <field name="MFG P/N">GRM32ER61E226KE15L</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Murata"/>
+      <property name="MFG P/N" value="GRM32ER61E226KE15L"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>424245c4-4183-459a-8f6b-a654ba44b783</tstamps>
+    </comp>
+    <comp ref="C35">
+      <value>22uF-10V-10%-0805</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL21A226KPCLRNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL21A226KPCLRNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>b8d2fd7e-effc-46e6-9306-04f4b2872e7f</tstamps>
+    </comp>
+    <comp ref="C36">
+      <value>22uF-10V-10%-0805</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL21A226KPCLRNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL21A226KPCLRNC"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>f5ec62b1-39ef-430e-8fdf-7cd480d9f8b2</tstamps>
+    </comp>
+    <comp ref="C38">
+      <value>22uF-25V-10%-1210</value>
+      <footprint>Capacitor_SMD:C_1210_3225Metric</footprint>
+      <fields>
+        <field name="MFG">Murata</field>
+        <field name="MFG P/N">GRM32ER61E226KE15L</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Murata"/>
+      <property name="MFG P/N" value="GRM32ER61E226KE15L"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>77df37e1-8169-4491-a322-519cc1b97e58</tstamps>
+    </comp>
+    <comp ref="D2">
+      <value>NSR05T40XV2T5G</value>
+      <footprint>Diode_SMD:D_SOD-523</footprint>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="MFG P/N">NSR05T40XV2T5G</field>
+      </fields>
+      <libsource lib="" part="D_Schottky_1" description="Schottky diode"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="MFG P/N" value="NSR05T40XV2T5G"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>686fd7c8-df2f-4fc1-a78f-4fda4db0879e</tstamps>
+    </comp>
+    <comp ref="D3">
+      <value>NSR05T40XV2T5G</value>
+      <footprint>Diode_SMD:D_SOD-523</footprint>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="MFG P/N">NSR05T40XV2T5G</field>
+      </fields>
+      <libsource lib="Device" part="D_Schottky" description="Schottky diode"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="MFG P/N" value="NSR05T40XV2T5G"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>a310d155-db29-460d-b4c9-d91fd944eb17</tstamps>
+    </comp>
+    <comp ref="D4">
+      <value>NSR05T40XV2T5G</value>
+      <footprint>Diode_SMD:D_SOD-523</footprint>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="MFG P/N">NSR05T40XV2T5G</field>
+      </fields>
+      <libsource lib="" part="D_Schottky_2" description="Schottky diode"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="MFG P/N" value="NSR05T40XV2T5G"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>9b097f22-8fe0-4142-99ad-d23d49095dcf</tstamps>
+    </comp>
+    <comp ref="D5">
+      <value>15V</value>
+      <footprint>Diode_SMD:D_SOD-123F</footprint>
+      <fields>
+        <field name="MFG">Nexperia</field>
+        <field name="MFG P/N">BZT52H-C15,115</field>
+      </fields>
+      <libsource lib="Device" part="D_Zener" description="Zener diode"/>
+      <property name="MFG" value="Nexperia"/>
+      <property name="MFG P/N" value="BZT52H-C15,115"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>99f2f25d-1380-4f30-8a43-97fade15d725</tstamps>
+    </comp>
+    <comp ref="D6">
+      <value>15V</value>
+      <footprint>Diode_SMD:D_SMB</footprint>
+      <datasheet>https://www.littelfuse.com/~/media/electronics/datasheets/tvs_diodes/littelfuse_tvs_diode_sz1smb_datasheet.pdf.pdf</datasheet>
+      <fields>
+        <field name="MFG">Littelfuse</field>
+        <field name="MFG P/N">SZ1SMB15CAT3G</field>
+      </fields>
+      <libsource lib="Device" part="D_TVS" description="Bidirectional transient-voltage-suppression diode"/>
+      <property name="MFG" value="Littelfuse"/>
+      <property name="MFG P/N" value="SZ1SMB15CAT3G"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>20ea2070-92af-42ab-a4a7-6ea3567127d1</tstamps>
+    </comp>
+    <comp ref="L2">
+      <value>1.0 uH-13.7m-20%</value>
+      <footprint>PI-Power-Board:IHLP2020CZER</footprint>
+      <datasheet>https://www.vishay.com/docs/34280/ihlp-2020cz-01.pdf</datasheet>
+      <fields>
+        <field name="MFG">Vishay</field>
+        <field name="MFG P/N">IHLP2020CZER1R0M01</field>
+      </fields>
+      <libsource lib="Device" part="L_Iron" description="Inductor with iron core"/>
+      <property name="MFG" value="Vishay"/>
+      <property name="MFG P/N" value="IHLP2020CZER1R0M01"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>3534f26d-9d14-4db7-8f56-ed4508e66a6f</tstamps>
+    </comp>
+    <comp ref="Q1">
+      <value>CSD17577Q5A</value>
+      <footprint>PI-Power-Board:TI-SON5x6</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/csd17577q5a.pdf</datasheet>
+      <fields>
+        <field name="MFG">Texas Instruments</field>
+        <field name="MFG P/N">CSD17577Q5A</field>
+      </fields>
+      <libsource lib="PI-Power-Board" part="CSD1577Q5A" description="N-MOSFET transistor, source/drain/gate, drain connected to mounting plane"/>
+      <property name="MFG" value="Texas Instruments"/>
+      <property name="MFG P/N" value="CSD17577Q5A"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>7d4dbd8e-4d24-4b98-a52e-2865dabb3f98</tstamps>
+    </comp>
+    <comp ref="Q2">
+      <value>CSD17577Q5A</value>
+      <footprint>PI-Power-Board:TI-SON5x6</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/csd17577q5a.pdf</datasheet>
+      <fields>
+        <field name="MFG">Texas Instruments</field>
+        <field name="MFG P/N">CSD17577Q5A</field>
+      </fields>
+      <libsource lib="PI-Power-Board" part="CSD1577Q5A" description="N-MOSFET transistor, source/drain/gate, drain connected to mounting plane"/>
+      <property name="MFG" value="Texas Instruments"/>
+      <property name="MFG P/N" value="CSD17577Q5A"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>44d09594-afa8-4997-bc06-16971cdf817b</tstamps>
+    </comp>
+    <comp ref="Q3">
+      <value>CSD17577Q5A</value>
+      <footprint>PI-Power-Board:TI-SON5x6</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/csd17577q5a.pdf</datasheet>
+      <fields>
+        <field name="MFG">Texas Instruments</field>
+        <field name="MFG P/N">CSD17577Q5A</field>
+      </fields>
+      <libsource lib="PI-Power-Board" part="CSD1577Q5A" description="N-MOSFET transistor, source/drain/gate, drain connected to mounting plane"/>
+      <property name="MFG" value="Texas Instruments"/>
+      <property name="MFG P/N" value="CSD17577Q5A"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>060ce9cc-3461-4606-879e-f17b3fc2348b</tstamps>
+    </comp>
+    <comp ref="Q4">
+      <value>CSD17577Q5A</value>
+      <footprint>PI-Power-Board:TI-SON5x6</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/csd17577q5a.pdf</datasheet>
+      <fields>
+        <field name="MFG">Texas Instruments</field>
+        <field name="MFG P/N">CSD17577Q5A</field>
+      </fields>
+      <libsource lib="PI-Power-Board" part="CSD1577Q5A" description="N-MOSFET transistor, source/drain/gate, drain connected to mounting plane"/>
+      <property name="MFG" value="Texas Instruments"/>
+      <property name="MFG P/N" value="CSD17577Q5A"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>1b2b8403-5fdb-43f9-b942-b62386519f8a</tstamps>
+    </comp>
+    <comp ref="Q5">
+      <value>SI4483ADY-T1-GE3</value>
+      <footprint>Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.vishay.com/docs/68982/si4483ad.pdf</datasheet>
+      <fields>
+        <field name="MFG">Vishay</field>
+        <field name="MFG P/N">SI4483ADY-T1-GE3</field>
+      </fields>
+      <libsource lib="Device" part="Q_PMOS_SGD" description="P-MOSFET transistor, source/gate/drain"/>
+      <property name="MFG" value="Vishay"/>
+      <property name="P/N" value=""/>
+      <property name="MFG P/N" value="SI4483ADY-T1-GE3"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>2cdecfb4-7287-407a-b495-ad8f28e1c886</tstamps>
+    </comp>
+    <comp ref="R7">
+      <value>105k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-07105KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-07105KL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>bb45afc9-b81f-40e6-a49d-85d4cc443be5</tstamps>
+    </comp>
+    <comp ref="R8">
+      <value>93.1k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Panasonic Electronic Components</field>
+        <field name="MFG P/N">ERJ-3EKF9312V</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Panasonic Electronic Components"/>
+      <property name="MFG P/N" value="ERJ-3EKF9312V"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>6e389981-2451-4878-84a0-e191d26c3eae</tstamps>
+    </comp>
+    <comp ref="R9">
+      <value>2.00k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-072KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-072KL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>e36e0d8a-32f8-429a-8760-a0f76563c983</tstamps>
+    </comp>
+    <comp ref="R10">
+      <value>10K0-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-0710KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-0710KL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>b2623734-f2a7-4bc9-84f8-52596a91b0e6</tstamps>
+    </comp>
+    <comp ref="R11">
+      <value>105k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-07105KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-07105KL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>3cc2b125-9065-4100-8b40-3edd68eb76e9</tstamps>
+    </comp>
+    <comp ref="R12">
+      <value>249k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-07249KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-07249KL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>d21d768f-2459-4f13-b1d6-07035f914a8b</tstamps>
+    </comp>
+    <comp ref="R13">
+      <value>15m-1%-0612</value>
+      <footprint>Resistor_SMD:R_0612_1632Metric</footprint>
+      <fields>
+        <field name="MFG">KOA Speer Electronics, Inc.</field>
+        <field name="MFG P/N">WU732BTTD15L0F</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="KOA Speer Electronics, Inc."/>
+      <property name="MFG P/N" value="WU732BTTD15L0F"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>f41a77bd-eb3f-4dbc-bb11-f17455ac8fe7</tstamps>
+    </comp>
+    <comp ref="R16">
+      <value>20.0k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-0720KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-0720KL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>1b6d9afb-2a44-46ca-ad73-17c7604dbe21</tstamps>
+    </comp>
+    <comp ref="R17">
+      <value>1.0k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-071KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-071KL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>a02e72b9-1760-4bd0-820e-bcfc856e9eb5</tstamps>
+    </comp>
+    <comp ref="R22">
+      <value>15.8k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-0715K8L</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-0715K8L"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>1c17b4c8-f000-4f7e-9bb1-abc874f3d350</tstamps>
+    </comp>
+    <comp ref="R23">
+      <value>2.00k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-072KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-072KL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>15d255e1-18a2-4394-b119-8bf92cbb1b96</tstamps>
+    </comp>
+    <comp ref="R24">
+      <value>20.0k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-0720KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-0720KL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>6f910065-02c5-4717-939d-0f7ea934e51c</tstamps>
+    </comp>
+    <comp ref="R25">
+      <value>0R-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="MFG P/N">RMCF0603ZT0R00</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="MFG P/N" value="RMCF0603ZT0R00"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>5cfd3a6e-3489-442e-ab57-0e78f105562c</tstamps>
+    </comp>
+    <comp ref="R26">
+      <value>10R0-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-0710RL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-0710RL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>acde7772-b76f-40c5-ac43-c539dd11b069</tstamps>
+    </comp>
+    <comp ref="R29">
+      <value>100R-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-07100RL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-07100RL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>88e8db84-9264-4716-8163-818652c70fb2</tstamps>
+    </comp>
+    <comp ref="R30">
+      <value>100R-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-07100RL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-07100RL"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>4b6d35bd-f233-40c4-8dbf-4f246e62d3a5</tstamps>
+    </comp>
+    <comp ref="U5">
+      <value>LM5176RHF</value>
+      <footprint>PI-Power-Board:QFN-28-1EP_4x5mm_P0.5mm_EP2.55x3.55mm_ThermalVias</footprint>
+      <datasheet>https://www.ti.com/lit/gpn/lm5176</datasheet>
+      <fields>
+        <field name="MFG">Texas Instruments</field>
+        <field name="MFG P/N">LM5176RHFT</field>
+      </fields>
+      <libsource lib="PI-Power-Board" part="LM5176RHF" description=""/>
+      <property name="MFG" value="Texas Instruments"/>
+      <property name="MFG P/N" value="LM5176RHFT"/>
+      <property name="Sheetname" value="5V PowerSupply"/>
+      <property name="Sheetfile" value="power-supply.kicad_sch"/>
+      <sheetpath names="/5V PowerSupply/" tstamps="/feeb2d6c-4828-41f4-95de-5c15de403137/"/>
+      <tstamps>aa933c40-be57-4cc5-b276-13c97a6dea40</tstamps>
+    </comp>
+    <comp ref="C1">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>f167e080-11ce-4c3a-b658-9eef6575642f</tstamps>
+    </comp>
+    <comp ref="C16">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>716f5194-7cbd-4038-b272-7c574d60e571</tstamps>
+    </comp>
+    <comp ref="C22">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>b76aa149-262f-4f68-8c63-538e58aadb86</tstamps>
+    </comp>
+    <comp ref="C25">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>c41ae1a6-4022-42a5-a360-6a5e6867995b</tstamps>
+    </comp>
+    <comp ref="D7">
+      <value>PESD1CAN</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23</footprint>
+      <datasheet>https://assets.nexperia.com/documents/data-sheet/PESD1CAN.pdf</datasheet>
+      <fields>
+        <field name="MFG">Nexperia</field>
+        <field name="MFG P/N">PESD1CAN,215</field>
+      </fields>
+      <libsource lib="PI-Power-Board" part="PESD1CAN" description=""/>
+      <property name="MFG" value="Nexperia"/>
+      <property name="MFG P/N" value="PESD1CAN,215"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>9a21f4f6-3866-447e-bf12-6473bc8a70d9</tstamps>
+    </comp>
+    <comp ref="R1">
+      <value>2.00k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-072KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-072KL"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>ef1b7b18-9432-4cdf-9762-e94cdaf3d529</tstamps>
+    </comp>
+    <comp ref="R2">
+      <value>2.00k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-072KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-072KL"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>72bc943a-10a0-48c9-a974-6ba1339bfe95</tstamps>
+    </comp>
+    <comp ref="R3">
+      <value>2.00k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-072KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-072KL"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>e844d855-4ba0-49ca-b93c-f67e189ec903</tstamps>
+    </comp>
+    <comp ref="R4">
+      <value>49.9R-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-0749R9L</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-0749R9L"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>df4a822c-f4a9-4df2-902c-20b25a5782f2</tstamps>
+    </comp>
+    <comp ref="U2">
+      <value>40MHz</value>
+      <footprint>PI-Power-Board:ECS-5032MV</footprint>
+      <datasheet>https://ecsxtal.com/store/pdf/ECS-5032MV.pdf</datasheet>
+      <fields>
+        <field name="MFG">ECS Inc</field>
+        <field name="MFG P/N">ECS-5032MV-400-CN-TR</field>
+      </fields>
+      <libsource lib="PI-Power-Board" part="40MHz-ECS-5032MV" description=""/>
+      <property name="MFG" value="ECS Inc"/>
+      <property name="MFG P/N" value="ECS-5032MV-400-CN-TR"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>9920229c-3bce-4489-8397-079de577ff16</tstamps>
+    </comp>
+    <comp ref="U4">
+      <value>MCP2542FD-E/SN</value>
+      <footprint>Package_SO:SO-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>http://ww1.microchip.com/downloads/en/DeviceDoc/MCP2542FD-4FD-MCP2542WFD-4WFD-Data-Sheet20005514B.pdf</datasheet>
+      <fields>
+        <field name="MFG">Microchip</field>
+        <field name="MFG P/N">MCP2542FD-E/SN</field>
+      </fields>
+      <libsource lib="Interface_CAN_LIN" part="MCP2542FDxMF" description="CAN-FD Transceiver, Wake-Up on CAN activity, 8Mbps, 5V supply, STBY pin, 3x3 DFN-8"/>
+      <property name="MFG" value="Microchip"/>
+      <property name="MFG P/N" value="MCP2542FD-E/SN"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>9b126edb-463a-454f-b6a5-f3010050275f</tstamps>
+    </comp>
+    <comp ref="U7">
+      <value>MCP2517FDT-H/SL</value>
+      <footprint>Package_SO:SOIC-14_3.9x8.7mm_P1.27mm</footprint>
+      <datasheet>https://www.microchip.com/en-us/product/MCP2517FD</datasheet>
+      <fields>
+        <field name="MFG">Microchip</field>
+        <field name="MFG P/N">MCP2517FDT-H/SL</field>
+      </fields>
+      <libsource lib="Interface_CAN_LIN" part="MCP2517FD-xSL" description="External CAN FD Controller with SPI Interface, SOIC-14"/>
+      <property name="MFG" value="Microchip"/>
+      <property name="MFG P/N" value="MCP2517FDT-H/SL"/>
+      <property name="Sheetname" value="CAN-FD"/>
+      <property name="Sheetfile" value="can-fd.kicad_sch"/>
+      <sheetpath names="/CAN-FD/" tstamps="/47cdabce-0f38-4512-8fd1-f452002c5dd4/"/>
+      <tstamps>83aaa5f0-1c0b-40ea-9c7b-4855953aa1da</tstamps>
+    </comp>
+    <comp ref="C17">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="IMU Driver"/>
+      <property name="Sheetfile" value="IMUdriver.kicad_sch"/>
+      <sheetpath names="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/"/>
+      <tstamps>bc27beaf-df2a-4359-b6d1-efd3bd6c05a8</tstamps>
+    </comp>
+    <comp ref="C18">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="IMU Driver"/>
+      <property name="Sheetfile" value="IMUdriver.kicad_sch"/>
+      <sheetpath names="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/"/>
+      <tstamps>a77802e4-e411-4900-96f4-8f60d84192e7</tstamps>
+    </comp>
+    <comp ref="C19">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="IMU Driver"/>
+      <property name="Sheetfile" value="IMUdriver.kicad_sch"/>
+      <sheetpath names="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/"/>
+      <tstamps>3b6f34c6-5f3e-4523-8276-a5f8f66362cf</tstamps>
+    </comp>
+    <comp ref="C28">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="IMU Driver"/>
+      <property name="Sheetfile" value="IMUdriver.kicad_sch"/>
+      <sheetpath names="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/"/>
+      <tstamps>83bf0757-ab41-49aa-991b-ba3e8a25e300</tstamps>
+    </comp>
+    <comp ref="C37">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="IMU Driver"/>
+      <property name="Sheetfile" value="IMUdriver.kicad_sch"/>
+      <sheetpath names="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/"/>
+      <tstamps>5064a1cf-ce76-4ac9-b669-4aef1e121689</tstamps>
+    </comp>
+    <comp ref="R21">
+      <value>120R-1%-0805</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RMCF0805FT120R</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RMCF0805FT120R"/>
+      <property name="Sheetname" value="IMU Driver"/>
+      <property name="Sheetfile" value="IMUdriver.kicad_sch"/>
+      <sheetpath names="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/"/>
+      <tstamps>0652b8fb-0ee8-4b06-814f-61c25b1c5a1d</tstamps>
+    </comp>
+    <comp ref="R31">
+      <value>120R-1%-0805</value>
+      <footprint>Resistor_SMD:R_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RMCF0805FT120R</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RMCF0805FT120R"/>
+      <property name="Sheetname" value="IMU Driver"/>
+      <property name="Sheetfile" value="IMUdriver.kicad_sch"/>
+      <sheetpath names="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/"/>
+      <tstamps>99bb2f5e-5633-4484-8232-9a387679b02e</tstamps>
+    </comp>
+    <comp ref="U1">
+      <value>NLSV1T34DFT2G</value>
+      <footprint>Package_TO_SOT_SMD:SOT-353_SC-70-5</footprint>
+      <datasheet>https://www.onsemi.com/pdf/datasheet/nlsv1t34-d.pdf</datasheet>
+      <fields>
+        <field name="MFG">onsemi</field>
+        <field name="MFG P/N">NLSV1T34DFT2G</field>
+      </fields>
+      <libsource lib="Logic_LevelTranslator" part="SN74AUP1T34DCK" description="1-Bit Unidirectional Voltage-Level Translator, SC-70"/>
+      <property name="MFG" value="onsemi"/>
+      <property name="MFG P/N" value="NLSV1T34DFT2G"/>
+      <property name="Sheetname" value="IMU Driver"/>
+      <property name="Sheetfile" value="IMUdriver.kicad_sch"/>
+      <sheetpath names="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/"/>
+      <tstamps>d51922b9-51fa-430a-9707-4558e5d7c9d6</tstamps>
+    </comp>
+    <comp ref="U8">
+      <value>ADM3490ARZ</value>
+      <footprint>Package_SO:SO-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.analog.com/media/en/technical-documentation/data-sheets/ADM3483_3485_3488_3490_3491.pdf</datasheet>
+      <fields>
+        <field name="MFG">Analog Devices</field>
+        <field name="MFG P/N">ADM3490ARZ</field>
+      </fields>
+      <libsource lib="RspPiPicoIMU" part="ADM3490ARZ" description=""/>
+      <property name="P/N" value=""/>
+      <property name="MFG" value="Analog Devices"/>
+      <property name="MFG P/N" value="ADM3490ARZ"/>
+      <property name="Sheetname" value="IMU Driver"/>
+      <property name="Sheetfile" value="IMUdriver.kicad_sch"/>
+      <sheetpath names="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/"/>
+      <tstamps>aaaf7dee-05a6-4832-8f56-2444eb8ea64f</tstamps>
+    </comp>
+    <comp ref="U9">
+      <value>ADM3490ARZ</value>
+      <footprint>Package_SO:SO-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.analog.com/media/en/technical-documentation/data-sheets/ADM3483_3485_3488_3490_3491.pdf</datasheet>
+      <fields>
+        <field name="MFG">Analog Devices</field>
+        <field name="MFG P/N">ADM3490ARZ</field>
+      </fields>
+      <libsource lib="RspPiPicoIMU" part="ADM3490ARZ" description=""/>
+      <property name="P/N" value=""/>
+      <property name="MFG" value="Analog Devices"/>
+      <property name="MFG P/N" value="ADM3490ARZ"/>
+      <property name="Sheetname" value="IMU Driver"/>
+      <property name="Sheetfile" value="IMUdriver.kicad_sch"/>
+      <sheetpath names="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/"/>
+      <tstamps>05284baf-126a-4061-9e54-778ac5c55e7a</tstamps>
+    </comp>
+    <comp ref="U10">
+      <value>ADM3490ARZ</value>
+      <footprint>Package_SO:SO-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.analog.com/media/en/technical-documentation/data-sheets/ADM3483_3485_3488_3490_3491.pdf</datasheet>
+      <fields>
+        <field name="MFG">Analog Devices</field>
+        <field name="MFG P/N">ADM3490ARZ</field>
+      </fields>
+      <libsource lib="RspPiPicoIMU" part="ADM3490ARZ" description=""/>
+      <property name="P/N" value=""/>
+      <property name="MFG" value="Analog Devices"/>
+      <property name="MFG P/N" value="ADM3490ARZ"/>
+      <property name="Sheetname" value="IMU Driver"/>
+      <property name="Sheetfile" value="IMUdriver.kicad_sch"/>
+      <sheetpath names="/IMU Driver/" tstamps="/5c12e4ab-2d1c-4640-9862-f6337288ba8e/"/>
+      <tstamps>329ed891-4da5-4968-938f-5e22d66dd6ac</tstamps>
+    </comp>
+    <comp ref="C5">
+      <value>22uF-10V-10%-0805</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL21A226KPCLRNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL21A226KPCLRNC"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>9a65cb20-7ec8-4950-9ab9-b912205c8222</tstamps>
+    </comp>
+    <comp ref="C6">
+      <value>22uF-10V-10%-0805</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL21A226KPCLRNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL21A226KPCLRNC"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>521f1948-21e6-423c-bd48-bbe0ae7e3597</tstamps>
+    </comp>
+    <comp ref="C7">
+      <value>22uF-10V-10%-0805</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL21A226KPCLRNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL21A226KPCLRNC"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>9dc17d4e-5680-409b-94c5-05bbd68674ca</tstamps>
+    </comp>
+    <comp ref="C8">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>ca1a3366-41e5-4c28-b19c-433b6b106e4a</tstamps>
+    </comp>
+    <comp ref="C20">
+      <value>22uF-10V-10%-0805</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL21A226KPCLRNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL21A226KPCLRNC"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>bc432059-12fb-4a33-88c8-6bcd0333053b</tstamps>
+    </comp>
+    <comp ref="C21">
+      <value>0.1uF-10%-50V-0603</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Samsung Electro-Mechanics</field>
+        <field name="MFG P/N">CL10B104KB8NNNC</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="MFG" value="Samsung Electro-Mechanics"/>
+      <property name="MFG P/N" value="CL10B104KB8NNNC"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>fb775b90-d327-4703-890a-5a21658de510</tstamps>
+    </comp>
+    <comp ref="L1">
+      <value>2.5uH-1.45A</value>
+      <footprint>PI-Power-Board:WE-TPC-744031002</footprint>
+      <datasheet>https://www.we-online.com/katalog/datasheet/744031002.pdf</datasheet>
+      <fields>
+        <field name="MFG">Wurth Electronik</field>
+        <field name="MFG P/N">744031002</field>
+      </fields>
+      <libsource lib="Device" part="L_Iron" description="Inductor with iron core"/>
+      <property name="MFG" value="Wurth Electronik"/>
+      <property name="MFG P/N" value="744031002"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>c1e38e8b-726d-4cd5-8c80-5586885284ff</tstamps>
+    </comp>
+    <comp ref="R6">
+      <value>DNI-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>a298b464-58c5-4de3-ae20-a2dd7a12000e</tstamps>
+    </comp>
+    <comp ref="R20">
+      <value>DNI-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>541fa817-e78f-46a5-bebb-d4dc1be4b4d8</tstamps>
+    </comp>
+    <comp ref="R27">
+      <value>31.6k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Stackpole Electronics Inc</field>
+        <field name="MFG P/N">RMCF0603FT31K6</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Stackpole Electronics Inc"/>
+      <property name="MFG P/N" value="RMCF0603FT31K6"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>0652a2f8-d0c8-4a1d-92b7-264bd5c3bb6d</tstamps>
+    </comp>
+    <comp ref="R28">
+      <value>10.0k-1%-0603</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <fields>
+        <field name="MFG">Yageo</field>
+        <field name="MFG P/N">RC0603FR-0710KL</field>
+      </fields>
+      <libsource lib="Device" part="R_US" description="Resistor, US symbol"/>
+      <property name="MFG" value="Yageo"/>
+      <property name="MFG P/N" value="RC0603FR-0710KL"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>03e80a30-6d54-4943-99e3-76f5d791a52f</tstamps>
+    </comp>
+    <comp ref="U3">
+      <value>MIC5233-3.0YM5-TR</value>
+      <footprint>Package_TO_SOT_SMD:SOT-23-5</footprint>
+      <datasheet>https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MIC5233-Data-Sheet-DS20006033D.pdf</datasheet>
+      <fields>
+        <field name="MFG">Microchip</field>
+        <field name="MFG P/N">MIC5233-3.0YM5-TR</field>
+      </fields>
+      <libsource lib="PI-Power-Board" part="MIC5233-3.0YM5-TR" description=""/>
+      <property name="MFG" value="Microchip"/>
+      <property name="MFG P/N" value="MIC5233-3.0YM5-TR"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>abfba0a8-41cf-4988-b726-4d42ab35df2a</tstamps>
+    </comp>
+    <comp ref="U6">
+      <value>AP62200WU-7</value>
+      <footprint>Package_TO_SOT_SMD:TSOT-23-6</footprint>
+      <datasheet>https://www.diodes.com/assets/Datasheets/AP62200_AP62201_AP62200T.pdf</datasheet>
+      <fields>
+        <field name="MFG">Diodes Inc</field>
+        <field name="MFG P/N">AP62200WU-7</field>
+      </fields>
+      <libsource lib="PI-Power-Board" part="AP62200WU-7" description=""/>
+      <property name="MFG" value="Diodes Inc"/>
+      <property name="MFG P/N" value="AP62200WU-7"/>
+      <property name="Sheetname" value="3V-3.3V-PS"/>
+      <property name="Sheetfile" value="3V3-3V0-power-supply.kicad_sch"/>
+      <sheetpath names="/3V-3.3V-PS/" tstamps="/2d4e4a8e-5ec4-4f06-b5e3-fdf354939c71/"/>
+      <tstamps>1bc1cc87-b20b-4957-bdc1-19ecdb7e0a10</tstamps>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="" part="D_Schottky_1">
+      <description>Schottky diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D2</field>
+        <field name="Value">D_Schottky_1</field>
+        <field name="Footprint">Diode_SMD:D_SOD-523</field>
+        <field name="Datasheet">~</field>
+        <field name="MFG">onsemi</field>
+        <field name="MFG P/N">NSR05T40XV2T5G</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="" part="D_Schottky_2">
+      <description>Schottky diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D3</field>
+        <field name="Value">D_Schottky_2</field>
+        <field name="Footprint">Diode_SMD:D_SOD-523</field>
+        <field name="Datasheet">~</field>
+        <field name="MFG">onsemi</field>
+        <field name="MFG P/N">NSR05T40XV2T5G</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="Conn_01x02_Male">
+      <description>Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x02_Male</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="Conn_01x03_Male">
+      <description>Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x03_Male</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="Conn_01x04_Male">
+      <description>Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x04_Male</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="Conn_01x12_Male">
+      <description>Generic connector, single row, 01x12, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x12_Male</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+        <pin num="6" name="Pin_6" type="passive"/>
+        <pin num="7" name="Pin_7" type="passive"/>
+        <pin num="8" name="Pin_8" type="passive"/>
+        <pin num="9" name="Pin_9" type="passive"/>
+        <pin num="10" name="Pin_10" type="passive"/>
+        <pin num="11" name="Pin_11" type="passive"/>
+        <pin num="12" name="Pin_12" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="Conn_01x40_Male">
+      <description>Generic connector, single row, 01x40, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x40_Male</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+        <pin num="6" name="Pin_6" type="passive"/>
+        <pin num="7" name="Pin_7" type="passive"/>
+        <pin num="8" name="Pin_8" type="passive"/>
+        <pin num="9" name="Pin_9" type="passive"/>
+        <pin num="10" name="Pin_10" type="passive"/>
+        <pin num="11" name="Pin_11" type="passive"/>
+        <pin num="12" name="Pin_12" type="passive"/>
+        <pin num="13" name="Pin_13" type="passive"/>
+        <pin num="14" name="Pin_14" type="passive"/>
+        <pin num="15" name="Pin_15" type="passive"/>
+        <pin num="16" name="Pin_16" type="passive"/>
+        <pin num="17" name="Pin_17" type="passive"/>
+        <pin num="18" name="Pin_18" type="passive"/>
+        <pin num="19" name="Pin_19" type="passive"/>
+        <pin num="20" name="Pin_20" type="passive"/>
+        <pin num="21" name="Pin_21" type="passive"/>
+        <pin num="22" name="Pin_22" type="passive"/>
+        <pin num="23" name="Pin_23" type="passive"/>
+        <pin num="24" name="Pin_24" type="passive"/>
+        <pin num="25" name="Pin_25" type="passive"/>
+        <pin num="26" name="Pin_26" type="passive"/>
+        <pin num="27" name="Pin_27" type="passive"/>
+        <pin num="28" name="Pin_28" type="passive"/>
+        <pin num="29" name="Pin_29" type="passive"/>
+        <pin num="30" name="Pin_30" type="passive"/>
+        <pin num="31" name="Pin_31" type="passive"/>
+        <pin num="32" name="Pin_32" type="passive"/>
+        <pin num="33" name="Pin_33" type="passive"/>
+        <pin num="34" name="Pin_34" type="passive"/>
+        <pin num="35" name="Pin_35" type="passive"/>
+        <pin num="36" name="Pin_36" type="passive"/>
+        <pin num="37" name="Pin_37" type="passive"/>
+        <pin num="38" name="Pin_38" type="passive"/>
+        <pin num="39" name="Pin_39" type="passive"/>
+        <pin num="40" name="Pin_40" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector" part="TestPoint">
+      <description>test point</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Pin*</fp>
+        <fp>Test*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">TP</field>
+        <field name="Value">TestPoint</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="C">
+      <description>Unpolarized capacitor</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="D_Schottky">
+      <description>Schottky diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D4</field>
+        <field name="Value">NSR05T40XV2T5G</field>
+        <field name="Footprint">Diode_SMD:D_SOD-523</field>
+        <field name="Datasheet">~</field>
+        <field name="MFG">onsemi</field>
+        <field name="MFG P/N">NSR05T40XV2T5G</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="D_TVS">
+      <description>Bidirectional transient-voltage-suppression diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_TVS</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A1" type="passive"/>
+        <pin num="2" name="A2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="D_Zener">
+      <description>Zener diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D1</field>
+        <field name="Value">15V</field>
+        <field name="Footprint">Diode_SMD:D_SOD-123F</field>
+        <field name="Datasheet">~</field>
+        <field name="MFG">Nexperia</field>
+        <field name="MFG P/N">BZT52H-C15,115</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="LED">
+      <description>Light emitting diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>LED*</fp>
+        <fp>LED_SMD:*</fp>
+        <fp>LED_THT:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D?</field>
+        <field name="Value">LED</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="L_Iron">
+      <description>Inductor with iron core</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Choke_*</fp>
+        <fp>*Coil*</fp>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">L</field>
+        <field name="Value">L_Iron</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="Q_PMOS_SGD">
+      <description>P-MOSFET transistor, source/gate/drain</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">Q?</field>
+        <field name="Value">Q_PMOS_SGD</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="S" type="passive"/>
+        <pin num="2" name="S" type="passive"/>
+        <pin num="3" name="S" type="passive"/>
+        <pin num="4" name="G" type="input"/>
+        <pin num="5" name="D" type="passive"/>
+        <pin num="6" name="D" type="passive"/>
+        <pin num="7" name="D" type="passive"/>
+        <pin num="8" name="D" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Device" part="R_US">
+      <description>Resistor, US symbol</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R_US</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Interface_CAN_LIN" part="MCP2517FD-xSL">
+      <description>External CAN FD Controller with SPI Interface, SOIC-14</description>
+      <docs>https://www.microchip.com/en-us/product/MCP2517FD</docs>
+      <footprints>
+        <fp>SOIC*3.9x8.7mm*P1.27mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U3</field>
+        <field name="Value">MCP2517FDT-H/SL</field>
+        <field name="Footprint">Package_SO:SOIC-14_3.9x8.7mm_P1.27mm</field>
+        <field name="Datasheet">https://www.microchip.com/en-us/product/MCP2517FD</field>
+        <field name="MFG">Microchip</field>
+        <field name="MFG P/N">MCP2517FDT-H/SL</field>
+      </fields>
+      <pins>
+        <pin num="1" name="TXCAN" type="output"/>
+        <pin num="2" name="RXCAN" type="input"/>
+        <pin num="3" name="CLKO/SOF" type="output"/>
+        <pin num="4" name="~{INT}" type="output"/>
+        <pin num="5" name="OSC2" type="output"/>
+        <pin num="6" name="OSC1" type="input"/>
+        <pin num="7" name="VSS" type="power_in"/>
+        <pin num="8" name="~{INT1}/GPIO1" type="bidirectional"/>
+        <pin num="9" name="~{INT0}/GPIO0/XSTBY" type="bidirectional"/>
+        <pin num="10" name="SCK" type="input"/>
+        <pin num="11" name="SDI" type="input"/>
+        <pin num="12" name="SDO" type="output"/>
+        <pin num="13" name="nCS" type="input"/>
+        <pin num="14" name="VDD" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Interface_CAN_LIN" part="MCP2542FDxMF">
+      <description>CAN-FD Transceiver, Wake-Up on CAN activity, 8Mbps, 5V supply, STBY pin, 3x3 DFN-8</description>
+      <docs>http://ww1.microchip.com/downloads/en/DeviceDoc/MCP2542FD-4FD-MCP2542WFD-4WFD-Data-Sheet20005514B.pdf</docs>
+      <footprints>
+        <fp>DFN*1EP*3x3mm*P0.65mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U4</field>
+        <field name="Value">MCP2542FD-E/SN</field>
+        <field name="Footprint">Package_SO:SO-8_3.9x4.9mm_P1.27mm</field>
+        <field name="Datasheet">http://ww1.microchip.com/downloads/en/DeviceDoc/MCP2542FD-4FD-MCP2542WFD-4WFD-Data-Sheet20005514B.pdf</field>
+        <field name="MFG">Microchip</field>
+        <field name="MFG P/N">MCP2542FD-E/SN</field>
+      </fields>
+      <pins>
+        <pin num="1" name="TXD" type="input"/>
+        <pin num="2" name="VSS" type="power_in"/>
+        <pin num="3" name="VDD" type="power_in"/>
+        <pin num="4" name="RXD" type="output"/>
+        <pin num="5" name="VIO" type="power_in"/>
+        <pin num="6" name="CANL" type="bidirectional"/>
+        <pin num="7" name="CANH" type="bidirectional"/>
+        <pin num="8" name="STBY" type="input"/>
+      </pins>
+    </libpart>
+    <libpart lib="Logic_LevelTranslator" part="SN74AUP1T34DCK">
+      <description>1-Bit Unidirectional Voltage-Level Translator, SC-70</description>
+      <docs>http://www.ti.com/lit/ds/symlink/sn74aup1t34.pdf</docs>
+      <footprints>
+        <fp>SOT*353*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">SN74AUP1T34DCK</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-353_SC-70-5</field>
+        <field name="Datasheet">http://www.ti.com/lit/ds/symlink/sn74aup1t34.pdf</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VCCA" type="power_in"/>
+        <pin num="2" name="A" type="input"/>
+        <pin num="3" name="GND" type="power_in"/>
+        <pin num="4" name="B" type="output"/>
+        <pin num="5" name="VCCB" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="Mechanical" part="MountingHole">
+      <description>Mounting Hole without connection</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>MountingHole*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">H</field>
+        <field name="Value">MountingHole</field>
+        <field name="Datasheet">~</field>
+      </fields>
+    </libpart>
+    <libpart lib="PI-Power-Board" part="40MHz-ECS-5032MV">
+      <docs>https://ecsxtal.com/store/pdf/ECS-5032MV.pdf</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">40MHz-ECS-5032MV</field>
+        <field name="Footprint">PI-Power-Board:ECS-5032MV</field>
+        <field name="Datasheet">https://ecsxtal.com/store/pdf/ECS-5032MV.pdf</field>
+        <field name="MFG">ECS Inc</field>
+        <field name="MFG P/N">ECS-5032MV-400-CN-TR</field>
+      </fields>
+      <pins>
+        <pin num="1" name="EN" type="input"/>
+        <pin num="2" name="GND" type="passive"/>
+        <pin num="3" name="OUT" type="output"/>
+        <pin num="4" name="V_{DD}" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="PI-Power-Board" part="AP62200WU-7">
+      <docs>https://www.diodes.com/assets/Datasheets/AP62200_AP62201_AP62200T.pdf</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">AP62200WU-7</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-6</field>
+        <field name="Datasheet">https://www.diodes.com/assets/Datasheets/AP62200_AP62201_AP62200T.pdf</field>
+        <field name="MFG">Diodes Inc</field>
+        <field name="MFG P/N">AP62200WU-7</field>
+      </fields>
+      <pins>
+        <pin num="1" name="GND" type="passive"/>
+        <pin num="2" name="SW" type="output"/>
+        <pin num="3" name="VIN" type="power_in"/>
+        <pin num="4" name="FB" type="input"/>
+        <pin num="5" name="EN" type="input"/>
+        <pin num="6" name="BST" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="PI-Power-Board" part="CSD1577Q5A">
+      <description>N-MOSFET transistor, source/drain/gate, drain connected to mounting plane</description>
+      <docs>~</docs>
+      <fields>
+        <field name="Reference">Q?</field>
+        <field name="Value">CSD1577Q5A</field>
+        <field name="Datasheet">~</field>
+      </fields>
+      <pins>
+        <pin num="1" name="S" type="passive"/>
+        <pin num="2" name="S" type="passive"/>
+        <pin num="3" name="S" type="passive"/>
+        <pin num="4" name="G" type="input"/>
+        <pin num="5" name="D" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="PI-Power-Board" part="LM5176RHF">
+      <docs>https://www.ti.com/lit/gpn/lm5176</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">LM5176RHF</field>
+        <field name="Footprint">PI-Power-Board:QFN-28-1EP_4x5mm_P0.5mm_EP2.55x3.55mm_ThermalVias</field>
+        <field name="Datasheet">https://www.ti.com/lit/gpn/lm5176</field>
+      </fields>
+      <pins>
+        <pin num="1" name="MODE" type="input"/>
+        <pin num="2" name="DITH" type="input"/>
+        <pin num="3" name="RT" type="input"/>
+        <pin num="4" name="SLOPE" type="input"/>
+        <pin num="5" name="SS" type="input"/>
+        <pin num="6" name="COMP" type="output"/>
+        <pin num="7" name="AGND" type="passive"/>
+        <pin num="8" name="FB" type="input"/>
+        <pin num="9" name="VOSNS" type="input"/>
+        <pin num="10" name="ISNS-" type="input"/>
+        <pin num="11" name="ISNS+" type="input"/>
+        <pin num="12" name="CSG" type="input"/>
+        <pin num="13" name="CS" type="input"/>
+        <pin num="14" name="PGOOD" type="open_collector"/>
+        <pin num="15" name="SW2" type="bidirectional"/>
+        <pin num="16" name="HDRV2" type="output"/>
+        <pin num="17" name="BOOT2" type="passive"/>
+        <pin num="18" name="LDRV2" type="output"/>
+        <pin num="19" name="PGND" type="passive"/>
+        <pin num="20" name="VCC" type="passive"/>
+        <pin num="21" name="BIAS" type="passive"/>
+        <pin num="22" name="LDRV1" type="output"/>
+        <pin num="23" name="BOOT1" type="passive"/>
+        <pin num="24" name="HDRV1" type="output"/>
+        <pin num="25" name="SW1" type="passive"/>
+        <pin num="26" name="EN/UVLO" type="input"/>
+        <pin num="27" name="VIN" type="passive"/>
+        <pin num="28" name="VISNS" type="input"/>
+        <pin num="29" name="EP-PGND" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="PI-Power-Board" part="MIC5233-3.0YM5-TR">
+      <docs>https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MIC5233-Data-Sheet-DS20006033D.pdf</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">MIC5233-3.0YM5-TR</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23-5</field>
+        <field name="Datasheet">https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/MIC5233-Data-Sheet-DS20006033D.pdf</field>
+        <field name="MFG">Microchip</field>
+        <field name="MFG P/N">MIC5233-3.0YM5-TR</field>
+      </fields>
+      <pins>
+        <pin num="1" name="IN" type="power_in"/>
+        <pin num="2" name="GND" type="passive"/>
+        <pin num="3" name="EN" type="input"/>
+        <pin num="4" name="NC/ADJ" type="power_in"/>
+        <pin num="5" name="OUT" type="power_out"/>
+      </pins>
+    </libpart>
+    <libpart lib="PI-Power-Board" part="PESD1CAN">
+      <docs>https://assets.nexperia.com/documents/data-sheet/PESD1CAN.pdf</docs>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">PESD1CAN</field>
+        <field name="Footprint">Package_TO_SOT_SMD:SOT-23</field>
+        <field name="Datasheet">https://assets.nexperia.com/documents/data-sheet/PESD1CAN.pdf</field>
+        <field name="MFG">Nexperia</field>
+        <field name="MFG P/N">PESD1CAN,215</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K1" type="passive"/>
+        <pin num="2" name="K1" type="passive"/>
+        <pin num="3" name="KK" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="RspPiPicoIMU" part="ADM3490ARZ">
+      <docs>https://www.analog.com/media/en/technical-documentation/data-sheets/ADM3483_3485_3488_3490_3491.pdf</docs>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">ADM3490ARZ</field>
+        <field name="Datasheet">https://www.analog.com/media/en/technical-documentation/data-sheets/ADM3483_3485_3488_3490_3491.pdf</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VCC" type="power_in"/>
+        <pin num="2" name="RO" type="output"/>
+        <pin num="3" name="DI" type="input"/>
+        <pin num="4" name="GND" type="passive"/>
+        <pin num="5" name="" type="output"/>
+        <pin num="6" name="" type="output"/>
+        <pin num="7" name="" type="input"/>
+        <pin num="8" name="" type="input"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="Connector">
+      <uri>/usr/share/kicad/symbols//Connector.kicad_sym</uri>
+    </library>
+    <library logical="Device">
+      <uri>/usr/share/kicad/symbols//Device.kicad_sym</uri>
+    </library>
+    <library logical="Interface_CAN_LIN">
+      <uri>/usr/share/kicad/symbols//Interface_CAN_LIN.kicad_sym</uri>
+    </library>
+    <library logical="Logic_LevelTranslator">
+      <uri>/usr/share/kicad/symbols//Logic_LevelTranslator.kicad_sym</uri>
+    </library>
+    <library logical="Mechanical">
+      <uri>/usr/share/kicad/symbols//Mechanical.kicad_sym</uri>
+    </library>
+    <library logical="PI-Power-Board">
+      <uri>/home/scott/Documents/Projects/FRC/PI-Power-Board/PI-Power-Board.kicad_sym</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="+3V0">
+      <node ref="C1" pin="1" pintype="passive"/>
+      <node ref="C16" pin="1" pintype="passive"/>
+      <node ref="C17" pin="1" pintype="passive"/>
+      <node ref="C25" pin="1" pintype="passive"/>
+      <node ref="R1" pin="1" pintype="passive"/>
+      <node ref="R2" pin="1" pintype="passive"/>
+      <node ref="R3" pin="1" pintype="passive"/>
+      <node ref="R5" pin="2" pintype="passive"/>
+      <node ref="TP1" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U1" pin="5" pinfunction="VCCB" pintype="power_in"/>
+      <node ref="U2" pin="1" pinfunction="EN" pintype="input"/>
+      <node ref="U2" pin="4" pinfunction="V_{DD}" pintype="power_in"/>
+      <node ref="U4" pin="5" pinfunction="VIO" pintype="power_in"/>
+      <node ref="U7" pin="14" pinfunction="VDD" pintype="power_in"/>
+    </net>
+    <net code="2" name="+3V3">
+      <node ref="C18" pin="1" pintype="passive"/>
+      <node ref="C19" pin="1" pintype="passive"/>
+      <node ref="C28" pin="1" pintype="passive"/>
+      <node ref="C37" pin="1" pintype="passive"/>
+      <node ref="R14" pin="2" pintype="passive"/>
+      <node ref="TP3" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U1" pin="1" pinfunction="VCCA" pintype="power_in"/>
+      <node ref="U10" pin="1" pinfunction="VCC" pintype="power_in"/>
+      <node ref="U8" pin="1" pinfunction="VCC" pintype="power_in"/>
+      <node ref="U9" pin="1" pinfunction="VCC" pintype="power_in"/>
+    </net>
+    <net code="3" name="+5V">
+      <node ref="C21" pin="1" pintype="passive"/>
+      <node ref="C22" pin="1" pintype="passive"/>
+      <node ref="C6" pin="1" pintype="passive"/>
+      <node ref="J1" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="J1" pin="4" pinfunction="Pin_4" pintype="passive"/>
+      <node ref="J3" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="R15" pin="2" pintype="passive"/>
+      <node ref="R19" pin="2" pintype="passive"/>
+      <node ref="TP4" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U3" pin="1" pinfunction="IN" pintype="power_in"/>
+      <node ref="U4" pin="3" pinfunction="VDD" pintype="power_in"/>
+      <node ref="U6" pin="3" pinfunction="VIN" pintype="power_in"/>
+    </net>
+    <net code="4" name="/3V-3.3V-PS/3V0_{OUT}">
+      <node ref="C20" pin="1" pintype="passive"/>
+      <node ref="R20" pin="1" pintype="passive"/>
+      <node ref="R5" pin="1" pintype="passive"/>
+      <node ref="U3" pin="5" pinfunction="OUT" pintype="power_out"/>
+    </net>
+    <net code="5" name="/3V-3.3V-PS/3V3_{OUT}">
+      <node ref="C5" pin="1" pintype="passive"/>
+      <node ref="C7" pin="1" pintype="passive"/>
+      <node ref="L1" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="R14" pin="1" pintype="passive"/>
+      <node ref="R27" pin="1" pintype="passive"/>
+    </net>
+    <net code="6" name="/3V-3.3V-PS/SW">
+      <node ref="C8" pin="2" pintype="passive"/>
+      <node ref="L1" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U6" pin="2" pinfunction="SW" pintype="output"/>
+    </net>
+    <net code="7" name="/3V3_PI">
+      <node ref="J1" pin="17" pinfunction="Pin_17" pintype="passive"/>
+      <node ref="U3" pin="3" pinfunction="EN" pintype="input"/>
+      <node ref="U6" pin="5" pinfunction="EN" pintype="input"/>
+    </net>
+    <net code="8" name="/5V PowerSupply/BIAS">
+      <node ref="C29" pin="1" pintype="passive"/>
+      <node ref="R25" pin="1" pintype="passive"/>
+      <node ref="U5" pin="21" pinfunction="BIAS" pintype="passive"/>
+    </net>
+    <net code="9" name="/5V PowerSupply/BOOT_{1}">
+      <node ref="C27" pin="1" pintype="passive"/>
+      <node ref="D4" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="U5" pin="23" pinfunction="BOOT1" pintype="passive"/>
+    </net>
+    <net code="10" name="/5V PowerSupply/BOOT_{2}">
+      <node ref="C30" pin="1" pintype="passive"/>
+      <node ref="D3" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="U5" pin="17" pinfunction="BOOT2" pintype="passive"/>
+    </net>
+    <net code="11" name="/5V PowerSupply/COMP">
+      <node ref="C2" pin="1" pintype="passive"/>
+      <node ref="C3" pin="1" pintype="passive"/>
+      <node ref="U5" pin="6" pinfunction="COMP" pintype="output"/>
+    </net>
+    <net code="12" name="/5V PowerSupply/CS">
+      <node ref="C26" pin="1" pintype="passive"/>
+      <node ref="R30" pin="1" pintype="passive"/>
+      <node ref="U5" pin="13" pinfunction="CS" pintype="input"/>
+    </net>
+    <net code="13" name="/5V PowerSupply/CSG">
+      <node ref="C26" pin="2" pintype="passive"/>
+      <node ref="R29" pin="1" pintype="passive"/>
+      <node ref="U5" pin="12" pinfunction="CSG" pintype="input"/>
+    </net>
+    <net code="14" name="/5V PowerSupply/EN{slash}UVLO">
+      <node ref="R11" pin="1" pintype="passive"/>
+      <node ref="R12" pin="2" pintype="passive"/>
+      <node ref="U5" pin="26" pinfunction="EN/UVLO" pintype="input"/>
+    </net>
+    <net code="15" name="/5V PowerSupply/FB">
+      <node ref="R24" pin="1" pintype="passive"/>
+      <node ref="R7" pin="2" pintype="passive"/>
+      <node ref="U5" pin="8" pinfunction="FB" pintype="input"/>
+    </net>
+    <net code="16" name="/5V PowerSupply/HDRV1">
+      <node ref="Q4" pin="4" pinfunction="G" pintype="input"/>
+      <node ref="U5" pin="24" pinfunction="HDRV1" pintype="output"/>
+    </net>
+    <net code="17" name="/5V PowerSupply/HDRV2">
+      <node ref="Q3" pin="4" pinfunction="G" pintype="input"/>
+      <node ref="U5" pin="16" pinfunction="HDRV2" pintype="output"/>
+    </net>
+    <net code="18" name="/5V PowerSupply/LDRV1">
+      <node ref="Q2" pin="4" pinfunction="G" pintype="input"/>
+      <node ref="U5" pin="22" pinfunction="LDRV1" pintype="output"/>
+    </net>
+    <net code="19" name="/5V PowerSupply/LDRV2">
+      <node ref="Q1" pin="4" pinfunction="G" pintype="input"/>
+      <node ref="U5" pin="18" pinfunction="LDRV2" pintype="output"/>
+    </net>
+    <net code="20" name="/5V PowerSupply/MODE">
+      <node ref="R8" pin="1" pintype="passive"/>
+      <node ref="U5" pin="1" pinfunction="MODE" pintype="input"/>
+    </net>
+    <net code="21" name="/5V PowerSupply/PGOOD">
+      <node ref="R10" pin="2" pintype="passive"/>
+      <node ref="U5" pin="14" pinfunction="PGOOD" pintype="open_collector"/>
+    </net>
+    <net code="22" name="/5V PowerSupply/RT">
+      <node ref="R22" pin="1" pintype="passive"/>
+      <node ref="U5" pin="3" pinfunction="RT" pintype="input"/>
+    </net>
+    <net code="23" name="/5V PowerSupply/R_{CSP}">
+      <node ref="Q1" pin="1" pinfunction="S" pintype="passive"/>
+      <node ref="Q1" pin="2" pinfunction="S" pintype="passive"/>
+      <node ref="Q1" pin="3" pinfunction="S" pintype="passive"/>
+      <node ref="Q2" pin="1" pinfunction="S" pintype="passive"/>
+      <node ref="Q2" pin="2" pinfunction="S" pintype="passive"/>
+      <node ref="Q2" pin="3" pinfunction="S" pintype="passive"/>
+      <node ref="R13" pin="1" pintype="passive"/>
+      <node ref="R30" pin="2" pintype="passive"/>
+    </net>
+    <net code="24" name="/5V PowerSupply/SLOPE">
+      <node ref="C4" pin="1" pintype="passive"/>
+      <node ref="U5" pin="4" pinfunction="SLOPE" pintype="input"/>
+    </net>
+    <net code="25" name="/5V PowerSupply/SS">
+      <node ref="C23" pin="1" pintype="passive"/>
+      <node ref="U5" pin="5" pinfunction="SS" pintype="input"/>
+    </net>
+    <net code="26" name="/5V PowerSupply/SW1">
+      <node ref="C27" pin="2" pintype="passive"/>
+      <node ref="L2" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="Q2" pin="5" pinfunction="D" pintype="passive"/>
+      <node ref="Q4" pin="1" pinfunction="S" pintype="passive"/>
+      <node ref="Q4" pin="2" pinfunction="S" pintype="passive"/>
+      <node ref="Q4" pin="3" pinfunction="S" pintype="passive"/>
+      <node ref="U5" pin="25" pinfunction="SW1" pintype="passive"/>
+    </net>
+    <net code="27" name="/5V PowerSupply/SW2">
+      <node ref="C30" pin="2" pintype="passive"/>
+      <node ref="L2" pin="2" pinfunction="2" pintype="passive"/>
+      <node ref="Q1" pin="5" pinfunction="D" pintype="passive"/>
+      <node ref="Q3" pin="1" pinfunction="S" pintype="passive"/>
+      <node ref="Q3" pin="2" pinfunction="S" pintype="passive"/>
+      <node ref="Q3" pin="3" pinfunction="S" pintype="passive"/>
+      <node ref="U5" pin="15" pinfunction="SW2" pintype="bidirectional"/>
+    </net>
+    <net code="28" name="/5V PowerSupply/V_{CC}">
+      <node ref="C31" pin="1" pintype="passive"/>
+      <node ref="D3" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D4" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="U5" pin="20" pinfunction="VCC" pintype="passive"/>
+    </net>
+    <net code="29" name="/5V PowerSupply/V_{IN}">
+      <node ref="C24" pin="1" pintype="passive"/>
+      <node ref="R26" pin="2" pintype="passive"/>
+      <node ref="U5" pin="27" pinfunction="VIN" pintype="passive"/>
+    </net>
+    <net code="30" name="/5V PowerSupply/V_{ISNS}">
+      <node ref="R9" pin="2" pintype="passive"/>
+      <node ref="U5" pin="28" pinfunction="VISNS" pintype="input"/>
+    </net>
+    <net code="31" name="/5V PowerSupply/V_{OSNS}">
+      <node ref="C12" pin="1" pintype="passive"/>
+      <node ref="C13" pin="1" pintype="passive"/>
+      <node ref="C14" pin="1" pintype="passive"/>
+      <node ref="C35" pin="1" pintype="passive"/>
+      <node ref="C36" pin="1" pintype="passive"/>
+      <node ref="Q3" pin="5" pinfunction="D" pintype="passive"/>
+      <node ref="R10" pin="1" pintype="passive"/>
+      <node ref="R15" pin="1" pintype="passive"/>
+      <node ref="R25" pin="2" pintype="passive"/>
+      <node ref="R7" pin="1" pintype="passive"/>
+      <node ref="U5" pin="9" pinfunction="VOSNS" pintype="input"/>
+    </net>
+    <net code="32" name="/5V PowerSupply/V_{P}">
+      <node ref="C10" pin="2" pintype="passive"/>
+      <node ref="C11" pin="2" pintype="passive"/>
+      <node ref="C15" pin="2" pintype="passive"/>
+      <node ref="C32" pin="2" pintype="passive"/>
+      <node ref="C33" pin="2" pintype="passive"/>
+      <node ref="C34" pin="2" pintype="passive"/>
+      <node ref="C9" pin="2" pintype="passive"/>
+      <node ref="D2" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="D5" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="Q4" pin="5" pinfunction="D" pintype="passive"/>
+      <node ref="Q5" pin="1" pinfunction="S" pintype="passive"/>
+      <node ref="Q5" pin="2" pinfunction="S" pintype="passive"/>
+      <node ref="Q5" pin="3" pinfunction="S" pintype="passive"/>
+      <node ref="R12" pin="1" pintype="passive"/>
+      <node ref="R16" pin="2" pintype="passive"/>
+      <node ref="R9" pin="1" pintype="passive"/>
+    </net>
+    <net code="33" name="/CAN-FD/CAN_H">
+      <node ref="D7" pin="1" pinfunction="K1" pintype="passive"/>
+      <node ref="J4" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="U4" pin="7" pinfunction="CANH" pintype="bidirectional"/>
+    </net>
+    <net code="34" name="/CAN-FD/CAN_L">
+      <node ref="D7" pin="2" pinfunction="K1" pintype="passive"/>
+      <node ref="J4" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="U4" pin="6" pinfunction="CANL" pintype="bidirectional"/>
+    </net>
+    <net code="35" name="/CS_H">
+      <node ref="J3" pin="12" pinfunction="Pin_12" pintype="passive"/>
+      <node ref="U8" pin="5" pintype="output"/>
+    </net>
+    <net code="36" name="/CS_L">
+      <node ref="J3" pin="11" pinfunction="Pin_11" pintype="passive"/>
+      <node ref="U8" pin="6" pintype="output"/>
+    </net>
+    <net code="37" name="/DR">
+      <node ref="J1" pin="32" pinfunction="Pin_32" pintype="passive"/>
+      <node ref="U10" pin="2" pinfunction="RO" pintype="output"/>
+    </net>
+    <net code="38" name="/DR_H">
+      <node ref="J3" pin="6" pinfunction="Pin_6" pintype="passive"/>
+      <node ref="R31" pin="1" pintype="passive"/>
+      <node ref="U10" pin="8" pintype="input"/>
+    </net>
+    <net code="39" name="/DR_L">
+      <node ref="J3" pin="5" pinfunction="Pin_5" pintype="passive"/>
+      <node ref="R31" pin="2" pintype="passive"/>
+      <node ref="U10" pin="7" pintype="input"/>
+    </net>
+    <net code="40" name="/MISO_H">
+      <node ref="J3" pin="10" pinfunction="Pin_10" pintype="passive"/>
+      <node ref="R21" pin="1" pintype="passive"/>
+      <node ref="U9" pin="8" pintype="input"/>
+    </net>
+    <net code="41" name="/MISO_L">
+      <node ref="J3" pin="9" pinfunction="Pin_9" pintype="passive"/>
+      <node ref="R21" pin="2" pintype="passive"/>
+      <node ref="U9" pin="7" pintype="input"/>
+    </net>
+    <net code="42" name="/MOSI_H">
+      <node ref="J3" pin="8" pinfunction="Pin_8" pintype="passive"/>
+      <node ref="U9" pin="5" pintype="output"/>
+    </net>
+    <net code="43" name="/MOSI_L">
+      <node ref="J3" pin="7" pinfunction="Pin_7" pintype="passive"/>
+      <node ref="U9" pin="6" pintype="output"/>
+    </net>
+    <net code="44" name="/PWM0">
+      <node ref="J1" pin="11" pinfunction="Pin_11" pintype="passive"/>
+      <node ref="R18" pin="1" pintype="passive"/>
+    </net>
+    <net code="45" name="/PWM1">
+      <node ref="J1" pin="13" pinfunction="Pin_13" pintype="passive"/>
+    </net>
+    <net code="46" name="/SCK_H">
+      <node ref="J3" pin="4" pinfunction="Pin_4" pintype="passive"/>
+      <node ref="U10" pin="5" pintype="output"/>
+    </net>
+    <net code="47" name="/SCK_L">
+      <node ref="J3" pin="3" pinfunction="Pin_3" pintype="passive"/>
+      <node ref="U10" pin="6" pintype="output"/>
+    </net>
+    <net code="48" name="/SPI1_CLK">
+      <node ref="J1" pin="23" pinfunction="Pin_23" pintype="passive"/>
+      <node ref="R18" pin="2" pintype="passive"/>
+      <node ref="U10" pin="3" pinfunction="DI" pintype="input"/>
+    </net>
+    <net code="49" name="/SPI1_RXD">
+      <node ref="J1" pin="21" pinfunction="Pin_21" pintype="passive"/>
+      <node ref="U1" pin="4" pinfunction="B" pintype="output"/>
+    </net>
+    <net code="50" name="/SPI1_TXD">
+      <node ref="J1" pin="19" pinfunction="Pin_19" pintype="passive"/>
+      <node ref="U9" pin="3" pinfunction="DI" pintype="input"/>
+    </net>
+    <net code="51" name="/SPI2_CLK">
+      <node ref="J1" pin="7" pinfunction="Pin_7" pintype="passive"/>
+      <node ref="U7" pin="10" pinfunction="SCK" pintype="input"/>
+    </net>
+    <net code="52" name="/SPI2_RXD">
+      <node ref="J1" pin="31" pinfunction="Pin_31" pintype="passive"/>
+      <node ref="U7" pin="12" pinfunction="SDO" pintype="output"/>
+    </net>
+    <net code="53" name="/SPI2_TXD">
+      <node ref="J1" pin="29" pinfunction="Pin_29" pintype="passive"/>
+      <node ref="U7" pin="11" pinfunction="SDI" pintype="input"/>
+    </net>
+    <net code="54" name="/UART2_RXD">
+      <node ref="J1" pin="10" pinfunction="Pin_10" pintype="passive"/>
+      <node ref="J2" pin="3" pinfunction="Pin_3" pintype="passive"/>
+    </net>
+    <net code="55" name="/UART2_TXD">
+      <node ref="J1" pin="8" pinfunction="Pin_8" pintype="passive"/>
+      <node ref="J2" pin="2" pinfunction="Pin_2" pintype="passive"/>
+    </net>
+    <net code="56" name="/VBAT">
+      <node ref="C38" pin="2" pintype="passive"/>
+      <node ref="D6" pin="2" pinfunction="A2" pintype="passive"/>
+      <node ref="J5" pin="3" pinfunction="Pin_3" pintype="passive"/>
+      <node ref="J5" pin="4" pinfunction="Pin_4" pintype="passive"/>
+      <node ref="Q5" pin="5" pinfunction="D" pintype="passive"/>
+      <node ref="Q5" pin="6" pinfunction="D" pintype="passive"/>
+      <node ref="Q5" pin="7" pinfunction="D" pintype="passive"/>
+      <node ref="Q5" pin="8" pinfunction="D" pintype="passive"/>
+      <node ref="TP2" pin="1" pinfunction="1" pintype="passive"/>
+    </net>
+    <net code="57" name="/~{CAN_INT0}">
+      <node ref="J1" pin="37" pinfunction="Pin_37" pintype="passive"/>
+      <node ref="R3" pin="2" pintype="passive"/>
+      <node ref="U7" pin="4" pinfunction="~{INT}" pintype="output"/>
+    </net>
+    <net code="58" name="/~{CAN_INT1}">
+      <node ref="J1" pin="36" pinfunction="Pin_36" pintype="passive"/>
+      <node ref="R1" pin="2" pintype="passive"/>
+      <node ref="U7" pin="9" pinfunction="~{INT0}/GPIO0/XSTBY" pintype="bidirectional"/>
+    </net>
+    <net code="59" name="/~{CAN_INT}">
+      <node ref="J1" pin="35" pinfunction="Pin_35" pintype="passive"/>
+      <node ref="R2" pin="2" pintype="passive"/>
+      <node ref="U7" pin="8" pinfunction="~{INT1}/GPIO1" pintype="bidirectional"/>
+    </net>
+    <net code="60" name="/~{SPI1_CS}">
+      <node ref="J1" pin="24" pinfunction="Pin_24" pintype="passive"/>
+      <node ref="U8" pin="3" pinfunction="DI" pintype="input"/>
+    </net>
+    <net code="61" name="/~{SPI2_CS}">
+      <node ref="J1" pin="33" pinfunction="Pin_33" pintype="passive"/>
+      <node ref="U7" pin="13" pinfunction="nCS" pintype="input"/>
+    </net>
+    <net code="62" name="GND">
+      <node ref="C1" pin="2" pintype="passive"/>
+      <node ref="C10" pin="1" pintype="passive"/>
+      <node ref="C11" pin="1" pintype="passive"/>
+      <node ref="C12" pin="2" pintype="passive"/>
+      <node ref="C13" pin="2" pintype="passive"/>
+      <node ref="C14" pin="2" pintype="passive"/>
+      <node ref="C15" pin="1" pintype="passive"/>
+      <node ref="C16" pin="2" pintype="passive"/>
+      <node ref="C17" pin="2" pintype="passive"/>
+      <node ref="C18" pin="2" pintype="passive"/>
+      <node ref="C19" pin="2" pintype="passive"/>
+      <node ref="C20" pin="2" pintype="passive"/>
+      <node ref="C21" pin="2" pintype="passive"/>
+      <node ref="C22" pin="2" pintype="passive"/>
+      <node ref="C23" pin="2" pintype="passive"/>
+      <node ref="C24" pin="2" pintype="passive"/>
+      <node ref="C25" pin="2" pintype="passive"/>
+      <node ref="C28" pin="2" pintype="passive"/>
+      <node ref="C29" pin="2" pintype="passive"/>
+      <node ref="C3" pin="2" pintype="passive"/>
+      <node ref="C31" pin="2" pintype="passive"/>
+      <node ref="C32" pin="1" pintype="passive"/>
+      <node ref="C33" pin="1" pintype="passive"/>
+      <node ref="C34" pin="1" pintype="passive"/>
+      <node ref="C35" pin="2" pintype="passive"/>
+      <node ref="C36" pin="2" pintype="passive"/>
+      <node ref="C37" pin="2" pintype="passive"/>
+      <node ref="C38" pin="1" pintype="passive"/>
+      <node ref="C4" pin="2" pintype="passive"/>
+      <node ref="C5" pin="2" pintype="passive"/>
+      <node ref="C6" pin="2" pintype="passive"/>
+      <node ref="C7" pin="2" pintype="passive"/>
+      <node ref="C9" pin="1" pintype="passive"/>
+      <node ref="D1" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="D6" pin="1" pinfunction="A1" pintype="passive"/>
+      <node ref="D7" pin="3" pinfunction="KK" pintype="passive"/>
+      <node ref="J1" pin="14" pinfunction="Pin_14" pintype="passive"/>
+      <node ref="J1" pin="20" pinfunction="Pin_20" pintype="passive"/>
+      <node ref="J1" pin="25" pinfunction="Pin_25" pintype="passive"/>
+      <node ref="J1" pin="30" pinfunction="Pin_30" pintype="passive"/>
+      <node ref="J1" pin="34" pinfunction="Pin_34" pintype="passive"/>
+      <node ref="J1" pin="39" pinfunction="Pin_39" pintype="passive"/>
+      <node ref="J1" pin="6" pinfunction="Pin_6" pintype="passive"/>
+      <node ref="J1" pin="9" pinfunction="Pin_9" pintype="passive"/>
+      <node ref="J2" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J3" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J5" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="J5" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="R11" pin="2" pintype="passive"/>
+      <node ref="R13" pin="2" pintype="passive"/>
+      <node ref="R17" pin="1" pintype="passive"/>
+      <node ref="R22" pin="2" pintype="passive"/>
+      <node ref="R23" pin="2" pintype="passive"/>
+      <node ref="R24" pin="2" pintype="passive"/>
+      <node ref="R28" pin="2" pintype="passive"/>
+      <node ref="R29" pin="2" pintype="passive"/>
+      <node ref="R6" pin="2" pintype="passive"/>
+      <node ref="R8" pin="2" pintype="passive"/>
+      <node ref="TP5" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U1" pin="3" pinfunction="GND" pintype="power_in"/>
+      <node ref="U10" pin="4" pinfunction="GND" pintype="passive"/>
+      <node ref="U2" pin="2" pinfunction="GND" pintype="passive"/>
+      <node ref="U3" pin="2" pinfunction="GND" pintype="passive"/>
+      <node ref="U4" pin="2" pinfunction="VSS" pintype="power_in"/>
+      <node ref="U4" pin="8" pinfunction="STBY" pintype="input"/>
+      <node ref="U5" pin="10" pinfunction="ISNS-" pintype="input"/>
+      <node ref="U5" pin="11" pinfunction="ISNS+" pintype="input"/>
+      <node ref="U5" pin="19" pinfunction="PGND" pintype="passive"/>
+      <node ref="U5" pin="2" pinfunction="DITH" pintype="input"/>
+      <node ref="U5" pin="29" pinfunction="EP-PGND" pintype="passive"/>
+      <node ref="U5" pin="7" pinfunction="AGND" pintype="passive"/>
+      <node ref="U6" pin="1" pinfunction="GND" pintype="passive"/>
+      <node ref="U7" pin="7" pinfunction="VSS" pintype="power_in"/>
+      <node ref="U8" pin="4" pinfunction="GND" pintype="passive"/>
+      <node ref="U9" pin="4" pinfunction="GND" pintype="passive"/>
+    </net>
+    <net code="63" name="Net-(C2-Pad2)">
+      <node ref="C2" pin="2" pintype="passive"/>
+      <node ref="R23" pin="1" pintype="passive"/>
+    </net>
+    <net code="64" name="Net-(C8-Pad1)">
+      <node ref="C8" pin="1" pintype="passive"/>
+      <node ref="U6" pin="6" pinfunction="BST" pintype="passive"/>
+    </net>
+    <net code="65" name="Net-(D1-Pad2)">
+      <node ref="D1" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="R19" pin="1" pintype="passive"/>
+    </net>
+    <net code="66" name="Net-(D2-Pad1)">
+      <node ref="D2" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="R26" pin="1" pintype="passive"/>
+    </net>
+    <net code="67" name="Net-(D5-Pad2)">
+      <node ref="D5" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="Q5" pin="4" pinfunction="G" pintype="input"/>
+      <node ref="R16" pin="1" pintype="passive"/>
+      <node ref="R17" pin="2" pintype="passive"/>
+    </net>
+    <net code="68" name="Net-(R4-Pad1)">
+      <node ref="R4" pin="1" pintype="passive"/>
+      <node ref="U2" pin="3" pinfunction="OUT" pintype="output"/>
+    </net>
+    <net code="69" name="Net-(R4-Pad2)">
+      <node ref="R4" pin="2" pintype="passive"/>
+      <node ref="U7" pin="6" pinfunction="OSC1" pintype="input"/>
+    </net>
+    <net code="70" name="Net-(R20-Pad2)">
+      <node ref="R20" pin="2" pintype="passive"/>
+      <node ref="R6" pin="1" pintype="passive"/>
+      <node ref="U3" pin="4" pinfunction="NC/ADJ" pintype="power_in"/>
+    </net>
+    <net code="71" name="Net-(R27-Pad2)">
+      <node ref="R27" pin="2" pintype="passive"/>
+      <node ref="R28" pin="1" pintype="passive"/>
+      <node ref="U6" pin="4" pinfunction="FB" pintype="input"/>
+    </net>
+    <net code="72" name="Net-(U1-Pad2)">
+      <node ref="U1" pin="2" pinfunction="A" pintype="input"/>
+      <node ref="U9" pin="2" pinfunction="RO" pintype="output"/>
+    </net>
+    <net code="73" name="Net-(U4-Pad1)">
+      <node ref="U4" pin="1" pinfunction="TXD" pintype="input"/>
+      <node ref="U7" pin="1" pinfunction="TXCAN" pintype="output"/>
+    </net>
+    <net code="74" name="Net-(U4-Pad4)">
+      <node ref="U4" pin="4" pinfunction="RXD" pintype="output"/>
+      <node ref="U7" pin="2" pinfunction="RXCAN" pintype="input"/>
+    </net>
+    <net code="75" name="unconnected-(J1-Pad1)">
+      <node ref="J1" pin="1" pinfunction="Pin_1" pintype="passive"/>
+    </net>
+    <net code="76" name="unconnected-(J1-Pad3)">
+      <node ref="J1" pin="3" pinfunction="Pin_3" pintype="passive"/>
+    </net>
+    <net code="77" name="unconnected-(J1-Pad5)">
+      <node ref="J1" pin="5" pinfunction="Pin_5" pintype="passive"/>
+    </net>
+    <net code="78" name="unconnected-(J1-Pad12)">
+      <node ref="J1" pin="12" pinfunction="Pin_12" pintype="passive"/>
+    </net>
+    <net code="79" name="unconnected-(J1-Pad15)">
+      <node ref="J1" pin="15" pinfunction="Pin_15" pintype="passive"/>
+    </net>
+    <net code="80" name="unconnected-(J1-Pad16)">
+      <node ref="J1" pin="16" pinfunction="Pin_16" pintype="passive"/>
+    </net>
+    <net code="81" name="unconnected-(J1-Pad18)">
+      <node ref="J1" pin="18" pinfunction="Pin_18" pintype="passive"/>
+    </net>
+    <net code="82" name="unconnected-(J1-Pad22)">
+      <node ref="J1" pin="22" pinfunction="Pin_22" pintype="passive"/>
+    </net>
+    <net code="83" name="unconnected-(J1-Pad26)">
+      <node ref="J1" pin="26" pinfunction="Pin_26" pintype="passive"/>
+    </net>
+    <net code="84" name="unconnected-(J1-Pad27)">
+      <node ref="J1" pin="27" pinfunction="Pin_27" pintype="passive"/>
+    </net>
+    <net code="85" name="unconnected-(J1-Pad28)">
+      <node ref="J1" pin="28" pinfunction="Pin_28" pintype="passive"/>
+    </net>
+    <net code="86" name="unconnected-(J1-Pad38)">
+      <node ref="J1" pin="38" pinfunction="Pin_38" pintype="passive"/>
+    </net>
+    <net code="87" name="unconnected-(J1-Pad40)">
+      <node ref="J1" pin="40" pinfunction="Pin_40" pintype="passive"/>
+    </net>
+    <net code="88" name="unconnected-(U7-Pad3)">
+      <node ref="U7" pin="3" pinfunction="CLKO/SOF" pintype="output"/>
+    </net>
+    <net code="89" name="unconnected-(U7-Pad5)">
+      <node ref="U7" pin="5" pinfunction="OSC2" pintype="output"/>
+    </net>
+    <net code="90" name="unconnected-(U8-Pad2)">
+      <node ref="U8" pin="2" pinfunction="RO" pintype="output"/>
+    </net>
+    <net code="91" name="unconnected-(U8-Pad7)">
+      <node ref="U8" pin="7" pintype="input"/>
+    </net>
+    <net code="92" name="unconnected-(U8-Pad8)">
+      <node ref="U8" pin="8" pintype="input"/>
+    </net>
+  </nets>
+</export>
