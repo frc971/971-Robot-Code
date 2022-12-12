@@ -18,11 +18,16 @@ DEFINE_string(board_template_path, "",
               "If specified, write an image to the specified path for the "
               "charuco board pattern.");
 DEFINE_bool(coarse_pattern, true, "If true, use coarse arucos; else, use fine");
+DEFINE_uint32(gray_threshold, 0,
+              "If > 0, threshold image based on this grayscale value");
 DEFINE_bool(large_board, true, "If true, use the large calibration board.");
 DEFINE_uint32(
     min_charucos, 10,
     "The mininum number of aruco targets in charuco board required to match.");
 DEFINE_bool(visualize, false, "Whether to visualize the resulting data.");
+DEFINE_bool(
+    draw_axes, false,
+    "Whether to draw axes on the resulting data-- warning, may cause crashes.");
 
 DEFINE_uint32(disable_delay, 100, "Time after an issue to disable tracing at.");
 
@@ -156,9 +161,8 @@ void ImageCallback::DisableTracing() {
 }
 
 void CharucoExtractor::SetupTargetData() {
-  // TODO(Jim): Put correct values here
-  marker_length_ = 0.15;
-  square_length_ = 0.1651;
+  marker_length_ = 0.146;
+  square_length_ = 0.2;
 
   // Only charuco board has a board associated with it
   board_ = static_cast<cv::Ptr<cv::aruco::CharucoBoard>>(NULL);
@@ -169,7 +173,7 @@ void CharucoExtractor::SetupTargetData() {
         FLAGS_large_board ? cv::aruco::DICT_5X5_250 : cv::aruco::DICT_6X6_250);
 
     if (target_type_ == TargetType::kCharuco) {
-      LOG(INFO) << "Using " << (FLAGS_large_board ? " large " : " small ")
+      LOG(INFO) << "Using " << (FLAGS_large_board ? "large" : "small")
                 << " charuco board with "
                 << (FLAGS_coarse_pattern ? "coarse" : "fine") << " pattern";
       board_ =
@@ -191,9 +195,8 @@ void CharucoExtractor::SetupTargetData() {
       }
     }
   } else if (target_type_ == TargetType::kCharucoDiamond) {
-    // TODO<Jim>: Measure this
     marker_length_ = 0.15;
-    square_length_ = 0.1651;
+    square_length_ = 0.2;
     dictionary_ = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_250);
   } else {
     // Bail out if it's not a supported target
@@ -228,16 +231,15 @@ void CharucoExtractor::DrawTargetPoses(cv::Mat rgb_image,
 
     // Found that drawAxis hangs if you try to draw with z values too
     // small (trying to draw axes at inifinity)
-    // TODO<Jim>: Explore what real thresholds for this should be;
-    // likely Don't need to get rid of negative values
+    // TODO<Jim>: Either track this down or reimplement drawAxes
     if (result.z() < 0.01) {
       LOG(INFO) << "Skipping, due to z value too small: " << result.z();
-    } else {
+    } else if (FLAGS_draw_axes == true) {
       result /= result.z();
       if (target_type_ == TargetType::kCharuco) {
         cv::aruco::drawAxis(rgb_image, calibration_.CameraIntrinsics(),
-                            calibration_.CameraDistCoeffs(), rvecs[i],
-                            tvecs[i], 0.1);
+                            calibration_.CameraDistCoeffs(), rvecs[i], tvecs[i],
+                            0.1);
       } else {
         cv::drawFrameAxes(rgb_image, calibration_.CameraIntrinsics(),
                           calibration_.CameraDistCoeffs(), rvecs[i], tvecs[i],
@@ -302,6 +304,16 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
       std::chrono::duration_cast<std::chrono::duration<double>>(
           event_loop_->monotonic_now() - eof)
           .count();
+
+  // Have found this useful if there is blurry / noisy images
+  if (FLAGS_gray_threshold > 0) {
+    cv::Mat gray;
+    cv::cvtColor(rgb_image, gray, cv::COLOR_BGR2GRAY);
+
+    cv::Mat thresh;
+    cv::threshold(gray, thresh, FLAGS_gray_threshold, 255, cv::THRESH_BINARY);
+    cv::cvtColor(thresh, rgb_image, cv::COLOR_GRAY2RGB);
+  }
 
   // Set up the variables we'll use in the callback function
   bool valid = false;
