@@ -145,10 +145,11 @@ copyfile root.root 644 etc/apt/sources.list.d/frc971.list
 target "apt-get update"
 target "apt-get -y install -t bullseye-backports systemd"
 
-target "apt-get install -y sudo openssh-server python3 bash-completion git v4l-utils cpufrequtils pmount rsync vim-nox chrony libopencv-calib3d4.5 libopencv-contrib4.5 libopencv-core4.5 libopencv-features2d4.5 libopencv-flann4.5 libopencv-highgui4.5 libopencv-imgcodecs4.5 libopencv-imgproc4.5 libopencv-ml4.5 libopencv-objdetect4.5 libopencv-photo4.5 libopencv-shape4.5 libopencv-stitching4.5 libopencv-superres4.5 libopencv-video4.5 libopencv-videoio4.5 libopencv-videostab4.5 libopencv-viz4.5 libnice10 pmount libnice-dev feh libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-nice usbutils"
+target "apt-get install -y sudo openssh-server python3 bash-completion git v4l-utils cpufrequtils pmount rsync vim-nox chrony libopencv-calib3d4.5 libopencv-contrib4.5 libopencv-core4.5 libopencv-features2d4.5 libopencv-flann4.5 libopencv-highgui4.5 libopencv-imgcodecs4.5 libopencv-imgproc4.5 libopencv-ml4.5 libopencv-objdetect4.5 libopencv-photo4.5 libopencv-shape4.5 libopencv-stitching4.5 libopencv-superres4.5 libopencv-video4.5 libopencv-videoio4.5 libopencv-videostab4.5 libopencv-viz4.5 libnice10 pmount libnice-dev feh libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-nice usbutils locales"
 
 target "usermod -a -G sudo pi"
 target "usermod -a -G video pi"
+target "localedef -i en_US -f UTF-8 en_US.UTF-8"
 
 function target_mkdir() {
   target "install -d -m $2 -o $(echo $1 | sed 's/\.[^.]*//') -g $(echo $1 | sed 's/[^.]*\.//') $3"
