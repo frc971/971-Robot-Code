@@ -301,6 +301,15 @@ alias(
 )
 
 alias(
+    name = "rustc_version",
+    actual = "@raze__rustc_version__0_4_0//:rustc_version",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
     name = "serde",
     actual = "@raze__serde__1_0_139//:serde",
     tags = [

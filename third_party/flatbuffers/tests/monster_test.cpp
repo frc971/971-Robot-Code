@@ -1,5 +1,6 @@
 #include "monster_test.h"
 
+#include <limits>
 #include <vector>
 
 #include "flatbuffers/flatbuffer_builder.h"
@@ -438,6 +439,16 @@ void MutateFlatBuffersTest(uint8_t *flatbuf, std::size_t length) {
   first->mutate_hp(0);
   TEST_EQ(first->hp(), 0);
   first->mutate_hp(1000);
+
+  // Test for each loop over mutable entries
+  for (auto item: *tables)
+  {
+    TEST_EQ(item->hp(), 1000);
+    item->mutate_hp(0);
+    TEST_EQ(item->hp(), 0);
+    item->mutate_hp(1000);
+    break; // one iteration is enough, just testing compilation
+  }
 
   // Mutate via LookupByKey
   TEST_NOTNULL(tables->MutableLookupByKey("Barney"));

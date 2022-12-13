@@ -1,6 +1,5 @@
-// swift-tools-version:5.2
 /*
- * Copyright 2020 Google Inc. All rights reserved.
+ * Copyright 2021 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +14,20 @@
  * limitations under the License.
  */
 
-import PackageDescription
+#ifndef FLATBUFFERS_BFBS_GEN_NIM_H_
+#define FLATBUFFERS_BFBS_GEN_NIM_H_
 
-let package = Package(
-  name: "FlatBuffers",
-  platforms: [
-    .iOS(.v11),
-    .macOS(.v10_14),
-  ],
-  products: [
-    .library(
-      name: "FlatBuffers",
-      targets: ["FlatBuffers"]),
-  ],
-  targets: [
-    .target(
-      name: "FlatBuffers",
-      dependencies: [],
-      exclude: ["Documentation.docc/Resources/code/swift"]),
-  ])
+#include <memory>
+#include <string>
+
+#include "flatbuffers/bfbs_generator.h"
+
+namespace flatbuffers {
+
+// Constructs a new Nim Code generator.
+std::unique_ptr<BfbsGenerator> NewNimBfbsGenerator(
+    const std::string &flatc_version);
+
+}  // namespace flatbuffers
+
+#endif  // FLATBUFFERS_BFBS_GEN_NIM_H_

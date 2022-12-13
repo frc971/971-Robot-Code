@@ -350,7 +350,7 @@ TEST_P(ShmEventLoopTest, GetSenderSharedMemory) {
 
   auto builder = sender.MakeBuilder();
   uint8_t *buffer;
-  builder.fbb()->CreateUninitializedVector(5, 1, &buffer);
+  builder.fbb()->CreateUninitializedVector(5, &buffer);
   EXPECT_GE(reinterpret_cast<char *>(buffer), shared_memory.begin());
   EXPECT_LT(reinterpret_cast<char *>(buffer), shared_memory.end());
 }

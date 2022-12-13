@@ -164,7 +164,7 @@ void AddVectorOfStrings(flatbuffers::ElementaryType elementary_type,
     }
 
     // Start the vector.
-    fbb->StartVector(size, inline_size);
+    fbb->StartVector(size, inline_size, /*align=*/inline_size);
 
     for (const flatbuffers::Offset<flatbuffers::String> &element :
          string_elements) {
@@ -214,7 +214,7 @@ void AddVector(flatbuffers::ElementaryType elementary_type,
         flatbuffers::InlineSize(elementary_type, nullptr);
 
     // Start the vector.
-    fbb->StartVector(size, inline_size);
+    fbb->StartVector(size, inline_size, /*align=*/inline_size);
 
     // Pack the contents in in reverse order.
     if (t2_has) {
@@ -306,7 +306,7 @@ void AddVectorOfObjects(flatbuffers::FlatBufferBuilder *fbb,
     }
 
     // Start the vector.
-    fbb->StartVector(size, inline_size);
+    fbb->StartVector(size, inline_size, /*align=*/inline_size);
 
     for (const flatbuffers::Offset<flatbuffers::Table> &element :
          object_elements) {

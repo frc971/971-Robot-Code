@@ -580,8 +580,9 @@ bool AddSingleElement(FlatbufferType type, int field_index,
 
 bool JsonParser::FinishVector(int field_index) {
   // Vectors have a start (unfortunately which needs to know the size)
-  fbb_->StartVector(stack_.back().vector_elements.size(),
-                    stack_.back().type.FieldInlineSize(field_index));
+  const size_t inline_size = stack_.back().type.FieldInlineSize(field_index);
+  fbb_->StartVector(stack_.back().vector_elements.size(), inline_size,
+                    /*align=*/inline_size);
 
   const flatbuffers::ElementaryType elementary_type =
       stack_.back().type.FieldElementaryType(field_index);
