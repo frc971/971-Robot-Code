@@ -987,7 +987,13 @@ std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
     return std::nullopt;
   }
 
-  if (FLAGS_workaround_double_headers) {
+  // We only know of busted headers in the versions of the log file header
+  // *before* the logger_sha1 field was added.  At some point before that point,
+  // the logic to track when a header has been written was rewritten in such a
+  // way that it can't happen anymore.  We've seen some logs where the body
+  // parses as a header recently, so the simple solution of always looking is
+  // failing us.
+  if (FLAGS_workaround_double_headers && !result.message().has_logger_sha1()) {
     while (true) {
       absl::Span<const uint8_t> maybe_header_data = span_reader->PeekMessage();
       if (maybe_header_data == absl::Span<const uint8_t>()) {
