@@ -11,7 +11,9 @@ import (
 
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/refresh_match_list_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
@@ -117,6 +119,12 @@ func RequestAllMatches(server string, requestBytes []byte) (*request_all_matches
 		request_all_matches_response.GetRootAsRequestAllMatchesResponse)
 }
 
+func RequestAllDriverRankings(server string, requestBytes []byte) (*request_all_driver_rankings_response.RequestAllDriverRankingsResponseT, error) {
+	return sendMessage[request_all_driver_rankings_response.RequestAllDriverRankingsResponseT](
+		server+"/requests/request/all_driver_rankings", requestBytes,
+		request_all_driver_rankings_response.GetRootAsRequestAllDriverRankingsResponse)
+}
+
 func RequestMatchesForTeam(server string, requestBytes []byte) (*request_matches_for_team_response.RequestMatchesForTeamResponseT, error) {
 	return sendMessage[request_matches_for_team_response.RequestMatchesForTeamResponseT](
 		server+"/requests/request/matches_for_team", requestBytes,
@@ -145,6 +153,12 @@ func RequestNotes(server string, requestBytes []byte) (*request_notes_for_team_r
 	return sendMessage[request_notes_for_team_response.RequestNotesForTeamResponseT](
 		server+"/requests/request/notes_for_team", requestBytes,
 		request_notes_for_team_response.GetRootAsRequestNotesForTeamResponse)
+}
+
+func RequestAllNotes(server string, requestBytes []byte) (*request_all_notes_response.RequestAllNotesResponseT, error) {
+	return sendMessage[request_all_notes_response.RequestAllNotesResponseT](
+		server+"/requests/request/all_notes", requestBytes,
+		request_all_notes_response.GetRootAsRequestAllNotesResponse)
 }
 
 func RequestShiftSchedule(server string, requestBytes []byte) (*request_shift_schedule_response.RequestShiftScheduleResponseT, error) {

@@ -189,6 +189,18 @@ func (database *Database) ReturnMatches() ([]Match, error) {
 	return matches, result.Error
 }
 
+func (database *Database) ReturnAllNotes() ([]NotesData, error) {
+	var notes []NotesData
+	result := database.Find(&notes)
+	return notes, result.Error
+}
+
+func (database *Database) ReturnAllDriverRankings() ([]DriverRankingData, error) {
+	var rankings []DriverRankingData
+	result := database.Find(&rankings)
+	return rankings, result.Error
+}
+
 func (database *Database) ReturnAllShifts() ([]Shift, error) {
 	var shifts []Shift
 	result := database.Find(&shifts)

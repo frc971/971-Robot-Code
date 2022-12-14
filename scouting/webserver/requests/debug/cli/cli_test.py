@@ -141,6 +141,73 @@ class TestDebugCli(unittest.TestCase):
             CompLevel: (string) (len=5) "quals"
             }"""), stdout)
 
+    def test_submit_and_request_notes(self):
+        self.refresh_match_list(year=2020, event_code="fake")
+
+        # First submit some data to be added to the database.
+        json_path = write_json_request({
+            "team": 100,
+            "notes": "A very inspiring and useful comment",
+            "good_driving": True,
+            "bad_driving": False,
+            "sketchy_climb": False,
+            "solid_climb": True,
+            "good_defense": False,
+            "bad_defense": False,
+        })
+        exit_code, _, stderr = run_debug_cli(["-submitNotes", json_path])
+        self.assertEqual(exit_code, 0, stderr)
+
+        # Now request the data back with zero indentation. That let's us
+        # validate the data easily.
+        json_path = write_json_request({})
+        exit_code, stdout, stderr = run_debug_cli(
+            ["-requestAllNotes", json_path, "-indent="])
+
+        self.assertEqual(exit_code, 0, stderr)
+        self.assertIn(
+            textwrap.dedent("""\
+            {
+            Team: (int32) 100,
+            Notes: (string) (len=35) "A very inspiring and useful comment",
+            GoodDriving: (bool) true,
+            BadDriving: (bool) false,
+            SketchyClimb: (bool) false,
+            SolidClimb: (bool) true,
+            GoodDefense: (bool) false,
+            BadDefense: (bool) false
+            }"""), stdout)
+
+    def test_submit_and_request_driver_ranking(self):
+        self.refresh_match_list(year=2020, event_code="fake")
+
+        # First submit some data to be added to the database.
+        json_path = write_json_request({
+            "matchNumber": 100,
+            "rank1": 101,
+            "rank2": 202,
+            "rank3": 303,
+        })
+        exit_code, _, stderr = run_debug_cli(
+            ["-submitDriverRanking", json_path])
+        self.assertEqual(exit_code, 0, stderr)
+
+        # Now request the data back with zero indentation. That let's us
+        # validate the data easily.
+        json_path = write_json_request({})
+        exit_code, stdout, stderr = run_debug_cli(
+            ["-requestAllDriverRankings", json_path, "-indent="])
+
+        self.assertEqual(exit_code, 0, stderr)
+        self.assertIn(
+            textwrap.dedent("""\
+            {
+            MatchNumber: (int32) 100,
+            Rank1: (int32) 101,
+            Rank2: (int32) 202,
+            Rank3: (int32) 303
+            }"""), stdout)
+
     def test_request_all_matches(self):
         self.refresh_match_list()
 

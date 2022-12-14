@@ -1,0 +1,18 @@
+namespace scouting.webserver.requests;
+
+table Note {
+    team:int (id: 0);
+    notes:string (id: 1);
+    good_driving:bool (id: 2);
+    bad_driving:bool (id: 3);
+    sketchy_climb:bool (id: 4);
+    solid_climb:bool (id: 5);
+    good_defense:bool (id: 6);
+    bad_defense:bool (id: 7);
+}
+
+table RequestAllNotesResponse {
+    note_list:[Note] (id:0);
+}
+
+root_type RequestAllNotesResponse;
