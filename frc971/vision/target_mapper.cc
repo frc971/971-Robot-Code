@@ -105,6 +105,12 @@ DataAdapter::MatchTargetDetections(
   auto robot_pose_it = timestamped_robot_poses.begin();
   for (const auto &timestamped_detection : timestamped_target_detections) {
     aos::distributed_clock::time_point target_time = timestamped_detection.time;
+
+    // Skip this target detection if we have no robot poses before it
+    if (robot_pose_it->time > target_time) {
+      continue;
+    }
+
     // Find the robot point right before this localization
     while (robot_pose_it->time > target_time ||
            (robot_pose_it + 1)->time <= target_time) {
@@ -118,6 +124,11 @@ DataAdapter::MatchTargetDetections(
     interpolated_poses.emplace(target_time,
                                InterpolatePose(*start, *end, target_time));
   }
+
+  // In the case that all target detections were before the first robot
+  // detection, we would have no interpolated poses at this point
+  CHECK_GT(interpolated_poses.size(), 0ul)
+      << "Need a robot pose before and after every target detection";
 
   // Match consecutive detections
   std::vector<ceres::examples::Constraint2d> target_constraints;
