@@ -58,6 +58,11 @@ struct Values {
   }
   static constexpr double kClimberPotRatio() { return 1.0; }
 
+  static constexpr double kClimberPotMetersPerVolt() {
+    return kClimberPotRatio() * (5.0 /*turns*/ / 5.0 /*volts*/) *
+           kClimberPotMetersPerRevolution();
+  }
+
   struct PotConstants {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
         ::frc971::zeroing::RelativeEncoderZeroingEstimator>
@@ -76,6 +81,11 @@ struct Values {
   }
 
   static constexpr double kIntakePotRatio() { return 16.0 / 64.0; }
+
+  static constexpr double kIntakePotRadiansPerVolt() {
+    return kIntakePotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
 
   static constexpr double kMaxIntakeEncoderPulsesPerSecond() {
     return control_loops::superstructure::intake::kFreeSpeed / (2.0 * M_PI) *
@@ -121,6 +131,10 @@ struct Values {
   static constexpr double kTurretFrontIntakePos() { return 0; }
 
   static constexpr double kTurretPotRatio() { return 27.0 / 110.0; }
+  static constexpr double kTurretPotRadiansPerVolt() {
+    return kTurretPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
   static constexpr double kTurretEncoderRatio() { return kTurretPotRatio(); }
   static constexpr double kTurretEncoderCountsPerRevolution() { return 4096.0; }
 
@@ -174,6 +188,11 @@ struct Values {
   static constexpr double kReseatFlipperPosition() { return 0.1; }
 
   static constexpr double kFlipperArmsPotRatio() { return 16.0 / 36.0; }
+
+  static constexpr double kFlipperArmsPotRadiansPerVolt() {
+    return kFlipperArmsPotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
 
   PotConstants flipper_arm_left;
   PotConstants flipper_arm_right;

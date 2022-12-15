@@ -215,6 +215,7 @@ cc_library(
         "//frc971/control_loops:pose",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
         "//frc971/shooter_interpolation:interpolation",
+        "//frc971/wpilib:wpilib_utils",
         "//y2022/control_loops/drivetrain:polydrivetrain_plants",
         "//y2022/control_loops/superstructure/catapult:catapult_plants",
         "//y2022/control_loops/superstructure/climber:climber_plants",
