@@ -1,0 +1,66 @@
+commit 78913db0555d6b47449ca3cb7478c94663a1e553
+Author: Philipp Schrader <philipp.schrader@gmail.com>
+Date:   Thu Oct 27 20:57:23 2022 -0700
+
+    Make matplotlib hermetic
+
+diff --git a/site-packages/matplotlib/__init__.py b/site-packages/matplotlib/__init__.py
+index ba9cd6c..083ef5b 100644
+--- a/site-packages/matplotlib/__init__.py
++++ b/site-packages/matplotlib/__init__.py
+@@ -104,6 +104,46 @@ import warnings
+ import numpy
+ from packaging.version import parse as parse_version
+ 
++
++from bazel_tools.tools.python.runfiles import runfiles
++
++def _hermeticity_fixup():
++    _runfiles = runfiles.Create()
++    runfiles_dir = _runfiles.EnvVars()["RUNFILES_DIR"]
++    if not runfiles_dir:
++        raise FileNotFoundError("Failed runfiles lookup.")
++
++    matplotlib_base = os.path.dirname(os.path.dirname(__file__))
++
++    # Hack to point matplotlib at its data.
++    os.environ["MATPLOTLIBDATA"] = os.path.join(matplotlib_base, "matplotlib", "mpl-data")
++    # Avoid reading /etc/matplotlib in all cases. Matplotlib is pretty happy to
++    # escape the sandbox by using absolute paths.
++    os.environ["MATPLOTLIBRC"] = os.path.join(os.environ["MATPLOTLIBDATA"], "matplotlibrc")
++    # There's a bug where the temp directory gets set if MATPLOTLIBRC isn't set.
++    # That causes the directory to not be created in time. We set the variable
++    # manually here to work around the bug.
++    os.environ["MPLCONFIGDIR"] = "/tmp/matplotlib-nobody"
++
++    gtk_runtime_base = os.path.join(runfiles_dir, "gtk_runtime")
++
++    # Tell fontconfig where to find matplotlib's sandboxed font files.
++    os.environ["FONTCONFIG_PATH"] = os.path.join(gtk_runtime_base, "etc/fonts")
++    os.environ["FONTCONFIG_FILE"] = "fonts.conf"
++    os.environ["FONTCONFIG_SYSROOT"] = gtk_runtime_base
++
++    ld_library_path = os.getenv("LD_LIBRARY_PATH") or ""
++    if ld_library_path:
++        ld_library_path = ":" + ld_library_path
++
++    os.environ["LD_LIBRARY_PATH"] = ":".join([
++        gtk_runtime_base + "/lib/x86_64-linux-gnu",
++        gtk_runtime_base + "/usr/lib/x86_64-linux-gnu",
++    ]) + ld_library_path
++
++_hermeticity_fixup()
++
++
+ # cbook must import matplotlib only within function
+ # definitions, so it is safe to import from it here.
+ from . import _api, _version, cbook, docstring, rcsetup
+@@ -524,7 +564,7 @@ def get_cachedir():
+ @_logged_cached('matplotlib data path: %s')
+ def get_data_path():
+     """Return the path to Matplotlib data."""
+-    return str(Path(__file__).with_name("mpl-data"))
++    return str(Path(os.environ["MATPLOTLIBDATA"]))
+ 
+ 
+ def matplotlib_fname():

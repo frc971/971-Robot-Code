@@ -164,6 +164,8 @@ files = {
     "libpsl5_0.21.0-1.2_amd64.deb": "d716f5b4346ec85bb728f4530abeb1da4a79f696c72d7f774c59ba127c202fa7",
     "libpthread-stubs0-dev_0.4-1_amd64.deb": "54632f160e1e8a43656a87195a547391038c4ca0f53291b849cd4457ba5dfde9",
     "librest-0.7-0_0.8.1-1.1_amd64.deb": "5cd57a96145a362bf60428315ab3fc6c2f528ab38a06a905da2568575c23bdc8",
+    "librsvg2-2_2.50.3+dfsg-1_amd64.deb": "c5f6cdb66683d9b8cd23f0e02e6adb29d43bdca301872842fa98d44e23fa1091",
+    "librsvg2-common_2.50.3+dfsg-1_amd64.deb": "4c28fad9d68e82729388f0b113de3a6ad020856c0783a3eced7eb626e80fcae6",
     "libselinux1-dev_3.1-3_amd64.deb": "16b14d7e8ed88b9b07d1b52d84d04ab2fcdfcdc4b8cecc9dd34df06f3ce7d3fb",
     "libselinux1_3.1-3_amd64.deb": "339f5ede10500c16dd7192d73169c31c4b27ab12130347275f23044ec8c7d897",
     "libsensors-config_3.6.0-7_all.deb": "4265811140a591d27c99d026b63707d8235d98c73d7543c66ab9ec73c28523fc",

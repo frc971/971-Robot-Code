@@ -414,10 +414,11 @@ http_archive(
     patch_args = ["-p1"],
     patches = [
         "//third_party:rules_python/0001-Support-overriding-individual-packages.patch",
+        "//third_party:rules_python/0002-Allow-user-to-patch-wheels.patch",
     ],
-    sha256 = "b593d13bb43c94ce94b483c2858e53a9b811f6f10e1e0eedc61073bd90e58d9c",
-    strip_prefix = "rules_python-0.12.0",
-    url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.12.0.tar.gz",
+    sha256 = "497ca47374f48c8b067d786b512ac10a276211810f4a580178ee9b9ad139323a",
+    strip_prefix = "rules_python-0.16.1",
+    url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.16.1.tar.gz",
 )
 
 load("@rules_python//python:repositories.bzl", "python_register_toolchains")
@@ -430,10 +431,14 @@ python_register_toolchains(
 
 load("@python3_9//:defs.bzl", python_interpreter = "interpreter")
 load("@rules_python//python:pip.bzl", "pip_parse")
+load("//tools/python:package_annotations.bzl", PYTHON_ANNOTATIONS = "ANNOTATIONS")
 
 pip_parse(
     name = "pip_deps",
+    annotations = PYTHON_ANNOTATIONS,
+    enable_implicit_namespace_pkgs = True,
     overrides = "//tools/python:whl_overrides.json",
+    patch_spec = "//tools/python:patches.json",
     python_interpreter_target = python_interpreter,
     require_overrides = RUNNING_IN_CI,
     requirements_lock = "//tools/python:requirements.lock.txt",
@@ -692,8 +697,8 @@ http_archive(
 http_archive(
     name = "gtk_runtime",
     build_file = "@//debian:gtk_runtime.BUILD",
-    sha256 = "934693e64bfe63f0c55cdf432fe183eb077d6875d4d6a3dce4e47dbe7e20f5a9",
-    url = "https://www.frc971.org/Build-Dependencies/gtk_runtime-3.tar.gz",
+    sha256 = "5a6014d1783363be6bc95843d03bbb6513e650eaea60be2b1a4c65bf21981f9b",
+    url = "https://www.frc971.org/Build-Dependencies/gtk_runtime-4.tar.gz",
 )
 
 # Downloaded from

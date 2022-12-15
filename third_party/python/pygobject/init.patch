@@ -1,0 +1,60 @@
+commit fe03a5f1aa619f4c1208ca1dce7d98db513dbec8
+Author: Philipp Schrader <philipp.schrader@gmail.com>
+Date:   Thu Oct 27 20:28:03 2022 -0700
+
+    Make pygobject hermetic
+
+diff --git a/site-packages/gi/__init__.py b/site-packages/gi/__init__.py
+index 3454790..a6f3246 100644
+--- a/site-packages/gi/__init__.py
++++ b/site-packages/gi/__init__.py
+@@ -27,6 +27,49 @@ import os
+ import importlib
+ import types
+ 
++from bazel_tools.tools.python.runfiles import runfiles
++
++def _hermeticity_fixup():
++    _runfiles = runfiles.Create()
++    runfiles_dir = _runfiles.EnvVars()["RUNFILES_DIR"]
++    if not runfiles_dir:
++        raise FileNotFoundError("Failed runfiles lookup.")
++
++    gtk_runtime_dir = os.path.join(runfiles_dir, "gtk_runtime")
++
++    ld_library_path = os.getenv("LD_LIBRARY_PATH") or ""
++    if ld_library_path:
++        ld_library_path = ":" + ld_library_path
++
++    os.environ["LD_LIBRARY_PATH"] = ":".join([
++        gtk_runtime_dir + "/lib/x86_64-linux-gnu",
++        gtk_runtime_dir + "/usr/lib/x86_64-linux-gnu",
++    ]) + ld_library_path
++
++    os.environ["GI_GIR_PATH"] = os.path.join(gtk_runtime_dir, "usr", "share", "gir-1.0")
++    os.environ["GI_TYPELIB_PATH"] = os.path.join(gtk_runtime_dir, "usr", "lib",
++                                                 "x86_64-linux-gnu",
++                                                 "girepository-1.0")
++
++    os.environ["GIO_EXTRA_MODULES"] = os.path.join(gtk_runtime_dir, "usr", "lib", "x86_64-linux-gnu", "gio", "modules")
++
++    # Tell fontconfig where to find the sandboxed font files.
++    os.environ["FONTCONFIG_PATH"] = os.path.join(gtk_runtime_dir, "etc/fonts/")
++    os.environ["FONTCONFIG_FILE"] = os.path.join(gtk_runtime_dir, "etc/fonts/fonts.conf")
++    # The sysroot here needs to be "/". If it were _base, then the font caches
++    # would contain _base-relative paths in them. Unfortunately pango interprets
++    # those as absolute paths and ends up failing to find all fonts.
++    os.environ["FONTCONFIG_SYSROOT"] = "/"
++    os.environ["GDK_PIXBUF_MODULEDIR"] = os.path.join(gtk_runtime_dir, "usr", "lib",
++                                                      "x86_64-linux-gnu", "gdk-pixbuf-2.0",
++                                                      "2.10.0", "loaders")
++    os.environ["GDK_PIXBUF_MODULE_FILE"] = os.path.join(os.environ["GDK_PIXBUF_MODULEDIR"], "loaders.cache")
++    os.system(os.path.join(gtk_runtime_dir, "usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders") + " --update-cache")
++
++
++_hermeticity_fixup()
++
++
+ _static_binding_error = ('When using gi.repository you must not import static '
+                          'modules like "gobject". Please change all occurrences '
+                          'of "import gobject" to "from gi.repository import GObject". '

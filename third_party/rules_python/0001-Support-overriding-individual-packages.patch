@@ -1,4 +1,4 @@
-From edb6d0447edf6b6116c8aff73cde6117abbaf706 Mon Sep 17 00:00:00 2001
+From 662f59afaecd7ecff5bd5234c8bbd9c219b7f24f Mon Sep 17 00:00:00 2001
 From: Philipp Schrader <philipp.schrader@gmail.com>
 Date: Sun, 11 Sep 2022 22:04:47 -0700
 Subject: [PATCH] Support overriding individual packages
@@ -6,14 +6,14 @@ Subject: [PATCH] Support overriding individual packages
 ---
  .../extract_wheels/extract_single_wheel.py    | 60 ++++++++++---------
  .../parse_requirements_to_bzl.py              | 44 +++++++++++++-
- python/pip_install/pip_repository.bzl         | 34 +++++++++++
- 3 files changed, 109 insertions(+), 29 deletions(-)
+ python/pip_install/pip_repository.bzl         | 38 ++++++++++++
+ 3 files changed, 114 insertions(+), 28 deletions(-)
 
 diff --git a/python/pip_install/extract_wheels/extract_single_wheel.py b/python/pip_install/extract_wheels/extract_single_wheel.py
-index a7cc672..26d4368 100644
+index ff64291..8742d25 100644
 --- a/python/pip_install/extract_wheels/extract_single_wheel.py
 +++ b/python/pip_install/extract_wheels/extract_single_wheel.py
-@@ -28,41 +28,47 @@ def main() -> None:
+@@ -50,41 +50,47 @@ def main() -> None:
          type=annotation_from_str_path,
          help="A json encoded file containing annotations for rendered packages.",
      )
@@ -89,7 +89,7 @@ index a7cc672..26d4368 100644
      name, extras_for_pkg = requirements._parse_requirement_for_extra(args.requirement)
      extras = {name: extras_for_pkg} if extras_for_pkg and name else dict()
 diff --git a/python/pip_install/extract_wheels/parse_requirements_to_bzl.py b/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
-index 5762cf5..46a94f5 100644
+index 686a57d..60936a9 100644
 --- a/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
 +++ b/python/pip_install/extract_wheels/parse_requirements_to_bzl.py
 @@ -4,7 +4,7 @@ import shlex
@@ -101,41 +101,27 @@ index 5762cf5..46a94f5 100644
  
  from pip._internal.network.session import PipSession
  from pip._internal.req import constructors
-@@ -81,7 +81,7 @@ def parse_whl_library_args(args: argparse.Namespace) -> Dict[str, Any]:
-     whl_library_args.setdefault("python_interpreter", sys.executable)
- 
-     # These arguments are not used by `whl_library`
--    for arg in ("requirements_lock", "requirements_lock_label", "annotations"):
-+    for arg in ("requirements_lock", "requirements_lock_label", "annotations", "overrides", "require_overrides"):
+@@ -86,6 +86,8 @@ def parse_whl_library_args(args: argparse.Namespace) -> Dict[str, Any]:
+         "requirements_lock_label",
+         "annotations",
+         "bzlmod",
++        "overrides",
++        "require_overrides",
+     ):
          if arg in whl_library_args:
              whl_library_args.pop(arg)
- 
-@@ -93,6 +93,8 @@ def generate_parsed_requirements_contents(
-     repo_prefix: str,
+@@ -100,6 +102,8 @@ def generate_parsed_requirements_contents(
      whl_library_args: Dict[str, Any],
      annotations: Dict[str, str] = dict(),
+     bzlmod: bool = False,
 +    overrides: Optional[Dict[str, Dict[str, str]]] = None,
 +    require_overrides: bool = False,
  ) -> str:
      """
      Parse each requirement from the requirements_lock file, and prepare arguments for each
-@@ -131,6 +133,13 @@ def generate_parsed_requirements_contents(
-         _packages = {repo_names_and_reqs}
-         _config = {args}
-         _annotations = {annotations}
-+        _overrides = {overrides}
-+        _require_overrides = {require_overrides}
-+
-+        _NOP_OVERRIDE = {{
-+            "url": None,
-+            "sha256": None,
-+        }}
- 
-         def _clean_name(name):
-             return name.replace("-", "_").replace(".", "_").lower()
-@@ -160,10 +169,22 @@ def generate_parsed_requirements_contents(
- 
-         def install_deps():
+@@ -133,10 +137,22 @@ def generate_parsed_requirements_contents(
+             whl_config = dict(_config)
+             whl_config.update(whl_library_kwargs)
              for name, requirement in _packages:
 +                override_entry = requirement.split(" ")[0]
 +                override_name, _, version = override_entry.partition("==")
@@ -153,21 +139,35 @@ index 5762cf5..46a94f5 100644
                      annotation = _get_annotation(requirement),
 +                    url = override["url"],
 +                    sha256 = override["sha256"],
-                     **_config
+                     **whl_config
                  )
-         """.format(
-@@ -178,6 +199,8 @@ def generate_parsed_requirements_contents(
-             repo_names_and_reqs=repo_names_and_reqs,
+ """
+@@ -154,6 +170,13 @@ def generate_parsed_requirements_contents(
+         _config = {args}
+         _annotations = {annotations}
+         _bzlmod = {bzlmod}
++        _overrides = {overrides}
++        _require_overrides = {require_overrides}
++
++        _NOP_OVERRIDE = {{
++            "url": None,
++            "sha256": None,
++        }}
+ 
+         def _clean_name(name):
+             return name.replace("-", "_").replace(".", "_").lower()
+@@ -204,6 +227,8 @@ def generate_parsed_requirements_contents(
              repo_prefix=repo_prefix,
              wheel_file_label=bazel.WHEEL_FILE_LABEL,
+             bzlmod=bzlmod,
 +            overrides=overrides or {},
 +            require_overrides=require_overrides,
          )
      )
  
-@@ -234,6 +257,16 @@ If set, it will take precedence over python_interpreter.",
-         type=annotation.annotations_map_from_str_path,
-         help="A json encoded file containing annotations for rendered packages.",
+@@ -266,6 +291,16 @@ If set, it will take precedence over python_interpreter.",
+         default=False,
+         help="Whether this script is run under bzlmod. Under bzlmod we don't generate the install_deps() macro as it isn't needed.",
      )
 +    parser.add_argument(
 +        "--overrides",
@@ -182,7 +182,7 @@ index 5762cf5..46a94f5 100644
      arguments.parse_common_args(parser)
      args = parser.parse_args()
  
-@@ -259,6 +292,11 @@ If set, it will take precedence over python_interpreter.",
+@@ -291,6 +326,11 @@ If set, it will take precedence over python_interpreter.",
              }
          )
  
@@ -194,34 +194,34 @@ index 5762cf5..46a94f5 100644
      output.write(
          textwrap.dedent(
              """\
-@@ -278,6 +316,8 @@ If set, it will take precedence over python_interpreter.",
-             repo_prefix=args.repo_prefix,
+@@ -313,6 +353,8 @@ If set, it will take precedence over python_interpreter.",
              whl_library_args=whl_library_args,
              annotations=annotated_requirements,
+             bzlmod=args.bzlmod,
 +            overrides=overrides,
 +            require_overrides=args.require_overrides,
          )
      )
  
 diff --git a/python/pip_install/pip_repository.bzl b/python/pip_install/pip_repository.bzl
-index d729ae9..afe3102 100644
+index 7fbf503..5af0731 100644
 --- a/python/pip_install/pip_repository.bzl
 +++ b/python/pip_install/pip_repository.bzl
-@@ -257,6 +257,11 @@ def _pip_repository_impl(rctx):
-         args += ["--python_interpreter", _get_python_interpreter_attr(rctx)]
-         if rctx.attr.python_interpreter_target:
-             args += ["--python_interpreter_target", str(rctx.attr.python_interpreter_target)]
-+        if rctx.attr.overrides:
-+            overrides_file = rctx.path(rctx.attr.overrides).realpath
-+            args += ["--overrides", overrides_file]
-+        if rctx.attr.require_overrides:
-+            args += ["--require-overrides"]
-         progress_message = "Parsing requirements to starlark"
-     else:
-         args = [
-@@ -391,6 +396,14 @@ pip_repository_attrs = {
-         default = False,
-         doc = "Create the repository in incremental mode.",
+@@ -322,6 +322,11 @@ def _pip_repository_impl(rctx):
+     args += ["--python_interpreter", _get_python_interpreter_attr(rctx)]
+     if rctx.attr.python_interpreter_target:
+         args += ["--python_interpreter_target", str(rctx.attr.python_interpreter_target)]
++    if rctx.attr.overrides:
++        overrides_file = rctx.path(rctx.attr.overrides).realpath
++        args += ["--overrides", overrides_file]
++    if rctx.attr.require_overrides:
++        args += ["--require-overrides"]
+     progress_message = "Parsing requirements to starlark"
+ 
+     args += ["--repo", rctx.attr.name, "--repo-prefix", rctx.attr.repo_prefix]
+@@ -447,6 +452,18 @@ pip_repository_attrs = {
+ we do not create the install_deps() macro.
+ """,
      ),
 +    "overrides": attr.label(
 +        allow_single_file = True,
@@ -231,10 +231,14 @@ index d729ae9..afe3102 100644
 +        default = False,
 +        doc = "If True, every requirement must have an entry in the \"overrides\" JSON file.",
 +    ),
-     "requirements": attr.label(
++    "requirements": attr.label(
++        allow_single_file = True,
++        doc = "A 'requirements.txt' pip requirements file.",
++    ),
+     "requirements_darwin": attr.label(
          allow_single_file = True,
-         doc = "A 'requirements.txt' pip requirements file.",
-@@ -483,6 +496,16 @@ def _whl_library_impl(rctx):
+         doc = "Override the requirements_lock attribute when the host platform is Mac OS",
+@@ -535,6 +552,16 @@ def _whl_library_impl(rctx):
              "--annotation",
              rctx.path(rctx.attr.annotation),
          ])
@@ -251,7 +255,7 @@ index d729ae9..afe3102 100644
  
      args = _parse_optional_attrs(rctx, args)
  
-@@ -515,6 +538,17 @@ whl_library_attrs = {
+@@ -567,6 +594,17 @@ whl_library_attrs = {
          mandatory = True,
          doc = "Python requirement string describing the package to make available",
      ),

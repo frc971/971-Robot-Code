@@ -183,6 +183,7 @@ download_packages(
     packages = [
         "gir1.2-gtk-3.0",
         "libgtk-3-dev",
+        "librsvg2-common",
     ],
 )
 
