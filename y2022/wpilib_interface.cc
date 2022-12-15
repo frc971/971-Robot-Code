@@ -82,19 +82,24 @@ double drivetrain_velocity_translate(double in) {
 }
 
 double climber_pot_translate(double voltage) {
-  return voltage * Values::kClimberPotMetersPerVolt();
+  return voltage * Values::kClimberPotRatio() *
+         (5.0 /*turns*/ / 5.0 /*volts*/) *
+         Values::kClimberPotMetersPerRevolution();
 }
 
 double flipper_arms_pot_translate(double voltage) {
-  return voltage * Values::kFlipperArmsPotRadiansPerVolt();
+  return voltage * Values::kFlipperArmsPotRatio() *
+         (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
 double intake_pot_translate(double voltage) {
-  return voltage * Values::kIntakePotRadiansPerVolt();
+  return voltage * Values::kIntakePotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
+         (2 * M_PI /*radians*/);
 }
 
 double turret_pot_translate(double voltage) {
-  return voltage * Values::kTurretPotRadiansPerVolt();
+  return voltage * Values::kTurretPotRatio() *
+         (10.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
 constexpr double kMaxFastEncoderPulsesPerSecond =

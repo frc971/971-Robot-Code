@@ -10,7 +10,6 @@
 #include "absl/base/call_once.h"
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
-#include "frc971/wpilib/wpilib_utils.h"
 #include "glog/logging.h"
 #include "y2022/control_loops/superstructure/catapult/integral_catapult_plant.h"
 #include "y2022/control_loops/superstructure/climber/integral_climber_plant.h"
@@ -191,25 +190,21 @@ Values MakeValues(uint16_t team) {
               {5, {4.0}},
           });
 
-      climber->potentiometer_offset = -0.035;
-
-      intake_front->potentiometer_offset = 3.122;
+      climber->potentiometer_offset = 0.0;
+      intake_front->potentiometer_offset = 0.0;
       intake_front->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.175;
-
-      intake_back->potentiometer_offset = 3.365;
+          .measured_absolute_position = 0.0;
+      intake_back->potentiometer_offset = 0.0;
       intake_back->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.052;
-
-      turret->potentiometer_offset = -10.668;
+          .measured_absolute_position = 0.0;
+      turret->potentiometer_offset = 0.0;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
-          1.308;
+          0.0;
+      flipper_arm_left->potentiometer_offset = 0.0;
+      flipper_arm_right->potentiometer_offset = 0.0;
 
-      flipper_arm_left->potentiometer_offset = -6.40;
-      flipper_arm_right->potentiometer_offset = 5.56;
-
-      catapult_params->zeroing_constants.measured_absolute_position = 1.717;
-      catapult->potentiometer_offset = -2.034;
+      catapult_params->zeroing_constants.measured_absolute_position = 0.0;
+      catapult->potentiometer_offset = 0.0;
 
       ball_color->reference_red = {0, 0, 1, 1};
       ball_color->reference_blue = {0, 0, 1, 1};
@@ -352,47 +347,6 @@ Values MakeValues(uint16_t team) {
     default:
       LOG(FATAL) << "unknown team: " << team;
   }
-
-  CHECK(frc971::wpilib::SafePotVoltageRange(
-      Values::kClimberRange(), climber->potentiometer_offset,
-      [](double meters) { return meters / Values::kClimberPotMetersPerVolt(); },
-      false))
-      << "Couldn't translate climber pot";
-  CHECK(frc971::wpilib::SafePotVoltageRange(
-      Values::kFlipperArmRange(), flipper_arm_left->potentiometer_offset,
-      [](double radians) {
-        return radians / Values::kFlipperArmsPotRadiansPerVolt();
-      },
-      false))
-      << "Couldn't translate flipper left pot";
-  CHECK(frc971::wpilib::SafePotVoltageRange(
-      Values::kFlipperArmRange(), flipper_arm_right->potentiometer_offset,
-      [](double radians) {
-        return radians / Values::kFlipperArmsPotRadiansPerVolt();
-      },
-      true))
-      << "Couldn't translate flipper right pot";
-  CHECK(frc971::wpilib::SafePotVoltageRange(
-      Values::kIntakeRange(), intake_front->potentiometer_offset,
-      [](double radians) {
-        return radians / Values::kIntakePotRadiansPerVolt();
-      },
-      true))
-      << "Couldn't translate front intake pot";
-  CHECK(frc971::wpilib::SafePotVoltageRange(
-      Values::kIntakeRange(), intake_back->potentiometer_offset,
-      [](double radians) {
-        return radians / Values::kIntakePotRadiansPerVolt();
-      },
-      true))
-      << "Couldn't translate back intake pot";
-  CHECK(frc971::wpilib::SafePotVoltageRange(
-      *turret_range, turret->potentiometer_offset,
-      [](double radians) {
-        return radians / Values::kTurretPotRadiansPerVolt();
-      },
-      false))
-      << "Couldn't translate turret pot";
 
   return r;
 }
