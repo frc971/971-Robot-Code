@@ -440,6 +440,35 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "wpilib_utils",
+    srcs = [
+        "wpilib_utils.cc",
+    ],
+    hdrs = [
+        "wpilib_utils.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//frc971:constants",
+    ],
+)
+
+cc_test(
+    name = "wpilib_utils_test",
+    srcs = [
+        "wpilib_utils_test.cc",
+    ],
+    data = [
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos/testing:flatbuffer_eq",
+        "//aos/testing:test_logging",
+        "//frc971/wpilib:wpilib_utils",
+    ],
+)
+
 ts_library(
     name = "imu_plot_utils",
     srcs = ["imu_plot_utils.ts"],
