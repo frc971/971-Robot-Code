@@ -5,6 +5,21 @@ load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
+    name = "subsystem_simulator",
+    testonly = True,
+    hdrs = [
+        "subsystem_simulator.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//frc971:constants",
+        "//frc971/control_loops:capped_test_plant",
+        "//frc971/control_loops:control_loop_test",
+        "//frc971/control_loops:position_sensor_sim",
+    ],
+)
+
+cc_library(
     name = "control_loop_test",
     testonly = True,
     srcs = [

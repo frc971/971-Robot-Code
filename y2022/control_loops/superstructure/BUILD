@@ -126,6 +126,7 @@ cc_test(
         "//frc971/control_loops:capped_test_plant",
         "//frc971/control_loops:control_loop_test",
         "//frc971/control_loops:position_sensor_sim",
+        "//frc971/control_loops:subsystem_simulator",
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
     ],
