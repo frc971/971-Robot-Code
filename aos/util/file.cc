@@ -36,20 +36,9 @@ namespace util {
 void WriteStringToFileOrDie(const std::string_view filename,
                             const std::string_view contents,
                             mode_t permissions) {
-  ScopedFD fd(open(::std::string(filename).c_str(),
-                   O_CREAT | O_WRONLY | O_TRUNC, permissions));
-  PCHECK(fd.get() != -1) << ": opening " << filename;
-  size_t size_written = 0;
-  while (size_written != contents.size()) {
-    const ssize_t result = write(fd.get(), contents.data() + size_written,
-                                 contents.size() - size_written);
-    PCHECK(result >= 0) << ": reading from " << filename;
-    if (result == 0) {
-      break;
-    }
-
-    size_written += result;
-  }
+  FileWriter writer(filename, permissions);
+  writer.WriteBytesOrDie(
+      {reinterpret_cast<const uint8_t *>(contents.data()), contents.size()});
 }
 
 bool MkdirPIfSpace(std::string_view path, mode_t mode) {
@@ -174,6 +163,48 @@ std::shared_ptr<absl::Span<uint8_t>> MMapFile(const std::string &path,
           });
   close(fd);
   return span;
+}
+
+FileWriter::FileWriter(std::string_view filename, mode_t permissions)
+    : file_(open(::std::string(filename).c_str(), O_WRONLY | O_CREAT | O_TRUNC,
+                 permissions)) {
+  PCHECK(file_.get() != -1) << ": opening " << filename;
+}
+
+FileWriter::WriteResult FileWriter::WriteBytes(
+    absl::Span<const uint8_t> bytes) {
+  size_t size_written = 0;
+  while (size_written != bytes.size()) {
+    const ssize_t result = write(file_.get(), bytes.data() + size_written,
+                                 bytes.size() - size_written);
+    if (result < 0) {
+      return {size_written, static_cast<int>(result)};
+    }
+    // Not really supposed to happen unless writing zero bytes without an error.
+    // See, e.g.,
+    // https://stackoverflow.com/questions/2176443/is-a-return-value-of-0-from-write2-in-c-an-error
+    if (result == 0) {
+      return {size_written, static_cast<int>(result)};
+    }
+
+    size_written += result;
+  }
+  return {size_written, static_cast<int>(size_written)};
+}
+
+FileWriter::WriteResult FileWriter::WriteBytes(std::string_view bytes) {
+  return WriteBytes(absl::Span<const uint8_t>{
+      reinterpret_cast<const uint8_t *>(bytes.data()), bytes.size()});
+}
+
+void FileWriter::WriteBytesOrDie(std::string_view bytes) {
+  WriteBytesOrDie(absl::Span<const uint8_t>{
+      reinterpret_cast<const uint8_t *>(bytes.data()), bytes.size()});
+}
+
+void FileWriter::WriteBytesOrDie(absl::Span<const uint8_t> bytes) {
+  PCHECK(bytes.size() == WriteBytes(bytes).bytes_written)
+      << ": Failed to write " << bytes.size() << " bytes.";
 }
 
 }  // namespace util

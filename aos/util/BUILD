@@ -336,6 +336,7 @@ cc_test(
         ":file",
         "//aos:realtime",
         "//aos/testing:googletest",
+        "//aos/testing:tmpdir",
     ],
 )
 
