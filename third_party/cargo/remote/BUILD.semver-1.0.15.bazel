@@ -56,7 +56,7 @@ cargo_build_script(
         "cargo-raze",
         "manual",
     ],
-    version = "1.0.14",
+    version = "1.0.15",
     visibility = ["//visibility:private"],
     deps = [
     ],
@@ -82,7 +82,7 @@ rust_library(
         "crate-name=semver",
         "manual",
     ],
-    version = "1.0.14",
+    version = "1.0.15",
     # buildifier: leave-alone
     deps = [
         ":semver_build_script",
