@@ -992,11 +992,11 @@ def raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "raze__semver__1_0_14",
-        url = "https://crates.io/api/v1/crates/semver/1.0.14/download",
+        name = "raze__semver__1_0_15",
+        url = "https://crates.io/api/v1/crates/semver/1.0.15/download",
         type = "tar.gz",
-        strip_prefix = "semver-1.0.14",
-        build_file = Label("//third_party/cargo/remote:BUILD.semver-1.0.14.bazel"),
+        strip_prefix = "semver-1.0.15",
+        build_file = Label("//third_party/cargo/remote:BUILD.semver-1.0.15.bazel"),
     )
 
     maybe(
