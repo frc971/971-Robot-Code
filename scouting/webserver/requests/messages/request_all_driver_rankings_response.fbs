@@ -1,0 +1,14 @@
+namespace scouting.webserver.requests;
+
+table Ranking {
+    matchNumber:int (id: 0);
+    rank1:int (id: 1);
+    rank2:int (id: 2);
+    rank3:int (id: 3);
+}
+
+table RequestAllDriverRankingsResponse {
+    driver_ranking_list:[Ranking] (id:0);
+}
+
+root_type RequestAllDriverRankingsResponse;

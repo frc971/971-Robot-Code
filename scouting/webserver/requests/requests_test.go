@@ -13,8 +13,12 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/refresh_match_list"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/refresh_match_list_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team"
@@ -590,6 +594,136 @@ func TestSubmitDriverRanking(t *testing.T) {
 	}
 }
 
+// Validates that we can request the driver rankings.
+func TestRequestDriverRankings(t *testing.T) {
+	db := MockDatabase{
+		driver_ranking: []db.DriverRankingData{
+			{
+				MatchNumber: 36,
+				Rank1:       1234,
+				Rank2:       1235,
+				Rank3:       1236,
+			},
+			{
+				MatchNumber: 36,
+				Rank1:       101,
+				Rank2:       202,
+				Rank3:       303,
+			},
+		},
+	}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&db, scrapeEmtpyMatchList, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_all_driver_rankings.RequestAllDriverRankingsT{}).Pack(builder))
+
+	response, err := debug.RequestAllDriverRankings("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request all driver rankings: ", err)
+	}
+
+	expected := request_all_driver_rankings_response.RequestAllDriverRankingsResponseT{
+		DriverRankingList: []*request_all_driver_rankings_response.RankingT{
+			{
+				MatchNumber: 36,
+				Rank1:       1234,
+				Rank2:       1235,
+				Rank3:       1236,
+			},
+			{
+				MatchNumber: 36,
+				Rank1:       101,
+				Rank2:       202,
+				Rank3:       303,
+			},
+		},
+	}
+	if len(expected.DriverRankingList) != len(response.DriverRankingList) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+	for i, match := range expected.DriverRankingList {
+		if !reflect.DeepEqual(*match, *response.DriverRankingList[i]) {
+			t.Fatal("Expected for driver ranking", i, ":", *match, ", but got:", *response.DriverRankingList[i])
+		}
+	}
+}
+
+// Validates that we can request all notes.
+func TestRequestAllNotes(t *testing.T) {
+	db := MockDatabase{
+		notes: []db.NotesData{
+			{
+				TeamNumber:   971,
+				Notes:        "Notes",
+				GoodDriving:  true,
+				BadDriving:   false,
+				SketchyClimb: true,
+				SolidClimb:   false,
+				GoodDefense:  true,
+				BadDefense:   false,
+			},
+			{
+				TeamNumber:   972,
+				Notes:        "More Notes",
+				GoodDriving:  false,
+				BadDriving:   false,
+				SketchyClimb: false,
+				SolidClimb:   true,
+				GoodDefense:  false,
+				BadDefense:   true,
+			},
+		},
+	}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&db, scrapeEmtpyMatchList, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_all_notes.RequestAllNotesT{}).Pack(builder))
+
+	response, err := debug.RequestAllNotes("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request all notes: ", err)
+	}
+
+	expected := request_all_notes_response.RequestAllNotesResponseT{
+		NoteList: []*request_all_notes_response.NoteT{
+			{
+				Team:         971,
+				Notes:        "Notes",
+				GoodDriving:  true,
+				BadDriving:   false,
+				SketchyClimb: true,
+				SolidClimb:   false,
+				GoodDefense:  true,
+				BadDefense:   false,
+			},
+			{
+				Team:         972,
+				Notes:        "More Notes",
+				GoodDriving:  false,
+				BadDriving:   false,
+				SketchyClimb: false,
+				SolidClimb:   true,
+				GoodDefense:  false,
+				BadDefense:   true,
+			},
+		},
+	}
+	if len(expected.NoteList) != len(response.NoteList) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+	for i, note := range expected.NoteList {
+		if !reflect.DeepEqual(*note, *response.NoteList[i]) {
+			t.Fatal("Expected for note", i, ":", *note, ", but got:", *response.NoteList[i])
+		}
+	}
+}
+
 // A mocked database we can use for testing. Add functionality to this as
 // needed for your tests.
 
@@ -651,6 +785,10 @@ func (database *MockDatabase) AddNotes(data db.NotesData) error {
 	return nil
 }
 
+func (database *MockDatabase) ReturnAllNotes() ([]db.NotesData, error) {
+	return database.notes, nil
+}
+
 func (database *MockDatabase) AddToShift(data db.Shift) error {
 	database.shiftSchedule = append(database.shiftSchedule, data)
 	return nil
@@ -667,6 +805,10 @@ func (database *MockDatabase) QueryAllShifts(int) ([]db.Shift, error) {
 func (database *MockDatabase) AddDriverRanking(data db.DriverRankingData) error {
 	database.driver_ranking = append(database.driver_ranking, data)
 	return nil
+}
+
+func (database *MockDatabase) ReturnAllDriverRankings() ([]db.DriverRankingData, error) {
+	return database.driver_ranking, nil
 }
 
 // Returns an empty match list from the fake The Blue Alliance scraping.

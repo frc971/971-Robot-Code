@@ -85,12 +85,20 @@ func main() {
 		"The end point where the server is listening.")
 	submitDataScoutingPtr := flag.String("submitDataScouting", "",
 		"If specified, parse the file as a SubmitDataScouting JSON request.")
+	submitDriverRankingPtr := flag.String("submitDriverRanking", "",
+		"If specified, parse the file as a submitDriverRanking JSON request.")
+	submitNotesPtr := flag.String("submitNotes", "",
+		"If specified, parse the file as a submitNotes JSON request.")
 	requestAllMatchesPtr := flag.String("requestAllMatches", "",
 		"If specified, parse the file as a RequestAllMatches JSON request.")
 	requestMatchesForTeamPtr := flag.String("requestMatchesForTeam", "",
 		"If specified, parse the file as a RequestMatchesForTeam JSON request.")
 	requestDataScoutingPtr := flag.String("requestDataScouting", "",
 		"If specified, parse the file as a RequestDataScouting JSON request.")
+	requestAllDriverRankingsPtr := flag.String("requestAllDriverRankings", "",
+		"If specified, parse the file as a requestAllDriverRankings JSON request.")
+	requestAllNotesPtr := flag.String("requestAllNotes", "",
+		"If specified, parse the file as a requestAllNotes JSON request.")
 	refreshMatchListPtr := flag.String("refreshMatchList", "",
 		"If specified, parse the file as a RefreshMatchList JSON request.")
 	flag.Parse()
@@ -107,6 +115,20 @@ func main() {
 		*submitDataScoutingPtr,
 		*addressPtr,
 		debug.SubmitDataScouting)
+
+	maybePerformRequest(
+		"submitNotes",
+		"scouting/webserver/requests/messages/submit_notes.fbs",
+		*submitNotesPtr,
+		*addressPtr,
+		debug.SubmitNotes)
+
+	maybePerformRequest(
+		"submitDriverRanking",
+		"scouting/webserver/requests/messages/submit_driver_ranking.fbs",
+		*submitDriverRankingPtr,
+		*addressPtr,
+		debug.SubmitDriverRanking)
 
 	maybePerformRequest(
 		"RequestAllMatches",
@@ -128,6 +150,20 @@ func main() {
 		*requestDataScoutingPtr,
 		*addressPtr,
 		debug.RequestDataScouting)
+
+	maybePerformRequest(
+		"requestAllDriverRankings",
+		"scouting/webserver/requests/messages/request_all_driver_rankings.fbs",
+		*requestAllDriverRankingsPtr,
+		*addressPtr,
+		debug.RequestAllDriverRankings)
+
+	maybePerformRequest(
+		"requestAllNotes",
+		"scouting/webserver/requests/messages/request_all_notes.fbs",
+		*requestAllNotesPtr,
+		*addressPtr,
+		debug.RequestAllNotes)
 
 	maybePerformRequest(
 		"RefreshMatchList",
