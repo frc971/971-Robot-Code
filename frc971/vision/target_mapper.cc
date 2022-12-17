@@ -343,9 +343,9 @@ std::string TargetMapper::MapToJson(std::string_view field_name) const {
   for (const auto &[id, pose] : target_poses_) {
     TargetPoseFbs::Builder target_pose_builder(fbb);
     target_pose_builder.add_id(id);
-    target_pose_builder.add_x(id);
-    target_pose_builder.add_y(id);
-    target_pose_builder.add_yaw(id);
+    target_pose_builder.add_x(pose.x);
+    target_pose_builder.add_y(pose.y);
+    target_pose_builder.add_yaw(pose.yaw_radians);
 
     target_poses_fbs.emplace_back(target_pose_builder.Finish());
   }
