@@ -20,7 +20,7 @@ DEFINE_bool(freeze_camera_height, true,
 DEFINE_bool(freeze_angle_to_camera, true,
             "If true, don't solve for polar angle to camera");
 
-DEFINE_uint64(max_num_iterations, 200,
+DEFINE_uint64(max_solver_iterations, 200,
               "Maximum number of iterations for the ceres solver");
 DEFINE_bool(solver_output, false,
             "If true, log the solver progress and results");
@@ -268,7 +268,7 @@ void TargetEstimator::Solve(
   options.gradient_tolerance = 1e-12;
   options.function_tolerance = 1e-16;
   options.parameter_tolerance = 1e-12;
-  options.max_num_iterations = FLAGS_max_num_iterations;
+  options.max_num_iterations = FLAGS_max_solver_iterations;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
 

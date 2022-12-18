@@ -101,6 +101,7 @@ cc_library(
     name = "target_mapper",
     srcs = ["target_mapper.cc"],
     hdrs = ["target_mapper.h"],
+    data = ["target_map.json"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
