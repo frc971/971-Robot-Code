@@ -27,7 +27,7 @@ DEFINE_uint32(
     "The mininum number of aruco targets in charuco board required to match.");
 DEFINE_bool(visualize, false, "Whether to visualize the resulting data.");
 
-DEFINE_uint32(age, 5, "Age to start dropping frames at.");
+DEFINE_uint32(age, 100, "Age to start dropping frames at.");
 DEFINE_uint32(disable_delay, 100, "Time after an issue to disable tracing at.");
 
 DECLARE_bool(enable_ftrace);

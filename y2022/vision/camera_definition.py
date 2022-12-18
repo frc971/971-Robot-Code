@@ -135,6 +135,7 @@ def compute_extrinsic_by_pi(pi_number, team_number):
             camera_yaw = -90.0 * np.pi / 180.0
             T = np.array([-10.5 * 0.0254, -5.0 * 0.0254, 28.5 * 0.0254])
     elif team_number == 7971:
+        is_turret = False
         # Cameras are flipped upside down
         camera_roll = 180.0 * np.pi / 180.0
         if pi_number == "pi1":

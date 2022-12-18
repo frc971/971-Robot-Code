@@ -11,20 +11,12 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2022/vision/camera_reader.h"
 
 DEFINE_string(json_path, "target_map.json",
               "Specify path for json with initial pose guesses.");
-DEFINE_int32(team_number, 971,
+DEFINE_int32(team_number, 7971,
              "Use the calibration for a node with this team number");
-
-DEFINE_bool(
-    use_robot_position, false,
-    "If true, use localizer output messages to get the robot position, and "
-    "superstructure status messages to get the turret angle, at the "
-    "times of target detections. Currently does not work reliably on the box "
-    "of pis.");
 
 DECLARE_string(image_channel);
 
@@ -33,29 +25,11 @@ namespace vision {
 using frc971::vision::DataAdapter;
 using frc971::vision::PoseUtils;
 using frc971::vision::TargetMapper;
-namespace superstructure = ::y2022::control_loops::superstructure;
-
-// Find transformation from camera to robot reference frame
-Eigen::Affine3d CameraTransform(Eigen::Affine3d fixed_extrinsics,
-                                Eigen::Affine3d turret_extrinsics,
-                                double turret_position) {
-  // Calculate the pose of the camera relative to the robot origin.
-  Eigen::Affine3d H_robot_camrob =
-      fixed_extrinsics *
-      Eigen::Affine3d(frc971::control_loops::TransformationMatrixForYaw<double>(
-          turret_position)) *
-      turret_extrinsics;
-
-  return H_robot_camrob;
-}
 
 // Change reference frame from camera to robot
 Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camrob_target,
-                                       Eigen::Affine3d fixed_extrinsics,
-                                       Eigen::Affine3d turret_extrinsics,
-                                       double turret_position) {
-  const Eigen::Affine3d H_robot_camrob =
-      CameraTransform(fixed_extrinsics, turret_extrinsics, turret_position);
+                                       Eigen::Affine3d extrinsics) {
+  const Eigen::Affine3d H_robot_camrob = extrinsics;
   const Eigen::Affine3d H_robot_target = H_robot_camrob * H_camrob_target;
   return H_robot_target;
 }
@@ -68,18 +42,7 @@ void HandleAprilTag(aos::distributed_clock::time_point pi_distributed_time,
                     std::vector<Eigen::Vector3d> tvecs_eigen,
                     std::vector<DataAdapter::TimestampedDetection>
                         *timestamped_target_detections,
-                    std::optional<aos::Fetcher<superstructure::Status>>
-                        *superstructure_status_fetcher,
-                    Eigen::Affine3d fixed_extrinsics,
-                    Eigen::Affine3d turret_extrinsics) {
-  double turret_position = 0.0;
-
-  if (superstructure_status_fetcher->has_value()) {
-    CHECK(superstructure_status_fetcher->value().Fetch());
-    turret_position =
-        superstructure_status_fetcher->value().get()->turret()->position();
-  }
-
+                    Eigen::Affine3d extrinsics) {
   for (size_t tag = 0; tag < april_ids.size(); tag++) {
     Eigen::Translation3d T_camera_target = Eigen::Translation3d(
         tvecs_eigen[tag][0], tvecs_eigen[tag][1], tvecs_eigen[tag][2]);
@@ -95,13 +58,12 @@ void HandleAprilTag(aos::distributed_clock::time_point pi_distributed_time,
                          -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
                             .finished());
     Eigen::Affine3d H_camrob_target = H_camcv_camrob.inverse() * H_camcv_target;
-    Eigen::Affine3d H_robot_target = CameraToRobotDetection(
-        H_camrob_target, fixed_extrinsics, turret_extrinsics, turret_position);
+    Eigen::Affine3d H_robot_target =
+        CameraToRobotDetection(H_camrob_target, extrinsics);
 
-    ceres::examples::Pose2d target_pose_camera =
-        PoseUtils::Affine3dToPose2d(H_camrob_target);
-    double distance_from_camera = std::sqrt(std::pow(target_pose_camera.x, 2) +
-                                            std::pow(target_pose_camera.y, 2));
+    ceres::examples::Pose3d target_pose_camera =
+        PoseUtils::Affine3dToPose3d(H_camrob_target);
+    double distance_from_camera = target_pose_camera.p.norm();
 
     timestamped_target_detections->emplace_back(
         DataAdapter::TimestampedDetection{
@@ -112,29 +74,9 @@ void HandleAprilTag(aos::distributed_clock::time_point pi_distributed_time,
   }
 }
 
-Eigen::Affine3d CameraFixedExtrinsics(
+Eigen::Affine3d CameraExtrinsics(
     const calibration::CameraCalibration *camera_calibration) {
-  cv::Mat extrinsics(
-      4, 4, CV_32F,
-      const_cast<void *>(static_cast<const void *>(
-          camera_calibration->fixed_extrinsics()->data()->data())));
-  extrinsics.convertTo(extrinsics, CV_64F);
-  CHECK_EQ(extrinsics.total(),
-           camera_calibration->fixed_extrinsics()->data()->size());
-  Eigen::Matrix4d extrinsics_eigen;
-  cv::cv2eigen(extrinsics, extrinsics_eigen);
-  return Eigen::Affine3d(extrinsics_eigen);
-}
-
-Eigen::Affine3d CameraTurretExtrinsics(
-    const calibration::CameraCalibration *camera_calibration) {
-  cv::Mat extrinsics(
-      4, 4, CV_32F,
-      const_cast<void *>(static_cast<const void *>(
-          camera_calibration->turret_extrinsics()->data()->data())));
-  extrinsics.convertTo(extrinsics, CV_64F);
-  CHECK_EQ(extrinsics.total(),
-           camera_calibration->turret_extrinsics()->data()->size());
+  cv::Mat extrinsics = CameraReader::CameraExtrinsics(camera_calibration);
   Eigen::Matrix4d extrinsics_eigen;
   cv::cv2eigen(extrinsics, extrinsics_eigen);
   return Eigen::Affine3d(extrinsics_eigen);
@@ -144,8 +86,6 @@ Eigen::Affine3d CameraTurretExtrinsics(
 void HandlePiCaptures(
     int pi_number, aos::EventLoop *pi_event_loop,
     aos::logger::LogReader *reader,
-    std::optional<aos::Fetcher<superstructure::Status>>
-        *superstructure_status_fetcher,
     std::vector<DataAdapter::TimestampedDetection>
         *timestamped_target_detections,
     std::vector<std::unique_ptr<CharucoExtractor>> *charuco_extractors,
@@ -156,8 +96,7 @@ void HandlePiCaptures(
       CameraReader::FindCameraCalibration(&calibration_data.message(),
                                           "pi" + std::to_string(pi_number),
                                           FLAGS_team_number);
-  const auto turret_extrinsics = CameraTurretExtrinsics(calibration);
-  const auto fixed_extrinsics = CameraFixedExtrinsics(calibration);
+  const auto extrinsics = CameraExtrinsics(calibration);
 
   // TODO(milind): change to /camera once we log at full frequency
   static constexpr std::string_view kImageChannel = "/camera/decimated";
@@ -179,8 +118,7 @@ void HandlePiCaptures(
         if (valid) {
           HandleAprilTag(pi_distributed_time, april_ids, rvecs_eigen,
                          tvecs_eigen, timestamped_target_detections,
-                         superstructure_status_fetcher, fixed_extrinsics,
-                         turret_extrinsics);
+                         extrinsics);
         }
       }));
 
@@ -197,49 +135,11 @@ void MappingMain(int argc, char *argv[]) {
   std::vector<std::string> unsorted_logfiles =
       aos::logger::FindLogs(argc, argv);
 
-  std::vector<DataAdapter::TimestampedPose> timestamped_robot_poses;
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections;
 
   // open logfiles
   aos::logger::LogReader reader(aos::logger::SortParts(unsorted_logfiles));
   reader.Register();
-
-  std::optional<aos::Fetcher<superstructure::Status>>
-      superstructure_status_fetcher;
-
-  if (FLAGS_use_robot_position) {
-    const aos::Node *imu_node =
-        aos::configuration::GetNode(reader.configuration(), "imu");
-    std::unique_ptr<aos::EventLoop> imu_event_loop =
-        reader.event_loop_factory()->MakeEventLoop("imu", imu_node);
-
-    imu_event_loop->MakeWatcher(
-        "/localizer", [&](const frc971::controls::LocalizerOutput &localizer) {
-          aos::monotonic_clock::time_point imu_monotonic_time =
-              aos::monotonic_clock::time_point(aos::monotonic_clock::duration(
-                  localizer.monotonic_timestamp_ns()));
-          aos::distributed_clock::time_point imu_distributed_time =
-              reader.event_loop_factory()
-                  ->GetNodeEventLoopFactory(imu_node)
-                  ->ToDistributedClock(imu_monotonic_time);
-
-          timestamped_robot_poses.emplace_back(DataAdapter::TimestampedPose{
-              .time = imu_distributed_time,
-              .pose =
-                  ceres::examples::Pose2d{.x = localizer.x(),
-                                          .y = localizer.y(),
-                                          .yaw_radians = localizer.theta()}});
-        });
-
-    const aos::Node *roborio_node =
-        aos::configuration::GetNode(reader.configuration(), "roborio");
-    std::unique_ptr<aos::EventLoop> roborio_event_loop =
-        reader.event_loop_factory()->MakeEventLoop("roborio", roborio_node);
-
-    superstructure_status_fetcher =
-        roborio_event_loop->MakeFetcher<superstructure::Status>(
-            "/superstructure");
-  }
 
   std::vector<std::unique_ptr<CharucoExtractor>> charuco_extractors;
   std::vector<std::unique_ptr<ImageCallback>> image_callbacks;
@@ -248,42 +148,38 @@ void MappingMain(int argc, char *argv[]) {
       aos::configuration::GetNode(reader.configuration(), "pi1");
   std::unique_ptr<aos::EventLoop> pi1_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi1", pi1);
-  HandlePiCaptures(
-      1, pi1_event_loop.get(), &reader, &superstructure_status_fetcher,
-      &timestamped_target_detections, &charuco_extractors, &image_callbacks);
+  HandlePiCaptures(1, pi1_event_loop.get(), &reader,
+                   &timestamped_target_detections, &charuco_extractors,
+                   &image_callbacks);
 
   const aos::Node *pi2 =
       aos::configuration::GetNode(reader.configuration(), "pi2");
   std::unique_ptr<aos::EventLoop> pi2_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi2", pi2);
-  HandlePiCaptures(
-      2, pi2_event_loop.get(), &reader, &superstructure_status_fetcher,
-      &timestamped_target_detections, &charuco_extractors, &image_callbacks);
+  HandlePiCaptures(2, pi2_event_loop.get(), &reader,
+                   &timestamped_target_detections, &charuco_extractors,
+                   &image_callbacks);
 
   const aos::Node *pi3 =
       aos::configuration::GetNode(reader.configuration(), "pi3");
   std::unique_ptr<aos::EventLoop> pi3_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi3", pi3);
-  HandlePiCaptures(
-      3, pi3_event_loop.get(), &reader, &superstructure_status_fetcher,
-      &timestamped_target_detections, &charuco_extractors, &image_callbacks);
+  HandlePiCaptures(3, pi3_event_loop.get(), &reader,
+                   &timestamped_target_detections, &charuco_extractors,
+                   &image_callbacks);
 
   const aos::Node *pi4 =
       aos::configuration::GetNode(reader.configuration(), "pi4");
   std::unique_ptr<aos::EventLoop> pi4_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi4", pi4);
-  HandlePiCaptures(
-      4, pi4_event_loop.get(), &reader, &superstructure_status_fetcher,
-      &timestamped_target_detections, &charuco_extractors, &image_callbacks);
+  HandlePiCaptures(4, pi4_event_loop.get(), &reader,
+                   &timestamped_target_detections, &charuco_extractors,
+                   &image_callbacks);
 
   reader.event_loop_factory()->Run();
 
   auto target_constraints =
-      (FLAGS_use_robot_position
-           ? DataAdapter::MatchTargetDetections(timestamped_robot_poses,
-                                                timestamped_target_detections)
-                 .first
-           : DataAdapter::MatchTargetDetections(timestamped_target_detections));
+      DataAdapter::MatchTargetDetections(timestamped_target_detections);
 
   frc971::vision::TargetMapper mapper(FLAGS_json_path, target_constraints);
   mapper.Solve("rapid_react");
