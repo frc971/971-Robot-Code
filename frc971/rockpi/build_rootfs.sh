@@ -23,7 +23,7 @@ if mount | grep "${PARTITION}" >/dev/null; then
   sudo umount "${PARTITION}"
 fi
 
-LOOPBACK="$(sudo losetup --list | grep "${IMAGE}" | awk '{print $1}')"
+LOOPBACK="$(sudo losetup --list | awk "/$IMAGE/"'{print $1}')"
 if [[ -n "${LOOPBACK}" ]]; then
   echo "Loop still exists..."
   sudo losetup -d "${LOOPBACK}"
@@ -58,6 +58,16 @@ make ARCH=arm CROSS_COMPILE="${CC}" rock-pi-4-rk3399_defconfig -j "$(nproc)"
 make ARCH=arm CROSS_COMPILE="${CC}" -j "$(nproc)"
 echo "Made uboot"
 popd
+
+function target_mkdir() {
+  target "install -d -m $2 -o $(echo $1 | sed 's/\.[^.]*//') -g $(echo $1 | sed 's/[^.]*\.//') $3"
+}
+
+function copyfile() {
+  sudo cp contents/$3 ${PARTITION}/$3
+  sudo chmod $2 ${PARTITION}/$3
+  target "chown $1 /$3"
+}
 
 
 # Now build the base set of partitions.
@@ -150,16 +160,6 @@ target "apt-get install -y sudo openssh-server python3 bash-completion git v4l-u
 target "usermod -a -G sudo pi"
 target "usermod -a -G video pi"
 target "localedef -i en_US -f UTF-8 en_US.UTF-8"
-
-function target_mkdir() {
-  target "install -d -m $2 -o $(echo $1 | sed 's/\.[^.]*//') -g $(echo $1 | sed 's/[^.]*\.//') $3"
-}
-
-function copyfile() {
-  sudo cp contents/$3 ${PARTITION}/$3
-  sudo chmod $2 ${PARTITION}/$3
-  target "chown $1 /$3"
-}
 
 copyfile root.root 644 etc/fstab
 copyfile root.root 440 etc/sudoers
