@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "Eigen/Dense"
+#include "absl/types/span.h"
+#include "aos/containers/sized_array.h"
 #include "frc971/control_loops/drivetrain/spline.h"
 #include "frc971/control_loops/drivetrain/trajectory_generated.h"
 #include "frc971/control_loops/fixed_quadrature.h"
@@ -15,16 +17,11 @@ namespace drivetrain {
 std::vector<Spline> FlatbufferToSplines(const MultiSpline *fb);
 
 // Class to hold a spline as a function of distance.
-class DistanceSpline {
+class DistanceSplineBase {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  DistanceSpline(const Spline &spline, int num_alpha = 0);
-  DistanceSpline(::std::vector<Spline> &&splines, int num_alpha = 0);
-  DistanceSpline(const MultiSpline *fb, int num_alpha = 0);
-  // Copies the distances for the spline directly out of the provided buffer,
-  // rather than constructing the distances from the original splines.
-  DistanceSpline(const fb::DistanceSpline &fb);
+  virtual ~DistanceSplineBase() {}
 
   flatbuffers::Offset<fb::DistanceSpline> Serialize(
       flatbuffers::FlatBufferBuilder *fbb,
@@ -34,13 +31,13 @@ class DistanceSpline {
   // Returns a point on the spline as a function of distance.
   ::Eigen::Matrix<double, 2, 1> XY(double distance) const {
     const AlphaAndIndex a = DistanceToAlpha(distance);
-    return splines_[a.index].Point(a.alpha);
+    return splines()[a.index].Point(a.alpha);
   }
 
   // Returns the velocity as a function of distance.
   ::Eigen::Matrix<double, 2, 1> DXY(double distance) const {
     const AlphaAndIndex a = DistanceToAlpha(distance);
-    return splines_[a.index].DPoint(a.alpha).normalized();
+    return splines()[a.index].DPoint(a.alpha).normalized();
   }
 
   // Returns the acceleration as a function of distance.
@@ -49,7 +46,7 @@ class DistanceSpline {
   // Returns the heading as a function of distance.
   double Theta(double distance) const {
     const AlphaAndIndex a = DistanceToAlpha(distance);
-    return splines_[a.index].Theta(a.alpha);
+    return splines()[a.index].Theta(a.alpha);
   }
 
   // Returns the angular velocity as a function of distance.
@@ -57,7 +54,7 @@ class DistanceSpline {
   double DTheta(double distance) const {
     // TODO(austin): We are re-computing DPoint here!
     const AlphaAndIndex a = DistanceToAlpha(distance);
-    const Spline &spline = splines_[a.index];
+    const Spline &spline = splines()[a.index];
     return spline.DTheta(a.alpha) / spline.DPoint(a.alpha).norm();
   }
 
@@ -71,10 +68,10 @@ class DistanceSpline {
   double DDTheta(double distance) const;
 
   // Returns the length of the path in meters.
-  double length() const { return distances_.back(); }
+  double length() const { return distances().back(); }
 
-  const std::vector<float> &distances() const { return distances_; }
-  const std::vector<Spline> &splines() const { return splines_; }
+  virtual const absl::Span<const float> distances() const = 0;
+  virtual const absl::Span<const Spline> splines() const = 0;
 
  private:
   struct AlphaAndIndex {
@@ -84,13 +81,49 @@ class DistanceSpline {
 
   // Computes alpha for a distance
   AlphaAndIndex DistanceToAlpha(double distance) const;
+};
 
+// Class which computes a DistanceSpline and stores it.
+class DistanceSpline final : public DistanceSplineBase {
+ public:
+  DistanceSpline(const Spline &spline, int num_alpha = 0);
+  DistanceSpline(::std::vector<Spline> &&splines, int num_alpha = 0);
+  DistanceSpline(const MultiSpline *fb, int num_alpha = 0);
+
+  const absl::Span<const float> distances() const override {
+    return distances_;
+  }
+  const absl::Span<const Spline> splines() const override { return splines_; }
+
+ private:
   ::std::vector<float> BuildDistances(size_t num_alpha);
 
   // The spline we are converting to a distance.
   const ::std::vector<Spline> splines_;
   // An interpolation table of distances evenly distributed in alpha.
   const ::std::vector<float> distances_;
+};
+
+// Class exposing a finished DistanceSpline flatbuffer as a DistanceSpline.
+//
+// The lifetime of the provided fb::DistanceSpline needs to out-live this class.
+class FinishedDistanceSpline final : public DistanceSplineBase {
+ public:
+  static constexpr size_t kMaxSplines = 6;
+  FinishedDistanceSpline(const fb::DistanceSpline &fb);
+
+  const absl::Span<const float> distances() const override {
+    return distances_;
+  }
+  const absl::Span<const Spline> splines() const override { return splines_; }
+
+ private:
+  ::std::vector<float> BuildDistances(size_t num_alpha);
+
+  // The spline we are converting to a distance.
+  aos::SizedArray<Spline, kMaxSplines> splines_;
+  // An interpolation table of distances evenly distributed in alpha.
+  const absl::Span<const float> distances_;
 };
 
 }  // namespace drivetrain

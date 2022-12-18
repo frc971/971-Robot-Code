@@ -44,7 +44,20 @@ class BaseTrajectory {
  public:
   BaseTrajectory(
       const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
-      const DrivetrainConfig<double> &config);
+      const DrivetrainConfig<double> &config)
+      : BaseTrajectory(constraints, config,
+                       std::make_shared<StateFeedbackLoop<
+                           2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
+                           HybridKalman<2, 2, 2>>>(
+                           config.make_hybrid_drivetrain_velocity_loop())) {}
+
+  BaseTrajectory(
+      const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
+      const DrivetrainConfig<double> &config,
+      std::shared_ptr<
+          StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
+                            HybridKalman<2, 2, 2>>>
+          velocity_drivetrain);
 
   virtual ~BaseTrajectory() = default;
 
@@ -94,7 +107,7 @@ class BaseTrajectory {
             Eigen::Matrix<double, 2, 1> *K4,
             Eigen::Matrix<double, 2, 1> *K5) const;
 
-  virtual const DistanceSpline &spline() const = 0;
+  virtual const DistanceSplineBase &spline() const = 0;
 
   // Returns the length of the path in meters.
   double length() const { return spline().length(); }
@@ -175,7 +188,7 @@ class BaseTrajectory {
       const flatbuffers::Vector<flatbuffers::Offset<Constraint>> *constraints,
       ConstraintType type);
 
-  std::unique_ptr<
+  std::shared_ptr<
       StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
                         HybridKalman<2, 2, 2>>>
       velocity_drivetrain_;
@@ -196,8 +209,21 @@ class FinishedTrajectory  : public BaseTrajectory {
  public:
   // Note: The lifetime of the supplied buffer is assumed to be greater than
   // that of this object.
+  explicit FinishedTrajectory(
+      const DrivetrainConfig<double> &config, const fb::Trajectory *buffer,
+      std::shared_ptr<
+          StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
+                            HybridKalman<2, 2, 2>>>
+          velocity_drivetrain);
+
   explicit FinishedTrajectory(const DrivetrainConfig<double> &config,
-                              const fb::Trajectory *buffer);
+                              const fb::Trajectory *buffer)
+      : FinishedTrajectory(
+            config, buffer,
+            std::make_shared<StateFeedbackLoop<
+                2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
+                HybridKalman<2, 2, 2>>>(
+                config.make_hybrid_drivetrain_velocity_loop())) {}
 
   virtual ~FinishedTrajectory() = default;
 
@@ -224,9 +250,9 @@ class FinishedTrajectory  : public BaseTrajectory {
   const fb::Trajectory &trajectory() const { return *buffer_; }
 
  private:
-  const DistanceSpline &spline() const override { return spline_; }
+  const DistanceSplineBase &spline() const override { return spline_; }
   const fb::Trajectory *buffer_;
-  const DistanceSpline spline_;
+  const FinishedDistanceSpline spline_;
 };
 
 // Class to handle plannign a trajectory and producing a flatbuffer containing

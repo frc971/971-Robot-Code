@@ -607,10 +607,12 @@ cc_library(
     deps = [
         ":spline",
         ":trajectory_fbs",
+        "//aos/containers:sized_array",
         "//aos/logging",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:fixed_quadrature",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )

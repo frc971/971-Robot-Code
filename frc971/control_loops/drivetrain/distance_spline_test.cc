@@ -157,7 +157,7 @@ TEST_P(ParameterizedDistanceSplineTest, Serialization) {
   flatbuffers::FlatBufferBuilder fbb;
   fbb.Finish(distance_spline_.Serialize(&fbb, {}));
   const aos::FlatbufferDetachedBuffer<fb::DistanceSpline> spline(fbb.Release());
-  DistanceSpline reread_spline(spline.message());
+  FinishedDistanceSpline reread_spline(spline.message());
   ASSERT_EQ(reread_spline.distances().size(),
             distance_spline_.distances().size());
   for (size_t ii = 0; ii < distance_spline_.distances().size(); ++ii) {
