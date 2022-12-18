@@ -261,7 +261,7 @@ void MappingMain(int argc, char *argv[]) {
           .first;
 
   frc971::vision::TargetMapper mapper(FLAGS_json_path, target_constraints);
-  mapper.Solve();
+  mapper.Solve("rapid_react");
 
   // Pointers need to be deleted to destruct all fetchers
   for (auto &charuco_extractor_ptr : charuco_extractors) {
