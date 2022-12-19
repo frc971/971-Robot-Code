@@ -163,6 +163,41 @@ DataAdapter::MatchTargetDetections(
   return {target_constraints, robot_delta_poses};
 }
 
+std::vector<ceres::examples::Constraint2d> DataAdapter::MatchTargetDetections(
+    const std::vector<DataAdapter::TimestampedDetection>
+        &timestamped_target_detections,
+    aos::distributed_clock::duration max_dt) {
+  CHECK_GE(timestamped_target_detections.size(), 2ul)
+      << "Must have at least 2 detections";
+
+  // Match consecutive detections
+  std::vector<ceres::examples::Constraint2d> target_constraints;
+  for (auto it = timestamped_target_detections.begin() + 1;
+       it < timestamped_target_detections.end(); it++) {
+    auto last_detection = *(it - 1);
+
+    // Skip two consecutive detections of the same target, because the solver
+    // doesn't allow this
+    if (it->id == last_detection.id) {
+      continue;
+    }
+
+    // Don't take into account constraints too far apart in time, because the
+    // recording device could have moved too much
+    if ((it->time - last_detection.time) > max_dt) {
+      continue;
+    }
+
+    // TODO(milind): better way to compute confidence since these detections are
+    // likely very close in time together
+    auto confidence = ComputeConfidence(last_detection.time, it->time);
+    target_constraints.emplace_back(
+        ComputeTargetConstraint(last_detection, *it, confidence));
+  }
+
+  return target_constraints;
+}
+
 Eigen::Matrix3d DataAdapter::ComputeConfidence(
     aos::distributed_clock::time_point start,
     aos::distributed_clock::time_point end) {
@@ -215,6 +250,15 @@ ceres::examples::Constraint2d DataAdapter::ComputeTargetConstraint(
       target_detection_start.id,     target_detection_end.id,
       target_constraint.x,           target_constraint.y,
       target_constraint.yaw_radians, confidence};
+}
+
+ceres::examples::Constraint2d DataAdapter::ComputeTargetConstraint(
+    const TimestampedDetection &target_detection_start,
+    const TimestampedDetection &target_detection_end,
+    const Eigen::Matrix3d &confidence) {
+  return ComputeTargetConstraint(target_detection_start,
+                                 Eigen::Affine3d(Eigen::Matrix4d::Identity()),
+                                 target_detection_end, confidence);
 }
 
 TargetMapper::TargetMapper(
