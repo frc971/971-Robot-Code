@@ -105,6 +105,9 @@ extra_aliased_targets = ["cargo_bin_cxxbridge"]
 [package.metadata.raze.crates.cxx-gen.'*']
 compile_data_attr = "[\"src/gen/include/cxx.h\"]"
 
+[package.metadata.raze.crates.clap.'3.*']
+compile_data_attr = "[\"examples/demo.md\"]"
+
 [package.metadata.raze.crates.supports-hyperlinks.'*']
 compile_data_attr = "[\"README.md\"]"
 

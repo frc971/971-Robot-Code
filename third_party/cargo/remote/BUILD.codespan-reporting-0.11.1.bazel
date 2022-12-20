@@ -61,7 +61,7 @@ rust_library(
     # buildifier: leave-alone
     deps = [
         "@raze__termcolor__1_1_3//:termcolor",
-        "@raze__unicode_width__0_1_9//:unicode_width",
+        "@raze__unicode_width__0_1_10//:unicode_width",
     ],
 )
 

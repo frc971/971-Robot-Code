@@ -55,7 +55,7 @@ rust_library(
     # buildifier: leave-alone
     deps = [
         "@raze__difflib__0_4_0//:difflib",
-        "@raze__itertools__0_10_3//:itertools",
-        "@raze__predicates_core__1_0_3//:predicates_core",
+        "@raze__itertools__0_10_5//:itertools",
+        "@raze__predicates_core__1_0_5//:predicates_core",
     ],
 )

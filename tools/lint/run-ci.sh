@@ -64,6 +64,13 @@ rustfmt() {
     ./tools/lint/rustfmt
 }
 
+cargo_lockfile() {
+    cd "${BUILD_WORKSPACE_DIRECTORY}"
+    cp third_party/cargo/Cargo.raze.lock Cargo.lock
+    external/rust__x86_64-unknown-linux-gnu_tools/bin/cargo generate-lockfile --locked --manifest-path=Cargo.toml
+    rm Cargo.lock
+}
+
 cargo_raze() {
     local -r cargo_raze="$(readlink -f external/cargo_raze/impl/cargo_raze_bin)"
     export CARGO="$(readlink -f external/rust__x86_64-unknown-linux-gnu_tools/bin/cargo)"
@@ -110,6 +117,7 @@ readonly -a LINTERS=(
     tweak_gazelle_go_deps
     clean_up_go_mirrors
     rustfmt
+    cargo_lockfile
     cargo_raze
     tweak_cargo_raze
     buildifier

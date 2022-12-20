@@ -61,7 +61,7 @@ rust_library(
             "@rules_rust//rust/platform:arm-unknown-linux-gnueabi",
             "@rules_rust//rust/platform:armv7-unknown-linux-gnueabihf",
         ): [
-            "@raze__libc__0_2_126//:libc",
+            "@raze__libc__0_2_138//:libc",
         ],
         "//conditions:default": [],
     }),

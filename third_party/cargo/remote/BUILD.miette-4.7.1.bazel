@@ -65,15 +65,15 @@ rust_library(
     # buildifier: leave-alone
     deps = [
         "@raze__atty__0_2_14//:atty",
-        "@raze__backtrace__0_3_66//:backtrace",
-        "@raze__once_cell__1_13_0//:once_cell",
-        "@raze__owo_colors__3_4_0//:owo_colors",
-        "@raze__supports_color__1_3_0//:supports_color",
+        "@raze__backtrace__0_3_67//:backtrace",
+        "@raze__once_cell__1_16_0//:once_cell",
+        "@raze__owo_colors__3_5_0//:owo_colors",
+        "@raze__supports_color__1_3_1//:supports_color",
         "@raze__supports_hyperlinks__1_2_0//:supports_hyperlinks",
         "@raze__supports_unicode__1_0_2//:supports_unicode",
         "@raze__terminal_size__0_1_17//:terminal_size",
-        "@raze__textwrap__0_15_0//:textwrap",
-        "@raze__thiserror__1_0_31//:thiserror",
-        "@raze__unicode_width__0_1_9//:unicode_width",
+        "@raze__textwrap__0_15_2//:textwrap",
+        "@raze__thiserror__1_0_38//:thiserror",
+        "@raze__unicode_width__0_1_10//:unicode_width",
     ],
 )

@@ -53,7 +53,7 @@ rust_library(
     # buildifier: leave-alone
     deps = [
         "@raze__cfg_if__1_0_0//:cfg_if",
-        "@raze__fastrand__1_7_0//:fastrand",
+        "@raze__fastrand__1_8_0//:fastrand",
         "@raze__remove_dir_all__0_5_3//:remove_dir_all",
     ] + selects.with_or({
         # cfg(any(unix, target_os = "wasi"))
@@ -62,7 +62,7 @@ rust_library(
             "@rules_rust//rust/platform:arm-unknown-linux-gnueabi",
             "@rules_rust//rust/platform:armv7-unknown-linux-gnueabihf",
         ): [
-            "@raze__libc__0_2_126//:libc",
+            "@raze__libc__0_2_138//:libc",
         ],
         "//conditions:default": [],
     }),
