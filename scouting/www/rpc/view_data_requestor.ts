@@ -81,7 +81,7 @@ export class ViewDataRequestor {
     let fbBuffer = await this.fetchFromServer(
       RequestDataScouting.startRequestDataScouting,
       RequestDataScouting.endRequestDataScouting,
-      '/requests/request/all_statss'
+      '/requests/request/data_scouting'
     );
 
     const parsedResponse =
