@@ -724,13 +724,7 @@ class EventLoop {
   // Defaults to 0 if this loop will not run realtime.
   virtual int runtime_realtime_priority() const = 0;
 
-  static cpu_set_t DefaultAffinity() {
-    cpu_set_t result;
-    for (int i = 0; i < CPU_SETSIZE; ++i) {
-      CPU_SET(i, &result);
-    }
-    return result;
-  }
+  static cpu_set_t DefaultAffinity();
 
   // Sets the scheduler affinity to run the event loop with. This may only be
   // called before Run().
