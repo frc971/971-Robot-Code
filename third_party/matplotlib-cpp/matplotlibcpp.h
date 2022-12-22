@@ -144,6 +144,7 @@ private:
 
     _interpreter() {
       // Force PYTHONHOME and PYTHONPATH to our sandboxed python.
+#if defined(FRC971_DEBIAN_BUNDLED_PYTHON)
       wchar_t python_home[] = L"../python_repo/usr/";
       wchar_t python_path[] =
           L"../matplotlib_repo/3:../python_repo/usr/lib/python35.zip:../"
@@ -153,6 +154,23 @@ private:
 
       Py_SetPath(python_path);
       Py_SetPythonHome(python_home);
+#elif defined(FRC971_UPSTREAM_BUNDLED_PYTHON)
+      wchar_t python_home[] = L"../python3_9_x86_64-unknown-linux-gnu/";
+      Py_SetPythonHome(python_home);
+
+      char python_path[] = "PYTHONPATH="
+        "../pip_deps_matplotlib/site-packages/:"
+        "../pip_deps_numpy/site-packages/:"
+        "../pip_deps_pillow/site-packages/:"
+        "../pip_deps_pycairo/site-packages/:"
+        "../pip_deps_pygobject/site-packages/:"
+        "../pip_deps_python_dateutil/site-packages/:"
+        "../pip_deps_six/site-packages/:"
+        "../";
+      putenv(python_path);
+#else
+#error Need one of the two defined.
+#endif
 
       // We fail really poorly if DISPLAY isn't set.  We can do better.
       if (getenv("DISPLAY") == nullptr) {
@@ -194,6 +212,13 @@ private:
             PyErr_Print();
             throw std::runtime_error("Error loading module matplotlib!");
         }
+
+#if defined(FRC971_UPSTREAM_BUNDLED_PYTHON)
+        // We don't support tkinter with Python from rules_python. We use the
+        // GTK backend instead.
+        // https://github.com/matplotlib/matplotlib/issues/23074
+        s_backend = "GTK3Agg";
+#endif
 
         // matplotlib.use() must be called *before* pylab, matplotlib.pyplot,
         // or matplotlib.backends is imported for the first time
