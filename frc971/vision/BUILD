@@ -187,3 +187,18 @@ cc_binary(
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
+
+cc_library(
+    name = "media_device",
+    srcs = [
+        "media_device.cc",
+    ],
+    hdrs = ["media_device.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/scoped:scoped_fd",
+        "//aos/util:file",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+    ],
+)
