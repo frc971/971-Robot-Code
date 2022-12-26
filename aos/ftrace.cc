@@ -9,13 +9,17 @@ DEFINE_bool(
 
 namespace aos {
 
+int MaybeCheckOpen(const char *file) {
+  if (!FLAGS_enable_ftrace) return -1;
+  int result = open(file, O_WRONLY);
+  PCHECK(result >= 0) << ": Failed to open " << file;
+  return result;
+}
+
 Ftrace::Ftrace()
-    : message_fd_(FLAGS_enable_ftrace
-                      ? open("/sys/kernel/debug/tracing/trace_marker", O_WRONLY)
-                      : -1),
-      on_fd_(FLAGS_enable_ftrace
-                 ? open("/sys/kernel/debug/tracing/tracing_on", O_WRONLY)
-                 : -1) {}
+    : message_fd_(MaybeCheckOpen("/sys/kernel/debug/tracing/trace_marker")),
+      on_fd_(MaybeCheckOpen("/sys/kernel/debug/tracing/tracing_on")) {
+}
 
 Ftrace::~Ftrace() {
   if (message_fd_ != -1) {
