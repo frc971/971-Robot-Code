@@ -6,6 +6,7 @@
 
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
+#include "aos/ftrace.h"
 #include "aos/scoped/scoped_fd.h"
 #include "frc971/vision/vision_generated.h"
 #include "glog/logging.h"

@@ -99,23 +99,28 @@ bool V4L2ReaderBase::ReadLatestImage() {
     EnqueueBuffer(saved_buffer_.index);
     saved_buffer_.Clear();
   }
+  ftrace_.FormatMessage("Enqueued previous buffer %d", saved_buffer_.index);
   while (true) {
     const BufferInfo previous_buffer = saved_buffer_;
     saved_buffer_ = DequeueBuffer();
+    ftrace_.FormatMessage("Dequeued %d", saved_buffer_.index);
     if (saved_buffer_) {
       // We got a new buffer. Return the previous one (if relevant) and keep
       // going.
       if (previous_buffer) {
+        ftrace_.FormatMessage("Previous %d", previous_buffer.index);
         EnqueueBuffer(previous_buffer.index);
       }
       continue;
     }
     if (!previous_buffer) {
       // There were no images to read. Return an indication of that.
+      ftrace_.FormatMessage("No images to read");
       return false;
     }
     // We didn't get a new one, but we already got one in a previous
     // iteration, which means we found an image so return it.
+    ftrace_.FormatMessage("Got saved buffer %d", saved_buffer_.index);
     saved_buffer_ = previous_buffer;
     buffers_[saved_buffer_.index].PrepareMessage(rows_, cols_, ImageSize(),
                                                  saved_buffer_.monotonic_eof);
