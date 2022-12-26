@@ -11,7 +11,18 @@ namespace aos {
 class ScopedFD {
  public:
   explicit ScopedFD(int fd = -1) : fd_(fd) {}
+  ScopedFD(ScopedFD &) = delete;
+  ScopedFD(ScopedFD &&other) : ScopedFD(other.release()) {}
+
+  void operator=(const ScopedFD &) = delete;
+  void operator=(ScopedFD &&other) {
+    int tmp = fd_;
+    fd_ = other.fd_;
+    other.fd_ = tmp;
+  }
+
   ~ScopedFD() { Close(); }
+
   int get() const { return fd_; }
   int release() {
     const int r = fd_;
@@ -28,8 +39,8 @@ class ScopedFD {
 
  private:
   int fd_;
+
   void Close();
-  DISALLOW_COPY_AND_ASSIGN(ScopedFD);
 };
 
 }  // namespace aos
