@@ -26,6 +26,8 @@ DEFINE_bool(
     "times of target detections. Currently does not work reliably on the box "
     "of pis.");
 
+DECLARE_string(image_channel);
+
 namespace y2022 {
 namespace vision {
 using frc971::vision::DataAdapter;
@@ -151,10 +153,13 @@ void HandlePiCaptures(
   const auto turret_extrinsics = CameraTurretExtrinsics(calibration);
   const auto fixed_extrinsics = CameraFixedExtrinsics(calibration);
 
+  // TODO(milind): change to /camera once we log at full frequency
+  static constexpr std::string_view kImageChannel = "/camera/decimated";
   charuco_extractors->emplace_back(std::make_unique<CharucoExtractor>(
       pi_event_loop,
       "pi-" + std::to_string(FLAGS_team_number) + "-" +
           std::to_string(pi_number),
+      TargetType::kAprilTag, kImageChannel,
       [=](cv::Mat /*rgb_image*/, aos::monotonic_clock::time_point eof,
           std::vector<cv::Vec4i> april_ids,
           std::vector<std::vector<cv::Point2f>> /*april_corners*/, bool valid,
@@ -173,11 +178,8 @@ void HandlePiCaptures(
         }
       }));
 
-  std::string channel =
-      absl::StrCat("/pi", std::to_string(pi_number), "/camera");
-
   image_callbacks->emplace_back(std::make_unique<ImageCallback>(
-      pi_event_loop, "/pi" + std::to_string(pi_number) + "/camera",
+      pi_event_loop, kImageChannel,
       [&, charuco_extractor =
               charuco_extractors->at(charuco_extractors->size() - 1).get()](
           cv::Mat rgb_image, const aos::monotonic_clock::time_point eof) {
@@ -232,9 +234,6 @@ void MappingMain(int argc, char *argv[]) {
         roborio_event_loop->MakeFetcher<superstructure::Status>(
             "/superstructure");
   }
-
-  // Override target_type to AprilTag, since that's what we're using here
-  FLAGS_target_type = "april_tag";
 
   std::vector<std::unique_ptr<CharucoExtractor>> charuco_extractors;
   std::vector<std::unique_ptr<ImageCallback>> image_callbacks;

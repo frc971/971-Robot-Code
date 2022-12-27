@@ -35,7 +35,7 @@ class Calibration {
         prev_H_camera_board_(Eigen::Affine3d()),
         prev_image_H_camera_board_(Eigen::Affine3d()),
         charuco_extractor_(
-            event_loop, pi,
+            event_loop, pi, TargetType::kCharuco, "/camera",
             [this](cv::Mat rgb_image,
                    const aos::monotonic_clock::time_point eof,
                    std::vector<cv::Vec4i> charuco_ids,
@@ -60,8 +60,6 @@ class Calibration {
     CHECK(std::regex_match(camera_id_, re))
         << ": Invalid camera_id '" << camera_id_
         << "', should be of form YY-NN";
-    CHECK_EQ(FLAGS_target_type, "charuco")
-        << "Intrinsic calibration only works with Charuco board";
   }
 
   void HandleCharuco(cv::Mat rgb_image,

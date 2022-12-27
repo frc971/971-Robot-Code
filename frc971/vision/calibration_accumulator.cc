@@ -114,6 +114,7 @@ void CalibrationData::ReviewData(CalibrationDataObserver *observer) const {
 Calibration::Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
                          aos::EventLoop *image_event_loop,
                          aos::EventLoop *imu_event_loop, std::string_view pi,
+                         TargetType target_type, std::string_view image_channel,
                          CalibrationData *data)
     : image_event_loop_(image_event_loop),
       image_factory_(event_loop_factory->GetNodeEventLoopFactory(
@@ -122,7 +123,7 @@ Calibration::Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
       imu_factory_(
           event_loop_factory->GetNodeEventLoopFactory(imu_event_loop_->node())),
       charuco_extractor_(
-          image_event_loop_, pi,
+          image_event_loop_, pi, target_type, image_channel,
           [this](cv::Mat rgb_image, monotonic_clock::time_point eof,
                  std::vector<cv::Vec4i> charuco_ids,
                  std::vector<std::vector<cv::Point2f>> charuco_corners,
@@ -135,7 +136,7 @@ Calibration::Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
           image_event_loop_,
           absl::StrCat("/pi",
                        std::to_string(aos::network::ParsePiNumber(pi).value()),
-                       "/camera"),
+                       image_channel),
           [this](cv::Mat rgb_image, const monotonic_clock::time_point eof) {
             charuco_extractor_.HandleImage(rgb_image, eof);
           }),

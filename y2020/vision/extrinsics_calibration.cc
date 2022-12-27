@@ -65,7 +65,7 @@ void Main(int argc, char **argv) {
 
     // Now, hook Calibration up to everything.
     Calibration extractor(&factory, pi_event_loop.get(), imu_event_loop.get(),
-                          FLAGS_pi, &data);
+                          FLAGS_pi, TargetType::kCharuco, "/camera", &data);
 
     if (FLAGS_turret) {
       aos::NodeEventLoopFactory *roborio_factory =

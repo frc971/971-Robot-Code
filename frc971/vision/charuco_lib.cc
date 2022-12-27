@@ -25,8 +25,6 @@ DEFINE_bool(large_board, true, "If true, use the large calibration board.");
 DEFINE_uint32(
     min_charucos, 10,
     "The mininum number of aruco targets in charuco board required to match.");
-DEFINE_string(target_type, "charuco",
-              "Type of target: april_tag|aruco|charuco|charuco_diamond");
 DEFINE_bool(visualize, false, "Whether to visualize the resulting data.");
 
 namespace frc971 {
@@ -163,11 +161,12 @@ void CharucoExtractor::SetupTargetData() {
   // Only charuco board has a board associated with it
   board_ = static_cast<cv::Ptr<cv::aruco::CharucoBoard>>(NULL);
 
-  if (FLAGS_target_type == "charuco" || FLAGS_target_type == "aruco") {
+  if (target_type_ == TargetType::kCharuco ||
+      target_type_ == TargetType::kAruco) {
     dictionary_ = cv::aruco::getPredefinedDictionary(
         FLAGS_large_board ? cv::aruco::DICT_5X5_250 : cv::aruco::DICT_6X6_250);
 
-    if (FLAGS_target_type == "charuco") {
+    if (target_type_ == TargetType::kCharuco) {
       LOG(INFO) << "Using " << (FLAGS_large_board ? " large " : " small ")
                 << " charuco board with "
                 << (FLAGS_coarse_pattern ? "coarse" : "fine") << " pattern";
@@ -189,12 +188,12 @@ void CharucoExtractor::SetupTargetData() {
         cv::imwrite(FLAGS_board_template_path, board_image);
       }
     }
-  } else if (FLAGS_target_type == "charuco_diamond") {
+  } else if (target_type_ == TargetType::kCharucoDiamond) {
     // TODO<Jim>: Measure this
     marker_length_ = 0.15;
     square_length_ = 0.1651;
     dictionary_ = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_250);
-  } else if (FLAGS_target_type == "april_tag") {
+  } else if (target_type_ == TargetType::kAprilTag) {
     // Tag will be 6 in (15.24 cm) according to
     // https://www.firstinspires.org/robotics/frc/blog/2022-2023-approved-devices-rules-preview-and-vision-target-update
     square_length_ = 0.1524;
@@ -202,8 +201,8 @@ void CharucoExtractor::SetupTargetData() {
         cv::aruco::getPredefinedDictionary(cv::aruco::DICT_APRILTAG_16h5);
   } else {
     // Bail out if it's not a supported target
-    LOG(FATAL) << "Target type undefined: " << FLAGS_target_type
-               << " vs. april_tag|aruco|charuco|charuco_diamond";
+    LOG(FATAL) << "Target type undefined: "
+               << static_cast<uint8_t>(target_type_);
   }
 }
 
@@ -238,7 +237,7 @@ void CharucoExtractor::DrawTargetPoses(cv::Mat rgb_image,
       LOG(INFO) << "Skipping, due to z value too small: " << result.z();
     } else {
       result /= result.z();
-      if (FLAGS_target_type == "charuco") {
+      if (target_type_ == TargetType::kCharuco) {
         cv::aruco::drawAxis(rgb_image, camera_matrix_, dist_coeffs_, rvecs[i],
                             tvecs[i], 0.1);
       } else {
@@ -277,7 +276,8 @@ void CharucoExtractor::PackPoseResults(
 }
 
 CharucoExtractor::CharucoExtractor(
-    aos::EventLoop *event_loop, std::string_view pi,
+    aos::EventLoop *event_loop, std::string_view pi, TargetType target_type,
+    std::string_view image_channel,
     std::function<void(cv::Mat, monotonic_clock::time_point,
                        std::vector<cv::Vec4i>,
                        std::vector<std::vector<cv::Point2f>>, bool,
@@ -285,6 +285,8 @@ CharucoExtractor::CharucoExtractor(
                        std::vector<Eigen::Vector3d>)> &&handle_charuco_fn)
     : event_loop_(event_loop),
       calibration_(SiftTrainingData(), pi),
+      target_type_(target_type),
+      image_channel_(image_channel),
       camera_matrix_(calibration_.CameraIntrinsics()),
       eigen_camera_matrix_(calibration_.CameraIntrinsicsEigen()),
       dist_coeffs_(calibration_.CameraDistCoeffs()),
@@ -298,7 +300,7 @@ CharucoExtractor::CharucoExtractor(
   CHECK(pi_number_) << ": Invalid pi number " << pi
                     << ", failed to parse pi number";
 
-  LOG(INFO) << "Connecting to channel /pi" << pi_number_.value() << "/camera";
+  LOG(INFO) << "Connecting to channel " << image_channel_;
 }
 
 void CharucoExtractor::HandleImage(cv::Mat rgb_image,
@@ -328,13 +330,14 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
   cv::aruco::detectMarkers(rgb_image, dictionary_, marker_corners, marker_ids);
   cv::aruco::drawDetectedMarkers(rgb_image, marker_corners, marker_ids);
 
-  VLOG(2) << "Handle Image, with target type = " << FLAGS_target_type << " and "
-          << marker_ids.size() << " markers detected initially";
+  VLOG(2) << "Handle Image, with target type = "
+          << static_cast<uint8_t>(target_type_) << " and " << marker_ids.size()
+          << " markers detected initially";
 
   if (marker_ids.size() == 0) {
     VLOG(2) << "Didn't find any markers";
   } else {
-    if (FLAGS_target_type == "charuco") {
+    if (target_type_ == TargetType::kCharuco) {
       std::vector<int> charuco_ids;
       std::vector<cv::Point2f> charuco_corners;
 
@@ -395,8 +398,8 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
                 << ", not enough marker IDs for charuco board, got "
                 << marker_ids.size() << ", needed " << FLAGS_min_charucos;
       }
-    } else if (FLAGS_target_type == "april_tag" ||
-               FLAGS_target_type == "aruco") {
+    } else if (target_type_ == TargetType::kAprilTag ||
+               target_type_ == TargetType::kAruco) {
       // estimate pose for april tags doesn't return valid, so marking true
       valid = true;
       std::vector<cv::Vec3d> rvecs, tvecs;
@@ -410,7 +413,7 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
         result_ids.emplace_back(cv::Vec4i{marker_ids[i], 0, 0, 0});
       }
       result_corners = marker_corners;
-    } else if (FLAGS_target_type == "charuco_diamond") {
+    } else if (target_type_ == TargetType::kCharucoDiamond) {
       // Extract the diamonds associated with the markers
       std::vector<cv::Vec4i> diamond_ids;
       std::vector<std::vector<cv::Point2f>> diamond_corners;
@@ -438,7 +441,8 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
         VLOG(2) << "Found aruco markers, but no charuco diamond targets";
       }
     } else {
-      LOG(FATAL) << "Unknown target type: " << FLAGS_target_type;
+      LOG(FATAL) << "Unknown target type: "
+                 << static_cast<uint8_t>(target_type_);
     }
   }
 
