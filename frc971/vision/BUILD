@@ -28,6 +28,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":vision_fbs",
+        "//aos/events:epoll",
         "//aos/events:event_loop",
         "//aos/scoped:scoped_fd",
         "@com_github_google_glog//:glog",

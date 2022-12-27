@@ -5,6 +5,7 @@
 #include <string>
 
 #include "absl/types/span.h"
+#include "aos/events/epoll.h"
 #include "aos/events/event_loop.h"
 #include "aos/ftrace.h"
 #include "aos/scoped/scoped_fd.h"
@@ -61,6 +62,8 @@ class V4L2ReaderBase {
   // TODO(Brian): This concept won't exist once we start using variable-size
   // H.264 frames.
   size_t ImageSize() const { return rows_ * cols_ * 2 /* bytes per pixel */; }
+
+  const aos::ScopedFD &fd() { return fd_; };
 
  private:
   static constexpr int kNumberBuffers = 4;
@@ -139,7 +142,13 @@ class V4L2Reader : public V4L2ReaderBase {
 // properly configured before this class is constructed.
 class RockchipV4L2Reader : public V4L2ReaderBase {
  public:
-  RockchipV4L2Reader(aos::EventLoop *event_loop, const std::string &device_name);
+  RockchipV4L2Reader(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
+                     const std::string &device_name);
+
+ private:
+  void OnImageReady();
+
+  aos::internal::EPoll *epoll_;
 };
 
 }  // namespace vision

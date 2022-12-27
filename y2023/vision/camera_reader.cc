@@ -13,34 +13,6 @@ namespace {
 
 using namespace frc971::vision;
 
-class CameraReader {
- public:
-  CameraReader(aos::EventLoop *event_loop, V4L2ReaderBase *reader)
-      : event_loop_(event_loop),
-        reader_(reader),
-        read_image_timer_(event_loop->AddTimer([this]() { ReadImage(); })) {
-    event_loop->OnRun(
-        [this]() { read_image_timer_->Setup(event_loop_->monotonic_now()); });
-  }
-
-  void ReadImage() {
-    if (!reader_->ReadLatestImage()) {
-      read_image_timer_->Setup(event_loop_->monotonic_now() +
-                               std::chrono::milliseconds(10));
-      return;
-    }
-    reader_->SendLatestImage();
-
-    read_image_timer_->Setup(event_loop_->monotonic_now());
-  }
-
- private:
-  aos::EventLoop *event_loop_;
-  V4L2ReaderBase *reader_;
-
-  aos::TimerHandler *const read_image_timer_;
-};
-
 void CameraReaderMain() {
   std::optional<MediaDevice> media_device = FindMediaDevice("platform:rkisp1");
 
@@ -105,7 +77,8 @@ void CameraReaderMain() {
 
   event_loop.SetRuntimeRealtimePriority(55);
 
-  RockchipV4L2Reader v4l2_reader(&event_loop, rkisp1_selfpath->device());
+  RockchipV4L2Reader v4l2_reader(&event_loop, event_loop.epoll(),
+                                 rkisp1_selfpath->device());
 
   // TODO(austin): Figure out exposure and stuff.
   /*
@@ -121,8 +94,6 @@ void CameraReaderMain() {
     v4l2_reader.UseAutoExposure();
   }
   */
-
-  CameraReader camera_reader(&event_loop, &v4l2_reader);
 
   event_loop.Run();
 }

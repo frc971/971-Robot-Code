@@ -302,9 +302,19 @@ V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
 }
 
 RockchipV4L2Reader::RockchipV4L2Reader(aos::EventLoop *event_loop,
+                                       aos::internal::EPoll *epoll,
                                        const std::string &device_name)
-    : V4L2ReaderBase(event_loop, device_name) {
+    : V4L2ReaderBase(event_loop, device_name), epoll_(epoll) {
   StreamOn();
+  epoll_->OnReadable(fd().get(), [this]() { OnImageReady(); });
+}
+
+void RockchipV4L2Reader::OnImageReady() {
+  if (!ReadLatestImage()) {
+    return;
+  }
+
+  SendLatestImage();
 }
 
 }  // namespace vision
