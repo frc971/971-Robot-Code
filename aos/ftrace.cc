@@ -3,23 +3,35 @@
 #include <cstdarg>
 #include <cstdio>
 
-DEFINE_bool(
-    enable_ftrace, false,
-    "If false, disable logging to /sys/kernel/debug/tracing/trace_marker");
+#include "absl/strings/str_cat.h"
+
+DEFINE_bool(enable_ftrace, false,
+            "If false, disable logging to /sys/kernel/tracing/trace_marker");
 
 namespace aos {
 
+namespace {
 int MaybeCheckOpen(const char *file) {
   if (!FLAGS_enable_ftrace) return -1;
-  int result = open(file, O_WRONLY);
-  PCHECK(result >= 0) << ": Failed to open " << file;
+  int result =
+      open(absl::StrCat("/sys/kernel/tracing/", file).c_str(), O_WRONLY);
+  if (result == -1) {
+    result = open(absl::StrCat("/sys/kernel/debug/tracing/", file).c_str(),
+                  O_WRONLY);
+  }
+
+  // New kernels prefer /sys/kernel/tracing, and old kernels prefer
+  // /sys/kernel/debug/tracing...  When Ubuntu 18.04 and the 4.9 kernel
+  // disappear finally, we can switch fully to /sys/kernel/tracing.
+  PCHECK(result >= 0) << ": Failed to open /sys/kernel/tracing/" << file
+                      << " or legacy /sys/kernel/debug/tracing/" << file;
   return result;
 }
+}  // namespace
 
 Ftrace::Ftrace()
-    : message_fd_(MaybeCheckOpen("/sys/kernel/debug/tracing/trace_marker")),
-      on_fd_(MaybeCheckOpen("/sys/kernel/debug/tracing/tracing_on")) {
-}
+    : message_fd_(MaybeCheckOpen("trace_marker")),
+      on_fd_(MaybeCheckOpen("tracing_on")) {}
 
 Ftrace::~Ftrace() {
   if (message_fd_ != -1) {
