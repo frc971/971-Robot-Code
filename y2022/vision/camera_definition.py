@@ -55,7 +55,8 @@ class CameraParameters:
         self.timestamp = 0
 
 
-def compute_extrinsic(camera_pitch, camera_yaw, T_camera, is_turret):
+def compute_extrinsic(camera_roll, camera_pitch, camera_yaw, T_camera,
+                      is_turret):
     # Compute the extrinsic calibration based on pitch and translation
     # Includes camera rotation from robot x,y,z to opencv (z, -x, -y)
 
@@ -64,6 +65,11 @@ def compute_extrinsic(camera_pitch, camera_yaw, T_camera, is_turret):
     # TODO<Jim>: Maybe store these to .json files, like with intrinsics?
     base_cam_ext = CameraExtrinsics()
     turret_cam_ext = CameraExtrinsics()
+
+    camera_roll_matrix = np.array(
+        [[1.0, 0.0, 0.0], [0.0, np.cos(camera_roll), -np.sin(camera_roll)],
+         [0.0, np.sin(camera_roll),
+          np.cos(camera_roll)]])
 
     camera_pitch_matrix = np.array(
         [[np.cos(camera_pitch), 0.0,
@@ -83,10 +89,10 @@ def compute_extrinsic(camera_pitch, camera_yaw, T_camera, is_turret):
         base_cam_ext.R = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0],
                                    [0.0, 0.0, 1.0]])
         base_cam_ext.T = np.array([0.0, 0.0, 0.0])
-        turret_cam_ext.R = camera_yaw_matrix @ camera_pitch_matrix @ robot_to_camera_rotation
+        turret_cam_ext.R = camera_yaw_matrix @ camera_pitch_matrix @ camera_roll_matrix @ robot_to_camera_rotation
         turret_cam_ext.T = T_camera
     else:
-        base_cam_ext.R = camera_yaw_matrix @ camera_pitch_matrix @ robot_to_camera_rotation
+        base_cam_ext.R = camera_yaw_matrix @ camera_pitch_matrix @ camera_roll_matrix @ robot_to_camera_rotation
         base_cam_ext.T = T_camera
         turret_cam_ext = None
 
@@ -95,6 +101,7 @@ def compute_extrinsic(camera_pitch, camera_yaw, T_camera, is_turret):
 
 def compute_extrinsic_by_pi(pi_number, team_number):
     # Defaults for all cameras
+    camera_roll = 0.0
     camera_pitch = -35.0 * np.pi / 180.0
     camera_yaw = 0.0
     is_turret = True
@@ -127,10 +134,26 @@ def compute_extrinsic_by_pi(pi_number, team_number):
         elif pi_number == "pi4":
             camera_yaw = -90.0 * np.pi / 180.0
             T = np.array([-10.5 * 0.0254, -5.0 * 0.0254, 28.5 * 0.0254])
+    elif team_number == 7971:
+        # Cameras are flipped upside down
+        camera_roll = 180.0 * np.pi / 180.0
+        if pi_number == "pi1":
+            camera_yaw = 90.0 * np.pi / 180.0
+            T = np.array([-6.0 * 0.0254, -8.0 * 0.0254, 0.5 * 0.0254])
+        elif pi_number == "pi2":
+            camera_yaw = 0.0
+            T = np.array([3.75 * 0.0254, 7.5 * 0.0254, 0.5 * 0.0254])
+        elif pi_number == "pi3":
+            camera_yaw = 0.0
+            T = np.array([3.75 * 0.0254, -4.25 * 0.0254, 0.5 * 0.0254])
+        elif pi_number == "pi4":
+            camera_yaw = 0.0
+            T = np.array([-6.0 * 0.0254, -7.0 * 0.0254, 0.5 * 0.0254])
     else:
         glog.fatal("Unknown team number for extrinsics")
 
-    return compute_extrinsic(camera_pitch, camera_yaw, T, is_turret)
+    return compute_extrinsic(camera_roll, camera_pitch, camera_yaw, T,
+                             is_turret)
 
 
 def load_camera_definitions():
@@ -153,7 +176,6 @@ def load_camera_definitions():
         glog.debug("Inspecting %s", filename)
         if ("cam-calib-int" in filename
                 or 'calibration' in filename) and filename.endswith(".json"):
-
             # Extract intrinsics from file
             calib_file = open(dir_name + "/" + filename, 'r')
             calib_dict = json.loads(calib_file.read())
