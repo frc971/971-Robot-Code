@@ -124,7 +124,7 @@ class DataAdapter {
   // too much
   static std::vector<ceres::examples::Constraint2d> MatchTargetDetections(
       const std::vector<TimestampedDetection> &timestamped_target_detections,
-      aos::distributed_clock::duration max_dt = std::chrono::milliseconds(5));
+      aos::distributed_clock::duration max_dt = std::chrono::milliseconds(1));
 
   // Computes inverse of covariance matrix, assuming there was a target
   // detection between robot movement over the given time period. Ceres calls
