@@ -4,6 +4,7 @@
 import matplotlib
 import gi
 from path_edit import FieldWidget
+from path_edit import Mode  # still being tested
 from basic_window import RunApp
 from constants import FIELDS, FIELD, SCREEN_SIZE
 
@@ -25,6 +26,21 @@ class GridWindow(Gtk.Window):
 
     def clear_clicked(self, button):
         self.field.clear()
+
+    def toggle_view_clicked(self, button):
+        temp_variable = self.field.mode
+
+        if self.field.mode != Mode.kViewing:
+            self.field.mode = Mode.kViewing
+            Gtk.Button.set_label(self.toggle_view, "Switch to Editing Mode")
+
+        else:
+            self.field.mode = self.field.previous_mode
+            if self.field.mode == Mode.kEditing:
+                Gtk.Button.set_label(self.toggle_view,
+                                     "Switch to Viewing Mode")
+
+        self.field.previous_mode = temp_variable
 
     def output_json_clicked(self, button):
         self.field.export_json(self.file_name_box.get_text())
@@ -155,7 +171,12 @@ class GridWindow(Gtk.Window):
         self.clear = Gtk.Button.new_with_label("Clear")
         self.clear.set_size_request(50, 40)
         self.clear.connect("clicked", self.clear_clicked)
+        #-----------currently being edited-----------#
 
+        self.toggle_view = Gtk.Button.new_with_label("Switch to Viewing Mode")
+        self.toggle_view.set_size_request(100, 40)
+        self.toggle_view.connect("clicked", self.toggle_view_clicked)
+        #--------------------------------------------#
         self.undo = Gtk.Button.new_with_label("Undo (Ctrl + Z)")
         self.undo.set_size_request(50, 40)
         self.undo.connect("clicked", self.undo_func)
@@ -204,11 +225,12 @@ class GridWindow(Gtk.Window):
         container.attach(limitControls, 5, 1, 1, 1)
 
         jsonControls = Gtk.FlowBox()
-        jsonControls.set_min_children_per_line(7)
+        jsonControls.set_min_children_per_line(8)
         jsonControls.add(self.file_name_box)
         jsonControls.add(self.output_json)
         jsonControls.add(self.input_json)
         jsonControls.add(self.clear)
+        jsonControls.add(self.toggle_view)  #----------------in progress
         jsonControls.add(self.undo)
         jsonControls.add(self.new_spline)
         jsonControls.add(self.new_multispline)

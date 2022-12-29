@@ -47,6 +47,7 @@ class FieldWidget(Gtk.DrawingArea):
         # add default spline for testing purposes
         # init editing / viewing modes and pointer location
         self.mode = Mode.kPlacing
+        self.previous_mode = Mode.kPlacing
         self.mousex = 0
         self.lastx = 0
         self.mousey = 0
@@ -192,6 +193,9 @@ class FieldWidget(Gtk.DrawingArea):
             for multispline in self.multisplines:
                 for i, point in enumerate(multispline.staged_points):
                     draw_px_x(cr, point[0], point[1], self.pxToM(2))
+            if len(self.multisplines) != 0 and self.multisplines[0].getSplines(
+            ):  #still in testing
+                self.draw_splines(cr)
         elif self.mode == Mode.kEditing:
             if len(self.multisplines) != 0 and self.multisplines[0].getSplines(
             ):
@@ -479,6 +483,11 @@ class FieldWidget(Gtk.DrawingArea):
                 self.active_multispline_index = self.multisplines.index(
                     multispline)
 
+        elif self.mode == Mode.kViewing:
+
+            if self.control_point_index == None:
+                self.drag_start = (event.x, event.y)
+
         self.queue_draw()
 
     def do_motion_notify_event(self, event):
@@ -496,12 +505,13 @@ class FieldWidget(Gtk.DrawingArea):
             multispline.update_lib_spline()
             self.graph.schedule_recalculate(self.multisplines)
 
-        if self.mode == Mode.kEditing and self.drag_start != None and self.control_point_index == None:
+        if self.drag_start != None and self.control_point_index == None:
+            if self.mode == Mode.kEditing or self.mode == Mode.kViewing:
 
-            self.zoom_transform.translate(event.x - self.lastx,
-                                          event.y - self.lasty)
-            self.lastx = event.x
-            self.lasty = event.y
+                self.zoom_transform.translate(event.x - self.lastx,
+                                              event.y - self.lasty)
+                self.lastx = event.x
+                self.lasty = event.y
 
         self.queue_draw()
 
