@@ -226,6 +226,7 @@ cc_binary(
     srcs = [
         "irq_affinity.cc",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":irq_affinity_lib",
         ":kthread_fbs",

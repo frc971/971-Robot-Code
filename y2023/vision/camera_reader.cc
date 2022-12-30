@@ -2,6 +2,7 @@
 #include "absl/strings/str_split.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "aos/realtime.h"
 #include "frc971/vision/media_device.h"
 #include "frc971/vision/v4l2_reader.h"
 
@@ -76,6 +77,7 @@ void CameraReaderMain() {
   aos::ShmEventLoop event_loop(&config.message());
 
   event_loop.SetRuntimeRealtimePriority(55);
+  event_loop.SetRuntimeAffinity(aos::MakeCpusetFromCpus({2}));
 
   RockchipV4L2Reader v4l2_reader(&event_loop, event_loop.epoll(),
                                  rkisp1_selfpath->device());

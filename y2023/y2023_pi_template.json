@@ -1,0 +1,347 @@
+{
+  "channels": [
+    {
+      "name": "/pi{{ NUM }}/aos",
+      "type": "aos.timing.Report",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 4096
+    },
+    {
+      "name": "/pi{{ NUM }}/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 200,
+      "num_senders": 20
+    },
+    {
+      "name": "/pi{{ NUM }}/aos",
+      "type": "aos.starter.Status",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 2000,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio",
+        "logger"
+      ],
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 5,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "logger",
+          "priority": 5,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi{{ NUM }}/aos",
+      "type": "aos.starter.StarterRpc",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 10,
+      "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio",
+        "logger"
+      ],
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 5,
+          "time_to_live": 5000000
+        },
+        {
+          "name": "logger",
+          "priority": 5,
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi{{ NUM }}/aos",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 10,
+      "num_senders": 2
+    },
+    {
+      "name": "/pi{{ NUM }}/aos",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 20,
+      "num_senders": 2
+    },
+    {
+      "name": "/pi{{ NUM }}/aos",
+      "type": "aos.logging.DynamicLogCommand",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 10,
+      "num_senders": 2
+    },
+    {
+      "name": "/pi{{ NUM }}/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 15,
+      "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio",
+        "imu"
+      ],
+      "max_size": 200,
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 1,
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
+        },
+        {
+          "name": "imu",
+          "priority": 1,
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/pi{{ NUM }}/aos/remote_timestamps/roborio/pi{{ NUM }}/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "pi{{ NUM }}",
+      "max_size": 208
+    },
+    {
+      "name": "/pi{{ NUM }}/aos/remote_timestamps/imu/pi{{ NUM }}/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "pi{{ NUM }}",
+      "max_size": 208
+    },
+    {
+      "name": "/imu/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "imu",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "pi{{ NUM }}"
+      ],
+      "destination_nodes": [
+        {
+          "name": "pi{{ NUM }}",
+          "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/pi{{ NUM }}/imu/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "imu",
+      "max_size": 208
+    },
+    {
+      "name": "/pi{{ NUM }}/camera",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 40,
+      "max_size": 2600000,
+      "num_readers": 4,
+      "read_method": "PIN",
+      "num_senders": 18
+    },
+    {
+      "name": "/logger/aos",
+      "type": "aos.starter.StarterRpc",
+      "source_node": "logger",
+      "destination_nodes": [
+        {
+          "name": "pi{{ NUM }}",
+          "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "logger"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/logger/aos/remote_timestamps/pi{{ NUM }}/logger/aos/aos-starter-StarterRpc",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "logger",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/logger/aos",
+      "type": "aos.starter.Status",
+      "source_node": "logger",
+      "destination_nodes": [
+        {
+          "name": "pi{{ NUM }}",
+          "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "logger"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/logger/aos/remote_timestamps/pi{{ NUM }}/logger/aos/aos-starter-Status",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "logger",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/roborio/aos",
+      "type": "aos.starter.StarterRpc",
+      "source_node": "roborio",
+      "destination_nodes": [
+        {
+          "name": "pi{{ NUM }}",
+          "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/pi{{ NUM }}/roborio/aos/aos-starter-StarterRpc",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/roborio/aos",
+      "type": "aos.starter.Status",
+      "source_node": "roborio",
+      "destination_nodes": [
+        {
+          "name": "pi{{ NUM }}",
+          "priority": 5,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/pi{{ NUM }}/roborio/aos/aos-starter-Status",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 200
+    }
+  ],
+  "applications": [
+    {
+      "name": "message_bridge_client",
+      "executable_name": "message_bridge_client",
+      "args": ["--rt_priority=16"],
+      "nodes": [
+        "pi{{ NUM }}"
+      ]
+    },
+    {
+      "name": "message_bridge_server",
+      "executable_name": "message_bridge_server",
+      "nodes": [
+        "pi{{ NUM }}"
+      ]
+    },
+    {
+      "name": "web_proxy",
+      "executable_name": "web_proxy_main",
+      "nodes": [
+        "pi{{ NUM }}"
+      ]
+    },
+    {
+      "name": "camera_reader",
+      "executable_name": "camera_reader",
+      "args": ["--enable_ftrace"],
+      "nodes": [
+        "pi{{ NUM }}"
+      ]
+    }
+  ],
+  "maps": [
+    {
+      "match": {
+        "name": "/aos*",
+        "source_node": "pi{{ NUM }}"
+      },
+      "rename": {
+        "name": "/pi{{ NUM }}/aos"
+      }
+    },
+    {
+      "match": {
+        "name": "/camera*",
+        "source_node": "pi{{ NUM }}"
+      },
+      "rename": {
+        "name": "/pi{{ NUM }}/camera"
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "name": "pi{{ NUM }}",
+      "hostname": "pi{{ NUM }}",
+      "hostnames": [
+        "pi-971-{{ NUM }}",
+        "pi-7971-{{ NUM }}",
+        "pi-8971-{{ NUM }}",
+        "pi-9971-{{ NUM }}"
+      ],
+      "port": 9971
+    },
+    {
+      "name": "logger"
+    },
+    {
+      "name": "imu"
+    },
+    {
+      "name": "roborio"
+    }
+  ]
+}
