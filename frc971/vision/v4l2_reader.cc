@@ -12,61 +12,87 @@ DEFINE_bool(ignore_timestamps, false,
 namespace frc971 {
 namespace vision {
 
-V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
-                       const std::string &device_name)
-    : fd_(open(device_name.c_str(), O_RDWR | O_NONBLOCK)) {
+V4L2ReaderBase::V4L2ReaderBase(aos::EventLoop *event_loop,
+                               const std::string &device_name)
+    : fd_(open(device_name.c_str(), O_RDWR | O_NONBLOCK)),
+      event_loop_(event_loop) {
   PCHECK(fd_.get() != -1) << " Failed to open device " << device_name;
+
+  // Figure out if we are multi-planar or not.
+  {
+    struct v4l2_capability capability;
+    memset(&capability, 0, sizeof(capability));
+    PCHECK(Ioctl(VIDIOC_QUERYCAP, &capability) == 0);
+
+    LOG(INFO) << "Opening " << device_name;
+    LOG(INFO) << "  driver " << capability.driver;
+    LOG(INFO) << "  card " << capability.card;
+    LOG(INFO) << "  bus_info " << capability.bus_info;
+    if (capability.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE) {
+      LOG(INFO) << "  Multi-planar";
+      multiplanar_ = true;
+    }
+  }
 
   // First, clean up after anybody else who left the device streaming.
   StreamOff();
+}
 
-  // Don't know why this magic call to SetExposure is required (before the
-  // camera settings are configured) to make things work on boot of the pi, but
-  // it seems to be-- without it, the image exposure is wrong (too dark). Note--
-  // any valid value seems to work-- just choosing 1 for now
-  SetExposure(1);
-
-  {
-    struct v4l2_format format;
-    memset(&format, 0, sizeof(format));
-    format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    format.fmt.pix.width = cols_;
-    format.fmt.pix.height = rows_;
-    format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-    // This means we want to capture from a progressive (non-interlaced)
-    // source.
-    format.fmt.pix.field = V4L2_FIELD_NONE;
-    PCHECK(Ioctl(VIDIOC_S_FMT, &format) == 0);
-    CHECK_EQ(static_cast<int>(format.fmt.pix.width), cols_);
-    CHECK_EQ(static_cast<int>(format.fmt.pix.height), rows_);
-    CHECK_EQ(static_cast<int>(format.fmt.pix.bytesperline),
-             cols_ * 2 /* bytes per pixel */);
-    CHECK_EQ(format.fmt.pix.sizeimage, ImageSize());
-  }
-
+void V4L2ReaderBase::StreamOn() {
   {
     struct v4l2_requestbuffers request;
     memset(&request, 0, sizeof(request));
     request.count = buffers_.size();
-    request.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    request.type = multiplanar() ? V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE
+                                 : V4L2_BUF_TYPE_VIDEO_CAPTURE;
     request.memory = V4L2_MEMORY_USERPTR;
     PCHECK(Ioctl(VIDIOC_REQBUFS, &request) == 0);
     CHECK_EQ(request.count, buffers_.size())
         << ": Kernel refused to give us the number of buffers we asked for";
   }
 
+  {
+    struct v4l2_format format;
+    memset(&format, 0, sizeof(format));
+    format.type = multiplanar() ? V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE
+                                : V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    PCHECK(Ioctl(VIDIOC_G_FMT, &format) == 0);
+
+    if (multiplanar()) {
+      cols_ = format.fmt.pix_mp.width;
+      rows_ = format.fmt.pix_mp.height;
+      LOG(INFO) << "Format is " << cols_ << ", " << rows_;
+      CHECK_EQ(format.fmt.pix_mp.pixelformat, V4L2_PIX_FMT_YUYV)
+          << ": Invalid pixel format";
+
+      CHECK_EQ(format.fmt.pix_mp.num_planes, 1u);
+
+      CHECK_EQ(static_cast<int>(format.fmt.pix_mp.plane_fmt[0].bytesperline),
+               cols_ * 2 /* bytes per pixel */);
+      CHECK_EQ(format.fmt.pix_mp.plane_fmt[0].sizeimage, ImageSize());
+    } else {
+      cols_ = format.fmt.pix.width;
+      rows_ = format.fmt.pix.height;
+      LOG(INFO) << "Format is " << cols_ << ", " << rows_;
+      CHECK_EQ(format.fmt.pix.pixelformat, V4L2_PIX_FMT_YUYV)
+          << ": Invalid pixel format";
+
+      CHECK_EQ(static_cast<int>(format.fmt.pix.bytesperline),
+               cols_ * 2 /* bytes per pixel */);
+      CHECK_EQ(format.fmt.pix.sizeimage, ImageSize());
+    }
+  }
+
   for (size_t i = 0; i < buffers_.size(); ++i) {
-    buffers_[i].sender = event_loop->MakeSender<CameraImage>("/camera");
+    buffers_[i].sender = event_loop_->MakeSender<CameraImage>("/camera");
     EnqueueBuffer(i);
   }
-
-  {
-    int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    PCHECK(Ioctl(VIDIOC_STREAMON, &type) == 0);
-  }
+  int type = multiplanar() ? V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE
+                           : V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  PCHECK(Ioctl(VIDIOC_STREAMON, &type) == 0);
 }
 
-bool V4L2Reader::ReadLatestImage() {
+bool V4L2ReaderBase::ReadLatestImage() {
   // First, enqueue any old buffer we already have. This is the one which
   // may have been sent.
   if (saved_buffer_) {
@@ -97,9 +123,9 @@ bool V4L2Reader::ReadLatestImage() {
   }
 }
 
-void V4L2Reader::SendLatestImage() { buffers_[saved_buffer_.index].Send(); }
+void V4L2ReaderBase::SendLatestImage() { buffers_[saved_buffer_.index].Send(); }
 
-void V4L2Reader::SetExposure(size_t duration) {
+void V4L2ReaderBase::SetExposure(size_t duration) {
   v4l2_control manual_control;
   manual_control.id = V4L2_CID_EXPOSURE_AUTO;
   manual_control.value = V4L2_EXPOSURE_MANUAL;
@@ -111,27 +137,28 @@ void V4L2Reader::SetExposure(size_t duration) {
   PCHECK(Ioctl(VIDIOC_S_CTRL, &exposure_control) == 0);
 }
 
-void V4L2Reader::UseAutoExposure() {
+void V4L2ReaderBase::UseAutoExposure() {
   v4l2_control control;
   control.id = V4L2_CID_EXPOSURE_AUTO;
   control.value = V4L2_EXPOSURE_AUTO;
   PCHECK(Ioctl(VIDIOC_S_CTRL, &control) == 0);
 }
 
-void V4L2Reader::Buffer::InitializeMessage(size_t max_image_size) {
+void V4L2ReaderBase::Buffer::InitializeMessage(size_t max_image_size) {
   message_offset = flatbuffers::Offset<CameraImage>();
   builder = aos::Sender<CameraImage>::Builder();
   builder = sender.MakeBuilder();
   // The kernel has an undocumented requirement that the buffer is aligned
-  // to 64 bytes. If you give it a nonaligned pointer, it will return EINVAL
+  // to 128 bytes. If you give it a nonaligned pointer, it will return EINVAL
   // and only print something in dmesg with the relevant dynamic debug
   // prints turned on.
-  builder.fbb()->StartIndeterminateVector(max_image_size, 1, 64, &data_pointer);
-  CHECK_EQ(reinterpret_cast<uintptr_t>(data_pointer) % 64, 0u)
+  builder.fbb()->StartIndeterminateVector(max_image_size, 1, 128,
+                                          &data_pointer);
+  CHECK_EQ(reinterpret_cast<uintptr_t>(data_pointer) % 128, 0u)
       << ": Flatbuffers failed to align things as requested";
 }
 
-void V4L2Reader::Buffer::PrepareMessage(
+void V4L2ReaderBase::Buffer::PrepareMessage(
     int rows, int cols, size_t image_size,
     aos::monotonic_clock::time_point monotonic_eof) {
   CHECK(data_pointer != nullptr);
@@ -147,24 +174,43 @@ void V4L2Reader::Buffer::PrepareMessage(
   message_offset = image_builder.Finish();
 }
 
-int V4L2Reader::Ioctl(unsigned long number, void *arg) {
+int V4L2ReaderBase::Ioctl(unsigned long number, void *arg) {
   return ioctl(fd_.get(), number, arg);
 }
 
-V4L2Reader::BufferInfo V4L2Reader::DequeueBuffer() {
+V4L2ReaderBase::BufferInfo V4L2ReaderBase::DequeueBuffer() {
   struct v4l2_buffer buffer;
   memset(&buffer, 0, sizeof(buffer));
-  buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   buffer.memory = V4L2_MEMORY_USERPTR;
-  const int result = Ioctl(VIDIOC_DQBUF, &buffer);
-  if (result == -1 && errno == EAGAIN) {
-    return BufferInfo();
+  if (multiplanar()) {
+    buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+    struct v4l2_plane planes[1];
+    std::memset(planes, 0, sizeof(planes));
+    buffer.m.planes = planes;
+    buffer.length = 1;
+    const int result = Ioctl(VIDIOC_DQBUF, &buffer);
+    if (result == -1 && errno == EAGAIN) {
+      return BufferInfo();
+    }
+    PCHECK(result == 0) << ": VIDIOC_DQBUF failed";
+    CHECK_LT(buffer.index, buffers_.size());
+
+    CHECK_EQ(reinterpret_cast<uintptr_t>(buffers_[buffer.index].data_pointer),
+             planes[0].m.userptr);
+
+    CHECK_EQ(ImageSize(), planes[0].length);
+  } else {
+    buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    const int result = Ioctl(VIDIOC_DQBUF, &buffer);
+    if (result == -1 && errno == EAGAIN) {
+      return BufferInfo();
+    }
+    PCHECK(result == 0) << ": VIDIOC_DQBUF failed";
+    CHECK_LT(buffer.index, buffers_.size());
+    CHECK_EQ(reinterpret_cast<uintptr_t>(buffers_[buffer.index].data_pointer),
+             buffer.m.userptr);
+    CHECK_EQ(ImageSize(), buffer.length);
   }
-  PCHECK(result == 0) << ": VIDIOC_DQBUF failed";
-  CHECK_LT(buffer.index, buffers_.size());
-  CHECK_EQ(reinterpret_cast<uintptr_t>(buffers_[buffer.index].data_pointer),
-           buffer.m.userptr);
-  CHECK_EQ(ImageSize(), buffer.length);
   CHECK(buffer.flags & V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC);
   if (!FLAGS_ignore_timestamps) {
     // Require that we have good timestamp on images
@@ -175,23 +221,39 @@ V4L2Reader::BufferInfo V4L2Reader::DequeueBuffer() {
           aos::time::from_timeval(buffer.timestamp)};
 }
 
-void V4L2Reader::EnqueueBuffer(int buffer_number) {
+void V4L2ReaderBase::EnqueueBuffer(int buffer_number) {
+  // TODO(austin): Detect multiplanar and do this all automatically.
+
   CHECK_GE(buffer_number, 0);
   CHECK_LT(buffer_number, static_cast<int>(buffers_.size()));
   buffers_[buffer_number].InitializeMessage(ImageSize());
   struct v4l2_buffer buffer;
+  struct v4l2_plane planes[1];
   memset(&buffer, 0, sizeof(buffer));
-  buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  memset(&planes, 0, sizeof(planes));
   buffer.memory = V4L2_MEMORY_USERPTR;
   buffer.index = buffer_number;
-  buffer.m.userptr =
-      reinterpret_cast<uintptr_t>(buffers_[buffer_number].data_pointer);
-  buffer.length = ImageSize();
+  if (multiplanar()) {
+    buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+    buffer.m.planes = planes;
+    buffer.length = 1;
+    planes[0].m.userptr =
+        reinterpret_cast<uintptr_t>(buffers_[buffer_number].data_pointer);
+    planes[0].length = ImageSize();
+    planes[0].bytesused = planes[0].length;
+  } else {
+    buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    buffer.m.userptr =
+        reinterpret_cast<uintptr_t>(buffers_[buffer_number].data_pointer);
+    buffer.length = ImageSize();
+  }
+
   PCHECK(Ioctl(VIDIOC_QBUF, &buffer) == 0);
 }
 
-void V4L2Reader::StreamOff() {
-  int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+void V4L2ReaderBase::StreamOff() {
+  int type = multiplanar() ? V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE
+                           : V4L2_BUF_TYPE_VIDEO_CAPTURE;
   const int result = Ioctl(VIDIOC_STREAMOFF, &type);
   if (result == 0) {
     return;
@@ -202,6 +264,42 @@ void V4L2Reader::StreamOff() {
     return;
   }
   PLOG(FATAL) << "VIDIOC_STREAMOFF failed";
+}
+
+V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
+                       const std::string &device_name)
+    : V4L2ReaderBase(event_loop, device_name) {
+  // Don't know why this magic call to SetExposure is required (before the
+  // camera settings are configured) to make things work on boot of the pi, but
+  // it seems to be-- without it, the image exposure is wrong (too dark). Note--
+  // any valid value seems to work-- just choosing 1 for now
+
+  SetExposure(1);
+
+  struct v4l2_format format;
+  memset(&format, 0, sizeof(format));
+  format.type = multiplanar() ? V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE
+                              : V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  format.fmt.pix.width = cols_;
+  format.fmt.pix.height = rows_;
+  format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+  // This means we want to capture from a progressive (non-interlaced)
+  // source.
+  format.fmt.pix.field = V4L2_FIELD_NONE;
+  PCHECK(Ioctl(VIDIOC_S_FMT, &format) == 0);
+  CHECK_EQ(static_cast<int>(format.fmt.pix.width), cols_);
+  CHECK_EQ(static_cast<int>(format.fmt.pix.height), rows_);
+  CHECK_EQ(static_cast<int>(format.fmt.pix.bytesperline),
+           cols_ * 2 /* bytes per pixel */);
+  CHECK_EQ(format.fmt.pix.sizeimage, ImageSize());
+
+  StreamOn();
+}
+
+RockchipV4L2Reader::RockchipV4L2Reader(aos::EventLoop *event_loop,
+                                       const std::string &device_name)
+    : V4L2ReaderBase(event_loop, device_name) {
+  StreamOn();
 }
 
 }  // namespace vision

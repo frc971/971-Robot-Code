@@ -5,23 +5,22 @@
 #include <string>
 
 #include "absl/types/span.h"
-#include "glog/logging.h"
-
 #include "aos/events/event_loop.h"
 #include "aos/scoped/scoped_fd.h"
 #include "frc971/vision/vision_generated.h"
+#include "glog/logging.h"
 
 namespace frc971 {
 namespace vision {
 
 // Reads images from a V4L2 capture device (aka camera).
-class V4L2Reader {
+class V4L2ReaderBase {
  public:
   // device_name is the name of the device file (like "/dev/video0").
-  V4L2Reader(aos::EventLoop *event_loop, const std::string &device_name);
+  V4L2ReaderBase(aos::EventLoop *event_loop, const std::string &device_name);
 
-  V4L2Reader(const V4L2Reader &) = delete;
-  V4L2Reader &operator=(const V4L2Reader &) = delete;
+  V4L2ReaderBase(const V4L2ReaderBase &) = delete;
+  V4L2ReaderBase &operator=(const V4L2ReaderBase &) = delete;
 
   // Reads the latest image.
   //
@@ -50,8 +49,20 @@ class V4L2Reader {
   // Switches from manual to auto exposure.
   void UseAutoExposure();
 
+ protected:
+  void StreamOff();
+  void StreamOn();
+
+  int Ioctl(unsigned long number, void *arg);
+
+  bool multiplanar() const { return multiplanar_; }
+
+  // TODO(Brian): This concept won't exist once we start using variable-size
+  // H.264 frames.
+  size_t ImageSize() const { return rows_ * cols_ * 2 /* bytes per pixel */; }
+
  private:
-  static constexpr int kNumberBuffers = 16;
+  static constexpr int kNumberBuffers = 4;
 
   struct Buffer {
     void InitializeMessage(size_t max_image_size);
@@ -89,19 +100,11 @@ class V4L2Reader {
     }
   };
 
-  // TODO(Brian): This concept won't exist once we start using variable-size
-  // H.264 frames.
-  size_t ImageSize() const { return rows_ * cols_ * 2 /* bytes per pixel */; }
-
   // Attempts to dequeue a buffer (nonblocking). Returns the index of the new
   // buffer, or BufferInfo() if there wasn't a frame to dequeue.
   BufferInfo DequeueBuffer();
 
   void EnqueueBuffer(int buffer);
-
-  int Ioctl(unsigned long number, void *arg);
-
-  void StreamOff();
 
   // The mmaped V4L2 buffers.
   std::array<Buffer, kNumberBuffers> buffers_;
@@ -110,10 +113,32 @@ class V4L2Reader {
   // onto.
   BufferInfo saved_buffer_;
 
-  const int rows_ = 480;
-  const int cols_ = 640;
+  bool multiplanar_ = false;
+
+  int rows_ = 0;
+  int cols_ = 0;
 
   aos::ScopedFD fd_;
+
+  aos::EventLoop *event_loop_;
+  aos::Ftrace ftrace_;
+};
+
+// Generic V4L2 reader for pi's and older.
+class V4L2Reader : public V4L2ReaderBase {
+ public:
+  V4L2Reader(aos::EventLoop *event_loop, const std::string &device_name);
+
+ private:
+  const int rows_ = 480;
+  const int cols_ = 640;
+};
+
+// Rockpi specific v4l2 reader.  This assumes that the media device has been
+// properly configured before this class is constructed.
+class RockchipV4L2Reader : public V4L2ReaderBase {
+ public:
+  RockchipV4L2Reader(aos::EventLoop *event_loop, const std::string &device_name);
 };
 
 }  // namespace vision
