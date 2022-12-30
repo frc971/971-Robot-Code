@@ -121,6 +121,10 @@ class Top {
   // to track every single process on the system, so that we can sort them).
   void set_track_top_processes(bool track_all) { track_all_ = track_all; }
 
+  void set_on_reading_update(std::function<void()> fn) {
+    on_reading_update_ = std::move(fn);
+  }
+
   // Specify a set of individual processes to track statistics for.
   // This can be changed at run-time, although it may take up to kSamplePeriod
   // to have full statistics on all the relevant processes, since we need at
@@ -159,6 +163,8 @@ class Top {
   bool track_all_ = false;
 
   std::map<pid_t, ProcessReadings> readings_;
+
+  std::function<void()> on_reading_update_;
 };
 
 }  // namespace aos::util

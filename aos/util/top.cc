@@ -224,6 +224,10 @@ void Top::UpdateReadings() {
       process.cpu_percent = 0.0;
     }
   }
+
+  if (on_reading_update_) {
+    on_reading_update_();
+  }
 }
 
 flatbuffers::Offset<ProcessInfo> Top::InfoForProcess(
