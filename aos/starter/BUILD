@@ -201,3 +201,23 @@ py_binary(
         "//aos/events/logging:logger_main",
     ],
 )
+
+cc_library(
+    name = "irq_affinity_lib",
+    srcs = ["irq_affinity_lib.cc"],
+    hdrs = ["irq_affinity_lib.h"],
+    deps = [
+        "//aos/scoped:scoped_fd",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "irq_affinity_lib_test",
+    srcs = ["irq_affinity_lib_test.cc"],
+    deps = [
+        ":irq_affinity_lib",
+        "//aos/testing:googletest",
+    ],
+)
