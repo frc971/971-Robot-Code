@@ -49,7 +49,7 @@ struct adis16505_state {
   char tx_buff[128];
   char rx_buff[128];
 
-  int count;
+  atomic_t count;
 
   spinlock_t lock;
 
@@ -62,21 +62,18 @@ struct adis16505_state {
 static int adis16505_dev_open(struct inode *in, struct file *f) {
   struct adis16505_state *ts =
       container_of(in->i_cdev, struct adis16505_state, handle_cdev);
-  int count;
+  int count = 0;
 
   f->private_data = ts;
+  count = atomic_cmpxchg(&ts->count, 0, 1);
 
-  spin_lock(&ts->lock);
-  count = ts->count;
-  if (count == 0) {
-    ++(ts->count);
-  }
-  spin_unlock(&ts->lock);
-
-  printk("open %p, count %d\n", ts, count);
   if (count > 0) {
     return -EBUSY;
   }
+
+  // Enable the IRQ after we've declared the device open.
+  enable_irq(ts->spi->irq);
+
   return 0;
 }
 
@@ -84,10 +81,13 @@ static int adis16505_dev_release(struct inode *in, struct file *f) {
   struct adis16505_state *ts;
   ts = container_of(in->i_cdev, struct adis16505_state, handle_cdev);
 
-  printk("release %p\n", ts);
-  spin_lock(&ts->lock);
-  --(ts->count);
-  spin_unlock(&ts->lock);
+  // Disable before declaring ourselves closed so we don't fire the IRQ when we
+  // are disabled, or let someone else open it up again before we disable it.
+  disable_irq(ts->spi->irq);
+
+  if (atomic_cmpxchg(&ts->count, 1, 0) != 1) {
+    BUG_ON(true);
+  }
 
   return 0;
 }
@@ -230,7 +230,7 @@ static int adis16505_probe(struct spi_device *spi) {
 
   spin_lock_init(&ts->lock);
   spin_lock_init(&ts->fifo_read_lock);
-  ts->count = 0;
+  atomic_set(&ts->count, 0);
   INIT_KFIFO(ts->fifo);
   init_waitqueue_head(&ts->wq);
 
@@ -241,10 +241,19 @@ static int adis16505_probe(struct spi_device *spi) {
   err = request_threaded_irq(spi->irq, NULL, adis16505_irq, IRQF_ONESHOT,
                              spi->dev.driver->name, ts);
 
-  if (!ts) {
+  if (err < 0) {
     dev_dbg(&spi->dev, "irq %d busy?\n", spi->irq);
     goto err_free_mem;
   }
+
+  // Immediately disable the IRQ.  Opening the device will enable it, so this
+  // lets us leave the driver probed all the time and only use it when userspace
+  // asks.
+  //
+  // Note: the IRQ will fire probably once before we get it disabled...  It
+  // might initiate a transfer from a device which isn't connected, which should
+  // just return 0 for everything.  This isn't actually a huge concern.
+  disable_irq(spi->irq);
 
   err = alloc_chrdev_region(&ts->character_device, 0, 1, "adis16505");
   if (err < 0) {
@@ -295,7 +304,7 @@ err_free_mem:
   return err;
 }
 
-static int adis16505_remove(struct spi_device *spi) {
+static void adis16505_remove(struct spi_device *spi) {
   struct adis16505_state *ts = spi_get_drvdata(spi);
 
   device_destroy(ts->device_class, ts->character_device);
@@ -309,7 +318,6 @@ static int adis16505_remove(struct spi_device *spi) {
   kfree(ts);
 
   dev_dbg(&spi->dev, "unregistered adis16505\n");
-  return 0;
 }
 
 static struct spi_driver adis16505_driver = {
