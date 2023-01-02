@@ -5,10 +5,13 @@
 #include <string>
 
 #include "absl/types/span.h"
+#include "aos/containers/ring_buffer.h"
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop.h"
 #include "aos/ftrace.h"
+#include "aos/realtime.h"
 #include "aos/scoped/scoped_fd.h"
+#include "aos/util/threaded_consumer.h"
 #include "frc971/vision/vision_generated.h"
 #include "glog/logging.h"
 
@@ -57,6 +60,23 @@ class V4L2ReaderBase {
   void StreamOff();
   void StreamOn();
 
+  // Enqueues a buffer for v4l2 to stream into (expensive).
+  void EnqueueBuffer(int buffer_index);
+
+  // Initializations that need to happen in the main thread.
+  //
+  // Implementations of MarkBufferToBeEnqueued should call this before calling
+  // EnqueueBuffer.
+  void ReinitializeBuffer(int buffer_index) {
+    CHECK_GE(buffer_index, 0);
+    CHECK_LT(buffer_index, static_cast<int>(buffers_.size()));
+    buffers_[buffer_index].InitializeMessage(ImageSize());
+  }
+
+  // Submits a buffer to be enqueued later in a lower priority thread.
+  // Legacy V4L2Reader still does this in the main thread.
+  virtual void MarkBufferToBeEnqueued(int buffer_index);
+
   int Ioctl(unsigned long number, void *arg);
 
   bool multiplanar() const { return multiplanar_; }
@@ -70,9 +90,9 @@ class V4L2ReaderBase {
 
   const aos::ScopedFD &fd() { return fd_; };
 
- private:
   static constexpr int kNumberBuffers = 4;
 
+ private:
   struct Buffer {
     void InitializeMessage(size_t max_image_size);
 
@@ -112,8 +132,6 @@ class V4L2ReaderBase {
   // Attempts to dequeue a buffer (nonblocking). Returns the index of the new
   // buffer, or BufferInfo() if there wasn't a frame to dequeue.
   BufferInfo DequeueBuffer();
-
-  void EnqueueBuffer(int buffer);
 
   // The mmaped V4L2 buffers.
   std::array<Buffer, kNumberBuffers> buffers_;
@@ -159,11 +177,15 @@ class RockchipV4L2Reader : public V4L2ReaderBase {
  private:
   void OnImageReady();
 
+  void MarkBufferToBeEnqueued(int buffer) override;
+
   int ImageSensorIoctl(unsigned long number, void *arg);
 
   aos::internal::EPoll *epoll_;
 
   aos::ScopedFD image_sensor_fd_;
+
+  aos::util::ThreadedConsumer<int, kNumberBuffers> buffer_requeuer_;
 };
 
 }  // namespace vision

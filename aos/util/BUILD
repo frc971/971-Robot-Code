@@ -466,6 +466,28 @@ cc_test(
 )
 
 cc_library(
+    name = "threaded_consumer",
+    hdrs = [
+        "threaded_consumer.h",
+    ],
+    deps = [
+        "//aos:condition",
+        "//aos:realtime",
+        "//aos/containers:ring_buffer",
+        "//aos/mutex",
+    ],
+)
+
+cc_test(
+    name = "threaded_consumer_test",
+    srcs = ["threaded_consumer_test.cc"],
+    deps = [
+        ":threaded_consumer",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
     name = "foxglove_websocket_lib",
     srcs = ["foxglove_websocket_lib.cc"],
     hdrs = ["foxglove_websocket_lib.h"],
