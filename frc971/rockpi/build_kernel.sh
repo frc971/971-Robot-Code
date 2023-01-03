@@ -39,4 +39,13 @@ make -s ARCH=arm64 LOCALVERSION="${LOCALVERSION}" CROSS_COMPILE="${CROSS_COMPILE
 
 VERSION="$(cat linux/include/config/kernel.release)"
 
+(
+  cd ../../y2022/localizer/kernel/
+  make rockpi
+)
+
+cp ../../y2022/localizer/kernel/adis16505.ko "kernel-install/lib/modules/${VERSION}/kernel/"
+
+depmod -b ./kernel-install ${VERSION}
+
 tar -cvf "linux-kernel-${VERSION}.tar.xz" -C kernel-install .

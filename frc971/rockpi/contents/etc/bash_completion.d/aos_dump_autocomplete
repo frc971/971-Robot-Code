@@ -1,0 +1,5 @@
+#!/bin/bash
+
+if [[ -e "/home/pi/bin/aos_dump_autocomplete.sh" ]]; then
+  . /home/pi/bin/aos_dump_autocomplete.sh
+fi
