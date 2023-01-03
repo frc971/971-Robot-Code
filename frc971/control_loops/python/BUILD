@@ -1,5 +1,23 @@
 package(default_visibility = ["//visibility:public"])
 
+py_library(
+    name = "constants",
+    srcs = ["constants.py"],
+    deps = [
+        "@pip//pygobject",
+    ],
+)
+
+py_library(
+    name = "drawing_constants",
+    srcs = ["drawing_constants.py"],
+    deps = [
+        ":color",
+        "@pip//numpy",
+        "@pip//pygobject",
+    ],
+)
+
 py_binary(
     name = "haptic_wheel",
     srcs = [
@@ -154,7 +172,6 @@ py_library(
 py_binary(
     name = "spline_graph",
     srcs = [
-        "color.py",
         "graph.py",
         "multispline.py",
         "path_edit.py",
@@ -171,6 +188,9 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":basic_window",
+        ":color",
+        ":constants",
+        ":drawing_constants",
         ":libspline",
         ":python_init",
         "@matplotlib_repo//:matplotlib3",
@@ -182,11 +202,11 @@ py_library(
     name = "basic_window",
     srcs = [
         "basic_window.py",
-        "color.py",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
+        ":constants",
         ":python_init",
         "@python_gtk",
     ],
