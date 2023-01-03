@@ -13,9 +13,20 @@ wide range of names to refer to the same package. That would be annoying to use
 in BUILD files.
 """
 
+import re
 import sys
 import textwrap
 from pathlib import Path
+
+# Regex to parse the lines in a requirements file.
+# - Ignore line comments.
+# - Remove any inline comments that may or may not exist.
+# - Also remove any version specifiers. We don't use it.
+#
+# E.g:
+#  numpy==1.2.3  # needed because we like it.
+# turns into "numpy".
+REQUIREMENT_MATCH = re.compile(r"[-_.a-zA-Z0-9]+")
 
 
 def parse_requirements(requirements_path: Path) -> list[str]:
@@ -25,18 +36,9 @@ def parse_requirements(requirements_path: Path) -> list[str]:
     depend on explicitly requested pip packages. We don't want users to depend
     on transitive dependencies of our requested pip packages.
     """
-    result = []
-    for line in requirements_path.read_text().splitlines():
-        # Ignore line comments.
-        if not line or line.startswith("#"):
-            continue
-
-        # Remove any inline comments that may or may not exist.
-        # E.g:
-        # numpy==1.2.3  # needed because we like it.
-        result.append(line.split()[0])
-
-    return result
+    lines = requirements_path.read_text().splitlines()
+    matches = map(REQUIREMENT_MATCH.match, lines)
+    return [match.group(0) for match in matches if match]
 
 
 def generate_build_files(requirements: list[str]) -> None:
