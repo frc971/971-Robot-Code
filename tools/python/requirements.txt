@@ -11,4 +11,9 @@ pkginfo
 pygobject
 requests
 scipy
+shapely
 yapf
+
+# TODO(phil): Migrate to absl-py. These are abandoned as far as I can tell.
+python-gflags
+glog

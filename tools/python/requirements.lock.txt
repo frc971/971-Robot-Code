@@ -99,6 +99,10 @@ ghp-import==2.1.0 \
     --hash=sha256:8337dd7b50877f163d4c0289bc1f1c7f127550241988d568c1db512c4324a619 \
     --hash=sha256:9c535c4c61193c2df8871222567d7fd7e5014d835f97dc7b7439069e2413d343
     # via mkdocs
+glog==0.3.1 \
+    --hash=sha256:88cee83dea8bddf73db7edbf5bd697237628389ef476c0a0ecad639c606189e5 \
+    --hash=sha256:b721edef6009eabc0b4d9f2619e153d2627a7b71a3657c8ed69f02ef7c78be97
+    # via -r tools/python/requirements.txt
 idna==3.4 \
     --hash=sha256:814f528e8dead7d329833b91c5faa87d60bf71824cd12a7530b5526063d02cb4 \
     --hash=sha256:90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2
@@ -319,6 +323,7 @@ numpy==1.23.5 \
     #   osqp
     #   qdldl
     #   scipy
+    #   shapely
 opencv-python==4.6.0.66 \
     --hash=sha256:0dc82a3d8630c099d2f3ac1b1aabee164e8188db54a786abb7a4e27eba309440 \
     --hash=sha256:5af8ba35a4fcb8913ffb86e92403e9a656a4bff4a645d196987468f0f8947875 \
@@ -456,6 +461,11 @@ python-dateutil==2.8.2 \
     # via
     #   ghp-import
     #   matplotlib
+python-gflags==3.1.2 \
+    --hash=sha256:40ae131e899ef68e9e14aa53ca063839c34f6a168afe622217b5b875492a1ee2
+    # via
+    #   -r tools/python/requirements.txt
+    #   glog
 pyyaml==6.0 \
     --hash=sha256:01b45c0191e6d66c470b6cf1b9531a771a83c1c4208272ead47a3ae4f2f603bf \
     --hash=sha256:0283c35a6a9fbf047493e3a0ce8d79ef5030852c51e9d911a27badfde0605293 \
@@ -552,10 +562,52 @@ scipy==1.9.3 \
     #   -r tools/python/requirements.txt
     #   osqp
     #   qdldl
+shapely==2.0.0 \
+    --hash=sha256:11f1b1231a6c04213fb1226c6968d1b1b3b369ec42d1e9655066af87631860ea \
+    --hash=sha256:13a9f978cd287e0fa95f39904a2bb36deddab490e4fab8bf43eba01b7d9eb58f \
+    --hash=sha256:17d0f89581aa15f7887052a6adf2753f9fe1c3fdbb6116653972e0d43e720e65 \
+    --hash=sha256:21ba32a6c45b7f8ab7d2d8d5cf339704e2d1dfdf3e2fb465b950a0c9bc894a4f \
+    --hash=sha256:2287d0cb592c1814e9f48065888af7ee3f13e090e6f7fa3e208b06a83fb2f6af \
+    --hash=sha256:292c22ff7806e3a25bc4324295e9204169c61a09165d4c9ee0a9784c1709c85e \
+    --hash=sha256:40c397d67ba609a163d38b649eee2b06c5f9bdc86d244a8e4cd09c6e2791cf3c \
+    --hash=sha256:44198fc188fe4b7dd39ef0fd325395d1d6ab0c29a7bbaa15663a16c362bf6f62 \
+    --hash=sha256:5477be8c11bf3109f7b804bb2d57536538b8d0a6118207f1020d71338f1a827c \
+    --hash=sha256:550f110940d79931b6a12a17de07f6b158c9586c4b121f885af11458ae5626d7 \
+    --hash=sha256:56c0e70749f8c2956493e9333375d2e2264ce25c838fc49c3a2ececbf2d3ba92 \
+    --hash=sha256:5fe8649aafe6adcb4d90f7f735f06ca8ca02a16da273d901f1dd02afc0d3618e \
+    --hash=sha256:6c71738702cf5c3fc60b3bbe869c321b053ea754f57addded540a71c78c2612e \
+    --hash=sha256:7266080d39946395ba4b31fa35b9b7695e0a4e38ccabf0c67e2936caf9f9b054 \
+    --hash=sha256:73771b3f65c2949cce0b310b9b62b8ce069407ceb497a9dd4436f9a4d059f12c \
+    --hash=sha256:73d605fcefd06ee997ba307ef363448d355f3c3e81b3f56ed332eaf6d506e1b5 \
+    --hash=sha256:7b2c41514ba985ea3772eee9b386d620784cccb7a459a270a072f3ef01fdd807 \
+    --hash=sha256:820bee508e4a0e564db22f8b55bb5e6e7f326d8d7c103639c42f5d3f378f4067 \
+    --hash=sha256:8a7ba97c97d85c1f07c57f9524c45128ef2bf8279061945d78052c78862b357f \
+    --hash=sha256:8b9f780c3b79b4a6501e0e8833b1877841b7b0e0a243e77b529fda8f1030afc2 \
+    --hash=sha256:91bbca0378eb82f0808f0e59150ac0952086f4caaab87ad8515a5e55e896c21e \
+    --hash=sha256:99420c89af78f371b96f0e2bad9afdebc6d0707d4275d157101483e4c4049fd6 \
+    --hash=sha256:a391cae931976fb6d8d15a4f4a92006358e93486454a812dde1d64184041a476 \
+    --hash=sha256:a9b6651812f2caa23e4d06bc06a2ed34450f82cb1c110c170a25b01bbb090895 \
+    --hash=sha256:b1def13ec2a74ebda2210d2fc1c53cecce5a079ec90f341101399427874507f1 \
+    --hash=sha256:b3d97f3ce6df47ca68c2d64b8c3cfa5c8ccc0fbc81ef8e15ff6004a6426e71b1 \
+    --hash=sha256:c47a61b1cd0c5b064c6d912bce7dba78c01f319f65ecccd6e61eecd21861a37a \
+    --hash=sha256:c4b99a3456e06dc55482569669ece969cdab311f2ad2a1d5622fc770f68cf3cd \
+    --hash=sha256:d28e19791c9be2ba1cb2fddefa86f73364bdf8334e88dbcd78a8e4494c0af66b \
+    --hash=sha256:d486cab823f0a978964ae97ca10564ea2b2ced93e84a2ef0b7b62cbacec9d3d2 \
+    --hash=sha256:de3722c68e49fbde8cb6859695bbb8fb9a4d48bbdf34fcf38b7994d2bd9772e2 \
+    --hash=sha256:e4ed31658fd0799eaa3569982aab1a5bc8fcf25ec196606bf137ee4fa984be88 \
+    --hash=sha256:e991ad155783cd0830b895ec8f310fde9e79a7b283776b889a751fb1e7c819fc \
+    --hash=sha256:eab24b60ae96b7375adceb1f120be818c59bd69db0f3540dc89527d8a371d253 \
+    --hash=sha256:eaea9ddee706654026a84aceb9a3156105917bab3de58fcf150343f847478202 \
+    --hash=sha256:ef98fec4a3aca6d33e3b9fdd680fe513cc7d1c6aedc65ada8a3965601d9d4bcf \
+    --hash=sha256:f69c418f2040c8593e33b1aba8f2acf890804b073b817535b5d291139d152af5 \
+    --hash=sha256:f96b24da0242791cd6042f6caf074e7a4537a66ca2d1b57d423feb98ba901295
+    # via -r tools/python/requirements.txt
 six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
-    # via python-dateutil
+    # via
+    #   glog
+    #   python-dateutil
 urllib3==1.26.13 \
     --hash=sha256:47cc05d99aaa09c9e72ed5809b60e7ba354e64b59c9c173ac3018642d8bb41fc \
     --hash=sha256:c083dd0dce68dbfbe1129d5271cb90f9447dea7d52097c6e0126120c521ddea8

@@ -9,4 +9,7 @@ ANNOTATIONS = {
         data = ["@gtk_runtime//:gtk_runtime"],
         deps = ["@bazel_tools//tools/python/runfiles"],
     ),
+    "python-gflags": package_annotation(
+        deps = ["@pip_deps_six//:pkg"],
+    ),
 }
