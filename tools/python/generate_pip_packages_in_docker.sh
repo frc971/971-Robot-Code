@@ -115,6 +115,7 @@ for wheel in "${wheels_built_from_source[@]}"; do
   echo "Repairing wheel ${wheel}"
   if ! auditwheel show "${wheel_path}"; then
     echo "Assuming ${wheel} is a non-platform wheel. Skipping."
+    cp "${wheel_path}" "${SCRIPT_DIR}"/wheelhouse/
     continue
   fi
   auditwheel repair \
