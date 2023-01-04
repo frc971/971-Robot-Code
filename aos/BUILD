@@ -157,7 +157,10 @@ cc_binary(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        "//aos:init",
+        "//aos/events:shm_event_loop",
         "//aos/time",
+        "//aos/util:top",
         "@com_github_google_glog//:glog",
     ],
 )
