@@ -340,6 +340,13 @@ void RockchipV4L2Reader::SetExposure(size_t duration) {
 }
 
 void RockchipV4L2Reader::SetGain(size_t gain) {
+  v4l2_control gain_control;
+  gain_control.id = V4L2_CID_GAIN;
+  gain_control.value = static_cast<int>(gain);
+  PCHECK(ImageSensorIoctl(VIDIOC_S_CTRL, &gain_control) == 0);
+}
+
+void RockchipV4L2Reader::SetGainExt(size_t gain) {
   struct v4l2_ext_controls controls;
   memset(&controls, 0, sizeof(controls));
   struct v4l2_ext_control control[1];
@@ -352,6 +359,18 @@ void RockchipV4L2Reader::SetGain(size_t gain) {
   control[0].value = gain;
 
   PCHECK(ImageSensorIoctl(VIDIOC_S_EXT_CTRLS, &controls) == 0);
+}
+
+void RockchipV4L2Reader::SetBlanking(size_t hblank, size_t vblank) {
+  v4l2_control hblank_control;
+  hblank_control.id = V4L2_CID_HBLANK;
+  hblank_control.value = static_cast<int>(hblank);
+  PCHECK(ImageSensorIoctl(VIDIOC_S_CTRL, &hblank_control) == 0);
+
+  v4l2_control vblank_control;
+  vblank_control.id = V4L2_CID_VBLANK;
+  vblank_control.value = static_cast<int>(vblank);
+  PCHECK(ImageSensorIoctl(VIDIOC_S_CTRL, &vblank_control) == 0);
 }
 
 }  // namespace vision

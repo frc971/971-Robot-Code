@@ -151,6 +151,9 @@ class RockchipV4L2Reader : public V4L2ReaderBase {
   void SetExposure(size_t duration) override;
 
   void SetGain(size_t gain);
+  void SetGainExt(size_t gain);
+
+  void SetBlanking(size_t hblank, size_t vblank);
 
  private:
   void OnImageReady();
