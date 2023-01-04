@@ -1,1 +1,1 @@
-ACTION=="add",KERNEL=="adis16505",MODE="0666"
+SUBSYSTEM=="adis16505_class", MODE="0666", GROUP="dialout"
