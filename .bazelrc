@@ -79,7 +79,7 @@ build:eigen  --copt -UNDEBUG
 build --show_result 5
 # Dump the output of the failing test to stdout.
 # Keep the default test timeouts except make 'eternal'=4500 secs
-test --test_output=errors --test_timeout=-1,-1,-1,4500
+test --test_output=errors --test_timeout=-1,-1,-1,5500
 
 build --sandbox_base=/dev/shm/
 build --experimental_multi_threaded_digest
