@@ -8,7 +8,7 @@ cc_library(
 
 cc_library(
     name = "gengen",
-    srcs = ["tools/GenGen.cpp"],
+    srcs = ["share/Halide/tools/GenGen.cpp"],
     visibility = ["//visibility:public"],
     deps = [
         ":halide",
@@ -29,7 +29,7 @@ filegroup(
     name = "build_files",
     srcs = [
         "lib/libHalide.a",
-        "tools/GenGen.cpp",
+        "share/Halide/tools/GenGen.cpp",
     ] + glob(["include/*.h"]),
     visibility = ["//visibility:public"],
 )

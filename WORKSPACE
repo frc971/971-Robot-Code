@@ -988,39 +988,28 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/opencv_amd64_v3.tar.gz",
 )
 
-# Downloaded from:
-# https://github.com/halide/Halide/releases/download/release_2019_08_27/halide-linux-64-gcc53-800-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz
-# which is "Halide 2019/08/27" at https://github.com/halide/Halide/releases.
 http_archive(
     name = "halide_k8",
     build_file = "@//debian:halide.BUILD",
-    sha256 = "c67185d50a99adba86f6b2cc43c7e2cf11bcdfba9052d05e764a89b456a50446",
-    strip_prefix = "halide/",
-    url = "https://www.frc971.org/Build-Dependencies/halide-linux-64-gcc53-800-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz",
+    sha256 = "be3bdd067acb9ee0d37d0830821113cd69174bee46da466a836d8829fef7cf91",
+    strip_prefix = "Halide-14.0.0-x86-64-linux/",
+    url = "https://github.com/halide/Halide/releases/download/v14.0.0/Halide-14.0.0-x86-64-linux-6b9ed2afd1d6d0badf04986602c943e287d44e46.tar.gz",
 )
 
-# Downloaded from:
-# https://github.com/halide/Halide/releases/download/v8.0.0/halide-arm64-linux-64-trunk-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz
-# which is "Halide 8.0.0" at https://github.com/halide/Halide/releases.
-# The "2019/08/27" release was renamed as per the release notes:
-# https://github.com/halide/Halide/releases/tag/v8.0.0
 http_archive(
     name = "halide_arm64",
     build_file = "@//debian:halide.BUILD",
-    sha256 = "97b3e54565cd9df52abdd6452f3720ffd38861524154d74ae3d20dc949ed2a63",
-    strip_prefix = "halide/",
-    url = "https://www.frc971.org/Build-Dependencies/halide-arm64-linux-64-trunk-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz",
+    sha256 = "cdd42411bcbba682f73d7db0af69837c4857ee90f1727c6feb37fc9a98132385",
+    strip_prefix = "Halide-14.0.0-arm-64-linux/",
+    url = "https://github.com/halide/Halide/releases/download/v14.0.0/Halide-14.0.0-arm-64-linux-6b9ed2afd1d6d0badf04986602c943e287d44e46.tar.gz",
 )
 
-# Downloaded from:
-# https://github.com/halide/Halide/releases/download/release_2019_08_27/halide-arm32-linux-32-trunk-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz
-# which is "Halide 2019/08/27" at https://github.com/halide/Halide/releases.
 http_archive(
     name = "halide_armhf",
     build_file = "@//debian:halide.BUILD",
-    sha256 = "10564c559c9e04a173823413916d05fadd6e697d91bab21ddc5041190fa8f0f0",
-    strip_prefix = "halide/",
-    url = "https://www.frc971.org/Build-Dependencies/halide-arm32-linux-32-trunk-65c26cba6a3eca2d08a0bccf113ca28746012cc3.tgz",
+    sha256 = "6b3fe3396391b57990a2c41d8dcea74b0734d1b2a0fd42fe0858d954aa45df2b",
+    strip_prefix = "Halide-14.0.0-arm-32-linux/",
+    url = "https://github.com/halide/Halide/releases/download/v14.0.0/Halide-14.0.0-arm-32-linux-6b9ed2afd1d6d0badf04986602c943e287d44e46.tar.gz",
 )
 
 # Downloaded from:
