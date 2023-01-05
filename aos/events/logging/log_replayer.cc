@@ -70,25 +70,14 @@ int Main(int argc, char *argv[]) {
     const aos::Configuration *raw_config = FLAGS_config.empty()
                                                ? config_reader.configuration()
                                                : &config.message();
-    const std::string channel_node =
-        aos::configuration::MultiNode(raw_config)
-            ? absl::StrFormat("\"source_node\": \"%s%s",
-                              aos::configuration::GetMyNode(raw_config)
-                                  ->name()
-                                  ->string_view(),
-                              "\",")
-            : "";
-    config = aos::configuration::MergeWithConfig(
-        raw_config,
-        aos::configuration::AddSchema(
-            absl::StrFormat(
-                "{ \"channels\": [{ \"name\": \"/timing\", \"type\": "
-                "\"aos.timing.ReplayTiming\", \"max_size\": 10000, "
-                "\"frequency\": 10000, %s %s",
-                channel_node, "\"num_senders\": 2 }]}"),
-            {aos::FlatbufferVector<reflection::Schema>(
-                aos::FlatbufferSpan<reflection::Schema>(
-                    aos::timing::ReplayTimingSchema()))}));
+    aos::ChannelT channel_overrides;
+    channel_overrides.max_size = 10000;
+    channel_overrides.frequency = 10000;
+    config = aos::configuration::AddChannelToConfiguration(
+        raw_config, "/timing",
+        aos::FlatbufferSpan<reflection::Schema>(
+            aos::timing::ReplayTimingSchema()),
+        aos::configuration::GetMyNode(raw_config), channel_overrides);
   }
 
   if (!FLAGS_merge_with_config.empty()) {

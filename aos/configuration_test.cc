@@ -1049,6 +1049,60 @@ TEST_F(ConfigurationTest, GetSchemaDetachedBuffer) {
             std::nullopt);
 }
 
+// Tests that we can use a utility to add individual channels to a single-node
+// config.
+TEST_F(ConfigurationTest, AddChannelToConfigSingleNode) {
+  FlatbufferDetachedBuffer<Configuration> base_config =
+      ReadConfig(ArtifactPath("aos/testdata/config1.json"));
+
+  FlatbufferVector<reflection::Schema> schema =
+      FileToFlatbuffer<reflection::Schema>(
+          ArtifactPath("aos/events/ping.bfbs"));
+
+  FlatbufferDetachedBuffer<Configuration> new_config =
+      AddChannelToConfiguration(&base_config.message(), "/new", schema);
+
+  ASSERT_EQ(new_config.message().channels()->size(),
+            base_config.message().channels()->size() + 1);
+
+  const Channel *channel =
+      GetChannel(new_config, "/new", "aos.examples.Ping", "", nullptr);
+  ASSERT_TRUE(channel != nullptr);
+  ASSERT_TRUE(channel->has_schema());
+  // Check that we don't populate channel settings that we don't override the
+  // defaults of.
+  ASSERT_FALSE(channel->has_frequency());
+}
+
+// Tests that we can use a utility to add individual channels to a multi-node
+// config.
+TEST_F(ConfigurationTest, AddChannelToConfigMultiNode) {
+  FlatbufferDetachedBuffer<Configuration> base_config =
+      ReadConfig(ArtifactPath("aos/testdata/good_multinode.json"));
+
+  FlatbufferVector<reflection::Schema> schema =
+      FileToFlatbuffer<reflection::Schema>(
+          ArtifactPath("aos/events/ping.bfbs"));
+
+  aos::ChannelT channel_overrides;
+  channel_overrides.frequency = 971;
+  FlatbufferDetachedBuffer<Configuration> new_config =
+      AddChannelToConfiguration(&base_config.message(), "/new", schema,
+                                GetNode(&base_config.message(), "pi1"),
+                                channel_overrides);
+
+  ASSERT_EQ(new_config.message().channels()->size(),
+            base_config.message().channels()->size() + 1);
+
+  const Channel *channel =
+      GetChannel(new_config, "/new", "aos.examples.Ping", "", nullptr);
+  ASSERT_TRUE(channel != nullptr);
+  ASSERT_TRUE(channel->has_schema());
+  ASSERT_TRUE(channel->has_source_node());
+  ASSERT_EQ("pi1", channel->source_node()->string_view());
+  ASSERT_EQ(971, channel->frequency());
+}
+
 }  // namespace testing
 }  // namespace configuration
 }  // namespace aos

@@ -227,6 +227,15 @@ std::optional<FlatbufferDetachedBuffer<reflection::Schema>>
 GetSchemaDetachedBuffer(const Configuration *config,
                         std::string_view schema_type);
 
+// Adds the specified channel to the config and returns the new, merged, config.
+// The channel name is derived from the specified name, the type and schema from
+// the provided schema, the source node from the specified node, and all other
+// fields (e.g., frequency) will be derived from the overrides parameter.
+aos::FlatbufferDetachedBuffer<Configuration> AddChannelToConfiguration(
+    const Configuration *config, std::string_view name,
+    aos::FlatbufferVector<reflection::Schema> schema,
+    const aos::Node *source_node = nullptr, ChannelT overrides = {});
+
 }  // namespace configuration
 
 // Compare and equality operators for Channel.  Note: these only check the name
