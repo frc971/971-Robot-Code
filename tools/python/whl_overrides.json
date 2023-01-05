@@ -27,6 +27,10 @@
         "sha256": "8337dd7b50877f163d4c0289bc1f1c7f127550241988d568c1db512c4324a619",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/ghp_import-2.1.0-py3-none-any.whl"
     },
+    "glog==0.3.1": {
+        "sha256": "88cee83dea8bddf73db7edbf5bd697237628389ef476c0a0ecad639c606189e5",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/glog-0.3.1-py2.py3-none-any.whl"
+    },
     "idna==3.4": {
         "sha256": "90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/idna-3.4-py3-none-any.whl"
@@ -103,6 +107,10 @@
         "sha256": "961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/python_dateutil-2.8.2-py2.py3-none-any.whl"
     },
+    "python_gflags==3.1.2": {
+        "sha256": "e2bd55abd9bb6e3b32026fd6c26a81c3f49979f24162fe73dc48da4fc306e74b",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/python_gflags-3.1.2-py3-none-any.whl"
+    },
     "pyyaml==6.0": {
         "sha256": "40527857252b61eacd1d9af500c3337ba8deb8fc298940291486c465c8b46ec0",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/PyYAML-6.0-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl"
@@ -122,6 +130,10 @@
     "scipy==1.9.3": {
         "sha256": "c68db6b290cbd4049012990d7fe71a2abd9ffbe82c0056ebe0f01df8be5436b0",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/scipy-1.9.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    },
+    "shapely==2.0.0": {
+        "sha256": "91bbca0378eb82f0808f0e59150ac0952086f4caaab87ad8515a5e55e896c21e",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/shapely-2.0.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     },
     "six==1.16.0": {
         "sha256": "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
