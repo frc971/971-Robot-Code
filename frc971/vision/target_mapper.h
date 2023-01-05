@@ -101,6 +101,9 @@ class DataAdapter {
     aos::distributed_clock::time_point time;
     // Pose of target relative to robot
     Eigen::Affine3d H_robot_target;
+    // Horizontal distance from camera to target, used for confidence
+    // calculation
+    double distance_from_camera;
     TargetMapper::TargetId id;
   };
 
@@ -131,7 +134,8 @@ class DataAdapter {
   // this matrix the "information"
   static Eigen::Matrix3d ComputeConfidence(
       aos::distributed_clock::time_point start,
-      aos::distributed_clock::time_point end);
+      aos::distributed_clock::time_point end, double distance_from_camera_start,
+      double distance_from_camera_end);
 
  private:
   static ceres::examples::Pose2d InterpolatePose(

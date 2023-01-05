@@ -50,21 +50,13 @@ Eigen::Affine3d CameraTransform(Eigen::Affine3d fixed_extrinsics,
 }
 
 // Change reference frame from camera to robot
-Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camcv_target,
+Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camrob_target,
                                        Eigen::Affine3d fixed_extrinsics,
                                        Eigen::Affine3d turret_extrinsics,
                                        double turret_position) {
-  // With X, Y, Z being robot axes and x, y, z being camera axes,
-  // x = -Y, y = -Z, z = X
-  const Eigen::Affine3d H_camcv_camrob =
-      Eigen::Affine3d((Eigen::Matrix4d() << 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0,
-                       0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-                          .finished());
-
   const Eigen::Affine3d H_robot_camrob =
       CameraTransform(fixed_extrinsics, turret_extrinsics, turret_position);
-  const Eigen::Affine3d H_robot_target =
-      H_robot_camrob * H_camcv_camrob.inverse() * H_camcv_target;
+  const Eigen::Affine3d H_robot_target = H_robot_camrob * H_camrob_target;
   return H_robot_target;
 }
 
@@ -94,15 +86,29 @@ void HandleAprilTag(aos::distributed_clock::time_point pi_distributed_time,
     Eigen::AngleAxisd r_angle = Eigen::AngleAxisd(
         rvecs_eigen[tag].norm(), rvecs_eigen[tag] / rvecs_eigen[tag].norm());
     CHECK(rvecs_eigen[tag].norm() != 0) << "rvecs norm = 0; divide by 0";
-    Eigen::Affine3d H_camcv_target = T_camera_target * r_angle;
 
+    Eigen::Affine3d H_camcv_target = T_camera_target * r_angle;
+    // With X, Y, Z being robot axes and x, y, z being camera axes,
+    // x = -Y, y = -Z, z = X
+    static const Eigen::Affine3d H_camcv_camrob =
+        Eigen::Affine3d((Eigen::Matrix4d() << 0.0, -1.0, 0.0, 0.0, 0.0, 0.0,
+                         -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+                            .finished());
+    Eigen::Affine3d H_camrob_target = H_camcv_camrob.inverse() * H_camcv_target;
     Eigen::Affine3d H_robot_target = CameraToRobotDetection(
-        H_camcv_target, fixed_extrinsics, turret_extrinsics, turret_position);
+        H_camrob_target, fixed_extrinsics, turret_extrinsics, turret_position);
+
+    ceres::examples::Pose2d target_pose_camera =
+        PoseUtils::Affine3dToPose2d(H_camrob_target);
+    double distance_from_camera = std::sqrt(std::pow(target_pose_camera.x, 2) +
+                                            std::pow(target_pose_camera.y, 2));
 
     timestamped_target_detections->emplace_back(
-        DataAdapter::TimestampedDetection{.time = pi_distributed_time,
-                                          .H_robot_target = H_robot_target,
-                                          .id = april_ids[tag][0]});
+        DataAdapter::TimestampedDetection{
+            .time = pi_distributed_time,
+            .H_robot_target = H_robot_target,
+            .distance_from_camera = distance_from_camera,
+            .id = april_ids[tag][0]});
   }
 }
 

@@ -149,7 +149,9 @@ DataAdapter::MatchTargetDetections(
     auto robot_pose = interpolated_poses[it->time];
     auto robot_delta_pose =
         PoseUtils::ComputeRelativePose(last_robot_pose, robot_pose);
-    auto confidence = ComputeConfidence(last_detection.time, it->time);
+    auto confidence = ComputeConfidence(last_detection.time, it->time,
+                                        last_detection.distance_from_camera,
+                                        it->distance_from_camera);
 
     target_constraints.emplace_back(ComputeTargetConstraint(
         last_detection, PoseUtils::Pose2dToAffine3d(robot_delta_pose), *it,
@@ -188,9 +190,9 @@ std::vector<ceres::examples::Constraint2d> DataAdapter::MatchTargetDetections(
       continue;
     }
 
-    // TODO(milind): better way to compute confidence since these detections are
-    // likely very close in time together
-    auto confidence = ComputeConfidence(last_detection.time, it->time);
+    auto confidence = ComputeConfidence(last_detection.time, it->time,
+                                        last_detection.distance_from_camera,
+                                        it->distance_from_camera);
     target_constraints.emplace_back(
         ComputeTargetConstraint(last_detection, *it, confidence));
   }
@@ -200,7 +202,8 @@ std::vector<ceres::examples::Constraint2d> DataAdapter::MatchTargetDetections(
 
 Eigen::Matrix3d DataAdapter::ComputeConfidence(
     aos::distributed_clock::time_point start,
-    aos::distributed_clock::time_point end) {
+    aos::distributed_clock::time_point end, double distance_from_camera_start,
+    double distance_from_camera_end) {
   constexpr size_t kX = 0;
   constexpr size_t kY = 1;
   constexpr size_t kTheta = 2;
@@ -221,14 +224,17 @@ Eigen::Matrix3d DataAdapter::ComputeConfidence(
   }
 
   {
-    // Noise for vision-based target localizations
+    // Noise for vision-based target localizations. Multiplying this matrix by
+    // the distance from camera to target squared results in the uncertainty in
+    // that measurement
     Eigen::Matrix3d Q_vision = Eigen::Matrix3d::Zero();
-    Q_vision(kX, kX) = std::pow(0.09, 2);
-    Q_vision(kY, kY) = std::pow(0.09, 2);
+    Q_vision(kX, kX) = std::pow(0.045, 2);
+    Q_vision(kY, kY) = std::pow(0.045, 2);
     Q_vision(kTheta, kTheta) = std::pow(0.02, 2);
 
     // Add uncertainty for the 2 vision measurements (1 at start and 1 at end)
-    P += 2.0 * Q_vision;
+    P += Q_vision * std::pow(distance_from_camera_start, 2);
+    P += Q_vision * std::pow(distance_from_camera_end, 2);
   }
 
   return P.inverse();
