@@ -23,7 +23,7 @@ def fast_gaussian(sigmas, sizes):
     objects = [f + ".o" for f in files] + [
         "fast_gaussian_runtime.o",
     ]
-    htmls = [f + ".html" for f in files]
+    htmls = [f + ".stmt.html" for f in files]
 
     native.genrule(
         name = "generate_fast_gaussian",
