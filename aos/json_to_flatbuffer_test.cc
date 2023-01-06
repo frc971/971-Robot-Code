@@ -215,6 +215,13 @@ TEST_F(JsonToFlatbufferTest, NestedStruct) {
   EXPECT_TRUE(JsonAndBack("{ \"apps\": [ {  }, {  } ] }"));
 }
 
+// Test mixing up whether a field is an object or a vector.
+TEST_F(JsonToFlatbufferTest, IncorrectVectorOfTables) {
+  EXPECT_FALSE(
+      JsonAndBack("{ \"single_application\": [ {\"name\": \"woot\"} ] }"));
+  EXPECT_FALSE(JsonAndBack("{ \"apps\": { \"name\": \"woot\" } }"));
+}
+
 // Test that we can parse an empty message.
 TEST_F(JsonToFlatbufferTest, EmptyMessage) {
   // Empty message works.

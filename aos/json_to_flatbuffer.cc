@@ -215,6 +215,14 @@ bool JsonParser::DoParse(FlatbufferType type, const std::string_view data,
             return false;
           }
 
+          if (in_vector() != stack_.back().type.FieldIsRepeating(field_index)) {
+            fprintf(stderr,
+                    "Field '%s' is%s supposed to be a vector, but is a %s.\n",
+                    stack_.back().field_name.c_str(), in_vector() ? " not" : "",
+                    in_vector() ? "vector" : "bare object");
+            return false;
+          }
+
           stack_.push_back({stack_.back().type.FieldType(field_index),
                             false,
                             -1,
