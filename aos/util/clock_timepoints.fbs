@@ -1,0 +1,27 @@
+include "aos/configuration.fbs";
+
+namespace aos;
+
+// Current clock values on a given node. Clock values + boot count will not be populated if
+// the node is not currently running.
+table NodeTimepoint {
+  // The name of the node that this clock corresponds to.
+  node:string (id: 0);
+  // Current boot count for this node (to allow observing reboots).
+  boot_count:int (id: 1);
+  // Current monotonic time of this clock, in nanoseconds.
+  monotonic_time:int64 (id: 2);
+  // Current realtime (UNIX epoch) time of this clock, in nanoseconds.
+  realtime_time:int64 (id: 3);
+}
+
+table ClockTimepoints {
+  // Current "distributed clock" time, in nanoseconds. This will roughly correspond to the
+  // average of the monotonic clocks across all devices, and will itself be monotonic.
+  distributed_clock:int64 (id: 0);
+  // Current clock values for every node. There will be an entry for every node, and the nodes
+  // will be in the same order as they are in in the config used to generated this message.
+  clocks:[NodeTimepoint] (id: 1);
+}
+
+root_type ClockTimepoints;

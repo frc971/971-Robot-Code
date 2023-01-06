@@ -1,6 +1,9 @@
+#include "aos/configuration.h"
 #include "aos/events/event_loop_generated.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/init.h"
+#include "aos/util/clock_publisher.h"
+#include "aos/util/clock_timepoints_schema.h"
 #include "aos/util/mcap_logger.h"
 
 DEFINE_string(node, "", "Node to replay from the perspective of.");
@@ -11,6 +14,9 @@ DEFINE_bool(
     "If set, use full channel names; by default, will shorten names to be the "
     "shortest possible version of the name (e.g., /aos instead of /pi/aos).");
 DEFINE_bool(compress, true, "Whether to use LZ4 compression in MCAP file.");
+DEFINE_bool(include_clocks, true,
+            "Whether to add a /clocks channel that publishes all nodes' clock "
+            "offsets.");
 
 // Converts an AOS log to an MCAP log that can be fed into Foxglove. To try this
 // out, run:
@@ -40,7 +46,22 @@ int main(int argc, char *argv[]) {
     replay_node = logger_node;
   }
 
-  aos::logger::LogReader reader(logfiles);
+  std::optional<aos::FlatbufferDetachedBuffer<aos::Configuration>> config;
+
+  if (FLAGS_include_clocks) {
+    aos::logger::LogReader config_reader(logfiles);
+
+    const aos::Configuration *raw_config = config_reader.configuration();
+    config = aos::configuration::AddChannelToConfiguration(
+        raw_config, "/clocks",
+        aos::FlatbufferSpan<reflection::Schema>(aos::ClockTimepointsSchema()),
+        replay_node.empty()
+            ? nullptr
+            : aos::configuration::GetNode(raw_config, replay_node));
+  }
+
+  aos::logger::LogReader reader(
+      logfiles, config.has_value() ? &config.value().message() : nullptr);
   aos::SimulatedEventLoopFactory factory(reader.configuration());
   reader.RegisterWithoutStarting(&factory);
 
@@ -49,6 +70,17 @@ int main(int argc, char *argv[]) {
        !aos::configuration::MultiNode(reader.configuration()))
           ? nullptr
           : aos::configuration::GetNode(reader.configuration(), replay_node);
+
+  std::unique_ptr<aos::EventLoop> clock_event_loop;
+  std::unique_ptr<aos::ClockPublisher> clock_publisher;
+  if (FLAGS_include_clocks) {
+    // TODO(james): Currently, because of RegisterWithoutStarting, this ends up
+    // running from t=0.0 rather than the start of the logfile. Fix that.
+    clock_event_loop =
+        reader.event_loop_factory()->MakeEventLoop("clock", node);
+    clock_publisher =
+        std::make_unique<aos::ClockPublisher>(&factory, clock_event_loop.get());
+  }
 
   std::unique_ptr<aos::EventLoop> mcap_event_loop =
       reader.event_loop_factory()->MakeEventLoop("mcap", node);

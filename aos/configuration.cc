@@ -1623,6 +1623,7 @@ aos::FlatbufferDetachedBuffer<Configuration> AddChannelToConfiguration(
     aos::FlatbufferVector<reflection::Schema> schema, const aos::Node *node,
     ChannelT overrides) {
   overrides.name = name;
+  CHECK(schema.message().has_root_table());
   overrides.type = schema.message().root_table()->name()->string_view();
   if (node != nullptr) {
     CHECK(node->has_name());

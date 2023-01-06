@@ -1,4 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("config_validator_macro.bzl", "config_validator_rule")
 
 package(default_visibility = ["//visibility:public"])
@@ -46,7 +47,10 @@ cc_binary(
     name = "log_to_mcap",
     srcs = ["log_to_mcap.cc"],
     deps = [
+        ":clock_publisher",
+        ":clock_timepoints_schema",
         ":mcap_logger",
+        "//aos:configuration",
         "//aos:init",
         "//aos/events/logging:log_reader",
         "//frc971/control_loops:control_loops_fbs",
@@ -72,6 +76,29 @@ cc_test(
         "//aos:flatbuffers",
         "//aos/events:event_loop_fbs",
         "//aos/testing:googletest",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "clock_timepoints_fbs",
+    srcs = ["clock_timepoints.fbs"],
+    gen_reflections = True,
+    deps = ["//aos:configuration_fbs"],
+)
+
+cc_static_flatbuffer(
+    name = "clock_timepoints_schema",
+    function = "aos::ClockTimepointsSchema",
+    target = ":clock_timepoints_fbs_reflection_out",
+)
+
+cc_library(
+    name = "clock_publisher",
+    srcs = ["clock_publisher.cc"],
+    hdrs = ["clock_publisher.h"],
+    deps = [
+        ":clock_timepoints_fbs",
+        "//aos/events:simulated_event_loop",
     ],
 )
 
