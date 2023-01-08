@@ -51,9 +51,18 @@ class CameraCalibration {
 // full-service callback functionality
 class ImageCallback {
  public:
+  enum class Format {
+    YUYV2 = 0,
+    BGR = 1,
+    GRAYSCALE = 2,
+  };
   ImageCallback(aos::EventLoop *event_loop, std::string_view channel,
                 std::function<void(cv::Mat, aos::monotonic_clock::time_point)>
                     &&handle_image_fn);
+
+  void set_format(Format format) {
+    format_ = format;
+  }
 
  private:
   void DisableTracing();
@@ -67,6 +76,8 @@ class ImageCallback {
   bool disabling_ = false;
 
   aos::Ftrace ftrace_;
+
+  Format format_ = Format::BGR;
 };
 
 // Class which calls a callback each time an image arrives with the information

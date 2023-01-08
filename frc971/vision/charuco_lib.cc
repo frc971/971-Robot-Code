@@ -168,9 +168,22 @@ ImageCallback::ImageCallback(
     cv::Mat image_color_mat(cv::Size(image.cols(), image.rows()), CV_8UC2,
                             (void *)image.data()->data());
     const cv::Size image_size(image.cols(), image.rows());
-    cv::Mat rgb_image(image_size, CV_8UC3);
-    cv::cvtColor(image_color_mat, rgb_image, cv::COLOR_YUV2BGR_YUYV);
-    handle_image_(rgb_image, eof);
+    switch (format_) {
+      case Format::GRAYSCALE: {
+        ftrace_.FormatMessage("Starting yuyv->greyscale\n");
+        cv::Mat gray_image(image_size, CV_8UC3);
+        cv::cvtColor(image_color_mat, gray_image, cv::COLOR_YUV2GRAY_YUYV);
+        handle_image_(gray_image, eof);
+      } break;
+      case Format::BGR: {
+        cv::Mat rgb_image(image_size, CV_8UC3);
+        cv::cvtColor(image_color_mat, rgb_image, cv::COLOR_YUV2BGR_YUYV);
+        handle_image_(rgb_image, eof);
+      } break;
+      case Format::YUYV2: {
+        handle_image_(image_color_mat, eof);
+      };
+    }
   });
 }
 
