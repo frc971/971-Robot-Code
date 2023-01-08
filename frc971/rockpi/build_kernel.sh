@@ -8,6 +8,10 @@ if [[ ! -e linux ]]; then
   ln -s ../.config linux/.config
 fi
 
+if [[ ! -e mali-driver ]]; then
+  git clone --branch master https://github.com/bootlin/mali-driver
+fi
+
 (
 cd linux
 
@@ -44,7 +48,13 @@ VERSION="$(cat linux/include/config/kernel.release)"
   make rockpi
 )
 
+(
+  cd mali-driver
+  make KDIR=$(realpath ../linux) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- all
+)
+
 cp ../../y2022/localizer/kernel/adis16505.ko "kernel-install/lib/modules/${VERSION}/kernel/"
+cp mali-driver/r8p0/drivers/gpu/arm/midgard/mali_kbase.ko "kernel-install/lib/modules/${VERSION}/kernel/"
 
 /sbin/depmod -b ./kernel-install ${VERSION}
 
