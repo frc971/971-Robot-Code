@@ -10,6 +10,7 @@
 #include "absl/base/call_once.h"
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
+#include "frc971/wpilib/wpilib_utils.h"
 #include "glog/logging.h"
 #include "y2022/control_loops/superstructure/catapult/integral_catapult_plant.h"
 #include "y2022/control_loops/superstructure/climber/integral_climber_plant.h"
@@ -362,6 +363,47 @@ Values MakeValues(uint16_t team) {
     default:
       LOG(FATAL) << "unknown team: " << team;
   }
+
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      Values::kClimberRange(), climber->potentiometer_offset,
+      [](double meters) { return meters / Values::kClimberPotMetersPerVolt(); },
+      false))
+      << "Couldn't translate climber pot";
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      Values::kFlipperArmRange(), flipper_arm_left->potentiometer_offset,
+      [](double radians) {
+        return radians / Values::kFlipperArmsPotRadiansPerVolt();
+      },
+      false))
+      << "Couldn't translate flipper left pot";
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      Values::kFlipperArmRange(), flipper_arm_right->potentiometer_offset,
+      [](double radians) {
+        return radians / Values::kFlipperArmsPotRadiansPerVolt();
+      },
+      true))
+      << "Couldn't translate flipper right pot";
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      Values::kIntakeRange(), intake_front->potentiometer_offset,
+      [](double radians) {
+        return radians / Values::kIntakePotRadiansPerVolt();
+      },
+      true))
+      << "Couldn't translate front intake pot";
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      Values::kIntakeRange(), intake_back->potentiometer_offset,
+      [](double radians) {
+        return radians / Values::kIntakePotRadiansPerVolt();
+      },
+      true))
+      << "Couldn't translate back intake pot";
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      *turret_range, turret->potentiometer_offset,
+      [](double radians) {
+        return radians / Values::kTurretPotRadiansPerVolt();
+      },
+      false))
+      << "Couldn't translate turret pot";
 
   return r;
 }
