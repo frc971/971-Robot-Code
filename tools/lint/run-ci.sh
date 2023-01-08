@@ -111,12 +111,11 @@ git_status_is_clean() {
 # All the linters that we are going to run.
 readonly -a LINTERS=(
     gofmt
-    # TODO(phil): Re-enable these. No idea what's going on.
-    #gomod
-    #update_go_repos
-    #gazelle
-    #tweak_gazelle_go_deps
-    #clean_up_go_mirrors
+    gomod
+    update_go_repos
+    gazelle
+    tweak_gazelle_go_deps
+    clean_up_go_mirrors
     rustfmt
     cargo_lockfile
     cargo_raze
