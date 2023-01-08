@@ -275,13 +275,24 @@
       "name": "message_bridge_client",
       "executable_name": "message_bridge_client",
       "args": ["--rt_priority=16"],
+      "user": "pi",
       "nodes": [
         "pi{{ NUM }}"
       ]
     },
     {
+      "name": "irq_affinity",
+      "executable_name": "irq_affinity",
+      "user": "root",
+      "args": ["--user=pi"],
+      "nodes": [
+          "pi{{ NUM }}"
+      ]
+    },
+    {
       "name": "message_bridge_server",
       "executable_name": "message_bridge_server",
+      "user": "pi",
       "nodes": [
         "pi{{ NUM }}"
       ]
@@ -289,6 +300,7 @@
     {
       "name": "web_proxy",
       "executable_name": "web_proxy_main",
+      "user": "pi",
       "nodes": [
         "pi{{ NUM }}"
       ]
@@ -297,6 +309,7 @@
       "name": "camera_reader",
       "executable_name": "camera_reader",
       "args": ["--enable_ftrace"],
+      "user": "pi",
       "nodes": [
         "pi{{ NUM }}"
       ]

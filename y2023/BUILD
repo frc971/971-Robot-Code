@@ -21,6 +21,7 @@ robot_downloader(
         "//aos/network:message_bridge_client",
         "//aos/network:message_bridge_server",
         "//aos/network:web_proxy_main",
+        "//aos/starter:irq_affinity",
         "//y2023/vision:camera_reader",
     ],
     target_compatible_with = ["//tools/platforms/hardware:raspberry_pi"],

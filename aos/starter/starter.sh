@@ -14,7 +14,7 @@ elif [[ "$(hostname)" == "pi-"* ]]; then
   # We have systemd configured to handle restarting, so just exec.
   export PATH="${PATH}:/home/pi/bin"
   rm -rf /dev/shm/aos
-  exec starterd
+  exec starterd --user=pi
 else
   ROBOT_CODE="${HOME}/bin"
 fi

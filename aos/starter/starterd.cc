@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     constexpr int kUnchanged = -1;
     if (setresgid(/* ruid */ gid, /* euid */ gid,
                   /* suid */ kUnchanged) != 0) {
-      PLOG(FATAL) << "Failed to change GID to " << FLAGS_user;
+      PLOG(FATAL) << "Failed to change GID to " << FLAGS_user << ", group " << gid;
     }
 
     if (setresuid(/* ruid */ uid, /* euid */ uid,

@@ -103,7 +103,8 @@ def main(argv):
         # permissions or the executables won't be visible to init.
         os.chmod(temp_dir, 0o775)
         # Starter needs to be SUID so we transition from lvuser to admin.
-        os.chmod(os.path.join(temp_dir, "starterd"), 0o775 | stat.S_ISUID)
+        if args.type != "pi":
+            os.chmod(os.path.join(temp_dir, "starterd"), 0o775 | stat.S_ISUID)
 
         rsync_cmd = ([
             "external/rsync/usr/bin/rsync",
