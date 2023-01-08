@@ -10,6 +10,8 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 
+#define PF_KTHREAD 0x00200000
+
 namespace aos::util {
 namespace {
 std::optional<std::string> ReadShortFile(std::string_view file_name) {
@@ -186,13 +188,16 @@ void Top::UpdateReadings() {
         ProcessStartTime(*proc_stat);
     auto reading_iter = readings_.find(pid);
     if (reading_iter == readings_.end()) {
-      reading_iter = readings_
-                         .insert(std::make_pair(
-                             pid, ProcessReadings{.name = proc_stat->name,
-                                                  .start_time = start_time,
-                                                  .cpu_percent = 0.0,
-                                                  .readings = {}}))
-                         .first;
+      reading_iter =
+          readings_
+              .insert(std::make_pair(
+                  pid, ProcessReadings{.name = proc_stat->name,
+                                       .start_time = start_time,
+                                       .cpu_percent = 0.0,
+                                       .kthread = !!(proc_stat->kernel_flags &
+                                                     PF_KTHREAD),
+                                       .readings = {}}))
+              .first;
     }
     ProcessReadings &process = reading_iter->second;
     // The process associated with the PID has changed; reset the state.
@@ -218,6 +223,10 @@ void Top::UpdateReadings() {
     } else {
       process.cpu_percent = 0.0;
     }
+  }
+
+  if (on_reading_update_) {
+    on_reading_update_();
   }
 }
 

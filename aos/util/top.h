@@ -95,11 +95,35 @@ std::optional<ProcStat> ReadProcStat(int pid);
 // extremely short-lived loads, this may do a poor job of capturing information.
 class Top {
  public:
+  // A snapshot of the resource usage of a process.
+  struct Reading {
+    aos::monotonic_clock::time_point reading_time;
+    std::chrono::nanoseconds total_run_time;
+    // Memory usage in bytes.
+    uint64_t memory_usage;
+  };
+
+  // All the information we have about a process.
+  struct ProcessReadings {
+    std::string name;
+    aos::monotonic_clock::time_point start_time;
+    // CPU usage is based on the past two readings.
+    double cpu_percent;
+    // True if this is a kernel thread, false if this is a userspace thread.
+    bool kthread;
+    // Last 2 readings
+    aos::RingBuffer<Reading, 2> readings;
+  };
+
   Top(aos::EventLoop *event_loop);
 
   // Set whether to track all the top processes (this will result in us having
   // to track every single process on the system, so that we can sort them).
   void set_track_top_processes(bool track_all) { track_all_ = track_all; }
+
+  void set_on_reading_update(std::function<void()> fn) {
+    on_reading_update_ = std::move(fn);
+  }
 
   // Specify a set of individual processes to track statistics for.
   // This can be changed at run-time, although it may take up to kSamplePeriod
@@ -116,23 +140,11 @@ class Top {
   flatbuffers::Offset<TopProcessesFbs> TopProcesses(
       flatbuffers::FlatBufferBuilder *fbb, int n);
 
+  const std::map<pid_t, ProcessReadings> &readings() const { return readings_; }
+
  private:
   // Rate at which to sample /proc/[pid]/stat.
   static constexpr std::chrono::seconds kSamplePeriod{1};
-
-  struct Reading {
-    aos::monotonic_clock::time_point reading_time;
-    std::chrono::nanoseconds total_run_time;
-    uint64_t memory_usage;
-  };
-
-  struct ProcessReadings {
-    std::string name;
-    aos::monotonic_clock::time_point start_time;
-    // CPU usage is based on the past two readings.
-    double cpu_percent;
-    aos::RingBuffer<Reading, 2> readings;
-  };
 
   std::chrono::nanoseconds TotalProcessTime(const ProcStat &proc_stat);
   aos::monotonic_clock::time_point ProcessStartTime(const ProcStat &proc_stat);
@@ -151,6 +163,8 @@ class Top {
   bool track_all_ = false;
 
   std::map<pid_t, ProcessReadings> readings_;
+
+  std::function<void()> on_reading_update_;
 };
 
 }  // namespace aos::util

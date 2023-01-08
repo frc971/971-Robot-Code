@@ -1,0 +1,26 @@
+namespace aos.starter;
+
+table IrqConfig {
+  name: string (id: 0);
+  affinity: [uint8] (id: 1);
+}
+
+enum Scheduler : uint8 {
+  SCHEDULER_OTHER = 0,
+  SCHEDULER_RR = 1,
+  SCHEDULER_FIFO = 2,
+}
+
+table KthreadConfig {
+  name: string (id: 0);
+  priority: int8 (id: 1);
+  scheduler: Scheduler = SCHEDULER_OTHER (id: 2);
+  affinity: [uint8] (id: 3);
+}
+
+table IrqAffinityConfig {
+  irqs: [IrqConfig] (id: 0);
+  kthreads: [KthreadConfig] (id: 1);
+}
+
+root_type IrqAffinityConfig;

@@ -172,6 +172,14 @@ flatbuffer_cc_library(
 )
 
 flatbuffer_cc_library(
+    name = "kthread_fbs",
+    srcs = ["kthread.fbs"],
+    gen_reflections = True,
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_cc_library(
     name = "starter_rpc_fbs",
     srcs = ["starter_rpc.fbs"],
     gen_reflections = True,
@@ -199,5 +207,40 @@ py_binary(
         "//aos/events:pingpong_config",
         "//aos/events:pong",
         "//aos/events/logging:logger_main",
+    ],
+)
+
+cc_library(
+    name = "irq_affinity_lib",
+    srcs = ["irq_affinity_lib.cc"],
+    hdrs = ["irq_affinity_lib.h"],
+    deps = [
+        "//aos/scoped:scoped_fd",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "irq_affinity",
+    srcs = [
+        "irq_affinity.cc",
+    ],
+    deps = [
+        ":irq_affinity_lib",
+        ":kthread_fbs",
+        "//aos:init",
+        "//aos:realtime",
+        "//aos/events:shm_event_loop",
+        "//aos/util:top",
+    ],
+)
+
+cc_test(
+    name = "irq_affinity_lib_test",
+    srcs = ["irq_affinity_lib_test.cc"],
+    deps = [
+        ":irq_affinity_lib",
+        "//aos/testing:googletest",
     ],
 )
