@@ -56,10 +56,17 @@ class ImageCallback {
                     &&handle_image_fn);
 
  private:
+  void DisableTracing();
+
   aos::EventLoop *event_loop_;
   aos::Fetcher<aos::message_bridge::ServerStatistics> server_fetcher_;
   const aos::Node *source_node_;
   std::function<void(cv::Mat, aos::monotonic_clock::time_point)> handle_image_;
+  aos::TimerHandler *timer_fn_;
+
+  bool disabling_ = false;
+
+  aos::Ftrace ftrace_;
 };
 
 // Class which calls a callback each time an image arrives with the information

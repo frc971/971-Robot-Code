@@ -29,6 +29,11 @@ DEFINE_string(target_type, "charuco",
               "Type of target: april_tag|aruco|charuco|charuco_diamond");
 DEFINE_bool(visualize, false, "Whether to visualize the resulting data.");
 
+DEFINE_uint32(age, 5, "Age to start dropping frames at.");
+DEFINE_uint32(disable_delay, 100, "Time after an issue to disable tracing at.");
+
+DECLARE_bool(enable_ftrace);
+
 namespace frc971 {
 namespace vision {
 namespace chrono = std::chrono;
@@ -102,7 +107,8 @@ ImageCallback::ImageCallback(
           event_loop_->GetChannel<CameraImage>(channel)
               ->source_node()
               ->string_view())),
-      handle_image_(std::move(handle_image_fn)) {
+      handle_image_(std::move(handle_image_fn)),
+      timer_fn_(event_loop->AddTimer([this]() { DisableTracing(); })) {
   event_loop_->MakeWatcher(channel, [this](const CameraImage &image) {
     const monotonic_clock::time_point eof_source_node =
         monotonic_clock::time_point(
@@ -141,7 +147,20 @@ ImageCallback::ImageCallback(
     const monotonic_clock::duration age = event_loop_->monotonic_now() - eof;
     const double age_double =
         std::chrono::duration_cast<std::chrono::duration<double>>(age).count();
-    if (age > std::chrono::milliseconds(100)) {
+    if (age > std::chrono::milliseconds(FLAGS_age)) {
+      if (FLAGS_enable_ftrace) {
+        ftrace_.FormatMessage("Too late receiving image, age: %f\n",
+                              age_double);
+        if (FLAGS_disable_delay > 0) {
+          if (!disabling_) {
+            timer_fn_->Setup(event_loop_->monotonic_now() +
+                             chrono::milliseconds(FLAGS_disable_delay));
+            disabling_ = true;
+          }
+        } else {
+          DisableTracing();
+        }
+      }
       VLOG(2) << "Age: " << age_double << ", getting behind, skipping";
       return;
     }
@@ -153,6 +172,11 @@ ImageCallback::ImageCallback(
     cv::cvtColor(image_color_mat, rgb_image, cv::COLOR_YUV2BGR_YUYV);
     handle_image_(rgb_image, eof);
   });
+}
+
+void ImageCallback::DisableTracing() {
+  disabling_ = false;
+  ftrace_.TurnOffOrDie();
 }
 
 void CharucoExtractor::SetupTargetData() {
