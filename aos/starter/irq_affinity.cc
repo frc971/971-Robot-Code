@@ -296,8 +296,16 @@ int main(int argc, char **argv) {
       "affinity": [2]
     },
     {
+      "name": "ff6e0000.dma-controller",
+      "affinity": [0]
+    },
+    {
+      "name": "ff1d0000.spi",
+      "affinity": [0]
+    },
+    {
       "name": "eth0",
-      "affinity": [3]
+      "affinity": [1]
     }
   ],
   "kthreads": [
@@ -340,7 +348,13 @@ int main(int argc, char **argv) {
     {
       "name": "irq/*-adis16505",
       "scheduler": "SCHEDULER_FIFO",
-      "priority": 58,
+      "priority": 59,
+      "affinity": [0]
+    },
+    {
+      "name": "irq/*-ff6e0000.dma-controller",
+      "scheduler": "SCHEDULER_FIFO",
+      "priority": 59,
       "affinity": [0]
     },
     {
