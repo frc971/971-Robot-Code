@@ -1,8 +1,4 @@
 load(
-    "//debian:python.bzl",
-    python_debs = "files",
-)
-load(
     ":apache2.bzl",
     apache2_debs = "files",
 )
@@ -39,16 +35,8 @@ load(
     patchelf_debs = "files",
 )
 load(
-    ":matplotlib.bzl",
-    matplotlib_debs = "files",
-)
-load(
     ":arm_frc_gnueabi_deps.bzl",
     arm_frc_gnueabi_deps_debs = "files",
-)
-load(
-    ":python_gtk.bzl",
-    python_gtk_debs = "files",
 )
 load(
     ":gtk_runtime.bzl",
@@ -97,38 +85,6 @@ load(
 load(":packages.bzl", "download_packages", "generate_deb_tarball")
 
 package(default_visibility = ["//visibility:public"])
-
-filegroup(
-    name = "matplotlib_patches",
-    srcs = [
-        "matplotlib_init.patch",
-    ],
-    visibility = ["@matplotlib_repo//:__pkg__"],
-)
-
-filegroup(
-    name = "python_shapely_patches",
-    srcs = [
-        "python_shapely_init.patch",
-    ],
-    visibility = ["@python_gtk//:__pkg__"],
-)
-
-filegroup(
-    name = "python_gi_patches",
-    srcs = [
-        "python_gi_init.patch",
-    ],
-    visibility = ["@python_gtk//:__pkg__"],
-)
-
-filegroup(
-    name = "python_geos_patches",
-    srcs = [
-        "python_geos.patch",
-    ],
-    visibility = ["@python_gtk//:__pkg__"],
-)
 
 py_binary(
     name = "download_packages",
@@ -185,20 +141,6 @@ download_packages(
         "libgtk-3-dev",
         "librsvg2-common",
     ],
-)
-
-download_packages(
-    name = "download_python_deps",
-    excludes = [
-        "libblas.so.3",
-        "liblapack.so.3",
-    ],
-    packages = [
-        "python3-dev",
-        "python3-numpy",
-        "python3-scipy",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
 )
 
 download_packages(
@@ -285,24 +227,6 @@ download_packages(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-download_packages(
-    name = "download_matplotlib_deps",
-    excludes = [
-        "python3-dev",
-        "python3-numpy",
-        "python3-scipy",
-        "x11-common",
-        "fonts-freefont",
-        "python3",
-        "libcups2",
-    ],
-    packages = [
-        "python3-matplotlib",
-        "python3-tk",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
 # This list was obtained by manually looking at the output from:
 # find bazel-out/../../../external/arm_frc_linux_gnueabi_repo/ -executable -type f -exec ldd {} + | sed 's/=>.*//g' | sort -u
 download_packages(
@@ -318,35 +242,6 @@ download_packages(
         "libtinfo5",
         "zlib1g",
     ],
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-download_packages(
-    name = "download_python_gtk_deps",
-    excludes = [
-        "fonts-freefont",
-        "gsettings-backend",
-        "libpng-dev",
-        "libz-dev",
-        "python3-dev",
-        "python3",
-        "libblas.so.3",
-        "liblapack.so.3",
-        "libstdc++-dev",
-    ],
-    packages = [
-        "libgtk-3-dev",
-        "python3-cairo",
-        "python3-gi",
-        "python3-gi-cairo",
-        "python3-shapely",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-generate_deb_tarball(
-    name = "python",
-    files = python_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
@@ -405,20 +300,8 @@ generate_deb_tarball(
 )
 
 generate_deb_tarball(
-    name = "matplotlib",
-    files = matplotlib_debs,
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-generate_deb_tarball(
     name = "arm_frc_gnueabi_deps",
     files = arm_frc_gnueabi_deps_debs,
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-generate_deb_tarball(
-    name = "python_gtk",
-    files = python_gtk_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

@@ -8,19 +8,6 @@ platform(
         "//tools/platforms/go:has_support",
         "//tools/platforms/rust:has_support",
         "//tools/platforms/nodejs:has_support",
-        "//tools/platforms/python:upstream_bundled_python",
-    ],
-)
-
-# TODO(phil): Delete this platform after migrating everything to use upstream
-# pip rules.
-platform(
-    name = "linux_x86_legacy_python",
-    constraint_values = [
-        "//tools/platforms/python:debian_bundled_python",
-    ],
-    parents = [
-        ":linux_x86",
     ],
 )
 

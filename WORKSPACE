@@ -89,10 +89,6 @@ load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
 rules_pkg_dependencies()
 
 load(
-    "//debian:python.bzl",
-    python_debs = "files",
-)
-load(
     "//debian:apache2.bzl",
     apache2_debs = "files",
 )
@@ -129,16 +125,8 @@ load(
     patchelf_debs = "files",
 )
 load(
-    "//debian:matplotlib.bzl",
-    matplotlib_debs = "files",
-)
-load(
     "//debian:arm_frc_gnueabi_deps.bzl",
     arm_frc_gnueabi_deps_debs = "files",
-)
-load(
-    "//debian:python_gtk.bzl",
-    python_gtk_debs = "files",
 )
 load(
     "//debian:gtk_runtime.bzl",
@@ -190,8 +178,6 @@ load(
 )
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
-generate_repositories_for_debs(python_debs)
-
 generate_repositories_for_debs(rsync_debs)
 
 generate_repositories_for_debs(ssh_debs)
@@ -210,11 +196,7 @@ generate_repositories_for_debs(mingw_compiler_debs)
 
 generate_repositories_for_debs(patchelf_debs)
 
-generate_repositories_for_debs(matplotlib_debs)
-
 generate_repositories_for_debs(arm_frc_gnueabi_deps_debs)
-
-generate_repositories_for_debs(python_gtk_debs)
 
 generate_repositories_for_debs(gtk_runtime_debs)
 
@@ -384,7 +366,6 @@ register_toolchains(
     # Find a good way to select between these two M4F toolchains.
     #"//tools/cpp:cc-toolchain-cortex-m4f-k22",
     "//tools/python:python_toolchain",
-    "//tools/python:upstream_python_toolchain",
     "//tools/go:noop_go_toolchain",
     "//tools/rust:rust-toolchain-x86",
     "//tools/rust:rust-toolchain-armv7",
@@ -394,13 +375,6 @@ register_toolchains(
     #"//tools/rust:rust-toolchain-roborio",
     "//tools/rust:noop_rust_toolchain",
     "//tools/ts:noop_node_toolchain",
-)
-
-http_archive(
-    name = "python_repo",
-    build_file = "@//debian:python.BUILD",
-    sha256 = "048c51872f9c3853ae4e961c710533f477194a3f170b454e8d582f32a83e90f5",
-    url = "https://www.frc971.org/Build-Dependencies/python-6.tar.gz",
 )
 
 http_archive(
@@ -530,36 +504,9 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/2022-01-06-debian-bullseye_rootfs.tar.bz2",
 )
 
-new_git_repository(
-    name = "python_gflags_repo",
-    build_file = "@//debian:gflags.BUILD",
-    commit = "41c4571864f0db5823e07715317e7388e94faabc",
-    remote = "https://github.com/gflags/python-gflags.git",
-)
-
-bind(
-    name = "python-gflags",
-    actual = "@python_gflags_repo//:gflags",
-)
-
 local_repository(
     name = "com_github_gflags_gflags",
     path = "third_party/gflags",
-)
-
-# Downloaded from:
-# https://pypi.python.org/packages/source/g/glog/glog-0.1.tar.gz
-http_archive(
-    name = "python_glog_repo",
-    build_file = "@//debian:glog.BUILD",
-    sha256 = "953fd80122c48023d1148e6d1bda2763fcab59c8a81682bb298238a5935547b0",
-    strip_prefix = "glog-0.1",
-    url = "https://www.frc971.org/Build-Dependencies/glog-0.1.tar.gz",
-)
-
-bind(
-    name = "python-glog",
-    actual = "@python_glog_repo//:glog",
 )
 
 # Generated with:
@@ -572,20 +519,10 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/allwpilib_ni-libraries_776db4e8aed31a651fa2f590e7468c69b384b42a.tar.gz",
 )
 
-# Downloaded from:
-# https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz
-http_archive(
-    name = "six_repo",
-    build_file = "@//debian:six.BUILD",
-    sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",
-    strip_prefix = "six-1.10.0",
-    url = "https://www.frc971.org/Build-Dependencies/six-1.10.0.tar.gz",
-)
-
 # For protobuf. Don't use these.
 bind(
     name = "six",
-    actual = "@six_repo//:six",
+    actual = "@pip//six",
 )
 
 bind(
@@ -680,16 +617,6 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/mingw_compiler.tar.gz",
 )
 
-# Note that we should generally keep the matplotlib repo in a folder not
-# named matplotlib, because otherwise the repository itself tends to end up
-# on the PYTHONPATH, rather than the matplotlib folder within this repo.
-http_archive(
-    name = "matplotlib_repo",
-    build_file = "@//debian:matplotlib.BUILD",
-    sha256 = "71d1512f1a9a3c90496f0ef3adcd46c4e5e4da4310d7cbb6b0da01a07e5e76e8",
-    url = "https://www.frc971.org/Build-Dependencies/matplotlib-6.tar.gz",
-)
-
 http_archive(
     name = "patchelf",
     build_file = "@//debian:patchelf.BUILD",
@@ -702,13 +629,6 @@ http_archive(
     build_file = "@//debian:arm_frc_gnueabi_deps.BUILD",
     sha256 = "4b26fe45010817dc136488ee1604ade21bd7c264c29f17d864fc6eba9d7442c4",
     url = "https://www.frc971.org/Build-Dependencies/arm_frc_gnueabi_deps.tar.gz",
-)
-
-http_archive(
-    name = "python_gtk",
-    build_file = "@//debian:python_gtk.BUILD",
-    sha256 = "36db18fc2b2c9012312b5d1cdc3d392d7e9756040f759ea50cb623fea29ae817",
-    url = "https://www.frc971.org/Build-Dependencies/python_gtk-4.tar.gz",
 )
 
 http_archive(
@@ -1029,32 +949,6 @@ http_archive(
     url = "https://github.com/halide/Halide/releases/download/v14.0.0/Halide-14.0.0-arm-32-linux-6b9ed2afd1d6d0badf04986602c943e287d44e46.tar.gz",
 )
 
-# Downloaded from:
-# https://files.pythonhosted.org/packages/0f/13/192104516c4a3d92dc6b5e106ffcfbf0fe35f3c4faa49650205ff652af72/opencv_python-4.5.1.48-cp37-cp37m-manylinux2014_x86_64.whl
-http_archive(
-    name = "opencv_contrib_nonfree_amd64",
-    build_file = "@//debian:opencv_python.BUILD",
-    sha256 = "a1dfa0486db367594510c0c799ec7481247dc86e651b69008806d875ab731471",
-    type = "zip",
-    url = "https://www.frc971.org/Build-Dependencies/opencv_python-4.5.1.48-cp39-cp39-manylinux2014_x86_64.whl",
-)
-
-http_archive(
-    name = "osqp_amd64",
-    build_file = "@//debian:osqp_python.BUILD",
-    sha256 = "8003fc363f707daa46fef3af548e6a580372154d6cd49a7bf2f569ba5f807d15",
-    type = "zip",
-    url = "https://files.pythonhosted.org/packages/3f/e2/f1c40e890f00f8a566bc2481d0f215e52def3dfe8eea6b8ad4cc2d3cbca2/osqp-0.6.2.post5-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-)
-
-http_archive(
-    name = "qdldl_amd64",
-    build_file = "@//debian:qdldl_python.BUILD",
-    sha256 = "2c09f4b1a1c6f3a0579af004443417e084491e7c844ff9fb73170bb5d43f70b5",
-    type = "zip",
-    url = "https://files.pythonhosted.org/packages/9e/26/ccb4f065b40c1e9ff35ee66970d4fa97dd2fe221b846da2110eb8cd6c3f4/qdldl-0.1.5.post0-cp39-cp39-manylinux2014_x86_64.whl",
-)
-
 http_archive(
     name = "gstreamer_k8",
     build_file = "@//debian:gstreamer.BUILD",
@@ -1074,34 +968,6 @@ http_archive(
     build_file = "@//debian:gstreamer.BUILD",
     sha256 = "42b414c565ffdbae3d2d7796a66da9de42a650de757fa6554fd624f0cc3aaa9b",
     url = "https://www.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_arm64.tar.gz",
-)
-
-# Downloaded from:
-# https://files.pythonhosted.org/packages/64/a7/45e11eebf2f15bf987c3bc11d37dcc838d9dc81250e67e4c5968f6008b6c/Jinja2-2.11.2.tar.gz
-http_archive(
-    name = "python_jinja2",
-    build_file = "@//debian:python_jinja2.BUILD",
-    sha256 = "89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0",
-    strip_prefix = "Jinja2-2.11.2",
-    url = "https://www.frc971.org/Build-Dependencies/Jinja2-2.11.2.tar.gz",
-)
-
-# Downloaded from:
-# https://files.pythonhosted.org/packages/b9/2e/64db92e53b86efccfaea71321f597fa2e1b2bd3853d8ce658568f7a13094/MarkupSafe-1.1.1.tar.gz
-http_archive(
-    name = "python_markupsafe",
-    build_file = "@//debian:python_markupsafe.BUILD",
-    sha256 = "29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b",
-    strip_prefix = "MarkupSafe-1.1.1",
-    url = "https://www.frc971.org/Build-Dependencies/MarkupSafe-1.1.1.tar.gz",
-)
-
-http_archive(
-    name = "python_yapf",
-    build_file = "@//debian:python_yapf.BUILD",
-    sha256 = "410ed0f592c898d75d73f7792aee6569bdbc0b57bc72b417c722c17f41f66b12",
-    strip_prefix = "yapf-0.32.0",
-    url = "https://github.com/google/yapf/archive/refs/tags/v0.32.0.tar.gz",
 )
 
 # //debian:lzma_amd64

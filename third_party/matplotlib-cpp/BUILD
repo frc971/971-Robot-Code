@@ -5,28 +5,18 @@ cc_library(
     hdrs = [
         "matplotlibcpp.h",
     ],
-    data = select({
-        "//tools/platforms/python:debian_bundled_python": [
-            "@matplotlib_repo//:matplotlib3",
-        ],
-        "//tools/platforms/python:upstream_bundled_python": [
-            "@pip//matplotlib",
-            "@pip//pygobject",
-        ],
-    }) + [
+    data = [
         "//third_party/python:python_runtime",
+        "@pip//matplotlib",
+        "@pip//pygobject",
     ],
     # While this is technically compatible with "linux", the
     # "@python_repo//:all_files" has x86 binaries in it.
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
-    deps = select({
-        "//tools/platforms/python:debian_bundled_python": [],
-        "//tools/platforms/python:upstream_bundled_python": [
-            "//third_party/python:numpy_cc",
-        ],
-    }) + [
+    deps = [
         "//third_party/python",
+        "//third_party/python:numpy_cc",
     ],
 )
 

@@ -29,12 +29,6 @@ for path in ${PYTHONPATH//:/ }; do
     LD_LIBRARY_PATH+=":${path}/../gtk_runtime/usr/lib"
     export LD_LIBRARY_PATH
     break
-  elif [[ "$path" == *.runfiles/python_repo ]]; then
-    PYTHON_BIN="$path"/usr/bin/python3
-    LD_LIBRARY_PATH="${path}/lib/x86_64-linux-gnu:${path}/usr/lib:${path}/usr/lib/x86_64-linux-gnu:${path}/../matplotlib_repo/usr/lib"
-    LD_LIBRARY_PATH+=":${path}/usr/lib/lapack:${path}/usr/lib/libblas:${path}/../matplotlib_repo/rpathed3/usr/lib:${path}/usr/lib/x86_64-linux-gnu/lapack:${path}/usr/lib/x86_64-linux-gnu/blas"
-    export LD_LIBRARY_PATH
-    break
   fi
 done
 
