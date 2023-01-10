@@ -49,6 +49,18 @@
       ]
     },
     {
+      "name": "/pi1/aos/remote_timestamps/pi2/pi1/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "pi1",
+      "frequency": 15
+    },
+    {
+      "name": "/pi2/aos/remote_timestamps/pi1/pi2/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "pi2",
+      "frequency": 15
+    },
+    {
       "name": "/pi1/aos",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "pi1",
@@ -73,17 +85,6 @@
       "frequency": 15
     },
     {
-      "name": "/pi1/aos/remote_timestamps/pi2",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "pi1"
-    },
-    {
-      "name": "/pi2/aos/remote_timestamps/pi1",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "pi2",
-      "frequency": 15
-    },
-    {
       "name": "/pi1/aos",
       "type": "aos.timing.Report",
       "source_node": "pi1",
@@ -100,44 +101,61 @@
       "max_size": 2048
     },
     {
-      "name": "/test",
+      "name": "/pi1/aos/remote_timestamps/pi2/nominal/aos-examples-Ping",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "pi1",
+      "frequency": 15
+    },
+    {
+      "name": "/pi1/aos/remote_timestamps/pi2/timestamps_too_slow/aos-examples-Ping",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "pi1",
+      /* This frequency is configured lower than it should be. This will cause errors. */
+      "frequency": 5
+    },
+    {
+      "name": "/pi1/aos/remote_timestamps/pi2/timestamps_too_fast/aos-examples-Ping",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "pi1",
+      /* This frequency is configured higher than it should be. This should not cause errors. */
+      "frequency": 10000
+    },
+    {
+      "name": "/nominal",
       "type": "aos.examples.Ping",
       "source_node": "pi1",
+      "frequency": 15,
       "destination_nodes": [
         {
           "name": "pi2",
-          "priority": 1,
           "timestamp_logger": "REMOTE_LOGGER",
           "timestamp_logger_nodes": ["pi1"]
         }
       ]
     },
     {
-      "name": "/test",
-      "type": "aos.examples.Pong",
-      "source_node": "pi2",
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": ["pi1"],
+      "name": "/timestamps_too_slow",
+      "type": "aos.examples.Ping",
+      "source_node": "pi1",
+      "frequency": 15,
       "destination_nodes": [
         {
-          "name": "pi1",
-          "priority": 1,
+          "name": "pi2",
           "timestamp_logger": "REMOTE_LOGGER",
           "timestamp_logger_nodes": ["pi1"]
         }
       ]
     },
     {
-      "name": "/unreliable",
+      "name": "/timestamps_too_fast",
       "type": "aos.examples.Ping",
       "source_node": "pi1",
+      "frequency": 15,
       "destination_nodes": [
         {
           "name": "pi2",
-          "priority": 1,
           "timestamp_logger": "REMOTE_LOGGER",
-          "timestamp_logger_nodes": ["pi1"],
-          "time_to_live": 5000000
+          "timestamp_logger_nodes": ["pi1"]
         }
       ]
     }
@@ -165,14 +183,12 @@
   "nodes": [
     {
       "name": "pi1",
-      "hostname": "localhost",
-      "hostnames": ["raspberrypi"],
+      "hostname": "pi1",
       "port": 9971
     },
     {
       "name": "pi2",
-      "hostname": "localhost",
-      "hostnames": ["raspberrypi2"],
+      "hostname": "pi2",
       "port": 9972
     }
   ]

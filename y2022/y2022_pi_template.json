@@ -218,14 +218,14 @@
     {
       "name": "/pi{{ NUM }}/aos/remote_timestamps/imu/pi{{ NUM }}/camera/y2022-vision-TargetEstimate",
       "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 50,
+      "frequency": 80,
       "source_node": "pi{{ NUM }}",
       "max_size": 208
     },
     {
       "name": "/pi{{ NUM }}/aos/remote_timestamps/logger/pi{{ NUM }}/camera/y2022-vision-TargetEstimate",
       "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 50,
+      "frequency": 80,
       "source_node": "pi{{ NUM }}",
       "max_size": 208
     },
@@ -300,7 +300,7 @@
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "logger",
       "logger": "NOT_LOGGED",
-      "frequency": 20,
+      "frequency": 50,
       "num_senders": 2,
       "max_size": 200
     },
@@ -350,7 +350,7 @@
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "roborio",
       "logger": "NOT_LOGGED",
-      "frequency": 20,
+      "frequency": 50,
       "num_senders": 2,
       "max_size": 200
     }

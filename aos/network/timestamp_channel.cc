@@ -109,6 +109,13 @@ aos::Sender<RemoteMessage> *ChannelTimestampSender::SenderForChannel(
 
   const Channel *timestamp_channel = finder.ForChannel(channel, connection);
 
+  // Sanity-check that the timestamp channel can actually support full-rate
+  // messages coming through on the source channel.
+  CHECK_GE(timestamp_channel->frequency(), channel->frequency())
+      << ": Timestamp channel "
+      << configuration::StrippedChannelToString(timestamp_channel)
+      << "'s rate is lower than the source channel.";
+
   {
     auto it = timestamp_loggers_.find(timestamp_channel);
     if (it != timestamp_loggers_.end()) {
