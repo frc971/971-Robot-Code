@@ -285,18 +285,21 @@ V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
   memset(&format, 0, sizeof(format));
   format.type = multiplanar() ? V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE
                               : V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  format.fmt.pix.width = cols_;
-  format.fmt.pix.height = rows_;
+
+  constexpr int kWidth = 640;
+  constexpr int kHeight = 480;
+  format.fmt.pix.width = kWidth;
+  format.fmt.pix.height = kHeight;
   format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
   // This means we want to capture from a progressive (non-interlaced)
   // source.
   format.fmt.pix.field = V4L2_FIELD_NONE;
   PCHECK(Ioctl(VIDIOC_S_FMT, &format) == 0);
-  CHECK_EQ(static_cast<int>(format.fmt.pix.width), cols_);
-  CHECK_EQ(static_cast<int>(format.fmt.pix.height), rows_);
+  CHECK_EQ(static_cast<int>(format.fmt.pix.width), kWidth);
+  CHECK_EQ(static_cast<int>(format.fmt.pix.height), kHeight);
   CHECK_EQ(static_cast<int>(format.fmt.pix.bytesperline),
-           cols_ * 2 /* bytes per pixel */);
-  CHECK_EQ(format.fmt.pix.sizeimage, ImageSize());
+           kWidth * 2 /* bytes per pixel */);
+  CHECK_EQ(format.fmt.pix.sizeimage, ImageSize(kHeight, kWidth));
 
   StreamOn();
 }
