@@ -1,0 +1,11 @@
+include "frc971/control_loops/profiled_subsystem.fbs";
+
+namespace y2023.control_loops.superstructure;
+
+
+table Goal {
+}
+
+
+
+root_type Goal;

@@ -81,6 +81,7 @@ cc_binary(
     visibility = [
         "//y2020:__subpackages__",
         "//y2022:__subpackages__",
+        "//y2023:__subpackages__",
     ],
     deps = [
         "//aos:init",

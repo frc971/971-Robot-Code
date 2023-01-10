@@ -303,7 +303,7 @@
   "applications": [
     {
       "name": "message_bridge_client",
-      "executable_name": "message_bridge_client",
+      "executable_name": "message_bridge_client.sh",
       "nodes": [
         "imu"
       ]

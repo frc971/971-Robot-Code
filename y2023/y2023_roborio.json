@@ -256,6 +256,36 @@
       ]
     },
     {
+      "name": "/superstructure",
+      "type": "y2023.control_loops.superstructure.Goal",
+      "source_node": "roborio",
+      "frequency": 200,
+      "max_size": 512
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2023.control_loops.superstructure.Status",
+      "source_node": "roborio",
+      "frequency": 400,
+      "num_senders": 2
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2023.control_loops.superstructure.Output",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 2,
+      "max_size": 224
+    },
+    {
+      "name": "/superstructure",
+      "type": "y2023.control_loops.superstructure.Position",
+      "source_node": "roborio",
+      "frequency": 200,
+      "num_senders": 2,
+      "max_size": 448
+    },
+    {
       "name": "/drivetrain",
       "type": "frc971.sensors.GyroReading",
       "source_node": "roborio",
@@ -423,6 +453,13 @@
       ]
     },
     {
+      "name": "superstructure",
+      "executable_name": "superstructure",
+      "nodes": [
+        "roborio"
+      ]
+    },
+    {
       "name": "joystick_reader",
       "executable_name": "joystick_reader",
       "nodes": [
@@ -453,7 +490,7 @@
     },
     {
       "name": "roborio_message_bridge_client",
-      "executable_name": "message_bridge_client",
+      "executable_name": "message_bridge_client.sh",
       "args": ["--rt_priority=16"],
       "nodes": [
         "roborio"

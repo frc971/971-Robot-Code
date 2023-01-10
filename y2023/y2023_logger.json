@@ -13,10 +13,70 @@
           "name": "logger",
           "priority": 1,
           "time_to_live": 5000000,
-          "timestamp_logger" : "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes" : ["roborio"]
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
         }
       ]
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Position",
+      "source_node": "roborio",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "logger"
+      ],
+      "destination_nodes": [
+        {
+          "name": "logger",
+          "priority": 2,
+          "time_to_live": 500000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/logger/drivetrain/frc971-control_loops-drivetrain-Position",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 400,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.Output",
+      "source_node": "roborio",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "logger"
+      ],
+      "destination_nodes": [
+        {
+          "name": "logger",
+          "priority": 2,
+          "time_to_live": 500000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/logger/drivetrain/frc971-control_loops-drivetrain-Output",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 400,
+      "num_senders": 2,
+      "max_size": 400
     },
     {
       "name": "/pi1/aos",
@@ -319,8 +379,8 @@
     {
       "name": "/localizer",
       "type": "frc971.IMUValuesBatch",
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
       "source_node": "imu",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
         "logger"
       ],
@@ -352,14 +412,16 @@
         "name": "/logger/camera"
       }
     }
-
   ],
   "applications": [
     {
       "name": "logger_message_bridge_client",
-      "executable_name": "message_bridge_client",
       "autostart": false,
-      "args": ["--rmem=8388608", "--rt_priority=16"],
+      "executable_name": "message_bridge_client.sh",
+      "args": [
+        "--rmem=8388608",
+        "--rt_priority=16"
+      ],
       "nodes": [
         "logger"
       ]
@@ -368,7 +430,9 @@
       "name": "logger_message_bridge_server",
       "executable_name": "message_bridge_server",
       "autostart": false,
-      "args": ["--rt_priority=16"],
+      "args": [
+        "--rt_priority=16"
+      ],
       "nodes": [
         "logger"
       ]
@@ -377,7 +441,14 @@
       "name": "image_logger",
       "executable_name": "logger_main",
       "autostart": false,
-      "args": ["--snappy_compress", "--logging_folder", "", "--snappy_compress", "--rotate_every", "60.0"],
+      "args": [
+        "--snappy_compress",
+        "--logging_folder",
+        "",
+        "--snappy_compress",
+        "--rotate_every",
+        "60.0"
+      ],
       "nodes": [
         "logger"
       ]
