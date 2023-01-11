@@ -3,6 +3,91 @@ workspace(name = "org_frc971")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load("@bazel_tools//tools/jdk:remote_java_repository.bzl", "remote_java_repository")
+load("//tools/ci:repo_defs.bzl", "ci_configure")
+
+ci_configure(name = "ci_configure")
+
+load("@ci_configure//:ci.bzl", "RUNNING_IN_CI")
+
+http_archive(
+    name = "platforms",
+    sha256 = "2c8d8347427e6bb0ba7cf9f933c08fe2be2b62ff2454546ad852f7bf267aad87",
+    strip_prefix = "platforms-e658a6af526089406d0057160542597501ba65d7",
+    url = "https://github.com/bazelbuild/platforms/archive/e658a6af526089406d0057160542597501ba65d7.zip",
+)
+
+http_archive(
+    name = "bazel_skylib",
+    sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "rules_python",
+    patch_args = ["-p1"],
+    patches = [
+        "//third_party:rules_python/0001-Support-overriding-individual-packages.patch",
+        "//third_party:rules_python/0002-Allow-user-to-patch-wheels.patch",
+    ],
+    sha256 = "497ca47374f48c8b067d786b512ac10a276211810f4a580178ee9b9ad139323a",
+    strip_prefix = "rules_python-0.16.1",
+    url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.16.1.tar.gz",
+)
+
+load("@rules_python//python:repositories.bzl", "python_register_toolchains")
+
+python_register_toolchains(
+    name = "python3_9",
+    python_version = "3.9",
+    register_toolchains = False,
+)
+
+load("@python3_9//:defs.bzl", python_interpreter = "interpreter")
+load("@rules_python//python:pip.bzl", "pip_parse")
+load("//tools/python:package_annotations.bzl", PYTHON_ANNOTATIONS = "ANNOTATIONS")
+
+pip_parse(
+    name = "pip_deps",
+    annotations = PYTHON_ANNOTATIONS,
+    enable_implicit_namespace_pkgs = True,
+    overrides = "//tools/python:whl_overrides.json",
+    patch_spec = "//tools/python:patches.json",
+    python_interpreter_target = python_interpreter,
+    require_overrides = RUNNING_IN_CI,
+    requirements_lock = "//tools/python:requirements.lock.txt",
+)
+
+# Load the starlark macro which will define your dependencies.
+load("@pip_deps//:requirements.bzl", install_pip_deps = "install_deps")
+
+install_pip_deps()
+
+load("//tools/python:repo_defs.bzl", "pip_configure")
+
+pip_configure(
+    name = "pip",
+)
+
+http_archive(
+    name = "rules_pkg",
+    patch_args = ["-p1"],
+    patches = [
+        "//third_party:rules_pkg/0001-Fix-tree-artifacts.patch",
+    ],
+    sha256 = "62eeb544ff1ef41d786e329e1536c1d541bb9bcad27ae984d57f18f314018e66",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_pkg/releases/download/0.6.0/rules_pkg-0.6.0.tar.gz",
+        "https://github.com/bazelbuild/rules_pkg/releases/download/0.6.0/rules_pkg-0.6.0.tar.gz",
+    ],
+)
+
+load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
+
+rules_pkg_dependencies()
+
 load(
     "//debian:python.bzl",
     python_debs = "files",
@@ -311,28 +396,6 @@ register_toolchains(
     "//tools/ts:noop_node_toolchain",
 )
 
-load("//tools/ci:repo_defs.bzl", "ci_configure")
-
-ci_configure(name = "ci_configure")
-
-load("@ci_configure//:ci.bzl", "RUNNING_IN_CI")
-
-http_archive(
-    name = "platforms",
-    sha256 = "2c8d8347427e6bb0ba7cf9f933c08fe2be2b62ff2454546ad852f7bf267aad87",
-    strip_prefix = "platforms-e658a6af526089406d0057160542597501ba65d7",
-    url = "https://github.com/bazelbuild/platforms/archive/e658a6af526089406d0057160542597501ba65d7.zip",
-)
-
-http_archive(
-    name = "bazel_skylib",
-    sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
-        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
-    ],
-)
-
 http_archive(
     name = "python_repo",
     build_file = "@//debian:python.BUILD",
@@ -407,52 +470,6 @@ http_archive(
     urls = [
         "https://www.frc971.org/Build-Dependencies/rules_cc-608c7b605fb844a20e96a3eddc9b49ad2542adab.zip",
     ],
-)
-
-http_archive(
-    name = "rules_python",
-    patch_args = ["-p1"],
-    patches = [
-        "//third_party:rules_python/0001-Support-overriding-individual-packages.patch",
-        "//third_party:rules_python/0002-Allow-user-to-patch-wheels.patch",
-    ],
-    sha256 = "497ca47374f48c8b067d786b512ac10a276211810f4a580178ee9b9ad139323a",
-    strip_prefix = "rules_python-0.16.1",
-    url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.16.1.tar.gz",
-)
-
-load("@rules_python//python:repositories.bzl", "python_register_toolchains")
-
-python_register_toolchains(
-    name = "python3_9",
-    python_version = "3.9",
-    register_toolchains = False,
-)
-
-load("@python3_9//:defs.bzl", python_interpreter = "interpreter")
-load("@rules_python//python:pip.bzl", "pip_parse")
-load("//tools/python:package_annotations.bzl", PYTHON_ANNOTATIONS = "ANNOTATIONS")
-
-pip_parse(
-    name = "pip_deps",
-    annotations = PYTHON_ANNOTATIONS,
-    enable_implicit_namespace_pkgs = True,
-    overrides = "//tools/python:whl_overrides.json",
-    patch_spec = "//tools/python:patches.json",
-    python_interpreter_target = python_interpreter,
-    require_overrides = RUNNING_IN_CI,
-    requirements_lock = "//tools/python:requirements.lock.txt",
-)
-
-# Load the starlark macro which will define your dependencies.
-load("@pip_deps//:requirements.bzl", install_pip_deps = "install_deps")
-
-install_pip_deps()
-
-load("//tools/python:repo_defs.bzl", "pip_configure")
-
-pip_configure(
-    name = "pip",
 )
 
 new_local_repository(
@@ -714,13 +731,13 @@ http_archive(
 # Java11 JDK.
 remote_java_repository(
     name = "openjdk_linux_archive",
-    exec_compatible_with = [
-        "@platforms//cpu:x86_64",
-        "@platforms//os:linux",
-    ],
     prefix = "openjdk",
     sha256 = "60e65d32e38876f81ddb623e87ac26c820465b637e263e8bed1acdecb4ca9be2",
     strip_prefix = "zulu11.54.25-ca-jdk11.0.14.1-linux_x64",
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
     urls = [
         "https://www.frc971.org/Build-Dependencies/zulu11.54.25-ca-jdk11.0.14.1-linux_x64.tar.gz",
     ],
@@ -729,13 +746,13 @@ remote_java_repository(
 
 remote_java_repository(
     name = "openjdk_linux_archive_aarch64",
-    exec_compatible_with = [
-        "@platforms//cpu:aarch64",
-        "@platforms//os:linux",
-    ],
     prefix = "openjdk",
     sha256 = "b0fb0bc303bb05b5042ef3d0939b9489f4a49a13a2d1c8f03c5d8ab23099454d",
     strip_prefix = "zulu11.54.25-ca-jdk11.0.14.1-linux_aarch64",
+    target_compatible_with = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:linux",
+    ],
     urls = [
         "https://www.frc971.org/Build-Dependencies/zulu11.54.25-ca-jdk11.0.14.1-linux_aarch64.tar.gz",
     ],
@@ -1183,23 +1200,6 @@ http_archive(
         "https://github.com/bazelbuild/buildtools/archive/refs/tags/4.2.4.tar.gz",
     ],
 )
-
-http_archive(
-    name = "rules_pkg",
-    patch_args = ["-p1"],
-    patches = [
-        "//third_party:rules_pkg/0001-Fix-tree-artifacts.patch",
-    ],
-    sha256 = "62eeb544ff1ef41d786e329e1536c1d541bb9bcad27ae984d57f18f314018e66",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_pkg/releases/download/0.6.0/rules_pkg-0.6.0.tar.gz",
-        "https://github.com/bazelbuild/rules_pkg/releases/download/0.6.0/rules_pkg-0.6.0.tar.gz",
-    ],
-)
-
-load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
-
-rules_pkg_dependencies()
 
 http_archive(
     name = "libtinfo5_amd64",
