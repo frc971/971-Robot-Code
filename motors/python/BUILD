@@ -7,11 +7,11 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib3",
-        "@python_repo//:scipy",
+        "@pip//glog",
+        "@pip//matplotlib",
+        "@pip//python_gflags",
+        "@pip//scipy",
     ],
 )
 
@@ -24,9 +24,9 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 

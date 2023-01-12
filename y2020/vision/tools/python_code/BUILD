@@ -2,9 +2,9 @@ py_library(
     name = "train_and_match",
     srcs = ["train_and_match.py"],
     deps = [
-        "//external:python-glog",
-        "@opencv_contrib_nonfree_amd64//:python_opencv",
-        "@python_repo//:scipy",
+        "@pip//glog",
+        "@pip//opencv_python",
+        "@pip//scipy",
     ],
 )
 
@@ -15,9 +15,9 @@ py_library(
     ],
     deps = [
         ":train_and_match",
-        "//external:python-glog",
-        "@opencv_contrib_nonfree_amd64//:python_opencv",
-        "@python_repo//:scipy",
+        "@pip//glog",
+        "@pip//opencv_python",
+        "@pip//scipy",
     ],
 )
 
@@ -28,7 +28,7 @@ py_library(
     ],
     deps = [
         ":define_training_data",
-        "//external:python-glog",
+        "@pip//glog",
     ],
 )
 
@@ -42,8 +42,8 @@ py_library(
         ":camera_definition",
         ":define_training_data",
         ":train_and_match",
-        "//external:python-glog",
-        "@opencv_contrib_nonfree_amd64//:python_opencv",
+        "@pip//glog",
+        "@pip//opencv_python",
     ],
 )
 
@@ -76,10 +76,10 @@ py_binary(
     deps = [
         ":camera_definition",
         ":target_definition",
-        "//external:python-glog",
         "//y2020/vision/sift:sift_fbs_python",
         "@bazel_tools//tools/python/runfiles",
-        "@opencv_contrib_nonfree_amd64//:python_opencv",
+        "@pip//glog",
+        "@pip//opencv_python",
     ],
 )
 
@@ -95,10 +95,10 @@ py_binary(
     deps = [
         ":camera_definition",
         ":target_definition",
-        "//external:python-glog",
         "//y2020/vision/sift:sift_fbs_python",
         "@bazel_tools//tools/python/runfiles",
-        "@opencv_contrib_nonfree_amd64//:python_opencv",
+        "@pip//glog",
+        "@pip//opencv_python",
     ],
 )
 
@@ -149,10 +149,10 @@ py_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":load_sift_training",
-        "//external:python-glog",
         "//y2020/vision/sift:sift_fbs_python",
         "@bazel_tools//tools/python/runfiles",
-        "@opencv_contrib_nonfree_amd64//:python_opencv",
+        "@pip//glog",
+        "@pip//opencv_python",
     ],
 )
 

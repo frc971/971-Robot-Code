@@ -54,7 +54,7 @@ py_library(
         "camera_definition.py",
     ],
     deps = [
-        "//external:python-glog",
+        "@pip//glog",
     ],
 )
 
@@ -70,10 +70,10 @@ py_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":camera_definition",
-        "//external:python-glog",
         "//y2022/vision:calibration_fbs_python",
         "@bazel_tools//tools/python/runfiles",
-        "@opencv_contrib_nonfree_amd64//:python_opencv",
+        "@pip//glog",
+        "@pip//opencv_python",
     ],
 )
 

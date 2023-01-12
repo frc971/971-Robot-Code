@@ -86,7 +86,7 @@ py_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "@python_repo//:scipy",
+        "@pip//scipy",
     ],
 )
 
@@ -98,7 +98,7 @@ py_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":calib_sensors",
-        "@python_repo//:scipy",
+        "@pip//scipy",
     ],
 )
 

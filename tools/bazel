@@ -24,7 +24,7 @@ if [[ -n "${BAZEL_OVERRIDE+x}" ]]; then
   exec "${BAZEL_OVERRIDE}" "$@"
 fi
 
-readonly VERSION="5.1.1"
+readonly VERSION="6.0.0"
 
 readonly DOWNLOAD_DIR="${HOME}/.cache/bazel"
 # Directory to unpack bazel into.  This must change whenever bazel changes.

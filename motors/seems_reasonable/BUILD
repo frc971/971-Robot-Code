@@ -7,9 +7,9 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:drivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -23,9 +23,9 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:polydrivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 

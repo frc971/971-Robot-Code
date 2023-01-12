@@ -9,9 +9,9 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:drivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -25,9 +25,9 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:polydrivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -41,11 +41,11 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
         "//frc971/control_loops/python:drivetrain",
         "//frc971/control_loops/python:polydrivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -58,10 +58,10 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//glog",
+        "@pip//matplotlib",
+        "@pip//python_gflags",
     ],
 )
 
@@ -74,10 +74,10 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:angular_system",
         "//frc971/control_loops/python:controls",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -91,10 +91,10 @@ py_binary(
     deps = [
         ":python_init",
         "//aos/util:py_trapezoid_profile",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//glog",
+        "@pip//matplotlib",
+        "@pip//python_gflags",
     ],
 )
 
@@ -108,10 +108,10 @@ py_binary(
     deps = [
         ":python_init",
         "//aos/util:py_trapezoid_profile",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//glog",
+        "@pip//matplotlib",
+        "@pip//python_gflags",
     ],
 )
 
@@ -123,9 +123,9 @@ py_library(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//aos/util:py_trapezoid_profile",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -137,10 +137,10 @@ py_library(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//aos/util:py_trapezoid_profile",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//glog",
+        "@pip//matplotlib",
+        "@pip//python_gflags",
     ],
 )
 
@@ -154,10 +154,10 @@ py_library(
         ":shoulder_lib",
         ":wrist_lib",
         "//aos/util:py_trapezoid_profile",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//glog",
+        "@pip//matplotlib",
+        "@pip//python_gflags",
     ],
 )
 
@@ -173,9 +173,9 @@ py_binary(
         ":shoulder_lib",
         ":wrist_lib",
         "//aos/util:py_trapezoid_profile",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 

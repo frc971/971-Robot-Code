@@ -19,13 +19,6 @@ steps:
       - tools/ci/clean-disk.sh
       - tools/bazel ${STARTUP} --output_base=../k8_output_base test ${COMMON} --config=k8 --config=eigen ${TARGETS}
 
-  # Temporary step until I manage to migrate everything over.
-  # TODO(phil): Delete this step.
-  - label: "x86_64_upstream_python"
-    commands:
-      - tools/ci/clean-disk.sh
-      - tools/bazel ${STARTUP} --output_base=../k8_output_base_upstream_python test ${COMMON} --config=k8_upstream_python --config=eigen --build_tests_only --test_lang_filters=py ${TARGETS}
-
   - label: "roborio"
     commands:
       - tools/ci/clean-disk.sh

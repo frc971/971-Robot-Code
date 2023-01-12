@@ -64,9 +64,6 @@ def generate_build_files(requirements: list[str]) -> None:
                 name = "{requirement}",
                 deps = [requirement("{requirement}")],
                 visibility = ["//visibility:public"],
-                target_compatible_with = [
-                    "@//tools/platforms/python:upstream_bundled_python",
-                ],
             )
             """))
 

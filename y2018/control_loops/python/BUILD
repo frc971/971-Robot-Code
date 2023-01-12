@@ -9,9 +9,9 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:drivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -25,9 +25,9 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:polydrivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -41,11 +41,11 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
         "//frc971/control_loops/python:drivetrain",
         "//frc971/control_loops/python:polydrivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -59,10 +59,10 @@ py_test(
     deps = [
         ":polydrivetrain_lib",
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
         "//frc971/control_loops/python:polydrivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -76,9 +76,9 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )
 
@@ -91,10 +91,10 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
-        "@matplotlib_repo//:matplotlib3",
+        "@pip//glog",
+        "@pip//matplotlib",
+        "@pip//python_gflags",
     ],
 )
 
@@ -122,7 +122,9 @@ py_binary(
         ":python_init",
         "//frc971/control_loops/python:basic_window",
         "//frc971/control_loops/python:color",
-        "@python_gtk",
+        "@pip//numpy",
+        "@pip//pygobject",
+        "@pip//shapely",
     ],
 )
 
@@ -136,7 +138,7 @@ py_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":python_init",
-        "@python_repo//:numpy",
+        "@pip//numpy",
     ],
 )
 
@@ -155,8 +157,8 @@ py_binary(
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
-        "//external:python-gflags",
-        "//external:python-glog",
         "//frc971/control_loops/python:controls",
+        "@pip//glog",
+        "@pip//python_gflags",
     ],
 )

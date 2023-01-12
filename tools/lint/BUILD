@@ -1,4 +1,5 @@
 load("@ci_configure//:ci.bzl", "RUNNING_IN_CI")
+load("@pip_deps//:requirements.bzl", "entry_point")
 
 sh_binary(
     name = "gofmt",
@@ -38,7 +39,7 @@ sh_binary(
     name = "yapf",
     srcs = ["yapf.sh"],
     data = [
-        "@python_yapf",
+        entry_point("yapf"),
     ],
     deps = [
         "@bazel_tools//tools/bash/runfiles",
