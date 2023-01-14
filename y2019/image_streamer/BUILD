@@ -1,3 +1,5 @@
+load("@org_frc971//tools/build_rules:select.bzl", "compiler_select")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_binary(
@@ -28,7 +30,14 @@ cc_library(
         "-Wno-cast-align",
         "-Wno-cast-qual",
         "-Wno-error=type-limits",
-    ],
+    ] + compiler_select({
+        "clang": [],
+        "gcc": [
+            "-Wno-misleading-indentation",
+            "-Wno-char-subscripts",
+            "-Wno-class-memaccess",
+        ],
+    }),
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//third_party/cimg:CImg",

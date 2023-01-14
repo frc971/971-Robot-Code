@@ -1,5 +1,5 @@
---- arm-frc2020-linux-gnueabi/usr/include/fts.h
-+++ arm-frc2020-linux-gnueabi/usr/include/fts.h
+--- arm-nilrt-linux-gnueabi/usr/include/fts.h
++++ arm-nilrt-linux-gnueabi/sysroot/usr/include/fts.h
 @@ -193,7 +193,7 @@ FTS *__REDIRECT (fts_open, (char * const *, int,
  				int (*)(const FTSENT **, const FTSENT **)),
  		     fts64_open);

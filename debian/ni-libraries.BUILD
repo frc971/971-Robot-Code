@@ -21,9 +21,9 @@ cc_library(
     srcs = [
         "libNiFpgaLv.so.13",
         "libnirio_emb_can.so.21",
-        "src/lib/chipobject/libRoboRIO_FRC_ChipObject.so.22.0.0",
-        "src/lib/netcomm/libFRC_NetworkCommunication.so.22.0.0",
-        "src/lib/visa/libvisa.so.21.0.0",
+        "src/lib/chipobject/libRoboRIO_FRC_ChipObject.so.23.0.0",
+        "src/lib/netcomm/libFRC_NetworkCommunication.so.23.0.0",
+        "src/lib/visa/libvisa.so.22.5.0",
     ],
     hdrs = glob(["src/include/**"]),
     includes = [

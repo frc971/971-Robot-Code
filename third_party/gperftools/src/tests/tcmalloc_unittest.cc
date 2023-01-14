@@ -781,9 +781,9 @@ static void TestNothrowNew(void* (*func)(size_t, const std::nothrow_t&)) {
 // Note the ... in the hook signature: we don't care what arguments
 // the hook takes.
 #define MAKE_HOOK_CALLBACK(hook_type, ...)                              \
-  static volatile int g_##hook_type##_calls = 0;                                 \
+  static volatile int g_##hook_type##_calls = 0;                        \
   static void IncrementCallsTo##hook_type(__VA_ARGS__) {                \
-    g_##hook_type##_calls++;                                            \
+    g_##hook_type##_calls = g_##hook_type##_calls + 1;                  \
   }                                                                     \
   static void Verify##hook_type##WasCalled() {                          \
     CHECK_GT(g_##hook_type##_calls, 0);                                 \

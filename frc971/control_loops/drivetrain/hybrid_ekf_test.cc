@@ -338,8 +338,8 @@ TEST_P(HybridEkfOldCorrectionsTest, CreateOldCorrection) {
 
 // Ensure that we check kSaveSamples - 1, for potential corner cases.
 INSTANTIATE_TEST_SUITE_P(OldCorrectionTest, HybridEkfOldCorrectionsTest,
-                        ::testing::Values(0, 1, 10,
-                                          HybridEkf<>::kSaveSamples - 1));
+                         ::testing::Values(0, 1, 10,
+                                           HybridEkf<>::kSaveSamples - 1));
 
 // Tests that creating a correction that is too old results in the correction
 // being dropped and ignored.
@@ -492,9 +492,10 @@ TEST_F(HybridEkfDeathTest, DieIfUninitialized) {
 TEST_F(HybridEkfDeathTest, DieOnNoU) {
   // Expect death if the user does not provide U when creating a fresh
   // measurement.
-  EXPECT_DEATH(ekf_.Correct({1, 2, 3}, nullptr, {}, {}, {}, {},
-                            t0_ + std::chrono::seconds(1)),
-               "U != nullptr");
+  EXPECT_DEATH(
+      ekf_.Correct({1, 2, 3}, nullptr, {}, {}, {}, Eigen::Matrix3d::Zero(),
+                   t0_ + std::chrono::seconds(1)),
+      "U != nullptr");
 }
 
 // Because the user can choose to provide only one of make_h or (h, dhdx), check
@@ -503,21 +504,22 @@ TEST_F(HybridEkfDeathTest, DieOnNoH) {
   // Check that we die when no h-related functions are provided:
   Input U;
   U << 1.0, 2.0, 0.0, 0.0;
-  EXPECT_DEATH(ekf_.Correct({1, 2, 3}, &U, {}, {}, {}, {},
+  EXPECT_DEATH(ekf_.Correct({1, 2, 3}, &U, {}, {}, {}, Eigen::Matrix3d::Zero(),
                             t0_ + std::chrono::seconds(1)),
                "make_h");
   // Check that we die when only one of h and dhdx are provided:
-  EXPECT_DEATH(ekf_.Correct({1, 2, 3}, &U, {}, {},
-                            [](const State &) {
-                              return Eigen::Matrix<double, 3, 12>::Zero();
-                            },
-                            {}, t0_ + std::chrono::seconds(1)),
-               "make_h");
-  EXPECT_DEATH(ekf_.Correct({1, 2, 3}, &U, {},
-                            [](const State &, const Input &) {
-                              return Eigen::Matrix<double, 3, 1>::Zero();
-                            },
-                            {}, {}, t0_ + std::chrono::seconds(1)),
+  EXPECT_DEATH(
+      ekf_.Correct(
+          {1, 2, 3}, &U, {}, {},
+          [](const State &) { return Eigen::Matrix<double, 3, 12>::Zero(); },
+          Eigen::Matrix3d::Zero(), t0_ + std::chrono::seconds(1)),
+      "make_h");
+  EXPECT_DEATH(ekf_.Correct(
+                   {1, 2, 3}, &U, {},
+                   [](const State &, const Input &) {
+                     return Eigen::Matrix<double, 3, 1>::Zero();
+                   },
+                   {}, Eigen::Matrix3d::Zero(), t0_ + std::chrono::seconds(1)),
                "make_h");
 }
 

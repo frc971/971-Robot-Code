@@ -106,8 +106,8 @@ class TypedAction : public Action {
  public:
   // A convenient way to refer to the type of our goals.
   typedef T GoalType;
-  typedef typename std::remove_reference<decltype(
-      *static_cast<GoalType *>(nullptr)->params())>::type ParamType;
+  typedef typename std::remove_pointer<typename std::invoke_result<
+      decltype(&GoalType::params), const GoalType *>::type>::type ParamType;
 
   TypedAction(typename ::aos::Fetcher<Status> *status_fetcher,
               typename ::aos::Sender<GoalType> *goal_sender,
@@ -194,8 +194,8 @@ template <typename T>
 class TypedActionFactory {
  public:
   typedef T GoalType;
-  typedef typename std::remove_reference<decltype(
-      *static_cast<GoalType *>(nullptr)->params())>::type ParamType;
+  typedef typename std::remove_pointer<typename std::invoke_result<
+      decltype(&GoalType::params), const GoalType *>::type>::type ParamType;
 
   explicit TypedActionFactory(::aos::EventLoop *event_loop,
                               const ::std::string &name)

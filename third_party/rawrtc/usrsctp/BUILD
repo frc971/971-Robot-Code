@@ -53,6 +53,7 @@ cc_library(
         ],
         "gcc": [
             "-Wno-discarded-qualifiers",
+            "-Wno-maybe-uninitialized",
         ],
     }),
     includes = [

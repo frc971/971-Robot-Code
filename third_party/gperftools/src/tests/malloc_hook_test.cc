@@ -255,7 +255,7 @@ void MultithreadedTestThreadRunner(int thread_num) {
   {
     MutexLock ml(&threadcount_lock);
     assert(num_threads_remaining > 0);
-    --num_threads_remaining;
+    num_threads_remaining = num_threads_remaining - 1;
 
     // We should use condvars and the like, but for this test, we'll
     // go simple and busy-wait.

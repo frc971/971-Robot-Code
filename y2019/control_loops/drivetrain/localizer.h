@@ -306,7 +306,7 @@ class TypedLocalizer
           MatchFrames(scores, best_matches, target_views.size());
       for (size_t ii = 0; ii < target_views.size(); ++ii) {
         size_t view_idx = best_frames[ii];
-        if (view_idx < 0 || view_idx >= camera_views.size()) {
+        if (view_idx >= camera_views.size()) {
           AOS_LOG(ERROR, "Somehow, the view scorer failed.\n");
           h_functions->push_back(
               [](const State &, const Input &) { return Output::Zero(); });

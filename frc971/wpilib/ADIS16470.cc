@@ -204,9 +204,7 @@ ADIS16470::ADIS16470(aos::EventLoop *event_loop, frc::SPI *spi,
   // We're not doing burst mode, so this is the IMU's rated speed.
   spi_->SetClockRate(2'000'000);
   spi_->SetChipSelectActiveLow();
-  spi_->SetClockActiveLow();
-  spi_->SetSampleDataOnTrailingEdge();
-  spi_->SetMSBFirst();
+  spi_->SetMode(frc::SPI::Mode::kMode3);
 
   // NI's SPI driver defaults to SCHED_OTHER.  Find it's PID with ps, and change
   // it to a RT priority of 33.

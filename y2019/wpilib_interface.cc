@@ -366,10 +366,7 @@ class CameraReader {
     spi_ = spi;
     spi_->SetClockRate(1e6);
     spi_->SetChipSelectActiveHigh();
-    spi_->SetClockActiveLow();
-    spi_->SetSampleDataOnFalling();
-    // It ignores you if you try changing this...
-    spi_->SetMSBFirst();
+    spi_->SetMode(frc::SPI::Mode::kMode3);
   }
 
   void set_activate_usb(std::unique_ptr<frc::DigitalInput> activate_usb) {
@@ -488,9 +485,7 @@ class CameraReader {
     if (dummy_spi_) {
       dummy_spi_->SetClockRate(1e5);
       dummy_spi_->SetChipSelectActiveLow();
-      dummy_spi_->SetClockActiveLow();
-      dummy_spi_->SetSampleDataOnFalling();
-      dummy_spi_->SetMSBFirst();
+      dummy_spi_->SetMode(frc::SPI::Mode::kMode3);
     }
   }
 

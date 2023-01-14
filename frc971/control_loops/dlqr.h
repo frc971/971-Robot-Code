@@ -38,9 +38,9 @@ void sb02od_(char *DICO, char *JOBB, char *FACT, char *UPLO, char *JOBL,
 // Computes the optimal LQR controller K for the provided system and costs.
 template <int kN, int kM>
 int dlqr(::Eigen::Matrix<double, kN, kN> A, ::Eigen::Matrix<double, kN, kM> B,
-          ::Eigen::Matrix<double, kN, kN> Q, ::Eigen::Matrix<double, kM, kM> R,
-          ::Eigen::Matrix<double, kM, kN> *K,
-          ::Eigen::Matrix<double, kN, kN> *S) {
+         ::Eigen::Matrix<double, kN, kN> Q, ::Eigen::Matrix<double, kM, kM> R,
+         ::Eigen::Matrix<double, kM, kN> *K,
+         ::Eigen::Matrix<double, kN, kN> *S) {
   *K = ::Eigen::Matrix<double, kM, kN>::Zero();
   *S = ::Eigen::Matrix<double, kN, kN>::Zero();
   // Discrete (not continuous)
@@ -69,9 +69,9 @@ int dlqr(::Eigen::Matrix<double, kN, kN> A, ::Eigen::Matrix<double, kN, kM> B,
   double ALFAR[kN * 2];
   double ALFAI[kN * 2];
   double BETA[kN * 2];
-  memset(ALFAR, 0, kN * 2);
-  memset(ALFAI, 0, kN * 2);
-  memset(BETA, 0, kN * 2);
+  memset(ALFAR, 0, sizeof(ALFAR));
+  memset(ALFAI, 0, sizeof(ALFAI));
+  memset(BETA, 0, sizeof(BETA));
 
   long LDS = 2 * kN + kM;
   ::Eigen::Matrix<double, 2 * kN + kM, 2 *kN + kM> S_schur =
@@ -88,17 +88,17 @@ int dlqr(::Eigen::Matrix<double, kN, kN> A, ::Eigen::Matrix<double, kN, kM> B,
   double TOL = 0.0;
 
   long IWORK[2 * kN > kM ? 2 * kN : kM];
-  memset(IWORK, 0, 2 * kN > kM ? 2 * kN : kM);
+  memset(IWORK, 0, sizeof(IWORK));
 
   long LDWORK = 16 * kN + 3 * kM + 16;
 
   double DWORK[LDWORK];
-  memset(DWORK, 0, LDWORK);
+  memset(DWORK, 0, sizeof(DWORK));
 
   long INFO = 0;
 
-  long BWORK[2 * kN];
-  memset(BWORK, 0, 2 * kN);
+  long BWORK[kN * 2];
+  memset(BWORK, 0, sizeof(BWORK));
 
   // TODO(austin): I can't tell if anything here is transposed...
   sb02od_(&DICO, &JOBB, &FACT, &UPLO, &JOBL, &SORT, &N, &M, &P, A.data(), &N,

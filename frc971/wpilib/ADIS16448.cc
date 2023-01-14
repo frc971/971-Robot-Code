@@ -128,9 +128,7 @@ ADIS16448::ADIS16448(::aos::ShmEventLoop *event_loop, frc::SPI::Port port,
   // 0.781MHz, so that's what this actually does.
   spi_->SetClockRate(1e5);
   spi_->SetChipSelectActiveLow();
-  spi_->SetClockActiveLow();
-  spi_->SetSampleDataOnFalling();
-  spi_->SetMSBFirst();
+  spi_->SetMode(frc::SPI::Mode::kMode3);
 
   dio1_->RequestInterrupts();
   dio1_->SetUpSourceEdge(true, false);
@@ -154,9 +152,7 @@ void ADIS16448::SetDummySPI(frc::SPI::Port port) {
   if (dummy_spi_) {
     dummy_spi_->SetClockRate(1e5);
     dummy_spi_->SetChipSelectActiveLow();
-    dummy_spi_->SetClockActiveLow();
-    dummy_spi_->SetSampleDataOnFalling();
-    dummy_spi_->SetMSBFirst();
+    dummy_spi_->SetMode(frc::SPI::Mode::kMode3);
   }
 }
 

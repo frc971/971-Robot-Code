@@ -7,7 +7,7 @@ package edu.wpi.first.util;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public final class WPIUtilJNI {
+public class WPIUtilJNI {
   static boolean libraryLoaded = false;
   static RuntimeLoader<WPIUtilJNI> loader = null;
 
@@ -54,6 +54,8 @@ public final class WPIUtilJNI {
     libraryLoaded = true;
   }
 
+  public static native void writeStderr(String str);
+
   public static native void enableMockTime();
 
   public static native void disableMockTime();
@@ -63,10 +65,6 @@ public final class WPIUtilJNI {
   public static native long now();
 
   public static native long getSystemTime();
-
-  public static native void addPortForwarder(int port, String remoteHost, int remotePort);
-
-  public static native void removePortForwarder(int port);
 
   public static native int createEvent(boolean manualReset, boolean initialState);
 
@@ -83,7 +81,7 @@ public final class WPIUtilJNI {
   public static native boolean releaseSemaphore(int semHandle, int releaseCount);
 
   /**
-   * Waits for an handle to be signaled.
+   * Waits for a handle to be signaled.
    *
    * @param handle handle to wait on
    * @throws InterruptedException on failure (e.g. object was destroyed)
@@ -91,7 +89,7 @@ public final class WPIUtilJNI {
   public static native void waitForObject(int handle) throws InterruptedException;
 
   /**
-   * Waits for an handle to be signaled, with timeout.
+   * Waits for a handle to be signaled, with timeout.
    *
    * @param handle handle to wait on
    * @param timeout timeout in seconds
@@ -126,29 +124,4 @@ public final class WPIUtilJNI {
    */
   public static native int[] waitForObjectsTimeout(int[] handles, double timeout)
       throws InterruptedException;
-
-  public static native int createMulticastServiceAnnouncer(
-      String serviceName, String serviceType, int port, String[] keys, String[] values);
-
-  public static native void freeMulticastServiceAnnouncer(int handle);
-
-  public static native void startMulticastServiceAnnouncer(int handle);
-
-  public static native void stopMulticastServiceAnnouncer(int handle);
-
-  public static native boolean getMulticastServiceAnnouncerHasImplementation(int handle);
-
-  public static native int createMulticastServiceResolver(String serviceType);
-
-  public static native void freeMulticastServiceResolver(int handle);
-
-  public static native void startMulticastServiceResolver(int handle);
-
-  public static native void stopMulticastServiceResolver(int handle);
-
-  public static native boolean getMulticastServiceResolverHasImplementation(int handle);
-
-  public static native int getMulticastServiceResolverEventHandle(int handle);
-
-  public static native ServiceData[] getMulticastServiceResolverData(int handle);
 }

@@ -45,9 +45,15 @@ python_register_toolchains(
     register_toolchains = False,
 )
 
-load("@python3_9//:defs.bzl", python_interpreter = "interpreter")
+load(
+    "@python3_9//:defs.bzl",
+    python_interpreter = "interpreter",
+)
 load("@rules_python//python:pip.bzl", "pip_parse")
-load("//tools/python:package_annotations.bzl", PYTHON_ANNOTATIONS = "ANNOTATIONS")
+load(
+    "//tools/python:package_annotations.bzl",
+    PYTHON_ANNOTATIONS = "ANNOTATIONS",
+)
 
 pip_parse(
     name = "pip_deps",
@@ -61,7 +67,10 @@ pip_parse(
 )
 
 # Load the starlark macro which will define your dependencies.
-load("@pip_deps//:requirements.bzl", install_pip_deps = "install_deps")
+load(
+    "@pip_deps//:requirements.bzl",
+    install_pip_deps = "install_deps",
+)
 
 install_pip_deps()
 
@@ -463,14 +472,14 @@ new_git_repository(
     remote = "https://github.com/avventi/Slycot.git",
 )
 
-# TODO(austin): https://github.com/wpilibsuite/roborio-toolchain/releases/tag/v2022-1
+# TODO(Ravago, Max, Alex): https://github.com/wpilibsuite/opensdk
 http_archive(
     name = "arm_frc_linux_gnueabi_repo",
     build_file = "@//tools/cpp/arm-frc-linux-gnueabi:arm-frc-linux-gnueabi.BUILD",
     patches = ["//debian:fts.patch"],
-    sha256 = "043a5b047c2af9cf80d146d8327b588264c98a01e0f3f41e3564dd2bbbc95c0e",
-    strip_prefix = "frc2020/roborio/",
-    url = "https://www.frc971.org/Build-Dependencies/FRC-2020-Linux-Toolchain-7.3.0.tar.gz",
+    sha256 = "f53c6b86c25b4827d50365efe760a08edfea39c027dd08674ae696c9093d6a37",
+    strip_prefix = "roborio-academic",
+    url = "https://www.frc971.org/Build-Dependencies/cortexa9_vfpv3-roborio-academic-2023-x86_64-linux-gnu-Toolchain-12.1.0.tgz",
 )
 
 # The main partition from https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-11-08/2021-10-30-raspios-bullseye-armhf-lite.zip.sig
@@ -519,8 +528,9 @@ local_repository(
 http_archive(
     name = "allwpilib_ni_libraries",
     build_file = "@//debian:ni-libraries.BUILD",
-    sha256 = "525b9d777cd00091b9095893c2e4fd0a70c7609c76db161161d407769ad4ba74",
-    url = "https://www.frc971.org/Build-Dependencies/allwpilib_ni-libraries_776db4e8aed31a651fa2f590e7468c69b384b42a.tar.gz",
+    sha256 = "c5d03ce5ed3807d9c4a5d415d8123d9ab3479498428eb0f1d77e74891f107aa0",
+    strip_prefix = "ni-libraries-2023.3.0",
+    url = "https://github.com/wpilibsuite/ni-libraries/archive/refs/tags/v2023.3.0.zip",
 )
 
 # For protobuf. Don't use these.
@@ -718,6 +728,86 @@ local_repository(
 )
 
 http_archive(
+    name = "ctre_phoenixpro_api_cpp_headers",
+    build_file_content = """
+cc_library(
+    name = 'api-cpp',
+    visibility = ['//visibility:public'],
+    hdrs = glob(['ctre/phoenixpro/**/*.hpp', 'units/*.h']),
+    includes = ["."],
+    deps = ["@//third_party/allwpilib/wpimath"],
+)
+""",
+    sha256 = "d9d6c48df9318cf106237a44bf7ad95e4092618bc3ab731092e9b733cacb1ffc",
+    urls = [
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.1/api-cpp-23.0.1-headers.zip",
+    ],
+)
+
+http_archive(
+    name = "ctre_phoenixpro_api_cpp_athena",
+    build_file_content = """
+filegroup(
+    name = 'shared_libraries',
+    srcs = [
+        'linux/athena/shared/libCTRE_PhoenixPro.so',
+    ],
+    visibility = ['//visibility:public'],
+)
+
+cc_library(
+    name = 'api-cpp',
+    visibility = ['//visibility:public'],
+    srcs = ['linux/athena/shared/libCTRE_PhoenixPro.so'],
+    target_compatible_with = ['@//tools/platforms/hardware:roborio'],
+)
+""",
+    sha256 = "3d228fdf8565de5411a739fa2670d4ef5390acb15ceb4d3cbef8c76b5adc7682",
+    urls = [
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.1/api-cpp-23.0.1-linuxathena.zip",
+    ],
+)
+
+http_archive(
+    name = "ctre_phoenixpro_tools_headers",
+    build_file_content = """
+cc_library(
+    name = 'tools',
+    visibility = ['//visibility:public'],
+    hdrs = glob(['ctre/**/*.h', 'ctre/**/*.hpp']),
+)
+""",
+    sha256 = "74d79bb3e739d9d6b87311656b0530aaefc211952cc647a3d57776a0cee9efce",
+    urls = [
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.1/tools-23.0.1-headers.zip",
+    ],
+)
+
+http_archive(
+    name = "ctre_phoenixpro_tools_athena",
+    build_file_content = """
+filegroup(
+    name = 'shared_libraries',
+    srcs = [
+        'linux/athena/shared/libCTRE_PhoenixTools.so',
+    ],
+    visibility = ['//visibility:public'],
+)
+
+cc_library(
+    name = 'tools',
+    visibility = ['//visibility:public'],
+    srcs = ['linux/athena/shared/libCTRE_PhoenixTools.so'],
+    target_compatible_with = ['@//tools/platforms/hardware:roborio'],
+)
+""",
+    sha256 = "1791b35fdf76aa08ad120e4d689d9440bd386542f63f5c44e4047a06e2e05b9a",
+    urls = [
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.1/tools-23.0.1-linuxathena.zip",
+    ],
+)
+
+http_archive(
     name = "ctre_phoenix_api_cpp_headers",
     build_file_content = """
 cc_library(
@@ -726,9 +816,9 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "ea4131d1809bc8ccbd72b15cc7a65bd6ebb89a65019afc6a336e2c92d91ec824",
+    sha256 = "93cc41c53e98bbcd5db7b0631ab95a7de7744527d5847d2e795e6c8acec46bf8",
     urls = [
-        "http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/api-cpp/5.21.1/api-cpp-5.21.1-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/api-cpp/5.30.2/api-cpp-5.30.2-headers.zip",
     ],
 )
 
@@ -750,9 +840,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "328130012a0fc1050c3ff09f30a2adf5106d15accc3d850b744fa60ec635a462",
+    sha256 = "63889beeeaac8bbef2573d23f1a9500b6382d28ab91c78f3605b6b624c27d68e",
     urls = [
-        "http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/api-cpp/5.21.1/api-cpp-5.21.1-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/api-cpp/5.30.2/api-cpp-5.30.2-linuxathena.zip",
     ],
 )
 
@@ -765,9 +855,9 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "b3332885c6afe082f9f67c2335086e89f705b6ac6c5101188616f81c58d3e49a",
+    sha256 = "d41dd70aa4397cba934292e636c90511e571a56971f696348851fcd3bb88894d",
     urls = [
-        "http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/cci/5.21.1/cci-5.21.1-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/cci/5.30.2/cci-5.30.2-headers.zip",
     ],
 )
 
@@ -789,9 +879,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "94812541734d7905774d97e10a97e9c79b5c37cba60d9b6b2d6e4bf3bbabc2fb",
+    sha256 = "b01f78b74ffcf01f48636dca894942e801ec6eac3daadcea7d65c4b74a80a056",
     urls = [
-        "http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/cci/5.21.1/cci-5.21.1-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/cci/5.30.2/cci-5.30.2-linuxathena.zip",
     ],
 )
 

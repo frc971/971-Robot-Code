@@ -207,7 +207,8 @@ static volatile int *sig_pids, sig_num_threads, sig_proc, sig_marker;
 static void SignalHandler(int signum, siginfo_t *si, void *data) {
   if (sig_pids != NULL) {
     if (signum == SIGABRT) {
-      while (sig_num_threads-- > 0) {
+      while (sig_num_threads > 0) {
+        sig_num_threads = sig_num_threads - 1;
         /* Not sure if sched_yield is really necessary here, but it does not */
         /* hurt, and it might be necessary for the same reasons that we have */
         /* to do so in sys_ptrace_detach().                                  */
@@ -342,7 +343,8 @@ static void ListerThread(struct ListerParams *args) {
      * check there first, and then fall back on the older naming
      * convention if necessary.
      */
-    if ((sig_proc = proc = c_open(*proc_path, O_RDONLY|O_DIRECTORY, 0)) < 0) {
+    sig_proc = proc = c_open(*proc_path, O_RDONLY|O_DIRECTORY, 0);
+    if (sig_proc < 0) {
       if (*++proc_path != NULL)
         continue;
       goto failure;

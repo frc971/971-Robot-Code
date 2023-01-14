@@ -3,6 +3,8 @@
 // the WPILib BSD license file in the root directory of this project.
 
 #pragma once
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
 
 #include <stdint.h>
 
@@ -23,7 +25,8 @@ constexpr int32_t kNumDigitalChannels =
     kNumDigitalHeaders + kNumDigitalMXPChannels + kNumDigitalSPIPortChannels;
 constexpr int32_t kNumPWMChannels = tPWM::kNumMXPRegisters + kNumPWMHeaders;
 constexpr int32_t kNumDigitalPWMOutputs =
-    tDIO::kNumPWMDutyCycleAElements + tDIO::kNumPWMDutyCycleBElements;
+    static_cast<int32_t>(tDIO::kNumPWMDutyCycleAElements) +
+    static_cast<int32_t>(tDIO::kNumPWMDutyCycleBElements);
 constexpr int32_t kNumEncoders = tEncoder::kNumSystems;
 constexpr int32_t kNumInterrupts = tInterrupt::kNumSystems;
 constexpr int32_t kNumRelayChannels = 8;
@@ -40,3 +43,5 @@ constexpr int32_t kNumREVPHModules = 63;
 constexpr int32_t kNumREVPHChannels = 16;
 
 }  // namespace hal
+
+#pragma GCC diagnostic pop

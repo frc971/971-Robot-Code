@@ -1,6 +1,7 @@
 # Use tools/rehost.sh to rehost easily.
 
 block *
+rewrite maven.ctr-electronics.com/(.*) software.frc971.org/Build-Dependencies/maven.ctr-electronics.com/$1
 rewrite github.com/(.*) software.frc971.org/Build-Dependencies/github.com/$1
 rewrite dl.google.com/(.*) software.frc971.org/Build-Dependencies/dl.google.com/$1
 rewrite mirror.bazel.build/(.*) software.frc971.org/Build-Dependencies/mirror.bazel.build/$1

@@ -85,8 +85,7 @@ DetachedBufferWriter::DetachedBufferWriter(std::string_view filename,
   if (!util::MkdirPIfSpace(filename, 0777)) {
     ran_out_of_space_ = true;
   } else {
-    fd_ = open(filename_.c_str(),
-               O_RDWR | O_CLOEXEC | O_CREAT | O_EXCL, 0774);
+    fd_ = open(filename_.c_str(), O_RDWR | O_CLOEXEC | O_CREAT | O_EXCL, 0774);
     if (fd_ == -1 && errno == ENOSPC) {
       ran_out_of_space_ = true;
     } else {
@@ -441,7 +440,8 @@ flatbuffers::Offset<MessageHeader> PackMessage(
   // want to control and understand it here.  Changing the order can increase
   // the amount of padding bytes in the middle.
   //
-  // It is also easier to follow...  And doesn't actually make things much bigger.
+  // It is also easier to follow...  And doesn't actually make things much
+  // bigger.
   switch (log_type) {
     case LogType::kLogRemoteMessage:
       message_header_builder.add_queue_index(context.remote_queue_index);
@@ -575,8 +575,7 @@ flatbuffers::uoffset_t PackMessageHeaderSize(LogType log_type) {
   LOG(FATAL);
 }
 
-flatbuffers::uoffset_t PackMessageSize(LogType log_type,
-                                       size_t data_size) {
+flatbuffers::uoffset_t PackMessageSize(LogType log_type, size_t data_size) {
   static_assert(sizeof(flatbuffers::uoffset_t) == 4u,
                 "Update size logic please.");
   const flatbuffers::uoffset_t aligned_data_length =
@@ -934,7 +933,7 @@ void SpanReader::ConsumeMessage() {
 
 absl::Span<const uint8_t> SpanReader::ReadMessage() {
   absl::Span<const uint8_t> result = PeekMessage();
-  if (result != absl::Span<const uint8_t>()) {
+  if (!result.empty()) {
     ConsumeMessage();
   } else {
     is_finished_ = true;
@@ -977,7 +976,7 @@ std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
   absl::Span<const uint8_t> config_data = span_reader->ReadMessage();
 
   // Make sure something was read.
-  if (config_data == absl::Span<const uint8_t>()) {
+  if (config_data.empty()) {
     return std::nullopt;
   }
 
@@ -996,7 +995,7 @@ std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
   if (FLAGS_workaround_double_headers && !result.message().has_logger_sha1()) {
     while (true) {
       absl::Span<const uint8_t> maybe_header_data = span_reader->PeekMessage();
-      if (maybe_header_data == absl::Span<const uint8_t>()) {
+      if (maybe_header_data.empty()) {
         break;
       }
 
@@ -1035,7 +1034,7 @@ std::optional<SizePrefixedFlatbufferVector<MessageHeader>> ReadNthMessage(
     data_span = span_reader.ReadMessage();
 
     // Make sure something was read.
-    if (data_span == absl::Span<const uint8_t>()) {
+    if (data_span.empty()) {
       return std::nullopt;
     }
   }
@@ -1079,7 +1078,7 @@ MessageReader::MessageReader(std::string_view filename)
 
 std::shared_ptr<UnpackedMessageHeader> MessageReader::ReadMessage() {
   absl::Span<const uint8_t> msg_data = span_reader_.ReadMessage();
-  if (msg_data == absl::Span<const uint8_t>()) {
+  if (msg_data.empty()) {
     if (is_corrupted()) {
       LOG(ERROR) << "Total corrupted volumes: before = "
                  << total_verified_before_
@@ -1116,7 +1115,7 @@ std::shared_ptr<UnpackedMessageHeader> MessageReader::ReadMessage() {
     while (true) {
       absl::Span<const uint8_t> msg_data = span_reader_.ReadMessage();
 
-      if (msg_data == absl::Span<const uint8_t>()) {
+      if (msg_data.empty()) {
         if (!ignore_corrupt_messages_flag_) {
           LOG(ERROR) << "Total corrupted volumes: before = "
                      << total_verified_before_
@@ -1212,20 +1211,17 @@ std::shared_ptr<UnpackedMessageHeader> UnpackedMessageHeader::MakeMessage(
     remote_queue_index = message.remote_queue_index();
   }
 
-  new (unpacked_message) UnpackedMessageHeader{
-      .channel_index = message.channel_index(),
-      .monotonic_sent_time = monotonic_clock::time_point(
+  new (unpacked_message) UnpackedMessageHeader(
+      message.channel_index(),
+      monotonic_clock::time_point(
           chrono::nanoseconds(message.monotonic_sent_time())),
-      .realtime_sent_time = realtime_clock::time_point(
+      realtime_clock::time_point(
           chrono::nanoseconds(message.realtime_sent_time())),
-      .queue_index = message.queue_index(),
-      .monotonic_remote_time = monotonic_remote_time,
-      .realtime_remote_time = realtime_remote_time,
-      .remote_queue_index = remote_queue_index,
-      .monotonic_timestamp_time = monotonic_clock::time_point(
+      message.queue_index(), monotonic_remote_time, realtime_remote_time,
+      remote_queue_index,
+      monotonic_clock::time_point(
           std::chrono::nanoseconds(message.monotonic_timestamp_time())),
-      .has_monotonic_timestamp_time = message.has_monotonic_timestamp_time(),
-      .span = span};
+      message.has_monotonic_timestamp_time(), span);
 
   if (data_size > 0) {
     memcpy(span.data(), message.data()->data(), data_size);

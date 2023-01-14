@@ -35,6 +35,24 @@ cc_library(
         "@ctre_phoenix_api_cpp_headers//:api-cpp",
         "@ctre_phoenix_cci_athena//:cci",
         "@ctre_phoenix_cci_headers//:cci",
+        "@ctre_phoenixpro_tools_athena//:tools",
+        "@ctre_phoenixpro_tools_headers//:tools",
+    ],
+)
+
+cc_library(
+    name = "phoenixpro",
+    linkopts = [
+        "-Wl,-rpath",
+        "-Wl,.",
+    ],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@ctre_phoenixpro_api_cpp_athena//:api-cpp",
+        "@ctre_phoenixpro_api_cpp_headers//:api-cpp",
+        "@ctre_phoenixpro_tools_athena//:tools",
+        "@ctre_phoenixpro_tools_headers//:tools",
     ],
 )
 

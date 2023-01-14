@@ -192,6 +192,8 @@ COPTS = [
     ] + compiler_select({
         "gcc": [
             "-Wno-error=cast-align",
+            "-Wno-class-memaccess",
+            "-Wno-restrict",
         ],
         "clang": [
             "-Wno-unused-const-variable",

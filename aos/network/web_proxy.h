@@ -229,7 +229,7 @@ class ApplicationConnection {
     bool requested = true;
   };
 
-  std::map<int, ChannelState> channels_;
+  std::map<size_t, ChannelState> channels_;
   const std::vector<std::unique_ptr<Subscriber>> &subscribers_;
 
   const std::vector<FlatbufferDetachedBuffer<MessageHeader>> config_headers_;

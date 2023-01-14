@@ -75,13 +75,6 @@ double DutyCycle::GetOutput() const {
   return retVal;
 }
 
-unsigned int DutyCycle::GetOutputRaw() const {
-  int32_t status = 0;
-  auto retVal = HAL_GetDutyCycleOutputRaw(m_handle, &status);
-  wpi_setHALError(status);
-  return retVal;
-}
-
 unsigned int DutyCycle::GetOutputScaleFactor() const {
   int32_t status = 0;
   auto retVal = HAL_GetDutyCycleOutputScaleFactor(m_handle, &status);

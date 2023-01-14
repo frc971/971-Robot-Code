@@ -83,7 +83,7 @@ int PrintRaw(int argc, char **argv) {
   aos::logger::SpanReader reader(argv[1]);
   absl::Span<const uint8_t> raw_log_file_header_span = reader.ReadMessage();
 
-  if (raw_log_file_header_span == absl::Span<const uint8_t>()) {
+  if (raw_log_file_header_span.empty()) {
     LOG(WARNING) << "Empty log file on " << reader.filename();
     return 0;
   }
@@ -98,7 +98,7 @@ int PrintRaw(int argc, char **argv) {
   }
   while (true) {
     absl::Span<const uint8_t> maybe_header_data = reader.PeekMessage();
-    if (maybe_header_data == absl::Span<const uint8_t>()) {
+    if (maybe_header_data.empty()) {
       break;
     }
 
@@ -153,7 +153,7 @@ int PrintRaw(int argc, char **argv) {
   while (true) {
     const aos::SizePrefixedFlatbufferSpan<aos::logger::MessageHeader> message(
         reader.ReadMessage());
-    if (message.span() == absl::Span<const uint8_t>()) {
+    if (message.span().empty()) {
       break;
     }
     CHECK(message.Verify());

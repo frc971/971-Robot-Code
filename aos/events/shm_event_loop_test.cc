@@ -42,7 +42,7 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
     }
     ::std::unique_ptr<ShmEventLoop> loop(new ShmEventLoop(configuration()));
     loop->set_name(name);
-    return std::move(loop);
+    return loop;
   }
 
   ::std::unique_ptr<EventLoop> MakePrimary(std::string_view name) override {
@@ -54,7 +54,7 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
         ::std::unique_ptr<ShmEventLoop>(new ShmEventLoop(configuration()));
     primary_event_loop_ = loop.get();
     loop->set_name(name);
-    return std::move(loop);
+    return loop;
   }
 
   void Run() override { CHECK_NOTNULL(primary_event_loop_)->Run(); }

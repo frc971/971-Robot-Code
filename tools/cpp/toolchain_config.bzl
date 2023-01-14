@@ -797,7 +797,7 @@ def _impl(ctx):
                     actions = all_cpp_compile_actions,
                     flag_groups = [
                         flag_group(
-                            flags = ["-std=gnu++1z", "-fno-sized-deallocation"],
+                            flags = ["-std=gnu++20", "-fno-sized-deallocation"],
                         ),
                     ],
                 ),
@@ -981,12 +981,12 @@ def _impl(ctx):
                 flag_groups = [
                     flag_group(
                         flags = [
-                            "--sysroot=external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi",
+                            "--sysroot=external/arm_frc_linux_gnueabi_repo/arm-nilrt-linux-gnueabi/sysroot",
                             "-nostdinc",
                             "-isystem",
-                            "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include",
+                            "external/arm_frc_linux_gnueabi_repo/arm-nilrt-linux-gnueabi/sysroot/usr/lib/gcc/arm-nilrt-linux-gnueabi/12/include",
                             "-isystem",
-                            "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include-fixed",
+                            "external/arm_frc_linux_gnueabi_repo/arm-nilrt-linux-gnueabi/sysroot/usr/lib/gcc/arm-nilrt-linux-gnueabi/12/include-fixed",
                         ],
                     ),
                 ],
@@ -1009,11 +1009,11 @@ def _impl(ctx):
                     flag_group(
                         flags = [
                             "-isystem",
-                            "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0",
+                            "external/arm_frc_linux_gnueabi_repo/arm-nilrt-linux-gnueabi/sysroot/usr/include/c++/12",
                             "-isystem",
-                            "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/arm-frc2020-linux-gnueabi",
+                            "external/arm_frc_linux_gnueabi_repo/arm-nilrt-linux-gnueabi/sysroot/usr/include/c++/12/arm-nilrt-linux-gnueabi",
                             "-isystem",
-                            "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/backward",
+                            "external/arm_frc_linux_gnueabi_repo/arm-nilrt-linux-gnueabi/sysroot/usr/include/c++/12/backward",
                         ],
                     ),
                 ],
@@ -1034,7 +1034,7 @@ def _impl(ctx):
                     flag_group(
                         flags = [
                             "-isystem",
-                            "external/arm_frc_linux_gnueabi_repo/arm-frc2020-linux-gnueabi/usr/include",
+                            "external/arm_frc_linux_gnueabi_repo/arm-nilrt-linux-gnueabi/sysroot/usr/include",
                             "-mfpu=neon",
                             "-D__STDC_FORMAT_MACROS",
                             "-D__STDC_CONSTANT_MACROS",
@@ -1108,10 +1108,10 @@ def _impl(ctx):
 
     if ctx.attr.cpu == "roborio":
         cxx_builtin_include_directories = [
-            "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include)%",
-            "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/lib/gcc/arm-frc2020-linux-gnueabi/7.3.0/include-fixed)%",
-            "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/arm-frc2020-linux-gnueabi)%",
-            "%package(@arm_frc_linux_gnueabi_repo//arm-frc2020-linux-gnueabi/usr/include/c++/7.3.0/backward)%",
+            "%package(@arm_frc_linux_gnueabi_repo//arm-nilrt-linux-gnueabi/sysroot/usr/lib/gcc/arm-nilrt-linux-gnueabi/12/include)%",
+            "%package(@arm_frc_linux_gnueabi_repo//arm-nilrt-linux-gnueabi/sysroot/usr/lib/gcc/arm-nilrt-linux-gnueabi/12/include-fixed)%",
+            "%package(@arm_frc_linux_gnueabi_repo//arm-nilrt-linux-gnueabi/sysroot/usr/include/c++/12/arm-nilrt-linux-gnueabi)%",
+            "%package(@arm_frc_linux_gnueabi_repo//arm-nilrt-linux-gnueabi/sysroot/usr/include/c++/12/backward)%",
         ]
     elif (ctx.attr.cpu == "rp2040" or
           ctx.attr.cpu == "cortex-m4f" or
