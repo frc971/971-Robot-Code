@@ -527,12 +527,12 @@ bind(
 
 bind(
     name = "gtest",
-    actual = "//third_party/googletest:googlemock",
+    actual = "@com_google_googletest//:gtest",
 )
 
 bind(
     name = "gtest_main",
-    actual = "//third_party/googletest:googlemock_main",
+    actual = "@com_google_googletest//:gtest_main",
 )
 
 # Recompressed from libusb-1.0.21.7z.
@@ -689,9 +689,13 @@ local_repository(
     path = "third_party/google-glog",
 )
 
-local_repository(
+http_archive(
     name = "com_google_googletest",
-    path = "third_party/googletest",
+    patch_args = ["-p1"],
+    patches = ["//third_party/googletest:googletest.patch"],
+    sha256 = "5c6d595243de011f8ce8cc68050cc0490726786e80cdfd6555ebfe148d920407",
+    strip_prefix = "googletest-356fc301251378e0f6fa6aa794d73714202887ac",
+    urls = ["https://github.com/google/googletest/archive/356fc301251378e0f6fa6aa794d73714202887ac.zip"],
 )
 
 # External dependency: Google Benchmark; has no Bazel build.

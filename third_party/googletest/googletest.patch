@@ -1,0 +1,31 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+index ac62251e..de652e5e 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -101,7 +101,10 @@ cc_library(
+     copts = select({
+         ":qnx": [],
+         ":windows": [],
+-        "//conditions:default": ["-pthread"],
++        "//conditions:default": [
++            "-pthread",
++            "-Wno-unused-parameter",
++        ],
+     }),
+     defines = select({
+         ":has_absl": ["GTEST_HAS_ABSL=1"],
+diff --git a/googlemock/test/BUILD.bazel b/googlemock/test/BUILD.bazel
+index d4297c80..b13ea948 100644
+--- a/googlemock/test/BUILD.bazel
++++ b/googlemock/test/BUILD.bazel
+@@ -39,6 +39,10 @@ cc_test(
+     name = "gmock_all_test",
+     size = "small",
+     srcs = glob(include = ["gmock-*.cc"]) + ["gmock-matchers_test.h"],
++    copts = [
++        "-Wno-unused-parameter",
++        "-Wno-unused-function",
++    ],
+     linkopts = select({
+         "//:qnx": [],
+         "//:windows": [],
