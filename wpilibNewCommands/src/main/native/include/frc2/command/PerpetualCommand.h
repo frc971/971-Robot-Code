@@ -13,13 +13,12 @@
 #include <utility>
 
 #include "frc2/command/CommandBase.h"
-#include "frc2/command/CommandGroupBase.h"
 #include "frc2/command/CommandHelper.h"
 
 namespace frc2 {
 /**
  * A command that runs another command in perpetuity, ignoring that command's
- * end conditions.  While this class does not extend {@link CommandGroupBase},
+ * end conditions.  While this class does not extend frc2::CommandGroupBase,
  * it is still considered a CommandGroup, as it allows one to compose another
  * command within it; the command instances that are passed to it cannot be
  * added to any other groups, or scheduled individually.
@@ -28,6 +27,12 @@ namespace frc2 {
  * component commands.
  *
  * This class is provided by the NewCommands VendorDep
+ *
+ * @deprecated PerpetualCommand violates the assumption that execute() doesn't
+get called after isFinished() returns true -- an assumption that should be
+valid. This was unsafe/undefined behavior from the start, and RepeatCommand
+provides an easy way to achieve similar end results with slightly different (and
+safe) semantics.
  */
 class PerpetualCommand : public CommandHelper<CommandBase, PerpetualCommand> {
  public:
@@ -38,7 +43,15 @@ class PerpetualCommand : public CommandHelper<CommandBase, PerpetualCommand> {
    *
    * @param command the command to run perpetually
    */
+  WPI_DEPRECATED(
+      "PerpetualCommand violates the assumption that execute() doesn't get "
+      "called after isFinished() returns true -- an assumption that should be "
+      "valid."
+      "This was unsafe/undefined behavior from the start, and RepeatCommand "
+      "provides an easy way to achieve similar end results with slightly "
+      "different (and safe) semantics.")
   explicit PerpetualCommand(std::unique_ptr<Command>&& command);
+  WPI_IGNORE_DEPRECATED
 
   /**
    * Creates a new PerpetualCommand.  Will run another command in perpetuity,
@@ -49,9 +62,17 @@ class PerpetualCommand : public CommandHelper<CommandBase, PerpetualCommand> {
    */
   template <class T, typename = std::enable_if_t<std::is_base_of_v<
                          Command, std::remove_reference_t<T>>>>
+  WPI_DEPRECATED(
+      "PerpetualCommand violates the assumption that execute() doesn't get "
+      "called after isFinished() returns true -- an assumption that should be "
+      "valid."
+      "This was unsafe/undefined behavior from the start, and RepeatCommand "
+      "provides an easy way to achieve similar end results with slightly "
+      "different (and safe) semantics.")
   explicit PerpetualCommand(T&& command)
       : PerpetualCommand(std::make_unique<std::remove_reference_t<T>>(
             std::forward<T>(command))) {}
+  WPI_UNIGNORE_DEPRECATED
 
   PerpetualCommand(PerpetualCommand&& other) = default;
 
@@ -66,8 +87,6 @@ class PerpetualCommand : public CommandHelper<CommandBase, PerpetualCommand> {
   void Execute() override;
 
   void End(bool interrupted) override;
-
-  PerpetualCommand Perpetually() && override;
 
  private:
   std::unique_ptr<Command> m_command;
