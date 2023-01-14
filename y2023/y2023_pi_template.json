@@ -273,9 +273,9 @@
   "applications": [
     {
       "name": "message_bridge_client",
-      "executable_name": "message_bridge_client",
       "args": ["--rt_priority=16"],
       "user": "pi",
+      "executable_name": "message_bridge_client.sh",
       "nodes": [
         "pi{{ NUM }}"
       ]

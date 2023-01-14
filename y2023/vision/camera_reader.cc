@@ -8,7 +8,7 @@
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 
-namespace y2022 {
+namespace y2023 {
 namespace vision {
 namespace {
 
@@ -102,9 +102,9 @@ void CameraReaderMain() {
 
 }  // namespace
 }  // namespace vision
-}  // namespace y2022
+}  // namespace y2023
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
-  y2022::vision::CameraReaderMain();
+  y2023::vision::CameraReaderMain();
 }
