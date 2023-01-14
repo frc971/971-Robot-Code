@@ -31,6 +31,8 @@ class V4L2ReaderBase {
   // until this method is called again.
   bool ReadLatestImage();
 
+  void MaybeEnqueue();
+
   // Sends the latest image.
   //
   // ReadLatestImage() must have returned a non-empty span the last time it was
@@ -46,7 +48,7 @@ class V4L2ReaderBase {
 
   // Sets the exposure duration of the camera. duration is the number of 100
   // microsecond units.
-  void SetExposure(size_t duration);
+  virtual void SetExposure(size_t duration);
 
   // Switches from manual to auto exposure.
   void UseAutoExposure();
@@ -143,12 +145,21 @@ class V4L2Reader : public V4L2ReaderBase {
 class RockchipV4L2Reader : public V4L2ReaderBase {
  public:
   RockchipV4L2Reader(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
-                     const std::string &device_name);
+                     const std::string &device_name,
+                     const std::string &image_sensor_subdev);
+
+  void SetExposure(size_t duration) override;
+
+  void SetGain(size_t gain);
 
  private:
   void OnImageReady();
 
+  int ImageSensorIoctl(unsigned long number, void *arg);
+
   aos::internal::EPoll *epoll_;
+
+  aos::ScopedFD image_sensor_fd_;
 };
 
 }  // namespace vision
