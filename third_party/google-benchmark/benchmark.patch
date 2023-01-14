@@ -1,0 +1,199 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+index 64f86ee..a588046 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -39,22 +39,25 @@ cc_library(
+         "include/benchmark/benchmark.h",
+         "include/benchmark/export.h",
+     ],
++    copts = [
++        "-Wno-format-nonliteral",
++    ],
++    defines = [
++        "BENCHMARK_STATIC_DEFINE",
++    ] + select({
++        ":perfcounters": ["HAVE_LIBPFM"],
++        "//conditions:default": [],
++    }),
+     linkopts = select({
+         ":windows": ["-DEFAULTLIB:shlwapi.lib"],
+         "//conditions:default": ["-pthread"],
+     }),
+-    strip_include_prefix = "include",
+-    visibility = ["//visibility:public"],
+     # Only static linking is allowed; no .so will be produced.
+     # Using `defines` (i.e. not `local_defines`) means that no
+     # dependent rules need to bother about defining the macro.
+     linkstatic = True,
+-    defines = [
+-        "BENCHMARK_STATIC_DEFINE",
+-    ] + select({
+-        ":perfcounters": ["HAVE_LIBPFM"],
+-        "//conditions:default": [],
+-    }),
++    strip_include_prefix = "include",
++    visibility = ["//visibility:public"],
+     deps = select({
+         ":perfcounters": ["@libpfm//:libpfm"],
+         "//conditions:default": [],
+@@ -64,7 +67,10 @@ cc_library(
+ cc_library(
+     name = "benchmark_main",
+     srcs = ["src/benchmark_main.cc"],
+-    hdrs = ["include/benchmark/benchmark.h", "include/benchmark/export.h"],
++    hdrs = [
++        "include/benchmark/benchmark.h",
++        "include/benchmark/export.h",
++    ],
+     strip_include_prefix = "include",
+     visibility = ["//visibility:public"],
+     deps = [":benchmark"],
+diff --git a/bindings/python/BUILD b/bindings/python/BUILD
+deleted file mode 100644
+index 9559a76..0000000
+--- a/bindings/python/BUILD
++++ /dev/null
+@@ -1,3 +0,0 @@
+-exports_files(glob(["*.BUILD"]))
+-exports_files(["build_defs.bzl"])
+-
+diff --git a/bindings/python/google_benchmark/BUILD b/bindings/python/google_benchmark/BUILD
+deleted file mode 100644
+index 3c1561f..0000000
+--- a/bindings/python/google_benchmark/BUILD
++++ /dev/null
+@@ -1,38 +0,0 @@
+-load("//bindings/python:build_defs.bzl", "py_extension")
+-
+-py_library(
+-    name = "google_benchmark",
+-    srcs = ["__init__.py"],
+-    visibility = ["//visibility:public"],
+-    deps = [
+-        ":_benchmark",
+-        # pip; absl:app
+-    ],
+-)
+-
+-py_extension(
+-    name = "_benchmark",
+-    srcs = ["benchmark.cc"],
+-    copts = [
+-        "-fexceptions",
+-        "-fno-strict-aliasing",
+-    ],
+-    features = ["-use_header_modules"],
+-    deps = [
+-        "//:benchmark",
+-        "@pybind11",
+-        "@python_headers",
+-    ],
+-)
+-
+-py_test(
+-    name = "example",
+-    srcs = ["example.py"],
+-    python_version = "PY3",
+-    srcs_version = "PY3",
+-    visibility = ["//visibility:public"],
+-    deps = [
+-        ":google_benchmark",
+-    ],
+-)
+-
+diff --git a/test/BUILD b/test/BUILD
+index 0a66bf3..4d62699 100644
+--- a/test/BUILD
++++ b/test/BUILD
+@@ -18,6 +18,10 @@ TEST_COPTS = [
+     #    "-Wshorten-64-to-32",
+     "-Wfloat-equal",
+     "-fstrict-aliasing",
++    "-Wno-unused-but-set-variable",
++    "-Wno-unused-variable",
++    "-Wno-unused-function",
++    "-Wno-unused-parameter",
+ ]
+ 
+ # Some of the issues with DoNotOptimize only occur when optimization is enabled
+@@ -27,12 +31,12 @@ PER_SRC_COPTS = {
+ 
+ TEST_ARGS = ["--benchmark_min_time=0.01"]
+ 
+-PER_SRC_TEST_ARGS = ({
++PER_SRC_TEST_ARGS = {
+     "user_counters_tabular_test.cc": ["--benchmark_counters_tabular=true"],
+     "repetitions_test.cc": [" --benchmark_repetitions=3"],
+-    "spec_arg_test.cc" : ["--benchmark_filter=BM_NotChosen"],
+-    "spec_arg_verbosity_test.cc" : ["--v=42"],
+-})
++    "spec_arg_test.cc": ["--benchmark_filter=BM_NotChosen"],
++    "spec_arg_verbosity_test.cc": ["--v=42"],
++}
+ 
+ cc_library(
+     name = "output_test_helper",
+@@ -58,14 +62,14 @@ cc_library(
+         copts = select({
+             "//:windows": [],
+             "//conditions:default": TEST_COPTS,
+-        }) + PER_SRC_COPTS.get(test_src, []) ,
++        }) + PER_SRC_COPTS.get(test_src, []),
+         deps = [
+             ":output_test_helper",
+             "//:benchmark",
+             "//:benchmark_internal_headers",
+             "@com_google_googletest//:gtest",
+             "@com_google_googletest//:gtest_main",
+-        ]
++        ],
+         # FIXME: Add support for assembly tests to bazel.
+         # See Issue #556
+         # https://github.com/google/benchmark/issues/556
+@@ -85,6 +89,10 @@ cc_test(
+     size = "small",
+     srcs = ["cxx03_test.cc"],
+     copts = TEST_COPTS + ["-std=c++03"],
++    target_compatible_with = select({
++        "//:windows": ["@platforms//:incompatible"],
++        "//conditions:default": [],
++    }),
+     deps = [
+         ":output_test_helper",
+         "//:benchmark",
+@@ -92,10 +100,6 @@ cc_test(
+         "@com_google_googletest//:gtest",
+         "@com_google_googletest//:gtest_main",
+     ],
+-    target_compatible_with = select({
+-        "//:windows": ["@platforms//:incompatible"],
+-        "//conditions:default": [],
+-    })
+ )
+ 
+ cc_test(
+diff --git a/tools/BUILD.bazel b/tools/BUILD.bazel
+deleted file mode 100644
+index 5895883..0000000
+--- a/tools/BUILD.bazel
++++ /dev/null
+@@ -1,19 +0,0 @@
+-load("@py_deps//:requirements.bzl", "requirement")
+-
+-py_library(
+-    name = "gbench",
+-    srcs = glob(["gbench/*.py"]),
+-    deps = [
+-      requirement("numpy"),
+-      requirement("scipy"),
+-    ],
+-)
+-
+-py_binary(
+-    name = "compare",
+-    srcs = ["compare.py"],
+-    python_version = "PY2",
+-    deps = [
+-        ":gbench",
+-    ],
+-)

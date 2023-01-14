@@ -695,9 +695,13 @@ local_repository(
 )
 
 # External dependency: Google Benchmark; has no Bazel build.
-local_repository(
+http_archive(
     name = "com_github_google_benchmark",
-    path = "third_party/google-benchmark",
+    patch_args = ["-p1"],
+    patches = ["//third_party/google-benchmark:benchmark.patch"],
+    sha256 = "6430e4092653380d9dc4ccb45a1e2dc9259d581f4866dc0759713126056bc1d7",
+    strip_prefix = "benchmark-1.7.1",
+    urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.7.1.tar.gz"],
 )
 
 local_repository(
