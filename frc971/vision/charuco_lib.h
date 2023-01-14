@@ -2,13 +2,12 @@
 #define Y2020_VISION_CHARUCO_LIB_H_
 
 #include <functional>
-#include <string_view>
-
 #include <opencv2/aruco/charuco.hpp>
 #include <opencv2/calib3d.hpp>
+#include <string_view>
+
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
-
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
@@ -16,7 +15,6 @@
 #include "y2020/vision/sift/sift_training_generated.h"
 
 DECLARE_bool(visualize);
-DECLARE_string(target_type);
 
 namespace frc971 {
 namespace vision {
@@ -80,6 +78,14 @@ class ImageCallback {
   Format format_ = Format::BGR;
 };
 
+// Types of targets that a CharucoExtractor can detect in images
+enum class TargetType : uint8_t {
+  kAprilTag = 0,
+  kAruco = 1,
+  kCharuco = 2,
+  kCharucoDiamond = 3
+};
+
 // Class which calls a callback each time an image arrives with the information
 // extracted from it.
 class CharucoExtractor {
@@ -98,7 +104,8 @@ class CharucoExtractor {
   // multiple targets in an image; for charuco boards, there should be just one
   // element
   CharucoExtractor(
-      aos::EventLoop *event_loop, std::string_view pi,
+      aos::EventLoop *event_loop, std::string_view pi, TargetType target_type,
+      std::string_view image_channel,
       std::function<void(cv::Mat, aos::monotonic_clock::time_point,
                          std::vector<cv::Vec4i>,
                          std::vector<std::vector<cv::Point2f>>, bool,
@@ -140,7 +147,12 @@ class CharucoExtractor {
   cv::Ptr<cv::aruco::Dictionary> dictionary_;
   cv::Ptr<cv::aruco::CharucoBoard> board_;
 
-  // Length of a side of the aruco marker
+  // Type of targets to detect
+  TargetType target_type_;
+  // Channel to listen on for images
+  std::string_view image_channel_;
+
+  // Length of a side of the target marker
   double marker_length_;
   // Length of a side of the checkerboard squares (around the marker)
   double square_length_;

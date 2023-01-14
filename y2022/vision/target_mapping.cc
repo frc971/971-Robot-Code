@@ -16,9 +16,17 @@
 
 DEFINE_string(json_path, "target_map.json",
               "Specify path for json with initial pose guesses.");
-DEFINE_int32(
-    team_number, 971,
-    "If reading locally, use the calibration for a node with this team number");
+DEFINE_int32(team_number, 971,
+             "Use the calibration for a node with this team number");
+
+DEFINE_bool(
+    use_robot_position, false,
+    "If true, use localizer output messages to get the robot position, and "
+    "superstructure status messages to get the turret angle, at the "
+    "times of target detections. Currently does not work reliably on the box "
+    "of pis.");
+
+DECLARE_string(image_channel);
 
 namespace y2022 {
 namespace vision {
@@ -62,17 +70,23 @@ Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camcv_target,
 
 // Add detected apriltag poses relative to the robot to
 // timestamped_target_detections
-void HandleAprilTag(
-    aos::distributed_clock::time_point pi_distributed_time,
-    std::vector<cv::Vec4i> april_ids, std::vector<Eigen::Vector3d> rvecs_eigen,
-    std::vector<Eigen::Vector3d> tvecs_eigen,
-    std::vector<DataAdapter::TimestampedDetection>
-        *timestamped_target_detections,
-    aos::Fetcher<superstructure::Status> *superstructure_status_fetcher,
-    Eigen::Affine3d fixed_extrinsics, Eigen::Affine3d turret_extrinsics) {
-  CHECK(superstructure_status_fetcher->Fetch());
-  double turret_position =
-      superstructure_status_fetcher->get()->turret()->position();
+void HandleAprilTag(aos::distributed_clock::time_point pi_distributed_time,
+                    std::vector<cv::Vec4i> april_ids,
+                    std::vector<Eigen::Vector3d> rvecs_eigen,
+                    std::vector<Eigen::Vector3d> tvecs_eigen,
+                    std::vector<DataAdapter::TimestampedDetection>
+                        *timestamped_target_detections,
+                    std::optional<aos::Fetcher<superstructure::Status>>
+                        *superstructure_status_fetcher,
+                    Eigen::Affine3d fixed_extrinsics,
+                    Eigen::Affine3d turret_extrinsics) {
+  double turret_position = 0.0;
+
+  if (superstructure_status_fetcher->has_value()) {
+    CHECK(superstructure_status_fetcher->value().Fetch());
+    turret_position =
+        superstructure_status_fetcher->value().get()->turret()->position();
+  }
 
   for (size_t tag = 0; tag < april_ids.size(); tag++) {
     Eigen::Translation3d T_camera_target = Eigen::Translation3d(
@@ -124,7 +138,8 @@ Eigen::Affine3d CameraTurretExtrinsics(
 void HandlePiCaptures(
     int pi_number, aos::EventLoop *pi_event_loop,
     aos::logger::LogReader *reader,
-    aos::Fetcher<superstructure::Status> *superstructure_status_fetcher,
+    std::optional<aos::Fetcher<superstructure::Status>>
+        *superstructure_status_fetcher,
     std::vector<DataAdapter::TimestampedDetection>
         *timestamped_target_detections,
     std::vector<std::unique_ptr<CharucoExtractor>> *charuco_extractors,
@@ -138,10 +153,13 @@ void HandlePiCaptures(
   const auto turret_extrinsics = CameraTurretExtrinsics(calibration);
   const auto fixed_extrinsics = CameraFixedExtrinsics(calibration);
 
+  // TODO(milind): change to /camera once we log at full frequency
+  static constexpr std::string_view kImageChannel = "/camera/decimated";
   charuco_extractors->emplace_back(std::make_unique<CharucoExtractor>(
       pi_event_loop,
       "pi-" + std::to_string(FLAGS_team_number) + "-" +
           std::to_string(pi_number),
+      TargetType::kAprilTag, kImageChannel,
       [=](cv::Mat /*rgb_image*/, aos::monotonic_clock::time_point eof,
           std::vector<cv::Vec4i> april_ids,
           std::vector<std::vector<cv::Point2f>> /*april_corners*/, bool valid,
@@ -160,11 +178,8 @@ void HandlePiCaptures(
         }
       }));
 
-  std::string channel =
-      absl::StrCat("/pi", std::to_string(pi_number), "/camera");
-
   image_callbacks->emplace_back(std::make_unique<ImageCallback>(
-      pi_event_loop, "/pi" + std::to_string(pi_number) + "/camera",
+      pi_event_loop, kImageChannel,
       [&, charuco_extractor =
               charuco_extractors->at(charuco_extractors->size() - 1).get()](
           cv::Mat rgb_image, const aos::monotonic_clock::time_point eof) {
@@ -182,41 +197,43 @@ void MappingMain(int argc, char *argv[]) {
   // open logfiles
   aos::logger::LogReader reader(aos::logger::SortParts(unsorted_logfiles));
   reader.Register();
-  const aos::Node *imu_node =
-      aos::configuration::GetNode(reader.configuration(), "imu");
 
-  std::unique_ptr<aos::EventLoop> imu_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("imu", imu_node);
+  std::optional<aos::Fetcher<superstructure::Status>>
+      superstructure_status_fetcher;
 
-  const aos::Node *roborio_node =
-      aos::configuration::GetNode(reader.configuration(), "roborio");
+  if (FLAGS_use_robot_position) {
+    const aos::Node *imu_node =
+        aos::configuration::GetNode(reader.configuration(), "imu");
+    std::unique_ptr<aos::EventLoop> imu_event_loop =
+        reader.event_loop_factory()->MakeEventLoop("imu", imu_node);
 
-  std::unique_ptr<aos::EventLoop> roborio_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("roborio", roborio_node);
+    imu_event_loop->MakeWatcher(
+        "/localizer", [&](const frc971::controls::LocalizerOutput &localizer) {
+          aos::monotonic_clock::time_point imu_monotonic_time =
+              aos::monotonic_clock::time_point(aos::monotonic_clock::duration(
+                  localizer.monotonic_timestamp_ns()));
+          aos::distributed_clock::time_point imu_distributed_time =
+              reader.event_loop_factory()
+                  ->GetNodeEventLoopFactory(imu_node)
+                  ->ToDistributedClock(imu_monotonic_time);
 
-  imu_event_loop->MakeWatcher(
-      "/localizer", [&](const frc971::controls::LocalizerOutput &localizer) {
-        aos::monotonic_clock::time_point imu_monotonic_time =
-            aos::monotonic_clock::time_point(aos::monotonic_clock::duration(
-                localizer.monotonic_timestamp_ns()));
-        aos::distributed_clock::time_point imu_distributed_time =
-            reader.event_loop_factory()
-                ->GetNodeEventLoopFactory(imu_node)
-                ->ToDistributedClock(imu_monotonic_time);
+          timestamped_robot_poses.emplace_back(DataAdapter::TimestampedPose{
+              .time = imu_distributed_time,
+              .pose =
+                  ceres::examples::Pose2d{.x = localizer.x(),
+                                          .y = localizer.y(),
+                                          .yaw_radians = localizer.theta()}});
+        });
 
-        timestamped_robot_poses.emplace_back(DataAdapter::TimestampedPose{
-            .time = imu_distributed_time,
-            .pose = ceres::examples::Pose2d{.x = localizer.x(),
-                                            .y = localizer.y(),
-                                            .yaw_radians = localizer.theta()}});
-      });
+    const aos::Node *roborio_node =
+        aos::configuration::GetNode(reader.configuration(), "roborio");
+    std::unique_ptr<aos::EventLoop> roborio_event_loop =
+        reader.event_loop_factory()->MakeEventLoop("roborio", roborio_node);
 
-  // Override target_type to AprilTag, since that's what we're using here
-  FLAGS_target_type = "april_tag";
-
-  auto superstructure_status_fetcher =
-      roborio_event_loop->MakeFetcher<superstructure::Status>(
-          "/superstructure");
+    superstructure_status_fetcher =
+        roborio_event_loop->MakeFetcher<superstructure::Status>(
+            "/superstructure");
+  }
 
   std::vector<std::unique_ptr<CharucoExtractor>> charuco_extractors;
   std::vector<std::unique_ptr<ImageCallback>> image_callbacks;
@@ -256,9 +273,11 @@ void MappingMain(int argc, char *argv[]) {
   reader.event_loop_factory()->Run();
 
   auto target_constraints =
-      DataAdapter::MatchTargetDetections(timestamped_robot_poses,
-                                         timestamped_target_detections)
-          .first;
+      (FLAGS_use_robot_position
+           ? DataAdapter::MatchTargetDetections(timestamped_robot_poses,
+                                                timestamped_target_detections)
+                 .first
+           : DataAdapter::MatchTargetDetections(timestamped_target_detections));
 
   frc971::vision::TargetMapper mapper(FLAGS_json_path, target_constraints);
   mapper.Solve("rapid_react");

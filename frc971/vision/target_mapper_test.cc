@@ -94,7 +94,7 @@ aos::distributed_clock::time_point TimeInMs(size_t ms) {
 
 }  // namespace
 
-TEST(DataAdapterTest, Interpolation) {
+TEST(DataAdapterTest, MatchTargetDetections) {
   std::vector<DataAdapter::TimestampedPose> timestamped_robot_poses = {
       {TimeInMs(0), ceres::examples::Pose2d{1.0, 2.0, 0.0}},
       {TimeInMs(5), ceres::examples::Pose2d{1.0, 2.0, 0.0}},
@@ -196,6 +196,50 @@ TEST(DataAdapterTest, Interpolation) {
   EXPECT_EQ(target_constraints[2].information, confidence_6ms);
   EXPECT_EQ(target_constraints[3].information, confidence_1ms);
   EXPECT_EQ(target_constraints[4].information, confidence_11ms);
+}
+
+TEST(DataAdapterTest, MatchTargetDetectionsWithoutRobotPosition) {
+  std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections =
+      {{TimeInMs(5),
+        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -5.0, 0.0}),
+        2},
+       {TimeInMs(6),
+        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, M_PI}),
+        0},
+       {TimeInMs(10),
+        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{3.0, -3.0, M_PI}),
+        1},
+       {TimeInMs(13),
+        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{4.0, -7.0, M_PI_2}),
+        2},
+       {TimeInMs(14),
+        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{4.0, -4.0, M_PI_2}),
+        2}};
+
+  constexpr auto kMaxDt = std::chrono::milliseconds(3);
+  auto target_constraints =
+      DataAdapter::MatchTargetDetections(timestamped_target_detections, kMaxDt);
+
+  // The constraint between the detection at 6ms and the one at 10 ms is skipped
+  // because dt > kMaxDt.
+  // Also, the constraint between the last two detections is skipped because
+  // they are the same target
+  EXPECT_EQ(target_constraints.size(),
+            timestamped_target_detections.size() - 3);
+
+  // Between 5ms and 6ms detections
+  EXPECT_DOUBLE_EQ(target_constraints[0].x, 0.0);
+  EXPECT_DOUBLE_EQ(target_constraints[0].y, 1.0);
+  EXPECT_DOUBLE_EQ(target_constraints[0].yaw_radians, -M_PI);
+  EXPECT_EQ(target_constraints[0].id_begin, 2);
+  EXPECT_EQ(target_constraints[0].id_end, 0);
+
+  // Between 10ms and 13ms detections
+  EXPECT_DOUBLE_EQ(target_constraints[1].x, -1.0);
+  EXPECT_DOUBLE_EQ(target_constraints[1].y, 4.0);
+  EXPECT_DOUBLE_EQ(target_constraints[1].yaw_radians, -M_PI_2);
+  EXPECT_EQ(target_constraints[1].id_begin, 1);
+  EXPECT_EQ(target_constraints[1].id_end, 2);
 }
 
 TEST(TargetMapperTest, TwoTargetsOneConstraint) {

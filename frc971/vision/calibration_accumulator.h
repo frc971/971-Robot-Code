@@ -1,5 +1,5 @@
-#ifndef Y2020_VISION_CALIBRATION_ACCUMULATOR_H_
-#define Y2020_VISION_CALIBRATION_ACCUMULATOR_H_
+#ifndef FRC971_VISION_CALIBRATION_ACCUMULATOR_H_
+#define FRC971_VISION_CALIBRATION_ACCUMULATOR_H_
 
 #include <vector>
 
@@ -82,7 +82,8 @@ class Calibration {
  public:
   Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
               aos::EventLoop *image_event_loop, aos::EventLoop *imu_event_loop,
-              std::string_view pi, CalibrationData *data);
+              std::string_view pi, TargetType target_type,
+              std::string_view image_channel, CalibrationData *data);
 
   // Processes a charuco detection that is returned from charuco_lib.
   // For a valid detection(s), it stores camera observation
@@ -115,4 +116,4 @@ class Calibration {
 }  // namespace vision
 }  // namespace frc971
 
-#endif  // Y2020_VISION_CALIBRATION_ACCUMULATOR_H_
+#endif  // FRC971_VISION_CALIBRATION_ACCUMULATOR_H_

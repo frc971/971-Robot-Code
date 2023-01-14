@@ -116,6 +116,16 @@ class DataAdapter {
       const std::vector<TimestampedPose> &timestamped_robot_poses,
       const std::vector<TimestampedDetection> &timestamped_target_detections);
 
+  // Pairs consecutive target detections that are not too far apart in time into
+  // constraints. Meant to be used on a system without a position measurement.
+  // Assumes timestamped_target_detections is in chronological order.
+  // max_dt is the maximum time between two target detections to match them up.
+  // If too much time passes, the recoding device (box of pis) could have moved
+  // too much
+  static std::vector<ceres::examples::Constraint2d> MatchTargetDetections(
+      const std::vector<TimestampedDetection> &timestamped_target_detections,
+      aos::distributed_clock::duration max_dt = std::chrono::milliseconds(1));
+
   // Computes inverse of covariance matrix, assuming there was a target
   // detection between robot movement over the given time period. Ceres calls
   // this matrix the "information"
@@ -135,6 +145,12 @@ class DataAdapter {
   static ceres::examples::Constraint2d ComputeTargetConstraint(
       const TimestampedDetection &target_detection_start,
       const Eigen::Affine3d &H_robotstart_robotend,
+      const TimestampedDetection &target_detection_end,
+      const Eigen::Matrix3d &confidence);
+  // Same as above function, but assumes no robot motion between the two
+  // detections
+  static ceres::examples::Constraint2d ComputeTargetConstraint(
+      const TimestampedDetection &target_detection_start,
       const TimestampedDetection &target_detection_end,
       const Eigen::Matrix3d &confidence);
 };
