@@ -387,9 +387,13 @@ http_archive(
     url = "https://www.frc971.org/Build-Dependencies/nlopt-496be736b8b249273838b891f4c8ca3669551127.zip",
 )
 
-local_repository(
+http_archive(
     name = "com_google_absl",
-    path = "third_party/abseil",
+    patch_args = ["-p1"],
+    patches = ["//third_party/abseil:abseil.patch"],
+    sha256 = "91209b5eecd9c3d862b230fefbc2728c7f2764ff6d5866ec398d48db1aaa1e90",
+    strip_prefix = "abseil-cpp-bb63a76710554cebbeb20306739a7b832be38c4a",
+    url = "https://github.com/abseil/abseil-cpp/archive/bb63a76710554cebbeb20306739a7b832be38c4a.zip",
 )
 
 local_repository(

@@ -1,0 +1,245 @@
+diff --git a/absl/copts/GENERATED_AbseilCopts.cmake b/absl/copts/GENERATED_AbseilCopts.cmake
+index 04e7b444..5d164438 100644
+--- a/absl/copts/GENERATED_AbseilCopts.cmake
++++ b/absl/copts/GENERATED_AbseilCopts.cmake
+@@ -49,6 +49,12 @@ list(APPEND ABSL_GCC_FLAGS
+     "-Wundef"
+     "-Wunused-local-typedefs"
+     "-Wunused-result"
++    "-Wno-format-nonliteral"
++    "-Wno-tautological-type-limit-compare"
++    "-Wno-unused-parameter"
++    "-Wno-sign-conversion"
++    "-Wno-shorten-64-to-32"
++    "-Wno-shadow"
+     "-Wvarargs"
+     "-Wvla"
+     "-Wwrite-strings"
+@@ -66,6 +72,12 @@ list(APPEND ABSL_GCC_TEST_FLAGS
+     "-Wundef"
+     "-Wunused-local-typedefs"
+     "-Wunused-result"
++    "-Wno-format-nonliteral"
++    "-Wno-tautological-type-limit-compare"
++    "-Wno-unused-parameter"
++    "-Wno-sign-conversion"
++    "-Wno-shorten-64-to-32"
++    "-Wno-shadow"
+     "-Wvarargs"
+     "-Wvla"
+     "-Wwrite-strings"
+@@ -95,8 +107,8 @@ list(APPEND ABSL_LLVM_FLAGS
+     "-Woverlength-strings"
+     "-Wpointer-arith"
+     "-Wself-assign"
+-    "-Wshadow-all"
+     "-Wshorten-64-to-32"
++    "-Wno-shadow"
+     "-Wsign-conversion"
+     "-Wstring-conversion"
+     "-Wtautological-overlap-compare"
+@@ -114,6 +126,11 @@ list(APPEND ABSL_LLVM_FLAGS
+     "-Wno-implicit-int-float-conversion"
+     "-Wno-unknown-warning-option"
+     "-DNOMINMAX"
++    "-Wno-format-nonliteral"
++    "-Wno-unused-parameter"
++    "-Wno-tautological-type-limit-compare"
++    "-Wno-sign-conversion"
++    "-Wno-shorten-64-to-32"
+ )
+ 
+ list(APPEND ABSL_LLVM_TEST_FLAGS
+@@ -133,7 +150,7 @@ list(APPEND ABSL_LLVM_TEST_FLAGS
+     "-Woverlength-strings"
+     "-Wpointer-arith"
+     "-Wself-assign"
+-    "-Wshadow-all"
++    "-Wno-shadow"
+     "-Wstring-conversion"
+     "-Wtautological-overlap-compare"
+     "-Wtautological-unsigned-zero-compare"
+@@ -150,6 +167,11 @@ list(APPEND ABSL_LLVM_TEST_FLAGS
+     "-Wno-implicit-int-float-conversion"
+     "-Wno-unknown-warning-option"
+     "-DNOMINMAX"
++    "-Wno-format-nonliteral"
++    "-Wno-unused-parameter"
++    "-Wno-tautological-type-limit-compare"
++    "-Wno-sign-conversion"
++    "-Wno-shorten-64-to-32"
+     "-Wno-deprecated-declarations"
+     "-Wno-implicit-int-conversion"
+     "-Wno-missing-prototypes"
+diff --git a/absl/copts/GENERATED_copts.bzl b/absl/copts/GENERATED_copts.bzl
+index 84f4bffc..f15266dd 100644
+--- a/absl/copts/GENERATED_copts.bzl
++++ b/absl/copts/GENERATED_copts.bzl
+@@ -50,6 +50,12 @@ ABSL_GCC_FLAGS = [
+     "-Wundef",
+     "-Wunused-local-typedefs",
+     "-Wunused-result",
++    "-Wno-format-nonliteral",
++    "-Wno-tautological-type-limit-compare",
++    "-Wno-unused-parameter",
++    "-Wno-sign-conversion",
++    "-Wno-shorten-64-to-32",
++    "-Wno-shadow",
+     "-Wvarargs",
+     "-Wvla",
+     "-Wwrite-strings",
+@@ -67,6 +73,12 @@ ABSL_GCC_TEST_FLAGS = [
+     "-Wundef",
+     "-Wunused-local-typedefs",
+     "-Wunused-result",
++    "-Wno-format-nonliteral",
++    "-Wno-tautological-type-limit-compare",
++    "-Wno-unused-parameter",
++    "-Wno-sign-conversion",
++    "-Wno-shorten-64-to-32",
++    "-Wno-shadow",
+     "-Wvarargs",
+     "-Wvla",
+     "-Wwrite-strings",
+@@ -96,8 +108,8 @@ ABSL_LLVM_FLAGS = [
+     "-Woverlength-strings",
+     "-Wpointer-arith",
+     "-Wself-assign",
+-    "-Wshadow-all",
+     "-Wshorten-64-to-32",
++    "-Wno-shadow",
+     "-Wsign-conversion",
+     "-Wstring-conversion",
+     "-Wtautological-overlap-compare",
+@@ -115,6 +127,11 @@ ABSL_LLVM_FLAGS = [
+     "-Wno-implicit-int-float-conversion",
+     "-Wno-unknown-warning-option",
+     "-DNOMINMAX",
++    "-Wno-format-nonliteral",
++    "-Wno-unused-parameter",
++    "-Wno-tautological-type-limit-compare",
++    "-Wno-sign-conversion",
++    "-Wno-shorten-64-to-32",
+ ]
+ 
+ ABSL_LLVM_TEST_FLAGS = [
+@@ -134,7 +151,7 @@ ABSL_LLVM_TEST_FLAGS = [
+     "-Woverlength-strings",
+     "-Wpointer-arith",
+     "-Wself-assign",
+-    "-Wshadow-all",
++    "-Wno-shadow",
+     "-Wstring-conversion",
+     "-Wtautological-overlap-compare",
+     "-Wtautological-unsigned-zero-compare",
+@@ -151,6 +168,11 @@ ABSL_LLVM_TEST_FLAGS = [
+     "-Wno-implicit-int-float-conversion",
+     "-Wno-unknown-warning-option",
+     "-DNOMINMAX",
++    "-Wno-format-nonliteral",
++    "-Wno-unused-parameter",
++    "-Wno-tautological-type-limit-compare",
++    "-Wno-sign-conversion",
++    "-Wno-shorten-64-to-32",
+     "-Wno-deprecated-declarations",
+     "-Wno-implicit-int-conversion",
+     "-Wno-missing-prototypes",
+diff --git a/absl/copts/copts.py b/absl/copts/copts.py
+index 06eeb67b..bfd49c1d 100644
+--- a/absl/copts/copts.py
++++ b/absl/copts/copts.py
+@@ -23,6 +23,12 @@ ABSL_GCC_FLAGS = [
+     "-Wundef",
+     "-Wunused-local-typedefs",
+     "-Wunused-result",
++    "-Wno-format-nonliteral",
++    "-Wno-tautological-type-limit-compare",
++    "-Wno-unused-parameter",
++    "-Wno-sign-conversion",
++    "-Wno-shorten-64-to-32",
++    "-Wno-shadow",
+     "-Wvarargs",
+     "-Wvla",  # variable-length array
+     "-Wwrite-strings",
+@@ -56,8 +62,8 @@ ABSL_LLVM_FLAGS = [
+     "-Woverlength-strings",
+     "-Wpointer-arith",
+     "-Wself-assign",
+-    "-Wshadow-all",
+     "-Wshorten-64-to-32",
++    "-Wno-shadow",
+     "-Wsign-conversion",
+     "-Wstring-conversion",
+     "-Wtautological-overlap-compare",
+@@ -80,6 +86,11 @@ ABSL_LLVM_FLAGS = [
+     "-Wno-unknown-warning-option",
+     # Don't define min and max macros (Build on Windows using clang)
+     "-DNOMINMAX",
++    "-Wno-format-nonliteral",
++    "-Wno-unused-parameter",
++    "-Wno-tautological-type-limit-compare",
++    "-Wno-sign-conversion",
++    "-Wno-shorten-64-to-32",
+ ]
+ 
+ ABSL_LLVM_TEST_ADDITIONAL_FLAGS = [
+diff --git a/absl/random/internal/BUILD.bazel b/absl/random/internal/BUILD.bazel
+index 81ca669b..e839860e 100644
+--- a/absl/random/internal/BUILD.bazel
++++ b/absl/random/internal/BUILD.bazel
+@@ -665,6 +665,7 @@ cc_test(
+ cc_library(
+     name = "nanobenchmark",
+     srcs = ["nanobenchmark.cc"],
++    copts = ABSL_DEFAULT_COPTS,
+     linkopts = ABSL_DEFAULT_LINKOPTS,
+     textual_hdrs = ["nanobenchmark.h"],
+     deps = [
+diff --git a/absl/strings/BUILD.bazel b/absl/strings/BUILD.bazel
+index ed330f26..5f1c44b6 100644
+--- a/absl/strings/BUILD.bazel
++++ b/absl/strings/BUILD.bazel
+@@ -653,6 +653,7 @@ cc_test(
+     srcs = [
+         "internal/cordz_info_statistics_test.cc",
+     ],
++    copts = ABSL_DEFAULT_COPTS,
+     deps = [
+         ":cord",
+         ":cord_internal",
+diff --git a/absl/time/internal/cctz/BUILD.bazel b/absl/time/internal/cctz/BUILD.bazel
+index edeabd81..49674f5f 100644
+--- a/absl/time/internal/cctz/BUILD.bazel
++++ b/absl/time/internal/cctz/BUILD.bazel
+@@ -16,6 +16,13 @@ package(features = ["-parse_headers"])
+ 
+ licenses(["notice"])
+ 
++load(
++    "//absl:copts/configure_copts.bzl",
++    "ABSL_DEFAULT_COPTS",
++    "ABSL_DEFAULT_LINKOPTS",
++    "ABSL_TEST_COPTS",
++)
++
+ ### libraries
+ 
+ cc_library(
+@@ -24,6 +31,8 @@ cc_library(
+     hdrs = [
+         "include/cctz/civil_time.h",
+     ],
++    copts = ABSL_DEFAULT_COPTS,
++    linkopts = ABSL_DEFAULT_LINKOPTS,
+     textual_hdrs = ["include/cctz/civil_time_detail.h"],
+     visibility = ["//visibility:public"],
+     deps = ["//absl/base:config"],
+@@ -53,6 +62,8 @@ cc_library(
+         "include/cctz/time_zone.h",
+         "include/cctz/zone_info_source.h",
+     ],
++    copts = ABSL_DEFAULT_COPTS,
++    linkopts = ABSL_DEFAULT_LINKOPTS,
+     # OS X and iOS no longer use `linkopts = ["-framework CoreFoundation"]`
+     # as (1) bazel adds it automatically, and (2) it caused problems when
+     # cross-compiling for Android.

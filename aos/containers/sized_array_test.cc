@@ -138,13 +138,19 @@ TEST(SizedArrayTest, Iterators) {
 // Tests various ways of filling up and emptying.
 TEST(SizedArrayTest, FillEmpty) {
   SizedArray<int, 2> a;
+  // The absl InlinedVector is overly clever and realizes that, for certain
+  // vectors, we can increase the static size of the vector for free...
+  EXPECT_EQ(4, a.capacity());
   EXPECT_TRUE(a.empty());
   EXPECT_NE(a.size(), a.capacity());
   a.push_back(9);
   EXPECT_FALSE(a.empty());
   EXPECT_NE(a.size(), a.capacity());
+  a.push_back(9);
+  EXPECT_FALSE(a.empty());
   a.push_back(7);
   EXPECT_FALSE(a.empty());
+  a.push_back(1);
   EXPECT_EQ(a.size(), a.capacity());
 
   a.clear();
