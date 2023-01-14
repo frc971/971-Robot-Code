@@ -92,7 +92,7 @@ void V4L2ReaderBase::StreamOn() {
   PCHECK(Ioctl(VIDIOC_STREAMON, &type) == 0);
 }
 
-bool V4L2ReaderBase::ReadLatestImage() {
+void V4L2ReaderBase::MaybeEnqueue() {
   // First, enqueue any old buffer we already have. This is the one which
   // may have been sent.
   if (saved_buffer_) {
@@ -100,6 +100,11 @@ bool V4L2ReaderBase::ReadLatestImage() {
     saved_buffer_.Clear();
   }
   ftrace_.FormatMessage("Enqueued previous buffer %d", saved_buffer_.index);
+}
+
+bool V4L2ReaderBase::ReadLatestImage() {
+  MaybeEnqueue();
+
   while (true) {
     const BufferInfo previous_buffer = saved_buffer_;
     saved_buffer_ = DequeueBuffer();
@@ -303,8 +308,14 @@ V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
 
 RockchipV4L2Reader::RockchipV4L2Reader(aos::EventLoop *event_loop,
                                        aos::internal::EPoll *epoll,
-                                       const std::string &device_name)
-    : V4L2ReaderBase(event_loop, device_name), epoll_(epoll) {
+                                       const std::string &device_name,
+                                       const std::string &image_sensor_subdev)
+    : V4L2ReaderBase(event_loop, device_name),
+      epoll_(epoll),
+      image_sensor_fd_(open(image_sensor_subdev.c_str(), O_RDWR | O_NONBLOCK)) {
+  PCHECK(image_sensor_fd_.get() != -1)
+      << " Failed to open device " << device_name;
+
   StreamOn();
   epoll_->OnReadable(fd().get(), [this]() { OnImageReady(); });
 }
@@ -315,6 +326,32 @@ void RockchipV4L2Reader::OnImageReady() {
   }
 
   SendLatestImage();
+}
+
+int RockchipV4L2Reader::ImageSensorIoctl(unsigned long number, void *arg) {
+  return ioctl(image_sensor_fd_.get(), number, arg);
+}
+
+void RockchipV4L2Reader::SetExposure(size_t duration) {
+  v4l2_control exposure_control;
+  exposure_control.id = V4L2_CID_EXPOSURE;
+  exposure_control.value = static_cast<int>(duration);
+  PCHECK(ImageSensorIoctl(VIDIOC_S_CTRL, &exposure_control) == 0);
+}
+
+void RockchipV4L2Reader::SetGain(size_t gain) {
+  struct v4l2_ext_controls controls;
+  memset(&controls, 0, sizeof(controls));
+  struct v4l2_ext_control control[1];
+  memset(&control, 0, sizeof(control));
+
+  controls.ctrl_class = V4L2_CTRL_CLASS_IMAGE_SOURCE;
+  controls.count = 1;
+  controls.controls = control;
+  control[0].id = V4L2_CID_ANALOGUE_GAIN;
+  control[0].value = gain;
+
+  PCHECK(ImageSensorIoctl(VIDIOC_S_EXT_CTRLS, &controls) == 0);
 }
 
 }  // namespace vision

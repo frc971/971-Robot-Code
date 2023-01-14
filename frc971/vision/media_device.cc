@@ -365,8 +365,12 @@ Entity *MediaDevice::FindEntity(std::string_view entity_name) {
 
 Link *MediaDevice::FindLink(std::string_view source, int source_pad_index,
                             std::string_view sink, int sink_pad_index) {
-  Entity *source_entity = CHECK_NOTNULL(FindEntity(source));
-  Entity *sink_entity = CHECK_NOTNULL(FindEntity(sink));
+  Entity *source_entity = FindEntity(source);
+  Entity *sink_entity = FindEntity(sink);
+
+  CHECK(source_entity != nullptr) << ": Failed to find source " << source;
+  CHECK(sink_entity != nullptr) << ": Failed to find sink " << sink;
+
   Pad *source_pad = source_entity->pads()[source_pad_index];
   Pad *sink_pad = sink_entity->pads()[sink_pad_index];
   for (size_t i = 0; i < source_pad->links_size(); ++i) {
