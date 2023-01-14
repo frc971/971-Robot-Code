@@ -69,6 +69,16 @@ ceres::examples::Pose2d MakePose(double x, double y, double yaw_radians) {
   return ceres::examples::Pose2d{x, y, yaw_radians};
 }
 
+// Assumes camera and robot origin are the same
+DataAdapter::TimestampedDetection MakeTimestampedDetection(
+    aos::distributed_clock::time_point time, Eigen::Affine3d H_robot_target,
+    TargetMapper::TargetId id) {
+  auto target_pose = PoseUtils::Affine3dToPose2d(H_robot_target);
+  return DataAdapter::TimestampedDetection{
+      time, H_robot_target,
+      std::sqrt(std::pow(target_pose.x, 2) + std::pow(target_pose.y, 2)), id};
+}
+
 bool TargetIsInView(TargetMapper::TargetPose target_detection) {
   // And check if it is within the fov of the robot /
   // camera, assuming camera is pointing in the
@@ -94,6 +104,64 @@ aos::distributed_clock::time_point TimeInMs(size_t ms) {
 
 }  // namespace
 
+TEST(DataAdapterTest, ComputeConfidence) {
+  // Check the confidence matrices. Don't check the actual values
+  // in case the constants change, just check that the confidence of contraints
+  // decreases as time period or distances from camera increase.
+  {
+    // Vary time period
+    constexpr double kDistanceStart = 0.5;
+    constexpr double kDistanceEnd = 2.0;
+
+    Eigen::Matrix3d last_confidence = Eigen::Matrix3d::Zero();
+    for (size_t dt = 0; dt < 15; dt++) {
+      Eigen::Matrix3d confidence = DataAdapter::ComputeConfidence(
+          TimeInMs(0), TimeInMs(dt), kDistanceStart, kDistanceEnd);
+
+      if (dt != 0) {
+        // Confidence only decreases every 5ms (control loop period)
+        if (dt % 5 == 0) {
+          EXPECT_CONFIDENCE_GT(last_confidence, confidence);
+        } else {
+          EXPECT_EQ(last_confidence, confidence);
+        }
+      }
+      last_confidence = confidence;
+    }
+  }
+
+  {
+    // Vary distance at start
+    constexpr int kDt = 3;
+    constexpr double kDistanceEnd = 1.5;
+    Eigen::Matrix3d last_confidence = Eigen::Matrix3d::Zero();
+    for (double distance_start = 0.0; distance_start < 3.0;
+         distance_start += 0.5) {
+      Eigen::Matrix3d confidence = DataAdapter::ComputeConfidence(
+          TimeInMs(0), TimeInMs(kDt), distance_start, kDistanceEnd);
+      if (distance_start != 0.0) {
+        EXPECT_CONFIDENCE_GT(last_confidence, confidence);
+      }
+      last_confidence = confidence;
+    }
+  }
+
+  {
+    // Vary distance at end
+    constexpr int kDt = 2;
+    constexpr double kDistanceStart = 2.5;
+    Eigen::Matrix3d last_confidence = Eigen::Matrix3d::Zero();
+    for (double distance_end = 0.0; distance_end < 3.0; distance_end += 0.5) {
+      Eigen::Matrix3d confidence = DataAdapter::ComputeConfidence(
+          TimeInMs(0), TimeInMs(kDt), kDistanceStart, distance_end);
+      if (distance_end != 0.0) {
+        EXPECT_CONFIDENCE_GT(last_confidence, confidence);
+      }
+      last_confidence = confidence;
+    }
+  }
+}
+
 TEST(DataAdapterTest, MatchTargetDetections) {
   std::vector<DataAdapter::TimestampedPose> timestamped_robot_poses = {
       {TimeInMs(0), ceres::examples::Pose2d{1.0, 2.0, 0.0}},
@@ -107,22 +175,22 @@ TEST(DataAdapterTest, MatchTargetDetections) {
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections =
       {{TimeInMs(5),
         PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        0},
+        1.0, 0},
        {TimeInMs(9),
         PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        1},
+        1.0, 1},
        {TimeInMs(9),
         PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        2},
+        1.0, 2},
        {TimeInMs(15),
         PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        0},
+        1.0, 0},
        {TimeInMs(16),
         PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        2},
+        1.0, 2},
        {TimeInMs(27),
         PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        1}};
+        1.0, 1}};
   auto [target_constraints, robot_delta_poses] =
       DataAdapter::MatchTargetDetections(timestamped_robot_poses,
                                          timestamped_target_detections);
@@ -166,55 +234,30 @@ TEST(DataAdapterTest, MatchTargetDetections) {
       PoseUtils::ComputeOffsetPose(computed_robot_pose, robot_delta_poses[4]);
   EXPECT_POSE_IN_RANGE(computed_robot_pose, timestamped_robot_poses[5].pose,
                        timestamped_robot_poses[6].pose);
-
-  // Check the confidence matrices. Don't check the actual values
-  // in case the constants change, just check the confidence of contraints
-  // relative to each other, as constraints over longer time periods should have
-  // lower confidence.
-  const auto confidence_0ms =
-      DataAdapter::ComputeConfidence(TimeInMs(0), TimeInMs(0));
-  const auto confidence_1ms =
-      DataAdapter::ComputeConfidence(TimeInMs(0), TimeInMs(1));
-  const auto confidence_4ms =
-      DataAdapter::ComputeConfidence(TimeInMs(0), TimeInMs(4));
-  const auto confidence_6ms =
-      DataAdapter::ComputeConfidence(TimeInMs(0), TimeInMs(6));
-  const auto confidence_11ms =
-      DataAdapter::ComputeConfidence(TimeInMs(0), TimeInMs(11));
-
-  // Check relative magnitude of different confidences.
-  // Confidences for 0-5ms, 5-10ms, and 10-15ms periods are equal
-  // because they fit within one control loop iteration.
-  EXPECT_EQ(confidence_0ms, confidence_1ms);
-  EXPECT_EQ(confidence_1ms, confidence_4ms);
-  EXPECT_CONFIDENCE_GT(confidence_4ms, confidence_6ms);
-  EXPECT_CONFIDENCE_GT(confidence_6ms, confidence_11ms);
-
-  // Check that confidences (information) of actual constraints are correct
-  EXPECT_EQ(target_constraints[0].information, confidence_4ms);
-  EXPECT_EQ(target_constraints[1].information, confidence_0ms);
-  EXPECT_EQ(target_constraints[2].information, confidence_6ms);
-  EXPECT_EQ(target_constraints[3].information, confidence_1ms);
-  EXPECT_EQ(target_constraints[4].information, confidence_11ms);
 }
 
 TEST(DataAdapterTest, MatchTargetDetectionsWithoutRobotPosition) {
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections =
-      {{TimeInMs(5),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -5.0, 0.0}),
-        2},
-       {TimeInMs(6),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, M_PI}),
-        0},
-       {TimeInMs(10),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{3.0, -3.0, M_PI}),
-        1},
-       {TimeInMs(13),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{4.0, -7.0, M_PI_2}),
-        2},
-       {TimeInMs(14),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{4.0, -4.0, M_PI_2}),
-        2}};
+      {MakeTimestampedDetection(
+           TimeInMs(5),
+           PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -5.0, 0.0}),
+           2),
+       MakeTimestampedDetection(TimeInMs(6),
+                                PoseUtils::Pose2dToAffine3d(
+                                    ceres::examples::Pose2d{5.0, -4.0, M_PI}),
+                                0),
+       MakeTimestampedDetection(TimeInMs(10),
+                                PoseUtils::Pose2dToAffine3d(
+                                    ceres::examples::Pose2d{3.0, -3.0, M_PI}),
+                                1),
+       MakeTimestampedDetection(TimeInMs(13),
+                                PoseUtils::Pose2dToAffine3d(
+                                    ceres::examples::Pose2d{4.0, -7.0, M_PI_2}),
+                                2),
+       MakeTimestampedDetection(TimeInMs(14),
+                                PoseUtils::Pose2dToAffine3d(
+                                    ceres::examples::Pose2d{4.0, -4.0, M_PI_2}),
+                                2)};
 
   constexpr auto kMaxDt = std::chrono::milliseconds(3);
   auto target_constraints =
@@ -252,12 +295,14 @@ TEST(TargetMapperTest, TwoTargetsOneConstraint) {
       {TimeInMs(10), ceres::examples::Pose2d{-1.0, 0.0, 0.0}},
       {TimeInMs(15), ceres::examples::Pose2d{-1.0, 0.0, 0.0}}};
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections =
-      {{TimeInMs(5),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{3.0, 0.0, M_PI}),
-        0},
-       {TimeInMs(10),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{-4.0, 0.0, 0.0}),
-        1}};
+      {MakeTimestampedDetection(
+           TimeInMs(5),
+           PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{3.0, 0.0, M_PI}),
+           0),
+       MakeTimestampedDetection(
+           TimeInMs(10),
+           PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{-4.0, 0.0, 0.0}),
+           1)};
   auto target_constraints =
       DataAdapter::MatchTargetDetections(timestamped_robot_poses,
                                          timestamped_target_detections)
@@ -282,16 +327,19 @@ TEST(TargetMapperTest, TwoTargetsTwoConstraints) {
       {TimeInMs(15), ceres::examples::Pose2d{4.0, 0.0, 0.0}},
       {TimeInMs(20), ceres::examples::Pose2d{-1.0, 0.0, 0.0}}};
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections =
-      {{TimeInMs(5),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{6.0, 0.0, M_PI}),
-        0},
-       {TimeInMs(10),
-        PoseUtils::Pose2dToAffine3d(
-            ceres::examples::Pose2d{-8.0, 0.0, -M_PI_2}),
-        1},
-       {TimeInMs(15),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{1.0, 0.0, M_PI}),
-        0}};
+      {MakeTimestampedDetection(
+           TimeInMs(5),
+           PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{6.0, 0.0, M_PI}),
+           0),
+       MakeTimestampedDetection(
+           TimeInMs(10),
+           PoseUtils::Pose2dToAffine3d(
+               ceres::examples::Pose2d{-8.0, 0.0, -M_PI_2}),
+           1),
+       MakeTimestampedDetection(
+           TimeInMs(15),
+           PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{1.0, 0.0, M_PI}),
+           0)};
   auto target_constraints =
       DataAdapter::MatchTargetDetections(timestamped_robot_poses,
                                          timestamped_target_detections)
@@ -315,13 +363,15 @@ TEST(TargetMapperTest, TwoTargetsOneNoisyConstraint) {
       {TimeInMs(10), ceres::examples::Pose2d{-1.0, 0.0, 0.0}},
       {TimeInMs(15), ceres::examples::Pose2d{-1.01, -0.01, 0.004}}};
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections =
-      {{TimeInMs(5),
-        PoseUtils::Pose2dToAffine3d(
-            ceres::examples::Pose2d{3.01, 0.001, M_PI - 0.001}),
-        0},
-       {TimeInMs(10),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{-4.01, 0.0, 0.0}),
-        1}};
+      {MakeTimestampedDetection(
+           TimeInMs(5),
+           PoseUtils::Pose2dToAffine3d(
+               ceres::examples::Pose2d{3.01, 0.001, M_PI - 0.001}),
+           0),
+       MakeTimestampedDetection(TimeInMs(10),
+                                PoseUtils::Pose2dToAffine3d(
+                                    ceres::examples::Pose2d{-4.01, 0.0, 0.0}),
+                                1)};
 
   auto target_constraints =
       DataAdapter::MatchTargetDetections(timestamped_robot_poses,
@@ -396,12 +446,9 @@ TEST(TargetMapperTest, MultiTargetCircleMotion) {
             aos::distributed_clock::time_point(std::chrono::milliseconds(t));
         timestamped_robot_poses.emplace_back(DataAdapter::TimestampedPose{
             .time = time_point, .pose = robot_pose});
-        timestamped_target_detections.emplace_back(
-            DataAdapter::TimestampedDetection{
-                .time = time_point,
-                .H_robot_target =
-                    PoseUtils::Pose2dToAffine3d(target_detection.pose),
-                .id = target_detection.id});
+        timestamped_target_detections.emplace_back(MakeTimestampedDetection(
+            time_point, PoseUtils::Pose2dToAffine3d(target_detection.pose),
+            target_detection.id));
       }
     }
   }
