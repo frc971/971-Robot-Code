@@ -1204,6 +1204,8 @@ raze_fetch_remote_crates()
 http_archive(
     name = "com_github_zaphoyd_websocketpp",
     build_file = "//third_party/websocketpp:websocketpp.BUILD",
+    patch_args = ["-p1"],
+    patches = ["//third_party/websocketpp:websocketpp.patch"],
     sha256 = "6ce889d85ecdc2d8fa07408d6787e7352510750daa66b5ad44aacb47bea76755",
     strip_prefix = "websocketpp-0.8.2",
     url = "https://github.com/zaphoyd/websocketpp/archive/refs/tags/0.8.2.tar.gz",
