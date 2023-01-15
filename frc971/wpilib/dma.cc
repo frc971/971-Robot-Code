@@ -317,7 +317,9 @@ void DMA::Start(size_t queue_depth) {
   }
 }
 
-static_assert(::std::is_pod<DMASample>::value, "DMASample needs to be POD");
+static_assert(::std::is_trivial<DMASample>::value &&
+                  ::std::is_standard_layout<DMASample>::value,
+              "DMASample needs to be POD");
 
 ssize_t DMASample::offset(int index) const {
   return dma_->channel_offsets_[index];

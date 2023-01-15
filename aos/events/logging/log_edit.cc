@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
 
     while (true) {
       absl::Span<const uint8_t> msg_data = span_reader.ReadMessage();
-      if (msg_data == absl::Span<const uint8_t>()) {
+      if (msg_data.empty()) {
         break;
       }
 

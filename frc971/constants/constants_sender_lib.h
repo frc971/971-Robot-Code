@@ -14,17 +14,14 @@ namespace frc971::constants {
 template <typename ConstantsData, typename ConstantsList>
 class ConstantSender {
  public:
-  ConstantSender<ConstantsData, ConstantsList>(
-      aos::EventLoop *event_loop, std::string constants_path,
-      std::string_view channel_name = "/constants")
+  ConstantSender(aos::EventLoop *event_loop, std::string constants_path,
+                 std::string_view channel_name = "/constants")
       : ConstantSender<ConstantsData, ConstantsList>(
             event_loop, constants_path, aos::network::GetTeamNumber(),
             channel_name) {}
 
-  ConstantSender<ConstantsData, ConstantsList>(aos::EventLoop *event_loop,
-                                               std::string constants_path,
-                                               const uint16_t team_number,
-                                               std::string_view channel_name)
+  ConstantSender(aos::EventLoop *event_loop, std::string constants_path,
+                 const uint16_t team_number, std::string_view channel_name)
       : team_number_(team_number),
         channel_name_(channel_name),
         constants_path_(constants_path),

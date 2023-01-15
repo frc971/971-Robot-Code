@@ -20,8 +20,8 @@ template <class T>
 class ActorBase {
  public:
   typedef T GoalType;
-  typedef typename std::remove_reference<decltype(
-      *static_cast<GoalType *>(nullptr)->params())>::type ParamType;
+  typedef typename std::remove_pointer<typename std::invoke_result<
+      decltype(&GoalType::params), const GoalType *>::type>::type ParamType;
 
   // Commonly used offset for autonomous phased loops
   static constexpr monotonic_clock::duration kLoopOffset =

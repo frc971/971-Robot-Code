@@ -84,16 +84,6 @@ class DutyCycle {
   double GetOutput() const;
 
   /**
-   * Get the raw output ratio of the duty cycle signal.
-   *
-   * <p> 0 means always low, an output equal to
-   * GetOutputScaleFactor() means always high.
-   *
-   * @return output ratio in raw units
-   */
-  unsigned int GetOutputRaw() const;
-
-  /**
    * Get the scale factor of the output.
    *
    * <p> An output equal to this value is always high, and then linearly scales

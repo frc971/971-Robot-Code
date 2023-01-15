@@ -32,8 +32,9 @@ common_copts = [
     "-Wno-switch-enum",
     "-Wno-error=cast-align",
     "-Wno-error=cast-qual",
-    "-Wno-deprecated-volatile",
     "-Wno-cast-qual",
+    "-Wno-array-bounds",
+    "-Wno-cast-function-type",
 
     # //build_tests:tcmalloc_build_test relies on this.
     "-DENABLE_LARGE_ALLOC_REPORT=1",
@@ -128,7 +129,10 @@ common_copts = [
         # disable the analysis to simplify.
         "-Wno-thread-safety-analysis",
     ],
-    "gcc": [],
+    "gcc": [
+        "-Wno-use-after-free",
+        "-Wno-ignored-qualifiers",
+    ],
 })
 
 cc_library(

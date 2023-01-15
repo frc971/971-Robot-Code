@@ -8,9 +8,9 @@
 #include "frc971/wpilib/ahal/DriverStation.h"
 
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <string_view>
-#include <functional>
 
 #include "FRC_NetworkCommunication/FRCComm.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
@@ -272,10 +272,10 @@ bool DriverStation::IsBrownedOut() const {
 }
 
 /**
-  * Returns the game specific message provided by the FMS.
-  *
-  * @return A string containing the game specific message.
-  */
+ * Returns the game specific message provided by the FMS.
+ *
+ * @return A string containing the game specific message.
+ */
 std::string_view DriverStation::GetGameSpecificMessage() const {
   return std::string_view(
       reinterpret_cast<const char *>(info_.gameSpecificMessage),
@@ -283,41 +283,35 @@ std::string_view DriverStation::GetGameSpecificMessage() const {
 }
 
 /**
-  * Returns the name of the competition event provided by the FMS.
-  *
-  * @return A string containing the event name
-  */
-std::string_view DriverStation::GetEventName() const {
-  return info_.eventName;
-}
+ * Returns the name of the competition event provided by the FMS.
+ *
+ * @return A string containing the event name
+ */
+std::string_view DriverStation::GetEventName() const { return info_.eventName; }
 
 /**
-  * Returns the match number provided by the FMS.
-  *
-  * @return The number of the match
-  */
+ * Returns the match number provided by the FMS.
+ *
+ * @return The number of the match
+ */
 DriverStation::MatchType DriverStation::GetMatchType() const {
   return static_cast<DriverStation::MatchType>(info_.matchType);
 }
 
 /**
-  * Returns the match number provided by the FMS.
-  *
-  * @return The number of the match
-  */
-int DriverStation::GetMatchNumber() const {
-  return info_.matchNumber;
-}
+ * Returns the match number provided by the FMS.
+ *
+ * @return The number of the match
+ */
+int DriverStation::GetMatchNumber() const { return info_.matchNumber; }
 
 /**
-  * Returns the number of times the current match has been replayed from the
-  * FMS.
-  *
-  * @return The number of replays
-  */
-int DriverStation::GetReplayNumber() const {
-  return info_.replayNumber;
-}
+ * Returns the number of times the current match has been replayed from the
+ * FMS.
+ *
+ * @return The number of replays
+ */
+int DriverStation::GetReplayNumber() const { return info_.replayNumber; }
 
 /**
  * Return the alliance that the driver station says it is on.
@@ -408,6 +402,8 @@ double DriverStation::GetBatteryVoltage() const {
  * the data will be copied from the DS polling loop.
  */
 void DriverStation::GetData() {
+  HAL_RefreshDSData();
+
   // Get the status of all of the joysticks, and save to the cache
   for (uint8_t stick = 0; stick < kJoystickPorts; stick++) {
     HAL_GetJoystickAxes(stick, &m_joystickAxesCache[stick]);
@@ -475,7 +471,6 @@ DriverStation::DriverStation() {
 }
 
 void DriverStation::RunIteration(std::function<void()> on_data) {
-  HAL_WaitForDSData();
   GetData();
 
   // We have to feed some sort of watchdog so that the driver's station knows

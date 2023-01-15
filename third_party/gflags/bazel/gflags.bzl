@@ -74,6 +74,7 @@ def gflags_library(hdrs=[], srcs=[], threads=1):
         "-DHAVE_STRTOQ",
         "-DHAVE_RWLOCK",
         "-Wno-format-nonliteral",
+        "-Wno-cast-function-type",
     ] + select({
         "//:x64_windows": [
             "-DOS_WINDOWS",

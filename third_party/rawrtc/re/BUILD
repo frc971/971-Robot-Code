@@ -34,6 +34,7 @@ cc_library(
         "gcc": [
             "-Wno-discarded-qualifiers",
             "-Wno-implicit-fallthrough",
+            "-Wno-address",
         ],
     }) + [
         "-DVER_MAJOR=0",

@@ -67,10 +67,11 @@ std::pair<RawSender::SharedSpan, absl::Span<uint8_t>> MakeSharedSpan(
   AlignedOwningSpan *const span = reinterpret_cast<AlignedOwningSpan *>(
       malloc(sizeof(AlignedOwningSpan) + size + kChannelDataAlignment - 1));
 
-  absl::Span mutable_span(
+  absl::Span<uint8_t> mutable_span(
       reinterpret_cast<uint8_t *>(RoundChannelData(&span->data[0], size)),
       size);
-  new (span) AlignedOwningSpan{.span = mutable_span};
+  // Use the placement new operator to construct an actual absl::Span in place.
+  new (&span->span) absl::Span(mutable_span);
 
   return std::make_pair(
       RawSender::SharedSpan(
@@ -1009,7 +1010,7 @@ void SimulatedChannel::MakeRawWatcher(SimulatedWatcher *watcher) {
   ::std::unique_ptr<SimulatedFetcher> fetcher(
       new SimulatedFetcher(event_loop, this));
   fetchers_.push_back(fetcher.get());
-  return ::std::move(fetcher);
+  return fetcher;
 }
 
 std::optional<uint32_t> SimulatedChannel::Send(
@@ -1584,7 +1585,7 @@ void NodeEventLoopFactory::DisableStatistics() {
 
   VLOG(1) << scheduler_.distributed_now() << " " << NodeName(node())
           << monotonic_now() << " MakeEventLoop(\"" << result->name() << "\")";
-  return std::move(result);
+  return result;
 }
 
 void SimulatedEventLoopFactory::AllowApplicationCreationDuring(

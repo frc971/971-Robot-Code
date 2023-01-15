@@ -18,9 +18,7 @@ GyroInterface::GyroInterface() : gyro_(new frc::SPI(frc::SPI::kOnboardCS0)) {
   // The myRIO goes up to 4MHz, so the roboRIO probably does too.
   gyro_->SetClockRate(4e6);
   gyro_->SetChipSelectActiveLow();
-  gyro_->SetClockActiveHigh();
-  gyro_->SetSampleDataOnRising();
-  gyro_->SetMSBFirst();
+  gyro_->SetMode(frc::SPI::Mode::kMode3);
 }
 
 bool GyroInterface::InitializeGyro() {

@@ -438,6 +438,24 @@ class PartsMessageReader {
 // Stores MessageHeader as a flat header and inline, aligned block of data.
 class UnpackedMessageHeader {
  public:
+  UnpackedMessageHeader(
+      uint32_t channel_index, monotonic_clock::time_point monotonic_sent_time,
+      realtime_clock::time_point realtime_sent_time, uint32_t queue_index,
+      std::optional<monotonic_clock::time_point> monotonic_remote_time,
+      std::optional<realtime_clock::time_point> realtime_remote_time,
+      std::optional<uint32_t> remote_queue_index,
+      monotonic_clock::time_point monotonic_timestamp_time,
+      bool has_monotonic_timestamp_time, absl::Span<const uint8_t> span)
+      : channel_index(channel_index),
+        monotonic_sent_time(monotonic_sent_time),
+        realtime_sent_time(realtime_sent_time),
+        queue_index(queue_index),
+        monotonic_remote_time(monotonic_remote_time),
+        realtime_remote_time(realtime_remote_time),
+        remote_queue_index(remote_queue_index),
+        monotonic_timestamp_time(monotonic_timestamp_time),
+        has_monotonic_timestamp_time(has_monotonic_timestamp_time),
+        span(span) {}
   UnpackedMessageHeader(const UnpackedMessageHeader &) = delete;
   UnpackedMessageHeader &operator=(const UnpackedMessageHeader &) = delete;
 

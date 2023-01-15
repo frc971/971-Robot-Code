@@ -1,8 +1,8 @@
 diff --git a/absl/copts/GENERATED_AbseilCopts.cmake b/absl/copts/GENERATED_AbseilCopts.cmake
-index 04e7b444..5d164438 100644
+index 04e7b444..81884a6d 100644
 --- a/absl/copts/GENERATED_AbseilCopts.cmake
 +++ b/absl/copts/GENERATED_AbseilCopts.cmake
-@@ -49,6 +49,12 @@ list(APPEND ABSL_GCC_FLAGS
+@@ -49,6 +49,13 @@ list(APPEND ABSL_GCC_FLAGS
      "-Wundef"
      "-Wunused-local-typedefs"
      "-Wunused-result"
@@ -12,10 +12,11 @@ index 04e7b444..5d164438 100644
 +    "-Wno-sign-conversion"
 +    "-Wno-shorten-64-to-32"
 +    "-Wno-shadow"
++    "-Wno-stringop-overflow"
      "-Wvarargs"
      "-Wvla"
      "-Wwrite-strings"
-@@ -66,6 +72,12 @@ list(APPEND ABSL_GCC_TEST_FLAGS
+@@ -66,6 +73,13 @@ list(APPEND ABSL_GCC_TEST_FLAGS
      "-Wundef"
      "-Wunused-local-typedefs"
      "-Wunused-result"
@@ -25,10 +26,11 @@ index 04e7b444..5d164438 100644
 +    "-Wno-sign-conversion"
 +    "-Wno-shorten-64-to-32"
 +    "-Wno-shadow"
++    "-Wno-stringop-overflow"
      "-Wvarargs"
      "-Wvla"
      "-Wwrite-strings"
-@@ -95,8 +107,8 @@ list(APPEND ABSL_LLVM_FLAGS
+@@ -95,8 +109,8 @@ list(APPEND ABSL_LLVM_FLAGS
      "-Woverlength-strings"
      "-Wpointer-arith"
      "-Wself-assign"
@@ -38,7 +40,7 @@ index 04e7b444..5d164438 100644
      "-Wsign-conversion"
      "-Wstring-conversion"
      "-Wtautological-overlap-compare"
-@@ -114,6 +126,11 @@ list(APPEND ABSL_LLVM_FLAGS
+@@ -114,6 +128,12 @@ list(APPEND ABSL_LLVM_FLAGS
      "-Wno-implicit-int-float-conversion"
      "-Wno-unknown-warning-option"
      "-DNOMINMAX"
@@ -47,10 +49,11 @@ index 04e7b444..5d164438 100644
 +    "-Wno-tautological-type-limit-compare"
 +    "-Wno-sign-conversion"
 +    "-Wno-shorten-64-to-32"
++    "-Wno-stringop-overflow"
  )
  
  list(APPEND ABSL_LLVM_TEST_FLAGS
-@@ -133,7 +150,7 @@ list(APPEND ABSL_LLVM_TEST_FLAGS
+@@ -133,7 +153,7 @@ list(APPEND ABSL_LLVM_TEST_FLAGS
      "-Woverlength-strings"
      "-Wpointer-arith"
      "-Wself-assign"
@@ -59,7 +62,7 @@ index 04e7b444..5d164438 100644
      "-Wstring-conversion"
      "-Wtautological-overlap-compare"
      "-Wtautological-unsigned-zero-compare"
-@@ -150,6 +167,11 @@ list(APPEND ABSL_LLVM_TEST_FLAGS
+@@ -150,6 +170,12 @@ list(APPEND ABSL_LLVM_TEST_FLAGS
      "-Wno-implicit-int-float-conversion"
      "-Wno-unknown-warning-option"
      "-DNOMINMAX"
@@ -68,14 +71,15 @@ index 04e7b444..5d164438 100644
 +    "-Wno-tautological-type-limit-compare"
 +    "-Wno-sign-conversion"
 +    "-Wno-shorten-64-to-32"
++    "-Wno-stringop-overflow"
      "-Wno-deprecated-declarations"
      "-Wno-implicit-int-conversion"
      "-Wno-missing-prototypes"
 diff --git a/absl/copts/GENERATED_copts.bzl b/absl/copts/GENERATED_copts.bzl
-index 84f4bffc..f15266dd 100644
+index 84f4bffc..21f487a1 100644
 --- a/absl/copts/GENERATED_copts.bzl
 +++ b/absl/copts/GENERATED_copts.bzl
-@@ -50,6 +50,12 @@ ABSL_GCC_FLAGS = [
+@@ -50,6 +50,13 @@ ABSL_GCC_FLAGS = [
      "-Wundef",
      "-Wunused-local-typedefs",
      "-Wunused-result",
@@ -85,10 +89,11 @@ index 84f4bffc..f15266dd 100644
 +    "-Wno-sign-conversion",
 +    "-Wno-shorten-64-to-32",
 +    "-Wno-shadow",
++    "-Wno-stringop-overflow",
      "-Wvarargs",
      "-Wvla",
      "-Wwrite-strings",
-@@ -67,6 +73,12 @@ ABSL_GCC_TEST_FLAGS = [
+@@ -67,6 +74,13 @@ ABSL_GCC_TEST_FLAGS = [
      "-Wundef",
      "-Wunused-local-typedefs",
      "-Wunused-result",
@@ -98,10 +103,11 @@ index 84f4bffc..f15266dd 100644
 +    "-Wno-sign-conversion",
 +    "-Wno-shorten-64-to-32",
 +    "-Wno-shadow",
++    "-Wno-stringop-overflow",
      "-Wvarargs",
      "-Wvla",
      "-Wwrite-strings",
-@@ -96,8 +108,8 @@ ABSL_LLVM_FLAGS = [
+@@ -96,8 +110,8 @@ ABSL_LLVM_FLAGS = [
      "-Woverlength-strings",
      "-Wpointer-arith",
      "-Wself-assign",
@@ -111,7 +117,7 @@ index 84f4bffc..f15266dd 100644
      "-Wsign-conversion",
      "-Wstring-conversion",
      "-Wtautological-overlap-compare",
-@@ -115,6 +127,11 @@ ABSL_LLVM_FLAGS = [
+@@ -115,6 +129,12 @@ ABSL_LLVM_FLAGS = [
      "-Wno-implicit-int-float-conversion",
      "-Wno-unknown-warning-option",
      "-DNOMINMAX",
@@ -120,10 +126,11 @@ index 84f4bffc..f15266dd 100644
 +    "-Wno-tautological-type-limit-compare",
 +    "-Wno-sign-conversion",
 +    "-Wno-shorten-64-to-32",
++    "-Wno-stringop-overflow",
  ]
  
  ABSL_LLVM_TEST_FLAGS = [
-@@ -134,7 +151,7 @@ ABSL_LLVM_TEST_FLAGS = [
+@@ -134,7 +154,7 @@ ABSL_LLVM_TEST_FLAGS = [
      "-Woverlength-strings",
      "-Wpointer-arith",
      "-Wself-assign",
@@ -132,7 +139,7 @@ index 84f4bffc..f15266dd 100644
      "-Wstring-conversion",
      "-Wtautological-overlap-compare",
      "-Wtautological-unsigned-zero-compare",
-@@ -151,6 +168,11 @@ ABSL_LLVM_TEST_FLAGS = [
+@@ -151,6 +171,12 @@ ABSL_LLVM_TEST_FLAGS = [
      "-Wno-implicit-int-float-conversion",
      "-Wno-unknown-warning-option",
      "-DNOMINMAX",
@@ -141,14 +148,15 @@ index 84f4bffc..f15266dd 100644
 +    "-Wno-tautological-type-limit-compare",
 +    "-Wno-sign-conversion",
 +    "-Wno-shorten-64-to-32",
++    "-Wno-stringop-overflow",
      "-Wno-deprecated-declarations",
      "-Wno-implicit-int-conversion",
      "-Wno-missing-prototypes",
 diff --git a/absl/copts/copts.py b/absl/copts/copts.py
-index 06eeb67b..bfd49c1d 100644
+index 06eeb67b..d2a3e74f 100644
 --- a/absl/copts/copts.py
 +++ b/absl/copts/copts.py
-@@ -23,6 +23,12 @@ ABSL_GCC_FLAGS = [
+@@ -23,6 +23,13 @@ ABSL_GCC_FLAGS = [
      "-Wundef",
      "-Wunused-local-typedefs",
      "-Wunused-result",
@@ -158,10 +166,11 @@ index 06eeb67b..bfd49c1d 100644
 +    "-Wno-sign-conversion",
 +    "-Wno-shorten-64-to-32",
 +    "-Wno-shadow",
++    "-Wno-stringop-overflow",
      "-Wvarargs",
      "-Wvla",  # variable-length array
      "-Wwrite-strings",
-@@ -56,8 +62,8 @@ ABSL_LLVM_FLAGS = [
+@@ -56,8 +63,8 @@ ABSL_LLVM_FLAGS = [
      "-Woverlength-strings",
      "-Wpointer-arith",
      "-Wself-assign",
@@ -171,7 +180,7 @@ index 06eeb67b..bfd49c1d 100644
      "-Wsign-conversion",
      "-Wstring-conversion",
      "-Wtautological-overlap-compare",
-@@ -80,6 +86,11 @@ ABSL_LLVM_FLAGS = [
+@@ -80,6 +87,12 @@ ABSL_LLVM_FLAGS = [
      "-Wno-unknown-warning-option",
      # Don't define min and max macros (Build on Windows using clang)
      "-DNOMINMAX",
@@ -180,6 +189,7 @@ index 06eeb67b..bfd49c1d 100644
 +    "-Wno-tautological-type-limit-compare",
 +    "-Wno-sign-conversion",
 +    "-Wno-shorten-64-to-32",
++    "-Wno-stringop-overflow",
  ]
  
  ABSL_LLVM_TEST_ADDITIONAL_FLAGS = [

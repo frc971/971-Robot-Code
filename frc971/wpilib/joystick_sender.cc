@@ -24,9 +24,13 @@ JoystickSender::JoystickSender(::aos::ShmEventLoop *event_loop)
   event_loop_->OnRun([this]() {
     frc::DriverStation *const ds = &frc::DriverStation::GetInstance();
 
+    wpi::Event event{false, false};
+    HAL_ProvideNewDataEventHandle(event.GetHandle());
+
     // TODO(Brian): Fix the potential deadlock when stopping here (condition
     // variable / mutex needs to get exposed all the way out or something).
     while (event_loop_->is_running()) {
+      wpi::WaitForObject(event.GetHandle());
       ds->RunIteration([&]() {
         auto builder = joystick_state_sender_.MakeBuilder();
 
@@ -129,6 +133,8 @@ JoystickSender::JoystickSender(::aos::ShmEventLoop *event_loop)
         }
       });
     }
+
+    HAL_RemoveNewDataEventHandle(event.GetHandle());
   });
 }
 

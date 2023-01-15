@@ -7,12 +7,12 @@
 
 #include "frc971/wpilib/ahal/SPI.h"
 
-#include <cstring>
-#include <utility>
-
 #include <hal/SPI.h>
 #include <wpi/SmallVector.h>
 #include <wpi/mutex.h>
+
+#include <cstring>
+#include <utility>
 
 #include "absl/types/span.h"
 #include "frc971/wpilib/ahal/DigitalSource.h"
@@ -30,44 +30,37 @@ SPI::~SPI() { HAL_CloseSPI(m_port); }
 
 void SPI::SetClockRate(int hz) { HAL_SetSPISpeed(m_port, hz); }
 
-void SPI::SetMSBFirst() {
-  m_msbFirst = true;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
-}
-
-void SPI::SetLSBFirst() {
-  m_msbFirst = false;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
+void SPI::SetMode(Mode mode) {
+  m_mode = static_cast<HAL_SPIMode>(mode & 0x3);
+  HAL_SetSPIMode(m_port, m_mode);
 }
 
 void SPI::SetSampleDataOnLeadingEdge() {
-  m_sampleOnTrailing = false;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
+  int mode = m_mode;
+  mode &= 2;
+  m_mode = static_cast<HAL_SPIMode>(mode);
+  HAL_SetSPIMode(m_port, m_mode);
 }
 
 void SPI::SetSampleDataOnTrailingEdge() {
-  m_sampleOnTrailing = true;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
-}
-
-void SPI::SetSampleDataOnFalling() {
-  m_sampleOnTrailing = true;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
-}
-
-void SPI::SetSampleDataOnRising() {
-  m_sampleOnTrailing = false;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
+  int mode = m_mode;
+  mode |= 2;
+  m_mode = static_cast<HAL_SPIMode>(mode);
+  HAL_SetSPIMode(m_port, m_mode);
 }
 
 void SPI::SetClockActiveLow() {
-  m_clockIdleHigh = true;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
+  int mode = m_mode;
+  mode |= 1;
+  m_mode = static_cast<HAL_SPIMode>(mode);
+  HAL_SetSPIMode(m_port, m_mode);
 }
 
 void SPI::SetClockActiveHigh() {
-  m_clockIdleHigh = false;
-  HAL_SetSPIOpts(m_port, m_msbFirst, m_sampleOnTrailing, m_clockIdleHigh);
+  int mode = m_mode;
+  mode &= 1;
+  m_mode = static_cast<HAL_SPIMode>(mode);
+  HAL_SetSPIMode(m_port, m_mode);
 }
 
 void SPI::SetChipSelectActiveHigh() {
@@ -82,13 +75,13 @@ void SPI::SetChipSelectActiveLow() {
   wpi_setHALError(status);
 }
 
-int SPI::Write(uint8_t* data, int size) {
+int SPI::Write(uint8_t *data, int size) {
   int retVal = 0;
   retVal = HAL_WriteSPI(m_port, data, size);
   return retVal;
 }
 
-int SPI::Read(bool initiate, uint8_t* dataReceived, int size) {
+int SPI::Read(bool initiate, uint8_t *dataReceived, int size) {
   int retVal = 0;
   if (initiate) {
     wpi::SmallVector<uint8_t, 32> dataToSend;
@@ -100,7 +93,7 @@ int SPI::Read(bool initiate, uint8_t* dataReceived, int size) {
   return retVal;
 }
 
-int SPI::Transaction(uint8_t* dataToSend, uint8_t* dataReceived, int size) {
+int SPI::Transaction(uint8_t *dataToSend, uint8_t *dataReceived, int size) {
   int retVal = 0;
   retVal = HAL_TransactionSPI(m_port, dataToSend, dataReceived, size);
   return retVal;
@@ -132,7 +125,7 @@ void SPI::StartAutoRate(double period) {
   wpi_setHALError(status);
 }
 
-void SPI::StartAutoTrigger(DigitalSource& source, bool rising, bool falling) {
+void SPI::StartAutoTrigger(DigitalSource &source, bool rising, bool falling) {
   int32_t status = 0;
   HAL_StartSPIAutoTrigger(
       m_port, source.GetPortHandleForRouting(),
@@ -155,8 +148,8 @@ void SPI::ForceAutoRead() {
 
 int SPI::ReadAutoReceivedData(uint32_t *buffer, int numToRead, double timeout) {
   int32_t status = 0;
-  int32_t val = HAL_ReadSPIAutoReceivedData(m_port, buffer, numToRead,
-                                            timeout, &status);
+  int32_t val =
+      HAL_ReadSPIAutoReceivedData(m_port, buffer, numToRead, timeout, &status);
   wpi_setHALError(status);
   return val;
 }

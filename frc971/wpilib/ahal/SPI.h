@@ -9,11 +9,12 @@
 
 #include <hal/SPITypes.h>
 #include <wpi/deprecated.h>
-#include <wpi/span.h>
-#include "absl/types/span.h"
 
 #include <cstdint>
 #include <memory>
+#include <span>
+
+#include "absl/types/span.h"
 
 namespace frc {
 
@@ -29,6 +30,12 @@ class DigitalSource;
 class SPI final {
  public:
   enum Port { kOnboardCS0 = 0, kOnboardCS1, kOnboardCS2, kOnboardCS3, kMXP };
+  enum Mode {
+    kMode0 = HAL_SPI_kMode0,
+    kMode1 = HAL_SPI_kMode1,
+    kMode2 = HAL_SPI_kMode2,
+    kMode3 = HAL_SPI_kMode3
+  };
 
   /**
    * Constructor
@@ -55,52 +62,71 @@ class SPI final {
   /**
    * Configure the order that bits are sent and received on the wire
    * to be most significant bit first.
+   *
+   * @deprecated Does not work, will be removed.
    */
+  WPI_DEPRECATED("Not supported by roboRIO.")
   void SetMSBFirst();
 
   /**
    * Configure the order that bits are sent and received on the wire
    * to be least significant bit first.
+   *
+   * @deprecated Does not work, will be removed.
    */
+  WPI_DEPRECATED("Not supported by roboRIO.")
   void SetLSBFirst();
 
   /**
    * Configure that the data is stable on the leading edge and the data
    * changes on the trailing edge.
+   *
+   * @deprecated Use SetMode() instead.
    */
+  WPI_DEPRECATED("Use SetMode() instead")
   void SetSampleDataOnLeadingEdge();
 
   /**
    * Configure that the data is stable on the trailing edge and the data
    * changes on the leading edge.
+   *
+   * @deprecated Use SetMode() instead.
    */
+  WPI_DEPRECATED("Use SetMode() instead")
   void SetSampleDataOnTrailingEdge();
-
-  /**
-   * Configure that the data is stable on the falling edge and the data
-   * changes on the rising edge.
-   */
-  WPI_DEPRECATED("Use SetSampleDataOnTrailingEdge in most cases.")
-  void SetSampleDataOnFalling();
-
-  /**
-   * Configure that the data is stable on the rising edge and the data
-   * changes on the falling edge.
-   */
-  WPI_DEPRECATED("Use SetSampleDataOnLeadingEdge in most cases")
-  void SetSampleDataOnRising();
 
   /**
    * Configure the clock output line to be active low.
    * This is sometimes called clock polarity high or clock idle high.
+   *
+   * @deprecated Use SetMode() instead.
    */
+  WPI_DEPRECATED("Use SetMode() instead")
   void SetClockActiveLow();
 
   /**
    * Configure the clock output line to be active high.
    * This is sometimes called clock polarity low or clock idle low.
+   *
+   * @deprecated Use SetMode() instead.
    */
+  WPI_DEPRECATED("Use SetMode() instead")
   void SetClockActiveHigh();
+
+  /**
+   * Sets the mode for the SPI device.
+   *
+   * <p>Mode 0 is Clock idle low, data sampled on rising edge
+   *
+   * <p>Mode 1 is Clock idle low, data sampled on falling edge
+   *
+   * <p>Mode 2 is Clock idle high, data sampled on falling edge
+   *
+   * <p>Mode 3 is Clock idle high, data sampled on rising edge
+   *
+   * @param mode The mode to set.
+   */
+  void SetMode(Mode mode);
 
   /**
    * Configure the chip select line to be active high.
@@ -247,9 +273,7 @@ class SPI final {
 
  protected:
   hal::SPIPort m_port;
-  bool m_msbFirst = false;          // Default little-endian
-  bool m_sampleOnTrailing = false;  // Default data updated on falling edge
-  bool m_clockIdleHigh = false;     // Default clock active high
+  HAL_SPIMode m_mode = HAL_SPIMode::HAL_SPI_kMode0;
 
  private:
   void Init();

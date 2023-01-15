@@ -692,7 +692,7 @@ std::optional<LocklessQueueWatcher> LocklessQueueWatcher::Make(
   queue.Initialize();
   LocklessQueueWatcher result(queue.memory(), priority);
   if (result.watcher_index_ != -1) {
-    return std::move(result);
+    return result;
   } else {
     return std::nullopt;
   }
@@ -891,7 +891,7 @@ std::optional<LocklessQueueSender> LocklessQueueSender::Make(
   queue.Initialize();
   LocklessQueueSender result(queue.memory(), channel_storage_duration);
   if (result.sender_index_ != -1) {
-    return std::move(result);
+    return result;
   } else {
     return std::nullopt;
   }
@@ -1199,7 +1199,7 @@ std::optional<LocklessQueuePinner> LocklessQueuePinner::Make(
   queue.Initialize();
   LocklessQueuePinner result(queue.memory(), queue.const_memory());
   if (result.pinner_index_ != -1) {
-    return std::move(result);
+    return result;
   } else {
     return std::nullopt;
   }

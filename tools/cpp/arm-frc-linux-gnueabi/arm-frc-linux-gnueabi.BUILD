@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-prefix = "arm-frc2020-linux-gnueabi"
+prefix = "arm-frc2023-linux-gnueabi"
 
 filegroup(
     name = "gcc",
@@ -60,14 +60,15 @@ filegroup(
 
 filegroup(
     name = "compiler_pieces",
-    srcs = glob([prefix + "/" + s for s in [
-        "usr/include/**",
-        "usr/lib/**",
-        "lib/**",
+    srcs = glob(["arm-nilrt-linux-gnueabi/" + s for s in [
+        "sysroot/usr/include/**",
+        "sysroot/usr/lib/**",
+        "sysroot/lib/**",
+        "lib/ldscripts/**",
         "bin/**",
         "**",
     ]] + [
-        "libexec/gcc/" + prefix + "/7.3.0/**",
+        "libexec/gcc/arm-nilrt-linux-gnueabi/12/**",
         "bin/**",
     ]),
 )

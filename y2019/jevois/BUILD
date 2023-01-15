@@ -1,4 +1,5 @@
 load("//motors:macros.bzl", "hex_from_elf")
+load("@org_frc971//tools/build_rules:select.bzl", "compiler_select")
 
 jevois_crc_args = [
     "$(location //third_party/pycrc:pycrc_main)",
@@ -124,6 +125,10 @@ cc_test(
     srcs = [
         "uart_test.cc",
     ],
+    copts = compiler_select({
+        "gcc": ["-Wno-stringop-overflow"],
+        "clang": [],
+    }),
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":uart",

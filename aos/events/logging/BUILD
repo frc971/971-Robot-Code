@@ -215,7 +215,10 @@ cc_library(
     hdrs = [
         "s3_fetcher.h",
     ],
-    target_compatible_with = ["@platforms//os:linux"],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":buffer_encoder",

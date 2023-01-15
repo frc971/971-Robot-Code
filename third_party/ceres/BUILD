@@ -32,6 +32,7 @@
 # not support parameterization around threading choice or sparse backends.
 
 load("//:bazel/ceres.bzl", "ceres_library")
+load("@org_frc971//tools/build_rules:select.bzl", "compiler_select")
 
 ceres_library(
     name = "ceres",
@@ -167,7 +168,10 @@ TEST_COPTS = [
     # TODO(keir): When the tests are macro-ified, apply these selectively.
     "-Wno-address",
     "-Wno-unused-parameter",
-]
+] + compiler_select({
+    "gcc": ["-Wno-use-after-free"],
+    "clang": [],
+})
 
 TEST_DEPS = [
     "//:ceres",
