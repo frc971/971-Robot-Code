@@ -12,5 +12,6 @@
     {
       "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-4_2021-06-12_15-37-25.706564865.json' %}
     }
-  ]
+  ],
+  "target_map": {% include 'y2023/vision/maps/target_map.json' %}
 }
