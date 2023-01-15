@@ -658,6 +658,54 @@ func TestReturnStatsDB(t *testing.T) {
 	}
 }
 
+func TestReturnActionsDB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+	correct := []Action{
+		Action{
+			TeamNumber: "1235", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), TimeStamp: 0000, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1236", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), TimeStamp: 0321, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1237", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), TimeStamp: 0222, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1238", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), TimeStamp: 0110, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1239", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), TimeStamp: 0004, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1233", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), TimeStamp: 0004, CollectedBy: "",
+		},
+	}
+
+	err := fixture.db.AddToMatch(Match{
+		MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+		R1: 1235, R2: 1236, R3: 1237, B1: 1238, B2: 1239, B3: 1233})
+	check(t, err, "Failed to add match")
+
+	for i := 0; i < len(correct); i++ {
+		err = fixture.db.AddAction(correct[i])
+		check(t, err, fmt.Sprint("Failed to add to actions ", i))
+	}
+
+	got, err := fixture.db.ReturnActions()
+	check(t, err, "Failed ReturnActions()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
 func TestRankingsDbUpdate(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()

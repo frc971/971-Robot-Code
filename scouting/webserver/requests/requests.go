@@ -29,6 +29,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
@@ -65,6 +67,8 @@ type SubmitShiftSchedule = submit_shift_schedule.SubmitShiftSchedule
 type SubmitShiftScheduleResponseT = submit_shift_schedule_response.SubmitShiftScheduleResponseT
 type SubmitDriverRanking = submit_driver_ranking.SubmitDriverRanking
 type SubmitDriverRankingResponseT = submit_driver_ranking_response.SubmitDriverRankingResponseT
+type SubmitActions = submit_actions.SubmitActions
+type SubmitActionsResponseT = submit_actions_response.SubmitActionsResponseT
 
 // The interface we expect the database abstraction to conform to.
 // We use an interface here because it makes unit testing easier.

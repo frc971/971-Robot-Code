@@ -66,6 +66,34 @@ type Stats struct {
 	CollectedBy string
 }
 
+type Stats2023 struct {
+	TeamNumber                                                     string `gorm:"primaryKey"`
+	MatchNumber                                                    int32  `gorm:"primaryKey"`
+	SetNumber                                                      int32  `gorm:"primaryKey"`
+	CompLevel                                                      string `gorm:"primaryKey"`
+	StartingQuadrant                                               int32
+	LowCubesAuto, MiddleCubesAuto, HighCubesAuto, CubesDroppedAuto int32
+	LowConesAuto, MiddleConesAuto, HighConesAuto, ConesDroppedAuto int32
+	LowCubes, MiddleCubes, HighCubes, CubesDropped                 int32
+	LowCones, MiddleCones, HighCones, ConesDropped                 int32
+	AvgCycle                                                       int32
+	// The username of the person who collected these statistics.
+	// "unknown" if submitted without logging in.
+	// Empty if the stats have not yet been collected.
+	CollectedBy string
+}
+
+type Action struct {
+	TeamNumber      string `gorm:"primaryKey"`
+	MatchNumber     int32  `gorm:"primaryKey"`
+	SetNumber       int32  `gorm:"primaryKey"`
+	CompLevel       string `gorm:"primaryKey"`
+	CompletedAction []byte
+	// This contains a serialized scouting.webserver.requests.ActionType flatbuffer.
+	TimeStamp   int32 `gorm:"primaryKey"`
+	CollectedBy string
+}
+
 type NotesData struct {
 	ID           uint `gorm:"primaryKey"`
 	TeamNumber   int32
@@ -113,7 +141,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&Match{}, &Shift{}, &Stats{}, &NotesData{}, &Ranking{}, &DriverRankingData{})
+	err = database.AutoMigrate(&Match{}, &Shift{}, &Stats{}, &Stats2023{}, &Action{}, &NotesData{}, &Ranking{}, &DriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -148,6 +176,13 @@ func (database *Database) AddToShift(sh Shift) error {
 	return result.Error
 }
 
+func (database *Database) AddAction(a Action) error {
+	result := database.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&a)
+	return result.Error
+}
+
 func (database *Database) AddToStats(s Stats) error {
 	matches, err := database.QueryMatches(s.TeamNumber)
 	if err != nil {
@@ -172,6 +207,28 @@ func (database *Database) AddToStats(s Stats) error {
 	s.AutoBallPickedUp3 = s.AutoBallPickedUp[2]
 	s.AutoBallPickedUp4 = s.AutoBallPickedUp[3]
 	s.AutoBallPickedUp5 = s.AutoBallPickedUp[4]
+	result := database.Create(&s)
+	return result.Error
+}
+
+func (database *Database) AddToStats2023(s Stats2023) error {
+	matches, err := database.QueryMatchesString(s.TeamNumber)
+	if err != nil {
+		return err
+	}
+	foundMatch := false
+	for _, match := range matches {
+		if match.MatchNumber == s.MatchNumber {
+			foundMatch = true
+			break
+		}
+	}
+	if !foundMatch {
+		return errors.New(fmt.Sprint(
+			"Failed to find team ", s.TeamNumber,
+			" in match ", s.MatchNumber, " in the schedule."))
+	}
+
 	result := database.Create(&s)
 	return result.Error
 }
@@ -205,6 +262,12 @@ func (database *Database) ReturnAllShifts() ([]Shift, error) {
 	var shifts []Shift
 	result := database.Find(&shifts)
 	return shifts, result.Error
+}
+
+func (database *Database) ReturnActions() ([]Action, error) {
+	var actions []Action
+	result := database.Find(&actions)
+	return actions, result.Error
 }
 
 // Packs the stats. This really just consists of taking the individual auto
@@ -249,6 +312,14 @@ func (database *Database) QueryMatches(teamNumber_ int32) ([]Match, error) {
 	return matches, result.Error
 }
 
+func (database *Database) QueryMatchesString(teamNumber_ string) ([]Match, error) {
+	var matches []Match
+	result := database.
+		Where("r1 = $1 OR r2 = $1 OR r3 = $1 OR b1 = $1 OR b2 = $1 OR b3 = $1", teamNumber_).
+		Find(&matches)
+	return matches, result.Error
+}
+
 func (database *Database) QueryAllShifts(matchNumber_ int) ([]Shift, error) {
 	var shifts []Shift
 	result := database.Where("match_number = ?", matchNumber_).Find(&shifts)
@@ -263,6 +334,13 @@ func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {
 		packStats(&stats[i])
 	}
 	return stats, result.Error
+}
+
+func (database *Database) QueryActions(teamNumber_ int) ([]Action, error) {
+	var actions []Action
+	result := database.
+		Where("team_number = ?", teamNumber_).Find(&actions)
+	return actions, result.Error
 }
 
 func (database *Database) QueryNotes(TeamNumber int32) ([]string, error) {
