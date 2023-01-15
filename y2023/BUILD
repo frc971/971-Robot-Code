@@ -30,7 +30,6 @@ robot_downloader(
         "//y2023/vision:camera_reader",
         "//aos/events/logging:logger_main",
         ":joystick_reader",
-        ":wpilib_interface",
         "//y2023/autonomous:binaries",
         "//y2023/control_loops/drivetrain:drivetrain",
         "//y2023/control_loops/drivetrain:trajectory_generator",
