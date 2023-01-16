@@ -320,6 +320,8 @@ RockchipV4L2Reader::RockchipV4L2Reader(aos::EventLoop *event_loop,
   epoll_->OnReadable(fd().get(), [this]() { OnImageReady(); });
 }
 
+RockchipV4L2Reader::~RockchipV4L2Reader() { epoll_->DeleteFd(fd().get()); }
+
 void RockchipV4L2Reader::OnImageReady() {
   if (!ReadLatestImage()) {
     return;

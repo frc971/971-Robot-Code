@@ -148,6 +148,8 @@ class RockchipV4L2Reader : public V4L2ReaderBase {
                      const std::string &device_name,
                      const std::string &image_sensor_subdev);
 
+  ~RockchipV4L2Reader();
+
   void SetExposure(size_t duration) override;
 
   void SetGain(size_t gain);
