@@ -4,8 +4,8 @@ Requires=network-online.target
 After=network-online.target
 
 [Service]
-User=pi
-Group=pi
+User=root
+Group=root
 Type=simple
 WorkingDirectory=/home/pi/bin
 ExecStart=/home/pi/bin/starter.sh
