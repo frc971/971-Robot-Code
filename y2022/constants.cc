@@ -10,6 +10,7 @@
 #include "absl/base/call_once.h"
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
+#include "frc971/wpilib/wpilib_utils.h"
 #include "glog/logging.h"
 #include "y2022/control_loops/superstructure/catapult/integral_catapult_plant.h"
 #include "y2022/control_loops/superstructure/climber/integral_climber_plant.h"
@@ -141,7 +142,7 @@ Values MakeValues(uint16_t team) {
 
       {3.60, {0.39, 20.65}},
       {4.50, {0.44, 22.3}},
-      {4.9, {0.43, 22.75}}, // up to here
+      {4.9, {0.43, 22.75}},  // up to here
       {5.4, {0.43, 23.85}},
 
       {6.0, {0.42, 25.3}},
@@ -190,21 +191,21 @@ Values MakeValues(uint16_t team) {
               {5, {4.0}},
           });
 
-      climber->potentiometer_offset = 0.0;
-      intake_front->potentiometer_offset = 0.0;
+      climber->potentiometer_offset = -0.035;
+      intake_front->potentiometer_offset = 3.122;
       intake_front->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.0;
-      intake_back->potentiometer_offset = 0.0;
+          .measured_absolute_position = 0.175;
+      intake_back->potentiometer_offset = 3.365;
       intake_back->subsystem_params.zeroing_constants
-          .measured_absolute_position = 0.0;
-      turret->potentiometer_offset = 0.0;
+          .measured_absolute_position = 0.051;
+      turret->potentiometer_offset = -7.932;
       turret->subsystem_params.zeroing_constants.measured_absolute_position =
-          0.0;
-      flipper_arm_left->potentiometer_offset = 0.0;
-      flipper_arm_right->potentiometer_offset = 0.0;
+          1.166;
+      flipper_arm_left->potentiometer_offset = -6.40;
+      flipper_arm_right->potentiometer_offset = 5.56;
 
       catapult_params->zeroing_constants.measured_absolute_position = 0.0;
-      catapult->potentiometer_offset = 0.0;
+      catapult->potentiometer_offset = -2.033;
 
       ball_color->reference_red = {0, 0, 1, 1};
       ball_color->reference_blue = {0, 0, 1, 1};
@@ -310,8 +311,10 @@ Values MakeValues(uint16_t team) {
           .upper = 2.9         // Front Soft
       };
       turret_params->range = *turret_range;
-      flipper_arm_left->potentiometer_offset = -4.39536583413615 - 0.108401297910291;
-      flipper_arm_right->potentiometer_offset = 4.36264091401229 + 0.175896445665755;
+      flipper_arm_left->potentiometer_offset =
+          -4.39536583413615 - 0.108401297910291;
+      flipper_arm_right->potentiometer_offset =
+          4.36264091401229 + 0.175896445665755;
 
       catapult_params->zeroing_constants.measured_absolute_position =
           1.62909518684227;
@@ -360,6 +363,47 @@ Values MakeValues(uint16_t team) {
     default:
       LOG(FATAL) << "unknown team: " << team;
   }
+
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      Values::kClimberRange(), climber->potentiometer_offset,
+      [](double meters) { return meters / Values::kClimberPotMetersPerVolt(); },
+      false))
+      << "Couldn't translate climber pot";
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      Values::kFlipperArmRange(), flipper_arm_left->potentiometer_offset,
+      [](double radians) {
+        return radians / Values::kFlipperArmsPotRadiansPerVolt();
+      },
+      false))
+      << "Couldn't translate flipper left pot";
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      Values::kFlipperArmRange(), flipper_arm_right->potentiometer_offset,
+      [](double radians) {
+        return radians / Values::kFlipperArmsPotRadiansPerVolt();
+      },
+      true))
+      << "Couldn't translate flipper right pot";
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      Values::kIntakeRange(), intake_front->potentiometer_offset,
+      [](double radians) {
+        return radians / Values::kIntakePotRadiansPerVolt();
+      },
+      true))
+      << "Couldn't translate front intake pot";
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      Values::kIntakeRange(), intake_back->potentiometer_offset,
+      [](double radians) {
+        return radians / Values::kIntakePotRadiansPerVolt();
+      },
+      true))
+      << "Couldn't translate back intake pot";
+  CHECK(frc971::wpilib::SafePotVoltageRange(
+      *turret_range, turret->potentiometer_offset,
+      [](double radians) {
+        return radians / Values::kTurretPotRadiansPerVolt();
+      },
+      false))
+      << "Couldn't translate turret pot";
 
   return r;
 }
