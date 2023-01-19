@@ -176,6 +176,7 @@ target_mkdir root.root 700 root/bin
 copyfile root.root 500 root/bin/grow.sh
 copyfile root.root 500 root/bin/change_hostname.sh
 copyfile root.root 500 root/bin/deploy_kernel.sh
+copyfile root.root 500 root/bin/chrt.sh
 copyfile root.root 644 etc/systemd/system/grow-rootfs.service
 copyfile root.root 644 etc/sysctl.d/sctp.conf
 copyfile root.root 644 etc/systemd/logind.conf
