@@ -63,7 +63,10 @@ class V4L2ReaderBase {
 
   // TODO(Brian): This concept won't exist once we start using variable-size
   // H.264 frames.
-  size_t ImageSize() const { return rows_ * cols_ * 2 /* bytes per pixel */; }
+  size_t ImageSize() const { return ImageSize(rows_, cols_); }
+  static size_t ImageSize(int rows, int cols) {
+    return rows * cols * 2 /* bytes per pixel */;
+  }
 
   const aos::ScopedFD &fd() { return fd_; };
 
@@ -134,10 +137,6 @@ class V4L2ReaderBase {
 class V4L2Reader : public V4L2ReaderBase {
  public:
   V4L2Reader(aos::EventLoop *event_loop, const std::string &device_name);
-
- private:
-  const int rows_ = 480;
-  const int cols_ = 640;
 };
 
 // Rockpi specific v4l2 reader.  This assumes that the media device has been
