@@ -238,8 +238,7 @@ inline monotonic_clock::time_point TimerHandler::Call(
 }
 
 inline void PhasedLoopHandler::Call(
-    std::function<monotonic_clock::time_point()> get_time,
-    std::function<void(monotonic_clock::time_point)> schedule) {
+    std::function<monotonic_clock::time_point()> get_time) {
   // Read time directly to save a vtable indirection...
   const monotonic_clock::time_point monotonic_start_time = get_time();
 
@@ -270,7 +269,7 @@ inline void PhasedLoopHandler::Call(
   cycles_elapsed_ = 0;
 
   // Schedule the next wakeup.
-  schedule(phased_loop_.sleep_time());
+  Schedule(phased_loop_.sleep_time());
 
   const monotonic_clock::time_point monotonic_end_time = get_time();
   ftrace_.FormatMessage(
@@ -287,7 +286,7 @@ inline void PhasedLoopHandler::Call(
   // If the handler took too long so we blew by the previous deadline, we
   // want to just try for the next deadline.  Reschedule.
   if (monotonic_end_time > phased_loop_.sleep_time()) {
-    Reschedule(schedule, monotonic_end_time);
+    Reschedule(monotonic_end_time);
   }
 }
 

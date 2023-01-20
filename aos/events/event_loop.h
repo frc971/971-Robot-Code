@@ -511,26 +511,61 @@ class TimerHandler {
   Ftrace ftrace_;
 };
 
-// Interface for phased loops.  They are built on timers.
+// Interface for phased loops. They are built on timers.
 class PhasedLoopHandler {
  public:
   virtual ~PhasedLoopHandler();
 
-  // Sets the interval and offset.  Any changes to interval and offset only take
-  // effect when the handler finishes running.
-  void set_interval_and_offset(const monotonic_clock::duration interval,
-                               const monotonic_clock::duration offset) {
-    phased_loop_.set_interval_and_offset(interval, offset);
+  // Sets the interval and offset. Any changes to interval and offset only take
+  // effect when the handler finishes running or upon a call to Reschedule().
+  //
+  // The precise semantics of the monotonic_now parameter are defined in
+  // phased_loop.h. The way that it gets used in this interface is to control
+  // what the cycles elapsed counter will read on the following call to your
+  // handler. In an idealized simulation environment, if you call
+  // set_interval_and_offset() during the phased loop offset without setting
+  // monotonic_now, then you should always see a count of 1 on the next cycle.
+  //
+  // With the default behavior (this is called inside your handler and with
+  // monotonic_now = nullopt), the next phased loop call will occur at most
+  // interval time after the current time. Note that in many cases this will
+  // *not* be the preferred behavior (in most cases, you would likely aim to
+  // keep the average frequency of the calls reasonably consistent).
+  //
+  // A combination of the monotonic_now parameter and manually calling
+  // Reschedule() outside of the phased loop handler can be used to alter the
+  // behavior of cycles_elapsed. For the default behavior, you can set
+  // monotonic_now to the current time. If you call set_interval_and_offset()
+  // and Reschedule() with the same monotonic_now, that will cause the next
+  // callback to occur in the range  (monotonic_now, monotonic_now + interval]
+  // and get called with a count of 1 (if the event is actually able to happen
+  // when it is scheduled to). E.g., if you are just adjusting the phased loop
+  // offset (but not the interval) and want to maintain a consistent frequency,
+  // you may call these functions with monotonic_now = now + interval / 2.
+  void set_interval_and_offset(
+      const monotonic_clock::duration interval,
+      const monotonic_clock::duration offset,
+      std::optional<monotonic_clock::time_point> monotonic_now = std::nullopt) {
+    phased_loop_.set_interval_and_offset(interval, offset, monotonic_now);
   }
 
-  // Sets and gets the name of the timer.  Set this if you want a descriptive
+  // Reruns the scheduler for the phased loop, scheduling the next callback at
+  // the next available time after monotonic_now. This allows
+  // set_interval_and_offset() to be called and have the changes take effect
+  // before the next handler finishes. This will have no effect if run during
+  // the phased loop's own handler.
+  void Reschedule(monotonic_clock::time_point monotonic_now) {
+    cycles_elapsed_ += phased_loop_.Iterate(monotonic_now);
+    Schedule(phased_loop_.sleep_time());
+  }
+
+  // Sets and gets the name of the timer. Set this if you want a descriptive
   // name in the timing report.
   void set_name(std::string_view name) { name_ = std::string(name); }
   const std::string_view name() const { return name_; }
 
  protected:
-  void Call(std::function<monotonic_clock::time_point()> get_time,
-            std::function<void(monotonic_clock::time_point)> schedule);
+  void Call(std::function<monotonic_clock::time_point()> get_time);
 
   PhasedLoopHandler(EventLoop *event_loop, std::function<void(int)> fn,
                     const monotonic_clock::duration interval,
@@ -538,12 +573,6 @@ class PhasedLoopHandler {
 
  private:
   friend class EventLoop;
-
-  void Reschedule(std::function<void(monotonic_clock::time_point)> schedule,
-                  monotonic_clock::time_point monotonic_now) {
-    cycles_elapsed_ += phased_loop_.Iterate(monotonic_now);
-    schedule(phased_loop_.sleep_time());
-  }
 
   virtual void Schedule(monotonic_clock::time_point sleep_time) = 0;
 

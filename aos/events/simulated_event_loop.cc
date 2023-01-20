@@ -1293,10 +1293,7 @@ void SimulatedPhasedLoopHandler::HandleEvent() noexcept {
   {
     ScopedMarkRealtimeRestorer rt(
         simulated_event_loop_->runtime_realtime_priority() > 0);
-    Call([monotonic_now]() { return monotonic_now; },
-         [this](monotonic_clock::time_point sleep_time) {
-           Schedule(sleep_time);
-         });
+    Call([monotonic_now]() { return monotonic_now; });
     simulated_event_loop_->ClearContext();
   }
 }
@@ -1312,6 +1309,7 @@ void SimulatedPhasedLoopHandler::Schedule(
   // The allocations in here are due to infrastructure and don't count in the no
   // mallocs in RT code.
   ScopedNotRealtime nrt;
+  simulated_event_loop_->RemoveEvent(&event_);
   if (token_ != scheduler_->InvalidToken()) {
     scheduler_->Deschedule(token_);
     token_ = scheduler_->InvalidToken();
