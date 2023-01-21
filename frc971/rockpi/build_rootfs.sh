@@ -9,9 +9,31 @@ IMAGE="arm64_bullseye_debian.img"
 KERNEL_VERSION=6.0.8-rt14-rockpi4b
 PARTITION="${IMAGE}.partition"
 
-# TODO(austin): Make sure flex, bison, gcc-aarch64-linux-gnu,
-# gcc-arm-none-eabi, device-tree-compiler, swig are installed
-# rather than let the user figure this out on their own the hard way.
+# Check if dependencies are missing.
+missing_deps=()
+REQUIRED_DEPS=(
+    flex
+    bison
+    gcc-arm-none-eabi
+    gcc-aarch64-linux-gnu
+    device-tree-compiler
+    swig
+)
+for dep in "${REQUIRED_DEPS[@]}"; do
+    if ! dpkg-query -W -f='${Status}' "${dep}" | grep -q "install ok installed"; then
+        missing_deps+=("${dep}")
+    fi
+done
+
+# Print missing dependencies
+if ((${#missing_deps[@]} != 0 )); then
+    echo "Missing dependencies, please install:"
+    echo apt install "${missing_deps[@]}"
+    exit 1
+else
+    echo -e "\033[32mAll dependencies are already installed\033[0m"
+fi
+
 export CC=aarch64-linux-gnu-
 
 # Reset any existing mounts.
