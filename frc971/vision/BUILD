@@ -46,6 +46,21 @@ flatbuffer_py_library(
     visibility = ["//visibility:public"],
 )
 
+py_library(
+    name = "create_calib_file",
+    srcs = [
+        "create_calib_file.py",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":calibration_fbs_python",
+        "@bazel_tools//tools/python/runfiles",
+        "@pip//glog",
+        "@pip//opencv_python",
+    ],
+)
+
 cc_library(
     name = "v4l2_reader",
     srcs = [
