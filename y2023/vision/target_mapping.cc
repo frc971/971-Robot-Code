@@ -2,6 +2,7 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
 #include "frc971/control_loops/pose.h"
+#include "frc971/vision/calibration_generated.h"
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/target_mapper.h"
 #include "opencv2/aruco.hpp"
@@ -11,7 +12,7 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include "y2022/vision/camera_reader.h"
+#include "y2023/vision/calibration_data.h"
 
 DEFINE_string(json_path, "target_map.json",
               "Specify path for json with initial pose guesses.");
@@ -20,11 +21,14 @@ DEFINE_int32(team_number, 7971,
 
 DECLARE_string(image_channel);
 
-namespace y2022 {
+namespace y2023 {
 namespace vision {
+using frc971::vision::CharucoExtractor;
 using frc971::vision::DataAdapter;
+using frc971::vision::ImageCallback;
 using frc971::vision::PoseUtils;
 using frc971::vision::TargetMapper;
+namespace calibration = frc971::vision::calibration;
 
 // Change reference frame from camera to robot
 Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camrob_target,
@@ -74,12 +78,39 @@ void HandleAprilTag(aos::distributed_clock::time_point pi_distributed_time,
   }
 }
 
+const calibration::CameraCalibration *FindCameraCalibration(
+    const calibration::CalibrationData *calibration_data,
+    std::string_view node_name) {
+  for (const calibration::CameraCalibration *candidate :
+       *calibration_data->camera_calibrations()) {
+    if (candidate->node_name()->string_view() != node_name) {
+      continue;
+    }
+    if (candidate->team_number() != FLAGS_team_number) {
+      continue;
+    }
+    return candidate;
+  }
+  LOG(FATAL) << ": Failed to find camera calibration for " << node_name
+             << " on " << FLAGS_team_number;
+}
+
 Eigen::Affine3d CameraExtrinsics(
     const calibration::CameraCalibration *camera_calibration) {
-  cv::Mat extrinsics = CameraReader::CameraExtrinsics(camera_calibration);
-  Eigen::Matrix4d extrinsics_eigen;
-  cv::cv2eigen(extrinsics, extrinsics_eigen);
-  return Eigen::Affine3d(extrinsics_eigen);
+  const frc971::vision::calibration::TransformationMatrix *transform =
+      camera_calibration->has_turret_extrinsics()
+          ? camera_calibration->turret_extrinsics()
+          : camera_calibration->fixed_extrinsics();
+
+  cv::Mat result(
+      4, 4, CV_32F,
+      const_cast<void *>(static_cast<const void *>(transform->data()->data())));
+  result.convertTo(result, CV_64F);
+  CHECK_EQ(result.total(), transform->data()->size());
+
+  Eigen::Matrix4d result_eigen;
+  cv::cv2eigen(result, result_eigen);
+  return Eigen::Affine3d(result_eigen);
 }
 
 // Get images from pi and pass apriltag positions to HandleAprilTag()
@@ -92,10 +123,8 @@ void HandlePiCaptures(
     std::vector<std::unique_ptr<ImageCallback>> *image_callbacks) {
   const aos::FlatbufferSpan<calibration::CalibrationData> calibration_data(
       CalibrationData());
-  const calibration::CameraCalibration *calibration =
-      CameraReader::FindCameraCalibration(&calibration_data.message(),
-                                          "pi" + std::to_string(pi_number),
-                                          FLAGS_team_number);
+  const calibration::CameraCalibration *calibration = FindCameraCalibration(
+      &calibration_data.message(), "pi" + std::to_string(pi_number));
   const auto extrinsics = CameraExtrinsics(calibration);
 
   // TODO(milind): change to /camera once we log at full frequency
@@ -104,7 +133,7 @@ void HandlePiCaptures(
       pi_event_loop,
       "pi-" + std::to_string(FLAGS_team_number) + "-" +
           std::to_string(pi_number),
-      TargetType::kAprilTag, kImageChannel,
+      frc971::vision::TargetType::kAprilTag, kImageChannel,
       [=](cv::Mat /*rgb_image*/, aos::monotonic_clock::time_point eof,
           std::vector<cv::Vec4i> april_ids,
           std::vector<std::vector<cv::Point2f>> /*april_corners*/, bool valid,
@@ -195,9 +224,9 @@ void MappingMain(int argc, char *argv[]) {
 }
 
 }  // namespace vision
-}  // namespace y2022
+}  // namespace y2023
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
-  y2022::vision::MappingMain(argc, argv);
+  y2023::vision::MappingMain(argc, argv);
 }
