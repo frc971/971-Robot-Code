@@ -1,3 +1,46 @@
+py_binary(
+    name = "create_calib_file",
+    srcs = [
+        "create_calib_file.py",
+    ],
+    args = [
+        "calibration_data.h",
+    ],
+    data = glob(["calib_files/*.json"]),
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/vision:create_calib_file",
+    ],
+)
+
+genrule(
+    name = "run_calibration_data",
+    outs = [
+        "calibration_data.h",
+    ],
+    cmd = " ".join([
+        "$(location :create_calib_file)",
+        "$(location calibration_data.h)",
+    ]),
+    target_compatible_with = ["@platforms//os:linux"],
+    tools = [
+        ":create_calib_file",
+    ],
+)
+
+cc_library(
+    name = "calibration_data",
+    hdrs = [
+        "calibration_data.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
 cc_binary(
     name = "camera_reader",
     srcs = [
