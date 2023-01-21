@@ -46,7 +46,7 @@ ls -lah "${BL31}"
 
 # Now, build uboot.
 if [[ ! -e u-boot ]]; then
-  git clone -b "${UBOOT_VERSION} https://github.com/u-boot/u-boot" --depth=1
+  git clone -b "${UBOOT_VERSION}" https://github.com/u-boot/u-boot --depth=1
 fi
 
 pushd u-boot/
