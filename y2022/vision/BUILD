@@ -1,35 +1,6 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("@npm//@bazel/typescript:index.bzl", "ts_library")
-
-flatbuffer_cc_library(
-    name = "calibration_fbs",
-    srcs = ["calibration.fbs"],
-    gen_reflections = 1,
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//y2022:__subpackages__"],
-)
-
-flatbuffer_ts_library(
-    name = "calibration_ts_fbs",
-    srcs = ["calibration.fbs"],
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-flatbuffer_py_library(
-    name = "calibration_fbs_python",
-    srcs = [
-        "calibration.fbs",
-    ],
-    namespace = "frc971.vision.calibration",
-    tables = [
-        "CalibrationData",
-        "CameraCalibration",
-        "TransformationMatrix",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-)
 
 ts_library(
     name = "vision_plotter",
@@ -70,7 +41,7 @@ py_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":camera_definition",
-        "//y2022/vision:calibration_fbs_python",
+        "//frc971/vision:calibration_fbs_python",
         "@bazel_tools//tools/python/runfiles",
         "@pip//glog",
         "@pip//opencv_python",
@@ -121,13 +92,13 @@ cc_library(
     deps = [
         ":blob_detector_lib",
         ":calibration_data",
-        ":calibration_fbs",
         ":target_estimate_fbs",
         ":target_estimator_lib",
         "//aos:flatbuffer_merge",
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//aos/network:team_number",
+        "//frc971/vision:calibration_fbs",
         "//frc971/vision:v4l2_reader",
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
@@ -246,11 +217,11 @@ cc_library(
     visibility = ["//y2022:__subpackages__"],
     deps = [
         ":blob_detector_lib",
-        ":calibration_fbs",
         ":target_estimate_fbs",
         "//aos/logging",
         "//aos/time",
         "//frc971/control_loops:quaternion_utils",
+        "//frc971/vision:calibration_fbs",
         "//frc971/vision:geometry_lib",
         "//third_party:opencv",
         "//y2022:constants",
@@ -265,7 +236,7 @@ flatbuffer_cc_library(
     srcs = ["target_estimate.fbs"],
     gen_reflections = 1,
     includes = [
-        ":calibration_fbs_includes",
+        "//frc971/vision:calibration_fbs_includes",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
@@ -276,7 +247,7 @@ flatbuffer_ts_library(
     srcs = ["target_estimate.fbs"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":calibration_ts_fbs",
+        "//frc971/vision:calibration_ts_fbs",
     ],
 )
 
