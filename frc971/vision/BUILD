@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 flatbuffer_cc_library(
@@ -12,6 +12,36 @@ flatbuffer_cc_library(
 flatbuffer_ts_library(
     name = "vision_ts_fbs",
     srcs = ["vision.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_cc_library(
+    name = "calibration_fbs",
+    srcs = ["calibration.fbs"],
+    gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_ts_library(
+    name = "calibration_ts_fbs",
+    srcs = ["calibration.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_py_library(
+    name = "calibration_fbs_python",
+    srcs = [
+        "calibration.fbs",
+    ],
+    namespace = "frc971.vision.calibration",
+    tables = [
+        "CalibrationData",
+        "CameraCalibration",
+        "TransformationMatrix",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

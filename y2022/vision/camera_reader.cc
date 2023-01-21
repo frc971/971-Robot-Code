@@ -8,11 +8,11 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/team_number.h"
+#include "frc971/vision/calibration_generated.h"
 #include "frc971/vision/v4l2_reader.h"
 #include "frc971/vision/vision_generated.h"
 #include "opencv2/imgproc.hpp"
 #include "y2022/vision/blob_detector.h"
-#include "y2022/vision/calibration_generated.h"
 
 DEFINE_string(image_png, "", "A set of PNG images");
 
