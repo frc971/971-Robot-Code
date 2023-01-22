@@ -1,10 +1,8 @@
 # Copy of ceres example code from their repo
 cc_library(
-    name = "pose_graph_2d_lib",
+    name = "pose_graph_3d_lib",
     hdrs = [
-        "angle_local_parameterization.h",
-        "normalize_angle.h",
-        "pose_graph_2d_error_term.h",
+        "pose_graph_3d_error_term.h",
         "read_g2o.h",
         "types.h",
     ],

@@ -299,29 +299,6 @@ cc_binary(
 )
 
 cc_binary(
-    name = "target_mapping",
-    srcs = [
-        "target_mapping.cc",
-    ],
-    data = [
-        "//y2022:aos_config",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//y2022:__subpackages__"],
-    deps = [
-        ":camera_reader_lib",
-        "//aos:init",
-        "//aos/events:simulated_event_loop",
-        "//aos/events/logging:log_reader",
-        "//frc971/control_loops:pose",
-        "//frc971/vision:charuco_lib",
-        "//frc971/vision:target_mapper",
-        "//third_party:opencv",
-        "//y2022/control_loops/superstructure:superstructure_status_fbs",
-    ],
-)
-
-cc_binary(
     name = "calibrate_extrinsics",
     srcs = [
         "calibrate_extrinsics.cc",

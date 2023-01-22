@@ -3,7 +3,9 @@
 #include <random>
 
 #include "aos/events/simulated_event_loop.h"
+#include "aos/testing/path.h"
 #include "aos/testing/random_seed.h"
+#include "aos/util/math.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
@@ -12,46 +14,65 @@ namespace frc971::vision {
 namespace {
 constexpr double kToleranceMeters = 0.05;
 constexpr double kToleranceRadians = 0.05;
+// Conversions between euler angles and quaternion result in slightly-off
+// doubles
+constexpr double kOrientationEqTolerance = 1e-10;
+constexpr std::chrono::milliseconds kMaxDt = std::chrono::milliseconds(3);
 constexpr std::string_view kFieldName = "test";
 }  // namespace
 
-#define EXPECT_POSE_NEAR(pose1, pose2)             \
-  EXPECT_NEAR(pose1.x, pose2.x, kToleranceMeters); \
-  EXPECT_NEAR(pose1.y, pose2.y, kToleranceMeters); \
-  EXPECT_NEAR(pose1.yaw_radians, pose2.yaw_radians, kToleranceRadians);
-
-#define EXPECT_POSE_EQ(pose1, pose2)  \
-  EXPECT_DOUBLE_EQ(pose1.x, pose2.x); \
-  EXPECT_DOUBLE_EQ(pose1.y, pose2.y); \
-  EXPECT_DOUBLE_EQ(pose1.yaw_radians, pose2.yaw_radians);
-
-#define EXPECT_BETWEEN_EXCLUSIVE(value, a, b) \
-  {                                           \
-    auto low = std::min(a, b);                \
-    auto high = std::max(a, b);               \
-    EXPECT_GT(value, low);                    \
-    EXPECT_LT(value, high);                   \
+// Angles normalized by aos::math::NormalizeAngle()
+#define EXPECT_NORMALIZED_ANGLES_NEAR(theta1, theta2, tolerance)           \
+  {                                                                        \
+    double delta = std::abs(aos::math::DiffAngle(theta1, theta2));         \
+    /* Have to check delta - 2pi for the case that one angle is very */    \
+    /* close to -pi, and the other is very close to +pi */                 \
+    EXPECT_TRUE(delta < tolerance || std::abs(aos::math::DiffAngle(        \
+                                         delta, 2.0 * M_PI)) < tolerance); \
   }
 
-namespace {
-// Expects angles to be normalized
-double DeltaAngle(double a, double b) {
-  double delta = std::abs(a - b);
-  return std::min(delta, (2.0 * M_PI) - delta);
-}
-}  // namespace
+#define EXPECT_POSE_NEAR(pose1, pose2)                                     \
+  {                                                                        \
+    for (size_t i = 0; i < 3; i++) {                                       \
+      EXPECT_NEAR(pose1.p(i), pose2.p(i), kToleranceMeters);               \
+    }                                                                      \
+    auto rpy_1 = PoseUtils::QuaternionToEulerAngles(pose1.q);              \
+    auto rpy_2 = PoseUtils::QuaternionToEulerAngles(pose2.q);              \
+    for (size_t i = 0; i < 3; i++) {                                       \
+      SCOPED_TRACE(absl::StrFormat("rpy_1(%d) = %f, rpy_2(%d) = %f", i,    \
+                                   rpy_1(i), i, rpy_2(i)));                \
+      EXPECT_NORMALIZED_ANGLES_NEAR(rpy_1(i), rpy_2(i), kToleranceRadians) \
+    }                                                                      \
+  }
 
-// Expects angles to be normalized
-#define EXPECT_ANGLE_BETWEEN_EXCLUSIVE(theta, a, b)  \
-  EXPECT_LT(DeltaAngle(a, theta), DeltaAngle(a, b)); \
-  EXPECT_LT(DeltaAngle(b, theta), DeltaAngle(a, b));
+#define EXPECT_POSE_EQ(pose1, pose2) \
+  EXPECT_EQ(pose1.p, pose2.p);       \
+  EXPECT_EQ(pose1.q, pose2.q);
 
-#define EXPECT_POSE_IN_RANGE(interpolated_pose, pose_start, pose_end)      \
-  EXPECT_BETWEEN_EXCLUSIVE(interpolated_pose.x, pose_start.x, pose_end.x); \
-  EXPECT_BETWEEN_EXCLUSIVE(interpolated_pose.y, pose_start.y, pose_end.y); \
-  EXPECT_ANGLE_BETWEEN_EXCLUSIVE(interpolated_pose.yaw_radians,            \
-                                 pose_start.yaw_radians,                   \
-                                 pose_end.yaw_radians);
+#define EXPECT_QUATERNION_NEAR(q1, q2)                                        \
+  EXPECT_NEAR(q1.x(), q2.x(), kOrientationEqTolerance) << q1 << " != " << q2; \
+  EXPECT_NEAR(q1.y(), q2.y(), kOrientationEqTolerance) << q1 << " != " << q2; \
+  EXPECT_NEAR(q1.z(), q2.z(), kOrientationEqTolerance) << q1 << " != " << q2; \
+  EXPECT_NEAR(q1.w(), q2.w(), kOrientationEqTolerance) << q1 << " != " << q2;
+
+// Expects same roll, pitch, and yaw values (not equivalent rotation)
+#define EXPECT_RPY_EQ(rpy_1, rpy_2)                                     \
+  {                                                                     \
+    for (size_t i = 0; i < 3; i++) {                                    \
+      SCOPED_TRACE(absl::StrFormat("rpy_1(%d) = %f, rpy_2(%d) = %f", i, \
+                                   rpy_1(i), i, rpy_2(i)));             \
+      EXPECT_NORMALIZED_ANGLES_NEAR(rpy_1(i), rpy_2(i),                 \
+                                    kOrientationEqTolerance)            \
+    }                                                                   \
+  }
+
+#define EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(roll, pitch, yaw) \
+  {                                                                        \
+    auto rpy = Eigen::Vector3d(roll, pitch, yaw);                          \
+    auto converted_rpy = PoseUtils::QuaternionToEulerAngles(               \
+        PoseUtils::EulerAnglesToQuaternion(rpy));                          \
+    EXPECT_RPY_EQ(converted_rpy, rpy);                                     \
+  }
 
 // Both confidence matrixes should have the same dimensions and be square
 #define EXPECT_CONFIDENCE_GT(confidence1, confidence2) \
@@ -65,18 +86,21 @@ double DeltaAngle(double a, double b) {
   }
 
 namespace {
-ceres::examples::Pose2d MakePose(double x, double y, double yaw_radians) {
-  return ceres::examples::Pose2d{x, y, yaw_radians};
+ceres::examples::Pose3d Make2dPose(double x, double y, double yaw_radians) {
+  return ceres::examples::Pose3d{Eigen::Vector3d(x, y, 0.0),
+                                 PoseUtils::EulerAnglesToQuaternion(
+                                     Eigen::Vector3d(0.0, 0.0, yaw_radians))};
 }
 
 // Assumes camera and robot origin are the same
 DataAdapter::TimestampedDetection MakeTimestampedDetection(
     aos::distributed_clock::time_point time, Eigen::Affine3d H_robot_target,
     TargetMapper::TargetId id) {
-  auto target_pose = PoseUtils::Affine3dToPose2d(H_robot_target);
+  auto target_pose = PoseUtils::Affine3dToPose3d(H_robot_target);
   return DataAdapter::TimestampedDetection{
       time, H_robot_target,
-      std::sqrt(std::pow(target_pose.x, 2) + std::pow(target_pose.y, 2)), id};
+      std::sqrt(std::pow(target_pose.p(0), 2) + std::pow(target_pose.p(1), 2)),
+      id};
 }
 
 bool TargetIsInView(TargetMapper::TargetPose target_detection) {
@@ -84,14 +108,14 @@ bool TargetIsInView(TargetMapper::TargetPose target_detection) {
   // camera, assuming camera is pointing in the
   // positive x-direction of the robot
   double angle_to_target =
-      atan2(target_detection.pose.y, target_detection.pose.x);
+      atan2(target_detection.pose.p(1), target_detection.pose.p(0));
 
   // Simulated camera field of view, in radians
   constexpr double kCameraFov = M_PI_2;
-  if (fabs(angle_to_target) <= kCameraFov / 2.0) {
-    VLOG(2) << "Found target in view, based on T = " << target_detection.pose.x
-            << ", " << target_detection.pose.y << " with angle "
-            << angle_to_target;
+  if (std::abs(angle_to_target) <= kCameraFov / 2.0) {
+    VLOG(2) << "Found target in view, based on T = "
+            << target_detection.pose.p(0) << ", " << target_detection.pose.p(1)
+            << " with angle " << angle_to_target;
     return true;
   } else {
     return false;
@@ -104,6 +128,44 @@ aos::distributed_clock::time_point TimeInMs(size_t ms) {
 
 }  // namespace
 
+TEST(PoseUtilsTest, EulerAnglesAndQuaternionConversions) {
+  // Make sure that the conversions are consistent back and forth.
+  // These angles shouldn't get changed to a different, equivalent roll pitch
+  // yaw.
+  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, 0.0, M_PI);
+  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, 0.0, -M_PI);
+  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, 0.0, M_PI_2);
+  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, 0.0, -M_PI_2);
+  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, 0.0, 0.0);
+  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, M_PI_4, 0.0);
+  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, -M_PI_4, 0.0);
+  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(0.0, -M_PI_4, M_PI_4);
+  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(M_PI_4, -M_PI_4, M_PI_4);
+  EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(-M_PI_2, -M_PI_4, M_PI_4);
+
+  // Now, do a sweep of roll, pitch, and yaws in the normalized
+  // range.
+  // - roll: (-pi/2, pi/2)
+  // - pitch: (-pi/2, pi/2)
+  // - yaw: [-pi, pi)
+  constexpr double kThetaMaxRoll = M_PI_2 - kToleranceRadians;
+  constexpr double kThetaMaxPitch = M_PI_2 - kToleranceRadians;
+  constexpr double kThetaMaxYaw = M_PI;
+  constexpr double kDeltaTheta = M_PI / 16;
+
+  for (double roll = -kThetaMaxRoll; roll < kThetaMaxRoll;
+       roll += kDeltaTheta) {
+    for (double pitch = -kThetaMaxPitch; pitch < kThetaMaxPitch;
+         pitch += kDeltaTheta) {
+      for (double yaw = -kThetaMaxYaw; yaw < kThetaMaxYaw; yaw += kDeltaTheta) {
+        SCOPED_TRACE(
+            absl::StrFormat("roll: %f, pitch: %f, yaw: %f", roll, pitch, yaw));
+        EXPECT_EULER_ANGLES_QUATERNION_BACK_AND_FORTH_EQ(roll, pitch, yaw);
+      }
+    }
+  }
+}
+
 TEST(DataAdapterTest, ComputeConfidence) {
   // Check the confidence matrices. Don't check the actual values
   // in case the constants change, just check that the confidence of contraints
@@ -113,10 +175,12 @@ TEST(DataAdapterTest, ComputeConfidence) {
     constexpr double kDistanceStart = 0.5;
     constexpr double kDistanceEnd = 2.0;
 
-    Eigen::Matrix3d last_confidence = Eigen::Matrix3d::Zero();
+    TargetMapper::ConfidenceMatrix last_confidence =
+        TargetMapper::ConfidenceMatrix::Zero();
     for (size_t dt = 0; dt < 15; dt++) {
-      Eigen::Matrix3d confidence = DataAdapter::ComputeConfidence(
-          TimeInMs(0), TimeInMs(dt), kDistanceStart, kDistanceEnd);
+      TargetMapper::ConfidenceMatrix confidence =
+          DataAdapter::ComputeConfidence(TimeInMs(0), TimeInMs(dt),
+                                         kDistanceStart, kDistanceEnd);
 
       if (dt != 0) {
         // Confidence only decreases every 5ms (control loop period)
@@ -134,11 +198,13 @@ TEST(DataAdapterTest, ComputeConfidence) {
     // Vary distance at start
     constexpr int kDt = 3;
     constexpr double kDistanceEnd = 1.5;
-    Eigen::Matrix3d last_confidence = Eigen::Matrix3d::Zero();
+    TargetMapper::ConfidenceMatrix last_confidence =
+        TargetMapper::ConfidenceMatrix::Zero();
     for (double distance_start = 0.0; distance_start < 3.0;
          distance_start += 0.5) {
-      Eigen::Matrix3d confidence = DataAdapter::ComputeConfidence(
-          TimeInMs(0), TimeInMs(kDt), distance_start, kDistanceEnd);
+      TargetMapper::ConfidenceMatrix confidence =
+          DataAdapter::ComputeConfidence(TimeInMs(0), TimeInMs(kDt),
+                                         distance_start, kDistanceEnd);
       if (distance_start != 0.0) {
         EXPECT_CONFIDENCE_GT(last_confidence, confidence);
       }
@@ -150,10 +216,12 @@ TEST(DataAdapterTest, ComputeConfidence) {
     // Vary distance at end
     constexpr int kDt = 2;
     constexpr double kDistanceStart = 2.5;
-    Eigen::Matrix3d last_confidence = Eigen::Matrix3d::Zero();
+    TargetMapper::ConfidenceMatrix last_confidence =
+        TargetMapper::ConfidenceMatrix::Zero();
     for (double distance_end = 0.0; distance_end < 3.0; distance_end += 0.5) {
-      Eigen::Matrix3d confidence = DataAdapter::ComputeConfidence(
-          TimeInMs(0), TimeInMs(kDt), kDistanceStart, distance_end);
+      TargetMapper::ConfidenceMatrix confidence =
+          DataAdapter::ComputeConfidence(TimeInMs(0), TimeInMs(kDt),
+                                         kDistanceStart, distance_end);
       if (distance_end != 0.0) {
         EXPECT_CONFIDENCE_GT(last_confidence, confidence);
       }
@@ -163,103 +231,23 @@ TEST(DataAdapterTest, ComputeConfidence) {
 }
 
 TEST(DataAdapterTest, MatchTargetDetections) {
-  std::vector<DataAdapter::TimestampedPose> timestamped_robot_poses = {
-      {TimeInMs(0), ceres::examples::Pose2d{1.0, 2.0, 0.0}},
-      {TimeInMs(5), ceres::examples::Pose2d{1.0, 2.0, 0.0}},
-      {TimeInMs(10), ceres::examples::Pose2d{3.0, 1.0, M_PI_2}},
-      {TimeInMs(15), ceres::examples::Pose2d{5.0, -2.0, -M_PI}},
-      {TimeInMs(20), ceres::examples::Pose2d{5.0, -2.0, -M_PI}},
-      {TimeInMs(25), ceres::examples::Pose2d{10.0, -32.0, M_PI_2}},
-      {TimeInMs(30), ceres::examples::Pose2d{-15.0, 12.0, 0.0}},
-      {TimeInMs(35), ceres::examples::Pose2d{-15.0, 12.0, 0.0}}};
-  std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections =
-      {{TimeInMs(5),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        1.0, 0},
-       {TimeInMs(9),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        1.0, 1},
-       {TimeInMs(9),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        1.0, 2},
-       {TimeInMs(15),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        1.0, 0},
-       {TimeInMs(16),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        1.0, 2},
-       {TimeInMs(27),
-        PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -4.0, 0.0}),
-        1.0, 1}};
-  auto [target_constraints, robot_delta_poses] =
-      DataAdapter::MatchTargetDetections(timestamped_robot_poses,
-                                         timestamped_target_detections);
-
-  // Check that target constraints got inserted in the
-  // correct spots
-  EXPECT_EQ(target_constraints.size(),
-            timestamped_target_detections.size() - 1);
-  for (auto it = target_constraints.begin(); it < target_constraints.end();
-       it++) {
-    auto timestamped_it = timestamped_target_detections.begin() +
-                          (it - target_constraints.begin());
-    EXPECT_EQ(it->id_begin, timestamped_it->id);
-    EXPECT_EQ(it->id_end, (timestamped_it + 1)->id);
-  }
-
-  // Check that poses were interpolated correctly.
-  // Keep track of the computed robot pose by adding the delta poses
-  auto computed_robot_pose = timestamped_robot_poses[1].pose;
-
-  computed_robot_pose =
-      PoseUtils::ComputeOffsetPose(computed_robot_pose, robot_delta_poses[0]);
-  EXPECT_POSE_IN_RANGE(computed_robot_pose, timestamped_robot_poses[1].pose,
-                       timestamped_robot_poses[2].pose);
-
-  computed_robot_pose =
-      PoseUtils::ComputeOffsetPose(computed_robot_pose, robot_delta_poses[1]);
-  EXPECT_POSE_IN_RANGE(computed_robot_pose, timestamped_robot_poses[1].pose,
-                       timestamped_robot_poses[2].pose);
-  EXPECT_POSE_EQ(robot_delta_poses[1], MakePose(0.0, 0.0, 0.0));
-
-  computed_robot_pose =
-      PoseUtils::ComputeOffsetPose(computed_robot_pose, robot_delta_poses[2]);
-  EXPECT_POSE_EQ(computed_robot_pose, timestamped_robot_poses[3].pose);
-
-  computed_robot_pose =
-      PoseUtils::ComputeOffsetPose(computed_robot_pose, robot_delta_poses[3]);
-  EXPECT_POSE_EQ(computed_robot_pose, timestamped_robot_poses[4].pose);
-
-  computed_robot_pose =
-      PoseUtils::ComputeOffsetPose(computed_robot_pose, robot_delta_poses[4]);
-  EXPECT_POSE_IN_RANGE(computed_robot_pose, timestamped_robot_poses[5].pose,
-                       timestamped_robot_poses[6].pose);
-}
-
-TEST(DataAdapterTest, MatchTargetDetectionsWithoutRobotPosition) {
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections =
       {MakeTimestampedDetection(
-           TimeInMs(5),
-           PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{5.0, -5.0, 0.0}),
+           TimeInMs(5), PoseUtils::Pose3dToAffine3d(Make2dPose(5.0, -5.0, 0.0)),
            2),
-       MakeTimestampedDetection(TimeInMs(6),
-                                PoseUtils::Pose2dToAffine3d(
-                                    ceres::examples::Pose2d{5.0, -4.0, M_PI}),
-                                0),
-       MakeTimestampedDetection(TimeInMs(10),
-                                PoseUtils::Pose2dToAffine3d(
-                                    ceres::examples::Pose2d{3.0, -3.0, M_PI}),
-                                1),
-       MakeTimestampedDetection(TimeInMs(13),
-                                PoseUtils::Pose2dToAffine3d(
-                                    ceres::examples::Pose2d{4.0, -7.0, M_PI_2}),
-                                2),
-       MakeTimestampedDetection(TimeInMs(14),
-                                PoseUtils::Pose2dToAffine3d(
-                                    ceres::examples::Pose2d{4.0, -4.0, M_PI_2}),
-                                2)};
+       MakeTimestampedDetection(
+           TimeInMs(6),
+           PoseUtils::Pose3dToAffine3d(Make2dPose(5.0, -4.0, M_PI)), 0),
+       MakeTimestampedDetection(
+           TimeInMs(10),
+           PoseUtils::Pose3dToAffine3d(Make2dPose(3.0, -3.0, M_PI)), 1),
+       MakeTimestampedDetection(
+           TimeInMs(13),
+           PoseUtils::Pose3dToAffine3d(Make2dPose(4.0, -7.0, M_PI_2)), 2),
+       MakeTimestampedDetection(
+           TimeInMs(14),
+           PoseUtils::Pose3dToAffine3d(Make2dPose(4.0, -4.0, M_PI_2)), 2)};
 
-  constexpr auto kMaxDt = std::chrono::milliseconds(3);
   auto target_constraints =
       DataAdapter::MatchTargetDetections(timestamped_target_detections, kMaxDt);
 
@@ -271,201 +259,225 @@ TEST(DataAdapterTest, MatchTargetDetectionsWithoutRobotPosition) {
             timestamped_target_detections.size() - 3);
 
   // Between 5ms and 6ms detections
-  EXPECT_DOUBLE_EQ(target_constraints[0].x, 0.0);
-  EXPECT_DOUBLE_EQ(target_constraints[0].y, 1.0);
-  EXPECT_DOUBLE_EQ(target_constraints[0].yaw_radians, -M_PI);
+  EXPECT_DOUBLE_EQ(target_constraints[0].t_be.p(0), 0.0);
+  EXPECT_DOUBLE_EQ(target_constraints[0].t_be.p(1), 1.0);
+  EXPECT_QUATERNION_NEAR(
+      target_constraints[0].t_be.q,
+      PoseUtils::EulerAnglesToQuaternion(Eigen::Vector3d(0.0, 0.0, M_PI)));
   EXPECT_EQ(target_constraints[0].id_begin, 2);
   EXPECT_EQ(target_constraints[0].id_end, 0);
 
   // Between 10ms and 13ms detections
-  EXPECT_DOUBLE_EQ(target_constraints[1].x, -1.0);
-  EXPECT_DOUBLE_EQ(target_constraints[1].y, 4.0);
-  EXPECT_DOUBLE_EQ(target_constraints[1].yaw_radians, -M_PI_2);
+  EXPECT_DOUBLE_EQ(target_constraints[1].t_be.p(0), -1.0);
+  EXPECT_DOUBLE_EQ(target_constraints[1].t_be.p(1), 4.0);
+  EXPECT_QUATERNION_NEAR(
+      target_constraints[1].t_be.q,
+      PoseUtils::EulerAnglesToQuaternion(Eigen::Vector3d(0.0, 0.0, -M_PI_2)));
   EXPECT_EQ(target_constraints[1].id_begin, 1);
   EXPECT_EQ(target_constraints[1].id_end, 2);
 }
 
 TEST(TargetMapperTest, TwoTargetsOneConstraint) {
-  std::map<TargetMapper::TargetId, ceres::examples::Pose2d> target_poses;
-  target_poses[0] = ceres::examples::Pose2d{5.0, 0.0, M_PI};
-  target_poses[1] = ceres::examples::Pose2d{-5.0, 0.0, 0.0};
+  ceres::examples::MapOfPoses target_poses;
+  target_poses[0] = Make2dPose(5.0, 0.0, M_PI);
+  target_poses[1] = Make2dPose(-5.0, 0.0, 0.0);
 
-  std::vector<DataAdapter::TimestampedPose> timestamped_robot_poses = {
-      {TimeInMs(5), ceres::examples::Pose2d{2.0, 0.0, 0.0}},
-      {TimeInMs(10), ceres::examples::Pose2d{-1.0, 0.0, 0.0}},
-      {TimeInMs(15), ceres::examples::Pose2d{-1.0, 0.0, 0.0}}};
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections =
       {MakeTimestampedDetection(
-           TimeInMs(5),
-           PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{3.0, 0.0, M_PI}),
+           TimeInMs(5), PoseUtils::Pose3dToAffine3d(Make2dPose(3.0, 0.0, M_PI)),
            0),
        MakeTimestampedDetection(
-           TimeInMs(10),
-           PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{-4.0, 0.0, 0.0}),
+           TimeInMs(6), PoseUtils::Pose3dToAffine3d(Make2dPose(-7.0, 0.0, 0.0)),
            1)};
   auto target_constraints =
-      DataAdapter::MatchTargetDetections(timestamped_robot_poses,
-                                         timestamped_target_detections)
-          .first;
+      DataAdapter::MatchTargetDetections(timestamped_target_detections, kMaxDt);
 
   frc971::vision::TargetMapper mapper(target_poses, target_constraints);
   mapper.Solve(kFieldName);
 
   ASSERT_EQ(mapper.target_poses().size(), 2);
-  EXPECT_POSE_NEAR(mapper.target_poses()[0], MakePose(5.0, 0.0, M_PI));
-  EXPECT_POSE_NEAR(mapper.target_poses()[1], MakePose(-5.0, 0.0, 0.0));
+  EXPECT_POSE_NEAR(mapper.target_poses()[0], Make2dPose(5.0, 0.0, M_PI));
+  EXPECT_POSE_NEAR(mapper.target_poses()[1], Make2dPose(-5.0, 0.0, 0.0));
 }
 
 TEST(TargetMapperTest, TwoTargetsTwoConstraints) {
-  std::map<TargetMapper::TargetId, ceres::examples::Pose2d> target_poses;
-  target_poses[0] = ceres::examples::Pose2d{5.0, 0.0, M_PI};
-  target_poses[1] = ceres::examples::Pose2d{-5.0, 0.0, -M_PI_2};
+  ceres::examples::MapOfPoses target_poses;
+  target_poses[0] = Make2dPose(5.0, 0.0, M_PI);
+  target_poses[1] = Make2dPose(-5.0, 0.0, -M_PI_2);
 
-  std::vector<DataAdapter::TimestampedPose> timestamped_robot_poses = {
-      {TimeInMs(5), ceres::examples::Pose2d{-1.0, 0.0, 0.0}},
-      {TimeInMs(10), ceres::examples::Pose2d{3.0, 0.0, 0.0}},
-      {TimeInMs(15), ceres::examples::Pose2d{4.0, 0.0, 0.0}},
-      {TimeInMs(20), ceres::examples::Pose2d{-1.0, 0.0, 0.0}}};
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections =
       {MakeTimestampedDetection(
            TimeInMs(5),
-           PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{6.0, 0.0, M_PI}),
-           0),
+           PoseUtils::Pose3dToAffine3d(Make2dPose(6.0, 0.0, M_PI_2)), 0),
        MakeTimestampedDetection(
-           TimeInMs(10),
-           PoseUtils::Pose2dToAffine3d(
-               ceres::examples::Pose2d{-8.0, 0.0, -M_PI_2}),
-           1),
+           TimeInMs(7),
+           PoseUtils::Pose3dToAffine3d(Make2dPose(6.0, 10.0, -M_PI)), 1),
        MakeTimestampedDetection(
-           TimeInMs(15),
-           PoseUtils::Pose2dToAffine3d(ceres::examples::Pose2d{1.0, 0.0, M_PI}),
-           0)};
+           TimeInMs(12),
+           PoseUtils::Pose3dToAffine3d(Make2dPose(1.0, 0.0, M_PI)), 0),
+       MakeTimestampedDetection(
+           TimeInMs(13),
+           PoseUtils::Pose3dToAffine3d(Make2dPose(-9.0, 0.0, -M_PI_2)), 1)};
   auto target_constraints =
-      DataAdapter::MatchTargetDetections(timestamped_robot_poses,
-                                         timestamped_target_detections)
-          .first;
+      DataAdapter::MatchTargetDetections(timestamped_target_detections, kMaxDt);
 
   frc971::vision::TargetMapper mapper(target_poses, target_constraints);
   mapper.Solve(kFieldName);
 
   ASSERT_EQ(mapper.target_poses().size(), 2);
-  EXPECT_POSE_NEAR(mapper.target_poses()[0], MakePose(5.0, 0.0, M_PI));
-  EXPECT_POSE_NEAR(mapper.target_poses()[1], MakePose(-5.0, 0.0, -M_PI_2));
+  EXPECT_POSE_NEAR(mapper.target_poses()[0], Make2dPose(5.0, 0.0, M_PI));
+  EXPECT_POSE_NEAR(mapper.target_poses()[1], Make2dPose(-5.0, 0.0, -M_PI_2));
 }
 
 TEST(TargetMapperTest, TwoTargetsOneNoisyConstraint) {
-  std::map<TargetMapper::TargetId, ceres::examples::Pose2d> target_poses;
-  target_poses[0] = ceres::examples::Pose2d{5.0, 0.0, M_PI};
-  target_poses[1] = ceres::examples::Pose2d{-5.0, 0.0, 0.0};
+  ceres::examples::MapOfPoses target_poses;
+  target_poses[0] = Make2dPose(5.0, 0.0, M_PI);
+  target_poses[1] = Make2dPose(-5.0, 0.0, 0.0);
 
-  std::vector<DataAdapter::TimestampedPose> timestamped_robot_poses = {
-      {TimeInMs(5), ceres::examples::Pose2d{1.99, 0.0, 0.0}},
-      {TimeInMs(10), ceres::examples::Pose2d{-1.0, 0.0, 0.0}},
-      {TimeInMs(15), ceres::examples::Pose2d{-1.01, -0.01, 0.004}}};
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections =
       {MakeTimestampedDetection(
            TimeInMs(5),
-           PoseUtils::Pose2dToAffine3d(
-               ceres::examples::Pose2d{3.01, 0.001, M_PI - 0.001}),
+           PoseUtils::Pose3dToAffine3d(Make2dPose(3.01, 0.001, M_PI - 0.001)),
            0),
-       MakeTimestampedDetection(TimeInMs(10),
-                                PoseUtils::Pose2dToAffine3d(
-                                    ceres::examples::Pose2d{-4.01, 0.0, 0.0}),
-                                1)};
+       MakeTimestampedDetection(
+           TimeInMs(7),
+           PoseUtils::Pose3dToAffine3d(Make2dPose(-7.01, 0.0, 0.0)), 1)};
 
   auto target_constraints =
-      DataAdapter::MatchTargetDetections(timestamped_robot_poses,
-                                         timestamped_target_detections)
-          .first;
+      DataAdapter::MatchTargetDetections(timestamped_target_detections, kMaxDt);
 
   frc971::vision::TargetMapper mapper(target_poses, target_constraints);
   mapper.Solve(kFieldName);
 
   ASSERT_EQ(mapper.target_poses().size(), 2);
-  EXPECT_POSE_NEAR(mapper.target_poses()[0], MakePose(5.0, 0.0, M_PI));
-  EXPECT_POSE_NEAR(mapper.target_poses()[1], MakePose(-5.0, 0.0, 0.0));
+  EXPECT_POSE_NEAR(mapper.target_poses()[0], Make2dPose(5.0, 0.0, M_PI));
+  EXPECT_POSE_NEAR(mapper.target_poses()[1], Make2dPose(-5.0, 0.0, 0.0));
 }
 
-TEST(TargetMapperTest, MultiTargetCircleMotion) {
-  // Build set of target locations wrt global origin
-  // For simplicity, do this on a grid of the field
-  double field_half_length = 7.5;  // half length of the field
-  double field_half_width = 5.0;   // half width of the field
-  std::map<TargetMapper::TargetId, ceres::examples::Pose2d> target_poses;
-  std::vector<TargetMapper::TargetPose> actual_target_poses;
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      TargetMapper::TargetId target_id = i * 3 + j;
-      TargetMapper::TargetPose target_pose{
-          target_id, ceres::examples::Pose2d{field_half_length * (1 - i),
-                                             field_half_width * (1 - j), 0.0}};
-      actual_target_poses.emplace_back(target_pose);
-      target_poses[target_id] = target_pose.pose;
-      VLOG(2) << "VERTEX_SE2 " << target_id << " " << target_pose.pose.x << " "
-              << target_pose.pose.y << " " << target_pose.pose.yaw_radians;
+class ChargedUpTargetMapperTest : public ::testing::Test {
+ public:
+  ChargedUpTargetMapperTest() : generator_(aos::testing::RandomSeed()) {}
+
+  // Generates noisy target detection if target in camera FOV
+  std::optional<DataAdapter::TimestampedDetection> MaybeGenerateNoisyDetection(
+      const ceres::examples::Pose3d &robot_pose,
+      const TargetMapper::TargetPose &target_pose, size_t t,
+      bool force_in_view = false) {
+    TargetMapper::TargetPose target_detection = {
+        .id = target_pose.id,
+        .pose = PoseUtils::ComputeRelativePose(robot_pose, target_pose.pose)};
+    if (force_in_view || TargetIsInView(target_detection)) {
+      // Define random generator with Gaussian
+      // distribution
+      constexpr double kMean = 0.0;
+      constexpr double kStdDev = 1.0;
+      // Can play with this to see how it impacts
+      // randomness
+      constexpr double kNoiseScalePosition = 0.01;
+      constexpr double kNoiseScaleOrientation = 0.0005;
+      std::normal_distribution<double> dist(kMean, kStdDev);
+
+      target_detection.pose.p(0) += dist(generator_) * kNoiseScalePosition;
+      target_detection.pose.p(1) += dist(generator_) * kNoiseScalePosition;
+      target_detection.pose.p(2) += dist(generator_) * kNoiseScalePosition;
+
+      target_detection.pose.q.w() += dist(generator_) * kNoiseScaleOrientation;
+      target_detection.pose.q.x() += dist(generator_) * kNoiseScaleOrientation;
+      target_detection.pose.q.y() += dist(generator_) * kNoiseScaleOrientation;
+      target_detection.pose.q.z() += dist(generator_) * kNoiseScaleOrientation;
+
+      auto time_point = TimeInMs(t);
+      return MakeTimestampedDetection(
+          time_point, PoseUtils::Pose3dToAffine3d(target_detection.pose),
+          target_detection.id);
     }
+
+    return std::nullopt;
   }
+
+ private:
+  std::default_random_engine generator_;
+};
+
+// Drive in a circle around the 2023 field, and add a bit of randomness to 3d
+// pose detections
+TEST_F(ChargedUpTargetMapperTest, FieldCircleMotion) {
+  // Read target map
+  auto target_map_fbs = aos::JsonFileToFlatbuffer<TargetMap>(
+      aos::testing::ArtifactPath("frc971/vision/target_map.json"));
+
+  std::vector<TargetMapper::TargetPose> actual_target_poses;
+  ceres::examples::MapOfPoses target_poses;
+  for (auto *target_pose_fbs : *target_map_fbs.message().target_poses()) {
+    auto target_pose = TargetMapper::TargetPose{
+        static_cast<int>(target_pose_fbs->id()),
+        ceres::examples::Pose3d{
+            Eigen::Vector3d(target_pose_fbs->x(), target_pose_fbs->y(),
+                            target_pose_fbs->z()),
+            PoseUtils::EulerAnglesToQuaternion(Eigen::Vector3d(
+                target_pose_fbs->roll(), target_pose_fbs->pitch(),
+                target_pose_fbs->yaw()))}};
+    actual_target_poses.emplace_back(target_pose);
+    target_poses[target_pose.id] = target_pose.pose;
+  }
+
+  double kFieldHalfLength = 16.54 / 2.0;  // half length of the field
+  double kFieldHalfWidth = 8.02 / 2.0;    // half width of the field
 
   // Now, create a bunch of robot poses and target
   // observations
-  size_t dt = 1;
+  constexpr size_t kDt = 5;
+  constexpr double kRobotZ = 1.0;
 
-  std::vector<DataAdapter::TimestampedPose> timestamped_robot_poses;
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections;
 
   constexpr size_t kTotalSteps = 100;
   for (size_t step_count = 0; step_count < kTotalSteps; step_count++) {
-    size_t t = dt * step_count;
+    size_t t = kDt * step_count;
+
     // Circle clockwise around the center of the field
     double robot_theta = t;
-    double robot_x = (field_half_length / 2.0) * cos(robot_theta);
-    double robot_y = (-field_half_width / 2.0) * sin(robot_theta);
 
-    ceres::examples::Pose2d robot_pose{robot_x, robot_y, robot_theta};
+    constexpr double kRadiusScalar = 0.5;
+    double robot_x = (kRadiusScalar * kFieldHalfLength) * cos(robot_theta);
+    double robot_y = (kRadiusScalar * -kFieldHalfWidth) * sin(robot_theta);
+
+    auto robot_pose =
+        ceres::examples::Pose3d{.p = Eigen::Vector3d(robot_x, robot_y, kRobotZ),
+                                .q = PoseUtils::EulerAnglesToQuaternion(
+                                    Eigen::Vector3d(robot_theta, 0.0, 0.0))};
+
     for (TargetMapper::TargetPose target_pose : actual_target_poses) {
-      TargetMapper::TargetPose target_detection = {
-          .id = target_pose.id,
-          .pose = PoseUtils::ComputeRelativePose(robot_pose, target_pose.pose)};
-      if (TargetIsInView(target_detection)) {
-        // Define random generator with Gaussian
-        // distribution
-        const double mean = 0.0;
-        const double stddev = 1.0;
-        // Can play with this to see how it impacts
-        // randomness
-        constexpr double kNoiseScale = 0.01;
-        std::default_random_engine generator(aos::testing::RandomSeed());
-        std::normal_distribution<double> dist(mean, stddev);
-
-        target_detection.pose.x += dist(generator) * kNoiseScale;
-        target_detection.pose.y += dist(generator) * kNoiseScale;
-        robot_pose.x += dist(generator) * kNoiseScale;
-        robot_pose.y += dist(generator) * kNoiseScale;
-
-        auto time_point =
-            aos::distributed_clock::time_point(std::chrono::milliseconds(t));
-        timestamped_robot_poses.emplace_back(DataAdapter::TimestampedPose{
-            .time = time_point, .pose = robot_pose});
-        timestamped_target_detections.emplace_back(MakeTimestampedDetection(
-            time_point, PoseUtils::Pose2dToAffine3d(target_detection.pose),
-            target_detection.id));
+      auto optional_detection =
+          MaybeGenerateNoisyDetection(robot_pose, target_pose, t);
+      if (optional_detection.has_value()) {
+        timestamped_target_detections.emplace_back(*optional_detection);
       }
     }
   }
 
+  // The above circular motion only captures targets 1-4, so add another
+  // detection with the camera looking at targets 5-8, and 4 at the same time to
+  // have a connection to the rest of the targets
   {
-    // Add in a robot pose after all target poses
-    auto final_robot_pose =
-        timestamped_robot_poses[timestamped_robot_poses.size() - 1];
-    timestamped_robot_poses.emplace_back(DataAdapter::TimestampedPose{
-        .time = final_robot_pose.time + std::chrono::milliseconds(dt),
-        .pose = final_robot_pose.pose});
+    auto last_robot_pose =
+        ceres::examples::Pose3d{.p = Eigen::Vector3d(0.0, 0.0, kRobotZ),
+                                .q = PoseUtils::EulerAnglesToQuaternion(
+                                    Eigen::Vector3d(0.0, 0.0, M_PI))};
+    for (size_t id = 4; id <= 8; id++) {
+      auto target_pose =
+          TargetMapper::GetTargetPoseById(actual_target_poses, id).value();
+      auto optional_detection = MaybeGenerateNoisyDetection(
+          last_robot_pose, target_pose, kTotalSteps * kDt, true);
+
+      ASSERT_TRUE(optional_detection.has_value())
+          << "Didn't detect target " << target_pose.id;
+      timestamped_target_detections.emplace_back(*optional_detection);
+    }
   }
 
   auto target_constraints =
-      DataAdapter::MatchTargetDetections(timestamped_robot_poses,
-                                         timestamped_target_detections)
-          .first;
+      DataAdapter::MatchTargetDetections(timestamped_target_detections, kMaxDt);
   frc971::vision::TargetMapper mapper(target_poses, target_constraints);
   mapper.Solve(kFieldName);
 
@@ -483,8 +495,10 @@ TEST(TargetMapperTest, MultiTargetCircleMotion) {
   for (auto [target_id, target_pose] : target_poses) {
     // Skip first pose, since that needs to be correct
     // and is fixed in the solver
-    if (target_id != 0) {
-      ceres::examples::Pose2d bad_pose{0.0, 0.0, M_PI / 2.0};
+    if (target_id != 1) {
+      ceres::examples::Pose3d bad_pose{
+          Eigen::Vector3d::Zero(),
+          PoseUtils::EulerAnglesToQuaternion(Eigen::Vector3d::Zero())};
       target_poses[target_id] = bad_pose;
     }
   }

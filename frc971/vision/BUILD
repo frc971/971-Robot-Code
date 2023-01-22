@@ -155,7 +155,7 @@ cc_library(
         ":target_map_fbs",
         "//aos/events:simulated_event_loop",
         "//frc971/control_loops:control_loop",
-        "//frc971/vision/ceres:pose_graph_2d_lib",
+        "//frc971/vision/ceres:pose_graph_3d_lib",
         "//third_party:opencv",
         "@com_google_ceres_solver//:ceres",
         "@org_tuxfamily_eigen//:eigen",
@@ -167,12 +167,15 @@ cc_test(
     srcs = [
         "target_mapper_test.cc",
     ],
+    data = [":target_map.json"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":target_mapper",
         "//aos/events:simulated_event_loop",
         "//aos/testing:googletest",
+        "//aos/testing:path",
         "//aos/testing:random_seed",
+        "//aos/util:math",
     ],
 )
 

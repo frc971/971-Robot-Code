@@ -6,12 +6,14 @@ table TargetPoseFbs {
   id:uint64 (id: 0);
 
   // Pose of target relative to field origin.
-  // NOTE: As of now, we only solve for the 2d pose (x, y, yaw)
-  // and all other values will be 0.
+  // To get the pose of the target in the field frame, do:
+  // Translation3d(x, y, z) *
+  // (AngleAxisd(yaw) * AngleAxisd(pitch) * AngleAxisd(roll))
   x:double (id: 1);
   y:double (id: 2);
   z:double (id: 3);
 
+  // Orientation of the target.
   roll:double (id: 4);
   pitch:double (id: 5);
   yaw:double (id: 6);
