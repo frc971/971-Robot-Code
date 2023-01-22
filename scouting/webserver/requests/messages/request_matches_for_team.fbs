@@ -1,7 +1,0 @@
-namespace scouting.webserver.requests;
-
-table RequestMatchesForTeam {
-    team:int (id: 0);
-}
-
-root_type RequestMatchesForTeam;

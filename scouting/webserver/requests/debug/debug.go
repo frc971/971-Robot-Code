@@ -15,7 +15,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
@@ -123,12 +122,6 @@ func RequestAllDriverRankings(server string, requestBytes []byte) (*request_all_
 	return sendMessage[request_all_driver_rankings_response.RequestAllDriverRankingsResponseT](
 		server+"/requests/request/all_driver_rankings", requestBytes,
 		request_all_driver_rankings_response.GetRootAsRequestAllDriverRankingsResponse)
-}
-
-func RequestMatchesForTeam(server string, requestBytes []byte) (*request_matches_for_team_response.RequestMatchesForTeamResponseT, error) {
-	return sendMessage[request_matches_for_team_response.RequestMatchesForTeamResponseT](
-		server+"/requests/request/matches_for_team", requestBytes,
-		request_matches_for_team_response.GetRootAsRequestMatchesForTeamResponse)
 }
 
 func RequestDataScouting(server string, requestBytes []byte) (*request_data_scouting_response.RequestDataScoutingResponseT, error) {

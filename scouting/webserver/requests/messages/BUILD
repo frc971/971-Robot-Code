@@ -11,8 +11,6 @@ FILE_NAMES = (
     "request_all_matches_response",
     "request_all_notes",
     "request_all_notes_response",
-    "request_matches_for_team",
-    "request_matches_for_team_response",
     "request_data_scouting",
     "request_data_scouting_response",
     "refresh_match_list",

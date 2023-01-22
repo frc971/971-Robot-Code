@@ -21,8 +21,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
@@ -182,55 +180,6 @@ func TestRequestAllMatches(t *testing.T) {
 		}
 	}
 
-}
-
-// Validates that we can request the full match list.
-func TestRequestMatchesForTeam(t *testing.T) {
-	db := MockDatabase{
-		matches: []db.Match{
-			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
-				R1: 5, R2: 42, R3: 600, B1: 971, B2: 400, B3: 200,
-			},
-			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
-				R1: 6, R2: 43, R3: 601, B1: 972, B2: 401, B3: 201,
-			},
-		},
-	}
-	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scrapeEmtpyMatchList, scoutingServer)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&request_matches_for_team.RequestMatchesForTeamT{
-		Team: 971,
-	}).Pack(builder))
-
-	response, err := debug.RequestMatchesForTeam("http://localhost:8080", builder.FinishedBytes())
-	if err != nil {
-		t.Fatal("Failed to request all matches: ", err)
-	}
-
-	expected := request_matches_for_team_response.RequestMatchesForTeamResponseT{
-		MatchList: []*request_matches_for_team_response.MatchT{
-			// MatchNumber, SetNumber, CompLevel
-			// R1, R2, R3, B1, B2, B3
-			{
-				1, 1, "qual",
-				5, 42, 600, 971, 400, 200,
-			},
-		},
-	}
-	if len(expected.MatchList) != len(response.MatchList) {
-		t.Fatal("Expected ", expected, ", but got ", *response)
-	}
-	for i, match := range expected.MatchList {
-		if !reflect.DeepEqual(*match, *response.MatchList[i]) {
-			t.Fatal("Expected for match", i, ":", *match, ", but got:", *response.MatchList[i])
-		}
-	}
 }
 
 // Validates that we can request the stats.

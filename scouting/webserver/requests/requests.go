@@ -23,8 +23,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_matches_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
@@ -49,8 +47,6 @@ type RequestAllDriverRankings = request_all_driver_rankings.RequestAllDriverRank
 type RequestAllDriverRankingsResponseT = request_all_driver_rankings_response.RequestAllDriverRankingsResponseT
 type RequestAllNotes = request_all_notes.RequestAllNotes
 type RequestAllNotesResponseT = request_all_notes_response.RequestAllNotesResponseT
-type RequestMatchesForTeam = request_matches_for_team.RequestMatchesForTeam
-type RequestMatchesForTeamResponseT = request_matches_for_team_response.RequestMatchesForTeamResponseT
 type RequestDataScouting = request_data_scouting.RequestDataScouting
 type RequestDataScoutingResponseT = request_data_scouting_response.RequestDataScoutingResponseT
 type RefreshMatchList = refresh_match_list.RefreshMatchList
@@ -228,49 +224,6 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 	matches, err := handler.db.ReturnMatches()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
-		return
-	}
-
-	var response RequestAllMatchesResponseT
-	for _, match := range matches {
-		response.MatchList = append(response.MatchList, &request_all_matches_response.MatchT{
-			MatchNumber: match.MatchNumber,
-			SetNumber:   match.SetNumber,
-			CompLevel:   match.CompLevel,
-			R1:          match.R1,
-			R2:          match.R2,
-			R3:          match.R3,
-			B1:          match.B1,
-			B2:          match.B2,
-			B3:          match.B3,
-		})
-	}
-
-	builder := flatbuffers.NewBuilder(50 * 1024)
-	builder.Finish((&response).Pack(builder))
-	w.Write(builder.FinishedBytes())
-}
-
-// Handles a RequestMatchesForTeam request.
-type requestMatchesForTeamHandler struct {
-	db Database
-}
-
-func (handler requestMatchesForTeamHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	requestBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
-		return
-	}
-
-	request, success := parseRequest(w, requestBytes, "RequestMatchesForTeam", request_matches_for_team.GetRootAsRequestMatchesForTeam)
-	if !success {
-		return
-	}
-
-	matches, err := handler.db.QueryMatches(request.Team())
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Faled to query database: ", err))
 		return
 	}
 
@@ -741,7 +694,6 @@ func HandleRequests(db Database, scrape ScrapeMatchList, scoutingServer server.S
 	scoutingServer.Handle("/requests/request/all_matches", requestAllMatchesHandler{db})
 	scoutingServer.Handle("/requests/request/all_notes", requestAllNotesHandler{db})
 	scoutingServer.Handle("/requests/request/all_driver_rankings", requestAllDriverRankingsHandler{db})
-	scoutingServer.Handle("/requests/request/matches_for_team", requestMatchesForTeamHandler{db})
 	scoutingServer.Handle("/requests/request/data_scouting", requestDataScoutingHandler{db})
 	scoutingServer.Handle("/requests/refresh_match_list", refreshMatchListHandler{db, scrape})
 	scoutingServer.Handle("/requests/submit/submit_notes", submitNoteScoutingHandler{db})

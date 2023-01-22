@@ -91,8 +91,6 @@ func main() {
 		"If specified, parse the file as a submitNotes JSON request.")
 	requestAllMatchesPtr := flag.String("requestAllMatches", "",
 		"If specified, parse the file as a RequestAllMatches JSON request.")
-	requestMatchesForTeamPtr := flag.String("requestMatchesForTeam", "",
-		"If specified, parse the file as a RequestMatchesForTeam JSON request.")
 	requestDataScoutingPtr := flag.String("requestDataScouting", "",
 		"If specified, parse the file as a RequestDataScouting JSON request.")
 	requestAllDriverRankingsPtr := flag.String("requestAllDriverRankings", "",
@@ -136,13 +134,6 @@ func main() {
 		*requestAllMatchesPtr,
 		*addressPtr,
 		debug.RequestAllMatches)
-
-	maybePerformRequest(
-		"RequestMatchesForTeam",
-		"scouting/webserver/requests/messages/request_matches_for_team.fbs",
-		*requestMatchesForTeamPtr,
-		*addressPtr,
-		debug.RequestMatchesForTeam)
 
 	maybePerformRequest(
 		"RequestDataScouting",

@@ -222,23 +222,6 @@ class TestDebugCli(unittest.TestCase):
             stdout)
         self.assertEqual(stdout.count("MatchNumber:"), 90)
 
-    def test_request_matches_for_team(self):
-        self.refresh_match_list()
-
-        json_path = write_json_request({
-            "team": 4856,
-        })
-        exit_code, stdout, stderr = run_debug_cli(
-            ["-requestMatchesForTeam", json_path])
-
-        # Team 4856 has 12 matches.
-        self.assertEqual(exit_code, 0, stderr)
-        self.assertIn(
-            "MatchList: ([]*request_matches_for_team_response.MatchT) (len=12 cap=12) {",
-            stdout)
-        self.assertEqual(stdout.count("MatchNumber:"), 12)
-        self.assertEqual(len(re.findall(r": \(int32\) 4856[,\n]", stdout)), 12)
-
     def test_request_all_matches(self):
         """Makes sure that we can import the match list multiple times without problems."""
         request_all_matches_outputs = []
