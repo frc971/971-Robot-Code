@@ -149,7 +149,7 @@ func (database *Database) AddToShift(sh Shift) error {
 }
 
 func (database *Database) AddToStats(s Stats) error {
-	matches, err := database.QueryMatches(s.TeamNumber)
+	matches, err := database.queryMatches(s.TeamNumber)
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func (database *Database) ReturnRankings() ([]Ranking, error) {
 	return rankins, result.Error
 }
 
-func (database *Database) QueryMatches(teamNumber_ int32) ([]Match, error) {
+func (database *Database) queryMatches(teamNumber_ int32) ([]Match, error) {
 	var matches []Match
 	result := database.
 		Where("r1 = $1 OR r2 = $1 OR r3 = $1 OR b1 = $1 OR b2 = $1 OR b3 = $1", teamNumber_).

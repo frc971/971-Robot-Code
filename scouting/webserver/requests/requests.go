@@ -73,7 +73,6 @@ type Database interface {
 	ReturnAllDriverRankings() ([]db.DriverRankingData, error)
 	ReturnAllShifts() ([]db.Shift, error)
 	ReturnStats() ([]db.Stats, error)
-	QueryMatches(int32) ([]db.Match, error)
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryStats(int) ([]db.Stats, error)
 	QueryNotes(int32) ([]string, error)

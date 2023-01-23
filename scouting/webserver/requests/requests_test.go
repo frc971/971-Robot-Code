@@ -702,19 +702,6 @@ func (database *MockDatabase) ReturnStats() ([]db.Stats, error) {
 	return database.stats, nil
 }
 
-func (database *MockDatabase) QueryMatches(requestedTeam int32) ([]db.Match, error) {
-	var matches []db.Match
-	for _, match := range database.matches {
-		for _, team := range []int32{match.R1, match.R2, match.R3, match.B1, match.B2, match.B3} {
-			if team == requestedTeam {
-				matches = append(matches, match)
-				break
-			}
-		}
-	}
-	return matches, nil
-}
-
 func (database *MockDatabase) QueryStats(int) ([]db.Stats, error) {
 	return []db.Stats{}, nil
 }

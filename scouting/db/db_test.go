@@ -234,41 +234,6 @@ func TestAddDuplicateStats(t *testing.T) {
 	}
 }
 
-func TestQueryMatchDB(t *testing.T) {
-	fixture := createDatabase(t)
-	defer fixture.TearDown()
-
-	testDatabase := []Match{
-		Match{MatchNumber: 2, SetNumber: 1, CompLevel: "quals", R1: 251, R2: 169, R3: 286, B1: 253, B2: 538, B3: 149},
-		Match{MatchNumber: 4, SetNumber: 1, CompLevel: "quals", R1: 198, R2: 135, R3: 777, B1: 999, B2: 434, B3: 698},
-		Match{MatchNumber: 3, SetNumber: 1, CompLevel: "quals", R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262},
-		Match{MatchNumber: 6, SetNumber: 1, CompLevel: "quals", R1: 191, R2: 132, R3: 773, B1: 994, B2: 435, B3: 696},
-	}
-
-	for i := 0; i < len(testDatabase); i++ {
-		err := fixture.db.AddToMatch(testDatabase[i])
-		check(t, err, fmt.Sprint("Failed to add match", i))
-	}
-
-	correct := []Match{
-		Match{
-			MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
-			R1: 251, R2: 169, R3: 286, B1: 253, B2: 538, B3: 149,
-		},
-		Match{
-			MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
-			R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262,
-		},
-	}
-
-	got, err := fixture.db.QueryMatches(538)
-	check(t, err, "Failed to query matches for 538")
-
-	if !reflect.DeepEqual(correct, got) {
-		t.Fatalf("Got %#v,\nbut expected %#v.", got, correct)
-	}
-}
-
 func TestQueryShiftDB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
