@@ -237,7 +237,7 @@ void TargetMapper::BuildOptimizationProblem(
     return;
   }
 
-  ceres::LossFunction *loss_function = NULL;
+  ceres::LossFunction *loss_function = new ceres::HuberLoss(2.0);
   ceres::LocalParameterization *quaternion_local_parameterization =
       new ceres::EigenQuaternionParameterization;
 
