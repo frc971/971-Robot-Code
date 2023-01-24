@@ -1228,7 +1228,7 @@ http_archive(
 )
 
 # This one is tricky to get an archive because it has recursive submodules. These semi-automated steps do work though:
-# git clone -b version1.9 --recurse-submodules --depth=1 https://github.com/aws/aws-sdk-cpp
+# git clone -b 1.10.34 --recurse-submodules --depth=1 https://github.com/aws/aws-sdk-cpp
 # cd aws-sdk-cpp
 # echo bsdtar -a -cf aws_sdk-version.tar.gz --ignore-zeros @\<\(git archive HEAD\) $(git submodule foreach --recursive --quiet 'echo @\<\(cd $displaypath \&\& git archive HEAD --prefix=$displaypath/\)')
 # Now run the command that printed, and the output will be at aws_sdk-version.tar.gz.
@@ -1237,8 +1237,8 @@ http_archive(
     build_file = "//debian:aws_sdk.BUILD",
     patch_args = ["-p1"],
     patches = ["//debian:aws_sdk.patch"],
-    sha256 = "1a2668722e5b5b2608a6ab21c876c1d98b5fd8c7d613129ced9561f5520817dc",
-    url = "https://www.frc971.org/Build-Dependencies/aws_sdk-19.0.0-RC1.tar.gz",
+    sha256 = "de6570d10c246189fd8c02100f7f0d9af8499a3ef94a131eeb85619f3bd6c604",
+    url = "https://www.frc971.org/Build-Dependencies/aws_sdk-1.10.34.tar.gz",
 )
 
 # Source code of LZ4 (files under lib/) are under BSD 2-Clause.

@@ -50,9 +50,9 @@ cc_library(
         "aws-cpp-sdk-core/include/aws/core/utils/crypto/openssl/*.h",
     ]),
     copts = [
-        "-DAWS_SDK_VERSION_MAJOR=19",
-        "-DAWS_SDK_VERSION_MINOR=0",
-        "-DAWS_SDK_VERSION_PATCH=\"\\\"0-RC1\"\\\"",
+        "-DAWS_SDK_VERSION_MAJOR=10",
+        "-DAWS_SDK_VERSION_MINOR=34",
+        "-DAWS_SDK_VERSION_PATCH=\"\\\"BRT\"\\\"",
         "-DENABLE_OPENSSL_ENCRYPTION",
         "-DENABLE_CURL_CLIENT",
         "-Wno-cast-align",
@@ -75,7 +75,7 @@ cc_library(
 genrule(
     name = "gen_Config",
     outs = ["crt/aws-crt-cpp/include/aws/crt/Config.h"],
-    cmd = "echo '#define AWS_CRT_CPP_VERSION \"19.0.0-RC1\"' > $@",
+    cmd = "echo '#define AWS_CRT_CPP_VERSION \"1.10.34\"' > $@",
     target_compatible_with = ["@platforms//os:linux"],
 )
 
@@ -88,15 +88,19 @@ cc_library(
     copts = [
         "-Wno-sign-compare",
         "-Wno-cast-qual",
+        "-Wno-tautological-type-limit-compare",
+        "-Wno-missing-field-initializers",
     ],
     includes = ["crt/aws-crt-cpp/include"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
         ":aws-c-auth",
         ":aws-c-common",
         ":aws-c-event-stream",
         ":aws-c-mqtt",
         ":aws-c-s3",
+        ":aws-c-sdkutils",
     ],
 )
 
@@ -109,6 +113,7 @@ genrule(
         "#define AWS_HAVE_GCC_INLINE_ASM 1",
         "#undef AWS_HAVE_MSVC_MULX",
         "#define AWS_HAVE_EXECINFO 1",
+        "#define AWS_AFFINITY_METHOD 0",
         "END",
     ]),
     target_compatible_with = ["@platforms//os:linux"],
@@ -118,6 +123,7 @@ cc_library(
     name = "aws-c-common",
     srcs = glob([
         "crt/aws-crt-cpp/crt/aws-c-common/source/*.c",
+        "crt/aws-crt-cpp/crt/aws-c-common/source/external/*.c",
         "crt/aws-crt-cpp/crt/aws-c-common/source/posix/*.c",
     ]) + [
         ":gen_config",
@@ -156,6 +162,7 @@ cc_library(
     includes = ["crt/aws-crt-cpp/crt/aws-c-common/include"],
     target_compatible_with = ["@platforms//os:linux"],
     textual_hdrs = glob(["crt/aws-crt-cpp/crt/aws-c-common/include/**/*.inl"]),
+    visibility = ["//visibility:public"],
 )
 
 # -march=armv8-a+crc
@@ -209,8 +216,10 @@ cc_library(
     ]),
     hdrs = glob(["crt/aws-crt-cpp/crt/aws-c-cal/include/**/*.h"]),
     copts = [
+        "-DOPENSSL_IS_AWSLC",
         "-Wno-incompatible-pointer-types",
         "-Wno-unused-function",
+        "-Wno-unused-parameter",
         "-Wno-cast-align",
         "-Wno-cast-qual",
     ],
@@ -235,6 +244,7 @@ cc_library(
     deps = [
         ":aws-c-auth",
         ":aws-c-common",
+        ":aws-checksums",
     ],
 )
 
@@ -242,6 +252,7 @@ cc_library(
     name = "aws-c-compression",
     srcs = glob(["crt/aws-crt-cpp/crt/aws-c-compression/source/*.c"]),
     hdrs = glob(["crt/aws-crt-cpp/crt/aws-c-compression/include/**/*.h"]),
+    copts = ["-Wno-cast-qual"],
     includes = ["crt/aws-crt-cpp/crt/aws-c-compression/include"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
@@ -269,6 +280,21 @@ cc_library(
 )
 
 cc_library(
+    name = "aws-c-sdkutils",
+    srcs = glob(["crt/aws-crt-cpp/crt/aws-c-sdkutils/source/**/*.c"]),
+    hdrs = glob(["crt/aws-crt-cpp/crt/aws-c-sdkutils/include/**/*.h"]),
+    copts = [
+        "-Wno-cast-align",
+        "-Wno-cast-qual",
+    ],
+    includes = ["crt/aws-crt-cpp/crt/aws-c-sdkutils/include"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":aws-c-common",
+    ],
+)
+
+cc_library(
     name = "aws-c-auth",
     srcs = glob(["crt/aws-crt-cpp/crt/aws-c-auth/source/**/*.c"]),
     hdrs = glob(["crt/aws-crt-cpp/crt/aws-c-auth/include/**/*.h"]),
@@ -282,6 +308,7 @@ cc_library(
         ":aws-c-common",
         ":aws-c-http",
         ":aws-c-io",
+        ":aws-c-sdkutils",
     ],
 )
 
@@ -292,11 +319,13 @@ cc_library(
     copts = [
         "-Wno-cast-qual",
         "-Wno-cast-align",
+        "-DAWS_MQTT_WITH_WEBSOCKETS",
     ],
     includes = ["crt/aws-crt-cpp/crt/aws-c-mqtt/include"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":aws-c-common",
+        ":aws-c-http",
         ":aws-c-io",
     ],
 )
@@ -309,8 +338,13 @@ cc_library(
         "crt/aws-crt-cpp/crt/aws-c-io/source/s2n/*.c",
         "crt/aws-crt-cpp/crt/aws-c-io/source/posix/*.c",
     ]),
-    hdrs = glob(["crt/aws-crt-cpp/crt/aws-c-io/include/**/*.h"]),
+    hdrs = glob(["crt/aws-crt-cpp/crt/aws-c-io/include/**/*.h"]) + [
+        "crt/aws-crt-cpp/crt/aws-c-io/source/pkcs11_private.h",
+    ] + glob([
+        "crt/aws-crt-cpp/crt/aws-c-io/source/pkcs11/v2.40/*.h",
+    ]),
     copts = [
+        "-DUSE_S2N",
         "-DAWS_USE_EPOLL",
         "-Wno-cast-align",
         "-Wno-cast-qual",
@@ -335,6 +369,7 @@ cc_library(
         "crt/aws-crt-cpp/crt/s2n/utils/**/*.c",
         "crt/aws-crt-cpp/crt/s2n/stuffer/**/*.c",
         "crt/aws-crt-cpp/crt/s2n/crypto/**/*.c",
+        "crt/aws-crt-cpp/crt/s2n/pq-crypto/*.c",
     ]),
     hdrs = ["crt/aws-crt-cpp/crt/s2n/api/s2n.h"],
     copts = [
