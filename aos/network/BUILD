@@ -375,6 +375,21 @@ aos_config(
     deps = ["//aos/events:aos_config"],
 )
 
+aos_config(
+    name = "timestamp_channel_test_config",
+    src = "timestamp_channel_test.json",
+    flatbuffers = [
+        ":remote_message_fbs",
+        "//aos/events:ping_fbs",
+        "//aos/events:pong_fbs",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//aos/events:aos_config"],
+)
+
 cc_test(
     name = "message_bridge_test",
     srcs = [
@@ -614,5 +629,21 @@ cc_test(
         ":testing_time_converter",
         ":timestamp_filter",
         "//aos/testing:googletest",
+    ],
+)
+
+cc_test(
+    name = "timestamp_channel_test",
+    srcs = ["timestamp_channel_test.cc"],
+    data = [":timestamp_channel_test_config"],
+    deps = [
+        ":timestamp_channel",
+        "//aos:configuration",
+        "//aos/events:ping_fbs",
+        "//aos/events:shm_event_loop",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//aos/testing:tmpdir",
     ],
 )

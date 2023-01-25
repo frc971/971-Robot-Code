@@ -36,9 +36,9 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
   timer_handler_->set_name("channel_poll");
   VLOG(1) << "Creating logger for " << FlatbufferToJson(node_);
 
-  // When we are logging remote timestamps, we need to be able to translate from
-  // the channel index that the event loop uses to the channel index in the
-  // config in the log file.
+  // When we are logging remote timestamps, we need to be able to translate
+  // from the channel index that the event loop uses to the channel index in
+  // the config in the log file.
   event_loop_to_logged_channel_index_.resize(
       event_loop->configuration()->channels()->size(), -1);
   for (size_t event_loop_channel_index = 0;
@@ -231,14 +231,20 @@ Logger::~Logger() {
 }
 
 bool Logger::RenameLogBase(std::string new_base_name) {
-  if (new_base_name == log_namer_->base_name()) {
+  // TODO(Naman): Got a crash in RenameLogBase. Putting in a CHECK_NOTNULL to
+  // catch the bug if it happens again
+  if (new_base_name == CHECK_NOTNULL(log_namer_)->base_name()) {
     return true;
   }
   std::string current_directory = std::string(log_namer_->base_name());
   std::string new_directory = new_base_name;
 
   auto current_path_split = current_directory.rfind("/");
+  CHECK(current_path_split != std::string::npos)
+      << "Could not find / in the current directory path";
   auto new_path_split = new_directory.rfind("/");
+  CHECK(new_path_split != std::string::npos)
+      << "Could not find / in the new directory path";
 
   CHECK(new_base_name.substr(new_path_split) ==
         current_directory.substr(current_path_split))
@@ -365,9 +371,9 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
   // worse.
   // TODO(austin): Test...
   //
-  // This is safe to call here since we have set last_synchronized_time_ as the
-  // same time as in the header, and all the data before it should be logged
-  // without ordering concerns.
+  // This is safe to call here since we have set last_synchronized_time_ as
+  // the same time as in the header, and all the data before it should be
+  // logged without ordering concerns.
   LogUntil(last_synchronized_time_);
 
   timer_handler_->Setup(event_loop_->monotonic_now() + polling_period_,
@@ -389,8 +395,8 @@ std::unique_ptr<LogNamer> Logger::RestartLogging(
   std::unique_ptr<LogNamer> old_log_namer = std::move(log_namer_);
   log_namer_ = std::move(log_namer);
 
-  // Now grab a representative time on both the RT and monotonic clock.  Average
-  // a monotonic clock before and after to reduce the error.
+  // Now grab a representative time on both the RT and monotonic clock.
+  // Average a monotonic clock before and after to reduce the error.
   const aos::monotonic_clock::time_point beginning_time =
       event_loop_->monotonic_now();
   const aos::realtime_clock::time_point beginning_time_rt =
@@ -403,11 +409,11 @@ std::unique_ptr<LogNamer> Logger::RestartLogging(
                  << "ns to swap log_namer";
   }
 
-  // Since we are going to log all in 1 big go, we need our log start time to be
-  // after the previous LogUntil call finished, but before 1 period after it.
-  // The best way to guarentee that is to pick a start time that is the earliest
-  // of the two.  That covers the case where the OS puts us to sleep between
-  // when we finish LogUntil and capture beginning_time.
+  // Since we are going to log all in 1 big go, we need our log start time to
+  // be after the previous LogUntil call finished, but before 1 period after
+  // it. The best way to guarentee that is to pick a start time that is the
+  // earliest of the two.  That covers the case where the OS puts us to sleep
+  // between when we finish LogUntil and capture beginning_time.
   const aos::monotonic_clock::time_point monotonic_start_time =
       std::min(last_synchronized_time_, beginning_time);
   const aos::realtime_clock::time_point realtime_start_time =
@@ -426,8 +432,9 @@ std::unique_ptr<LogNamer> Logger::RestartLogging(
   // Note that WriteHeader updates last_synchronized_time_ to be the
   // current time when it is called, which is then the "start time"
   // of the new (restarted) log. This timestamp will be after
-  // the timestamp of the last message fetched on each channel, but is carefully
-  // picked per the comment above to not violate max_out_of_order_duration.
+  // the timestamp of the last message fetched on each channel, but is
+  // carefully picked per the comment above to not violate
+  // max_out_of_order_duration.
   WriteHeader(monotonic_start_time, realtime_start_time);
 
   const aos::monotonic_clock::time_point header_time =
@@ -762,8 +769,8 @@ void Logger::Rotate() {
 // Class to copy a context into the provided buffer.
 class ContextDataCopier : public DataEncoder::Copier {
  public:
-  ContextDataCopier(const Context &context, int channel_index,
-                     LogType log_type, EventLoop *event_loop)
+  ContextDataCopier(const Context &context, int channel_index, LogType log_type,
+                    EventLoop *event_loop)
       : DataEncoder::Copier(PackMessageSize(log_type, context.size)),
         context_(context),
         channel_index_(channel_index),
@@ -790,10 +797,10 @@ class ContextDataCopier : public DataEncoder::Copier {
 // Class to copy a RemoteMessage into the provided buffer.
 class RemoteMessageCopier : public DataEncoder::Copier {
  public:
-  RemoteMessageCopier(
-      const message_bridge::RemoteMessage *message, int channel_index,
-      aos::monotonic_clock::time_point monotonic_timestamp_time,
-      EventLoop *event_loop)
+  RemoteMessageCopier(const message_bridge::RemoteMessage *message,
+                      int channel_index,
+                      aos::monotonic_clock::time_point monotonic_timestamp_time,
+                      EventLoop *event_loop)
       : DataEncoder::Copier(PackRemoteMessageSize()),
         message_(message),
         channel_index_(channel_index),
@@ -826,8 +833,8 @@ void Logger::WriteData(NewDataWriter *writer, const FetcherStruct &f) {
     // Write!
     const auto start = event_loop_->monotonic_now();
 
-    ContextDataCopier coppier(f.fetcher->context(), f.channel_index,
-                               f.log_type, event_loop_);
+    ContextDataCopier coppier(f.fetcher->context(), f.channel_index, f.log_type,
+                              event_loop_);
 
     writer->CopyMessage(&coppier, source_node_boot_uuid, start);
     RecordCreateMessageTime(start, coppier.end_time(), f);
@@ -852,7 +859,7 @@ void Logger::WriteTimestamps(NewDataWriter *timestamp_writer,
 
     const auto start = event_loop_->monotonic_now();
     ContextDataCopier coppier(f.fetcher->context(), f.channel_index,
-                               LogType::kLogDeliveryTimeOnly, event_loop_);
+                              LogType::kLogDeliveryTimeOnly, event_loop_);
 
     timestamp_writer->CopyMessage(&coppier, event_loop_->boot_uuid(), start);
     RecordCreateMessageTime(start, coppier.end_time(), f);
@@ -902,7 +909,7 @@ void Logger::WriteContent(NewDataWriter *contents_writer,
         reliable, monotonic_timestamp_time);
 
     RemoteMessageCopier coppier(msg, channel_index, monotonic_timestamp_time,
-                                 event_loop_);
+                                event_loop_);
 
     contents_writer->CopyMessage(&coppier, UUID::FromVector(msg->boot_uuid()),
                                  start);

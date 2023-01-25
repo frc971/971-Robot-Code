@@ -524,6 +524,104 @@ TEST_P(AbstractEventLoopTest, FetchDataFromBeforeCreation) {
   EXPECT_THAT(values, ::testing::ElementsAreArray({201}));
 }
 
+// Tests that timer handler is enabled after setup (even if it is in the past)
+// and is disabled after running
+TEST_P(AbstractEventLoopTest, CheckTimerDisabled) {
+  auto loop = MakePrimary("primary");
+
+  auto timer = loop->AddTimer([this]() {
+    LOG(INFO) << "timer called";
+    Exit();
+  });
+
+  loop->OnRun([&loop, timer]() {
+    EXPECT_TRUE(timer->IsDisabled());
+    timer->Setup(loop->monotonic_now() + chrono::milliseconds(100));
+    EXPECT_FALSE(timer->IsDisabled());
+  });
+
+  Run();
+  EXPECT_TRUE(timer->IsDisabled());
+}
+
+// Tests that timer handler is enabled after setup (even if it is in the past)
+// and is disabled after running
+TEST_P(AbstractEventLoopTest, CheckTimerRunInPastDisabled) {
+  auto loop = MakePrimary("primary");
+
+  auto timer2 = loop->AddTimer([this]() {
+    LOG(INFO) << "timer called";
+    Exit();
+  });
+
+  auto timer = loop->AddTimer([&loop, timer2]() {
+    timer2->Setup(loop->monotonic_now() - chrono::nanoseconds(1));
+  });
+
+  loop->OnRun([&loop, timer]() {
+    timer->Setup(loop->monotonic_now() + chrono::seconds(1));
+    EXPECT_FALSE(timer->IsDisabled());
+  });
+
+  Run();
+  EXPECT_TRUE(timer2->IsDisabled());
+}
+
+// Tests that timer handler is not disabled even after calling Exit on the event
+// loop within the timer
+TEST_P(AbstractEventLoopTest, CheckTimerRepeatOnCountDisabled) {
+  auto loop = MakePrimary("primary");
+  int counter = 0;
+
+  auto timer = loop->AddTimer([&counter, this]() {
+    LOG(INFO) << "timer called";
+    counter++;
+    if (counter >= 5) {
+      Exit();
+    }
+  });
+
+  loop->OnRun([&loop, timer]() {
+    timer->Setup(loop->monotonic_now() + chrono::seconds(1),
+                 chrono::seconds(1));
+    EXPECT_FALSE(timer->IsDisabled());
+  });
+  Run();
+
+  // Sanity check
+  EXPECT_EQ(counter, 5);
+
+  // if you run the loop again, the timer will start running again
+  EXPECT_FALSE(timer->IsDisabled());
+
+  counter = 0;
+  Run();
+  timer->Disable();
+
+  EXPECT_TRUE(timer->IsDisabled());
+}
+
+// Tests that timer handler is not disabled even after calling Exit on the event
+// loop using an external timer
+TEST_P(AbstractEventLoopTest, CheckTimerRepeatTillEndTimerDisabled) {
+  auto loop = MakePrimary("primary");
+
+  auto timer = loop->AddTimer([]() { LOG(INFO) << "timer called"; });
+
+  loop->OnRun([&loop, timer]() {
+    timer->Setup(loop->monotonic_now() + chrono::seconds(1),
+                 chrono::seconds(1));
+    EXPECT_FALSE(timer->IsDisabled());
+  });
+
+  EndEventLoop(loop.get(), chrono::seconds(5));
+  Run();
+  EXPECT_FALSE(timer->IsDisabled());
+
+  timer->Disable();
+  EXPECT_TRUE(timer->IsDisabled());
+}
+
 // Tests that Fetch and FetchNext interleave as expected.
 TEST_P(AbstractEventLoopTest, FetchAndFetchNextTogether) {
   auto loop1 = Make();

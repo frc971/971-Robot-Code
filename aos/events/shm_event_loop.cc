@@ -599,6 +599,7 @@ class ShmTimerHandler final : public TimerHandler {
 
     if (repeat_offset_ == std::chrono::seconds(0)) {
       timerfd_.Disable();
+      disabled_ = true;
     } else {
       // Compute how many cycles have elapsed and schedule the next iteration
       // for the next iteration in the future.
@@ -612,6 +613,7 @@ class ShmTimerHandler final : public TimerHandler {
       event_.set_event_time(base_);
       shm_event_loop_->AddEvent(&event_);
       timerfd_.SetTime(base_, std::chrono::seconds(0));
+      disabled_ = false;
     }
   }
 
@@ -627,6 +629,7 @@ class ShmTimerHandler final : public TimerHandler {
     repeat_offset_ = repeat_offset;
     event_.set_event_time(base_);
     shm_event_loop_->AddEvent(&event_);
+    disabled_ = false;
   }
 
   void Disable() override {
@@ -635,6 +638,8 @@ class ShmTimerHandler final : public TimerHandler {
     timerfd_.Disable();
     disabled_ = true;
   }
+
+  bool IsDisabled() override { return disabled_; }
 
  private:
   ShmEventLoop *shm_event_loop_;
@@ -647,7 +652,7 @@ class ShmTimerHandler final : public TimerHandler {
 
   // Used to track if Disable() was called during the callback, so we know not
   // to reschedule.
-  bool disabled_ = false;
+  bool disabled_ = true;
 };
 
 // Adapter class to the timerfd and PhasedLoop.

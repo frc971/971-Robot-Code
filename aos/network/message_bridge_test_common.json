@@ -87,20 +87,17 @@
     {
       "name": "/pi1/aos/remote_timestamps/pi2/test/aos-examples-Ping",
       "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "pi1",
-      "frequency": 15
+      "source_node": "pi1"
     },
     {
       "name": "/pi2/aos/remote_timestamps/pi1/test/aos-examples-Pong",
       "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "pi2",
-      "frequency": 15
+      "source_node": "pi2"
     },
     {
       "name": "/pi1/aos/remote_timestamps/pi2/unreliable/aos-examples-Ping",
       "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "pi1",
-      "frequency": 15
+      "source_node": "pi1"
     },
     {
       "name": "/pi1/aos",

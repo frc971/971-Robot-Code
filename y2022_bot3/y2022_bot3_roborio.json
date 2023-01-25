@@ -82,14 +82,14 @@
           ],
           "time_to_live": 5000000
         }
-      ] 
+      ]
     },
     {
       "name": "/roborio/aos/remote_timestamps/logger/roborio/aos/aos-starter-Status",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "roborio",
       "logger": "NOT_LOGGED",
-      "frequency": 20,
+      "frequency": 50,
       "num_senders": 2,
       "max_size": 200
     },

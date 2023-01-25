@@ -521,6 +521,8 @@ class SimulatedTimerHandler : public TimerHandler,
 
   void Disable() override;
 
+  bool IsDisabled() override;
+
  private:
   SimulatedEventLoop *simulated_event_loop_;
   EventHandler<SimulatedTimerHandler> event_;
@@ -529,6 +531,7 @@ class SimulatedTimerHandler : public TimerHandler,
 
   monotonic_clock::time_point base_;
   monotonic_clock::duration repeat_offset_;
+  bool disabled_ = true;
 };
 
 class SimulatedPhasedLoopHandler : public PhasedLoopHandler,
@@ -1201,6 +1204,7 @@ void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
   token_ = scheduler_->Schedule(std::max(base, monotonic_now), this);
   event_.set_event_time(base_);
   simulated_event_loop_->AddEvent(&event_);
+  disabled_ = false;
 }
 
 void SimulatedTimerHandler::Handle() noexcept {
@@ -1232,8 +1236,10 @@ void SimulatedTimerHandler::HandleEvent() noexcept {
     token_ = scheduler_->Schedule(base_, this);
     event_.set_event_time(base_);
     simulated_event_loop_->AddEvent(&event_);
+    disabled_ = false;
+  } else {
+    disabled_ = true;
   }
-
   {
     ScopedMarkRealtimeRestorer rt(
         simulated_event_loop_->runtime_realtime_priority() > 0);
@@ -1251,7 +1257,10 @@ void SimulatedTimerHandler::Disable() {
     }
     token_ = scheduler_->InvalidToken();
   }
+  disabled_ = true;
 }
+
+bool SimulatedTimerHandler::IsDisabled() { return disabled_; }
 
 SimulatedPhasedLoopHandler::SimulatedPhasedLoopHandler(
     EventScheduler *scheduler, SimulatedEventLoop *simulated_event_loop,
