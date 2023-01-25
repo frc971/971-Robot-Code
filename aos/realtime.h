@@ -38,6 +38,15 @@ inline cpu_set_t MakeCpusetFromCpus(std::initializer_list<int> cpus) {
   return result;
 }
 
+// Returns the affinity representing all the CPUs.
+inline cpu_set_t DefaultAffinity() {
+  cpu_set_t result;
+  for (int i = 0; i < CPU_SETSIZE; ++i) {
+    CPU_SET(i, &result);
+  }
+  return result;
+}
+
 // Returns the current thread's CPU affinity.
 cpu_set_t GetCurrentThreadAffinity();
 

@@ -27,6 +27,17 @@ cc_static_flatbuffer(
     visibility = ["//visibility:public"],
 )
 
+flatbuffer_cc_library(
+    name = "replay_config_fbs",
+    srcs = ["log_replayer_config.fbs"],
+    gen_reflections = True,
+    includes = [
+        "//aos:configuration_fbs_includes",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "boot_timestamp",
     srcs = ["boot_timestamp.cc"],
@@ -35,6 +46,51 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos/time",
+    ],
+)
+
+cc_binary(
+    name = "log_replayer",
+    srcs = [
+        "log_replayer.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":log_reader",
+        ":log_reader_utils",
+        ":replay_config_fbs",
+        ":replay_timing_fbs",
+        ":replay_timing_schema",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos:json_to_flatbuffer",
+        "//aos/events:shm_event_loop",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "log_reader_utils",
+    srcs = [
+        "log_reader_utils.cc",
+    ],
+    hdrs = [
+        "log_reader_utils.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":log_reader",
+        "//aos:configuration",
+        "//aos:flatbuffer_merge",
+        "//aos:flatbuffers",
+        "//aos:uuid",
+        "//aos/containers:resizeable_buffer",
+        "//aos/events:event_loop",
+        "//aos/util:file",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -543,6 +599,7 @@ cc_test(
     name = "realtime_replay_test",
     srcs = ["realtime_replay_test.cc"],
     data = [
+        ":multinode_pingpong_combined_config",
         "//aos/events:pingpong_config",
     ],
     target_compatible_with = ["@platforms//os:linux"],

@@ -3708,7 +3708,6 @@ TEST_P(MultinodeLoggerTest, MissingPartsFromMiddle) {
 
     event_loop_factory_.RunFor(chrono::milliseconds(95));
 
-
     StartLogger(&pi1_logger);
     aos::monotonic_clock::time_point last_rotation_time =
         pi1_logger.event_loop->monotonic_now();

@@ -230,6 +230,8 @@ std::vector<McapLogger::SummaryOffset> McapLogger::WriteSchemasAndChannels(
   if (register_handlers == RegisterHandlers::kYes) {
     configuration_id_ = ++id;
     event_loop_->OnRun([this]() {
+      // TODO(james): Make it so that the timestamp for the configuration
+      // message is not 0.0.
       Context config_context;
       config_context.monotonic_event_time = event_loop_->monotonic_now();
       config_context.queue_index = 0;

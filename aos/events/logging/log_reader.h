@@ -31,6 +31,12 @@ namespace logger {
 
 class EventNotifier;
 
+// Vector of pair of name and type of the channel
+using ReplayChannels =
+    std::vector<std::pair<std::string_view, std::string_view>>;
+// Vector of channel indices
+using ReplayChannelIndicies = std::vector<size_t>;
+
 // We end up with one of the following 3 log file types.
 //
 // Single node logged as the source node.
@@ -67,11 +73,16 @@ class LogReader {
   // pass it in here. It must provide all the channels that the original logged
   // config did.
   //
+  // If certain messages should not be replayed, the replay_channels param can
+  // be used as an inclusive list of channels for messages to be replayed.
+  //
   // The single file constructor calls SortParts internally.
   LogReader(std::string_view filename,
-            const Configuration *replay_configuration = nullptr);
+            const Configuration *replay_configuration = nullptr,
+            const ReplayChannels *replay_channels = nullptr);
   LogReader(std::vector<LogFile> log_files,
-            const Configuration *replay_configuration = nullptr);
+            const Configuration *replay_configuration = nullptr,
+            const ReplayChannels *replay_channels = nullptr);
   ~LogReader();
 
   // Registers all the callbacks to send the log file data out on an event loop
@@ -332,7 +343,8 @@ class LogReader {
     enum class ThreadedBuffering { kYes, kNo };
     State(std::unique_ptr<TimestampMapper> timestamp_mapper,
           message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters,
-          const Node *node, ThreadedBuffering threading);
+          const Node *node, ThreadedBuffering threading,
+          std::unique_ptr<const ReplayChannelIndicies> replay_channel_indicies);
 
     // Connects up the timestamp mappers.
     void AddPeer(State *peer);
@@ -728,7 +740,17 @@ class LogReader {
     std::optional<BootTimestamp> last_queued_message_;
     std::optional<util::ThreadedQueue<TimestampedMessage, BootTimestamp>>
         message_queuer_;
+
+    // If a ReplayChannels was passed to LogReader, this will hold the
+    // indices of the channels to replay for the Node represented by
+    // the instance of LogReader::State.
+    std::unique_ptr<const ReplayChannelIndicies> replay_channel_indicies_;
   };
+
+  // If a ReplayChannels was passed to LogReader then creates a
+  // ReplayChannelIndicies for the given node. Otherwise, returns a nullptr.
+  std::unique_ptr<const ReplayChannelIndicies> MaybeMakeReplayChannelIndicies(
+      const Node *node);
 
   // Node index -> State.
   std::vector<std::unique_ptr<State>> states_;
@@ -765,6 +787,10 @@ class LogReader {
 
   const Configuration *remapped_configuration_ = nullptr;
   const Configuration *replay_configuration_ = nullptr;
+
+  // If a ReplayChannels was passed to LogReader, this will hold the
+  // name and type of channels to replay which is used when creating States.
+  const ReplayChannels *replay_channels_ = nullptr;
 
   // If true, the replay timer will ignore any missing data.  This is used
   // during startup when we are bootstrapping everything and trying to get to

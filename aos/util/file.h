@@ -80,6 +80,37 @@ class FileReader {
   char buffer_[kBufferSize];
 };
 
+// Simple interface to allow opening a file for writing and then writing it
+// without any malloc's.
+// TODO(james): It may make sense to add a ReadBytes() interface here that can
+// take a memory buffer to fill, to avoid the templating required by the
+// self-managed buffer of FileReader<>.
+class FileWriter {
+ public:
+  // The result of an individual call to WriteBytes().
+  // Because WriteBytes() may repeatedly call write() when partial writes occur,
+  // it is possible for a non-zero number of bytes to have been written while
+  // still having an error because a late call to write() failed.
+  struct WriteResult {
+    // Total number of bytes successfully written to the file.
+    size_t bytes_written;
+    // If the write was successful (return_code > 0), equal to bytes_written.
+    // Otherwise, equal to the return value of the final call to write.
+    int return_code;
+  };
+
+  FileWriter(std::string_view filename, mode_t permissions = S_IRWXU);
+
+  WriteResult WriteBytes(absl::Span<const uint8_t> bytes);
+  WriteResult WriteBytes(std::string_view bytes);
+  void WriteBytesOrDie(absl::Span<const uint8_t> bytes);
+  void WriteBytesOrDie(std::string_view bytes);
+  int fd() const { return file_.get(); }
+
+ private:
+  aos::ScopedFD file_;
+};
+
 }  // namespace util
 }  // namespace aos
 

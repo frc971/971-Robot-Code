@@ -3,6 +3,7 @@
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
 #include "aos/logging/implementations.h"
+#include "aos/realtime.h"
 #include "glog/logging.h"
 
 DEFINE_bool(timing_reports, true, "Publish timing reports.");
@@ -621,6 +622,8 @@ void EventLoop::SetTimerContext(
   context_.buffer_index = -1;
   context_.source_boot_uuid = boot_uuid();
 }
+
+cpu_set_t EventLoop::DefaultAffinity() { return aos::DefaultAffinity(); }
 
 void WatcherState::set_timing_report(timing::Watcher *watcher) {
   watcher_ = watcher;

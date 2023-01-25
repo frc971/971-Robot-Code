@@ -1618,5 +1618,32 @@ GetSchemaDetachedBuffer(const Configuration *config,
   return RecursiveCopyFlatBuffer(found_schema);
 }
 
+aos::FlatbufferDetachedBuffer<Configuration> AddChannelToConfiguration(
+    const Configuration *config, std::string_view name,
+    aos::FlatbufferVector<reflection::Schema> schema, const aos::Node *node,
+    ChannelT overrides) {
+  overrides.name = name;
+  CHECK(schema.message().has_root_table());
+  overrides.type = schema.message().root_table()->name()->string_view();
+  if (node != nullptr) {
+    CHECK(node->has_name());
+    overrides.source_node = node->name()->string_view();
+  }
+  flatbuffers::FlatBufferBuilder fbb;
+  // Don't populate fields from overrides that the user doesn't explicitly
+  // override.
+  fbb.ForceDefaults(false);
+  const flatbuffers::Offset<Channel> channel_offset =
+      Channel::Pack(fbb, &overrides);
+  const flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Channel>>>
+      channels_offset = fbb.CreateVector({channel_offset});
+  Configuration::Builder config_builder(fbb);
+  config_builder.add_channels(channels_offset);
+  fbb.Finish(config_builder.Finish());
+  FlatbufferDetachedBuffer<Configuration> new_channel_config = fbb.Release();
+  new_channel_config = MergeConfiguration(new_channel_config, {schema});
+  return MergeWithConfig(config, new_channel_config);
+}
+
 }  // namespace configuration
 }  // namespace aos

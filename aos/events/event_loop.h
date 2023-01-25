@@ -274,7 +274,7 @@ class Fetcher {
   // Fetches the next message. Returns true if it fetched a new message.  This
   // method will only return messages sent after the Fetcher was created.
   bool FetchNext() {
-    const bool result = fetcher_->FetchNext();
+    const bool result = CHECK_NOTNULL(fetcher_)->FetchNext();
     if (result) {
       CheckChannelDataAlignment(fetcher_->context().data,
                                 fetcher_->context().size);
@@ -286,7 +286,7 @@ class Fetcher {
   // This will return the latest message regardless of if it was sent before or
   // after the fetcher was created.
   bool Fetch() {
-    const bool result = fetcher_->Fetch();
+    const bool result = CHECK_NOTNULL(fetcher_)->Fetch();
     if (result) {
       CheckChannelDataAlignment(fetcher_->context().data,
                                 fetcher_->context().size);
@@ -297,23 +297,25 @@ class Fetcher {
   // Returns a pointer to the contained flatbuffer, or nullptr if there is no
   // available message.
   const T *get() const {
-    return fetcher_->context().data != nullptr
+    return CHECK_NOTNULL(fetcher_)->context().data != nullptr
                ? flatbuffers::GetRoot<T>(
                      reinterpret_cast<const char *>(fetcher_->context().data))
                : nullptr;
   }
 
   // Returns the channel this fetcher uses
-  const Channel *channel() const { return fetcher_->channel(); }
+  const Channel *channel() const { return CHECK_NOTNULL(fetcher_)->channel(); }
 
   // Returns the context holding timestamps and other metadata about the
   // message.
-  const Context &context() const { return fetcher_->context(); }
+  const Context &context() const { return CHECK_NOTNULL(fetcher_)->context(); }
 
   const T &operator*() const { return *get(); }
   const T *operator->() const { return get(); }
 
-  // Returns true if this fetcher is valid and connected to a channel.
+  // Returns true if this fetcher is valid and connected to a channel. If you,
+  // e.g., are using TryMakeFetcher, then you must check valid() before
+  // attempting to use the Fetcher.
   bool valid() const { return static_cast<bool>(fetcher_); }
 
   // Copies the current flatbuffer into a FlatbufferVector.
@@ -346,7 +348,7 @@ class Sender {
     Builder(RawSender *sender, ChannelPreallocatedAllocator *allocator)
         : fbb_(allocator->size(), allocator),
           allocator_(allocator),
-          sender_(sender) {
+          sender_(CHECK_NOTNULL(sender)) {
       CheckChannelDataAlignment(allocator->data(), allocator->size());
       fbb_.ForceDefaults(true);
     }
@@ -414,10 +416,13 @@ class Sender {
   RawSender::Error SendDetached(FlatbufferDetachedBuffer<T> detached);
 
   // Equivalent to RawSender::CheckOk
-  void CheckOk(const RawSender::Error err) { sender_->CheckOk(err); };
+  void CheckOk(const RawSender::Error err) {
+    CHECK_NOTNULL(sender_)->CheckOk(err);
+  };
 
-  // Returns the name of the underlying queue.
-  const Channel *channel() const { return sender_->channel(); }
+  // Returns the name of the underlying queue, if valid.  You must check valid()
+  // first.
+  const Channel *channel() const { return CHECK_NOTNULL(sender_)->channel(); }
 
   // Returns true if the Sender is a valid Sender. If you, e.g., are using
   // TryMakeSender, then you must check valid() before attempting to use the
@@ -428,17 +433,19 @@ class Sender {
 
   // Returns the time_points that the last message was sent at.
   aos::monotonic_clock::time_point monotonic_sent_time() const {
-    return sender_->monotonic_sent_time();
+    return CHECK_NOTNULL(sender_)->monotonic_sent_time();
   }
   aos::realtime_clock::time_point realtime_sent_time() const {
-    return sender_->realtime_sent_time();
+    return CHECK_NOTNULL(sender_)->realtime_sent_time();
   }
   // Returns the queue index that this was sent with.
-  uint32_t sent_queue_index() const { return sender_->sent_queue_index(); }
+  uint32_t sent_queue_index() const {
+    return CHECK_NOTNULL(sender_)->sent_queue_index();
+  }
 
   // Returns the buffer index which MakeBuilder() will expose access to. This is
   // the buffer the caller can fill out.
-  int buffer_index() const { return sender_->buffer_index(); }
+  int buffer_index() const { return CHECK_NOTNULL(sender_)->buffer_index(); }
 
  private:
   friend class EventLoop;
@@ -576,7 +583,8 @@ class EventLoop {
   }
 
   // Like MakeFetcher, but returns an invalid fetcher if the given channel is
-  // not readable on this node or does not exist.
+  // not readable on this node or does not exist. You must check valid() on the
+  // Fetcher before using it.
   template <typename T>
   Fetcher<T> TryMakeFetcher(const std::string_view channel_name) {
     const Channel *const channel = GetChannel<T>(channel_name);
@@ -611,7 +619,8 @@ class EventLoop {
   }
 
   // Like MakeSender, but returns an invalid sender if the given channel is
-  // not sendable on this node or does not exist.
+  // not sendable on this node or does not exist. You must check valid() on the
+  // Sender before using it.
   template <typename T>
   Sender<T> TryMakeSender(const std::string_view channel_name) {
     const Channel *channel = GetChannel<T>(channel_name);
@@ -715,13 +724,7 @@ class EventLoop {
   // Defaults to 0 if this loop will not run realtime.
   virtual int runtime_realtime_priority() const = 0;
 
-  static cpu_set_t DefaultAffinity() {
-    cpu_set_t result;
-    for (int i = 0; i < CPU_SETSIZE; ++i) {
-      CPU_SET(i, &result);
-    }
-    return result;
-  }
+  static cpu_set_t DefaultAffinity();
 
   // Sets the scheduler affinity to run the event loop with. This may only be
   // called before Run().
