@@ -165,10 +165,44 @@ std::shared_ptr<absl::Span<uint8_t>> MMapFile(const std::string &path,
   return span;
 }
 
+FileReader::FileReader(std::string_view filename)
+    : file_(open(::std::string(filename).c_str(), O_RDONLY)) {
+  PCHECK(file_.get() != -1) << ": opening " << filename;
+}
+
+absl::Span<char> FileReader::ReadContents(absl::Span<char> buffer) {
+  PCHECK(0 == lseek(file_.get(), 0, SEEK_SET));
+  const ssize_t result = read(file_.get(), buffer.data(), buffer.size());
+  PCHECK(result >= 0);
+  return {buffer.data(), static_cast<size_t>(result)};
+}
+
 FileWriter::FileWriter(std::string_view filename, mode_t permissions)
     : file_(open(::std::string(filename).c_str(), O_WRONLY | O_CREAT | O_TRUNC,
                  permissions)) {
   PCHECK(file_.get() != -1) << ": opening " << filename;
+}
+
+// absl::SimpleAtoi doesn't interpret a leading 0x as hex, which we need here.
+// Instead, we use the flatbufers API, which unfortunately relies on NUL
+// termination.
+int32_t FileReader::ReadInt32() {
+  // Maximum characters for a 32-bit integer, +1 for the NUL.
+  // Hex is the same size with the leading 0x.
+  std::array<char, 11> buffer;
+  int32_t result;
+  const auto string_span =
+      ReadContents(absl::Span<char>(buffer.data(), buffer.size())
+                       .subspan(0, buffer.size() - 1));
+  // Verify we found the newline.
+  CHECK_EQ(buffer[string_span.size() - 1], '\n');
+  // Truncate the newline.
+  buffer[string_span.size() - 1] = '\0';
+  CHECK(flatbuffers::StringToNumber(buffer.data(), &result))
+      << ": Error parsing string to integer: "
+      << std::string_view(string_span.data(), string_span.size());
+
+  return result;
 }
 
 FileWriter::WriteResult FileWriter::WriteBytes(

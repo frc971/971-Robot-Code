@@ -56,8 +56,20 @@ TEST(FileTest, ReadNormalFileNoMalloc) {
   FLAGS_die_on_malloc = true;
   RegisterMallocHook();
   aos::ScopedRealtime realtime;
-  EXPECT_EQ("123456789\n", reader.ReadContents());
-  EXPECT_EQ(123456789, reader.ReadInt());
+  {
+    std::array<char, 20> contents;
+    absl::Span<char> read_result =
+        reader.ReadContents({contents.data(), contents.size()});
+    EXPECT_EQ("123456789\n",
+              std::string_view(read_result.data(), read_result.size()));
+  }
+  {
+    std::optional<std::array<char, 10>> read_result = reader.ReadString<10>();
+    ASSERT_TRUE(read_result.has_value());
+    EXPECT_EQ("123456789\n",
+              std::string_view(read_result->data(), read_result->size()));
+  }
+  EXPECT_EQ(123456789, reader.ReadInt32());
 }
 
 // Tests that we can write to a file without malloc'ing.
