@@ -143,6 +143,11 @@ class McapLogger {
                     const Context &context, ChunkStatus *chunk);
   void WriteChunk(ChunkStatus *chunk);
 
+  // Writes out the special configuration channel. This gets called right before
+  // the first actual message is written so that we can have a reasonable
+  // monotonic clock time.
+  void WriteConfigurationMessage();
+
   // The helpers for writing records which appear in the Summary section will
   // return SummaryOffset's so that they can be referenced in the SummaryOffset
   // section.
@@ -199,6 +204,7 @@ class McapLogger {
   uint16_t configuration_id_ = 0;
   FlatbufferDetachedBuffer<Channel> configuration_channel_;
   FlatbufferDetachedBuffer<Configuration> configuration_;
+  bool wrote_configuration_ = false;
 
   // Memory buffer to use for compressing data.
   std::vector<uint8_t> compression_buffer_;
