@@ -18,6 +18,7 @@ REQUIRED_DEPS=(
     gcc-aarch64-linux-gnu
     device-tree-compiler
     swig
+    debootstrap
 )
 for dep in "${REQUIRED_DEPS[@]}"; do
     if ! dpkg-query -W -f='${Status}' "${dep}" | grep -q "install ok installed"; then
