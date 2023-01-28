@@ -8,12 +8,26 @@ from pathlib import Path
 
 
 def main(argv):
-    if len(argv) != 4:
+    if len(argv) != 5:
+        print(
+            f"Incorrect number of arguments {len(argv)} to flatbuffers_static."
+        )
+        print(argv)
         return 1
 
     input_path = sys.argv[1]
     output_path = sys.argv[2]
     function = sys.argv[3].split("::")
+    bfbs_name = sys.argv[4]
+    if bfbs_name != '-':
+        inputs = input_path.split(' ')
+        valid_paths = [path for path in inputs if path.endswith(bfbs_name)]
+        if len(valid_paths) != 1:
+            print(
+                f"Expected exactly one match for {bfbs_name}; got {valid_paths}."
+            )
+            return 1
+        input_path = valid_paths[0]
     include_guard = output_path.replace('/', '_').replace('-', '_').replace(
         '.', '_').upper() + '_'
 
