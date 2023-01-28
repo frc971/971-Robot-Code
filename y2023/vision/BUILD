@@ -45,8 +45,12 @@ cc_binary(
     name = "camera_reader",
     srcs = [
         "camera_reader.cc",
+        "rkisp1-config.h",
     ],
-    target_compatible_with = ["@platforms//os:linux"],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "//tools/platforms/hardware:raspberry_pi",
+    ],
     visibility = ["//y2023:__subpackages__"],
     deps = [
         "//aos:init",
