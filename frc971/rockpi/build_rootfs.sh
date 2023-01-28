@@ -128,13 +128,13 @@ sudo mount "${LOOPBACK}p1" "${PARTITION}/boot"
 
 # Run the string command as root inside the target.
 function target() {
-  sudo chroot --userspec=root.root "${PARTITION}" qemu-aarch64-static \
+  sudo chroot --userspec=root:root "${PARTITION}" qemu-aarch64-static \
     /bin/bash -c "$1"
 }
 
 # Run the string command as the pi user inside the target.
 function pi_target() {
-  sudo chroot --userspec=pi.pi "${PARTITION}" qemu-aarch64-static \
+  sudo chroot --userspec=pi:pi --groups=pi "${PARTITION}" qemu-aarch64-static \
     /bin/bash -c "$1"
 }
 
@@ -175,7 +175,14 @@ copyfile root.root 644 etc/apt/sources.list.d/bullseye-backports.list
 copyfile root.root 644 etc/apt/sources.list.d/frc971.list
 
 target "apt-get update"
-target "apt-get -y install -t bullseye-backports systemd"
+target "apt-get -y install -t bullseye-backports systemd systemd-resolved"
+
+# Make systemd-resolved work.
+target_mkdir root.root 755 run/systemd
+target_mkdir systemd-resolve.systemd-resolve 755 run/systemd/resolve
+copyfile systemd-resolve.systemd-resolve 644 run/systemd/resolve/stub-resolv.conf
+target "systemctl enable systemd-resolved"
+
 target "apt-get -y install -t bullseye-backports bpfcc-tools"
 
 target "apt-get install -y sudo openssh-server python3 bash-completion git v4l-utils cpufrequtils pmount rsync vim-nox chrony libopencv-calib3d4.5 libopencv-contrib4.5 libopencv-core4.5 libopencv-features2d4.5 libopencv-flann4.5 libopencv-highgui4.5 libopencv-imgcodecs4.5 libopencv-imgproc4.5 libopencv-ml4.5 libopencv-objdetect4.5 libopencv-photo4.5 libopencv-shape4.5 libopencv-stitching4.5 libopencv-superres4.5 libopencv-video4.5 libopencv-videoio4.5 libopencv-videostab4.5 libopencv-viz4.5 libnice10 pmount libnice-dev feh libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-nice usbutils locales trace-cmd clinfo"
@@ -213,10 +220,8 @@ copyfile root.root 644 etc/udev/rules.d/99-adis16505.rules
 copyfile root.root 644 etc/udev/rules.d/99-mali.rules
 
 target "apt-get update"
-target "apt-get -y install -t bullseye-backports systemd"
 
 target "systemctl enable systemd-networkd"
-target "systemctl enable systemd-resolved"
 target "systemctl enable grow-rootfs"
 target "systemctl enable frc971"
 target "systemctl enable frc971chrt"
@@ -228,14 +233,14 @@ if [[ ! -e "${PARTITION}/home/pi/.dotfiles" ]]; then
     git clone --separate-git-dir=/home/pi/.dotfiles https://github.com/AustinSchuh/.dotfiles.git tmpdotfiles && \
     rsync --recursive --verbose --exclude .git tmpdotfiles/ /home/pi/ && \
     rm -r tmpdotfiles && \
-    git --git-dir=/home/pi/.dotfiles/ --work-tree=/home/pi/ config --local status.showUntrackedFiles no && \
-    vim -c \":qa!\""
+    git --git-dir=/home/pi/.dotfiles/ --work-tree=/home/pi/ config --local status.showUntrackedFiles no"
+  pi_target "vim -c \":qa!\""
 
   target "cd /root/ && \
     git clone --separate-git-dir=/root/.dotfiles https://github.com/AustinSchuh/.dotfiles.git tmpdotfiles && \
     rsync --recursive --verbose --exclude .git tmpdotfiles/ /root/ && rm -r tmpdotfiles && \
-    git --git-dir=/root/.dotfiles/ --work-tree=/root/ config --local status.showUntrackedFiles no && \
-    vim -c \":qa!\""
+    git --git-dir=/root/.dotfiles/ --work-tree=/root/ config --local status.showUntrackedFiles no"
+  target "vim -c \":qa!\""
 fi
 
 target "apt-get clean"
@@ -243,7 +248,7 @@ target "apt-get clean"
 sudo chroot ${PARTITION} qemu-aarch64-static /bin/bash
 
 # TODO(austin): This appears to not be working...  pi_target doesn't apper to be happy
-sudo chroot --userspec=pi.pi ${PARTITION} qemu-aarch64-static /bin/bash
+sudo chroot --userspec=pi:pi --groups=pi ${PARTITION} qemu-aarch64-static /bin/bash
 
 # TODO(austin): everything else we were doing to the pi's.
 sudo rm ${PARTITION}/usr/bin/qemu-aarch64-static
