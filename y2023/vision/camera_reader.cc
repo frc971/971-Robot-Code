@@ -30,7 +30,7 @@ void CameraReaderMain() {
     width = 1920;
     height = 1080;
     color_format = MEDIA_BUS_FMT_SRGGB10_1X10;
-    camera_device_string = "imx290 4-0036";
+    camera_device_string = "arducam-pivariety 4-000c";
   }
 
   media_device->Reset();
@@ -94,9 +94,9 @@ void CameraReaderMain() {
                                  rkisp1_selfpath->device(), camera->device());
 
   if (FLAGS_lowlight_camera) {
-    v4l2_reader.SetGain(72);
-    v4l2_reader.SetExposure(30);
-    v4l2_reader.SetBlanking(2480, 45);
+    v4l2_reader.SetGainExt(100);
+    v4l2_reader.SetVerticalBlanking(1000);
+    v4l2_reader.SetExposure(50);
   } else {
     v4l2_reader.SetGainExt(1000);
     v4l2_reader.SetExposure(1000);

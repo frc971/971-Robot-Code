@@ -80,7 +80,7 @@ class V4L2ReaderBase {
                         aos::monotonic_clock::time_point monotonic_eof);
 
     void Send() {
-      (void)builder.Send(message_offset);
+      builder.CheckOk(builder.Send(message_offset));
       message_offset = flatbuffers::Offset<CameraImage>();
     }
 
@@ -154,7 +154,7 @@ class RockchipV4L2Reader : public V4L2ReaderBase {
   void SetGain(size_t gain);
   void SetGainExt(size_t gain);
 
-  void SetBlanking(size_t hblank, size_t vblank);
+  void SetVerticalBlanking(size_t vblank);
 
  private:
   void OnImageReady();
