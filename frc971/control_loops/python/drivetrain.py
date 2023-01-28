@@ -3,6 +3,7 @@
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 import numpy
+import math
 import sys
 from matplotlib import pylab
 import glog
@@ -33,7 +34,8 @@ class DrivetrainParams(object):
                  dt=0.00505,
                  controller_poles=[0.90, 0.90],
                  observer_poles=[0.02, 0.02],
-                 robot_cg_offset=0.0):
+                 robot_cg_offset=0.0,
+                 coefficient_of_friction=1.0):
         """Defines all constants of a drivetrain.
 
         Args:
@@ -107,6 +109,7 @@ class DrivetrainParams(object):
         self.num_motors = num_motors
         self.controller_poles = controller_poles
         self.observer_poles = observer_poles
+        self.coefficient_of_friction = coefficient_of_friction
 
 
 class Drivetrain(control_loop.ControlLoop):
@@ -531,6 +534,221 @@ def WriteDrivetrain(drivetrain_files,
                                                     namespaces=namespaces,
                                                     scalar_type=scalar_type)
     kf_loop_writer.Write(kf_drivetrain_files[0], kf_drivetrain_files[1])
+
+
+def PlotDrivetrainSprint(drivetrain_params):
+    # Simulate the response of the system to a step input.
+    drivetrain = KFDrivetrain(left_low=False,
+                              right_low=False,
+                              drivetrain_params=drivetrain_params)
+    simulated_left_position = []
+    simulated_right_position = []
+    simulated_left_velocity = []
+    simulated_right_velocity = []
+
+    simulated_left_motor_currents = []
+    simulated_left_breaker_currents = []
+    simulated_right_motor_currents = []
+    simulated_right_breaker_currents = []
+
+    simulated_battery_heat_wattages = []
+    simulated_wattage = []
+    motor_inverter_voltages = []
+    voltage_left = []
+    voltage_right = []
+    simulated_motor_heat_wattages = []
+    simulated_motor_wattage = []
+
+    max_motor_currents = []
+    overall_currents = []
+    simulated_battery_wattage = []
+
+    # Distance in meters to call 1/2 field.
+    kSprintDistance = 8.0
+
+    vbat = 12.6
+    # Measured resistance of the battery, pd board, and breakers.
+    Rw = 0.023
+    top_speed = drivetrain.free_speed * (drivetrain.Gr +
+                                         drivetrain.Gl) / 2.0 * drivetrain.r
+
+    passed_distance = False
+    max_breaker_current = 0
+    heat_energy_usage = 0.0
+    for index in range(800):
+        # Current per side
+        left_traction_current = (drivetrain.mass / 2.0 *
+                                 drivetrain_params.coefficient_of_friction *
+                                 9.81 * drivetrain.r * drivetrain.Gl /
+                                 drivetrain.Kt)
+        right_traction_current = (drivetrain.mass / 2.0 *
+                                  drivetrain_params.coefficient_of_friction *
+                                  9.81 * drivetrain.r * drivetrain.Gr /
+                                  drivetrain.Kt)
+
+        # Detect if we've traveled over the sprint distance and report stats.
+        if (drivetrain.X[0, 0] + drivetrain.X[2, 0]) / 2.0 > kSprintDistance:
+            if not passed_distance:
+                velocity = (drivetrain.X[1, 0] + drivetrain.X[3, 0]) / 2.0
+                print("Took", index * drivetrain.dt,
+                      "to pass 1/2 field, going", velocity, "m/s,",
+                      velocity / 0.0254 / 12.0, "Traction limit current",
+                      left_traction_current / drivetrain_params.num_motors,
+                      "max breaker current", max_breaker_current, "top speed",
+                      top_speed, "m/s", top_speed / 0.0254 / 12.0,
+                      "fps, gear ratio", drivetrain.Gl, "heat energy",
+                      heat_energy_usage)
+            passed_distance = True
+
+        bemf_left = drivetrain.X[
+            1, 0] / drivetrain.r / drivetrain.Gl / drivetrain.Kv
+        bemf_right = drivetrain.X[
+            3, 0] / drivetrain.r / drivetrain.Gr / drivetrain.Kv
+
+        # Max current we could push through the motors is what we would get if
+        # we short the battery through the battery resistance into the motor.
+        max_motor_current = (vbat - (bemf_left + bemf_right) / 2.0) / (
+            Rw + drivetrain.resistance / 2.0)
+
+        max_motor_currents.append(max_motor_current /
+                                  (drivetrain_params.num_motors * 2))
+
+        # From this current, we can compute the voltage we can apply.
+        # This is either the traction limit or the current limit.
+        max_voltage_left = bemf_left + min(
+            max_motor_current / 2,
+            left_traction_current) * drivetrain.resistance
+        max_voltage_right = bemf_right + min(
+            max_motor_current / 2,
+            right_traction_current) * drivetrain.resistance
+
+        simulated_left_position.append(drivetrain.X[0, 0])
+        simulated_left_velocity.append(drivetrain.X[1, 0])
+        simulated_right_position.append(drivetrain.X[2, 0])
+        simulated_right_velocity.append(drivetrain.X[3, 0])
+
+        U = numpy.matrix([[min(max_voltage_left, vbat)],
+                          [min(max_voltage_right, vbat)]])
+
+        # Stator current
+        simulated_left_motor_current = (U[0, 0] -
+                                        bemf_left) / drivetrain.resistance
+        simulated_right_motor_current = (U[1, 0] -
+                                         bemf_right) / drivetrain.resistance
+
+        # And this gives us the power pushed into the motors.
+        power = (U[0, 0] * simulated_left_motor_current +
+                 U[1, 0] * simulated_right_motor_current)
+
+        simulated_wattage.append(power)
+
+        # Solve for the voltage we'd have to supply to the input of the motor
+        # controller to generate the power required.
+        motor_inverter_voltage = (
+            vbat + numpy.sqrt(vbat * vbat - 4.0 * power * Rw)) / 2.0
+
+        overall_current = (vbat - motor_inverter_voltage) / Rw
+        overall_currents.append(overall_current)
+
+        motor_inverter_voltages.append(motor_inverter_voltage)
+
+        # Overall left and right currents at the breaker
+        simulated_left_breaker_current = (
+            simulated_left_motor_current /
+            drivetrain_params.num_motors) * U[0, 0] / motor_inverter_voltage
+        simulated_right_breaker_current = (
+            simulated_right_motor_current /
+            drivetrain_params.num_motors) * U[1, 0] / motor_inverter_voltage
+
+        simulated_left_motor_currents.append(simulated_left_motor_current /
+                                             drivetrain_params.num_motors)
+        simulated_left_breaker_currents.append(simulated_left_breaker_current)
+        simulated_right_motor_currents.append(simulated_right_motor_current /
+                                              drivetrain_params.num_motors)
+        simulated_right_breaker_currents.append(
+            simulated_right_breaker_current)
+
+        # Save out the peak battery current observed.
+        max_breaker_current = max(
+            max_breaker_current,
+            max(simulated_left_breaker_current,
+                simulated_right_breaker_current))
+
+        # Compute the heat burned in the battery
+        simulated_battery_heat_wattage = math.pow(
+            vbat - motor_inverter_voltage, 2.0) / Rw
+        simulated_battery_heat_wattages.append(simulated_battery_heat_wattage)
+
+        motor_heat_wattage = (math.pow(simulated_left_motor_current, 2.0) *
+                              drivetrain.resistance +
+                              math.pow(simulated_right_motor_current, 2.0) *
+                              drivetrain.resistance)
+        simulated_motor_heat_wattages.append(motor_heat_wattage)
+
+        simulated_motor_wattage.append(simulated_left_motor_current * U[0, 0] +
+                                       simulated_right_motor_current * U[1, 0])
+
+        simulated_battery_wattage.append(vbat * overall_current)
+
+        # And then the overall energy outputted by the battery.
+        heat_energy_usage += (motor_heat_wattage +
+                              simulated_battery_heat_wattage) * drivetrain.dt
+
+        voltage_left.append(U[0, 0])
+        voltage_right.append(U[1, 0])
+
+        drivetrain.Update(U)
+
+    t = [drivetrain.dt * x for x in range(len(simulated_left_position))]
+    pylab.rc('lines', linewidth=4)
+    pylab.subplot(3, 1, 1)
+    pylab.plot(t, simulated_left_position, label='left position')
+    pylab.plot(t, simulated_right_position, 'r--', label='right position')
+    pylab.plot(t, simulated_left_velocity, label='left velocity')
+    pylab.plot(t, simulated_right_velocity, label='right velocity')
+
+    pylab.suptitle('Acceleration Test\n12 Volt Step Input')
+    pylab.legend(loc='lower right')
+
+    pylab.subplot(3, 1, 2)
+
+    pylab.plot(t, simulated_left_motor_currents, label='left rotor current')
+    pylab.plot(t,
+               simulated_right_motor_currents,
+               'r--',
+               label='right rotor current')
+    pylab.plot(t,
+               simulated_left_breaker_currents,
+               label='left breaker current')
+    pylab.plot(t,
+               simulated_right_breaker_currents,
+               'r--',
+               label='right breaker current')
+    pylab.plot(t, motor_inverter_voltages, label='motor inverter voltage')
+    pylab.plot(t, voltage_left, label='left voltage')
+    pylab.plot(t, voltage_right, label='right voltage')
+    pylab.plot(t, max_motor_currents, label='max_currents')
+    pylab.legend(loc='lower right')
+
+    wattage_axis = pylab.subplot(3, 1, 3)
+    wattage_axis.plot(t, simulated_wattage, label='wattage')
+    wattage_axis.plot(t,
+                      simulated_battery_heat_wattages,
+                      label='battery wattage')
+    wattage_axis.plot(t,
+                      simulated_motor_heat_wattages,
+                      label='motor heat wattage')
+    wattage_axis.plot(t, simulated_motor_wattage, label='motor wattage')
+    wattage_axis.plot(t, simulated_battery_wattage, label='overall wattage')
+    pylab.legend(loc='upper left')
+    overall_current_axis = wattage_axis.twinx()
+    overall_current_axis.plot(t, overall_currents, 'c--', label='current')
+
+    pylab.legend(loc='lower right')
+
+    pylab.suptitle('Acceleration Test\n12 Volt Step Input\n%f fps' %
+                   (top_speed / 0.0254 / 12.0, ))
+    pylab.show()
 
 
 def PlotDrivetrainMotions(drivetrain_params):
