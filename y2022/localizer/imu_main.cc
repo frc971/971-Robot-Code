@@ -1,7 +1,8 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/realtime.h"
-#include "y2022/localizer/imu.h"
+#include "frc971/imu_reader/imu.h"
+#include "y2022/constants.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 
@@ -15,7 +16,8 @@ int main(int argc, char *argv[]) {
       << ": Failed to set read permissions on IMU device.";
 
   aos::ShmEventLoop event_loop(&config.message());
-  y2022::localizer::Imu imu(&event_loop);
+  frc971::imu::Imu imu(&event_loop,
+                       y2022::constants::Values::DrivetrainEncoderToMeters(1));
 
   event_loop.SetRuntimeRealtimePriority(30);
 

@@ -1,10 +1,9 @@
-#include "y2022/localizer/imu.h"
+#include "frc971/imu_reader/imu.h"
 
 #include "aos/util/crc32.h"
 #include "glog/logging.h"
-#include "y2022/constants.h"
 
-namespace y2022::localizer {
+namespace frc971::imu {
 
 namespace {
 
@@ -15,10 +14,11 @@ constexpr double kTempScale = 0.1;
 
 }  // namespace
 
-Imu::Imu(aos::ShmEventLoop *event_loop)
+Imu::Imu(aos::ShmEventLoop *event_loop, double encoder_scalar)
     : event_loop_(event_loop),
       imu_sender_(
-          event_loop_->MakeSender<frc971::IMUValuesBatch>("/localizer")) {
+          event_loop_->MakeSender<frc971::IMUValuesBatch>("/localizer")),
+      encoder_scalar_(encoder_scalar) {
   imu_fd_ = open("/dev/adis16505", O_RDONLY | O_NONBLOCK);
   PCHECK(imu_fd_ != -1) << ": Failed to open SPI device for IMU.";
   aos::internal::EPoll *epoll = event_loop_->epoll();
@@ -120,10 +120,8 @@ flatbuffers::Offset<frc971::IMUValues> Imu::ProcessReading(
 
     // extra data from the pico
     imu_builder.add_pico_timestamp_us(pico_timestamp);
-    imu_builder.add_left_encoder(
-        -constants::Values::DrivetrainEncoderToMeters(encoder2_count));
-    imu_builder.add_right_encoder(
-        constants::Values::DrivetrainEncoderToMeters(encoder1_count));
+    imu_builder.add_left_encoder(-encoder_scalar_ * encoder2_count);
+    imu_builder.add_right_encoder(encoder_scalar_ * encoder1_count);
     imu_builder.add_previous_reading_diag_stat(diag_stat_offset);
   }
 
@@ -164,4 +162,5 @@ double Imu::ConvertValue16(absl::Span<const uint8_t> data,
 }
 
 Imu::~Imu() { PCHECK(0 == close(imu_fd_)); }
-}  // namespace y2022::localizer
+
+}  // namespace frc971::imu

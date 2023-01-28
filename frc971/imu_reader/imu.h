@@ -1,16 +1,17 @@
-#ifndef Y2022_LOCALIZER_IMU_H_
-#define Y2022_LOCALIZER_IMU_H_
+#ifndef FRC971_IMU_READER_IMU_H_
+#define FRC971_IMU_READER_IMU_H_
+
 #include "aos/events/shm_event_loop.h"
 #include "frc971/wpilib/imu_batch_generated.h"
-#include "y2022/constants.h"
 
-namespace y2022::localizer {
+namespace frc971::imu {
 
 // Reads IMU packets from the kernel driver which reads them over spi
 // from the Raspberry Pi Pico on the IMU board.
 class Imu {
  public:
-  Imu(aos::ShmEventLoop *event_loop);
+  // Constructs an IMU reader object.  encoder_scalar is in meters/count.
+  Imu(aos::ShmEventLoop *event_loop, double encoder_scalar);
   ~Imu();
 
  private:
@@ -26,6 +27,10 @@ class Imu {
   int imu_fd_;
 
   uint failed_checksums_ = 0;
+
+  double encoder_scalar_;
 };
-}  // namespace y2022::localizer
-#endif  // Y2022_LOCALIZER_IMU_H_
+
+}  // namespace frc971::imu
+
+#endif  // FRC971_IMU_READER_IMU_H_
