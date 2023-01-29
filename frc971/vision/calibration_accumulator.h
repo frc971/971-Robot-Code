@@ -8,6 +8,7 @@
 #include "aos/time/time.h"
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/charuco_lib.h"
+#include "frc971/vision/foxglove_image_converter.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 
 namespace frc971 {
@@ -76,6 +77,28 @@ class CalibrationData {
       turret_points_;
 };
 
+class CalibrationFoxgloveVisualizer {
+ public:
+  CalibrationFoxgloveVisualizer(aos::EventLoop *event_loop);
+
+  static aos::FlatbufferDetachedBuffer<aos::Configuration>
+  AddVisualizationChannels(const aos::Configuration *config,
+                           const aos::Node *node);
+
+  void HandleCharuco(const aos::monotonic_clock::time_point eof,
+                     std::vector<std::vector<cv::Point2f>> charuco_corners) {
+    auto builder = annotations_sender_.MakeBuilder();
+    builder.CheckOk(
+        builder.Send(BuildAnnotations(eof, charuco_corners, builder.fbb())));
+  }
+
+ private:
+  aos::EventLoop *event_loop_;
+  FoxgloveImageConverter image_converter_;
+
+  aos::Sender<foxglove::ImageAnnotations> annotations_sender_;
+};
+
 // Class to register image and IMU callbacks in AOS and route them to the
 // corresponding CalibrationData class.
 class Calibration {
@@ -109,6 +132,9 @@ class Calibration {
   ImageCallback image_callback_;
 
   CalibrationData *data_;
+
+  std::unique_ptr<aos::EventLoop> visualizer_event_loop_;
+  CalibrationFoxgloveVisualizer visualizer_;
 
   frc971::IMUValuesT last_value_;
 };

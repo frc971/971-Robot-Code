@@ -11,6 +11,8 @@
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/wpilib/imu_batch_generated.h"
+#include "external/com_github_foxglove_schemas/ImageAnnotations_schema.h"
+#include "external/com_github_foxglove_schemas/CompressedImage_schema.h"
 
 DEFINE_bool(display_undistorted, false,
             "If true, display the undistorted image.");
@@ -111,6 +113,33 @@ void CalibrationData::ReviewData(CalibrationDataObserver *observer) const {
   }
 }
 
+CalibrationFoxgloveVisualizer::CalibrationFoxgloveVisualizer(
+    aos::EventLoop *event_loop)
+    : event_loop_(event_loop),
+      image_converter_(event_loop_, "/camera", "/visualization",
+                       ImageCompression::kJpeg),
+      annotations_sender_(
+          event_loop_->MakeSender<foxglove::ImageAnnotations>("/visualization")) {}
+
+aos::FlatbufferDetachedBuffer<aos::Configuration>
+CalibrationFoxgloveVisualizer::AddVisualizationChannels(
+    const aos::Configuration *config, const aos::Node *node) {
+  constexpr std::string_view channel_name = "/visualization";
+  aos::ChannelT channel_overrides;
+  channel_overrides.max_size = 10000000;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> result =
+      aos::configuration::AddChannelToConfiguration(
+          config, channel_name,
+          aos::FlatbufferSpan<reflection::Schema>(
+              foxglove::ImageAnnotationsSchema()),
+          node, channel_overrides);
+  return aos::configuration::AddChannelToConfiguration(
+      &result.message(), channel_name,
+      aos::FlatbufferSpan<reflection::Schema>(
+          foxglove::CompressedImageSchema()),
+      node, channel_overrides);
+}
+
 Calibration::Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
                          aos::EventLoop *image_event_loop,
                          aos::EventLoop *imu_event_loop, std::string_view pi,
@@ -140,7 +169,9 @@ Calibration::Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
           [this](cv::Mat rgb_image, const monotonic_clock::time_point eof) {
             charuco_extractor_.HandleImage(rgb_image, eof);
           }),
-      data_(data) {
+      data_(data),
+      visualizer_event_loop_(image_factory_->MakeEventLoop("visualization")),
+      visualizer_(visualizer_event_loop_.get()) {
   imu_factory_->OnShutdown([]() { cv::destroyAllWindows(); });
 
   // Check for IMUValuesBatch topic on both /localizer and /drivetrain channels,
@@ -173,9 +204,10 @@ Calibration::Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
 void Calibration::HandleCharuco(
     cv::Mat rgb_image, const monotonic_clock::time_point eof,
     std::vector<cv::Vec4i> /*charuco_ids*/,
-    std::vector<std::vector<cv::Point2f>> /*charuco_corners*/, bool valid,
+    std::vector<std::vector<cv::Point2f>> charuco_corners, bool valid,
     std::vector<Eigen::Vector3d> rvecs_eigen,
     std::vector<Eigen::Vector3d> tvecs_eigen) {
+  visualizer_.HandleCharuco(eof, charuco_corners);
   if (valid) {
     CHECK(rvecs_eigen.size() > 0) << "Require at least one target detected";
     // We only use one (the first) target detected for calibration
@@ -237,6 +269,7 @@ void Calibration::HandleIMU(const frc971::IMUValues *imu) {
                         last_value_.accelerometer_y,
                         last_value_.accelerometer_z);
 
+  // TODO: ToDistributedClock may be too noisy.
   data_->AddImu(imu_factory_->ToDistributedClock(monotonic_clock::time_point(
                     chrono::nanoseconds(imu->monotonic_timestamp_ns()))),
                 gyro, accel * kG);

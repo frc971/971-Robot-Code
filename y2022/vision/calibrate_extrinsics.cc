@@ -2,6 +2,7 @@
 #include "Eigen/Geometry"
 #include "absl/strings/str_format.h"
 #include "aos/events/logging/log_reader.h"
+#include "aos/events/logging/log_writer.h"
 #include "aos/init.h"
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
@@ -21,6 +22,8 @@ DEFINE_bool(turret, true, "If true, the camera is on the turret");
 DEFINE_string(target_type, "charuco",
               "Type of target: april_tag|aruco|charuco|charuco_diamond");
 DEFINE_string(image_channel, "/camera", "Channel to listen for images on");
+DEFINE_string(output_logs, "/tmp/calibration/",
+              "Output folder for visualization logs.");
 
 namespace frc971 {
 namespace vision {
@@ -33,11 +36,24 @@ using aos::monotonic_clock;
 
 void Main(int argc, char **argv) {
   CalibrationData data;
+  std::optional<uint16_t> pi_number = aos::network::ParsePiNumber(FLAGS_pi);
+  CHECK(pi_number);
+  const std::string pi_name = absl::StrCat("pi", *pi_number);
+  LOG(INFO) << "Pi " << *pi_number;
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config = [argc, argv,
+                                                              pi_name]() {
+    aos::logger::LogReader reader(
+        aos::logger::SortParts(aos::logger::FindLogs(argc, argv)));
+    return CalibrationFoxgloveVisualizer::AddVisualizationChannels(
+        reader.logged_configuration(),
+        aos::configuration::GetNode(reader.logged_configuration(), pi_name));
+  }();
 
   {
     // Now, accumulate all the data into the data object.
     aos::logger::LogReader reader(
-        aos::logger::SortParts(aos::logger::FindLogs(argc, argv)));
+        aos::logger::SortParts(aos::logger::FindLogs(argc, argv)),
+        &config.message());
 
     aos::SimulatedEventLoopFactory factory(reader.configuration());
     reader.Register(&factory);
@@ -50,11 +66,8 @@ void Main(int argc, char **argv) {
     const aos::Node *const roborio_node =
         aos::configuration::GetNode(factory.configuration(), "roborio");
 
-    std::optional<uint16_t> pi_number = aos::network::ParsePiNumber(FLAGS_pi);
-    CHECK(pi_number);
-    LOG(INFO) << "Pi " << *pi_number;
-    const aos::Node *const pi_node = aos::configuration::GetNode(
-        factory.configuration(), absl::StrCat("pi", *pi_number));
+    const aos::Node *const pi_node =
+        aos::configuration::GetNode(factory.configuration(), pi_name);
 
     LOG(INFO) << "imu " << aos::FlatbufferToJson(imu_node);
     LOG(INFO) << "roboRIO " << aos::FlatbufferToJson(roborio_node);
@@ -66,6 +79,11 @@ void Main(int argc, char **argv) {
         factory.MakeEventLoop("calibration", roborio_node);
     std::unique_ptr<aos::EventLoop> pi_event_loop =
         factory.MakeEventLoop("calibration", pi_node);
+
+    std::unique_ptr<aos::EventLoop> logger_loop =
+        factory.MakeEventLoop("logger", pi_node);
+    aos::logger::Logger logger(logger_loop.get());
+    logger.StartLoggingOnRun(FLAGS_output_logs);
 
     TargetType target_type = TargetType::kCharuco;
     if (FLAGS_target_type == "april_tag") {

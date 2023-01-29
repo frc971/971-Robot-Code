@@ -487,5 +487,42 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
                   rvecs_eigen, tvecs_eigen);
 }
 
+flatbuffers::Offset<foxglove::ImageAnnotations> BuildAnnotations(
+    const aos::monotonic_clock::time_point monotonic_now,
+    const std::vector<std::vector<cv::Point2f>> &corners,
+    flatbuffers::FlatBufferBuilder *fbb) {
+  std::vector<flatbuffers::Offset<foxglove::PointsAnnotation>> rectangles;
+  const struct timespec now_t = aos::time::to_timespec(monotonic_now);
+  foxglove::Time time{static_cast<uint32_t>(now_t.tv_sec),
+                      static_cast<uint32_t>(now_t.tv_nsec)};
+  const flatbuffers::Offset<foxglove::Color> color_offset =
+      foxglove::CreateColor(*fbb, 0.0, 1.0, 0.0, 1.0);
+  for (const std::vector<cv::Point2f> &rectangle : corners) {
+    std::vector<flatbuffers::Offset<foxglove::Point2>> points_offsets;
+    for (const cv::Point2f &point : rectangle) {
+      points_offsets.push_back(foxglove::CreatePoint2(*fbb, point.x, point.y));
+    }
+    const flatbuffers::Offset<
+        flatbuffers::Vector<flatbuffers::Offset<foxglove::Point2>>>
+        points_offset = fbb->CreateVector(points_offsets);
+    std::vector<flatbuffers::Offset<foxglove::Color>> color_offsets(
+        points_offsets.size(), color_offset);
+    auto colors_offset = fbb->CreateVector(color_offsets);
+    foxglove::PointsAnnotation::Builder points_builder(*fbb);
+    points_builder.add_timestamp(&time);
+    points_builder.add_type(foxglove::PointsAnnotationType::POINTS);
+    points_builder.add_points(points_offset);
+    points_builder.add_outline_color(color_offset);
+    points_builder.add_outline_colors(colors_offset);
+    points_builder.add_thickness(2.0);
+    rectangles.push_back(points_builder.Finish());
+  }
+
+  const auto rectangles_offset = fbb->CreateVector(rectangles);
+  foxglove::ImageAnnotations::Builder annotation_builder(*fbb);
+  annotation_builder.add_points(rectangles_offset);
+  return annotation_builder.Finish();
+}
+
 }  // namespace vision
 }  // namespace frc971
