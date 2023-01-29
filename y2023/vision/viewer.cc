@@ -1,8 +1,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include "absl/strings/match.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "aos/json_to_flatbuffer.h"
 #include "aos/time/time.h"
 #include "frc971/vision/vision_generated.h"
 
@@ -36,7 +38,12 @@ bool DisplayLoop() {
   cv::cvtColor(image_color_mat, bgr_image, cv::COLOR_YUV2BGR_YUYV);
 
   if (!FLAGS_capture.empty()) {
-    cv::imwrite(FLAGS_capture, bgr_image);
+    if (absl::EndsWith(FLAGS_capture, ".bfbs")) {
+      aos::WriteFlatbufferToFile(FLAGS_capture, image_fetcher.CopyFlatBuffer());
+    } else {
+      cv::imwrite(FLAGS_capture, bgr_image);
+    }
+
     return false;
   }
 
