@@ -229,17 +229,6 @@ std::vector<McapLogger::SummaryOffset> McapLogger::WriteSchemasAndChannels(
   // Manually add in a special /configuration channel.
   if (register_handlers == RegisterHandlers::kYes) {
     configuration_id_ = ++id;
-    event_loop_->OnRun([this]() {
-      // TODO(james): Make it so that the timestamp for the configuration
-      // message is not 0.0.
-      Context config_context;
-      config_context.monotonic_event_time = event_loop_->monotonic_now();
-      config_context.queue_index = 0;
-      config_context.size = configuration_.span().size();
-      config_context.data = configuration_.span().data();
-      WriteMessage(configuration_id_, &configuration_channel_.message(),
-                   config_context, &current_chunks_[configuration_id_]);
-    });
   }
 
   std::vector<SummaryOffset> offsets;
@@ -274,6 +263,18 @@ std::vector<McapLogger::SummaryOffset> McapLogger::WriteSchemasAndChannels(
   offsets.push_back({OpCode::kChannel, channel_offset,
                      static_cast<uint64_t>(output_.tellp()) - channel_offset});
   return offsets;
+}
+
+void McapLogger::WriteConfigurationMessage() {
+  Context config_context;
+  config_context.monotonic_event_time = event_loop_->monotonic_now();
+  config_context.queue_index = 0;
+  config_context.size = configuration_.span().size();
+  config_context.data = configuration_.span().data();
+  // Avoid infinite recursion...
+  wrote_configuration_ = true;
+  WriteMessage(configuration_id_, &configuration_channel_.message(),
+               config_context, &current_chunks_[configuration_id_]);
 }
 
 void McapLogger::WriteMagic() { output_ << "\x89MCAP0\r\n"; }
@@ -390,6 +391,9 @@ void McapLogger::WriteChannel(const uint16_t id, const uint16_t schema_id,
 
 void McapLogger::WriteMessage(uint16_t channel_id, const Channel *channel,
                               const Context &context, ChunkStatus *chunk) {
+  if (!wrote_configuration_) {
+    WriteConfigurationMessage();
+  }
   CHECK_NOTNULL(context.data);
 
   message_counts_[channel_id]++;

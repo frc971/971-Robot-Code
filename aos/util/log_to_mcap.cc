@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
   if (FLAGS_include_clocks) {
     aos::logger::LogReader config_reader(logfiles);
 
-    const aos::Configuration *raw_config = config_reader.configuration();
+    const aos::Configuration *raw_config = config_reader.logged_configuration();
     config = aos::configuration::AddChannelToConfiguration(
         raw_config, "/clocks",
         aos::FlatbufferSpan<reflection::Schema>(aos::ClockTimepointsSchema()),
@@ -74,26 +74,33 @@ int main(int argc, char *argv[]) {
   std::unique_ptr<aos::EventLoop> clock_event_loop;
   std::unique_ptr<aos::ClockPublisher> clock_publisher;
   if (FLAGS_include_clocks) {
-    // TODO(james): Currently, because of RegisterWithoutStarting, this ends up
-    // running from t=0.0 rather than the start of the logfile. Fix that.
-    clock_event_loop =
-        reader.event_loop_factory()->MakeEventLoop("clock", node);
-    clock_publisher =
-        std::make_unique<aos::ClockPublisher>(&factory, clock_event_loop.get());
+    reader.OnStart(node, [&clock_event_loop, &reader, &clock_publisher,
+                          &factory, node]() {
+      clock_event_loop =
+          reader.event_loop_factory()->MakeEventLoop("clock", node);
+      clock_publisher = std::make_unique<aos::ClockPublisher>(
+          &factory, clock_event_loop.get());
+    });
   }
 
-  std::unique_ptr<aos::EventLoop> mcap_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("mcap", node);
+  std::unique_ptr<aos::EventLoop> mcap_event_loop;
   CHECK(!FLAGS_output_path.empty());
-  aos::McapLogger relogger(
-      mcap_event_loop.get(), FLAGS_output_path,
-      FLAGS_mode == "flatbuffer" ? aos::McapLogger::Serialization::kFlatbuffer
-                                 : aos::McapLogger::Serialization::kJson,
-      FLAGS_canonical_channel_names
-          ? aos::McapLogger::CanonicalChannelNames::kCanonical
-          : aos::McapLogger::CanonicalChannelNames::kShortened,
-      FLAGS_compress ? aos::McapLogger::Compression::kLz4
-                     : aos::McapLogger::Compression::kNone);
+  std::unique_ptr<aos::McapLogger> relogger;
+  factory.GetNodeEventLoopFactory(node)
+      ->OnStartup([&relogger, &mcap_event_loop, &reader, node]() {
+        mcap_event_loop =
+            reader.event_loop_factory()->MakeEventLoop("mcap", node);
+        relogger = std::make_unique<aos::McapLogger>(
+            mcap_event_loop.get(), FLAGS_output_path,
+            FLAGS_mode == "flatbuffer"
+                ? aos::McapLogger::Serialization::kFlatbuffer
+                : aos::McapLogger::Serialization::kJson,
+            FLAGS_canonical_channel_names
+                ? aos::McapLogger::CanonicalChannelNames::kCanonical
+                : aos::McapLogger::CanonicalChannelNames::kShortened,
+            FLAGS_compress ? aos::McapLogger::Compression::kLz4
+                           : aos::McapLogger::Compression::kNone);
+      });
   reader.event_loop_factory()->Run();
   reader.Deregister();
 }
