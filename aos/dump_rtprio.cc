@@ -18,8 +18,13 @@
 #include <set>
 #include <string>
 
+#include "aos/events/shm_event_loop.h"
+#include "aos/init.h"
+#include "aos/util/top.h"
 #include "aos/time/time.h"
 #include "glog/logging.h"
+
+DEFINE_string(config, "aos_config.json", "File path of aos configuration");
 
 namespace {
 
@@ -52,17 +57,7 @@ const char *policy_string(uint32_t policy) {
   return str.substr(0, str.size() - 1);
 }
 
-int find_pid_max() {
-  int r;
-  FILE *pid_max_file = fopen("/proc/sys/kernel/pid_max", "r");
-  PCHECK(pid_max_file != nullptr)
-      << ": Failed to open /proc/sys/kernel/pid_max";
-  CHECK_EQ(1, fscanf(pid_max_file, "%d", &r));
-  PCHECK(fclose(pid_max_file) == 0);
-  return r;
-}
-
-cpu_set_t find_all_cpus() {
+cpu_set_t FindAllCpus() {
   long nproc = sysconf(_SC_NPROCESSORS_CONF);
   PCHECK(nproc != -1);
   cpu_set_t r;
@@ -253,47 +248,63 @@ struct Thread {
 
 }  // namespace
 
-int main() {
-  const int pid_max = find_pid_max();
-  const cpu_set_t all_cpus = find_all_cpus();
+int main(int argc, char **argv) {
+  aos::InitGoogle(&argc, &argv);
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(FLAGS_config);
 
-  std::multiset<Thread> threads;
+  aos::ShmEventLoop event_loop(&config.message());
+  event_loop.SkipTimingReport();
+  event_loop.SkipAosLog();
+  aos::util::Top top(&event_loop);
+  top.set_track_top_processes(true);
 
-  for (int i = 0; i < pid_max; ++i) {
-    bool not_there = false;
+  const cpu_set_t all_cpus = FindAllCpus();
 
-    const cpu_set_t cpu_mask = find_cpu_mask(i, &not_there);
-    const sched_param param = find_sched_param(i, &not_there);
-    const int scheduler = find_scheduler(i, &not_there);
-    const ::std::string exe = find_exe(i, &not_there);
-    const int nice_value = find_nice_value(i, &not_there);
+  top.set_on_reading_update([&]() {
+    std::multiset<Thread> threads;
 
-    int ppid = 0, sid = 0;
-    read_stat(i, &ppid, &sid, &not_there);
+    for (const std::pair<const pid_t, aos::util::Top::ProcessReadings>
+             &reading : top.readings()) {
+      pid_t tid = reading.first;
+      bool not_there = false;
 
-    int pgrp = 0;
-    ::std::string name;
-    read_status(i, ppid, &pgrp, &name, &not_there);
+      const cpu_set_t cpu_mask = find_cpu_mask(tid, &not_there);
+      const sched_param param = find_sched_param(tid, &not_there);
+      const int scheduler = find_scheduler(tid, &not_there);
+      const ::std::string exe = find_exe(tid, &not_there);
+      const int nice_value = find_nice_value(tid, &not_there);
 
-    if (not_there) continue;
+      int ppid = 0, sid = 0;
+      read_stat(tid, &ppid, &sid, &not_there);
 
-    const char *cpu_mask_string =
-        CPU_EQUAL(&cpu_mask, &all_cpus) ? "all" : "???";
+      int pgrp = 0;
+      ::std::string name;
+      read_status(tid, ppid, &pgrp, &name, &not_there);
 
-    threads.emplace(Thread{.policy = static_cast<uint32_t>(scheduler),
-                           .exe = exe,
-                           .name = name,
-                           .cpu_mask = cpu_mask_string,
-                           .nice_value = nice_value,
-                           .sched_priority = param.sched_priority,
-                           .tid = i,
-                           .pid = pgrp,
-                           .ppid = ppid,
-                           .sid = sid});
-  }
+      if (not_there) continue;
 
-  printf("exe,name,cpumask,policy,nice,priority,tid,pid,ppid,sid\n");
-  for (const auto &t : threads) {
-    t.Print();
-  }
+      const char *cpu_mask_string =
+          CPU_EQUAL(&cpu_mask, &all_cpus) ? "all" : "???";
+
+      threads.emplace(Thread{.policy = static_cast<uint32_t>(scheduler),
+                             .exe = exe,
+                             .name = name,
+                             .cpu_mask = cpu_mask_string,
+                             .nice_value = nice_value,
+                             .sched_priority = param.sched_priority,
+                             .tid = tid,
+                             .pid = pgrp,
+                             .ppid = ppid,
+                             .sid = sid});
+    }
+
+    printf("exe,name,cpumask,policy,nice,priority,tid,pid,ppid,sid\n");
+    for (const auto &t : threads) {
+      t.Print();
+    }
+    event_loop.Exit();
+  });
+
+  event_loop.Run();
 }
