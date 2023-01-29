@@ -1,0 +1,46 @@
+{
+  "channels" : [
+    {
+      "name": "/aos",
+      "type": "aos.timing.Report",
+      "source_node": "test"
+    },
+    {
+      "name": "/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "test"
+    },
+    {
+      "name": "/aos",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "test"
+    },
+    {
+      "name": "/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "test"
+    },
+    {
+      "name": "/aos",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "test"
+    },
+    {
+      "name": "/camera",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "test",
+      "max_size": 10000000
+    },
+    {
+      "name": "/visualize",
+      "type": "foxglove.CompressedImage",
+      "source_node": "test",
+      "max_size": 10000000
+    }
+  ],
+  "nodes": [
+    {
+      "name": "test"
+    }
+  ]
+}

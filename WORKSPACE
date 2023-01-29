@@ -549,6 +549,18 @@ bind(
     actual = "@com_google_googletest//:gtest_main",
 )
 
+http_archive(
+    name = "april_tag_test_image",
+    build_file_content = """
+filegroup(
+    name = "april_tag_test_image",
+    srcs = ["test.bfbs", "expected.jpeg", "expected.png"],
+    visibility = ["//visibility:public"],
+)""",
+    sha256 = "5312c79b19e9883b3cebd9d65b4438a2bf05b41da0bcd8c35e19d22c3b2e1859",
+    urls = ["https://www.frc971.org/Build-Dependencies/test_image_frc971.vision.CameraImage_2023.01.28.tar.gz"],
+)
+
 # Recompressed from libusb-1.0.21.7z.
 http_file(
     name = "libusb_1_0_windows",
