@@ -167,7 +167,63 @@
       "max_size": 4200000,
       "num_readers": 4,
       "read_method": "PIN",
-      "num_senders": 18
+      "num_senders": 18,
+      "logger": "NOT_LOGGED"
+    },
+    {
+      "name": "/pi{{ NUM }}/camera/decimated",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 2,
+      "max_size": 4200000,
+      "num_senders": 2
+    },
+    {
+      "name": "/pi{{ NUM }}/camera",
+      "type": "frc971.vision.TargetMap",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 80,
+      "num_senders": 2,
+      "max_size": 40000,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu",
+        "logger"
+      ],
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 4,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "pi{{ NUM }}"
+          ],
+          "time_to_live": 5000000
+        },
+        {
+          "name": "logger",
+          "priority": 4,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "pi{{ NUM }}"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/pi{{ NUM }}/aos/remote_timestamps/imu/pi{{ NUM }}/camera/frc971-vision-TargetMap",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 80,
+      "source_node": "pi{{ NUM }}",
+      "max_size": 208
+    },
+    {
+      "name": "/pi{{ NUM }}/aos/remote_timestamps/logger/pi{{ NUM }}/camera/frc971-vision-TargetMap",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 80,
+      "source_node": "pi{{ NUM }}",
+      "max_size": 208
     },
     {
       "name": "/logger/aos",

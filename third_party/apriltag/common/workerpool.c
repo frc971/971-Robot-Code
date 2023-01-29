@@ -41,20 +41,6 @@ either expressed or implied, of the Regents of The University of Michigan.
 #include "workerpool.h"
 #include "debug_print.h"
 
-struct workerpool {
-    int nthreads;
-    zarray_t *tasks;
-    int taskspos;
-
-    pthread_t *threads;
-    int *status;
-
-    pthread_mutex_t mutex;
-    pthread_cond_t startcond;   // used to signal the availability of work
-    pthread_cond_t endcond;     // used to signal completion of all work
-
-    int end_count; // how many threads are done?
-};
 
 struct task
 {
