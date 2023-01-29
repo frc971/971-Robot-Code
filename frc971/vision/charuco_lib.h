@@ -58,9 +58,7 @@ class ImageCallback {
                 std::function<void(cv::Mat, aos::monotonic_clock::time_point)>
                     &&handle_image_fn);
 
-  void set_format(Format format) {
-    format_ = format;
-  }
+  void set_format(Format format) { format_ = format; }
 
  private:
   void DisableTracing();
@@ -80,10 +78,9 @@ class ImageCallback {
 
 // Types of targets that a CharucoExtractor can detect in images
 enum class TargetType : uint8_t {
-  kAprilTag = 0,
-  kAruco = 1,
-  kCharuco = 2,
-  kCharucoDiamond = 3
+  kAruco = 0,
+  kCharuco = 1,
+  kCharucoDiamond = 2
 };
 
 // Class which calls a callback each time an image arrives with the information

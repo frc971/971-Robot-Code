@@ -19,7 +19,7 @@ DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
 DEFINE_bool(plot, false, "Whether to plot the resulting data.");
 DEFINE_bool(turret, true, "If true, the camera is on the turret");
 DEFINE_string(target_type, "charuco",
-              "Type of target: april_tag|aruco|charuco|charuco_diamond");
+              "Type of target: aruco|charuco|charuco_diamond");
 DEFINE_string(image_channel, "/camera", "Channel to listen for images on");
 
 namespace frc971 {
@@ -68,9 +68,7 @@ void Main(int argc, char **argv) {
         factory.MakeEventLoop("calibration", pi_node);
 
     TargetType target_type = TargetType::kCharuco;
-    if (FLAGS_target_type == "april_tag") {
-      target_type = TargetType::kAprilTag;
-    } else if (FLAGS_target_type == "aruco") {
+    if (FLAGS_target_type == "aruco") {
       target_type = TargetType::kAruco;
     } else if (FLAGS_target_type == "charuco") {
       target_type = TargetType::kCharuco;
@@ -78,7 +76,7 @@ void Main(int argc, char **argv) {
       target_type = TargetType::kCharucoDiamond;
     } else {
       LOG(FATAL) << "Unknown target type: " << FLAGS_target_type
-                 << ", expected: april_tag|aruco|charuco|charuco_diamond";
+                 << ", expected: aruco|charuco|charuco_diamond";
     }
 
     // Now, hook Calibration up to everything.

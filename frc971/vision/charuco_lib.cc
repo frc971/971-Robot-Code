@@ -230,12 +230,6 @@ void CharucoExtractor::SetupTargetData() {
     marker_length_ = 0.15;
     square_length_ = 0.1651;
     dictionary_ = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_250);
-  } else if (target_type_ == TargetType::kAprilTag) {
-    // Tag will be 6 in (15.24 cm) according to
-    // https://www.firstinspires.org/robotics/frc/blog/2022-2023-approved-devices-rules-preview-and-vision-target-update
-    square_length_ = 0.1524;
-    dictionary_ =
-        cv::aruco::getPredefinedDictionary(cv::aruco::DICT_APRILTAG_16h5);
   } else {
     // Bail out if it's not a supported target
     LOG(FATAL) << "Target type undefined: "
@@ -435,9 +429,8 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
                 << ", not enough marker IDs for charuco board, got "
                 << marker_ids.size() << ", needed " << FLAGS_min_charucos;
       }
-    } else if (target_type_ == TargetType::kAprilTag ||
-               target_type_ == TargetType::kAruco) {
-      // estimate pose for april tags doesn't return valid, so marking true
+    } else if (target_type_ == TargetType::kAruco) {
+      // estimate pose for arucos doesn't return valid, so marking true
       valid = true;
       std::vector<cv::Vec3d> rvecs, tvecs;
       cv::aruco::estimatePoseSingleMarkers(marker_corners, square_length_,

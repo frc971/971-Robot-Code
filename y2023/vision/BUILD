@@ -86,6 +86,7 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2023:__subpackages__"],
     deps = [
+        ":aprilrobotics_lib",
         ":calibration_data",
         "//aos:init",
         "//aos/events:simulated_event_loop",
