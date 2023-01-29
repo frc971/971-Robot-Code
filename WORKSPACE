@@ -1303,9 +1303,9 @@ http_archive(
 
 http_archive(
     name = "com_github_foxglove_ws-protocol",
-    build_file = "//third_party/foxglove_ws_protocol:foxglove_ws_protocol.BUILD",
+    build_file = "//third_party/foxglove/ws_protocol:foxglove_ws_protocol.BUILD",
     patch_args = ["-p1"],
-    patches = ["//third_party/foxglove_ws_protocol:foxglove_ws_protocol.patch"],
+    patches = ["//third_party/foxglove/ws_protocol:foxglove_ws_protocol.patch"],
     sha256 = "3256f09a67419f6556778c443d332f1a4bf53ba0e7a464179bf838abffa366ab",
     strip_prefix = "ws-protocol-releases-typescript-ws-protocol-examples-v0.0.6",
     url = "https://github.com/foxglove/ws-protocol/archive/refs/tags/releases/typescript/ws-protocol-examples/v0.0.6.tar.gz",
@@ -1324,4 +1324,12 @@ cc_library(
     sha256 = "8976812c24a118600f6fcf071a20606630a69afe4c0abee3b0dea528e682c585",
     strip_prefix = "asio-1.24.0",
     url = "https://downloads.sourceforge.net/project/asio/asio/1.24.0%2520%2528Stable%2529/asio-1.24.0.tar.bz2",
+)
+
+http_archive(
+    name = "com_github_foxglove_schemas",
+    build_file = "//third_party/foxglove/schemas:schemas.BUILD",
+    sha256 = "c0d08365eb8fba0af7773b5f0095fb53fb53f020bde46edaa308af5bb939fc15",
+    strip_prefix = "schemas-7a3e077b88142ac46bb4e2616f83dc029b45352e/schemas/flatbuffer",
+    url = "https://github.com/foxglove/schemas/archive/7a3e077b88142ac46bb4e2616f83dc029b45352e.tar.gz",
 )
