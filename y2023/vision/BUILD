@@ -69,9 +69,11 @@ cc_binary(
     visibility = ["//y2023:__subpackages__"],
     deps = [
         "//aos:init",
+        "//aos:json_to_flatbuffer",
         "//aos/events:shm_event_loop",
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
+        "@com_google_absl//absl/strings",
     ],
 )
 
