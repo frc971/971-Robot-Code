@@ -135,6 +135,7 @@ class HybridEkf {
     kLongitudinalAccel = 2,
     kLateralAccel = 3,
   };
+
   static constexpr int kNInputs = 4;
   // Number of previous samples to save.
   static constexpr int kSaveSamples = 200;
@@ -177,6 +178,135 @@ class HybridEkf {
   // State contains the states defined by the StateIdx enum. See comments there.
   typedef Eigen::Matrix<Scalar, kNStates, 1> State;
 
+  // The following classes exist to allow us to support doing corections in the
+  // past by rewinding the EKF, calling the appropriate H and dhdx functions,
+  // and then playing everything back. Originally, this simply used
+  // std::function's, but doing so causes us to perform dynamic memory
+  // allocation in the core of the drivetrain control loop.
+  //
+  // The ExpectedObservationFunctor class serves to provide an interface for the
+  // actual H and dH/dX that the EKF itself needs. Most implementations end up
+  // just using this; in the degenerate case, ExpectedObservationFunctor could
+  // be implemented as a class that simply stores two std::functions and calls
+  // them when H() and DHDX() are called.
+  //
+  // The ObserveDeletion() and deleted() methods exist for sanity checking--we
+  // don't rely on them to do any work, but in order to ensure that memory is
+  // being managed correctly, we have the HybridEkf call ObserveDeletion() when
+  // it no longer needs an instance of the object.
+  class ExpectedObservationFunctor {
+   public:
+    virtual ~ExpectedObservationFunctor() = default;
+    // Return the expected measurement of the system for a given state and plant
+    // input.
+    virtual Output H(const State &state, const Input &input) = 0;
+    // Return the derivative of H() with respect to the state, given the current
+    // state.
+    virtual Eigen::Matrix<Scalar, kNOutputs, kNStates> DHDX(
+        const State &state) = 0;
+    virtual void ObserveDeletion() {
+      CHECK(!deleted_);
+      deleted_ = true;
+    }
+    bool deleted() const { return deleted_; }
+
+   private:
+    bool deleted_ = false;
+  };
+
+  // The ExpectedObservationBuilder creates a new ExpectedObservationFunctor.
+  // This is used for situations where in order to know what the correction
+  // methods even are we need to know the state at some time in the past. This
+  // is only used in the y2019 code and we've generally stopped using this
+  // pattern.
+  class ExpectedObservationBuilder {
+   public:
+    virtual ~ExpectedObservationBuilder() = default;
+    // The lifetime of the returned object should last at least until
+    // ObserveDeletion() is called on said object.
+    virtual ExpectedObservationFunctor *MakeExpectedObservations(
+        const State &state, const StateSquare &P) = 0;
+    void ObserveDeletion() {
+      CHECK(!deleted_);
+      deleted_ = true;
+    }
+    bool deleted() const { return deleted_; }
+
+   private:
+    bool deleted_ = false;
+  };
+
+  // The ExpectedObservationAllocator provides a utility class which manages the
+  // memory for a single type of correction step for a given localizer.
+  // Using the knowledge that at most kSaveSamples ExpectedObservation* objects
+  // can be referenced by the HybridEkf at any given time, this keeps an
+  // internal queue that more than mirrors the HybridEkf's internal queue, using
+  // the oldest spots in the queue to construct new ExpectedObservation*'s.
+  // This can be used with T as either a ExpectedObservationBuilder or
+  // ExpectedObservationFunctor. The appropriate Correct function will then be
+  // called in place of calling HybridEkf::Correct directly. Note that unless T
+  // implements both the Builder and Functor (which is generally discouraged),
+  // only one of the Correct* functions will build.
+  template <typename T>
+  class ExpectedObservationAllocator {
+   public:
+    ExpectedObservationAllocator(HybridEkf *ekf) : ekf_(ekf) {}
+    void CorrectKnownH(const Output &z, const Input *U, T H,
+                       const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
+                       aos::monotonic_clock::time_point t) {
+      if (functors_.full()) {
+        CHECK(functors_.begin()->functor->deleted());
+      }
+      auto pushed = functors_.PushFromBottom(Pair{t, std::move(H)});
+      if (pushed == functors_.end()) {
+        VLOG(1) << "Observation dropped off bottom of queue.";
+        return;
+      }
+      ekf_->Correct(z, U, nullptr, &pushed->functor.value(), R, t);
+    }
+    void CorrectKnownHBuilder(
+        const Output &z, const Input *U, T builder,
+        const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
+        aos::monotonic_clock::time_point t) {
+      if (functors_.full()) {
+        CHECK(functors_.begin()->functor->deleted());
+      }
+      auto pushed = functors_.PushFromBottom(Pair{t, std::move(builder)});
+      if (pushed == functors_.end()) {
+        VLOG(1) << "Observation dropped off bottom of queue.";
+        return;
+      }
+      ekf_->Correct(z, U, &pushed->functor.value(), nullptr, R, t);
+    }
+
+   private:
+    struct Pair {
+      aos::monotonic_clock::time_point t;
+      std::optional<T> functor;
+      friend bool operator<(const Pair &l, const Pair &r) { return l.t < r.t; }
+    };
+
+    HybridEkf *const ekf_;
+    aos::PriorityQueue<Pair, kSaveSamples + 1, std::less<Pair>> functors_;
+  };
+
+  // A simple implementation of ExpectedObservationFunctor for an LTI correction
+  // step. Does not store any external references, so overrides
+  // ObserveDeletion() to do nothing.
+  class LinearH : public ExpectedObservationFunctor {
+   public:
+    LinearH(const Eigen::Matrix<Scalar, kNOutputs, kNStates> &H) : H_(H) {}
+    virtual ~LinearH() = default;
+    Output H(const State &state, const Input &) final { return H_ * state; }
+    Eigen::Matrix<Scalar, kNOutputs, kNStates> DHDX(const State &) final {
+      return H_;
+    }
+    void ObserveDeletion() {}
+
+   private:
+    const Eigen::Matrix<Scalar, kNOutputs, kNStates> H_;
+  };
+
   // Constructs a HybridEkf for a particular drivetrain.
   // Currently, we use the drivetrain config for modelling constants
   // (continuous time A and B matrices) and for the noise matrices for the
@@ -207,11 +337,8 @@ class HybridEkf {
         P_,
         Input::Zero(),
         Output::Zero(),
-        {},
-        [](const State &, const Input &) { return Output::Zero(); },
-        [](const State &) {
-          return Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero();
-        },
+        nullptr,
+        &H_encoders_and_gyro_.value(),
         Eigen::Matrix<Scalar, kNOutputs, kNOutputs>::Identity(),
         StateSquare::Identity(),
         StateSquare::Zero(),
@@ -230,18 +357,11 @@ class HybridEkf {
   // on an assumption that the voltage was held constant between the time steps.
   // TODO(james): Is it necessary to explicitly to provide a version with H as a
   // matrix for linear cases?
-  void Correct(
-      const Output &z, const Input *U,
-      std::function<void(const State &, const StateSquare &,
-                         std::function<Output(const State &, const Input &)> *,
-                         std::function<Eigen::Matrix<
-                             Scalar, kNOutputs, kNStates>(const State &)> *)>
-          make_h,
-      std::function<Output(const State &, const Input &)> h,
-      std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
-          dhdx,
-      const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
-      aos::monotonic_clock::time_point t);
+  void Correct(const Output &z, const Input *U,
+               ExpectedObservationBuilder *observation_builder,
+               ExpectedObservationFunctor *expected_observations,
+               const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
+               aos::monotonic_clock::time_point t);
 
   // A utility function for specifically updating with encoder and gyro
   // measurements.
@@ -291,11 +411,8 @@ class HybridEkf {
     Eigen::Matrix<Scalar, kNOutputs, kNOutputs> R;
     R.setZero();
     R.diagonal() << encoder_noise_, encoder_noise_, gyro_noise_;
-    Correct(z, &U, {},
-            [this](const State &X, const Input &) {
-              return H_encoders_and_gyro_ * X;
-            },
-            [this](const State &) { return H_encoders_and_gyro_; }, R, t);
+    CHECK(H_encoders_and_gyro_.has_value());
+    Correct(z, &U, nullptr, &H_encoders_and_gyro_.value(), R, t);
   }
 
   // Sundry accessor:
@@ -348,6 +465,50 @@ class HybridEkf {
 
  private:
   struct Observation {
+    Observation(aos::monotonic_clock::time_point t,
+                aos::monotonic_clock::time_point prev_t, State X_hat,
+                StateSquare P, Input U, Output z,
+                ExpectedObservationBuilder *make_h,
+                ExpectedObservationFunctor *h,
+                Eigen::Matrix<Scalar, kNOutputs, kNOutputs> R, StateSquare A_d,
+                StateSquare Q_d,
+                aos::monotonic_clock::duration discretization_time,
+                State predict_update)
+        : t(t),
+          prev_t(prev_t),
+          X_hat(X_hat),
+          P(P),
+          U(U),
+          z(z),
+          make_h(make_h),
+          h(h),
+          R(R),
+          A_d(A_d),
+          Q_d(Q_d),
+          discretization_time(discretization_time),
+          predict_update(predict_update) {}
+    Observation(const Observation &) = delete;
+    Observation &operator=(const Observation &) = delete;
+    // Move-construct an observation by copying over the contents of the struct
+    // and then clearing the old Observation's pointers so that it doesn't try
+    // to clean things up.
+    Observation(Observation &&o)
+        : Observation(o.t, o.prev_t, o.X_hat, o.P, o.U, o.z, o.make_h, o.h, o.R,
+                      o.A_d, o.Q_d, o.discretization_time, o.predict_update) {
+      o.make_h = nullptr;
+      o.h = nullptr;
+    }
+    Observation &operator=(Observation &&observation) = delete;
+    ~Observation() {
+      // Observe h being deleted first, since make_h may own its memory.
+      // Shouldn't actually matter, though.
+      if (h != nullptr) {
+        h->ObserveDeletion();
+      }
+      if (make_h != nullptr) {
+        make_h->ObserveDeletion();
+      }
+    }
     // Time when the observation was taken.
     aos::monotonic_clock::time_point t;
     // Time that the previous observation was taken:
@@ -365,24 +526,11 @@ class HybridEkf {
     // estimate. This is used by the camera to make it so that we only have to
     // match targets once.
     // Only called if h and dhdx are empty.
-    std::function<void(const State &, const StateSquare &,
-                       std::function<Output(const State &, const Input &)> *,
-                       std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(
-                           const State &)> *)>
-        make_h;
+    ExpectedObservationBuilder *make_h = nullptr;
     // A function to calculate the expected output at a given state/input.
     // TODO(james): For encoders/gyro, it is linear and the function call may
     // be expensive. Potential source of optimization.
-    std::function<Output(const State &, const Input &)> h;
-    // The Jacobian of h with respect to x.
-    // We assume that U has no impact on the Jacobian.
-    // TODO(james): Currently, none of the users of this actually make use of
-    // the ability to have dynamic dhdx (technically, the camera code should
-    // recalculate it to be strictly correct, but I was both too lazy to do
-    // so and it seemed unnecessary). This is a potential source for future
-    // optimizations if function calls are being expensive.
-    std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
-        dhdx;
+    ExpectedObservationFunctor *h = nullptr;
     // The measurement noise matrix.
     Eigen::Matrix<Scalar, kNOutputs, kNOutputs> R;
 
@@ -556,7 +704,7 @@ class HybridEkf {
   }
 
   void CorrectImpl(Observation *obs, State *state, StateSquare *P) {
-    const Eigen::Matrix<Scalar, kNOutputs, kNStates> H = obs->dhdx(*state);
+    const Eigen::Matrix<Scalar, kNOutputs, kNStates> H = obs->h->DHDX(*state);
     // Note: Technically, this does calculate P * H.transpose() twice. However,
     // when I was mucking around with some things, I found that in practice
     // putting everything into one expression and letting Eigen optimize it
@@ -566,7 +714,7 @@ class HybridEkf {
         *P * H.transpose() * (H * *P * H.transpose() + obs->R).inverse();
     const StateSquare Ptemp = (StateSquare::Identity() - K * H) * *P;
     *P = Ptemp;
-    *state += K * (obs->z - obs->h(*state, obs->U));
+    *state += K * (obs->z - obs->h->H(*state, obs->U));
   }
 
   void ProcessObservation(Observation *obs, const std::chrono::nanoseconds dt,
@@ -576,9 +724,9 @@ class HybridEkf {
     if (dt.count() != 0 && dt < kMaxTimestep) {
       PredictImpl(obs, dt, state, P);
     }
-    if (!(obs->h && obs->dhdx)) {
-      CHECK(obs->make_h);
-      obs->make_h(*state, *P, &obs->h, &obs->dhdx);
+    if (obs->h == nullptr) {
+      CHECK(obs->make_h != nullptr);
+      obs->h = CHECK_NOTNULL(obs->make_h->MakeExpectedObservations(*state, *P));
     }
     CorrectImpl(obs, state, P);
   }
@@ -590,7 +738,7 @@ class HybridEkf {
   StateSquare A_continuous_;
   StateSquare Q_continuous_;
   StateSquare P_;
-  Eigen::Matrix<Scalar, kNOutputs, kNStates> H_encoders_and_gyro_;
+  std::optional<LinearH> H_encoders_and_gyro_;
   Scalar encoder_noise_, gyro_noise_;
   Eigen::Matrix<Scalar, kNStates, kNInputs> B_continuous_;
 
@@ -610,14 +758,8 @@ class HybridEkf {
 template <typename Scalar>
 void HybridEkf<Scalar>::Correct(
     const Output &z, const Input *U,
-    std::function<void(const State &, const StateSquare &,
-                       std::function<Output(const State &, const Input &)> *,
-                       std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(
-                           const State &)> *)>
-        make_h,
-    std::function<Output(const State &, const Input &)> h,
-    std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
-        dhdx,
+    ExpectedObservationBuilder *observation_builder,
+    ExpectedObservationFunctor *expected_observations,
     const Eigen::Matrix<Scalar, kNOutputs, kNOutputs> &R,
     aos::monotonic_clock::time_point t) {
   CHECK(!observations_.empty());
@@ -627,9 +769,9 @@ void HybridEkf<Scalar>::Correct(
     return;
   }
   auto cur_it = observations_.PushFromBottom(
-      {t, t, State::Zero(), StateSquare::Zero(), Input::Zero(), z, make_h, h,
-       dhdx, R, StateSquare::Identity(), StateSquare::Zero(),
-       std::chrono::seconds(0), State::Zero()});
+      {t, t, State::Zero(), StateSquare::Zero(), Input::Zero(), z,
+       observation_builder, expected_observations, R, StateSquare::Identity(),
+       StateSquare::Zero(), std::chrono::seconds(0), State::Zero()});
   if (cur_it == observations_.end()) {
     VLOG(1) << "Camera dropped off of end with time of "
             << aos::time::DurationInSeconds(t.time_since_epoch())
@@ -773,14 +915,18 @@ void HybridEkf<Scalar>::InitializeMatrices() {
       std::pow(1.1, 2.0);
   Q_continuous_(kLateralVelocity, kLateralVelocity) = std::pow(0.1, 2.0);
 
-  H_encoders_and_gyro_.setZero();
-  // Encoders are stored directly in the state matrix, so are a minor
-  // transform away.
-  H_encoders_and_gyro_(0, kLeftEncoder) = 1.0;
-  H_encoders_and_gyro_(1, kRightEncoder) = 1.0;
-  // Gyro rate is just the difference between right/left side speeds:
-  H_encoders_and_gyro_(2, kLeftVelocity) = -1.0 / diameter;
-  H_encoders_and_gyro_(2, kRightVelocity) = 1.0 / diameter;
+  {
+    Eigen::Matrix<Scalar, kNOutputs, kNStates> H_encoders_and_gyro;
+    H_encoders_and_gyro.setZero();
+    // Encoders are stored directly in the state matrix, so are a minor
+    // transform away.
+    H_encoders_and_gyro(0, kLeftEncoder) = 1.0;
+    H_encoders_and_gyro(1, kRightEncoder) = 1.0;
+    // Gyro rate is just the difference between right/left side speeds:
+    H_encoders_and_gyro(2, kLeftVelocity) = -1.0 / diameter;
+    H_encoders_and_gyro(2, kRightVelocity) = 1.0 / diameter;
+    H_encoders_and_gyro_.emplace(H_encoders_and_gyro);
+  }
 
   encoder_noise_ = 5e-9;
   gyro_noise_ = 1e-13;

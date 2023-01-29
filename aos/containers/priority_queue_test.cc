@@ -153,16 +153,22 @@ TEST_F(PriorityQueueTest, FullBufferInsertBottom) {
   ASSERT_TRUE(reverse_expected.empty());
 }
 
-// Check that operator-> works as expected on the iterator.
+// Check that operator-> works as expected on the iterator, and that we can use
+// a non-copyable, non-assignable object.
 struct TestStruct {
+  TestStruct(int a) : a(a) {}
+  TestStruct(const TestStruct &) = delete;
+  TestStruct &operator=(const TestStruct &) = delete;
+  TestStruct(TestStruct &&) = default;
+  TestStruct &operator=(TestStruct &&) = delete;
   int a;
   friend bool operator<(const TestStruct &lhs, const TestStruct &rhs) {
     return lhs.a < rhs.a;
   }
 };
-TEST(PriorirtyQueueTest, MemberAccess) {
+TEST(PriorityQueueMoveTest, MemberAccess) {
   PriorityQueue<TestStruct, 10, ::std::less<TestStruct>> q;
-  auto it = q.PushFromBottom({11});
+  auto it = q.PushFromBottom(TestStruct{11});
   EXPECT_EQ(11, it->a);
 }
 

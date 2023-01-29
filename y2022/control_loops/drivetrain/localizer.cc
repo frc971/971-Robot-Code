@@ -11,6 +11,7 @@ Localizer::Localizer(
     : event_loop_(event_loop),
       dt_config_(dt_config),
       ekf_(dt_config),
+      observations_(&ekf_),
       localizer_output_fetcher_(
           event_loop_->MakeFetcher<frc971::controls::LocalizerOutput>(
               "/localizer")),
@@ -48,7 +49,7 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
       joystick_state_fetcher_->autonomous()) {
     // TODO(james): This is an inelegant way to avoid having the localizer mess
     // up splines. Do better.
-    //return;
+    // return;
   }
   if (localizer_output_fetcher_.Fetch()) {
     clock_offset_fetcher_.Fetch();
@@ -89,11 +90,6 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
       }
     }
 
-    Eigen::Matrix<float, HybridEkf::kNOutputs, HybridEkf::kNStates> H;
-    H.setZero();
-    H(0, StateIdx::kX) = 1;
-    H(1, StateIdx::kY) = 1;
-    H(2, StateIdx::kTheta) = 1;
     const Eigen::Vector3f Z{
         static_cast<float>(localizer_output_fetcher_->x()),
         static_cast<float>(localizer_output_fetcher_->y()),
@@ -101,15 +97,8 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
     Eigen::Matrix3f R = Eigen::Matrix3f::Zero();
     R.diagonal() << 0.01, 0.01, 1e-4;
     const Input U_correct = ekf_.MostRecentInput();
-    ekf_.Correct(
-        Eigen::Vector3f::Zero(), &U_correct, {},
-        [H, state_at_capture, Z](const State &,
-                                 const Input &) -> Eigen::Vector3f {
-          Eigen::Vector3f error = H * state_at_capture.value() - Z;
-          error(2) = aos::math::NormalizeAngle(error(2));
-          return error;
-        },
-        [H](const State &) { return H; }, R, now);
+    observations_.CorrectKnownH(Eigen::Vector3f::Zero(), &U_correct,
+                                Corrector(state_at_capture.value(), Z), R, now);
   }
 }
 

@@ -4,11 +4,11 @@
 #include <string_view>
 
 #include "aos/events/event_loop.h"
+#include "aos/network/message_bridge_server_generated.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
-#include "y2022/localizer/localizer_output_generated.h"
-#include "aos/network/message_bridge_server_generated.h"
 #include "frc971/input/joystick_state_generated.h"
+#include "y2022/localizer/localizer_output_generated.h"
 
 namespace y2022 {
 namespace control_loops {
@@ -63,9 +63,34 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
   }
 
  private:
+  class Corrector : public HybridEkf::ExpectedObservationFunctor {
+   public:
+    Corrector(const State &state_at_capture, const Eigen::Vector3f &Z)
+        : state_at_capture_(state_at_capture), Z_(Z) {
+      H_.setZero();
+      H_(0, StateIdx::kX) = 1;
+      H_(1, StateIdx::kY) = 1;
+      H_(2, StateIdx::kTheta) = 1;
+    }
+    Output H(const State &, const Input &) final {
+      Eigen::Vector3f error = H_ * state_at_capture_ - Z_;
+      error(2) = aos::math::NormalizeAngle(error(2));
+      return error;
+    }
+    Eigen::Matrix<float, HybridEkf::kNOutputs, HybridEkf::kNStates> DHDX(
+        const State &) final {
+      return H_;
+    }
+
+   private:
+    Eigen::Matrix<float, HybridEkf::kNOutputs, HybridEkf::kNStates> H_;
+    State state_at_capture_;
+    Eigen::Vector3f Z_;
+  };
   aos::EventLoop *const event_loop_;
   const frc971::control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
   HybridEkf ekf_;
+  HybridEkf::ExpectedObservationAllocator<Corrector> observations_;
 
   aos::Fetcher<frc971::controls::LocalizerOutput> localizer_output_fetcher_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;

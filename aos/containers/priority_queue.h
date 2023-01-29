@@ -3,6 +3,7 @@
 
 #include <array>
 #include <iterator>
+#include <optional>
 
 namespace aos {
 
@@ -60,18 +61,19 @@ class PriorityQueue {
   // and the queue is full, then data is ignored and end() is returned.
   // PushFromBottom starts the search from the bottom of the queue.
   // TODO(james): If performance becomes an issue, improve search.
-  iterator PushFromBottom(const Data &data) {
+  iterator PushFromBottom(Data data) {
     size_t lower_idx = buffer_size;
     size_t upper_idx = bottom_;
     // Find our spot in the queue:
-    while (upper_idx != buffer_size && !cmp_(data, list_[upper_idx].data)) {
+    while (upper_idx != buffer_size &&
+           !cmp_(data, list_[upper_idx].data.value())) {
       lower_idx = upper_idx;
       upper_idx = list_[upper_idx].upper_idx;
       if (upper_idx == buffer_size) {
         break;
       }
     }
-    return InsertInList(data, lower_idx, upper_idx);
+    return InsertInList(std::move(data), lower_idx, upper_idx);
   }
 
   size_t size() const { return size_; }
@@ -85,10 +87,10 @@ class PriorityQueue {
     top_ = buffer_size;
   }
 
-  Data &top() { return list_[top_].data; }
-  const Data &top() const { return list_[top_].data; }
-  Data &get(size_t idx) { return list_[idx].data; }
-  const Data &get(size_t idx) const { return list_[idx].data; }
+  Data &top() { return list_[top_].data.value(); }
+  const Data &top() const { return list_[top_].data.value(); }
+  Data &get(size_t idx) { return list_[idx].data.value(); }
+  const Data &get(size_t idx) const { return list_[idx].data.value(); }
   iterator begin() { return iterator(this, bottom_); }
   iterator end() { return iterator(this, buffer_size); }
 
@@ -101,7 +103,7 @@ class PriorityQueue {
   struct Datum {
     // A list element with data and the indices of the next highest/lowest
     // priority elements.
-    Data data;
+    std::optional<Data> data;
     // Values of buffer_size indicate that we are at the beginning or end of
     // the queue.
     size_t lower_idx = buffer_size;
@@ -109,7 +111,7 @@ class PriorityQueue {
   };
 
   // Insert an element above lower_idx and below upper_idx.
-  iterator InsertInList(const Data &data, size_t lower_idx, size_t upper_idx) {
+  iterator InsertInList(Data data, size_t lower_idx, size_t upper_idx) {
     // For inserting new elements, when we are initially filling the queue we
     // will increment upwards in the array; once full, we just evict the
     // lowest priority element.
@@ -140,7 +142,7 @@ class PriorityQueue {
     if (top_ == lower_idx) {
       top_ = insertion_idx;
     }
-    list_[insertion_idx].data = data;
+    list_[insertion_idx].data.emplace(std::move(data));
     list_[insertion_idx].upper_idx = upper_idx;
     list_[insertion_idx].lower_idx = lower_idx;
     ++size_;
