@@ -182,7 +182,7 @@
       "name": "/pi{{ NUM }}/camera",
       "type": "frc971.vision.TargetMap",
       "source_node": "pi{{ NUM }}",
-      "frequency": 30,
+      "frequency": 40,
       "num_senders": 2,
       "max_size": 40000,
       "logger": "LOCAL_AND_REMOTE_LOGGER",

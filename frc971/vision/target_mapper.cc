@@ -66,6 +66,32 @@ Eigen::Vector3d PoseUtils::RotationMatrixToEulerAngles(
   return Eigen::Vector3d(roll, pitch, yaw);
 }
 
+flatbuffers::Offset<TargetPoseFbs> PoseUtils::TargetPoseToFbs(
+    const TargetMapper::TargetPose &target_pose,
+    flatbuffers::FlatBufferBuilder *fbb) {
+  const auto position_offset =
+      CreatePosition(*fbb, target_pose.pose.p(0), target_pose.pose.p(1),
+                     target_pose.pose.p(2));
+  const auto orientation_offset =
+      CreateQuaternion(*fbb, target_pose.pose.q.w(), target_pose.pose.q.x(),
+                       target_pose.pose.q.y(), target_pose.pose.q.z());
+  return CreateTargetPoseFbs(*fbb, target_pose.id, position_offset,
+                             orientation_offset);
+}
+
+TargetMapper::TargetPose PoseUtils::TargetPoseFromFbs(
+    const TargetPoseFbs &target_pose_fbs) {
+  return {.id = static_cast<TargetMapper::TargetId>(target_pose_fbs.id()),
+          .pose = ceres::examples::Pose3d{
+              Eigen::Vector3d(target_pose_fbs.position()->x(),
+                              target_pose_fbs.position()->y(),
+                              target_pose_fbs.position()->z()),
+              Eigen::Quaterniond(target_pose_fbs.orientation()->w(),
+                                 target_pose_fbs.orientation()->x(),
+                                 target_pose_fbs.orientation()->y(),
+                                 target_pose_fbs.orientation()->z())}};
+}
+
 ceres::examples::VectorOfConstraints DataAdapter::MatchTargetDetections(
     const std::vector<DataAdapter::TimestampedDetection>
         &timestamped_target_detections,
@@ -177,12 +203,8 @@ TargetMapper::TargetMapper(
   aos::FlatbufferDetachedBuffer<TargetMap> target_map =
       aos::JsonFileToFlatbuffer<TargetMap>(target_poses_path);
   for (const auto *target_pose_fbs : *target_map.message().target_poses()) {
-    target_poses_[target_pose_fbs->id()] = ceres::examples::Pose3d{
-        Eigen::Vector3d(target_pose_fbs->x(), target_pose_fbs->y(),
-                        target_pose_fbs->z()),
-        PoseUtils::EulerAnglesToQuaternion(
-            Eigen::Vector3d(target_pose_fbs->roll(), target_pose_fbs->pitch(),
-                            target_pose_fbs->yaw()))};
+    target_poses_[target_pose_fbs->id()] =
+        PoseUtils::TargetPoseFromFbs(*target_pose_fbs).pose;
   }
 }
 
@@ -253,12 +275,12 @@ void TargetMapper::BuildOptimizationProblem(
   }
 
   // The pose graph optimization problem has six DOFs that are not fully
-  // constrained. This is typically referred to as gauge freedom. You can apply
-  // a rigid body transformation to all the nodes and the optimization problem
-  // will still have the exact same cost. The Levenberg-Marquardt algorithm has
-  // internal damping which mitigates this issue, but it is better to properly
-  // constrain the gauge freedom. This can be done by setting one of the poses
-  // as constant so the optimizer cannot change it.
+  // constrained. This is typically referred to as gauge freedom. You can
+  // apply a rigid body transformation to all the nodes and the optimization
+  // problem will still have the exact same cost. The Levenberg-Marquardt
+  // algorithm has internal damping which mitigates this issue, but it is
+  // better to properly constrain the gauge freedom. This can be done by
+  // setting one of the poses as constant so the optimizer cannot change it.
   ceres::examples::MapOfPoses::iterator pose_start_iter = poses->begin();
   CHECK(pose_start_iter != poses->end()) << "There are no poses.";
   problem->SetParameterBlockConstant(pose_start_iter->second.p.data());
@@ -306,19 +328,8 @@ std::string TargetMapper::MapToJson(std::string_view field_name) const {
   // Convert poses to flatbuffers
   std::vector<flatbuffers::Offset<TargetPoseFbs>> target_poses_fbs;
   for (const auto &[id, pose] : target_poses_) {
-    TargetPoseFbs::Builder target_pose_builder(fbb);
-    target_pose_builder.add_id(id);
-
-    target_pose_builder.add_x(pose.p(0));
-    target_pose_builder.add_y(pose.p(1));
-    target_pose_builder.add_z(pose.p(2));
-
-    auto rpy = PoseUtils::QuaternionToEulerAngles(pose.q);
-    target_pose_builder.add_roll(rpy.x());
-    target_pose_builder.add_pitch(rpy.y());
-    target_pose_builder.add_yaw(rpy.z());
-
-    target_poses_fbs.emplace_back(target_pose_builder.Finish());
+    target_poses_fbs.emplace_back(
+        PoseUtils::TargetPoseToFbs(TargetPose{.id = id, .pose = pose}, &fbb));
   }
 
   const auto field_name_offset = fbb.CreateString(field_name);

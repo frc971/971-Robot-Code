@@ -89,6 +89,14 @@ class PoseUtils {
   static Eigen::Vector3d QuaternionToEulerAngles(const Eigen::Quaterniond &q);
   // Converts a 3d rotation matrix into a rotation with roll, pitch, and yaw
   static Eigen::Vector3d RotationMatrixToEulerAngles(const Eigen::Matrix3d &R);
+
+  // Builds a TargetPoseFbs from a TargetPose
+  static flatbuffers::Offset<TargetPoseFbs> TargetPoseToFbs(
+      const TargetMapper::TargetPose &target_pose,
+      flatbuffers::FlatBufferBuilder *fbb);
+  // Converts a TargetPoseFbs to a TargetPose
+  static TargetMapper::TargetPose TargetPoseFromFbs(
+      const TargetPoseFbs &target_pose_fbs);
 };
 
 // Transforms robot position and target detection data into target constraints

@@ -408,15 +408,9 @@ TEST_F(ChargedUpTargetMapperTest, FieldCircleMotion) {
 
   std::vector<TargetMapper::TargetPose> actual_target_poses;
   ceres::examples::MapOfPoses target_poses;
-  for (auto *target_pose_fbs : *target_map_fbs.message().target_poses()) {
-    auto target_pose = TargetMapper::TargetPose{
-        static_cast<int>(target_pose_fbs->id()),
-        ceres::examples::Pose3d{
-            Eigen::Vector3d(target_pose_fbs->x(), target_pose_fbs->y(),
-                            target_pose_fbs->z()),
-            PoseUtils::EulerAnglesToQuaternion(Eigen::Vector3d(
-                target_pose_fbs->roll(), target_pose_fbs->pitch(),
-                target_pose_fbs->yaw()))}};
+  for (const auto *target_pose_fbs : *target_map_fbs.message().target_poses()) {
+    const TargetMapper::TargetPose target_pose =
+        PoseUtils::TargetPoseFromFbs(*target_pose_fbs);
     actual_target_poses.emplace_back(target_pose);
     target_poses[target_pose.id] = target_pose.pose;
   }

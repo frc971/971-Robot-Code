@@ -91,10 +91,15 @@ AprilRoboticsDetector::BuildTargetPose(
     flatbuffers::FlatBufferBuilder *fbb) {
   const auto T =
       Eigen::Translation3d(pose.t->data[0], pose.t->data[1], pose.t->data[2]);
-  const auto rpy = frc971::vision::PoseUtils::RotationMatrixToEulerAngles(
-      Eigen::Matrix3d(pose.R->data));
-  return frc971::vision::CreateTargetPoseFbs(*fbb, target_id, T.x(), T.y(),
-                                             T.z(), rpy(0), rpy(1), rpy(2));
+  const auto position_offset =
+      frc971::vision::CreatePosition(*fbb, T.x(), T.y(), T.z());
+
+  const auto orientation = Eigen::Quaterniond(Eigen::Matrix3d(pose.R->data));
+  const auto orientation_offset = frc971::vision::CreateQuaternion(
+      *fbb, orientation.w(), orientation.x(), orientation.y(), orientation.z());
+
+  return frc971::vision::CreateTargetPoseFbs(*fbb, target_id, position_offset,
+                                             orientation_offset);
 }
 
 std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>>
