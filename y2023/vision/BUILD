@@ -1,6 +1,7 @@
+load("//frc971:halide.bzl", "halide_library")
+load("//tools/build_rules:select.bzl", "cpu_select")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
-load("//tools/build_rules:select.bzl", "cpu_select")
 
 cc_binary(
     name = "camera_reader",
@@ -99,6 +100,22 @@ cc_library(
         "//y2023/constants:constants_fbs",
         "@com_github_google_glog//:glog",
     ],
+)
+
+halide_library(
+    name = "ToGreyscaleAndDecimateHalide",
+    src = "april_generator.cc",
+    args = "rows=720 cols=1280",
+    function = "decimate_generator",
+    visibility = ["//visibility:public"],
+)
+
+halide_library(
+    name = "ThresholdHalide",
+    src = "april_generator.cc",
+    args = "rows=360 cols=640",
+    function = "threshold_generator",
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
