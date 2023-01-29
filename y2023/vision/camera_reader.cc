@@ -62,8 +62,8 @@ void CameraReaderMain() {
       media_device->FindEntity("rkisp1_resizer_selfpath");
   rkisp1_resizer_selfpath->pads(0)->SetSubdevFormat(width, height,
                                                     MEDIA_BUS_FMT_YUYV8_2X8);
-  rkisp1_resizer_selfpath->pads(1)->SetSubdevFormat(width, height,
-                                                    MEDIA_BUS_FMT_YUYV8_2X8);
+  rkisp1_resizer_selfpath->pads(1)->SetSubdevFormat(
+      width * 2 / 3, height * 2 / 3, MEDIA_BUS_FMT_YUYV8_2X8);
   rkisp1_resizer_selfpath->pads(0)->SetSubdevCrop(width, height);
 
   Entity *rkisp1_resizer_mainpath =
@@ -79,7 +79,7 @@ void CameraReaderMain() {
   rkisp1_mainpath->SetFormat(width / 2, height / 2, V4L2_PIX_FMT_YUV422P);
 
   Entity *rkisp1_selfpath = media_device->FindEntity("rkisp1_selfpath");
-  rkisp1_selfpath->SetFormat(width, height, V4L2_PIX_FMT_YUYV);
+  rkisp1_selfpath->SetFormat(width * 2 / 3, height * 2 / 3, V4L2_PIX_FMT_YUYV);
 
   media_device->Enable(
       media_device->FindLink(camera_device_string, 0, "rkisp1_csi", 0));
