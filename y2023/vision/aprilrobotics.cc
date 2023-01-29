@@ -1,7 +1,5 @@
 #include "y2023/vision/aprilrobotics.h"
 
-DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
-
 DEFINE_bool(
     debug, false,
     "If true, dump a ton of debug and crash on the first valid detection.");
@@ -167,31 +165,5 @@ AprilRoboticsDetector::DetectTags(cv::Mat image) {
   return results;
 }
 
-void AprilViewerMain() {
-  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
-
-  aos::ShmEventLoop event_loop(&config.message());
-
-  AprilRoboticsDetector detector(&event_loop, "/camera");
-
-  detector.SetWorkerpoolAffinities();
-
-  event_loop.SetRuntimeAffinity(aos::MakeCpusetFromCpus({5}));
-
-  struct sched_param param;
-  param.sched_priority = 21;
-  PCHECK(sched_setscheduler(0, SCHED_FIFO, &param) == 0);
-
-  event_loop.Run();
-}
-
 }  // namespace vision
 }  // namespace y2023
-
-int main(int argc, char **argv) {
-  aos::InitGoogle(&argc, &argv);
-  y2023::vision::AprilViewerMain();
-
-  return 0;
-}

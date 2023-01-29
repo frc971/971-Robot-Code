@@ -1,3 +1,5 @@
+load("@//tools/build_rules:select.bzl", "compiler_select")
+
 cc_library(
     name = "apriltag",
     srcs = [
@@ -69,18 +71,23 @@ cc_library(
         "tagStandard41h12.h",
         "tagStandard52h13.h",
     ],
-    copts = [
-        "-Wno-unused-parameter",
-        "-Wno-cast-qual",
+    copts = compiler_select({
+        "clang": [
+            "-Wno-cast-align",
+            "-Wno-incompatible-pointer-types-discards-qualifiers",
+        ],
+        "gcc": [
+            "-Wno-discarded-qualifiers",
+            "-Wno-shift-negative-value",
+        ],
+    }) + [
         "-Wno-sign-compare",
+        "-Wno-cast-qual",
+        "-Wno-unused-parameter",
         "-Wno-unused-variable",
-        "-Wno-cast-align",
-        "-Wno-incompatible-pointer-types-discards-qualifiers",
         "-Wno-format-nonliteral",
     ],
     includes = ["."],
-    target_compatible_with = [
-        "@platforms//cpu:arm64",
-    ],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

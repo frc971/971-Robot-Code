@@ -3,7 +3,6 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
-#include "aos/init.h"
 #include "aos/network/team_number.h"
 #include "aos/realtime.h"
 #include "frc971/vision/calibration_generated.h"

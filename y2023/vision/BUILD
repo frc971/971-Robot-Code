@@ -98,8 +98,8 @@ cc_binary(
     ],
 )
 
-cc_binary(
-    name = "aprilrobotics",
+cc_library(
+    name = "aprilrobotics_lib",
     srcs = [
         "aprilrobotics.cc",
         "aprilrobotics.h",
@@ -117,5 +117,19 @@ cc_binary(
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
         "//third_party/apriltag",
+    ],
+)
+
+cc_binary(
+    name = "aprilrobotics",
+    srcs = [
+        "aprilrobotics_main.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2023:__subpackages__"],
+    deps = [
+        ":aprilrobotics_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
     ],
 )
