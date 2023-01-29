@@ -1,0 +1,197 @@
+#include "y2023/vision/aprilrobotics.h"
+
+DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
+
+DEFINE_bool(
+    debug, false,
+    "If true, dump a ton of debug and crash on the first valid detection.");
+
+DEFINE_int32(team_number, 971,
+             "Use the calibration for a node with this team number");
+namespace y2023 {
+namespace vision {
+
+AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
+                                             std::string_view channel_name)
+    : calibration_data_(CalibrationData()),
+      ftrace_(),
+      image_callback_(event_loop, channel_name,
+                      [&](cv::Mat image_color_mat,
+                          const aos::monotonic_clock::time_point /*eof*/) {
+                        HandleImage(image_color_mat);
+                      }),
+      target_map_sender_(
+          event_loop->MakeSender<frc971::vision::TargetMap>("/camera")) {
+  tag_family_ = tag16h5_create();
+  tag_detector_ = apriltag_detector_create();
+
+  apriltag_detector_add_family_bits(tag_detector_, tag_family_, 1);
+  tag_detector_->nthreads = 6;
+  tag_detector_->wp = workerpool_create(tag_detector_->nthreads);
+  tag_detector_->qtp.min_white_black_diff = 5;
+  tag_detector_->debug = FLAGS_debug;
+
+  std::string hostname = aos::network::GetHostname();
+
+  // Check team string is valid
+  std::optional<uint16_t> pi_number = aos::network::ParsePiNumber(hostname);
+  std::optional<uint16_t> team_number =
+      aos::network::team_number_internal::ParsePiTeamNumber(hostname);
+  CHECK(pi_number) << "Unable to parse pi number from '" << hostname << "'";
+  CHECK(team_number);
+
+  calibration_ = FindCameraCalibration(&calibration_data_.message(),
+                                       "pi" + std::to_string(*pi_number));
+  intrinsics_ = CameraIntrinsics(calibration_);
+  camera_distortion_coeffs_ = CameraDistCoeffs(calibration_);
+
+  image_callback_.set_format(frc971::vision::ImageCallback::Format::GRAYSCALE);
+}
+
+AprilRoboticsDetector::~AprilRoboticsDetector() {
+  apriltag_detector_destroy(tag_detector_);
+  free(tag_family_);
+}
+
+void AprilRoboticsDetector::SetWorkerpoolAffinities() {
+  for (int i = 0; i < tag_detector_->wp->nthreads; i++) {
+    cpu_set_t affinity;
+    CPU_ZERO(&affinity);
+    CPU_SET(i, &affinity);
+    pthread_setaffinity_np(tag_detector_->wp->threads[i], sizeof(affinity),
+                           &affinity);
+    struct sched_param param;
+    param.sched_priority = 20;
+    int res = pthread_setschedparam(tag_detector_->wp->threads[i], SCHED_FIFO,
+                                    &param);
+    PCHECK(res == 0) << "Failed to set priority of threadpool threads";
+  }
+}
+
+void AprilRoboticsDetector::HandleImage(cv::Mat image_color_mat) {
+  std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> detections =
+      DetectTags(image_color_mat);
+
+  auto builder = target_map_sender_.MakeBuilder();
+  std::vector<flatbuffers::Offset<frc971::vision::TargetPoseFbs>> target_poses;
+  for (const auto &[detection, pose] : detections) {
+    target_poses.emplace_back(
+        BuildTargetPose(pose, detection.id, builder.fbb()));
+  }
+  const auto target_poses_offset = builder.fbb()->CreateVector(target_poses);
+  auto target_map_builder = builder.MakeBuilder<frc971::vision::TargetMap>();
+
+  target_map_builder.add_target_poses(target_poses_offset);
+  builder.CheckOk(builder.Send(target_map_builder.Finish()));
+}
+
+flatbuffers::Offset<frc971::vision::TargetPoseFbs>
+AprilRoboticsDetector::BuildTargetPose(
+    const apriltag_pose_t &pose,
+    frc971::vision::TargetMapper::TargetId target_id,
+    flatbuffers::FlatBufferBuilder *fbb) {
+  const auto T =
+      Eigen::Translation3d(pose.t->data[0], pose.t->data[1], pose.t->data[2]);
+  const auto rpy = frc971::vision::PoseUtils::RotationMatrixToEulerAngles(
+      Eigen::Matrix3d(pose.R->data));
+  return frc971::vision::CreateTargetPoseFbs(*fbb, target_id, T.x(), T.y(),
+                                             T.z(), rpy(0), rpy(1), rpy(2));
+}
+
+std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>>
+AprilRoboticsDetector::DetectTags(cv::Mat image) {
+  const aos::monotonic_clock::time_point start_time =
+      aos::monotonic_clock::now();
+
+  image_u8_t im = {
+    .width = image.cols,
+    .height = image.rows,
+    .stride = image.cols,
+    .buf = image.data,
+  };
+
+  ftrace_.FormatMessage("Starting detect\n");
+  zarray_t *detections = apriltag_detector_detect(tag_detector_, &im);
+  ftrace_.FormatMessage("Done detecting\n");
+
+  std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> results;
+
+  for (int i = 0; i < zarray_size(detections); i++) {
+    apriltag_detection_t *det;
+    zarray_get(detections, i, &det);
+
+    if (det->decision_margin > 30) {
+      VLOG(1) << "Found tag number " << det->id << " hamming: " << det->hamming
+              << " margin: " << det->decision_margin;
+
+      const aos::monotonic_clock::time_point before_pose_estimation =
+          aos::monotonic_clock::now();
+      // First create an apriltag_detection_info_t struct using your known
+      // parameters.
+      apriltag_detection_info_t info;
+      info.det = det;
+      info.tagsize = 0.1524;
+      info.fx = intrinsics_.at<double>(0, 0);
+      info.fy = intrinsics_.at<double>(1, 1);
+      info.cx = intrinsics_.at<double>(0, 2);
+      info.cy = intrinsics_.at<double>(1, 2);
+
+      apriltag_pose_t pose;
+      double err = estimate_tag_pose(&info, &pose);
+
+      VLOG(1) << "err: " << err;
+
+      results.emplace_back(*det, pose);
+
+      const aos::monotonic_clock::time_point after_pose_estimation =
+          aos::monotonic_clock::now();
+
+      VLOG(1) << "Took "
+              << std::chrono::duration<double>(after_pose_estimation -
+                                               before_pose_estimation)
+                     .count()
+              << " seconds for pose estimation";
+    }
+  }
+
+  apriltag_detections_destroy(detections);
+
+  const aos::monotonic_clock::time_point end_time = aos::monotonic_clock::now();
+
+  timeprofile_display(tag_detector_->tp);
+
+  VLOG(1) << "Took "
+          << std::chrono::duration<double>(end_time - start_time).count()
+          << " seconds to detect overall";
+
+  return results;
+}
+
+void AprilViewerMain() {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(FLAGS_config);
+
+  aos::ShmEventLoop event_loop(&config.message());
+
+  AprilRoboticsDetector detector(&event_loop, "/camera");
+
+  detector.SetWorkerpoolAffinities();
+
+  event_loop.SetRuntimeAffinity(aos::MakeCpusetFromCpus({5}));
+
+  struct sched_param param;
+  param.sched_priority = 21;
+  PCHECK(sched_setscheduler(0, SCHED_FIFO, &param) == 0);
+
+  event_loop.Run();
+}
+
+}  // namespace vision
+}  // namespace y2023
+
+int main(int argc, char **argv) {
+  aos::InitGoogle(&argc, &argv);
+  y2023::vision::AprilViewerMain();
+
+  return 0;
+}

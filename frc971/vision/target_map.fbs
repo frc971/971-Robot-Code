@@ -27,3 +27,5 @@ table TargetMap {
   // Unique name of the field
   field_name:string (id: 1);
 }
+
+root_type TargetMap;

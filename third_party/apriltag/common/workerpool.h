@@ -31,6 +31,21 @@ either expressed or implied, of the Regents of The University of Michigan.
 
 typedef struct workerpool workerpool_t;
 
+struct workerpool {
+  int nthreads;
+  zarray_t *tasks;
+  int taskspos;
+
+  pthread_t *threads;
+  int *status;
+
+  pthread_mutex_t mutex;
+  pthread_cond_t startcond;  // used to signal the availability of work
+  pthread_cond_t endcond;    // used to signal completion of all work
+
+  int end_count;  // how many threads are done?
+};
+
 // as a special case, if nthreads==1, no additional threads are
 // created, and workerpool_run will run synchronously.
 workerpool_t *workerpool_create(int nthreads);
@@ -41,7 +56,8 @@ void workerpool_add_task(workerpool_t *wp, void (*f)(void *p), void *p);
 // runs all added tasks, waits for them to complete.
 void workerpool_run(workerpool_t *wp);
 
-// same as workerpool_run, except always single threaded. (mostly for debugging).
+// same as workerpool_run, except always single threaded. (mostly for
+// debugging).
 void workerpool_run_single(workerpool_t *wp);
 
 int workerpool_get_nthreads(workerpool_t *wp);

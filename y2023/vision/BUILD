@@ -97,3 +97,25 @@ cc_binary(
         "//third_party:opencv",
     ],
 )
+
+cc_binary(
+    name = "aprilrobotics",
+    srcs = [
+        "aprilrobotics.cc",
+        "aprilrobotics.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2023:__subpackages__"],
+    deps = [
+        ":calibration_data",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/vision:calibration_fbs",
+        "//frc971/vision:charuco_lib",
+        "//frc971/vision:target_map_fbs",
+        "//frc971/vision:target_mapper",
+        "//frc971/vision:vision_fbs",
+        "//third_party:opencv",
+        "//third_party/apriltag",
+    ],
+)
