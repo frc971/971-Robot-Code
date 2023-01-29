@@ -35,7 +35,7 @@ class AprilRoboticsDetector {
       cv::Mat image);
 
  private:
-  void HandleImage(cv::Mat image);
+  void HandleImage(cv::Mat image, aos::monotonic_clock::time_point eof);
 
   flatbuffers::Offset<frc971::vision::TargetPoseFbs> BuildTargetPose(
       const apriltag_pose_t &pose,

@@ -15,8 +15,8 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
       ftrace_(),
       image_callback_(event_loop, channel_name,
                       [&](cv::Mat image_color_mat,
-                          const aos::monotonic_clock::time_point /*eof*/) {
-                        HandleImage(image_color_mat);
+                          const aos::monotonic_clock::time_point eof) {
+                        HandleImage(image_color_mat, eof);
                       }),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")) {
@@ -66,7 +66,8 @@ void AprilRoboticsDetector::SetWorkerpoolAffinities() {
   }
 }
 
-void AprilRoboticsDetector::HandleImage(cv::Mat image_color_mat) {
+void AprilRoboticsDetector::HandleImage(cv::Mat image_color_mat,
+                                        aos::monotonic_clock::time_point eof) {
   std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> detections =
       DetectTags(image_color_mat);
 
@@ -78,8 +79,8 @@ void AprilRoboticsDetector::HandleImage(cv::Mat image_color_mat) {
   }
   const auto target_poses_offset = builder.fbb()->CreateVector(target_poses);
   auto target_map_builder = builder.MakeBuilder<frc971::vision::TargetMap>();
-
   target_map_builder.add_target_poses(target_poses_offset);
+  target_map_builder.add_monotonic_timestamp_ns(eof.time_since_epoch().count());
   builder.CheckOk(builder.Send(target_map_builder.Finish()));
 }
 
@@ -102,10 +103,10 @@ AprilRoboticsDetector::DetectTags(cv::Mat image) {
       aos::monotonic_clock::now();
 
   image_u8_t im = {
-    .width = image.cols,
-    .height = image.rows,
-    .stride = image.cols,
-    .buf = image.data,
+      .width = image.cols,
+      .height = image.rows,
+      .stride = image.cols,
+      .buf = image.data,
   };
 
   ftrace_.FormatMessage("Starting detect\n");
