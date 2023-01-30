@@ -167,22 +167,13 @@
       "max_size": 4200000,
       "num_readers": 4,
       "read_method": "PIN",
-      "num_senders": 18,
-      "logger": "NOT_LOGGED"
-    },
-    {
-      "name": "/pi{{ NUM }}/camera/decimated",
-      "type": "frc971.vision.CameraImage",
-      "source_node": "pi{{ NUM }}",
-      "frequency": 2,
-      "max_size": 4200000,
-      "num_senders": 2
+      "num_senders": 18
     },
     {
       "name": "/pi{{ NUM }}/camera",
       "type": "frc971.vision.TargetMap",
       "source_node": "pi{{ NUM }}",
-      "frequency": 30,
+      "frequency": 40,
       "num_senders": 2,
       "max_size": 40000,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
