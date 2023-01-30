@@ -16,6 +16,7 @@ DEFINE_bool(lowlight_camera, true, "Switch to use imx462 image sensor.");
 DEFINE_double(red, 1.252, "Red gain");
 DEFINE_double(green, 1, "Green gain");
 DEFINE_double(blue, 1.96, "Blue gain");
+DEFINE_double(exposure, 150, "Camera exposure");
 
 namespace y2023 {
 namespace vision {
@@ -104,7 +105,7 @@ void CameraReaderMain() {
   if (FLAGS_lowlight_camera) {
     v4l2_reader.SetGainExt(100);
     v4l2_reader.SetVerticalBlanking(1000);
-    v4l2_reader.SetExposure(150);
+    v4l2_reader.SetExposure(FLAGS_exposure);
   } else {
     v4l2_reader.SetGainExt(1000);
     v4l2_reader.SetExposure(1000);
