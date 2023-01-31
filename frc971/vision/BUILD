@@ -251,3 +251,16 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "foxglove_image_converter",
+    srcs = ["foxglove_image_converter.cc"],
+    hdrs = ["foxglove_image_converter.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":vision_fbs",
+        "//aos/events:event_loop",
+        "//third_party:opencv",
+        "@com_github_foxglove_schemas//:schemas",
+    ],
+)
