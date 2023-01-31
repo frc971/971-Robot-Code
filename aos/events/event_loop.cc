@@ -115,11 +115,7 @@ PhasedLoopHandler::PhasedLoopHandler(EventLoop *event_loop,
     const monotonic_clock::time_point monotonic_now =
         event_loop_->monotonic_now();
     phased_loop_.Reset(monotonic_now);
-    Reschedule(
-        [this](monotonic_clock::time_point sleep_time) {
-          Schedule(sleep_time);
-        },
-        monotonic_now);
+    Reschedule(monotonic_now);
     // Reschedule here will count cycles elapsed before now, and then the
     // reschedule before running the handler will count the time that elapsed
     // then. So clear the count here.

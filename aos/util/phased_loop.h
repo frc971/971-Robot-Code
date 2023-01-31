@@ -1,6 +1,8 @@
 #ifndef AOS_UTIL_PHASED_LOOP_H_
 #define AOS_UTIL_PHASED_LOOP_H_
 
+#include <optional>
+
 #include "aos/time/time.h"
 
 namespace aos {
@@ -21,8 +23,30 @@ class PhasedLoop {
       const monotonic_clock::duration offset = monotonic_clock::duration(0));
 
   // Updates the offset and interval.
-  void set_interval_and_offset(const monotonic_clock::duration interval,
-                               const monotonic_clock::duration offset);
+  //
+  // After a call to set_interval_and_offset with monotonic_now = nullopt, the
+  // following will hold, for any allowed values of interval and offset:
+  // auto original_time = loop.sleep_time();
+  // loop.set_interval_and_offset(interval, offset);
+  // CHECK_LE(loop.sleep_time(), original_time);
+  // CHECK_EQ(0, loop.Iterate(original_time));
+  //
+  // Note that this will not be the behavior that all (or even necessarily most)
+  // users want, since it doesn't necessarily preserve a "keep the iteration
+  // time as consistent as possible" concept. However, it *is* better defined
+  // than the alternative, where if you decrease the offset by, e.g., 1ms on a
+  // 100ms interval, then the behavior will vary depending on whather you are
+  // going from 0ms->999ms offset or from 1ms->0ms offset.
+  //
+  // If monotonic_now is set, then the following will hold:
+  // auto original_time = loop.sleep_time();
+  // loop.set_interval_and_offset(interval, offset, monotonic_now);
+  // CHECK_LE(loop.sleep_time(), monotonic_now);
+  // CHECK_EQ(0, loop.Iterate(monotonic_now));
+  void set_interval_and_offset(
+      const monotonic_clock::duration interval,
+      const monotonic_clock::duration offset,
+      std::optional<monotonic_clock::time_point> monotonic_now = std::nullopt);
 
   // Computes the offset given an interval and a time that we should trigger.
   static monotonic_clock::duration OffsetFromIntervalAndTime(

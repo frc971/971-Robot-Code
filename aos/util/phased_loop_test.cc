@@ -1,6 +1,7 @@
 #include "aos/util/phased_loop.h"
 
 #include "aos/time/time.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 namespace aos {
@@ -230,8 +231,61 @@ TEST_F(PhasedLoopTest, DecrementingOffset) {
   ASSERT_EQ(5, loop.Iterate(last_time));
   for (int i = 1; i < kCount; i++) {
     const auto offset = kOffset - milliseconds(i);
-    loop.set_interval_and_offset(kInterval, offset);
+    // First, set the interval/offset without specifying a "now". If we then
+    // attempt to Iterate() to the same time as the last iteration, this should
+    // always result in zero cycles elapsed.
+    {
+      const monotonic_clock::time_point original_time = loop.sleep_time();
+      loop.set_interval_and_offset(kInterval, offset);
+      EXPECT_EQ(original_time - milliseconds(1), loop.sleep_time());
+      EXPECT_EQ(0, loop.Iterate(last_time));
+    }
+
+    // Now, explicitly update/clear things to last_time. This should have the
+    // same behavior as not specifying a monotonic_now.
+    {
+      loop.set_interval_and_offset(kInterval, offset, last_time);
+      EXPECT_EQ(0, loop.Iterate(last_time));
+    }
+
     const auto next_time = last_time - milliseconds(1) + kAllIterationsInterval;
+    EXPECT_EQ(kIterations, loop.Iterate(next_time));
+    last_time = next_time;
+  }
+}
+
+// Tests that the phased loop is correctly adjusting when the offset is
+// incremented multiple times.
+TEST_F(PhasedLoopTest, IncrementingOffset) {
+  constexpr int kCount = 5;
+  constexpr int kIterations = 10;
+  const auto kOffset = milliseconds(0);
+  const auto kInterval = milliseconds(1000);
+  const auto kAllIterationsInterval = kInterval * kIterations;
+
+  PhasedLoop loop(kInterval, monotonic_clock::epoch(), kOffset);
+  auto last_time = monotonic_clock::epoch() + kOffset + (kInterval * 3);
+  ASSERT_EQ(4, loop.Iterate(last_time));
+  for (int i = 1; i < kCount; i++) {
+    const auto offset = kOffset + milliseconds(i);
+    {
+      const monotonic_clock::time_point original_time = loop.sleep_time();
+      loop.set_interval_and_offset(kInterval, offset);
+      EXPECT_EQ(original_time - kInterval + milliseconds(1), loop.sleep_time());
+      EXPECT_EQ(0, loop.Iterate(last_time));
+    }
+    // Now, explicitly update/clear things to a set time. We add a milliseconds
+    // so that when we call Iterate() next we actually get the expected number
+    // of iterations (otherwise, there is an iteration that would happen at
+    // last_time + 1 that gets counted, which is correct behavior, and so just
+    // needs to be accounted for somehow).
+    {
+      loop.set_interval_and_offset(kInterval, offset,
+                                   last_time + milliseconds(1));
+      EXPECT_EQ(0, loop.Iterate(last_time + milliseconds(1)));
+    }
+
+    const auto next_time = last_time + milliseconds(1) + kAllIterationsInterval;
     EXPECT_EQ(kIterations, loop.Iterate(next_time));
     last_time = next_time;
   }

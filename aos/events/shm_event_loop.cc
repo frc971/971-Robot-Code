@@ -679,9 +679,7 @@ class ShmPhasedLoopHandler final : public PhasedLoopHandler {
     timerfd_.Read();
     event_.Invalidate();
 
-    Call(monotonic_clock::now, [this](monotonic_clock::time_point sleep_time) {
-      Schedule(sleep_time);
-    });
+    Call(monotonic_clock::now);
   }
 
   ~ShmPhasedLoopHandler() override {

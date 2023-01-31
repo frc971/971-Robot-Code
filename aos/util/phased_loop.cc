@@ -17,15 +17,26 @@ PhasedLoop::PhasedLoop(const monotonic_clock::duration interval,
 
 void PhasedLoop::set_interval_and_offset(
     const monotonic_clock::duration interval,
-    const monotonic_clock::duration offset) {
+    const monotonic_clock::duration offset,
+    std::optional<monotonic_clock::time_point> monotonic_now) {
   // Update last_time_ to the new offset so that we have an even interval
-  last_time_ += offset - offset_;
+  // In doing so, set things so that last_time_ will only ever decrease on calls
+  // to set_interval_and_offset.
+  last_time_ += offset - offset_ -
+                (offset > offset_ ? interval : monotonic_clock::duration(0));
 
   interval_ = interval;
   offset_ = offset;
   CHECK(offset_ >= monotonic_clock::duration(0));
   CHECK(interval_ > monotonic_clock::duration(0));
   CHECK(offset_ < interval_);
+  // Reset effectively clears the skipped iteration count and ensures that the
+  // last time is in the interval (monotonic_now - interval, monotonic_now],
+  // which means that a call to Iterate(monotonic_now) will return 1 and set a
+  // wakeup time after monotonic_now.
+  if (monotonic_now.has_value()) {
+    Iterate(monotonic_now.value());
+  }
 }
 
 monotonic_clock::duration PhasedLoop::OffsetFromIntervalAndTime(

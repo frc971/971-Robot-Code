@@ -1,0 +1,300 @@
+diff a/aos/events/event_loop_param_test.cc b/aos/events/event_loop_param_test.cc	(rejected hunks)
+@@ -1923,6 +1923,298 @@
+   EXPECT_GT(expected_times[expected_times.size() / 2], average_time - kEpsilon);
+ }
+ 
++// Tests that a phased loop responds correctly to a changing offset; sweep
++// across a variety of potential offset changes, to ensure that we are
++// exercising a variety of potential cases.
++TEST_P(AbstractEventLoopTest, PhasedLoopChangingOffsetSweep) {
++  const chrono::milliseconds kInterval = chrono::milliseconds(1000);
++  const int kCount = 5;
++
++  auto loop1 = MakePrimary();
++
++  std::vector<aos::monotonic_clock::duration> offset_options;
++  for (int ii = 0; ii < kCount; ++ii) {
++    offset_options.push_back(ii * kInterval / kCount);
++  }
++  std::vector<aos::monotonic_clock::duration> offset_sweep;
++  // Run over all the pair-wise combinations of offsets.
++  for (int ii = 0; ii < kCount; ++ii) {
++    for (int jj = 0; jj < kCount; ++jj) {
++      offset_sweep.push_back(offset_options.at(ii));
++      offset_sweep.push_back(offset_options.at(jj));
++    }
++  }
++
++  std::vector<::aos::monotonic_clock::time_point> expected_times;
++
++  PhasedLoopHandler *phased_loop;
++
++  // Run kCount iterations.
++  int counter = 0;
++  phased_loop = loop1->AddPhasedLoop(
++      [&phased_loop, &expected_times, &loop1, this, kInterval, &counter,
++       offset_sweep](int count) {
++        EXPECT_EQ(count, 1);
++        expected_times.push_back(loop1->context().monotonic_event_time);
++
++        counter++;
++
++        if (counter == offset_sweep.size()) {
++          LOG(INFO) << "Exiting";
++          this->Exit();
++          return;
++        }
++
++        phased_loop->set_interval_and_offset(kInterval,
++                                             offset_sweep.at(counter));
++      },
++      kInterval, offset_sweep.at(0));
++
++  Run();
++  ASSERT_EQ(expected_times.size(), offset_sweep.size());
++  for (size_t ii = 1; ii < expected_times.size(); ++ii) {
++    EXPECT_LE(expected_times.at(ii) - expected_times.at(ii - 1), kInterval);
++  }
++}
++
++// Tests that a phased loop responds correctly to being rescheduled with now
++// equal to a time in the past.
++TEST_P(AbstractEventLoopTest, PhasedLoopRescheduleInPast) {
++  const chrono::milliseconds kOffset = chrono::milliseconds(400);
++  const chrono::milliseconds kInterval = chrono::milliseconds(1000);
++
++  auto loop1 = MakePrimary();
++
++  std::vector<::aos::monotonic_clock::time_point> expected_times;
++
++  PhasedLoopHandler *phased_loop;
++
++  int expected_count = 1;
++
++  // Set up a timer that will get run immediately after the phased loop and
++  // which will attempt to reschedule the phased loop to just before now. This
++  // should succeed, but will result in 0 cycles elapsing.
++  TimerHandler *manager_timer =
++      loop1->AddTimer([&phased_loop, &loop1, &expected_count, this]() {
++        if (expected_count == 0) {
++          LOG(INFO) << "Exiting";
++          this->Exit();
++          return;
++        }
++        phased_loop->Reschedule(loop1->context().monotonic_event_time -
++                                std::chrono::nanoseconds(1));
++        expected_count = 0;
++      });
++
++  phased_loop = loop1->AddPhasedLoop(
++      [&expected_count, &expected_times, &loop1, manager_timer](int count) {
++        EXPECT_EQ(count, expected_count);
++        expected_times.push_back(loop1->context().monotonic_event_time);
++
++        manager_timer->Setup(loop1->context().monotonic_event_time);
++      },
++      kInterval, kOffset);
++  phased_loop->set_name("Test loop");
++  manager_timer->set_name("Manager timer");
++
++  Run();
++
++  ASSERT_EQ(2u, expected_times.size());
++  ASSERT_EQ(expected_times[0], expected_times[1]);
++}
++
++// Tests that a phased loop responds correctly to being rescheduled at the time
++// when it should be triggering (it should kick the trigger to the next cycle).
++TEST_P(AbstractEventLoopTest, PhasedLoopRescheduleNow) {
++  const chrono::milliseconds kOffset = chrono::milliseconds(400);
++  const chrono::milliseconds kInterval = chrono::milliseconds(1000);
++
++  auto loop1 = MakePrimary();
++
++  std::vector<::aos::monotonic_clock::time_point> expected_times;
++
++  PhasedLoopHandler *phased_loop;
++
++  bool should_exit = false;
++  // Set up a timer that will get run immediately after the phased loop and
++  // which will attempt to reschedule the phased loop to now. This should
++  // succeed, but will result in no change to the expected behavior (since this
++  // is the same thing that is actually done internally).
++  TimerHandler *manager_timer =
++      loop1->AddTimer([&phased_loop, &loop1, &should_exit, this]() {
++        if (should_exit) {
++          LOG(INFO) << "Exiting";
++          this->Exit();
++          return;
++        }
++        phased_loop->Reschedule(loop1->context().monotonic_event_time);
++        should_exit = true;
++      });
++
++  phased_loop = loop1->AddPhasedLoop(
++      [&expected_times, &loop1, manager_timer](int count) {
++        EXPECT_EQ(count, 1);
++        expected_times.push_back(loop1->context().monotonic_event_time);
++
++        manager_timer->Setup(loop1->context().monotonic_event_time);
++      },
++      kInterval, kOffset);
++  phased_loop->set_name("Test loop");
++  manager_timer->set_name("Manager timer");
++
++  Run();
++
++  ASSERT_EQ(2u, expected_times.size());
++  ASSERT_EQ(expected_times[0] + kInterval, expected_times[1]);
++}
++
++// Tests that a phased loop responds correctly to being rescheduled at a time in
++// the distant future.
++TEST_P(AbstractEventLoopTest, PhasedLoopRescheduleFuture) {
++  const chrono::milliseconds kOffset = chrono::milliseconds(400);
++  const chrono::milliseconds kInterval = chrono::milliseconds(1000);
++
++  auto loop1 = MakePrimary();
++
++  std::vector<::aos::monotonic_clock::time_point> expected_times;
++
++  PhasedLoopHandler *phased_loop;
++
++  bool should_exit = false;
++  int expected_count = 1;
++  TimerHandler *manager_timer = loop1->AddTimer(
++      [&expected_count, &phased_loop, &loop1, &should_exit, this, kInterval]() {
++        if (should_exit) {
++          LOG(INFO) << "Exiting";
++          this->Exit();
++          return;
++        }
++        expected_count = 10;
++        // Knock off 1 ns, since the scheduler rounds up when it is
++        // scheduled to exactly a loop time.
++        phased_loop->Reschedule(loop1->context().monotonic_event_time +
++                                kInterval * expected_count -
++                                std::chrono::nanoseconds(1));
++        should_exit = true;
++      });
++
++  phased_loop = loop1->AddPhasedLoop(
++      [&expected_times, &loop1, manager_timer, &expected_count](int count) {
++        EXPECT_EQ(count, expected_count);
++        expected_times.push_back(loop1->context().monotonic_event_time);
++
++        manager_timer->Setup(loop1->context().monotonic_event_time);
++      },
++      kInterval, kOffset);
++  phased_loop->set_name("Test loop");
++  manager_timer->set_name("Manager timer");
++
++  Run();
++
++  ASSERT_EQ(2u, expected_times.size());
++  ASSERT_EQ(expected_times[0] + expected_count * kInterval, expected_times[1]);
++}
++
++// Tests that a phased loop responds correctly to having its phase offset
++// incremented and then being scheduled after a set time, exercising a pattern
++// where a phased loop's offset is changed while trying to maintain the trigger
++// at a consistent period.
++TEST_P(AbstractEventLoopTest, PhasedLoopRescheduleWithLaterOffset) {
++  const chrono::milliseconds kOffset = chrono::milliseconds(400);
++  const chrono::milliseconds kInterval = chrono::milliseconds(1000);
++
++  auto loop1 = MakePrimary();
++
++  std::vector<::aos::monotonic_clock::time_point> expected_times;
++
++  PhasedLoopHandler *phased_loop;
++
++  bool should_exit = false;
++  TimerHandler *manager_timer = loop1->AddTimer(
++      [&phased_loop, &loop1, &should_exit, this, kInterval, kOffset]() {
++        if (should_exit) {
++          LOG(INFO) << "Exiting";
++          this->Exit();
++          return;
++        }
++        // Schedule the next callback to be strictly later than the current time
++        // + interval / 2, to ensure a consistent frequency.
++        monotonic_clock::time_point half_time =
++            loop1->context().monotonic_event_time + kInterval / 2;
++        phased_loop->set_interval_and_offset(
++            kInterval, kOffset + std::chrono::nanoseconds(1), half_time);
++        phased_loop->Reschedule(half_time);
++        should_exit = true;
++      });
++
++  phased_loop = loop1->AddPhasedLoop(
++      [&expected_times, &loop1, manager_timer](int count) {
++        EXPECT_EQ(1, count);
++        expected_times.push_back(loop1->context().monotonic_event_time);
++
++        manager_timer->Setup(loop1->context().monotonic_event_time);
++      },
++      kInterval, kOffset);
++  phased_loop->set_name("Test loop");
++  manager_timer->set_name("Manager timer");
++
++  Run();
++
++  ASSERT_EQ(2u, expected_times.size());
++  ASSERT_EQ(expected_times[0] + kInterval + std::chrono::nanoseconds(1),
++            expected_times[1]);
++}
++
++// Tests that a phased loop responds correctly to having its phase offset
++// decremented and then being scheduled after a set time, exercising a pattern
++// where a phased loop's offset is changed while trying to maintain the trigger
++// at a consistent period.
++TEST_P(AbstractEventLoopTest, PhasedLoopRescheduleWithEarlierOffset) {
++  const chrono::milliseconds kOffset = chrono::milliseconds(400);
++  const chrono::milliseconds kInterval = chrono::milliseconds(1000);
++
++  auto loop1 = MakePrimary();
++
++  std::vector<::aos::monotonic_clock::time_point> expected_times;
++
++  PhasedLoopHandler *phased_loop;
++
++  bool should_exit = false;
++  TimerHandler *manager_timer = loop1->AddTimer(
++      [&phased_loop, &loop1, &should_exit, this, kInterval, kOffset]() {
++        if (should_exit) {
++          LOG(INFO) << "Exiting";
++          this->Exit();
++          return;
++        }
++        // Schedule the next callback to be strictly later than the current time
++        // + interval / 2, to ensure a consistent frequency.
++        const aos::monotonic_clock::time_point half_time =
++            loop1->context().monotonic_event_time + kInterval / 2;
++        phased_loop->set_interval_and_offset(
++            kInterval, kOffset - std::chrono::nanoseconds(1), half_time);
++        phased_loop->Reschedule(half_time);
++        should_exit = true;
++      });
++
++  phased_loop = loop1->AddPhasedLoop(
++      [&expected_times, &loop1, manager_timer](int count) {
++        EXPECT_EQ(1, count);
++        expected_times.push_back(loop1->context().monotonic_event_time);
++
++        manager_timer->Setup(loop1->context().monotonic_event_time);
++      },
++      kInterval, kOffset);
++  phased_loop->set_name("Test loop");
++  manager_timer->set_name("Manager timer");
++
++  Run();
++
++  ASSERT_EQ(2u, expected_times.size());
++  ASSERT_EQ(expected_times[0] + kInterval - std::chrono::nanoseconds(1),
++            expected_times[1]);
++}
++
+ // Tests that senders count correctly in the timing report.
+ TEST_P(AbstractEventLoopTest, SenderTimingReport) {
+   gflags::FlagSaver flag_saver;
