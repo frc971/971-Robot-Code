@@ -729,3 +729,21 @@ cc_binary(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_binary(
+    name = "log_config_extractor",
+    srcs = [
+        "log_config_extractor.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:aos_cli_utils",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos:json_to_flatbuffer",
+        "//aos/events/logging:log_reader",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)
