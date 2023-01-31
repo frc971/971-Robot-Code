@@ -44,14 +44,12 @@ void HandleAprilTag(const TargetMap &map,
                     std::vector<DataAdapter::TimestampedDetection>
                         *timestamped_target_detections,
                     Eigen::Affine3d extrinsics) {
-  for (const auto *target_pose : *map.target_poses()) {
-    Eigen::Translation3d T_camera_target = Eigen::Translation3d(
-        target_pose->x(), target_pose->y(), target_pose->z());
-    Eigen::Quaterniond R_camera_target =
-        PoseUtils::EulerAnglesToQuaternion(Eigen::Vector3d(
-            target_pose->roll(), target_pose->pitch(), target_pose->yaw()));
+  for (const auto *target_pose_fbs : *map.target_poses()) {
+    const TargetMapper::TargetPose target_pose =
+        PoseUtils::TargetPoseFromFbs(*target_pose_fbs);
 
-    Eigen::Affine3d H_camcv_target = T_camera_target * R_camera_target;
+    Eigen::Affine3d H_camcv_target =
+        Eigen::Translation3d(target_pose.pose.p) * target_pose.pose.q;
     // With X, Y, Z being robot axes and x, y, z being camera axes,
     // x = -Y, y = -Z, z = X
     static const Eigen::Affine3d H_camcv_camrob =
@@ -74,7 +72,7 @@ void HandleAprilTag(const TargetMap &map,
             .time = pi_distributed_time,
             .H_robot_target = H_robot_target,
             .distance_from_camera = distance_from_camera,
-            .id = static_cast<TargetMapper::TargetId>(target_pose->id())});
+            .id = static_cast<TargetMapper::TargetId>(target_pose.id)});
   }
 }
 

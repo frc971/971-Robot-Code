@@ -1,5 +1,18 @@
 namespace frc971.vision;
 
+table Position {
+  x:double (id: 0);
+  y:double (id: 1);
+  z:double (id: 2);
+}
+
+table Quaternion {
+  w:double (id: 0);
+  x:double (id: 1);
+  y:double (id: 2);
+  z:double (id: 3);
+}
+
 // Represents 3d pose of an april tag on the field.
 table TargetPoseFbs {
   // AprilTag ID of this target
@@ -7,16 +20,10 @@ table TargetPoseFbs {
 
   // Pose of target relative to either the field origin or robot.
   // To get the pose of the target, do:
-  // Translation3d(x, y, z) *
-  // (AngleAxisd(yaw) * AngleAxisd(pitch) * AngleAxisd(roll))
-  x:double (id: 1);
-  y:double (id: 2);
-  z:double (id: 3);
-
-  // Orientation of the target.
-  roll:double (id: 4);
-  pitch:double (id: 5);
-  yaw:double (id: 6);
+  // Translation3d(position.x(), position.y(), position.z()) *
+  // Quaterniond(orientation.w(), orientation.x(), orientation.y(), orientation.z())
+  position:Position (id: 1);
+  orientation:Quaternion (id: 2);
 }
 
 // Map of all target poses on a field.
