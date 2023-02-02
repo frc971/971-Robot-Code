@@ -66,6 +66,7 @@ cc_library(
     srcs = ["vision_util.cc"],
     hdrs = ["vision_util.h"],
     deps = [
+        "//third_party:opencv",
         "//y2023/constants:constants_fbs",
         "@com_github_google_glog//:glog",
     ],
