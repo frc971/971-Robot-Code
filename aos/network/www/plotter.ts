@@ -342,8 +342,11 @@ export class Legend {
         // Make sure both have text in the right spot.  Don't be too picky since
         // nothing should really be changing here, and it's handy to let the
         // user edit the HTML for testing.
-        if (this.legend.children[child].lastChild.textContent.length == 0 &&
-            line.label().length != 0) {
+        let textdiv = this.legend.children[child].lastChild;
+        let canvas = this.legend.children[child].firstChild;
+        if ((textdiv.textContent.length == 0 && line.label().length != 0) ||
+            (textdiv as HTMLDivElement).offsetHeight !=
+                (canvas as HTMLCanvasElement).height) {
           needsUpdate = true;
           break;
         }
