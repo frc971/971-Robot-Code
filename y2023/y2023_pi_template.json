@@ -164,7 +164,7 @@
       "type": "frc971.vision.CameraImage",
       "source_node": "pi{{ NUM }}",
       "frequency": 40,
-      "max_size": 4200000,
+      "max_size": 1843456,
       "num_readers": 4,
       "read_method": "PIN",
       "num_senders": 18
