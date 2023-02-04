@@ -31,6 +31,24 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "graph_edit",
+    srcs = [
+        "graph_edit.py",
+        "graph_generate.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":python_init",
+        "//frc971/control_loops/python:basic_window",
+        "//frc971/control_loops/python:color",
+        "@pip//numpy",
+        "@pip//pygobject",
+        "@pip//shapely",
+    ],
+)
+
 py_library(
     name = "polydrivetrain_lib",
     srcs = [
