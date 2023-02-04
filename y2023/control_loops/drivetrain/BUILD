@@ -1,4 +1,5 @@
 load("//aos:config.bzl", "aos_config")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 genrule(
     name = "genrule_drivetrain",
@@ -110,4 +111,13 @@ cc_binary(
         "//aos/events:shm_event_loop",
         "//frc971/control_loops/drivetrain:trajectory_generator",
     ],
+)
+
+flatbuffer_cc_library(
+    name = "drivetrain_can_position_fbs",
+    srcs = [
+        "drivetrain_can_position.fbs",
+    ],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
 )

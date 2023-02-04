@@ -23,6 +23,7 @@
 #undef ERROR
 
 #include "aos/commonmath.h"
+#include "aos/containers/sized_array.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
@@ -32,8 +33,10 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
+#include "ctre/phoenix/cci/Diagnostics_CCI.h"
 #include "ctre/phoenix/motorcontrol/can/TalonFX.h"
 #include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
+#include "ctre/phoenixpro/TalonFX.hpp"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
@@ -51,12 +54,18 @@
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2023/constants.h"
+#include "y2023/control_loops/drivetrain/drivetrain_can_position_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_position_generated.h"
+
+DEFINE_bool(ctre_diag_server, false,
+            "If true, enable the diagnostics server for interacting with "
+            "devices on the CAN bus using Phoenix Tuner");
 
 using ::aos::monotonic_clock;
 using ::y2023::constants::Values;
 namespace superstructure = ::y2023::control_loops::superstructure;
+namespace drivetrain = ::y2023::control_loops::drivetrain;
 namespace chrono = ::std::chrono;
 using std::make_unique;
 
@@ -120,6 +129,16 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   // Auto mode switches.
   void set_autonomous_mode(int i, ::std::unique_ptr<frc::DigitalInput> sensor) {
     autonomous_modes_.at(i) = ::std::move(sensor);
+  }
+
+  void set_heading_input(::std::unique_ptr<frc::DigitalInput> sensor) {
+    imu_heading_input_ = ::std::move(sensor);
+    imu_heading_reader_.set_input(imu_heading_input_.get());
+  }
+
+  void set_yaw_rate_input(::std::unique_ptr<frc::DigitalInput> sensor) {
+    imu_yaw_rate_input_ = ::std::move(sensor);
+    imu_yaw_rate_reader_.set_input(imu_yaw_rate_input_.get());
   }
 
   void RunIteration() override {
@@ -220,6 +239,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
+  std::unique_ptr<frc::DigitalInput> imu_heading_input_, imu_yaw_rate_input_;
+
   frc971::wpilib::DMAPulseWidthReader imu_heading_reader_, imu_yaw_rate_reader_;
 };
 
@@ -256,6 +277,326 @@ class SuperstructureWriter
   }
 };
 
+static constexpr int kCANFalconCount = 6;
+static constexpr int kCANSignalsCount = 3;
+static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
+
+class Falcon {
+ public:
+  Falcon(int device_id, std::string canbus,
+         aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
+                         kCANFalconCount * kCANSignalsCount> *signals)
+      : talon_(device_id, canbus),
+        device_id_(device_id),
+        device_temp_(talon_.GetDeviceTemp()),
+        supply_voltage_(talon_.GetSupplyVoltage()),
+        supply_current_(talon_.GetSupplyCurrent()),
+        torque_current_(talon_.GetTorqueCurrent()),
+        position_(talon_.GetPosition()) {
+    // device temp is not timesynced so don't add it to the list of signals
+    device_temp_.SetUpdateFrequency(kCANUpdateFreqHz);
+
+    CHECK_EQ(kCANSignalsCount, 3);
+    CHECK_NOTNULL(signals);
+    CHECK_LE(signals->size() + 3u, signals->capacity());
+
+    supply_voltage_.SetUpdateFrequency(kCANUpdateFreqHz);
+    signals->push_back(&supply_voltage_);
+
+    supply_current_.SetUpdateFrequency(kCANUpdateFreqHz);
+    signals->push_back(&supply_current_);
+
+    torque_current_.SetUpdateFrequency(kCANUpdateFreqHz);
+    signals->push_back(&torque_current_);
+
+    position_.SetUpdateFrequency(kCANUpdateFreqHz);
+    signals->push_back(&position_);
+  }
+
+  void WriteConfigs(ctre::phoenixpro::signals::InvertedValue invert) {
+    inverted_ = invert;
+
+    ctre::phoenixpro::configs::CurrentLimitsConfigs current_limits;
+    current_limits.StatorCurrentLimit =
+        constants::Values::kDrivetrainStatorCurrentLimit();
+    current_limits.StatorCurrentLimitEnable = true;
+    current_limits.SupplyCurrentLimit =
+        constants::Values::kDrivetrainSupplyCurrentLimit();
+    current_limits.SupplyCurrentLimitEnable = true;
+
+    ctre::phoenixpro::configs::MotorOutputConfigs output_configs;
+    output_configs.NeutralMode =
+        ctre::phoenixpro::signals::NeutralModeValue::Brake;
+    output_configs.DutyCycleNeutralDeadband = 0;
+
+    output_configs.Inverted = inverted_;
+
+    ctre::phoenixpro::configs::TalonFXConfiguration configuration;
+    configuration.CurrentLimits = current_limits;
+    configuration.MotorOutput = output_configs;
+
+    ctre::phoenix::StatusCode status =
+        talon_.GetConfigurator().Apply(configuration);
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
+  }
+
+  ctre::phoenixpro::hardware::TalonFX *talon() { return &talon_; }
+
+  flatbuffers::Offset<drivetrain::CANFalcon> WritePosition(
+      flatbuffers::FlatBufferBuilder *fbb) {
+    drivetrain::CANFalcon::Builder builder(*fbb);
+    builder.add_id(device_id_);
+    builder.add_device_temp(device_temp_.GetValue().value());
+    builder.add_supply_voltage(supply_voltage_.GetValue().value());
+    builder.add_supply_current(supply_current_.GetValue().value());
+    builder.add_torque_current(torque_current_.GetValue().value());
+
+    double invert =
+        (inverted_ ==
+                 ctre::phoenixpro::signals::InvertedValue::Clockwise_Positive
+             ? 1
+             : -1);
+
+    builder.add_position(constants::Values::DrivetrainCANEncoderToMeters(
+                             position_.GetValue().value()) *
+                         invert);
+
+    return builder.Finish();
+  }
+
+  // returns the monotonic timestamp of the latest timesynced reading in the
+  // timebase of the the syncronized CAN bus clock.
+  int64_t GetTimestamp() {
+    std::chrono::nanoseconds latest_timestamp =
+        torque_current_.GetTimestamp().GetTime();
+
+    return latest_timestamp.count();
+  }
+
+  void RefreshNontimesyncedSignals() { device_temp_.Refresh(); };
+
+ private:
+  ctre::phoenixpro::hardware::TalonFX talon_;
+  int device_id_;
+
+  ctre::phoenixpro::signals::InvertedValue inverted_;
+
+  ctre::phoenixpro::StatusSignalValue<units::temperature::celsius_t>
+      device_temp_;
+  ctre::phoenixpro::StatusSignalValue<units::voltage::volt_t> supply_voltage_;
+  ctre::phoenixpro::StatusSignalValue<units::current::ampere_t> supply_current_,
+      torque_current_;
+  ctre::phoenixpro::StatusSignalValue<units::angle::turn_t> position_;
+};
+
+class CANSensorReader {
+ public:
+  CANSensorReader(aos::EventLoop *event_loop)
+      : event_loop_(event_loop),
+        can_position_sender_(
+            event_loop->MakeSender<drivetrain::CANPosition>("/drivetrain")) {
+    event_loop->SetRuntimeRealtimePriority(35);
+    timer_handler_ = event_loop->AddTimer([this]() { Loop(); });
+    timer_handler_->set_name("CANSensorReader Loop");
+
+    event_loop->OnRun([this]() {
+      timer_handler_->Setup(event_loop_->monotonic_now(), 1 / kCANUpdateFreqHz);
+    });
+  }
+
+  aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
+                  kCANFalconCount * kCANSignalsCount>
+      *get_signals_registry() {
+    return &signals_;
+  };
+
+  void set_falcons(std::shared_ptr<Falcon> right_front,
+                   std::shared_ptr<Falcon> right_back,
+                   std::shared_ptr<Falcon> right_under,
+                   std::shared_ptr<Falcon> left_front,
+                   std::shared_ptr<Falcon> left_back,
+                   std::shared_ptr<Falcon> left_under) {
+    right_front_ = std::move(right_front);
+    right_back_ = std::move(right_back);
+    right_under_ = std::move(right_under);
+    left_front_ = std::move(left_front);
+    left_back_ = std::move(left_back);
+    left_under_ = std::move(left_under);
+  }
+
+ private:
+  void Loop() {
+    CHECK_EQ(signals_.size(), 18u);
+    ctre::phoenix::StatusCode status =
+        ctre::phoenixpro::BaseStatusSignalValue::WaitForAll(
+            2000_ms,
+            {signals_[0], signals_[1], signals_[2], signals_[3], signals_[4],
+             signals_[5], signals_[6], signals_[7], signals_[8], signals_[9],
+             signals_[10], signals_[11], signals_[12], signals_[13],
+             signals_[14], signals_[15], signals_[16], signals_[17]});
+
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to read signals from falcons: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
+
+    auto builder = can_position_sender_.MakeBuilder();
+
+    for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
+                        left_back_, left_under_}) {
+      falcon->RefreshNontimesyncedSignals();
+    }
+
+    aos::SizedArray<flatbuffers::Offset<drivetrain::CANFalcon>, kCANFalconCount>
+        falcons;
+
+    for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
+                        left_back_, left_under_}) {
+      falcons.push_back(falcon->WritePosition(builder.fbb()));
+    }
+
+    auto falcons_list =
+        builder.fbb()->CreateVector<flatbuffers::Offset<drivetrain::CANFalcon>>(
+            falcons);
+
+    drivetrain::CANPosition::Builder can_position_builder =
+        builder.MakeBuilder<drivetrain::CANPosition>();
+
+    can_position_builder.add_falcons(falcons_list);
+    can_position_builder.add_timestamp(right_front_->GetTimestamp());
+    can_position_builder.add_status(static_cast<int>(status));
+
+    builder.CheckOk(builder.Send(can_position_builder.Finish()));
+  }
+
+  aos::EventLoop *event_loop_;
+
+  aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
+                  kCANFalconCount * kCANSignalsCount>
+      signals_;
+  aos::Sender<drivetrain::CANPosition> can_position_sender_;
+
+  std::shared_ptr<Falcon> right_front_, right_back_, right_under_, left_front_,
+      left_back_, left_under_;
+
+  // Pointer to the timer handler used to modify the wakeup.
+  ::aos::TimerHandler *timer_handler_;
+};
+
+class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
+                             ::frc971::control_loops::drivetrain::Output> {
+ public:
+  DrivetrainWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler<
+            ::frc971::control_loops::drivetrain::Output>(event_loop,
+                                                         "/drivetrain") {
+    event_loop->SetRuntimeRealtimePriority(
+        constants::Values::kDrivetrainWriterPriority);
+
+    if (!FLAGS_ctre_diag_server) {
+      c_Phoenix_Diagnostics_SetSecondsToStart(-1);
+      c_Phoenix_Diagnostics_Dispose();
+    }
+
+    ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
+        constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
+    ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
+        constants::Values::kDrivetrainTxPriority, true, "Drivetrain Bus");
+
+    event_loop->OnRun([this]() { WriteConfigs(); });
+  }
+
+  void set_falcons(std::shared_ptr<Falcon> right_front,
+                   std::shared_ptr<Falcon> right_back,
+                   std::shared_ptr<Falcon> right_under,
+                   std::shared_ptr<Falcon> left_front,
+                   std::shared_ptr<Falcon> left_back,
+                   std::shared_ptr<Falcon> left_under) {
+    right_front_ = std::move(right_front);
+    right_back_ = std::move(right_back);
+    right_under_ = std::move(right_under);
+    left_front_ = std::move(left_front);
+    left_back_ = std::move(left_back);
+    left_under_ = std::move(left_under);
+  }
+
+  void set_right_inverted(ctre::phoenixpro::signals::InvertedValue invert) {
+    right_inverted_ = invert;
+  }
+
+  void set_left_inverted(ctre::phoenixpro::signals::InvertedValue invert) {
+    left_inverted_ = invert;
+  }
+
+ private:
+  void WriteConfigs() {
+    for (auto falcon :
+         {right_front_.get(), right_back_.get(), right_under_.get()}) {
+      falcon->WriteConfigs(right_inverted_);
+    }
+
+    for (auto falcon :
+         {left_front_.get(), left_back_.get(), left_under_.get()}) {
+      falcon->WriteConfigs(left_inverted_);
+    }
+  }
+
+  void Write(
+      const ::frc971::control_loops::drivetrain::Output &output) override {
+    ctre::phoenixpro::controls::DutyCycleOut left_control(
+        SafeSpeed(output.left_voltage()));
+    left_control.UpdateFreqHz = 0_Hz;
+    left_control.EnableFOC = true;
+
+    ctre::phoenixpro::controls::DutyCycleOut right_control(
+        SafeSpeed(output.right_voltage()));
+    right_control.UpdateFreqHz = 0_Hz;
+    right_control.EnableFOC = true;
+
+    for (auto falcon :
+         {left_front_.get(), left_back_.get(), left_under_.get()}) {
+      ctre::phoenix::StatusCode status =
+          falcon->talon()->SetControl(left_control);
+
+      if (!status.IsOK()) {
+        AOS_LOG(ERROR, "Failed to write control to falcon: %s: %s",
+                status.GetName(), status.GetDescription());
+      }
+    }
+
+    for (auto falcon :
+         {right_front_.get(), right_back_.get(), right_under_.get()}) {
+      ctre::phoenix::StatusCode status =
+          falcon->talon()->SetControl(right_control);
+
+      if (!status.IsOK()) {
+        AOS_LOG(ERROR, "Failed to write control to falcon: %s: %s",
+                status.GetName(), status.GetDescription());
+      }
+    }
+  }
+
+  void Stop() override {
+    AOS_LOG(WARNING, "drivetrain output too old\n");
+    ctre::phoenixpro::controls::NeutralOut stop_command;
+    for (auto falcon :
+         {right_front_.get(), right_back_.get(), right_under_.get(),
+          left_front_.get(), left_back_.get(), left_under_.get()}) {
+      falcon->talon()->SetControl(stop_command);
+    }
+  }
+
+  double SafeSpeed(double voltage) {
+    return (::aos::Clip(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
+  }
+
+  ctre::phoenixpro::signals::InvertedValue left_inverted_, right_inverted_;
+  std::shared_ptr<Falcon> right_front_, right_back_, right_under_, left_front_,
+      left_back_, left_under_;
+};
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
  public:
@@ -272,6 +613,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         aos::configuration::ReadConfig("aos_config.json");
 
     // Thread 1.
+    ::aos::ShmEventLoop joystick_sender_event_loop(&config.message());
+    ::frc971::wpilib::JoystickSender joystick_sender(
+        &joystick_sender_event_loop);
+    AddLoop(&joystick_sender_event_loop);
+
     // Thread 2.
     ::aos::ShmEventLoop pdp_fetcher_event_loop(&config.message());
     ::frc971::wpilib::PDPFetcher pdp_fetcher(&pdp_fetcher_event_loop);
@@ -288,11 +634,43 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
     sensor_reader.set_superstructure_reading(superstructure_reading);
 
+    sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(9));
+    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(8));
+
     AddLoop(&sensor_reader_event_loop);
 
     // Thread 4.
+    ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
+    CANSensorReader can_sensor_reader(&can_sensor_reader_event_loop);
+
+    std::shared_ptr<Falcon> right_front = std::make_shared<Falcon>(
+        1, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> right_back = std::make_shared<Falcon>(
+        2, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> right_under = std::make_shared<Falcon>(
+        3, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> left_front = std::make_shared<Falcon>(
+        4, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> left_back = std::make_shared<Falcon>(
+        5, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> left_under = std::make_shared<Falcon>(
+        6, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+
+    can_sensor_reader.set_falcons(right_front, right_back, right_under,
+                                  left_front, left_back, left_under);
+
+    AddLoop(&can_sensor_reader_event_loop);
+
+    // Thread 5.
     ::aos::ShmEventLoop output_event_loop(&config.message());
-    ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
+    DrivetrainWriter drivetrain_writer(&output_event_loop);
+
+    drivetrain_writer.set_falcons(right_front, right_back, right_under,
+                                  left_front, left_back, left_under);
+    drivetrain_writer.set_right_inverted(
+        ctre::phoenixpro::signals::InvertedValue::Clockwise_Positive);
+    drivetrain_writer.set_left_inverted(
+        ctre::phoenixpro::signals::InvertedValue::CounterClockwise_Positive);
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
 

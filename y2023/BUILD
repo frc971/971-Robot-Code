@@ -3,6 +3,36 @@ load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:template.bzl", "jinja2_template")
 
 robot_downloader(
+    binaries = [
+        "//aos/network:web_proxy_main",
+        "//aos/events/logging:log_cat",
+    ],
+    data = [
+        ":aos_config",
+        ":message_bridge_client.sh",
+        "@ctre_phoenix_api_cpp_athena//:shared_libraries",
+        "@ctre_phoenix_cci_athena//:shared_libraries",
+        "@ctre_phoenixpro_api_cpp_athena//:shared_libraries",
+        "@ctre_phoenixpro_tools_athena//:shared_libraries",
+    ],
+    dirs = [
+        "//y2023/www:www_files",
+    ],
+    start_binaries = [
+        "//aos/events/logging:logger_main",
+        "//aos/network:web_proxy_main",
+        ":joystick_reader",
+        ":wpilib_interface",
+        "//aos/network:message_bridge_client",
+        "//aos/network:message_bridge_server",
+        "//y2023/control_loops/drivetrain:drivetrain",
+        "//y2023/control_loops/drivetrain:trajectory_generator",
+        "//y2023/control_loops/superstructure:superstructure",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+robot_downloader(
     name = "pi_download",
     binaries = [
         "//y2020/vision:calibration",
@@ -146,6 +176,7 @@ aos_config(
         "//aos/network:timestamp_fbs",
         "//y2019/control_loops/drivetrain:target_selector_fbs",
         "//y2023/control_loops/superstructure:superstructure_goal_fbs",
+        "//y2023/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//y2023/control_loops/superstructure:superstructure_output_fbs",
         "//y2023/control_loops/superstructure:superstructure_position_fbs",
         "//y2023/control_loops/superstructure:superstructure_status_fbs",
@@ -202,6 +233,7 @@ cc_binary(
         ":constants",
         "//aos:init",
         "//aos:math",
+        "//aos/containers:sized_array",
         "//aos/events:shm_event_loop",
         "//aos/logging",
         "//aos/stl_mutex",
@@ -228,7 +260,9 @@ cc_binary(
         "//frc971/wpilib:wpilib_interface",
         "//frc971/wpilib:wpilib_robot_base",
         "//third_party:phoenix",
+        "//third_party:phoenixpro",
         "//third_party:wpilib",
+        "//y2023/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//y2023/control_loops/superstructure:superstructure_output_fbs",
         "//y2023/control_loops/superstructure:superstructure_position_fbs",
     ],
