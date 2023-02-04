@@ -85,18 +85,23 @@ void V4L2ReaderBase::StreamOn() {
 
   for (size_t i = 0; i < buffers_.size(); ++i) {
     buffers_[i].sender = event_loop_->MakeSender<CameraImage>("/camera");
-    EnqueueBuffer(i);
+    MarkBufferToBeEnqueued(i);
   }
   int type = multiplanar() ? V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE
                            : V4L2_BUF_TYPE_VIDEO_CAPTURE;
   PCHECK(Ioctl(VIDIOC_STREAMON, &type) == 0);
 }
 
+void V4L2ReaderBase::MarkBufferToBeEnqueued(int buffer_index) {
+  ReinitializeBuffer(buffer_index);
+  EnqueueBuffer(buffer_index);
+}
+
 void V4L2ReaderBase::MaybeEnqueue() {
   // First, enqueue any old buffer we already have. This is the one which
   // may have been sent.
   if (saved_buffer_) {
-    EnqueueBuffer(saved_buffer_.index);
+    MarkBufferToBeEnqueued(saved_buffer_.index);
     saved_buffer_.Clear();
   }
   ftrace_.FormatMessage("Enqueued previous buffer %d", saved_buffer_.index);
@@ -114,7 +119,7 @@ bool V4L2ReaderBase::ReadLatestImage() {
       // going.
       if (previous_buffer) {
         ftrace_.FormatMessage("Previous %d", previous_buffer.index);
-        EnqueueBuffer(previous_buffer.index);
+        MarkBufferToBeEnqueued(previous_buffer.index);
       }
       continue;
     }
@@ -133,7 +138,12 @@ bool V4L2ReaderBase::ReadLatestImage() {
   }
 }
 
-void V4L2ReaderBase::SendLatestImage() { buffers_[saved_buffer_.index].Send(); }
+void V4L2ReaderBase::SendLatestImage() {
+  buffers_[saved_buffer_.index].Send();
+
+  MarkBufferToBeEnqueued(saved_buffer_.index);
+  saved_buffer_.Clear();
+}
 
 void V4L2ReaderBase::SetExposure(size_t duration) {
   v4l2_control manual_control;
@@ -236,7 +246,8 @@ void V4L2ReaderBase::EnqueueBuffer(int buffer_number) {
 
   CHECK_GE(buffer_number, 0);
   CHECK_LT(buffer_number, static_cast<int>(buffers_.size()));
-  buffers_[buffer_number].InitializeMessage(ImageSize());
+  CHECK(buffers_[buffer_number].data_pointer != nullptr);
+
   struct v4l2_buffer buffer;
   struct v4l2_plane planes[1];
   memset(&buffer, 0, sizeof(buffer));
@@ -315,15 +326,20 @@ RockchipV4L2Reader::RockchipV4L2Reader(aos::EventLoop *event_loop,
                                        const std::string &image_sensor_subdev)
     : V4L2ReaderBase(event_loop, device_name),
       epoll_(epoll),
-      image_sensor_fd_(open(image_sensor_subdev.c_str(), O_RDWR | O_NONBLOCK)) {
+      image_sensor_fd_(open(image_sensor_subdev.c_str(), O_RDWR | O_NONBLOCK)),
+      buffer_requeuer_([this](int buffer) { EnqueueBuffer(buffer); }, 20) {
   PCHECK(image_sensor_fd_.get() != -1)
       << " Failed to open device " << device_name;
-
   StreamOn();
   epoll_->OnReadable(fd().get(), [this]() { OnImageReady(); });
 }
 
 RockchipV4L2Reader::~RockchipV4L2Reader() { epoll_->DeleteFd(fd().get()); }
+
+void RockchipV4L2Reader::MarkBufferToBeEnqueued(int buffer) {
+  ReinitializeBuffer(buffer);
+  buffer_requeuer_.Push(buffer);
+}
 
 void RockchipV4L2Reader::OnImageReady() {
   if (!ReadLatestImage()) {
