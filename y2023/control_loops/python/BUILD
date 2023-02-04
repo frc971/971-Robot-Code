@@ -35,7 +35,8 @@ py_binary(
     name = "graph_edit",
     srcs = [
         "graph_edit.py",
-        "graph_generate.py",
+        "graph_paths.py",
+        "graph_tools.py",
     ],
     legacy_create_init = False,
     target_compatible_with = ["@platforms//cpu:x86_64"],

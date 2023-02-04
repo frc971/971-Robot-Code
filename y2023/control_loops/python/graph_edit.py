@@ -11,19 +11,15 @@ import numpy
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gtk
 import cairo
-import graph_generate
-from graph_generate import XYSegment, AngleSegment, to_theta, to_xy, alpha_blend
-from graph_generate import back_to_xy_loop, subdivide_theta, to_theta_loop
-from graph_generate import l1, l2, joint_center
+from graph_tools import XYSegment, AngleSegment, to_theta, to_xy, alpha_blend, draw_lines
+from graph_tools import back_to_xy_loop, subdivide_theta, to_theta_loop, px
+from graph_tools import l1, l2, joint_center
+from graph_paths import segments
 
-from frc971.control_loops.python.basic_window import OverrideMatrix, identity, quit_main_loop, set_color
+from frc971.control_loops.python.basic_window import quit_main_loop, set_color
 
 import shapely
 from shapely.geometry import Polygon
-
-
-def px(cr):
-    return OverrideMatrix(cr, identity)
 
 
 def draw_px_cross(cr, length_px):
@@ -79,15 +75,6 @@ t2_min = -7.0 / 4.0 * numpy.pi
 
 t1_max = get_angle((-32.525 + 4.0) * 0.0254)
 t2_max = numpy.pi * 3.0 / 4.0
-
-
-# Draw lines to cr + stroke.
-def draw_lines(cr, lines):
-    cr.move_to(lines[0][0], lines[0][1])
-    for pt in lines[1:]:
-        cr.line_to(pt[0], pt[1])
-    with px(cr):
-        cr.stroke()
 
 
 # Rotate a rasterized loop such that it aligns to when the parameters loop
@@ -491,5 +478,5 @@ class Silly(basic_window.BaseWindow):
 
 
 silly = Silly()
-silly.segments = graph_generate.segments
+silly.segments = segments
 basic_window.RunApp()
