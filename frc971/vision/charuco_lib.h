@@ -13,6 +13,7 @@
 #include "aos/network/message_bridge_server_generated.h"
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
+#include "external/com_github_foxglove_schemas/ImageAnnotations_generated.h"
 
 DECLARE_bool(visualize);
 
@@ -177,6 +178,13 @@ class CharucoExtractor {
       std::vector<Eigen::Vector3d>)>
       handle_charuco_;
 };
+
+// Puts the provided charuco corners into a foxglove ImageAnnotation type for
+// visualization purposes.
+flatbuffers::Offset<foxglove::ImageAnnotations> BuildAnnotations(
+    const aos::monotonic_clock::time_point monotonic_now,
+    const std::vector<std::vector<cv::Point2f>> &corners,
+    flatbuffers::FlatBufferBuilder *fbb);
 
 }  // namespace vision
 }  // namespace frc971
