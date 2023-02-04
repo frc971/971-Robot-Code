@@ -27,7 +27,6 @@ DEFINE_uint32(
     "The mininum number of aruco targets in charuco board required to match.");
 DEFINE_bool(visualize, false, "Whether to visualize the resulting data.");
 
-DEFINE_uint32(age, 100, "Age to start dropping frames at.");
 DEFINE_uint32(disable_delay, 100, "Time after an issue to disable tracing at.");
 
 DECLARE_bool(enable_ftrace);
@@ -94,8 +93,8 @@ const sift::CameraCalibration *CameraCalibration::FindCameraCalibration(
 
 ImageCallback::ImageCallback(
     aos::EventLoop *event_loop, std::string_view channel,
-    std::function<void(cv::Mat, monotonic_clock::time_point)> &&handle_image_fn)
-
+    std::function<void(cv::Mat, monotonic_clock::time_point)> &&handle_image_fn,
+    monotonic_clock::duration max_age)
     : event_loop_(event_loop),
       server_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
@@ -106,7 +105,8 @@ ImageCallback::ImageCallback(
               ->source_node()
               ->string_view())),
       handle_image_(std::move(handle_image_fn)),
-      timer_fn_(event_loop->AddTimer([this]() { DisableTracing(); })) {
+      timer_fn_(event_loop->AddTimer([this]() { DisableTracing(); })),
+      max_age_(max_age) {
   event_loop_->MakeWatcher(channel, [this](const CameraImage &image) {
     const monotonic_clock::time_point eof_source_node =
         monotonic_clock::time_point(
@@ -145,7 +145,7 @@ ImageCallback::ImageCallback(
     const monotonic_clock::duration age = event_loop_->monotonic_now() - eof;
     const double age_double =
         std::chrono::duration_cast<std::chrono::duration<double>>(age).count();
-    if (age > std::chrono::milliseconds(FLAGS_age)) {
+    if (age > max_age_) {
       if (FLAGS_enable_ftrace) {
         ftrace_.FormatMessage("Too late receiving image, age: %f\n",
                               age_double);

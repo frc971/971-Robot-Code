@@ -53,7 +53,8 @@ class Calibration {
             [this](cv::Mat rgb_image,
                    const aos::monotonic_clock::time_point eof) {
               charuco_extractor_.HandleImage(rgb_image, eof);
-            }) {
+            },
+            std::chrono::milliseconds(5)) {
     CHECK(pi_number_) << ": Invalid pi number " << pi
                       << ", failed to parse pi number";
     std::regex re{"^[0-9][0-9]-[0-9][0-9]"};

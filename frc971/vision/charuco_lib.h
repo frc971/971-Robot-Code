@@ -54,9 +54,13 @@ class ImageCallback {
     BGR = 1,
     GRAYSCALE = 2,
   };
-  ImageCallback(aos::EventLoop *event_loop, std::string_view channel,
-                std::function<void(cv::Mat, aos::monotonic_clock::time_point)>
-                    &&handle_image_fn);
+
+  // `max_age` is the age to start dropping frames at
+  ImageCallback(
+      aos::EventLoop *event_loop, std::string_view channel,
+      std::function<void(cv::Mat, aos::monotonic_clock::time_point)>
+          &&handle_image_fn,
+      aos::monotonic_clock::duration max_age = std::chrono::milliseconds(100));
 
   void set_format(Format format) { format_ = format; }
 
@@ -74,6 +78,8 @@ class ImageCallback {
   aos::Ftrace ftrace_;
 
   Format format_ = Format::BGR;
+
+  aos::monotonic_clock::duration max_age_;
 };
 
 // Types of targets that a CharucoExtractor can detect in images
