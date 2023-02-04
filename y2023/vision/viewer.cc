@@ -14,6 +14,8 @@ DEFINE_string(channel, "/camera", "Channel name for the image.");
 DEFINE_string(capture, "",
               "If set, capture a single image and save it to this filename.");
 
+DEFINE_int32(rate, 100, "Time in milliseconds to wait between images");
+
 namespace frc971 {
 namespace vision {
 namespace {
@@ -78,7 +80,7 @@ void ViewerMain() {
           event_loop.Exit();
         };
       },
-      ::std::chrono::milliseconds(100));
+      ::std::chrono::milliseconds(FLAGS_rate));
 
   event_loop.Run();
 
