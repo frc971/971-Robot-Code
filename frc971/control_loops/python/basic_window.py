@@ -7,7 +7,7 @@ from gi.repository import GLib
 from gi.repository import Gdk
 from gi.repository import GdkX11
 import cairo
-from constants import *
+from frc971.control_loops.python.constants import *
 
 identity = cairo.Matrix()
 
