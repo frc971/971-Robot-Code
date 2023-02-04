@@ -112,7 +112,21 @@ class DummyEncoder final : public DataEncoder {
  private:
   size_t total_bytes_ = 0;
 
-  ResizeableBuffer input_buffer_;
+  // A class which uses aligned_alloc to allocate sector aligned blocks of
+  // memory.
+  class AlignedReallocator {
+   public:
+    static void *Realloc(void *old, size_t old_size, size_t new_capacity) {
+      void *new_memory = std::aligned_alloc(512, new_capacity);
+      if (old) {
+        memcpy(new_memory, old, old_size);
+        free(old);
+      }
+      return new_memory;
+    }
+  };
+
+  AllocatorResizeableBuffer<AlignedReallocator> input_buffer_;
   std::vector<absl::Span<const uint8_t>> return_queue_;
 };
 
