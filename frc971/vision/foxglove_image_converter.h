@@ -1,8 +1,9 @@
 #ifndef FRC971_VISION_FOXGLOVE_IMAGE_CONVERTER_H_
 #define FRC971_VISION_FOXGLOVE_IMAGE_CONVERTER_H_
-#include "external/com_github_foxglove_schemas/CompressedImage_generated.h"
-#include "frc971/vision/vision_generated.h"
 #include "aos/events/event_loop.h"
+#include "external/com_github_foxglove_schemas/CompressedImage_generated.h"
+#include "frc971/vision/charuco_lib.h"
+#include "frc971/vision/vision_generated.h"
 
 namespace frc971::vision {
 // Empirically, from 2022 logs:
@@ -12,9 +13,11 @@ namespace frc971::vision {
 // conversion with a user-script in Foxglove Studio.
 enum class ImageCompression { kJpeg, kPng };
 
+std::string_view ExtensionForCompression(ImageCompression compression);
+
 flatbuffers::Offset<foxglove::CompressedImage> CompressImage(
-    const CameraImage *raw_image, flatbuffers::FlatBufferBuilder *fbb,
-    ImageCompression compression);
+    const cv::Mat image, const aos::monotonic_clock::time_point eof,
+    flatbuffers::FlatBufferBuilder *fbb, ImageCompression compression);
 
 // This class provides a simple converter that will take an AOS CameraImage
 // channel and output
@@ -30,6 +33,7 @@ class FoxgloveImageConverter {
 
  private:
   aos::EventLoop *event_loop_;
+  ImageCallback image_callback_;
   aos::Sender<foxglove::CompressedImage> sender_;
 };
 }  // namespace frc971::vision

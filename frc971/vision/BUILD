@@ -1,4 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
+load("//aos:config.bzl", "aos_config")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 flatbuffer_cc_library(
@@ -263,9 +264,42 @@ cc_library(
     hdrs = ["foxglove_image_converter.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":charuco_lib",
         ":vision_fbs",
         "//aos/events:event_loop",
         "//third_party:opencv",
         "@com_github_foxglove_schemas//:schemas",
+    ],
+)
+
+aos_config(
+    name = "converter_config",
+    testonly = True,
+    src = "converter_test_config.json",
+    flatbuffers = [
+        "//frc971/vision:vision_fbs",
+        "//aos/events:event_loop_fbs",
+        "//aos/logging:log_message_fbs",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
+        "@com_github_foxglove_schemas//:schemas",
+    ],
+)
+
+cc_test(
+    name = "foxglove_image_converter_test",
+    srcs = ["foxglove_image_converter_test.cc"],
+    data = [
+        ":converter_config",
+        "@april_tag_test_image",
+    ],
+    deps = [
+        ":foxglove_image_converter",
+        "//aos:configuration",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//aos/testing:tmpdir",
     ],
 )
