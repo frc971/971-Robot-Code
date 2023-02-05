@@ -9,15 +9,19 @@ DEFINE_int32(team_number, 971,
 namespace y2023 {
 namespace vision {
 
+namespace chrono = std::chrono;
+
 AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
                                              std::string_view channel_name)
     : calibration_data_(CalibrationData()),
       ftrace_(),
-      image_callback_(event_loop, channel_name,
-                      [&](cv::Mat image_color_mat,
-                          const aos::monotonic_clock::time_point eof) {
-                        HandleImage(image_color_mat, eof);
-                      }),
+      image_callback_(
+          event_loop, channel_name,
+          [&](cv::Mat image_color_mat,
+              const aos::monotonic_clock::time_point eof) {
+            HandleImage(image_color_mat, eof);
+          },
+          chrono::milliseconds(5)),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")) {
   tag_family_ = tag16h5_create();
@@ -151,8 +155,8 @@ AprilRoboticsDetector::DetectTags(cv::Mat image) {
           aos::monotonic_clock::now();
 
       VLOG(1) << "Took "
-              << std::chrono::duration<double>(after_pose_estimation -
-                                               before_pose_estimation)
+              << chrono::duration<double>(after_pose_estimation -
+                                          before_pose_estimation)
                      .count()
               << " seconds for pose estimation";
     }
@@ -164,8 +168,7 @@ AprilRoboticsDetector::DetectTags(cv::Mat image) {
 
   timeprofile_display(tag_detector_->tp);
 
-  VLOG(1) << "Took "
-          << std::chrono::duration<double>(end_time - start_time).count()
+  VLOG(1) << "Took " << chrono::duration<double>(end_time - start_time).count()
           << " seconds to detect overall";
 
   return results;
