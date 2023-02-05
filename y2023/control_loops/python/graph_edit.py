@@ -14,7 +14,7 @@ import cairo
 from graph_tools import XYSegment, AngleSegment, to_theta, to_xy, alpha_blend, draw_lines
 from graph_tools import back_to_xy_loop, subdivide_theta, to_theta_loop, px
 from graph_tools import l1, l2, joint_center
-from graph_paths import segments
+import graph_paths
 
 from frc971.control_loops.python.basic_window import quit_main_loop, set_color
 
@@ -206,9 +206,6 @@ class Silly(basic_window.BaseWindow):
         event.x = o_x
         event.y = o_y
 
-    def do_button_press(self, event):
-        pass
-
     def _do_configure(self, event):
         self.window_shape = (event.width, event.height)
 
@@ -257,7 +254,32 @@ class Silly(basic_window.BaseWindow):
                      self.extents_y_max - self.extents_y_min)
         cr.fill()
 
-        if not self.theta_version:
+        if self.theta_version:
+            # Draw a filled white rectangle.
+            set_color(cr, palette["WHITE"])
+            cr.rectangle(-numpy.pi, -numpy.pi, numpy.pi * 2.0, numpy.pi * 2.0)
+            cr.fill()
+
+            set_color(cr, palette["BLUE"])
+            for i in range(-6, 6):
+                cr.move_to(-40, -40 + i * numpy.pi)
+                cr.line_to(40, 40 + i * numpy.pi)
+            with px(cr):
+                cr.stroke()
+
+            set_color(cr, Color(0.5, 0.5, 1.0))
+            draw_lines(cr, lines_theta)
+
+            set_color(cr, Color(0.0, 1.0, 0.2))
+            cr.move_to(self.last_pos[0], self.last_pos[1])
+            draw_px_cross(cr, 5)
+
+            c_pt, dist = closest_segment(lines_theta, self.last_pos)
+            print("dist:", dist, c_pt, self.last_pos)
+            set_color(cr, palette["CYAN"])
+            cr.move_to(c_pt[0], c_pt[1])
+            draw_px_cross(cr, 5)
+        else:
             # Draw a filled white rectangle.
             set_color(cr, palette["WHITE"])
             cr.rectangle(-2.0, -2.0, 4.0, 4.0)
@@ -272,24 +294,7 @@ class Silly(basic_window.BaseWindow):
                    2.0 * numpy.pi)
             with px(cr):
                 cr.stroke()
-        else:
-            # Draw a filled white rectangle.
-            set_color(cr, palette["WHITE"])
-            cr.rectangle(-numpy.pi, -numpy.pi, numpy.pi * 2.0, numpy.pi * 2.0)
-            cr.fill()
 
-        if self.theta_version:
-            set_color(cr, palette["BLUE"])
-            for i in range(-6, 6):
-                cr.move_to(-40, -40 + i * numpy.pi)
-                cr.line_to(40, 40 + i * numpy.pi)
-            with px(cr):
-                cr.stroke()
-
-        if self.theta_version:
-            set_color(cr, Color(0.5, 0.5, 1.0))
-            draw_lines(cr, lines_theta)
-        else:
             set_color(cr, Color(0.5, 1.0, 1.0))
             draw_lines(cr, lines1)
             draw_lines(cr, lines2)
@@ -320,7 +325,6 @@ class Silly(basic_window.BaseWindow):
             with px(cr):
                 cr.stroke()
 
-        if not self.theta_version:
             theta1, theta2 = to_theta(self.last_pos,
                                       self.circular_index_select)
             x, y = joint_center[0], joint_center[1]
@@ -338,17 +342,6 @@ class Silly(basic_window.BaseWindow):
             cr.move_to(self.last_pos[0], self.last_pos[1])
             set_color(cr, Color(0.0, 1.0, 0.2))
             draw_px_cross(cr, 20)
-
-        if self.theta_version:
-            set_color(cr, Color(0.0, 1.0, 0.2))
-            cr.move_to(self.last_pos[0], self.last_pos[1])
-            draw_px_cross(cr, 5)
-
-            c_pt, dist = closest_segment(lines_theta, self.last_pos)
-            print("dist:", dist, c_pt, self.last_pos)
-            set_color(cr, palette["CYAN"])
-            cr.move_to(c_pt[0], c_pt[1])
-            draw_px_cross(cr, 5)
 
         set_color(cr, Color(0.0, 0.5, 1.0))
         for segment in self.segments:
@@ -478,5 +471,5 @@ class Silly(basic_window.BaseWindow):
 
 
 silly = Silly()
-silly.segments = segments
+silly.segments = graph_paths.segments
 basic_window.RunApp()
