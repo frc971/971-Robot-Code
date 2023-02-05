@@ -175,7 +175,7 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 40,
       "num_senders": 2,
-      "max_size": 40000,
+      "max_size": 1024,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
         "imu",

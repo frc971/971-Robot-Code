@@ -22,7 +22,9 @@ namespace vision {
 class V4L2ReaderBase {
  public:
   // device_name is the name of the device file (like "/dev/video0").
-  V4L2ReaderBase(aos::EventLoop *event_loop, const std::string &device_name);
+  // image_channel is the channel to send images on
+  V4L2ReaderBase(aos::EventLoop *event_loop, std::string_view device_name,
+                 std::string_view image_channel);
 
   V4L2ReaderBase(const V4L2ReaderBase &) = delete;
   V4L2ReaderBase &operator=(const V4L2ReaderBase &) = delete;
@@ -114,6 +116,8 @@ class V4L2ReaderBase {
     flatbuffers::Offset<CameraImage> message_offset;
 
     uint8_t *data_pointer = nullptr;
+
+    std::string_view image_channel_;
   };
 
   struct BufferInfo {
@@ -149,12 +153,15 @@ class V4L2ReaderBase {
 
   aos::EventLoop *event_loop_;
   aos::Ftrace ftrace_;
+
+  std::string_view image_channel_;
 };
 
 // Generic V4L2 reader for pi's and older.
 class V4L2Reader : public V4L2ReaderBase {
  public:
-  V4L2Reader(aos::EventLoop *event_loop, const std::string &device_name);
+  V4L2Reader(aos::EventLoop *event_loop, std::string_view device_name,
+             std::string_view image_channel = "/camera");
 };
 
 // Rockpi specific v4l2 reader.  This assumes that the media device has been
@@ -162,10 +169,11 @@ class V4L2Reader : public V4L2ReaderBase {
 class RockchipV4L2Reader : public V4L2ReaderBase {
  public:
   RockchipV4L2Reader(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
-                     const std::string &device_name,
-                     const std::string &image_sensor_subdev);
+                     std::string_view device_name,
+                     std::string_view image_sensor_subdev,
+                     std::string_view image_channel = "/camera");
 
-  ~RockchipV4L2Reader();
+  virtual ~RockchipV4L2Reader();
 
   void SetExposure(size_t duration) override;
 

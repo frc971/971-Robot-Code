@@ -13,9 +13,11 @@ namespace frc971 {
 namespace vision {
 
 V4L2ReaderBase::V4L2ReaderBase(aos::EventLoop *event_loop,
-                               const std::string &device_name)
-    : fd_(open(device_name.c_str(), O_RDWR | O_NONBLOCK)),
-      event_loop_(event_loop) {
+                               std::string_view device_name,
+                               std::string_view image_channel)
+    : fd_(open(device_name.data(), O_RDWR | O_NONBLOCK)),
+      event_loop_(event_loop),
+      image_channel_(image_channel) {
   PCHECK(fd_.get() != -1) << " Failed to open device " << device_name;
 
   // Figure out if we are multi-planar or not.
@@ -84,7 +86,7 @@ void V4L2ReaderBase::StreamOn() {
   }
 
   for (size_t i = 0; i < buffers_.size(); ++i) {
-    buffers_[i].sender = event_loop_->MakeSender<CameraImage>("/camera");
+    buffers_[i].sender = event_loop_->MakeSender<CameraImage>(image_channel_);
     MarkBufferToBeEnqueued(i);
   }
   int type = multiplanar() ? V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE
@@ -287,9 +289,9 @@ void V4L2ReaderBase::StreamOff() {
   PLOG(FATAL) << "VIDIOC_STREAMOFF failed";
 }
 
-V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
-                       const std::string &device_name)
-    : V4L2ReaderBase(event_loop, device_name) {
+V4L2Reader::V4L2Reader(aos::EventLoop *event_loop, std::string_view device_name,
+                       std::string_view image_channel)
+    : V4L2ReaderBase(event_loop, device_name, image_channel) {
   // Don't know why this magic call to SetExposure is required (before the
   // camera settings are configured) to make things work on boot of the pi, but
   // it seems to be-- without it, the image exposure is wrong (too dark). Note--
@@ -322,11 +324,12 @@ V4L2Reader::V4L2Reader(aos::EventLoop *event_loop,
 
 RockchipV4L2Reader::RockchipV4L2Reader(aos::EventLoop *event_loop,
                                        aos::internal::EPoll *epoll,
-                                       const std::string &device_name,
-                                       const std::string &image_sensor_subdev)
-    : V4L2ReaderBase(event_loop, device_name),
+                                       std::string_view device_name,
+                                       std::string_view image_sensor_subdev,
+                                       std::string_view image_channel)
+    : V4L2ReaderBase(event_loop, device_name, image_channel),
       epoll_(epoll),
-      image_sensor_fd_(open(image_sensor_subdev.c_str(), O_RDWR | O_NONBLOCK)),
+      image_sensor_fd_(open(image_sensor_subdev.data(), O_RDWR | O_NONBLOCK)),
       buffer_requeuer_([this](int buffer) { EnqueueBuffer(buffer); },
                        kEnqueueFifoPriority) {
   PCHECK(image_sensor_fd_.get() != -1)
