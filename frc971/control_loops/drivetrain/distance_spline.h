@@ -123,7 +123,7 @@ class FinishedDistanceSpline final : public DistanceSplineBase {
   // The spline we are converting to a distance.
   aos::SizedArray<Spline, kMaxSplines> splines_;
   // An interpolation table of distances evenly distributed in alpha.
-  const absl::Span<const float> distances_;
+  absl::Span<const float> distances_;
 };
 
 }  // namespace drivetrain

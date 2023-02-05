@@ -5,7 +5,6 @@
 #include <thread>
 
 #include "Eigen/Dense"
-
 #include "aos/condition.h"
 #include "aos/mutex/mutex.h"
 #include "frc971/control_loops/control_loops_generated.h"
@@ -23,6 +22,7 @@ namespace drivetrain {
 
 class SplineDrivetrain {
  public:
+  static constexpr size_t kMaxTrajectories = 5;
   SplineDrivetrain(const DrivetrainConfig<double> &dt_config);
 
   void SetGoal(const ::frc971::control_loops::drivetrain::Goal *goal);
@@ -49,15 +49,15 @@ class SplineDrivetrain {
   // Accessor for the current goal state, pretty much only present for debugging
   // purposes.
   ::Eigen::Matrix<double, 5, 1> CurrentGoalState() const {
-    return executing_spline_ ? current_trajectory().GoalState(current_xva_(0),
-                                                              current_xva_(1))
+    return executing_spline_ ? CHECK_NOTNULL(current_trajectory())
+                                   ->GoalState(current_xva_(0), current_xva_(1))
                              : ::Eigen::Matrix<double, 5, 1>::Zero();
   }
 
   bool IsAtEnd() const {
-    return executing_spline_
-               ? current_trajectory().is_at_end(current_xva_.block<2, 1>(0, 0))
-               : true;
+    return executing_spline_ ? CHECK_NOTNULL(current_trajectory())
+                                   ->is_at_end(current_xva_.block<2, 1>(0, 0))
+                             : true;
   }
 
   size_t trajectory_count() const { return trajectories_.size(); }
@@ -70,21 +70,20 @@ class SplineDrivetrain {
 
   // This is called to update the internal state for managing all the splines.
   // Calling it redundantly does not cause any issues. It checks the value of
-  // commanded_spline_ to determine whether we are being commanded to run a
+  // commanded_spline to determine whether we are being commanded to run a
   // spline, and if there is any trajectory in the list of trajectories matching
-  // the command, we begin/continue executing that spline. If commanded_spline_
+  // the command, we begin/continue executing that spline. If commanded_spline
   // is empty or has changed, we stop executing the previous trajectory and
   // remove it from trajectories_. Then, when the drivetrain code checks
   // HasTrajectory() for the old trajectory, it will return false and the
   // drivetrain can free up the fetcher to get the next trajectory.
-  void UpdateSplineHandles();
+  void UpdateSplineHandles(std::optional<int> commanded_spline);
 
   // Deletes the currently executing trajectory.
   void DeleteCurrentSpline();
 
-  const FinishedTrajectory &current_trajectory() const {
-    return *CHECK_NOTNULL(current_trajectory_);
-  }
+  FinishedTrajectory *current_trajectory();
+  const FinishedTrajectory *current_trajectory() const;
 
   const DrivetrainConfig<double> dt_config_;
 
@@ -97,8 +96,7 @@ class SplineDrivetrain {
 
   // TODO(james): Sort out construction to avoid so much dynamic memory
   // allocation...
-  std::vector<std::unique_ptr<FinishedTrajectory>> trajectories_;
-  const FinishedTrajectory *current_trajectory_ = nullptr;
+  aos::SizedArray<FinishedTrajectory, kMaxTrajectories> trajectories_;
 
   std::optional<int> commanded_spline_;
 

@@ -3,12 +3,12 @@
 
 #include <chrono>
 
-#include "aos/flatbuffers.h"
 #include "Eigen/Dense"
+#include "aos/flatbuffers.h"
 #include "frc971/control_loops/drivetrain/distance_spline.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
-#include "frc971/control_loops/drivetrain/trajectory_generated.h"
 #include "frc971/control_loops/drivetrain/spline_goal_generated.h"
+#include "frc971/control_loops/drivetrain/trajectory_generated.h"
 #include "frc971/control_loops/hybrid_state_feedback_loop.h"
 #include "frc971/control_loops/runge_kutta.h"
 #include "frc971/control_loops/state_feedback_loop.h"
@@ -193,11 +193,11 @@ class BaseTrajectory {
                         HybridKalman<2, 2, 2>>>
       velocity_drivetrain_;
 
-  const DrivetrainConfig<double> config_;
+  DrivetrainConfig<double> config_;
 
   // Robot radiuses.
-  const double robot_radius_l_;
-  const double robot_radius_r_;
+  double robot_radius_l_;
+  double robot_radius_r_;
   float lateral_acceleration_ = 3.0;
   float longitudinal_acceleration_ = 2.0;
   float voltage_limit_ = 12.0;
@@ -205,7 +205,7 @@ class BaseTrajectory {
 
 // A wrapper around the Trajectory flatbuffer to allow for controlling to a
 // spline using a pre-generated trajectory.
-class FinishedTrajectory  : public BaseTrajectory {
+class FinishedTrajectory : public BaseTrajectory {
  public:
   // Note: The lifetime of the supplied buffer is assumed to be greater than
   // that of this object.
@@ -224,6 +224,11 @@ class FinishedTrajectory  : public BaseTrajectory {
                 2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
                 HybridKalman<2, 2, 2>>>(
                 config.make_hybrid_drivetrain_velocity_loop())) {}
+
+  FinishedTrajectory(const FinishedTrajectory &) = delete;
+  FinishedTrajectory &operator=(const FinishedTrajectory &) = delete;
+  FinishedTrajectory(FinishedTrajectory &&) = default;
+  FinishedTrajectory &operator=(FinishedTrajectory &&) = default;
 
   virtual ~FinishedTrajectory() = default;
 
@@ -252,7 +257,7 @@ class FinishedTrajectory  : public BaseTrajectory {
  private:
   const DistanceSplineBase &spline() const override { return spline_; }
   const fb::Trajectory *buffer_;
-  const FinishedDistanceSpline spline_;
+  FinishedDistanceSpline spline_;
 };
 
 // Class to handle plannign a trajectory and producing a flatbuffer containing
@@ -268,8 +273,7 @@ class Trajectory : public BaseTrajectory {
 
   virtual ~Trajectory() = default;
 
-  std::vector<Eigen::Matrix<double, 3, 1>> PlanXVA(
-      std::chrono::nanoseconds dt);
+  std::vector<Eigen::Matrix<double, 3, 1>> PlanXVA(std::chrono::nanoseconds dt);
 
   enum class VoltageLimit {
     kConservative,
@@ -375,10 +379,7 @@ class Trajectory : public BaseTrajectory {
   const DistanceSpline &spline() const override { return spline_; }
 
  private:
-
-  float plan_velocity(size_t index) const override {
-    return plan_[index];
-  }
+  float plan_velocity(size_t index) const override { return plan_[index]; }
   size_t distance_plan_size() const override { return plan_.size(); }
 
   fb::SegmentConstraint plan_constraint(size_t index) const override {
@@ -410,8 +411,7 @@ class Trajectory : public BaseTrajectory {
 inline Eigen::Matrix<double, 5, 1> ContinuousDynamics(
     const StateFeedbackHybridPlant<2, 2, 2> &velocity_drivetrain,
     const Eigen::Matrix<double, 2, 2> &Tlr_to_la,
-    const Eigen::Matrix<double, 5, 1> X,
-    const Eigen::Matrix<double, 2, 1> U) {
+    const Eigen::Matrix<double, 5, 1> X, const Eigen::Matrix<double, 2, 1> U) {
   const auto &velocity = X.block<2, 1>(3, 0);
   const double theta = X(2);
   Eigen::Matrix<double, 2, 1> la = Tlr_to_la * velocity;
