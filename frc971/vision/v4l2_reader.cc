@@ -327,7 +327,8 @@ RockchipV4L2Reader::RockchipV4L2Reader(aos::EventLoop *event_loop,
     : V4L2ReaderBase(event_loop, device_name),
       epoll_(epoll),
       image_sensor_fd_(open(image_sensor_subdev.c_str(), O_RDWR | O_NONBLOCK)),
-      buffer_requeuer_([this](int buffer) { EnqueueBuffer(buffer); }, 20) {
+      buffer_requeuer_([this](int buffer) { EnqueueBuffer(buffer); },
+                       kEnqueueFifoPriority) {
   PCHECK(image_sensor_fd_.get() != -1)
       << " Failed to open device " << device_name;
   StreamOn();

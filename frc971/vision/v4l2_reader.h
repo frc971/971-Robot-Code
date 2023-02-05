@@ -185,6 +185,8 @@ class RockchipV4L2Reader : public V4L2ReaderBase {
 
   aos::ScopedFD image_sensor_fd_;
 
+  static constexpr int kEnqueueFifoPriority = 1;
+
   aos::util::ThreadedConsumer<int, kNumberBuffers> buffer_requeuer_;
 };
 
