@@ -366,7 +366,8 @@ class Silly(basic_window.BaseWindow):
 
     # Current segment based on which mode the drawing system is in.
     def current_seg(self):
-        if self.prev_segment_pt and self.now_segment_pt:
+        if self.prev_segment_pt is not None and (self.prev_segment_pt.any() and
+                                                 self.now_segment_pt.any()):
             if self.theta_version:
                 return AngleSegment(self.prev_segment_pt, self.now_segment_pt)
             else:
