@@ -24,6 +24,8 @@ go_library(
         "//scouting/webserver/requests/messages:request_notes_for_team_response_go_fbs",
         "//scouting/webserver/requests/messages:request_shift_schedule_go_fbs",
         "//scouting/webserver/requests/messages:request_shift_schedule_response_go_fbs",
+        "//scouting/webserver/requests/messages:submit_actions_go_fbs",
+        "//scouting/webserver/requests/messages:submit_actions_response_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_go_fbs",
         "//scouting/webserver/requests/messages:submit_data_scouting_response_go_fbs",
         "//scouting/webserver/requests/messages:submit_driver_ranking_go_fbs",

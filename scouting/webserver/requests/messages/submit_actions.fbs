@@ -1,0 +1,53 @@
+namespace scouting.webserver.requests;
+
+table StartMatchAction {
+    position:int (id:0);
+}
+
+enum ObjectType: short {
+    kCube,
+    kCone
+}
+
+enum ScoreLevel: short {
+    kLow,
+    kMiddle,
+    kHigh
+}
+
+table PickupObjectAction {
+    object_type:ObjectType (id:0);
+    auto:bool (id:1);
+}
+
+table PlaceObjectAction {
+    object_type:ObjectType (id:0);
+    score_level:ScoreLevel (id:1);
+    auto:bool (id:2);
+}
+
+table RobotDeathAction {
+    robot_on:bool (id:0);
+}
+
+table EndMatchAction {
+}
+
+union ActionType {
+    StartMatchAction,
+    PickupObjectAction,
+    PlaceObjectAction,
+    RobotDeathAction,
+    EndMatchAction
+}
+
+table Action {
+    timestamp:int (id:0);
+    action_taken:ActionType (id:2);
+}
+
+table SubmitActions {
+    actions_list:[Action] (id:0);
+}
+
+root_type SubmitActions;
