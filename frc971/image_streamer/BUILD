@@ -8,25 +8,18 @@ gen_embedded(
     ),
 )
 
-filegroup(
-    name = "image_streamer_start",
-    srcs = ["image_streamer_start.sh"],
-    visibility = ["//visibility:public"],
-)
-
 cc_binary(
     name = "image_streamer",
     srcs = ["image_streamer.cc"],
     args = [
-        "--data_dir=y2022/image_streamer/www",
+        "--data_dir=frc971/image_streamer/www",
     ],
     copts = [
         "-Wno-cast-align",
     ],
     data = [
-        "//y2022:aos_config",
-        "//y2022/image_streamer/www:files",
-        "//y2022/image_streamer/www:main_bundle.min.js",
+        "//frc971/image_streamer/www:files",
+        "//frc971/image_streamer/www:main_bundle.min.js",
     ],
     target_compatible_with = select({
         "@platforms//cpu:x86_64": [],

@@ -326,3 +326,9 @@ cc_binary(
         "//frc971/vision:vision_fbs",
     ],
 )
+
+filegroup(
+    name = "image_streamer_start",
+    srcs = ["image_streamer_start.sh"],
+    visibility = ["//visibility:public"],
+)

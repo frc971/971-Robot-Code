@@ -44,17 +44,17 @@ robot_downloader(
         "//y2022/localizer:imu_main",
         "//y2022/localizer:localizer_main",
         "//y2022/vision:image_decimator",
-        "//y2022/image_streamer:image_streamer",
+        "//frc971/image_streamer:image_streamer",
         "//aos/events/logging:log_cat",
     ],
     data = [
         ":aos_config",
         ":message_bridge_client.sh",
-        "//y2022/image_streamer:image_streamer_start",
+        "//y2022/vision:image_streamer_start",
     ],
     dirs = [
         "//y2022/www:www_files",
-        "//y2022/image_streamer/www:www_files",
+        "//frc971/image_streamer/www:www_files",
     ],
     start_binaries = [
         "//aos/events/logging:logger_main",
