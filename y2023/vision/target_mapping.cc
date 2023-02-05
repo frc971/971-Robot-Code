@@ -78,14 +78,14 @@ void HandleAprilTag(const TargetMap &map,
 
 // Get images from pi and pass apriltag positions to HandleAprilTag()
 void HandlePiCaptures(
-    aos::EventLoop *pi_event_loop, aos::logger::LogReader *reader,
+    aos::EventLoop *detection_event_loop, aos::EventLoop *mapping_event_loop,
+    aos::logger::LogReader *reader,
     std::vector<DataAdapter::TimestampedDetection>
         *timestamped_target_detections,
     std::vector<std::unique_ptr<AprilRoboticsDetector>> *detectors) {
-  // TODO(milind): change to /camera once we log at full frequency
-  static constexpr std::string_view kImageChannel = "/camera/decimated";
-  auto detector_ptr =
-      std::make_unique<AprilRoboticsDetector>(pi_event_loop, kImageChannel);
+  static constexpr std::string_view kImageChannel = "/camera";
+  auto detector_ptr = std::make_unique<AprilRoboticsDetector>(
+      detection_event_loop, kImageChannel);
   // Get the camera extrinsics
   cv::Mat extrinsics_cv = detector_ptr->extrinsics();
   Eigen::Matrix4d extrinsics_matrix;
@@ -94,10 +94,10 @@ void HandlePiCaptures(
 
   detectors->emplace_back(std::move(detector_ptr));
 
-  pi_event_loop->MakeWatcher("/camera", [=](const TargetMap &map) {
+  mapping_event_loop->MakeWatcher("/camera", [=](const TargetMap &map) {
     aos::distributed_clock::time_point pi_distributed_time =
         reader->event_loop_factory()
-            ->GetNodeEventLoopFactory(pi_event_loop->node())
+            ->GetNodeEventLoopFactory(mapping_event_loop->node())
             ->ToDistributedClock(aos::monotonic_clock::time_point(
                 aos::monotonic_clock::duration(map.monotonic_timestamp_ns())));
 
@@ -114,37 +114,53 @@ void MappingMain(int argc, char *argv[]) {
 
   // open logfiles
   aos::logger::LogReader reader(aos::logger::SortParts(unsorted_logfiles));
+  // Send new april tag poses. This allows us to take a log of images, then play
+  // with the april detection code and see those changes take effect in mapping
+  constexpr size_t kNumPis = 4;
+  for (size_t i = 1; i <= kNumPis; i++) {
+    reader.RemapLoggedChannel(absl::StrFormat("/pi%u/camera", i),
+                              "frc971.vision.TargetMap");
+  }
+
   reader.Register();
 
   std::vector<std::unique_ptr<AprilRoboticsDetector>> detectors;
 
   const aos::Node *pi1 =
       aos::configuration::GetNode(reader.configuration(), "pi1");
-  std::unique_ptr<aos::EventLoop> pi1_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("pi1", pi1);
-  HandlePiCaptures(pi1_event_loop.get(), &reader,
-                   &timestamped_target_detections, &detectors);
+  std::unique_ptr<aos::EventLoop> pi1_detection_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("pi1_detection", pi1);
+  std::unique_ptr<aos::EventLoop> pi1_mapping_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("pi1_mapping", pi1);
+  HandlePiCaptures(pi1_detection_event_loop.get(), pi1_mapping_event_loop.get(),
+                   &reader, &timestamped_target_detections, &detectors);
 
   const aos::Node *pi2 =
       aos::configuration::GetNode(reader.configuration(), "pi2");
-  std::unique_ptr<aos::EventLoop> pi2_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("pi2", pi2);
-  HandlePiCaptures(pi2_event_loop.get(), &reader,
-                   &timestamped_target_detections, &detectors);
+  std::unique_ptr<aos::EventLoop> pi2_detection_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("pi2_detection", pi2);
+  std::unique_ptr<aos::EventLoop> pi2_mapping_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("pi2_mapping", pi2);
+  HandlePiCaptures(pi2_detection_event_loop.get(), pi2_mapping_event_loop.get(),
+                   &reader, &timestamped_target_detections, &detectors);
 
   const aos::Node *pi3 =
       aos::configuration::GetNode(reader.configuration(), "pi3");
-  std::unique_ptr<aos::EventLoop> pi3_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("pi3", pi3);
-  HandlePiCaptures(pi3_event_loop.get(), &reader,
-                   &timestamped_target_detections, &detectors);
+  std::unique_ptr<aos::EventLoop> pi3_detection_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("pi3_detection", pi3);
+  std::unique_ptr<aos::EventLoop> pi3_mapping_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("pi3_mapping", pi3);
+  HandlePiCaptures(pi3_detection_event_loop.get(), pi3_mapping_event_loop.get(),
+                   &reader, &timestamped_target_detections, &detectors);
 
   const aos::Node *pi4 =
       aos::configuration::GetNode(reader.configuration(), "pi4");
-  std::unique_ptr<aos::EventLoop> pi4_event_loop =
-      reader.event_loop_factory()->MakeEventLoop("pi4", pi4);
-  HandlePiCaptures(pi4_event_loop.get(), &reader,
-                   &timestamped_target_detections, &detectors);
+  std::unique_ptr<aos::EventLoop> pi4_detection_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("pi4_detection", pi4);
+  std::unique_ptr<aos::EventLoop> pi4_mapping_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("pi4_mapping", pi4);
+  HandlePiCaptures(pi4_detection_event_loop.get(), pi4_mapping_event_loop.get(),
+                   &reader, &timestamped_target_detections, &detectors);
 
   reader.event_loop_factory()->Run();
 

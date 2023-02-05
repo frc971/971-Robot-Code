@@ -227,7 +227,9 @@ AprilRoboticsDetector::DetectTags(cv::Mat image) {
 
   const aos::monotonic_clock::time_point end_time = aos::monotonic_clock::now();
 
-  timeprofile_display(tag_detector_->tp);
+  if (FLAGS_debug) {
+    timeprofile_display(tag_detector_->tp);
+  }
 
   VLOG(1) << "Took " << chrono::duration<double>(end_time - start_time).count()
           << " seconds to detect overall";

@@ -189,11 +189,14 @@ ceres::examples::Constraint3d DataAdapter::ComputeTargetConstraint(
   ceres::examples::Pose3d target_constraint =
       PoseUtils::Affine3dToPose3d(H_targetstart_targetend);
 
-  return ceres::examples::Constraint3d{
-      target_detection_start.id,
-      target_detection_end.id,
-      {target_constraint.p, target_constraint.q},
-      confidence};
+  const auto constraint_3d =
+      ceres::examples::Constraint3d{target_detection_start.id,
+                                    target_detection_end.id,
+                                    {target_constraint.p, target_constraint.q},
+                                    confidence};
+
+  VLOG(2) << "Computed constraint: " << constraint_3d;
+  return constraint_3d;
 }
 
 TargetMapper::TargetMapper(
