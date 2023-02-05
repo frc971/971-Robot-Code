@@ -64,6 +64,8 @@ class Aimer {
   // Real-world distance to the target.
   double target_distance_ = 0.0;  // meters
   double inner_port_angle_ = 0.0;  // radians
+
+  Eigen::Matrix<double, 2, 2> Tlr_to_la_;
 };
 
 }  // namespace turret

@@ -41,7 +41,7 @@ TEST(ThreadedConsumerTest, ElevatedPriority) {
     ThreadedConsumer<int, 4> threaded_consumer(
         [&counter](int task) {
           CheckRealtime();
-          LOG(INFO) << "task:" << task << " counter: " << counter;
+          VLOG(1) << "task:" << task << " counter: " << counter;
           counter = task;
         },
         20);
@@ -71,7 +71,7 @@ TEST(ThreadedConsumerTest, OverflowRingBuffer) {
 
   ThreadedConsumer<int, 4> threaded_consumer(
       [&counter, &should_block](int task) {
-        LOG(INFO) << "task:" << task << " counter: " << counter;
+        VLOG(1) << "task:" << task << " counter: " << counter;
 
         counter = task;
 
@@ -111,7 +111,7 @@ TEST(ThreadedConsumerTest, FinishesTasksOnQuit) {
   {
     ThreadedConsumer<int, 4> threaded_consumer(
         [&counter, &should_block](int task) {
-          LOG(INFO) << "task:" << task << " counter: " << counter;
+          VLOG(1) << "task:" << task << " counter: " << counter;
 
           counter = task;
 

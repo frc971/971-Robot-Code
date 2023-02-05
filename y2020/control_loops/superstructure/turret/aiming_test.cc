@@ -12,12 +12,24 @@ namespace superstructure {
 namespace turret {
 namespace testing {
 
+class TeamNumberEnvironment : public ::testing::Environment {
+ public:
+  ~TeamNumberEnvironment() override {}
+
+  // Override this to define how to set up the environment.
+  void SetUp() override { aos::network::OverrideTeamNumber(971); }
+
+  // Override this to define how to tear down the environment.
+  void TearDown() override {}
+};
+
+::testing::Environment *const team_number_env =
+    ::testing::AddGlobalTestEnvironment(new TeamNumberEnvironment);
+
 using frc971::control_loops::Pose;
 
 class AimerTest : public ::testing::Test {
  public:
-  AimerTest() { aos::network::OverrideTeamNumber(971); }
-
   typedef Aimer::Goal Goal;
   typedef Aimer::Status Status;
   struct StatusData {
