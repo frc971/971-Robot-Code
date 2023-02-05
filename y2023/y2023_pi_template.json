@@ -360,6 +360,15 @@
       "nodes": [
         "pi{{ NUM }}"
       ]
+    },
+    {
+      "name": "aprilrobotics",
+      "executable_name": "aprilrobotics",
+      "args": ["--enable_ftrace"],
+      "user": "pi",
+      "nodes": [
+        "pi{{ NUM }}"
+      ]
     }
   ],
   "maps": [
