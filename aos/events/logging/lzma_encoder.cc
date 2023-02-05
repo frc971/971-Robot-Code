@@ -95,7 +95,7 @@ void LzmaEncoder::Encode(Copier *copy) {
   // since lzma is going to take it from here.
   CHECK_LE(copy_size, input_buffer_.size());
 
-  CHECK_EQ(copy->Copy(input_buffer_.data()), copy_size);
+  CHECK_EQ(copy->Copy(input_buffer_.data(), 0, copy_size), copy_size);
 
   stream_.next_in = input_buffer_.data();
   stream_.avail_in = copy_size;

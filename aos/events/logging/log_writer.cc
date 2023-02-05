@@ -766,64 +766,6 @@ void Logger::Rotate() {
   }
 }
 
-// Class to copy a context into the provided buffer.
-class ContextDataCopier : public DataEncoder::Copier {
- public:
-  ContextDataCopier(const Context &context, int channel_index, LogType log_type,
-                    EventLoop *event_loop)
-      : DataEncoder::Copier(PackMessageSize(log_type, context.size)),
-        context_(context),
-        channel_index_(channel_index),
-        log_type_(log_type),
-        event_loop_(event_loop) {}
-
-  monotonic_clock::time_point end_time() const { return end_time_; }
-
-  size_t Copy(uint8_t *data) final {
-    size_t result =
-        PackMessageInline(data, context_, channel_index_, log_type_);
-    end_time_ = event_loop_->monotonic_now();
-    return result;
-  }
-
- private:
-  const Context &context_;
-  const int channel_index_;
-  const LogType log_type_;
-  EventLoop *event_loop_;
-  monotonic_clock::time_point end_time_;
-};
-
-// Class to copy a RemoteMessage into the provided buffer.
-class RemoteMessageCopier : public DataEncoder::Copier {
- public:
-  RemoteMessageCopier(const message_bridge::RemoteMessage *message,
-                      int channel_index,
-                      aos::monotonic_clock::time_point monotonic_timestamp_time,
-                      EventLoop *event_loop)
-      : DataEncoder::Copier(PackRemoteMessageSize()),
-        message_(message),
-        channel_index_(channel_index),
-        monotonic_timestamp_time_(monotonic_timestamp_time),
-        event_loop_(event_loop) {}
-
-  monotonic_clock::time_point end_time() const { return end_time_; }
-
-  size_t Copy(uint8_t *data) final {
-    size_t result = PackRemoteMessageInline(data, message_, channel_index_,
-                                            monotonic_timestamp_time_);
-    end_time_ = event_loop_->monotonic_now();
-    return result;
-  }
-
- private:
-  const message_bridge::RemoteMessage *message_;
-  int channel_index_;
-  aos::monotonic_clock::time_point monotonic_timestamp_time_;
-  EventLoop *event_loop_;
-  monotonic_clock::time_point end_time_;
-};
-
 void Logger::WriteData(NewDataWriter *writer, const FetcherStruct &f) {
   if (writer != nullptr) {
     const UUID source_node_boot_uuid =

@@ -186,7 +186,8 @@ flatbuffers::Offset<MessageHeader> PackRemoteMessage(
 constexpr flatbuffers::uoffset_t PackRemoteMessageSize() { return 96u; }
 size_t PackRemoteMessageInline(
     uint8_t *data, const message_bridge::RemoteMessage *msg, int channel_index,
-    const aos::monotonic_clock::time_point monotonic_timestamp_time);
+    const aos::monotonic_clock::time_point monotonic_timestamp_time,
+    size_t start_byte, size_t end_byte);
 
 // Packes a message pointed to by the context into a MessageHeader.
 flatbuffers::Offset<MessageHeader> PackMessage(
@@ -201,7 +202,8 @@ flatbuffers::uoffset_t PackMessageSize(LogType log_type, size_t data_size);
 // This is equivalent to PackMessage, but doesn't require allocating a
 // FlatBufferBuilder underneath.
 size_t PackMessageInline(uint8_t *data, const Context &contex,
-                         int channel_index, LogType log_type);
+                         int channel_index, LogType log_type, size_t start_byte,
+                         size_t end_byte);
 
 // Class to read chunks out of a log file.
 class SpanReader {
@@ -911,6 +913,65 @@ class TimestampMapper {
 // Returns the node name with a trailing space, or an empty string if we are on
 // a single node.
 std::string MaybeNodeName(const Node *);
+
+// Class to copy a RemoteMessage into the provided buffer.
+class RemoteMessageCopier : public DataEncoder::Copier {
+ public:
+  RemoteMessageCopier(const message_bridge::RemoteMessage *message,
+                      int channel_index,
+                      aos::monotonic_clock::time_point monotonic_timestamp_time,
+                      EventLoop *event_loop)
+      : DataEncoder::Copier(PackRemoteMessageSize()),
+        message_(message),
+        channel_index_(channel_index),
+        monotonic_timestamp_time_(monotonic_timestamp_time),
+        event_loop_(event_loop) {}
+
+  monotonic_clock::time_point end_time() const { return end_time_; }
+
+  size_t Copy(uint8_t *data, size_t start_byte, size_t end_byte) final {
+    size_t result = PackRemoteMessageInline(data, message_, channel_index_,
+                                            monotonic_timestamp_time_,
+                                            start_byte, end_byte);
+    end_time_ = event_loop_->monotonic_now();
+    return result;
+  }
+
+ private:
+  const message_bridge::RemoteMessage *message_;
+  int channel_index_;
+  aos::monotonic_clock::time_point monotonic_timestamp_time_;
+  EventLoop *event_loop_;
+  monotonic_clock::time_point end_time_;
+};
+
+// Class to copy a context into the provided buffer.
+class ContextDataCopier : public DataEncoder::Copier {
+ public:
+  ContextDataCopier(const Context &context, int channel_index, LogType log_type,
+                    EventLoop *event_loop)
+      : DataEncoder::Copier(PackMessageSize(log_type, context.size)),
+        context_(context),
+        channel_index_(channel_index),
+        log_type_(log_type),
+        event_loop_(event_loop) {}
+
+  monotonic_clock::time_point end_time() const { return end_time_; }
+
+  size_t Copy(uint8_t *data, size_t start_byte, size_t end_byte) final {
+    size_t result = PackMessageInline(data, context_, channel_index_, log_type_,
+                                      start_byte, end_byte);
+    end_time_ = event_loop_->monotonic_now();
+    return result;
+  }
+
+ private:
+  const Context &context_;
+  const int channel_index_;
+  const LogType log_type_;
+  EventLoop *event_loop_;
+  monotonic_clock::time_point end_time_;
+};
 
 }  // namespace aos::logger
 
