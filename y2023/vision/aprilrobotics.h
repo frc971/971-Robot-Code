@@ -15,6 +15,7 @@
 #include "third_party/apriltag/apriltag.h"
 #include "third_party/apriltag/apriltag_pose.h"
 #include "third_party/apriltag/tag16h5.h"
+#include "y2023/vision/april_debug_generated.h"
 #include "y2023/vision/calibration_data.h"
 
 DECLARE_int32(team_number);
@@ -95,6 +96,7 @@ class AprilRoboticsDetector {
 
   frc971::vision::ImageCallback image_callback_;
   aos::Sender<frc971::vision::TargetMap> target_map_sender_;
+  aos::Sender<y2023::vision::AprilDebug> april_debug_sender_;
 };
 
 }  // namespace vision
