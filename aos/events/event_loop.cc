@@ -236,7 +236,8 @@ void EventLoop::TakeWatcher(const Channel *channel) {
 
   CHECK(taken_senders_.find(channel) == taken_senders_.end())
       << ": " << configuration::CleanedChannelToString(channel)
-      << " is already being used.";
+      << " is already being used for sending. Can't make a watcher on the "
+         "same event loop.";
 
   auto result = taken_watchers_.insert(channel);
   CHECK(result.second) << ": " << configuration::CleanedChannelToString(channel)
