@@ -9,9 +9,9 @@ namespace superstructure {
 namespace turret {
 
 using frc971::control_loops::Pose;
-using frc971::control_loops::aiming::TurretGoal;
-using frc971::control_loops::aiming::ShotConfig;
 using frc971::control_loops::aiming::RobotState;
+using frc971::control_loops::aiming::ShotConfig;
+using frc971::control_loops::aiming::TurretGoal;
 
 // Shooting-on-the-fly concept:
 // The current way that we manage shooting-on-the fly endeavors to be reasonably
@@ -129,7 +129,9 @@ Pose OuterPortPose(aos::Alliance alliance) {
   return target;
 }
 
-Aimer::Aimer() : goal_(MakePrefilledGoal()) {}
+Aimer::Aimer()
+    : goal_(MakePrefilledGoal()),
+      Tlr_to_la_(drivetrain::GetDrivetrainConfig().Tlr_to_la()) {}
 
 void Aimer::Update(const Status *status, aos::Alliance alliance,
                    WrapMode wrap_mode, ShotMode shot_mode) {
@@ -145,9 +147,8 @@ void Aimer::Update(const Status *status, aos::Alliance alliance,
   // robot. All of this would be helped by just doing this work in the Localizer
   // itself.
   const Eigen::Vector2d linear_angular =
-      drivetrain::GetDrivetrainConfig().Tlr_to_la() *
-      Eigen::Vector2d(status->localizer()->left_velocity(),
-                      status->localizer()->right_velocity());
+      Tlr_to_la_ * Eigen::Vector2d(status->localizer()->left_velocity(),
+                                   status->localizer()->right_velocity());
   const double xdot = linear_angular(0) * std::cos(status->theta());
   const double ydot = linear_angular(0) * std::sin(status->theta());
 
