@@ -9,8 +9,8 @@
 #include "aos/network/message_bridge_server_generated.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
-#include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2020/control_loops/drivetrain/localizer_debug_generated.h"
+#include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2020/vision/sift/sift_generated.h"
 
 namespace y2020 {
@@ -95,6 +95,37 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
     std::array<int, kNumRejectionReasons> rejection_counts;
   };
 
+  class Corrector : public HybridEkf::ExpectedObservationFunctor {
+   public:
+    Corrector(const Eigen::Matrix<float, 4, 4> &H_field_target,
+              const Pose &pose_robot_target, const State &state_at_capture,
+              const Eigen::Vector3f &Z,
+              std::optional<RejectionReason> *correction_rejection)
+        : H_field_target_(H_field_target),
+          pose_robot_target_(pose_robot_target),
+          state_at_capture_(state_at_capture),
+          Z_(Z),
+          correction_rejection_(correction_rejection) {
+      H_.setZero();
+      H_(0, StateIdx::kX) = 1;
+      H_(1, StateIdx::kY) = 1;
+      H_(2, StateIdx::kTheta) = 1;
+    }
+    Output H(const State &, const Input &) final;
+    Eigen::Matrix<float, HybridEkf::kNOutputs, HybridEkf::kNStates> DHDX(
+        const State &) final {
+      return H_;
+    }
+
+   private:
+    Eigen::Matrix<float, HybridEkf::kNOutputs, HybridEkf::kNStates> H_;
+    const Eigen::Matrix<float, 4, 4> H_field_target_;
+    Pose pose_robot_target_;
+    const State state_at_capture_;
+    const Eigen::Vector3f &Z_;
+    std::optional<RejectionReason> *correction_rejection_;
+  };
+
   // Processes new image data from the given pi and updates the EKF.
   aos::SizedArray<flatbuffers::Offset<ImageMatchDebug>, 5> HandleImageMatch(
       size_t camera_index, std::string_view pi,
@@ -113,6 +144,7 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
   aos::EventLoop *const event_loop_;
   const frc971::control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
   HybridEkf ekf_;
+  HybridEkf::ExpectedObservationAllocator<Corrector> observations_;
 
   std::vector<aos::Fetcher<frc971::vision::sift::ImageMatchResult>>
       image_fetchers_;

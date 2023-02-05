@@ -213,8 +213,7 @@ TEST_F(HybridEkfTest, ZeroTimeCorrect) {
   HybridEkf<>::Output Z(0.5, 0.5, 1);
   Eigen::Matrix<double, 3, 12> H;
   H.setIdentity();
-  auto h = [H](const State &X, const Input &) { return H * X; };
-  auto dhdx = [H](const State &) { return H; };
+  HybridEkf<>::LinearH h(H);
   Eigen::Matrix<double, 3, 3> R;
   R.setIdentity();
   R *= 1e-3;
@@ -222,7 +221,7 @@ TEST_F(HybridEkfTest, ZeroTimeCorrect) {
   EXPECT_EQ(0.0, ekf_.X_hat(StateIdx::kTheta));
   const double starting_p_norm = ekf_.P().norm();
   for (int ii = 0; ii < 100; ++ii) {
-    ekf_.Correct(Z, &U, {}, h, dhdx, R, t0_);
+    ekf_.Correct(Z, &U, nullptr, &h, R, t0_);
   }
   EXPECT_NEAR(Z(0, 0), ekf_.X_hat(StateIdx::kX), 1e-3);
   EXPECT_NEAR(Z(1, 0), ekf_.X_hat(StateIdx::kY), 1e-3);
@@ -241,8 +240,7 @@ TEST_F(HybridEkfTest, PredictionsAreSane) {
   State true_X = ekf_.X_hat();
   Eigen::Matrix<double, 3, 12> H;
   H.setZero();
-  auto h = [H](const State &X, const Input &) { return H * X; };
-  auto dhdx = [H](const State &) { return H; };
+  HybridEkf<>::LinearH h(H);
   // Provide constant input voltage.
   Input U;
   U << 12.0, 10.0, 1.0, -0.1;
@@ -253,7 +251,7 @@ TEST_F(HybridEkfTest, PredictionsAreSane) {
   EXPECT_EQ(0.0, ekf_.X_hat().norm());
   const double starting_p_norm = ekf_.P().norm();
   for (int ii = 0; ii < 100; ++ii) {
-    ekf_.Correct(Z, &U, {}, h, dhdx, R, t0_ + dt_config_.dt * (ii + 1));
+    ekf_.Correct(Z, &U, nullptr, &h, R, t0_ + dt_config_.dt * (ii + 1));
     true_X = Update(true_X, U, false);
     EXPECT_EQ(true_X, ekf_.X_hat());
   }
@@ -292,8 +290,7 @@ TEST_P(HybridEkfOldCorrectionsTest, CreateOldCorrection) {
   Z.setZero();
   Eigen::Matrix<double, 3, 12> H;
   H.setZero();
-  auto h_zero = [H](const State &X, const Input &) { return H * X; };
-  auto dhdx_zero = [H](const State &) { return H; };
+  HybridEkf<>::LinearH h_zero(H);
   Input U;
   U << 12.0, 12.0, 0.0, 0.0;
   Eigen::Matrix<double, 3, 3> R;
@@ -302,8 +299,7 @@ TEST_P(HybridEkfOldCorrectionsTest, CreateOldCorrection) {
   // We fill up the buffer to be as full as demanded by the user.
   const size_t n_predictions = GetParam();
   for (size_t ii = 0; ii < n_predictions; ++ii) {
-    ekf_.Correct(Z, &U, {}, h_zero, dhdx_zero, R,
-                 t0_ + dt_config_.dt * (ii + 1));
+    ekf_.Correct(Z, &U, nullptr, &h_zero, R, t0_ + dt_config_.dt * (ii + 1));
   }
 
   // Store state and covariance after prediction steps.
@@ -315,13 +311,12 @@ TEST_P(HybridEkfOldCorrectionsTest, CreateOldCorrection) {
   H(0, 0) = 1;
   H(1, 1) = 1;
   H(2, 2) = 1;
-  auto h = [H](const State &X, const Input &) { return H * X; };
-  auto dhdx = [H](const State &) { return H; };
+  HybridEkf<>::LinearH h(H);
   R.setZero();
   R.diagonal() << 1e-5, 1e-5, 1e-5;
   U.setZero();
   for (int ii = 0; ii < 20; ++ii) {
-    ekf_.Correct(Z, &U, {}, h, dhdx, R, t0_);
+    ekf_.Correct(Z, &U, nullptr, &h, R, t0_);
   }
   const double corrected_p_norm = ekf_.P().norm();
   State expected_X_hat = modeled_X_hat;
@@ -348,8 +343,7 @@ TEST_F(HybridEkfTest, DiscardTooOldCorrection) {
   Z.setZero();
   Eigen::Matrix<double, 3, 12> H;
   H.setZero();
-  auto h_zero = [H](const State &X, const Input &) { return H * X; };
-  auto dhdx_zero = [H](const State &) { return H; };
+  HybridEkf<>::LinearH h_zero(H);
   Input U;
   U << 12.0, 12.0, 0.0, 0.0;
   Eigen::Matrix<double, 3, 3> R;
@@ -357,8 +351,7 @@ TEST_F(HybridEkfTest, DiscardTooOldCorrection) {
 
   EXPECT_EQ(0.0, ekf_.X_hat().norm());
   for (int ii = 0; ii < HybridEkf<>::kSaveSamples; ++ii) {
-    ekf_.Correct(Z, &U, {}, h_zero, dhdx_zero, R,
-                 t0_ + dt_config_.dt * (ii + 1));
+    ekf_.Correct(Z, &U, nullptr, &h_zero, R, t0_ + dt_config_.dt * (ii + 1));
   }
   const State modeled_X_hat = ekf_.X_hat();
   const HybridEkf<>::StateSquare modeled_P = ekf_.P();
@@ -368,12 +361,11 @@ TEST_F(HybridEkfTest, DiscardTooOldCorrection) {
   H(0, 0) = 1;
   H(1, 1) = 1;
   H(2, 2) = 1;
-  auto h = [H](const State &X, const Input &) { return H * X; };
-  auto dhdx = [H](const State &) { return H; };
+  HybridEkf<>::LinearH h(H);
   R.setIdentity();
   R *= 1e-5;
   U.setZero();
-  ekf_.Correct(Z, &U, {}, h, dhdx, R, t0_);
+  ekf_.Correct(Z, &U, nullptr, &h, R, t0_);
   EXPECT_EQ(ekf_.X_hat(), modeled_X_hat)
       << "Expected too-old correction to have no effect; X_hat: "
       << ekf_.X_hat() << " expected " << modeled_X_hat;
@@ -493,8 +485,8 @@ TEST_F(HybridEkfDeathTest, DieOnNoU) {
   // Expect death if the user does not provide U when creating a fresh
   // measurement.
   EXPECT_DEATH(
-      ekf_.Correct({1, 2, 3}, nullptr, {}, {}, {}, Eigen::Matrix3d::Zero(),
-                   t0_ + std::chrono::seconds(1)),
+      ekf_.Correct({1, 2, 3}, nullptr, nullptr, nullptr,
+                   Eigen::Matrix3d::Zero(), t0_ + std::chrono::seconds(1)),
       "U != nullptr");
 }
 
@@ -504,23 +496,10 @@ TEST_F(HybridEkfDeathTest, DieOnNoH) {
   // Check that we die when no h-related functions are provided:
   Input U;
   U << 1.0, 2.0, 0.0, 0.0;
-  EXPECT_DEATH(ekf_.Correct({1, 2, 3}, &U, {}, {}, {}, Eigen::Matrix3d::Zero(),
-                            t0_ + std::chrono::seconds(1)),
-               "make_h");
-  // Check that we die when only one of h and dhdx are provided:
   EXPECT_DEATH(
-      ekf_.Correct(
-          {1, 2, 3}, &U, {}, {},
-          [](const State &) { return Eigen::Matrix<double, 3, 12>::Zero(); },
-          Eigen::Matrix3d::Zero(), t0_ + std::chrono::seconds(1)),
+      ekf_.Correct({1, 2, 3}, &U, nullptr, nullptr, Eigen::Matrix3d::Zero(),
+                   t0_ + std::chrono::seconds(1)),
       "make_h");
-  EXPECT_DEATH(ekf_.Correct(
-                   {1, 2, 3}, &U, {},
-                   [](const State &, const Input &) {
-                     return Eigen::Matrix<double, 3, 1>::Zero();
-                   },
-                   {}, Eigen::Matrix3d::Zero(), t0_ + std::chrono::seconds(1)),
-               "make_h");
 }
 
 }  // namespace testing

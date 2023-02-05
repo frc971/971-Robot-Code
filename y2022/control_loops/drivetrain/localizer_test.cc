@@ -10,12 +10,13 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-#include "y2022/localizer/localizer_output_generated.h"
 #include "gtest/gtest.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
+#include "y2022/localizer/localizer_output_generated.h"
 
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
+DECLARE_bool(die_on_malloc);
 
 namespace y2022 {
 namespace control_loops {
@@ -31,7 +32,7 @@ DrivetrainConfig<double> GetTest2022DrivetrainConfig() {
   DrivetrainConfig<double> config = GetDrivetrainConfig();
   return config;
 }
-}
+}  // namespace
 
 namespace chrono = std::chrono;
 using aos::monotonic_clock;
@@ -74,6 +75,7 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
         drivetrain_plant_(drivetrain_plant_event_loop_.get(),
                           drivetrain_plant_imu_event_loop_.get(), dt_config_,
                           std::chrono::microseconds(500)) {
+    FLAGS_die_on_malloc = true;
     set_team_id(frc971::control_loops::testing::kTeamNumber);
     set_battery_voltage(12.0);
 
@@ -95,6 +97,7 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
           output_builder.add_x(drivetrain_plant_.state()(0));
           output_builder.add_y(drivetrain_plant_.state()(1));
           output_builder.add_theta(drivetrain_plant_.state()(2));
+          builder.CheckOk(builder.Send(output_builder.Finish()));
         })
         ->Setup(imu_test_event_loop_->monotonic_now(),
                 std::chrono::milliseconds(5));

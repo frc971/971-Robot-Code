@@ -89,6 +89,7 @@ Localizer::Localizer(
     : event_loop_(event_loop),
       dt_config_(dt_config),
       ekf_(dt_config),
+      observations_(&ekf_),
       clock_offset_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
               "/aos")),
@@ -244,7 +245,7 @@ Localizer::HandleImageMatch(
     rejection_reason = RejectionReason::IMAGE_FROM_FUTURE;
   }
   if (!result.has_camera_calibration()) {
-    LOG(WARNING) << "Got camera frame without calibration data.";
+    AOS_LOG(WARNING, "Got camera frame without calibration data.\n");
     ImageMatchDebug::Builder builder(*fbb);
     builder.add_camera(camera_index);
     builder.add_accepted(false);
@@ -401,11 +402,6 @@ Localizer::HandleImageMatch(
 
     Eigen::Matrix3f R = Eigen::Matrix3f::Zero();
     R.diagonal() = noises.cwiseAbs2();
-    Eigen::Matrix<float, HybridEkf::kNOutputs, HybridEkf::kNStates> H;
-    H.setZero();
-    H(0, StateIdx::kX) = 1;
-    H(1, StateIdx::kY) = 1;
-    H(2, StateIdx::kTheta) = 1;
     VLOG(1) << "Pose implied by target: " << Z.transpose()
             << " and current pose " << x() << ", " << y() << ", " << theta()
             << " Heading/dist/skew implied by target: "
@@ -447,47 +443,11 @@ Localizer::HandleImageMatch(
     // more convenient to write given the Correct() interface we already have.
     // Note: If we start going back to doing back-in-time rewinds, then we can't
     // get away with passing things by reference.
-    ekf_.Correct(
-        Eigen::Vector3f::Zero(), &U, {},
-        [H, H_field_target, pose_robot_target, state_at_capture, Z,
-         &correction_rejection](const State &,
-                                const Input &) -> Eigen::Vector3f {
-          // Weighting for how much to use the current robot heading estimate
-          // vs. the heading estimate from the image results. A value of 1.0
-          // completely ignores the measured heading, but will prioritize turret
-          // aiming above all else. A value of 0.0 will prioritize correcting
-          // any gyro heading drift.
-          constexpr float kImpliedWeight = 0.99;
-          const float z_yaw_diff = aos::math::NormalizeAngle(
-              state_at_capture.value()(Localizer::StateIdx::kTheta) - Z(2));
-          const float z_yaw = Z(2) + kImpliedWeight * z_yaw_diff;
-          const Eigen::Vector3f Z_implied =
-              CalculateImpliedPose(z_yaw, H_field_target, pose_robot_target);
-          const Eigen::Vector3f Z_used = Z_implied;
-          // Just in case we ever do encounter any, drop measurements if they
-          // have non-finite numbers.
-          if (!Z.allFinite()) {
-            AOS_LOG(WARNING, "Got measurement with infinites or NaNs.\n");
-            correction_rejection = RejectionReason::NONFINITE_MEASUREMENT;
-            return Eigen::Vector3f::Zero();
-          }
-          Eigen::Vector3f Zhat = H * state_at_capture.value() - Z_used;
-          // Rewrap angle difference to put it back in range. Note that this
-          // component of the error is currently ignored (see definition of H
-          // above).
-          Zhat(2) = aos::math::NormalizeAngle(Zhat(2));
-          // If the measurement implies that we are too far from the current
-          // estimate, then ignore it.
-          // Note that I am not entirely sure how much effect this actually has,
-          // because I primarily introduced it to make sure that any grossly
-          // invalid measurements get thrown out.
-          if (Zhat.squaredNorm() > std::pow(10.0, 2)) {
-            correction_rejection = RejectionReason::CORRECTION_TOO_LARGE;
-            return Eigen::Vector3f::Zero();
-          }
-          return Zhat;
-        },
-        [H](const State &) { return H; }, R, now);
+    observations_.CorrectKnownH(
+        Eigen::Vector3f::Zero(), &U,
+        Corrector(H_field_target, pose_robot_target, state_at_capture.value(),
+                  Z, &correction_rejection),
+        R, now);
     if (correction_rejection) {
       builder.add_accepted(false);
       builder.add_rejection_reason(*correction_rejection);
@@ -500,6 +460,43 @@ Localizer::HandleImageMatch(
     debug_offsets.push_back(builder.Finish());
   }
   return debug_offsets;
+}
+
+Localizer::Output Localizer::Corrector::H(const State &, const Input &) {
+  // Weighting for how much to use the current robot heading estimate
+  // vs. the heading estimate from the image results. A value of 1.0
+  // completely ignores the measured heading, but will prioritize turret
+  // aiming above all else. A value of 0.0 will prioritize correcting
+  // any gyro heading drift.
+  constexpr float kImpliedWeight = 0.99;
+  const float z_yaw_diff = aos::math::NormalizeAngle(
+      state_at_capture_(Localizer::StateIdx::kTheta) - Z_(2));
+  const float z_yaw = Z_(2) + kImpliedWeight * z_yaw_diff;
+  const Eigen::Vector3f Z_implied =
+      CalculateImpliedPose(z_yaw, H_field_target_, pose_robot_target_);
+  const Eigen::Vector3f Z_used = Z_implied;
+  // Just in case we ever do encounter any, drop measurements if they
+  // have non-finite numbers.
+  if (!Z_.allFinite()) {
+    AOS_LOG(WARNING, "Got measurement with infinites or NaNs.\n");
+    *correction_rejection_ = RejectionReason::NONFINITE_MEASUREMENT;
+    return Eigen::Vector3f::Zero();
+  }
+  Eigen::Vector3f Zhat = H_ * state_at_capture_ - Z_used;
+  // Rewrap angle difference to put it back in range. Note that this
+  // component of the error is currently ignored (see definition of H
+  // above).
+  Zhat(2) = aos::math::NormalizeAngle(Zhat(2));
+  // If the measurement implies that we are too far from the current
+  // estimate, then ignore it.
+  // Note that I am not entirely sure how much effect this actually has,
+  // because I primarily introduced it to make sure that any grossly
+  // invalid measurements get thrown out.
+  if (Zhat.squaredNorm() > std::pow(10.0, 2)) {
+    *correction_rejection_ = RejectionReason::CORRECTION_TOO_LARGE;
+    return Eigen::Vector3f::Zero();
+  }
+  return Zhat;
 }
 
 }  // namespace drivetrain
