@@ -361,7 +361,7 @@ class Silly(basic_window.BaseWindow):
                 cr.stroke()
 
     def cur_pt_in_theta(self):
-        if self.theta_version: return self.last_pos
+        if self.theta_version: return numpy.asarray(self.last_pos)
         return to_theta(self.last_pos, self.circular_index_select)
 
     # Current segment based on which mode the drawing system is in.
