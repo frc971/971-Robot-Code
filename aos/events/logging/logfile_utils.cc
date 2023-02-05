@@ -129,27 +129,12 @@ DetachedBufferWriter &DetachedBufferWriter::operator=(
   return *this;
 }
 
-void DetachedBufferWriter::QueueSpan(absl::Span<const uint8_t> span) {
+void DetachedBufferWriter::CopyMessage(DataEncoder::Copier *coppier,
+                                       aos::monotonic_clock::time_point now) {
   if (ran_out_of_space_) {
     // We don't want any later data to be written after space becomes
     // available, so refuse to write anything more once we've dropped data
     // because we ran out of space.
-    VLOG(1) << "Ignoring span: " << span.size();
-    return;
-  }
-
-  if (!encoder_->HasSpace(span.size())) {
-    Flush();
-    CHECK(encoder_->HasSpace(span.size()));
-  }
-  DataEncoder::SpanCopier coppier(span);
-  encoder_->Encode(&coppier);
-  FlushAtThreshold(aos::monotonic_clock::now());
-}
-
-void DetachedBufferWriter::CopyMessage(DataEncoder::Copier *coppier,
-                                       aos::monotonic_clock::time_point now) {
-  if (ran_out_of_space_) {
     return;
   }
 

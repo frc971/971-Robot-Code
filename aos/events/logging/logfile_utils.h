@@ -76,9 +76,6 @@ class DetachedBufferWriter {
   void CopyMessage(DataEncoder::Copier *coppier,
                    aos::monotonic_clock::time_point now);
 
-  // Queues up data in span. May copy or may write it to disk immediately.
-  void QueueSpan(absl::Span<const uint8_t> span);
-
   // Indicates we got ENOSPC when trying to write. After this returns true, no
   // further data is written.
   bool ran_out_of_space() const { return ran_out_of_space_; }

@@ -248,7 +248,8 @@ void NewDataWriter::QueueHeader(
                  header, {.multi_line = false, .max_vector_size = 100});
 
   CHECK(writer);
-  writer->QueueSpan(header.span());
+  DataEncoder::SpanCopier coppier(header.span());
+  writer->CopyMessage(&coppier, aos::monotonic_clock::now());
   header_written_ = true;
   monotonic_start_time_ = log_namer_->monotonic_start_time(
       node_index_, state_[node_index_].boot_uuid);
@@ -606,7 +607,8 @@ void MultiNodeLogNamer::WriteConfiguration(
       std::make_unique<DetachedBufferWriter>(
           filename, encoder_factory_(header->span().size()));
 
-  writer->QueueSpan(header->span());
+  DataEncoder::SpanCopier coppier(header->span());
+  writer->CopyMessage(&coppier, aos::monotonic_clock::now());
 
   if (!writer->ran_out_of_space()) {
     all_filenames_.emplace_back(

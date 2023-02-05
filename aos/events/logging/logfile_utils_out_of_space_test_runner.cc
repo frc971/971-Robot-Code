@@ -22,10 +22,14 @@ int main(int argc, char **argv) {
       FLAGS_tmpfs + "/file",
       std::make_unique<aos::logger::DummyEncoder>(data.size()));
   for (int i = 0; i < 8; ++i) {
-    writer.QueueSpan(data);
+    aos::logger::DataEncoder::SpanCopier coppier(data);
+    writer.CopyMessage(&coppier, aos::monotonic_clock::now());
     CHECK(!writer.ran_out_of_space()) << ": " << i;
   }
-  writer.QueueSpan(data);
+  {
+    aos::logger::DataEncoder::SpanCopier coppier(data);
+    writer.CopyMessage(&coppier, aos::monotonic_clock::now());
+  }
   CHECK(writer.ran_out_of_space());
   writer.acknowledge_out_of_space();
 }

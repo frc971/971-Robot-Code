@@ -39,6 +39,10 @@ class TestDetachedBufferWriter : public DetachedBufferWriter {
   void WriteSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer) {
     QueueSpan(absl::Span<const uint8_t>(buffer.data(), buffer.size()));
   }
+  void QueueSpan(absl::Span<const uint8_t> buffer) {
+    DataEncoder::SpanCopier coppier(buffer);
+    CopyMessage(&coppier, monotonic_clock::now());
+  }
 };
 
 // Creates a size prefixed flatbuffer from json.

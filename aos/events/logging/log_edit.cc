@@ -51,7 +51,10 @@ int main(int argc, char **argv) {
     aos::logger::DetachedBufferWriter buffer_writer(
         FLAGS_logfile,
         std::make_unique<aos::logger::DummyEncoder>(FLAGS_max_message_size));
-    buffer_writer.QueueSpan(header.span());
+    {
+      aos::logger::DataEncoder::SpanCopier coppier(header.span());
+      buffer_writer.CopyMessage(&coppier, aos::monotonic_clock::min_time);
+    }
 
     while (true) {
       absl::Span<const uint8_t> msg_data = span_reader.ReadMessage();
@@ -59,7 +62,10 @@ int main(int argc, char **argv) {
         break;
       }
 
-      buffer_writer.QueueSpan(msg_data);
+      {
+        aos::logger::DataEncoder::SpanCopier coppier(msg_data);
+        buffer_writer.CopyMessage(&coppier, aos::monotonic_clock::min_time);
+      }
     }
   } else {
     aos::logger::MessageReader reader(FLAGS_logfile);
