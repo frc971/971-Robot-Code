@@ -1392,3 +1392,15 @@ filegroup(
     url =
         "https://www.frc971.org/Build-Dependencies/foxglove-d6b00825.tar.gz",
 )
+
+#
+# https://www.st.com/en/embedded-software/stsw-img009.html#overview
+http_archive(
+    name = "vl53l1x_ultra_lite_driver_api",
+    build_file = "//third_party/vl53l1x:vl53l1x.BUILD",
+    patch_args = ["-p1"],
+    patches = ["//third_party/vl53l1x:vl53l1x.patch"],
+    sha256 = "06a66254ab7a8b061f93ff0f65abb6088c3ea50335475bb6ac11087beb65d174",
+    strip_prefix = "en.STSW-IMG009_v3.5.2/API",
+    url = "https://www.frc971.org/Build-Dependencies/en.STSW-IMG009.zip",
+)

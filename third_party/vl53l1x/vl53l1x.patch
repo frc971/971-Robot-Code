@@ -1,0 +1,310 @@
+diff --git a/core/VL53L1X_api.c b/core/VL53L1X_api.c
+index 572040d..7cdb719 100644
+--- a/core/VL53L1X_api.c
++++ b/core/VL53L1X_api.c
+@@ -62,7 +62,7 @@
+  * @brief Functions implementation
+  */
+ 
+-#include "VL53L1X_api.h"
++#include "core/VL53L1X_api.h"
+ #include <string.h>
+ 
+ #if 0
+@@ -665,7 +665,7 @@ VL53L1X_ERROR  VL53L1X_GetOffset(uint16_t dev, int16_t *offset)
+ 	Temp = Temp>>5;
+    *offset = (int16_t)(Temp);
+ 
+-   if(*offset > 1024) 
++   if(*offset > 1024)
+    {
+ 		*offset = *offset - 2048;
+    }
+diff --git a/core/VL53L1X_api.h b/core/VL53L1X_api.h
+index fc93e56..790ffcb 100644
+--- a/core/VL53L1X_api.h
++++ b/core/VL53L1X_api.h
+@@ -68,7 +68,11 @@
+ #ifndef _API_H_
+ #define _API_H_
+ 
+-#include "vl53l1_platform.h"
++#include "platform/vl53l1_platform.h"
++
++#ifdef __cplusplus
++extern "C" {
++#endif
+ 
+ #define VL53L1X_IMPLEMENTATION_VER_MAJOR       3
+ #define VL53L1X_IMPLEMENTATION_VER_MINOR       5
+@@ -390,4 +394,8 @@ VL53L1X_ERROR VL53L1X_GetSigmaThreshold(uint16_t dev, uint16_t *signal);
+  */
+ VL53L1X_ERROR VL53L1X_StartTemperatureUpdate(uint16_t dev);
+ 
++#ifdef __cplusplus
++}
++#endif
++
+ #endif
+diff --git a/core/VL53L1X_calibration.c b/core/VL53L1X_calibration.c
+index 0c58fb1..59381da 100644
+--- a/core/VL53L1X_calibration.c
++++ b/core/VL53L1X_calibration.c
+@@ -63,8 +63,8 @@
+  * @file  vl53l1x_calibration.c
+  * @brief Calibration functions implementation
+  */
+-#include "VL53L1X_api.h"
+-#include "VL53L1X_calibration.h"
++#include "core/VL53L1X_api.h"
++#include "core/VL53L1X_calibration.h"
+ 
+ #define ALGO__PART_TO_PART_RANGE_OFFSET_MM	0x001E
+ #define MM_CONFIG__INNER_OFFSET_MM			0x0020
+diff --git a/core/VL53L1X_calibration.h b/core/VL53L1X_calibration.h
+index c057722..eaa405a 100644
+--- a/core/VL53L1X_calibration.h
++++ b/core/VL53L1X_calibration.h
+@@ -67,6 +67,12 @@
+ #ifndef _CALIBRATION_H_
+ #define _CALIBRATION_H_
+ 
++#include <stdint.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
+ /**
+  * @brief This function performs the offset calibration.\n
+  * The function returns the offset value found and programs the offset compensation into the device.
+@@ -90,4 +96,8 @@ int8_t VL53L1X_CalibrateOffset(uint16_t dev, uint16_t TargetDistInMm, int16_t *o
+  */
+ int8_t VL53L1X_CalibrateXtalk(uint16_t dev, uint16_t TargetDistInMm, uint16_t *xtalk);
+ 
++#ifdef __cplusplus
++}
++#endif
++
+ #endif
+diff --git a/platform/vl53l1_platform.c b/platform/vl53l1_platform.c
+index 4d17113..0cd0620 100644
+--- a/platform/vl53l1_platform.c
++++ b/platform/vl53l1_platform.c
+@@ -1,75 +1,144 @@
+ 
+-/* 
+-* This file is part of VL53L1 Platform 
+-* 
+-* Copyright (c) 2016, STMicroelectronics - All Rights Reserved 
+-* 
+-* License terms: BSD 3-clause "New" or "Revised" License. 
+-* 
+-* Redistribution and use in source and binary forms, with or without 
+-* modification, are permitted provided that the following conditions are met: 
+-* 
+-* 1. Redistributions of source code must retain the above copyright notice, this 
+-* list of conditions and the following disclaimer. 
+-* 
+-* 2. Redistributions in binary form must reproduce the above copyright notice, 
+-* this list of conditions and the following disclaimer in the documentation 
+-* and/or other materials provided with the distribution. 
+-* 
+-* 3. Neither the name of the copyright holder nor the names of its contributors 
+-* may be used to endorse or promote products derived from this software 
+-* without specific prior written permission. 
+-* 
+-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+-* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+-* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+-* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE 
+-* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+-* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
+-* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
+-* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+-* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+-* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+-* 
++/*
++* This file is part of VL53L1 Platform
++*
++* Copyright (c) 2016, STMicroelectronics - All Rights Reserved
++*
++* License terms: BSD 3-clause "New" or "Revised" License.
++*
++* Redistribution and use in source and binary forms, with or without
++* modification, are permitted provided that the following conditions are met:
++*
++* 1. Redistributions of source code must retain the above copyright notice, this
++* list of conditions and the following disclaimer.
++*
++* 2. Redistributions in binary form must reproduce the above copyright notice,
++* this list of conditions and the following disclaimer in the documentation
++* and/or other materials provided with the distribution.
++*
++* 3. Neither the name of the copyright holder nor the names of its contributors
++* may be used to endorse or promote products derived from this software
++* without specific prior written permission.
++*
++* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*
+ */
+ 
+-#include "vl53l1_platform.h"
++#include "platform/vl53l1_platform.h"
++#include <stdint.h>
+ #include <string.h>
+ #include <time.h>
+ #include <math.h>
+ 
+-int8_t VL53L1_WriteMulti( uint16_t dev, uint16_t index, uint8_t *pdata, uint32_t count) {
+-	return 0; // to be implemented
++#include "hardware/i2c.h"
++#include "pico/stdlib.h"
++
++static uint8_t
++    buffer[VL53L1X_I2C_BUF_SIZE + 2];  // R/W buffer for all transactions
++
++/* ----- Static helper functions ----- */
++
++// Read len bytes of data from i2c device with address dev into buff
++// Expects register address to already be configured
++// Returns 0 on success, -1 on failure
++static int8_t Pico_I2CRead(i2c_inst_t *i2c_dev, uint16_t addr, uint8_t *buff,
++                           uint8_t len) {
++  return (i2c_read_blocking(i2c_dev, addr, buff, len, false) == len) - 1;
++}
++
++// Write len bytes of data to i2c device with address dev from buff
++// Returns 0 on success, -1 on failure
++static int8_t Pico_I2CWrite(i2c_inst_t *i2c_dev, uint16_t addr, uint8_t *buff,
++                            uint8_t len) {
++  return (i2c_write_blocking(i2c_dev, addr, buff, len, false) == len) - 1;
+ }
+ 
+-int8_t VL53L1_ReadMulti(uint16_t dev, uint16_t index, uint8_t *pdata, uint32_t count){
+-	return 0; // to be implemented
++int8_t VL53L1_WriteMulti(uint16_t dev, uint16_t index, uint8_t *pdata,
++                         uint32_t count) {
++  if (count >= VL53L1X_I2C_BUF_SIZE) {
++    return -1;
++  }
++
++  buffer[0] = 0xFF & (index >> 8);
++  buffer[1] = 0xFF & index;
++  memcpy(&buffer[2], pdata, count);
++
++  i2c_inst_t *i2c_dev = i2c0;
++  if (dev == 1) {
++    i2c_dev = i2c0;
++  } else if (dev == 2) {
++    i2c_dev = i2c1;
++  }
++
++  return Pico_I2CWrite(i2c_dev, VL53L1X_I2C_DEV_ADDR, buffer, (count + 2));
++}
++
++int8_t VL53L1_ReadMulti(uint16_t dev, uint16_t index, uint8_t *pdata,
++                        uint32_t count) {
++  if (count >= VL53L1X_I2C_BUF_SIZE) {
++    return -1;
++  }
++
++  buffer[0] = 0xFF & (index >> 8);
++  buffer[1] = 0xFF & index;
++
++  i2c_inst_t *i2c_dev = i2c0;
++  if (dev == 1) {
++    i2c_dev = i2c0;
++  } else if (dev == 2) {
++    i2c_dev = i2c1;
++  }
++
++  int8_t result = Pico_I2CWrite(i2c_dev, VL53L1X_I2C_DEV_ADDR, buffer, 2);
++
++  if (result == 0) {
++    pdata[0] = index;
++    result = Pico_I2CRead(i2c_dev, VL53L1X_I2C_DEV_ADDR, pdata, count);
++  }
++
++  return result;
+ }
+ 
+ int8_t VL53L1_WrByte(uint16_t dev, uint16_t index, uint8_t data) {
+-	return 0; // to be implemented
++  return VL53L1_WriteMulti(dev, index, &data, 1);
+ }
+ 
+ int8_t VL53L1_WrWord(uint16_t dev, uint16_t index, uint16_t data) {
+-	return 0; // to be implemented
++  data = __htons(data);
++  return VL53L1_WriteMulti(dev, index, (uint8_t *)&data, 2);
+ }
+ 
+ int8_t VL53L1_WrDWord(uint16_t dev, uint16_t index, uint32_t data) {
+-	return 0; // to be implemented
++  data = __htonl(data);
++  return VL53L1_WriteMulti(dev, index, (uint8_t *)&data, 4);
+ }
+ 
+ int8_t VL53L1_RdByte(uint16_t dev, uint16_t index, uint8_t *data) {
+-	return 0; // to be implemented
++  return VL53L1_ReadMulti(dev, index, data, 1);
+ }
+ 
+ int8_t VL53L1_RdWord(uint16_t dev, uint16_t index, uint16_t *data) {
+-	return 0; // to be implemented
++  int8_t result = VL53L1_ReadMulti(dev, index, (uint8_t *)data, 2);
++  *data = __ntohs(*data);
++  return result;
+ }
+ 
+ int8_t VL53L1_RdDWord(uint16_t dev, uint16_t index, uint32_t *data) {
+-	return 0; // to be implemented
++  int8_t result = VL53L1_ReadMulti(dev, index, (uint8_t *)data, 4);
++  *data = __ntohl(*data);
++  return result;
+ }
+ 
+-int8_t VL53L1_WaitMs(uint16_t dev, int32_t wait_ms){
+-	return 0; // to be implemented
++int8_t VL53L1_WaitMs(uint16_t dev, int32_t wait_ms) {
++  sleep_ms(wait_ms);
++  return 0;
+ }
+diff --git a/platform/vl53l1_platform.h b/platform/vl53l1_platform.h
+index 75bc4c2..e657ba6 100644
+--- a/platform/vl53l1_platform.h
++++ b/platform/vl53l1_platform.h
+@@ -2,17 +2,20 @@
+  * @file  vl53l1_platform.h
+  * @brief Those platform functions are platform dependent and have to be implemented by the user
+  */
+- 
++
+ #ifndef _VL53L1_PLATFORM_H_
+ #define _VL53L1_PLATFORM_H_
+ 
+-#include "vl53l1_types.h"
++#include "platform/vl53l1_types.h"
+ 
+ #ifdef __cplusplus
+ extern "C"
+ {
+ #endif
+ 
++#define VL53L1X_I2C_BUF_SIZE 256
++#define VL53L1X_I2C_DEV_ADDR 0x29
++
+ typedef struct {
+ 	uint32_t dummy;
+ } VL53L1_Dev_t;
