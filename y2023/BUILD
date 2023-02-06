@@ -11,6 +11,7 @@ robot_downloader(
         "//y2022/localizer:localizer_main",
         "//aos/network:web_proxy_main",
         "//aos/events/logging:log_cat",
+        "//y2023/rockpi:imu_main",
     ],
     data = [
         ":aos_config",
