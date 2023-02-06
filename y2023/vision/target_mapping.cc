@@ -13,7 +13,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 #include "y2023/vision/aprilrobotics.h"
-#include "y2023/vision/calibration_data.h"
+#include "y2023/vision/vision_util.h"
 
 DEFINE_string(json_path, "target_map.json",
               "Specify path for json with initial pose guesses.");
@@ -76,23 +76,6 @@ void HandleAprilTag(const TargetMap &map,
   }
 }
 
-const calibration::CameraCalibration *FindCameraCalibration(
-    const calibration::CalibrationData *calibration_data,
-    std::string_view node_name) {
-  for (const calibration::CameraCalibration *candidate :
-       *calibration_data->camera_calibrations()) {
-    if (candidate->node_name()->string_view() != node_name) {
-      continue;
-    }
-    if (candidate->team_number() != FLAGS_team_number) {
-      continue;
-    }
-    return candidate;
-  }
-  LOG(FATAL) << ": Failed to find camera calibration for " << node_name
-             << " on " << FLAGS_team_number;
-}
-
 Eigen::Affine3d CameraExtrinsics(
     const calibration::CameraCalibration *camera_calibration) {
   const frc971::vision::calibration::TransformationMatrix *transform =
@@ -113,16 +96,15 @@ Eigen::Affine3d CameraExtrinsics(
 
 // Get images from pi and pass apriltag positions to HandleAprilTag()
 void HandlePiCaptures(
+    const frc971::constants::ConstantsFetcher<Constants> &constants,
     aos::EventLoop *pi_event_loop, aos::logger::LogReader *reader,
     std::vector<DataAdapter::TimestampedDetection>
         *timestamped_target_detections,
     std::vector<std::unique_ptr<AprilRoboticsDetector>> *detectors) {
-  const aos::FlatbufferSpan<calibration::CalibrationData> calibration_data(
-      CalibrationData());
 
   const auto node_name = pi_event_loop->node()->name()->string_view();
   const calibration::CameraCalibration *calibration =
-      FindCameraCalibration(&calibration_data.message(), node_name);
+      FindCameraCalibration(constants.constants(), node_name);
   const auto extrinsics = CameraExtrinsics(calibration);
 
   // TODO(milind): change to /camera once we log at full frequency
@@ -158,28 +140,36 @@ void MappingMain(int argc, char *argv[]) {
       aos::configuration::GetNode(reader.configuration(), "pi1");
   std::unique_ptr<aos::EventLoop> pi1_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi1", pi1);
-  HandlePiCaptures(pi1_event_loop.get(), &reader,
+  frc971::constants::ConstantsFetcher<Constants> pi1_constants(
+      pi1_event_loop.get());
+  HandlePiCaptures(pi1_constants, pi1_event_loop.get(), &reader,
                    &timestamped_target_detections, &detectors);
 
   const aos::Node *pi2 =
       aos::configuration::GetNode(reader.configuration(), "pi2");
   std::unique_ptr<aos::EventLoop> pi2_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi2", pi2);
-  HandlePiCaptures(pi2_event_loop.get(), &reader,
+  frc971::constants::ConstantsFetcher<Constants> pi2_constants(
+      pi2_event_loop.get());
+  HandlePiCaptures(pi2_constants, pi2_event_loop.get(), &reader,
                    &timestamped_target_detections, &detectors);
 
   const aos::Node *pi3 =
       aos::configuration::GetNode(reader.configuration(), "pi3");
   std::unique_ptr<aos::EventLoop> pi3_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi3", pi3);
-  HandlePiCaptures(pi3_event_loop.get(), &reader,
+  frc971::constants::ConstantsFetcher<Constants> pi3_constants(
+      pi3_event_loop.get());
+  HandlePiCaptures(pi3_constants, pi3_event_loop.get(), &reader,
                    &timestamped_target_detections, &detectors);
 
   const aos::Node *pi4 =
       aos::configuration::GetNode(reader.configuration(), "pi4");
   std::unique_ptr<aos::EventLoop> pi4_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi4", pi4);
-  HandlePiCaptures(pi4_event_loop.get(), &reader,
+  frc971::constants::ConstantsFetcher<Constants> pi4_constants(
+      pi4_event_loop.get());
+  HandlePiCaptures(pi4_constants, pi4_event_loop.get(), &reader,
                    &timestamped_target_detections, &detectors);
 
   reader.event_loop_factory()->Run();

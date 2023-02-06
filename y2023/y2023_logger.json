@@ -391,6 +391,14 @@
           "time_to_live": 500000000
         }
       ]
+    },
+    {
+      "name": "/logger/constants",
+      "type": "y2023.Constants",
+      "source_node": "logger",
+      "frequency": 1,
+      "num_senders": 2,
+      "max_size": 4096
     }
   ],
   "maps": [
@@ -401,6 +409,15 @@
       },
       "rename": {
         "name": "/logger/aos"
+      }
+    },
+    {
+      "match": {
+        "name": "/constants*",
+        "source_node": "logger"
+      },
+      "rename": {
+        "name": "/logger/constants"
       }
     },
     {
@@ -460,6 +477,13 @@
       "nodes": [
         "logger"
       ]
+    },
+    {
+      "name": "constants_sender",
+      "autorestart": false,
+      "nodes": [
+        "logger"
+      ]
     }
   ],
   "nodes": [
@@ -469,7 +493,9 @@
       "hostnames": [
         "pi-971-6",
         "pi-9971-6",
+        "pi-7971-6",
         "ASchuh-T480s",
+        "tarvalon",
         "aschuh-3950x"
       ],
       "port": 9971

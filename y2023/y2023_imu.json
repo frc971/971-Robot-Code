@@ -298,12 +298,21 @@
       "frequency": 2200,
       "max_size": 1600,
       "num_senders": 2
+    },
+    {
+      "name": "/imu/constants",
+      "type": "y2023.Constants",
+      "source_node": "imu",
+      "frequency": 1,
+      "num_senders": 2,
+      "max_size": 4096
     }
   ],
   "applications": [
     {
       "name": "message_bridge_client",
       "executable_name": "message_bridge_client.sh",
+      "user": "pi",
       "nodes": [
         "imu"
       ]
@@ -313,6 +322,7 @@
       "executable_name": "localizer_main",
       /* TODO(james): Remove this once confident in the accelerometer code. */
       "args": ["--ignore_accelerometer"],
+      "user": "pi",
       "nodes": [
         "imu"
       ]
@@ -320,6 +330,7 @@
     {
       "name": "imu",
       "executable_name": "imu_main",
+      "user": "pi",
       "nodes": [
         "imu"
       ]
@@ -327,6 +338,7 @@
     {
       "name": "message_bridge_server",
       "executable_name": "message_bridge_server",
+      "user": "pi",
       "nodes": [
         "imu"
       ]
@@ -335,6 +347,7 @@
       "name": "localizer_logger",
       "executable_name": "logger_main",
       "args": ["--logging_folder", "", "--snappy_compress"],
+      "user": "pi",
       "nodes": [
         "imu"
       ]
@@ -342,12 +355,30 @@
     {
       "name": "web_proxy",
       "executable_name": "web_proxy_main",
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "constants_sender",
+      "autorestart": false,
+      "user": "pi",
       "nodes": [
         "imu"
       ]
     }
   ],
   "maps": [
+    {
+      "match": {
+        "name": "/constants*",
+        "source_node": "imu"
+      },
+      "rename": {
+        "name": "/imu/constants"
+      }
+    },
     {
       "match": {
         "name": "/aos*",

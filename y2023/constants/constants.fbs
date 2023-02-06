@@ -1,0 +1,13 @@
+include "frc971/vision/calibration.fbs";
+
+namespace y2023;
+
+table CameraConfiguration {
+  calibration:frc971.vision.calibration.CameraCalibration (id: 0);
+}
+
+table Constants {
+  cameras:[CameraConfiguration] (id: 0);
+}
+
+root_type Constants;

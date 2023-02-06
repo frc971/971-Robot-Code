@@ -1,0 +1,14 @@
+include "y2023/constants/constants.fbs";
+
+namespace y2023;
+
+table TeamAndConstants {
+  team:long (id: 0);
+  data:Constants (id: 1);
+}
+
+table ConstantsList {
+  constants:[TeamAndConstants] (id: 0);
+}
+
+root_type ConstantsList;

@@ -1,6 +1,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "y2023/vision/aprilrobotics.h"
+#include "frc971/constants/constants_sender_lib.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 
@@ -8,6 +9,8 @@ namespace y2023::vision {
 void AprilViewerMain() {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
+
+  frc971::constants::WaitForConstants<Constants>(&config.message());
 
   aos::ShmEventLoop event_loop(&config.message());
 

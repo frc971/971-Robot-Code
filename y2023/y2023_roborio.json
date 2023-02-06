@@ -435,6 +435,14 @@
       "type": "frc971.wpilib.PneumaticsToLog",
       "source_node": "roborio",
       "frequency": 50
+    },
+    {
+      "name": "/roborio/constants",
+      "type": "y2023.Constants",
+      "source_node": "roborio",
+      "frequency": 1,
+      "num_senders": 2,
+      "max_size": 4096
     }
   ],
   "applications": [
@@ -511,9 +519,25 @@
       "nodes": [
         "roborio"
       ]
+    },
+    {
+      "name": "constants_sender",
+      "autorestart": false,
+      "nodes": [
+        "roborio"
+      ]
     }
   ],
   "maps": [
+    {
+      "match": {
+        "name": "/constants*",
+        "source_node": "roborio"
+      },
+      "rename": {
+        "name": "/roborio/constants"
+      }
+    },
     {
       "match": {
         "name": "/aos*",
