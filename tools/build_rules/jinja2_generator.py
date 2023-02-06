@@ -22,7 +22,8 @@ def main():
     args = parser.parse_args(sys.argv[1:])
 
     with open(args.template, 'r') as input_file:
-        template = jinja2.Template(input_file.read())
+        template = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(".")).from_string(input_file.read())
 
     output = template.render(args.replacements)
     with open(args.output, 'w') as config_file:
