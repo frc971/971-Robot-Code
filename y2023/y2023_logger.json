@@ -492,7 +492,7 @@
     {
       "name": "image_streamer",
       "executable_name": "image_streamer_start.sh",
-      "autostart": false,
+      "autostart": true,
       "nodes": [
         "logger"
       ]

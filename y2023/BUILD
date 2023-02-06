@@ -15,14 +15,17 @@ robot_downloader(
         "//aos/network:web_proxy_main",
         "//aos/events/logging:log_cat",
         "//y2023/rockpi:imu_main",
+        "//frc971/image_streamer:image_streamer",
     ],
     data = [
         ":aos_config",
         "//y2023/constants:constants.json",
+        "//y2023/vision:image_streamer_start",
         "//y2023/www:www_files",
     ],
     dirs = [
         "//y2023/www:www_files",
+        "//frc971/image_streamer/www:www_files",
     ],
     start_binaries = [
         "//aos/network:message_bridge_client",

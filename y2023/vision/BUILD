@@ -119,6 +119,12 @@ cc_binary(
     ],
 )
 
+filegroup(
+    name = "image_streamer_start",
+    srcs = ["image_streamer_start.sh"],
+    visibility = ["//visibility:public"],
+)
+
 cc_binary(
     name = "foxglove_image_converter",
     srcs = ["foxglove_image_converter.cc"],
