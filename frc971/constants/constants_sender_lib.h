@@ -2,6 +2,7 @@
 #define FRC971_CONSTANTS_CONSTANTS_SENDER_H_
 
 #include "aos/events/event_loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
@@ -27,11 +28,9 @@ class ConstantSender {
         constants_path_(constants_path),
         event_loop_(event_loop),
         sender_(event_loop_->MakeSender<ConstantsData>(channel_name_)) {
-    event_loop->OnRun([this]() {
-      typename aos::Sender<ConstantsData>::Builder builder =
-          sender_.MakeBuilder();
-      builder.CheckOk(builder.Send(GetConstantsForTeamNumber(builder.fbb())));
-    });
+    typename aos::Sender<ConstantsData>::Builder builder =
+        sender_.MakeBuilder();
+    builder.CheckOk(builder.Send(GetConstantsForTeamNumber(builder.fbb())));
   }
 
  private:
@@ -62,6 +61,56 @@ class ConstantSender {
   aos::EventLoop *event_loop_;
   aos::Sender<ConstantsData> sender_;
 };
+
+// This class fetches the current constants for the device, with appropriate
+// CHECKs to ensure that (a) the constants never change and (b) that the
+// constants are always available. This can be paired with WaitForConstants to
+// create the conditions for (b). In simulation, the constants should simply be
+// sent before starting up other EventLoops.
+template <typename ConstantsData>
+class ConstantsFetcher {
+ public:
+  ConstantsFetcher(aos::EventLoop *event_loop,
+                   std::string_view channel = "/constants")
+      : fetcher_(event_loop->MakeFetcher<ConstantsData>(channel)) {
+    CHECK(fetcher_.Fetch())
+        << "Constants information must be available at startup.";
+    event_loop->MakeNoArgWatcher<ConstantsData>(channel, []() {
+      LOG(FATAL)
+          << "Don't know how to handle changes to constants information.";
+    });
+  }
+
+  const ConstantsData& constants() const {
+    return *fetcher_.get();
+  }
+
+ private:
+  aos::Fetcher<ConstantsData> fetcher_;
+};
+
+// Blocks until data is available on the requested channel using a ShmEventLoop.
+// This is for use during initialization in C++ binaries so that we can delay
+// initialization until everything is available. This allows applications to
+// depend on constants data during their initialization.
+template <typename ConstantsData>
+void WaitForConstants(const aos::Configuration *config,
+                      std::string_view channel = "/constants") {
+  aos::ShmEventLoop event_loop(config);
+  aos::Fetcher fetcher = event_loop.MakeFetcher<ConstantsData>(channel);
+  event_loop.MakeNoArgWatcher<ConstantsData>(
+      channel, [&event_loop]() { event_loop.Exit(); });
+  event_loop.OnRun([&event_loop, &fetcher]() {
+    // If the constants were already published, we don't need to wait for them.
+    if (fetcher.Fetch()) {
+      event_loop.Exit();
+    }
+  });
+  LOG(INFO) << "Waiting for constants data on " << channel << " "
+            << ConstantsData::GetFullyQualifiedName();
+  event_loop.Run();
+  LOG(INFO) << "Got constants data.";
+}
 
 }  // namespace frc971::constants
 

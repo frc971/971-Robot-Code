@@ -40,11 +40,10 @@ TEST_F(ConstantSenderTest, HasData971) {
   ConstantSender<testdata::ConstantsData, testdata::ConstantsList> test971(
       constants_sender_event_loop_.get(),
       "frc971/constants/testdata/test_constants.json", "/constants");
-  test_event_loop->MakeWatcher("/constants",
-                               [](const testdata::ConstantsData &data) {
-                                 EXPECT_EQ(data.max_roller_voltage(), 12);
-                                 EXPECT_EQ(data.min_roller_voltage(), -12);
-                               });
+  ConstantsFetcher<testdata::ConstantsData> fetcher(test_event_loop.get());
+  EXPECT_EQ(fetcher.constants().max_roller_voltage(), 12);
+  EXPECT_EQ(fetcher.constants().min_roller_voltage(), -12);
+  // Ensure that the watcher in ConstantsFetcher never triggers.
   event_loop_factory_.RunFor(std::chrono::seconds(1));
 }
 
@@ -57,12 +56,40 @@ TEST_F(ConstantSenderTest, HasData9971) {
   ConstantSender<testdata::ConstantsData, testdata::ConstantsList> test971(
       constants_sender_event_loop_.get(),
       "frc971/constants/testdata/test_constants.json", 9971, "/constants");
-  test_event_loop->MakeWatcher("/constants",
-                               [](const testdata::ConstantsData &data) {
-                                 EXPECT_EQ(data.max_roller_voltage(), 6);
-                                 EXPECT_EQ(data.min_roller_voltage(), -6);
-                               });
+  ConstantsFetcher<testdata::ConstantsData> fetcher(test_event_loop.get());
+  EXPECT_EQ(fetcher.constants().max_roller_voltage(), 6);
+  EXPECT_EQ(fetcher.constants().min_roller_voltage(), -6);
   event_loop_factory_.RunFor(std::chrono::seconds(1));
+}
+
+// Tests that the ConstantsFetcher dies when there is no data available during
+// construction.
+TEST_F(ConstantSenderTest, NoDataOnStartup) {
+  std::unique_ptr<aos::EventLoop> test_event_loop =
+      event_loop_factory_.MakeEventLoop("constants");
+  EXPECT_DEATH(ConstantsFetcher<testdata::ConstantsData>(test_event_loop.get()),
+               "information must be available at startup");
+}
+
+// Tests that the ConstantsFetcher dies when there is a change to the constants
+// data.
+TEST_F(ConstantSenderTest, DieOnDataUpdate) {
+  std::unique_ptr<aos::EventLoop> test_event_loop =
+      event_loop_factory_.MakeEventLoop("constants");
+  ConstantSender<testdata::ConstantsData, testdata::ConstantsList> test971(
+      constants_sender_event_loop_.get(),
+      "frc971/constants/testdata/test_constants.json", 9971, "/constants");
+  ConstantsFetcher<testdata::ConstantsData> fetcher(test_event_loop.get());
+  auto sender =
+      constants_sender_event_loop_->MakeSender<testdata::ConstantsData>(
+          "/constants");
+  constants_sender_event_loop_->OnRun([&sender]() {
+      auto builder = sender.MakeBuilder();
+      builder.CheckOk(builder.Send(
+          builder.MakeBuilder<testdata::ConstantsData>().Finish()));
+      });
+  EXPECT_DEATH(event_loop_factory_.RunFor(std::chrono::seconds(1)),
+               "changes to constants");
 }
 
 // When given a team number that it not recognized we kill the program.
