@@ -146,9 +146,10 @@ class DrivetrainFilters {
 class DrivetrainLoop
     : public frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
-  // Note that we only actually store N - 1 splines, since we need to keep one
-  // fetcher free to check whether there are any new splines.
-  static constexpr size_t kNumSplineFetchers = 5;
+  // Note that we only actually store N - 1 splines consistently, since we need
+  // to keep one fetcher free to check whether there are any new splines.
+  static constexpr size_t kNumSplineFetchers =
+      SplineDrivetrain::kMaxTrajectories;
 
   // Constructs a control loop which can take a Drivetrain or defaults to the
   // drivetrain at frc971::control_loops::drivetrain

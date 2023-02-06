@@ -36,18 +36,16 @@ void SplineDrivetrain::ScaleCapU(Eigen::Matrix<double, 2, 1> *U) {
 
 void SplineDrivetrain::SetGoal(
     const ::frc971::control_loops::drivetrain::Goal *goal) {
-  if (goal->has_spline_handle()) {
-    commanded_spline_ = goal->spline_handle();
-  } else {
-    commanded_spline_.reset();
-  }
-  UpdateSplineHandles();
+  UpdateSplineHandles(goal->has_spline_handle()
+                          ? std::make_optional<int>(goal->spline_handle())
+                          : std::nullopt);
 }
 
 bool SplineDrivetrain::IsCurrentTrajectory(
     const fb::Trajectory *trajectory) const {
-  return (current_trajectory_ != nullptr &&
-          current_trajectory().spline_handle() == trajectory->handle());
+  const FinishedTrajectory *current = current_trajectory();
+  return (current != nullptr &&
+          current->spline_handle() == trajectory->handle());
 }
 
 bool SplineDrivetrain::HasTrajectory(const fb::Trajectory *trajectory) const {
@@ -55,7 +53,7 @@ bool SplineDrivetrain::HasTrajectory(const fb::Trajectory *trajectory) const {
     return false;
   }
   for (size_t ii = 0; ii < trajectories_.size(); ++ii) {
-    if (trajectories_[ii]->spline_handle() == trajectory->handle()) {
+    if (trajectories_[ii].spline_handle() == trajectory->handle()) {
       return true;
     }
   }
@@ -66,7 +64,7 @@ void SplineDrivetrain::DeleteTrajectory(const fb::Trajectory *trajectory) {
   CHECK(trajectory != nullptr);
 
   for (size_t ii = 0; ii < trajectories_.size(); ++ii) {
-    if (trajectories_[ii]->spline_handle() == trajectory->handle()) {
+    if (trajectories_[ii].spline_handle() == trajectory->handle()) {
       trajectories_.erase(trajectories_.begin() + ii);
       return;
     }
@@ -76,47 +74,67 @@ void SplineDrivetrain::DeleteTrajectory(const fb::Trajectory *trajectory) {
 }
 
 void SplineDrivetrain::AddTrajectory(const fb::Trajectory *trajectory) {
-  trajectories_.emplace_back(std::make_unique<FinishedTrajectory>(
-      dt_config_, trajectory, velocity_drivetrain_));
-  UpdateSplineHandles();
+  CHECK_LT(trajectories_.size(), trajectories_.capacity());
+  trajectories_.emplace_back(dt_config_, trajectory, velocity_drivetrain_);
+  UpdateSplineHandles(commanded_spline_);
 }
 
 void SplineDrivetrain::DeleteCurrentSpline() {
-  DeleteTrajectory(&CHECK_NOTNULL(current_trajectory_)->trajectory());
+  DeleteTrajectory(&CHECK_NOTNULL(current_trajectory())->trajectory());
   executing_spline_ = false;
-  current_trajectory_ = nullptr;
+  commanded_spline_.reset();
   current_xva_.setZero();
 }
 
-void SplineDrivetrain::UpdateSplineHandles() {
+void SplineDrivetrain::UpdateSplineHandles(
+    std::optional<int> commanded_spline) {
   // If we are currently executing a spline and have received a change
   if (executing_spline_) {
-    if (!commanded_spline_) {
+    if (!commanded_spline) {
       // We've been told to stop executing a spline; remove it from our queue,
       // and clean up.
       DeleteCurrentSpline();
       return;
     } else {
       if (executing_spline_ &&
-          current_trajectory().spline_handle() != *commanded_spline_) {
+          CHECK_NOTNULL(current_trajectory())->spline_handle() !=
+              *commanded_spline) {
         // If we are executing a spline, and the handle has changed, garbage
         // collect the old spline.
         DeleteCurrentSpline();
       }
     }
   }
+  commanded_spline_ = commanded_spline;
   // We've now cleaned up the previous state; handle any new commands.
   if (!commanded_spline_) {
     return;
   }
   for (size_t ii = 0; ii < trajectories_.size(); ++ii) {
-    if (trajectories_[ii]->spline_handle() == *commanded_spline_) {
+    if (trajectories_[ii].spline_handle() == *commanded_spline_) {
       executing_spline_ = true;
-      current_trajectory_ = trajectories_[ii].get();
     }
   }
   // If we didn't find the commanded spline in the list of available splines,
   // that's fine; it just means, it hasn't been fully planned yet.
+}
+
+FinishedTrajectory *SplineDrivetrain::current_trajectory() {
+  for (size_t ii = 0; ii < trajectories_.size(); ++ii) {
+    if (trajectories_[ii].spline_handle() == *commanded_spline_) {
+      return &trajectories_[ii];
+    }
+  }
+  return nullptr;
+}
+
+const FinishedTrajectory *SplineDrivetrain::current_trajectory() const {
+  for (size_t ii = 0; ii < trajectories_.size(); ++ii) {
+    if (trajectories_[ii].spline_handle() == *commanded_spline_) {
+      return &trajectories_[ii];
+    }
+  }
+  return nullptr;
 }
 
 // TODO(alex): Hold position when done following the spline.
@@ -127,17 +145,19 @@ void SplineDrivetrain::Update(
   enable_ = enable;
   if (enable && executing_spline_) {
     ::Eigen::Matrix<double, 2, 1> U_ff = ::Eigen::Matrix<double, 2, 1>::Zero();
+    const FinishedTrajectory *const trajectory =
+        CHECK_NOTNULL(current_trajectory());
     if (!IsAtEnd() && executing_spline_) {
       // TODO(alex): It takes about a cycle for the outputs to propagate to the
       // motors. Consider delaying the output by a cycle.
-      U_ff = current_trajectory().FFVoltage(current_xva_(0));
+      U_ff = trajectory->FFVoltage(current_xva_(0));
     }
 
     const double current_distance = current_xva_(0);
     ::Eigen::Matrix<double, 2, 5> K =
-        current_trajectory().GainForDistance(current_distance);
+        trajectory->GainForDistance(current_distance);
     ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
-    const bool backwards = current_trajectory().drive_spline_backwards();
+    const bool backwards = trajectory->drive_spline_backwards();
     if (backwards) {
       ::Eigen::Matrix<double, 2, 1> swapU(U_ff(1, 0), U_ff(0, 0));
       U_ff = -swapU;
@@ -148,11 +168,11 @@ void SplineDrivetrain::Update(
       goal_state(4, 0) = -left_goal;
     }
     const Eigen::Matrix<double, 5, 1> relative_goal =
-        current_trajectory().StateToPathRelativeState(current_distance,
-                                                      goal_state, backwards);
+        trajectory->StateToPathRelativeState(current_distance, goal_state,
+                                             backwards);
     const Eigen::Matrix<double, 5, 1> relative_state =
-        current_trajectory().StateToPathRelativeState(current_distance, state,
-                                                      backwards);
+        trajectory->StateToPathRelativeState(current_distance, state,
+                                             backwards);
     Eigen::Matrix<double, 5, 1> state_error = relative_goal - relative_state;
     state_error(2, 0) = ::aos::math::NormalizeAngle(state_error(2, 0));
     ::Eigen::Matrix<double, 2, 1> U_fb = K * state_error;
@@ -163,7 +183,7 @@ void SplineDrivetrain::Update(
     }
 
     ::Eigen::Matrix<double, 2, 1> xv_state = current_xva_.block<2, 1>(0, 0);
-    next_xva_ = current_trajectory().GetNextXVA(dt_config_.dt, &xv_state);
+    next_xva_ = trajectory->GetNextXVA(dt_config_.dt, &xv_state);
     next_U_ = U_ff + U_fb - voltage_error;
     uncapped_U_ = next_U_;
     ScaleCapU(&next_U_);
@@ -203,7 +223,7 @@ flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
       builder->CreateUninitializedVector(trajectories_.size(), &spline_handles);
 
   for (size_t ii = 0; ii < trajectories_.size(); ++ii) {
-    spline_handles[ii] = trajectories_[ii]->spline_handle();
+    spline_handles[ii] = trajectories_[ii].spline_handle();
   }
 
   drivetrain::TrajectoryLogging::Builder trajectory_logging_builder(*builder);
@@ -211,7 +231,7 @@ flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
     ::Eigen::Matrix<double, 5, 1> goal_state = CurrentGoalState();
     trajectory_logging_builder.add_x(goal_state(0));
     trajectory_logging_builder.add_y(goal_state(1));
-    if (current_trajectory().drive_spline_backwards()) {
+    if (CHECK_NOTNULL(current_trajectory())->drive_spline_backwards()) {
       trajectory_logging_builder.add_left_velocity(-goal_state(4));
       trajectory_logging_builder.add_right_velocity(-goal_state(3));
       trajectory_logging_builder.add_theta(
@@ -223,8 +243,7 @@ flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
       trajectory_logging_builder.add_right_velocity(goal_state(4));
     }
   }
-  trajectory_logging_builder.add_is_executing(!IsAtEnd() &&
-                                              executing_spline_);
+  trajectory_logging_builder.add_is_executing(!IsAtEnd() && executing_spline_);
   trajectory_logging_builder.add_is_executed(executing_spline_ && IsAtEnd());
   if (commanded_spline_) {
     trajectory_logging_builder.add_goal_spline_handle(*commanded_spline_);
@@ -233,8 +252,9 @@ flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
     }
   }
   trajectory_logging_builder.add_distance_remaining(
-      executing_spline_ ? current_trajectory().length() - current_xva_.x()
-                        : 0.0);
+      executing_spline_
+          ? CHECK_NOTNULL(current_trajectory())->length() - current_xva_.x()
+          : 0.0);
   trajectory_logging_builder.add_available_splines(handles_vector);
 
   return trajectory_logging_builder.Finish();
