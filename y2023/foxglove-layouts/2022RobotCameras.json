@@ -1,0 +1,114 @@
+{
+  "configById": {
+    "ImageViewPanel!3j0qvlm": {
+      "cameraTopic": "/studio_script/YUYVConvertedImagePi1",
+      "enabledMarkerTopics": [],
+      "mode": "fit",
+      "pan": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "synchronize": false,
+      "transformMarkers": false,
+      "zoom": 1
+    },
+    "ImageViewPanel!1uof9zo": {
+      "cameraTopic": "/studio_script/YUYVConvertedImagePi3",
+      "enabledMarkerTopics": [],
+      "mode": "fit",
+      "pan": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "synchronize": false,
+      "transformMarkers": false,
+      "zoom": 1
+    },
+    "ImageViewPanel!1ya4lw8": {
+      "cameraTopic": "/studio_script/YUYVConvertedImagePi2",
+      "enabledMarkerTopics": [],
+      "mode": "fit",
+      "pan": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "synchronize": false,
+      "transformMarkers": false,
+      "zoom": 1
+    },
+    "ImageViewPanel!1tvn3cp": {
+      "cameraTopic": "/studio_script/YUYVConvertedImagePi4",
+      "enabledMarkerTopics": [],
+      "mode": "fit",
+      "pan": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "synchronize": false,
+      "transformMarkers": false,
+      "zoom": 1
+    },
+    "ImageViewPanel!jmmyy1": {
+      "cameraTopic": "/studio_script/YUYVConvertedImageDriverCamera",
+      "enabledMarkerTopics": [],
+      "mode": "fit",
+      "pan": {
+        "x": 1,
+        "y": -1
+      },
+      "rotation": 0,
+      "synchronize": false,
+      "transformMarkers": false,
+      "zoom": 1
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {
+    "1eb832cf-fe38-4d19-9f6b-be4144f8c594": {
+      "sourceCode": "// The ./types module provides helper types for your Input events and messages.\nimport { Input, Message, Time } from \"./types\";\n\n// Your script can output well-known message types, any of your custom message types, or\n// complete custom message types.\n//\n// Use `Message` to access your data source types or well-known types:\n// type Twist = Message<\"geometry_msgs/Twist\">;\n\n// These are the topics your script \"subscribes\" to. Studio will invoke your script function\n// when any message is received on one of these topics.\nexport const inputs = [\"/camera/decimated frc971.vision.CameraImage\"];\n\n// Any output your script produces is \"published\" to this topic. Published messages are only visible within Studio, not to your original data source.\nexport const output = \"/studio_script/YUYVConvertedImageDriverCamera\";\n\n// This function is called with messages from your input topics.\n// The first argument is an event with the topic, receive time, and message.\n// Use the `Input<...>` helper to get the correct event type for your input topic messages.\nexport default function script(\n  event: Input<\"/camera/decimated frc971.vision.CameraImage\">\n): Message<\"foxglove_msgs/RawImage\"> {\n  let timestampmt: Time;\n  timestampmt = {\n    sec: Number(event.message.monotonic_timestamp_ns) / 1000000000,\n    nsec: Number(event.message.monotonic_timestamp_ns),\n  };\n  const data = new Uint8Array(event.message.data.length);\n  for (let ii = 0; ii < data.length; ii += 4) {\n    data[ii] = event.message.data[ii + 1];\n    data[ii + 1] = event.message.data[ii];\n    data[ii + 2] = event.message.data[ii + 3];\n    data[ii + 3] = event.message.data[ii + 2];\n  }\n  return {\n    timestamp: timestampmt,\n    frame_id: \"DRIVER_CAMERA\",\n    width: event.message.cols,\n    height: event.message.rows,\n    encoding: \"yuv422\",\n    step: 1280,\n    data: data,\n  };\n}\n",
+      "name": "1eb832cf"
+    },
+    "20d0b3c5-95ed-4825-bc51-cdc20182b2c1": {
+      "sourceCode": "// The ./types module provides helper types for your Input events and messages.\nimport { Input, Message, Time } from \"./types\";\n\n// Your script can output well-known message types, any of your custom message types, or\n// complete custom message types.\n//\n// Use `Message` to access your data source types or well-known types:\n// type Twist = Message<\"geometry_msgs/Twist\">;\n\n// These are the topics your script \"subscribes\" to. Studio will invoke your script function\n// when any message is received on one of these topics.\nexport const inputs = [\"/pi1/camera/decimated frc971.vision.CameraImage\"];\n\n// Any output your script produces is \"published\" to this topic. Published messages are only visible within Studio, not to your original data source.\nexport const output = \"/studio_script/YUYVConvertedImagePi1\";\n\n// This function is called with messages from your input topics.\n// The first argument is an event with the topic, receive time, and message.\n// Use the `Input<...>` helper to get the correct event type for your input topic messages.\nexport default function script(\n  event: Input<\"/pi1/camera/decimated frc971.vision.CameraImage\">\n): Message<\"foxglove_msgs/RawImage\"> {\n  let timestampmt: Time;\n  timestampmt = {\n    sec: Number(event.message.monotonic_timestamp_ns) / 1000000000,\n    nsec: Number(event.message.monotonic_timestamp_ns),\n  };\n  const data = new Uint8Array(event.message.data.length);\n  for (let ii = 0; ii < data.length; ii += 4) {\n    data[ii] = event.message.data[ii + 1];\n    data[ii + 1] = event.message.data[ii];\n    data[ii + 2] = event.message.data[ii + 3];\n    data[ii + 3] = event.message.data[ii + 2];\n  }\n  return {\n    timestamp: timestampmt,\n    frame_id: \"PI1\",\n    width: event.message.cols,\n    height: event.message.rows,\n    encoding: \"yuv422\",\n    step: 1280,\n    data: data,\n  };\n}\n",
+      "name": "20d0b3c5"
+    },
+    "8837da0e-fd3d-4f76-be0c-d93e842db0b4": {
+      "sourceCode": "// The ./types module provides helper types for your Input events and messages.\nimport { Input, Message, Time } from \"./types\";\n\n// Your script can output well-known message types, any of your custom message types, or\n// complete custom message types.\n//\n// Use `Message` to access your data source types or well-known types:\n// type Twist = Message<\"geometry_msgs/Twist\">;\n\n// These are the topics your script \"subscribes\" to. Studio will invoke your script function\n// when any message is received on one of these topics.\nexport const inputs = [\"/pi2/camera/decimated frc971.vision.CameraImage\"];\n\n// Any output your script produces is \"published\" to this topic. Published messages are only visible within Studio, not to your original data source.\nexport const output = \"/studio_script/YUYVConvertedImagePi2\";\n\n// This function is called with messages from your input topics.\n// The first argument is an event with the topic, receive time, and message.\n// Use the `Input<...>` helper to get the correct event type for your input topic messages.\nexport default function script(\n  event: Input<\"/pi2/camera/decimated frc971.vision.CameraImage\">\n): Message<\"foxglove_msgs/RawImage\"> {\n  let timestampmt: Time;\n  timestampmt = {\n    sec: Number(event.message.monotonic_timestamp_ns) / 1000000000,\n    nsec: Number(event.message.monotonic_timestamp_ns),\n  };\n  const data = new Uint8Array(event.message.data.length);\n  for (let ii = 0; ii < data.length; ii += 4) {\n    data[ii] = event.message.data[ii + 1];\n    data[ii + 1] = event.message.data[ii];\n    data[ii + 2] = event.message.data[ii + 3];\n    data[ii + 3] = event.message.data[ii + 2];\n  }\n  return {\n    timestamp: timestampmt,\n    frame_id: \"PI2\",\n    width: event.message.cols,\n    height: event.message.rows,\n    encoding: \"yuv422\",\n    step: 1280,\n    data: data,\n  };\n}\n",
+      "name": "8837da0e"
+    },
+    "86094f4e-ccf3-464b-848d-4fa3b4a62fe0": {
+      "sourceCode": "// The ./types module provides helper types for your Input events and messages.\nimport { Input, Message, Time } from \"./types\";\n\n// Your script can output well-known message types, any of your custom message types, or\n// complete custom message types.\n//\n// Use `Message` to access your data source types or well-known types:\n// type Twist = Message<\"geometry_msgs/Twist\">;\n\n// These are the topics your script \"subscribes\" to. Studio will invoke your script function\n// when any message is received on one of these topics.\nexport const inputs = [\"/pi3/camera/decimated frc971.vision.CameraImage\"];\n\n// Any output your script produces is \"published\" to this topic. Published messages are only visible within Studio, not to your original data source.\nexport const output = \"/studio_script/YUYVConvertedImagePi3\";\n\n// This function is called with messages from your input topics.\n// The first argument is an event with the topic, receive time, and message.\n// Use the `Input<...>` helper to get the correct event type for your input topic messages.\nexport default function script(\n  event: Input<\"/pi3/camera/decimated frc971.vision.CameraImage\">\n): Message<\"foxglove_msgs/RawImage\"> {\n  let timestampmt: Time;\n  timestampmt = {\n    sec: Number(event.message.monotonic_timestamp_ns) / 1000000000,\n    nsec: Number(event.message.monotonic_timestamp_ns),\n  };\n  const data = new Uint8Array(event.message.data.length);\n  for (let ii = 0; ii < data.length; ii += 4) {\n    data[ii] = event.message.data[ii + 1];\n    data[ii + 1] = event.message.data[ii];\n    data[ii + 2] = event.message.data[ii + 3];\n    data[ii + 3] = event.message.data[ii + 2];\n  }\n  return {\n    timestamp: timestampmt,\n    frame_id: \"PI3\",\n    width: event.message.cols,\n    height: event.message.rows,\n    encoding: \"yuv422\",\n    step: 1280,\n    data: data,\n  };\n}\n",
+      "name": "86094f4e"
+    },
+    "202f16df-82f5-48d8-8318-55a6bb305866": {
+      "sourceCode": "// The ./types module provides helper types for your Input events and messages.\nimport { Input, Message, Time } from \"./types\";\n\n// Your script can output well-known message types, any of your custom message types, or\n// complete custom message types.\n//\n// Use `Message` to access your data source types or well-known types:\n// type Twist = Message<\"geometry_msgs/Twist\">;\n\n// These are the topics your script \"subscribes\" to. Studio will invoke your script function\n// when any message is received on one of these topics.\nexport const inputs = [\"/pi4/camera/decimated frc971.vision.CameraImage\"];\n\n// Any output your script produces is \"published\" to this topic. Published messages are only visible within Studio, not to your original data source.\nexport const output = \"/studio_script/YUYVConvertedImagePi4\";\n\n// This function is called with messages from your input topics.\n// The first argument is an event with the topic, receive time, and message.\n// Use the `Input<...>` helper to get the correct event type for your input topic messages.\nexport default function script(\n  event: Input<\"/pi4/camera/decimated frc971.vision.CameraImage\">\n): Message<\"foxglove_msgs/RawImage\"> {\n  let timestampmt: Time;\n  timestampmt = {\n    sec: Number(event.message.monotonic_timestamp_ns) / 1000000000,\n    nsec: Number(event.message.monotonic_timestamp_ns),\n  };\n  const data = new Uint8Array(event.message.data.length);\n  for (let ii = 0; ii < data.length; ii += 4) {\n    data[ii] = event.message.data[ii + 1];\n    data[ii + 1] = event.message.data[ii];\n    data[ii + 2] = event.message.data[ii + 3];\n    data[ii + 3] = event.message.data[ii + 2];\n  }\n  return {\n    timestamp: timestampmt,\n    frame_id: \"PI4\",\n    width: event.message.cols,\n    height: event.message.rows,\n    encoding: \"yuv422\",\n    step: 1280,\n    data: data,\n  };\n}\n",
+      "name": "202f16df"
+    }
+  },
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": {
+    "direction": "row",
+    "first": {
+      "first": "ImageViewPanel!3j0qvlm",
+      "second": "ImageViewPanel!1uof9zo",
+      "direction": "column"
+    },
+    "second": {
+      "direction": "row",
+      "first": {
+        "first": "ImageViewPanel!1ya4lw8",
+        "second": "ImageViewPanel!1tvn3cp",
+        "direction": "column"
+      },
+      "second": "ImageViewPanel!jmmyy1",
+      "splitPercentage": 40.642717427911904
+    },
+    "splitPercentage": 31.186958104147582
+  }
+}
