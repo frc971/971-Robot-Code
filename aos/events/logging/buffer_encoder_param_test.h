@@ -20,15 +20,12 @@ class BufferEncoderBaseTest : public ::testing::Test {
  public:
   static constexpr size_t kMaxMessageSize = 2 * 1024 * 1024;
 
-  class DetachedBufferCopier : public DataEncoder::Copier {
+  class DetachedBufferCopier : public DataEncoder::SpanCopier {
    public:
     DetachedBufferCopier(flatbuffers::DetachedBuffer &&data)
-        : DataEncoder::Copier(data.size()), data_(std::move(data)) {}
-
-    size_t Copy(uint8_t *data) final {
-      std::memcpy(data, data_.data(), data_.size());
-      return data_.size();
-    }
+        : DataEncoder::SpanCopier(
+              absl::Span<const uint8_t>(data.data(), data.size())),
+          data_(std::move(data)) {}
 
    private:
     const flatbuffers::DetachedBuffer data_;

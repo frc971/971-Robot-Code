@@ -32,8 +32,8 @@ void DummyEncoder::Encode(Copier *copy) {
   const size_t input_buffer_initial_size = input_buffer_.size();
 
   input_buffer_.resize(input_buffer_initial_size + copy->size());
-  const size_t written_size =
-      copy->Copy(input_buffer_.data() + input_buffer_initial_size);
+  const size_t written_size = copy->Copy(
+      input_buffer_.data() + input_buffer_initial_size, 0, copy->size());
   DCHECK_EQ(written_size, copy->size());
 
   total_bytes_ += written_size;

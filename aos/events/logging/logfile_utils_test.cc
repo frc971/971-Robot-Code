@@ -3100,6 +3100,90 @@ std::string AnnotateBinaries(
                                           "/foo.afb");
 }
 
+// Event loop which just has working time functions for the Copier classes
+// tested below.
+class TimeEventLoop : public EventLoop {
+ public:
+  TimeEventLoop() : EventLoop(nullptr) {}
+
+  aos::monotonic_clock::time_point monotonic_now() const final {
+    return aos::monotonic_clock::min_time;
+  }
+  realtime_clock::time_point realtime_now() const final {
+    return aos::realtime_clock::min_time;
+  }
+
+  void OnRun(::std::function<void()> /*on_run*/) final { LOG(FATAL); }
+
+  const std::string_view name() const final { return "time"; }
+  const Node *node() const final { return nullptr; }
+
+  void SetRuntimeAffinity(const cpu_set_t & /*cpuset*/) final { LOG(FATAL); }
+  void SetRuntimeRealtimePriority(int /*priority*/) final { LOG(FATAL); }
+
+  const cpu_set_t &runtime_affinity() const final {
+    LOG(FATAL);
+    return cpuset_;
+  }
+
+  TimerHandler *AddTimer(::std::function<void()> /*callback*/) final {
+    LOG(FATAL);
+    return nullptr;
+  }
+
+  std::unique_ptr<RawSender> MakeRawSender(const Channel * /*channel*/) final {
+    LOG(FATAL);
+    return std::unique_ptr<RawSender>();
+  }
+
+  const UUID &boot_uuid() const final {
+    LOG(FATAL);
+    return boot_uuid_;
+  }
+
+  void set_name(const std::string_view name) final { LOG(FATAL) << name; }
+
+  pid_t GetTid() final {
+    LOG(FATAL);
+    return 0;
+  }
+
+  int NumberBuffers(const Channel * /*channel*/) final {
+    LOG(FATAL);
+    return 0;
+  }
+
+  int runtime_realtime_priority() const final {
+    LOG(FATAL);
+    return 0;
+  }
+
+  std::unique_ptr<RawFetcher> MakeRawFetcher(
+      const Channel * /*channel*/) final {
+    LOG(FATAL);
+    return std::unique_ptr<RawFetcher>();
+  }
+
+  PhasedLoopHandler *AddPhasedLoop(
+      ::std::function<void(int)> /*callback*/,
+      const monotonic_clock::duration /*interval*/,
+      const monotonic_clock::duration /*offset*/) final {
+    LOG(FATAL);
+    return nullptr;
+  }
+
+  void MakeRawWatcher(
+      const Channel * /*channel*/,
+      std::function<void(const Context &context, const void *message)>
+      /*watcher*/) final {
+    LOG(FATAL);
+  }
+
+ private:
+  const cpu_set_t cpuset_ = DefaultAffinity();
+  UUID boot_uuid_ = UUID ::Zero();
+};
+
 // Tests that all variations of PackMessage are equivalent to the inline
 // PackMessage used to avoid allocations.
 TEST_F(InlinePackMessage, Equivilent) {
@@ -3136,14 +3220,41 @@ TEST_F(InlinePackMessage, Equivilent) {
                                             67);
 
       // And verify packing inline works as expected.
-      EXPECT_EQ(repacked_message.size(),
-                PackMessageInline(repacked_message.data(), context,
-                                  channel_index, type));
+      EXPECT_EQ(
+          repacked_message.size(),
+          PackMessageInline(repacked_message.data(), context, channel_index,
+                            type, 0u, repacked_message.size()));
       EXPECT_EQ(absl::Span<uint8_t>(repacked_message),
                 absl::Span<uint8_t>(fbb.GetBufferSpan().data(),
                                     fbb.GetBufferSpan().size()))
           << AnnotateBinaries(schema, "aos/events/logging/logger.bfbs",
                               fbb.GetBufferSpan());
+
+      // Ok, now we want to confirm that we can build up arbitrary pieces of
+      // said flatbuffer.  Try all of them since it is cheap.
+      TimeEventLoop event_loop;
+      for (size_t i = 0; i < repacked_message.size(); i += 8) {
+        for (size_t j = i; j < repacked_message.size(); j += 8) {
+          std::vector<uint8_t> destination(repacked_message.size(), 67u);
+          ContextDataCopier copier(context, channel_index, type, &event_loop);
+
+          copier.Copy(destination.data(), i, j);
+
+          size_t index = 0;
+          for (size_t k = i; k < j; ++k) {
+            ASSERT_EQ(destination[index], repacked_message[k])
+                << ": Failed to match type " << static_cast<int>(type)
+                << ", index " << index << " while testing range " << i << " to "
+                << j;
+            ;
+            ++index;
+          }
+          // Now, confirm that none of the other bytes have been touched.
+          for (; index < destination.size(); ++index) {
+            ASSERT_EQ(destination[index], 67u);
+          }
+        }
+      }
     }
   }
 }
@@ -3181,15 +3292,37 @@ TEST_F(InlinePackMessage, RemoteEquivilent) {
     std::vector<uint8_t> repacked_message(PackRemoteMessageSize(), 67);
 
     // And verify packing inline works as expected.
-    EXPECT_EQ(
-        repacked_message.size(),
-        PackRemoteMessageInline(repacked_message.data(), &random_msg.message(),
-                                channel_index, monotonic_timestamp_time));
+    EXPECT_EQ(repacked_message.size(),
+              PackRemoteMessageInline(
+                  repacked_message.data(), &random_msg.message(), channel_index,
+                  monotonic_timestamp_time, 0u, repacked_message.size()));
     EXPECT_EQ(absl::Span<uint8_t>(repacked_message),
               absl::Span<uint8_t>(fbb.GetBufferSpan().data(),
                                   fbb.GetBufferSpan().size()))
         << AnnotateBinaries(schema, "aos/events/logging/logger.bfbs",
                             fbb.GetBufferSpan());
+
+    // Ok, now we want to confirm that we can build up arbitrary pieces of said
+    // flatbuffer.  Try all of them since it is cheap.
+    TimeEventLoop event_loop;
+    for (size_t i = 0; i < repacked_message.size(); i += 8) {
+      for (size_t j = i; j < repacked_message.size(); j += 8) {
+        std::vector<uint8_t> destination(repacked_message.size(), 67u);
+        RemoteMessageCopier copier(&random_msg.message(), channel_index,
+                                   monotonic_timestamp_time, &event_loop);
+
+        copier.Copy(destination.data(), i, j);
+
+        size_t index = 0;
+        for (size_t k = i; k < j; ++k) {
+          ASSERT_EQ(destination[index], repacked_message[k]);
+          ++index;
+        }
+        for (; index < destination.size(); ++index) {
+          ASSERT_EQ(destination[index], 67u);
+        }
+      }
+    }
   }
 }
 

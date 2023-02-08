@@ -115,4 +115,33 @@ INSTANTIATE_TEST_SUITE_P(
                        }),
                        ::testing::Range(0, 100)));
 
+// Tests that SpanCopier copies as expected.
+TEST(SpanCopierTest, Matches) {
+  std::vector<uint8_t> data;
+  for (int i = 0; i < 32; ++i) {
+    data.push_back(i);
+  }
+
+  CHECK_EQ(data.size(), 32u);
+
+  for (int i = 0; i < 32; i += 8) {
+    for (int j = i; j < 32; j += 8) {
+      std::vector<uint8_t> destination(data.size(), 0);
+      DataEncoder::SpanCopier copier(
+          absl::Span<const uint8_t>(data.data(), data.size()));
+
+      copier.Copy(destination.data(), i, j);
+
+      size_t index = 0;
+      for (int k = i; k < j; ++k) {
+        EXPECT_EQ(destination[index], k);
+        ++index;
+      }
+      for (; index < destination.size(); ++index) {
+        EXPECT_EQ(destination[index], 0u);
+      }
+    }
+  }
+}
+
 }  // namespace aos::logger::testing

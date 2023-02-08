@@ -142,7 +142,7 @@ void SnappyEncoder::DetachedBufferSource::Append(Copier *copy) {
   CHECK_LE(copy_size + data_.size(), data_.capacity());
   size_t starting_size = data_.size();
   data_.resize(starting_size + copy_size);
-  CHECK_EQ(copy->Copy(data_.data() + starting_size), copy_size);
+  CHECK_EQ(copy->Copy(data_.data() + starting_size, 0, copy_size), copy_size);
   accumulated_checksum_ = AccumulateCrc32(
       {data_.data() + starting_size, copy_size}, accumulated_checksum_);
 }

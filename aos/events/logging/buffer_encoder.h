@@ -23,7 +23,8 @@ class DataEncoder {
     size_t size() const { return size_; }
 
     // Writes size() bytes to data, and returns the data written.
-    [[nodiscard]] virtual size_t Copy(uint8_t *data) = 0;
+    [[nodiscard]] virtual size_t Copy(uint8_t *data, size_t start_byte,
+                                      size_t end_byte) = 0;
 
    private:
     size_t size_;
@@ -35,12 +36,15 @@ class DataEncoder {
    public:
     SpanCopier(absl::Span<const uint8_t> data)
         : Copier(data.size()), data_(data) {
-      CHECK(data_.data());
+      CHECK(data_.data() != nullptr);
     }
 
-    size_t Copy(uint8_t *data) final {
-      std::memcpy(data, data_.data(), data_.size());
-      return data_.size();
+    size_t Copy(uint8_t *data, size_t start_byte, size_t end_byte) final {
+      DCHECK_LE(start_byte, end_byte);
+      DCHECK_LE(end_byte, data_.size());
+
+      std::memcpy(data, data_.data() + start_byte, end_byte - start_byte);
+      return end_byte - start_byte;
     }
 
    private:
