@@ -1,5 +1,5 @@
-#ifndef Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_TRAJECTORY_H_
-#define Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_TRAJECTORY_H_
+#ifndef FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_TRAJECTORY_H_
+#define FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_TRAJECTORY_H_
 
 #include <array>
 #include <initializer_list>
@@ -7,10 +7,10 @@
 #include <vector>
 
 #include "Eigen/Dense"
+#include "frc971/control_loops/double_jointed_arm/dynamics.h"
 
-namespace y2018 {
+namespace frc971 {
 namespace control_loops {
-namespace superstructure {
 namespace arm {
 
 // This class represents a path in theta0, theta1 space.  It also returns the
@@ -90,8 +90,10 @@ class Trajectory {
  public:
   // Constructs a trajectory (but doesn't calculate it) given a path and a step
   // size.
-  Trajectory(::std::unique_ptr<const Path> path, double gridsize)
-      : path_(::std::move(path)),
+  Trajectory(const Dynamics *dynamics, ::std::unique_ptr<const Path> path,
+             double gridsize)
+      : dynamics_(dynamics),
+        path_(::std::move(path)),
         num_plan_points_(
             static_cast<size_t>(::std::ceil(path_->length() / gridsize) + 1)),
         step_size_(path_->length() /
@@ -220,7 +222,8 @@ class Trajectory {
   double GetDAcceleration(double distance) const {
     return GetDAcceleration(distance, max_dvelocity_);
   }
-  double GetDAcceleration(double distance, const ::std::vector<double> &plan) const {
+  double GetDAcceleration(double distance,
+                          const ::std::vector<double> &plan) const {
     ::std::pair<size_t, size_t> indices = IndicesForDistance(distance);
     const double v0 = plan[indices.first];
     const double v1 = plan[indices.second];
@@ -276,6 +279,7 @@ class Trajectory {
 
   const Path &path() const { return *path_; }
 
+
  private:
   friend class testing::TrajectoryTest_IndicesForDistanceTest_Test;
 
@@ -298,6 +302,8 @@ class Trajectory {
     return ::std::pair<size_t, size_t>(lower_index, lower_index + 1);
   }
 
+  const Dynamics *dynamics_;
+
   // The path to follow.
   ::std::unique_ptr<const Path> path_;
   // The number of points in the plan.
@@ -315,14 +321,16 @@ class Trajectory {
 // This class tracks the current goal along trajectories and paths.
 class TrajectoryFollower {
  public:
-  TrajectoryFollower(const ::Eigen::Matrix<double, 2, 1> &theta)
-      : trajectory_(nullptr), theta_(theta) {
+  TrajectoryFollower(const Dynamics *dynamics,
+                     const ::Eigen::Matrix<double, 2, 1> &theta)
+      : dynamics_(dynamics), trajectory_(nullptr), theta_(theta) {
     omega_.setZero();
     last_K_.setZero();
     Reset();
   }
 
-  TrajectoryFollower(Trajectory *const trajectory) : trajectory_(trajectory) {
+  TrajectoryFollower(const Dynamics *dynamics, Trajectory *const trajectory)
+      : dynamics_(dynamics), trajectory_(trajectory) {
     last_K_.setZero();
     Reset();
   }
@@ -405,6 +413,7 @@ class TrajectoryFollower {
   int failed_solutions() const { return failed_solutions_; }
 
  private:
+  const Dynamics *dynamics_;
   // The trajectory plan.
   const Trajectory *trajectory_ = nullptr;
 
@@ -431,8 +440,7 @@ class TrajectoryFollower {
 };
 
 }  // namespace arm
-}  // namespace superstructure
 }  // namespace control_loops
-}  // namespace y2018
+}  // namespace frc971
 
-#endif  // Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_TRAJECTORY_H_
+#endif  // FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_TRAJECTORY_H_

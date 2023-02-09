@@ -1,12 +1,11 @@
-#include "y2018/control_loops/superstructure/arm/demo_path.h"
+#include "frc971/control_loops/double_jointed_arm/demo_path.h"
 
 #include <array>
 #include <initializer_list>
 #include <memory>
 
-namespace y2018 {
+namespace frc971 {
 namespace control_loops {
-namespace superstructure {
 namespace arm {
 
 ::std::vector<::std::array<double, 6>> FlipPath(
@@ -24,7 +23,6 @@ namespace arm {
   }
   return result;
 }
-
 
 ::std::unique_ptr<Path> MakeDemoPath() {
   return ::std::unique_ptr<Path>(new Path(FlipPath(
@@ -213,6 +211,5 @@ namespace arm {
 }
 
 }  // namespace arm
-}  // namespace superstructure
 }  // namespace control_loops
-}  // namespace y2018
+}  // namespace frc971

@@ -94,6 +94,7 @@ cc_test(
         "//frc971/control_loops:control_loop_test",
         "//frc971/control_loops:position_sensor_sim",
         "//frc971/control_loops:team_number_test_environment",
+        "//y2018/control_loops/superstructure/arm:arm_constants",
         "//y2018/control_loops/superstructure/intake:intake_plants",
     ],
 )

@@ -27,12 +27,12 @@ def add_edge(cc_file, name, segment, index, reverse):
     cc_file.append("                             %s," % (alpha_unitizer))
     if reverse:
         cc_file.append(
-            "                             Trajectory(Path::Reversed(%s()), 0.005));"
+            "                             Trajectory(dynamics, Path::Reversed(%s()), 0.005));"
             % (path_function_name(str(name))))
     else:
         cc_file.append(
-            "                             Trajectory(%s(), 0.005));" %
-            (path_function_name(str(name))))
+            "                             Trajectory(dynamics, %s(), 0.005));"
+            % (path_function_name(str(name))))
 
     start_index = None
     end_index = None
@@ -68,9 +68,14 @@ def main(argv):
     cc_file.append("#include <memory>")
     cc_file.append("")
     cc_file.append(
-        "#include \"y2018/control_loops/superstructure/arm/trajectory.h\"")
+        "#include \"frc971/control_loops/double_jointed_arm/trajectory.h\"")
     cc_file.append(
-        "#include \"y2018/control_loops/superstructure/arm/graph.h\"")
+        "#include \"frc971/control_loops/double_jointed_arm/graph.h\"")
+
+    cc_file.append("using frc971::control_loops::arm::Trajectory;")
+    cc_file.append("using frc971::control_loops::arm::Path;")
+    cc_file.append("using frc971::control_loops::arm::SearchGraph;")
+
     cc_file.append("")
     cc_file.append("namespace y2018 {")
     cc_file.append("namespace control_loops {")
@@ -86,14 +91,20 @@ def main(argv):
     h_file.append("#include <memory>")
     h_file.append("")
     h_file.append(
-        "#include \"y2018/control_loops/superstructure/arm/trajectory.h\"")
+        "#include \"frc971/control_loops/double_jointed_arm/trajectory.h\"")
     h_file.append(
-        "#include \"y2018/control_loops/superstructure/arm/graph.h\"")
+        "#include \"frc971/control_loops/double_jointed_arm/graph.h\"")
+    h_file.append(
+        "#include \"frc971/control_loops/double_jointed_arm/dynamics.h\"")
     h_file.append("")
     h_file.append("namespace y2018 {")
     h_file.append("namespace control_loops {")
     h_file.append("namespace superstructure {")
     h_file.append("namespace arm {")
+
+    h_file.append("using frc971::control_loops::arm::Trajectory;")
+    h_file.append("using frc971::control_loops::arm::Path;")
+    h_file.append("using frc971::control_loops::arm::SearchGraph;")
 
     h_file.append("")
     h_file.append("struct TrajectoryAndParams {")
@@ -182,11 +193,13 @@ def main(argv):
     h_file.append("")
     h_file.append("// Builds a search graph.")
     h_file.append("SearchGraph MakeSearchGraph("
+                  "const frc971::control_loops::arm::Dynamics *dynamics, "
                   "::std::vector<TrajectoryAndParams> *trajectories,")
     h_file.append("                            "
                   "const ::Eigen::Matrix<double, 2, 2> &alpha_unitizer,")
     h_file.append("                            double vmax);")
     cc_file.append("SearchGraph MakeSearchGraph("
+                   "const frc971::control_loops::arm::Dynamics *dynamics, "
                    "::std::vector<TrajectoryAndParams> *trajectories,")
     cc_file.append("                            "
                    "const ::Eigen::Matrix<double, 2, 2> &alpha_unitizer,")

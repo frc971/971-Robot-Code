@@ -1,20 +1,19 @@
-#include "y2018/control_loops/superstructure/arm/trajectory.h"
+#include "frc971/control_loops/double_jointed_arm/trajectory.h"
 
 #include "Eigen/Dense"
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/dlqr.h"
+#include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/jacobian.h"
 #include "gflags/gflags.h"
-#include "y2018/control_loops/superstructure/arm/dynamics.h"
 
 DEFINE_double(lqr_proximal_pos, 0.15, "Position LQR gain");
 DEFINE_double(lqr_proximal_vel, 4.0, "Velocity LQR gain");
 DEFINE_double(lqr_distal_pos, 0.20, "Position LQR gain");
 DEFINE_double(lqr_distal_vel, 4.0, "Velocity LQR gain");
 
-namespace y2018 {
+namespace frc971 {
 namespace control_loops {
-namespace superstructure {
 namespace arm {
 
 Path Path::Reversed(const Path &p) {
@@ -106,9 +105,9 @@ Path::Path(::std::initializer_list<::std::array<double, 6>> list) {
     ::Eigen::Matrix<double, 2, 2> K2;
 
     const ::Eigen::Matrix<double, 2, 1> gravity_volts =
-        Dynamics::K3_inverse * Dynamics::GravityTorque(X);
+        dynamics_->K3_inverse_ * dynamics_->GravityTorque(X);
 
-    Dynamics::NormilizedMatriciesForState(X, &K1, &K2);
+    dynamics_->NormilizedMatriciesForState(X, &K1, &K2);
 
     const ::Eigen::Matrix<double, 2, 2> omega_square =
         (::Eigen::Matrix<double, 2, 2>() << omega(0, 0), 0.0, 0.0, omega(1, 0))
@@ -123,18 +122,18 @@ Path::Path(::std::initializer_list<::std::array<double, 6>> list) {
         ::std::sqrt(1.0 / ::std::max(0.001, (alpha_unitizer * alpha).norm()));
 
     const ::Eigen::Matrix<double, 2, 1> vk1 =
-        Dynamics::K3_inverse * (K1 * alpha + K2 * omega_square * omega);
+        dynamics_->K3_inverse_ * (K1 * alpha + K2 * omega_square * omega);
     const ::Eigen::Matrix<double, 2, 1> vk2 =
-        Dynamics::K3_inverse * Dynamics::K4 * omega;
+        dynamics_->K3_inverse_ * dynamics_->K4_ * omega;
 
     // Loop through all the various vmin, plan_vmax combinations.
     for (const double c : {-plan_vmax, plan_vmax}) {
       // Also loop through saturating theta0 and theta1
       for (const ::std::tuple<double, double, double> &abgravity :
            {::std::tuple<double, double, double>{vk1(0), vk2(0),
-                                                gravity_volts(0)},
+                                                 gravity_volts(0)},
             ::std::tuple<double, double, double>{vk1(1), vk2(1),
-                                                gravity_volts(1)}}) {
+                                                 gravity_volts(1)}}) {
         const double a = ::std::get<0>(abgravity);
         const double b = ::std::get<1>(abgravity);
         const double gravity = ::std::get<2>(abgravity);
@@ -178,19 +177,19 @@ double Trajectory::FeasableForwardsAcceleration(
   ::Eigen::Matrix<double, 2, 2> K1;
   ::Eigen::Matrix<double, 2, 2> K2;
 
-  Dynamics::NormilizedMatriciesForState(X, &K1, &K2);
+  dynamics_->NormilizedMatriciesForState(X, &K1, &K2);
 
   const ::Eigen::Matrix<double, 2, 2> omega_square =
       (::Eigen::Matrix<double, 2, 2>() << omega(0, 0), 0.0, 0.0, omega(1, 0))
           .finished();
 
   const ::Eigen::Matrix<double, 2, 1> k_constant =
-      Dynamics::K3_inverse *
+      dynamics_->K3_inverse_ *
       ((K1 * alpha + K2 * omega_square * omega) * goal_velocity *
            goal_velocity +
-       Dynamics::K4 * omega * goal_velocity - Dynamics::GravityTorque(X));
+       dynamics_->K4_ * omega * goal_velocity - dynamics_->GravityTorque(X));
   const ::Eigen::Matrix<double, 2, 1> k_scalar =
-      Dynamics::K3_inverse * K1 * omega;
+      dynamics_->K3_inverse_ * K1 * omega;
 
   const double constraint_goal_acceleration =
       ::std::sqrt(
@@ -236,19 +235,19 @@ double Trajectory::FeasableBackwardsAcceleration(
   ::Eigen::Matrix<double, 2, 2> K1;
   ::Eigen::Matrix<double, 2, 2> K2;
 
-  Dynamics::NormilizedMatriciesForState(X, &K1, &K2);
+  dynamics_->NormilizedMatriciesForState(X, &K1, &K2);
 
   const ::Eigen::Matrix<double, 2, 2> omega_square =
       (::Eigen::Matrix<double, 2, 2>() << omega(0, 0), 0.0, 0.0, omega(1, 0))
           .finished();
 
   const ::Eigen::Matrix<double, 2, 1> k_constant =
-      Dynamics::K3_inverse *
+      dynamics_->K3_inverse_ *
       ((K1 * alpha + K2 * omega_square * omega) * goal_velocity *
            goal_velocity +
-       Dynamics::K4 * omega * goal_velocity - Dynamics::GravityTorque(X));
+       dynamics_->K4_ * omega * goal_velocity - dynamics_->GravityTorque(X));
   const ::Eigen::Matrix<double, 2, 1> k_scalar =
-      Dynamics::K3_inverse * K1 * omega;
+      dynamics_->K3_inverse_ * K1 * omega;
 
   const double constraint_goal_acceleration =
       ::std::sqrt(
@@ -390,12 +389,22 @@ void TrajectoryFollower::Reset() {
           .finished()
           .asDiagonal();
 
+  const auto x_blocked = X.block<4, 1>(0, 0);
+
   const ::Eigen::Matrix<double, 4, 4> final_A =
       ::frc971::control_loops::NumericalJacobianX<4, 2>(
-          Dynamics::UnboundedDiscreteDynamics, X.block<4, 1>(0, 0), U, 0.00505);
+          [this](const auto &x_blocked, const auto &U, double dt) {
+            return this->dynamics_->UnboundedDiscreteDynamics(
+                x_blocked, U, dt);
+          },
+          x_blocked, U, 0.00505);
+
   const ::Eigen::Matrix<double, 4, 2> final_B =
       ::frc971::control_loops::NumericalJacobianU<4, 2>(
-          Dynamics::UnboundedDiscreteDynamics, X.block<4, 1>(0, 0), U, 0.00505);
+          [this](const auto &x_blocked, const auto &U, double dt) {
+            return this->dynamics_->UnboundedDiscreteDynamics(x_blocked, U, dt);
+          },
+          x_blocked, U, 0.00505);
 
   ::Eigen::Matrix<double, 4, 4> S;
   ::Eigen::Matrix<double, 2, 4> sub_K;
@@ -441,7 +450,7 @@ void TrajectoryFollower::USaturationSearch(
                         *saturation_goal_acceleration);
   const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
   const ::Eigen::Matrix<double, 2, 1> U_ff =
-      Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t);
+      dynamics_->FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t);
 
   *U = U_ff + K * (R - X);
 }
@@ -494,11 +503,11 @@ void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 6, 1> &X,
       U_unsaturated_.setZero();
     } else {
       const ::Eigen::Matrix<double, 6, 1> R =
-          trajectory_->R(theta_, ::Eigen::Matrix<double, 2, 1>::Zero());
+          Trajectory::R(theta_, ::Eigen::Matrix<double, 2, 1>::Zero());
 
-      U_ff_ = Dynamics::FF_U(X.block<4, 1>(0, 0),
-                             ::Eigen::Matrix<double, 2, 1>::Zero(),
-                             ::Eigen::Matrix<double, 2, 1>::Zero());
+      U_ff_ = dynamics_->FF_U(
+          X.block<4, 1>(0, 0), ::Eigen::Matrix<double, 2, 1>::Zero(),
+          ::Eigen::Matrix<double, 2, 1>::Zero());
       const ::Eigen::Matrix<double, 2, 6> K = K_at_state(X, U_ff_);
       U_ = U_unsaturated_ = U_ff_ + K * (R - X);
 
@@ -558,7 +567,7 @@ void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 6, 1> &X,
 
   const ::Eigen::Matrix<double, 6, 1> R = trajectory_->R(theta_t, omega_t);
 
-  U_ff_ = Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t);
+  U_ff_ = dynamics_->FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t);
 
   const ::Eigen::Matrix<double, 2, 6> K = K_at_state(X, U_ff_);
   U_ = U_unsaturated_ = U_ff_ + K * (R - X);
@@ -613,6 +622,5 @@ void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 6, 1> &X,
 }
 
 }  // namespace arm
-}  // namespace superstructure
 }  // namespace control_loops
-}  // namespace y2018
+}  // namespace frc971

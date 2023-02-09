@@ -4,13 +4,16 @@
 #include "aos/time/time.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2018/constants.h"
-#include "y2018/control_loops/superstructure/arm/dynamics.h"
-#include "y2018/control_loops/superstructure/arm/ekf.h"
+#include "frc971/control_loops/double_jointed_arm/dynamics.h"
+#include "frc971/control_loops/double_jointed_arm/ekf.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
-#include "y2018/control_loops/superstructure/arm/graph.h"
-#include "y2018/control_loops/superstructure/arm/trajectory.h"
+#include "frc971/control_loops/double_jointed_arm/graph.h"
+#include "frc971/control_loops/double_jointed_arm/trajectory.h"
 #include "y2018/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2018/control_loops/superstructure/superstructure_status_generated.h"
+
+using frc971::control_loops::arm::TrajectoryFollower;
+using frc971::control_loops::arm::EKF;
 
 namespace y2018 {
 namespace control_loops {
@@ -113,6 +116,8 @@ class Arm {
   const ::Eigen::Matrix<double, 2, 2> alpha_unitizer_;
 
   double vmax_ = kVMax();
+
+  frc971::control_loops::arm::Dynamics dynamics_;
 
   ::std::vector<TrajectoryAndParams> trajectories_;
   SearchGraph search_graph_;

@@ -1,5 +1,5 @@
-#ifndef Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_GRAPH_H_
-#define Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_GRAPH_H_
+#ifndef FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_GRAPH_H_
+#define FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_GRAPH_H_
 
 #include <algorithm>
 #include <cassert>
@@ -8,9 +8,8 @@
 #include <memory>
 #include <vector>
 
-namespace y2018 {
+namespace frc971 {
 namespace control_loops {
-namespace superstructure {
 namespace arm {
 
 // Grr... normal priority queues don't allow modifying the node cost.
@@ -183,8 +182,7 @@ class SearchGraph {
 };
 
 }  // namespace arm
-}  // namespace superstructure
 }  // namespace control_loops
-}  // namespace y2018
+}  // namespace frc971
 
-#endif  // Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_GRAPH_H_
+#endif  // FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_GRAPH_H_

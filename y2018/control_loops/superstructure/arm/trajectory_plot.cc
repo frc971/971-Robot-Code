@@ -1,10 +1,11 @@
 #include "aos/init.h"
 #include "frc971/analysis/in_process_plotter.h"
+#include "frc971/control_loops/double_jointed_arm/dynamics.h"
+#include "frc971/control_loops/double_jointed_arm/ekf.h"
+#include "frc971/control_loops/double_jointed_arm/trajectory.h"
 #include "gflags/gflags.h"
-#include "y2018/control_loops/superstructure/arm/dynamics.h"
-#include "y2018/control_loops/superstructure/arm/ekf.h"
+#include "y2018/control_loops/superstructure/arm/arm_constants.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
-#include "y2018/control_loops/superstructure/arm/trajectory.h"
 
 DEFINE_bool(forwards, true, "If true, run the forwards simulation.");
 DEFINE_bool(plot, true, "If true, plot");
@@ -16,10 +17,12 @@ namespace superstructure {
 namespace arm {
 
 void Main() {
-  Trajectory trajectory(FLAGS_forwards
-                            ? MakeNeutralToFrontHighPath()
-                            : Path::Reversed(MakeNeutralToFrontHighPath()),
-                        0.001);
+  frc971::control_loops::arm::Dynamics dynamics(kArmConstants);
+  frc971::control_loops::arm::Trajectory trajectory(
+      &dynamics,
+      FLAGS_forwards ? MakeNeutralToFrontHighPath()
+                     : Path::Reversed(MakeNeutralToFrontHighPath()),
+      0.001);
 
   constexpr double kAlpha0Max = 30.0;
   constexpr double kAlpha1Max = 50.0;
@@ -96,7 +99,7 @@ void Main() {
 
     const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
     const ::Eigen::Matrix<double, 2, 1> U =
-        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t)
+        dynamics.FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t)
             .array()
             .max(-20)
             .min(20);
@@ -118,7 +121,7 @@ void Main() {
 
     const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
     const ::Eigen::Matrix<double, 2, 1> U =
-        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t)
+        dynamics.FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t)
             .array()
             .max(-20)
             .min(20);
@@ -140,7 +143,7 @@ void Main() {
 
     const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
     const ::Eigen::Matrix<double, 2, 1> U =
-        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t)
+        dynamics.FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t)
             .array()
             .max(-20)
             .min(20);
@@ -156,7 +159,8 @@ void Main() {
     X << theta_t(0), 0.0, theta_t(1), 0.0;
   }
 
-  TrajectoryFollower follower(&trajectory);
+  frc971::control_loops::arm::TrajectoryFollower follower(&dynamics,
+                                                          &trajectory);
 
   ::std::vector<double> t_array;
   ::std::vector<double> theta0_goal_t_array;
@@ -187,7 +191,7 @@ void Main() {
   ::std::vector<double> torque0_hat_t_array;
   ::std::vector<double> torque1_hat_t_array;
 
-  EKF arm_ekf;
+  frc971::control_loops::arm::EKF arm_ekf(&dynamics);
   arm_ekf.Reset(X);
   ::std::cout << "Reset P: " << arm_ekf.P_reset() << ::std::endl;
   ::std::cout << "Stabilized P: " << arm_ekf.P_half_converged() << ::std::endl;
@@ -236,9 +240,9 @@ void Main() {
     actual_U(0) += 1.0;
 
     const ::Eigen::Matrix<double, 4, 1> xdot =
-        Dynamics::Acceleration(X, actual_U);
+        dynamics.Acceleration(X, actual_U);
 
-    X = Dynamics::UnboundedDiscreteDynamics(X, actual_U, sim_dt);
+    X = dynamics.UnboundedDiscreteDynamics(X, actual_U, sim_dt);
     arm_ekf.Predict(follower.U(), sim_dt);
 
     alpha0_t_array.push_back(xdot(1));
@@ -270,10 +274,14 @@ void Main() {
     plotter.AddLine(distance_array, alpha0_array, "alpha0");
     plotter.AddLine(distance_array, alpha1_array, "alpha1");
 
-    plotter.AddLine(integrated_distance, integrated_theta0_array, "integrated theta0");
-    plotter.AddLine(integrated_distance, integrated_theta1_array, "integrated theta1");
-    plotter.AddLine(integrated_distance, integrated_omega0_array, "integrated omega0");
-    plotter.AddLine(integrated_distance, integrated_omega1_array, "integrated omega1");
+    plotter.AddLine(integrated_distance, integrated_theta0_array,
+                    "integrated theta0");
+    plotter.AddLine(integrated_distance, integrated_theta1_array,
+                    "integrated theta1");
+    plotter.AddLine(integrated_distance, integrated_omega0_array,
+                    "integrated omega0");
+    plotter.AddLine(integrated_distance, integrated_omega1_array,
+                    "integrated omega1");
     plotter.Publish();
 
     plotter.AddFigure();

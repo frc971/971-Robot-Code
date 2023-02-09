@@ -8,7 +8,8 @@
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
 #include "y2018/constants.h"
-#include "y2018/control_loops/superstructure/arm/dynamics.h"
+#include "frc971/control_loops/double_jointed_arm/dynamics.h"
+#include "y2018/control_loops/superstructure/arm/arm_constants.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
 #include "y2018/control_loops/superstructure/superstructure.h"
@@ -129,7 +130,8 @@ class ArmSimulation {
                               constants::Values::kProximalEncoderRatio()),
         distal_zeroing_constants_(distal_zeroing_constants),
         distal_pot_encoder_(M_PI * 2.0 *
-                            constants::Values::kDistalEncoderRatio()) {
+                            constants::Values::kDistalEncoderRatio()),
+        dynamics_(arm::kArmConstants) {
     X_.setZero();
   }
 
@@ -174,7 +176,7 @@ class ArmSimulation {
     AOS_CHECK_LE(::std::abs(U(1)), voltage_check);
 
     if (release_arm_brake) {
-      X_ = arm::Dynamics::UnboundedDiscreteDynamics(X_, U, 0.00505);
+      X_ = dynamics_.UnboundedDiscreteDynamics(X_, U, 0.00505);
     } else {
       // Well, the brake shouldn't stop both joints, but this will get the tests
       // to pass.
@@ -197,6 +199,8 @@ class ArmSimulation {
   const ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
       distal_zeroing_constants_;
   PositionSensorSimulator distal_pot_encoder_;
+
+  ::frc971::control_loops::arm::Dynamics dynamics_;
 };
 
 class SuperstructureSimulation {

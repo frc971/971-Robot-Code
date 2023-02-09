@@ -1,11 +1,10 @@
-#include "y2018/control_loops/superstructure/arm/graph.h"
+#include "frc971/control_loops/double_jointed_arm/graph.h"
 
 #include <algorithm>
 #include <cassert>
 
-namespace y2018 {
+namespace frc971 {
 namespace control_loops {
-namespace superstructure {
 namespace arm {
 
 SearchGraph::SearchGraph(size_t num_vertexes, std::initializer_list<Edge> edges)
@@ -68,6 +67,5 @@ double SearchGraph::GetCostToGoal(size_t vertex) {
 }
 
 }  // namespace arm
-}  // namespace superstructure
 }  // namespace control_loops
-}  // namespace y2018
+}  // namespace frc971

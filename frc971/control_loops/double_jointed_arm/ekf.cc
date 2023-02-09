@@ -1,19 +1,18 @@
-#include "y2018/control_loops/superstructure/arm/ekf.h"
+#include "frc971/control_loops/double_jointed_arm/ekf.h"
 
-#include "Eigen/Dense"
 #include <iostream>
 
+#include "Eigen/Dense"
+#include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/jacobian.h"
-#include "y2018/control_loops/superstructure/arm/dynamics.h"
 
 DEFINE_double(proximal_voltage_error_uncertainty, 8.0,
               "Proximal joint voltage error uncertainty.");
 DEFINE_double(distal_voltage_error_uncertainty, 2.0,
               "Distal joint voltage error uncertainty.");
 
-namespace y2018 {
+namespace frc971 {
 namespace control_loops {
-namespace superstructure {
 namespace arm {
 
 namespace {
@@ -29,7 +28,7 @@ namespace {
         .asDiagonal());
 }  // namespace
 
-EKF::EKF() {
+EKF::EKF(const Dynamics *dynamics) : dynamics_(dynamics) {
   X_hat_.setZero();
   Q_covariance =
       ((::Eigen::DiagonalMatrix<double, 6>().diagonal() << ::std::pow(0.1, 2),
@@ -69,9 +68,12 @@ void EKF::Reset(const ::Eigen::Matrix<double, 4, 1> &X) {
 void EKF::Predict(const ::Eigen::Matrix<double, 2, 1> &U, double dt) {
   const ::Eigen::Matrix<double, 6, 6> A =
       ::frc971::control_loops::NumericalJacobianX<6, 2>(
-          Dynamics::UnboundedEKFDiscreteDynamics, X_hat_, U, dt);
+          [this](const auto &X_hat_, const auto &U, double dt) {
+            return dynamics_->UnboundedEKFDiscreteDynamics(X_hat_, U, dt);
+          },
+          X_hat_, U, dt);
 
-  X_hat_ = Dynamics::UnboundedEKFDiscreteDynamics(X_hat_, U, dt);
+  X_hat_ = dynamics_->UnboundedEKFDiscreteDynamics(X_hat_, U, dt);
   P_ = A * P_ * A.transpose() + Q_covariance;
 }
 
@@ -83,8 +85,8 @@ void EKF::Correct(const ::Eigen::Matrix<double, 2, 1> &Y, double /*dt*/) {
           .asDiagonal());
   // H is the jacobian of the h(x) measurement prediction function
   const ::Eigen::Matrix<double, 2, 6> H_jacobian =
-      (::Eigen::Matrix<double, 2, 6>() << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-      0.0, 0.0, 1.0, 0.0, 0.0, 0.0)
+      (::Eigen::Matrix<double, 2, 6>() << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+       0.0, 1.0, 0.0, 0.0, 0.0)
           .finished();
 
   // Update step Measurement residual error of proximal and distal joint
@@ -106,6 +108,5 @@ void EKF::Correct(const ::Eigen::Matrix<double, 2, 1> &Y, double /*dt*/) {
 }
 
 }  // namespace arm
-}  // namespace superstructure
 }  // namespace control_loops
-}  // namespace y2018
+}  // namespace frc971

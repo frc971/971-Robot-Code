@@ -1,11 +1,11 @@
-#ifndef Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_EKF_H_
-#define Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_EKF_H_
+#ifndef FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_EKF_H_
+#define FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_EKF_H_
 
 #include "Eigen/Dense"
+#include "frc971/control_loops/double_jointed_arm/dynamics.h"
 
-namespace y2018 {
+namespace frc971 {
 namespace control_loops {
-namespace superstructure {
 namespace arm {
 
 // An extended kalman filter for the Arm.
@@ -13,7 +13,7 @@ namespace arm {
 //   [theta0, omega0, theta1, omega1, voltage error0, voltage error1]
 class EKF {
  public:
-  EKF();
+  EKF(const Dynamics *dynamics);
 
   // Resets the internal state back to X.  Resets the torque disturbance to 0.
   void Reset(const ::Eigen::Matrix<double, 4, 1> &X);
@@ -43,11 +43,12 @@ class EKF {
   ::Eigen::Matrix<double, 6, 6> P_half_converged_;
   ::Eigen::Matrix<double, 6, 6> P_converged_;
   ::Eigen::Matrix<double, 6, 6> P_reset_;
+
+  const Dynamics *dynamics_;
 };
 
 }  // namespace arm
-}  // namespace superstructure
 }  // namespace control_loops
-}  // namespace y2018
+}  // namespace frc971
 
-#endif  // Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_EKF_H_
+#endif  // FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_EKF_H_

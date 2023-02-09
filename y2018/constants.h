@@ -6,7 +6,8 @@
 
 #include "frc971/constants.h"
 #include "y2018/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "y2018/control_loops/superstructure/arm/dynamics.h"
+#include "frc971/control_loops/double_jointed_arm/dynamics.h"
+#include "y2018/control_loops/superstructure/arm/arm_constants.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
 
 namespace y2018 {
@@ -49,8 +50,8 @@ struct Values {
     return (12.0 / 60.0) * (18.0 / 84.0);
   }
   static constexpr double kMaxProximalEncoderPulsesPerSecond() {
-    return control_loops::superstructure::arm::Dynamics::kFreeSpeed /
-           (2.0 * M_PI) / control_loops::superstructure::arm::Dynamics::kG1 /
+    return control_loops::superstructure::arm::kArmConstants.free_speed /
+           (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g1 /
            kProximalEncoderRatio() * kProximalEncoderCountsPerRevolution();
   }
   static constexpr double kProximalPotRatio() { return (12.0 / 60.0); }
@@ -58,8 +59,8 @@ struct Values {
   static constexpr double kDistalEncoderCountsPerRevolution() { return 4096.0; }
   static constexpr double kDistalEncoderRatio() { return (12.0 / 60.0); }
   static constexpr double kMaxDistalEncoderPulsesPerSecond() {
-    return control_loops::superstructure::arm::Dynamics::kFreeSpeed /
-           (2.0 * M_PI) / control_loops::superstructure::arm::Dynamics::kG2 /
+    return control_loops::superstructure::arm::kArmConstants.free_speed /
+           (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g2 /
            kDistalEncoderRatio() * kProximalEncoderCountsPerRevolution();
   }
   static constexpr double kDistalPotRatio() {

@@ -1,13 +1,13 @@
-#include "y2018/control_loops/superstructure/arm/trajectory.h"
+#include "frc971/control_loops/double_jointed_arm/trajectory.h"
+#include "frc971/control_loops/double_jointed_arm/test_constants.h"
 
+#include "frc971/control_loops/double_jointed_arm/demo_path.h"
+#include "frc971/control_loops/double_jointed_arm/dynamics.h"
+#include "frc971/control_loops/double_jointed_arm/ekf.h"
 #include "gtest/gtest.h"
-#include "y2018/control_loops/superstructure/arm/demo_path.h"
-#include "y2018/control_loops/superstructure/arm/dynamics.h"
-#include "y2018/control_loops/superstructure/arm/ekf.h"
 
-namespace y2018 {
+namespace frc971 {
 namespace control_loops {
-namespace superstructure {
 namespace arm {
 namespace testing {
 
@@ -75,20 +75,22 @@ TEST(TrajectoryTest, OutOfBounds) {
       (::Eigen::Matrix<double, 2, 1>() << 3.0, 0.0).finished()));
 }
 
-
-// Tests that we can compute the indices of the plan for a given distance correctly.
+// Tests that we can compute the indices of the plan for a given distance
+// correctly.
 TEST(TrajectoryTest, IndicesForDistanceTest) {
   // Start with a stupid simple plan.
   Path p({{{0.0, 0.0, 1.0, 0.0, 0.0, 0.0}},
           {{1.0, 0.0, 1.0, 0.0, 0.0, 0.0}},
           {{2.0, 0.0, 1.0, 0.0, 0.0, 0.0}},
           {{3.0, 0.0, 1.0, 0.0, 0.0, 0.0}}});
-  Trajectory t(::std::unique_ptr<Path>(new Path(p)), 0.1);
+  Dynamics dynamics(kArmConstants);
+  Trajectory t(&dynamics, ::std::unique_ptr<Path>(new Path(p)), 0.1);
 
   // 0 - 3.0 every 0.1 should be 31 points.
   EXPECT_EQ(t.num_plan_points(), 31);
 
-  // Verify that something centered in a grid cell returns the points on either side.
+  // Verify that something centered in a grid cell returns the points on either
+  // side.
   EXPECT_EQ(::std::make_pair(static_cast<size_t>(0), static_cast<size_t>(1)),
             t.IndicesForDistance(0.05));
   EXPECT_EQ(::std::make_pair(static_cast<size_t>(1), static_cast<size_t>(2)),
@@ -145,17 +147,21 @@ TEST(TrajectoryTest, ReversedPath) {
   EXPECT_NEAR(path->length(), reversed_path->length(), 1e-6);
 
   for (double d = 0; d < path->length(); d += 0.01) {
-    EXPECT_TRUE(path->Theta(d).isApprox(reversed_path->Theta(path->length() - d)));
-    EXPECT_TRUE(path->Omega(d).isApprox(-reversed_path->Omega(path->length() - d)));
-    EXPECT_TRUE(path->Alpha(d).isApprox(reversed_path->Alpha(path->length() - d)));
+    EXPECT_TRUE(
+        path->Theta(d).isApprox(reversed_path->Theta(path->length() - d)));
+    EXPECT_TRUE(
+        path->Omega(d).isApprox(-reversed_path->Omega(path->length() - d)));
+    EXPECT_TRUE(
+        path->Alpha(d).isApprox(reversed_path->Alpha(path->length() - d)));
   }
 }
 
 // Tests that we can follow a path.  Look at :trajectory_plot if you want to see
 // the path.
 TEST(TrajectoryTest, RunTrajectory) {
+  Dynamics dynamics(kArmConstants);
   ::std::unique_ptr<Path> path = MakeDemoPath();
-  Trajectory trajectory(::std::move(path), 0.001);
+  Trajectory trajectory(&dynamics, ::std::move(path), 0.001);
 
   constexpr double kAlpha0Max = 40.0;
   constexpr double kAlpha1Max = 60.0;
@@ -174,16 +180,17 @@ TEST(TrajectoryTest, RunTrajectory) {
     X << theta_t(0), 0.0, theta_t(1), 0.0;
   }
 
-  EKF arm_ekf;
+  EKF arm_ekf(&dynamics);
   arm_ekf.Reset(X);
 
-  TrajectoryFollower follower(&trajectory);
+  TrajectoryFollower follower(&dynamics, &trajectory);
   constexpr double sim_dt = 0.00505;
   while (t < 1.0) {
     arm_ekf.Correct((::Eigen::Matrix<double, 2, 1>() << X(0), X(2)).finished(),
                     sim_dt);
     follower.Update(arm_ekf.X_hat(), false, sim_dt, vmax, 12.0);
-    X = Dynamics::UnboundedDiscreteDynamics(X, follower.U(), sim_dt);
+
+    X = dynamics.UnboundedDiscreteDynamics(X, follower.U(), sim_dt);
     arm_ekf.Predict(follower.U(), sim_dt);
     t += sim_dt;
   }
@@ -204,6 +211,5 @@ TEST(TrajectoryTest, RunTrajectory) {
 
 }  // namespace testing
 }  // namespace arm
-}  // namespace superstructure
 }  // namespace control_loops
-}  // namespace y2018
+}  // namespace frc971

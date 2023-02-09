@@ -1,10 +1,9 @@
-#include "y2018/control_loops/superstructure/arm/graph.h"
+#include "frc971/control_loops/double_jointed_arm/graph.h"
 
 #include "gtest/gtest.h"
 
-namespace y2018 {
+namespace frc971 {
 namespace control_loops {
-namespace superstructure {
 namespace arm {
 namespace testing {
 
@@ -68,6 +67,5 @@ TEST(GraphTest, Distances) {
 
 }  // namespace testing
 }  // namespace arm
-}  // namespace superstructure
 }  // namespace control_loops
-}  // namespace y2018
+}  // namespace frc971

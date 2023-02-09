@@ -5,8 +5,9 @@
 
 #include "aos/logging/logging.h"
 #include "y2018/constants.h"
-#include "y2018/control_loops/superstructure/arm/demo_path.h"
-#include "y2018/control_loops/superstructure/arm/dynamics.h"
+#include "frc971/control_loops/double_jointed_arm/demo_path.h"
+#include "frc971/control_loops/double_jointed_arm/dynamics.h"
+#include "y2018/control_loops/superstructure/arm/arm_constants.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
 
 namespace y2018 {
@@ -29,9 +30,12 @@ Arm::Arm()
       alpha_unitizer_((::Eigen::Matrix<double, 2, 2>() << 1.0 / kAlpha0Max(),
                        0.0, 0.0, 1.0 / kAlpha1Max())
                           .finished()),
-      search_graph_(MakeSearchGraph(&trajectories_, alpha_unitizer_, kVMax())),
+      dynamics_(kArmConstants),
+      search_graph_(MakeSearchGraph(&dynamics_, &trajectories_, alpha_unitizer_,
+                                    kVMax())),
+      arm_ekf_(&dynamics_),
       // Go to the start of the first trajectory.
-      follower_(ReadyAboveBoxPoint()),
+      follower_(&dynamics_, ReadyAboveBoxPoint()),
       points_(PointList()) {
   int i = 0;
   for (const auto &trajectory : trajectories_) {
