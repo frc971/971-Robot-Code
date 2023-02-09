@@ -14,7 +14,19 @@ namespace aos {
 // See foxglove_websocket.cc for some usage notes.
 class FoxgloveWebsocketServer {
  public:
-  FoxgloveWebsocketServer(aos::EventLoop *event_loop, uint32_t port);
+  // Whether to serialize the messages into the MCAP file as JSON or
+  // flatbuffers.
+  enum class Serialization {
+    kJson,
+    kFlatbuffer,
+  };
+  enum class FetchPinnedChannels {
+    kYes,
+    kNo,
+  };
+  FoxgloveWebsocketServer(aos::EventLoop *event_loop, uint32_t port,
+                          Serialization serialization,
+                          FetchPinnedChannels fetch_pinned_channels);
   ~FoxgloveWebsocketServer();
 
  private:
@@ -33,6 +45,8 @@ class FoxgloveWebsocketServer {
   };
 
   aos::EventLoop *event_loop_;
+  const Serialization serialization_;
+  const FetchPinnedChannels fetch_pinned_channels_;
   foxglove::websocket::Server server_;
   // A map of fetchers for every single channel that could be subscribed to.
   std::map<ChannelId, FetcherState> fetchers_;

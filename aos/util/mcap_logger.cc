@@ -309,7 +309,7 @@ void McapLogger::WriteSchema(const uint16_t id, const aos::Channel *channel) {
   CHECK(channel->has_schema());
 
   const FlatbufferDetachedBuffer<reflection::Schema> schema =
-      CopyFlatBuffer(channel->schema());
+      RecursiveCopyFlatBuffer(channel->schema());
 
   // Write out the schema (we don't bother deduplicating schema types):
   string_builder_.Reset();

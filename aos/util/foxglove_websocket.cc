@@ -5,6 +5,12 @@
 
 DEFINE_string(config, "/app/aos_config.json", "Path to the config.");
 DEFINE_uint32(port, 8765, "Port to use for foxglove websocket server.");
+DEFINE_string(mode, "flatbuffer", "json or flatbuffer serialization.");
+DEFINE_bool(fetch_pinned_channels, true,
+            "Set this to allow foxglove_websocket to make fetchers on channels "
+            "with a read_method of PIN (see aos/configuration.fbs; PIN is an "
+            "enum value). Having this enabled will cause foxglove to  consume "
+            "extra shared memory resources.");
 
 int main(int argc, char *argv[]) {
   gflags::SetUsageMessage(
@@ -40,7 +46,14 @@ int main(int argc, char *argv[]) {
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  aos::FoxgloveWebsocketServer server(&event_loop, FLAGS_port);
+  aos::FoxgloveWebsocketServer server(
+      &event_loop, FLAGS_port,
+      FLAGS_mode == "flatbuffer"
+          ? aos::FoxgloveWebsocketServer::Serialization::kFlatbuffer
+          : aos::FoxgloveWebsocketServer::Serialization::kJson,
+      FLAGS_fetch_pinned_channels
+          ? aos::FoxgloveWebsocketServer::FetchPinnedChannels::kYes
+          : aos::FoxgloveWebsocketServer::FetchPinnedChannels::kNo);
 
   event_loop.Run();
 }
