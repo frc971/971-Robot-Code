@@ -10,6 +10,14 @@ table Status {
 
   // If true, we have aborted. This is the or of all subsystem estops.
   estopped:bool (id: 1);
+
+  proximal:frc971.PotAndAbsoluteEncoderEstimatorState (id: 2);
+
+  distal:frc971.PotAndAbsoluteEncoderEstimatorState (id: 3);
+
+  roll_joint:frc971.PotAndAbsoluteEncoderEstimatorState (id: 4);
+
+  wrist:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 5);
 }
 
 root_type Status;

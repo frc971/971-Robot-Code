@@ -4,6 +4,17 @@ namespace y2023.control_loops.superstructure;
 
 
 table Goal {
+    // Used to identify a position in the planned set of positions on the arm.
+    // Controls distal, proximal, and roll joints
+    arm_goal_position:uint32 (id: 0);
+
+    wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 1);
+
+    // If this is true, the rollers should intake.
+    intake:bool (id: 2);
+
+    // If this is true, the rollers should spit.
+    spit:bool (id: 3);
 }
 
 
