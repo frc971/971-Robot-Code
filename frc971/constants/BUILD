@@ -4,10 +4,12 @@ cc_library(
         "constants_sender_lib.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos:flatbuffer_merge",
         "//aos:json_to_flatbuffer",
         "//aos/events:event_loop",
+        "//aos/events:shm_event_loop",
         "//aos/network:team_number",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",

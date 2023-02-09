@@ -2,7 +2,7 @@ def _jinja2_template_impl(ctx):
     out = ctx.actions.declare_file(ctx.attr.name)
 
     ctx.actions.run_shell(
-        inputs = ctx.files.src,
+        inputs = ctx.files.src + ctx.files.includes,
         tools = [ctx.executable._jinja2],
         progress_message = "Generating " + out.short_path,
         outputs = [out],
@@ -21,6 +21,10 @@ jinja2_template = rule(
         "parameters": attr.string_dict(
             mandatory = True,
             doc = """The parameters to supply to Jinja2.""",
+        ),
+        "includes": attr.label_list(
+            allow_files = True,
+            doc = """Files which are included by the template.""",
         ),
         "_jinja2": attr.label(
             default = "//tools/build_rules:jinja2_generator",
