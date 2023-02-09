@@ -71,17 +71,37 @@ func TestAddToMatchDB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
 
-	correct := []Match{
-		Match{
-			MatchNumber: 7,
-			SetNumber:   1,
-			CompLevel:   "quals",
-			R1:          9999, R2: 1000, R3: 777, B1: 0000, B2: 4321, B3: 1234,
+	correct := []TeamMatch{
+		TeamMatch{
+			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 9999,
+		},
+		TeamMatch{
+			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: 1000,
+		},
+		TeamMatch{
+			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: 777,
+		},
+		TeamMatch{
+			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: 0000,
+		},
+		TeamMatch{
+			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: 4321,
+		},
+		TeamMatch{
+			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 3, TeamNumber: 1234,
 		},
 	}
 
-	err := fixture.db.AddToMatch(correct[0])
-	check(t, err, "Failed to add match data")
+	for _, match := range correct {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match data")
+	}
 
 	got, err := fixture.db.ReturnMatches()
 	check(t, err, "Failed ReturnMatches()")
@@ -179,15 +199,28 @@ func TestAddToStatsDB(t *testing.T) {
 			Comment: "final comment", CollectedBy: "beth",
 		},
 	}
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 1236},
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: 1001},
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: 777},
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: 1000},
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: 4321},
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 3, TeamNumber: 1234},
+	}
 
-	err := fixture.db.AddToMatch(Match{
-		MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-		R1: 1236, R2: 1001, R3: 777, B1: 1000, B2: 4321, B3: 1234,
-	})
-	check(t, err, "Failed to add match")
+	for _, match := range matches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+	}
 
 	for i := 0; i < len(correct); i++ {
-		err = fixture.db.AddToStats(correct[i])
+		err := fixture.db.AddToStats(correct[i])
 		check(t, err, "Failed to add stats to DB")
 	}
 
@@ -214,14 +247,28 @@ func TestAddDuplicateStats(t *testing.T) {
 		Comment: "this is a comment", CollectedBy: "josh",
 	}
 
-	err := fixture.db.AddToMatch(Match{
-		MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-		R1: 1236, R2: 1001, R3: 777, B1: 1000, B2: 4321, B3: 1234,
-	})
-	check(t, err, "Failed to add match")
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 1236},
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: 1001},
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: 777},
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: 1000},
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: 4321},
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 3, TeamNumber: 1234},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+	}
 
 	// Add stats. This should succeed.
-	err = fixture.db.AddToStats(stats)
+	err := fixture.db.AddToStats(stats)
 	check(t, err, "Failed to add stats to DB")
 
 	// Try again. It should fail this time.
@@ -323,13 +370,28 @@ func TestQueryStatsDB(t *testing.T) {
 		},
 	}
 
-	err := fixture.db.AddToMatch(Match{
-		MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-		R1: 1235, R2: 1234, R3: 1233, B1: 1232, B2: 1231, B3: 1239})
-	check(t, err, "Failed to add match")
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 1235},
+		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: 1234},
+		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: 1233},
+		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: 1232},
+		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: 1231},
+		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 3, TeamNumber: 1239},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+	}
 
 	for i := 0; i < len(testDatabase); i++ {
-		err = fixture.db.AddToStats(testDatabase[i])
+		err := fixture.db.AddToStats(testDatabase[i])
 		check(t, err, fmt.Sprint("Failed to add stats ", i))
 	}
 
@@ -404,27 +466,17 @@ func TestReturnMatchDB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
 
-	correct := []Match{
-		Match{
-			MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
-			R1: 251, R2: 169, R3: 286, B1: 253, B2: 538, B3: 149,
-		},
-		Match{
-			MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
-			R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262,
-		},
-		Match{
-			MatchNumber: 4, SetNumber: 1, CompLevel: "quals",
-			R1: 251, R2: 169, R3: 286, B1: 653, B2: 538, B3: 149,
-		},
-		Match{
-			MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
-			R1: 198, R2: 1421, R3: 538, B1: 26, B2: 448, B3: 262,
-		},
-		Match{
-			MatchNumber: 6, SetNumber: 1, CompLevel: "quals",
-			R1: 251, R2: 188, R3: 286, B1: 555, B2: 538, B3: 149,
-		},
+	correct := []TeamMatch{
+		TeamMatch{
+			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 1, TeamNumber: 6835},
+		TeamMatch{
+			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 2, TeamNumber: 4834},
+		TeamMatch{
+			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: 9824},
+		TeamMatch{
+			MatchNumber: 7, SetNumber: 2, CompLevel: "quals", Alliance: "B", AlliancePosition: 1, TeamNumber: 3732},
+		TeamMatch{
+			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 1, TeamNumber: 3732},
 	}
 
 	for i := 0; i < len(correct); i++ {
@@ -444,19 +496,13 @@ func TestOverwriteNewMatchData(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
 
-	testDatabase := []Match{
-		Match{
-			MatchNumber: 1, SetNumber: 1, CompLevel: "quals",
-			R1: 251, R2: 169, R3: 286, B1: 253, B2: 538, B3: 149,
-		},
-		Match{
-			MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
-			R1: 198, R2: 135, R3: 777, B1: 999, B2: 434, B3: 698,
-		},
-		Match{
-			MatchNumber: 1, SetNumber: 1, CompLevel: "quals",
-			R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262,
-		},
+	testDatabase := []TeamMatch{
+		TeamMatch{
+			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: 4464},
+		TeamMatch{
+			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 2, TeamNumber: 2352},
+		TeamMatch{
+			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: 6321},
 	}
 
 	for i := 0; i < len(testDatabase); i++ {
@@ -464,15 +510,11 @@ func TestOverwriteNewMatchData(t *testing.T) {
 		check(t, err, fmt.Sprint("Failed to add match", i))
 	}
 
-	correct := []Match{
-		Match{
-			MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
-			R1: 198, R2: 135, R3: 777, B1: 999, B2: 434, B3: 698,
-		},
-		Match{
-			MatchNumber: 1, SetNumber: 1, CompLevel: "quals",
-			R1: 147, R2: 421, R3: 538, B1: 126, B2: 448, B3: 262,
-		},
+	correct := []TeamMatch{
+		TeamMatch{
+			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 2, TeamNumber: 2352},
+		TeamMatch{
+			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: 6321},
 	}
 
 	got, err := fixture.db.ReturnMatches()
@@ -605,13 +647,28 @@ func TestReturnStatsDB(t *testing.T) {
 		},
 	}
 
-	err := fixture.db.AddToMatch(Match{
-		MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-		R1: 1235, R2: 1236, R3: 1237, B1: 1238, B2: 1239, B3: 1233})
-	check(t, err, "Failed to add match")
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 1235},
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: 1236},
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: 1237},
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: 1238},
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: 1239},
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 3, TeamNumber: 1233},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+	}
 
 	for i := 0; i < len(correct); i++ {
-		err = fixture.db.AddToStats(correct[i])
+		err := fixture.db.AddToStats(correct[i])
 		check(t, err, fmt.Sprint("Failed to add stats ", i))
 	}
 
@@ -653,13 +710,28 @@ func TestReturnActionsDB(t *testing.T) {
 		},
 	}
 
-	err := fixture.db.AddToMatch(Match{
-		MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-		R1: 1235, R2: 1236, R3: 1237, B1: 1238, B2: 1239, B3: 1233})
-	check(t, err, "Failed to add match")
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 1235},
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: 1236},
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: 1237},
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: 1238},
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: 1239},
+		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 3, TeamNumber: 1233},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+	}
 
 	for i := 0; i < len(correct); i++ {
-		err = fixture.db.AddAction(correct[i])
+		err := fixture.db.AddAction(correct[i])
 		check(t, err, fmt.Sprint("Failed to add to actions ", i))
 	}
 
