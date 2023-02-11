@@ -105,8 +105,10 @@ class Calibration {
  public:
   Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
               aos::EventLoop *image_event_loop, aos::EventLoop *imu_event_loop,
-              std::string_view pi, TargetType target_type,
-              std::string_view image_channel, CalibrationData *data);
+              std::string_view pi,
+              const calibration::CameraCalibration *intrinsics_calibration,
+              TargetType target_type, std::string_view image_channel,
+              CalibrationData *data);
 
   // Processes a charuco detection that is returned from charuco_lib.
   // For a valid detection(s), it stores camera observation

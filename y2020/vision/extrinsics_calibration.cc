@@ -13,13 +13,12 @@
 #include "frc971/vision/vision_generated.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
-#include "y2020/vision/sift/sift_generated.h"
-#include "y2020/vision/sift/sift_training_generated.h"
-#include "y2020/vision/tools/python_code/sift_training_data.h"
 
 DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
 DEFINE_bool(plot, false, "Whether to plot the resulting data.");
 DEFINE_bool(turret, false, "If true, the camera is on the turret");
+DEFINE_string(base_intrinsics, "",
+              "Intrinsics to use for extrinsics calibration.");
 
 namespace frc971 {
 namespace vision {
@@ -63,9 +62,13 @@ void Main(int argc, char **argv) {
     std::unique_ptr<aos::EventLoop> pi_event_loop =
         factory.MakeEventLoop("calibration", pi_node);
 
+    aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> intrinsics =
+        aos::JsonFileToFlatbuffer<calibration::CameraCalibration>(
+            FLAGS_base_intrinsics);
     // Now, hook Calibration up to everything.
     Calibration extractor(&factory, pi_event_loop.get(), imu_event_loop.get(),
-                          FLAGS_pi, TargetType::kCharuco, "/camera", &data);
+                          FLAGS_pi, &intrinsics.message(), TargetType::kCharuco,
+                          "/camera", &data);
 
     if (FLAGS_turret) {
       aos::NodeEventLoopFactory *roborio_factory =

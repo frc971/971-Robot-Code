@@ -140,11 +140,13 @@ CalibrationFoxgloveVisualizer::AddVisualizationChannels(
       node, channel_overrides);
 }
 
-Calibration::Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
-                         aos::EventLoop *image_event_loop,
-                         aos::EventLoop *imu_event_loop, std::string_view pi,
-                         TargetType target_type, std::string_view image_channel,
-                         CalibrationData *data)
+Calibration::Calibration(
+    aos::SimulatedEventLoopFactory *event_loop_factory,
+    aos::EventLoop *image_event_loop, aos::EventLoop *imu_event_loop,
+    std::string_view pi,
+    const calibration::CameraCalibration *intrinsics_calibration,
+    TargetType target_type, std::string_view image_channel,
+    CalibrationData *data)
     : image_event_loop_(image_event_loop),
       image_factory_(event_loop_factory->GetNodeEventLoopFactory(
           image_event_loop_->node())),
@@ -152,7 +154,7 @@ Calibration::Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
       imu_factory_(
           event_loop_factory->GetNodeEventLoopFactory(imu_event_loop_->node())),
       charuco_extractor_(
-          image_event_loop_, pi, target_type, image_channel,
+          image_event_loop_, intrinsics_calibration, target_type, image_channel,
           [this](cv::Mat rgb_image, monotonic_clock::time_point eof,
                  std::vector<cv::Vec4i> charuco_ids,
                  std::vector<std::vector<cv::Point2f>> charuco_corners,

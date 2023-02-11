@@ -39,7 +39,7 @@ robot_downloader(
 robot_downloader(
     name = "pi_download",
     binaries = [
-        "//y2020/vision:calibration",
+        "//frc971/vision:intrinsics_calibration",
         "//y2022/vision:viewer",
         "//y2022/localizer:imu_main",
         "//y2022/localizer:localizer_main",

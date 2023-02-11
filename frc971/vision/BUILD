@@ -99,11 +99,9 @@ cc_library(
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:team_number",
         "//frc971/control_loops:quaternion_utils",
+        "//frc971/vision:calibration_fbs",
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
-        "//y2020/vision/sift:sift_fbs",
-        "//y2020/vision/sift:sift_training_fbs",
-        "//y2020/vision/tools/python_code:sift_training_data",
         "@com_github_foxglove_schemas//:schemas",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings:str_format",
@@ -301,5 +299,53 @@ cc_test(
         "//aos/testing:googletest",
         "//aos/testing:path",
         "//aos/testing:tmpdir",
+    ],
+)
+
+cc_library(
+    name = "intrinsics_calibration_lib",
+    srcs = [
+        "intrinsics_calibration_lib.cc",
+    ],
+    hdrs = [
+        "intrinsics_calibration_lib.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos/events:event_loop",
+        "//frc971/control_loops/drivetrain:improved_down_estimator",
+        "//frc971/vision:charuco_lib",
+        "//frc971/vision:vision_fbs",
+        "//frc971/wpilib:imu_batch_fbs",
+        "//frc971/wpilib:imu_fbs",
+        "//third_party:opencv",
+        "@com_google_absl//absl/strings:str_format",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_binary(
+    name = "intrinsics_calibration",
+    srcs = [
+        "intrinsics_calibration.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = [
+        "//y2020:__subpackages__",
+        "//y2022:__subpackages__",
+        "//y2023:__subpackages__",
+    ],
+    deps = [
+        ":intrinsics_calibration_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/control_loops/drivetrain:improved_down_estimator",
+        "//frc971/vision:charuco_lib",
+        "//frc971/vision:vision_fbs",
+        "//frc971/wpilib:imu_batch_fbs",
+        "//frc971/wpilib:imu_fbs",
+        "//third_party:opencv",
+        "@com_google_absl//absl/strings:str_format",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )

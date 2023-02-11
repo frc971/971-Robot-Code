@@ -11,9 +11,6 @@
 #include "frc971/vision/extrinsics_calibration.h"
 #include "frc971/vision/vision_generated.h"
 #include "frc971/wpilib/imu_batch_generated.h"
-#include "y2020/vision/sift/sift_generated.h"
-#include "y2020/vision/sift/sift_training_generated.h"
-#include "y2020/vision/tools/python_code/sift_training_data.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 
 DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
@@ -24,6 +21,8 @@ DEFINE_string(target_type, "charuco",
 DEFINE_string(image_channel, "/camera", "Channel to listen for images on");
 DEFINE_string(output_logs, "/tmp/calibration/",
               "Output folder for visualization logs.");
+DEFINE_string(base_intrinsics, "",
+              "Intrinsics to use for extrinsics calibration.");
 
 namespace frc971 {
 namespace vision {
@@ -97,9 +96,13 @@ void Main(int argc, char **argv) {
                  << ", expected: aruco|charuco|charuco_diamond";
     }
 
+    aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> intrinsics =
+        aos::JsonFileToFlatbuffer<calibration::CameraCalibration>(
+            FLAGS_base_intrinsics);
     // Now, hook Calibration up to everything.
     Calibration extractor(&factory, pi_event_loop.get(), imu_event_loop.get(),
-                          FLAGS_pi, target_type, FLAGS_image_channel, &data);
+                          FLAGS_pi, &intrinsics.message(), target_type,
+                          FLAGS_image_channel, &data);
 
     if (FLAGS_turret) {
       aos::NodeEventLoopFactory *roborio_factory =
