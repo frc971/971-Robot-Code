@@ -1,0 +1,6 @@
+if test ${devnum} -eq 1;
+then
+  sysboot ${devtype} ${devnum}:${distro_bootpart} any ${scriptaddr} sdcard_extlinux.conf
+else
+  sysboot ${devtype} ${devnum}:${distro_bootpart} any ${scriptaddr} emmc_extlinux.conf
+fi

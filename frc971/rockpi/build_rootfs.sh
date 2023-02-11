@@ -16,6 +16,7 @@ REQUIRED_DEPS=(
     bison
     gcc-arm-none-eabi
     gcc-aarch64-linux-gnu
+    u-boot-tools
     device-tree-compiler
     swig
     debootstrap
@@ -164,14 +165,22 @@ sudo tar --strip-components=3 -xvf "linux-kernel-${KERNEL_VERSION}.tar.xz" \
   -C "${PARTITION}/lib/modules/" ./lib/modules
 
 # Now, configure it to start automatically.
-sudo mkdir -p ${PARTITION}/boot/extlinux/
-cat << __EOF__ | sudo tee "${PARTITION}/boot/extlinux/extlinux.conf"
+cat << __EOF__ | sudo tee "${PARTITION}/boot/sdcard_extlinux.conf"
 label Linux ${KERNEL_VERSION}
     kernel /vmlinuz-${KERNEL_VERSION}
     append earlycon=uart8250,mmio32,0xff1a0000 earlyprintk console=ttyS2,1500000n8 root=/dev/mmcblk0p2 ro rootfstype=ext4 rootwait
     fdtdir /dtbs/${KERNEL_VERSION}/
 __EOF__
+cat << __EOF__ | sudo tee "${PARTITION}/boot/emmc_extlinux.conf"
+label Linux ${KERNEL_VERSION}
+    kernel /vmlinuz-${KERNEL_VERSION}
+    append earlycon=uart8250,mmio32,0xff1a0000 earlyprintk console=ttyS2,1500000n8 root=/dev/mmcblk1p2 ro rootfstype=ext4 rootwait
+    fdtdir /dtbs/${KERNEL_VERSION}/
+__EOF__
 
+mkimage -c none -A arm -T script -d contents/boot/boot.script contents/boot/boot.scr
+copyfile root.root 644 boot/boot.scr
+rm contents/boot/boot.scr
 copyfile root.root 644 etc/apt/sources.list.d/bullseye-backports.list
 copyfile root.root 644 etc/apt/sources.list.d/frc971.list
 
@@ -186,7 +195,7 @@ target "systemctl enable systemd-resolved"
 
 target "apt-get -y install -t bullseye-backports bpfcc-tools"
 
-target "apt-get install -y sudo openssh-server python3 bash-completion git v4l-utils cpufrequtils pmount rsync vim-nox chrony libopencv-calib3d4.5 libopencv-contrib4.5 libopencv-core4.5 libopencv-features2d4.5 libopencv-flann4.5 libopencv-highgui4.5 libopencv-imgcodecs4.5 libopencv-imgproc4.5 libopencv-ml4.5 libopencv-objdetect4.5 libopencv-photo4.5 libopencv-shape4.5 libopencv-stitching4.5 libopencv-superres4.5 libopencv-video4.5 libopencv-videoio4.5 libopencv-videostab4.5 libopencv-viz4.5 libnice10 pmount libnice-dev feh libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-nice usbutils locales trace-cmd clinfo jq"
+target "apt-get install -y sudo openssh-server python3 bash-completion git v4l-utils cpufrequtils pmount rsync vim-nox chrony libopencv-calib3d4.5 libopencv-contrib4.5 libopencv-core4.5 libopencv-features2d4.5 libopencv-flann4.5 libopencv-highgui4.5 libopencv-imgcodecs4.5 libopencv-imgproc4.5 libopencv-ml4.5 libopencv-objdetect4.5 libopencv-photo4.5 libopencv-shape4.5 libopencv-stitching4.5 libopencv-superres4.5 libopencv-video4.5 libopencv-videoio4.5 libopencv-videostab4.5 libopencv-viz4.5 libnice10 pmount libnice-dev feh libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-nice usbutils locales trace-cmd clinfo jq strace"
 target "cd /tmp && wget https://software.frc971.org/Build-Dependencies/libmali-midgard-t86x-r14p0-x11_1.9-1_arm64.deb && sudo dpkg -i libmali-midgard-t86x-r14p0-x11_1.9-1_arm64.deb && rm libmali-midgard-t86x-r14p0-x11_1.9-1_arm64.deb"
 
 target "apt-get clean"
@@ -208,6 +217,7 @@ copyfile root.root 500 root/bin/change_hostname.sh
 copyfile root.root 500 root/bin/deploy_kernel.sh
 copyfile root.root 500 root/bin/chrt.sh
 copyfile root.root 644 etc/systemd/system/grow-rootfs.service
+copyfile root.root 644 etc/systemd/system/mount-boot.service
 copyfile root.root 644 etc/sysctl.d/sctp.conf
 copyfile root.root 644 etc/systemd/logind.conf
 copyfile root.root 555 etc/bash_completion.d/aos_dump_autocomplete
@@ -224,6 +234,7 @@ target "apt-get update"
 
 target "systemctl enable systemd-networkd"
 target "systemctl enable grow-rootfs"
+target "systemctl enable mount-boot"
 target "systemctl enable frc971"
 target "systemctl enable frc971chrt"
 target "/root/bin/change_hostname.sh pi-971-1"

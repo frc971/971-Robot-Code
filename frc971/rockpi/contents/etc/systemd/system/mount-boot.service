@@ -1,0 +1,16 @@
+[Unit]
+Description=Mount /boot
+DefaultDependencies=no
+Before=local-fs.target
+Before=shutdown.target
+After=-.mount
+BindsTo=-.mount
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c "mount $(cat /proc/cmdline | sed 's/.*\(mmcblk.p\).*/\/dev\/\11/') /boot"
+TimeoutSec=0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
