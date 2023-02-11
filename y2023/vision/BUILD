@@ -1,3 +1,5 @@
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+
 py_binary(
     name = "create_calib_file",
     srcs = [
@@ -101,6 +103,14 @@ cc_binary(
     ],
 )
 
+flatbuffer_cc_library(
+    name = "april_debug_fbs",
+    srcs = ["april_debug.fbs"],
+    gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "aprilrobotics_lib",
     srcs = [
@@ -110,6 +120,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2023:__subpackages__"],
     deps = [
+        ":april_debug_fbs",
         ":calibration_data",
         "//aos:init",
         "//aos/events:shm_event_loop",
