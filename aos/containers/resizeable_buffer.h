@@ -11,18 +11,21 @@ namespace aos {
 // Kind of like a subset of vector<uint8_t>, but with less destructor calls.
 // When building unoptimized, especially with sanitizers, the vector<uint8_t>
 // version ends up being really slow in tests.
-class ResizeableBuffer {
+//
+// F is the allocator used for reallocating the memory used by the buffer.
+template <class F>
+class AllocatorResizeableBuffer {
  public:
-  ResizeableBuffer() = default;
+  AllocatorResizeableBuffer() = default;
 
-  ResizeableBuffer(const ResizeableBuffer &other) { *this = other; }
-  ResizeableBuffer(ResizeableBuffer &&other) { *this = std::move(other); }
-  ResizeableBuffer &operator=(const ResizeableBuffer &other) {
+  AllocatorResizeableBuffer(const AllocatorResizeableBuffer &other) { *this = other; }
+  AllocatorResizeableBuffer(AllocatorResizeableBuffer &&other) { *this = std::move(other); }
+  AllocatorResizeableBuffer &operator=(const AllocatorResizeableBuffer &other) {
     resize(other.size());
     memcpy(storage_.get(), other.storage_.get(), size());
     return *this;
   }
-  ResizeableBuffer &operator=(ResizeableBuffer &&other) {
+  AllocatorResizeableBuffer &operator=(AllocatorResizeableBuffer &&other) {
     std::swap(storage_, other.storage_);
     std::swap(size_, other.size_);
     std::swap(capacity_, other.capacity_);
@@ -93,13 +96,25 @@ class ResizeableBuffer {
 
   void Allocate(size_t new_capacity) {
     void *const old = storage_.release();
-    storage_.reset(CHECK_NOTNULL(realloc(old, new_capacity)));
+    storage_.reset(CHECK_NOTNULL(F::Realloc(old, capacity_, new_capacity)));
     capacity_ = new_capacity;
   }
 
   std::unique_ptr<void, decltype(&DoFree)> storage_{nullptr, &DoFree};
   size_t size_ = 0, capacity_ = 0;
 };
+
+// An allocator which just uses realloc to allocate.
+class Reallocator {
+ public:
+  static void *Realloc(void *old, size_t /*old_size*/, size_t new_capacity) {
+    return realloc(old, new_capacity);
+  }
+};
+
+// A resizable buffer which uses realloc when it needs to grow to attempt to
+// avoid full coppies.
+class ResizeableBuffer : public AllocatorResizeableBuffer<Reallocator> {};
 
 }  // namespace aos
 
