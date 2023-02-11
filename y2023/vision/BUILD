@@ -1,48 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
-py_binary(
-    name = "create_calib_file",
-    srcs = [
-        "create_calib_file.py",
-    ],
-    args = [
-        "calibration_data.h",
-    ],
-    data = glob(["calib_files/*.json"]),
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//frc971/vision:create_calib_file",
-    ],
-)
-
-genrule(
-    name = "run_calibration_data",
-    outs = [
-        "calibration_data.h",
-    ],
-    cmd = " ".join([
-        "$(location :create_calib_file)",
-        "$(location calibration_data.h)",
-    ]),
-    target_compatible_with = ["@platforms//os:linux"],
-    tools = [
-        ":create_calib_file",
-    ],
-)
-
-cc_library(
-    name = "calibration_data",
-    hdrs = [
-        "calibration_data.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "@com_google_absl//absl/types:span",
-    ],
-)
-
 cc_binary(
     name = "camera_reader",
     srcs = [
@@ -91,15 +48,26 @@ cc_binary(
     visibility = ["//y2023:__subpackages__"],
     deps = [
         ":aprilrobotics_lib",
-        ":calibration_data",
         "//aos:init",
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_reader",
+        "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:pose",
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:charuco_lib",
         "//frc971/vision:target_mapper",
         "//third_party:opencv",
+        "//y2023/constants:constants_fbs",
+    ],
+)
+
+cc_library(
+    name = "vision_util",
+    srcs = ["vision_util.cc"],
+    hdrs = ["vision_util.h"],
+    deps = [
+        "//y2023/constants:constants_fbs",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -121,9 +89,10 @@ cc_library(
     visibility = ["//y2023:__subpackages__"],
     deps = [
         ":april_debug_fbs",
-        ":calibration_data",
+        ":vision_util",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "//frc971/constants:constants_sender_lib",
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:charuco_lib",
         "//frc971/vision:target_map_fbs",
@@ -131,6 +100,7 @@ cc_library(
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
         "//third_party/apriltag",
+        "//y2023/constants:constants_fbs",
     ],
 )
 

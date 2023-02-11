@@ -324,6 +324,14 @@
       "frequency": 50,
       "num_senders": 2,
       "max_size": 200
+    },
+    {
+      "name": "/pi{{ NUM }}/constants",
+      "type": "y2023.Constants",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 1,
+      "num_senders": 2,
+      "max_size": 4096
     }
   ],
   "applications": [
@@ -378,6 +386,14 @@
       "nodes": [
         "pi{{ NUM }}"
       ]
+    },
+    {
+      "name": "constants_sender",
+      "autorestart": false,
+      "user": "pi",
+      "nodes": [
+        "pi{{ NUM }}"
+      ]
     }
   ],
   "maps": [
@@ -388,6 +404,15 @@
       },
       "rename": {
         "name": "/pi{{ NUM }}/aos"
+      }
+    },
+    {
+      "match": {
+        "name": "/constants*",
+        "source_node": "pi{{ NUM }}"
+      },
+      "rename": {
+        "name": "/pi{{ NUM }}/constants"
       }
     },
     {

@@ -16,7 +16,8 @@
 #include "third_party/apriltag/apriltag_pose.h"
 #include "third_party/apriltag/tag16h5.h"
 #include "y2023/vision/april_debug_generated.h"
-#include "y2023/vision/calibration_data.h"
+#include "y2023/constants/constants_generated.h"
+#include "frc971/constants/constants_sender_lib.h"
 
 DECLARE_int32(team_number);
 
@@ -43,23 +44,6 @@ class AprilRoboticsDetector {
       frc971::vision::TargetMapper::TargetId target_id,
       flatbuffers::FlatBufferBuilder *fbb);
 
-  static const frc971::vision::calibration::CameraCalibration *
-  FindCameraCalibration(
-      const frc971::vision::calibration::CalibrationData *calibration_data,
-      std::string_view node_name) {
-    for (const frc971::vision::calibration::CameraCalibration *candidate :
-         *calibration_data->camera_calibrations()) {
-      if (candidate->node_name()->string_view() != node_name) {
-        continue;
-      }
-      if (candidate->team_number() != FLAGS_team_number) {
-        continue;
-      }
-      return candidate;
-    }
-    LOG(FATAL) << ": Failed to find camera calibration for " << node_name
-               << " on " << FLAGS_team_number;
-  }
 
   static cv::Mat CameraIntrinsics(
       const frc971::vision::calibration::CameraCalibration
@@ -86,8 +70,7 @@ class AprilRoboticsDetector {
   apriltag_family_t *tag_family_;
   apriltag_detector_t *tag_detector_;
 
-  const aos::FlatbufferSpan<frc971::vision::calibration::CalibrationData>
-      calibration_data_;
+  const frc971::constants::ConstantsFetcher<Constants> calibration_data_;
   const frc971::vision::calibration::CameraCalibration *calibration_;
   cv::Mat intrinsics_;
   cv::Mat camera_distortion_coeffs_;

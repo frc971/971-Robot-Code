@@ -1,11 +1,11 @@
 #include "y2023/vision/aprilrobotics.h"
 
+#include "y2023/vision/vision_util.h"
+
 DEFINE_bool(
     debug, false,
     "If true, dump a ton of debug and crash on the first valid detection.");
 
-DEFINE_int32(team_number, 971,
-             "Use the calibration for a node with this team number");
 namespace y2023 {
 namespace vision {
 
@@ -13,7 +13,7 @@ namespace chrono = std::chrono;
 
 AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
                                              std::string_view channel_name)
-    : calibration_data_(CalibrationData()),
+    : calibration_data_(event_loop),
       ftrace_(),
       image_callback_(
           event_loop, channel_name,
@@ -38,14 +38,8 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
   std::string hostname = aos::network::GetHostname();
 
   // Check team string is valid
-  std::optional<uint16_t> pi_number = aos::network::ParsePiNumber(hostname);
-  std::optional<uint16_t> team_number =
-      aos::network::team_number_internal::ParsePiTeamNumber(hostname);
-  CHECK(pi_number) << "Unable to parse pi number from '" << hostname << "'";
-  CHECK(team_number);
-
-  calibration_ = FindCameraCalibration(&calibration_data_.message(),
-                                       "pi" + std::to_string(*pi_number));
+  calibration_ = FindCameraCalibration(
+      calibration_data_.constants(), event_loop->node()->name()->string_view());
   intrinsics_ = CameraIntrinsics(calibration_);
   camera_distortion_coeffs_ = CameraDistCoeffs(calibration_);
 
