@@ -1,7 +1,4 @@
 import numpy
-import cairo
-
-from frc971.control_loops.python.basic_window import OverrideMatrix, identity
 
 # joint_center in x-y space.
 joint_center = (-0.299, 0.299)
@@ -14,10 +11,6 @@ max_dist = 0.01
 max_dist_theta = numpy.pi / 64
 xy_end_circle_size = 0.01
 theta_end_circle_size = 0.07
-
-
-def px(cr):
-    return OverrideMatrix(cr, identity)
 
 
 # Convert from x-y coordinates to theta coordinates.
@@ -215,13 +208,11 @@ def get_derivs(t_prev, t, t_next):
     return (a[0], a[1], d1[0], d1[1], accel[0], accel[1])
 
 
-# Draw lines to cr + stroke.
+# Draw a list of lines to a cairo context.
 def draw_lines(cr, lines):
     cr.move_to(lines[0][0], lines[0][1])
     for pt in lines[1:]:
         cr.line_to(pt[0], pt[1])
-    with px(cr):
-        cr.stroke()
 
 
 # Segment in angle space.

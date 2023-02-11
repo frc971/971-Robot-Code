@@ -11,15 +11,28 @@ import numpy
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gtk
 import cairo
-from graph_tools import XYSegment, AngleSegment, to_theta, to_xy, alpha_blend, draw_lines
-from graph_tools import back_to_xy_loop, subdivide_theta, to_theta_loop, px
+from graph_tools import XYSegment, AngleSegment, to_theta, to_xy, alpha_blend
+from graph_tools import back_to_xy_loop, subdivide_theta, to_theta_loop
 from graph_tools import l1, l2, joint_center
 import graph_paths
 
-from frc971.control_loops.python.basic_window import quit_main_loop, set_color
+from frc971.control_loops.python.basic_window import quit_main_loop, set_color, OverrideMatrix, identity
 
 import shapely
 from shapely.geometry import Polygon
+
+
+def px(cr):
+    return OverrideMatrix(cr, identity)
+
+
+# Draw lines to cr + stroke.
+def draw_lines(cr, lines):
+    cr.move_to(lines[0][0], lines[0][1])
+    for pt in lines[1:]:
+        cr.line_to(pt[0], pt[1])
+    with px(cr):
+        cr.stroke()
 
 
 def draw_px_cross(cr, length_px):
