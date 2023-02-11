@@ -859,8 +859,19 @@ struct CostFunctor {
   }
 };
 
-void Solve(const CalibrationData &data,
-           CalibrationParameters *calibration_parameters) {
+std::vector<float> MatrixToVector(const Eigen::Matrix<double, 4, 4> &H) {
+  std::vector<float> data;
+  for (int row = 0; row < 4; ++row) {
+    for (int col = 0; col < 4; ++col) {
+      data.push_back(H(row, col));
+    }
+  }
+  return data;
+}
+
+aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> Solve(
+    const CalibrationData &data,
+    CalibrationParameters *calibration_parameters) {
   ceres::Problem problem;
 
   ceres::EigenQuaternionParameterization *quaternion_local_parameterization =
@@ -949,6 +960,46 @@ void Solve(const CalibrationData &data,
   LOG(INFO) << summary.FullReport();
   LOG(INFO) << "Solution is " << (summary.IsSolutionUsable() ? "" : "NOT ")
             << "usable";
+
+  {
+    flatbuffers::FlatBufferBuilder fbb;
+    flatbuffers::Offset<flatbuffers::Vector<float>> data_offset =
+        fbb.CreateVector(MatrixToVector(
+            (Eigen::Translation3d(
+                 calibration_parameters->pivot_to_camera_translation) *
+             Eigen::Quaterniond(calibration_parameters->pivot_to_camera))
+                .inverse()
+                .matrix()));
+    calibration::TransformationMatrix::Builder matrix_builder(fbb);
+    matrix_builder.add_data(data_offset);
+    flatbuffers::Offset<calibration::TransformationMatrix>
+        camera_to_pivot_offset = matrix_builder.Finish();
+
+    flatbuffers::Offset<calibration::TransformationMatrix> pivot_to_imu_offset;
+    if (calibration_parameters->has_pivot) {
+      flatbuffers::Offset<flatbuffers::Vector<float>> data_offset =
+          fbb.CreateVector(MatrixToVector(
+              (Eigen::Translation3d(
+                   calibration_parameters->pivot_to_imu_translation) *
+               Eigen::Quaterniond(calibration_parameters->pivot_to_imu))
+                  .matrix()));
+      calibration::TransformationMatrix::Builder matrix_builder(fbb);
+      matrix_builder.add_data(data_offset);
+      pivot_to_imu_offset = matrix_builder.Finish();
+    }
+
+    calibration::CameraCalibration::Builder calibration_builder(fbb);
+    if (calibration_parameters->has_pivot) {
+      calibration_builder.add_fixed_extrinsics(pivot_to_imu_offset);
+      calibration_builder.add_turret_extrinsics(camera_to_pivot_offset);
+    } else {
+      calibration_builder.add_fixed_extrinsics(camera_to_pivot_offset);
+    }
+    fbb.Finish(calibration_builder.Finish());
+    aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> extrinsics =
+        fbb.Release();
+    return extrinsics;
+  }
 }
 
 void Plot(const CalibrationData &data,

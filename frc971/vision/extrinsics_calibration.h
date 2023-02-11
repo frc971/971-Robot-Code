@@ -33,10 +33,17 @@ struct CalibrationParameters {
   bool has_pivot = false;
 };
 
+// Copies an Eigen matrix into a row-major vector of the data. Used for
+// converting into the flatbuffer TransformationMatrix type.
+std::vector<float> MatrixToVector(const Eigen::Matrix<double, 4, 4> &H);
+
 // Solves the mounting problem given the calibration data and parameters.  The
 // parameters are used as the seed to the solver.
-void Solve(const CalibrationData &data,
-           CalibrationParameters *calibration_parameters);
+// Produces a CameraCalibration flatbuffer which will have the relevant
+// extrinsics fields populated, so that it can subsequently be merged with the
+// intrinsics portion of the calibration.
+aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> Solve(
+    const CalibrationData &data, CalibrationParameters *calibration_parameters);
 
 // Plots the calibrated results to help visualize the fit.
 void Plot(const CalibrationData &data,
