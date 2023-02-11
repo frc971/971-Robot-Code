@@ -379,6 +379,22 @@
       ]
     },
     {
+      "name": "image_logger",
+      "executable_name": "logger_main",
+      "autostart": false,
+      "args": [
+        "--logging_folder",
+        "",
+        "--rotate_every",
+        "60.0",
+        "--direct",
+        "--flush_size=4194304"
+      ],
+      "nodes": [
+        "pi{{ NUM }}"
+      ]
+    },
+    {
       "name": "aprilrobotics",
       "executable_name": "aprilrobotics",
       "args": ["--enable_ftrace"],

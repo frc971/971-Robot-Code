@@ -459,12 +459,12 @@
       "executable_name": "logger_main",
       "autostart": false,
       "args": [
-        "--snappy_compress",
         "--logging_folder",
         "",
-        "--snappy_compress",
         "--rotate_every",
-        "60.0"
+        "60.0",
+        "--direct",
+        "--flush_size=4194304"
       ],
       "nodes": [
         "logger"
