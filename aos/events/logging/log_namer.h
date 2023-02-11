@@ -491,10 +491,7 @@ class MultiNodeLogNamer : public LogNamer {
   std::vector<std::string> all_filenames_;
 
   std::string temp_suffix_;
-  std::function<std::unique_ptr<DataEncoder>(size_t)> encoder_factory_ =
-      [](size_t max_message_size) {
-        return std::make_unique<DummyEncoder>(max_message_size);
-      };
+  std::function<std::unique_ptr<DataEncoder>(size_t)> encoder_factory_;
   std::string extension_;
 
   // Storage for statistics from previously-rotated DetachedBufferWriters.

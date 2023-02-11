@@ -37,7 +37,8 @@ class LzmaEncoder final : public DataEncoder {
     // space.
     return true;
   }
-  void Encode(Copier *copy) final;
+  size_t space() const final { return input_buffer_.capacity(); }
+  size_t Encode(Copier *copy, size_t start_byte) final;
   void Finish() final;
   void Clear(int n) final;
   absl::Span<const absl::Span<const uint8_t>> queue() final;

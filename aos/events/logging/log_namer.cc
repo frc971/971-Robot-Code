@@ -14,6 +14,8 @@
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
 
+DECLARE_int32(flush_size);
+
 namespace aos {
 namespace logger {
 
@@ -568,7 +570,12 @@ MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
                                      EventLoop *event_loop, const Node *node)
     : LogNamer(configuration, event_loop, node),
       base_name_(base_name),
-      old_base_name_() {}
+      old_base_name_(),
+      encoder_factory_([](size_t max_message_size) {
+        // TODO(austin): For slow channels, can we allocate less memory?
+        return std::make_unique<DummyEncoder>(max_message_size,
+                                              FLAGS_flush_size);
+      }) {}
 
 MultiNodeLogNamer::~MultiNodeLogNamer() {
   if (!ran_out_of_space_) {

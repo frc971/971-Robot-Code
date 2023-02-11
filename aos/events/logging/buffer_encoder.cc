@@ -9,34 +9,32 @@
 
 namespace aos::logger {
 
-DummyEncoder::DummyEncoder(size_t max_buffer_size) {
-  // TODO(austin): This is going to end up writing > 128k chunks, not 128k
-  // chunks exactly.  If we really want to, we could make it always write 128k
-  // chunks by only exposing n * 128k chunks as we go.  This might improve write
-  // performance, then again, it might have no effect if the kernel is combining
-  // writes...
-  constexpr size_t kWritePageSize = 128 * 1024;
+DummyEncoder::DummyEncoder(size_t /*max_message_size*/, size_t buffer_size) {
   // Round up to the nearest page size.
-  input_buffer_.reserve(
-      ((max_buffer_size + kWritePageSize - 1) / kWritePageSize) *
-      kWritePageSize);
+  input_buffer_.reserve(buffer_size);
   return_queue_.resize(1);
 }
 
-bool DummyEncoder::HasSpace(size_t request) const {
-  return request + input_buffer_.size() < input_buffer_.capacity();
+size_t DummyEncoder::space() const {
+  return input_buffer_.capacity() - input_buffer_.size();
 }
 
-void DummyEncoder::Encode(Copier *copy) {
-  DCHECK(HasSpace(copy->size()));
+bool DummyEncoder::HasSpace(size_t request) const { return request <= space(); }
+
+size_t DummyEncoder::Encode(Copier *copy, size_t start_byte) {
   const size_t input_buffer_initial_size = input_buffer_.size();
 
-  input_buffer_.resize(input_buffer_initial_size + copy->size());
-  const size_t written_size = copy->Copy(
-      input_buffer_.data() + input_buffer_initial_size, 0, copy->size());
-  DCHECK_EQ(written_size, copy->size());
+  size_t expected_write_size =
+      std::min(input_buffer_.capacity() - input_buffer_initial_size,
+               copy->size() - start_byte);
+  input_buffer_.resize(input_buffer_initial_size + expected_write_size);
+  const size_t written_size =
+      copy->Copy(input_buffer_.data() + input_buffer_initial_size, start_byte,
+                 expected_write_size + start_byte);
 
   total_bytes_ += written_size;
+
+  return written_size;
 }
 
 void DummyEncoder::Clear(const int n) {

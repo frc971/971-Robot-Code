@@ -30,7 +30,7 @@ class DataEncoder {
     size_t size_;
   };
 
-  // Coppies a span.  The span must have a longer lifetime than the coppier is
+  // Copies a span.  The span must have a longer lifetime than the coppier is
   // being used.
   class SpanCopier : public Copier {
    public:
@@ -55,12 +55,13 @@ class DataEncoder {
   // the output needs to be flushed.
   virtual bool HasSpace(size_t request) const = 0;
 
-  // Encodes and enqueues the given data encoder.
-  virtual void Encode(Copier *copy) = 0;
+  // Returns the space available.
+  virtual size_t space() const = 0;
 
-  // If this returns true, the encoder may be bypassed by writing directly to
-  // the file.
-  virtual bool may_bypass() const { return false; }
+  // Encodes and enqueues the given data encoder.  Starts at the start byte
+  // (which must be a multiple of 8 bytes), and goes as far as it can.  Returns
+  // the amount encoded.
+  virtual size_t Encode(Copier *copy, size_t start_byte) = 0;
 
   // Finalizes the encoding process. After this, queue_size() represents the
   // full extent of data which will be written to this file.
@@ -90,7 +91,7 @@ class DataEncoder {
 // and queues it up as is.
 class DummyEncoder final : public DataEncoder {
  public:
-  DummyEncoder(size_t max_buffer_size);
+  DummyEncoder(size_t max_message_size, size_t buffer_size = 128 * 1024);
   DummyEncoder(const DummyEncoder &) = delete;
   DummyEncoder(DummyEncoder &&other) = delete;
   DummyEncoder &operator=(const DummyEncoder &) = delete;
@@ -98,8 +99,8 @@ class DummyEncoder final : public DataEncoder {
   ~DummyEncoder() override = default;
 
   bool HasSpace(size_t request) const final;
-  void Encode(Copier *copy) final;
-  bool may_bypass() const final { return true; }
+  size_t space() const final;
+  size_t Encode(Copier *copy, size_t start_byte) final;
   void Finish() final {}
   void Clear(int n) final;
   absl::Span<const absl::Span<const uint8_t>> queue() final;

@@ -134,12 +134,13 @@ class DetachedBufferWriter {
 
  private:
   // Performs a single writev call with as much of the data we have queued up as
-  // possible.
+  // possible.  now is the time we flushed at, to be recorded in
+  // last_flush_time_.
   //
   // This will normally take all of the data we have queued up, unless an
   // encoder has spit out a big enough chunk all at once that we can't manage
   // all of it.
-  void Flush();
+  void Flush(aos::monotonic_clock::time_point now);
 
   // write_return is what write(2) or writev(2) returned. write_size is the
   // number of bytes we expected it to write.

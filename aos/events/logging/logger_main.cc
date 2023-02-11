@@ -32,6 +32,8 @@ DEFINE_double(rotate_every, 0.0,
 DEFINE_int32(xz_compression_level, 9, "Compression level for the LZMA Encoder");
 #endif
 
+DECLARE_int32(flush_size);
+
 int main(int argc, char *argv[]) {
   gflags::SetUsageMessage(
       "This program provides a simple logger binary that logs all SHMEM data "
@@ -53,14 +55,15 @@ int main(int argc, char *argv[]) {
   if (FLAGS_snappy_compress) {
     log_namer->set_extension(aos::logger::SnappyDecoder::kExtension);
     log_namer->set_encoder_factory([](size_t max_message_size) {
-      return std::make_unique<aos::logger::SnappyEncoder>(max_message_size);
+      return std::make_unique<aos::logger::SnappyEncoder>(max_message_size,
+                                                          FLAGS_flush_size);
     });
 #ifdef LZMA
   } else if (FLAGS_xz_compress) {
     log_namer->set_extension(aos::logger::LzmaEncoder::kExtension);
     log_namer->set_encoder_factory([](size_t max_message_size) {
       return std::make_unique<aos::logger::LzmaEncoder>(
-          max_message_size, FLAGS_xz_compression_level);
+          max_message_size, FLAGS_xz_compression_level, FLAGS_flush_size);
     });
 #endif
   }
