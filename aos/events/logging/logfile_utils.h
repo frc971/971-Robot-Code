@@ -44,10 +44,29 @@ enum class LogType : uint8_t {
 
 // This class manages efficiently writing a sequence of detached buffers to a
 // file.  It encodes them, queues them up, and batches the write operation.
+//
+// There are a couple over-arching constraints on writing to keep track of.
+//  1) The kernel is both faster and more efficient at writing large, aligned
+//     chunks with O_DIRECT set on the file.  The alignment needed is specified
+//     by kSector and is file system dependent.
+//  2) Not all encoders support generating round multiples of kSector of data.
+//     Rather than burden the API for detecting when that is the case, we want
+//     DetachedBufferWriter to be as efficient as it can at writing what given.
+//  3) Some files are small and not updated frequently.  They need to be
+//     flushed or we will lose data on power off.  It is most efficient to write
+//     as much as we can aligned by kSector and then fall back to the non direct
+//     method when it has been flushed.
+//  4) Not all filesystems support O_DIRECT, and different sizes may be optimal
+//     for different machines.  The defaults should work decently anywhere and
+//     be tuneable for faster systems.
 class DetachedBufferWriter {
  public:
   // Marker struct for one of our constructor overloads.
   struct already_out_of_space_t {};
+
+  // Size of an aligned sector used to detect when the data is aligned enough to
+  // use O_DIRECT instead.
+  static constexpr size_t kSector = 512u;
 
   DetachedBufferWriter(std::string_view filename,
                        std::unique_ptr<DataEncoder> encoder);
@@ -155,6 +174,21 @@ class DetachedBufferWriter {
   // the current time.  It just needs to be close.
   void FlushAtThreshold(aos::monotonic_clock::time_point now);
 
+  // Enables O_DIRECT on the open file if it is supported.  Cheap to call if it
+  // is already enabled.
+  void EnableDirect();
+  // Disables O_DIRECT on the open file if it is supported.  Cheap to call if it
+  // is already disabld.
+  void DisableDirect();
+
+  // Writes a chunk of iovecs.  aligned is true if all the data is kSector byte
+  // aligned and multiples of it in length, and counted_size is the sum of the
+  // sizes of all the chunks of data.  Returns the size of data written.
+  size_t WriteV(struct iovec *iovec_data, size_t iovec_size, bool aligned,
+                size_t counted_size);
+
+  bool ODirectEnabled() { return !!(flags_ & O_DIRECT); }
+
   std::string filename_;
   std::unique_ptr<DataEncoder> encoder_;
 
@@ -173,6 +207,10 @@ class DetachedBufferWriter {
   int total_write_count_ = 0;
   int total_write_messages_ = 0;
   int total_write_bytes_ = 0;
+  int last_synced_bytes_ = 0;
+
+  bool supports_odirect_ = true;
+  int flags_ = 0;
 
   aos::monotonic_clock::time_point last_flush_time_ =
       aos::monotonic_clock::min_time;
