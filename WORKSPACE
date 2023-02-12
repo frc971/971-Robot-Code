@@ -1345,3 +1345,23 @@ http_archive(
     strip_prefix = "schemas-7a3e077b88142ac46bb4e2616f83dc029b45352e/schemas/flatbuffer",
     url = "https://github.com/foxglove/schemas/archive/7a3e077b88142ac46bb4e2616f83dc029b45352e.tar.gz",
 )
+
+# This contains the *compiled* foxglove studio. This can be reproduced by:
+# 1. Cloning https://github.com/foxglove/studio
+# 2. Building the code (yarn web:build:prod)
+# 3. tar'ing the web/.webpack folder
+# These files can be hosted locally to provide an offline foxglove server.
+# Foxglove may be served on any port and may be nested at a subpath
+# (e.g., at hostname:8000/foxglove behind a proxy).
+http_archive(
+    name = "foxglove_studio",
+    build_file_content = """
+filegroup(
+    name = "foxglove_studio",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)""",
+    sha256 = "629b150e4c71679e1ac30b8a2dfa558a04bbcca7ad0edd61bd6878d3b243edb6",
+    url =
+        "https://www.frc971.org/Build-Dependencies/foxglove-d6b00825.tar.gz",
+)
