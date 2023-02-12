@@ -171,6 +171,20 @@
     },
     {
       "name": "/pi{{ NUM }}/camera",
+      "type": "foxglove.CompressedImage",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 40,
+      "max_size": 300000
+    },
+    {
+      "name": "/pi{{ NUM }}/camera",
+      "type": "foxglove.ImageAnnotations",
+      "source_node": "pi{{ NUM }}",
+      "frequency": 40,
+      "max_size": 50000
+    },
+    {
+      "name": "/pi{{ NUM }}/camera",
       "type": "frc971.vision.TargetMap",
       "source_node": "pi{{ NUM }}",
       "frequency": 40,
