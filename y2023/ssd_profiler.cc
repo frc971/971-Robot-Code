@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 
 #include <chrono>
 
@@ -16,7 +17,10 @@ DEFINE_string(file, "/media/sda1/foo", "File to write to.");
 
 DEFINE_uint32(write_size, 4096, "Size of hunk to write");
 DEFINE_bool(sync, false, "If true, sync the file after each written block.");
+DEFINE_bool(writev, false, "If true, use writev.");
 DEFINE_bool(direct, false, "If true, O_DIRECT.");
+DEFINE_uint32(chunks, 1, "Chunks to write using writev.");
+DEFINE_uint32(chunk_size, 512, "Chunk size to write using writev.");
 
 int main(int argc, char ** argv) {
   aos::InitGoogle(&argc, &argv);
@@ -40,25 +44,43 @@ int main(int argc, char ** argv) {
     PCHECK(close(random_fd) == 0);
   }
 
+  std::vector<struct iovec> iovec;
+  iovec.resize(FLAGS_chunks);
+  CHECK_LE(FLAGS_chunks * FLAGS_chunk_size, FLAGS_write_size);
+
+  for (size_t i = 0; i < FLAGS_chunks; ++i) {
+    iovec[i].iov_base = &data[i * FLAGS_chunk_size];
+    iovec[i].iov_len = FLAGS_chunk_size;
+  }
+  iovec[FLAGS_chunks - 1].iov_base = &data[(FLAGS_chunks - 1) * FLAGS_chunk_size];
+  iovec[FLAGS_chunks - 1].iov_len = data.size() - (FLAGS_chunks - 1) * FLAGS_chunk_size;
+
   int fd = open(
       FLAGS_file.c_str(),
-      O_RDWR | O_CLOEXEC | O_CREAT | O_EXCL | (FLAGS_direct ? O_DIRECT : 0),
+      O_RDWR | O_CLOEXEC | O_CREAT | (FLAGS_direct ? O_DIRECT : 0),
       0774);
   PCHECK(fd != -1);
 
   const aos::monotonic_clock::time_point start_time =
       aos::monotonic_clock::now();
-  aos::monotonic_clock::time_point last_time =
-      start_time;
+  aos::monotonic_clock::time_point last_time = start_time;
   size_t last_written_data = 0;
   size_t written_data = 0;
 
   while (true) {
-    PCHECK(write(fd, data.data(), data.size()) ==
-           static_cast<ssize_t>(data.size()))
-        << ": Failed after "
-        << chrono::duration<double>(aos::monotonic_clock::now() - start_time)
-               .count();
+    if (FLAGS_writev) {
+      PCHECK(writev(fd, iovec.data(), iovec.size()) ==
+             static_cast<ssize_t>(data.size()))
+          << ": Failed after "
+          << chrono::duration<double>(aos::monotonic_clock::now() - start_time)
+                 .count();
+    } else {
+      PCHECK(write(fd, data.data(), data.size()) ==
+             static_cast<ssize_t>(data.size()))
+          << ": Failed after "
+          << chrono::duration<double>(aos::monotonic_clock::now() - start_time)
+                 .count();
+    }
 
     // Trigger a flush if asked.
     if (FLAGS_sync) {
