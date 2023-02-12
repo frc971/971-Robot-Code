@@ -13,9 +13,12 @@ namespace aos::logger::testing {
 
 class DummyEncoderTest : public BufferEncoderBaseTest {};
 
+constexpr size_t kEncoderBufferSize = 4 * 1024 * 1024;
+
 // Tests that buffers are concatenated without being modified.
 TEST_F(DummyEncoderTest, QueuesBuffersAsIs) {
-  DummyEncoder encoder(BufferEncoderBaseTest::kMaxMessageSize);
+  DummyEncoder encoder(BufferEncoderBaseTest::kMaxMessageSize,
+                       kEncoderBufferSize);
   const auto expected = CreateAndEncode(100, &encoder);
   std::vector<uint8_t> data = Flatten(expected);
 
@@ -26,7 +29,8 @@ TEST_F(DummyEncoderTest, QueuesBuffersAsIs) {
 
 // Tests that buffers are concatenated without being modified.
 TEST_F(DummyEncoderTest, CoppiesBuffersAsIs) {
-  DummyEncoder encoder(BufferEncoderBaseTest::kMaxMessageSize);
+  DummyEncoder encoder(BufferEncoderBaseTest::kMaxMessageSize,
+                       kEncoderBufferSize);
   const auto expected = CreateAndEncode(100, &encoder);
   std::vector<uint8_t> data = Flatten(expected);
 
@@ -108,7 +112,8 @@ TEST(DummyDecoderTest, ReadsRepeatedlyIntoSmallerBuffer) {
 INSTANTIATE_TEST_SUITE_P(
     Dummy, BufferEncoderTest,
     ::testing::Combine(::testing::Values([](size_t max_buffer_size) {
-                         return std::make_unique<DummyEncoder>(max_buffer_size);
+                         return std::make_unique<DummyEncoder>(
+                             max_buffer_size, kEncoderBufferSize);
                        }),
                        ::testing::Values([](std::string_view filename) {
                          return std::make_unique<DummyDecoder>(filename);

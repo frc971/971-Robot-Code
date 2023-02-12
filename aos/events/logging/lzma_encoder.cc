@@ -88,19 +88,22 @@ LzmaEncoder::LzmaEncoder(size_t max_message_size,
 
 LzmaEncoder::~LzmaEncoder() { lzma_end(&stream_); }
 
-void LzmaEncoder::Encode(Copier *copy) {
+size_t LzmaEncoder::Encode(Copier *copy, size_t start_byte) {
   const size_t copy_size = copy->size();
   // LZMA compresses the data as it goes along, copying the compressed results
   // into another buffer.  So, there's no need to store more than one message
   // since lzma is going to take it from here.
   CHECK_LE(copy_size, input_buffer_.size());
 
-  CHECK_EQ(copy->Copy(input_buffer_.data(), 0, copy_size), copy_size);
+  CHECK_EQ(copy->Copy(input_buffer_.data(), start_byte, copy_size - start_byte),
+           copy_size - start_byte);
 
   stream_.next_in = input_buffer_.data();
   stream_.avail_in = copy_size;
 
   RunLzmaCode(LZMA_RUN);
+
+  return copy_size - start_byte;
 }
 
 void LzmaEncoder::Finish() { RunLzmaCode(LZMA_FINISH); }

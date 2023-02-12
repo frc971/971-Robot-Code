@@ -45,7 +45,7 @@ class BufferEncoderBaseTest : public ::testing::Test {
           << encoder->queued_bytes() << ", encoding " << buffer.size();
 
       DetachedBufferCopier coppier(std::move(buffer));
-      encoder->Encode(&coppier);
+      encoder->Encode(&coppier, 0);
     }
     return result;
   }

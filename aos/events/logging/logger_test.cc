@@ -557,7 +557,7 @@ std::vector<CompressionParams> SupportedCompressionAlgorithms() {
            }},
           {SnappyDecoder::kExtension,
            [](size_t max_message_size) {
-             return std::make_unique<SnappyEncoder>(max_message_size);
+             return std::make_unique<SnappyEncoder>(max_message_size, 32768);
            }},
 #ifdef LZMA
           {LzmaDecoder::kExtension,

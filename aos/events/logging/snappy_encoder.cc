@@ -43,12 +43,15 @@ SnappyEncoder::SnappyEncoder(size_t max_message_size, size_t chunk_size)
 
 void SnappyEncoder::Finish() { EncodeCurrentBuffer(); }
 
-void SnappyEncoder::Encode(Copier *copy) {
+size_t SnappyEncoder::Encode(Copier *copy, size_t start_byte) {
+  CHECK_EQ(start_byte, 0u);
   buffer_source_.Append(copy);
 
   if (buffer_source_.Available() >= chunk_size_) {
     EncodeCurrentBuffer();
   }
+
+  return copy->size();
 }
 
 void SnappyEncoder::EncodeCurrentBuffer() {

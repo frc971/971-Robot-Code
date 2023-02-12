@@ -16,9 +16,9 @@ namespace aos::logger {
 // Encodes buffers using snappy.
 class SnappyEncoder final : public DataEncoder {
  public:
-  explicit SnappyEncoder(size_t max_message_size, size_t chunk_size = 32768);
+  explicit SnappyEncoder(size_t max_message_size, size_t chunk_size = 128 * 1024);
 
-  void Encode(Copier *copy) final;
+  size_t Encode(Copier *copy, size_t start_byte) final;
 
   void Finish() final;
   void Clear(int n) final;
@@ -28,6 +28,7 @@ class SnappyEncoder final : public DataEncoder {
     // Since the output always mallocs space, we have infinite output space.
     return true;
   }
+  size_t space() const final { return buffer_source_.space(); }
   size_t total_bytes() const final { return total_bytes_; }
   size_t queue_size() const final { return queue_.size(); }
 
@@ -35,6 +36,7 @@ class SnappyEncoder final : public DataEncoder {
   class DetachedBufferSource : public snappy::Source {
    public:
     DetachedBufferSource(size_t buffer_size);
+    size_t space() const { return data_.capacity() - data_.size(); }
     size_t Available() const final;
     const char *Peek(size_t *length) final;
     void Skip(size_t n) final;
