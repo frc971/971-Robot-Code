@@ -1,0 +1,112 @@
+Source:,/home/henry/971-Robot-Code/circuit_boards/connector_boards/RRIB2/RRIB2.kicad_sch,,,,,,,
+Date:,Sat 01 Oct 2022 02:57:19 PM PDT,,,,,,,
+Tool:,Eeschema 6.0.8-f2edbf62ab~116~ubuntu20.04.1,,,,,,,
+Generator:,/usr/share/kicad/plugins/bom_csv_grouped_by_value.py,,,,,,,
+Component Count:,90,,,,,,,
+,,,,,,,,
+Individual Components:,,,,,,,,
+,,,,,,,,
+Item,Qty,Reference(s),Value,LibPart,Footprint,Datasheet,MFG,MFG P/N
+1,2,"H1, H2",MountingHole,Mechanical:MountingHole,MountingHole:MountingHole_3.2mm_M3,~,,
+2,1,J1,DIO0,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+3,1,J2,DIO1,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+4,1,J3,DIO2,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+5,1,J4,DIO3,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+6,1,J5,DIO4,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+7,1,J6,DIO5,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+8,1,J7,DIO6,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+9,1,J8,DIO7,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+10,1,J9,DIO8,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+11,1,J10,DIO9,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+12,1,J11,DIO22,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+13,1,J12,DIO23,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+14,1,J13,DIO24,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+15,1,J14,DIO25,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+16,1,J15,RR_DIO0,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+17,1,J16,RR_DIO1,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+18,1,J17,RR_DIO2,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+19,1,J18,RR_DIO3,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+20,1,J19,RR_DIO4,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+21,1,J20,RR_DIO5,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+22,1,J21,RR_DIO6,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+23,1,J22,RR_DIO7,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+24,1,J23,RR_DIO8,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+25,1,J24,RR_DIO9,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+26,1,J25,ENC0,Connector:Conn_01x04_Male,RRIB2:70541-0003,~,Molex,70541-0003
+27,1,J26,ENC1,Connector:Conn_01x04_Male,RRIB2:70541-0003,~,Molex,70541-0003
+28,1,J27,ENC2,Connector:Conn_01x04_Male,RRIB2:70541-0003,~,Molex,70541-0003
+29,1,J28,ENC3,Connector:Conn_01x04_Male,RRIB2:70541-0003,~,Molex,70541-0003
+30,1,J29,ENC4,Connector:Conn_01x04_Male,RRIB2:70541-0003,~,Molex,70541-0003
+31,1,J30,ENC5,Connector:Conn_01x04_Male,RRIB2:70541-0003,~,Molex,70541-0003
+32,1,J31,ENC_AD0,Connector:Conn_01x06_Male,RRIB2:70541-0005,~,Molex,70541-0005
+33,1,J32,ENC_AD1,Connector:Conn_01x06_Male,RRIB2:70541-0005,~,Molex,70541-0005
+34,1,J33,ENC_AD2,Connector:Conn_01x06_Male,RRIB2:70541-0005,~,Molex,70541-0005
+35,1,J34,ENC_AD3,Connector:Conn_01x06_Male,RRIB2:70541-0005,~,Molex,70541-0005
+36,1,J35,ENC_AD4,Connector:Conn_01x06_Male,RRIB2:70541-0005,~,Molex,70541-0005
+37,1,J36,ENC_AD5,Connector:Conn_01x06_Male,RRIB2:70541-0005,~,Molex,70541-0005
+38,1,J37,RLY0,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+39,1,J38,RLY1,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+40,1,J39,RLY2,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+41,1,J40,RLY3,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+42,1,J41,AIN0,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+43,1,J42,AIN1,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+44,1,J43,AIN2,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+45,1,J44,AIN3,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+46,1,J45,AIN4,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+47,1,J46,AIN5,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+48,1,J47,AIN6,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+49,1,J48,AIN7,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+50,1,J49,RR_RELAY0,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+51,1,J50,RR_RELAY1,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+52,1,J51,RR_RELAY2,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+53,1,J52,RR_RELAY3,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+54,1,J53,RR_AIN0,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+55,1,J54,RR_AIN1,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+56,1,J55,RR_AIN2,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+57,1,J56,RR_AIN3,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+58,1,J57,PWM0,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+59,1,J58,PWM1,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+60,1,J59,PWM2,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+61,1,J60,PWM3,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+62,1,J61,PWM4,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+63,1,J62,PWM5,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+64,1,J63,PWM6,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+65,1,J64,PWM7,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+66,1,J65,PWM8,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+67,1,J66,PWM9,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+68,1,J67,RR_PWM0,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+69,1,J68,RR_PWM1,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+70,1,J69,RR_PWM2,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+71,1,J70,RR_PWM3,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+72,1,J71,RR_PWM4,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+73,1,J72,RR_PWM5,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+74,1,J73,RR_PWM6,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector SolutionsSullins Connector Solutions,PPTC031LFBN-RC
+75,1,J74,RR_PWM7,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+76,1,J75,RR_PWM8,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+77,1,J76,RR_PWM9,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+78,1,J77,RSL,Connector:Conn_01x02_Male,RRIB2:70541-0001,~,MOLEX,70541-0001
+79,1,J78,RS232,Connector:Conn_01x03_Male,RRIB2:70541-0002,~,Molex,70541-0002
+80,1,J79,I2C,Connector:Conn_01x04_Male,RRIB2:70541-0003,~,Molex,70541-0003
+81,1,J80,SPI0,Connector:Conn_01x07_Male,RRIB2:70541-0006,~,MOLEX,70541-0006
+82,1,J81,SPI1,Connector:Conn_01x07_Male,RRIB2:70541-0006,~,MOLEX,70541-0006
+83,1,J82,SPI2,Connector:Conn_01x07_Male,RRIB2:70541-0006,~,MOLEX,70541-0006
+84,1,J83,SPI3,Connector:Conn_01x07_Male,RRIB2:70541-0006,~,MOLEX,70541-0006
+85,1,J84,RR_RSL,Connector:Conn_01x02_Female,Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC021LFBN-RC
+86,1,J85,RR_RS-232,Connector:Conn_01x03_Female,Connector_PinSocket_2.54mm:PinSocket_1x03_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC031LFBN-RC
+87,1,J86,RR_I2C,Connector:Conn_01x04_Female,Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical,~,Sullins Connector Solutions,PPTC041LFBN-RC
+88,1,J87,RR_MXP,Connector:Conn_01x34_Female,Connector_PinSocket_2.54mm:PinSocket_2x17_P2.54mm_Vertical,~,Sullins Connector Solutions,SFH11-PBPC-D17-ST-BK
+89,1,J88,RR_SPI,Connector:Conn_01x10_Female,Connector_PinSocket_2.54mm:PinSocket_2x05_P2.54mm_Vertical,~,Sullins Connector Solutions,SFH11-PBPC-D05-ST-BK
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,70541-0002,37
+,,,,,,,PPTC031LFBN-RC,29
+,,,,,,,70541-0003,7
+,,,,,,,70541-0005,6
+,,,,,,,70541-0006,4
+,,,,,,,PPTC021LFBN-RC,1
+,,,,,,,PPTC041LFBN-RC,1
+,,,,,,,SFH11-PBPC-D17-ST-BK,1
+,,,,,,,SFH11-PBPC-D05-ST-BK,1
+,,,,,,,70541-0001,1

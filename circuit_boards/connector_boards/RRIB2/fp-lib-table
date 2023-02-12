@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name "RRIB2")(type "KiCad")(uri "/home/scottberman/Documents/Projects/FRC971/RRIB2.pretty")(options "")(descr ""))
+  (lib (name "RRIB_2")(type "KiCad")(uri "${KIPRJMOD}/RRIB_2.pretty")(options "")(descr ""))
+)
