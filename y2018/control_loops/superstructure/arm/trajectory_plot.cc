@@ -1,10 +1,10 @@
-#include "y2018/control_loops/superstructure/arm/trajectory.h"
-
+#include "aos/init.h"
+#include "frc971/analysis/in_process_plotter.h"
 #include "gflags/gflags.h"
-#include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #include "y2018/control_loops/superstructure/arm/dynamics.h"
 #include "y2018/control_loops/superstructure/arm/ekf.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
+#include "y2018/control_loops/superstructure/arm/trajectory.h"
 
 DEFINE_bool(forwards, true, "If true, run the forwards simulation.");
 DEFINE_bool(plot, true, "If true, plot");
@@ -32,7 +32,7 @@ void Main() {
           .finished();
   trajectory.OptimizeTrajectory(alpha_unitizer, vmax);
 
-  ::std::vector<double> distance_array = trajectory.DistanceArray();
+  const ::std::vector<double> distance_array = trajectory.DistanceArray();
 
   ::std::vector<double> theta0_array;
   ::std::vector<double> theta1_array;
@@ -96,7 +96,10 @@ void Main() {
 
     const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
     const ::Eigen::Matrix<double, 2, 1> U =
-        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t).array().max(-20).min(20);
+        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t)
+            .array()
+            .max(-20)
+            .min(20);
 
     Uff0_distance_array.push_back(U(0));
     Uff1_distance_array.push_back(U(1));
@@ -115,17 +118,20 @@ void Main() {
 
     const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
     const ::Eigen::Matrix<double, 2, 1> U =
-        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t).array().max(-20).min(20);
+        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t)
+            .array()
+            .max(-20)
+            .min(20);
 
     Uff0_distance_array_curvature.push_back(U(0));
     Uff1_distance_array_curvature.push_back(U(1));
   }
 
   for (const double distance : distance_array) {
-    const double goal_velocity = trajectory.GetDVelocity(
-        distance, trajectory.max_dvelocity());
-    const double goal_acceleration = trajectory.GetDAcceleration(
-        distance, trajectory.max_dvelocity());
+    const double goal_velocity =
+        trajectory.GetDVelocity(distance, trajectory.max_dvelocity());
+    const double goal_acceleration =
+        trajectory.GetDAcceleration(distance, trajectory.max_dvelocity());
     const ::Eigen::Matrix<double, 2, 1> theta_t = trajectory.ThetaT(distance);
     const ::Eigen::Matrix<double, 2, 1> omega_t =
         trajectory.OmegaT(distance, goal_velocity);
@@ -134,7 +140,10 @@ void Main() {
 
     const ::Eigen::Matrix<double, 6, 1> R = trajectory.R(theta_t, omega_t);
     const ::Eigen::Matrix<double, 2, 1> U =
-        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t).array().max(-20).min(20);
+        Dynamics::FF_U(R.block<4, 1>(0, 0), omega_t, alpha_t)
+            .array()
+            .max(-20)
+            .min(20);
 
     Uff0_distance_array_backwards_only.push_back(U(0));
     Uff1_distance_array_backwards_only.push_back(U(1));
@@ -244,115 +253,96 @@ void Main() {
   }
 
   if (FLAGS_plot) {
-    matplotlibcpp::figure();
-    matplotlibcpp::title("Trajectory");
-    matplotlibcpp::plot(theta0_array, theta1_array,
-                        {{"label", "desired path"}});
-    matplotlibcpp::plot(theta0_t_array, theta1_t_array,
-                        {{"label", "actual path"}});
-    matplotlibcpp::legend();
+    frc971::analysis::Plotter plotter;
 
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(distance_array, theta0_array, {{"label", "theta0"}});
-    matplotlibcpp::plot(distance_array, theta1_array, {{"label", "theta1"}});
-    matplotlibcpp::plot(distance_array, omega0_array, {{"label", "omega0"}});
-    matplotlibcpp::plot(distance_array, omega1_array, {{"label", "omega1"}});
-    matplotlibcpp::plot(distance_array, alpha0_array, {{"label", "alpha0"}});
-    matplotlibcpp::plot(distance_array, alpha1_array, {{"label", "alpha1"}});
+    plotter.AddFigure();
+    plotter.Title("Trajectory");
+    plotter.AddLine(theta0_array, theta1_array, "desired path");
+    plotter.AddLine(theta0_t_array, theta1_t_array, "actual path");
+    plotter.Publish();
 
-    matplotlibcpp::plot(integrated_distance, integrated_theta0_array,
-                        {{"label", "itheta0"}});
-    matplotlibcpp::plot(integrated_distance, integrated_theta1_array,
-                        {{"label", "itheta1"}});
-    matplotlibcpp::plot(integrated_distance, integrated_omega0_array,
-                        {{"label", "iomega0"}});
-    matplotlibcpp::plot(integrated_distance, integrated_omega1_array,
-                        {{"label", "iomega1"}});
-    matplotlibcpp::legend();
+    plotter.AddFigure();
+    plotter.Title("Input spline");
+    plotter.AddLine(distance_array, theta0_array, "theta0");
+    plotter.AddLine(distance_array, theta1_array, "theta1");
+    plotter.AddLine(distance_array, omega0_array, "omega0");
+    plotter.AddLine(distance_array, omega1_array, "omega1");
+    plotter.AddLine(distance_array, alpha0_array, "alpha0");
+    plotter.AddLine(distance_array, alpha1_array, "alpha1");
 
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(distance_array, trajectory.max_dvelocity_unfiltered(),
-                        {{"label", "pass0"}});
-    matplotlibcpp::plot(distance_array, trajectory.max_dvelocity(),
-                        {{"label", "passb"}});
-    matplotlibcpp::plot(distance_array, trajectory.max_dvelocity_forward_pass(),
-                        {{"label", "passf"}});
-    matplotlibcpp::legend();
+    plotter.AddLine(integrated_distance, integrated_theta0_array, "integrated theta0");
+    plotter.AddLine(integrated_distance, integrated_theta1_array, "integrated theta1");
+    plotter.AddLine(integrated_distance, integrated_omega0_array, "integrated omega0");
+    plotter.AddLine(integrated_distance, integrated_omega1_array, "integrated omega1");
+    plotter.Publish();
 
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(t_array, alpha0_goal_t_array,
-                        {{"label", "alpha0_t_goal"}});
-    matplotlibcpp::plot(t_array, alpha0_t_array, {{"label", "alpha0_t"}});
-    matplotlibcpp::plot(t_array, alpha1_goal_t_array,
-                        {{"label", "alpha1_t_goal"}});
-    matplotlibcpp::plot(t_array, alpha1_t_array, {{"label", "alpha1_t"}});
-    matplotlibcpp::plot(t_array, distance_t_array, {{"label", "distance_t"}});
-    matplotlibcpp::plot(t_array, velocity_t_array, {{"label", "velocity_t"}});
-    matplotlibcpp::plot(t_array, acceleration_t_array,
-                        {{"label", "acceleration_t"}});
-    matplotlibcpp::legend();
+    plotter.AddFigure();
+    plotter.Title("Solver passes");
+    plotter.AddLine(distance_array, trajectory.max_dvelocity_unfiltered(),
+                    "pass0");
+    plotter.AddLine(distance_array, trajectory.max_dvelocity(), "passb");
+    plotter.AddLine(distance_array, trajectory.max_dvelocity_forward_pass(),
+                    "passf");
+    plotter.Publish();
 
-    matplotlibcpp::figure();
-    matplotlibcpp::title("Angular Velocities");
-    matplotlibcpp::plot(t_array, omega0_goal_t_array,
-                        {{"label", "omega0_t_goal"}});
-    matplotlibcpp::plot(t_array, omega0_t_array, {{"label", "omega0_t"}});
-    matplotlibcpp::plot(t_array, omega0_hat_t_array,
-                        {{"label", "omega0_hat_t"}});
-    matplotlibcpp::plot(t_array, omega1_goal_t_array,
-                        {{"label", "omega1_t_goal"}});
-    matplotlibcpp::plot(t_array, omega1_t_array, {{"label", "omega1_t"}});
-    matplotlibcpp::plot(t_array, omega1_hat_t_array,
-                        {{"label", "omega1_hat_t"}});
-    matplotlibcpp::legend();
+    plotter.AddFigure();
+    plotter.Title("Time Goals");
+    plotter.AddLine(t_array, alpha0_goal_t_array, "alpha0_t_goal");
+    plotter.AddLine(t_array, alpha0_t_array, "alpha0_t");
+    plotter.AddLine(t_array, alpha1_goal_t_array, "alpha1_t_goal");
+    plotter.AddLine(t_array, alpha1_t_array, "alpha1_t");
+    plotter.AddLine(t_array, distance_t_array, "distance_t");
+    plotter.AddLine(t_array, velocity_t_array, "velocity_t");
+    plotter.AddLine(t_array, acceleration_t_array, "acceleration_t");
+    plotter.Publish();
 
-    matplotlibcpp::figure();
-    matplotlibcpp::title("Voltages");
-    matplotlibcpp::plot(t_array, u0_unsaturated_array, {{"label", "u0_full"}});
-    matplotlibcpp::plot(t_array, u0_array, {{"label", "u0"}});
-    matplotlibcpp::plot(t_array, uff0_array, {{"label", "uff0"}});
-    matplotlibcpp::plot(t_array, u1_unsaturated_array, {{"label", "u1_full"}});
-    matplotlibcpp::plot(t_array, u1_array, {{"label", "u1"}});
-    matplotlibcpp::plot(t_array, uff1_array, {{"label", "uff1"}});
-    matplotlibcpp::plot(t_array, torque0_hat_t_array,
-                        {{"label", "torque0_hat"}});
-    matplotlibcpp::plot(t_array, torque1_hat_t_array,
-                        {{"label", "torque1_hat"}});
-    matplotlibcpp::legend();
+    plotter.AddFigure();
+    plotter.Title("Angular Velocities");
+    plotter.AddLine(t_array, omega0_goal_t_array, "omega0_t_goal");
+    plotter.AddLine(t_array, omega0_t_array, "omega0_t");
+    plotter.AddLine(t_array, omega0_hat_t_array, "omega0_hat_t");
+    plotter.AddLine(t_array, omega1_goal_t_array, "omega1_t_goal");
+    plotter.AddLine(t_array, omega1_t_array, "omega1_t");
+    plotter.AddLine(t_array, omega1_hat_t_array, "omega1_hat_t");
+    plotter.Publish();
+
+    plotter.AddFigure();
+    plotter.Title("Voltages");
+    plotter.AddLine(t_array, u0_unsaturated_array, "u0_full");
+    plotter.AddLine(t_array, u0_array, "u0");
+    plotter.AddLine(t_array, uff0_array, "uff0");
+    plotter.AddLine(t_array, u1_unsaturated_array, "u1_full");
+    plotter.AddLine(t_array, u1_array, "u1");
+    plotter.AddLine(t_array, uff1_array, "uff1");
+    plotter.AddLine(t_array, torque0_hat_t_array, "torque0_hat");
+    plotter.AddLine(t_array, torque1_hat_t_array, "torque1_hat");
+    plotter.Publish();
 
     if (FLAGS_plot_thetas) {
-      matplotlibcpp::figure();
-      matplotlibcpp::title("Angles");
-      matplotlibcpp::plot(t_array, theta0_goal_t_array,
-                          {{"label", "theta0_t_goal"}});
-      matplotlibcpp::plot(t_array, theta0_t_array, {{"label", "theta0_t"}});
-      matplotlibcpp::plot(t_array, theta0_hat_t_array,
-                          {{"label", "theta0_hat_t"}});
-      matplotlibcpp::plot(t_array, theta1_goal_t_array,
-                          {{"label", "theta1_t_goal"}});
-      matplotlibcpp::plot(t_array, theta1_t_array, {{"label", "theta1_t"}});
-      matplotlibcpp::plot(t_array, theta1_hat_t_array,
-                          {{"label", "theta1_hat_t"}});
-      matplotlibcpp::legend();
+      plotter.AddFigure();
+      plotter.Title("Angles");
+      plotter.AddLine(t_array, theta0_goal_t_array, "theta0_t_goal");
+      plotter.AddLine(t_array, theta0_t_array, "theta0_t");
+      plotter.AddLine(t_array, theta0_hat_t_array, "theta0_hat_t");
+      plotter.AddLine(t_array, theta1_goal_t_array, "theta1_t_goal");
+      plotter.AddLine(t_array, theta1_t_array, "theta1_t");
+      plotter.AddLine(t_array, theta1_hat_t_array, "theta1_hat_t");
+      plotter.Publish();
     }
 
-    matplotlibcpp::figure();
-    matplotlibcpp::title("ff for distance");
-    matplotlibcpp::plot(distance_array, Uff0_distance_array, {{"label",
-    "ff0"}});
-    matplotlibcpp::plot(distance_array, Uff1_distance_array, {{"label",
-    "ff1"}});
-    matplotlibcpp::plot(distance_array, Uff0_distance_array_backwards_only,
-                        {{"label", "ff0_back"}});
-    matplotlibcpp::plot(distance_array, Uff1_distance_array_backwards_only,
-                        {{"label", "ff1_back"}});
-    matplotlibcpp::plot(distance_array, Uff0_distance_array_curvature,
-                        {{"label", "ff0_curve"}});
-    matplotlibcpp::plot(distance_array, Uff1_distance_array_curvature,
-                        {{"label", "ff1_curve"}});
-    matplotlibcpp::legend();
+    plotter.AddFigure();
+    plotter.Title("ff for distance");
+    plotter.AddLine(distance_array, Uff0_distance_array, "ff0");
+    plotter.AddLine(distance_array, Uff1_distance_array, "ff1");
+    plotter.AddLine(distance_array, Uff0_distance_array_backwards_only,
+                    "ff0_back");
+    plotter.AddLine(distance_array, Uff1_distance_array_backwards_only,
+                    "ff1_back");
+    plotter.AddLine(distance_array, Uff0_distance_array_curvature, "ff0_curve");
+    plotter.AddLine(distance_array, Uff1_distance_array_curvature, "ff1_curve");
 
-    matplotlibcpp::show();
+    plotter.Publish();
+    plotter.Spin();
   }
 }
 
@@ -362,7 +352,7 @@ void Main() {
 }  // namespace y2018
 
 int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, false);
+  ::aos::InitGoogle(&argc, &argv);
   ::y2018::control_loops::superstructure::arm::Main();
   return 0;
 }
