@@ -1,6 +1,21 @@
 namespace y2023.control_loops.superstructure;
 
 table Output {
+    // Proximal arm voltage
+    proximal_voltage:double (id: 0);
+
+    // Distal arm voltage
+    distal_voltage:double (id: 1);
+
+    // roll_voltage for rolling joint
+    roll_joint_voltage:double (id: 2);
+
+    // Wrists rotate end effector rollers
+    // Wrist arm voltage
+    wrist_voltage:double (id: 3);
+
+    // Roller voltage on the end effector
+    roller_voltage:double (id: 4);
 }
 
 root_type Output;
