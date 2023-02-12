@@ -484,6 +484,7 @@
     {
       "name": "autonomous_action",
       "executable_name": "autonomous_action",
+      "autostart": false,
       "nodes": [
         "roborio"
       ]
@@ -498,7 +499,7 @@
     },
     {
       "name": "roborio_message_bridge_client",
-      "executable_name": "message_bridge_client.sh",
+      "executable_name": "message_bridge_client",
       "args": ["--rt_priority=16"],
       "nodes": [
         "roborio"
