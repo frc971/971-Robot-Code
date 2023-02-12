@@ -482,6 +482,7 @@ gen_embedded(
         exclude = ["www/**/*"],
     ),
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
 )
 
 cc_binary(
