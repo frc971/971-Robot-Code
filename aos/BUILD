@@ -411,9 +411,11 @@ cc_test(
     ],
     data = [
         ":json_to_flatbuffer_fbs_reflection_out",
+        ":json_to_flatbuffer_test_spaces.json",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        ":flatbuffer_merge",
         ":json_to_flatbuffer",
         ":json_to_flatbuffer_fbs",
         "//aos/testing:googletest",

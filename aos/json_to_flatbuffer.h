@@ -109,10 +109,8 @@ inline void WriteFlatbufferToFile(std::string_view filename,
 template <typename T>
 inline FlatbufferDetachedBuffer<T> JsonFileToFlatbuffer(
     const std::string_view path) {
-  std::ifstream t{std::string(path)};
-  std::istream_iterator<char> start(t), end;
-  std::string result(start, end);
-  return FlatbufferDetachedBuffer<T>(JsonToFlatbuffer<T>(result));
+  return FlatbufferDetachedBuffer<T>(
+      JsonToFlatbuffer<T>(util::ReadFileToStringOrDie(path)));
 }
 
 // Parses a file as a binary flatbuffer or dies.

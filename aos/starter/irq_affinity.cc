@@ -14,6 +14,8 @@ DEFINE_string(config, "aos_config.json", "File path of aos configuration");
 
 DEFINE_string(user, "",
               "Starter runs as though this user ran a SUID binary if set.");
+DEFINE_string(irq_config, "rockpi_config.json",
+              "File path of rockpi configuration");
 
 namespace aos {
 
@@ -265,117 +267,10 @@ int main(int argc, char **argv) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 
-  // TODO(austin): File instead of hard-coded JSON.
   aos::FlatbufferDetachedBuffer<aos::starter::IrqAffinityConfig>
       irq_affinity_config =
-          aos::JsonToFlatbuffer<aos::starter::IrqAffinityConfig>(
-              R"json({
-  "irqs": [
-    {
-      "name": "ttyS2",
-      "affinity": [1]
-    },
-    {
-      "name": "dw-mci",
-      "affinity": [1]
-    },
-    {
-      "name": "mmc1",
-      "affinity": [1]
-    },
-    {
-      "name": "rkisp1",
-      "affinity": [2]
-    },
-    {
-      "name": "ff3c0000.i2c",
-      "affinity": [2]
-    },
-    {
-      "name": "ff3d0000.i2c",
-      "affinity": [2]
-    },
-    {
-      "name": "ff6e0000.dma-controller",
-      "affinity": [0]
-    },
-    {
-      "name": "ff1d0000.spi",
-      "affinity": [0]
-    },
-    {
-      "name": "eth0",
-      "affinity": [1]
-    }
-  ],
-  "kthreads": [
-    {
-      "name": "irq/*-ff940000.hdmi",
-      "scheduler": "SCHEDULER_OTHER"
-    },
-    {
-      "name": "irq/*-rockchip_usb2phy",
-      "scheduler": "SCHEDULER_OTHER"
-    },
-    {
-      "name": "irq/*-mmc0",
-      "scheduler": "SCHEDULER_OTHER"
-    },
-    {
-      "name": "irq/*-mmc1",
-      "scheduler": "SCHEDULER_OTHER"
-    },
-    {
-      "name": "irq/*-fe320000.mmc cd",
-      "scheduler": "SCHEDULER_OTHER"
-    },
-    {
-      "name": "irq/*-vc4 crtc",
-      "scheduler": "SCHEDULER_OTHER"
-    },
-    {
-      "name": "irq/*-rkisp1",
-      "scheduler": "SCHEDULER_FIFO",
-      "priority": 60,
-      "affinity": [2]
-    },
-    {
-      "name": "irq/*-ff3c0000.i2c",
-      "scheduler": "SCHEDULER_FIFO",
-      "priority": 51,
-      "affinity": [2]
-    },
-    {
-      "name": "irq/*-adis16505",
-      "scheduler": "SCHEDULER_FIFO",
-      "priority": 59,
-      "affinity": [0]
-    },
-    {
-      "name": "irq/*-ff6e0000.dma-controller",
-      "scheduler": "SCHEDULER_FIFO",
-      "priority": 59,
-      "affinity": [0]
-    },
-    {
-      "name": "spi0",
-      "scheduler": "SCHEDULER_FIFO",
-      "priority": 57,
-      "affinity": [0]
-    },
-    {
-      "name": "irq/*-eth0",
-      "scheduler": "SCHEDULER_FIFO",
-      "priority": 10,
-      "affinity": [1]
-    },
-    {
-      "name": "irq/*-rockchip_thermal",
-      "scheduler": "SCHEDULER_FIFO",
-      "priority": 1
-    }
-  ]
-})json");
+          aos::JsonFileToFlatbuffer<aos::starter::IrqAffinityConfig>(
+              FLAGS_irq_config);
 
   aos::ShmEventLoop shm_event_loop(&config.message());
 
