@@ -47,7 +47,7 @@ GST_PLUGIN_STATIC_DECLARE(videotestsrc);
 GST_PLUGIN_STATIC_DECLARE(x264);
 }
 
-DEFINE_string(config, "y2022/aos_config.json",
+DEFINE_string(config, "aos_config.json",
               "Name of the config file to replay using.");
 DEFINE_string(device, "/dev/video0",
               "Camera fd. Ignored if reading from channel");
@@ -59,6 +59,7 @@ DEFINE_int32(framerate, 25, "Framerate (FPS)");
 DEFINE_int32(brightness, 50, "Camera brightness");
 DEFINE_int32(exposure, 300, "Manual exposure");
 DEFINE_int32(bitrate, 500000, "H264 encode bitrate");
+DEFINE_int32(streaming_port, 1180, "Port to stream images on with seasocks");
 DEFINE_int32(min_port, 5800, "Min rtp port");
 DEFINE_int32(max_port, 5810, "Max rtp port");
 DEFINE_string(listen_on, "",
@@ -653,7 +654,7 @@ int main(int argc, char **argv) {
         std::make_shared<WebsocketHandler>(&event_loop, &server);
     server.addWebSocketHandler("/ws", websocket_handler);
 
-    server.startListening(1180);
+    server.startListening(FLAGS_streaming_port);
     server.setStaticPath(FLAGS_data_dir.c_str());
 
     aos::internal::EPoll *epoll = event_loop.epoll();
