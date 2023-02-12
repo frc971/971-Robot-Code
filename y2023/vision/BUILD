@@ -118,3 +118,14 @@ cc_binary(
         "//aos/events:shm_event_loop",
     ],
 )
+
+cc_binary(
+    name = "foxglove_image_converter",
+    srcs = ["foxglove_image_converter.cc"],
+    visibility = ["//y2023:__subpackages__"],
+    deps = [
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/vision:foxglove_image_converter_lib",
+    ],
+)

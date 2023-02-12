@@ -8,7 +8,7 @@
 #include "aos/time/time.h"
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/charuco_lib.h"
-#include "frc971/vision/foxglove_image_converter.h"
+#include "frc971/vision/foxglove_image_converter_lib.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 
 namespace frc971 {

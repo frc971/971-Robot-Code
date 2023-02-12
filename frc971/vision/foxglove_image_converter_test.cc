@@ -1,4 +1,4 @@
-#include "frc971/vision/foxglove_image_converter.h"
+#include "frc971/vision/foxglove_image_converter_lib.h"
 
 #include "aos/events/simulated_event_loop.h"
 #include "aos/json_to_flatbuffer.h"

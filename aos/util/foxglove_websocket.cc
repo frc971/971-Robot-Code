@@ -3,7 +3,7 @@
 #include "aos/util/foxglove_websocket_lib.h"
 #include "gflags/gflags.h"
 
-DEFINE_string(config, "/app/aos_config.json", "Path to the config.");
+DEFINE_string(config, "aos_config.json", "Path to the config.");
 DEFINE_uint32(port, 8765, "Port to use for foxglove websocket server.");
 DEFINE_string(mode, "flatbuffer", "json or flatbuffer serialization.");
 DEFINE_bool(fetch_pinned_channels, true,

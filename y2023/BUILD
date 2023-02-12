@@ -6,10 +6,12 @@ robot_downloader(
     name = "pi_download",
     binaries = [
         "//frc971/vision:intrinsics_calibration",
+        "//aos/util:foxglove_websocket",
         "//y2023/vision:viewer",
         "//y2023/vision:aprilrobotics",
         "//y2022/localizer:localizer_main",
         "//y2023/constants:constants_sender",
+        "//y2023/vision:foxglove_image_converter",
         "//aos/network:web_proxy_main",
         "//aos/events/logging:log_cat",
         "//y2023/rockpi:imu_main",

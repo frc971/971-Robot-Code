@@ -122,7 +122,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":charuco_lib",
-        ":foxglove_image_converter",
+        ":foxglove_image_converter_lib",
         "//aos:init",
         "//aos/events/logging:log_reader",
         "//frc971/analysis:in_process_plotter",
@@ -257,9 +257,9 @@ cc_library(
 )
 
 cc_library(
-    name = "foxglove_image_converter",
-    srcs = ["foxglove_image_converter.cc"],
-    hdrs = ["foxglove_image_converter.h"],
+    name = "foxglove_image_converter_lib",
+    srcs = ["foxglove_image_converter_lib.cc"],
+    hdrs = ["foxglove_image_converter_lib.h"],
     visibility = ["//visibility:public"],
     deps = [
         ":charuco_lib",
@@ -293,7 +293,7 @@ cc_test(
         "@april_tag_test_image",
     ],
     deps = [
-        ":foxglove_image_converter",
+        ":foxglove_image_converter_lib",
         "//aos:configuration",
         "//aos/events:simulated_event_loop",
         "//aos/testing:googletest",
