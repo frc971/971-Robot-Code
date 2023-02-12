@@ -21,7 +21,6 @@ DECLARE_int32(team_number);
 
 namespace y2023 {
 namespace vision {
-using frc971::vision::CharucoExtractor;
 using frc971::vision::DataAdapter;
 using frc971::vision::ImageCallback;
 using frc971::vision::PoseUtils;

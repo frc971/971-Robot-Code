@@ -44,6 +44,10 @@ table CameraCalibration {
 
   // Timestamp for when the calibration was taken on the realtime clock.
   calibration_timestamp:int64 (id: 6);
+
+  // ID for the physical camera hardware (typically will be a string of the form
+  // YY-NN, with a two-digit year and an index).
+  camera_id:string (id: 7);
 }
 
 // Calibration information for all the cameras we know about.

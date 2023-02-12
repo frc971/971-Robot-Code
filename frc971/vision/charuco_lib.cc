@@ -13,9 +13,6 @@
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/vision_generated.h"
 #include "glog/logging.h"
-#include "y2020/vision/sift/sift_generated.h"
-#include "y2020/vision/sift/sift_training_generated.h"
-#include "y2020/vision/tools/python_code/sift_training_data.h"
 
 DEFINE_string(board_template_path, "",
               "If specified, write an image to the specified path for the "
@@ -37,59 +34,27 @@ namespace chrono = std::chrono;
 using aos::monotonic_clock;
 
 CameraCalibration::CameraCalibration(
-    const absl::Span<const uint8_t> training_data_bfbs, std::string_view pi) {
-  const aos::FlatbufferSpan<sift::TrainingData> training_data(
-      training_data_bfbs);
-  CHECK(training_data.Verify());
-  camera_calibration_ = FindCameraCalibration(&training_data.message(), pi);
-}
-
-cv::Mat CameraCalibration::CameraIntrinsics() const {
-  const cv::Mat result(3, 3, CV_32F,
-                       const_cast<void *>(static_cast<const void *>(
-                           camera_calibration_->intrinsics()->data())));
-  CHECK_EQ(result.total(), camera_calibration_->intrinsics()->size());
-  return result;
-}
-
-Eigen::Matrix3d CameraCalibration::CameraIntrinsicsEigen() const {
-  cv::Mat camera_intrinsics = CameraIntrinsics();
-  Eigen::Matrix3d result;
-  cv::cv2eigen(camera_intrinsics, result);
-  return result;
-}
-
-cv::Mat CameraCalibration::CameraDistCoeffs() const {
-  const cv::Mat result(5, 1, CV_32F,
-                       const_cast<void *>(static_cast<const void *>(
-                           camera_calibration_->dist_coeffs()->data())));
-  CHECK_EQ(result.total(), camera_calibration_->dist_coeffs()->size());
-  return result;
-}
-
-const sift::CameraCalibration *CameraCalibration::FindCameraCalibration(
-    const sift::TrainingData *const training_data, std::string_view pi) const {
-  std::optional<uint16_t> pi_number = aos::network::ParsePiNumber(pi);
-  std::optional<uint16_t> team_number =
-      aos::network::team_number_internal::ParsePiTeamNumber(pi);
-  CHECK(pi_number);
-  CHECK(team_number);
-  const std::string node_name = absl::StrFormat("pi%d", pi_number.value());
-  LOG(INFO) << "Looking for node name " << node_name << " team number "
-            << team_number.value();
-  for (const sift::CameraCalibration *candidate :
-       *training_data->camera_calibrations()) {
-    if (candidate->node_name()->string_view() != node_name) {
-      continue;
-    }
-    if (candidate->team_number() != team_number.value()) {
-      continue;
-    }
-    return candidate;
-  }
-  LOG(FATAL) << ": Failed to find camera calibration for " << node_name
-             << " on " << team_number.value();
-}
+    const calibration::CameraCalibration *calibration)
+    : intrinsics_([calibration]() {
+        const cv::Mat result(3, 3, CV_32F,
+                             const_cast<void *>(static_cast<const void *>(
+                                 calibration->intrinsics()->data())));
+        CHECK_EQ(result.total(), calibration->intrinsics()->size());
+        return result;
+      }()),
+      intrinsics_eigen_([this]() {
+        cv::Mat camera_intrinsics = intrinsics_;
+        Eigen::Matrix3d result;
+        cv::cv2eigen(camera_intrinsics, result);
+        return result;
+      }()),
+      dist_coeffs_([calibration]() {
+        const cv::Mat result(5, 1, CV_32F,
+                             const_cast<void *>(static_cast<const void *>(
+                                 calibration->dist_coeffs()->data())));
+        CHECK_EQ(result.total(), calibration->dist_coeffs()->size());
+        return result;
+      }()) {}
 
 ImageCallback::ImageCallback(
     aos::EventLoop *event_loop, std::string_view channel,
@@ -257,8 +222,9 @@ void CharucoExtractor::DrawTargetPoses(cv::Mat rgb_image,
 
     const Eigen::Affine3d board_to_camera = translation * rotation;
 
-    Eigen::Vector3d result = eigen_camera_matrix_ * camera_projection *
-                             board_to_camera * Eigen::Vector3d::Zero();
+    Eigen::Vector3d result = calibration_.CameraIntrinsicsEigen() *
+                             camera_projection * board_to_camera *
+                             Eigen::Vector3d::Zero();
 
     // Found that drawAxis hangs if you try to draw with z values too
     // small (trying to draw axes at inifinity)
@@ -269,11 +235,13 @@ void CharucoExtractor::DrawTargetPoses(cv::Mat rgb_image,
     } else {
       result /= result.z();
       if (target_type_ == TargetType::kCharuco) {
-        cv::aruco::drawAxis(rgb_image, camera_matrix_, dist_coeffs_, rvecs[i],
+        cv::aruco::drawAxis(rgb_image, calibration_.CameraIntrinsics(),
+                            calibration_.CameraDistCoeffs(), rvecs[i],
                             tvecs[i], 0.1);
       } else {
-        cv::drawFrameAxes(rgb_image, camera_matrix_, dist_coeffs_, rvecs[i],
-                          tvecs[i], 0.1);
+        cv::drawFrameAxes(rgb_image, calibration_.CameraIntrinsics(),
+                          calibration_.CameraDistCoeffs(), rvecs[i], tvecs[i],
+                          0.1);
       }
     }
     std::stringstream ss;
@@ -307,7 +275,8 @@ void CharucoExtractor::PackPoseResults(
 }
 
 CharucoExtractor::CharucoExtractor(
-    aos::EventLoop *event_loop, std::string_view pi, TargetType target_type,
+    aos::EventLoop *event_loop,
+    const calibration::CameraCalibration *calibration, TargetType target_type,
     std::string_view image_channel,
     std::function<void(cv::Mat, monotonic_clock::time_point,
                        std::vector<cv::Vec4i>,
@@ -315,21 +284,14 @@ CharucoExtractor::CharucoExtractor(
                        std::vector<Eigen::Vector3d>,
                        std::vector<Eigen::Vector3d>)> &&handle_charuco_fn)
     : event_loop_(event_loop),
-      calibration_(SiftTrainingData(), pi),
       target_type_(target_type),
       image_channel_(image_channel),
-      camera_matrix_(calibration_.CameraIntrinsics()),
-      eigen_camera_matrix_(calibration_.CameraIntrinsicsEigen()),
-      dist_coeffs_(calibration_.CameraDistCoeffs()),
-      pi_number_(aos::network::ParsePiNumber(pi)),
+      calibration_(CHECK_NOTNULL(calibration)),
       handle_charuco_(std::move(handle_charuco_fn)) {
   SetupTargetData();
 
-  LOG(INFO) << "Camera matrix " << camera_matrix_;
-  LOG(INFO) << "Distortion Coefficients " << dist_coeffs_;
-
-  CHECK(pi_number_) << ": Invalid pi number " << pi
-                    << ", failed to parse pi number";
+  LOG(INFO) << "Camera matrix " << calibration_.CameraIntrinsics();
+  LOG(INFO) << "Distortion Coefficients " << calibration_.CameraDistCoeffs();
 
   LOG(INFO) << "Connecting to channel " << image_channel_;
 }
@@ -392,7 +354,7 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
         cv::aruco::interpolateCornersCharuco(
             marker_corners, marker_ids, rgb_image, board_,
             charuco_corners_with_calibration, charuco_ids_with_calibration,
-            camera_matrix_, dist_coeffs_);
+            calibration_.CameraIntrinsics(), calibration_.CameraDistCoeffs());
 
         if (charuco_ids.size() >= FLAGS_min_charucos) {
           cv::aruco::drawDetectedCornersCharuco(
@@ -401,7 +363,8 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
           cv::Vec3d rvec, tvec;
           valid = cv::aruco::estimatePoseCharucoBoard(
               charuco_corners_with_calibration, charuco_ids_with_calibration,
-              board_, camera_matrix_, dist_coeffs_, rvec, tvec);
+              board_, calibration_.CameraIntrinsics(),
+              calibration_.CameraDistCoeffs(), rvec, tvec);
 
           // if charuco pose is valid, return pose, with ids and corners
           if (valid) {
@@ -433,9 +396,9 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
       // estimate pose for arucos doesn't return valid, so marking true
       valid = true;
       std::vector<cv::Vec3d> rvecs, tvecs;
-      cv::aruco::estimatePoseSingleMarkers(marker_corners, square_length_,
-                                           camera_matrix_, dist_coeffs_, rvecs,
-                                           tvecs);
+      cv::aruco::estimatePoseSingleMarkers(
+          marker_corners, square_length_, calibration_.CameraIntrinsics(),
+          calibration_.CameraDistCoeffs(), rvecs, tvecs);
       DrawTargetPoses(rgb_image, rvecs, tvecs);
 
       PackPoseResults(rvecs, tvecs, &rvecs_eigen, &tvecs_eigen);
@@ -459,9 +422,9 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
         // estimate pose for diamonds doesn't return valid, so marking true
         valid = true;
         std::vector<cv::Vec3d> rvecs, tvecs;
-        cv::aruco::estimatePoseSingleMarkers(diamond_corners, square_length_,
-                                             camera_matrix_, dist_coeffs_,
-                                             rvecs, tvecs);
+        cv::aruco::estimatePoseSingleMarkers(
+            diamond_corners, square_length_, calibration_.CameraIntrinsics(),
+            calibration_.CameraDistCoeffs(), rvecs, tvecs);
         DrawTargetPoses(rgb_image, rvecs, tvecs);
 
         PackPoseResults(rvecs, tvecs, &rvecs_eigen, &tvecs_eigen);

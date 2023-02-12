@@ -5,7 +5,7 @@ load("//tools/build_rules:template.bzl", "jinja2_template")
 robot_downloader(
     name = "pi_download",
     binaries = [
-        "//y2020/vision:calibration",
+        "//frc971/vision:intrinsics_calibration",
         "//y2023/vision:viewer",
         "//y2023/vision:aprilrobotics",
         "//y2022/localizer:localizer_main",

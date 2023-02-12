@@ -11,8 +11,7 @@
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
-#include "y2020/vision/sift/sift_generated.h"
-#include "y2020/vision/sift/sift_training_generated.h"
+#include "frc971/vision/calibration_generated.h"
 #include "external/com_github_foxglove_schemas/ImageAnnotations_generated.h"
 
 DECLARE_bool(visualize);
@@ -24,23 +23,19 @@ namespace vision {
 // training data.
 class CameraCalibration {
  public:
-  CameraCalibration(const absl::Span<const uint8_t> training_data_bfbs,
-                    std::string_view pi);
+  CameraCalibration(const calibration::CameraCalibration *calibration);
 
   // Intrinsics for the located camera.
-  cv::Mat CameraIntrinsics() const;
-  Eigen::Matrix3d CameraIntrinsicsEigen() const;
+  cv::Mat CameraIntrinsics() const { return intrinsics_; }
+  Eigen::Matrix3d CameraIntrinsicsEigen() const { return intrinsics_eigen_; }
 
   // Distortion coefficients for the located camera.
-  cv::Mat CameraDistCoeffs() const;
+  cv::Mat CameraDistCoeffs() const { return dist_coeffs_; }
 
  private:
-  // Finds the camera specific calibration flatbuffer.
-  const sift::CameraCalibration *FindCameraCalibration(
-      const sift::TrainingData *const training_data, std::string_view pi) const;
-
-  // Pointer to this camera's calibration parameters.
-  const sift::CameraCalibration *camera_calibration_;
+  const cv::Mat intrinsics_;
+  const Eigen::Matrix3d intrinsics_eigen_;
+  const cv::Mat dist_coeffs_;
 };
 
 // Helper class to call a function with a cv::Mat and age when an image shows up
@@ -108,7 +103,8 @@ class CharucoExtractor {
   // multiple targets in an image; for charuco boards, there should be just one
   // element
   CharucoExtractor(
-      aos::EventLoop *event_loop, std::string_view pi, TargetType target_type,
+      aos::EventLoop *event_loop,
+      const calibration::CameraCalibration *calibration, TargetType target_type,
       std::string_view image_channel,
       std::function<void(cv::Mat, aos::monotonic_clock::time_point,
                          std::vector<cv::Vec4i>,
@@ -125,9 +121,11 @@ class CharucoExtractor {
   cv::Ptr<cv::aruco::CharucoBoard> board() const { return board_; }
 
   // Returns the camera matrix for this camera.
-  const cv::Mat camera_matrix() const { return camera_matrix_; }
+  const cv::Mat camera_matrix() const {
+    return calibration_.CameraIntrinsics();
+  }
   // Returns the distortion coefficients for this camera.
-  const cv::Mat dist_coeffs() const { return dist_coeffs_; }
+  const cv::Mat dist_coeffs() const { return calibration_.CameraDistCoeffs(); }
 
  private:
   // Creates the dictionary, board, and other parameters for the appropriate
@@ -146,7 +144,6 @@ class CharucoExtractor {
                        std::vector<Eigen::Vector3d> *tvecs_eigen);
 
   aos::EventLoop *event_loop_;
-  CameraCalibration calibration_;
 
   cv::Ptr<cv::aruco::Dictionary> dictionary_;
   cv::Ptr<cv::aruco::CharucoBoard> board_;
@@ -161,15 +158,7 @@ class CharucoExtractor {
   // Length of a side of the checkerboard squares (around the marker)
   double square_length_;
 
-  // Intrinsic calibration matrix
-  const cv::Mat camera_matrix_;
-  // Intrinsic calibration matrix as Eigen::Matrix3d
-  const Eigen::Matrix3d eigen_camera_matrix_;
-  // Intrinsic distortion coefficients
-  const cv::Mat dist_coeffs_;
-
-  // Index number of the raspberry pi
-  const std::optional<uint16_t> pi_number_;
+  CameraCalibration calibration_;
 
   // Function to call.
   std::function<void(
