@@ -82,7 +82,7 @@ cc_binary(
         ":ekf",
         ":generated_graph",
         ":trajectory",
-        "//third_party/matplotlib-cpp",
+        "//frc971/analysis:in_process_plotter",
         "@com_github_gflags_gflags//:gflags",
         "@org_tuxfamily_eigen//:eigen",
     ],
