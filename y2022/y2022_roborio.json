@@ -334,7 +334,7 @@
       "source_node": "roborio",
       "frequency": 200,
       "num_senders": 2,
-      "max_size": 72
+      "max_size": 200
     },
     {
       "name": "/superstructure",
@@ -420,7 +420,7 @@
           "priority": 5,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "imu"
+            "roborio"
           ],
           "time_to_live": 5000000
         }

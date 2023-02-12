@@ -11,8 +11,8 @@
 #include "absl/types/span.h"
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
-#include "frc971/vision/calibration_generated.h"
 #include "external/com_github_foxglove_schemas/ImageAnnotations_generated.h"
+#include "frc971/vision/calibration_generated.h"
 
 DECLARE_bool(visualize);
 
