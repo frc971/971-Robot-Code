@@ -377,6 +377,17 @@
       "num_senders": 1
     },
     {
+      "name": "/logger/camera/downsized",
+      "type": "frc971.vision.CameraImage",
+      "logger": "NOT_LOGGED",
+      "source_node": "logger",
+      "frequency": 40,
+      "max_size": 921744,
+      "num_readers": 4,
+      "read_method": "PIN",
+      "num_senders": 18
+    },
+    {
       "name": "/localizer",
       "type": "frc971.IMUValuesBatch",
       "source_node": "imu",
@@ -450,6 +461,14 @@
       "args": [
         "--rt_priority=16"
       ],
+      "nodes": [
+        "logger"
+      ]
+    },
+    {
+      "name": "camera_reader",
+      "executable_name": "camera_reader",
+      "args": ["--enable_ftrace", "--send_downsized_images"],
       "nodes": [
         "logger"
       ]
