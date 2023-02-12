@@ -85,6 +85,9 @@ enum class TargetType : uint8_t {
   kCharucoDiamond = 2
 };
 
+TargetType TargetTypeFromString(std::string_view str);
+std::ostream &operator<<(std::ostream &os, TargetType target_type);
+
 // Class which calls a callback each time an image arrives with the information
 // extracted from it.
 class CharucoExtractor {

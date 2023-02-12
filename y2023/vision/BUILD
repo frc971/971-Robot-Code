@@ -129,3 +129,21 @@ cc_binary(
         "//frc971/vision:foxglove_image_converter_lib",
     ],
 )
+
+cc_binary(
+    name = "calibrate_extrinsics",
+    srcs = [
+        "calibrate_extrinsics.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:init",
+        "//aos/events/logging:log_reader",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/vision:extrinsics_calibration",
+        "//third_party:opencv",
+        "//y2023/constants:constants_fbs",
+        "//y2023/vision:vision_util",
+    ],
+)

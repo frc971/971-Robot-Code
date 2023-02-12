@@ -492,5 +492,33 @@ flatbuffers::Offset<foxglove::ImageAnnotations> BuildAnnotations(
   return annotation_builder.Finish();
 }
 
+TargetType TargetTypeFromString(std::string_view str) {
+  if (str == "aruco") {
+    return TargetType::kAruco;
+  } else if (str == "charuco") {
+    return TargetType::kCharuco;
+  } else if (str == "charuco_diamond") {
+    return TargetType::kCharucoDiamond;
+  } else {
+    LOG(FATAL) << "Unknown target type: " << str
+               << ", expected: aruco|charuco|charuco_diamond";
+  }
+}
+
+std::ostream &operator<<(std::ostream &os, TargetType target_type) {
+  switch (target_type) {
+    case TargetType::kAruco:
+      os << "aruco";
+      break;
+    case TargetType::kCharuco:
+      os << "charuco";
+      break;
+    case TargetType::kCharucoDiamond:
+      os << "charuco_diamond";
+      break;
+  }
+  return os;
+}
+
 }  // namespace vision
 }  // namespace frc971
