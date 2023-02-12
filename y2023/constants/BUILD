@@ -18,7 +18,11 @@ cc_library(
 jinja2_template(
     name = "constants.json",
     src = "constants.jinja2.json",
-    includes = ["//y2023/vision/calib_files"] + ["7971.json"],
+    includes = [
+        "7971.json",
+        "//y2023/vision/calib_files",
+        "//y2023/vision/maps",
+    ],
     parameters = {},
     visibility = ["//visibility:public"],
 )
@@ -28,7 +32,10 @@ flatbuffer_cc_library(
     srcs = ["constants.fbs"],
     gen_reflections = True,
     visibility = ["//visibility:public"],
-    deps = ["//frc971/vision:calibration_fbs"],
+    deps = [
+        "//frc971/vision:calibration_fbs",
+        "//frc971/vision:target_map_fbs",
+    ],
 )
 
 flatbuffer_cc_library(
