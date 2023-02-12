@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "hall-effect")(type "KiCad")(uri "${KIPRJMOD}/hall-effect.kicad_sym")(options "")(descr ""))
+)
