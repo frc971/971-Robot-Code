@@ -75,41 +75,23 @@ void HandleAprilTag(const TargetMap &map,
   }
 }
 
-Eigen::Affine3d CameraExtrinsics(
-    const calibration::CameraCalibration *camera_calibration) {
-  const frc971::vision::calibration::TransformationMatrix *transform =
-      camera_calibration->has_turret_extrinsics()
-          ? camera_calibration->turret_extrinsics()
-          : camera_calibration->fixed_extrinsics();
-
-  cv::Mat result(
-      4, 4, CV_32F,
-      const_cast<void *>(static_cast<const void *>(transform->data()->data())));
-  result.convertTo(result, CV_64F);
-  CHECK_EQ(result.total(), transform->data()->size());
-
-  Eigen::Matrix4d result_eigen;
-  cv::cv2eigen(result, result_eigen);
-  return Eigen::Affine3d(result_eigen);
-}
-
 // Get images from pi and pass apriltag positions to HandleAprilTag()
 void HandlePiCaptures(
-    const frc971::constants::ConstantsFetcher<Constants> &constants,
     aos::EventLoop *pi_event_loop, aos::logger::LogReader *reader,
     std::vector<DataAdapter::TimestampedDetection>
         *timestamped_target_detections,
     std::vector<std::unique_ptr<AprilRoboticsDetector>> *detectors) {
-
-  const auto node_name = pi_event_loop->node()->name()->string_view();
-  const calibration::CameraCalibration *calibration =
-      FindCameraCalibration(constants.constants(), node_name);
-  const auto extrinsics = CameraExtrinsics(calibration);
-
   // TODO(milind): change to /camera once we log at full frequency
   static constexpr std::string_view kImageChannel = "/camera/decimated";
-  detectors->emplace_back(
-      std::make_unique<AprilRoboticsDetector>(pi_event_loop, kImageChannel));
+  auto detector_ptr =
+      std::make_unique<AprilRoboticsDetector>(pi_event_loop, kImageChannel);
+  // Get the camera extrinsics
+  cv::Mat extrinsics_cv = detector_ptr->extrinsics();
+  Eigen::Matrix4d extrinsics_matrix;
+  cv::cv2eigen(extrinsics_cv, extrinsics_matrix);
+  const auto extrinsics = Eigen::Affine3d(extrinsics_matrix);
+
+  detectors->emplace_back(std::move(detector_ptr));
 
   pi_event_loop->MakeWatcher("/camera", [=](const TargetMap &map) {
     aos::distributed_clock::time_point pi_distributed_time =
@@ -139,36 +121,28 @@ void MappingMain(int argc, char *argv[]) {
       aos::configuration::GetNode(reader.configuration(), "pi1");
   std::unique_ptr<aos::EventLoop> pi1_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi1", pi1);
-  frc971::constants::ConstantsFetcher<Constants> pi1_constants(
-      pi1_event_loop.get());
-  HandlePiCaptures(pi1_constants, pi1_event_loop.get(), &reader,
+  HandlePiCaptures(pi1_event_loop.get(), &reader,
                    &timestamped_target_detections, &detectors);
 
   const aos::Node *pi2 =
       aos::configuration::GetNode(reader.configuration(), "pi2");
   std::unique_ptr<aos::EventLoop> pi2_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi2", pi2);
-  frc971::constants::ConstantsFetcher<Constants> pi2_constants(
-      pi2_event_loop.get());
-  HandlePiCaptures(pi2_constants, pi2_event_loop.get(), &reader,
+  HandlePiCaptures(pi2_event_loop.get(), &reader,
                    &timestamped_target_detections, &detectors);
 
   const aos::Node *pi3 =
       aos::configuration::GetNode(reader.configuration(), "pi3");
   std::unique_ptr<aos::EventLoop> pi3_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi3", pi3);
-  frc971::constants::ConstantsFetcher<Constants> pi3_constants(
-      pi3_event_loop.get());
-  HandlePiCaptures(pi3_constants, pi3_event_loop.get(), &reader,
+  HandlePiCaptures(pi3_event_loop.get(), &reader,
                    &timestamped_target_detections, &detectors);
 
   const aos::Node *pi4 =
       aos::configuration::GetNode(reader.configuration(), "pi4");
   std::unique_ptr<aos::EventLoop> pi4_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi4", pi4);
-  frc971::constants::ConstantsFetcher<Constants> pi4_constants(
-      pi4_event_loop.get());
-  HandlePiCaptures(pi4_constants, pi4_event_loop.get(), &reader,
+  HandlePiCaptures(pi4_event_loop.get(), &reader,
                    &timestamped_target_detections, &detectors);
 
   reader.event_loop_factory()->Run();

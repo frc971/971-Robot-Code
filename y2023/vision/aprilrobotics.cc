@@ -6,6 +6,9 @@ DEFINE_bool(
     debug, false,
     "If true, dump a ton of debug and crash on the first valid detection.");
 
+DEFINE_double(min_decision_margin, 30.0,
+              "Minimum decision margin (confidence) for an apriltag detection");
+
 namespace y2023 {
 namespace vision {
 
@@ -40,8 +43,16 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
   // Check team string is valid
   calibration_ = FindCameraCalibration(
       calibration_data_.constants(), event_loop->node()->name()->string_view());
+
+  extrinsics_ = CameraExtrinsics(calibration_);
+
   intrinsics_ = CameraIntrinsics(calibration_);
-  camera_distortion_coeffs_ = CameraDistCoeffs(calibration_);
+  // Create an undistort projection matrix using the intrinsics
+  projection_matrix_ = cv::Mat::zeros(3, 4, CV_64F);
+  intrinsics_.rowRange(0, 3).colRange(0, 3).copyTo(
+      projection_matrix_.rowRange(0, 3).colRange(0, 3));
+
+  dist_coeffs_ = CameraDistCoeffs(calibration_);
 
   image_callback_.set_format(frc971::vision::ImageCallback::Format::GRAYSCALE);
 }
@@ -66,10 +77,10 @@ void AprilRoboticsDetector::SetWorkerpoolAffinities() {
   }
 }
 
-void AprilRoboticsDetector::HandleImage(cv::Mat image_color_mat,
+void AprilRoboticsDetector::HandleImage(cv::Mat image_grayscale,
                                         aos::monotonic_clock::time_point eof) {
   std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> detections =
-      DetectTags(image_color_mat);
+      DetectTags(image_grayscale);
 
   auto builder = target_map_sender_.MakeBuilder();
   std::vector<flatbuffers::Offset<frc971::vision::TargetPoseFbs>> target_poses;
@@ -102,6 +113,28 @@ AprilRoboticsDetector::BuildTargetPose(
                                              orientation_offset);
 }
 
+void AprilRoboticsDetector::UndistortDetection(
+    apriltag_detection_t *det) const {
+  // 4 corners
+  constexpr size_t kRows = 4;
+  // 2d points
+  constexpr size_t kCols = 2;
+
+  cv::Mat distorted_points(kRows, kCols, CV_64F, det->p);
+  cv::Mat undistorted_points = cv::Mat::zeros(kRows, kCols, CV_64F);
+
+  // Undistort the april tag points
+  cv::undistortPoints(distorted_points, undistorted_points, intrinsics_,
+                      dist_coeffs_, cv::noArray(), projection_matrix_);
+
+  // Copy the undistorted points into det
+  for (size_t i = 0; i < kRows; i++) {
+    for (size_t j = 0; j < kCols; j++) {
+      det->p[i][j] = undistorted_points.at<double>(i, j);
+    }
+  }
+}
+
 std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>>
 AprilRoboticsDetector::DetectTags(cv::Mat image) {
   const aos::monotonic_clock::time_point start_time =
@@ -128,7 +161,7 @@ AprilRoboticsDetector::DetectTags(cv::Mat image) {
     apriltag_detection_t *det;
     zarray_get(detections, i, &det);
 
-    if (det->decision_margin > 30) {
+    if (det->decision_margin > FLAGS_min_decision_margin) {
       VLOG(1) << "Found tag number " << det->id << " hamming: " << det->hamming
               << " margin: " << det->decision_margin;
 
@@ -139,6 +172,7 @@ AprilRoboticsDetector::DetectTags(cv::Mat image) {
       apriltag_detection_info_t info;
       info.det = det;
       info.tagsize = 0.1524;
+
       info.fx = intrinsics_.at<double>(0, 0);
       info.fy = intrinsics_.at<double>(1, 1);
       info.cx = intrinsics_.at<double>(0, 2);
@@ -147,6 +181,7 @@ AprilRoboticsDetector::DetectTags(cv::Mat image) {
       apriltag_pose_t pose;
       double err = estimate_tag_pose(&info, &pose);
 
+      UndistortDetection(det);
       VLOG(1) << "err: " << err;
 
       results.emplace_back(*det, pose);
