@@ -16,7 +16,6 @@ robot_downloader(
     ],
     data = [
         ":aos_config",
-        ":message_bridge_client.sh",
         "//y2023/constants:constants.json",
         "//y2023/www:www_files",
     ],
