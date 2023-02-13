@@ -5,6 +5,10 @@
 DEFINE_bool(combined_timestamp_channel_fallback, true,
             "If true, fall back to using the combined timestamp channel if the "
             "single timestamp channel doesn't exist for a timestamp.");
+DEFINE_bool(check_timestamp_channel_frequencies, true,
+            "If true, include a debug CHECK to ensure that remote timestamp "
+            "channels are configured to have at least as great a frequency as "
+            "the corresponding data channel.");
 
 namespace aos {
 namespace message_bridge {
@@ -109,12 +113,14 @@ aos::Sender<RemoteMessage> *ChannelTimestampSender::SenderForChannel(
 
   const Channel *timestamp_channel = finder.ForChannel(channel, connection);
 
-  // Sanity-check that the timestamp channel can actually support full-rate
-  // messages coming through on the source channel.
-  CHECK_GE(timestamp_channel->frequency(), channel->frequency())
-      << ": Timestamp channel "
-      << configuration::StrippedChannelToString(timestamp_channel)
-      << "'s rate is lower than the source channel.";
+  if (FLAGS_check_timestamp_channel_frequencies) {
+    // Sanity-check that the timestamp channel can actually support full-rate
+    // messages coming through on the source channel.
+    CHECK_GE(timestamp_channel->frequency(), channel->frequency())
+        << ": Timestamp channel "
+        << configuration::StrippedChannelToString(timestamp_channel)
+        << "'s rate is lower than the source channel.";
+  }
 
   {
     auto it = timestamp_loggers_.find(timestamp_channel);
