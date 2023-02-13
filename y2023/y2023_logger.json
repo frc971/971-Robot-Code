@@ -41,6 +41,38 @@
       ]
     },
     {
+      "name": "/camera",
+      "type": "y2023.vision.GamePieces",
+      "source_node": "logger",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio"
+      ],
+      "frequency": 40,
+      "num_senders": 2,
+      "max_size": 1024,
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 2,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/logger/aos/remote_timestamps/roborio/camera/y2023-vision-GamePieces",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "logger",
+      "logger": "NOT_LOGGED",
+      "frequency": 40,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
       "name": "/roborio/aos/remote_timestamps/logger/drivetrain/frc971-control_loops-drivetrain-Position",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "roborio",
@@ -496,6 +528,13 @@
       "name": "constants_sender",
       "autorestart": false,
       "user": "pi",
+      "nodes": [
+        "logger"
+      ]
+    },
+    {
+      "name": "game_piece_detector",
+      "executable_name": "game_piece_detector",
       "nodes": [
         "logger"
       ]
