@@ -76,7 +76,7 @@ static inline uint32_t us_to_ms(uint64_t us) {
  * \ingroup timestamp
  * \brief Convert a timestamp into a number of milliseconds since boot.
  * \param t an absolute_time_t value to convert
- * \return the number of microseconds since boot represented by t
+ * \return the number of milliseconds since boot represented by t
  * \sa to_us_since_boot()
  */
 static inline uint32_t to_ms_since_boot(absolute_time_t t) {
@@ -161,6 +161,16 @@ static inline int64_t absolute_time_diff_us(absolute_time_t from, absolute_time_
  * \ingroup timestamp
  */
 extern const absolute_time_t at_the_end_of_time;
+
+/*! \brief Determine if the given timestamp is "at_the_end_of_time"
+ * \ingroup timestamp
+ *  \param t the timestamp
+ *  \return true if the timestamp is at_the_end_of_time
+ *  \sa at_the_end_of_time
+ */
+static inline bool is_at_the_end_of_time(absolute_time_t t) {
+    return to_us_since_boot(t) == to_us_since_boot(at_the_end_of_time);
+}
 
 /*! \brief The timestamp representing a null timestamp
  * \ingroup timestamp

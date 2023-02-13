@@ -88,11 +88,16 @@ void dma_claim_mask(uint32_t channel_mask);
 /*! \brief Mark a dma channel as no longer used
  *  \ingroup hardware_dma
  *
- * Method for cooperative claiming of hardware.
- *
  * \param channel the dma channel to release
  */
 void dma_channel_unclaim(uint channel);
+
+/*! \brief Mark multiple dma channels as no longer used
+ *  \ingroup hardware_dma
+ *
+ * \param channel_mask Bitfield of all channels to unclaim (bit 0 == channel 0, bit 1 == channel 1 etc)
+ */
+void dma_unclaim_mask(uint32_t channel_mask);
 
 /*! \brief Claim a free dma channel
  *  \ingroup hardware_dma
@@ -118,7 +123,6 @@ bool dma_channel_is_claimed(uint channel);
  *
  * A DMA channel needs to be configured, these functions provide handy helpers to set up configuration
  * structures. See \ref dma_channel_config
- *
  */
 
 /*! \brief Enumeration of available DMA channel transfer sizes.
@@ -136,10 +140,10 @@ typedef struct {
     uint32_t ctrl;
 } dma_channel_config;
 
-/*! \brief  Set DMA channel read increment
+/*! \brief  Set DMA channel read increment in a channel configuration object
  *  \ingroup channel_config
  *
- * \param c Pointer to channel configuration data
+ * \param c Pointer to channel configuration object
  * \param incr True to enable read address increments, if false, each read will be from the same address
  *             Usually disabled for peripheral to memory transfers
  */
@@ -147,10 +151,10 @@ static inline void channel_config_set_read_increment(dma_channel_config *c, bool
     c->ctrl = incr ? (c->ctrl | DMA_CH0_CTRL_TRIG_INCR_READ_BITS) : (c->ctrl & ~DMA_CH0_CTRL_TRIG_INCR_READ_BITS);
 }
 
-/*! \brief  Set DMA channel write increment
+/*! \brief  Set DMA channel write increment in a channel configuration object
  *  \ingroup channel_config
  *
- * \param c Pointer to channel configuration data
+ * \param c Pointer to channel configuration object
  * \param incr True to enable write address increments, if false, each write will be to the same address
  *             Usually disabled for memory to peripheral transfers
  * Usually disabled for memory to peripheral transfers
@@ -159,7 +163,7 @@ static inline void channel_config_set_write_increment(dma_channel_config *c, boo
     c->ctrl = incr ? (c->ctrl | DMA_CH0_CTRL_TRIG_INCR_WRITE_BITS) : (c->ctrl & ~DMA_CH0_CTRL_TRIG_INCR_WRITE_BITS);
 }
 
-/*! \brief  Select a transfer request signal
+/*! \brief  Select a transfer request signal in a channel configuration object
  *  \ingroup channel_config
  *
  * The channel uses the transfer request signal to pace its data transfer rate.
@@ -179,13 +183,13 @@ static inline void channel_config_set_dreq(dma_channel_config *c, uint dreq) {
     c->ctrl = (c->ctrl & ~DMA_CH0_CTRL_TRIG_TREQ_SEL_BITS) | (dreq << DMA_CH0_CTRL_TRIG_TREQ_SEL_LSB);
 }
 
-/*! \brief  Set DMA channel completion channel
+/*! \brief  Set DMA channel chain_to channel in a channel configuration object
  *  \ingroup channel_config
  *
  * When this channel completes, it will trigger the channel indicated by chain_to. Disable by
  * setting chain_to to itself (the same channel)
  *
- * \param c Pointer to channel configuration data
+ * \param c Pointer to channel configuration object
  * \param chain_to Channel to trigger when this channel completes.
  */
 static inline void channel_config_set_chain_to(dma_channel_config *c, uint chain_to) {
@@ -193,13 +197,13 @@ static inline void channel_config_set_chain_to(dma_channel_config *c, uint chain
     c->ctrl = (c->ctrl & ~DMA_CH0_CTRL_TRIG_CHAIN_TO_BITS) | (chain_to << DMA_CH0_CTRL_TRIG_CHAIN_TO_LSB);
 }
 
-/*! \brief Set the size of each DMA bus transfer
+/*! \brief Set the size of each DMA bus transfer in a channel configuration object
  *  \ingroup channel_config
  *
  * Set the size of each bus transfer (byte/halfword/word). The read and write addresses
  * advance by the specific amount (1/2/4 bytes) with each transfer.
  *
- * \param c Pointer to channel configuration data
+ * \param c Pointer to channel configuration object
  * \param size See enum for possible values.
  */
 static inline void channel_config_set_transfer_data_size(dma_channel_config *c, enum dma_channel_transfer_size size) {
@@ -207,7 +211,7 @@ static inline void channel_config_set_transfer_data_size(dma_channel_config *c, 
     c->ctrl = (c->ctrl & ~DMA_CH0_CTRL_TRIG_DATA_SIZE_BITS) | (((uint)size) << DMA_CH0_CTRL_TRIG_DATA_SIZE_LSB);
 }
 
-/*! \brief  Set address wrapping parameters
+/*! \brief  Set address wrapping parameters in a channel configuration object
  *  \ingroup channel_config
  *
  * Size of address wrap region. If 0, don’t wrap. For values n > 0, only the lower n bits of the address
@@ -217,7 +221,7 @@ static inline void channel_config_set_transfer_data_size(dma_channel_config *c, 
  *
  * 0x0 -> No wrapping.
  *
- * \param c Pointer to channel configuration data
+ * \param c Pointer to channel configuration object
  * \param write True to apply to write addresses, false to apply to read addresses
  * \param size_bits 0 to disable wrapping. Otherwise the size in bits of the changing part of the address.
  *        Effectively wraps the address on a (1 << size_bits) byte boundary.
@@ -229,27 +233,27 @@ static inline void channel_config_set_ring(dma_channel_config *c, bool write, ui
               (write ? DMA_CH0_CTRL_TRIG_RING_SEL_BITS : 0);
 }
 
-/*! \brief  Set DMA byte swapping
+/*! \brief  Set DMA byte swapping config in a channel configuration object
  *  \ingroup channel_config
  *
  * No effect for byte data, for halfword data, the two bytes of each halfword are
  * swapped. For word data, the four bytes of each word are swapped to reverse their order.
  *
- * \param c Pointer to channel configuration data
+ * \param c Pointer to channel configuration object
  * \param bswap True to enable byte swapping
  */
 static inline void channel_config_set_bswap(dma_channel_config *c, bool bswap) {
     c->ctrl = bswap ? (c->ctrl | DMA_CH0_CTRL_TRIG_BSWAP_BITS) : (c->ctrl & ~DMA_CH0_CTRL_TRIG_BSWAP_BITS);
 }
 
-/*! \brief  Set IRQ quiet mode
+/*! \brief  Set IRQ quiet mode in a channel configuration object
  *  \ingroup channel_config
  *
  * In QUIET mode, the channel does not generate IRQs at the end of every transfer block. Instead,
  * an IRQ is raised when NULL is written to a trigger register, indicating the end of a control
  * block chain.
  *
- * \param c Pointer to channel configuration data
+ * \param c Pointer to channel configuration object
  * \param irq_quiet True to enable quiet mode, false to disable.
  */
 static inline void channel_config_set_irq_quiet(dma_channel_config *c, bool irq_quiet) {
@@ -257,13 +261,31 @@ static inline void channel_config_set_irq_quiet(dma_channel_config *c, bool irq_
 }
 
 /*!
- *  \brief Enable/Disable the DMA channel
+ *  \brief Set the channel priority in a channel configuration object
+ *  \ingroup channel_config
+ *
+ * When true, gives a channel preferential treatment in issue scheduling: in each scheduling round,
+ * all high priority channels are considered first, and then only a single low
+ * priority channel, before returning to the high priority channels.
+ *
+ * This only affects the order in which the DMA schedules channels. The DMA's bus priority is not changed.
+ * If the DMA is not saturated then a low priority channel will see no loss of throughput.
+ *
+ * \param c Pointer to channel configuration object
+ * \param high_priority True to enable high priority
+ */
+static inline void channel_config_set_high_priority(dma_channel_config *c, bool high_priority) {
+    c->ctrl = high_priority ? (c->ctrl | DMA_CH0_CTRL_TRIG_HIGH_PRIORITY_BITS) : (c->ctrl & ~DMA_CH0_CTRL_TRIG_HIGH_PRIORITY_BITS);
+}
+
+/*!
+ *  \brief Enable/Disable the DMA channel in a channel configuration object
  *  \ingroup channel_config
  *
  * When false, the channel will ignore triggers, stop issuing transfers, and pause the current transfer sequence (i.e. BUSY will
  * remain high if already high)
  *
- * \param c Pointer to channel configuration data
+ * \param c Pointer to channel configuration object
  * \param enable True to enable the DMA channel. When enabled, the channel will respond to triggering events, and start transferring data.
  *
  */
@@ -271,12 +293,12 @@ static inline void channel_config_set_enable(dma_channel_config *c, bool enable)
     c->ctrl = enable ? (c->ctrl | DMA_CH0_CTRL_TRIG_EN_BITS) : (c->ctrl & ~DMA_CH0_CTRL_TRIG_EN_BITS);
 }
 
-/*! \brief  Enable access to channel by sniff hardware.
+/*! \brief  Enable access to channel by sniff hardware in a channel configuration object
  *  \ingroup channel_config
  *
  * Sniff HW must be enabled and have this channel selected.
  *
- * \param c Pointer to channel configuration data
+ * \param c Pointer to channel configuration object
  * \param sniff_enable True to enable the Sniff HW access to this DMA channel.
  */
 static inline void channel_config_set_sniff_enable(dma_channel_config *c, bool sniff_enable) {
@@ -297,6 +319,7 @@ static inline void channel_config_set_sniff_enable(dma_channel_config *c, bool s
  * Ring | write=false, size=0 (i.e. off)
  * Byte Swap | false
  * Quiet IRQs | false
+ * High Priority | false
  * Channel Enable | true
  * Sniff Enable | false
  *
@@ -315,6 +338,7 @@ static inline dma_channel_config dma_channel_get_default_config(uint channel) {
     channel_config_set_irq_quiet(&c, false);
     channel_config_set_enable(&c, true);
     channel_config_set_sniff_enable(&c, false);
+    channel_config_set_high_priority( &c, false);
     return c;
 }
 
@@ -473,6 +497,32 @@ static inline void dma_channel_start(uint channel) {
  *
  * Function will only return once the DMA has stopped.
  *
+ * Note that due to errata RP2040-E13, aborting a channel which has transfers
+ * in-flight (i.e. an individual read has taken place but the corresponding write has not), the ABORT
+ * status bit will clear prematurely, and subsequently the in-flight
+ * transfers will trigger a completion interrupt once they complete.
+ *
+ * The effect of this is that you \em may see a spurious completion interrupt
+ * on the channel as a result of calling this method.
+ *
+ * The calling code should be sure to ignore a completion IRQ as a result of this method. This may
+ * not require any additional work, as aborting a channel which may be about to complete, when you have a completion
+ * IRQ handler registered, is inherently race-prone, and so code is likely needed to disambiguate the two occurrences.
+ *
+ * If that is not the case, but you do have a channel completion IRQ handler registered, you can simply
+ * disable/re-enable the IRQ around the call to this method as shown by this code fragment (using DMA IRQ0).
+ *
+ * \code
+ *  // disable the channel on IRQ0
+ *  dma_channel_set_irq0_enabled(channel, false);
+ *  // abort the channel
+ *  dma_channel_abort(channel);
+ *  // clear the spurious IRQ (if there was one)
+ *  dma_channel_acknowledge_irq0(channel);
+ *  // re-enable the channel on IRQ0
+ *  dma_channel_set_irq0_enabled(channel, true);
+ *\endcode
+ *
  * \param channel DMA channel
  */
 static inline void dma_channel_abort(uint channel) {
@@ -480,7 +530,7 @@ static inline void dma_channel_abort(uint channel) {
     dma_hw->abort = 1u << channel;
     // Bit will go 0 once channel has reached safe state
     // (i.e. any in-flight transfers have retired)
-    while (dma_hw->abort & (1ul << channel)) tight_loop_contents();
+    while (dma_hw->ch[channel].ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS) tight_loop_contents();
 }
 
 /*! \brief  Enable single DMA channel's interrupt via DMA_IRQ_0
