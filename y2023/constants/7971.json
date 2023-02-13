@@ -1,16 +1,16 @@
 {
   "cameras": [
     {
-      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-1_cam-23-01_2013-01-18_09-15-19.438113048.json' %}
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-1_cam-23-01_ext-2023-02-17.json' %}
     },
     {
-      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-2_cam-23-02_2013-01-18_09-02-49.498335208.json' %}
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-2_cam-23-02_ext_2023-02-17.json' %}
     },
     {
-      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-3_cam-23-03_2013-01-18_09-39-27.378322133.json' %}
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-3_cam-23-03_ext_2023-02-17.json' %}
     },
     {
-      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-4_cam-23-04_2013-01-18_09-39-42.039874176.json' %}
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-4_cam-23-04_ext_2023-02-17.json' %}
     }
   ],
   "target_map": {% include 'y2023/vision/maps/target_map.json' %}

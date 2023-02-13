@@ -20,6 +20,7 @@ jinja2_template(
     src = "constants.jinja2.json",
     includes = [
         "7971.json",
+        "971.json",
         "//y2023/vision/calib_files",
         "//y2023/vision/maps",
     ],
