@@ -8,6 +8,7 @@ cc_binary(
         "-Wno-format-nonliteral",
         "-Wno-reorder",
         "-Wno-unused-parameter",
+        "-Wno-unused-variable",
         "-Wno-unused-function",
         "-Wno-type-limits",
     ],

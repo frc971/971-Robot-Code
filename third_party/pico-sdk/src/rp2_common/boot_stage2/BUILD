@@ -61,7 +61,7 @@ genrule(
     name = "gen_bs2_default_padded_checksummed.S",
     srcs = ["bs2_default.bin"],
     outs = ["bs2_default_padded_checksummed.S"],
-    cmd = "$(location :pad_checksum_python) -s 0xffffffff $(SRCS) $(OUTS)",
+    cmd = "python3 $(location :pad_checksum_python) -s 0xffffffff $(SRCS) $(OUTS)",
     tools = [":pad_checksum_python"],
     visibility = ["//visibility:public"],
 )

@@ -1,0 +1,31 @@
+cc_binary(
+    name = "pioasm",
+    srcs = [
+        "ada_output.cpp",
+        "c_sdk_output.cpp",
+        "gen/lexer.cpp",
+        "gen/location.h",
+        "gen/parser.cpp",
+        "gen/parser.hpp",
+        "hex_output.cpp",
+        "main.cpp",
+        "output_format.h",
+        "pio_assembler.cpp",
+        "pio_assembler.h",
+        "pio_disassembler.cpp",
+        "pio_disassembler.h",
+        "pio_types.h",
+        "python_output.cpp",
+    ],
+    copts = [
+        "-Wno-unused-parameter",
+        "-Wno-sign-compare",
+        "-fexceptions",
+    ],
+    includes = [
+        ".",
+        "gen",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    visibility = ["//visibility:public"],
+)
