@@ -4,7 +4,6 @@ load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_go_library",
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//tools/build_rules:apache.bzl", "apache_wrapper")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
-load("@npm//@bazel/concatjs:index.bzl", "karma_web_test_suite")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
 
 cc_test(
@@ -164,23 +163,6 @@ rust_binary(
 ts_project(
     name = "build_tests_ts",
     srcs = ["basic.ts"],
-)
-
-ts_project(
-    name = "ts_test",
-    testonly = True,
-    srcs = ["basic_test.ts"],
-    deps = [
-        ":build_tests_ts",
-        "@npm//@types/jasmine",
-    ],
-)
-
-karma_web_test_suite(
-    name = "karma",
-    testonly = True,
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [":ts_test"],
 )
 
 rust_library(
