@@ -1,9 +1,9 @@
+load("//tools/build_rules:js.bzl", "ts_project")
 load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
 load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
 load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
 
-ts_library(
+ts_project(
     name = "demo",
     srcs = [
         "demo.ts",

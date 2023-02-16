@@ -3,7 +3,15 @@ load("@npm//@bazel/rollup:index.bzl", upstream_rollup_bundle = "rollup_bundle")
 load("@npm//@bazel/terser:index.bzl", "terser_minified")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@npm//@bazel/protractor:index.bzl", "protractor_web_test_suite")
-load("@npm//@bazel/typescript:index.bzl", "ts_project")
+load("@npm//@bazel/typescript:index.bzl", upstream_ts_library = "ts_library", upstream_ts_project = "ts_project")
+
+def ts_project(**kwargs):
+    """A trivial wrapper to prepare for the rules_js migration.
+
+    The intent is to change his macro to wrap the new rules_js ts_project
+    implementation.
+    """
+    upstream_ts_library(**kwargs)
 
 def rollup_bundle(name, deps, visibility = None, **kwargs):
     """Calls the upstream rollup_bundle() and exposes a .min.js file.
@@ -72,7 +80,7 @@ def protractor_ts_test(name, srcs, deps = None, data = None, **kwargs):
     See the documentation for more information:
     https://bazelbuild.github.io/rules_nodejs/Protractor.html#protractor_web_test_suite
     """
-    ts_project(
+    upstream_ts_project(
         name = name + "__lib",
         srcs = srcs,
         testonly = 1,

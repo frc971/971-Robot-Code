@@ -1,8 +1,7 @@
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
-load("//tools/build_rules:js.bzl", "rollup_bundle")
+load("//tools/build_rules:js.bzl", "rollup_bundle", "ts_project")
 load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
 
-ts_library(
+ts_project(
     name = "camera_main",
     srcs = [
         "camera_main.ts",
@@ -21,7 +20,7 @@ ts_library(
     ],
 )
 
-ts_library(
+ts_project(
     name = "field_main",
     srcs = [
         "constants.ts",
