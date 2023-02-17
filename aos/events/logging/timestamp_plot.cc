@@ -48,9 +48,13 @@ std::pair<std::vector<double>, std::vector<double>> ReadSamples(
     std::string_view node1, std::string_view node2, bool flip) {
   std::vector<double> samplefile12_t;
   std::vector<double> samplefile12_o;
+  const std::string path = SampleFile(node1, node2);
 
-  const std::string file =
-      aos::util::ReadFileToStringOrDie(SampleFile(node1, node2));
+  if (!aos::util::PathExists(path)) {
+    return {};
+  }
+
+  const std::string file = aos::util::ReadFileToStringOrDie(path);
   bool first = true;
   std::vector<std::string_view> lines = absl::StrSplit(file, '\n');
   samplefile12_t.reserve(lines.size());
@@ -91,7 +95,8 @@ std::vector<std::pair<std::string, std::string>> NodeConnections() {
     for (size_t j = 0; j < i; ++j) {
       const std::string_view node1 = nodes[j];
       const std::string_view node2 = nodes[i];
-      if (aos::util::PathExists(SampleFile(node1, node2))) {
+      if (aos::util::PathExists(SampleFile(node1, node2)) ||
+          aos::util::PathExists(SampleFile(node2, node1))) {
         result.emplace_back(node1, node2);
         LOG(INFO) << "Found pairing " << node1 << ", " << node2;
       }
@@ -152,9 +157,13 @@ std::pair<std::vector<double>, std::vector<double>> NodePlotter::ReadLines(
     std::string_view node1, std::string_view node2, bool flip) {
   std::vector<double> samplefile12_t;
   std::vector<double> samplefile12_o;
+  const std::string path = absl::StrCat("/tmp/timestamp_noncausal_", node1, "_", node2, ".csv");
 
-  const std::string file = aos::util::ReadFileToStringOrDie(
-      absl::StrCat("/tmp/timestamp_noncausal_", node1, "_", node2, ".csv"));
+  if (!aos::util::PathExists(path)) {
+    return {};
+  }
+
+  const std::string file = aos::util::ReadFileToStringOrDie(path);
   bool first = true;
   std::vector<std::string_view> lines = absl::StrSplit(file, '\n');
   samplefile12_t.reserve(lines.size());
@@ -306,8 +315,13 @@ int Main(int argc, const char *const *argv) {
   NodePlotter plotter;
 
   if (FLAGS_all) {
-    for (std::pair<std::string, std::string> ab : NodeConnections()) {
+    const std::vector<std::pair<std::string, std::string>> connections =
+        NodeConnections();
+    for (std::pair<std::string, std::string> ab : connections) {
       plotter.AddNodes(ab.first, ab.second);
+    }
+    if (connections.size() == 0) {
+      LOG(WARNING) << "No connections found, is something wrong?";
     }
   } else {
     CHECK_EQ(argc, 3);
