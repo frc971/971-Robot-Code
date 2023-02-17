@@ -56,6 +56,7 @@ bool Ipv6Enabled() {
 struct sockaddr_storage ResolveSocket(std::string_view host, int port,
                                       bool use_ipv6) {
   struct sockaddr_storage result;
+  memset(&result, 0, sizeof(result));
   struct addrinfo *addrinfo_result;
   struct sockaddr_in *t_addr = (struct sockaddr_in *)&result;
   struct sockaddr_in6 *t_addr6 = (struct sockaddr_in6 *)&result;
@@ -282,6 +283,7 @@ bool SctpReadWrite::SendMessage(
 
   // Use the assoc_id for the destination instead of the msg_name.
   struct msghdr outmsg;
+  memset(&outmsg, 0, sizeof(outmsg));
   if (sockaddr_remote) {
     outmsg.msg_name = &*sockaddr_remote;
     outmsg.msg_namelen = sizeof(*sockaddr_remote);
@@ -489,6 +491,7 @@ bool SctpReadWrite::Abort(sctp_assoc_t snd_assoc_id) {
 
   // Use the assoc_id for the destination instead of the msg_name.
   struct msghdr outmsg;
+  memset(&outmsg, 0, sizeof(outmsg));
   outmsg.msg_namelen = 0;
 
   outmsg.msg_iovlen = 0;
