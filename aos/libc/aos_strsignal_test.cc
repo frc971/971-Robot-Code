@@ -26,13 +26,15 @@ class SignalNameTester {
   }
 };
 
+// msan doesn't seem to like strsignal().
+#if !__has_feature(memory_sanitizer)
 // Tests that all the signals give the same result as strsignal(3).
 TEST(StrsignalTest, All) {
   // Sigh, strsignal allocates a buffer that uses pthread local storage.  This
   // interacts poorly with asan.  Spawning a thread causes the storage to get
   // cleaned up before asan checks.
   SignalNameTester t;
-#ifdef AOS_SANITIZER_thread
+#if defined(AOS_SANITIZER_thread)
   // tsan doesn't like this usage of ::std::thread. It looks like
   // <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57507>.
   t();
@@ -41,6 +43,7 @@ TEST(StrsignalTest, All) {
   thread.join();
 #endif
 }
+#endif
 
 }  // namespace testing
 }  // namespace libc
