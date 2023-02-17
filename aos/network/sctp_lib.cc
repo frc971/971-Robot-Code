@@ -340,8 +340,13 @@ aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
   CHECK(fd_ != -1);
 
   while (true) {
-    aos::unique_c_ptr<Message> result(
-        reinterpret_cast<Message *>(malloc(sizeof(Message) + max_size_ + 1)));
+    constexpr size_t kMessageAlign = alignof(Message);
+    const size_t max_message_size =
+        ((sizeof(Message) + max_size_ + 1 + (kMessageAlign - 1)) /
+         kMessageAlign) *
+        kMessageAlign;
+    aos::unique_c_ptr<Message> result(reinterpret_cast<Message *>(
+        aligned_alloc(kMessageAlign, max_message_size)));
 
     struct msghdr inmessage;
     memset(&inmessage, 0, sizeof(struct msghdr));
