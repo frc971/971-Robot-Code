@@ -1,21 +1,21 @@
 import {Injectable} from '@angular/core';
 import {Builder, ByteBuffer} from 'flatbuffers';
-import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
-import {RequestAllNotes} from 'org_frc971/scouting/webserver/requests/messages/request_all_notes_generated';
+import {ErrorResponse} from '../../webserver/requests/messages/error_response_generated';
+import {RequestAllNotes} from '../../webserver/requests/messages/request_all_notes_generated';
 import {
   Note,
   RequestAllNotesResponse,
-} from 'org_frc971/scouting/webserver/requests/messages/request_all_notes_response_generated';
-import {RequestAllDriverRankings} from 'org_frc971/scouting/webserver/requests/messages/request_all_driver_rankings_generated';
+} from '../../webserver/requests/messages/request_all_notes_response_generated';
+import {RequestAllDriverRankings} from '../../webserver/requests/messages/request_all_driver_rankings_generated';
 import {
   Ranking,
   RequestAllDriverRankingsResponse,
-} from 'org_frc971/scouting/webserver/requests/messages/request_all_driver_rankings_response_generated';
-import {RequestDataScouting} from 'org_frc971/scouting/webserver/requests/messages/request_data_scouting_generated';
+} from '../../webserver/requests/messages/request_all_driver_rankings_response_generated';
+import {RequestDataScouting} from '../../webserver/requests/messages/request_data_scouting_generated';
 import {
   Stats,
   RequestDataScoutingResponse,
-} from 'org_frc971/scouting/webserver/requests/messages/request_data_scouting_response_generated';
+} from '../../webserver/requests/messages/request_data_scouting_response_generated';
 
 @Injectable({providedIn: 'root'})
 export class ViewDataRequestor {

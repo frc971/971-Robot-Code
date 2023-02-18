@@ -5,7 +5,7 @@ import {FormsModule} from '@angular/forms';
 import {CounterButtonModule} from '../counter_button/counter_button.module';
 import {EntryComponent} from './entry.component';
 
-import {ClimbLevel} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_generated';
+import {ClimbLevel} from '../../webserver/requests/messages/submit_data_scouting_generated';
 
 @Pipe({name: 'levelToString'})
 export class LevelToStringPipe implements PipeTransform {

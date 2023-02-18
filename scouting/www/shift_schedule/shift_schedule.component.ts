@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {Builder, ByteBuffer} from 'flatbuffers';
-import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
+import {ErrorResponse} from '../../webserver/requests/messages/error_response_generated';
 
 @Component({
   selector: 'shift-schedule',
