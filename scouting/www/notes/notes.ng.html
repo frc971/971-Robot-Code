@@ -1,4 +1,6 @@
-<h2 id="page-title">Notes</h2>
+<div class="header">
+  <h2>Notes</h2>
+</div>
 
 <ng-container [ngSwitch]="section">
   <div *ngSwitchCase="'TeamSelection'">
@@ -58,7 +60,7 @@
                 class="form-check-input"
                 [(ngModel)]="newData[i]['keywordsData'][key]"
                 type="checkbox"
-                id="{{KEYWORD_CHECKBOX_LABELS[key]}}_{{i}}"
+                id="{{labelToId(KEYWORD_CHECKBOX_LABELS[key])}}_{{i}}"
                 name="{{KEYWORD_CHECKBOX_LABELS[key]}}"
               />
               <label
@@ -81,7 +83,7 @@
                 class="form-check-input"
                 [(ngModel)]="newData[i]['keywordsData'][key]"
                 type="checkbox"
-                id="{{KEYWORD_CHECKBOX_LABELS[key]}}"
+                id="{{labelToId(KEYWORD_CHECKBOX_LABELS[key])}}"
                 name="{{KEYWORD_CHECKBOX_LABELS[key]}}"
               />
               <label

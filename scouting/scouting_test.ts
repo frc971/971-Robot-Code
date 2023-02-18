@@ -327,7 +327,7 @@ describe('The scouting web page', () => {
     // Navigate to Notes Page.
     await loadPage();
     await element(by.cssContainingText('.nav-link', 'Notes')).click();
-    expect(await element(by.id('page-title')).getText()).toEqual('Notes');
+    expect(await getHeadingText()).toEqual('Notes');
 
     // Add first team.
     await setTextboxByIdTo('team_number_notes', '1234');
@@ -336,7 +336,7 @@ describe('The scouting web page', () => {
     // Add note and select keyword for first team.
     expect(await element(by.id('team-key-1')).getText()).toEqual('1234');
     await element(by.id('text-input-1')).sendKeys('Good Driving');
-    await element(by.id('Good Driving_0')).click();
+    await element(by.id('good_driving_0')).click();
 
     // Navigate to add team selection and add another team.
     await element(by.id('add-team-button')).click();
@@ -346,7 +346,7 @@ describe('The scouting web page', () => {
     // Add note and select keyword for second team.
     expect(await element(by.id('team-key-2')).getText()).toEqual('1235');
     await element(by.id('text-input-2')).sendKeys('Bad Driving');
-    await element(by.id('Bad Driving_1')).click();
+    await element(by.id('bad_driving_1')).click();
 
     // Submit Notes.
     await element(by.buttonText('Submit')).click();
@@ -359,7 +359,7 @@ describe('The scouting web page', () => {
     // Navigate to Notes Page.
     await loadPage();
     await element(by.cssContainingText('.nav-link', 'Notes')).click();
-    expect(await element(by.id('page-title')).getText()).toEqual('Notes');
+    expect(await getHeadingText()).toEqual('Notes');
 
     // Add first team.
     await setTextboxByIdTo('team_number_notes', '1234');
@@ -395,9 +395,7 @@ describe('The scouting web page', () => {
     // Navigate to Driver Ranking Page.
     await loadPage();
     await element(by.cssContainingText('.nav-link', 'Driver Ranking')).click();
-    expect(await element(by.id('page-title')).getText()).toEqual(
-      'Driver Ranking'
-    );
+    expect(await getHeadingText()).toEqual('Driver Ranking');
 
     // Input match and team numbers.
     await setTextboxByIdTo('match_number_selection', '11');
