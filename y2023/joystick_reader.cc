@@ -72,12 +72,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     // TODO(milind): add more actions and paths
     if (data.IsPressed(kIntake)) {
       intake = true;
-      arm_goal_position_ = arm::ConePosIndex();
+      arm_goal_position_ = arm::PickupPosIndex();
     } else if (data.IsPressed(kSpit)) {
       spit = true;
-      arm_goal_position_ = arm::ConePosIndex();
+      arm_goal_position_ = arm::PickupPosIndex();
     } else if (data.IsPressed(kScore)) {
-      arm_goal_position_ = arm::ConePerchPosIndex();
+      arm_goal_position_ = arm::ScorePosIndex();
     }
 
     {

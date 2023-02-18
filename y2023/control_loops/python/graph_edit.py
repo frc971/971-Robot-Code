@@ -6,20 +6,22 @@ from frc971.control_loops.python import basic_window
 from frc971.control_loops.python.color import Color, palette
 import random
 import gi
-import numpy
+import numpy as np
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gtk
 import cairo
-from graph_tools import XYSegment, AngleSegment, to_theta, to_xy, alpha_blend
-from graph_tools import back_to_xy_loop, subdivide_theta, to_theta_loop
+from graph_tools import to_theta, to_xy, alpha_blend
 from graph_tools import l1, l2, joint_center
+from graph_tools import DRIVER_CAM_POINTS
 import graph_paths
 
 from frc971.control_loops.python.basic_window import quit_main_loop, set_color, OverrideMatrix, identity
 
 import shapely
 from shapely.geometry import Polygon
+
+import matplotlib.pyplot as plt
 
 
 def px(cr):
@@ -55,39 +57,13 @@ def angle_dist_sqr(a1, a2):
 
 # Find the highest y position that intersects the vertical line defined by x.
 def inter_y(x):
-    return numpy.sqrt((l2 + l1)**2 -
-                      (x - joint_center[0])**2) + joint_center[1]
-
-
-# This is the x position where the inner (hyperextension) circle intersects the horizontal line
-derr = numpy.sqrt((l1 - l2)**2 - (joint_center[1] - 0.3048)**2)
+    return np.sqrt((l2 + l1)**2 - (x - joint_center[0])**2) + joint_center[1]
 
 
 # Define min and max l1 angles based on vertical constraints.
 def get_angle(boundary):
-    h = numpy.sqrt((l1)**2 - (boundary - joint_center[0])**2) + joint_center[1]
-    return numpy.arctan2(h, boundary - joint_center[0])
-
-
-# left hand side lines
-lines1 = [
-    (-0.826135, inter_y(-0.826135)),
-    (-0.826135, 0.1397),
-    (-23.025 * 0.0254, 0.1397),
-    (-23.025 * 0.0254, 0.3048),
-    (joint_center[0] - derr, 0.3048),
-]
-
-# right hand side lines
-lines2 = [(joint_center[0] + derr, 0.3048), (0.422275, 0.3048),
-          (0.422275, 0.1397), (0.826135, 0.1397),
-          (0.826135, inter_y(0.826135))]
-
-t1_min = get_angle((32.525 - 4.0) * 0.0254)
-t2_min = -7.0 / 4.0 * numpy.pi
-
-t1_max = get_angle((-32.525 + 4.0) * 0.0254)
-t2_max = numpy.pi * 3.0 / 4.0
+    h = np.sqrt((l1)**2 - (boundary - joint_center[0])**2) + joint_center[1]
+    return np.arctan2(h, boundary - joint_center[0])
 
 
 # Rotate a rasterized loop such that it aligns to when the parameters loop
@@ -96,7 +72,7 @@ def rotate_to_jump_point(points):
     for pt_i in range(1, len(points)):
         pt = points[pt_i]
         delta = last_pt[1] - pt[1]
-        if abs(delta) > numpy.pi:
+        if abs(delta) > np.pi:
             return points[pt_i:] + points[:pt_i]
         last_pt = pt
     return points
@@ -107,39 +83,14 @@ def y_shift(points, dy):
     return [(x, y + dy) for x, y in points]
 
 
-lines1_theta_part = rotate_to_jump_point(to_theta_loop(lines1, 0))
-lines2_theta_part = rotate_to_jump_point(to_theta_loop(lines2))
-
-# Some hacks here to make a single polygon by shifting to get an extra copy of the contraints.
-lines1_theta = y_shift(lines1_theta_part, -numpy.pi * 2) + lines1_theta_part + \
-    y_shift(lines1_theta_part, numpy.pi * 2)
-lines2_theta = y_shift(lines2_theta_part, numpy.pi * 2) + lines2_theta_part + \
-    y_shift(lines2_theta_part, -numpy.pi * 2)
-
-lines_theta = lines1_theta + lines2_theta
-
-p1 = Polygon(lines_theta)
-
-p2 = Polygon([(t1_min, t2_min), (t1_max, t2_min), (t1_max, t2_max),
-              (t1_min, t2_max)])
-
-# Fully computed theta constrints.
-lines_theta = list(p1.intersection(p2).exterior.coords)
-
-lines1_theta_back = back_to_xy_loop(lines1_theta)
-lines2_theta_back = back_to_xy_loop(lines2_theta)
-
-lines_theta_back = back_to_xy_loop(lines_theta)
-
-
 # Get the closest point to a line from a test pt.
 def get_closest(prev, cur, pt):
     dx_ang = (cur[0] - prev[0])
     dy_ang = (cur[1] - prev[1])
 
-    d = numpy.sqrt(dx_ang**2 + dy_ang**2)
+    d = np.sqrt(dx_ang**2 + dy_ang**2)
     if (d < 0.000001):
-        return prev, numpy.sqrt((prev[0] - pt[0])**2 + (prev[1] - pt[1])**2)
+        return prev, np.sqrt((prev[0] - pt[0])**2 + (prev[1] - pt[1])**2)
 
     pdx = -dy_ang / d
     pdy = dx_ang / d
@@ -150,9 +101,9 @@ def get_closest(prev, cur, pt):
     alpha = (dx_ang * dpx + dy_ang * dpy) / d / d
 
     if (alpha < 0):
-        return prev, numpy.sqrt((prev[0] - pt[0])**2 + (prev[1] - pt[1])**2)
+        return prev, np.sqrt((prev[0] - pt[0])**2 + (prev[1] - pt[1])**2)
     elif (alpha > 1):
-        return cur, numpy.sqrt((cur[0] - pt[0])**2 + (cur[1] - pt[1])**2)
+        return cur, np.sqrt((cur[0] - pt[0])**2 + (cur[1] - pt[1])**2)
     else:
         return (alpha_blend(prev[0], cur[0], alpha), alpha_blend(prev[1], cur[1], alpha)), \
             abs(dpx * pdx + dpy * pdy)
@@ -171,10 +122,10 @@ def closest_segment(lines, pt):
 
 
 # Create a GTK+ widget on which we will draw using Cairo
-class Silly(basic_window.BaseWindow):
+class ArmUi(basic_window.BaseWindow):
 
     def __init__(self):
-        super(Silly, self).__init__()
+        super(ArmUi, self).__init__()
 
         self.window = Gtk.Window()
         self.window.set_title("DrawingArea")
@@ -185,6 +136,7 @@ class Silly(basic_window.BaseWindow):
                                | Gdk.EventMask.SCROLL_MASK
                                | Gdk.EventMask.KEY_PRESS_MASK)
         self.method_connect("key-press-event", self.do_key_press)
+        self.method_connect("motion-notify-event", self.do_motion)
         self.method_connect("button-press-event",
                             self._do_button_press_internal)
         self.method_connect("configure-event", self._do_configure)
@@ -194,7 +146,7 @@ class Silly(basic_window.BaseWindow):
         self.theta_version = False
         self.reinit_extents()
 
-        self.last_pos = (numpy.pi / 2.0, 1.0)
+        self.last_pos = (np.pi / 2.0, 1.0)
         self.circular_index_select = -1
 
         # Extra stuff for drawing lines.
@@ -203,6 +155,12 @@ class Silly(basic_window.BaseWindow):
         self.now_segment_pt = None
         self.spline_edit = 0
         self.edit_control1 = True
+
+        self.roll_joint_thetas = None
+        self.roll_joint_point = None
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111)
+        plt.show(block=False)
 
     def do_key_press(self, event):
         pass
@@ -236,10 +194,10 @@ class Silly(basic_window.BaseWindow):
 
     def reinit_extents(self):
         if self.theta_version:
-            self.extents_x_min = -numpy.pi * 2
-            self.extents_x_max = numpy.pi * 2
-            self.extents_y_min = -numpy.pi * 2
-            self.extents_y_max = numpy.pi * 2
+            self.extents_x_min = -np.pi * 2
+            self.extents_x_max = np.pi * 2
+            self.extents_y_min = -np.pi * 2
+            self.extents_y_max = np.pi * 2
         else:
             self.extents_x_min = -40.0 * 0.0254
             self.extents_x_max = 40.0 * 0.0254
@@ -270,91 +228,75 @@ class Silly(basic_window.BaseWindow):
         if self.theta_version:
             # Draw a filled white rectangle.
             set_color(cr, palette["WHITE"])
-            cr.rectangle(-numpy.pi, -numpy.pi, numpy.pi * 2.0, numpy.pi * 2.0)
+            cr.rectangle(-np.pi, -np.pi, np.pi * 2.0, np.pi * 2.0)
             cr.fill()
 
             set_color(cr, palette["BLUE"])
             for i in range(-6, 6):
-                cr.move_to(-40, -40 + i * numpy.pi)
-                cr.line_to(40, 40 + i * numpy.pi)
+                cr.move_to(-40, -40 + i * np.pi)
+                cr.line_to(40, 40 + i * np.pi)
             with px(cr):
                 cr.stroke()
-
-            set_color(cr, Color(0.5, 0.5, 1.0))
-            draw_lines(cr, lines_theta)
 
             set_color(cr, Color(0.0, 1.0, 0.2))
             cr.move_to(self.last_pos[0], self.last_pos[1])
             draw_px_cross(cr, 5)
 
-            c_pt, dist = closest_segment(lines_theta, self.last_pos)
-            print("dist:", dist, c_pt, self.last_pos)
-            set_color(cr, palette["CYAN"])
-            cr.move_to(c_pt[0], c_pt[1])
-            draw_px_cross(cr, 5)
         else:
             # Draw a filled white rectangle.
             set_color(cr, palette["WHITE"])
             cr.rectangle(-2.0, -2.0, 4.0, 4.0)
             cr.fill()
 
+            # Draw top of drivetrain (including bumpers)
+            DRIVETRAIN_X = -0.490
+            DRIVETRAIN_Y = 0.184
+            DRIVETRAIN_WIDTH = 0.980
             set_color(cr, palette["BLUE"])
-            cr.arc(joint_center[0], joint_center[1], l2 + l1, 0,
-                   2.0 * numpy.pi)
-            with px(cr):
-                cr.stroke()
-            cr.arc(joint_center[0], joint_center[1], l1 - l2, 0,
-                   2.0 * numpy.pi)
+            cr.move_to(DRIVETRAIN_X, DRIVETRAIN_Y)
+            cr.line_to(DRIVETRAIN_X + DRIVETRAIN_WIDTH, DRIVETRAIN_Y)
             with px(cr):
                 cr.stroke()
 
-            set_color(cr, Color(0.5, 1.0, 1.0))
-            draw_lines(cr, lines1)
-            draw_lines(cr, lines2)
+            # Draw joint center
+            JOINT_CENTER_RADIUS = 0.173 / 2
+            cr.arc(joint_center[0], joint_center[1], JOINT_CENTER_RADIUS, 0,
+                   2.0 * np.pi)
+            with px(cr):
+                cr.stroke()
 
-            def get_circular_index(pt):
-                theta1, theta2 = pt
-                circular_index = int(numpy.floor((theta2 - theta1) / numpy.pi))
-                return circular_index
+            JOINT_TOWER_X = -0.252
+            JOINT_TOWER_Y = DRIVETRAIN_Y
+            JOINT_TOWER_WIDTH = 0.098
+            JOINT_TOWER_HEIGHT = 0.864
+            cr.rectangle(JOINT_TOWER_X, JOINT_TOWER_Y, JOINT_TOWER_WIDTH,
+                         JOINT_TOWER_HEIGHT)
+            with px(cr):
+                cr.stroke()
 
+            # Draw driver cam
+            cr.set_source_rgba(1, 0, 0, 0.5)
+            DRIVER_CAM_X = DRIVER_CAM_POINTS[0][0]
+            DRIVER_CAM_Y = DRIVER_CAM_POINTS[0][1]
+            DRIVER_CAM_WIDTH = DRIVER_CAM_POINTS[-1][0] - DRIVER_CAM_POINTS[0][
+                0]
+            DRIVER_CAM_HEIGHT = DRIVER_CAM_POINTS[-1][1] - DRIVER_CAM_POINTS[
+                0][1]
+            cr.rectangle(DRIVER_CAM_X, DRIVER_CAM_Y, DRIVER_CAM_WIDTH,
+                         DRIVER_CAM_HEIGHT)
+            with px(cr):
+                cr.fill()
+
+            # Draw max radius
             set_color(cr, palette["BLUE"])
-            lines = subdivide_theta(lines_theta)
-            o_circular_index = circular_index = get_circular_index(lines[0])
-            p_xy = to_xy(lines[0][0], lines[0][1])
-            if circular_index == self.circular_index_select:
-                cr.move_to(p_xy[0] + circular_index * 0, p_xy[1])
-            for pt in lines[1:]:
-                p_xy = to_xy(pt[0], pt[1])
-                circular_index = get_circular_index(pt)
-                if o_circular_index == self.circular_index_select:
-                    cr.line_to(p_xy[0] + o_circular_index * 0, p_xy[1])
-                if circular_index != o_circular_index:
-                    o_circular_index = circular_index
-                    with px(cr):
-                        cr.stroke()
-                    if circular_index == self.circular_index_select:
-                        cr.move_to(p_xy[0] + circular_index * 0, p_xy[1])
-
+            cr.arc(joint_center[0], joint_center[1], l2 + l1, 0, 2.0 * np.pi)
+            with px(cr):
+                cr.stroke()
+            cr.arc(joint_center[0], joint_center[1], l1 - l2, 0, 2.0 * np.pi)
             with px(cr):
                 cr.stroke()
 
-            theta1, theta2 = to_theta(self.last_pos,
-                                      self.circular_index_select)
-            x, y = joint_center[0], joint_center[1]
-            cr.move_to(x, y)
-
-            x += numpy.cos(theta1) * l1
-            y += numpy.sin(theta1) * l1
-            cr.line_to(x, y)
-            x += numpy.cos(theta2) * l2
-            y += numpy.sin(theta2) * l2
-            cr.line_to(x, y)
-            with px(cr):
-                cr.stroke()
-
-            cr.move_to(self.last_pos[0], self.last_pos[1])
-            set_color(cr, Color(0.0, 1.0, 0.2))
-            draw_px_cross(cr, 20)
+            set_color(cr, Color(0.5, 1.0, 1))
 
         set_color(cr, Color(0.0, 0.5, 1.0))
         for segment in self.segments:
@@ -366,25 +308,57 @@ class Silly(basic_window.BaseWindow):
                 cr.stroke()
 
         set_color(cr, Color(0.0, 1.0, 0.5))
-        segment = self.current_seg()
-        if segment:
-            print(segment)
-            segment.DrawTo(cr, self.theta_version)
-            with px(cr):
-                cr.stroke()
+
+        # Create the roll joint plot
+        if self.roll_joint_thetas:
+            self.ax.clear()
+            self.ax.plot(*self.roll_joint_thetas)
+            if self.roll_joint_point:
+                self.ax.scatter([self.roll_joint_point[0]],
+                                [self.roll_joint_point[1]],
+                                s=10,
+                                c="red")
+            plt.title("Roll Joint Angle")
+            plt.xlabel("t (0 to 1)")
+            plt.ylabel("theta (rad)")
+
+            self.fig.canvas.draw()
 
     def cur_pt_in_theta(self):
-        if self.theta_version: return numpy.asarray(self.last_pos)
+        if self.theta_version: return self.last_pos
         return to_theta(self.last_pos, self.circular_index_select)
 
-    # Current segment based on which mode the drawing system is in.
-    def current_seg(self):
-        if self.prev_segment_pt is not None and (self.prev_segment_pt.any() and
-                                                 self.now_segment_pt.any()):
-            if self.theta_version:
-                return AngleSegment(self.prev_segment_pt, self.now_segment_pt)
-            else:
-                return XYSegment(self.prev_segment_pt, self.now_segment_pt)
+    def do_motion(self, event):
+        o_x = event.x
+        o_y = event.y
+        x = event.x - self.window_shape[0] / 2
+        y = self.window_shape[1] / 2 - event.y
+        scale = self.get_current_scale()
+        event.x = x / scale + self.center[0]
+        event.y = y / scale + self.center[1]
+
+        for segment in self.segments:
+            self.roll_joint_thetas = segment.roll_joint_thetas()
+
+            hovered_t = segment.intersection(event)
+            if hovered_t:
+                min_diff = np.inf
+                closest_t = None
+                closest_theta = None
+                for i in range(len(self.roll_joint_thetas[0])):
+                    t = self.roll_joint_thetas[0][i]
+                    diff = abs(t - hovered_t)
+                    if diff < min_diff:
+                        min_diff = diff
+                        closest_t = t
+                        closest_theta = self.roll_joint_thetas[1][i]
+                self.roll_joint_point = (closest_t, closest_theta)
+                break
+
+        event.x = o_x
+        event.y = o_y
+
+        self.redraw()
 
     def do_key_press(self, event):
         keyval = Gdk.keyval_to_lower(event.keyval)
@@ -400,11 +374,6 @@ class Silly(basic_window.BaseWindow):
             # Decrement which arm solution we render
             self.circular_index_select -= 1
             print(self.circular_index_select)
-        elif keyval == Gdk.KEY_w:
-            # Add this segment to the segment list.
-            segment = self.current_seg()
-            if segment: self.segments.append(segment)
-            self.prev_segment_pt = self.now_segment_pt
 
         elif keyval == Gdk.KEY_r:
             self.prev_segment_pt = self.now_segment_pt
@@ -436,7 +405,7 @@ class Silly(basic_window.BaseWindow):
                 theta1, theta2 = self.last_pos
                 data = to_xy(theta1, theta2)
                 self.circular_index_select = int(
-                    numpy.floor((theta2 - theta1) / numpy.pi))
+                    np.floor((theta2 - theta1) / np.pi))
                 self.last_pos = (data[0], data[1])
             else:
                 self.last_pos = self.cur_pt_in_theta()
@@ -476,14 +445,14 @@ class Silly(basic_window.BaseWindow):
                   (self.last_pos[0], self.last_pos[1],
                    self.circular_index_select))
 
-        print('c1: numpy.array([%f, %f])' %
+        print('c1: np.array([%f, %f])' %
               (self.segments[0].control1[0], self.segments[0].control1[1]))
-        print('c2: numpy.array([%f, %f])' %
+        print('c2: np.array([%f, %f])' %
               (self.segments[0].control2[0], self.segments[0].control2[1]))
 
         self.redraw()
 
 
-silly = Silly()
-silly.segments = graph_paths.segments
+arm_ui = ArmUi()
+arm_ui.segments = graph_paths.segments
 basic_window.RunApp()

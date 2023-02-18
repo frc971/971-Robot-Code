@@ -10,15 +10,15 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":generated_graph",
-        "//frc971/control_loops/double_jointed_arm:demo_path",
         "//frc971/control_loops/double_jointed_arm:ekf",
         "//frc971/control_loops/double_jointed_arm:graph",
-        "//frc971/control_loops/double_jointed_arm:trajectory",
         "//frc971/zeroing",
         "//y2023:constants",
         "//y2023/control_loops/superstructure:superstructure_position_fbs",
         "//y2023/control_loops/superstructure:superstructure_status_fbs",
         "//y2023/control_loops/superstructure/arm:arm_constants",
+        "//y2023/control_loops/superstructure/arm:trajectory",
+        "//y2023/control_loops/superstructure/roll:roll_plants",
     ],
 )
 
@@ -49,7 +49,8 @@ cc_library(
     deps = [
         ":arm_constants",
         "//frc971/control_loops/double_jointed_arm:graph",
-        "//frc971/control_loops/double_jointed_arm:trajectory",
+        "//y2023/control_loops/superstructure/arm:trajectory",
+        "//y2023/control_loops/superstructure/roll:roll_plants",
     ],
 )
 

@@ -1,7 +1,7 @@
 from __future__ import print_function
 import sys
-import numpy
-import graph_paths
+import numpy as np
+import y2023.control_loops.python.graph_paths as graph_paths
 
 
 def index_function_name(name):
@@ -20,26 +20,36 @@ def add_edge(cc_file, name, segment, index, reverse):
 
     alpha_unitizer = "alpha_unitizer"
     if segment.alpha_unitizer is not None:
-        alpha_unitizer = "(::Eigen::Matrix<double, 2, 2>() << %f, %f, %f, %f).finished()" % (
-            segment.alpha_unitizer[0, 0], segment.alpha_unitizer[0, 1],
-            segment.alpha_unitizer[1, 0], segment.alpha_unitizer[1, 1])
+        alpha_unitizer = "(::Eigen::Matrix<double, 3, 3>() << %f, %f, %f, %f, %f, %f, %f, %f, %f).finished()" % (
+            segment.alpha_unitizer[0, 0],
+            segment.alpha_unitizer[0, 1],
+            segment.alpha_unitizer[0, 2],
+            segment.alpha_unitizer[1, 0],
+            segment.alpha_unitizer[1, 1],
+            segment.alpha_unitizer[1, 2],
+            segment.alpha_unitizer[2, 0],
+            segment.alpha_unitizer[2, 1],
+            segment.alpha_unitizer[2, 2],
+        )
     cc_file.append("  trajectories->emplace_back(%s," % (vmax))
     cc_file.append("                             %s," % (alpha_unitizer))
     if reverse:
         cc_file.append(
-            "                             Trajectory(dynamics, Path::Reversed(%s()), 0.005));"
+            "                             Trajectory(dynamics, &hybrid_roll_joint_loop->plant(), Path::Reversed(%s()), 0.005));"
             % (path_function_name(str(name))))
     else:
         cc_file.append(
-            "                             Trajectory(dynamics, %s(), 0.005));"
+            "                             Trajectory(dynamics, &hybrid_roll_joint_loop->plant(), %s(), 0.005));"
             % (path_function_name(str(name))))
 
     start_index = None
     end_index = None
     for point, name in graph_paths.points:
-        if (point == segment.start).all():
+        if (point[:2] == segment.start
+            ).all() and point[2] == segment.alpha_rolls[0][1]:
             start_index = name
-        if (point == segment.end).all():
+        if (point[:2] == segment.end
+            ).all() and point[2] == segment.alpha_rolls[-1][1]:
             end_index = name
 
     if reverse:
@@ -61,20 +71,27 @@ def add_edge(cc_file, name, segment, index, reverse):
 
 def main(argv):
     cc_file = []
-    cc_file.append(
-        "#include \"y2023/control_loops/superstructure/arm/generated_graph.h\""
-    )
     cc_file.append("")
     cc_file.append("#include <memory>")
     cc_file.append("")
     cc_file.append(
-        "#include \"frc971/control_loops/double_jointed_arm/trajectory.h\"")
-    cc_file.append(
         "#include \"frc971/control_loops/double_jointed_arm/graph.h\"")
+    cc_file.append(
+        "#include \"y2023/control_loops/superstructure/arm/generated_graph.h\""
+    )
+    cc_file.append(
+        "#include \"y2023/control_loops/superstructure/arm/trajectory.h\"")
+    cc_file.append(
+        "#include \"y2023/control_loops/superstructure/roll/integral_hybrid_roll_plant.h\""
+    )
 
-    cc_file.append("using frc971::control_loops::arm::Trajectory;")
-    cc_file.append("using frc971::control_loops::arm::Path;")
     cc_file.append("using frc971::control_loops::arm::SearchGraph;")
+    cc_file.append(
+        "using y2023::control_loops::superstructure::arm::Trajectory;")
+    cc_file.append("using y2023::control_loops::superstructure::arm::Path;")
+    cc_file.append("using y2023::control_loops::superstructure::arm::NSpline;")
+    cc_file.append(
+        "using y2023::control_loops::superstructure::arm::CosSpline;")
 
     cc_file.append("")
     cc_file.append("namespace y2023 {")
@@ -91,20 +108,22 @@ def main(argv):
     h_file.append("#include <memory>")
     h_file.append("")
     h_file.append(
-        "#include \"frc971/control_loops/double_jointed_arm/trajectory.h\"")
-    h_file.append(
         "#include \"frc971/control_loops/double_jointed_arm/graph.h\"")
     h_file.append(
         "#include \"y2023/control_loops/superstructure/arm/arm_constants.h\"")
+    h_file.append(
+        "#include \"y2023/control_loops/superstructure/arm/trajectory.h\"")
+
     h_file.append("")
     h_file.append("namespace y2023 {")
     h_file.append("namespace control_loops {")
     h_file.append("namespace superstructure {")
     h_file.append("namespace arm {")
 
-    h_file.append("using frc971::control_loops::arm::Trajectory;")
-    h_file.append("using frc971::control_loops::arm::Path;")
     h_file.append("using frc971::control_loops::arm::SearchGraph;")
+    h_file.append(
+        "using y2023::control_loops::superstructure::arm::Trajectory;")
+    h_file.append("using y2023::control_loops::superstructure::arm::Path;")
     h_file.append(
         "using y2023::control_loops::superstructure::arm::kArmConstants;")
 
@@ -112,14 +131,14 @@ def main(argv):
     h_file.append("struct TrajectoryAndParams {")
     h_file.append("  TrajectoryAndParams(double new_vmax,")
     h_file.append(
-        "                      const ::Eigen::Matrix<double, 2, 2> &new_alpha_unitizer,"
+        "                      const ::Eigen::Matrix<double, 3, 3> &new_alpha_unitizer,"
     )
     h_file.append("                      Trajectory &&new_trajectory)")
     h_file.append("      : vmax(new_vmax),")
     h_file.append("        alpha_unitizer(new_alpha_unitizer),")
     h_file.append("        trajectory(::std::move(new_trajectory)) {}")
     h_file.append("  double vmax;")
-    h_file.append("  ::Eigen::Matrix<double, 2, 2> alpha_unitizer;")
+    h_file.append("  ::Eigen::Matrix<double, 3, 3> alpha_unitizer;")
     h_file.append("  Trajectory trajectory;")
     h_file.append("};")
     h_file.append("")
@@ -129,11 +148,12 @@ def main(argv):
         h_file.append("")
         h_file.append("constexpr uint32_t %s() { return %d; }" %
                       (index_function_name(point[1]), index))
-        h_file.append("inline ::Eigen::Matrix<double, 2, 1> %sPoint() {" %
+        h_file.append("inline ::Eigen::Matrix<double, 3, 1> %sPoint() {" %
                       point[1])
         h_file.append(
-            "  return (::Eigen::Matrix<double, 2, 1>() << %f, %f).finished();"
-            % (numpy.pi / 2.0 - point[0][0], numpy.pi / 2.0 - point[0][1]))
+            "  return (::Eigen::Matrix<double, 3, 1>() << %f, %f, %f).finished();"
+            % (np.pi / 2.0 - point[0][0], np.pi / 2.0 - point[0][1],
+               np.pi / 2.0 - point[0][2]))
         h_file.append("}")
 
     front_points = [
@@ -168,26 +188,39 @@ def main(argv):
                       path_function_name(name))
         cc_file.append("::std::unique_ptr<Path> %s() {" %
                        path_function_name(name))
-        cc_file.append("  return ::std::unique_ptr<Path>(new Path({")
-        for point in segment.ToThetaPoints():
-            cc_file.append("      {{%.12f, %.12f, %.12f," %
-                           (numpy.pi / 2.0 - point[0],
-                            numpy.pi / 2.0 - point[1], -point[2]))
-            cc_file.append("        %.12f, %.12f, %.12f}}," %
-                           (-point[3], -point[4], -point[5]))
-        cc_file.append("  }));")
+        cc_file.append(
+            "  return ::std::unique_ptr<Path>(new Path(CosSpline{NSpline<4, 2>((Eigen::Matrix<double, 2, 4>() << "
+        )
+        points = [
+            segment.start, segment.control1, segment.control2, segment.end
+        ]
+        for i in range(len(points)):
+            cc_file.append("%.12f," % (np.pi / 2.0 - points[i][0]))
+        for i in range(len(points)):
+            cc_file.append("%.12f%s" % (np.pi / 2.0 - points[i][1],
+                                        ", " if i != len(points) - 1 else ""))
+
+        cc_file.append(").finished()), {")
+        for alpha, roll in segment.alpha_rolls:
+            cc_file.append(
+                "CosSpline::AlphaTheta{.alpha = %.12f, .theta = %.12f}" %
+                (alpha, np.pi / 2.0 - roll))
+            if alpha != segment.alpha_rolls[-1][0]:
+                cc_file.append(", ")
+        cc_file.append("  }}));")
         cc_file.append("}")
 
     # Matrix of nodes
-    h_file.append("::std::vector<::Eigen::Matrix<double, 2, 1>> PointList();")
+    h_file.append("::std::vector<::Eigen::Matrix<double, 3, 1>> PointList();")
 
     cc_file.append(
-        "::std::vector<::Eigen::Matrix<double, 2, 1>> PointList() {")
-    cc_file.append("  ::std::vector<::Eigen::Matrix<double, 2, 1>> points;")
+        "::std::vector<::Eigen::Matrix<double, 3, 1>> PointList() {")
+    cc_file.append("  ::std::vector<::Eigen::Matrix<double, 3, 1>> points;")
     for point in graph_paths.points:
         cc_file.append(
-            "  points.push_back((::Eigen::Matrix<double, 2, 1>() << %.12s, %.12s).finished());"
-            % (numpy.pi / 2.0 - point[0][0], numpy.pi / 2.0 - point[0][1]))
+            "  points.push_back((::Eigen::Matrix<double, 3, 1>() << %.12s, %.12s, %.12s).finished());"
+            % (np.pi / 2.0 - point[0][0], np.pi / 2.0 - point[0][1],
+               np.pi / 2.0 - point[0][2]))
     cc_file.append("  return points;")
     cc_file.append("}")
 
@@ -198,15 +231,22 @@ def main(argv):
                   "const frc971::control_loops::arm::Dynamics *dynamics, "
                   "::std::vector<TrajectoryAndParams> *trajectories,")
     h_file.append("                            "
-                  "const ::Eigen::Matrix<double, 2, 2> &alpha_unitizer,")
-    h_file.append("                            double vmax);")
+                  "const ::Eigen::Matrix<double, 3, 3> &alpha_unitizer,")
+    h_file.append("                            "
+                  "double vmax,")
+    h_file.append(
+        "const StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>, HybridKalman<3, 1, 1>> *hybrid_roll_joint_loop);"
+    )
     cc_file.append("SearchGraph MakeSearchGraph("
                    "const frc971::control_loops::arm::Dynamics *dynamics, "
                    "::std::vector<TrajectoryAndParams> *trajectories,")
     cc_file.append("                            "
-                   "const ::Eigen::Matrix<double, 2, 2> &alpha_unitizer,")
+                   "const ::Eigen::Matrix<double, 3, 3> &alpha_unitizer,")
     cc_file.append("                            "
-                   "double vmax) {")
+                   "double vmax,")
+    cc_file.append(
+        "const StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>, HybridKalman<3, 1, 1>> *hybrid_roll_joint_loop) {"
+    )
     cc_file.append("  ::std::vector<SearchGraph::Edge> edges;")
 
     index = 0
