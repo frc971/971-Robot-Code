@@ -1,8 +1,8 @@
-import {Channel, Configuration} from 'org_frc971/aos/configuration_generated';
-import {Connection} from 'org_frc971/aos/network/www/proxy';
+import {Channel, Configuration} from '../../aos/configuration_generated';
+import {Connection} from '../../aos/network/www/proxy';
 import {ByteBuffer} from 'flatbuffers';
-import {ImageMatchResult, Feature} from 'org_frc971/y2020/vision/sift/sift_generated'
-import {CameraImage} from 'org_frc971/frc971/vision/vision_generated';
+import {ImageMatchResult, Feature} from '../vision/sift/sift_generated'
+import {CameraImage} from '../../frc971/vision/vision_generated';
 
 export class ImageHandler {
   private canvas = document.createElement('canvas');

@@ -1,6 +1,6 @@
 import {ByteBuffer} from 'flatbuffers';
-import {Configuration} from 'org_frc971/aos/configuration_generated';
-import {Connection} from 'org_frc971/aos/network/www/proxy';
+import {Configuration} from '../../configuration_generated';
+import {Connection} from './proxy';
 
 import {Parser, Table} from './reflection'
 

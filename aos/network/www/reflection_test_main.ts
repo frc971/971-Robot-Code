@@ -1,6 +1,6 @@
 import {Builder, ByteBuffer} from 'flatbuffers';
-import {Configuration} from 'org_frc971/aos/configuration_generated'
-import {BaseType, Configuration as TestTable, FooStruct, Location, Map, VectorOfStrings, VectorOfVectorOfString} from 'org_frc971/aos/json_to_flatbuffer_generated'
+import {Configuration} from '../../configuration_generated'
+import {BaseType, Configuration as TestTable, FooStruct, Location, Map, VectorOfStrings, VectorOfVectorOfString} from '../../json_to_flatbuffer_generated'
 
 import {Connection} from './proxy';
 import {Parser, Table} from './reflection'

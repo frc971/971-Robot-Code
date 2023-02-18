@@ -1,8 +1,8 @@
 // Provides a plot for debugging drivetrain-related issues.
-import {AosPlotter} from 'org_frc971/aos/network/www/aos_plotter';
-import {ImuMessageHandler} from 'org_frc971/frc971/wpilib/imu_plot_utils';
-import * as proxy from 'org_frc971/aos/network/www/proxy';
-import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from 'org_frc971/aos/network/www/colors';
+import {AosPlotter} from '../../aos/network/www/aos_plotter';
+import {ImuMessageHandler} from '../../frc971/wpilib/imu_plot_utils';
+import * as proxy from '../../aos/network/www/proxy';
+import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from '../../aos/network/www/colors';
 
 import Connection = proxy.Connection;
 

@@ -1,7 +1,7 @@
 // Provides a plot for debugging robot state-related issues.
-import {AosPlotter} from 'org_frc971/aos/network/www/aos_plotter';
-import * as proxy from 'org_frc971/aos/network/www/proxy';
-import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from 'org_frc971/aos/network/www/colors';
+import {AosPlotter} from '../../../aos/network/www/aos_plotter';
+import * as proxy from '../../../aos/network/www/proxy';
+import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from '../../../aos/network/www/colors';
 
 import Connection = proxy.Connection;
 

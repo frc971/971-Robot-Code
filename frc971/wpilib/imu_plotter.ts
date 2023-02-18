@@ -1,7 +1,7 @@
 // Provides a basic plot for debugging IMU-related issues on a robot.
-import {AosPlotter} from 'org_frc971/aos/network/www/aos_plotter';
-import {ImuMessageHandler} from 'org_frc971/frc971/wpilib/imu_plot_utils';
-import * as proxy from 'org_frc971/aos/network/www/proxy';
+import {AosPlotter} from '../../aos/network/www/aos_plotter';
+import {ImuMessageHandler} from '../../frc971/wpilib/imu_plot_utils';
+import * as proxy from '../../aos/network/www/proxy';
 
 import Connection = proxy.Connection;
 

@@ -1,11 +1,11 @@
 import {ByteBuffer} from 'flatbuffers';
-import {AosPlotter} from 'org_frc971/aos/network/www/aos_plotter';
-import {MessageHandler, TimestampedMessage} from 'org_frc971/aos/network/www/aos_plotter';
-import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from 'org_frc971/aos/network/www/colors';
-import {Connection} from 'org_frc971/aos/network/www/proxy';
-import {Table} from 'org_frc971/aos/network/www/reflection';
+import {AosPlotter} from '../../aos/network/www/aos_plotter';
+import {MessageHandler, TimestampedMessage} from '../../aos/network/www/aos_plotter';
+import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from '../../aos/network/www/colors';
+import {Connection} from '../../aos/network/www/proxy';
+import {Table} from '../../aos/network/www/reflection';
 import {Schema} from 'flatbuffers_reflection/reflection_generated';
-import {TargetEstimate} from 'org_frc971/y2022/vision/target_estimate_generated';
+import {TargetEstimate} from './target_estimate_generated';
 
 
 const TIME = AosPlotter.TIME;

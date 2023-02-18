@@ -1,4 +1,5 @@
-import * as Colors from 'org_frc971/aos/network/www/colors';
+import * as Colors from './colors';
+
 // Multiplies all the values in the provided array by scale.
 function scaleVec(vec: number[], scale: number): number[] {
   const scaled: number[] = [];

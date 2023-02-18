@@ -23,11 +23,11 @@
 // The demo_plot.ts script has a basic example of using this library, with all
 // the required boilerplate, as well as some extra examples about how to
 // add axis labels and the such.
-import {Channel, Configuration} from 'org_frc971/aos/configuration_generated';
-import {Line, Plot, Point} from 'org_frc971/aos/network/www/plotter';
-import {Connection} from 'org_frc971/aos/network/www/proxy';
-import {SubscriberRequest, ChannelRequest, TransferMethod} from 'org_frc971/aos/network/web_proxy_generated';
-import {Parser, Table} from 'org_frc971/aos/network/www/reflection'
+import {Channel, Configuration} from '../../configuration_generated';
+import {Line, Plot, Point} from './plotter';
+import {Connection} from './proxy';
+import {SubscriberRequest, ChannelRequest, TransferMethod} from '../web_proxy_generated';
+import {Parser, Table} from './reflection'
 import {Schema} from 'flatbuffers_reflection/reflection_generated';
 import {ByteBuffer} from 'flatbuffers';
 

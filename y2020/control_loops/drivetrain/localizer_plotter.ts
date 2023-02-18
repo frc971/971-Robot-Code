@@ -1,10 +1,10 @@
 // Provides a plot for debugging robot state-related issues.
-import {AosPlotter} from 'org_frc971/aos/network/www/aos_plotter';
-import {Connection} from 'org_frc971/aos/network/www/proxy';
-import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from 'org_frc971/aos/network/www/colors';
-import {MessageHandler, TimestampedMessage} from 'org_frc971/aos/network/www/aos_plotter';
-import {Point} from 'org_frc971/aos/network/www/plotter';
-import {Table} from 'org_frc971/aos/network/www/reflection';
+import {AosPlotter} from '../../../aos/network/www/aos_plotter';
+import {Connection} from '../../../aos/network/www/proxy';
+import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from '../../../aos/network/www/colors';
+import {MessageHandler, TimestampedMessage} from '../../../aos/network/www/aos_plotter';
+import {Point} from '../../../aos/network/www/plotter';
+import {Table} from '../../../aos/network/www/reflection';
 import {ByteBuffer} from 'flatbuffers';
 import {Schema} from 'flatbuffers_reflection/reflection_generated';
 

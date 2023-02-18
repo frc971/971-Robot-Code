@@ -20,41 +20,41 @@
 // each robot year, and may even end up allowing plots to be specified solely
 // using JSON rather than requiring people to write a script just to create
 // a plot.
-import {Configuration} from 'org_frc971/aos/configuration_generated';
-import {Connection} from 'org_frc971/aos/network/www/proxy';
-import {plotImu} from 'org_frc971/frc971/wpilib/imu_plotter';
-import {plotDrivetrain} from 'org_frc971/frc971/control_loops/drivetrain/drivetrain_plotter';
-import {plotSpline} from 'org_frc971/frc971/control_loops/drivetrain/spline_plotter';
-import {plotDownEstimator} from 'org_frc971/frc971/control_loops/drivetrain/down_estimator_plotter';
+import {Configuration} from '../../aos/configuration_generated';
+import {Connection} from '../../aos/network/www/proxy';
+import {plotImu} from '../wpilib/imu_plotter';
+import {plotDrivetrain} from '../control_loops/drivetrain/drivetrain_plotter';
+import {plotSpline} from '../control_loops/drivetrain/spline_plotter';
+import {plotDownEstimator} from '../control_loops/drivetrain/down_estimator_plotter';
 import {plotRobotState} from
-    'org_frc971/frc971/control_loops/drivetrain/robot_state_plotter'
+    '../control_loops/drivetrain/robot_state_plotter'
 import {plotFinisher as plot2020Finisher} from
-    'org_frc971/y2020/control_loops/superstructure/finisher_plotter'
+    '../../y2020/control_loops/superstructure/finisher_plotter'
 import {plotTurret as plot2020Turret} from
-    'org_frc971/y2020/control_loops/superstructure/turret_plotter'
+    '../../y2020/control_loops/superstructure/turret_plotter'
 import {plotLocalizer as plot2020Localizer} from
-    'org_frc971/y2020/control_loops/drivetrain/localizer_plotter'
+    '../../y2020/control_loops/drivetrain/localizer_plotter'
 import {plotAccelerator as plot2020Accelerator} from
-    'org_frc971/y2020/control_loops/superstructure/accelerator_plotter'
+    '../../y2020/control_loops/superstructure/accelerator_plotter'
 import {plotHood as plot2020Hood} from
-    'org_frc971/y2020/control_loops/superstructure/hood_plotter'
+    '../../y2020/control_loops/superstructure/hood_plotter'
 import {plotSuperstructure as plot2021Superstructure} from
-    'org_frc971/y2021_bot3/control_loops/superstructure/superstructure_plotter';
+    '../../y2021_bot3/control_loops/superstructure/superstructure_plotter';
 import {plotTurret as plot2022Turret} from
-    'org_frc971/y2022/control_loops/superstructure/turret_plotter'
+    '../../y2022/control_loops/superstructure/turret_plotter'
 import {plotSuperstructure as plot2022Superstructure} from
-    'org_frc971/y2022/control_loops/superstructure/superstructure_plotter'
+    '../../y2022/control_loops/superstructure/superstructure_plotter'
 import {plotCatapult as plot2022Catapult} from
-    'org_frc971/y2022/control_loops/superstructure/catapult_plotter'
+    '../../y2022/control_loops/superstructure/catapult_plotter'
 import {plotIntakeFront as plot2022IntakeFront, plotIntakeBack as plot2022IntakeBack} from
-    'org_frc971/y2022/control_loops/superstructure/intake_plotter'
+    '../../y2022/control_loops/superstructure/intake_plotter'
 import {plotClimber as plot2022Climber} from
-    'org_frc971/y2022/control_loops/superstructure/climber_plotter'
+    '../../y2022/control_loops/superstructure/climber_plotter'
 import {plotLocalizer as plot2022Localizer} from
-    'org_frc971/y2022/localizer/localizer_plotter'
+    '../../y2022/localizer/localizer_plotter'
 import {plotVision as plot2022Vision} from
-    'org_frc971/y2022/vision/vision_plotter'
-import {plotDemo} from 'org_frc971/aos/network/www/demo_plot';
+    '../../y2022/vision/vision_plotter'
+import {plotDemo} from '../../aos/network/www/demo_plot';
 
 const rootDiv = document.createElement('div');
 rootDiv.style.width = '100%';

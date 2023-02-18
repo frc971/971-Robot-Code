@@ -1,5 +1,5 @@
 import {Builder, ByteBuffer} from 'flatbuffers';
-import {Payload, SdpType, WebSocketIce, WebSocketMessage, WebSocketSdp} from 'org_frc971/aos/network/web_proxy_generated';
+import {Payload, SdpType, WebSocketIce, WebSocketMessage, WebSocketSdp} from '../../../aos/network/web_proxy_generated';
 
 // Port 9 is used to indicate an active (outgoing) TCP connection. The server
 // would send a corresponding candidate with the actual TCP port it is
