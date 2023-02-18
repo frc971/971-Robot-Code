@@ -9,7 +9,6 @@ robot_downloader(
     ],
     data = [
         ":aos_config",
-        ":message_bridge_client.sh",
         "@ctre_phoenix_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix_cci_athena//:shared_libraries",
         "@ctre_phoenixpro_api_cpp_athena//:shared_libraries",
