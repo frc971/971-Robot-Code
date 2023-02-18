@@ -1,7 +1,7 @@
 // Provides a plot for debugging drivetrain-related issues.
-import {AosPlotter} from 'org_frc971/aos/network/www/aos_plotter';
-import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from 'org_frc971/aos/network/www/colors';
-import * as proxy from 'org_frc971/aos/network/www/proxy';
+import {AosPlotter} from '../../../aos/network/www/aos_plotter';
+import {BLUE, BROWN, CYAN, GREEN, PINK, RED, WHITE} from '../../../aos/network/www/colors';
+import * as proxy from '../../../aos/network/www/proxy';
 
 import Connection = proxy.Connection;
 

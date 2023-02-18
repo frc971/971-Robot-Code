@@ -1,7 +1,7 @@
 // Plotter for the C++ in-process plotter.
-import {Configuration} from 'org_frc971/aos/configuration_generated';
-import {Connection} from 'org_frc971/aos/network/www/proxy';
-import {plotData} from 'org_frc971/frc971/analysis/plot_data_utils';
+import {Configuration} from '../../../aos/configuration_generated';
+import {Connection} from '../../../aos/network/www/proxy';
+import {plotData} from '../plot_data_utils';
 
 const rootDiv = document.createElement('div');
 rootDiv.classList.add('aos_cpp_plot');

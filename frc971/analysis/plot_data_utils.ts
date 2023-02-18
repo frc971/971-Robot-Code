@@ -1,10 +1,10 @@
 // Provides a plot which handles plotting the plot defined by a
 // frc971.analysis.Plot message.
-import {Plot as PlotFb} from 'org_frc971/frc971/analysis/plot_data_generated';
-import {MessageHandler, TimestampedMessage} from 'org_frc971/aos/network/www/aos_plotter';
+import {Plot as PlotFb} from './plot_data_generated';
+import {MessageHandler, TimestampedMessage} from '../../aos/network/www/aos_plotter';
 import {ByteBuffer} from 'flatbuffers';
-import {Plot, Point} from 'org_frc971/aos/network/www/plotter';
-import {Connection} from 'org_frc971/aos/network/www/proxy';
+import {Plot, Point} from '../../aos/network/www/plotter';
+import {Connection} from '../../aos/network/www/proxy';
 import {Schema} from 'flatbuffers_reflection/reflection_generated';
 
 export function plotData(conn: Connection, parentDiv: Element) {

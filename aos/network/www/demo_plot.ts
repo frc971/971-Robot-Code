@@ -12,9 +12,9 @@
 // This example shows how to:
 // (a) Make use of the AosPlotter to plot a shmem message as a time-series.
 // (b) Define your own custom plot with whatever data you want.
-import {AosPlotter} from 'org_frc971/aos/network/www/aos_plotter';
-import {Plot, Point} from 'org_frc971/aos/network/www/plotter';
-import * as proxy from 'org_frc971/aos/network/www/proxy';
+import {AosPlotter} from './aos_plotter';
+import {Plot, Point} from './plotter';
+import * as proxy from './proxy';
 
 import Connection = proxy.Connection;
 
