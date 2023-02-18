@@ -287,6 +287,14 @@
     },
     {
       "name": "/drivetrain",
+      "type": "y2023.control_loops.drivetrain.CANPosition",
+      "source_node": "roborio",
+      "frequency": 220,
+      "num_senders": 2,
+      "max_size": 400
+    },
+    {
+      "name": "/drivetrain",
       "type": "frc971.sensors.GyroReading",
       "source_node": "roborio",
       "frequency": 200,
@@ -490,7 +498,7 @@
       ]
     },
     {
-      "name": "web_proxy",
+      "name": "roborio_web_proxy",
       "executable_name": "web_proxy_main",
       "args": ["--min_ice_port=5800", "--max_ice_port=5810"],
       "nodes": [
@@ -506,7 +514,7 @@
       ]
     },
     {
-      "name": "message_bridge_server",
+      "name": "roborio_message_bridge_server",
       "executable_name": "message_bridge_server",
       "args": ["--rt_priority=16"],
       "nodes": [

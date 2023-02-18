@@ -20,6 +20,10 @@ constexpr uint16_t kCodingRobotTeamNumber = 7971;
 struct Values {
   static const int kZeroingSampleSize = 200;
 
+  static const int kDrivetrainWriterPriority = 35;
+  static const int kDrivetrainTxPriority = 36;
+  static const int kDrivetrainRxPriority = 36;
+
   static constexpr double kDrivetrainCyclesPerRevolution() { return 512.0; }
   static constexpr double kDrivetrainEncoderCountsPerRevolution() {
     return kDrivetrainCyclesPerRevolution() * 4;
@@ -32,11 +36,20 @@ struct Values {
            kDrivetrainEncoderCountsPerRevolution();
   }
 
+  static constexpr double kDrivetrainSupplyCurrentLimit() { return 35.0; }
+  static constexpr double kDrivetrainStatorCurrentLimit() { return 40.0; }
+
   static double DrivetrainEncoderToMeters(int32_t in) {
     return ((static_cast<double>(in) /
              kDrivetrainEncoderCountsPerRevolution()) *
             (2.0 * M_PI)) *
            kDrivetrainEncoderRatio() * control_loops::drivetrain::kWheelRadius;
+  }
+
+  static double DrivetrainCANEncoderToMeters(double rotations) {
+    return (rotations * (2.0 * M_PI)) *
+           control_loops::drivetrain::kHighOutputRatio *
+           control_loops::drivetrain::kWheelRadius;
   }
 
   struct PotConstants {

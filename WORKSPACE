@@ -750,9 +750,9 @@ cc_library(
     deps = ["@//third_party/allwpilib/wpimath"],
 )
 """,
-    sha256 = "d9d6c48df9318cf106237a44bf7ad95e4092618bc3ab731092e9b733cacb1ffc",
+    sha256 = "7ffc54bf40814a5c101ea3159af15215f15087298cfc2ae65826f987ccf65499",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.1/api-cpp-23.0.1-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.5/api-cpp-23.0.5-headers.zip",
     ],
 )
 
@@ -774,9 +774,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "3d228fdf8565de5411a739fa2670d4ef5390acb15ceb4d3cbef8c76b5adc7682",
+    sha256 = "1e8a487cb538388de437d04985512533a9dea79e6c56ee0f319c5eb80260fcab",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.1/api-cpp-23.0.1-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.5/api-cpp-23.0.5-linuxathena.zip",
     ],
 )
 
@@ -789,9 +789,9 @@ cc_library(
     hdrs = glob(['ctre/**/*.h', 'ctre/**/*.hpp']),
 )
 """,
-    sha256 = "74d79bb3e739d9d6b87311656b0530aaefc211952cc647a3d57776a0cee9efce",
+    sha256 = "51c52dfce4c2491887a7b7380e2f17e93a4092b6ac9f60d716738447a8ebedd7",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.1/tools-23.0.1-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.5/tools-23.0.5-headers.zip",
     ],
 )
 
@@ -813,9 +813,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "1791b35fdf76aa08ad120e4d689d9440bd386542f63f5c44e4047a06e2e05b9a",
+    sha256 = "9fb137321745c1eff63bdcfe486806afb46ede11ea4d4c59461320845698cc1e",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.1/tools-23.0.1-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.5/tools-23.0.5-linuxathena.zip",
     ],
 )
 

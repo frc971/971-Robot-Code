@@ -1,0 +1,39 @@
+namespace y2023.control_loops.drivetrain;
+
+table CANFalcon {
+  // The CAN id of the falcon
+  id:int (id: 0);
+
+  // In Amps
+  supply_current:float (id: 1);
+
+  // In Amps
+  // Stator current where positive current means torque is applied in
+  // the motor's forward direction as determined by its Inverted setting.
+  torque_current:float (id: 2);
+
+  // In Volts
+  supply_voltage:float (id: 3);
+
+  // In degrees Celsius
+  device_temp:float (id: 4);
+
+  // In meters traveled on the drivetrain
+  position:float (id: 5);
+}
+
+// CAN readings from the CAN sensor reader loop
+table CANPosition {
+  falcons: [CANFalcon] (id: 0);
+
+  // The timestamp of the measurement on the canivore clock in nanoseconds
+  // This will have less jitter than the
+  // timestamp of the message being sent out.
+  timestamp:int64 (id: 1);
+
+  // The ctre::phoenix::StatusCode of the measurement
+  // Should be OK = 0
+  status:int (id: 2);
+}
+
+root_type CANPosition;
