@@ -308,14 +308,14 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		a := response.MatchList[i]
 		b := response.MatchList[j]
 
-		aMatchTypeIndex, err := findIndexInList(MATCH_TYPE_ORDERING, a.CompLevel)
-		if err != nil {
-			err = errors.New(fmt.Sprint("Comp level ", a.CompLevel, " not found in sorting list ", MATCH_TYPE_ORDERING, " : ", err))
+		aMatchTypeIndex, err2 := findIndexInList(MATCH_TYPE_ORDERING, a.CompLevel)
+		if err2 != nil {
+			err = errors.New(fmt.Sprint("Comp level ", a.CompLevel, " not found in sorting list ", MATCH_TYPE_ORDERING, " : ", err2))
 			return false
 		}
-		bMatchTypeIndex, err := findIndexInList(MATCH_TYPE_ORDERING, b.CompLevel)
-		if err != nil {
-			err = errors.New(fmt.Sprint("Comp level ", b.CompLevel, " not found in sorting list ", MATCH_TYPE_ORDERING, " : ", err))
+		bMatchTypeIndex, err2 := findIndexInList(MATCH_TYPE_ORDERING, b.CompLevel)
+		if err2 != nil {
+			err = errors.New(fmt.Sprint("Comp level ", b.CompLevel, " not found in sorting list ", MATCH_TYPE_ORDERING, " : ", err2))
 			return false
 		}
 
