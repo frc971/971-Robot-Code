@@ -1,0 +1,8 @@
+{
+    "name": "@org_frc971/scouting/www/match_list",
+    "private": true,
+    "dependencies": {
+        "@org_frc971/scouting/www/rpc": "workspace:*",
+        "@angular/forms": "15.0.1"
+    }
+}

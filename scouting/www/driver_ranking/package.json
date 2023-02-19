@@ -1,0 +1,7 @@
+{
+    "name": "@org_frc971/scouting/www/driver_ranking",
+    "private": true,
+    "dependencies": {
+        "@angular/forms": "15.0.1"
+    }
+}

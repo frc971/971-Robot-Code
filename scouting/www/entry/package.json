@@ -1,0 +1,8 @@
+{
+    "name": "@org_frc971/scouting/www/entry",
+    "private": true,
+    "dependencies": {
+        "@org_frc971/scouting/www/counter_button": "workspace:*",
+        "@angular/forms": "15.0.1"
+    }
+}
