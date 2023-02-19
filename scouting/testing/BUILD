@@ -8,6 +8,7 @@ py_binary(
         "//scouting",
         "//scouting/db/testdb_server",
         "//scouting/scraping:test_data",
+        "@rules_python//python/runfiles",
     ],
     visibility = ["//visibility:public"],
 )

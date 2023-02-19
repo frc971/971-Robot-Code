@@ -18,6 +18,10 @@ import sys
 import time
 from typing import List
 
+from rules_python.python.runfiles import runfiles
+
+RUNFILES = runfiles.Create()
+
 
 def wait_for_server(port: int):
     """Waits for the server at the specified port to respond to TCP connections."""
@@ -59,15 +63,22 @@ def set_up_tba_api_dir(tmpdir: Path, year: int, event_code: str):
     tba_api_dir = tmpdir / "api" / "v3" / "event" / f"{year}{event_code}"
     tba_api_dir.mkdir(parents=True, exist_ok=True)
     (tba_api_dir / "matches").write_text(
-        Path(f"scouting/scraping/test_data/{year}_{event_code}.json").
-        read_text())
+        Path(
+            RUNFILES.Rlocation(
+                f"org_frc971/scouting/scraping/test_data/{year}_{event_code}.json"
+            )).read_text())
 
 
 class Runner:
     """Helps manage the services we need for testing the scouting app."""
 
-    def start(self, port: int):
-        """Starts the services needed for testing the scouting app."""
+    def start(self, port: int, notify_fd: int = 0):
+        """Starts the services needed for testing the scouting app.
+
+        if notify_fd is set to a non-zero value, the string "READY" is written
+        to that file descriptor once everything is set up.
+        """
+
         self.tmpdir = Path(os.environ["TEST_TMPDIR"]) / "servers"
         self.tmpdir.mkdir(exist_ok=True)
 
@@ -76,12 +87,15 @@ class Runner:
 
         # The database needs to be running and addressable before the scouting
         # webserver can start.
-        self.testdb_server = subprocess.Popen(
-            ["scouting/db/testdb_server/testdb_server_/testdb_server"])
+        self.testdb_server = subprocess.Popen([
+            RUNFILES.Rlocation(
+                "org_frc971/scouting/db/testdb_server/testdb_server_/testdb_server"
+            )
+        ])
         wait_for_server(5432)
 
         self.webserver = subprocess.Popen([
-            "scouting/scouting",
+            RUNFILES.Rlocation("org_frc971/scouting/scouting"),
             f"--port={port}",
             f"--db_config={db_config}",
             f"--tba_config={tba_config}",
@@ -98,6 +112,10 @@ class Runner:
         # Wait for the TBA server and the scouting webserver to start up.
         wait_for_server(7000)
         wait_for_server(port)
+
+        if notify_fd:
+            with os.fdopen(notify_fd, "w") as file:
+                file.write("READY")
 
     def stop(self):
         """Stops the services needed for testing the scouting app."""
@@ -127,10 +145,17 @@ def main(argv: List[str]):
     parser.add_argument("--port",
                         type=int,
                         help="The port for the actual web server.")
+    parser.add_argument(
+        "--notify_fd",
+        type=int,
+        default=0,
+        help=("If non-zero, indicates a file descriptor to which 'READY' is "
+              "written when everything has started up."),
+    )
     args = parser.parse_args(argv[1:])
 
     runner = Runner()
-    runner.start(args.port)
+    runner.start(args.port, args.notify_fd)
 
     # Wait until we're asked to shut down via CTRL-C or SIGTERM.
     signal.signal(signal.SIGINT, discard_signal)
