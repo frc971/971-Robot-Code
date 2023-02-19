@@ -1,5 +1,4 @@
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
-load("//tools/build_rules:js.bzl", "rollup_bundle")
+load("//tools/build_rules:js.bzl", "rollup_bundle", "ts_project")
 load("//aos:config.bzl", "aos_config")
 
 exports_files(["styles.css"])
@@ -13,7 +12,7 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-ts_library(
+ts_project(
     name = "proxy",
     srcs = [
         "config_handler.ts",
@@ -31,7 +30,7 @@ ts_library(
     ],
 )
 
-ts_library(
+ts_project(
     name = "main",
     srcs = [
         "main.ts",
@@ -68,7 +67,7 @@ genrule(
     visibility = ["//aos:__subpackages__"],
 )
 
-ts_library(
+ts_project(
     name = "reflection_test_main",
     srcs = [
         "reflection_test_main.ts",
@@ -83,7 +82,7 @@ ts_library(
     ],
 )
 
-ts_library(
+ts_project(
     name = "reflection_ts",
     srcs = ["reflection.ts"],
     target_compatible_with = ["@platforms//os:linux"],
@@ -96,7 +95,7 @@ ts_library(
     ],
 )
 
-ts_library(
+ts_project(
     name = "colors",
     srcs = [
         "colors.ts",
@@ -105,7 +104,7 @@ ts_library(
     visibility = ["//visibility:public"],
 )
 
-ts_library(
+ts_project(
     name = "plotter",
     srcs = [
         "plotter.ts",
@@ -115,7 +114,7 @@ ts_library(
     deps = [":colors"],
 )
 
-ts_library(
+ts_project(
     name = "aos_plotter",
     srcs = [
         "aos_plotter.ts",
@@ -134,7 +133,7 @@ ts_library(
     ],
 )
 
-ts_library(
+ts_project(
     name = "demo_plot",
     srcs = [
         "demo_plot.ts",

@@ -1,9 +1,9 @@
+load("//tools/build_rules:js.bzl", "ts_project")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
 
-ts_library(
+ts_project(
     name = "localizer_plotter",
     srcs = ["localizer_plotter.ts"],
     target_compatible_with = ["@platforms//os:linux"],

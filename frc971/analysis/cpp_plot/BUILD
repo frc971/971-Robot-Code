@@ -1,9 +1,8 @@
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
-load("//tools/build_rules:js.bzl", "rollup_bundle")
+load("//tools/build_rules:js.bzl", "rollup_bundle", "ts_project")
 
 package(default_visibility = ["//visibility:public"])
 
-ts_library(
+ts_project(
     name = "cpp_plot",
     srcs = ["cpp_plot.ts"],
     target_compatible_with = ["@platforms//os:linux"],

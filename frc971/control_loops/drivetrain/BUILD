@@ -1,9 +1,9 @@
+load("//tools/build_rules:js.bzl", "ts_project")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:select.bzl", "cpu_select")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -786,7 +786,7 @@ cc_test(
     ],
 )
 
-ts_library(
+ts_project(
     name = "down_estimator_plotter",
     srcs = ["down_estimator_plotter.ts"],
     target_compatible_with = ["@platforms//os:linux"],
@@ -798,7 +798,7 @@ ts_library(
     ],
 )
 
-ts_library(
+ts_project(
     name = "spline_plotter",
     srcs = ["spline_plotter.ts"],
     target_compatible_with = ["@platforms//os:linux"],
@@ -809,7 +809,7 @@ ts_library(
     ],
 )
 
-ts_library(
+ts_project(
     name = "drivetrain_plotter",
     srcs = ["drivetrain_plotter.ts"],
     target_compatible_with = ["@platforms//os:linux"],
@@ -821,7 +821,7 @@ ts_library(
     ],
 )
 
-ts_library(
+ts_project(
     name = "robot_state_plotter",
     srcs = ["robot_state_plotter.ts"],
     target_compatible_with = ["@platforms//os:linux"],

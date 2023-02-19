@@ -1,5 +1,4 @@
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
-load("//tools/build_rules:js.bzl", "rollup_bundle")
+load("//tools/build_rules:js.bzl", "rollup_bundle", "ts_project")
 load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
 
 package(default_visibility = ["//visibility:public"])
@@ -12,7 +11,7 @@ filegroup(
     ]),
 )
 
-ts_library(
+ts_project(
     name = "proxy",
     srcs = [
         "proxy.ts",
@@ -23,7 +22,7 @@ ts_library(
     ],
 )
 
-ts_library(
+ts_project(
     name = "main",
     srcs = [
         "main.ts",

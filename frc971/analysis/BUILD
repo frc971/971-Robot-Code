@@ -1,5 +1,4 @@
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
-load("//tools/build_rules:js.bzl", "rollup_bundle")
+load("//tools/build_rules:js.bzl", "rollup_bundle", "ts_project")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
@@ -33,7 +32,7 @@ py_test(
     deps = ["//aos:configuration_fbs_python"],
 )
 
-ts_library(
+ts_project(
     name = "plot_index",
     srcs = ["plot_index.ts"],
     target_compatible_with = ["@platforms//os:linux"],
@@ -127,7 +126,7 @@ flatbuffer_ts_library(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-ts_library(
+ts_project(
     name = "plot_data_utils",
     srcs = ["plot_data_utils.ts"],
     visibility = ["//visibility:public"],
