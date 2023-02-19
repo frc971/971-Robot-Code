@@ -1,9 +1,9 @@
 import {Component, OnInit} from '@angular/core';
 
 import {Builder, ByteBuffer} from 'flatbuffers';
-import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
-import {RefreshMatchListResponse} from 'org_frc971/scouting/webserver/requests/messages/refresh_match_list_response_generated';
-import {RefreshMatchList} from 'org_frc971/scouting/webserver/requests/messages/refresh_match_list_generated';
+import {ErrorResponse} from '../../webserver/requests/messages/error_response_generated';
+import {RefreshMatchListResponse} from '../../webserver/requests/messages/refresh_match_list_response_generated';
+import {RefreshMatchList} from '../../webserver/requests/messages/refresh_match_list_generated';
 
 @Component({
   selector: 'app-import-match-list',

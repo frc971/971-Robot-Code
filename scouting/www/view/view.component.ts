@@ -2,15 +2,15 @@ import {Component, OnInit} from '@angular/core';
 import {
   Ranking,
   RequestAllDriverRankingsResponse,
-} from 'org_frc971/scouting/webserver/requests/messages/request_all_driver_rankings_response_generated';
+} from '../../webserver/requests/messages/request_all_driver_rankings_response_generated';
 import {
   Stats,
   RequestDataScoutingResponse,
-} from 'org_frc971/scouting/webserver/requests/messages/request_data_scouting_response_generated';
+} from '../../webserver/requests/messages/request_data_scouting_response_generated';
 import {
   Note,
   RequestAllNotesResponse,
-} from 'org_frc971/scouting/webserver/requests/messages/request_all_notes_response_generated';
+} from '../../webserver/requests/messages/request_all_notes_response_generated';
 
 import {ViewDataRequestor} from '../rpc/view_data_requestor';
 

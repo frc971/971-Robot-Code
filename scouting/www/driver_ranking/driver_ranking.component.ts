@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {Builder, ByteBuffer} from 'flatbuffers';
-import {SubmitDriverRanking} from 'org_frc971/scouting/webserver/requests/messages/submit_driver_ranking_generated';
-import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
+import {SubmitDriverRanking} from '../../webserver/requests/messages/submit_driver_ranking_generated';
+import {ErrorResponse} from '../../webserver/requests/messages/error_response_generated';
 
 // TeamSelection: Display form to input which
 // teams to rank and the match number.

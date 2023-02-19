@@ -9,12 +9,12 @@ import {
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Builder, ByteBuffer} from 'flatbuffers';
-import {ErrorResponse} from 'org_frc971/scouting/webserver/requests/messages/error_response_generated';
+import {ErrorResponse} from '../../webserver/requests/messages/error_response_generated';
 import {
   ClimbLevel,
   SubmitDataScouting,
-} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_generated';
-import {SubmitDataScoutingResponse} from 'org_frc971/scouting/webserver/requests/messages/submit_data_scouting_response_generated';
+} from '../../webserver/requests/messages/submit_data_scouting_generated';
+import {SubmitDataScoutingResponse} from '../../webserver/requests/messages/submit_data_scouting_response_generated';
 
 type Section =
   | 'Team Selection'
