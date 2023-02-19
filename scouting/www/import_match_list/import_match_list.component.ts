@@ -8,7 +8,7 @@ import {RefreshMatchList} from '../../webserver/requests/messages/refresh_match_
 @Component({
   selector: 'app-import-match-list',
   templateUrl: './import_match_list.ng.html',
-  styleUrls: ['../common.css', './import_match_list.component.css'],
+  styleUrls: ['../app/common.css', './import_match_list.component.css'],
 })
 export class ImportMatchListComponent {
   year: number = new Date().getFullYear();

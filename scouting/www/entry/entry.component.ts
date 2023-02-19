@@ -58,7 +58,7 @@ const IMAGES_ARRAY = [
 @Component({
   selector: 'app-entry',
   templateUrl: './entry.ng.html',
-  styleUrls: ['../common.css', './entry.component.css'],
+  styleUrls: ['../app/common.css', './entry.component.css'],
 })
 export class EntryComponent {
   // Re-export the type here so that we can use it in the `[value]` attribute

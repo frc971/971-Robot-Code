@@ -2,7 +2,7 @@ import {NgModule, Pipe, PipeTransform} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 
-import {CounterButtonModule} from '../counter_button/counter_button.module';
+import {CounterButtonModule} from '@org_frc971/scouting/www/counter_button';
 import {EntryComponent} from './entry.component';
 
 import {ClimbLevel} from '../../webserver/requests/messages/submit_data_scouting_generated';

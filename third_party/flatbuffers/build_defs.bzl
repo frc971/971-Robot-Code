@@ -8,8 +8,7 @@ Rules for building C++ flatbuffers with Bazel.
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@rules_rust//rust:rust_common.bzl", "CrateInfo")
-load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
-load("@npm//@bazel/typescript:index.bzl", "ts_project")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 flatc_path = "@com_github_google_flatbuffers//:flatc"

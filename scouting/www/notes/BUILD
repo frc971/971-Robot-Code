@@ -1,29 +1,20 @@
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+load("//tools/build_rules:js.bzl", "ng_pkg")
 
-ts_library(
+npm_link_all_packages(name = "node_modules")
+
+ng_pkg(
     name = "notes",
-    srcs = [
-        "notes.component.ts",
-        "notes.module.ts",
+    extra_srcs = [
+        "//scouting/www:app_common_css",
     ],
-    angular_assets = [
-        "notes.component.css",
-        "notes.ng.html",
-        "//scouting/www:common_css",
-    ],
-    compiler = "//tools:tsc_wrapped_with_angular",
-    target_compatible_with = ["@platforms//cpu:x86_64"],
-    use_angular_plugin = True,
-    visibility = ["//visibility:public"],
     deps = [
+        ":node_modules/@angular/forms",
         "//scouting/webserver/requests/messages:error_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_notes_for_team_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_notes_for_team_ts_fbs",
         "//scouting/webserver/requests/messages:submit_notes_response_ts_fbs",
         "//scouting/webserver/requests/messages:submit_notes_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
-        "@npm//@angular/common",
-        "@npm//@angular/core",
-        "@npm//@angular/forms",
     ],
 )

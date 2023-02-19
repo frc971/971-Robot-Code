@@ -1,3 +1,4 @@
+load("@aspect_rules_js//npm:defs.bzl", "npm_package")
 load("//:build_defs.bzl", "flatbuffer_rust_library")
 load("//:typescript.bzl", "flatbuffer_ts_library")
 
@@ -9,9 +10,16 @@ filegroup(
 
 flatbuffer_ts_library(
     name = "reflection_ts_fbs",
-    package_name = "flatbuffers_reflection",
     srcs = ["reflection.fbs"],
     include_reflection = False,
+    visibility = ["//visibility:public"],
+)
+
+npm_package(
+    name = "flatbuffers_reflection",
+    srcs = [":reflection_ts_fbs_ts"],
+    include_external_repositories = ["*"],
+    package = "flatbuffers_reflection",
     visibility = ["//visibility:public"],
 )
 

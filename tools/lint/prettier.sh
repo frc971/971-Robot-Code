@@ -15,7 +15,7 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
 runfiles_export_envvars
 export RUNFILES="${RUNFILES_DIR}"
 
-PRETTIER="$(rlocation npm/prettier/bin/prettier.sh)"
+PRETTIER="$(rlocation org_frc971/tools/lint/prettier_binary.sh)"
 PRETTIER="$(readlink -f "${PRETTIER}")"
 readonly PRETTIER
 

@@ -22,7 +22,7 @@ type TeamInMatch = {
 @Component({
   selector: 'my-app',
   templateUrl: './app.ng.html',
-  styleUrls: ['./common.css'],
+  styleUrls: ['../app/common.css'],
 })
 export class App {
   selectedTeamInMatch: TeamInMatch = {

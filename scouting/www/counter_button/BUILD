@@ -1,21 +1,8 @@
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+load("//tools/build_rules:js.bzl", "ng_pkg")
 
-ts_library(
+npm_link_all_packages(name = "node_modules")
+
+ng_pkg(
     name = "counter_button",
-    srcs = [
-        "counter_button.component.ts",
-        "counter_button.module.ts",
-    ],
-    angular_assets = [
-        "counter_button.component.css",
-        "counter_button.ng.html",
-    ],
-    compiler = "//tools:tsc_wrapped_with_angular",
-    target_compatible_with = ["@platforms//cpu:x86_64"],
-    use_angular_plugin = True,
-    visibility = ["//visibility:public"],
-    deps = [
-        "@npm//@angular/common",
-        "@npm//@angular/core",
-    ],
 )

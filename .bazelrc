@@ -98,7 +98,7 @@ startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 build --spawn_strategy=linux-sandbox
 build --sandbox_default_allow_network=false
 
-build --strategy=TypeScriptCompile=worker --strategy=AngularTemplateCompile=worker
+build --strategy=TsProject=linux-sandbox
 
 # Use our hermetic JDK.
 # Note that this doesn't quite work fully, but it should. See
@@ -111,3 +111,6 @@ startup --noautodetect_server_javabase
 
 # Give each build action and test its own /tmp.
 build --sandbox_tmpfs_path=/tmp
+
+# Prevent cypress from using its own binary. We want to use the hermetic one.
+build --action_env=CYPRESS_INSTALL_BINARY=0

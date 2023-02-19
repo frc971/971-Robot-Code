@@ -1,5 +1,5 @@
+load("@aspect_rules_cypress//cypress:defs.bzl", "cypress_module_test")
 load("//tools/build_rules:apache.bzl", "apache_wrapper")
-load("//tools/build_rules:js.bzl", "protractor_ts_test")
 
 sh_binary(
     name = "scouting",
@@ -16,13 +16,23 @@ sh_binary(
     ],
 )
 
-protractor_ts_test(
+cypress_module_test(
     name = "scouting_test",
-    srcs = [
-        ":scouting_test.ts",
+    args = [
+        "run",
+        "--config-file=cypress.config.js",
+        "--browser=../../chrome_linux/chrome",
     ],
-    on_prepare = ":scouting_test.protractor.on-prepare.js",
-    server = "//scouting/testing:scouting_test_servers",
+    browsers = ["@chrome_linux//:all"],
+    copy_data_to_bin = False,
+    cypress = "//:node_modules/cypress",
+    data = [
+        "cypress.config.js",
+        "scouting_test.cy.js",
+        "//scouting/testing:scouting_test_servers",
+        "@xvfb_amd64//:wrapped_bin/Xvfb",
+    ],
+    runner = "cypress_runner.js",
 )
 
 apache_wrapper(

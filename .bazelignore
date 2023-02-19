@@ -1,1 +1,12 @@
 external
+node_modules
+scouting/www/node_modules
+scouting/www/counter_button/node_modules
+scouting/www/driver_ranking/node_modules
+scouting/www/entry/node_modules
+scouting/www/import_match_list/node_modules
+scouting/www/match_list/node_modules
+scouting/www/notes/node_modules
+scouting/www/rpc/node_modules
+scouting/www/shift_schedule/node_modules
+scouting/www/view/node_modules

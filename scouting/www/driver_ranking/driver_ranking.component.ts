@@ -12,7 +12,7 @@ type Section = 'TeamSelection' | 'Data';
 @Component({
   selector: 'app-driver-ranking',
   templateUrl: './driver_ranking.ng.html',
-  styleUrls: ['../common.css', './driver_ranking.component.css'],
+  styleUrls: ['../app/common.css', './driver_ranking.component.css'],
 })
 export class DriverRankingComponent {
   section: Section = 'TeamSelection';

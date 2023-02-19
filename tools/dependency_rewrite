@@ -13,8 +13,11 @@ rewrite devsite.ctr-electronics.com/(.*) software.frc971.org/Build-Dependencies/
 rewrite www.openssl.org/(.*) software.frc971.org/Build-Dependencies/www.openssl.org/$1
 rewrite zlib.net/(.*) software.frc971.org/Build-Dependencies/zlib.net/$1
 rewrite downloads.sourceforge.net/(.*) software.frc971.org/Build-Dependencies/downloads.sourceforge.net/$1
+rewrite cdn.cypress.io/(.*) software.frc971.org/Build-Dependencies/cdn.cypress.io/$1
+rewrite www.googleapis.com/(.*) software.frc971.org/Build-Dependencies/www.googleapis.com/$1
 allow crates.io
 allow golang.org
+allow registry.npmjs.org
 
 allow software.frc971.org
 allow www.frc971.org

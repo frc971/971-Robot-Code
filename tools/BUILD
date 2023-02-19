@@ -1,4 +1,4 @@
-load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary")
+#load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -101,14 +101,4 @@ config_setting(
     flag_values = {
         "@io_bazel_rules_go//go/config:msan": "false",
     },
-)
-
-nodejs_binary(
-    name = "tsc_wrapped_with_angular",
-    data = [
-        "@npm//@angular/compiler-cli",
-        "@npm//@bazel/typescript",
-    ],
-    entry_point = "@npm//:node_modules/@bazel/typescript/internal/tsc_wrapped/tsc_wrapped.js",
-    target_compatible_with = ["@platforms//cpu:x86_64"],
 )

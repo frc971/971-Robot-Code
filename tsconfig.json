@@ -1,11 +1,19 @@
 {
+  "compileOnSave": false,
+  "exclude": ["bazel-*"],
   "compilerOptions": {
     "experimentalDecorators": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
     "strict": false,
     "noImplicitAny": false,
     "target": "es2021",
     "lib": ["es2021", "dom", "dom.iterable"],
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "paths": {
+      "@org_frc971/*": ["./*"]
+    }
   },
   "bazelOptions": {
     "workspaceName": "971-Robot-Code"

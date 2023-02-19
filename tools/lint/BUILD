@@ -1,5 +1,10 @@
 load("@ci_configure//:ci.bzl", "RUNNING_IN_CI")
 load("@pip_deps//:requirements.bzl", "entry_point")
+load("@npm//:prettier/package_json.bzl", prettier_bin = "bin")
+
+prettier_bin.prettier_binary(
+    name = "prettier_binary",
+)
 
 sh_binary(
     name = "gofmt",
@@ -50,7 +55,7 @@ sh_binary(
     name = "prettier",
     srcs = ["prettier.sh"],
     data = [
-        "@npm//prettier/bin:prettier",
+        ":prettier_binary",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [

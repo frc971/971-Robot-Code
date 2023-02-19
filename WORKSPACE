@@ -32,9 +32,11 @@ http_archive(
     url = "https://github.com/aspect-build/bazel-lib/releases/download/v1.27.1/bazel-lib-v1.27.1.tar.gz",
 )
 
-load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")
+load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies", "register_jq_toolchains")
 
 aspect_bazel_lib_dependencies()
+
+register_jq_toolchains()
 
 http_archive(
     name = "rules_python",
@@ -915,44 +917,192 @@ cc_library(
 )
 
 http_archive(
-    name = "build_bazel_rules_nodejs",
-    sha256 = "cfc289523cf1594598215901154a6c2515e8bf3671fd708264a6f6aefe02bf39",
-    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/4.4.6/rules_nodejs-4.4.6.tar.gz"],
+    name = "aspect_rules_js",
+    sha256 = "9fadde0ae6e0101755b8aedabf7d80b166491a8de297c60f6a5179cd0d0fea58",
+    strip_prefix = "rules_js-1.20.0",
+    url = "https://github.com/aspect-build/rules_js/releases/download/v1.20.0/rules_js-v1.20.0.tar.gz",
 )
 
-load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories", "yarn_install")
+load("@aspect_rules_js//npm:npm_import.bzl", "npm_translate_lock", "pnpm_repository")
 
-node_repositories()
+pnpm_repository(name = "pnpm")
 
-# Setup Bazel managed npm dependencies with the `yarn_install` rule.
+load("@aspect_rules_js//js:repositories.bzl", "rules_js_dependencies")
 
-# To run yarn by hand, use:
-#  bazel run @nodejs_linux_amd64//:bin/yarn -- list
-# I'm sure there is a better path, but that works...
-yarn_install(
-    name = "npm",
-    frozen_lockfile = True,
-    package_json = "//:package.json",
-    patch_args = ["-p1"],
-    post_install_patches = [
-        "//third_party:npm/@bazel/protractor/bazel-protractor.patch",
-    ],
-    symlink_node_modules = False,
-    yarn_lock = "//:yarn.lock",
-)
-
-load("@build_bazel_rules_nodejs//toolchains/esbuild:esbuild_repositories.bzl", "esbuild_repositories")
-
-esbuild_repositories(npm_repository = "npm")
+rules_js_dependencies()
 
 http_archive(
-    name = "io_bazel_rules_webtesting",
-    patch_args = ["-p1"],
-    patches = [
-        "@//third_party:rules_webtesting/rules_webtesting.patch",
+    name = "aspect_rules_esbuild",
+    sha256 = "b98cde83e9e6a006d8300e88e2f09da56b5a6c18166465a224cfe36bdcbc03e0",
+    strip_prefix = "aspect-build-rules_esbuild-110b94c",
+    type = "tar.gz",
+    url = "https://github.com/aspect-build/rules_esbuild/tarball/110b94c7f16f328a0eab8aa0b862030055b86564",
+)
+
+load("@aspect_rules_esbuild//esbuild:dependencies.bzl", "rules_esbuild_dependencies")
+
+rules_esbuild_dependencies()
+
+load("@rules_nodejs//nodejs:repositories.bzl", "DEFAULT_NODE_VERSION", "nodejs_register_toolchains")
+
+nodejs_register_toolchains(
+    name = "nodejs",
+    node_version = DEFAULT_NODE_VERSION,
+)
+
+npm_translate_lock(
+    name = "npm",
+    data = [
+        "@//:package.json",
+        "@//:pnpm-workspace.yaml",
+        "@//scouting/www:package.json",
+        "@//scouting/www/counter_button:package.json",
+        "@//scouting/www/driver_ranking:package.json",
+        "@//scouting/www/entry:package.json",
+        "@//scouting/www/import_match_list:package.json",
+        "@//scouting/www/match_list:package.json",
+        "@//scouting/www/notes:package.json",
+        "@//scouting/www/rpc:package.json",
+        "@//scouting/www/shift_schedule:package.json",
+        "@//scouting/www/view:package.json",
     ],
-    sha256 = "e9abb7658b6a129740c0b3ef6f5a2370864e102a5ba5ffca2cea565829ed825a",
-    urls = ["https://github.com/bazelbuild/rules_webtesting/releases/download/0.3.5/rules_webtesting.tar.gz"],
+
+    # Running lifecycle hooks on npm package fsevents@2.3.2 fails in a dramatic way:
+    # ```
+    # SyntaxError: Unexpected strict mode reserved word
+    # at ESMLoader.moduleStrategy (node:internal/modules/esm/translators:117:18)
+    # at ESMLoader.moduleProvider (node:internal/modules/esm/loader:337:14)
+    # at async link (node:internal/modules/esm/module_job:70:21)
+    # ```
+    lifecycle_hooks_no_sandbox = False,
+    npmrc = "@//:.npmrc",
+    pnpm_lock = "//:pnpm-lock.yaml",
+    quiet = False,
+    update_pnpm_lock = False,
+    verify_node_modules_ignored = "//:.bazelignore",
+)
+
+load("@aspect_rules_esbuild//esbuild:repositories.bzl", "esbuild_register_toolchains", LATEST_ESBUILD_VERSION = "LATEST_VERSION")
+
+esbuild_register_toolchains(
+    name = "esbuild",
+    esbuild_version = LATEST_ESBUILD_VERSION,
+)
+
+http_archive(
+    name = "aspect_rules_rollup",
+    patch_args = [
+        "-p1",
+    ],
+    patches = [
+        "//third_party:rules_rollup/0001-Fix-resolving-files.patch",
+    ],
+    sha256 = "4c43d20ce377b93cd43a3553e6159a17b85ce80c36a564b55051c2320d32b777",
+    strip_prefix = "rules_rollup-0.13.1",
+    url = "https://github.com/aspect-build/rules_rollup/releases/download/v0.13.1/rules_rollup-v0.13.1.tar.gz",
+)
+
+load("@aspect_rules_rollup//rollup:dependencies.bzl", "rules_rollup_dependencies")
+
+# Fetches the rules_rollup dependencies.
+# If you want to have a different version of some dependency,
+# you should fetch it *before* calling this.
+# Alternatively, you can skip calling this function, so long as you've
+# already fetched all the dependencies.
+rules_rollup_dependencies()
+
+load("@aspect_rules_rollup//rollup:repositories.bzl", "rollup_repositories")
+
+rollup_repositories(name = "rollup")
+
+load("@rollup//:npm_repositories.bzl", rollup_npm_repositories = "npm_repositories")
+
+rollup_npm_repositories()
+
+http_archive(
+    name = "aspect_rules_terser",
+    sha256 = "918e7ac036eca1402cae4d4ddba75ecdcdd886ac35bc0624d9f1ebc7527e369b",
+    strip_prefix = "rules_terser-0.13.0",
+    url = "https://github.com/aspect-build/rules_terser/archive/refs/tags/v0.13.0.tar.gz",
+)
+
+load("@aspect_rules_terser//terser:dependencies.bzl", "rules_terser_dependencies")
+
+rules_terser_dependencies()
+
+# Fetch and register a nodejs interpreter, if you haven't already
+
+nodejs_register_toolchains(
+    name = "node",
+    node_version = DEFAULT_NODE_VERSION,
+)
+
+# Fetch and register the terser tool
+load("@aspect_rules_terser//terser:repositories.bzl", "terser_repositories")
+
+terser_repositories(name = "terser")
+
+load("@terser//:npm_repositories.bzl", terser_npm_repositories = "npm_repositories")
+
+terser_npm_repositories()
+
+http_archive(
+    name = "aspect_rules_ts",
+    sha256 = "db77d904284d21121ae63dbaaadfd8c75ff6d21ad229f92038b415c1ad5019cc",
+    strip_prefix = "rules_ts-1.3.0",
+    url = "https://github.com/aspect-build/rules_ts/releases/download/v1.3.0/rules_ts-v1.3.0.tar.gz",
+)
+
+load("@aspect_rules_ts//ts:repositories.bzl", "rules_ts_dependencies")
+
+rules_ts_dependencies(ts_version_from = "//:package.json")
+
+load("@npm//:repositories.bzl", "npm_repositories")
+
+npm_repositories()
+
+http_archive(
+    name = "aspect_rules_cypress",
+    sha256 = "06d70a2960108607d2e70f9bc6863af6b82317fdfcf7a5a30fd226a5abc46782",
+    strip_prefix = "aspect-build-rules_cypress-3db1b74",
+    type = "tar.gz",
+    urls = [
+        "https://github.com/aspect-build/rules_cypress/tarball/3db1b74818ac4ce1b9d489a6e0065b36c1076761",
+    ],
+)
+
+load("@aspect_rules_cypress//cypress:dependencies.bzl", "rules_cypress_dependencies")
+load("@aspect_rules_cypress//cypress:repositories.bzl", "cypress_register_toolchains")
+
+rules_cypress_dependencies()
+
+cypress_register_toolchains(
+    name = "cypress",
+    cypress_version = "12.3.0",
+)
+
+# Copied from:
+# https://github.com/aspect-build/rules_cypress/blob/3db1b74818ac4ce1b9d489a6e0065b36c1076761/internal_deps.bzl#L47
+#
+# To update CHROME_REVISION, use the below script
+#
+# LASTCHANGE_URL="https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Linux_x64%2FLAST_CHANGE?alt=media"
+# CHROME_REVISION=$(curl -s -S $LASTCHANGE_URL)
+# echo "latest CHROME_REVISION_LINUX is $CHROME_REVISION"
+CHROME_REVISION_LINUX = "1072361"
+
+http_archive(
+    name = "chrome_linux",
+    build_file_content = """filegroup(
+name = "all",
+srcs = glob(["**"]),
+visibility = ["//visibility:public"],
+)""",
+    sha256 = "0df22f743facd1e090eff9b7f8d8bdc293fb4dc31ce9156d2ef19b515974a72b",
+    strip_prefix = "chrome-linux",
+    urls = [
+        "https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Linux_x64%2F" + CHROME_REVISION_LINUX + "%2Fchrome-linux.zip?alt=media",
+    ],
 )
 
 http_archive(
@@ -985,14 +1135,6 @@ rust_repository_set(
     rustfmt_version = "1.62.0",
     version = "1.62.0",
 )
-
-load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
-
-web_test_repositories()
-
-load("@io_bazel_rules_webtesting//web/versioned:browsers-0.3.3.bzl", "browser_repositories")
-
-browser_repositories(chromium = True)
 
 # Flatbuffers
 local_repository(

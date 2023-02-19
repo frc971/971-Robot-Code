@@ -2,8 +2,8 @@
 Rules for building typescript flatbuffers with Bazel.
 """
 
-load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
-load("@npm//@bazel/typescript:index.bzl", "ts_project")
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
 load(":build_defs.bzl", "DEFAULT_INCLUDE_PATHS", "flatbuffer_library_public")
 
 DEFAULT_FLATC_TS_ARGS = [
@@ -93,6 +93,7 @@ def flatbuffer_ts_library(
         compatible_with = compatible_with,
         restricted_to = restricted_to,
         target_compatible_with = target_compatible_with,
+        supports_workers = False,
         tsconfig = {
             "compilerOptions": {
                 "declaration": True,
@@ -107,7 +108,12 @@ def flatbuffer_ts_library(
                 "types": ["node"],
             },
         },
-        deps = deps + ["@com_github_google_flatbuffers//ts:flatbuffers"] + (["@com_github_google_flatbuffers//reflection:reflection_ts_fbs"] if include_reflection else []),
+        deps = deps + [
+            "@//:node_modules/flatbuffers",
+            # TODO(phil): Figure out why @types/node isn't being picked up as a
+            # transitivie dependencies.
+            "@//:node_modules/@types/node",
+        ] + (["@//:node_modules/flatbuffers_reflection"] if include_reflection else []),
     )
     js_library(
         name = name,
@@ -115,8 +121,7 @@ def flatbuffer_ts_library(
         compatible_with = compatible_with,
         restricted_to = restricted_to,
         target_compatible_with = target_compatible_with,
-        deps = [name + "_ts"],
-        package_name = package_name,
+        srcs = [name + "_ts"],
     )
     native.filegroup(
         name = "%s_includes" % (name),

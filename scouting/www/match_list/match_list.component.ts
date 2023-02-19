@@ -7,7 +7,7 @@ import {
   RequestAllMatchesResponse,
 } from '../../webserver/requests/messages/request_all_matches_response_generated';
 
-import {MatchListRequestor} from '../rpc/match_list_requestor';
+import {MatchListRequestor} from '@org_frc971/scouting/www/rpc';
 
 type TeamInMatch = {
   teamNumber: number;
@@ -19,7 +19,7 @@ type TeamInMatch = {
 @Component({
   selector: 'app-match-list',
   templateUrl: './match_list.ng.html',
-  styleUrls: ['../common.css', './match_list.component.css'],
+  styleUrls: ['../app/common.css', './match_list.component.css'],
 })
 export class MatchListComponent implements OnInit {
   @Output() selectedTeamEvent = new EventEmitter<TeamInMatch>();

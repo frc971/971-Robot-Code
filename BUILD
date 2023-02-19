@@ -1,9 +1,40 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_config")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+load("@aspect_rules_js//npm:defs.bzl", "npm_link_package")
+
+# Link npm packages
+npm_link_all_packages(name = "node_modules")
 
 exports_files([
     "tsconfig.json",
+    "tsconfig.node.json",
     "rollup.config.js",
 ])
+
+# The root repo tsconfig
+ts_config(
+    name = "tsconfig",
+    src = "tsconfig.json",
+    visibility = ["//visibility:public"],
+)
+
+ts_config(
+    name = "tsconfig.node",
+    src = "tsconfig.node.json",
+    visibility = ["//visibility:public"],
+    deps = [":tsconfig"],
+)
+
+npm_link_package(
+    name = "node_modules/flatbuffers",
+    src = "@com_github_google_flatbuffers//ts:flatbuffers",
+)
+
+npm_link_package(
+    name = "node_modules/flatbuffers_reflection",
+    src = "@com_github_google_flatbuffers//reflection:flatbuffers_reflection",
+)
 
 # gazelle:prefix github.com/frc971/971-Robot-Code
 # gazelle:build_file_name BUILD

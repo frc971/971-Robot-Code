@@ -1,9 +1,20 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@aspect_rules_js//npm:defs.bzl", "npm_link_package")
 
 licenses(["notice"])
 
 package(
     default_visibility = ["//visibility:public"],
+)
+
+npm_link_package(
+    name = "node_modules/flatbuffers",
+    src = "@com_github_google_flatbuffers//ts:flatbuffers",
+)
+
+npm_link_package(
+    name = "node_modules/flatbuffers_reflection",
+    src = "@com_github_google_flatbuffers//reflection:flatbuffers_reflection",
 )
 
 exports_files([

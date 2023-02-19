@@ -20,3 +20,6 @@
 /tools/python/venv/
 /tools/python/wheelhouse/
 /tools/python/wheelhouse_tmp/
+
+node_modules
+/.aspect

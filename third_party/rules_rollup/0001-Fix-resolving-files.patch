@@ -1,0 +1,24 @@
+From fd6dd080ea58fd71c70ce2303873feab1abda760 Mon Sep 17 00:00:00 2001
+From: Philipp Schrader <philipp.schrader@gmail.com>
+Date: Sun, 19 Feb 2023 14:18:11 -0800
+Subject: [PATCH] Fix resolving files
+
+I don't really know what the underlying problem is, but returning a
+File instead of a path is causing us grief.
+---
+ rollup/private/rollup_bundle.bzl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rollup/private/rollup_bundle.bzl b/rollup/private/rollup_bundle.bzl
+index 32aaad4..a2061dd 100644
+--- a/rollup/private/rollup_bundle.bzl
++++ b/rollup/private/rollup_bundle.bzl
+@@ -186,7 +186,7 @@ def _resolve_js_input(f, inputs):
+     for i in inputs:
+         if i.extension == "js" or i.extension == "mjs":
+             if _no_ext(i) == no_ext:
+-                return i
++                return i.short_path
+     fail("Could not find corresponding javascript entry point for %s. Add the %s.js to your deps." % (f.path, no_ext))
+ 
+ def _rollup_outs(sourcemap, name, entry_point, entry_points, output_dir):

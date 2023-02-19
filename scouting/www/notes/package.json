@@ -2,6 +2,6 @@
     "name": "@org_frc971/scouting/www/notes",
     "private": true,
     "dependencies": {
-        "@angular/forms": "15.0.1"
+        "@angular/forms": "15.1.5"
     }
 }

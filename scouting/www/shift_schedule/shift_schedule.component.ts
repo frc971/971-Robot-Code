@@ -5,7 +5,7 @@ import {ErrorResponse} from '../../webserver/requests/messages/error_response_ge
 @Component({
   selector: 'shift-schedule',
   templateUrl: './shift_schedule.ng.html',
-  styleUrls: ['../common.css', './shift_schedule.component.css'],
+  styleUrls: ['../app/common.css', './shift_schedule.component.css'],
 })
 export class ShiftsComponent {
   progressMessage: string = '';

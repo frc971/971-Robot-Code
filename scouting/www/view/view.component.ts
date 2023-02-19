@@ -12,7 +12,7 @@ import {
   RequestAllNotesResponse,
 } from '../../webserver/requests/messages/request_all_notes_response_generated';
 
-import {ViewDataRequestor} from '../rpc/view_data_requestor';
+import {ViewDataRequestor} from '../rpc';
 
 type Source = 'Notes' | 'Stats' | 'DriverRanking';
 
@@ -28,7 +28,7 @@ const COMP_LEVEL_LABELS = {
 @Component({
   selector: 'app-view',
   templateUrl: './view.ng.html',
-  styleUrls: ['../common.css', './view.component.css'],
+  styleUrls: ['../app/common.css', './view.component.css'],
 })
 export class ViewComponent {
   constructor(private readonly viewDataRequestor: ViewDataRequestor) {}

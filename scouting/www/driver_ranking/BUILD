@@ -1,26 +1,17 @@
-load("@npm//@bazel/typescript:index.bzl", "ts_library")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+load("//tools/build_rules:js.bzl", "ng_pkg")
 
-ts_library(
+npm_link_all_packages(name = "node_modules")
+
+ng_pkg(
     name = "driver_ranking",
-    srcs = [
-        "driver_ranking.component.ts",
-        "driver_ranking.module.ts",
+    extra_srcs = [
+        "//scouting/www:app_common_css",
     ],
-    angular_assets = [
-        "driver_ranking.component.css",
-        "driver_ranking.ng.html",
-        "//scouting/www:common_css",
-    ],
-    compiler = "//tools:tsc_wrapped_with_angular",
-    target_compatible_with = ["@platforms//cpu:x86_64"],
-    use_angular_plugin = True,
-    visibility = ["//visibility:public"],
     deps = [
+        ":node_modules/@angular/forms",
         "//scouting/webserver/requests/messages:error_response_ts_fbs",
         "//scouting/webserver/requests/messages:submit_driver_ranking_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
-        "@npm//@angular/common",
-        "@npm//@angular/core",
-        "@npm//@angular/forms",
     ],
 )

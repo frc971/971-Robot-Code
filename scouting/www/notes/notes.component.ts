@@ -64,7 +64,7 @@ const KEYWORD_CHECKBOX_LABELS = {
 @Component({
   selector: 'frc971-notes',
   templateUrl: './notes.ng.html',
-  styleUrls: ['../common.css', './notes.component.css'],
+  styleUrls: ['../app/common.css', './notes.component.css'],
 })
 export class Notes {
   // Re-export KEYWORD_CHECKBOX_LABELS so that we can
