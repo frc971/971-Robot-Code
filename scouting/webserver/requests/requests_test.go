@@ -125,18 +125,78 @@ func TestSubmitDataScouting(t *testing.T) {
 // Validates that we can request the full match list.
 func TestRequestAllMatches(t *testing.T) {
 	db := MockDatabase{
-		matches: []db.Match{
+		matches: []db.TeamMatch{
 			{
 				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
-				R1: 5, R2: 42, R3: 600, B1: 971, B2: 400, B3: 200,
+				Alliance: "R", AlliancePosition: 1, TeamNumber: 5,
+			},
+			{
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
+				Alliance: "R", AlliancePosition: 2, TeamNumber: 42,
+			},
+			{
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
+				Alliance: "R", AlliancePosition: 3, TeamNumber: 600,
+			},
+			{
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
+				Alliance: "B", AlliancePosition: 1, TeamNumber: 971,
+			},
+			{
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
+				Alliance: "B", AlliancePosition: 2, TeamNumber: 400,
+			},
+			{
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
+				Alliance: "B", AlliancePosition: 3, TeamNumber: 200,
 			},
 			{
 				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
-				R1: 6, R2: 43, R3: 601, B1: 972, B2: 401, B3: 201,
+				Alliance: "R", AlliancePosition: 1, TeamNumber: 6,
+			},
+			{
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
+				Alliance: "R", AlliancePosition: 2, TeamNumber: 43,
+			},
+			{
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
+				Alliance: "R", AlliancePosition: 3, TeamNumber: 601,
+			},
+			{
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
+				Alliance: "B", AlliancePosition: 1, TeamNumber: 972,
+			},
+			{
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
+				Alliance: "B", AlliancePosition: 2, TeamNumber: 401,
+			},
+			{
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
+				Alliance: "B", AlliancePosition: 3, TeamNumber: 201,
 			},
 			{
 				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
-				R1: 7, R2: 44, R3: 602, B1: 973, B2: 402, B3: 202,
+				Alliance: "R", AlliancePosition: 1, TeamNumber: 7,
+			},
+			{
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
+				Alliance: "R", AlliancePosition: 2, TeamNumber: 44,
+			},
+			{
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
+				Alliance: "R", AlliancePosition: 3, TeamNumber: 602,
+			},
+			{
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
+				Alliance: "B", AlliancePosition: 1, TeamNumber: 973,
+			},
+			{
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
+				Alliance: "B", AlliancePosition: 2, TeamNumber: 402,
+			},
+			{
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
+				Alliance: "B", AlliancePosition: 3, TeamNumber: 202,
 			},
 		},
 	}
@@ -496,19 +556,33 @@ func TestRefreshMatchList(t *testing.T) {
 	}
 
 	// Make sure that the data made it into the database.
-	expectedMatches := []db.Match{
+	expectedMatches := []db.TeamMatch{
 		{
-			MatchNumber: 1,
-			SetNumber:   2,
-			CompLevel:   "qual",
-			R1:          100,
-			R2:          200,
-			R3:          300,
-			B1:          101,
-			B2:          201,
-			B3:          301,
+			MatchNumber: 1, SetNumber: 2, CompLevel: "qual",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 100,
+		},
+		{
+			MatchNumber: 1, SetNumber: 2, CompLevel: "qual",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: 200,
+		},
+		{
+			MatchNumber: 1, SetNumber: 2, CompLevel: "qual",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: 300,
+		},
+		{
+			MatchNumber: 1, SetNumber: 2, CompLevel: "qual",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: 101,
+		},
+		{
+			MatchNumber: 1, SetNumber: 2, CompLevel: "qual",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: 201,
+		},
+		{
+			MatchNumber: 1, SetNumber: 2, CompLevel: "qual",
+			Alliance: "B", AlliancePosition: 3, TeamNumber: 301,
 		},
 	}
+
 	if !reflect.DeepEqual(expectedMatches, database.matches) {
 		t.Fatal("Expected ", expectedMatches, ", but got ", database.matches)
 	}
@@ -677,14 +751,14 @@ func TestRequestAllNotes(t *testing.T) {
 // needed for your tests.
 
 type MockDatabase struct {
-	matches        []db.Match
+	matches        []db.TeamMatch
 	stats          []db.Stats
 	notes          []db.NotesData
 	shiftSchedule  []db.Shift
 	driver_ranking []db.DriverRankingData
 }
 
-func (database *MockDatabase) AddToMatch(match db.Match) error {
+func (database *MockDatabase) AddToMatch(match db.TeamMatch) error {
 	database.matches = append(database.matches, match)
 	return nil
 }
@@ -694,7 +768,7 @@ func (database *MockDatabase) AddToStats(stats db.Stats) error {
 	return nil
 }
 
-func (database *MockDatabase) ReturnMatches() ([]db.Match, error) {
+func (database *MockDatabase) ReturnMatches() ([]db.TeamMatch, error) {
 	return database.matches, nil
 }
 

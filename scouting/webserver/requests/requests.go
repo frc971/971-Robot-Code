@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -69,10 +70,10 @@ type SubmitActionsResponseT = submit_actions_response.SubmitActionsResponseT
 // The interface we expect the database abstraction to conform to.
 // We use an interface here because it makes unit testing easier.
 type Database interface {
-	AddToMatch(db.Match) error
+	AddToMatch(db.TeamMatch) error
 	AddToShift(db.Shift) error
 	AddToStats(db.Stats) error
-	ReturnMatches() ([]db.Match, error)
+	ReturnMatches() ([]db.TeamMatch, error)
 	ReturnAllNotes() ([]db.NotesData, error)
 	ReturnAllDriverRankings() ([]db.DriverRankingData, error)
 	ReturnAllShifts() ([]db.Shift, error)
@@ -212,6 +213,15 @@ type requestAllMatchesHandler struct {
 	db Database
 }
 
+func findIndexInList(list []string, comp_level string) (int, error) {
+	for index, value := range list {
+		if value == comp_level {
+			return index, nil
+		}
+	}
+	return -1, errors.New(fmt.Sprint("Failed to find comp level ", comp_level, " in list ", list))
+}
+
 func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	requestBytes, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -230,19 +240,123 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		return
 	}
 
-	var response RequestAllMatchesResponseT
+	// Change structure of match objects in the database(1 per team) to
+	// the old match structure(1 per match) that the webserver uses.
+	type Key struct {
+		MatchNumber int32
+		SetNumber   int32
+		CompLevel   string
+	}
+
+	assembledMatches := map[Key]request_all_matches_response.MatchT{}
+
 	for _, match := range matches {
-		response.MatchList = append(response.MatchList, &request_all_matches_response.MatchT{
-			MatchNumber: match.MatchNumber,
-			SetNumber:   match.SetNumber,
-			CompLevel:   match.CompLevel,
-			R1:          match.R1,
-			R2:          match.R2,
-			R3:          match.R3,
-			B1:          match.B1,
-			B2:          match.B2,
-			B3:          match.B3,
-		})
+		key := Key{match.MatchNumber, match.SetNumber, match.CompLevel}
+		log.Println("Key : ", key)
+		entry, ok := assembledMatches[key]
+		if !ok {
+			entry = request_all_matches_response.MatchT{
+				MatchNumber: match.MatchNumber,
+				SetNumber:   match.SetNumber,
+				CompLevel:   match.CompLevel,
+			}
+		}
+		log.Println("Entry : ", entry)
+		switch match.Alliance {
+		case "R":
+			switch match.AlliancePosition {
+			case 1:
+				entry.R1 = match.TeamNumber
+			case 2:
+				entry.R2 = match.TeamNumber
+			case 3:
+				entry.R3 = match.TeamNumber
+			default:
+				respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Unknown red position ", strconv.Itoa(int(match.AlliancePosition)), " in match ", strconv.Itoa(int(match.MatchNumber))))
+				return
+			}
+		case "B":
+			switch match.AlliancePosition {
+			case 1:
+				entry.B1 = match.TeamNumber
+			case 2:
+				entry.B2 = match.TeamNumber
+			case 3:
+				entry.B3 = match.TeamNumber
+			default:
+				respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Unknown blue position ", strconv.Itoa(int(match.AlliancePosition)), " in match ", strconv.Itoa(int(match.MatchNumber))))
+				return
+			}
+		default:
+			respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Unknown alliance ", match.Alliance, " in match ", strconv.Itoa(int(match.AlliancePosition))))
+			return
+		}
+		assembledMatches[key] = entry
+	}
+
+	var response RequestAllMatchesResponseT
+	for _, match := range assembledMatches {
+		copied_match := match
+		response.MatchList = append(response.MatchList, &copied_match)
+	}
+
+	var MATCH_TYPE_ORDERING = []string{"qm", "ef", "qf", "sf", "f"}
+
+	err = nil
+	sort.Slice(response.MatchList, func(i, j int) bool {
+		if err != nil {
+			return false
+		}
+		a := response.MatchList[i]
+		b := response.MatchList[j]
+
+		aMatchTypeIndex, err := findIndexInList(MATCH_TYPE_ORDERING, a.CompLevel)
+		if err != nil {
+			err = errors.New(fmt.Sprint("Comp level ", a.CompLevel, " not found in sorting list ", MATCH_TYPE_ORDERING, " : ", err))
+			return false
+		}
+		bMatchTypeIndex, err := findIndexInList(MATCH_TYPE_ORDERING, b.CompLevel)
+		if err != nil {
+			err = errors.New(fmt.Sprint("Comp level ", b.CompLevel, " not found in sorting list ", MATCH_TYPE_ORDERING, " : ", err))
+			return false
+		}
+
+		if aMatchTypeIndex < bMatchTypeIndex {
+			return true
+		}
+		if aMatchTypeIndex > bMatchTypeIndex {
+			return false
+		}
+
+		// Then sort by match number. E.g. in semi finals, all match 1 rounds
+		// are done first. Then come match 2 rounds. And then, if necessary,
+		// the match 3 rounds.
+		aMatchNumber := a.MatchNumber
+		bMatchNumber := b.MatchNumber
+		if aMatchNumber < bMatchNumber {
+			return true
+		}
+		if aMatchNumber > bMatchNumber {
+			return false
+		}
+		// Lastly, sort by set number. I.e. Semi Final 1 Match 1 happens first.
+		// Then comes Semi Final 2 Match 1. Then comes Semi Final 1 Match 2. Then
+		// Semi Final 2 Match 2.
+		aSetNumber := a.SetNumber
+		bSetNumber := b.SetNumber
+		if aSetNumber < bSetNumber {
+			return true
+		}
+		if aSetNumber > bSetNumber {
+			return false
+		}
+		return true
+	})
+
+	if err != nil {
+		// check if error happened during sorting and notify webpage if that
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint(err))
+		return
 	}
 
 	builder := flatbuffers.NewBuilder(50 * 1024)
@@ -400,22 +514,48 @@ func (handler refreshMatchListHandler) ServeHTTP(w http.ResponseWriter, req *htt
 				"TheBlueAlliance data for match %d is malformed: %v", match.MatchNumber, err))
 			return
 		}
-		// Add the match to the database.
-		err = handler.db.AddToMatch(db.Match{
-			MatchNumber: int32(match.MatchNumber),
-			SetNumber:   int32(match.SetNumber),
-			CompLevel:   match.CompLevel,
-			R1:          red[0],
-			R2:          red[1],
-			R3:          red[2],
-			B1:          blue[0],
-			B2:          blue[1],
-			B3:          blue[2],
-		})
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(
-				"Failed to add match %d to the database: %v", match.MatchNumber, err))
-			return
+
+		team_matches := []db.TeamMatch{
+			{
+				MatchNumber: int32(match.MatchNumber),
+				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
+				Alliance: "R", AlliancePosition: 1, TeamNumber: red[0],
+			},
+			{
+				MatchNumber: int32(match.MatchNumber),
+				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
+				Alliance: "R", AlliancePosition: 2, TeamNumber: red[1],
+			},
+			{
+				MatchNumber: int32(match.MatchNumber),
+				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
+				Alliance: "R", AlliancePosition: 3, TeamNumber: red[2],
+			},
+			{
+				MatchNumber: int32(match.MatchNumber),
+				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
+				Alliance: "B", AlliancePosition: 1, TeamNumber: blue[0],
+			},
+			{
+				MatchNumber: int32(match.MatchNumber),
+				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
+				Alliance: "B", AlliancePosition: 2, TeamNumber: blue[1],
+			},
+			{
+				MatchNumber: int32(match.MatchNumber),
+				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
+				Alliance: "B", AlliancePosition: 3, TeamNumber: blue[2],
+			},
+		}
+
+		for _, match := range team_matches {
+			// Iterate through matches to check they can be added to database.
+			err = handler.db.AddToMatch(match)
+			if err != nil {
+				respondWithError(w, http.StatusInternalServerError, fmt.Sprintf(
+					"Failed to add team %d from match %d to the database: %v", match.TeamNumber, match.MatchNumber, err))
+				return
+			}
 		}
 	}
 

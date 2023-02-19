@@ -3,7 +3,6 @@ package db
 import (
 	"errors"
 	"fmt"
-
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -14,13 +13,13 @@ type Database struct {
 	*gorm.DB
 }
 
-type Match struct {
-	// TODO(phil): Rework this be be one team per row.
-	// Makes queries much simpler.
-	MatchNumber            int32  `gorm:"primaryKey"`
-	SetNumber              int32  `gorm:"primaryKey"`
-	CompLevel              string `gorm:"primaryKey"`
-	R1, R2, R3, B1, B2, B3 int32
+type TeamMatch struct {
+	MatchNumber      int32  `gorm:"primaryKey"`
+	SetNumber        int32  `gorm:"primaryKey"`
+	CompLevel        string `gorm:"primaryKey"`
+	Alliance         string `gorm:"primaryKey"` // "R" or "B"
+	AlliancePosition int32  `gorm:"primaryKey"` // 1, 2, or 3
+	TeamNumber       int32
 }
 
 type Shift struct {
@@ -141,7 +140,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&Match{}, &Shift{}, &Stats{}, &Stats2023{}, &Action{}, &NotesData{}, &Ranking{}, &DriverRankingData{})
+	err = database.AutoMigrate(&TeamMatch{}, &Shift{}, &Stats{}, &Stats2023{}, &Action{}, &NotesData{}, &Ranking{}, &DriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -162,7 +161,7 @@ func (database *Database) SetDebugLogLevel() {
 	database.DB.Logger = database.DB.Logger.LogMode(logger.Info)
 }
 
-func (database *Database) AddToMatch(m Match) error {
+func (database *Database) AddToMatch(m TeamMatch) error {
 	result := database.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&m)
@@ -240,8 +239,8 @@ func (database *Database) AddOrUpdateRankings(r Ranking) error {
 	return result.Error
 }
 
-func (database *Database) ReturnMatches() ([]Match, error) {
-	var matches []Match
+func (database *Database) ReturnMatches() ([]TeamMatch, error) {
+	var matches []TeamMatch
 	result := database.Find(&matches)
 	return matches, result.Error
 }
@@ -304,18 +303,18 @@ func (database *Database) ReturnRankings() ([]Ranking, error) {
 	return rankins, result.Error
 }
 
-func (database *Database) queryMatches(teamNumber_ int32) ([]Match, error) {
-	var matches []Match
+func (database *Database) queryMatches(teamNumber_ int32) ([]TeamMatch, error) {
+	var matches []TeamMatch
 	result := database.
-		Where("r1 = $1 OR r2 = $1 OR r3 = $1 OR b1 = $1 OR b2 = $1 OR b3 = $1", teamNumber_).
+		Where("team_number = $1", teamNumber_).
 		Find(&matches)
 	return matches, result.Error
 }
 
-func (database *Database) QueryMatchesString(teamNumber_ string) ([]Match, error) {
-	var matches []Match
+func (database *Database) QueryMatchesString(teamNumber_ string) ([]TeamMatch, error) {
+	var matches []TeamMatch
 	result := database.
-		Where("r1 = $1 OR r2 = $1 OR r3 = $1 OR b1 = $1 OR b2 = $1 OR b3 = $1", teamNumber_).
+		Where("team_number = $1", teamNumber_).
 		Find(&matches)
 	return matches, result.Error
 }
