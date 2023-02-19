@@ -232,6 +232,14 @@ func (database *Database) AddToStats2023(s Stats2023) error {
 	return result.Error
 }
 
+func (database *Database) DeleteFromStats(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
+	var stats2023 []Stats2023
+	result := database.
+		Where("comp_level = ? AND match_number = ? AND set_number = ? AND team_number = ?", compLevel_, matchNumber_, setNumber_, teamNumber_).
+		Delete(&stats2023)
+	return result.Error
+}
+
 func (database *Database) AddOrUpdateRankings(r Ranking) error {
 	result := database.Clauses(clause.OnConflict{
 		UpdateAll: true,
@@ -295,6 +303,12 @@ func (database *Database) ReturnStats() ([]Stats, error) {
 		packStats(&stats[i])
 	}
 	return stats, result.Error
+}
+
+func (database *Database) ReturnStats2023() ([]Stats2023, error) {
+	var stats2023 []Stats2023
+	result := database.Find(&stats2023)
+	return stats2023, result.Error
 }
 
 func (database *Database) ReturnRankings() ([]Ranking, error) {
