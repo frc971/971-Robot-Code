@@ -124,80 +124,78 @@ func TestSubmitDataScouting(t *testing.T) {
 
 // Validates that we can request the full match list.
 func TestRequestAllMatches(t *testing.T) {
-	t.Skip("TODO(phil/emily): Figure out why this test is failing.")
-
 	db := MockDatabase{
 		matches: []db.TeamMatch{
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 1, TeamNumber: 5,
 			},
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 2, TeamNumber: 42,
 			},
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 3, TeamNumber: 600,
 			},
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 1, TeamNumber: 971,
 			},
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 2, TeamNumber: 400,
 			},
 			{
-				MatchNumber: 1, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 3, TeamNumber: 200,
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 1, TeamNumber: 6,
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 2, TeamNumber: 43,
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 3, TeamNumber: 601,
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 1, TeamNumber: 972,
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 2, TeamNumber: 401,
 			},
 			{
-				MatchNumber: 2, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 3, TeamNumber: 201,
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 1, TeamNumber: 7,
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 2, TeamNumber: 44,
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
 				Alliance: "R", AlliancePosition: 3, TeamNumber: 602,
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 1, TeamNumber: 973,
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 2, TeamNumber: 402,
 			},
 			{
-				MatchNumber: 3, SetNumber: 1, CompLevel: "qual",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
 				Alliance: "B", AlliancePosition: 3, TeamNumber: 202,
 			},
 		},
@@ -220,15 +218,15 @@ func TestRequestAllMatches(t *testing.T) {
 			// MatchNumber, SetNumber, CompLevel
 			// R1, R2, R3, B1, B2, B3
 			{
-				1, 1, "qual",
+				1, 1, "qm",
 				5, 42, 600, 971, 400, 200,
 			},
 			{
-				2, 1, "qual",
+				2, 1, "qm",
 				6, 43, 601, 972, 401, 201,
 			},
 			{
-				3, 1, "qual",
+				3, 1, "qm",
 				7, 44, 602, 973, 402, 202,
 			},
 		},
