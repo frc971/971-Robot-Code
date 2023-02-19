@@ -18,7 +18,7 @@ table TargetPoseFbs {
   // AprilTag ID of this target
   id:uint64 (id: 0);
 
-  // Pose of target relative to either the field origin or robot.
+  // Pose of target relative to either the field origin or camera.
   // To get the pose of the target, do:
   // Translation3d(position.x(), position.y(), position.z()) *
   // Quaterniond(orientation.w(), orientation.x(), orientation.y(), orientation.z())
@@ -29,7 +29,7 @@ table TargetPoseFbs {
 // Map of all target poses on a field.
 // There are two possible uses for this:
 // 1. Static april tag poses on the field solved for by TargetMapper.
-// 2. List of detected april poses relative to the robot.
+// 2. List of detected april poses relative to the camera.
 table TargetMap {
   target_poses:[TargetPoseFbs] (id: 0);
 
