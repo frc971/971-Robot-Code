@@ -1,5 +1,6 @@
 #include "aos/json_to_flatbuffer.h"
 
+#include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer_generated.h"
 #include "aos/testing/path.h"
 #include "flatbuffers/minireflect.h"
@@ -299,6 +300,21 @@ TEST_F(JsonToFlatbufferTest, TrimmedVector) {
 TEST_F(JsonToFlatbufferTest, NullptrData) {
   EXPECT_EQ("null", TableFlatbufferToJson((const flatbuffers::Table *)(nullptr),
                                           ConfigurationTypeTable()));
+}
+
+TEST_F(JsonToFlatbufferTest, SpacedData) {
+  EXPECT_TRUE(CompareFlatBuffer(
+      FlatbufferDetachedBuffer<VectorOfStrings>(
+          JsonToFlatbuffer<VectorOfStrings>(R"json({
+	"str": [
+		"f o o",
+		"b a r",
+		"foo bar",
+		"bar foo"
+	]
+})json")),
+      JsonFileToFlatbuffer<VectorOfStrings>(
+          ArtifactPath("aos/json_to_flatbuffer_test_spaces.json"))));
 }
 
 }  // namespace testing

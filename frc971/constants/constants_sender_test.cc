@@ -113,11 +113,11 @@ TEST_F(ConstantSenderTest, SyntaxErrorDeath) {
       ({
         ConstantSender<testdata::ConstantsData, testdata::ConstantsList>
             test_syntax(constants_sender_event_loop_.get(),
-                        "frc971/constants/testdata/syntaxerror.json", 971,
+                        "frc971/constants/testdata/syntax_error.json", 971,
                         "/constants");
         event_loop_factory_.RunFor(std::chrono::seconds(1));
       }),
-      "Error on line 0");
+      "Invalid field name");
 }
 
 }  // namespace testing

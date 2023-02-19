@@ -45,6 +45,7 @@ cc_test(
     ],
     data = [
         "//frc971/constants/testdata:aos_config",
+        "//frc971/constants/testdata:syntax_error.json",
         "//frc971/constants/testdata:test_constants.json",
     ],
     target_compatible_with = ["@platforms//os:linux"],
