@@ -12,8 +12,7 @@ namespace frc971::controls {
 
 namespace {
 constexpr double kG = 9.80665;
-constexpr std::chrono::microseconds kNominalDt(500);
-
+static constexpr std::chrono::microseconds kNominalDt = ImuWatcher::kNominalDt;
 // Field position of the target (the 2022 target is conveniently in the middle
 // of the field....).
 constexpr double kVisionTargetX = 0.0;
@@ -863,18 +862,10 @@ ModelBasedLocalizer::PackTargetEstimateDebug(
   }
 }
 
-namespace {
-// Period at which the encoder readings from the IMU board wrap.
-static double DrivetrainWrapPeriod() {
-  return y2022::constants::Values::DrivetrainEncoderToMeters(1 << 16);
-}
-}  // namespace
-
 EventLoopLocalizer::EventLoopLocalizer(
     aos::EventLoop *event_loop,
     const control_loops::drivetrain::DrivetrainConfig<double> &dt_config)
     : event_loop_(event_loop),
-      dt_config_(dt_config),
       model_based_(dt_config),
       status_sender_(event_loop_->MakeSender<LocalizerStatus>("/localizer")),
       output_sender_(event_loop_->MakeSender<LocalizerOutput>("/localizer")),
@@ -892,9 +883,15 @@ EventLoopLocalizer::EventLoopLocalizer(
                   "/superstructure")),
       joystick_state_fetcher_(
           event_loop_->MakeFetcher<aos::JoystickState>("/roborio/aos")),
-      zeroer_(zeroing::ImuZeroer::FaultBehavior::kTemporary),
-      left_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()),
-      right_encoder_(-DrivetrainWrapPeriod() / 2.0, DrivetrainWrapPeriod()) {
+      imu_watcher_(event_loop, dt_config,
+                   y2022::constants::Values::DrivetrainEncoderToMeters(1),
+                   [this](aos::monotonic_clock::time_point sample_time_pico,
+                          aos::monotonic_clock::time_point sample_time_pi,
+                          std::optional<Eigen::Vector2d> encoders,
+                          Eigen::Vector3d gyro, Eigen::Vector3d accel) {
+                     HandleImu(sample_time_pico, sample_time_pi, encoders, gyro,
+                               accel);
+                   }) {
   event_loop->SetRuntimeRealtimePriority(10);
   event_loop_->MakeWatcher(
       "/drivetrain",
@@ -965,7 +962,7 @@ EventLoopLocalizer::EventLoopLocalizer(
             model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
             continue;
           }
-          capture_time -= pico_offset_error_;
+          capture_time -= imu_watcher_.pico_offset_error();
           model_based_.HandleImageMatch(
               capture_time, target_estimate_fetchers_[camera_index].get(),
               camera_index);
@@ -976,153 +973,83 @@ EventLoopLocalizer::EventLoopLocalizer(
     estimate_timer->Setup(event_loop_->monotonic_now(),
                           std::chrono::milliseconds(100));
   });
-  event_loop_->MakeWatcher(
-      "/localizer", [this](const frc971::IMUValuesBatch &values) {
-        CHECK(values.has_readings());
-        output_fetcher_.Fetch();
-        for (const IMUValues *value : *values.readings()) {
-          zeroer_.InsertAndProcessMeasurement(*value);
-          if (zeroer_.Faulted()) {
-            if (value->checksum_failed()) {
-              imu_fault_tracker_.pico_to_pi_checksum_mismatch++;
-            } else if (value->previous_reading_diag_stat()->checksum_mismatch()) {
-              imu_fault_tracker_.imu_to_pico_checksum_mismatch++;
-            } else {
-              imu_fault_tracker_.other_zeroing_faults++;
-            }
-          } else {
-            if (!first_valid_data_counter_.has_value()) {
-              first_valid_data_counter_ = value->data_counter();
-            }
-          }
-          if (first_valid_data_counter_.has_value()) {
-            total_imu_messages_received_++;
-            // Only update when we have good checksums, since the data counter
-            // could get corrupted.
-            if (!zeroer_.Faulted()) {
-              if (value->data_counter() < last_data_counter_) {
-                data_counter_offset_ += 1 << 16;
-              }
-              imu_fault_tracker_.missed_messages =
-                  (1 + value->data_counter() + data_counter_offset_ -
-                   first_valid_data_counter_.value()) -
-                  total_imu_messages_received_;
-              last_data_counter_ = value->data_counter();
-            }
-          }
-          const std::optional<Eigen::Vector2d> encoders =
-              zeroer_.Faulted()
-                  ? std::nullopt
-                  : std::make_optional(Eigen::Vector2d{
-                        left_encoder_.Unwrap(value->left_encoder()),
-                        right_encoder_.Unwrap(value->right_encoder())});
-          {
-            // If we can't trust the imu reading, just naively increment the
-            // pico timestamp.
-            const aos::monotonic_clock::time_point pico_timestamp =
-                zeroer_.Faulted()
-                    ? (last_pico_timestamp_.has_value()
-                           ? last_pico_timestamp_.value() + kNominalDt
-                           : aos::monotonic_clock::epoch())
-                    : aos::monotonic_clock::time_point(
-                          std::chrono::microseconds(
-                              value->pico_timestamp_us()));
-            // TODO(james): If we get large enough drift off of the pico,
-            // actually do something about it.
-            if (!pico_offset_.has_value()) {
-              pico_offset_ =
-                  event_loop_->context().monotonic_event_time - pico_timestamp;
-              last_pico_timestamp_ = pico_timestamp;
-            }
-            if (pico_timestamp < last_pico_timestamp_) {
-              pico_offset_.value() += std::chrono::microseconds(1ULL << 32);
-            }
-            const aos::monotonic_clock::time_point sample_timestamp =
-                pico_offset_.value() + pico_timestamp;
-            pico_offset_error_ =
-                event_loop_->context().monotonic_event_time - sample_timestamp;
-            const bool disabled =
-                (output_fetcher_.get() == nullptr) ||
-                (output_fetcher_.context().monotonic_event_time +
-                     std::chrono::milliseconds(10) <
-                 event_loop_->context().monotonic_event_time);
-            const bool zeroed = zeroer_.Zeroed();
-            // For gyros, use the most recent gyro reading if we aren't zeroed,
-            // to avoid missing integration cycles.
-            model_based_.HandleImu(
-                sample_timestamp,
-                zeroed ? zeroer_.ZeroedGyro().value() : last_gyro_,
-                zeroed ? zeroer_.ZeroedAccel().value()
-                       : dt_config_.imu_transform.transpose() *
-                             Eigen::Vector3d::UnitZ(),
-                encoders,
-                disabled ? Eigen::Vector2d::Zero()
-                         : Eigen::Vector2d{output_fetcher_->left_voltage(),
-                                           output_fetcher_->right_voltage()});
-            last_pico_timestamp_ = pico_timestamp;
+}
 
-            if (zeroed) {
-              last_gyro_ = zeroer_.ZeroedGyro().value();
-            }
-          }
-          {
-            auto builder = status_sender_.MakeBuilder();
-            const flatbuffers::Offset<ModelBasedStatus> model_based_status =
-                model_based_.PopulateStatus(builder.fbb());
-            const flatbuffers::Offset<control_loops::drivetrain::ImuZeroerState>
-                zeroer_status = zeroer_.PopulateStatus(builder.fbb());
-            const flatbuffers::Offset<ImuFailures> imu_failures =
-                ImuFailures::Pack(*builder.fbb(), &imu_fault_tracker_);
-            LocalizerStatus::Builder status_builder =
-                builder.MakeBuilder<LocalizerStatus>();
-            status_builder.add_model_based(model_based_status);
-            status_builder.add_zeroed(zeroer_.Zeroed());
-            status_builder.add_faulted_zero(zeroer_.Faulted());
-            status_builder.add_zeroing(zeroer_status);
-            status_builder.add_imu_failures(imu_failures);
-            if (encoders.has_value()) {
-              status_builder.add_left_encoder(encoders.value()(0));
-              status_builder.add_right_encoder(encoders.value()(1));
-            }
-            if (pico_offset_.has_value()) {
-              status_builder.add_pico_offset_ns(pico_offset_.value().count());
-              status_builder.add_pico_offset_error_ns(
-                  pico_offset_error_.count());
-            }
-            builder.CheckOk(builder.Send(status_builder.Finish()));
-          }
-          if (last_output_send_ + std::chrono::milliseconds(5) <
-              event_loop_->context().monotonic_event_time) {
-            auto builder = output_sender_.MakeBuilder();
+void EventLoopLocalizer::HandleImu(
+    aos::monotonic_clock::time_point sample_time_pico,
+    aos::monotonic_clock::time_point sample_time_pi,
+    std::optional<Eigen::Vector2d> encoders, Eigen::Vector3d gyro,
+    Eigen::Vector3d accel) {
+  output_fetcher_.Fetch();
+  {
+    const bool disabled = (output_fetcher_.get() == nullptr) ||
+                          (output_fetcher_.context().monotonic_event_time +
+                               std::chrono::milliseconds(10) <
+                           event_loop_->context().monotonic_event_time);
+    // For gyros, use the most recent gyro reading if we aren't zeroed,
+    // to avoid missing integration cycles.
+    model_based_.HandleImu(
+        sample_time_pico, gyro, accel, encoders,
+        disabled ? Eigen::Vector2d::Zero()
+                 : Eigen::Vector2d{output_fetcher_->left_voltage(),
+                                   output_fetcher_->right_voltage()});
+  }
+  {
+    auto builder = status_sender_.MakeBuilder();
+    const flatbuffers::Offset<ModelBasedStatus> model_based_status =
+        model_based_.PopulateStatus(builder.fbb());
+    const flatbuffers::Offset<control_loops::drivetrain::ImuZeroerState>
+        zeroer_status = imu_watcher_.zeroer().PopulateStatus(builder.fbb());
+    const flatbuffers::Offset<ImuFailures> imu_failures =
+        imu_watcher_.PopulateImuFailures(builder.fbb());
+    LocalizerStatus::Builder status_builder =
+        builder.MakeBuilder<LocalizerStatus>();
+    status_builder.add_model_based(model_based_status);
+    status_builder.add_zeroed(imu_watcher_.zeroer().Zeroed());
+    status_builder.add_faulted_zero(imu_watcher_.zeroer().Faulted());
+    status_builder.add_zeroing(zeroer_status);
+    status_builder.add_imu_failures(imu_failures);
+    if (encoders.has_value()) {
+      status_builder.add_left_encoder(encoders.value()(0));
+      status_builder.add_right_encoder(encoders.value()(1));
+    }
+    if (imu_watcher_.pico_offset().has_value()) {
+      status_builder.add_pico_offset_ns(
+          imu_watcher_.pico_offset().value().count());
+      status_builder.add_pico_offset_error_ns(
+          imu_watcher_.pico_offset_error().count());
+    }
+    builder.CheckOk(builder.Send(status_builder.Finish()));
+  }
+  if (last_output_send_ + std::chrono::milliseconds(5) <
+      event_loop_->context().monotonic_event_time) {
+    auto builder = output_sender_.MakeBuilder();
 
-            const auto led_outputs_offset =
-                builder.fbb()->CreateVector(model_based_.led_outputs().data(),
-                                            model_based_.led_outputs().size());
+    const auto led_outputs_offset = builder.fbb()->CreateVector(
+        model_based_.led_outputs().data(), model_based_.led_outputs().size());
 
-            LocalizerOutput::Builder output_builder =
-                builder.MakeBuilder<LocalizerOutput>();
-            // TODO(james): Should we bother to try to estimate time offsets for
-            // the pico?
-            output_builder.add_monotonic_timestamp_ns(
-                value->monotonic_timestamp_ns());
-            output_builder.add_x(model_based_.xytheta()(0));
-            output_builder.add_y(model_based_.xytheta()(1));
-            output_builder.add_theta(model_based_.xytheta()(2));
-            output_builder.add_zeroed(zeroer_.Zeroed());
-            output_builder.add_image_accepted_count(model_based_.total_accepted());
-            const Eigen::Quaterniond &orientation = model_based_.orientation();
-            Quaternion quaternion;
-            quaternion.mutate_x(orientation.x());
-            quaternion.mutate_y(orientation.y());
-            quaternion.mutate_z(orientation.z());
-            quaternion.mutate_w(orientation.w());
-            output_builder.add_orientation(&quaternion);
-            output_builder.add_led_outputs(led_outputs_offset);
-            builder.CheckOk(builder.Send(output_builder.Finish()));
-            last_output_send_ = event_loop_->monotonic_now();
-          }
-        }
-      });
+    LocalizerOutput::Builder output_builder =
+        builder.MakeBuilder<LocalizerOutput>();
+    output_builder.add_monotonic_timestamp_ns(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            sample_time_pi.time_since_epoch())
+            .count());
+    output_builder.add_x(model_based_.xytheta()(0));
+    output_builder.add_y(model_based_.xytheta()(1));
+    output_builder.add_theta(model_based_.xytheta()(2));
+    output_builder.add_zeroed(imu_watcher_.zeroer().Zeroed());
+    output_builder.add_image_accepted_count(model_based_.total_accepted());
+    const Eigen::Quaterniond &orientation = model_based_.orientation();
+    Quaternion quaternion;
+    quaternion.mutate_x(orientation.x());
+    quaternion.mutate_y(orientation.y());
+    quaternion.mutate_z(orientation.z());
+    quaternion.mutate_w(orientation.w());
+    output_builder.add_orientation(&quaternion);
+    output_builder.add_led_outputs(led_outputs_offset);
+    builder.CheckOk(builder.Send(output_builder.Finish()));
+    last_output_send_ = event_loop_->monotonic_now();
+  }
 }
 
 std::optional<aos::monotonic_clock::duration> EventLoopLocalizer::ClockOffset(

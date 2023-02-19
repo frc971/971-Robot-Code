@@ -19,6 +19,7 @@
 #include "y2022/localizer/localizer_status_generated.h"
 #include "y2022/localizer/localizer_visualization_generated.h"
 #include "y2022/vision/target_estimate_generated.h"
+#include "frc971/imu_reader/imu_watcher.h"
 
 namespace frc971::controls {
 
@@ -58,10 +59,6 @@ class LocalizerTest;
 // until the branches stop diverging--this will indicate that the model
 // matches the accelerometer readings again, and so we will swap back to
 // the model-based state.
-//
-// TODO:
-// * Implement paying attention to camera readings.
-// * Tune for ADIS16505/real robot.
 class ModelBasedLocalizer {
  public:
   static constexpr size_t kNumPis = 4;
@@ -331,8 +328,11 @@ class EventLoopLocalizer {
  private:
   std::optional<aos::monotonic_clock::duration> ClockOffset(
       std::string_view pi);
+  void HandleImu(aos::monotonic_clock::time_point sample_time_pico,
+                 aos::monotonic_clock::time_point sample_time_pi,
+                 std::optional<Eigen::Vector2d> encoders, Eigen::Vector3d gyro,
+                 Eigen::Vector3d accel);
   aos::EventLoop *event_loop_;
-  const control_loops::drivetrain::DrivetrainConfig<double> &dt_config_;
   ModelBasedLocalizer model_based_;
   aos::Sender<LocalizerStatus> status_sender_;
   aos::Sender<LocalizerOutput> output_sender_;
@@ -350,22 +350,8 @@ class EventLoopLocalizer {
       aos::monotonic_clock::min_time;
   aos::monotonic_clock::time_point last_visualization_send_ =
       aos::monotonic_clock::min_time;
-  std::optional<aos::monotonic_clock::time_point> last_pico_timestamp_;
-  aos::monotonic_clock::duration pico_offset_error_;
-  // t = pico_offset_ + pico_timestamp.
-  // Note that this can drift over sufficiently long time periods!
-  std::optional<std::chrono::nanoseconds> pico_offset_;
 
-  ImuFailuresT imu_fault_tracker_;
-  std::optional<size_t> first_valid_data_counter_;
-  size_t total_imu_messages_received_ = 0;
-  size_t data_counter_offset_ = 0;
-  int last_data_counter_ = 0;
-
-  Eigen::Vector3d last_gyro_ = Eigen::Vector3d::Zero();
-
-  zeroing::UnwrapSensor left_encoder_;
-  zeroing::UnwrapSensor right_encoder_;
+  ImuWatcher imu_watcher_;
 };
 }  // namespace frc971::controls
 #endif  // Y2022_LOCALIZER_LOCALIZER_H_

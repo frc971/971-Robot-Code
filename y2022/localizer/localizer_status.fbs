@@ -1,4 +1,5 @@
 include "frc971/control_loops/drivetrain/drivetrain_status.fbs";
+include "frc971/imu_reader/imu_failures.fbs";
 
 namespace frc971.controls;
 
@@ -90,13 +91,6 @@ table ModelBasedStatus {
   // *maybe* during startup.
   clock_resets:int (id: 17);
   statistics:CumulativeStatistics (id: 18);
-}
-
-table ImuFailures {
-  imu_to_pico_checksum_mismatch:uint (id: 0);
-  pico_to_pi_checksum_mismatch:uint (id: 1);
-  missed_messages:uint (id: 2);
-  other_zeroing_faults:uint (id: 3);
 }
 
 table LocalizerStatus {

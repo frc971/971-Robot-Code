@@ -38,12 +38,13 @@ flatbuffer_cc_library(
         "localizer_status.fbs",
     ],
     gen_reflections = True,
-    includes = [
-        "//frc971/control_loops:control_loops_fbs_includes",
-        "//frc971/control_loops/drivetrain:drivetrain_status_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//frc971/imu_reader:imu_failures_fbs",
+    ],
 )
 
 flatbuffer_ts_library(
@@ -53,6 +54,7 @@ flatbuffer_ts_library(
     deps = [
         "//frc971/control_loops:control_loops_ts_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
+        "//frc971/imu_reader:imu_failures_ts_fbs",
     ],
 )
 
@@ -106,12 +108,11 @@ cc_library(
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/control_loops/drivetrain:improved_down_estimator",
         "//frc971/control_loops/drivetrain:localizer_fbs",
+        "//frc971/imu_reader:imu_watcher",
         "//frc971/input:joystick_state_fbs",
         "//frc971/vision:calibration_fbs",
         "//frc971/wpilib:imu_batch_fbs",
         "//frc971/wpilib:imu_fbs",
-        "//frc971/zeroing:imu_zeroer",
-        "//frc971/zeroing:wrap",
         "//y2022:constants",
         "//y2022/control_loops/superstructure:superstructure_status_fbs",
         "//y2022/vision:target_estimate_fbs",
