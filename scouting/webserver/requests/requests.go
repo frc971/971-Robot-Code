@@ -252,7 +252,6 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 
 	for _, match := range matches {
 		key := Key{match.MatchNumber, match.SetNumber, match.CompLevel}
-		log.Println("Key : ", key)
 		entry, ok := assembledMatches[key]
 		if !ok {
 			entry = request_all_matches_response.MatchT{
@@ -261,7 +260,6 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 				CompLevel:   match.CompLevel,
 			}
 		}
-		log.Println("Entry : ", entry)
 		switch match.Alliance {
 		case "R":
 			switch match.AlliancePosition {
