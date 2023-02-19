@@ -175,4 +175,8 @@ export class Notes {
     this.errorMessage = '';
     this.section = 'TeamSelection';
   }
+
+  labelToId(label: String): String {
+    return label.replaceAll(' ', '_').toLowerCase();
+  }
 }
