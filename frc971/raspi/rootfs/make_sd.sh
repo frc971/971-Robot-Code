@@ -4,7 +4,7 @@ set -e
 
 # Disk image to use for creating SD card
 # NOTE: You MUST run modify_rootfs.sh on this image BEFORE running make_sd.sh
-ORIG_IMAGE="2022-01-28-raspios-bullseye-arm64-lite.img"
+ORIG_IMAGE="arm64_bullseye_debian.img"
 IMAGE=`echo ${ORIG_IMAGE} | sed s/.img/-frc-mods.img/`
 DEVICE="/dev/sda"
 

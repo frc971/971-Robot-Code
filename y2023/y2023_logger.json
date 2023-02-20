@@ -466,7 +466,7 @@
       ]
     },
     {
-      "name": "camera_reader",
+      "name": "logger_camera_reader",
       "executable_name": "camera_reader",
       "args": ["--enable_ftrace", "--send_downsized_images"],
       "nodes": [

@@ -6,7 +6,7 @@
     },
     {
       "team": 971,
-      "data": {}
+      "data": {% include 'y2023/constants/971.json' %}
     },
     {
       "team": 9971,
