@@ -871,18 +871,10 @@ EventLoopLocalizer::EventLoopLocalizer(
       output_sender_(event_loop_->MakeSender<LocalizerOutput>("/localizer")),
       visualization_sender_(
           event_loop_->MakeSender<LocalizerVisualization>("/localizer")),
-      output_fetcher_(
-          event_loop_->MakeFetcher<frc971::control_loops::drivetrain::Output>(
-              "/drivetrain")),
-      clock_offset_fetcher_(
-          event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
-              "/aos")),
       superstructure_fetcher_(
           event_loop_
               ->MakeFetcher<y2022::control_loops::superstructure::Status>(
                   "/superstructure")),
-      joystick_state_fetcher_(
-          event_loop_->MakeFetcher<aos::JoystickState>("/roborio/aos")),
       imu_watcher_(event_loop, dt_config,
                    y2022::constants::Values::DrivetrainEncoderToMeters(1),
                    [this](aos::monotonic_clock::time_point sample_time_pico,
@@ -891,7 +883,8 @@ EventLoopLocalizer::EventLoopLocalizer(
                           Eigen::Vector3d gyro, Eigen::Vector3d accel) {
                      HandleImu(sample_time_pico, sample_time_pi, encoders, gyro,
                                accel);
-                   }) {
+                   }),
+      utils_(event_loop) {
   event_loop->SetRuntimeRealtimePriority(10);
   event_loop_->MakeWatcher(
       "/drivetrain",
@@ -929,10 +922,7 @@ EventLoopLocalizer::EventLoopLocalizer(
             absl::StrCat("/", kPisToUse[camera_index], "/camera"));
   }
   aos::TimerHandler *estimate_timer = event_loop_->AddTimer([this]() {
-      joystick_state_fetcher_.Fetch();
-      const bool maybe_in_auto = (joystick_state_fetcher_.get() != nullptr)
-                                     ? joystick_state_fetcher_->autonomous()
-                                     : true;
+      const bool maybe_in_auto = utils_.MaybeInAutonomous();
       model_based_.set_use_aggressive_image_corrections(!maybe_in_auto);
       for (size_t camera_index = 0; camera_index < kPisToUse.size();
            ++camera_index) {
@@ -946,8 +936,10 @@ EventLoopLocalizer::EventLoopLocalizer(
         }
         if (target_estimate_fetchers_[camera_index].Fetch()) {
           const std::optional<aos::monotonic_clock::duration> monotonic_offset =
-              ClockOffset(kPisToUse[camera_index]);
+              utils_.ClockOffset(kPisToUse[camera_index]);
           if (!monotonic_offset.has_value()) {
+            model_based_.TallyRejection(
+                RejectionReason::MESSAGE_BRIDGE_DISCONNECTED);
             continue;
           }
           // TODO(james): Get timestamp from message contents.
@@ -980,20 +972,11 @@ void EventLoopLocalizer::HandleImu(
     aos::monotonic_clock::time_point sample_time_pi,
     std::optional<Eigen::Vector2d> encoders, Eigen::Vector3d gyro,
     Eigen::Vector3d accel) {
-  output_fetcher_.Fetch();
-  {
-    const bool disabled = (output_fetcher_.get() == nullptr) ||
-                          (output_fetcher_.context().monotonic_event_time +
-                               std::chrono::milliseconds(10) <
-                           event_loop_->context().monotonic_event_time);
-    // For gyros, use the most recent gyro reading if we aren't zeroed,
-    // to avoid missing integration cycles.
-    model_based_.HandleImu(
-        sample_time_pico, gyro, accel, encoders,
-        disabled ? Eigen::Vector2d::Zero()
-                 : Eigen::Vector2d{output_fetcher_->left_voltage(),
-                                   output_fetcher_->right_voltage()});
-  }
+
+  model_based_.HandleImu(
+      sample_time_pico, gyro, accel, encoders,
+      utils_.VoltageOrZero(event_loop_->context().monotonic_event_time));
+
   {
     auto builder = status_sender_.MakeBuilder();
     const flatbuffers::Offset<ModelBasedStatus> model_based_status =
@@ -1050,32 +1033,6 @@ void EventLoopLocalizer::HandleImu(
     builder.CheckOk(builder.Send(output_builder.Finish()));
     last_output_send_ = event_loop_->monotonic_now();
   }
-}
-
-std::optional<aos::monotonic_clock::duration> EventLoopLocalizer::ClockOffset(
-    std::string_view pi) {
-  std::optional<aos::monotonic_clock::duration> monotonic_offset;
-  clock_offset_fetcher_.Fetch();
-  if (clock_offset_fetcher_.get() != nullptr) {
-    for (const auto connection : *clock_offset_fetcher_->connections()) {
-      if (connection->has_node() && connection->node()->has_name() &&
-          connection->node()->name()->string_view() == pi) {
-        if (connection->has_monotonic_offset()) {
-          monotonic_offset =
-              std::chrono::nanoseconds(connection->monotonic_offset());
-        } else {
-          // If we don't have a monotonic offset, that means we aren't
-          // connected.
-          model_based_.TallyRejection(
-              RejectionReason::MESSAGE_BRIDGE_DISCONNECTED);
-          return std::nullopt;
-        }
-        break;
-      }
-    }
-  }
-  CHECK(monotonic_offset.has_value());
-  return monotonic_offset;
 }
 
 }  // namespace frc971::controls

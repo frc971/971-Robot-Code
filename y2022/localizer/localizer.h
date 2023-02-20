@@ -12,6 +12,7 @@
 #include "frc971/input/joystick_state_generated.h"
 #include "frc971/control_loops/drivetrain/improved_down_estimator.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
+#include "frc971/control_loops/drivetrain/localization_utils.h"
 #include "frc971/zeroing/imu_zeroer.h"
 #include "frc971/zeroing/wrap.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
@@ -326,8 +327,6 @@ class EventLoopLocalizer {
   ModelBasedLocalizer *localizer() { return &model_based_; }
 
  private:
-  std::optional<aos::monotonic_clock::duration> ClockOffset(
-      std::string_view pi);
   void HandleImu(aos::monotonic_clock::time_point sample_time_pico,
                  aos::monotonic_clock::time_point sample_time_pi,
                  std::optional<Eigen::Vector2d> encoders, Eigen::Vector3d gyro,
@@ -337,21 +336,18 @@ class EventLoopLocalizer {
   aos::Sender<LocalizerStatus> status_sender_;
   aos::Sender<LocalizerOutput> output_sender_;
   aos::Sender<LocalizerVisualization> visualization_sender_;
-  aos::Fetcher<frc971::control_loops::drivetrain::Output> output_fetcher_;
-  aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
   std::array<aos::Fetcher<y2022::vision::TargetEstimate>,
              ModelBasedLocalizer::kNumPis>
       target_estimate_fetchers_;
   aos::Fetcher<y2022::control_loops::superstructure::Status>
       superstructure_fetcher_;
-  aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
-  zeroing::ImuZeroer zeroer_;
   aos::monotonic_clock::time_point last_output_send_ =
       aos::monotonic_clock::min_time;
   aos::monotonic_clock::time_point last_visualization_send_ =
       aos::monotonic_clock::min_time;
 
   ImuWatcher imu_watcher_;
+  control_loops::drivetrain::LocalizationUtils utils_;
 };
 }  // namespace frc971::controls
 #endif  // Y2022_LOCALIZER_LOCALIZER_H_
