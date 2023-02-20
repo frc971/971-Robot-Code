@@ -17,16 +17,21 @@ neutral_to_cone_perch_pos_2 = to_theta_with_circular_index(0.7,
                                                            circular_index=-1)
 cone_perch_pos = to_theta_with_circular_index(1.0, 2.0, circular_index=-1)
 
-points = []
+# TODO(Max): Add real paths for arm.
+points = [(neutral, "NeutralPos"), (neutral_to_cone_1, "NeutralToConePos1"),
+          (neutral_to_cone_2, "NeutralToConePos2"), (cone_pos, "ConePos"),
+          (neutral_to_cone_perch_pos_1, "NeutralToConePerchPos1"),
+          (neutral_to_cone_perch_pos_2, "NeutralToConePerchPos2"),
+          (cone_perch_pos, "ConePerchPos")]
 front_points = []
 back_points = []
 unnamed_segments = []
-named_segments = []
-
-segments = [
+named_segments = [
     ThetaSplineSegment(neutral, neutral_to_cone_1, neutral_to_cone_2, cone_pos,
                        "NeutralToCone"),
     ThetaSplineSegment(neutral, neutral_to_cone_perch_pos_1,
                        neutral_to_cone_perch_pos_2, cone_perch_pos,
-                       "NeutralToPerchedCone"),
+                       "NeutralToConePerch"),
 ]
+
+segments = unnamed_segments + named_segments

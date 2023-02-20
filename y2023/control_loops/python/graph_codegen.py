@@ -27,11 +27,11 @@ def add_edge(cc_file, name, segment, index, reverse):
     cc_file.append("                             %s," % (alpha_unitizer))
     if reverse:
         cc_file.append(
-            "                             Trajectory(dynamics, Path::Reversed(%s()), 0.005, kArmConstants));"
+            "                             Trajectory(dynamics, Path::Reversed(%s()), 0.005));"
             % (path_function_name(str(name))))
     else:
         cc_file.append(
-            "                             Trajectory(dynamics, %s(), 0.005, kArmConstants));"
+            "                             Trajectory(dynamics, %s(), 0.005));"
             % (path_function_name(str(name))))
 
     start_index = None
@@ -202,11 +202,11 @@ def main(argv):
     h_file.append("                            double vmax);")
     cc_file.append("SearchGraph MakeSearchGraph("
                    "const frc971::control_loops::arm::Dynamics *dynamics, "
-                   "::std::vector<TrajectoryAndParams> * /*trajectories*/,")
+                   "::std::vector<TrajectoryAndParams> *trajectories,")
     cc_file.append("                            "
-                   "const ::Eigen::Matrix<double, 2, 2> & /*alpha_unitizer*/,")
+                   "const ::Eigen::Matrix<double, 2, 2> &alpha_unitizer,")
     cc_file.append("                            "
-                   "double /*vmax*/) {")
+                   "double vmax) {")
     cc_file.append("  ::std::vector<SearchGraph::Edge> edges;")
 
     index = 0

@@ -3,6 +3,53 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2023.control_loops.superstructure;
 
+enum ArmState : ubyte {
+    UNINITIALIZED = 0,
+    ZEROING = 1,
+    DISABLED = 2,
+    GOTO_PATH = 3,
+    RUNNING = 4,
+    ESTOP = 5,
+}
+
+table ArmStatus {
+  // State of the estimators.
+  proximal_estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState (id: 0);
+  distal_estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState (id: 1);
+
+  // The node we are currently going to.
+  current_node:uint32 (id: 2);
+  // Distance (in radians) to the end of the path.
+  path_distance_to_go:float (id: 3);
+  // Goal position and velocity (radians)
+  goal_theta0:float (id: 4);
+  goal_theta1:float (id: 5);
+  goal_omega0:float (id: 6);
+  goal_omega1:float (id: 7);
+
+  // Current position and velocity (radians)
+  theta0:float (id: 8);
+  theta1:float (id: 9);
+
+  omega0:float (id: 10);
+  omega1:float (id: 11);
+
+  // Estimated voltage error for the two joints.
+  voltage_error0:float (id: 12);
+  voltage_error1:float (id: 13);
+
+  // True if we are zeroed.
+  zeroed:bool (id: 14);
+
+  // True if the arm is zeroed.
+  estopped:bool (id: 15);
+
+  // The current state machine state.
+  state:ArmState (id: 16);
+
+  // The number of times the LQR solver failed.
+  failed_solutions:uint32 (id: 17);
+}
 
 table Status {
   // All subsystems know their location.
@@ -11,13 +58,11 @@ table Status {
   // If true, we have aborted. This is the or of all subsystem estops.
   estopped:bool (id: 1);
 
-  proximal:frc971.PotAndAbsoluteEncoderEstimatorState (id: 2);
+  arm:ArmStatus (id: 2);
 
-  distal:frc971.PotAndAbsoluteEncoderEstimatorState (id: 3);
+  roll_joint:frc971.PotAndAbsoluteEncoderEstimatorState (id: 3);
 
-  roll_joint:frc971.PotAndAbsoluteEncoderEstimatorState (id: 4);
-
-  wrist:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 5);
+  wrist:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 4);
 }
 
 root_type Status;
