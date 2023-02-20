@@ -185,6 +185,10 @@ load(
     "//debian:libtinfo5_arm64.bzl",
     libtinfo5_arm64_debs = "files",
 )
+load(
+    "//debian:xvfb_amd64.bzl",
+    xvfb_amd64_debs = "files",
+)
 load("//debian:packages.bzl", "generate_repositories_for_debs")
 
 generate_repositories_for_debs(rsync_debs)
@@ -236,6 +240,8 @@ generate_repositories_for_debs(lzma_arm64_debs)
 generate_repositories_for_debs(libtinfo5_amd64_debs)
 
 generate_repositories_for_debs(libtinfo5_arm64_debs)
+
+generate_repositories_for_debs(xvfb_amd64_debs)
 
 local_repository(
     name = "com_grail_bazel_toolchain",
@@ -1211,6 +1217,16 @@ exports_files(
     patch_cmds = ["touch lib/aarch64-linux-gnu/BUILD"],
     sha256 = "df4ea5194c80df8d1f5f6ed68b47ce9dbf78aa8cdebbc61cf00654d9075f8e3c",
     urls = ["https://www.frc971.org/Build-Dependencies/libtinfo5_arm64.tar.gz"],
+)
+
+http_archive(
+    name = "xvfb_amd64",
+    build_file = "//third_party:xvfb/xvfb.BUILD",
+    patch_cmds = [
+        "unlink usr/bin/X11",
+    ],
+    sha256 = "a7491bf6c47ed0037992fa493f9c25af3ab00a695d706e1fdc122a8b798c0d7c",
+    urls = ["https://www.frc971.org/Build-Dependencies/xvfb_amd64.tar.gz"],
 )
 
 local_repository(

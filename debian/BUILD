@@ -82,6 +82,10 @@ load(
     ":libtinfo5_arm64.bzl",
     libtinfo5_arm64_debs = "files",
 )
+load(
+    ":xvfb_amd64.bzl",
+    xvfb_amd64_debs = "files",
+)
 load(":packages.bzl", "download_packages", "generate_deb_tarball")
 
 package(default_visibility = ["//visibility:public"])
@@ -420,6 +424,22 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "libtinfo5_arm64",
     files = libtinfo5_arm64_debs,
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+download_packages(
+    name = "download_xvfb_packages",
+    excludes = [
+        "libglx-mesa0",
+    ],
+    packages = [
+        "xvfb",
+    ],
+)
+
+generate_deb_tarball(
+    name = "xvfb_amd64",
+    files = xvfb_amd64_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
