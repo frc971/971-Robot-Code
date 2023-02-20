@@ -17,6 +17,11 @@ DEFINE_string(config, "aos_config.json", "File path of aos configuration");
 DEFINE_bool(
     _bash_autocomplete, false,
     "Internal use: Outputs channel list for use with autocomplete script.");
+
+DEFINE_bool(_zsh_compatability, false,
+            "Internal use: Force completion to complete either channels or "
+            "message_types, zsh doesn't handle spaces well.");
+
 DEFINE_string(_bash_autocomplete_word, "",
               "Internal use: Current word being autocompleted");
 
@@ -195,7 +200,9 @@ void CliUtilInfo::Autocomplete(
           // Otherwise, since the message type is poulated yet not being edited,
           // the user must be editing the channel name alone, in which case only
           // suggest channel names, not pairs.
-          if (message_type.empty()) {
+          // If _split_complete flag is set then dont return
+          // pairs of values
+          if (!FLAGS__zsh_compatability && message_type.empty()) {
             std::cout << '\'' << channel->name()->c_str() << ' '
                       << channel->type()->c_str() << "' ";
           } else {
