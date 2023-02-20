@@ -2,22 +2,26 @@ include "frc971/control_loops/control_loops.fbs";
 
 namespace y2023.control_loops.superstructure;
 
-table Position {
-    // Zero for proximal is facing parallel to base of robot
-    // Positive position would be rotated upwards
-    proximal:frc971.PotAndAbsolutePosition (id: 0);
+table ArmPosition {
+  // Values of the encoder and potentiometer at the base of the proximal
+  // (connected to drivebase) arm in radians.
+  proximal:frc971.PotAndAbsolutePosition (id: 0);
 
-    // Zero for distal is facing parallel relative to the shoulder
-    // Positive position would be rotated upwards
-    distal:frc971.PotAndAbsolutePosition (id: 1);
+  // Values of the encoder and potentiometer at the base of the distal
+  // (connected to proximal) arm in radians.
+  distal:frc971.PotAndAbsolutePosition (id: 1);
+}
+
+table Position {
+    arm:ArmPosition (id: 0);
 
     // Zero for roll joint is up vertically
     // Positive position would be rotated counterclockwise relative to the robot
-    roll_joint:frc971.PotAndAbsolutePosition (id: 2);
+    roll_joint:frc971.PotAndAbsolutePosition (id: 1);
 
     // Zero for wrist is facing staright outward.
     // Positive position would be upwards
-    wrist:frc971.PotAndAbsolutePosition (id: 3);
+    wrist:frc971.PotAndAbsolutePosition (id: 2);
 }
 
 root_type Position;

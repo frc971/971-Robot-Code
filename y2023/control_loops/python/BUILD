@@ -50,6 +50,22 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "graph_codegen",
+    srcs = [
+        "graph_codegen.py",
+        "graph_paths.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":python_init",
+        "//frc971/control_loops/python:basic_window",
+        "//frc971/control_loops/python:color",
+        "@pip//numpy",
+    ],
+)
+
 py_library(
     name = "polydrivetrain_lib",
     srcs = [
