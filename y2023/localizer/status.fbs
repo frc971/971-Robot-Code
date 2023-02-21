@@ -1,0 +1,59 @@
+include "frc971/control_loops/drivetrain/drivetrain_status.fbs";
+include "frc971/imu_reader/imu_failures.fbs";
+
+namespace y2023.localizer;
+
+enum RejectionReason : uint8 {
+  // For some reason, the image timestamp indicates that the image was taken
+  // in the future.
+  IMAGE_FROM_FUTURE = 0,
+  // The image was too old for the buffer of old state estimates that we
+  // maintain.
+  IMAGE_TOO_OLD = 1,
+  // Message bridge is not yet connected, and so we can't get accurate
+  // time offsets betwee nnodes.
+  MESSAGE_BRIDGE_DISCONNECTED = 2,
+  // The target ID does not exist.
+  NO_SUCH_TARGET = 3,
+}
+
+table RejectionCount {
+  error:RejectionReason (id: 0);
+  count:uint (id: 1);
+}
+
+table CumulativeStatistics {
+  total_accepted:int (id: 0);
+  total_candidates:int (id: 1);
+  rejection_reasons:[RejectionCount] (id: 2);
+}
+
+table ImuStatus {
+  // Whether the IMU is zeroed or not.
+  zeroed:bool (id: 0);
+  // Whether the IMU zeroing is faulted or not.
+  faulted_zero:bool (id: 1);
+  zeroing:frc971.control_loops.drivetrain.ImuZeroerState (id: 2);
+  // Offset between the pico clock and the pi clock, such that
+  // pico_timestamp + pico_offset_ns = pi_timestamp
+  pico_offset_ns:int64 (id: 3);
+  // Error in the offset, if we assume that the pi/pico clocks are identical and
+  // that there is a perfectly consistent latency between the two. Will be zero
+  // for the very first cycle, and then referenced off of the initial offset
+  // thereafter. If greater than zero, implies that the pico is "behind",
+  // whether due to unusually large latency or due to clock drift.
+  pico_offset_error_ns:int64 (id: 4);
+  left_encoder:double (id: 5);
+  right_encoder:double (id: 6);
+  imu_failures:frc971.controls.ImuFailures (id: 7);
+}
+
+table Status {
+  state: frc971.control_loops.drivetrain.LocalizerState (id: 0);
+  down_estimator:frc971.control_loops.drivetrain.DownEstimatorState (id: 1);
+  imu:ImuStatus (id: 2);
+  // Statistics are per-camera, by camera index.
+  statistics:[CumulativeStatistics] (id: 3);
+}
+
+root_type Status;

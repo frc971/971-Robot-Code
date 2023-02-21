@@ -322,8 +322,6 @@ class HybridEkf {
 
   // Set the initial guess of the state. Can only be called once, and before
   // any measurement updates have occured.
-  // TODO(james): We may want to actually re-initialize and reset things on
-  // the field. Create some sort of Reset() function.
   void ResetInitialState(::aos::monotonic_clock::time_point t,
                          const State &state, const StateSquare &P) {
     observations_.clear();

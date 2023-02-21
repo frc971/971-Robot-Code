@@ -4,8 +4,10 @@ load("//tools/build_rules:template.bzl", "jinja2_template")
 cc_library(
     name = "simulated_constants_sender",
     testonly = True,
-    srcs = ["simulated_constants_sender.h"],
-    hdrs = ["simulated_constants_sender.cc"],
+    srcs = ["simulated_constants_sender.cc"],
+    hdrs = ["simulated_constants_sender.h"],
+    data = [":test_constants.json"],
+    visibility = ["//y2023:__subpackages__"],
     deps = [
         ":constants_fbs",
         ":constants_list_fbs",
@@ -13,6 +15,15 @@ cc_library(
         "//aos/testing:path",
         "//frc971/constants:constants_sender_lib",
     ],
+)
+
+jinja2_template(
+    name = "test_constants.json",
+    testonly = True,
+    src = "test_constants.jinja2.json",
+    includes = glob(["test_data/*.json"]),
+    parameters = {},
+    visibility = ["//visibility:public"],
 )
 
 jinja2_template(

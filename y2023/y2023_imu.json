@@ -22,6 +22,7 @@
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "frequency": 50,
       "num_senders": 20,
+      "max_size": 2048,
       "logger_nodes": [
         "roborio",
         "logger"
@@ -300,6 +301,44 @@
       "num_senders": 2
     },
     {
+      "name": "/localizer",
+      "type": "y2023.localizer.Status",
+      "source_node": "imu",
+      "frequency": 2200,
+      "max_size": 1000,
+      "num_senders": 2
+    },
+    {
+      "name": "/localizer",
+      "type": "frc971.controls.LocalizerOutput",
+      "source_node": "imu",
+      "frequency": 210,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio"
+      ],
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 5,
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/roborio/localizer/frc971-controls-LocalizerOutput",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "imu",
+      "logger": "NOT_LOGGED",
+      "frequency": 210,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
       "name": "/imu/constants",
       "type": "y2023.Constants",
       "source_node": "imu",
@@ -320,8 +359,6 @@
     {
       "name": "localizer",
       "executable_name": "localizer_main",
-      /* TODO(james): Remove this once confident in the accelerometer code. */
-      "args": ["--ignore_accelerometer"],
       "user": "pi",
       "nodes": [
         "imu"
@@ -355,6 +392,13 @@
     {
       "name": "web_proxy",
       "executable_name": "web_proxy_main",
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "foxglove_websocket",
       "user": "pi",
       "nodes": [
         "imu"
