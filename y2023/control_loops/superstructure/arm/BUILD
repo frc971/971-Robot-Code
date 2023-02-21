@@ -62,3 +62,19 @@ cc_library(
         "//frc971/control_loops/double_jointed_arm:dynamics",
     ],
 )
+
+cc_binary(
+    name = "arm_design",
+    srcs = [
+        "arm_design.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":arm_constants",
+        "//aos:init",
+        "//frc971/analysis:in_process_plotter",
+        "//frc971/control_loops:dlqr",
+        "//frc971/control_loops:jacobian",
+        "//frc971/control_loops/double_jointed_arm:dynamics",
+    ],
+)

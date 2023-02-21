@@ -51,7 +51,7 @@ struct Values {
   }
   static constexpr double kMaxProximalEncoderPulsesPerSecond() {
     return control_loops::superstructure::arm::kArmConstants.free_speed /
-           (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g1 /
+           (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g0 /
            kProximalEncoderRatio() * kProximalEncoderCountsPerRevolution();
   }
   static constexpr double kProximalPotRatio() { return (12.0 / 60.0); }
@@ -60,7 +60,7 @@ struct Values {
   static constexpr double kDistalEncoderRatio() { return (12.0 / 60.0); }
   static constexpr double kMaxDistalEncoderPulsesPerSecond() {
     return control_loops::superstructure::arm::kArmConstants.free_speed /
-           (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g2 /
+           (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g1 /
            kDistalEncoderRatio() * kProximalEncoderCountsPerRevolution();
   }
   static constexpr double kDistalPotRatio() {
