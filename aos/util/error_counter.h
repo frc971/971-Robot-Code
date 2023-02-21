@@ -67,5 +67,40 @@ class ErrorCounter {
  private:
   flatbuffers::Vector<flatbuffers::Offset<Count>> *vector_ = nullptr;
 };
+
+// The ArrayErrorCounter serves the same purpose as the ErrorCounter class,
+// except that:
+// (a) It owns its own memory, rather than modifying a flatbuffer in-place.
+// (b) Because of this, the user has greater flexibility in choosing when to
+//     reset the error counters.
+template <typename Error, typename Count>
+class ArrayErrorCounter {
+ public:
+  static constexpr size_t kNumErrors = ErrorCounter<Error, Count>::kNumErrors;
+  ArrayErrorCounter() { ResetCounts(); }
+
+  flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Count>>>
+  PopulateCounts(flatbuffers::FlatBufferBuilder *fbb) {
+    const flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Count>>>
+        offset = ErrorCounter<Error, Count>::Initialize(fbb);
+    flatbuffers::Vector<flatbuffers::Offset<Count>> *vector =
+        flatbuffers::GetMutableTemporaryPointer(*fbb, offset);
+    for (size_t ii = 0; ii < kNumErrors; ++ii) {
+      vector->GetMutableObject(ii)->mutate_count(error_counts_.at(ii));
+    }
+    return offset;
+  }
+
+  void IncrementError(Error error) {
+    DCHECK_LT(static_cast<size_t>(error), error_counts_.size());
+    error_counts_.at(static_cast<size_t>(error))++;
+  }
+
+  // Sets all the error counts to zero.
+  void ResetCounts() { error_counts_.fill(0); }
+
+ private:
+  std::array<size_t, kNumErrors> error_counts_;
+};
 }  // namespace aos::util
 #endif  // AOS_UTIL_ERROR_COUNTER_H_
