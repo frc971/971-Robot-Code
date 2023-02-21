@@ -291,6 +291,7 @@ cc_binary(
         "//y2023/control_loops/drivetrain:drivetrain_base",
         "//y2023/control_loops/superstructure:superstructure_goal_fbs",
         "//y2023/control_loops/superstructure:superstructure_status_fbs",
+        "//y2023/control_loops/superstructure/arm:generated_graph",
     ],
 )
 

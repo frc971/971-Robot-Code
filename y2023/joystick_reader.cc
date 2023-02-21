@@ -19,6 +19,7 @@
 #include "frc971/zeroing/wrap.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/drivetrain/drivetrain_base.h"
+#include "y2023/control_loops/superstructure/arm/generated_graph.h"
 #include "y2023/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_status_generated.h"
 
@@ -34,7 +35,13 @@ namespace y2023 {
 namespace input {
 namespace joysticks {
 
+// TODO(milind): add correct locations
+const ButtonLocation kIntake(3, 3);
+const ButtonLocation kScore(3, 3);
+const ButtonLocation kSpit(3, 3);
+
 namespace superstructure = y2023::control_loops::superstructure;
+namespace arm = superstructure::arm;
 
 class Reader : public ::frc971::input::ActionJoystickInput {
  public:
@@ -59,14 +66,28 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       return;
     }
 
-    (void)data;
-    // TODO(Xander): Use driverstaion data to provide instructions.
+    bool intake = false;
+    bool spit = false;
+
+    // TODO(milind): add more actions and paths
+    if (data.IsPressed(kIntake)) {
+      intake = true;
+      arm_goal_position_ = arm::ConePosIndex();
+    } else if (data.IsPressed(kSpit)) {
+      spit = true;
+      arm_goal_position_ = arm::ConePosIndex();
+    } else if (data.IsPressed(kScore)) {
+      arm_goal_position_ = arm::ConePerchPosIndex();
+    }
+
     {
       auto builder = superstructure_goal_sender_.MakeBuilder();
 
       superstructure::Goal::Builder superstructure_goal_builder =
           builder.MakeBuilder<superstructure::Goal>();
-
+      superstructure_goal_builder.add_arm_goal_position(arm_goal_position_);
+      superstructure_goal_builder.add_intake(intake);
+      superstructure_goal_builder.add_spit(spit);
       if (builder.Send(superstructure_goal_builder.Finish()) !=
           aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
@@ -78,6 +99,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   ::aos::Sender<superstructure::Goal> superstructure_goal_sender_;
 
   ::aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
+
+  uint32_t arm_goal_position_;
 };
 
 }  // namespace joysticks
