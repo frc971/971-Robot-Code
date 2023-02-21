@@ -5,6 +5,7 @@
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2023/constants.h"
+#include "y2023/control_loops/superstructure/arm/arm.h"
 #include "y2023/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_position_generated.h"
@@ -44,6 +45,8 @@ class Superstructure
   aos::Fetcher<frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
+
+  arm::Arm arm_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
 

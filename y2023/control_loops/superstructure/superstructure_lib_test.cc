@@ -18,6 +18,9 @@ namespace y2023 {
 namespace control_loops {
 namespace superstructure {
 namespace testing {
+namespace {
+constexpr double kNoiseScalar = 0.01;
+}  // namespace
 namespace chrono = std::chrono;
 
 using ::aos::monotonic_clock;
@@ -40,6 +43,89 @@ using RelativeEncoderSimulator = frc971::control_loops::SubsystemSimulator<
     frc971::control_loops::RelativeEncoderProfiledJointStatus,
     RelativeEncoderSubsystem::State, constants::Values::PotConstants>;
 
+class ArmSimulation {
+ public:
+  explicit ArmSimulation(
+      const ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
+          &proximal_zeroing_constants,
+      const ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
+          &distal_zeroing_constants,
+      std::chrono::nanoseconds dt)
+      : proximal_zeroing_constants_(proximal_zeroing_constants),
+        proximal_pot_encoder_(M_PI * 2.0 *
+                              constants::Values::kProximalEncoderRatio()),
+        distal_zeroing_constants_(distal_zeroing_constants),
+        distal_pot_encoder_(M_PI * 2.0 *
+                            constants::Values::kDistalEncoderRatio()),
+        dynamics_(arm::kArmConstants),
+        dt_(dt) {
+    X_.setZero();
+  }
+
+  void InitializePosition(::Eigen::Matrix<double, 2, 1> position) {
+    X_ << position(0), 0.0, position(1), 0.0;
+
+    proximal_pot_encoder_.Initialize(
+        X_(0), kNoiseScalar, 0.0,
+        proximal_zeroing_constants_.measured_absolute_position);
+    distal_pot_encoder_.Initialize(
+        X_(2), kNoiseScalar, 0.0,
+        distal_zeroing_constants_.measured_absolute_position);
+  }
+
+  flatbuffers::Offset<ArmPosition> GetSensorValues(
+      flatbuffers::FlatBufferBuilder *fbb) {
+    frc971::PotAndAbsolutePosition::Builder proximal_builder(*fbb);
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> proximal_offset =
+        proximal_pot_encoder_.GetSensorValues(&proximal_builder);
+
+    frc971::PotAndAbsolutePosition::Builder distal_builder(*fbb);
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> distal_offset =
+        distal_pot_encoder_.GetSensorValues(&distal_builder);
+
+    ArmPosition::Builder arm_position_builder(*fbb);
+    arm_position_builder.add_proximal(proximal_offset);
+    arm_position_builder.add_distal(distal_offset);
+
+    return arm_position_builder.Finish();
+  }
+
+  double proximal_position() const { return X_(0, 0); }
+  double proximal_velocity() const { return X_(1, 0); }
+  double distal_position() const { return X_(2, 0); }
+  double distal_velocity() const { return X_(3, 0); }
+
+  void Simulate(::Eigen::Matrix<double, 2, 1> U) {
+    constexpr double voltage_check =
+        superstructure::arm::Arm::kOperatingVoltage();
+
+    AOS_CHECK_LE(::std::abs(U(0)), voltage_check);
+    AOS_CHECK_LE(::std::abs(U(1)), voltage_check);
+
+    X_ = dynamics_.UnboundedDiscreteDynamics(
+        X_, U,
+        std::chrono::duration_cast<std::chrono::duration<double>>(dt_).count());
+
+    // TODO(austin): Estop on grose out of bounds.
+    proximal_pot_encoder_.MoveTo(X_(0));
+    distal_pot_encoder_.MoveTo(X_(2));
+  }
+
+ private:
+  ::Eigen::Matrix<double, 4, 1> X_;
+
+  const ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
+      proximal_zeroing_constants_;
+  PositionSensorSimulator proximal_pot_encoder_;
+
+  const ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants
+      distal_zeroing_constants_;
+  PositionSensorSimulator distal_pot_encoder_;
+
+  ::frc971::control_loops::arm::Dynamics dynamics_;
+
+  std::chrono::nanoseconds dt_;
+};
 // Class which simulates the superstructure and sends out queue messages with
 // the position.
 class SuperstructureSimulation {
@@ -49,21 +135,26 @@ class SuperstructureSimulation {
                            chrono::nanoseconds dt)
       : event_loop_(event_loop),
         dt_(dt),
+        arm_(values->arm_proximal.zeroing, values->arm_distal.zeroing, dt_),
         superstructure_position_sender_(
             event_loop_->MakeSender<Position>("/superstructure")),
         superstructure_status_fetcher_(
             event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
             event_loop_->MakeFetcher<Output>("/superstructure")) {
-    (void)values;
-    (void)dt_;
-
+    InitializeArmPosition(arm::NeutralPosPoint());
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
           // Skip this the first time.
           if (!first_) {
             EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
             EXPECT_TRUE(superstructure_status_fetcher_.Fetch());
+
+            arm_.Simulate(
+                (::Eigen::Matrix<double, 2, 1>()
+                     << superstructure_output_fetcher_->proximal_voltage(),
+                 superstructure_output_fetcher_->distal_voltage())
+                    .finished());
           }
           first_ = false;
           SendPositionMessage();
@@ -71,13 +162,22 @@ class SuperstructureSimulation {
         dt);
   }
 
+  void InitializeArmPosition(::Eigen::Matrix<double, 2, 1> position) {
+    arm_.InitializePosition(position);
+  }
+
+  const ArmSimulation &arm() const { return arm_; }
+
   // Sends a queue message with the position of the superstructure.
   void SendPositionMessage() {
     ::aos::Sender<Position>::Builder builder =
         superstructure_position_sender_.MakeBuilder();
 
-    Position::Builder position_builder = builder.MakeBuilder<Position>();
+    flatbuffers::Offset<ArmPosition> arm_offset =
+        arm_.GetSensorValues(builder.fbb());
 
+    Position::Builder position_builder = builder.MakeBuilder<Position>();
+    position_builder.add_arm(arm_offset);
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
   }
@@ -86,6 +186,8 @@ class SuperstructureSimulation {
   ::aos::EventLoop *event_loop_;
   const chrono::nanoseconds dt_;
   ::aos::PhasedLoopHandler *phased_loop_handle_ = nullptr;
+
+  ArmSimulation arm_;
 
   ::aos::Sender<Position> superstructure_position_sender_;
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
@@ -139,6 +241,10 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   void VerifyNearGoal() {
     superstructure_goal_fetcher_.Fetch();
     superstructure_status_fetcher_.Fetch();
+
+    ASSERT_TRUE(superstructure_goal_fetcher_.get() != nullptr) << ": No goal";
+    ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr)
+        << ": No status";
   }
 
   void CheckIfZeroed() {
@@ -233,6 +339,8 @@ TEST_F(SuperstructureTest, ReachesGoal) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
+    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -287,6 +395,73 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 TEST_F(SuperstructureTest, DisableTest) {
   RunFor(chrono::seconds(2));
   CheckIfZeroed();
+}
+
+// Tests that we don't freak out without a goal.
+TEST_F(SuperstructureTest, ArmSimpleGoal) {
+  SetEnabled(true);
+  RunFor(chrono::seconds(20));
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_arm_goal_position(arm::NeutralToConePos1Index());
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(ArmState::RUNNING, superstructure_status_fetcher_->arm()->state());
+}
+
+// Tests that we can can execute a move.
+TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
+  SetEnabled(true);
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_arm_goal_position(arm::NeutralToConePos1Index());
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(10));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_arm_goal_position(arm::NeutralToConePos2Index());
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(10));
+  VerifyNearGoal();
+}
+
+// Tests that we can can execute a move which moves through multiple nodes.
+TEST_F(SuperstructureTest, ArmMultistepMove) {
+  SetEnabled(true);
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(10));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_arm_goal_position(arm::ConePosIndex());
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(10));
+  VerifyNearGoal();
 }
 
 }  // namespace testing

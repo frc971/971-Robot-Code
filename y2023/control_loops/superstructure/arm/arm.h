@@ -26,18 +26,16 @@ class Arm {
 
   // if true, tune down all the constants for testing.
   static constexpr bool kGrannyMode() { return false; }
+
   // the operating voltage.
   static constexpr double kOperatingVoltage() {
     return kGrannyMode() ? 5.0 : 12.0;
   }
-
   static constexpr double kDt() { return 0.00505; }
-
   static constexpr double kAlpha0Max() { return kGrannyMode() ? 5.0 : 15.0; }
   static constexpr double kAlpha1Max() { return kGrannyMode() ? 5.0 : 15.0; }
 
   static constexpr double kVMax() { return kGrannyMode() ? 5.0 : 11.5; }
-
   static constexpr double kPathlessVMax() { return 5.0; }
   static constexpr double kGotoPathVMax() { return 6.0; }
 
@@ -50,16 +48,19 @@ class Arm {
   void Reset();
 
   ArmState state() const { return state_; }
-  bool estopped() const { return state_ == ArmState::ESTOP; }
 
+  bool estopped() const { return state_ == ArmState::ESTOP; }
   bool zeroed() const {
     return (proximal_zeroing_estimator_.zeroed() &&
             distal_zeroing_estimator_.zeroed());
   }
+
   // Returns the maximum position for the intake.  This is used to override the
   // intake position to release the box when the state machine is lifting.
   double max_intake_override() const { return max_intake_override_; }
+
   uint32_t current_node() const { return current_node_; }
+
   double path_distance_to_go() { return follower_.path_distance_to_go(); }
 
  private:
@@ -71,6 +72,7 @@ class Arm {
   }
 
   std::shared_ptr<const constants::Values> values_;
+
   ArmState state_;
 
   ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator
@@ -80,15 +82,16 @@ class Arm {
 
   double proximal_offset_;
   double distal_offset_;
+
   double max_intake_override_;
 
   const ::Eigen::Matrix<double, 2, 2> alpha_unitizer_;
+
   double vmax_ = kVMax();
 
   frc971::control_loops::arm::Dynamics dynamics_;
 
   ::std::vector<TrajectoryAndParams> trajectories_;
-
   SearchGraph search_graph_;
 
   bool close_enough_for_full_power_;
@@ -96,7 +99,6 @@ class Arm {
   size_t brownout_count_;
 
   EKF arm_ekf_;
-
   TrajectoryFollower follower_;
 
   const ::std::vector<::Eigen::Matrix<double, 2, 1>> points_;
@@ -106,6 +108,7 @@ class Arm {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
+
 }  // namespace arm
 }  // namespace superstructure
 }  // namespace control_loops

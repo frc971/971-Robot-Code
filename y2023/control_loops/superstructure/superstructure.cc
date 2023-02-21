@@ -12,6 +12,8 @@ namespace y2023 {
 namespace control_loops {
 namespace superstructure {
 
+using ::aos::monotonic_clock;
+
 using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::RelativeEncoderProfiledJointStatus;
@@ -26,19 +28,19 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
           event_loop->MakeFetcher<frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),
       joystick_state_fetcher_(
-          event_loop->MakeFetcher<aos::JoystickState>("/aos")) {
-  (void)values;
-}
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+      arm_(values_) {}
 
 void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
                                   aos::Sender<Output>::Builder *output,
                                   aos::Sender<Status>::Builder *status) {
-  (void)unsafe_goal;
-  (void)position;
+  const monotonic_clock::time_point timestamp =
+      event_loop()->context().monotonic_event_time;
 
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
+    arm_.Reset();
   }
 
   OutputT output_struct;
@@ -47,11 +49,31 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     alliance_ = joystick_state_fetcher_->alliance();
   }
   drivetrain_status_fetcher_.Fetch();
-  output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
-  
+
+  const uint32_t arm_goal_position =
+      unsafe_goal != nullptr ? unsafe_goal->arm_goal_position() : 0u;
+
+  flatbuffers::Offset<superstructure::ArmStatus> arm_status_offset =
+      arm_.Iterate(
+          timestamp, unsafe_goal != nullptr ? &(arm_goal_position) : nullptr,
+          position->arm(),
+          unsafe_goal != nullptr ? unsafe_goal->trajectory_override() : false,
+          output != nullptr ? &output_struct.proximal_voltage : nullptr,
+          output != nullptr ? &output_struct.distal_voltage : nullptr,
+          unsafe_goal != nullptr ? unsafe_goal->intake() : false,
+          unsafe_goal != nullptr ? unsafe_goal->spit() : false,
+
+          status->fbb());
+
+  if (output) {
+    output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
+  }
+
   Status::Builder status_builder = status->MakeBuilder<Status>();
   status_builder.add_zeroed(true);
   status_builder.add_estopped(false);
+  status_builder.add_arm(arm_status_offset);
+
   (void)status->Send(status_builder.Finish());
 }
 
