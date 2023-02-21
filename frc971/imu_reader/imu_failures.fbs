@@ -1,0 +1,16 @@
+namespace frc971.controls;
+
+// Counters to track how many times different errors have occurred.
+table ImuFailures {
+  // Count of total number of checksum mismatches between the IMU and the
+  // pico itself.
+  imu_to_pico_checksum_mismatch:uint (id: 0);
+  // Count of total number of checksum mismatches between the pico board
+  // and the raspberry pi.
+  pico_to_pi_checksum_mismatch:uint (id: 1);
+  // Total number of dropped/missed messages.
+  missed_messages:uint (id: 2);
+  // Total number of messages dropped for any other conditions that can fault
+  // the zeroer (e.g., diagnostic failures in the IMU).
+  other_zeroing_faults:uint (id: 3);
+}
