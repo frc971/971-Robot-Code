@@ -11,17 +11,25 @@ import {FormsModule} from '@angular/forms';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import {ErrorResponse} from '../../webserver/requests/messages/error_response_generated';
 import {
-  ClimbLevel,
-  SubmitDataScouting,
-} from '../../webserver/requests/messages/submit_data_scouting_generated';
-import {SubmitDataScoutingResponse} from '../../webserver/requests/messages/submit_data_scouting_response_generated';
+  ObjectType,
+  ScoreLevel,
+  SubmitActions,
+  StartMatchAction,
+  PickupObjectAction,
+  PlaceObjectAction,
+  RobotDeathAction,
+  EndMatchAction,
+  ActionType,
+  Action,
+} from '../../webserver/requests/messages/submit_actions_generated';
 
 type Section =
   | 'Team Selection'
-  | 'Auto'
-  | 'TeleOp'
-  | 'Climb'
-  | 'Other'
+  | 'Init'
+  | 'Pickup'
+  | 'Place'
+  | 'Endgame'
+  | 'Dead'
   | 'Review and Submit'
   | 'Success';
 
@@ -38,22 +46,42 @@ const COMP_LEVEL_LABELS: Record<CompLevel, string> = {
   f: 'Finals',
 };
 
-const IMAGES_ARRAY = [
-  {
-    id: 'field_quadrants_image',
-    original_image:
-      '/sha256/cbb99a057a2504e80af526dae7a0a04121aed84c56a6f4889e9576fe1c20c61e/pictures/field/quadrants.jpeg',
-    reversed_image:
-      '/sha256/ee4d24cf6b850158aa64e2b301c31411cb28f88a247a8916abb97214bb251eb5/pictures/field/reversed_quadrants.jpeg',
-  },
-  {
-    id: 'field_balls_image',
-    original_image:
-      '/sha256/e095cc8a75d804b0e2070e0a941fab37154176756d4c1a775e53cc48c3a732b9/pictures/field/balls.jpeg',
-    reversed_image:
-      '/sha256/fe4a4605c03598611c583d4dcdf28e06a056a17302ae91f5c527568966d95f3a/pictures/field/reversed_balls.jpeg',
-  },
-];
+type ActionT =
+  | {
+      type: 'startMatchAction';
+      timestamp?: number;
+      position: number;
+    }
+  | {
+      type: 'pickupObjectAction';
+      timestamp?: number;
+      objectType: ObjectType;
+      auto?: boolean;
+    }
+  | {
+      type: 'placeObjectAction';
+      timestamp?: number;
+      objectType?: ObjectType;
+      scoreLevel: ScoreLevel;
+      auto?: boolean;
+    }
+  | {
+      type: 'robotDeathAction';
+      timestamp?: number;
+      robotOn: boolean;
+    }
+  | {
+      type: 'endMatchAction';
+      docked: boolean;
+      engaged: boolean;
+      timestamp?: number;
+    }
+  | {
+      // This is not a action that is submitted,
+      // It is used for undoing purposes.
+      type: 'endAutoPhase';
+      timestamp?: number;
+    };
 
 @Component({
   selector: 'app-entry',
@@ -63,9 +91,10 @@ const IMAGES_ARRAY = [
 export class EntryComponent {
   // Re-export the type here so that we can use it in the `[value]` attribute
   // of radio buttons.
-  readonly ClimbLevel = ClimbLevel;
   readonly COMP_LEVELS = COMP_LEVELS;
   readonly COMP_LEVEL_LABELS = COMP_LEVEL_LABELS;
+  readonly ObjectType = ObjectType;
+  readonly ScoreLevel = ScoreLevel;
 
   section: Section = 'Team Selection';
   @Output() switchTabsEvent = new EventEmitter<string>();
@@ -73,118 +102,169 @@ export class EntryComponent {
   @Input() teamNumber: number = 1;
   @Input() setNumber: number = 1;
   @Input() compLevel: CompLevel = 'qm';
-  autoUpperShotsMade: number = 0;
-  autoLowerShotsMade: number = 0;
-  autoShotsMissed: number = 0;
-  teleUpperShotsMade: number = 0;
-  teleLowerShotsMade: number = 0;
-  teleShotsMissed: number = 0;
-  defensePlayedOnScore: number = 0;
-  defensePlayedScore: number = 0;
-  level: ClimbLevel = ClimbLevel.NoAttempt;
-  ball1: boolean = false;
-  ball2: boolean = false;
-  ball3: boolean = false;
-  ball4: boolean = false;
-  ball5: boolean = false;
-  quadrant: number = 1;
+
+  actionList: ActionT[] = [];
   errorMessage: string = '';
-  noShow: boolean = false;
-  neverMoved: boolean = false;
-  batteryDied: boolean = false;
-  mechanicallyBroke: boolean = false;
-  lostComs: boolean = false;
-  comment: string = '';
+  autoPhase: boolean = true;
+  lastObject: ObjectType = null;
+
+  matchStartTimestamp: number = 0;
+
+  addAction(action: ActionT): void {
+    action.timestamp = Math.floor(Date.now() / 1000);
+    if (action.type == 'startMatchAction') {
+      // Unix nanosecond timestamp.
+      this.matchStartTimestamp = Date.now() * 1e6;
+      action.timestamp = 0;
+    } else {
+      // Unix nanosecond timestamp relative to match start.
+      action.timestamp = Date.now() * 1e6 - this.matchStartTimestamp;
+    }
+
+    if (
+      action.type == 'pickupObjectAction' ||
+      action.type == 'placeObjectAction'
+    ) {
+      action.auto = this.autoPhase;
+      if (action.type == 'pickupObjectAction') {
+        this.lastObject = action.objectType;
+      } else if (action.type == 'placeObjectAction') {
+        action.objectType = this.lastObject;
+      }
+    }
+    this.actionList.push(action);
+  }
+
+  undoLastAction() {
+    if (this.actionList.length > 0) {
+      let lastAction = this.actionList.pop();
+      switch (lastAction?.type) {
+        case 'endAutoPhase':
+          this.autoPhase = true;
+        case 'pickupObjectAction':
+          this.section = 'Pickup';
+          break;
+        case 'placeObjectAction':
+          this.section = 'Place';
+          break;
+        case 'endMatchAction':
+          this.section = 'Pickup';
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  changeSectionTo(target: Section) {
+    this.section = target;
+  }
 
   @ViewChild('header') header: ElementRef;
 
-  nextSection() {
-    if (this.section === 'Team Selection') {
-      this.section = 'Auto';
-    } else if (this.section === 'Auto') {
-      this.section = 'TeleOp';
-    } else if (this.section === 'TeleOp') {
-      this.section = 'Climb';
-    } else if (this.section === 'Climb') {
-      this.section = 'Other';
-    } else if (this.section === 'Other') {
-      this.section = 'Review and Submit';
-    } else if (this.section === 'Review and Submit') {
-      this.submitDataScouting();
-      return;
-    } else if (this.section === 'Success') {
-      this.switchTabsEvent.emit('MatchList');
-      return;
-    }
-    // Scroll back to the top so that we can be sure the user sees the
-    // entire next screen. Otherwise it's easy to overlook input fields.
-    this.scrollToTop();
-  }
-
-  prevSection() {
-    if (this.section === 'Auto') {
-      this.section = 'Team Selection';
-    } else if (this.section === 'TeleOp') {
-      this.section = 'Auto';
-    } else if (this.section === 'Climb') {
-      this.section = 'TeleOp';
-    } else if (this.section === 'Other') {
-      this.section = 'Climb';
-    } else if (this.section === 'Review and Submit') {
-      this.section = 'Other';
-    }
-    // Scroll back to the top so that we can be sure the user sees the
-    // entire previous screen. Otherwise it's easy to overlook input
-    // fields.
-    this.scrollToTop();
-  }
-
-  flipImages() {
-    for (let obj of IMAGES_ARRAY) {
-      let img = document.getElementById(obj.id) as HTMLImageElement;
-      img.src = img.src.endsWith(obj.original_image)
-        ? obj.reversed_image
-        : obj.original_image;
-    }
-  }
   private scrollToTop() {
     this.header.nativeElement.scrollIntoView();
   }
 
-  async submitDataScouting() {
-    this.errorMessage = '';
-
+  async submitActions() {
     const builder = new Builder();
-    const compLevel = builder.createString(this.compLevel);
-    const comment = builder.createString(this.comment);
-    SubmitDataScouting.startSubmitDataScouting(builder);
-    SubmitDataScouting.addTeam(builder, this.teamNumber);
-    SubmitDataScouting.addMatch(builder, this.matchNumber);
-    SubmitDataScouting.addSetNumber(builder, this.setNumber);
-    SubmitDataScouting.addCompLevel(builder, compLevel);
-    SubmitDataScouting.addMissedShotsAuto(builder, this.autoShotsMissed);
-    SubmitDataScouting.addUpperGoalAuto(builder, this.autoUpperShotsMade);
-    SubmitDataScouting.addLowerGoalAuto(builder, this.autoLowerShotsMade);
-    SubmitDataScouting.addMissedShotsTele(builder, this.teleShotsMissed);
-    SubmitDataScouting.addUpperGoalTele(builder, this.teleUpperShotsMade);
-    SubmitDataScouting.addLowerGoalTele(builder, this.teleLowerShotsMade);
-    SubmitDataScouting.addDefenseRating(builder, this.defensePlayedScore);
-    SubmitDataScouting.addDefenseReceivedRating(
+    const actionOffsets: number[] = [];
+
+    for (const action of this.actionList) {
+      let actionOffset: number | undefined;
+      console.log(action.type);
+
+      switch (action.type) {
+        case 'startMatchAction':
+          const startMatchActionOffset =
+            StartMatchAction.createStartMatchAction(builder, action.position);
+          actionOffset = Action.createAction(
+            builder,
+            action.timestamp || 0,
+            ActionType.StartMatchAction,
+            startMatchActionOffset
+          );
+          break;
+
+        case 'pickupObjectAction':
+          const pickupObjectActionOffset =
+            PickupObjectAction.createPickupObjectAction(
+              builder,
+              action.objectType,
+              action.auto || false
+            );
+          actionOffset = Action.createAction(
+            builder,
+            action.timestamp || 0,
+            ActionType.PickupObjectAction,
+            pickupObjectActionOffset
+          );
+          break;
+
+        case 'placeObjectAction':
+          const placeObjectActionOffset =
+            PlaceObjectAction.createPlaceObjectAction(
+              builder,
+              action.objectType,
+              action.scoreLevel,
+              action.auto || false
+            );
+          actionOffset = Action.createAction(
+            builder,
+            action.timestamp || 0,
+            ActionType.PlaceObjectAction,
+            placeObjectActionOffset
+          );
+          break;
+
+        case 'robotDeathAction':
+          const robotDeathActionOffset =
+            RobotDeathAction.createRobotDeathAction(builder, action.robotOn);
+          actionOffset = Action.createAction(
+            builder,
+            action.timestamp || 0,
+            ActionType.RobotDeathAction,
+            robotDeathActionOffset
+          );
+          break;
+
+        case 'endMatchAction':
+          const endMatchActionOffset = EndMatchAction.createEndMatchAction(
+            builder,
+            action.docked,
+            action.engaged
+          );
+          actionOffset = Action.createAction(
+            builder,
+            action.timestamp || 0,
+            ActionType.EndMatchAction,
+            endMatchActionOffset
+          );
+          break;
+
+        case 'endAutoPhase':
+          // Not important action.
+          break;
+
+        default:
+          throw new Error(`Unknown action type`);
+      }
+
+      if (actionOffset !== undefined) {
+        actionOffsets.push(actionOffset);
+      }
+    }
+
+    const actionsVector = SubmitActions.createActionsListVector(
       builder,
-      this.defensePlayedOnScore
+      actionOffsets
     );
-    SubmitDataScouting.addAutoBall1(builder, this.ball1);
-    SubmitDataScouting.addAutoBall2(builder, this.ball2);
-    SubmitDataScouting.addAutoBall3(builder, this.ball3);
-    SubmitDataScouting.addAutoBall4(builder, this.ball4);
-    SubmitDataScouting.addAutoBall5(builder, this.ball5);
-    SubmitDataScouting.addStartingQuadrant(builder, this.quadrant);
-    SubmitDataScouting.addClimbLevel(builder, this.level);
-    SubmitDataScouting.addComment(builder, comment);
-    builder.finish(SubmitDataScouting.endSubmitDataScouting(builder));
+    SubmitActions.startSubmitActions(builder);
+    SubmitActions.addActionsList(builder, actionsVector);
+    builder.finish(SubmitActions.endSubmitActions(builder));
 
     const buffer = builder.asUint8Array();
-    const res = await fetch('/requests/submit/data_scouting', {
+    const res = await fetch('/requests/submit/actions', {
       method: 'POST',
       body: buffer,
     });
@@ -192,6 +272,7 @@ export class EntryComponent {
     if (res.ok) {
       // We successfully submitted the data. Report success.
       this.section = 'Success';
+      this.actionList = [];
     } else {
       const resBuffer = await res.arrayBuffer();
       const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));

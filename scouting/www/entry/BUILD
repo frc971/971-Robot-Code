@@ -11,9 +11,7 @@ ng_pkg(
     deps = [
         ":node_modules/@angular/forms",
         "//scouting/webserver/requests/messages:error_response_ts_fbs",
-        "//scouting/webserver/requests/messages:submit_data_scouting_response_ts_fbs",
-        "//scouting/webserver/requests/messages:submit_data_scouting_ts_fbs",
-        "//scouting/www/counter_button:_lib",
+        "//scouting/webserver/requests/messages:submit_actions_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )

@@ -49,386 +49,133 @@
     <div class="buttons">
       <!-- hack to right align the next button -->
       <div></div>
-      <button class="btn btn-primary" (click)="nextSection()">Next</button>
+      <button class="btn btn-primary" (click)="changeSectionTo('Init');">
+        Next
+      </button>
     </div>
   </div>
 
-  <div *ngSwitchCase="'Auto'" id="auto" class="container-fluid">
-    <button class="buttons" id="switch_field_button" (click)="flipImages()">
-      Flip
-    </button>
-    <div class="row">
-      <img
-        id="field_quadrants_image"
-        src="/sha256/cbb99a057a2504e80af526dae7a0a04121aed84c56a6f4889e9576fe1c20c61e/pictures/field/quadrants.jpeg"
-        alt="Quadrants Image"
-      />
-      <form>
+  <div *ngSwitchCase="'Init'" id="init" class="container-fluid">
+    <h2>Select Starting Position</h2>
+    <div *ngFor="let i of [1, 2, 3, 4]">
+      <label>
         <input
           type="radio"
-          [(ngModel)]="quadrant"
-          name="quadrant"
-          id="quadrant1"
-          [value]="1"
+          name="radio-group"
+          [value]="i"
+          (change)="selectedValue = $event.target.value"
         />
-        <label for="quadrant1">Quadrant 1</label>
-        <input
-          type="radio"
-          [(ngModel)]="quadrant"
-          name="quadrant"
-          id="quadrant2"
-          [value]="2"
-        />
-        <label for="quadrant2">Quadrant 2</label>
-        <br />
-        <input
-          type="radio"
-          [(ngModel)]="quadrant"
-          name="quadrant"
-          id="quadrant3"
-          [value]="3"
-        />
-        <label for="quadrant3">Quadrant 3</label>
-        <input
-          type="radio"
-          [(ngModel)]="quadrant"
-          name="quadrant"
-          id="quadrant4"
-          [value]="4"
-        />
-        <label for="quadrant4">Quadrant 4</label>
-      </form>
-    </div>
-    <div class="row">
-      <img
-        id="field_balls_image"
-        src="/sha256/e095cc8a75d804b0e2070e0a941fab37154176756d4c1a775e53cc48c3a732b9/pictures/field/balls.jpeg"
-        alt="Balls Image"
-      />
-      <form>
-        <!--Choice for each ball location-->
-        <input
-          [(ngModel)]="ball1"
-          type="checkbox"
-          name="1ball"
-          value="1"
-          id="ball-1"
-        />
-        <label for="ball-1">Ball 1</label>
-        <input
-          [(ngModel)]="ball2"
-          type="checkbox"
-          name="2ball"
-          value="2"
-          id="ball-2"
-        />
-        <label for="ball-2">Ball 2</label>
-        <br />
-        <input
-          [(ngModel)]="ball3"
-          type="checkbox"
-          name="3ball"
-          value="3"
-          id="ball-3"
-        />
-        <label for="ball-3">Ball 3</label>
-        <input
-          [(ngModel)]="ball4"
-          type="checkbox"
-          name="4ball"
-          value="4"
-          id="ball-4"
-        />
-        <label for="ball-4">Ball 4</label>
-        <br />
-        <input
-          [(ngModel)]="ball5"
-          type="checkbox"
-          name="5ball"
-          value="5"
-          id="ball-5"
-        />
-        <label for="ball-5">Ball 5</label>
-      </form>
-    </div>
-    <div class="row justify-content-center">
-      <frc971-counter-button class="col-4" [(value)]="autoUpperShotsMade">
-        Upper
-      </frc971-counter-button>
-      <frc971-counter-button class="col-4" [(value)]="autoLowerShotsMade">
-        Lower
-      </frc971-counter-button>
-      <frc971-counter-button class="col-4" [(value)]="autoShotsMissed">
-        Missed
-      </frc971-counter-button>
-    </div>
-    <div class="buttons">
-      <button class="btn btn-primary" (click)="prevSection()">Back</button>
-      <button class="btn btn-primary" (click)="nextSection()">Next</button>
-    </div>
-  </div>
-
-  <div *ngSwitchCase="'TeleOp'" id="teleop" class="container-fluid">
-    <div class="row justify-content-center">
-      <frc971-counter-button class="col-4" [(value)]="teleUpperShotsMade">
-        Upper
-      </frc971-counter-button>
-      <frc971-counter-button class="col-4" [(value)]="teleLowerShotsMade">
-        Lower
-      </frc971-counter-button>
-      <frc971-counter-button class="col-4" [(value)]="teleShotsMissed">
-        Missed
-      </frc971-counter-button>
-    </div>
-    <div class="buttons">
-      <button class="btn btn-primary" (click)="prevSection()">Back</button>
-      <button class="btn btn-primary" (click)="nextSection()">Next</button>
-    </div>
-  </div>
-
-  <div *ngSwitchCase="'Climb'" id="climb" class="container-fluid">
-    <form>
-      <input
-        [(ngModel)]="level"
-        type="radio"
-        name="level"
-        id="no_attempt"
-        [value]="ClimbLevel.NoAttempt"
-      />
-      <label for="no_attempt">No climbing attempt</label>
-      <br />
-      <input
-        [(ngModel)]="level"
-        type="radio"
-        name="level"
-        id="low"
-        [value]="ClimbLevel.Low"
-      />
-      <label for="low">Low</label>
-      <br />
-      <input
-        [(ngModel)]="level"
-        type="radio"
-        name="level"
-        id="medium"
-        [value]="ClimbLevel.Medium"
-      />
-      <label for="medium">Medium</label>
-      <br />
-      <input
-        [(ngModel)]="level"
-        type="radio"
-        name="level"
-        id="high"
-        [value]="ClimbLevel.High"
-      />
-      <label for="high">High</label>
-      <br />
-      <input
-        [(ngModel)]="level"
-        type="radio"
-        name="level"
-        id="traversal"
-        [value]="ClimbLevel.Traversal"
-      />
-      <label for="traversal">Traversal</label>
-      <br />
-      <input
-        [(ngModel)]="level"
-        type="radio"
-        name="level"
-        id="failed"
-        [value]="ClimbLevel.Failed"
-      />
-      <label for="failed">Failed</label>
-      <br />
-      <input
-        [(ngModel)]="level"
-        type="radio"
-        name="level"
-        id="failed_with_plenty_of_time"
-        [value]="ClimbLevel.FailedWithPlentyOfTime"
-      />
-      <label for="failed_with_plenty_of_time">
-        Failed (attempted with more than 10 seconds left)
+        {{ i }}
       </label>
-      <br />
-    </form>
+    </div>
     <div class="buttons">
-      <button class="btn btn-primary" (click)="prevSection()">Back</button>
-      <button class="btn btn-primary" (click)="nextSection()">Next</button>
+      <button
+        class="btn btn-primary"
+        [disabled]="!selectedValue"
+        (click)="changeSectionTo('Pickup'); addAction({type: 'startMatchAction', position: selectedValue});"
+      >
+        Start Match
+      </button>
     </div>
   </div>
 
-  <div *ngSwitchCase="'Other'" id="defense" class="container-fluid">
-    <h4 class="text-center">
-      How much did other robots play defense against this robot?
-    </h4>
-    0 - No defense played against this robot
-    <br />
-    1 - Minimal defense
-    <br />
-    2 - Some defense
-    <br />
-    3 - About half the match was played against defense
-    <br />
-    4 - Good amount of defense
-    <br />
-    5 - Constant defense
-    <div class="row" style="min-height: 50px">
-      <div class="col-10">
-        <input
-          type="range"
-          min="0"
-          max="5"
-          [(ngModel)]="defensePlayedOnScore"
-        />
-      </div>
-      <div class="col">
-        <h6>{{defensePlayedOnScore}}</h6>
-      </div>
-    </div>
-
-    <h4 class="text-center">
-      How much did this robot play defense against other robots?
-    </h4>
-    0 - This robot did not play defense
-    <br />
-    1 - Minimal defense
-    <br />
-    2 - Some defense
-    <br />
-    3 - Defense was played for about half the match
-    <br />
-    4 - Good amount of defense
-    <br />
-    5 - Constant defense
-    <div class="row">
-      <div class="col-10">
-        <input type="range" min="0" max="5" [(ngModel)]="defensePlayedScore" />
-      </div>
-      <div class="col">
-        <h6>{{defensePlayedScore}}</h6>
-      </div>
-    </div>
-
-    <div class="row">
-      <form>
-        <input
-          type="checkbox"
-          [(ngModel)]="noShow"
-          name="no_show"
-          id="no_show"
-        />
-        <label for="no_show">No show</label>
-        <br />
-        <input
-          type="checkbox"
-          [(ngModel)]="neverMoved"
-          name="never_moved"
-          id="never_moved"
-        />
-        <label for="never_moved">Never moved</label>
-        <br />
-        <input
-          type="checkbox"
-          [(ngModel)]="batteryDied"
-          name="battery_died"
-          id="battery_died"
-        />
-        <label for="battery_died">Battery died</label>
-        <br />
-        <input
-          type="checkbox"
-          [(ngModel)]="mechanicallyBroke"
-          name="mechanically_broke"
-          id="mechanically_broke"
-        />
-        <label for="mechanically_broke">Broke (mechanically)</label>
-        <br />
-        <input
-          type="checkbox"
-          [(ngModel)]="lostComs"
-          name="lost_coms"
-          id="lost_coms"
-        />
-        <label for="lost_coms">Lost coms</label>
-      </form>
-    </div>
-
-    <div class="row">
-      <h4>General Comments About Match</h4>
-      <textarea
-        [(ngModel)]="comment"
-        id="comment"
-        placeholder="optional"
-      ></textarea>
-    </div>
-
-    <div class="buttons">
-      <button class="btn btn-primary" (click)="prevSection()">Back</button>
-      <button class="btn btn-primary" (click)="nextSection()">Next</button>
-    </div>
+  <div *ngSwitchCase="'Pickup'" id="PickUp" class="container-fluid">
+    <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
+    <button
+      class="btn btn-warning"
+      (click)="changeSectionTo('Place'); addAction({type: 'pickupObjectAction', objectType: ObjectType.kCone});"
+    >
+      CONE
+    </button>
+    <button
+      class="btn btn-primary"
+      (click)="changeSectionTo('Place'); addAction({type: 'pickupObjectAction', objectType: ObjectType.kCube});"
+    >
+      CUBE
+    </button>
+    <button
+      *ngIf="autoPhase"
+      class="btn btn-info"
+      (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
+    >
+      Start Teleop
+    </button>
+    <button
+      *ngIf="!autoPhase"
+      class="btn btn-info"
+      (click)="changeSectionTo('Endgame')"
+    >
+      Endgame
+    </button>
   </div>
 
-  <div *ngSwitchCase="'Review and Submit'" id="review" class="container-fluid">
-    <h4>Team Selection</h4>
-    <ul>
-      <li>Match number: {{matchNumber}}</li>
-      <li>Team number: {{teamNumber}}</li>
-      <li>SetNumber: {{setNumber}}</li>
-      <li>Comp Level: {{COMP_LEVEL_LABELS[compLevel]}}</li>
-    </ul>
-
-    <h4>Auto</h4>
-    <ul>
-      <li>Quadrant: {{quadrant}}</li>
-      <li>Collected Ball 1: {{ball1}}</li>
-      <li>Collected Ball 2: {{ball2}}</li>
-      <li>Collected Ball 3: {{ball3}}</li>
-      <li>Collected Ball 4: {{ball4}}</li>
-      <li>Collected Ball 5: {{ball5}}</li>
-      <li>Upper Shots Made: {{autoUpperShotsMade}}</li>
-      <li>Lower Shots Made: {{autoLowerShotsMade}}</li>
-      <li>Missed Shots: {{autoShotsMissed}}</li>
-    </ul>
-
-    <h4>TeleOp</h4>
-    <ul>
-      <li>Upper Shots Made: {{teleUpperShotsMade}}</li>
-      <li>Lower Shots Made: {{teleLowerShotsMade}}</li>
-      <li>Missed Shots: {{teleShotsMissed}}</li>
-    </ul>
-
-    <h4>Climb</h4>
-    <ul>
-      <li>Climb Level: {{level | levelToString}}</li>
-    </ul>
-
-    <h4>Other</h4>
-    <ul>
-      <li>Defense Played On Rating: {{defensePlayedOnScore}}</li>
-      <li>Defense Played Rating: {{defensePlayedScore}}</li>
-      <li>No show: {{noShow}}</li>
-      <li>Never moved: {{neverMoved}}</li>
-      <li>Battery died: {{batteryDied}}</li>
-      <li>Broke (mechanically): {{mechanicallyBroke}}</li>
-      <li>Lost coms: {{lostComs}}</li>
-      <li>Comments: {{comment}}</li>
-    </ul>
-
-    <span class="error_message">{{ errorMessage }}</span>
-
-    <div class="buttons">
-      <button class="btn btn-primary" (click)="prevSection()">Back</button>
-      <button class="btn btn-primary" (click)="nextSection()">Submit</button>
-    </div>
+  <div *ngSwitchCase="'Place'" id="Place" class="container-fluid">
+    <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
+    <button
+      class="btn btn-success"
+      (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kHigh});"
+    >
+      HIGH
+    </button>
+    <button
+      class="btn btn-warning"
+      (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kMiddle});"
+    >
+      MID
+    </button>
+    <button
+      class="btn btn-danger"
+      (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kLow});"
+    >
+      LOW
+    </button>
+    <button
+      *ngIf="autoPhase"
+      class="btn btn-info"
+      (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
+    >
+      Start Teleop
+    </button>
+    <button
+      *ngIf="!autoPhase"
+      class="btn btn-info"
+      (click)="changeSectionTo('Endgame')"
+    >
+      Endgame
+    </button>
   </div>
 
-  <div *ngSwitchCase="'Success'" id="success" class="container-fluid">
-    <span>Successfully submitted scouting data.</span>
-    <div class="buttons justify-content-end">
-      <button class="btn btn-primary" (click)="nextSection()">Continue</button>
-    </div>
+  <div *ngSwitchCase="'Endgame'" id="Endgame" class="container-fluid">
+    <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
+    <label>
+      <input type="checkbox" (change)="dockedValue = $event.target.value" />
+      Docked
+    </label>
+    <label>
+      <input type="checkbox" (change)="engagedValue = $event.target.value" />
+      Engaged
+    </label>
+    <button
+      *ngIf="!autoPhase"
+      class="btn btn-info"
+      (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: dockedValue, engaged: engagedValue});"
+    >
+      End Match
+    </button>
+  </div>
+
+  <div *ngSwitchCase="'Review and Submit'" id="Review" class="container-fluid">
+    <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
+    <button
+      *ngIf="!autoPhase"
+      class="btn btn-warning"
+      (click)="submitActions();"
+    >
+      Submit
+    </button>
+  </div>
+
+  <div *ngSwitchCase="'Success'" id="Success" class="container-fluid">
+    <h2>Successfully submitted data.</h2>
   </div>
 </ng-container>
