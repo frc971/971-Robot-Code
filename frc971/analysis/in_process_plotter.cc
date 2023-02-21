@@ -80,7 +80,7 @@ void Plotter::YLabel(std::string_view label) {
 
 void Plotter::AddLine(const std::vector<double> &x,
                       const std::vector<double> &y, LineOptions options) {
-  CHECK_EQ(x.size(), y.size());
+  CHECK_EQ(x.size(), y.size()) << ": " << options.label;
   CHECK(!position_.IsNull())
       << "You must call AddFigure() before calling AddLine().";
 
