@@ -122,6 +122,7 @@ py_library(
     deps = [
         "//frc971/control_loops/python:controls",
         "@pip//matplotlib",
+        "@pip//pygobject",
     ],
 )
 

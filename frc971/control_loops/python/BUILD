@@ -29,6 +29,7 @@ py_binary(
         "//frc971/control_loops/python:controls",
         "@pip//glog",
         "@pip//matplotlib",
+        "@pip//pygobject",
         "@pip//python_gflags",
     ],
 )
@@ -77,6 +78,7 @@ py_binary(
         ":controls",
         ":python_init",
         "@pip//matplotlib",
+        "@pip//pygobject",
     ],
 )
 
@@ -90,6 +92,7 @@ py_library(
         ":controls",
         ":python_init",
         "@pip//matplotlib",
+        "@pip//pygobject",
     ],
 )
 
@@ -132,6 +135,7 @@ py_library(
         ":python_init",
         "@pip//glog",
         "@pip//matplotlib",
+        "@pip//pygobject",
     ],
 )
 
@@ -153,6 +157,7 @@ py_library(
         "//aos/util:py_trapezoid_profile",
         "//frc971/control_loops:python_init",
         "@pip//matplotlib",
+        "@pip//pygobject",
     ],
 )
 
@@ -166,6 +171,7 @@ py_library(
         "//aos/util:py_trapezoid_profile",
         "//frc971/control_loops:python_init",
         "@pip//matplotlib",
+        "@pip//pygobject",
     ],
 )
 

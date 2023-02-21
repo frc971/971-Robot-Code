@@ -58,6 +58,7 @@ py_binary(
         "//frc971/control_loops/python:controls",
         "@pip//glog",
         "@pip//matplotlib",
+        "@pip//pygobject",
         "@pip//python_gflags",
     ],
 )
@@ -106,6 +107,7 @@ py_binary(
         "//frc971/control_loops/python:controls",
         "@pip//glog",
         "@pip//matplotlib",
+        "@pip//pygobject",
         "@pip//python_gflags",
     ],
 )
@@ -123,6 +125,7 @@ py_binary(
         "//frc971/control_loops/python:controls",
         "@pip//glog",
         "@pip//matplotlib",
+        "@pip//pygobject",
         "@pip//python_gflags",
     ],
 )
@@ -168,6 +171,7 @@ py_binary(
         "//frc971/control_loops/python:controls",
         "@pip//glog",
         "@pip//matplotlib",
+        "@pip//pygobject",
         "@pip//python_gflags",
     ],
 )
