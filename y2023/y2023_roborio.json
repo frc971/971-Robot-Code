@@ -61,7 +61,7 @@
       "source_node": "roborio",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 4096
+      "max_size": 8192
     },
     {
       "name": "/roborio/aos",
@@ -530,7 +530,7 @@
       ]
     },
     {
-      "name": "constants_sender",
+      "name": "constants_sender_roborio",
       "autorestart": false,
       "nodes": [
         "roborio"

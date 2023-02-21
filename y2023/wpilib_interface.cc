@@ -198,6 +198,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       position_builder.add_arm(arm_offset);
       position_builder.add_roll_joint(roll_joint_offset);
       position_builder.add_wrist(wrist_offset);
+      builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
     {
@@ -791,26 +792,25 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_drivetrain_left_encoder(make_encoder(1));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
     sensor_reader.set_superstructure_reading(superstructure_reading);
-
-    sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(9));
-    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(8));
+    sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(1));
+    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(0));
 
     sensor_reader.set_proximal_encoder(make_encoder(3));
     sensor_reader.set_proximal_absolute_pwm(make_unique<frc::DigitalInput>(3));
     sensor_reader.set_proximal_potentiometer(make_unique<frc::AnalogInput>(3));
 
-    sensor_reader.set_distal_encoder(make_encoder(3));
-    sensor_reader.set_distal_absolute_pwm(make_unique<frc::DigitalInput>(3));
-    sensor_reader.set_distal_potentiometer(make_unique<frc::AnalogInput>(3));
+    sensor_reader.set_distal_encoder(make_encoder(2));
+    sensor_reader.set_distal_absolute_pwm(make_unique<frc::DigitalInput>(2));
+    sensor_reader.set_distal_potentiometer(make_unique<frc::AnalogInput>(2));
 
-    sensor_reader.set_roll_joint_encoder(make_encoder(3));
+    sensor_reader.set_roll_joint_encoder(make_encoder(5));
     sensor_reader.set_roll_joint_absolute_pwm(
-        make_unique<frc::DigitalInput>(3));
+        make_unique<frc::DigitalInput>(5));
     sensor_reader.set_roll_joint_potentiometer(
-        make_unique<frc::AnalogInput>(3));
+        make_unique<frc::AnalogInput>(5));
 
-    sensor_reader.set_wrist_encoder(make_encoder(3));
-    sensor_reader.set_wrist_absolute_pwm(make_unique<frc::DigitalInput>(3));
+    sensor_reader.set_wrist_encoder(make_encoder(4));
+    sensor_reader.set_wrist_absolute_pwm(make_unique<frc::DigitalInput>(4));
 
     AddLoop(&sensor_reader_event_loop);
 
@@ -846,17 +846,17 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ctre::phoenixpro::signals::InvertedValue::Clockwise_Positive);
     drivetrain_writer.set_left_inverted(
         ctre::phoenixpro::signals::InvertedValue::CounterClockwise_Positive);
-
     SuperstructureWriter superstructure_writer(&output_event_loop);
 
-    superstructure_writer.set_proximal_falcon(make_unique<::frc::TalonFX>(3));
-    superstructure_writer.set_distal_falcon(make_unique<::frc::TalonFX>(3));
+    superstructure_writer.set_proximal_falcon(make_unique<::frc::TalonFX>(1));
+    superstructure_writer.set_distal_falcon(make_unique<::frc::TalonFX>(0));
 
     superstructure_writer.set_roll_joint_victor(
-        make_unique<::frc::VictorSP>(5));
-    superstructure_writer.set_wrist_victor(make_unique<::frc::VictorSP>(5));
+        make_unique<::frc::VictorSP>(3));
+    superstructure_writer.set_wrist_victor(make_unique<::frc::VictorSP>(2));
+
     superstructure_writer.set_roller_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(5));
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
 
     superstructure_writer.set_superstructure_reading(superstructure_reading);
 
