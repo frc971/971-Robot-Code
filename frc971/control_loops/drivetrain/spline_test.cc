@@ -129,11 +129,13 @@ TEST_F(SplineTest, XYIntegral) {
     plotter_->AddLine(alphas_plot, idy_plot, "Integrated dY");
     plotter_->XLabel("Spline Alpha");
     plotter_->YLabel("X/Y (m), dX, dY (m / alpha)");
+    plotter_->Publish();
 
     plotter_->AddFigure("X/Y Plot of Spline Path");
     plotter_->AddLine(x_plot, y_plot, "spline");
     plotter_->XLabel("X (m)");
     plotter_->YLabel("Y (m)");
+    plotter_->Publish();
   }
 }
 
