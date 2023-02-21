@@ -11,6 +11,9 @@ sh_binary(
         "//scouting/www:static_files",
     ],
     visibility = ["//visibility:public"],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
 )
 
 protractor_ts_test(
