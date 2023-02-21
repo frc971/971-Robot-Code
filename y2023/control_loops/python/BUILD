@@ -90,3 +90,19 @@ py_library(
     visibility = ["//visibility:public"],
     deps = ["//y2023/control_loops:python_init"],
 )
+
+py_binary(
+    name = "roll",
+    srcs = [
+        "roll.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":python_init",
+        "//frc971/control_loops/python:angular_system",
+        "//frc971/control_loops/python:controls",
+        "@pip//glog",
+        "@pip//python_gflags",
+    ],
+)

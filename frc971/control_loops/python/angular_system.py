@@ -120,11 +120,15 @@ class AngularSystem(control_loop.ControlLoop):
 
         self.R = numpy.matrix([[(self.params.kalman_r_position**2.0)]])
 
-        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
-                                                         B=self.B,
-                                                         C=self.C,
-                                                         Q=self.Q,
-                                                         R=self.R)
+        # From testing, these continuous Q and R's appear to be good approximations of Q and R.
+        self.Q_continuous = self.Q / self.dt
+        self.R_continuous = self.R * self.dt
+
+        self.KalmanGain, self.P_steady_state = controls.kalman(A=self.A,
+                                                               B=self.B,
+                                                               C=self.C,
+                                                               Q=self.Q,
+                                                               R=self.R)
 
         glog.debug('Kal %s', repr(self.KalmanGain))
 
@@ -165,11 +169,15 @@ class IntegralAngularSystem(AngularSystem):
 
         self.R = numpy.matrix([[(self.params.kalman_r_position**2.0)]])
 
-        self.KalmanGain, self.Q_steady = controls.kalman(A=self.A,
-                                                         B=self.B,
-                                                         C=self.C,
-                                                         Q=self.Q,
-                                                         R=self.R)
+        # From testing, these continuous Q and R's appear to be good approximations of Q and R.
+        self.Q_continuous = self.Q / self.dt
+        self.R_continuous = self.R * self.dt
+
+        self.KalmanGain, self.P_steady_state = controls.kalman(A=self.A,
+                                                               B=self.B,
+                                                               C=self.C,
+                                                               Q=self.Q,
+                                                               R=self.R)
 
         self.K_unaugmented = self.K
         self.K = numpy.matrix(numpy.zeros((1, 3)))
@@ -409,7 +417,12 @@ def PlotMotion(params,
             max_acceleration=max_acceleration)
 
 
-def WriteAngularSystem(params, plant_files, controller_files, year_namespaces):
+def WriteAngularSystem(params,
+                       plant_files,
+                       controller_files,
+                       year_namespaces,
+                       plant_type='StateFeedbackPlant',
+                       observer_type='StateFeedbackObserver'):
     """Writes out the constants for a angular system to a file.
 
     Args:
@@ -440,7 +453,9 @@ def WriteAngularSystem(params, plant_files, controller_files, year_namespaces):
 
     loop_writer = control_loop.ControlLoopWriter(name,
                                                  angular_systems,
-                                                 namespaces=year_namespaces)
+                                                 namespaces=year_namespaces,
+                                                 plant_type=plant_type,
+                                                 observer_type=observer_type)
     loop_writer.AddConstant(
         control_loop.Constant('kOutputRatio', '%f', angular_systems[0].G))
     loop_writer.AddConstant(
@@ -451,5 +466,7 @@ def WriteAngularSystem(params, plant_files, controller_files, year_namespaces):
     integral_loop_writer = control_loop.ControlLoopWriter(
         'Integral' + name,
         integral_angular_systems,
-        namespaces=year_namespaces)
+        namespaces=year_namespaces,
+        plant_type=plant_type,
+        observer_type=observer_type)
     integral_loop_writer.Write(controller_files[0], controller_files[1])
