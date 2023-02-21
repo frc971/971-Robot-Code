@@ -301,7 +301,7 @@ export class EntryComponent {
     builder.finish(SubmitActions.endSubmitActions(builder));
 
     const buffer = builder.asUint8Array();
-    const res = await fetch('/requests/submit/actions', {
+    const res = await fetch('/requests/submit/submit_actions', {
       method: 'POST',
       body: buffer,
     });

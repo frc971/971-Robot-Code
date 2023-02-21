@@ -105,7 +105,7 @@ describe('Scouting app tests', () => {
   });
 
   //TODO(FILIP): Verify last action when the last action header gets added.
-  it('should: be able to get to submit screen in data scouting.', () => {
+  it('should: be able to submit data scouting.', () => {
     switchToTab('Data Entry');
     headerShouldBe('Team Selection');
     clickButton('Next');
@@ -131,11 +131,11 @@ describe('Scouting app tests', () => {
     clickButton('Endgame');
     cy.get('[type="checkbox"]').check();
 
-    // Should be on submit screen.
-    // TODO(FILIP): Verify that submitting works once we add it.
-
     clickButton('End Match');
     headerShouldBe('Review and Submit');
+
+    clickButton('Submit');
+    headerShouldBe('Success');
   });
 
   it('should: be able to return to correct screen with undo for pick and place.', () => {

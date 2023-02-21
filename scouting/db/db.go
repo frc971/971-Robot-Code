@@ -48,14 +48,14 @@ type Stats2023 struct {
 }
 
 type Action struct {
-	TeamNumber      string `gorm:"primaryKey"`
-	MatchNumber     int32  `gorm:"primaryKey"`
-	SetNumber       int32  `gorm:"primaryKey"`
-	CompLevel       string `gorm:"primaryKey"`
-	CompletedAction []byte
+	TeamNumber  string `gorm:"primaryKey"`
+	MatchNumber int32  `gorm:"primaryKey"`
+	SetNumber   int32  `gorm:"primaryKey"`
+	CompLevel   string `gorm:"primaryKey"`
 	// This contains a serialized scouting.webserver.requests.ActionType flatbuffer.
-	TimeStamp   int32 `gorm:"primaryKey"`
-	CollectedBy string
+	CompletedAction []byte
+	Timestamp       int64 `gorm:"primaryKey"`
+	CollectedBy     string
 }
 
 type NotesData struct {

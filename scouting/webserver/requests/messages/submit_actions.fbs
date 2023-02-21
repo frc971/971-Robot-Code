@@ -62,5 +62,6 @@ table SubmitActions {
     set_number:int (id: 2);
     comp_level:string (id: 3);
     actions_list:[Action] (id:4);
+    //TODO: delete this field
     collected_by:string (id: 5);
 }

@@ -752,6 +752,109 @@ func TestRequestAllNotes(t *testing.T) {
 	}
 }
 
+func packAction(action *submit_actions.ActionT) []byte {
+	builder := flatbuffers.NewBuilder(50 * 1024)
+	builder.Finish((action).Pack(builder))
+	return (builder.FinishedBytes())
+}
+
+func TestAddingActions(t *testing.T) {
+	database := MockDatabase{}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&database, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&submit_actions.SubmitActionsT{
+		TeamNumber:  "1234",
+		MatchNumber: 4,
+		SetNumber:   1,
+		CompLevel:   "qual",
+		ActionsList: []*submit_actions.ActionT{
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypePickupObjectAction,
+					Value: &submit_actions.PickupObjectActionT{
+						ObjectType: submit_actions.ObjectTypekCube,
+						Auto:       true,
+					},
+				},
+				Timestamp: 2400,
+			},
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypePlaceObjectAction,
+					Value: &submit_actions.PlaceObjectActionT{
+						ObjectType: submit_actions.ObjectTypekCube,
+						ScoreLevel: submit_actions.ScoreLevelkLow,
+						Auto:       false,
+					},
+				},
+				Timestamp: 1009,
+			},
+		},
+	}).Pack(builder))
+
+	_, err := debug.SubmitActions("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to submit actions: ", err)
+	}
+
+	// Make sure that the data made it into the database.
+	// TODO: Add this back when we figure out how to add the serialized action into the database.
+
+	/* expectedActionsT := []*submit_actions.ActionT{
+		{
+			ActionTaken: &submit_actions.ActionTypeT{
+				Type:	submit_actions.ActionTypePickupObjectAction,
+				Value:	&submit_actions.PickupObjectActionT{
+					ObjectType: submit_actions.ObjectTypekCube,
+					Auto: true,
+				},
+			},
+			Timestamp:       2400,
+		},
+		{
+			ActionTaken: &submit_actions.ActionTypeT{
+				Type:	submit_actions.ActionTypePlaceObjectAction,
+				Value:	&submit_actions.PlaceObjectActionT{
+					ObjectType: submit_actions.ObjectTypekCube,
+					ScoreLevel: submit_actions.ScoreLevelkLow,
+					Auto: false,
+				},
+			},
+			Timestamp:       1009,
+		},
+	} */
+
+	expectedActions := []db.Action{
+		{
+			TeamNumber:      "1234",
+			MatchNumber:     4,
+			SetNumber:       1,
+			CompLevel:       "qual",
+			CollectedBy:     "debug_cli",
+			CompletedAction: []byte{},
+			Timestamp:       2400,
+		},
+		{
+			TeamNumber:      "1234",
+			MatchNumber:     4,
+			SetNumber:       1,
+			CompLevel:       "qual",
+			CollectedBy:     "debug_cli",
+			CompletedAction: []byte{},
+			Timestamp:       1009,
+		},
+	}
+
+	if !reflect.DeepEqual(expectedActions, database.actions) {
+		t.Fatal("Expected ", expectedActions, ", but got:", database.actions)
+	}
+
+}
+
 // A mocked database we can use for testing. Add functionality to this as
 // needed for your tests.
 
@@ -761,6 +864,7 @@ type MockDatabase struct {
 	shiftSchedule  []db.Shift
 	driver_ranking []db.DriverRankingData
 	stats2023      []db.Stats2023
+	actions        []db.Action
 }
 
 func (database *MockDatabase) AddToMatch(match db.TeamMatch) error {
@@ -829,4 +933,13 @@ func (database *MockDatabase) AddDriverRanking(data db.DriverRankingData) error 
 
 func (database *MockDatabase) ReturnAllDriverRankings() ([]db.DriverRankingData, error) {
 	return database.driver_ranking, nil
+}
+
+func (database *MockDatabase) AddAction(action db.Action) error {
+	database.actions = append(database.actions, action)
+	return nil
+}
+
+func (database *MockDatabase) ReturnActions() ([]db.Action, error) {
+	return database.actions, nil
 }

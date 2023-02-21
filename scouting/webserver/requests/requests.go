@@ -56,6 +56,7 @@ type SubmitShiftScheduleResponseT = submit_shift_schedule_response.SubmitShiftSc
 type SubmitDriverRanking = submit_driver_ranking.SubmitDriverRanking
 type SubmitDriverRankingResponseT = submit_driver_ranking_response.SubmitDriverRankingResponseT
 type SubmitActions = submit_actions.SubmitActions
+type Action = submit_actions.Action
 type SubmitActionsResponseT = submit_actions_response.SubmitActionsResponseT
 
 // The interface we expect the database abstraction to conform to.
@@ -74,6 +75,7 @@ type Database interface {
 	QueryNotes(int32) ([]string, error)
 	AddNotes(db.NotesData) error
 	AddDriverRanking(db.DriverRankingData) error
+	AddAction(db.Action) error
 }
 
 // Handles unknown requests. Just returns a 404.
@@ -785,6 +787,62 @@ func (handler requestAllDriverRankingsHandler) ServeHTTP(w http.ResponseWriter, 
 	w.Write(builder.FinishedBytes())
 }
 
+type submitActionsHandler struct {
+	db Database
+}
+
+func (handler submitActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// Get the username of the person submitting the data.
+	username := parseUsername(req)
+
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "SubmitActions", submit_actions.GetRootAsSubmitActions)
+	if !success {
+		return
+	}
+
+	log.Println("Got actions for match", request.MatchNumber(), "team", request.TeamNumber(), "from", username)
+
+	for i := 0; i < request.ActionsListLength(); i++ {
+
+		var action Action
+		request.ActionsList(&action, i)
+
+		dbAction := db.Action{
+			TeamNumber:  string(request.TeamNumber()),
+			MatchNumber: request.MatchNumber(),
+			SetNumber:   request.SetNumber(),
+			CompLevel:   string(request.CompLevel()),
+			//TODO: Serialize CompletedAction
+			CompletedAction: []byte{},
+			Timestamp:       action.Timestamp(),
+			CollectedBy:     username,
+		}
+
+		// Do some error checking.
+		if action.Timestamp() < 0 {
+			respondWithError(w, http.StatusBadRequest, fmt.Sprint(
+				"Invalid timestamp field value of ", action.Timestamp()))
+			return
+		}
+
+		err = handler.db.AddAction(dbAction)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to add action to database: ", err))
+			return
+		}
+	}
+
+	builder := flatbuffers.NewBuilder(50 * 1024)
+	builder.Finish((&SubmitActionsResponseT{}).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.HandleFunc("/requests", unknown)
 	scoutingServer.Handle("/requests/request/all_matches", requestAllMatchesHandler{db})
@@ -796,4 +854,5 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.Handle("/requests/submit/shift_schedule", submitShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/request/shift_schedule", requestShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_driver_ranking", SubmitDriverRankingHandler{db})
+	scoutingServer.Handle("/requests/submit/submit_actions", submitActionsHandler{db})
 }

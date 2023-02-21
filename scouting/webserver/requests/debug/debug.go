@@ -16,6 +16,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule_response"
@@ -156,4 +157,10 @@ func SubmitDriverRanking(server string, requestBytes []byte) (*submit_driver_ran
 	return sendMessage[submit_driver_ranking_response.SubmitDriverRankingResponseT](
 		server+"/requests/submit/submit_driver_ranking", requestBytes,
 		submit_driver_ranking_response.GetRootAsSubmitDriverRankingResponse)
+}
+
+func SubmitActions(server string, requestBytes []byte) (*submit_actions_response.SubmitActionsResponseT, error) {
+	return sendMessage[submit_actions_response.SubmitActionsResponseT](
+		server+"/requests/submit/submit_actions", requestBytes,
+		submit_actions_response.GetRootAsSubmitActionsResponse)
 }
