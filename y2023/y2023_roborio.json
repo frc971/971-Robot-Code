@@ -476,6 +476,16 @@
       ]
     },
     {
+      "name": "roborio_irq_affinity",
+      "executable_name": "irq_affinity",
+      "args": [
+        "--irq_config=/home/admin/bin/roborio_irq_config.json"
+      ],
+      "nodes": [
+        "roborio"
+      ]
+    },
+    {
       "name": "joystick_reader",
       "executable_name": "joystick_reader",
       "nodes": [

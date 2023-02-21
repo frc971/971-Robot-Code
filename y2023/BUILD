@@ -9,6 +9,7 @@ robot_downloader(
     ],
     data = [
         ":aos_config",
+        "//aos/starter:roborio_irq_config.json",
         "@ctre_phoenix_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix_cci_athena//:shared_libraries",
         "@ctre_phoenixpro_api_cpp_athena//:shared_libraries",
@@ -20,6 +21,7 @@ robot_downloader(
     start_binaries = [
         "//aos/events/logging:logger_main",
         "//aos/network:web_proxy_main",
+        "//aos/starter:irq_affinity",
         ":joystick_reader",
         ":wpilib_interface",
         "//aos/network:message_bridge_client",
@@ -35,6 +37,7 @@ robot_downloader(
     name = "pi_download",
     binaries = [
         "//frc971/vision:intrinsics_calibration",
+        "//aos/starter:irq_affinity",
         "//aos/util:foxglove_websocket",
         "//y2023/vision:viewer",
         "//y2023/vision:aprilrobotics",

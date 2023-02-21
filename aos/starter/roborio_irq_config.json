@@ -1,0 +1,24 @@
+{
+  "irqs": [
+    {
+      "name": "e0002000.usb",
+      "affinity": [1]
+    },
+    {
+      "name": "mmc0",
+      "affinity": [0]
+    },
+    {
+      "name": "eth0",
+      "affinity": [0]
+    }
+  ],
+  "kthreads": [
+    {
+      "name": "irq/*-e0002000",
+      "scheduler": "SCHEDULER_FIFO",
+      "priority": 45,
+      "affinity": [1]
+    }
+  ]
+}

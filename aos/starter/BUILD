@@ -1,6 +1,8 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//aos:config.bzl", "aos_config")
 
+exports_files(["roborio_irq_config.json"])
+
 # This target is everything which should get deployed to the robot.
 filegroup(
     name = "starter",
