@@ -31,8 +31,8 @@ T RungeKuttaSteps(const F &fn, T X, double dt, int steps) {
   return X;
 }
 
-// Implements Runge Kutta integration (4th order).  This integrates dy/dt = fn(t,
-// y).  It must have the call signature of fn(double t, T y).  The
+// Implements Runge Kutta integration (4th order).  This integrates dy/dt =
+// fn(t, y).  It must have the call signature of fn(double t, T y).  The
 // integration starts at an initial value y, and integrates for dt.
 template <typename F, typename T>
 T RungeKutta(const F &fn, T y, double t, double dt) {
@@ -43,6 +43,15 @@ T RungeKutta(const F &fn, T y, double t, double dt) {
   T k4 = dt * fn(t + dt, y + k3);
 
   return y + (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
+}
+
+template <typename F, typename T>
+T RungeKuttaSteps(const F &fn, T X, double t, double dt, int steps) {
+  dt = dt / steps;
+  for (int i = 0; i < steps; ++i) {
+    X = RungeKutta(fn, X, t + dt * i, dt);
+  }
+  return X;
 }
 
 // Implements Runge Kutta integration (4th order).  fn is the function to
