@@ -437,7 +437,7 @@ class SuperstructureWriter
 };
 
 static constexpr int kCANFalconCount = 6;
-static constexpr int kCANSignalsCount = 3;
+static constexpr int kCANSignalsCount = 4;
 static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
 
 class Falcon {
@@ -455,9 +455,9 @@ class Falcon {
     // device temp is not timesynced so don't add it to the list of signals
     device_temp_.SetUpdateFrequency(kCANUpdateFreqHz);
 
-    CHECK_EQ(kCANSignalsCount, 3);
+    CHECK_EQ(kCANSignalsCount, 4);
     CHECK_NOTNULL(signals);
-    CHECK_LE(signals->size() + 3u, signals->capacity());
+    CHECK_LE(signals->size() + 4u, signals->capacity());
 
     supply_voltage_.SetUpdateFrequency(kCANUpdateFreqHz);
     signals->push_back(&supply_voltage_);
@@ -588,14 +588,15 @@ class CANSensorReader {
 
  private:
   void Loop() {
-    CHECK_EQ(signals_.size(), 18u);
+    CHECK_EQ(signals_.size(), 24u);
     ctre::phoenix::StatusCode status =
         ctre::phoenixpro::BaseStatusSignalValue::WaitForAll(
-            2000_ms,
-            {signals_[0], signals_[1], signals_[2], signals_[3], signals_[4],
-             signals_[5], signals_[6], signals_[7], signals_[8], signals_[9],
-             signals_[10], signals_[11], signals_[12], signals_[13],
-             signals_[14], signals_[15], signals_[16], signals_[17]});
+            2000_ms, {signals_[0],  signals_[1],  signals_[2],  signals_[3],
+                      signals_[4],  signals_[5],  signals_[6],  signals_[7],
+                      signals_[8],  signals_[9],  signals_[10], signals_[11],
+                      signals_[12], signals_[13], signals_[14], signals_[15],
+                      signals_[16], signals_[17], signals_[18], signals_[19],
+                      signals_[20], signals_[21], signals_[22], signals_[23]});
 
     if (!status.IsOK()) {
       AOS_LOG(ERROR, "Failed to read signals from falcons: %s: %s",
