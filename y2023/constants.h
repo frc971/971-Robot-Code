@@ -139,6 +139,10 @@ struct Values {
     };
   }
 
+  // Rollers
+  static constexpr double kRollerSupplyCurrentLimit() { return 30.0; }
+  static constexpr double kRollerStatorCurrentLimit() { return 60.0; }
+
   struct PotConstants {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
         ::frc971::zeroing::RelativeEncoderZeroingEstimator>

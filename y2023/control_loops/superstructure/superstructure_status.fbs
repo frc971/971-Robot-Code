@@ -62,7 +62,7 @@ table Status {
 
   roll_joint:frc971.PotAndAbsoluteEncoderEstimatorState (id: 3);
 
-  wrist:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 4);
+  wrist:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 4);
 }
 
 root_type Status;

@@ -86,12 +86,27 @@ double drivetrain_velocity_translate(double in) {
          control_loops::drivetrain::kWheelRadius;
 }
 
-constexpr double kMaxFastEncoderPulsesPerSecond =
-    /*std::max({*/ Values::kMaxDrivetrainEncoderPulsesPerSecond() /*,
-                  Values::kMaxIntakeEncoderPulsesPerSecond()})*/
-    ;
-/*static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
-            "fast encoders are too fast");*/
+double proximal_pot_translate(double voltage) {
+  return voltage * Values::kProximalPotRadiansPerVolt();
+}
+
+double distal_pot_translate(double voltage) {
+  return voltage * Values::kDistalPotRadiansPerVolt();
+}
+
+double roll_joint_pot_translate(double voltage) {
+  return voltage * Values::kRollJointPotRadiansPerVolt();
+}
+
+constexpr double kMaxFastEncoderPulsesPerSecond = std::max({
+    Values::kMaxDrivetrainEncoderPulsesPerSecond(),
+    Values::kMaxProximalEncoderPulsesPerSecond(),
+    Values::kMaxDistalEncoderPulsesPerSecond(),
+    Values::kMaxRollJointEncoderPulsesPerSecond(),
+    Values::kMaxWristEncoderPulsesPerSecond(),
+});
+static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
+              "fast encoders are too fast");
 
 }  // namespace
 
@@ -143,7 +158,47 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   void RunIteration() override {
     superstructure_reading_->Set(true);
-    { auto builder = superstructure_position_sender_.MakeBuilder(); }
+    {
+      auto builder = superstructure_position_sender_.MakeBuilder();
+      frc971::PotAndAbsolutePositionT proximal;
+      CopyPosition(proximal_encoder_, &proximal,
+                   Values::kProximalEncoderCountsPerRevolution(),
+                   Values::kProximalEncoderRatio(), proximal_pot_translate,
+                   false, values_->arm_proximal.potentiometer_offset);
+      frc971::PotAndAbsolutePositionT distal;
+      CopyPosition(distal_encoder_, &distal,
+                   Values::kDistalEncoderCountsPerRevolution(),
+                   Values::kDistalEncoderRatio(), distal_pot_translate, false,
+                   values_->arm_distal.potentiometer_offset);
+      frc971::PotAndAbsolutePositionT roll_joint;
+      CopyPosition(roll_joint_encoder_, &roll_joint,
+                   Values::kRollJointEncoderCountsPerRevolution(),
+                   Values::kRollJointEncoderRatio(), roll_joint_pot_translate,
+                   false, values_->roll_joint.potentiometer_offset);
+      frc971::AbsolutePositionT wrist;
+      CopyPosition(wrist_encoder_, &wrist,
+                   Values::kWristEncoderCountsPerRevolution(),
+                   Values::kWristEncoderRatio(), false);
+
+      flatbuffers::Offset<frc971::PotAndAbsolutePosition> proximal_offset =
+          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &proximal);
+      flatbuffers::Offset<frc971::PotAndAbsolutePosition> distal_offset =
+          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &distal);
+      flatbuffers::Offset<superstructure::ArmPosition> arm_offset =
+          superstructure::CreateArmPosition(*builder.fbb(), proximal_offset,
+                                            distal_offset);
+      flatbuffers::Offset<frc971::PotAndAbsolutePosition> roll_joint_offset =
+          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &roll_joint);
+      flatbuffers::Offset<frc971::AbsolutePosition> wrist_offset =
+          frc971::AbsolutePosition::Pack(*builder.fbb(), &wrist);
+
+      superstructure::Position::Builder position_builder =
+          builder.MakeBuilder<superstructure::Position>();
+
+      position_builder.add_arm(arm_offset);
+      position_builder.add_roll_joint(roll_joint_offset);
+      position_builder.add_wrist(wrist_offset);
+    }
 
     {
       auto builder = drivetrain_position_sender_.MakeBuilder();
@@ -228,6 +283,61 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     superstructure_reading_ = superstructure_reading;
   }
 
+  void set_proximal_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    fast_encoder_filter_.Add(encoder.get());
+    proximal_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_proximal_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    proximal_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_proximal_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    proximal_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_distal_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    fast_encoder_filter_.Add(encoder.get());
+    distal_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_distal_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    distal_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_distal_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    distal_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_roll_joint_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    fast_encoder_filter_.Add(encoder.get());
+    roll_joint_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_roll_joint_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    roll_joint_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_roll_joint_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    roll_joint_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
+  void set_wrist_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    fast_encoder_filter_.Add(encoder.get());
+    wrist_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_wrist_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    wrist_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
  private:
   std::shared_ptr<const Values> values_;
 
@@ -242,6 +352,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::unique_ptr<frc::DigitalInput> imu_heading_input_, imu_yaw_rate_input_;
 
   frc971::wpilib::DMAPulseWidthReader imu_heading_reader_, imu_yaw_rate_reader_;
+
+  frc971::wpilib::AbsoluteEncoderAndPotentiometer proximal_encoder_,
+      distal_encoder_, roll_joint_encoder_;
+  frc971::wpilib::AbsoluteEncoder wrist_encoder_;
 };
 
 class SuperstructureWriter
@@ -258,10 +372,50 @@ class SuperstructureWriter
     superstructure_reading_ = superstructure_reading;
   }
 
- private:
-  void Stop() override { AOS_LOG(WARNING, "Superstructure output too old.\n"); }
+  void set_proximal_falcon(::std::unique_ptr<::frc::TalonFX> t) {
+    proximal_falcon_ = ::std::move(t);
+  }
 
-  void Write(const superstructure::Output &output) override { (void)output; }
+  void set_distal_falcon(::std::unique_ptr<::frc::TalonFX> t) {
+    distal_falcon_ = ::std::move(t);
+  }
+
+  void set_roll_joint_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    roll_joint_victor_ = ::std::move(t);
+  }
+
+  void set_wrist_victor(::std::unique_ptr<::frc::VictorSP> t) {
+    wrist_victor_ = ::std::move(t);
+  }
+
+  void set_roller_falcon(
+      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+    roller_falcon_ = ::std::move(t);
+    roller_falcon_->ConfigSupplyCurrentLimit(
+        {true, Values::kRollerSupplyCurrentLimit(),
+         Values::kRollerSupplyCurrentLimit(), 0});
+    roller_falcon_->ConfigStatorCurrentLimit(
+        {true, Values::kRollerStatorCurrentLimit(),
+         Values::kRollerStatorCurrentLimit(), 0});
+  }
+
+ private:
+  void Stop() override {
+    AOS_LOG(WARNING, "Superstructure output too old.\n");
+    proximal_falcon_->SetDisabled();
+    distal_falcon_->SetDisabled();
+    roll_joint_victor_->SetDisabled();
+    wrist_victor_->SetDisabled();
+    roller_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+  }
+
+  void Write(const superstructure::Output &output) override {
+    WritePwm(output.proximal_voltage(), proximal_falcon_.get());
+    WritePwm(output.distal_voltage(), distal_falcon_.get());
+    WritePwm(output.roll_joint_voltage(), roll_joint_victor_.get());
+    WritePwm(output.wrist_voltage(), wrist_victor_.get());
+    WriteCan(output.roller_voltage(), roller_falcon_.get());
+  }
 
   static void WriteCan(const double voltage,
                        ::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
@@ -275,6 +429,10 @@ class SuperstructureWriter
     motor->SetSpeed(std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) /
                     12.0);
   }
+
+  ::std::unique_ptr<::frc::TalonFX> proximal_falcon_, distal_falcon_;
+  ::std::unique_ptr<::frc::VictorSP> roll_joint_victor_, wrist_victor_;
+  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> roller_falcon_;
 };
 
 static constexpr int kCANFalconCount = 6;
@@ -637,6 +795,23 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(9));
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(8));
 
+    sensor_reader.set_proximal_encoder(make_encoder(3));
+    sensor_reader.set_proximal_absolute_pwm(make_unique<frc::DigitalInput>(3));
+    sensor_reader.set_proximal_potentiometer(make_unique<frc::AnalogInput>(3));
+
+    sensor_reader.set_distal_encoder(make_encoder(3));
+    sensor_reader.set_distal_absolute_pwm(make_unique<frc::DigitalInput>(3));
+    sensor_reader.set_distal_potentiometer(make_unique<frc::AnalogInput>(3));
+
+    sensor_reader.set_roll_joint_encoder(make_encoder(3));
+    sensor_reader.set_roll_joint_absolute_pwm(
+        make_unique<frc::DigitalInput>(3));
+    sensor_reader.set_roll_joint_potentiometer(
+        make_unique<frc::AnalogInput>(3));
+
+    sensor_reader.set_wrist_encoder(make_encoder(3));
+    sensor_reader.set_wrist_absolute_pwm(make_unique<frc::DigitalInput>(3));
+
     AddLoop(&sensor_reader_event_loop);
 
     // Thread 4.
@@ -673,6 +848,15 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ctre::phoenixpro::signals::InvertedValue::CounterClockwise_Positive);
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
+
+    superstructure_writer.set_proximal_falcon(make_unique<::frc::TalonFX>(3));
+    superstructure_writer.set_distal_falcon(make_unique<::frc::TalonFX>(3));
+
+    superstructure_writer.set_roll_joint_victor(
+        make_unique<::frc::VictorSP>(5));
+    superstructure_writer.set_wrist_victor(make_unique<::frc::VictorSP>(5));
+    superstructure_writer.set_roller_falcon(
+        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(5));
 
     superstructure_writer.set_superstructure_reading(superstructure_reading);
 
