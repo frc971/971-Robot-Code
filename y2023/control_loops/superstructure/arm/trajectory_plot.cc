@@ -6,6 +6,7 @@
 #include "frc971/control_loops/fixed_quadrature.h"
 #include "gflags/gflags.h"
 #include "y2023/control_loops/superstructure/arm/arm_constants.h"
+#include "y2023/control_loops/superstructure/arm/generated_graph.h"
 #include "y2023/control_loops/superstructure/arm/trajectory.h"
 #include "y2023/control_loops/superstructure/roll/integral_hybrid_roll_plant.h"
 #include "y2023/control_loops/superstructure/roll/integral_roll_plant.h"
@@ -13,6 +14,13 @@
 DEFINE_bool(forwards, true, "If true, run the forwards simulation.");
 DEFINE_bool(plot, true, "If true, plot");
 DEFINE_bool(plot_thetas, true, "If true, plot the angles");
+
+DEFINE_double(alpha0_max, 20.0, "Max acceleration on joint 0.");
+DEFINE_double(alpha1_max, 30.0, "Max acceleration on joint 1.");
+DEFINE_double(alpha2_max, 60.0, "Max acceleration on joint 2.");
+DEFINE_double(vmax_plan, 10.0, "Max voltage to plan.");
+DEFINE_double(vmax_battery, 12.0, "Max battery voltage.");
+DEFINE_double(time, 2.0, "Simulation time.");
 
 namespace y2023 {
 namespace control_loops {
@@ -26,12 +34,12 @@ void Main() {
                     HybridKalman<3, 1, 1>>
       hybrid_roll = superstructure::roll::MakeIntegralHybridRollLoop();
 
-  Eigen::Matrix<double, 3, 4> spline_params;
+  Eigen::Matrix<double, 2, 4> spline_params;
 
   spline_params << 0.30426338, 0.42813912, 0.64902386, 0.55127045, -1.73611082,
-      -1.64478944, -1.44763868, -1.22624244, 0.1, 0.2, 0.3, 0.5;
+      -1.64478944, -1.04763868, -0.82624244;
   LOG(INFO) << "Spline " << spline_params;
-  NSpline<4, 2> spline(spline_params.block<2, 4>(0, 0));
+  NSpline<4, 2> spline(spline_params);
   CosSpline cos_spline(spline,
                        {{0.0, 0.1}, {0.3, 0.1}, {0.7, 0.2}, {1.0, 0.2}});
   Path distance_spline(cos_spline, 100);
@@ -39,17 +47,17 @@ void Main() {
   Trajectory trajectory(&dynamics, &hybrid_roll.plant(),
                         std::make_unique<Path>(cos_spline), 0.001);
 
-  constexpr double kAlpha0Max = 20.0;
-  constexpr double kAlpha1Max = 30.0;
-  constexpr double kAlpha2Max = 40.0;
-  constexpr double vmax = 9.0;
   constexpr double sim_dt = 0.00505;
 
+  LOG(INFO) << "Planning with kAlpha0Max=" << FLAGS_alpha0_max
+            << ", kAlpha1Max=" << FLAGS_alpha1_max
+            << ", kAlpha2Max=" << FLAGS_alpha2_max;
+
   const ::Eigen::DiagonalMatrix<double, 3> alpha_unitizer(
-      (::Eigen::DiagonalMatrix<double, 3>().diagonal() << (1.0 / kAlpha0Max),
-       (1.0 / kAlpha1Max), (1.0 / kAlpha2Max))
+      (::Eigen::DiagonalMatrix<double, 3>().diagonal() << (1.0 / FLAGS_alpha0_max),
+       (1.0 / FLAGS_alpha1_max), (1.0 / FLAGS_alpha2_max))
           .finished());
-  trajectory.OptimizeTrajectory(alpha_unitizer, vmax);
+  trajectory.OptimizeTrajectory(alpha_unitizer, FLAGS_vmax_plan);
 
   const ::std::vector<double> distance_array = trajectory.DistanceArray();
 
@@ -286,7 +294,7 @@ void Main() {
   ::std::cout << "Really stabilized P: " << arm_ekf.P_converged()
               << ::std::endl;
 
-  while (t < 1.2) {
+  while (t < FLAGS_time) {
     t_array.push_back(t);
     arm_ekf.Correct(
         (::Eigen::Matrix<double, 2, 1>() << arm_X(0), arm_X(2)).finished(),
@@ -295,7 +303,7 @@ void Main() {
     follower.Update(
         (Eigen::Matrix<double, 9, 1>() << arm_ekf.X_hat(), roll.X_hat())
             .finished(),
-        false, sim_dt, vmax, 12.0);
+        false, sim_dt, FLAGS_vmax_plan, FLAGS_vmax_battery);
 
     const ::Eigen::Matrix<double, 3, 1> theta_t =
         trajectory.ThetaT(follower.goal()(0));

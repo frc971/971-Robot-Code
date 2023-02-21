@@ -116,6 +116,7 @@ cc_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":arm_constants",
+        ":generated_graph",
         ":trajectory",
         "//frc971/analysis:in_process_plotter",
         "//frc971/control_loops:binomial",

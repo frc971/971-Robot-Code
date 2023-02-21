@@ -39,6 +39,7 @@ def main(argv):
         R = numpy.matrix([[numpy.pi / 2.0], [0.0]])
         angular_system.PlotKick(kRoll, R)
         angular_system.PlotMotion(kRoll, R)
+        return
 
     # Write the generated constants out to a file.
     if len(argv) != 5:

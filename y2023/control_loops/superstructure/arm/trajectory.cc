@@ -8,10 +8,10 @@
 #include "frc971/control_loops/runge_kutta.h"
 #include "gflags/gflags.h"
 
-DEFINE_double(lqr_proximal_pos, 0.15, "Position LQR gain");
-DEFINE_double(lqr_proximal_vel, 4.0, "Velocity LQR gain");
-DEFINE_double(lqr_distal_pos, 0.20, "Position LQR gain");
-DEFINE_double(lqr_distal_vel, 4.0, "Velocity LQR gain");
+DEFINE_double(lqr_proximal_pos, 0.5, "Position LQR gain");
+DEFINE_double(lqr_proximal_vel, 5, "Velocity LQR gain");
+DEFINE_double(lqr_distal_pos, 0.5, "Position LQR gain");
+DEFINE_double(lqr_distal_vel, 5, "Velocity LQR gain");
 
 namespace y2023 {
 namespace control_loops {
@@ -347,7 +347,7 @@ double Trajectory::FeasableForwardsVoltage(
       const ::Eigen::Matrix<double, 3, 1> U =
           k_constant + k_scalar * voltage_accel;
 
-      VLOG(1) << "Trying, U is " << U.transpose() << ", accel "
+      VLOG(2) << "Trying, U is " << U.transpose() << ", accel "
               << voltage_accel;
       if ((U.array().abs() <= plan_vmax + 1e-6).all()) {
         min_goal_acceleration = std::min(voltage_accel, min_goal_acceleration);
@@ -377,7 +377,7 @@ double Trajectory::FeasableForwardsVoltage(
 
   if (min_goal_acceleration < constraint_goal_acceleration &&
       constraint_goal_acceleration < max_goal_acceleration) {
-    VLOG(1)
+    VLOG(2)
         << "Solved valid accel at distance " << goal_distance << ", voltage "
         << (k_constant + k_scalar * constraint_goal_acceleration).transpose()
         << ", accel " << constraint_goal_acceleration
@@ -394,7 +394,7 @@ double Trajectory::FeasableForwardsVoltage(
     return constraint_goal_acceleration;
   }
 
-  VLOG(1) << "Solved valid accel at distance " << goal_distance << ", voltage "
+  VLOG(2) << "Solved valid accel at distance " << goal_distance << ", voltage "
           << (k_constant + k_scalar * goal_acceleration).transpose()
           << ", decel limits [" << min_goal_acceleration << ", "
           << max_goal_acceleration << "], picked " << goal_acceleration
@@ -480,7 +480,7 @@ double Trajectory::FeasableBackwardsVoltage(
 
       // TODO(austin): This doesn't always give a valid solution.  It really
       // should.  Figure out why.
-      VLOG(1) << "Trying, U is " << U.transpose() << ", accel "
+      VLOG(2) << "Trying, U is " << U.transpose() << ", accel "
               << voltage_accel;
       if ((U.array().abs() <= plan_vmax + 1e-6).all()) {
         min_goal_acceleration = std::min(-voltage_accel, min_goal_acceleration);
@@ -502,7 +502,7 @@ double Trajectory::FeasableBackwardsVoltage(
 
   if (min_goal_acceleration < constraint_goal_acceleration &&
       constraint_goal_acceleration < max_goal_acceleration) {
-    VLOG(1)
+    VLOG(2)
         << "Solved valid decel at distance " << goal_distance << ", voltage "
         << (k_constant - k_scalar * constraint_goal_acceleration).transpose()
         << ", decel " << min_goal_acceleration
@@ -525,7 +525,7 @@ double Trajectory::FeasableBackwardsVoltage(
           ? max_goal_acceleration
           : min_goal_acceleration;
 
-  VLOG(1) << "Solved valid decel at distance " << goal_distance << ", voltage "
+  VLOG(2) << "Solved valid decel at distance " << goal_distance << ", voltage "
           << (k_constant - k_scalar * goal_acceleration).transpose()
           << ", decel limits [" << min_goal_acceleration << ", "
           << max_goal_acceleration << "], picked " << goal_acceleration
@@ -703,8 +703,12 @@ void TrajectoryFollower::Reset() {
   ::Eigen::Matrix<double, 4, 4> S;
   ::Eigen::Matrix<double, 2, 4> sub_K;
   if (::frc971::controls::dlqr<4, 2>(final_A, final_B, Q, R, &sub_K, &S) == 0) {
-    ::Eigen::EigenSolver<::Eigen::Matrix<double, 4, 4>> eigensolver(
-        final_A - final_B * sub_K);
+    if (VLOG_IS_ON(1)) {
+      ::Eigen::EigenSolver<::Eigen::Matrix<double, 4, 4>> eigensolver(
+          final_A - final_B * sub_K);
+      LOG(INFO) << eigensolver.eigenvalues().transpose();
+      LOG(INFO) << sub_K;
+    }
 
     ::Eigen::Matrix<double, 2, 6> K;
     K.setZero();
