@@ -1,5 +1,5 @@
-#ifndef Y2022_CONTROL_LOOPS_DRIVETRAIN_LOCALIZER_H_
-#define Y2022_CONTROL_LOOPS_DRIVETRAIN_LOCALIZER_H_
+#ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_LOCALIZATION_PUPPET_LOCALIZER_H_
+#define FRC971_CONTROL_LOOPS_DRIVETRAIN_LOCALIZATION_PUPPET_LOCALIZER_H_
 
 #include <string_view>
 
@@ -7,20 +7,20 @@
 #include "aos/network/message_bridge_server_generated.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
-#include "frc971/input/joystick_state_generated.h"
-#include "y2022/localizer/localizer_output_generated.h"
+#include "frc971/control_loops/drivetrain/localization/localizer_output_generated.h"
 
-namespace y2022 {
+namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
-// This class handles the localization for the 2022 robot. Rather than actually
-// doing any work on the roborio, we farm all the localization out to a
+// This class handles the localization for the 2022/2023 robots. Rather than
+// actually doing any work on the roborio, we farm all the localization out to a
 // raspberry pi and it then sends out LocalizerOutput messages that we treat as
-// measurement updates. See //y2022/localizer.
-// TODO(james): Needs tests. Should refactor out some of the code from the 2020
-// localizer test.
-class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
+// measurement updates. See //y202*/localizer.
+// TODO(james): Needs more tests. Should refactor out some of the code from the
+// 2020 localizer test.
+class PuppetLocalizer
+    : public frc971::control_loops::drivetrain::LocalizerInterface {
  public:
   typedef frc971::control_loops::TypedPose<float> Pose;
   typedef frc971::control_loops::drivetrain::HybridEkf<float> HybridEkf;
@@ -29,9 +29,10 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
   typedef typename HybridEkf::StateSquare StateSquare;
   typedef typename HybridEkf::Input Input;
   typedef typename HybridEkf::Output Output;
-  Localizer(aos::EventLoop *event_loop,
-            const frc971::control_loops::drivetrain::DrivetrainConfig<double>
-                &dt_config);
+  PuppetLocalizer(
+      aos::EventLoop *event_loop,
+      const frc971::control_loops::drivetrain::DrivetrainConfig<double>
+          &dt_config);
   frc971::control_loops::drivetrain::HybridEkf<double>::State Xhat()
       const override {
     return ekf_.X_hat().cast<double>();
@@ -93,7 +94,6 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
   HybridEkf::ExpectedObservationAllocator<Corrector> observations_;
 
   aos::Fetcher<frc971::controls::LocalizerOutput> localizer_output_fetcher_;
-  aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
 
   // Target selector to allow us to satisfy the LocalizerInterface requirements.
@@ -102,6 +102,6 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
 
 }  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace y2022
+}  // namespace frc971
 
-#endif  // Y2022_CONTROL_LOOPS_DRIVETRAIN_LOCALIZER_H_
+#endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_LOCALIZATION_PUPPET_LOCALIZER_H_

@@ -479,21 +479,6 @@ const ModelBasedLocalizer::OldPosition ModelBasedLocalizer::GetStateForTime(
 }
 
 namespace {
-// Converts a flatbuffer TransformationMatrix to an Eigen matrix. Technically,
-// this should be able to do a single memcpy, but the extra verbosity here seems
-// appropriate.
-Eigen::Matrix<double, 4, 4> FlatbufferToTransformationMatrix(
-    const frc971::vision::calibration::TransformationMatrix &flatbuffer) {
-  CHECK_EQ(16u, CHECK_NOTNULL(flatbuffer.data())->size());
-  Eigen::Matrix<double, 4, 4> result;
-  result.setIdentity();
-  for (int row = 0; row < 4; ++row) {
-    for (int col = 0; col < 4; ++col) {
-      result(row, col) = (*flatbuffer.data())[row * 4 + col];
-    }
-  }
-  return result;
-}
 
 // Node names of the pis to listen for cameras from.
 constexpr std::array<std::string_view, ModelBasedLocalizer::kNumPis> kPisToUse{
@@ -521,7 +506,8 @@ const Eigen::Matrix<double, 4, 4> ModelBasedLocalizer::CameraTransform(
   }
   CHECK(calibration->has_fixed_extrinsics());
   const Eigen::Matrix<double, 4, 4> fixed_extrinsics =
-      FlatbufferToTransformationMatrix(*calibration->fixed_extrinsics());
+      control_loops::drivetrain::FlatbufferToTransformationMatrix(
+          *calibration->fixed_extrinsics());
 
   // Calculate the pose of the camera relative to the robot origin.
   Eigen::Matrix<double, 4, 4> H_robot_camera = fixed_extrinsics;
@@ -530,7 +516,8 @@ const Eigen::Matrix<double, 4, 4> ModelBasedLocalizer::CameraTransform(
         H_robot_camera *
         frc971::control_loops::TransformationMatrixForYaw<double>(
             state.turret_position) *
-        FlatbufferToTransformationMatrix(*calibration->turret_extrinsics());
+        control_loops::drivetrain::FlatbufferToTransformationMatrix(
+            *calibration->turret_extrinsics());
   }
   return H_robot_camera;
 }

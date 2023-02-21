@@ -193,10 +193,10 @@ cc_library(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
+        "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
         "//frc971/queues:gyro_fbs",
         "//third_party:phoenix",
         "//third_party:wpilib",
-        "//y2022/localizer:localizer_output_fbs",
     ],
 )
 

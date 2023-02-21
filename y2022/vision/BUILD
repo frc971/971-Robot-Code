@@ -98,11 +98,11 @@ cc_library(
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//aos/network:team_number",
+        "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:v4l2_reader",
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
-        "//y2022/localizer:localizer_output_fbs",
     ],
 )
 

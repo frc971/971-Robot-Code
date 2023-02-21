@@ -1,7 +1,7 @@
 import {ByteBuffer} from 'flatbuffers';
 import {Connection} from '../../aos/network/www/proxy';
 import {IntakeState, Status as SuperstructureStatus, SuperstructureState} from '../control_loops/superstructure/superstructure_status_generated'
-import {LocalizerOutput} from '../localizer/localizer_output_generated';
+import {LocalizerOutput} from '../../frc971/control_loops/drivetrain/localization/localizer_output_generated';
 import {RejectionReason} from '../localizer/localizer_status_generated';
 import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated';
 import {LocalizerVisualization, TargetEstimateDebug} from '../localizer/localizer_visualization_generated';

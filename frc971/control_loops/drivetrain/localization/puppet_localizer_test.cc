@@ -1,4 +1,4 @@
-#include "y2022/control_loops/drivetrain/localizer.h"
+#include "frc971/control_loops/drivetrain/localization/puppet_localizer.h"
 
 #include <queue>
 
@@ -8,17 +8,17 @@
 #include "aos/network/testing_time_converter.h"
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
-#include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
+#include "frc971/control_loops/drivetrain/localization/localizer_output_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
-#include "y2022/localizer/localizer_output_generated.h"
 
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
 DECLARE_bool(die_on_malloc);
 
-namespace y2022 {
+namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 namespace testing {
@@ -29,7 +29,8 @@ using frc971::control_loops::drivetrain::LocalizerControl;
 
 namespace {
 DrivetrainConfig<double> GetTest2022DrivetrainConfig() {
-  DrivetrainConfig<double> config = GetDrivetrainConfig();
+  DrivetrainConfig<double> config =
+      y2022::control_loops::drivetrain::GetDrivetrainConfig();
   return config;
 }
 }  // namespace
@@ -39,11 +40,13 @@ using aos::monotonic_clock;
 using frc971::control_loops::drivetrain::DrivetrainLoop;
 using frc971::control_loops::drivetrain::testing::DrivetrainSimulation;
 
+
 // TODO(james): Make it so this actually tests the full system of the localizer.
 class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
  protected:
-  // We must use the 2022 drivetrain config so that we don't have to deal
-  // with shifting:
+  // We must use the 2022 drivetrain config so that we actually have a multi-nde
+  // config with a LocalizerOutput message.
+  // TODO(james): Refactor this test to be year-agnostic.
   LocalizedDrivetrainTest()
       : frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig(
@@ -108,7 +111,8 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
   void SetStartingPosition(const Eigen::Matrix<double, 3, 1> &xytheta) {
     *drivetrain_plant_.mutable_state() << xytheta.x(), xytheta.y(),
         xytheta(2, 0), 0.0, 0.0;
-    Eigen::Matrix<double, Localizer::HybridEkf::kNStates, 1> localizer_state;
+    Eigen::Matrix<double, PuppetLocalizer::HybridEkf::kNStates, 1>
+        localizer_state;
     localizer_state.setZero();
     localizer_state.block<3, 1>(0, 0) = xytheta;
     localizer_.Reset(monotonic_now(), localizer_state);
@@ -169,7 +173,7 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
   std::unique_ptr<aos::EventLoop> drivetrain_event_loop_;
   const frc971::control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
 
-  Localizer localizer_;
+  PuppetLocalizer localizer_;
   DrivetrainLoop drivetrain_;
 
   std::unique_ptr<aos::EventLoop> drivetrain_plant_event_loop_;
@@ -208,4 +212,4 @@ TEST_F(LocalizedDrivetrainTest, Nominal) {
 }  // namespace testing
 }  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace y2022
+}  // namespace frc971

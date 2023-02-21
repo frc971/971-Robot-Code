@@ -17,22 +17,6 @@ ts_project(
 )
 
 flatbuffer_cc_library(
-    name = "localizer_output_fbs",
-    srcs = [
-        "localizer_output.fbs",
-    ],
-    gen_reflections = True,
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-)
-
-flatbuffer_ts_library(
-    name = "localizer_output_ts_fbs",
-    srcs = ["localizer_output.fbs"],
-    visibility = ["//visibility:public"],
-)
-
-flatbuffer_cc_library(
     name = "localizer_status_fbs",
     srcs = [
         "localizer_status.fbs",
@@ -94,7 +78,6 @@ cc_library(
     hdrs = ["localizer.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":localizer_output_fbs",
         ":localizer_status_fbs",
         ":localizer_visualization_fbs",
         "//aos/containers:ring_buffer",
@@ -107,8 +90,9 @@ cc_library(
         "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/control_loops/drivetrain:improved_down_estimator",
-        "//frc971/control_loops/drivetrain:localization_utils",
         "//frc971/control_loops/drivetrain:localizer_fbs",
+        "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
+        "//frc971/control_loops/drivetrain/localization:utils",
         "//frc971/imu_reader:imu_watcher",
         "//frc971/input:joystick_state_fbs",
         "//frc971/vision:calibration_fbs",

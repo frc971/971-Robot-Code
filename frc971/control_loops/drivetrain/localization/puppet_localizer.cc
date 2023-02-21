@@ -1,10 +1,10 @@
-#include "y2022/control_loops/drivetrain/localizer.h"
+#include "frc971/control_loops/drivetrain/localization/puppet_localizer.h"
 
-namespace y2022 {
+namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
-Localizer::Localizer(
+PuppetLocalizer::PuppetLocalizer(
     aos::EventLoop *event_loop,
     const frc971::control_loops::drivetrain::DrivetrainConfig<double>
         &dt_config)
@@ -15,8 +15,6 @@ Localizer::Localizer(
       localizer_output_fetcher_(
           event_loop_->MakeFetcher<frc971::controls::LocalizerOutput>(
               "/localizer")),
-      joystick_state_fetcher_(
-          event_loop_->MakeFetcher<aos::JoystickState>("/aos")),
       clock_offset_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
               "/aos")) {
@@ -30,7 +28,7 @@ Localizer::Localizer(
   target_selector_.set_has_target(false);
 }
 
-void Localizer::Reset(
+void PuppetLocalizer::Reset(
     aos::monotonic_clock::time_point t,
     const frc971::control_loops::drivetrain::HybridEkf<double>::State &state) {
   // Go through and clear out all of the fetchers so that we don't get behind.
@@ -38,19 +36,12 @@ void Localizer::Reset(
   ekf_.ResetInitialState(t, state.cast<float>(), ekf_.P());
 }
 
-void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
+void PuppetLocalizer::Update(const Eigen::Matrix<double, 2, 1> &U,
                        aos::monotonic_clock::time_point now,
                        double left_encoder, double right_encoder,
                        double gyro_rate, const Eigen::Vector3d &accel) {
   ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate,
                              U.cast<float>(), accel.cast<float>(), now);
-  joystick_state_fetcher_.Fetch();
-  if (joystick_state_fetcher_.get() != nullptr &&
-      joystick_state_fetcher_->autonomous()) {
-    // TODO(james): This is an inelegant way to avoid having the localizer mess
-    // up splines. Do better.
-    // return;
-  }
   if (localizer_output_fetcher_.Fetch()) {
     clock_offset_fetcher_.Fetch();
     bool message_bridge_connected = true;
@@ -79,8 +70,6 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
         std::chrono::nanoseconds(
             localizer_output_fetcher_->monotonic_timestamp_ns()) -
         monotonic_offset);
-    // TODO: Finish implementing simple x/y/theta updater with state_at_capture.
-    // TODO: Implement turret/camera processing logic on pi side.
     std::optional<State> state_at_capture =
         ekf_.LastStateBeforeTime(capture_time);
     if (!state_at_capture.has_value()) {
@@ -104,4 +93,4 @@ void Localizer::Update(const Eigen::Matrix<double, 2, 1> &U,
 
 }  // namespace drivetrain
 }  // namespace control_loops
-}  // namespace y2022
+}  // namespace frc971

@@ -8,11 +8,11 @@
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
+#include "frc971/control_loops/drivetrain/localization/localizer_output_generated.h"
 #include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "frc971/queues/gyro_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
-#include "y2022/localizer/localizer_output_generated.h"
 
 namespace y2022::control_loops::superstructure {
 

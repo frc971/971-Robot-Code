@@ -831,17 +831,3 @@ ts_project(
         "//aos/network/www:proxy",
     ],
 )
-
-cc_library(
-    name = "localization_utils",
-    srcs = ["localization_utils.cc"],
-    hdrs = ["localization_utils.h"],
-    deps = [
-        ":drivetrain_output_fbs",
-        "//aos/events:event_loop",
-        "//aos/network:message_bridge_server_fbs",
-        "//frc971/input:joystick_state_fbs",
-        "//frc971/vision:calibration_fbs",
-        "@org_tuxfamily_eigen//:eigen",
-    ],
-)
