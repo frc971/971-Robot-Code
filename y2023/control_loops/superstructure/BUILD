@@ -68,7 +68,6 @@ cc_library(
         "superstructure.h",
     ],
     deps = [
-        # ":collision_avoidance_lib",
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",
@@ -78,6 +77,7 @@ cc_library(
         "//frc971/control_loops:control_loop",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2023:constants",
+        "//y2023/control_loops/superstructure/arm",
     ],
 )
 

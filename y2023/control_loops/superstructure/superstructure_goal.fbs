@@ -8,13 +8,16 @@ table Goal {
     // Controls distal, proximal, and roll joints
     arm_goal_position:uint32 (id: 0);
 
-    wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 1);
+    // Overrides the current path to go to the next path
+    trajectory_override:bool (id: 1);
+
+    wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 2);
 
     // If this is true, the rollers should intake.
-    intake:bool (id: 2);
+    intake:bool (id: 3);
 
     // If this is true, the rollers should spit.
-    spit:bool (id: 3);
+    spit:bool (id: 4);
 }
 
 
