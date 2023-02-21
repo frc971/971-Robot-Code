@@ -60,7 +60,7 @@ struct Values {
   static constexpr double kProximalEncoderRatio() { return (15.0 / 95.0); }
   static constexpr double kMaxProximalEncoderPulsesPerSecond() {
     return control_loops::superstructure::arm::kArmConstants.free_speed /
-           (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g1 /
+           (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g0 /
            kProximalEncoderRatio() * kProximalEncoderCountsPerRevolution();
   }
   static constexpr double kProximalPotRatio() {
@@ -76,8 +76,8 @@ struct Values {
   static constexpr double kDistalEncoderRatio() { return (15.0 / 95.0); }
   static constexpr double kMaxDistalEncoderPulsesPerSecond() {
     return control_loops::superstructure::arm::kArmConstants.free_speed /
-           (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g2 /
-           kDistalEncoderRatio() * kDistalEncoderCountsPerRevolution();
+           (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g1 /
+           kDistalEncoderRatio() * kProximalEncoderCountsPerRevolution();
   }
   static constexpr double kDistalPotRatio() {
     return (24.0 / 36.0) * (18.0 / 66.0) * (15.0 / 95.0);
@@ -138,6 +138,10 @@ struct Values {
         1.26    // Front Soft
     };
   }
+
+  // Rollers
+  static constexpr double kRollerSupplyCurrentLimit() { return 30.0; }
+  static constexpr double kRollerStatorCurrentLimit() { return 60.0; }
 
   struct PotConstants {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
