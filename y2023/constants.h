@@ -10,6 +10,8 @@
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2023/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2023/control_loops/superstructure/arm/arm_constants.h"
+#include "y2023/control_loops/superstructure/roll/roll_plant.h"
+#include "y2023/control_loops/superstructure/wrist/wrist_plant.h"
 
 namespace y2023 {
 namespace constants {
@@ -65,15 +67,76 @@ struct Values {
     return (24.0 / 36.0) * (24.0 / 58.0) * (15.0 / 95.0);
   }
 
+  static constexpr double kProximalPotRadiansPerVolt() {
+    return kProximalPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
+
   static constexpr double kDistalEncoderCountsPerRevolution() { return 4096.0; }
   static constexpr double kDistalEncoderRatio() { return (15.0 / 95.0); }
   static constexpr double kMaxDistalEncoderPulsesPerSecond() {
     return control_loops::superstructure::arm::kArmConstants.free_speed /
            (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g2 /
-           kDistalEncoderRatio() * kProximalEncoderCountsPerRevolution();
+           kDistalEncoderRatio() * kDistalEncoderCountsPerRevolution();
   }
   static constexpr double kDistalPotRatio() {
     return (24.0 / 36.0) * (18.0 / 66.0) * (15.0 / 95.0);
+  }
+
+  static constexpr double kDistalPotRadiansPerVolt() {
+    return kDistalPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
+
+  // Roll joint
+  static constexpr double kRollJointEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
+
+  static constexpr double kRollJointEncoderRatio() { return (18.0 / 48.0); }
+
+  static constexpr double kRollJointPotRatio() { return (18.0 / 48.0); }
+
+  static constexpr double kRollJointPotRadiansPerVolt() {
+    return kRollJointPotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
+
+  static constexpr double kMaxRollJointEncoderPulsesPerSecond() {
+    return control_loops::superstructure::roll::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::roll::kOutputRatio /
+           kRollJointEncoderRatio() * kRollJointEncoderCountsPerRevolution();
+  }
+
+  static constexpr ::frc971::constants::Range kRollJointRange() {
+    return ::frc971::constants::Range{
+        -1.05,  // Back Hard
+        1.44,   // Front Hard
+        -0.89,  // Back Soft
+        1.26    // Front Soft
+    };
+  }
+
+  // Wrist
+  static constexpr double kWristEncoderCountsPerRevolution() { return 4096.0; }
+
+  static constexpr double kWristEncoderRatio() {
+    return (24.0 / 36.0) * (36.0 / 60.0);
+  }
+
+  static constexpr double kMaxWristEncoderPulsesPerSecond() {
+    return control_loops::superstructure::wrist::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::wrist::kOutputRatio /
+           kWristEncoderRatio() * kWristEncoderCountsPerRevolution();
+  }
+
+  static constexpr ::frc971::constants::Range kWristRange() {
+    return ::frc971::constants::Range{
+        -1.05,  // Back Hard
+        1.44,   // Front Hard
+        -0.89,  // Back Soft
+        1.26    // Front Soft
+    };
   }
 
   struct PotConstants {
@@ -97,6 +160,12 @@ struct Values {
 
   ArmJointConstants arm_proximal;
   ArmJointConstants arm_distal;
+
+  PotAndAbsEncoderConstants roll_joint;
+
+  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+      ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
+      wrist;
 };
 
 // Creates and returns a Values instance for the constants.

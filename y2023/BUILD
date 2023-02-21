@@ -220,6 +220,8 @@ cc_library(
         "//frc971/shooter_interpolation:interpolation",
         "//y2023/control_loops/drivetrain:polydrivetrain_plants",
         "//y2023/control_loops/superstructure/arm:arm_constants",
+        "//y2023/control_loops/superstructure/roll:roll_plants",
+        "//y2023/control_loops/superstructure/wrist:wrist_plants",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
     ],
