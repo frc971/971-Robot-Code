@@ -30,8 +30,11 @@ cc_binary(
         "//aos:init",
         "//aos:json_to_flatbuffer",
         "//aos/events:shm_event_loop",
+        "//frc971/constants:constants_sender_lib",
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
+        "//y2023/vision:april_debug_fbs",
+        "//y2023/vision:vision_util",
         "@com_google_absl//absl/strings",
     ],
 )
