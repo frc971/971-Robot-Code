@@ -11,10 +11,10 @@ import numpy as np
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gtk
 import cairo
-from graph_tools import to_theta, to_xy, alpha_blend
-from graph_tools import l1, l2, joint_center
-from graph_tools import DRIVER_CAM_POINTS
-import graph_paths
+from y2023.control_loops.python.graph_tools import to_theta, to_xy, alpha_blend, shift_angles
+from y2023.control_loops.python.graph_tools import l1, l2, joint_center
+from y2023.control_loops.python.graph_tools import DRIVER_CAM_POINTS
+from y2023.control_loops.python import graph_paths
 
 from frc971.control_loops.python.basic_window import quit_main_loop, set_color, OverrideMatrix, identity
 
@@ -146,8 +146,8 @@ class ArmUi(basic_window.BaseWindow):
         self.theta_version = False
         self.reinit_extents()
 
-        self.last_pos = (np.pi / 2.0, 1.0)
-        self.circular_index_select = -1
+        self.last_pos = to_xy(*graph_paths.neutral[:2])
+        self.circular_index_select = 1
 
         # Extra stuff for drawing lines.
         self.segments = []
@@ -298,6 +298,36 @@ class ArmUi(basic_window.BaseWindow):
 
             set_color(cr, Color(0.5, 1.0, 1))
 
+        if not self.theta_version:
+            theta1, theta2 = to_theta(self.last_pos,
+                                      self.circular_index_select)
+            x, y = joint_center[0], joint_center[1]
+            cr.move_to(x, y)
+
+            x += np.cos(theta1) * l1
+            y += np.sin(theta1) * l1
+            cr.line_to(x, y)
+            x += np.cos(theta2) * l2
+            y += np.sin(theta2) * l2
+            cr.line_to(x, y)
+            with px(cr):
+                cr.stroke()
+
+            cr.move_to(self.last_pos[0], self.last_pos[1])
+            set_color(cr, Color(0.0, 1.0, 0.2))
+            draw_px_cross(cr, 20)
+
+        if self.theta_version:
+            set_color(cr, Color(0.0, 1.0, 0.2))
+            cr.move_to(self.last_pos[0], self.last_pos[1])
+            draw_px_cross(cr, 5)
+
+            c_pt, dist = closest_segment(lines_theta, self.last_pos)
+            print("dist:", dist, c_pt, self.last_pos)
+            set_color(cr, palette["CYAN"])
+            cr.move_to(c_pt[0], c_pt[1])
+            draw_px_cross(cr, 5)
+
         set_color(cr, Color(0.0, 0.5, 1.0))
         for segment in self.segments:
             color = [0, random.random(), 1]
@@ -326,7 +356,10 @@ class ArmUi(basic_window.BaseWindow):
 
     def cur_pt_in_theta(self):
         if self.theta_version: return self.last_pos
-        return to_theta(self.last_pos, self.circular_index_select)
+        return to_theta(self.last_pos,
+                        self.circular_index_select,
+                        cross_point=-np.pi,
+                        die=False)
 
     def do_motion(self, event):
         o_x = event.x
@@ -431,8 +464,14 @@ class ArmUi(basic_window.BaseWindow):
         self.redraw()
 
     def do_button_press(self, event):
+        last_pos = self.last_pos
         self.last_pos = (event.x, event.y)
-        self.now_segment_pt = self.cur_pt_in_theta()
+        pt_theta = self.cur_pt_in_theta()
+        if pt_theta is None:
+            self.last_pos = last_pos
+            return
+
+        self.now_segment_pt = np.array(shift_angles(pt_theta))
 
         if self.edit_control1:
             self.segments[0].control1 = self.now_segment_pt

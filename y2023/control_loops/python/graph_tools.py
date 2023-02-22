@@ -31,7 +31,7 @@ def shift_angles(thetas):
 # where circular_index is the circular index, or the position in the
 # "hyperextension" zones. "cross_point" allows shifting the place where
 # it rounds the result so that it draws nicer (no other functional differences).
-def to_theta(pt, circular_index, cross_point=-np.pi):
+def to_theta(pt, circular_index, cross_point=-np.pi, die=True):
     orient = (circular_index % 2) == 0
     x = pt[0]
     y = pt[1]
@@ -41,8 +41,11 @@ def to_theta(pt, circular_index, cross_point=-np.pi):
     t3 = np.arctan2(y, x)
     theta1 = np.arccos((l1**2 + l3**2 - l2**2) / (2 * l1 * l3))
     if np.isnan(theta1):
-        traceback.print_stack()
-        sys.exit("Couldn't fit triangle to %f, %f, %f" % (l1, l2, l3))
+        print(("Couldn't fit triangle to %f, %f, %f" % (l1, l2, l3)))
+        if die:
+            traceback.print_stack()
+            sys.exit(1)
+        return None
 
     if orient:
         theta1 = -theta1
