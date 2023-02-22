@@ -189,6 +189,28 @@ def roll_joint_collision(theta1, theta2, theta3):
     return collision
 
 
+# Delta limit means theta2 - theta1.
+# The limit for the proximal and distal is relative,
+# so define constraints for this delta.
+UPPER_DELTA_LIMIT = 0.0
+LOWER_DELTA_LIMIT = -1.9 * np.pi
+
+# TODO(milind): put actual proximal limits
+UPPER_PROXIMAL_LIMIT = np.pi * 1.5
+LOWER_PROXIMAL_LIMIT = -np.pi
+
+UPPER_ROLL_JOINT_LIMIT = 0.75 * np.pi
+LOWER_ROLL_JOINT_LIMIT = -0.75 * np.pi
+
+
+def arm_past_limit(theta1, theta2, theta3):
+    delta = theta2 - theta1
+    return (delta > UPPER_DELTA_LIMIT or delta < LOWER_DELTA_LIMIT) or (
+        theta3 > UPPER_ROLL_JOINT_LIMIT or
+        theta3 < LOWER_ROLL_JOINT_LIMIT) or (theta1 > UPPER_PROXIMAL_LIMIT
+                                             or theta1 < LOWER_PROXIMAL_LIMIT)
+
+
 def get_circular_index(theta):
     return int(np.floor((theta[1] - theta[0]) / np.pi))
 
@@ -361,14 +383,30 @@ class Path(abc.ABC):
                 return True
         return False
 
+    def arm_past_limit(self, points, verbose=True):
+        for point in points:
+            if arm_past_limit(*point):
+                if verbose:
+                    print("Arm past limit for path %s in point %s" %
+                          (self.name, point))
+                return True
+        return False
+
     def DrawTo(self, cr, theta_version):
-        if self.roll_joint_collision(self.DoToThetaPoints()):
+        points = self.DoToThetaPoints()
+        if self.roll_joint_collision(points):
+            # Draw the spline red
             cr.set_source_rgb(1.0, 0.0, 0.0)
+        elif self.arm_past_limit(points):
+            # Draw the spline orange
+            cr.set_source_rgb(1.0, 0.5, 0.0)
+
         self.DoDrawTo(cr, theta_version)
 
     def ToThetaPoints(self):
         points = self.DoToThetaPoints()
-        if self.roll_joint_collision(points, verbose=True):
+        if self.roll_joint_collision(points, verbose=True) or \
+           self.arm_past_limit(points, verbose=True):
             sys.exit(1)
         return points
 
