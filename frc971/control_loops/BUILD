@@ -354,6 +354,9 @@ cc_library(
         "fixed_quadrature.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "@org_tuxfamily_eigen//:eigen",
+    ],
 )
 
 cc_test(
