@@ -17,6 +17,15 @@ xy_end_circle_size = 0.01
 theta_end_circle_size = 0.07
 
 
+# Shift the angle between the convention used for input/output and the convention we use for some computations here
+def shift_angle(theta):
+    return np.pi / 2 - theta
+
+
+def shift_angles(thetas):
+    return [shift_angle(theta) for theta in thetas]
+
+
 # Convert from x-y coordinates to theta coordinates.
 # orientation is a bool. This orientation is circular_index mod 2.
 # where circular_index is the circular index, or the position in the
@@ -154,6 +163,10 @@ def project_points_onto_axis(points, axis):
 
 
 def roll_joint_collision(theta1, theta2, theta3):
+    theta1 = shift_angle(theta1)
+    theta2 = shift_angle(theta2)
+    theta3 = shift_angle(theta3)
+
     end_effector_points = to_end_effector_points(theta1, theta2, theta3)
 
     assert len(end_effector_points) == 8 and len(end_effector_points[0]) == 3
@@ -181,8 +194,8 @@ def get_circular_index(theta):
 
 
 def get_xy(theta):
-    theta1 = theta[0]
-    theta2 = theta[1]
+    theta1 = shift_angle(theta[0])
+    theta2 = shift_angle(theta[1])
     x = np.cos(theta1) * l1 + np.cos(theta2) * l2 + joint_center[0]
     y = np.sin(theta1) * l1 + np.sin(theta2) * l2 + joint_center[1]
     return np.array((x, y))
@@ -210,7 +223,7 @@ def to_theta_with_circular_index(x, y, circular_index):
     theta1, theta2 = to_theta((x, y), circular_index)
     n_circular_index = int(np.floor((theta2 - theta1) / np.pi))
     theta2 = theta2 + ((circular_index - n_circular_index)) * np.pi
-    return np.array((theta1, theta2))
+    return np.array((shift_angle(theta1), shift_angle(theta2)))
 
 
 # to_theta, but distinguishes between
@@ -415,8 +428,10 @@ class ThetaSplineSegment(SplineSegmentBase):
     def DoDrawTo(self, cr, theta_version):
         if (theta_version):
             draw_lines(cr, [
-                spline_eval(self.start, self.control1, self.control2, self.end,
-                            alpha) for alpha in subdivide_multistep()
+                shift_angles(
+                    spline_eval(self.start, self.control1, self.control2,
+                                self.end, alpha))
+                for alpha in subdivide_multistep()
             ])
         else:
             start = get_xy(self.start)

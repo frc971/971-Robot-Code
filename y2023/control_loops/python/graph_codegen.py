@@ -152,8 +152,7 @@ def main(argv):
                       point[1])
         h_file.append(
             "  return (::Eigen::Matrix<double, 3, 1>() << %f, %f, %f).finished();"
-            % (np.pi / 2.0 - point[0][0], np.pi / 2.0 - point[0][1],
-               np.pi / 2.0 - point[0][2]))
+            % (point[0][0], point[0][1], point[0][2]))
         h_file.append("}")
 
     front_points = [
@@ -195,16 +194,17 @@ def main(argv):
             segment.start, segment.control1, segment.control2, segment.end
         ]
         for i in range(len(points)):
-            cc_file.append("%.12f," % (np.pi / 2.0 - points[i][0]))
+            cc_file.append("%.12f," % (points[i][0]))
         for i in range(len(points)):
-            cc_file.append("%.12f%s" % (np.pi / 2.0 - points[i][1],
-                                        ", " if i != len(points) - 1 else ""))
+            cc_file.append(
+                "%.12f%s" %
+                (points[i][1], ", " if i != len(points) - 1 else ""))
 
         cc_file.append(").finished()), {")
         for alpha, roll in segment.alpha_rolls:
             cc_file.append(
                 "CosSpline::AlphaTheta{.alpha = %.12f, .theta = %.12f}" %
-                (alpha, np.pi / 2.0 - roll))
+                (alpha, roll))
             if alpha != segment.alpha_rolls[-1][0]:
                 cc_file.append(", ")
         cc_file.append("  }}));")
@@ -219,8 +219,7 @@ def main(argv):
     for point in graph_paths.points:
         cc_file.append(
             "  points.push_back((::Eigen::Matrix<double, 3, 1>() << %.12s, %.12s, %.12s).finished());"
-            % (np.pi / 2.0 - point[0][0], np.pi / 2.0 - point[0][1],
-               np.pi / 2.0 - point[0][2]))
+            % (point[0][0], point[0][1], point[0][2]))
     cc_file.append("  return points;")
     cc_file.append("}")
 
