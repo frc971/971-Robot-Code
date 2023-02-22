@@ -392,12 +392,12 @@
   "nodes": [
     {
       "name": "imu",
-      "hostname": "imu",
+      "hostname": "pi6",
       "hostnames": [
-        "pi-971-5",
-        "pi-7971-5",
-        "pi-8971-5",
-        "pi-9971-5"
+        "pi-971-6",
+        "pi-7971-6",
+        "pi-8971-6",
+        "pi-9971-6"
       ],
       "port": 9971
     },
