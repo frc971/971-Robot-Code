@@ -1,2 +1,2 @@
-/dev/mmcblk0p1  /boot  auto  defaults 0  2
 /dev/mmcblk0p2  /  auto  errors=remount-ro  0  0
+tmpfs /dev/shm tmpfs rw,nosuid,nodev,size=90% 0 0
