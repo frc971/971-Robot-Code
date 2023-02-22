@@ -9,7 +9,7 @@ namespace testing {
 // Tests that integrating dx/dt = e^x works.
 TEST(RungeKuttaTest, Exponential) {
   ::Eigen::Matrix<double, 1, 1> y0;
-  y0(0, 0) = 0.0;
+  y0(0, 0) = 1.0;
 
   ::Eigen::Matrix<double, 1, 1> y1 = RungeKutta(
       [](::Eigen::Matrix<double, 1, 1> x) {
@@ -18,7 +18,22 @@ TEST(RungeKuttaTest, Exponential) {
         return y;
       },
       y0, 0.1);
-  EXPECT_NEAR(y1(0, 0), ::std::exp(0.1) - ::std::exp(0), 1e-3);
+  EXPECT_NEAR(y1(0, 0), -std::log(std::exp(-1.0) - 0.1), 1e-5);
+}
+
+// Now do it with sub steps.
+TEST(RungeKuttaTest, ExponentialSteps) {
+  ::Eigen::Matrix<double, 1, 1> y0;
+  y0(0, 0) = 1.0;
+
+  ::Eigen::Matrix<double, 1, 1> y1 = RungeKuttaSteps(
+      [](::Eigen::Matrix<double, 1, 1> x) {
+        ::Eigen::Matrix<double, 1, 1> y;
+        y(0, 0) = ::std::exp(x(0, 0));
+        return y;
+      },
+      y0, 0.1, 10);
+  EXPECT_NEAR(y1(0, 0), -std::log(std::exp(-1.0) - 0.1), 1e-8);
 }
 
 // Tests that integrating dx/dt = e^x works when we provide a U.
@@ -61,6 +76,20 @@ TEST(RungeKuttaTest, RungeKuttaTimeVarying) {
       },
       y0, 5.0, 1.0);
   EXPECT_NEAR(y1(0, 0), RungeKuttaTimeVaryingSolution(6.0)(0, 0), 1e-3);
+}
+
+// Now do it with a ton of sub steps.
+TEST(RungeKuttaTest, RungeKuttaTimeVaryingSteps) {
+  ::Eigen::Matrix<double, 1, 1> y0 = RungeKuttaTimeVaryingSolution(5.0);
+
+  ::Eigen::Matrix<double, 1, 1> y1 = RungeKuttaSteps(
+      [](double t, ::Eigen::Matrix<double, 1, 1> x) {
+        return (::Eigen::Matrix<double, 1, 1>()
+                << x(0, 0) * (2.0 / (::std::exp(t) + 1.0) - 1.0))
+            .finished();
+      },
+      y0, 5.0, 1.0, 10);
+  EXPECT_NEAR(y1(0, 0), RungeKuttaTimeVaryingSolution(6.0)(0, 0), 1e-7);
 }
 
 }  // namespace testing
