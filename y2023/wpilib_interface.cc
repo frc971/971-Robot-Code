@@ -164,17 +164,17 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       CopyPosition(proximal_encoder_, &proximal,
                    Values::kProximalEncoderCountsPerRevolution(),
                    Values::kProximalEncoderRatio(), proximal_pot_translate,
-                   false, values_->arm_proximal.potentiometer_offset);
+                   true, values_->arm_proximal.potentiometer_offset);
       frc971::PotAndAbsolutePositionT distal;
       CopyPosition(distal_encoder_, &distal,
                    Values::kDistalEncoderCountsPerRevolution(),
-                   Values::kDistalEncoderRatio(), distal_pot_translate, false,
+                   Values::kDistalEncoderRatio(), distal_pot_translate, true,
                    values_->arm_distal.potentiometer_offset);
       frc971::PotAndAbsolutePositionT roll_joint;
       CopyPosition(roll_joint_encoder_, &roll_joint,
                    Values::kRollJointEncoderCountsPerRevolution(),
                    Values::kRollJointEncoderRatio(), roll_joint_pot_translate,
-                   false, values_->roll_joint.potentiometer_offset);
+                   true, values_->roll_joint.potentiometer_offset);
       frc971::AbsolutePositionT wrist;
       CopyPosition(wrist_encoder_, &wrist,
                    Values::kWristEncoderCountsPerRevolution(),

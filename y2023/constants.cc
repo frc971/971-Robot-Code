@@ -79,14 +79,19 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      arm_proximal->zeroing.measured_absolute_position = 0.0;
-      arm_proximal->potentiometer_offset = 0.0;
+      arm_proximal->zeroing.measured_absolute_position = 0.908708932890508;
+      arm_proximal->potentiometer_offset = 0.931355973012855 + 8.6743197253382;
 
-      arm_distal->zeroing.measured_absolute_position = 0.0;
-      arm_distal->potentiometer_offset = 0.0;
+      arm_distal->zeroing.measured_absolute_position = 0.560320674747198;
+      arm_distal->potentiometer_offset = 0.436664933370656 + 0.49457213779426 +
+                                         6.78213223139724 - 0.0220711555235029 -
+                                         0.0162945074111813;
 
-      roll_joint->zeroing.measured_absolute_position = 0.0;
-      roll_joint->potentiometer_offset = 0.0;
+      roll_joint->zeroing.measured_absolute_position = 0.779367181558787;
+      roll_joint->potentiometer_offset =
+          3.87038557084874 - 0.0241774522172967 + 0.0711345168020632 -
+          0.866186131631967 - 0.0256788357596952 + 0.18101759154572017 -
+          0.0208958996127179;
 
       wrist->zeroing_constants.measured_absolute_position = 0.0;
 

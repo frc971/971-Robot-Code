@@ -64,7 +64,7 @@ struct Values {
            kProximalEncoderRatio() * kProximalEncoderCountsPerRevolution();
   }
   static constexpr double kProximalPotRatio() {
-    return (24.0 / 36.0) * (24.0 / 58.0) * (15.0 / 95.0);
+    return (36.0 / 24.0) * (15.0 / 95.0);
   }
 
   static constexpr double kProximalPotRadiansPerVolt() {
@@ -80,7 +80,7 @@ struct Values {
            kDistalEncoderRatio() * kProximalEncoderCountsPerRevolution();
   }
   static constexpr double kDistalPotRatio() {
-    return (24.0 / 36.0) * (18.0 / 66.0) * (15.0 / 95.0);
+    return (36.0 / 24.0) * (15.0 / 95.0);
   }
 
   static constexpr double kDistalPotRadiansPerVolt() {
