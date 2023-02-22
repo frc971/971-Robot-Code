@@ -29,7 +29,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
               "/drivetrain")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
-      arm_(values_) {}
+      arm_(values_),
+      end_effector_() {}
 
 void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
@@ -41,6 +42,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     arm_.Reset();
+    end_effector_.Reset();
   }
 
   OutputT output_struct;
@@ -66,6 +68,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
           status->fbb());
 
+  EndEffectorState end_effector_state = end_effector_.RunIteration(
+      timestamp, unsafe_goal != nullptr ? unsafe_goal->intake() : false,
+      unsafe_goal != nullptr ? unsafe_goal->spit() : false,
+      position->end_effector_cone_beam_break(),
+      position->end_effector_cube_beam_break(), &output_struct.roller_voltage);
+
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
@@ -74,6 +82,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_zeroed(true);
   status_builder.add_estopped(false);
   status_builder.add_arm(arm_status_offset);
+  status_builder.add_end_effector_state(end_effector_state);
 
   (void)status->Send(status_builder.Finish());
 }
