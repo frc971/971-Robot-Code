@@ -225,11 +225,17 @@ class Dynamics {
   const ArmConstants arm_constants_;
 
   // K3, K4 matricies described above.
+  const ::Eigen::Matrix<double, 2, 2> &K3() const { return K3_; }
+  const ::Eigen::Matrix<double, 2, 2> &K3_inverse() const {
+    return K3_inverse_;
+  }
+  const ::Eigen::Matrix<double, 2, 2> &K4() const { return K4_; }
+
+ private:
   const ::Eigen::Matrix<double, 2, 2> K3_;
   const ::Eigen::Matrix<double, 2, 2> K3_inverse_;
   const ::Eigen::Matrix<double, 2, 2> K4_;
 
- private:
   const double alpha_;
   const double beta_;
   const double gamma_;

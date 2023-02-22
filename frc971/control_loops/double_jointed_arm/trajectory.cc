@@ -105,7 +105,7 @@ Path::Path(::std::initializer_list<::std::array<double, 6>> list) {
     ::Eigen::Matrix<double, 2, 2> K2;
 
     const ::Eigen::Matrix<double, 2, 1> gravity_volts =
-        dynamics_->K3_inverse_ * dynamics_->GravityTorque(X);
+        dynamics_->K3_inverse() * dynamics_->GravityTorque(X);
 
     dynamics_->NormilizedMatriciesForState(X, &K1, &K2);
 
@@ -122,9 +122,9 @@ Path::Path(::std::initializer_list<::std::array<double, 6>> list) {
         ::std::sqrt(1.0 / ::std::max(0.001, (alpha_unitizer * alpha).norm()));
 
     const ::Eigen::Matrix<double, 2, 1> vk1 =
-        dynamics_->K3_inverse_ * (K1 * alpha + K2 * omega_square * omega);
+        dynamics_->K3_inverse() * (K1 * alpha + K2 * omega_square * omega);
     const ::Eigen::Matrix<double, 2, 1> vk2 =
-        dynamics_->K3_inverse_ * dynamics_->K4_ * omega;
+        dynamics_->K3_inverse() * dynamics_->K4() * omega;
 
     // Loop through all the various vmin, plan_vmax combinations.
     for (const double c : {-plan_vmax, plan_vmax}) {
@@ -184,12 +184,12 @@ double Trajectory::FeasableForwardsAcceleration(
           .finished();
 
   const ::Eigen::Matrix<double, 2, 1> k_constant =
-      dynamics_->K3_inverse_ *
+      dynamics_->K3_inverse() *
       ((K1 * alpha + K2 * omega_square * omega) * goal_velocity *
            goal_velocity +
-       dynamics_->K4_ * omega * goal_velocity - dynamics_->GravityTorque(X));
+       dynamics_->K4() * omega * goal_velocity - dynamics_->GravityTorque(X));
   const ::Eigen::Matrix<double, 2, 1> k_scalar =
-      dynamics_->K3_inverse_ * K1 * omega;
+      dynamics_->K3_inverse() * K1 * omega;
 
   const double constraint_goal_acceleration =
       ::std::sqrt(
@@ -242,12 +242,12 @@ double Trajectory::FeasableBackwardsAcceleration(
           .finished();
 
   const ::Eigen::Matrix<double, 2, 1> k_constant =
-      dynamics_->K3_inverse_ *
+      dynamics_->K3_inverse() *
       ((K1 * alpha + K2 * omega_square * omega) * goal_velocity *
            goal_velocity +
-       dynamics_->K4_ * omega * goal_velocity - dynamics_->GravityTorque(X));
+       dynamics_->K4() * omega * goal_velocity - dynamics_->GravityTorque(X));
   const ::Eigen::Matrix<double, 2, 1> k_scalar =
-      dynamics_->K3_inverse_ * K1 * omega;
+      dynamics_->K3_inverse() * K1 * omega;
 
   const double constraint_goal_acceleration =
       ::std::sqrt(
