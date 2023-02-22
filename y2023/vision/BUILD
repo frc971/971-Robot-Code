@@ -136,6 +136,32 @@ cc_binary(
     ],
 )
 
+cc_test(
+    name = "april_detection_test",
+    srcs = [
+        "april_detection_test.cc",
+    ],
+    data = [
+        "//y2023:aos_config",
+        "//y2023/constants:constants.json",
+        "@apriltag_test_bfbs_images",
+    ],
+    deps = [
+        ":aprilrobotics_lib",
+        "//aos:flatbuffer_merge",
+        "//aos:json_to_flatbuffer",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//aos/testing:test_logging",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/vision:target_mapper",
+        "//frc971/vision:vision_fbs",
+        "//y2023/constants:constants_fbs",
+        "//y2023/constants:constants_list_fbs",
+    ],
+)
+
 filegroup(
     name = "image_streamer_start",
     srcs = ["image_streamer_start.sh"],

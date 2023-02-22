@@ -26,12 +26,13 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
     : calibration_data_(event_loop),
       image_size_(0, 0),
       ftrace_(),
-      image_callback_(event_loop, channel_name,
-                      [&](cv::Mat image_color_mat,
-                          const aos::monotonic_clock::time_point eof) {
-                        HandleImage(image_color_mat, eof);
-                      },
-                      chrono::milliseconds(5)),
+      image_callback_(
+          event_loop, channel_name,
+          [&](cv::Mat image_color_mat,
+              const aos::monotonic_clock::time_point eof) {
+            HandleImage(image_color_mat, eof);
+          },
+          chrono::milliseconds(5)),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
       image_annotations_sender_(
@@ -275,8 +276,8 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
     }
   }
 
-  foxglove::ImageAnnotations::Builder annotation_builder(*builder.fbb());
   const auto corners_offset = builder.fbb()->CreateVector(foxglove_corners);
+  foxglove::ImageAnnotations::Builder annotation_builder(*builder.fbb());
   annotation_builder.add_points(corners_offset);
   builder.CheckOk(builder.Send(annotation_builder.Finish()));
 
