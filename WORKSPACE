@@ -26,6 +26,17 @@ http_archive(
 )
 
 http_archive(
+    name = "aspect_bazel_lib",
+    sha256 = "80897b673c2b506d21f861ae316689aa8abcc3e56947580a41bf9e68ff13af58",
+    strip_prefix = "bazel-lib-1.27.1",
+    url = "https://github.com/aspect-build/bazel-lib/releases/download/v1.27.1/bazel-lib-v1.27.1.tar.gz",
+)
+
+load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")
+
+aspect_bazel_lib_dependencies()
+
+http_archive(
     name = "rules_python",
     patch_args = ["-p1"],
     patches = [
