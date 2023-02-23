@@ -17,16 +17,16 @@ constexpr ::frc971::control_loops::arm::ArmConstants kArmConstants = {
     .l0 = 20 * 0.0254,
     .l1 = 38 * 0.0254,
 
-    .m0 = 9.34 / 2.2,
-    .m1 = 9.77 / 2.2,
+    .m0 = 4.5 / 2.2,
+    .m1 = 15.5 / 2.2,
 
     // Moment of inertia of the joints in kg m^2
-    .j0 = 2957.05 * 0.0002932545454545454,
-    .j1 = 2824.70 * 0.0002932545454545454,
+    .j0 = 0.092,
+    .j1 = 1.6,
 
     // Radius of the center of mass of the joints in meters.
-    .r0 = 21.64 * 0.0254,
-    .r1 = 26.70 * 0.0254,
+    .r0 = 4.5 * 0.0254,
+    .r1 = 20 * 0.0254,
 
     // Gear ratios for the two joints.
     .g0 = 55.0,
