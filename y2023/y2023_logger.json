@@ -373,7 +373,7 @@
       "max_size": 1843456,
       "num_readers": 4,
       "read_method": "PIN",
-      "num_senders": 1
+      "num_senders": 18
     },
     {
       "name": "/logger/camera/downsized",
@@ -442,24 +442,17 @@
   ],
   "applications": [
     {
-      "name": "logger_message_bridge_client",
-      "autostart": false,
-      "executable_name": "message_bridge_client.sh",
-      "args": [
-        "--rmem=8388608",
-        "--rt_priority=16"
-      ],
+      "name": "message_bridge_client",
+      "executable_name": "message_bridge_client",
+      "user": "pi",
       "nodes": [
         "logger"
       ]
     },
     {
-      "name": "logger_message_bridge_server",
+      "name": "message_bridge_server",
       "executable_name": "message_bridge_server",
-      "autostart": false,
-      "args": [
-        "--rt_priority=16"
-      ],
+      "user": "pi",
       "nodes": [
         "logger"
       ]
