@@ -406,15 +406,20 @@ class SuperstructureWriter
     distal_falcon_->SetDisabled();
     roll_joint_victor_->SetDisabled();
     wrist_victor_->SetDisabled();
-    roller_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+    if (roller_falcon_) {
+      roller_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled,
+                          0);
+    }
   }
 
   void Write(const superstructure::Output &output) override {
     WritePwm(output.proximal_voltage(), proximal_falcon_.get());
     WritePwm(output.distal_voltage(), distal_falcon_.get());
-    WritePwm(output.roll_joint_voltage(), roll_joint_victor_.get());
+    WritePwm(-output.roll_joint_voltage(), roll_joint_victor_.get());
     WritePwm(output.wrist_voltage(), wrist_victor_.get());
-    WriteCan(output.roller_voltage(), roller_falcon_.get());
+    if (roller_falcon_) {
+      WriteCan(output.roller_voltage(), roller_falcon_.get());
+    }
   }
 
   static void WriteCan(const double voltage,
