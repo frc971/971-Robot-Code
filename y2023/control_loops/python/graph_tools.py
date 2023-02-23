@@ -202,16 +202,19 @@ LOWER_DELTA_LIMIT = -1.9 * np.pi
 UPPER_PROXIMAL_LIMIT = np.pi * 1.5
 LOWER_PROXIMAL_LIMIT = -np.pi
 
+UPPER_DISTAL_LIMIT = 0.75 * np.pi
+LOWER_DISTAL_LIMIT = -0.75 * np.pi
+
 UPPER_ROLL_JOINT_LIMIT = 0.75 * np.pi
 LOWER_ROLL_JOINT_LIMIT = -0.75 * np.pi
 
 
 def arm_past_limit(theta1, theta2, theta3):
     delta = theta2 - theta1
-    return (delta > UPPER_DELTA_LIMIT or delta < LOWER_DELTA_LIMIT) or (
-        theta3 > UPPER_ROLL_JOINT_LIMIT or
-        theta3 < LOWER_ROLL_JOINT_LIMIT) or (theta1 > UPPER_PROXIMAL_LIMIT
-                                             or theta1 < LOWER_PROXIMAL_LIMIT)
+    return delta > UPPER_DELTA_LIMIT or delta < LOWER_DELTA_LIMIT or \
+            theta1 > UPPER_PROXIMAL_LIMIT or theta1 < LOWER_PROXIMAL_LIMIT or \
+            theta2 > UPPER_DISTAL_LIMIT or theta2 < LOWER_DISTAL_LIMIT or \
+            theta3 > UPPER_ROLL_JOINT_LIMIT or theta3 < LOWER_ROLL_JOINT_LIMIT
 
 
 def get_circular_index(theta):
