@@ -488,38 +488,6 @@ class PoseFilter : public CeresPoseFilter<double> {
     vis_robot.SetCameraParameters(camera_mat);
     vis_robot.SetDistortionCoefficients(dist_coeffs);
 
-    /*
-    // Draw an initial visualization
-    Eigen::Vector3d T_world_imu_vec =
-        calibration_parameters.initial_state.block<3, 1>(0, 0);
-    Eigen::Translation3d T_world_imu(T_world_imu_vec);
-    Eigen::Affine3d H_world_imu =
-        T_world_imu * calibration_parameters.initial_orientation;
-
-    vis_robot.DrawFrameAxes(H_world_imu, "imu");
-
-    Eigen::Quaterniond R_imu_pivot(calibration_parameters.pivot_to_imu);
-    Eigen::Translation3d T_imu_pivot(
-        calibration_parameters.pivot_to_imu_translation);
-    Eigen::Affine3d H_imu_pivot = T_imu_pivot * R_imu_pivot;
-    Eigen::Affine3d H_world_pivot = H_world_imu * H_imu_pivot;
-    vis_robot.DrawFrameAxes(H_world_pivot, "pivot");
-
-    Eigen::Affine3d H_imupivot_camerapivot(
-        Eigen::AngleAxisd(1.5, Eigen::Vector3d::UnitZ()));
-    Eigen::Quaterniond R_camera_pivot(calibration_parameters.pivot_to_camera);
-    Eigen::Translation3d T_camera_pivot(
-        calibration_parameters.pivot_to_camera_translation);
-    Eigen::Affine3d H_camera_pivot = T_camera_pivot * R_camera_pivot;
-    Eigen::Affine3d H_world_camera = H_world_imu * H_imu_pivot *
-                                     H_imupivot_camerapivot *
-                                     H_camera_pivot.inverse();
-    vis_robot.DrawFrameAxes(H_world_camera, "camera");
-
-    cv::imshow("Original poses", image_mat);
-    cv::waitKey();
-    */
-
     uint current_state_index = 0;
     uint current_turret_index = 0;
     for (uint i = 0; i < camera_times_.size() - 1; i++) {
@@ -623,11 +591,6 @@ class PoseFilter : public CeresPoseFilter<double> {
 
       cv::imshow("Live", image_mat);
       cv::waitKey(50);
-
-      if (i % 200 == 0) {
-        LOG(INFO) << "Pausing at step " << i;
-        cv::waitKey();
-      }
     }
     LOG(INFO) << "Finished visualizing robot.  Press any key to continue";
     cv::waitKey();
@@ -849,11 +812,11 @@ struct CostFunctor {
           trans_error_scale * filter.errorpz(i);
     }
 
-    LOG(INFO) << "Cost function calc took "
-              << chrono::duration<double>(aos::monotonic_clock::now() -
-                                          start_time)
-                     .count()
-              << " seconds";
+    VLOG(2) << "Cost function calc took "
+            << chrono::duration<double>(aos::monotonic_clock::now() -
+                                        start_time)
+                   .count()
+            << " seconds";
 
     return true;
   }
@@ -898,7 +861,7 @@ aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> Solve(
         calibration_parameters->accelerometer_bias.data());
   }
 
-  {
+  if (calibration_parameters->has_pivot) {
     // The turret's Z rotation is redundant with the camera's mounting z
     // rotation since it's along the rotation axis.
     ceres::CostFunction *turret_z_cost_function =
@@ -920,6 +883,17 @@ aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> Solve(
         calibration_parameters->pivot_to_imu.coeffs().data());
     problem.SetParameterBlockConstant(
         calibration_parameters->pivot_to_imu_translation.data());
+  }
+
+  {
+    // The board rotation in z is a bit arbitrary, so hoping to limit it to
+    // increase repeatability
+    ceres::CostFunction *board_z_cost_function =
+        new ceres::AutoDiffCostFunction<PenalizeQuaternionZ, 1, 4>(
+            new PenalizeQuaternionZ());
+    problem.AddResidualBlock(
+        board_z_cost_function, nullptr,
+        calibration_parameters->board_to_world.coeffs().data());
   }
 
   problem.SetParameterization(
@@ -952,9 +926,9 @@ aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> Solve(
   // Run the solver!
   ceres::Solver::Options options;
   options.minimizer_progress_to_stdout = true;
-  options.gradient_tolerance = 1e-12;
+  options.gradient_tolerance = 1e-6;
   options.function_tolerance = 1e-6;
-  options.parameter_tolerance = 1e-12;
+  options.parameter_tolerance = 1e-6;
   ceres::Solver::Summary summary;
   Solve(options, &problem, &summary);
   LOG(INFO) << summary.FullReport();

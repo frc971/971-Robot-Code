@@ -7,8 +7,8 @@
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
 #include "aos/util/file.h"
-#include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/constants/constants_sender_lib.h"
+#include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/extrinsics_calibration.h"
 #include "frc971/vision/vision_generated.h"
 #include "frc971/wpilib/imu_batch_generated.h"
@@ -17,7 +17,7 @@
 
 DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
 DEFINE_bool(plot, false, "Whether to plot the resulting data.");
-DEFINE_string(target_type, "charuco",
+DEFINE_string(target_type, "charuco_diamond",
               "Type of target: aruco|charuco|charuco_diamond");
 DEFINE_string(image_channel, "/camera", "Channel to listen for images on");
 DEFINE_string(output_logs, "/tmp/calibration/",
@@ -51,16 +51,17 @@ struct CalibrationAccumulatorState {
       TargetType target_type = TargetTypeFromString(FLAGS_target_type);
       std::unique_ptr<aos::EventLoop> constants_event_loop =
           factory->MakeEventLoop("constants_fetcher", pi_event_loop->node());
-      frc971::constants::ConstantsFetcher<y2023::Constants> constants_fetcher(
-          constants_event_loop.get());
-      *intrinsics =
-          FLAGS_base_intrinsics.empty()
-              ? aos::RecursiveCopyFlatBuffer(
-                    y2023::vision::FindCameraCalibration(
-                        constants_fetcher.constants(),
-                        pi_event_loop->node()->name()->string_view()))
-              : aos::JsonFileToFlatbuffer<calibration::CameraCalibration>(
-                    FLAGS_base_intrinsics);
+      if (FLAGS_base_intrinsics.empty()) {
+        frc971::constants::ConstantsFetcher<y2023::Constants> constants_fetcher(
+            constants_event_loop.get());
+        *intrinsics =
+            aos::RecursiveCopyFlatBuffer(y2023::vision::FindCameraCalibration(
+                constants_fetcher.constants(),
+                pi_event_loop->node()->name()->string_view()));
+      } else {
+        *intrinsics = aos::JsonFileToFlatbuffer<calibration::CameraCalibration>(
+            FLAGS_base_intrinsics);
+      }
       extractor = std::make_unique<Calibration>(
           factory, pi_event_loop.get(), imu_event_loop.get(), FLAGS_pi,
           &intrinsics->message(), target_type, FLAGS_image_channel, data);
@@ -80,6 +81,14 @@ void Main(int argc, char **argv) {
     // Now, accumulate all the data into the data object.
     aos::logger::LogReader reader(
         aos::logger::SortParts(aos::logger::FindLogs(argc, argv)));
+    reader.RemapLoggedChannel<foxglove::CompressedImage>("/pi1/camera");
+    reader.RemapLoggedChannel<foxglove::CompressedImage>("/pi2/camera");
+    reader.RemapLoggedChannel<foxglove::CompressedImage>("/pi3/camera");
+    reader.RemapLoggedChannel<foxglove::CompressedImage>("/pi4/camera");
+    reader.RemapLoggedChannel<foxglove::ImageAnnotations>("/pi1/camera");
+    reader.RemapLoggedChannel<foxglove::ImageAnnotations>("/pi2/camera");
+    reader.RemapLoggedChannel<foxglove::ImageAnnotations>("/pi3/camera");
+    reader.RemapLoggedChannel<foxglove::ImageAnnotations>("/pi4/camera");
 
     aos::SimulatedEventLoopFactory factory(reader.configuration());
     reader.RegisterWithoutStarting(&factory);
@@ -122,29 +131,40 @@ void Main(int argc, char **argv) {
   CHECK(data.camera_samples_size() > 0) << "Didn't get any camera observations";
 
   // And now we have it, we can start processing it.
-  const Eigen::Quaternion<double> nominal_initial_orientation(
-      frc971::controls::ToQuaternionFromRotationVector(
-          Eigen::Vector3d(0.0, 0.0, M_PI)));
-  const Eigen::Quaternion<double> nominal_pivot_to_camera(
+  // NOTE: For y2023, with no turret, pivot == imu
+
+  // Define the mapping that takes imu frame (with z up) to camera frame (with z
+  // pointing out)
+  const Eigen::Quaterniond R_precam_cam(
+      Eigen::AngleAxisd(-0.5 * M_PI, Eigen::Vector3d::UnitX()) *
+      Eigen::AngleAxisd(-0.5 * M_PI, Eigen::Vector3d::UnitZ()));
+  // Set up initial conditions for the pis that are reasonable
+  Eigen::Quaternion<double> nominal_initial_orientation(
+      Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitZ()));
+  Eigen::Quaternion<double> nominal_pivot_to_camera(
+      Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitX()) *
+      Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitY()));
+  Eigen::Vector3d nominal_pivot_to_camera_translation(8.0, 8.0, 0.0);
+  Eigen::Quaternion<double> nominal_board_to_world(
       Eigen::AngleAxisd(-0.5 * M_PI, Eigen::Vector3d::UnitX()));
-  const Eigen::Quaternion<double> nominal_board_to_world(
-      Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitX()));
   Eigen::Matrix<double, 6, 1> nominal_initial_state =
       Eigen::Matrix<double, 6, 1>::Zero();
-  // Set x value to 0.5 m (center view on the board)
-  // nominal_initial_state(0, 0) = 0.5;
-  // Set y value to -1 m (approx distance from imu to board/world)
-  nominal_initial_state(1, 0) = -1.0;
+  // Set y value to -1 m (approx distance from imu to the board/world)
+  nominal_initial_state(1, 0) = 1.0;
 
   CalibrationParameters calibration_parameters;
   calibration_parameters.initial_orientation = nominal_initial_orientation;
   calibration_parameters.pivot_to_camera = nominal_pivot_to_camera;
+  calibration_parameters.pivot_to_camera_translation =
+      nominal_pivot_to_camera_translation;
+  // Board to world rotation
   calibration_parameters.board_to_world = nominal_board_to_world;
+  // Initial imu location (and velocity)
   calibration_parameters.initial_state = nominal_initial_state;
   calibration_parameters.has_pivot = false;
 
-  // Show the inverse of pivot_to_camera, since camera_to_pivot tells where the
-  // camera is with respect to the pivot frame
+  // Show the inverse of pivot_to_camera, since camera_to_pivot tells where
+  // the camera is with respect to the pivot frame
   const Eigen::Affine3d nominal_affine_pivot_to_camera =
       Eigen::Translation3d(calibration_parameters.pivot_to_camera_translation) *
       nominal_pivot_to_camera;
@@ -156,22 +176,20 @@ void Main(int argc, char **argv) {
   LOG(INFO) << "Initial Conditions for solver.  Assumes:\n"
             << "1) board origin is same as world, but rotated pi/2 about "
                "x-axis, so z points out\n"
-            << "2) pivot origin matches imu origin\n"
+            << "2) pivot origin matches imu origin (since there's no turret)\n"
             << "3) camera is offset from pivot (depends on which camera)";
 
-  LOG(INFO)
-      << "Nominal initial_orientation of imu w.r.t. world (angle-axis vector): "
-      << frc971::controls::ToRotationVectorFromQuaternion(
-             nominal_initial_orientation)
-             .transpose();
+  LOG(INFO) << "Nominal initial_orientation of imu w.r.t. world "
+               "(angle-axis vector): "
+            << frc971::controls::ToRotationVectorFromQuaternion(
+                   nominal_initial_orientation)
+                   .transpose();
   LOG(INFO) << "Nominal initial_state: \n"
             << "Position: "
             << nominal_initial_state.block<3, 1>(0, 0).transpose() << "\n"
             << "Velocity: "
             << nominal_initial_state.block<3, 1>(3, 0).transpose();
-  // TODO<Jim>: Might be nice to take out the rotation component that maps into
-  // camera image coordinates (with x right, y down, z forward)
-  LOG(INFO) << "Nominal camera_to_pivot (angle-axis vector): "
+  LOG(INFO) << "Nominal camera_to_pivot rotation (angle-axis vector): "
             << frc971::controls::ToRotationVectorFromQuaternion(
                    nominal_camera_to_pivot_rotation)
                    .transpose();
@@ -188,17 +206,20 @@ void Main(int argc, char **argv) {
 
   if (!FLAGS_output_calibration.empty()) {
     aos::WriteFlatbufferToJson(FLAGS_output_calibration, merged_calibration);
+  } else {
+    LOG(WARNING) << "Calibration filename not provided, so not saving it";
   }
 
   LOG(INFO) << "RESULTS OF CALIBRATION SOLVER:";
   std::cout << aos::FlatbufferToJson(&merged_calibration.message())
             << std::endl;
+
   LOG(INFO) << "initial_orientation of imu w.r.t. world (angle-axis vector): "
             << frc971::controls::ToRotationVectorFromQuaternion(
                    calibration_parameters.initial_orientation)
                    .transpose();
   LOG(INFO)
-      << "initial_state: \n"
+      << "initial_state (imu): \n"
       << "Position: "
       << calibration_parameters.initial_state.block<3, 1>(0, 0).transpose()
       << "\n"
@@ -208,15 +229,17 @@ void Main(int argc, char **argv) {
   const Eigen::Affine3d affine_pivot_to_camera =
       Eigen::Translation3d(calibration_parameters.pivot_to_camera_translation) *
       calibration_parameters.pivot_to_camera;
+  const Eigen::Affine3d affine_camera_to_pivot =
+      affine_pivot_to_camera.inverse();
   const Eigen::Quaterniond camera_to_pivot_rotation(
-      affine_pivot_to_camera.inverse().rotation());
+      affine_camera_to_pivot.rotation());
   const Eigen::Vector3d camera_to_pivot_translation(
-      affine_pivot_to_camera.inverse().translation());
-  LOG(INFO) << "camera to pivot (angle-axis vec): "
+      affine_camera_to_pivot.translation());
+  LOG(INFO) << "camera to pivot(imu) rotation (angle-axis vec): "
             << frc971::controls::ToRotationVectorFromQuaternion(
                    camera_to_pivot_rotation)
                    .transpose();
-  LOG(INFO) << "camera to pivot translation: "
+  LOG(INFO) << "camera to pivot(imu) translation: "
             << camera_to_pivot_translation.transpose();
   LOG(INFO) << "board_to_world (rotation) "
             << frc971::controls::ToRotationVectorFromQuaternion(
@@ -227,12 +250,24 @@ void Main(int argc, char **argv) {
   LOG(INFO) << "gyro_bias " << calibration_parameters.gyro_bias.transpose();
   LOG(INFO) << "gravity " << 9.81 * calibration_parameters.gravity_scalar;
 
-  LOG(INFO) << "pivot_to_camera change "
+  LOG(INFO) << "Checking delta from nominal (initial condition) to solved "
+               "values:";
+  LOG(INFO) << "nominal_pivot_to_camera rotation: "
+            << frc971::controls::ToRotationVectorFromQuaternion(
+                   R_precam_cam * nominal_pivot_to_camera)
+                   .transpose();
+  LOG(INFO) << "solved pivot_to_camera rotation: "
+            << frc971::controls::ToRotationVectorFromQuaternion(
+                   R_precam_cam * calibration_parameters.pivot_to_camera)
+                   .transpose();
+
+  LOG(INFO) << "pivot_to_camera rotation delta (zero if the IC's match the "
+               "solved value) "
             << frc971::controls::ToRotationVectorFromQuaternion(
                    calibration_parameters.pivot_to_camera *
                    nominal_pivot_to_camera.inverse())
                    .transpose();
-  LOG(INFO) << "board_to_world delta "
+  LOG(INFO) << "board_to_world rotation change "
             << frc971::controls::ToRotationVectorFromQuaternion(
                    calibration_parameters.board_to_world *
                    nominal_board_to_world.inverse())

@@ -8,11 +8,11 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
+#include "external/com_github_foxglove_schemas/CompressedImage_schema.h"
+#include "external/com_github_foxglove_schemas/ImageAnnotations_schema.h"
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/wpilib/imu_batch_generated.h"
-#include "external/com_github_foxglove_schemas/ImageAnnotations_schema.h"
-#include "external/com_github_foxglove_schemas/CompressedImage_schema.h"
 
 DEFINE_bool(display_undistorted, false,
             "If true, display the undistorted image.");
@@ -116,10 +116,10 @@ void CalibrationData::ReviewData(CalibrationDataObserver *observer) const {
 CalibrationFoxgloveVisualizer::CalibrationFoxgloveVisualizer(
     aos::EventLoop *event_loop)
     : event_loop_(event_loop),
-      image_converter_(event_loop_, "/camera", "/visualization",
+      image_converter_(event_loop_, "/camera", "/camera",
                        ImageCompression::kJpeg),
       annotations_sender_(
-          event_loop_->MakeSender<foxglove::ImageAnnotations>("/visualization")) {}
+          event_loop_->MakeSender<foxglove::ImageAnnotations>("/camera")) {}
 
 aos::FlatbufferDetachedBuffer<aos::Configuration>
 CalibrationFoxgloveVisualizer::AddVisualizationChannels(
