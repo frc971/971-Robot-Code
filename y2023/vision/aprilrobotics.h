@@ -38,7 +38,7 @@ class AprilRoboticsDetector {
   std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> DetectTags(
       cv::Mat image);
 
-  const cv::Mat extrinsics() const { return extrinsics_; }
+  const std::optional<cv::Mat> extrinsics() const { return extrinsics_; }
   const cv::Mat intrinsics() const { return intrinsics_; }
   const cv::Mat dist_coeffs() const { return dist_coeffs_; }
 
@@ -57,7 +57,7 @@ class AprilRoboticsDetector {
   const frc971::vision::calibration::CameraCalibration *calibration_;
   cv::Mat intrinsics_;
   cv::Mat projection_matrix_;
-  cv::Mat extrinsics_;
+  std::optional<cv::Mat> extrinsics_;
   cv::Mat dist_coeffs_;
 
   aos::Ftrace ftrace_;

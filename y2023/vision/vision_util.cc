@@ -18,11 +18,15 @@ const frc971::vision::calibration::CameraCalibration *FindCameraCalibration(
   LOG(FATAL) << ": Failed to find camera calibration for " << node_name;
 }
 
-cv::Mat CameraExtrinsics(
+std::optional<cv::Mat> CameraExtrinsics(
     const frc971::vision::calibration::CameraCalibration *camera_calibration) {
   CHECK(!camera_calibration->has_turret_extrinsics())
       << "No turret on 2023 robot";
 
+  if (!camera_calibration->has_fixed_extrinsics()) {
+    return std::nullopt;
+  }
+  CHECK(camera_calibration->fixed_extrinsics()->has_data());
   cv::Mat result(4, 4, CV_32F,
                  const_cast<void *>(static_cast<const void *>(
                      camera_calibration->fixed_extrinsics()->data()->data())));
