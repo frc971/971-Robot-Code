@@ -54,7 +54,6 @@ EndEffectorState EndEffector::RunIteration(
         state_ = EndEffectorState::SPITTING;
       }
       break;
-
     case EndEffectorState::SPITTING:
       // If spit requested, spit
       *roller_voltage = -constants::Values::kRollerVoltage();
@@ -74,8 +73,6 @@ EndEffectorState EndEffector::RunIteration(
 
   return state_;
 }
-
-EndEffectorState EndEffector::state() { return state_; }
 
 void EndEffector::Reset() { state_ = EndEffectorState::IDLE; }
 
