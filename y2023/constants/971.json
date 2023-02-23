@@ -1,16 +1,16 @@
 {
   "cameras": [
     {
-      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-1_cam-23-05_2013-01-18_09-38-22.915096335.json' %}
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-1_cam-23-05_ext_2023-02-22.json' %}
     },
     {
-      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-2_cam-23-06_2013-01-18_09-32-06.409252911.json' %}
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-2_cam-23-06_ext_2023-02-22.json' %}
     },
     {
-      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-3_cam-23-07_2013-01-18_09-11-56.768663953.json' %}
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-3_cam-23-07_ext_2023-02-22.json' %}
     },
     {
-      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-4_cam-23-08_2013-01-18_09-27-45.150551614.json' %}
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-4_cam-23-08_ext_2023-02-22.json' %}
     }
   ]
 }
