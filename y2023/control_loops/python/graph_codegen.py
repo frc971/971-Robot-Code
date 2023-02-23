@@ -71,7 +71,6 @@ def add_edge(cc_file, name, segment, index, reverse):
 
 def main(argv):
     cc_file = []
-    cc_file.append("")
     cc_file.append("#include <memory>")
     cc_file.append("")
     cc_file.append(
@@ -84,6 +83,7 @@ def main(argv):
     cc_file.append(
         "#include \"y2023/control_loops/superstructure/roll/integral_hybrid_roll_plant.h\""
     )
+    cc_file.append("")
 
     cc_file.append("using frc971::control_loops::arm::SearchGraph;")
     cc_file.append(
@@ -187,28 +187,24 @@ def main(argv):
                       path_function_name(name))
         cc_file.append("::std::unique_ptr<Path> %s() {" %
                        path_function_name(name))
-        cc_file.append(
-            "  return ::std::unique_ptr<Path>(new Path(CosSpline{NSpline<4, 2>((Eigen::Matrix<double, 2, 4>() << "
-        )
+        cc_file.append("  return ::std::unique_ptr<Path>(new Path(CosSpline{")
+        cc_file.append("      NSpline<4, 2>((Eigen::Matrix<double, 2, 4>() <<")
         points = [
             segment.start, segment.control1, segment.control2, segment.end
         ]
-        for i in range(len(points)):
-            cc_file.append("%.12f," % (points[i][0]))
-        for i in range(len(points)):
-            cc_file.append(
-                "%.12f%s" %
-                (points[i][1], ", " if i != len(points) - 1 else ""))
+        cc_file.append("             " +
+                       " ".join(["%.12f," % (p[0]) for p in points]))
+        cc_file.append("             " +
+                       ", ".join(["%.12f" % (p[1]) for p in points]))
 
-        cc_file.append(").finished()), {")
+        cc_file.append("      ).finished()), {")
         for alpha, roll in segment.alpha_rolls:
             cc_file.append(
-                "CosSpline::AlphaTheta{.alpha = %.12f, .theta = %.12f}" %
-                (alpha, roll))
-            if alpha != segment.alpha_rolls[-1][0]:
-                cc_file.append(", ")
+                "       CosSpline::AlphaTheta{.alpha = %.12f, .theta = %.12f},"
+                % (alpha, roll))
         cc_file.append("  }}));")
         cc_file.append("}")
+        cc_file.append("")
 
     # Matrix of nodes
     h_file.append("::std::vector<::Eigen::Matrix<double, 3, 1>> PointList();")
@@ -229,22 +225,25 @@ def main(argv):
     h_file.append("SearchGraph MakeSearchGraph("
                   "const frc971::control_loops::arm::Dynamics *dynamics, "
                   "::std::vector<TrajectoryAndParams> *trajectories,")
-    h_file.append("                            "
-                  "const ::Eigen::Matrix<double, 3, 3> &alpha_unitizer,")
-    h_file.append("                            "
-                  "double vmax,")
+    h_file.append(
+        "                            const ::Eigen::Matrix<double, 3, 3> &alpha_unitizer,"
+    )
+    h_file.append("                            double vmax,")
     h_file.append(
         "const StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>, HybridKalman<3, 1, 1>> *hybrid_roll_joint_loop);"
     )
-    cc_file.append("SearchGraph MakeSearchGraph("
-                   "const frc971::control_loops::arm::Dynamics *dynamics, "
-                   "::std::vector<TrajectoryAndParams> *trajectories,")
-    cc_file.append("                            "
-                   "const ::Eigen::Matrix<double, 3, 3> &alpha_unitizer,")
-    cc_file.append("                            "
-                   "double vmax,")
+    cc_file.append("")
+    cc_file.append("SearchGraph MakeSearchGraph(")
+    cc_file.append("    const frc971::control_loops::arm::Dynamics *dynamics,")
+    cc_file.append("    std::vector<TrajectoryAndParams> *trajectories,")
     cc_file.append(
-        "const StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>, HybridKalman<3, 1, 1>> *hybrid_roll_joint_loop) {"
+        "    const ::Eigen::Matrix<double, 3, 3> &alpha_unitizer, double vmax,"
+    )
+    cc_file.append(
+        "    const StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,"
+    )
+    cc_file.append(
+        "                            HybridKalman<3, 1, 1>> *hybrid_roll_joint_loop) {"
     )
     cc_file.append("  ::std::vector<SearchGraph::Edge> edges;")
 
