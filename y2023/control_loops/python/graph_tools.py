@@ -409,12 +409,11 @@ class Path(abc.ABC):
 
         self.DoDrawTo(cr, theta_version)
 
-    def ToThetaPoints(self):
+    def VerifyPoints(self):
         points = self.DoToThetaPoints()
         if self.roll_joint_collision(points, verbose=True) or \
            self.arm_past_limit(points, verbose=True):
             sys.exit(1)
-        return points
 
 
 class SplineSegmentBase(Path):

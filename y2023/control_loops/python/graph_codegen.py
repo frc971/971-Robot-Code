@@ -13,6 +13,8 @@ def path_function_name(name):
 
 
 def add_edge(cc_file, name, segment, index, reverse):
+    segment.VerifyPoints()
+
     cc_file.append("  // Adding edge %d" % index)
     vmax = "vmax"
     if segment.vmax:
