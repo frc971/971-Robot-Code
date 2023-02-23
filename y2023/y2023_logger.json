@@ -368,10 +368,9 @@
     {
       "name": "/logger/camera",
       "type": "frc971.vision.CameraImage",
-      "logger": "NOT_LOGGED",
       "source_node": "logger",
-      "frequency": 100,
-      "max_size": 2600000,
+      "frequency": 40,
+      "max_size": 1843456,
       "num_readers": 4,
       "read_method": "PIN",
       "num_senders": 1
@@ -508,14 +507,11 @@
   "nodes": [
     {
       "name": "logger",
-      "hostname": "pi6",
+      "hostname": "pi5",
       "hostnames": [
-        "pi-971-6",
-        "pi-9971-6",
-        "pi-7971-6",
-        "ASchuh-T480s",
-        "tarvalon",
-        "aschuh-3950x"
+        "pi-971-5",
+        "pi-9971-5",
+        "pi-7971-5"
       ],
       "port": 9971
     },
