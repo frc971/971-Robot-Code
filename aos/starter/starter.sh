@@ -13,8 +13,7 @@ if [[ "$(hostname)" == "roboRIO"* ]]; then
 elif [[ "$(hostname)" == "pi-"* ]]; then
   # We have systemd configured to handle restarting, so just exec.
   export PATH="${PATH}:/home/pi/bin"
-  rm -rf /dev/shm/aos
-  exec starterd --user=pi
+  exec starterd --user=pi --purge_shm_base
 else
   ROBOT_CODE="${HOME}/bin"
 fi
@@ -22,6 +21,5 @@ fi
 cd "${ROBOT_CODE}"
 export PATH="${PATH}:${ROBOT_CODE}"
 while true; do
-  rm -rf /dev/shm/aos
-  starterd 2>&1
+  starterd --purge_shm_base 2>&1
 done
