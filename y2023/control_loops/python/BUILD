@@ -44,6 +44,7 @@ py_binary(
         ":python_init",
         "//frc971/control_loops/python:basic_window",
         "//frc971/control_loops/python:color",
+        "@pip//matplotlib",
         "@pip//numpy",
         "@pip//pygobject",
         "@pip//shapely",
@@ -55,6 +56,7 @@ py_binary(
     srcs = [
         "graph_codegen.py",
         "graph_paths.py",
+        "graph_tools.py",
     ],
     legacy_create_init = False,
     target_compatible_with = ["@platforms//os:linux"],

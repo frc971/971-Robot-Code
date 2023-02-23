@@ -117,6 +117,7 @@ cc_test(
         "//frc971/control_loops:subsystem_simulator",
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//y2023/control_loops/superstructure/roll:roll_plants",
     ],
 )
 

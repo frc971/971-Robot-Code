@@ -5,15 +5,14 @@
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/double_jointed_arm/ekf.h"
 #include "frc971/control_loops/double_jointed_arm/graph.h"
-#include "frc971/control_loops/double_jointed_arm/trajectory.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/superstructure/arm/generated_graph.h"
+#include "y2023/control_loops/superstructure/arm/trajectory.h"
 #include "y2023/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_status_generated.h"
 
 using frc971::control_loops::arm::EKF;
-using frc971::control_loops::arm::TrajectoryFollower;
 
 namespace y2023 {
 namespace control_loops {
@@ -32,8 +31,13 @@ class Arm {
     return kGrannyMode() ? 5.0 : 12.0;
   }
   static constexpr double kDt() { return 0.00505; }
+  static constexpr std::chrono::nanoseconds kDtDuration() {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::duration<double>(kDt()));
+  }
   static constexpr double kAlpha0Max() { return kGrannyMode() ? 5.0 : 15.0; }
   static constexpr double kAlpha1Max() { return kGrannyMode() ? 5.0 : 15.0; }
+  static constexpr double kAlpha2Max() { return kGrannyMode() ? 5.0 : 15.0; }
 
   static constexpr double kVMax() { return kGrannyMode() ? 5.0 : 11.5; }
   static constexpr double kPathlessVMax() { return 5.0; }
@@ -43,7 +47,8 @@ class Arm {
       const ::aos::monotonic_clock::time_point /*monotonic_now*/,
       const uint32_t *unsafe_goal, const superstructure::ArmPosition *position,
       bool trajectory_override, double *proximal_output, double *distal_output,
-      bool /*intake*/, bool /*spit*/, flatbuffers::FlatBufferBuilder *fbb);
+      double *roll_joint_output, bool /*intake*/, bool /*spit*/,
+      flatbuffers::FlatBufferBuilder *fbb);
 
   void Reset();
 
@@ -52,12 +57,9 @@ class Arm {
   bool estopped() const { return state_ == ArmState::ESTOP; }
   bool zeroed() const {
     return (proximal_zeroing_estimator_.zeroed() &&
-            distal_zeroing_estimator_.zeroed());
+            distal_zeroing_estimator_.zeroed() &&
+            roll_joint_zeroing_estimator_.zeroed());
   }
-
-  // Returns the maximum position for the intake.  This is used to override the
-  // intake position to release the box when the state machine is lifting.
-  double max_intake_override() const { return max_intake_override_; }
 
   uint32_t current_node() const { return current_node_; }
 
@@ -79,29 +81,36 @@ class Arm {
       proximal_zeroing_estimator_;
   ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator
       distal_zeroing_estimator_;
+  ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator
+      roll_joint_zeroing_estimator_;
 
   double proximal_offset_;
   double distal_offset_;
+  double roll_joint_offset_;
 
-  double max_intake_override_;
-
-  const ::Eigen::Matrix<double, 2, 2> alpha_unitizer_;
+  const ::Eigen::DiagonalMatrix<double, 3> alpha_unitizer_;
 
   double vmax_ = kVMax();
 
   frc971::control_loops::arm::Dynamics dynamics_;
 
   ::std::vector<TrajectoryAndParams> trajectories_;
-  SearchGraph search_graph_;
 
   bool close_enough_for_full_power_;
 
   size_t brownout_count_;
 
+  StateFeedbackLoop<3, 1, 1, double, StateFeedbackPlant<3, 1, 1>,
+                    StateFeedbackObserver<3, 1, 1>>
+      roll_joint_loop_;
+  const StateFeedbackLoop<3, 1, 1, double, StateFeedbackHybridPlant<3, 1, 1>,
+                          HybridKalman<3, 1, 1>>
+      hybrid_roll_joint_loop_;
   EKF arm_ekf_;
+  SearchGraph search_graph_;
   TrajectoryFollower follower_;
 
-  const ::std::vector<::Eigen::Matrix<double, 2, 1>> points_;
+  const ::std::vector<::Eigen::Matrix<double, 3, 1>> points_;
 
   // Start at the 0th index.
   uint32_t current_node_;

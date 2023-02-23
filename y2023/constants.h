@@ -164,8 +164,7 @@ struct Values {
 
   ArmJointConstants arm_proximal;
   ArmJointConstants arm_distal;
-
-  PotAndAbsEncoderConstants roll_joint;
+  ArmJointConstants roll_joint;
 
   ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
       ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>

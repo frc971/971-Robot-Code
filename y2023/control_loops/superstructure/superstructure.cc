@@ -60,6 +60,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           unsafe_goal != nullptr ? unsafe_goal->trajectory_override() : false,
           output != nullptr ? &output_struct.proximal_voltage : nullptr,
           output != nullptr ? &output_struct.distal_voltage : nullptr,
+          output != nullptr ? &output_struct.roll_joint_voltage : nullptr,
           unsafe_goal != nullptr ? unsafe_goal->intake() : false,
           unsafe_goal != nullptr ? unsafe_goal->spit() : false,
 

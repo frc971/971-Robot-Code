@@ -16,6 +16,7 @@ table ArmStatus {
   // State of the estimators.
   proximal_estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState (id: 0);
   distal_estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState (id: 1);
+  roll_joint_estimator_state:frc971.PotAndAbsoluteEncoderEstimatorState (id: 18);
 
   // The node we are currently going to.
   current_node:uint32 (id: 2);
@@ -24,19 +25,24 @@ table ArmStatus {
   // Goal position and velocity (radians)
   goal_theta0:float (id: 4);
   goal_theta1:float (id: 5);
+  goal_theta2:float (id: 19);
   goal_omega0:float (id: 6);
   goal_omega1:float (id: 7);
+  goal_omega2:float (id: 20);
 
   // Current position and velocity (radians)
   theta0:float (id: 8);
   theta1:float (id: 9);
+  theta2:float (id: 21);
 
   omega0:float (id: 10);
   omega1:float (id: 11);
+  omega2:float (id: 22);
 
   // Estimated voltage error for the two joints.
   voltage_error0:float (id: 12);
   voltage_error1:float (id: 13);
+  voltage_error2:float (id: 23);
 
   // True if we are zeroed.
   zeroed:bool (id: 14);
@@ -60,9 +66,7 @@ table Status {
 
   arm:ArmStatus (id: 2);
 
-  roll_joint:frc971.PotAndAbsoluteEncoderEstimatorState (id: 3);
-
-  wrist:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 4);
+  wrist:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 3);
 }
 
 root_type Status;

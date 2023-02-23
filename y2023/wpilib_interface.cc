@@ -184,11 +184,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &proximal);
       flatbuffers::Offset<frc971::PotAndAbsolutePosition> distal_offset =
           frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &distal);
-      flatbuffers::Offset<superstructure::ArmPosition> arm_offset =
-          superstructure::CreateArmPosition(*builder.fbb(), proximal_offset,
-                                            distal_offset);
       flatbuffers::Offset<frc971::PotAndAbsolutePosition> roll_joint_offset =
           frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &roll_joint);
+      flatbuffers::Offset<superstructure::ArmPosition> arm_offset =
+          superstructure::CreateArmPosition(*builder.fbb(), proximal_offset,
+                                            distal_offset, roll_joint_offset);
       flatbuffers::Offset<frc971::AbsolutePosition> wrist_offset =
           frc971::AbsolutePosition::Pack(*builder.fbb(), &wrist);
 
@@ -196,7 +196,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           builder.MakeBuilder<superstructure::Position>();
 
       position_builder.add_arm(arm_offset);
-      position_builder.add_roll_joint(roll_joint_offset);
       position_builder.add_wrist(wrist_offset);
       builder.CheckOk(builder.Send(position_builder.Finish()));
     }

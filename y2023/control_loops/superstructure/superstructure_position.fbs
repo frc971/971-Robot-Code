@@ -12,18 +12,18 @@ table ArmPosition {
   // (connected to proximal) arm in radians.
   // Zero is straight up, positive is a forwards rotation
   distal:frc971.PotAndAbsolutePosition (id: 1);
+
+  // Zero for roll joint is up vertically
+  // Positive position would be rotated counterclockwise relative to the robot
+  roll_joint:frc971.PotAndAbsolutePosition (id: 2);
 }
 
 table Position {
     arm:ArmPosition (id: 0);
 
-    // Zero for roll joint is up vertically
-    // Positive position would be rotated counterclockwise relative to the robot
-    roll_joint:frc971.PotAndAbsolutePosition (id: 1);
-
     // Zero for wrist is facing staright outward.
     // Positive position would be upwards
-    wrist:frc971.AbsolutePosition (id: 2);
+    wrist:frc971.AbsolutePosition (id: 1);
 }
 
 root_type Position;
