@@ -228,9 +228,6 @@ cc_binary(
     srcs = [
         "irq_affinity.cc",
     ],
-    data = [
-        "//aos/starter:rockpi_config.json",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         ":irq_affinity_lib",
