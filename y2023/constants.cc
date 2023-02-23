@@ -42,7 +42,7 @@ Values MakeValues(uint16_t team) {
 
   roll_joint->zeroing.average_filter_size = Values::kZeroingSampleSize;
   roll_joint->zeroing.one_revolution_distance =
-      M_PI * 2.0 * constants::Values::kDistalEncoderRatio();
+      M_PI * 2.0 * constants::Values::kRollJointEncoderRatio();
   roll_joint->zeroing.zeroing_threshold = 0.0005;
   roll_joint->zeroing.moving_buffer_size = 20;
   roll_joint->zeroing.allowable_encoder_error = 0.9;
