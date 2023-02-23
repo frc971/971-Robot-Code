@@ -24,11 +24,6 @@ steps:
       - tools/ci/clean-disk.sh
       - tools/bazel ${STARTUP} --output_base=../roborio_output_base build ${COMMON} --config=roborio ${ROBORIO_TARGETS}
 
-  - label: "armv7"
-    commands:
-      - tools/ci/clean-disk.sh
-      - tools/bazel ${STARTUP} --output_base=../armv7_output_base build ${COMMON} --config=armv7 ${TARGETS}
-
   - label: "arm64"
     commands:
       - tools/ci/clean-disk.sh
