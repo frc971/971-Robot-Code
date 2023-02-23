@@ -55,8 +55,8 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
     const ::aos::monotonic_clock::time_point /*monotonic_now*/,
     const uint32_t *unsafe_goal, const superstructure::ArmPosition *position,
     bool trajectory_override, double *proximal_output, double *distal_output,
-    double *roll_joint_output, bool /*intake*/, bool /*spit*/,
-    flatbuffers::FlatBufferBuilder *fbb) {
+    double *roll_joint_output, flatbuffers::FlatBufferBuilder *fbb) {
+  ::Eigen::Matrix<double, 2, 1> Y;
   const bool outputs_disabled =
       ((proximal_output == nullptr) || (distal_output == nullptr) ||
        (roll_joint_output == nullptr));

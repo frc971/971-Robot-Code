@@ -2,6 +2,11 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2023.control_loops.superstructure;
 
+enum RollerGoal: ubyte {
+    IDLE = 0,
+    INTAKE = 1,
+    SPIT = 2,
+}
 
 table Goal {
     // Used to identify a position in the planned set of positions on the arm.
@@ -13,11 +18,7 @@ table Goal {
 
     wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 2);
 
-    // If this is true, the rollers should intake.
-    intake:bool (id: 3);
-
-    // If this is true, the rollers should spit.
-    spit:bool (id: 4);
+    roller_goal:RollerGoal (id: 3);
 }
 
 

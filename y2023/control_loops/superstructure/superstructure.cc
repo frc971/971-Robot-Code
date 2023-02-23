@@ -63,14 +63,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &output_struct.proximal_voltage : nullptr,
           output != nullptr ? &output_struct.distal_voltage : nullptr,
           output != nullptr ? &output_struct.roll_joint_voltage : nullptr,
-          unsafe_goal != nullptr ? unsafe_goal->intake() : false,
-          unsafe_goal != nullptr ? unsafe_goal->spit() : false,
-
           status->fbb());
 
   EndEffectorState end_effector_state = end_effector_.RunIteration(
-      timestamp, unsafe_goal != nullptr ? unsafe_goal->intake() : false,
-      unsafe_goal != nullptr ? unsafe_goal->spit() : false,
+      timestamp,
+      unsafe_goal != nullptr ? unsafe_goal->roller_goal() : RollerGoal::IDLE,
       position->end_effector_cone_beam_break(),
       position->end_effector_cube_beam_break(), &output_struct.roller_voltage);
 

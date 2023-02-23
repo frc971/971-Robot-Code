@@ -30,6 +30,7 @@ using frc971::input::driver_station::ButtonLocation;
 using frc971::input::driver_station::ControlBit;
 using frc971::input::driver_station::JoystickAxis;
 using frc971::input::driver_station::POVLocation;
+using y2023::control_loops::superstructure::RollerGoal;
 
 namespace y2023 {
 namespace input {
@@ -66,16 +67,15 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       return;
     }
 
-    bool intake = false;
-    bool spit = false;
+    RollerGoal roller_goal = RollerGoal::IDLE;
 
     // TODO(milind): add more actions and paths
     if (data.IsPressed(kIntake)) {
-      intake = true;
-      arm_goal_position_ = arm::PickupPosIndex();
+      roller_goal = RollerGoal::INTAKE;
+      arm_goal_position_ = arm::ScorePosIndex();
     } else if (data.IsPressed(kSpit)) {
-      spit = true;
-      arm_goal_position_ = arm::PickupPosIndex();
+      roller_goal = RollerGoal::SPIT;
+      arm_goal_position_ = arm::ScorePosIndex();
     } else if (data.IsPressed(kScore)) {
       arm_goal_position_ = arm::ScorePosIndex();
     }
@@ -86,8 +86,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       superstructure::Goal::Builder superstructure_goal_builder =
           builder.MakeBuilder<superstructure::Goal>();
       superstructure_goal_builder.add_arm_goal_position(arm_goal_position_);
-      superstructure_goal_builder.add_intake(intake);
-      superstructure_goal_builder.add_spit(spit);
+      superstructure_goal_builder.add_roller_goal(roller_goal);
       if (builder.Send(superstructure_goal_builder.Finish()) !=
           aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
