@@ -7,5 +7,6 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/imu_reader:imu",
+        "//y2023:constants",
     ],
 )
