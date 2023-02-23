@@ -30,7 +30,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       arm_(values_),
-      end_effector_() {}
+      end_effector_(),
+      wrist_(values->wrist.subsystem_params) {}
 
 void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
@@ -65,6 +66,12 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &output_struct.roll_joint_voltage : nullptr,
           status->fbb());
 
+  flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus> wrist_offset =
+      wrist_.Iterate(unsafe_goal != nullptr ? unsafe_goal->wrist() : nullptr,
+                     position->wrist(),
+                     output != nullptr ? &output_struct.wrist_voltage : nullptr,
+                     status->fbb());
+
   EndEffectorState end_effector_state = end_effector_.RunIteration(
       timestamp,
       unsafe_goal != nullptr ? unsafe_goal->roller_goal() : RollerGoal::IDLE,
@@ -79,6 +86,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_zeroed(true);
   status_builder.add_estopped(false);
   status_builder.add_arm(arm_status_offset);
+  status_builder.add_wrist(wrist_offset);
   status_builder.add_end_effector_state(end_effector_state);
 
   (void)status->Send(status_builder.Finish());

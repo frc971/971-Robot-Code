@@ -44,6 +44,11 @@ using RelativeEncoderSimulator = frc971::control_loops::SubsystemSimulator<
     frc971::control_loops::RelativeEncoderProfiledJointStatus,
     RelativeEncoderSubsystem::State, constants::Values::PotConstants>;
 
+using AbsoluteEncoderSimulator = ::frc971::control_loops::SubsystemSimulator<
+    ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus,
+    Superstructure::AbsoluteEncoderSubsystem::State,
+    constants::Values::AbsEncoderConstants>;
+
 class ArmSimulation {
  public:
   explicit ArmSimulation(
@@ -169,6 +174,14 @@ class SuperstructureSimulation {
         dt_(dt),
         arm_(values->arm_proximal.zeroing, values->arm_distal.zeroing,
              values->roll_joint.zeroing, dt_),
+        wrist_(new CappedTestPlant(wrist::MakeWristPlant()),
+               PositionSensorSimulator(
+                   values->wrist.subsystem_params.zeroing_constants
+                       .one_revolution_distance),
+               values->wrist, constants::Values::kWristRange(),
+               values->wrist.subsystem_params.zeroing_constants
+                   .measured_absolute_position,
+               dt_),
         superstructure_position_sender_(
             event_loop_->MakeSender<Position>("/superstructure")),
         superstructure_status_fetcher_(
@@ -189,6 +202,9 @@ class SuperstructureSimulation {
                  superstructure_output_fetcher_->distal_voltage(),
                  superstructure_output_fetcher_->roll_joint_voltage())
                     .finished());
+
+            wrist_.Simulate(superstructure_output_fetcher_->wrist_voltage(),
+                            superstructure_status_fetcher_->wrist());
           }
           first_ = false;
           SendPositionMessage();
@@ -200,7 +216,8 @@ class SuperstructureSimulation {
     arm_.InitializePosition(position);
   }
 
-  const ArmSimulation &arm() const { return arm_; }
+  ArmSimulation *arm() { return &arm_; }
+  AbsoluteEncoderSimulator *wrist() { return &wrist_; }
 
   // Sends a queue message with the position of the superstructure.
   void SendPositionMessage() {
@@ -210,8 +227,17 @@ class SuperstructureSimulation {
     flatbuffers::Offset<ArmPosition> arm_offset =
         arm_.GetSensorValues(builder.fbb());
 
+    frc971::AbsolutePosition::Builder wrist_builder =
+        builder.MakeBuilder<frc971::AbsolutePosition>();
+    flatbuffers::Offset<frc971::AbsolutePosition> wrist_offset =
+        wrist_.encoder()->GetSensorValues(&wrist_builder);
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
     position_builder.add_arm(arm_offset);
+    position_builder.add_wrist(wrist_offset);
+    // TODO(Max): Add tests for end effector beam breaks
+    position_builder.add_end_effector_cone_beam_break(false);
+    position_builder.add_end_effector_cube_beam_break(false);
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
   }
@@ -222,6 +248,7 @@ class SuperstructureSimulation {
   ::aos::PhasedLoopHandler *phased_loop_handle_ = nullptr;
 
   ArmSimulation arm_;
+  AbsoluteEncoderSimulator wrist_;
 
   ::aos::Sender<Position> superstructure_position_sender_;
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
@@ -309,18 +336,23 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                 superstructure_status_fetcher_->arm()->omega2(), kEpsOmega);
 
     // Check that our simulator matches the status
-    EXPECT_NEAR(superstructure_plant_.arm().proximal_position(),
+    EXPECT_NEAR(superstructure_plant_.arm()->proximal_position(),
                 superstructure_status_fetcher_->arm()->theta0(), kEpsTheta);
-    EXPECT_NEAR(superstructure_plant_.arm().distal_position(),
+    EXPECT_NEAR(superstructure_plant_.arm()->distal_position(),
                 superstructure_status_fetcher_->arm()->theta1(), kEpsTheta);
-    EXPECT_NEAR(superstructure_plant_.arm().roll_joint_position(),
+    EXPECT_NEAR(superstructure_plant_.arm()->roll_joint_position(),
                 superstructure_status_fetcher_->arm()->theta2(), kEpsTheta);
-    EXPECT_NEAR(superstructure_plant_.arm().proximal_velocity(),
+    EXPECT_NEAR(superstructure_plant_.arm()->proximal_velocity(),
                 superstructure_status_fetcher_->arm()->omega0(), kEpsOmega);
-    EXPECT_NEAR(superstructure_plant_.arm().distal_velocity(),
+    EXPECT_NEAR(superstructure_plant_.arm()->distal_velocity(),
                 superstructure_status_fetcher_->arm()->omega1(), kEpsOmega);
-    EXPECT_NEAR(superstructure_plant_.arm().roll_joint_velocity(),
+    EXPECT_NEAR(superstructure_plant_.arm()->roll_joint_velocity(),
                 superstructure_status_fetcher_->arm()->omega2(), kEpsOmega);
+
+    if (superstructure_goal_fetcher_->has_wrist()) {
+      EXPECT_NEAR(superstructure_goal_fetcher_->wrist()->unsafe_goal(),
+                  superstructure_status_fetcher_->wrist()->position(), 0.001);
+    }
   }
 
   void CheckIfZeroed() {
@@ -398,7 +430,16 @@ TEST_F(SuperstructureTest, DoesNothing) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kWristRange().middle());
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_trajectory_override(false);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_roller_goal(RollerGoal::IDLE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -415,9 +456,17 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   WaitUntilZeroed();
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kWristRange().upper);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_trajectory_override(false);
+    goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_roller_goal(RollerGoal::IDLE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -439,7 +488,13 @@ TEST_F(SuperstructureTest, SaturationTest) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kWristRange().upper);
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_wrist(wrist_offset);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -451,10 +506,20 @@ TEST_F(SuperstructureTest, SaturationTest) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
+    flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+        wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+            *builder.fbb(), constants::Values::kWristRange().lower,
+            CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
+
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_wrist(wrist_offset);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
+
+  superstructure_plant_.wrist()->set_peak_velocity(23.0);
+  superstructure_plant_.wrist()->set_peak_acceleration(0.2);
 
   // TODO(Milo): Make this a sane time
   RunFor(chrono::seconds(20));
@@ -466,6 +531,10 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
   SetEnabled(true);
   WaitUntilZeroed();
   RunFor(chrono::seconds(2));
+
+  EXPECT_EQ(ArmState::RUNNING, superstructure_.arm().state());
+  EXPECT_EQ(Superstructure::AbsoluteEncoderSubsystem::State::RUNNING,
+            superstructure_.wrist().state());
 }
 
 // Tests that running disabled works

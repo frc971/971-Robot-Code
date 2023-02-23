@@ -146,12 +146,12 @@ struct Values {
 
   // Game object is fed into end effector for at least this time
   static constexpr std::chrono::milliseconds kExtraIntakingTime() {
-      return std::chrono::seconds(2);
+    return std::chrono::seconds(2);
   }
 
   // Game object is spit from end effector for at least this time
   static constexpr std::chrono::milliseconds kExtraSpittingTime() {
-      return std::chrono::seconds(2);
+    return std::chrono::seconds(2);
   }
 
   struct PotConstants {
@@ -168,6 +168,12 @@ struct Values {
     double potentiometer_offset;
   };
 
+  struct AbsEncoderConstants {
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
+        subsystem_params;
+  };
+
   struct ArmJointConstants {
     ::frc971::constants::PotAndAbsoluteEncoderZeroingConstants zeroing;
     double potentiometer_offset;
@@ -177,9 +183,7 @@ struct Values {
   ArmJointConstants arm_distal;
   ArmJointConstants roll_joint;
 
-  ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
-      ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
-      wrist;
+  AbsEncoderConstants wrist;
 };
 
 // Creates and returns a Values instance for the constants.
