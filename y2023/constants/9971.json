@@ -1,0 +1,16 @@
+{
+  "cameras": [
+    {
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-4_cam-23-09_2013-01-18_09-02-59.650270322.json' %}
+    },
+    {
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-3_cam-23-10_2013-01-18_10-02-40.377380613.json' %}
+    },
+    {
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-2_cam-23-11_2013-01-18_10-01-30.177115986.json' %}
+    },
+    {
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-4_cam-23-08_2013-01-18_09-27-45.150551614.json' %}
+    }
+  ]
+}

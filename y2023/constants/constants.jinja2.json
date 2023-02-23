@@ -10,7 +10,7 @@
     },
     {
       "team": 9971,
-      "data": {}
+      "data": {% include 'y2023/constants/9971.json' %}
     }
   ]
 }

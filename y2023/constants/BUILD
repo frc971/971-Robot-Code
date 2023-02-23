@@ -21,6 +21,7 @@ jinja2_template(
     includes = [
         "7971.json",
         "971.json",
+        "9971.json",
         "//y2023/vision/calib_files",
         "//y2023/vision/maps",
     ],
