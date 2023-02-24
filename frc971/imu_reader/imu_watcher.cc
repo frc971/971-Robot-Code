@@ -28,8 +28,7 @@ ImuWatcher::ImuWatcher(
       right_encoder_(
           -EncoderWrapDistance(drivetrain_distance_per_encoder_tick) / 2.0,
           EncoderWrapDistance(drivetrain_distance_per_encoder_tick)) {
-  event_loop->MakeWatcher("/localizer", [this, event_loop](
-                                            const IMUValuesBatch &values) {
+  event_loop->MakeWatcher("/localizer", [this](const IMUValuesBatch &values) {
     CHECK(values.has_readings());
     for (const IMUValues *value : *values.readings()) {
       zeroer_.InsertAndProcessMeasurement(*value);
@@ -79,11 +78,13 @@ ImuWatcher::ImuWatcher(
                        : aos::monotonic_clock::epoch())
                 : aos::monotonic_clock::time_point(
                       std::chrono::microseconds(value->pico_timestamp_us()));
+        const aos::monotonic_clock::time_point pi_read_timestamp =
+            aos::monotonic_clock::time_point(
+                std::chrono::nanoseconds(value->monotonic_timestamp_ns()));
         // TODO(james): If we get large enough drift off of the pico,
         // actually do something about it.
         if (!pico_offset_.has_value()) {
-          pico_offset_ =
-              event_loop->context().monotonic_event_time - pico_timestamp;
+          pico_offset_ = pi_read_timestamp - pico_timestamp;
           last_pico_timestamp_ = pico_timestamp;
         }
         if (pico_timestamp < last_pico_timestamp_) {
@@ -91,17 +92,14 @@ ImuWatcher::ImuWatcher(
         }
         const aos::monotonic_clock::time_point sample_timestamp =
             pico_offset_.value() + pico_timestamp;
-        pico_offset_error_ =
-            event_loop->context().monotonic_event_time - sample_timestamp;
+        pico_offset_error_ = pi_read_timestamp - sample_timestamp;
         const bool zeroed = zeroer_.Zeroed();
 
         // When not zeroed, we aim to approximate zero acceleration by doing a
         // zero-order hold on the gyro and setting the accelerometer readings to
         // gravity.
-        callback_(sample_timestamp,
-                  aos::monotonic_clock::time_point(std::chrono::nanoseconds(
-                      value->monotonic_timestamp_ns())),
-                  encoders, zeroed ? zeroer_.ZeroedGyro().value() : last_gyro_,
+        callback_(sample_timestamp, pi_read_timestamp, encoders,
+                  zeroed ? zeroer_.ZeroedGyro().value() : last_gyro_,
                   zeroed ? zeroer_.ZeroedAccel().value()
                          : dt_config_.imu_transform.transpose() *
                                Eigen::Vector3d::UnitZ());

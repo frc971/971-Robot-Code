@@ -337,6 +337,14 @@
       "frequency": 1,
       "num_senders": 2,
       "max_size": 4096
+    },
+    {
+      "name": "/pi{{ NUM }}/camera",
+      "type": "y2023.localizer.Visualization",
+      "source_node": "imu",
+      "frequency": 40,
+      "max_size": 1000,
+      "num_senders": 2
     }
   ],
   "applications": [

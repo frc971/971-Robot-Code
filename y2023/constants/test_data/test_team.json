@@ -1,0 +1,17 @@
+{
+  "cameras": [
+    {
+      "calibration": {% include 'y2023/constants/test_data/calibration_pi-1.json' %}
+    },
+    {
+      "calibration": {% include 'y2023/constants/test_data/calibration_pi-2.json' %}
+    },
+    {
+      "calibration": {% include 'y2023/constants/test_data/calibration_pi-3.json' %}
+    },
+    {
+      "calibration": {% include 'y2023/constants/test_data/calibration_pi-4.json' %}
+    }
+  ],
+  "target_map": {% include 'y2023/constants/test_data/target_map.json' %}
+}

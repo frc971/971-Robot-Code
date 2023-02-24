@@ -5,9 +5,10 @@
 #include "aos/testing/path.h"
 
 namespace y2023 {
-void SendSimulationConstants(aos::SimulatedEventLoopFactory *factory, int team,
-                             std::string constants_path = testing::ArtifactPath(
-                                 "y2023/constants/constants.json"));
+void SendSimulationConstants(
+    aos::SimulatedEventLoopFactory *factory, int team,
+    std::string constants_path =
+        aos::testing::ArtifactPath("y2023/constants/test_constants.json"));
 }  // namespace y2023
 
 #endif  // Y2023_CONSTANTS_SIMULATED_CONFIG_SENDER_H_

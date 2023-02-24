@@ -84,6 +84,7 @@ cc_binary(
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
+        "//frc971/control_loops/drivetrain/localization:puppet_localizer",
     ],
 )
 

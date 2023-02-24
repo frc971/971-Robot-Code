@@ -1,0 +1,25 @@
+include "y2023/localizer/status.fbs";
+
+namespace y2023.localizer;
+
+table TargetEstimateDebug {
+  camera:uint8 (id: 0);
+  camera_x:double (id: 1);
+  camera_y:double (id: 2);
+  camera_theta:double (id: 3);
+  implied_robot_x:double (id: 4);
+  implied_robot_y:double (id: 5);
+  implied_robot_theta:double (id: 6);
+  accepted:bool (id: 7);
+  rejection_reason:RejectionReason  (id: 8);
+  // Image age (more human-readable than trying to interpret raw nanosecond
+  // values).
+  image_age_sec:double (id: 9);
+}
+
+table Visualization {
+  targets:[TargetEstimateDebug] (id: 0);
+  statistics:CumulativeStatistics (id: 1);
+}
+
+root_type Visualization;

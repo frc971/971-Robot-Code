@@ -2,6 +2,7 @@
 #include "y2023/constants/constants_list_generated.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/testing/path.h"
+#include "frc971/constants/constants_sender_lib.h"
 
 namespace y2023 {
 void SendSimulationConstants(aos::SimulatedEventLoopFactory *factory, int team,
@@ -14,5 +15,3 @@ void SendSimulationConstants(aos::SimulatedEventLoopFactory *factory, int team,
   }
 }
 }  // namespace y2023
-
-#endif  // Y2023_CONFIGURATION_SIMULATED_CONFIG_SENDER_H_
