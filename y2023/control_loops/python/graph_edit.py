@@ -332,8 +332,7 @@ class ArmUi(basic_window.BaseWindow):
 
         set_color(cr, Color(0.0, 0.5, 1.0))
         for segment in self.segments:
-            color = [0, random.random(), 1]
-            random.shuffle(color)
+            color = [0.2, random.random(), random.random()]
             set_color(cr, Color(color[0], color[1], color[2]))
             segment.DrawTo(cr, self.theta_version)
             with px(cr):
