@@ -457,6 +457,9 @@
     {
       "name": "drivetrain",
       "executable_name": "drivetrain",
+      "args": [
+        "--die_on_malloc"
+      ],
       "nodes": [
         "roborio"
       ]
@@ -464,6 +467,9 @@
     {
       "name": "trajectory_generator",
       "executable_name": "trajectory_generator",
+      "args": [
+        "--die_on_malloc"
+      ],
       "nodes": [
         "roborio"
       ]
@@ -471,6 +477,9 @@
     {
       "name": "superstructure",
       "executable_name": "superstructure",
+      "args": [
+        "--die_on_malloc"
+      ],
       "nodes": [
         "roborio"
       ]
@@ -488,6 +497,9 @@
     {
       "name": "joystick_reader",
       "executable_name": "joystick_reader",
+      "args": [
+        "--die_on_malloc"
+      ],
       "nodes": [
         "roborio"
       ]
@@ -502,6 +514,9 @@
     {
       "name": "autonomous_action",
       "executable_name": "autonomous_action",
+      "args": [
+        "--die_on_malloc"
+      ],
       "autostart": false,
       "nodes": [
         "roborio"
