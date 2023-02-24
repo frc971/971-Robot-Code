@@ -86,7 +86,7 @@ void HandlePiCaptures(
   auto detector_ptr = std::make_unique<AprilRoboticsDetector>(
       detection_event_loop, kImageChannel);
   // Get the camera extrinsics
-  cv::Mat extrinsics_cv = detector_ptr->extrinsics();
+  cv::Mat extrinsics_cv = detector_ptr->extrinsics().value();
   Eigen::Matrix4d extrinsics_matrix;
   cv::cv2eigen(extrinsics_cv, extrinsics_matrix);
   const auto extrinsics = Eigen::Affine3d(extrinsics_matrix);

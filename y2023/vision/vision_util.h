@@ -10,7 +10,7 @@ namespace y2023::vision {
 const frc971::vision::calibration::CameraCalibration *FindCameraCalibration(
     const y2023::Constants &calibration_data, std::string_view node_name);
 
-cv::Mat CameraExtrinsics(
+std::optional<cv::Mat> CameraExtrinsics(
     const frc971::vision::calibration::CameraCalibration *camera_calibration);
 
 cv::Mat CameraIntrinsics(
