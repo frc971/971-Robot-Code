@@ -460,6 +460,7 @@
     {
       "name": "logger_camera_reader",
       "executable_name": "camera_reader",
+      "user": "pi",
       "args": ["--enable_ftrace", "--send_downsized_images"],
       "nodes": [
         "logger"
@@ -469,6 +470,7 @@
       "name": "image_logger",
       "executable_name": "logger_main",
       "autostart": false,
+      "user": "pi",
       "args": [
         "--logging_folder",
         "",
@@ -485,6 +487,7 @@
       "name": "image_streamer",
       "executable_name": "image_streamer_start.sh",
       "autostart": true,
+      "user": "pi",
       "nodes": [
         "logger"
       ]
@@ -492,6 +495,7 @@
     {
       "name": "constants_sender",
       "autorestart": false,
+      "user": "pi",
       "nodes": [
         "logger"
       ]
