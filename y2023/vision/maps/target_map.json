@@ -1,3 +1,7 @@
+/* Targets have positive Z axis pointing into the board, positive X to the right
+   when looking at the board, and positive Y is down when looking at the board.
+   This means that you will get an identity rotation from the camera to target
+   frame when the target is upright, flat, and centered in the camera's view.*/
 {
     "target_poses": [
         {
@@ -7,12 +11,11 @@
                 "y": -2.938,
                 "z": 0.463
             },
-            /* yaw of pi */
             "orientation": {
-                "w": 0.0,
-                "x": 0.0,
-                "y": 0.0,
-                "z": 1.0
+                "w": -0.5,
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5
             }
         },
         {
@@ -22,12 +25,11 @@
                 "y": -1.262,
                 "z": 0.463
             },
-            /* yaw of pi */
             "orientation": {
-                "w": 0.0,
-                "x": 0.0,
-                "y": 0.0,
-                "z": 1.0
+                "w": -0.5,
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5
             }
         },
         {
@@ -37,12 +39,11 @@
                 "y": 0.414,
                 "z": 0.463
             },
-            /* yaw of pi */
             "orientation": {
-                "w": 0.0,
-                "x": 0.0,
-                "y": 0.0,
-                "z": 1.0
+                "w": -0.5,
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5
             }
         },
         {
@@ -52,12 +53,11 @@
                 "y": 2.740,
                 "z": 0.695
             },
-            /* yaw of pi */
             "orientation": {
-                "w": 0.0,
-                "x": 0.0,
-                "y": 0.0,
-                "z": 1.0
+                "w": -0.5,
+                "x": 0.5,
+                "y": -0.5,
+                "z": 0.5
             }
         },
         {
@@ -68,11 +68,10 @@
                 "z": 0.695
             },
             "orientation": {
-            /* yaw of 0 */
-                "w": 1.0,
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
+                "w": 0.5,
+                "x": -0.5,
+                "y": -0.5,
+                "z": 0.5
             }
         },
         {
@@ -82,12 +81,11 @@
                 "y": 0.414,
                 "z": 0.463
             },
-            /* yaw of 0 */
             "orientation": {
-                "w": 1.0,
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
+                "w": 0.5,
+                "x": -0.5,
+                "y": -0.5,
+                "z": 0.5
             }
         },
         {
@@ -97,12 +95,11 @@
                 "y": -1.262,
                 "z": 0.463
             },
-            /* yaw of 0 */
             "orientation": {
-                "w": 1.0,
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
+                "w": 0.5,
+                "x": -0.5,
+                "y": -0.5,
+                "z": 0.5
             }
         },
         {
@@ -112,12 +109,11 @@
                 "y": -2.938,
                 "z": 0.463
             },
-            /* yaw of 0 */
             "orientation": {
-                "w": 1.0,
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
+                "w": 0.5,
+                "x": -0.5,
+                "y": -0.5,
+                "z": 0.5
             }
         }
     ]
