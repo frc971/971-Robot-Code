@@ -57,6 +57,19 @@ table ArmStatus {
   failed_solutions:uint32 (id: 17);
 }
 
+// State of the superstructure state machine
+enum EndEffectorState : ubyte {
+  // Not doing anything
+  IDLE = 0,
+  // Intaking the game object into the end effector
+  INTAKING = 1,
+  // The game object is loaded into the end effector
+  LOADED = 2,
+  // Waiting for the arm to be at shooting goal and then telling the
+  // end effector to spit
+  SPITTING = 3,
+}
+
 table Status {
   // All subsystems know their location.
   zeroed:bool (id: 0);
@@ -67,6 +80,8 @@ table Status {
   arm:ArmStatus (id: 2);
 
   wrist:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 3);
+
+  end_effector_state:EndEffectorState (id: 4);
 }
 
 root_type Status;

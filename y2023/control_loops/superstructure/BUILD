@@ -60,6 +60,25 @@ flatbuffer_cc_library(
 )
 
 cc_library(
+    name = "end_effector",
+    srcs = [
+        "end_effector.cc",
+    ],
+    hdrs = [
+        "end_effector.h",
+    ],
+    deps = [
+        ":superstructure_goal_fbs",
+        ":superstructure_position_fbs",
+        ":superstructure_status_fbs",
+        "//aos/events:event_loop",
+        "//aos/time",
+        "//frc971/control_loops:control_loop",
+        "//y2023:constants",
+    ],
+)
+
+cc_library(
     name = "superstructure_lib",
     srcs = [
         "superstructure.cc",
@@ -68,6 +87,7 @@ cc_library(
         "superstructure.h",
     ],
     deps = [
+        ":end_effector",
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",
