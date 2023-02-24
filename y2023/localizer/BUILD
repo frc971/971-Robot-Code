@@ -31,7 +31,6 @@ flatbuffer_cc_library(
         "visualization.fbs",
     ],
     gen_reflections = True,
-    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
         ":status_fbs",
@@ -47,12 +46,87 @@ flatbuffer_ts_library(
     ],
 )
 
+flatbuffer_cc_library(
+    name = "scoring_map_fbs",
+    srcs = [
+        "scoring_map.fbs",
+    ],
+    gen_reflections = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/vision:target_map_fbs",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "relative_scoring_map_fbs",
+    srcs = [
+        "relative_scoring_map.fbs",
+    ],
+    gen_reflections = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":scoring_map_fbs",
+    ],
+)
+
+cc_library(
+    name = "utils",
+    srcs = ["utils.cc"],
+    hdrs = ["utils.h"],
+    deps = [
+        "//frc971/vision:target_map_fbs",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_library(
+    name = "map_expander_lib",
+    srcs = ["map_expander_lib.cc"],
+    hdrs = ["map_expander_lib.h"],
+    deps = [
+        ":relative_scoring_map_fbs",
+        ":scoring_map_fbs",
+        ":utils",
+        "//aos:flatbuffers",
+        "//aos:json_to_flatbuffer",
+    ],
+)
+
+cc_binary(
+    name = "map_expander",
+    srcs = ["map_expander.cc"],
+    data = [
+        "//y2023/constants:scoring_map",
+        "//y2023/vision/maps",
+    ],
+    deps = [
+        ":map_expander_lib",
+        "//aos:init",
+    ],
+)
+
+cc_test(
+    name = "map_expander_lib_test",
+    srcs = ["map_expander_lib_test.cc"],
+    data = [
+        "//y2023/constants:scoring_map",
+        "//y2023/vision/maps",
+    ],
+    deps = [
+        ":map_expander_lib",
+        "//aos/testing:flatbuffer_eq",
+        "//aos/testing:googletest",
+    ],
+)
+
 cc_library(
     name = "localizer",
     srcs = ["localizer.cc"],
     hdrs = ["localizer.h"],
     deps = [
         ":status_fbs",
+        ":utils",
         ":visualization_fbs",
         "//aos/containers:sized_array",
         "//aos/events:event_loop",
@@ -77,6 +151,7 @@ cc_test(
     deps = [
         ":localizer",
         ":status_fbs",
+        ":utils",
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_writer",
         "//aos/testing:googletest",

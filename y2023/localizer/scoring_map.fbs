@@ -1,0 +1,44 @@
+include "frc971/vision/target_map.fbs";
+
+namespace y2023.localizer;
+
+// "left" and "right" in this file are taken from the perspective of a robot
+// on the field.
+
+// A row of three scoring positions, where the cube scoring locations will be
+// in the middle.
+table ScoringRow {
+  left_cone:frc971.vision.Position (id: 0);
+  cube:frc971.vision.Position (id: 1);
+  right_cone:frc971.vision.Position (id: 2);
+}
+
+// A batch of 9 scoring locations, anchored by a single april tag target.
+table ScoringGrid {
+  // Either game piece type can be scored in all the locations on the bottom
+  // row.
+  bottom:ScoringRow (id: 0);
+  middle:ScoringRow (id: 1);
+  top:ScoringRow (id: 2);
+}
+
+// Location where we can retrieve game pieces from the human player.
+table DoubleSubstation {
+  left:frc971.vision.Position (id: 0);
+  right:frc971.vision.Position (id: 1);
+}
+
+table HalfField {
+  // The substation will be across the field from the grids.
+  substation:DoubleSubstation (id: 0);
+  left_grid:ScoringGrid (id: 1);
+  middle_grid:ScoringGrid (id: 2);
+  right_grid:ScoringGrid (id: 3);
+}
+
+table ScoringMap {
+  red:HalfField (id: 0);
+  blue:HalfField (id: 1);
+}
+
+root_type ScoringMap;

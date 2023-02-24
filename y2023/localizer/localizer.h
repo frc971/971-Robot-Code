@@ -116,8 +116,5 @@ class Localizer {
   // For the status message.
   std::optional<Eigen::Vector2d> last_encoder_readings_;
 };
-
-// Converts a TargetPoseFbs into a transformation matrix.
-Localizer::Transform PoseToTransform(const frc971::vision::TargetPoseFbs *pose);
 }  // namespace y2023::localizer
 #endif  // Y2023_LOCALIZER_LOCALIZER_H_

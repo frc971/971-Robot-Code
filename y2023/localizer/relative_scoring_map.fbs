@@ -1,0 +1,38 @@
+include "y2023/localizer/scoring_map.fbs";
+
+namespace y2023.localizer;
+
+// This file provides a schema for a more stripped-down version of the
+// ScoringMap. In this version, we try to deduplicate as much information
+// as is reasonable so that it is easier for humans to modify and verify the
+// numbers.
+// In particular, we:
+// * Assume that each batch of 9 scoring grid is identical with respect to
+//   the april tag for that scoring grid.
+// * Provide all coordinates relative to the april tags in question.
+//
+// Note that when we say "relative to the april tags," that does mean in the
+// april tag frame. As such, the Z of the relative position will be how far
+// behind the april tag the scoring position is (i.e., the X offset), the
+// relative X will be to the right of the target, and the Y will be how far
+// below the center of the target the scoring position is.
+
+// The april tag ids for each field component on one half of the field.
+table RelativeHalfField {
+  substation:uint64 (id: 0);
+  left:uint64 (id: 1);
+  middle:uint64 (id: 2);
+  right:uint64 (id: 3);
+}
+
+table RelativeScoringMap {
+  // Substation numbers are relative to the april tag.
+  substation:DoubleSubstation (id: 0);
+  // The nominal grid will provide positions that are all relative to the
+  // coordinates of the april tag for that grid.
+  nominal_grid:ScoringGrid (id: 1);
+  red:RelativeHalfField (id: 2);
+  blue:RelativeHalfField (id: 3);
+}
+
+root_type RelativeScoringMap;

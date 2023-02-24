@@ -31,11 +31,21 @@ jinja2_template(
         "7971.json",
         "971.json",
         "9971.json",
+        ":scoring_map",
         "//y2023/vision/calib_files",
         "//y2023/vision/maps",
     ],
     parameters = {},
     visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "scoring_map",
+    srcs = [
+        "relative_scoring_map.json",
+        "scoring_map.json",
+    ],
+    visibility = ["//y2023:__subpackages__"],
 )
 
 flatbuffer_cc_library(

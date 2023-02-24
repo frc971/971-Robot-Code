@@ -10,6 +10,7 @@
 #include "y2023/constants/simulated_constants_sender.h"
 #include "y2023/control_loops/drivetrain/drivetrain_base.h"
 #include "y2023/localizer/status_generated.h"
+#include "y2023/localizer/utils.h"
 
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
