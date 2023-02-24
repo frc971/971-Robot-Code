@@ -121,6 +121,77 @@ def closest_segment(lines, pt):
     return c_pt, c_pt_dist
 
 
+# Defining outline of robot
+class RobotOutline():
+
+    def __init__(self, drivetrain_pos, drivetrain_width, joint_center_radius,
+                 joint_tower_pos, joint_tower_width, joint_tower_height,
+                 driver_cam_pos, driver_cam_width, driver_cam_height):
+        self.drivetrain_pos = drivetrain_pos
+        self.drivetrain_width = drivetrain_width
+
+        self.joint_center_radius = joint_center_radius
+        self.joint_tower_pos = joint_tower_pos
+        self.joint_tower_width = joint_tower_width
+        self.joint_tower_height = joint_tower_height
+
+        self.driver_cam_pos = driver_cam_pos
+        self.driver_cam_width = driver_cam_width
+        self.driver_cam_height = driver_cam_height
+
+    def draw(self, cr):
+        set_color(cr, palette["BLUE"])
+
+        cr.move_to(self.drivetrain_pos[0], self.drivetrain_pos[1])
+        cr.line_to(self.drivetrain_pos[0] + self.drivetrain_width,
+                   self.drivetrain_pos[1])
+
+        with px(cr):
+            cr.stroke()
+
+        # Draw joint center
+        cr.arc(joint_center[0], joint_center[1], self.joint_center_radius, 0,
+               2.0 * np.pi)
+        with px(cr):
+            cr.stroke()
+
+        # Draw joint tower
+        cr.rectangle(self.joint_tower_pos[0], self.joint_tower_pos[1],
+                     self.joint_tower_width, self.joint_tower_height)
+
+        with px(cr):
+            cr.stroke()
+
+        # Draw driver cam
+        cr.set_source_rgba(1, 0, 0, 0.5)
+        cr.rectangle(self.driver_cam_pos[0], self.driver_cam_pos[1],
+                     self.driver_cam_width, self.driver_cam_height)
+
+        with px(cr):
+            cr.fill()
+
+    def draw_theta(self, cr):
+        # TOOD(Max): add theta mode drawing
+        pass
+
+
+DRIVETRAIN_X = -0.490
+DRIVETRAIN_Y = 0.184
+DRIVETRAIN_WIDTH = 0.980
+
+JOINT_CENTER_RADIUS = 0.173 / 2
+
+JOINT_TOWER_X = -0.252
+JOINT_TOWER_Y = DRIVETRAIN_Y
+JOINT_TOWER_WIDTH = 0.098
+JOINT_TOWER_HEIGHT = 0.864
+
+DRIVER_CAM_X = DRIVER_CAM_POINTS[0][0]
+DRIVER_CAM_Y = DRIVER_CAM_POINTS[0][1]
+DRIVER_CAM_WIDTH = DRIVER_CAM_POINTS[-1][0] - DRIVER_CAM_POINTS[0][0]
+DRIVER_CAM_HEIGHT = DRIVER_CAM_POINTS[-1][1] - DRIVER_CAM_POINTS[0][1]
+
+
 # Create a GTK+ widget on which we will draw using Cairo
 class ArmUi(basic_window.BaseWindow):
 
@@ -163,6 +234,13 @@ class ArmUi(basic_window.BaseWindow):
         plt.show(block=False)
 
         self.index = 0
+
+        self.outline = RobotOutline([DRIVETRAIN_X, DRIVETRAIN_Y],
+                                    DRIVETRAIN_WIDTH, JOINT_CENTER_RADIUS,
+                                    [JOINT_TOWER_X, JOINT_TOWER_Y],
+                                    JOINT_TOWER_WIDTH, JOINT_TOWER_HEIGHT,
+                                    [DRIVER_CAM_X, DRIVER_CAM_Y],
+                                    DRIVER_CAM_WIDTH, DRIVER_CAM_HEIGHT)
 
     def do_key_press(self, event):
         pass
@@ -250,44 +328,7 @@ class ArmUi(basic_window.BaseWindow):
             cr.rectangle(-2.0, -2.0, 4.0, 4.0)
             cr.fill()
 
-            # Draw top of drivetrain (including bumpers)
-            DRIVETRAIN_X = -0.490
-            DRIVETRAIN_Y = 0.184
-            DRIVETRAIN_WIDTH = 0.980
-            set_color(cr, palette["BLUE"])
-            cr.move_to(DRIVETRAIN_X, DRIVETRAIN_Y)
-            cr.line_to(DRIVETRAIN_X + DRIVETRAIN_WIDTH, DRIVETRAIN_Y)
-            with px(cr):
-                cr.stroke()
-
-            # Draw joint center
-            JOINT_CENTER_RADIUS = 0.173 / 2
-            cr.arc(joint_center[0], joint_center[1], JOINT_CENTER_RADIUS, 0,
-                   2.0 * np.pi)
-            with px(cr):
-                cr.stroke()
-
-            JOINT_TOWER_X = -0.252
-            JOINT_TOWER_Y = DRIVETRAIN_Y
-            JOINT_TOWER_WIDTH = 0.098
-            JOINT_TOWER_HEIGHT = 0.864
-            cr.rectangle(JOINT_TOWER_X, JOINT_TOWER_Y, JOINT_TOWER_WIDTH,
-                         JOINT_TOWER_HEIGHT)
-            with px(cr):
-                cr.stroke()
-
-            # Draw driver cam
-            cr.set_source_rgba(1, 0, 0, 0.5)
-            DRIVER_CAM_X = DRIVER_CAM_POINTS[0][0]
-            DRIVER_CAM_Y = DRIVER_CAM_POINTS[0][1]
-            DRIVER_CAM_WIDTH = DRIVER_CAM_POINTS[-1][0] - DRIVER_CAM_POINTS[0][
-                0]
-            DRIVER_CAM_HEIGHT = DRIVER_CAM_POINTS[-1][1] - DRIVER_CAM_POINTS[
-                0][1]
-            cr.rectangle(DRIVER_CAM_X, DRIVER_CAM_Y, DRIVER_CAM_WIDTH,
-                         DRIVER_CAM_HEIGHT)
-            with px(cr):
-                cr.fill()
+            self.outline.draw(cr)
 
             # Draw max radius
             set_color(cr, palette["BLUE"])
@@ -324,11 +365,7 @@ class ArmUi(basic_window.BaseWindow):
             cr.move_to(self.last_pos[0], self.last_pos[1])
             draw_px_cross(cr, 5)
 
-            c_pt, dist = closest_segment(lines_theta, self.last_pos)
-            print("dist:", dist, c_pt, self.last_pos)
-            set_color(cr, palette["CYAN"])
-            cr.move_to(c_pt[0], c_pt[1])
-            draw_px_cross(cr, 5)
+            self.outline.draw_theta(cr)
 
         set_color(cr, Color(0.0, 0.5, 1.0))
         for segment in self.segments:
