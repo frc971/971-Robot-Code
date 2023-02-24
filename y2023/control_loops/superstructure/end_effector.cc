@@ -14,7 +14,7 @@ EndEffector::EndEffector()
     : state_(EndEffectorState::IDLE), beambreak_(false) {}
 
 EndEffectorState EndEffector::RunIteration(
-    const ::aos::monotonic_clock::time_point timestamp, bool intake, bool spit,
+    const ::aos::monotonic_clock::time_point timestamp, RollerGoal roller_goal,
     bool cone_beambreak, bool cube_beambreak, double *roller_voltage) {
   bool beambreak = cone_beambreak || cube_beambreak;
 
@@ -23,7 +23,7 @@ EndEffectorState EndEffector::RunIteration(
   switch (state_) {
     case EndEffectorState::IDLE:
       // If idle and intake requested, intake
-      if (intake) {
+      if (roller_goal == RollerGoal::INTAKE) {
         state_ = EndEffectorState::INTAKING;
         timer_ = timestamp;
       }
@@ -50,11 +50,10 @@ EndEffectorState EndEffector::RunIteration(
         timer_ = timestamp;
       }
       // If loaded and spit requested, spit
-      else if (spit) {
+      else if (roller_goal == RollerGoal::SPIT) {
         state_ = EndEffectorState::SPITTING;
       }
       break;
-
     case EndEffectorState::SPITTING:
       // If spit requested, spit
       *roller_voltage = -constants::Values::kRollerVoltage();
@@ -74,8 +73,6 @@ EndEffectorState EndEffector::RunIteration(
 
   return state_;
 }
-
-EndEffectorState EndEffector::state() { return state_; }
 
 void EndEffector::Reset() { state_ = EndEffectorState::IDLE; }
 

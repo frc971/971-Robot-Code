@@ -29,11 +29,20 @@ class Superstructure
           ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
           ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
 
+  using AbsoluteEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::AbsoluteEncoderZeroingEstimator,
+          ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus>;
+
   explicit Superstructure(::aos::EventLoop *event_loop,
                           std::shared_ptr<const constants::Values> values,
                           const ::std::string &name = "/superstructure");
 
   double robot_velocity() const;
+
+  inline const arm::Arm &arm() const { return arm_; }
+  inline const EndEffector &end_effector() const { return end_effector_; }
+  inline const AbsoluteEncoderSubsystem &wrist() const { return wrist_; }
 
  protected:
   virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
@@ -49,6 +58,7 @@ class Superstructure
 
   arm::Arm arm_;
   EndEffector end_effector_;
+  AbsoluteEncoderSubsystem wrist_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
 
