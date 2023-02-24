@@ -175,7 +175,7 @@ class CharucoExtractor {
 // visualization purposes.
 flatbuffers::Offset<foxglove::ImageAnnotations> BuildAnnotations(
     const aos::monotonic_clock::time_point monotonic_now,
-    const std::vector<std::vector<cv::Point2f>> &corners,
+    const std::vector<std::vector<cv::Point2f>> &corners, double thickness,
     flatbuffers::FlatBufferBuilder *fbb);
 
 }  // namespace vision

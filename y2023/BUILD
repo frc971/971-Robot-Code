@@ -110,7 +110,6 @@ aos_config(
             "//frc971/vision:calibration_fbs",
             "//frc971/vision:target_map_fbs",
             "//frc971/vision:vision_fbs",
-            "//y2023/vision:april_debug_fbs",
             "@com_github_foxglove_schemas//:schemas",
         ],
         target_compatible_with = ["@platforms//os:linux"],

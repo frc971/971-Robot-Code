@@ -1,5 +1,3 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
-
 cc_binary(
     name = "camera_reader",
     srcs = [
@@ -33,7 +31,6 @@ cc_binary(
         "//frc971/constants:constants_sender_lib",
         "//frc971/vision:vision_fbs",
         "//third_party:opencv",
-        "//y2023/vision:april_debug_fbs",
         "//y2023/vision:vision_util",
         "@com_google_absl//absl/strings",
     ],
@@ -75,14 +72,6 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
-    name = "april_debug_fbs",
-    srcs = ["april_debug.fbs"],
-    gen_reflections = 1,
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-)
-
 cc_library(
     name = "aprilrobotics_lib",
     srcs = [
@@ -92,7 +81,6 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2023:__subpackages__"],
     deps = [
-        ":april_debug_fbs",
         ":vision_util",
         "//aos:init",
         "//aos/events:shm_event_loop",

@@ -27,8 +27,8 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
           chrono::milliseconds(5)),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
-      april_debug_sender_(
-          event_loop->MakeSender<y2023::vision::AprilDebug>("/camera")) {
+      image_annotations_sender_(
+          event_loop->MakeSender<foxglove::ImageAnnotations>("/camera")) {
   tag_family_ = tag16h5_create();
   tag_detector_ = apriltag_detector_create();
 
@@ -80,7 +80,7 @@ void AprilRoboticsDetector::SetWorkerpoolAffinities() {
 void AprilRoboticsDetector::HandleImage(cv::Mat image_grayscale,
                                         aos::monotonic_clock::time_point eof) {
   std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> detections =
-      DetectTags(image_grayscale);
+      DetectTags(image_grayscale, eof);
 
   auto builder = target_map_sender_.MakeBuilder();
   std::vector<flatbuffers::Offset<frc971::vision::TargetPoseFbs>> target_poses;
@@ -136,7 +136,8 @@ void AprilRoboticsDetector::UndistortDetection(
 }
 
 std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>>
-AprilRoboticsDetector::DetectTags(cv::Mat image) {
+AprilRoboticsDetector::DetectTags(cv::Mat image,
+                                  aos::monotonic_clock::time_point eof) {
   const aos::monotonic_clock::time_point start_time =
       aos::monotonic_clock::now();
 
@@ -153,9 +154,9 @@ AprilRoboticsDetector::DetectTags(cv::Mat image) {
 
   std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> results;
 
-  std::vector<flatbuffers::Offset<AprilCorners>> corners_vector;
+  std::vector<std::vector<cv::Point2f>> corners_vector;
 
-  auto builder = april_debug_sender_.MakeBuilder();
+  auto builder = image_annotations_sender_.MakeBuilder();
 
   for (int i = 0; i < zarray_size(detections); i++) {
     apriltag_detection_t *det;
@@ -195,33 +196,19 @@ AprilRoboticsDetector::DetectTags(cv::Mat image) {
                      .count()
               << " seconds for pose estimation";
 
-      std::vector<Point> corner_points;
-
+      std::vector<cv::Point2f> corner_points;
       corner_points.emplace_back(det->p[0][0], det->p[0][1]);
       corner_points.emplace_back(det->p[1][0], det->p[1][1]);
       corner_points.emplace_back(det->p[2][0], det->p[2][1]);
       corner_points.emplace_back(det->p[3][0], det->p[3][1]);
 
-      auto corner_points_fbs =
-          builder.fbb()->CreateVectorOfStructs(corner_points);
-
-      AprilCorners::Builder april_corners_builder =
-          builder.MakeBuilder<AprilCorners>();
-
-      april_corners_builder.add_id(det->id);
-      april_corners_builder.add_points(corner_points_fbs);
-
-      corners_vector.emplace_back(april_corners_builder.Finish());
+      corners_vector.emplace_back(corner_points);
     }
   }
 
-  auto corners_vector_fbs = builder.fbb()->CreateVector(corners_vector);
-
-  AprilDebug::Builder april_debug_builder = builder.MakeBuilder<AprilDebug>();
-
-  april_debug_builder.add_corners(corners_vector_fbs);
-
-  builder.CheckOk(builder.Send(april_debug_builder.Finish()));
+  const auto annotations_offset =
+      frc971::vision::BuildAnnotations(eof, corners_vector, 5.0, builder.fbb());
+  builder.CheckOk(builder.Send(annotations_offset));
 
   apriltag_detections_destroy(detections);
 
