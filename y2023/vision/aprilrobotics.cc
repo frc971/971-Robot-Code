@@ -6,7 +6,7 @@ DEFINE_bool(
     debug, false,
     "If true, dump a ton of debug and crash on the first valid detection.");
 
-DEFINE_double(min_decision_margin, 30.0,
+DEFINE_double(min_decision_margin, 75.0,
               "Minimum decision margin (confidence) for an apriltag detection");
 
 namespace y2023 {
