@@ -1355,8 +1355,10 @@ bool ChannelMessageIsLoggedOnNode(const Channel *channel,
     case LoggerConfig::LOCAL_LOGGER:
       return channel->source_node()->string_view() == node_name;
     case LoggerConfig::LOCAL_AND_REMOTE_LOGGER:
-      CHECK(channel->has_logger_nodes());
-      CHECK_GT(channel->logger_nodes()->size(), 0u);
+      CHECK(channel->has_logger_nodes())
+          << "Missing logger nodes on " << StrippedChannelToString(channel);
+      CHECK_GT(channel->logger_nodes()->size(), 0u)
+          << "Missing logger nodes on " << StrippedChannelToString(channel);
 
       if (channel->source_node()->string_view() == node_name) {
         return true;
@@ -1364,8 +1366,10 @@ bool ChannelMessageIsLoggedOnNode(const Channel *channel,
 
       [[fallthrough]];
     case LoggerConfig::REMOTE_LOGGER:
-      CHECK(channel->has_logger_nodes());
-      CHECK_GT(channel->logger_nodes()->size(), 0u);
+      CHECK(channel->has_logger_nodes())
+          << "Missing logger nodes on " << StrippedChannelToString(channel);
+      CHECK_GT(channel->logger_nodes()->size(), 0u)
+          << "Missing logger nodes on " << StrippedChannelToString(channel);
       for (const flatbuffers::String *logger_node : *channel->logger_nodes()) {
         if (logger_node->string_view() == node_name) {
           return true;
