@@ -1,5 +1,6 @@
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
+
 #include "absl/strings/str_format.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
@@ -15,6 +16,8 @@
 #include "y2023/constants/constants_generated.h"
 #include "y2023/vision/vision_util.h"
 
+#include <opencv2/core/eigen.hpp>
+
 DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
 DEFINE_bool(plot, false, "Whether to plot the resulting data.");
 DEFINE_string(target_type, "charuco_diamond",
@@ -22,10 +25,12 @@ DEFINE_string(target_type, "charuco_diamond",
 DEFINE_string(image_channel, "/camera", "Channel to listen for images on");
 DEFINE_string(output_logs, "/tmp/calibration/",
               "Output folder for visualization logs.");
-DEFINE_string(base_intrinsics, "",
-              "Intrinsics to use for extrinsics calibration.");
+DEFINE_string(base_calibration, "",
+              "Intrinsics (and optionally extrinsics) to use for extrinsics "
+              "calibration.");
 DEFINE_string(output_calibration, "",
-              "Output json file to use for the resulting extrinsics.");
+              "Output json file to use for the resulting calibration "
+              "(intrinsics and extrinsics).");
 
 namespace frc971 {
 namespace vision {
@@ -51,7 +56,7 @@ struct CalibrationAccumulatorState {
       TargetType target_type = TargetTypeFromString(FLAGS_target_type);
       std::unique_ptr<aos::EventLoop> constants_event_loop =
           factory->MakeEventLoop("constants_fetcher", pi_event_loop->node());
-      if (FLAGS_base_intrinsics.empty()) {
+      if (FLAGS_base_calibration.empty()) {
         frc971::constants::ConstantsFetcher<y2023::Constants> constants_fetcher(
             constants_event_loop.get());
         *intrinsics =
@@ -60,7 +65,7 @@ struct CalibrationAccumulatorState {
                 pi_event_loop->node()->name()->string_view()));
       } else {
         *intrinsics = aos::JsonFileToFlatbuffer<calibration::CameraCalibration>(
-            FLAGS_base_intrinsics);
+            FLAGS_base_calibration);
       }
       extractor = std::make_unique<Calibration>(
           factory, pi_event_loop.get(), imu_event_loop.get(), FLAGS_pi,
@@ -75,7 +80,7 @@ void Main(int argc, char **argv) {
   CHECK(pi_number);
   const std::string pi_name = absl::StrCat("pi", *pi_number);
 
-  aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> intrinsics =
+  aos::FlatbufferDetachedBuffer<calibration::CameraCalibration> calibration =
       aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>::Empty();
   {
     // Now, accumulate all the data into the data object.
@@ -102,7 +107,8 @@ void Main(int argc, char **argv) {
     const aos::Node *const pi_node =
         aos::configuration::GetNode(factory.configuration(), pi_name);
 
-    CalibrationAccumulatorState accumulator_state(&factory, &data, &intrinsics);
+    CalibrationAccumulatorState accumulator_state(&factory, &data,
+                                                  &calibration);
 
     reader.OnStart(imu_node, [&accumulator_state, imu_node, &factory]() {
       accumulator_state.imu_event_loop =
@@ -152,6 +158,24 @@ void Main(int argc, char **argv) {
   // Set y value to -1 m (approx distance from imu to the board/world)
   nominal_initial_state(1, 0) = 1.0;
 
+  // If available, pull extrinsics from the calibration file
+  const calibration::CameraCalibration *calib_msg = &calibration.message();
+  if (calib_msg->has_fixed_extrinsics()) {
+    LOG(INFO) << "Using extrinsiscs from calibration file as initial condition";
+    const cv::Mat extrinsics_cv(
+        4, 4, CV_32F,
+        const_cast<void *>(static_cast<const void *>(
+            calib_msg->fixed_extrinsics()->data()->data())));
+    CHECK_EQ(extrinsics_cv.total(),
+             calib_msg->fixed_extrinsics()->data()->size());
+    Eigen::Matrix4d ext_mat;
+    cv::cv2eigen(extrinsics_cv, ext_mat);
+    Eigen::Affine3d extrinsics(ext_mat);
+    Eigen::Affine3d H_camera_imu = extrinsics.inverse();
+    nominal_pivot_to_camera = H_camera_imu.rotation();
+    nominal_pivot_to_camera_translation = H_camera_imu.translation();
+  }
+
   CalibrationParameters calibration_parameters;
   calibration_parameters.initial_orientation = nominal_initial_orientation;
   calibration_parameters.pivot_to_camera = nominal_pivot_to_camera;
@@ -198,10 +222,10 @@ void Main(int argc, char **argv) {
 
   aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>
       solved_extrinsics = Solve(data, &calibration_parameters);
-  intrinsics.mutable_message()->clear_fixed_extrinsics();
-  intrinsics.mutable_message()->clear_turret_extrinsics();
+  calibration.mutable_message()->clear_fixed_extrinsics();
+  calibration.mutable_message()->clear_turret_extrinsics();
   aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>
-      merged_calibration = aos::MergeFlatBuffers(&intrinsics.message(),
+      merged_calibration = aos::MergeFlatBuffers(&calibration.message(),
                                                  &solved_extrinsics.message());
 
   if (!FLAGS_output_calibration.empty()) {
