@@ -73,20 +73,16 @@ typedef pio_hw_t *PIO;
  * e.g. pio_gpio_init(pio0, 5)
  *
  *  \ingroup hardware_pio
- * @{
  */
 #define pio0 pio0_hw
-/** @} */
 
 /** Identifier for the second (PIO 1) hardware PIO instance (for use in PIO functions).
  *
  * e.g. pio_gpio_init(pio1, 5)
  *
  *  \ingroup hardware_pio
- * @{
  */
 #define pio1 pio1_hw
-/** @} */
 
 /** \brief PIO state machine configuration
  *  \defgroup sm_config sm_config
@@ -99,6 +95,9 @@ typedef pio_hw_t *PIO;
 
 /** \brief PIO Configuration structure
  *  \ingroup sm_config
+ *
+ * This structure is an in-memory representation of the configuration that can be applied to a PIO
+ * state machine later using pio_sm_set_config() or pio_sm_init().
  */
 typedef struct {
     uint32_t clkdiv;
@@ -157,7 +156,7 @@ static inline void sm_config_set_set_pins(pio_sm_config *c, uint set_base, uint 
 /*! \brief Set the 'in' pins in a state machine configuration
  *  \ingroup sm_config
  *
- * Can overlap with the 'out', ''set' and 'sideset' pins
+ * Can overlap with the 'out', 'set' and 'sideset' pins
  *
  * \param c Pointer to the configuration structure to modify
  * \param in_base 0-31 First pin to use as input
@@ -215,6 +214,7 @@ static inline void sm_config_set_sideset(pio_sm_config *c, uint bit_count, bool 
  * \sa sm_config_set_clkdiv()
  */
 static inline void sm_config_set_clkdiv_int_frac(pio_sm_config *c, uint16_t div_int, uint8_t div_frac) {
+    invalid_params_if(PIO, div_int == 0 && div_frac != 0);
     c->clkdiv =
             (((uint)div_frac) << PIO_SM0_CLKDIV_FRAC_LSB) |
             (((uint)div_int) << PIO_SM0_CLKDIV_INT_LSB);
@@ -374,8 +374,8 @@ static inline void sm_config_set_mov_status(pio_sm_config *c, enum pio_mov_statu
  * Side Set Pins (base) | 0
  * Side Set | disabled
  * Wrap | wrap=31, wrap_to=0
- * In Shift | shift_direction=right, autopush=false, push_thrshold=32
- * Out Shift | shift_direction=right, autopull=false, pull_thrshold=32
+ * In Shift | shift_direction=right, autopush=false, push_threshold=32
+ * Out Shift | shift_direction=right, autopull=false, pull_threshold=32
  * Jmp Pin | 0
  * Out Special | sticky=false, has_enable_pin=false, enable_pin_index=0
  * Mov Status | status_sel=STATUS_TX_LESSTHAN, n=0
@@ -790,9 +790,9 @@ static inline void pio_set_irqn_source_enabled(PIO pio, uint irq_index, enum pio
 static inline void pio_set_irqn_source_mask_enabled(PIO pio, uint irq_index, uint32_t source_mask, bool enabled) {
     invalid_params_if(PIO, irq_index > 1);
     if (irq_index) {
-        pio_set_irq0_source_mask_enabled(pio, source_mask, enabled);
-    } else {
         pio_set_irq1_source_mask_enabled(pio, source_mask, enabled);
+    } else {
+        pio_set_irq0_source_mask_enabled(pio, source_mask, enabled);
     }
 }
 
@@ -905,7 +905,7 @@ static inline void pio_sm_set_wrap(PIO pio, uint sm, uint wrap_target, uint wrap
 }
 
 /*! \brief Set the current 'out' pins for a state machine
- *  \ingroup sm_config
+ *  \ingroup hardware_pio
  *
  * Can overlap with the 'in', 'set' and 'sideset' pins
  *
@@ -926,7 +926,7 @@ static inline void pio_sm_set_out_pins(PIO pio, uint sm, uint out_base, uint out
 
 
 /*! \brief Set the current 'set' pins for a state machine
- *  \ingroup sm_config
+ *  \ingroup hardware_pio
  *
  * Can overlap with the 'in', 'out' and 'sideset' pins
  *
@@ -946,9 +946,9 @@ static inline void pio_sm_set_set_pins(PIO pio, uint sm, uint set_base, uint set
 }
 
 /*! \brief Set the current 'in' pins for a state machine
- *  \ingroup sm_config
+ *  \ingroup hardware_pio
  *
- * Can overlap with the 'out', ''set' and 'sideset' pins
+ * Can overlap with the 'out', 'set' and 'sideset' pins
  *
  * \param pio The PIO instance; either \ref pio0 or \ref pio1
  * \param sm State machine index (0..3)
@@ -963,7 +963,7 @@ static inline void pio_sm_set_in_pins(PIO pio, uint sm, uint in_base) {
 }
 
 /*! \brief Set the current 'sideset' pins for a state machine
- *  \ingroup sm_config
+ *  \ingroup hardware_pio
  *
  * Can overlap with the 'in', 'out' and 'set' pins
  *
@@ -1155,6 +1155,7 @@ void pio_sm_drain_tx_fifo(PIO pio, uint sm);
 static inline void pio_sm_set_clkdiv_int_frac(PIO pio, uint sm, uint16_t div_int, uint8_t div_frac) {
     check_pio_param(pio);
     check_sm_param(sm);
+    invalid_params_if(PIO, div_int == 0 && div_frac != 0);
     pio->sm[sm].clkdiv =
             (((uint)div_frac) << PIO_SM0_CLKDIV_FRAC_LSB) |
             (((uint)div_int) << PIO_SM0_CLKDIV_INT_LSB);
