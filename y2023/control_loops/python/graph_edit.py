@@ -162,6 +162,8 @@ class ArmUi(basic_window.BaseWindow):
         self.ax = self.fig.add_subplot(111)
         plt.show(block=False)
 
+        self.index = 0
+
     def do_key_press(self, event):
         pass
 
@@ -411,13 +413,16 @@ class ArmUi(basic_window.BaseWindow):
         elif keyval == Gdk.KEY_r:
             self.prev_segment_pt = self.now_segment_pt
 
+        elif keyval == Gdk.KEY_o:
+            # Only prints current segment
+            print(repr(self.segments[self.index]))
         elif keyval == Gdk.KEY_p:
             # Print out the segments.
             print(repr(self.segments))
         elif keyval == Gdk.KEY_g:
             # Generate theta points.
             if self.segments:
-                print(repr(self.segments[0].ToThetaPoints()))
+                print(repr(self.segments[self.index].ToThetaPoints()))
         elif keyval == Gdk.KEY_e:
             best_pt = self.now_segment_pt
             best_dist = 1e10
@@ -431,6 +436,10 @@ class ArmUi(basic_window.BaseWindow):
                     best_pt = segment.end
                     best_dist = d
             self.now_segment_pt = best_pt
+
+        elif keyval == Gdk.KEY_k:
+            self.index += 1
+            self.index = self.index % len(self.segments)
 
         elif keyval == Gdk.KEY_t:
             # Toggle between theta and xy renderings
@@ -449,9 +458,9 @@ class ArmUi(basic_window.BaseWindow):
         elif keyval == Gdk.KEY_z:
             self.edit_control1 = not self.edit_control1
             if self.edit_control1:
-                self.now_segment_pt = self.segments[0].control1
+                self.now_segment_pt = self.segments[self.index].control1
             else:
-                self.now_segment_pt = self.segments[0].control2
+                self.now_segment_pt = self.segments[self.index].control2
             if not self.theta_version:
                 data = to_xy(self.now_segment_pt[0], self.now_segment_pt[1])
                 self.last_pos = (data[0], data[1])
@@ -474,9 +483,9 @@ class ArmUi(basic_window.BaseWindow):
         self.now_segment_pt = np.array(shift_angles(pt_theta))
 
         if self.edit_control1:
-            self.segments[0].control1 = self.now_segment_pt
+            self.segments[self.index].control1 = self.now_segment_pt
         else:
-            self.segments[0].control2 = self.now_segment_pt
+            self.segments[self.index].control2 = self.now_segment_pt
 
         print('Clicked at theta: %s' % (repr(self.now_segment_pt, )))
         if not self.theta_version:
@@ -485,9 +494,11 @@ class ArmUi(basic_window.BaseWindow):
                    self.circular_index_select))
 
         print('c1: np.array([%f, %f])' %
-              (self.segments[0].control1[0], self.segments[0].control1[1]))
+              (self.segments[self.index].control1[0],
+               self.segments[self.index].control1[1]))
         print('c2: np.array([%f, %f])' %
-              (self.segments[0].control2[0], self.segments[0].control2[1]))
+              (self.segments[self.index].control2[0],
+               self.segments[self.index].control2[1]))
 
         self.redraw()
 
