@@ -510,6 +510,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_wrist(wrist_offset);
+    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -530,6 +531,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     goal_builder.add_wrist(wrist_offset);
 
+    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -752,7 +754,7 @@ TEST_F(SuperstructureTest, ArmSimpleGoal) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_arm_goal_position(arm::PickupPosIndex());
+    goal_builder.add_arm_goal_position(arm::ScoreBackMidConeUpPosIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -778,7 +780,7 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_arm_goal_position(arm::PickupPosIndex());
+    goal_builder.add_arm_goal_position(arm::ScoreBackMidConeUpPosIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -795,7 +797,7 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_arm_goal_position(arm::PickupPosIndex());
+    goal_builder.add_arm_goal_position(arm::ScoreBackMidConeUpPosIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -806,7 +808,7 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_arm_goal_position(arm::ScorePosIndex());
+    goal_builder.add_arm_goal_position(arm::ScoreLowPosIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 

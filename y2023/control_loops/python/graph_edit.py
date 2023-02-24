@@ -379,7 +379,8 @@ class ArmUi(basic_window.BaseWindow):
                 # Draw current spline in black
                 color = [0, 0, 0]
             else:
-                color = [0.2, random.random(), random.random()]
+                color = [0, random.random(), 1]
+                random.shuffle(color)
             set_color(cr, Color(color[0], color[1], color[2]))
             self.segments[i].DrawTo(cr, self.theta_version)
             with px(cr):
@@ -559,4 +560,5 @@ class ArmUi(basic_window.BaseWindow):
 
 arm_ui = ArmUi()
 arm_ui.segments = graph_paths.segments
+print('Starting with segment: ', arm_ui.segments[arm_ui.index].name)
 basic_window.RunApp()

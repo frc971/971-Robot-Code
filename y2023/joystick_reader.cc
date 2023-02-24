@@ -41,12 +41,80 @@ const ButtonLocation kIntake(4, 5);
 const ButtonLocation kScore(4, 4);
 const ButtonLocation kSpit(4, 13);
 
+const ButtonLocation kMidBackTipConeScoreLeft(4, 15);
+const ButtonLocation kHighBackTipConeScoreLeft(4, 14);
+const ButtonLocation kMidBackTipConeScoreRight(3, 2);
+
+const ButtonLocation kGroundPickupConeUp(4, 7);
+const ButtonLocation kGroundPickupConeDown(4, 8);
+const ButtonLocation kHPConePickup(4, 6);
+
 const ButtonLocation kSuck(4, 12);
 
 const ButtonLocation kWrist(4, 10);
 
 namespace superstructure = y2023::control_loops::superstructure;
 namespace arm = superstructure::arm;
+
+enum class GamePiece {
+  CONE_UP = 0,
+  CONE_DOWN = 1,
+  CUBE = 2,
+};
+
+struct ArmSetpoint {
+  uint32_t index;
+  double wrist_goal;
+  std::optional<double> score_wrist_goal = std::nullopt;
+  GamePiece game_piece;
+  ButtonLocation button;
+};
+
+const std::vector<ArmSetpoint> setpoints = {
+    {
+        .index = arm::GroundPickupBackConeUpIndex(),
+        .wrist_goal = 0.0,
+        .game_piece = GamePiece::CONE_UP,
+        .button = kGroundPickupConeUp,
+    },
+    {
+        .index = arm::GroundPickupBackConeDownIndex(),
+        .wrist_goal = 0.0,
+        .game_piece = GamePiece::CONE_DOWN,
+        .button = kGroundPickupConeDown,
+    },
+    {
+        .index = arm::ScoreBackMidConeUpPosIndex(),
+        .wrist_goal = 0.55,
+        .game_piece = GamePiece::CONE_UP,
+        .button = kMidBackTipConeScoreRight,
+    },
+    {
+        .index = arm::ScoreBackMidConeDownPosIndex(),
+        .wrist_goal = 2.2,
+        .score_wrist_goal = 0.0,
+        .game_piece = GamePiece::CONE_DOWN,
+        .button = kMidBackTipConeScoreRight,
+    },
+    {
+        .index = arm::HPPickupBackConeUpIndex(),
+        .wrist_goal = 0.2,
+        .game_piece = GamePiece::CONE_UP,
+        .button = kHPConePickup,
+    },
+    {
+        .index = arm::ScoreFrontHighConeUpPosIndex(),
+        .wrist_goal = 0.05,
+        .game_piece = GamePiece::CONE_UP,
+        .button = kHighBackTipConeScoreLeft,
+    },
+    {
+        .index = arm::ScoreFrontMidConeUpPosIndex(),
+        .wrist_goal = 0.05,
+        .game_piece = GamePiece::CONE_UP,
+        .button = kMidBackTipConeScoreLeft,
+    },
+};
 
 class Reader : public ::frc971::input::ActionJoystickInput {
  public:
@@ -63,6 +131,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
   void AutoEnded() override { AOS_LOG(INFO, "Auto ended.\n"); }
 
+  GamePiece current_game_piece_ = GamePiece::CONE_UP;
+
   void HandleTeleop(
       const ::frc971::input::driver_station::Data &data) override {
     superstructure_status_fetcher_.Fetch();
@@ -71,39 +141,61 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       return;
     }
 
-    RollerGoal roller_goal = RollerGoal::IDLE;
+    if (!superstructure_status_fetcher_->has_wrist()) {
+      AOS_LOG(ERROR, "Got no superstructure status message.\n");
+      return;
+    }
 
-    // TODO(milind): add more actions and paths
-    if (data.IsPressed(kIntake)) {
-      arm_goal_position_ = arm::ScorePosIndex();
-    } else if (data.IsPressed(kScore)) {
-      arm_goal_position_ = arm::ScorePosIndex();
-    } else {
-      arm_goal_position_ = arm::NeutralPosIndex();
+    double wrist_goal = 0.0;
+    RollerGoal roller_goal = RollerGoal::IDLE;
+    arm_goal_position_ = arm::NeutralPosIndex();
+    std::optional<double> score_wrist_goal = std::nullopt;
+
+    if (data.IsPressed(kGroundPickupConeUp) || data.IsPressed(kHPConePickup)) {
+      roller_goal = RollerGoal::INTAKE;
+      current_game_piece_ = GamePiece::CONE_UP;
+    } else if (data.IsPressed(kGroundPickupConeDown)) {
+      roller_goal = RollerGoal::INTAKE;
+      current_game_piece_ = GamePiece::CONE_DOWN;
+    }
+
+    // Search for the active setpoint.
+    for (const ArmSetpoint &setpoint : setpoints) {
+      if (data.IsPressed(setpoint.button)) {
+        if (setpoint.game_piece == current_game_piece_) {
+          wrist_goal = setpoint.wrist_goal;
+          arm_goal_position_ = setpoint.index;
+          score_wrist_goal = setpoint.score_wrist_goal;
+          break;
+        }
+      }
     }
 
     if (data.IsPressed(kSuck)) {
       roller_goal = RollerGoal::INTAKE;
     } else if (data.IsPressed(kSpit)) {
-      roller_goal = RollerGoal::SPIT;
-    }
+      if (score_wrist_goal.has_value()) {
+        wrist_goal = score_wrist_goal.value();
 
-    double wrist_goal = 0.1;
-
-    if (data.IsPressed(kWrist)) {
-      wrist_goal = 1.5;
-    } else {
-      wrist_goal = 0.1;
+        // If we are supposed to dunk it, wait until we are close enough to
+        // spit.
+        if (std::abs(score_wrist_goal.value() -
+                     superstructure_status_fetcher_->wrist()->position()) <
+            0.1) {
+          roller_goal = RollerGoal::SPIT;
+        }
+      } else {
+        roller_goal = RollerGoal::SPIT;
+      }
     }
 
     {
       auto builder = superstructure_goal_sender_.MakeBuilder();
 
       flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
-          wrist_offset =
-              CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-                  *builder.fbb(), wrist_goal,
-                  CreateProfileParameters(*builder.fbb(), 12.0, 90.0));
+          wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+              *builder.fbb(), wrist_goal,
+              CreateProfileParameters(*builder.fbb(), 12.0, 90.0));
 
       superstructure::Goal::Builder superstructure_goal_builder =
           builder.MakeBuilder<superstructure::Goal>();
