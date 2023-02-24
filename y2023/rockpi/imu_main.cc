@@ -2,6 +2,7 @@
 #include "aos/init.h"
 #include "aos/realtime.h"
 #include "frc971/imu_reader/imu.h"
+#include "y2023/constants.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 
@@ -12,8 +13,8 @@ int main(int argc, char *argv[]) {
       aos::configuration::ReadConfig(FLAGS_config);
 
   aos::ShmEventLoop event_loop(&config.message());
-  // TODO(austin): Set the ratio...
-  frc971::imu::Imu imu(&event_loop, 1.0);
+  frc971::imu::Imu imu(&event_loop,
+                       y2023::constants::Values::DrivetrainEncoderToMeters(1));
 
   event_loop.SetRuntimeAffinity(aos::MakeCpusetFromCpus({0}));
   event_loop.SetRuntimeRealtimePriority(55);
