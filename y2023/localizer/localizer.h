@@ -88,6 +88,8 @@ class Localizer {
   flatbuffers::Offset<ImuStatus> PopulateImu(
       flatbuffers::FlatBufferBuilder *fbb) const;
   void SendStatus();
+  static flatbuffers::Offset<CumulativeStatistics> StatisticsForCamera(
+      const CameraState &camera, flatbuffers::FlatBufferBuilder *fbb);
 
   aos::EventLoop *const event_loop_;
   const frc971::control_loops::drivetrain::DrivetrainConfig<double> dt_config_;

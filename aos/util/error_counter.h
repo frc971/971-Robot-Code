@@ -80,7 +80,7 @@ class ArrayErrorCounter {
   ArrayErrorCounter() { ResetCounts(); }
 
   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Count>>>
-  PopulateCounts(flatbuffers::FlatBufferBuilder *fbb) {
+  PopulateCounts(flatbuffers::FlatBufferBuilder *fbb) const {
     const flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Count>>>
         offset = ErrorCounter<Error, Count>::Initialize(fbb);
     flatbuffers::Vector<flatbuffers::Offset<Count>> *vector =

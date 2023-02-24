@@ -158,8 +158,11 @@ Localizer::Localizer(
           }
           auto vector_offset = builder.fbb()->CreateVector(
               debug_offsets.data(), debug_offsets.size());
+          auto stats_offset =
+              StatisticsForCamera(cameras_.at(camera_index), builder.fbb());
           Visualization::Builder visualize_builder(*builder.fbb());
           visualize_builder.add_targets(vector_offset);
+          visualize_builder.add_statistics(stats_offset);
           builder.CheckOk(builder.Send(visualize_builder.Finish()));
           SendStatus();
         });
@@ -392,19 +395,22 @@ flatbuffers::Offset<ImuStatus> Localizer::PopulateImu(
   return builder.Finish();
 }
 
+flatbuffers::Offset<CumulativeStatistics> Localizer::StatisticsForCamera(
+    const CameraState &camera, flatbuffers::FlatBufferBuilder *fbb) {
+  const auto counts_offset = camera.rejection_counter.PopulateCounts(fbb);
+  CumulativeStatistics::Builder stats_builder(*fbb);
+  stats_builder.add_total_accepted(camera.total_accepted_targets);
+  stats_builder.add_total_candidates(camera.total_candidate_targets);
+  stats_builder.add_rejection_reasons(counts_offset);
+  return stats_builder.Finish();
+}
+
 void Localizer::SendStatus() {
   auto builder = status_sender_.MakeBuilder();
   std::array<flatbuffers::Offset<CumulativeStatistics>, kNumCameras>
       stats_offsets;
   for (size_t ii = 0; ii < kNumCameras; ++ii) {
-    const auto counts_offset =
-        cameras_.at(ii).rejection_counter.PopulateCounts(builder.fbb());
-    CumulativeStatistics::Builder stats_builder =
-        builder.MakeBuilder<CumulativeStatistics>();
-    stats_builder.add_total_accepted(cameras_.at(ii).total_accepted_targets);
-    stats_builder.add_total_candidates(cameras_.at(ii).total_candidate_targets);
-    stats_builder.add_rejection_reasons(counts_offset);
-    stats_offsets.at(ii) = stats_builder.Finish();
+    stats_offsets.at(ii) = StatisticsForCamera(cameras_.at(ii), builder.fbb());
   }
   auto stats_offset =
       builder.fbb()->CreateVector(stats_offsets.data(), stats_offsets.size());
