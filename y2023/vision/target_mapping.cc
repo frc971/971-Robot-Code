@@ -29,10 +29,10 @@ using frc971::vision::TargetMapper;
 namespace calibration = frc971::vision::calibration;
 
 // Change reference frame from camera to robot
-Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camrob_target,
+Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camera_target,
                                        Eigen::Affine3d extrinsics) {
-  const Eigen::Affine3d H_robot_camrob = extrinsics;
-  const Eigen::Affine3d H_robot_target = H_robot_camrob * H_camrob_target;
+  const Eigen::Affine3d H_robot_camera = extrinsics;
+  const Eigen::Affine3d H_robot_target = H_robot_camera * H_camera_target;
   return H_robot_target;
 }
 
@@ -47,20 +47,13 @@ void HandleAprilTag(const TargetMap &map,
     const TargetMapper::TargetPose target_pose =
         PoseUtils::TargetPoseFromFbs(*target_pose_fbs);
 
-    Eigen::Affine3d H_camcv_target =
+    Eigen::Affine3d H_camera_target =
         Eigen::Translation3d(target_pose.pose.p) * target_pose.pose.q;
-    // With X, Y, Z being robot axes and x, y, z being camera axes,
-    // x = -Y, y = -Z, z = X
-    static const Eigen::Affine3d H_camcv_camrob =
-        Eigen::Affine3d((Eigen::Matrix4d() << 0.0, -1.0, 0.0, 0.0, 0.0, 0.0,
-                         -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-                            .finished());
-    Eigen::Affine3d H_camrob_target = H_camcv_camrob.inverse() * H_camcv_target;
     Eigen::Affine3d H_robot_target =
-        CameraToRobotDetection(H_camrob_target, extrinsics);
+        CameraToRobotDetection(H_camera_target, extrinsics);
 
     ceres::examples::Pose3d target_pose_camera =
-        PoseUtils::Affine3dToPose3d(H_camrob_target);
+        PoseUtils::Affine3dToPose3d(H_camera_target);
     double distance_from_camera = target_pose_camera.p.norm();
 
     CHECK(map.has_monotonic_timestamp_ns())
