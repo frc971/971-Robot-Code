@@ -85,8 +85,7 @@ void AprilRoboticsDetector::HandleImage(cv::Mat image_grayscale,
   auto builder = target_map_sender_.MakeBuilder();
   std::vector<flatbuffers::Offset<frc971::vision::TargetPoseFbs>> target_poses;
   for (const auto &[detection, pose] : detections) {
-    target_poses.emplace_back(
-        BuildTargetPose(pose, detection.id, builder.fbb()));
+    target_poses.emplace_back(BuildTargetPose(pose, detection, builder.fbb()));
   }
   const auto target_poses_offset = builder.fbb()->CreateVector(target_poses);
   auto target_map_builder = builder.MakeBuilder<frc971::vision::TargetMap>();
@@ -96,10 +95,9 @@ void AprilRoboticsDetector::HandleImage(cv::Mat image_grayscale,
 }
 
 flatbuffers::Offset<frc971::vision::TargetPoseFbs>
-AprilRoboticsDetector::BuildTargetPose(
-    const apriltag_pose_t &pose,
-    frc971::vision::TargetMapper::TargetId target_id,
-    flatbuffers::FlatBufferBuilder *fbb) {
+AprilRoboticsDetector::BuildTargetPose(const apriltag_pose_t &pose,
+                                       const apriltag_detection_t &det,
+                                       flatbuffers::FlatBufferBuilder *fbb) {
   const auto T =
       Eigen::Translation3d(pose.t->data[0], pose.t->data[1], pose.t->data[2]);
   const auto position_offset =
@@ -109,8 +107,8 @@ AprilRoboticsDetector::BuildTargetPose(
   const auto orientation_offset = frc971::vision::CreateQuaternion(
       *fbb, orientation.w(), orientation.x(), orientation.y(), orientation.z());
 
-  return frc971::vision::CreateTargetPoseFbs(*fbb, target_id, position_offset,
-                                             orientation_offset);
+  return frc971::vision::CreateTargetPoseFbs(
+      *fbb, det.id, position_offset, orientation_offset, det.decision_margin);
 }
 
 void AprilRoboticsDetector::UndistortDetection(
