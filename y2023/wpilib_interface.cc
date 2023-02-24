@@ -197,6 +197,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       position_builder.add_arm(arm_offset);
       position_builder.add_wrist(wrist_offset);
+      position_builder.add_end_effector_cone_beam_break(
+          end_effector_cone_beam_break_->Get());
+      position_builder.add_end_effector_cube_beam_break(
+          end_effector_cube_beam_break_->Get());
       builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
@@ -338,6 +342,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     wrist_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
   }
 
+  void set_end_effector_cone_beam_break(
+      ::std::unique_ptr<frc::DigitalInput> sensor) {
+    end_effector_cone_beam_break_ = ::std::move(sensor);
+  }
+  void set_end_effector_cube_beam_break(
+      ::std::unique_ptr<frc::DigitalInput> sensor) {
+    end_effector_cube_beam_break_ = ::std::move(sensor);
+  }
+
  private:
   std::shared_ptr<const Values> values_;
 
@@ -349,7 +362,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
-  std::unique_ptr<frc::DigitalInput> imu_heading_input_, imu_yaw_rate_input_;
+  std::unique_ptr<frc::DigitalInput> imu_heading_input_, imu_yaw_rate_input_,
+      end_effector_cone_beam_break_, end_effector_cube_beam_break_;
 
   frc971::wpilib::DMAPulseWidthReader imu_heading_reader_, imu_yaw_rate_reader_;
 
@@ -816,6 +830,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     sensor_reader.set_wrist_encoder(make_encoder(4));
     sensor_reader.set_wrist_absolute_pwm(make_unique<frc::DigitalInput>(4));
+
+    // TODO(Max): Make the DigitalInput values the accurate robot values.
+    sensor_reader.set_end_effector_cone_beam_break(
+        make_unique<frc::DigitalInput>(6));
+    sensor_reader.set_end_effector_cube_beam_break(
+        make_unique<frc::DigitalInput>(7));
 
     AddLoop(&sensor_reader_event_loop);
 
