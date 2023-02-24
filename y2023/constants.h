@@ -40,7 +40,7 @@ struct Values {
   }
 
   static constexpr double kDrivetrainSupplyCurrentLimit() { return 35.0; }
-  static constexpr double kDrivetrainStatorCurrentLimit() { return 40.0; }
+  static constexpr double kDrivetrainStatorCurrentLimit() { return 60.0; }
 
   static double DrivetrainEncoderToMeters(int32_t in) {
     return ((static_cast<double>(in) /
