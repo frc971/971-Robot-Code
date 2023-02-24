@@ -10,7 +10,6 @@
 #include "frc971/vision/vision_generated.h"
 #include "opencv2/calib3d.hpp"
 #include "opencv2/imgproc.hpp"
-#include "y2023/vision/april_debug_generated.h"
 #include "y2023/vision/vision_util.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
@@ -28,10 +27,8 @@ namespace {
 using frc971::vision::CameraImage;
 
 bool DisplayLoop(const cv::Mat intrinsics, const cv::Mat dist_coeffs,
-                 aos::Fetcher<CameraImage> *image_fetcher,
-                 aos::Fetcher<AprilDebug> *april_debug_fetcher) {
+                 aos::Fetcher<CameraImage> *image_fetcher) {
   const CameraImage *image;
-  std::optional<const AprilDebug *> april_debug = std::nullopt;
 
   // Read next image
   if (!image_fetcher->Fetch()) {
@@ -40,12 +37,6 @@ bool DisplayLoop(const cv::Mat intrinsics, const cv::Mat dist_coeffs,
   }
   image = image_fetcher->get();
   CHECK(image != nullptr) << "Couldn't read image";
-
-  if (april_debug_fetcher->Fetch()) {
-    april_debug = april_debug_fetcher->get();
-  } else {
-    VLOG(2) << "Couldn't fetch next target map";
-  }
 
   // Create color image:
   cv::Mat image_color_mat(cv::Size(image->cols(), image->rows()), CV_8UC2,
@@ -66,17 +57,6 @@ bool DisplayLoop(const cv::Mat intrinsics, const cv::Mat dist_coeffs,
 
   cv::Mat undistorted_image;
   cv::undistort(bgr_image, undistorted_image, intrinsics, dist_coeffs);
-
-  if (april_debug.has_value() && april_debug.value()->corners()->size() > 0) {
-    for (const auto *corners : *april_debug.value()->corners()) {
-      std::vector<cv::Point> points;
-      for (const auto *point_fbs : *corners->points()) {
-        points.emplace_back(point_fbs->x(), point_fbs->y());
-      }
-      cv::polylines(undistorted_image, points, true, cv::Scalar(255, 0, 0), 10);
-    }
-  }
-
   cv::imshow("Display", undistorted_image);
 
   int keystroke = cv::waitKey(1);
@@ -109,14 +89,11 @@ void ViewerMain() {
 
   aos::Fetcher<CameraImage> image_fetcher =
       event_loop.MakeFetcher<CameraImage>(FLAGS_channel);
-  aos::Fetcher<AprilDebug> april_debug_fetcher =
-      event_loop.MakeFetcher<AprilDebug>("/camera");
 
   // Run the display loop
   event_loop.AddPhasedLoop(
       [&](int) {
-        if (!DisplayLoop(intrinsics, dist_coeffs, &image_fetcher,
-                         &april_debug_fetcher)) {
+        if (!DisplayLoop(intrinsics, dist_coeffs, &image_fetcher)) {
           LOG(INFO) << "Calling event_loop Exit";
           event_loop.Exit();
         };

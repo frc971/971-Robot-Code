@@ -17,7 +17,6 @@
 #include "third_party/apriltag/apriltag_pose.h"
 #include "third_party/apriltag/tag16h5.h"
 #include "y2023/constants/constants_generated.h"
-#include "y2023/vision/april_debug_generated.h"
 
 DECLARE_int32(team_number);
 
@@ -36,7 +35,7 @@ class AprilRoboticsDetector {
   void UndistortDetection(apriltag_detection_t *det) const;
 
   std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> DetectTags(
-      cv::Mat image);
+      cv::Mat image, aos::monotonic_clock::time_point eof);
 
   const std::optional<cv::Mat> extrinsics() const { return extrinsics_; }
   const cv::Mat intrinsics() const { return intrinsics_; }
@@ -64,7 +63,7 @@ class AprilRoboticsDetector {
 
   frc971::vision::ImageCallback image_callback_;
   aos::Sender<frc971::vision::TargetMap> target_map_sender_;
-  aos::Sender<y2023::vision::AprilDebug> april_debug_sender_;
+  aos::Sender<foxglove::ImageAnnotations> image_annotations_sender_;
 };
 
 }  // namespace vision

@@ -217,15 +217,6 @@
       ]
     },
     {
-      "name": "/pi{{ NUM }}/camera",
-      "type": "y2023.vision.AprilDebug",
-      "source_node": "pi{{ NUM }}",
-      "frequency": 40,
-      "num_senders": 2,
-      "max_size": 40000,
-      "logger": "LOCAL_LOGGER"
-    },
-    {
       "name": "/pi{{ NUM }}/aos/remote_timestamps/imu/pi{{ NUM }}/camera/frc971-vision-TargetMap",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 80,

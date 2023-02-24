@@ -457,14 +457,15 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
 
 flatbuffers::Offset<foxglove::ImageAnnotations> BuildAnnotations(
     const aos::monotonic_clock::time_point monotonic_now,
-    const std::vector<std::vector<cv::Point2f>> &corners,
+    const std::vector<std::vector<cv::Point2f>> &corners, double thickness,
     flatbuffers::FlatBufferBuilder *fbb) {
   std::vector<flatbuffers::Offset<foxglove::PointsAnnotation>> rectangles;
   const struct timespec now_t = aos::time::to_timespec(monotonic_now);
   foxglove::Time time{static_cast<uint32_t>(now_t.tv_sec),
                       static_cast<uint32_t>(now_t.tv_nsec)};
+  // Draw the points in pink
   const flatbuffers::Offset<foxglove::Color> color_offset =
-      foxglove::CreateColor(*fbb, 0.0, 1.0, 0.0, 1.0);
+      foxglove::CreateColor(*fbb, 1.0, 0.75, 0.8, 1.0);
   for (const std::vector<cv::Point2f> &rectangle : corners) {
     std::vector<flatbuffers::Offset<foxglove::Point2>> points_offsets;
     for (const cv::Point2f &point : rectangle) {
@@ -482,7 +483,7 @@ flatbuffers::Offset<foxglove::ImageAnnotations> BuildAnnotations(
     points_builder.add_points(points_offset);
     points_builder.add_outline_color(color_offset);
     points_builder.add_outline_colors(colors_offset);
-    points_builder.add_thickness(2.0);
+    points_builder.add_thickness(thickness);
     rectangles.push_back(points_builder.Finish());
   }
 

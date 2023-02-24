@@ -88,8 +88,8 @@ class CalibrationFoxgloveVisualizer {
   void HandleCharuco(const aos::monotonic_clock::time_point eof,
                      std::vector<std::vector<cv::Point2f>> charuco_corners) {
     auto builder = annotations_sender_.MakeBuilder();
-    builder.CheckOk(
-        builder.Send(BuildAnnotations(eof, charuco_corners, builder.fbb())));
+    builder.CheckOk(builder.Send(
+        BuildAnnotations(eof, charuco_corners, 2.0, builder.fbb())));
   }
 
  private:
