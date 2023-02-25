@@ -73,14 +73,14 @@ struct Values {
   }
 
   static constexpr double kDistalEncoderCountsPerRevolution() { return 4096.0; }
-  static constexpr double kDistalEncoderRatio() { return (15.0 / 95.0); }
+  static constexpr double kDistalEncoderRatio() { return (15.0 / 96.0); }
   static constexpr double kMaxDistalEncoderPulsesPerSecond() {
     return control_loops::superstructure::arm::kArmConstants.free_speed /
            (2.0 * M_PI) / control_loops::superstructure::arm::kArmConstants.g1 /
            kDistalEncoderRatio() * kProximalEncoderCountsPerRevolution();
   }
   static constexpr double kDistalPotRatio() {
-    return (36.0 / 24.0) * (15.0 / 95.0);
+    return (36.0 / 24.0) * (15.0 / 96.0);
   }
 
   static constexpr double kDistalPotRadiansPerVolt() {

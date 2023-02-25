@@ -29,8 +29,8 @@ constexpr ::frc971::control_loops::arm::ArmConstants kArmConstants = {
     .r1 = 20 * 0.0254,
 
     // Gear ratios for the two joints.
-    .g0 = 55.0,
-    .g1 = 106.0,
+    .g0 = (60. / 16.) * (58. / 24.) * (95. / 15.),
+    .g1 = (52. / 14.) * (42. / 34.) * (66. / 18.) * (96. / 15.),
 
     // Falcon motor constants.
     .efficiency_tweak = kEfficiencyTweak,
