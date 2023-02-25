@@ -15,10 +15,15 @@ EndEffector::EndEffector()
 
 EndEffectorState EndEffector::RunIteration(
     const ::aos::monotonic_clock::time_point timestamp, RollerGoal roller_goal,
-    bool cone_beambreak, bool cube_beambreak, double *roller_voltage) {
-  bool beambreak = cone_beambreak || cube_beambreak;
-
+    double falcon_current, double cone_position, bool beambreak,
+    double *roller_voltage) {
   *roller_voltage = 0.0;
+
+  constexpr double kMinCurrent = 20.0;
+  constexpr double kMaxConePosition = 0.92;
+
+  bool beambreak_status = (beambreak || (falcon_current > kMinCurrent &&
+                                         cone_position < kMaxConePosition));
 
   switch (state_) {
     case EndEffectorState::IDLE:
@@ -30,7 +35,7 @@ EndEffectorState EndEffector::RunIteration(
       break;
     case EndEffectorState::INTAKING:
       // If intaking and beam break is not triggered, keep intaking
-      if (beambreak) {
+      if (beambreak_status) {
         // Beam has been broken, switch to loaded.
         state_ = EndEffectorState::LOADED;
         break;
@@ -45,7 +50,7 @@ EndEffectorState EndEffector::RunIteration(
       break;
     case EndEffectorState::LOADED:
       // If loaded and beam break not triggered, intake
-      if (!beambreak) {
+      if (!beambreak_status) {
         state_ = EndEffectorState::INTAKING;
         timer_ = timestamp;
       }
@@ -58,7 +63,7 @@ EndEffectorState EndEffector::RunIteration(
       // If spit requested, spit
       *roller_voltage = -constants::Values::kRollerVoltage();
       if (beambreak_) {
-        if (!beambreak) {
+        if (!beambreak_status) {
           timer_ = timestamp;
         }
       } else if (timestamp > timer_ + constants::Values::kExtraSpittingTime()) {
@@ -69,7 +74,7 @@ EndEffectorState EndEffector::RunIteration(
       break;
   }
 
-  beambreak_ = beambreak;
+  beambreak_ = beambreak_status;
 
   return state_;
 }

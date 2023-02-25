@@ -18,6 +18,28 @@ table ArmPosition {
   roll_joint:frc971.PotAndAbsolutePosition (id: 2);
 }
 
+table CANFalcon {
+  // The CAN id of the falcon
+  id:int (id: 0);
+
+  // In Amps
+  supply_current:float (id: 1);
+
+  // In Amps
+  // Stator current where positive current means torque is applied in
+  // the motor's forward direction as determined by its Inverted setting.
+  torque_current:float (id: 2);
+
+  // In Volts
+  supply_voltage:float (id: 3);
+
+  // In degrees Celsius
+  device_temp:float (id: 4);
+
+  // Raw position
+  position:float (id: 5);
+}
+
 table Position {
     arm:ArmPosition (id: 0);
 
@@ -30,6 +52,9 @@ table Position {
 
     // If this is true, the cube beam break is triggered.
     end_effector_cube_beam_break:bool (id: 3);
+
+    // Roller falcon data
+    roller_falcon:CANFalcon (id: 4);
 }
 
 root_type Position;

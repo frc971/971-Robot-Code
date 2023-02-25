@@ -56,6 +56,8 @@ flatbuffer_cc_library(
     includes = [
         "//frc971/control_loops:control_loops_fbs_includes",
         "//frc971/control_loops:profiled_subsystem_fbs_includes",
+        "//frc971/vision:calibration_fbs_includes",
+        "//y2023/control_loops/drivetrain:drivetrain_can_position_fbs_includes",
     ],
 )
 
@@ -69,7 +71,6 @@ cc_library(
     ],
     deps = [
         ":superstructure_goal_fbs",
-        ":superstructure_position_fbs",
         ":superstructure_status_fbs",
         "//aos/events:event_loop",
         "//aos/time",
@@ -97,6 +98,7 @@ cc_library(
         "//frc971/control_loops:control_loop",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2023:constants",
+        "//y2023/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//y2023/control_loops/superstructure/arm",
     ],
 )

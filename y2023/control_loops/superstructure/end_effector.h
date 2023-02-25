@@ -6,7 +6,6 @@
 #include "frc971/control_loops/control_loop.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/superstructure/superstructure_goal_generated.h"
-#include "y2023/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2023 {
@@ -18,8 +17,8 @@ class EndEffector {
   EndEffector();
   EndEffectorState RunIteration(
       const ::aos::monotonic_clock::time_point timestamp,
-      RollerGoal roller_goal, bool cone_beambreak, bool cube_beambreak,
-      double *intake_roller_voltage);
+      RollerGoal roller_goal, double falcon_current, double cone_position,
+      bool beambreak, double *intake_roller_voltage);
   EndEffectorState state() const { return state_; }
   void Reset();
 
