@@ -336,10 +336,15 @@ class ArmUi(basic_window.BaseWindow):
             draw_px_cross(cr, 5)
 
         set_color(cr, Color(0.0, 0.5, 1.0))
-        for segment in self.segments:
-            color = [0.2, random.random(), random.random()]
+        for i in range(len(self.segments)):
+            color = None
+            if i == self.index:
+                # Draw current spline in black
+                color = [0, 0, 0]
+            else:
+                color = [0.2, random.random(), random.random()]
             set_color(cr, Color(color[0], color[1], color[2]))
-            segment.DrawTo(cr, self.theta_version)
+            self.segments[i].DrawTo(cr, self.theta_version)
             with px(cr):
                 cr.stroke()
 
@@ -380,28 +385,26 @@ class ArmUi(basic_window.BaseWindow):
         event.x = x / scale + self.center[0]
         event.y = y / scale + self.center[1]
 
-        for segment in self.segments:
-            self.joint_thetas = segment.joint_thetas()
+        segment = self.segments[self.index]
+        self.joint_thetas = segment.joint_thetas()
 
-            hovered_t = segment.intersection(event)
-            if hovered_t:
-                min_diff = np.inf
-                closest_t = None
-                closest_thetas = None
-                for i in range(len(self.joint_thetas[0])):
-                    t = self.joint_thetas[0][i]
-                    diff = abs(t - hovered_t)
-                    if diff < min_diff:
-                        min_diff = diff
-                        closest_t = t
-                        closest_thetas = [
-                            self.joint_thetas[1][0][i],
-                            self.joint_thetas[1][1][i],
-                            self.joint_thetas[1][2][i]
-                        ]
-                self.joint_points = [(closest_t, closest_theta)
-                                     for closest_theta in closest_thetas]
-                break
+        hovered_t = segment.intersection(event)
+        if hovered_t:
+            min_diff = np.inf
+            closest_t = None
+            closest_thetas = None
+            for i in range(len(self.joint_thetas[0])):
+                t = self.joint_thetas[0][i]
+                diff = abs(t - hovered_t)
+                if diff < min_diff:
+                    min_diff = diff
+                    closest_t = t
+                    closest_thetas = [
+                        self.joint_thetas[1][0][i], self.joint_thetas[1][1][i],
+                        self.joint_thetas[1][2][i]
+                    ]
+            self.joint_points = [(closest_t, closest_theta)
+                                 for closest_theta in closest_thetas]
 
         event.x = o_x
         event.y = o_y
