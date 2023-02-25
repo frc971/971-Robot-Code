@@ -174,7 +174,7 @@
       "type": "foxglove.CompressedImage",
       "source_node": "pi{{ NUM }}",
       "frequency": 40,
-      "max_size": 300000
+      "max_size": 622384
     },
     {
       "name": "/pi{{ NUM }}/camera",
