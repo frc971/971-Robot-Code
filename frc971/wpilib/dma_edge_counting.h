@@ -50,7 +50,7 @@ class DMAPulseWidthReader : public DMASampleHandlerInterface {
 
  private:
   void UpdateFromSample(const DMASample & /*sample*/) override;
-  void UpdatePolledValue() override {}
+  void UpdatePolledValue() override;
 
   void PollFromSample(const DMASample & /*sample*/) override {}
   void AddToDMA(DMA *dma) override {
@@ -66,6 +66,8 @@ class DMAPulseWidthReader : public DMASampleHandlerInterface {
   bool have_prev_sample_ = false;
   // Last time the reading switched to high
   uint64_t high_time_ = 0;
+  // Number of times we've been polled without an update
+  size_t poll_count_ = 0;
 
   double last_width_ = ::std::numeric_limits<double>::quiet_NaN();
 

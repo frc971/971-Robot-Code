@@ -27,13 +27,27 @@ void DMAEdgeCounter::UpdateFromSample(const DMASample &sample) {
 void DMAPulseWidthReader::UpdateFromSample(const DMASample &sample) {
   if (have_prev_sample_ && high_time_ != 0 && prev_sample_.Get(input_) &&
       !sample.Get(input_)) {
-    last_width_ = (sample.GetTime() - high_time_) * 0.000001;
+    last_width_ = (sample.GetTime() - high_time_) * 1e-6;
+    high_time_ = 0;
+    poll_count_ = 0;
   } else if (have_prev_sample_ && !prev_sample_.Get(input_) &&
              sample.Get(input_)) {
     high_time_ = prev_sample_.GetTime();
+    poll_count_ = 0;
   }
   have_prev_sample_ = true;
   prev_sample_ = sample;
+}
+
+void DMAPulseWidthReader::UpdatePolledValue() {
+  // If we are polled without an update for too long, reset
+  constexpr size_t kMaxPollCount = 4;
+  if (poll_count_ > kMaxPollCount) {
+    high_time_ = 0;
+    have_prev_sample_ = false;
+    last_width_ = ::std::numeric_limits<double>::quiet_NaN();
+  }
+  poll_count_++;
 }
 
 void DMAPulseSeparationReader::UpdateFromSample(const DMASample &sample) {
