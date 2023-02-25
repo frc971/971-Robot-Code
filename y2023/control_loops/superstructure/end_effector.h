@@ -17,8 +17,8 @@ class EndEffector {
   EndEffector();
   EndEffectorState RunIteration(
       const ::aos::monotonic_clock::time_point timestamp,
-      RollerGoal roller_goal, bool cone_beambreak, bool cube_beambreak,
-      double *intake_roller_voltage);
+      RollerGoal roller_goal, double falcon_current, double cone_position,
+      bool beambreak, double *intake_roller_voltage);
   EndEffectorState state() const { return state_; }
   void Reset();
 
