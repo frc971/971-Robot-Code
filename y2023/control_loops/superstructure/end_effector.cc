@@ -19,7 +19,7 @@ EndEffectorState EndEffector::RunIteration(
     double *roller_voltage) {
   *roller_voltage = 0.0;
 
-  constexpr double kMinCurrent = 20.0;
+  constexpr double kMinCurrent = 40.0;
   constexpr double kMaxConePosition = 0.92;
 
   bool beambreak_status = (beambreak || (falcon_current > kMinCurrent &&

@@ -354,10 +354,10 @@ class CANSensorReader {
       superstructure::CANFalconT roller_falcon_data;
       roller_falcon_data.id = roller_falcon_->device_id();
       roller_falcon_data.supply_current = roller_falcon_->supply_current();
-      roller_falcon_data.torque_current = roller_falcon_->torque_current();
+      roller_falcon_data.torque_current = -roller_falcon_->torque_current();
       roller_falcon_data.supply_voltage = roller_falcon_->supply_voltage();
       roller_falcon_data.device_temp = roller_falcon_->device_temp();
-      roller_falcon_data.position = roller_falcon_->position();
+      roller_falcon_data.position = -roller_falcon_->position();
       roller_falcon_data_ =
           std::make_optional<superstructure::CANFalconT>(roller_falcon_data);
     }

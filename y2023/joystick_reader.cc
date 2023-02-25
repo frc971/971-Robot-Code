@@ -39,7 +39,9 @@ namespace joysticks {
 // TODO(milind): add correct locations
 const ButtonLocation kIntake(4, 5);
 const ButtonLocation kScore(4, 4);
-const ButtonLocation kSpit(3, 3);
+const ButtonLocation kSpit(4, 13);
+
+const ButtonLocation kSuck(4, 12);
 
 const ButtonLocation kWrist(4, 10);
 
@@ -73,15 +75,17 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     // TODO(milind): add more actions and paths
     if (data.IsPressed(kIntake)) {
-      roller_goal = RollerGoal::INTAKE;
-      arm_goal_position_ = arm::ScorePosIndex();
-    } else if (data.IsPressed(kSpit)) {
-      roller_goal = RollerGoal::SPIT;
       arm_goal_position_ = arm::ScorePosIndex();
     } else if (data.IsPressed(kScore)) {
       arm_goal_position_ = arm::ScorePosIndex();
     } else {
       arm_goal_position_ = arm::NeutralPosIndex();
+    }
+
+    if (data.IsPressed(kSuck)) {
+      roller_goal = RollerGoal::INTAKE;
+    } else if (data.IsPressed(kSpit)) {
+      roller_goal = RollerGoal::SPIT;
     }
 
     double wrist_goal = 0.1;
