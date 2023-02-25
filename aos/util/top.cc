@@ -124,10 +124,11 @@ std::optional<ProcStat> ReadProcStat(pid_t pid) {
       .exit_code = static_cast<int64_t>(numbers.at(48))};
 }
 
-Top::Top(aos::EventLoop *event_loop)
+Top::Top(aos::EventLoop *event_loop, bool track_threads)
     : event_loop_(event_loop),
       clock_tick_(std::chrono::nanoseconds(1000000000 / sysconf(_SC_CLK_TCK))),
-      page_size_(sysconf(_SC_PAGESIZE)) {
+      page_size_(sysconf(_SC_PAGESIZE)),
+      track_threads_(track_threads) {
   TimerHandler *timer = event_loop_->AddTimer([this]() { UpdateReadings(); });
   event_loop_->OnRun([timer, this]() {
     timer->Setup(event_loop_->monotonic_now(), kSamplePeriod);
@@ -149,6 +150,32 @@ uint64_t Top::RealMemoryUsage(const ProcStat &proc_stat) {
   return proc_stat.resident_set_size * page_size_;
 }
 
+void Top::MaybeAddThreadIds(pid_t pid, std::set<pid_t> *pids) {
+  if (!track_threads_) {
+    return;
+  }
+
+  // Add all the threads in /proc/pid/task
+  std::string task_dir = absl::StrCat("/proc/", std::to_string(pid), "/task/");
+  DIR *dir = opendir(task_dir.data());
+  if (dir == nullptr) {
+    LOG(WARNING) << "Unable to open " << task_dir;
+    return;
+  }
+
+  while (true) {
+    struct dirent *const dir_entry = readdir(dir);
+    if (dir_entry == nullptr) {
+      break;
+    }
+    pid_t tid;
+    if (absl::SimpleAtoi(dir_entry->d_name, &tid)) {
+      pids->emplace(tid);
+    }
+  }
+  closedir(dir);
+}
+
 void Top::UpdateReadings() {
   aos::monotonic_clock::time_point now = event_loop_->monotonic_now();
   // Get all the processes that we *might* care about.
@@ -157,6 +184,7 @@ void Top::UpdateReadings() {
   // tracking.
   for (const auto &reading : readings_) {
     pids.insert(reading.first);
+    MaybeAddThreadIds(reading.first, &pids);
   }
   if (track_all_) {
     DIR *const dir = opendir("/proc");
@@ -172,6 +200,7 @@ void Top::UpdateReadings() {
       if (dir_entry->d_type == DT_DIR &&
           absl::SimpleAtoi(dir_entry->d_name, &pid)) {
         pids.insert(pid);
+        MaybeAddThreadIds(pid, &pids);
       }
     }
     closedir(dir);

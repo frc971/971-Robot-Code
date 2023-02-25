@@ -20,8 +20,8 @@
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
-#include "aos/util/top.h"
 #include "aos/time/time.h"
+#include "aos/util/top.h"
 #include "glog/logging.h"
 
 DEFINE_string(config, "aos_config.json", "File path of aos configuration");
@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
   aos::ShmEventLoop event_loop(&config.message());
   event_loop.SkipTimingReport();
   event_loop.SkipAosLog();
-  aos::util::Top top(&event_loop);
+  aos::util::Top top(&event_loop, true);
   top.set_track_top_processes(true);
 
   const cpu_set_t all_cpus = FindAllCpus();

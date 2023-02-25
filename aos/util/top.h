@@ -115,7 +115,7 @@ class Top {
     aos::RingBuffer<Reading, 2> readings;
   };
 
-  Top(aos::EventLoop *event_loop);
+  Top(aos::EventLoop *event_loop, bool track_threads = false);
 
   // Set whether to track all the top processes (this will result in us having
   // to track every single process on the system, so that we can sort them).
@@ -150,6 +150,9 @@ class Top {
   aos::monotonic_clock::time_point ProcessStartTime(const ProcStat &proc_stat);
   uint64_t RealMemoryUsage(const ProcStat &proc_stat);
   void UpdateReadings();
+  // Adds thread ids for the given pid to the pids set,
+  // if we are tracking threads.
+  void MaybeAddThreadIds(pid_t pid, std::set<pid_t> *pids);
 
   aos::EventLoop *event_loop_;
 
@@ -161,6 +164,7 @@ class Top {
 
   std::set<pid_t> pids_to_track_;
   bool track_all_ = false;
+  bool track_threads_;
 
   std::map<pid_t, ProcessReadings> readings_;
 
