@@ -68,7 +68,7 @@
       "type": "aos.logging.LogMessageFbs",
       "source_node": "roborio",
       "frequency": 500,
-      "max_size": 344,
+      "max_size": 1000,
       "num_senders": 20
     },
     {
