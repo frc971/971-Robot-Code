@@ -43,6 +43,8 @@ cc_binary(
     ],
     data = [
         "//y2023:aos_config",
+        "//y2023/constants:constants.json",
+        "//y2023/vision:maps",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2023:__subpackages__"],
@@ -58,6 +60,7 @@ cc_binary(
         "//frc971/vision:target_mapper",
         "//third_party:opencv",
         "//y2023/constants:constants_fbs",
+        "//y2023/constants:simulated_constants_sender",
     ],
 )
 

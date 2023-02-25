@@ -12,12 +12,20 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc.hpp"
+#include "y2023/constants/simulated_constants_sender.h"
 #include "y2023/vision/aprilrobotics.h"
 #include "y2023/vision/vision_util.h"
 
-DEFINE_string(json_path, "target_map.json",
+DEFINE_string(json_path, "y2023/vision/maps/target_map.json",
               "Specify path for json with initial pose guesses.");
-DECLARE_int32(team_number);
+DEFINE_string(constants_path, "y2023/constants/constants.json",
+              "Path to the constant file");
+DEFINE_string(output_dir, "y2023/vision/maps",
+              "Directory to write solved target map to");
+DEFINE_string(field_name, "charged_up",
+              "Field name, for the output json filename and flatbuffer field");
+DEFINE_int32(team_number, 7971,
+             "Use the calibration for a node with this team number");
 
 namespace y2023 {
 namespace vision {
@@ -112,9 +120,18 @@ void MappingMain(int argc, char *argv[]) {
   for (size_t i = 1; i <= kNumPis; i++) {
     reader.RemapLoggedChannel(absl::StrFormat("/pi%u/camera", i),
                               "frc971.vision.TargetMap");
+    reader.RemapLoggedChannel(absl::StrFormat("/pi%u/camera", i),
+                              "foxglove.ImageAnnotations");
+    reader.RemapLoggedChannel(absl::StrFormat("/pi%u/constants", i),
+                              "y2023.Constants");
   }
 
+  reader.RemapLoggedChannel("/imu/constants", "y2023.Constants");
+
   reader.Register();
+
+  SendSimulationConstants(reader.event_loop_factory(), FLAGS_team_number,
+                          FLAGS_constants_path);
 
   std::vector<std::unique_ptr<AprilRoboticsDetector>> detectors;
 
@@ -160,7 +177,7 @@ void MappingMain(int argc, char *argv[]) {
       DataAdapter::MatchTargetDetections(timestamped_target_detections);
 
   frc971::vision::TargetMapper mapper(FLAGS_json_path, target_constraints);
-  mapper.Solve("charged_up");
+  mapper.Solve(FLAGS_field_name, FLAGS_output_dir);
 
   // Clean up all the pointers
   for (auto &detector_ptr : detectors) {

@@ -18,8 +18,6 @@
 #include "third_party/apriltag/tag16h5.h"
 #include "y2023/constants/constants_generated.h"
 
-DECLARE_int32(team_number);
-
 namespace y2023 {
 namespace vision {
 
