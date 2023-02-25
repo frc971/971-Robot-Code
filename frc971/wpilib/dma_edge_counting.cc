@@ -25,8 +25,12 @@ void DMAEdgeCounter::UpdateFromSample(const DMASample &sample) {
 }
 
 void DMAPulseWidthReader::UpdateFromSample(const DMASample &sample) {
-  if (have_prev_sample_ && prev_sample_.Get(input_) && !sample.Get(input_)) {
-    last_width_ = sample.GetTimestamp() - prev_sample_.GetTimestamp();
+  if (have_prev_sample_ && high_time_ != 0 && prev_sample_.Get(input_) &&
+      !sample.Get(input_)) {
+    last_width_ = (sample.GetTime() - high_time_) * 0.000001;
+  } else if (have_prev_sample_ && !prev_sample_.Get(input_) &&
+             sample.Get(input_)) {
+    high_time_ = prev_sample_.GetTime();
   }
   have_prev_sample_ = true;
   prev_sample_ = sample;

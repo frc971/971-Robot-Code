@@ -136,9 +136,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   void Start() override {
-    // TODO(Ravago): Figure out why adding multiple DMA readers results in weird
-    // behavior
-    // AddToDMA(&imu_heading_reader_);
+    AddToDMA(&imu_heading_reader_);
     AddToDMA(&imu_yaw_rate_reader_);
   }
 

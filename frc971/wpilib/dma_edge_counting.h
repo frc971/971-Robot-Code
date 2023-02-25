@@ -5,15 +5,13 @@
 #include <optional>
 #include <vector>
 
-#include "aos/macros.h"
-
 #include "aos/containers/sized_array.h"
-#include "frc971/wpilib/ahal/Utility.h"
-#include "frc971/wpilib/dma.h"
-
+#include "aos/macros.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/Encoder.h"
+#include "frc971/wpilib/ahal/Utility.h"
+#include "frc971/wpilib/dma.h"
 #undef ERROR
 
 namespace frc971 {
@@ -47,6 +45,7 @@ class DMAPulseWidthReader : public DMASampleHandlerInterface {
 
   void set_input(frc::DigitalInput *input) { input_ = input; }
 
+  // Last pulse width in seconds
   double last_width() const { return last_width_; }
 
  private:
@@ -65,6 +64,8 @@ class DMAPulseWidthReader : public DMASampleHandlerInterface {
   DMASample prev_sample_;
   // Whether or not we actually have anything in prev_sample_.
   bool have_prev_sample_ = false;
+  // Last time the reading switched to high
+  uint64_t high_time_ = 0;
 
   double last_width_ = ::std::numeric_limits<double>::quiet_NaN();
 
