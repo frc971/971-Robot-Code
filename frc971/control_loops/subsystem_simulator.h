@@ -72,6 +72,11 @@ class SubsystemSimulator {
 
   void set_controller_index(size_t index) { plant_->set_index(index); }
 
+  double voltage_offset() const { return plant_->voltage_offset(); }
+  void set_voltage_offset(double voltage_offset) {
+    plant_->set_voltage_offset(voltage_offset);
+  }
+
   PositionSensorSimulator *encoder() { return &encoder_; }
 
  private:

@@ -394,6 +394,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       // status before checking it.
     } while (superstructure_status_fetcher_.get() == nullptr ||
              !superstructure_status_fetcher_.get()->zeroed());
+
+    superstructure_plant_.wrist()->set_voltage_offset(1.0);
   }
 
   void SendRobotVelocity(double robot_velocity) {
@@ -439,7 +441,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   std::unique_ptr<aos::logger::Logger> logger_;
 
   const ::std::vector<::Eigen::Matrix<double, 3, 1>> points_;
-};  // namespace testing
+};
 
 // Tests that the superstructure does nothing when the goal is to remain
 // still.
@@ -736,6 +738,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
 // Tests that we don't freak out without a goal.
 TEST_F(SuperstructureTest, ArmSimpleGoal) {
   SetEnabled(true);
+  WaitUntilZeroed();
   RunFor(chrono::seconds(20));
 
   {
@@ -753,6 +756,7 @@ TEST_F(SuperstructureTest, ArmSimpleGoal) {
 // Tests that we can can execute a move.
 TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
   SetEnabled(true);
+  WaitUntilZeroed();
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
@@ -778,6 +782,7 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
 // Tests that we can can execute a move which moves through multiple nodes.
 TEST_F(SuperstructureTest, ArmMultistepMove) {
   SetEnabled(true);
+  WaitUntilZeroed();
   superstructure_plant_.InitializeArmPosition(arm::NeutralPosPoint());
 
   {

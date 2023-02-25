@@ -44,6 +44,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     arm_.Reset();
     end_effector_.Reset();
+    wrist_.Reset();
   }
 
   OutputT output_struct;
@@ -67,10 +68,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           status->fbb());
 
   flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus> wrist_offset =
-      wrist_.Iterate(unsafe_goal != nullptr ? unsafe_goal->wrist() : nullptr,
-                     position->wrist(),
-                     output != nullptr ? &output_struct.wrist_voltage : nullptr,
-                     status->fbb());
+      wrist_.Iterate(
+          unsafe_goal != nullptr ? unsafe_goal->wrist() : nullptr,
+          position->wrist(),
+          output != nullptr ? &(output_struct.wrist_voltage) : nullptr,
+          status->fbb());
 
   EndEffectorState end_effector_state = end_effector_.RunIteration(
       timestamp,
@@ -83,8 +85,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
-  status_builder.add_zeroed(true);
-  status_builder.add_estopped(false);
+  status_builder.add_zeroed(wrist_.zeroed() && arm_.zeroed());
+  status_builder.add_estopped(wrist_.estopped() || arm_.estopped());
   status_builder.add_arm(arm_status_offset);
   status_builder.add_wrist(wrist_offset);
   status_builder.add_end_effector_state(end_effector_state);
