@@ -212,6 +212,10 @@ cc_test(
     name = "lockless_queue_test",
     timeout = "eternal",
     srcs = ["lockless_queue_test.cc"],
+    tags = [
+        # TODO(phil): Re-enable this after the rules_js migration is over.
+        "manual",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event",
