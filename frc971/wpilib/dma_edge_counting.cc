@@ -28,11 +28,11 @@ void DMAPulseWidthReader::UpdateFromSample(const DMASample &sample) {
   if (have_prev_sample_ && high_time_ != 0 && prev_sample_.Get(input_) &&
       !sample.Get(input_)) {
     last_width_ = (sample.GetTime() - high_time_) * 1e-6;
-    high_time_ = 0;
     poll_count_ = 0;
   } else if (have_prev_sample_ && !prev_sample_.Get(input_) &&
              sample.Get(input_)) {
-    high_time_ = prev_sample_.GetTime();
+    last_period_ = (sample.GetTime() - high_time_) * 1e-6;
+    high_time_ = sample.GetTime();
     poll_count_ = 0;
   }
   have_prev_sample_ = true;
@@ -46,6 +46,7 @@ void DMAPulseWidthReader::UpdatePolledValue() {
     high_time_ = 0;
     have_prev_sample_ = false;
     last_width_ = ::std::numeric_limits<double>::quiet_NaN();
+    last_period_ = ::std::numeric_limits<double>::quiet_NaN();
   }
   poll_count_++;
 }

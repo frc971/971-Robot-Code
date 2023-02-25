@@ -244,16 +244,12 @@ class SuperstructureSimulation {
     Position::Builder position_builder = builder.MakeBuilder<Position>();
     position_builder.add_arm(arm_offset);
     position_builder.add_wrist(wrist_offset);
-    position_builder.add_end_effector_cone_beam_break(
-        end_effector_cone_beam_break_);
     position_builder.add_end_effector_cube_beam_break(
         end_effector_cube_beam_break_);
+    // TODO(milind): put into our state
+    position_builder.add_cone_position(0.95);
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
-  }
-
-  void set_end_effector_cone_beam_break(bool triggered) {
-    end_effector_cone_beam_break_ = triggered;
   }
 
   void set_end_effector_cube_beam_break(bool triggered) {
@@ -268,7 +264,6 @@ class SuperstructureSimulation {
   ArmSimulation arm_;
   AbsoluteEncoderSimulator wrist_;
 
-  bool end_effector_cone_beam_break_;
   bool end_effector_cube_beam_break_;
 
   ::aos::Sender<Position> superstructure_position_sender_;
@@ -569,7 +564,7 @@ class SuperstructureBeambreakTest
  public:
   void SetBeambreak(GamePiece game_piece, bool status) {
     if (game_piece == GamePiece::kCone) {
-      superstructure_plant_.set_end_effector_cone_beam_break(status);
+      // TODO(milind): handle cone
     } else {
       superstructure_plant_.set_end_effector_cube_beam_break(status);
     }
@@ -807,8 +802,9 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
   VerifyNearGoal();
 }
 
+// TODO(milind): add cone
 INSTANTIATE_TEST_SUITE_P(EndEffectorGoal, SuperstructureBeambreakTest,
-                         ::testing::Values(GamePiece::kCone, GamePiece::kCube));
+                         ::testing::Values(GamePiece::kCube));
 
 }  // namespace testing
 }  // namespace superstructure

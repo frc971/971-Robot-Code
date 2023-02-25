@@ -47,6 +47,7 @@ class DMAPulseWidthReader : public DMASampleHandlerInterface {
 
   // Last pulse width in seconds
   double last_width() const { return last_width_; }
+  double last_period() const { return last_period_; }
 
  private:
   void UpdateFromSample(const DMASample & /*sample*/) override;
@@ -70,6 +71,7 @@ class DMAPulseWidthReader : public DMASampleHandlerInterface {
   size_t poll_count_ = 0;
 
   double last_width_ = ::std::numeric_limits<double>::quiet_NaN();
+  double last_period_ = ::std::numeric_limits<double>::quiet_NaN();
 
   DISALLOW_COPY_AND_ASSIGN(DMAPulseWidthReader);
 };

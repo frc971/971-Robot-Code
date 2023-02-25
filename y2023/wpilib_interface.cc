@@ -138,6 +138,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   void Start() override {
     AddToDMA(&imu_heading_reader_);
     AddToDMA(&imu_yaw_rate_reader_);
+    AddToDMA(&cone_position_sensor_);
   }
 
   // Auto mode switches.
@@ -196,10 +197,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       position_builder.add_arm(arm_offset);
       position_builder.add_wrist(wrist_offset);
-      position_builder.add_end_effector_cone_beam_break(
-          end_effector_cone_beam_break_->Get());
       position_builder.add_end_effector_cube_beam_break(
           end_effector_cube_beam_break_->Get());
+      position_builder.add_cone_position(cone_position_sensor_.last_width() /
+                                         cone_position_sensor_.last_period());
       builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
@@ -341,13 +342,14 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     wrist_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
   }
 
-  void set_end_effector_cone_beam_break(
-      ::std::unique_ptr<frc::DigitalInput> sensor) {
-    end_effector_cone_beam_break_ = ::std::move(sensor);
-  }
   void set_end_effector_cube_beam_break(
       ::std::unique_ptr<frc::DigitalInput> sensor) {
     end_effector_cube_beam_break_ = ::std::move(sensor);
+  }
+
+  void set_cone_position_sensor(::std::unique_ptr<frc::DigitalInput> sensor) {
+    cone_position_input_ = ::std::move(sensor);
+    cone_position_sensor_.set_input(cone_position_input_.get());
   }
 
  private:
@@ -362,13 +364,16 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
   std::unique_ptr<frc::DigitalInput> imu_heading_input_, imu_yaw_rate_input_,
-      end_effector_cone_beam_break_, end_effector_cube_beam_break_;
+      end_effector_cube_beam_break_;
 
   frc971::wpilib::DMAPulseWidthReader imu_heading_reader_, imu_yaw_rate_reader_;
 
   frc971::wpilib::AbsoluteEncoderAndPotentiometer proximal_encoder_,
       distal_encoder_, roll_joint_encoder_;
   frc971::wpilib::AbsoluteEncoder wrist_encoder_;
+
+  frc971::wpilib::DMAPulseWidthReader cone_position_sensor_;
+  std::unique_ptr<frc::DigitalInput> cone_position_input_;
 };
 
 class SuperstructureWriter
@@ -831,11 +836,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_wrist_encoder(make_encoder(4));
     sensor_reader.set_wrist_absolute_pwm(make_unique<frc::DigitalInput>(4));
 
-    // TODO(Max): Make the DigitalInput values the accurate robot values.
-    sensor_reader.set_end_effector_cone_beam_break(
-        make_unique<frc::DigitalInput>(6));
     sensor_reader.set_end_effector_cube_beam_break(
         make_unique<frc::DigitalInput>(7));
+    sensor_reader.set_cone_position_sensor(make_unique<frc::DigitalInput>(8));
 
     AddLoop(&sensor_reader_event_loop);
 

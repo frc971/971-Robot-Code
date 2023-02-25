@@ -79,7 +79,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   EndEffectorState end_effector_state = end_effector_.RunIteration(
       timestamp,
       unsafe_goal != nullptr ? unsafe_goal->roller_goal() : RollerGoal::IDLE,
-      position->end_effector_cone_beam_break(),
+      false,
       position->end_effector_cube_beam_break(), &output_struct.roller_voltage);
 
   if (output) {

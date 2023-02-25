@@ -63,8 +63,8 @@ static constexpr uint kPinOutput = 4;
 
 class SignalWriter {
  public:
-  static constexpr double kScaledRangeLow = 0.1;
-  static constexpr double kScaledRangeHigh = 0.9;
+  static constexpr double kScaledRangeLow = 0.0;
+  static constexpr double kScaledRangeHigh = 1.0;
 
   // PWM counts to this before wrapping
   static constexpr uint16_t kPWMTop = 62499;
@@ -427,9 +427,15 @@ int main() {
                      sensor2.errors == 0 && result2.Status == 0 &&
                      width_of_obstruction > 0;
 
-    output_writer.SetEnabled(data_good);
-    output_writer.SetValue(averaged_estimate);
-    output_indicator.SetValue(data_good? averaged_estimate: 0);
+    output_writer.SetEnabled(sensor1.errors == 0 && result1.Status == 0 &&
+                             sensor2.errors == 0 && result2.Status == 0);
+
+    const double output =
+        data_good ? std::max(0.05, std::min(averaged_estimate * 2.0, 0.9))
+                  : 0.95;
+    output_writer.SetValue(output);
+
+    output_indicator.SetValue(data_good ? averaged_estimate : 0);
 
     /*Temporary */ if (data_good) {
       n += 1;
@@ -456,12 +462,13 @@ int main() {
         "dist = %5d mm, "
         "Ambient = %3d, Signal = %5d, "
         "#ofSpads = %3d\nPeriod: %f Errors: %d %d %d %d\nx: %f, width: %f "
-        "data: %s\n",
+        "data: %s, sending: %f\n",
         result1.Status, result1.Distance, result1.Ambient, result1.SigPerSPAD,
         result1.NumSPADs, result2.Status, result2.Distance, result2.Ambient,
         result2.SigPerSPAD, result2.NumSPADs, period_ms, sensor1.errors,
         sensor2.errors, sensor1.consecutive_errors, sensor2.consecutive_errors,
-        averaged_estimate, width_of_obstruction, data_good ? "good" : "bad");
+        averaged_estimate, width_of_obstruction, data_good ? "good" : "bad",
+        output);
 
     // Try to reinitialize the sensor if it is in a bad state (eg. lost power
     // but is now reconnected)

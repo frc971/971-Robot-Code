@@ -26,7 +26,7 @@ table Position {
     wrist:frc971.AbsolutePosition (id: 1);
 
     // If this is true, the cone beam break is triggered.
-    end_effector_cone_beam_break:bool (id: 2);
+    cone_position:double (id: 2);
 
     // If this is true, the cube beam break is triggered.
     end_effector_cube_beam_break:bool (id: 3);
