@@ -3,7 +3,6 @@ load("//tools/build_rules:template.bzl", "jinja2_template")
 
 cc_library(
     name = "simulated_constants_sender",
-    testonly = True,
     srcs = ["simulated_constants_sender.cc"],
     hdrs = ["simulated_constants_sender.h"],
     data = [":test_constants.json"],
@@ -19,7 +18,6 @@ cc_library(
 
 jinja2_template(
     name = "test_constants.json",
-    testonly = True,
     src = "test_constants.jinja2.json",
     includes = glob(["test_data/*.json"]),
     parameters = {},
