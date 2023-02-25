@@ -5,6 +5,7 @@
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2023/constants.h"
+#include "y2023/control_loops/drivetrain/drivetrain_can_position_generated.h"
 #include "y2023/control_loops/superstructure/arm/arm.h"
 #include "y2023/control_loops/superstructure/end_effector.h"
 #include "y2023/control_loops/superstructure/superstructure_goal_generated.h"

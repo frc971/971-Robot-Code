@@ -6,7 +6,6 @@
 #include "frc971/control_loops/control_loop.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/superstructure/superstructure_goal_generated.h"
-#include "y2023/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2023 {

@@ -110,11 +110,283 @@ static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
 
 }  // namespace
 
+static constexpr int kCANFalconCount = 6;
+static constexpr int kCANSignalsCount = 4;
+static constexpr int kRollerSignalsCount = 4;
+static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
+
+class Falcon {
+ public:
+  Falcon(int device_id, std::string canbus,
+         aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
+                         kCANFalconCount * kCANSignalsCount +
+                             kRollerSignalsCount> *signals)
+      : talon_(device_id, canbus),
+        device_id_(device_id),
+        device_temp_(talon_.GetDeviceTemp()),
+        supply_voltage_(talon_.GetSupplyVoltage()),
+        supply_current_(talon_.GetSupplyCurrent()),
+        torque_current_(talon_.GetTorqueCurrent()),
+        position_(talon_.GetPosition()) {
+    // device temp is not timesynced so don't add it to the list of signals
+    device_temp_.SetUpdateFrequency(kCANUpdateFreqHz);
+
+    CHECK_EQ(kCANSignalsCount, 4);
+    CHECK_NOTNULL(signals);
+    CHECK_LE(signals->size() + 4u, signals->capacity());
+
+    supply_voltage_.SetUpdateFrequency(kCANUpdateFreqHz);
+    signals->push_back(&supply_voltage_);
+
+    supply_current_.SetUpdateFrequency(kCANUpdateFreqHz);
+    signals->push_back(&supply_current_);
+
+    torque_current_.SetUpdateFrequency(kCANUpdateFreqHz);
+    signals->push_back(&torque_current_);
+
+    position_.SetUpdateFrequency(kCANUpdateFreqHz);
+    signals->push_back(&position_);
+  }
+
+  void WriteConfigs(ctre::phoenixpro::signals::InvertedValue invert) {
+    inverted_ = invert;
+
+    ctre::phoenixpro::configs::CurrentLimitsConfigs current_limits;
+    current_limits.StatorCurrentLimit =
+        constants::Values::kDrivetrainStatorCurrentLimit();
+    current_limits.StatorCurrentLimitEnable = true;
+    current_limits.SupplyCurrentLimit =
+        constants::Values::kDrivetrainSupplyCurrentLimit();
+    current_limits.SupplyCurrentLimitEnable = true;
+
+    ctre::phoenixpro::configs::MotorOutputConfigs output_configs;
+    output_configs.NeutralMode =
+        ctre::phoenixpro::signals::NeutralModeValue::Brake;
+    output_configs.DutyCycleNeutralDeadband = 0;
+
+    output_configs.Inverted = inverted_;
+
+    ctre::phoenixpro::configs::TalonFXConfiguration configuration;
+    configuration.CurrentLimits = current_limits;
+    configuration.MotorOutput = output_configs;
+
+    ctre::phoenix::StatusCode status =
+        talon_.GetConfigurator().Apply(configuration);
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
+  }
+
+  void WriteRollerConfigs() {
+    ctre::phoenixpro::configs::CurrentLimitsConfigs current_limits;
+    current_limits.StatorCurrentLimit =
+        constants::Values::kRollerStatorCurrentLimit();
+    current_limits.StatorCurrentLimitEnable = true;
+    current_limits.SupplyCurrentLimit =
+        constants::Values::kRollerSupplyCurrentLimit();
+    current_limits.SupplyCurrentLimitEnable = true;
+
+    ctre::phoenixpro::configs::MotorOutputConfigs output_configs;
+    output_configs.NeutralMode =
+        ctre::phoenixpro::signals::NeutralModeValue::Brake;
+    output_configs.DutyCycleNeutralDeadband = 0;
+
+    ctre::phoenixpro::configs::TalonFXConfiguration configuration;
+    configuration.CurrentLimits = current_limits;
+    configuration.MotorOutput = output_configs;
+
+    ctre::phoenix::StatusCode status =
+        talon_.GetConfigurator().Apply(configuration);
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
+  }
+
+  ctre::phoenixpro::hardware::TalonFX *talon() { return &talon_; }
+
+  flatbuffers::Offset<drivetrain::CANFalcon> WritePosition(
+      flatbuffers::FlatBufferBuilder *fbb) {
+    drivetrain::CANFalcon::Builder builder(*fbb);
+    builder.add_id(device_id_);
+    builder.add_device_temp(device_temp());
+    builder.add_supply_voltage(supply_voltage());
+    builder.add_supply_current(supply_current());
+    builder.add_torque_current(torque_current());
+
+    double invert =
+        (inverted_ ==
+                 ctre::phoenixpro::signals::InvertedValue::Clockwise_Positive
+             ? 1
+             : -1);
+
+    builder.add_position(
+        constants::Values::DrivetrainCANEncoderToMeters(position()) * invert);
+
+    return builder.Finish();
+  }
+
+  int device_id() const { return device_id_; }
+  float device_temp() const { return device_temp_.GetValue().value(); }
+  float supply_voltage() const { return supply_voltage_.GetValue().value(); }
+  float supply_current() const { return supply_current_.GetValue().value(); }
+  float torque_current() const { return torque_current_.GetValue().value(); }
+  float position() const { return position_.GetValue().value(); }
+
+  // returns the monotonic timestamp of the latest timesynced reading in the
+  // timebase of the the syncronized CAN bus clock.
+  int64_t GetTimestamp() {
+    std::chrono::nanoseconds latest_timestamp =
+        torque_current_.GetTimestamp().GetTime();
+
+    return latest_timestamp.count();
+  }
+
+  void RefreshNontimesyncedSignals() { device_temp_.Refresh(); };
+
+ private:
+  ctre::phoenixpro::hardware::TalonFX talon_;
+  int device_id_;
+
+  ctre::phoenixpro::signals::InvertedValue inverted_;
+
+  ctre::phoenixpro::StatusSignalValue<units::temperature::celsius_t>
+      device_temp_;
+  ctre::phoenixpro::StatusSignalValue<units::voltage::volt_t> supply_voltage_;
+  ctre::phoenixpro::StatusSignalValue<units::current::ampere_t> supply_current_,
+      torque_current_;
+  ctre::phoenixpro::StatusSignalValue<units::angle::turn_t> position_;
+};
+
+class CANSensorReader {
+ public:
+  CANSensorReader(aos::EventLoop *event_loop)
+      : event_loop_(event_loop),
+        can_position_sender_(
+            event_loop->MakeSender<drivetrain::CANPosition>("/drivetrain")),
+        roller_falcon_data_(std::nullopt) {
+    event_loop->SetRuntimeRealtimePriority(40);
+    event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({1}));
+    timer_handler_ = event_loop->AddTimer([this]() { Loop(); });
+    timer_handler_->set_name("CANSensorReader Loop");
+
+    event_loop->OnRun([this]() {
+      timer_handler_->Setup(event_loop_->monotonic_now(), 1 / kCANUpdateFreqHz);
+    });
+  }
+
+  aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
+                  kCANFalconCount * kCANSignalsCount + kRollerSignalsCount>
+      *get_signals_registry() {
+    return &signals_;
+  };
+
+  void set_falcons(std::shared_ptr<Falcon> right_front,
+                   std::shared_ptr<Falcon> right_back,
+                   std::shared_ptr<Falcon> right_under,
+                   std::shared_ptr<Falcon> left_front,
+                   std::shared_ptr<Falcon> left_back,
+                   std::shared_ptr<Falcon> left_under,
+                   std::shared_ptr<Falcon> roller_falcon) {
+    right_front_ = std::move(right_front);
+    right_back_ = std::move(right_back);
+    right_under_ = std::move(right_under);
+    left_front_ = std::move(left_front);
+    left_back_ = std::move(left_back);
+    left_under_ = std::move(left_under);
+    roller_falcon_ = std::move(roller_falcon);
+  }
+
+  std::optional<superstructure::CANFalconT> roller_falcon_data() {
+    std::unique_lock<aos::stl_mutex> lock(roller_mutex_);
+    return roller_falcon_data_;
+  }
+
+ private:
+  void Loop() {
+    CHECK_EQ(signals_.size(), 28u);
+    ctre::phoenix::StatusCode status =
+        ctre::phoenixpro::BaseStatusSignalValue::WaitForAll(
+            2000_ms, {signals_[0],  signals_[1],  signals_[2],  signals_[3],
+                      signals_[4],  signals_[5],  signals_[6],  signals_[7],
+                      signals_[8],  signals_[9],  signals_[10], signals_[11],
+                      signals_[12], signals_[13], signals_[14], signals_[15],
+                      signals_[16], signals_[17], signals_[18], signals_[19],
+                      signals_[20], signals_[21], signals_[22], signals_[23],
+                      signals_[24], signals_[25], signals_[26], signals_[27]});
+
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to read signals from falcons: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
+
+    auto builder = can_position_sender_.MakeBuilder();
+
+    for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
+                        left_back_, left_under_, roller_falcon_}) {
+      falcon->RefreshNontimesyncedSignals();
+    }
+
+    aos::SizedArray<flatbuffers::Offset<drivetrain::CANFalcon>, kCANFalconCount>
+        falcons;
+
+    for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
+                        left_back_, left_under_}) {
+      falcons.push_back(falcon->WritePosition(builder.fbb()));
+    }
+
+    auto falcons_list =
+        builder.fbb()->CreateVector<flatbuffers::Offset<drivetrain::CANFalcon>>(
+            falcons);
+
+    drivetrain::CANPosition::Builder can_position_builder =
+        builder.MakeBuilder<drivetrain::CANPosition>();
+
+    can_position_builder.add_falcons(falcons_list);
+    can_position_builder.add_timestamp(right_front_->GetTimestamp());
+    can_position_builder.add_status(static_cast<int>(status));
+
+    builder.CheckOk(builder.Send(can_position_builder.Finish()));
+
+    {
+      std::unique_lock<aos::stl_mutex> lock(roller_mutex_);
+      superstructure::CANFalconT roller_falcon_data;
+      roller_falcon_data.id = roller_falcon_->device_id();
+      roller_falcon_data.supply_current = roller_falcon_->supply_current();
+      roller_falcon_data.torque_current = roller_falcon_->torque_current();
+      roller_falcon_data.supply_voltage = roller_falcon_->supply_voltage();
+      roller_falcon_data.device_temp = roller_falcon_->device_temp();
+      roller_falcon_data.position = roller_falcon_->position();
+      roller_falcon_data_ =
+          std::make_optional<superstructure::CANFalconT>(roller_falcon_data);
+    }
+  }
+
+  aos::EventLoop *event_loop_;
+
+  aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
+                  kCANFalconCount * kCANSignalsCount + kRollerSignalsCount>
+      signals_;
+  aos::Sender<drivetrain::CANPosition> can_position_sender_;
+
+  std::shared_ptr<Falcon> right_front_, right_back_, right_under_, left_front_,
+      left_back_, left_under_, roller_falcon_;
+
+  std::optional<superstructure::CANFalconT> roller_falcon_data_;
+
+  aos::stl_mutex roller_mutex_;
+
+  // Pointer to the timer handler used to modify the wakeup.
+  ::aos::TimerHandler *timer_handler_;
+};
+
 // Class to send position messages with sensor readings to our loops.
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(::aos::ShmEventLoop *event_loop,
-               std::shared_ptr<const Values> values)
+               std::shared_ptr<const Values> values,
+               CANSensorReader *can_sensor_reader)
       : ::frc971::wpilib::SensorReader(event_loop),
         values_(std::move(values)),
         auto_mode_sender_(
@@ -128,7 +400,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                 ->MakeSender<::frc971::control_loops::drivetrain::Position>(
                     "/drivetrain")),
         gyro_sender_(event_loop->MakeSender<::frc971::sensors::GyroReading>(
-            "/drivetrain")) {
+            "/drivetrain")),
+        can_sensor_reader_(can_sensor_reader) {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
@@ -192,6 +465,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       flatbuffers::Offset<frc971::AbsolutePosition> wrist_offset =
           frc971::AbsolutePosition::Pack(*builder.fbb(), &wrist);
 
+      flatbuffers::Offset<superstructure::CANFalcon> roller_falcon_offset;
+      auto optional_roller_falcon = can_sensor_reader_->roller_falcon_data();
+      if (optional_roller_falcon.has_value()) {
+        roller_falcon_offset = superstructure::CANFalcon::Pack(
+            *builder.fbb(), &optional_roller_falcon.value());
+      }
+
       superstructure::Position::Builder position_builder =
           builder.MakeBuilder<superstructure::Position>();
 
@@ -201,6 +481,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
           end_effector_cube_beam_break_->Get());
       position_builder.add_cone_position(cone_position_sensor_.last_width() /
                                          cone_position_sensor_.last_period());
+      if (!roller_falcon_offset.IsNull()) {
+        position_builder.add_roller_falcon(roller_falcon_offset);
+      }
       builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
@@ -374,6 +657,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   frc971::wpilib::DMAPulseWidthReader cone_position_sensor_;
   std::unique_ptr<frc::DigitalInput> cone_position_input_;
+
+  CANSensorReader *can_sensor_reader_;
 };
 
 class SuperstructureWriter
@@ -440,248 +725,6 @@ class SuperstructureWriter
 
   ::std::unique_ptr<::frc::TalonFX> proximal_falcon_, distal_falcon_;
   ::std::unique_ptr<::frc::VictorSP> roll_joint_victor_, wrist_victor_;
-};
-
-static constexpr int kCANFalconCount = 6;
-static constexpr int kCANSignalsCount = 4;
-static constexpr int kRollerSignalsCount = 4;
-static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
-
-class Falcon {
- public:
-  Falcon(int device_id, std::string canbus,
-         aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
-                         kCANFalconCount * kCANSignalsCount +
-                             kRollerSignalsCount> *signals)
-      : talon_(device_id, canbus),
-        device_id_(device_id),
-        device_temp_(talon_.GetDeviceTemp()),
-        supply_voltage_(talon_.GetSupplyVoltage()),
-        supply_current_(talon_.GetSupplyCurrent()),
-        torque_current_(talon_.GetTorqueCurrent()),
-        position_(talon_.GetPosition()) {
-    // device temp is not timesynced so don't add it to the list of signals
-    device_temp_.SetUpdateFrequency(kCANUpdateFreqHz);
-
-    CHECK_EQ(kCANSignalsCount, 4);
-    CHECK_NOTNULL(signals);
-    CHECK_LE(signals->size() + 4u, signals->capacity());
-
-    supply_voltage_.SetUpdateFrequency(kCANUpdateFreqHz);
-    signals->push_back(&supply_voltage_);
-
-    supply_current_.SetUpdateFrequency(kCANUpdateFreqHz);
-    signals->push_back(&supply_current_);
-
-    torque_current_.SetUpdateFrequency(kCANUpdateFreqHz);
-    signals->push_back(&torque_current_);
-
-    position_.SetUpdateFrequency(kCANUpdateFreqHz);
-    signals->push_back(&position_);
-  }
-
-  void WriteConfigs(ctre::phoenixpro::signals::InvertedValue invert) {
-    inverted_ = invert;
-
-    ctre::phoenixpro::configs::CurrentLimitsConfigs current_limits;
-    current_limits.StatorCurrentLimit =
-        constants::Values::kDrivetrainStatorCurrentLimit();
-    current_limits.StatorCurrentLimitEnable = true;
-    current_limits.SupplyCurrentLimit =
-        constants::Values::kDrivetrainSupplyCurrentLimit();
-    current_limits.SupplyCurrentLimitEnable = true;
-
-    ctre::phoenixpro::configs::MotorOutputConfigs output_configs;
-    output_configs.NeutralMode =
-        ctre::phoenixpro::signals::NeutralModeValue::Brake;
-    output_configs.DutyCycleNeutralDeadband = 0;
-
-    output_configs.Inverted = inverted_;
-
-    ctre::phoenixpro::configs::TalonFXConfiguration configuration;
-    configuration.CurrentLimits = current_limits;
-    configuration.MotorOutput = output_configs;
-
-    ctre::phoenix::StatusCode status =
-        talon_.GetConfigurator().Apply(configuration);
-    if (!status.IsOK()) {
-      AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
-              status.GetName(), status.GetDescription());
-    }
-  }
-
-  void WriteRollerConfigs() {
-    ctre::phoenixpro::configs::CurrentLimitsConfigs current_limits;
-    current_limits.StatorCurrentLimit =
-        constants::Values::kRollerStatorCurrentLimit();
-    current_limits.StatorCurrentLimitEnable = true;
-    current_limits.SupplyCurrentLimit =
-        constants::Values::kRollerSupplyCurrentLimit();
-    current_limits.SupplyCurrentLimitEnable = true;
-
-    ctre::phoenixpro::configs::MotorOutputConfigs output_configs;
-    output_configs.NeutralMode =
-        ctre::phoenixpro::signals::NeutralModeValue::Brake;
-    output_configs.DutyCycleNeutralDeadband = 0;
-
-    ctre::phoenixpro::configs::TalonFXConfiguration configuration;
-    configuration.CurrentLimits = current_limits;
-    configuration.MotorOutput = output_configs;
-
-    ctre::phoenix::StatusCode status =
-        talon_.GetConfigurator().Apply(configuration);
-    if (!status.IsOK()) {
-      AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
-              status.GetName(), status.GetDescription());
-    }
-  }
-
-  ctre::phoenixpro::hardware::TalonFX *talon() { return &talon_; }
-
-  flatbuffers::Offset<drivetrain::CANFalcon> WritePosition(
-      flatbuffers::FlatBufferBuilder *fbb) {
-    drivetrain::CANFalcon::Builder builder(*fbb);
-    builder.add_id(device_id_);
-    builder.add_device_temp(device_temp_.GetValue().value());
-    builder.add_supply_voltage(supply_voltage_.GetValue().value());
-    builder.add_supply_current(supply_current_.GetValue().value());
-    builder.add_torque_current(torque_current_.GetValue().value());
-
-    double invert =
-        (inverted_ ==
-                 ctre::phoenixpro::signals::InvertedValue::Clockwise_Positive
-             ? 1
-             : -1);
-
-    builder.add_position(constants::Values::DrivetrainCANEncoderToMeters(
-                             position_.GetValue().value()) *
-                         invert);
-
-    return builder.Finish();
-  }
-
-  // returns the monotonic timestamp of the latest timesynced reading in the
-  // timebase of the the syncronized CAN bus clock.
-  int64_t GetTimestamp() {
-    std::chrono::nanoseconds latest_timestamp =
-        torque_current_.GetTimestamp().GetTime();
-
-    return latest_timestamp.count();
-  }
-
-  void RefreshNontimesyncedSignals() { device_temp_.Refresh(); };
-
- private:
-  ctre::phoenixpro::hardware::TalonFX talon_;
-  int device_id_;
-
-  ctre::phoenixpro::signals::InvertedValue inverted_;
-
-  ctre::phoenixpro::StatusSignalValue<units::temperature::celsius_t>
-      device_temp_;
-  ctre::phoenixpro::StatusSignalValue<units::voltage::volt_t> supply_voltage_;
-  ctre::phoenixpro::StatusSignalValue<units::current::ampere_t> supply_current_,
-      torque_current_;
-  ctre::phoenixpro::StatusSignalValue<units::angle::turn_t> position_;
-};
-
-class CANSensorReader {
- public:
-  CANSensorReader(aos::EventLoop *event_loop)
-      : event_loop_(event_loop),
-        can_position_sender_(
-            event_loop->MakeSender<drivetrain::CANPosition>("/drivetrain")) {
-    event_loop->SetRuntimeRealtimePriority(40);
-    event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({1}));
-    timer_handler_ = event_loop->AddTimer([this]() { Loop(); });
-    timer_handler_->set_name("CANSensorReader Loop");
-
-    event_loop->OnRun([this]() {
-      timer_handler_->Setup(event_loop_->monotonic_now(), 1 / kCANUpdateFreqHz);
-    });
-  }
-
-  aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
-                  kCANFalconCount * kCANSignalsCount + kRollerSignalsCount>
-      *get_signals_registry() {
-    return &signals_;
-  };
-
-  void set_falcons(std::shared_ptr<Falcon> right_front,
-                   std::shared_ptr<Falcon> right_back,
-                   std::shared_ptr<Falcon> right_under,
-                   std::shared_ptr<Falcon> left_front,
-                   std::shared_ptr<Falcon> left_back,
-                   std::shared_ptr<Falcon> left_under,
-                   std::shared_ptr<Falcon> roller_falcon) {
-    right_front_ = std::move(right_front);
-    right_back_ = std::move(right_back);
-    right_under_ = std::move(right_under);
-    left_front_ = std::move(left_front);
-    left_back_ = std::move(left_back);
-    left_under_ = std::move(left_under);
-    roller_falcon_ = std::move(roller_falcon);
-  }
-
- private:
-  void Loop() {
-    CHECK_EQ(signals_.size(), 28u);
-    ctre::phoenix::StatusCode status =
-        ctre::phoenixpro::BaseStatusSignalValue::WaitForAll(
-            2000_ms, {signals_[0],  signals_[1],  signals_[2],  signals_[3],
-                      signals_[4],  signals_[5],  signals_[6],  signals_[7],
-                      signals_[8],  signals_[9],  signals_[10], signals_[11],
-                      signals_[12], signals_[13], signals_[14], signals_[15],
-                      signals_[16], signals_[17], signals_[18], signals_[19],
-                      signals_[20], signals_[21], signals_[22], signals_[23],
-                      signals_[24], signals_[25], signals_[26], signals_[27]});
-
-    if (!status.IsOK()) {
-      AOS_LOG(ERROR, "Failed to read signals from falcons: %s: %s",
-              status.GetName(), status.GetDescription());
-    }
-
-    auto builder = can_position_sender_.MakeBuilder();
-
-    for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
-                        left_back_, left_under_, roller_falcon_}) {
-      falcon->RefreshNontimesyncedSignals();
-    }
-
-    aos::SizedArray<flatbuffers::Offset<drivetrain::CANFalcon>, kCANFalconCount>
-        falcons;
-
-    for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
-                        left_back_, left_under_}) {
-      falcons.push_back(falcon->WritePosition(builder.fbb()));
-    }
-
-    auto falcons_list =
-        builder.fbb()->CreateVector<flatbuffers::Offset<drivetrain::CANFalcon>>(
-            falcons);
-
-    drivetrain::CANPosition::Builder can_position_builder =
-        builder.MakeBuilder<drivetrain::CANPosition>();
-
-    can_position_builder.add_falcons(falcons_list);
-    can_position_builder.add_timestamp(right_front_->GetTimestamp());
-    can_position_builder.add_status(static_cast<int>(status));
-
-    builder.CheckOk(builder.Send(can_position_builder.Finish()));
-  }
-
-  aos::EventLoop *event_loop_;
-
-  aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
-                  kCANFalconCount * kCANSignalsCount + kRollerSignalsCount>
-      signals_;
-  aos::Sender<drivetrain::CANPosition> can_position_sender_;
-
-  std::shared_ptr<Falcon> right_front_, right_back_, right_under_, left_front_,
-      left_back_, left_under_, roller_falcon_;
-
-  // Pointer to the timer handler used to modify the wakeup.
-  ::aos::TimerHandler *timer_handler_;
 };
 
 class SuperstructureCANWriter
@@ -863,8 +906,34 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         make_unique<frc::DigitalOutput>(25);
 
     // Thread 3.
+    ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
+    can_sensor_reader_event_loop.set_name("CANSensorReader");
+    CANSensorReader can_sensor_reader(&can_sensor_reader_event_loop);
+
+    std::shared_ptr<Falcon> right_front = std::make_shared<Falcon>(
+        1, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> right_back = std::make_shared<Falcon>(
+        2, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> right_under = std::make_shared<Falcon>(
+        3, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> left_front = std::make_shared<Falcon>(
+        4, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> left_back = std::make_shared<Falcon>(
+        5, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> left_under = std::make_shared<Falcon>(
+        6, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> roller = std::make_shared<Falcon>(
+        13, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+
+    can_sensor_reader.set_falcons(right_front, right_back, right_under,
+                                  left_front, left_back, left_under, roller);
+
+    AddLoop(&can_sensor_reader_event_loop);
+
+    // Thread 4.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
-    SensorReader sensor_reader(&sensor_reader_event_loop, values);
+    SensorReader sensor_reader(&sensor_reader_event_loop, values,
+                               &can_sensor_reader);
     sensor_reader.set_pwm_trigger(true);
     sensor_reader.set_drivetrain_left_encoder(make_encoder(1));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
@@ -894,31 +963,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_cone_position_sensor(make_unique<frc::DigitalInput>(8));
 
     AddLoop(&sensor_reader_event_loop);
-
-    // Thread 4.
-    ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
-    can_sensor_reader_event_loop.set_name("CANSensorReader");
-    CANSensorReader can_sensor_reader(&can_sensor_reader_event_loop);
-
-    std::shared_ptr<Falcon> right_front = std::make_shared<Falcon>(
-        1, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> right_back = std::make_shared<Falcon>(
-        2, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> right_under = std::make_shared<Falcon>(
-        3, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> left_front = std::make_shared<Falcon>(
-        4, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> left_back = std::make_shared<Falcon>(
-        5, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> left_under = std::make_shared<Falcon>(
-        6, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> roller = std::make_shared<Falcon>(
-        13, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-
-    can_sensor_reader.set_falcons(right_front, right_back, right_under,
-                                  left_front, left_back, left_under, roller);
-
-    AddLoop(&can_sensor_reader_event_loop);
 
     // Thread 5.
     // Setup CAN.
