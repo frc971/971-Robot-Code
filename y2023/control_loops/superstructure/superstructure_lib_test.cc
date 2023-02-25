@@ -127,8 +127,7 @@ class ArmSimulation {
   double roll_joint_velocity() const { return roll_joint_loop_.X_hat(1, 0); }
 
   void Simulate(::Eigen::Matrix<double, 3, 1> U) {
-    constexpr double voltage_check =
-        superstructure::arm::Arm::kOperatingVoltage();
+    constexpr double voltage_check = constants::Values::kArmOperatingVoltage();
 
     AOS_CHECK_LE(::std::abs(U(0)), voltage_check);
     AOS_CHECK_LE(::std::abs(U(1)), voltage_check);

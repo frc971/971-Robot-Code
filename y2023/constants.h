@@ -154,6 +154,32 @@ struct Values {
     return std::chrono::seconds(2);
   }
 
+  // if true, tune down all the arm constants for testing.
+  static constexpr bool kArmGrannyMode() { return false; }
+
+  // the operating voltage.
+  static constexpr double kArmOperatingVoltage() {
+    return kArmGrannyMode() ? 6.0 : 12.0;
+  }
+  static constexpr double kArmDt() { return 0.00505; }
+  static constexpr std::chrono::nanoseconds kArmDtDuration() {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::duration<double>(kArmDt()));
+  }
+  static constexpr double kArmAlpha0Max() {
+    return kArmGrannyMode() ? 15.0 : 15.0;
+  }
+  static constexpr double kArmAlpha1Max() {
+    return kArmGrannyMode() ? 10.0 : 10.0;
+  }
+  static constexpr double kArmAlpha2Max() {
+    return kArmGrannyMode() ? 90.0 : 90.0;
+  }
+
+  static constexpr double kArmVMax() { return kArmGrannyMode() ? 4.0 : 9.5; }
+  static constexpr double kArmPathlessVMax() { return 4.5; }
+  static constexpr double kArmGotoPathVMax() { return 4.5; }
+
   struct PotConstants {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
         ::frc971::zeroing::RelativeEncoderZeroingEstimator>
