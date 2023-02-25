@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <bitset>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -284,13 +285,24 @@ int main(int argc, char **argv) {
 
       if (not_there) continue;
 
-      const char *cpu_mask_string =
-          CPU_EQUAL(&cpu_mask, &all_cpus) ? "all" : "???";
+      std::string_view cpu_mask_string;
+      if (CPU_EQUAL(&cpu_mask, &all_cpus)) {
+        cpu_mask_string = "all";
+      } else {
+        // Convert the CPU mask to a bitset
+        std::bitset<CPU_SETSIZE> bitset;
+        for (size_t i = 0; i < CPU_SETSIZE; i++) {
+          bitset[i] = CPU_ISSET(i, &cpu_mask);
+        }
+        std::stringstream ss;
+        ss << std::hex << bitset.to_ulong();
+        cpu_mask_string = ss.str();
+      }
 
       threads.emplace(Thread{.policy = static_cast<uint32_t>(scheduler),
                              .exe = exe,
                              .name = name,
-                             .cpu_mask = cpu_mask_string,
+                             .cpu_mask = cpu_mask_string.data(),
                              .nice_value = nice_value,
                              .sched_priority = param.sched_priority,
                              .tid = tid,
