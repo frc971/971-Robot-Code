@@ -44,6 +44,12 @@ table ArmStatus {
   voltage_error1:float (id: 13);
   voltage_error2:float (id: 23);
 
+  // Current arm position in meters for use with UI
+  arm_x:float (id: 24);
+  arm_y:float (id: 25);
+  // Circular index to handle theta wrapping
+  arm_circular_index:int (id: 26);
+
   // True if we are zeroed.
   zeroed:bool (id: 14);
 

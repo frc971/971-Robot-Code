@@ -51,6 +51,31 @@ Arm::Arm(std::shared_ptr<const constants::Values> values)
 
 void Arm::Reset() { state_ = ArmState::UNINITIALIZED; }
 
+namespace {
+
+// Proximal joint center in xy space
+constexpr std::pair<double, double> kJointCenter = {-0.203, 0.787};
+
+std::tuple<double, double, int> ArmThetasToXY(double theta_proximal,
+                                              double theta_distal) {
+  double theta_proximal_shifted = M_PI / 2.0 - theta_proximal;
+  double theta_distal_shifted = M_PI / 2.0 - theta_distal;
+
+  double x = std::cos(theta_proximal_shifted) * kArmConstants.l0 +
+             std::cos(theta_distal_shifted) * kArmConstants.l1 +
+             kJointCenter.first;
+  double y = std::sin(theta_proximal_shifted) * kArmConstants.l0 +
+             std::sin(theta_distal_shifted) * kArmConstants.l1 +
+             kJointCenter.second;
+
+  int circular_index =
+      std::floor((theta_distal_shifted - theta_proximal_shifted) / M_PI);
+
+  return std::make_tuple(x, y, circular_index);
+}
+
+}  // namespace
+
 flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
     const ::aos::monotonic_clock::time_point /*monotonic_now*/,
     const uint32_t *unsafe_goal, const superstructure::ArmPosition *position,
@@ -273,6 +298,9 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
       roll_joint_estimator_state_offset =
           roll_joint_zeroing_estimator_.GetEstimatorState(fbb);
 
+  const auto [arm_x, arm_y, arm_circular_index] =
+      ArmThetasToXY(arm_ekf_.X_hat(0), arm_ekf_.X_hat(2));
+
   superstructure::ArmStatus::Builder status_builder(*fbb);
   status_builder.add_proximal_estimator_state(proximal_estimator_state_offset);
   status_builder.add_distal_estimator_state(distal_estimator_state_offset);
@@ -295,6 +323,10 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
   status_builder.add_voltage_error0(arm_ekf_.X_hat(4));
   status_builder.add_voltage_error1(arm_ekf_.X_hat(5));
   status_builder.add_voltage_error2(roll_joint_loop_.X_hat(2));
+
+  status_builder.add_arm_x(arm_x);
+  status_builder.add_arm_y(arm_y);
+  status_builder.add_arm_circular_index(arm_circular_index);
 
   if (!disable) {
     *proximal_output = ::std::max(
