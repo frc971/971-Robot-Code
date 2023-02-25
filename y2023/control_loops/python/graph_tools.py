@@ -357,7 +357,7 @@ class Path(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def roll_joint_thetas(self):
+    def joint_thetas(self):
         pass
 
     @abc.abstractmethod
@@ -490,12 +490,16 @@ class ThetaSplineSegment(SplineSegmentBase):
     def get_controls_theta(self):
         return (self.start, self.control1, self.control2, self.end)
 
-    def roll_joint_thetas(self):
+    def joint_thetas(self):
         ts = []
-        thetas = []
+        thetas = [[], [], []]
         for alpha in subdivide_multistep():
+            proximal, distal = spline_eval(self.start, self.control1,
+                                           self.control2, self.end, alpha)
             roll_joint = get_roll_joint_theta_multistep(
                 self.alpha_rolls, alpha)
-            thetas.append(roll_joint)
+            thetas[0].append(proximal)
+            thetas[1].append(distal)
+            thetas[2].append(roll_joint)
             ts.append(alpha)
         return ts, thetas
