@@ -381,7 +381,10 @@ class SuperstructureWriter
  public:
   SuperstructureWriter(aos::EventLoop *event_loop)
       : frc971::wpilib::LoopOutputHandler<superstructure::Output>(
-            event_loop, "/superstructure") {}
+            event_loop, "/superstructure") {
+    event_loop->SetRuntimeRealtimePriority(
+        constants::Values::kDrivetrainWriterPriority);
+  }
 
   std::shared_ptr<frc::DigitalOutput> superstructure_reading_;
 
@@ -406,17 +409,6 @@ class SuperstructureWriter
     wrist_victor_ = ::std::move(t);
   }
 
-  void set_roller_falcon(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
-    roller_falcon_ = ::std::move(t);
-    roller_falcon_->ConfigSupplyCurrentLimit(
-        {true, Values::kRollerSupplyCurrentLimit(),
-         Values::kRollerSupplyCurrentLimit(), 0});
-    roller_falcon_->ConfigStatorCurrentLimit(
-        {true, Values::kRollerStatorCurrentLimit(),
-         Values::kRollerStatorCurrentLimit(), 0});
-  }
-
  private:
   void Stop() override {
     AOS_LOG(WARNING, "Superstructure output too old.\n");
@@ -424,10 +416,6 @@ class SuperstructureWriter
     distal_falcon_->SetDisabled();
     roll_joint_victor_->SetDisabled();
     wrist_victor_->SetDisabled();
-    if (roller_falcon_) {
-      roller_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled,
-                          0);
-    }
   }
 
   void Write(const superstructure::Output &output) override {
@@ -435,9 +423,6 @@ class SuperstructureWriter
     WritePwm(output.distal_voltage(), distal_falcon_.get());
     WritePwm(-output.roll_joint_voltage(), roll_joint_victor_.get());
     WritePwm(output.wrist_voltage(), wrist_victor_.get());
-    if (roller_falcon_) {
-      WriteCan(output.roller_voltage(), roller_falcon_.get());
-    }
   }
 
   static void WriteCan(const double voltage,
@@ -455,18 +440,19 @@ class SuperstructureWriter
 
   ::std::unique_ptr<::frc::TalonFX> proximal_falcon_, distal_falcon_;
   ::std::unique_ptr<::frc::VictorSP> roll_joint_victor_, wrist_victor_;
-  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> roller_falcon_;
 };
 
 static constexpr int kCANFalconCount = 6;
 static constexpr int kCANSignalsCount = 4;
+static constexpr int kRollerSignalsCount = 4;
 static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
 
 class Falcon {
  public:
   Falcon(int device_id, std::string canbus,
          aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
-                         kCANFalconCount * kCANSignalsCount> *signals)
+                         kCANFalconCount * kCANSignalsCount +
+                             kRollerSignalsCount> *signals)
       : talon_(device_id, canbus),
         device_id_(device_id),
         device_temp_(talon_.GetDeviceTemp()),
@@ -511,6 +497,32 @@ class Falcon {
     output_configs.DutyCycleNeutralDeadband = 0;
 
     output_configs.Inverted = inverted_;
+
+    ctre::phoenixpro::configs::TalonFXConfiguration configuration;
+    configuration.CurrentLimits = current_limits;
+    configuration.MotorOutput = output_configs;
+
+    ctre::phoenix::StatusCode status =
+        talon_.GetConfigurator().Apply(configuration);
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
+  }
+
+  void WriteRollerConfigs() {
+    ctre::phoenixpro::configs::CurrentLimitsConfigs current_limits;
+    current_limits.StatorCurrentLimit =
+        constants::Values::kRollerStatorCurrentLimit();
+    current_limits.StatorCurrentLimitEnable = true;
+    current_limits.SupplyCurrentLimit =
+        constants::Values::kRollerSupplyCurrentLimit();
+    current_limits.SupplyCurrentLimitEnable = true;
+
+    ctre::phoenixpro::configs::MotorOutputConfigs output_configs;
+    output_configs.NeutralMode =
+        ctre::phoenixpro::signals::NeutralModeValue::Brake;
+    output_configs.DutyCycleNeutralDeadband = 0;
 
     ctre::phoenixpro::configs::TalonFXConfiguration configuration;
     configuration.CurrentLimits = current_limits;
@@ -590,7 +602,7 @@ class CANSensorReader {
   }
 
   aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
-                  kCANFalconCount * kCANSignalsCount>
+                  kCANFalconCount * kCANSignalsCount + kRollerSignalsCount>
       *get_signals_registry() {
     return &signals_;
   };
@@ -600,18 +612,20 @@ class CANSensorReader {
                    std::shared_ptr<Falcon> right_under,
                    std::shared_ptr<Falcon> left_front,
                    std::shared_ptr<Falcon> left_back,
-                   std::shared_ptr<Falcon> left_under) {
+                   std::shared_ptr<Falcon> left_under,
+                   std::shared_ptr<Falcon> roller_falcon) {
     right_front_ = std::move(right_front);
     right_back_ = std::move(right_back);
     right_under_ = std::move(right_under);
     left_front_ = std::move(left_front);
     left_back_ = std::move(left_back);
     left_under_ = std::move(left_under);
+    roller_falcon_ = std::move(roller_falcon);
   }
 
  private:
   void Loop() {
-    CHECK_EQ(signals_.size(), 24u);
+    CHECK_EQ(signals_.size(), 28u);
     ctre::phoenix::StatusCode status =
         ctre::phoenixpro::BaseStatusSignalValue::WaitForAll(
             2000_ms, {signals_[0],  signals_[1],  signals_[2],  signals_[3],
@@ -619,7 +633,8 @@ class CANSensorReader {
                       signals_[8],  signals_[9],  signals_[10], signals_[11],
                       signals_[12], signals_[13], signals_[14], signals_[15],
                       signals_[16], signals_[17], signals_[18], signals_[19],
-                      signals_[20], signals_[21], signals_[22], signals_[23]});
+                      signals_[20], signals_[21], signals_[22], signals_[23],
+                      signals_[24], signals_[25], signals_[26], signals_[27]});
 
     if (!status.IsOK()) {
       AOS_LOG(ERROR, "Failed to read signals from falcons: %s: %s",
@@ -629,7 +644,7 @@ class CANSensorReader {
     auto builder = can_position_sender_.MakeBuilder();
 
     for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
-                        left_back_, left_under_}) {
+                        left_back_, left_under_, roller_falcon_}) {
       falcon->RefreshNontimesyncedSignals();
     }
 
@@ -658,15 +673,63 @@ class CANSensorReader {
   aos::EventLoop *event_loop_;
 
   aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
-                  kCANFalconCount * kCANSignalsCount>
+                  kCANFalconCount * kCANSignalsCount + kRollerSignalsCount>
       signals_;
   aos::Sender<drivetrain::CANPosition> can_position_sender_;
 
   std::shared_ptr<Falcon> right_front_, right_back_, right_under_, left_front_,
-      left_back_, left_under_;
+      left_back_, left_under_, roller_falcon_;
 
   // Pointer to the timer handler used to modify the wakeup.
   ::aos::TimerHandler *timer_handler_;
+};
+
+class SuperstructureCANWriter
+    : public ::frc971::wpilib::LoopOutputHandler<superstructure::Output> {
+ public:
+  SuperstructureCANWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler<superstructure::Output>(
+            event_loop, "/superstructure") {
+    event_loop->SetRuntimeRealtimePriority(
+        constants::Values::kSuperstructureCANWriterPriority);
+
+    event_loop->OnRun([this]() { WriteConfigs(); });
+  };
+
+  void set_roller_falcon(std::shared_ptr<Falcon> roller_falcon) {
+    roller_falcon_ = std::move(roller_falcon);
+  }
+
+ private:
+  void WriteConfigs() { roller_falcon_->WriteRollerConfigs(); }
+
+  void Write(const superstructure::Output &output) override {
+    ctre::phoenixpro::controls::DutyCycleOut roller_control(
+        SafeSpeed(-output.roller_voltage()));
+    roller_control.UpdateFreqHz = 0_Hz;
+    roller_control.EnableFOC = true;
+
+    ctre::phoenix::StatusCode status =
+        roller_falcon_->talon()->SetControl(roller_control);
+
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to write control to falcon: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
+  }
+
+  void Stop() override {
+    AOS_LOG(WARNING, "Superstructure CAN output too old.\n");
+    ctre::phoenixpro::controls::NeutralOut stop_command;
+
+    roller_falcon_->talon()->SetControl(stop_command);
+  }
+
+  double SafeSpeed(double voltage) {
+    return (::aos::Clip(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
+  }
+
+  std::shared_ptr<Falcon> roller_falcon_;
 };
 
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
@@ -678,16 +741,6 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
                                                          "/drivetrain") {
     event_loop->SetRuntimeRealtimePriority(
         constants::Values::kDrivetrainWriterPriority);
-
-    if (!FLAGS_ctre_diag_server) {
-      c_Phoenix_Diagnostics_SetSecondsToStart(-1);
-      c_Phoenix_Diagnostics_Dispose();
-    }
-
-    ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
-        constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
-    ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
-        constants::Values::kDrivetrainTxPriority, true, "Drivetrain Bus");
 
     event_loop->OnRun([this]() { WriteConfigs(); });
   }
@@ -859,16 +912,29 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         5, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
     std::shared_ptr<Falcon> left_under = std::make_shared<Falcon>(
         6, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    std::shared_ptr<Falcon> roller = std::make_shared<Falcon>(
+        13, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
 
     can_sensor_reader.set_falcons(right_front, right_back, right_under,
-                                  left_front, left_back, left_under);
+                                  left_front, left_back, left_under, roller);
 
     AddLoop(&can_sensor_reader_event_loop);
 
     // Thread 5.
-    ::aos::ShmEventLoop output_event_loop(&config.message());
-    output_event_loop.set_name("OutputWriter");
-    DrivetrainWriter drivetrain_writer(&output_event_loop);
+    // Setup CAN.
+    if (!FLAGS_ctre_diag_server) {
+      c_Phoenix_Diagnostics_SetSecondsToStart(-1);
+      c_Phoenix_Diagnostics_Dispose();
+    }
+
+    ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
+        constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
+    ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
+        constants::Values::kDrivetrainTxPriority, true, "Drivetrain Bus");
+
+    ::aos::ShmEventLoop can_output_event_loop(&config.message());
+    can_output_event_loop.set_name("CANOutputWriter");
+    DrivetrainWriter drivetrain_writer(&can_output_event_loop);
 
     drivetrain_writer.set_falcons(right_front, right_back, right_under,
                                   left_front, left_back, left_under);
@@ -876,6 +942,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         ctre::phoenixpro::signals::InvertedValue::Clockwise_Positive);
     drivetrain_writer.set_left_inverted(
         ctre::phoenixpro::signals::InvertedValue::CounterClockwise_Positive);
+
+    SuperstructureCANWriter superstructure_can_writer(&can_output_event_loop);
+    superstructure_can_writer.set_roller_falcon(roller);
+
+    AddLoop(&can_output_event_loop);
+
+    ::aos::ShmEventLoop output_event_loop(&config.message());
+    output_event_loop.set_name("PWMOutputWriter");
     SuperstructureWriter superstructure_writer(&output_event_loop);
 
     superstructure_writer.set_proximal_falcon(make_unique<::frc::TalonFX>(1));
@@ -884,9 +958,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_roll_joint_victor(
         make_unique<::frc::VictorSP>(3));
     superstructure_writer.set_wrist_victor(make_unique<::frc::VictorSP>(2));
-
-    superstructure_writer.set_roller_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
 
     superstructure_writer.set_superstructure_reading(superstructure_reading);
 
