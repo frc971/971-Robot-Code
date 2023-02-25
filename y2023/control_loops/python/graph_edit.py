@@ -439,6 +439,7 @@ class ArmUi(basic_window.BaseWindow):
         elif keyval == Gdk.KEY_k:
             self.index += 1
             self.index = self.index % len(self.segments)
+            print("Switched to segment:", self.segments[self.index].name)
 
         elif keyval == Gdk.KEY_t:
             # Toggle between theta and xy renderings

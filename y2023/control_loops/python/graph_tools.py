@@ -64,7 +64,7 @@ def to_xy(theta1, theta2):
 
 
 END_EFFECTOR_X_LEN = (-1.0 * IN_TO_M, 10.425 * IN_TO_M)
-END_EFFECTOR_Y_LEN = (-4.875 * IN_TO_M, 7.325 * IN_TO_M)
+END_EFFECTOR_Y_LEN = (-3.5 * IN_TO_M, 7.325 * IN_TO_M)
 END_EFFECTOR_Z_LEN = (-11.0 * IN_TO_M, 11.0 * IN_TO_M)
 
 
@@ -149,20 +149,9 @@ DRIVER_CAM_POINTS = rect_points(
      -4.350 * IN_TO_M - DRIVER_CAM_Z_OFFSET))
 
 
-def compute_face_normals(points):
-    # Return the normal vectors of all the faces
-    normals = []
-    for i in range(points.shape[0]):
-        v1 = points[i]
-        v2 = points[(i + 1) % points.shape[0]]
-        normal = np.cross(v1, v2)
-        normals.append(normal)
-    return np.array(normals)
-
-
-def project_points_onto_axis(points, axis):
-    projections = np.dot(points, axis)
-    return np.min(projections), np.max(projections)
+def rect_collision_1d(min_1, max_1, min_2, max_2):
+    return (min_1 <= min_2 <= max_1) or (min_1 <= max_2 <= max_1) or (
+        min_2 < min_1 and max_2 > max_1)
 
 
 def roll_joint_collision(theta1, theta2, theta3):
@@ -174,22 +163,17 @@ def roll_joint_collision(theta1, theta2, theta3):
 
     assert len(end_effector_points) == 8 and len(end_effector_points[0]) == 3
     assert len(DRIVER_CAM_POINTS) == 8 and len(DRIVER_CAM_POINTS[0]) == 3
+    collided = True
 
-    # Use the Separating Axis Theorem to check for collision
-    end_effector_normals = compute_face_normals(end_effector_points)
-    driver_cam_normals = compute_face_normals(DRIVER_CAM_POINTS)
+    for i in range(len(end_effector_points[0])):
+        min_ee = min(end_effector_points[:, i])
+        max_ee = max(end_effector_points[:, i])
 
-    collision = True
-    # Check for separating axes
-    for normal in np.concatenate((end_effector_normals, driver_cam_normals)):
-        min_ee, max_ee = project_points_onto_axis(end_effector_points, normal)
-        min_dc, max_dc = project_points_onto_axis(DRIVER_CAM_POINTS, normal)
-        if max_ee < min_dc or min_ee > max_dc:
-            # Separating axis found, rectangles don't intersect
-            collision = False
-            break
+        min_dc = min(DRIVER_CAM_POINTS[:, i])
+        max_dc = max(DRIVER_CAM_POINTS[:, i])
 
-    return collision
+        collided &= rect_collision_1d(min_ee, max_ee, min_dc, max_dc)
+    return collided
 
 
 # Delta limit means theta2 - theta1.
