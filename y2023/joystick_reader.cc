@@ -37,9 +37,11 @@ namespace input {
 namespace joysticks {
 
 // TODO(milind): add correct locations
-const ButtonLocation kIntake(3, 3);
-const ButtonLocation kScore(3, 3);
+const ButtonLocation kIntake(4, 5);
+const ButtonLocation kScore(4, 4);
 const ButtonLocation kSpit(3, 3);
+
+const ButtonLocation kWrist(4, 10);
 
 namespace superstructure = y2023::control_loops::superstructure;
 namespace arm = superstructure::arm;
@@ -78,15 +80,32 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       arm_goal_position_ = arm::ScorePosIndex();
     } else if (data.IsPressed(kScore)) {
       arm_goal_position_ = arm::ScorePosIndex();
+    } else {
+      arm_goal_position_ = arm::NeutralPosIndex();
+    }
+
+    double wrist_goal = 0.1;
+
+    if (data.IsPressed(kWrist)) {
+      wrist_goal = 1.5;
+    } else {
+      wrist_goal = 0.1;
     }
 
     {
       auto builder = superstructure_goal_sender_.MakeBuilder();
 
+      flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
+          wrist_offset =
+              CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+                  *builder.fbb(), wrist_goal,
+                  CreateProfileParameters(*builder.fbb(), 12.0, 90.0));
+
       superstructure::Goal::Builder superstructure_goal_builder =
           builder.MakeBuilder<superstructure::Goal>();
       superstructure_goal_builder.add_arm_goal_position(arm_goal_position_);
       superstructure_goal_builder.add_roller_goal(roller_goal);
+      superstructure_goal_builder.add_wrist(wrist_offset);
       if (builder.Send(superstructure_goal_builder.Finish()) !=
           aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Sending superstructure goal failed.\n");

@@ -132,10 +132,10 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kWristRange() {
     return ::frc971::constants::Range{
-        -1.05,  // Back Hard
-        1.44,   // Front Hard
-        -0.89,  // Back Soft
-        1.26    // Front Soft
+        .lower_hard = -0.10,  // Back Hard
+        .upper_hard = 2.30,   // Front Hard
+        .lower = 0.0,         // Back Soft
+        .upper = 2.0,         // Front Soft
     };
   }
 
