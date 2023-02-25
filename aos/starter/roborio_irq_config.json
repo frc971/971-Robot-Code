@@ -19,6 +19,16 @@
       "scheduler": "SCHEDULER_FIFO",
       "priority": 45,
       "affinity": [1]
+    },
+    {
+      "name": "irq/*-s-mmc0",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": -20
+    },
+    {
+      "name": "irq/*-mmc0",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": -20
     }
   ]
 }

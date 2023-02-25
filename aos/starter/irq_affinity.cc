@@ -1,6 +1,7 @@
 #include <linux/securebits.h>
 #include <pwd.h>
 #include <sys/prctl.h>
+#include <sys/resource.h>
 #include <sys/types.h>
 
 #include "aos/events/shm_event_loop.h"
@@ -86,6 +87,7 @@ struct ParsedKThreadConfig {
   std::string postfix;
   starter::Scheduler scheduler;
   int priority;
+  std::optional<int> nice;
   cpu_set_t affinity;
 
   bool Matches(std::string_view candidate) const {
@@ -107,25 +109,29 @@ struct ParsedKThreadConfig {
   }
 
   void ConfigurePid(pid_t pid) const {
-    {
-      struct sched_param param;
-      param.sched_priority = priority;
-      int new_scheduler;
-      switch (scheduler) {
-        case starter::Scheduler::SCHEDULER_OTHER:
-          new_scheduler = SCHED_OTHER;
-          break;
-        case starter::Scheduler::SCHEDULER_RR:
-          new_scheduler = SCHED_RR;
-          break;
-        case starter::Scheduler::SCHEDULER_FIFO:
-          new_scheduler = SCHED_FIFO;
-          break;
-        default:
-          LOG(FATAL) << "Unknown scheduler";
-      }
-      PCHECK(sched_setscheduler(pid, new_scheduler, &param) == 0);
+    struct sched_param param;
+    param.sched_priority = priority;
+    int new_scheduler;
+    switch (scheduler) {
+      case starter::Scheduler::SCHEDULER_OTHER:
+        new_scheduler = SCHED_OTHER;
+        break;
+      case starter::Scheduler::SCHEDULER_RR:
+        new_scheduler = SCHED_RR;
+        break;
+      case starter::Scheduler::SCHEDULER_FIFO:
+        new_scheduler = SCHED_FIFO;
+        break;
+      default:
+        LOG(FATAL) << "Unknown scheduler";
     }
+    PCHECK(sched_setscheduler(pid, new_scheduler, &param) == 0);
+
+    if (scheduler == starter::Scheduler::SCHEDULER_OTHER && nice.has_value()) {
+      PCHECK(setpriority(PRIO_PROCESS, pid, *nice) == 0)
+          << ": Failed to set priority";
+    }
+
     PCHECK(sched_setaffinity(pid, sizeof(affinity), &affinity) == 0);
   }
 };
@@ -160,6 +166,7 @@ class IrqAffinity {
                                 star_position + 1)),
             .scheduler = kthread_config->scheduler(),
             .priority = kthread_config->priority(),
+            .nice = kthread_config->nice(),
             .affinity = AffinityFromFlatbuffer(kthread_config->affinity()),
         });
       }

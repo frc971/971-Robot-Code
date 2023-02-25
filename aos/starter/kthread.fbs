@@ -16,6 +16,7 @@ table KthreadConfig {
   priority: int8 (id: 1);
   scheduler: Scheduler = SCHEDULER_OTHER (id: 2);
   affinity: [uint8] (id: 3);
+  nice: int8 = 0 (id: 4);
 }
 
 table IrqAffinityConfig {
