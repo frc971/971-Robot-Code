@@ -274,25 +274,25 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
 
   const ButtonLocation kQuickTurn(1, 3);
 
-  const ButtonLocation TopButton(1, 1);
-  const ButtonLocation SecondButton(1, 2);
-  const ButtonLocation BottomButton(1, 4);
+  const ButtonLocation kTopButton(1, 1);
+  const ButtonLocation kSecondButton(1, 2);
+  const ButtonLocation kBottomButton(1, 4);
   // Non-existant button for nops.
-  const ButtonLocation DummyButton(1, 10);
+  const ButtonLocation kDummyButton(1, 10);
 
   // TODO(james): Make a copy assignment operator for ButtonLocation so we don't
   // have to shoehorn in these ternary operators.
   const ButtonLocation kTurn1 = (top_button_use == TopButtonUse::kLineFollow)
-                                    ? SecondButton
-                                    : DummyButton;
+                                    ? kSecondButton
+                                    : kDummyButton;
   // Turn2 does closed loop driving.
   const ButtonLocation kTurn2 =
-      (top_button_use == TopButtonUse::kLineFollow) ? TopButton : DummyButton;
+      (top_button_use == TopButtonUse::kLineFollow) ? kTopButton : kDummyButton;
 
   const ButtonLocation kShiftHigh =
-      (top_button_use == TopButtonUse::kShift) ? TopButton : DummyButton;
+      (top_button_use == TopButtonUse::kShift) ? kTopButton : kDummyButton;
   const ButtonLocation kShiftLow =
-      (top_button_use == TopButtonUse::kShift) ? SecondButton : DummyButton;
+      (top_button_use == TopButtonUse::kShift) ? kSecondButton : kDummyButton;
 
   std::unique_ptr<PistolDrivetrainInputReader> result(
       new PistolDrivetrainInputReader(
@@ -300,7 +300,7 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
           kTriggerVelocityLow, kTriggerTorqueHigh, kTriggerTorqueLow,
           kTriggerHigh, kTriggerLow, kWheelVelocityHigh, kWheelVelocityLow,
           kWheelTorqueHigh, kWheelTorqueLow, kQuickTurn, kShiftHigh, kShiftLow,
-          kTurn1, kTurn2, BottomButton));
+          kTurn1, kTurn2, kBottomButton));
 
   result->set_default_high_gear(default_high_gear);
   return result;
