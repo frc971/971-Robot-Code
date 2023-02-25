@@ -31,7 +31,9 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       arm_(values_),
       end_effector_(),
-      wrist_(values->wrist.subsystem_params) {}
+      wrist_(values->wrist.subsystem_params) {
+  event_loop->SetRuntimeRealtimePriority(30);
+}
 
 void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,

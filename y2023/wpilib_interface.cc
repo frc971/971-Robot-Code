@@ -132,6 +132,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     // Set to filter out anything shorter than 1/4 of the minimum pulse width
     // we should ever see.
     UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
+    event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({0}));
   }
 
   void Start() override {
@@ -575,7 +576,8 @@ class CANSensorReader {
       : event_loop_(event_loop),
         can_position_sender_(
             event_loop->MakeSender<drivetrain::CANPosition>("/drivetrain")) {
-    event_loop->SetRuntimeRealtimePriority(35);
+    event_loop->SetRuntimeRealtimePriority(40);
+    event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({1}));
     timer_handler_ = event_loop->AddTimer([this]() { Loop(); });
     timer_handler_->set_name("CANSensorReader Loop");
 
@@ -841,6 +843,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     // Thread 4.
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
+    can_sensor_reader_event_loop.set_name("CANSensorReader");
     CANSensorReader can_sensor_reader(&can_sensor_reader_event_loop);
 
     std::shared_ptr<Falcon> right_front = std::make_shared<Falcon>(
@@ -863,6 +866,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     // Thread 5.
     ::aos::ShmEventLoop output_event_loop(&config.message());
+    output_event_loop.set_name("OutputWriter");
     DrivetrainWriter drivetrain_writer(&output_event_loop);
 
     drivetrain_writer.set_falcons(right_front, right_back, right_under,
