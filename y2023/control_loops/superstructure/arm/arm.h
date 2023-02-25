@@ -28,20 +28,20 @@ class Arm {
 
   // the operating voltage.
   static constexpr double kOperatingVoltage() {
-    return kGrannyMode() ? 5.0 : 12.0;
+    return kGrannyMode() ? 6.0 : 12.0;
   }
+  static constexpr double kVMax() { return kGrannyMode() ? 4.0 : 9.5; }
+  static constexpr double kPathlessVMax() { return 4.5; }
+  static constexpr double kGotoPathVMax() { return 4.5; }
+
   static constexpr double kDt() { return 0.00505; }
   static constexpr std::chrono::nanoseconds kDtDuration() {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::duration<double>(kDt()));
   }
-  static constexpr double kAlpha0Max() { return kGrannyMode() ? 5.0 : 15.0; }
-  static constexpr double kAlpha1Max() { return kGrannyMode() ? 5.0 : 15.0; }
-  static constexpr double kAlpha2Max() { return kGrannyMode() ? 5.0 : 15.0; }
-
-  static constexpr double kVMax() { return kGrannyMode() ? 5.0 : 11.5; }
-  static constexpr double kPathlessVMax() { return 5.0; }
-  static constexpr double kGotoPathVMax() { return 6.0; }
+  static constexpr double kAlpha0Max() { return kGrannyMode() ? 15.0 : 15.0; }
+  static constexpr double kAlpha1Max() { return kGrannyMode() ? 10.0 : 10.0; }
+  static constexpr double kAlpha2Max() { return kGrannyMode() ? 90.0 : 90.0; }
 
   flatbuffers::Offset<superstructure::ArmStatus> Iterate(
       const ::aos::monotonic_clock::time_point /*monotonic_now*/,
