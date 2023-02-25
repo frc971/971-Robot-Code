@@ -24,6 +24,13 @@ table TargetPoseFbs {
   // Quaterniond(orientation.w(), orientation.x(), orientation.y(), orientation.z())
   position:Position (id: 1);
   orientation:Quaternion (id: 2);
+
+  // Minimum decision margin (confidence) for this april tag detection.
+  // Only filled out if this pose represents a live detection.
+  // NOTE: Detections with a decision margin less than
+  // FLAGS_min_decision_margin in aprilrobotics.cc are already filtered
+  // out before sending.
+  confidence:double (id: 3);
 }
 
 // Map of all target poses on a field.
