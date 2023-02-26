@@ -470,9 +470,6 @@ class ArmUi(basic_window.BaseWindow):
         elif keyval == Gdk.KEY_o:
             # Only prints current segment
             print(repr(self.segments[self.index]))
-        elif keyval == Gdk.KEY_p:
-            # Print out the segments.
-            print(repr(self.segments))
         elif keyval == Gdk.KEY_g:
             # Generate theta points.
             if self.segments:
@@ -491,7 +488,14 @@ class ArmUi(basic_window.BaseWindow):
                     best_dist = d
             self.now_segment_pt = best_pt
 
-        elif keyval == Gdk.KEY_k:
+        elif keyval == Gdk.KEY_p:
+            if self.index > 0:
+                self.index -= 1
+            else:
+                self.index = len(self.segments) - 1
+            print("Switched to segment:", self.segments[self.index].name)
+
+        elif keyval == Gdk.KEY_n:
             self.index += 1
             self.index = self.index % len(self.segments)
             print("Switched to segment:", self.segments[self.index].name)
