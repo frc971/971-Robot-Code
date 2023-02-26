@@ -42,6 +42,7 @@ robot_downloader(
         "//aos/util:foxglove_websocket",
         "//y2023/vision:viewer",
         "//y2023/vision:aprilrobotics",
+        "//aos/events:aos_timing_report_streamer",
         "//y2023/localizer:localizer_main",
         "//y2023/constants:constants_sender",
         "//y2023/vision:foxglove_image_converter",
