@@ -103,7 +103,9 @@ AprilRoboticsDetector::BuildTargetPose(const apriltag_pose_t &pose,
   const auto position_offset =
       frc971::vision::CreatePosition(*fbb, T.x(), T.y(), T.z());
 
-  const auto orientation = Eigen::Quaterniond(Eigen::Matrix3d(pose.R->data));
+  // Aprilrobotics stores the rotation matrix in row-major order
+  const auto orientation = Eigen::Quaterniond(
+      Eigen::Matrix<double, 3, 3, Eigen::RowMajor>(pose.R->data));
   const auto orientation_offset = frc971::vision::CreateQuaternion(
       *fbb, orientation.w(), orientation.x(), orientation.y(), orientation.z());
 
