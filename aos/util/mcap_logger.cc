@@ -84,6 +84,21 @@ nlohmann::json JsonSchemaForFlatbuffer(const FlatbufferType &type,
   return schema;
 }
 
+std::string ShortenedChannelName(const aos::Configuration *config,
+                                 const aos::Channel *channel,
+                                 std::string_view application_name,
+                                 const aos::Node *node) {
+  std::set<std::string> names =
+      configuration::GetChannelAliases(config, channel, application_name, node);
+  std::string_view shortest_name;
+  for (const std::string &name : names) {
+    if (shortest_name.empty() || name.size() < shortest_name.size()) {
+      shortest_name = name;
+    }
+  }
+  return std::string(shortest_name);
+}
+
 namespace {
 std::string_view CompressionName(McapLogger::Compression compression) {
   switch (compression) {
@@ -354,15 +369,9 @@ void McapLogger::WriteChannel(const uint16_t id, const uint16_t schema_id,
                                   channel->type()->string_view());
         break;
       case CanonicalChannelNames::kShortened: {
-        std::set<std::string> names = configuration::GetChannelAliases(
-            event_loop_->configuration(), channel, event_loop_->name(),
-            event_loop_->node());
-        std::string_view shortest_name;
-        for (const std::string &name : names) {
-          if (shortest_name.empty() || name.size() < shortest_name.size()) {
-            shortest_name = name;
-          }
-        }
+        const std::string shortest_name =
+            ShortenedChannelName(event_loop_->configuration(), channel,
+                                 event_loop_->name(), event_loop_->node());
         if (shortest_name != channel->name()->string_view()) {
           VLOG(1) << "Shortening " << channel->name()->string_view() << " "
                   << channel->type()->string_view() << " to " << shortest_name;
