@@ -314,6 +314,7 @@ cc_binary(
         "//frc971/input:drivetrain_input",
         "//frc971/input:joystick_input",
         "//y2023/control_loops/drivetrain:drivetrain_base",
+        "//y2023/control_loops/drivetrain:target_selector_hint_fbs",
         "//y2023/control_loops/superstructure:superstructure_goal_fbs",
         "//y2023/control_loops/superstructure:superstructure_status_fbs",
         "//y2023/control_loops/superstructure/arm:generated_graph",

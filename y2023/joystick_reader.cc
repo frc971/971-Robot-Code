@@ -19,6 +19,7 @@
 #include "frc971/zeroing/wrap.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/drivetrain/drivetrain_base.h"
+#include "y2023/control_loops/drivetrain/target_selector_hint_generated.h"
 #include "y2023/control_loops/superstructure/arm/generated_graph.h"
 #include "y2023/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_status_generated.h"
@@ -31,6 +32,10 @@ using frc971::input::driver_station::ControlBit;
 using frc971::input::driver_station::JoystickAxis;
 using frc971::input::driver_station::POVLocation;
 using y2023::control_loops::superstructure::RollerGoal;
+using y2023::control_loops::drivetrain::RowSelectionHint;
+using y2023::control_loops::drivetrain::GridSelectionHint;
+using y2023::control_loops::drivetrain::SpotSelectionHint;
+using y2023::control_loops::drivetrain::TargetSelectorHint;
 
 namespace y2023 {
 namespace input {
@@ -81,6 +86,8 @@ struct ArmSetpoint {
   GamePiece game_piece;
   std::vector<ButtonLocation> buttons;
   Side side;
+  std::optional<RowSelectionHint> row_hint = std::nullopt;
+  std::optional<SpotSelectionHint> spot_hint = std::nullopt;
 };
 
 const std::vector<ArmSetpoint> setpoints = {
@@ -104,6 +111,8 @@ const std::vector<ArmSetpoint> setpoints = {
         .game_piece = GamePiece::CONE_UP,
         .buttons = {kMidConeScoreRight},
         .side = Side::BACK,
+        .row_hint = RowSelectionHint::MIDDLE,
+        .spot_hint = SpotSelectionHint::RIGHT,
     },
     {
         .index = arm::ScoreBackMidConeDownPosIndex(),
@@ -112,6 +121,8 @@ const std::vector<ArmSetpoint> setpoints = {
         .game_piece = GamePiece::CONE_DOWN,
         .buttons = {kMidConeScoreRight},
         .side = Side::BACK,
+        .row_hint = RowSelectionHint::MIDDLE,
+        .spot_hint = SpotSelectionHint::RIGHT,
     },
     {
         .index = arm::HPPickupBackConeUpIndex(),
@@ -126,6 +137,8 @@ const std::vector<ArmSetpoint> setpoints = {
         .game_piece = GamePiece::CONE_UP,
         .buttons = {kHighConeScoreLeft, kHighConeScoreRight},
         .side = Side::FRONT,
+        .row_hint = RowSelectionHint::TOP,
+        .spot_hint = SpotSelectionHint::LEFT,
     },
     {
         .index = arm::ScoreFrontMidConeUpPosIndex(),
@@ -133,6 +146,8 @@ const std::vector<ArmSetpoint> setpoints = {
         .game_piece = GamePiece::CONE_UP,
         .buttons = {kMidConeScoreLeft, kMidConeScoreRight},
         .side = Side::FRONT,
+        .row_hint = RowSelectionHint::MIDDLE,
+        .spot_hint = SpotSelectionHint::LEFT,
     },
     {
         .index = arm::GroundPickupBackCubeIndex(),
@@ -147,6 +162,8 @@ const std::vector<ArmSetpoint> setpoints = {
         .game_piece = GamePiece::CUBE,
         .buttons = {kMidCube},
         .side = Side::FRONT,
+        .row_hint = RowSelectionHint::MIDDLE,
+        .spot_hint = SpotSelectionHint::MIDDLE,
     },
     {
         .index = arm::ScoreBackMidCubeIndex(),
@@ -155,6 +172,8 @@ const std::vector<ArmSetpoint> setpoints = {
         .game_piece = GamePiece::CUBE,
         .buttons = {kMidCube},
         .side = Side::BACK,
+        .row_hint = RowSelectionHint::MIDDLE,
+        .spot_hint = SpotSelectionHint::MIDDLE,
     },
     {
         .index = arm::ScoreFrontLowCubeIndex(),
@@ -162,6 +181,8 @@ const std::vector<ArmSetpoint> setpoints = {
         .game_piece = GamePiece::CUBE,
         .buttons = {kLowCube},
         .side = Side::FRONT,
+        .row_hint = RowSelectionHint::BOTTOM,
+        .spot_hint = SpotSelectionHint::MIDDLE,
     },
     {
         .index = arm::ScoreBackLowCubeIndex(),
@@ -169,6 +190,8 @@ const std::vector<ArmSetpoint> setpoints = {
         .game_piece = GamePiece::CUBE,
         .buttons = {kLowCube},
         .side = Side::BACK,
+        .row_hint = RowSelectionHint::BOTTOM,
+        .spot_hint = SpotSelectionHint::MIDDLE,
     },
     {
         .index = arm::ScoreFrontHighCubeIndex(),
@@ -176,6 +199,8 @@ const std::vector<ArmSetpoint> setpoints = {
         .game_piece = GamePiece::CUBE,
         .buttons = {kHighCube},
         .side = Side::FRONT,
+        .row_hint = RowSelectionHint::TOP,
+        .spot_hint = SpotSelectionHint::MIDDLE,
     },
     {
         .index = arm::ScoreBackHighCubeIndex(),
@@ -184,6 +209,8 @@ const std::vector<ArmSetpoint> setpoints = {
         .game_piece = GamePiece::CUBE,
         .buttons = {kHighCube},
         .side = Side::BACK,
+        .row_hint = RowSelectionHint::TOP,
+        .spot_hint = SpotSelectionHint::MIDDLE,
     },
     {
         .index = arm::GroundPickupFrontCubeIndex(),
@@ -203,6 +230,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
             ::frc971::input::DrivetrainInputReader::InputType::kPistol, {}),
         superstructure_goal_sender_(
             event_loop->MakeSender<superstructure::Goal>("/superstructure")),
+        target_selector_hint_sender_(
+            event_loop->MakeSender<TargetSelectorHint>("/drivetrain")),
         superstructure_status_fetcher_(
             event_loop->MakeFetcher<superstructure::Status>(
                 "/superstructure")) {}
@@ -245,6 +274,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
 
     const Side current_side = data.IsPressed(kBack) ? Side::BACK : Side::FRONT;
+    std::optional<RowSelectionHint> placing_row;
+    std::optional<SpotSelectionHint> placing_spot;
 
     // Search for the active setpoint.
     for (const ArmSetpoint &setpoint : setpoints) {
@@ -255,11 +286,14 @@ class Reader : public ::frc971::input::ActionJoystickInput {
             wrist_goal = setpoint.wrist_goal;
             arm_goal_position_ = setpoint.index;
             score_wrist_goal = setpoint.score_wrist_goal;
+            placing_row = setpoint.row_hint;
+            placing_spot = setpoint.spot_hint;
             break;
           }
         }
       }
     }
+    CHECK_EQ(placing_row.has_value(), placing_spot.has_value());
 
     if (data.IsPressed(kSuck)) {
       roller_goal = RollerGoal::INTAKE_LAST;
@@ -297,10 +331,22 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
       }
     }
+    if (placing_row.has_value()) {
+      auto builder = target_selector_hint_sender_.MakeBuilder();
+      auto hint_builder = builder.MakeBuilder<TargetSelectorHint>();
+      hint_builder.add_row(placing_row.value());
+      hint_builder.add_spot(placing_spot.value());
+      // TODO: Add field to TargetSelector hint for forwards vs. backwards
+      // placement.
+      if (builder.Send(hint_builder.Finish()) != aos::RawSender::Error::kOk) {
+        AOS_LOG(ERROR, "Sending target selector hint failed.\n");
+      }
+    }
   }
 
  private:
   ::aos::Sender<superstructure::Goal> superstructure_goal_sender_;
+  ::aos::Sender<TargetSelectorHint> target_selector_hint_sender_;
 
   ::aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
 
