@@ -177,10 +177,11 @@ AprilRoboticsDetector::DetectTags(cv::Mat image,
       info.cx = intrinsics_.at<double>(0, 2);
       info.cy = intrinsics_.at<double>(1, 2);
 
+      UndistortDetection(det);
+
       apriltag_pose_t pose;
       double err = estimate_tag_pose(&info, &pose);
 
-      UndistortDetection(det);
       VLOG(1) << "err: " << err;
 
       results.emplace_back(*det, pose);
