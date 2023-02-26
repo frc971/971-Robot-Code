@@ -23,6 +23,13 @@ namespace vision {
 
 class AprilRoboticsDetector {
  public:
+  // Aprilrobotics representation of a tag detection
+  struct Detection {
+    apriltag_detection_t det;
+    apriltag_pose_t pose;
+    double pose_error;
+  };
+
   AprilRoboticsDetector(aos::EventLoop *event_loop,
                         std::string_view channel_name);
   ~AprilRoboticsDetector();
@@ -32,8 +39,8 @@ class AprilRoboticsDetector {
   // Undistorts the april tag corners using the camera calibration
   void UndistortDetection(apriltag_detection_t *det) const;
 
-  std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> DetectTags(
-      cv::Mat image, aos::monotonic_clock::time_point eof);
+  std::vector<Detection> DetectTags(cv::Mat image,
+                                    aos::monotonic_clock::time_point eof);
 
   const std::optional<cv::Mat> extrinsics() const { return extrinsics_; }
   const cv::Mat intrinsics() const { return intrinsics_; }
@@ -43,8 +50,7 @@ class AprilRoboticsDetector {
   void HandleImage(cv::Mat image, aos::monotonic_clock::time_point eof);
 
   flatbuffers::Offset<frc971::vision::TargetPoseFbs> BuildTargetPose(
-      const apriltag_pose_t &pose, const apriltag_detection_t &det,
-      flatbuffers::FlatBufferBuilder *fbb);
+      const Detection &detection, flatbuffers::FlatBufferBuilder *fbb);
 
   apriltag_family_t *tag_family_;
   apriltag_detector_t *tag_detector_;

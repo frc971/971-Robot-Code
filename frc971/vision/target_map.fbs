@@ -31,6 +31,14 @@ table TargetPoseFbs {
   // FLAGS_min_decision_margin in aprilrobotics.cc are already filtered
   // out before sending.
   confidence:double (id: 3);
+
+  // Object-space error of the tag from pose estimation.
+  // Only filled out if this pose represents a live detection.
+  // Tags which are seen completely usually have a pose_error < 1e-6,
+  // and a higher error could imply that part of the tag is being blocked.
+  // NOTE: not filtered by aprilrobotics.cc so that we can log
+  // more detections.
+  pose_error:double (id: 4);
 }
 
 // Map of all target poses on a field.

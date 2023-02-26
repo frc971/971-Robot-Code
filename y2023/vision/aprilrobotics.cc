@@ -20,12 +20,13 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
                                              std::string_view channel_name)
     : calibration_data_(event_loop),
       ftrace_(),
-      image_callback_(event_loop, channel_name,
-                      [&](cv::Mat image_color_mat,
-                          const aos::monotonic_clock::time_point eof) {
-                        HandleImage(image_color_mat, eof);
-                      },
-                      chrono::milliseconds(5)),
+      image_callback_(
+          event_loop, channel_name,
+          [&](cv::Mat image_color_mat,
+              const aos::monotonic_clock::time_point eof) {
+            HandleImage(image_color_mat, eof);
+          },
+          chrono::milliseconds(5)),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
       image_annotations_sender_(
@@ -80,13 +81,12 @@ void AprilRoboticsDetector::SetWorkerpoolAffinities() {
 
 void AprilRoboticsDetector::HandleImage(cv::Mat image_grayscale,
                                         aos::monotonic_clock::time_point eof) {
-  std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> detections =
-      DetectTags(image_grayscale, eof);
+  std::vector<Detection> detections = DetectTags(image_grayscale, eof);
 
   auto builder = target_map_sender_.MakeBuilder();
   std::vector<flatbuffers::Offset<frc971::vision::TargetPoseFbs>> target_poses;
-  for (const auto &[detection, pose] : detections) {
-    target_poses.emplace_back(BuildTargetPose(pose, detection, builder.fbb()));
+  for (const auto &detection : detections) {
+    target_poses.emplace_back(BuildTargetPose(detection, builder.fbb()));
   }
   const auto target_poses_offset = builder.fbb()->CreateVector(target_poses);
   auto target_map_builder = builder.MakeBuilder<frc971::vision::TargetMap>();
@@ -96,22 +96,23 @@ void AprilRoboticsDetector::HandleImage(cv::Mat image_grayscale,
 }
 
 flatbuffers::Offset<frc971::vision::TargetPoseFbs>
-AprilRoboticsDetector::BuildTargetPose(const apriltag_pose_t &pose,
-                                       const apriltag_detection_t &det,
+AprilRoboticsDetector::BuildTargetPose(const Detection &detection,
                                        flatbuffers::FlatBufferBuilder *fbb) {
   const auto T =
-      Eigen::Translation3d(pose.t->data[0], pose.t->data[1], pose.t->data[2]);
+      Eigen::Translation3d(detection.pose.t->data[0], detection.pose.t->data[1],
+                           detection.pose.t->data[2]);
   const auto position_offset =
       frc971::vision::CreatePosition(*fbb, T.x(), T.y(), T.z());
 
   // Aprilrobotics stores the rotation matrix in row-major order
   const auto orientation = Eigen::Quaterniond(
-      Eigen::Matrix<double, 3, 3, Eigen::RowMajor>(pose.R->data));
+      Eigen::Matrix<double, 3, 3, Eigen::RowMajor>(detection.pose.R->data));
   const auto orientation_offset = frc971::vision::CreateQuaternion(
       *fbb, orientation.w(), orientation.x(), orientation.y(), orientation.z());
 
   return frc971::vision::CreateTargetPoseFbs(
-      *fbb, det.id, position_offset, orientation_offset, det.decision_margin);
+      *fbb, detection.det.id, position_offset, orientation_offset,
+      detection.det.decision_margin, detection.pose_error);
 }
 
 void AprilRoboticsDetector::UndistortDetection(
@@ -136,9 +137,8 @@ void AprilRoboticsDetector::UndistortDetection(
   }
 }
 
-std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>>
-AprilRoboticsDetector::DetectTags(cv::Mat image,
-                                  aos::monotonic_clock::time_point eof) {
+std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
+    cv::Mat image, aos::monotonic_clock::time_point eof) {
   const aos::monotonic_clock::time_point start_time =
       aos::monotonic_clock::now();
 
@@ -155,7 +155,7 @@ AprilRoboticsDetector::DetectTags(cv::Mat image,
   zarray_t *detections = apriltag_detector_detect(tag_detector_, &im);
   ftrace_.FormatMessage("Done detecting\n");
 
-  std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> results;
+  std::vector<Detection> results;
 
   std::vector<std::vector<cv::Point2f>> orig_corners_vector;
   std::vector<std::vector<cv::Point2f>> corners_vector;
@@ -206,7 +206,7 @@ AprilRoboticsDetector::DetectTags(cv::Mat image,
 
       VLOG(1) << "err: " << err;
 
-      results.emplace_back(*det, pose);
+      results.emplace_back(Detection{*det, pose, err});
 
       const aos::monotonic_clock::time_point after_pose_estimation =
           aos::monotonic_clock::now();
