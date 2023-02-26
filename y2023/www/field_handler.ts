@@ -241,11 +241,9 @@ export class FieldHandler {
         // Make camera readings fade over time.
         const alpha = Math.round(255 * ageAlpha).toString(16).padStart(2, '0');
         const dashed = false;
-        const acceptedRgb = accepted ? '#00FF00' : '#FF0000';
-        const acceptedRgba = acceptedRgb + alpha;
         const cameraRgb = PI_COLORS[imageDebug.camera()];
         const cameraRgba = cameraRgb + alpha;
-        this.drawRobot(x, y, theta, acceptedRgba, dashed);
+        this.drawRobot(x, y, theta, cameraRgba, dashed);
         this.drawCamera(cameraX, cameraY, cameraTheta, cameraRgba);
       }
     }
