@@ -317,6 +317,7 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   ++total_accepted_targets_;
   ++cameras_.at(camera_index).total_accepted_targets;
   VLOG(1) << "new state " << ekf_.X_hat().topRows<3>().transpose();
+  builder.add_accepted(true);
   return builder.Finish();
 }
 
