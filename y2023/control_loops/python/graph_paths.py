@@ -2,186 +2,130 @@ import numpy as np
 
 from y2023.control_loops.python.graph_tools import *
 
-neutral = np.array((np.pi, 0.0, 0.0))
+named_segments = []
+points = {}
 
-# NeutralToGroundPickupBackConeUp
-neutral_to_cone_up_1 = np.array([3.170156, -0.561227])
-neutral_to_cone_up_2 = np.array([2.972776, -1.026820])
-ground_pickup_back_cone_up = to_theta_with_circular_index_and_roll(
+points['Neutral'] = np.array((np.pi, 0.0, 0.0))
+
+points['GroundPickupBackConeUp'] = to_theta_with_circular_index_and_roll(
     -1.07774334, 0.36308701, np.pi / 2.0, circular_index=1)
 
-# NeutralToGroundPickupBackConeDown
-neutral_to_ground_pickup_back_cone_down_1 = np.array([3.170156, -0.561227])
-neutral_to_ground_pickup_back_cone_down_2 = np.array([2.972776, -1.026820])
-ground_pickup_back_cone_down = to_theta_with_circular_index_and_roll(
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToGroundPickupBackConeUp",
+        start=points['Neutral'],
+        control1=np.array([3.170156, -0.561227]),
+        control2=np.array([2.972776, -1.026820]),
+        end=points['GroundPickupBackConeUp'],
+        control_alpha_rolls=[(0.30, 0.0), (.95, np.pi / 2.0)],
+    ))
+
+points['GroundPickupBackConeDown'] = to_theta_with_circular_index_and_roll(
     -1.11487594, 0.23140145, np.pi / 2.0, circular_index=1)
 
-# NeutralToGroundPickupBackCube
-neutral_to_ground_pickup_back_cube_1 = np.array([3.153228, -0.497009])
-neutral_to_ground_pickup_back_cube_2 = np.array([2.972776, -1.026820])
-neutral_to_hp_pickup_back_cube_alpha_rolls = [
-    (0.7, 0.0),
-    (.9, -np.pi / 2.0),
-]
-ground_pickup_back_cube = to_theta_with_circular_index_and_roll(
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToGroundPickupBackConeDown",
+        start=points['Neutral'],
+        control1=np.array([3.170156, -0.561227]),
+        control2=np.array([2.972776, -1.026820]),
+        end=points['GroundPickupBackConeDown'],
+        control_alpha_rolls=[(0.30, 0.0), (.95, np.pi / 2.0)],
+    ))
+
+points['GroundPickupBackCube'] = to_theta_with_circular_index_and_roll(
     -1.102, 0.224, -np.pi / 2.0, circular_index=1)
 
-# NeutralToBackMidConeUpScore
-neutral_to_score_back_mid_cone_up_1 = np.array([0.994244, -1.417442])
-neutral_to_score_back_mid_cone_up_2 = np.array([1.711325, -0.679748])
-score_back_mid_cone_up_pos = to_theta_with_circular_index_and_roll(
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToGroundPickupBackCube",
+        start=points['Neutral'],
+        control1=np.array([3.153228, -0.497009]),
+        control2=np.array([2.972776, -1.026820]),
+        end=points['GroundPickupBackCube'],
+        control_alpha_rolls=[(0.7, 0.0), (.9, -np.pi / 2.0)],
+    ))
+
+points['ScoreBackMidConeUpPos'] = to_theta_with_circular_index_and_roll(
     -1.41871454, 1.07476162, np.pi / 2.0, circular_index=0)
 
-# NeutralToMidConeDownScore
-neutral_to_score_mid_cone_down_1 = np.array([3.394572, -0.239378])
-neutral_to_score_mid_cone_down_2 = np.array([3.654854, -0.626835])
-score_mid_cone_down_pos = to_theta_with_circular_index_and_roll(
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToBackMidConeUpScore",
+        start=points['Neutral'],
+        control1=np.array([0.994244, -1.417442]),
+        control2=np.array([1.711325, -0.679748]),
+        end=points['ScoreBackMidConeUpPos'],
+        control_alpha_rolls=[(0.40, 0.0), (.95, np.pi / 2.0)],
+    ))
+
+points['ScoreBackMidConeDownPos'] = to_theta_with_circular_index_and_roll(
     -1.37792406, 0.81332449, np.pi / 2.0, circular_index=1)
 
-# NeutralToMidConeDownScore
-neutral_to_hp_pickup_back_cone_up_1 = np.array([2.0, -0.239378])
-neutral_to_hp_pickup_back_cone_up_2 = np.array([1.6, -0.626835])
-neutral_to_hp_pickup_back_cone_up_alpha_rolls = [
-    (0.7, 0.0),
-    (.9, np.pi / 2.0),
-]
-hp_pickup_back_cone_up = to_theta_with_circular_index_and_roll(
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToMidConeDownScore",
+        start=points['Neutral'],
+        control1=np.array([3.394572, -0.239378]),
+        control2=np.array([3.654854, -0.626835]),
+        end=points['ScoreBackMidConeDownPos'],
+        control_alpha_rolls=[(0.40, 0.0), (.95, np.pi / 2.0)],
+    ))
+
+points['HPPickupBackConeUp'] = to_theta_with_circular_index_and_roll(
     -1.1050539, 1.31390128, np.pi / 2.0, circular_index=0)
 
-# NeutralToFrontHighConeUpScore
-neutral_to_score_front_high_cone_up_1 = np.array([2.594244, 0.417442])
-neutral_to_score_front_high_cone_up_2 = np.array([1.51325, 0.679748])
-score_front_high_cone_up_pos = to_theta_with_circular_index_and_roll(
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToHPPickupBackConeUp",
+        start=points['Neutral'],
+        control1=np.array([2.0, -0.239378]),
+        control2=np.array([1.6, -0.626835]),
+        end=points['HPPickupBackConeUp'],
+        control_alpha_rolls=[(0.7, 0.0), (.9, np.pi / 2.0)],
+    ))
+
+points['ScoreFrontHighConeUpPos'] = to_theta_with_circular_index_and_roll(
     0.98810344, 1.37536719, -np.pi / 2.0, circular_index=0)
 
-# NeutralToFrontMidConeUpScore
-neutral_to_score_front_mid_cone_up_1 = np.array([3.0, 0.317442])
-neutral_to_score_front_mid_cone_up_2 = np.array([2.9, 0.479748])
-score_front_mid_cone_up_pos = to_theta_with_circular_index_and_roll(
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToFrontHighConeUpScore",
+        start=points['Neutral'],
+        control1=np.array([2.594244, 0.417442]),
+        control2=np.array([1.51325, 0.679748]),
+        end=points['ScoreFrontHighConeUpPos'],
+        control_alpha_rolls=[(0.40, 0.0), (.95, -np.pi / 2.0)],
+    ))
+
+points['ScoreFrontMidConeUpPos'] = to_theta_with_circular_index_and_roll(
     0.43740453, 1.06330555, -np.pi / 2.0, circular_index=0)
 
-neutral_to_cone_down_1 = np.array([2.396694, 0.508020])
-neutral_to_cone_down_2 = np.array([2.874513, 0.933160])
-cone_down_pos = to_theta_with_circular_index_and_roll(0.7,
-                                                      0.11,
-                                                      np.pi / 2.0,
-                                                      circular_index=0)
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToFrontMidConeUpScore",
+        start=points['Neutral'],
+        control1=np.array([3.0, 0.317442]),
+        control2=np.array([2.9, 0.479748]),
+        end=points['ScoreFrontMidConeUpPos'],
+        control_alpha_rolls=[(0.40, 0.0), (.95, -np.pi / 2.0)],
+    ))
 
-neutral_to_cube_1 = np.array([2.396694, 0.508020])
-neutral_to_cube_2 = np.array([2.874513, 0.933160])
+points['ConeDownPos'] = to_theta_with_circular_index_and_roll(0.7,
+                                                              0.11,
+                                                              np.pi / 2.0,
+                                                              circular_index=0)
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToConeDown",
+        start=points['Neutral'],
+        control1=np.array([2.396694, 0.508020]),
+        control2=np.array([2.874513, 0.933160]),
+        end=points['ConeDownPos'],
+        control_alpha_rolls=[(0.30, 0.0), (.95, np.pi / 2.0)],
+    ))
 
-cube_pos = to_theta_with_circular_index_and_roll(0.7,
-                                                 0.24,
-                                                 np.pi / 2.0,
-                                                 circular_index=0)
-
-neutral_to_pickup_control_alpha_rolls = [
-    (0.30, 0.0),
-    (.95, np.pi / 2.0),
-]
-
-neutral_to_score_1 = np.array([0.994244, -1.417442])
-neutral_to_score_2 = np.array([1.711325, -0.679748])
-
-score_low_pos = to_theta_with_circular_index_and_roll(-(0.41 / 2 + 0.49),
-                                                      0 + 0.05,
-                                                      np.pi / 2.0,
-                                                      circular_index=1)
-
-neutral_to_score_low_2 = np.array([3.37926599, -0.73664663])
-
-score_mid_cube_pos = to_theta_with_circular_index_and_roll(-(0.58 + 0.49),
-                                                           0.6 + 0.05,
-                                                           np.pi / 2.0,
-                                                           circular_index=0)
-
-score_high_cone_pos = to_theta_with_circular_index_and_roll(-1.01,
-                                                            1.17 + 0.05,
-                                                            np.pi / 2.0,
-                                                            circular_index=0)
-
-score_high_cube_pos = to_theta_with_circular_index_and_roll(-1.01,
-                                                            0.90 + 0.05,
-                                                            np.pi / 2.0,
-                                                            circular_index=0)
-
-neutral_to_back_score_control_alpha_rolls = [(0.40, 0.0), (.95, np.pi / 2.0)]
-neutral_to_front_score_control_alpha_rolls = [(0.40, 0.0), (.95, -np.pi / 2.0)]
-
-points = [(neutral, "NeutralPos"),
-          (ground_pickup_back_cone_up, "GroundPickupBackConeUp"),
-          (ground_pickup_back_cone_down, "GroundPickupBackConeDown"),
-          (ground_pickup_back_cube, "GroundPickupBackCube"),
-          (hp_pickup_back_cone_up, "HPPickupBackConeUp"),
-          (cone_down_pos, "ConeDownPos"), (score_low_pos, "ScoreLowPos"),
-          (score_back_mid_cone_up_pos, "ScoreBackMidConeUpPos"),
-          (score_front_high_cone_up_pos, "ScoreFrontHighConeUpPos"),
-          (score_front_mid_cone_up_pos, "ScoreFrontMidConeUpPos"),
-          (score_mid_cone_down_pos, "ScoreBackMidConeDownPos"),
-          (score_mid_cube_pos, "ScoreMidCubePos"),
-          (score_high_cone_pos, "ScoreHighConePos"),
-          (score_high_cube_pos, "ScoreHighCubePos"), (cube_pos, "CubePos")]
 front_points = []
 back_points = []
 unnamed_segments = []
-named_segments = [
-    ThetaSplineSegment("NeutralToGroundPickupBackConeUp", neutral,
-                       neutral_to_cone_up_1, neutral_to_cone_up_2,
-                       ground_pickup_back_cone_up,
-                       neutral_to_pickup_control_alpha_rolls),
-    ThetaSplineSegment("NeutralToGroundPickupBackConeDown", neutral,
-                       neutral_to_ground_pickup_back_cone_down_1,
-                       neutral_to_ground_pickup_back_cone_down_2,
-                       ground_pickup_back_cone_down,
-                       neutral_to_pickup_control_alpha_rolls),
-    ThetaSplineSegment("NeutralToGroundPickupBackCube", neutral,
-                       neutral_to_ground_pickup_back_cube_1,
-                       neutral_to_ground_pickup_back_cube_2,
-                       ground_pickup_back_cube,
-                       neutral_to_hp_pickup_back_cube_alpha_rolls),
-    ThetaSplineSegment("NeutralToHPPickupBackConeUp", neutral,
-                       neutral_to_hp_pickup_back_cone_up_1,
-                       neutral_to_hp_pickup_back_cone_up_2,
-                       hp_pickup_back_cone_up,
-                       neutral_to_hp_pickup_back_cone_up_alpha_rolls),
-    ThetaSplineSegment("NeutralToFrontHighConeUpScore", neutral,
-                       neutral_to_score_front_high_cone_up_1,
-                       neutral_to_score_front_high_cone_up_2,
-                       score_front_high_cone_up_pos,
-                       neutral_to_front_score_control_alpha_rolls),
-    ThetaSplineSegment("NeutralToFrontMidConeUpScore", neutral,
-                       neutral_to_score_front_mid_cone_up_1,
-                       neutral_to_score_front_mid_cone_up_2,
-                       score_front_mid_cone_up_pos,
-                       neutral_to_front_score_control_alpha_rolls),
-    ThetaSplineSegment("NeutralToConeDown", neutral, neutral_to_cone_down_1,
-                       neutral_to_cone_down_2, cone_down_pos,
-                       neutral_to_pickup_control_alpha_rolls),
-    ThetaSplineSegment("NeutralToCube", neutral, neutral_to_cube_1,
-                       neutral_to_cube_2, cube_pos,
-                       neutral_to_pickup_control_alpha_rolls),
-    ThetaSplineSegment("NeutralToLowScore", neutral, neutral_to_score_1,
-                       neutral_to_score_low_2, score_low_pos,
-                       neutral_to_back_score_control_alpha_rolls),
-    ThetaSplineSegment("NeutralToBackMidConeUpScore", neutral,
-                       neutral_to_score_back_mid_cone_up_1,
-                       neutral_to_score_back_mid_cone_up_2,
-                       score_back_mid_cone_up_pos,
-                       neutral_to_back_score_control_alpha_rolls),
-    ThetaSplineSegment("NeutralToMidConeDownScore", neutral,
-                       neutral_to_score_mid_cone_down_1,
-                       neutral_to_score_mid_cone_down_2,
-                       score_mid_cone_down_pos,
-                       neutral_to_back_score_control_alpha_rolls),
-    ThetaSplineSegment("NeutralToMidCubeScore", neutral, neutral_to_score_1,
-                       neutral_to_score_2, score_mid_cube_pos,
-                       neutral_to_back_score_control_alpha_rolls),
-    ThetaSplineSegment("NeutralToHighConeScore", neutral, neutral_to_score_1,
-                       neutral_to_score_2, score_high_cone_pos,
-                       neutral_to_back_score_control_alpha_rolls),
-    ThetaSplineSegment("NeutralToHighCubeScore", neutral, neutral_to_score_1,
-                       neutral_to_score_2, score_high_cube_pos,
-                       neutral_to_back_score_control_alpha_rolls),
-]
-
 segments = named_segments + unnamed_segments

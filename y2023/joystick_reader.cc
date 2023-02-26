@@ -155,7 +155,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     double wrist_goal = 0.0;
     RollerGoal roller_goal = RollerGoal::IDLE;
-    arm_goal_position_ = arm::NeutralPosIndex();
+    arm_goal_position_ = arm::NeutralIndex();
     std::optional<double> score_wrist_goal = std::nullopt;
 
     if (data.IsPressed(kGroundPickupConeUp) || data.IsPressed(kHPConePickup)) {

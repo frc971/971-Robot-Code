@@ -46,13 +46,14 @@ def add_edge(cc_file, name, segment, index, reverse):
 
     start_index = None
     end_index = None
-    for point, name in graph_paths.points:
+    for key in sorted(graph_paths.points.keys()):
+        point = graph_paths.points[key]
         if (point[:2] == segment.start
             ).all() and point[2] == segment.alpha_rolls[0][1]:
-            start_index = name
+            start_index = key
         if (point[:2] == segment.end
             ).all() and point[2] == segment.alpha_rolls[-1][1]:
-            end_index = name
+            end_index = key
 
     if reverse:
         start_index, end_index = end_index, start_index
@@ -146,15 +147,15 @@ def main(argv):
     h_file.append("")
 
     # Now dump out the vertices and associated constexpr vertex name functions.
-    for index, point in enumerate(graph_paths.points):
+    for index, key in enumerate(sorted(graph_paths.points.keys())):
+        point = graph_paths.points[key]
         h_file.append("")
         h_file.append("constexpr uint32_t %s() { return %d; }" %
-                      (index_function_name(point[1]), index))
-        h_file.append("inline ::Eigen::Matrix<double, 3, 1> %sPoint() {" %
-                      point[1])
+                      (index_function_name(key), index))
+        h_file.append("inline ::Eigen::Matrix<double, 3, 1> %sPoint() {" % key)
         h_file.append(
             "  return (::Eigen::Matrix<double, 3, 1>() << %f, %f, %f).finished();"
-            % (point[0][0], point[0][1], point[0][2]))
+            % (point[0], point[1], point[2]))
         h_file.append("}")
 
     front_points = [
@@ -214,10 +215,11 @@ def main(argv):
     cc_file.append(
         "::std::vector<::Eigen::Matrix<double, 3, 1>> PointList() {")
     cc_file.append("  ::std::vector<::Eigen::Matrix<double, 3, 1>> points;")
-    for point in graph_paths.points:
+    for key in sorted(graph_paths.points.keys()):
+        point = graph_paths.points[key]
         cc_file.append(
             "  points.push_back((::Eigen::Matrix<double, 3, 1>() << %.12s, %.12s, %.12s).finished());"
-            % (point[0][0], point[0][1], point[0][2]))
+            % (point[0], point[1], point[2]))
     cc_file.append("  return points;")
     cc_file.append("}")
 
