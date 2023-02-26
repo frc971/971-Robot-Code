@@ -122,3 +122,12 @@ flatbuffer_cc_library(
     gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
+
+flatbuffer_cc_library(
+    name = "target_selector_hint_fbs",
+    srcs = [
+        ":target_selector_hint.fbs",
+    ],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
+)

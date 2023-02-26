@@ -1,0 +1,33 @@
+namespace y2023.control_loops.drivetrain;
+
+// Which of the grids we are going for.
+// From the perspective of the robot!
+enum GridSelectionHint : ubyte {
+  LEFT,
+  MIDDLE,
+  RIGHT,
+}
+
+// Which level to score on.
+enum RowSelectionHint : ubyte {
+  BOTTOM,
+  MIDDLE,
+  TOP,
+}
+
+// Within a row, which spot to score in.
+// From the perspective of the robot!
+enum SpotSelectionHint : ubyte {
+  LEFT,
+  MIDDLE,
+  RIGHT,
+}
+
+
+table TargetSelectorHint {
+  grid:GridSelectionHint (id: 0);
+  row:RowSelectionHint (id: 1);
+  spot:SpotSelectionHint (id: 2);
+}
+
+root_type TargetSelectorHint;

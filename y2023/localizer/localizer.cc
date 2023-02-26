@@ -4,6 +4,7 @@
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/control_loops/pose.h"
 #include "y2023/constants.h"
+#include "y2023/localizer/utils.h"
 
 namespace y2023::localizer {
 namespace {
@@ -36,16 +37,6 @@ std::map<uint64_t, Localizer::Transform> GetTargetLocations(
 }
 }  // namespace
 
-Localizer::Transform PoseToTransform(
-    const frc971::vision::TargetPoseFbs *pose) {
-  const frc971::vision::Position *position = pose->position();
-  const frc971::vision::Quaternion *quaternion = pose->orientation();
-  return (Eigen::Translation3d(
-              Eigen::Vector3d(position->x(), position->y(), position->z())) *
-          Eigen::Quaterniond(quaternion->w(), quaternion->x(), quaternion->y(),
-                             quaternion->z()))
-      .matrix();
-}
 
 std::array<Localizer::CameraState, Localizer::kNumCameras>
 Localizer::MakeCameras(const Constants &constants, aos::EventLoop *event_loop) {

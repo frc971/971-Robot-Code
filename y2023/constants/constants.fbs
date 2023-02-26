@@ -1,5 +1,6 @@
 include "frc971/vision/calibration.fbs";
 include "frc971/vision/target_map.fbs";
+include "y2023/localizer/scoring_map.fbs";
 
 namespace y2023;
 
@@ -10,6 +11,7 @@ table CameraConfiguration {
 table Constants {
   cameras:[CameraConfiguration] (id: 0);
   target_map:frc971.vision.TargetMap (id: 1);
+  scoring_map:localizer.ScoringMap (id: 2);
 }
 
 root_type Constants;

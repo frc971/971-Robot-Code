@@ -344,7 +344,7 @@
       "source_node": "imu",
       "frequency": 1,
       "num_senders": 2,
-      "max_size": 4096
+      "max_size": 65536
     }
   ],
   "applications": [

@@ -1,0 +1,80 @@
+{
+  "substation": {
+    /* TODO: Tune substation numbers once we pick a "good" spot. */
+    "left": {
+      "x": -1.0,
+      "y": -0.255,
+      "z": 0.16
+    },
+    "right": {
+      "x": 1.0,
+      "y": -0.255,
+      "z": 0.16
+    }
+  },
+  "nominal_grid": {
+    "bottom": {
+      "left_cone": {
+        "x": -0.559,
+        "y": 0.463,
+        "z": -0.254
+      },
+      "cube": {
+        "x": 0.0,
+        "y": 0.463,
+        "z": -0.254
+      },
+      "right_cone": {
+        "x": 0.559,
+        "y": 0.463,
+        "z": -0.254
+      }
+    },
+    "middle": {
+      "left_cone": {
+        "x": -0.559,
+        "y": -0.407,
+        "z": 0.217
+      },
+      "cube": {
+        "x": 0.0,
+        "y": -0.407,
+        "z": 0.217
+      },
+      "right_cone": {
+        "x": 0.559,
+        "y": -0.407,
+        "z": 0.217
+      }
+    },
+    "top": {
+      "left_cone": {
+        "x": -0.559,
+        "y": -0.707,
+        "z": 0.647
+      },
+      "cube": {
+        "x": 0.0,
+        "y": -0.707,
+        "z": 0.647
+      },
+      "right_cone": {
+        "x": 0.559,
+        "y": -0.707,
+        "z": 0.647
+      }
+    }
+  },
+  "red": {
+    "substation": 5,
+    "left": 3,
+    "middle": 2,
+    "right": 1
+  },
+  "blue": {
+    "substation": 4,
+    "left": 6,
+    "middle": 7,
+    "right": 8
+  }
+}

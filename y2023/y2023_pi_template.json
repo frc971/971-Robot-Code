@@ -336,7 +336,7 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 1,
       "num_senders": 2,
-      "max_size": 4096
+      "max_size": 65536
     },
     {
       "name": "/pi{{ NUM }}/camera",
