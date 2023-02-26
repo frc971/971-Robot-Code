@@ -11,9 +11,12 @@ namespace superstructure {
 using ::aos::monotonic_clock;
 
 EndEffector::EndEffector()
-    : state_(EndEffectorState::IDLE), beambreak_(false) {}
+    : state_(EndEffectorState::IDLE),
+      game_piece_(GamePiece::NONE),
+      timer_(aos::monotonic_clock::min_time),
+      beambreak_(false) {}
 
-EndEffectorState EndEffector::RunIteration(
+void EndEffector::RunIteration(
     const ::aos::monotonic_clock::time_point timestamp, RollerGoal roller_goal,
     double falcon_current, double cone_position, bool beambreak,
     double *roller_voltage) {
@@ -24,6 +27,16 @@ EndEffectorState EndEffector::RunIteration(
 
   bool beambreak_status = (beambreak || (falcon_current > kMinCurrent &&
                                          cone_position < kMaxConePosition));
+
+  // Let them switch game pieces
+  if (roller_goal == RollerGoal::INTAKE_CONE) {
+    game_piece_ = GamePiece::CONE;
+  } else if (roller_goal == RollerGoal::INTAKE_CUBE) {
+    game_piece_ = GamePiece::CUBE;
+  }
+
+  // Cube voltage is flipped
+  double voltage_sign = (game_piece_ == GamePiece::CUBE ? -1.0 : 1.0);
 
   // Go into spitting if we were told to, no matter where we are
   if (roller_goal == RollerGoal::SPIT && state_ != EndEffectorState::SPITTING) {
@@ -37,7 +50,9 @@ EndEffectorState EndEffector::RunIteration(
   switch (state_) {
     case EndEffectorState::IDLE:
       // If idle and intake requested, intake
-      if (roller_goal == RollerGoal::INTAKE) {
+      if (roller_goal == RollerGoal::INTAKE_CONE ||
+          roller_goal == RollerGoal::INTAKE_CUBE ||
+          roller_goal == RollerGoal::INTAKE_LAST) {
         state_ = EndEffectorState::INTAKING;
         timer_ = timestamp;
       }
@@ -54,7 +69,11 @@ EndEffectorState EndEffector::RunIteration(
         break;
       }
 
-      *roller_voltage = constants::Values::kRollerVoltage();
+      if (game_piece_ == GamePiece::CUBE) {
+        *roller_voltage = kRollerCubeSuckVoltage();
+      } else {
+        *roller_voltage = kRollerConeSuckVoltage();
+      }
 
       break;
     case EndEffectorState::LOADED:
@@ -66,7 +85,7 @@ EndEffectorState EndEffector::RunIteration(
       break;
     case EndEffectorState::SPITTING:
       // If spit requested, spit
-      *roller_voltage = -constants::Values::kRollerVoltage();
+      *roller_voltage = voltage_sign * kRollerSpitVoltage();
       if (beambreak_) {
         if (!beambreak_status) {
           timer_ = timestamp;
@@ -74,14 +93,13 @@ EndEffectorState EndEffector::RunIteration(
       } else if (timestamp > timer_ + constants::Values::kExtraSpittingTime()) {
         // Finished spitting
         state_ = EndEffectorState::IDLE;
+        game_piece_ = GamePiece::NONE;
       }
 
       break;
   }
 
   beambreak_ = beambreak_status;
-
-  return state_;
 }
 
 void EndEffector::Reset() { state_ = EndEffectorState::IDLE; }

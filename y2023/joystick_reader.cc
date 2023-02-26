@@ -47,6 +47,7 @@ const ButtonLocation kMidBackTipConeScoreRight(3, 2);
 
 const ButtonLocation kGroundPickupConeUp(4, 7);
 const ButtonLocation kGroundPickupConeDown(4, 8);
+const ButtonLocation kGroundPickupCube(4, 10);
 const ButtonLocation kHPConePickup(4, 6);
 
 const ButtonLocation kSuck(4, 12);
@@ -152,11 +153,14 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     std::optional<double> score_wrist_goal = std::nullopt;
 
     if (data.IsPressed(kGroundPickupConeUp) || data.IsPressed(kHPConePickup)) {
-      roller_goal = RollerGoal::INTAKE;
+      roller_goal = RollerGoal::INTAKE_CONE;
       current_game_piece_ = GamePiece::CONE_UP;
     } else if (data.IsPressed(kGroundPickupConeDown)) {
-      roller_goal = RollerGoal::INTAKE;
+      roller_goal = RollerGoal::INTAKE_CONE;
       current_game_piece_ = GamePiece::CONE_DOWN;
+    } else if (data.IsPressed(kGroundPickupCube)) {
+      roller_goal = RollerGoal::INTAKE_CUBE;
+      current_game_piece_ = GamePiece::CUBE;
     }
 
     // Search for the active setpoint.
@@ -172,7 +176,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     }
 
     if (data.IsPressed(kSuck)) {
-      roller_goal = RollerGoal::INTAKE;
+      roller_goal = RollerGoal::INTAKE_LAST;
     } else if (data.IsPressed(kSpit)) {
       if (score_wrist_goal.has_value()) {
         wrist_goal = score_wrist_goal.value();

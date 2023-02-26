@@ -76,7 +76,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &(output_struct.wrist_voltage) : nullptr,
           status->fbb());
 
-  EndEffectorState end_effector_state = end_effector_.RunIteration(
+  end_effector_.RunIteration(
       timestamp,
       unsafe_goal != nullptr ? unsafe_goal->roller_goal() : RollerGoal::IDLE,
       position->has_roller_falcon()
@@ -94,7 +94,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_estopped(wrist_.estopped() || arm_.estopped());
   status_builder.add_arm(arm_status_offset);
   status_builder.add_wrist(wrist_offset);
-  status_builder.add_end_effector_state(end_effector_state);
+  status_builder.add_end_effector_state(end_effector_.state());
+  // TODO(milind): integrate this with ML game piece detection somehow
+  status_builder.add_game_piece(end_effector_.game_piece());
 
   (void)status->Send(status_builder.Finish());
 }
