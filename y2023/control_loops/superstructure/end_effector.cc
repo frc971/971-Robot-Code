@@ -59,6 +59,12 @@ void EndEffector::RunIteration(
       break;
     case EndEffectorState::INTAKING:
       // If intaking and beam break is not triggered, keep intaking
+      if (roller_goal == RollerGoal::INTAKE_CONE ||
+          roller_goal == RollerGoal::INTAKE_CUBE ||
+          roller_goal == RollerGoal::INTAKE_LAST) {
+        timer_ = timestamp;
+      }
+
       if (beambreak_status) {
         // Beam has been broken, switch to loaded.
         state_ = EndEffectorState::LOADED;
@@ -77,10 +83,10 @@ void EndEffector::RunIteration(
 
       break;
     case EndEffectorState::LOADED:
+      timer_ = timestamp;
       // If loaded and beam break not triggered, intake
       if (!beambreak_status) {
         state_ = EndEffectorState::INTAKING;
-        timer_ = timestamp;
       }
       break;
     case EndEffectorState::SPITTING:
