@@ -7,7 +7,9 @@ namespace drivetrain {
 PuppetLocalizer::PuppetLocalizer(
     aos::EventLoop *event_loop,
     const frc971::control_loops::drivetrain::DrivetrainConfig<double>
-        &dt_config)
+        &dt_config,
+    std::unique_ptr<frc971::control_loops::drivetrain::TargetSelectorInterface>
+        target_selector)
     : event_loop_(event_loop),
       dt_config_(dt_config),
       ekf_(dt_config),
@@ -17,7 +19,8 @@ PuppetLocalizer::PuppetLocalizer(
               "/localizer")),
       clock_offset_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
-              "/aos")) {
+              "/aos")),
+      target_selector_(std::move(target_selector)) {
   ekf_.set_ignore_accel(true);
 
   event_loop->OnRun([this, event_loop]() {
@@ -25,7 +28,11 @@ PuppetLocalizer::PuppetLocalizer(
                            HybridEkf::State::Zero(), ekf_.P());
   });
 
-  target_selector_.set_has_target(false);
+  if (!target_selector_) {
+    auto selector = std::make_unique<TrivialTargetSelector>();
+    selector->set_has_target(false);
+    target_selector_ = std::move(selector);
+  }
 }
 
 void PuppetLocalizer::Reset(

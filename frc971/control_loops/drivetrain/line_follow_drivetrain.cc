@@ -95,6 +95,8 @@ LineFollowDrivetrain::LineFollowDrivetrain(
     const DrivetrainConfig<double> &dt_config,
     TargetSelectorInterface *target_selector)
     : dt_config_(dt_config),
+      Q_(dt_config_.line_follow_config.Q),
+      R_(dt_config_.line_follow_config.R),
       A_d_(ADiscrete(dt_config_)),
       B_d_(BDiscrete(dt_config_)),
       K_(CalcK(A_d_, B_d_, Q_, R_)),
@@ -131,7 +133,8 @@ void LineFollowDrivetrain::SetGoal(
   }
   // Set an adjustment that lets the driver tweak the offset for where we place
   // the target left/right.
-  side_adjust_ = -goal->wheel() * 0.1;
+  side_adjust_ =
+      -goal->wheel() * dt_config_.line_follow_config.max_controllable_offset;
 }
 
 bool LineFollowDrivetrain::SetOutput(

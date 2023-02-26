@@ -1,7 +1,6 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_LINE_FOLLOW_DRIVETRAIN_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_LINE_FOLLOW_DRIVETRAIN_H_
 #include "Eigen/Dense"
-
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
@@ -56,21 +55,10 @@ class LineFollowDrivetrain {
                    double relative_y_offset, double velocity_sign);
 
   const DrivetrainConfig<double> dt_config_;
-  // TODO(james): These should probably be factored out somewhere.
   // TODO(james): This controller is not actually asymptotically stable, due to
   // the varying goal theta.
-  const ::Eigen::DiagonalMatrix<double, 3> Q_ =
-      (::Eigen::DiagonalMatrix<double, 3>().diagonal()
-           << 1.0 / ::std::pow(0.1, 2),
-       1.0 / ::std::pow(1.0, 2), 1.0 / ::std::pow(1.0, 2))
-          .finished()
-          .asDiagonal();
-  const ::Eigen::DiagonalMatrix<double, 2> R_ =
-      (::Eigen::DiagonalMatrix<double, 2>().diagonal()
-           << 1.0 / ::std::pow(12.0, 2),
-       1.0 / ::std::pow(12.0, 2))
-          .finished()
-          .asDiagonal();
+  const ::Eigen::Matrix<double, 3, 3> Q_;
+  const ::Eigen::Matrix<double, 2, 2> R_;
   // The matrices we use for the linear controller.
   // State for these is [theta, linear_velocity, angular_velocity]
   const ::Eigen::Matrix<double, 3, 3> A_d_;

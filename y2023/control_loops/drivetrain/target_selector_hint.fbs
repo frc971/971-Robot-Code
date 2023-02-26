@@ -28,6 +28,8 @@ table TargetSelectorHint {
   grid:GridSelectionHint (id: 0);
   row:RowSelectionHint (id: 1);
   spot:SpotSelectionHint (id: 2);
+  // TODO: support human player pickup auto-align?
+  // TODO: add flag for forwards vs. backwards.
 }
 
 root_type TargetSelectorHint;

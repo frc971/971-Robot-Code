@@ -81,6 +81,7 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":drivetrain_base",
+        ":target_selector",
         "//aos:init",
         "//aos/events:shm_event_loop",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
@@ -130,4 +131,33 @@ flatbuffer_cc_library(
     ],
     gen_reflections = 1,
     visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "target_selector",
+    srcs = ["target_selector.cc"],
+    hdrs = ["target_selector.h"],
+    deps = [
+        ":target_selector_hint_fbs",
+        "//aos/containers:sized_array",
+        "//aos/events:event_loop",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/control_loops:pose",
+        "//frc971/control_loops/drivetrain:localizer",
+        "//frc971/input:joystick_state_fbs",
+        "//y2023/constants:constants_fbs",
+    ],
+)
+
+cc_test(
+    name = "target_selector_test",
+    srcs = ["target_selector_test.cc"],
+    data = ["//y2023:aos_config"],
+    deps = [
+        ":target_selector",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
+        "//frc971/input:joystick_state_fbs",
+        "//y2023/constants:simulated_constants_sender",
+    ],
 )

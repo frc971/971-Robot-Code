@@ -49,6 +49,31 @@ struct DownEstimatorConfig {
   int do_accel_corrections = 50;
 };
 
+// Configuration for line-following mode.
+struct LineFollowConfig {
+  // The line-following uses an LQR controller with states of [theta,
+  // linear_velocity, angular_velocity] and inputs of [left_voltage,
+  // right_voltage].
+  // These Q and R matrices are the costs for state and input respectively.
+  Eigen::Matrix3d Q =
+      Eigen::Matrix3d((::Eigen::DiagonalMatrix<double, 3>().diagonal()
+                           << 1.0 / ::std::pow(0.1, 2),
+                       1.0 / ::std::pow(1.0, 2), 1.0 / ::std::pow(1.0, 2))
+                          .finished()
+                          .asDiagonal());
+  Eigen::Matrix2d R =
+      Eigen::Matrix2d((::Eigen::DiagonalMatrix<double, 2>().diagonal()
+                           << 1.0 / ::std::pow(12.0, 2),
+                       1.0 / ::std::pow(12.0, 2))
+                          .finished()
+                          .asDiagonal());
+
+  // The driver can use their steering controller to adjust where we attempt to
+  // place things laterally. This specifies how much range on either side of
+  // zero we allow them, in meters.
+  double max_controllable_offset = 0.1;
+};
+
 template <typename Scalar = double>
 struct DrivetrainConfig {
   // Shifting method we are using.
@@ -117,6 +142,8 @@ struct DrivetrainConfig {
   bool is_simulated = false;
 
   DownEstimatorConfig down_estimator_config{};
+
+  LineFollowConfig line_follow_config{};
 
   // Converts the robot state to a linear distance position, velocity.
   static Eigen::Matrix<Scalar, 2, 1> LeftRightToLinear(

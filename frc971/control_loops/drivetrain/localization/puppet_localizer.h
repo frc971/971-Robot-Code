@@ -32,14 +32,17 @@ class PuppetLocalizer
   PuppetLocalizer(
       aos::EventLoop *event_loop,
       const frc971::control_loops::drivetrain::DrivetrainConfig<double>
-          &dt_config);
+          &dt_config,
+      std::unique_ptr<
+          frc971::control_loops::drivetrain::TargetSelectorInterface>
+          target_selector = {});
   frc971::control_loops::drivetrain::HybridEkf<double>::State Xhat()
       const override {
     return ekf_.X_hat().cast<double>();
   }
-  frc971::control_loops::drivetrain::TrivialTargetSelector *target_selector()
+  frc971::control_loops::drivetrain::TargetSelectorInterface *target_selector()
       override {
-    return &target_selector_;
+    return target_selector_.get();
   }
 
   void Update(const ::Eigen::Matrix<double, 2, 1> &U,
@@ -97,7 +100,8 @@ class PuppetLocalizer
   aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
 
   // Target selector to allow us to satisfy the LocalizerInterface requirements.
-  frc971::control_loops::drivetrain::TrivialTargetSelector target_selector_;
+  std::unique_ptr<frc971::control_loops::drivetrain::TargetSelectorInterface>
+      target_selector_;
 };
 
 }  // namespace drivetrain

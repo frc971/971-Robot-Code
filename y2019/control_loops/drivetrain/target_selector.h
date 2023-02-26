@@ -32,6 +32,7 @@ class TargetSelector
       /*num_obstacles=*/0, double> FakeCamera;
 
   TargetSelector(::aos::EventLoop *event_loop);
+  virtual ~TargetSelector() {}
 
   bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
                        double command_speed) override;

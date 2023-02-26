@@ -11,6 +11,7 @@
 
 using ::frc971::control_loops::drivetrain::DownEstimatorConfig;
 using ::frc971::control_loops::drivetrain::DrivetrainConfig;
+using ::frc971::control_loops::drivetrain::LineFollowConfig;
 
 namespace chrono = ::std::chrono;
 
@@ -61,7 +62,20 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
           .finished(),
       false /*is_simulated*/,
       DownEstimatorConfig{.gravity_threshold = 0.015,
-                          .do_accel_corrections = 1000}};
+                          .do_accel_corrections = 1000},
+      LineFollowConfig{
+          .Q = Eigen::Matrix3d((::Eigen::DiagonalMatrix<double, 3>().diagonal()
+                                    << 1.0 / ::std::pow(0.1, 2),
+                                1.0 / ::std::pow(1.0, 2),
+                                1.0 / ::std::pow(1.0, 2))
+                                   .finished()
+                                   .asDiagonal()),
+          .R = Eigen::Matrix2d((::Eigen::DiagonalMatrix<double, 2>().diagonal()
+                                    << 10.0 / ::std::pow(12.0, 2),
+                                10.0 / ::std::pow(12.0, 2))
+                                   .finished()
+                                   .asDiagonal()),
+          .max_controllable_offset = 0.5}};
 
   return kDrivetrainConfig;
 };

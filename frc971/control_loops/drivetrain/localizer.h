@@ -15,6 +15,7 @@ namespace drivetrain {
 // state updates and then determine what poes we should be driving to.
 class TargetSelectorInterface {
  public:
+  virtual ~TargetSelectorInterface() {}
   // Take the state as [x, y, theta, left_vel, right_vel]
   // If unable to determine what target to go for, returns false. If a viable
   // target is selected, then returns true and sets target_pose.
@@ -108,6 +109,7 @@ class LocalizerInterface {
 // manually set the target selector state.
 class TrivialTargetSelector : public TargetSelectorInterface {
  public:
+  virtual ~TrivialTargetSelector() {}
   bool UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &, double) override {
     return has_target_;
   }

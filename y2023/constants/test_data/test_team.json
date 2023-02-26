@@ -13,5 +13,6 @@
       "calibration": {% include 'y2023/constants/test_data/calibration_pi-4.json' %}
     }
   ],
-  "target_map": {% include 'y2023/constants/test_data/target_map.json' %}
+  "target_map": {% include 'y2023/constants/test_data/target_map.json' %},
+  "scoring_map": {% include 'y2023/constants/test_data/scoring_map.json' %}
 }
