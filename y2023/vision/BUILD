@@ -1,3 +1,5 @@
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+
 cc_binary(
     name = "camera_reader",
     srcs = [
@@ -166,4 +168,47 @@ cc_binary(
         "//y2023/constants:constants_fbs",
         "//y2023/vision:vision_util",
     ],
+)
+
+cc_binary(
+    name = "game_pieces_detector",
+    srcs = [
+        "game_pieces_main.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2023:__subpackages__"],
+    deps = [
+        ":game_pieces_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+    ],
+)
+
+cc_library(
+    name = "game_pieces_lib",
+    srcs = [
+        "game_pieces.cc",
+    ],
+    hdrs = [
+        "game_pieces.h",
+    ],
+    data = [
+        "//y2023:aos_config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2023:__subpackages__"],
+    deps = [
+        ":game_pieces_fbs",
+        "//aos/events:event_loop",
+        "//aos/events:shm_event_loop",
+        "//frc971/vision:vision_fbs",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "game_pieces_fbs",
+    srcs = ["game_pieces.fbs"],
+    gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
 )
