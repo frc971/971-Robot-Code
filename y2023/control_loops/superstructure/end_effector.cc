@@ -25,6 +25,15 @@ EndEffectorState EndEffector::RunIteration(
   bool beambreak_status = (beambreak || (falcon_current > kMinCurrent &&
                                          cone_position < kMaxConePosition));
 
+  // Go into spitting if we were told to, no matter where we are
+  if (roller_goal == RollerGoal::SPIT && state_ != EndEffectorState::SPITTING) {
+    state_ = EndEffectorState::SPITTING;
+
+    if (!beambreak_status) {
+      timer_ = timestamp;
+    }
+  }
+
   switch (state_) {
     case EndEffectorState::IDLE:
       // If idle and intake requested, intake
@@ -53,10 +62,6 @@ EndEffectorState EndEffector::RunIteration(
       if (!beambreak_status) {
         state_ = EndEffectorState::INTAKING;
         timer_ = timestamp;
-      }
-      // If loaded and spit requested, spit
-      else if (roller_goal == RollerGoal::SPIT) {
-        state_ = EndEffectorState::SPITTING;
       }
       break;
     case EndEffectorState::SPITTING:

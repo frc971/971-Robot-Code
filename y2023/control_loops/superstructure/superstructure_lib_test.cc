@@ -719,6 +719,18 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::SPITTING);
 
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_trajectory_override(false);
+    goal_builder.add_roller_goal(RollerGoal::IDLE);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+
   // Checking that it goes to idle after it's given time to stop spitting.
   RunFor(dt() * 3);
 
