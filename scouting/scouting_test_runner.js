@@ -63,7 +63,6 @@ const serverShutdown = new Promise((resolve) => {
   await serverStartup;
   const result = await cypress.run(
     Object.assign(runOptions, {
-      headless: true,
       config: {
         baseUrl: 'http://localhost:8000',
         screenshotsFolder:
