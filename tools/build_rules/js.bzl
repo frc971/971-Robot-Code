@@ -12,6 +12,7 @@ load("//tools/build_rules/js:ng.bzl", "ng_esbuild", "ng_project")
 load("//tools/build_rules/js:ts.bzl", _ts_project = "ts_project")
 load("@aspect_rules_rollup//rollup:defs.bzl", upstream_rollup_bundle = "rollup_bundle")
 load("@aspect_rules_terser//terser:defs.bzl", "terser_minified")
+load("@aspect_rules_cypress//cypress:defs.bzl", "cypress_module_test")
 
 ts_project = _ts_project
 
@@ -359,3 +360,42 @@ _expose_file_with_suffix = rule(
         "suffix": attr.string(mandatory = True),
     },
 )
+
+def cypress_test(runner, data = None, **kwargs):
+    """Runs a cypress test with the specified runner.
+
+    Args:
+        runner: The runner that starts up any necessary servers and then
+            invokes Cypress itself. See the Module API documentation for more
+            information: https://docs.cypress.io/guides/guides/module-api
+        data: The spec files (*.cy.js) and the servers under test. Also any
+            other files needed at runtime.
+        kwargs: Arguments forwarded to the upstream cypress_module_test().
+    """
+
+    # Figure out how many directories deep this package is relative to the
+    # workspace root.
+    package_depth = len(native.package_name().split("/"))
+
+    # Chrome is located at the runfiles root. So we need to go up one more
+    # directory than the workspace root.
+    chrome_location = "../" * (package_depth + 1) + "chrome_linux/chrome"
+    config_location = "../" * package_depth + "tools/build_rules/js/cypress.config.js"
+
+    data = data or []
+    data.append("//tools/build_rules/js:cypress.config.js")
+    data.append("@xvfb_amd64//:wrapped_bin/Xvfb")
+
+    cypress_module_test(
+        args = [
+            "run",
+            "--config-file=" + config_location,
+            "--browser=" + chrome_location,
+        ],
+        browsers = ["@chrome_linux//:all"],
+        copy_data_to_bin = False,
+        cypress = "//:node_modules/cypress",
+        data = data,
+        runner = runner,
+        **kwargs
+    )
