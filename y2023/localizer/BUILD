@@ -74,6 +74,7 @@ cc_library(
     name = "utils",
     srcs = ["utils.cc"],
     hdrs = ["utils.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//frc971/vision:target_map_fbs",
         "@org_tuxfamily_eigen//:eigen",
