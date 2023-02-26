@@ -174,9 +174,25 @@ class CharucoExtractor {
 // Puts the provided charuco corners into a foxglove ImageAnnotation type for
 // visualization purposes.
 flatbuffers::Offset<foxglove::ImageAnnotations> BuildAnnotations(
+    flatbuffers::FlatBufferBuilder *fbb,
     const aos::monotonic_clock::time_point monotonic_now,
-    const std::vector<std::vector<cv::Point2f>> &corners, double thickness,
-    flatbuffers::FlatBufferBuilder *fbb);
+    const std::vector<std::vector<cv::Point2f>> &corners,
+    const std::vector<double> rgba_color = std::vector<double>{0.0, 1.0, 0.0,
+                                                               1.0},
+    const double thickness = 5,
+    const foxglove::PointsAnnotationType line_type =
+        foxglove::PointsAnnotationType::POINTS);
+
+// Creates a PointsAnnotation to build up ImageAnnotations with different types
+flatbuffers::Offset<foxglove::PointsAnnotation> BuildPointsAnnotation(
+    flatbuffers::FlatBufferBuilder *fbb,
+    const aos::monotonic_clock::time_point monotonic_now,
+    const std::vector<cv::Point2f> &corners,
+    const std::vector<double> rgba_color = std::vector<double>{0.0, 1.0, 0.0,
+                                                               1.0},
+    const double thickness = 5,
+    const foxglove::PointsAnnotationType line_type =
+        foxglove::PointsAnnotationType::POINTS);
 
 }  // namespace vision
 }  // namespace frc971

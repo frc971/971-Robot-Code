@@ -89,7 +89,8 @@ class CalibrationFoxgloveVisualizer {
                      std::vector<std::vector<cv::Point2f>> charuco_corners) {
     auto builder = annotations_sender_.MakeBuilder();
     builder.CheckOk(builder.Send(
-        BuildAnnotations(eof, charuco_corners, 2.0, builder.fbb())));
+        BuildAnnotations(builder.fbb(), eof, charuco_corners,
+                         std::vector<double>{0.0, 1.0, 0.0, 1.0}, 2.0)));
   }
 
  private:
