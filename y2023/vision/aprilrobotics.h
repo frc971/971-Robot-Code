@@ -28,6 +28,7 @@ class AprilRoboticsDetector {
     apriltag_detection_t det;
     apriltag_pose_t pose;
     double pose_error;
+    double distortion_factor;
   };
 
   AprilRoboticsDetector(aos::EventLoop *event_loop,
@@ -52,6 +53,12 @@ class AprilRoboticsDetector {
   flatbuffers::Offset<frc971::vision::TargetPoseFbs> BuildTargetPose(
       const Detection &detection, flatbuffers::FlatBufferBuilder *fbb);
 
+  // Computes the distortion effect on this detection taking the scaled average
+  // delta between orig_corners (distorted corners) and corners (undistorted
+  // corners)
+  double ComputeDistortionFactor(const std::vector<cv::Point2f> &orig_corners,
+                                 const std::vector<cv::Point2f> &corners);
+
   apriltag_family_t *tag_family_;
   apriltag_detector_t *tag_detector_;
 
@@ -61,6 +68,7 @@ class AprilRoboticsDetector {
   cv::Mat projection_matrix_;
   std::optional<cv::Mat> extrinsics_;
   cv::Mat dist_coeffs_;
+  cv::Size image_size_;
 
   aos::Ftrace ftrace_;
 

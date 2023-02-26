@@ -19,6 +19,7 @@ namespace chrono = std::chrono;
 AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
                                              std::string_view channel_name)
     : calibration_data_(event_loop),
+      image_size_(0, 0),
       ftrace_(),
       image_callback_(
           event_loop, channel_name,
@@ -81,6 +82,8 @@ void AprilRoboticsDetector::SetWorkerpoolAffinities() {
 
 void AprilRoboticsDetector::HandleImage(cv::Mat image_grayscale,
                                         aos::monotonic_clock::time_point eof) {
+  image_size_ = image_grayscale.size();
+
   std::vector<Detection> detections = DetectTags(image_grayscale, eof);
 
   auto builder = target_map_sender_.MakeBuilder();
@@ -112,7 +115,8 @@ AprilRoboticsDetector::BuildTargetPose(const Detection &detection,
 
   return frc971::vision::CreateTargetPoseFbs(
       *fbb, detection.det.id, position_offset, orientation_offset,
-      detection.det.decision_margin, detection.pose_error);
+      detection.det.decision_margin, detection.pose_error,
+      detection.distortion_factor);
 }
 
 void AprilRoboticsDetector::UndistortDetection(
@@ -135,6 +139,25 @@ void AprilRoboticsDetector::UndistortDetection(
       det->p[i][j] = undistorted_points.at<double>(i, j);
     }
   }
+}
+
+double AprilRoboticsDetector::ComputeDistortionFactor(
+    const std::vector<cv::Point2f> &orig_corners,
+    const std::vector<cv::Point2f> &corners) {
+  CHECK_EQ(orig_corners.size(), 4ul);
+  CHECK_EQ(corners.size(), 4ul);
+
+  double avg_distance = 0.0;
+  for (size_t i = 0; i < corners.size(); i++) {
+    avg_distance += cv::norm(orig_corners[i] - corners[i]);
+  }
+  avg_distance /= corners.size();
+
+  // Normalize avg_distance by dividing by the image size
+  double distortion_factor =
+      avg_distance /
+      static_cast<double>(image_size_.width * image_size_.height);
+  return distortion_factor;
 }
 
 std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
@@ -177,8 +200,6 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
       VLOG(1) << "Found tag number " << det->id << " hamming: " << det->hamming
               << " margin: " << det->decision_margin;
 
-      const aos::monotonic_clock::time_point before_pose_estimation =
-          aos::monotonic_clock::now();
       // First create an apriltag_detection_info_t struct using your known
       // parameters.
       apriltag_detection_info_t info;
@@ -201,21 +222,20 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
 
       UndistortDetection(det);
 
+      const aos::monotonic_clock::time_point before_pose_estimation =
+          aos::monotonic_clock::now();
+
       apriltag_pose_t pose;
-      double err = estimate_tag_pose(&info, &pose);
-
-      VLOG(1) << "err: " << err;
-
-      results.emplace_back(Detection{*det, pose, err});
+      double pose_error = estimate_tag_pose(&info, &pose);
 
       const aos::monotonic_clock::time_point after_pose_estimation =
           aos::monotonic_clock::now();
-
       VLOG(1) << "Took "
               << chrono::duration<double>(after_pose_estimation -
                                           before_pose_estimation)
                      .count()
               << " seconds for pose estimation";
+      VLOG(1) << "Pose err: " << pose_error;
 
       std::vector<cv::Point2f> corner_points;
       corner_points.emplace_back(det->p[0][0], det->p[0][1]);
@@ -224,6 +244,14 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
       corner_points.emplace_back(det->p[3][0], det->p[3][1]);
 
       corners_vector.emplace_back(corner_points);
+
+      double distortion_factor =
+          ComputeDistortionFactor(orig_corner_points, corner_points);
+
+      results.emplace_back(Detection{.det = *det,
+                                     .pose = pose,
+                                     .pose_error = pose_error,
+                                     .distortion_factor = distortion_factor});
     }
   }
 
