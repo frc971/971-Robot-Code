@@ -590,6 +590,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
 
     builder.CheckOk(builder.Send(goal_builder.Finish()));
   }
+  SetBeambreak(GetParam(), false);
 
   // This makes sure that we intake as normal when
   // requesting intake.

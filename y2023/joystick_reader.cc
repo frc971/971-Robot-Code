@@ -115,6 +115,12 @@ const std::vector<ArmSetpoint> setpoints = {
         .game_piece = GamePiece::CONE_UP,
         .button = kMidBackTipConeScoreLeft,
     },
+    {
+        .index = arm::GroundPickupBackCubeIndex(),
+        .wrist_goal = 0.6,
+        .game_piece = GamePiece::CUBE,
+        .button = kGroundPickupCube,
+    },
 };
 
 class Reader : public ::frc971::input::ActionJoystickInput {
@@ -161,6 +167,10 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     } else if (data.IsPressed(kGroundPickupCube)) {
       roller_goal = RollerGoal::INTAKE_CUBE;
       current_game_piece_ = GamePiece::CUBE;
+    }
+
+    if (current_game_piece_ == GamePiece::CUBE) {
+      wrist_goal = 0.6;
     }
 
     // Search for the active setpoint.

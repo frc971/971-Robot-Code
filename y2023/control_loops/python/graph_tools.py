@@ -9,7 +9,7 @@ joint_center = (-0.203, 0.787)
 
 # Joint distances (l1 = "proximal", l2 = "distal")
 l1 = 20.0 * IN_TO_M
-l2 = 31.5 * IN_TO_M
+l2 = 38.0 * IN_TO_M
 
 max_dist = 0.01
 max_dist_theta = np.pi / 64
@@ -35,7 +35,7 @@ def to_theta(pt, circular_index, cross_point=-np.pi, die=True):
     orient = (circular_index % 2) == 0
     x = pt[0]
     y = pt[1]
-    x -= joint_center[0]
+    x -= joint_center[0] - 1e-9
     y -= joint_center[1]
     l3 = np.hypot(x, y)
     t3 = np.arctan2(y, x)
