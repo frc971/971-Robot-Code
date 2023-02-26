@@ -22,7 +22,7 @@ cypress_test(
         "scouting_test.cy.js",
         "//scouting/testing:scouting_test_servers",
     ],
-    runner = "cypress_runner.js",
+    runner = "scouting_test_runner.js",
 )
 
 apache_wrapper(
