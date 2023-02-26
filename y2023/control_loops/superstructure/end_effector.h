@@ -14,17 +14,24 @@ namespace superstructure {
 
 class EndEffector {
  public:
+  static constexpr double kRollerConeSuckVoltage() { return 12.0; }
+  static constexpr double kRollerCubeSuckVoltage() { return -5.0; }
+  static constexpr double kRollerSpitVoltage() { return -9.0; }
+
   EndEffector();
-  EndEffectorState RunIteration(
-      const ::aos::monotonic_clock::time_point timestamp,
-      RollerGoal roller_goal, double falcon_current, double cone_position,
-      bool beambreak, double *intake_roller_voltage);
+  void RunIteration(const ::aos::monotonic_clock::time_point timestamp,
+                    RollerGoal roller_goal, double falcon_current,
+                    double cone_position, bool beambreak,
+                    double *intake_roller_voltage);
   EndEffectorState state() const { return state_; }
+  GamePiece game_piece() const { return game_piece_; }
   void Reset();
 
  private:
-  EndEffectorState state_ = EndEffectorState::IDLE;
-  aos::monotonic_clock::time_point timer_ = aos::monotonic_clock::min_time;
+  EndEffectorState state_;
+  GamePiece game_piece_;
+
+  aos::monotonic_clock::time_point timer_;
 
   bool beambreak_;
 };

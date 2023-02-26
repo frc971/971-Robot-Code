@@ -53,11 +53,6 @@ using AbsoluteEncoderSimulator = ::frc971::control_loops::SubsystemSimulator<
     Superstructure::AbsoluteEncoderSubsystem::State,
     constants::Values::AbsEncoderConstants>;
 
-enum GamePiece {
-  kCone,
-  kCube,
-};
-
 class ArmSimulation {
  public:
   explicit ArmSimulation(
@@ -565,7 +560,7 @@ class SuperstructureBeambreakTest
       public ::testing::WithParamInterface<GamePiece> {
  public:
   void SetBeambreak(GamePiece game_piece, bool status) {
-    if (game_piece == GamePiece::kCone) {
+    if (game_piece == GamePiece::CONE) {
       // TODO(milind): handle cone
     } else {
       superstructure_plant_.set_end_effector_cube_beam_break(status);
@@ -577,6 +572,11 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   SetEnabled(true);
   WaitUntilZeroed();
 
+  double voltage_sign = (GetParam() == GamePiece::CUBE ? -1.0 : 1.0);
+  double suck_voltage =
+      (GetParam() == GamePiece::CUBE ? EndEffector::kRollerCubeSuckVoltage()
+                                     : EndEffector::kRollerConeSuckVoltage());
+
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
@@ -584,7 +584,9 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
 
     goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
     goal_builder.add_trajectory_override(false);
-    goal_builder.add_roller_goal(RollerGoal::INTAKE);
+    goal_builder.add_roller_goal(GetParam() == GamePiece::CONE
+                                     ? RollerGoal::INTAKE_CONE
+                                     : RollerGoal::INTAKE_CUBE);
 
     builder.CheckOk(builder.Send(goal_builder.Finish()));
   }
@@ -596,10 +598,10 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
-  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(),
-            constants::Values::kRollerVoltage());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), suck_voltage);
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::INTAKING);
+  EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GetParam());
 
   SetBeambreak(GetParam(), true);
 
@@ -613,6 +615,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), 0.0);
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::LOADED);
+  EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GetParam());
 
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -634,10 +637,10 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
-  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(),
-            constants::Values::kRollerVoltage());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), suck_voltage);
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::INTAKING);
+  EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GetParam());
 
   // Checking that we go back to idle after beambreak is lost and we
   // set our goal to idle.
@@ -648,6 +651,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), 0.0);
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::IDLE);
+  EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GetParam());
 
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -656,7 +660,9 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
 
     goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
     goal_builder.add_trajectory_override(false);
-    goal_builder.add_roller_goal(RollerGoal::INTAKE);
+    goal_builder.add_roller_goal(GetParam() == GamePiece::CONE
+                                     ? RollerGoal::INTAKE_CONE
+                                     : RollerGoal::INTAKE_CUBE);
 
     builder.CheckOk(builder.Send(goal_builder.Finish()));
   }
@@ -668,10 +674,10 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
-  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(),
-            constants::Values::kRollerVoltage());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), suck_voltage);
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::INTAKING);
+  EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GetParam());
 
   SetBeambreak(GetParam(), true);
 
@@ -684,6 +690,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), 0.0);
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::LOADED);
+  EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GetParam());
 
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -705,9 +712,10 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(),
-            -constants::Values::kRollerVoltage());
+            voltage_sign * EndEffector::kRollerSpitVoltage());
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::SPITTING);
+  EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GetParam());
 
   SetBeambreak(GetParam(), false);
 
@@ -717,9 +725,10 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(),
-            -constants::Values::kRollerVoltage());
+            voltage_sign * EndEffector::kRollerSpitVoltage());
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::SPITTING);
+  EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GetParam());
 
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -742,6 +751,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), 0.0);
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::IDLE);
+  EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GamePiece::NONE);
 }
 
 // Tests that we don't freak out without a goal.
@@ -818,7 +828,7 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
 
 // TODO(milind): add cone
 INSTANTIATE_TEST_SUITE_P(EndEffectorGoal, SuperstructureBeambreakTest,
-                         ::testing::Values(GamePiece::kCube));
+                         ::testing::Values(GamePiece::CUBE));
 
 }  // namespace testing
 }  // namespace superstructure

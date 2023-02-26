@@ -143,7 +143,6 @@ struct Values {
   // Rollers
   static constexpr double kRollerSupplyCurrentLimit() { return 30.0; }
   static constexpr double kRollerStatorCurrentLimit() { return 100.0; }
-  static constexpr double kRollerVoltage() { return 12.0; }
 
   // Game object is fed into end effector for at least this time
   static constexpr std::chrono::milliseconds kExtraIntakingTime() {

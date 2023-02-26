@@ -76,6 +76,12 @@ enum EndEffectorState : ubyte {
   SPITTING = 3,
 }
 
+enum GamePiece : ubyte {
+  NONE = 0,
+  CONE = 1,
+  CUBE = 2,
+}
+
 table Status {
   // All subsystems know their location.
   zeroed:bool (id: 0);
@@ -88,6 +94,7 @@ table Status {
   wrist:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 3);
 
   end_effector_state:EndEffectorState (id: 4);
+  game_piece:GamePiece (id: 5);
 }
 
 root_type Status;
