@@ -18,13 +18,12 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
                                              std::string_view channel_name)
     : calibration_data_(event_loop),
       ftrace_(),
-      image_callback_(
-          event_loop, channel_name,
-          [&](cv::Mat image_color_mat,
-              const aos::monotonic_clock::time_point eof) {
-            HandleImage(image_color_mat, eof);
-          },
-          chrono::milliseconds(5)),
+      image_callback_(event_loop, channel_name,
+                      [&](cv::Mat image_color_mat,
+                          const aos::monotonic_clock::time_point eof) {
+                        HandleImage(image_color_mat, eof);
+                      },
+                      chrono::milliseconds(5)),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
       image_annotations_sender_(
@@ -154,6 +153,7 @@ AprilRoboticsDetector::DetectTags(cv::Mat image,
 
   std::vector<std::pair<apriltag_detection_t, apriltag_pose_t>> results;
 
+  std::vector<std::vector<cv::Point2f>> orig_corners_vector;
   std::vector<std::vector<cv::Point2f>> corners_vector;
 
   auto builder = image_annotations_sender_.MakeBuilder();
@@ -178,6 +178,15 @@ AprilRoboticsDetector::DetectTags(cv::Mat image,
       info.fy = intrinsics_.at<double>(1, 1);
       info.cx = intrinsics_.at<double>(0, 2);
       info.cy = intrinsics_.at<double>(1, 2);
+
+      // Store out the original, pre-undistortion corner points for sending
+      std::vector<cv::Point2f> orig_corner_points;
+      orig_corner_points.emplace_back(det->p[0][0], det->p[0][1]);
+      orig_corner_points.emplace_back(det->p[1][0], det->p[1][1]);
+      orig_corner_points.emplace_back(det->p[2][0], det->p[2][1]);
+      orig_corner_points.emplace_back(det->p[3][0], det->p[3][1]);
+
+      orig_corners_vector.emplace_back(orig_corner_points);
 
       UndistortDetection(det);
 
@@ -207,8 +216,8 @@ AprilRoboticsDetector::DetectTags(cv::Mat image,
     }
   }
 
-  const auto annotations_offset =
-      frc971::vision::BuildAnnotations(eof, corners_vector, 5.0, builder.fbb());
+  const auto annotations_offset = frc971::vision::BuildAnnotations(
+      eof, orig_corners_vector, 5.0, builder.fbb());
   builder.CheckOk(builder.Send(annotations_offset));
 
   apriltag_detections_destroy(detections);
