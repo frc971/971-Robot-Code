@@ -155,7 +155,7 @@ double Path::DistanceToAlpha(double distance) const {
                            distance_step_size +
                        static_cast<double>(before) * distance_step_size;
   CHECK_GT(alpha, 0.0);
-  CHECK_LT(alpha, 1.0);
+  CHECK_LE(alpha, 1.0);
   return alpha;
 }
 
