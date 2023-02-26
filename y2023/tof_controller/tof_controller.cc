@@ -1,17 +1,17 @@
 #include <stdio.h>
 
 #include <algorithm>
-#include <limits>
 #include <cmath>
+#include <limits>
 
+#include "core/VL53L1X_api.h"
+#include "core/VL53L1X_calibration.h"
 #include "hardware/clocks.h"
 #include "hardware/i2c.h"
 #include "hardware/pwm.h"
 #include "hardware/watchdog.h"
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
-#include "core/VL53L1X_api.h"
-#include "core/VL53L1X_calibration.h"
 
 namespace y2023 {
 namespace tof_controller {
@@ -63,9 +63,6 @@ static constexpr uint kPinOutput = 4;
 
 class SignalWriter {
  public:
-  static constexpr double kScaledRangeLow = 0.0;
-  static constexpr double kScaledRangeHigh = 1.0;
-
   // PWM counts to this before wrapping
   static constexpr uint16_t kPWMTop = 62499;
   static constexpr int kPWMFreqHz = 200;
@@ -109,21 +106,9 @@ class SignalWriter {
     Write();
   }
 
-  void SetEnabled(bool enabled) {
-    enabled_ = enabled;
-    Write();
-  }
-
  private:
   void Write() {
-    double scaled_value =
-        (value_ * (kScaledRangeHigh - kScaledRangeLow) + kScaledRangeLow);
-
-    uint16_t level = scaled_value * kPWMTop;
-
-    if (!enabled_) {
-      level = 0;
-    }
+    uint16_t level = value_ * kPWMTop;
 
     pwm_set_gpio_level(pin_, level);
   }
@@ -423,16 +408,26 @@ int main() {
 
     double averaged_estimate = (left_estimate + right_estimate) / 2;
 
-    bool data_good = sensor1.errors == 0 && result1.Status == 0 &&
-                     sensor2.errors == 0 && result2.Status == 0 &&
-                     width_of_obstruction > 0;
+    const bool sensor1_good = sensor1.errors == 0 && result1.Status == 0;
+    const bool sensor2_good = sensor2.errors == 0 && result2.Status == 0;
 
-    output_writer.SetEnabled(sensor1.errors == 0 && result1.Status == 0 &&
-                             sensor2.errors == 0 && result2.Status == 0);
+    const bool data_good =
+        sensor1_good && sensor2_good && width_of_obstruction > 0;
 
-    const double output =
-        data_good ? std::max(0.05, std::min(averaged_estimate * 2.0, 0.9))
-                  : 0.95;
+    double output = std::max(0.05, std::min(averaged_estimate * 2.0, 0.90));
+
+    if (!data_good) {
+      if (!sensor1_good && !sensor2_good) {
+        output = 0.98;
+      } else if (!sensor2_good) {
+        output = 0.97;
+      } else if (!sensor1_good) {
+        output = 0.96;
+      } else {
+        output = 0.95;
+      }
+    }
+
     output_writer.SetValue(output);
 
     output_indicator.SetValue(data_good ? averaged_estimate : 0);
