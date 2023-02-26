@@ -185,6 +185,7 @@ aos_config(
         "//aos/network:timestamp_fbs",
         "//y2019/control_loops/drivetrain:target_selector_fbs",
         "//y2023/control_loops/superstructure:superstructure_goal_fbs",
+        "//y2023/control_loops/drivetrain:target_selector_hint_fbs",
         "//y2023/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//y2023/control_loops/superstructure:superstructure_output_fbs",
         "//y2023/control_loops/superstructure:superstructure_position_fbs",

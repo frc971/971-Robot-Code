@@ -451,6 +451,11 @@
       "frequency": 1,
       "num_senders": 2,
       "max_size": 4096
+    },
+    {
+      "name": "/drivetrain",
+      "type": "y2023.control_loops.drivetrain.TargetSelectorHint",
+      "source_node": "roborio"
     }
   ],
   "applications": [
