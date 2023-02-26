@@ -37,6 +37,25 @@ cc_binary(
 )
 
 cc_binary(
+    name = "localization_verifier",
+    srcs = [
+        "localization_verifier.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2023:__subpackages__"],
+    deps = [
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
+        "//frc971/vision:vision_fbs",
+        "//y2023/localizer",
+        "//y2023/vision:vision_util",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_binary(
     name = "target_mapping",
     srcs = [
         "target_mapping.cc",

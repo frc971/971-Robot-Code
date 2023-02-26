@@ -124,6 +124,7 @@ cc_library(
     name = "localizer",
     srcs = ["localizer.cc"],
     hdrs = ["localizer.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":status_fbs",
         ":utils",

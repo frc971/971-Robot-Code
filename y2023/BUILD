@@ -41,6 +41,7 @@ robot_downloader(
         "//aos/starter:irq_affinity",
         "//aos/util:foxglove_websocket",
         "//y2023/vision:viewer",
+        "//y2023/vision:localization_verifier",
         "//y2023/vision:aprilrobotics",
         "//aos/events:aos_timing_report_streamer",
         "//y2023/localizer:localizer_main",
