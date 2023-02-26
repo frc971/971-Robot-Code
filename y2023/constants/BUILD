@@ -56,6 +56,7 @@ flatbuffer_cc_library(
     deps = [
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:target_map_fbs",
+        "//y2023/localizer:scoring_map_fbs",
     ],
 )
 
