@@ -85,8 +85,8 @@ std::vector<const aos::Node *> InteractNodesForApplication(
 }
 
 void PrintKey() {
-  absl::PrintF("%-30s %-10s %-8s %-6s %-9s\n", "Name", "Node", "State", "PID",
-               "Uptime");
+  absl::PrintF("%-30s %-10s %-8s %-6s %-9s %-13s\n", "Name", "Node", "State",
+               "PID", "Uptime", "Last Exit Code");
 }
 
 std::vector<const aos::starter::ApplicationStatus *> SortApplications(
@@ -195,16 +195,22 @@ void PrintApplicationStatus(const aos::starter::ApplicationStatus *app_status,
       chrono::nanoseconds(app_status->last_start_time()));
   const auto time_running =
       chrono::duration_cast<chrono::seconds>(time - last_start_time);
+  const std::string last_exit_code =
+      app_status->has_last_exit_code()
+          ? std::to_string(app_status->last_exit_code())
+          : "-";
   if (app_status->state() == aos::starter::State::STOPPED) {
-    absl::PrintF("%-30s %-10s %-8s\n", app_status->name()->string_view(),
-                 (node == nullptr) ? "none" : node->name()->string_view(),
-                 aos::starter::EnumNameState(app_status->state()));
-  } else {
-    absl::PrintF("%-30s %-10s %-8s %-6d %-9s\n",
+    absl::PrintF("%-30s %-10s %-8s %-6s %-9s %-13s\n",
                  app_status->name()->string_view(),
                  (node == nullptr) ? "none" : node->name()->string_view(),
-                 aos::starter::EnumNameState(app_status->state()),
-                 app_status->pid(), std::to_string(time_running.count()) + 's');
+                 aos::starter::EnumNameState(app_status->state()), "", "",
+                 last_exit_code);
+  } else {
+    absl::PrintF(
+        "%-30s %-10s %-8s %-6d %-9s %-13s\n", app_status->name()->string_view(),
+        (node == nullptr) ? "none" : node->name()->string_view(),
+        aos::starter::EnumNameState(app_status->state()), app_status->pid(),
+        std::to_string(time_running.count()) + 's', last_exit_code);
   }
 }
 
