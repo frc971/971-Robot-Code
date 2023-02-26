@@ -8,6 +8,8 @@ DEFINE_bool(
 
 DEFINE_double(min_decision_margin, 75.0,
               "Minimum decision margin (confidence) for an apriltag detection");
+DEFINE_int32(pixel_border, 3,
+             "Size of image border within which to reject detected corners");
 
 namespace y2023 {
 namespace vision {
@@ -146,6 +148,8 @@ AprilRoboticsDetector::DetectTags(cv::Mat image,
       .stride = image.cols,
       .buf = image.data,
   };
+  const uint32_t min_x = FLAGS_pixel_border;
+  const uint32_t max_x = image.cols - FLAGS_pixel_border;
 
   ftrace_.FormatMessage("Starting detect\n");
   zarray_t *detections = apriltag_detector_detect(tag_detector_, &im);
@@ -163,6 +167,13 @@ AprilRoboticsDetector::DetectTags(cv::Mat image,
     zarray_get(detections, i, &det);
 
     if (det->decision_margin > FLAGS_min_decision_margin) {
+      if (det->p[0][0] < min_x || det->p[0][0] > max_x ||
+          det->p[1][0] < min_x || det->p[1][0] > max_x ||
+          det->p[2][0] < min_x || det->p[2][0] > max_x ||
+          det->p[3][0] < min_x || det->p[3][0] > max_x) {
+        VLOG(1) << "Rejecting detection because corner is outside pixel border";
+        continue;
+      }
       VLOG(1) << "Found tag number " << det->id << " hamming: " << det->hamming
               << " margin: " << det->decision_margin;
 
