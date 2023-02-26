@@ -4,6 +4,7 @@
 #include "frc971/vision/vision_generated.h"
 #include "glog/logging.h"
 #include "y2023/localizer/localizer.h"
+#include "y2023/localizer/utils.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 

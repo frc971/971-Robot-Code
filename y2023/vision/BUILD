@@ -50,6 +50,7 @@ cc_binary(
         "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
         "//frc971/vision:vision_fbs",
         "//y2023/localizer",
+        "//y2023/localizer:utils",
         "//y2023/vision:vision_util",
         "@com_google_absl//absl/strings",
     ],
