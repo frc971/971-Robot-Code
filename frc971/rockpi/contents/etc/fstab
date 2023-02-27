@@ -1,2 +1,2 @@
-/dev/mmcblk0p2  /  auto  errors=remount-ro  0  0
+/dev/mmcblk0p2 / ext4 rw,relatime,sync,dirsync,nodelalloc,errors=remount-ro 0  0
 tmpfs /dev/shm tmpfs rw,nosuid,nodev,size=90% 0 0

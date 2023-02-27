@@ -168,13 +168,13 @@ sudo tar --strip-components=3 -xvf "linux-kernel-${KERNEL_VERSION}.tar.xz" \
 cat << __EOF__ | sudo tee "${PARTITION}/boot/sdcard_extlinux.conf"
 label Linux ${KERNEL_VERSION}
     kernel /vmlinuz-${KERNEL_VERSION}
-    append earlycon=uart8250,mmio32,0xff1a0000 earlyprintk console=ttyS2,1500000n8 root=/dev/mmcblk0p2 ro rootfstype=ext4 rootwait
+    append earlycon=uart8250,mmio32,0xff1a0000 earlyprintk console=ttyS2,1500000n8 root=/dev/mmcblk0p2 ro rootfstype=ext4 rootflags=data=journal rootwait
     fdtdir /dtbs/${KERNEL_VERSION}/
 __EOF__
 cat << __EOF__ | sudo tee "${PARTITION}/boot/emmc_extlinux.conf"
 label Linux ${KERNEL_VERSION}
     kernel /vmlinuz-${KERNEL_VERSION}
-    append earlycon=uart8250,mmio32,0xff1a0000 earlyprintk console=ttyS2,1500000n8 root=/dev/mmcblk1p2 ro rootfstype=ext4 rootwait
+    append earlycon=uart8250,mmio32,0xff1a0000 earlyprintk console=ttyS2,1500000n8 root=/dev/mmcblk1p2 ro rootfstype=ext4 rootflags=data=journal rootwait
     fdtdir /dtbs/${KERNEL_VERSION}/
 __EOF__
 
