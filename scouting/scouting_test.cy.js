@@ -62,17 +62,6 @@ before(() => {
   cy.visit('/');
   disableAlerts();
   cy.title().should('eq', 'FRC971 Scouting Application');
-
-  // Import the match list before running any tests. Ideally this should be
-  // run in beforeEach(), but it's not worth doing that at this time. Our
-  // tests are basic enough not to require this.
-  switchToTab('Import Match List');
-  headerShouldBe('Import Match List');
-  setInputTo('#year', '2016');
-  setInputTo('#event_code', 'nytr');
-  clickButton('Import');
-
-  cy.get('.progress_message').contains('Successfully imported match list.');
 });
 
 beforeEach(() => {

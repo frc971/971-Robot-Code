@@ -47,14 +47,15 @@ def create_db_config(tmpdir: Path) -> Path:
     return config
 
 
-def create_tba_config(tmpdir: Path) -> Path:
-    # Configure the scouting webserver to scrape data from our fake TBA
-    # server.
+def create_tba_config(tmpdir: Path, year: int, event_code: str) -> Path:
+    # Configure the scouting webserver to scrape data from our fake TBA server.
     config = tmpdir / "scouting_config.json"
     config.write_text(
         json.dumps({
             "api_key": "dummy_key_that_is_not_actually_used_in_this_test",
             "base_url": "http://localhost:7000",
+            "year": year,
+            "event_code": event_code,
         }))
     return config
 
@@ -72,7 +73,11 @@ def set_up_tba_api_dir(tmpdir: Path, year: int, event_code: str):
 class Runner:
     """Helps manage the services we need for testing the scouting app."""
 
-    def start(self, port: int, notify_fd: int = 0):
+    def start(self,
+              port: int,
+              notify_fd: int = 0,
+              year: int = 2016,
+              event_code: str = "nytr"):
         """Starts the services needed for testing the scouting app.
 
         if notify_fd is set to a non-zero value, the string "READY" is written
@@ -83,7 +88,9 @@ class Runner:
         self.tmpdir.mkdir(exist_ok=True)
 
         db_config = create_db_config(self.tmpdir)
-        tba_config = create_tba_config(self.tmpdir)
+        tba_config = create_tba_config(self.tmpdir,
+                                       year=year,
+                                       event_code=event_code)
 
         # The database needs to be running and addressable before the scouting
         # webserver can start.
@@ -102,8 +109,7 @@ class Runner:
         ])
 
         # Create a fake TBA server to serve the static match list.
-        set_up_tba_api_dir(self.tmpdir, year=2016, event_code="nytr")
-        set_up_tba_api_dir(self.tmpdir, year=2020, event_code="fake")
+        set_up_tba_api_dir(self.tmpdir, year, event_code)
         self.fake_tba_api = subprocess.Popen(
             ["python3", "-m", "http.server", "7000"],
             cwd=self.tmpdir,

@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
-	"github.com/frc971/971-Robot-Code/scouting/scraping"
 	"github.com/frc971/971-Robot-Code/scouting/scraping/background"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/match_list"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/rankings"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
@@ -120,18 +120,19 @@ func main() {
 	}
 	defer database.Delete()
 
-	scrapeMatchList := func(year int32, eventCode string) ([]scraping.Match, error) {
-		if *blueAllianceConfigPtr == "" {
-			return nil, errors.New("Cannot scrape TBA's match list without a config file.")
-		}
-		return scraping.GetAllData[[]scraping.Match](year, eventCode, *blueAllianceConfigPtr, "matches")
-	}
-
 	scoutingServer := server.NewScoutingServer()
 	static.ServePages(scoutingServer, *dirPtr)
-	requests.HandleRequests(database, scrapeMatchList, scoutingServer)
+	requests.HandleRequests(database, scoutingServer)
 	scoutingServer.Start(*portPtr)
 	fmt.Println("Serving", *dirPtr, "on port", *portPtr)
+
+	// Since Go doesn't support default arguments, we use 0 and "" to
+	// indicate that we want to source the values from the config.
+
+	matchListScraper := background.BackgroundScraper{}
+	matchListScraper.Start(func() {
+		match_list.GetMatchList(database, 0, "", *blueAllianceConfigPtr)
+	})
 
 	rankingsScraper := background.BackgroundScraper{}
 	rankingsScraper.Start(func() {
@@ -148,5 +149,6 @@ func main() {
 	fmt.Println("Shutting down.")
 	scoutingServer.Stop()
 	rankingsScraper.Stop()
+	matchListScraper.Stop()
 	fmt.Println("Successfully shut down.")
 }

@@ -959,7 +959,6 @@ npm_translate_lock(
         "@//scouting/www/counter_button:package.json",
         "@//scouting/www/driver_ranking:package.json",
         "@//scouting/www/entry:package.json",
-        "@//scouting/www/import_match_list:package.json",
         "@//scouting/www/match_list:package.json",
         "@//scouting/www/notes:package.json",
         "@//scouting/www/rpc:package.json",

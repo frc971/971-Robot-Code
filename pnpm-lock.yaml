@@ -72,12 +72,6 @@ importers:
       '@angular/forms': 15.1.5
       '@org_frc971/scouting/www/counter_button': link:../counter_button
 
-  scouting/www/import_match_list:
-    specifiers:
-      '@angular/forms': 15.1.5
-    dependencies:
-      '@angular/forms': 15.1.5
-
   scouting/www/match_list:
     specifiers:
       '@angular/forms': 15.1.5

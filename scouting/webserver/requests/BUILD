@@ -8,10 +8,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//scouting/db",
-        "//scouting/scraping",
         "//scouting/webserver/requests/messages:error_response_go_fbs",
-        "//scouting/webserver/requests/messages:refresh_match_list_go_fbs",
-        "//scouting/webserver/requests/messages:refresh_match_list_response_go_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_go_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_response_go_fbs",
         "//scouting/webserver/requests/messages:request_all_matches_go_fbs",
@@ -46,11 +43,8 @@ go_test(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         "//scouting/db",
-        "//scouting/scraping",
         "//scouting/webserver/requests/debug",
         "//scouting/webserver/requests/messages:error_response_go_fbs",
-        "//scouting/webserver/requests/messages:refresh_match_list_go_fbs",
-        "//scouting/webserver/requests/messages:refresh_match_list_response_go_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_go_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_response_go_fbs",
         "//scouting/webserver/requests/messages:request_all_matches_go_fbs",
