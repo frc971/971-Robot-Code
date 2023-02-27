@@ -107,17 +107,21 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kPracticeTeamNumber:
-      arm_proximal->zeroing.measured_absolute_position = 0.0;
-      arm_proximal->potentiometer_offset = 0.0;
+      arm_proximal->zeroing.measured_absolute_position = 0.254437958024658;
+      arm_proximal->potentiometer_offset =
+          10.5178592988554 + 0.0944609125285876;
 
-      arm_distal->zeroing.measured_absolute_position = 0.0;
-      arm_distal->potentiometer_offset = 0.0;
+      arm_distal->zeroing.measured_absolute_position = 0.51986178669514;
+      arm_distal->potentiometer_offset = 7.673132586937 - 0.0799284644472573 -
+                                         0.0323574039310657 +
+                                         0.0143810684138064;
 
-      roll_joint->zeroing.measured_absolute_position = 0.0;
-      roll_joint->potentiometer_offset = 0.0;
+      roll_joint->zeroing.measured_absolute_position = 1.86685853969852;
+      roll_joint->potentiometer_offset =
+          0.624713611895747 + 3.10458504917251 - 0.0966407797407789;
 
       wrist->subsystem_params.zeroing_constants.measured_absolute_position =
-          0.0;
+          -0.607792293122026;
 
       break;
 
