@@ -15,6 +15,8 @@ enum RejectionReason : uint8 {
   MESSAGE_BRIDGE_DISCONNECTED = 2,
   // The target ID does not exist.
   NO_SUCH_TARGET = 3,
+  // Pose estimation error was higher than any normal detection.
+  HIGH_POSE_ERROR = 4,
 }
 
 table RejectionCount {
