@@ -3,8 +3,12 @@
 #include "aos/containers/sized_array.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/control_loops/pose.h"
+#include "gflags/gflags.h"
 #include "y2023/constants.h"
 #include "y2023/localizer/utils.h"
+
+DEFINE_double(max_pose_error, 1e-6,
+              "Throw out target poses with a higher pose error than this");
 
 namespace y2023::localizer {
 namespace {
@@ -36,7 +40,6 @@ std::map<uint64_t, Localizer::Transform> GetTargetLocations(
   return transforms;
 }
 }  // namespace
-
 
 std::array<Localizer::CameraState, Localizer::kNumCameras>
 Localizer::MakeCameras(const Constants &constants, aos::EventLoop *event_loop) {
@@ -293,6 +296,11 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   if (!state_at_capture.has_value()) {
     VLOG(1) << "Rejecting image due to being too old.";
     return RejectImage(camera_index, RejectionReason::IMAGE_TOO_OLD, &builder);
+  } else if (target.pose_error() > FLAGS_max_pose_error) {
+    VLOG(1) << "Rejecting target due to high pose error "
+            << target.pose_error();
+    return RejectImage(camera_index, RejectionReason::HIGH_POSE_ERROR,
+                       &builder);
   }
 
   const Input U = ekf_.MostRecentInput();
