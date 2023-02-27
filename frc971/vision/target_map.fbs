@@ -44,7 +44,7 @@ table TargetPoseFbs {
   // Only filled out if this pose represents a live detection.
   // This is computed as the average distance between the distorted
   // corners and undistorted corners, normalized by the image size
-  // to be between 0-1.
+  // and the maximum expected distortion to be between 0-1.
   // NOTE: not filtered by aprilrobotics.cc so that we can log
   // more detections.
   distortion_factor:double (id: 5);
