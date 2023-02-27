@@ -9,6 +9,9 @@
 
 DEFINE_double(max_pose_error, 1e-6,
               "Throw out target poses with a higher pose error than this");
+DEFINE_double(distortion_noise_scalar, 1.0,
+              "Scale the target pose distortion factor by this when computing "
+              "the noise.");
 
 namespace y2023::localizer {
 namespace {
@@ -281,6 +284,8 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
 
   // TODO(james): Tune this. Also, gain schedule for auto mode?
   Eigen::Matrix<double, 3, 1> noises(1.0, 1.0, 0.5);
+  // Scale noise by the distortion factor for this detection
+  noises *= (1.0 + FLAGS_distortion_noise_scalar * target.distortion_factor());
 
   Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
   R.diagonal() = noises.cwiseAbs2();
