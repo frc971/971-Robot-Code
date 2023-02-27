@@ -21,6 +21,7 @@ go_test(
     embed = [":rankings"],
     deps = [
         "//scouting/db",
+        "//scouting/scraping/background",
         "//scouting/webserver/server",
     ],
 )

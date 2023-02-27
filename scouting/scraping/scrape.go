@@ -89,36 +89,17 @@ func getJson(year int32, eventCode, configPath, category string) ([]byte, error)
 	return bodyBytes, nil
 }
 
-// Return all matches in event according to TBA
-func AllMatches(year int32, eventCode, configPath string) ([]Match, error) {
-	bodyBytes, err := getJson(year, eventCode, configPath, "matches")
-
+func GetAllData[T interface{}](year int32, eventCode, configPath string, category string) (T, error) {
+	var result T
+	bodyBytes, err := getJson(year, eventCode, configPath, category)
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 
-	var matches []Match
-	// Unmarshal json into go usable format.
-	if err := json.Unmarshal([]byte(bodyBytes), &matches); err != nil {
-		return nil, errors.New(fmt.Sprint("Failed to parse JSON received from TBA: ", err))
+	// Unmarshal the JSON data into the in-memory format.
+	if err = json.Unmarshal([]byte(bodyBytes), &result); err != nil {
+		return result, errors.New(fmt.Sprint("Failed to parse ", category, " JSON received from TBA: ", err))
 	}
 
-	return matches, nil
-}
-
-// Return event rankings according to TBA
-func AllRankings(year int32, eventCode, configPath string) (EventRanking, error) {
-	bodyBytes, err := getJson(year, eventCode, configPath, "rankings")
-
-	if err != nil {
-		return EventRanking{}, err
-	}
-
-	var rankings EventRanking
-	// Unmarshal json into go usable format.
-	if err := json.Unmarshal([]byte(bodyBytes), &rankings); err != nil {
-		return EventRanking{}, errors.New(fmt.Sprint("Failed to parse JSON received from TBA: ", err))
-	}
-
-	return rankings, nil
+	return result, nil
 }

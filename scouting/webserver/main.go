@@ -15,6 +15,7 @@ import (
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/scraping"
+	"github.com/frc971/971-Robot-Code/scouting/scraping/background"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/rankings"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
@@ -123,7 +124,7 @@ func main() {
 		if *blueAllianceConfigPtr == "" {
 			return nil, errors.New("Cannot scrape TBA's match list without a config file.")
 		}
-		return scraping.AllMatches(year, eventCode, *blueAllianceConfigPtr)
+		return scraping.GetAllData[[]scraping.Match](year, eventCode, *blueAllianceConfigPtr, "matches")
 	}
 
 	scoutingServer := server.NewScoutingServer()
@@ -132,8 +133,10 @@ func main() {
 	scoutingServer.Start(*portPtr)
 	fmt.Println("Serving", *dirPtr, "on port", *portPtr)
 
-	scraper := rankings.RankingScraper{}
-	scraper.Start(database, 0, "", *blueAllianceConfigPtr)
+	rankingsScraper := background.BackgroundScraper{}
+	rankingsScraper.Start(func() {
+		rankings.GetRankings(database, 0, "", *blueAllianceConfigPtr)
+	})
 
 	// Block until the user hits Ctrl-C.
 	sigint := make(chan os.Signal, 1)
@@ -144,6 +147,6 @@ func main() {
 
 	fmt.Println("Shutting down.")
 	scoutingServer.Stop()
-	scraper.Stop()
+	rankingsScraper.Stop()
 	fmt.Println("Successfully shut down.")
 }
