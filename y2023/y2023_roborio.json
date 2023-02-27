@@ -561,6 +561,7 @@
     },
     {
       "name": "constants_sender_roborio",
+      "executable_name": "constants_sender",
       "autorestart": false,
       "nodes": [
         "roborio"
