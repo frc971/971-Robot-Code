@@ -152,11 +152,12 @@ def main(argv):
         h_file.append("")
         h_file.append("constexpr uint32_t %s() { return %d; }" %
                       (index_function_name(key), index))
-        h_file.append("inline ::Eigen::Matrix<double, 3, 1> %sPoint() {" % key)
-        h_file.append(
+        h_file.append("::Eigen::Matrix<double, 3, 1> %sPoint();" % key)
+        cc_file.append("::Eigen::Matrix<double, 3, 1> %sPoint() {" % key)
+        cc_file.append(
             "  return (::Eigen::Matrix<double, 3, 1>() << %f, %f, %f).finished();"
             % (point[0], point[1], point[2]))
-        h_file.append("}")
+        cc_file.append("}")
 
     front_points = [
         index_function_name(point[1]) + "()"
