@@ -57,17 +57,21 @@ const serverShutdown = new Promise((resolve) => {
 
 // Wait for the server to be ready, run the tests, then shut down the server.
 (async () => {
+  // Parse command line options.
+  let runOptions = await cypress.cli.parseRunArguments(process.argv.slice(2));
+
   await serverStartup;
-  const result = await cypress.run({
-    headless: true,
-    config: {
-      baseUrl: 'http://localhost:8000',
-      screenshotsFolder:
-        process.env.TEST_UNDECLARED_OUTPUTS_DIR + '/screenshots',
-      video: false,
-      videosFolder: process.env.TEST_UNDECLARED_OUTPUTS_DIR + '/videos',
-    },
-  });
+  const result = await cypress.run(
+    Object.assign(runOptions, {
+      config: {
+        baseUrl: 'http://localhost:8000',
+        screenshotsFolder:
+          process.env.TEST_UNDECLARED_OUTPUTS_DIR + '/screenshots',
+        video: false,
+        videosFolder: process.env.TEST_UNDECLARED_OUTPUTS_DIR + '/videos',
+      },
+    })
+  );
   await servers.kill();
   await serverShutdown;
 

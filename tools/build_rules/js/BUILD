@@ -1,6 +1,10 @@
 load("@npm//:@angular/compiler-cli/package_json.bzl", angular_compiler_cli = "bin")
 load(":ts.bzl", "ts_project")
 
+exports_files([
+    "cypress.config.js",
+])
+
 # Define the @angular/compiler-cli ngc bin binary as a target
 angular_compiler_cli.ngc_binary(
     name = "ngc",

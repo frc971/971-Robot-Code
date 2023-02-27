@@ -124,3 +124,8 @@ In order to scrape ranking data, add the competition-specific information to
 where `<year>` is the year of the event and `<event_code>` is the short code
 for the event. A list of event codes is available
 [here](http://frclinks.com/#eventcodes).
+
+
+Debugging Cypress tests
+--------------------------------------------------------------------------------
+See the [dedicated section](../tools/js#debugging-cypress-tests) for this.

@@ -7,6 +7,9 @@ module.exports = defineConfig({
     setupNodeEvents(on, config) {
       on('before:browser:launch', (browser = {}, launchOptions) => {
         launchOptions.args.push('--disable-gpu-shader-disk-cache');
+        launchOptions.args.push('--enable-logging');
+        launchOptions.args.push('--v=stderr');
+        return launchOptions;
       });
 
       // Lets users print to the console:
