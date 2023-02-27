@@ -572,7 +572,9 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   SetEnabled(true);
   WaitUntilZeroed();
 
-  double voltage_sign = (GetParam() == GamePiece::CUBE ? -1.0 : 1.0);
+  double spit_voltage =
+      (GetParam() == GamePiece::CUBE ? EndEffector::kRollerCubeSpitVoltage()
+                                     : EndEffector::kRollerConeSpitVoltage());
   double suck_voltage =
       (GetParam() == GamePiece::CUBE ? EndEffector::kRollerCubeSuckVoltage()
                                      : EndEffector::kRollerConeSuckVoltage());
@@ -712,8 +714,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
-  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(),
-            voltage_sign * EndEffector::kRollerSpitVoltage());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), spit_voltage);
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::SPITTING);
   EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GetParam());
@@ -725,8 +726,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
-  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(),
-            voltage_sign * EndEffector::kRollerSpitVoltage());
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), spit_voltage);
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::SPITTING);
   EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GetParam());

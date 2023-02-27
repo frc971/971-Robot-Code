@@ -180,11 +180,11 @@ def roll_joint_collision(theta1, theta2, theta3):
 # The limit for the proximal and distal is relative,
 # so define constraints for this delta.
 UPPER_DELTA_LIMIT = 0.0
-LOWER_DELTA_LIMIT = -1.9 * np.pi
+LOWER_DELTA_LIMIT = -1.98 * np.pi
 
 # TODO(milind): put actual proximal limits
-UPPER_PROXIMAL_LIMIT = np.pi * 1.5
-LOWER_PROXIMAL_LIMIT = -np.pi
+UPPER_PROXIMAL_LIMIT = np.pi * 2.0
+LOWER_PROXIMAL_LIMIT = -np.pi * 2.0
 
 UPPER_DISTAL_LIMIT = 0.75 * np.pi
 LOWER_DISTAL_LIMIT = -0.75 * np.pi

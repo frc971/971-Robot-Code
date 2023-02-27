@@ -35,9 +35,6 @@ void EndEffector::RunIteration(
     game_piece_ = GamePiece::CUBE;
   }
 
-  // Cube voltage is flipped
-  double voltage_sign = (game_piece_ == GamePiece::CUBE ? -1.0 : 1.0);
-
   // Go into spitting if we were told to, no matter where we are
   if (roller_goal == RollerGoal::SPIT && state_ != EndEffectorState::SPITTING) {
     state_ = EndEffectorState::SPITTING;
@@ -91,7 +88,11 @@ void EndEffector::RunIteration(
       break;
     case EndEffectorState::SPITTING:
       // If spit requested, spit
-      *roller_voltage = voltage_sign * kRollerSpitVoltage();
+      if (game_piece_ == GamePiece::CUBE) {
+        *roller_voltage = kRollerCubeSpitVoltage();
+      } else {
+        *roller_voltage = kRollerConeSpitVoltage();
+      }
       if (beambreak_) {
         if (!beambreak_status) {
           timer_ = timestamp;

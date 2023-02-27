@@ -34,7 +34,7 @@ named_segments.append(
     ))
 
 points['GroundPickupBackCube'] = to_theta_with_circular_index_and_roll(
-    -1.102, 0.224, -np.pi / 2.0, circular_index=1)
+    -1.102, 0.25, -np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -44,6 +44,19 @@ named_segments.append(
         control2=np.array([2.972776, -1.026820]),
         end=points['GroundPickupBackCube'],
         control_alpha_rolls=[(0.7, 0.0), (.9, -np.pi / 2.0)],
+    ))
+
+points['GroundPickupFrontCube'] = to_theta_with_circular_index_and_roll(
+    0.325603, 0.255189, np.pi / 2.0, circular_index=0)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToGroundPickupFrontCube",
+        start=points['Neutral'],
+        control1=np.array([3.338852196583635, 0.34968650009090885]),
+        control2=np.array([4.28246270189025, 1.492916470137478]),
+        end=points['GroundPickupFrontCube'],
+        control_alpha_rolls=[(0.4, 0.0), (.9, np.pi / 2.0)],
     ))
 
 points['ScoreBackMidConeUpPos'] = to_theta_with_circular_index_and_roll(
@@ -109,6 +122,87 @@ named_segments.append(
         control2=np.array([2.9, 0.479748]),
         end=points['ScoreFrontMidConeUpPos'],
         control_alpha_rolls=[(0.40, 0.0), (.95, -np.pi / 2.0)],
+    ))
+
+points['ScoreFrontLowCube'] = to_theta_with_circular_index_and_roll(
+    0.325603, 0.30, np.pi / 2.0, circular_index=0)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreFrontLowCube",
+        start=points['Neutral'],
+        control1=np.array([3.338852196583635, 0.34968650009090885]),
+        control2=np.array([4.28246270189025, 1.492916470137478]),
+        end=points['ScoreFrontLowCube'],
+        control_alpha_rolls=[(0.4, 0.0), (.9, np.pi / 2.0)],
+    ))
+
+points['ScoreBackLowCube'] = to_theta_with_circular_index_and_roll(
+    -1.102, 0.30, -np.pi / 2.0, circular_index=1)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreLowBackCube",
+        start=points['Neutral'],
+        control1=np.array([3.153228, -0.497009]),
+        control2=np.array([2.972776, -1.026820]),
+        end=points['ScoreBackLowCube'],
+        control_alpha_rolls=[(0.7, 0.0), (.9, -np.pi / 2.0)],
+    ))
+
+points['ScoreFrontMidCube'] = to_theta_with_circular_index_and_roll(
+    0.517846, 0.87, np.pi / 2.0, circular_index=0)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreFrontMidCube",
+        start=points["Neutral"],
+        control1=np.array([3.1310824883477952, 0.23591705727105095]),
+        control2=np.array([3.0320025094685965, 0.43674789928668933]),
+        end=points["ScoreFrontMidCube"],
+        control_alpha_rolls=[(0.4, np.pi * 0.0), (0.95, np.pi * 0.5)],
+    ))
+
+points['ScoreFrontHighCube'] = to_theta_with_circular_index_and_roll(
+    0.901437, 1.16, np.pi / 2.0, circular_index=0)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreFrontHighCube",
+        start=points["Neutral"],
+        control1=np.array([2.537484161662287, 0.059700523547219]),
+        control2=np.array([2.449391812539668, 0.4141564369176016]),
+        end=points["ScoreFrontHighCube"],
+        control_alpha_rolls=[(0.4, np.pi * 0.0), (0.95, np.pi * 0.5)],
+    ))
+
+points['ScoreBackMidCube'] = to_theta_with_circular_index_and_roll(
+    -1.27896, 0.84, -np.pi / 2.0, circular_index=1)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreBackMidCube",
+        start=points["Neutral"],
+        control1=np.array([3.3485646154655404, -0.4369603013926491]),
+        control2=np.array([3.2653593368256995, -0.789587049476034]),
+        end=points["ScoreBackMidCube"],
+        control_alpha_rolls=[(0.3, -np.pi * 0.0), (0.95, -np.pi * 0.5)],
+    ))
+
+# TODO(austin): This doesn't produce the next line...
+#points['ScoreBackHighCube'] = to_theta_with_circular_index_and_roll(
+#    -1.60932, 1.16839, np.pi / 2.0, circular_index=0)
+points['ScoreBackHighCube'] = np.array(
+    (4.77284735761704, -1.19952193130714, -np.pi / 2.0))
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreBackHighCube",
+        start=points["Neutral"],
+        control1=np.array([3.6804854484103684, -0.3494541095053125]),
+        control2=np.array([3.9889380578509517, -0.6637934755748516]),
+        end=points["ScoreBackHighCube"],
+        control_alpha_rolls=[(0.3, -np.pi * 0.0), (0.95, -np.pi * 0.5)],
     ))
 
 points['ConeDownPos'] = to_theta_with_circular_index_and_roll(0.7,

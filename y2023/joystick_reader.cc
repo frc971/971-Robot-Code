@@ -37,20 +37,26 @@ namespace input {
 namespace joysticks {
 
 // TODO(milind): add correct locations
-const ButtonLocation kIntake(4, 5);
 const ButtonLocation kScore(4, 4);
 const ButtonLocation kSpit(4, 13);
 
-const ButtonLocation kMidBackTipConeScoreLeft(4, 15);
-const ButtonLocation kHighBackTipConeScoreLeft(4, 14);
-const ButtonLocation kMidBackTipConeScoreRight(3, 2);
+const ButtonLocation kHighConeScoreLeft(4, 14);
+const ButtonLocation kHighConeScoreRight(3, 1);
+
+const ButtonLocation kMidConeScoreLeft(4, 15);
+const ButtonLocation kMidConeScoreRight(3, 2);
+
+const ButtonLocation kHighCube(4, 1);
+const ButtonLocation kMidCube(4, 2);
+const ButtonLocation kLowCube(4, 3);
 
 const ButtonLocation kGroundPickupConeUp(4, 7);
 const ButtonLocation kGroundPickupConeDown(4, 8);
 const ButtonLocation kGroundPickupCube(4, 10);
 const ButtonLocation kHPConePickup(4, 6);
 
-const ButtonLocation kSuck(4, 12);
+const ButtonLocation kSuck(4, 11);
+const ButtonLocation kBack(4, 12);
 
 const ButtonLocation kWrist(4, 10);
 
@@ -63,12 +69,18 @@ enum class GamePiece {
   CUBE = 2,
 };
 
+enum class Side {
+  FRONT = 0,
+  BACK = 1,
+};
+
 struct ArmSetpoint {
   uint32_t index;
   double wrist_goal;
   std::optional<double> score_wrist_goal = std::nullopt;
   GamePiece game_piece;
-  ButtonLocation button;
+  std::vector<ButtonLocation> buttons;
+  Side side;
 };
 
 const std::vector<ArmSetpoint> setpoints = {
@@ -76,50 +88,109 @@ const std::vector<ArmSetpoint> setpoints = {
         .index = arm::GroundPickupBackConeUpIndex(),
         .wrist_goal = 0.0,
         .game_piece = GamePiece::CONE_UP,
-        .button = kGroundPickupConeUp,
+        .buttons = {kGroundPickupConeUp},
+        .side = Side::BACK,
     },
     {
         .index = arm::GroundPickupBackConeDownIndex(),
         .wrist_goal = 0.0,
         .game_piece = GamePiece::CONE_DOWN,
-        .button = kGroundPickupConeDown,
+        .buttons = {kGroundPickupConeDown},
+        .side = Side::BACK,
     },
     {
         .index = arm::ScoreBackMidConeUpPosIndex(),
         .wrist_goal = 0.55,
         .game_piece = GamePiece::CONE_UP,
-        .button = kMidBackTipConeScoreRight,
+        .buttons = {kMidConeScoreRight},
+        .side = Side::BACK,
     },
     {
         .index = arm::ScoreBackMidConeDownPosIndex(),
         .wrist_goal = 2.2,
         .score_wrist_goal = 0.0,
         .game_piece = GamePiece::CONE_DOWN,
-        .button = kMidBackTipConeScoreRight,
+        .buttons = {kMidConeScoreRight},
+        .side = Side::BACK,
     },
     {
         .index = arm::HPPickupBackConeUpIndex(),
         .wrist_goal = 0.2,
         .game_piece = GamePiece::CONE_UP,
-        .button = kHPConePickup,
+        .buttons = {kHPConePickup},
+        .side = Side::BACK,
     },
     {
         .index = arm::ScoreFrontHighConeUpPosIndex(),
         .wrist_goal = 0.05,
         .game_piece = GamePiece::CONE_UP,
-        .button = kHighBackTipConeScoreLeft,
+        .buttons = {kHighConeScoreLeft, kHighConeScoreRight},
+        .side = Side::FRONT,
     },
     {
         .index = arm::ScoreFrontMidConeUpPosIndex(),
         .wrist_goal = 0.05,
         .game_piece = GamePiece::CONE_UP,
-        .button = kMidBackTipConeScoreLeft,
+        .buttons = {kMidConeScoreLeft, kMidConeScoreRight},
+        .side = Side::FRONT,
     },
     {
         .index = arm::GroundPickupBackCubeIndex(),
         .wrist_goal = 0.6,
         .game_piece = GamePiece::CUBE,
-        .button = kGroundPickupCube,
+        .buttons = {kGroundPickupCube},
+        .side = Side::BACK,
+    },
+    {
+        .index = arm::ScoreFrontMidCubeIndex(),
+        .wrist_goal = 0.6,
+        .game_piece = GamePiece::CUBE,
+        .buttons = {kMidCube},
+        .side = Side::FRONT,
+    },
+    {
+        .index = arm::ScoreBackMidCubeIndex(),
+        .wrist_goal = 0.6,
+        .score_wrist_goal = 0.0,
+        .game_piece = GamePiece::CUBE,
+        .buttons = {kMidCube},
+        .side = Side::BACK,
+    },
+    {
+        .index = arm::ScoreFrontLowCubeIndex(),
+        .wrist_goal = 0.6,
+        .game_piece = GamePiece::CUBE,
+        .buttons = {kLowCube},
+        .side = Side::FRONT,
+    },
+    {
+        .index = arm::ScoreBackLowCubeIndex(),
+        .wrist_goal = 0.6,
+        .game_piece = GamePiece::CUBE,
+        .buttons = {kLowCube},
+        .side = Side::BACK,
+    },
+    {
+        .index = arm::ScoreFrontHighCubeIndex(),
+        .wrist_goal = 0.6,
+        .game_piece = GamePiece::CUBE,
+        .buttons = {kHighCube},
+        .side = Side::FRONT,
+    },
+    {
+        .index = arm::ScoreBackHighCubeIndex(),
+        .wrist_goal = 0.6,
+        .score_wrist_goal = 0.0,
+        .game_piece = GamePiece::CUBE,
+        .buttons = {kHighCube},
+        .side = Side::BACK,
+    },
+    {
+        .index = arm::GroundPickupFrontCubeIndex(),
+        .wrist_goal = 0.6,
+        .game_piece = GamePiece::CUBE,
+        .buttons = {kGroundPickupCube},
+        .side = Side::FRONT,
     },
 };
 
@@ -173,14 +244,19 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       wrist_goal = 0.6;
     }
 
+    const Side current_side = data.IsPressed(kBack) ? Side::BACK : Side::FRONT;
+
     // Search for the active setpoint.
     for (const ArmSetpoint &setpoint : setpoints) {
-      if (data.IsPressed(setpoint.button)) {
-        if (setpoint.game_piece == current_game_piece_) {
-          wrist_goal = setpoint.wrist_goal;
-          arm_goal_position_ = setpoint.index;
-          score_wrist_goal = setpoint.score_wrist_goal;
-          break;
+      for (const ButtonLocation &button : setpoint.buttons) {
+        if (data.IsPressed(button)) {
+          if (setpoint.game_piece == current_game_piece_ &&
+              setpoint.side == current_side) {
+            wrist_goal = setpoint.wrist_goal;
+            arm_goal_position_ = setpoint.index;
+            score_wrist_goal = setpoint.score_wrist_goal;
+            break;
+          }
         }
       }
     }
