@@ -6,11 +6,13 @@ robot_downloader(
     binaries = [
         "//aos/network:web_proxy_main",
         "//aos/events/logging:log_cat",
+        "//y2023/constants:constants_sender",
         "//aos/events:aos_timing_report_streamer",
     ],
     data = [
         ":aos_config",
         "//aos/starter:roborio_irq_config.json",
+        "//y2023/constants:constants.json",
         "@ctre_phoenix_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix_cci_athena//:shared_libraries",
         "@ctre_phoenixpro_api_cpp_athena//:shared_libraries",
