@@ -17,9 +17,74 @@ Do that by removing the image.
 
 # Installing
 
+We're currently installing the filesystem onto the eMMC of the Rock
+Pis.  This involves a multi-step process:
+
+* Create an SD card with the image.  The Pi will boot off of this in order to flash the eMMC
+
+Assuming the SD card shows up on your system as /dev/sda, then you can use the command:
+
 `sudo dd if=arm64_bullseye_debian.img of=/dev/sda status=progress`
 
-The default user is `pi`, and password is `raspberry`.
+WARNING: any time you're using 'dd' to write data, make SURE you've got the right output
+device, e.g., here of=/dev/sda.  It's possible your hard drive is /dev/sda, and you
+don't want to over-write that!!
+
+* Create a USB drive with the image on it.  We'll use this to copy the image to the eMMC
+
+We're using the xfs filesystem for USB thumb drives.  To create this, do the following:
+* Insert the thumbdrive
+* Figure out which device this is and unmount it.  E.g., if it's /dev/sdb1, do
+  * `sudo umount /dev/sdb1`
+* Run fdisk to create an empty partition:
+  * `sudo fdisk /dev/sdb`
+  * Type "o" to create an empty DOS partition table
+  * Type "n" to create a new partition
+  * Type "p" to select primary partition
+  * Accept the next 3 default values (1, 2048, 500170751) (or whatever end block is given)
+  * Type "w" to write this information to the partition table
+* Run mkfs to make this an xfs file system:
+  * `sudo mkfs -t xfs -f /dev/sdb1`
+    * (Note, you might have to install the xfs file system support for mkfs)
+* Change permissions on the drive to make it write-able
+  * `sudo chmod a+rwx [path-to-drive]`
+    * where `[path-to-drive]` is the path to the drive, e.g., /media/jim/XXXX
+    (I believe /dev/sdb1 should work, also)
+
+# Writing the disk image to the eMMC
+
+Insert the SD card and the thumbdrive and boot the Pi.
+
+It should come up as pi-971-1 (IP: 10.9.71.101).  The default user is
+`pi`, and password is `raspberry`.  Note: if you don't have your ssh
+key installed, you should get that added to the base image.
+
+Once booted, login and write the image to the eMMC:
+
+`sudo dd if=/media/sda1/arm64_bullseye_debian.img of=/dev/mmcblk1 status=progress`
+
+Then, power down the Pi, remove the SD card and the USB thumb drive, and power on the Pi
+
+Once it's up, login again.
+
+Change the hostname to the desired hostname, e.g., if you want it to be pi-9971-2, use
+
+`sudo /root/bin/change_hostname.sh pi-9971-2`
+
+It's a good idea here to reboot the Pi one more time to make sure it
+came up with the expected IP address and hostname.
+
+# Additional steps in setting up the Rock Pis
+
+We also have been plugging in a USB thumb drive to each Pi to do logging.
+
+We are formatting these as xfs filesystems.  To do this follow the
+above instructions on a new USB drive to format as xfs.
+
+That's it!!
+
+
+# Other notes:
 
 # State of RK3399 image processing.
 
