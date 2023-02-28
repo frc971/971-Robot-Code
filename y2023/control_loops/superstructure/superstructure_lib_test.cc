@@ -192,7 +192,7 @@ class SuperstructureSimulation {
             event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
             event_loop_->MakeFetcher<Output>("/superstructure")) {
-    InitializeArmPosition(arm::NeutralPosPoint());
+    InitializeArmPosition(arm::NeutralPoint());
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
           // Skip this the first time.
@@ -447,7 +447,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
             *builder.fbb(), constants::Values::kWristRange().middle());
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_arm_goal_position(arm::NeutralIndex());
     goal_builder.add_trajectory_override(false);
     goal_builder.add_wrist(wrist_offset);
     goal_builder.add_roller_goal(RollerGoal::IDLE);
@@ -473,7 +473,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_arm_goal_position(arm::NeutralIndex());
     goal_builder.add_trajectory_override(false);
     goal_builder.add_wrist(wrist_offset);
     goal_builder.add_roller_goal(RollerGoal::IDLE);
@@ -505,7 +505,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_wrist(wrist_offset);
-    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_arm_goal_position(arm::NeutralIndex());
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -526,7 +526,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     goal_builder.add_wrist(wrist_offset);
 
-    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_arm_goal_position(arm::NeutralIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -582,7 +582,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_arm_goal_position(arm::NeutralIndex());
     goal_builder.add_trajectory_override(false);
     goal_builder.add_roller_goal(GetParam() == GamePiece::CONE
                                      ? RollerGoal::INTAKE_CONE
@@ -623,7 +623,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_arm_goal_position(arm::NeutralIndex());
     goal_builder.add_trajectory_override(false);
     goal_builder.add_roller_goal(RollerGoal::IDLE);
 
@@ -659,7 +659,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_arm_goal_position(arm::NeutralIndex());
     goal_builder.add_trajectory_override(false);
     goal_builder.add_roller_goal(GetParam() == GamePiece::CONE
                                      ? RollerGoal::INTAKE_CONE
@@ -698,7 +698,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_arm_goal_position(arm::NeutralIndex());
     goal_builder.add_trajectory_override(false);
     goal_builder.add_roller_goal(RollerGoal::SPIT);
 
@@ -736,7 +736,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_arm_goal_position(arm::NeutralIndex());
     goal_builder.add_trajectory_override(false);
     goal_builder.add_roller_goal(RollerGoal::IDLE);
 
@@ -780,7 +780,7 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_arm_goal_position(arm::NeutralPosIndex());
+    goal_builder.add_arm_goal_position(arm::NeutralIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -803,7 +803,7 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
 TEST_F(SuperstructureTest, ArmMultistepMove) {
   SetEnabled(true);
   WaitUntilZeroed();
-  superstructure_plant_.InitializeArmPosition(arm::NeutralPosPoint());
+  superstructure_plant_.InitializeArmPosition(arm::NeutralPoint());
 
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -819,7 +819,7 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_arm_goal_position(arm::ScoreLowPosIndex());
+    goal_builder.add_arm_goal_position(arm::ConeDownPosIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 

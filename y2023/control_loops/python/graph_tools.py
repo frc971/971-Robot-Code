@@ -202,7 +202,8 @@ def arm_past_limit(theta1, theta2, theta3):
 
 
 def get_circular_index(theta):
-    return int(np.floor((theta[1] - theta[0]) / np.pi))
+    return int(
+        np.floor((shift_angle(theta[1]) - shift_angle(theta[0])) / np.pi))
 
 
 def get_xy(theta):
@@ -446,6 +447,52 @@ class ThetaSplineSegment(SplineSegmentBase):
                             ] + control_alpha_rolls + [[1.0, end[2]]]
         self.alpha_unitizer = alpha_unitizer
         self.vmax = vmax
+
+    def Print(self, points):
+        # Find the name of the start end end points.
+        start_name = None
+        end_name = None
+        for name in points:
+            point = points[name]
+            if (self.start == point[:2]).all():
+                start_name = name
+            elif (self.end == point[:2]).all():
+                end_name = name
+
+        alpha_points = '[' + ', '.join([
+            f"({alpha}, np.pi * {theta / np.pi})"
+            for alpha, theta in self.alpha_rolls[1:-1]
+        ]) + ']'
+
+        def FormatToTheta(point):
+            x, y = get_xy(point)
+            circular_index = get_circular_index(point)
+            return "to_theta_with_circular_index(%.3f, %.3f, circular_index=%d)" % (
+                x, y, circular_index)
+
+        def FormatToThetaRoll(point, roll):
+            x, y = get_xy(point)
+            circular_index = get_circular_index(point)
+            return "to_theta_with_circular_index_and_roll(%.3f, %.3f, np.pi * %.2f, circular_index=%d)" % (
+                x, y, roll / np.pi, circular_index)
+
+        print('named_segments.append(')
+        print('    ThetaSplineSegment(')
+        print(f'        name="{self.name}",')
+        print(
+            f'        start=points["{start_name}"], # {FormatToThetaRoll(self.start, self.alpha_rolls[0][1])}'
+        )
+        print(
+            f'        control1=np.array([{self.control1[0]}, {self.control1[1]}]), # {FormatToTheta(self.control1)}'
+        )
+        print(
+            f'        control2=np.array([{self.control2[0]}, {self.control2[1]}]), # {FormatToTheta(self.control2)}'
+        )
+        print(
+            f'        end=points["{end_name}"], # {FormatToThetaRoll(self.end, self.alpha_rolls[-1][1])}'
+        )
+        print(f'        control_alpha_rolls={alpha_points},')
+        print(f'))')
 
     def __repr__(self):
         return "ThetaSplineSegment(%s, %s, %s, %s)" % (repr(

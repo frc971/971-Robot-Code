@@ -38,7 +38,7 @@ Arm::Arm(std::shared_ptr<const constants::Values> values)
       search_graph_(MakeSearchGraph(&dynamics_, &trajectories_, alpha_unitizer_,
                                     kVMax(), &hybrid_roll_joint_loop_)),
       // Go to the start of the first trajectory.
-      follower_(&dynamics_, &hybrid_roll_joint_loop_, NeutralPosPoint()),
+      follower_(&dynamics_, &hybrid_roll_joint_loop_, NeutralPoint()),
       points_(PointList()),
       current_node_(0) {
   int i = 0;
@@ -92,7 +92,7 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
   }
 
   // TODO(milind): should we default to the closest position?
-  uint32_t filtered_goal = arm::NeutralPosIndex();
+  uint32_t filtered_goal = arm::NeutralIndex();
   if (unsafe_goal != nullptr) {
     filtered_goal = *unsafe_goal;
   }

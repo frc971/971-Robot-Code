@@ -217,7 +217,7 @@ class ArmUi(basic_window.BaseWindow):
         self.theta_version = False
         self.reinit_extents()
 
-        self.last_pos = to_xy(*graph_paths.neutral[:2])
+        self.last_pos = to_xy(*graph_paths.points['Neutral'][:2])
         self.circular_index_select = 1
 
         # Extra stuff for drawing lines.
@@ -494,11 +494,13 @@ class ArmUi(basic_window.BaseWindow):
             else:
                 self.index = len(self.segments) - 1
             print("Switched to segment:", self.segments[self.index].name)
+            self.segments[self.index].Print(graph_paths.points)
 
         elif keyval == Gdk.KEY_n:
             self.index += 1
             self.index = self.index % len(self.segments)
             print("Switched to segment:", self.segments[self.index].name)
+            self.segments[self.index].Print(graph_paths.points)
 
         elif keyval == Gdk.KEY_t:
             # Toggle between theta and xy renderings
@@ -546,18 +548,15 @@ class ArmUi(basic_window.BaseWindow):
         else:
             self.segments[self.index].control2 = self.now_segment_pt
 
-        print('Clicked at theta: %s' % (repr(self.now_segment_pt, )))
+        print('Clicked at theta: np.array([%s, %s])' %
+              (self.now_segment_pt[0], self.now_segment_pt[1]))
         if not self.theta_version:
-            print('Clicked at xy, circular index: (%f, %f, %f)' %
-                  (self.last_pos[0], self.last_pos[1],
+            print(
+                'Clicked at to_theta_with_circular_index(%.3f, %.3f, circular_index=%d)'
+                % (self.last_pos[0], self.last_pos[1],
                    self.circular_index_select))
 
-        print('c1: np.array([%f, %f])' %
-              (self.segments[self.index].control1[0],
-               self.segments[self.index].control1[1]))
-        print('c2: np.array([%f, %f])' %
-              (self.segments[self.index].control2[0],
-               self.segments[self.index].control2[1]))
+        self.segments[self.index].Print(graph_paths.points)
 
         self.redraw()
 
@@ -565,4 +564,5 @@ class ArmUi(basic_window.BaseWindow):
 arm_ui = ArmUi()
 arm_ui.segments = graph_paths.segments
 print('Starting with segment: ', arm_ui.segments[arm_ui.index].name)
+arm_ui.segments[arm_ui.index].Print(graph_paths.points)
 basic_window.RunApp()
