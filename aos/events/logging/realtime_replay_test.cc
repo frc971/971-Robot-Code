@@ -150,20 +150,24 @@ TEST_F(RealtimeLoggerTest, SingleNodeReplayChannels) {
   shm_event_loop.AddTimer([]() { LOG(INFO) << "Hello, World!"; })
       ->Setup(shm_event_loop.monotonic_now(), std::chrono::seconds(1));
 
-  auto *const end_timer = shm_event_loop.AddTimer([&shm_event_loop]() {
-    LOG(INFO) << "All done, quitting now";
-    shm_event_loop.Exit();
-  });
-
-  // TODO(EricS) reader.OnEnd() is not working as expected when
-  // using a channel filter.
-  // keep looking for 3 seconds if some message comes, just in case
+  // End timer should not be called in this case, it should automatically quit
+  // the event loop and check for number of fetches messages
+  // This is added to make sure OnEnd is called consistently
+  // When OnEnd is not called after finishing of the log, this will eventually
+  // quit due to the end timer but will report a failure
   size_t run_seconds = 3;
+  auto *const end_timer =
+      shm_event_loop.AddTimer([&shm_event_loop, run_seconds]() {
+        shm_event_loop.Exit();
+        FAIL() << "OnEnd wasn't called on log end so quitting after "
+               << run_seconds << " seconds.";
+      });
   shm_event_loop.OnRun([&shm_event_loop, end_timer, run_seconds]() {
     LOG(INFO) << "Quitting in: " << run_seconds;
     end_timer->Setup(shm_event_loop.monotonic_now() +
                      std::chrono::seconds(run_seconds));
   });
+
   shm_event_loop.Run();
   reader.Deregister();
 
