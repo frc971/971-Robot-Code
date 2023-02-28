@@ -40,6 +40,9 @@ class AprilRoboticsDetector {
   // Undistorts the april tag corners using the camera calibration
   void UndistortDetection(apriltag_detection_t *det) const;
 
+  // Helper function to store detection points in vector of Point2f's
+  std::vector<cv::Point2f> MakeCornerVector(const apriltag_detection_t *det);
+
   std::vector<Detection> DetectTags(cv::Mat image,
                                     aos::monotonic_clock::time_point eof);
 

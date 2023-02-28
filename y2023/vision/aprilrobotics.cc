@@ -26,13 +26,12 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
     : calibration_data_(event_loop),
       image_size_(0, 0),
       ftrace_(),
-      image_callback_(
-          event_loop, channel_name,
-          [&](cv::Mat image_color_mat,
-              const aos::monotonic_clock::time_point eof) {
-            HandleImage(image_color_mat, eof);
-          },
-          chrono::milliseconds(5)),
+      image_callback_(event_loop, channel_name,
+                      [&](cv::Mat image_color_mat,
+                          const aos::monotonic_clock::time_point eof) {
+                        HandleImage(image_color_mat, eof);
+                      },
+                      chrono::milliseconds(5)),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
       image_annotations_sender_(
@@ -166,6 +165,17 @@ double AprilRoboticsDetector::ComputeDistortionFactor(
   return std::min(distortion_factor / FLAGS_max_expected_distortion, 1.0);
 }
 
+std::vector<cv::Point2f> AprilRoboticsDetector::MakeCornerVector(
+    const apriltag_detection_t *det) {
+  std::vector<cv::Point2f> corner_points;
+  corner_points.emplace_back(det->p[0][0], det->p[0][1]);
+  corner_points.emplace_back(det->p[1][0], det->p[1][1]);
+  corner_points.emplace_back(det->p[2][0], det->p[2][1]);
+  corner_points.emplace_back(det->p[3][0], det->p[3][1]);
+
+  return corner_points;
+}
+
 std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
     cv::Mat image, aos::monotonic_clock::time_point eof) {
   const aos::monotonic_clock::time_point start_time =
@@ -186,21 +196,25 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
 
   std::vector<Detection> results;
 
-  std::vector<std::vector<cv::Point2f>> orig_corners_vector;
-  std::vector<std::vector<cv::Point2f>> corners_vector;
-
   auto builder = image_annotations_sender_.MakeBuilder();
+  std::vector<flatbuffers::Offset<foxglove::PointsAnnotation>> foxglove_corners;
 
   for (int i = 0; i < zarray_size(detections); i++) {
     apriltag_detection_t *det;
     zarray_get(detections, i, &det);
 
     if (det->decision_margin > FLAGS_min_decision_margin) {
+      // TODO<jim>: Should we check for top/bottom of image?
       if (det->p[0][0] < min_x || det->p[0][0] > max_x ||
           det->p[1][0] < min_x || det->p[1][0] > max_x ||
           det->p[2][0] < min_x || det->p[2][0] > max_x ||
           det->p[3][0] < min_x || det->p[3][0] > max_x) {
         VLOG(1) << "Rejecting detection because corner is outside pixel border";
+        // Send rejected corner points in red
+        std::vector<cv::Point2f> rejected_corner_points = MakeCornerVector(det);
+        foxglove_corners.push_back(frc971::vision::BuildPointsAnnotation(
+            builder.fbb(), eof, rejected_corner_points,
+            std::vector<double>{1.0, 0.0, 0.0, 0.5}));
         continue;
       }
       VLOG(1) << "Found tag number " << det->id << " hamming: " << det->hamming
@@ -217,14 +231,11 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
       info.cx = intrinsics_.at<double>(0, 2);
       info.cy = intrinsics_.at<double>(1, 2);
 
-      // Store out the original, pre-undistortion corner points for sending
-      std::vector<cv::Point2f> orig_corner_points;
-      orig_corner_points.emplace_back(det->p[0][0], det->p[0][1]);
-      orig_corner_points.emplace_back(det->p[1][0], det->p[1][1]);
-      orig_corner_points.emplace_back(det->p[2][0], det->p[2][1]);
-      orig_corner_points.emplace_back(det->p[3][0], det->p[3][1]);
-
-      orig_corners_vector.emplace_back(orig_corner_points);
+      // Send original corner points in green
+      std::vector<cv::Point2f> orig_corner_points = MakeCornerVector(det);
+      foxglove_corners.push_back(frc971::vision::BuildPointsAnnotation(
+          builder.fbb(), eof, orig_corner_points,
+          std::vector<double>{0.0, 1.0, 0.0, 0.5}));
 
       UndistortDetection(det);
 
@@ -243,13 +254,11 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
               << " seconds for pose estimation";
       VLOG(1) << "Pose err: " << pose_error;
 
-      std::vector<cv::Point2f> corner_points;
-      corner_points.emplace_back(det->p[0][0], det->p[0][1]);
-      corner_points.emplace_back(det->p[1][0], det->p[1][1]);
-      corner_points.emplace_back(det->p[2][0], det->p[2][1]);
-      corner_points.emplace_back(det->p[3][0], det->p[3][1]);
-
-      corners_vector.emplace_back(corner_points);
+      // Send undistorted corner points in pink
+      std::vector<cv::Point2f> corner_points = MakeCornerVector(det);
+      foxglove_corners.push_back(frc971::vision::BuildPointsAnnotation(
+          builder.fbb(), eof, corner_points,
+          std::vector<double>{1.0, 0.75, 0.8, 1.0}));
 
       double distortion_factor =
           ComputeDistortionFactor(orig_corner_points, corner_points);
@@ -261,9 +270,10 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
     }
   }
 
-  const auto annotations_offset = frc971::vision::BuildAnnotations(
-      eof, orig_corners_vector, 5.0, builder.fbb());
-  builder.CheckOk(builder.Send(annotations_offset));
+  foxglove::ImageAnnotations::Builder annotation_builder(*builder.fbb());
+  const auto corners_offset = builder.fbb()->CreateVector(foxglove_corners);
+  annotation_builder.add_points(corners_offset);
+  builder.CheckOk(builder.Send(annotation_builder.Finish()));
 
   apriltag_detections_destroy(detections);
 
