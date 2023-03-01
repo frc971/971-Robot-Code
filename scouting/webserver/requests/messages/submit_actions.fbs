@@ -15,6 +15,11 @@ enum ScoreLevel: short {
     kHigh
 }
 
+table AutoBalanceAction {
+    docked:bool (id:0);
+    engaged:bool (id:1);
+}
+
 table PickupObjectAction {
     object_type:ObjectType (id:0);
     auto:bool (id:1);
@@ -36,6 +41,7 @@ table EndMatchAction {
 }
 
 union ActionType {
+    AutoBalanceAction,
     StartMatchAction,
     PickupObjectAction,
     PlaceObjectAction,
