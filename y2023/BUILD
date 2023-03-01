@@ -1,6 +1,7 @@
 load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:template.bzl", "jinja2_template")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 robot_downloader(
     binaries = [
@@ -185,6 +186,7 @@ aos_config(
     name = "config_roborio",
     src = "y2023_roborio.json",
     flatbuffers = [
+        ":can_configuration_fbs",
         "//aos/network:remote_message_fbs",
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
@@ -250,6 +252,7 @@ cc_binary(
     ],
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
+        ":can_configuration_fbs",
         ":constants",
         "//aos:init",
         "//aos:math",
@@ -340,4 +343,13 @@ cc_binary(
         "//aos/time",
         "@com_github_google_glog//:glog",
     ],
+)
+
+flatbuffer_cc_library(
+    name = "can_configuration_fbs",
+    srcs = [
+        ":can_configuration.fbs",
+    ],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
 )
