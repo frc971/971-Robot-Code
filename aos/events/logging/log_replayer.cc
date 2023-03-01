@@ -57,19 +57,16 @@ int Main(int argc, char *argv[]) {
   const std::vector<aos::logger::LogFile> logfiles =
       aos::logger::SortParts(unsorted_logfiles);
 
+  aos::logger::LogReader config_reader(logfiles);
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       FLAGS_config.empty()
-          ? aos::FlatbufferDetachedBuffer<aos::Configuration>::Empty()
+          ? CopyFlatBuffer<aos::Configuration>(config_reader.configuration())
           : aos::configuration::ReadConfig(FLAGS_config);
 
   if (FLAGS_plot_timing) {
-    aos::logger::LogReader config_reader(logfiles);
-
     // Go through the effort to add a ReplayTiming channel to ensure that we
     // can capture timing information from the replay.
-    const aos::Configuration *raw_config = FLAGS_config.empty()
-                                               ? config_reader.configuration()
-                                               : &config.message();
+    const aos::Configuration *raw_config = &config.message();
     aos::ChannelT channel_overrides;
     channel_overrides.max_size = 10000;
     channel_overrides.frequency = 10000;
@@ -90,7 +87,6 @@ int Main(int argc, char *argv[]) {
           ? std::nullopt
           : std::make_optional(aos::JsonToFlatbuffer<ReplayConfig>(
                 aos::util::ReadFileToStringOrDie(FLAGS_replay_config.data())));
-
   std::vector<std::pair<std::string_view, std::string_view>> message_filter;
   if (FLAGS_skip_sender_channels && replay_config.has_value()) {
     CHECK(replay_config.value().message().has_active_nodes());
@@ -112,7 +108,7 @@ int Main(int argc, char *argv[]) {
         ChannelsInLog(logfiles, active_nodes, applications);
     for (auto const &channel :
          channels.watchers_and_fetchers_without_senders.value()) {
-      message_filter.emplace_back(std::make_pair(channel.name, channel.type));
+      message_filter.emplace_back(channel.name, channel.type);
     }
   }
 
@@ -120,7 +116,8 @@ int Main(int argc, char *argv[]) {
       logfiles, &config.message(),
       message_filter.empty() ? nullptr : &message_filter);
 
-  if (replay_config.has_value()) {
+  if (replay_config.has_value() &&
+      replay_config.value().message().has_remap_channels()) {
     for (auto const &remap_channel :
          *replay_config.value().message().remap_channels()) {
       auto const &channel = remap_channel->channel();
