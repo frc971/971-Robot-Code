@@ -87,7 +87,7 @@ int Main(int argc, char *argv[]) {
           ? std::nullopt
           : std::make_optional(aos::JsonToFlatbuffer<ReplayConfig>(
                 aos::util::ReadFileToStringOrDie(FLAGS_replay_config.data())));
-  std::vector<std::pair<std::string_view, std::string_view>> message_filter;
+  std::vector<std::pair<std::string, std::string>> message_filter;
   if (FLAGS_skip_sender_channels && replay_config.has_value()) {
     CHECK(replay_config.value().message().has_active_nodes());
     std::vector<const Node *> active_nodes;

@@ -1333,7 +1333,7 @@ void LogReader::RemapLoggedChannel(std::string_view name, std::string_view type,
                                    RemapConflict conflict_handling) {
   if (replay_channels_ != nullptr) {
     CHECK(std::find(replay_channels_->begin(), replay_channels_->end(),
-                    std::make_pair(name, type)) != replay_channels_->end())
+                    std::make_pair(std::string{name}, std::string{type})) != replay_channels_->end())
         << "Attempted to remap channel " << name << " " << type
         << " which is not included in the replay channels passed to LogReader.";
   }

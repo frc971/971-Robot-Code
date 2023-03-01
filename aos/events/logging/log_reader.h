@@ -33,7 +33,7 @@ class EventNotifier;
 
 // Vector of pair of name and type of the channel
 using ReplayChannels =
-    std::vector<std::pair<std::string_view, std::string_view>>;
+    std::vector<std::pair<std::string, std::string>>;
 // Vector of channel indices
 using ReplayChannelIndices = std::vector<size_t>;
 
