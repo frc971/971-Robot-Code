@@ -7,6 +7,7 @@ User=www-data
 Group=www-data
 Type=simple
 WorkingDirectory=/opt/frc971/scouting_server
+Environment=RUNFILES_DIR=/opt/frc971/scouting_server
 ExecStart=/opt/frc971/scouting_server/scouting/scouting \
     -port 8080 \
     -db_config /var/frc971/scouting/db_config.json \
