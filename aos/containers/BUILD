@@ -64,6 +64,30 @@ cc_test(
 )
 
 cc_library(
+    name = "error_list",
+    hdrs = [
+        "error_list.h",
+    ],
+    deps = [
+        ":sized_array",
+        "//aos:flatbuffers",
+    ],
+)
+
+cc_test(
+    name = "error_list_test",
+    srcs = [
+        "error_list_test.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":error_list",
+        "//aos:json_to_flatbuffer_fbs",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
     name = "resizeable_buffer",
     hdrs = [
         "resizeable_buffer.h",
