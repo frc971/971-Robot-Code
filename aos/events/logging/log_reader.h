@@ -35,7 +35,7 @@ class EventNotifier;
 using ReplayChannels =
     std::vector<std::pair<std::string_view, std::string_view>>;
 // Vector of channel indices
-using ReplayChannelIndicies = std::vector<size_t>;
+using ReplayChannelIndices = std::vector<size_t>;
 
 // We end up with one of the following 3 log file types.
 //
@@ -350,7 +350,7 @@ class LogReader {
           message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters,
           std::function<void()> notice_realtime_end, const Node *node,
           ThreadedBuffering threading,
-          std::unique_ptr<const ReplayChannelIndicies> replay_channel_indicies);
+          std::unique_ptr<const ReplayChannelIndices> replay_channel_indices);
 
     // Connects up the timestamp mappers.
     void AddPeer(State *peer);
@@ -753,12 +753,12 @@ class LogReader {
     // If a ReplayChannels was passed to LogReader, this will hold the
     // indices of the channels to replay for the Node represented by
     // the instance of LogReader::State.
-    std::unique_ptr<const ReplayChannelIndicies> replay_channel_indicies_;
+    std::unique_ptr<const ReplayChannelIndices> replay_channel_indices_;
   };
 
   // If a ReplayChannels was passed to LogReader then creates a
-  // ReplayChannelIndicies for the given node. Otherwise, returns a nullptr.
-  std::unique_ptr<const ReplayChannelIndicies> MaybeMakeReplayChannelIndicies(
+  // ReplayChannelIndices for the given node. Otherwise, returns a nullptr.
+  std::unique_ptr<const ReplayChannelIndices> MaybeMakeReplayChannelIndices(
       const Node *node);
 
   // Node index -> State.

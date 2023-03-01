@@ -618,7 +618,7 @@ void LogReader::RegisterWithoutStarting(
             ? nullptr
             : std::make_unique<TimestampMapper>(std::move(filtered_parts)),
         filters_.get(), std::bind(&LogReader::NoticeRealtimeEnd, this), node,
-        State::ThreadedBuffering::kNo, MaybeMakeReplayChannelIndicies(node));
+        State::ThreadedBuffering::kNo, MaybeMakeReplayChannelIndices(node));
     State *state = states_[node_index].get();
     state->SetNodeEventLoopFactory(
         event_loop_factory_->GetNodeEventLoopFactory(node),
@@ -809,7 +809,7 @@ void LogReader::Register(EventLoop *event_loop) {
             ? nullptr
             : std::make_unique<TimestampMapper>(std::move(filtered_parts)),
         filters_.get(), std::bind(&LogReader::NoticeRealtimeEnd, this), node,
-        State::ThreadedBuffering::kYes, MaybeMakeReplayChannelIndicies(node));
+        State::ThreadedBuffering::kYes, MaybeMakeReplayChannelIndices(node));
     State *state = states_[node_index].get();
 
     state->SetChannelCount(logged_configuration()->channels()->size());
@@ -1668,13 +1668,13 @@ void LogReader::MakeRemappedConfig() {
   // TODO(austin): Lazily re-build to save CPU?
 }
 
-std::unique_ptr<const ReplayChannelIndicies>
-LogReader::MaybeMakeReplayChannelIndicies(const Node *node) {
+std::unique_ptr<const ReplayChannelIndices>
+LogReader::MaybeMakeReplayChannelIndices(const Node *node) {
   if (replay_channels_ == nullptr) {
     return nullptr;
   } else {
-    std::unique_ptr<ReplayChannelIndicies> replay_channel_indicies =
-        std::make_unique<ReplayChannelIndicies>();
+    std::unique_ptr<ReplayChannelIndices> replay_channel_indices =
+        std::make_unique<ReplayChannelIndices>();
     for (auto const &channel : *replay_channels_) {
       const Channel *ch = configuration::GetChannel(
           logged_configuration(), channel.first, channel.second, "", node);
@@ -1686,10 +1686,10 @@ LogReader::MaybeMakeReplayChannelIndicies(const Node *node) {
       }
       const size_t channel_index =
           configuration::ChannelIndex(logged_configuration(), ch);
-      replay_channel_indicies->emplace_back(channel_index);
+      replay_channel_indices->emplace_back(channel_index);
     }
-    std::sort(replay_channel_indicies->begin(), replay_channel_indicies->end());
-    return replay_channel_indicies;
+    std::sort(replay_channel_indices->begin(), replay_channel_indices->end());
+    return replay_channel_indices;
   }
 }
 
@@ -1748,16 +1748,16 @@ LogReader::State::State(
     message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters,
     std::function<void()> notice_realtime_end, const Node *node,
     LogReader::State::ThreadedBuffering threading,
-    std::unique_ptr<const ReplayChannelIndicies> replay_channel_indicies)
+    std::unique_ptr<const ReplayChannelIndices> replay_channel_indices)
     : timestamp_mapper_(std::move(timestamp_mapper)),
       notice_realtime_end_(notice_realtime_end),
       node_(node),
       multinode_filters_(multinode_filters),
       threading_(threading),
-      replay_channel_indicies_(std::move(replay_channel_indicies)) {
-  if (replay_channel_indicies_ != nullptr) {
+      replay_channel_indices_(std::move(replay_channel_indices)) {
+  if (replay_channel_indices_ != nullptr) {
     timestamp_mapper_->set_replay_channels_callback(
-        [filter = replay_channel_indicies_.get()](
+        [filter = replay_channel_indices_.get()](
             const TimestampedMessage &message) -> bool {
           auto const begin = filter->cbegin();
           auto const end = filter->cend();
