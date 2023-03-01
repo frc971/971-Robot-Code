@@ -2,11 +2,6 @@
   padding: 10px;
 }
 
-.buttons {
-  display: flex;
-  justify-content: space-between;
-}
-
 textarea {
   width: 350px;
   height: 180px;

@@ -69,32 +69,134 @@
       </label>
     </div>
     <div class="buttons">
-      <button
-        class="btn btn-primary"
-        [disabled]="!selectedValue"
-        (click)="changeSectionTo('Pickup'); addAction({type: 'startMatchAction', position: selectedValue});"
-      >
-        Start Match
-      </button>
+      <!-- Creates a responsive stack of full-width, "block buttons". -->
+      <div class="d-grid gap-2">
+        <button
+          class="btn btn-primary"
+          [disabled]="!selectedValue"
+          (click)="changeSectionTo('Pickup'); addAction({type: 'startMatchAction', position: selectedValue});"
+        >
+          Start Match
+        </button>
+      </div>
     </div>
   </div>
 
   <div *ngSwitchCase="'Pickup'" id="PickUp" class="container-fluid">
-    <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
-    <button
-      class="btn btn-warning"
-      (click)="changeSectionTo('Place'); addAction({type: 'pickupObjectAction', objectType: ObjectType.kCone});"
-    >
-      CONE
-    </button>
-    <button
-      class="btn btn-primary"
-      (click)="changeSectionTo('Place'); addAction({type: 'pickupObjectAction', objectType: ObjectType.kCube});"
-    >
-      CUBE
-    </button>
-    <!-- 'Balancing' during auto. -->
-    <div *ngIf="autoPhase">
+    <div class="d-grid gap-2">
+      <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
+      <button
+        class="btn btn-warning"
+        (click)="changeSectionTo('Place'); addAction({type: 'pickupObjectAction', objectType: ObjectType.kCone});"
+      >
+        CONE
+      </button>
+      <button
+        class="btn btn-primary"
+        (click)="changeSectionTo('Place'); addAction({type: 'pickupObjectAction', objectType: ObjectType.kCube});"
+      >
+        CUBE
+      </button>
+      <!-- 'Balancing' during auto. -->
+      <div *ngIf="autoPhase" class="d-grid gap-2">
+        <label>
+          <input type="checkbox" (change)="dockedValue = $event.target.value" />
+          Docked
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            (change)="engagedValue = $event.target.value"
+          />
+          Engaged
+        </label>
+        <br />
+        <button
+          class="btn btn-info"
+          (click)="addAction({type: 'autoBalanceAction', docked: dockedValue, engaged: engagedValue});"
+        >
+          Submit Balancing
+        </button>
+      </div>
+      <button
+        *ngIf="autoPhase"
+        class="btn btn-info"
+        (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
+      >
+        Start Teleop
+      </button>
+      <button
+        *ngIf="!autoPhase"
+        class="btn btn-info"
+        (click)="changeSectionTo('Endgame')"
+      >
+        Endgame
+      </button>
+    </div>
+  </div>
+
+  <div *ngSwitchCase="'Place'" id="Place" class="container-fluid">
+    <div class="d-grid gap-2">
+      <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
+      <button
+        class="btn btn-success"
+        (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kHigh});"
+      >
+        HIGH
+      </button>
+      <button
+        class="btn btn-warning"
+        (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kMiddle});"
+      >
+        MID
+      </button>
+      <button
+        class="btn btn-danger"
+        (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kLow});"
+      >
+        LOW
+      </button>
+      <!-- 'Balancing' during auto. -->
+      <div *ngIf="autoPhase" class="d-grid gap-2">
+        <label>
+          <input type="checkbox" (change)="dockedValue = $event.target.value" />
+          Docked
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            (change)="engagedValue = $event.target.value"
+          />
+          Engaged
+        </label>
+        <br />
+        <button
+          class="btn btn-info"
+          (click)="addAction({type: 'autoBalanceAction', docked: dockedValue, engaged: engagedValue});"
+        >
+          Submit Balancing
+        </button>
+      </div>
+      <button
+        *ngIf="autoPhase"
+        class="btn btn-info"
+        (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
+      >
+        Start Teleop
+      </button>
+      <button
+        *ngIf="!autoPhase"
+        class="btn btn-info"
+        (click)="changeSectionTo('Endgame')"
+      >
+        Endgame
+      </button>
+    </div>
+  </div>
+
+  <div *ngSwitchCase="'Endgame'" id="Endgame" class="container-fluid">
+    <div class="d-grid gap-2">
+      <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
       <label>
         <input type="checkbox" (change)="dockedValue = $event.target.value" />
         Docked
@@ -103,94 +205,27 @@
         <input type="checkbox" (change)="engagedValue = $event.target.value" />
         Engaged
       </label>
-      <br />
       <button
+        *ngIf="!autoPhase"
         class="btn btn-info"
-        (click)="addAction({type: 'autoBalanceAction', docked: dockedValue, engaged: engagedValue});"
+        (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: dockedValue, engaged: engagedValue});"
       >
-        Submit Balancing
+        End Match
       </button>
     </div>
-    <button
-      *ngIf="autoPhase"
-      class="btn btn-info"
-      (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
-    >
-      Start Teleop
-    </button>
-    <button
-      *ngIf="!autoPhase"
-      class="btn btn-info"
-      (click)="changeSectionTo('Endgame')"
-    >
-      Endgame
-    </button>
-  </div>
-
-  <div *ngSwitchCase="'Place'" id="Place" class="container-fluid">
-    <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
-    <button
-      class="btn btn-success"
-      (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kHigh});"
-    >
-      HIGH
-    </button>
-    <button
-      class="btn btn-warning"
-      (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kMiddle});"
-    >
-      MID
-    </button>
-    <button
-      class="btn btn-danger"
-      (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kLow});"
-    >
-      LOW
-    </button>
-    <button
-      *ngIf="autoPhase"
-      class="btn btn-info"
-      (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
-    >
-      Start Teleop
-    </button>
-    <button
-      *ngIf="!autoPhase"
-      class="btn btn-info"
-      (click)="changeSectionTo('Endgame')"
-    >
-      Endgame
-    </button>
-  </div>
-
-  <div *ngSwitchCase="'Endgame'" id="Endgame" class="container-fluid">
-    <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
-    <label>
-      <input type="checkbox" (change)="dockedValue = $event.target.value" />
-      Docked
-    </label>
-    <label>
-      <input type="checkbox" (change)="engagedValue = $event.target.value" />
-      Engaged
-    </label>
-    <button
-      *ngIf="!autoPhase"
-      class="btn btn-info"
-      (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: dockedValue, engaged: engagedValue});"
-    >
-      End Match
-    </button>
   </div>
 
   <div *ngSwitchCase="'Review and Submit'" id="Review" class="container-fluid">
-    <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
-    <button
-      *ngIf="!autoPhase"
-      class="btn btn-warning"
-      (click)="submitActions();"
-    >
-      Submit
-    </button>
+    <div class="d-grid gap-2">
+      <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
+      <button
+        *ngIf="!autoPhase"
+        class="btn btn-warning"
+        (click)="submitActions();"
+      >
+        Submit
+      </button>
+    </div>
   </div>
 
   <div *ngSwitchCase="'Success'" id="Success" class="container-fluid">
