@@ -75,6 +75,7 @@ cc_binary(
         "//aos:init",
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_reader",
+        "//aos/util:mcap_logger",
         "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:pose",
         "//frc971/vision:calibration_fbs",
