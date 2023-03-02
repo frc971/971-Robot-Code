@@ -35,3 +35,10 @@ $ sudo systemctl stop scouting.service
 $ sudo systemctl start scouting.service
 $ sudo systemctl restart scouting.service
 ```
+
+Incompatible database changes
+--------------------------------------------------------------------------------
+When deploying a new scouting application that has incompatible changes, you
+may want to clear the existing database. This can be done by also specifying
+the `--clear-db` option when deploying. This option will cause all tables to be
+dropped before the scouting app is deployed.
