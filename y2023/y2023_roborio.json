@@ -445,6 +445,12 @@
       "frequency": 50
     },
     {
+      "name": "/roborio",
+      "type": "y2023.CANConfiguration",
+      "source_node": "roborio",
+      "frequency": 2
+    },
+    {
       "name": "/roborio/constants",
       "type": "y2023.Constants",
       "source_node": "roborio",

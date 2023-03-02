@@ -53,6 +53,7 @@
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
+#include "y2023/can_configuration_generated.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/drivetrain/drivetrain_can_position_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_output_generated.h"
@@ -148,6 +149,17 @@ class Falcon {
     signals->push_back(&position_);
   }
 
+  void PrintConfigs() {
+    ctre::phoenixpro::configs::TalonFXConfiguration configuration;
+    ctre::phoenix::StatusCode status =
+        talon_.GetConfigurator().Refresh(configuration);
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to get falcon configuration: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
+    AOS_LOG(INFO, "configuration: %s", configuration.ToString().c_str());
+  }
+
   void WriteConfigs(ctre::phoenixpro::signals::InvertedValue invert) {
     inverted_ = invert;
 
@@ -176,6 +188,8 @@ class Falcon {
       AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
               status.GetName(), status.GetDescription());
     }
+
+    PrintConfigs();
   }
 
   void WriteRollerConfigs() {
@@ -202,6 +216,8 @@ class Falcon {
       AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
               status.GetName(), status.GetDescription());
     }
+
+    PrintConfigs();
   }
 
   ctre::phoenixpro::hardware::TalonFX *talon() { return &talon_; }
@@ -739,6 +755,13 @@ class SuperstructureCANWriter
     event_loop->OnRun([this]() { WriteConfigs(); });
   };
 
+  void HandleCANConfiguration(const CANConfiguration &configuration) {
+    roller_falcon_->PrintConfigs();
+    if (configuration.reapply()) {
+      WriteConfigs();
+    }
+  }
+
   void set_roller_falcon(std::shared_ptr<Falcon> roller_falcon) {
     roller_falcon_ = std::move(roller_falcon);
   }
@@ -808,6 +831,16 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
 
   void set_left_inverted(ctre::phoenixpro::signals::InvertedValue invert) {
     left_inverted_ = invert;
+  }
+
+  void HandleCANConfiguration(const CANConfiguration &configuration) {
+    for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
+                        left_back_, left_under_}) {
+      falcon->PrintConfigs();
+    }
+    if (configuration.reapply()) {
+      WriteConfigs();
+    }
   }
 
  private:
@@ -989,6 +1022,13 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     SuperstructureCANWriter superstructure_can_writer(&can_output_event_loop);
     superstructure_can_writer.set_roller_falcon(roller);
+
+    can_output_event_loop.MakeWatcher(
+        "/roborio", [&drivetrain_writer, &superstructure_can_writer](
+                        const CANConfiguration &configuration) {
+          drivetrain_writer.HandleCANConfiguration(configuration);
+          superstructure_can_writer.HandleCANConfiguration(configuration);
+        });
 
     AddLoop(&can_output_event_loop);
 
