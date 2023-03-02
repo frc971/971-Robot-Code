@@ -29,7 +29,18 @@ DEFINE_bool(quiet, false,
 namespace aos {
 
 void WriteConfig(const aos::Configuration *config, std::string output_path) {
-  auto config_flatbuffer = RecursiveCopyFlatBuffer(config);
+  // In order to deduplicate the reflection schemas in the resulting config
+  // flatbuffer (and thus reduce the size of the final flatbuffer), use
+  // MergeConfiguration() rather than the more generic
+  // RecursiveCopyFlatBuffer(). RecursiveCopyFlatBuffer() is sometimes used to
+  // reduce flatbuffer memory usage, but it only does so by rearranging memory
+  // locations, not by actually deduplicating identical flatbuffers.
+  std::vector<aos::FlatbufferVector<reflection::Schema>> schemas;
+  for (const Channel *c : *config->channels()) {
+    schemas.emplace_back(RecursiveCopyFlatBuffer(c->schema()));
+  }
+  auto config_flatbuffer = configuration::MergeConfiguration(
+      RecursiveCopyFlatBuffer(config), schemas);
 
   if (FLAGS_bfbs) {
     WriteFlatbufferToFile(output_path + ".bfbs", config_flatbuffer);
