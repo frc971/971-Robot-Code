@@ -93,6 +93,24 @@
     >
       CUBE
     </button>
+    <!-- 'Balancing' during auto. -->
+    <div *ngIf="autoPhase">
+      <label>
+        <input type="checkbox" (change)="dockedValue = $event.target.value" />
+        Docked
+      </label>
+      <label>
+        <input type="checkbox" (change)="engagedValue = $event.target.value" />
+        Engaged
+      </label>
+      <br />
+      <button
+        class="btn btn-info"
+        (click)="addAction({type: 'autoBalanceAction', docked: dockedValue, engaged: engagedValue});"
+      >
+        Submit Balancing
+      </button>
+    </div>
     <button
       *ngIf="autoPhase"
       class="btn btn-info"

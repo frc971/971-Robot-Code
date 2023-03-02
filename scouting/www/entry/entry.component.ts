@@ -15,6 +15,7 @@ import {
   ScoreLevel,
   SubmitActions,
   StartMatchAction,
+  AutoBalanceAction,
   PickupObjectAction,
   PlaceObjectAction,
   RobotDeathAction,
@@ -51,6 +52,12 @@ type ActionT =
       type: 'startMatchAction';
       timestamp?: number;
       position: number;
+    }
+  | {
+      type: 'autoBalanceAction';
+      timestamp?: number;
+      docked: boolean;
+      engaged: boolean;
     }
   | {
       type: 'pickupObjectAction';
