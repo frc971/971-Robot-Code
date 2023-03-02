@@ -24,9 +24,20 @@ class FoxgloveWebsocketServer {
     kYes,
     kNo,
   };
+  // Whether to attempt to shorten channel names.
+  enum class CanonicalChannelNames {
+    // Just use the full, unambiguous, channel names.
+    kCanonical,
+    // Use GetChannelAliases() to determine the shortest possible name for the
+    // channel for the current node, and use that in the MCAP file. This makes
+    // it so that the channels in the resulting file are more likely to match
+    // the channel names that are used in "real" applications.
+    kShortened,
+  };
   FoxgloveWebsocketServer(aos::EventLoop *event_loop, uint32_t port,
                           Serialization serialization,
-                          FetchPinnedChannels fetch_pinned_channels);
+                          FetchPinnedChannels fetch_pinned_channels,
+                          CanonicalChannelNames canonical_channels);
   ~FoxgloveWebsocketServer();
 
  private:
@@ -47,6 +58,7 @@ class FoxgloveWebsocketServer {
   aos::EventLoop *event_loop_;
   const Serialization serialization_;
   const FetchPinnedChannels fetch_pinned_channels_;
+  const CanonicalChannelNames canonical_channels_;
   foxglove::websocket::Server server_;
   // A map of fetchers for every single channel that could be subscribed to.
   std::map<ChannelId, FetcherState> fetchers_;

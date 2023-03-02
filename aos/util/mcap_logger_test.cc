@@ -10,7 +10,8 @@ namespace aos::testing {
 // will require writing an MCAP reader (or importing an existing one).
 
 // Confirm that the schema for the reflection.Schema table itself hasn't
-// changed. reflection.Schema should be a very stable type, so this should need
+// changed. reflection.Schema should be a very stable type, so this should
+// need
 // updating except when we change the JSON schema generation itself.
 TEST(JsonSchemaTest, ReflectionSchema) {
   std::string schema_json =

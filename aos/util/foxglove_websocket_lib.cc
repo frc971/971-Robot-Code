@@ -1,8 +1,8 @@
 #include "aos/util/foxglove_websocket_lib.h"
 
-#include "aos/util/mcap_logger.h"
-#include "aos/flatbuffer_merge.h"
 #include "absl/strings/escaping.h"
+#include "aos/flatbuffer_merge.h"
+#include "aos/util/mcap_logger.h"
 #include "gflags/gflags.h"
 
 DEFINE_uint32(sorting_buffer_ms, 100,
@@ -17,10 +17,12 @@ constexpr std::chrono::milliseconds kPollPeriod{50};
 namespace aos {
 FoxgloveWebsocketServer::FoxgloveWebsocketServer(
     aos::EventLoop *event_loop, uint32_t port, Serialization serialization,
-    FetchPinnedChannels fetch_pinned_channels)
+    FetchPinnedChannels fetch_pinned_channels,
+    CanonicalChannelNames canonical_channels)
     : event_loop_(event_loop),
       serialization_(serialization),
       fetch_pinned_channels_(fetch_pinned_channels),
+      canonical_channels_(canonical_channels),
       server_(port, "aos_foxglove") {
   for (const aos::Channel *channel :
        *event_loop_->configuration()->channels()) {
@@ -30,18 +32,28 @@ FoxgloveWebsocketServer::FoxgloveWebsocketServer(
         (!is_pinned || fetch_pinned_channels_ == FetchPinnedChannels::kYes)) {
       const FlatbufferDetachedBuffer<reflection::Schema> schema =
           RecursiveCopyFlatBuffer(channel->schema());
+      const std::string shortest_name =
+          ShortenedChannelName(event_loop_->configuration(), channel,
+                               event_loop_->name(), event_loop_->node());
+      std::string name_to_send;
+      switch (canonical_channels_) {
+        case CanonicalChannelNames::kCanonical:
+          name_to_send = channel->name()->string_view();
+          break;
+        case CanonicalChannelNames::kShortened:
+          name_to_send = shortest_name;
+          break;
+      }
       const ChannelId id =
           (serialization_ == Serialization::kJson)
               ? server_.addChannel(foxglove::websocket::ChannelWithoutId{
-                    .topic =
-                        channel->name()->str() + " " + channel->type()->str(),
+                    .topic = name_to_send + " " + channel->type()->str(),
                     .encoding = "json",
                     .schemaName = channel->type()->str(),
                     .schema =
                         JsonSchemaForFlatbuffer({channel->schema()}).dump()})
               : server_.addChannel(foxglove::websocket::ChannelWithoutId{
-                    .topic =
-                        channel->name()->str() + " " + channel->type()->str(),
+                    .topic = name_to_send + " " + channel->type()->str(),
                     .encoding = "flatbuffer",
                     .schemaName = channel->type()->str(),
                     .schema = absl::Base64Escape(

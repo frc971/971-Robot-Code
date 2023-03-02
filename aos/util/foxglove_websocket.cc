@@ -11,6 +11,10 @@ DEFINE_bool(fetch_pinned_channels, true,
             "with a read_method of PIN (see aos/configuration.fbs; PIN is an "
             "enum value). Having this enabled will cause foxglove to  consume "
             "extra shared memory resources.");
+DEFINE_bool(
+    canonical_channel_names, false,
+    "If set, use full channel names; by default, will shorten names to be the "
+    "shortest possible version of the name (e.g., /aos instead of /pi/aos).");
 
 int main(int argc, char *argv[]) {
   gflags::SetUsageMessage(
@@ -53,7 +57,10 @@ int main(int argc, char *argv[]) {
           : aos::FoxgloveWebsocketServer::Serialization::kJson,
       FLAGS_fetch_pinned_channels
           ? aos::FoxgloveWebsocketServer::FetchPinnedChannels::kYes
-          : aos::FoxgloveWebsocketServer::FetchPinnedChannels::kNo);
+          : aos::FoxgloveWebsocketServer::FetchPinnedChannels::kNo,
+      FLAGS_canonical_channel_names
+          ? aos::FoxgloveWebsocketServer::CanonicalChannelNames::kCanonical
+          : aos::FoxgloveWebsocketServer::CanonicalChannelNames::kShortened);
 
   event_loop.Run();
 }

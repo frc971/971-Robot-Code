@@ -24,6 +24,13 @@ nlohmann::json JsonSchemaForFlatbuffer(
     const FlatbufferType &type,
     JsonSchemaRecursion recursion_level = JsonSchemaRecursion::kTopLevel);
 
+// Returns the shortest possible alias for the specified channel on the
+// specified node/application.
+std::string ShortenedChannelName(const aos::Configuration *config,
+                                 const aos::Channel *channel,
+                                 std::string_view application_name,
+                                 const aos::Node *node);
+
 // Generates an MCAP file, per the specification at
 // https://github.com/foxglove/mcap/tree/main/docs/specification
 // This currently generates an uncompressed logfile with full message indexing
