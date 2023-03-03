@@ -49,15 +49,6 @@
   <li class="nav-item">
     <a
       class="nav-link"
-      [class.active]="tabIs('ImportMatchList')"
-      (click)="switchTabToGuarded('ImportMatchList')"
-    >
-      Import Match List
-    </a>
-  </li>
-  <li class="nav-item">
-    <a
-      class="nav-link"
       [class.active]="tabIs('ShiftSchedule')"
       (click)="switchTabToGuarded('ShiftSchedule')"
     >
@@ -90,9 +81,6 @@
   ></app-entry>
   <frc971-notes *ngSwitchCase="'Notes'"></frc971-notes>
   <app-driver-ranking *ngSwitchCase="'DriverRanking'"></app-driver-ranking>
-  <app-import-match-list
-    *ngSwitchCase="'ImportMatchList'"
-  ></app-import-match-list>
   <shift-schedule *ngSwitchCase="'ShiftSchedule'"></shift-schedule>
   <app-view
     (switchTabsEvent)="switchTabTo($event)"

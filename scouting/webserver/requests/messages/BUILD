@@ -13,8 +13,6 @@ FILE_NAMES = (
     "request_all_notes_response",
     "request_data_scouting",
     "request_data_scouting_response",
-    "refresh_match_list",
-    "refresh_match_list_response",
     "submit_notes",
     "submit_notes_response",
     "request_notes_for_team",

@@ -2,9 +2,11 @@ package rankings
 
 import (
 	"github.com/frc971/971-Robot-Code/scouting/db"
+	"github.com/frc971/971-Robot-Code/scouting/scraping/background"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -18,8 +20,13 @@ func (database *MockDatabase) AddOrUpdateRankings(data db.Ranking) error {
 	return nil
 }
 
-func ServeRankings(h http.Handler) http.Handler {
+func ServeRankings(t *testing.T, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+		// Make sure that the rankings are requested properly.
+		if !strings.HasSuffix(r.URL.Path, "/2016nytr/rankings") {
+			t.Error("Got unexpected URL: ", r.URL.Path)
+		}
+
 		r.URL.Path = "scraping/test_data/2016_nytr_rankings.json"
 
 		h.ServeHTTP(w, r)
@@ -30,13 +37,15 @@ func ServeRankings(h http.Handler) http.Handler {
 
 func TestGetRankings(t *testing.T) {
 	database := MockDatabase{}
-	scraper := RankingScraper{}
+	scraper := background.BackgroundScraper{}
 	tbaServer := server.NewScoutingServer()
-	tbaServer.Handle("/", ServeRankings(http.FileServer(http.Dir("../../"))))
+	tbaServer.Handle("/", ServeRankings(t, http.FileServer(http.Dir("../../"))))
 	tbaServer.Start(8000)
 	defer tbaServer.Stop()
 
-	scraper.Start(&database, 0, "", "scouting_test_config.json")
+	scraper.Start(func() {
+		GetRankings(&database, 0, "", "scouting_test_config.json")
+	})
 	defer scraper.Stop()
 
 	for {

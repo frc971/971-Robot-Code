@@ -97,8 +97,6 @@ func main() {
 		"If specified, parse the file as a requestAllDriverRankings JSON request.")
 	requestAllNotesPtr := flag.String("requestAllNotes", "",
 		"If specified, parse the file as a requestAllNotes JSON request.")
-	refreshMatchListPtr := flag.String("refreshMatchList", "",
-		"If specified, parse the file as a RefreshMatchList JSON request.")
 	flag.Parse()
 
 	spew.Config.Indent = *indentPtr
@@ -155,11 +153,4 @@ func main() {
 		*requestAllNotesPtr,
 		*addressPtr,
 		debug.RequestAllNotes)
-
-	maybePerformRequest(
-		"RefreshMatchList",
-		"scouting/webserver/requests/messages/refresh_match_list.fbs",
-		*refreshMatchListPtr,
-		*addressPtr,
-		debug.RefreshMatchList)
 }

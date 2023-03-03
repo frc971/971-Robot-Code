@@ -13,7 +13,18 @@ import time
 from typing import Any, Dict, List
 import unittest
 
+from rules_python.python.runfiles import runfiles
+
 import scouting.testing.scouting_test_servers
+
+RUNFILES = runfiles.Create()
+
+# This regex finds the number of matches that the web server has imported. This
+# is intended to parse the output of the debug cli's `-requestAllMatches`
+# option.
+MATCH_LIST_LENGTH_EXTRACTION_RE = re.compile(
+    r"MatchList: \(\[\]\*request_all_matches_response.MatchT\) \(len=(\d+) cap=.*\) \{"
+)
 
 
 def write_json_request(content: Dict[str, Any]):
@@ -37,29 +48,52 @@ def run_debug_cli(args: List[str]):
     )
 
 
+def find_num_matches_for_event(year, event_code):
+    with open(
+            RUNFILES.Rlocation(
+                f"org_frc971/scouting/scraping/test_data/{year}_{event_code}.json"
+            ), "r") as file:
+        raw_match_list = json.load(file)
+    return len(raw_match_list)
+
+
 class TestDebugCli(unittest.TestCase):
 
     def setUp(self):
         self.servers = scouting.testing.scouting_test_servers.Runner()
-        self.servers.start(8080)
 
     def tearDown(self):
         self.servers.stop()
 
-    def refresh_match_list(self, year=2016, event_code="nytr"):
-        """Triggers the webserver to fetch the match list."""
-        json_path = write_json_request({
-            "year": year,
-            "event_code": event_code,
-        })
-        exit_code, stdout, stderr = run_debug_cli(
-            ["-refreshMatchList", json_path])
-        self.assertEqual(exit_code, 0, f"{year}{event_code}: {stderr}")
-        self.assertIn(
-            "(refresh_match_list_response.RefreshMatchListResponseT)", stdout)
+    def start_servers(self, year=2016, event_code="nytr"):
+        self.servers.start(8080, year=year, event_code=event_code)
+
+        expected_num_matches = find_num_matches_for_event(year, event_code)
+        json_path = write_json_request({})
+
+        # Wait until the match list is imported. This is done automatically
+        # when the web server starts up.
+        sys.stderr.write("Waiting for match list to be imported.\n")
+        while True:
+            exit_code, stdout, stderr = run_debug_cli(
+                ["-requestAllMatches", json_path])
+            self.assertEqual(exit_code, 0, stderr)
+
+            match = MATCH_LIST_LENGTH_EXTRACTION_RE.search(stdout)
+            if match:
+                num_matches_imported = int(match.group(1))
+
+                if num_matches_imported == expected_num_matches:
+                    break
+                else:
+                    sys.stderr.write(
+                        f"Waiting until {expected_num_matches} are imported. "
+                        f"Currently at {num_matches_imported}.\n")
+
+            time.sleep(0.25)
 
     def test_submit_and_request_data_scouting(self):
-        self.refresh_match_list(year=2020, event_code="fake")
+        self.start_servers(year=2020, event_code="fake")
 
         # First submit some data to be added to the database.
         json_path = write_json_request({
@@ -142,7 +176,7 @@ class TestDebugCli(unittest.TestCase):
             }"""), stdout)
 
     def test_submit_and_request_notes(self):
-        self.refresh_match_list(year=2020, event_code="fake")
+        self.start_servers(year=2020, event_code="fake")
 
         # First submit some data to be added to the database.
         json_path = write_json_request({
@@ -179,7 +213,7 @@ class TestDebugCli(unittest.TestCase):
             }"""), stdout)
 
     def test_submit_and_request_driver_ranking(self):
-        self.refresh_match_list(year=2020, event_code="fake")
+        self.start_servers(year=2020, event_code="fake")
 
         # First submit some data to be added to the database.
         json_path = write_json_request({
@@ -209,7 +243,7 @@ class TestDebugCli(unittest.TestCase):
             }"""), stdout)
 
     def test_request_all_matches(self):
-        self.refresh_match_list()
+        self.start_servers()
 
         # RequestAllMatches has no fields.
         json_path = write_json_request({})
@@ -221,24 +255,6 @@ class TestDebugCli(unittest.TestCase):
             "MatchList: ([]*request_all_matches_response.MatchT) (len=90 cap=90) {",
             stdout)
         self.assertEqual(stdout.count("MatchNumber:"), 90)
-
-    def test_request_all_matches(self):
-        """Makes sure that we can import the match list multiple times without problems."""
-        request_all_matches_outputs = []
-        for _ in range(2):
-            self.refresh_match_list()
-
-            # RequestAllMatches has no fields.
-            json_path = write_json_request({})
-            exit_code, stdout, stderr = run_debug_cli(
-                ["-requestAllMatches", json_path])
-
-            self.assertEqual(exit_code, 0, stderr)
-            request_all_matches_outputs.append(stdout)
-
-        self.maxDiff = None
-        self.assertEqual(request_all_matches_outputs[0],
-                         request_all_matches_outputs[1])
 
 
 if __name__ == "__main__":

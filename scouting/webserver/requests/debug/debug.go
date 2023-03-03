@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/refresh_match_list_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
@@ -128,12 +127,6 @@ func RequestDataScouting(server string, requestBytes []byte) (*request_data_scou
 	return sendMessage[request_data_scouting_response.RequestDataScoutingResponseT](
 		server+"/requests/request/data_scouting", requestBytes,
 		request_data_scouting_response.GetRootAsRequestDataScoutingResponse)
-}
-
-func RefreshMatchList(server string, requestBytes []byte) (*refresh_match_list_response.RefreshMatchListResponseT, error) {
-	return sendMessage[refresh_match_list_response.RefreshMatchListResponseT](
-		server+"/requests/refresh_match_list", requestBytes,
-		refresh_match_list_response.GetRootAsRefreshMatchListResponse)
 }
 
 func SubmitNotes(server string, requestBytes []byte) (*submit_notes_response.SubmitNotesResponseT, error) {

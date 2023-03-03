@@ -17,7 +17,6 @@ ng_application(
         "//:node_modules/@angular/animations",
         "//scouting/www/driver_ranking:_lib",
         "//scouting/www/entry:_lib",
-        "//scouting/www/import_match_list:_lib",
         "//scouting/www/match_list:_lib",
         "//scouting/www/notes:_lib",
         "//scouting/www/shift_schedule:_lib",

@@ -6,13 +6,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"time"
 )
-
-type RankingScraper struct {
-	doneChan     chan<- bool
-	checkStopped chan<- bool
-}
 
 type Database interface {
 	AddOrUpdateRankings(db.Ranking) error
@@ -24,8 +18,8 @@ func parseTeamKey(teamKey string) (int, error) {
 	return strconv.Atoi(teamKey)
 }
 
-func getRankings(database Database, year int32, eventCode string, blueAllianceConfig string) {
-	rankings, err := scraping.AllRankings(year, eventCode, blueAllianceConfig)
+func GetRankings(database Database, year int32, eventCode string, blueAllianceConfig string) {
+	rankings, err := scraping.GetAllData[scraping.EventRanking](year, eventCode, blueAllianceConfig, "rankings")
 	if err != nil {
 		log.Println("Failed to scrape ranking list: ", err)
 		return
@@ -48,45 +42,6 @@ func getRankings(database Database, year int32, eventCode string, blueAllianceCo
 
 		if err != nil {
 			log.Println("Failed to add or update database: ", err)
-		}
-	}
-}
-
-func (scraper *RankingScraper) Start(database Database, year int32, eventCode string, blueAllianceConfig string) {
-	scraper.doneChan = make(chan bool, 1)
-	scraper.checkStopped = make(chan bool, 1)
-
-	go func(database Database, year int32, eventCode string) {
-		// Setting start time to 11 minutes prior so getRankings called instantly when Start() called
-		startTime := time.Now().Add(-11 * time.Minute)
-		for {
-			curTime := time.Now()
-			diff := curTime.Sub(startTime)
-
-			if diff.Minutes() > 10 {
-				getRankings(database, year, eventCode, blueAllianceConfig)
-				startTime = curTime
-			}
-
-			if len(scraper.doneChan) != 0 {
-				break
-			}
-
-			time.Sleep(time.Second)
-		}
-
-		scraper.checkStopped <- true
-	}(database, year, eventCode)
-}
-
-func (scraper *RankingScraper) Stop() {
-	scraper.doneChan <- true
-
-	for {
-		if len(scraper.checkStopped) != 0 {
-			close(scraper.doneChan)
-			close(scraper.checkStopped)
-			break
 		}
 	}
 }
