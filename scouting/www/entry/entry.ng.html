@@ -70,7 +70,7 @@
     </div>
     <div class="buttons">
       <!-- Creates a responsive stack of full-width, "block buttons". -->
-      <div class="d-grid gap-2">
+      <div class="d-grid gap-5">
         <button
           class="btn btn-primary"
           [disabled]="!selectedValue"
@@ -83,7 +83,7 @@
   </div>
 
   <div *ngSwitchCase="'Pickup'" id="PickUp" class="container-fluid">
-    <div class="d-grid gap-2">
+    <div class="d-grid gap-5">
       <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-warning"
@@ -136,7 +136,7 @@
   </div>
 
   <div *ngSwitchCase="'Place'" id="Place" class="container-fluid">
-    <div class="d-grid gap-2">
+    <div class="d-grid gap-5">
       <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-success"
@@ -195,7 +195,7 @@
   </div>
 
   <div *ngSwitchCase="'Endgame'" id="Endgame" class="container-fluid">
-    <div class="d-grid gap-2">
+    <div class="d-grid gap-5">
       <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
       <label>
         <input type="checkbox" (change)="dockedValue = $event.target.value" />
@@ -216,7 +216,7 @@
   </div>
 
   <div *ngSwitchCase="'Review and Submit'" id="Review" class="container-fluid">
-    <div class="d-grid gap-2">
+    <div class="d-grid gap-5">
       <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
       <button
         *ngIf="!autoPhase"
