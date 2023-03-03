@@ -1,4 +1,5 @@
 #include <chrono>
+
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
@@ -9,8 +10,7 @@
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
 
-DEFINE_string(config, "",
-              "Name of the config file to replay using.");
+DEFINE_string(config, "", "Name of the config file to replay using.");
 /* This binary is used to validate that all of the
    needed remote timestamps channels are in the config
    to log the timestamps.
@@ -18,8 +18,8 @@ DEFINE_string(config, "",
    to confirm that the timestamps in the config are able to
    replay all of the data in the log
    This can be done by getting a list of all of the nodes and
-   iterating through it with a for loop creating a logger for 
-   each one 
+   iterating through it with a for loop creating a logger for
+   each one
    Reference superstructure_lib_test.cc*/
 TEST(ConfigValidatorTest, ReadConfig) {
   ASSERT_TRUE(!FLAGS_config.empty());
@@ -30,3 +30,7 @@ TEST(ConfigValidatorTest, ReadConfig) {
 
   factory.RunFor(std::chrono::seconds(1));
 }
+
+// TODO(milind): add more tests, the above one doesn't
+// catch an error like forgetting to add a forwarded message to
+// the destination node's config.
