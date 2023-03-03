@@ -87,11 +87,11 @@ Values MakeValues(uint16_t team) {
           0.931355973012855 + 8.6743197253382 - 0.101200335326309 -
           0.0820901660993467 - 0.0703733798337964;
 
-      arm_distal->zeroing.measured_absolute_position = 0.617279923658987;
+      arm_distal->zeroing.measured_absolute_position = 0.58478872393942;
       arm_distal->potentiometer_offset =
           0.436664933370656 + 0.49457213779426 + 6.78213223139724 -
           0.0220711555235029 - 0.0162945074111813 + 0.00630344935527365 -
-          0.0164398318919943 - 0.145833494945215;
+          0.0164398318919943 - 0.145833494945215 + 0.234878799868491;
 
       roll_joint->zeroing.measured_absolute_position = 1.12525305971909;
       roll_joint->potentiometer_offset =
@@ -102,27 +102,27 @@ Values MakeValues(uint16_t team) {
           0.11972765117321;
 
       wrist->subsystem_params.zeroing_constants.measured_absolute_position =
-          0.420104471500763;
+          0.783151696328745;
 
       break;
 
     case kPracticeTeamNumber:
-      arm_proximal->zeroing.measured_absolute_position = 0.254437958024658;
+      arm_proximal->zeroing.measured_absolute_position = 0.261970010788946;
       arm_proximal->potentiometer_offset =
-          10.5178592988554 + 0.0944609125285876;
+          10.5178592988554 + 0.0944609125285876 - 0.00826532984625095;
 
-      arm_distal->zeroing.measured_absolute_position = 0.51986178669514;
-      arm_distal->potentiometer_offset = 7.673132586937 - 0.0799284644472573 -
-                                         0.0323574039310657 +
-                                         0.0143810684138064;
+      arm_distal->zeroing.measured_absolute_position = 0.507166003869875;
+      arm_distal->potentiometer_offset =
+          7.673132586937 - 0.0799284644472573 - 0.0323574039310657 +
+          0.0143810684138064 + 0.00945555248207735;
 
-      roll_joint->zeroing.measured_absolute_position = 1.86685853969852;
-      roll_joint->potentiometer_offset = 0.624713611895747 + 3.10458504917251 -
-                                         0.0966407797407789 +
-                                         0.0257708772364788;
+      roll_joint->zeroing.measured_absolute_position = 1.88759815823151;
+      roll_joint->potentiometer_offset =
+          0.624713611895747 + 3.10458504917251 - 0.0966407797407789 +
+          0.0257708772364788 - 0.0395076737853459;
 
       wrist->subsystem_params.zeroing_constants.measured_absolute_position =
-          0.615125389629717;
+          0.627578012126286;
 
       break;
 
