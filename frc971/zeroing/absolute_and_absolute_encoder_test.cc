@@ -1,15 +1,15 @@
 #include "frc971/zeroing/absolute_and_absolute_encoder.h"
 
-#include "gtest/gtest.h"
-
 #include "frc971/zeroing/zeroing_test.h"
+#include "glog/logging.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 namespace frc971 {
 namespace zeroing {
 namespace testing {
 
 using constants::AbsoluteAndAbsoluteEncoderZeroingConstants;
-using EstimatorState = AbsoluteAndAbsoluteEncoderZeroingEstimator::State;
 
 class AbsoluteAndAbsoluteEncoderZeroingTest : public ZeroingTest {
  protected:
@@ -17,7 +17,7 @@ class AbsoluteAndAbsoluteEncoderZeroingTest : public ZeroingTest {
               AbsoluteAndAbsoluteEncoderZeroingEstimator *estimator,
               double new_position) {
     simulator->MoveTo(new_position);
-    FBB fbb;
+    flatbuffers::FlatBufferBuilder fbb;
     estimator->UpdateEstimate(
         *simulator->FillSensorValues<AbsoluteAndAbsolutePosition>(&fbb));
   }
@@ -107,7 +107,7 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
   AbsoluteAndAbsoluteEncoderZeroingEstimator estimator(constants);
 
   // We tolerate a couple NANs before we start.
-  FBB fbb;
+  flatbuffers::FlatBufferBuilder fbb;
   fbb.Finish(CreateAbsoluteAndAbsolutePosition(
       fbb, 0.0, ::std::numeric_limits<double>::quiet_NaN(), 0.0));
   for (size_t i = 0; i < kSampleSize - 1; ++i) {
@@ -180,7 +180,7 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
 
   AbsoluteAndAbsoluteEncoderZeroingEstimator estimator(constants);
 
-  FBB fbb;
+  flatbuffers::FlatBufferBuilder fbb;
   fbb.Finish(CreateAbsoluteAndAbsolutePosition(
       fbb, 0.0, ::std::numeric_limits<double>::quiet_NaN(), 0.0));
   const auto sensor_values =
@@ -192,6 +192,14 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
 
   estimator.UpdateEstimate(*sensor_values);
   ASSERT_TRUE(estimator.error());
+
+  fbb.Finish(estimator.GetEstimatorState(&fbb));
+  const AbsoluteAndAbsoluteEncoderEstimatorState *state =
+      flatbuffers::GetRoot<AbsoluteAndAbsoluteEncoderEstimatorState>(
+          fbb.GetBufferPointer());
+
+  ASSERT_GT(state->errors()->size(), 0);
+  EXPECT_EQ(state->errors()->Get(0), ZeroingError::LOST_ABSOLUTE_ENCODER);
 }
 
 TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
@@ -234,12 +242,13 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
   ASSERT_TRUE(estimator.zeroed());
   EXPECT_DOUBLE_EQ(start_pos, estimator.offset());
 
-  FBB fbb;
+  flatbuffers::FlatBufferBuilder fbb;
 
   fbb.Finish(estimator.GetEstimatorState(&fbb));
 
-  const EstimatorState *state =
-      flatbuffers::GetRoot<EstimatorState>(fbb.GetBufferPointer());
+  const AbsoluteAndAbsoluteEncoderEstimatorState *state =
+      flatbuffers::GetRoot<AbsoluteAndAbsoluteEncoderEstimatorState>(
+          fbb.GetBufferPointer());
 
   EXPECT_NEAR(state->position(), position, 1e-10);
 
@@ -251,6 +260,74 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
   // single_turn_distance_per_revolution
   // (2.7 + 1.6) % 4
   EXPECT_NEAR(state->single_turn_absolute_position(), 0.3, 1e-10);
+}
+
+// Tests that errors() adds the OFFSET_MOVED_TOO_FAR error when we move too far.
+TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
+       TestAbsoluteAndAbsoluteEncoderZeroingStateErrors) {
+  const double full_range = 4.0;
+  const double distance_per_revolution = 1.0;
+  const double single_turn_distance_per_revolution = full_range;
+  const double start_pos = 2.1;
+  const double single_turn_middle_position = full_range * 0.5;
+  const double measured_absolute_position = 0.3 * distance_per_revolution;
+  const double single_turn_measured_absolute_position =
+      0.4 * single_turn_distance_per_revolution;
+
+  AbsoluteAndAbsoluteEncoderZeroingConstants constants{
+      kSampleSize,
+      distance_per_revolution,
+      measured_absolute_position,
+      single_turn_distance_per_revolution,
+      single_turn_measured_absolute_position,
+      single_turn_middle_position,
+      0.1,
+      kMovingBufferSize,
+      kIndexErrorFraction};
+
+  PositionSensorSimulator sim(distance_per_revolution,
+                              single_turn_distance_per_revolution);
+  sim.Initialize(start_pos, distance_per_revolution / 3.0, 0.0,
+                 measured_absolute_position,
+                 single_turn_measured_absolute_position);
+
+  AbsoluteAndAbsoluteEncoderZeroingEstimator estimator(constants);
+
+  const double position = 2.7;
+
+  for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
+    MoveTo(&sim, &estimator, position);
+    ASSERT_FALSE(estimator.zeroed());
+  }
+  MoveTo(&sim, &estimator, position);
+  ASSERT_TRUE(estimator.zeroed());
+  EXPECT_DOUBLE_EQ(start_pos, estimator.offset());
+
+  // If the ratios suddenly get very messed up
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.Finish(CreateAbsoluteAndAbsolutePosition(fbb, 0.0, 0.0, 3.0));
+
+  const auto sensor_values =
+      flatbuffers::GetRoot<AbsoluteAndAbsolutePosition>(fbb.GetBufferPointer());
+
+  ASSERT_FALSE(estimator.error());
+
+  for (size_t i = 0; i < kSampleSize + kMovingBufferSize - 1; ++i) {
+    estimator.UpdateEstimate(*sensor_values);
+  }
+  ASSERT_TRUE(estimator.error());
+
+  flatbuffers::FlatBufferBuilder fbb2;
+  fbb2.Finish(estimator.GetEstimatorState(&fbb2));
+  const AbsoluteAndAbsoluteEncoderEstimatorState *state =
+      flatbuffers::GetRoot<AbsoluteAndAbsoluteEncoderEstimatorState>(
+          fbb2.GetBufferPointer());
+
+  for (ZeroingError err : *state->errors()) {
+    LOG(INFO) << "error: " << EnumNameZeroingError(err);
+  }
+  EXPECT_THAT(*state->errors(),
+              ::testing::ElementsAre(ZeroingError::OFFSET_MOVED_TOO_FAR));
 }
 
 }  // namespace testing

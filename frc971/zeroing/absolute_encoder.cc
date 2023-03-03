@@ -3,9 +3,9 @@
 #include <cmath>
 #include <numeric>
 
-#include "glog/logging.h"
-
+#include "aos/containers/error_list.h"
 #include "frc971/zeroing/wrap.h"
+#include "glog/logging.h"
 
 namespace frc971 {
 namespace zeroing {
@@ -29,7 +29,6 @@ void AbsoluteEncoderZeroingEstimator::Reset() {
   move_detector_.Reset();
 }
 
-
 // The math here is a bit backwards, but I think it'll be less error prone that
 // way and more similar to the version with a pot as well.
 //
@@ -49,11 +48,13 @@ void AbsoluteEncoderZeroingEstimator::UpdateEstimate(
   if (::std::isnan(info.absolute_encoder())) {
     if (zeroed_) {
       VLOG(1) << "NAN on absolute encoder.";
+      errors_.Set(ZeroingError::LOST_ABSOLUTE_ENCODER);
       error_ = true;
     } else {
       ++nan_samples_;
       VLOG(1) << "NAN on absolute encoder while zeroing " << nan_samples_;
       if (nan_samples_ >= constants_.average_filter_size) {
+        errors_.Set(ZeroingError::LOST_ABSOLUTE_ENCODER);
         error_ = true;
         zeroed_ = true;
       }
@@ -152,6 +153,7 @@ void AbsoluteEncoderZeroingEstimator::UpdateEstimate(
                 << ", current " << offset_ << ", allowable change: "
                 << constants_.allowable_encoder_error *
                        constants_.one_revolution_distance;
+        errors_.Set(ZeroingError::OFFSET_MOVED_TOO_FAR);
         error_ = true;
       }
 
@@ -166,11 +168,15 @@ void AbsoluteEncoderZeroingEstimator::UpdateEstimate(
 flatbuffers::Offset<AbsoluteEncoderZeroingEstimator::State>
 AbsoluteEncoderZeroingEstimator::GetEstimatorState(
     flatbuffers::FlatBufferBuilder *fbb) const {
+  flatbuffers::Offset<flatbuffers::Vector<ZeroingError>> errors_offset =
+      errors_.ToFlatbuffer(fbb);
+
   State::Builder builder(*fbb);
   builder.add_error(error_);
   builder.add_zeroed(zeroed_);
   builder.add_position(position_);
   builder.add_absolute_position(filtered_absolute_encoder_);
+  builder.add_errors(errors_offset);
   return builder.Finish();
 }
 

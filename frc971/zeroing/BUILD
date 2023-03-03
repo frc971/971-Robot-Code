@@ -80,6 +80,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":wrap",
+        "//aos/containers:error_list",
         "//aos/logging",
         "//frc971:constants",
         "//frc971/control_loops:control_loops_fbs",
