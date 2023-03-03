@@ -208,6 +208,21 @@ export class EntryComponent {
           );
           break;
 
+        case 'autoBalanceAction':
+          const autoBalanceActionOffset =
+            AutoBalanceAction.createAutoBalanceAction(
+              builder,
+              action.docked,
+              action.engaged
+            );
+          actionOffset = Action.createAction(
+            builder,
+            action.timestamp || 0,
+            ActionType.AutoBalanceAction,
+            autoBalanceActionOffset
+          );
+          break;
+
         case 'placeObjectAction':
           const placeObjectActionOffset =
             PlaceObjectAction.createPlaceObjectAction(
