@@ -32,20 +32,22 @@ def main(argv):
         print("Stopping the scouting app.")
         subprocess.run(
             f"ssh -tt {args.host} sudo systemctl stop scouting.service",
+            shell=True,
             # In case the scouting app isn't installed, ignore the error here.
             check=False,
             stdin=sys.stdin)
         print("Clearing the database.")
         subprocess.run(
             " ".join([
-                f"ssh -tt {args.host} sudo -u postgres psql",
+                f"ssh -tt {args.host}",
+                "\"sudo -u postgres psql",
                 # Drop all tables in the same schema.
                 "-c 'drop schema public cascade;'",
                 # Create an empty schema for the scouting app to use.
                 "-c 'create schema public;'",
                 # List all tables as a sanity check.
                 "-c '\dt'",
-                "postgres",
+                "postgres\"",
             ]),
             shell=True,
             check=True,
