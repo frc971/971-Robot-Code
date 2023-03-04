@@ -463,7 +463,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       CopyPosition(roll_joint_encoder_, &roll_joint,
                    Values::kRollJointEncoderCountsPerRevolution(),
                    Values::kRollJointEncoderRatio(), roll_joint_pot_translate,
-                   true, values_->roll_joint.potentiometer_offset);
+                   false, values_->roll_joint.potentiometer_offset);
       frc971::AbsolutePositionT wrist;
       CopyPosition(wrist_encoder_, &wrist,
                    Values::kWristEncoderCountsPerRevolution(),
