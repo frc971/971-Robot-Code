@@ -1,7 +1,5 @@
 load("@aspect_rules_js//js:providers.bzl", "JsInfo")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
-load("@aspect_rules_js//js:defs.bzl", "js_library")
-load("@aspect_rules_js//npm:defs.bzl", "npm_package")
 load("@aspect_bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
 load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
 load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
@@ -271,26 +269,12 @@ def ng_pkg(name, generate_public_api = True, extra_srcs = [], deps = [], test_de
         srcs.append(":_public_api")
 
     ng_project(
-        name = "_lib",
+        name = name,
         srcs = srcs + [":_index"],
         deps = deps + PACKAGE_DEPS,
         #visibility = ["//visibility:private"],
         visibility = ["//visibility:public"],
         **kwargs
-    )
-
-    js_library(
-        name = name + "_js",
-        srcs = [":_lib"],
-        visibility = ["//visibility:public"],
-    )
-
-    npm_package(
-        name = name,
-        srcs = ["package.json", ":_lib"],
-        # This is a perf improvement; the default will be flipped to False in rules_js 2.0
-        include_runfiles = False,
-        visibility = ["//visibility:public"],
     )
 
 def rollup_bundle(name, entry_point, deps = [], visibility = None, **kwargs):
