@@ -786,7 +786,9 @@ class SuperstructureCANWriter
 
   void Stop() override {
     AOS_LOG(WARNING, "Superstructure CAN output too old.\n");
-    ctre::phoenixpro::controls::NeutralOut stop_command;
+    ctre::phoenixpro::controls::DutyCycleOut stop_command(0.0);
+    stop_command.UpdateFreqHz = 0_Hz;
+    stop_command.EnableFOC = true;
 
     roller_falcon_->talon()->SetControl(stop_command);
   }
@@ -893,7 +895,10 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
 
   void Stop() override {
     AOS_LOG(WARNING, "drivetrain output too old\n");
-    ctre::phoenixpro::controls::NeutralOut stop_command;
+    ctre::phoenixpro::controls::DutyCycleOut stop_command(0.0);
+    stop_command.UpdateFreqHz = 0_Hz;
+    stop_command.EnableFOC = true;
+
     for (auto falcon :
          {right_front_.get(), right_back_.get(), right_under_.get(),
           left_front_.get(), left_back_.get(), left_under_.get()}) {
