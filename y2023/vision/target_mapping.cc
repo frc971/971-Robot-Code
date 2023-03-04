@@ -2,6 +2,7 @@
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
+#include "aos/util/mcap_logger.h"
 #include "frc971/control_loops/pose.h"
 #include "frc971/vision/calibration_generated.h"
 #include "frc971/vision/charuco_lib.h"
@@ -29,6 +30,8 @@ DEFINE_string(field_name, "charged_up",
               "Field name, for the output json filename and flatbuffer field");
 DEFINE_int32(team_number, 7971,
              "Use the calibration for a node with this team number");
+DEFINE_string(mcap_output_path, "/tmp/log.mcap", "Log to output.");
+DEFINE_string(pi, "pi1", "Pi name to generate mcap log for; defaults to pi1.");
 
 namespace y2023 {
 namespace vision {
@@ -177,6 +180,25 @@ void MappingMain(int argc, char *argv[]) {
       reader.event_loop_factory()->MakeEventLoop("pi4_mapping", pi4);
   HandlePiCaptures(pi4_detection_event_loop.get(), pi4_mapping_event_loop.get(),
                    &reader, &timestamped_target_detections, &detectors);
+
+  std::unique_ptr<aos::EventLoop> mcap_event_loop;
+  std::unique_ptr<aos::McapLogger> relogger;
+  if (!FLAGS_mcap_output_path.empty()) {
+    LOG(INFO) << "Writing out mcap file to " << FLAGS_mcap_output_path;
+    // TODO: Should make this work for any pi
+    const aos::Node *node =
+        aos::configuration::GetNode(reader.configuration(), FLAGS_pi);
+    reader.event_loop_factory()->GetNodeEventLoopFactory(node)->OnStartup(
+        [&relogger, &mcap_event_loop, &reader, node]() {
+          mcap_event_loop =
+              reader.event_loop_factory()->MakeEventLoop("mcap", node);
+          relogger = std::make_unique<aos::McapLogger>(
+              mcap_event_loop.get(), FLAGS_mcap_output_path,
+              aos::McapLogger::Serialization::kFlatbuffer,
+              aos::McapLogger::CanonicalChannelNames::kShortened,
+              aos::McapLogger::Compression::kLz4);
+        });
+  }
 
   reader.event_loop_factory()->Run();
 
