@@ -28,12 +28,12 @@ assemble_static_files(
     name = "static_files",
     app_files = ":app",
     pictures = [
-        "//third_party/y2022/field:pictures",
+        "//third_party/y2023/field:pictures",
     ],
     replace_prefixes = {
         "prod": "",
         "dev": "",
-        "third_party/y2022": "pictures",
+        "third_party/y2023": "pictures",
     },
     visibility = ["//visibility:public"],
 )
