@@ -209,7 +209,7 @@ void LineFollowDrivetrain::Update(
   // UpdateSelection every time.
   bool new_target =
       target_selector_->UpdateSelection(abs_state, goal_velocity_);
-  if (freeze_target_) {
+  if (freeze_target_ && !target_selector_->ForceReselectTarget()) {
     // When freezing the target, only make changes if we didn't have a good
     // target before.
     if (!have_target_ && new_target) {
@@ -229,9 +229,6 @@ void LineFollowDrivetrain::Update(
                                            goal_velocity_);
     }
   }
-  // TODO(james): Find out how often the manipulator hits the right button first
-  // try. We may want to make our target freezing logic more permissive,
-  // especially for drive direction.
 
   // Get the robot pose in the target coordinate frame.
   relative_pose_ = Pose({abs_state.x(), abs_state.y(), 0.0}, abs_state(2, 0))

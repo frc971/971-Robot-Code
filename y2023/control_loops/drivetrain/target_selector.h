@@ -38,12 +38,15 @@ class TargetSelector
 
   double TargetRadius() const override { return 0.0; }
   Side DriveDirection() const override { return drive_direction_; }
+  // We will manage any desired hysteresis in the target selection.
+  bool ForceReselectTarget() const override { return true; }
 
  private:
   void UpdateAlliance();
   std::optional<Pose> target_pose_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<TargetSelectorHint> hint_fetcher_;
+  std::optional<TargetSelectorHintT> last_hint_;
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
   const localizer::HalfField *scoring_map_ = nullptr;
   Side drive_direction_ = Side::DONT_CARE;

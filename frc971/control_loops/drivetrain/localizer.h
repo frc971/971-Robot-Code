@@ -36,6 +36,9 @@ class TargetSelectorInterface {
   virtual double TargetRadius() const = 0;
   // Which direction we want the robot to drive to get to the target.
   virtual Side DriveDirection() const = 0;
+  // Indicates that the line following *must* drive to the currently selected
+  // target, regardless of any hysteresis we try to use to protect the driver.
+  virtual bool ForceReselectTarget() const = 0;
 };
 
 // Defines an interface for classes that provide field-global localization.
@@ -119,15 +122,20 @@ class TrivialTargetSelector : public TargetSelectorInterface {
   TypedPose<double> TargetPose() const override { return pose_; }
   double TargetRadius() const override { return target_radius_; }
   Side DriveDirection() const override { return drive_direction_; }
+  bool ForceReselectTarget() const override { return force_reselect_; }
 
   void set_pose(const TypedPose<double> &pose) { pose_ = pose; }
   void set_target_radius(double radius) { target_radius_ = radius; }
   void set_has_target(bool has_target) { has_target_ = has_target; }
   void set_drive_direction(Side side) { drive_direction_ = side; }
+  void set_force_reselect(bool force_reselect) {
+    force_reselect_ = force_reselect;
+  }
   bool has_target() const { return has_target_; }
 
  private:
   bool has_target_ = true;
+  bool force_reselect_ = false;
   TypedPose<double> pose_;
   double target_radius_ = 0.0;
   Side drive_direction_ = Side::DONT_CARE;
