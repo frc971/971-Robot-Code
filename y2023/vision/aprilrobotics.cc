@@ -8,7 +8,7 @@ DEFINE_bool(
 
 DEFINE_double(min_decision_margin, 75.0,
               "Minimum decision margin (confidence) for an apriltag detection");
-DEFINE_int32(pixel_border, 3,
+DEFINE_int32(pixel_border, 10,
              "Size of image border within which to reject detected corners");
 DEFINE_double(
     max_expected_distortion, 0.0005,
