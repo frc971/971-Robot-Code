@@ -493,7 +493,11 @@
       "name": "logger_camera_reader",
       "executable_name": "camera_reader",
       "user": "pi",
-      "args": ["--enable_ftrace", "--send_downsized_images"],
+      "args": [
+        "--enable_ftrace",
+        "--send_downsized_images",
+        "--exposure=650"
+      ],
       "nodes": [
         "logger"
       ]
