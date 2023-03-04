@@ -90,7 +90,13 @@
 
   <div *ngSwitchCase="'Pickup'" id="PickUp" class="container-fluid">
     <div class="d-grid gap-5">
-      <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
+      <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
+      <button
+        class="btn btn-danger"
+        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotOn: false});"
+      >
+        DEAD
+      </button>
       <button
         class="btn btn-warning"
         (click)="changeSectionTo('Place'); addAction({type: 'pickupObjectAction', objectType: ObjectType.kCone});"
@@ -143,7 +149,13 @@
 
   <div *ngSwitchCase="'Place'" id="Place" class="container-fluid">
     <div class="d-grid gap-5">
-      <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
+      <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
+      <button
+        class="btn btn-danger"
+        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotOn: false});"
+      >
+        DEAD
+      </button>
       <button
         class="btn btn-success"
         (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kHigh});"
@@ -202,7 +214,13 @@
 
   <div *ngSwitchCase="'Endgame'" id="Endgame" class="container-fluid">
     <div class="d-grid gap-5">
-      <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
+      <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
+      <button
+        class="btn btn-danger"
+        (click)="changeSectionTo('Dead'); addAction({type: 'robotDeathAction', robotOn: false});"
+      >
+        DEAD
+      </button>
       <label>
         <input type="checkbox" (change)="dockedValue = $event.target.value" />
         Docked
@@ -221,9 +239,21 @@
     </div>
   </div>
 
+  <div *ngSwitchCase="'Dead'" id="Dead" class="container-fluid">
+    <h2>Robot is dead</h2>
+    <div class="d-grid gap-2">
+      <button
+        class="btn btn-success"
+        (click)="changeSectionTo('Pickup'); addAction({type: 'robotDeathAction', robotOn: true}); "
+      >
+        Revive
+      </button>
+    </div>
+  </div>
+
   <div *ngSwitchCase="'Review and Submit'" id="Review" class="container-fluid">
     <div class="d-grid gap-5">
-      <button class="btn btn-danger" (click)="undoLastAction()">UNDO</button>
+      <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         *ngIf="!autoPhase"
         class="btn btn-warning"

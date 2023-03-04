@@ -157,6 +157,12 @@ export class EntryComponent {
         case 'endMatchAction':
           this.section = 'Pickup';
           break;
+        case 'robotDeathAction':
+          // TODO(FILIP): Return user to the screen they
+          // clicked dead robot on. Pickup is fine for now but
+          // might cause confusion.
+          this.section = 'Pickup';
+          break;
         default:
           break;
       }
