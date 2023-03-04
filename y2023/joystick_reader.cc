@@ -31,11 +31,12 @@ using frc971::input::driver_station::ButtonLocation;
 using frc971::input::driver_station::ControlBit;
 using frc971::input::driver_station::JoystickAxis;
 using frc971::input::driver_station::POVLocation;
-using y2023::control_loops::superstructure::RollerGoal;
-using y2023::control_loops::drivetrain::RowSelectionHint;
 using y2023::control_loops::drivetrain::GridSelectionHint;
+using y2023::control_loops::drivetrain::RowSelectionHint;
 using y2023::control_loops::drivetrain::SpotSelectionHint;
 using y2023::control_loops::drivetrain::TargetSelectorHint;
+using y2023::control_loops::superstructure::RollerGoal;
+using Side = frc971::control_loops::drivetrain::RobotSide;
 
 namespace y2023 {
 namespace input {
@@ -75,11 +76,6 @@ enum class GamePiece {
   CONE_UP = 0,
   CONE_DOWN = 1,
   CUBE = 2,
-};
-
-enum class Side {
-  FRONT = 0,
-  BACK = 1,
 };
 
 struct ButtonData {
@@ -439,8 +435,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       auto hint_builder = builder.MakeBuilder<TargetSelectorHint>();
       hint_builder.add_row(placing_row.value());
       hint_builder.add_spot(placing_spot.value());
-      // TODO: Add field to TargetSelector hint for forwards vs. backwards
-      // placement.
+      hint_builder.add_robot_side(CHECK_NOTNULL(current_setpoint_)->side);
       if (builder.Send(hint_builder.Finish()) != aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Sending target selector hint failed.\n");
       }

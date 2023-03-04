@@ -40,6 +40,8 @@ class TargetSelector
 
   double TargetRadius() const override { return target_radius_; }
 
+  Side DriveDirection() const override { return Side::DONT_CARE; }
+
  private:
   static constexpr double kFakeFov = M_PI * 0.9;
   // Longitudinal speed at which the robot must be going in order for us to make

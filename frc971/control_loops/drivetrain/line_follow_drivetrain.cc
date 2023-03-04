@@ -87,6 +87,19 @@ void AB(const DrivetrainConfig<double> &dt_config,
   return Kff;
 }
 
+double VelocitySignForSide(TargetSelectorInterface::Side side,
+                           double goal_velocity) {
+  switch (side) {
+    case TargetSelectorInterface::Side::FRONT:
+      return 1.0;
+    case TargetSelectorInterface::Side::BACK:
+      return -1.0;
+    case TargetSelectorInterface::Side::DONT_CARE:
+      return goal_velocity >= 0.0 ? 1.0 : -1.0;
+  }
+  return 1.0;
+}
+
 }  // namespace
 
 // When we create A/B, we do recompute A/B, but we don't really care about
@@ -202,7 +215,8 @@ void LineFollowDrivetrain::Update(
     if (!have_target_ && new_target) {
       have_target_ = true;
       start_of_target_acquire_ = now;
-      velocity_sign_ = goal_velocity_ >= 0.0 ? 1.0 : -1.0;
+      velocity_sign_ = VelocitySignForSide(target_selector_->DriveDirection(),
+                                           goal_velocity_);
       target_pose_ = target_selector_->TargetPose();
     }
   } else {
@@ -211,9 +225,14 @@ void LineFollowDrivetrain::Update(
     have_target_ = new_target;
     if (have_target_) {
       target_pose_ = target_selector_->TargetPose();
-      velocity_sign_ = goal_velocity_ >= 0.0 ? 1.0 : -1.0;
+      velocity_sign_ = VelocitySignForSide(target_selector_->DriveDirection(),
+                                           goal_velocity_);
     }
   }
+  // TODO(james): Find out how often the manipulator hits the right button first
+  // try. We may want to make our target freezing logic more permissive,
+  // especially for drive direction.
+
   // Get the robot pose in the target coordinate frame.
   relative_pose_ = Pose({abs_state.x(), abs_state.y(), 0.0}, abs_state(2, 0))
                        .Rebase(&target_pose_);
@@ -276,6 +295,8 @@ flatbuffers::Offset<LineFollowLogging> LineFollowDrivetrain::PopulateStatus(
       -relative_pose_.rel_pos().x());
   line_follow_logging_builder.add_goal_theta(controls_goal_(0, 0));
   line_follow_logging_builder.add_rel_theta(relative_pose_.rel_theta());
+  line_follow_logging_builder.add_drive_direction(
+      target_selector_->DriveDirection());
   return line_follow_logging_builder.Finish();
 }
 

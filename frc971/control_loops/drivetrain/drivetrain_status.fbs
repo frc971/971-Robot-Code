@@ -82,6 +82,12 @@ table TrajectoryLogging {
   available_splines:[int] (id: 12);
 }
 
+enum RobotSide : ubyte {
+  FRONT = 0,
+  BACK = 1,
+  DONT_CARE = 2,
+}
+
 // For logging state of the line follower.
 table LineFollowLogging {
   // Whether we are currently freezing target choice.
@@ -100,6 +106,8 @@ table LineFollowLogging {
   goal_theta:float (id: 7);
   // Current relative heading.
   rel_theta:float (id: 8);
+  // Current goal drive direction.
+  drive_direction:RobotSide = DONT_CARE (id: 9);
 }
 
 // Current states of the EKF. See hybrid_ekf.h for detailed comments.

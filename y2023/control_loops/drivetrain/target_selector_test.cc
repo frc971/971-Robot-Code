@@ -4,6 +4,8 @@
 #include "gtest/gtest.h"
 #include "y2023/constants/simulated_constants_sender.h"
 
+using Side = frc971::control_loops::drivetrain::RobotSide;
+
 namespace y2023::control_loops::drivetrain {
 class TargetSelectorTest : public ::testing::Test {
  protected:
@@ -38,17 +40,18 @@ class TargetSelectorTest : public ::testing::Test {
   }
 
   void SendHint(GridSelectionHint grid, RowSelectionHint row,
-                SpotSelectionHint spot) {
+                SpotSelectionHint spot, Side side) {
     auto builder = hint_sender_.MakeBuilder();
     builder.CheckOk(builder.Send(
-        CreateTargetSelectorHint(*builder.fbb(), grid, row, spot)));
+        CreateTargetSelectorHint(*builder.fbb(), grid, row, spot, side)));
   }
-  void SendHint(RowSelectionHint row, SpotSelectionHint spot) {
+  void SendHint(RowSelectionHint row, SpotSelectionHint spot, Side side) {
     auto builder = hint_sender_.MakeBuilder();
     TargetSelectorHint::Builder hint_builder =
         builder.MakeBuilder<TargetSelectorHint>();
     hint_builder.add_row(row);
     hint_builder.add_spot(spot);
+    hint_builder.add_robot_side(side);
     builder.CheckOk(builder.Send(hint_builder.Finish()));
   }
 
@@ -95,13 +98,16 @@ TEST_F(TargetSelectorTest, FullySpecifiedTarget) {
                {row->left_cone(), SpotSelectionHint::LEFT},
                {row->cube(), SpotSelectionHint::MIDDLE},
                {row->right_cone(), SpotSelectionHint::RIGHT}}) {
-        SendHint(grid_hint, row_hint, spot_hint);
+        SendHint(grid_hint, row_hint, spot_hint, Side::FRONT);
         EXPECT_TRUE(target_selector_.UpdateSelection(
             Eigen::Matrix<double, 5, 1>::Zero(), 0.0));
         EXPECT_EQ(0.0, target_selector_.TargetRadius());
         EXPECT_EQ(spot->x(), target_selector_.TargetPose().abs_pos().x());
         EXPECT_EQ(spot->y(), target_selector_.TargetPose().abs_pos().y());
         EXPECT_EQ(spot->z(), target_selector_.TargetPose().abs_pos().z());
+        EXPECT_EQ(frc971::control_loops::drivetrain::TargetSelectorInterface::
+                      Side::FRONT,
+                  target_selector_.DriveDirection());
       }
     }
   }
@@ -125,12 +131,15 @@ TEST_F(TargetSelectorTest, NoGridSpecified) {
             SpotSelectionHint::MIDDLE},
            {scoring_map()->left_grid()->bottom()->right_cone(),
             SpotSelectionHint::RIGHT}}) {
-    SendHint(RowSelectionHint::BOTTOM, spot_hint);
+    SendHint(RowSelectionHint::BOTTOM, spot_hint, Side::BACK);
     EXPECT_TRUE(target_selector_.UpdateSelection(
         Eigen::Matrix<double, 5, 1>::Zero(), 0.0));
     EXPECT_EQ(spot->x(), target_selector_.TargetPose().abs_pos().x());
     EXPECT_EQ(spot->y(), target_selector_.TargetPose().abs_pos().y());
     EXPECT_EQ(spot->z(), target_selector_.TargetPose().abs_pos().z());
+    EXPECT_EQ(
+        frc971::control_loops::drivetrain::TargetSelectorInterface::Side::BACK,
+        target_selector_.DriveDirection());
   }
 }
 

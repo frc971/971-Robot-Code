@@ -23,6 +23,7 @@ class TargetSelector
     : public frc971::control_loops::drivetrain::TargetSelectorInterface {
  public:
   typedef frc971::control_loops::TypedPose<double> Pose;
+  typedef frc971::control_loops::drivetrain::RobotSide Side;
 
   TargetSelector(aos::EventLoop *event_loop);
 
@@ -36,6 +37,7 @@ class TargetSelector
   }
 
   double TargetRadius() const override { return 0.0; }
+  Side DriveDirection() const override { return drive_direction_; }
 
  private:
   void UpdateAlliance();
@@ -44,6 +46,7 @@ class TargetSelector
   aos::Fetcher<TargetSelectorHint> hint_fetcher_;
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
   const localizer::HalfField *scoring_map_ = nullptr;
+  Side drive_direction_ = Side::DONT_CARE;
 };
 }  // namespace y2023::control_loops::drivetrain
 #endif  // Y2023_CONTROL_LOOPS_DRIVETRAIN_TARGET_SELECTOR_H_

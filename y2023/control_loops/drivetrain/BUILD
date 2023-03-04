@@ -131,6 +131,9 @@ flatbuffer_cc_library(
     ],
     gen_reflections = 1,
     visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+    ],
 )
 
 cc_library(

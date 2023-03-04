@@ -1,3 +1,5 @@
+include "frc971/control_loops/drivetrain/drivetrain_status.fbs";
+
 namespace y2023.control_loops.drivetrain;
 
 // Which of the grids we are going for.
@@ -23,13 +25,12 @@ enum SpotSelectionHint : ubyte {
   RIGHT,
 }
 
-
 table TargetSelectorHint {
   grid:GridSelectionHint (id: 0);
   row:RowSelectionHint (id: 1);
   spot:SpotSelectionHint (id: 2);
+  robot_side:frc971.control_loops.drivetrain.RobotSide = DONT_CARE (id: 3);
   // TODO: support human player pickup auto-align?
-  // TODO: add flag for forwards vs. backwards.
 }
 
 root_type TargetSelectorHint;
