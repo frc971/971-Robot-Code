@@ -1,0 +1,36 @@
+namespace scouting.webserver.requests;
+
+table Stats2023 {
+  team_number:string (id: 0);
+  match_number:int (id: 1);
+  set_number:int (id: 21);
+  comp_level:string (id: 22);
+
+  starting_quadrant:int (id: 2);
+  low_cubes_auto:int (id:3);
+  middle_cubes_auto:int (id:4);
+  high_cubes_auto:int (id: 5);
+  cubes_dropped_auto: int (id: 6);
+  low_cones_auto:int (id:7);
+  middle_cones_auto:int (id:8);
+  high_cones_auto:int (id:9);
+  cones_dropped_auto:int (id:10);
+
+  low_cubes:int (id:11);
+  middle_cubes:int (id:12);
+  high_cubes:int (id:13);
+  cubes_dropped:int (id:14);
+  low_cones:int (id:15);
+  middle_cones:int (id:16);
+  high_cones:int (id:17);
+  cones_dropped:int (id:18);
+  avg_cycle:int (id:19);
+
+  collected_by:string (id:20);
+}
+
+table Request2023DataScoutingResponse {
+    stats_list:[Stats2023] (id:0);
+}
+
+root_type Request2023DataScoutingResponse;

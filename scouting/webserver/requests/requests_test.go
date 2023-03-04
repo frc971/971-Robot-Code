@@ -10,6 +10,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/debug"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches"
@@ -303,6 +305,79 @@ func TestRequestDataScouting(t *testing.T) {
 				StartingQuadrant: 2,
 				ClimbLevel:       request_data_scouting_response.ClimbLevelMedium,
 				Comment:          "another lovely comment",
+			},
+		},
+	}
+	if len(expected.StatsList) != len(response.StatsList) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+	for i, match := range expected.StatsList {
+		if !reflect.DeepEqual(*match, *response.StatsList[i]) {
+			t.Fatal("Expected for stats", i, ":", *match, ", but got:", *response.StatsList[i])
+		}
+	}
+}
+
+// Validates that we can request the 2023 stats.
+func TestRequest2023DataScouting(t *testing.T) {
+	db := MockDatabase{
+		stats2023: []db.Stats2023{
+			{
+				TeamNumber: "3634", MatchNumber: 1, SetNumber: 2,
+				CompLevel: "quals", StartingQuadrant: 3, LowCubesAuto: 10,
+				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 0,
+				LowConesAuto: 1, MiddleConesAuto: 2, HighConesAuto: 1,
+				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
+				HighCubes: 2, CubesDropped: 1, LowCones: 1,
+				MiddleCones: 2, HighCones: 0, ConesDropped: 1,
+				AvgCycle: 34, CollectedBy: "isaac",
+			},
+			{
+				TeamNumber: "2343", MatchNumber: 1, SetNumber: 2,
+				CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
+				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 2,
+				LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
+				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
+				HighCubes: 1, CubesDropped: 0, LowCones: 0,
+				MiddleCones: 2, HighCones: 1, ConesDropped: 1,
+				AvgCycle: 53, CollectedBy: "unknown",
+			},
+		},
+	}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&db, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_2023_data_scouting.Request2023DataScoutingT{}).Pack(builder))
+
+	response, err := debug.Request2023DataScouting("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request all matches: ", err)
+	}
+
+	expected := request_2023_data_scouting_response.Request2023DataScoutingResponseT{
+		StatsList: []*request_2023_data_scouting_response.Stats2023T{
+			{
+				TeamNumber: "3634", MatchNumber: 1, SetNumber: 2,
+				CompLevel: "quals", StartingQuadrant: 3, LowCubesAuto: 10,
+				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 0,
+				LowConesAuto: 1, MiddleConesAuto: 2, HighConesAuto: 1,
+				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
+				HighCubes: 2, CubesDropped: 1, LowCones: 1,
+				MiddleCones: 2, HighCones: 0, ConesDropped: 1,
+				AvgCycle: 34, CollectedBy: "isaac",
+			},
+			{
+				TeamNumber: "2343", MatchNumber: 1, SetNumber: 2,
+				CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
+				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 2,
+				LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
+				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
+				HighCubes: 1, CubesDropped: 0, LowCones: 0,
+				MiddleCones: 2, HighCones: 1, ConesDropped: 1,
+				AvgCycle: 53, CollectedBy: "unknown",
 			},
 		},
 	}
@@ -665,6 +740,7 @@ type MockDatabase struct {
 	notes          []db.NotesData
 	shiftSchedule  []db.Shift
 	driver_ranking []db.DriverRankingData
+	stats2023      []db.Stats2023
 }
 
 func (database *MockDatabase) AddToMatch(match db.TeamMatch) error {
@@ -677,12 +753,20 @@ func (database *MockDatabase) AddToStats(stats db.Stats) error {
 	return nil
 }
 
+func (database *MockDatabase) AddToStats2023(stats2023 db.Stats2023) error {
+	database.stats2023 = append(database.stats2023, stats2023)
+	return nil
+}
 func (database *MockDatabase) ReturnMatches() ([]db.TeamMatch, error) {
 	return database.matches, nil
 }
 
 func (database *MockDatabase) ReturnStats() ([]db.Stats, error) {
 	return database.stats, nil
+}
+
+func (database *MockDatabase) ReturnStats2023() ([]db.Stats2023, error) {
+	return database.stats2023, nil
 }
 
 func (database *MockDatabase) QueryStats(int) ([]db.Stats, error) {

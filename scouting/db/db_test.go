@@ -233,6 +233,94 @@ func TestAddToStatsDB(t *testing.T) {
 	}
 }
 
+func TestAddToStats2023DB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	correct := []Stats2023{
+		Stats2023{
+			TeamNumber: "6344", MatchNumber: 3, SetNumber: 1,
+			CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
+			MiddleCubesAuto: 1, HighCubesAuto: 0, CubesDroppedAuto: 1,
+			LowConesAuto: 1, MiddleConesAuto: 0, HighConesAuto: 2,
+			ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 2,
+			HighCubes: 1, CubesDropped: 0, LowCones: 0,
+			MiddleCones: 2, HighCones: 1, ConesDropped: 1,
+			AvgCycle: 0, CollectedBy: "emma",
+		},
+		Stats2023{
+			TeamNumber: "7454", MatchNumber: 3, SetNumber: 1,
+			CompLevel: "quals", StartingQuadrant: 2, LowCubesAuto: 1,
+			MiddleCubesAuto: 2, HighCubesAuto: 2, CubesDroppedAuto: 0,
+			LowConesAuto: 2, MiddleConesAuto: 0, HighConesAuto: 0,
+			ConesDroppedAuto: 1, LowCubes: 1, MiddleCubes: 0,
+			HighCubes: 0, CubesDropped: 1, LowCones: 0,
+			MiddleCones: 0, HighCones: 1, ConesDropped: 0,
+			AvgCycle: 0, CollectedBy: "tyler",
+		},
+		Stats2023{
+			TeamNumber: "4354", MatchNumber: 3, SetNumber: 1,
+			CompLevel: "quals", StartingQuadrant: 3, LowCubesAuto: 0,
+			MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 0,
+			LowConesAuto: 0, MiddleConesAuto: 2, HighConesAuto: 1,
+			ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
+			HighCubes: 2, CubesDropped: 1, LowCones: 1,
+			MiddleCones: 1, HighCones: 0, ConesDropped: 1,
+			AvgCycle: 0, CollectedBy: "isaac",
+		},
+		Stats2023{
+			TeamNumber: "6533", MatchNumber: 3, SetNumber: 1,
+			CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
+			MiddleCubesAuto: 2, HighCubesAuto: 1, CubesDroppedAuto: 1,
+			LowConesAuto: 1, MiddleConesAuto: 0, HighConesAuto: 0,
+			ConesDroppedAuto: 0, LowCubes: 0, MiddleCubes: 1,
+			HighCubes: 2, CubesDropped: 1, LowCones: 0,
+			MiddleCones: 1, HighCones: 0, ConesDropped: 0,
+			AvgCycle: 0, CollectedBy: "will",
+		},
+		Stats2023{
+			TeamNumber: "8354", MatchNumber: 3, SetNumber: 1,
+			CompLevel: "quals", StartingQuadrant: 2, LowCubesAuto: 1,
+			MiddleCubesAuto: 1, HighCubesAuto: 2, CubesDroppedAuto: 0,
+			LowConesAuto: 0, MiddleConesAuto: 1, HighConesAuto: 1,
+			ConesDroppedAuto: 1, LowCubes: 1, MiddleCubes: 0,
+			HighCubes: 0, CubesDropped: 2, LowCones: 1,
+			MiddleCones: 1, HighCones: 0, ConesDropped: 1,
+			AvgCycle: 0, CollectedBy: "unkown",
+		},
+	}
+
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 6344},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: 7454},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: 4354},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: 6533},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: 8354},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+	}
+
+	for i := 0; i < len(correct); i++ {
+		err := fixture.db.AddToStats2023(correct[i])
+		check(t, err, "Failed to add 2023stats to DB")
+	}
+
+	got, err := fixture.db.ReturnStats2023()
+	check(t, err, "Failed ReturnStats2023()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
 func TestAddDuplicateStats(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
@@ -801,6 +889,82 @@ func TestReturnStatsDB(t *testing.T) {
 	}
 
 	got, err := fixture.db.ReturnStats()
+	check(t, err, "Failed ReturnStats()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
+func TestReturnStats2023DB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	correct := []Stats2023{
+		Stats2023{
+			TeamNumber: "2343", MatchNumber: 2, SetNumber: 1,
+			CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 1,
+			MiddleCubesAuto: 2, HighCubesAuto: 2, CubesDroppedAuto: 1,
+			LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 2,
+			ConesDroppedAuto: 1, LowCubes: 1, MiddleCubes: 2,
+			HighCubes: 1, CubesDropped: 0, LowCones: 2,
+			MiddleCones: 0, HighCones: 2, ConesDropped: 1,
+			AvgCycle: 51, CollectedBy: "isaac",
+		},
+		Stats2023{
+			TeamNumber: "5443", MatchNumber: 2, SetNumber: 1,
+			CompLevel: "quals", StartingQuadrant: 2, LowCubesAuto: 1,
+			MiddleCubesAuto: 1, HighCubesAuto: 0, CubesDroppedAuto: 1,
+			LowConesAuto: 1, MiddleConesAuto: 1, HighConesAuto: 0,
+			ConesDroppedAuto: 0, LowCubes: 2, MiddleCubes: 2,
+			HighCubes: 1, CubesDropped: 0, LowCones: 1,
+			MiddleCones: 0, HighCones: 2, ConesDropped: 1,
+			AvgCycle: 39, CollectedBy: "jack",
+		},
+		Stats2023{
+			TeamNumber: "5436", MatchNumber: 2, SetNumber: 1,
+			CompLevel: "quals", StartingQuadrant: 3, LowCubesAuto: 0,
+			MiddleCubesAuto: 2, HighCubesAuto: 0, CubesDroppedAuto: 1,
+			LowConesAuto: 2, MiddleConesAuto: 0, HighConesAuto: 0,
+			ConesDroppedAuto: 1, LowCubes: 2, MiddleCubes: 2,
+			HighCubes: 0, CubesDropped: 0, LowCones: 1,
+			MiddleCones: 2, HighCones: 1, ConesDropped: 1,
+			AvgCycle: 45, CollectedBy: "martin",
+		},
+		Stats2023{
+			TeamNumber: "5643", MatchNumber: 2, SetNumber: 1,
+			CompLevel: "quals", StartingQuadrant: 4, LowCubesAuto: 0,
+			MiddleCubesAuto: 0, HighCubesAuto: 1, CubesDroppedAuto: 1,
+			LowConesAuto: 2, MiddleConesAuto: 0, HighConesAuto: 0,
+			ConesDroppedAuto: 1, LowCubes: 2, MiddleCubes: 2,
+			HighCubes: 0, CubesDropped: 0, LowCones: 2,
+			MiddleCones: 2, HighCones: 1, ConesDropped: 1,
+			AvgCycle: 34, CollectedBy: "unknown",
+		},
+	}
+
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 2343},
+		TeamMatch{MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: 5443},
+		TeamMatch{MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: 5436},
+		TeamMatch{MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: 5643},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+	}
+
+	for i := 0; i < len(correct); i++ {
+		err := fixture.db.AddToStats2023(correct[i])
+		check(t, err, fmt.Sprint("Failed to add stats ", i))
+	}
+
+	got, err := fixture.db.ReturnStats2023()
 	check(t, err, "Failed ReturnStats()")
 
 	if !reflect.DeepEqual(correct, got) {

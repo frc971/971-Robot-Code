@@ -1,0 +1,7 @@
+namespace scouting.webserver.requests;
+
+table Request2023DataScouting {
+
+}
+
+root_type Request2023DataScouting;

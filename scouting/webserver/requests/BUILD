@@ -9,6 +9,8 @@ go_library(
     deps = [
         "//scouting/db",
         "//scouting/webserver/requests/messages:error_response_go_fbs",
+        "//scouting/webserver/requests/messages:request_2023_data_scouting_go_fbs",
+        "//scouting/webserver/requests/messages:request_2023_data_scouting_response_go_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_go_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_response_go_fbs",
         "//scouting/webserver/requests/messages:request_all_matches_go_fbs",
@@ -45,6 +47,8 @@ go_test(
         "//scouting/db",
         "//scouting/webserver/requests/debug",
         "//scouting/webserver/requests/messages:error_response_go_fbs",
+        "//scouting/webserver/requests/messages:request_2023_data_scouting_go_fbs",
+        "//scouting/webserver/requests/messages:request_2023_data_scouting_response_go_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_go_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_response_go_fbs",
         "//scouting/webserver/requests/messages:request_all_matches_go_fbs",

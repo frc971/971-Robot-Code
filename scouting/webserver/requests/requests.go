@@ -13,6 +13,8 @@ import (
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches"
@@ -49,6 +51,8 @@ type RequestAllNotes = request_all_notes.RequestAllNotes
 type RequestAllNotesResponseT = request_all_notes_response.RequestAllNotesResponseT
 type RequestDataScouting = request_data_scouting.RequestDataScouting
 type RequestDataScoutingResponseT = request_data_scouting_response.RequestDataScoutingResponseT
+type Request2023DataScouting = request_2023_data_scouting.Request2023DataScouting
+type Request2023DataScoutingResponseT = request_2023_data_scouting_response.Request2023DataScoutingResponseT
 type SubmitNotes = submit_notes.SubmitNotes
 type SubmitNotesResponseT = submit_notes_response.SubmitNotesResponseT
 type RequestNotesForTeam = request_notes_for_team.RequestNotesForTeam
@@ -68,11 +72,13 @@ type Database interface {
 	AddToMatch(db.TeamMatch) error
 	AddToShift(db.Shift) error
 	AddToStats(db.Stats) error
+	AddToStats2023(db.Stats2023) error
 	ReturnMatches() ([]db.TeamMatch, error)
 	ReturnAllNotes() ([]db.NotesData, error)
 	ReturnAllDriverRankings() ([]db.DriverRankingData, error)
 	ReturnAllShifts() ([]db.Shift, error)
 	ReturnStats() ([]db.Stats, error)
+	ReturnStats2023() ([]db.Stats2023, error)
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryStats(int) ([]db.Stats, error)
 	QueryNotes(int32) ([]string, error)
@@ -374,7 +380,7 @@ func (handler requestDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *
 
 	stats, err := handler.db.ReturnStats()
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Faled to query database: ", err))
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
 		return
 	}
 
@@ -443,6 +449,63 @@ func (handler submitNoteScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 
 	var response SubmitNotesResponseT
 	builder := flatbuffers.NewBuilder(10)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
+// Handles a Request2023DataScouting request.
+type request2023DataScoutingHandler struct {
+	db Database
+}
+
+func (handler request2023DataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	_, success := parseRequest(w, requestBytes, "Request2023DataScouting", request_2023_data_scouting.GetRootAsRequest2023DataScouting)
+	if !success {
+		return
+	}
+
+	stats, err := handler.db.ReturnStats2023()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
+		return
+	}
+
+	var response Request2023DataScoutingResponseT
+	for _, stat := range stats {
+		response.StatsList = append(response.StatsList, &request_2023_data_scouting_response.Stats2023T{
+			TeamNumber:       stat.TeamNumber,
+			MatchNumber:      stat.MatchNumber,
+			SetNumber:        stat.SetNumber,
+			CompLevel:        stat.CompLevel,
+			StartingQuadrant: stat.StartingQuadrant,
+			LowCubesAuto:     stat.LowCubesAuto,
+			MiddleCubesAuto:  stat.MiddleCubesAuto,
+			HighCubesAuto:    stat.HighCubesAuto,
+			CubesDroppedAuto: stat.CubesDroppedAuto,
+			LowConesAuto:     stat.LowConesAuto,
+			MiddleConesAuto:  stat.MiddleConesAuto,
+			HighConesAuto:    stat.HighConesAuto,
+			ConesDroppedAuto: stat.ConesDroppedAuto,
+			LowCubes:         stat.LowCubes,
+			MiddleCubes:      stat.MiddleCubes,
+			HighCubes:        stat.HighCubes,
+			CubesDropped:     stat.CubesDropped,
+			LowCones:         stat.LowCones,
+			MiddleCones:      stat.MiddleCones,
+			HighCones:        stat.HighCones,
+			ConesDropped:     stat.ConesDropped,
+			AvgCycle:         stat.AvgCycle,
+			CollectedBy:      stat.CollectedBy,
+		})
+	}
+
+	builder := flatbuffers.NewBuilder(50 * 1024)
 	builder.Finish((&response).Pack(builder))
 	w.Write(builder.FinishedBytes())
 }
@@ -683,6 +746,7 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.Handle("/requests/request/all_notes", requestAllNotesHandler{db})
 	scoutingServer.Handle("/requests/request/all_driver_rankings", requestAllDriverRankingsHandler{db})
 	scoutingServer.Handle("/requests/request/data_scouting", requestDataScoutingHandler{db})
+	scoutingServer.Handle("/requests/request/2023_data_scouting", request2023DataScoutingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_notes", submitNoteScoutingHandler{db})
 	scoutingServer.Handle("/requests/request/notes_for_team", requestNotesForTeamHandler{db})
 	scoutingServer.Handle("/requests/submit/shift_schedule", submitShiftScheduleHandler{db})

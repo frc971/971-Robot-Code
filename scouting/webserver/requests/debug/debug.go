@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
@@ -127,6 +128,12 @@ func RequestDataScouting(server string, requestBytes []byte) (*request_data_scou
 	return sendMessage[request_data_scouting_response.RequestDataScoutingResponseT](
 		server+"/requests/request/data_scouting", requestBytes,
 		request_data_scouting_response.GetRootAsRequestDataScoutingResponse)
+}
+
+func Request2023DataScouting(server string, requestBytes []byte) (*request_2023_data_scouting_response.Request2023DataScoutingResponseT, error) {
+	return sendMessage[request_2023_data_scouting_response.Request2023DataScoutingResponseT](
+		server+"/requests/request/2023_data_scouting", requestBytes,
+		request_2023_data_scouting_response.GetRootAsRequest2023DataScoutingResponse)
 }
 
 func SubmitNotes(server string, requestBytes []byte) (*submit_notes_response.SubmitNotesResponseT, error) {
