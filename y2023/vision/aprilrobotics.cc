@@ -189,6 +189,8 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
   };
   const uint32_t min_x = FLAGS_pixel_border;
   const uint32_t max_x = image.cols - FLAGS_pixel_border;
+  const uint32_t min_y = FLAGS_pixel_border;
+  const uint32_t max_y = image.rows - FLAGS_pixel_border;
 
   ftrace_.FormatMessage("Starting detect\n");
   zarray_t *detections = apriltag_detector_detect(tag_detector_, &im);
@@ -204,11 +206,14 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
     zarray_get(detections, i, &det);
 
     if (det->decision_margin > FLAGS_min_decision_margin) {
-      // TODO<jim>: Should we check for top/bottom of image?
       if (det->p[0][0] < min_x || det->p[0][0] > max_x ||
           det->p[1][0] < min_x || det->p[1][0] > max_x ||
           det->p[2][0] < min_x || det->p[2][0] > max_x ||
-          det->p[3][0] < min_x || det->p[3][0] > max_x) {
+          det->p[3][0] < min_x || det->p[3][0] > max_x ||
+          det->p[0][1] < min_y || det->p[0][1] > max_y ||
+          det->p[1][1] < min_y || det->p[1][1] > max_y ||
+          det->p[2][1] < min_y || det->p[2][1] > max_y ||
+          det->p[3][1] < min_y || det->p[3][1] > max_y) {
         VLOG(1) << "Rejecting detection because corner is outside pixel border";
         // Send rejected corner points in red
         std::vector<cv::Point2f> rejected_corner_points = MakeCornerVector(det);
