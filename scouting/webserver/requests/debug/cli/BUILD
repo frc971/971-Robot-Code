@@ -25,8 +25,12 @@ go_binary(
 
 py_test(
     name = "cli_test",
+    size = "small",
     srcs = [
         "cli_test.py",
+    ],
+    args = [
+        "-v",
     ],
     data = [
         ":cli",
