@@ -1,0 +1,13 @@
+namespace frc971.can_logger;
+
+// A message to represent a single CAN or CAN FD frame.
+table CanFrame {
+  // CAN id + flags
+  can_id:uint32 (id: 0);
+  // The body of the CAN frame up to 64 bytes long.
+  data:[ubyte] (id: 1);
+  // The hardware timestamp of when the frame came in
+  monotonic_timestamp_ns:uint64 (id: 2);
+}
+
+root_type CanFrame;

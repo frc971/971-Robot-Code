@@ -358,6 +358,14 @@
       "max_size": 448
     },
     {
+      "name": "/can",
+      "type": "frc971.can_logger.CanFrame",
+      "source_node": "roborio",
+      "frequency": 6000,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
       "name": "/drivetrain",
       "type": "y2023.control_loops.drivetrain.CANPosition",
       "source_node": "roborio",
@@ -641,6 +649,13 @@
       "name": "constants_sender_roborio",
       "executable_name": "constants_sender",
       "autorestart": false,
+      "nodes": [
+        "roborio"
+      ]
+    },
+    {
+      "name": "can_logger",
+      "executable_name": "can_logger",
       "nodes": [
         "roborio"
       ]
