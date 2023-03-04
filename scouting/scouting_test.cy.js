@@ -104,129 +104,64 @@ describe('Scouting app tests', () => {
     cy.get('#comp_level').should('have.value', '3: sf');
   });
 
-  //TODO(FILIP): Rewrite tests for the new scouting interface.
-  /*
-  it('should: error on unknown match.', () => {
+  //TODO(FILIP): Verify last action when the last action header gets added.
+  it('should: be able to get to submit screen in data scouting.', () => {
     switchToTab('Data Entry');
     headerShouldBe('Team Selection');
+    clickButton('Next');
 
-    // Pick a match that doesn't exist in the 2016nytr match list.
-    setInputTo('#match_number', '3');
-    setInputTo('#team_number', '971');
+    // Select Starting Position.
+    cy.get('[type="radio"]').first().check();
+    clickButton('Start Match');
 
-    // Click Next until we get to the submit screen.
-    for (let i = 0; i < 5; i++) {
-      clickButton('Next');
-    }
+    // Pick and Place Cone in Auto.
+    clickButton('CONE');
+    clickButton('HIGH');
+
+    // Pick and Place Cube in Teleop.
+    clickButton('Start Teleop');
+    clickButton('CUBE');
+    clickButton('LOW');
+
+    // Robot dead and revive.
+    clickButton('DEAD');
+    clickButton('Revive');
+
+    // Engame.
+    clickButton('Endgame');
+    cy.get('[type="checkbox"]').check();
+
+    // Should be on submit screen.
+    // TODO(FILIP): Verify that submitting works once we add it.
+
+    clickButton('End Match');
     headerShouldBe('Review and Submit');
-
-    // Attempt to submit and validate the error.
-    clickButton('Submit');
-    cy.get('.error_message').contains(
-      'Failed to find team 971 in match 3 in the schedule.'
-    );
   });
 
-  // Make sure that each page on the Entry tab has both "Next" and "Back"
-  // buttons. The only screens exempted from this are the first page and the
-  // last page.
-  it('should: have forwards and backwards buttons.', () => {
+  it('should: be able to return to correct screen with undo for pick and place.', () => {
     switchToTab('Data Entry');
-
-    const expectedOrder = [
-      'Team Selection',
-      'Auto',
-      'TeleOp',
-      'Climb',
-      'Other',
-      'Review and Submit',
-    ];
-
-    // Go forward through the screens.
-    for (let i = 0; i < expectedOrder.length; i++) {
-      headerShouldBe(expectedOrder[i]);
-      if (i != expectedOrder.length - 1) {
-        clickButton('Next');
-      }
-    }
-
-    // Go backwards through the screens.
-    for (let i = 0; i < expectedOrder.length; i++) {
-      headerShouldBe(expectedOrder[expectedOrder.length - i - 1]);
-      if (i != expectedOrder.length - 1) {
-        clickButton('Back');
-      }
-    }
-  });
-  
-
-  it('should: review and submit correct data.', () => {
-    switchToTab('Data Entry');
-
-    // Submit scouting data for a random team that attended 2016nytr.
     headerShouldBe('Team Selection');
-    setInputTo('#match_number', '2');
-    setInputTo('#team_number', '5254');
-    setInputTo('#set_number', '42');
-    cy.get('#comp_level').select('Semi Finals');
     clickButton('Next');
 
-    headerShouldBe('Auto');
-    cy.get('#quadrant3').check();
-    clickButton('Next');
+    // Select Starting Position.
+    cy.get('[type="radio"]').first().check();
+    clickButton('Start Match');
 
-    headerShouldBe('TeleOp');
-    clickButton('Next');
+    // Pick up cone.
+    clickButton('CONE');
 
-    headerShouldBe('Climb');
-    cy.get('#high').check();
-    clickButton('Next');
+    // Undo that pick up.
+    clickButton('UNDO');
 
-    headerShouldBe('Other');
-    adjustNthSliderBy(0, 3);
-    adjustNthSliderBy(1, 1);
-    cy.get('#no_show').check();
-    cy.get('#mechanically_broke').check();
-    setInputTo('#comment', 'A very useful comment here.');
-    clickButton('Next');
+    // User should be back on pickup screen.
+    headerShouldBe('Pickup');
 
-    headerShouldBe('Review and Submit');
-    cy.get('.error_message').should('have.text', '');
-
-    // Validate Team Selection.
-    expectReviewFieldToBe('Match number', '2');
-    expectReviewFieldToBe('Team number', '5254');
-    expectReviewFieldToBe('SetNumber', '42');
-    expectReviewFieldToBe('Comp Level', 'Semi Finals');
-
-    // Validate Auto.
-    expectNthReviewFieldToBe('Upper Shots Made', 0, '0');
-    expectNthReviewFieldToBe('Lower Shots Made', 0, '0');
-    expectNthReviewFieldToBe('Missed Shots', 0, '0');
-    expectReviewFieldToBe('Quadrant', '3');
-
-    // Validate TeleOp.
-    expectNthReviewFieldToBe('Upper Shots Made', 1, '0');
-    expectNthReviewFieldToBe('Lower Shots Made', 1, '0');
-    expectNthReviewFieldToBe('Missed Shots', 1, '0');
-
-    // Validate Climb.
-    expectReviewFieldToBe('Climb Level', 'High');
-
-    // Validate Other.
-    expectReviewFieldToBe('Defense Played On Rating', '3');
-    expectReviewFieldToBe('Defense Played Rating', '1');
-    expectReviewFieldToBe('No show', 'true');
-    expectReviewFieldToBe('Never moved', 'false');
-    expectReviewFieldToBe('Battery died', 'false');
-    expectReviewFieldToBe('Broke (mechanically)', 'true');
-    expectReviewFieldToBe('Comments', 'A very useful comment here.');
-
-    clickButton('Submit');
-    headerShouldBe('Success');
+    // Check the same thing but for undoing place.
+    clickButton('CUBE');
+    clickButton('MID');
+    clickButton('UNDO');
+    headerShouldBe('Place');
   });
-
-  */
 
   it('should: submit note scouting for multiple teams', () => {
     // Navigate to Notes Page.
