@@ -101,22 +101,23 @@ class Runner:
         ])
         wait_for_server(5432)
 
+        # Create a fake TBA server to serve the static match list.
+        # Make sure it starts up first so that the webserver successfully
+        # scrapes the TBA data on startup.
+        set_up_tba_api_dir(self.tmpdir, year, event_code)
+        self.fake_tba_api = subprocess.Popen(
+            ["python3", "-m", "http.server", "7000"],
+            cwd=self.tmpdir,
+        )
+        wait_for_server(7000)
+
+        # Wait for the scouting webserver to start up.
         self.webserver = subprocess.Popen([
             RUNFILES.Rlocation("org_frc971/scouting/scouting"),
             f"--port={port}",
             f"--db_config={db_config}",
             f"--tba_config={tba_config}",
         ])
-
-        # Create a fake TBA server to serve the static match list.
-        set_up_tba_api_dir(self.tmpdir, year, event_code)
-        self.fake_tba_api = subprocess.Popen(
-            ["python3", "-m", "http.server", "7000"],
-            cwd=self.tmpdir,
-        )
-
-        # Wait for the TBA server and the scouting webserver to start up.
-        wait_for_server(7000)
         wait_for_server(port)
 
         if notify_fd:

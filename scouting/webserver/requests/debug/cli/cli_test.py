@@ -89,6 +89,10 @@ class TestDebugCli(unittest.TestCase):
                     sys.stderr.write(
                         f"Waiting until {expected_num_matches} are imported. "
                         f"Currently at {num_matches_imported}.\n")
+            else:
+                sys.stderr.write(
+                    "Failed to parse requestAllMatches for number of "
+                    f"matches: {stdout}\n")
 
             time.sleep(0.25)
 
