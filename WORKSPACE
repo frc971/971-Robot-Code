@@ -1557,3 +1557,19 @@ filegroup(
     sha256 = "2356b9d0b3be59d01e837bfbbee21de55b16232d5e00c66701c20b64ff3272e3",
     url = "https://www.frc971.org/Build-Dependencies/2023_arducam_apriltag_test_images.tar.gz",
 )
+
+http_archive(
+    name = "libedgetpu",
+    build_file = "//third_party:libedgetpu/libedgetpu.BUILD",
+    sha256 = "d082df79a33309f58da697cce258acca96ceb12db40660fdbf7826289e4a037c",
+    strip_prefix = "libedgetpu-bazel",
+    url = "https://www.frc971.org/Build-Dependencies/libedgetpu-1.0.tar.gz",
+)
+
+http_archive(
+    name = "libtensorflowlite",
+    build_file = "//third_party:libtensorflowlite/libtensorflowlite.BUILD",
+    sha256 = "0e3f8deac9c7cdf9aa5812ad6a87af318ed1cf08cb0c414aa494846b7fc15302",
+    strip_prefix = "tensorflow-bazel",
+    url = "https://www.frc971.org/Build-Dependencies/tensorflow-2.8.0.tar.gz",
+)
