@@ -3,6 +3,8 @@ import {Connection} from '../../aos/network/www/proxy';
 import {LocalizerOutput} from '../../frc971/control_loops/drivetrain/localization/localizer_output_generated';
 import {RejectionReason} from '../localizer/status_generated';
 import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated';
+import {Status as SuperstructureStatus, EndEffectorState, ArmState, ArmStatus} from '../control_loops/superstructure/superstructure_status_generated'
+import {Class} from '../vision/game_pieces_generated'
 import {Visualization, TargetEstimateDebug} from '../localizer/visualization_generated';
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
@@ -21,6 +23,7 @@ export class FieldHandler {
   private canvas = document.createElement('canvas');
   private localizerOutput: LocalizerOutput|null = null;
   private drivetrainStatus: DrivetrainStatus|null = null;
+  private superstructureStatus: SuperstructureStatus|null = null;
 
   // Image information indexed by timestamp (seconds since the epoch), so that
   // we can stop displaying images after a certain amount of time.
@@ -33,6 +36,26 @@ export class FieldHandler {
       (document.getElementById('images_accepted') as HTMLElement);
   private rejectionReasonCells: HTMLElement[] = [];
   private fieldImage: HTMLImageElement = new Image();
+  private endEffectorState: HTMLElement =
+	  (document.getElementById('end_effector_state') as HTMLElement);
+  private wrist: HTMLElement =
+	  (document.getElementById('wrist') as HTMLElement);
+  private armState: HTMLElement =
+	  (document.getElementById('arm_state') as HTMLElement);
+  private gamePiece: HTMLElement =
+	  (document.getElementById('game_piece') as HTMLElement);
+  private armX: HTMLElement =
+	  (document.getElementById('arm_x') as HTMLElement);
+  private armY: HTMLElement =
+	  (document.getElementById('arm_y') as HTMLElement);
+  private circularIndex: HTMLElement =
+	  (document.getElementById('arm_circular_index') as HTMLElement);
+  private roll: HTMLElement =
+	  (document.getElementById('arm_roll') as HTMLElement);
+  private proximal: HTMLElement =
+	  (document.getElementById('arm_proximal') as HTMLElement);
+  private distal: HTMLElement =
+	  (document.getElementById('arm_distal') as HTMLElement);
 
   constructor(private readonly connection: Connection) {
     (document.getElementById('field') as HTMLElement).appendChild(this.canvas);
@@ -81,6 +104,11 @@ export class FieldHandler {
                '/localizer', "frc971.controls.LocalizerOutput", (data) => {
             this.handleLocalizerOutput(data);
           });
+	this.connection.addHandler(
+		'/superstructure', "y2023.control_loops.superstructure.Status",
+		(data) => {
+			this.handleSuperstructureStatus(data)
+		});
     });
   }
 
@@ -115,6 +143,11 @@ export class FieldHandler {
   private handleDrivetrainStatus(data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
     this.drivetrainStatus = DrivetrainStatus.getRootAsStatus(fbBuffer);
+  }
+
+  private handleSuperstructureStatus(data: Uint8Array): void {
+	  const fbBuffer = new ByteBuffer(data);
+	  this.superstructureStatus = SuperstructureStatus.getRootAsStatus(fbBuffer);
   }
 
   drawField(): void {
@@ -179,6 +212,25 @@ export class FieldHandler {
     div.classList.remove('near');
   }
 
+  setEstopped(div: HTMLElement): void {
+	  div.innerHTML = 'estopped';
+	  div.classList.add('faulted');
+	  div.classList.remove('zeroing');
+	  div.classList.remove('near');
+  }
+
+  setTargetValue(
+	  div: HTMLElement, target: number, val: number, tolerance: number): void {
+	  div.innerHTML = val.toFixed(4);
+	  div.classList.remove('faulted');
+	  div.classList.remove('zeroing');
+	  if (Math.abs(target - val) < tolerance) {
+		  div.classList.add('near');
+	  } else {
+		  div.classList.remove('near');
+	  }
+  }
+
   setValue(div: HTMLElement, val: number): void {
     div.innerHTML = val.toFixed(4);
     div.classList.remove('faulted');
@@ -192,6 +244,39 @@ export class FieldHandler {
 
     // Draw the matches with debugging information from the localizer.
     const now = Date.now() / 1000.0;
+
+    if (this.superstructureStatus) {
+	    this.endEffectorState.innerHTML =
+		    EndEffectorState[this.superstructureStatus.endEffectorState()];
+	    if (!this.superstructureStatus.wrist() ||
+		!this.superstructureStatus.wrist().zeroed()) {
+		    this.setZeroing(this.wrist);
+	    } else if (this.superstructureStatus.wrist().estopped()) {
+		    this.setEstopped(this.wrist);
+	    } else {
+		    this.setTargetValue(
+		    	this.wrist,
+		    	this.superstructureStatus.wrist().unprofiledGoalPosition(),
+		    	this.superstructureStatus.wrist().estimatorState().position(),
+		    	1e-3);
+	    }
+	    this.armState.innerHTML =
+		    ArmState[this.superstructureStatus.arm().state()];
+	    this.gamePiece.innerHTML =
+		    Class[this.superstructureStatus.gamePiece()];
+	    this.armX.innerHTML =
+		    this.superstructureStatus.arm().armX().toFixed(2);
+	    this.armY.innerHTML =
+		    this.superstructureStatus.arm().armY().toFixed(2);
+	    this.circularIndex.innerHTML =
+		    this.superstructureStatus.arm().armCircularIndex().toFixed(0);
+	    this.roll.innerHTML =
+		    this.superstructureStatus.arm().rollJointEstimatorState().position().toFixed(2);
+	    this.proximal.innerHTML =
+		    this.superstructureStatus.arm().proximalEstimatorState().position().toFixed(2);
+	    this.distal.innerHTML =
+		    this.superstructureStatus.arm().distalEstimatorState().position().toFixed(2);
+    }
 
     if (this.drivetrainStatus && this.drivetrainStatus.trajectoryLogging()) {
       this.drawRobot(
