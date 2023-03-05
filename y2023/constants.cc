@@ -125,7 +125,7 @@ Values MakeValues(uint16_t team) {
           0.0257708772364788 - 0.0395076737853459 - 6.87914956118006;
 
       wrist->subsystem_params.zeroing_constants.measured_absolute_position =
-          2.51265911579648;
+          0.0227022553749391;
 
       wrist->subsystem_params.zeroing_constants.one_revolution_distance =
           M_PI * 2.0 * constants::Values::kPracticeWristEncoderRatio();
