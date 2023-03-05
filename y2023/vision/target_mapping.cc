@@ -32,6 +32,8 @@ DEFINE_int32(team_number, 7971,
              "Use the calibration for a node with this team number");
 DEFINE_string(mcap_output_path, "/tmp/log.mcap", "Log to output.");
 DEFINE_string(pi, "pi1", "Pi name to generate mcap log for; defaults to pi1.");
+DEFINE_double(max_pose_error, 1e-6,
+              "Throw out target poses with a higher pose error than this");
 
 namespace y2023 {
 namespace vision {
@@ -52,12 +54,17 @@ Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camera_target,
 
 // Add detected apriltag poses relative to the robot to
 // timestamped_target_detections
-void HandleAprilTag(const TargetMap &map,
-                    aos::distributed_clock::time_point pi_distributed_time,
-                    std::vector<DataAdapter::TimestampedDetection>
-                        *timestamped_target_detections,
-                    Eigen::Affine3d extrinsics) {
+void HandleAprilTags(const TargetMap &map,
+                     aos::distributed_clock::time_point pi_distributed_time,
+                     std::vector<DataAdapter::TimestampedDetection>
+                         *timestamped_target_detections,
+                     Eigen::Affine3d extrinsics) {
   for (const auto *target_pose_fbs : *map.target_poses()) {
+    // Skip detections with high pose errors
+    if (target_pose_fbs->pose_error() > FLAGS_max_pose_error) {
+      continue;
+    }
+
     const TargetMapper::TargetPose target_pose =
         PoseUtils::TargetPoseFromFbs(*target_pose_fbs);
 
@@ -82,7 +89,7 @@ void HandleAprilTag(const TargetMap &map,
   }
 }
 
-// Get images from pi and pass apriltag positions to HandleAprilTag()
+// Get images from pi and pass apriltag positions to HandleAprilTags()
 void HandlePiCaptures(
     aos::EventLoop *detection_event_loop, aos::EventLoop *mapping_event_loop,
     aos::logger::LogReader *reader,
@@ -107,8 +114,8 @@ void HandlePiCaptures(
             ->ToDistributedClock(aos::monotonic_clock::time_point(
                 aos::monotonic_clock::duration(map.monotonic_timestamp_ns())));
 
-    HandleAprilTag(map, pi_distributed_time, timestamped_target_detections,
-                   extrinsics);
+    HandleAprilTags(map, pi_distributed_time, timestamped_target_detections,
+                    extrinsics);
   });
 }
 
