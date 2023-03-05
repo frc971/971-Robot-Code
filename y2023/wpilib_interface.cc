@@ -425,7 +425,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   void Start() override {
-    AddToDMA(&imu_heading_reader_);
     AddToDMA(&imu_yaw_rate_reader_);
     AddToDMA(&cone_position_sensor_);
   }
@@ -433,11 +432,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   // Auto mode switches.
   void set_autonomous_mode(int i, ::std::unique_ptr<frc::DigitalInput> sensor) {
     autonomous_modes_.at(i) = ::std::move(sensor);
-  }
-
-  void set_heading_input(::std::unique_ptr<frc::DigitalInput> sensor) {
-    imu_heading_input_ = ::std::move(sensor);
-    imu_heading_reader_.set_input(imu_heading_input_.get());
   }
 
   void set_yaw_rate_input(::std::unique_ptr<frc::DigitalInput> sensor) {
@@ -536,23 +530,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       constexpr double kScaledRangeHigh = 0.9;
 
       constexpr double kPWMFrequencyHz = 200;
-      double heading_duty_cycle =
-          imu_heading_reader_.last_width() * kPWMFrequencyHz;
       double velocity_duty_cycle =
           imu_yaw_rate_reader_.last_width() * kPWMFrequencyHz;
 
       constexpr double kDutyCycleScale =
           1 / (kScaledRangeHigh - kScaledRangeLow);
       // scale from 0.1 - 0.9 to 0 - 1
-      double rescaled_heading_duty_cycle =
-          (heading_duty_cycle - kScaledRangeLow) * kDutyCycleScale;
       double rescaled_velocity_duty_cycle =
           (velocity_duty_cycle - kScaledRangeLow) * kDutyCycleScale;
 
-      if (!std::isnan(rescaled_heading_duty_cycle)) {
-        gyro_reading_builder.add_angle(rescaled_heading_duty_cycle *
-                                       (2.0 * M_PI));
-      }
       if (!std::isnan(rescaled_velocity_duty_cycle)) {
         gyro_reading_builder.add_velocity((rescaled_velocity_duty_cycle - 0.5) *
                                           kVelocityRadiansPerSecond);
@@ -662,10 +648,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
-  std::unique_ptr<frc::DigitalInput> imu_heading_input_, imu_yaw_rate_input_,
+  std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_,
       end_effector_cube_beam_break_;
 
-  frc971::wpilib::DMAPulseWidthReader imu_heading_reader_, imu_yaw_rate_reader_;
+  frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
 
   frc971::wpilib::AbsoluteEncoderAndPotentiometer proximal_encoder_,
       distal_encoder_, roll_joint_encoder_;
@@ -976,7 +962,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_drivetrain_left_encoder(make_encoder(1));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
     sensor_reader.set_superstructure_reading(superstructure_reading);
-    sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(1));
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(0));
 
     sensor_reader.set_proximal_encoder(make_encoder(3));
