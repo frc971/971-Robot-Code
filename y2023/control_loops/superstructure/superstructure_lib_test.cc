@@ -765,7 +765,7 @@ TEST_F(SuperstructureTest, ArmSimpleGoal) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_arm_goal_position(arm::ScoreBackMidConeUpPosIndex());
+    goal_builder.add_arm_goal_position(arm::ScoreBackMidConeUpIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -791,7 +791,7 @@ TEST_F(SuperstructureTest, ArmMoveAndMoveBack) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_arm_goal_position(arm::ScoreBackMidConeUpPosIndex());
+    goal_builder.add_arm_goal_position(arm::ScoreBackMidConeUpIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -808,7 +808,7 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_arm_goal_position(arm::ScoreBackMidConeUpPosIndex());
+    goal_builder.add_arm_goal_position(arm::ScoreBackMidConeUpIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
@@ -819,7 +819,7 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_arm_goal_position(arm::ConeDownPosIndex());
+    goal_builder.add_arm_goal_position(arm::ScoreFrontLowConeUpIndex());
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
