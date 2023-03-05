@@ -26,8 +26,9 @@ Arm::Arm(std::shared_ptr<const constants::Values> values)
       distal_offset_(0.0),
       roll_joint_offset_(0.0),
       alpha_unitizer_((::Eigen::DiagonalMatrix<double, 3>().diagonal()
-                           << (1.0 / kAlpha0Max()),
-                       (1.0 / kAlpha1Max()), (1.0 / kAlpha2Max()))
+                           << (1.0 / constants::Values::kArmAlpha0Max()),
+                       (1.0 / constants::Values::kArmAlpha1Max()),
+                       (1.0 / constants::Values::kArmAlpha2Max()))
                           .finished()),
       dynamics_(kArmConstants),
       close_enough_for_full_power_(false),
@@ -36,7 +37,8 @@ Arm::Arm(std::shared_ptr<const constants::Values> values)
       hybrid_roll_joint_loop_(roll::MakeIntegralHybridRollLoop()),
       arm_ekf_(&dynamics_),
       search_graph_(MakeSearchGraph(&dynamics_, &trajectories_, alpha_unitizer_,
-                                    kVMax(), &hybrid_roll_joint_loop_)),
+                                    constants::Values::kArmVMax(),
+                                    &hybrid_roll_joint_loop_)),
       // Go to the start of the first trajectory.
       follower_(&dynamics_, &hybrid_roll_joint_loop_, NeutralPoint()),
       points_(PointList()),
@@ -117,7 +119,7 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
     *roll_joint_output = 0.0;
   }
 
-  arm_ekf_.Correct(Y_arm, kDt());
+  arm_ekf_.Correct(Y_arm, constants::Values::kArmDt());
   roll_joint_loop_.Correct(Y_roll_joint);
 
   if (::std::abs(arm_ekf_.X_hat(0) - follower_.theta(0)) <= 0.05 &&
@@ -276,16 +278,21 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
 
   const double max_operating_voltage =
       close_enough_for_full_power_
-          ? kOperatingVoltage()
-          : (state_ == ArmState::GOTO_PATH ? kGotoPathVMax() : kPathlessVMax());
+          ? constants::Values::kArmOperatingVoltage()
+          : (state_ == ArmState::GOTO_PATH
+                 ? constants::Values::kArmGotoPathVMax()
+                 : constants::Values::kArmPathlessVMax());
   ::Eigen::Matrix<double, 9, 1> X_hat;
   X_hat.block<6, 1>(0, 0) = arm_ekf_.X_hat();
   X_hat.block<3, 1>(6, 0) = roll_joint_loop_.X_hat();
 
-  follower_.Update(X_hat, disable, kDt(), vmax_, max_operating_voltage);
+  follower_.Update(X_hat, disable, constants::Values::kArmDt(), vmax_,
+                   max_operating_voltage);
+  AOS_LOG(INFO, "Max voltage: %f\n", max_operating_voltage);
 
-  arm_ekf_.Predict(follower_.U().head<2>(), kDt());
-  roll_joint_loop_.UpdateObserver(follower_.U().tail<1>(), kDtDuration());
+  arm_ekf_.Predict(follower_.U().head<2>(), constants::Values::kArmDt());
+  roll_joint_loop_.UpdateObserver(follower_.U().tail<1>(),
+                                  constants::Values::kArmDtDuration());
 
   flatbuffers::Offset<frc971::PotAndAbsoluteEncoderEstimatorState>
       proximal_estimator_state_offset =
@@ -329,11 +336,14 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
 
   if (!disable) {
     *proximal_output = ::std::max(
-        -kOperatingVoltage(), ::std::min(kOperatingVoltage(), follower_.U(0)));
+        -constants::Values::kArmOperatingVoltage(),
+        ::std::min(constants::Values::kArmOperatingVoltage(), follower_.U(0)));
     *distal_output = ::std::max(
-        -kOperatingVoltage(), ::std::min(kOperatingVoltage(), follower_.U(1)));
+        -constants::Values::kArmOperatingVoltage(),
+        ::std::min(constants::Values::kArmOperatingVoltage(), follower_.U(1)));
     *roll_joint_output = ::std::max(
-        -kOperatingVoltage(), ::std::min(kOperatingVoltage(), follower_.U(2)));
+        -constants::Values::kArmOperatingVoltage(),
+        ::std::min(constants::Values::kArmOperatingVoltage(), follower_.U(2)));
   }
 
   status_builder.add_path_distance_to_go(follower_.path_distance_to_go());

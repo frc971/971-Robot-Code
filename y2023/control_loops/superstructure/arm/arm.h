@@ -23,26 +23,6 @@ class Arm {
  public:
   Arm(std::shared_ptr<const constants::Values> values);
 
-  // if true, tune down all the constants for testing.
-  static constexpr bool kGrannyMode() { return false; }
-
-  // the operating voltage.
-  static constexpr double kOperatingVoltage() {
-    return kGrannyMode() ? 6.0 : 12.0;
-  }
-  static constexpr double kVMax() { return kGrannyMode() ? 4.0 : 9.5; }
-  static constexpr double kPathlessVMax() { return 4.5; }
-  static constexpr double kGotoPathVMax() { return 4.5; }
-
-  static constexpr double kDt() { return 0.00505; }
-  static constexpr std::chrono::nanoseconds kDtDuration() {
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::duration<double>(kDt()));
-  }
-  static constexpr double kAlpha0Max() { return kGrannyMode() ? 15.0 : 15.0; }
-  static constexpr double kAlpha1Max() { return kGrannyMode() ? 10.0 : 10.0; }
-  static constexpr double kAlpha2Max() { return kGrannyMode() ? 90.0 : 90.0; }
-
   flatbuffers::Offset<superstructure::ArmStatus> Iterate(
       const ::aos::monotonic_clock::time_point /*monotonic_now*/,
       const uint32_t *unsafe_goal, const superstructure::ArmPosition *position,
@@ -89,7 +69,7 @@ class Arm {
 
   const ::Eigen::DiagonalMatrix<double, 3> alpha_unitizer_;
 
-  double vmax_ = kVMax();
+  double vmax_ = constants::Values::kArmVMax();
 
   frc971::control_loops::arm::Dynamics dynamics_;
 
