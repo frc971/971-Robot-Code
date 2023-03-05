@@ -162,13 +162,8 @@ static dma_channel_config pi_rx_config;
 static uint pi_dma_tx;
 static uint pi_dma_rx;
 
-// zeroed yaw from the latest message from the imu
-static double yaw = 0;
+// yaw velocity from the latest message from the imu
 static double yaw_rate = 0;
-
-// TODO: fields for the janky, not encapsulated zeroing function
-static double yaw_rate_offset = 0;
-static bool yaw_zeroed = false;
 
 static int16_t encoder1_count = 0;
 static int16_t encoder2_count = 0;
@@ -277,25 +272,6 @@ static uint16_t check_checksum(uint16_t *buf) {
   return sum;
 }
 
-static void zero_yaw(double yaw) {
-  static double yaw_buffer[YAW_BUF_LEN];
-  static int num_items;
-
-  if (num_items < YAW_BUF_LEN) {
-    yaw_buffer[num_items] = yaw;
-    num_items++;
-  } else if (!yaw_zeroed) {
-    double sum = 0;
-    for (int i = 0; i < YAW_BUF_LEN; i++) {
-      sum += yaw_buffer[i];
-    }
-    yaw_rate_offset = -sum / YAW_BUF_LEN;
-    yaw = 0;
-    printf("offset: %f\n", yaw_rate_offset);
-    yaw_zeroed = true;
-  }
-}
-
 void pack_pi_packet() {
   // zero the buffer
   for (int i = 0; i < PI_NUM_ITEMS; i++) {
@@ -366,34 +342,19 @@ void imu_read_finished() {
     // and set an unused bit of DIAG_STAT
     imu_data_buffer[1] = 1u << 0;
   } else {
-    static const double dt = 0.0005;  // seconds
     int32_t z_gyro_out;
     memcpy(&z_gyro_out, imu_data_buffer + 6, 4);
-    yaw_rate = (double)z_gyro_out / 655360.0 + yaw_rate_offset;  // degrees
-    yaw += yaw_rate * dt;
+    yaw_rate = (double)z_gyro_out / 655360.0;  // degrees
 
     // 50% is 0; -2000 deg/sec to 2000 deg/sec
     double scaled_rate = (std::clamp(yaw_rate, -2000.0, 2000.0) / 4000.0 + 0.5);
 
-    // 0 to 360
-    double wrapped_heading = fmod(yaw, 360);
-    if (wrapped_heading < 0) {
-      wrapped_heading = wrapped_heading + 360;
-    }
-
-    double scaled_heading = wrapped_heading / 360.0;
-
     constexpr double kScaledRangeLow = 0.1;
     constexpr double kScaledRangeHigh = 0.9;
 
-    uint16_t heading_level =
-        (scaled_heading * (kScaledRangeHigh - kScaledRangeLow) +
-         kScaledRangeLow) *
-        PWM_TOP;
     uint16_t rate_level =
         (scaled_rate * (kScaledRangeHigh - kScaledRangeLow) + kScaledRangeLow) *
         PWM_TOP;
-    pwm_set_gpio_level(HEADING_PWM, heading_level);
     pwm_set_gpio_level(RATE_PWM, rate_level);
   }
 
@@ -711,12 +672,6 @@ int main() {
 
   setup_adis16505();
 
-  while (!yaw_zeroed) {
-    dma_channel_wait_for_finish_blocking(imu_dma_rx);
-    sleep_us(100);
-    zero_yaw(yaw_rate);
-  }
-
   printf("Press q to enter bootloader\n");
 
   while (1) {
@@ -734,12 +689,12 @@ int main() {
     // debug
     // one printf is faster than many printfs
     printf(
-        "Z pos is %f encoder: %d %d\n"
+        "z vel: %f, encoder: %d %d\n"
         "Num failed checksums: %d, Total messages recieved: %d,\n"
         "Num messages to pi: %d, Timing overrun count: %d,\n"
         "Send time: %d us, suspicious checksum count: %u,\n"
         "IMU reset count: %d, checksum: %u,\n",
-        yaw, encoder1_count, encoder2_count, checksum_mismatch_count,
+        yaw_rate, encoder1_count, encoder2_count, checksum_mismatch_count,
         message_recieved_count, message_sent_count, timing_overrun_count,
         send_time, suspicious_checksums, imu_reset_count,
         imu_data_buffer[IMU_NUM_ITEMS - 1]);
