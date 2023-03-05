@@ -15,6 +15,7 @@ namespace drivetrain {
 // state updates and then determine what poes we should be driving to.
 class TargetSelectorInterface {
  public:
+  typedef RobotSide Side;
   virtual ~TargetSelectorInterface() {}
   // Take the state as [x, y, theta, left_vel, right_vel]
   // If unable to determine what target to go for, returns false. If a viable
@@ -33,6 +34,8 @@ class TargetSelectorInterface {
   // from the TargetPose--this is distinct from wanting the center of the
   // robot to project straight onto the center of the target.
   virtual double TargetRadius() const = 0;
+  // Which direction we want the robot to drive to get to the target.
+  virtual Side DriveDirection() const = 0;
 };
 
 // Defines an interface for classes that provide field-global localization.
@@ -115,16 +118,19 @@ class TrivialTargetSelector : public TargetSelectorInterface {
   }
   TypedPose<double> TargetPose() const override { return pose_; }
   double TargetRadius() const override { return target_radius_; }
+  Side DriveDirection() const override { return drive_direction_; }
 
   void set_pose(const TypedPose<double> &pose) { pose_ = pose; }
   void set_target_radius(double radius) { target_radius_ = radius; }
   void set_has_target(bool has_target) { has_target_ = has_target; }
+  void set_drive_direction(Side side) { drive_direction_ = side; }
   bool has_target() const { return has_target_; }
 
  private:
   bool has_target_ = true;
   TypedPose<double> pose_;
   double target_radius_ = 0.0;
+  Side drive_direction_ = Side::DONT_CARE;
 };
 
 // Uses the generic HybridEkf implementation to provide a basic field estimator.

@@ -115,6 +115,12 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
   }
   CHECK(closest_position.has_value());
   target_pose_ = Pose(closest_position.value(), /*theta=*/0.0);
+  if (hint_fetcher_->has_robot_side()) {
+    drive_direction_ = hint_fetcher_->robot_side();
+  } else {
+    drive_direction_ = Side::DONT_CARE;
+  }
   return true;
 }
+
 }  // namespace y2023::control_loops::drivetrain

@@ -309,12 +309,12 @@ TEST_P(LineFollowDrivetrainTargetParamTest, NonZeroTargetTest) {
   VerifyNearGoal();
 }
 INSTANTIATE_TEST_SUITE_P(TargetPosTest, LineFollowDrivetrainTargetParamTest,
-                        ::testing::Values(Pose({0.0, 0.0, 0.0}, 0.0),
-                                          Pose({1.0, 0.0, 0.0}, 0.0),
-                                          Pose({3.0, 1.0, 0.0}, 0.0),
-                                          Pose({3.0, 0.0, 0.0}, 0.5),
-                                          Pose({3.0, 0.0, 0.0}, -0.5),
-                                          Pose({-3.0, -1.0, 0.0}, -2.5)));
+                         ::testing::Values(Pose({0.0, 0.0, 0.0}, 0.0),
+                                           Pose({1.0, 0.0, 0.0}, 0.0),
+                                           Pose({3.0, 1.0, 0.0}, 0.0),
+                                           Pose({3.0, 0.0, 0.0}, 0.5),
+                                           Pose({3.0, 0.0, 0.0}, -0.5),
+                                           Pose({-3.0, -1.0, 0.0}, -2.5)));
 
 class LineFollowDrivetrainParamTest
     : public LineFollowDrivetrainTest,
