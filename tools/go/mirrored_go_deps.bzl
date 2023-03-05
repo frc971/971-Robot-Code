@@ -2,7 +2,7 @@ load("//tools/go:go_mirrors.bzl", "GO_MIRROR_INFO")
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 load("@ci_configure//:ci.bzl", "RUNNING_IN_CI")
 
-def maybe_override_go_dep(name, importpath, sum, version):
+def maybe_override_go_dep(name, importpath, sum, version, **kwargs):
     """This macro selects between our dependency mirrors and upstream sources.
 
     We want to use the mirrored version whenever possible. In CI we are required
@@ -28,12 +28,14 @@ def maybe_override_go_dep(name, importpath, sum, version):
             importpath = importpath,
             sum = sum,
             version = version,
+            **kwargs
         )
 
 def mirrored_go_dependencies():
     """Sets up the Go dependencies we've mirrored."""
     for name in GO_MIRROR_INFO:
         info = GO_MIRROR_INFO[name]
+        kwargs = info.get("kwargs", {})
         go_repository(
             name = name,
             strip_prefix = info["strip_prefix"],
@@ -43,4 +45,5 @@ def mirrored_go_dependencies():
             ],
             sha256 = info["sha256"],
             importpath = info["importpath"],
+            **kwargs
         )

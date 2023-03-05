@@ -53,6 +53,7 @@ def download_repos(repos: Dict[str, str], existing_mirrored_repos: Dict[str,
         print(f"Downloading file for {repo['name']}")
         importpath = repo["importpath"]
         version = repo["version"]
+        repo_kwargs = repo.get("kwargs")
         module = f"{importpath}@{version}"
 
         download_result = subprocess.run(
@@ -84,6 +85,8 @@ def download_repos(repos: Dict[str, str], existing_mirrored_repos: Dict[str,
             "version": version,
             "importpath": importpath,
         }
+        if repo_kwargs:
+            cached_info[name]["kwargs"] = repo_kwargs
 
     return cached_info
 

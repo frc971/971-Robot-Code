@@ -119,7 +119,7 @@ func parseRequest[T interface{}](w http.ResponseWriter, buf []byte, requestName 
 // Parses the authorization information that the browser inserts into the
 // headers.  The authorization follows this format:
 //
-//  req.Headers["Authorization"] = []string{"Basic <base64 encoded username:password>"}
+//	req.Headers["Authorization"] = []string{"Basic <base64 encoded username:password>"}
 func parseUsername(req *http.Request) string {
 	auth, ok := req.Header["Authorization"]
 	if !ok {

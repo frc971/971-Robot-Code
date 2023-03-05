@@ -1,0 +1,21 @@
+From 1b0b864a6900beeee83cadfcb596381ceb443b86 Mon Sep 17 00:00:00 2001
+From: Philipp Schrader <philipp.schrader@gmail.com>
+Date: Sun, 5 Mar 2023 13:51:11 -0800
+Subject: [PATCH] Fix visibility of gazelle-runner
+
+---
+ def.bzl | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/def.bzl b/def.bzl
+index c4d3c71..ce9a6f2 100644
+--- a/def.bzl
++++ b/def.bzl
+@@ -145,6 +145,7 @@ def gazelle(name, **kwargs):
+     _gazelle_runner(
+         name = runner_name,
+         tags = tags,
++        visibility = visibility,
+         **kwargs
+     )
+     native.sh_binary(

@@ -17,6 +17,12 @@ GO_MIRROR_INFO = {
     "com_github_buildkite_go_buildkite": {
         "filename": "com_github_buildkite_go_buildkite__v2.2.0+incompatible.zip",
         "importpath": "github.com/buildkite/go-buildkite",
+        "kwargs": {
+            "build_directives": [
+                "gazelle:resolve go github.com/cenkalti/backoff @com_github_cenkalti_backoff//:go_default_library",
+                "gazelle:resolve go github.com/google/go-querystring/query @com_github_google_go_querystring//query:go_default_library",
+            ],
+        },
         "sha256": "1871115c8c6db004e4b6e57cee927043bfc9ea0c56e7b8f8336021bd8bf588c4",
         "strip_prefix": "github.com/buildkite/go-buildkite@v2.2.0+incompatible",
         "version": "v2.2.0+incompatible",

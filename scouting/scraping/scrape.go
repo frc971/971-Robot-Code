@@ -23,9 +23,10 @@ type scrapingConfig struct {
 // Also takes in a file path to the JSON config file that contains your TBA API key.
 // It defaults to <workspace root>/config.json
 // the config is expected to have the following contents:
-//{
-//    api_key:"myTBAapiKey"
-//}
+//
+//	{
+//	   api_key:"myTBAapiKey"
+//	}
 func getJson(year int32, eventCode, configPath, category string) ([]byte, error) {
 	if configPath == "" {
 		configPath = os.Getenv("BUILD_WORKSPACE_DIRECTORY") + "/scouting_config.json"
