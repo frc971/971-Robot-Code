@@ -101,6 +101,7 @@ function log_likelihood(
 end
 
 function rank()
+    # TODO(phil): Make the input path configurable.
     df = DataFrame(CSV.File("./data/2022_madtown.csv"))
 
     rank1 = "Rank 1 (best)"
@@ -132,6 +133,7 @@ function rank()
             :score=>Optim.minimizer(res),
         ) |>
         x -> sort!(x, [:score], rev=true)
+    # TODO(phil): Save the output to a CSV file.
     show(ranking_points, allrows=true)
 end
 
