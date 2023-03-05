@@ -12,14 +12,14 @@ PARTITION="${IMAGE}.partition"
 # Check if dependencies are missing.
 missing_deps=()
 REQUIRED_DEPS=(
-    flex
     bison
-    gcc-arm-none-eabi
-    gcc-aarch64-linux-gnu
-    u-boot-tools
-    device-tree-compiler
-    swig
     debootstrap
+    device-tree-compiler
+    flex
+    gcc-aarch64-linux-gnu
+    gcc-arm-none-eabi
+    swig
+    u-boot-tools
 )
 for dep in "${REQUIRED_DEPS[@]}"; do
     if ! dpkg-query -W -f='${Status}' "${dep}" | grep -q "install ok installed"; then
@@ -257,6 +257,13 @@ if [[ ! -e "${PARTITION}/home/pi/.dotfiles" ]]; then
 fi
 
 target "apt-get clean"
+
+# Add a file to show when this image was last modified and by whom
+TIMESTAMP_FILE="${PARTITION}/home/pi/.ImageModifiedDate.txt"
+echo "Date modified:"`date` > "${TIMESTAMP_FILE}"
+echo "Image file: ${IMAGE}"  >> "${TIMESTAMP_FILE}"
+echo "Git tag: "`git rev-parse HEAD` >> "${TIMESTAMP_FILE}"
+echo "User: "`whoami` >> "${TIMESTAMP_FILE}"
 
 sudo chroot ${PARTITION} qemu-aarch64-static /bin/bash
 

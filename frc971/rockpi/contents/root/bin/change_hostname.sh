@@ -33,10 +33,16 @@ fi
 # Put corret team number in pi's IP addresses, or add them if needed
 if grep '^10\.[0-9]*\.[0-9]*\.[0-9]*\s*pi-[0-9]*-[0-9] pi[0-9]$' /etc/hosts >/dev/null ;
 then
-  sed -i "s/^10\.[0-9]*\.[0-9]*\(\.[0-9]*\s*pi-\)[0-9]*\(-[0-9] pi[0-9]\)$/${IP_BASE}\1${TEAM_NUMBER}\2/" /etc/hosts
+  sed -i "s/^10\.[0-9]*\.[0-9]*\(\.[0-9]*\s*pi-\)[0-9]*\(-[0-9] pi[0-9]\)\(.*\)$/${IP_BASE}\1${TEAM_NUMBER}\2\3/" /etc/hosts
 else
   for i in {1..6}; do
-    echo -e "${IP_BASE}.$(( i + 100 ))\tpi-${TEAM_NUMBER}-${i} pi${i}" >> /etc/hosts
+      imu=""
+      # Add imu name to pi6.  Put space in this string, since extra
+      # spaces otherwise will make the above grep fail
+      if [[ ${i} == 6 ]]; then
+          imu=" imu"
+      fi
+    echo -e "${IP_BASE}.$(( i + 100 ))\tpi-${TEAM_NUMBER}-${i} pi${i}${imu}" >> /etc/hosts
   done
 fi
 
