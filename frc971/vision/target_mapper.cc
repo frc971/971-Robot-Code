@@ -7,6 +7,9 @@
 
 DEFINE_uint64(max_num_iterations, 100,
               "Maximum number of iterations for the ceres solver");
+DEFINE_double(distortion_noise_scalar, 1.0,
+              "Scale the target pose distortion factor by this when computing "
+              "the noise.");
 
 namespace frc971::vision {
 
@@ -101,36 +104,33 @@ ceres::examples::VectorOfConstraints DataAdapter::MatchTargetDetections(
 
   // Match consecutive detections
   ceres::examples::VectorOfConstraints target_constraints;
-  for (auto it = timestamped_target_detections.begin() + 1;
-       it < timestamped_target_detections.end(); it++) {
-    auto last_detection = *(it - 1);
+  for (auto detection = timestamped_target_detections.begin() + 1;
+       detection < timestamped_target_detections.end(); detection++) {
+    auto last_detection = detection - 1;
 
     // Skip two consecutive detections of the same target, because the solver
     // doesn't allow this
-    if (it->id == last_detection.id) {
+    if (detection->id == last_detection->id) {
       continue;
     }
 
     // Don't take into account constraints too far apart in time, because the
     // recording device could have moved too much
-    if ((it->time - last_detection.time) > max_dt) {
+    if ((detection->time - last_detection->time) > max_dt) {
       continue;
     }
 
-    auto confidence = ComputeConfidence(last_detection.time, it->time,
-                                        last_detection.distance_from_camera,
-                                        it->distance_from_camera);
+    auto confidence = ComputeConfidence(*last_detection, *detection);
     target_constraints.emplace_back(
-        ComputeTargetConstraint(last_detection, *it, confidence));
+        ComputeTargetConstraint(*last_detection, *detection, confidence));
   }
 
   return target_constraints;
 }
 
 TargetMapper::ConfidenceMatrix DataAdapter::ComputeConfidence(
-    aos::distributed_clock::time_point start,
-    aos::distributed_clock::time_point end, double distance_from_camera_start,
-    double distance_from_camera_end) {
+    const TimestampedDetection &detection_start,
+    const TimestampedDetection &detection_end) {
   constexpr size_t kX = 0;
   constexpr size_t kY = 1;
   constexpr size_t kZ = 2;
@@ -153,7 +153,8 @@ TargetMapper::ConfidenceMatrix DataAdapter::ComputeConfidence(
     Q_odometry(kOrientation3, kOrientation3) = std::pow(0.01, 2);
 
     // Add uncertainty for robot position measurements from start to end
-    int iterations = (end - start) / frc971::controls::kLoopFrequency;
+    int iterations = (detection_end.time - detection_start.time) /
+                     frc971::controls::kLoopFrequency;
     P += static_cast<double>(iterations) * Q_odometry;
   }
 
@@ -171,8 +172,12 @@ TargetMapper::ConfidenceMatrix DataAdapter::ComputeConfidence(
     Q_vision(kOrientation3, kOrientation3) = std::pow(0.02, 2);
 
     // Add uncertainty for the 2 vision measurements (1 at start and 1 at end)
-    P += Q_vision * std::pow(distance_from_camera_start, 2);
-    P += Q_vision * std::pow(distance_from_camera_end, 2);
+    P += Q_vision * std::pow(detection_start.distance_from_camera, 2) *
+         (1.0 +
+          FLAGS_distortion_noise_scalar * detection_start.distortion_factor);
+    P +=
+        Q_vision * std::pow(detection_end.distance_from_camera, 2) *
+        (1.0 + FLAGS_distortion_noise_scalar * detection_end.distortion_factor);
   }
 
   return P.inverse();
