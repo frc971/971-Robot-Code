@@ -7,6 +7,7 @@
 #include "frc971/control_loops/jacobian.h"
 #include "frc971/control_loops/runge_kutta.h"
 #include "gflags/gflags.h"
+#include "y2023/control_loops/superstructure/arm/arm_trajectories_generated.h"
 
 DEFINE_double(lqr_proximal_pos, 0.5, "Position LQR gain");
 DEFINE_double(lqr_proximal_vel, 5, "Velocity LQR gain");
@@ -163,6 +164,56 @@ Path Path::Reversed() const { return Path(spline_.Reversed()); }
 
 ::std::unique_ptr<Path> Path::Reversed(::std::unique_ptr<Path> p) {
   return ::std::make_unique<Path>(p->Reversed());
+}
+
+Trajectory::Trajectory(const frc971::control_loops::arm::Dynamics *dynamics,
+                       const StateFeedbackHybridPlant<3, 1, 1> *roll,
+                       const TrajectoryFbs &trajectory_fbs)
+    : dynamics_(dynamics),
+      roll_(roll),
+      num_plan_points_(trajectory_fbs.num_plan_points()),
+      step_size_(trajectory_fbs.step_size()),
+      max_dvelocity_unfiltered_(
+          trajectory_fbs.max_dvelocity_unfiltered()->data(),
+          trajectory_fbs.max_dvelocity_unfiltered()->data() +
+              trajectory_fbs.max_dvelocity_unfiltered()->size()),
+      max_dvelocity_backwards_voltage_(
+          trajectory_fbs.max_dvelocity_backward_voltage()->data(),
+          trajectory_fbs.max_dvelocity_backward_voltage()->data() +
+              trajectory_fbs.max_dvelocity_backward_voltage()->size()),
+      max_dvelocity_backwards_accel_(
+          trajectory_fbs.max_dvelocity_backward_accel()->data(),
+          trajectory_fbs.max_dvelocity_backward_accel()->data() +
+              trajectory_fbs.max_dvelocity_backward_accel()->size()),
+      max_dvelocity_forwards_accel_(
+          trajectory_fbs.max_dvelocity_forwards_accel()->data(),
+          trajectory_fbs.max_dvelocity_forwards_accel()->data() +
+              trajectory_fbs.max_dvelocity_forwards_accel()->size()),
+      max_dvelocity_forwards_voltage_(
+          trajectory_fbs.max_dvelocity_forwards_voltage()->data(),
+          trajectory_fbs.max_dvelocity_forwards_voltage()->data() +
+              trajectory_fbs.max_dvelocity_forwards_voltage()->size()),
+      alpha_unitizer_(trajectory_fbs.alpha_unitizer()->data()) {
+  auto control_points = ::Eigen::Matrix<double, 2, 4>(
+      trajectory_fbs.path()->spline()->spline()->control_points()->data());
+  NSpline<4, 2> spline(control_points);
+
+  std::vector<CosSpline::AlphaTheta> alpha_roll;
+
+  for (const auto &alpha_theta : *trajectory_fbs.path()->spline()->roll()) {
+    CosSpline::AlphaTheta atheta = {
+        .alpha = alpha_theta->alpha(),
+        .theta = alpha_theta->theta(),
+    };
+
+    alpha_roll.emplace_back(atheta);
+  }
+
+  CosSpline cos_spline(spline, alpha_roll);
+
+  path_ = std::make_unique<Path>(cos_spline,
+                                 (trajectory_fbs.path()->distances()->data(),
+                                  trajectory_fbs.path()->distances()->size()));
 }
 
 double Trajectory::MaxCurvatureSpeed(

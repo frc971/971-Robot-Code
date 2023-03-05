@@ -2,16 +2,21 @@
 #define Y2023_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 
 #include "aos/events/event_loop.h"
+#include "aos/json_to_flatbuffer.h"
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/drivetrain/drivetrain_can_position_generated.h"
 #include "y2023/control_loops/superstructure/arm/arm.h"
+#include "y2023/control_loops/superstructure/arm/arm_trajectories_generated.h"
 #include "y2023/control_loops/superstructure/end_effector.h"
 #include "y2023/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_status_generated.h"
+
+using y2023::control_loops::superstructure::arm::ArmTrajectories;
+using y2023::control_loops::superstructure::arm::TrajectoryAndParams;
 
 namespace y2023 {
 namespace control_loops {
@@ -35,15 +40,22 @@ class Superstructure
           ::frc971::zeroing::AbsoluteEncoderZeroingEstimator,
           ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus>;
 
-  explicit Superstructure(::aos::EventLoop *event_loop,
-                          std::shared_ptr<const constants::Values> values,
-                          const ::std::string &name = "/superstructure");
+  explicit Superstructure(
+      ::aos::EventLoop *event_loop,
+      std::shared_ptr<const constants::Values> values,
+      const aos::FlatbufferVector<ArmTrajectories> &arm_trajectories,
+      const ::std::string &name = "/superstructure");
 
   double robot_velocity() const;
 
   inline const arm::Arm &arm() const { return arm_; }
   inline const EndEffector &end_effector() const { return end_effector_; }
   inline const AbsoluteEncoderSubsystem &wrist() const { return wrist_; }
+
+  static const aos::FlatbufferVector<ArmTrajectories> GetArmTrajectories(
+      const std::string &filename) {
+    return aos::FileToFlatbuffer<arm::ArmTrajectories>(filename);
+  }
 
  protected:
   virtual void RunIteration(const Goal *unsafe_goal, const Position *position,

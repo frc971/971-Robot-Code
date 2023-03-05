@@ -17,6 +17,8 @@
 DEFINE_int32(team, 971, "Team number to use for logfile replay.");
 DEFINE_string(output_folder, "/tmp/superstructure_replay/",
               "Logs all channels to the provided logfile.");
+DEFINE_string(arm_trajectories, "arm/arm_trajectories_generated.bfbs",
+              "The path to the generated arm trajectories bfbs file.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
@@ -45,10 +47,16 @@ int main(int argc, char **argv) {
   auto logger = std::make_unique<aos::logger::Logger>(logger_event_loop.get());
   logger->StartLoggingOnRun(FLAGS_output_folder);
 
-  roborio->OnStartup([roborio]() {
+  auto trajectories =
+      y2023::control_loops::superstructure::Superstructure::GetArmTrajectories(
+          FLAGS_arm_trajectories);
+
+  roborio->OnStartup([roborio, &trajectories]() {
     roborio->AlwaysStart<y2023::control_loops::superstructure::Superstructure>(
-        "superstructure", std::make_shared<y2023::constants::Values>(
-                              y2023::constants::MakeValues()));
+        "superstructure",
+        std::make_shared<y2023::constants::Values>(
+            y2023::constants::MakeValues()),
+        trajectories);
   });
 
   std::unique_ptr<aos::EventLoop> print_loop = roborio->MakeEventLoop("print");

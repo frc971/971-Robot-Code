@@ -276,8 +276,12 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         values_(std::make_shared<constants::Values>(constants::MakeValues())),
         roborio_(aos::configuration::GetNode(configuration(), "roborio")),
         logger_pi_(aos::configuration::GetNode(configuration(), "logger")),
+        arm_trajectories_(superstructure::Superstructure::GetArmTrajectories(
+            "y2023/control_loops/superstructure/arm/"
+            "arm_trajectories_generated.bfbs")),
         superstructure_event_loop(MakeEventLoop("Superstructure", roborio_)),
-        superstructure_(superstructure_event_loop.get(), values_),
+        superstructure_(superstructure_event_loop.get(), values_,
+                        arm_trajectories_),
         test_event_loop_(MakeEventLoop("test", roborio_)),
         superstructure_goal_fetcher_(
             test_event_loop_->MakeFetcher<Goal>("/superstructure")),
@@ -409,6 +413,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
   const aos::Node *const roborio_;
   const aos::Node *const logger_pi_;
+
+  const ::aos::FlatbufferVector<ArmTrajectories> arm_trajectories_;
 
   ::std::unique_ptr<::aos::EventLoop> superstructure_event_loop;
   ::y2023::control_loops::superstructure::Superstructure superstructure_;

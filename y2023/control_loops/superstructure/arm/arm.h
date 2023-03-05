@@ -21,7 +21,8 @@ namespace arm {
 
 class Arm {
  public:
-  Arm(std::shared_ptr<const constants::Values> values);
+  Arm(std::shared_ptr<const constants::Values> values,
+      const ArmTrajectories &arm_trajectories);
 
   flatbuffers::Offset<superstructure::ArmStatus> Iterate(
       const ::aos::monotonic_clock::time_point /*monotonic_now*/,
@@ -50,6 +51,23 @@ class Arm {
     return ::std::abs(arm_ekf_.X_hat(0) - follower_.theta(0)) <= threshold &&
            ::std::abs(arm_ekf_.X_hat(2) - follower_.theta(1)) <= threshold &&
            follower_.path_distance_to_go() < 1e-3;
+  }
+
+  static SearchGraph GetSearchGraph(const ArmTrajectories &arm_trajectories) {
+    // Creating edges from fbs
+    std::vector<SearchGraph::Edge> edges;
+
+    for (const auto *edge : *arm_trajectories.edges()) {
+      SearchGraph::Edge edge_data{
+          .start = static_cast<size_t>(edge->start()),
+          .end = static_cast<size_t>(edge->end()),
+          .cost = edge->cost(),
+      };
+
+      edges.emplace_back(edge_data);
+    }
+
+    return SearchGraph(edges.size(), std::move(edges));
   }
 
   std::shared_ptr<const constants::Values> values_;

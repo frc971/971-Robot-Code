@@ -20,6 +20,7 @@ robot_downloader(
         ":aos_config",
         "//aos/starter:roborio_irq_config.json",
         "//y2023/constants:constants.json",
+        "//y2023/control_loops/superstructure/arm:arm_trajectories_generated.bfbs",
         "@ctre_phoenix_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix_cci_athena//:shared_libraries",
         "@ctre_phoenixpro_api_cpp_athena//:shared_libraries",

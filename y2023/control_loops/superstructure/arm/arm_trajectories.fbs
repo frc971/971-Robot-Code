@@ -1,0 +1,56 @@
+namespace y2023.control_loops.superstructure.arm;
+
+table SplineFbs {
+  // 2x4 Eigen matrix
+  control_points: [double] (id: 0);
+}
+
+struct AlphaThetaFbs {
+  // Parameterized value from 0-1
+  alpha: double;
+  // Roll joint angle
+  theta: double;
+}
+
+table CosSplineFbs {
+  spline: SplineFbs (id: 0);
+  roll: [AlphaThetaFbs] (id: 1);
+}
+
+table PathFbs {
+  spline: CosSplineFbs (id: 0);
+  distances: [float] (id: 1);
+}
+
+table TrajectoryFbs {
+  path: PathFbs (id: 0);
+  num_plan_points: uint64 (id: 1);
+  step_size: double (id: 2);
+  max_dvelocity_unfiltered: [double] (id: 3);
+  max_dvelocity_backward_accel: [double] (id: 4);
+  max_dvelocity_forwards_accel: [double] (id: 5);
+  max_dvelocity_backward_voltage: [double] (id: 6);
+  max_dvelocity_forwards_voltage: [double] (id: 7);
+  alpha_unitizer: [double] (id: 8);
+}
+
+struct EdgeFbs {
+  start: uint64;
+  end: uint64;
+  cost: double;
+}
+
+table TrajectoryAndParamsFbs {
+  vmax: double (id: 0);
+  alpha_unitizer: [double] (id: 1);
+  trajectory: TrajectoryFbs (id: 2);
+  name: string (id: 3);
+}
+
+table ArmTrajectories {
+  trajectories: [TrajectoryAndParamsFbs] (id: 0);
+  edges: [EdgeFbs] (id: 1);
+  // TODO(milind/maxwell): add vertexes in too
+}
+
+root_type ArmTrajectories;

@@ -4,6 +4,7 @@
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/team_number.h"
 #include "frc971/zeroing/wrap.h"
+#include "y2023/control_loops/superstructure/arm/arm_trajectories_generated.h"
 
 DEFINE_bool(ignore_distance, false,
             "If true, ignore distance when shooting and obay joystick_reader");
@@ -18,9 +19,11 @@ using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::RelativeEncoderProfiledJointStatus;
 
-Superstructure::Superstructure(::aos::EventLoop *event_loop,
-                               std::shared_ptr<const constants::Values> values,
-                               const ::std::string &name)
+Superstructure::Superstructure(
+    ::aos::EventLoop *event_loop,
+    std::shared_ptr<const constants::Values> values,
+    const aos::FlatbufferVector<ArmTrajectories> &arm_trajectories,
+    const ::std::string &name)
     : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
                                                                     name),
       values_(values),
@@ -29,7 +32,7 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
               "/drivetrain")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
-      arm_(values_),
+      arm_(values_, arm_trajectories.message()),
       end_effector_(),
       wrist_(values->wrist.subsystem_params) {
   event_loop->SetRuntimeRealtimePriority(30);

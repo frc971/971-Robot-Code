@@ -1,3 +1,5 @@
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+
 cc_library(
     name = "arm",
     srcs = [
@@ -24,6 +26,39 @@ cc_library(
 )
 
 genrule(
+    name = "generated_arm_trajectory_genrule",
+    outs = [
+        "arm_trajectories_generated.bfbs",
+    ],
+    cmd = "$(location //y2023/control_loops/superstructure/arm:arm_trajectory_generator) --output $(OUTS)",
+    target_compatible_with = ["@platforms//os:linux"],
+    tools = [
+        "//y2023/control_loops/superstructure/arm:arm_trajectory_generator",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "arm_trajectory_generator",
+    srcs = [
+        "arm_trajectory_gen.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":arm_constants",
+        ":arm_trajectories_fbs",
+        "//aos:flatbuffers",
+        "//aos:json_to_flatbuffer",
+        "//frc971/control_loops/double_jointed_arm:graph",
+        "//y2023:constants",
+        "//y2023/control_loops/superstructure/arm:generated_graph",
+        "//y2023/control_loops/superstructure/arm:trajectory",
+        "//y2023/control_loops/superstructure/roll:roll_plants",
+    ],
+)
+
+genrule(
     name = "generated_graph_genrule",
     outs = [
         "generated_graph.h",
@@ -34,6 +69,15 @@ genrule(
     tools = [
         "//y2023/control_loops/python:graph_codegen",
     ],
+)
+
+flatbuffer_cc_library(
+    name = "arm_trajectories_fbs",
+    srcs = [
+        "arm_trajectories.fbs",
+    ],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -86,6 +130,7 @@ cc_library(
     srcs = ["trajectory.cc"],
     hdrs = ["trajectory.h"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops:binomial",
         "//frc971/control_loops:dlqr",
@@ -93,6 +138,7 @@ cc_library(
         "//frc971/control_loops:hybrid_state_feedback_loop",
         "//frc971/control_loops/double_jointed_arm:dynamics",
         "//frc971/control_loops/double_jointed_arm:ekf",
+        "//y2023/control_loops/superstructure/arm:arm_trajectories_fbs",
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
