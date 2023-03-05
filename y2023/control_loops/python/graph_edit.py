@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 from __future__ import print_function
+# matplotlib overrides fontconfig locations, so it needs to be imported before gtk.
+import matplotlib.pyplot as plt
 import os
 from frc971.control_loops.python import basic_window
 from frc971.control_loops.python.color import Color, palette
@@ -20,8 +22,6 @@ from frc971.control_loops.python.basic_window import quit_main_loop, set_color, 
 
 import shapely
 from shapely.geometry import Polygon
-
-import matplotlib.pyplot as plt
 
 
 def px(cr):
