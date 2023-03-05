@@ -92,8 +92,8 @@ void LocalizationVerifierMain() {
                                               &localizer_fetcher);
                            });
 
-    event_loop.Run();
   }
+  event_loop.Run();
 }
 
 }  // namespace y2023::vision
