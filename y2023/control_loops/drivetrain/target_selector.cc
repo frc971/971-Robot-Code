@@ -3,6 +3,12 @@
 #include "aos/containers/sized_array.h"
 
 namespace y2023::control_loops::drivetrain {
+namespace {
+// If we already have a target selected, require the robot to be closer than
+// this distance (in meters) to one target than another before swapping.
+constexpr double kGridHysteresisDistance = 0.1;
+}  // namespace
+
 TargetSelector::TargetSelector(aos::EventLoop *event_loop)
     : joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
@@ -43,6 +49,17 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
   if (hint_fetcher_.get() == nullptr) {
     // We don't know where to go, wait on a hint.
     return false;
+  }
+  // Keep track of when the hint changes (note that this will not detect default
+  // vs. not populated default values); when it changes, force us to reselect
+  // the target.
+  {
+    TargetSelectorHintT hint_object;
+    hint_fetcher_.get()->UnPackTo(&hint_object);
+    if (!last_hint_.has_value() || hint_object != last_hint_) {
+      target_pose_.reset();
+    }
+    last_hint_ = hint_object;
   }
   aos::SizedArray<const localizer::ScoringGrid *, 3> possible_grids;
   if (hint_fetcher_->has_grid()) {
@@ -102,24 +119,35 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
         return positions;
       }();
   CHECK_LT(0u, possible_positions.size());
+  aos::SizedArray<double, 3> distances;
   std::optional<double> closest_distance;
   std::optional<Eigen::Vector3d> closest_position;
   const Eigen::Vector3d robot_position(state.x(), state.y(), 0.0);
   for (const frc971::vision::Position *position : possible_positions) {
     const Eigen::Vector3d target(position->x(), position->y(), position->z());
     double distance = (target - robot_position).norm();
+    distances.push_back(distance);
     if (!closest_distance.has_value() || distance < closest_distance.value()) {
       closest_distance = distance;
       closest_position = target;
     }
   }
-  CHECK(closest_position.has_value());
-  target_pose_ = Pose(closest_position.value(), /*theta=*/0.0);
-  if (hint_fetcher_->has_robot_side()) {
-    drive_direction_ = hint_fetcher_->robot_side();
-  } else {
-    drive_direction_ = Side::DONT_CARE;
+  std::sort(distances.begin(), distances.end());
+  CHECK_EQ(distances.at(0), closest_distance.value());
+  // Only change the target pose if one grid is clearly better than the other.
+  // This prevents us from dithering between two grids if we happen to be on the
+  // boundary.
+  if (!target_pose_.has_value() ||
+      distances.at(1) - distances.at(0) > kGridHysteresisDistance) {
+    CHECK(closest_position.has_value());
+    target_pose_ = Pose(closest_position.value(), /*theta=*/0.0);
+    if (hint_fetcher_->has_robot_side()) {
+      drive_direction_ = hint_fetcher_->robot_side();
+    } else {
+      drive_direction_ = Side::DONT_CARE;
+    }
   }
+  CHECK(target_pose_.has_value());
   return true;
 }
 

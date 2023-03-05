@@ -108,6 +108,7 @@ TEST_F(TargetSelectorTest, FullySpecifiedTarget) {
         EXPECT_EQ(frc971::control_loops::drivetrain::TargetSelectorInterface::
                       Side::FRONT,
                   target_selector_.DriveDirection());
+        EXPECT_TRUE(target_selector_.ForceReselectTarget());
       }
     }
   }
@@ -134,6 +135,7 @@ TEST_F(TargetSelectorTest, NoGridSpecified) {
     SendHint(RowSelectionHint::BOTTOM, spot_hint, Side::BACK);
     EXPECT_TRUE(target_selector_.UpdateSelection(
         Eigen::Matrix<double, 5, 1>::Zero(), 0.0));
+    EXPECT_TRUE(target_selector_.ForceReselectTarget());
     EXPECT_EQ(spot->x(), target_selector_.TargetPose().abs_pos().x());
     EXPECT_EQ(spot->y(), target_selector_.TargetPose().abs_pos().y());
     EXPECT_EQ(spot->z(), target_selector_.TargetPose().abs_pos().z());
@@ -141,6 +143,46 @@ TEST_F(TargetSelectorTest, NoGridSpecified) {
         frc971::control_loops::drivetrain::TargetSelectorInterface::Side::BACK,
         target_selector_.DriveDirection());
   }
+}
+
+// Tests that if we are on the boundary of two grids that we do apply some
+// hysteresis.
+TEST_F(TargetSelectorTest, GridHysteresis) {
+  SendJoystickState();
+  // We will leave the robot at (0, 0). This means that if we are going for the
+  // left cone we should go for the middle grid, and if we are going for the
+  // cube (middle) or right cone positions we should prefer the left grid.
+  // Note that the grids are not centered on the field (hence the middle isn't
+  // always preferred when at (0, 0)).
+
+  const frc971::vision::Position *left_pos =
+      scoring_map()->left_grid()->bottom()->cube();
+  const frc971::vision::Position *middle_pos =
+      scoring_map()->middle_grid()->bottom()->cube();
+  Eigen::Matrix<double, 5, 1> split_position;
+  split_position << 0.0, (left_pos->y() + middle_pos->y()) / 2.0, 0.0, 0.0, 0.0;
+  Eigen::Matrix<double, 5, 1> slightly_left = split_position;
+  slightly_left.y() += 0.01;
+  Eigen::Matrix<double, 5, 1> slightly_middle = split_position;
+  slightly_middle.y() -= 0.01;
+  Eigen::Matrix<double, 5, 1> very_middle = split_position;
+  very_middle.y() -= 1.0;
+
+  SendHint(RowSelectionHint::BOTTOM, SpotSelectionHint::MIDDLE, Side::BACK);
+  EXPECT_TRUE(target_selector_.UpdateSelection(slightly_left, 0.0));
+  Eigen::Vector3d target = target_selector_.TargetPose().abs_pos();
+  EXPECT_EQ(target.x(), left_pos->x());
+  EXPECT_EQ(target.y(), left_pos->y());
+  // A slight movement should *not* reset things.
+  EXPECT_TRUE(target_selector_.UpdateSelection(slightly_middle, 0.0));
+  target = target_selector_.TargetPose().abs_pos();
+  EXPECT_EQ(target.x(), left_pos->x());
+  EXPECT_EQ(target.y(), left_pos->y());
+  // A large movement *should* reset things.
+  EXPECT_TRUE(target_selector_.UpdateSelection(very_middle, 0.0));
+  target = target_selector_.TargetPose().abs_pos();
+  EXPECT_EQ(target.x(), middle_pos->x());
+  EXPECT_EQ(target.y(), middle_pos->y());
 }
 
 }  // namespace y2023::control_loops::drivetrain

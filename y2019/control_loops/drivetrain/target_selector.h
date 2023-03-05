@@ -1,10 +1,10 @@
 #ifndef Y2019_CONTROL_LOOPS_DRIVETRAIN_TARGET_SELECTOR_H_
 #define Y2019_CONTROL_LOOPS_DRIVETRAIN_TARGET_SELECTOR_H_
 
-#include "frc971/control_loops/pose.h"
-#include "frc971/control_loops/drivetrain/localizer.h"
-#include "y2019/constants.h"
 #include "frc971/control_loops/drivetrain/camera.h"
+#include "frc971/control_loops/drivetrain/localizer.h"
+#include "frc971/control_loops/pose.h"
+#include "y2019/constants.h"
 #include "y2019/control_loops/drivetrain/target_selector_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 
@@ -29,7 +29,8 @@ class TargetSelector
   // obstacles and just assume that we have perfect field of view.
   typedef frc971::control_loops::TypedCamera<
       y2019::constants::Field::kNumTargets,
-      /*num_obstacles=*/0, double> FakeCamera;
+      /*num_obstacles=*/0, double>
+      FakeCamera;
 
   TargetSelector(::aos::EventLoop *event_loop);
   virtual ~TargetSelector() {}
@@ -41,6 +42,8 @@ class TargetSelector
   double TargetRadius() const override { return target_radius_; }
 
   Side DriveDirection() const override { return Side::DONT_CARE; }
+
+  bool ForceReselectTarget() const override { return false; }
 
  private:
   static constexpr double kFakeFov = M_PI * 0.9;

@@ -260,6 +260,27 @@ TEST_F(LineFollowDrivetrainTest, FreezeOnControllerType) {
       << "Expected state of zero, got: " << state_.transpose();
 }
 
+// Tests that, when we explicitly require that the controller use a new target
+// that we obey it, even during trying to do line following.
+TEST_F(LineFollowDrivetrainTest, IgnoreFreezeWhenRequested) {
+  state_.setZero();
+  set_goal_pose({{0.0, 0.0, 0.0}, 0.0});
+  // Do one iteration to get the target into the drivetrain:
+  Iterate();
+
+  freeze_target_ = true;
+  target_selector_.set_force_reselect(true);
+
+  // Set a goal pose that we will end up trying to go to.
+  set_goal_pose({{1.0, 0.0, 0.0}, 0.0});
+  driver_model_ = [](const ::Eigen::Matrix<double, 5, 1> &) { return 0.25; };
+
+  RunForTime(::std::chrono::seconds(5));
+  // Should've driven a decent distance in X.
+  EXPECT_LT(1.0, state_.x());
+  EXPECT_NEAR(0.0, state_.y(), 1e-6);
+}
+
 // Tests that when we freeze the controller without having acquired a target, we
 // don't do anything until a target arrives.
 TEST_F(LineFollowDrivetrainTest, FreezeWithoutAcquiringTarget) {
