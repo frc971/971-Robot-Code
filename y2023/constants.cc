@@ -118,13 +118,13 @@ Values MakeValues(uint16_t team) {
           7.673132586937 - 0.0799284644472573 - 0.0323574039310657 +
           0.0143810684138064 + 0.00945555248207735;
 
-      roll_joint->zeroing.measured_absolute_position = 1.88759815823151;
+      roll_joint->zeroing.measured_absolute_position = 1.7490367887908;
       roll_joint->potentiometer_offset =
           0.624713611895747 + 3.10458504917251 - 0.0966407797407789 +
-          0.0257708772364788 - 0.0395076737853459;
+          0.0257708772364788 - 0.0395076737853459 - 6.87914956118006;
 
       wrist->subsystem_params.zeroing_constants.measured_absolute_position =
-          0.627578012126286;
+          2.51265911579648;
 
       break;
 
