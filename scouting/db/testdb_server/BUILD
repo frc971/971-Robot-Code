@@ -6,7 +6,7 @@ go_library(
     importpath = "github.com/frc971/971-Robot-Code/scouting/db/testdb_server",
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:private"],
-    deps = ["@com_github_phst_runfiles//:go_default_library"],
+    deps = ["@io_bazel_rules_go//go/runfiles:go_default_library"],
 )
 
 go_binary(

@@ -18,7 +18,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/phst/runfiles"
+	"github.com/bazelbuild/rules_go/go/runfiles"
 )
 
 func check(err error, message string) {
@@ -43,7 +43,7 @@ func loadRunfilesEnvironment() {
 }
 
 func getRunfile(path string) string {
-	result, err := runfiles.Path(path)
+	result, err := runfiles.Rlocation(path)
 	check(err, fmt.Sprint("Failed to find runfile path for ", path))
 	return result
 }

@@ -9,10 +9,10 @@ def go_dependencies():
         version = "v0.0.1-2019.2.3",
     )
     maybe_override_go_dep(
-        name = "com_github_antihax_optional",
-        importpath = "github.com/antihax/optional",
-        sum = "h1:xK2lYat7ZLaVVcIuj82J8kIro4V6kDe0AUDFboUCwcg=",
-        version = "v1.0.0",
+        name = "com_github_bazelbuild_rules_go",
+        importpath = "github.com/bazelbuild/rules_go",
+        sum = "h1:YGNsLhWe18Ielebav7cClP3GMwBxBE+xEArLHtmXDx8=",
+        version = "v0.38.1",
     )
     maybe_override_go_dep(
         name = "com_github_buildkite_go_buildkite",
@@ -89,20 +89,14 @@ def go_dependencies():
     maybe_override_go_dep(
         name = "com_github_envoyproxy_go_control_plane",
         importpath = "github.com/envoyproxy/go-control-plane",
-        sum = "h1:fP+fF0up6oPY49OrjPrhIJ8yQfdIM85NXMLkMg1EXVs=",
-        version = "v0.9.10-0.20210907150352-cf90f659a021",
+        sum = "h1:xvqufLtNVwAhN8NMyWklVgxnWohi+wtMGQMhtxexlm0=",
+        version = "v0.10.2-0.20220325020618-49ff273808a1",
     )
     maybe_override_go_dep(
         name = "com_github_envoyproxy_protoc_gen_validate",
         importpath = "github.com/envoyproxy/protoc-gen-validate",
         sum = "h1:EQciDnbrYxy13PgWoY8AqoxGiPrpgBZ1R8UNe3ddc+A=",
         version = "v0.1.0",
-    )
-    maybe_override_go_dep(
-        name = "com_github_ghodss_yaml",
-        importpath = "github.com/ghodss/yaml",
-        sum = "h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=",
-        version = "v1.0.0",
     )
     maybe_override_go_dep(
         name = "com_github_go_kit_log",
@@ -137,8 +131,8 @@ def go_dependencies():
     maybe_override_go_dep(
         name = "com_github_golang_mock",
         importpath = "github.com/golang/mock",
-        sum = "h1:G5FRp8JnTd7RQH5kemVNlMeyXQAztQ3mOWV95KxsXH8=",
-        version = "v1.1.1",
+        sum = "h1:ErTB+efbowRARo13NNdxyJji2egdxLGQhRaY+DUumQc=",
+        version = "v1.6.0",
     )
     maybe_override_go_dep(
         name = "com_github_golang_protobuf",
@@ -149,8 +143,8 @@ def go_dependencies():
     maybe_override_go_dep(
         name = "com_github_google_go_cmp",
         importpath = "github.com/google/go-cmp",
-        sum = "h1:Khx7svrCpmxxtHBq5j2mp/xVjsi8hQMfNLvJFAlrGgU=",
-        version = "v0.5.5",
+        sum = "h1:BKbKCqvP6I+rmFHt06ZmyQtvB8xAkWdhFyr0ZUNZcxQ=",
+        version = "v0.5.6",
     )
     maybe_override_go_dep(
         name = "com_github_google_go_querystring",
@@ -169,12 +163,6 @@ def go_dependencies():
         importpath = "github.com/google/uuid",
         sum = "h1:EVhdT+1Kseyi1/pUmXKaFxYsDNy9RQYkMWRH68J/W7Y=",
         version = "v1.1.2",
-    )
-    maybe_override_go_dep(
-        name = "com_github_grpc_ecosystem_grpc_gateway",
-        importpath = "github.com/grpc-ecosystem/grpc-gateway",
-        sum = "h1:gmcG1KaJ57LophUzW0Hy8NmPhnMZb4M0+kPpLofRdBo=",
-        version = "v1.16.0",
     )
     maybe_override_go_dep(
         name = "com_github_jackc_chunkreader",
@@ -315,12 +303,6 @@ def go_dependencies():
         version = "v0.0.12",
     )
     maybe_override_go_dep(
-        name = "com_github_phst_runfiles",
-        importpath = "github.com/phst/runfiles",
-        sum = "h1:N5aMcF9W9AjW4ed+PJhA7+FjdgPa9gJ+St3mNu2tq1Q=",
-        version = "v0.0.0-20220125203201-388095b3a22d",
-    )
-    maybe_override_go_dep(
         name = "com_github_pkg_errors",
         importpath = "github.com/pkg/errors",
         sum = "h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=",
@@ -337,12 +319,6 @@ def go_dependencies():
         importpath = "github.com/prometheus/client_model",
         sum = "h1:gQz4mCbXsO+nc9n1hCxHcGA3Zx3Eo+UHZoInFGUIXNM=",
         version = "v0.0.0-20190812154241-14fe0d1b01d4",
-    )
-    maybe_override_go_dep(
-        name = "com_github_rogpeppe_fastuuid",
-        importpath = "github.com/rogpeppe/fastuuid",
-        sum = "h1:Ppwyp6VYCF1nvBTXL3trRso7mXMlRrw9ooo375wvi2s=",
-        version = "v1.2.0",
     )
     maybe_override_go_dep(
         name = "com_github_rogpeppe_go_internal",
@@ -425,8 +401,8 @@ def go_dependencies():
     maybe_override_go_dep(
         name = "in_gopkg_yaml_v2",
         importpath = "gopkg.in/yaml.v2",
-        sum = "h1:fvjTMHxHEw/mxHbtzPi3JCcKXQRAnQTBRo6YCJSVHKI=",
-        version = "v2.2.3",
+        sum = "h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=",
+        version = "v2.2.2",
     )
     maybe_override_go_dep(
         name = "in_gopkg_yaml_v3",
@@ -447,12 +423,6 @@ def go_dependencies():
         version = "v1.23.5",
     )
     maybe_override_go_dep(
-        name = "io_opentelemetry_go_proto_otlp",
-        importpath = "go.opentelemetry.io/proto/otlp",
-        sum = "h1:rwOQPCuKAKmwGKq2aVNnYIibI6wnV7EvzgfTCzcdGg8=",
-        version = "v0.7.0",
-    )
-    maybe_override_go_dep(
         name = "org_golang_google_appengine",
         importpath = "google.golang.org/appengine",
         sum = "h1:/wp5JvzpHIxhs/dumFmF7BXTf3Z+dd4uXta4kVyO508=",
@@ -467,14 +437,14 @@ def go_dependencies():
     maybe_override_go_dep(
         name = "org_golang_google_grpc",
         importpath = "google.golang.org/grpc",
-        sum = "h1:Eeu7bZtDZ2DpRCsLhUlcrLnvYaMK1Gz86a+hMVvELmM=",
-        version = "v1.43.0",
+        sum = "h1:fPVVDxY9w++VjTZsYvXWqEf9Rqar/e+9zYfxKK+W+YU=",
+        version = "v1.50.0",
     )
     maybe_override_go_dep(
         name = "org_golang_google_protobuf",
         importpath = "google.golang.org/protobuf",
-        sum = "h1:bxAC2xTBsZGibn2RTntX0oH50xLsqy1OxA9tTL3p/lk=",
-        version = "v1.26.0",
+        sum = "h1:w43yiav+6bVFTBQFZX0r7ipe9JQ1QsbMgHwbBziscLw=",
+        version = "v1.28.0",
     )
     maybe_override_go_dep(
         name = "org_golang_x_crypto",
@@ -503,8 +473,8 @@ def go_dependencies():
     maybe_override_go_dep(
         name = "org_golang_x_net",
         importpath = "golang.org/x/net",
-        sum = "h1:qWPm9rbaAMKs8Bq/9LRpbMqxWRVUAQwMI9fVrssnTfw=",
-        version = "v0.0.0-20210226172049-e18ecbb05110",
+        sum = "h1:4nGaVu0QrbjT/AK2PRLuQfQuh6DJve+pELhqTdAj3x0=",
+        version = "v0.0.0-20210405180319-a5a99cb37ef4",
     )
     maybe_override_go_dep(
         name = "org_golang_x_oauth2",
