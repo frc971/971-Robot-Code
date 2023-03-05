@@ -8,10 +8,32 @@ table CameraConfiguration {
   calibration:frc971.vision.calibration.CameraCalibration (id: 0);
 }
 
+// Data point for a single time of flight sensor reading. Used in a linear
+// interpolation table.
+table TimeOfFlightDatum {
+  // Time-of-flight sensor reading for the datum.
+  tof_reading:double (id: 0);
+  // Where the game piece is laterally in the robot frame. 0 = centered;
+  // positive = to the left of the robot.
+  // In meters.
+  lateral_position:double (id: 1);
+}
+
+table TimeOfFlight {
+  interpolation_table:[TimeOfFlightDatum] (id: 0);
+}
+
+table RobotConstants {
+  // Table of time-of-flight reading positions. Until we bother using one
+  // of our interpolation classes, should just contain two values.
+  tof:TimeOfFlight (id: 0);
+}
+
 table Constants {
   cameras:[CameraConfiguration] (id: 0);
   target_map:frc971.vision.TargetMap (id: 1);
   scoring_map:localizer.ScoringMap (id: 2);
+  robot:RobotConstants (id: 3);
 }
 
 root_type Constants;

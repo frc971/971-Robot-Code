@@ -31,6 +31,7 @@ jinja2_template(
         "7971.json",
         "971.json",
         "9971.json",
+        "common.json",
         ":scoring_map",
         "//y2023/vision/calib_files",
         "//y2023/vision/maps",

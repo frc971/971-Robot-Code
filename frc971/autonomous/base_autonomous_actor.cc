@@ -28,7 +28,7 @@ BaseAutonomousActor::BaseAutonomousActor(
       dt_config_(dt_config),
       initial_drivetrain_({0.0, 0.0}),
       target_selector_hint_sender_(
-          event_loop->MakeSender<
+          event_loop->TryMakeSender<
               ::y2019::control_loops::drivetrain::TargetSelectorHint>(
               "/drivetrain")),
       drivetrain_goal_sender_(
@@ -456,7 +456,8 @@ void BaseAutonomousActor::LineFollowAtVelocity(
     builder.CheckOk(builder.Send(goal_builder.Finish()));
   }
 
-  {
+  if (target_selector_hint_sender_) {
+    // TODO(james): 2019? Seriously?
     auto builder = target_selector_hint_sender_.MakeBuilder();
     ::y2019::control_loops::drivetrain::TargetSelectorHint::Builder
         target_hint_builder = builder.MakeBuilder<

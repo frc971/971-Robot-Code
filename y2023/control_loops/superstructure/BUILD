@@ -10,9 +10,9 @@ flatbuffer_cc_library(
         "superstructure_goal.fbs",
     ],
     gen_reflections = 1,
-    includes = [
-        "//frc971/control_loops:control_loops_fbs_includes",
-        "//frc971/control_loops:profiled_subsystem_fbs_includes",
+    deps = [
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
     ],
 )
 
@@ -30,9 +30,9 @@ flatbuffer_cc_library(
         "superstructure_status.fbs",
     ],
     gen_reflections = 1,
-    includes = [
-        "//frc971/control_loops:control_loops_fbs_includes",
-        "//frc971/control_loops:profiled_subsystem_fbs_includes",
+    deps = [
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
     ],
 )
 
@@ -53,11 +53,11 @@ flatbuffer_cc_library(
         "superstructure_position.fbs",
     ],
     gen_reflections = 1,
-    includes = [
-        "//frc971/control_loops:control_loops_fbs_includes",
-        "//frc971/control_loops:profiled_subsystem_fbs_includes",
-        "//frc971/vision:calibration_fbs_includes",
-        "//y2023/control_loops/drivetrain:drivetrain_can_position_fbs_includes",
+    deps = [
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/vision:calibration_fbs",
+        "//y2023/control_loops/drivetrain:drivetrain_can_position_fbs",
     ],
 )
 
