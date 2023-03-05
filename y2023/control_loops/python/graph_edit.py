@@ -247,9 +247,6 @@ class ArmUi(basic_window.BaseWindow):
                                     [DRIVER_CAM_X, DRIVER_CAM_Y],
                                     DRIVER_CAM_WIDTH, DRIVER_CAM_HEIGHT)
 
-    def do_key_press(self, event):
-        pass
-
     def _do_button_press_internal(self, event):
         o_x = event.x
         o_y = event.y
