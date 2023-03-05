@@ -138,8 +138,11 @@ void StarterClient::SendCommands(
                         "node name.";
         }
       }
-      CHECK(status_fetchers_[node_name].get() != nullptr)
-          << ": No status available for node " << node_name;
+      if (status_fetchers_[node_name].get() == nullptr) {
+        LOG(WARNING) << ": No status available for node " << node_name
+                     << "; not executing commands for that node.";
+        continue;
+      }
       if (is_multi_node) {
         node_offsets.push_back(builder.fbb()->CreateString(node_name));
       }
