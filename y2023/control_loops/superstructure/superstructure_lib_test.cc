@@ -181,7 +181,7 @@ class SuperstructureSimulation {
                PositionSensorSimulator(
                    values->wrist.subsystem_params.zeroing_constants
                        .one_revolution_distance),
-               values->wrist, constants::Values::kWristRange(),
+               values->wrist, constants::Values::kCompWristRange(),
                values->wrist.subsystem_params.zeroing_constants
                    .measured_absolute_position,
                dt_),
@@ -449,7 +449,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kWristRange().middle());
+            *builder.fbb(), constants::Values::kCompWristRange().middle());
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_arm_goal_position(arm::NeutralIndex());
@@ -474,7 +474,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kWristRange().upper);
+            *builder.fbb(), constants::Values::kCompWristRange().upper);
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
@@ -505,7 +505,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kWristRange().upper);
+            *builder.fbb(), constants::Values::kCompWristRange().upper);
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
@@ -524,7 +524,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     flatbuffers::Offset<StaticZeroingSingleDOFProfiledSubsystemGoal>
         wrist_offset = CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-            *builder.fbb(), constants::Values::kWristRange().lower,
+            *builder.fbb(), constants::Values::kCompWristRange().lower,
             CreateProfileParameters(*builder.fbb(), 20.0, 0.1));
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
