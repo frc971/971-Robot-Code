@@ -58,6 +58,9 @@ void HandleDetections(
         H_field_robot * H_robot_camera * H_camera_target;
 
     LOG(INFO) << "Field to target " << target_pose->id();
+    LOG(INFO) << "H_field_robot " << H_field_robot;
+    LOG(INFO) << "H_robot_camera " << H_robot_camera;
+    LOG(INFO) << "H_camera_target " << H_camera_target;
     LOG(INFO) << "Transform: " << H_field_target;
     LOG(INFO) << "Translation: "
               << Eigen::Affine3d(H_field_target).translation();
@@ -87,11 +90,11 @@ void LocalizationVerifierMain() {
     const std::string_view pi_name =
         camera->calibration()->node_name()->string_view();
     event_loop.MakeWatcher(absl::StrCat("/", pi_name, "/camera"),
-                           [&](const frc971::vision::TargetMap &target_map) {
+                           [H_robot_camera, &localizer_fetcher](
+                               const frc971::vision::TargetMap &target_map) {
                              HandleDetections(target_map, H_robot_camera,
                                               &localizer_fetcher);
                            });
-
   }
   event_loop.Run();
 }
