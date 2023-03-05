@@ -1,19 +1,14 @@
 module DriverRank
 
-using GoogleSheets: sheets_client, Spreadsheet, CellRange, get, AUTH_SCOPE_READONLY
 using CSV
 using DataFrames: DataFrame
-using Transducers: Cat, MapCat, Map
+using Transducers: MapCat, Map
 using DataStructures: OrderedSet
 using HypothesisTests: OneSampleZTest, pvalue
 using Roots: find_zero
 using Statistics: mean
 import Optim
 using Optim: optimize
-using BlackBoxOptim: bboptimize, best_candidate, best_fitness
-# using PlotlyJS
-using Plots: scatter, hline!, plotlyjs, savefig, plotly
-import PlotlyBase: to_html
 
 struct TeamKey
     key::String
@@ -106,49 +101,7 @@ function log_likelihood(
 end
 
 function rank()
-    # client = sheets_client(AUTH_SCOPE_READONLY)
-    # # spreadsheet_id = "13Cit7WrUxWz79iYVnoMoPc56W7H_cfr92jyT67tb2Xo"
-    # spreadsheet_id = "1q-Cl2aW4IkHk8Vcfd7OuFt0g4o3itn4SXgBi8Z1b7UE"
-    # range_name = "Form Responses 1"
-
-    # sheet = Spreadsheet(spreadsheet_id)
-    # range = CellRange(sheet, range_name)
-    # result = get(client, range).values
-
-    # # Filter empty rows
-    # is_not_empty =  result[:, 1] .!= ""
-    # result = result[is_not_empty, :]
-    # df = DataFrame(TeamKey.(result[2:end, :]), result[1, :])
-
     df = DataFrame(CSV.File("./data/2022_madtown.csv"))
-
-    # rank1 = "Rank 1 (best)"
-    # rank2 = "Rank 2"
-    # rank3 = "Rank 3"
-    # rank4 = "Rank 4"
-    # rank5 = "Rank 5"
-    # rank6 = "Rank 6 (worst)"
-    # matchups =
-    #     [
-    #         (df[!, rank1], df[!, rank2]),
-    #         (df[!, rank1], df[!, rank3]),
-    #         (df[!, rank1], df[!, rank4]),
-    #         (df[!, rank1], df[!, rank5]),
-    #         (df[!, rank1], df[!, rank6]),
-    #         (df[!, rank2], df[!, rank3]),
-    #         (df[!, rank2], df[!, rank4]),
-    #         (df[!, rank2], df[!, rank5]),
-    #         (df[!, rank2], df[!, rank6]),
-    #         (df[!, rank3], df[!, rank4]),
-    #         (df[!, rank3], df[!, rank5]),
-    #         (df[!, rank3], df[!, rank6]),
-    #         (df[!, rank4], df[!, rank5]),
-    #         (df[!, rank4], df[!, rank6]),
-    #         (df[!, rank5], df[!, rank6]),
-    #     ] |>
-    #     MapCat(((winners, losers),) -> zip(winners, losers)) |>
-    #     Map(((winner, loser),) -> DriverMatchup(; winner, loser)) |>
-    #     collect
 
     rank1 = "Rank 1 (best)"
     rank2 = "Rank 2"
@@ -168,7 +121,7 @@ function rank()
         collect
 
     driver_rankings = DriverRankings(matchups)
-    
+
     # Optimize!
     x0 = zeros(num_teams(driver_rankings))
     res = optimize(x -> objective_value(driver_rankings, x), x0, Optim.LBFGS(), autodiff=:forward)
@@ -180,26 +133,6 @@ function rank()
         ) |>
         x -> sort!(x, [:score], rev=true)
     show(ranking_points, allrows=true)
-
-    plotly()
-    idx = 1:length(ranking_points.team)
-    plt = scatter(
-        idx, ranking_points.score,
-        title="Driver Ranking",
-        xlabel="Team Number",
-        xticks=(idx, ranking_points.team),
-        xrotation=90,
-        ylabel="Score",
-        legend=false,
-    )
-    hline!(plt, [0.])
-
-    savefig(plt, "./driver_ranking.html")
-    # open("./driver_ranking.html", "w") do io
-    #     PlotlyBase.to_html(io, plt)
-    # end
-
-    return plt
 end
 
 export rank
