@@ -41,7 +41,7 @@
       ]
     },
     {
-      "name": "/camera",
+      "name": "/logger/camera",
       "type": "y2023.vision.GamePieces",
       "source_node": "logger",
       "logger": "LOCAL_AND_REMOTE_LOGGER",
@@ -64,7 +64,7 @@
       ]
     },
     {
-      "name": "/logger/aos/remote_timestamps/roborio/camera/y2023-vision-GamePieces",
+      "name": "/logger/aos/remote_timestamps/roborio/logger/camera/y2023-vision-GamePieces",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "logger",
       "logger": "NOT_LOGGED",
