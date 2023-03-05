@@ -125,6 +125,17 @@ type DriverRankingData struct {
 	Rank3       int32
 }
 
+type ParsedDriverRankingData struct {
+	// This data stores the output of DriverRank.jl.
+
+	TeamNumber string `gorm:"primaryKey"`
+
+	// The score of the team. A difference of 100 in two team's scores
+	// indicates that one team will outperform the other in 90% of the
+	// matches.
+	Score float32
+}
+
 // Opens a database at the specified port on localhost. We currently don't
 // support connecting to databases on other hosts.
 func NewDatabase(user string, password string, port int) (*Database, error) {
@@ -140,7 +151,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&TeamMatch{}, &Shift{}, &Stats{}, &Stats2023{}, &Action{}, &NotesData{}, &Ranking{}, &DriverRankingData{})
+	err = database.AutoMigrate(&TeamMatch{}, &Shift{}, &Stats{}, &Stats2023{}, &Action{}, &NotesData{}, &Ranking{}, &DriverRankingData{}, &ParsedDriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -261,6 +272,12 @@ func (database *Database) ReturnAllNotes() ([]NotesData, error) {
 
 func (database *Database) ReturnAllDriverRankings() ([]DriverRankingData, error) {
 	var rankings []DriverRankingData
+	result := database.Find(&rankings)
+	return rankings, result.Error
+}
+
+func (database *Database) ReturnAllParsedDriverRankings() ([]ParsedDriverRankingData, error) {
+	var rankings []ParsedDriverRankingData
 	result := database.Find(&rankings)
 	return rankings, result.Error
 }
@@ -397,6 +414,13 @@ func (database *Database) AddDriverRanking(data DriverRankingData) error {
 		Rank2:       data.Rank2,
 		Rank3:       data.Rank3,
 	})
+	return result.Error
+}
+
+func (database *Database) AddParsedDriverRanking(data ParsedDriverRankingData) error {
+	result := database.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&data)
 	return result.Error
 }
 

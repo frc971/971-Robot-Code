@@ -972,3 +972,44 @@ func TestDriverRanking(t *testing.T) {
 		t.Errorf("Got %#v,\nbut expected %#v.", actual, expected)
 	}
 }
+
+func TestParsedDriverRanking(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	expected := []ParsedDriverRankingData{
+		{TeamNumber: "1234", Score: 100},
+		{TeamNumber: "1235", Score: 110},
+		{TeamNumber: "1236", Score: 90},
+	}
+
+	for i := range expected {
+		err := fixture.db.AddParsedDriverRanking(expected[i])
+		check(t, err, "Failed to add Parsed Driver Ranking")
+	}
+
+	actual, err := fixture.db.ReturnAllParsedDriverRankings()
+	check(t, err, "Failed to get Parsed Driver Ranking")
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Got %#v,\nbut expected %#v.", actual, expected)
+	}
+
+	// Now update one of the rankings and make sure we get the properly
+	// merged result.
+	err = fixture.db.AddParsedDriverRanking(ParsedDriverRankingData{
+		TeamNumber: "1235", Score: 200,
+	})
+	check(t, err, "Failed to add Parsed Driver Ranking")
+
+	expected = []ParsedDriverRankingData{
+		{TeamNumber: "1234", Score: 100},
+		{TeamNumber: "1236", Score: 90},
+		{TeamNumber: "1235", Score: 200},
+	}
+
+	actual, err = fixture.db.ReturnAllParsedDriverRankings()
+	check(t, err, "Failed to get Parsed Driver Ranking")
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Got %#v,\nbut expected %#v.", actual, expected)
+	}
+}
