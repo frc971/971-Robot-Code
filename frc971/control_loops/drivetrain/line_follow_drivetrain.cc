@@ -165,18 +165,21 @@ double LineFollowDrivetrain::GoalTheta(
     const ::Eigen::Matrix<double, 5, 1> &abs_state, double relative_y_offset,
     double velocity_sign) {
   // Calculates the goal angle for the drivetrain given our position.
-  // The calculated goal will be such that a point disc_rad to one side of the
-  // drivetrain (the side depends on where we approach from) will end up hitting
-  // the plane of the target exactly disc_rad from the center of the target.
-  // This allows us to better approach targets in the 2019 game from an
-  // angle--radii of zero imply driving straight in.
-  const double disc_rad = target_selector_->TargetRadius();
+  // The calculated goal will be such that a point piece_rad to one side of the
+  // drivetrain (the side depends on where we approach from and SignedRadii())
+  // will end up hitting the plane of the target exactly target_rad from the
+  // center of the target. This allows us to better approach targets in the 2019
+  // game from an angle--radii of zero imply driving straight in.
+  const double target_rad = target_selector_->TargetRadius();
+  const double piece_rad = target_selector_->GamePieceRadius();
   // Depending on whether we are to the right or left of the target, we work off
   // of a different side of the robot.
-  const double edge_sign = relative_y_offset > 0 ? 1.0 : -1.0;
+  const double edge_sign = target_selector_->SignedRadii()
+                               ? 1.0
+                               : (relative_y_offset > 0 ? 1.0 : -1.0);
   // Note side_adjust which is the input from the driver's wheel to allow
   // shifting the goal target left/right.
-  const double edge_offset = edge_sign * disc_rad - side_adjust_;
+  const double edge_offset = edge_sign * target_rad - side_adjust_;
   // The point that we are trying to get the disc to hit.
   const Pose corner = Pose(&target_pose_, {0.0, edge_offset, 0.0}, 0.0);
   // A pose for the current robot position that is square to the target.
@@ -185,14 +188,17 @@ double LineFollowDrivetrain::GoalTheta(
   // To prevent numerical issues, we limit x so that when the localizer isn't
   // working properly and ends up driving past the target, we still get sane
   // results.
-  square_robot.mutable_pos()->x() =
-      ::std::min(::std::min(square_robot.mutable_pos()->x(), -disc_rad), -0.01);
+  // The min() with -piece_rad ensures that we past well-conditioned numbers
+  // to acos() (we must have piece_rad <= dist_to_corner); the min with -0.01
+  // ensures that dist_to_corner doesn't become near zero.
+  square_robot.mutable_pos()->x() = ::std::min(
+      ::std::min(square_robot.mutable_pos()->x(), -std::abs(piece_rad)), -0.01);
   // Distance from the edge of the disc on the robot to the velcro we want to
   // hit on the target.
   const double dist_to_corner = square_robot.xy_norm();
   // The following actually handles calculating the heading we need the robot to
   // take (relative to the plane of the target).
-  const double alpha = ::std::acos(disc_rad / dist_to_corner);
+  const double alpha = ::std::acos(piece_rad / dist_to_corner);
   const double heading_to_robot = edge_sign * square_robot.heading();
   double theta = -edge_sign * (M_PI - alpha - (heading_to_robot - M_PI_2));
   if (velocity_sign < 0) {

@@ -37,6 +37,8 @@ class TargetSelector
   }
 
   double TargetRadius() const override { return 0.0; }
+  double GamePieceRadius() const override { return 0.0; }
+  bool SignedRadii() const override { return true; }
   Side DriveDirection() const override { return drive_direction_; }
   // We will manage any desired hysteresis in the target selection.
   bool ForceReselectTarget() const override { return true; }

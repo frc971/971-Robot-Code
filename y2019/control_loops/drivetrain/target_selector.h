@@ -40,6 +40,8 @@ class TargetSelector
   Pose TargetPose() const override { return target_pose_; }
 
   double TargetRadius() const override { return target_radius_; }
+  double GamePieceRadius() const override { return target_radius_; }
+  bool SignedRadii() const override { return false; }
 
   Side DriveDirection() const override { return Side::DONT_CARE; }
 

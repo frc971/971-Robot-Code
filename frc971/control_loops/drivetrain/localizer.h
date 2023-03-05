@@ -29,11 +29,26 @@ class TargetSelectorInterface {
   // Gets the current target pose. Should only be called if UpdateSelection has
   // returned true.
   virtual TypedPose<double> TargetPose() const = 0;
+  // For the "radii" below, we have two possible modes:
+  // 1) Akin to 2019, we can place with either edge of the game piece, so
+  //    the line following code will have to automatically detect which edge
+  //    (right or left) to aim to have intersect the target.
+  // 2) As in 2023, the game piece itself is offset in the robot and so we care
+  //    which of left vs. right we are using.
+  // In situation (1), SignedRadii() should return false and the *Radius()
+  // functions should return a non-negative number (technically I think the
+  // math may work for negative numbers, but may have weird implications
+  // physically...). For (2) SignedRadii()
+  // should return true and the sign of the *Radius() functions will be
+  // respected by the line following code.
+  virtual bool SignedRadii() const = 0;
   // The "radius" of the target--for y2019, we wanted to drive in so that a disc
   // with radius r would hit the plane of the target at an offset of exactly r
   // from the TargetPose--this is distinct from wanting the center of the
   // robot to project straight onto the center of the target.
   virtual double TargetRadius() const = 0;
+  // the "radius" of the robot/game piece to place.
+  virtual double GamePieceRadius() const = 0;
   // Which direction we want the robot to drive to get to the target.
   virtual Side DriveDirection() const = 0;
   // Indicates that the line following *must* drive to the currently selected
@@ -120,12 +135,15 @@ class TrivialTargetSelector : public TargetSelectorInterface {
     return has_target_;
   }
   TypedPose<double> TargetPose() const override { return pose_; }
+  bool SignedRadii() const override { return signed_radii_; }
   double TargetRadius() const override { return target_radius_; }
+  double GamePieceRadius() const override { return game_piece_radius_; }
   Side DriveDirection() const override { return drive_direction_; }
   bool ForceReselectTarget() const override { return force_reselect_; }
 
   void set_pose(const TypedPose<double> &pose) { pose_ = pose; }
   void set_target_radius(double radius) { target_radius_ = radius; }
+  void set_game_piece_radius(double radius) { game_piece_radius_ = radius; }
   void set_has_target(bool has_target) { has_target_ = has_target; }
   void set_drive_direction(Side side) { drive_direction_ = side; }
   void set_force_reselect(bool force_reselect) {
@@ -137,7 +155,9 @@ class TrivialTargetSelector : public TargetSelectorInterface {
   bool has_target_ = true;
   bool force_reselect_ = false;
   TypedPose<double> pose_;
+  bool signed_radii_ = false;
   double target_radius_ = 0.0;
+  double game_piece_radius_ = 0.0;
   Side drive_direction_ = Side::DONT_CARE;
 };
 
