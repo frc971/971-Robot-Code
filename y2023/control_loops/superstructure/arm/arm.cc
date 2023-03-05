@@ -16,7 +16,8 @@ constexpr int kMaxBrownoutCount = 4;
 
 }  // namespace
 
-Arm::Arm(std::shared_ptr<const constants::Values> values)
+Arm::Arm(std::shared_ptr<const constants::Values> values,
+         const ArmTrajectories &arm_trajectories)
     : values_(values),
       state_(ArmState::UNINITIALIZED),
       proximal_zeroing_estimator_(values_->arm_proximal.zeroing),
@@ -36,13 +37,17 @@ Arm::Arm(std::shared_ptr<const constants::Values> values)
       roll_joint_loop_(roll::MakeIntegralRollLoop()),
       hybrid_roll_joint_loop_(roll::MakeIntegralHybridRollLoop()),
       arm_ekf_(&dynamics_),
-      search_graph_(MakeSearchGraph(&dynamics_, &trajectories_, alpha_unitizer_,
-                                    constants::Values::kArmVMax(),
-                                    &hybrid_roll_joint_loop_)),
+      search_graph_(GetSearchGraph(arm_trajectories)),
       // Go to the start of the first trajectory.
       follower_(&dynamics_, &hybrid_roll_joint_loop_, NeutralPoint()),
       points_(PointList()),
       current_node_(0) {
+  // Creating trajectories from fbs
+  for (const auto *trajectory : *arm_trajectories.trajectories()) {
+    trajectories_.emplace_back(&dynamics_, &hybrid_roll_joint_loop_.plant(),
+                               *trajectory);
+  }
+
   int i = 0;
   for (const auto &trajectory : trajectories_) {
     AOS_LOG(INFO, "trajectory length for edge node %d: %f\n", i,
@@ -54,7 +59,6 @@ Arm::Arm(std::shared_ptr<const constants::Values> values)
 void Arm::Reset() { state_ = ArmState::UNINITIALIZED; }
 
 namespace {
-
 // Proximal joint center in xy space
 constexpr std::pair<double, double> kJointCenter = {-0.203, 0.787};
 

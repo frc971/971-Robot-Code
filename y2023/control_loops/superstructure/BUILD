@@ -87,6 +87,9 @@ cc_library(
     hdrs = [
         "superstructure.h",
     ],
+    data = [
+        "//y2023/control_loops/superstructure/arm:arm_trajectories_generated.bfbs",
+    ],
     deps = [
         ":end_effector",
         ":superstructure_goal_fbs",
@@ -100,6 +103,7 @@ cc_library(
         "//y2023:constants",
         "//y2023/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//y2023/control_loops/superstructure/arm",
+        "//y2023/control_loops/superstructure/arm:arm_trajectories_fbs",
     ],
 )
 
@@ -129,6 +133,7 @@ cc_test(
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",
         ":superstructure_status_fbs",
+        "//aos:json_to_flatbuffer",
         "//aos:math",
         "//aos/events/logging:log_writer",
         "//aos/testing:googletest",

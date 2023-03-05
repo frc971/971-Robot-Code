@@ -37,12 +37,13 @@ def add_edge(cc_file, name, segment, index, reverse):
     cc_file.append("                             %s," % (alpha_unitizer))
     if reverse:
         cc_file.append(
-            "                             Trajectory(dynamics, &hybrid_roll_joint_loop->plant(), Path::Reversed(%s()), 0.005));"
+            "                             Trajectory(dynamics, &hybrid_roll_joint_loop->plant(), Path::Reversed(%s()), 0.005), "
             % (path_function_name(str(name))))
     else:
         cc_file.append(
-            "                             Trajectory(dynamics, &hybrid_roll_joint_loop->plant(), %s(), 0.005));"
+            "                             Trajectory(dynamics, &hybrid_roll_joint_loop->plant(), %s(), 0.005), "
             % (path_function_name(str(name))))
+    cc_file.append(f"\"{path_function_name(str(name))}\");")
 
     start_index = None
     end_index = None
@@ -116,6 +117,9 @@ def main(argv):
         "#include \"y2023/control_loops/superstructure/arm/arm_constants.h\"")
     h_file.append(
         "#include \"y2023/control_loops/superstructure/arm/trajectory.h\"")
+    h_file.append(
+        "#include \"y2023/control_loops/superstructure/arm/arm_trajectories_generated.h\""
+    )
 
     h_file.append("")
     h_file.append("namespace y2023 {")
@@ -130,19 +134,39 @@ def main(argv):
     h_file.append(
         "using y2023::control_loops::superstructure::arm::kArmConstants;")
 
+    h_file.append(
+        "using y2023::control_loops::superstructure::arm::TrajectoryAndParamsFbs;"
+    )
+
     h_file.append("")
     h_file.append("struct TrajectoryAndParams {")
     h_file.append("  TrajectoryAndParams(double new_vmax,")
     h_file.append(
         "                      const ::Eigen::Matrix<double, 3, 3> &new_alpha_unitizer,"
     )
-    h_file.append("                      Trajectory &&new_trajectory)")
+    h_file.append(
+        "                      Trajectory &&new_trajectory, std::string_view new_name)"
+    )
     h_file.append("      : vmax(new_vmax),")
     h_file.append("        alpha_unitizer(new_alpha_unitizer),")
-    h_file.append("        trajectory(::std::move(new_trajectory)) {}")
+    h_file.append("        trajectory(::std::move(new_trajectory)),")
+    h_file.append("         name(new_name) {}")
+    h_file.append(
+        "TrajectoryAndParams(const frc971::control_loops::arm::Dynamics *dynamics, const StateFeedbackHybridPlant<3, 1, 1> *roll, const TrajectoryAndParamsFbs &trajectory_and_params_fbs)"
+    )
+    h_file.append(": vmax(trajectory_and_params_fbs.vmax()),")
+    h_file.append(
+        "alpha_unitizer((trajectory_and_params_fbs.alpha_unitizer()->data(),")
+    h_file.append("     trajectory_and_params_fbs.alpha_unitizer()->data() +")
+    h_file.append(
+        "         trajectory_and_params_fbs.alpha_unitizer()->size())),")
+    h_file.append(
+        "trajectory(dynamics, roll, *trajectory_and_params_fbs.trajectory()),")
+    h_file.append("name(trajectory_and_params_fbs.name()->string_view()) {}")
     h_file.append("  double vmax;")
     h_file.append("  ::Eigen::Matrix<double, 3, 3> alpha_unitizer;")
     h_file.append("  Trajectory trajectory;")
+    h_file.append(" std::string_view name;")
     h_file.append("};")
     h_file.append("")
 

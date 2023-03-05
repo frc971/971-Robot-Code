@@ -13,6 +13,7 @@
 #include "frc971/control_loops/fixed_quadrature.h"
 #include "frc971/control_loops/hybrid_state_feedback_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "y2023/control_loops/superstructure/arm/arm_trajectories_generated.h"
 
 namespace y2023 {
 namespace control_loops {
@@ -152,6 +153,10 @@ class CosSpline {
   // Returns the d^2spline/dalpha^2 for a given alpha.
   ::Eigen::Matrix<double, 3, 1> Alpha(double alpha) const;
 
+  const NSpline<4, 2> &spline() const { return spline_; }
+
+  const std::vector<AlphaTheta> &roll() { return roll_; }
+
   CosSpline Reversed() const;
 
  private:
@@ -170,6 +175,9 @@ class Path {
   Path(const CosSpline &spline, int num_alpha = 100)
       : spline_(spline), distances_(BuildDistances(num_alpha)) {}
 
+  Path(const CosSpline &spline, std::vector<float> distances)
+      : spline_(spline), distances_(distances) {}
+
   virtual ~Path() {}
 
   // Returns a point on the spline as a function of distance.
@@ -185,6 +193,8 @@ class Path {
   double length() const { return distances().back(); }
 
   const absl::Span<const float> distances() const { return distances_; }
+
+  const CosSpline &spline() const { return spline_; }
 
   Path Reversed() const;
   static ::std::unique_ptr<Path> Reversed(::std::unique_ptr<Path> p);
@@ -211,7 +221,7 @@ class Trajectory {
   // size.
   Trajectory(const frc971::control_loops::arm::Dynamics *dynamics,
              const StateFeedbackHybridPlant<3, 1, 1> *roll,
-             ::std::unique_ptr<const Path> path, double gridsize)
+             std::unique_ptr<const Path> path, double gridsize)
       : dynamics_(dynamics),
         roll_(roll),
         path_(::std::move(path)),
@@ -221,6 +231,10 @@ class Trajectory {
                    static_cast<double>(num_plan_points_ - 1)) {
     alpha_unitizer_.setZero();
   }
+
+  Trajectory(const frc971::control_loops::arm::Dynamics *dynamics,
+             const StateFeedbackHybridPlant<3, 1, 1> *roll,
+             const TrajectoryFbs &trajectory_fbs);
 
   // Optimizes the trajectory.  The path will adhere to the constraints that
   // || angular acceleration * alpha_unitizer || < 1, and the applied voltage <
@@ -431,6 +445,8 @@ class Trajectory {
 
   const Path &path() const { return *path_; }
 
+  double step_size() const { return step_size_; }
+
  private:
   friend class testing::TrajectoryTest_IndicesForDistanceTest_Test;
 
@@ -457,7 +473,7 @@ class Trajectory {
   const StateFeedbackHybridPlant<3, 1, 1> *roll_;
 
   // The path to follow.
-  ::std::unique_ptr<const Path> path_;
+  std::unique_ptr<const Path> path_;
   // The number of points in the plan.
   const size_t num_plan_points_;
   // A cached version of the step size since we need this a *lot*.
@@ -607,8 +623,8 @@ class TrajectoryFollower {
 };
 
 }  // namespace arm
+}  // namespace superstructure
 }  // namespace control_loops
-}  // namespace frc971
 }  // namespace y2023
 
 #endif  // Y2023_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_TRAJECTORY_H_
