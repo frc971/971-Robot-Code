@@ -1,26 +1,37 @@
 #include "y2023/autonomous/auto_splines.h"
 
 #include "frc971/control_loops/control_loops_generated.h"
+#include "aos/flatbuffer_merge.h"
 
 namespace y2023 {
 namespace actors {
 
-void MaybeFlipSpline(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
-    flatbuffers::Offset<flatbuffers::Vector<float>> spline_y_offset,
-    bool is_left) {
-  flatbuffers::Vector<float> *spline_y =
-      GetMutableTemporaryPointer(*builder->fbb(), spline_y_offset);
+namespace {
+flatbuffers::Offset<frc971::MultiSpline> FixSpline(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    flatbuffers::Offset<frc971::MultiSpline> spline_offset,
+    aos::Alliance alliance) {
+  frc971::MultiSpline *spline =
+      GetMutableTemporaryPointer(*builder->fbb(), spline_offset);
+  flatbuffers::Vector<float> *spline_x = spline->mutable_spline_x();
 
-  if (!is_left) {
-    for (size_t i = 0; i < spline_y->size(); i++) {
-      spline_y->Mutate(i, -spline_y->Get(i));
+  // For 2023: The field is mirrored across the center line, and is not
+  // rotationally symmetric. As such, we only flip the X coordinates when
+  // changing side of the field.
+  if (alliance == aos::Alliance::kBlue) {
+    for (size_t ii = 0; ii < spline_x->size(); ++ii) {
+      spline_x->Mutate(ii, -spline_x->Get(ii));
     }
   }
+  return spline_offset;
 }
+}  // namespace
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
   flatbuffers::Offset<frc971::Constraint> longitudinal_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> lateral_constraint_offset;
   flatbuffers::Offset<frc971::Constraint> voltage_constraint_offset;
@@ -78,11 +89,13 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
   multispline_builder.add_spline_x(spline_x_offset);
   multispline_builder.add_spline_y(spline_y_offset);
 
-  return multispline_builder.Finish();
+  return FixSpline(builder, multispline_builder.Finish(), alliance);
 }
 
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
-    aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder) {
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
   flatbuffers::Offset<flatbuffers::Vector<float>> spline_x_offset =
       builder->fbb()->CreateVector<float>(
           {-12.3, -11.9, -11.5, -11.1, -10.6, -10.0});
@@ -96,7 +109,17 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
   multispline_builder.add_spline_x(spline_x_offset);
   multispline_builder.add_spline_y(spline_y_offset);
 
-  return multispline_builder.Finish();
+  return FixSpline(builder, multispline_builder.Finish(), alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::TestSpline(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(test_spline_, builder->fbb()),
+      alliance);
 }
 
 }  // namespace actors

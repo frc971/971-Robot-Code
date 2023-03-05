@@ -509,7 +509,7 @@
       "name": "joystick_reader",
       "executable_name": "joystick_reader",
       "args": [
-        "--die_on_malloc"
+        "--nodie_on_malloc"
       ],
       "nodes": [
         "roborio"
@@ -526,9 +526,9 @@
       "name": "autonomous_action",
       "executable_name": "autonomous_action",
       "args": [
-        "--die_on_malloc"
+        "--nodie_on_malloc"
       ],
-      "autostart": false,
+      "autostart": true,
       "nodes": [
         "roborio"
       ]

@@ -25,6 +25,8 @@ class Action;
 class ActionQueue {
  public:
   // Queues up an action for sending.
+  // TODO(james): Allow providing something other than a unique_ptr to avoid
+  // malloc's.
   void EnqueueAction(::std::unique_ptr<Action> action);
 
   // Cancels the current action, and runs the next one after the current one has
