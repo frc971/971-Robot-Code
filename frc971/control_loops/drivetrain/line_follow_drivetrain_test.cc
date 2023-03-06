@@ -190,6 +190,7 @@ TEST_F(LineFollowDrivetrainTest, BasicGoalThetaCheck) {
       for (double v : {-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0}) {
         for (double throttle : {-1.0, 1.0}) {
           target_selector_.set_target_radius(0.0);
+          target_selector_.set_game_piece_radius(0.0);
           const double zero_rad_theta = GoalTheta(x, y, v, throttle);
           EXPECT_NEAR(
               0.0,
@@ -198,6 +199,7 @@ TEST_F(LineFollowDrivetrainTest, BasicGoalThetaCheck) {
                                      zero_rad_theta),
               1e-14);
           target_selector_.set_target_radius(0.05);
+          target_selector_.set_game_piece_radius(0.05);
           const double small_rad_theta = GoalTheta(x, y, v, throttle);
           if (y > 0) {
             EXPECT_LT(small_rad_theta, zero_rad_theta);
