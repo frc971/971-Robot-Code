@@ -3,6 +3,7 @@
 #include "aos/containers/sized_array.h"
 #include "frc971/shooter_interpolation/interpolation.h"
 #include "y2023/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2023/vision/game_pieces_generated.h"
 
 namespace y2023::control_loops::drivetrain {
 namespace {
@@ -15,7 +16,8 @@ TargetSelector::TargetSelector(aos::EventLoop *event_loop)
     : joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       hint_fetcher_(event_loop->MakeFetcher<TargetSelectorHint>("/drivetrain")),
-      superstructure_status_fetcher_(event_loop->MakeFetcher<superstructure::Status>("/superstructure")),
+      superstructure_status_fetcher_(
+          event_loop->MakeFetcher<superstructure::Status>("/superstructure")),
       status_sender_(
           event_loop->MakeSender<TargetSelectorStatus>("/drivetrain")),
       constants_fetcher_(event_loop) {
@@ -33,12 +35,14 @@ TargetSelector::TargetSelector(aos::EventLoop *event_loop)
             LateralOffsetForTimeOfFlight(msg.cone_position());
       });
 
-  event_loop->AddPhasedLoop([this](int){
-      auto builder = status_sender_.MakeBuilder();
-      auto status_builder = builder.MakeBuilder<TargetSelectorStatus>();
-      status_builder.add_game_piece_position(game_piece_position_);
-      builder.CheckOk(builder.Send(status_builder.Finish()));
-      }, std::chrono::milliseconds(100));
+  event_loop->AddPhasedLoop(
+      [this](int) {
+        auto builder = status_sender_.MakeBuilder();
+        auto status_builder = builder.MakeBuilder<TargetSelectorStatus>();
+        status_builder.add_game_piece_position(game_piece_position_);
+        builder.CheckOk(builder.Send(status_builder.Finish()));
+      },
+      std::chrono::milliseconds(100));
 }
 
 void TargetSelector::UpdateAlliance() {
@@ -180,10 +184,13 @@ double TargetSelector::LateralOffsetForTimeOfFlight(double reading) {
   superstructure_status_fetcher_.Fetch();
   if (superstructure_status_fetcher_.get() != nullptr) {
     switch (superstructure_status_fetcher_->game_piece()) {
-      case superstructure::GamePiece::NONE:
-      case superstructure::GamePiece::CUBE:
+      case vision::Class::NONE:
+      case vision::Class::CUBE:
         return 0.0;
-      case superstructure::GamePiece::CONE:
+      case vision::Class::CONE_UP:
+        // execute logic below.
+        break;
+      case vision::Class::CONE_DOWN:
         // execute logic below.
         break;
     }

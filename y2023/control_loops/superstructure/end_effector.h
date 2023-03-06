@@ -7,6 +7,7 @@
 #include "y2023/constants.h"
 #include "y2023/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_status_generated.h"
+#include "y2023/vision/game_pieces_generated.h"
 
 namespace y2023 {
 namespace control_loops {
@@ -26,12 +27,12 @@ class EndEffector {
                     double cone_position, bool beambreak,
                     double *intake_roller_voltage);
   EndEffectorState state() const { return state_; }
-  GamePiece game_piece() const { return game_piece_; }
+  vision::Class game_piece() const { return game_piece_; }
   void Reset();
 
  private:
   EndEffectorState state_;
-  GamePiece game_piece_;
+  vision::Class game_piece_;
 
   aos::monotonic_clock::time_point timer_;
 

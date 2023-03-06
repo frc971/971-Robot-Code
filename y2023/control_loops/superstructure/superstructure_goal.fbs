@@ -4,10 +4,11 @@ namespace y2023.control_loops.superstructure;
 
 enum RollerGoal: ubyte {
     IDLE = 0,
-    INTAKE_CONE = 1,
+    INTAKE_CONE_UP = 1,
     INTAKE_CUBE = 2,
     INTAKE_LAST = 3,
     SPIT = 4,
+    INTAKE_CONE_DOWN = 5,
 }
 
 table Goal {

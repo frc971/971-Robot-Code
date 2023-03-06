@@ -2,9 +2,10 @@ namespace y2023.vision;
 
 // Object class.
 enum Class : byte {
-    CONE_DOWN,
-    CONE_UP,
-    CUBE
+    NONE = 0,
+    CONE_UP = 1,
+    CUBE = 2,
+    CONE_DOWN = 3,
 }
 
 // Bounding box dimensions and position.
