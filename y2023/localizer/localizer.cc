@@ -284,6 +284,7 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
 
   // TODO(james): Tune this. Also, gain schedule for auto mode?
   Eigen::Matrix<double, 3, 1> noises(1.0, 1.0, 0.5);
+  noises /= 4.0;
   // Scale noise by the distortion factor for this detection
   noises *= (1.0 + FLAGS_distortion_noise_scalar * target.distortion_factor());
 
