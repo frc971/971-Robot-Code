@@ -1545,3 +1545,15 @@ http_archive(
     strip_prefix = "en.STSW-IMG009_v3.5.2/API",
     url = "https://www.frc971.org/Build-Dependencies/en.STSW-IMG009.zip",
 )
+
+http_archive(
+    name = "apriltag_test_bfbs_images",
+    build_file_content = """
+filegroup(
+    name = "apriltag_test_bfbs_images",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)""",
+    sha256 = "2356b9d0b3be59d01e837bfbbee21de55b16232d5e00c66701c20b64ff3272e3",
+    url = "https://www.frc971.org/Build-Dependencies/2023_arducam_apriltag_test_images.tar.gz",
+)
