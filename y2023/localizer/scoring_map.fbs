@@ -2,8 +2,8 @@ include "frc971/vision/target_map.fbs";
 
 namespace y2023.localizer;
 
-// "left" and "right" in this file are taken from the perspective of a robot
-// on the field.
+// "left" and "right" in this file are taken from the perspective of a driver
+// off the field.
 
 // A row of three scoring positions, where the cube scoring locations will be
 // in the middle.
