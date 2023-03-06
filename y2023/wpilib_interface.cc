@@ -104,7 +104,8 @@ constexpr double kMaxFastEncoderPulsesPerSecond = std::max({
     Values::kMaxProximalEncoderPulsesPerSecond(),
     Values::kMaxDistalEncoderPulsesPerSecond(),
     Values::kMaxRollJointEncoderPulsesPerSecond(),
-    Values::kMaxWristEncoderPulsesPerSecond(),
+    Values::kMaxCompWristEncoderPulsesPerSecond(),
+    Values::kMaxPracticeWristEncoderPulsesPerSecond(),
 });
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
@@ -461,7 +462,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       frc971::AbsolutePositionT wrist;
       CopyPosition(wrist_encoder_, &wrist,
                    Values::kWristEncoderCountsPerRevolution(),
-                   Values::kWristEncoderRatio(), false);
+                   values_->wrist.subsystem_params.zeroing_constants
+                           .one_revolution_distance /
+                       (M_PI * 2.0),
+                   values_->wrist_flipped);
 
       flatbuffers::Offset<frc971::PotAndAbsolutePosition> proximal_offset =
           frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &proximal);

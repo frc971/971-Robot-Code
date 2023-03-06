@@ -373,15 +373,20 @@ class ArmUi(basic_window.BaseWindow):
         for i in range(len(self.segments)):
             color = None
             if i == self.index:
-                # Draw current spline in black
-                color = [0, 0, 0]
-            else:
-                color = [0, random.random(), 1]
-                random.shuffle(color)
+                continue
+            color = [0, random.random(), 1]
+            random.shuffle(color)
             set_color(cr, Color(color[0], color[1], color[2]))
             self.segments[i].DrawTo(cr, self.theta_version)
             with px(cr):
                 cr.stroke()
+
+        # Draw current spline in black
+        color = [0, 0, 0]
+        set_color(cr, Color(color[0], color[1], color[2]))
+        self.segments[self.index].DrawTo(cr, self.theta_version)
+        with px(cr):
+            cr.stroke()
 
         set_color(cr, Color(0.0, 1.0, 0.5))
 

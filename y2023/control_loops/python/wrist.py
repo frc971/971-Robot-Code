@@ -20,7 +20,7 @@ except gflags.DuplicateFlagError:
 kWrist = angular_system.AngularSystemParams(
     name='Wrist',
     motor=control_loop.BAG(),
-    G=(6.0 / 48.0) * (20.0 / 100.0) * (24.0 / 36.0) * (36.0 / 60.0),
+    G=(6.0 / 48.0) * (20.0 / 100.0) * (18.0 / 24.0) * (24.0 / 44.0),
     # Use parallel axis theorem to get the moment of inertia around
     # the joint (I = I_cm + mh^2 = 0.001877 + 0.8332 * 0.0407162^2)
     J=0.003258,

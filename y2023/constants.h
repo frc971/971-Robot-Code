@@ -121,17 +121,34 @@ struct Values {
   // Wrist
   static constexpr double kWristEncoderCountsPerRevolution() { return 4096.0; }
 
-  static constexpr double kWristEncoderRatio() {
+  static constexpr double kCompWristEncoderRatio() {
+    return 1.0;
+  }
+  static constexpr double kPracticeWristEncoderRatio() {
     return (24.0 / 36.0) * (36.0 / 60.0);
   }
 
-  static constexpr double kMaxWristEncoderPulsesPerSecond() {
+  static constexpr double kMaxCompWristEncoderPulsesPerSecond() {
     return control_loops::superstructure::wrist::kFreeSpeed / (2.0 * M_PI) *
            control_loops::superstructure::wrist::kOutputRatio /
-           kWristEncoderRatio() * kWristEncoderCountsPerRevolution();
+           kCompWristEncoderRatio() * kWristEncoderCountsPerRevolution();
+  }
+  static constexpr double kMaxPracticeWristEncoderPulsesPerSecond() {
+    return control_loops::superstructure::wrist::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::wrist::kOutputRatio /
+           kPracticeWristEncoderRatio() * kWristEncoderCountsPerRevolution();
   }
 
-  static constexpr ::frc971::constants::Range kWristRange() {
+  static constexpr ::frc971::constants::Range kCompWristRange() {
+    return ::frc971::constants::Range{
+        .lower_hard = -0.10,  // Back Hard
+        .upper_hard = 4.90,   // Front Hard
+        .lower = 0.0,         // Back Soft
+        .upper = 4.0,         // Front Soft
+    };
+  }
+
+  static constexpr ::frc971::constants::Range kPracticeWristRange() {
     return ::frc971::constants::Range{
         .lower_hard = -0.10,  // Back Hard
         .upper_hard = 2.30,   // Front Hard
@@ -210,6 +227,8 @@ struct Values {
   ArmJointConstants roll_joint;
 
   AbsEncoderConstants wrist;
+
+  bool wrist_flipped;
 };
 
 // Creates and returns a Values instance for the constants.

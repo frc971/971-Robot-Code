@@ -25,6 +25,7 @@ Values MakeValues(uint16_t team) {
   auto *const arm_distal = &r.arm_distal;
   auto *const wrist = &r.wrist;
   auto *const roll_joint = &r.roll_joint;
+  r.wrist_flipped = true;
 
   arm_proximal->zeroing.average_filter_size = Values::kZeroingSampleSize;
   arm_proximal->zeroing.one_revolution_distance =
@@ -51,18 +52,18 @@ Values MakeValues(uint16_t team) {
   wrist->subsystem_params.operating_voltage = 12.0;
   wrist->subsystem_params.zeroing_profile_params = {0.5, 3.0};
   wrist->subsystem_params.default_profile_params = {0.5, 5.0};
-  wrist->subsystem_params.range = Values::kWristRange();
+  wrist->subsystem_params.range = Values::kCompWristRange();
   wrist->subsystem_params.make_integral_loop =
       control_loops::superstructure::wrist::MakeIntegralWristLoop;
   wrist->subsystem_params.zeroing_constants.average_filter_size =
       Values::kZeroingSampleSize;
   wrist->subsystem_params.zeroing_constants.one_revolution_distance =
-      M_PI * 2.0 * constants::Values::kWristEncoderRatio();
+      M_PI * 2.0 * constants::Values::kCompWristEncoderRatio();
   wrist->subsystem_params.zeroing_constants.zeroing_threshold = 0.0005;
   wrist->subsystem_params.zeroing_constants.moving_buffer_size = 20;
   wrist->subsystem_params.zeroing_constants.allowable_encoder_error = 0.9;
   wrist->subsystem_params.zeroing_constants.middle_position =
-      Values::kWristRange().middle();
+      Values::kCompWristRange().middle();
 
   switch (team) {
     // A set of constants for tests.
@@ -82,17 +83,17 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      arm_proximal->zeroing.measured_absolute_position = 0.132182297391884;
+      arm_proximal->zeroing.measured_absolute_position = 0.138453705930275;
       arm_proximal->potentiometer_offset =
           0.931355973012855 + 8.6743197253382 - 0.101200335326309 -
-          0.0820901660993467 - 0.0703733798337964;
+          0.0820901660993467 - 0.0703733798337964 - 0.0294645384848748;
 
-      arm_distal->zeroing.measured_absolute_position = 0.597004611319487;
+      arm_distal->zeroing.measured_absolute_position = 0.562947209110251;
       arm_distal->potentiometer_offset =
           0.436664933370656 + 0.49457213779426 + 6.78213223139724 -
           0.0220711555235029 - 0.0162945074111813 + 0.00630344935527365 -
           0.0164398318919943 - 0.145833494945215 + 0.234878799868491 +
-          0.125924230298394;
+          0.125924230298394 + 0.147136306208754;
 
       roll_joint->zeroing.measured_absolute_position = 0.593975883699743;
       roll_joint->potentiometer_offset =
@@ -104,7 +105,7 @@ Values MakeValues(uint16_t team) {
           0.0201047336425017 - 1.0173426655158 - 0.186085272847293 - 0.0317706563397807;
 
       wrist->subsystem_params.zeroing_constants.measured_absolute_position =
-          1.54674994866259;
+          5.78862525947414;
 
       break;
 
@@ -125,6 +126,13 @@ Values MakeValues(uint16_t team) {
 
       wrist->subsystem_params.zeroing_constants.measured_absolute_position =
           2.51265911579648;
+
+      wrist->subsystem_params.zeroing_constants.one_revolution_distance =
+          M_PI * 2.0 * constants::Values::kPracticeWristEncoderRatio();
+      wrist->subsystem_params.range = Values::kPracticeWristRange();
+      wrist->subsystem_params.zeroing_constants.middle_position =
+          Values::kPracticeWristRange().middle();
+      r.wrist_flipped = false;
 
       break;
 

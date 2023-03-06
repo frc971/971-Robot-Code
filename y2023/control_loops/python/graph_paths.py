@@ -298,7 +298,7 @@ named_segments.append(
     ))
 
 points['ScoreBackLowCube'] = to_theta_with_circular_index_and_roll(
-    -1.102, 0.30, -np.pi / 2.0, circular_index=1)
+    -1.102, 0.3212121, -np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
