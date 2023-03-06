@@ -13,7 +13,7 @@ ng_pkg(
         "//scouting/webserver/requests/messages:error_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_all_matches_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_all_matches_ts_fbs",
-        "//scouting/www/rpc:_lib",
+        "//scouting/www/rpc",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
