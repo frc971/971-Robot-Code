@@ -642,6 +642,19 @@ cc_test(
 )
 
 cc_test(
+    name = "log_reader_utils_test",
+    srcs = ["log_reader_utils_test.cc"],
+    data = [
+        ":multinode_pingpong_combined_config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":log_reader_utils",
+        ":multinode_logger_test_lib",
+    ],
+)
+
+cc_test(
     name = "multinode_logger_test",
     srcs = ["multinode_logger_test.cc"],
     copts = select({

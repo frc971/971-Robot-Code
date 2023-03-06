@@ -18,21 +18,14 @@ using aos::message_bridge::RemoteMessage;
 using aos::testing::ArtifactPath;
 using aos::testing::MessageCounter;
 
-constexpr std::string_view kCombinedConfigSha1(
-    "5d73fe35bacaa59d24f8f0c1a806fe10b783b0fcc80809ee30a9db824e82538b");
-constexpr std::string_view kSplitConfigSha1(
-    "f25e8f6f90d61f41c41517e652300566228b077e44cd86f1af2af4a9bed31ad4");
-constexpr std::string_view kReloggedSplitConfigSha1(
-    "f1fabd629bdf8735c3d81bc791d7a454e8e636951c26cba6426545cbc97f911f");
-
 INSTANTIATE_TEST_SUITE_P(
     All, MultinodeLoggerTest,
     ::testing::Combine(
         ::testing::Values(
             ConfigParams{"multinode_pingpong_combined_config.json", true,
-                         kCombinedConfigSha1, kCombinedConfigSha1},
+                         kCombinedConfigSha1(), kCombinedConfigSha1()},
             ConfigParams{"multinode_pingpong_split_config.json", false,
-                         kSplitConfigSha1, kReloggedSplitConfigSha1}),
+                         kSplitConfigSha1(), kReloggedSplitConfigSha1()}),
         ::testing::ValuesIn(SupportedCompressionAlgorithms())));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -40,9 +33,9 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Combine(
         ::testing::Values(
             ConfigParams{"multinode_pingpong_combined_config.json", true,
-                         kCombinedConfigSha1, kCombinedConfigSha1},
+                         kCombinedConfigSha1(), kCombinedConfigSha1()},
             ConfigParams{"multinode_pingpong_split_config.json", false,
-                         kSplitConfigSha1, kReloggedSplitConfigSha1}),
+                         kSplitConfigSha1(), kReloggedSplitConfigSha1()}),
         ::testing::ValuesIn(SupportedCompressionAlgorithms())));
 
 // Tests that we can write and read simple multi-node log files.
