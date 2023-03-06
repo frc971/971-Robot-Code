@@ -28,11 +28,13 @@ robot_downloader(
     ],
     dirs = [
         "//y2023/www:www_files",
+        "//y2023/autonomous:splines",
     ],
     start_binaries = [
         "//aos/events/logging:logger_main",
         "//aos/network:web_proxy_main",
         "//aos/starter:irq_affinity",
+        "//y2023/autonomous:binaries",
         ":joystick_reader",
         ":wpilib_interface",
         "//aos/network:message_bridge_client",
