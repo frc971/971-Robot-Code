@@ -7,6 +7,7 @@
 #include "y2023/constants/constants_generated.h"
 #include "y2023/control_loops/drivetrain/target_selector_hint_generated.h"
 #include "y2023/control_loops/drivetrain/target_selector_status_generated.h"
+#include "y2023/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2023::control_loops::drivetrain {
 // This target selector provides the logic to choose which position to try to
@@ -47,10 +48,11 @@ class TargetSelector
  private:
   void UpdateAlliance();
   // Returns the Y coordinate of a game piece given the time-of-flight reading.
-  double LateralOffsetForTimeOfFlight(double reading) const;
+  double LateralOffsetForTimeOfFlight(double reading);
   std::optional<Pose> target_pose_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<TargetSelectorHint> hint_fetcher_;
+  aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
   aos::Sender<TargetSelectorStatus> status_sender_;
   std::optional<TargetSelectorHintT> last_hint_;
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;

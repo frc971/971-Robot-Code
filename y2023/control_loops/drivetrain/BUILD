@@ -161,6 +161,7 @@ cc_library(
         "//frc971/shooter_interpolation:interpolation",
         "//y2023/constants:constants_fbs",
         "//y2023/control_loops/superstructure:superstructure_position_fbs",
+        "//y2023/control_loops/superstructure:superstructure_status_fbs",
     ],
 )
 
