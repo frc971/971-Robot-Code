@@ -15,6 +15,7 @@ TargetSelector::TargetSelector(aos::EventLoop *event_loop)
     : joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       hint_fetcher_(event_loop->MakeFetcher<TargetSelectorHint>("/drivetrain")),
+      superstructure_status_fetcher_(event_loop->MakeFetcher<superstructure::Status>("/superstructure")),
       status_sender_(
           event_loop->MakeSender<TargetSelectorStatus>("/drivetrain")),
       constants_fetcher_(event_loop) {
@@ -24,6 +25,10 @@ TargetSelector::TargetSelector(aos::EventLoop *event_loop)
   event_loop->MakeWatcher(
       "/superstructure",
       [this](const y2023::control_loops::superstructure::Position &msg) {
+        // Technically this means that even if we have a cube we are relying on
+        // getting a Position message before updating the game_piece_position_
+        // to zero. But if we aren't getting position messages, then things are
+        // very broken.
         game_piece_position_ =
             LateralOffsetForTimeOfFlight(msg.cone_position());
       });
@@ -171,7 +176,20 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
 // TODO: Maybe this already handles field side correctly? Unsure if the line
 // follower ends up having positive as being robot frame relative or robot
 // direction relative...
-double TargetSelector::LateralOffsetForTimeOfFlight(double reading) const {
+double TargetSelector::LateralOffsetForTimeOfFlight(double reading) {
+  superstructure_status_fetcher_.Fetch();
+  if (superstructure_status_fetcher_.get() != nullptr) {
+    switch (superstructure_status_fetcher_->game_piece()) {
+      case superstructure::GamePiece::NONE:
+      case superstructure::GamePiece::CUBE:
+        return 0.0;
+      case superstructure::GamePiece::CONE:
+        // execute logic below.
+        break;
+    }
+  } else {
+    return 0.0;
+  }
   const TimeOfFlight *calibration =
       CHECK_NOTNULL(constants_fetcher_.constants().robot()->tof());
   // TODO(james): Use a generic interpolation table class.
