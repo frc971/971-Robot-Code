@@ -433,14 +433,15 @@ func (handler submitNoteScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 	}
 
 	err = handler.db.AddNotes(db.NotesData{
-		TeamNumber:   request.Team(),
-		Notes:        string(request.Notes()),
-		GoodDriving:  bool(request.GoodDriving()),
-		BadDriving:   bool(request.BadDriving()),
-		SketchyClimb: bool(request.SketchyClimb()),
-		SolidClimb:   bool(request.SolidClimb()),
-		GoodDefense:  bool(request.GoodDefense()),
-		BadDefense:   bool(request.BadDefense()),
+		TeamNumber:     request.Team(),
+		Notes:          string(request.Notes()),
+		GoodDriving:    bool(request.GoodDriving()),
+		BadDriving:     bool(request.BadDriving()),
+		SketchyPickup:  bool(request.SketchyPickup()),
+		SketchyPlacing: bool(request.SketchyPlacing()),
+		GoodDefense:    bool(request.GoodDefense()),
+		BadDefense:     bool(request.BadDefense()),
+		EasilyDefended: bool(request.EasilyDefended()),
 	})
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert notes: %v", err))
@@ -686,14 +687,15 @@ func (handler requestAllNotesHandler) ServeHTTP(w http.ResponseWriter, req *http
 	var response RequestAllNotesResponseT
 	for _, note := range notes {
 		response.NoteList = append(response.NoteList, &request_all_notes_response.NoteT{
-			Team:         note.TeamNumber,
-			Notes:        note.Notes,
-			GoodDriving:  note.GoodDriving,
-			BadDriving:   note.BadDriving,
-			SketchyClimb: note.SketchyClimb,
-			SolidClimb:   note.SolidClimb,
-			GoodDefense:  note.GoodDefense,
-			BadDefense:   note.BadDefense,
+			Team:           note.TeamNumber,
+			Notes:          note.Notes,
+			GoodDriving:    note.GoodDriving,
+			BadDriving:     note.BadDriving,
+			SketchyPickup:  note.SketchyPickup,
+			SketchyPlacing: note.SketchyPlacing,
+			GoodDefense:    note.GoodDefense,
+			BadDefense:     note.BadDefense,
+			EasilyDefended: note.EasilyDefended,
 		})
 	}
 

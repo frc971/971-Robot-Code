@@ -400,14 +400,15 @@ func TestSubmitNotes(t *testing.T) {
 
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&submit_notes.SubmitNotesT{
-		Team:         971,
-		Notes:        "Notes",
-		GoodDriving:  true,
-		BadDriving:   false,
-		SketchyClimb: true,
-		SolidClimb:   false,
-		GoodDefense:  true,
-		BadDefense:   false,
+		Team:           971,
+		Notes:          "Notes",
+		GoodDriving:    true,
+		BadDriving:     false,
+		SketchyPickup:  true,
+		SketchyPlacing: false,
+		GoodDefense:    true,
+		BadDefense:     false,
+		EasilyDefended: true,
 	}).Pack(builder))
 
 	_, err := debug.SubmitNotes("http://localhost:8080", builder.FinishedBytes())
@@ -417,14 +418,15 @@ func TestSubmitNotes(t *testing.T) {
 
 	expected := []db.NotesData{
 		{
-			TeamNumber:   971,
-			Notes:        "Notes",
-			GoodDriving:  true,
-			BadDriving:   false,
-			SketchyClimb: true,
-			SolidClimb:   false,
-			GoodDefense:  true,
-			BadDefense:   false,
+			TeamNumber:     971,
+			Notes:          "Notes",
+			GoodDriving:    true,
+			BadDriving:     false,
+			SketchyPickup:  true,
+			SketchyPlacing: false,
+			GoodDefense:    true,
+			BadDefense:     false,
+			EasilyDefended: true,
 		},
 	}
 
@@ -436,14 +438,15 @@ func TestSubmitNotes(t *testing.T) {
 func TestRequestNotes(t *testing.T) {
 	database := MockDatabase{
 		notes: []db.NotesData{{
-			TeamNumber:   971,
-			Notes:        "Notes",
-			GoodDriving:  true,
-			BadDriving:   false,
-			SketchyClimb: true,
-			SolidClimb:   false,
-			GoodDefense:  true,
-			BadDefense:   false,
+			TeamNumber:     971,
+			Notes:          "Notes",
+			GoodDriving:    true,
+			BadDriving:     false,
+			SketchyPickup:  true,
+			SketchyPlacing: false,
+			GoodDefense:    true,
+			BadDefense:     false,
+			EasilyDefended: true,
 		}},
 	}
 	scoutingServer := server.NewScoutingServer()
@@ -663,24 +666,26 @@ func TestRequestAllNotes(t *testing.T) {
 	db := MockDatabase{
 		notes: []db.NotesData{
 			{
-				TeamNumber:   971,
-				Notes:        "Notes",
-				GoodDriving:  true,
-				BadDriving:   false,
-				SketchyClimb: true,
-				SolidClimb:   false,
-				GoodDefense:  true,
-				BadDefense:   false,
+				TeamNumber:     971,
+				Notes:          "Notes",
+				GoodDriving:    true,
+				BadDriving:     false,
+				SketchyPickup:  true,
+				SketchyPlacing: false,
+				GoodDefense:    true,
+				BadDefense:     false,
+				EasilyDefended: false,
 			},
 			{
-				TeamNumber:   972,
-				Notes:        "More Notes",
-				GoodDriving:  false,
-				BadDriving:   false,
-				SketchyClimb: false,
-				SolidClimb:   true,
-				GoodDefense:  false,
-				BadDefense:   true,
+				TeamNumber:     972,
+				Notes:          "More Notes",
+				GoodDriving:    false,
+				BadDriving:     false,
+				SketchyPickup:  false,
+				SketchyPlacing: true,
+				GoodDefense:    false,
+				BadDefense:     true,
+				EasilyDefended: false,
 			},
 		},
 	}
@@ -700,24 +705,26 @@ func TestRequestAllNotes(t *testing.T) {
 	expected := request_all_notes_response.RequestAllNotesResponseT{
 		NoteList: []*request_all_notes_response.NoteT{
 			{
-				Team:         971,
-				Notes:        "Notes",
-				GoodDriving:  true,
-				BadDriving:   false,
-				SketchyClimb: true,
-				SolidClimb:   false,
-				GoodDefense:  true,
-				BadDefense:   false,
+				Team:           971,
+				Notes:          "Notes",
+				GoodDriving:    true,
+				BadDriving:     false,
+				SketchyPickup:  true,
+				SketchyPlacing: false,
+				GoodDefense:    true,
+				BadDefense:     false,
+				EasilyDefended: false,
 			},
 			{
-				Team:         972,
-				Notes:        "More Notes",
-				GoodDriving:  false,
-				BadDriving:   false,
-				SketchyClimb: false,
-				SolidClimb:   true,
-				GoodDefense:  false,
-				BadDefense:   true,
+				Team:           972,
+				Notes:          "More Notes",
+				GoodDriving:    false,
+				BadDriving:     false,
+				SketchyPickup:  false,
+				SketchyPlacing: true,
+				GoodDefense:    false,
+				BadDefense:     true,
+				EasilyDefended: false,
 			},
 		},
 	}

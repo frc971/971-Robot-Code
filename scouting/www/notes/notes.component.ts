@@ -40,10 +40,11 @@ type Section = 'TeamSelection' | 'Data';
 interface Keywords {
   goodDriving: boolean;
   badDriving: boolean;
-  sketchyClimb: boolean;
-  solidClimb: boolean;
+  sketchyPickup: boolean;
+  sketchyPlacing: boolean;
   goodDefense: boolean;
   badDefense: boolean;
+  easilyDefended: boolean;
 }
 
 interface Input {
@@ -55,10 +56,11 @@ interface Input {
 const KEYWORD_CHECKBOX_LABELS = {
   goodDriving: 'Good Driving',
   badDriving: 'Bad Driving',
-  solidClimb: 'Solid Climb',
-  sketchyClimb: 'Sketchy Climb',
+  sketchyPickup: 'Solid Pickup',
+  sketchyPlacing: 'Sketchy Placing',
   goodDefense: 'Good Defense',
   badDefense: 'Bad Defense',
+  easilyDefended: 'Easily Defended',
 } as const;
 
 @Component({
@@ -113,10 +115,11 @@ export class Notes {
       keywordsData: {
         goodDriving: false,
         badDriving: false,
-        solidClimb: false,
-        sketchyClimb: false,
+        sketchyPickup: false,
+        sketchyPlacing: false,
         goodDefense: false,
         badDefense: false,
+        easilyDefended: false,
       },
     };
 
@@ -149,10 +152,11 @@ export class Notes {
           dataFb,
           this.newData[i].keywordsData.goodDriving,
           this.newData[i].keywordsData.badDriving,
-          this.newData[i].keywordsData.sketchyClimb,
-          this.newData[i].keywordsData.solidClimb,
+          this.newData[i].keywordsData.sketchyPickup,
+          this.newData[i].keywordsData.sketchyPlacing,
           this.newData[i].keywordsData.goodDefense,
-          this.newData[i].keywordsData.badDefense
+          this.newData[i].keywordsData.badDefense,
+          this.newData[i].keywordsData.easilyDefended
         )
       );
 

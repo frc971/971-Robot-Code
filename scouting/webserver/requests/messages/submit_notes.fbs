@@ -5,10 +5,11 @@ table SubmitNotes {
     notes:string (id: 1);
     good_driving:bool (id: 2);
     bad_driving:bool (id: 3);
-    sketchy_climb:bool (id: 4);
-    solid_climb:bool (id: 5);
+    sketchy_pickup:bool (id: 4);
+    sketchy_placing:bool (id: 5);
     good_defense:bool (id: 6);
     bad_defense:bool (id: 7);
+    easily_defended:bool (id: 8);
 }
 
 root_type SubmitNotes;

@@ -188,10 +188,11 @@ class TestDebugCli(unittest.TestCase):
             "notes": "A very inspiring and useful comment",
             "good_driving": True,
             "bad_driving": False,
-            "sketchy_climb": False,
-            "solid_climb": True,
+            "sketchy_pickup": False,
+            "sketchy_placing": True,
             "good_defense": False,
             "bad_defense": False,
+            "easily_defended": False,
         })
         exit_code, _, stderr = run_debug_cli(["-submitNotes", json_path])
         self.assertEqual(exit_code, 0, stderr)
@@ -210,10 +211,11 @@ class TestDebugCli(unittest.TestCase):
             Notes: (string) (len=35) "A very inspiring and useful comment",
             GoodDriving: (bool) true,
             BadDriving: (bool) false,
-            SketchyClimb: (bool) false,
-            SolidClimb: (bool) true,
+            SketchyPickup: (bool) false,
+            SketchyPlacing: (bool) true,
             GoodDefense: (bool) false,
-            BadDefense: (bool) false
+            BadDefense: (bool) false,
+            EasilyDefended: (bool) false
             }"""), stdout)
 
     def test_submit_and_request_driver_ranking(self):

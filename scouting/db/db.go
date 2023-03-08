@@ -94,15 +94,16 @@ type Action struct {
 }
 
 type NotesData struct {
-	ID           uint `gorm:"primaryKey"`
-	TeamNumber   int32
-	Notes        string
-	GoodDriving  bool
-	BadDriving   bool
-	SketchyClimb bool
-	SolidClimb   bool
-	GoodDefense  bool
-	BadDefense   bool
+	ID             uint `gorm:"primaryKey"`
+	TeamNumber     int32
+	Notes          string
+	GoodDriving    bool
+	BadDriving     bool
+	SketchyPickup  bool
+	SketchyPlacing bool
+	GoodDefense    bool
+	BadDefense     bool
+	EasilyDefended bool
 }
 
 type Ranking struct {
@@ -395,14 +396,15 @@ func (database *Database) QueryRankings(TeamNumber int) ([]Ranking, error) {
 
 func (database *Database) AddNotes(data NotesData) error {
 	result := database.Create(&NotesData{
-		TeamNumber:   data.TeamNumber,
-		Notes:        data.Notes,
-		GoodDriving:  data.GoodDriving,
-		BadDriving:   data.BadDriving,
-		SketchyClimb: data.SketchyClimb,
-		SolidClimb:   data.SolidClimb,
-		GoodDefense:  data.GoodDefense,
-		BadDefense:   data.BadDefense,
+		TeamNumber:     data.TeamNumber,
+		Notes:          data.Notes,
+		GoodDriving:    data.GoodDriving,
+		BadDriving:     data.BadDriving,
+		SketchyPickup:  data.SketchyPickup,
+		SketchyPlacing: data.SketchyPlacing,
+		GoodDefense:    data.GoodDefense,
+		BadDefense:     data.BadDefense,
+		EasilyDefended: data.EasilyDefended,
 	})
 	return result.Error
 }

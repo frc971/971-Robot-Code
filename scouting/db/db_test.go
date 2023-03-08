@@ -1092,11 +1092,11 @@ func TestNotes(t *testing.T) {
 
 	expected := []string{"Note 1", "Note 3"}
 
-	err := fixture.db.AddNotes(NotesData{TeamNumber: 1234, Notes: "Note 1", GoodDriving: true, BadDriving: false, SketchyClimb: false, SolidClimb: true, GoodDefense: false, BadDefense: true})
+	err := fixture.db.AddNotes(NotesData{TeamNumber: 1234, Notes: "Note 1", GoodDriving: true, BadDriving: false, SketchyPickup: false, SketchyPlacing: true, GoodDefense: false, BadDefense: true, EasilyDefended: true})
 	check(t, err, "Failed to add Note")
-	err = fixture.db.AddNotes(NotesData{TeamNumber: 1235, Notes: "Note 2", GoodDriving: false, BadDriving: true, SketchyClimb: false, SolidClimb: true, GoodDefense: false, BadDefense: false})
+	err = fixture.db.AddNotes(NotesData{TeamNumber: 1235, Notes: "Note 2", GoodDriving: false, BadDriving: true, SketchyPickup: false, SketchyPlacing: true, GoodDefense: false, BadDefense: false, EasilyDefended: false})
 	check(t, err, "Failed to add Note")
-	err = fixture.db.AddNotes(NotesData{TeamNumber: 1234, Notes: "Note 3", GoodDriving: true, BadDriving: false, SketchyClimb: false, SolidClimb: true, GoodDefense: true, BadDefense: false})
+	err = fixture.db.AddNotes(NotesData{TeamNumber: 1234, Notes: "Note 3", GoodDriving: true, BadDriving: false, SketchyPickup: false, SketchyPlacing: true, GoodDefense: true, BadDefense: false, EasilyDefended: true})
 	check(t, err, "Failed to add Note")
 
 	actual, err := fixture.db.QueryNotes(1234)

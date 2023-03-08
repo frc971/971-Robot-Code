@@ -171,17 +171,20 @@ export class ViewComponent {
     if (entry.badDriving()) {
       parsedKeywords += 'Bad Driving ';
     }
-    if (entry.solidClimb()) {
-      parsedKeywords += 'Solid Climb ';
+    if (entry.sketchyPickup()) {
+      parsedKeywords += 'Sketchy Pickup ';
     }
-    if (entry.sketchyClimb()) {
-      parsedKeywords += 'Sketchy Climb ';
+    if (entry.sketchyPlacing()) {
+      parsedKeywords += 'Sketchy Pickup ';
     }
     if (entry.goodDefense()) {
       parsedKeywords += 'Good Defense ';
     }
     if (entry.badDefense()) {
       parsedKeywords += 'Bad Defense ';
+    }
+    if (entry.easilyDefended()) {
+      parsedKeywords += 'Easily Defended';
     }
 
     return parsedKeywords;
