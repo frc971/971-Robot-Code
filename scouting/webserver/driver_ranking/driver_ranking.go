@@ -119,7 +119,8 @@ func GenerateFullDriverRanking(database Database, scriptPath string) {
 	// database.
 	outputRecords, err := readFromCsv(outputCsvFile)
 
-	for _, record := range outputRecords {
+	// Skip the first row since those are the column labels.
+	for _, record := range outputRecords[1:] {
 		score, err := strconv.ParseFloat(record[1], 32)
 		if err != nil {
 			log.Println("Failed to parse score for team ", record[0], ": ", record[1], ": ", err)

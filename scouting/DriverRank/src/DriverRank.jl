@@ -1,3 +1,5 @@
+#!/usr/bin/env julia
+
 module DriverRank
 
 using CSV
@@ -100,9 +102,11 @@ function log_likelihood(
     return result
 end
 
-function rank()
-    # TODO(phil): Make the input path configurable.
-    df = DataFrame(CSV.File("./data/2022_madtown.csv"))
+function rank(
+    input_csv::String,
+    output_csv::String,
+)
+    df = DataFrame(CSV.File(input_csv))
 
     rank1 = "Rank 1 (best)"
     rank2 = "Rank 2"
@@ -133,10 +137,18 @@ function rank()
             :score=>Optim.minimizer(res),
         ) |>
         x -> sort!(x, [:score], rev=true)
-    # TODO(phil): Save the output to a CSV file.
-    show(ranking_points, allrows=true)
+
+    # Uncomment to print the results on the console as well.
+    #show(ranking_points, allrows=true)
+
+    CSV.write(output_csv, ranking_points)
 end
 
 export rank
+
+# Run the program if this script is being executed from the command line.
+if abspath(PROGRAM_FILE) == @__FILE__
+    rank(ARGS[1], ARGS[2])
+end
 
 end # module
