@@ -1,0 +1,7 @@
+namespace y2023.control_loops.drivetrain;
+
+table TargetSelectorStatus {
+  game_piece_position:double (id: 0);
+}
+
+root_type TargetSelectorStatus;

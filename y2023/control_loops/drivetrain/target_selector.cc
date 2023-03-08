@@ -1,6 +1,8 @@
 #include "y2023/control_loops/drivetrain/target_selector.h"
 
 #include "aos/containers/sized_array.h"
+#include "frc971/shooter_interpolation/interpolation.h"
+#include "y2023/control_loops/superstructure/superstructure_position_generated.h"
 
 namespace y2023::control_loops::drivetrain {
 namespace {
@@ -13,10 +15,25 @@ TargetSelector::TargetSelector(aos::EventLoop *event_loop)
     : joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       hint_fetcher_(event_loop->MakeFetcher<TargetSelectorHint>("/drivetrain")),
+      status_sender_(
+          event_loop->MakeSender<TargetSelectorStatus>("/drivetrain")),
       constants_fetcher_(event_loop) {
   CHECK(constants_fetcher_.constants().has_scoring_map());
   CHECK(constants_fetcher_.constants().scoring_map()->has_red());
   CHECK(constants_fetcher_.constants().scoring_map()->has_blue());
+  event_loop->MakeWatcher(
+      "/superstructure",
+      [this](const y2023::control_loops::superstructure::Position &msg) {
+        game_piece_position_ =
+            LateralOffsetForTimeOfFlight(msg.cone_position());
+      });
+
+  event_loop->AddPhasedLoop([this](int){
+      auto builder = status_sender_.MakeBuilder();
+      auto status_builder = builder.MakeBuilder<TargetSelectorStatus>();
+      status_builder.add_game_piece_position(game_piece_position_);
+      builder.CheckOk(builder.Send(status_builder.Finish()));
+      }, std::chrono::milliseconds(100));
 }
 
 void TargetSelector::UpdateAlliance() {
@@ -149,6 +166,23 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
   }
   CHECK(target_pose_.has_value());
   return true;
+}
+
+// TODO: Maybe this already handles field side correctly? Unsure if the line
+// follower ends up having positive as being robot frame relative or robot
+// direction relative...
+double TargetSelector::LateralOffsetForTimeOfFlight(double reading) const {
+  const TimeOfFlight *calibration =
+      CHECK_NOTNULL(constants_fetcher_.constants().robot()->tof());
+  // TODO(james): Use a generic interpolation table class.
+  auto table = CHECK_NOTNULL(calibration->interpolation_table());
+  CHECK_EQ(2u, table->size());
+  double x1 = table->Get(0)->tof_reading();
+  double x2 = table->Get(1)->tof_reading();
+  double y1 = table->Get(0)->lateral_position();
+  double y2 = table->Get(1)->lateral_position();
+  return frc971::shooter_interpolation::Blend((reading - x1) / (x2 - x1), y1,
+                                              y2);
 }
 
 }  // namespace y2023::control_loops::drivetrain

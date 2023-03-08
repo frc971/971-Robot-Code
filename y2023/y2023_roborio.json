@@ -412,7 +412,7 @@
     },
     {
       "name": "/drivetrain",
-      "type": "y2019.control_loops.drivetrain.TargetSelectorHint",
+      "type": "y2023.control_loops.drivetrain.TargetSelectorStatus",
       "source_node": "roborio"
     },
     {

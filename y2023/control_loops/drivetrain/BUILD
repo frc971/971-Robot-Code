@@ -125,6 +125,15 @@ flatbuffer_cc_library(
 )
 
 flatbuffer_cc_library(
+    name = "target_selector_status_fbs",
+    srcs = [
+        ":target_selector_status.fbs",
+    ],
+    gen_reflections = 1,
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_cc_library(
     name = "target_selector_hint_fbs",
     srcs = [
         ":target_selector_hint.fbs",
@@ -142,13 +151,16 @@ cc_library(
     hdrs = ["target_selector.h"],
     deps = [
         ":target_selector_hint_fbs",
+        ":target_selector_status_fbs",
         "//aos/containers:sized_array",
         "//aos/events:event_loop",
         "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:pose",
         "//frc971/control_loops/drivetrain:localizer",
         "//frc971/input:joystick_state_fbs",
+        "//frc971/shooter_interpolation:interpolation",
         "//y2023/constants:constants_fbs",
+        "//y2023/control_loops/superstructure:superstructure_position_fbs",
     ],
 )
 

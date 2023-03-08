@@ -6,6 +6,7 @@
 #include "frc971/input/joystick_state_generated.h"
 #include "y2023/constants/constants_generated.h"
 #include "y2023/control_loops/drivetrain/target_selector_hint_generated.h"
+#include "y2023/control_loops/drivetrain/target_selector_status_generated.h"
 
 namespace y2023::control_loops::drivetrain {
 // This target selector provides the logic to choose which position to try to
@@ -37,7 +38,7 @@ class TargetSelector
   }
 
   double TargetRadius() const override { return 0.0; }
-  double GamePieceRadius() const override { return 0.0; }
+  double GamePieceRadius() const override { return game_piece_position_; }
   bool SignedRadii() const override { return true; }
   Side DriveDirection() const override { return drive_direction_; }
   // We will manage any desired hysteresis in the target selection.
@@ -45,12 +46,16 @@ class TargetSelector
 
  private:
   void UpdateAlliance();
+  // Returns the Y coordinate of a game piece given the time-of-flight reading.
+  double LateralOffsetForTimeOfFlight(double reading) const;
   std::optional<Pose> target_pose_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<TargetSelectorHint> hint_fetcher_;
+  aos::Sender<TargetSelectorStatus> status_sender_;
   std::optional<TargetSelectorHintT> last_hint_;
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
   const localizer::HalfField *scoring_map_ = nullptr;
+  double game_piece_position_ = 0.0;
   Side drive_direction_ = Side::DONT_CARE;
 };
 }  // namespace y2023::control_loops::drivetrain
