@@ -9,6 +9,7 @@ go_library(
     deps = [
         "//scouting/db",
         "//scouting/scraping/background",
+        "//scouting/webserver/driver_ranking",
         "//scouting/webserver/match_list",
         "//scouting/webserver/rankings",
         "//scouting/webserver/requests",
