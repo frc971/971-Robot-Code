@@ -1579,3 +1579,19 @@ http_archive(
     strip_prefix = "tensorflow-bazel",
     url = "https://www.frc971.org/Build-Dependencies/tensorflow-2.8.0.tar.gz",
 )
+
+http_archive(
+    name = "julia",
+    build_file = "//third_party:julia/julia.BUILD",
+    patch_cmds = [
+        "echo 'LIB_SYMLINKS = {' > files.bzl",
+        '''find lib/ -type l -exec bash -c 'echo "\\"{}\\": \\"$(readlink {})\\","' \\; | sort >> files.bzl''',
+        "echo '}' >> files.bzl",
+        "echo 'LIBS = [' >> files.bzl",
+        '''find lib/ -type f -exec bash -c 'echo "\\"{}\\","' \\; | sort >> files.bzl''',
+        "echo ']' >> files.bzl",
+    ],
+    sha256 = "e71a24816e8fe9d5f4807664cbbb42738f5aa9fe05397d35c81d4c5d649b9d05",
+    strip_prefix = "julia-1.8.5",
+    url = "https://julialang-s3.julialang.org/bin/linux/x64/1.8/julia-1.8.5-linux-x86_64.tar.gz",
+)

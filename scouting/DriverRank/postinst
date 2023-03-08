@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+export PATH="/opt/frc971/julia_runtime/bin:${PATH}"
+export JULIA_DEPOT_PATH=/var/frc971/scouting/julia_depot/
+export JULIA_PROJECT=/opt/frc971/julia_manifest
+
+julia /opt/frc971/julia_manifest/activate.jl /opt/frc971/julia_manifest
