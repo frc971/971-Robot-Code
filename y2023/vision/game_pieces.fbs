@@ -8,8 +8,8 @@ enum Class : byte {
 }
 
 // Bounding box dimensions and position.
+// X and Y represent the top left of the bounding box.
 table Box {
-    //TODO(Filip): Are cords center of box or top left corner?
     x:uint (id: 0);
     y:uint (id: 1);
     w:uint (id: 2);
@@ -24,6 +24,7 @@ table GamePiece {
 
 table GamePieces {
     game_pieces:[GamePiece] (id: 0);
+    best_piece:uint (id: 1); // Index of the "best piece".
 }
 
 root_type GamePieces;
