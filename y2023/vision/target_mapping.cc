@@ -20,8 +20,8 @@
 
 DEFINE_string(json_path, "y2023/vision/maps/target_map.json",
               "Specify path for json with initial pose guesses.");
-DEFINE_string(config, "y2023/aos_config.json",
-              "Path to the config file to use.");
+DEFINE_string(config, "",
+              "If set, override the log's config file with this one.");
 DEFINE_string(constants_path, "y2023/constants/constants.json",
               "Path to the constant file");
 DEFINE_string(output_dir, "y2023/vision/maps",
@@ -127,12 +127,15 @@ void MappingMain(int argc, char *argv[]) {
 
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections;
 
-  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
-      aos::configuration::ReadConfig(FLAGS_config);
+  std::optional<aos::FlatbufferDetachedBuffer<aos::Configuration>> config =
+      (FLAGS_config.empty()
+           ? std::nullopt
+           : std::make_optional(aos::configuration::ReadConfig(FLAGS_config)));
 
   // open logfiles
-  aos::logger::LogReader reader(aos::logger::SortParts(unsorted_logfiles),
-                                &config.message());
+  aos::logger::LogReader reader(
+      aos::logger::SortParts(unsorted_logfiles),
+      config.has_value() ? &config->message() : nullptr);
   // Send new april tag poses. This allows us to take a log of images, then play
   // with the april detection code and see those changes take effect in mapping
   constexpr size_t kNumPis = 4;
