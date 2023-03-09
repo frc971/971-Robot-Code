@@ -68,6 +68,7 @@ const ButtonLocation kSuck(4, 11);
 const ButtonLocation kBack(4, 12);
 
 const ButtonLocation kWrist(4, 10);
+const ButtonLocation kStayIn(3, 4);
 
 namespace superstructure = y2023::control_loops::superstructure;
 namespace arm = superstructure::arm;
@@ -386,9 +387,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     // And, pull the bits out of it.
     if (current_setpoint_ != nullptr) {
-      wrist_goal = current_setpoint_->wrist_goal;
-      arm_goal_position_ = current_setpoint_->index;
-      score_wrist_goal = current_setpoint_->score_wrist_goal;
+      if (!data.IsPressed(kStayIn)) {
+        wrist_goal = current_setpoint_->wrist_goal;
+        arm_goal_position_ = current_setpoint_->index;
+        score_wrist_goal = current_setpoint_->score_wrist_goal;
+      }
+
       placing_row = current_setpoint_->row_hint;
     }
 
