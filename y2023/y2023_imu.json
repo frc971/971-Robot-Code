@@ -312,7 +312,7 @@
       "name": "/localizer",
       "type": "frc971.controls.LocalizerOutput",
       "source_node": "imu",
-      "frequency": 210,
+      "frequency": 52,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
         "roborio"
@@ -334,7 +334,7 @@
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "imu",
       "logger": "NOT_LOGGED",
-      "frequency": 210,
+      "frequency": 52,
       "num_senders": 2,
       "max_size": 200
     },

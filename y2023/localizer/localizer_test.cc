@@ -332,7 +332,9 @@ TEST_F(LocalizerTest, NominalReverse) {
 // correctly.
 TEST_F(LocalizerTest, NominalSpinInPlace) {
   output_voltages_ << -1.0, 1.0;
-  event_loop_factory_.RunFor(std::chrono::seconds(2));
+  // Go 1 ms over 2 sec to make sure we actually see relatively recent messages
+  // on each channel.
+  event_loop_factory_.RunFor(std::chrono::milliseconds(2001));
   CHECK(output_fetcher_.Fetch());
   CHECK(status_fetcher_.Fetch());
   // The two can be different because they may've been sent at different
