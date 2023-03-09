@@ -43,7 +43,7 @@ namespace input {
 namespace joysticks {
 
 // TODO(milind): add correct locations
-const ButtonLocation kScore(4, 4);
+const ButtonLocation kDriverSpit(2, 1);
 const ButtonLocation kSpit(4, 13);
 
 const ButtonLocation kHighConeScoreLeft(4, 14);
@@ -396,7 +396,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     if (data.IsPressed(kSuck)) {
       roller_goal = RollerGoal::INTAKE_LAST;
-    } else if (data.IsPressed(kSpit)) {
+    } else if (data.IsPressed(kSpit) || data.IsPressed(kDriverSpit)) {
       if (score_wrist_goal.has_value()) {
         wrist_goal = score_wrist_goal.value();
 
