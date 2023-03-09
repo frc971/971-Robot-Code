@@ -76,6 +76,7 @@ void HandleAprilTags(const TargetMap &map,
     ceres::examples::Pose3d target_pose_camera =
         PoseUtils::Affine3dToPose3d(H_camera_target);
     double distance_from_camera = target_pose_camera.p.norm();
+    double distortion_factor = target_pose_fbs->distortion_factor();
 
     CHECK(map.has_monotonic_timestamp_ns())
         << "Need detection timestamps for mapping";
@@ -85,6 +86,7 @@ void HandleAprilTags(const TargetMap &map,
             .time = pi_distributed_time,
             .H_robot_target = H_robot_target,
             .distance_from_camera = distance_from_camera,
+            .distortion_factor = distortion_factor,
             .id = static_cast<TargetMapper::TargetId>(target_pose.id)});
   }
 }

@@ -111,6 +111,8 @@ class DataAdapter {
     // Horizontal distance from camera to target, used for confidence
     // calculation
     double distance_from_camera;
+    // A measure of how much distortion affected this detection from 0-1.
+    double distortion_factor;
     TargetMapper::TargetId id;
   };
 
@@ -128,9 +130,8 @@ class DataAdapter {
   // detection between robot movement over the given time period. Ceres calls
   // this matrix the "information"
   static TargetMapper::ConfidenceMatrix ComputeConfidence(
-      aos::distributed_clock::time_point start,
-      aos::distributed_clock::time_point end, double distance_from_camera_start,
-      double distance_from_camera_end);
+      const TimestampedDetection &detection_start,
+      const TimestampedDetection &detection_end);
 
  private:
   // Computes the constraint between the start and end pose of the targets: the

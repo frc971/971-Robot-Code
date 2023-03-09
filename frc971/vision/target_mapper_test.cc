@@ -95,12 +95,28 @@ ceres::examples::Pose3d Make2dPose(double x, double y, double yaw_radians) {
 // Assumes camera and robot origin are the same
 DataAdapter::TimestampedDetection MakeTimestampedDetection(
     aos::distributed_clock::time_point time, Eigen::Affine3d H_robot_target,
-    TargetMapper::TargetId id) {
+    TargetMapper::TargetId id, double distortion_factor = 0.001) {
   auto target_pose = PoseUtils::Affine3dToPose3d(H_robot_target);
   return DataAdapter::TimestampedDetection{
-      time, H_robot_target,
-      std::sqrt(std::pow(target_pose.p(0), 2) + std::pow(target_pose.p(1), 2)),
-      id};
+      .time = time,
+      .H_robot_target = H_robot_target,
+      .distance_from_camera = target_pose.p.norm(),
+      .distortion_factor = distortion_factor,
+      .id = id};
+}
+
+DataAdapter::TimestampedDetection MakeTimestampedDetectionForConfidence(
+    aos::distributed_clock::time_point time, TargetMapper::TargetId id,
+    double distance_from_camera, double distortion_factor) {
+  auto target_pose = ceres::examples::Pose3d{
+      .p = Eigen::Vector3d(distance_from_camera, 0.0, 0.0),
+      .q = Eigen::Quaterniond(1.0, 0.0, 0.0, 0.0)};
+  return DataAdapter::TimestampedDetection{
+      .time = time,
+      .H_robot_target = PoseUtils::Pose3dToAffine3d(target_pose),
+      .distance_from_camera = target_pose.p.norm(),
+      .distortion_factor = distortion_factor,
+      .id = id};
 }
 
 bool TargetIsInView(TargetMapper::TargetPose target_detection) {
@@ -170,17 +186,25 @@ TEST(DataAdapterTest, ComputeConfidence) {
   // Check the confidence matrices. Don't check the actual values
   // in case the constants change, just check that the confidence of contraints
   // decreases as time period or distances from camera increase.
+
+  constexpr size_t kIdStart = 0;
+  constexpr size_t kIdEnd = 1;
+
   {
     // Vary time period
     constexpr double kDistanceStart = 0.5;
     constexpr double kDistanceEnd = 2.0;
+    constexpr double kDistortionFactor = 0.001;
 
     TargetMapper::ConfidenceMatrix last_confidence =
         TargetMapper::ConfidenceMatrix::Zero();
     for (size_t dt = 0; dt < 15; dt++) {
       TargetMapper::ConfidenceMatrix confidence =
-          DataAdapter::ComputeConfidence(TimeInMs(0), TimeInMs(dt),
-                                         kDistanceStart, kDistanceEnd);
+          DataAdapter::ComputeConfidence(
+              MakeTimestampedDetectionForConfidence(
+                  TimeInMs(0), kIdStart, kDistanceStart, kDistortionFactor),
+              MakeTimestampedDetectionForConfidence(
+                  TimeInMs(dt), kIdEnd, kDistanceEnd, kDistortionFactor));
 
       if (dt != 0) {
         // Confidence only decreases every 5ms (control loop period)
@@ -198,13 +222,19 @@ TEST(DataAdapterTest, ComputeConfidence) {
     // Vary distance at start
     constexpr int kDt = 3;
     constexpr double kDistanceEnd = 1.5;
+    constexpr double kDistortionFactor = 0.001;
+
     TargetMapper::ConfidenceMatrix last_confidence =
         TargetMapper::ConfidenceMatrix::Zero();
     for (double distance_start = 0.0; distance_start < 3.0;
          distance_start += 0.5) {
       TargetMapper::ConfidenceMatrix confidence =
-          DataAdapter::ComputeConfidence(TimeInMs(0), TimeInMs(kDt),
-                                         distance_start, kDistanceEnd);
+          DataAdapter::ComputeConfidence(
+              MakeTimestampedDetectionForConfidence(
+                  TimeInMs(0), kIdStart, distance_start, kDistortionFactor),
+              MakeTimestampedDetectionForConfidence(
+                  TimeInMs(kDt), kIdEnd, kDistanceEnd, kDistortionFactor));
+
       if (distance_start != 0.0) {
         EXPECT_CONFIDENCE_GT(last_confidence, confidence);
       }
@@ -216,13 +246,43 @@ TEST(DataAdapterTest, ComputeConfidence) {
     // Vary distance at end
     constexpr int kDt = 2;
     constexpr double kDistanceStart = 2.5;
+    constexpr double kDistortionFactor = 0.001;
+
     TargetMapper::ConfidenceMatrix last_confidence =
         TargetMapper::ConfidenceMatrix::Zero();
     for (double distance_end = 0.0; distance_end < 3.0; distance_end += 0.5) {
       TargetMapper::ConfidenceMatrix confidence =
-          DataAdapter::ComputeConfidence(TimeInMs(0), TimeInMs(kDt),
-                                         kDistanceStart, distance_end);
+          DataAdapter::ComputeConfidence(
+              MakeTimestampedDetectionForConfidence(
+                  TimeInMs(0), kIdStart, kDistanceStart, kDistortionFactor),
+              MakeTimestampedDetectionForConfidence(
+                  TimeInMs(kDt), kIdEnd, distance_end, kDistortionFactor));
+
       if (distance_end != 0.0) {
+        EXPECT_CONFIDENCE_GT(last_confidence, confidence);
+      }
+      last_confidence = confidence;
+    }
+  }
+
+  {
+    // Vary distortion factor
+    constexpr int kDt = 2;
+    constexpr double kDistanceStart = 2.5;
+    constexpr double kDistanceEnd = 1.5;
+
+    TargetMapper::ConfidenceMatrix last_confidence =
+        TargetMapper::ConfidenceMatrix::Zero();
+    for (double distortion_factor = 0.0; distortion_factor <= 1.0;
+         distortion_factor += 0.01) {
+      TargetMapper::ConfidenceMatrix confidence =
+          DataAdapter::ComputeConfidence(
+              MakeTimestampedDetectionForConfidence(
+                  TimeInMs(0), kIdStart, kDistanceStart, distortion_factor),
+              MakeTimestampedDetectionForConfidence(
+                  TimeInMs(kDt), kIdEnd, kDistanceEnd, distortion_factor));
+
+      if (distortion_factor != 0.0) {
         EXPECT_CONFIDENCE_GT(last_confidence, confidence);
       }
       last_confidence = confidence;
@@ -386,10 +446,18 @@ class ChargedUpTargetMapperTest : public ::testing::Test {
       target_detection.pose.q.y() += dist(generator_) * kNoiseScaleOrientation;
       target_detection.pose.q.z() += dist(generator_) * kNoiseScaleOrientation;
 
+      // Get most distortion factors close to zero, but have a few outliers
+      const std::vector<double> kDistortionFactorIntervals = {0.0, 0.01, 1.0};
+      const std::vector<double> kDistortionFactorWeights = {0.9, 0.1};
+      std::piecewise_constant_distribution<double> distortion_factor_dist(
+          kDistortionFactorIntervals.begin(), kDistortionFactorIntervals.end(),
+          kDistortionFactorWeights.begin());
+      double distortion_factor = distortion_factor_dist(generator_);
+
       auto time_point = TimeInMs(t);
       return MakeTimestampedDetection(
           time_point, PoseUtils::Pose3dToAffine3d(target_detection.pose),
-          target_detection.id);
+          target_detection.id, distortion_factor);
     }
 
     return std::nullopt;
