@@ -8,6 +8,11 @@ Group=www-data
 Type=simple
 WorkingDirectory=/opt/frc971/scouting_server
 Environment=RUNFILES_DIR=/opt/frc971/scouting_server
+# Add "julia" to the PATH.
+Environment=PATH=/opt/frc971/scouting/julia_runtime/bin:/usr/local/bin:/usr/bin:/bin
+# Use the Julia cache set up by the frc971-scouting-julia package.
+Environment=JULIA_DEPOT_PATH=/var/frc971/scouting/julia_depot/
+Environment=JULIA_PROJECT=/opt/frc971/julia_manifest
 ExecStart=/opt/frc971/scouting_server/scouting/scouting \
     -port 8080 \
     -db_config /var/frc971/scouting/db_config.json \

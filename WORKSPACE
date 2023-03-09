@@ -99,14 +99,10 @@ pip_configure(
 
 http_archive(
     name = "rules_pkg",
-    patch_args = ["-p1"],
-    patches = [
-        "//third_party:rules_pkg/0001-Fix-tree-artifacts.patch",
-    ],
-    sha256 = "62eeb544ff1ef41d786e329e1536c1d541bb9bcad27ae984d57f18f314018e66",
+    sha256 = "8c20f74bca25d2d442b327ae26768c02cf3c99e93fad0381f32be9aab1967675",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_pkg/releases/download/0.6.0/rules_pkg-0.6.0.tar.gz",
-        "https://github.com/bazelbuild/rules_pkg/releases/download/0.6.0/rules_pkg-0.6.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_pkg/releases/download/0.8.1/rules_pkg-0.8.1.tar.gz",
+        "https://github.com/bazelbuild/rules_pkg/releases/download/0.8.1/rules_pkg-0.8.1.tar.gz",
     ],
 )
 
@@ -1582,4 +1578,20 @@ http_archive(
     sha256 = "0e3f8deac9c7cdf9aa5812ad6a87af318ed1cf08cb0c414aa494846b7fc15302",
     strip_prefix = "tensorflow-bazel",
     url = "https://www.frc971.org/Build-Dependencies/tensorflow-2.8.0.tar.gz",
+)
+
+http_archive(
+    name = "julia",
+    build_file = "//third_party:julia/julia.BUILD",
+    patch_cmds = [
+        "echo 'LIB_SYMLINKS = {' > files.bzl",
+        '''find lib/ -type l -exec bash -c 'echo "\\"{}\\": \\"$(readlink {})\\","' \\; | sort >> files.bzl''',
+        "echo '}' >> files.bzl",
+        "echo 'LIBS = [' >> files.bzl",
+        '''find lib/ -type f -exec bash -c 'echo "\\"{}\\","' \\; | sort >> files.bzl''',
+        "echo ']' >> files.bzl",
+    ],
+    sha256 = "e71a24816e8fe9d5f4807664cbbb42738f5aa9fe05397d35c81d4c5d649b9d05",
+    strip_prefix = "julia-1.8.5",
+    url = "https://julialang-s3.julialang.org/bin/linux/x64/1.8/julia-1.8.5-linux-x86_64.tar.gz",
 )
