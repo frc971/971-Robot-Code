@@ -6,6 +6,8 @@
 #include "aos/testing/tmpdir.h"
 #include "gtest/gtest.h"
 
+DECLARE_int32(jpeg_quality);
+
 namespace frc971::vision {
 std::ostream &operator<<(std::ostream &os, ImageCompression compression) {
   os << ExtensionForCompression(compression);
@@ -29,6 +31,10 @@ class ImageConverterTest : public ::testing::TestWithParam<ImageCompression> {
                    GetParam()),
         output_path_(absl::StrCat(aos::testing::TestTmpDir(), "/test.",
                                   ExtensionForCompression(GetParam()))) {
+    // Because our test image for comparison was generated with a JPEG quality
+    // of 95, we need to use that for the test to work. This also protects the
+    // tests against future changes to the default JPEG quality.
+    FLAGS_jpeg_quality = 95;
     test_event_loop_->OnRun(
         [this]() { image_sender_.CheckOk(image_sender_.Send(camera_image_)); });
     test_event_loop_->MakeWatcher(

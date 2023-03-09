@@ -3,7 +3,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-DEFINE_int32(jpeg_quality, 95,
+DEFINE_int32(jpeg_quality, 60,
              "Compression quality of JPEGs, 0-100; lower numbers mean lower "
              "quality and resulting image sizes.");
 
