@@ -21,26 +21,6 @@
       ]
     },
     {
-      "name": "/drivetrain",
-      "type": "frc971.control_loops.drivetrain.Position",
-      "source_node": "roborio",
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "logger"
-      ],
-      "destination_nodes": [
-        {
-          "name": "logger",
-          "priority": 2,
-          "time_to_live": 500000000,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "roborio"
-          ]
-        }
-      ]
-    },
-    {
       "name": "/logger/camera",
       "type": "y2023.vision.GamePieces",
       "source_node": "logger",
@@ -71,44 +51,6 @@
       "frequency": 40,
       "num_senders": 2,
       "max_size": 200
-    },
-    {
-      "name": "/roborio/aos/remote_timestamps/logger/drivetrain/frc971-control_loops-drivetrain-Position",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "roborio",
-      "logger": "NOT_LOGGED",
-      "frequency": 400,
-      "num_senders": 2,
-      "max_size": 200
-    },
-    {
-      "name": "/drivetrain",
-      "type": "frc971.control_loops.drivetrain.Output",
-      "source_node": "roborio",
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "logger"
-      ],
-      "destination_nodes": [
-        {
-          "name": "logger",
-          "priority": 2,
-          "time_to_live": 500000000,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "roborio"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "/roborio/aos/remote_timestamps/logger/drivetrain/frc971-control_loops-drivetrain-Output",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "roborio",
-      "logger": "NOT_LOGGED",
-      "frequency": 400,
-      "num_senders": 2,
-      "max_size": 400
     },
     {
       "name": "/pi1/aos",

@@ -166,7 +166,7 @@ Localizer::Localizer(
   }
 
   event_loop_->AddPhasedLoop([this](int) { SendOutput(); },
-                             std::chrono::milliseconds(5));
+                             std::chrono::milliseconds(20));
 
   event_loop_->MakeWatcher(
       "/drivetrain",
