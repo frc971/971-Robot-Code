@@ -47,6 +47,8 @@ def main(argv):
                 "-c 'create schema public;'",
                 # List all tables as a sanity check.
                 "-c '\dt'",
+                # Make sure we make the visualizations accessible.
+                "-c 'GRANT ALL ON SCHEMA public TO tableau;'",
                 "postgres\"",
             ]),
             shell=True,
