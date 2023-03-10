@@ -23,8 +23,8 @@ pkg_tar(
     # So we work around it by manually adding some symlinks that let us pretend
     # that we're at the root of the runfiles tree.
     symlinks = {
-        "opt/frc971/scouting_server/org_frc971": ".",
-        "opt/frc971/scouting_server/bazel_tools": "external/bazel_tools",
+        "org_frc971": ".",
+        "bazel_tools": "external/bazel_tools",
     },
 )
 
