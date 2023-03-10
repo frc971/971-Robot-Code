@@ -1,4 +1,5 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 cc_binary(
     name = "camera_reader",
@@ -236,6 +237,13 @@ flatbuffer_cc_library(
     name = "game_pieces_fbs",
     srcs = ["game_pieces.fbs"],
     gen_reflections = 1,
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_ts_library(
+    name = "game_pieces_ts_fbs",
+    srcs = ["game_pieces.fbs"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

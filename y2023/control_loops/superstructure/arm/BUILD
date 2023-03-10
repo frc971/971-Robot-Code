@@ -22,6 +22,7 @@ cc_library(
         "//y2023/control_loops/superstructure/arm:arm_constants",
         "//y2023/control_loops/superstructure/arm:trajectory",
         "//y2023/control_loops/superstructure/roll:roll_plants",
+        "//y2023/vision:game_pieces_fbs",
     ],
 )
 

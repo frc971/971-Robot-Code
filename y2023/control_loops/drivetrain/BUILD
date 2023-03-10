@@ -162,6 +162,7 @@ cc_library(
         "//y2023/constants:constants_fbs",
         "//y2023/control_loops/superstructure:superstructure_position_fbs",
         "//y2023/control_loops/superstructure:superstructure_status_fbs",
+        "//y2023/vision:game_pieces_fbs",
     ],
 )
 

@@ -562,10 +562,10 @@ TEST_F(SuperstructureTest, DisableTest) {
 
 class SuperstructureBeambreakTest
     : public SuperstructureTest,
-      public ::testing::WithParamInterface<GamePiece> {
+      public ::testing::WithParamInterface<vision::Class> {
  public:
-  void SetBeambreak(GamePiece game_piece, bool status) {
-    if (game_piece == GamePiece::CONE) {
+  void SetBeambreak(vision::Class game_piece, bool status) {
+    if (game_piece == vision::Class::CONE_UP) {
       // TODO(milind): handle cone
     } else {
       superstructure_plant_.set_end_effector_cube_beam_break(status);
@@ -577,12 +577,20 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   SetEnabled(true);
   WaitUntilZeroed();
 
-  double spit_voltage =
-      (GetParam() == GamePiece::CUBE ? EndEffector::kRollerCubeSpitVoltage()
-                                     : EndEffector::kRollerConeSpitVoltage());
-  double suck_voltage =
-      (GetParam() == GamePiece::CUBE ? EndEffector::kRollerCubeSuckVoltage()
-                                     : EndEffector::kRollerConeSuckVoltage());
+  double spit_voltage = (GetParam() == vision::Class::CUBE
+                             ? EndEffector::kRollerCubeSpitVoltage()
+                             : EndEffector::kRollerConeSpitVoltage());
+  double suck_voltage = (GetParam() == vision::Class::CUBE
+                             ? EndEffector::kRollerCubeSuckVoltage()
+                             : EndEffector::kRollerConeSuckVoltage());
+
+  RollerGoal roller_goal = RollerGoal::INTAKE_CUBE;
+
+  if (GetParam() == vision::Class::CONE_DOWN) {
+    roller_goal = RollerGoal::INTAKE_CONE_DOWN;
+  } else if (GetParam() == vision::Class::CONE_UP) {
+    roller_goal = RollerGoal::INTAKE_CONE_UP;
+  }
 
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -591,9 +599,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
 
     goal_builder.add_arm_goal_position(arm::NeutralIndex());
     goal_builder.add_trajectory_override(false);
-    goal_builder.add_roller_goal(GetParam() == GamePiece::CONE
-                                     ? RollerGoal::INTAKE_CONE
-                                     : RollerGoal::INTAKE_CUBE);
+    goal_builder.add_roller_goal(roller_goal);
 
     builder.CheckOk(builder.Send(goal_builder.Finish()));
   }
@@ -668,9 +674,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
 
     goal_builder.add_arm_goal_position(arm::NeutralIndex());
     goal_builder.add_trajectory_override(false);
-    goal_builder.add_roller_goal(GetParam() == GamePiece::CONE
-                                     ? RollerGoal::INTAKE_CONE
-                                     : RollerGoal::INTAKE_CUBE);
+    goal_builder.add_roller_goal(roller_goal);
 
     builder.CheckOk(builder.Send(goal_builder.Finish()));
   }
@@ -757,7 +761,7 @@ TEST_P(SuperstructureBeambreakTest, EndEffectorGoal) {
   EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), 0.0);
   EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
             EndEffectorState::IDLE);
-  EXPECT_EQ(superstructure_status_fetcher_->game_piece(), GamePiece::NONE);
+  EXPECT_EQ(superstructure_status_fetcher_->game_piece(), vision::Class::NONE);
 }
 
 // Tests that we don't freak out without a goal.
@@ -834,7 +838,7 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
 
 // TODO(milind): add cone
 INSTANTIATE_TEST_SUITE_P(EndEffectorGoal, SuperstructureBeambreakTest,
-                         ::testing::Values(GamePiece::CUBE));
+                         ::testing::Values(vision::Class::CUBE));
 
 }  // namespace testing
 }  // namespace superstructure

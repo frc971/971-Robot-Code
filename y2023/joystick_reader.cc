@@ -334,10 +334,10 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     std::optional<double> score_wrist_goal = std::nullopt;
 
     if (data.IsPressed(kGroundPickupConeUp) || data.IsPressed(kHPConePickup)) {
-      roller_goal = RollerGoal::INTAKE_CONE;
+      roller_goal = RollerGoal::INTAKE_CONE_UP;
       current_game_piece_ = GamePiece::CONE_UP;
     } else if (data.IsPressed(kGroundPickupConeDownBase)) {
-      roller_goal = RollerGoal::INTAKE_CONE;
+      roller_goal = RollerGoal::INTAKE_CONE_DOWN;
       current_game_piece_ = GamePiece::CONE_DOWN;
     } else if (data.IsPressed(kGroundPickupCube)) {
       roller_goal = RollerGoal::INTAKE_CUBE;

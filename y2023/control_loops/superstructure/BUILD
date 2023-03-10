@@ -33,6 +33,7 @@ flatbuffer_cc_library(
     deps = [
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
+        "//y2023/vision:game_pieces_fbs",
     ],
 )
 
@@ -44,6 +45,7 @@ flatbuffer_ts_library(
     deps = [
         "//frc971/control_loops:control_loops_ts_fbs",
         "//frc971/control_loops:profiled_subsystem_ts_fbs",
+        "//y2023/vision:game_pieces_ts_fbs",
     ],
 )
 
@@ -76,6 +78,7 @@ cc_library(
         "//aos/time",
         "//frc971/control_loops:control_loop",
         "//y2023:constants",
+        "//y2023/vision:game_pieces_fbs",
     ],
 )
 
@@ -145,6 +148,7 @@ cc_test(
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//y2023/control_loops/superstructure/roll:roll_plants",
+        "//y2023/vision:game_pieces_fbs",
     ],
 )
 

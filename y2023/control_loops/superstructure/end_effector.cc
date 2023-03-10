@@ -3,6 +3,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/control_loop.h"
+#include "y2023/vision/game_pieces_generated.h"
 
 namespace y2023 {
 namespace control_loops {
@@ -12,7 +13,7 @@ using ::aos::monotonic_clock;
 
 EndEffector::EndEffector()
     : state_(EndEffectorState::IDLE),
-      game_piece_(GamePiece::NONE),
+      game_piece_(vision::Class::NONE),
       timer_(aos::monotonic_clock::min_time),
       beambreak_(false) {}
 
@@ -25,15 +26,21 @@ void EndEffector::RunIteration(
   constexpr double kMinCurrent = 40.0;
   constexpr double kMaxConePosition = 0.92;
 
-  bool beambreak_status = (beambreak || (falcon_current > kMinCurrent &&
-                                         cone_position < kMaxConePosition));
-
   // Let them switch game pieces
-  if (roller_goal == RollerGoal::INTAKE_CONE) {
-    game_piece_ = GamePiece::CONE;
+  if (roller_goal == RollerGoal::INTAKE_CONE_UP) {
+    game_piece_ = vision::Class::CONE_UP;
+  } else if (roller_goal == RollerGoal::INTAKE_CONE_DOWN) {
+    game_piece_ = vision::Class::CONE_DOWN;
   } else if (roller_goal == RollerGoal::INTAKE_CUBE) {
-    game_piece_ = GamePiece::CUBE;
+    game_piece_ = vision::Class::CUBE;
   }
+
+  bool beambreak_status =
+      (((game_piece_ == vision::Class::CUBE ||
+         game_piece_ == vision::Class::CONE_UP) &&
+        beambreak) ||
+       ((game_piece_ == vision::Class::CONE_DOWN &&
+         falcon_current > kMinCurrent && cone_position < kMaxConePosition)));
 
   // Go into spitting if we were told to, no matter where we are
   if (roller_goal == RollerGoal::SPIT && state_ != EndEffectorState::SPITTING) {
@@ -47,7 +54,8 @@ void EndEffector::RunIteration(
   switch (state_) {
     case EndEffectorState::IDLE:
       // If idle and intake requested, intake
-      if (roller_goal == RollerGoal::INTAKE_CONE ||
+      if (roller_goal == RollerGoal::INTAKE_CONE_UP ||
+          roller_goal == RollerGoal::INTAKE_CONE_DOWN ||
           roller_goal == RollerGoal::INTAKE_CUBE ||
           roller_goal == RollerGoal::INTAKE_LAST) {
         state_ = EndEffectorState::INTAKING;
@@ -56,7 +64,8 @@ void EndEffector::RunIteration(
       break;
     case EndEffectorState::INTAKING:
       // If intaking and beam break is not triggered, keep intaking
-      if (roller_goal == RollerGoal::INTAKE_CONE ||
+      if (roller_goal == RollerGoal::INTAKE_CONE_UP ||
+          roller_goal == RollerGoal::INTAKE_CONE_DOWN ||
           roller_goal == RollerGoal::INTAKE_CUBE ||
           roller_goal == RollerGoal::INTAKE_LAST) {
         timer_ = timestamp;
@@ -72,7 +81,7 @@ void EndEffector::RunIteration(
         break;
       }
 
-      if (game_piece_ == GamePiece::CUBE) {
+      if (game_piece_ == vision::Class::CUBE) {
         *roller_voltage = kRollerCubeSuckVoltage();
       } else {
         *roller_voltage = kRollerConeSuckVoltage();
@@ -88,7 +97,7 @@ void EndEffector::RunIteration(
       break;
     case EndEffectorState::SPITTING:
       // If spit requested, spit
-      if (game_piece_ == GamePiece::CUBE) {
+      if (game_piece_ == vision::Class::CUBE) {
         *roller_voltage = kRollerCubeSpitVoltage();
       } else {
         *roller_voltage = kRollerConeSpitVoltage();
@@ -100,7 +109,7 @@ void EndEffector::RunIteration(
       } else if (timestamp > timer_ + constants::Values::kExtraSpittingTime()) {
         // Finished spitting
         state_ = EndEffectorState::IDLE;
-        game_piece_ = GamePiece::NONE;
+        game_piece_ = vision::Class::NONE;
       }
 
       break;
