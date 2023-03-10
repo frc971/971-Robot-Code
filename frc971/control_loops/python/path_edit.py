@@ -81,9 +81,13 @@ class FieldWidget(Gtk.DrawingArea):
     def set_field(self, field):
         self.field = field
         try:
-            self.field_png = cairo.ImageSurface.create_from_png(
-                "frc971/control_loops/python/field_images/" +
-                self.field.field_id + ".png")
+            if self.field.field_id.startswith('//'):
+                self.field_png = cairo.ImageSurface.create_from_png(
+                    self.field.field_id[2:])
+            else:
+                self.field_png = cairo.ImageSurface.create_from_png(
+                    "frc971/control_loops/python/field_images/" +
+                    self.field.field_id + ".png")
         except cairo.Error:
             self.field_png = None
 

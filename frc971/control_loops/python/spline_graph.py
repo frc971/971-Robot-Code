@@ -107,7 +107,7 @@ class GridWindow(Gtk.Window):
 
         self.file_name_box = Gtk.Entry()
         self.file_name_box.set_size_request(50, 40)
-        self.file_name_box.set_text(FIELD.field_id + ".json")
+        self.file_name_box.set_text("test.json")
         self.file_name_box.set_editable(True)
 
         self.long_input = Gtk.SpinButton()

@@ -7,8 +7,15 @@ filegroup(
         "**/*.html",
         "**/*.css",
         "**/*.png",
-    ]),
+    ]) + ["2023.png"],
     visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "2023_field_png",
+    srcs = ["//third_party/y2023/field:pictures"],
+    outs = ["2023.png"],
+    cmd = "cp third_party/y2023/field/2023.png $@",
 )
 
 ts_project(

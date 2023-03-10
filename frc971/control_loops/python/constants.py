@@ -15,6 +15,9 @@ BALL_RADIUS = 0.165
 ROBOT_SIDE_TO_HATCH_PANEL = 0.1
 HATCH_PANEL_WIDTH = 0.4826
 
+# field_id is either just a file prefix for a .png in field_images/ or is a
+# full path preceded by // specifying a location relative to the root of the
+# repository.
 FieldType = namedtuple(
     'Field', ['name', 'tags', 'year', 'width', 'length', 'robot', 'field_id'])
 RobotType = namedtuple("Robot", ['width', 'length'])
@@ -33,6 +36,7 @@ Robot2019 = RobotType(width=0.65, length=0.8)
 Robot2020 = RobotType(width=0.8128, length=0.8636)  # 32 in x 34 in
 Robot2021 = Robot2020
 Robot2022 = RobotType(width=0.8763, length=0.96647)
+Robot2023 = RobotType(width=0.8763, length=0.96647)
 
 FIELDS = {
     "2019 Field":
@@ -115,9 +119,17 @@ FIELDS = {
               length=8.2296,
               robot=Robot2022,
               field_id="2022"),
+    "2023 Field":
+    FieldType("2023 Field",
+              tags=[],
+              year=2023,
+              width=16.59255,
+              length=8.10895,
+              robot=Robot2023,
+              field_id="//third_party/y2023/field/2023.png"),
 }
 
-FIELD = FIELDS["2022 Field"]
+FIELD = FIELDS["2023 Field"]
 
 
 def get_json_folder(field):

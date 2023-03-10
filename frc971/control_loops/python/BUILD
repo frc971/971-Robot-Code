@@ -188,7 +188,7 @@ py_binary(
     data = glob([
         "field_images/*.png",
         "field_images/*.svg",
-    ]),
+    ]) + ["//third_party/y2023/field:pictures"],
     legacy_create_init = False,
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
