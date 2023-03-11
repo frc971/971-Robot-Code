@@ -446,8 +446,7 @@
     },
     {
       "name": "image_logger",
-      "executable_name": "logger_main",
-      "autostart": false,
+      "executable_name": "image_logger",
       "user": "pi",
       "args": [
         "--logging_folder",

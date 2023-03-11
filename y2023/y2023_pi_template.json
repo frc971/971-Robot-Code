@@ -392,8 +392,7 @@
     },
     {
       "name": "image_logger",
-      "executable_name": "logger_main",
-      "autostart": false,
+      "executable_name": "image_logger",
       "args": [
         "--logging_folder",
         "",
@@ -402,6 +401,7 @@
         "--direct",
         "--flush_size=4194304"
       ],
+      "user": "pi",
       "nodes": [
         "pi{{ NUM }}"
       ]

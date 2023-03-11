@@ -28,6 +28,42 @@
           "timestamp_logger_nodes": [
             "roborio"
           ]
+        },
+        {
+          "name": "pi1",
+          "priority": 5,
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
+        },
+        {
+          "name": "pi2",
+          "priority": 5,
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
+        },
+        {
+          "name": "pi3",
+          "priority": 5,
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
+        },
+        {
+          "name": "pi4",
+          "priority": 5,
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "roborio"
+          ]
         }
       ]
     },
@@ -42,6 +78,42 @@
     },
     {
       "name": "/roborio/aos/remote_timestamps/logger/roborio/aos/aos-JoystickState",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 300,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/pi1/roborio/aos/aos-JoystickState",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 300,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/pi2/roborio/aos/aos-JoystickState",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 300,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/pi3/roborio/aos/aos-JoystickState",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "roborio",
+      "logger": "NOT_LOGGED",
+      "frequency": 300,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/roborio/aos/remote_timestamps/pi4/roborio/aos/aos-JoystickState",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "roborio",
       "logger": "NOT_LOGGED",

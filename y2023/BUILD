@@ -81,6 +81,7 @@ robot_downloader(
         "//aos/network:web_proxy_main",
         "//aos/starter:irq_affinity",
         "//y2023/vision:camera_reader",
+        "//y2023/vision:image_logger",
         "//aos/events/logging:logger_main",
         "//y2023/vision:game_pieces_detector",
     ],
