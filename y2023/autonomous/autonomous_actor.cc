@@ -5,13 +5,18 @@
 #include <cmath>
 
 #include "aos/logging/logging.h"
+#include "aos/util/math.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
+#include "y2023/autonomous/auto_splines.h"
+#include "y2023/constants.h"
 #include "y2023/control_loops/drivetrain/drivetrain_base.h"
+#include "y2023/control_loops/superstructure/arm/generated_graph.h"
 
 DEFINE_bool(spline_auto, true, "Run simple test S-spline auto mode.");
+DEFINE_bool(charged_up, true, "If true run charged up autonomous mode");
 
 namespace y2023 {
-namespace actors {
+namespace autonomous {
 
 using ::aos::monotonic_clock;
 using ::frc971::ProfileParametersT;
@@ -28,7 +33,9 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       robot_state_fetcher_(event_loop->MakeFetcher<aos::RobotState>("/aos")),
-      auto_splines_() {
+      auto_splines_(),
+      arm_goal_position_(control_loops::superstructure::arm::NeutralIndex()),
+      points_(control_loops::superstructure::arm::PointList()) {
   replan_timer_ = event_loop->AddTimer([this]() { Replan(); });
 
   event_loop->OnRun([this, event_loop]() {
@@ -51,8 +58,9 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
           (joystick_state_fetcher_->alliance() != alliance_)) {
         alliance_ = joystick_state_fetcher_->alliance();
         is_planned_ = false;
-        // Only kick the planning out by 2 seconds. If we end up enabled in that
-        // second, then we will kick it out further based on the code below.
+        // Only kick the planning out by 2 seconds. If we end up enabled in
+        // that second, then we will kick it out further based on the code
+        // below.
         replan_timer_->Setup(now + std::chrono::seconds(2));
       }
       if (joystick_state_fetcher_->enabled()) {
@@ -77,6 +85,27 @@ void AutonomousActor::Replan() {
                    SplineDirection::kForward);
 
     starting_position_ = test_spline_->starting_position();
+  } else if (FLAGS_charged_up) {
+    charged_up_splines_ = {
+        PlanSpline(std::bind(&AutonomousSplines::Spline1, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kBackward),
+        PlanSpline(std::bind(&AutonomousSplines::Spline2, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::Spline3, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kBackward),
+        PlanSpline(std::bind(&AutonomousSplines::Spline4, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::Spline5, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kBackward),
+    };
+
+    starting_position_ = charged_up_splines_.value()[0].starting_position();
+    CHECK(starting_position_);
   }
 
   is_planned_ = true;
@@ -113,8 +142,8 @@ bool AutonomousActor::RunAction(
     CHECK(starting_position_);
     SendStartingPosition(starting_position_.value());
   }
-  // Clear this so that we don't accidentally resend things as soon as we replan
-  // later.
+  // Clear this so that we don't accidentally resend things as soon as we
+  // replan later.
   user_indicated_safe_to_reset_ = false;
   is_planned_ = false;
   starting_position_.reset();
@@ -160,5 +189,204 @@ void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
   }
 }
 
-}  // namespace actors
+// Charged Up 3 Game Object Autonomous.
+void AutonomousActor::ChargedUp() {
+  aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
+
+  CHECK(charged_up_splines_);
+
+  auto &splines = *charged_up_splines_;
+
+  // Tell the superstructure a cone was preloaded
+  if (!WaitForPreloaded()) return;
+
+  // Place first cone on mid level
+  MidConeScore();
+
+  // Wait until the arm is at the goal to spit
+  if (!WaitForArmGoal()) return;
+  Spit();
+
+  AOS_LOG(
+      INFO, "Placed first cone %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  // Drive and intake the cube nearest to the starting zone
+  if (!splines[0].WaitForPlan()) return;
+  splines[0].Start();
+
+  // Move arm into position to pickup a cube and start cube intake
+  PickupCube();
+  IntakeCube();
+
+  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
+
+  // Drive back to grid and place cube on high level
+  if (!splines[1].WaitForPlan()) return;
+  splines[1].Start();
+
+  HighCubeScore();
+
+  if (!splines[1].WaitForSplineDistanceRemaining(0.02)) return;
+
+  if (!WaitForArmGoal()) return;
+  Spit();
+
+  AOS_LOG(
+      INFO, "Placed first cube %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  // Drive and intake the cube second nearest to the starting zone
+  if (!splines[2].WaitForPlan()) return;
+  splines[2].Start();
+
+  PickupCube();
+  IntakeCube();
+
+  if (!splines[2].WaitForSplineDistanceRemaining(0.02)) return;
+
+  // Drive back to grid and place object on mid level
+  if (!splines[3].WaitForPlan()) return;
+  splines[3].Start();
+
+  MidCubeScore();
+
+  if (!splines[3].WaitForSplineDistanceRemaining(0.02)) return;
+
+  if (!WaitForArmGoal()) return;
+  Spit();
+
+  AOS_LOG(
+      INFO, "Placed second cube %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  // Drive onto charging station
+  if (!splines[4].WaitForPlan()) return;
+  splines[4].Start();
+
+  if (!splines[4].WaitForSplineDistanceRemaining(0.02)) return;
+}
+
+void AutonomousActor::SendSuperstructureGoal() {
+  auto builder = superstructure_goal_sender_.MakeBuilder();
+
+  control_loops::superstructure::Goal::Builder superstructure_builder =
+      builder.MakeBuilder<control_loops::superstructure::Goal>();
+
+  superstructure_builder.add_arm_goal_position(arm_goal_position_);
+  superstructure_builder.add_preloaded_with_cone(preloaded_);
+  superstructure_builder.add_roller_goal(roller_goal_);
+  superstructure_builder.add_wrist(wrist_goal_);
+
+  if (builder.Send(superstructure_builder.Finish()) !=
+      aos::RawSender::Error::kOk) {
+    AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
+  }
+}
+
+[[nodiscard]] bool AutonomousActor::WaitForPreloaded() {
+  set_preloaded(true);
+  SendSuperstructureGoal();
+
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
+                                      event_loop()->monotonic_now(),
+                                      ActorBase::kLoopOffset);
+
+  bool loaded = false;
+  while (!loaded) {
+    if (ShouldCancel()) {
+      return false;
+    }
+
+    phased_loop.SleepUntilNext();
+    superstructure_status_fetcher_.Fetch();
+    CHECK(superstructure_status_fetcher_.get() != nullptr);
+
+    loaded = (superstructure_status_fetcher_->end_effector_state() ==
+              control_loops::superstructure::EndEffectorState::LOADED);
+  }
+
+  set_preloaded(false);
+  SendSuperstructureGoal();
+
+  return true;
+}
+
+void AutonomousActor::MidConeScore() {
+  set_arm_goal_position(
+      control_loops::superstructure::arm::ScoreFrontMidConeUpIndex());
+  set_wrist_goal(0.05);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::HighCubeScore() {
+  set_arm_goal_position(
+      control_loops::superstructure::arm::ScoreFrontHighCubeIndex());
+  set_wrist_goal(0.6);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::MidCubeScore() {
+  set_arm_goal_position(
+      control_loops::superstructure::arm::ScoreFrontMidCubeIndex());
+  set_wrist_goal(0.6);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::PickupCube() {
+  set_arm_goal_position(
+      control_loops::superstructure::arm::GroundPickupBackCubeIndex());
+  set_wrist_goal(0.6);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::Spit() {
+  set_roller_goal(control_loops::superstructure::RollerGoal::SPIT);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::IntakeCube() {
+  set_roller_goal(control_loops::superstructure::RollerGoal::INTAKE_CUBE);
+  SendSuperstructureGoal();
+}
+
+[[nodiscard]] bool AutonomousActor::WaitForArmGoal() {
+  constexpr double kEpsTheta = 0.01;
+
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
+                                      event_loop()->monotonic_now(),
+                                      ActorBase::kLoopOffset);
+
+  bool at_goal = false;
+  while (!at_goal) {
+    if (ShouldCancel()) {
+      return false;
+    }
+
+    phased_loop.SleepUntilNext();
+    superstructure_status_fetcher_.Fetch();
+    CHECK(superstructure_status_fetcher_.get() != nullptr);
+
+    // Check that the status had the right goal
+    at_goal = (std::abs(points_[arm_goal_position_](0) -
+                        superstructure_status_fetcher_->arm()->theta0()) <
+                   kEpsTheta &&
+               std::abs(points_[arm_goal_position_](1) -
+                        superstructure_status_fetcher_->arm()->theta1()) <
+                   kEpsTheta &&
+               std::abs(points_[arm_goal_position_](2) -
+                        superstructure_status_fetcher_->arm()->theta2()) <
+                   kEpsTheta) &&
+              (std::abs(wrist_goal_ -
+                        superstructure_status_fetcher_->wrist()->position()) <
+               kEpsTheta);
+  }
+
+  set_preloaded(false);
+  SendSuperstructureGoal();
+
+  return true;
+}
+
+}  // namespace autonomous
 }  // namespace y2023

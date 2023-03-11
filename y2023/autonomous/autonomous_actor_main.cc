@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
       aos::configuration::ReadConfig("aos_config.json");
 
   ::aos::ShmEventLoop event_loop(&config.message());
-  ::y2023::actors::AutonomousActor autonomous(&event_loop);
+  ::y2023::autonomous::AutonomousActor autonomous(&event_loop);
 
   event_loop.Run();
 
