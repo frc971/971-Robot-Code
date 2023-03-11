@@ -88,7 +88,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           ? position->roller_falcon()->torque_current()
           : 0.0,
       position->cone_position(), position->end_effector_cube_beam_break(),
-      &output_struct.roller_voltage);
+      &output_struct.roller_voltage,
+      unsafe_goal != nullptr ? unsafe_goal->preloaded_with_cone() : false);
 
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));

@@ -4,7 +4,7 @@
 #include "aos/flatbuffer_merge.h"
 
 namespace y2023 {
-namespace actors {
+namespace autonomous {
 
 namespace {
 flatbuffers::Offset<frc971::MultiSpline> FixSpline(
@@ -92,6 +92,66 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::BasicSSpline(
   return FixSpline(builder, multispline_builder.Finish(), alliance);
 }
 
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::TestSpline(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(test_spline_, builder->fbb()),
+      alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::Spline1(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(spline_1_, builder->fbb()),
+      alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::Spline2(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(spline_2_, builder->fbb()),
+      alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::Spline3(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(spline_3_, builder->fbb()),
+      alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::Spline4(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(spline_4_, builder->fbb()),
+      alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::Spline5(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(spline_5_, builder->fbb()),
+      alliance);
+}
+
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
     aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
         *builder,
@@ -112,15 +172,5 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
   return FixSpline(builder, multispline_builder.Finish(), alliance);
 }
 
-flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::TestSpline(
-    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
-        *builder,
-    aos::Alliance alliance) {
-  return FixSpline(
-      builder,
-      aos::CopyFlatBuffer<frc971::MultiSpline>(test_spline_, builder->fbb()),
-      alliance);
-}
-
-}  // namespace actors
+}  // namespace autonomous
 }  // namespace y2023

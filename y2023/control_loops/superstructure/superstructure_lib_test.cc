@@ -446,6 +446,26 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   const ::std::vector<::Eigen::Matrix<double, 3, 1>> points_;
 };
 
+// Test that we are able to signal that the ball was preloaded
+TEST_F(SuperstructureTest, Preloaded) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_preloaded_with_cone(true);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(dt());
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
+            EndEffectorState::LOADED);
+}
+
 // Tests that the superstructure does nothing when the goal is to remain
 // still.
 TEST_F(SuperstructureTest, DoesNothing) {

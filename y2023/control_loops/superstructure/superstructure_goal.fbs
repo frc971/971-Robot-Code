@@ -22,6 +22,9 @@ table Goal {
     wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 2);
 
     roller_goal:RollerGoal (id: 3);
+
+    // If true, we started with the cone loaded and should proceed to that state.
+    preloaded_with_cone:bool (id: 4);
 }
 
 

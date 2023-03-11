@@ -25,7 +25,7 @@ class EndEffector {
   void RunIteration(const ::aos::monotonic_clock::time_point timestamp,
                     RollerGoal roller_goal, double falcon_current,
                     double cone_position, bool beambreak,
-                    double *intake_roller_voltage);
+                    double *intake_roller_voltage, bool preloaded_with_cone);
   EndEffectorState state() const { return state_; }
   vision::Class game_piece() const { return game_piece_; }
   void Reset();

@@ -20,11 +20,25 @@ EndEffector::EndEffector()
 void EndEffector::RunIteration(
     const ::aos::monotonic_clock::time_point timestamp, RollerGoal roller_goal,
     double falcon_current, double cone_position, bool beambreak,
-    double *roller_voltage) {
+    double *roller_voltage, bool preloaded_with_cone) {
   *roller_voltage = 0.0;
 
   constexpr double kMinCurrent = 40.0;
   constexpr double kMaxConePosition = 0.92;
+
+  // If we started off preloaded, skip to the loaded state.
+  // Make sure we weren't already there just in case.
+  if (preloaded_with_cone) {
+    switch (state_) {
+      case EndEffectorState::IDLE:
+      case EndEffectorState::INTAKING:
+        state_ = EndEffectorState::LOADED;
+        break;
+      case EndEffectorState::LOADED:
+      case EndEffectorState::SPITTING:
+        break;
+    }
+  }
 
   // Let them switch game pieces
   if (roller_goal == RollerGoal::INTAKE_CONE_UP) {
@@ -90,8 +104,8 @@ void EndEffector::RunIteration(
       break;
     case EndEffectorState::LOADED:
       timer_ = timestamp;
-      // If loaded and beam break not triggered, intake
-      if (!beambreak_status) {
+      // If loaded and beam break not triggered and not preloaded, intake
+      if (!beambreak_status && !preloaded_with_cone) {
         state_ = EndEffectorState::INTAKING;
       }
       break;
