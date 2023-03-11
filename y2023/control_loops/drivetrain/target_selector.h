@@ -1,5 +1,6 @@
 #ifndef Y2023_CONTROL_LOOPS_DRIVETRAIN_TARGET_SELECTOR_H_
 #define Y2023_CONTROL_LOOPS_DRIVETRAIN_TARGET_SELECTOR_H_
+#include "aos/containers/sized_array.h"
 #include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
 #include "frc971/control_loops/pose.h"
@@ -47,6 +48,11 @@ class TargetSelector
 
  private:
   void UpdateAlliance();
+  static aos::SizedArray<const frc971::vision::Position *, 3>
+  PossibleScoringPositions(const TargetSelectorHint *hint,
+                           const localizer::HalfField *scoring_map);
+  static aos::SizedArray<const frc971::vision::Position *, 3>
+  PossiblePickupPositions(const localizer::HalfField *scoring_map);
   std::optional<Pose> target_pose_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<TargetSelectorHint> hint_fetcher_;

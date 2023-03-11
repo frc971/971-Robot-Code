@@ -55,6 +55,14 @@ class TargetSelectorTest : public ::testing::Test {
     builder.CheckOk(builder.Send(hint_builder.Finish()));
   }
 
+  void SendSubstationHint() {
+    auto builder = hint_sender_.MakeBuilder();
+    TargetSelectorHint::Builder hint_builder =
+        builder.MakeBuilder<TargetSelectorHint>();
+    hint_builder.add_substation_pickup(true);
+    builder.CheckOk(builder.Send(hint_builder.Finish()));
+  }
+
   const localizer::HalfField *scoring_map() const {
     return constants_fetcher_.constants().scoring_map()->red();
   }
@@ -183,6 +191,31 @@ TEST_F(TargetSelectorTest, GridHysteresis) {
   target = target_selector_.TargetPose().abs_pos();
   EXPECT_EQ(target.x(), middle_pos->x());
   EXPECT_EQ(target.y(), middle_pos->y());
+}
+
+// Test that substation pickup being set in the hint causes us to pickup from
+// the substation.
+TEST_F(TargetSelectorTest, SubstationPickup) {
+  SendJoystickState();
+  SendSubstationHint();
+  const frc971::vision::Position *left_pos =
+      scoring_map()->substation()->left();
+  const frc971::vision::Position *right_pos =
+      scoring_map()->substation()->right();
+  Eigen::Matrix<double, 5, 1> left_position;
+  left_position << 0.0, left_pos->y(), 0.0, 0.0, 0.0;
+  Eigen::Matrix<double, 5, 1> right_position;
+  right_position << 0.0, right_pos->y(), 0.0, 0.0, 0.0;
+
+  EXPECT_TRUE(target_selector_.UpdateSelection(left_position, 0.0));
+  Eigen::Vector3d target = target_selector_.TargetPose().abs_pos();
+  EXPECT_EQ(target.x(), left_pos->x());
+  EXPECT_EQ(target.y(), left_pos->y());
+
+  EXPECT_TRUE(target_selector_.UpdateSelection(right_position, 0.0));
+  target = target_selector_.TargetPose().abs_pos();
+  EXPECT_EQ(target.x(), right_pos->x());
+  EXPECT_EQ(target.y(), right_pos->y());
 }
 
 }  // namespace y2023::control_loops::drivetrain

@@ -434,7 +434,17 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
       }
     }
-    if (placing_row.has_value()) {
+    // TODO(james): Is there a more principled way to detect Human Player
+    // pickup? Probably don't bother fixing it until/unless we add more buttons
+    // that can select human player pickup.
+    if (data.IsPressed(kHPConePickup)) {
+      auto builder = target_selector_hint_sender_.MakeBuilder();
+      auto hint_builder = builder.MakeBuilder<TargetSelectorHint>();
+      hint_builder.add_substation_pickup(true);
+      if (builder.Send(hint_builder.Finish()) != aos::RawSender::Error::kOk) {
+        AOS_LOG(ERROR, "Sending target selector hint failed.\n");
+      }
+    } else if (placing_row.has_value()) {
       auto builder = target_selector_hint_sender_.MakeBuilder();
       auto hint_builder = builder.MakeBuilder<TargetSelectorHint>();
       hint_builder.add_row(placing_row.value());
