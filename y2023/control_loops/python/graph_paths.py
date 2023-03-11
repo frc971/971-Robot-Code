@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 
 from y2023.control_loops.python.graph_tools import *
@@ -419,3 +421,26 @@ front_points = []
 back_points = []
 unnamed_segments = []
 segments = named_segments + unnamed_segments
+
+# This checks that all points are unique
+
+seen_segments = []
+
+for segment in segments:
+    # check for equality of the start and end values
+
+    if (segment.start.tolist(), segment.end.tolist()) in seen_segments:
+        print("Repeated value")
+        segment.Print(points)
+        sys.exit(1)
+    else:
+        seen_segments.append((segment.start.tolist(), segment.end.tolist()))
+
+seen_points = []
+
+for point in points:
+    if point in seen_points:
+        print(f"Repeated value {point}")
+        sys.exit(1)
+    else:
+        seen_points.append(point)
