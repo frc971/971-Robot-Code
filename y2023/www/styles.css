@@ -7,35 +7,17 @@
   display: inline-block
 }
 
-#targets,
 #readouts,
-#vision_readouts {
+#middle_readouts
+{
   display: inline-block;
   vertical-align: top;
   float: right;
 }
 
+
 #legend {
   display: inline-block;
-}
-
-#outer_target {
-  border: 1px solid black;
-  width: 140px;
-  background-color: white;
-}
-
-#inner_target {
-  width: 60px;
-  height: 60px;
-  margin: 40px;
-  border: 1px solid black;
-  background-color: white;
-}
-
-#outer_target.targetted,
-#inner_target.targetted {
-  background-color: green;
 }
 
 table, th, td {
@@ -54,7 +36,7 @@ td:first-child {
   width: 150px;
 }
 
-.near {
+.connected, .near {
   background-color: LightGreen;
   border-radius: 10px;
 }
@@ -75,6 +57,17 @@ td:first-child {
 }
 
 #vision_readouts > div > div {
+  display: table-cell;
+  padding: 5px;
+  text-align: right;
+}
+
+#message_bridge_status > div {
+  display: table-row;
+  padding: 5px;
+}
+
+#message_bridge_status > div > div {
   display: table-cell;
   padding: 5px;
   text-align: right;
