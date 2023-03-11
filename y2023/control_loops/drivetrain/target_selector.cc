@@ -24,16 +24,6 @@ TargetSelector::TargetSelector(aos::EventLoop *event_loop)
   CHECK(constants_fetcher_.constants().has_scoring_map());
   CHECK(constants_fetcher_.constants().scoring_map()->has_red());
   CHECK(constants_fetcher_.constants().scoring_map()->has_blue());
-  event_loop->MakeWatcher(
-      "/superstructure",
-      [this](const y2023::control_loops::superstructure::Position &msg) {
-        // Technically this means that even if we have a cube we are relying on
-        // getting a Position message before updating the game_piece_position_
-        // to zero. But if we aren't getting position messages, then things are
-        // very broken.
-        game_piece_position_ =
-            LateralOffsetForTimeOfFlight(msg.cone_position());
-      });
 
   event_loop->AddPhasedLoop(
       [this](int) {
@@ -172,42 +162,15 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
     } else {
       drive_direction_ = Side::DONT_CARE;
     }
+    // Only update the game piece position when we reassign the target.
+    superstructure_status_fetcher_.Fetch();
+    if (superstructure_status_fetcher_.get() != nullptr) {
+      game_piece_position_ =
+          superstructure_status_fetcher_->game_piece_position();
+    }
   }
   CHECK(target_pose_.has_value());
   return true;
-}
-
-// TODO: Maybe this already handles field side correctly? Unsure if the line
-// follower ends up having positive as being robot frame relative or robot
-// direction relative...
-double TargetSelector::LateralOffsetForTimeOfFlight(double reading) {
-  superstructure_status_fetcher_.Fetch();
-  if (superstructure_status_fetcher_.get() != nullptr) {
-    switch (superstructure_status_fetcher_->game_piece()) {
-      case vision::Class::NONE:
-      case vision::Class::CUBE:
-        return 0.0;
-      case vision::Class::CONE_UP:
-        // execute logic below.
-        break;
-      case vision::Class::CONE_DOWN:
-        // execute logic below.
-        break;
-    }
-  } else {
-    return 0.0;
-  }
-  const TimeOfFlight *calibration =
-      CHECK_NOTNULL(constants_fetcher_.constants().robot()->tof());
-  // TODO(james): Use a generic interpolation table class.
-  auto table = CHECK_NOTNULL(calibration->interpolation_table());
-  CHECK_EQ(2u, table->size());
-  double x1 = table->Get(0)->tof_reading();
-  double x2 = table->Get(1)->tof_reading();
-  double y1 = table->Get(0)->lateral_position();
-  double y2 = table->Get(1)->lateral_position();
-  return frc971::shooter_interpolation::Blend((reading - x1) / (x2 - x1), y1,
-                                              y2);
 }
 
 }  // namespace y2023::control_loops::drivetrain

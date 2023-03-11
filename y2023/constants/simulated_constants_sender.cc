@@ -5,7 +5,7 @@
 #include "frc971/constants/constants_sender_lib.h"
 
 namespace y2023 {
-void SendSimulationConstants(aos::SimulatedEventLoopFactory *factory, int team,
+bool SendSimulationConstants(aos::SimulatedEventLoopFactory *factory, int team,
                              std::string constants_path) {
   for (const aos::Node *node : factory->nodes()) {
     std::unique_ptr<aos::EventLoop> event_loop =
@@ -13,5 +13,6 @@ void SendSimulationConstants(aos::SimulatedEventLoopFactory *factory, int team,
     frc971::constants::ConstantSender<Constants, ConstantsList> sender(
         event_loop.get(), constants_path, team, "/constants");
   }
+  return true;
 }
 }  // namespace y2023

@@ -47,8 +47,6 @@ class TargetSelector
 
  private:
   void UpdateAlliance();
-  // Returns the Y coordinate of a game piece given the time-of-flight reading.
-  double LateralOffsetForTimeOfFlight(double reading);
   std::optional<Pose> target_pose_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<TargetSelectorHint> hint_fetcher_;

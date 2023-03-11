@@ -5,7 +5,9 @@
 #include "aos/testing/path.h"
 
 namespace y2023 {
-void SendSimulationConstants(
+// Returns true, to allow this to be easily called in the initializer list of a
+// constructor.
+bool SendSimulationConstants(
     aos::SimulatedEventLoopFactory *factory, int team,
     std::string constants_path =
         aos::testing::ArtifactPath("y2023/constants/test_constants.json"));

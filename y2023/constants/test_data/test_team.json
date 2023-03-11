@@ -14,5 +14,19 @@
     }
   ],
   "target_map": {% include 'y2023/constants/test_data/target_map.json' %},
-  "scoring_map": {% include 'y2023/constants/test_data/scoring_map.json' %}
+  "scoring_map": {% include 'y2023/constants/test_data/scoring_map.json' %},
+  "robot": {
+    "tof": {
+      "interpolation_table": [
+        {
+          "tof_reading": 0.1,
+          "lateral_position": 0.2
+        },
+        {
+          "tof_reading": 0.90,
+          "lateral_position": -0.2
+        }
+      ]
+    }
+  }
 }
