@@ -30,6 +30,7 @@ ts_project(
         "//aos/network:connect_ts_fbs",
         "//aos/network:web_proxy_ts_fbs",
         "//aos/network/www:proxy",
+        "//frc971/control_loops:control_loops_ts_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
         "//frc971/control_loops/drivetrain/localization:localizer_output_ts_fbs",
         "//y2023/control_loops/superstructure:superstructure_status_ts_fbs",
