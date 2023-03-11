@@ -56,6 +56,7 @@
 #include "y2023/can_configuration_generated.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/drivetrain/drivetrain_can_position_generated.h"
+#include "y2023/control_loops/superstructure/led_indicator.h"
 #include "y2023/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_position_generated.h"
 
@@ -1026,6 +1027,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     AddLoop(&can_output_event_loop);
 
+    // Thread 6
+    // Setup superstructure output
     ::aos::ShmEventLoop output_event_loop(&config.message());
     output_event_loop.set_name("PWMOutputWriter");
     SuperstructureWriter superstructure_writer(&output_event_loop);
@@ -1040,6 +1043,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_superstructure_reading(superstructure_reading);
 
     AddLoop(&output_event_loop);
+
+    // Thread 7
+    // Setup led_indicator
+    ::aos::ShmEventLoop led_indicator_event_loop(&config.message());
+    led_indicator_event_loop.set_name("LedIndicator");
+    control_loops::superstructure::LedIndicator led_indicator(
+        &led_indicator_event_loop);
+    AddLoop(&led_indicator_event_loop);
 
     RunLoops();
   }
