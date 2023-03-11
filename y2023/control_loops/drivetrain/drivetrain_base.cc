@@ -75,7 +75,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
                                 10.0 / ::std::pow(12.0, 2))
                                    .finished()
                                    .asDiagonal()),
-          .max_controllable_offset = 0.5}};
+          .max_controllable_offset = 0.5},
+  };
 
   return kDrivetrainConfig;
 };
