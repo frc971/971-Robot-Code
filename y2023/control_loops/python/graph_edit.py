@@ -257,7 +257,6 @@ class ArmUi(basic_window.BaseWindow):
 
         # Extra stuff for drawing lines.
         self.segments = segments
-        self.prev_segment_pt = None
         self.now_segment_pt = None
         self.spline_edit = 0
         self.edit_control1 = True
@@ -532,9 +531,6 @@ class ArmUi(basic_window.BaseWindow):
             self.circular_index_select -= 1
             print(self.circular_index_select)
 
-        elif keyval == Gdk.KEY_r:
-            self.prev_segment_pt = self.now_segment_pt
-
         elif keyval == Gdk.KEY_o:
             # Only prints current segment
             print(repr(self.segments[self.index]))
@@ -542,19 +538,6 @@ class ArmUi(basic_window.BaseWindow):
             # Generate theta points.
             if self.segments:
                 print(repr(self.segments[self.index].ToThetaPoints()))
-        elif keyval == Gdk.KEY_e:
-            best_pt = self.now_segment_pt
-            best_dist = 1e10
-            for segment in self.segments:
-                d = angle_dist_sqr(segment.start, self.now_segment_pt)
-                if (d < best_dist):
-                    best_pt = segment.start
-                    best_dist = d
-                d = angle_dist_sqr(segment.end, self.now_segment_pt)
-                if (d < best_dist):
-                    best_pt = segment.end
-                    best_dist = d
-            self.now_segment_pt = best_pt
 
         elif keyval == Gdk.KEY_p:
             if self.index > 0:
@@ -566,6 +549,19 @@ class ArmUi(basic_window.BaseWindow):
 
         elif keyval == Gdk.KEY_i:
             self.show_indicators = not self.show_indicators
+
+        elif keyval == Gdk.KEY_h:
+            print("q: Quit the program")
+            print("c: Incriment which arm solution we render")
+            print("v: Decrement which arm solution we render")
+            print("o: Print the current segment")
+            print("g: Generate theta points")
+            print("p: Move to the previous segment")
+            print("n: Move to the next segment")
+            print("i: Switch on or off the control point indicators")
+            print("l: Switch on or off viewing only the selected spline")
+            print("t: Toggle between xy or theta renderings")
+            print("z: Switch between editing control point 1 and 2")
 
         elif keyval == Gdk.KEY_n:
             self.index += 1
