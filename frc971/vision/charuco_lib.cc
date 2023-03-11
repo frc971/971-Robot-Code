@@ -24,6 +24,8 @@ DEFINE_bool(large_board, true, "If true, use the large calibration board.");
 DEFINE_uint32(
     min_charucos, 10,
     "The mininum number of aruco targets in charuco board required to match.");
+DEFINE_uint32(min_id, 12, "Minimum valid charuco id");
+DEFINE_uint32(max_id, 15, "Minimum valid charuco id");
 DEFINE_bool(visualize, false, "Whether to visualize the resulting data.");
 DEFINE_bool(
     draw_axes, false,
@@ -426,24 +428,47 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
                                       square_length_ / marker_length_,
                                       diamond_corners, diamond_ids);
 
-      // Check to see if we found any diamond targets
-      if (diamond_ids.size() > 0) {
-        cv::aruco::drawDetectedDiamonds(rgb_image, diamond_corners,
-                                        diamond_ids);
+      // Check that we have exactly one charuco diamond.  For calibration, we
+      // can constrain things so that this is the case
+      if (diamond_ids.size() == 1) {
+        // TODO<Jim>: Could probably make this check more general than requiring
+        // range of ids
+        bool all_valid_ids = true;
+        for (uint i = 0; i < 4; i++) {
+          uint id = diamond_ids[0][i];
+          if ((id < FLAGS_min_id) || (id > FLAGS_max_id)) {
+            all_valid_ids = false;
+            LOG(INFO) << "Got invalid charuco id: " << id;
+          }
+        }
+        if (all_valid_ids) {
+          cv::aruco::drawDetectedDiamonds(rgb_image, diamond_corners,
+                                          diamond_ids);
 
-        // estimate pose for diamonds doesn't return valid, so marking true
-        valid = true;
-        std::vector<cv::Vec3d> rvecs, tvecs;
-        cv::aruco::estimatePoseSingleMarkers(
-            diamond_corners, square_length_, calibration_.CameraIntrinsics(),
-            calibration_.CameraDistCoeffs(), rvecs, tvecs);
-        DrawTargetPoses(rgb_image, rvecs, tvecs);
+          // estimate pose for diamonds doesn't return valid, so marking true
+          valid = true;
+          std::vector<cv::Vec3d> rvecs, tvecs;
+          cv::aruco::estimatePoseSingleMarkers(
+              diamond_corners, square_length_, calibration_.CameraIntrinsics(),
+              calibration_.CameraDistCoeffs(), rvecs, tvecs);
+          DrawTargetPoses(rgb_image, rvecs, tvecs);
 
-        PackPoseResults(rvecs, tvecs, &rvecs_eigen, &tvecs_eigen);
-        result_ids = diamond_ids;
-        result_corners = diamond_corners;
+          PackPoseResults(rvecs, tvecs, &rvecs_eigen, &tvecs_eigen);
+          result_ids = diamond_ids;
+          result_corners = diamond_corners;
+        } else {
+          LOG(INFO) << "Not all charuco ids were valid, so skipping";
+        }
       } else {
-        VLOG(2) << "Found aruco markers, but no charuco diamond targets";
+        if (diamond_ids.size() == 0) {
+          // OK to not see any markers sometimes
+          VLOG(2)
+              << "Found aruco markers, but no valid charuco diamond targets";
+        } else {
+          // But should never detect multiple
+          LOG(FATAL) << "Found multiple charuco diamond markers.  Should only "
+                        "be one";
+        }
       }
     } else {
       LOG(FATAL) << "Unknown target type: "
