@@ -1,6 +1,5 @@
 #include "y2023/control_loops/drivetrain/target_selector.h"
 
-#include "aos/containers/sized_array.h"
 #include "frc971/shooter_interpolation/interpolation.h"
 #include "y2023/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2023/vision/game_pieces_generated.h"
@@ -53,6 +52,74 @@ void TargetSelector::UpdateAlliance() {
   }
 }
 
+aos::SizedArray<const frc971::vision::Position *, 3>
+TargetSelector::PossibleScoringPositions(
+    const TargetSelectorHint *hint, const localizer::HalfField *scoring_map) {
+  aos::SizedArray<const localizer::ScoringGrid *, 3> possible_grids;
+  if (hint->has_grid()) {
+    possible_grids = {[hint, scoring_map]() -> const localizer::ScoringGrid * {
+      switch (hint->grid()) {
+        case GridSelectionHint::LEFT:
+          return scoring_map->left_grid();
+        case GridSelectionHint::MIDDLE:
+          return scoring_map->middle_grid();
+        case GridSelectionHint::RIGHT:
+          return scoring_map->right_grid();
+      }
+      // Make roborio compiler happy...
+      return nullptr;
+    }()};
+  } else {
+    possible_grids = {scoring_map->left_grid(), scoring_map->middle_grid(),
+                      scoring_map->right_grid()};
+  }
+
+  aos::SizedArray<const localizer::ScoringRow *, 3> possible_rows =
+      [possible_grids, hint]() {
+        aos::SizedArray<const localizer::ScoringRow *, 3> rows;
+        for (const localizer::ScoringGrid *grid : possible_grids) {
+          CHECK_NOTNULL(grid);
+          switch (hint->row()) {
+            case RowSelectionHint::BOTTOM:
+              rows.push_back(grid->bottom());
+              break;
+            case RowSelectionHint::MIDDLE:
+              rows.push_back(grid->middle());
+              break;
+            case RowSelectionHint::TOP:
+              rows.push_back(grid->top());
+              break;
+          }
+        }
+        return rows;
+      }();
+  aos::SizedArray<const frc971::vision::Position *, 3> positions;
+  for (const localizer::ScoringRow *row : possible_rows) {
+    CHECK_NOTNULL(row);
+    switch (hint->spot()) {
+      case SpotSelectionHint::LEFT:
+        positions.push_back(row->left_cone());
+        break;
+      case SpotSelectionHint::MIDDLE:
+        positions.push_back(row->cube());
+        break;
+      case SpotSelectionHint::RIGHT:
+        positions.push_back(row->right_cone());
+        break;
+    }
+  }
+  return positions;
+}
+
+aos::SizedArray<const frc971::vision::Position *, 3>
+TargetSelector::PossiblePickupPositions(
+    const localizer::HalfField *scoring_map) {
+  aos::SizedArray<const frc971::vision::Position *, 3> positions;
+  positions.push_back(scoring_map->substation()->left());
+  positions.push_back(scoring_map->substation()->right());
+  return positions;
+}
+
 bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
                                      double /*command_speed*/) {
   UpdateAlliance();
@@ -77,63 +144,11 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
     }
     last_hint_ = hint_object;
   }
-  aos::SizedArray<const localizer::ScoringGrid *, 3> possible_grids;
-  if (hint_fetcher_->has_grid()) {
-    possible_grids = {[this]() -> const localizer::ScoringGrid * {
-      switch (hint_fetcher_->grid()) {
-        case GridSelectionHint::LEFT:
-          return scoring_map_->left_grid();
-        case GridSelectionHint::MIDDLE:
-          return scoring_map_->middle_grid();
-        case GridSelectionHint::RIGHT:
-          return scoring_map_->right_grid();
-      }
-      // Make roborio compiler happy...
-      return nullptr;
-    }()};
-  } else {
-    possible_grids = {scoring_map_->left_grid(), scoring_map_->middle_grid(),
-                      scoring_map_->right_grid()};
-  }
-
-  aos::SizedArray<const localizer::ScoringRow *, 3> possible_rows =
-      [this, possible_grids]() {
-        aos::SizedArray<const localizer::ScoringRow *, 3> rows;
-        for (const localizer::ScoringGrid *grid : possible_grids) {
-          CHECK_NOTNULL(grid);
-          switch (hint_fetcher_->row()) {
-            case RowSelectionHint::BOTTOM:
-              rows.push_back(grid->bottom());
-              break;
-            case RowSelectionHint::MIDDLE:
-              rows.push_back(grid->middle());
-              break;
-            case RowSelectionHint::TOP:
-              rows.push_back(grid->top());
-              break;
-          }
-        }
-        return rows;
-      }();
-  aos::SizedArray<const frc971::vision::Position *, 3> possible_positions =
-      [this, possible_rows]() {
-        aos::SizedArray<const frc971::vision::Position *, 3> positions;
-        for (const localizer::ScoringRow *row : possible_rows) {
-          CHECK_NOTNULL(row);
-          switch (hint_fetcher_->spot()) {
-            case SpotSelectionHint::LEFT:
-              positions.push_back(row->left_cone());
-              break;
-            case SpotSelectionHint::MIDDLE:
-              positions.push_back(row->cube());
-              break;
-            case SpotSelectionHint::RIGHT:
-              positions.push_back(row->right_cone());
-              break;
-          }
-        }
-        return positions;
-      }();
+  const aos::SizedArray<const frc971::vision::Position *, 3>
+      possible_positions =
+          hint_fetcher_->substation_pickup()
+              ? PossiblePickupPositions(scoring_map_)
+              : PossibleScoringPositions(hint_fetcher_.get(), scoring_map_);
   CHECK_LT(0u, possible_positions.size());
   aos::SizedArray<double, 3> distances;
   std::optional<double> closest_distance;

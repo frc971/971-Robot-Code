@@ -30,7 +30,8 @@ table TargetSelectorHint {
   row:RowSelectionHint (id: 1);
   spot:SpotSelectionHint (id: 2);
   robot_side:frc971.control_loops.drivetrain.RobotSide = DONT_CARE (id: 3);
-  // TODO: support human player pickup auto-align?
+  // If set, attempt to pickup from the human player station.
+  substation_pickup:bool (id: 4);
 }
 
 root_type TargetSelectorHint;
