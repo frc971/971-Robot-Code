@@ -285,6 +285,8 @@ class ArmUi(basic_window.BaseWindow):
         self.segment_selector = SegmentSelector(self.segments)
         self.segment_selector.show()
 
+        self.show_indicators = True
+
     def _do_button_press_internal(self, event):
         o_x = event.x
         o_y = event.y
@@ -427,6 +429,8 @@ class ArmUi(basic_window.BaseWindow):
         set_color(cr, Color(color[0], color[1], color[2]))
         self.segments[self.index].DrawTo(cr, self.theta_version)
 
+        with px(cr):
+            cr.stroke()
         control1 = get_xy(self.segments[self.index].control1)
         control2 = get_xy(self.segments[self.index].control2)
 
@@ -434,10 +438,15 @@ class ArmUi(basic_window.BaseWindow):
             control1 = shift_angles(self.segments[self.index].control1)
             control2 = shift_angles(self.segments[self.index].control2)
 
-        cr.move_to(control1[0] + 0.02, control1[1])
-        cr.arc(control1[0], control1[1], 0.02, 0, 2.0 * np.pi)
-        cr.move_to(control2[0] + 0.02, control2[1])
-        cr.arc(control2[0], control2[1], 0.02, 0, 2.0 * np.pi)
+        if self.show_indicators:
+            set_color(cr, Color(1.0, 0.0, 1.0))
+            cr.move_to(control1[0] + 0.02, control1[1])
+            cr.arc(control1[0], control1[1], 0.02, 0, 2.0 * np.pi)
+            with px(cr):
+                cr.stroke()
+            set_color(cr, Color(1.0, 0.7, 0.0))
+            cr.move_to(control2[0] + 0.02, control2[1])
+            cr.arc(control2[0], control2[1], 0.02, 0, 2.0 * np.pi)
 
         with px(cr):
             cr.stroke()
@@ -551,6 +560,9 @@ class ArmUi(basic_window.BaseWindow):
                 self.index = len(self.segments) - 1
             print("Switched to segment:", self.segments[self.index].name)
             self.segments[self.index].Print(graph_paths.points)
+
+        elif keyval == Gdk.KEY_i:
+            self.show_indicators = not self.show_indicators
 
         elif keyval == Gdk.KEY_n:
             self.index += 1
