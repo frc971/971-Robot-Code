@@ -292,7 +292,6 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
 
   follower_.Update(X_hat, disable, constants::Values::kArmDt(), vmax_,
                    max_operating_voltage);
-  AOS_LOG(INFO, "Max voltage: %f\n", max_operating_voltage);
 
   arm_ekf_.Predict(follower_.U().head<2>(), constants::Values::kArmDt());
   roll_joint_loop_.UpdateObserver(follower_.U().tail<1>(),
