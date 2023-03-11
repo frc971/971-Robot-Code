@@ -73,6 +73,7 @@ void LedIndicator::DecideColor() {
   superstructure_position_fetcher_.Fetch();
   server_statistics_fetcher_.Fetch();
   drivetrain_output_fetcher_.Fetch();
+  drivetrain_status_fetcher_.Fetch();
   client_statistics_fetcher_.Fetch();
   gyro_reading_fetcher_.Fetch();
   localizer_output_fetcher_.Fetch();
@@ -165,7 +166,8 @@ void LedIndicator::DecideColor() {
     }
 
     // Check if there is a target that is in sight
-    if (drivetrain_status_fetcher_->line_follow_logging()->have_target()) {
+    if (drivetrain_status_fetcher_.get() != nullptr &&
+        drivetrain_status_fetcher_->line_follow_logging()->have_target()) {
       DisplayLed(255, 165, 0);
       return;
     }
