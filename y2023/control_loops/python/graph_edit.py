@@ -192,10 +192,45 @@ DRIVER_CAM_WIDTH = DRIVER_CAM_POINTS[-1][0] - DRIVER_CAM_POINTS[0][0]
 DRIVER_CAM_HEIGHT = DRIVER_CAM_POINTS[-1][1] - DRIVER_CAM_POINTS[0][1]
 
 
+class SegmentSelector(basic_window.BaseWindow):
+
+    def __init__(self, segments):
+        super(SegmentSelector, self).__init__()
+
+        self.window = Gtk.Window()
+        self.window.set_title("Segment Selector")
+
+        self.segments = segments
+
+        self.segment_store = Gtk.ListStore(int, str)
+
+        for i, segment in enumerate(segments):
+            self.segment_store.append([i, segment.name])
+
+        self.segment_box = Gtk.ComboBox.new_with_model_and_entry(
+            self.segment_store)
+        self.segment_box.connect("changed", self.on_combo_changed)
+        self.segment_box.set_entry_text_column(1)
+
+        self.current_path_index = None
+
+        self.window.add(self.segment_box)
+        self.window.show_all()
+
+    def on_combo_changed(self, combo):
+        iter = combo.get_active_iter()
+
+        if iter is not None:
+            model = combo.get_model()
+            id, name = model[iter][:2]
+            print("Selected: ID=%d, name=%s" % (id, name))
+            self.current_path_index = id
+
+
 # Create a GTK+ widget on which we will draw using Cairo
 class ArmUi(basic_window.BaseWindow):
 
-    def __init__(self):
+    def __init__(self, segments):
         super(ArmUi, self).__init__()
 
         self.window = Gtk.Window()
@@ -221,7 +256,7 @@ class ArmUi(basic_window.BaseWindow):
         self.circular_index_select = 1
 
         # Extra stuff for drawing lines.
-        self.segments = []
+        self.segments = segments
         self.prev_segment_pt = None
         self.now_segment_pt = None
         self.spline_edit = 0
@@ -246,6 +281,9 @@ class ArmUi(basic_window.BaseWindow):
                                     JOINT_TOWER_WIDTH, JOINT_TOWER_HEIGHT,
                                     [DRIVER_CAM_X, DRIVER_CAM_Y],
                                     DRIVER_CAM_WIDTH, DRIVER_CAM_HEIGHT)
+
+        self.segment_selector = SegmentSelector(self.segments)
+        self.segment_selector.show()
 
     def _do_button_press_internal(self, event):
         o_x = event.x
@@ -295,6 +333,8 @@ class ArmUi(basic_window.BaseWindow):
     # Handle the expose-event by drawing
     def handle_draw(self, cr):
         # use "with px(cr): blah;" to transform to pixel coordinates.
+        if self.segment_selector.current_path_index is not None:
+            self.index = self.segment_selector.current_path_index
 
         # Fill the background color of the window with grey
         set_color(cr, palette["GREY"])
@@ -577,8 +617,7 @@ class ArmUi(basic_window.BaseWindow):
         self.redraw()
 
 
-arm_ui = ArmUi()
-arm_ui.segments = graph_paths.segments
+arm_ui = ArmUi(graph_paths.segments)
 print('Starting with segment: ', arm_ui.segments[arm_ui.index].name)
 arm_ui.segments[arm_ui.index].Print(graph_paths.points)
 basic_window.RunApp()
