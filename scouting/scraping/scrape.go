@@ -78,7 +78,7 @@ func getJson(year int32, eventCode, configPath, category string) ([]byte, error)
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprint("Got unexpected status code from TBA API request: ", resp.Status))
+		return nil, errors.New(fmt.Sprint("Got unexpected status code from TBA API request ", req.URL, ": ", resp.Status))
 	}
 
 	// Get all bytes from response body.

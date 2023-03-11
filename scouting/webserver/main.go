@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path"
 	"strconv"
 	"syscall"
 	"time"
@@ -58,6 +59,14 @@ func getDefaultPort() int {
 	return 8080
 }
 
+func getDefaultBlueAllianceConfig() string {
+	workspaceDirectory := os.Getenv("BUILD_WORKSPACE_DIRECTORY")
+	if workspaceDirectory != "" {
+		return path.Join(workspaceDirectory, "scouting_config.json")
+	}
+	return "scouting_config.json"
+}
+
 func main() {
 	portPtr := flag.Int("port", getDefaultPort(), "The port number to bind to.")
 	dirPtr := flag.String("directory", ".", "The directory to serve at /.")
@@ -71,9 +80,11 @@ func main() {
 			"-db_config.")
 	dbConnectRetries := flag.Int("db_retries", 5,
 		"The number of seconds to retry connecting to the database on startup.")
-	blueAllianceConfigPtr := flag.String("tba_config", "",
+	blueAllianceConfigPtr := flag.String("tba_config", getDefaultBlueAllianceConfig(),
 		"The path to your The Blue Alliance JSON config. "+
 			"It needs an \"api_key\" field with your TBA API key. "+
+			"It needs a \"year\" field with the event year. "+
+			"It needs an \"event_code\" field with the event code. "+
 			"Optionally, it can have a \"base_url\" field with the TBA API base URL.")
 	flag.Parse()
 
