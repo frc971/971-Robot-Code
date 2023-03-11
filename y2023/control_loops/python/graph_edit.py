@@ -13,7 +13,7 @@ import numpy as np
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk, Gtk
 import cairo
-from y2023.control_loops.python.graph_tools import to_theta, to_xy, alpha_blend, shift_angles
+from y2023.control_loops.python.graph_tools import to_theta, to_xy, alpha_blend, shift_angles, get_xy
 from y2023.control_loops.python.graph_tools import l1, l2, joint_center
 from y2023.control_loops.python.graph_tools import DRIVER_CAM_POINTS
 from y2023.control_loops.python import graph_paths
@@ -378,6 +378,7 @@ class ArmUi(basic_window.BaseWindow):
             random.shuffle(color)
             set_color(cr, Color(color[0], color[1], color[2]))
             self.segments[i].DrawTo(cr, self.theta_version)
+
             with px(cr):
                 cr.stroke()
 
@@ -385,6 +386,19 @@ class ArmUi(basic_window.BaseWindow):
         color = [0, 0, 0]
         set_color(cr, Color(color[0], color[1], color[2]))
         self.segments[self.index].DrawTo(cr, self.theta_version)
+
+        control1 = get_xy(self.segments[self.index].control1)
+        control2 = get_xy(self.segments[self.index].control2)
+
+        if self.theta_version:
+            control1 = shift_angles(self.segments[self.index].control1)
+            control2 = shift_angles(self.segments[self.index].control2)
+
+        cr.move_to(control1[0] + 0.02, control1[1])
+        cr.arc(control1[0], control1[1], 0.02, 0, 2.0 * np.pi)
+        cr.move_to(control2[0] + 0.02, control2[1])
+        cr.arc(control2[0], control2[1], 0.02, 0, 2.0 * np.pi)
+
         with px(cr):
             cr.stroke()
 
