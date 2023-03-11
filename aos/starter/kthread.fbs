@@ -21,7 +21,10 @@ table KthreadConfig {
 
 table IrqAffinityConfig {
   irqs: [IrqConfig] (id: 0);
+  // Kernel threads.
   kthreads: [KthreadConfig] (id: 1);
+  // Normal threads.
+  threads: [KthreadConfig] (id: 2);
 }
 
 root_type IrqAffinityConfig;
