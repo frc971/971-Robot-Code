@@ -297,6 +297,7 @@ cc_binary(
         "//third_party:phoenixpro",
         "//third_party:wpilib",
         "//y2023/control_loops/drivetrain:drivetrain_can_position_fbs",
+        "//y2023/control_loops/superstructure:led_indicator_lib",
         "//y2023/control_loops/superstructure:superstructure_output_fbs",
         "//y2023/control_loops/superstructure:superstructure_position_fbs",
     ],
