@@ -286,6 +286,8 @@ class ArmUi(basic_window.BaseWindow):
         self.segment_selector.show()
 
         self.show_indicators = True
+        # Lets you only view selected path
+        self.view_current = False
 
     def _do_button_press_internal(self, event):
         o_x = event.x
@@ -412,17 +414,18 @@ class ArmUi(basic_window.BaseWindow):
             self.outline.draw_theta(cr)
 
         set_color(cr, Color(0.0, 0.5, 1.0))
-        for i in range(len(self.segments)):
-            color = None
-            if i == self.index:
-                continue
-            color = [0, random.random(), 1]
-            random.shuffle(color)
-            set_color(cr, Color(color[0], color[1], color[2]))
-            self.segments[i].DrawTo(cr, self.theta_version)
+        if not self.view_current:
+            for i in range(len(self.segments)):
+                color = None
+                if i == self.index:
+                    continue
+                color = [0, random.random(), 1]
+                random.shuffle(color)
+                set_color(cr, Color(color[0], color[1], color[2]))
+                self.segments[i].DrawTo(cr, self.theta_version)
 
-            with px(cr):
-                cr.stroke()
+                with px(cr):
+                    cr.stroke()
 
         # Draw current spline in black
         color = [0, 0, 0]
@@ -569,6 +572,9 @@ class ArmUi(basic_window.BaseWindow):
             self.index = self.index % len(self.segments)
             print("Switched to segment:", self.segments[self.index].name)
             self.segments[self.index].Print(graph_paths.points)
+
+        elif keyval == Gdk.KEY_l:
+            self.view_current = not self.view_current
 
         elif keyval == Gdk.KEY_t:
             # Toggle between theta and xy renderings
