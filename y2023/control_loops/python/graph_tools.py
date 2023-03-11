@@ -183,7 +183,7 @@ UPPER_DELTA_LIMIT = 0.0
 LOWER_DELTA_LIMIT = -1.98 * np.pi
 
 # TODO(milind): put actual proximal limits
-UPPER_PROXIMAL_LIMIT = np.pi * 2.0
+UPPER_PROXIMAL_LIMIT = np.pi * 3.0
 LOWER_PROXIMAL_LIMIT = -np.pi * 2.0
 
 UPPER_DISTAL_LIMIT = 0.75 * np.pi
@@ -193,12 +193,36 @@ UPPER_ROLL_JOINT_LIMIT = 0.75 * np.pi
 LOWER_ROLL_JOINT_LIMIT = -0.75 * np.pi
 
 
-def arm_past_limit(theta1, theta2, theta3):
+def arm_past_limit(theta1, theta2, theta3, verbose=True):
     delta = theta2 - theta1
-    return delta > UPPER_DELTA_LIMIT or delta < LOWER_DELTA_LIMIT or \
-            theta1 > UPPER_PROXIMAL_LIMIT or theta1 < LOWER_PROXIMAL_LIMIT or \
-            theta2 > UPPER_DISTAL_LIMIT or theta2 < LOWER_DISTAL_LIMIT or \
-            theta3 > UPPER_ROLL_JOINT_LIMIT or theta3 < LOWER_ROLL_JOINT_LIMIT
+    if delta > UPPER_DELTA_LIMIT or delta < LOWER_DELTA_LIMIT:
+        if verbose:
+            print(
+                f'Delta {delta} outside {LOWER_DELTA_LIMIT}, {UPPER_DELTA_LIMIT}'
+            )
+        return True
+    if theta1 > UPPER_PROXIMAL_LIMIT or theta1 < LOWER_PROXIMAL_LIMIT:
+        if verbose:
+            print(
+                f'Proximal {theta1} outside {LOWER_PROXIMAL_LIMIT}, {UPPER_PROXIMAL_LIMIT}'
+            )
+        return True
+
+    if theta2 > UPPER_DISTAL_LIMIT or theta2 < LOWER_DISTAL_LIMIT:
+        if verbose:
+            print(
+                f'Proximal {theta2} outside {LOWER_DISTAL_LIMIT}, {UPPER_DISTAL_LIMIT}'
+            )
+        return True
+
+    if theta3 > UPPER_ROLL_JOINT_LIMIT or theta3 < LOWER_ROLL_JOINT_LIMIT:
+        if verbose:
+            print(
+                f'Proximal {theta3} outside {LOWER_ROLL_JOINT_LIMIT}, {UPPER_ROLL_JOINT_LIMIT}'
+            )
+        return True
+
+    return False
 
 
 def get_circular_index(theta):
@@ -376,7 +400,7 @@ class Path(abc.ABC):
 
     def arm_past_limit(self, points, verbose=True):
         for point in points:
-            if arm_past_limit(*point):
+            if arm_past_limit(*point, verbose=verbose):
                 if verbose:
                     print("Arm past limit for path %s in point %s" %
                           (self.name, point))

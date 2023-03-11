@@ -4,6 +4,18 @@ import numpy as np
 
 from y2023.control_loops.python.graph_tools import *
 
+
+def ThetaSegment(name, start, end):
+    control = np.array([(start[0] + end[0]) / 2.0, (start[1] + end[1]) / 2.0])
+    return ThetaSplineSegment(
+        name=name,
+        start=start,
+        control1=control,
+        control2=control,
+        end=end,
+    )
+
+
 named_segments = []
 points = {}
 
@@ -37,7 +49,7 @@ named_segments.append(
 
 points[
     'GroundPickupFrontConeDownBase'] = to_theta_with_circular_index_and_roll(
-        0.263207, 0.24, -np.pi / 2.0, circular_index=0)
+        0.30, 0.24, -np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -75,6 +87,136 @@ named_segments.append(
         control_alpha_rolls=[(0.30, 0.0), (.95, -np.pi / 2.0)],
     ))
 
+points['ScoreBackLowConeDownTip'] = to_theta_with_circular_index_and_roll(
+    -1.17422, 0.441203, np.pi / 2.0, circular_index=1)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreBackLowConeDownTip",
+        start=points['Neutral'],
+        control1=np.array([3.0959727041167358, -0.48933188185224896]),
+        control2=np.array([3.11854219540683, -1.0398000886366843]),
+        end=points['ScoreBackLowConeDownTip'],
+        control_alpha_rolls=[(0.20, 0.0), (.95, np.pi / 2.0)],
+    ))
+
+points['ScoreFrontLowConeDownTip'] = to_theta_with_circular_index_and_roll(
+    0.327783, 0.430704, np.pi / 2.0, circular_index=0)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreFrontLowConeDownTip",
+        start=points['Neutral'],
+        control1=np.array([3.6217558044411176, 0.6335548380532725]),
+        control2=np.array([4.2557660430407935, 1.0411926555706872]),
+        end=points['ScoreFrontLowConeDownTip'],
+        control_alpha_rolls=[(0.20, 0.0), (.95, np.pi / 2.0)],
+    ))
+
+points['ScoreBackMidConeDownTip'] = to_theta_with_circular_index_and_roll(
+    -1.49, 0.818521, -np.pi / 2.0, circular_index=1)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreBackMidConeDownTip",
+        start=points['Neutral'],
+        control1=np.array([3.193704394908777, -0.46076706416611657]),
+        control2=np.array([3.6421839688861786, -0.8129214904599373]),
+        end=points['ScoreBackMidConeDownTip'],
+        control_alpha_rolls=[(0.20, 0.0), (.95, -np.pi / 2.0)],
+    ))
+
+points[
+    'ScoreBackMidConeDownTipPlaced'] = to_theta_with_circular_index_and_roll(
+        -1.43, 0.65, -np.pi / 2.0, circular_index=1)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreBackMidConeDownTipPlaced",
+        start=points['Neutral'],
+        control1=np.array([3.193704394908777, -0.46076706416611657]),
+        control2=np.array([3.6421839688861786, -0.8129214904599373]),
+        end=points['ScoreBackMidConeDownTipPlaced'],
+        control_alpha_rolls=[(0.20, 0.0), (.95, -np.pi / 2.0)],
+    ))
+
+named_segments.append(
+    ThetaSegment(
+        name="ScoreBackMidConeDownTipToScoreBackMidConeDownTipPlaced",
+        start=points['ScoreBackMidConeDownTip'],
+        end=points['ScoreBackMidConeDownTipPlaced'],
+    ))
+
+points['ScoreFrontMidConeDownTip'] = np.array(
+    (6.37001629521978, 2.04450540030891, np.pi / 2.0))
+#to_theta_with_circular_index_and_roll(
+#0.708449, 0.869738, np.pi / 2.0, circular_index=1)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreFrontMidConeDownTip",
+        start=points['Neutral'],
+        control1=np.array([4.579377666056791, 0.3789471836198275]),
+        control2=np.array([5.140992799899862, 1.5135884307866865]),
+        end=points['ScoreFrontMidConeDownTip'],
+        control_alpha_rolls=[(0.50, 0.0), (.95, np.pi / 2.0)],
+    ))
+
+points['ScoreFrontMidConeDownTipPlaced'] = np.array(
+    (6.42001629521978, 2.30450540030891, np.pi / 2.0))
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreFrontMidConeDownTipPlaced",
+        start=points['Neutral'],
+        control1=np.array([4.579377666056791, 0.3789471836198275]),
+        control2=np.array([5.140992799899862, 1.5135884307866865]),
+        end=points['ScoreFrontMidConeDownTipPlaced'],
+        control_alpha_rolls=[(0.50, 0.0), (.95, np.pi / 2.0)],
+    ))
+
+named_segments.append(
+    ThetaSegment(
+        name="ScoreFrontMidConeDownTipToScoreFrontMidConeDownTipPlaced",
+        start=points['ScoreFrontMidConeDownTip'],
+        end=points['ScoreFrontMidConeDownTipPlaced'],
+    ))
+
+points['ScoreFrontHighConeDownTip'] = np.array(
+    (7.07190783461154, 1.55094570328448, np.pi / 2.0))
+#to_theta_with_circular_index_and_roll(
+#0.708449, 0.869738, np.pi / 2.0, circular_index=1)
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreFrontHighConeDownTip",
+        start=points['Neutral'],
+        control1=np.array([4.579377666056791, 0.3789471836198275]),
+        control2=np.array([5.140992799899862, 1.5135884307866865]),
+        end=points['ScoreFrontHighConeDownTip'],
+        control_alpha_rolls=[(0.50, 0.0), (.95, np.pi / 2.0)],
+    ))
+
+points['ScoreFrontHighConeDownTipPlaced'] = np.array(
+    (6.93190783461154, 1.80094570328448, np.pi / 2.0))
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="NeutralToScoreFrontHighConeDownTipPlaced",
+        start=points['Neutral'],
+        control1=np.array([5.997741842590495, 1.8354263885166913]),
+        control2=np.array([6.141018843972322, 1.0777341552037734]),
+        end=points['ScoreFrontHighConeDownTipPlaced'],
+        control_alpha_rolls=[(0.50, 0.0), (.95, np.pi / 2.0)],
+    ))
+
+named_segments.append(
+    ThetaSegment(
+        name="ScoreFrontHighConeDownTipToScoreFrontHighConeDownTipPlaced",
+        start=points['ScoreFrontHighConeDownTip'],
+        end=points['ScoreFrontHighConeDownTipPlaced'],
+    ))
+
 points['ScoreFrontHighConeDownBase'] = to_theta_with_circular_index_and_roll(
     1.04686, 1.13243, -np.pi / 2.0, circular_index=0)
 
@@ -89,7 +231,7 @@ named_segments.append(
     ))
 
 points['GroundPickupBackCube'] = to_theta_with_circular_index_and_roll(
-    -1.102, 0.30, -np.pi / 2.0, circular_index=1)
+    -1.102, 0.28, -np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -115,7 +257,7 @@ named_segments.append(
     ))
 
 points['ScoreBackMidConeUp'] = to_theta_with_circular_index_and_roll(
-    -1.33013, 1.08354, np.pi / 2.0, circular_index=1)
+    -1.45013, 1.04354, np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -161,7 +303,7 @@ named_segments.append(
     ))
 
 points['ScoreBackMidConeDownBase'] = to_theta_with_circular_index_and_roll(
-    -1.37792406, 0.81332449, np.pi / 2.0, circular_index=1)
+    -1.37792406, 0.87332449, np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -187,7 +329,7 @@ named_segments.append(
     ))
 
 points['HPPickupBackConeUp'] = to_theta_with_circular_index_and_roll(
-    -1.1050539, 1.34, np.pi / 2.0, circular_index=0)
+    -1.1050539, 1.325, np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -228,7 +370,7 @@ named_segments.append(
     ))
 
 points['ScoreFrontMidConeUp'] = to_theta_with_circular_index_and_roll(
-    0.43740453, 1.06330555, -np.pi / 2.0, circular_index=0)
+    0.64, 1.03, -np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -241,7 +383,7 @@ named_segments.append(
     ))
 
 points['ScoreFrontLowCube'] = to_theta_with_circular_index_and_roll(
-    0.325603, 0.30, np.pi / 2.0, circular_index=0)
+    0.325603, 0.39, np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(

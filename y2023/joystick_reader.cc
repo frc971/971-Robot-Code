@@ -42,6 +42,9 @@ namespace y2023 {
 namespace input {
 namespace joysticks {
 
+constexpr double kConeWrist = 0.4;
+constexpr double kCubeWrist = 1.0;
+
 // TODO(milind): add correct locations
 const ButtonLocation kDriverSpit(2, 1);
 const ButtonLocation kSpit(4, 13);
@@ -60,7 +63,7 @@ const ButtonLocation kMidCube(4, 2);
 const ButtonLocation kLowCube(4, 3);
 
 const ButtonLocation kGroundPickupConeUp(4, 7);
-const ButtonLocation kGroundPickupConeDownBase(4, 8);
+const ButtonLocation kGroundPickupConeDown(4, 8);
 const ButtonLocation kGroundPickupCube(4, 10);
 const ButtonLocation kHPConePickup(4, 6);
 
@@ -70,6 +73,9 @@ const ButtonLocation kBack(4, 12);
 const ButtonLocation kWrist(4, 10);
 const ButtonLocation kStayIn(3, 4);
 
+const ButtonLocation kConeDownTip(4, 4);
+const ButtonLocation kConeDownBase(4, 5);
+
 namespace superstructure = y2023::control_loops::superstructure;
 namespace arm = superstructure::arm;
 
@@ -77,6 +83,7 @@ enum class GamePiece {
   CONE_UP = 0,
   CONE_DOWN = 1,
   CUBE = 2,
+  CONE_TIP = 4,
 };
 
 struct ButtonData {
@@ -86,6 +93,7 @@ struct ButtonData {
 
 struct ArmSetpoint {
   uint32_t index;
+  std::optional<uint32_t> place_index = std::nullopt;
   double wrist_goal;
   std::optional<double> score_wrist_goal = std::nullopt;
   GamePiece game_piece;
@@ -97,35 +105,88 @@ struct ArmSetpoint {
 const std::vector<ArmSetpoint> setpoints = {
     {
         .index = arm::GroundPickupBackConeUpIndex(),
-        .wrist_goal = 0.0,
+        .wrist_goal = 0.7,
         .game_piece = GamePiece::CONE_UP,
         .buttons = {{kGroundPickupConeUp}},
         .side = Side::BACK,
     },
     {
         .index = arm::GroundPickupFrontConeUpIndex(),
-        .wrist_goal = 0.2,
+        .wrist_goal = 0.6,
         .game_piece = GamePiece::CONE_UP,
         .buttons = {{kGroundPickupConeUp}},
         .side = Side::FRONT,
     },
     {
         .index = arm::GroundPickupBackConeDownBaseIndex(),
-        .wrist_goal = 0.0,
+        .wrist_goal = kConeWrist,
         .game_piece = GamePiece::CONE_DOWN,
-        .buttons = {{kGroundPickupConeDownBase}},
+        .buttons = {{kGroundPickupConeDown}},
         .side = Side::BACK,
     },
     {
         .index = arm::GroundPickupFrontConeDownBaseIndex(),
-        .wrist_goal = 0.2,
+        .wrist_goal = 0.6,
         .game_piece = GamePiece::CONE_DOWN,
-        .buttons = {{kGroundPickupConeDownBase}},
+        .buttons = {{kGroundPickupConeDown}},
         .side = Side::FRONT,
     },
     {
-        .index = arm::ScoreBackMidConeUpIndex(),
+        .index = arm::ScoreBackLowConeDownTipIndex(),
+        .wrist_goal = 0.7,
+        .game_piece = GamePiece::CONE_TIP,
+        .buttons = {{kLowConeScoreRight, SpotSelectionHint::RIGHT},
+                    {kLowCube, SpotSelectionHint::MIDDLE},
+                    {kLowConeScoreLeft, SpotSelectionHint::LEFT}},
+        .side = Side::BACK,
+        .row_hint = RowSelectionHint::BOTTOM,
+    },
+    {
+        .index = arm::ScoreBackMidConeDownTipIndex(),
+        .place_index = arm::ScoreBackMidConeDownTipPlacedIndex(),
+        .wrist_goal = 0.8,
+        .score_wrist_goal = 2.0,
+        .game_piece = GamePiece::CONE_TIP,
+        .buttons = {{kMidConeScoreRight, SpotSelectionHint::RIGHT},
+                    {kMidConeScoreLeft, SpotSelectionHint::LEFT}},
+        .side = Side::BACK,
+        .row_hint = RowSelectionHint::MIDDLE,
+    },
+    {
+        .index = arm::ScoreFrontMidConeDownTipIndex(),
+        .place_index = arm::ScoreFrontMidConeDownTipPlacedIndex(),
         .wrist_goal = 0.0,
+        .score_wrist_goal = 1.4,
+        .game_piece = GamePiece::CONE_TIP,
+        .buttons = {{kMidConeScoreRight, SpotSelectionHint::RIGHT},
+                    {kMidConeScoreLeft, SpotSelectionHint::LEFT}},
+        .side = Side::FRONT,
+        .row_hint = RowSelectionHint::MIDDLE,
+    },
+    {
+        .index = arm::ScoreFrontHighConeDownTipIndex(),
+        .place_index = arm::ScoreFrontHighConeDownTipPlacedIndex(),
+        .wrist_goal = 0.4,
+        .score_wrist_goal = 1.4,
+        .game_piece = GamePiece::CONE_TIP,
+        .buttons = {{kHighConeScoreRight, SpotSelectionHint::RIGHT},
+                    {kHighConeScoreLeft, SpotSelectionHint::LEFT}},
+        .side = Side::FRONT,
+        .row_hint = RowSelectionHint::TOP,
+    },
+    {
+        .index = arm::ScoreFrontLowConeDownTipIndex(),
+        .wrist_goal = 2.8,
+        .game_piece = GamePiece::CONE_TIP,
+        .buttons = {{kLowConeScoreRight, SpotSelectionHint::RIGHT},
+                    {kLowCube, SpotSelectionHint::MIDDLE},
+                    {kLowConeScoreLeft, SpotSelectionHint::LEFT}},
+        .side = Side::FRONT,
+        .row_hint = RowSelectionHint::TOP,
+    },
+    {
+        .index = arm::ScoreBackMidConeUpIndex(),
+        .wrist_goal = kConeWrist,
         .game_piece = GamePiece::CONE_UP,
         .buttons = {{kMidConeScoreRight, SpotSelectionHint::RIGHT},
                     {kMidConeScoreLeft, SpotSelectionHint::LEFT}},
@@ -134,7 +195,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreBackLowConeUpIndex(),
-        .wrist_goal = 0.0,
+        .wrist_goal = kConeWrist,
         .game_piece = GamePiece::CONE_UP,
         .buttons = {{kLowConeScoreLeft, SpotSelectionHint::LEFT},
                     {kLowConeScoreRight, SpotSelectionHint::RIGHT}},
@@ -143,7 +204,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreFrontLowConeUpIndex(),
-        .wrist_goal = 0.0,
+        .wrist_goal = kConeWrist,
         .game_piece = GamePiece::CONE_UP,
         .buttons = {{kLowConeScoreLeft, SpotSelectionHint::LEFT},
                     {kLowConeScoreRight, SpotSelectionHint::RIGHT}},
@@ -152,8 +213,8 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreBackMidConeDownBaseIndex(),
-        .wrist_goal = 2.2,
-        .score_wrist_goal = 0.0,
+        .wrist_goal = 2.5,
+        .score_wrist_goal = kConeWrist,
         .game_piece = GamePiece::CONE_DOWN,
         .buttons = {{kMidConeScoreLeft, SpotSelectionHint::LEFT},
                     {kMidConeScoreRight, SpotSelectionHint::RIGHT}},
@@ -162,8 +223,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreBackLowConeDownBaseIndex(),
-        .wrist_goal = 0.0,
-        .score_wrist_goal = 0.0,
+        .wrist_goal = kConeWrist,
         .game_piece = GamePiece::CONE_DOWN,
         .buttons = {{kLowConeScoreLeft, SpotSelectionHint::LEFT},
                     {kLowConeScoreRight, SpotSelectionHint::RIGHT}},
@@ -172,7 +232,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreFrontLowConeDownBaseIndex(),
-        .wrist_goal = 0.0,
+        .wrist_goal = kConeWrist,
         .game_piece = GamePiece::CONE_DOWN,
         .buttons = {{kLowConeScoreLeft, SpotSelectionHint::LEFT},
                     {kLowConeScoreRight, SpotSelectionHint::RIGHT}},
@@ -181,8 +241,8 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreFrontMidConeDownBaseIndex(),
-        .wrist_goal = 2.0,
-        .score_wrist_goal = 0.0,
+        .wrist_goal = 2.6,
+        .score_wrist_goal = 0.2,
         .game_piece = GamePiece::CONE_DOWN,
         .buttons = {{kMidConeScoreLeft, SpotSelectionHint::LEFT},
                     {kMidConeScoreRight, SpotSelectionHint::RIGHT}},
@@ -191,8 +251,8 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreFrontHighConeDownBaseIndex(),
-        .wrist_goal = 2.0,
-        .score_wrist_goal = 0.0,
+        .wrist_goal = 2.6,
+        .score_wrist_goal = 0.2,
         .game_piece = GamePiece::CONE_DOWN,
         .buttons = {{kHighConeScoreLeft, SpotSelectionHint::LEFT},
                     {kHighConeScoreRight, SpotSelectionHint::RIGHT}},
@@ -201,21 +261,21 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::HPPickupFrontConeUpIndex(),
-        .wrist_goal = 0.0,
+        .wrist_goal = kConeWrist,
         .game_piece = GamePiece::CONE_UP,
         .buttons = {{kHPConePickup}},
         .side = Side::FRONT,
     },
     {
         .index = arm::HPPickupBackConeUpIndex(),
-        .wrist_goal = 0.4,
+        .wrist_goal = 0.5,
         .game_piece = GamePiece::CONE_UP,
         .buttons = {{kHPConePickup}},
         .side = Side::BACK,
     },
     {
         .index = arm::ScoreFrontHighConeUpIndex(),
-        .wrist_goal = 0.05,
+        .wrist_goal = kConeWrist + 0.05,
         .game_piece = GamePiece::CONE_UP,
         .buttons = {{kHighConeScoreLeft, SpotSelectionHint::LEFT},
                     {kHighConeScoreRight, SpotSelectionHint::RIGHT}},
@@ -224,7 +284,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreFrontMidConeUpIndex(),
-        .wrist_goal = 0.05,
+        .wrist_goal = kConeWrist + 0.05,
         .game_piece = GamePiece::CONE_UP,
         .buttons = {{kMidConeScoreLeft, SpotSelectionHint::LEFT},
                     {kMidConeScoreRight, SpotSelectionHint::RIGHT}},
@@ -233,14 +293,14 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::GroundPickupBackCubeIndex(),
-        .wrist_goal = 0.6,
+        .wrist_goal = kCubeWrist,
         .game_piece = GamePiece::CUBE,
         .buttons = {{kGroundPickupCube}},
         .side = Side::BACK,
     },
     {
         .index = arm::ScoreFrontMidCubeIndex(),
-        .wrist_goal = 0.6,
+        .wrist_goal = kCubeWrist,
         .game_piece = GamePiece::CUBE,
         .buttons = {{kMidCube, SpotSelectionHint::MIDDLE}},
         .side = Side::FRONT,
@@ -248,8 +308,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreBackMidCubeIndex(),
-        .wrist_goal = 0.6,
-        .score_wrist_goal = 0.0,
+        .wrist_goal = kCubeWrist,
         .game_piece = GamePiece::CUBE,
         .buttons = {{kMidCube, SpotSelectionHint::MIDDLE}},
         .side = Side::BACK,
@@ -257,7 +316,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreFrontLowCubeIndex(),
-        .wrist_goal = 0.6,
+        .wrist_goal = kCubeWrist,
         .game_piece = GamePiece::CUBE,
         .buttons = {{kLowCube, SpotSelectionHint::MIDDLE}},
         .side = Side::FRONT,
@@ -265,7 +324,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreBackLowCubeIndex(),
-        .wrist_goal = 0.6,
+        .wrist_goal = kCubeWrist,
         .game_piece = GamePiece::CUBE,
         .buttons = {{kLowCube, SpotSelectionHint::MIDDLE}},
         .side = Side::BACK,
@@ -273,7 +332,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreFrontHighCubeIndex(),
-        .wrist_goal = 0.6,
+        .wrist_goal = kCubeWrist,
         .game_piece = GamePiece::CUBE,
         .buttons = {{kHighCube, SpotSelectionHint::MIDDLE}},
         .side = Side::FRONT,
@@ -281,8 +340,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreBackHighCubeIndex(),
-        .wrist_goal = 0.6,
-        .score_wrist_goal = 0.0,
+        .wrist_goal = kCubeWrist,
         .game_piece = GamePiece::CUBE,
         .buttons = {{kHighCube, SpotSelectionHint::MIDDLE}},
         .side = Side::BACK,
@@ -290,7 +348,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::GroundPickupFrontCubeIndex(),
-        .wrist_goal = 0.6,
+        .wrist_goal = kCubeWrist,
         .game_piece = GamePiece::CUBE,
         .buttons = {{kGroundPickupCube}},
         .side = Side::FRONT,
@@ -333,11 +391,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     RollerGoal roller_goal = RollerGoal::IDLE;
     arm_goal_position_ = arm::NeutralIndex();
     std::optional<double> score_wrist_goal = std::nullopt;
+    std::optional<double> place_index = std::nullopt;
 
     if (data.IsPressed(kGroundPickupConeUp) || data.IsPressed(kHPConePickup)) {
       roller_goal = RollerGoal::INTAKE_CONE_UP;
       current_game_piece_ = GamePiece::CONE_UP;
-    } else if (data.IsPressed(kGroundPickupConeDownBase)) {
+    } else if (data.IsPressed(kGroundPickupConeDown)) {
       roller_goal = RollerGoal::INTAKE_CONE_DOWN;
       current_game_piece_ = GamePiece::CONE_DOWN;
     } else if (data.IsPressed(kGroundPickupCube)) {
@@ -345,8 +404,17 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       current_game_piece_ = GamePiece::CUBE;
     }
 
+    if (current_game_piece_ == GamePiece::CONE_DOWN ||
+        current_game_piece_ == GamePiece::CONE_TIP) {
+      if (data.IsPressed(kConeDownTip)) {
+        current_game_piece_ = GamePiece::CONE_TIP;
+      } else if (data.IsPressed(kConeDownBase)) {
+        current_game_piece_ = GamePiece::CONE_DOWN;
+      }
+    }
+
     if (current_game_piece_ == GamePiece::CUBE) {
-      wrist_goal = 0.6;
+      wrist_goal = kCubeWrist;
     }
 
     std::optional<RowSelectionHint> placing_row;
@@ -391,6 +459,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         wrist_goal = current_setpoint_->wrist_goal;
         arm_goal_position_ = current_setpoint_->index;
         score_wrist_goal = current_setpoint_->score_wrist_goal;
+        place_index = current_setpoint_->place_index;
       }
 
       placing_row = current_setpoint_->row_hint;
@@ -407,9 +476,19 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         // If we are supposed to dunk it, wait until we are close enough to
         // spit.
         if (std::abs(score_wrist_goal.value() -
-                     superstructure_status_fetcher_->wrist()->position()) <
+                     superstructure_status_fetcher_->wrist()->goal_position()) <
             0.1) {
-          roller_goal = RollerGoal::SPIT;
+          if (place_index.has_value()) {
+            arm_goal_position_ = place_index.value();
+            if (arm_goal_position_ ==
+                    superstructure_status_fetcher_->arm()->current_node() &&
+                superstructure_status_fetcher_->arm()->path_distance_to_go() <
+                    0.01) {
+              roller_goal = RollerGoal::SPIT;
+            }
+          } else {
+            roller_goal = RollerGoal::SPIT;
+          }
         }
       } else {
         roller_goal = RollerGoal::SPIT;

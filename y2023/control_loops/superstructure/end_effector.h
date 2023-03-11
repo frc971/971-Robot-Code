@@ -18,7 +18,7 @@ class EndEffector {
   static constexpr double kRollerConeSuckVoltage() { return 12.0; }
   static constexpr double kRollerConeSpitVoltage() { return -9.0; }
 
-  static constexpr double kRollerCubeSuckVoltage() { return -5.0; }
+  static constexpr double kRollerCubeSuckVoltage() { return -7.0; }
   static constexpr double kRollerCubeSpitVoltage() { return 3.0; }
 
   EndEffector();
