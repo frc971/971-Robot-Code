@@ -11,7 +11,7 @@ DEFINE_double(min_decision_margin, 75.0,
 DEFINE_int32(pixel_border, 10,
              "Size of image border within which to reject detected corners");
 DEFINE_double(
-    max_expected_distortion, 0.0005,
+    max_expected_distortion, 0.314,
     "Maximum expected value for unscaled distortion factors. Will scale "
     "distortion factors so that this value (and a higher distortion) maps to "
     "1.0.");
@@ -158,11 +158,11 @@ double AprilRoboticsDetector::ComputeDistortionFactor(
   }
   avg_distance /= corners.size();
 
-  // Normalize avg_distance by dividing by the image size, and then the maximum
-  // expected distortion
+  // Normalize avg_distance by dividing by the image diagonal,
+  // and then the maximum expected distortion
   double distortion_factor =
       avg_distance /
-      static_cast<double>(image_size_.width * image_size_.height);
+      cv::norm(cv::Point2d(image_size_.width, image_size_.height));
   return std::min(distortion_factor / FLAGS_max_expected_distortion, 1.0);
 }
 
