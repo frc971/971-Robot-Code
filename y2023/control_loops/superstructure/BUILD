@@ -156,6 +156,35 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "led_indicator_lib",
+    srcs = ["led_indicator.cc"],
+    hdrs = ["led_indicator.h"],
+    data = [
+        "@ctre_phoenix_api_cpp_athena//:shared_libraries",
+        "@ctre_phoenix_cci_athena//:shared_libraries",
+    ],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
+    deps = [
+        ":superstructure_output_fbs",
+        ":superstructure_position_fbs",
+        ":superstructure_status_fbs",
+        "//aos/events:event_loop",
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//frc971/control_loops:control_loop",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
+        "//frc971/queues:gyro_fbs",
+        "//third_party:phoenix",
+        "//third_party:wpilib",
+        "//y2023/vision:game_pieces_fbs",
+    ],
+)
+
 cc_binary(
     name = "superstructure_replay",
     srcs = ["superstructure_replay.cc"],
