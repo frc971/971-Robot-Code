@@ -3,6 +3,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/team_number.h"
+#include "frc971/shooter_interpolation/interpolation.h"
 #include "frc971/zeroing/wrap.h"
 #include "y2023/control_loops/superstructure/arm/arm_trajectories_generated.h"
 
@@ -27,6 +28,7 @@ Superstructure::Superstructure(
     : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
                                                                     name),
       values_(values),
+      constants_fetcher_(event_loop),
       drivetrain_status_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),
@@ -100,6 +102,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_end_effector_state(end_effector_.state());
   // TODO(milind): integrate this with ML game piece detection somehow
   status_builder.add_game_piece(end_effector_.game_piece());
+  const std::optional<double> game_piece_position =
+      LateralOffsetForTimeOfFlight(position->cone_position());
+  if (game_piece_position.has_value()) {
+    status_builder.add_game_piece_position(game_piece_position.value());
+  }
 
   (void)status->Send(status_builder.Finish());
 }
@@ -108,6 +115,36 @@ double Superstructure::robot_velocity() const {
   return (drivetrain_status_fetcher_.get() != nullptr
               ? drivetrain_status_fetcher_->robot_speed()
               : 0.0);
+}
+
+std::optional<double> Superstructure::LateralOffsetForTimeOfFlight(
+    double reading) {
+  switch (end_effector_.game_piece()) {
+    case vision::Class::NONE:
+      return std::nullopt;
+    case vision::Class::CUBE:
+      // Cubes are definitionally centered.
+      return 0.0;
+    case vision::Class::CONE_UP:
+    case vision::Class::CONE_DOWN:
+      // execute logic below.
+      break;
+  }
+  constexpr double kInvalidReading = 0.93;
+  if (reading > kInvalidReading) {
+    return std::nullopt;
+  }
+  const TimeOfFlight *calibration = CHECK_NOTNULL(
+      CHECK_NOTNULL(constants_fetcher_.constants().robot())->tof());
+  // TODO(james): Use a generic interpolation table class.
+  auto table = CHECK_NOTNULL(calibration->interpolation_table());
+  CHECK_EQ(2u, table->size());
+  double x1 = table->Get(0)->tof_reading();
+  double x2 = table->Get(1)->tof_reading();
+  double y1 = table->Get(0)->lateral_position();
+  double y2 = table->Get(1)->lateral_position();
+  return frc971::shooter_interpolation::Blend((reading - x1) / (x2 - x1), y1,
+                                              y2);
 }
 
 }  // namespace superstructure

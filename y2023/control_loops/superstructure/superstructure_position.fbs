@@ -47,7 +47,13 @@ table Position {
     // Positive position would be upwards
     wrist:frc971.AbsolutePosition (id: 1);
 
-    // If this is true, the cone beam break is triggered.
+    // Estimated position of a cone in the gripper from the time-of-flight
+    // sensors.
+    // If greater than 0.9, indicates that we cannot see a cone.
+    // Will be larger when the cone is farther forwards on the robot when
+    // the wrist and arm positions are all at zero (this will typically mean
+    // that it is larger when the cone is to the robot's current right when
+    // trying to core).
     cone_position:double (id: 2);
 
     // If this is true, the cube beam break is triggered.

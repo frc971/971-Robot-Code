@@ -8,6 +8,7 @@
 #include "frc971/control_loops/subsystem_simulator.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "gtest/gtest.h"
+#include "y2023/constants/simulated_constants_sender.h"
 #include "y2023/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2023/control_loops/superstructure/roll/integral_roll_plant.h"
 #include "y2023/control_loops/superstructure/superstructure.h"
@@ -240,14 +241,17 @@ class SuperstructureSimulation {
     position_builder.add_wrist(wrist_offset);
     position_builder.add_end_effector_cube_beam_break(
         end_effector_cube_beam_break_);
-    // TODO(milind): put into our state
-    position_builder.add_cone_position(0.95);
+    position_builder.add_cone_position(cone_position_);
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
   }
 
   void set_end_effector_cube_beam_break(bool triggered) {
     end_effector_cube_beam_break_ = triggered;
+  }
+
+  void set_cone_position(double cone_position) {
+    cone_position_ = cone_position;
   }
 
  private:
@@ -265,6 +269,7 @@ class SuperstructureSimulation {
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
 
   bool first_ = true;
+  double cone_position_ = 0.95;
 };
 
 class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
@@ -274,6 +279,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
             aos::configuration::ReadConfig("y2023/aos_config.json"),
             std::chrono::microseconds(5050)),
         values_(std::make_shared<constants::Values>(constants::MakeValues())),
+        simulated_constants_dummy_(SendSimulationConstants(
+            event_loop_factory(), 7971, "y2023/constants/test_constants.json")),
         roborio_(aos::configuration::GetNode(configuration(), "roborio")),
         logger_pi_(aos::configuration::GetNode(configuration(), "logger")),
         arm_trajectories_(superstructure::Superstructure::GetArmTrajectories(
@@ -410,6 +417,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   }
 
   std::shared_ptr<const constants::Values> values_;
+  const bool simulated_constants_dummy_;
 
   const aos::Node *const roborio_;
   const aos::Node *const logger_pi_;
@@ -558,6 +566,42 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 TEST_F(SuperstructureTest, DisableTest) {
   RunFor(chrono::seconds(2));
   CheckIfZeroed();
+}
+
+// Tests that the cone position ocnversion works.
+TEST_F(SuperstructureTest, ConePositionConversion) {
+  // Get ourselves into CONE mode.
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_arm_goal_position(arm::NeutralIndex());
+    goal_builder.add_trajectory_override(false);
+    goal_builder.add_roller_goal(RollerGoal::INTAKE_CONE_UP);
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+  superstructure_plant_.set_cone_position(1.0);
+  RunFor(chrono::seconds(1));
+  // Game piece position should not be populated when invalid.
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(vision::Class::CONE_UP, superstructure_status_fetcher_->game_piece());
+  EXPECT_FALSE(superstructure_status_fetcher_->has_game_piece_position());
+
+  // And then send a valid cone position.
+  superstructure_plant_.set_cone_position(0.5);
+  RunFor(chrono::seconds(1));
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(vision::Class::CONE_UP, superstructure_status_fetcher_->game_piece());
+  EXPECT_TRUE(superstructure_status_fetcher_->has_game_piece_position());
+  EXPECT_FLOAT_EQ(0.0, superstructure_status_fetcher_->game_piece_position());
+
+  superstructure_plant_.set_cone_position(0.1);
+  RunFor(chrono::seconds(1));
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(vision::Class::CONE_UP, superstructure_status_fetcher_->game_piece());
+  EXPECT_TRUE(superstructure_status_fetcher_->has_game_piece_position());
+  EXPECT_FLOAT_EQ(0.2, superstructure_status_fetcher_->game_piece_position());
 }
 
 class SuperstructureBeambreakTest

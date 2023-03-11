@@ -89,7 +89,15 @@ table Status {
   wrist:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 3);
 
   end_effector_state:EndEffectorState (id: 4);
+
   game_piece:vision.Class (id: 5);
+
+  // Indicates the current lateral position of the game piece, in meters.
+  // This number will be zero when the game piece is centered, and positive if
+  // the arm + wrist are all at zero and the game piece is towards the back
+  // of the robot. This will typically mean that positive is to the robot's
+  // left
+  game_piece_position:double (id: 6);
 }
 
 root_type Status;

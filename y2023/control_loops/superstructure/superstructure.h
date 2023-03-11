@@ -3,9 +3,11 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/json_to_flatbuffer.h"
+#include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2023/constants.h"
+#include "y2023/constants/constants_generated.h"
 #include "y2023/control_loops/drivetrain/drivetrain_can_position_generated.h"
 #include "y2023/control_loops/superstructure/arm/arm.h"
 #include "y2023/control_loops/superstructure/arm/arm_trajectories_generated.h"
@@ -63,7 +65,11 @@ class Superstructure
                             aos::Sender<Status>::Builder *status) override;
 
  private:
+  // Returns the Y coordinate of a game piece given the time-of-flight reading.
+  std::optional<double> LateralOffsetForTimeOfFlight(double reading);
+
   std::shared_ptr<const constants::Values> values_;
+  frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
 
   aos::Fetcher<frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
