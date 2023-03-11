@@ -321,6 +321,81 @@ func TestAddToStats2023DB(t *testing.T) {
 	}
 }
 
+func TestQueryingStats2023ByTeam(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	stats := []Stats2023{
+		Stats2023{
+			TeamNumber: "6344", MatchNumber: 3, SetNumber: 1,
+			CompLevel: "qm", StartingQuadrant: 1, LowCubesAuto: 0,
+			MiddleCubesAuto: 1, HighCubesAuto: 0, CubesDroppedAuto: 1,
+			LowConesAuto: 1, MiddleConesAuto: 0, HighConesAuto: 2,
+			ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 2,
+			HighCubes: 1, CubesDropped: 0, LowCones: 0,
+			MiddleCones: 2, HighCones: 1, ConesDropped: 1,
+			AvgCycle: 0, CollectedBy: "emma",
+		},
+		Stats2023{
+			TeamNumber: "7454", MatchNumber: 4, SetNumber: 1,
+			CompLevel: "qm", StartingQuadrant: 2, LowCubesAuto: 1,
+			MiddleCubesAuto: 2, HighCubesAuto: 2, CubesDroppedAuto: 0,
+			LowConesAuto: 2, MiddleConesAuto: 0, HighConesAuto: 0,
+			ConesDroppedAuto: 1, LowCubes: 1, MiddleCubes: 0,
+			HighCubes: 0, CubesDropped: 1, LowCones: 0,
+			MiddleCones: 0, HighCones: 1, ConesDropped: 0,
+			AvgCycle: 0, CollectedBy: "tyler",
+		},
+		Stats2023{
+			TeamNumber: "6344", MatchNumber: 5, SetNumber: 1,
+			CompLevel: "qm", StartingQuadrant: 1, LowCubesAuto: 0,
+			MiddleCubesAuto: 1, HighCubesAuto: 0, CubesDroppedAuto: 1,
+			LowConesAuto: 1, MiddleConesAuto: 0, HighConesAuto: 2,
+			ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 2,
+			HighCubes: 1, CubesDropped: 0, LowCones: 0,
+			MiddleCones: 2, HighCones: 1, ConesDropped: 1,
+			AvgCycle: 0, CollectedBy: "emma",
+		},
+	}
+
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 6344},
+		TeamMatch{MatchNumber: 4, SetNumber: 1, CompLevel: "qm",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 7454},
+		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "qm",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: 6344},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+	}
+
+	for i := range stats {
+		err := fixture.db.AddToStats2023(stats[i])
+		check(t, err, "Failed to add 2023stats to DB")
+	}
+
+	// Validate that requesting status for a single team gets us the
+	// expected data.
+	statsFor6344, err := fixture.db.ReturnStats2023ForTeam("6344", 3, 1, "qm")
+	check(t, err, "Failed ReturnStats2023()")
+
+	if !reflect.DeepEqual([]Stats2023{stats[0]}, statsFor6344) {
+		t.Errorf("Got %#v,\nbut expected %#v.", statsFor6344, stats[0])
+	}
+
+	// Validate that requesting team data for a non-existent match returns
+	// nothing.
+	statsForMissing, err := fixture.db.ReturnStats2023ForTeam("6344", 9, 1, "qm")
+	check(t, err, "Failed ReturnStats2023()")
+
+	if !reflect.DeepEqual([]Stats2023{}, statsForMissing) {
+		t.Errorf("Got %#v,\nbut expected %#v.", statsForMissing, []Stats2023{})
+	}
+}
+
 func TestAddDuplicateStats(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
