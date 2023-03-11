@@ -417,6 +417,66 @@ named_segments.append(
         control_alpha_rolls=[],
     ))
 
+named_segments.append(
+    ThetaSplineSegment(
+        name="GroundPickupBackConeUpToGroundPickupBackConeDownBase",
+        start=points["GroundPickupBackConeUp"],
+        control1=np.array([2.984750907058771, -1.4175755629898785]),
+        control2=np.array([2.9834020302847164, -1.4959006770007095]),
+        end=points["GroundPickupBackConeDownBase"],
+        control_alpha_rolls=[],
+    ))
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="GroundPickupBackCubeToGroundPickupBackConeUp",
+        start=points["GroundPickupBackCube"],
+        control1=np.array([2.9814712671305497, -1.4752615794585657]),
+        control2=np.array([2.9814712671305497, -1.4752615794585657]),
+        end=points["GroundPickupBackConeUp"],
+        control_alpha_rolls=[],
+    ))
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="GroundPickupBackCubeToGroundPickupBackConeDownBase",
+        start=points["GroundPickupBackCube"],
+        control1=np.array([2.9915062872070943, -1.5453319249912183]),
+        control2=np.array([3.0113316601735853, -1.5625220857410058]),
+        end=points["GroundPickupBackConeDownBase"],
+        control_alpha_rolls=[],
+    ))
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="GroundPickupFrontConeUpToGroundPickupFrontConeDownBase",
+        start=points["GroundPickupFrontConeUp"],
+        control1=np.array([4.178303420953318, 1.7954892324947347]),
+        control2=np.array([4.198694185882847, 1.8611851211658763]),
+        end=points["GroundPickupFrontConeDownBase"],
+        control_alpha_rolls=[],
+    ))
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="GroundPickupFrontCubeToGroundPickupFrontConeUp",
+        start=points["GroundPickupFrontCube"],
+        control1=np.array([4.152678427672294, 1.755703782155648]),
+        control2=np.array([4.115445030197163, 1.77599054062196]),
+        end=points["GroundPickupFrontConeUp"],
+        control_alpha_rolls=[],
+    ))
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="GroundPickupFrontCubeToGroundPickFrontCubeDownBase",
+        start=points["GroundPickupFrontCube"],
+        control1=np.array([4.126486425254001, 1.838621758570565]),
+        control2=np.array([4.1585708953556, 1.8633805468551703]),
+        end=points["GroundPickupFrontConeDownBase"],
+        control_alpha_rolls=[],
+    ))
+
 front_points = []
 back_points = []
 unnamed_segments = []
