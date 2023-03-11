@@ -26,21 +26,67 @@ export class MatchListComponent implements OnInit {
   progressMessage: string = '';
   errorMessage: string = '';
   matchList: Match[] = [];
+  hideCompletedMatches: boolean = true;
 
   constructor(private readonly matchListRequestor: MatchListRequestor) {}
+
+  // Returns a class for the row to hide it if all teams in this match have
+  // already been scouted.
+  getRowClass(match: Match): string {
+    const scouted = match.dataScouted();
+    if (
+      this.hideCompletedMatches &&
+      scouted.r1() &&
+      scouted.r2() &&
+      scouted.r3() &&
+      scouted.b1() &&
+      scouted.b2() &&
+      scouted.b3()
+    ) {
+      return 'hidden_row';
+    }
+    return '';
+  }
 
   setTeamInMatch(teamInMatch: TeamInMatch) {
     this.selectedTeamEvent.emit(teamInMatch);
   }
 
-  teamsInMatch(match: Match): {teamNumber: number; color: 'red' | 'blue'}[] {
+  teamsInMatch(
+    match: Match
+  ): {teamNumber: number; color: 'red' | 'blue'; disabled: boolean}[] {
+    const scouted = match.dataScouted();
     return [
-      {teamNumber: match.r1(), color: 'red'},
-      {teamNumber: match.r2(), color: 'red'},
-      {teamNumber: match.r3(), color: 'red'},
-      {teamNumber: match.b1(), color: 'blue'},
-      {teamNumber: match.b2(), color: 'blue'},
-      {teamNumber: match.b3(), color: 'blue'},
+      {
+        teamNumber: match.r1(),
+        color: 'red',
+        disabled: this.hideCompletedMatches && scouted.r1(),
+      },
+      {
+        teamNumber: match.r2(),
+        color: 'red',
+        disabled: this.hideCompletedMatches && scouted.r2(),
+      },
+      {
+        teamNumber: match.r3(),
+        color: 'red',
+        disabled: this.hideCompletedMatches && scouted.r3(),
+      },
+      {
+        teamNumber: match.b1(),
+        color: 'blue',
+        disabled: this.hideCompletedMatches && scouted.b1(),
+      },
+      {
+        teamNumber: match.b2(),
+        color: 'blue',
+        disabled: this.hideCompletedMatches && scouted.b2(),
+      },
+      {
+        teamNumber: match.b3(),
+        color: 'blue',
+        disabled: this.hideCompletedMatches && scouted.b3(),
+      },
     ];
   }
 
