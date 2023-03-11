@@ -30,5 +30,12 @@
       "scheduler": "SCHEDULER_OTHER",
       "nice": -20
     }
+  ],
+  "threads": [
+    {
+      "name": "FRC_NetCommDaem",
+      "scheduler": "SCHEDULER_FIFO",
+      "priority": 15
+    }
   ]
 }

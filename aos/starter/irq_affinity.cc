@@ -145,31 +145,10 @@ class IrqAffinity {
           &irq_affinity_config)
       : top_(event_loop) {
     if (irq_affinity_config.message().has_kthreads()) {
-      kthreads_.reserve(irq_affinity_config.message().kthreads()->size());
-      for (const starter::KthreadConfig *kthread_config :
-           *irq_affinity_config.message().kthreads()) {
-        LOG(INFO) << "Kthread " << aos::FlatbufferToJson(kthread_config);
-        CHECK(kthread_config->has_name()) << ": Name required";
-        const size_t star_position =
-            kthread_config->name()->string_view().find('*');
-        const bool has_star = star_position != std::string_view::npos;
-
-        kthreads_.push_back(ParsedKThreadConfig{
-            .full_match = !has_star,
-            .prefix = std::string(
-                !has_star ? kthread_config->name()->string_view()
-                          : kthread_config->name()->string_view().substr(
-                                0, star_position)),
-            .postfix = std::string(
-                !has_star ? ""
-                          : kthread_config->name()->string_view().substr(
-                                star_position + 1)),
-            .scheduler = kthread_config->scheduler(),
-            .priority = kthread_config->priority(),
-            .nice = kthread_config->nice(),
-            .affinity = AffinityFromFlatbuffer(kthread_config->affinity()),
-        });
-      }
+      PopulateThreads(irq_affinity_config.message().kthreads(), &kthreads_);
+    }
+    if (irq_affinity_config.message().has_threads()) {
+      PopulateThreads(irq_affinity_config.message().threads(), &threads_);
     }
 
     if (irq_affinity_config.message().has_irqs()) {
@@ -191,6 +170,13 @@ class IrqAffinity {
            top_.readings()) {
         if (reading.second.kthread) {
           for (const ParsedKThreadConfig &match : kthreads_) {
+            if (match.Matches(reading.second.name)) {
+              match.ConfigurePid(reading.first);
+              break;
+            }
+          }
+        } else {
+          for (const ParsedKThreadConfig &match : threads_) {
             if (match.Matches(reading.second.name)) {
               match.ConfigurePid(reading.first);
               break;
@@ -220,6 +206,36 @@ class IrqAffinity {
   }
 
  private:
+  void PopulateThreads(
+      const flatbuffers::Vector<flatbuffers::Offset<starter::KthreadConfig>>
+          *threads_config,
+      std::vector<ParsedKThreadConfig> *threads) {
+    threads->reserve(threads_config->size());
+    for (const starter::KthreadConfig *kthread_config : *threads_config) {
+      LOG(INFO) << "Kthread " << aos::FlatbufferToJson(kthread_config);
+      CHECK(kthread_config->has_name()) << ": Name required";
+      const size_t star_position =
+          kthread_config->name()->string_view().find('*');
+      const bool has_star = star_position != std::string_view::npos;
+
+      threads->push_back(ParsedKThreadConfig{
+          .full_match = !has_star,
+          .prefix = std::string(
+              !has_star ? kthread_config->name()->string_view()
+                        : kthread_config->name()->string_view().substr(
+                              0, star_position)),
+          .postfix = std::string(
+              !has_star ? ""
+                        : kthread_config->name()->string_view().substr(
+                              star_position + 1)),
+          .scheduler = kthread_config->scheduler(),
+          .priority = kthread_config->priority(),
+          .nice = kthread_config->nice(),
+          .affinity = AffinityFromFlatbuffer(kthread_config->affinity()),
+      });
+    }
+  }
+
   util::Top top_;
 
   // TODO(austin): Publish message with everything in it.
@@ -227,6 +243,7 @@ class IrqAffinity {
   // posterity.
 
   std::vector<ParsedKThreadConfig> kthreads_;
+  std::vector<ParsedKThreadConfig> threads_;
   std::vector<ParsedIrqConfig> irqs_;
 
   InterruptsStatus interrupts_status_;
