@@ -329,7 +329,7 @@ named_segments.append(
     ))
 
 points['HPPickupBackConeUp'] = to_theta_with_circular_index_and_roll(
-    -1.1050539, 1.325, np.pi / 2.0, circular_index=0)
+    -1.1200539, 1.335, np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -342,7 +342,7 @@ named_segments.append(
     ))
 
 points['HPPickupFrontConeUp'] = np.array(
-    (5.16514378449353, 1.26, -np.pi / 2.0))
+    (5.16514378449353, 1.23, -np.pi / 2.0))
 #        to_theta_with_circular_index_and_roll(
 #    0.265749, 1.28332, -np.pi / 2.0, circular_index=1)
 
