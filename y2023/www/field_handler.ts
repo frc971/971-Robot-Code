@@ -5,6 +5,7 @@ import {RejectionReason} from '../localizer/status_generated';
 import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated';
 import {Status as SuperstructureStatus, EndEffectorState, ArmState, ArmStatus} from '../control_loops/superstructure/superstructure_status_generated'
 import {Class} from '../vision/game_pieces_generated'
+import {ZeroingError} from '../../frc971/control_loops/control_loops_generated';
 import {Visualization, TargetEstimateDebug} from '../localizer/visualization_generated';
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
@@ -56,6 +57,8 @@ export class FieldHandler {
 	  (document.getElementById('arm_proximal') as HTMLElement);
   private distal: HTMLElement =
 	  (document.getElementById('arm_distal') as HTMLElement);
+  private zeroingFaults: HTMLElement =
+	  (document.getElementById('zeroing_faults') as HTMLElement);_
 
   constructor(private readonly connection: Connection) {
     (document.getElementById('field') as HTMLElement).appendChild(this.canvas);
@@ -276,6 +279,23 @@ export class FieldHandler {
 		    this.superstructureStatus.arm().proximalEstimatorState().position().toFixed(2);
 	    this.distal.innerHTML =
 		    this.superstructureStatus.arm().distalEstimatorState().position().toFixed(2);
+	    let zeroingErrors: string = "Roll Joint Errors:"+'<br/>';
+	    for (let i = 0; i < this.superstructureStatus.arm().rollJointEstimatorState().errors.length; i++) {
+	    	zeroingErrors += ZeroingError[this.superstructureStatus.arm().rollJointEstimatorState().errors(i)]+'<br/>';
+	    }
+      zeroingErrors += '<br/>'+"Proximal Joint Errors:"+'<br/>';
+	    for (let i = 0; i < this.superstructureStatus.arm().proximalEstimatorState().errors.length; i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.arm().proximalEstimatorState().errors(i)]+'<br/>';
+	    }
+      zeroingErrors += '<br/>'+"Distal Joint Errors:"+'<br/>';
+	    for (let i = 0; i < this.superstructureStatus.arm().distalEstimatorState().errors.length; i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.arm().distalEstimatorState().errors(i)]+'<br/>';
+	    }
+      zeroingErrors += '<br/>'+"Wrist Errors:"+'<br/>';
+	    for (let i = 0; i < this.superstructureStatus.wrist().estimatorState().errors.length; i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.wrist().estimatorState().errors(i)]+'<br/>';
+	    }
+	    this.zeroingFaults.innerHTML = zeroingErrors;
     }
 
     if (this.drivetrainStatus && this.drivetrainStatus.trajectoryLogging()) {
