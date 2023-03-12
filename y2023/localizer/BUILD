@@ -190,3 +190,22 @@ ts_project(
         "//aos/network/www:proxy",
     ],
 )
+
+cc_binary(
+    name = "localizer_replay",
+    srcs = ["localizer_replay.cc"],
+    data = [
+        "//y2023:aos_config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":localizer",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos:json_to_flatbuffer",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/events/logging:log_writer",
+        "//y2023/control_loops/drivetrain:drivetrain_base",
+    ],
+)
