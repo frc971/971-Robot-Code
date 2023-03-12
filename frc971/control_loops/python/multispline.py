@@ -264,6 +264,8 @@ class Multispline():
         best_multispline = None
 
         for multispline_index, multispline in enumerate(multisplines):
+            if not multispline.getLibsplines():
+                continue
             distance_spline = DistanceSpline(multispline.getLibsplines())
 
             # The optimizer finds local minima that often aren't what we want,
