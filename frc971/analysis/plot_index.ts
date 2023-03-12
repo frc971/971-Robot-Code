@@ -54,6 +54,8 @@ import {plotLocalizer as plot2022Localizer} from
     '../../y2022/localizer/localizer_plotter'
 import {plotVision as plot2022Vision} from
     '../../y2022/vision/vision_plotter'
+import {plotVision as plot2023Corrections} from
+    '../../y2023/localizer/corrections_plotter'
 import {plotDemo} from '../../aos/network/www/demo_plot';
 
 const rootDiv = document.createElement('div');
@@ -112,6 +114,7 @@ const plotIndex = new Map<string, PlotState>([
   ['Spline Debug', new PlotState(plotDiv, plotSpline)],
   ['Down Estimator', new PlotState(plotDiv, plotDownEstimator)],
   ['Robot State', new PlotState(plotDiv, plotRobotState)],
+  ['2023 Vision', new PlotState(plotDiv, plot2023Corrections)],
   ['2020 Finisher', new PlotState(plotDiv, plot2020Finisher)],
   ['2020 Accelerator', new PlotState(plotDiv, plot2020Accelerator)],
   ['2020 Hood', new PlotState(plotDiv, plot2020Hood)],

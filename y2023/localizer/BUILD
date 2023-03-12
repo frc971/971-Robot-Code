@@ -1,5 +1,6 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
+load("//tools/build_rules:js.bzl", "ts_project")
 
 flatbuffer_cc_library(
     name = "status_fbs",
@@ -174,5 +175,18 @@ cc_binary(
         "//aos/events:shm_event_loop",
         "//frc971/constants:constants_sender_lib",
         "//y2023/control_loops/drivetrain:drivetrain_base",
+    ],
+)
+
+ts_project(
+    name = "corrections_plotter",
+    srcs = ["corrections_plotter.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":visualization_ts_fbs",
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:colors",
+        "//aos/network/www:proxy",
     ],
 )
