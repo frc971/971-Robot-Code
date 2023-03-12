@@ -63,6 +63,13 @@ table TargetMap {
   // End-of-frame timestamp for the frame with tag detections.
   // (for use case 2.).
   monotonic_timestamp_ns:int64 (id: 2);
+
+  // Number of april tags rejected (cumulative) because
+  // of low decision margin (affected by lighting).
+  // We do the decision margin rejection in aprilrobotics
+  // so we don't have an excessive amount of random target
+  // detections (for use case 2).
+  rejections:uint64 (id: 3);
 }
 
 root_type TargetMap;

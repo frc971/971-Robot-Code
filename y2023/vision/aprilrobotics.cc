@@ -36,7 +36,8 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
       image_annotations_sender_(
-          event_loop->MakeSender<foxglove::ImageAnnotations>("/camera")) {
+          event_loop->MakeSender<foxglove::ImageAnnotations>("/camera")),
+      rejections_(0) {
   tag_family_ = tag16h5_create();
   tag_detector_ = apriltag_detector_create();
 
@@ -89,17 +90,18 @@ void AprilRoboticsDetector::HandleImage(cv::Mat image_grayscale,
                                         aos::monotonic_clock::time_point eof) {
   image_size_ = image_grayscale.size();
 
-  std::vector<Detection> detections = DetectTags(image_grayscale, eof);
+  DetectionResult result = DetectTags(image_grayscale, eof);
 
   auto builder = target_map_sender_.MakeBuilder();
   std::vector<flatbuffers::Offset<frc971::vision::TargetPoseFbs>> target_poses;
-  for (const auto &detection : detections) {
+  for (const auto &detection : result.detections) {
     target_poses.emplace_back(BuildTargetPose(detection, builder.fbb()));
   }
   const auto target_poses_offset = builder.fbb()->CreateVector(target_poses);
   auto target_map_builder = builder.MakeBuilder<frc971::vision::TargetMap>();
   target_map_builder.add_target_poses(target_poses_offset);
   target_map_builder.add_monotonic_timestamp_ns(eof.time_since_epoch().count());
+  target_map_builder.add_rejections(result.rejections);
   builder.CheckOk(builder.Send(target_map_builder.Finish()));
 }
 
@@ -177,7 +179,7 @@ std::vector<cv::Point2f> AprilRoboticsDetector::MakeCornerVector(
   return corner_points;
 }
 
-std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
+AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
     cv::Mat image, aos::monotonic_clock::time_point eof) {
   const aos::monotonic_clock::time_point start_time =
       aos::monotonic_clock::now();
@@ -273,6 +275,8 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
                                      .pose = pose,
                                      .pose_error = pose_error,
                                      .distortion_factor = distortion_factor});
+    } else {
+      rejections_++;
     }
   }
 
@@ -292,7 +296,7 @@ std::vector<AprilRoboticsDetector::Detection> AprilRoboticsDetector::DetectTags(
   VLOG(1) << "Took " << chrono::duration<double>(end_time - start_time).count()
           << " seconds to detect overall";
 
-  return results;
+  return {.detections = results, .rejections = rejections_};
 }
 
 }  // namespace vision
