@@ -91,7 +91,7 @@ void PuppetLocalizer::Update(const Eigen::Matrix<double, 2, 1> &U,
         static_cast<float>(localizer_output_fetcher_->y()),
         static_cast<float>(localizer_output_fetcher_->theta())};
     Eigen::Matrix3f R = Eigen::Matrix3f::Zero();
-    R.diagonal() << 0.01, 0.01, 1e-4;
+    R.diagonal() << 1e-4, 1e-4, 1e-6;
     const Input U_correct = ekf_.MostRecentInput();
     observations_.CorrectKnownH(Eigen::Vector3f::Zero(), &U_correct,
                                 Corrector(state_at_capture.value(), Z), R, now);

@@ -18,6 +18,8 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
       "frc971.control_loops.drivetrain.Position");
   const status = aosPlotter.addMessageSource(
       '/drivetrain', 'frc971.control_loops.drivetrain.Status');
+  const localizerOuput = aosPlotter.addMessageSource(
+      '/localizer', 'frc971.controls.LocalizerOutput');
   const output = aosPlotter.addMessageSource(
       '/drivetrain', 'frc971.control_loops.drivetrain.Output');
   const gyroReading = aosPlotter.addMessageSource(
@@ -279,11 +281,10 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   xPositionPlot.plot.getAxisLabels().setXLabel(TIME);
   xPositionPlot.plot.getAxisLabels().setYLabel('X Position (m)');
 
-  const localizerX = xPositionPlot.addMessageLine(status, ['x']);
-  localizerX.setColor(RED);
-  const splineX =
-      xPositionPlot.addMessageLine(status, ['trajectory_logging', 'x']);
-  splineX.setColor(GREEN);
+  xPositionPlot.addMessageLine(status, ['x']).setColor(RED);
+  xPositionPlot.addMessageLine(status, ['trajectory_logging', 'x'])
+      .setColor(GREEN);
+  xPositionPlot.addMessageLine(localizerOuput, ['x']).setColor(BLUE);
 
   // Absolute Y Position
   const yPositionPlot = aosPlotter.addPlot(element);
@@ -291,11 +292,10 @@ export function plotDrivetrain(conn: Connection, element: Element): void {
   yPositionPlot.plot.getAxisLabels().setXLabel(TIME);
   yPositionPlot.plot.getAxisLabels().setYLabel('Y Position (m)');
 
-  const localizerY = yPositionPlot.addMessageLine(status, ['y']);
-  localizerY.setColor(RED);
-  const splineY =
-      yPositionPlot.addMessageLine(status, ['trajectory_logging', 'y']);
-  splineY.setColor(GREEN);
+  yPositionPlot.addMessageLine(status, ['y']).setColor(RED);
+  yPositionPlot.addMessageLine(status, ['trajectory_logging', 'y'])
+      .setColor(GREEN);
+  yPositionPlot.addMessageLine(localizerOuput, ['y']).setColor(BLUE);
 
   // Gyro
   const gyroPlot = aosPlotter.addPlot(element);
