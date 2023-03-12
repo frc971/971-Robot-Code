@@ -165,6 +165,8 @@ double LineFollowDrivetrain::GoalTheta(
     const ::Eigen::Matrix<double, 5, 1> &abs_state, double relative_y_offset,
     double velocity_sign) {
   // Calculates the goal angle for the drivetrain given our position.
+  // Note: The goal angle is in target-relative coordinates, since our entire
+  // control loop is written relative to the target.
   // The calculated goal will be such that a point piece_rad to one side of the
   // drivetrain (the side depends on where we approach from and SignedRadii())
   // will end up hitting the plane of the target exactly target_rad from the
