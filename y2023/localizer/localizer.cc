@@ -310,10 +310,6 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   const std::optional<State> state_at_capture =
       ekf_.LastStateBeforeTime(capture_time);
 
-  double theta_at_capture = state_at_capture.value()(StateIdx::kTheta);
-  double camera_implied_theta = Z(Corrector::kTheta);
-  constexpr double kDegToRad = M_PI / 180.0;
-
   if (!state_at_capture.has_value()) {
     VLOG(1) << "Rejecting image due to being too old.";
     return RejectImage(camera_index, RejectionReason::IMAGE_TOO_OLD, &builder);
@@ -322,7 +318,13 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
             << target.pose_error();
     return RejectImage(camera_index, RejectionReason::HIGH_POSE_ERROR,
                        &builder);
-  } else if (std::abs(camera_implied_theta - theta_at_capture) >
+  }
+
+  double theta_at_capture = state_at_capture.value()(StateIdx::kTheta);
+  double camera_implied_theta = Z(Corrector::kTheta);
+  constexpr double kDegToRad = M_PI / 180.0;
+
+  if (std::abs(camera_implied_theta - theta_at_capture) >
              FLAGS_max_implied_yaw_error * kDegToRad) {
     return RejectImage(camera_index, RejectionReason::HIGH_IMPLIED_YAW_ERROR,
                        &builder);
