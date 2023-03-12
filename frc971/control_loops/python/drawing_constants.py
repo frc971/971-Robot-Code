@@ -44,7 +44,11 @@ def draw_circle(cr, x, y, radius, color=palette["RED"]):
     cr.stroke()
 
 
-def draw_control_points(cr, points, width=10, radius=4, color=palette["BLUE"]):
+def draw_control_points_cross(cr,
+                              points,
+                              width=10,
+                              radius=4,
+                              color=palette["BLUE"]):
     for i in range(0, len(points)):
         draw_px_x(cr, points[i][0], points[i][1], width, color)
         set_color(cr, color)

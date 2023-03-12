@@ -20,18 +20,18 @@ namespace autonomous {
 class AutonomousSplines {
  public:
   AutonomousSplines()
-    : test_spline_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
+      : test_spline_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
             "splines/test_spline.json")),
         spline_1_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-            "splines/spline_1.json")),
+            "splines/spline.0.json")),
         spline_2_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-            "splines/spline_2.json")),
+            "splines/spline.1.json")),
         spline_3_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-            "splines/spline_3.json")),
+            "splines/spline.2.json")),
         spline_4_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-            "splines/spline_4.json")),
+            "splines/spline.3.json")),
         spline_5_(aos::JsonFileToFlatbuffer<frc971::MultiSpline>(
-            "splines/spline_5.json")) {}
+            "splines/spline.4.json")) {}
   static flatbuffers::Offset<frc971::MultiSpline> BasicSSpline(
       aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
           *builder,
