@@ -89,6 +89,9 @@
   </div>
 
   <div *ngSwitchCase="'Pickup'" id="PickUp" class="container-fluid">
+    <h6 class="text-muted">
+      Last Action: {{actionList[actionList.length - 1].type}}
+    </h6>
     <div class="d-grid gap-5">
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
@@ -148,6 +151,9 @@
   </div>
 
   <div *ngSwitchCase="'Place'" id="Place" class="container-fluid">
+    <h6 class="text-muted">
+      Last Action: {{actionList[actionList.length - 1].type}}
+    </h6>
     <div class="d-grid gap-5">
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
@@ -213,6 +219,9 @@
   </div>
 
   <div *ngSwitchCase="'Endgame'" id="Endgame" class="container-fluid">
+    <h6 class="text-muted">
+      Last Action: {{actionList[actionList.length - 1].type}}
+    </h6>
     <div class="d-grid gap-5">
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
