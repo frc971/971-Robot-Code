@@ -32,10 +32,12 @@ class GridWindow(Gtk.Window):
 
         if self.field.mode != Mode.kViewing:
             self.field.mode = Mode.kViewing
+            self.field.queue_draw()
             Gtk.Button.set_label(self.toggle_view, "Switch to Editing Mode")
 
         else:
             self.field.mode = self.field.previous_mode
+            self.field.queue_draw()
             if self.field.mode == Mode.kEditing:
                 Gtk.Button.set_label(self.toggle_view,
                                      "Switch to Viewing Mode")

@@ -17,9 +17,10 @@ import copy
 from constants import FIELD
 from constants import get_json_folder
 from constants import ROBOT_SIDE_TO_BALL_CENTER, ROBOT_SIDE_TO_HATCH_PANEL, HATCH_PANEL_WIDTH, BALL_RADIUS
-from drawing_constants import set_color, draw_px_cross, draw_px_x, display_text, draw_control_points
+from drawing_constants import set_color, draw_px_cross, draw_px_x, display_text, draw_control_points_cross
 from multispline import Multispline, ControlPointIndex
 import time
+from pathlib import Path
 
 
 class Mode(enum.Enum):
@@ -54,6 +55,7 @@ class FieldWidget(Gtk.DrawingArea):
         self.lasty = 0
         self.drag_start = None
         self.module_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        self.repository_root = Path(self.module_path, "../../..").resolve()
         self.path_to_export = os.path.join(self.module_path,
                                            'points_for_pathedit.json')
 
@@ -199,38 +201,14 @@ class FieldWidget(Gtk.DrawingArea):
                     draw_px_x(cr, point[0], point[1], self.pxToM(2))
             if len(self.multisplines) != 0 and self.multisplines[0].getSplines(
             ):  #still in testing
+                self.draw_cursor(cr)
                 self.draw_splines(cr)
         elif self.mode == Mode.kEditing:
             if len(self.multisplines) != 0 and self.multisplines[0].getSplines(
             ):
+                self.draw_cursor(cr)
                 self.draw_splines(cr)
-
-                for i, points in enumerate(
-                        self.active_multispline.getSplines()):
-                    points = [np.array([x, y]) for (x, y) in points]
-                    draw_control_points(cr,
-                                        points,
-                                        width=self.pxToM(5),
-                                        radius=self.pxToM(2))
-
-                    p0, p1, p2, p3, p4, p5 = points
-                    first_tangent = p0 + 2.0 * (p1 - p0)
-                    second_tangent = p5 + 2.0 * (p4 - p5)
-                    cr.set_source_rgb(0, 0.5, 0)
-                    cr.move_to(*p0)
-                    cr.set_line_width(self.pxToM(1.0))
-                    cr.line_to(*first_tangent)
-                    cr.move_to(*first_tangent)
-                    cr.line_to(*p2)
-
-                    cr.move_to(*p5)
-                    cr.line_to(*second_tangent)
-
-                    cr.move_to(*second_tangent)
-                    cr.line_to(*p3)
-
-                    cr.stroke()
-                    cr.set_line_width(self.pxToM(2))
+                self.draw_control_points(cr)
 
         set_color(cr, palette["WHITE"])
         cr.paint_with_alpha(0.2)
@@ -238,7 +216,34 @@ class FieldWidget(Gtk.DrawingArea):
         draw_px_cross(cr, self.mousex, self.mousey, self.pxToM(2))
         cr.restore()
 
-    def draw_splines(self, cr):
+    def draw_control_points(self, cr):
+        for i, points in enumerate(self.active_multispline.getSplines()):
+            points = [np.array([x, y]) for (x, y) in points]
+            draw_control_points_cross(cr,
+                                      points,
+                                      width=self.pxToM(5),
+                                      radius=self.pxToM(2))
+
+            p0, p1, p2, p3, p4, p5 = points
+            first_tangent = p0 + 2.0 * (p1 - p0)
+            second_tangent = p5 + 2.0 * (p4 - p5)
+            cr.set_source_rgb(0, 0.5, 0)
+            cr.move_to(*p0)
+            cr.set_line_width(self.pxToM(1.0))
+            cr.line_to(*first_tangent)
+            cr.move_to(*first_tangent)
+            cr.line_to(*p2)
+
+            cr.move_to(*p5)
+            cr.line_to(*second_tangent)
+
+            cr.move_to(*second_tangent)
+            cr.line_to(*p3)
+
+            cr.stroke()
+            cr.set_line_width(self.pxToM(2))
+
+    def draw_cursor(self, cr):
         mouse = np.array((self.mousex, self.mousey))
 
         multispline, result = Multispline.nearest_distance(
@@ -267,6 +272,7 @@ class FieldWidget(Gtk.DrawingArea):
             multispline_index = self.multisplines.index(multispline)
             self.graph.place_cursor(multispline_index, distance=result.x[0])
 
+    def draw_splines(self, cr):
         for multispline in self.multisplines:
             for i, spline in enumerate(multispline.getLibsplines()):
                 alpha = 1 if multispline == self.active_multispline else 0.2
@@ -284,64 +290,61 @@ class FieldWidget(Gtk.DrawingArea):
                 self.draw_robot_at_point(cr, spline, 1)
 
     def export_json(self, file_name):
-        self.path_to_export = os.path.join(
-            self.module_path,  # position of the python
-            "../../..",  # root of the repository
+        export_folder = Path(
+            self.repository_root,
             get_json_folder(self.field),  # path from the root
-            file_name  # selected file
         )
 
-        # Will export to json file
-        multisplines_object = [
-            multispline.toJsonObject() for multispline in self.multisplines
-        ]
-        print(multisplines_object)
-        with open(self.path_to_export, mode='w') as points_file:
-            json.dump(multisplines_object, points_file)
+        filename = Path(export_folder, file_name)
+
+        # strip suffix
+        filename = filename.with_suffix("")
+        print(file_name, filename)
+
+        print(f"Exporting {len(self.multisplines)} splines")
+        # Export each multispline to its own json file
+        for index, multispline in enumerate(self.multisplines):
+            file = filename.with_suffix(f".{index}.json")
+            print(f"  {file.relative_to(export_folder)}")
+            with open(file, mode='w') as points_file:
+                json.dump(multispline.toJsonObject(), points_file)
 
     def import_json(self, file_name):
-        self.path_to_export = os.path.join(
-            self.module_path,  # position of the python
-            "../../..",  # root of the repository
+        # Abort place mode
+        if self.mode is Mode.kPlacing and len(self.multisplines) > 0 and len(
+                self.multisplines[-1].getSplines()) == 0:
+            self.multisplines.pop()
+            self.mode = Mode.kEditing
+            self.queue_draw()
+
+        import_folder = Path(
+            self.repository_root,
             get_json_folder(self.field),  # path from the root
-            file_name  # selected file
         )
 
-        # import from json file
-        print("LOADING LOAD FROM " + file_name)  # Load takes a few seconds
-        with open(self.path_to_export) as points_file:
-            multisplines_object = json.load(points_file)
+        file_candidates = []
+
+        # try exact match first
+        filename = Path(import_folder, file_name)
+        if filename.exists():
+            file_candidates.append(filename)
+        else:
+            # look for other files with the same stem but different numbers
+            stripped_stem = Path(file_name).with_suffix('').stem
+            file_candidates = list(
+                import_folder.glob(f"{stripped_stem}.*.json"))
+            print([file.stem for file in file_candidates])
+            file_candidates.sort()
+
+        print(f"Found {len(file_candidates)} files")
+        for file in file_candidates:
+            print(f"  {file.relative_to(import_folder)}")
+
+            with open(file) as points_file:
+                self.multisplines.append(
+                    Multispline.fromJsonObject(json.load(points_file)))
 
         self.attempt_append_multisplines()
-
-        # TODO: Export multisplines in different files
-        if type(multisplines_object) is dict:
-            multisplines_object = [multisplines_object]
-        else:
-            self.multisplines = []
-
-        # if people messed with the spline json,
-        # it might not be the right length
-        # so give them a nice error message
-        for multispline_object in multisplines_object:
-            print(multispline_object)
-            try:  # try to salvage as many segments of the spline as possible
-                self.multisplines.append(
-                    Multispline.fromJsonObject(multispline_object))
-            except IndexError:
-                # check if they're both 6+5*(k-1) long
-                expected_length = 6 + 5 * (multispline_object["spline_count"] -
-                                           1)
-                x_len = len(multispline_object["spline_x"])
-                y_len = len(multispline_object["spline_x"])
-                if x_len is not expected_length:
-                    print(
-                        "Error: spline x values were not the expected length; expected {} got {}"
-                        .format(expected_length, x_len))
-                elif y_len is not expected_length:
-                    print(
-                        "Error: spline y values were not the expected length; expected {} got {}"
-                        .format(expected_length, y_len))
 
         print("SPLINES LOADED")
         self.mode = Mode.kEditing
@@ -361,9 +364,9 @@ class FieldWidget(Gtk.DrawingArea):
         self.control_point_index = None
         #recalulate graph using new points
         self.graph.axis.clear()
-        self.graph.queue_draw()
-        #allow placing again
-        self.mode = Mode.kPlacing
+        self.graph.canvas.draw_idle()
+        #go back into viewing mode
+        self.mode = Mode.kViewing
         #redraw entire graph
         self.queue_draw()
 
