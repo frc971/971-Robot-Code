@@ -1,12 +1,15 @@
 import {ByteBuffer} from 'flatbuffers';
+
+import {ClientStatistics} from '../../aos/network/message_bridge_client_generated'
+import {ServerStatistics, State as ConnectionState} from '../../aos/network/message_bridge_server_generated'
 import {Connection} from '../../aos/network/www/proxy';
-import {LocalizerOutput} from '../../frc971/control_loops/drivetrain/localization/localizer_output_generated';
-import {RejectionReason} from '../localizer/status_generated';
-import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated';
-import {Status as SuperstructureStatus, EndEffectorState, ArmState, ArmStatus} from '../control_loops/superstructure/superstructure_status_generated'
-import {Class} from '../vision/game_pieces_generated'
 import {ZeroingError} from '../../frc971/control_loops/control_loops_generated';
-import {Visualization, TargetEstimateDebug} from '../localizer/visualization_generated';
+import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated';
+import {LocalizerOutput} from '../../frc971/control_loops/drivetrain/localization/localizer_output_generated';
+import {ArmState, ArmStatus, EndEffectorState, Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
+import {RejectionReason} from '../localizer/status_generated';
+import {TargetEstimateDebug, Visualization} from '../localizer/visualization_generated';
+import {Class} from '../vision/game_pieces_generated'
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
 
@@ -36,34 +39,37 @@ export class FieldHandler {
   private imagesAcceptedCounter: HTMLElement =
       (document.getElementById('images_accepted') as HTMLElement);
   private rejectionReasonCells: HTMLElement[] = [];
+  private messageBridgeDiv: HTMLElement =
+      (document.getElementById('message_bridge_status') as HTMLElement);
+  private clientStatuses = new Map<string, HTMLElement>();
+  private serverStatuses = new Map<string, HTMLElement>();
   private fieldImage: HTMLImageElement = new Image();
   private endEffectorState: HTMLElement =
-	  (document.getElementById('end_effector_state') as HTMLElement);
+      (document.getElementById('end_effector_state') as HTMLElement);
   private wrist: HTMLElement =
-	  (document.getElementById('wrist') as HTMLElement);
+      (document.getElementById('wrist') as HTMLElement);
   private armState: HTMLElement =
-	  (document.getElementById('arm_state') as HTMLElement);
+      (document.getElementById('arm_state') as HTMLElement);
   private gamePiece: HTMLElement =
-	  (document.getElementById('game_piece') as HTMLElement);
-  private armX: HTMLElement =
-	  (document.getElementById('arm_x') as HTMLElement);
-  private armY: HTMLElement =
-	  (document.getElementById('arm_y') as HTMLElement);
+      (document.getElementById('game_piece') as HTMLElement);
+  private armX: HTMLElement = (document.getElementById('arm_x') as HTMLElement);
+  private armY: HTMLElement = (document.getElementById('arm_y') as HTMLElement);
   private circularIndex: HTMLElement =
-	  (document.getElementById('arm_circular_index') as HTMLElement);
+      (document.getElementById('arm_circular_index') as HTMLElement);
   private roll: HTMLElement =
-	  (document.getElementById('arm_roll') as HTMLElement);
+      (document.getElementById('arm_roll') as HTMLElement);
   private proximal: HTMLElement =
-	  (document.getElementById('arm_proximal') as HTMLElement);
+      (document.getElementById('arm_proximal') as HTMLElement);
   private distal: HTMLElement =
-	  (document.getElementById('arm_distal') as HTMLElement);
+      (document.getElementById('arm_distal') as HTMLElement);
   private zeroingFaults: HTMLElement =
-	  (document.getElementById('zeroing_faults') as HTMLElement);_
+      (document.getElementById('zeroing_faults') as HTMLElement);
+  _
 
   constructor(private readonly connection: Connection) {
     (document.getElementById('field') as HTMLElement).appendChild(this.canvas);
 
-    this.fieldImage.src = "2023.png";
+    this.fieldImage.src = '2023.png';
 
     for (const value in RejectionReason) {
       // Typescript generates an iterator that produces both numbers and
@@ -94,24 +100,28 @@ export class FieldHandler {
       // matches.
       for (const pi in PIS) {
         this.connection.addReliableHandler(
-            '/' + PIS[pi] + '/camera', "y2023.localizer.Visualization",
+            '/' + PIS[pi] + '/camera', 'y2023.localizer.Visualization',
             (data) => {
               this.handleLocalizerDebug(pi, data);
             });
       }
       this.connection.addHandler(
-          '/drivetrain', "frc971.control_loops.drivetrain.Status", (data) => {
+          '/drivetrain', 'frc971.control_loops.drivetrain.Status', (data) => {
             this.handleDrivetrainStatus(data);
           });
       this.connection.addHandler(
-               '/localizer', "frc971.controls.LocalizerOutput", (data) => {
+          '/localizer', 'frc971.controls.LocalizerOutput', (data) => {
             this.handleLocalizerOutput(data);
           });
-	this.connection.addHandler(
-		'/superstructure', "y2023.control_loops.superstructure.Status",
-		(data) => {
-			this.handleSuperstructureStatus(data)
-		});
+      this.connection.addHandler(
+          '/superstructure', 'y2023.control_loops.superstructure.Status',
+          (data) => {this.handleSuperstructureStatus(data)});
+      this.connection.addHandler(
+          '/aos', 'aos.message_bridge.ServerStatistics',
+          (data) => {this.handleServerStatistics(data)});
+      this.connection.addHandler(
+          '/aos', 'aos.message_bridge.ClientStatistics',
+          (data) => {this.handleClientStatistics(data)});
     });
   }
 
@@ -149,8 +159,69 @@ export class FieldHandler {
   }
 
   private handleSuperstructureStatus(data: Uint8Array): void {
-	  const fbBuffer = new ByteBuffer(data);
-	  this.superstructureStatus = SuperstructureStatus.getRootAsStatus(fbBuffer);
+    const fbBuffer = new ByteBuffer(data);
+    this.superstructureStatus = SuperstructureStatus.getRootAsStatus(fbBuffer);
+  }
+
+  private populateNodeConnections(nodeName: string): void {
+    const row = document.createElement('div');
+    this.messageBridgeDiv.appendChild(row);
+    const nodeDiv = document.createElement('div');
+    nodeDiv.innerHTML = nodeName;
+    row.appendChild(nodeDiv);
+    const clientDiv = document.createElement('div');
+    clientDiv.innerHTML = 'N/A';
+    row.appendChild(clientDiv);
+    const serverDiv = document.createElement('div');
+    serverDiv.innerHTML = 'N/A';
+    row.appendChild(serverDiv);
+    this.serverStatuses.set(nodeName, serverDiv);
+    this.clientStatuses.set(nodeName, clientDiv);
+  }
+
+  private setCurrentNodeState(element: HTMLElement, state: ConnectionState):
+      void {
+    if (state === ConnectionState.CONNECTED) {
+      element.innerHTML = ConnectionState[state];
+      element.classList.remove('faulted');
+      element.classList.add('connected');
+    } else {
+      element.innerHTML = ConnectionState[state];
+      element.classList.remove('connected');
+      element.classList.add('faulted');
+    }
+  }
+
+  private handleServerStatistics(data: Uint8Array): void {
+    const fbBuffer = new ByteBuffer(data);
+    const serverStatistics =
+        ServerStatistics.getRootAsServerStatistics(fbBuffer);
+
+    for (let ii = 0; ii < serverStatistics.connectionsLength(); ++ii) {
+      const connection = serverStatistics.connections(ii);
+      const nodeName = connection.node().name();
+      if (!this.serverStatuses.has(nodeName)) {
+        this.populateNodeConnections(nodeName);
+      }
+      this.setCurrentNodeState(
+          this.serverStatuses.get(nodeName), connection.state());
+    }
+  }
+
+  private handleClientStatistics(data: Uint8Array): void {
+    const fbBuffer = new ByteBuffer(data);
+    const clientStatistics =
+        ClientStatistics.getRootAsClientStatistics(fbBuffer);
+
+    for (let ii = 0; ii < clientStatistics.connectionsLength(); ++ii) {
+      const connection = clientStatistics.connections(ii);
+      const nodeName = connection.node().name();
+      if (!this.clientStatuses.has(nodeName)) {
+        this.populateNodeConnections(nodeName);
+      }
+      this.setCurrentNodeState(
+          this.clientStatuses.get(nodeName), connection.state());
+    }
   }
 
   drawField(): void {
@@ -163,8 +234,8 @@ export class FieldHandler {
     ctx.restore();
   }
 
-  drawCamera(
-      x: number, y: number, theta: number, color: string = 'blue'): void {
+  drawCamera(x: number, y: number, theta: number, color: string = 'blue'):
+      void {
     const ctx = this.canvas.getContext('2d');
     ctx.save();
     ctx.translate(x, y);
@@ -182,8 +253,8 @@ export class FieldHandler {
   }
 
   drawRobot(
-      x: number, y: number, theta: number,
-      color: string = 'blue', dashed: boolean = false): void {
+      x: number, y: number, theta: number, color: string = 'blue',
+      dashed: boolean = false): void {
     const ctx = this.canvas.getContext('2d');
     ctx.save();
     ctx.translate(x, y);
@@ -216,22 +287,22 @@ export class FieldHandler {
   }
 
   setEstopped(div: HTMLElement): void {
-	  div.innerHTML = 'estopped';
-	  div.classList.add('faulted');
-	  div.classList.remove('zeroing');
-	  div.classList.remove('near');
+    div.innerHTML = 'estopped';
+    div.classList.add('faulted');
+    div.classList.remove('zeroing');
+    div.classList.remove('near');
   }
 
   setTargetValue(
-	  div: HTMLElement, target: number, val: number, tolerance: number): void {
-	  div.innerHTML = val.toFixed(4);
-	  div.classList.remove('faulted');
-	  div.classList.remove('zeroing');
-	  if (Math.abs(target - val) < tolerance) {
-		  div.classList.add('near');
-	  } else {
-		  div.classList.remove('near');
-	  }
+      div: HTMLElement, target: number, val: number, tolerance: number): void {
+    div.innerHTML = val.toFixed(4);
+    div.classList.remove('faulted');
+    div.classList.remove('zeroing');
+    if (Math.abs(target - val) < tolerance) {
+      div.classList.add('near');
+    } else {
+      div.classList.remove('near');
+    }
   }
 
   setValue(div: HTMLElement, val: number): void {
@@ -249,60 +320,92 @@ export class FieldHandler {
     const now = Date.now() / 1000.0;
 
     if (this.superstructureStatus) {
-	    this.endEffectorState.innerHTML =
-		    EndEffectorState[this.superstructureStatus.endEffectorState()];
-	    if (!this.superstructureStatus.wrist() ||
-		!this.superstructureStatus.wrist().zeroed()) {
-		    this.setZeroing(this.wrist);
-	    } else if (this.superstructureStatus.wrist().estopped()) {
-		    this.setEstopped(this.wrist);
-	    } else {
-		    this.setTargetValue(
-		    	this.wrist,
-		    	this.superstructureStatus.wrist().unprofiledGoalPosition(),
-		    	this.superstructureStatus.wrist().estimatorState().position(),
-		    	1e-3);
-	    }
-	    this.armState.innerHTML =
-		    ArmState[this.superstructureStatus.arm().state()];
-	    this.gamePiece.innerHTML =
-		    Class[this.superstructureStatus.gamePiece()];
-	    this.armX.innerHTML =
-		    this.superstructureStatus.arm().armX().toFixed(2);
-	    this.armY.innerHTML =
-		    this.superstructureStatus.arm().armY().toFixed(2);
-	    this.circularIndex.innerHTML =
-		    this.superstructureStatus.arm().armCircularIndex().toFixed(0);
-	    this.roll.innerHTML =
-		    this.superstructureStatus.arm().rollJointEstimatorState().position().toFixed(2);
-	    this.proximal.innerHTML =
-		    this.superstructureStatus.arm().proximalEstimatorState().position().toFixed(2);
-	    this.distal.innerHTML =
-		    this.superstructureStatus.arm().distalEstimatorState().position().toFixed(2);
-	    let zeroingErrors: string = "Roll Joint Errors:"+'<br/>';
-	    for (let i = 0; i < this.superstructureStatus.arm().rollJointEstimatorState().errors.length; i++) {
-	    	zeroingErrors += ZeroingError[this.superstructureStatus.arm().rollJointEstimatorState().errors(i)]+'<br/>';
-	    }
-      zeroingErrors += '<br/>'+"Proximal Joint Errors:"+'<br/>';
-	    for (let i = 0; i < this.superstructureStatus.arm().proximalEstimatorState().errors.length; i++) {
-        zeroingErrors += ZeroingError[this.superstructureStatus.arm().proximalEstimatorState().errors(i)]+'<br/>';
-	    }
-      zeroingErrors += '<br/>'+"Distal Joint Errors:"+'<br/>';
-	    for (let i = 0; i < this.superstructureStatus.arm().distalEstimatorState().errors.length; i++) {
-        zeroingErrors += ZeroingError[this.superstructureStatus.arm().distalEstimatorState().errors(i)]+'<br/>';
-	    }
-      zeroingErrors += '<br/>'+"Wrist Errors:"+'<br/>';
-	    for (let i = 0; i < this.superstructureStatus.wrist().estimatorState().errors.length; i++) {
-        zeroingErrors += ZeroingError[this.superstructureStatus.wrist().estimatorState().errors(i)]+'<br/>';
-	    }
-	    this.zeroingFaults.innerHTML = zeroingErrors;
+      this.endEffectorState.innerHTML =
+          EndEffectorState[this.superstructureStatus.endEffectorState()];
+      if (!this.superstructureStatus.wrist() ||
+          !this.superstructureStatus.wrist().zeroed()) {
+        this.setZeroing(this.wrist);
+      } else if (this.superstructureStatus.wrist().estopped()) {
+        this.setEstopped(this.wrist);
+      } else {
+        this.setTargetValue(
+            this.wrist,
+            this.superstructureStatus.wrist().unprofiledGoalPosition(),
+            this.superstructureStatus.wrist().estimatorState().position(),
+            1e-3);
+      }
+      this.armState.innerHTML =
+          ArmState[this.superstructureStatus.arm().state()];
+      this.gamePiece.innerHTML = Class[this.superstructureStatus.gamePiece()];
+      this.armX.innerHTML = this.superstructureStatus.arm().armX().toFixed(2);
+      this.armY.innerHTML = this.superstructureStatus.arm().armY().toFixed(2);
+      this.circularIndex.innerHTML =
+          this.superstructureStatus.arm().armCircularIndex().toFixed(0);
+      this.roll.innerHTML = this.superstructureStatus.arm()
+                                .rollJointEstimatorState()
+                                .position()
+                                .toFixed(2);
+      this.proximal.innerHTML = this.superstructureStatus.arm()
+                                    .proximalEstimatorState()
+                                    .position()
+                                    .toFixed(2);
+      this.distal.innerHTML = this.superstructureStatus.arm()
+                                  .distalEstimatorState()
+                                  .position()
+                                  .toFixed(2);
+      let zeroingErrors: string = 'Roll Joint Errors:' +
+          '<br/>';
+      for (let i = 0; i < this.superstructureStatus.arm()
+                              .rollJointEstimatorState()
+                              .errors.length;
+           i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.arm()
+                                          .rollJointEstimatorState()
+                                          .errors(i)] +
+            '<br/>';
+      }
+      zeroingErrors += '<br/>' +
+          'Proximal Joint Errors:' +
+          '<br/>';
+      for (let i = 0; i < this.superstructureStatus.arm()
+                              .proximalEstimatorState()
+                              .errors.length;
+           i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.arm()
+                                          .proximalEstimatorState()
+                                          .errors(i)] +
+            '<br/>';
+      }
+      zeroingErrors += '<br/>' +
+          'Distal Joint Errors:' +
+          '<br/>';
+      for (let i = 0; i <
+           this.superstructureStatus.arm().distalEstimatorState().errors.length;
+           i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.arm()
+                                          .distalEstimatorState()
+                                          .errors(i)] +
+            '<br/>';
+      }
+      zeroingErrors += '<br/>' +
+          'Wrist Errors:' +
+          '<br/>';
+      for (let i = 0;
+           i < this.superstructureStatus.wrist().estimatorState().errors.length;
+           i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.wrist()
+                                          .estimatorState()
+                                          .errors(i)] +
+            '<br/>';
+      }
+      this.zeroingFaults.innerHTML = zeroingErrors;
     }
 
     if (this.drivetrainStatus && this.drivetrainStatus.trajectoryLogging()) {
       this.drawRobot(
           this.drivetrainStatus.trajectoryLogging().x(),
           this.drivetrainStatus.trajectoryLogging().y(),
-          this.drivetrainStatus.trajectoryLogging().theta(), "#000000FF",
+          this.drivetrainStatus.trajectoryLogging().theta(), '#000000FF',
           false);
     }
 

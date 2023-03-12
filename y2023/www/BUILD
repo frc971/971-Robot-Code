@@ -28,6 +28,8 @@ ts_project(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/network:connect_ts_fbs",
+        "//aos/network:message_bridge_client_ts_fbs",
+        "//aos/network:message_bridge_server_ts_fbs",
         "//aos/network:web_proxy_ts_fbs",
         "//aos/network/www:proxy",
         "//frc971/control_loops:control_loops_ts_fbs",

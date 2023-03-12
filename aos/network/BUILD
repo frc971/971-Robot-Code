@@ -65,11 +65,19 @@ flatbuffer_cc_library(
     name = "message_bridge_client_fbs",
     srcs = ["message_bridge_client.fbs"],
     gen_reflections = 1,
-    includes = [
-        ":message_bridge_server_fbs_includes",
-        "//aos:configuration_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":message_bridge_server_fbs",
+        "//aos:configuration_fbs",
+    ],
+)
+
+flatbuffer_ts_library(
+    name = "message_bridge_client_ts_fbs",
+    srcs = ["message_bridge_client.fbs"],
+    deps = [
+        ":message_bridge_server_ts_fbs",
+    ],
 )
 
 cc_static_flatbuffer(
@@ -83,10 +91,18 @@ flatbuffer_cc_library(
     name = "message_bridge_server_fbs",
     srcs = ["message_bridge_server.fbs"],
     gen_reflections = 1,
-    includes = [
-        "//aos:configuration_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:configuration_fbs",
+    ],
+)
+
+flatbuffer_ts_library(
+    name = "message_bridge_server_ts_fbs",
+    srcs = ["message_bridge_server.fbs"],
+    deps = [
+        "//aos:configuration_ts_fbs",
+    ],
 )
 
 cc_static_flatbuffer(
