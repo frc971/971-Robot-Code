@@ -83,8 +83,8 @@ class Localizer {
       TargetEstimateDebug::Builder *builder);
 
   void SendOutput();
-  flatbuffers::Offset<frc971::control_loops::drivetrain::LocalizerState>
-  PopulateState(flatbuffers::FlatBufferBuilder *fbb) const;
+  static flatbuffers::Offset<frc971::control_loops::drivetrain::LocalizerState>
+  PopulateState(const State &X_hat, flatbuffers::FlatBufferBuilder *fbb);
   flatbuffers::Offset<ImuStatus> PopulateImu(
       flatbuffers::FlatBufferBuilder *fbb) const;
   void SendStatus();

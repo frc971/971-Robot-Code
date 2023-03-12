@@ -15,6 +15,16 @@ table TargetEstimateDebug {
   // Image age (more human-readable than trying to interpret raw nanosecond
   // values).
   image_age_sec:double (id: 9);
+  // Time at which the image was captured.
+  image_monotonic_timestamp_ns:uint64 (id: 10);
+  // April tag ID used for this image detection.
+  april_tag:uint (id: 11);
+  // If the image was accepted, the total correction that occurred as a result.
+  // These numbers will be equal to the value after the correction - the value
+  // before.
+  correction_x: double (id: 12);
+  correction_y: double (id: 13);
+  correction_theta: double (id: 14);
 }
 
 table Visualization {

@@ -248,8 +248,13 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   builder.add_camera(camera_index);
   builder.add_image_age_sec(aos::time::DurationInSeconds(
       event_loop_->monotonic_now() - capture_time));
+  builder.add_image_monotonic_timestamp_ns(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          capture_time.time_since_epoch())
+          .count());
 
   const uint64_t target_id = target.id();
+  builder.add_april_tag(target_id);
   VLOG(2) << aos::FlatbufferToJson(&target);
   if (target_poses_.count(target_id) == 0) {
     VLOG(1) << "Rejecting target due to invalid ID " << target_id;
@@ -335,6 +340,7 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
 
   const Input U = ekf_.MostRecentInput();
   VLOG(1) << "previous state " << ekf_.X_hat().topRows<3>().transpose();
+  const State prior_state = ekf_.X_hat();
   // For the correction step, instead of passing in the measurement directly,
   // we pass in (0, 0, 0) as the measurement and then for the expected
   // measurement (Zhat) we calculate the error between the pose implied by
@@ -346,6 +352,12 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   ++total_accepted_targets_;
   ++cameras_.at(camera_index).total_accepted_targets;
   VLOG(1) << "new state " << ekf_.X_hat().topRows<3>().transpose();
+  builder.add_correction_x(ekf_.X_hat()(StateIdx::kX) -
+                           prior_state(StateIdx::kX));
+  builder.add_correction_y(ekf_.X_hat()(StateIdx::kY) -
+                           prior_state(StateIdx::kY));
+  builder.add_correction_theta(ekf_.X_hat()(StateIdx::kTheta) -
+                               prior_state(StateIdx::kTheta));
   builder.add_accepted(true);
   return builder.Finish();
 }
@@ -387,21 +399,22 @@ void Localizer::SendOutput() {
 }
 
 flatbuffers::Offset<frc971::control_loops::drivetrain::LocalizerState>
-Localizer::PopulateState(flatbuffers::FlatBufferBuilder *fbb) const {
+Localizer::PopulateState(const State &X_hat,
+                         flatbuffers::FlatBufferBuilder *fbb) {
   frc971::control_loops::drivetrain::LocalizerState::Builder builder(*fbb);
-  builder.add_x(ekf_.X_hat(StateIdx::kX));
-  builder.add_y(ekf_.X_hat(StateIdx::kY));
-  builder.add_theta(ekf_.X_hat(StateIdx::kTheta));
-  builder.add_left_velocity(ekf_.X_hat(StateIdx::kLeftVelocity));
-  builder.add_right_velocity(ekf_.X_hat(StateIdx::kRightVelocity));
-  builder.add_left_encoder(ekf_.X_hat(StateIdx::kLeftEncoder));
-  builder.add_right_encoder(ekf_.X_hat(StateIdx::kRightEncoder));
-  builder.add_left_voltage_error(ekf_.X_hat(StateIdx::kLeftVoltageError));
-  builder.add_right_voltage_error(ekf_.X_hat(StateIdx::kRightVoltageError));
-  builder.add_angular_error(ekf_.X_hat(StateIdx::kAngularError));
+  builder.add_x(X_hat(StateIdx::kX));
+  builder.add_y(X_hat(StateIdx::kY));
+  builder.add_theta(X_hat(StateIdx::kTheta));
+  builder.add_left_velocity(X_hat(StateIdx::kLeftVelocity));
+  builder.add_right_velocity(X_hat(StateIdx::kRightVelocity));
+  builder.add_left_encoder(X_hat(StateIdx::kLeftEncoder));
+  builder.add_right_encoder(X_hat(StateIdx::kRightEncoder));
+  builder.add_left_voltage_error(X_hat(StateIdx::kLeftVoltageError));
+  builder.add_right_voltage_error(X_hat(StateIdx::kRightVoltageError));
+  builder.add_angular_error(X_hat(StateIdx::kAngularError));
   builder.add_longitudinal_velocity_offset(
-      ekf_.X_hat(StateIdx::kLongitudinalVelocityOffset));
-  builder.add_lateral_velocity(ekf_.X_hat(StateIdx::kLateralVelocity));
+      X_hat(StateIdx::kLongitudinalVelocityOffset));
+  builder.add_lateral_velocity(X_hat(StateIdx::kLateralVelocity));
   return builder.Finish();
 }
 
@@ -447,7 +460,7 @@ void Localizer::SendStatus() {
   auto down_estimator_offset =
       down_estimator_.PopulateStatus(builder.fbb(), t_);
   auto imu_offset = PopulateImu(builder.fbb());
-  auto state_offset = PopulateState(builder.fbb());
+  auto state_offset = PopulateState(ekf_.X_hat(), builder.fbb());
   Status::Builder status_builder = builder.MakeBuilder<Status>();
   status_builder.add_state(state_offset);
   status_builder.add_down_estimator(down_estimator_offset);
