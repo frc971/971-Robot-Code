@@ -15,6 +15,7 @@
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
 DECLARE_bool(die_on_malloc);
+DECLARE_double(max_distance_to_target);
 
 namespace y2023::localizer::testing {
 
@@ -73,6 +74,7 @@ class LocalizerTest : public ::testing::Test {
                 ->MakeFetcher<frc971::controls::LocalizerOutput>("/localizer")),
         status_fetcher_(
             imu_test_event_loop_->MakeFetcher<Status>("/localizer")) {
+    FLAGS_max_distance_to_target = 100.0;
     FLAGS_die_on_malloc = true;
     {
       aos::TimerHandler *timer = roborio_test_event_loop_->AddTimer([this]() {

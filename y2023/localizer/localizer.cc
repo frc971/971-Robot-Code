@@ -12,9 +12,13 @@ DEFINE_double(max_pose_error, 1e-6,
 DEFINE_double(distortion_noise_scalar, 1.0,
               "Scale the target pose distortion factor by this when computing "
               "the noise.");
-DEFINE_double(max_implied_yaw_error, 30.0,
-              "Reject target poses that imply a robot yaw of this many degrees "
-              "off from our estimate.");
+DEFINE_double(
+    max_implied_yaw_error, 30.0,
+    "Reject target poses that imply a robot yaw of more than this many degrees "
+    "off from our estimate.");
+DEFINE_double(max_distance_to_target, 6.0,
+              "Reject target poses that have a 3d distance of more than this "
+              "many meters.");
 
 namespace y2023::localizer {
 namespace {
@@ -285,11 +289,15 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   builder.add_implied_robot_y(Z(Corrector::kY));
   builder.add_implied_robot_theta(Z(Corrector::kTheta));
 
+  double distance_to_target =
+      Eigen::Affine3d(H_camera_target).translation().norm();
+
   // TODO(james): Tune this. Also, gain schedule for auto mode?
   Eigen::Matrix<double, 3, 1> noises(1.0, 1.0, 0.5);
   noises /= 4.0;
   // Scale noise by the distortion factor for this detection
-  noises *= (1.0 + FLAGS_distortion_noise_scalar * target.distortion_factor());
+  noises *= (1.0 + FLAGS_distortion_noise_scalar * target.distortion_factor() *
+                       std::exp(distance_to_target));
 
   Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
   R.diagonal() = noises.cwiseAbs2();
@@ -302,6 +310,10 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   const std::optional<State> state_at_capture =
       ekf_.LastStateBeforeTime(capture_time);
 
+  double theta_at_capture = state_at_capture.value()(StateIdx::kTheta);
+  double camera_implied_theta = Z(Corrector::kTheta);
+  constexpr double kDegToRad = M_PI / 180.0;
+
   if (!state_at_capture.has_value()) {
     VLOG(1) << "Rejecting image due to being too old.";
     return RejectImage(camera_index, RejectionReason::IMAGE_TOO_OLD, &builder);
@@ -310,15 +322,13 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
             << target.pose_error();
     return RejectImage(camera_index, RejectionReason::HIGH_POSE_ERROR,
                        &builder);
-  } else {
-    double theta_at_capture = state_at_capture.value()(StateIdx::kTheta);
-    double camera_implied_theta = Z(Corrector::kTheta);
-    constexpr double kDegToRad = M_PI / 180.0;
-    if (std::abs(camera_implied_theta - theta_at_capture) >
-        FLAGS_max_implied_yaw_error * kDegToRad) {
-      return RejectImage(camera_index, RejectionReason::HIGH_IMPLIED_YAW_ERROR,
-                         &builder);
-    }
+  } else if (std::abs(camera_implied_theta - theta_at_capture) >
+             FLAGS_max_implied_yaw_error * kDegToRad) {
+    return RejectImage(camera_index, RejectionReason::HIGH_IMPLIED_YAW_ERROR,
+                       &builder);
+  } else if (distance_to_target > FLAGS_max_distance_to_target) {
+    return RejectImage(camera_index, RejectionReason::HIGH_DISTANCE_TO_TARGET,
+                       &builder);
   }
 
   const Input U = ekf_.MostRecentInput();

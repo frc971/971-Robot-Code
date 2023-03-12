@@ -19,6 +19,9 @@ enum RejectionReason : uint8 {
   HIGH_POSE_ERROR = 4,
   // Pose estimate implied a robot yaw far off from our estimate.
   HIGH_IMPLIED_YAW_ERROR = 5,
+  // Pose estimate had a high distance to target.
+  // We don't trust estimates very far out.
+  HIGH_DISTANCE_TO_TARGET = 6,
 }
 
 table RejectionCount {
