@@ -248,19 +248,19 @@
       >
         Revive
       </button>
+      <button
+        class="btn btn-info"
+        (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: dockedValue, engaged: engagedValue});"
+      >
+        End Match
+      </button>
     </div>
   </div>
 
   <div *ngSwitchCase="'Review and Submit'" id="Review" class="container-fluid">
     <div class="d-grid gap-5">
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
-      <button
-        *ngIf="!autoPhase"
-        class="btn btn-warning"
-        (click)="submitActions();"
-      >
-        Submit
-      </button>
+      <button class="btn btn-warning" (click)="submitActions();">Submit</button>
     </div>
   </div>
 
