@@ -55,7 +55,10 @@ table Action {
 }
 
 table SubmitActions {
-    actions_list:[Action] (id:0);
+    team_number:string (id: 0);
+    match_number:int (id: 1);
+    set_number:int (id: 2);
+    comp_level:string (id: 3);
+    actions_list:[Action] (id:4);
+    collected_by:string (id: 5);
 }
-
-root_type SubmitActions;

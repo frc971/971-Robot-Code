@@ -454,6 +454,104 @@ func (handler submitNoteScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 	w.Write(builder.FinishedBytes())
 }
 
+func ConvertActionsToStat(submitActions *submit_actions.SubmitActions) (db.Stats2023, error) {
+	overall_time := int64(0)
+	cycles := int64(0)
+	picked_up := false
+	lastPlacedTime := int64(0)
+	stat := db.Stats2023{TeamNumber: string(submitActions.TeamNumber()), MatchNumber: submitActions.MatchNumber(), SetNumber: submitActions.SetNumber(), CompLevel: string(submitActions.CompLevel()),
+		StartingQuadrant: 0, LowCubesAuto: 0, MiddleCubesAuto: 0, HighCubesAuto: 0, CubesDroppedAuto: 0,
+		LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0, ConesDroppedAuto: 0, LowCubes: 0, MiddleCubes: 0, HighCubes: 0,
+		CubesDropped: 0, LowCones: 0, MiddleCones: 0, HighCones: 0, ConesDropped: 0, AvgCycle: 0, CollectedBy: string(submitActions.CollectedBy()),
+	}
+	// Loop over all actions.
+	for i := 0; i < submitActions.ActionsListLength(); i++ {
+		var action submit_actions.Action
+		if !submitActions.ActionsList(&action, i) {
+			return db.Stats2023{}, errors.New(fmt.Sprintf("Failed to parse submit_actions.Action"))
+		}
+		actionTable := new(flatbuffers.Table)
+		action_type := action.ActionTakenType()
+		if !action.ActionTaken(actionTable) {
+			return db.Stats2023{}, errors.New(fmt.Sprint("Failed to parse sub-action or sub-action was missing"))
+		}
+		if action_type == submit_actions.ActionTypeStartMatchAction {
+			var startMatchAction submit_actions.StartMatchAction
+			startMatchAction.Init(actionTable.Bytes, actionTable.Pos)
+			stat.StartingQuadrant = startMatchAction.Position()
+		} else if action_type == submit_actions.ActionTypePickupObjectAction {
+			var pick_up_action submit_actions.PickupObjectAction
+			pick_up_action.Init(actionTable.Bytes, actionTable.Pos)
+			if picked_up == true {
+				object := pick_up_action.ObjectType().String()
+				auto := pick_up_action.Auto()
+				if object == "kCube" && auto == false {
+					stat.CubesDropped += 1
+				} else if object == "kCube" && auto == true {
+					stat.CubesDroppedAuto += 1
+				} else if object == "kCone" && auto == false {
+					stat.ConesDropped += 1
+				} else if object == "kCube" && auto == true {
+					stat.ConesDroppedAuto += 1
+				}
+			} else {
+				picked_up = true
+			}
+		} else if action_type == submit_actions.ActionTypePlaceObjectAction {
+			var place_action submit_actions.PlaceObjectAction
+			place_action.Init(actionTable.Bytes, actionTable.Pos)
+			if !picked_up {
+				return db.Stats2023{}, errors.New(fmt.Sprintf("Got PlaceObjectAction without corresponding PickupObjectAction"))
+			}
+			object := place_action.ObjectType()
+			level := place_action.ScoreLevel()
+			auto := place_action.Auto()
+			if object == 0 && level == 0 && auto == true {
+				stat.LowCubesAuto += 1
+			} else if object == 0 && level == 0 && auto == false {
+				stat.LowCubes += 1
+			} else if object == 0 && level == 1 && auto == true {
+				stat.MiddleCubesAuto += 1
+			} else if object == 0 && level == 1 && auto == false {
+				stat.MiddleCubes += 1
+			} else if object == 0 && level == 2 && auto == true {
+				stat.HighCubesAuto += 1
+			} else if object == 0 && level == 2 && auto == false {
+				stat.HighCubes += 1
+			} else if object == 1 && level == 0 && auto == true {
+				stat.LowConesAuto += 1
+			} else if object == 1 && level == 0 && auto == false {
+				stat.LowCones += 1
+			} else if object == 1 && level == 1 && auto == true {
+				stat.MiddleConesAuto += 1
+			} else if object == 1 && level == 1 && auto == false {
+				stat.MiddleCones += 1
+			} else if object == 1 && level == 2 && auto == true {
+				stat.HighConesAuto += 1
+			} else if object == 1 && level == 2 && auto == false {
+				stat.HighCones += 1
+			} else {
+				return db.Stats2023{}, errors.New(fmt.Sprintf("Got unknown ObjectType/ScoreLevel/Auto combination"))
+			}
+			picked_up = false
+			if lastPlacedTime != int64(0) {
+				// If this is not the first time we place,
+				// start counting cycle time. We define cycle
+				// time as the time between placements.
+				overall_time += int64(action.Timestamp()) - lastPlacedTime
+				cycles += 1
+			}
+			lastPlacedTime = int64(action.Timestamp())
+		}
+	}
+	if cycles != 0 {
+		stat.AvgCycle = int32(overall_time / cycles)
+	} else {
+		stat.AvgCycle = 0
+	}
+	return stat, nil
+}
+
 // Handles a Request2023DataScouting request.
 type request2023DataScoutingHandler struct {
 	db Database

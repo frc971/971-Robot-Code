@@ -23,6 +23,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
@@ -388,6 +389,103 @@ func TestRequest2023DataScouting(t *testing.T) {
 		if !reflect.DeepEqual(*match, *response.StatsList[i]) {
 			t.Fatal("Expected for stats", i, ":", *match, ", but got:", *response.StatsList[i])
 		}
+	}
+}
+
+// Validates that we can request the 2023 stats.
+func TestConvertActionsToStat(t *testing.T) {
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&submit_actions.SubmitActionsT{
+		TeamNumber:  "4244",
+		MatchNumber: 3,
+		SetNumber:   1,
+		CompLevel:   "quals",
+		CollectedBy: "katie",
+		ActionsList: []*submit_actions.ActionT{
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypeStartMatchAction,
+					Value: &submit_actions.StartMatchActionT{
+						Position: 1,
+					},
+				},
+				Timestamp: 0,
+			},
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypePickupObjectAction,
+					Value: &submit_actions.PickupObjectActionT{
+						ObjectType: submit_actions.ObjectTypekCube,
+						Auto:       true,
+					},
+				},
+				Timestamp: 400,
+			},
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypePickupObjectAction,
+					Value: &submit_actions.PickupObjectActionT{
+						ObjectType: submit_actions.ObjectTypekCube,
+						Auto:       true,
+					},
+				},
+				Timestamp: 800,
+			},
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypePlaceObjectAction,
+					Value: &submit_actions.PlaceObjectActionT{
+						ObjectType: submit_actions.ObjectTypekCube,
+						ScoreLevel: submit_actions.ScoreLevelkLow,
+						Auto:       true,
+					},
+				},
+				Timestamp: 2000,
+			},
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypePickupObjectAction,
+					Value: &submit_actions.PickupObjectActionT{
+						ObjectType: submit_actions.ObjectTypekCone,
+						Auto:       false,
+					},
+				},
+				Timestamp: 2800,
+			},
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypePlaceObjectAction,
+					Value: &submit_actions.PlaceObjectActionT{
+						ObjectType: submit_actions.ObjectTypekCone,
+						ScoreLevel: submit_actions.ScoreLevelkHigh,
+						Auto:       false,
+					},
+				},
+				Timestamp: 3100,
+			},
+		},
+	}).Pack(builder))
+
+	submitActions := submit_actions.GetRootAsSubmitActions(builder.FinishedBytes(), 0)
+	response, err := ConvertActionsToStat(submitActions)
+
+	if err != nil {
+		t.Fatal("Failed to convert actions to stats: ", err)
+	}
+
+	expected := db.Stats2023{
+		TeamNumber: "4244", MatchNumber: 3, SetNumber: 1,
+		CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 1,
+		MiddleCubesAuto: 0, HighCubesAuto: 0, CubesDroppedAuto: 1,
+		LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
+		ConesDroppedAuto: 0, LowCubes: 0, MiddleCubes: 0,
+		HighCubes: 0, CubesDropped: 0, LowCones: 0,
+		MiddleCones: 0, HighCones: 1, ConesDropped: 0,
+		AvgCycle: 1100, CollectedBy: "katie",
+	}
+
+	if expected != response {
+		t.Fatal("Expected ", expected, ", but got ", response)
 	}
 }
 
