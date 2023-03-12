@@ -171,7 +171,10 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
   if (!target_pose_.has_value() ||
       distances.at(1) - distances.at(0) > kGridHysteresisDistance) {
     CHECK(closest_position.has_value());
-    target_pose_ = Pose(closest_position.value(), /*theta=*/0.0);
+    // Since all targets on one side of the field face the same direction, we
+    // can just auto-choose orientation based on field side.
+    target_pose_ = Pose(closest_position.value(),
+                        /*theta=*/closest_position->x() > 0.0 ? 0.0 : M_PI);
     if (hint_fetcher_->has_robot_side()) {
       drive_direction_ = hint_fetcher_->robot_side();
     } else {
