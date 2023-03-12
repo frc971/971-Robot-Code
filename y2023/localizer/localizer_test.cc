@@ -123,7 +123,7 @@ class LocalizerTest : public ::testing::Test {
             const frc971::control_loops::Pose robot_pose(
                 {drivetrain_plant_.GetPosition().x(),
                  drivetrain_plant_.GetPosition().y(), 0.0},
-                drivetrain_plant_.state()(2, 0));
+                drivetrain_plant_.state()(2, 0) + implied_yaw_error_);
 
             const Eigen::Matrix<double, 4, 4> H_field_camera =
                 robot_pose.AsTransformationMatrix() * H_robot_camera;
@@ -275,6 +275,7 @@ class LocalizerTest : public ::testing::Test {
 
   uint64_t send_target_id_ = kTargetId;
   double pose_error_ = 1e-7;
+  double implied_yaw_error_ = 0.0;
 
   gflags::FlagSaver flag_saver_;
 };
@@ -481,6 +482,27 @@ TEST_F(LocalizerTest, HighPoseError) {
                 ->Get(static_cast<size_t>(RejectionReason::HIGH_POSE_ERROR))
                 ->count(),
             status_fetcher_->statistics()->Get(0)->total_candidates());
+}
+
+// Tests that we correctly reject a detection with a high implied yaw error.
+TEST_F(LocalizerTest, HighImpliedYawError) {
+  output_voltages_ << 0.0, 0.0;
+  send_targets_ = true;
+  implied_yaw_error_ = 31.0 * M_PI / 180.0;
+
+  event_loop_factory_.RunFor(std::chrono::seconds(4));
+  CHECK(status_fetcher_.Fetch());
+  ASSERT_TRUE(status_fetcher_->has_statistics());
+  ASSERT_EQ(4u /* number of cameras */, status_fetcher_->statistics()->size());
+  ASSERT_EQ(0, status_fetcher_->statistics()->Get(0)->total_accepted());
+  ASSERT_LT(10, status_fetcher_->statistics()->Get(0)->total_candidates());
+  ASSERT_EQ(
+      status_fetcher_->statistics()
+          ->Get(0)
+          ->rejection_reasons()
+          ->Get(static_cast<size_t>(RejectionReason::HIGH_IMPLIED_YAW_ERROR))
+          ->count(),
+      status_fetcher_->statistics()->Get(0)->total_candidates());
 }
 
 }  // namespace y2023::localizer::testing

@@ -305,7 +305,7 @@
       "type": "y2023.localizer.Status",
       "source_node": "imu",
       "frequency": 2200,
-      "max_size": 1000,
+      "max_size": 1504,
       "num_senders": 2
     },
     {

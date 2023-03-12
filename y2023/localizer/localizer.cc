@@ -12,6 +12,9 @@ DEFINE_double(max_pose_error, 1e-6,
 DEFINE_double(distortion_noise_scalar, 1.0,
               "Scale the target pose distortion factor by this when computing "
               "the noise.");
+DEFINE_double(max_implied_yaw_error, 30.0,
+              "Reject target poses that imply a robot yaw of this many degrees "
+              "off from our estimate.");
 
 namespace y2023::localizer {
 namespace {
@@ -307,6 +310,15 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
             << target.pose_error();
     return RejectImage(camera_index, RejectionReason::HIGH_POSE_ERROR,
                        &builder);
+  } else {
+    double theta_at_capture = state_at_capture.value()(StateIdx::kTheta);
+    double camera_implied_theta = Z(Corrector::kTheta);
+    constexpr double kDegToRad = M_PI / 180.0;
+    if (std::abs(camera_implied_theta - theta_at_capture) >
+        FLAGS_max_implied_yaw_error * kDegToRad) {
+      return RejectImage(camera_index, RejectionReason::HIGH_IMPLIED_YAW_ERROR,
+                         &builder);
+    }
   }
 
   const Input U = ekf_.MostRecentInput();
