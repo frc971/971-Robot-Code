@@ -294,6 +294,12 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   builder.add_implied_robot_y(Z(Corrector::kY));
   builder.add_implied_robot_theta(Z(Corrector::kTheta));
 
+  Eigen::AngleAxisd rvec_camera_target(
+      Eigen::Affine3d(H_camera_target).rotation());
+  // Use y angle (around vertical axis) to compute skew
+  double skew = rvec_camera_target.axis().y() * rvec_camera_target.angle();
+  builder.add_skew(skew);
+
   double distance_to_target =
       Eigen::Affine3d(H_camera_target).translation().norm();
 
