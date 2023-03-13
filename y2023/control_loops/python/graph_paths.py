@@ -338,7 +338,7 @@ named_segments.append(
         control1=np.array([2.0, -0.239378]),
         control2=np.array([1.6, -0.626835]),
         end=points['HPPickupBackConeUp'],
-        control_alpha_rolls=[(0.7, 0.0), (.9, np.pi / 2.0)],
+        control_alpha_rolls=[(0.3, 0.0), (.9, np.pi / 2.0)],
     ))
 
 points['HPPickupFrontConeUp'] = np.array(
@@ -353,7 +353,7 @@ named_segments.append(
         control1=np.array([4.068204933788692, -0.05440997896697275]),
         control2=np.array([4.861911360838861, -0.03790410600482508]),
         end=points['HPPickupFrontConeUp'],
-        control_alpha_rolls=[(0.7, 0.0), (.9, -np.pi / 2.0)],
+        control_alpha_rolls=[(0.3, 0.0), (.9, -np.pi / 2.0)],
     ))
 
 points['ScoreFrontHighConeUp'] = to_theta_with_circular_index_and_roll(
