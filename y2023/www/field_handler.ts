@@ -38,7 +38,7 @@ export class FieldHandler {
       (document.getElementById('theta') as HTMLElement);
   private imagesAcceptedCounter: HTMLElement =
       (document.getElementById('images_accepted') as HTMLElement);
-  private rejectionReasonCells: HTMLElement[] = [];
+  private rejectionReasonCells: HTMLElement[][] = [];
   private messageBridgeDiv: HTMLElement =
       (document.getElementById('message_bridge_status') as HTMLElement);
   private clientStatuses = new Map<string, HTMLElement>();
@@ -71,6 +71,19 @@ export class FieldHandler {
 
     this.fieldImage.src = '2023.png';
 
+    // Construct a table header.
+    {
+      const row = document.createElement('div');
+      const nameCell = document.createElement('div');
+      nameCell.innerHTML = "Rejection Reason";
+      row.appendChild(nameCell);
+      for (const pi of PIS) {
+        const nodeCell = document.createElement('div');
+        nodeCell.innerHTML = pi;
+        row.appendChild(nodeCell);
+      }
+      document.getElementById('vision_readouts').appendChild(row);
+    }
     for (const value in RejectionReason) {
       // Typescript generates an iterator that produces both numbers and
       // strings... don't do anything on the string iterations.
@@ -81,10 +94,13 @@ export class FieldHandler {
       const nameCell = document.createElement('div');
       nameCell.innerHTML = RejectionReason[value];
       row.appendChild(nameCell);
-      const valueCell = document.createElement('div');
-      valueCell.innerHTML = 'NA';
-      this.rejectionReasonCells.push(valueCell);
-      row.appendChild(valueCell);
+      this.rejectionReasonCells.push([]);
+      for (const pi of PIS) {
+        const valueCell = document.createElement('div');
+        valueCell.innerHTML = 'NA';
+        this.rejectionReasonCells[this.rejectionReasonCells.length - 1].push(valueCell);
+        row.appendChild(valueCell);
+      }
       document.getElementById('vision_readouts').appendChild(row);
     }
 
@@ -102,7 +118,7 @@ export class FieldHandler {
         this.connection.addReliableHandler(
             '/' + PIS[pi] + '/camera', 'y2023.localizer.Visualization',
             (data) => {
-              this.handleLocalizerDebug(pi, data);
+              this.handleLocalizerDebug(Number(pi), data);
             });
       }
       this.connection.addHandler(
@@ -125,7 +141,7 @@ export class FieldHandler {
     });
   }
 
-  private handleLocalizerDebug(pi: string, data: Uint8Array): void {
+  private handleLocalizerDebug(pi: number, data: Uint8Array): void {
     const now = Date.now() / 1000.0;
 
     const fbBuffer = new ByteBuffer(data);
@@ -139,7 +155,7 @@ export class FieldHandler {
           this.rejectionReasonCells.length) {
         for (let ii = 0; ii < debug.statistics().rejectionReasonsLength();
              ++ii) {
-          this.rejectionReasonCells[ii].innerHTML =
+          this.rejectionReasonCells[ii][pi].innerHTML =
               debug.statistics().rejectionReasons(ii).count().toString();
         }
       } else {
