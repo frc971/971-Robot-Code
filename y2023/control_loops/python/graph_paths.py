@@ -207,7 +207,7 @@ named_segments.append(
         control1=np.array([5.997741842590495, 1.8354263885166913]),
         control2=np.array([6.141018843972322, 1.0777341552037734]),
         end=points['ScoreFrontHighConeDownTipPlaced'],
-        control_alpha_rolls=[(0.50, 0.0), (.95, np.pi / 2.0)],
+        control_alpha_rolls=[(0.30, 0.0), (.95, np.pi / 2.0)],
     ))
 
 named_segments.append(
@@ -240,7 +240,7 @@ named_segments.append(
         control1=np.array([3.153228, -0.497009]),
         control2=np.array([2.972776, -1.026820]),
         end=points['GroundPickupBackCube'],
-        control_alpha_rolls=[(0.7, 0.0), (.9, -np.pi / 2.0)],
+        control_alpha_rolls=[(0.4, 0.0), (.9, -np.pi / 2.0)],
     ))
 
 points['GroundPickupFrontCube'] = to_theta_with_circular_index_and_roll(
@@ -366,7 +366,7 @@ named_segments.append(
         control1=np.array([2.594244, 0.417442]),
         control2=np.array([1.51325, 0.679748]),
         end=points['ScoreFrontHighConeUp'],
-        control_alpha_rolls=[(0.40, 0.0), (.95, -np.pi / 2.0)],
+        control_alpha_rolls=[(0.20, 0.0), (.95, -np.pi / 2.0)],
     ))
 
 points['ScoreFrontMidConeUp'] = to_theta_with_circular_index_and_roll(
