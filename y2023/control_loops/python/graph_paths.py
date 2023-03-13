@@ -393,6 +393,9 @@ named_segments.append(
         control2=np.array([2.728197531599509, 0.5677148040671784]),
         end=points['ScoreFrontMidConeUpAuto'],
         control_alpha_rolls=[(0.20, 0.0), (.90, -np.pi / 2.0)],
+        vmax=10.0,
+        alpha_unitizer=np.matrix(
+            f"{1.0 / 20.0} 0 0; 0 {1.0 / 25.0} 0; 0 0 {1.0 / 100.0}"),
     ))
 
 named_segments.append(
