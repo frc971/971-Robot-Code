@@ -114,16 +114,12 @@ static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
 }  // namespace
 
 static constexpr int kCANFalconCount = 6;
-static constexpr int kCANSignalsCount = 4;
-static constexpr int kRollerSignalsCount = 4;
 static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
 
 class Falcon {
  public:
   Falcon(int device_id, std::string canbus,
-         aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
-                         kCANFalconCount * kCANSignalsCount +
-                             kRollerSignalsCount> *signals)
+         std::vector<ctre::phoenixpro::BaseStatusSignalValue *> *signals)
       : talon_(device_id, canbus),
         device_id_(device_id),
         device_temp_(talon_.GetDeviceTemp()),
@@ -134,9 +130,7 @@ class Falcon {
     // device temp is not timesynced so don't add it to the list of signals
     device_temp_.SetUpdateFrequency(kCANUpdateFreqHz);
 
-    CHECK_EQ(kCANSignalsCount, 4);
     CHECK_NOTNULL(signals);
-    CHECK_LE(signals->size() + 4u, signals->capacity());
 
     supply_voltage_.SetUpdateFrequency(kCANUpdateFreqHz);
     signals->push_back(&supply_voltage_);
@@ -279,8 +273,11 @@ class Falcon {
 
 class CANSensorReader {
  public:
-  CANSensorReader(aos::EventLoop *event_loop)
+  CANSensorReader(
+      aos::EventLoop *event_loop,
+      std::vector<ctre::phoenixpro::BaseStatusSignalValue *> signals_registry)
       : event_loop_(event_loop),
+        signals_(signals_registry.begin(), signals_registry.end()),
         can_position_sender_(
             event_loop->MakeSender<drivetrain::CANPosition>("/drivetrain")),
         roller_falcon_data_(std::nullopt) {
@@ -293,12 +290,6 @@ class CANSensorReader {
       timer_handler_->Setup(event_loop_->monotonic_now(), 1 / kCANUpdateFreqHz);
     });
   }
-
-  aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
-                  kCANFalconCount * kCANSignalsCount + kRollerSignalsCount>
-      *get_signals_registry() {
-    return &signals_;
-  };
 
   void set_falcons(std::shared_ptr<Falcon> right_front,
                    std::shared_ptr<Falcon> right_back,
@@ -323,16 +314,8 @@ class CANSensorReader {
 
  private:
   void Loop() {
-    CHECK_EQ(signals_.size(), 28u);
     ctre::phoenix::StatusCode status =
-        ctre::phoenixpro::BaseStatusSignalValue::WaitForAll(
-            2000_ms, {signals_[0],  signals_[1],  signals_[2],  signals_[3],
-                      signals_[4],  signals_[5],  signals_[6],  signals_[7],
-                      signals_[8],  signals_[9],  signals_[10], signals_[11],
-                      signals_[12], signals_[13], signals_[14], signals_[15],
-                      signals_[16], signals_[17], signals_[18], signals_[19],
-                      signals_[20], signals_[21], signals_[22], signals_[23],
-                      signals_[24], signals_[25], signals_[26], signals_[27]});
+        ctre::phoenixpro::BaseStatusSignalValue::WaitForAll(2000_ms, signals_);
 
     if (!status.IsOK()) {
       AOS_LOG(ERROR, "Failed to read signals from falcons: %s: %s",
@@ -383,9 +366,7 @@ class CANSensorReader {
 
   aos::EventLoop *event_loop_;
 
-  aos::SizedArray<ctre::phoenixpro::BaseStatusSignalValue *,
-                  kCANFalconCount * kCANSignalsCount + kRollerSignalsCount>
-      signals_;
+  const std::vector<ctre::phoenixpro::BaseStatusSignalValue *> signals_;
   aos::Sender<drivetrain::CANPosition> can_position_sender_;
 
   std::shared_ptr<Falcon> right_front_, right_back_, right_under_, left_front_,
@@ -934,25 +915,27 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     std::shared_ptr<frc::DigitalOutput> superstructure_reading =
         make_unique<frc::DigitalOutput>(25);
 
+    std::vector<ctre::phoenixpro::BaseStatusSignalValue *> signals_registry;
+    std::shared_ptr<Falcon> right_front =
+        std::make_shared<Falcon>(1, "Drivetrain Bus", &signals_registry);
+    std::shared_ptr<Falcon> right_back =
+        std::make_shared<Falcon>(2, "Drivetrain Bus", &signals_registry);
+    std::shared_ptr<Falcon> right_under =
+        std::make_shared<Falcon>(3, "Drivetrain Bus", &signals_registry);
+    std::shared_ptr<Falcon> left_front =
+        std::make_shared<Falcon>(4, "Drivetrain Bus", &signals_registry);
+    std::shared_ptr<Falcon> left_back =
+        std::make_shared<Falcon>(5, "Drivetrain Bus", &signals_registry);
+    std::shared_ptr<Falcon> left_under =
+        std::make_shared<Falcon>(6, "Drivetrain Bus", &signals_registry);
+    std::shared_ptr<Falcon> roller =
+        std::make_shared<Falcon>(13, "Drivetrain Bus", &signals_registry);
+
     // Thread 3.
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
     can_sensor_reader_event_loop.set_name("CANSensorReader");
-    CANSensorReader can_sensor_reader(&can_sensor_reader_event_loop);
-
-    std::shared_ptr<Falcon> right_front = std::make_shared<Falcon>(
-        1, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> right_back = std::make_shared<Falcon>(
-        2, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> right_under = std::make_shared<Falcon>(
-        3, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> left_front = std::make_shared<Falcon>(
-        4, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> left_back = std::make_shared<Falcon>(
-        5, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> left_under = std::make_shared<Falcon>(
-        6, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
-    std::shared_ptr<Falcon> roller = std::make_shared<Falcon>(
-        13, "Drivetrain Bus", can_sensor_reader.get_signals_registry());
+    CANSensorReader can_sensor_reader(&can_sensor_reader_event_loop,
+                                      std::move(signals_registry));
 
     can_sensor_reader.set_falcons(right_front, right_back, right_under,
                                   left_front, left_back, left_under, roller);
