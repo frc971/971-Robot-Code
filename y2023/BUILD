@@ -60,6 +60,7 @@ robot_downloader(
         "//y2023/constants:constants_sender",
         "//y2023/vision:foxglove_image_converter",
         "//aos/network:web_proxy_main",
+        ":joystick_republish",
         "//aos/events/logging:log_cat",
         "//y2023/rockpi:imu_main",
         "//frc971/image_streamer:image_streamer",
@@ -324,6 +325,23 @@ cc_binary(
         "//y2023/control_loops/superstructure:superstructure_goal_fbs",
         "//y2023/control_loops/superstructure:superstructure_status_fbs",
         "//y2023/control_loops/superstructure/arm:generated_graph",
+    ],
+)
+
+cc_binary(
+    name = "joystick_republish",
+    srcs = [
+        "joystick_republish.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:configuration",
+        "//aos:flatbuffer_merge",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/input:joystick_state_fbs",
+        "@com_github_google_glog//:glog",
     ],
 )
 
