@@ -1,14 +1,14 @@
-import {ByteBuffer} from 'flatbuffers';
-
+import {ByteBuffer} from 'flatbuffers'
 import {ClientStatistics} from '../../aos/network/message_bridge_client_generated'
 import {ServerStatistics, State as ConnectionState} from '../../aos/network/message_bridge_server_generated'
-import {Connection} from '../../aos/network/www/proxy';
-import {ZeroingError} from '../../frc971/control_loops/control_loops_generated';
-import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated';
-import {LocalizerOutput} from '../../frc971/control_loops/drivetrain/localization/localizer_output_generated';
+import {Connection} from '../../aos/network/www/proxy'
+import {ZeroingError} from '../../frc971/control_loops/control_loops_generated'
+import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated'
+import {LocalizerOutput} from '../../frc971/control_loops/drivetrain/localization/localizer_output_generated'
+import {TargetMap} from '../../frc971/vision/target_map_generated'
 import {ArmState, ArmStatus, EndEffectorState, Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
-import {RejectionReason} from '../localizer/status_generated';
-import {TargetEstimateDebug, Visualization} from '../localizer/visualization_generated';
+import {RejectionReason} from '../localizer/status_generated'
+import {TargetEstimateDebug, Visualization} from '../localizer/visualization_generated'
 import {Class} from '../vision/game_pieces_generated'
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
@@ -38,6 +38,10 @@ export class FieldHandler {
       (document.getElementById('theta') as HTMLElement);
   private imagesAcceptedCounter: HTMLElement =
       (document.getElementById('images_accepted') as HTMLElement);
+  // HTML elements for rejection reasons for individual pis. Indices
+  // corresponding to RejectionReason enum values will be for those reasons. The
+  // final row will account for images rejected by the aprilrobotics detector
+  // instead of the localizer.
   private rejectionReasonCells: HTMLElement[][] = [];
   private messageBridgeDiv: HTMLElement =
       (document.getElementById('message_bridge_status') as HTMLElement);
@@ -64,8 +68,6 @@ export class FieldHandler {
       (document.getElementById('arm_distal') as HTMLElement);
   private zeroingFaults: HTMLElement =
       (document.getElementById('zeroing_faults') as HTMLElement);
-  _
-
   constructor(private readonly connection: Connection) {
     (document.getElementById('field') as HTMLElement).appendChild(this.canvas);
 
@@ -75,7 +77,7 @@ export class FieldHandler {
     {
       const row = document.createElement('div');
       const nameCell = document.createElement('div');
-      nameCell.innerHTML = "Rejection Reason";
+      nameCell.innerHTML = 'Rejection Reason';
       row.appendChild(nameCell);
       for (const pi of PIS) {
         const nodeCell = document.createElement('div');
@@ -98,7 +100,25 @@ export class FieldHandler {
       for (const pi of PIS) {
         const valueCell = document.createElement('div');
         valueCell.innerHTML = 'NA';
-        this.rejectionReasonCells[this.rejectionReasonCells.length - 1].push(valueCell);
+        this.rejectionReasonCells[this.rejectionReasonCells.length - 1].push(
+            valueCell);
+        row.appendChild(valueCell);
+      }
+      document.getElementById('vision_readouts').appendChild(row);
+    }
+
+    // Add rejection reason row for aprilrobotics rejections.
+    {
+      const row = document.createElement('div');
+      const nameCell = document.createElement('div');
+      nameCell.innerHTML = 'Rejected by aprilrobotics';
+      row.appendChild(nameCell);
+      this.rejectionReasonCells.push([]);
+      for (const pi of PIS) {
+        const valueCell = document.createElement('div');
+        valueCell.innerHTML = 'NA';
+        this.rejectionReasonCells[this.rejectionReasonCells.length - 1].push(
+            valueCell);
         row.appendChild(valueCell);
       }
       document.getElementById('vision_readouts').appendChild(row);
@@ -119,6 +139,13 @@ export class FieldHandler {
             '/' + PIS[pi] + '/camera', 'y2023.localizer.Visualization',
             (data) => {
               this.handleLocalizerDebug(Number(pi), data);
+            });
+      }
+      for (const pi in PIS) {
+        // Make unreliable to reduce network spam.
+        this.connection.addHandler(
+            '/' + PIS[pi] + '/camera', 'frc971.vision.TargetMap', (data) => {
+              this.handlePiTargetMap(pi, data);
             });
       }
       this.connection.addHandler(
@@ -151,7 +178,7 @@ export class FieldHandler {
     const debug = this.localizerImageMatches.get(now);
 
     if (debug.statistics()) {
-      if (debug.statistics().rejectionReasonsLength() ==
+      if ((debug.statistics().rejectionReasonsLength() + 1) ==
           this.rejectionReasonCells.length) {
         for (let ii = 0; ii < debug.statistics().rejectionReasonsLength();
              ++ii) {
@@ -162,6 +189,13 @@ export class FieldHandler {
         console.error('Unexpected number of rejection reasons in counter.');
       }
     }
+  }
+
+  private handlePiTargetMap(pi: string, data: Uint8Array): void {
+    const fbBuffer = new ByteBuffer(data);
+    const targetMap = TargetMap.getRootAsTargetMap(fbBuffer);
+    this.rejectionReasonCells[this.rejectionReasonCells.length - 1][pi]
+        .innerHTML = targetMap.rejections().toString();
   }
 
   private handleLocalizerOutput(data: Uint8Array): void {
