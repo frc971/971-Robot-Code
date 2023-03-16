@@ -32,6 +32,13 @@ flatbuffer_ts_library(
     visibility = ["//visibility:public"],
 )
 
+flatbuffer_ts_library(
+    name = "target_map_ts_fbs",
+    srcs = ["target_map.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
 flatbuffer_py_library(
     name = "calibration_fbs_python",
     srcs = [
