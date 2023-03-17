@@ -984,8 +984,20 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
         }
       }
 
-      CHECK(found_schema != nullptr)
-          << ": Failed to find schema for " << FlatbufferToJson(c);
+      if (found_schema == nullptr) {
+        std::stringstream ss;
+        for (const aos::FlatbufferVector<reflection::Schema> &schema :
+             schemas) {
+          if (schema.message().root_table() == nullptr) {
+            continue;
+          }
+          auto name = schema.message().root_table()->name()->string_view();
+          ss << "\n\tname: " << name;
+        }
+        LOG(FATAL) << ": Failed to find schema for " << FlatbufferToJson(c)
+                   << "\n\tThe following schemas were found:\n"
+                   << ss.str();
+      }
 
       // Now copy the message manually.
       auto cached_schema = schema_cache.find(c->type()->string_view());
