@@ -79,6 +79,7 @@ type Database interface {
 	ReturnAllShifts() ([]db.Shift, error)
 	ReturnStats() ([]db.Stats, error)
 	ReturnStats2023() ([]db.Stats2023, error)
+	ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string) ([]db.Stats2023, error)
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryStats(int) ([]db.Stats, error)
 	QueryNotes(int32) ([]string, error)
@@ -212,6 +213,16 @@ type requestAllMatchesHandler struct {
 	db Database
 }
 
+// Change structure of match objects in the database(1 per team) to
+// the old match structure(1 per match) that the webserver uses.
+// We use the information in this struct to identify which match object
+// corresponds to which old match structure object.
+type MatchAssemblyKey struct {
+	MatchNumber int32
+	SetNumber   int32
+	CompLevel   string
+}
+
 func findIndexInList(list []string, comp_level string) (int, error) {
 	for index, value := range list {
 		if value == comp_level {
@@ -219,6 +230,15 @@ func findIndexInList(list []string, comp_level string) (int, error) {
 		}
 	}
 	return -1, errors.New(fmt.Sprint("Failed to find comp level ", comp_level, " in list ", list))
+}
+
+func (handler requestAllMatchesHandler) teamHasBeenDataScouted(key MatchAssemblyKey, teamNumber int32) (bool, error) {
+	stats, err := handler.db.ReturnStats2023ForTeam(
+		strconv.Itoa(int(teamNumber)), key.MatchNumber, key.SetNumber, key.CompLevel)
+	if err != nil {
+		return false, err
+	}
+	return (len(stats) > 0), nil
 }
 
 func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -239,35 +259,42 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		return
 	}
 
-	// Change structure of match objects in the database(1 per team) to
-	// the old match structure(1 per match) that the webserver uses.
-	type Key struct {
-		MatchNumber int32
-		SetNumber   int32
-		CompLevel   string
-	}
-
-	assembledMatches := map[Key]request_all_matches_response.MatchT{}
+	assembledMatches := map[MatchAssemblyKey]request_all_matches_response.MatchT{}
 
 	for _, match := range matches {
-		key := Key{match.MatchNumber, match.SetNumber, match.CompLevel}
+		key := MatchAssemblyKey{match.MatchNumber, match.SetNumber, match.CompLevel}
+
+		// Retrieve the converted match structure we have assembled so
+		// far. If we haven't started assembling one yet, then start a
+		// new one.
 		entry, ok := assembledMatches[key]
 		if !ok {
 			entry = request_all_matches_response.MatchT{
 				MatchNumber: match.MatchNumber,
 				SetNumber:   match.SetNumber,
 				CompLevel:   match.CompLevel,
+				DataScouted: &request_all_matches_response.ScoutedLevelT{},
 			}
 		}
+
+		var team *int32
+		var dataScoutedTeam *bool
+
+		// Fill in the field for the match that we have in in the
+		// database. In the database, each match row only has 1 team
+		// number.
 		switch match.Alliance {
 		case "R":
 			switch match.AlliancePosition {
 			case 1:
-				entry.R1 = match.TeamNumber
+				team = &entry.R1
+				dataScoutedTeam = &entry.DataScouted.R1
 			case 2:
-				entry.R2 = match.TeamNumber
+				team = &entry.R2
+				dataScoutedTeam = &entry.DataScouted.R2
 			case 3:
-				entry.R3 = match.TeamNumber
+				team = &entry.R3
+				dataScoutedTeam = &entry.DataScouted.R3
 			default:
 				respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Unknown red position ", strconv.Itoa(int(match.AlliancePosition)), " in match ", strconv.Itoa(int(match.MatchNumber))))
 				return
@@ -275,11 +302,14 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		case "B":
 			switch match.AlliancePosition {
 			case 1:
-				entry.B1 = match.TeamNumber
+				team = &entry.B1
+				dataScoutedTeam = &entry.DataScouted.B1
 			case 2:
-				entry.B2 = match.TeamNumber
+				team = &entry.B2
+				dataScoutedTeam = &entry.DataScouted.B2
 			case 3:
-				entry.B3 = match.TeamNumber
+				team = &entry.B3
+				dataScoutedTeam = &entry.DataScouted.B3
 			default:
 				respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Unknown blue position ", strconv.Itoa(int(match.AlliancePosition)), " in match ", strconv.Itoa(int(match.MatchNumber))))
 				return
@@ -288,6 +318,21 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 			respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Unknown alliance ", match.Alliance, " in match ", strconv.Itoa(int(match.AlliancePosition))))
 			return
 		}
+
+		*team = match.TeamNumber
+
+		// Figure out if this team has been data scouted already.
+		*dataScoutedTeam, err = handler.teamHasBeenDataScouted(key, match.TeamNumber)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, fmt.Sprint(
+				"Failed to determine data scouting status for team ",
+				strconv.Itoa(int(match.AlliancePosition)),
+				" in match ",
+				strconv.Itoa(int(match.MatchNumber)),
+				err))
+			return
+		}
+
 		assembledMatches[key] = entry
 	}
 

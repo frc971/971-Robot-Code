@@ -199,6 +199,29 @@ func TestRequestAllMatches(t *testing.T) {
 				Alliance: "B", AlliancePosition: 3, TeamNumber: 202,
 			},
 		},
+		// Pretend that we have some data scouting data.
+		stats2023: []db.Stats2023{
+			{
+				TeamNumber: "5", MatchNumber: 1, SetNumber: 1,
+				CompLevel: "qm", StartingQuadrant: 3, LowCubesAuto: 10,
+				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 0,
+				LowConesAuto: 1, MiddleConesAuto: 2, HighConesAuto: 1,
+				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
+				HighCubes: 2, CubesDropped: 1, LowCones: 1,
+				MiddleCones: 2, HighCones: 0, ConesDropped: 1,
+				AvgCycle: 34, CollectedBy: "alex",
+			},
+			{
+				TeamNumber: "973", MatchNumber: 3, SetNumber: 1,
+				CompLevel: "qm", StartingQuadrant: 1, LowCubesAuto: 0,
+				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 2,
+				LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
+				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
+				HighCubes: 1, CubesDropped: 0, LowCones: 0,
+				MiddleCones: 2, HighCones: 1, ConesDropped: 1,
+				AvgCycle: 53, CollectedBy: "bob",
+			},
+		},
 	}
 	scoutingServer := server.NewScoutingServer()
 	HandleRequests(&db, scoutingServer)
@@ -220,14 +243,27 @@ func TestRequestAllMatches(t *testing.T) {
 			{
 				1, 1, "qm",
 				5, 42, 600, 971, 400, 200,
+				&request_all_matches_response.ScoutedLevelT{
+					// The R1 team has already been data
+					// scouted.
+					true, false, false, false, false, false,
+				},
 			},
 			{
 				2, 1, "qm",
 				6, 43, 601, 972, 401, 201,
+				&request_all_matches_response.ScoutedLevelT{
+					false, false, false, false, false, false,
+				},
 			},
 			{
 				3, 1, "qm",
 				7, 44, 602, 973, 402, 202,
+				&request_all_matches_response.ScoutedLevelT{
+					// The B1 team has already been data
+					// scouted.
+					false, false, false, true, false, false,
+				},
 			},
 		},
 	}
@@ -872,6 +908,16 @@ func (database *MockDatabase) ReturnStats() ([]db.Stats, error) {
 
 func (database *MockDatabase) ReturnStats2023() ([]db.Stats2023, error) {
 	return database.stats2023, nil
+}
+
+func (database *MockDatabase) ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string) ([]db.Stats2023, error) {
+	var results []db.Stats2023
+	for _, stats := range database.stats2023 {
+		if stats.TeamNumber == teamNumber && stats.MatchNumber == matchNumber && stats.SetNumber == setNumber && stats.CompLevel == compLevel {
+			results = append(results, stats)
+		}
+	}
+	return results, nil
 }
 
 func (database *MockDatabase) QueryStats(int) ([]db.Stats, error) {

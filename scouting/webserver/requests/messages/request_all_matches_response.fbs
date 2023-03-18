@@ -1,5 +1,15 @@
 namespace scouting.webserver.requests;
 
+// Specifies whether a team has been scouted for this particular match.
+table ScoutedLevel {
+    r1: bool (id: 0);
+    r2: bool (id: 1);
+    r3: bool (id: 2);
+    b1: bool (id: 3);
+    b2: bool (id: 4);
+    b3: bool (id: 5);
+}
+
 table Match {
     match_number:int (id: 0);
     set_number:int (id: 1);
@@ -10,6 +20,9 @@ table Match {
     b1:int (id: 6);
     b2:int (id: 7);
     b3:int (id: 8);
+
+    // Tells you how completely we've data scouted this match.
+    data_scouted: ScoutedLevel (id: 9);
 }
 
 table RequestAllMatchesResponse  {
