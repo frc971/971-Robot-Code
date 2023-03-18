@@ -106,7 +106,8 @@ function rank(
     input_csv::String,
     output_csv::String,
 )
-    df = DataFrame(CSV.File(input_csv))
+    # Force all team numbers to be parsed as strings.
+    df = DataFrame(CSV.File(input_csv, types=String))
 
     rank1 = "Rank 1 (best)"
     rank2 = "Rank 2"
