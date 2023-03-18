@@ -575,6 +575,23 @@ http_archive(
 )
 
 http_archive(
+    name = "ffmpeg",
+    build_file_content = """
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+
+native_binary(
+  name = "ffmpeg",
+  src = "ffmpeg-6.0.1-amd64-static/ffmpeg",
+  out = "ffmpeg",
+  visibility = ["//visibility:public"],
+  target_compatible_with = ["@platforms//cpu:x86_64", "@platforms//os:linux"],
+)
+    """,
+    sha256 = "28268bf402f1083833ea269331587f60a242848880073be8016501d864bd07a5",
+    url = "https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-6.0.1-amd64-static.tar.xz",
+)
+
+http_archive(
     name = "apache2",
     build_file = "@//debian:apache2.BUILD",
     sha256 = "98b0ad6d911751ba0aa486429e6278f995e7bbabd928c7d3d44c888fa2bf371b",
@@ -1655,10 +1672,11 @@ http_archive(
 # https://github.com/hedronvision/bazel-compile-commands-extractor
 http_archive(
     name = "hedron_compile_commands",
-    strip_prefix = "bazel-compile-commands-extractor-daae6f40adfa5fdb7c89684cbe4d88b691c63b2d",
 
     # Replace the commit hash (daae6f40adfa5fdb7c89684cbe4d88b691c63b2d) in both places (below) with the latest (https://github.com/hedronvision/bazel-compile-commands-extractor/commits/main), rather than using the stale one here.
     # Even better, set up Renovate and let it do the work for you (see "Suggestion: Updates" in the README).
+    sha256 = "43451a32bf271e7ba4635a07f7996d535501f066c0fe8feab04fb0c91dd5986e",
+    strip_prefix = "bazel-compile-commands-extractor-daae6f40adfa5fdb7c89684cbe4d88b691c63b2d",
     url = "https://github.com/hedronvision/bazel-compile-commands-extractor/archive/daae6f40adfa5fdb7c89684cbe4d88b691c63b2d.tar.gz",
     # When you first run this tool, it'll recommend a sha256 hash to put here with a message like: "DEBUG: Rule 'hedron_compile_commands' indicated that a canonical reproducible form can be obtained by modifying arguments sha256 = ..."
 )

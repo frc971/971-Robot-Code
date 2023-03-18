@@ -410,3 +410,32 @@ cc_binary(
         "//aos/events:shm_event_loop",
     ],
 )
+
+cc_binary(
+    name = "video_ripper",
+    srcs = [
+        "video_ripper.cc",
+    ],
+    data = [
+        "@ffmpeg",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//frc971/vision:vision_fbs",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+sh_binary(
+    name = "video_tiler",
+    srcs = ["video_tiler.sh"],
+    data = [
+        "@bazel_tools//tools/bash/runfiles",
+        "@ffmpeg",
+    ],
+)
