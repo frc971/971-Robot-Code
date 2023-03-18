@@ -2,8 +2,16 @@
   <h2>Matches</h2>
 </div>
 
+<label>
+  <input type="checkbox" [(ngModel)]="hideCompletedMatches" />
+  Hide completed matches
+</label>
+
 <div class="container-fluid">
-  <div class="row" *ngFor="let match of matchList; index as i">
+  <div
+    *ngFor="let match of matchList; index as i"
+    [ngClass]="'row ' + getRowClass(match)"
+  >
     <span class="badge bg-secondary rounded-left">
       {{ displayMatchNumber(match) }}
     </span>
@@ -18,6 +26,7 @@
             })"
         class="match-item"
         [ngClass]="team.color"
+        [disabled]="team.disabled"
       >
         {{ team.teamNumber }}
       </button>

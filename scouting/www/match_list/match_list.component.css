@@ -6,6 +6,10 @@
   background-color: #dc3545;
 }
 
+button:disabled {
+  background-color: #524143;
+}
+
 .blue {
   background-color: #0d6efd;
 }
@@ -21,4 +25,8 @@
   padding: 0;
   /* minimum touch target size */
   height: 44px;
+}
+
+div.hidden_row {
+  display: none;
 }
