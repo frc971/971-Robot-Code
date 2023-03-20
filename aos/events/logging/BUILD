@@ -73,6 +73,34 @@ cc_binary(
 )
 
 cc_library(
+    name = "log_backend",
+    srcs = ["log_backend.cc"],
+    hdrs = ["log_backend.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/time",
+        "//aos/util:file",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "log_backend_test",
+    srcs = ["log_backend_test.cc"],
+    shard_count = 4,
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":log_backend",
+        "//aos/testing:googletest",
+        "//aos/testing:tmpdir",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
     name = "log_reader_utils",
     srcs = [
         "log_reader_utils.cc",
@@ -116,6 +144,7 @@ cc_library(
         ":snappy_encoder",
         ":buffer_encoder",
         ":logger_fbs",
+        ":log_backend",
         "//aos:uuid",
         "//aos:configuration",
         "//aos:flatbuffer_merge",

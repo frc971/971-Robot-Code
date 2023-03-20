@@ -21,7 +21,7 @@ class LoggerState {
   LoggerState(aos::logger::LogReader *reader, const aos::Node *node)
       : event_loop_(
             reader->event_loop_factory()->MakeEventLoop("logger", node)),
-        namer_(std::make_unique<aos::logger::MultiNodeLogNamer>(
+        namer_(std::make_unique<aos::logger::MultiNodeFilesLogNamer>(
             absl::StrCat(FLAGS_output_folder, "/", node->name()->string_view(),
                          "/"),
             event_loop_.get())),

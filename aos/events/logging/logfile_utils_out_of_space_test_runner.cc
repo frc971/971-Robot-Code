@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
   std::array<uint8_t, 10240> data;
   data.fill(0);
 
-  aos::logger::DetachedBufferWriter writer(
+  aos::logger::DetachedBufferFileWriter writer(
       FLAGS_tmpfs + "/file",
       std::make_unique<aos::logger::DummyEncoder>(data.size()));
   for (int i = 0; i < 8; ++i) {

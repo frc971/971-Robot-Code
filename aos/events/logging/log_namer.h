@@ -174,7 +174,7 @@ class LogNamer {
         logger_node_index_(configuration::GetNodeIndex(configuration_, node_)) {
     nodes_.emplace_back(node_);
   }
-  virtual ~LogNamer() {}
+  virtual ~LogNamer() = default;
 
   virtual std::string_view base_name() const = 0;
 
@@ -183,6 +183,8 @@ class LogNamer {
   // Rotate is called by Logger::RenameLogBase, which is currently the only user
   // of this method.
   // Only renaming the folder is supported, not the file base name.
+  // TODO (Alexei): it should not be in interface, since it is not applied to
+  // files.
   virtual void set_base_name(std::string_view base_name) = 0;
 
   // Returns a writer for writing data from messages on this channel (on the
@@ -297,32 +299,30 @@ class LogNamer {
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader>::Empty();
 };
 
-// Log namer which uses a config and a base name to name a bunch of files.
+// Log namer which uses a config to name a bunch of files.
 class MultiNodeLogNamer : public LogNamer {
  public:
-  MultiNodeLogNamer(std::string_view base_name, EventLoop *event_loop);
-  MultiNodeLogNamer(std::string_view base_name,
+  MultiNodeLogNamer(std::unique_ptr<RenamableFileBackend> log_backend,
+                    EventLoop *event_loop);
+  MultiNodeLogNamer(std::unique_ptr<RenamableFileBackend> log_backend,
                     const Configuration *configuration, EventLoop *event_loop,
                     const Node *node);
   ~MultiNodeLogNamer() override;
 
-  std::string_view base_name() const final { return base_name_; }
+  std::string_view base_name() const final { return log_backend_->base_name(); }
 
   void set_base_name(std::string_view base_name) final {
-    old_base_name_ = base_name_;
-    base_name_ = base_name;
+    log_backend_->RenameLogBase(base_name);
   }
 
-  // If temp_suffix is set, then this will write files under names beginning
-  // with the specified suffix, and then rename them to the desired name after
+  // When enabled, this will write files under names beginning
+  // with the .tmp suffix, and then rename them to the desired name after
   // they are fully written.
   //
   // This is useful to enable incremental copying of the log files.
   //
   // Defaults to writing directly to the final filename.
-  void set_temp_suffix(std::string_view temp_suffix) {
-    temp_suffix_ = temp_suffix;
-  }
+  void EnableTempFiles() { log_backend_->EnableTempFiles(); }
 
   // Sets the function for creating encoders.  The argument is the max message
   // size (including headers) that will be written into this encoder.
@@ -396,7 +396,8 @@ class MultiNodeLogNamer : public LogNamer {
     return accumulate_data_writers(
         max_write_time_,
         [](std::chrono::nanoseconds x, const NewDataWriter &data_writer) {
-          return std::max(x, data_writer.writer->max_write_time());
+          return std::max(
+              x, data_writer.writer->WriteStatistics()->max_write_time());
         });
   }
   int max_write_time_bytes() const {
@@ -404,9 +405,11 @@ class MultiNodeLogNamer : public LogNamer {
         std::make_tuple(max_write_time_bytes_, max_write_time_),
         [](std::tuple<int, std::chrono::nanoseconds> x,
            const NewDataWriter &data_writer) {
-          if (data_writer.writer->max_write_time() > std::get<1>(x)) {
-            return std::make_tuple(data_writer.writer->max_write_time_bytes(),
-                                   data_writer.writer->max_write_time());
+          if (data_writer.writer->WriteStatistics()->max_write_time() >
+              std::get<1>(x)) {
+            return std::make_tuple(
+                data_writer.writer->WriteStatistics()->max_write_time_bytes(),
+                data_writer.writer->WriteStatistics()->max_write_time());
           }
           return x;
         }));
@@ -416,10 +419,12 @@ class MultiNodeLogNamer : public LogNamer {
         std::make_tuple(max_write_time_messages_, max_write_time_),
         [](std::tuple<int, std::chrono::nanoseconds> x,
            const NewDataWriter &data_writer) {
-          if (data_writer.writer->max_write_time() > std::get<1>(x)) {
+          if (data_writer.writer->WriteStatistics()->max_write_time() >
+              std::get<1>(x)) {
             return std::make_tuple(
-                data_writer.writer->max_write_time_messages(),
-                data_writer.writer->max_write_time());
+                data_writer.writer->WriteStatistics()
+                    ->max_write_time_messages(),
+                data_writer.writer->WriteStatistics()->max_write_time());
           }
           return x;
         }));
@@ -428,25 +433,26 @@ class MultiNodeLogNamer : public LogNamer {
     return accumulate_data_writers(
         total_write_time_,
         [](std::chrono::nanoseconds x, const NewDataWriter &data_writer) {
-          return x + data_writer.writer->total_write_time();
+          return x + data_writer.writer->WriteStatistics()->total_write_time();
         });
   }
   int total_write_count() const {
     return accumulate_data_writers(
         total_write_count_, [](int x, const NewDataWriter &data_writer) {
-          return x + data_writer.writer->total_write_count();
+          return x + data_writer.writer->WriteStatistics()->total_write_count();
         });
   }
   int total_write_messages() const {
     return accumulate_data_writers(
         total_write_messages_, [](int x, const NewDataWriter &data_writer) {
-          return x + data_writer.writer->total_write_messages();
+          return x +
+                 data_writer.writer->WriteStatistics()->total_write_messages();
         });
   }
   int total_write_bytes() const {
     return accumulate_data_writers(
         total_write_bytes_, [](int x, const NewDataWriter &data_writer) {
-          return x + data_writer.writer->total_write_bytes();
+          return x + data_writer.writer->WriteStatistics()->total_write_bytes();
         });
   }
 
@@ -466,8 +472,6 @@ class MultiNodeLogNamer : public LogNamer {
   void CreateBufferWriter(std::string_view path, size_t max_message_size,
                           std::unique_ptr<DetachedBufferWriter> *destination);
 
-  void RenameTempFile(DetachedBufferWriter *destination);
-
   void CloseWriter(std::unique_ptr<DetachedBufferWriter> *writer_pointer);
 
   // A version of std::accumulate which operates over all of our DataWriters.
@@ -484,13 +488,11 @@ class MultiNodeLogNamer : public LogNamer {
     return t;
   }
 
-  std::string base_name_;
-  std::string old_base_name_;
+  std::unique_ptr<RenamableFileBackend> log_backend_;
 
   bool ran_out_of_space_ = false;
   std::vector<std::string> all_filenames_;
 
-  std::string temp_suffix_;
   std::function<std::unique_ptr<DataEncoder>(size_t)> encoder_factory_;
   std::string extension_;
 
@@ -507,6 +509,21 @@ class MultiNodeLogNamer : public LogNamer {
   std::unique_ptr<NewDataWriter> data_writer_;
 
   std::map<const Channel *, NewDataWriter> data_writers_;
+};
+
+// This is specialized log namer that deals with directory centric log events.
+class MultiNodeFilesLogNamer : public MultiNodeLogNamer {
+ public:
+  MultiNodeFilesLogNamer(std::string_view base_name, EventLoop *event_loop)
+      : MultiNodeLogNamer(std::make_unique<RenamableFileBackend>(base_name),
+                          event_loop) {}
+
+  MultiNodeFilesLogNamer(std::string_view base_name,
+                         const Configuration *configuration,
+                         EventLoop *event_loop, const Node *node)
+      : MultiNodeLogNamer(std::make_unique<RenamableFileBackend>(base_name),
+                          configuration, event_loop, node) {}
+  ~MultiNodeFilesLogNamer() override = default;
 };
 
 }  // namespace logger

@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
     aos::logger::SpanReader span_reader(orig_path);
     CHECK(!span_reader.ReadMessage().empty()) << ": Empty header, aborting";
 
-    aos::logger::DetachedBufferWriter buffer_writer(
+    aos::logger::DetachedBufferFileWriter buffer_writer(
         FLAGS_logfile,
         std::make_unique<aos::logger::DummyEncoder>(FLAGS_max_message_size));
     {

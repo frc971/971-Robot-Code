@@ -20,6 +20,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/boot_timestamp.h"
 #include "aos/events/logging/buffer_encoder.h"
+#include "aos/events/logging/log_backend.h"
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/flatbuffers.h"
@@ -44,31 +45,13 @@ enum class LogType : uint8_t {
 
 // This class manages efficiently writing a sequence of detached buffers to a
 // file.  It encodes them, queues them up, and batches the write operation.
-//
-// There are a couple over-arching constraints on writing to keep track of.
-//  1) The kernel is both faster and more efficient at writing large, aligned
-//     chunks with O_DIRECT set on the file.  The alignment needed is specified
-//     by kSector and is file system dependent.
-//  2) Not all encoders support generating round multiples of kSector of data.
-//     Rather than burden the API for detecting when that is the case, we want
-//     DetachedBufferWriter to be as efficient as it can at writing what given.
-//  3) Some files are small and not updated frequently.  They need to be
-//     flushed or we will lose data on power off.  It is most efficient to write
-//     as much as we can aligned by kSector and then fall back to the non direct
-//     method when it has been flushed.
-//  4) Not all filesystems support O_DIRECT, and different sizes may be optimal
-//     for different machines.  The defaults should work decently anywhere and
-//     be tuneable for faster systems.
+
 class DetachedBufferWriter {
  public:
   // Marker struct for one of our constructor overloads.
   struct already_out_of_space_t {};
 
-  // Size of an aligned sector used to detect when the data is aligned enough to
-  // use O_DIRECT instead.
-  static constexpr size_t kSector = 512u;
-
-  DetachedBufferWriter(std::string_view filename,
+  DetachedBufferWriter(std::unique_ptr<FileHandler> file_handler,
                        std::unique_ptr<DataEncoder> encoder);
   // Creates a dummy instance which won't even open a file. It will act as if
   // opening the file ran out of space immediately.
@@ -81,11 +64,11 @@ class DetachedBufferWriter {
   DetachedBufferWriter &operator=(DetachedBufferWriter &&other);
   DetachedBufferWriter &operator=(const DetachedBufferWriter &) = delete;
 
-  std::string_view filename() const { return filename_; }
+  std::string_view filename() const { return file_handler_->filename(); }
 
   // This will be true until Close() is called, unless the file couldn't be
   // created due to running out of space.
-  bool is_open() const { return fd_ != -1; }
+  bool is_open() const { return file_handler_->is_open(); }
 
   // Queues up a finished FlatBufferBuilder to be encoded and written.
   //
@@ -123,33 +106,7 @@ class DetachedBufferWriter {
     return encoder_->total_bytes();
   }
 
-  // The maximum time for a single write call, or 0 if none have been performed.
-  std::chrono::nanoseconds max_write_time() const { return max_write_time_; }
-  // The number of bytes in the longest write call, or -1 if none have been
-  // performed.
-  int max_write_time_bytes() const { return max_write_time_bytes_; }
-  // The number of buffers in the longest write call, or -1 if none have been
-  // performed.
-  int max_write_time_messages() const { return max_write_time_messages_; }
-  // The total time spent in write calls.
-  std::chrono::nanoseconds total_write_time() const {
-    return total_write_time_;
-  }
-  // The total number of writes which have been performed.
-  int total_write_count() const { return total_write_count_; }
-  // The total number of messages which have been written.
-  int total_write_messages() const { return total_write_messages_; }
-  // The total number of bytes which have been written.
-  int total_write_bytes() const { return total_write_bytes_; }
-  void ResetStatistics() {
-    max_write_time_ = std::chrono::nanoseconds::zero();
-    max_write_time_bytes_ = -1;
-    max_write_time_messages_ = -1;
-    total_write_time_ = std::chrono::nanoseconds::zero();
-    total_write_count_ = 0;
-    total_write_messages_ = 0;
-    total_write_bytes_ = 0;
-  }
+  WriteStats* WriteStatistics() const { return file_handler_->WriteStatistics(); }
 
  private:
   // Performs a single writev call with as much of the data we have queued up as
@@ -161,59 +118,31 @@ class DetachedBufferWriter {
   // all of it.
   void Flush(aos::monotonic_clock::time_point now);
 
-  // write_return is what write(2) or writev(2) returned. write_size is the
-  // number of bytes we expected it to write.
-  void HandleWriteReturn(ssize_t write_return, size_t write_size);
-
-  void UpdateStatsForWrite(aos::monotonic_clock::duration duration,
-                           ssize_t written, int iovec_size);
-
   // Flushes data if we've reached the threshold to do that as part of normal
   // operation either due to the outstanding queued data, or because we have
   // passed our flush period.  now is the current time to save some CPU grabbing
   // the current time.  It just needs to be close.
   void FlushAtThreshold(aos::monotonic_clock::time_point now);
 
-  // Enables O_DIRECT on the open file if it is supported.  Cheap to call if it
-  // is already enabled.
-  void EnableDirect();
-  // Disables O_DIRECT on the open file if it is supported.  Cheap to call if it
-  // is already disabld.
-  void DisableDirect();
-
-  // Writes a chunk of iovecs.  aligned is true if all the data is kSector byte
-  // aligned and multiples of it in length, and counted_size is the sum of the
-  // sizes of all the chunks of data.  Returns the size of data written.
-  size_t WriteV(struct iovec *iovec_data, size_t iovec_size, bool aligned,
-                size_t counted_size);
-
-  bool ODirectEnabled() { return !!(flags_ & O_DIRECT); }
-
-  std::string filename_;
+  std::unique_ptr<FileHandler> file_handler_;
   std::unique_ptr<DataEncoder> encoder_;
 
-  int fd_ = -1;
   bool ran_out_of_space_ = false;
   bool acknowledge_ran_out_of_space_ = false;
 
-  // List of iovecs to use with writev.  This is a member variable to avoid
-  // churn.
-  std::vector<struct iovec> iovec_;
-
-  std::chrono::nanoseconds max_write_time_ = std::chrono::nanoseconds::zero();
-  int max_write_time_bytes_ = -1;
-  int max_write_time_messages_ = -1;
-  std::chrono::nanoseconds total_write_time_ = std::chrono::nanoseconds::zero();
-  int total_write_count_ = 0;
-  int total_write_messages_ = 0;
-  int total_write_bytes_ = 0;
-  int last_synced_bytes_ = 0;
-
-  bool supports_odirect_ = true;
-  int flags_ = 0;
-
   aos::monotonic_clock::time_point last_flush_time_ =
       aos::monotonic_clock::min_time;
+};
+
+// Specialized writer to single file
+class DetachedBufferFileWriter : public FileBackend,
+                                 public DetachedBufferWriter {
+ public:
+  DetachedBufferFileWriter(std::string_view filename,
+                           std::unique_ptr<DataEncoder> encoder)
+      : FileBackend("/"),
+        DetachedBufferWriter(FileBackend::RequestFile(filename),
+                             std::move(encoder)) {}
 };
 
 // Repacks the provided RemoteMessage into fbb.

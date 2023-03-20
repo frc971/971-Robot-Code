@@ -1,6 +1,7 @@
 #include "aos/events/logging/logfile_utils.h"
 
 #include <chrono>
+#include <filesystem>
 #include <random>
 #include <string>
 
@@ -29,13 +30,13 @@ using aos::testing::ArtifactPath;
 
 // Adapter class to make it easy to test DetachedBufferWriter without adding
 // test only boilerplate to DetachedBufferWriter.
-class TestDetachedBufferWriter : public DetachedBufferWriter {
+class TestDetachedBufferWriter : public DetachedBufferFileWriter {
  public:
   // Pick a max size that is rather conservative.
   static constexpr size_t kMaxMessageSize = 128 * 1024;
   TestDetachedBufferWriter(std::string_view filename)
-      : DetachedBufferWriter(filename,
-                             std::make_unique<DummyEncoder>(kMaxMessageSize)) {}
+      : DetachedBufferFileWriter(
+            filename, std::make_unique<DummyEncoder>(kMaxMessageSize)) {}
   void WriteSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer) {
     QueueSpan(absl::Span<const uint8_t>(buffer.data(), buffer.size()));
   }
@@ -154,6 +155,7 @@ TEST(PartsMessageReaderDeathTest, TooFarOutOfOrder) {
     writer.QueueSpan(m2.span());
     writer.QueueSpan(m3.span());
   }
+  ASSERT_TRUE(std::filesystem::exists(logfile0)) << logfile0;
 
   const std::vector<LogFile> parts = SortParts({logfile0});
 

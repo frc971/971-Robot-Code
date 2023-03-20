@@ -560,17 +560,16 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   return result;
 }
 
-MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
-                                     EventLoop *event_loop)
-    : MultiNodeLogNamer(base_name, event_loop->configuration(), event_loop,
-                        event_loop->node()) {}
+MultiNodeLogNamer::MultiNodeLogNamer(
+    std::unique_ptr<RenamableFileBackend> log_backend, EventLoop *event_loop)
+    : MultiNodeLogNamer(std::move(log_backend), event_loop->configuration(),
+                        event_loop, event_loop->node()) {}
 
-MultiNodeLogNamer::MultiNodeLogNamer(std::string_view base_name,
-                                     const Configuration *configuration,
-                                     EventLoop *event_loop, const Node *node)
+MultiNodeLogNamer::MultiNodeLogNamer(
+    std::unique_ptr<RenamableFileBackend> log_backend,
+    const Configuration *configuration, EventLoop *event_loop, const Node *node)
     : LogNamer(configuration, event_loop, node),
-      base_name_(base_name),
-      old_base_name_(),
+      log_backend_(std::move(log_backend)),
       encoder_factory_([](size_t max_message_size) {
         // TODO(austin): For slow channels, can we allocate less memory?
         return std::make_unique<DummyEncoder>(max_message_size,
@@ -606,21 +605,19 @@ void MultiNodeLogNamer::WriteConfiguration(
     return;
   }
 
-  const std::string_view separator = base_name_.back() == '/' ? "" : "_";
-  const std::string filename = absl::StrCat(
-      base_name_, separator, config_sha256, ".bfbs", extension_, temp_suffix_);
-
+  const std::string filename = absl::StrCat(config_sha256, ".bfbs", extension_);
+  auto file_handle = log_backend_->RequestFile(filename);
   std::unique_ptr<DetachedBufferWriter> writer =
       std::make_unique<DetachedBufferWriter>(
-          filename, encoder_factory_(header->span().size()));
+          std::move(file_handle), encoder_factory_(header->span().size()));
 
   DataEncoder::SpanCopier coppier(header->span());
   writer->CopyMessage(&coppier, aos::monotonic_clock::now());
 
   if (!writer->ran_out_of_space()) {
-    all_filenames_.emplace_back(
-        absl::StrCat(config_sha256, ".bfbs", extension_));
+    all_filenames_.emplace_back(filename);
   }
+  // Close the file and maybe rename it too.
   CloseWriter(&writer);
 }
 
@@ -646,8 +643,8 @@ NewDataWriter *MultiNodeLogNamer::MakeWriter(const Channel *channel) {
     if (!data_writer_) {
       MakeDataWriter();
     }
-    data_writer_->UpdateMaxMessageSize(PackMessageSize(
-        LogType::kLogRemoteMessage, channel->max_size()));
+    data_writer_->UpdateMaxMessageSize(
+        PackMessageSize(LogType::kLogRemoteMessage, channel->max_size()));
     return data_writer_.get();
   }
 
@@ -726,10 +723,10 @@ void MultiNodeLogNamer::ResetStatistics() {
   for (std::pair<const Channel *const, NewDataWriter> &data_writer :
        data_writers_) {
     if (!data_writer.second.writer) continue;
-    data_writer.second.writer->ResetStatistics();
+    data_writer.second.writer->WriteStatistics()->ResetStats();
   }
   if (data_writer_) {
-    data_writer_->writer->ResetStatistics();
+    data_writer_->writer->WriteStatistics()->ResetStats();
   }
   max_write_time_ = std::chrono::nanoseconds::zero();
   max_write_time_bytes_ = -1;
@@ -789,7 +786,7 @@ void MultiNodeLogNamer::CreateBufferWriter(
     // Refuse to open any new files, which might skip data. Any existing files
     // are in the same folder, which means they're on the same filesystem, which
     // means they're probably going to run out of space and get stuck too.
-    if (!destination->get()) {
+    if (!(*destination)) {
       // But avoid leaving a nullptr writer if we're out of space when
       // attempting to open the first file.
       *destination = std::make_unique<DetachedBufferWriter>(
@@ -797,102 +794,54 @@ void MultiNodeLogNamer::CreateBufferWriter(
     }
     return;
   }
-  const std::string_view separator = base_name_.back() == '/' ? "" : "_";
-  const std::string filename =
-      absl::StrCat(base_name_, separator, path, temp_suffix_);
-  if (!destination->get()) {
+
+  // Let's check that we need to close and replace current driver.
+  if (*destination) {
+    // Let's close the current writer.
+    CloseWriter(destination);
+    // Are we out of space now?
     if (ran_out_of_space_) {
       *destination = std::make_unique<DetachedBufferWriter>(
           DetachedBufferWriter::already_out_of_space_t());
       return;
     }
-    *destination = std::make_unique<DetachedBufferWriter>(
-        filename, encoder_factory_(max_message_size));
-    if (!destination->get()->ran_out_of_space()) {
-      all_filenames_.emplace_back(path);
-    }
-    return;
   }
 
-  CloseWriter(destination);
-  if (ran_out_of_space_) {
-    *destination->get() =
-        DetachedBufferWriter(DetachedBufferWriter::already_out_of_space_t());
-    return;
-  }
-
-  *destination->get() =
-      DetachedBufferWriter(filename, encoder_factory_(max_message_size));
-  if (!destination->get()->ran_out_of_space()) {
+  const std::string filename(path);
+  *destination = std::make_unique<DetachedBufferWriter>(
+      log_backend_->RequestFile(filename), encoder_factory_(max_message_size));
+  if (!(*destination)->ran_out_of_space()) {
     all_filenames_.emplace_back(path);
-  }
-}
-
-void MultiNodeLogNamer::RenameTempFile(DetachedBufferWriter *destination) {
-  if (temp_suffix_.empty()) {
-    return;
-  }
-  std::string current_filename = std::string(destination->filename());
-  CHECK(current_filename.size() > temp_suffix_.size());
-  std::string final_filename =
-      current_filename.substr(0, current_filename.size() - temp_suffix_.size());
-  int result = rename(current_filename.c_str(), final_filename.c_str());
-
-  // When changing the base name, we rename the log folder while there active
-  // buffer writers. Therefore, the name of that active buffer may still refer
-  // to the old file location rather than the new one. This minimized changes to
-  // existing code.
-  if (result != 0 && errno != ENOSPC && !old_base_name_.empty()) {
-    auto offset = current_filename.find(old_base_name_);
-    if (offset != std::string::npos) {
-      current_filename.replace(offset, old_base_name_.length(), base_name_);
-    }
-    offset = final_filename.find(old_base_name_);
-    if (offset != std::string::npos) {
-      final_filename.replace(offset, old_base_name_.length(), base_name_);
-    }
-    result = rename(current_filename.c_str(), final_filename.c_str());
-  }
-
-  if (result != 0) {
-    if (errno == ENOSPC) {
-      ran_out_of_space_ = true;
-      return;
-    } else {
-      PLOG(FATAL) << "Renaming " << current_filename << " to " << final_filename
-                  << " failed";
-    }
-  } else {
-    VLOG(1) << "Renamed " << current_filename << " -> " << final_filename;
   }
 }
 
 void MultiNodeLogNamer::CloseWriter(
     std::unique_ptr<DetachedBufferWriter> *writer_pointer) {
-  DetachedBufferWriter *const writer = writer_pointer->get();
-  if (!writer) {
+  CHECK_NOTNULL(writer_pointer);
+  if (!(*writer_pointer)) {
     return;
   }
+  DetachedBufferWriter *const writer = writer_pointer->get();
   const bool was_open = writer->is_open();
   writer->Close();
 
-  if (writer->max_write_time() > max_write_time_) {
-    max_write_time_ = writer->max_write_time();
-    max_write_time_bytes_ = writer->max_write_time_bytes();
-    max_write_time_messages_ = writer->max_write_time_messages();
+  const auto *stats = writer->WriteStatistics();
+  if (stats->max_write_time() > max_write_time_) {
+    max_write_time_ = stats->max_write_time();
+    max_write_time_bytes_ = stats->max_write_time_bytes();
+    max_write_time_messages_ = stats->max_write_time_messages();
   }
-  total_write_time_ += writer->total_write_time();
-  total_write_count_ += writer->total_write_count();
-  total_write_messages_ += writer->total_write_messages();
-  total_write_bytes_ += writer->total_write_bytes();
+  total_write_time_ += stats->total_write_time();
+  total_write_count_ += stats->total_write_count();
+  total_write_messages_ += stats->total_write_messages();
+  total_write_bytes_ += stats->total_write_bytes();
 
   if (writer->ran_out_of_space()) {
     ran_out_of_space_ = true;
     writer->acknowledge_out_of_space();
   }
-  if (was_open) {
-    RenameTempFile(writer);
-  } else {
+
+  if (!was_open) {
     CHECK(access(std::string(writer->filename()).c_str(), F_OK) == -1)
         << ": File should not exist: " << writer->filename();
   }

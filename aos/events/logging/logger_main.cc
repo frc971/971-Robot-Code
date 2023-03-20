@@ -48,8 +48,7 @@ int main(int argc, char *argv[]) {
 
   aos::ShmEventLoop event_loop(&config.message());
 
-  std::unique_ptr<aos::logger::MultiNodeLogNamer> log_namer;
-  log_namer = std::make_unique<aos::logger::MultiNodeLogNamer>(
+  auto log_namer = std::make_unique<aos::logger::MultiNodeFilesLogNamer>(
       absl::StrCat(aos::logging::GetLogName("fbs_log"), "/"), &event_loop);
 
   if (FLAGS_snappy_compress) {

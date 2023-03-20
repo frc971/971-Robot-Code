@@ -18,9 +18,9 @@ DECLARE_int32(flush_size);
 DEFINE_double(disabled_time, 5.0,
               "Continue logging if disabled for this amount of time or less");
 
-std::unique_ptr<aos::logger::MultiNodeLogNamer> MakeLogNamer(
+std::unique_ptr<aos::logger::MultiNodeFilesLogNamer> MakeLogNamer(
     aos::EventLoop *event_loop) {
-  return std::make_unique<aos::logger::MultiNodeLogNamer>(
+  return std::make_unique<aos::logger::MultiNodeFilesLogNamer>(
       absl::StrCat(aos::logging::GetLogName("fbs_log"), "/"), event_loop);
 }
 

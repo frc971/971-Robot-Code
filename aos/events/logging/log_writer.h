@@ -156,11 +156,11 @@ class Logger {
   // Returns whether a log is currently being written.
   bool is_started() const { return static_cast<bool>(log_namer_); }
 
-  // Shortcut to call StartLogging with a MultiNodeLogNamer when event
+  // Shortcut to call StartLogging with a MultiNodeFilesLogNamer when event
   // processing starts.
   void StartLoggingOnRun(std::string base_name) {
     event_loop_->OnRun([this, base_name]() {
-      StartLogging(std::make_unique<MultiNodeLogNamer>(
+      StartLogging(std::make_unique<MultiNodeFilesLogNamer>(
           base_name, configuration_, event_loop_, node_));
     });
   }

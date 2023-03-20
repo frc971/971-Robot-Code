@@ -191,8 +191,8 @@ TEST_F(RealtimeMultiNodeLoggerTest, ReplayChannelsPingTest) {
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
 
-    std::unique_ptr<MultiNodeLogNamer> namer =
-        std::make_unique<MultiNodeLogNamer>(
+    std::unique_ptr<MultiNodeFilesLogNamer> namer =
+        std::make_unique<MultiNodeFilesLogNamer>(
             base_name_, &config_.message(), logger_event_loop.get(),
             configuration::GetNode(&config_.message(), "pi1"));
 
@@ -236,8 +236,8 @@ TEST_F(RealtimeMultiNodeLoggerTest, RemappedReplayChannelsTest) {
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
 
-    std::unique_ptr<MultiNodeLogNamer> namer =
-        std::make_unique<MultiNodeLogNamer>(
+    std::unique_ptr<MultiNodeFilesLogNamer> namer =
+        std::make_unique<MultiNodeFilesLogNamer>(
             base_name_, &config_.message(), logger_event_loop.get(),
             configuration::GetNode(&config_.message(), "pi1"));
 
@@ -287,8 +287,8 @@ TEST_F(RealtimeMultiNodeLoggerTest, DoesNotExistInReplayChannelsTest) {
     Logger logger(logger_event_loop.get());
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
-    std::unique_ptr<MultiNodeLogNamer> namer =
-        std::make_unique<MultiNodeLogNamer>(
+    std::unique_ptr<MultiNodeFilesLogNamer> namer =
+        std::make_unique<MultiNodeFilesLogNamer>(
             base_name_, &config_.message(), logger_event_loop.get(),
             configuration::GetNode(&config_.message(), "pi1"));
 
@@ -348,8 +348,8 @@ TEST_F(RealtimeMultiNodeLoggerDeathTest,
     logger.set_separate_config(false);
     logger.set_polling_period(std::chrono::milliseconds(100));
 
-    std::unique_ptr<MultiNodeLogNamer> namer =
-        std::make_unique<MultiNodeLogNamer>(
+    std::unique_ptr<MultiNodeFilesLogNamer> namer =
+        std::make_unique<MultiNodeFilesLogNamer>(
             base_name_, &config_.message(), logger_event_loop.get(),
             configuration::GetNode(&config_.message(), "pi1"));
 

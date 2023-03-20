@@ -41,8 +41,8 @@ void LoggerState::StartLogger(std::string logfile_base) {
   logger->set_logger_version(
       absl::StrCat("logger_version_", event_loop->node()->name()->str()));
   event_loop->OnRun([this, logfile_base]() {
-    std::unique_ptr<MultiNodeLogNamer> namer =
-        std::make_unique<MultiNodeLogNamer>(logfile_base, configuration,
+    std::unique_ptr<MultiNodeFilesLogNamer> namer =
+        std::make_unique<MultiNodeFilesLogNamer>(logfile_base, configuration,
                                             event_loop.get(), node);
     namer->set_extension(params.extension);
     namer->set_encoder_factory(params.encoder_factory);
