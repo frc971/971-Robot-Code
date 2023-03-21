@@ -75,7 +75,7 @@ type Stats2023 struct {
 	LowConesAuto, MiddleConesAuto, HighConesAuto, ConesDroppedAuto int32
 	LowCubes, MiddleCubes, HighCubes, CubesDropped                 int32
 	LowCones, MiddleCones, HighCones, ConesDropped                 int32
-	AvgCycle                                                       int32
+	AvgCycle                                                       int64
 	// The username of the person who collected these statistics.
 	// "unknown" if submitted without logging in.
 	// Empty if the stats have not yet been collected.

@@ -590,7 +590,7 @@ func ConvertActionsToStat(submitActions *submit_actions.SubmitActions) (db.Stats
 		}
 	}
 	if cycles != 0 {
-		stat.AvgCycle = int32(overall_time / cycles)
+		stat.AvgCycle = overall_time / cycles
 	} else {
 		stat.AvgCycle = 0
 	}

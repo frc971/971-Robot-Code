@@ -24,7 +24,8 @@ table Stats2023 {
   middle_cones:int (id:16);
   high_cones:int (id:17);
   cones_dropped:int (id:18);
-  avg_cycle:int (id:19);
+  // Time in nanoseconds.
+  avg_cycle:int64 (id:19);
 
   collected_by:string (id:20);
 }

@@ -118,7 +118,6 @@ export class EntryComponent {
   matchStartTimestamp: number = 0;
 
   addAction(action: ActionT): void {
-    action.timestamp = Math.floor(Date.now() / 1000);
     if (action.type == 'startMatchAction') {
       // Unix nanosecond timestamp.
       this.matchStartTimestamp = Date.now() * 1e6;
@@ -193,7 +192,7 @@ export class EntryComponent {
             StartMatchAction.createStartMatchAction(builder, action.position);
           actionOffset = Action.createAction(
             builder,
-            action.timestamp || 0,
+            BigInt(action.timestamp || 0),
             ActionType.StartMatchAction,
             startMatchActionOffset
           );
@@ -208,7 +207,7 @@ export class EntryComponent {
             );
           actionOffset = Action.createAction(
             builder,
-            action.timestamp || 0,
+            BigInt(action.timestamp || 0),
             ActionType.PickupObjectAction,
             pickupObjectActionOffset
           );
@@ -223,7 +222,7 @@ export class EntryComponent {
             );
           actionOffset = Action.createAction(
             builder,
-            action.timestamp || 0,
+            BigInt(action.timestamp || 0),
             ActionType.AutoBalanceAction,
             autoBalanceActionOffset
           );
@@ -239,7 +238,7 @@ export class EntryComponent {
             );
           actionOffset = Action.createAction(
             builder,
-            action.timestamp || 0,
+            BigInt(action.timestamp || 0),
             ActionType.PlaceObjectAction,
             placeObjectActionOffset
           );
@@ -250,7 +249,7 @@ export class EntryComponent {
             RobotDeathAction.createRobotDeathAction(builder, action.robotOn);
           actionOffset = Action.createAction(
             builder,
-            action.timestamp || 0,
+            BigInt(action.timestamp || 0),
             ActionType.RobotDeathAction,
             robotDeathActionOffset
           );
@@ -264,7 +263,7 @@ export class EntryComponent {
           );
           actionOffset = Action.createAction(
             builder,
-            action.timestamp || 0,
+            BigInt(action.timestamp || 0),
             ActionType.EndMatchAction,
             endMatchActionOffset
           );

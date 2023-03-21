@@ -50,7 +50,7 @@ union ActionType {
 }
 
 table Action {
-    timestamp:int (id:0);
+    timestamp:int64 (id:0);
     action_taken:ActionType (id:2);
 }
 
