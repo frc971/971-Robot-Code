@@ -289,6 +289,8 @@ class ArmUi(basic_window.BaseWindow):
         # Lets you only view selected path
         self.view_current = False
 
+        self.editing = True
+
     def _do_button_press_internal(self, event):
         o_x = event.x
         o_y = event.y
@@ -573,6 +575,9 @@ class ArmUi(basic_window.BaseWindow):
             print("Switched to segment:", self.segments[self.index].name)
             self.segments[self.index].Print(graph_paths.points)
 
+        elif keyval == Gdk.KEY_d:
+            self.editing = not self.editing
+
         elif keyval == Gdk.KEY_l:
             self.view_current = not self.view_current
 
@@ -608,6 +613,7 @@ class ArmUi(basic_window.BaseWindow):
         self.redraw()
 
     def do_button_press(self, event):
+
         last_pos = self.last_pos
         self.last_pos = (event.x, event.y)
         pt_theta = self.cur_pt_in_theta()
@@ -617,10 +623,11 @@ class ArmUi(basic_window.BaseWindow):
 
         self.now_segment_pt = np.array(shift_angles(pt_theta))
 
-        if self.edit_control1:
-            self.segments[self.index].control1 = self.now_segment_pt
-        else:
-            self.segments[self.index].control2 = self.now_segment_pt
+        if self.editing:
+            if self.edit_control1:
+                self.segments[self.index].control1 = self.now_segment_pt
+            else:
+                self.segments[self.index].control2 = self.now_segment_pt
 
         print('Clicked at theta: np.array([%s, %s])' %
               (self.now_segment_pt[0], self.now_segment_pt[1]))
