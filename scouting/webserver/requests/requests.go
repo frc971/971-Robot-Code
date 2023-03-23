@@ -524,6 +524,15 @@ func ConvertActionsToStat(submitActions *submit_actions.SubmitActions) (db.Stats
 			var startMatchAction submit_actions.StartMatchAction
 			startMatchAction.Init(actionTable.Bytes, actionTable.Pos)
 			stat.StartingQuadrant = startMatchAction.Position()
+		} else if action_type == submit_actions.ActionTypeAutoBalanceAction {
+			var autoBalanceAction submit_actions.AutoBalanceAction
+			autoBalanceAction.Init(actionTable.Bytes, actionTable.Pos)
+			if autoBalanceAction.Docked() {
+				stat.DockedAuto = true
+			}
+			if autoBalanceAction.Engaged() {
+				stat.EngagedAuto = true
+			}
 		} else if action_type == submit_actions.ActionTypePickupObjectAction {
 			var pick_up_action submit_actions.PickupObjectAction
 			pick_up_action.Init(actionTable.Bytes, actionTable.Pos)
@@ -587,6 +596,15 @@ func ConvertActionsToStat(submitActions *submit_actions.SubmitActions) (db.Stats
 				cycles += 1
 			}
 			lastPlacedTime = int64(action.Timestamp())
+		} else if action_type == submit_actions.ActionTypeEndMatchAction {
+			var endMatchAction submit_actions.EndMatchAction
+			endMatchAction.Init(actionTable.Bytes, actionTable.Pos)
+			if endMatchAction.Docked() {
+				stat.Docked = true
+			}
+			if endMatchAction.Engaged() {
+				stat.Engaged = true
+			}
 		}
 	}
 	if cycles != 0 {
@@ -645,6 +663,10 @@ func (handler request2023DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 			HighCones:        stat.HighCones,
 			ConesDropped:     stat.ConesDropped,
 			AvgCycle:         stat.AvgCycle,
+			DockedAuto:       stat.DockedAuto,
+			EngagedAuto:      stat.EngagedAuto,
+			Docked:           stat.Docked,
+			Engaged:          stat.Engaged,
 			CollectedBy:      stat.CollectedBy,
 		})
 	}

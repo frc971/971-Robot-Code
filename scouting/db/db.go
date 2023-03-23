@@ -77,6 +77,8 @@ type Stats2023 struct {
 	LowCubes, MiddleCubes, HighCubes, CubesDropped                 int32
 	LowCones, MiddleCones, HighCones, ConesDropped                 int32
 	AvgCycle                                                       int64
+	DockedAuto, EngagedAuto                                        bool
+	Docked, Engaged                                                bool
 	// The username of the person who collected these statistics.
 	// "unknown" if submitted without logging in.
 	// Empty if the stats have not yet been collected.

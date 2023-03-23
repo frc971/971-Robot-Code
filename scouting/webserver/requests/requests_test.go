@@ -209,7 +209,8 @@ func TestRequestAllMatches(t *testing.T) {
 				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
 				HighCubes: 2, CubesDropped: 1, LowCones: 1,
 				MiddleCones: 2, HighCones: 0, ConesDropped: 1,
-				AvgCycle: 34, CollectedBy: "alex",
+				AvgCycle: 34, DockedAuto: true, EngagedAuto: true,
+				Docked: false, Engaged: false, CollectedBy: "alex",
 			},
 			{
 				TeamNumber: "973", MatchNumber: 3, SetNumber: 1,
@@ -219,7 +220,8 @@ func TestRequestAllMatches(t *testing.T) {
 				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
 				HighCubes: 1, CubesDropped: 0, LowCones: 0,
 				MiddleCones: 2, HighCones: 1, ConesDropped: 1,
-				AvgCycle: 53, CollectedBy: "bob",
+				AvgCycle: 53, DockedAuto: true, EngagedAuto: false,
+				Docked: false, Engaged: false, CollectedBy: "bob",
 			},
 		},
 	}
@@ -367,7 +369,8 @@ func TestRequest2023DataScouting(t *testing.T) {
 				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
 				HighCubes: 2, CubesDropped: 1, LowCones: 1,
 				MiddleCones: 2, HighCones: 0, ConesDropped: 1,
-				AvgCycle: 34, CollectedBy: "isaac",
+				AvgCycle: 34, DockedAuto: true, EngagedAuto: false,
+				Docked: false, Engaged: false, CollectedBy: "isaac",
 			},
 			{
 				TeamNumber: "2343", MatchNumber: 1, SetNumber: 2,
@@ -377,7 +380,8 @@ func TestRequest2023DataScouting(t *testing.T) {
 				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
 				HighCubes: 1, CubesDropped: 0, LowCones: 0,
 				MiddleCones: 2, HighCones: 1, ConesDropped: 1,
-				AvgCycle: 53, CollectedBy: "unknown",
+				AvgCycle: 53, DockedAuto: false, EngagedAuto: false,
+				Docked: false, Engaged: false, CollectedBy: "unknown",
 			},
 		},
 	}
@@ -404,7 +408,8 @@ func TestRequest2023DataScouting(t *testing.T) {
 				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
 				HighCubes: 2, CubesDropped: 1, LowCones: 1,
 				MiddleCones: 2, HighCones: 0, ConesDropped: 1,
-				AvgCycle: 34, CollectedBy: "isaac",
+				AvgCycle: 34, DockedAuto: true, EngagedAuto: false,
+				Docked: false, Engaged: false, CollectedBy: "isaac",
 			},
 			{
 				TeamNumber: "2343", MatchNumber: 1, SetNumber: 2,
@@ -414,7 +419,8 @@ func TestRequest2023DataScouting(t *testing.T) {
 				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
 				HighCubes: 1, CubesDropped: 0, LowCones: 0,
 				MiddleCones: 2, HighCones: 1, ConesDropped: 1,
-				AvgCycle: 53, CollectedBy: "unknown",
+				AvgCycle: 53, DockedAuto: false, EngagedAuto: false,
+				Docked: false, Engaged: false, CollectedBy: "unknown",
 			},
 		},
 	}
@@ -480,6 +486,16 @@ func TestConvertActionsToStat(t *testing.T) {
 			},
 			{
 				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypeAutoBalanceAction,
+					Value: &submit_actions.AutoBalanceActionT{
+						Docked:  true,
+						Engaged: true,
+					},
+				},
+				Timestamp: 2400,
+			},
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
 					Type: submit_actions.ActionTypePickupObjectAction,
 					Value: &submit_actions.PickupObjectActionT{
 						ObjectType: submit_actions.ObjectTypekCone,
@@ -499,6 +515,16 @@ func TestConvertActionsToStat(t *testing.T) {
 				},
 				Timestamp: 3100,
 			},
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypeEndMatchAction,
+					Value: &submit_actions.EndMatchActionT{
+						Docked:  true,
+						Engaged: false,
+					},
+				},
+				Timestamp: 4000,
+			},
 		},
 	}).Pack(builder))
 
@@ -517,7 +543,8 @@ func TestConvertActionsToStat(t *testing.T) {
 		ConesDroppedAuto: 0, LowCubes: 0, MiddleCubes: 0,
 		HighCubes: 0, CubesDropped: 0, LowCones: 0,
 		MiddleCones: 0, HighCones: 1, ConesDropped: 0,
-		AvgCycle: 1100, CollectedBy: "katie",
+		AvgCycle: 1100, DockedAuto: true, EngagedAuto: true,
+		Docked: true, Engaged: false, CollectedBy: "katie",
 	}
 
 	if expected != response {
