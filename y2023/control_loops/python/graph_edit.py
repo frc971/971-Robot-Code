@@ -526,6 +526,20 @@ class ArmUi(Gtk.DrawingArea):
 
         self.queue_draw()
 
+    def switch_theta(self):
+        # Toggle between theta and xy renderings
+        if self.theta_version:
+            theta1, theta2 = self.last_pos
+            data = to_xy(theta1, theta2)
+            self.circular_index_select = int(
+                np.floor((theta2 - theta1) / np.pi))
+            self.last_pos = (data[0], data[1])
+        else:
+            self.last_pos = self.cur_pt_in_theta()
+
+        self.theta_version = not self.theta_version
+        self.init_extents()
+
     def do_key_press(self, event):
         keyval = Gdk.keyval_to_lower(event.keyval)
         print("Gdk.KEY_" + Gdk.keyval_name(keyval))
@@ -589,18 +603,7 @@ class ArmUi(Gtk.DrawingArea):
             self.view_current = not self.view_current
 
         elif keyval == Gdk.KEY_t:
-            # Toggle between theta and xy renderings
-            if self.theta_version:
-                theta1, theta2 = self.last_pos
-                data = to_xy(theta1, theta2)
-                self.circular_index_select = int(
-                    np.floor((theta2 - theta1) / np.pi))
-                self.last_pos = (data[0], data[1])
-            else:
-                self.last_pos = self.cur_pt_in_theta()
-
-            self.theta_version = not self.theta_version
-            self.init_extents()
+            self.switch_theta()
 
         elif keyval == Gdk.KEY_z:
             self.edit_control1 = not self.edit_control1
@@ -689,7 +692,27 @@ class Window(Gtk.Window):
 
         self.grid.attach(self.arm_draw, 0, 1, 1, 1)
 
-        self.grid.attach(self.segment_box, 0, 0, 1, 1)
+        self.isolate_button = Gtk.Button(label="Toggle Path Isolation")
+        self.isolate_button.connect('clicked', self.on_button_click)
+
+        self.theta_button = Gtk.Button(label="Toggle Theta Mode")
+        self.theta_button.connect('clicked', self.on_button_click)
+
+        self.editing_button = Gtk.Button(label="Toggle Editing Mode")
+        self.editing_button.connect('clicked', self.on_button_click)
+
+        self.indicator_button = Gtk.Button(
+            label="Toggle Control Point Indicators")
+        self.indicator_button.connect('clicked', self.on_button_click)
+
+        self.box = Gtk.Box(spacing=6)
+        self.grid.attach(self.box, 0, 0, 1, 1)
+
+        self.box.pack_start(self.segment_box, False, False, 0)
+        self.box.pack_start(self.isolate_button, False, False, 0)
+        self.box.pack_start(self.theta_button, False, False, 0)
+        self.box.pack_start(self.editing_button, False, False, 0)
+        self.box.pack_start(self.indicator_button, False, False, 0)
 
     def on_combo_changed(self, combo):
         iter = combo.get_active_iter()
@@ -699,6 +722,7 @@ class Window(Gtk.Window):
             id, name = model[iter][:2]
             print("Selected: ID=%d, name=%s" % (id, name))
             self.arm_draw.index = id
+            self.arm_draw.queue_draw()
 
     def method_connect(self, event, cb):
 
@@ -708,7 +732,18 @@ class Window(Gtk.Window):
         self.connect(event, handler)
 
     def do_map_event(self, event):
-        self.arm_draw.y_offset = self.segment_box.get_allocation().height
+        self.arm_draw.y_offset = self.box.get_allocation().height
+
+    def on_button_click(self, button):
+        if self.isolate_button == button:
+            self.arm_draw.view_current = not self.arm_draw.view_current
+        elif self.theta_button == button:
+            self.arm_draw.switch_theta()
+        elif self.editing_button == button:
+            self.arm_draw.editing = not self.arm_draw.editing
+        elif self.indicator_button == button:
+            self.arm_draw.show_indicators = not self.arm_draw.show_indicators
+        self.arm_draw.queue_draw()
 
 
 window = Window(graph_paths.segments)
