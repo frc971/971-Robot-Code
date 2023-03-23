@@ -382,17 +382,19 @@ named_segments.append(
         control_alpha_rolls=[(0.40, 0.0), (.95, -np.pi / 2.0)],
     ))
 
+points['Starting'] = np.array((np.pi, -0.125053863467887, 0.0))
+
 points['ScoreFrontMidConeUpAuto'] = to_theta_with_circular_index_and_roll(
     0.58, 0.97, -np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
-        name="NeutralToScoreFrontMidConeUpAuto",
-        start=points['Neutral'],
+        name="StartingToScoreFrontMidConeUpAuto",
+        start=points['Starting'],
         control1=np.array([2.99620794024176, 0.23620211875551145]),
         control2=np.array([2.728197531599509, 0.5677148040671784]),
         end=points['ScoreFrontMidConeUpAuto'],
-        control_alpha_rolls=[(0.20, 0.0), (.90, -np.pi / 2.0)],
+        control_alpha_rolls=[(0.20, 0.0), (.85, -np.pi / 2.0)],
         vmax=10.0,
         alpha_unitizer=np.matrix(
             f"{1.0 / 20.0} 0 0; 0 {1.0 / 25.0} 0; 0 0 {1.0 / 100.0}"),
@@ -442,17 +444,6 @@ named_segments.append(
         control2=np.array([3.63484177908944, 1.008850428344438]),
         end=points["ScoreFrontMidCube"],
         control_alpha_rolls=[],
-    ))
-
-# Auto express spline...
-named_segments.append(
-    ThetaSplineSegment(
-        name="GroundPickupBackCubeToScoreFrontMidCube",
-        start=points['ScoreFrontMidCube'],
-        control1=np.array([3.2345111429709847, 0.45338639767112277]),
-        control2=np.array([3.098240119468829, -0.46161157069783254]),
-        end=points['GroundPickupBackCube'],
-        control_alpha_rolls=[(0.40, 0.0), (0.60, 0.0)],
     ))
 
 points['ScoreFrontHighCube'] = to_theta_with_circular_index_and_roll(
@@ -654,6 +645,27 @@ named_segments.append(
         control2=np.array([4.1585708953556, 1.8633805468551703]),
         end=points["GroundPickupFrontConeDownBase"],
         control_alpha_rolls=[],
+    ))
+
+# Auto express spline...
+named_segments.append(
+    ThetaSplineSegment(
+        name="GroundPickupBackCubeToScoreFrontMidCube",
+        start=points['ScoreFrontMidCube'],
+        control1=np.array([3.2345111429709847, 0.45338639767112277]),
+        control2=np.array([3.098240119468829, -0.46161157069783254]),
+        end=points['GroundPickupBackCube'],
+        control_alpha_rolls=[(0.40, 0.0), (0.60, 0.0)],
+    ))
+
+named_segments.append(
+    ThetaSplineSegment(
+        name="GroundPickupBackCubeToScoreFrontHighCube",
+        start=points['ScoreFrontHighCube'],
+        control1=np.array([2.7074513232200186, 0.20154350392334375]),
+        control2=np.array([3.01714846217257, -0.6310437434614364]),
+        end=points['GroundPickupBackCube'],
+        control_alpha_rolls=[(0.40, 0.0), (0.60, 0.0)],
     ))
 
 front_points = []
