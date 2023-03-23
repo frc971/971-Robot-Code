@@ -247,3 +247,16 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_library(
+    name = "mock_starter",
+    srcs = ["mock_starter.cc"],
+    hdrs = ["mock_starter.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/events:simulated_event_loop",
+        "//aos/starter:starter_fbs",
+        "//aos/starter:starter_rpc_fbs",
+        "//aos/starter:starter_rpc_lib",
+    ],
+)
