@@ -382,6 +382,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
   GamePiece current_game_piece_ = GamePiece::CONE_UP;
 
+  bool has_scored_ = false;
+
   void HandleTeleop(
       const ::frc971::input::driver_station::Data &data) override {
     superstructure_status_fetcher_.Fetch();
@@ -445,6 +447,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
     // Ok, no active setpoint.  Search for the right one.
     if (current_setpoint_ == nullptr) {
+      has_scored_ = false;
       const Side current_side =
           data.IsPressed(kBack) ? Side::BACK : Side::FRONT;
       // Search for the active setpoint.
@@ -485,13 +488,16 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         // spit.
         if (std::abs(score_wrist_goal.value() -
                      superstructure_status_fetcher_->wrist()->goal_position()) <
-            0.1) {
+                0.1 ||
+            has_scored_) {
           if (place_index.has_value()) {
             arm_goal_position_ = place_index.value();
-            if (arm_goal_position_ ==
-                    superstructure_status_fetcher_->arm()->current_node() &&
-                superstructure_status_fetcher_->arm()->path_distance_to_go() <
-                    0.01) {
+            if ((arm_goal_position_ ==
+                     superstructure_status_fetcher_->arm()->current_node() &&
+                 superstructure_status_fetcher_->arm()->path_distance_to_go() <
+                     0.01) ||
+                has_scored_) {
+              has_scored_ = true;
               roller_goal = RollerGoal::SPIT;
             }
           } else {
