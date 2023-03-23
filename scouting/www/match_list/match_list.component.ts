@@ -10,7 +10,7 @@ import {
 import {MatchListRequestor} from '@org_frc971/scouting/www/rpc';
 
 type TeamInMatch = {
-  teamNumber: number;
+  teamNumber: string;
   matchNumber: number;
   setNumber: number;
   compLevel: string;
@@ -54,7 +54,7 @@ export class MatchListComponent implements OnInit {
 
   teamsInMatch(
     match: Match
-  ): {teamNumber: number; color: 'red' | 'blue'; disabled: boolean}[] {
+  ): {teamNumber: string; color: 'red' | 'blue'; disabled: boolean}[] {
     const scouted = match.dataScouted();
     return [
       {

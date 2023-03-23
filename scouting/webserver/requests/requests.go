@@ -232,9 +232,9 @@ func findIndexInList(list []string, comp_level string) (int, error) {
 	return -1, errors.New(fmt.Sprint("Failed to find comp level ", comp_level, " in list ", list))
 }
 
-func (handler requestAllMatchesHandler) teamHasBeenDataScouted(key MatchAssemblyKey, teamNumber int32) (bool, error) {
+func (handler requestAllMatchesHandler) teamHasBeenDataScouted(key MatchAssemblyKey, teamNumber string) (bool, error) {
 	stats, err := handler.db.ReturnStats2023ForTeam(
-		strconv.Itoa(int(teamNumber)), key.MatchNumber, key.SetNumber, key.CompLevel)
+		teamNumber, key.MatchNumber, key.SetNumber, key.CompLevel)
 	if err != nil {
 		return false, err
 	}
@@ -277,7 +277,7 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 			}
 		}
 
-		var team *int32
+		var team *string
 		var dataScoutedTeam *bool
 
 		// Fill in the field for the match that we have in in the

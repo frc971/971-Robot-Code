@@ -128,75 +128,75 @@ func TestRequestAllMatches(t *testing.T) {
 		matches: []db.TeamMatch{
 			{
 				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
-				Alliance: "R", AlliancePosition: 1, TeamNumber: 5,
+				Alliance: "R", AlliancePosition: 1, TeamNumber: "5",
 			},
 			{
 				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
-				Alliance: "R", AlliancePosition: 2, TeamNumber: 42,
+				Alliance: "R", AlliancePosition: 2, TeamNumber: "42",
 			},
 			{
 				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
-				Alliance: "R", AlliancePosition: 3, TeamNumber: 600,
+				Alliance: "R", AlliancePosition: 3, TeamNumber: "600",
 			},
 			{
 				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
-				Alliance: "B", AlliancePosition: 1, TeamNumber: 971,
+				Alliance: "B", AlliancePosition: 1, TeamNumber: "971",
 			},
 			{
 				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
-				Alliance: "B", AlliancePosition: 2, TeamNumber: 400,
+				Alliance: "B", AlliancePosition: 2, TeamNumber: "400",
 			},
 			{
 				MatchNumber: 1, SetNumber: 1, CompLevel: "qm",
-				Alliance: "B", AlliancePosition: 3, TeamNumber: 200,
+				Alliance: "B", AlliancePosition: 3, TeamNumber: "200",
 			},
 			{
 				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
-				Alliance: "R", AlliancePosition: 1, TeamNumber: 6,
+				Alliance: "R", AlliancePosition: 1, TeamNumber: "6",
 			},
 			{
 				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
-				Alliance: "R", AlliancePosition: 2, TeamNumber: 43,
+				Alliance: "R", AlliancePosition: 2, TeamNumber: "43",
 			},
 			{
 				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
-				Alliance: "R", AlliancePosition: 3, TeamNumber: 601,
+				Alliance: "R", AlliancePosition: 3, TeamNumber: "601",
 			},
 			{
 				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
-				Alliance: "B", AlliancePosition: 1, TeamNumber: 972,
+				Alliance: "B", AlliancePosition: 1, TeamNumber: "972",
 			},
 			{
 				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
-				Alliance: "B", AlliancePosition: 2, TeamNumber: 401,
+				Alliance: "B", AlliancePosition: 2, TeamNumber: "401",
 			},
 			{
 				MatchNumber: 2, SetNumber: 1, CompLevel: "qm",
-				Alliance: "B", AlliancePosition: 3, TeamNumber: 201,
+				Alliance: "B", AlliancePosition: 3, TeamNumber: "201",
 			},
 			{
 				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
-				Alliance: "R", AlliancePosition: 1, TeamNumber: 7,
+				Alliance: "R", AlliancePosition: 1, TeamNumber: "7",
 			},
 			{
 				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
-				Alliance: "R", AlliancePosition: 2, TeamNumber: 44,
+				Alliance: "R", AlliancePosition: 2, TeamNumber: "44",
 			},
 			{
 				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
-				Alliance: "R", AlliancePosition: 3, TeamNumber: 602,
+				Alliance: "R", AlliancePosition: 3, TeamNumber: "602",
 			},
 			{
 				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
-				Alliance: "B", AlliancePosition: 1, TeamNumber: 973,
+				Alliance: "B", AlliancePosition: 1, TeamNumber: "973",
 			},
 			{
 				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
-				Alliance: "B", AlliancePosition: 2, TeamNumber: 402,
+				Alliance: "B", AlliancePosition: 2, TeamNumber: "402",
 			},
 			{
 				MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
-				Alliance: "B", AlliancePosition: 3, TeamNumber: 202,
+				Alliance: "B", AlliancePosition: 3, TeamNumber: "202",
 			},
 		},
 		// Pretend that we have some data scouting data.
@@ -242,7 +242,7 @@ func TestRequestAllMatches(t *testing.T) {
 			// R1, R2, R3, B1, B2, B3
 			{
 				1, 1, "qm",
-				5, 42, 600, 971, 400, 200,
+				"5", "42", "600", "971", "400", "200",
 				&request_all_matches_response.ScoutedLevelT{
 					// The R1 team has already been data
 					// scouted.
@@ -251,14 +251,14 @@ func TestRequestAllMatches(t *testing.T) {
 			},
 			{
 				2, 1, "qm",
-				6, 43, 601, 972, 401, 201,
+				"6", "43", "601", "972", "401", "201",
 				&request_all_matches_response.ScoutedLevelT{
 					false, false, false, false, false, false,
 				},
 			},
 			{
 				3, 1, "qm",
-				7, 44, 602, 973, 402, 202,
+				"7", "44", "602", "973", "402", "202",
 				&request_all_matches_response.ScoutedLevelT{
 					// The B1 team has already been data
 					// scouted.

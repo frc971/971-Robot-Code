@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -75,27 +74,27 @@ func TestAddToMatchDB(t *testing.T) {
 	correct := []TeamMatch{
 		TeamMatch{
 			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 9999,
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "9999",
 		},
 		TeamMatch{
 			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 2, TeamNumber: 1000,
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "1000",
 		},
 		TeamMatch{
 			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 3, TeamNumber: 777,
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "777",
 		},
 		TeamMatch{
 			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 1, TeamNumber: 0000,
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "0000",
 		},
 		TeamMatch{
 			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 2, TeamNumber: 4321,
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "4321",
 		},
 		TeamMatch{
 			MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 3, TeamNumber: 1234,
+			Alliance: "B", AlliancePosition: 3, TeamNumber: "1234",
 		},
 	}
 
@@ -202,17 +201,17 @@ func TestAddToStatsDB(t *testing.T) {
 	}
 	matches := []TeamMatch{
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 1236},
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "1236"},
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 2, TeamNumber: 1001},
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "1001"},
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 3, TeamNumber: 777},
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "777"},
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 1, TeamNumber: 1000},
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "1000"},
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 2, TeamNumber: 4321},
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "4321"},
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 3, TeamNumber: 1234},
+			Alliance: "B", AlliancePosition: 3, TeamNumber: "1234"},
 	}
 
 	for _, match := range matches {
@@ -292,15 +291,15 @@ func TestAddToStats2023DB(t *testing.T) {
 
 	matches := []TeamMatch{
 		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 6344},
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "6344"},
 		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 2, TeamNumber: 7454},
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "7454"},
 		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 3, TeamNumber: 4354},
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "4354"},
 		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 1, TeamNumber: 6533},
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "6533"},
 		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 2, TeamNumber: 8354},
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "8354"},
 	}
 
 	for _, match := range matches {
@@ -360,11 +359,11 @@ func TestQueryingStats2023ByTeam(t *testing.T) {
 
 	matches := []TeamMatch{
 		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "qm",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 6344},
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "6344"},
 		TeamMatch{MatchNumber: 4, SetNumber: 1, CompLevel: "qm",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 7454},
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "7454"},
 		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "qm",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 6344},
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "6344"},
 	}
 
 	for _, match := range matches {
@@ -413,17 +412,17 @@ func TestAddDuplicateStats(t *testing.T) {
 
 	matches := []TeamMatch{
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 1236},
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "1236"},
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 2, TeamNumber: 1001},
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "1001"},
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 3, TeamNumber: 777},
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "777"},
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 1, TeamNumber: 1000},
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "1000"},
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 2, TeamNumber: 4321},
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "4321"},
 		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 3, TeamNumber: 1234},
+			Alliance: "B", AlliancePosition: 3, TeamNumber: "1234"},
 	}
 
 	for _, match := range matches {
@@ -527,25 +526,25 @@ func TestDeleteFromStats(t *testing.T) {
 
 	originalMatches := []TeamMatch{
 		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 1111},
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "1111"},
 		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 1, TeamNumber: 2314},
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "2314"},
 		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 3, TeamNumber: 1742},
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "1742"},
 		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 2, TeamNumber: 2454},
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "2454"},
 		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 3, TeamNumber: 3242},
+			Alliance: "B", AlliancePosition: 3, TeamNumber: "3242"},
 	}
 
 	// Matches for which we want to delete the stats.
 	matches := []TeamMatch{
 		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
-			TeamNumber: 1111},
+			TeamNumber: "1111"},
 		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
-			TeamNumber: 2314},
+			TeamNumber: "2314"},
 		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
-			TeamNumber: 1742},
+			TeamNumber: "1742"},
 	}
 
 	for _, match := range originalMatches {
@@ -560,7 +559,7 @@ func TestDeleteFromStats(t *testing.T) {
 	}
 
 	for _, match := range matches {
-		err := fixture.db.DeleteFromStats(match.CompLevel, match.MatchNumber, match.SetNumber, strconv.Itoa(int(match.TeamNumber)))
+		err := fixture.db.DeleteFromStats(match.CompLevel, match.MatchNumber, match.SetNumber, match.TeamNumber)
 		check(t, err, "Failed to delete stat")
 	}
 
@@ -663,17 +662,17 @@ func TestQueryStatsDB(t *testing.T) {
 
 	matches := []TeamMatch{
 		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 1235},
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "1235"},
 		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 2, TeamNumber: 1234},
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "1234"},
 		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 3, TeamNumber: 1233},
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "1233"},
 		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 1, TeamNumber: 1232},
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "1232"},
 		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 2, TeamNumber: 1231},
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "1231"},
 		TeamMatch{MatchNumber: 94, SetNumber: 2, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 3, TeamNumber: 1239},
+			Alliance: "B", AlliancePosition: 3, TeamNumber: "1239"},
 	}
 
 	for _, match := range matches {
@@ -759,15 +758,15 @@ func TestReturnMatchDB(t *testing.T) {
 
 	correct := []TeamMatch{
 		TeamMatch{
-			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 1, TeamNumber: 6835},
+			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 1, TeamNumber: "6835"},
 		TeamMatch{
-			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 2, TeamNumber: 4834},
+			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 2, TeamNumber: "4834"},
 		TeamMatch{
-			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: 9824},
+			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: "9824"},
 		TeamMatch{
-			MatchNumber: 7, SetNumber: 2, CompLevel: "quals", Alliance: "B", AlliancePosition: 1, TeamNumber: 3732},
+			MatchNumber: 7, SetNumber: 2, CompLevel: "quals", Alliance: "B", AlliancePosition: 1, TeamNumber: "3732"},
 		TeamMatch{
-			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 1, TeamNumber: 3732},
+			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 1, TeamNumber: "3732"},
 	}
 
 	for i := 0; i < len(correct); i++ {
@@ -789,11 +788,11 @@ func TestOverwriteNewMatchData(t *testing.T) {
 
 	testDatabase := []TeamMatch{
 		TeamMatch{
-			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: 4464},
+			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: "4464"},
 		TeamMatch{
-			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 2, TeamNumber: 2352},
+			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 2, TeamNumber: "2352"},
 		TeamMatch{
-			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: 6321},
+			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: "6321"},
 	}
 
 	for i := 0; i < len(testDatabase); i++ {
@@ -803,9 +802,9 @@ func TestOverwriteNewMatchData(t *testing.T) {
 
 	correct := []TeamMatch{
 		TeamMatch{
-			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 2, TeamNumber: 2352},
+			MatchNumber: 8, SetNumber: 1, CompLevel: "quals", Alliance: "R", AlliancePosition: 2, TeamNumber: "2352"},
 		TeamMatch{
-			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: 6321},
+			MatchNumber: 9, SetNumber: 1, CompLevel: "quals", Alliance: "B", AlliancePosition: 3, TeamNumber: "6321"},
 	}
 
 	got, err := fixture.db.ReturnMatches()
@@ -940,17 +939,17 @@ func TestReturnStatsDB(t *testing.T) {
 
 	matches := []TeamMatch{
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 1235},
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "1235"},
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 2, TeamNumber: 1236},
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "1236"},
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 3, TeamNumber: 1237},
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "1237"},
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 1, TeamNumber: 1238},
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "1238"},
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 2, TeamNumber: 1239},
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "1239"},
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 3, TeamNumber: 1233},
+			Alliance: "B", AlliancePosition: 3, TeamNumber: "1233"},
 	}
 
 	for _, match := range matches {
@@ -1020,13 +1019,13 @@ func TestReturnStats2023DB(t *testing.T) {
 
 	matches := []TeamMatch{
 		TeamMatch{MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 2343},
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "2343"},
 		TeamMatch{MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 2, TeamNumber: 5443},
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "5443"},
 		TeamMatch{MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 3, TeamNumber: 5436},
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "5436"},
 		TeamMatch{MatchNumber: 2, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 1, TeamNumber: 5643},
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "5643"},
 	}
 
 	for _, match := range matches {
@@ -1079,17 +1078,17 @@ func TestReturnActionsDB(t *testing.T) {
 
 	matches := []TeamMatch{
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 1, TeamNumber: 1235},
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "1235"},
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 2, TeamNumber: 1236},
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "1236"},
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "R", AlliancePosition: 3, TeamNumber: 1237},
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "1237"},
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 1, TeamNumber: 1238},
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "1238"},
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 2, TeamNumber: 1239},
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "1239"},
 		TeamMatch{MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			Alliance: "B", AlliancePosition: 3, TeamNumber: 1233},
+			Alliance: "B", AlliancePosition: 3, TeamNumber: "1233"},
 	}
 
 	for _, match := range matches {
