@@ -97,32 +97,32 @@ func GetMatchList(database Database, year int32, eventCode string, blueAllianceC
 			{
 				MatchNumber: int32(match.MatchNumber),
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
-				Alliance: "R", AlliancePosition: 1, TeamNumber: red[0],
+				Alliance: "R", AlliancePosition: 1, TeamNumber: strconv.Itoa(int(red[0])),
 			},
 			{
 				MatchNumber: int32(match.MatchNumber),
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
-				Alliance: "R", AlliancePosition: 2, TeamNumber: red[1],
+				Alliance: "R", AlliancePosition: 2, TeamNumber: strconv.Itoa(int(red[1])),
 			},
 			{
 				MatchNumber: int32(match.MatchNumber),
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
-				Alliance: "R", AlliancePosition: 3, TeamNumber: red[2],
+				Alliance: "R", AlliancePosition: 3, TeamNumber: strconv.Itoa(int(red[2])),
 			},
 			{
 				MatchNumber: int32(match.MatchNumber),
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
-				Alliance: "B", AlliancePosition: 1, TeamNumber: blue[0],
+				Alliance: "B", AlliancePosition: 1, TeamNumber: strconv.Itoa(int(blue[0])),
 			},
 			{
 				MatchNumber: int32(match.MatchNumber),
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
-				Alliance: "B", AlliancePosition: 2, TeamNumber: blue[1],
+				Alliance: "B", AlliancePosition: 2, TeamNumber: strconv.Itoa(int(blue[1])),
 			},
 			{
 				MatchNumber: int32(match.MatchNumber),
 				SetNumber:   int32(match.SetNumber), CompLevel: match.CompLevel,
-				Alliance: "B", AlliancePosition: 3, TeamNumber: blue[2],
+				Alliance: "B", AlliancePosition: 3, TeamNumber: strconv.Itoa(int(blue[2])),
 			},
 		}
 

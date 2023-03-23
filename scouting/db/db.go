@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
+	"strconv"
 )
 
 type Database struct {
@@ -19,7 +20,7 @@ type TeamMatch struct {
 	CompLevel        string `gorm:"primaryKey"`
 	Alliance         string `gorm:"primaryKey"` // "R" or "B"
 	AlliancePosition int32  `gorm:"primaryKey"` // 1, 2, or 3
-	TeamNumber       int32
+	TeamNumber       string
 }
 
 type Shift struct {
@@ -195,7 +196,7 @@ func (database *Database) AddAction(a Action) error {
 }
 
 func (database *Database) AddToStats(s Stats) error {
-	matches, err := database.queryMatches(s.TeamNumber)
+	matches, err := database.queryMatches(strconv.Itoa(int(s.TeamNumber)))
 	if err != nil {
 		return err
 	}
@@ -344,7 +345,7 @@ func (database *Database) ReturnRankings() ([]Ranking, error) {
 	return rankins, result.Error
 }
 
-func (database *Database) queryMatches(teamNumber_ int32) ([]TeamMatch, error) {
+func (database *Database) queryMatches(teamNumber_ string) ([]TeamMatch, error) {
 	var matches []TeamMatch
 	result := database.
 		Where("team_number = $1", teamNumber_).
