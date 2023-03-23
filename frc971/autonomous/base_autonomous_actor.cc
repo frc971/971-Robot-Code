@@ -430,18 +430,26 @@ bool BaseAutonomousActor::SplineHandle::SplineDistanceRemaining(
     //     when we reach the end of the spline).
     // (b) The spline that we are executing is the correct one.
     // (c) There is less than distance distance remaining.
+    if (base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
+            ->goal_spline_handle() != spline_handle_) {
+      // Never done if we aren't the active spline.
+      return false;
+    }
+
+    if (base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
+            ->is_executed()) {
+      return true;
+    }
     return base_autonomous_actor_->drivetrain_status_fetcher_
                ->trajectory_logging()
                ->is_executing() &&
-           base_autonomous_actor_->drivetrain_status_fetcher_
-                   ->trajectory_logging()
-                   ->goal_spline_handle() == spline_handle_ &&
            base_autonomous_actor_->drivetrain_status_fetcher_
                    ->trajectory_logging()
                    ->distance_remaining() < distance;
   }
   return false;
 }
+
 bool BaseAutonomousActor::SplineHandle::WaitForSplineDistanceRemaining(
     double distance) {
   ::aos::time::PhasedLoop phased_loop(
