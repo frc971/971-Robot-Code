@@ -18,9 +18,9 @@ EndEffector::EndEffector()
       beambreak_(false) {}
 
 void EndEffector::RunIteration(
-    const ::aos::monotonic_clock::time_point timestamp, RollerGoal roller_goal,
-    double falcon_current, double cone_position, bool beambreak,
-    double *roller_voltage, bool preloaded_with_cone) {
+    const ::aos::monotonic_clock::time_point timestamp,
+    RollerGoal roller_goal, double falcon_current, double cone_position,
+    bool beambreak, double *roller_voltage, bool preloaded_with_cone) {
   *roller_voltage = 0.0;
 
   constexpr double kMinCurrent = 40.0;
@@ -32,6 +32,7 @@ void EndEffector::RunIteration(
     switch (state_) {
       case EndEffectorState::IDLE:
       case EndEffectorState::INTAKING:
+        game_piece_ = vision::Class::CONE_UP;
         state_ = EndEffectorState::LOADED;
         break;
       case EndEffectorState::LOADED:
@@ -124,6 +125,12 @@ void EndEffector::RunIteration(
         // Finished spitting
         state_ = EndEffectorState::IDLE;
         game_piece_ = vision::Class::NONE;
+      } else if (roller_goal == RollerGoal::INTAKE_CONE_UP ||
+                 roller_goal == RollerGoal::INTAKE_CONE_DOWN ||
+                 roller_goal == RollerGoal::INTAKE_CUBE ||
+                 roller_goal == RollerGoal::INTAKE_LAST) {
+        state_ = EndEffectorState::INTAKING;
+        timer_ = timestamp;
       }
 
       break;

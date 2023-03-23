@@ -168,7 +168,7 @@ struct Values {
 
   // Game object is spit from end effector for at least this time
   static constexpr std::chrono::milliseconds kExtraSpittingTime() {
-    return std::chrono::seconds(2);
+    return std::chrono::seconds(1);
   }
 
   // if true, tune down all the arm constants for testing.
