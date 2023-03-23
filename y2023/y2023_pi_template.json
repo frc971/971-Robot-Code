@@ -397,7 +397,7 @@
         "--logging_folder",
         "",
         "--rotate_every",
-        "60.0",
+        "30.0",
         "--direct",
         "--flush_size=4194304"
       ],

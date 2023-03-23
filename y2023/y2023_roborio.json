@@ -551,7 +551,8 @@
       "executable_name": "logger_main",
       "args": [
         "--snappy_compress",
-        "--logging_folder=/home/admin/logs/"
+        "--logging_folder=/home/admin/logs/",
+        "--rotate_every", "30.0"
       ],
       "nodes": [
         "roborio"

@@ -496,7 +496,8 @@
       "args": [
         "--logging_folder",
         "",
-        "--snappy_compress"
+        "--snappy_compress",
+        "--rotate_every", "30.0"
       ],
       "user": "pi",
       "nodes": [
