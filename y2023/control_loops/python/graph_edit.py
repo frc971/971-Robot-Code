@@ -3,6 +3,8 @@
 from __future__ import print_function
 # matplotlib overrides fontconfig locations, so it needs to be imported before gtk.
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_gtk3agg import (FigureCanvasGTK3Agg as
+                                                 FigureCanvas)
 import os
 from frc971.control_loops.python import basic_window
 from frc971.control_loops.python.color import Color, palette
@@ -229,15 +231,19 @@ class SegmentSelector(basic_window.BaseWindow):
             self.current_path_index = id
 
 
+ARM_AREA_WIDTH = 2 * (SCREEN_SIZE - 200)
+ARM_AREA_HEIGHT = SCREEN_SIZE
+
+
 # Create a GTK+ widget on which we will draw using Cairo
 class ArmUi(Gtk.DrawingArea):
 
     def __init__(self, segments):
         super(ArmUi, self).__init__()
 
-        self.set_size_request(2 * SCREEN_SIZE, SCREEN_SIZE)
+        self.set_size_request(ARM_AREA_WIDTH, ARM_AREA_HEIGHT)
         self.center = (0, 0)
-        self.shape = (2 * SCREEN_SIZE, SCREEN_SIZE)
+        self.shape = (ARM_AREA_WIDTH, ARM_AREA_HEIGHT)
         self.theta_version = False
 
         self.init_extents()
@@ -263,7 +269,6 @@ class ArmUi(Gtk.DrawingArea):
             self.fig.add_subplot(3, 1, 3)
         ]
         self.fig.subplots_adjust(hspace=1.0)
-        plt.show(block=False)
 
         self.index = 0
 
@@ -296,9 +301,6 @@ class ArmUi(Gtk.DrawingArea):
         self.do_button_press(event)
         event.x = o_x
         event.y = o_y
-
-    def _do_configure(self, event):
-        self.window_shape = (event.width, event.height)
 
     def init_extents(self):
         if self.theta_version:
@@ -685,7 +687,6 @@ class Window(Gtk.Window):
         self.method_connect("motion-notify-event", self.arm_draw.do_motion)
         self.method_connect("button-press-event",
                             self.arm_draw._do_button_press_internal)
-        self.method_connect("configure-event", self.arm_draw._do_configure)
 
         self.grid = Gtk.Grid()
         self.add(self.grid)
@@ -707,6 +708,11 @@ class Window(Gtk.Window):
 
         self.box = Gtk.Box(spacing=6)
         self.grid.attach(self.box, 0, 0, 1, 1)
+
+        self.figure_canvas = FigureCanvas(self.arm_draw.fig)
+        self.figure_canvas.set_size_request(500, 300)
+
+        self.grid.attach(self.figure_canvas, 1, 1, 1, 1)
 
         self.box.pack_start(self.segment_box, False, False, 0)
         self.box.pack_start(self.isolate_button, False, False, 0)
