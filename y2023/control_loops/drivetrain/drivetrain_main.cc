@@ -15,6 +15,8 @@ int main(int argc, char **argv) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("aos_config.json");
 
+  frc971::constants::WaitForConstants<y2023::Constants>(&config.message());
+
   aos::ShmEventLoop event_loop(&config.message());
   std::unique_ptr<::frc971::control_loops::drivetrain::PuppetLocalizer>
       localizer = std::make_unique<
