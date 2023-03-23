@@ -2,6 +2,108 @@
   "channels": [
     {
       "name": "/imu/aos",
+      "type": "aos.JoystickState",
+      "source_node": "imu",
+      "frequency": 100,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
+      "destination_nodes": [
+        {
+          "name": "logger",
+          "priority": 5,
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
+        },
+        {
+          "name": "pi1",
+          "priority": 5,
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
+        },
+        {
+          "name": "pi2",
+          "priority": 5,
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
+        },
+        {
+          "name": "pi3",
+          "priority": 5,
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
+        },
+        {
+          "name": "pi4",
+          "priority": 5,
+          "time_to_live": 50000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/logger/imu/aos/aos-JoystickState",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "imu",
+      "logger": "NOT_LOGGED",
+      "frequency": 300,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/pi1/imu/aos/aos-JoystickState",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "imu",
+      "logger": "NOT_LOGGED",
+      "frequency": 300,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/pi2/imu/aos/aos-JoystickState",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "imu",
+      "logger": "NOT_LOGGED",
+      "frequency": 300,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/pi3/imu/aos/aos-JoystickState",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "imu",
+      "logger": "NOT_LOGGED",
+      "frequency": 300,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/pi4/imu/aos/aos-JoystickState",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "imu",
+      "logger": "NOT_LOGGED",
+      "frequency": 300,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/imu/aos",
       "type": "aos.timing.Report",
       "source_node": "imu",
       "frequency": 50,
@@ -373,6 +475,14 @@
       ]
     },
     {
+      "name": "joystick_republish",
+      "executable_name": "joystick_republish",
+      "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
       "name": "message_bridge_server",
       "executable_name": "message_bridge_server",
       "user": "pi",
@@ -383,7 +493,11 @@
     {
       "name": "localizer_logger",
       "executable_name": "logger_main",
-      "args": ["--logging_folder", "", "--snappy_compress"],
+      "args": [
+        "--logging_folder",
+        "",
+        "--snappy_compress"
+      ],
       "user": "pi",
       "nodes": [
         "imu"
@@ -450,6 +564,18 @@
     },
     {
       "name": "roborio"
+    },
+    {
+      "name": "pi1"
+    },
+    {
+      "name": "pi2"
+    },
+    {
+      "name": "pi3"
+    },
+    {
+      "name": "pi4"
     }
   ]
 }

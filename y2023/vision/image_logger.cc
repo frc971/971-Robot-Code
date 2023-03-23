@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
   });
 
   event_loop.MakeWatcher(
-      "/roborio/aos", [&](const aos::JoystickState &joystick_state) {
+      "/imu/aos", [&](const aos::JoystickState &joystick_state) {
         const auto timestamp = event_loop.context().monotonic_event_time;
         // Store the last time we got disabled
         if (enabled && !joystick_state.enabled()) {
