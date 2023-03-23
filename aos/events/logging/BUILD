@@ -55,6 +55,7 @@ cc_binary(
         "log_replayer.cc",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
     deps = [
         ":log_reader",
         ":log_reader_utils",
