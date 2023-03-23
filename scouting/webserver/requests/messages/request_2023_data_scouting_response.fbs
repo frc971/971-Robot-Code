@@ -26,8 +26,12 @@ table Stats2023 {
   cones_dropped:int (id:18);
   // Time in nanoseconds.
   avg_cycle:int64 (id:19);
+  docked_auto:bool (id:20);
+  engaged_auto:bool (id:23);
+  docked:bool (id:25);
+  engaged:bool (id:26);
 
-  collected_by:string (id:20);
+  collected_by:string (id:24);
 }
 
 table Request2023DataScoutingResponse {

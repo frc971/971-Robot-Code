@@ -245,7 +245,8 @@ func TestAddToStats2023DB(t *testing.T) {
 			ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 2,
 			HighCubes: 1, CubesDropped: 0, LowCones: 0,
 			MiddleCones: 2, HighCones: 1, ConesDropped: 1,
-			AvgCycle: 0, CollectedBy: "emma",
+			AvgCycle: 0, DockedAuto: true, EngagedAuto: false,
+			Docked: false, Engaged: false, CollectedBy: "emma",
 		},
 		Stats2023{
 			TeamNumber: "7454", MatchNumber: 3, SetNumber: 1,
@@ -255,7 +256,8 @@ func TestAddToStats2023DB(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 1, MiddleCubes: 0,
 			HighCubes: 0, CubesDropped: 1, LowCones: 0,
 			MiddleCones: 0, HighCones: 1, ConesDropped: 0,
-			AvgCycle: 0, CollectedBy: "tyler",
+			AvgCycle: 0, DockedAuto: false, EngagedAuto: false,
+			Docked: true, Engaged: true, CollectedBy: "tyler",
 		},
 		Stats2023{
 			TeamNumber: "4354", MatchNumber: 3, SetNumber: 1,
@@ -265,7 +267,8 @@ func TestAddToStats2023DB(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
 			HighCubes: 2, CubesDropped: 1, LowCones: 1,
 			MiddleCones: 1, HighCones: 0, ConesDropped: 1,
-			AvgCycle: 0, CollectedBy: "isaac",
+			AvgCycle: 0, DockedAuto: false, EngagedAuto: false,
+			Docked: false, Engaged: false, CollectedBy: "isaac",
 		},
 		Stats2023{
 			TeamNumber: "6533", MatchNumber: 3, SetNumber: 1,
@@ -275,7 +278,8 @@ func TestAddToStats2023DB(t *testing.T) {
 			ConesDroppedAuto: 0, LowCubes: 0, MiddleCubes: 1,
 			HighCubes: 2, CubesDropped: 1, LowCones: 0,
 			MiddleCones: 1, HighCones: 0, ConesDropped: 0,
-			AvgCycle: 0, CollectedBy: "will",
+			AvgCycle: 0, DockedAuto: true, EngagedAuto: true,
+			Docked: false, Engaged: false, CollectedBy: "will",
 		},
 		Stats2023{
 			TeamNumber: "8354", MatchNumber: 3, SetNumber: 1,
@@ -285,7 +289,8 @@ func TestAddToStats2023DB(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 1, MiddleCubes: 0,
 			HighCubes: 0, CubesDropped: 2, LowCones: 1,
 			MiddleCones: 1, HighCones: 0, ConesDropped: 1,
-			AvgCycle: 0, CollectedBy: "unkown",
+			AvgCycle: 0, DockedAuto: true, EngagedAuto: false,
+			Docked: true, Engaged: false, CollectedBy: "unkown",
 		},
 	}
 
@@ -333,7 +338,8 @@ func TestQueryingStats2023ByTeam(t *testing.T) {
 			ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 2,
 			HighCubes: 1, CubesDropped: 0, LowCones: 0,
 			MiddleCones: 2, HighCones: 1, ConesDropped: 1,
-			AvgCycle: 0, CollectedBy: "emma",
+			AvgCycle: 0, DockedAuto: true, EngagedAuto: false,
+			Docked: false, Engaged: false, CollectedBy: "emma",
 		},
 		Stats2023{
 			TeamNumber: "7454", MatchNumber: 4, SetNumber: 1,
@@ -343,7 +349,8 @@ func TestQueryingStats2023ByTeam(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 1, MiddleCubes: 0,
 			HighCubes: 0, CubesDropped: 1, LowCones: 0,
 			MiddleCones: 0, HighCones: 1, ConesDropped: 0,
-			AvgCycle: 0, CollectedBy: "tyler",
+			AvgCycle: 0, DockedAuto: true, EngagedAuto: true,
+			Docked: false, Engaged: false, CollectedBy: "tyler",
 		},
 		Stats2023{
 			TeamNumber: "6344", MatchNumber: 5, SetNumber: 1,
@@ -353,7 +360,8 @@ func TestQueryingStats2023ByTeam(t *testing.T) {
 			ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 2,
 			HighCubes: 1, CubesDropped: 0, LowCones: 0,
 			MiddleCones: 2, HighCones: 1, ConesDropped: 1,
-			AvgCycle: 0, CollectedBy: "emma",
+			AvgCycle: 0, DockedAuto: true, EngagedAuto: false,
+			Docked: true, Engaged: false, CollectedBy: "emma",
 		},
 	}
 
@@ -457,7 +465,8 @@ func TestDeleteFromStats(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 1,
 			HighCubes: 2, CubesDropped: 1, LowCones: 1,
 			MiddleCones: 0, HighCones: 1, ConesDropped: 2,
-			AvgCycle: 58, CollectedBy: "unknown",
+			AvgCycle: 58, DockedAuto: false, EngagedAuto: false,
+			Docked: true, Engaged: true, CollectedBy: "unknown",
 		},
 		Stats2023{
 			TeamNumber: "2314", MatchNumber: 5, SetNumber: 1,
@@ -467,7 +476,8 @@ func TestDeleteFromStats(t *testing.T) {
 			ConesDroppedAuto: 0, LowCubes: 2, MiddleCubes: 0,
 			HighCubes: 1, CubesDropped: 0, LowCones: 0,
 			MiddleCones: 2, HighCones: 1, ConesDropped: 0,
-			AvgCycle: 34, CollectedBy: "simon",
+			AvgCycle: 34, DockedAuto: true, EngagedAuto: true,
+			Docked: true, Engaged: false, CollectedBy: "simon",
 		},
 		Stats2023{
 			TeamNumber: "3242", MatchNumber: 5, SetNumber: 1,
@@ -477,7 +487,8 @@ func TestDeleteFromStats(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 2,
 			HighCubes: 0, CubesDropped: 0, LowCones: 2,
 			MiddleCones: 0, HighCones: 1, ConesDropped: 1,
-			AvgCycle: 50, CollectedBy: "eliza",
+			AvgCycle: 50, DockedAuto: false, EngagedAuto: false,
+			Docked: false, Engaged: false, CollectedBy: "eliza",
 		},
 		Stats2023{
 			TeamNumber: "1742", MatchNumber: 5, SetNumber: 1,
@@ -487,7 +498,8 @@ func TestDeleteFromStats(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 1,
 			HighCubes: 2, CubesDropped: 1, LowCones: 0,
 			MiddleCones: 2, HighCones: 1, ConesDropped: 1,
-			AvgCycle: 49, CollectedBy: "isaac",
+			AvgCycle: 49, DockedAuto: true, EngagedAuto: false,
+			Docked: false, Engaged: false, CollectedBy: "isaac",
 		},
 		Stats2023{
 			TeamNumber: "2454", MatchNumber: 5, SetNumber: 1,
@@ -497,7 +509,8 @@ func TestDeleteFromStats(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 1, MiddleCubes: 2,
 			HighCubes: 0, CubesDropped: 0, LowCones: 1,
 			MiddleCones: 1, HighCones: 1, ConesDropped: 0,
-			AvgCycle: 70, CollectedBy: "sam",
+			AvgCycle: 70, DockedAuto: true, EngagedAuto: true,
+			Docked: false, Engaged: false, CollectedBy: "sam",
 		},
 	}
 
@@ -510,7 +523,8 @@ func TestDeleteFromStats(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 2,
 			HighCubes: 0, CubesDropped: 0, LowCones: 2,
 			MiddleCones: 0, HighCones: 1, ConesDropped: 1,
-			AvgCycle: 50, CollectedBy: "eliza",
+			AvgCycle: 50, DockedAuto: false, EngagedAuto: false,
+			Docked: false, Engaged: false, CollectedBy: "eliza",
 		},
 		Stats2023{
 			TeamNumber: "2454", MatchNumber: 5, SetNumber: 1,
@@ -520,7 +534,8 @@ func TestDeleteFromStats(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 1, MiddleCubes: 2,
 			HighCubes: 0, CubesDropped: 0, LowCones: 1,
 			MiddleCones: 1, HighCones: 1, ConesDropped: 0,
-			AvgCycle: 70, CollectedBy: "sam",
+			AvgCycle: 70, DockedAuto: true, EngagedAuto: true,
+			Docked: false, Engaged: false, CollectedBy: "sam",
 		},
 	}
 
@@ -983,7 +998,8 @@ func TestReturnStats2023DB(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 1, MiddleCubes: 2,
 			HighCubes: 1, CubesDropped: 0, LowCones: 2,
 			MiddleCones: 0, HighCones: 2, ConesDropped: 1,
-			AvgCycle: 51, CollectedBy: "isaac",
+			AvgCycle: 51, DockedAuto: true, EngagedAuto: true,
+			Docked: false, Engaged: false, CollectedBy: "isaac",
 		},
 		Stats2023{
 			TeamNumber: "5443", MatchNumber: 2, SetNumber: 1,
@@ -993,7 +1009,8 @@ func TestReturnStats2023DB(t *testing.T) {
 			ConesDroppedAuto: 0, LowCubes: 2, MiddleCubes: 2,
 			HighCubes: 1, CubesDropped: 0, LowCones: 1,
 			MiddleCones: 0, HighCones: 2, ConesDropped: 1,
-			AvgCycle: 39, CollectedBy: "jack",
+			AvgCycle: 39, DockedAuto: false, EngagedAuto: false,
+			Docked: false, Engaged: false, CollectedBy: "jack",
 		},
 		Stats2023{
 			TeamNumber: "5436", MatchNumber: 2, SetNumber: 1,
@@ -1003,7 +1020,8 @@ func TestReturnStats2023DB(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 2, MiddleCubes: 2,
 			HighCubes: 0, CubesDropped: 0, LowCones: 1,
 			MiddleCones: 2, HighCones: 1, ConesDropped: 1,
-			AvgCycle: 45, CollectedBy: "martin",
+			AvgCycle: 45, DockedAuto: true, EngagedAuto: false,
+			Docked: false, Engaged: false, CollectedBy: "martin",
 		},
 		Stats2023{
 			TeamNumber: "5643", MatchNumber: 2, SetNumber: 1,
@@ -1013,7 +1031,8 @@ func TestReturnStats2023DB(t *testing.T) {
 			ConesDroppedAuto: 1, LowCubes: 2, MiddleCubes: 2,
 			HighCubes: 0, CubesDropped: 0, LowCones: 2,
 			MiddleCones: 2, HighCones: 1, ConesDropped: 1,
-			AvgCycle: 34, CollectedBy: "unknown",
+			AvgCycle: 34, DockedAuto: true, EngagedAuto: false,
+			Docked: true, Engaged: false, CollectedBy: "unknown",
 		},
 	}
 
