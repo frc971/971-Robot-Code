@@ -232,6 +232,15 @@ std::optional<TargetMapper::TargetPose> TargetMapper::GetTargetPoseById(
   return std::nullopt;
 }
 
+std::optional<TargetMapper::TargetPose> TargetMapper::GetTargetPoseById(
+    TargetId target_id) {
+  if (target_poses_.count(target_id) > 0) {
+    return TargetMapper::TargetPose{target_id, target_poses_[target_id]};
+  }
+
+  return std::nullopt;
+}
+
 // Taken from ceres/examples/slam/pose_graph_3d/pose_graph_3d.cc
 // Constructs the nonlinear least squares optimization problem from the pose
 // graph constraints.
@@ -290,6 +299,9 @@ void TargetMapper::BuildOptimizationProblem(
   // better to properly constrain the gauge freedom. This can be done by
   // setting one of the poses as constant so the optimizer cannot change it.
   ceres::examples::MapOfPoses::iterator pose_start_iter = poses->begin();
+  // TODO<Jim>: This fixes first target, but breaks optimizer if we don't have
+  // an observation on the first target.  We may want to allow other targets as
+  // fixed
   CHECK(pose_start_iter != poses->end()) << "There are no poses.";
   problem->SetParameterBlockConstant(pose_start_iter->second.p.data());
   problem->SetParameterBlockConstant(pose_start_iter->second.q.coeffs().data());
@@ -302,6 +314,7 @@ bool TargetMapper::SolveOptimizationProblem(ceres::Problem *problem) {
   ceres::Solver::Options options;
   options.max_num_iterations = FLAGS_max_num_iterations;
   options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+  options.minimizer_progress_to_stdout = true;
 
   ceres::Solver::Summary summary;
   ceres::Solve(options, problem, &summary);

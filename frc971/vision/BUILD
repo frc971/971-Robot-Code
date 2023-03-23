@@ -223,6 +223,7 @@ cc_library(
     hdrs = [
         "visualize_robot.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos:init",
         "//third_party:opencv",

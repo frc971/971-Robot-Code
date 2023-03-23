@@ -11,6 +11,7 @@
 #include "frc971/vision/target_map_generated.h"
 #include "frc971/vision/target_mapper.h"
 #include "frc971/vision/vision_generated.h"
+#include "frc971/vision/visualize_robot.h"
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/imgproc.hpp"
 #include "third_party/apriltag/apriltag.h"
@@ -83,8 +84,8 @@ class AprilRoboticsDetector {
   frc971::vision::ImageCallback image_callback_;
   aos::Sender<frc971::vision::TargetMap> target_map_sender_;
   aos::Sender<foxglove::ImageAnnotations> image_annotations_sender_;
-
   size_t rejections_;
+  frc971::vision::VisualizeRobot vis_robot_;
 };
 
 }  // namespace vision

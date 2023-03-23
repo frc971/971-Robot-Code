@@ -9,6 +9,24 @@
 namespace frc971 {
 namespace vision {
 
+void VisualizeRobot::SetDefaultViewpoint(int image_width, double focal_length) {
+  // 10 meters above the origin, rotated so the camera faces straight down
+  Eigen::Translation3d camera_trans(0, 0, 10.0);
+  Eigen::AngleAxisd camera_rot(M_PI, Eigen::Vector3d::UnitX());
+  Eigen::Affine3d camera_viewpoint = camera_trans * camera_rot;
+  SetViewpoint(camera_viewpoint);
+
+  cv::Mat camera_mat;
+  double half_width = static_cast<double>(image_width) / 2.0;
+  double intr[] = {focal_length, 0.0, half_width, 0.0, focal_length,
+                   half_width,   0.0, 0.0,        1.0};
+  camera_mat = cv::Mat(3, 3, CV_64FC1, intr);
+  SetCameraParameters(camera_mat);
+
+  cv::Mat dist_coeffs = cv::Mat(1, 5, CV_64F, 0.0);
+  SetDistortionCoefficients(dist_coeffs);
+}
+
 cv::Point VisualizeRobot::ProjectPoint(Eigen::Vector3d T_world_point) {
   // Map 3D point in world coordinates to camera frame
   Eigen::Vector3d T_camera_point = H_world_viewpoint_.inverse() * T_world_point;
@@ -28,7 +46,7 @@ void VisualizeRobot::DrawLine(Eigen::Vector3d start3d, Eigen::Vector3d end3d) {
   cv::Point start2d = ProjectPoint(start3d);
   cv::Point end2d = ProjectPoint(end3d);
 
-  cv::line(image_, start2d, end2d, cv::Scalar(0, 0, 255));
+  cv::line(image_, start2d, end2d, cv::Scalar(0, 200, 0));
 }
 
 void VisualizeRobot::DrawFrameAxes(Eigen::Affine3d H_world_target,
@@ -53,21 +71,37 @@ void VisualizeRobot::DrawFrameAxes(Eigen::Affine3d H_world_target,
     // Grab x axis direction
     cv::Vec3d label_offset = r_mat.col(0);
 
-    // Find 3D coordinate of point at the end of the x-axis, and project it
+    // Find 3D coordinate of point at the end of the x-axis, and put label there
+    // Bump it just a few (5) pixels to the right, to make it read easier
     cv::Mat label_coord_res =
         camera_mat_ * cv::Mat(tvec + label_offset * axis_scale);
     cv::Vec3d label_coord = label_coord_res.col(0);
-    label_coord[0] = label_coord[0] / label_coord[2];
+    label_coord[0] = label_coord[0] / label_coord[2] + 5;
     label_coord[1] = label_coord[1] / label_coord[2];
     cv::putText(image_, label, cv::Point(label_coord[0], label_coord[1]),
                 cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
   }
 }
 
-void VisualizeRobot::DrawBoardOutline(Eigen::Affine3d H_world_board,
+void VisualizeRobot::DrawRobotOutline(Eigen::Affine3d H_world_robot,
                                       std::string label) {
-  LOG(INFO) << "Not yet implemented; drawing axes only";
-  DrawFrameAxes(H_world_board, label);
+  DrawFrameAxes(H_world_robot, label);
+  const double kBotHalfWidth = 0.75 / 2.0;
+  const double kBotHalfLength = 1.0 / 2.0;
+  // Compute coordinates for front/rear and right/left corners
+  Eigen::Vector3d fr_corner =
+      H_world_robot * Eigen::Vector3d(kBotHalfLength, kBotHalfWidth, 0);
+  Eigen::Vector3d fl_corner =
+      H_world_robot * Eigen::Vector3d(kBotHalfLength, -kBotHalfWidth, 0);
+  Eigen::Vector3d rl_corner =
+      H_world_robot * Eigen::Vector3d(-kBotHalfLength, -kBotHalfWidth, 0);
+  Eigen::Vector3d rr_corner =
+      H_world_robot * Eigen::Vector3d(-kBotHalfLength, kBotHalfWidth, 0);
+
+  DrawLine(fr_corner, fl_corner);
+  DrawLine(fl_corner, rl_corner);
+  DrawLine(rl_corner, rr_corner);
+  DrawLine(rr_corner, fr_corner);
 }
 
 }  // namespace vision

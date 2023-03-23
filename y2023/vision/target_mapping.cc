@@ -7,6 +7,7 @@
 #include "frc971/vision/calibration_generated.h"
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/target_mapper.h"
+#include "frc971/vision/visualize_robot.h"
 #include "opencv2/aruco.hpp"
 #include "opencv2/calib3d.hpp"
 #include "opencv2/core/eigen.hpp"
@@ -28,8 +29,8 @@ DEFINE_string(output_dir, "y2023/vision/maps",
               "Directory to write solved target map to");
 DEFINE_string(field_name, "charged_up",
               "Field name, for the output json filename and flatbuffer field");
-DEFINE_int32(team_number, 7971,
-             "Use the calibration for a node with this team number");
+DEFINE_int32(team_number, 0,
+             "Required: Use the calibration for a node with this team number");
 DEFINE_string(mcap_output_path, "/tmp/log.mcap", "Log to output.");
 DEFINE_string(pi, "pi1", "Pi name to generate mcap log for; defaults to pi1.");
 DEFINE_double(max_pose_error, 1e-6,
@@ -52,16 +53,22 @@ Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camera_target,
   return H_robot_target;
 }
 
+frc971::vision::VisualizeRobot vis_robot_;
+const int kImageWidth = 1000;
+
 // Add detected apriltag poses relative to the robot to
 // timestamped_target_detections
 void HandleAprilTags(const TargetMap &map,
                      aos::distributed_clock::time_point pi_distributed_time,
                      std::vector<DataAdapter::TimestampedDetection>
                          *timestamped_target_detections,
-                     Eigen::Affine3d extrinsics) {
+                     Eigen::Affine3d extrinsics, std::string node_name,
+                     frc971::vision::TargetMapper mapper) {
   for (const auto *target_pose_fbs : *map.target_poses()) {
     // Skip detections with high pose errors
     if (target_pose_fbs->pose_error() > FLAGS_max_pose_error) {
+      LOG(INFO) << " Skipping tag " << target_pose_fbs->id()
+                << " due to pose error of " << target_pose_fbs->pose_error();
       continue;
     }
 
@@ -88,6 +95,27 @@ void HandleAprilTags(const TargetMap &map,
             .distance_from_camera = distance_from_camera,
             .distortion_factor = distortion_factor,
             .id = static_cast<TargetMapper::TargetId>(target_pose.id)});
+
+    if (FLAGS_visualize) {
+      Eigen::Affine3d H_world_target = PoseUtils::Pose3dToAffine3d(
+          mapper.GetTargetPoseById(target_pose_fbs->id())->pose);
+      Eigen::Affine3d H_world_robot = H_world_target * H_robot_target.inverse();
+      Eigen::Affine3d H_world_camera =
+          H_world_target * H_camera_target.inverse();
+      LOG(INFO) << node_name << ", " << target_pose_fbs->id()
+                << ", t = " << pi_distributed_time
+                << ", pose_error = " << target_pose_fbs->pose_error()
+                << ", robot_pos (x,y,z) + "
+                << H_world_robot.translation().transpose();
+      vis_robot_.DrawRobotOutline(
+          H_world_robot, node_name + "-" +
+                             std::to_string(target_pose_fbs->id()) + "  " +
+                             std::to_string(target_pose_fbs->pose_error() /
+                                            FLAGS_max_pose_error));
+      vis_robot_.DrawFrameAxes(H_world_camera, node_name);
+      vis_robot_.DrawFrameAxes(H_world_target,
+                               std::to_string(target_pose_fbs->id()));
+    }
   }
 }
 
@@ -109,6 +137,10 @@ void HandlePiCaptures(
 
   detectors->emplace_back(std::move(detector_ptr));
 
+  ceres::examples::VectorOfConstraints target_constraints;
+  frc971::vision::TargetMapper target_loc_mapper(FLAGS_json_path,
+                                                 target_constraints);
+
   mapping_event_loop->MakeWatcher("/camera", [=](const TargetMap &map) {
     aos::distributed_clock::time_point pi_distributed_time =
         reader->event_loop_factory()
@@ -116,8 +148,16 @@ void HandlePiCaptures(
             ->ToDistributedClock(aos::monotonic_clock::time_point(
                 aos::monotonic_clock::duration(map.monotonic_timestamp_ns())));
 
+    std::string node_name = detection_event_loop->node()->name()->str();
     HandleAprilTags(map, pi_distributed_time, timestamped_target_detections,
-                    extrinsics);
+                    extrinsics, node_name, target_loc_mapper);
+    if (FLAGS_visualize) {
+      cv::imshow("View", vis_robot_.image_);
+      cv::waitKey();
+      cv::Mat image_mat =
+          cv::Mat::zeros(cv::Size(kImageWidth, kImageWidth), CV_8UC3);
+      vis_robot_.SetImage(image_mat);
+    }
   });
 }
 
@@ -197,7 +237,6 @@ void MappingMain(int argc, char *argv[]) {
   std::unique_ptr<aos::McapLogger> relogger;
   if (!FLAGS_mcap_output_path.empty()) {
     LOG(INFO) << "Writing out mcap file to " << FLAGS_mcap_output_path;
-    // TODO: Should make this work for any pi
     const aos::Node *node =
         aos::configuration::GetNode(reader.configuration(), FLAGS_pi);
     reader.event_loop_factory()->GetNodeEventLoopFactory(node)->OnStartup(
@@ -210,6 +249,14 @@ void MappingMain(int argc, char *argv[]) {
               aos::McapLogger::CanonicalChannelNames::kShortened,
               aos::McapLogger::Compression::kLz4);
         });
+  }
+
+  if (FLAGS_visualize) {
+    cv::Mat image_mat =
+        cv::Mat::zeros(cv::Size(kImageWidth, kImageWidth), CV_8UC3);
+    vis_robot_.SetImage(image_mat);
+    const double kFocalLength = 500.0;
+    vis_robot_.SetDefaultViewpoint(kImageWidth, kFocalLength);
   }
 
   reader.event_loop_factory()->Run();

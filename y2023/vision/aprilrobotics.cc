@@ -2,6 +2,8 @@
 
 #include "y2023/vision/vision_util.h"
 
+#include <opencv2/highgui.hpp>
+
 DEFINE_bool(
     debug, false,
     "If true, dump a ton of debug and crash on the first valid detection.");
@@ -26,13 +28,12 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
     : calibration_data_(event_loop),
       image_size_(0, 0),
       ftrace_(),
-      image_callback_(
-          event_loop, channel_name,
-          [&](cv::Mat image_color_mat,
-              const aos::monotonic_clock::time_point eof) {
-            HandleImage(image_color_mat, eof);
-          },
-          chrono::milliseconds(5)),
+      image_callback_(event_loop, channel_name,
+                      [&](cv::Mat image_color_mat,
+                          const aos::monotonic_clock::time_point eof) {
+                        HandleImage(image_color_mat, eof);
+                      },
+                      chrono::milliseconds(5)),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
       image_annotations_sender_(
@@ -54,7 +55,6 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
       calibration_data_.constants(), event_loop->node()->name()->string_view());
 
   extrinsics_ = CameraExtrinsics(calibration_);
-
   intrinsics_ = CameraIntrinsics(calibration_);
   // Create an undistort projection matrix using the intrinsics
   projection_matrix_ = cv::Mat::zeros(3, 4, CV_64F);
@@ -181,6 +181,8 @@ std::vector<cv::Point2f> AprilRoboticsDetector::MakeCornerVector(
 
 AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
     cv::Mat image, aos::monotonic_clock::time_point eof) {
+  cv::Mat color_image;
+  cvtColor(image, color_image, cv::COLOR_GRAY2RGB);
   const aos::monotonic_clock::time_point start_time =
       aos::monotonic_clock::now();
 
@@ -275,9 +277,41 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
                                      .pose = pose,
                                      .pose_error = pose_error,
                                      .distortion_factor = distortion_factor});
+      if (FLAGS_visualize) {
+        // Draw raw (distorted) corner points in green
+        cv::line(color_image, orig_corner_points[0], orig_corner_points[1],
+                 cv::Scalar(0, 255, 0), 2);
+        cv::line(color_image, orig_corner_points[1], orig_corner_points[2],
+                 cv::Scalar(0, 255, 0), 2);
+        cv::line(color_image, orig_corner_points[2], orig_corner_points[3],
+                 cv::Scalar(0, 255, 0), 2);
+        cv::line(color_image, orig_corner_points[3], orig_corner_points[0],
+                 cv::Scalar(0, 255, 0), 2);
+
+        // Draw undistorted corner points in red
+        cv::line(color_image, corner_points[0], corner_points[1],
+                 cv::Scalar(0, 0, 255), 2);
+        cv::line(color_image, corner_points[2], corner_points[1],
+                 cv::Scalar(0, 0, 255), 2);
+        cv::line(color_image, corner_points[2], corner_points[3],
+                 cv::Scalar(0, 0, 255), 2);
+        cv::line(color_image, corner_points[0], corner_points[3],
+                 cv::Scalar(0, 0, 255), 2);
+      }
+
+      VLOG(1) << "Found tag number " << det->id << " hamming: " << det->hamming
+              << " margin: " << det->decision_margin;
+
     } else {
       rejections_++;
     }
+  }
+  if (FLAGS_visualize) {
+    // Display the result
+    // Rotate by 180 degrees to make it upright
+    // TDOO<Jim>: Make this a flag, since we don't want it for box of pis
+    cv::rotate(color_image, color_image, 1);
+    cv::imshow("AprilRoboticsDetector Image", color_image);
   }
 
   const auto corners_offset = builder.fbb()->CreateVector(foxglove_corners);
