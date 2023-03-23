@@ -377,6 +377,10 @@
       "name": "web_proxy",
       "executable_name": "web_proxy_main",
       "user": "pi",
+      "args": [
+        "--min_ice_port=5800",
+        "--max_ice_port=5810"
+      ],
       "nodes": [
         "pi{{ NUM }}"
       ]
