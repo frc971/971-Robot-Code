@@ -505,6 +505,30 @@ cc_binary(
     ],
 )
 
+cc_library(
+    name = "multinode_logger_test_lib",
+    testonly = True,
+    srcs = [
+        "multinode_logger_test_lib.cc",
+    ],
+    hdrs = ["multinode_logger_test_lib.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":log_reader",
+        ":log_writer",
+        ":snappy_encoder",
+        "//aos/events:message_counter",
+        "//aos/events:ping_lib",
+        "//aos/events:pong_lib",
+        "//aos/events:simulated_event_loop",
+        "//aos/network:testing_time_converter",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//aos/testing:tmpdir",
+    ],
+)
+
 aos_config(
     name = "multinode_pingpong_split_config",
     src = "multinode_pingpong_split.json",
@@ -617,8 +641,8 @@ cc_test(
 )
 
 cc_test(
-    name = "logger_test",
-    srcs = ["logger_test.cc"],
+    name = "multinode_logger_test",
+    srcs = ["multinode_logger_test.cc"],
     copts = select({
         "//tools:cpu_k8": ["-DLZMA=1"],
         "//tools:cpu_arm64": ["-DLZMA=1"],
@@ -631,6 +655,24 @@ cc_test(
         ":multinode_pingpong_split4_reliable_config",
         ":multinode_pingpong_split_config",
         ":multinode_pingpong_triangle_split_config",
+        "//aos/events:pingpong_config",
+    ],
+    shard_count = 10,
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":multinode_logger_test_lib",
+    ],
+)
+
+cc_test(
+    name = "logger_test",
+    srcs = ["logger_test.cc"],
+    copts = select({
+        "//tools:cpu_k8": ["-DLZMA=1"],
+        "//tools:cpu_arm64": ["-DLZMA=1"],
+        "//conditions:default": [],
+    }),
+    data = [
         "//aos/events:pingpong_config",
     ],
     shard_count = 10,
