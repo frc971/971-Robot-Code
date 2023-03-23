@@ -91,6 +91,11 @@ class BaseAutonomousActor : public ::aos::common::actions::ActorBase<Goal> {
   // Returns true if the drive has finished.
   bool IsDriveDone();
 
+  // Returns the current x, y, theta of the robot on the field.
+  double X();
+  double Y();
+  double Theta();
+
   void LineFollowAtVelocity(
       double velocity,
       y2019::control_loops::drivetrain::SelectionHint hint =

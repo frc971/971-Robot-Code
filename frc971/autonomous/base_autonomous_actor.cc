@@ -177,6 +177,24 @@ bool BaseAutonomousActor::IsDriveDone() {
   return false;
 }
 
+double BaseAutonomousActor::X() {
+  drivetrain_status_fetcher_.Fetch();
+  CHECK(drivetrain_status_fetcher_.get());
+  return drivetrain_status_fetcher_->x();
+}
+
+double BaseAutonomousActor::Y() {
+  drivetrain_status_fetcher_.Fetch();
+  CHECK(drivetrain_status_fetcher_.get());
+  return drivetrain_status_fetcher_->y();
+}
+
+double BaseAutonomousActor::Theta() {
+  drivetrain_status_fetcher_.Fetch();
+  CHECK(drivetrain_status_fetcher_.get());
+  return drivetrain_status_fetcher_->theta();
+}
+
 bool BaseAutonomousActor::WaitForAboveAngle(double angle) {
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
