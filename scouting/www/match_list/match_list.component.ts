@@ -30,19 +30,37 @@ export class MatchListComponent implements OnInit {
 
   constructor(private readonly matchListRequestor: MatchListRequestor) {}
 
-  // Returns a class for the row to hide it if all teams in this match have
-  // already been scouted.
-  getRowClass(match: Match): string {
+  // Returns true if the match is fully scouted. Returns false otherwise.
+  matchIsFullyScouted(match: Match): boolean {
     const scouted = match.dataScouted();
-    if (
-      this.hideCompletedMatches &&
+    return (
       scouted.r1() &&
       scouted.r2() &&
       scouted.r3() &&
       scouted.b1() &&
       scouted.b2() &&
       scouted.b3()
-    ) {
+    );
+  }
+
+  // Returns true if at least one team in this match has been scouted. Returns
+  // false otherwise.
+  matchIsPartiallyScouted(match: Match): boolean {
+    const scouted = match.dataScouted();
+    return (
+      scouted.r1() ||
+      scouted.r2() ||
+      scouted.r3() ||
+      scouted.b1() ||
+      scouted.b2() ||
+      scouted.b3()
+    );
+  }
+
+  // Returns a class for the row to hide it if all teams in this match have
+  // already been scouted.
+  getRowClass(match: Match): string {
+    if (this.hideCompletedMatches && this.matchIsFullyScouted(match)) {
       return 'hidden_row';
     }
     return '';
@@ -110,7 +128,22 @@ export class MatchListComponent implements OnInit {
   displayMatchNumber(match: Match): string {
     // Only display the set number for eliminations matches.
     const setNumber = match.compLevel() == 'qm' ? '' : `${match.setNumber()}`;
-    return `${this.matchType(match)} ${setNumber} Match ${match.matchNumber()}`;
+    const matchType = this.matchType(match);
+    const mainText = `${matchType} ${setNumber} Match ${match.matchNumber()}`;
+
+    // When showing the full match list (i.e. not hiding completed matches)
+    // it's useful to know if a match has already been scouted or not.
+    const suffix = (() => {
+      if (this.matchIsFullyScouted(match)) {
+        return '(fully scouted)';
+      } else if (this.matchIsPartiallyScouted(match)) {
+        return '(partially scouted)';
+      } else {
+        return '';
+      }
+    })();
+
+    return `${mainText} ${suffix}`;
   }
 
   ngOnInit() {
