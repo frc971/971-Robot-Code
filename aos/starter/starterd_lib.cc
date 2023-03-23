@@ -84,7 +84,8 @@ Starter::Starter(const aos::Configuration *event_loop_config)
     if (aos::configuration::MultiNode(config_msg_)) {
       std::string_view current_node = event_loop_.node()->name()->string_view();
       for (const aos::Application *application : *applications) {
-        CHECK(application->has_nodes());
+        CHECK(application->has_nodes())
+            << ": Missing nodes on " << aos::FlatbufferToJson(application);
         for (const flatbuffers::String *node : *application->nodes()) {
           if (node->string_view() == current_node) {
             AddApplication(application);
