@@ -115,20 +115,17 @@
       <!-- 'Balancing' during auto. -->
       <div *ngIf="autoPhase" class="d-grid gap-2">
         <label>
-          <input type="checkbox" (change)="dockedValue = $event.target.value" />
+          <input #docked type="checkbox" />
           Docked
         </label>
         <label>
-          <input
-            type="checkbox"
-            (change)="engagedValue = $event.target.value"
-          />
+          <input #engaged type="checkbox" />
           Engaged
         </label>
         <br />
         <button
           class="btn btn-info"
-          (click)="addAction({type: 'autoBalanceAction', docked: dockedValue, engaged: engagedValue});"
+          (click)="addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked});"
         >
           Submit Balancing
         </button>
@@ -183,20 +180,17 @@
       <!-- 'Balancing' during auto. -->
       <div *ngIf="autoPhase" class="d-grid gap-2">
         <label>
-          <input type="checkbox" (change)="dockedValue = $event.target.value" />
+          <input #docked type="checkbox" />
           Docked
         </label>
         <label>
-          <input
-            type="checkbox"
-            (change)="engagedValue = $event.target.value"
-          />
+          <input #engaged type="checkbox" />
           Engaged
         </label>
         <br />
         <button
           class="btn btn-info"
-          (click)="addAction({type: 'autoBalanceAction', docked: dockedValue, engaged: engagedValue});"
+          (click)="addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked});"
         >
           Submit Balancing
         </button>
@@ -231,17 +225,17 @@
         DEAD
       </button>
       <label>
-        <input type="checkbox" (change)="dockedValue = $event.target.value" />
+        <input #docked type="checkbox" />
         Docked
       </label>
       <label>
-        <input type="checkbox" (change)="engagedValue = $event.target.value" />
+        <input #engaged type="checkbox" />
         Engaged
       </label>
       <button
         *ngIf="!autoPhase"
         class="btn btn-info"
-        (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: dockedValue, engaged: engagedValue});"
+        (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: docked.checked, engaged: engaged.checked});"
       >
         End Match
       </button>
@@ -259,7 +253,7 @@
       </button>
       <button
         class="btn btn-info"
-        (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: dockedValue, engaged: engagedValue});"
+        (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: docked.checked, engaged: engaged.checked});"
       >
         End Match
       </button>
@@ -276,4 +270,6 @@
   <div *ngSwitchCase="'Success'" id="Success" class="container-fluid">
     <h2>Successfully submitted data.</h2>
   </div>
+
+  <span class="error_message" role="alert">{{ errorMessage }}</span>
 </ng-container>
