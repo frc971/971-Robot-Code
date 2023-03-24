@@ -13,12 +13,19 @@ DEFINE_double(distortion_noise_scalar, 1.0,
               "Scale the target pose distortion factor by this when computing "
               "the noise.");
 DEFINE_double(
-    max_implied_yaw_error, 30.0,
+    max_implied_yaw_error, 3.0,
     "Reject target poses that imply a robot yaw of more than this many degrees "
     "off from our estimate.");
-DEFINE_double(max_distance_to_target, 6.0,
+DEFINE_double(
+    max_implied_teleop_yaw_error, 30.0,
+    "Reject target poses that imply a robot yaw of more than this many degrees "
+    "off from our estimate.");
+DEFINE_double(max_distance_to_target, 3.5,
               "Reject target poses that have a 3d distance of more than this "
               "many meters.");
+DEFINE_double(max_auto_image_robot_speed, 2.0,
+              "Reject target poses when the robot is travelling faster than "
+              "this speed in auto.");
 
 namespace y2023::localizer {
 namespace {
@@ -330,8 +337,19 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   double camera_implied_theta = Z(Corrector::kTheta);
   constexpr double kDegToRad = M_PI / 180.0;
 
-  if (std::abs(camera_implied_theta - theta_at_capture) >
-             FLAGS_max_implied_yaw_error * kDegToRad) {
+  const double robot_speed =
+      (state_at_capture.value()(StateIdx::kLeftVelocity) +
+       state_at_capture.value()(StateIdx::kRightVelocity)) /
+      2.0;
+  const double yaw_threshold =
+      (utils_.MaybeInAutonomous() ? FLAGS_max_implied_yaw_error
+                                  : FLAGS_max_implied_teleop_yaw_error) *
+      kDegToRad;
+  if (utils_.MaybeInAutonomous() &&
+      (std::abs(robot_speed) > FLAGS_max_auto_image_robot_speed)) {
+    return RejectImage(camera_index, RejectionReason::ROBOT_TOO_FAST, &builder);
+  } else if (std::abs(aos::math::NormalizeAngle(
+                 camera_implied_theta - theta_at_capture)) > yaw_threshold) {
     return RejectImage(camera_index, RejectionReason::HIGH_IMPLIED_YAW_ERROR,
                        &builder);
   } else if (distance_to_target > FLAGS_max_distance_to_target) {
