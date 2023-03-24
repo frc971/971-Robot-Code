@@ -25,6 +25,8 @@ table TargetEstimateDebug {
   correction_x: double (id: 12);
   correction_y: double (id: 13);
   correction_theta: double (id: 14);
+  // The angle between the camera axis and target normal.
+  skew:double (id: 15);
 }
 
 table Visualization {
