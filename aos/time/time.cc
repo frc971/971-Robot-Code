@@ -9,6 +9,7 @@
 
 #ifdef __linux__
 
+#include "absl/strings/numbers.h"
 #include "glog/logging.h"
 
 #else  // __linux__
@@ -80,6 +81,7 @@ std::ostream &operator<<(std::ostream &stream,
   return stream;
 }
 
+#ifdef __linux__
 std::optional<monotonic_clock::time_point> monotonic_clock::FromString(
     const std::string_view now) {
   // This should undo the operator << above.
@@ -97,18 +99,28 @@ std::optional<monotonic_clock::time_point> monotonic_clock::FromString(
 
   bool negative = now[0] == '-';
 
-  std::string sec(
+  std::string_view sec(
       now.substr(negative ? 1 : 0, now.size() - (negative ? 14 : 13)));
-  std::string nsec(now.substr(now.size() - 12, 9));
+  std::string_view nsec(now.substr(now.size() - 12, 9));
 
   if (!std::all_of(sec.begin(), sec.end(), ::isdigit) ||
       !std::all_of(nsec.begin(), nsec.end(), ::isdigit)) {
     return std::nullopt;
   }
 
+  std::chrono::seconds::rep seconds_data;
+  if (!absl::SimpleAtoi(sec, &seconds_data)) {
+    return std::nullopt;
+  }
+
+  std::chrono::nanoseconds::rep nanoseconds_data;
+  if (!absl::SimpleAtoi(nsec, &nanoseconds_data)) {
+    return std::nullopt;
+  }
+
   return monotonic_clock::time_point(
-      std::chrono::seconds((negative ? -1 : 1) * atoll(sec.c_str())) +
-      std::chrono::nanoseconds((negative ? -1 : 1) * atoll(nsec.c_str())));
+      std::chrono::seconds((negative ? -1 : 1) * seconds_data) +
+      std::chrono::nanoseconds((negative ? -1 : 1) * nanoseconds_data));
 }
 
 std::optional<realtime_clock::time_point> realtime_clock::FromString(
@@ -123,7 +135,7 @@ std::optional<realtime_clock::time_point> realtime_clock::FromString(
     return std::nullopt;
   }
 
-  std::string nsec(now.substr(now.size() - 9, 9));
+  std::string_view nsec(now.substr(now.size() - 9, 9));
 
   if (!std::all_of(nsec.begin(), nsec.end(), ::isdigit)) {
     return std::nullopt;
@@ -139,10 +151,16 @@ std::optional<realtime_clock::time_point> realtime_clock::FromString(
 
   time_t seconds = mktime(&tm);
 
+  std::chrono::nanoseconds::rep nanoseconds_data;
+  if (!absl::SimpleAtoi(nsec, &nanoseconds_data)) {
+    return std::nullopt;
+  }
+
   return realtime_clock::time_point(
       std::chrono::seconds(seconds) +
-      std::chrono::nanoseconds(atoll(nsec.c_str())));
+      std::chrono::nanoseconds(nanoseconds_data));
 }
+#endif
 
 std::ostream &operator<<(std::ostream &stream,
                          const aos::realtime_clock::time_point &now) {

@@ -26,8 +26,10 @@ class monotonic_clock {
 
   // Converts the time string to a time_point if it is well formatted.  This is
   // designed to reverse operator <<.
+#ifdef __linux__
   static std::optional<monotonic_clock::time_point> FromString(
       const std::string_view now);
+#endif
 
   // Returns the epoch (0).
   static constexpr monotonic_clock::time_point epoch() {
@@ -56,8 +58,10 @@ class realtime_clock {
 
   // Converts the time string to a time_point if it is well formatted.  This is
   // designed to reverse operator <<.
+#ifdef __linux__
   static std::optional<realtime_clock::time_point> FromString(
       const std::string_view now);
+#endif
 
   // Returns the epoch (0).
   static constexpr realtime_clock::time_point epoch() {
