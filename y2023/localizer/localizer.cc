@@ -97,7 +97,8 @@ Localizer::Localizer(
                    y2023::constants::Values::DrivetrainEncoderToMeters(1),
                    std::bind(&Localizer::HandleImu, this, std::placeholders::_1,
                              std::placeholders::_2, std::placeholders::_3,
-                             std::placeholders::_4, std::placeholders::_5)),
+                             std::placeholders::_4, std::placeholders::_5),
+                   frc971::controls::ImuWatcher::TimestampSource::kPi),
       utils_(event_loop),
       status_sender_(event_loop->MakeSender<Status>("/localizer")),
       output_sender_(event_loop->MakeSender<frc971::controls::LocalizerOutput>(

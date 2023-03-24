@@ -18,7 +18,8 @@ ImuWatcher::ImuWatcher(
     std::function<
         void(aos::monotonic_clock::time_point, aos::monotonic_clock::time_point,
              std::optional<Eigen::Vector2d>, Eigen::Vector3d, Eigen::Vector3d)>
-        callback)
+        callback,
+    TimestampSource timestamp_source)
     : dt_config_(dt_config),
       callback_(std::move(callback)),
       zeroer_(zeroing::ImuZeroer::FaultBehavior::kTemporary),
@@ -28,7 +29,8 @@ ImuWatcher::ImuWatcher(
       right_encoder_(
           -EncoderWrapDistance(drivetrain_distance_per_encoder_tick) / 2.0,
           EncoderWrapDistance(drivetrain_distance_per_encoder_tick)) {
-  event_loop->MakeWatcher("/localizer", [this](const IMUValuesBatch &values) {
+  event_loop->MakeWatcher("/localizer", [this, timestamp_source](
+                                            const IMUValuesBatch &values) {
     CHECK(values.has_readings());
     for (const IMUValues *value : *values.readings()) {
       zeroer_.InsertAndProcessMeasurement(*value);
@@ -69,18 +71,21 @@ ImuWatcher::ImuWatcher(
                     left_encoder_.Unwrap(value->left_encoder()),
                     right_encoder_.Unwrap(value->right_encoder())});
       {
-        // If we can't trust the imu reading, just naively increment the
-        // pico timestamp.
-        const aos::monotonic_clock::time_point pico_timestamp =
-            zeroer_.Faulted()
-                ? (last_pico_timestamp_.has_value()
-                       ? last_pico_timestamp_.value() + kNominalDt
-                       : aos::monotonic_clock::epoch())
-                : aos::monotonic_clock::time_point(
-                      std::chrono::microseconds(value->pico_timestamp_us()));
         const aos::monotonic_clock::time_point pi_read_timestamp =
             aos::monotonic_clock::time_point(
                 std::chrono::nanoseconds(value->monotonic_timestamp_ns()));
+        // If we can't trust the imu reading, just naively increment the
+        // pico timestamp.
+        const aos::monotonic_clock::time_point pico_timestamp =
+            timestamp_source == TimestampSource::kPi
+                ? pi_read_timestamp
+                : (zeroer_.Faulted()
+                       ? (last_pico_timestamp_.has_value()
+                              ? last_pico_timestamp_.value() + kNominalDt
+                              : aos::monotonic_clock::epoch())
+                       : aos::monotonic_clock::time_point(
+                             std::chrono::microseconds(
+                                 value->pico_timestamp_us())));
         // TODO(james): If we get large enough drift off of the pico,
         // actually do something about it.
         if (!pico_offset_.has_value()) {
