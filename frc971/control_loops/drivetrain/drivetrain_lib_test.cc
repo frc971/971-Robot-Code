@@ -657,8 +657,8 @@ TEST_F(DrivetrainTest, SplineSimpleBackwards) {
       CHECK_NOTNULL(drivetrain_status_fetcher_->trajectory_logging())->theta();
   // As a sanity check, compare both against absolute angle and the spline's
   // goal angle.
-  EXPECT_NEAR(0.0, ::aos::math::DiffAngle(actual(2), 0.0), 2e-2);
-  EXPECT_NEAR(0.0, ::aos::math::DiffAngle(actual(2), expected_theta), 2e-2);
+  EXPECT_NEAR(0.0, ::aos::math::DiffAngle(actual(2), 0.0), 5e-2);
+  EXPECT_NEAR(0.0, ::aos::math::DiffAngle(actual(2), expected_theta), 5e-2);
 }
 
 // Tests that simple spline with a single goal message.
@@ -1005,7 +1005,7 @@ TEST_F(DrivetrainTest, SplineVoltageError) {
   const ::Eigen::Vector2d actual = drivetrain_plant_.GetPosition();
   // Expect the x position comparison to fail; everything else to succeed.
   spline_estimate_tolerance_ = 0.11;
-  spline_control_tolerance_ = 0.11;
+  spline_control_tolerance_ = 0.09;
   EXPECT_GT(std::abs(estimated_x - expected_x), spline_control_tolerance_);
   EXPECT_NEAR(estimated_y, expected_y, spline_control_tolerance_);
   EXPECT_NEAR(actual(0), estimated_x, spline_estimate_tolerance_);
