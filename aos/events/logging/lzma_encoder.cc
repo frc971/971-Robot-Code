@@ -84,6 +84,13 @@ LzmaEncoder::LzmaEncoder(size_t max_message_size,
   // efficient to allocate if we go over a threshold to keep the static memory
   // in use smaller, or just allocate the worst case like we are doing here?
   input_buffer_.resize(max_message_size);
+
+  // Start our queues out with a reasonable space allocation.  The cost of this
+  // is negligable compared to the buffer cost, but removes a bunch of
+  // allocations at runtime.
+  queue_.reserve(4);
+  free_queue_.reserve(4);
+  return_queue_.reserve(4);
 }
 
 LzmaEncoder::~LzmaEncoder() { lzma_end(&stream_); }
@@ -111,6 +118,9 @@ void LzmaEncoder::Finish() { RunLzmaCode(LZMA_FINISH); }
 void LzmaEncoder::Clear(const int n) {
   CHECK_GE(n, 0);
   CHECK_LE(static_cast<size_t>(n), queue_size());
+  for (int i = 0; i < n; ++i) {
+    free_queue_.emplace_back(std::move(queue_[i]));
+  }
   queue_.erase(queue_.begin(), queue_.begin() + n);
   if (queue_.empty()) {
     stream_.next_out = nullptr;
@@ -155,8 +165,13 @@ void LzmaEncoder::RunLzmaCode(lzma_action action) {
     // construction or a Reset, or when an input buffer is large enough to fill
     // more than one output buffer.
     if (stream_.avail_out == 0) {
-      queue_.emplace_back();
-      queue_.back().resize(kEncodedBufferSizeBytes);
+      if (!free_queue_.empty()) {
+        queue_.emplace_back(std::move(free_queue_.back()));
+        free_queue_.pop_back();
+      } else {
+        queue_.emplace_back();
+        queue_.back().resize(kEncodedBufferSizeBytes);
+      }
       stream_.next_out = queue_.back().data();
       stream_.avail_out = kEncodedBufferSizeBytes;
       // Update the byte count.

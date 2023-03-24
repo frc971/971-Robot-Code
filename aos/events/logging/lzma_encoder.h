@@ -54,6 +54,11 @@ class LzmaEncoder final : public DataEncoder {
   lzma_stream stream_;
   uint32_t compression_preset_;
   std::vector<ResizeableBuffer> queue_;
+  // Since we pretty much just allocate a couple of buffers, then allocate and
+  // release them over and over with very similar memory usage and without much
+  // variation in the peak usage, put the allocate chunks in a free queue to
+  // reduce fragmentation.
+  std::vector<ResizeableBuffer> free_queue_;
   bool finished_ = false;
   // Total bytes that resulted from encoding raw data since the last call to
   // Reset.
