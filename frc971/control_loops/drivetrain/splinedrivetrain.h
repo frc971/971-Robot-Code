@@ -22,7 +22,7 @@ namespace drivetrain {
 
 class SplineDrivetrain {
  public:
-  static constexpr size_t kMaxTrajectories = 5;
+  static constexpr size_t kMaxTrajectories = 6;
   SplineDrivetrain(const DrivetrainConfig<double> &dt_config);
 
   void SetGoal(const ::frc971::control_loops::drivetrain::Goal *goal);
