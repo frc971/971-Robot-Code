@@ -8,23 +8,18 @@ robot_downloader(
     ],
     data = [
         ":aos_config",
-        "@ctre_phoenix_api_cpp_athena//:shared_libraries",
-        "@ctre_phoenix_cci_athena//:shared_libraries",
+        "@ctre_phoenixpro_api_cpp_athena//:shared_libraries",
+        "@ctre_phoenixpro_tools_athena//:shared_libraries",
     ],
     dirs = [
         "//y2022_bot3/actors:splines",
     ],
     start_binaries = [
         "//aos/events/logging:logger_main",
-        "//aos/network:web_proxy_main",
         ":joystick_reader",
         ":wpilib_interface",
-        "//aos/network:message_bridge_client",
-        "//aos/network:message_bridge_server",
-        "//y2022_bot3/actors:binaries",
         "//y2022_bot3/control_loops/drivetrain:drivetrain",
         "//y2022_bot3/control_loops/drivetrain:trajectory_generator",
-        "//y2022_bot3/control_loops/superstructure:superstructure",
     ],
     target_compatible_with = ["@platforms//os:linux"],
 )

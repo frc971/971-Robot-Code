@@ -14,7 +14,7 @@ gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
 kDrivetrain = drivetrain.DrivetrainParams(
     J=6.0,
-    mass=58.0,
+    mass=28.0,
     # TODO(austin): Measure radius a bit better.
     robot_radius=0.39,
     wheel_radius=2.5 * 0.0254,

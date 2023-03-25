@@ -19,6 +19,10 @@ int main(int argc, char **argv) {
           std::make_unique<::frc971::control_loops::drivetrain::DeadReckonEkf>(
               &event_loop,
               ::y2022_bot3::control_loops::drivetrain::GetDrivetrainConfig());
+  std::unique_ptr<DrivetrainLoop> drivetrain = std::make_unique<DrivetrainLoop>(
+      y2022_bot3::control_loops::drivetrain::GetDrivetrainConfig(), &event_loop,
+      localizer.get());
+
   event_loop.Run();
 
   return 0;
