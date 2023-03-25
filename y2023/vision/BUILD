@@ -83,10 +83,10 @@ cc_binary(
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:charuco_lib",
         "//frc971/vision:target_mapper",
+        "//frc971/vision:visualize_robot",
         "//third_party:opencv",
         "//y2023/constants:constants_fbs",
         "//y2023/constants:simulated_constants_sender",
-        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -199,6 +199,36 @@ cc_binary(
         "//third_party:opencv",
         "//y2023/constants:constants_fbs",
         "//y2023/vision:vision_util",
+    ],
+)
+
+cc_binary(
+    name = "calibrate_multi_cameras",
+    srcs = [
+        "calibrate_multi_cameras.cc",
+    ],
+    data = [
+        "//y2023:aos_config",
+        "//y2023/constants:constants.json",
+        "//y2023/vision:maps",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2023:__subpackages__"],
+    deps = [
+        ":aprilrobotics_lib",
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/util:mcap_logger",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/control_loops:pose",
+        "//frc971/vision:calibration_fbs",
+        "//frc971/vision:charuco_lib",
+        "//frc971/vision:target_mapper",
+        "//third_party:opencv",
+        "//y2023/constants:constants_fbs",
+        "//y2023/constants:simulated_constants_sender",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 

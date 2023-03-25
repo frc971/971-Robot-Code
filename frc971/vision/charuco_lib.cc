@@ -25,8 +25,10 @@ DEFINE_bool(large_board, true, "If true, use the large calibration board.");
 DEFINE_uint32(
     min_charucos, 10,
     "The mininum number of aruco targets in charuco board required to match.");
-DEFINE_uint32(min_id, 12, "Minimum valid charuco id");
-DEFINE_uint32(max_id, 15, "Minimum valid charuco id");
+DEFINE_uint32(min_id, 0, "Minimum valid charuco id");
+DEFINE_uint32(max_diamonds, 0,
+              "Maximum number of diamonds to see.  Set to 0 for no limit");
+DEFINE_uint32(max_id, 15, "Maximum valid charuco id");
 DEFINE_bool(visualize, false, "Whether to visualize the resulting data.");
 DEFINE_bool(
     draw_axes, false,
@@ -280,9 +282,21 @@ void CharucoExtractor::PackPoseResults(
 }
 
 CharucoExtractor::CharucoExtractor(
+    const calibration::CameraCalibration *calibration,
+    const TargetType target_type)
+    : event_loop_(nullptr),
+      target_type_(target_type),
+      calibration_(CHECK_NOTNULL(calibration)) {
+  VLOG(2) << "Configuring CharucoExtractor without event_loop";
+  SetupTargetData();
+  VLOG(2) << "Camera matrix:\n" << calibration_.CameraIntrinsics();
+  VLOG(2) << "Distortion Coefficients:\n" << calibration_.CameraDistCoeffs();
+}
+
+CharucoExtractor::CharucoExtractor(
     aos::EventLoop *event_loop,
-    const calibration::CameraCalibration *calibration, TargetType target_type,
-    std::string_view image_channel,
+    const calibration::CameraCalibration *calibration,
+    const TargetType target_type, std::string_view image_channel,
     std::function<void(cv::Mat, monotonic_clock::time_point,
                        std::vector<cv::Vec4i>,
                        std::vector<std::vector<cv::Point2f>>, bool,
@@ -303,9 +317,34 @@ CharucoExtractor::CharucoExtractor(
 
 void CharucoExtractor::HandleImage(cv::Mat rgb_image,
                                    const monotonic_clock::time_point eof) {
+  // Set up the variables we'll use in the callback function
+  bool valid = false;
+  // ids and corners for final, refined board / marker detections
+  // Using Vec4i type since it supports Charuco Diamonds
+  // And overloading it using 1st int in Vec4i for others target types
+  std::vector<cv::Vec4i> result_ids;
+  std::vector<std::vector<cv::Point2f>> result_corners;
+
+  // Return a list of poses; for Charuco Board there will be just one
+  std::vector<Eigen::Vector3d> rvecs_eigen;
+  std::vector<Eigen::Vector3d> tvecs_eigen;
+  ProcessImage(rgb_image, eof, event_loop_->monotonic_now(), result_ids,
+               result_corners, valid, rvecs_eigen, tvecs_eigen);
+
+  handle_charuco_(rgb_image, eof, result_ids, result_corners, valid,
+                  rvecs_eigen, tvecs_eigen);
+}
+
+void CharucoExtractor::ProcessImage(
+    cv::Mat rgb_image, const monotonic_clock::time_point eof,
+    const monotonic_clock::time_point current_time,
+    std::vector<cv::Vec4i> &result_ids,
+    std::vector<std::vector<cv::Point2f>> &result_corners, bool &valid,
+    std::vector<Eigen::Vector3d> &rvecs_eigen,
+    std::vector<Eigen::Vector3d> &tvecs_eigen) {
   const double age_double =
-      std::chrono::duration_cast<std::chrono::duration<double>>(
-          event_loop_->monotonic_now() - eof)
+      std::chrono::duration_cast<std::chrono::duration<double>>(current_time -
+                                                                eof)
           .count();
 
   // Have found this useful if there is blurry / noisy images
@@ -318,21 +357,9 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
     cv::cvtColor(thresh, rgb_image, cv::COLOR_GRAY2RGB);
   }
 
-  // Set up the variables we'll use in the callback function
-  bool valid = false;
-  // Return a list of poses; for Charuco Board there will be just one
-  std::vector<Eigen::Vector3d> rvecs_eigen;
-  std::vector<Eigen::Vector3d> tvecs_eigen;
-
   // ids and corners for initial aruco marker detections
   std::vector<int> marker_ids;
   std::vector<std::vector<cv::Point2f>> marker_corners;
-
-  // ids and corners for final, refined board / marker detections
-  // Using Vec4i type since it supports Charuco Diamonds
-  // And overloading it using 1st int in Vec4i for others target types
-  std::vector<cv::Vec4i> result_ids;
-  std::vector<std::vector<cv::Point2f>> result_corners;
 
   // Do initial marker detection; this is the same for all target types
   cv::aruco::detectMarkers(rgb_image, dictionary_, marker_corners, marker_ids);
@@ -429,11 +456,14 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
                                       square_length_ / marker_length_,
                                       diamond_corners, diamond_ids);
 
-      // Check that we have exactly one charuco diamond.  For calibration, we
-      // can constrain things so that this is the case
-      if (diamond_ids.size() == 1) {
-        // TODO<Jim>: Could probably make this check more general than requiring
-        // range of ids
+      // Check that we have an acceptable number of diamonds detected.
+      // Should be at least one, and no more than FLAGS_max_diamonds.
+      // Different calibration routines will require different values for this
+      if (diamond_ids.size() > 0 &&
+          (FLAGS_max_diamonds == 0 ||
+           diamond_ids.size() <= FLAGS_max_diamonds)) {
+        // TODO<Jim>: Could probably make this check more general than
+        // requiring range of ids
         bool all_valid_ids = true;
         for (uint i = 0; i < 4; i++) {
           uint id = diamond_ids[0][i];
@@ -446,14 +476,15 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
           cv::aruco::drawDetectedDiamonds(rgb_image, diamond_corners,
                                           diamond_ids);
 
-          // estimate pose for diamonds doesn't return valid, so marking true
+          // estimate pose for diamonds doesn't return valid, so marking
+          // true
           valid = true;
           std::vector<cv::Vec3d> rvecs, tvecs;
           cv::aruco::estimatePoseSingleMarkers(
               diamond_corners, square_length_, calibration_.CameraIntrinsics(),
               calibration_.CameraDistCoeffs(), rvecs, tvecs);
-          DrawTargetPoses(rgb_image, rvecs, tvecs);
 
+          DrawTargetPoses(rgb_image, rvecs, tvecs);
           PackPoseResults(rvecs, tvecs, &rvecs_eigen, &tvecs_eigen);
           result_ids = diamond_ids;
           result_corners = diamond_corners;
@@ -463,12 +494,12 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
       } else {
         if (diamond_ids.size() == 0) {
           // OK to not see any markers sometimes
-          VLOG(2)
-              << "Found aruco markers, but no valid charuco diamond targets";
+          VLOG(2) << "Found aruco markers, but no valid charuco diamond "
+                     "targets";
         } else {
-          // But should never detect multiple
-          LOG(FATAL) << "Found multiple charuco diamond markers.  Should only "
-                        "be one";
+          VLOG(2) << "Found too many number of diamond markers, which likely "
+                     "means false positives were detected: "
+                  << diamond_ids.size() << " > " << FLAGS_max_diamonds;
         }
       }
     } else {
@@ -476,9 +507,6 @@ void CharucoExtractor::HandleImage(cv::Mat rgb_image,
                  << static_cast<uint8_t>(target_type_);
     }
   }
-
-  handle_charuco_(rgb_image, eof, result_ids, result_corners, valid,
-                  rvecs_eigen, tvecs_eigen);
 }
 
 flatbuffers::Offset<foxglove::ImageAnnotations> BuildAnnotations(

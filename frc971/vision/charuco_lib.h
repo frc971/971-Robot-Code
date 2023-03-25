@@ -93,6 +93,11 @@ std::ostream &operator<<(std::ostream &os, TargetType target_type);
 // extracted from it.
 class CharucoExtractor {
  public:
+  // Setting up a constructor that doesn't require an event_loop, so we can call
+  // and get results back from ProcessImage directly
+  CharucoExtractor(const calibration::CameraCalibration *calibration,
+                   const TargetType target_type);
+
   // The callback takes the following arguments:
   //   cv::Mat -> image with overlays drawn on it.
   //   monotonic_clock::time_point -> Time on this node when this image was
@@ -117,7 +122,16 @@ class CharucoExtractor {
                          std::vector<Eigen::Vector3d>)> &&handle_charuco_fn);
 
   // Handles the image by detecting the charuco board in it.
-  void HandleImage(cv::Mat rgb_image, aos::monotonic_clock::time_point eof);
+  void HandleImage(cv::Mat rgb_image,
+                   const aos::monotonic_clock::time_point eof);
+
+  void ProcessImage(cv::Mat rgb_image,
+                    const aos::monotonic_clock::time_point eof,
+                    const aos::monotonic_clock::time_point current_time,
+                    std::vector<cv::Vec4i> &result_ids,
+                    std::vector<std::vector<cv::Point2f>> &result_corners,
+                    bool &valid, std::vector<Eigen::Vector3d> &rvecs_eigen,
+                    std::vector<Eigen::Vector3d> &tvecs_eigen);
 
   // Returns the aruco dictionary in use.
   cv::Ptr<cv::aruco::Dictionary> dictionary() const { return dictionary_; }
@@ -140,8 +154,8 @@ class CharucoExtractor {
   void DrawTargetPoses(cv::Mat rgb_image, std::vector<cv::Vec3d> rvecs,
                        std::vector<cv::Vec3d> tvecs);
 
-  // Helper function to convert rotation (rvecs) and translation (tvecs) vectors
-  // into Eigen vectors and store in corresponding vectors
+  // Helper function to convert rotation (rvecs) and translation (tvecs)
+  // vectors into Eigen vectors and store in corresponding vectors
   void PackPoseResults(std::vector<cv::Vec3d> &rvecs,
                        std::vector<cv::Vec3d> &tvecs,
                        std::vector<Eigen::Vector3d> *rvecs_eigen,
@@ -184,7 +198,8 @@ flatbuffers::Offset<foxglove::ImageAnnotations> BuildAnnotations(
     const foxglove::PointsAnnotationType line_type =
         foxglove::PointsAnnotationType::POINTS);
 
-// Creates a PointsAnnotation to build up ImageAnnotations with different types
+// Creates a PointsAnnotation to build up ImageAnnotations with different
+// types
 flatbuffers::Offset<foxglove::PointsAnnotation> BuildPointsAnnotation(
     flatbuffers::FlatBufferBuilder *fbb,
     const aos::monotonic_clock::time_point monotonic_now,
