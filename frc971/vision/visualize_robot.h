@@ -31,13 +31,19 @@ class VisualizeRobot {
 
   // Set camera parameters (for projection into a virtual view)
   void SetCameraParameters(cv::Mat camera_intrinsics) {
-    camera_mat_ = camera_intrinsics;
+    camera_mat_ = camera_intrinsics.clone();
   }
 
   // Set distortion coefficients (defaults to 0)
   void SetDistortionCoefficients(cv::Mat dist_coeffs) {
-    dist_coeffs_ = dist_coeffs;
+    dist_coeffs_ = dist_coeffs.clone();
   }
+
+  // Sets up a default camera view 10 m above the origin, pointing down
+  // Uses image_width and focal_length to define a default camera projection
+  // matrix
+  void SetDefaultViewpoint(int image_width = 1000,
+                           double focal_length = 1000.0);
 
   // Helper function to project a point in 3D to the virtual image coordinates
   cv::Point ProjectPoint(Eigen::Vector3d point3d);
@@ -50,8 +56,9 @@ class VisualizeRobot {
   void DrawFrameAxes(Eigen::Affine3d H_world_target, std::string label = "",
                      double axis_scale = 0.25);
 
-  // TODO<Jim>: Need to implement this, and maybe DrawRobotOutline
-  void DrawBoardOutline(Eigen::Affine3d H_world_board, std::string label = "");
+  // TODO<Jim>: Also implement DrawBoardOutline?  Maybe one function w/
+  // parameters?
+  void DrawRobotOutline(Eigen::Affine3d H_world_robot, std::string label = "");
 
   Eigen::Affine3d H_world_viewpoint_;  // Where to view the world from
   cv::Mat image_;                      // Image to draw on

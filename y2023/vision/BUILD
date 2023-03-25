@@ -117,6 +117,7 @@ cc_library(
         "//frc971/vision:target_map_fbs",
         "//frc971/vision:target_mapper",
         "//frc971/vision:vision_fbs",
+        "//frc971/vision:visualize_robot",
         "//third_party:opencv",
         "//third_party/apriltag",
         "//y2023/constants:constants_fbs",
