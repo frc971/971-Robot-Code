@@ -13,6 +13,28 @@ namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
 
+// What to use the top two buttons for on the pistol grip.
+enum class PistolTopButtonUse {
+  // Normal shifting.
+  kShift,
+  // Line following (currently just uses top button).
+  kLineFollow,
+  // Don't use the top button
+  kNone,
+};
+
+enum class PistolSecondButtonUse {
+  kTurn1,
+  kShiftLow,
+  kNone,
+};
+
+enum class PistolBottomButtonUse {
+  kControlLoopDriving,
+  kSlowDown,
+  kNone,
+};
+
 enum class ShifterType : int32_t {
   HALL_EFFECT_SHIFTER = 0,  // Detect when inbetween gears.
   SIMPLE_SHIFTER = 1,       // Switch gears without speedmatch logic.
@@ -144,6 +166,10 @@ struct DrivetrainConfig {
   DownEstimatorConfig down_estimator_config{};
 
   LineFollowConfig line_follow_config{};
+
+  PistolTopButtonUse top_button_use = PistolTopButtonUse::kShift;
+  PistolSecondButtonUse second_button_use = PistolSecondButtonUse::kShiftLow;
+  PistolBottomButtonUse bottom_button_use = PistolBottomButtonUse::kSlowDown;
 
   // Converts the robot state to a linear distance position, velocity.
   static Eigen::Matrix<Scalar, 2, 1> LeftRightToLinear(

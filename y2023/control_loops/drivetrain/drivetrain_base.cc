@@ -76,6 +76,10 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
                                    .finished()
                                    .asDiagonal()),
           .max_controllable_offset = 0.5},
+      frc971::control_loops::drivetrain::PistolTopButtonUse::kNone,
+      frc971::control_loops::drivetrain::PistolSecondButtonUse::kTurn1,
+      frc971::control_loops::drivetrain::PistolBottomButtonUse::
+          kControlLoopDriving,
   };
 
   return kDrivetrainConfig;
