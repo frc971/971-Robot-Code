@@ -7,52 +7,46 @@ import (
 // A helper to run a function in the background at a specified interval.
 // Can be used for a lot of different things.
 type backgroundTask struct {
-	doneChan     chan<- bool
-	checkStopped chan<- bool
-	interval     time.Duration
+	ticker        *time.Ticker
+	stopRequested chan bool
+	done          chan bool
 }
 
 func New(interval time.Duration) backgroundTask {
 	return backgroundTask{
-		doneChan:     make(chan bool, 1),
-		checkStopped: make(chan bool, 1),
-		interval:     interval,
+		ticker:        time.NewTicker(interval),
+		stopRequested: make(chan bool, 1),
+		done:          make(chan bool, 1),
 	}
 }
 
 func (task *backgroundTask) Start(taskFunc func()) {
 	go func() {
-		// Setting start time to a time prior so the function gets
-		// called instantly when Start() called
-		startTime := time.Now().Add(-task.interval - time.Minute)
+		// Signal the Stop() function below when the goroutine has
+		// finished executing.
+		defer func() { task.done <- true }()
+
+		// time.Ticker doesn't perform an immediate invocation.
+		// Instead, it waits for the specified duration before
+		// triggering the first tick. We pretend that there's a tick
+		// here by invoking the callback manually.
+		taskFunc()
+
 		for {
-			curTime := time.Now()
-			diff := curTime.Sub(startTime)
-
-			if diff > task.interval {
+			select {
+			case <-task.stopRequested:
+				return
+			case <-task.ticker.C:
 				taskFunc()
-				startTime = curTime
 			}
-
-			if len(task.doneChan) != 0 {
-				break
-			}
-
-			time.Sleep(time.Second)
 		}
-
-		task.checkStopped <- true
 	}()
 }
 
 func (task *backgroundTask) Stop() {
-	task.doneChan <- true
-
-	for {
-		if len(task.checkStopped) != 0 {
-			close(task.doneChan)
-			close(task.checkStopped)
-			break
-		}
-	}
+	task.stopRequested <- true
+	task.ticker.Stop()
+	<-task.done
+	close(task.stopRequested)
+	close(task.done)
 }
