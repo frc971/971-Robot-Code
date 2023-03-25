@@ -6,7 +6,7 @@ DEFINE_bool(
     debug, false,
     "If true, dump a ton of debug and crash on the first valid detection.");
 
-DEFINE_double(min_decision_margin, 75.0,
+DEFINE_double(min_decision_margin, 50.0,
               "Minimum decision margin (confidence) for an apriltag detection");
 DEFINE_int32(pixel_border, 10,
              "Size of image border within which to reject detected corners");
@@ -26,13 +26,12 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
     : calibration_data_(event_loop),
       image_size_(0, 0),
       ftrace_(),
-      image_callback_(
-          event_loop, channel_name,
-          [&](cv::Mat image_color_mat,
-              const aos::monotonic_clock::time_point eof) {
-            HandleImage(image_color_mat, eof);
-          },
-          chrono::milliseconds(5)),
+      image_callback_(event_loop, channel_name,
+                      [&](cv::Mat image_color_mat,
+                          const aos::monotonic_clock::time_point eof) {
+                        HandleImage(image_color_mat, eof);
+                      },
+                      chrono::milliseconds(5)),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
       image_annotations_sender_(

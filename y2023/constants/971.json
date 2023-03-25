@@ -4,7 +4,7 @@
       "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-1_cam-23-05_ext_2023-03-05.json' %}
     },
     {
-      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-2_cam-23-06_ext_2023-02-22.json' %}
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-2_cam-23-06_ext_2023-03-25.json' %}
     },
     {
       "calibration": {% include 'y2023/vision/calib_files/calibration_pi-971-3_cam-23-07_ext_2023-02-22.json' %}
