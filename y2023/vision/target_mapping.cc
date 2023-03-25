@@ -35,6 +35,10 @@ DEFINE_string(mcap_output_path, "/tmp/log.mcap", "Log to output.");
 DEFINE_string(pi, "pi1", "Pi name to generate mcap log for; defaults to pi1.");
 DEFINE_double(max_pose_error, 1e-6,
               "Throw out target poses with a higher pose error than this");
+DEFINE_uint64(wait_key, 0,
+              "Time in ms to wait between images, if no click (0 to wait "
+              "indefinitely until click).");
+DEFINE_bool(solve, true, "Whether to solve for the field's target map.");
 
 namespace y2023 {
 namespace vision {
@@ -43,6 +47,7 @@ using frc971::vision::ImageCallback;
 using frc971::vision::PoseUtils;
 using frc971::vision::TargetMap;
 using frc971::vision::TargetMapper;
+using frc971::vision::VisualizeRobot;
 namespace calibration = frc971::vision::calibration;
 
 // Change reference frame from camera to robot
@@ -53,8 +58,14 @@ Eigen::Affine3d CameraToRobotDetection(Eigen::Affine3d H_camera_target,
   return H_robot_target;
 }
 
-frc971::vision::VisualizeRobot vis_robot_;
 const int kImageWidth = 1000;
+// Map from pi node name to color for drawing
+const std::map<std::string, cv::Scalar> kPiColors = {
+    {"pi1", cv::Scalar(255, 0, 255)},
+    {"pi2", cv::Scalar(255, 255, 0)},
+    {"pi3", cv::Scalar(0, 255, 255)},
+    {"pi4", cv::Scalar(255, 165, 0)},
+};
 
 // Add detected apriltag poses relative to the robot to
 // timestamped_target_detections
@@ -63,7 +74,13 @@ void HandleAprilTags(const TargetMap &map,
                      std::vector<DataAdapter::TimestampedDetection>
                          *timestamped_target_detections,
                      Eigen::Affine3d extrinsics, std::string node_name,
-                     frc971::vision::TargetMapper mapper) {
+                     frc971::vision::TargetMapper target_loc_mapper,
+                     std::set<std::string> *drawn_nodes,
+                     VisualizeRobot *vis_robot, size_t *display_count) {
+  bool drew = false;
+  std::stringstream label;
+  label << node_name << " - ";
+
   for (const auto *target_pose_fbs : *map.target_poses()) {
     // Skip detections with high pose errors
     if (target_pose_fbs->pose_error() > FLAGS_max_pose_error) {
@@ -97,25 +114,51 @@ void HandleAprilTags(const TargetMap &map,
             .id = static_cast<TargetMapper::TargetId>(target_pose.id)});
 
     if (FLAGS_visualize) {
+      // If we've already drawn in the current image,
+      // display it before clearing and adding the new poses
+      if (drawn_nodes->count(node_name) != 0) {
+        (*display_count)++;
+        cv::putText(vis_robot->image_,
+                    "Poses #" + std::to_string(*display_count),
+                    cv::Point(600, 10), cv::FONT_HERSHEY_PLAIN, 1.0,
+                    cv::Scalar(255, 255, 255));
+
+        cv::imshow("View", vis_robot->image_);
+        cv::waitKey(FLAGS_wait_key);
+        vis_robot->ClearImage();
+        drawn_nodes->clear();
+      }
+
       Eigen::Affine3d H_world_target = PoseUtils::Pose3dToAffine3d(
-          mapper.GetTargetPoseById(target_pose_fbs->id())->pose);
+          target_loc_mapper.GetTargetPoseById(target_pose_fbs->id())->pose);
       Eigen::Affine3d H_world_robot = H_world_target * H_robot_target.inverse();
-      Eigen::Affine3d H_world_camera =
-          H_world_target * H_camera_target.inverse();
       LOG(INFO) << node_name << ", " << target_pose_fbs->id()
                 << ", t = " << pi_distributed_time
                 << ", pose_error = " << target_pose_fbs->pose_error()
                 << ", robot_pos (x,y,z) + "
                 << H_world_robot.translation().transpose();
-      vis_robot_.DrawRobotOutline(
-          H_world_robot, node_name + "-" +
-                             std::to_string(target_pose_fbs->id()) + "  " +
-                             std::to_string(target_pose_fbs->pose_error() /
-                                            FLAGS_max_pose_error));
-      vis_robot_.DrawFrameAxes(H_world_camera, node_name);
-      vis_robot_.DrawFrameAxes(H_world_target,
-                               std::to_string(target_pose_fbs->id()));
+
+      label << "id " << target_pose_fbs->id() << ": err "
+            << (target_pose_fbs->pose_error() / FLAGS_max_pose_error) << " ";
+
+      vis_robot->DrawRobotOutline(H_world_robot,
+                                  std::to_string(target_pose_fbs->id()),
+                                  kPiColors.at(node_name));
+
+      vis_robot->DrawFrameAxes(H_world_target,
+                               std::to_string(target_pose_fbs->id()),
+                               kPiColors.at(node_name));
+      drew = true;
     }
+  }
+  if (drew) {
+    size_t pi_number =
+        static_cast<size_t>(node_name[node_name.size() - 1] - '0');
+    cv::putText(vis_robot->image_, label.str(),
+                cv::Point(10, 10 + 20 * pi_number), cv::FONT_HERSHEY_PLAIN, 1.0,
+                kPiColors.at(node_name));
+
+    drawn_nodes->emplace(node_name);
   }
 }
 
@@ -125,10 +168,15 @@ void HandlePiCaptures(
     aos::logger::LogReader *reader,
     std::vector<DataAdapter::TimestampedDetection>
         *timestamped_target_detections,
-    std::vector<std::unique_ptr<AprilRoboticsDetector>> *detectors) {
+    std::vector<std::unique_ptr<AprilRoboticsDetector>> *detectors,
+    std::set<std::string> *drawn_nodes, VisualizeRobot *vis_robot,
+    size_t *display_count) {
   static constexpr std::string_view kImageChannel = "/camera";
+  // For the robots, we need to flip the image since the cameras are rolled by
+  // 180 degrees
+  bool flip_image = (FLAGS_team_number != 7971);
   auto detector_ptr = std::make_unique<AprilRoboticsDetector>(
-      detection_event_loop, kImageChannel);
+      detection_event_loop, kImageChannel, flip_image);
   // Get the camera extrinsics
   cv::Mat extrinsics_cv = detector_ptr->extrinsics().value();
   Eigen::Matrix4d extrinsics_matrix;
@@ -150,14 +198,8 @@ void HandlePiCaptures(
 
     std::string node_name = detection_event_loop->node()->name()->str();
     HandleAprilTags(map, pi_distributed_time, timestamped_target_detections,
-                    extrinsics, node_name, target_loc_mapper);
-    if (FLAGS_visualize) {
-      cv::imshow("View", vis_robot_.image_);
-      cv::waitKey();
-      cv::Mat image_mat =
-          cv::Mat::zeros(cv::Size(kImageWidth, kImageWidth), CV_8UC3);
-      vis_robot_.SetImage(image_mat);
-    }
+                    extrinsics, node_name, target_loc_mapper, drawn_nodes,
+                    vis_robot, display_count);
   });
 }
 
@@ -176,8 +218,9 @@ void MappingMain(int argc, char *argv[]) {
   aos::logger::LogReader reader(
       aos::logger::SortParts(unsorted_logfiles),
       config.has_value() ? &config->message() : nullptr);
-  // Send new april tag poses. This allows us to take a log of images, then play
-  // with the april detection code and see those changes take effect in mapping
+  // Send new april tag poses. This allows us to take a log of images, then
+  // play with the april detection code and see those changes take effect in
+  // mapping
   constexpr size_t kNumPis = 4;
   for (size_t i = 1; i <= kNumPis; i++) {
     reader.RemapLoggedChannel(absl::StrFormat("/pi%u/camera", i),
@@ -196,6 +239,9 @@ void MappingMain(int argc, char *argv[]) {
                           FLAGS_constants_path);
 
   std::vector<std::unique_ptr<AprilRoboticsDetector>> detectors;
+  VisualizeRobot vis_robot;
+  std::set<std::string> drawn_nodes;
+  size_t display_count = 0;
 
   const aos::Node *pi1 =
       aos::configuration::GetNode(reader.configuration(), "pi1");
@@ -204,7 +250,8 @@ void MappingMain(int argc, char *argv[]) {
   std::unique_ptr<aos::EventLoop> pi1_mapping_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi1_mapping", pi1);
   HandlePiCaptures(pi1_detection_event_loop.get(), pi1_mapping_event_loop.get(),
-                   &reader, &timestamped_target_detections, &detectors);
+                   &reader, &timestamped_target_detections, &detectors,
+                   &drawn_nodes, &vis_robot, &display_count);
 
   const aos::Node *pi2 =
       aos::configuration::GetNode(reader.configuration(), "pi2");
@@ -213,7 +260,8 @@ void MappingMain(int argc, char *argv[]) {
   std::unique_ptr<aos::EventLoop> pi2_mapping_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi2_mapping", pi2);
   HandlePiCaptures(pi2_detection_event_loop.get(), pi2_mapping_event_loop.get(),
-                   &reader, &timestamped_target_detections, &detectors);
+                   &reader, &timestamped_target_detections, &detectors,
+                   &drawn_nodes, &vis_robot, &display_count);
 
   const aos::Node *pi3 =
       aos::configuration::GetNode(reader.configuration(), "pi3");
@@ -222,7 +270,8 @@ void MappingMain(int argc, char *argv[]) {
   std::unique_ptr<aos::EventLoop> pi3_mapping_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi3_mapping", pi3);
   HandlePiCaptures(pi3_detection_event_loop.get(), pi3_mapping_event_loop.get(),
-                   &reader, &timestamped_target_detections, &detectors);
+                   &reader, &timestamped_target_detections, &detectors,
+                   &drawn_nodes, &vis_robot, &display_count);
 
   const aos::Node *pi4 =
       aos::configuration::GetNode(reader.configuration(), "pi4");
@@ -231,7 +280,8 @@ void MappingMain(int argc, char *argv[]) {
   std::unique_ptr<aos::EventLoop> pi4_mapping_event_loop =
       reader.event_loop_factory()->MakeEventLoop("pi4_mapping", pi4);
   HandlePiCaptures(pi4_detection_event_loop.get(), pi4_mapping_event_loop.get(),
-                   &reader, &timestamped_target_detections, &detectors);
+                   &reader, &timestamped_target_detections, &detectors,
+                   &drawn_nodes, &vis_robot, &display_count);
 
   std::unique_ptr<aos::EventLoop> mcap_event_loop;
   std::unique_ptr<aos::McapLogger> relogger;
@@ -252,20 +302,20 @@ void MappingMain(int argc, char *argv[]) {
   }
 
   if (FLAGS_visualize) {
-    cv::Mat image_mat =
-        cv::Mat::zeros(cv::Size(kImageWidth, kImageWidth), CV_8UC3);
-    vis_robot_.SetImage(image_mat);
+    vis_robot.ClearImage();
     const double kFocalLength = 500.0;
-    vis_robot_.SetDefaultViewpoint(kImageWidth, kFocalLength);
+    vis_robot.SetDefaultViewpoint(kImageWidth, kFocalLength);
   }
 
   reader.event_loop_factory()->Run();
 
-  auto target_constraints =
-      DataAdapter::MatchTargetDetections(timestamped_target_detections);
+  if (FLAGS_solve) {
+    auto target_constraints =
+        DataAdapter::MatchTargetDetections(timestamped_target_detections);
 
-  frc971::vision::TargetMapper mapper(FLAGS_json_path, target_constraints);
-  mapper.Solve(FLAGS_field_name, FLAGS_output_dir);
+    frc971::vision::TargetMapper mapper(FLAGS_json_path, target_constraints);
+    mapper.Solve(FLAGS_field_name, FLAGS_output_dir);
+  }
 
   // Clean up all the pointers
   for (auto &detector_ptr : detectors) {
