@@ -34,7 +34,7 @@ LedIndicator::LedIndicator(aos::EventLoop *event_loop)
   config.brightnessScalar = 1.0;
   candle_.ConfigAllSettings(config, 0);
 
-  event_loop_->AddPhasedLoop([&](int) { DecideColor(); },
+  event_loop_->AddPhasedLoop([this](int) { DecideColor(); },
                              std::chrono::milliseconds(20));
 }
 
@@ -177,9 +177,9 @@ void LedIndicator::DecideColor() {
       DisplayLed(0, 0, 255);
       return;
     }
-
-    return;
   }
+
+  DisplayLed(0, 0, 0);
 }
 
 }  // namespace y2023::control_loops::superstructure
