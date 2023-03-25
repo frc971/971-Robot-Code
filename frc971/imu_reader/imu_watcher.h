@@ -20,6 +20,16 @@ class ImuWatcher {
   // Expected frequency of messages from the pico-based IMU.
   static constexpr std::chrono::microseconds kNominalDt{500};
 
+  enum class TimestampSource {
+    // Use the pico's timestamp to provide timestamps to the callbacks.
+    kPico,
+    // Use pi-based timestamps--this can result in a clock that has marginally
+    // more jitter relative to the sample times than the pico's clock, but
+    // is less likely to encounter major issues when there is some sort of issue
+    // with the pico <-> pi interface.
+    kPi,
+  };
+
   // The callback specified by the user will take:
   // sample_time_pico: The pico-based timestamp corresponding to the measurement
   //   time. This will be offset by roughly pico_offset_error from the pi's
@@ -40,7 +50,8 @@ class ImuWatcher {
       std::function<void(
           aos::monotonic_clock::time_point, aos::monotonic_clock::time_point,
           std::optional<Eigen::Vector2d>, Eigen::Vector3d, Eigen::Vector3d)>
-          callback);
+          callback,
+      TimestampSource timestamp_source = TimestampSource::kPico);
 
   const zeroing::ImuZeroer &zeroer() const { return zeroer_; }
 

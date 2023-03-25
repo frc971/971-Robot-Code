@@ -67,9 +67,10 @@ class DrivetrainFilters {
 
   // Returns the current localizer state.
   Eigen::Matrix<double, 5, 1> trajectory_state() {
+    // Use the regular kalman filter's left/right velocity because they are
+    // generally smoother.
     return (Eigen::Matrix<double, 5, 1>() << localizer_->x(), localizer_->y(),
-            localizer_->theta(), localizer_->left_velocity(),
-            localizer_->right_velocity())
+            localizer_->theta(), DrivetrainXHat()(1), DrivetrainXHat()(3))
         .finished();
   }
 

@@ -765,7 +765,7 @@ void Trajectory::CalculatePathGains() {
   // TODO(james): Pull these out into a config.
   Eigen::Matrix<double, 5, 5> Q;
   Q.setIdentity();
-  Q.diagonal() << 20.0, 20.0, 20.0, 10.0, 10.0;
+  Q.diagonal() << 30.0, 30.0, 20.0, 15.0, 15.0;
   Q *= 2.0;
   Q = (Q * Q).eval();
 
