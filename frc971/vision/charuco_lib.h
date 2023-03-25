@@ -83,7 +83,8 @@ class ImageCallback {
 enum class TargetType : uint8_t {
   kAruco = 0,
   kCharuco = 1,
-  kCharucoDiamond = 2
+  kCharucoDiamond = 2,
+  kAprilTag = 3
 };
 
 TargetType TargetTypeFromString(std::string_view str);

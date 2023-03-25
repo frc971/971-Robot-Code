@@ -203,6 +203,11 @@ void CharucoExtractor::SetupTargetData() {
     marker_length_ = 0.15;
     square_length_ = 0.2;
     dictionary_ = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_250);
+  } else if (target_type_ == TargetType::kAprilTag) {
+    marker_length_ = 0.1016;
+    square_length_ = 0.1524;
+    dictionary_ =
+        cv::aruco::getPredefinedDictionary(cv::aruco::DICT_APRILTAG_16h5);
   } else {
     // Bail out if it's not a supported target
     LOG(FATAL) << "Target type undefined: "
@@ -241,14 +246,15 @@ void CharucoExtractor::DrawTargetPoses(cv::Mat rgb_image,
       LOG(INFO) << "Skipping, due to z value too small: " << result.z();
     } else if (FLAGS_draw_axes == true) {
       result /= result.z();
-      if (target_type_ == TargetType::kCharuco) {
+      if (target_type_ == TargetType::kCharuco ||
+          target_type_ == TargetType::kAprilTag) {
         cv::aruco::drawAxis(rgb_image, calibration_.CameraIntrinsics(),
                             calibration_.CameraDistCoeffs(), rvecs[i], tvecs[i],
-                            0.1);
+                            square_length_);
       } else {
         cv::drawFrameAxes(rgb_image, calibration_.CameraIntrinsics(),
                           calibration_.CameraDistCoeffs(), rvecs[i], tvecs[i],
-                          0.1);
+                          square_length_);
       }
     }
     std::stringstream ss;
@@ -434,7 +440,8 @@ void CharucoExtractor::ProcessImage(
                 << ", not enough marker IDs for charuco board, got "
                 << marker_ids.size() << ", needed " << FLAGS_min_charucos;
       }
-    } else if (target_type_ == TargetType::kAruco) {
+    } else if (target_type_ == TargetType::kAruco ||
+               target_type_ == TargetType::kAprilTag) {
       // estimate pose for arucos doesn't return valid, so marking true
       valid = true;
       std::vector<cv::Vec3d> rvecs, tvecs;
@@ -567,9 +574,11 @@ TargetType TargetTypeFromString(std::string_view str) {
     return TargetType::kCharuco;
   } else if (str == "charuco_diamond") {
     return TargetType::kCharucoDiamond;
+  } else if (str == "apriltag") {
+    return TargetType::kAprilTag;
   } else {
     LOG(FATAL) << "Unknown target type: " << str
-               << ", expected: aruco|charuco|charuco_diamond";
+               << ", expected: apriltag|aruco|charuco|charuco_diamond";
   }
 }
 
@@ -583,6 +592,9 @@ std::ostream &operator<<(std::ostream &os, TargetType target_type) {
       break;
     case TargetType::kCharucoDiamond:
       os << "charuco_diamond";
+      break;
+    case TargetType::kAprilTag:
+      os << "apriltag";
       break;
   }
   return os;
