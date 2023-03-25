@@ -1,4 +1,4 @@
-package background
+package background_task
 
 import (
 	"time"
@@ -7,12 +7,12 @@ import (
 // A helper to run a function in the background every ~10 minutes. Technically
 // can be used for a lot of different things, but is primarily geared towards
 // scraping thebluealliance.com.
-type BackgroundScraper struct {
+type BackgroundTask struct {
 	doneChan     chan<- bool
 	checkStopped chan<- bool
 }
 
-func (scraper *BackgroundScraper) Start(scrape func()) {
+func (scraper *BackgroundTask) Start(scrape func()) {
 	scraper.doneChan = make(chan bool, 1)
 	scraper.checkStopped = make(chan bool, 1)
 
@@ -39,7 +39,7 @@ func (scraper *BackgroundScraper) Start(scrape func()) {
 	}()
 }
 
-func (scraper *BackgroundScraper) Stop() {
+func (scraper *BackgroundTask) Stop() {
 	scraper.doneChan <- true
 
 	for {

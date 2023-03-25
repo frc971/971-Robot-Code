@@ -1,14 +1,15 @@
 package rankings
 
 import (
-	"github.com/frc971/971-Robot-Code/scouting/db"
-	"github.com/frc971/971-Robot-Code/scouting/scraping/background"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	"net/http"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/frc971/971-Robot-Code/scouting/background_task"
+	"github.com/frc971/971-Robot-Code/scouting/db"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 )
 
 type MockDatabase struct {
@@ -37,7 +38,7 @@ func ServeRankings(t *testing.T, h http.Handler) http.Handler {
 
 func TestGetRankings(t *testing.T) {
 	database := MockDatabase{}
-	scraper := background.BackgroundScraper{}
+	scraper := background_task.BackgroundTask{}
 	tbaServer := server.NewScoutingServer()
 	tbaServer.Handle("/", ServeRankings(t, http.FileServer(http.Dir("../../"))))
 	tbaServer.Start(8000)
