@@ -3,6 +3,8 @@
 from __future__ import print_function
 # matplotlib overrides fontconfig locations, so it needs to be imported before gtk.
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_gtk3agg import (FigureCanvasGTK3Agg as
+                                                 FigureCanvas)
 import os
 from frc971.control_loops.python import basic_window
 from frc971.control_loops.python.color import Color, palette
@@ -22,6 +24,8 @@ from frc971.control_loops.python.basic_window import quit_main_loop, set_color, 
 
 import shapely
 from shapely.geometry import Polygon
+
+from frc971.control_loops.python.constants import *
 
 
 def px(cr):
@@ -227,30 +231,24 @@ class SegmentSelector(basic_window.BaseWindow):
             self.current_path_index = id
 
 
+ARM_AREA_WIDTH = 2 * (SCREEN_SIZE - 200)
+ARM_AREA_HEIGHT = SCREEN_SIZE
+
+
 # Create a GTK+ widget on which we will draw using Cairo
-class ArmUi(basic_window.BaseWindow):
+class ArmUi(Gtk.DrawingArea):
 
     def __init__(self, segments):
         super(ArmUi, self).__init__()
 
-        self.window = Gtk.Window()
-        self.window.set_title("DrawingArea")
-
-        self.window.set_events(Gdk.EventMask.BUTTON_PRESS_MASK
-                               | Gdk.EventMask.BUTTON_RELEASE_MASK
-                               | Gdk.EventMask.POINTER_MOTION_MASK
-                               | Gdk.EventMask.SCROLL_MASK
-                               | Gdk.EventMask.KEY_PRESS_MASK)
-        self.method_connect("key-press-event", self.do_key_press)
-        self.method_connect("motion-notify-event", self.do_motion)
-        self.method_connect("button-press-event",
-                            self._do_button_press_internal)
-        self.method_connect("configure-event", self._do_configure)
-        self.window.add(self)
-        self.window.show_all()
-
+        self.set_size_request(ARM_AREA_WIDTH, ARM_AREA_HEIGHT)
+        self.center = (0, 0)
+        self.shape = (ARM_AREA_WIDTH, ARM_AREA_HEIGHT)
         self.theta_version = False
-        self.reinit_extents()
+
+        self.init_extents()
+
+        self.connect('draw', self.on_draw)
 
         self.last_pos = to_xy(*graph_paths.points['Neutral'][:2])
         self.circular_index_select = 1
@@ -270,7 +268,6 @@ class ArmUi(basic_window.BaseWindow):
             self.fig.add_subplot(3, 1, 3)
         ]
         self.fig.subplots_adjust(hspace=1.0)
-        plt.show(block=False)
 
         self.index = 0
 
@@ -281,16 +278,20 @@ class ArmUi(basic_window.BaseWindow):
                                     [DRIVER_CAM_X, DRIVER_CAM_Y],
                                     DRIVER_CAM_WIDTH, DRIVER_CAM_HEIGHT)
 
-        self.segment_selector = SegmentSelector(self.segments)
-        self.segment_selector.show()
-
         self.show_indicators = True
         # Lets you only view selected path
         self.view_current = False
 
+        self.editing = True
+
+        self.x_offset = 0
+        self.y_offset = 0
+
     def _do_button_press_internal(self, event):
         o_x = event.x
         o_y = event.y
+        event.y -= self.y_offset
+        event.x -= self.x_offset
         x = event.x - self.window_shape[0] / 2
         y = self.window_shape[1] / 2 - event.y
         scale = self.get_current_scale()
@@ -300,22 +301,7 @@ class ArmUi(basic_window.BaseWindow):
         event.x = o_x
         event.y = o_y
 
-    def _do_configure(self, event):
-        self.window_shape = (event.width, event.height)
-
-    def redraw(self):
-        if not self.needs_redraw:
-            self.needs_redraw = True
-            self.window.queue_draw()
-
-    def method_connect(self, event, cb):
-
-        def handler(obj, *args):
-            cb(*args)
-
-        self.window.connect(event, handler)
-
-    def reinit_extents(self):
+    def init_extents(self):
         if self.theta_version:
             self.extents_x_min = -np.pi * 2
             self.extents_x_max = np.pi * 2
@@ -327,18 +313,41 @@ class ArmUi(basic_window.BaseWindow):
             self.extents_y_min = -4.0 * 0.0254
             self.extents_y_max = 110.0 * 0.0254
 
-        self.init_extents(
-            (0.5 * (self.extents_x_min + self.extents_x_max), 0.5 *
-             (self.extents_y_max + self.extents_y_min)),
-            (1.0 * (self.extents_x_max - self.extents_x_min), 1.0 *
-             (self.extents_y_max - self.extents_y_min)))
+        self.center = (0.5 * (self.extents_x_min + self.extents_x_max),
+                       0.5 * (self.extents_y_max + self.extents_y_min))
+        self.shape = (1.0 * (self.extents_x_max - self.extents_x_min),
+                      1.0 * (self.extents_y_max - self.extents_y_min))
+
+    def get_current_scale(self):
+        w_w, w_h = self.window_shape
+        w, h = self.shape
+        return min((w_w / w), (w_h / h))
+
+    def on_draw(self, widget, event):
+        cr = self.get_window().cairo_create()
+
+        self.window_shape = (self.get_window().get_geometry().width,
+                             self.get_window().get_geometry().height)
+
+        cr.save()
+        cr.set_font_size(20)
+        cr.translate(self.window_shape[0] / 2, self.window_shape[1] / 2)
+        scale = self.get_current_scale()
+        cr.scale(scale, -scale)
+        cr.translate(-self.center[0], -self.center[1])
+        cr.reset_clip()
+        self.handle_draw(cr)
+        cr.restore()
+
+    def method_connect(self, event, cb):
+
+        def handler(obj, *args):
+            cb(*args)
+
+        self.window.connect(event, handler)
 
     # Handle the expose-event by drawing
     def handle_draw(self, cr):
-        # use "with px(cr): blah;" to transform to pixel coordinates.
-        if self.segment_selector.current_path_index is not None:
-            self.index = self.segment_selector.current_path_index
-
         # Fill the background color of the window with grey
         set_color(cr, palette["GREY"])
         cr.paint()
@@ -484,6 +493,8 @@ class ArmUi(basic_window.BaseWindow):
     def do_motion(self, event):
         o_x = event.x
         o_y = event.y
+        event.x -= self.x_offset
+        event.y -= self.y_offset
         x = event.x - self.window_shape[0] / 2
         y = self.window_shape[1] / 2 - event.y
         scale = self.get_current_scale()
@@ -514,7 +525,21 @@ class ArmUi(basic_window.BaseWindow):
         event.x = o_x
         event.y = o_y
 
-        self.redraw()
+        self.queue_draw()
+
+    def switch_theta(self):
+        # Toggle between theta and xy renderings
+        if self.theta_version:
+            theta1, theta2 = self.last_pos
+            data = to_xy(theta1, theta2)
+            self.circular_index_select = int(
+                np.floor((theta2 - theta1) / np.pi))
+            self.last_pos = (data[0], data[1])
+        else:
+            self.last_pos = self.cur_pt_in_theta()
+
+        self.theta_version = not self.theta_version
+        self.init_extents()
 
     def do_key_press(self, event):
         keyval = Gdk.keyval_to_lower(event.keyval)
@@ -569,22 +594,14 @@ class ArmUi(basic_window.BaseWindow):
             print("Switched to segment:", self.segments[self.index].name)
             self.segments[self.index].Print(graph_paths.points)
 
+        elif keyval == Gdk.KEY_d:
+            self.editing = not self.editing
+
         elif keyval == Gdk.KEY_l:
             self.view_current = not self.view_current
 
         elif keyval == Gdk.KEY_t:
-            # Toggle between theta and xy renderings
-            if self.theta_version:
-                theta1, theta2 = self.last_pos
-                data = to_xy(theta1, theta2)
-                self.circular_index_select = int(
-                    np.floor((theta2 - theta1) / np.pi))
-                self.last_pos = (data[0], data[1])
-            else:
-                self.last_pos = self.cur_pt_in_theta()
-
-            self.theta_version = not self.theta_version
-            self.reinit_extents()
+            self.switch_theta()
 
         elif keyval == Gdk.KEY_z:
             self.edit_control1 = not self.edit_control1
@@ -601,9 +618,10 @@ class ArmUi(basic_window.BaseWindow):
             print("self.last_pos: ", self.last_pos, " ci: ",
                   self.circular_index_select)
 
-        self.redraw()
+        self.queue_draw()
 
     def do_button_press(self, event):
+
         last_pos = self.last_pos
         self.last_pos = (event.x, event.y)
         pt_theta = self.cur_pt_in_theta()
@@ -613,10 +631,11 @@ class ArmUi(basic_window.BaseWindow):
 
         self.now_segment_pt = np.array(shift_angles(pt_theta))
 
-        if self.edit_control1:
-            self.segments[self.index].control1 = self.now_segment_pt
-        else:
-            self.segments[self.index].control2 = self.now_segment_pt
+        if self.editing:
+            if self.edit_control1:
+                self.segments[self.index].control1 = self.now_segment_pt
+            else:
+                self.segments[self.index].control2 = self.now_segment_pt
 
         print('Clicked at theta: np.array([%s, %s])' %
               (self.now_segment_pt[0], self.now_segment_pt[1]))
@@ -628,10 +647,107 @@ class ArmUi(basic_window.BaseWindow):
 
         self.segments[self.index].Print(graph_paths.points)
 
-        self.redraw()
+        self.queue_draw()
 
 
-arm_ui = ArmUi(graph_paths.segments)
-print('Starting with segment: ', arm_ui.segments[arm_ui.index].name)
-arm_ui.segments[arm_ui.index].Print(graph_paths.points)
+class Window(Gtk.Window):
+
+    def __init__(self, segments):
+        super().__init__(title="Drawing Area")
+
+        self.segment_store = Gtk.ListStore(int, str)
+
+        for i, segment in enumerate(segments):
+            self.segment_store.append([i, segment.name])
+
+        self.segment_box = Gtk.ComboBox.new_with_model_and_entry(
+            self.segment_store)
+        self.segment_box.connect("changed", self.on_combo_changed)
+        self.segment_box.set_entry_text_column(1)
+
+        self.arm_draw = ArmUi(segments)
+
+        self.arm_draw.y_offset = self.segment_box.get_allocation().width
+
+        print('Starting with segment: ',
+              self.arm_draw.segments[self.arm_draw.index].name)
+        self.arm_draw.segments[self.arm_draw.index].Print(graph_paths.points)
+
+        self.set_events(Gdk.EventMask.BUTTON_PRESS_MASK
+                        | Gdk.EventMask.BUTTON_RELEASE_MASK
+                        | Gdk.EventMask.POINTER_MOTION_MASK
+                        | Gdk.EventMask.SCROLL_MASK
+                        | Gdk.EventMask.KEY_PRESS_MASK)
+        self.method_connect('map-event', self.do_map_event)
+        self.method_connect("key-press-event", self.arm_draw.do_key_press)
+        self.method_connect("motion-notify-event", self.arm_draw.do_motion)
+        self.method_connect("button-press-event",
+                            self.arm_draw._do_button_press_internal)
+
+        self.grid = Gtk.Grid()
+        self.add(self.grid)
+
+        self.grid.attach(self.arm_draw, 0, 1, 1, 1)
+
+        self.isolate_button = Gtk.Button(label="Toggle Path Isolation")
+        self.isolate_button.connect('clicked', self.on_button_click)
+
+        self.theta_button = Gtk.Button(label="Toggle Theta Mode")
+        self.theta_button.connect('clicked', self.on_button_click)
+
+        self.editing_button = Gtk.Button(label="Toggle Editing Mode")
+        self.editing_button.connect('clicked', self.on_button_click)
+
+        self.indicator_button = Gtk.Button(
+            label="Toggle Control Point Indicators")
+        self.indicator_button.connect('clicked', self.on_button_click)
+
+        self.box = Gtk.Box(spacing=6)
+        self.grid.attach(self.box, 0, 0, 1, 1)
+
+        self.figure_canvas = FigureCanvas(self.arm_draw.fig)
+        self.figure_canvas.set_size_request(500, 300)
+
+        self.grid.attach(self.figure_canvas, 1, 1, 1, 1)
+
+        self.box.pack_start(self.segment_box, False, False, 0)
+        self.box.pack_start(self.isolate_button, False, False, 0)
+        self.box.pack_start(self.theta_button, False, False, 0)
+        self.box.pack_start(self.editing_button, False, False, 0)
+        self.box.pack_start(self.indicator_button, False, False, 0)
+
+    def on_combo_changed(self, combo):
+        iter = combo.get_active_iter()
+
+        if iter is not None:
+            model = combo.get_model()
+            id, name = model[iter][:2]
+            print("Selected: ID=%d, name=%s" % (id, name))
+            self.arm_draw.index = id
+            self.arm_draw.queue_draw()
+
+    def method_connect(self, event, cb):
+
+        def handler(obj, *args):
+            cb(*args)
+
+        self.connect(event, handler)
+
+    def do_map_event(self, event):
+        self.arm_draw.y_offset = self.box.get_allocation().height
+
+    def on_button_click(self, button):
+        if self.isolate_button == button:
+            self.arm_draw.view_current = not self.arm_draw.view_current
+        elif self.theta_button == button:
+            self.arm_draw.switch_theta()
+        elif self.editing_button == button:
+            self.arm_draw.editing = not self.arm_draw.editing
+        elif self.indicator_button == button:
+            self.arm_draw.show_indicators = not self.arm_draw.show_indicators
+        self.arm_draw.queue_draw()
+
+
+window = Window(graph_paths.segments)
+window.show_all()
 basic_window.RunApp()
