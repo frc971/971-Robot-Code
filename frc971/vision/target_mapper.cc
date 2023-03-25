@@ -10,9 +10,11 @@ DEFINE_uint64(max_num_iterations, 100,
 DEFINE_double(distortion_noise_scalar, 1.0,
               "Scale the target pose distortion factor by this when computing "
               "the noise.");
+DEFINE_uint64(
+    frozen_target_id, 1,
+    "Freeze the pose of this target so the map can have one fixed point.");
 
 namespace frc971::vision {
-
 Eigen::Affine3d PoseUtils::Pose3dToAffine3d(
     const ceres::examples::Pose3d &pose3d) {
   Eigen::Affine3d H_world_pose =
@@ -160,8 +162,8 @@ TargetMapper::ConfidenceMatrix DataAdapter::ComputeConfidence(
 
   {
     // Noise for vision-based target localizations. Multiplying this matrix by
-    // the distance from camera to target squared results in the uncertainty in
-    // that measurement
+    // the distance from camera to target squared results in the uncertainty
+    // in that measurement
     TargetMapper::ConfidenceMatrix Q_vision =
         TargetMapper::ConfidenceMatrix::Zero();
     Q_vision(kX, kX) = std::pow(0.045, 2);
@@ -298,10 +300,10 @@ void TargetMapper::BuildOptimizationProblem(
   // algorithm has internal damping which mitigates this issue, but it is
   // better to properly constrain the gauge freedom. This can be done by
   // setting one of the poses as constant so the optimizer cannot change it.
-  ceres::examples::MapOfPoses::iterator pose_start_iter = poses->begin();
-  // TODO<Jim>: This fixes first target, but breaks optimizer if we don't have
-  // an observation on the first target.  We may want to allow other targets as
-  // fixed
+  CHECK_NE(poses->count(FLAGS_frozen_target_id), 0ul)
+      << "Got no poses for frozen target id " << FLAGS_frozen_target_id;
+  ceres::examples::MapOfPoses::iterator pose_start_iter =
+      poses->find(FLAGS_frozen_target_id);
   CHECK(pose_start_iter != poses->end()) << "There are no poses.";
   problem->SetParameterBlockConstant(pose_start_iter->second.p.data());
   problem->SetParameterBlockConstant(pose_start_iter->second.q.coeffs().data());
