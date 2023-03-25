@@ -350,7 +350,11 @@
   "applications": [
     {
       "name": "message_bridge_client",
-      "args": ["--rt_priority=16"],
+      "executable_name": "message_bridge_client",
+      "args": [
+        "--rt_priority=16",
+        "--sinit_max_init_timeout=5000"
+      ],
       "user": "pi",
       "nodes": [
         "pi{{ NUM }}"
