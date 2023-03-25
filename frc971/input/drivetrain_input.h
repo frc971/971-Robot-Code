@@ -16,6 +16,10 @@
 namespace frc971 {
 namespace input {
 
+using control_loops::drivetrain::PistolBottomButtonUse;
+using control_loops::drivetrain::PistolSecondButtonUse;
+using control_loops::drivetrain::PistolTopButtonUse;
+
 // We have a couple different joystick configurations used to drive our skid
 // steer robots.  These configurations don't change very often, and there are a
 // small, discrete, set of them.  The interface to the drivetrain is the same
@@ -179,19 +183,13 @@ class PistolDrivetrainInputReader : public DrivetrainInputReader {
  public:
   using DrivetrainInputReader::DrivetrainInputReader;
 
-  // What to use the top two buttons for on the pistol grip.
-  enum class TopButtonUse {
-    // Normal shifting.
-    kShift,
-    // Line following (currently just uses top button).
-    kLineFollow,
-  };
-
   // Creates a DrivetrainInputReader with the corresponding joystick ports and
   // axis for the (cheap) pistol grip controller.
   static std::unique_ptr<PistolDrivetrainInputReader> Make(
       ::aos::EventLoop *event_loop, bool default_high_gear,
-      TopButtonUse top_button_use);
+      PistolTopButtonUse top_button_use,
+      PistolSecondButtonUse second_button_use,
+      PistolBottomButtonUse bottom_button_use);
 
  private:
   PistolDrivetrainInputReader(

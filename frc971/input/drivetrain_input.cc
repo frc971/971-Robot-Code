@@ -262,7 +262,8 @@ SteeringWheelDrivetrainInputReader::Make(::aos::EventLoop *event_loop,
 
 std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
     ::aos::EventLoop *event_loop, bool default_high_gear,
-    TopButtonUse top_button_use) {
+    PistolTopButtonUse top_button_use, PistolSecondButtonUse second_button_use,
+    PistolBottomButtonUse bottom_button_use) {
   // Pistol Grip controller
   const JoystickAxis kTriggerHigh(1, 1), kTriggerLow(1, 4),
       kTriggerVelocityHigh(1, 2), kTriggerVelocityLow(1, 5),
@@ -275,6 +276,7 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
   const ButtonLocation kQuickTurn(1, 3);
 
   const ButtonLocation kTopButton(1, 1);
+
   const ButtonLocation kSecondButton(1, 2);
   const ButtonLocation kBottomButton(1, 4);
   // Non-existant button for nops.
@@ -282,17 +284,20 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
 
   // TODO(james): Make a copy assignment operator for ButtonLocation so we don't
   // have to shoehorn in these ternary operators.
-  const ButtonLocation kTurn1 = (top_button_use == TopButtonUse::kLineFollow)
-                                    ? kSecondButton
-                                    : kDummyButton;
+  const ButtonLocation kTurn1 =
+      (second_button_use == PistolSecondButtonUse::kTurn1) ? kSecondButton
+                                                           : kDummyButton;
   // Turn2 does closed loop driving.
   const ButtonLocation kTurn2 =
-      (top_button_use == TopButtonUse::kLineFollow) ? kTopButton : kDummyButton;
+      (top_button_use == PistolTopButtonUse::kLineFollow) ? kTopButton
+                                                          : kDummyButton;
 
   const ButtonLocation kShiftHigh =
-      (top_button_use == TopButtonUse::kShift) ? kTopButton : kDummyButton;
+      (top_button_use == PistolTopButtonUse::kShift) ? kTopButton
+                                                     : kDummyButton;
   const ButtonLocation kShiftLow =
-      (top_button_use == TopButtonUse::kShift) ? kSecondButton : kDummyButton;
+      (second_button_use == PistolSecondButtonUse::kShiftLow) ? kSecondButton
+                                                              : kDummyButton;
 
   std::unique_ptr<PistolDrivetrainInputReader> result(
       new PistolDrivetrainInputReader(
@@ -300,7 +305,12 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
           kTriggerVelocityLow, kTriggerTorqueHigh, kTriggerTorqueLow,
           kTriggerHigh, kTriggerLow, kWheelVelocityHigh, kWheelVelocityLow,
           kWheelTorqueHigh, kWheelTorqueLow, kQuickTurn, kShiftHigh, kShiftLow,
-          kTurn1, kTurn2, kBottomButton));
+          kTurn1,
+          (bottom_button_use == PistolBottomButtonUse::kControlLoopDriving)
+              ? kBottomButton
+              : kTurn2,
+          (top_button_use == PistolTopButtonUse::kNone) ? kTopButton
+                                                        : kBottomButton));
 
   result->set_default_high_gear(default_high_gear);
   return result;
@@ -335,13 +345,25 @@ std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make(
       drivetrain_input_reader = SteeringWheelDrivetrainInputReader::Make(
           event_loop, dt_config.default_high_gear);
       break;
-    case InputType::kPistol:
-      drivetrain_input_reader = PistolDrivetrainInputReader::Make(
-          event_loop, dt_config.default_high_gear,
+    case InputType::kPistol: {
+      // For backwards compatibility
+      PistolTopButtonUse top_button_use =
           dt_config.pistol_grip_shift_enables_line_follow
-              ? PistolDrivetrainInputReader::TopButtonUse::kLineFollow
-              : PistolDrivetrainInputReader::TopButtonUse::kShift);
+              ? PistolTopButtonUse::kLineFollow
+              : dt_config.top_button_use;
+
+      PistolSecondButtonUse second_button_use = dt_config.second_button_use;
+      PistolBottomButtonUse bottom_button_use = dt_config.bottom_button_use;
+
+      if (top_button_use == PistolTopButtonUse::kLineFollow) {
+        second_button_use = PistolSecondButtonUse::kTurn1;
+      }
+
+      drivetrain_input_reader = PistolDrivetrainInputReader::Make(
+          event_loop, dt_config.default_high_gear, top_button_use,
+          second_button_use, bottom_button_use);
       break;
+    }
     case InputType::kXbox:
       drivetrain_input_reader = XboxDrivetrainInputReader::Make(event_loop);
       break;
