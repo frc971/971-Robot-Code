@@ -43,6 +43,12 @@ func (task *backgroundTask) Start(taskFunc func()) {
 	}()
 }
 
+// Stops the background task from within the background task. The Stop()
+// function still needs to be called from outside the task.
+func (task *backgroundTask) StopFromWithinTask() {
+	task.stopRequested <- true
+}
+
 func (task *backgroundTask) Stop() {
 	task.stopRequested <- true
 	task.ticker.Stop()
