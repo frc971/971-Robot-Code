@@ -141,17 +141,17 @@ func main() {
 	// Since Go doesn't support default arguments, we use 0 and "" to
 	// indicate that we want to source the values from the config.
 
-	matchListScraper := background_task.BackgroundTask{}
+	matchListScraper := background_task.New(10 * time.Minute)
 	matchListScraper.Start(func() {
 		match_list.GetMatchList(database, 0, "", *blueAllianceConfigPtr)
 	})
 
-	rankingsScraper := background_task.BackgroundTask{}
+	rankingsScraper := background_task.New(10 * time.Minute)
 	rankingsScraper.Start(func() {
 		rankings.GetRankings(database, 0, "", *blueAllianceConfigPtr)
 	})
 
-	driverRankingParser := background_task.BackgroundTask{}
+	driverRankingParser := background_task.New(10 * time.Minute)
 	driverRankingParser.Start(func() {
 		// Specify "" as the script path here so that the default is
 		// used.

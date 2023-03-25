@@ -38,7 +38,7 @@ func ServeRankings(t *testing.T, h http.Handler) http.Handler {
 
 func TestGetRankings(t *testing.T) {
 	database := MockDatabase{}
-	scraper := background_task.BackgroundTask{}
+	scraper := background_task.New(time.Minute)
 	tbaServer := server.NewScoutingServer()
 	tbaServer.Handle("/", ServeRankings(t, http.FileServer(http.Dir("../../"))))
 	tbaServer.Start(8000)
