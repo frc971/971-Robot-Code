@@ -41,11 +41,14 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void HighCubeScore();
   void MidCubeScore();
   void MidConeScore();
+  void Neutral();
   void PickupCube();
   void Spit();
+  void StopSpitting();
   void IntakeCube();
+  void Balance();
 
-  [[nodiscard]] bool WaitForArmGoal();
+  [[nodiscard]] bool WaitForArmGoal(double distance_to_go = 0.01);
 
   [[nodiscard]] bool WaitForPreloaded();
 
@@ -62,7 +65,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
   aos::Fetcher<aos::RobotState> robot_state_fetcher_;
 
-  double wrist_goal_ = 0.0;
+  double wrist_goal_;
   control_loops::superstructure::RollerGoal roller_goal_ =
       control_loops::superstructure::RollerGoal::IDLE;
 
@@ -86,7 +89,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
       superstructure_status_fetcher_;
 
   std::optional<SplineHandle> test_spline_;
-  std::optional<std::array<SplineHandle, 5>> charged_up_splines_;
+  std::optional<std::array<SplineHandle, 4>> charged_up_splines_;
 
   // List of arm angles from arm::PointsList
   const ::std::vector<::Eigen::Matrix<double, 3, 1>> points_;
