@@ -11,14 +11,14 @@ ng_pkg(
     generate_public_api = False,
     deps = [
         "//scouting/webserver/requests/messages:error_response_ts_fbs",
+        "//scouting/webserver/requests/messages:request_2023_data_scouting_response_ts_fbs",
+        "//scouting/webserver/requests/messages:request_2023_data_scouting_ts_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_ts_fbs",
         "//scouting/webserver/requests/messages:request_all_matches_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_all_matches_ts_fbs",
         "//scouting/webserver/requests/messages:request_all_notes_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_all_notes_ts_fbs",
-        "//scouting/webserver/requests/messages:request_data_scouting_response_ts_fbs",
-        "//scouting/webserver/requests/messages:request_data_scouting_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )

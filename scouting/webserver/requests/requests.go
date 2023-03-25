@@ -21,16 +21,12 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
@@ -41,16 +37,12 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
-type SubmitDataScouting = submit_data_scouting.SubmitDataScouting
-type SubmitDataScoutingResponseT = submit_data_scouting_response.SubmitDataScoutingResponseT
 type RequestAllMatches = request_all_matches.RequestAllMatches
 type RequestAllMatchesResponseT = request_all_matches_response.RequestAllMatchesResponseT
 type RequestAllDriverRankings = request_all_driver_rankings.RequestAllDriverRankings
 type RequestAllDriverRankingsResponseT = request_all_driver_rankings_response.RequestAllDriverRankingsResponseT
 type RequestAllNotes = request_all_notes.RequestAllNotes
 type RequestAllNotesResponseT = request_all_notes_response.RequestAllNotesResponseT
-type RequestDataScouting = request_data_scouting.RequestDataScouting
-type RequestDataScoutingResponseT = request_data_scouting_response.RequestDataScoutingResponseT
 type Request2023DataScouting = request_2023_data_scouting.Request2023DataScouting
 type Request2023DataScoutingResponseT = request_2023_data_scouting_response.Request2023DataScoutingResponseT
 type SubmitNotes = submit_notes.SubmitNotes
@@ -71,17 +63,14 @@ type SubmitActionsResponseT = submit_actions_response.SubmitActionsResponseT
 type Database interface {
 	AddToMatch(db.TeamMatch) error
 	AddToShift(db.Shift) error
-	AddToStats(db.Stats) error
 	AddToStats2023(db.Stats2023) error
 	ReturnMatches() ([]db.TeamMatch, error)
 	ReturnAllNotes() ([]db.NotesData, error)
 	ReturnAllDriverRankings() ([]db.DriverRankingData, error)
 	ReturnAllShifts() ([]db.Shift, error)
-	ReturnStats() ([]db.Stats, error)
 	ReturnStats2023() ([]db.Stats2023, error)
 	ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string) ([]db.Stats2023, error)
 	QueryAllShifts(int) ([]db.Shift, error)
-	QueryStats(int) ([]db.Stats, error)
 	QueryNotes(int32) ([]string, error)
 	AddNotes(db.NotesData) error
 	AddDriverRanking(db.DriverRankingData) error
@@ -143,69 +132,6 @@ func parseUsername(req *http.Request) string {
 		return "unknown"
 	}
 	return loginParts[0]
-}
-
-// Handles a SubmitDataScouting request.
-type submitDataScoutingHandler struct {
-	db Database
-}
-
-func (handler submitDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// Get the username of the person submitting the data.
-	username := parseUsername(req)
-
-	requestBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
-		return
-	}
-
-	request, success := parseRequest[SubmitDataScouting](w, requestBytes, "SubmitDataScouting", submit_data_scouting.GetRootAsSubmitDataScouting)
-	if !success {
-		return
-	}
-
-	log.Println("Got data scouting data for match", request.Match(), "team", request.Team(), "from", username)
-
-	stats := db.Stats{
-		TeamNumber:       request.Team(),
-		MatchNumber:      request.Match(),
-		SetNumber:        request.SetNumber(),
-		CompLevel:        string(request.CompLevel()),
-		StartingQuadrant: request.StartingQuadrant(),
-		AutoBallPickedUp: [5]bool{
-			request.AutoBall1(), request.AutoBall2(), request.AutoBall3(),
-			request.AutoBall4(), request.AutoBall5(),
-		},
-		ShotsMissedAuto:      request.MissedShotsAuto(),
-		UpperGoalAuto:        request.UpperGoalAuto(),
-		LowerGoalAuto:        request.LowerGoalAuto(),
-		ShotsMissed:          request.MissedShotsTele(),
-		UpperGoalShots:       request.UpperGoalTele(),
-		LowerGoalShots:       request.LowerGoalTele(),
-		PlayedDefense:        request.DefenseRating(),
-		DefenseReceivedScore: request.DefenseReceivedRating(),
-		Climbing:             int32(request.ClimbLevel()),
-		CollectedBy:          username,
-		Comment:              string(request.Comment()),
-	}
-
-	// Do some error checking.
-	if stats.StartingQuadrant < 1 || stats.StartingQuadrant > 4 {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprint(
-			"Invalid starting_quadrant field value of ", stats.StartingQuadrant))
-		return
-	}
-
-	err = handler.db.AddToStats(stats)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit datascouting data: ", err))
-		return
-	}
-
-	builder := flatbuffers.NewBuilder(50 * 1024)
-	builder.Finish((&SubmitDataScoutingResponseT{}).Pack(builder))
-	w.Write(builder.FinishedBytes())
 }
 
 // Handles a RequestAllMaches request.
@@ -399,61 +325,6 @@ func (handler requestAllMatchesHandler) ServeHTTP(w http.ResponseWriter, req *ht
 		// check if error happened during sorting and notify webpage if that
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprint(err))
 		return
-	}
-
-	builder := flatbuffers.NewBuilder(50 * 1024)
-	builder.Finish((&response).Pack(builder))
-	w.Write(builder.FinishedBytes())
-}
-
-// Handles a RequestDataScouting request.
-type requestDataScoutingHandler struct {
-	db Database
-}
-
-func (handler requestDataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	requestBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
-		return
-	}
-
-	_, success := parseRequest(w, requestBytes, "RequestDataScouting", request_data_scouting.GetRootAsRequestDataScouting)
-	if !success {
-		return
-	}
-
-	stats, err := handler.db.ReturnStats()
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
-		return
-	}
-
-	var response RequestDataScoutingResponseT
-	for _, stat := range stats {
-		response.StatsList = append(response.StatsList, &request_data_scouting_response.StatsT{
-			Team:                  stat.TeamNumber,
-			Match:                 stat.MatchNumber,
-			SetNumber:             stat.SetNumber,
-			CompLevel:             stat.CompLevel,
-			StartingQuadrant:      stat.StartingQuadrant,
-			AutoBall1:             stat.AutoBallPickedUp[0],
-			AutoBall2:             stat.AutoBallPickedUp[1],
-			AutoBall3:             stat.AutoBallPickedUp[2],
-			AutoBall4:             stat.AutoBallPickedUp[3],
-			AutoBall5:             stat.AutoBallPickedUp[4],
-			MissedShotsAuto:       stat.ShotsMissedAuto,
-			UpperGoalAuto:         stat.UpperGoalAuto,
-			LowerGoalAuto:         stat.LowerGoalAuto,
-			MissedShotsTele:       stat.ShotsMissed,
-			UpperGoalTele:         stat.UpperGoalShots,
-			LowerGoalTele:         stat.LowerGoalShots,
-			DefenseRating:         stat.PlayedDefense,
-			DefenseReceivedRating: stat.DefenseReceivedScore,
-			ClimbLevel:            request_data_scouting_response.ClimbLevel(stat.Climbing),
-			CollectedBy:           stat.CollectedBy,
-			Comment:               stat.Comment,
-		})
 	}
 
 	builder := flatbuffers.NewBuilder(50 * 1024)
@@ -908,11 +779,9 @@ func (handler requestAllDriverRankingsHandler) ServeHTTP(w http.ResponseWriter, 
 
 func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.HandleFunc("/requests", unknown)
-	scoutingServer.Handle("/requests/submit/data_scouting", submitDataScoutingHandler{db})
 	scoutingServer.Handle("/requests/request/all_matches", requestAllMatchesHandler{db})
 	scoutingServer.Handle("/requests/request/all_notes", requestAllNotesHandler{db})
 	scoutingServer.Handle("/requests/request/all_driver_rankings", requestAllDriverRankingsHandler{db})
-	scoutingServer.Handle("/requests/request/data_scouting", requestDataScoutingHandler{db})
 	scoutingServer.Handle("/requests/request/2023_data_scouting", request2023DataScoutingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_notes", submitNoteScoutingHandler{db})
 	scoutingServer.Handle("/requests/request/notes_for_team", requestNotesForTeamHandler{db})

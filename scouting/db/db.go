@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
-	"strconv"
 )
 
 type Database struct {
@@ -26,44 +25,6 @@ type TeamMatch struct {
 type Shift struct {
 	MatchNumber                                                      int32 `gorm:"primaryKey"`
 	R1scouter, R2scouter, R3scouter, B1scouter, B2scouter, B3scouter string
-}
-
-type Stats struct {
-	TeamNumber       int32  `gorm:"primaryKey"`
-	MatchNumber      int32  `gorm:"primaryKey"`
-	SetNumber        int32  `gorm:"primaryKey"`
-	CompLevel        string `gorm:"primaryKey"`
-	StartingQuadrant int32
-	// This field is for the balls picked up during auto. Use this field
-	// when using this library. Ignore the AutoBallPickedUpX fields below.
-	AutoBallPickedUp [5]bool `gorm:"-:all"`
-	// These fields are internal implementation details. Do not use these.
-	// TODO(phil): Figure out how to use the JSON gorm serializer instead
-	// of manually serializing/deserializing these.
-	AutoBallPickedUp1 bool
-	AutoBallPickedUp2 bool
-	AutoBallPickedUp3 bool
-	AutoBallPickedUp4 bool
-	AutoBallPickedUp5 bool
-	// TODO(phil): Re-order auto and teleop fields so auto comes first.
-	ShotsMissed, UpperGoalShots, LowerGoalShots   int32
-	ShotsMissedAuto, UpperGoalAuto, LowerGoalAuto int32
-	PlayedDefense, DefenseReceivedScore           int32
-	// Climbing level:
-	// 0 -> "NoAttempt"
-	// 1 -> "Failed"
-	// 2 -> "FailedWithPlentyOfTime"
-	// 3 -> "Low"
-	// 4 -> "Medium"
-	// 5 -> "High"
-	// 6 -> "Traversal"
-	Climbing int32
-	// Some non-numerical data that the scout felt worth noting.
-	Comment string
-	// The username of the person who collected these statistics.
-	// "unknown" if submitted without logging in.
-	// Empty if the stats have not yet been collected.
-	CollectedBy string
 }
 
 type Stats2023 struct {
@@ -155,7 +116,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&TeamMatch{}, &Shift{}, &Stats{}, &Stats2023{}, &Action{}, &NotesData{}, &Ranking{}, &DriverRankingData{}, &ParsedDriverRankingData{})
+	err = database.AutoMigrate(&TeamMatch{}, &Shift{}, &Stats2023{}, &Action{}, &NotesData{}, &Ranking{}, &DriverRankingData{}, &ParsedDriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -194,34 +155,6 @@ func (database *Database) AddAction(a Action) error {
 	result := database.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&a)
-	return result.Error
-}
-
-func (database *Database) AddToStats(s Stats) error {
-	matches, err := database.queryMatches(strconv.Itoa(int(s.TeamNumber)))
-	if err != nil {
-		return err
-	}
-	foundMatch := false
-	for _, match := range matches {
-		if match.MatchNumber == s.MatchNumber {
-			foundMatch = true
-			break
-		}
-	}
-	if !foundMatch {
-		return errors.New(fmt.Sprint(
-			"Failed to find team ", s.TeamNumber,
-			" in match ", s.MatchNumber, " in the schedule."))
-	}
-
-	// Unpack the auto balls array.
-	s.AutoBallPickedUp1 = s.AutoBallPickedUp[0]
-	s.AutoBallPickedUp2 = s.AutoBallPickedUp[1]
-	s.AutoBallPickedUp3 = s.AutoBallPickedUp[2]
-	s.AutoBallPickedUp4 = s.AutoBallPickedUp[3]
-	s.AutoBallPickedUp5 = s.AutoBallPickedUp[4]
-	result := database.Create(&s)
 	return result.Error
 }
 
@@ -298,34 +231,6 @@ func (database *Database) ReturnActions() ([]Action, error) {
 	return actions, result.Error
 }
 
-// Packs the stats. This really just consists of taking the individual auto
-// ball booleans and turning them into an array. The individual booleans are
-// cleared so that they don't affect struct comparisons.
-func packStats(stats *Stats) {
-	stats.AutoBallPickedUp = [5]bool{
-		stats.AutoBallPickedUp1,
-		stats.AutoBallPickedUp2,
-		stats.AutoBallPickedUp3,
-		stats.AutoBallPickedUp4,
-		stats.AutoBallPickedUp5,
-	}
-	stats.AutoBallPickedUp1 = false
-	stats.AutoBallPickedUp2 = false
-	stats.AutoBallPickedUp3 = false
-	stats.AutoBallPickedUp4 = false
-	stats.AutoBallPickedUp5 = false
-}
-
-func (database *Database) ReturnStats() ([]Stats, error) {
-	var stats []Stats
-	result := database.Find(&stats)
-	// Pack the auto balls array.
-	for i := range stats {
-		packStats(&stats[i])
-	}
-	return stats, result.Error
-}
-
 func (database *Database) ReturnStats2023() ([]Stats2023, error) {
 	var stats2023 []Stats2023
 	result := database.Find(&stats2023)
@@ -367,16 +272,6 @@ func (database *Database) QueryAllShifts(matchNumber_ int) ([]Shift, error) {
 	var shifts []Shift
 	result := database.Where("match_number = ?", matchNumber_).Find(&shifts)
 	return shifts, result.Error
-}
-
-func (database *Database) QueryStats(teamNumber_ int) ([]Stats, error) {
-	var stats []Stats
-	result := database.Where("team_number = ?", teamNumber_).Find(&stats)
-	// Pack the auto balls array.
-	for i := range stats {
-		packStats(&stats[i])
-	}
-	return stats, result.Error
 }
 
 func (database *Database) QueryActions(teamNumber_ int) ([]Action, error) {

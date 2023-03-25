@@ -14,10 +14,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule_response"
@@ -106,12 +104,6 @@ func sendMessage[FbT interface{}, Fb interface{ UnPack() *FbT }](url string, req
 	return response.UnPack(), nil
 }
 
-func SubmitDataScouting(server string, requestBytes []byte) (*submit_data_scouting_response.SubmitDataScoutingResponseT, error) {
-	return sendMessage[submit_data_scouting_response.SubmitDataScoutingResponseT](
-		server+"/requests/submit/data_scouting", requestBytes,
-		submit_data_scouting_response.GetRootAsSubmitDataScoutingResponse)
-}
-
 func RequestAllMatches(server string, requestBytes []byte) (*request_all_matches_response.RequestAllMatchesResponseT, error) {
 	return sendMessage[request_all_matches_response.RequestAllMatchesResponseT](
 		server+"/requests/request/all_matches", requestBytes,
@@ -122,12 +114,6 @@ func RequestAllDriverRankings(server string, requestBytes []byte) (*request_all_
 	return sendMessage[request_all_driver_rankings_response.RequestAllDriverRankingsResponseT](
 		server+"/requests/request/all_driver_rankings", requestBytes,
 		request_all_driver_rankings_response.GetRootAsRequestAllDriverRankingsResponse)
-}
-
-func RequestDataScouting(server string, requestBytes []byte) (*request_data_scouting_response.RequestDataScoutingResponseT, error) {
-	return sendMessage[request_data_scouting_response.RequestDataScoutingResponseT](
-		server+"/requests/request/data_scouting", requestBytes,
-		request_data_scouting_response.GetRootAsRequestDataScoutingResponse)
 }
 
 func Request2023DataScouting(server string, requestBytes []byte) (*request_2023_data_scouting_response.Request2023DataScoutingResponseT, error) {

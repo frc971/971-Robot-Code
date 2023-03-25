@@ -16,7 +16,7 @@
       </a>
     </li>
     <li>
-      <a class="dropdown-item" href="#" (click)="switchDataSource('Stats')">
+      <a class="dropdown-item" href="#" (click)="switchDataSource('Stats2023')">
         Stats
       </a>
     </li>
@@ -73,7 +73,7 @@
     </table>
   </div>
   <!-- Stats Data Display. -->
-  <div *ngSwitchCase="'Stats'">
+  <div *ngSwitchCase="'Stats2023'">
     <table class="table">
       <thead>
         <tr>
@@ -93,11 +93,11 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let stat of statList; index as i;">
-          <th scope="row">{{stat.match()}}</th>
-          <td>{{stat.team()}}</td>
-          <td>{{stat.setNumber()}}</td>
-          <td>{{COMP_LEVEL_LABELS[stat.compLevel()]}}</td>
+        <tr *ngFor="let stat2023 of statList; index as i;">
+          <th scope="row">{{stat2023.match()}}</th>
+          <td>{{stat2023.team()}}</td>
+          <td>{{stat2023.setNumber()}}</td>
+          <td>{{COMP_LEVEL_LABELS[stat2023.compLevel()]}}</td>
           <!-- Delete Icon. -->
           <td>
             <button class="btn btn-danger" (click)="deleteData()">

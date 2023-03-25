@@ -3,16 +3,12 @@ load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 FILE_NAMES = (
     "error_response",
-    "submit_data_scouting",
-    "submit_data_scouting_response",
     "request_all_driver_rankings",
     "request_all_driver_rankings_response",
     "request_all_matches",
     "request_all_matches_response",
     "request_all_notes",
     "request_all_notes_response",
-    "request_data_scouting",
-    "request_data_scouting_response",
     "request_2023_data_scouting",
     "request_2023_data_scouting_response",
     "submit_notes",

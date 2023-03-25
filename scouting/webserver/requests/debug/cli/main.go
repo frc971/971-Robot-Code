@@ -83,16 +83,12 @@ func main() {
 		"The indentation to use for the result dumping. Default is a space.")
 	addressPtr := flag.String("address", "http://localhost:8080",
 		"The end point where the server is listening.")
-	submitDataScoutingPtr := flag.String("submitDataScouting", "",
-		"If specified, parse the file as a SubmitDataScouting JSON request.")
 	submitDriverRankingPtr := flag.String("submitDriverRanking", "",
 		"If specified, parse the file as a submitDriverRanking JSON request.")
 	submitNotesPtr := flag.String("submitNotes", "",
 		"If specified, parse the file as a submitNotes JSON request.")
 	requestAllMatchesPtr := flag.String("requestAllMatches", "",
 		"If specified, parse the file as a RequestAllMatches JSON request.")
-	requestDataScoutingPtr := flag.String("requestDataScouting", "",
-		"If specified, parse the file as a RequestDataScouting JSON request.")
 	request2023DataScoutingPtr := flag.String("request2023DataScouting", "",
 		"If specified, parse the file as a Request2023DataScouting JSON request.")
 	requestAllDriverRankingsPtr := flag.String("requestAllDriverRankings", "",
@@ -107,13 +103,6 @@ func main() {
 	spew.Config.DisablePointerAddresses = true
 
 	// Handle the actual arguments.
-	maybePerformRequest(
-		"SubmitDataScouting",
-		"scouting/webserver/requests/messages/submit_data_scouting.fbs",
-		*submitDataScoutingPtr,
-		*addressPtr,
-		debug.SubmitDataScouting)
-
 	maybePerformRequest(
 		"submitNotes",
 		"scouting/webserver/requests/messages/submit_notes.fbs",
@@ -134,13 +123,6 @@ func main() {
 		*requestAllMatchesPtr,
 		*addressPtr,
 		debug.RequestAllMatches)
-
-	maybePerformRequest(
-		"RequestDataScouting",
-		"scouting/webserver/requests/messages/request_data_scouting.fbs",
-		*requestDataScoutingPtr,
-		*addressPtr,
-		debug.RequestDataScouting)
 
 	maybePerformRequest(
 		"Request2023DataScouting",

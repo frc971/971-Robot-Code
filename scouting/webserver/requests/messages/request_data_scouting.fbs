@@ -1,7 +1,0 @@
-namespace scouting.webserver.requests;
-
-table RequestDataScouting {
-    // TODO: Implement this.
-}
-
-root_type RequestDataScouting;

@@ -11,11 +11,11 @@ import {
   Ranking,
   RequestAllDriverRankingsResponse,
 } from '../../webserver/requests/messages/request_all_driver_rankings_response_generated';
-import {RequestDataScouting} from '../../webserver/requests/messages/request_data_scouting_generated';
+import {Request2023DataScouting} from '../../webserver/requests/messages/request_2023_data_scouting_generated';
 import {
-  Stats,
-  RequestDataScoutingResponse,
-} from '../../webserver/requests/messages/request_data_scouting_response_generated';
+  Stats2023,
+  Request2023DataScoutingResponse,
+} from '../../webserver/requests/messages/request_2023_data_scouting_response_generated';
 
 @Injectable({providedIn: 'root'})
 export class ViewDataRequestor {
@@ -77,15 +77,15 @@ export class ViewDataRequestor {
     return driverRankingList;
   }
   // Returns all data scouting entries from the database.
-  async fetchStatsList(): Promise<Stats[]> {
+  async fetchStats2023List(): Promise<Stats2023[]> {
     let fbBuffer = await this.fetchFromServer(
-      RequestDataScouting.startRequestDataScouting,
-      RequestDataScouting.endRequestDataScouting,
-      '/requests/request/data_scouting'
+      Request2023DataScouting.startRequest2023DataScouting,
+      Request2023DataScouting.endRequest2023DataScouting,
+      '/requests/request/2023_data_scouting'
     );
 
     const parsedResponse =
-      RequestDataScoutingResponse.getRootAsRequestDataScoutingResponse(
+      Request2023DataScoutingResponse.getRootAsRequest2023DataScoutingResponse(
         fbBuffer
       );
 

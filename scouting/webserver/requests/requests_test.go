@@ -1,15 +1,12 @@
 package requests
 
 import (
-	"bytes"
-	"io"
 	"net/http"
 	"reflect"
 	"testing"
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/debug"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings"
@@ -18,14 +15,10 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting"
-	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule"
@@ -47,78 +40,6 @@ func Test404(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("Expected error code 404, but got %d instead", resp.Status)
-	}
-}
-
-// Validates that we can submit new data scouting data.
-func TestSubmitDataScoutingError(t *testing.T) {
-	db := MockDatabase{}
-	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	resp, err := http.Post("http://localhost:8080/requests/submit/data_scouting", "application/octet-stream", bytes.NewReader([]byte("")))
-	if err != nil {
-		t.Fatalf("Failed to send request: %v", err)
-	}
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatal("Unexpected status code. Got", resp.Status)
-	}
-
-	responseBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal("Failed to read response bytes:", err)
-	}
-	errorResponse := error_response.GetRootAsErrorResponse(responseBytes, 0)
-
-	errorMessage := string(errorResponse.ErrorMessage())
-	if errorMessage != "Failed to parse SubmitDataScouting: runtime error: index out of range [3] with length 0" {
-		t.Fatal("Got mismatched error message:", errorMessage)
-	}
-}
-
-// Validates that we can submit new data scouting data.
-func TestSubmitDataScouting(t *testing.T) {
-	db := MockDatabase{}
-	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&submit_data_scouting.SubmitDataScoutingT{
-		Team:                  971,
-		Match:                 1,
-		SetNumber:             8,
-		CompLevel:             "quals",
-		StartingQuadrant:      2,
-		AutoBall1:             true,
-		AutoBall2:             false,
-		AutoBall3:             false,
-		AutoBall4:             false,
-		AutoBall5:             false,
-		MissedShotsAuto:       9971,
-		UpperGoalAuto:         9971,
-		LowerGoalAuto:         9971,
-		MissedShotsTele:       9971,
-		UpperGoalTele:         9971,
-		LowerGoalTele:         9971,
-		DefenseRating:         9971,
-		DefenseReceivedRating: 4,
-		ClimbLevel:            submit_data_scouting.ClimbLevelLow,
-		Comment:               "this is a comment",
-	}).Pack(builder))
-
-	response, err := debug.SubmitDataScouting("http://localhost:8080", builder.FinishedBytes())
-	if err != nil {
-		t.Fatal("Failed to submit data scouting: ", err)
-	}
-
-	// We get an empty response back. Validate that.
-	expected := submit_data_scouting_response.SubmitDataScoutingResponseT{}
-	if !reflect.DeepEqual(expected, *response) {
-		t.Fatal("Expected ", expected, ", but got:", *response)
 	}
 }
 
@@ -278,83 +199,6 @@ func TestRequestAllMatches(t *testing.T) {
 		}
 	}
 
-}
-
-// Validates that we can request the stats.
-func TestRequestDataScouting(t *testing.T) {
-	db := MockDatabase{
-		stats: []db.Stats{
-			{
-				TeamNumber: 971, MatchNumber: 1, SetNumber: 2, CompLevel: "quals",
-				StartingQuadrant: 1,
-				AutoBallPickedUp: [5]bool{true, false, false, false, true},
-				ShotsMissed:      1, UpperGoalShots: 2, LowerGoalShots: 3,
-				ShotsMissedAuto: 4, UpperGoalAuto: 5, LowerGoalAuto: 6,
-				PlayedDefense: 7, DefenseReceivedScore: 3, Climbing: 2,
-				Comment: "a lovely comment", CollectedBy: "john",
-			},
-			{
-				TeamNumber: 972, MatchNumber: 1, SetNumber: 4, CompLevel: "extra",
-				StartingQuadrant: 2,
-				AutoBallPickedUp: [5]bool{false, false, true, false, false},
-				ShotsMissed:      2, UpperGoalShots: 3, LowerGoalShots: 4,
-				ShotsMissedAuto: 5, UpperGoalAuto: 6, LowerGoalAuto: 7,
-				PlayedDefense: 8, DefenseReceivedScore: 1, Climbing: 4,
-				Comment: "another lovely comment", CollectedBy: "andrea",
-			},
-		},
-	}
-	scoutingServer := server.NewScoutingServer()
-	HandleRequests(&db, scoutingServer)
-	scoutingServer.Start(8080)
-	defer scoutingServer.Stop()
-
-	builder := flatbuffers.NewBuilder(1024)
-	builder.Finish((&request_data_scouting.RequestDataScoutingT{}).Pack(builder))
-
-	response, err := debug.RequestDataScouting("http://localhost:8080", builder.FinishedBytes())
-	if err != nil {
-		t.Fatal("Failed to request all matches: ", err)
-	}
-
-	expected := request_data_scouting_response.RequestDataScoutingResponseT{
-		StatsList: []*request_data_scouting_response.StatsT{
-			{
-				Team: 971, Match: 1, SetNumber: 2, CompLevel: "quals",
-				MissedShotsAuto: 4, UpperGoalAuto: 5, LowerGoalAuto: 6,
-				MissedShotsTele: 1, UpperGoalTele: 2, LowerGoalTele: 3,
-				DefenseRating:         7,
-				DefenseReceivedRating: 3,
-				CollectedBy:           "john",
-				AutoBall1:             true, AutoBall2: false, AutoBall3: false,
-				AutoBall4: false, AutoBall5: true,
-				StartingQuadrant: 1,
-				ClimbLevel:       request_data_scouting_response.ClimbLevelFailedWithPlentyOfTime,
-				Comment:          "a lovely comment",
-			},
-			{
-				Team: 972, Match: 1, SetNumber: 4, CompLevel: "extra",
-				MissedShotsAuto: 5, UpperGoalAuto: 6, LowerGoalAuto: 7,
-				MissedShotsTele: 2, UpperGoalTele: 3, LowerGoalTele: 4,
-				DefenseRating:         8,
-				DefenseReceivedRating: 1,
-				CollectedBy:           "andrea",
-				AutoBall1:             false, AutoBall2: false, AutoBall3: true,
-				AutoBall4: false, AutoBall5: false,
-				StartingQuadrant: 2,
-				ClimbLevel:       request_data_scouting_response.ClimbLevelMedium,
-				Comment:          "another lovely comment",
-			},
-		},
-	}
-	if len(expected.StatsList) != len(response.StatsList) {
-		t.Fatal("Expected ", expected, ", but got ", *response)
-	}
-	for i, match := range expected.StatsList {
-		if !reflect.DeepEqual(*match, *response.StatsList[i]) {
-			t.Fatal("Expected for stats", i, ":", *match, ", but got:", *response.StatsList[i])
-		}
-	}
 }
 
 // Validates that we can request the 2023 stats.
@@ -904,7 +748,6 @@ func TestRequestAllNotes(t *testing.T) {
 
 type MockDatabase struct {
 	matches        []db.TeamMatch
-	stats          []db.Stats
 	notes          []db.NotesData
 	shiftSchedule  []db.Shift
 	driver_ranking []db.DriverRankingData
@@ -916,21 +759,12 @@ func (database *MockDatabase) AddToMatch(match db.TeamMatch) error {
 	return nil
 }
 
-func (database *MockDatabase) AddToStats(stats db.Stats) error {
-	database.stats = append(database.stats, stats)
-	return nil
-}
-
 func (database *MockDatabase) AddToStats2023(stats2023 db.Stats2023) error {
 	database.stats2023 = append(database.stats2023, stats2023)
 	return nil
 }
 func (database *MockDatabase) ReturnMatches() ([]db.TeamMatch, error) {
 	return database.matches, nil
-}
-
-func (database *MockDatabase) ReturnStats() ([]db.Stats, error) {
-	return database.stats, nil
 }
 
 func (database *MockDatabase) ReturnStats2023() ([]db.Stats2023, error) {
@@ -945,10 +779,6 @@ func (database *MockDatabase) ReturnStats2023ForTeam(teamNumber string, matchNum
 		}
 	}
 	return results, nil
-}
-
-func (database *MockDatabase) QueryStats(int) ([]db.Stats, error) {
-	return []db.Stats{}, nil
 }
 
 func (database *MockDatabase) QueryNotes(requestedTeam int32) ([]string, error) {
