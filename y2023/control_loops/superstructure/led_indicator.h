@@ -69,7 +69,7 @@ class LedIndicator {
 
   void DisplayLed(uint8_t r, uint8_t g, uint8_t b);
 
-  ctre::phoenix::led::CANdle candle_{0, ""};
+  ctre::phoenix::led::CANdle candle_{8, "rio"};
 
   aos::EventLoop *event_loop_;
   aos::Fetcher<frc971::control_loops::drivetrain::Output>
