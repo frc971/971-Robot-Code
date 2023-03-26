@@ -24,6 +24,8 @@ enum RejectionReason : uint8 {
   HIGH_DISTANCE_TO_TARGET = 6,
   // The robot was travelling too fast; we don't trust the target.
   ROBOT_TOO_FAST = 7,
+  // Pose estimation error ratio was higher than any normal detection.
+  HIGH_POSE_ERROR_RATIO = 8,
 }
 
 table RejectionCount {

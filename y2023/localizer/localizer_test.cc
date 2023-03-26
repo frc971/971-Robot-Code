@@ -155,6 +155,7 @@ class LocalizerTest : public ::testing::Test {
             target_builder.add_position(position_offset);
             target_builder.add_orientation(quat_offset);
             target_builder.add_pose_error(pose_error_);
+            target_builder.add_pose_error_ratio(pose_error_ratio_);
             auto target_offset = target_builder.Finish();
 
             auto targets_offset = builder.fbb()->CreateVector({target_offset});
@@ -277,6 +278,7 @@ class LocalizerTest : public ::testing::Test {
 
   uint64_t send_target_id_ = kTargetId;
   double pose_error_ = 1e-7;
+  double pose_error_ratio_ = 0.1;
   double implied_yaw_error_ = 0.0;
 
   gflags::FlagSaver flag_saver_;
@@ -503,6 +505,29 @@ TEST_F(LocalizerTest, HighImpliedYawError) {
           ->Get(0)
           ->rejection_reasons()
           ->Get(static_cast<size_t>(RejectionReason::HIGH_IMPLIED_YAW_ERROR))
+          ->count(),
+      status_fetcher_->statistics()->Get(0)->total_candidates());
+}
+
+// Tests that we correctly reject a detection with a high pose error ratio.
+TEST_F(LocalizerTest, HighPoseErrorRatio) {
+  output_voltages_ << 0.0, 0.0;
+  send_targets_ = true;
+  // Send the minimum pose error to be rejected
+  constexpr double kEps = 1e-9;
+  pose_error_ratio_ = 0.4 + kEps;
+
+  event_loop_factory_.RunFor(std::chrono::seconds(4));
+  CHECK(status_fetcher_.Fetch());
+  ASSERT_TRUE(status_fetcher_->has_statistics());
+  ASSERT_EQ(4u /* number of cameras */, status_fetcher_->statistics()->size());
+  ASSERT_EQ(0, status_fetcher_->statistics()->Get(0)->total_accepted());
+  ASSERT_LT(10, status_fetcher_->statistics()->Get(0)->total_candidates());
+  ASSERT_EQ(
+      status_fetcher_->statistics()
+          ->Get(0)
+          ->rejection_reasons()
+          ->Get(static_cast<size_t>(RejectionReason::HIGH_POSE_ERROR_RATIO))
           ->count(),
       status_fetcher_->statistics()->Get(0)->total_candidates());
 }
