@@ -126,7 +126,8 @@ class Falcon {
         supply_voltage_(talon_.GetSupplyVoltage()),
         supply_current_(talon_.GetSupplyCurrent()),
         torque_current_(talon_.GetTorqueCurrent()),
-        position_(talon_.GetPosition()) {
+        position_(talon_.GetPosition()),
+        duty_cycle_(talon_.GetDutyCycle()) {
     // device temp is not timesynced so don't add it to the list of signals
     device_temp_.SetUpdateFrequency(kCANUpdateFreqHz);
 
@@ -143,6 +144,9 @@ class Falcon {
 
     position_.SetUpdateFrequency(kCANUpdateFreqHz);
     signals->push_back(&position_);
+
+    duty_cycle_.SetUpdateFrequency(kCANUpdateFreqHz);
+    signals->push_back(&duty_cycle_);
   }
 
   void PrintConfigs() {
@@ -226,6 +230,7 @@ class Falcon {
     builder.add_supply_voltage(supply_voltage());
     builder.add_supply_current(supply_current());
     builder.add_torque_current(torque_current());
+    builder.add_duty_cycle(duty_cycle());
 
     double invert =
         (inverted_ ==
@@ -244,6 +249,7 @@ class Falcon {
   float supply_voltage() const { return supply_voltage_.GetValue().value(); }
   float supply_current() const { return supply_current_.GetValue().value(); }
   float torque_current() const { return torque_current_.GetValue().value(); }
+  float duty_cycle() const { return duty_cycle_.GetValue().value(); }
   float position() const { return position_.GetValue().value(); }
 
   // returns the monotonic timestamp of the latest timesynced reading in the
@@ -269,6 +275,8 @@ class Falcon {
   ctre::phoenixpro::StatusSignalValue<units::current::ampere_t> supply_current_,
       torque_current_;
   ctre::phoenixpro::StatusSignalValue<units::angle::turn_t> position_;
+  ctre::phoenixpro::StatusSignalValue<units::dimensionless::scalar_t>
+      duty_cycle_;
 };
 
 class CANSensorReader {
@@ -359,6 +367,7 @@ class CANSensorReader {
       roller_falcon_data.supply_voltage = roller_falcon_->supply_voltage();
       roller_falcon_data.device_temp = roller_falcon_->device_temp();
       roller_falcon_data.position = -roller_falcon_->position();
+      roller_falcon_data.duty_cycle = roller_falcon_->duty_cycle();
       roller_falcon_data_ =
           std::make_optional<superstructure::CANFalconT>(roller_falcon_data);
     }
