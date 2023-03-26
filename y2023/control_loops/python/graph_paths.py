@@ -31,7 +31,7 @@ named_segments.append(
         control1=np.array([3.170156, -0.561227]),
         control2=np.array([2.972776, -1.026820]),
         end=points['GroundPickupBackConeUp'],
-        control_alpha_rolls=[(0.30, 0.0), (.95, np.pi / 2.0)],
+        control_alpha_rolls=[(.95, np.pi / 2.0)],
     ))
 
 points['GroundPickupBackConeDownBase'] = to_theta_with_circular_index_and_roll(
@@ -44,7 +44,7 @@ named_segments.append(
         control1=np.array([3.170156, -0.561227]),
         control2=np.array([2.972776, -1.026820]),
         end=points['GroundPickupBackConeDownBase'],
-        control_alpha_rolls=[(0.30, 0.0), (.95, np.pi / 2.0)],
+        control_alpha_rolls=[(.95, np.pi / 2.0)],
     ))
 
 points[
@@ -58,7 +58,7 @@ named_segments.append(
         control1=np.array([3.495221564200401, 0.4737763579250964]),
         control2=np.array([4.110392601248856, 1.0424853539638115]),
         end=points['GroundPickupFrontConeDownBase'],
-        control_alpha_rolls=[(0.30, 0.0), (.95, -np.pi / 2.0)],
+        control_alpha_rolls=[(.95, -np.pi / 2.0)],
     ))
 
 points['ScoreFrontLowConeDownBase'] = to_theta_with_circular_index_and_roll(
@@ -240,7 +240,7 @@ named_segments.append(
         control1=np.array([3.153228, -0.497009]),
         control2=np.array([2.972776, -1.026820]),
         end=points['GroundPickupBackCube'],
-        control_alpha_rolls=[(0.4, 0.0), (.9, -np.pi / 2.0)],
+        control_alpha_rolls=[(.9, -np.pi / 2.0)],
     ))
 
 points['GroundPickupFrontCube'] = to_theta_with_circular_index_and_roll(
@@ -253,7 +253,7 @@ named_segments.append(
         control1=np.array([3.338852196583635, 0.34968650009090885]),
         control2=np.array([4.28246270189025, 1.492916470137478]),
         end=points['GroundPickupFrontCube'],
-        control_alpha_rolls=[(0.4, 0.0), (.9, np.pi / 2.0)],
+        control_alpha_rolls=[(.9, np.pi / 2.0)],
     ))
 
 points['ScoreBackMidConeUp'] = to_theta_with_circular_index_and_roll(
@@ -335,12 +335,12 @@ named_segments.append(
     ThetaSplineSegment(
         name="NeutralToHPPickupBackConeUp",
         start=points['Neutral'],
-        control1=np.array([2.0, -0.239378]),
-        control2=np.array([1.6, -0.626835]),
+        control1=np.array([2.1007555300246317, -1.0652453944299012]),
+        control2=np.array([0.7579462988809116, -1.6518672114346526]),
         end=points['HPPickupBackConeUp'],
-        control_alpha_rolls=[(0.3, 0.0), (.9, np.pi / 2.0)],
+        control_alpha_rolls=[(.9, np.pi / 2.0)],
         alpha_unitizer=np.matrix(
-            f"{1.0 / 9.0} 0 0; 0 {1.0 / 6.0} 0; 0 0 {1.0 / 100.0}"),
+            f"{1.0 / 15.0} 0 0; 0 {1.0 / 15.0} 0; 0 0 {1.0 / 100.0}"),
     ))
 
 points['HPPickupFrontConeUp'] = np.array(
@@ -352,12 +352,12 @@ named_segments.append(
     ThetaSplineSegment(
         name="NeutralToHPPickupFrontConeUp",
         start=points['Neutral'],
-        control1=np.array([4.068204933788692, -0.05440997896697275]),
-        control2=np.array([4.861911360838861, -0.03790410600482508]),
+        control1=np.array([3.7428100581067785, 0.3957215032198551]),
+        control2=np.array([4.349242198354247, 0.8724403878333801]),
         end=points['HPPickupFrontConeUp'],
-        control_alpha_rolls=[(0.3, 0.0), (.9, -np.pi / 2.0)],
+        control_alpha_rolls=[(.8, -np.pi / 2.0)],
         alpha_unitizer=np.matrix(
-            f"{1.0 / 9.0} 0 0; 0 {1.0 / 6.0} 0; 0 0 {1.0 / 100.0}"),
+            f"{1.0 / 15.0} 0 0; 0 {1.0 / 15.0} 0; 0 0 {1.0 / 70.0}"),
     ))
 
 points['ScoreFrontHighConeUp'] = to_theta_with_circular_index_and_roll(
@@ -370,7 +370,7 @@ named_segments.append(
         control1=np.array([2.594244, 0.417442]),
         control2=np.array([1.51325, 0.679748]),
         end=points['ScoreFrontHighConeUp'],
-        control_alpha_rolls=[(0.20, 0.0), (.95, -np.pi / 2.0)],
+        control_alpha_rolls=[(.95, -np.pi / 2.0)],
     ))
 
 points['ScoreFrontMidConeUp'] = to_theta_with_circular_index_and_roll(
@@ -383,7 +383,7 @@ named_segments.append(
         control1=np.array([3.0, 0.317442]),
         control2=np.array([2.9, 0.479748]),
         end=points['ScoreFrontMidConeUp'],
-        control_alpha_rolls=[(0.40, 0.0), (.95, -np.pi / 2.0)],
+        control_alpha_rolls=[(.95, -np.pi / 2.0)],
     ))
 
 points['Starting'] = np.array((np.pi, -0.125053863467887, 0.0))
@@ -424,7 +424,7 @@ named_segments.append(
         control1=np.array([3.338852196583635, 0.34968650009090885]),
         control2=np.array([4.28246270189025, 1.492916470137478]),
         end=points['ScoreFrontLowCube'],
-        control_alpha_rolls=[(0.4, 0.0), (.9, np.pi / 2.0)],
+        control_alpha_rolls=[(.9, np.pi / 2.0)],
     ))
 
 points['ScoreFrontMidCube'] = to_theta_with_circular_index_and_roll(
@@ -437,7 +437,7 @@ named_segments.append(
         control1=np.array([3.1310824883477952, 0.23591705727105095]),
         control2=np.array([3.0320025094685965, 0.43674789928668933]),
         end=points["ScoreFrontMidCube"],
-        control_alpha_rolls=[(0.4, np.pi * 0.0), (0.95, np.pi * 0.5)],
+        control_alpha_rolls=[(0.95, np.pi * 0.5)],
     ))
 
 named_segments.append(
@@ -460,7 +460,7 @@ named_segments.append(
         control1=np.array([2.537484161662287, 0.059700523547219]),
         control2=np.array([2.449391812539668, 0.4141564369176016]),
         end=points["ScoreFrontHighCube"],
-        control_alpha_rolls=[(0.4, np.pi * 0.0), (0.95, np.pi * 0.5)],
+        control_alpha_rolls=[(0.95, np.pi * 0.5)],
     ))
 
 named_segments.append(
@@ -496,7 +496,7 @@ named_segments.append(
         control1=np.array([3.3485646154655404, -0.4369603013926491]),
         control2=np.array([3.2653593368256995, -0.789587049476034]),
         end=points["ScoreBackMidCube"],
-        control_alpha_rolls=[(0.3, -np.pi * 0.0), (0.95, -np.pi * 0.5)],
+        control_alpha_rolls=[(0.95, -np.pi * 0.5)],
     ))
 
 named_segments.append(
@@ -522,7 +522,7 @@ named_segments.append(
         control1=np.array([3.6804854484103684, -0.3494541095053125]),
         control2=np.array([3.9889380578509517, -0.6637934755748516]),
         end=points["ScoreBackHighCube"],
-        control_alpha_rolls=[(0.3, -np.pi * 0.0), (0.95, -np.pi * 0.5)],
+        control_alpha_rolls=[(0.95, -np.pi * 0.5)],
     ))
 
 named_segments.append(
@@ -545,7 +545,7 @@ named_segments.append(
         control1=np.array([3.153481004695907, 0.4827717171390571]),
         control2=np.array([4.107487625131798, 0.9935705415901082]),
         end=points['GroundPickupFrontConeUp'],
-        control_alpha_rolls=[(0.30, 0.0), (.95, -np.pi / 2.0)],
+        control_alpha_rolls=[(.95, -np.pi / 2.0)],
     ))
 
 points['ScoreFrontLowConeUp'] = to_theta_with_circular_index_and_roll(
