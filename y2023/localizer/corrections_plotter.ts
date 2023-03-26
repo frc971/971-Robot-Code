@@ -52,19 +52,25 @@ export function plotVision(conn: Connection, element: Element): void {
   const localizerOutput = aosPlotter.addMessageSource(
       '/localizer', 'frc971.controls.LocalizerOutput');
 
+  const statsPlot = aosPlotter.addPlot(element);
+  statsPlot.plot.getAxisLabels().setTitle('Statistics');
+  statsPlot.plot.getAxisLabels().setXLabel(TIME);
+  statsPlot.plot.getAxisLabels().setYLabel('[bool, enum]');
+
+  statsPlot
+      .addMessageLine(localizerStatus, ['statistics[]', 'total_accepted'])
+      .setDrawLine(false)
+      .setColor(BLUE);
+  statsPlot
+      .addMessageLine(localizerStatus, ['statistics[]', 'total_candidates'])
+      .setDrawLine(false)
+      .setColor(RED);
+
   const rejectionPlot = aosPlotter.addPlot(element);
   rejectionPlot.plot.getAxisLabels().setTitle('Rejection Reasons');
   rejectionPlot.plot.getAxisLabels().setXLabel(TIME);
   rejectionPlot.plot.getAxisLabels().setYLabel('[bool, enum]');
 
-  rejectionPlot
-      .addMessageLine(localizerStatus, ['statistics[]', 'total_accepted'])
-      .setDrawLine(false)
-      .setColor(BLUE);
-  rejectionPlot
-      .addMessageLine(localizerStatus, ['statistics[]', 'total_candidates'])
-      .setDrawLine(false)
-      .setColor(RED);
   for (let ii = 0; ii < targets.length; ++ii) {
     rejectionPlot.addMessageLine(targets[ii], ['rejection_reason'])
         .setDrawLine(false)
@@ -126,6 +132,21 @@ export function plotVision(conn: Connection, element: Element): void {
         .setLabel('pi' + (ii + 1));
   }
 
+  const thetaPlot = aosPlotter.addPlot(element);
+  thetaPlot.plot.getAxisLabels().setTitle('Yaw');
+  thetaPlot.plot.getAxisLabels().setXLabel(TIME);
+  thetaPlot.plot.getAxisLabels().setYLabel('[m]');
+
+  for (let ii = 0; ii < targets.length; ++ii) {
+    thetaPlot.addMessageLine(targets[ii], ['implied_robot_theta'])
+        .setDrawLine(false)
+        .setColor(PI_COLORS[ii])
+        .setLabel('pi' + (ii + 1));
+  }
+  thetaPlot.addMessageLine(localizerOutput, ['theta'])
+      .setDrawLine(false)
+      .setColor(BLUE);
+
   const aprilTagPlot = aosPlotter.addPlot(element);
   aprilTagPlot.plot.getAxisLabels().setTitle('April Tag IDs');
   aprilTagPlot.plot.getAxisLabels().setXLabel(TIME);
@@ -133,6 +154,18 @@ export function plotVision(conn: Connection, element: Element): void {
 
   for (let ii = 0; ii < targets.length; ++ii) {
     aprilTagPlot.addMessageLine(targets[ii], ['april_tag'])
+        .setDrawLine(false)
+        .setColor(PI_COLORS[ii])
+        .setLabel('pi' + (ii + 1));
+  }
+
+  const imageAgePlot = aosPlotter.addPlot(element);
+  imageAgePlot.plot.getAxisLabels().setTitle('Image Age');
+  imageAgePlot.plot.getAxisLabels().setXLabel(TIME);
+  imageAgePlot.plot.getAxisLabels().setYLabel('[sec]');
+
+  for (let ii = 0; ii < targets.length; ++ii) {
+    imageAgePlot.addMessageLine(targets[ii], ['image_age_sec'])
         .setDrawLine(false)
         .setColor(PI_COLORS[ii])
         .setLabel('pi' + (ii + 1));

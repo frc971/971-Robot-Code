@@ -52,6 +52,8 @@ import {plotClimber as plot2022Climber} from
     '../../y2022/control_loops/superstructure/climber_plotter'
 import {plotLocalizer as plot2022Localizer} from
     '../../y2022/localizer/localizer_plotter'
+import {plotLocalizer as plot2023Localizer} from
+    '../../y2023/localizer/localizer_plotter'
 import {plotVision as plot2022Vision} from
     '../../y2022/vision/vision_plotter'
 import {plotVision as plot2023Corrections} from
@@ -115,6 +117,7 @@ const plotIndex = new Map<string, PlotState>([
   ['Down Estimator', new PlotState(plotDiv, plotDownEstimator)],
   ['Robot State', new PlotState(plotDiv, plotRobotState)],
   ['2023 Vision', new PlotState(plotDiv, plot2023Corrections)],
+  ['2023 Localizer', new PlotState(plotDiv, plot2023Localizer)],
   ['2020 Finisher', new PlotState(plotDiv, plot2020Finisher)],
   ['2020 Accelerator', new PlotState(plotDiv, plot2020Accelerator)],
   ['2020 Hood', new PlotState(plotDiv, plot2020Hood)],
