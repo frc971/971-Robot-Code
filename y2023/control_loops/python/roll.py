@@ -24,9 +24,9 @@ kRoll = angular_system.AngularSystemParams(
     motor=control_loop.BAG(),
     G=18.0 / 48.0 * 1.0 / 36.0,
     # 598.006 in^2 lb
-    J=0.175,
+    J=0.175 * 3.0,
     q_pos=0.40,
-    q_vel=20.0,
+    q_vel=5.0,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
     kalman_q_voltage=4.0,
