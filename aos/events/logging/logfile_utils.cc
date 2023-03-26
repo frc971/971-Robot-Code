@@ -237,8 +237,7 @@ void DetachedBufferWriter::Flush(aos::monotonic_clock::time_point now) {
   }
 
   iovec_.clear();
-  const size_t original_iovec_size = std::min<size_t>(queue.size(), IOV_MAX);
-  size_t iovec_size = original_iovec_size;
+  size_t iovec_size = std::min<size_t>(queue.size(), IOV_MAX);
   iovec_.resize(iovec_size);
   size_t counted_size = 0;
 
@@ -248,7 +247,7 @@ void DetachedBufferWriter::Flush(aos::monotonic_clock::time_point now) {
   // The file is aligned if it is a multiple of kSector in length.  The data is
   // aligned if it's memory is kSector aligned, and the length is a multiple of
   // kSector in length.
-  bool aligned = (file_written_bytes_ % kSector) == 0;
+  bool aligned = (total_write_bytes_ % kSector) == 0;
   size_t write_index = 0;
   for (size_t i = 0; i < iovec_size; ++i) {
     iovec_[write_index].iov_base = const_cast<uint8_t *>(queue[i].data());
@@ -296,13 +295,11 @@ void DetachedBufferWriter::Flush(aos::monotonic_clock::time_point now) {
     ++write_index;
   }
 
-  if (counted_size > 0) {
-    // Either write the aligned data if it is all aligned, or write the rest
-    // unaligned if we wrote aligned up above.
-    WriteV(iovec_.data(), iovec_.size(), aligned, counted_size);
+  // Either write the aligned data if it is all aligned, or write the rest
+  // unaligned if we wrote aligned up above.
+  WriteV(iovec_.data(), iovec_.size(), aligned, counted_size);
 
-    encoder_->Clear(original_iovec_size);
-  }
+  encoder_->Clear(iovec_size);
 }
 
 size_t DetachedBufferWriter::WriteV(struct iovec *iovec_data, size_t iovec_size,
@@ -320,21 +317,21 @@ size_t DetachedBufferWriter::WriteV(struct iovec *iovec_data, size_t iovec_size,
 
   if (written > 0) {
     // Flush asynchronously and force the data out of the cache.
-    sync_file_range(fd_, file_written_bytes_, written, SYNC_FILE_RANGE_WRITE);
-    if (file_written_bytes_ != 0) {
+    sync_file_range(fd_, total_write_bytes_, written, SYNC_FILE_RANGE_WRITE);
+    if (last_synced_bytes_ != 0) {
       // Per Linus' recommendation online on how to do fast file IO, do a
       // blocking flush of the previous write chunk, and then tell the kernel to
       // drop the pages from the cache.  This makes sure we can't get too far
       // ahead.
       sync_file_range(fd_, last_synced_bytes_,
-                      file_written_bytes_ - last_synced_bytes_,
+                      total_write_bytes_ - last_synced_bytes_,
                       SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE |
                           SYNC_FILE_RANGE_WAIT_AFTER);
       posix_fadvise(fd_, last_synced_bytes_,
-                    file_written_bytes_ - last_synced_bytes_,
+                    total_write_bytes_ - last_synced_bytes_,
                     POSIX_FADV_DONTNEED);
 
-      last_synced_bytes_ = file_written_bytes_;
+      last_synced_bytes_ = total_write_bytes_;
     }
   }
 
@@ -374,7 +371,6 @@ void DetachedBufferWriter::UpdateStatsForWrite(
   ++total_write_count_;
   total_write_messages_ += iovec_size;
   total_write_bytes_ += written;
-  file_written_bytes_ += written;
 }
 
 void DetachedBufferWriter::FlushAtThreshold(
