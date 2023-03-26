@@ -1,6 +1,19 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
-load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//tools/build_rules:js.bzl", "ts_project")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
+
+ts_project(
+    name = "localizer_plotter",
+    srcs = ["localizer_plotter.ts"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/network/www:aos_plotter",
+        "//aos/network/www:colors",
+        "//aos/network/www:proxy",
+        "//frc971/wpilib:imu_plot_utils",
+    ],
+)
 
 flatbuffer_cc_library(
     name = "status_fbs",

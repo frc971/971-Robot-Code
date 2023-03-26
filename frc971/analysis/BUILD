@@ -59,6 +59,7 @@ ts_project(
         "//y2022/localizer:localizer_plotter",
         "//y2022/vision:vision_plotter",
         "//y2023/localizer:corrections_plotter",
+        "//y2023/localizer:localizer_plotter",
     ],
 )
 
