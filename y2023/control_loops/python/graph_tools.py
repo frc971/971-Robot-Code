@@ -143,8 +143,8 @@ def rect_points(x, y, z):
 
 DRIVER_CAM_Z_OFFSET = 3.225 * IN_TO_M
 DRIVER_CAM_POINTS = rect_points(
-    (-5.126 * IN_TO_M + joint_center[0], 0.393 * IN_TO_M + joint_center[0]),
-    (5.125 * IN_TO_M + joint_center[1], 17.375 * IN_TO_M + joint_center[1]),
+    (-0.252, -0.252 + 0.098),
+    (-3.0 * IN_TO_M + joint_center[1], -8.0 * IN_TO_M + joint_center[1]),
     (-8.475 * IN_TO_M - DRIVER_CAM_Z_OFFSET,
      -4.350 * IN_TO_M - DRIVER_CAM_Z_OFFSET))
 
