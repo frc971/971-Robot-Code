@@ -769,9 +769,9 @@ cc_library(
     deps = ["@//third_party/allwpilib/wpimath"],
 )
 """,
-    sha256 = "decff0a28fa4a167696cc2e1122b6a5acd2fef01d3bfd356d8cad25bb487a191",
+    sha256 = "340a9c8e726e2eb365b7a40a722df05fe7c7072c5c4a617fa0218eb6d074ad9f",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.10/api-cpp-23.0.10-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.11/api-cpp-23.0.11-headers.zip",
     ],
 )
 
@@ -793,9 +793,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "00aea02c583d109056e2716e73b7d70e84d5c56a6daebd1dc9f4612c430894f8",
+    sha256 = "11f392bebfe54f512be9ef59809e1a10c4497e0ce92970645f054e7e04fe7ef6",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.10/api-cpp-23.0.10-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.11/api-cpp-23.0.11-linuxathena.zip",
     ],
 )
 
@@ -808,9 +808,9 @@ cc_library(
     hdrs = glob(['ctre/**/*.h', 'ctre/**/*.hpp']),
 )
 """,
-    sha256 = "3d503df97b711c150c0b50238f644c528e55d5b82418c8e3970c79faa14b749c",
+    sha256 = "7585e1bd9e581dd745e7f040ab521b966b40a04d05bc7fa82d6dafe2fb65764e",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.10/tools-23.0.10-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.11/tools-23.0.11-headers.zip",
     ],
 )
 
@@ -832,9 +832,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "4ada1ed9e11c208da9e8a8e8a648a0fe426e6717121ebc2f1392ae3ddc7f2b8c",
+    sha256 = "b1daadfe782c43ed32c2e1a3956998f9604a3fc9282ef866fd8dc1482f3b8cc9",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.10/tools-23.0.10-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.11/tools-23.0.11-linuxathena.zip",
     ],
 )
 
