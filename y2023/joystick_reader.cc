@@ -48,34 +48,33 @@ constexpr double kCubeWrist = 1.0;
 
 // TODO(milind): add correct locations
 const ButtonLocation kDriverSpit(1, 1);
-const ButtonLocation kSpit(4, 13);
+const ButtonLocation kSpit(2, 5);
 
-const ButtonLocation kHighConeScoreLeft(4, 14);
-const ButtonLocation kHighConeScoreRight(3, 1);
+const ButtonLocation kHighConeScoreLeft(2, 6);
+const ButtonLocation kHighConeScoreRight(2, 9);
 
-const ButtonLocation kMidConeScoreLeft(4, 15);
-const ButtonLocation kMidConeScoreRight(3, 2);
+const ButtonLocation kMidConeScoreLeft(2, 7);
+const ButtonLocation kMidConeScoreRight(2, 10);
 
-const ButtonLocation kLowConeScoreLeft(4, 16);
-const ButtonLocation kLowConeScoreRight(3, 3);
+const ButtonLocation kLowConeScoreLeft(2, 8);
+const ButtonLocation kLowConeScoreRight(2, 11);
 
-const ButtonLocation kHighCube(4, 1);
-const ButtonLocation kMidCube(4, 2);
-const ButtonLocation kLowCube(4, 3);
+const ButtonLocation kHighCube(1, 6);
+const ButtonLocation kMidCube(1, 7);
+const ButtonLocation kLowCube(1, 8);
 
-const ButtonLocation kGroundPickupConeUp(4, 7);
-const ButtonLocation kGroundPickupConeDown(4, 8);
-const ButtonLocation kGroundPickupCube(4, 10);
-const ButtonLocation kHPConePickup(4, 6);
+const ButtonLocation kGroundPickupConeUp(1, 12);
+const ButtonLocation kGroundPickupConeDown(1, 13);
+const ButtonLocation kGroundPickupCube(2, 2);
+const ButtonLocation kHPConePickup(1, 11);
 
-const ButtonLocation kSuck(4, 11);
-const ButtonLocation kBack(4, 12);
+const ButtonLocation kSuck(2, 3);
+const ButtonLocation kBack(2, 4);
 
-const ButtonLocation kWrist(4, 10);
-const ButtonLocation kStayIn(3, 4);
+const ButtonLocation kStayIn(2, 12);
 
-const ButtonLocation kConeDownTip(4, 4);
-const ButtonLocation kConeDownBase(4, 5);
+const ButtonLocation kConeDownTip(1, 9);
+const ButtonLocation kConeDownBase(1, 10);
 
 namespace superstructure = y2023::control_loops::superstructure;
 namespace arm = superstructure::arm;
@@ -521,7 +520,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
       superstructure::Goal::Builder superstructure_goal_builder =
           builder.MakeBuilder<superstructure::Goal>();
-      superstructure_goal_builder.add_arm_goal_position(arm::NeutralIndex());
+      superstructure_goal_builder.add_arm_goal_position(arm_goal_position_);
       superstructure_goal_builder.add_roller_goal(roller_goal);
       superstructure_goal_builder.add_wrist(wrist_offset);
       if (builder.Send(superstructure_goal_builder.Finish()) !=
