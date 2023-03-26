@@ -166,6 +166,7 @@ cc_library(
     ],
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
+        ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",
         ":superstructure_status_fbs",

@@ -1,6 +1,7 @@
 #include "y2023/control_loops/superstructure/led_indicator.h"
 
 namespace led = ctre::phoenix::led;
+namespace chrono = std::chrono;
 
 namespace y2023::control_loops::superstructure {
 
@@ -13,6 +14,8 @@ LedIndicator::LedIndicator(aos::EventLoop *event_loop)
           event_loop_->MakeFetcher<Status>("/superstructure")),
       superstructure_position_fetcher_(
           event_loop_->MakeFetcher<Position>("/superstructure")),
+      superstructure_goal_fetcher_(
+          event_loop_->MakeFetcher<Goal>("/superstructure")),
       server_statistics_fetcher_(
           event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
               "/roborio/aos")),
@@ -35,7 +38,9 @@ LedIndicator::LedIndicator(aos::EventLoop *event_loop)
   candle_.ConfigAllSettings(config, 0);
 
   event_loop_->AddPhasedLoop([this](int) { DecideColor(); },
-                             std::chrono::milliseconds(20));
+                             chrono::milliseconds(20));
+  event_loop_->OnRun(
+      [this]() { startup_time_ = event_loop_->monotonic_now(); });
 }
 
 // This method will be called once per scheduler run
@@ -75,6 +80,7 @@ void LedIndicator::DecideColor() {
   drivetrain_output_fetcher_.Fetch();
   drivetrain_status_fetcher_.Fetch();
   client_statistics_fetcher_.Fetch();
+  superstructure_goal_fetcher_.Fetch();
   gyro_reading_fetcher_.Fetch();
   localizer_output_fetcher_.Fetch();
 
@@ -96,15 +102,18 @@ void LedIndicator::DecideColor() {
   // Not zeroed
   if (superstructure_status_fetcher_.get() &&
       !superstructure_status_fetcher_->zeroed()) {
-    DisplayLed(255, 0, 255);
+    DisplayLed(255, 255, 0);
     return;
   }
 
-  // If the imu gyro readings are not being sent/updated recently
-  if (!gyro_reading_fetcher_.get() ||
-      gyro_reading_fetcher_.context().monotonic_event_time <
-          event_loop_->monotonic_now() -
-              frc971::controls::kLoopFrequency * 10) {
+  // If the imu gyro readings are not being sent/updated recently.  Only do this
+  // after we've been on for a bit.
+  if (event_loop_->context().monotonic_event_time >
+          startup_time_ + chrono::seconds(5) &&
+      (!gyro_reading_fetcher_.get() ||
+       gyro_reading_fetcher_.context().monotonic_event_time +
+               frc971::controls::kLoopFrequency * 10 <
+           event_loop_->monotonic_now())) {
     if (flash_counter_.Flash()) {
       DisplayLed(255, 0, 0);
     } else {
@@ -127,54 +136,44 @@ void LedIndicator::DecideColor() {
     return;
   }
 
-  if (superstructure_status_fetcher_.get()) {
+  if (superstructure_status_fetcher_.get() &&
+      superstructure_goal_fetcher_.get()) {
+    const bool cone = (superstructure_status_fetcher_->game_piece() ==
+                           vision::Class::CONE_UP ||
+                       superstructure_status_fetcher_->game_piece() ==
+                           vision::Class::CONE_DOWN);
+    const bool intaking = (superstructure_goal_fetcher_->roller_goal() ==
+                               RollerGoal::INTAKE_CONE_UP ||
+                           superstructure_goal_fetcher_->roller_goal() ==
+                               RollerGoal::INTAKE_CUBE ||
+                           superstructure_goal_fetcher_->roller_goal() ==
+                               RollerGoal::INTAKE_LAST ||
+                           superstructure_goal_fetcher_->roller_goal() ==
+                               RollerGoal::INTAKE_CONE_DOWN);
     // Check if end effector is intaking.
     if (superstructure_status_fetcher_->end_effector_state() ==
-        EndEffectorState::INTAKING) {
+            EndEffectorState::LOADED &&
+        intaking) {
       if (flash_counter_.Flash()) {
-        DisplayLed(255, 165, 0);
-      } else {
-        DisplayLed(0, 0, 0);
+        if (cone) {
+          DisplayLed(255, 165, 0);
+        } else {
+          DisplayLed(138, 43, 226);
+        }
+        return;
       }
-
-      return;
-    }
-    // Check if end effector is spitting.
-    if (superstructure_status_fetcher_->end_effector_state() ==
-        EndEffectorState::SPITTING) {
-      if (flash_counter_.Flash()) {
-        DisplayLed(0, 255, 0);
-      } else {
-        DisplayLed(0, 0, 0);
-      }
-
-      return;
-    }
-
-    // Check the if there is a cone in the end effector.
-    if (superstructure_status_fetcher_->game_piece() ==
-            vision::Class::CONE_UP ||
-        superstructure_status_fetcher_->game_piece() ==
-            vision::Class::CONE_DOWN) {
-      DisplayLed(255, 255, 0);
-      return;
-    }
-    // Check if the cube beam break is triggered.
-    if (superstructure_status_fetcher_->game_piece() == vision::Class::CUBE) {
-      DisplayLed(138, 43, 226);
-      return;
     }
 
     // Check if there is a target that is in sight
-    if (drivetrain_status_fetcher_.get() != nullptr &&
-        drivetrain_status_fetcher_->line_follow_logging()->have_target()) {
-      DisplayLed(255, 165, 0);
-      return;
-    }
-
     if (event_loop_->monotonic_now() <
-        last_accepted_time_ + std::chrono::milliseconds(500)) {
-      DisplayLed(0, 0, 255);
+        last_accepted_time_ + chrono::milliseconds(100)) {
+      if (drivetrain_status_fetcher_.get() != nullptr &&
+          drivetrain_status_fetcher_->line_follow_logging()->have_target()) {
+        DisplayLed(0, 255, 0);
+        return;
+      } else {
+        DisplayLed(0, 0, 255);
+      }
       return;
     }
   }

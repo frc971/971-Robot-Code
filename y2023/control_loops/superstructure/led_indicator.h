@@ -12,6 +12,7 @@
 #include "frc971/control_loops/drivetrain/localization/localizer_output_generated.h"
 #include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "frc971/queues/gyro_generated.h"
+#include "y2023/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_status_generated.h"
@@ -76,6 +77,7 @@ class LedIndicator {
       drivetrain_output_fetcher_;
   aos::Fetcher<Status> superstructure_status_fetcher_;
   aos::Fetcher<Position> superstructure_position_fetcher_;
+  aos::Fetcher<Goal> superstructure_goal_fetcher_;
   aos::Fetcher<aos::message_bridge::ServerStatistics>
       server_statistics_fetcher_;
   aos::Fetcher<aos::message_bridge::ClientStatistics>
@@ -87,6 +89,9 @@ class LedIndicator {
 
   size_t last_accepted_count_ = 0;
   aos::monotonic_clock::time_point last_accepted_time_ =
+      aos::monotonic_clock::min_time;
+
+  aos::monotonic_clock::time_point startup_time_ =
       aos::monotonic_clock::min_time;
 
   FlashCounter flash_counter_{kFlashIterations};
