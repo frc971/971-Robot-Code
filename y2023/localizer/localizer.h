@@ -91,6 +91,8 @@ class Localizer {
   static flatbuffers::Offset<CumulativeStatistics> StatisticsForCamera(
       const CameraState &camera, flatbuffers::FlatBufferBuilder *fbb);
 
+  bool UseAprilTag(uint64_t target_id);
+
   aos::EventLoop *const event_loop_;
   const frc971::control_loops::drivetrain::DrivetrainConfig<double> dt_config_;
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;

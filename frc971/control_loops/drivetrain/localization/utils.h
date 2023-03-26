@@ -29,6 +29,7 @@ class LocalizationUtils {
   // Returns true if either there is no JoystickState message available or if
   // we are currently in autonomous mode.
   bool MaybeInAutonomous();
+  aos::Alliance Alliance();
 
   // Returns the offset between our node and the specified node (or nullopt if
   // no offset is available). The sign of this will be such that the time on
