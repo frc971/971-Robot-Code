@@ -30,6 +30,7 @@ class AprilRoboticsDetector {
     apriltag_pose_t pose;
     double pose_error;
     double distortion_factor;
+    double pose_error_ratio;
   };
 
   struct DetectionResult {
@@ -42,6 +43,10 @@ class AprilRoboticsDetector {
   ~AprilRoboticsDetector();
 
   void SetWorkerpoolAffinities();
+
+  // Deletes the heap-allocated rotation and translation pointers in the given
+  // pose
+  void DestroyPose(apriltag_pose_t *pose) const;
 
   // Undistorts the april tag corners using the camera calibration
   void UndistortDetection(apriltag_detection_t *det) const;
