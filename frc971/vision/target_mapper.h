@@ -47,7 +47,7 @@ class TargetMapper {
       std::vector<TargetPose> target_poses, TargetId target_id);
 
   // Version that gets based on internal target_poses
-  std::optional<TargetPose> GetTargetPoseById(TargetId target_id);
+  std::optional<TargetPose> GetTargetPoseById(TargetId target_id) const;
 
   ceres::examples::MapOfPoses target_poses() { return target_poses_; }
 

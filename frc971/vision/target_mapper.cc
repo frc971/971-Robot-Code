@@ -235,9 +235,9 @@ std::optional<TargetMapper::TargetPose> TargetMapper::GetTargetPoseById(
 }
 
 std::optional<TargetMapper::TargetPose> TargetMapper::GetTargetPoseById(
-    TargetId target_id) {
+    TargetId target_id) const {
   if (target_poses_.count(target_id) > 0) {
-    return TargetMapper::TargetPose{target_id, target_poses_[target_id]};
+    return TargetMapper::TargetPose{target_id, target_poses_.at(target_id)};
   }
 
   return std::nullopt;

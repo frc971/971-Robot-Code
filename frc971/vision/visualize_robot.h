@@ -21,13 +21,16 @@ namespace vision {
 
 class VisualizeRobot {
  public:
+  VisualizeRobot(cv::Size default_size = cv::Size(1280, 720))
+      : default_size_(default_size) {}
+
   // Set image on which to draw
   void SetImage(cv::Mat image) { image_ = image; }
 
   // Sets image to all black.
-  // Uses default_size if no image has been set yet, else image_.size()
-  void ClearImage(cv::Size default_size = cv::Size(1280, 720)) {
-    auto image_size = (image_.data == nullptr ? default_size : image_.size());
+  // Uses default_size_ if no image has been set yet, else image_.size()
+  void ClearImage() {
+    auto image_size = (image_.data == nullptr ? default_size_ : image_.size());
     cv::Mat black_image_mat = cv::Mat::zeros(image_size, CV_8UC3);
     SetImage(black_image_mat);
   }
@@ -73,9 +76,10 @@ class VisualizeRobot {
 
   Eigen::Affine3d H_world_viewpoint_;  // Where to view the world from
   cv::Mat image_;                      // Image to draw on
-  cv::Mat camera_mat_;   // Virtual camera intrinsics (defines fov, center)
-  cv::Mat dist_coeffs_;  // Distortion coefficients, if desired (only used in
-                         // DrawFrameAxes
+  cv::Mat camera_mat_;     // Virtual camera intrinsics (defines fov, center)
+  cv::Mat dist_coeffs_;    // Distortion coefficients, if desired (only used in
+                           // DrawFrameAxes
+  cv::Size default_size_;  // Default image size
 };
 }  // namespace vision
 }  // namespace frc971
