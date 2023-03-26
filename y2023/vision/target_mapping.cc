@@ -81,7 +81,8 @@ void HandleAprilTags(const TargetMap &map,
                      Eigen::Affine3d extrinsics, std::string node_name,
                      frc971::vision::TargetMapper target_loc_mapper,
                      std::set<std::string> *drawn_nodes,
-                     VisualizeRobot *vis_robot, size_t *display_count) {
+                     VisualizeRobot *vis_robot, size_t *display_count,
+                     aos::distributed_clock::time_point *last_draw_time) {
   bool drew = false;
   std::stringstream label;
   label << node_name << " - ";
@@ -167,6 +168,7 @@ void HandleAprilTags(const TargetMap &map,
                                std::to_string(target_pose_fbs->id()),
                                kPiColors.at(node_name));
       drew = true;
+      *last_draw_time = pi_distributed_time;
     }
   }
   if (drew) {
@@ -177,6 +179,13 @@ void HandleAprilTags(const TargetMap &map,
                 kPiColors.at(node_name));
 
     drawn_nodes->emplace(node_name);
+  } else if (pi_distributed_time - *last_draw_time >
+                 std::chrono::milliseconds(30) &&
+             *display_count >= FLAGS_skip_to) {
+    // Clear the image if we haven't draw in a while
+    vis_robot->ClearImage();
+    cv::imshow("View", vis_robot->image_);
+    cv::waitKey(FLAGS_wait_key);
   }
 }
 
@@ -188,7 +197,7 @@ void HandlePiCaptures(
         *timestamped_target_detections,
     std::vector<std::unique_ptr<AprilRoboticsDetector>> *detectors,
     std::set<std::string> *drawn_nodes, VisualizeRobot *vis_robot,
-    size_t *display_count) {
+    size_t *display_count, aos::distributed_clock::time_point *last_draw_time) {
   static constexpr std::string_view kImageChannel = "/camera";
   // For the robots, we need to flip the image since the cameras are rolled by
   // 180 degrees
@@ -217,7 +226,7 @@ void HandlePiCaptures(
     std::string node_name = detection_event_loop->node()->name()->str();
     HandleAprilTags(map, pi_distributed_time, timestamped_target_detections,
                     extrinsics, node_name, target_loc_mapper, drawn_nodes,
-                    vis_robot, display_count);
+                    vis_robot, display_count, last_draw_time);
   });
 }
 
@@ -260,6 +269,8 @@ void MappingMain(int argc, char *argv[]) {
   VisualizeRobot vis_robot;
   std::set<std::string> drawn_nodes;
   size_t display_count = 0;
+  aos::distributed_clock::time_point last_draw_time =
+      aos::distributed_clock::min_time;
 
   const aos::Node *pi1 =
       aos::configuration::GetNode(reader.configuration(), "pi1");
@@ -269,7 +280,7 @@ void MappingMain(int argc, char *argv[]) {
       reader.event_loop_factory()->MakeEventLoop("pi1_mapping", pi1);
   HandlePiCaptures(pi1_detection_event_loop.get(), pi1_mapping_event_loop.get(),
                    &reader, &timestamped_target_detections, &detectors,
-                   &drawn_nodes, &vis_robot, &display_count);
+                   &drawn_nodes, &vis_robot, &display_count, &last_draw_time);
 
   const aos::Node *pi2 =
       aos::configuration::GetNode(reader.configuration(), "pi2");
@@ -279,7 +290,7 @@ void MappingMain(int argc, char *argv[]) {
       reader.event_loop_factory()->MakeEventLoop("pi2_mapping", pi2);
   HandlePiCaptures(pi2_detection_event_loop.get(), pi2_mapping_event_loop.get(),
                    &reader, &timestamped_target_detections, &detectors,
-                   &drawn_nodes, &vis_robot, &display_count);
+                   &drawn_nodes, &vis_robot, &display_count, &last_draw_time);
 
   const aos::Node *pi3 =
       aos::configuration::GetNode(reader.configuration(), "pi3");
@@ -289,7 +300,7 @@ void MappingMain(int argc, char *argv[]) {
       reader.event_loop_factory()->MakeEventLoop("pi3_mapping", pi3);
   HandlePiCaptures(pi3_detection_event_loop.get(), pi3_mapping_event_loop.get(),
                    &reader, &timestamped_target_detections, &detectors,
-                   &drawn_nodes, &vis_robot, &display_count);
+                   &drawn_nodes, &vis_robot, &display_count, &last_draw_time);
 
   const aos::Node *pi4 =
       aos::configuration::GetNode(reader.configuration(), "pi4");
@@ -299,7 +310,7 @@ void MappingMain(int argc, char *argv[]) {
       reader.event_loop_factory()->MakeEventLoop("pi4_mapping", pi4);
   HandlePiCaptures(pi4_detection_event_loop.get(), pi4_mapping_event_loop.get(),
                    &reader, &timestamped_target_detections, &detectors,
-                   &drawn_nodes, &vis_robot, &display_count);
+                   &drawn_nodes, &vis_robot, &display_count, &last_draw_time);
 
   std::unique_ptr<aos::EventLoop> mcap_event_loop;
   std::unique_ptr<aos::McapLogger> relogger;
