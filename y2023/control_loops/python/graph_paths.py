@@ -266,7 +266,7 @@ named_segments.append(
         control1=np.array([3.6130298244820453, -0.2781204657180023]),
         control2=np.array([3.804763224169111, -0.5179424890517237]),
         end=points['ScoreBackMidConeUp'],
-        control_alpha_rolls=[(0.40, 0.0), (.95, np.pi / 2.0)],
+        control_alpha_rolls=[(.95, np.pi / 2.0)],
     ))
 
 points['ScoreBackLowConeUp'] = to_theta_with_circular_index_and_roll(
@@ -279,7 +279,7 @@ named_segments.append(
         control1=np.array([3.260123029490386, -0.5296803702636037]),
         control2=np.array([3.1249665389044283, -0.7810758529482493]),
         end=points['ScoreBackLowConeUp'],
-        control_alpha_rolls=[(0.40, 0.0), (.95, np.pi / 2.0)],
+        control_alpha_rolls=[(.95, np.pi / 2.0)],
     ))
 
 named_segments.append(
@@ -335,8 +335,8 @@ named_segments.append(
     ThetaSplineSegment(
         name="NeutralToHPPickupBackConeUp",
         start=points['Neutral'],
-        control1=np.array([2.1007555300246317, -1.0652453944299012]),
-        control2=np.array([0.7579462988809116, -1.6518672114346526]),
+        control1=np.array([2.7014360412658567, -0.32490272351246796]),
+        control2=np.array([0.8282769211604871, -1.8026615176254461]),
         end=points['HPPickupBackConeUp'],
         control_alpha_rolls=[(.9, np.pi / 2.0)],
         alpha_unitizer=np.matrix(
