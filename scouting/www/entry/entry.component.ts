@@ -281,12 +281,18 @@ export class EntryComponent {
         actionOffsets.push(actionOffset);
       }
     }
+    const teamNumberFb = builder.createString(this.teamNumber.toString());
+    const compLevelFb = builder.createString(this.compLevel);
 
     const actionsVector = SubmitActions.createActionsListVector(
       builder,
       actionOffsets
     );
     SubmitActions.startSubmitActions(builder);
+    SubmitActions.addTeamNumber(builder, teamNumberFb);
+    SubmitActions.addMatchNumber(builder, this.matchNumber);
+    SubmitActions.addSetNumber(builder, this.setNumber);
+    SubmitActions.addCompLevel(builder, compLevelFb);
     SubmitActions.addActionsList(builder, actionsVector);
     builder.finish(SubmitActions.endSubmitActions(builder));
 
