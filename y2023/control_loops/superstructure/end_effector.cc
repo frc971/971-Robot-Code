@@ -109,6 +109,9 @@ void EndEffector::RunIteration(
       if (!beambreak_status && !preloaded_with_cone) {
         state_ = EndEffectorState::INTAKING;
       }
+      if (game_piece_ != vision::Class::CUBE) {
+        *roller_voltage = 1.3;
+      }
       break;
     case EndEffectorState::SPITTING:
       // If spit requested, spit
