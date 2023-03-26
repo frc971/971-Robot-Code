@@ -17,6 +17,8 @@ DEFINE_double(
     "Maximum expected value for unscaled distortion factors. Will scale "
     "distortion factors so that this value (and a higher distortion) maps to "
     "1.0.");
+DEFINE_uint64(pose_estimation_iterations, 50,
+              "Number of iterations for apriltag pose estimation.");
 
 namespace y2023 {
 namespace vision {
@@ -98,8 +100,11 @@ void AprilRoboticsDetector::HandleImage(cv::Mat image_grayscale,
 
   auto builder = target_map_sender_.MakeBuilder();
   std::vector<flatbuffers::Offset<frc971::vision::TargetPoseFbs>> target_poses;
-  for (const auto &detection : result.detections) {
-    target_poses.emplace_back(BuildTargetPose(detection, builder.fbb()));
+  for (auto &detection : result.detections) {
+    auto *fbb = builder.fbb();
+    auto pose = BuildTargetPose(detection, fbb);
+    DestroyPose(&detection.pose);
+    target_poses.emplace_back(pose);
   }
   const auto target_poses_offset = builder.fbb()->CreateVector(target_poses);
   auto target_map_builder = builder.MakeBuilder<frc971::vision::TargetMap>();
@@ -127,7 +132,7 @@ AprilRoboticsDetector::BuildTargetPose(const Detection &detection,
   return frc971::vision::CreateTargetPoseFbs(
       *fbb, detection.det.id, position_offset, orientation_offset,
       detection.det.decision_margin, detection.pose_error,
-      detection.distortion_factor);
+      detection.distortion_factor, detection.pose_error_ratio);
 }
 
 void AprilRoboticsDetector::UndistortDetection(
@@ -181,6 +186,11 @@ std::vector<cv::Point2f> AprilRoboticsDetector::MakeCornerVector(
   corner_points.emplace_back(det->p[3][0], det->p[3][1]);
 
   return corner_points;
+}
+
+void AprilRoboticsDetector::DestroyPose(apriltag_pose_t *pose) const {
+  matd_destroy(pose->R);
+  matd_destroy(pose->t);
 }
 
 AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
@@ -256,8 +266,13 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
       const aos::monotonic_clock::time_point before_pose_estimation =
           aos::monotonic_clock::now();
 
-      apriltag_pose_t pose;
-      double pose_error = estimate_tag_pose(&info, &pose);
+      apriltag_pose_t pose_1;
+      apriltag_pose_t pose_2;
+      double pose_error_1;
+      double pose_error_2;
+      estimate_tag_pose_orthogonal_iteration(&info, &pose_error_1, &pose_1,
+                                             &pose_error_2, &pose_2,
+                                             FLAGS_pose_estimation_iterations);
 
       const aos::monotonic_clock::time_point after_pose_estimation =
           aos::monotonic_clock::now();
@@ -266,7 +281,8 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
                                           before_pose_estimation)
                      .count()
               << " seconds for pose estimation";
-      VLOG(1) << "Pose err: " << pose_error;
+      VLOG(1) << "Pose err 1: " << pose_error_1;
+      VLOG(1) << "Pose err 2: " << pose_error_2;
 
       // Send undistorted corner points in pink
       std::vector<cv::Point2f> corner_points = MakeCornerVector(det);
@@ -277,10 +293,29 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
       double distortion_factor =
           ComputeDistortionFactor(orig_corner_points, corner_points);
 
+      // We get two estimates for poses.
+      // Choose the one with the lower estimation error
+      bool use_pose_1 = (pose_error_1 < pose_error_2);
+      auto best_pose = (use_pose_1 ? pose_1 : pose_2);
+      auto secondary_pose = (use_pose_1 ? pose_2 : pose_1);
+      double best_pose_error = (use_pose_1 ? pose_error_1 : pose_error_2);
+      double secondary_pose_error = (use_pose_1 ? pose_error_2 : pose_error_1);
+
+      CHECK_NE(best_pose_error, std::numeric_limits<double>::infinity())
+          << "Got no valid pose estimations, this should not be possible.";
+      double pose_error_ratio = best_pose_error / secondary_pose_error;
+
+      // Destroy the secondary pose if we got one
+      if (secondary_pose_error != std::numeric_limits<double>::infinity()) {
+        DestroyPose(&secondary_pose);
+      }
+
       results.emplace_back(Detection{.det = *det,
-                                     .pose = pose,
-                                     .pose_error = pose_error,
-                                     .distortion_factor = distortion_factor});
+                                     .pose = best_pose,
+                                     .pose_error = best_pose_error,
+                                     .distortion_factor = distortion_factor,
+                                     .pose_error_ratio = pose_error_ratio});
+
       if (FLAGS_visualize) {
         // Draw raw (distorted) corner points in green
         cv::line(color_image, orig_corner_points[0], orig_corner_points[1],

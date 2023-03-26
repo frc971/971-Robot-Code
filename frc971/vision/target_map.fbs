@@ -48,6 +48,15 @@ table TargetPoseFbs {
   // NOTE: not filtered by aprilrobotics.cc so that we can log
   // more detections.
   distortion_factor:double (id: 5);
+
+  // Ratio of pose_error from the best estimation to
+  // pose error of the second best estimation.
+  // Only filled out if this pose represents a live detection.
+  // This should be significantly less than 1,
+  // otherwise this pose may be a wrong solution.
+  // NOTE: not filtered by aprilrobotics.cc so that we can log
+  // more detections.
+  pose_error_ratio:double (id: 6);
 }
 
 // Map of all target poses on a field.

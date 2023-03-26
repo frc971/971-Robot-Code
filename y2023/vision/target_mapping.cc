@@ -35,9 +35,14 @@ DEFINE_string(mcap_output_path, "/tmp/log.mcap", "Log to output.");
 DEFINE_string(pi, "pi1", "Pi name to generate mcap log for; defaults to pi1.");
 DEFINE_double(max_pose_error, 1e-6,
               "Throw out target poses with a higher pose error than this");
+DEFINE_double(
+    max_pose_error_ratio, 0.4,
+    "Throw out target poses with a higher pose error ratio than this");
 DEFINE_uint64(wait_key, 0,
               "Time in ms to wait between images, if no click (0 to wait "
               "indefinitely until click).");
+DEFINE_uint64(skip_to, 1,
+              "Start at combined image of this number (1 is the first image)");
 DEFINE_bool(solve, true, "Whether to solve for the field's target map.");
 
 namespace y2023 {
@@ -84,8 +89,15 @@ void HandleAprilTags(const TargetMap &map,
   for (const auto *target_pose_fbs : *map.target_poses()) {
     // Skip detections with high pose errors
     if (target_pose_fbs->pose_error() > FLAGS_max_pose_error) {
-      LOG(INFO) << " Skipping tag " << target_pose_fbs->id()
-                << " due to pose error of " << target_pose_fbs->pose_error();
+      VLOG(1) << " Skipping tag " << target_pose_fbs->id()
+              << " due to pose error of " << target_pose_fbs->pose_error();
+      continue;
+    }
+    // Skip detections with high pose error ratios
+    if (target_pose_fbs->pose_error_ratio() > FLAGS_max_pose_error_ratio) {
+      VLOG(1) << " Skipping tag " << target_pose_fbs->id()
+              << " due to pose error ratio of "
+              << target_pose_fbs->pose_error_ratio();
       continue;
     }
 
@@ -123,8 +135,12 @@ void HandleAprilTags(const TargetMap &map,
                     cv::Point(600, 10), cv::FONT_HERSHEY_PLAIN, 1.0,
                     cv::Scalar(255, 255, 255));
 
-        cv::imshow("View", vis_robot->image_);
-        cv::waitKey(FLAGS_wait_key);
+        if (*display_count >= FLAGS_skip_to) {
+          cv::imshow("View", vis_robot->image_);
+          cv::waitKey(FLAGS_wait_key);
+        } else {
+          VLOG(1) << "At poses #" << std::to_string(*display_count);
+        }
         vis_robot->ClearImage();
         drawn_nodes->clear();
       }
@@ -132,14 +148,16 @@ void HandleAprilTags(const TargetMap &map,
       Eigen::Affine3d H_world_target = PoseUtils::Pose3dToAffine3d(
           target_loc_mapper.GetTargetPoseById(target_pose_fbs->id())->pose);
       Eigen::Affine3d H_world_robot = H_world_target * H_robot_target.inverse();
-      LOG(INFO) << node_name << ", " << target_pose_fbs->id()
-                << ", t = " << pi_distributed_time
-                << ", pose_error = " << target_pose_fbs->pose_error()
-                << ", robot_pos (x,y,z) + "
-                << H_world_robot.translation().transpose();
+      VLOG(2) << node_name << ", " << target_pose_fbs->id()
+              << ", t = " << pi_distributed_time
+              << ", pose_error = " << target_pose_fbs->pose_error()
+              << ", pose_error_ratio = " << target_pose_fbs->pose_error_ratio()
+              << ", robot_pos (x,y,z) + "
+              << H_world_robot.translation().transpose();
 
       label << "id " << target_pose_fbs->id() << ": err "
-            << (target_pose_fbs->pose_error() / FLAGS_max_pose_error) << " ";
+            << (target_pose_fbs->pose_error() / FLAGS_max_pose_error)
+            << " ratio " << target_pose_fbs->pose_error_ratio() << " ";
 
       vis_robot->DrawRobotOutline(H_world_robot,
                                   std::to_string(target_pose_fbs->id()),
