@@ -1,8 +1,8 @@
 #include "y2023/vision/aprilrobotics.h"
 
-#include "y2023/vision/vision_util.h"
-
 #include <opencv2/highgui.hpp>
+
+#include "y2023/vision/vision_util.h"
 
 DEFINE_bool(
     debug, false,
@@ -24,16 +24,20 @@ namespace vision {
 namespace chrono = std::chrono;
 
 AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
-                                             std::string_view channel_name)
+                                             std::string_view channel_name,
+                                             bool flip_image)
     : calibration_data_(event_loop),
       image_size_(0, 0),
+      flip_image_(flip_image),
+      node_name_(event_loop->node()->name()->string_view()),
       ftrace_(),
-      image_callback_(event_loop, channel_name,
-                      [&](cv::Mat image_color_mat,
-                          const aos::monotonic_clock::time_point eof) {
-                        HandleImage(image_color_mat, eof);
-                      },
-                      chrono::milliseconds(5)),
+      image_callback_(
+          event_loop, channel_name,
+          [&](cv::Mat image_color_mat,
+              const aos::monotonic_clock::time_point eof) {
+            HandleImage(image_color_mat, eof);
+          },
+          chrono::milliseconds(5)),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
       image_annotations_sender_(
@@ -309,9 +313,11 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
   if (FLAGS_visualize) {
     // Display the result
     // Rotate by 180 degrees to make it upright
-    // TDOO<Jim>: Make this a flag, since we don't want it for box of pis
-    cv::rotate(color_image, color_image, 1);
-    cv::imshow("AprilRoboticsDetector Image", color_image);
+    if (flip_image_) {
+      cv::rotate(color_image, color_image, 1);
+    }
+    cv::imshow(absl::StrCat("AprilRoboticsDetector Image ", node_name_),
+               color_image);
   }
 
   const auto corners_offset = builder.fbb()->CreateVector(foxglove_corners);

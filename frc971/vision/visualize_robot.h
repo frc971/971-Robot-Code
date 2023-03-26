@@ -24,6 +24,14 @@ class VisualizeRobot {
   // Set image on which to draw
   void SetImage(cv::Mat image) { image_ = image; }
 
+  // Sets image to all black.
+  // Uses default_size if no image has been set yet, else image_.size()
+  void ClearImage(cv::Size default_size = cv::Size(1280, 720)) {
+    auto image_size = (image_.data == nullptr ? default_size : image_.size());
+    cv::Mat black_image_mat = cv::Mat::zeros(image_size, CV_8UC3);
+    SetImage(black_image_mat);
+  }
+
   // Set the viewpoint of the camera relative to a global origin
   void SetViewpoint(Eigen::Affine3d view_origin) {
     H_world_viewpoint_ = view_origin;
@@ -49,16 +57,19 @@ class VisualizeRobot {
   cv::Point ProjectPoint(Eigen::Vector3d point3d);
 
   // Draw a line connecting two 3D points
-  void DrawLine(Eigen::Vector3d start, Eigen::Vector3d end);
+  void DrawLine(Eigen::Vector3d start, Eigen::Vector3d end,
+                cv::Scalar color = cv::Scalar(0, 200, 0));
 
   // Draw coordinate frame for a target frame relative to the world frame
   // Axes are drawn (x,y,z) -> (red, green, blue)
   void DrawFrameAxes(Eigen::Affine3d H_world_target, std::string label = "",
+                     cv::Scalar label_color = cv::Scalar(0, 0, 255),
                      double axis_scale = 0.25);
 
   // TODO<Jim>: Also implement DrawBoardOutline?  Maybe one function w/
   // parameters?
-  void DrawRobotOutline(Eigen::Affine3d H_world_robot, std::string label = "");
+  void DrawRobotOutline(Eigen::Affine3d H_world_robot, std::string label = "",
+                        cv::Scalar color = cv::Scalar(0, 200, 0));
 
   Eigen::Affine3d H_world_viewpoint_;  // Where to view the world from
   cv::Mat image_;                      // Image to draw on

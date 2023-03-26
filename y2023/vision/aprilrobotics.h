@@ -38,7 +38,7 @@ class AprilRoboticsDetector {
   };
 
   AprilRoboticsDetector(aos::EventLoop *event_loop,
-                        std::string_view channel_name);
+                        std::string_view channel_name, bool flip_image = true);
   ~AprilRoboticsDetector();
 
   void SetWorkerpoolAffinities();
@@ -78,6 +78,8 @@ class AprilRoboticsDetector {
   std::optional<cv::Mat> extrinsics_;
   cv::Mat dist_coeffs_;
   cv::Size image_size_;
+  bool flip_image_;
+  std::string_view node_name_;
 
   aos::Ftrace ftrace_;
 

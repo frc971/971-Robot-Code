@@ -1,10 +1,11 @@
 #include "frc971/vision/visualize_robot.h"
-#include "glog/logging.h"
 
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+
+#include "glog/logging.h"
 
 namespace frc971 {
 namespace vision {
@@ -42,15 +43,17 @@ cv::Point VisualizeRobot::ProjectPoint(Eigen::Vector3d T_world_point) {
   return projected_point;
 }
 
-void VisualizeRobot::DrawLine(Eigen::Vector3d start3d, Eigen::Vector3d end3d) {
+void VisualizeRobot::DrawLine(Eigen::Vector3d start3d, Eigen::Vector3d end3d,
+                              cv::Scalar color) {
   cv::Point start2d = ProjectPoint(start3d);
   cv::Point end2d = ProjectPoint(end3d);
 
-  cv::line(image_, start2d, end2d, cv::Scalar(0, 200, 0));
+  cv::line(image_, start2d, end2d, color);
 }
 
 void VisualizeRobot::DrawFrameAxes(Eigen::Affine3d H_world_target,
-                                   std::string label, double axis_scale) {
+                                   std::string label, cv::Scalar label_color,
+                                   double axis_scale) {
   // Map origin to display from global (world) frame to camera frame
   Eigen::Affine3d H_viewpoint_target =
       H_world_viewpoint_.inverse() * H_world_target;
@@ -79,13 +82,13 @@ void VisualizeRobot::DrawFrameAxes(Eigen::Affine3d H_world_target,
     label_coord[0] = label_coord[0] / label_coord[2] + 5;
     label_coord[1] = label_coord[1] / label_coord[2];
     cv::putText(image_, label, cv::Point(label_coord[0], label_coord[1]),
-                cv::FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 0, 255));
+                cv::FONT_HERSHEY_PLAIN, 1.0, label_color);
   }
 }
 
 void VisualizeRobot::DrawRobotOutline(Eigen::Affine3d H_world_robot,
-                                      std::string label) {
-  DrawFrameAxes(H_world_robot, label);
+                                      std::string label, cv::Scalar color) {
+  DrawFrameAxes(H_world_robot, label, color);
   const double kBotHalfWidth = 0.75 / 2.0;
   const double kBotHalfLength = 1.0 / 2.0;
   // Compute coordinates for front/rear and right/left corners
@@ -98,10 +101,10 @@ void VisualizeRobot::DrawRobotOutline(Eigen::Affine3d H_world_robot,
   Eigen::Vector3d rr_corner =
       H_world_robot * Eigen::Vector3d(-kBotHalfLength, kBotHalfWidth, 0);
 
-  DrawLine(fr_corner, fl_corner);
-  DrawLine(fl_corner, rl_corner);
-  DrawLine(rl_corner, rr_corner);
-  DrawLine(rr_corner, fr_corner);
+  DrawLine(fr_corner, fl_corner, color);
+  DrawLine(fl_corner, rl_corner, color);
+  DrawLine(rl_corner, rr_corner, color);
+  DrawLine(rr_corner, fr_corner, color);
 }
 
 }  // namespace vision
