@@ -9,6 +9,9 @@
 
 DEFINE_double(max_pose_error, 1e-6,
               "Throw out target poses with a higher pose error than this");
+DEFINE_double(
+    max_pose_error_ratio, 0.4,
+    "Throw out target poses with a higher pose error ratio than this");
 DEFINE_double(distortion_noise_scalar, 1.0,
               "Scale the target pose distortion factor by this when computing "
               "the noise.");
@@ -336,6 +339,11 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
     VLOG(1) << "Rejecting target due to high pose error "
             << target.pose_error();
     return RejectImage(camera_index, RejectionReason::HIGH_POSE_ERROR,
+                       &builder);
+  } else if (target.pose_error_ratio() > FLAGS_max_pose_error_ratio) {
+    VLOG(1) << "Rejecting target due to high pose error ratio "
+            << target.pose_error_ratio();
+    return RejectImage(camera_index, RejectionReason::HIGH_POSE_ERROR_RATIO,
                        &builder);
   }
 
