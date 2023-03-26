@@ -16,6 +16,7 @@
 #include "frc971/input/driver_station_data.h"
 #include "frc971/input/drivetrain_input.h"
 #include "frc971/input/joystick_input.h"
+#include "frc971/input/redundant_joystick_data.h"
 #include "frc971/zeroing/wrap.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/drivetrain/drivetrain_base.h"
@@ -46,7 +47,7 @@ constexpr double kConeWrist = 0.4;
 constexpr double kCubeWrist = 1.0;
 
 // TODO(milind): add correct locations
-const ButtonLocation kDriverSpit(2, 1);
+const ButtonLocation kDriverSpit(1, 1);
 const ButtonLocation kSpit(4, 13);
 
 const ButtonLocation kHighConeScoreLeft(4, 14);
@@ -369,7 +370,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       : ::frc971::input::ActionJoystickInput(
             event_loop,
             ::y2023::control_loops::drivetrain::GetDrivetrainConfig(),
-            ::frc971::input::DrivetrainInputReader::InputType::kPistol, {}),
+            ::frc971::input::DrivetrainInputReader::InputType::kPistol,
+            {.use_redundant_joysticks = true}),
         superstructure_goal_sender_(
             event_loop->MakeSender<superstructure::Goal>("/superstructure")),
         target_selector_hint_sender_(
@@ -519,7 +521,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
       superstructure::Goal::Builder superstructure_goal_builder =
           builder.MakeBuilder<superstructure::Goal>();
-      superstructure_goal_builder.add_arm_goal_position(arm_goal_position_);
+      superstructure_goal_builder.add_arm_goal_position(arm::NeutralIndex());
       superstructure_goal_builder.add_roller_goal(roller_goal);
       superstructure_goal_builder.add_wrist(wrist_offset);
       if (builder.Send(superstructure_goal_builder.Finish()) !=

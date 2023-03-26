@@ -4,6 +4,7 @@
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/input/driver_station_data.h"
+#include "frc971/input/redundant_joystick_data.h"
 
 using ::frc971::input::driver_station::ControlBit;
 
@@ -11,6 +12,16 @@ namespace frc971 {
 namespace input {
 
 void ActionJoystickInput::RunIteration(
+    const ::frc971::input::driver_station::Data &unsorted_data) {
+  if (input_config_.use_redundant_joysticks) {
+    driver_station::RedundantData redundant_data_storage(unsorted_data);
+    DoRunIteration(redundant_data_storage);
+  } else {
+    DoRunIteration(unsorted_data);
+  }
+}
+
+void ActionJoystickInput::DoRunIteration(
     const ::frc971::input::driver_station::Data &data) {
   const bool last_auto_running = auto_running_;
   auto_running_ = data.GetControlBit(ControlBit::kAutonomous) &&

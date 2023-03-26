@@ -121,9 +121,7 @@ struct Values {
   // Wrist
   static constexpr double kWristEncoderCountsPerRevolution() { return 4096.0; }
 
-  static constexpr double kCompWristEncoderRatio() {
-    return 1.0;
-  }
+  static constexpr double kCompWristEncoderRatio() { return 1.0; }
   static constexpr double kPracticeWristEncoderRatio() {
     return (24.0 / 36.0) * (36.0 / 60.0);
   }
@@ -172,7 +170,7 @@ struct Values {
   }
 
   // if true, tune down all the arm constants for testing.
-  static constexpr bool kArmGrannyMode() { return false; }
+  static constexpr bool kArmGrannyMode() { return true; }
 
   // the operating voltage.
   static constexpr double kArmOperatingVoltage() {

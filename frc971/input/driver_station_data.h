@@ -76,24 +76,24 @@ class Data {
   // Updates the current information with a new set of values.
   void Update(const aos::JoystickState *new_values);
 
-  bool IsPressed(POVLocation location) const;
-  bool PosEdge(POVLocation location) const;
-  bool NegEdge(POVLocation location) const;
+  virtual bool IsPressed(POVLocation location) const;
+  virtual bool PosEdge(POVLocation location) const;
+  virtual bool NegEdge(POVLocation location) const;
 
   // Returns the current and previous "values" for the POV.
-  int32_t GetPOV(int joystick) const;
-  int32_t GetOldPOV(int joystick) const;
+  virtual int32_t GetPOV(int joystick) const;
+  virtual int32_t GetOldPOV(int joystick) const;
 
-  bool IsPressed(ButtonLocation location) const;
-  bool PosEdge(ButtonLocation location) const;
-  bool NegEdge(ButtonLocation location) const;
+  virtual bool IsPressed(ButtonLocation location) const;
+  virtual bool PosEdge(ButtonLocation location) const;
+  virtual bool NegEdge(ButtonLocation location) const;
 
-  bool GetControlBit(ControlBit bit) const;
-  bool PosEdge(ControlBit bit) const;
-  bool NegEdge(ControlBit bit) const;
+  virtual bool GetControlBit(ControlBit bit) const;
+  virtual bool PosEdge(ControlBit bit) const;
+  virtual bool NegEdge(ControlBit bit) const;
 
   // Returns the value in the range [-1.0, 1.0].
-  float GetAxis(JoystickAxis axis) const;
+  virtual float GetAxis(JoystickAxis axis) const;
 
  private:
   struct SavedJoystickState {

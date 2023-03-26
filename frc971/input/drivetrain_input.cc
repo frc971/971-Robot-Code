@@ -280,7 +280,7 @@ std::unique_ptr<PistolDrivetrainInputReader> PistolDrivetrainInputReader::Make(
   const ButtonLocation kSecondButton(1, 2);
   const ButtonLocation kBottomButton(1, 4);
   // Non-existant button for nops.
-  const ButtonLocation kDummyButton(1, 10);
+  const ButtonLocation kDummyButton(1, 15);
 
   // TODO(james): Make a copy assignment operator for ButtonLocation so we don't
   // have to shoehorn in these ternary operators.

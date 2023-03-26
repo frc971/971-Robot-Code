@@ -16,6 +16,8 @@ int main(int argc, char **argv) {
 
   ::aos::ShmEventLoop event_loop(&config.message());
 
+  frc971::constants::WaitForConstants<y2023::Constants>(&config.message());
+
   auto trajectories =
       y2023::control_loops::superstructure::Superstructure::GetArmTrajectories(
           FLAGS_arm_trajectories);

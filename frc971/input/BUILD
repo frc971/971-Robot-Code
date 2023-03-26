@@ -58,12 +58,28 @@ cc_library(
 )
 
 cc_library(
+    name = "redundant_joystick_data",
+    srcs = [
+        "redundant_joystick_data.cc",
+    ],
+    hdrs = [
+        "redundant_joystick_data.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":driver_station_data",
+        "//aos/events:event_loop",
+    ],
+)
+
+cc_library(
     name = "action_joystick_input",
     srcs = ["action_joystick_input.cc"],
     hdrs = ["action_joystick_input.h"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_input",
+        ":redundant_joystick_data",
         "//aos:init",
         "//aos/actions:action_lib",
         "//aos/logging",

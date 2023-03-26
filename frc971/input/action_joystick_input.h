@@ -25,6 +25,11 @@ class ActionJoystickInput : public ::frc971::input::JoystickInput {
     // A button, for use with the run_teleop_in_auto, that will cancel the auto
     // mode, and if run_telop_in_auto is specified, resume teloperation.
     const driver_station::ButtonLocation cancel_auto_button = {-1, -1};
+
+    // Use button 14 and 15 to encode the id of the joystick and remap the
+    // joysticks so that their ids are independent of their order on the
+    // driverstation.
+    bool use_redundant_joysticks = false;
   };
   ActionJoystickInput(
       ::aos::EventLoop *event_loop,
@@ -94,6 +99,8 @@ class ActionJoystickInput : public ::frc971::input::JoystickInput {
       const ::frc971::input::driver_station::Data &data) = 0;
 
   void RunIteration(const ::frc971::input::driver_station::Data &data) override;
+
+  void DoRunIteration(const ::frc971::input::driver_station::Data &data);
 
   void StartAuto();
   void StopAuto();
