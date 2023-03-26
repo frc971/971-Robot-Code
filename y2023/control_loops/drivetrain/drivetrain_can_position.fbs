@@ -20,6 +20,9 @@ table CANFalcon {
 
   // In meters traveled on the drivetrain
   position:float (id: 5);
+
+  // Nominal range is -1 to 1, but can be -2 to +2
+  duty_cycle: float (id: 6);
 }
 
 // CAN readings from the CAN sensor reader loop

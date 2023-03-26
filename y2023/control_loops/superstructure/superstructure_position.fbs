@@ -38,6 +38,9 @@ table CANFalcon {
 
   // Raw position
   position:float (id: 5);
+
+  // Nominal range is -1 to 1, but can be -2 to +2
+  duty_cycle:float (id: 6);
 }
 
 table Position {
