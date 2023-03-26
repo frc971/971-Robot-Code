@@ -248,6 +248,29 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::RejectImage(
   return builder->Finish();
 }
 
+bool Localizer::UseAprilTag(uint64_t target_id) {
+  if (target_poses_.count(target_id) == 0) {
+    return false;
+  }
+
+  const flatbuffers::Vector<uint64_t> *ignore_tags = nullptr;
+
+  switch (utils_.Alliance()) {
+    case aos::Alliance::kRed:
+      ignore_tags =
+          CHECK_NOTNULL(constants_fetcher_.constants().ignore_targets()->red());
+      break;
+    case aos::Alliance::kBlue:
+      ignore_tags = CHECK_NOTNULL(
+          constants_fetcher_.constants().ignore_targets()->blue());
+      break;
+    case aos::Alliance::kInvalid:
+      return true;
+  }
+  return std::find(ignore_tags->begin(), ignore_tags->end(), target_id) ==
+         ignore_tags->end();
+}
+
 flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
     int camera_index, const aos::monotonic_clock::time_point capture_time,
     const frc971::vision::TargetPoseFbs &target,
@@ -267,7 +290,7 @@ flatbuffers::Offset<TargetEstimateDebug> Localizer::HandleTarget(
   const uint64_t target_id = target.id();
   builder.add_april_tag(target_id);
   VLOG(2) << aos::FlatbufferToJson(&target);
-  if (target_poses_.count(target_id) == 0) {
+  if (!UseAprilTag(target_id)) {
     VLOG(1) << "Rejecting target due to invalid ID " << target_id;
     return RejectImage(camera_index, RejectionReason::NO_SUCH_TARGET, &builder);
   }

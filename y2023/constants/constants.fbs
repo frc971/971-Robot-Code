@@ -29,11 +29,19 @@ table RobotConstants {
   tof:TimeOfFlight (id: 0);
 }
 
+// Set of april tag targets, by april tag ID, to ignore when on a
+// given alliance.
+table IgnoreTargets {
+  red:[uint64] (id: 0);
+  blue:[uint64] (id: 1);
+}
+
 table Constants {
   cameras:[CameraConfiguration] (id: 0);
   target_map:frc971.vision.TargetMap (id: 1);
   scoring_map:localizer.ScoringMap (id: 2);
   robot:RobotConstants (id: 3);
+  ignore_targets:IgnoreTargets (id: 4);
 }
 
 root_type Constants;

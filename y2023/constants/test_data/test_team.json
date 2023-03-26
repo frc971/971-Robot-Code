@@ -28,5 +28,9 @@
         }
       ]
     }
+  },
+  "ignore_targets": {
+    "red": [4],
+    "blue": [5]
   }
 }

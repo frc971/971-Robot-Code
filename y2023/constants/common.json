@@ -1,2 +1,6 @@
   "target_map": {% include 'y2023/vision/maps/target_map.json' %},
-  "scoring_map": {% include 'y2023/constants/scoring_map.json' %}
+  "scoring_map": {% include 'y2023/constants/scoring_map.json' %},
+  "ignore_targets": {
+    "red": [4],
+    "blue": [5]
+  }
