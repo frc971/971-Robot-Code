@@ -41,6 +41,9 @@ DEFINE_double(
 DEFINE_uint64(wait_key, 0,
               "Time in ms to wait between images, if no click (0 to wait "
               "indefinitely until click).");
+DEFINE_double(pause_on_distance, 1.0,
+              "Pause if two consecutive implied robot positions differ by more "
+              "than this many meters");
 DEFINE_uint64(skip_to, 1,
               "Start at combined image of this number (1 is the first image)");
 DEFINE_bool(solve, true, "Whether to solve for the field's target map.");
@@ -103,6 +106,12 @@ class TargetMapperReplay {
   // the display window
   aos::distributed_clock::time_point last_draw_time_;
 
+  Eigen::Affine3d last_H_world_robot_;
+  // Maximum distance between consecutive T_world_robot's in one display frame,
+  // used to determine if we need to pause for the user to see this frame
+  // clearly
+  double max_delta_T_world_robot_;
+
   std::vector<std::unique_ptr<aos::EventLoop>> detection_event_loops_;
   std::vector<std::unique_ptr<aos::EventLoop>> mapping_event_loops_;
 
@@ -134,7 +143,9 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
       vis_robot_(cv::Size(1280, 1000)),
       drawn_nodes_(),
       display_count_(0),
-      last_draw_time_(aos::distributed_clock::min_time) {
+      last_draw_time_(aos::distributed_clock::min_time),
+      last_H_world_robot_(Eigen::Matrix4d::Identity()),
+      max_delta_T_world_robot_(0.0) {
   // Send new april tag poses. This allows us to take a log of images, then
   // play with the april detection code and see those changes take effect in
   // mapping
@@ -261,7 +272,10 @@ void TargetMapperReplay::HandleAprilTags(
 
         if (display_count_ >= FLAGS_skip_to) {
           cv::imshow("View", vis_robot_.image_);
-          cv::waitKey(FLAGS_wait_key);
+          cv::waitKey(max_delta_T_world_robot_ > FLAGS_pause_on_distance
+                          ? 0
+                          : FLAGS_wait_key);
+          max_delta_T_world_robot_ = 0.0;
         } else {
           VLOG(1) << "At poses #" << std::to_string(display_count_);
         }
@@ -290,8 +304,16 @@ void TargetMapperReplay::HandleAprilTags(
       vis_robot_.DrawFrameAxes(H_world_target,
                                std::to_string(target_pose_fbs->id()),
                                kPiColors.at(node_name));
+
+      double delta_T_world_robot =
+          (H_world_robot.translation() - last_H_world_robot_.translation())
+              .norm();
+      max_delta_T_world_robot_ =
+          std::max(delta_T_world_robot, max_delta_T_world_robot_);
+
       drew = true;
       last_draw_time_ = pi_distributed_time;
+      last_H_world_robot_ = H_world_robot;
     }
   }
   if (drew) {
@@ -309,6 +331,7 @@ void TargetMapperReplay::HandleAprilTags(
     vis_robot_.ClearImage();
     cv::imshow("View", vis_robot_.image_);
     cv::waitKey(FLAGS_wait_key);
+    max_delta_T_world_robot_ = 0.0;
   }
 }
 
