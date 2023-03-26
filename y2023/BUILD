@@ -37,6 +37,7 @@ robot_downloader(
         "//y2023/autonomous:binaries",
         ":joystick_reader",
         ":wpilib_interface",
+        "//frc971/can_logger",
         "//aos/network:message_bridge_client",
         "//aos/network:message_bridge_server",
         "//y2023/control_loops/drivetrain:drivetrain",
@@ -211,6 +212,7 @@ aos_config(
         "//y2023/control_loops/superstructure:superstructure_output_fbs",
         "//y2023/control_loops/superstructure:superstructure_position_fbs",
         "//y2023/control_loops/superstructure:superstructure_status_fbs",
+        "//frc971/can_logger:can_logging_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
