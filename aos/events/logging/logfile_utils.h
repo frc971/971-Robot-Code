@@ -212,8 +212,6 @@ class DetachedBufferWriter {
   bool supports_odirect_ = true;
   int flags_ = 0;
 
-  size_t file_written_bytes_ = 0;
-
   aos::monotonic_clock::time_point last_flush_time_ =
       aos::monotonic_clock::min_time;
 };
