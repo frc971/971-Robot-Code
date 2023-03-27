@@ -37,7 +37,7 @@
           "priority": 2,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "roborio"
+            "logger"
           ],
           "time_to_live": 5000000
         }
@@ -64,7 +64,11 @@
         {
           "name": "logger",
           "priority": 1,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "pi1"
+          ]
         }
       ]
     },
@@ -80,7 +84,11 @@
         {
           "name": "logger",
           "priority": 1,
-          "time_to_live": 5000000
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "pi2"
+          ]
         }
       ]
     },
@@ -96,6 +104,10 @@
         {
           "name": "logger",
           "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "pi3"
+          ],
           "time_to_live": 5000000
         }
       ]
@@ -112,6 +124,10 @@
         {
           "name": "logger",
           "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "pi4"
+          ],
           "time_to_live": 5000000
         }
       ]
@@ -157,64 +173,16 @@
       "name": "/logger/aos",
       "type": "aos.starter.Status",
       "source_node": "logger",
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 2000,
-      "logger_nodes": [
-        "roborio"
-      ],
-      "destination_nodes": [
-        {
-          "name": "roborio",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "logger"
-          ],
-          "time_to_live": 5000000
-        }
-      ]
-    },
-    {
-      "name": "/logger/aos/remote_timestamps/roborio/logger/aos/aos-starter-Status",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "logger",
-      "logger": "NOT_LOGGED",
-      "frequency": 50,
-      "num_senders": 2,
-      "max_size": 200
+      "max_size": 2000
     },
     {
       "name": "/logger/aos",
       "type": "aos.starter.StarterRpc",
       "source_node": "logger",
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "roborio"
-      ],
       "frequency": 10,
-      "num_senders": 2,
-      "destination_nodes": [
-        {
-          "name": "roborio",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "logger"
-          ],
-          "time_to_live": 5000000
-        }
-      ]
-    },
-    {
-      "name": "/logger/aos/remote_timestamps/roborio/logger/aos/aos-starter-StarterRpc",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "logger",
-      "logger": "NOT_LOGGED",
-      "frequency": 20,
-      "num_senders": 2,
-      "max_size": 200
+      "num_senders": 2
     },
     {
       "name": "/logger/aos",
@@ -225,8 +193,12 @@
       "max_size": 400,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "roborio",
-        "imu"
+        "imu",
+        "pi1",
+        "pi2",
+        "pi3",
+        "pi4",
+        "roborio"
       ],
       "destination_nodes": [
         {
@@ -286,15 +258,6 @@
       ]
     },
     {
-      "name": "/logger/aos/remote_timestamps/roborio/logger/aos/aos-message_bridge-Timestamp",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "logger",
-      "logger": "NOT_LOGGED",
-      "frequency": 20,
-      "num_senders": 2,
-      "max_size": 200
-    },
-    {
       "name": "/logger/aos/remote_timestamps/imu/logger/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "logger",
@@ -332,6 +295,15 @@
     },
     {
       "name": "/logger/aos/remote_timestamps/pi4/logger/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "logger",
+      "logger": "NOT_LOGGED",
+      "frequency": 20,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/logger/aos/remote_timestamps/roborio/logger/aos/aos-message_bridge-Timestamp",
       "type": "aos.message_bridge.RemoteMessage",
       "source_node": "logger",
       "logger": "NOT_LOGGED",
@@ -504,13 +476,13 @@
       "name": "pi3"
     },
     {
-      "name": "roborio"
-    },
-    {
       "name": "imu"
     },
     {
       "name": "pi4"
+    },
+    {
+      "name": "roborio"
     }
   ]
 }
