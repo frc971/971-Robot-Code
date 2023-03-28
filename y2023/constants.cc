@@ -35,8 +35,6 @@ Values MakeValues(uint16_t team) {
   arm_proximal->zeroing.allowable_encoder_error = 0.9;
 
   arm_distal->zeroing.average_filter_size = Values::kZeroingSampleSize;
-  arm_distal->zeroing.one_revolution_distance =
-      M_PI * 2.0 * constants::Values::kDistalEncoderRatio();
   arm_distal->zeroing.zeroing_threshold = 0.0005;
   arm_distal->zeroing.moving_buffer_size = 20;
   arm_distal->zeroing.allowable_encoder_error = 0.9;
@@ -73,6 +71,8 @@ Values MakeValues(uint16_t team) {
 
       arm_distal->zeroing.measured_absolute_position = 0.0;
       arm_distal->potentiometer_offset = 0.0;
+      arm_distal->zeroing.one_revolution_distance =
+          M_PI * 2.0 * constants::Values::kDistalEncoderRatio();
 
       roll_joint->zeroing.measured_absolute_position = 0.0;
       roll_joint->potentiometer_offset = 0.0;
@@ -89,12 +89,16 @@ Values MakeValues(uint16_t team) {
           0.0820901660993467 - 0.0703733798337964 - 0.0294645384848748 -
           0.577156175549626;
 
-      arm_distal->zeroing.measured_absolute_position = 0.119544808434349;
+      arm_distal->zeroing.measured_absolute_position = 0.137511584277487;
       arm_distal->potentiometer_offset =
           0.436664933370656 + 0.49457213779426 + 6.78213223139724 -
           0.0220711555235029 - 0.0162945074111813 + 0.00630344935527365 -
           0.0164398318919943 - 0.145833494945215 + 0.234878799868491 +
-          0.125924230298394 + 0.147136306208754 - 0.69167546169753;
+          0.125924230298394 + 0.147136306208754 - 0.69167546169753 -
+          0.308761538844425;
+
+      arm_distal->zeroing.one_revolution_distance =
+          M_PI * 2.0 * constants::Values::kDistalEncoderRatio();
 
       roll_joint->zeroing.measured_absolute_position = 0.62315534539819;
       roll_joint->potentiometer_offset =
@@ -103,7 +107,8 @@ Values MakeValues(uint16_t team) {
             0.0208958996127179 - 0.186395903925026 + 0.45801689548395 -
             0.5935210745062 + 0.166256655718334 - 0.12591438680483 +
             0.11972765117321 - 0.318724743041507) +
-          0.0201047336425017 - 1.0173426655158 - 0.186085272847293 - 0.0317706563397807;
+          0.0201047336425017 - 1.0173426655158 - 0.186085272847293 -
+          0.0317706563397807;
 
       wrist->subsystem_params.zeroing_constants.measured_absolute_position =
           2.27068625283861;
@@ -116,10 +121,15 @@ Values MakeValues(uint16_t team) {
           10.5178592988554 + 0.0944609125285876 - 0.00826532984625095 +
           0.167359305216504;
 
-      arm_distal->zeroing.measured_absolute_position = 0.0915283983599425;
+      arm_distal->zeroing.measured_absolute_position = 0.0698375027814462;
       arm_distal->potentiometer_offset =
           7.673132586937 - 0.0799284644472573 - 0.0323574039310657 +
-          0.0143810684138064 + 0.00945555248207735 + 0.452446388633863;
+          0.0143810684138064 + 0.00945555248207735 + 0.452446388633863 +
+          0.0194863477007102;
+
+      arm_distal->zeroing.one_revolution_distance =
+          M_PI * 2.0 * constants::Values::kDistalEncoderRatio() *
+          3.11964893168338 / 3.148;
 
       roll_joint->zeroing.measured_absolute_position = 0.0722321007692069;
       roll_joint->potentiometer_offset =
