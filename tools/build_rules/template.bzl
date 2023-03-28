@@ -49,13 +49,8 @@ jinja2_template_rule = rule(
 )
 
 def jinja2_template(name, src, parameters = {}, list_parameters = {}, **kwargs):
-    if "." not in name:
-        fail("No file extension in " + name)
-
     # Since the `out` field will be set to `name`, and the name for the rule must
-    # differ from `out`, name the rule as the `name` minus the
-    # file extension.
-    dot_index = name.rindex(".")
-    rule_name = name[:dot_index]
+    # differ from `out`, name the rule as the `name` plus a suffix
+    rule_name = name + "_rule"
 
     jinja2_template_rule(name = rule_name, out = name, src = src, parameters = parameters, list_parameters = list_parameters, **kwargs)
