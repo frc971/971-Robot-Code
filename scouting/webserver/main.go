@@ -14,8 +14,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/frc971/971-Robot-Code/scouting/background_task"
 	"github.com/frc971/971-Robot-Code/scouting/db"
-	"github.com/frc971/971-Robot-Code/scouting/scraping/background"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/match_list"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/rankings"
@@ -141,17 +141,17 @@ func main() {
 	// Since Go doesn't support default arguments, we use 0 and "" to
 	// indicate that we want to source the values from the config.
 
-	matchListScraper := background.BackgroundScraper{}
+	matchListScraper := background_task.New(10 * time.Minute)
 	matchListScraper.Start(func() {
 		match_list.GetMatchList(database, 0, "", *blueAllianceConfigPtr)
 	})
 
-	rankingsScraper := background.BackgroundScraper{}
+	rankingsScraper := background_task.New(10 * time.Minute)
 	rankingsScraper.Start(func() {
 		rankings.GetRankings(database, 0, "", *blueAllianceConfigPtr)
 	})
 
-	driverRankingParser := background.BackgroundScraper{}
+	driverRankingParser := background_task.New(10 * time.Minute)
 	driverRankingParser.Start(func() {
 		// Specify "" as the script path here so that the default is
 		// used.

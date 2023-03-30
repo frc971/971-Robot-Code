@@ -20,8 +20,8 @@ go_test(
     ],
     embed = [":rankings"],
     deps = [
+        "//scouting/background_task",
         "//scouting/db",
-        "//scouting/scraping/background",
         "//scouting/webserver/server",
     ],
 )
