@@ -72,6 +72,7 @@ bool CanLogger::ReadFrame() {
 
   CanFrame::Builder can_frame_builder = builder.MakeBuilder<CanFrame>();
   can_frame_builder.add_can_id(frame.can_id);
+  can_frame_builder.add_flags(frame.flags);
   can_frame_builder.add_data(frame_data);
   can_frame_builder.add_monotonic_timestamp_ns(
       static_cast<std::chrono::nanoseconds>(
