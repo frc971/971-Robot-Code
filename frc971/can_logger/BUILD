@@ -37,3 +37,36 @@ flatbuffer_cc_library(
     gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
+
+cc_binary(
+    name = "log_to_asc",
+    srcs = [
+        "log_to_asc.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":asc_logger",
+        ":can_logging_fbs",
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events/logging:log_reader",
+        "//aos/time",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "asc_logger",
+    srcs = [
+        "asc_logger.cc",
+    ],
+    hdrs = [
+        "asc_logger.h",
+    ],
+    deps = [
+        ":can_logging_fbs",
+        "//aos/events:event_loop",
+        "//aos/scoped:scoped_fd",
+        "@com_github_google_glog//:glog",
+    ],
+)
