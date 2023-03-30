@@ -18,6 +18,7 @@ enum ScoreLevel: short {
 table AutoBalanceAction {
     docked:bool (id:0);
     engaged:bool (id:1);
+    balance_attempt:bool (id:2);
 }
 
 table PickupObjectAction {
@@ -38,6 +39,7 @@ table RobotDeathAction {
 table EndMatchAction {
     docked:bool (id:0);
     engaged:bool (id:1);
+    balance_attempt:bool (id:2);
 }
 
 union ActionType {

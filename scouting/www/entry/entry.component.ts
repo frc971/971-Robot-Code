@@ -58,6 +58,7 @@ type ActionT =
       timestamp?: number;
       docked: boolean;
       engaged: boolean;
+      balanceAttempt: boolean;
     }
   | {
       type: 'pickupObjectAction';
@@ -81,6 +82,7 @@ type ActionT =
       type: 'endMatchAction';
       docked: boolean;
       engaged: boolean;
+      balanceAttempt: boolean;
       timestamp?: number;
     }
   | {
@@ -218,7 +220,8 @@ export class EntryComponent {
             AutoBalanceAction.createAutoBalanceAction(
               builder,
               action.docked,
-              action.engaged
+              action.engaged,
+              action.balanceAttempt
             );
           actionOffset = Action.createAction(
             builder,
@@ -259,7 +262,8 @@ export class EntryComponent {
           const endMatchActionOffset = EndMatchAction.createEndMatchAction(
             builder,
             action.docked,
-            action.engaged
+            action.engaged,
+            action.balanceAttempt
           );
           actionOffset = Action.createAction(
             builder,

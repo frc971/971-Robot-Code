@@ -25,11 +25,13 @@ table Stats2023 {
   high_cones:int (id:17);
   cones_dropped:int (id:18);
   // Time in nanoseconds.
-  avg_cycle:int64 (id:19);
-  docked_auto:bool (id:20);
-  engaged_auto:bool (id:23);
-  docked:bool (id:25);
-  engaged:bool (id:26);
+  avg_cycle: int64 (id:19);
+  docked_auto: bool (id:20);
+  engaged_auto: bool (id:23);
+  balance_attempt_auto: bool (id:27);
+  docked: bool (id:25);
+  engaged: bool (id:26);
+  balance_attempt: bool (id:28);
 
   collected_by:string (id:24);
 }

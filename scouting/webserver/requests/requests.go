@@ -404,6 +404,9 @@ func ConvertActionsToStat(submitActions *submit_actions.SubmitActions) (db.Stats
 			if autoBalanceAction.Engaged() {
 				stat.EngagedAuto = true
 			}
+			if autoBalanceAction.BalanceAttempt() {
+				stat.BalanceAttemptAuto = true
+			}
 		} else if action_type == submit_actions.ActionTypePickupObjectAction {
 			var pick_up_action submit_actions.PickupObjectAction
 			pick_up_action.Init(actionTable.Bytes, actionTable.Pos)
@@ -476,6 +479,9 @@ func ConvertActionsToStat(submitActions *submit_actions.SubmitActions) (db.Stats
 			if endMatchAction.Engaged() {
 				stat.Engaged = true
 			}
+			if endMatchAction.BalanceAttempt() {
+				stat.BalanceAttempt = true
+			}
 		}
 	}
 	if cycles != 0 {
@@ -512,33 +518,35 @@ func (handler request2023DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 	var response Request2023DataScoutingResponseT
 	for _, stat := range stats {
 		response.StatsList = append(response.StatsList, &request_2023_data_scouting_response.Stats2023T{
-			TeamNumber:       stat.TeamNumber,
-			MatchNumber:      stat.MatchNumber,
-			SetNumber:        stat.SetNumber,
-			CompLevel:        stat.CompLevel,
-			StartingQuadrant: stat.StartingQuadrant,
-			LowCubesAuto:     stat.LowCubesAuto,
-			MiddleCubesAuto:  stat.MiddleCubesAuto,
-			HighCubesAuto:    stat.HighCubesAuto,
-			CubesDroppedAuto: stat.CubesDroppedAuto,
-			LowConesAuto:     stat.LowConesAuto,
-			MiddleConesAuto:  stat.MiddleConesAuto,
-			HighConesAuto:    stat.HighConesAuto,
-			ConesDroppedAuto: stat.ConesDroppedAuto,
-			LowCubes:         stat.LowCubes,
-			MiddleCubes:      stat.MiddleCubes,
-			HighCubes:        stat.HighCubes,
-			CubesDropped:     stat.CubesDropped,
-			LowCones:         stat.LowCones,
-			MiddleCones:      stat.MiddleCones,
-			HighCones:        stat.HighCones,
-			ConesDropped:     stat.ConesDropped,
-			AvgCycle:         stat.AvgCycle,
-			DockedAuto:       stat.DockedAuto,
-			EngagedAuto:      stat.EngagedAuto,
-			Docked:           stat.Docked,
-			Engaged:          stat.Engaged,
-			CollectedBy:      stat.CollectedBy,
+			TeamNumber:         stat.TeamNumber,
+			MatchNumber:        stat.MatchNumber,
+			SetNumber:          stat.SetNumber,
+			CompLevel:          stat.CompLevel,
+			StartingQuadrant:   stat.StartingQuadrant,
+			LowCubesAuto:       stat.LowCubesAuto,
+			MiddleCubesAuto:    stat.MiddleCubesAuto,
+			HighCubesAuto:      stat.HighCubesAuto,
+			CubesDroppedAuto:   stat.CubesDroppedAuto,
+			LowConesAuto:       stat.LowConesAuto,
+			MiddleConesAuto:    stat.MiddleConesAuto,
+			HighConesAuto:      stat.HighConesAuto,
+			ConesDroppedAuto:   stat.ConesDroppedAuto,
+			LowCubes:           stat.LowCubes,
+			MiddleCubes:        stat.MiddleCubes,
+			HighCubes:          stat.HighCubes,
+			CubesDropped:       stat.CubesDropped,
+			LowCones:           stat.LowCones,
+			MiddleCones:        stat.MiddleCones,
+			HighCones:          stat.HighCones,
+			ConesDropped:       stat.ConesDropped,
+			AvgCycle:           stat.AvgCycle,
+			DockedAuto:         stat.DockedAuto,
+			EngagedAuto:        stat.EngagedAuto,
+			BalanceAttemptAuto: stat.BalanceAttemptAuto,
+			Docked:             stat.Docked,
+			Engaged:            stat.Engaged,
+			BalanceAttempt:     stat.BalanceAttempt,
+			CollectedBy:        stat.CollectedBy,
 		})
 	}
 

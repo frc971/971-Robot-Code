@@ -1,7 +1,6 @@
 <div class="header" #header>
   <h2>{{section}}</h2>
 </div>
-
 <ng-container [ngSwitch]="section">
   <div
     *ngSwitchCase="'Team Selection'"
@@ -54,7 +53,6 @@
       </button>
     </div>
   </div>
-
   <div *ngSwitchCase="'Init'" id="init" class="container-fluid">
     <h2>Select Starting Position</h2>
     <img
@@ -87,7 +85,6 @@
       </div>
     </div>
   </div>
-
   <div *ngSwitchCase="'Pickup'" id="PickUp" class="container-fluid">
     <h6 class="text-muted">
       Last Action: {{actionList[actionList.length - 1].type}}
@@ -122,10 +119,14 @@
           <input #engaged type="checkbox" />
           Engaged
         </label>
+        <label>
+          <input #attempted type="checkbox" />
+          Attempted to dock and engage but failed
+        </label>
         <br />
         <button
           class="btn btn-info"
-          (click)="addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked});"
+          (click)="addAction({type: 'autoBalanceAction', docked: dockedValue, engaged: engagedValue, balanceAttempt: attempted.checked});"
         >
           Submit Balancing
         </button>
@@ -146,7 +147,6 @@
       </button>
     </div>
   </div>
-
   <div *ngSwitchCase="'Place'" id="Place" class="container-fluid">
     <h6 class="text-muted">
       Last Action: {{actionList[actionList.length - 1].type}}
@@ -187,10 +187,14 @@
           <input #engaged type="checkbox" />
           Engaged
         </label>
+        <label>
+          <input #attempted type="checkbox" />
+          Attempted to dock and engage but failed
+        </label>
         <br />
         <button
           class="btn btn-info"
-          (click)="addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked});"
+          (click)="addAction({type: 'autoBalanceAction', docked: dockedValue, engaged: engagedValue, balanceAttempt: attempted.checked});"
         >
           Submit Balancing
         </button>
@@ -211,7 +215,6 @@
       </button>
     </div>
   </div>
-
   <div *ngSwitchCase="'Endgame'" id="Endgame" class="container-fluid">
     <h6 class="text-muted">
       Last Action: {{actionList[actionList.length - 1].type}}
@@ -232,16 +235,19 @@
         <input #engaged type="checkbox" />
         Engaged
       </label>
+      <label>
+        <input #attempted type="checkbox" />
+        Attempted to dock and engage but failed
+      </label>
       <button
         *ngIf="!autoPhase"
         class="btn btn-info"
-        (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: docked.checked, engaged: engaged.checked});"
+        (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
       >
         End Match
       </button>
     </div>
   </div>
-
   <div *ngSwitchCase="'Dead'" id="Dead" class="container-fluid">
     <h2>Robot is dead</h2>
     <div class="d-grid gap-2">
@@ -259,14 +265,12 @@
       </button>
     </div>
   </div>
-
   <div *ngSwitchCase="'Review and Submit'" id="Review" class="container-fluid">
     <div class="d-grid gap-5">
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button class="btn btn-warning" (click)="submitActions();">Submit</button>
     </div>
   </div>
-
   <div *ngSwitchCase="'Success'" id="Success" class="container-fluid">
     <h2>Successfully submitted data.</h2>
   </div>
