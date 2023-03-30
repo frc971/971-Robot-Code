@@ -102,7 +102,7 @@ type NotesData struct {
 	Notes          string
 	GoodDriving    bool
 	BadDriving     bool
-	SketchyPickup  bool
+	SolidPickup    bool
 	SketchyPlacing bool
 	GoodDefense    bool
 	BadDefense     bool
@@ -412,7 +412,7 @@ func (database *Database) AddNotes(data NotesData) error {
 		Notes:          data.Notes,
 		GoodDriving:    data.GoodDriving,
 		BadDriving:     data.BadDriving,
-		SketchyPickup:  data.SketchyPickup,
+		SolidPickup:    data.SolidPickup,
 		SketchyPlacing: data.SketchyPlacing,
 		GoodDefense:    data.GoodDefense,
 		BadDefense:     data.BadDefense,

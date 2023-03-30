@@ -171,11 +171,11 @@ export class ViewComponent {
     if (entry.badDriving()) {
       parsedKeywords += 'Bad Driving ';
     }
-    if (entry.sketchyPickup()) {
-      parsedKeywords += 'Sketchy Pickup ';
+    if (entry.solidPickup()) {
+      parsedKeywords += 'Solid Pickup ';
     }
     if (entry.sketchyPlacing()) {
-      parsedKeywords += 'Sketchy Pickup ';
+      parsedKeywords += 'Sketchy Placing ';
     }
     if (entry.goodDefense()) {
       parsedKeywords += 'Good Defense ';
