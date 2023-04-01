@@ -111,7 +111,7 @@ export class Notes {
   setTeamNumber() {
     let data: Input = {
       teamNumber: this.teamNumberSelection,
-      notesData: 'Match: \nAuto: \nTeleop: \nEngame: ',
+      notesData: 'Match: \nAuto: \nTeleop: \nEndgame: ',
       keywordsData: {
         goodDriving: false,
         badDriving: false,
