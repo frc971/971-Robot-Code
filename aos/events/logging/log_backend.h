@@ -243,7 +243,7 @@ class RenamableFileBackend : public LogBackend {
         : FileHandler(std::move(filename)), owner_(owner) {}
     ~RenamableFileHandler() final = default;
 
-    // Returns false if not enough memory, true otherwise.
+    // Closes and if needed renames file.
     WriteCode Close() final;
 
    private:
@@ -258,7 +258,7 @@ class RenamableFileBackend : public LogBackend {
 
   // TODO (Alexei): it is called by Logger, and left here for compatibility.
   // Logger should not call it.
-  std::string_view base_name() { return base_name_; }
+  std::string_view base_name() const { return base_name_; }
 
   // If temp files are enabled, then this will write files with the .tmp
   // suffix, and then rename them to the desired name after they are fully

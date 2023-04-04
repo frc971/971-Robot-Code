@@ -188,7 +188,7 @@ WriteResult FileHandler::Write(
   VLOG(1) << "Started " << (was_aligned ? "aligned" : "unaligned")
           << " at offset " << total_write_bytes_ << " on " << filename();
 
-  // Walk through aligned queue and batch writes basel on aligned flag
+  // Walk through aligned queue and batch writes based on aligned flag
   for (const auto &item : queue_aligner_.aligned_queue()) {
     if (was_aligned != item.aligned) {
       // Switching aligned context. Let's flush current batch.

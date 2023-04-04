@@ -1816,8 +1816,16 @@ TEST_P(MultinodeLoggerTest, LoggerRenameFolder) {
   logfile_base1_ = tmp_dir_ + "/new-good/multi_logfile1";
   logfile_base2_ = tmp_dir_ + "/new-good/multi_logfile2";
   logfiles_ = MakeLogFiles(logfile_base1_, logfile_base2_);
-  ASSERT_TRUE(pi1_logger.logger->RenameLogBase(logfile_base1_));
-  ASSERT_TRUE(pi2_logger.logger->RenameLogBase(logfile_base2_));
+
+  // Sequence of set_base_name and Rotate simulates rename operation. Since
+  // rename is not supported by all namers, RenameLogBase moved from logger to
+  // the higher level abstraction, yet log_namers support rename, and it is
+  // legal to test it here.
+  pi1_logger.log_namer->set_base_name(logfile_base1_);
+  pi1_logger.logger->Rotate();
+  pi2_logger.log_namer->set_base_name(logfile_base2_);
+  pi2_logger.logger->Rotate();
+
   for (auto &file : logfiles_) {
     struct stat s;
     EXPECT_EQ(0, stat(file.c_str(), &s));
@@ -1836,7 +1844,7 @@ TEST_P(MultinodeLoggerDeathTest, LoggerRenameFile) {
   StartLogger(&pi1_logger);
   event_loop_factory_.RunFor(chrono::milliseconds(10000));
   logfile_base1_ = tmp_dir_ + "/new-renamefile/new_multi_logfile1";
-  EXPECT_DEATH({ pi1_logger.logger->RenameLogBase(logfile_base1_); },
+  EXPECT_DEATH({ pi1_logger.log_namer->set_base_name(logfile_base1_); },
                "Rename of file base from");
 }
 

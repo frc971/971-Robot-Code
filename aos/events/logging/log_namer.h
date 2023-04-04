@@ -176,17 +176,6 @@ class LogNamer {
   }
   virtual ~LogNamer() = default;
 
-  virtual std::string_view base_name() const = 0;
-
-  // Rotate should be called at least once in between calls to set_base_name.
-  // Otherwise temporary files will not be recoverable.
-  // Rotate is called by Logger::RenameLogBase, which is currently the only user
-  // of this method.
-  // Only renaming the folder is supported, not the file base name.
-  // TODO (Alexei): it should not be in interface, since it is not applied to
-  // files.
-  virtual void set_base_name(std::string_view base_name) = 0;
-
   // Returns a writer for writing data from messages on this channel (on the
   // primary node).
   //
@@ -306,27 +295,12 @@ class LogNamer {
 // Log namer which uses a config to name a bunch of files.
 class MultiNodeLogNamer : public LogNamer {
  public:
-  MultiNodeLogNamer(std::unique_ptr<RenamableFileBackend> log_backend,
+  MultiNodeLogNamer(std::unique_ptr<LogBackend> log_backend,
                     EventLoop *event_loop);
-  MultiNodeLogNamer(std::unique_ptr<RenamableFileBackend> log_backend,
+  MultiNodeLogNamer(std::unique_ptr<LogBackend> log_backend,
                     const Configuration *configuration, EventLoop *event_loop,
                     const Node *node);
   ~MultiNodeLogNamer() override;
-
-  std::string_view base_name() const final { return log_backend_->base_name(); }
-
-  void set_base_name(std::string_view base_name) final {
-    log_backend_->RenameLogBase(base_name);
-  }
-
-  // When enabled, this will write files under names beginning
-  // with the .tmp suffix, and then rename them to the desired name after
-  // they are fully written.
-  //
-  // This is useful to enable incremental copying of the log files.
-  //
-  // Defaults to writing directly to the final filename.
-  void EnableTempFiles() { log_backend_->EnableTempFiles(); }
 
   // Sets the function for creating encoders.  The argument is the max message
   // size (including headers) that will be written into this encoder.
@@ -462,6 +436,12 @@ class MultiNodeLogNamer : public LogNamer {
 
   void ResetStatistics();
 
+ protected:
+  // TODO (Alexei): consider to move ownership of log_namer to concrete sub
+  // class and make log_backend_ raw pointer.
+  LogBackend *log_backend() { return log_backend_.get(); }
+  const LogBackend *log_backend() const { return log_backend_.get(); }
+
  private:
   // Opens up a writer for timestamps forwarded back.
   void OpenForwardedTimestampWriter(const Channel *channel,
@@ -492,7 +472,7 @@ class MultiNodeLogNamer : public LogNamer {
     return t;
   }
 
-  std::unique_ptr<RenamableFileBackend> log_backend_;
+  std::unique_ptr<LogBackend> log_backend_;
 
   bool ran_out_of_space_ = false;
   std::vector<std::string> all_filenames_;
@@ -528,6 +508,36 @@ class MultiNodeFilesLogNamer : public MultiNodeLogNamer {
       : MultiNodeLogNamer(std::make_unique<RenamableFileBackend>(base_name),
                           configuration, event_loop, node) {}
   ~MultiNodeFilesLogNamer() override = default;
+
+  std::string_view base_name() const {
+    return renamable_file_backend()->base_name();
+  }
+
+  // Rotate should be called at least once in between calls to set_base_name.
+  // Otherwise, temporary files will not be recoverable.
+  // Rotate is called by Logger::RenameLogBase, which is currently the only user
+  // of this method.
+  // Only renaming the folder is supported, not the file base name.
+  void set_base_name(std::string_view base_name) {
+    renamable_file_backend()->RenameLogBase(base_name);
+  }
+
+  // When enabled, this will write files under names beginning
+  // with the .tmp suffix, and then rename them to the desired name after
+  // they are fully written.
+  //
+  // This is useful to enable incremental copying of the log files.
+  //
+  // Defaults to writing directly to the final filename.
+  void EnableTempFiles() { renamable_file_backend()->EnableTempFiles(); }
+
+ private:
+  RenamableFileBackend *renamable_file_backend() {
+    return reinterpret_cast<RenamableFileBackend *>(log_backend());
+  }
+  const RenamableFileBackend *renamable_file_backend() const {
+    return reinterpret_cast<const RenamableFileBackend *>(log_backend());
+  }
 };
 
 }  // namespace logger

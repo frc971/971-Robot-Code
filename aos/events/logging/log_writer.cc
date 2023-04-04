@@ -230,16 +230,7 @@ Logger::~Logger() {
   }
 }
 
-bool Logger::RenameLogBase(std::string new_base_name) {
-  // TODO(Naman): Got a crash in RenameLogBase. Putting in a CHECK_NOTNULL to
-  // catch the bug if it happens again
-  if (new_base_name == CHECK_NOTNULL(log_namer_)->base_name()) {
-    return true;
-  }
-  log_namer_->set_base_name(new_base_name);
-  Rotate();
-  return true;
-}
+
 
 std::string Logger::WriteConfiguration(LogNamer *log_namer) {
   std::string config_sha256;

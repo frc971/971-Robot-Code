@@ -561,12 +561,12 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
 }
 
 MultiNodeLogNamer::MultiNodeLogNamer(
-    std::unique_ptr<RenamableFileBackend> log_backend, EventLoop *event_loop)
+    std::unique_ptr<LogBackend> log_backend, EventLoop *event_loop)
     : MultiNodeLogNamer(std::move(log_backend), event_loop->configuration(),
                         event_loop, event_loop->node()) {}
 
 MultiNodeLogNamer::MultiNodeLogNamer(
-    std::unique_ptr<RenamableFileBackend> log_backend,
+    std::unique_ptr<LogBackend> log_backend,
     const Configuration *configuration, EventLoop *event_loop, const Node *node)
     : LogNamer(configuration, event_loop, node),
       log_backend_(std::move(log_backend)),

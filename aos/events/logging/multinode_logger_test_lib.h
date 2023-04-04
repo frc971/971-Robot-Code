@@ -50,7 +50,7 @@ struct LoggerState {
   std::unique_ptr<Logger> logger;
   const Configuration *configuration;
   const Node *node;
-  MultiNodeLogNamer *log_namer;
+  MultiNodeFilesLogNamer *log_namer;
   CompressionParams params;
 
   void AppendAllFilenames(std::vector<std::string> *filenames);
