@@ -134,17 +134,6 @@ class DetachedBufferWriter {
       aos::monotonic_clock::min_time;
 };
 
-// Specialized writer to single file
-class DetachedBufferFileWriter : public FileBackend,
-                                 public DetachedBufferWriter {
- public:
-  DetachedBufferFileWriter(std::string_view filename,
-                           std::unique_ptr<DataEncoder> encoder)
-      : FileBackend("/"),
-        DetachedBufferWriter(FileBackend::RequestFile(filename),
-                             std::move(encoder)) {}
-};
-
 // Repacks the provided RemoteMessage into fbb.
 flatbuffers::Offset<MessageHeader> PackRemoteMessage(
     flatbuffers::FlatBufferBuilder *fbb,
