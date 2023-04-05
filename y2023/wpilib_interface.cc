@@ -441,10 +441,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                    Values::kProximalEncoderRatio(), proximal_pot_translate,
                    true, values_->arm_proximal.potentiometer_offset);
       frc971::PotAndAbsolutePositionT distal;
-      CopyPosition(distal_encoder_, &distal,
-                   Values::kDistalEncoderCountsPerRevolution(),
-                   Values::kDistalEncoderRatio(), distal_pot_translate, true,
-                   values_->arm_distal.potentiometer_offset);
+      CopyPosition(
+          distal_encoder_, &distal, Values::kDistalEncoderCountsPerRevolution(),
+          values_->arm_distal.zeroing.one_revolution_distance / (M_PI * 2.0),
+          distal_pot_translate, true, values_->arm_distal.potentiometer_offset);
       frc971::PotAndAbsolutePositionT roll_joint;
       CopyPosition(roll_joint_encoder_, &roll_joint,
                    Values::kRollJointEncoderCountsPerRevolution(),

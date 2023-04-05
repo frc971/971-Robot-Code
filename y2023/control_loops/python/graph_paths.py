@@ -22,7 +22,7 @@ points = {}
 points['Neutral'] = np.array((np.pi, 0.0, 0.0))
 
 points['GroundPickupBackConeUp'] = to_theta_with_circular_index_and_roll(
-    -1.07774334, 0.40, np.pi / 2.0, circular_index=1)
+    -1.07774334, 0.39, np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -35,7 +35,7 @@ named_segments.append(
     ))
 
 points['GroundPickupBackConeDownBase'] = to_theta_with_circular_index_and_roll(
-    -1.11487594, 0.25, np.pi / 2.0, circular_index=1)
+    -1.11487594, 0.24, np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -49,7 +49,7 @@ named_segments.append(
 
 points[
     'GroundPickupFrontConeDownBase'] = to_theta_with_circular_index_and_roll(
-        0.30, 0.24, -np.pi / 2.0, circular_index=0)
+        0.30, 0.265, -np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -257,7 +257,7 @@ named_segments.append(
     ))
 
 points['ScoreBackMidConeUp'] = to_theta_with_circular_index_and_roll(
-    -1.45013, 1.04354, np.pi / 2.0, circular_index=1)
+    -1.45013, 1.00354, np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -329,7 +329,7 @@ named_segments.append(
     ))
 
 points['HPPickupBackConeUp'] = to_theta_with_circular_index_and_roll(
-    -1.1200539, 1.345, np.pi / 2.0, circular_index=0)
+    -1.1200539, 1.330, np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -344,7 +344,7 @@ named_segments.append(
     ))
 
 points['HPPickupFrontConeUp'] = np.array(
-    (5.16514378449353, 1.26, -np.pi / 2.0))
+    (5.16514378449353, 1.25, -np.pi / 2.0))
 #        to_theta_with_circular_index_and_roll(
 #    0.265749, 1.28332, -np.pi / 2.0, circular_index=1)
 
@@ -361,7 +361,7 @@ named_segments.append(
     ))
 
 points['ScoreFrontHighConeUp'] = to_theta_with_circular_index_and_roll(
-    0.98810344, 1.37536719, -np.pi / 2.0, circular_index=0)
+    0.98810344, 1.31536719, -np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -374,7 +374,7 @@ named_segments.append(
     ))
 
 points['ScoreFrontMidConeUp'] = to_theta_with_circular_index_and_roll(
-    0.64, 1.03, -np.pi / 2.0, circular_index=0)
+    0.64, 0.99, -np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -536,7 +536,7 @@ named_segments.append(
     ))
 
 points['GroundPickupFrontConeUp'] = to_theta_with_circular_index_and_roll(
-    0.313099, 0.380, -np.pi / 2.0, circular_index=0)
+    0.313099, 0.390, -np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
