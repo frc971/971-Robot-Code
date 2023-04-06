@@ -26,7 +26,7 @@ kRoll = angular_system.AngularSystemParams(
     # 598.006 in^2 lb
     J=0.175 * 3.0,
     q_pos=0.40,
-    q_vel=5.0,
+    q_vel=3.0,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
     kalman_q_voltage=4.0,
