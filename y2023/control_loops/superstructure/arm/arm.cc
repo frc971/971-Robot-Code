@@ -12,7 +12,7 @@ namespace {
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
 
-constexpr int kMaxBrownoutCount = 4;
+constexpr int kMaxBrownoutCount = 20;
 
 }  // namespace
 
@@ -248,7 +248,6 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
 
   if (state_ == ArmState::RUNNING && unsafe_goal != nullptr) {
     if (current_node_ != filtered_goal) {
-      AOS_LOG(INFO, "Goal is different\n");
       if (filtered_goal >= search_graph_.num_vertexes()) {
         AOS_LOG(ERROR, "goal node out of range ESTOP\n");
         state_ = ArmState::ESTOP;

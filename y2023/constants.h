@@ -194,8 +194,8 @@ struct Values {
   }
 
   static constexpr double kArmVMax() { return kArmGrannyMode() ? 4.0 : 9.5; }
-  static constexpr double kArmPathlessVMax() { return 4.5; }
-  static constexpr double kArmGotoPathVMax() { return 4.5; }
+  static constexpr double kArmPathlessVMax() { return 9.5; }
+  static constexpr double kArmGotoPathVMax() { return 9.5; }
 
   struct PotConstants {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
