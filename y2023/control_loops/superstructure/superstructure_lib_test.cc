@@ -451,7 +451,6 @@ TEST_F(SuperstructureTest, Preloaded) {
   SetEnabled(true);
   WaitUntilZeroed();
 
-
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
@@ -605,23 +604,44 @@ TEST_F(SuperstructureTest, ConePositionConversion) {
   RunFor(chrono::seconds(1));
   // Game piece position should not be populated when invalid.
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
-  EXPECT_EQ(vision::Class::CONE_UP, superstructure_status_fetcher_->game_piece());
+  EXPECT_EQ(vision::Class::CONE_UP,
+            superstructure_status_fetcher_->game_piece());
   EXPECT_FALSE(superstructure_status_fetcher_->has_game_piece_position());
 
   // And then send a valid cone position.
   superstructure_plant_.set_cone_position(0.5);
   RunFor(chrono::seconds(1));
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
-  EXPECT_EQ(vision::Class::CONE_UP, superstructure_status_fetcher_->game_piece());
+  EXPECT_EQ(vision::Class::CONE_UP,
+            superstructure_status_fetcher_->game_piece());
   EXPECT_TRUE(superstructure_status_fetcher_->has_game_piece_position());
   EXPECT_FLOAT_EQ(0.0, superstructure_status_fetcher_->game_piece_position());
 
   superstructure_plant_.set_cone_position(0.1);
   RunFor(chrono::seconds(1));
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
-  EXPECT_EQ(vision::Class::CONE_UP, superstructure_status_fetcher_->game_piece());
+  EXPECT_EQ(vision::Class::CONE_UP,
+            superstructure_status_fetcher_->game_piece());
   EXPECT_TRUE(superstructure_status_fetcher_->has_game_piece_position());
   EXPECT_FLOAT_EQ(0.2, superstructure_status_fetcher_->game_piece_position());
+
+  // Test that if wpilib_interface spews out invalid values that we don't
+  // attempt to convert them.
+  superstructure_plant_.set_cone_position(
+      std::numeric_limits<double>::quiet_NaN());
+  RunFor(chrono::seconds(1));
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(vision::Class::CONE_UP,
+            superstructure_status_fetcher_->game_piece());
+  EXPECT_FALSE(superstructure_status_fetcher_->has_game_piece_position());
+
+  superstructure_plant_.set_cone_position(
+      -std::numeric_limits<double>::infinity());
+  RunFor(chrono::seconds(1));
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(vision::Class::CONE_UP,
+            superstructure_status_fetcher_->game_piece());
+  EXPECT_FALSE(superstructure_status_fetcher_->has_game_piece_position());
 }
 
 class SuperstructureBeambreakTest
