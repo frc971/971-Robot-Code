@@ -328,14 +328,12 @@ void AutonomousActor::ChargedUp() {
 
   MidCubeScore();
 
-  if (!splines[3].WaitForSplineDistanceRemaining(0.05)) return;
+  if (!splines[3].WaitForSplineDistanceRemaining(0.07)) return;
   AOS_LOG(
       INFO, "Got back from second cube at %lf s\n",
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
   if (!WaitForArmGoal(0.05)) return;
-
-  if (!splines[3].WaitForSplineDistanceRemaining(0.05)) return;
   Spit();
 
   if (!splines[3].WaitForSplineDistanceRemaining(0.02)) return;
@@ -349,6 +347,8 @@ void AutonomousActor::ChargedUp() {
   const ProfileParametersT kTurn = MakeProfileParameters(3.0, 4.5);
   StartDrive(0.0, 0.0, kDrive, kTurn);
 
+  std::this_thread::sleep_for(chrono::milliseconds(100));
+
   {
     double side_scalar = (alliance_ == aos::Alliance::kRed) ? 1.0 : -1.0;
     StartDrive(6.33 - std::abs(X()), 0.0, kDrive, kTurn);
@@ -358,7 +358,7 @@ void AutonomousActor::ChargedUp() {
         INFO, "Done backing up %lf s\n",
         aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
-    const ProfileParametersT kInPlaceTurn = MakeProfileParameters(2.0, 4.5);
+    const ProfileParametersT kInPlaceTurn = MakeProfileParameters(2.5, 7.0);
     StartDrive(0.0, aos::math::NormalizeAngle(M_PI / 2.0 - Theta()), kDrive,
                kInPlaceTurn);
 
@@ -369,8 +369,13 @@ void AutonomousActor::ChargedUp() {
         INFO, "Roller off %lf s\n",
         aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
+    if (!WaitForTurnProfileNear(0.6)) return;
+    AOS_LOG(
+        INFO, "Balance arm %lf s\n",
+        aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
     Balance();
-    if (!WaitForTurnProfileNear(0.03)) return;
+    if (!WaitForTurnProfileNear(0.001)) return;
 
     AOS_LOG(
         INFO, "Done turning %lf s\n",
@@ -378,7 +383,7 @@ void AutonomousActor::ChargedUp() {
 
     const ProfileParametersT kDrive = MakeProfileParameters(1.4, 3.0);
     const ProfileParametersT kFinalTurn = MakeProfileParameters(3.0, 4.5);
-    const double kDriveDistance = 3.12;
+    const double kDriveDistance = 3.11;
     StartDrive(-kDriveDistance, 0.0, kDrive, kFinalTurn);
 
     const ProfileParametersT kFastTurn = MakeProfileParameters(5.0, 8.0);
@@ -461,7 +466,7 @@ void AutonomousActor::Neutral() {
 
 void AutonomousActor::Balance() {
   set_arm_goal_position(
-      control_loops::superstructure::arm::GroundPickupFrontConeUpIndex());
+      control_loops::superstructure::arm::ScoreFrontLowCubeIndex());
   set_wrist_goal(0.0);
   SendSuperstructureGoal();
 }

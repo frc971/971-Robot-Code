@@ -386,7 +386,7 @@ named_segments.append(
         control_alpha_rolls=[(.95, -np.pi / 2.0)],
     ))
 
-points['Starting'] = np.array((np.pi, -0.125053863467887, 0.0))
+points['Starting'] = np.array((np.pi, -0.15, 0.0))
 
 points['ScoreFrontMidConeUpAuto'] = to_theta_with_circular_index_and_roll(
     0.58, 0.97, -np.pi / 2.0, circular_index=0)
@@ -398,7 +398,7 @@ named_segments.append(
         control1=np.array([2.99620794024176, 0.23620211875551145]),
         control2=np.array([2.728197531599509, 0.5677148040671784]),
         end=points['ScoreFrontMidConeUpAuto'],
-        control_alpha_rolls=[(0.20, 0.0), (.85, -np.pi / 2.0)],
+        control_alpha_rolls=[(.85, -np.pi / 2.0)],
         vmax=10.0,
         alpha_unitizer=np.matrix(
             f"{1.0 / 20.0} 0 0; 0 {1.0 / 25.0} 0; 0 0 {1.0 / 100.0}"),
