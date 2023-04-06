@@ -81,6 +81,8 @@ class ImuWatcher {
 
   // Last observed pico measurement. Used to track IMU staleness.
   std::optional<aos::monotonic_clock::time_point> last_pico_timestamp_;
+  // Time at which we received the last imu message on the pi's clock.
+  std::optional<aos::monotonic_clock::time_point> last_imu_message_;
   // Estimate of the drift between the pi and pico clocks. See
   // pico_offset_error() for definition.
   aos::monotonic_clock::duration pico_offset_error_;

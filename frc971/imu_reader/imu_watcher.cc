@@ -29,7 +29,7 @@ ImuWatcher::ImuWatcher(
       right_encoder_(
           -EncoderWrapDistance(drivetrain_distance_per_encoder_tick) / 2.0,
           EncoderWrapDistance(drivetrain_distance_per_encoder_tick)) {
-  event_loop->MakeWatcher("/localizer", [this, timestamp_source](
+  event_loop->MakeWatcher("/localizer", [this, timestamp_source, event_loop](
                                             const IMUValuesBatch &values) {
     CHECK(values.has_readings());
     for (const IMUValues *value : *values.readings()) {
@@ -47,6 +47,7 @@ ImuWatcher::ImuWatcher(
           first_valid_data_counter_ = value->data_counter();
         }
       }
+      int messages_dropped_this_cycle = 0;
       if (first_valid_data_counter_.has_value()) {
         total_imu_messages_received_++;
         // Only update when we have good checksums, since the data counter
@@ -55,10 +56,13 @@ ImuWatcher::ImuWatcher(
           if (value->data_counter() < last_data_counter_) {
             data_counter_offset_ += 1 << 16;
           }
-          imu_fault_tracker_.missed_messages =
+          const int total_dropped =
               (1 + value->data_counter() + data_counter_offset_ -
                first_valid_data_counter_.value()) -
               total_imu_messages_received_;
+          messages_dropped_this_cycle =
+              total_dropped - imu_fault_tracker_.missed_messages;
+          imu_fault_tracker_.missed_messages = total_dropped;
           last_data_counter_ = value->data_counter();
         }
       }
@@ -92,12 +96,48 @@ ImuWatcher::ImuWatcher(
           pico_offset_ = pi_read_timestamp - pico_timestamp;
           last_pico_timestamp_ = pico_timestamp;
         }
+        // The pico will sleep for a minimum of 3 seconds when resetting the
+        // IMU. Any absence of messages for less than that time is probably not
+        // an actual reset.
         if (pico_timestamp < last_pico_timestamp_) {
           pico_offset_.value() += std::chrono::microseconds(1ULL << 32);
         }
         const aos::monotonic_clock::time_point sample_timestamp =
             pico_offset_.value() + pico_timestamp;
         pico_offset_error_ = pi_read_timestamp - sample_timestamp;
+
+        if (last_imu_message_.has_value()) {
+          constexpr std::chrono::seconds kMinimumImuResetTime(3);
+          const std::chrono::nanoseconds message_time_gap =
+              last_imu_message_.value() -
+              event_loop->context().monotonic_event_time;
+          if (message_time_gap > kMinimumImuResetTime) {
+            bool assigned_fault = false;
+            // The IMU has probably reset; attempt to determine whether just the
+            // IMU was reset or if the IMU and pico reset.
+            if (std::chrono::abs(pico_offset_error_) >
+                std::chrono::seconds(1)) {
+              // If we have this big of a gap, then everything downstream of
+              // this is going to complain anyways, so reset the offset.
+              pico_offset_.reset();
+
+              imu_fault_tracker_.probable_pico_reset_count++;
+              assigned_fault = true;
+            }
+            // See if we dropped the "right" number of messages for the gap in
+            // question.
+            if (std::chrono::abs(messages_dropped_this_cycle * kNominalDt -
+                                 message_time_gap) >
+                std::chrono::milliseconds(100)) {
+              imu_fault_tracker_.probable_imu_reset_count++;
+              assigned_fault = true;
+            }
+
+            if (!assigned_fault) {
+              imu_fault_tracker_.unassignable_reset_count++;
+            }
+          }
+        }
         const bool zeroed = zeroer_.Zeroed();
 
         // When not zeroed, we aim to approximate zero acceleration by doing a
@@ -114,6 +154,7 @@ ImuWatcher::ImuWatcher(
         }
         last_pico_timestamp_ = pico_timestamp;
       }
+      last_imu_message_ = event_loop->context().monotonic_event_time;
     }
   });
 }
