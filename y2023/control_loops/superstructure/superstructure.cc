@@ -132,7 +132,7 @@ std::optional<double> Superstructure::LateralOffsetForTimeOfFlight(
       break;
   }
   constexpr double kInvalidReading = 0.93;
-  if (reading > kInvalidReading) {
+  if (reading > kInvalidReading || !std::isfinite(reading)) {
     return std::nullopt;
   }
   const TimeOfFlight *calibration = CHECK_NOTNULL(
