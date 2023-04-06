@@ -8,6 +8,8 @@ table CanFrame {
   data:[ubyte] (id: 1);
   // The hardware timestamp of when the frame came in
   monotonic_timestamp_ns:uint64 (id: 2);
+  // Additional flags for CAN FD
+  flags: ubyte (id: 3);
 }
 
 root_type CanFrame;
