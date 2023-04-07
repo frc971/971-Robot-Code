@@ -210,10 +210,12 @@ void DetachedBufferWriter::FlushAtThreshold(
   while (encoder_->space() == 0 ||
          encoder_->queued_bytes() > static_cast<size_t>(FLAGS_flush_size) ||
          encoder_->queue_size() >= IOV_MAX ||
-         now > last_flush_time_ +
-                   chrono::duration_cast<chrono::nanoseconds>(
-                       chrono::duration<double>(FLAGS_flush_period))) {
-    VLOG(1) << "Chose to flush at " << now << ", last " << last_flush_time_;
+         (now > last_flush_time_ +
+                    chrono::duration_cast<chrono::nanoseconds>(
+                        chrono::duration<double>(FLAGS_flush_period)) &&
+          encoder_->queued_bytes() != 0)) {
+    VLOG(1) << "Chose to flush at " << now << ", last " << last_flush_time_
+            << " queued bytes " << encoder_->queued_bytes();
     Flush(now);
   }
 }

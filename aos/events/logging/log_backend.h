@@ -122,6 +122,11 @@ class FileHandler {
   // Peeks messages from queue and writes it to file. Returns code when
   // out-of-space problem occurred along with number of messages from queue that
   // was written.
+  //
+  // The spans can be aligned or not, and can have any lengths.  This code will
+  // write faster if the spans passed in start at aligned addresses, and are
+  // multiples of kSector long (and the data written so far is also a multiple
+  // of kSector length).
   virtual WriteResult Write(
       const absl::Span<const absl::Span<const uint8_t>> &queue);
 

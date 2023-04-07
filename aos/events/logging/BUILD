@@ -94,6 +94,7 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":log_backend",
+        "//aos/containers:resizeable_buffer",
         "//aos/testing:googletest",
         "//aos/testing:tmpdir",
         "@com_github_google_glog//:glog",
