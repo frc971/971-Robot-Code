@@ -58,6 +58,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void MaybeSendStartingPosition();
   void SplineAuto();
   void ChargedUp();
+  void ChargedUpCableSide();
   void Replan();
 
   aos::Sender<frc971::control_loops::drivetrain::LocalizerControl>
@@ -90,6 +91,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
 
   std::optional<SplineHandle> test_spline_;
   std::optional<std::array<SplineHandle, 4>> charged_up_splines_;
+  std::optional<std::array<SplineHandle, 4>> charged_up_cable_splines_;
 
   // List of arm angles from arm::PointsList
   const ::std::vector<::Eigen::Matrix<double, 3, 1>> points_;

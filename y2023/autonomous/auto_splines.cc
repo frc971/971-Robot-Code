@@ -142,6 +142,46 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::Spline4(
       alliance);
 }
 
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SplineCable1(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(splinecable_1_, builder->fbb()),
+      alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SplineCable2(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(splinecable_2_, builder->fbb()),
+      alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SplineCable3(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(splinecable_3_, builder->fbb()),
+      alliance);
+}
+
+flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::SplineCable4(
+    aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
+        *builder,
+    aos::Alliance alliance) {
+  return FixSpline(
+      builder,
+      aos::CopyFlatBuffer<frc971::MultiSpline>(splinecable_4_, builder->fbb()),
+      alliance);
+}
+
 flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
     aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
         *builder,

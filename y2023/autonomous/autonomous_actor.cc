@@ -14,6 +14,7 @@
 
 DEFINE_bool(spline_auto, false, "Run simple test S-spline auto mode.");
 DEFINE_bool(charged_up, true, "If true run charged up autonomous mode");
+DEFINE_bool(charged_up_cable, false, "If true run cable side autonomous mode");
 
 namespace y2023 {
 namespace autonomous {
@@ -126,10 +127,27 @@ void AutonomousActor::Replan() {
                    SplineDirection::kBackward),
         PlanSpline(std::bind(&AutonomousSplines::Spline4, &auto_splines_,
                              std::placeholders::_1, alliance_),
-                   SplineDirection::kForward),
-    };
+                   SplineDirection::kForward)};
 
     starting_position_ = charged_up_splines_.value()[0].starting_position();
+    CHECK(starting_position_);
+  } else if (FLAGS_charged_up_cable) {
+    charged_up_cable_splines_ = {
+        PlanSpline(std::bind(&AutonomousSplines::SplineCable1, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kBackward),
+        PlanSpline(std::bind(&AutonomousSplines::SplineCable2, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::SplineCable3, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kBackward),
+        PlanSpline(std::bind(&AutonomousSplines::SplineCable4, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward)};
+
+    starting_position_ =
+        charged_up_cable_splines_.value()[0].starting_position();
     CHECK(starting_position_);
   }
 
@@ -222,7 +240,7 @@ void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
   }
 }
 
-// Charged Up 3 Game Object Autonomous.
+// Charged Up 3 Game Object Autonomous (non-cable side)
 void AutonomousActor::ChargedUp() {
   aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
 
@@ -399,6 +417,127 @@ void AutonomousActor::ChargedUp() {
         INFO, "Done %lf s\n",
         aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
   }
+}
+
+// Charged Up 3 Game Object Autonomous (cable side)
+void AutonomousActor::ChargedUpCableSide() {
+  aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
+
+  CHECK(charged_up_cable_splines_);
+
+  auto &splines = *charged_up_cable_splines_;
+
+  AOS_LOG(INFO, "Going to preload");
+
+  // Tell the superstructure a cone was preloaded
+  if (!WaitForPreloaded()) return;
+  AOS_LOG(INFO, "Moving arm");
+
+  // Place first cone on mid level
+  MidConeScore();
+
+  // Wait until the arm is at the goal to spit
+  if (!WaitForArmGoal(0.10)) return;
+  Spit();
+  if (!WaitForArmGoal(0.01)) return;
+
+  std::this_thread::sleep_for(chrono::milliseconds(100));
+
+  AOS_LOG(
+      INFO, "Placed first cone %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  // Drive and intake the cube nearest to the starting zone
+  if (!splines[0].WaitForPlan()) return;
+  splines[0].Start();
+
+  // Move arm into position to pickup a cube and start cube intake
+  PickupCube();
+
+  std::this_thread::sleep_for(chrono::milliseconds(500));
+
+  IntakeCube();
+
+  AOS_LOG(
+      INFO, "Turning on rollers %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) return;
+
+  AOS_LOG(
+      INFO, "Got there %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  // Drive back to grid and place cube on high level
+  if (!splines[1].WaitForPlan()) return;
+  splines[1].Start();
+
+  std::this_thread::sleep_for(chrono::milliseconds(300));
+  HighCubeScore();
+
+  if (!splines[1].WaitForSplineDistanceRemaining(0.08)) return;
+  AOS_LOG(
+      INFO, "Back for first cube %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!WaitForArmGoal(0.10)) return;
+
+  AOS_LOG(
+      INFO, "Arm in place for first cube %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  Spit();
+
+  if (!splines[1].WaitForSplineDistanceRemaining(0.08)) return;
+
+  AOS_LOG(
+      INFO, "Finished spline back %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!WaitForArmGoal(0.05)) return;
+
+  AOS_LOG(
+      INFO, "Placed first cube %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  // Drive and intake the cube second nearest to the starting zone
+  if (!splines[2].WaitForPlan()) return;
+  splines[2].Start();
+
+  std::this_thread::sleep_for(chrono::milliseconds(200));
+  PickupCube();
+
+  std::this_thread::sleep_for(chrono::milliseconds(500));
+  IntakeCube();
+
+  if (!splines[2].WaitForSplineDistanceRemaining(0.05)) return;
+  AOS_LOG(
+      INFO, "Picked up second cube %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  // Drive back to grid and place object on mid level
+  if (!splines[3].WaitForPlan()) return;
+  splines[3].Start();
+
+  AOS_LOG(
+      INFO, "Driving back %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  MidCubeScore();
+
+  if (!splines[3].WaitForSplineDistanceRemaining(0.07)) return;
+  AOS_LOG(
+      INFO, "Got back from second cube at %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!WaitForArmGoal(0.05)) return;
+  Spit();
+
+  if (!splines[3].WaitForSplineDistanceRemaining(0.02)) return;
+
+  AOS_LOG(
+      INFO, "Placed second cube %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 }
 
 void AutonomousActor::SendSuperstructureGoal() {
