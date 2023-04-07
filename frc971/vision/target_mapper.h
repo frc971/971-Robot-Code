@@ -136,7 +136,6 @@ class DataAdapter {
       const TimestampedDetection &detection_start,
       const TimestampedDetection &detection_end);
 
- private:
   // Computes the constraint between the start and end pose of the targets: the
   // relative pose between the start and end target locations in the frame of
   // the start target.
@@ -146,10 +145,10 @@ class DataAdapter {
       const TargetMapper::ConfidenceMatrix &confidence);
 };
 
+}  // namespace frc971::vision
+
 std::ostream &operator<<(std::ostream &os, ceres::examples::Pose3d pose);
 std::ostream &operator<<(std::ostream &os,
                          ceres::examples::Constraint3d constraint);
-
-}  // namespace frc971::vision
 
 #endif  // FRC971_VISION_TARGET_MAPPER_H_

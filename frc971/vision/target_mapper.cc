@@ -174,12 +174,14 @@ TargetMapper::ConfidenceMatrix DataAdapter::ComputeConfidence(
     Q_vision(kOrientation3, kOrientation3) = std::pow(0.02, 2);
 
     // Add uncertainty for the 2 vision measurements (1 at start and 1 at end)
-    P += Q_vision * std::pow(detection_start.distance_from_camera, 2) *
-         (1.0 +
-          FLAGS_distortion_noise_scalar * detection_start.distortion_factor);
-    P +=
-        Q_vision * std::pow(detection_end.distance_from_camera, 2) *
-        (1.0 + FLAGS_distortion_noise_scalar * detection_end.distortion_factor);
+    P += Q_vision * std::pow(detection_start.distance_from_camera *
+                                 (1.0 + FLAGS_distortion_noise_scalar *
+                                            detection_start.distortion_factor),
+                             2);
+    P += Q_vision * std::pow(detection_end.distance_from_camera *
+                                 (1.0 + FLAGS_distortion_noise_scalar *
+                                            detection_end.distortion_factor),
+                             2);
   }
 
   return P.inverse();
@@ -364,8 +366,10 @@ std::string TargetMapper::MapToJson(std::string_view field_name) const {
       {.multi_line = true});
 }
 
+}  // namespace frc971::vision
+
 std::ostream &operator<<(std::ostream &os, ceres::examples::Pose3d pose) {
-  auto rpy = PoseUtils::QuaternionToEulerAngles(pose.q);
+  auto rpy = frc971::vision::PoseUtils::QuaternionToEulerAngles(pose.q);
   os << absl::StrFormat(
       "{x: %.3f, y: %.3f, z: %.3f, roll: %.3f, pitch: "
       "%.3f, yaw: %.3f}",
@@ -380,5 +384,3 @@ std::ostream &operator<<(std::ostream &os,
      << constraint.t_be << "}";
   return os;
 }
-
-}  // namespace frc971::vision
