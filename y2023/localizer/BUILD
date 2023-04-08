@@ -146,6 +146,7 @@ cc_library(
         ":visualization_fbs",
         "//aos/containers:sized_array",
         "//aos/events:event_loop",
+        "//aos/network:message_bridge_client_fbs",
         "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:pose",
         "//frc971/control_loops/drivetrain:hybrid_ekf",
