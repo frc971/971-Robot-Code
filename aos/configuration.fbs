@@ -32,6 +32,15 @@ table Connection {
   timestamp_logger_nodes:[string] (id: 2);
 
   // Priority to forward data with.
+  // The priority value in SCTP_SS_PRIO is used to determine the order in which
+  // data from different streams is transmitted. Lower priority values indicate
+  // higher priority in sending the data. When the SCTP stack has to choose
+  // which stream's data to send next, it will select the data from the stream
+  // with the highest priority (i.e., the lowest priority value). If two or
+  // more streams have the same priority, SCTP_SS_PRIO falls back to a
+  // round-robin scheduling between these streams. Note that this does not
+  // reserve any potion of the bandwidth. It is only used to determine which
+  // message to send when the system is ready to send a message.
   priority:ushort = 100 (id: 3);
 
   // Time to live in nanoseconds before the message is dropped.
