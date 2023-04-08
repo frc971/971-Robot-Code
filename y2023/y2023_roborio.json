@@ -459,7 +459,6 @@
     {
       "name": "can_logger",
       "executable_name": "can_logger",
-      "autostart": false,
       "nodes": [
         "roborio"
       ]
