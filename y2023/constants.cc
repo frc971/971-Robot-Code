@@ -83,19 +83,19 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kCompTeamNumber:
-      arm_proximal->zeroing.measured_absolute_position = 0.153241637089465;
+      arm_proximal->zeroing.measured_absolute_position = 0.149723235965925;
       arm_proximal->potentiometer_offset =
           0.931355973012855 + 8.6743197253382 - 0.101200335326309 -
           0.0820901660993467 - 0.0703733798337964 - 0.0294645384848748 -
           0.577156175549626;
 
-      arm_distal->zeroing.measured_absolute_position = 0.137511584277487;
+      arm_distal->zeroing.measured_absolute_position = 0.190748983191916;
       arm_distal->potentiometer_offset =
           0.436664933370656 + 0.49457213779426 + 6.78213223139724 -
           0.0220711555235029 - 0.0162945074111813 + 0.00630344935527365 -
           0.0164398318919943 - 0.145833494945215 + 0.234878799868491 +
           0.125924230298394 + 0.147136306208754 - 0.69167546169753 -
-          0.308761538844425;
+          0.308761538844425 + 0.610386472488493;
 
       arm_distal->zeroing.one_revolution_distance =
           M_PI * 2.0 * constants::Values::kDistalEncoderRatio();
