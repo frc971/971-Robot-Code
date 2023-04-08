@@ -72,6 +72,9 @@ robot_downloader(
         "//y2023/constants:constants.json",
         "//y2023/vision:image_streamer_start",
         "//y2023/www:www_files",
+        "@game_pieces_edgetpu_model//file",
+        "@libedgetpu//:arm/libedgetpu.so.1",
+        "@libtensorflowlite//:arm/libtensorflowlite.so",
     ],
     dirs = [
         "//y2023/www:www_files",

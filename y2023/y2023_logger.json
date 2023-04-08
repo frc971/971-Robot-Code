@@ -450,6 +450,7 @@
     {
       "name": "game_piece_detector",
       "executable_name": "game_piece_detector",
+      "user": "pi",
       "nodes": [
         "logger"
       ]

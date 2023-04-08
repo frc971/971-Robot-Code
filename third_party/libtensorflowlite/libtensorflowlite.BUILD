@@ -1,16 +1,19 @@
 cc_library(
-    visibility = ["//visibility:public"],
     name = "tensorflow-k8",
+    srcs = ["k8/libtensorflowlite.so"],
     hdrs = glob(["include/**/*.h"]),
+    copts = ["-Wno-unused-parameter"],
     strip_include_prefix = "include",
-    srcs = ["k8/libtensorflowlite.so"]
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
-    visibility = ["//visibility:public"],
     name = "tensorflow-arm",
+    srcs = ["arm/libtensorflowlite.so"],
     hdrs = glob(["include/**/*.h"]),
+    copts = ["-Wno-unused-parameter"],
     strip_include_prefix = "include",
-    srcs = ["arm/libtensorflowlite.so"]
+    visibility = ["//visibility:public"],
 )
 
+exports_files(["arm/libtensorflowlite.so"])

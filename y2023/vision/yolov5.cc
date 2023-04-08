@@ -1,11 +1,13 @@
 #include "yolov5.h"
 
+#include <tensorflow/lite/c/common.h>
 #include <tensorflow/lite/interpreter.h>
 #include <tensorflow/lite/kernels/register.h>
 #include <tensorflow/lite/model.h>
+#include <tflite/public/edgetpu.h>
 #include <tflite/public/edgetpu_c.h>
 
-#include <opencv2/core.hpp>
+#include <opencv2/dnn.hpp>
 
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -36,7 +38,7 @@ class YOLOV5Impl : public YOLOV5 {
  private:
   // Convert an OpenCV Mat object to a tensor input
   // that can be fed to the TensorFlow Lite model.
-  void ConvertCVMatToTensor(const cv::Mat &src, uint8_t *in);
+  void ConvertCVMatToTensor(cv::Mat src, uint8_t *in);
 
   // Resizes, converts color space, and converts
   // image data type before inference.
@@ -75,54 +77,100 @@ class YOLOV5Impl : public YOLOV5 {
   static constexpr int kClassIdOffset = 5;
 };
 
-std::unique_ptr<YOLOV5> MakeYOLOV5() {
-  YOLOV5Impl *yolo = new YOLOV5Impl();
-  return std::unique_ptr<YOLOV5>(yolo);
-}
+std::unique_ptr<YOLOV5> MakeYOLOV5() { return std::make_unique<YOLOV5Impl>(); }
 
 void YOLOV5Impl::LoadModel(const std::string path) {
-  model_ = tflite::FlatBufferModel::BuildFromFile(path.c_str());
+  LOG(INFO) << "Load model: start";
+
+
+  tflite::ops::builtin::BuiltinOpResolver resolver;
+
+  model_ = tflite::FlatBufferModel::VerifyAndBuildFromFile(path.c_str());
+
+  /*
+  auto model_impl = model_->GetModel();
+  model_impl->subgraphs();
+  LOG(INFO) << model_impl;
+  LOG(INFO) << model_impl->subgraphs();
+  auto subgraphs = model_impl->subgraphs();
+  LOG(INFO) << subgraphs->size();
+  LOG(INFO) << subgraphs->Get(0)->inputs()->size();
+  LOG(INFO) << subgraphs->Get(0)->inputs()->Get(0);
+  (void)subgraphs;
+  */
+
+  LOG(INFO) << "Load model: Build Model from file";
+
   CHECK(model_);
+  CHECK(model_->initialized());
+  CHECK_EQ(tflite::InterpreterBuilder(*model_, resolver)(&interpreter_),
+           kTfLiteOk);
+  LOG(INFO) << "Load model: Interpreter builder done";
+  /*
+  LOG(INFO) << &interpreter_->primary_subgraph();
+  LOG(INFO) << interpreter_->subgraph(0);
+  LOG(INFO) << interpreter_->subgraphs_size();
+  LOG(INFO) << interpreter_->subgraph(0)->inputs().size();
+  LOG(INFO) << interpreter_->inputs().size();
+  */
+
+  //interpreter_->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context.get());
+  // LOG(INFO) << "After set external context";
+
   size_t num_devices;
   std::unique_ptr<edgetpu_device, decltype(&edgetpu_free_devices)> devices(
       edgetpu_list_devices(&num_devices), &edgetpu_free_devices);
-  const auto &device = devices.get()[0];
-  CHECK_EQ(num_devices, 1ul);
-  tflite::ops::builtin::BuiltinOpResolver resolver;
-  CHECK_EQ(tflite::InterpreterBuilder(*model_, resolver)(&interpreter_),
-           kTfLiteOk);
 
-  auto *delegate =
-      edgetpu_create_delegate(device.type, device.path, nullptr, 0);
+  //const auto &available_tpus =
+    // edgetpu::EdgeTpuManager::GetSingleton()->EnumerateEdgeTpu();
+  //LOG(INFO) << "Available tpus: " << available_tpus.size();
+
+  LOG(INFO) << "Load model: Getting devices";
+  CHECK_EQ(num_devices, 1ul);
+  const auto &device = devices.get()[0];
+  (void )device;
+  LOG(INFO) << "Load model: Got Device";
+
+  auto *delegate = edgetpu_create_delegate(device.type, device.path, nullptr, 0);
+
   interpreter_->ModifyGraphWithDelegate(delegate);
 
-  TfLiteStatus status = interpreter_->AllocateTensors();
-  CHECK(status == kTfLiteOk);
 
+  TfLiteStatus status = interpreter_->AllocateTensors();
+  CHECK_EQ(status, kTfLiteOk);
+  CHECK(interpreter_);
+
+  LOG(INFO) << "Load model: Allocate tensors success";
   input_ = interpreter_->inputs()[0];
+  LOG(INFO) << "After set inputs";
+  LOG(INFO) << input_;
   TfLiteIntArray *dims = interpreter_->tensor(input_)->dims;
   in_height_ = dims->data[1];
   in_width_ = dims->data[2];
   in_channels_ = dims->data[3];
   in_type_ = interpreter_->tensor(input_)->type;
   input_8_ = interpreter_->typed_tensor<uint8_t>(input_);
+  
 
   interpreter_->SetNumThreads(FLAGS_nthreads);
+
+  LOG(INFO) << "End of load";
 }
 
-void YOLOV5Impl::Preprocess(cv::Mat image) {
-  cv::resize(image, image, cv::Size(in_height_, in_width_), cv::INTER_CUBIC);
-  cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
-  image.convertTo(image, CV_8U);
-}
-
-void YOLOV5Impl::ConvertCVMatToTensor(const cv::Mat &src, uint8_t *in) {
+void YOLOV5Impl::ConvertCVMatToTensor(cv::Mat src, uint8_t *in) {
   CHECK(src.type() == CV_8UC3);
   int n = 0, nc = src.channels(), ne = src.elemSize();
-  for (int y = 0; y < src.rows; ++y)
-    for (int x = 0; x < src.cols; ++x)
-      for (int c = 0; c < nc; ++c)
+  LOG(INFO) << "ConvertCVMatToTensor - Rows " << src.rows;
+  LOG(INFO) << "ConvertCVMatToTensor - Cols " << src.cols;
+  for (int y = 0; y < src.rows; ++y) {
+    for (int x = 0; x < src.cols; ++x) {
+      for (int c = 0; c < nc; ++c) {
+	      (void)ne;
+	      (void)n;
         in[n++] = src.data[y * src.step + x * ne + c];
+      }
+    }
+  }
 }
 
 std::vector<std::vector<float>> YOLOV5Impl::TensorToVector2D(
@@ -182,20 +230,30 @@ void YOLOV5Impl::NonMaximumSupression(
     confidences.push_back(d.confidence);
   }
 
-  cv::dnn::NMSBoxes(boxes, confidences, FLAGS_conf_threshold,
-                    FLAGS_nms_threshold, *indices);
+  (void)indices;
+  // TODO(FILIP): Fix linker error.
+  // cv::dnn::NMSBoxes(boxes, confidences, FLAGS_conf_threshold,
+                  // FLAGS_nms_threshold, *indices);
 }
 
 std::vector<Detection> YOLOV5Impl::ProcessImage(cv::Mat frame) {
   img_height_ = frame.rows;
   img_width_ = frame.cols;
 
-  Preprocess(frame);
+  //Preprocess;
+  cv::resize(frame, frame, cv::Size(in_height_, in_width_), cv::INTER_CUBIC);
+  cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+  frame.convertTo(frame, CV_8U);
+
+  LOG(INFO) << "After preprocess - Before convert to tensor";
   ConvertCVMatToTensor(frame, input_8_);
 
   // Inference
+  LOG(INFO) << "Before Invoke";
   TfLiteStatus status = interpreter_->Invoke();
   CHECK_EQ(status, kTfLiteOk);
+
+  LOG(INFO) << "After invoke, status checked";
 
   int output_tensor_index = interpreter_->outputs()[0];
   TfLiteIntArray *out_dims = interpreter_->tensor(output_tensor_index)->dims;
@@ -203,15 +261,24 @@ std::vector<Detection> YOLOV5Impl::ProcessImage(cv::Mat frame) {
   int num_columns = out_dims->data[2];
 
   TfLiteTensor *src_tensor = interpreter_->tensor(interpreter_->outputs()[0]);
+
   std::vector<std::vector<float>> orig_preds =
       TensorToVector2D(src_tensor, num_rows, num_columns);
+  LOG(INFO) << "After tensor to vector 2D";
 
   std::vector<int> indices;
   std::vector<Detection> detections;
 
   NonMaximumSupression(orig_preds, num_rows, num_columns, &detections,
                        &indices);
-
+  LOG(INFO) << "After NMS";
+  for (size_t i = 0; i < interpreter_->outputs().size(); i++) {
+        LOG(INFO) << "Detection #" << i << " | " << interpreter_->outputs()[i];
+  }
+  if (detections.size() > 0) {
+    LOG(INFO) << "Detection ID: " <<  detections[0].class_id;
+    LOG(INFO) << "Confidence" << detections[0].confidence;
+  }
   return detections;
 };
 

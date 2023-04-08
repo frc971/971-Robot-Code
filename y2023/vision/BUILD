@@ -224,11 +224,13 @@ cc_library(
     ],
     data = [
         "//y2023:aos_config",
+        "@game_pieces_edgetpu_model//file",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2023:__subpackages__"],
     deps = [
         ":game_pieces_fbs",
+        ":yolov5_lib",
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//frc971/vision:vision_fbs",
@@ -273,6 +275,7 @@ cc_library(
     name = "yolov5_lib",
     srcs = ["yolov5.cc"],
     hdrs = ["yolov5.h"],
+    copts = ["-Wno-unused-parameter"],
     deps = [
         "//third_party:opencv",
         "@com_github_gflags_gflags//:gflags",
