@@ -280,6 +280,7 @@ cc_library(
         "//third_party:opencv",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
     ] + cpu_select({
         "amd64": [
             "@libtensorflowlite//:tensorflow-k8",

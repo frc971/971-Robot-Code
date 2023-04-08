@@ -6,7 +6,6 @@
 #include "aos/events/shm_event_loop.h"
 #include "frc971/vision/vision_generated.h"
 #include "y2023/vision/yolov5.h"
-#include <chrono>
 
 // The best_x and best_y are pixel (x, y) cordinates. The 'best'
 // game piece is picked on proximity to the specified cordinates.
@@ -24,36 +23,34 @@ DEFINE_uint32(
 
 namespace y2023 {
 namespace vision {
+using aos::monotonic_clock;
 GamePiecesDetector::GamePiecesDetector(aos::EventLoop *event_loop)
     : game_pieces_sender_(event_loop->MakeSender<GamePieces>("/camera")) {
-    LOG(INFO) << "Before load model in constr";
+  model = MakeYOLOV5();
+  model->LoadModel("edgetpu_model.tflite");
 
-    model = MakeYOLOV5();
-    model->LoadModel("edgetpu_model.tflite");
+  event_loop->MakeWatcher(
+      "/camera", [this, event_loop](const CameraImage &camera_image) {
+        const monotonic_clock::time_point eof = monotonic_clock::time_point(
+            std::chrono::nanoseconds(camera_image.monotonic_timestamp_ns()));
+        const monotonic_clock::duration age = event_loop->monotonic_now() - eof;
+        if (age > std::chrono::milliseconds(100)) {
+          VLOG(1) << "Behind, skipping";
+          return;
+        }
 
-    LOG(INFO) << "After load model in constr";
-  event_loop->MakeWatcher("/camera", [this](const CameraImage &camera_image) {
-    this->ProcessImage(camera_image);
-  });
+        this->ProcessImage(camera_image);
+      });
 }
 
 void GamePiecesDetector::ProcessImage(const CameraImage &image) {
-    auto start = std::chrono::high_resolution_clock::now();
-	LOG(INFO) << reinterpret_cast<const void*>(image.data()->data());
   cv::Mat image_color_mat(cv::Size(image.cols(), image.rows()), CV_8UC2,
                           (void *)image.data()->data());
   std::vector<Detection> detections;
   cv::Mat image_mat(cv::Size(image.cols(), image.rows()), CV_8UC3);
-  LOG(INFO) << reinterpret_cast<void*>(image_mat.ptr());
   cv::cvtColor(image_color_mat, image_mat, cv::COLOR_YUV2BGR_YUYV);
-  LOG(INFO) << reinterpret_cast<void*>(image_mat.ptr());
 
   detections = model->ProcessImage(image_mat);
-  LOG(INFO) << reinterpret_cast<void*>(image_mat.ptr());
-  LOG(INFO) << reinterpret_cast<void*>(image_color_mat.ptr());
-
-  auto stop = std::chrono::high_resolution_clock::now();
-  LOG(INFO) << "INFERENCE TIME " << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
 
   auto builder = game_pieces_sender_.MakeBuilder();
 
@@ -61,7 +58,6 @@ void GamePiecesDetector::ProcessImage(const CameraImage &image) {
 
   float lowest_distance = std::numeric_limits<float>::max();
   int best_distance_index = 0;
-  srand(time(0));
 
   for (size_t i = 0; i < detections.size(); i++) {
     auto box_builder = builder.MakeBuilder<Box>();
