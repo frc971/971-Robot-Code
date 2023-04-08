@@ -1,5 +1,6 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
+load("//tools/build_rules:select.bzl", "cpu_select")
 
 cc_binary(
     name = "camera_reader",
@@ -266,4 +267,24 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
     ],
+)
+
+cc_library(
+    name = "yolov5_lib",
+    srcs = ["yolov5.cc"],
+    hdrs = ["yolov5.h"],
+    deps = [
+        "//third_party:opencv",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ] + cpu_select({
+        "amd64": [
+            "@libtensorflowlite//:tensorflow-k8",
+            "@libedgetpu//:libedgetpu-k8",
+        ],
+        "arm": [
+            "@libtensorflowlite//:tensorflow-arm",
+            "@libedgetpu//:libedgetpu-arm",
+        ],
+    }),
 )
