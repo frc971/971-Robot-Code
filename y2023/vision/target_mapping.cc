@@ -47,6 +47,9 @@ DEFINE_double(pause_on_distance, 1.0,
 DEFINE_uint64(skip_to, 1,
               "Start at combined image of this number (1 is the first image)");
 DEFINE_bool(solve, true, "Whether to solve for the field's target map.");
+DEFINE_string(dump_constraints_to, "/tmp/constraints.txt",
+              "Write the target constraints to this path");
+DECLARE_uint64(frozen_target_id);
 
 namespace y2023 {
 namespace vision {
@@ -57,6 +60,9 @@ using frc971::vision::TargetMap;
 using frc971::vision::TargetMapper;
 using frc971::vision::VisualizeRobot;
 namespace calibration = frc971::vision::calibration;
+
+constexpr TargetMapper::TargetId kMinTargetId = 1;
+constexpr TargetMapper::TargetId kMaxTargetId = 8;
 
 // Class to handle reading target poses from a replayed log,
 // displaying various debug info, and passing the poses to
@@ -222,6 +228,14 @@ void TargetMapperReplay::HandleAprilTags(
   label << node_name << " - ";
 
   for (const auto *target_pose_fbs : *map.target_poses()) {
+    // Skip detections with invalid ids
+    if (target_pose_fbs->id() < kMinTargetId ||
+        target_pose_fbs->id() > kMaxTargetId) {
+      LOG(WARNING) << "Skipping tag with invalid id of "
+                   << target_pose_fbs->id();
+      continue;
+    }
+
     // Skip detections with high pose errors
     if (target_pose_fbs->pose_error() > FLAGS_max_pose_error) {
       VLOG(1) << " Skipping tag " << target_pose_fbs->id()
@@ -367,6 +381,63 @@ void TargetMapperReplay::MaybeSolve() {
   if (FLAGS_solve) {
     auto target_constraints =
         DataAdapter::MatchTargetDetections(timestamped_target_detections_);
+
+    // Remove constraints between the two sides of the field - these are
+    // basically garbage because of how far the camera is. We will use seeding
+    // below to connect the two sides
+    target_constraints.erase(
+        std::remove_if(target_constraints.begin(), target_constraints.end(),
+                       [](const auto &constraint) {
+                         constexpr TargetMapper::TargetId kMaxRedId = 4;
+                         TargetMapper::TargetId min_id =
+                             std::min(constraint.id_begin, constraint.id_end);
+                         TargetMapper::TargetId max_id =
+                             std::max(constraint.id_begin, constraint.id_end);
+                         return (min_id <= kMaxRedId && max_id > kMaxRedId);
+                       }),
+        target_constraints.end());
+
+    if (!FLAGS_dump_constraints_to.empty()) {
+      std::ofstream fout(FLAGS_dump_constraints_to);
+      for (const auto &constraint : target_constraints) {
+        fout << constraint << std::endl;
+      }
+      fout.flush();
+      fout.close();
+    }
+
+    // Give seed constraints with a higher confidence to ground the solver.
+    // This "distance from camera" controls the noise of the seed measurement
+    constexpr double kSeedDistanceFromCamera = 1.0;
+
+    constexpr double kSeedDistortionFactor = 0.0;
+    const DataAdapter::TimestampedDetection frozen_detection_seed = {
+        .time = aos::distributed_clock::min_time,
+        .H_robot_target = PoseUtils::Pose3dToAffine3d(
+            kFixedTargetMapper.GetTargetPoseById(FLAGS_frozen_target_id)
+                .value()
+                .pose),
+        .distance_from_camera = kSeedDistanceFromCamera,
+        .distortion_factor = kSeedDistortionFactor,
+        .id = kMinTargetId};
+
+    for (TargetMapper::TargetId id = kMinTargetId; id <= kMaxTargetId; id++) {
+      if (id == static_cast<TargetMapper::TargetId>(FLAGS_frozen_target_id)) {
+        continue;
+      }
+
+      const DataAdapter::TimestampedDetection detection_seed = {
+          .time = aos::distributed_clock::min_time,
+          .H_robot_target = PoseUtils::Pose3dToAffine3d(
+              kFixedTargetMapper.GetTargetPoseById(id).value().pose),
+          .distance_from_camera = kSeedDistanceFromCamera,
+          .distortion_factor = kSeedDistortionFactor,
+          .id = id};
+      target_constraints.emplace_back(DataAdapter::ComputeTargetConstraint(
+          frozen_detection_seed, detection_seed,
+          DataAdapter::ComputeConfidence(frozen_detection_seed,
+                                         detection_seed)));
+    }
 
     TargetMapper mapper(FLAGS_json_path, target_constraints);
     mapper.Solve(FLAGS_field_name, FLAGS_output_dir);

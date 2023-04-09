@@ -33,12 +33,13 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
       flip_image_(flip_image),
       node_name_(event_loop->node()->name()->string_view()),
       ftrace_(),
-      image_callback_(event_loop, channel_name,
-                      [&](cv::Mat image_color_mat,
-                          const aos::monotonic_clock::time_point eof) {
-                        HandleImage(image_color_mat, eof);
-                      },
-                      chrono::milliseconds(5)),
+      image_callback_(
+          event_loop, channel_name,
+          [&](cv::Mat image_color_mat,
+              const aos::monotonic_clock::time_point eof) {
+            HandleImage(image_color_mat, eof);
+          },
+          chrono::milliseconds(5)),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
       image_annotations_sender_(
