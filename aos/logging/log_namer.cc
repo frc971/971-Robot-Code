@@ -111,19 +111,19 @@ bool FindDevice(char *device, size_t device_size) {
 
 }  // namespace
 
-std::string GetLogName(const char *basename) {
+std::optional<std::string> MaybeGetLogName(const char *basename) {
   if (FLAGS_logging_folder.empty()) {
     char folder[128];
     {
       char dev_name[8];
-      while (!FindDevice(dev_name, sizeof(dev_name))) {
+      if (!FindDevice(dev_name, sizeof(dev_name))) {
         LOG(INFO) << "Waiting for a device";
-        sleep(5);
+        return std::nullopt;
       }
       snprintf(folder, sizeof(folder), "/media/%s1", dev_name);
-      while (!FoundThumbDrive(folder)) {
+      if (!FoundThumbDrive(folder)) {
         LOG(INFO) << "Waiting for" << folder;
-        sleep(1);
+        return std::nullopt;
       }
       snprintf(folder, sizeof(folder), "/media/%s1/", dev_name);
     }
@@ -162,6 +162,22 @@ std::string GetLogName(const char *basename) {
     free(tmp2);
   }
   return log_base_name;
+}
+
+std::string GetLogName(const char *basename) {
+  std::optional<std::string> log_base_name;
+
+  while (true) {
+    log_base_name = MaybeGetLogName(basename);
+
+    if (log_base_name.has_value()) {
+      break;
+    }
+
+    sleep(5);
+  }
+
+  return log_base_name.value();
 }
 
 }  // namespace logging

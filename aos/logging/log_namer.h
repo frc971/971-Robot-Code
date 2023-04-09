@@ -2,6 +2,7 @@
 #define AOS_LOGGING_LOG_NAMER_H_
 
 #include <string>
+#include <optional>
 
 namespace aos {
 namespace logging {
@@ -13,6 +14,11 @@ namespace logging {
 // the form "/media/sda1/abc-123" and setup a symlink pointing to it at
 // "/media/sda1/abc-current".
 std::string GetLogName(const char *basename);
+
+// A nonblocking variant of GetLogName that you can poll instead of blocking for
+// the usb drive.
+std::optional<std::string> MaybeGetLogName(const char *basename);
+
 }  // namespace logging
 }  // namespace aos
 
