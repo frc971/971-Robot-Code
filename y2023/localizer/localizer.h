@@ -4,6 +4,8 @@
 #include <array>
 #include <map>
 
+#include "aos/network/message_bridge_client_generated.h"
+#include "aos/network/message_bridge_server_generated.h"
 #include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/drivetrain/improved_down_estimator.h"
@@ -117,6 +119,11 @@ class Localizer {
 
   // For the status message.
   std::optional<Eigen::Vector2d> last_encoder_readings_;
+
+  aos::Fetcher<aos::message_bridge::ServerStatistics>
+      server_statistics_fetcher_;
+  aos::Fetcher<aos::message_bridge::ClientStatistics>
+      client_statistics_fetcher_;
 };
 }  // namespace y2023::localizer
 #endif  // Y2023_LOCALIZER_LOCALIZER_H_

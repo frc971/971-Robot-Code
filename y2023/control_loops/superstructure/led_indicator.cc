@@ -49,29 +49,38 @@ void LedIndicator::DisplayLed(uint8_t r, uint8_t g, uint8_t b) {
                   static_cast<int>(b));
 }
 
-namespace {
-bool DisconnectedPiServer(
-    const aos::message_bridge::ServerStatistics &server_stats) {
-  for (const auto *pi_server_status : *server_stats.connections()) {
-    if (pi_server_status->state() == aos::message_bridge::State::DISCONNECTED &&
-        pi_server_status->node()->name()->string_view() != "logger") {
+bool DisconnectedIMUPiServer(
+    const aos::message_bridge::ServerStatistics &server_statistics) {
+  for (const auto *node_status : *server_statistics.connections()) {
+    if (node_status->state() == aos::message_bridge::State::DISCONNECTED &&
+        node_status->node()->name()->string_view() != "logger") {
       return true;
     }
   }
+
   return false;
 }
 
-bool DisconnectedPiClient(
-    const aos::message_bridge::ClientStatistics &client_stats) {
-  for (const auto *pi_client_status : *client_stats.connections()) {
-    if (pi_client_status->state() == aos::message_bridge::State::DISCONNECTED &&
-        pi_client_status->node()->name()->string_view() != "logger") {
+bool DisconnectedIMUPiClient(
+    const aos::message_bridge::ClientStatistics &client_statistics) {
+  for (const auto *node_status : *client_statistics.connections()) {
+    if (node_status->state() == aos::message_bridge::State::DISCONNECTED &&
+        node_status->node()->name()->string_view() != "logger") {
       return true;
     }
   }
+
   return false;
 }
-}  // namespace
+
+bool PisDisconnected(
+    const frc971::controls::LocalizerOutput &localizer_output) {
+  if (!localizer_output.all_pis_connected()) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 void LedIndicator::DecideColor() {
   superstructure_status_fetcher_.Fetch();
@@ -122,11 +131,12 @@ void LedIndicator::DecideColor() {
     return;
   }
 
-  // Pi disconnected
-  if ((server_statistics_fetcher_.get() &&
-       DisconnectedPiServer(*server_statistics_fetcher_)) ||
-      (client_statistics_fetcher_.get() &&
-       DisconnectedPiClient(*client_statistics_fetcher_))) {
+  if (localizer_output_fetcher_.get() == nullptr ||
+      server_statistics_fetcher_.get() == nullptr ||
+      client_statistics_fetcher_.get() == nullptr ||
+      PisDisconnected(*localizer_output_fetcher_) ||
+      DisconnectedIMUPiServer(*server_statistics_fetcher_) ||
+      DisconnectedIMUPiClient(*client_statistics_fetcher_)) {
     if (flash_counter_.Flash()) {
       DisplayLed(255, 0, 0);
     } else {

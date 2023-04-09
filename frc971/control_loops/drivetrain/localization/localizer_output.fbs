@@ -37,6 +37,9 @@ table LocalizerOutput {
 
   // Cumulative number of accepted images.
   image_accepted_count:uint (id: 7);
+
+  // Is true if all vision pis are connected to the IMU pi
+  all_pis_connected:bool (id: 8);
 }
 
 root_type LocalizerOutput;

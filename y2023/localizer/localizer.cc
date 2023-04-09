@@ -112,7 +112,13 @@ Localizer::Localizer(
       utils_(event_loop),
       status_sender_(event_loop->MakeSender<Status>("/localizer")),
       output_sender_(event_loop->MakeSender<frc971::controls::LocalizerOutput>(
-          "/localizer")) {
+          "/localizer")),
+      server_statistics_fetcher_(
+          event_loop_->MakeFetcher<aos::message_bridge::ServerStatistics>(
+              "/aos")),
+      client_statistics_fetcher_(
+          event_loop_->MakeFetcher<aos::message_bridge::ClientStatistics>(
+              "/aos")) {
   if (dt_config_.is_simulated) {
     down_estimator_.assume_perfect_gravity();
   }
@@ -451,6 +457,34 @@ void Localizer::SendOutput() {
   quaternion.mutate_z(orientation.z());
   quaternion.mutate_w(orientation.w());
   output_builder.add_orientation(&quaternion);
+  server_statistics_fetcher_.Fetch();
+  client_statistics_fetcher_.Fetch();
+
+  bool pis_connected = true;
+
+  if (server_statistics_fetcher_.get()) {
+    for (const auto *pi_server_status :
+         *server_statistics_fetcher_->connections()) {
+      if (pi_server_status->state() ==
+              aos::message_bridge::State::DISCONNECTED &&
+          pi_server_status->node()->name()->string_view() != "logger") {
+        pis_connected = false;
+      }
+    }
+  }
+
+  if (client_statistics_fetcher_.get()) {
+    for (const auto *pi_client_status :
+         *client_statistics_fetcher_->connections()) {
+      if (pi_client_status->state() ==
+              aos::message_bridge::State::DISCONNECTED &&
+          pi_client_status->node()->name()->string_view() != "logger") {
+        pis_connected = false;
+      }
+    }
+  }
+
+  output_builder.add_all_pis_connected(pis_connected);
   builder.CheckOk(builder.Send(output_builder.Finish()));
 }
 
