@@ -55,6 +55,7 @@ robot_downloader(
         "//aos/util:foxglove_websocket",
         "//y2023/vision:viewer",
         "//y2023/vision:localization_verifier",
+        "//y2023/vision:camera_monitor",
         "//y2023/vision:aprilrobotics",
         "//aos/events:aos_timing_report_streamer",
         "//y2023/localizer:localizer_main",

@@ -298,3 +298,25 @@ filegroup(
     srcs = ["game_pieces_detector_starter.sh"],
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "camera_monitor_lib",
+    srcs = ["camera_monitor_lib.cc"],
+    hdrs = ["camera_monitor_lib.h"],
+    deps = [
+        "//aos/events:event_loop",
+        "//aos/starter:starter_rpc_lib",
+        "//frc971/vision:vision_fbs",
+    ],
+)
+
+cc_binary(
+    name = "camera_monitor",
+    srcs = ["camera_monitor.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":camera_monitor_lib",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+    ],
+)
