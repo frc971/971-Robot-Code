@@ -229,6 +229,7 @@ copyfile root.root 644 etc/systemd/system/usb-mount@.service
 copyfile root.root 644 etc/udev/rules.d/99-usb-mount.rules
 copyfile root.root 644 etc/udev/rules.d/99-adis16505.rules
 copyfile root.root 644 etc/udev/rules.d/99-mali.rules
+copyfile root.root 644 etc/udev/rules.d/99-coral-perms.rules
 copyfile root.root 644 etc/chrony/chrony.conf
 
 target "apt-get update"
