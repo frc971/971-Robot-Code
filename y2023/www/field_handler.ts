@@ -56,6 +56,8 @@ export class FieldHandler {
       (document.getElementById('arm_state') as HTMLElement);
   private gamePiece: HTMLElement =
       (document.getElementById('game_piece') as HTMLElement);
+  private gamePiecePosition: HTMLElement =
+      (document.getElementById('game_piece_position') as HTMLElement);
   private armX: HTMLElement = (document.getElementById('arm_x') as HTMLElement);
   private armY: HTMLElement = (document.getElementById('arm_y') as HTMLElement);
   private circularIndex: HTMLElement =
@@ -387,6 +389,8 @@ export class FieldHandler {
       this.armState.innerHTML =
           ArmState[this.superstructureStatus.arm().state()];
       this.gamePiece.innerHTML = Class[this.superstructureStatus.gamePiece()];
+      this.gamePiecePosition.innerHTML =
+          this.superstructureStatus.gamePiecePosition().toFixed(4);
       this.armX.innerHTML = this.superstructureStatus.arm().armX().toFixed(2);
       this.armY.innerHTML = this.superstructureStatus.arm().armY().toFixed(2);
       this.circularIndex.innerHTML =
