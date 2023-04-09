@@ -170,7 +170,7 @@ struct Values {
   }
 
   // if true, tune down all the arm constants for testing.
-  static constexpr bool kArmGrannyMode() { return true; }
+  static constexpr bool kArmGrannyMode() { return false; }
 
   // the operating voltage.
   static constexpr double kArmOperatingVoltage() {
