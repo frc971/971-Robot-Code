@@ -13,4 +13,12 @@ table ImuFailures {
   // Total number of messages dropped for any other conditions that can fault
   // the zeroer (e.g., diagnostic failures in the IMU).
   other_zeroing_faults:uint (id: 3);
+  // These are the counts for the number of times that we think the pico and imu
+  // have reset. Note that when the pico resets both of these should increment.
+  probable_pico_reset_count:uint (id: 4);
+  probable_imu_reset_count:uint (id: 5);
+  // This counter is used for things that look like resets (i.e., a large gap in
+  // IMU readings) but where the IMU data counter and pico timestamp offsets
+  // still look correct.
+  unassignable_reset_count:uint (id: 6);
 }
