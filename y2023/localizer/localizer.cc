@@ -23,7 +23,7 @@ DEFINE_double(
     max_implied_teleop_yaw_error, 30.0,
     "Reject target poses that imply a robot yaw of more than this many degrees "
     "off from our estimate.");
-DEFINE_double(max_distance_to_target, 3.5,
+DEFINE_double(max_distance_to_target, 5.0,
               "Reject target poses that have a 3d distance of more than this "
               "many meters.");
 DEFINE_double(max_auto_image_robot_speed, 2.0,
