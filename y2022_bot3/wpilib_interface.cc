@@ -334,72 +334,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       climber_encoder_left_, climber_encoder_right_;
 };
 
-class SuperstructureWriter
-    : public ::frc971::wpilib::LoopOutputHandler<superstructure::Output> {
- public:
-  SuperstructureWriter(aos::EventLoop *event_loop)
-      : frc971::wpilib::LoopOutputHandler<superstructure::Output>(
-            event_loop, "/superstructure") {}
-
-  void set_intake_roller_falcon(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
-    intake_roller_falcon_ = std::move(t);
-    intake_roller_falcon_->ConfigSupplyCurrentLimit(
-        {true, Values::kIntakeRollerSupplyCurrentLimit(),
-         Values::kIntakeRollerSupplyCurrentLimit(), 0});
-    intake_roller_falcon_->ConfigStatorCurrentLimit(
-        {true, Values::kIntakeRollerStatorCurrentLimit(),
-         Values::kIntakeRollerStatorCurrentLimit(), 0});
-  }
-
-  void set_climber_falcon_left(std::unique_ptr<frc::TalonFX> t) {
-    climber_falcon_left_ = std::move(t);
-  }
-
-  void set_climber_falcon_right(std::unique_ptr<frc::TalonFX> t) {
-    climber_falcon_right_ = std::move(t);
-  }
-
-  void set_intake_falcon(std::unique_ptr<frc::TalonFX> t) {
-    intake_falcon_ = std::move(t);
-  }
-
- private:
-  void Stop() override {
-    AOS_LOG(WARNING, "Superstructure output too old.\n");
-    climber_falcon_left_->SetDisabled();
-    climber_falcon_right_->SetDisabled();
-    intake_falcon_->SetDisabled();
-    intake_roller_falcon_->Set(
-        ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
-  }
-
-  void Write(const superstructure::Output &output) override {
-    WritePwm(output.climber_voltage_left(), climber_falcon_left_.get());
-    WritePwm(output.climber_voltage_right(), climber_falcon_right_.get());
-    WritePwm(output.intake_voltage(), intake_falcon_.get());
-    WriteCan(output.roller_voltage(), intake_roller_falcon_.get());
-  }
-
-  static void WriteCan(const double voltage,
-                       ::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
-    falcon->Set(
-        ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
-        std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
-  }
-
-  template <typename T>
-  static void WritePwm(const double voltage, T *motor) {
-    motor->SetSpeed(std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) /
-                    12.0);
-  }
-
-  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      intake_roller_falcon_;
-  ::std::unique_ptr<::frc::TalonFX> climber_falcon_left_, climber_falcon_right_,
-      intake_falcon_;
-};
-
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
  public:
   ::std::unique_ptr<frc::Encoder> make_encoder(int index) {
@@ -429,11 +363,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop, values);
     sensor_reader.set_pwm_trigger(true);
-    sensor_reader.set_drivetrain_left_encoder(make_encoder(1));
-    sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
+    sensor_reader.set_drivetrain_left_encoder(make_encoder(0));
+    sensor_reader.set_drivetrain_right_encoder(make_encoder(1));
 
-    sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(9));
-    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(8));
+    sensor_reader.set_heading_input(make_unique<frc::DigitalInput>(8));
+    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(9));
 
     sensor_reader.set_intake_encoder(make_encoder(2));
     sensor_reader.set_climber_encoder_right(make_encoder(3));
@@ -458,16 +392,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::frc971::wpilib::DrivetrainWriter drivetrain_writer(&output_event_loop);
     drivetrain_writer.set_left_controller0(
         ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), false);
+    drivetrain_writer.set_left_controller1(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), false);
     drivetrain_writer.set_right_controller0(
-        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(1)), true);
-
-    SuperstructureWriter superstructure_writer(&output_event_loop);
-    superstructure_writer.set_climber_falcon_left(make_unique<frc::TalonFX>(2));
-    superstructure_writer.set_climber_falcon_right(
-        make_unique<frc::TalonFX>(3));
-    superstructure_writer.set_intake_falcon(make_unique<frc::TalonFX>(4));
-    superstructure_writer.set_intake_roller_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(2)), true);
+    drivetrain_writer.set_right_controller1(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(3)), true);
     AddLoop(&output_event_loop);
 
     // Thread 5.

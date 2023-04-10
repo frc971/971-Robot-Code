@@ -42,7 +42,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       : ::frc971::input::ActionJoystickInput(
             event_loop,
             ::y2022_bot3::control_loops::drivetrain::GetDrivetrainConfig(),
-            ::frc971::input::DrivetrainInputReader::InputType::kSteeringWheel, {}),
+            ::frc971::input::DrivetrainInputReader::InputType::kPistol, {}),
         superstructure_goal_sender_(
             event_loop->MakeSender<superstructure::Goal>("/superstructure")),
         superstructure_status_fetcher_(

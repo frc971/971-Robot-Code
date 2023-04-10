@@ -27,7 +27,7 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
   static constexpr double kImuYaw = 0.0;
   static DrivetrainConfig<double> kDrivetrainConfig{
       ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
-      ::frc971::control_loops::drivetrain::LoopType::OPEN_LOOP,
+      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
       ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
       ::frc971::control_loops::drivetrain::IMUType::IMU_FLIPPED_X,
 
