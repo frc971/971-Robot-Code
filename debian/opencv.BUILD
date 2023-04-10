@@ -28,6 +28,8 @@ _common_srcs_list = [
     "usr/lib/%s/libopencv_aruco.so.4.5",
     "usr/lib/%s/libopencv_imgcodecs.so.4.5",
     "usr/lib/%s/libopencv_ml.so.4.5",
+    "usr/lib/%s/libopencv_dnn.so.4.5",
+    "usr/lib/%s/libprotobuf.so.23",
     "usr/lib/%s/libopencv_calib3d.so.4.5",
     "usr/lib/%s/libtbb.so.2",
     "usr/lib/%s/libgtk-3.so.0",

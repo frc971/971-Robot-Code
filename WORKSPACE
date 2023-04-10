@@ -580,6 +580,13 @@ filegroup(
     urls = ["https://www.frc971.org/Build-Dependencies/test_image_frc971.vision.CameraImage_2023.01.28.tar.gz"],
 )
 
+http_file(
+    name = "game_pieces_edgetpu_model",
+    downloaded_file_path = "edgetpu_model.tflite",
+    sha256 = "af1cf86515d03690389845d015895aff734ab890141ca792813c1b5754900b4d",
+    urls = ["https://www.frc971.org/Build-Dependencies/models/2023/model_edgetpu_2023.04.09.tflite"],
+)
+
 # Recompressed from libusb-1.0.21.7z.
 http_file(
     name = "libusb_1_0_windows",
@@ -1567,17 +1574,17 @@ filegroup(
 http_archive(
     name = "libedgetpu",
     build_file = "//third_party:libedgetpu/libedgetpu.BUILD",
-    sha256 = "d082df79a33309f58da697cce258acca96ceb12db40660fdbf7826289e4a037c",
+    sha256 = "c900faf2c9ea9599fda60c3d03ac43d0d7b34119659c9e35638b81cd14354b57",
     strip_prefix = "libedgetpu-bazel",
-    url = "https://www.frc971.org/Build-Dependencies/libedgetpu-1.0.tar.gz",
+    url = "https://www.frc971.org/Build-Dependencies/libedgetpu-ddfa7bde33c23afd8c2892182faa3e5b4e6ad94e.tar.gz",
 )
 
 http_archive(
     name = "libtensorflowlite",
     build_file = "//third_party:libtensorflowlite/libtensorflowlite.BUILD",
-    sha256 = "0e3f8deac9c7cdf9aa5812ad6a87af318ed1cf08cb0c414aa494846b7fc15302",
+    sha256 = "a073dfddb3cb25113ba7eac6edb5569d0ae7988cad881d3f665e8ca0b8b85108",
     strip_prefix = "tensorflow-bazel",
-    url = "https://www.frc971.org/Build-Dependencies/tensorflow-2.8.0.tar.gz",
+    url = "https://www.frc971.org/Build-Dependencies/tensorflow-a4dfb8d1a71385bd6d122e4f27f86dcebb96712d.tar.gz",
 )
 
 http_archive(

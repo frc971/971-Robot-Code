@@ -5,6 +5,8 @@
 #include "frc971/vision/vision_generated.h"
 #include "y2023/vision/game_pieces_generated.h"
 
+#include "y2023/vision/yolov5.h"
+
 namespace y2023 {
 namespace vision {
 
@@ -20,6 +22,7 @@ class GamePiecesDetector {
 
  private:
   aos::Sender<GamePieces> game_pieces_sender_;
+  std::unique_ptr<YOLOV5> model;
 };
 }  // namespace vision
 }  // namespace y2023

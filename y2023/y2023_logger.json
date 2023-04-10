@@ -407,8 +407,7 @@
       "user": "pi",
       "args": [
         "--enable_ftrace",
-        "--send_downsized_images",
-        "--exposure=650"
+        "--send_downsized_images"
       ],
       "nodes": [
         "logger"
@@ -450,6 +449,7 @@
     {
       "name": "game_piece_detector",
       "executable_name": "game_piece_detector",
+      "user": "pi",
       "nodes": [
         "logger"
       ]
