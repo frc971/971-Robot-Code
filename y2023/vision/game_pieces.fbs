@@ -1,11 +1,16 @@
 namespace y2023.vision;
 
-// Object class.
+// Not used by ml anymore.
 enum Class : byte {
     NONE = 0,
     CONE_UP = 1,
     CUBE = 2,
     CONE_DOWN = 3,
+}
+
+enum ConeClass : byte {
+    NONE = 0,
+    CONE = 1,
 }
 
 // Bounding box dimensions and position.
@@ -18,14 +23,13 @@ table Box {
 }
 
 table GamePiece {
-    piece_class:Class (id: 0);
+    piece_class:ConeClass (id: 0);
     box:Box (id:1);
     confidence:float (id:2);
 }
 
 table GamePieces {
     game_pieces:[GamePiece] (id: 0);
-    best_piece:uint (id: 1); // Index of the "best piece".
 }
 
 root_type GamePieces;

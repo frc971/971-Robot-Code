@@ -292,3 +292,9 @@ cc_library(
         ],
     }),
 )
+
+filegroup(
+    name = "game_pieces_detector_starter",
+    srcs = ["game_pieces_detector_starter.sh"],
+    visibility = ["//visibility:public"],
+)

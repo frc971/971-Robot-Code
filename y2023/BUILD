@@ -70,6 +70,7 @@ robot_downloader(
         ":aos_config",
         "//frc971/rockpi:rockpi_config.json",
         "//y2023/constants:constants.json",
+        "//y2023/vision:game_pieces_detector_starter",
         "//y2023/vision:image_streamer_start",
         "//y2023/www:www_files",
         "@game_pieces_edgetpu_model//file",

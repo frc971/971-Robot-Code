@@ -583,8 +583,8 @@ filegroup(
 http_file(
     name = "game_pieces_edgetpu_model",
     downloaded_file_path = "edgetpu_model.tflite",
-    sha256 = "af1cf86515d03690389845d015895aff734ab890141ca792813c1b5754900b4d",
-    urls = ["https://www.frc971.org/Build-Dependencies/models/2023/model_edgetpu_2023.04.09.tflite"],
+    sha256 = "3d37f34805d017153064076519aaf4b532658a3b8f2518bce8787f27a5c3064c",
+    urls = ["https://www.frc971.org/Build-Dependencies/models/2023/model_edgetpu_2023.04.09_3.tflite"],
 )
 
 # Recompressed from libusb-1.0.21.7z.

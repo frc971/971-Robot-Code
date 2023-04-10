@@ -447,8 +447,9 @@
       ]
     },
     {
-      "name": "game_piece_detector",
-      "executable_name": "game_piece_detector",
+      "name": "game_pieces_detector_starter",
+      "executable_name": "game_pieces_detector_starter.sh",
+      "autostart": true,
       "user": "pi",
       "nodes": [
         "logger"
