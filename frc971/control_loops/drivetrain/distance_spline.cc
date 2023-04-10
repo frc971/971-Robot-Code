@@ -48,8 +48,8 @@ namespace drivetrain {
       if (!ddend0.isApprox(ddstart1, 1e-6)) {
         AOS_LOG(
             ERROR,
-            "Splines %d and %d don't line up in the second derivative.  [%f, "
-            "%f] != [%f, %f]\n",
+            "Splines %d and %d don't line up in the second derivative.  [%.7f, "
+            "%.7f] != [%.7f, %.7f]\n",
             static_cast<int>(i - 1), static_cast<int>(i), ddend0(0, 0),
             ddend0(1, 0), ddstart1(0, 0), ddstart1(1, 0));
       }
