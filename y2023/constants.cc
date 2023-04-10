@@ -111,7 +111,7 @@ Values MakeValues(uint16_t team) {
           0.0317706563397807 - 2.6357823523782 + 0.871932806570122;
 
       wrist->subsystem_params.zeroing_constants.measured_absolute_position =
-          2.29036834725319;
+          0.858579506535361;
 
       break;
 
