@@ -206,6 +206,8 @@ bool AutonomousActor::RunAction(
     SplineAuto();
   } else if (FLAGS_charged_up) {
     ChargedUp();
+  } else if (FLAGS_charged_up_cable) {
+    ChargedUpCableSide();
   } else {
     AOS_LOG(WARNING, "No auto mode selected.");
   }
@@ -538,6 +540,9 @@ void AutonomousActor::ChargedUpCableSide() {
   AOS_LOG(
       INFO, "Placed second cube %lf s\n",
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  std::this_thread::sleep_for(chrono::milliseconds(200));
+  Neutral();
 }
 
 void AutonomousActor::SendSuperstructureGoal() {
