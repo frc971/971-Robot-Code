@@ -9,7 +9,7 @@ namespace driver_station {
 RedundantData::RedundantData(const Data &data) : joystick_map_(), data_(data) {
   // Start with a naive map.
   for (int i = 0; i < JoystickFeature::kJoysticks; i++) {
-    joystick_map_.at(i) = i;
+    joystick_map_.at(i) = -1;
   }
 
   for (int i = 0; i < JoystickFeature::kJoysticks; i++) {
@@ -32,6 +32,9 @@ RedundantData::RedundantData(const Data &data) : joystick_map_(), data_(data) {
 };
 
 int RedundantData::MapRedundantJoystick(int joystick) const {
+  if (joystick < 0 || joystick >= static_cast<int>(joystick_map_.size())) {
+    return -1;
+  }
   return joystick_map_.at(joystick);
 }
 
