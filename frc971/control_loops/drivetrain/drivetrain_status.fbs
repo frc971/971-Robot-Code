@@ -77,6 +77,7 @@ table TrajectoryLogging {
   left_velocity:float (id: 9);
   right_velocity:float (id: 10);
   distance_remaining:float (id: 11);
+  distance_traveled:float (id: 13);
 
   // Splines that we have full plans for.
   available_splines:[int] (id: 12);

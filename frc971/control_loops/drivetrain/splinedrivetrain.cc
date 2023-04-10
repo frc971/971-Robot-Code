@@ -256,6 +256,8 @@ flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
           ? CHECK_NOTNULL(current_trajectory())->length() - current_xva_.x()
           : 0.0);
   trajectory_logging_builder.add_available_splines(handles_vector);
+  trajectory_logging_builder.add_distance_traveled(
+      executing_spline_ ? current_xva_.x() : 0.0);
 
   return trajectory_logging_builder.Finish();
 }
