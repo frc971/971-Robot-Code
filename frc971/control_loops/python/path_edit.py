@@ -498,7 +498,7 @@ class FieldWidget(Gtk.DrawingArea):
 
             multispline, result = Multispline.nearest_distance(
                 self.multisplines, cur_p)
-            if result and result.fun < 0.1:
+            if self.control_point_index == None and result and result.fun < 0.1:
                 self.active_multispline_index = self.multisplines.index(
                     multispline)
 
