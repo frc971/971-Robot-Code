@@ -97,7 +97,7 @@ type ActionT =
   templateUrl: './entry.ng.html',
   styleUrls: ['../app/common.css', './entry.component.css'],
 })
-export class EntryComponent {
+export class EntryComponent implements OnInit {
   // Re-export the type here so that we can use it in the `[value]` attribute
   // of radio buttons.
   readonly COMP_LEVELS = COMP_LEVELS;
@@ -106,11 +106,11 @@ export class EntryComponent {
   readonly ScoreLevel = ScoreLevel;
 
   section: Section = 'Team Selection';
-  @Output() switchTabsEvent = new EventEmitter<string>();
   @Input() matchNumber: number = 1;
   @Input() teamNumber: number = 1;
   @Input() setNumber: number = 1;
   @Input() compLevel: CompLevel = 'qm';
+  @Input() skipTeamSelection = false;
 
   actionList: ActionT[] = [];
   errorMessage: string = '';
@@ -118,6 +118,12 @@ export class EntryComponent {
   lastObject: ObjectType = null;
 
   matchStartTimestamp: number = 0;
+
+  ngOnInit() {
+    // When the user navigated from the match list, we can skip the team
+    // selection. I.e. we trust that the user clicked the correct button.
+    this.section = this.skipTeamSelection ? 'Init' : 'Team Selection';
+  }
 
   addAction(action: ActionT): void {
     if (action.type == 'startMatchAction') {

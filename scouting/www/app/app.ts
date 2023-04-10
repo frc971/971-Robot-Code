@@ -30,6 +30,9 @@ export class App {
     setNumber: 1,
     compLevel: 'qm',
   };
+  // Keep track of the match list automatically navigating the user to the
+  // Entry tab.
+  navigatedFromMatchList: boolean = false;
   tab: Tab = 'MatchList';
 
   @ViewChild('block_alerts') block_alerts: ElementRef;
@@ -54,7 +57,8 @@ export class App {
 
   selectTeamInMatch(teamInMatch: TeamInMatch) {
     this.selectedTeamInMatch = teamInMatch;
-    this.switchTabTo('Entry');
+    this.navigatedFromMatchList = true;
+    this.switchTabTo('Entry', false);
   }
 
   switchTabToGuarded(tab: Tab) {
@@ -69,11 +73,16 @@ export class App {
       }
     }
     if (shouldSwitch) {
-      this.switchTabTo(tab);
+      this.switchTabTo(tab, true);
     }
   }
 
-  private switchTabTo(tab: Tab) {
+  private switchTabTo(tab: Tab, wasGuarded: boolean) {
+    if (wasGuarded) {
+      // When the user navigated between tabs manually, we want to reset some
+      // state.
+      this.navigatedFromMatchList = false;
+    }
     this.tab = tab;
   }
 }
