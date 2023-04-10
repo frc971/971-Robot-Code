@@ -20,8 +20,15 @@ DEFINE_double(disabled_time, 5.0,
 
 std::unique_ptr<aos::logger::MultiNodeFilesLogNamer> MakeLogNamer(
     aos::EventLoop *event_loop) {
+  std::optional<std::string> log_name =
+      aos::logging::MaybeGetLogName("fbs_log");
+
+  if (!log_name.has_value()) {
+    return nullptr;
+  }
+
   return std::make_unique<aos::logger::MultiNodeFilesLogNamer>(
-      absl::StrCat(aos::logging::GetLogName("fbs_log"), "/"), event_loop);
+      absl::StrCat(log_name.value(), "/"), event_loop);
 }
 
 int main(int argc, char *argv[]) {
@@ -71,9 +78,14 @@ int main(int argc, char *argv[]) {
         enabled = joystick_state.enabled();
 
         if (!logging && enabled) {
+          auto log_namer = MakeLogNamer(&event_loop);
+          if (log_namer == nullptr) {
+            return;
+          }
+
           // Start logging if we just got enabled
           LOG(INFO) << "Starting logging";
-          logger.StartLogging(MakeLogNamer(&event_loop));
+          logger.StartLogging(std::move(log_namer));
           logging = true;
           last_rotation_time = event_loop.monotonic_now();
         } else if (logging && !enabled &&
