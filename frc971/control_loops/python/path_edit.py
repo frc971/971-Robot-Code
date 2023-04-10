@@ -287,7 +287,11 @@ class FieldWidget(Gtk.DrawingArea):
 
                 if i == 0:
                     self.draw_robot_at_point(cr, spline, 0)
-                self.draw_robot_at_point(cr, spline, 1)
+
+                is_last_spline = spline is multispline.getLibsplines()[-1]
+
+                if multispline == self.active_multispline or is_last_spline:
+                    self.draw_robot_at_point(cr, spline, 1)
 
     def export_json(self, file_name):
         export_folder = Path(
