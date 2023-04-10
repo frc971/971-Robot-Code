@@ -7,6 +7,7 @@
 #include "ceres/ceres.h"
 #include "frc971/vision/ceres/types.h"
 #include "frc971/vision/target_map_generated.h"
+#include "frc971/vision/visualize_robot.h"
 
 namespace frc971::vision {
 
@@ -51,18 +52,36 @@ class TargetMapper {
 
   ceres::examples::MapOfPoses target_poses() { return target_poses_; }
 
+  // Cost function for the secondary solver finding out where the whole map fits
+  // in the world
+  template <typename S>
+  bool operator()(const S *const translation, const S *const rotation,
+                  S *residual) const;
+
  private:
   // Constructs the nonlinear least squares optimization problem from the
   // pose graph constraints.
-  void BuildOptimizationProblem(
+  void BuildTargetPoseOptimizationProblem(
       const ceres::examples::VectorOfConstraints &constraints,
       ceres::examples::MapOfPoses *poses, ceres::Problem *problem);
+
+  // Constructs the nonlinear least squares optimization problem for the solved
+  // -> actual pose solver.
+  void BuildMapFittingOptimizationProblem(ceres::Problem *problem);
 
   // Returns true if the solve was successful.
   bool SolveOptimizationProblem(ceres::Problem *problem);
 
+  ceres::examples::MapOfPoses ideal_target_poses_;
   ceres::examples::MapOfPoses target_poses_;
   ceres::examples::VectorOfConstraints target_constraints_;
+
+  // Transformation moving the target map we solved for to where it actually
+  // should be in the world
+  Eigen::Translation3d T_frozen_actual_;
+  Eigen::Quaterniond R_frozen_actual_;
+
+  mutable VisualizeRobot vis_robot_;
 };
 
 // Utility functions for dealing with ceres::examples::Pose3d structs

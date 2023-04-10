@@ -10,9 +10,12 @@ DEFINE_uint64(max_num_iterations, 100,
 DEFINE_double(distortion_noise_scalar, 1.0,
               "Scale the target pose distortion factor by this when computing "
               "the noise.");
-DEFINE_uint64(
+DEFINE_int32(
     frozen_target_id, 1,
     "Freeze the pose of this target so the map can have one fixed point.");
+DEFINE_int32(min_target_id, 1, "Minimum target id to solve for");
+DEFINE_int32(max_target_id, 8, "Maximum target id to solve for");
+DEFINE_bool(visualize_solver, false, "If true, visualize the solving process.");
 
 namespace frc971::vision {
 Eigen::Affine3d PoseUtils::Pose3dToAffine3d(
@@ -211,19 +214,28 @@ ceres::examples::Constraint3d DataAdapter::ComputeTargetConstraint(
 TargetMapper::TargetMapper(
     std::string_view target_poses_path,
     const ceres::examples::VectorOfConstraints &target_constraints)
-    : target_constraints_(target_constraints) {
+    : target_constraints_(target_constraints),
+      T_frozen_actual_(Eigen::Vector3d::Zero()),
+      R_frozen_actual_(Eigen::Quaterniond::Identity()),
+      vis_robot_(cv::Size(1280, 1000)) {
   aos::FlatbufferDetachedBuffer<TargetMap> target_map =
       aos::JsonFileToFlatbuffer<TargetMap>(target_poses_path);
   for (const auto *target_pose_fbs : *target_map.message().target_poses()) {
-    target_poses_[target_pose_fbs->id()] =
+    ideal_target_poses_[target_pose_fbs->id()] =
         PoseUtils::TargetPoseFromFbs(*target_pose_fbs).pose;
   }
+  target_poses_ = ideal_target_poses_;
 }
 
 TargetMapper::TargetMapper(
     const ceres::examples::MapOfPoses &target_poses,
     const ceres::examples::VectorOfConstraints &target_constraints)
-    : target_poses_(target_poses), target_constraints_(target_constraints) {}
+    : ideal_target_poses_(target_poses),
+      target_poses_(ideal_target_poses_),
+      target_constraints_(target_constraints),
+      T_frozen_actual_(Eigen::Vector3d::Zero()),
+      R_frozen_actual_(Eigen::Quaterniond::Identity()),
+      vis_robot_(cv::Size(1280, 1000)) {}
 
 std::optional<TargetMapper::TargetPose> TargetMapper::GetTargetPoseById(
     std::vector<TargetMapper::TargetPose> target_poses, TargetId target_id) {
@@ -248,7 +260,7 @@ std::optional<TargetMapper::TargetPose> TargetMapper::GetTargetPoseById(
 // Taken from ceres/examples/slam/pose_graph_3d/pose_graph_3d.cc
 // Constructs the nonlinear least squares optimization problem from the pose
 // graph constraints.
-void TargetMapper::BuildOptimizationProblem(
+void TargetMapper::BuildTargetPoseOptimizationProblem(
     const ceres::examples::VectorOfConstraints &constraints,
     ceres::examples::MapOfPoses *poses, ceres::Problem *problem) {
   CHECK(poses != nullptr);
@@ -311,6 +323,33 @@ void TargetMapper::BuildOptimizationProblem(
   problem->SetParameterBlockConstant(pose_start_iter->second.q.coeffs().data());
 }
 
+void TargetMapper::BuildMapFittingOptimizationProblem(ceres::Problem *problem) {
+  // Setup robot visualization
+  vis_robot_.ClearImage();
+  constexpr int kImageWidth = 1280;
+  constexpr double kFocalLength = 500.0;
+  vis_robot_.SetDefaultViewpoint(kImageWidth, kFocalLength);
+
+  const size_t num_targets = FLAGS_max_target_id - FLAGS_min_target_id;
+  // Translation and rotation error for each target
+  const size_t num_residuals = num_targets * 6;
+  // Set up the only cost function (also known as residual). This uses
+  // auto-differentiation to obtain the derivative (jacobian).
+  ceres::CostFunction *cost_function =
+      new ceres::AutoDiffCostFunction<TargetMapper, ceres::DYNAMIC, 3, 4>(
+          this, num_residuals, ceres::DO_NOT_TAKE_OWNERSHIP);
+
+  ceres::LossFunction *loss_function = new ceres::HuberLoss(2.0);
+  ceres::LocalParameterization *quaternion_local_parameterization =
+      new ceres::EigenQuaternionParameterization;
+
+  problem->AddResidualBlock(cost_function, loss_function,
+                            T_frozen_actual_.vector().data(),
+                            R_frozen_actual_.coeffs().data());
+  problem->SetParameterization(R_frozen_actual_.coeffs().data(),
+                               quaternion_local_parameterization);
+}
+
 // Taken from ceres/examples/slam/pose_graph_3d/pose_graph_3d.cc
 bool TargetMapper::SolveOptimizationProblem(ceres::Problem *problem) {
   CHECK_NOTNULL(problem);
@@ -330,11 +369,39 @@ bool TargetMapper::SolveOptimizationProblem(ceres::Problem *problem) {
 
 void TargetMapper::Solve(std::string_view field_name,
                          std::optional<std::string_view> output_dir) {
-  ceres::Problem problem;
-  BuildOptimizationProblem(target_constraints_, &target_poses_, &problem);
+  ceres::Problem target_pose_problem;
+  BuildTargetPoseOptimizationProblem(target_constraints_, &target_poses_,
+                                     &target_pose_problem);
+  CHECK(SolveOptimizationProblem(&target_pose_problem))
+      << "The target pose solve was not successful, exiting.";
 
-  CHECK(SolveOptimizationProblem(&problem))
-      << "The solve was not successful, exiting.";
+  ceres::Problem map_fitting_problem;
+  BuildMapFittingOptimizationProblem(&map_fitting_problem);
+  CHECK(SolveOptimizationProblem(&map_fitting_problem))
+      << "The map fitting solve was not successful, exiting.";
+
+  Eigen::Affine3d H_frozen_actual = T_frozen_actual_ * R_frozen_actual_;
+  LOG(INFO) << "H_frozen_actual: "
+            << PoseUtils::Affine3dToPose3d(H_frozen_actual);
+
+  auto H_world_frozen =
+      PoseUtils::Pose3dToAffine3d(target_poses_[FLAGS_frozen_target_id]);
+  auto H_world_frozenactual = H_world_frozen * H_frozen_actual;
+
+  // Offset the solved poses to become the actual ones
+  for (auto &[id, pose] : target_poses_) {
+    // Don't offset targets we didn't solve for
+    if (id < FLAGS_min_target_id || id > FLAGS_max_target_id) {
+      continue;
+    }
+
+    // Take the delta between the frozen target and the solved target, and put
+    // that on top of the actual pose of the frozen target
+    auto H_world_solved = PoseUtils::Pose3dToAffine3d(pose);
+    auto H_frozen_solved = H_world_frozen.inverse() * H_world_solved;
+    auto H_world_actual = H_world_frozenactual * H_frozen_solved;
+    pose = PoseUtils::Affine3dToPose3d(H_world_actual);
+  }
 
   auto map_json = MapToJson(field_name);
   VLOG(1) << "Solved target poses: " << map_json;
@@ -364,6 +431,110 @@ std::string TargetMapper::MapToJson(std::string_view field_name) const {
   return aos::FlatbufferToJson(
       flatbuffers::GetMutableTemporaryPointer(fbb, target_map_offset),
       {.multi_line = true});
+}
+
+namespace {
+
+// Hacks to extract a double from a scalar, which is either a ceres jet or a
+// double. Only used for debugging and displaying.
+template <typename S>
+double ScalarToDouble(S s) {
+  const double *ptr = reinterpret_cast<double *>(&s);
+  return *ptr;
+}
+
+template <typename S>
+Eigen::Affine3d ScalarAffineToDouble(Eigen::Transform<S, 3, Eigen::Affine> H) {
+  Eigen::Affine3d H_double;
+  for (size_t i = 0; i < H.rows(); i++) {
+    for (size_t j = 0; j < H.cols(); j++) {
+      H_double(i, j) = ScalarToDouble(H(i, j));
+    }
+  }
+  return H_double;
+}
+
+}  // namespace
+
+template <typename S>
+bool TargetMapper::operator()(const S *const translation,
+                              const S *const rotation, S *residual) const {
+  using Affine3s = Eigen::Transform<S, 3, Eigen::Affine>;
+  Eigen::Quaternion<S> R_frozen_actual(rotation[3], rotation[1], rotation[2],
+                                       rotation[0]);
+  Eigen::Translation<S, 3> T_frozen_actual(translation[0], translation[1],
+                                           translation[2]);
+  // Actual target pose in the frame of the fixed pose.
+  Affine3s H_frozen_actual = T_frozen_actual * R_frozen_actual;
+  VLOG(2) << "H_frozen_actual: "
+          << PoseUtils::Affine3dToPose3d(ScalarAffineToDouble(H_frozen_actual));
+
+  Affine3s H_world_frozen =
+      PoseUtils::Pose3dToAffine3d(target_poses_.at(FLAGS_frozen_target_id))
+          .cast<S>();
+  Affine3s H_world_frozenactual = H_world_frozen * H_frozen_actual;
+
+  size_t residual_index = 0;
+  if (FLAGS_visualize_solver) {
+    vis_robot_.ClearImage();
+  }
+
+  for (const auto &[id, solved_pose] : target_poses_) {
+    if (id < FLAGS_min_target_id || id > FLAGS_max_target_id) {
+      continue;
+    }
+
+    Affine3s H_world_ideal =
+        PoseUtils::Pose3dToAffine3d(ideal_target_poses_.at(id)).cast<S>();
+    Affine3s H_world_solved =
+        PoseUtils::Pose3dToAffine3d(solved_pose).cast<S>();
+    // Take the delta between the frozen target and the solved target, and put
+    // that on top of the actual pose of the frozen target
+    auto H_frozen_solved = H_world_frozen.inverse() * H_world_solved;
+    auto H_world_actual = H_world_frozenactual * H_frozen_solved;
+    VLOG(2) << id << ": " << H_world_actual.translation();
+    Affine3s H_ideal_actual = H_world_ideal.inverse() * H_world_actual;
+    auto T_ideal_actual = H_ideal_actual.translation();
+    VLOG(2) << "T_ideal_actual: " << T_ideal_actual;
+    VLOG(2);
+    auto R_ideal_actual = Eigen::AngleAxis<S>(H_ideal_actual.rotation());
+
+    constexpr double kTranslationScalar = 100.0;
+    constexpr double kRotationScalar = 1000.0;
+
+    // Penalize based on how much our actual poses matches the ideal
+    // ones. We've already solved for the relative poses, now figure out
+    // where all of them fit in the world.
+    residual[residual_index++] = kTranslationScalar * T_ideal_actual(0);
+    residual[residual_index++] = kTranslationScalar * T_ideal_actual(1);
+    residual[residual_index++] = kTranslationScalar * T_ideal_actual(2);
+    residual[residual_index++] =
+        kRotationScalar * R_ideal_actual.angle() * R_ideal_actual.axis().x();
+    residual[residual_index++] =
+        kRotationScalar * R_ideal_actual.angle() * R_ideal_actual.axis().y();
+    residual[residual_index++] =
+        kRotationScalar * R_ideal_actual.angle() * R_ideal_actual.axis().z();
+
+    if (FLAGS_visualize_solver) {
+      vis_robot_.DrawFrameAxes(ScalarAffineToDouble(H_world_actual),
+                               std::to_string(id), cv::Scalar(0, 255, 0));
+      vis_robot_.DrawFrameAxes(ScalarAffineToDouble(H_world_ideal),
+                               std::to_string(id), cv::Scalar(255, 255, 255));
+    }
+  }
+  if (FLAGS_visualize_solver) {
+    cv::imshow("Target maps", vis_robot_.image_);
+    cv::waitKey(0);
+  }
+
+  // Ceres can't handle residual values of exactly zero
+  for (size_t i = 0; i < residual_index; i++) {
+    if (residual[i] == S(0)) {
+      residual[i] = S(1e-9);
+    }
+  }
+
+  return true;
 }
 
 }  // namespace frc971::vision

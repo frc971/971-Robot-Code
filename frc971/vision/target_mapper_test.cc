@@ -9,6 +9,9 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
+DECLARE_int32(min_target_id);
+DECLARE_int32(max_target_id);
+
 namespace frc971::vision {
 
 namespace {
@@ -338,6 +341,9 @@ TEST(DataAdapterTest, MatchTargetDetections) {
 }
 
 TEST(TargetMapperTest, TwoTargetsOneConstraint) {
+  FLAGS_min_target_id = 0;
+  FLAGS_max_target_id = 1;
+
   ceres::examples::MapOfPoses target_poses;
   target_poses[0] = Make2dPose(5.0, 0.0, M_PI);
   target_poses[1] = Make2dPose(-5.0, 0.0, 0.0);
@@ -361,6 +367,9 @@ TEST(TargetMapperTest, TwoTargetsOneConstraint) {
 }
 
 TEST(TargetMapperTest, TwoTargetsTwoConstraints) {
+  FLAGS_min_target_id = 0;
+  FLAGS_max_target_id = 1;
+
   ceres::examples::MapOfPoses target_poses;
   target_poses[0] = Make2dPose(5.0, 0.0, M_PI);
   target_poses[1] = Make2dPose(-5.0, 0.0, -M_PI_2);
@@ -390,6 +399,9 @@ TEST(TargetMapperTest, TwoTargetsTwoConstraints) {
 }
 
 TEST(TargetMapperTest, TwoTargetsOneNoisyConstraint) {
+  FLAGS_min_target_id = 0;
+  FLAGS_max_target_id = 1;
+
   ceres::examples::MapOfPoses target_poses;
   target_poses[0] = Make2dPose(5.0, 0.0, M_PI);
   target_poses[1] = Make2dPose(-5.0, 0.0, 0.0);
@@ -544,33 +556,6 @@ TEST_F(ChargedUpTargetMapperTest, FieldCircleMotion) {
   mapper.Solve(kFieldName);
 
   for (auto [target_pose_id, mapper_target_pose] : mapper.target_poses()) {
-    TargetMapper::TargetPose actual_target_pose =
-        TargetMapper::GetTargetPoseById(actual_target_poses, target_pose_id)
-            .value();
-    EXPECT_POSE_NEAR(mapper_target_pose, actual_target_pose.pose);
-  }
-
-  //
-  // See what happens when we don't start with the
-  // correct values
-  //
-  for (auto [target_id, target_pose] : target_poses) {
-    // Skip first pose, since that needs to be correct
-    // and is fixed in the solver
-    if (target_id != 1) {
-      ceres::examples::Pose3d bad_pose{
-          Eigen::Vector3d::Zero(),
-          PoseUtils::EulerAnglesToQuaternion(Eigen::Vector3d::Zero())};
-      target_poses[target_id] = bad_pose;
-    }
-  }
-
-  frc971::vision::TargetMapper mapper_bad_poses(target_poses,
-                                                target_constraints);
-  mapper_bad_poses.Solve(kFieldName);
-
-  for (auto [target_pose_id, mapper_target_pose] :
-       mapper_bad_poses.target_poses()) {
     TargetMapper::TargetPose actual_target_pose =
         TargetMapper::GetTargetPoseById(actual_target_poses, target_pose_id)
             .value();

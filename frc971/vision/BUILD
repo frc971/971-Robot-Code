@@ -166,6 +166,7 @@ cc_library(
         ":target_map_fbs",
         "//aos/events:simulated_event_loop",
         "//frc971/control_loops:control_loop",
+        "//frc971/vision:visualize_robot",
         "//frc971/vision/ceres:pose_graph_3d_lib",
         "//third_party:opencv",
         "@com_google_ceres_solver//:ceres",
