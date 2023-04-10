@@ -422,6 +422,15 @@ class FieldWidget(Gtk.DrawingArea):
                     prev_multispline.getSplines()[-1])
             self.queue_draw()
 
+    def on_graph_clicked(self):
+        if self.graph.cursor is not None:
+            cursor = self.graph.find_cursor()
+            if cursor is None:
+                return
+            multispline_index, x = cursor
+
+            self.active_multispline_index = multispline_index
+
     def do_button_release_event(self, event):
         self.drag_start = None
 
