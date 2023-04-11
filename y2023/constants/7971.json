@@ -4,10 +4,10 @@
       "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-1_cam-23-01_ext_2023-02-19.json' %}
     },
     {
-      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-2_cam-23-02_ext_2023-04-05.json' %}
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-2_cam-23-02_ext_2023-04-08.json' %}
     },
     {
-      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-3_cam-23-03_ext_2023-04-05.json' %}
+      "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-3_cam-23-03_ext_2023-04-08.json' %}
     },
     {
       "calibration": {% include 'y2023/vision/calib_files/calibration_pi-7971-4_cam-23-04_ext_2023-02-19.json' %}
