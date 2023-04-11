@@ -92,6 +92,109 @@ TEST(LogBackendTest, UseTestAndRenameBaseAfterWrite) {
   EXPECT_TRUE(std::filesystem::exists(renamed + "test.log"));
 }
 
+TEST(QueueAlignmentTest, Cases) {
+  QueueAligner aligner;
+  uint8_t *start = nullptr;
+  {
+    // Only prefix
+    std::vector<absl::Span<const uint8_t>> queue;
+    const uint8_t *current = start + 1;
+    queue.emplace_back(current, FileHandler::kSector - 2);
+    aligner.FillAlignedQueue(queue);
+    ASSERT_EQ(aligner.aligned_queue().size(), 1);
+    const auto &prefix = aligner.aligned_queue()[0];
+    EXPECT_FALSE(prefix.aligned);
+    EXPECT_EQ(prefix.size, FileHandler::kSector - 2);
+  }
+  {
+    // Only main
+    std::vector<absl::Span<const uint8_t>> queue;
+    const uint8_t *current = start;
+    queue.emplace_back(current, FileHandler::kSector);
+    aligner.FillAlignedQueue(queue);
+    ASSERT_EQ(aligner.aligned_queue().size(), 1);
+    const auto &main = aligner.aligned_queue()[0];
+    EXPECT_TRUE(main.aligned);
+    EXPECT_EQ(main.size, FileHandler::kSector);
+  }
+  {
+    // Empty
+    std::vector<absl::Span<const uint8_t>> queue;
+    const uint8_t *current = start;
+    queue.emplace_back(current, 0);
+    EXPECT_DEATH(aligner.FillAlignedQueue(queue),
+                 "Nobody should be sending empty messages");
+  }
+  {
+    // Main and suffix
+    std::vector<absl::Span<const uint8_t>> queue;
+    const uint8_t *current = start;
+    queue.emplace_back(current, FileHandler::kSector + 1);
+    aligner.FillAlignedQueue(queue);
+    ASSERT_EQ(aligner.aligned_queue().size(), 2);
+
+    const auto &main = aligner.aligned_queue()[0];
+    EXPECT_TRUE(main.aligned);
+    EXPECT_EQ(main.size, FileHandler::kSector);
+
+    const auto &suffix = aligner.aligned_queue()[1];
+    EXPECT_FALSE(suffix.aligned);
+    EXPECT_EQ(suffix.size, 1);
+  }
+  {
+    // Prefix, main
+    std::vector<absl::Span<const uint8_t>> queue;
+    const uint8_t *current = start + 1;
+    queue.emplace_back(current, 2 * FileHandler::kSector - 1);
+    aligner.FillAlignedQueue(queue);
+    ASSERT_EQ(aligner.aligned_queue().size(), 2);
+
+    const auto &prefix = aligner.aligned_queue()[0];
+    EXPECT_FALSE(prefix.aligned);
+    EXPECT_EQ(prefix.size, FileHandler::kSector - 1);
+
+    const auto &main = aligner.aligned_queue()[1];
+    EXPECT_TRUE(main.aligned);
+    EXPECT_EQ(main.size, FileHandler::kSector);
+  }
+  {
+    // Prefix and suffix
+    std::vector<absl::Span<const uint8_t>> queue;
+    const uint8_t *current = start + 1;
+    queue.emplace_back(current, 2 * FileHandler::kSector - 2);
+    aligner.FillAlignedQueue(queue);
+    ASSERT_EQ(aligner.aligned_queue().size(), 2);
+
+    const auto &prefix = aligner.aligned_queue()[0];
+    EXPECT_FALSE(prefix.aligned);
+    EXPECT_EQ(prefix.size, FileHandler::kSector - 1);
+
+    const auto &suffix = aligner.aligned_queue()[1];
+    EXPECT_FALSE(suffix.aligned);
+    EXPECT_EQ(suffix.size, FileHandler::kSector - 1);
+  }
+  {
+    // Prefix, main and suffix
+    std::vector<absl::Span<const uint8_t>> queue;
+    const uint8_t *current = start + 1;
+    queue.emplace_back(current, 3 * FileHandler::kSector - 2);
+    aligner.FillAlignedQueue(queue);
+    ASSERT_EQ(aligner.aligned_queue().size(), 3);
+
+    const auto &prefix = aligner.aligned_queue()[0];
+    EXPECT_FALSE(prefix.aligned);
+    EXPECT_EQ(prefix.size, FileHandler::kSector - 1);
+
+    const auto &main = aligner.aligned_queue()[1];
+    EXPECT_TRUE(main.aligned);
+    EXPECT_EQ(main.size, FileHandler::kSector);
+
+    const auto &suffix = aligner.aligned_queue()[2];
+    EXPECT_FALSE(suffix.aligned);
+    EXPECT_EQ(suffix.size, FileHandler::kSector - 1);
+  }
+}
+
 // It represents calls to Write function (batching of calls and messages) where
 // int values are sizes of each message in the queue.
 using WriteRecipe = std::vector<std::vector<int>>;
@@ -261,6 +364,7 @@ TEST_F(FileWriteTestBase, AlignedToUnaligned) {
   auto result = handler->Write(queue);
   EXPECT_EQ(result.code, WriteCode::kOk);
   EXPECT_EQ(result.messages_written, queue.size());
+  EXPECT_GT(handler->written_aligned(), 0);
 
   ASSERT_EQ(handler->Close(), WriteCode::kOk);
   EXPECT_TRUE(std::filesystem::exists(file));

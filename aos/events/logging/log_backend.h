@@ -77,6 +77,36 @@ struct WriteResult {
   size_t messages_written = 0;
 };
 
+// Source for iovec with additional flag that pointer and size of data is
+// aligned and be ready for O_DIRECT operation.
+struct AlignedIovec {
+  const uint8_t *data;
+  size_t size;
+  bool aligned;
+
+  AlignedIovec(const uint8_t *data, size_t size, bool aligned)
+      : data(data), size(size), aligned(aligned) {}
+};
+
+// Converts queue of pieces to write to the disk to the queue where every
+// element is either aligned for O_DIRECT operation or marked as not aligned.
+class QueueAligner {
+ public:
+  QueueAligner();
+
+  // Reads input queue and fills with aligned and unaligned pieces. It is easy
+  // to deal with smaller pieces and batch it during the write operation.
+  void FillAlignedQueue(
+      const absl::Span<const absl::Span<const uint8_t>> &queue);
+
+  const std::vector<AlignedIovec> &aligned_queue() const {
+    return aligned_queue_;
+  }
+
+ private:
+  std::vector<AlignedIovec> aligned_queue_;
+};
+
 // FileHandler is a replacement for bare filename in log writing and reading
 // operations.
 //
@@ -94,8 +124,6 @@ struct WriteResult {
 //  4) Not all filesystems support O_DIRECT, and different sizes may be optimal
 //     for different machines.  The defaults should work decently anywhere and
 //     be tunable for faster systems.
-// TODO (Alexei): need 2 variations, to support systems with and without
-// O_DIRECT
 class FileHandler {
  public:
   // Size of an aligned sector used to detect when the data is aligned enough to
@@ -139,6 +167,9 @@ class FileHandler {
   // Get access to statistics related to the write operations.
   WriteStats *WriteStatistics() { return &write_stats_; }
 
+  // Number of bytes written in aligned mode. It is mostly for testing.
+  size_t written_aligned() const { return written_aligned_; }
+
  private:
   // Enables O_DIRECT on the open file if it is supported.  Cheap to call if it
   // is already enabled.
@@ -149,11 +180,9 @@ class FileHandler {
 
   bool ODirectEnabled() const { return !!(flags_ & O_DIRECT); }
 
-  // Writes a chunk of iovecs.  aligned is true if all the data is kSector byte
-  // aligned and multiples of it in length, and counted_size is the sum of the
-  // sizes of all the chunks of data.
-  WriteCode WriteV(struct iovec *iovec_data, size_t iovec_size, bool aligned,
-                   size_t counted_size);
+  // Writes a chunk of iovecs. aligned is true if all the data is kSector byte
+  // aligned and multiples of it in length.
+  WriteCode WriteV(const std::vector<struct iovec> &iovec, bool aligned);
 
   const std::string filename_;
 
@@ -163,8 +192,12 @@ class FileHandler {
   // churn.
   std::vector<struct iovec> iovec_;
 
+  QueueAligner queue_aligner_;
+
   int total_write_bytes_ = 0;
   int last_synced_bytes_ = 0;
+
+  size_t written_aligned_ = 0;
 
   bool supports_odirect_ = true;
   int flags_ = 0;
