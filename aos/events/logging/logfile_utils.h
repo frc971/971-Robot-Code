@@ -474,6 +474,12 @@ class UnpackedMessageHeader {
   // pointer to track.
   absl::Span<const uint8_t> span;
 
+  // Used to be able to mutate the data in the span. This is only used for
+  // mutating the message inside of LogReader for the Before Send Callback. It
+  // is safe in this case since there is only one caller to Send, and the data
+  // is not mutated after Send is called.
+  uint8_t *mutable_data() { return const_cast<uint8_t *>(span.data()); }
+
   char actual_data[];
 
  private:

@@ -159,9 +159,6 @@ class RawSender {
  public:
   using SharedSpan = std::shared_ptr<const absl::Span<const uint8_t>>;
 
-  // This looks a little ugly with no space, but please leave it so clang-format
-  // doesn't keep changing it. Bug is filed at
-  // <https://github.com/llvm/llvm-project/issues/55457>.
   enum class [[nodiscard]] Error{
       // Represents success and no error
       kOk,
@@ -217,7 +214,6 @@ class RawSender {
              monotonic_clock::time_point monotonic_remote_time,
              realtime_clock::time_point realtime_remote_time,
              uint32_t remote_queue_index, const UUID &remote_boot_uuid);
-
   const Channel *channel() const { return channel_; }
 
   // Returns the time_points that the last message was sent at.

@@ -129,6 +129,62 @@ TEST_F(LoggerTest, Starts) {
   EXPECT_EQ(pong_count, ping_count);
 }
 
+// Tests that we can mutate a message before sending
+TEST_F(LoggerTest, MutateCallback) {
+  const ::std::string tmpdir = aos::testing::TestTmpDir();
+  const ::std::string base_name = tmpdir + "/logfile";
+  const ::std::string config =
+      absl::StrCat(base_name, kSingleConfigSha256, ".bfbs");
+  const ::std::string logfile = base_name + "_data.part0.bfbs";
+  // Remove it.
+  unlink(config.c_str());
+  unlink(logfile.c_str());
+
+  LOG(INFO) << "Logging data to " << logfile;
+
+  {
+    std::unique_ptr<EventLoop> logger_event_loop =
+        event_loop_factory_.MakeEventLoop("logger");
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    Logger logger(logger_event_loop.get());
+    logger.set_separate_config(false);
+    logger.set_polling_period(std::chrono::milliseconds(100));
+    logger.StartLoggingOnRun(base_name);
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+  }
+
+  // Even though it doesn't make any difference here, exercise the logic for
+  // passing in a separate config.
+  LogReader reader(logfile, &config_.message());
+
+  reader.AddBeforeSendCallback("/test", [](aos::examples::Ping *ping) {
+    ping->mutate_value(ping->value() + 1);
+  });
+
+  // This sends out the fetched messages and advances time to the start of the
+  // log file.
+  reader.Register();
+
+  EXPECT_THAT(reader.LoggedNodes(), ::testing::ElementsAre(nullptr));
+
+  std::unique_ptr<EventLoop> test_event_loop =
+      reader.event_loop_factory()->MakeEventLoop("log_reader");
+
+  // Confirm that the ping and pong counts both match, and the value also
+  // matches.
+  int ping_count = 10;
+  test_event_loop->MakeWatcher("/test",
+                               [&ping_count](const examples::Ping &ping) {
+                                 ++ping_count;
+                                 EXPECT_EQ(ping.value(), ping_count);
+                               });
+
+  reader.event_loop_factory()->RunFor(std::chrono::seconds(100));
+  EXPECT_EQ(ping_count, 2010);
+}
+
 // Tests calling StartLogging twice.
 TEST_F(LoggerDeathTest, ExtraStart) {
   const ::std::string tmpdir = aos::testing::TestTmpDir();
