@@ -23,8 +23,10 @@ class Graph(Gtk.Bin):
         self.canvas = FigureCanvas(fig)  # a Gtk.DrawingArea
         self.canvas.set_vexpand(True)
         self.canvas.set_size_request(800, 250)
-        self.callback_id = self.canvas.mpl_connect('motion_notify_event',
-                                                   self.on_mouse_move)
+        self.mouse_move_callback = self.canvas.mpl_connect(
+            'motion_notify_event', self.on_mouse_move)
+        self.click_callback = self.canvas.mpl_connect('button_press_event',
+                                                      self.on_click)
         self.add(self.canvas)
 
         # The current graph data
@@ -98,6 +100,24 @@ class Graph(Gtk.Bin):
             # tell the field to update too
             if self.cursor_watcher is not None:
                 self.cursor_watcher.queue_draw()
+
+    def on_click(self, event):
+        """Same as on_mouse_move but also selects multisplines"""
+
+        if self.data is None:
+            return
+        total_steps_taken = self.data.shape[1]
+        total_time = self.dt * total_steps_taken
+        if event.xdata is not None:
+            # clip the position if still on the canvas, but off the graph
+            self.cursor = np.clip(event.xdata, 0, total_time)
+
+            self.redraw_cursor()
+
+            # tell the field to update too
+            if self.cursor_watcher is not None:
+                self.cursor_watcher.queue_draw()
+                self.cursor_watcher.on_graph_clicked()
 
     def redraw_cursor(self):
         """Redraws the cursor line"""

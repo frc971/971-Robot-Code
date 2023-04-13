@@ -287,7 +287,11 @@ class FieldWidget(Gtk.DrawingArea):
 
                 if i == 0:
                     self.draw_robot_at_point(cr, spline, 0)
-                self.draw_robot_at_point(cr, spline, 1)
+
+                is_last_spline = spline is multispline.getLibsplines()[-1]
+
+                if multispline == self.active_multispline or is_last_spline:
+                    self.draw_robot_at_point(cr, spline, 1)
 
     def export_json(self, file_name):
         export_folder = Path(
@@ -422,6 +426,15 @@ class FieldWidget(Gtk.DrawingArea):
                     prev_multispline.getSplines()[-1])
             self.queue_draw()
 
+    def on_graph_clicked(self):
+        if self.graph.cursor is not None:
+            cursor = self.graph.find_cursor()
+            if cursor is None:
+                return
+            multispline_index, x = cursor
+
+            self.active_multispline_index = multispline_index
+
     def do_button_release_event(self, event):
         self.drag_start = None
 
@@ -489,7 +502,7 @@ class FieldWidget(Gtk.DrawingArea):
 
             multispline, result = Multispline.nearest_distance(
                 self.multisplines, cur_p)
-            if result and result.fun < 0.1:
+            if self.control_point_index == None and result and result.fun < 0.1:
                 self.active_multispline_index = self.multisplines.index(
                     multispline)
 
