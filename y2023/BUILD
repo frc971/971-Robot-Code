@@ -379,6 +379,7 @@ cc_binary(
     ],
     deps = [
         "//aos:init",
+        "//aos/containers:resizeable_buffer",
         "//aos/time",
         "@com_github_google_glog//:glog",
     ],

@@ -5,10 +5,13 @@
 #include <sys/uio.h>
 
 #include <chrono>
+#include <csignal>
+#include <filesystem>
 
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
+#include "aos/containers/resizeable_buffer.h"
 #include "aos/init.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"
@@ -18,6 +21,7 @@ namespace chrono = std::chrono;
 DEFINE_string(file, "/media/sda1/foo", "File to write to.");
 
 DEFINE_uint32(write_size, 4096, "Size of hunk to write");
+DEFINE_bool(cleanup, true, "If true, delete the created file");
 DEFINE_int32(nice, -20,
              "Priority to nice to. Set to 0 to not change the priority.");
 DEFINE_bool(sync, false, "If true, sync the file after each written block.");
@@ -26,14 +30,42 @@ DEFINE_bool(direct, false, "If true, O_DIRECT.");
 DEFINE_uint32(chunks, 1, "Chunks to write using writev.");
 DEFINE_uint32(chunk_size, 512, "Chunk size to write using writev.");
 
+// Stolen from aos/events/logging/DummyEncoder
+class AlignedReallocator {
+ public:
+  static void *Realloc(void *old, size_t old_size, size_t new_capacity) {
+    void *new_memory = std::aligned_alloc(512, new_capacity);
+    if (old) {
+      memcpy(new_memory, old, old_size);
+      free(old);
+    }
+    return new_memory;
+  }
+};
+
+void trap_sig(int signum) { exit(signum); }
+
+void cleanup() {
+  // Delete FLAGS_file at shutdown
+  PCHECK(std::filesystem::remove(FLAGS_file) != 0) << "Failed to cleanup file";
+}
+
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
+  // c++ needs bash's trap <fcn> EXIT
+  // instead we get this mess :(
+  if (FLAGS_cleanup) {
+    std::signal(SIGINT, trap_sig);
+    std::signal(SIGTERM, trap_sig);
+    std::signal(SIGKILL, trap_sig);
+    std::signal(SIGHUP, trap_sig);
+    std::atexit(cleanup);
+  }
+  aos::AllocatorResizeableBuffer<AlignedReallocator> data;
 
-  std::vector<uint8_t> data;
-
-  // We want uncompressible data.  The easiest way to do this is to grab a good
-  // sized block from /dev/random, and then reuse it.
   {
+    // We want uncompressible data.  The easiest way to do this is to grab a
+    // good sized block from /dev/random, and then reuse it.
     int random_fd = open("/dev/random", O_RDONLY | O_CLOEXEC);
     PCHECK(random_fd != -1) << ": Failed to open /dev/random";
     data.resize(FLAGS_write_size);
@@ -49,17 +81,19 @@ int main(int argc, char **argv) {
   }
 
   std::vector<struct iovec> iovec;
-  iovec.resize(FLAGS_chunks);
-  CHECK_LE(FLAGS_chunks * FLAGS_chunk_size, FLAGS_write_size);
+  if (FLAGS_writev) {
+    iovec.resize(FLAGS_chunks);
+    CHECK_LE(FLAGS_chunks * FLAGS_chunk_size, FLAGS_write_size);
 
-  for (size_t i = 0; i < FLAGS_chunks; ++i) {
-    iovec[i].iov_base = &data[i * FLAGS_chunk_size];
-    iovec[i].iov_len = FLAGS_chunk_size;
+    for (size_t i = 0; i < FLAGS_chunks; ++i) {
+      iovec[i].iov_base = &data.at(i * FLAGS_chunk_size);
+      iovec[i].iov_len = FLAGS_chunk_size;
+    }
+    iovec[FLAGS_chunks - 1].iov_base =
+        &data.at((FLAGS_chunks - 1) * FLAGS_chunk_size);
+    iovec[FLAGS_chunks - 1].iov_len =
+        data.size() - (FLAGS_chunks - 1) * FLAGS_chunk_size;
   }
-  iovec[FLAGS_chunks - 1].iov_base =
-      &data[(FLAGS_chunks - 1) * FLAGS_chunk_size];
-  iovec[FLAGS_chunks - 1].iov_len =
-      data.size() - (FLAGS_chunks - 1) * FLAGS_chunk_size;
 
   int fd =
       open(FLAGS_file.c_str(),

@@ -45,6 +45,8 @@ class AllocatorResizeableBuffer {
   const uint8_t *begin() const { return data(); }
   uint8_t *end() { return data() + size(); }
   const uint8_t *end() const { return data() + size(); }
+  uint8_t &at(int index) { return *(data() + index); }
+  const uint8_t &at(int index) const { return *(data() + index); }
 
   size_t size() const { return size_; }
   size_t capacity() const { return capacity_; }
