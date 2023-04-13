@@ -15,10 +15,10 @@ DEFINE_bool(forwards, true, "If true, run the forwards simulation.");
 DEFINE_bool(plot, true, "If true, plot");
 DEFINE_bool(plot_thetas, true, "If true, plot the angles");
 
-DEFINE_double(alpha0_max, 20.0, "Max acceleration on joint 0.");
-DEFINE_double(alpha1_max, 30.0, "Max acceleration on joint 1.");
-DEFINE_double(alpha2_max, 60.0, "Max acceleration on joint 2.");
-DEFINE_double(vmax_plan, 10.0, "Max voltage to plan.");
+DEFINE_double(alpha0_max, 15.0, "Max acceleration on joint 0.");
+DEFINE_double(alpha1_max, 10.0, "Max acceleration on joint 1.");
+DEFINE_double(alpha2_max, 90.0, "Max acceleration on joint 2.");
+DEFINE_double(vmax_plan, 9.5, "Max voltage to plan.");
 DEFINE_double(vmax_battery, 12.0, "Max battery voltage.");
 DEFINE_double(time, 2.0, "Simulation time.");
 
@@ -36,12 +36,20 @@ void Main() {
 
   Eigen::Matrix<double, 2, 4> spline_params;
 
-  spline_params << 0.30426338, 0.42813912, 0.64902386, 0.55127045, -1.73611082,
-      -1.64478944, -1.04763868, -0.82624244;
+  spline_params << 3.227752818257, 3.032002509469, 3.131082488348,
+      3.141592653590, 0.914286433787, 0.436747899287, 0.235917057271,
+      0.000000000000;
   LOG(INFO) << "Spline " << spline_params;
   NSpline<4, 2> spline(spline_params);
   CosSpline cos_spline(spline,
-                       {{0.0, 0.1}, {0.3, 0.1}, {0.7, 0.2}, {1.0, 0.2}});
+                       {
+                           CosSpline::AlphaTheta{.alpha = 0.000000000000,
+                                                 .theta = 1.570796326795},
+                           CosSpline::AlphaTheta{.alpha = 0.050000000000,
+                                                 .theta = 1.570796326795},
+                           CosSpline::AlphaTheta{.alpha = 1.000000000000,
+                                                 .theta = 0.000000000000},
+                       });
   Path distance_spline(cos_spline, 100);
 
   Trajectory trajectory(&dynamics, &hybrid_roll.plant(),
@@ -300,10 +308,14 @@ void Main() {
         (::Eigen::Matrix<double, 2, 1>() << arm_X(0), arm_X(2)).finished(),
         sim_dt);
     roll.Correct((::Eigen::Matrix<double, 1, 1>() << roll_X(0)).finished());
+    bool disabled = false;
+    if (t > 0.40 && t < 0.46) {
+      disabled = true;
+    }
     follower.Update(
         (Eigen::Matrix<double, 9, 1>() << arm_ekf.X_hat(), roll.X_hat())
             .finished(),
-        false, sim_dt, FLAGS_vmax_plan, FLAGS_vmax_battery);
+        disabled, sim_dt, FLAGS_vmax_plan, FLAGS_vmax_battery);
 
     const ::Eigen::Matrix<double, 3, 1> theta_t =
         trajectory.ThetaT(follower.goal()(0));

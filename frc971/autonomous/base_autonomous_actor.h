@@ -41,7 +41,9 @@ class BaseAutonomousActor : public ::aos::common::actions::ActorBase<Goal> {
     // Whether there is less than a certain distance, in meters, remaining in
     // the current spline.
     bool SplineDistanceRemaining(double distance);
+    bool SplineDistanceTraveled(double distance);
     bool WaitForSplineDistanceRemaining(double distance);
+    bool WaitForSplineDistanceTraveled(double distance);
 
     // Returns [x, y, theta] position of the start.
     const Eigen::Vector3d &starting_position() const { return spline_start_; }

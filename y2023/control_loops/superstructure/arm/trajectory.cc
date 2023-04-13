@@ -974,8 +974,8 @@ void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 9, 1> &X,
     }
 
     // Pull us back to the previous point until we aren't saturated anymore.
-    double saturation_goal_velocity;
-    double saturation_goal_acceleration;
+    double saturation_goal_velocity = 0.0;
+    double saturation_goal_acceleration = 0.0;
     while (step_size > 0.01) {
       USaturationSearch(goal_(0), last_goal_(0), goal_(1), last_goal_(1),
                         saturation_fraction_along_path_, arm_K, X, *trajectory_,

@@ -450,6 +450,35 @@ bool BaseAutonomousActor::SplineHandle::SplineDistanceRemaining(
   return false;
 }
 
+bool BaseAutonomousActor::SplineHandle::SplineDistanceTraveled(
+    double distance) {
+  base_autonomous_actor_->drivetrain_status_fetcher_.Fetch();
+  if (base_autonomous_actor_->drivetrain_status_fetcher_.get()) {
+    // Confirm that:
+    // (a) The spline has started executiong (is_executing remains true even
+    //     when we reach the end of the spline).
+    // (b) The spline that we are executing is the correct one.
+    // (c) There is less than distance distance remaining.
+    if (base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
+            ->goal_spline_handle() != spline_handle_) {
+      // Never done if we aren't the active spline.
+      return false;
+    }
+
+    if (base_autonomous_actor_->drivetrain_status_fetcher_->trajectory_logging()
+            ->is_executed()) {
+      return true;
+    }
+    return base_autonomous_actor_->drivetrain_status_fetcher_
+               ->trajectory_logging()
+               ->is_executing() &&
+           base_autonomous_actor_->drivetrain_status_fetcher_
+                   ->trajectory_logging()
+                   ->distance_traveled() > distance;
+  }
+  return false;
+}
+
 bool BaseAutonomousActor::SplineHandle::WaitForSplineDistanceRemaining(
     double distance) {
   ::aos::time::PhasedLoop phased_loop(
@@ -462,6 +491,23 @@ bool BaseAutonomousActor::SplineHandle::WaitForSplineDistanceRemaining(
     }
     phased_loop.SleepUntilNext();
     if (SplineDistanceRemaining(distance)) {
+      return true;
+    }
+  }
+}
+
+bool BaseAutonomousActor::SplineHandle::WaitForSplineDistanceTraveled(
+    double distance) {
+  ::aos::time::PhasedLoop phased_loop(
+      frc971::controls::kLoopFrequency,
+      base_autonomous_actor_->event_loop()->monotonic_now(),
+      ActorBase::kLoopOffset);
+  while (true) {
+    if (base_autonomous_actor_->ShouldCancel()) {
+      return false;
+    }
+    phased_loop.SleepUntilNext();
+    if (SplineDistanceTraveled(distance)) {
       return true;
     }
   }
