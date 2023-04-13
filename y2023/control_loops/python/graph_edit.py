@@ -244,6 +244,7 @@ class ArmUi(Gtk.DrawingArea):
         self.set_size_request(ARM_AREA_WIDTH, ARM_AREA_HEIGHT)
         self.center = (0, 0)
         self.shape = (ARM_AREA_WIDTH, ARM_AREA_HEIGHT)
+        self.window_shape = (ARM_AREA_WIDTH, ARM_AREA_HEIGHT)
         self.theta_version = False
 
         self.init_extents()
@@ -325,9 +326,6 @@ class ArmUi(Gtk.DrawingArea):
 
     def on_draw(self, widget, event):
         cr = self.get_window().cairo_create()
-
-        self.window_shape = (self.get_window().get_geometry().width,
-                             self.get_window().get_geometry().height)
 
         cr.save()
         cr.set_font_size(20)
