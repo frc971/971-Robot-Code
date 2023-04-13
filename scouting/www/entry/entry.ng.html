@@ -177,6 +177,15 @@
       >
         LOW
       </button>
+      <!-- Impossible to place supercharged pieces in auto. -->
+      <div *ngIf="autoPhase == false" class="d-grid gap-2">
+        <button
+          class="btn btn-dark"
+          (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kSupercharged});"
+        >
+          SUPERCHARGED
+        </button>
+      </div>
       <!-- 'Balancing' during auto. -->
       <div *ngIf="autoPhase" class="d-grid gap-2">
         <label>
