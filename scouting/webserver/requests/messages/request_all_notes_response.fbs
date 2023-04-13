@@ -5,7 +5,7 @@ table Note {
     notes:string (id: 1);
     good_driving:bool (id: 2);
     bad_driving:bool (id: 3);
-    solid_pickup:bool (id: 4);
+    solid_placing:bool (id: 4);
     sketchy_placing:bool (id: 5);
     good_defense:bool (id: 6);
     bad_defense:bool (id: 7);

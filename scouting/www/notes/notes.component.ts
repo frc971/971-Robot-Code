@@ -40,7 +40,7 @@ type Section = 'TeamSelection' | 'Data';
 interface Keywords {
   goodDriving: boolean;
   badDriving: boolean;
-  solidPickup: boolean;
+  solidPlacing: boolean;
   sketchyPlacing: boolean;
   goodDefense: boolean;
   badDefense: boolean;
@@ -56,7 +56,7 @@ interface Input {
 const KEYWORD_CHECKBOX_LABELS = {
   goodDriving: 'Good Driving',
   badDriving: 'Bad Driving',
-  solidPickup: 'Solid Pickup',
+  solidPlacing: 'Solid Placing',
   sketchyPlacing: 'Sketchy Placing',
   goodDefense: 'Good Defense',
   badDefense: 'Bad Defense',
@@ -115,7 +115,7 @@ export class Notes {
       keywordsData: {
         goodDriving: false,
         badDriving: false,
-        solidPickup: false,
+        solidPlacing: false,
         sketchyPlacing: false,
         goodDefense: false,
         badDefense: false,
@@ -152,7 +152,7 @@ export class Notes {
           dataFb,
           this.newData[i].keywordsData.goodDriving,
           this.newData[i].keywordsData.badDriving,
-          this.newData[i].keywordsData.solidPickup,
+          this.newData[i].keywordsData.solidPlacing,
           this.newData[i].keywordsData.sketchyPlacing,
           this.newData[i].keywordsData.goodDefense,
           this.newData[i].keywordsData.badDefense,
