@@ -242,8 +242,8 @@ WriteCode FileHandler::WriteV(struct iovec *iovec_data, size_t iovec_size,
                     total_write_bytes_ - last_synced_bytes_,
                     POSIX_FADV_DONTNEED);
 
-      last_synced_bytes_ = total_write_bytes_;
     }
+    last_synced_bytes_ = total_write_bytes_;
   }
 
   const auto end = aos::monotonic_clock::now();
