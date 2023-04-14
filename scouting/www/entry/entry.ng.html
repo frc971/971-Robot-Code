@@ -92,7 +92,13 @@
     <h6 class="text-muted">
       Last Action: {{actionList[actionList.length - 1].type}}
     </h6>
-    <div class="d-grid gap-5">
+    <!-- 
+      Decrease distance between buttons during auto to make space for auto balancing
+      selection and keep all buttons visible without scrolling on most devices.
+    -->
+    <div
+      [ngClass]="{'d-grid': true, 'gap-3': autoPhase === true, 'gap-5': autoPhase === false}"
+    >
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
@@ -136,7 +142,7 @@
       </div>
       <button
         *ngIf="autoPhase"
-        class="btn btn-info"
+        class="btn btn-dark"
         (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
       >
         Start Teleop
@@ -154,7 +160,13 @@
     <h6 class="text-muted">
       Last Action: {{actionList[actionList.length - 1].type}}
     </h6>
-    <div class="d-grid gap-5">
+    <!-- 
+      Decrease distance between buttons during auto to make space for auto balancing
+      selection and keep all buttons visible without scrolling on most devices.
+    -->
+    <div
+      [ngClass]="{'d-grid': true, 'gap-3': autoPhase === true, 'gap-5': autoPhase === false}"
+    >
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
@@ -213,7 +225,7 @@
       </div>
       <button
         *ngIf="autoPhase"
-        class="btn btn-info"
+        class="btn btn-dark"
         (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
       >
         Start Teleop
