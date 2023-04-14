@@ -12,7 +12,8 @@ enum ObjectType: short {
 enum ScoreLevel: short {
     kLow,
     kMiddle,
-    kHigh
+    kHigh,
+    kSupercharged,
 }
 
 table AutoBalanceAction {

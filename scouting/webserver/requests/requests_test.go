@@ -129,7 +129,7 @@ func TestRequestAllMatches(t *testing.T) {
 				LowConesAuto: 1, MiddleConesAuto: 2, HighConesAuto: 1,
 				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
 				HighCubes: 2, CubesDropped: 1, LowCones: 1,
-				MiddleCones: 2, HighCones: 0, ConesDropped: 1,
+				MiddleCones: 2, HighCones: 0, ConesDropped: 1, SuperchargedPieces: 0,
 				AvgCycle: 34, DockedAuto: true, EngagedAuto: true,
 				BalanceAttemptAuto: false, Docked: false, Engaged: false,
 				BalanceAttempt: false, CollectedBy: "alex",
@@ -141,7 +141,7 @@ func TestRequestAllMatches(t *testing.T) {
 				LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
 				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
 				HighCubes: 1, CubesDropped: 0, LowCones: 0,
-				MiddleCones: 2, HighCones: 1, ConesDropped: 1,
+				MiddleCones: 2, HighCones: 1, ConesDropped: 1, SuperchargedPieces: 0,
 				AvgCycle: 53, DockedAuto: true, EngagedAuto: false,
 				BalanceAttemptAuto: false, Docked: false, Engaged: false,
 				BalanceAttempt: true, CollectedBy: "bob",
@@ -214,7 +214,7 @@ func TestRequest2023DataScouting(t *testing.T) {
 				LowConesAuto: 1, MiddleConesAuto: 2, HighConesAuto: 1,
 				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
 				HighCubes: 2, CubesDropped: 1, LowCones: 1,
-				MiddleCones: 2, HighCones: 0, ConesDropped: 1,
+				MiddleCones: 2, HighCones: 0, ConesDropped: 1, SuperchargedPieces: 0,
 				AvgCycle: 34, DockedAuto: true, EngagedAuto: false,
 				BalanceAttemptAuto: false, Docked: false, Engaged: false,
 				BalanceAttempt: true, CollectedBy: "isaac",
@@ -226,7 +226,7 @@ func TestRequest2023DataScouting(t *testing.T) {
 				LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
 				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
 				HighCubes: 1, CubesDropped: 0, LowCones: 0,
-				MiddleCones: 2, HighCones: 1, ConesDropped: 1,
+				MiddleCones: 2, HighCones: 1, ConesDropped: 1, SuperchargedPieces: 0,
 				AvgCycle: 53, DockedAuto: false, EngagedAuto: false,
 				BalanceAttemptAuto: true, Docked: false, Engaged: false,
 				BalanceAttempt: true, CollectedBy: "unknown",
@@ -255,7 +255,7 @@ func TestRequest2023DataScouting(t *testing.T) {
 				LowConesAuto: 1, MiddleConesAuto: 2, HighConesAuto: 1,
 				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
 				HighCubes: 2, CubesDropped: 1, LowCones: 1,
-				MiddleCones: 2, HighCones: 0, ConesDropped: 1,
+				MiddleCones: 2, HighCones: 0, ConesDropped: 1, SuperchargedPieces: 0,
 				AvgCycle: 34, DockedAuto: true, EngagedAuto: false,
 				BalanceAttemptAuto: false, Docked: false, Engaged: false,
 				BalanceAttempt: true, CollectedBy: "isaac",
@@ -267,7 +267,7 @@ func TestRequest2023DataScouting(t *testing.T) {
 				LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
 				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
 				HighCubes: 1, CubesDropped: 0, LowCones: 0,
-				MiddleCones: 2, HighCones: 1, ConesDropped: 1,
+				MiddleCones: 2, HighCones: 1, ConesDropped: 1, SuperchargedPieces: 0,
 				AvgCycle: 53, DockedAuto: false, EngagedAuto: false,
 				BalanceAttemptAuto: true, Docked: false, Engaged: false,
 				BalanceAttempt: true, CollectedBy: "unknown",
@@ -368,6 +368,27 @@ func TestConvertActionsToStat(t *testing.T) {
 			},
 			{
 				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypePickupObjectAction,
+					Value: &submit_actions.PickupObjectActionT{
+						ObjectType: submit_actions.ObjectTypekCube,
+						Auto:       false,
+					},
+				},
+				Timestamp: 3500,
+			},
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
+					Type: submit_actions.ActionTypePlaceObjectAction,
+					Value: &submit_actions.PlaceObjectActionT{
+						ObjectType: submit_actions.ObjectTypekCube,
+						ScoreLevel: submit_actions.ScoreLevelkSupercharged,
+						Auto:       false,
+					},
+				},
+				Timestamp: 3900,
+			},
+			{
+				ActionTaken: &submit_actions.ActionTypeT{
 					Type: submit_actions.ActionTypeEndMatchAction,
 					Value: &submit_actions.EndMatchActionT{
 						Docked:         true,
@@ -375,7 +396,7 @@ func TestConvertActionsToStat(t *testing.T) {
 						BalanceAttempt: true,
 					},
 				},
-				Timestamp: 4000,
+				Timestamp: 4200,
 			},
 		},
 	}).Pack(builder))
@@ -394,8 +415,8 @@ func TestConvertActionsToStat(t *testing.T) {
 		LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
 		ConesDroppedAuto: 0, LowCubes: 0, MiddleCubes: 0,
 		HighCubes: 0, CubesDropped: 0, LowCones: 0,
-		MiddleCones: 0, HighCones: 1, ConesDropped: 0,
-		AvgCycle: 1100, DockedAuto: true, EngagedAuto: true,
+		MiddleCones: 0, HighCones: 1, ConesDropped: 0, SuperchargedPieces: 1,
+		AvgCycle: 950, DockedAuto: true, EngagedAuto: true,
 		BalanceAttemptAuto: false, Docked: true, Engaged: false,
 		BalanceAttempt: true, CollectedBy: "katie",
 	}

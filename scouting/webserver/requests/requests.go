@@ -380,7 +380,7 @@ func ConvertActionsToStat(submitActions *submit_actions.SubmitActions) (db.Stats
 	stat := db.Stats2023{TeamNumber: string(submitActions.TeamNumber()), MatchNumber: submitActions.MatchNumber(), SetNumber: submitActions.SetNumber(), CompLevel: string(submitActions.CompLevel()),
 		StartingQuadrant: 0, LowCubesAuto: 0, MiddleCubesAuto: 0, HighCubesAuto: 0, CubesDroppedAuto: 0,
 		LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0, ConesDroppedAuto: 0, LowCubes: 0, MiddleCubes: 0, HighCubes: 0,
-		CubesDropped: 0, LowCones: 0, MiddleCones: 0, HighCones: 0, ConesDropped: 0, AvgCycle: 0, CollectedBy: string(submitActions.CollectedBy()),
+		CubesDropped: 0, LowCones: 0, MiddleCones: 0, HighCones: 0, ConesDropped: 0, SuperchargedPieces: 0, AvgCycle: 0, CollectedBy: string(submitActions.CollectedBy()),
 	}
 	// Loop over all actions.
 	for i := 0; i < submitActions.ActionsListLength(); i++ {
@@ -460,6 +460,8 @@ func ConvertActionsToStat(submitActions *submit_actions.SubmitActions) (db.Stats
 				stat.HighConesAuto += 1
 			} else if object == 1 && level == 2 && auto == false {
 				stat.HighCones += 1
+			} else if level == 3 {
+				stat.SuperchargedPieces += 1
 			} else {
 				return db.Stats2023{}, errors.New(fmt.Sprintf("Got unknown ObjectType/ScoreLevel/Auto combination"))
 			}
@@ -541,6 +543,7 @@ func (handler request2023DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 			MiddleCones:        stat.MiddleCones,
 			HighCones:          stat.HighCones,
 			ConesDropped:       stat.ConesDropped,
+			SuperchargedPieces: stat.SuperchargedPieces,
 			AvgCycle:           stat.AvgCycle,
 			DockedAuto:         stat.DockedAuto,
 			EngagedAuto:        stat.EngagedAuto,
