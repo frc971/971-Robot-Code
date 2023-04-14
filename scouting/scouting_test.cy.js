@@ -20,6 +20,17 @@ function setInputTo(fieldSelector, value) {
   cy.get(fieldSelector).type('{selectAll}' + value);
 }
 
+// Click on a random team in the Match list. The exact details here are not
+// important, but we need to know what they are. This could as well be any
+// other team from any other match.
+function clickSemiFinal2Match3Team5254() {
+  // On the 87th row of matches (index 86) click on the second team
+  // (index 1) which resolves to team 5254 in semi final 2 match 3.
+  cy.get('button.match-item')
+    .eq(86 * 6 + 1)
+    .click();
+}
+
 // Moves the nth slider left or right. A positive "adjustBy" value moves the
 // slider to the right. A negative value moves the slider to the left.
 //
@@ -91,13 +102,9 @@ describe('Scouting app tests', () => {
   it('should: prefill the match information.', () => {
     headerShouldBe('Matches');
 
-    // On the 87th row of matches (index 86) click on the second team
-    // (index 1) which resolves to team 5254 in semi final 2 match 3.
-    cy.get('button.match-item')
-      .eq(86 * 6 + 1)
-      .click();
+    clickSemiFinal2Match3Team5254();
 
-    headerShouldBe('Team Selection');
+    headerShouldBe(' Team Selection ');
     cy.get('#match_number').should('have.value', '3');
     cy.get('#team_number').should('have.value', '5254');
     cy.get('#set_number').should('have.value', '2');
@@ -106,11 +113,13 @@ describe('Scouting app tests', () => {
 
   //TODO(FILIP): Verify last action when the last action header gets added.
   it('should: be able to submit data scouting.', () => {
-    switchToTab('Data Entry');
-    headerShouldBe('Team Selection');
+    clickSemiFinal2Match3Team5254();
+
+    headerShouldBe(' Team Selection ');
     clickButton('Next');
 
     // Select Starting Position.
+    headerShouldBe('5254 Init ');
     cy.get('[type="radio"]').first().check();
     clickButton('Start Match');
 
@@ -132,15 +141,16 @@ describe('Scouting app tests', () => {
     cy.get('[type="checkbox"]').check();
 
     clickButton('End Match');
-    headerShouldBe('Review and Submit');
+    headerShouldBe('5254 Review and Submit ');
 
     clickButton('Submit');
-    headerShouldBe('Success');
+    headerShouldBe('5254 Success ');
   });
 
   it('should: be able to return to correct screen with undo for pick and place.', () => {
-    switchToTab('Data Entry');
-    headerShouldBe('Team Selection');
+    clickSemiFinal2Match3Team5254();
+
+    headerShouldBe(' Team Selection ');
     clickButton('Next');
 
     // Select Starting Position.
@@ -154,13 +164,13 @@ describe('Scouting app tests', () => {
     clickButton('UNDO');
 
     // User should be back on pickup screen.
-    headerShouldBe('Pickup');
+    headerShouldBe('5254 Pickup ');
 
     // Check the same thing but for undoing place.
     clickButton('CUBE');
     clickButton('MID');
     clickButton('UNDO');
-    headerShouldBe('Place');
+    headerShouldBe('5254 Place ');
   });
 
   it('should: submit note scouting for multiple teams', () => {
