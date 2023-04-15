@@ -284,6 +284,9 @@ void LineFollowDrivetrain::Update(
   } else if (minU < -12.0) {
     U_ = U_ - U_.Ones() * (minU + 12.0);
   }
+  if (!U_.allFinite()) {
+    U_.setZero();
+  }
 }
 
 flatbuffers::Offset<LineFollowLogging> LineFollowDrivetrain::PopulateStatus(
