@@ -384,6 +384,14 @@
       ]
     },
     {
+      "name": "camera_monitor",
+      "executable_name": "camera_monitor",
+      "user": "pi",
+      "nodes": [
+        "pi{{ NUM }}"
+      ]
+    },
+    {
       "name": "foxglove_websocket",
       "user": "pi",
       "nodes": [

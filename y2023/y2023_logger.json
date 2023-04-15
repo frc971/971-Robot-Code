@@ -447,6 +447,14 @@
       ]
     },
     {
+      "name": "camera_monitor",
+      "executable_name": "camera_monitor",
+      "user": "pi",
+      "nodes": [
+        "logger"
+      ]
+    },
+    {
       "name": "game_pieces_detector_starter",
       "executable_name": "game_pieces_detector_starter.sh",
       "autostart": true,
