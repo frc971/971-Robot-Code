@@ -93,8 +93,7 @@ class TargetMapperReplay {
 
   // Gets images from the given pi and passes apriltag positions to
   // HandleAprilTags()
-  void HandlePiCaptures(aos::EventLoop *detection_event_loop,
-                        aos::EventLoop *mapping_event_loop);
+  void HandlePiCaptures(aos::EventLoop *mapping_event_loop);
 
   aos::logger::LogReader *reader_;
   // April tag detections from all pis
@@ -117,7 +116,6 @@ class TargetMapperReplay {
   // clearly
   double max_delta_T_world_robot_;
 
-  std::vector<std::unique_ptr<aos::EventLoop>> detection_event_loops_;
   std::vector<std::unique_ptr<aos::EventLoop>> mapping_event_loops_;
 
   std::unique_ptr<aos::EventLoop> mcap_event_loop_;
@@ -151,15 +149,10 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
       last_draw_time_(aos::distributed_clock::min_time),
       last_H_world_robot_(Eigen::Matrix4d::Identity()),
       max_delta_T_world_robot_(0.0) {
-  // Send new april tag poses. This allows us to take a log of images, then
-  // play with the april detection code and see those changes take effect in
-  // mapping
   constexpr size_t kNumPis = 4;
+  // TODO(milind): add a flag to support replaying april detection from full
+  // logs as well.
   for (size_t i = 1; i <= kNumPis; i++) {
-    reader_->RemapLoggedChannel(absl::StrFormat("/pi%u/camera", i),
-                                "frc971.vision.TargetMap");
-    reader_->RemapLoggedChannel(absl::StrFormat("/pi%u/camera", i),
-                                "foxglove.ImageAnnotations");
     reader_->RemapLoggedChannel(absl::StrFormat("/pi%u/constants", i),
                                 "y2023.Constants");
   }
@@ -175,14 +168,10 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
     std::string node_name = "pi" + std::to_string(i);
     const aos::Node *pi =
         aos::configuration::GetNode(reader_->configuration(), node_name);
-    detection_event_loops_.emplace_back(
-        reader_->event_loop_factory()->MakeEventLoop(node_name + "_detection",
-                                                     pi));
     mapping_event_loops_.emplace_back(
         reader_->event_loop_factory()->MakeEventLoop(node_name + "_mapping",
                                                      pi));
     HandlePiCaptures(
-        detection_event_loops_[detection_event_loops_.size() - 1].get(),
         mapping_event_loops_[mapping_event_loops_.size() - 1].get());
   }
 
@@ -349,21 +338,16 @@ void TargetMapperReplay::HandleAprilTags(
   }
 }
 
-void TargetMapperReplay::HandlePiCaptures(aos::EventLoop *detection_event_loop,
-                                          aos::EventLoop *mapping_event_loop) {
-  static constexpr std::string_view kImageChannel = "/camera";
-  // For the robots, we need to flip the image since the cameras are rolled by
-  // 180 degrees
-  bool flip_image = (FLAGS_team_number != 7971);
-  auto detector_ptr = std::make_unique<AprilRoboticsDetector>(
-      detection_event_loop, kImageChannel, flip_image);
+void TargetMapperReplay::HandlePiCaptures(aos::EventLoop *mapping_event_loop) {
   // Get the camera extrinsics
-  cv::Mat extrinsics_cv = detector_ptr->extrinsics().value();
+  const frc971::constants::ConstantsFetcher<Constants> constants(
+      mapping_event_loop);
+  const auto *calibration = FindCameraCalibration(
+      constants.constants(), mapping_event_loop->node()->name()->string_view());
+  cv::Mat extrinsics_cv = CameraExtrinsics(calibration).value();
   Eigen::Matrix4d extrinsics_matrix;
   cv::cv2eigen(extrinsics_cv, extrinsics_matrix);
   const auto extrinsics = Eigen::Affine3d(extrinsics_matrix);
-
-  detectors_.emplace_back(std::move(detector_ptr));
 
   mapping_event_loop->MakeWatcher("/camera", [=](const TargetMap &map) {
     aos::distributed_clock::time_point pi_distributed_time =
@@ -372,7 +356,7 @@ void TargetMapperReplay::HandlePiCaptures(aos::EventLoop *detection_event_loop,
             ->ToDistributedClock(aos::monotonic_clock::time_point(
                 aos::monotonic_clock::duration(map.monotonic_timestamp_ns())));
 
-    std::string node_name = detection_event_loop->node()->name()->str();
+    std::string node_name = mapping_event_loop->node()->name()->str();
     HandleAprilTags(map, pi_distributed_time, node_name, extrinsics);
   });
 }
