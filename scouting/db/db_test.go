@@ -144,7 +144,8 @@ func TestAddToStats2023DB(t *testing.T) {
 
 	correct := []Stats2023{
 		Stats2023{
-			TeamNumber: "6344", MatchNumber: 3, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "6344", MatchNumber: 3, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
 			MiddleCubesAuto: 1, HighCubesAuto: 0, CubesDroppedAuto: 1,
 			LowConesAuto: 1, MiddleConesAuto: 0, HighConesAuto: 2,
@@ -156,7 +157,8 @@ func TestAddToStats2023DB(t *testing.T) {
 			BalanceAttempt: false, CollectedBy: "emma",
 		},
 		Stats2023{
-			TeamNumber: "7454", MatchNumber: 3, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "7454", MatchNumber: 3, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 2, LowCubesAuto: 1,
 			MiddleCubesAuto: 2, HighCubesAuto: 2, CubesDroppedAuto: 0,
 			LowConesAuto: 2, MiddleConesAuto: 0, HighConesAuto: 0,
@@ -168,7 +170,8 @@ func TestAddToStats2023DB(t *testing.T) {
 			BalanceAttempt: false, CollectedBy: "tyler",
 		},
 		Stats2023{
-			TeamNumber: "4354", MatchNumber: 3, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "4354", MatchNumber: 3, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 3, LowCubesAuto: 0,
 			MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 0,
 			LowConesAuto: 0, MiddleConesAuto: 2, HighConesAuto: 1,
@@ -180,7 +183,8 @@ func TestAddToStats2023DB(t *testing.T) {
 			BalanceAttempt: true, CollectedBy: "isaac",
 		},
 		Stats2023{
-			TeamNumber: "6533", MatchNumber: 3, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "6533", MatchNumber: 3, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
 			MiddleCubesAuto: 2, HighCubesAuto: 1, CubesDroppedAuto: 1,
 			LowConesAuto: 1, MiddleConesAuto: 0, HighConesAuto: 0,
@@ -192,7 +196,8 @@ func TestAddToStats2023DB(t *testing.T) {
 			BalanceAttempt: true, CollectedBy: "will",
 		},
 		Stats2023{
-			TeamNumber: "8354", MatchNumber: 3, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "8354", MatchNumber: 3, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 2, LowCubesAuto: 1,
 			MiddleCubesAuto: 1, HighCubesAuto: 2, CubesDroppedAuto: 0,
 			LowConesAuto: 0, MiddleConesAuto: 1, HighConesAuto: 1,
@@ -236,13 +241,47 @@ func TestAddToStats2023DB(t *testing.T) {
 	}
 }
 
+func TestInsertPreScoutedStats(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	stats := Stats2023{
+		PreScouting: false,
+		TeamNumber:  "6344", MatchNumber: 3, SetNumber: 1,
+		CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
+		MiddleCubesAuto: 1, HighCubesAuto: 0, CubesDroppedAuto: 1,
+		LowConesAuto: 1, MiddleConesAuto: 0, HighConesAuto: 2,
+		ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 2,
+		HighCubes: 1, CubesDropped: 0, LowCones: 0,
+		MiddleCones: 2, HighCones: 1, ConesDropped: 1, SuperchargedPieces: 0,
+		AvgCycle: 0, Mobility: true, DockedAuto: true, EngagedAuto: false,
+		BalanceAttemptAuto: false, Docked: false, Engaged: false,
+		BalanceAttempt: false, CollectedBy: "emma",
+	}
+
+	// Attempt to insert the non-pre-scouted data and make sure it fails.
+	err := fixture.db.AddToStats2023(stats)
+	if err == nil {
+		t.Fatal("Expected error from inserting the stats.")
+	}
+	if err.Error() != "Failed to find team 6344 in match 3 in the schedule." {
+		t.Fatal("Got:", err.Error())
+	}
+
+	// Mark the data as pre-scouting data. It should now succeed.
+	stats.PreScouting = true
+	err = fixture.db.AddToStats2023(stats)
+	check(t, err, "Failed to add prescouted stats to DB")
+}
+
 func TestQueryingStats2023ByTeam(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
 
 	stats := []Stats2023{
 		Stats2023{
-			TeamNumber: "6344", MatchNumber: 3, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "6344", MatchNumber: 3, SetNumber: 1,
 			CompLevel: "qm", StartingQuadrant: 1, LowCubesAuto: 0,
 			MiddleCubesAuto: 1, HighCubesAuto: 0, CubesDroppedAuto: 1,
 			LowConesAuto: 1, MiddleConesAuto: 0, HighConesAuto: 2,
@@ -254,7 +293,8 @@ func TestQueryingStats2023ByTeam(t *testing.T) {
 			BalanceAttempt: false, CollectedBy: "emma",
 		},
 		Stats2023{
-			TeamNumber: "7454", MatchNumber: 4, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "7454", MatchNumber: 4, SetNumber: 1,
 			CompLevel: "qm", StartingQuadrant: 2, LowCubesAuto: 1,
 			MiddleCubesAuto: 2, HighCubesAuto: 2, CubesDroppedAuto: 0,
 			LowConesAuto: 2, MiddleConesAuto: 0, HighConesAuto: 0,
@@ -266,7 +306,8 @@ func TestQueryingStats2023ByTeam(t *testing.T) {
 			BalanceAttempt: false, CollectedBy: "tyler",
 		},
 		Stats2023{
-			TeamNumber: "6344", MatchNumber: 5, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "6344", MatchNumber: 5, SetNumber: 1,
 			CompLevel: "qm", StartingQuadrant: 1, LowCubesAuto: 0,
 			MiddleCubesAuto: 1, HighCubesAuto: 0, CubesDroppedAuto: 1,
 			LowConesAuto: 1, MiddleConesAuto: 0, HighConesAuto: 2,
@@ -323,7 +364,8 @@ func TestDeleteFromStats(t *testing.T) {
 
 	startingStats := []Stats2023{
 		Stats2023{
-			TeamNumber: "1111", MatchNumber: 5, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "1111", MatchNumber: 5, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 2, LowCubesAuto: 2,
 			MiddleCubesAuto: 0, HighCubesAuto: 1, CubesDroppedAuto: 1,
 			LowConesAuto: 0, MiddleConesAuto: 2, HighConesAuto: 0,
@@ -335,7 +377,8 @@ func TestDeleteFromStats(t *testing.T) {
 			BalanceAttempt: false, CollectedBy: "unknown",
 		},
 		Stats2023{
-			TeamNumber: "2314", MatchNumber: 5, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "2314", MatchNumber: 5, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 3, LowCubesAuto: 1,
 			MiddleCubesAuto: 0, HighCubesAuto: 1, CubesDroppedAuto: 1,
 			LowConesAuto: 0, MiddleConesAuto: 1, HighConesAuto: 0,
@@ -347,7 +390,8 @@ func TestDeleteFromStats(t *testing.T) {
 			BalanceAttempt: false, CollectedBy: "simon",
 		},
 		Stats2023{
-			TeamNumber: "3242", MatchNumber: 5, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "3242", MatchNumber: 5, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
 			MiddleCubesAuto: 2, HighCubesAuto: 0, CubesDroppedAuto: 1,
 			LowConesAuto: 1, MiddleConesAuto: 0, HighConesAuto: 0,
@@ -359,7 +403,8 @@ func TestDeleteFromStats(t *testing.T) {
 			BalanceAttempt: false, CollectedBy: "eliza",
 		},
 		Stats2023{
-			TeamNumber: "1742", MatchNumber: 5, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "1742", MatchNumber: 5, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 4, LowCubesAuto: 1,
 			MiddleCubesAuto: 1, HighCubesAuto: 0, CubesDroppedAuto: 0,
 			LowConesAuto: 0, MiddleConesAuto: 2, HighConesAuto: 0,
@@ -370,7 +415,8 @@ func TestDeleteFromStats(t *testing.T) {
 			Docked: false, Engaged: false, CollectedBy: "isaac",
 		},
 		Stats2023{
-			TeamNumber: "2454", MatchNumber: 5, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "2454", MatchNumber: 5, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
 			MiddleCubesAuto: 0, HighCubesAuto: 0, CubesDroppedAuto: 0,
 			LowConesAuto: 1, MiddleConesAuto: 1, HighConesAuto: 0,
@@ -385,7 +431,8 @@ func TestDeleteFromStats(t *testing.T) {
 
 	correct := []Stats2023{
 		Stats2023{
-			TeamNumber: "3242", MatchNumber: 5, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "3242", MatchNumber: 5, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
 			MiddleCubesAuto: 2, HighCubesAuto: 0, CubesDroppedAuto: 1,
 			LowConesAuto: 1, MiddleConesAuto: 0, HighConesAuto: 0,
@@ -397,7 +444,8 @@ func TestDeleteFromStats(t *testing.T) {
 			BalanceAttempt: false, CollectedBy: "eliza",
 		},
 		Stats2023{
-			TeamNumber: "2454", MatchNumber: 5, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "2454", MatchNumber: 5, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
 			MiddleCubesAuto: 0, HighCubesAuto: 0, CubesDroppedAuto: 0,
 			LowConesAuto: 1, MiddleConesAuto: 1, HighConesAuto: 0,
@@ -677,7 +725,8 @@ func TestReturnStats2023DB(t *testing.T) {
 
 	correct := []Stats2023{
 		Stats2023{
-			TeamNumber: "2343", MatchNumber: 2, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "2343", MatchNumber: 2, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 1,
 			MiddleCubesAuto: 2, HighCubesAuto: 2, CubesDroppedAuto: 1,
 			LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 2,
@@ -689,7 +738,8 @@ func TestReturnStats2023DB(t *testing.T) {
 			BalanceAttempt: true, CollectedBy: "isaac",
 		},
 		Stats2023{
-			TeamNumber: "5443", MatchNumber: 2, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "5443", MatchNumber: 2, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 2, LowCubesAuto: 1,
 			MiddleCubesAuto: 1, HighCubesAuto: 0, CubesDroppedAuto: 1,
 			LowConesAuto: 1, MiddleConesAuto: 1, HighConesAuto: 0,
@@ -701,7 +751,8 @@ func TestReturnStats2023DB(t *testing.T) {
 			BalanceAttempt: false, CollectedBy: "jack",
 		},
 		Stats2023{
-			TeamNumber: "5436", MatchNumber: 2, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "5436", MatchNumber: 2, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 3, LowCubesAuto: 0,
 			MiddleCubesAuto: 2, HighCubesAuto: 0, CubesDroppedAuto: 1,
 			LowConesAuto: 2, MiddleConesAuto: 0, HighConesAuto: 0,
@@ -713,7 +764,8 @@ func TestReturnStats2023DB(t *testing.T) {
 			BalanceAttempt: true, CollectedBy: "martin",
 		},
 		Stats2023{
-			TeamNumber: "5643", MatchNumber: 2, SetNumber: 1,
+			PreScouting: false,
+			TeamNumber:  "5643", MatchNumber: 2, SetNumber: 1,
 			CompLevel: "quals", StartingQuadrant: 4, LowCubesAuto: 0,
 			MiddleCubesAuto: 0, HighCubesAuto: 1, CubesDroppedAuto: 1,
 			LowConesAuto: 2, MiddleConesAuto: 0, HighConesAuto: 0,
