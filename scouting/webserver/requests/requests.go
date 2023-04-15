@@ -377,7 +377,9 @@ func ConvertActionsToStat(submitActions *submit_actions.SubmitActions) (db.Stats
 	cycles := int64(0)
 	picked_up := false
 	lastPlacedTime := int64(0)
-	stat := db.Stats2023{TeamNumber: string(submitActions.TeamNumber()), MatchNumber: submitActions.MatchNumber(), SetNumber: submitActions.SetNumber(), CompLevel: string(submitActions.CompLevel()),
+	stat := db.Stats2023{
+		PreScouting: submitActions.PreScouting(),
+		TeamNumber:  string(submitActions.TeamNumber()), MatchNumber: submitActions.MatchNumber(), SetNumber: submitActions.SetNumber(), CompLevel: string(submitActions.CompLevel()),
 		StartingQuadrant: 0, LowCubesAuto: 0, MiddleCubesAuto: 0, HighCubesAuto: 0, CubesDroppedAuto: 0,
 		LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0, ConesDroppedAuto: 0, LowCubes: 0, MiddleCubes: 0, HighCubes: 0,
 		CubesDropped: 0, LowCones: 0, MiddleCones: 0, HighCones: 0, ConesDropped: 0, SuperchargedPieces: 0, AvgCycle: 0, CollectedBy: string(submitActions.CollectedBy()),
@@ -825,6 +827,7 @@ func (handler submitActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.R
 		request.ActionsList(&action, i)
 
 		dbAction := db.Action{
+			PreScouting: request.PreScouting(),
 			TeamNumber:  string(request.TeamNumber()),
 			MatchNumber: request.MatchNumber(),
 			SetNumber:   request.SetNumber(),

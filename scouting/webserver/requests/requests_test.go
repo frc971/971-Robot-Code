@@ -408,6 +408,7 @@ func TestConvertActionsToStat(t *testing.T) {
 				Timestamp: 4200,
 			},
 		},
+		PreScouting: false,
 	}).Pack(builder))
 
 	submitActions := submit_actions.GetRootAsSubmitActions(builder.FinishedBytes(), 0)
@@ -418,7 +419,8 @@ func TestConvertActionsToStat(t *testing.T) {
 	}
 
 	expected := db.Stats2023{
-		TeamNumber: "4244", MatchNumber: 3, SetNumber: 1,
+		PreScouting: false,
+		TeamNumber:  "4244", MatchNumber: 3, SetNumber: 1,
 		CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 1,
 		MiddleCubesAuto: 0, HighCubesAuto: 0, CubesDroppedAuto: 1,
 		LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
@@ -824,6 +826,7 @@ func TestAddingActions(t *testing.T) {
 				Timestamp: 1009,
 			},
 		},
+		PreScouting: true,
 	}).Pack(builder))
 
 	_, err := debug.SubmitActions("http://localhost:8080", builder.FinishedBytes())
@@ -860,6 +863,7 @@ func TestAddingActions(t *testing.T) {
 
 	expectedActions := []db.Action{
 		{
+			PreScouting:     true,
 			TeamNumber:      "1234",
 			MatchNumber:     4,
 			SetNumber:       1,
@@ -869,6 +873,7 @@ func TestAddingActions(t *testing.T) {
 			Timestamp:       2400,
 		},
 		{
+			PreScouting:     true,
 			TeamNumber:      "1234",
 			MatchNumber:     4,
 			SetNumber:       1,

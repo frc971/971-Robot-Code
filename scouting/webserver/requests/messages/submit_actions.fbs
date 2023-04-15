@@ -70,4 +70,8 @@ table SubmitActions {
     actions_list:[Action] (id:4);
     //TODO: delete this field
     collected_by:string (id: 5);
+    // If this is for pre-scouting, then the server should accept this
+    // submission. I.e. checking that the match information exists in the match
+    // list should be skipped.
+    pre_scouting:bool (id: 6);
 }
