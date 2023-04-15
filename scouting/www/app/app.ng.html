@@ -72,18 +72,15 @@
     *ngSwitchCase="'MatchList'"
   ></app-match-list>
   <app-entry
-    (switchTabsEvent)="switchTabTo($event)"
     [teamNumber]="selectedTeamInMatch.teamNumber"
     [matchNumber]="selectedTeamInMatch.matchNumber"
     [setNumber]="selectedTeamInMatch.setNumber"
     [compLevel]="selectedTeamInMatch.compLevel"
+    [skipTeamSelection]="navigatedFromMatchList"
     *ngSwitchCase="'Entry'"
   ></app-entry>
   <frc971-notes *ngSwitchCase="'Notes'"></frc971-notes>
   <app-driver-ranking *ngSwitchCase="'DriverRanking'"></app-driver-ranking>
   <shift-schedule *ngSwitchCase="'ShiftSchedule'"></shift-schedule>
-  <app-view
-    (switchTabsEvent)="switchTabTo($event)"
-    *ngSwitchCase="'View'"
-  ></app-view>
+  <app-view *ngSwitchCase="'View'"></app-view>
 </ng-container>

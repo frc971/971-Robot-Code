@@ -99,24 +99,23 @@ describe('Scouting app tests', () => {
     cy.get('.badge').eq(89).contains('Final 1 Match 3');
   });
 
-  it('should: prefill the match information.', () => {
-    headerShouldBe('Matches');
-
-    clickSemiFinal2Match3Team5254();
-
+  it('should: be let users enter match information manually.', () => {
+    switchToTab('Entry');
     headerShouldBe(' Team Selection ');
-    cy.get('#match_number').should('have.value', '3');
-    cy.get('#team_number').should('have.value', '5254');
-    cy.get('#set_number').should('have.value', '2');
-    cy.get('#comp_level').should('have.value', '3: sf');
+
+    setInputTo('#match_number', '3');
+    setInputTo('#team_number', '5254');
+    setInputTo('#set_number', '2');
+    setInputTo('#comp_level', '3: sf');
+
+    clickButton('Next');
+
+    headerShouldBe('5254 Init ');
   });
 
   //TODO(FILIP): Verify last action when the last action header gets added.
   it('should: be able to submit data scouting.', () => {
     clickSemiFinal2Match3Team5254();
-
-    headerShouldBe(' Team Selection ');
-    clickButton('Next');
 
     // Select Starting Position.
     headerShouldBe('5254 Init ');
@@ -149,9 +148,6 @@ describe('Scouting app tests', () => {
 
   it('should: be able to return to correct screen with undo for pick and place.', () => {
     clickSemiFinal2Match3Team5254();
-
-    headerShouldBe(' Team Selection ');
-    clickButton('Next');
 
     // Select Starting Position.
     cy.get('[type="radio"]').first().check();
