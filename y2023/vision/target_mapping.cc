@@ -5,7 +5,6 @@
 #include "aos/util/mcap_logger.h"
 #include "frc971/control_loops/pose.h"
 #include "frc971/vision/calibration_generated.h"
-#include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/target_mapper.h"
 #include "frc971/vision/visualize_robot.h"
 #include "opencv2/aruco.hpp"
@@ -49,7 +48,10 @@ DEFINE_uint64(skip_to, 1,
 DEFINE_bool(solve, true, "Whether to solve for the field's target map.");
 DEFINE_string(dump_constraints_to, "/tmp/constraints.txt",
               "Write the target constraints to this path");
-DECLARE_uint64(frozen_target_id);
+DECLARE_int32(frozen_target_id);
+DECLARE_int32(min_target_id);
+DECLARE_int32(max_target_id);
+DECLARE_bool(visualize_solver);
 
 namespace y2023 {
 namespace vision {
@@ -60,9 +62,6 @@ using frc971::vision::TargetMap;
 using frc971::vision::TargetMapper;
 using frc971::vision::VisualizeRobot;
 namespace calibration = frc971::vision::calibration;
-
-constexpr TargetMapper::TargetId kMinTargetId = 1;
-constexpr TargetMapper::TargetId kMaxTargetId = 8;
 
 // Class to handle reading target poses from a replayed log,
 // displaying various debug info, and passing the poses to
@@ -203,7 +202,7 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
         });
   }
 
-  if (FLAGS_visualize) {
+  if (FLAGS_visualize_solver) {
     vis_robot_.ClearImage();
     const double kFocalLength = 500.0;
     vis_robot_.SetDefaultViewpoint(kImageWidth, kFocalLength);
@@ -229,22 +228,23 @@ void TargetMapperReplay::HandleAprilTags(
 
   for (const auto *target_pose_fbs : *map.target_poses()) {
     // Skip detections with invalid ids
-    if (target_pose_fbs->id() < kMinTargetId ||
-        target_pose_fbs->id() > kMaxTargetId) {
-      LOG(WARNING) << "Skipping tag with invalid id of "
-                   << target_pose_fbs->id();
+    if (static_cast<TargetMapper::TargetId>(target_pose_fbs->id()) <
+            FLAGS_min_target_id ||
+        static_cast<TargetMapper::TargetId>(target_pose_fbs->id()) >
+            FLAGS_max_target_id) {
+      VLOG(1) << "Skipping tag with invalid id of " << target_pose_fbs->id();
       continue;
     }
 
     // Skip detections with high pose errors
     if (target_pose_fbs->pose_error() > FLAGS_max_pose_error) {
-      VLOG(1) << " Skipping tag " << target_pose_fbs->id()
+      VLOG(1) << "Skipping tag " << target_pose_fbs->id()
               << " due to pose error of " << target_pose_fbs->pose_error();
       continue;
     }
     // Skip detections with high pose error ratios
     if (target_pose_fbs->pose_error_ratio() > FLAGS_max_pose_error_ratio) {
-      VLOG(1) << " Skipping tag " << target_pose_fbs->id()
+      VLOG(1) << "Skipping tag " << target_pose_fbs->id()
               << " due to pose error ratio of "
               << target_pose_fbs->pose_error_ratio();
       continue;
@@ -274,7 +274,7 @@ void TargetMapperReplay::HandleAprilTags(
             .distortion_factor = distortion_factor,
             .id = static_cast<TargetMapper::TargetId>(target_pose.id)});
 
-    if (FLAGS_visualize) {
+    if (FLAGS_visualize_solver) {
       // If we've already drawn in the current image,
       // display it before clearing and adding the new poses
       if (drawn_nodes_.count(node_name) != 0) {
@@ -419,10 +419,13 @@ void TargetMapperReplay::MaybeSolve() {
                 .pose),
         .distance_from_camera = kSeedDistanceFromCamera,
         .distortion_factor = kSeedDistortionFactor,
-        .id = kMinTargetId};
+        .id = FLAGS_frozen_target_id};
 
-    for (TargetMapper::TargetId id = kMinTargetId; id <= kMaxTargetId; id++) {
-      if (id == static_cast<TargetMapper::TargetId>(FLAGS_frozen_target_id)) {
+    constexpr TargetMapper::TargetId kAbsMinTargetId = 1;
+    constexpr TargetMapper::TargetId kAbsMaxTargetId = 8;
+    for (TargetMapper::TargetId id = kAbsMinTargetId; id <= kAbsMaxTargetId;
+         id++) {
+      if (id == FLAGS_frozen_target_id) {
         continue;
       }
 
