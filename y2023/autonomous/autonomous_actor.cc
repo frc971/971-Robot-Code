@@ -475,7 +475,13 @@ void AutonomousActor::ChargedUpCableSide() {
   splines[1].Start();
 
   std::this_thread::sleep_for(chrono::milliseconds(300));
+  Neutral();
+
+  if (!splines[1].WaitForSplineDistanceTraveled(3.2)) return;
   HighCubeScore();
+  AOS_LOG(
+      INFO, "Extending arm %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
   if (!splines[1].WaitForSplineDistanceRemaining(0.08)) return;
   AOS_LOG(
@@ -521,10 +527,17 @@ void AutonomousActor::ChargedUpCableSide() {
   if (!splines[3].WaitForPlan()) return;
   splines[3].Start();
 
+  std::this_thread::sleep_for(chrono::milliseconds(400));
+  Neutral();
+
   AOS_LOG(
       INFO, "Driving back %lf s\n",
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
+  if (!splines[3].WaitForSplineDistanceTraveled(3.5)) return;
+  AOS_LOG(
+      INFO, "Extending arm %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
   MidCubeScore();
 
   if (!splines[3].WaitForSplineDistanceRemaining(0.07)) return;
