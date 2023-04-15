@@ -283,6 +283,8 @@ class ArmUi(Gtk.DrawingArea):
         # Lets you only view selected path
         self.view_current = False
 
+        self.previous_segment = None
+
         self.editing = True
 
         self.x_offset = 0
@@ -539,6 +541,13 @@ class ArmUi(Gtk.DrawingArea):
         self.theta_version = not self.theta_version
         self.init_extents()
 
+    def undo(self):
+        if self.previous_segment is not None:
+            if self.edit_control1:
+                self.segments[self.index].control1 = self.previous_segment
+            else:
+                self.segments[self.index].control2 = self.previous_segment
+
     def do_key_press(self, event):
         keyval = Gdk.keyval_to_lower(event.keyval)
         print("Gdk.KEY_" + Gdk.keyval_name(keyval))
@@ -561,6 +570,9 @@ class ArmUi(Gtk.DrawingArea):
             # Generate theta points.
             if self.segments:
                 print(repr(self.segments[self.index].ToThetaPoints()))
+
+        elif keyval == Gdk.KEY_u:
+            self.undo()
 
         elif keyval == Gdk.KEY_p:
             if self.index > 0:
@@ -628,11 +640,16 @@ class ArmUi(Gtk.DrawingArea):
             return
 
         self.now_segment_pt = np.array(shift_angles(pt_theta))
-
         if self.editing:
             if self.edit_control1:
+                if (self.now_segment_pt !=
+                        self.segments[self.index].control1).any():
+                    self.previous_segment = self.segments[self.index].control1
                 self.segments[self.index].control1 = self.now_segment_pt
             else:
+                if (self.now_segment_pt !=
+                        self.segments[self.index].control2).any():
+                    self.previous_segment = self.segments[self.index].control2
                 self.segments[self.index].control2 = self.now_segment_pt
 
         print('Clicked at theta: np.array([%s, %s])' %
@@ -700,6 +717,9 @@ class Window(Gtk.Window):
             label="Toggle Control Point Indicators")
         self.indicator_button.connect('clicked', self.on_button_click)
 
+        self.undo_button = Gtk.Button(label="Undo")
+        self.undo_button.connect('clicked', self.on_button_click)
+
         self.box = Gtk.Box(spacing=6)
         self.grid.attach(self.box, 0, 0, 1, 1)
 
@@ -713,6 +733,7 @@ class Window(Gtk.Window):
         self.box.pack_start(self.theta_button, False, False, 0)
         self.box.pack_start(self.editing_button, False, False, 0)
         self.box.pack_start(self.indicator_button, False, False, 0)
+        self.box.pack_start(self.undo_button, False, False, 0)
 
     def on_combo_changed(self, combo):
         iter = combo.get_active_iter()
@@ -743,6 +764,8 @@ class Window(Gtk.Window):
             self.arm_draw.editing = not self.arm_draw.editing
         elif self.indicator_button == button:
             self.arm_draw.show_indicators = not self.arm_draw.show_indicators
+        elif self.undo_button == button:
+            self.arm_draw.undo()
         self.arm_draw.queue_draw()
 
 
