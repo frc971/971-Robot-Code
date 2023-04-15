@@ -397,6 +397,13 @@ func ConvertActionsToStat(submitActions *submit_actions.SubmitActions) (db.Stats
 			var startMatchAction submit_actions.StartMatchAction
 			startMatchAction.Init(actionTable.Bytes, actionTable.Pos)
 			stat.StartingQuadrant = startMatchAction.Position()
+		} else if action_type == submit_actions.ActionTypeMobilityAction {
+			var mobilityAction submit_actions.MobilityAction
+			mobilityAction.Init(actionTable.Bytes, actionTable.Pos)
+			if mobilityAction.Mobility() {
+				stat.Mobility = true
+			}
+
 		} else if action_type == submit_actions.ActionTypeAutoBalanceAction {
 			var autoBalanceAction submit_actions.AutoBalanceAction
 			autoBalanceAction.Init(actionTable.Bytes, actionTable.Pos)
@@ -545,6 +552,7 @@ func (handler request2023DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 			ConesDropped:       stat.ConesDropped,
 			SuperchargedPieces: stat.SuperchargedPieces,
 			AvgCycle:           stat.AvgCycle,
+			Mobility:           stat.Mobility,
 			DockedAuto:         stat.DockedAuto,
 			EngagedAuto:        stat.EngagedAuto,
 			BalanceAttemptAuto: stat.BalanceAttemptAuto,

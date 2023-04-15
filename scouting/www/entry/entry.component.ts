@@ -15,6 +15,7 @@ import {
   ScoreLevel,
   SubmitActions,
   StartMatchAction,
+  MobilityAction,
   AutoBalanceAction,
   PickupObjectAction,
   PlaceObjectAction,
@@ -52,6 +53,11 @@ type ActionT =
       type: 'startMatchAction';
       timestamp?: number;
       position: number;
+    }
+  | {
+      type: 'mobilityAction';
+      timestamp?: number;
+      mobility: boolean;
     }
   | {
       type: 'autoBalanceAction';
@@ -205,22 +211,18 @@ export class EntryComponent implements OnInit {
             startMatchActionOffset
           );
           break;
-
-        case 'pickupObjectAction':
-          const pickupObjectActionOffset =
-            PickupObjectAction.createPickupObjectAction(
-              builder,
-              action.objectType,
-              action.auto || false
-            );
+        case 'mobilityAction':
+          const mobilityActionOffset = MobilityAction.createMobilityAction(
+            builder,
+            action.mobility
+          );
           actionOffset = Action.createAction(
             builder,
             BigInt(action.timestamp || 0),
-            ActionType.PickupObjectAction,
-            pickupObjectActionOffset
+            ActionType.MobilityAction,
+            mobilityActionOffset
           );
           break;
-
         case 'autoBalanceAction':
           const autoBalanceActionOffset =
             AutoBalanceAction.createAutoBalanceAction(
@@ -237,6 +239,20 @@ export class EntryComponent implements OnInit {
           );
           break;
 
+        case 'pickupObjectAction':
+          const pickupObjectActionOffset =
+            PickupObjectAction.createPickupObjectAction(
+              builder,
+              action.objectType,
+              action.auto || false
+            );
+          actionOffset = Action.createAction(
+            builder,
+            BigInt(action.timestamp || 0),
+            ActionType.PickupObjectAction,
+            pickupObjectActionOffset
+          );
+          break;
         case 'placeObjectAction':
           const placeObjectActionOffset =
             PlaceObjectAction.createPlaceObjectAction(

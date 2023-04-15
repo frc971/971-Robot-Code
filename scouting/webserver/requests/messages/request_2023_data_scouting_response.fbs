@@ -27,6 +27,8 @@ table Stats2023 {
   supercharged_pieces:int (id:29);
   // Time in nanoseconds.
   avg_cycle: int64 (id:19);
+  // Did the robot leave its community during auto.
+  mobility: bool (id:30);
   docked_auto: bool (id:20);
   engaged_auto: bool (id:23);
   balance_attempt_auto: bool (id:27);

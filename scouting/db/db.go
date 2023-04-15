@@ -39,6 +39,7 @@ type Stats2023 struct {
 	LowCones, MiddleCones, HighCones, ConesDropped                 int32
 	SuperchargedPieces                                             int32
 	AvgCycle                                                       int64
+	Mobility                                                       bool
 	DockedAuto, EngagedAuto, BalanceAttemptAuto                    bool
 	Docked, Engaged, BalanceAttempt                                bool
 

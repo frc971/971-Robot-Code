@@ -118,6 +118,13 @@
       >
         CUBE
       </button>
+      <button
+        *ngIf="autoPhase"
+        class="btn btn-light"
+        (click)="addAction({type: 'mobilityAction', mobility: true});"
+      >
+        Mobility
+      </button>
       <!-- 'Balancing' during auto. -->
       <div *ngIf="autoPhase" class="d-grid gap-2">
         <label>
@@ -192,6 +199,13 @@
       >
         LOW
       </button>
+      <button
+        *ngIf="autoPhase"
+        class="btn btn-light"
+        (click)="addAction({type: 'mobilityAction', mobility: true});"
+      >
+        Mobility
+      </button>
       <!-- Impossible to place supercharged pieces in auto. -->
       <div *ngIf="autoPhase == false" class="d-grid gap-2">
         <button
@@ -202,7 +216,7 @@
         </button>
       </div>
       <!-- 'Balancing' during auto. -->
-      <div *ngIf="autoPhase" class="d-grid gap-2">
+      <div *ngIf="autoPhase" class="d-grid gap-1">
         <label>
           <input #docked type="checkbox" />
           Docked

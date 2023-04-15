@@ -16,6 +16,10 @@ enum ScoreLevel: short {
     kSupercharged,
 }
 
+table MobilityAction {
+    mobility:bool (id:0);
+}
+
 table AutoBalanceAction {
     docked:bool (id:0);
     engaged:bool (id:1);
@@ -44,6 +48,7 @@ table EndMatchAction {
 }
 
 union ActionType {
+    MobilityAction,
     AutoBalanceAction,
     StartMatchAction,
     PickupObjectAction,
