@@ -21,51 +21,14 @@
       "source_node": "pi{{ NUM }}",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 2000,
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "logger"
-      ],
-      "destination_nodes": [
-        {
-          "name": "logger",
-          "priority": 5,
-          "time_to_live": 5000000,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "pi{{ NUM }}"
-          ]
-        }
-      ]
+      "max_size": 2000
     },
     {
       "name": "/pi{{ NUM }}/aos",
       "type": "aos.starter.StarterRpc",
       "source_node": "pi{{ NUM }}",
       "frequency": 10,
-      "num_senders": 2,
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "logger"
-      ],
-      "destination_nodes": [
-        {
-          "name": "logger",
-          "priority": 5,
-          "time_to_live": 5000000,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "pi{{ NUM }}"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "/pi{{ NUM }}/aos/remote_timestamps/logger/pi{{ NUM }}/aos/aos-starter-StarterRpc",
-      "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 20,
-      "source_node": "pi{{ NUM }}",
-      "max_size": 208
+      "num_senders": 2
     },
     {
       "name": "/pi{{ NUM }}/aos",
@@ -178,21 +141,11 @@
       "max_size": 1024,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "imu",
-        "logger"
+        "imu"
       ],
       "destination_nodes": [
         {
           "name": "imu",
-          "priority": 4,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "pi{{ NUM }}"
-          ],
-          "time_to_live": 5000000
-        },
-        {
-          "name": "logger",
           "priority": 4,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
@@ -208,87 +161,6 @@
       "frequency": 80,
       "source_node": "pi{{ NUM }}",
       "max_size": 208
-    },
-    {
-      "name": "/pi{{ NUM }}/aos/remote_timestamps/logger/pi{{ NUM }}/camera/frc971-vision-TargetMap",
-      "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 80,
-      "source_node": "pi{{ NUM }}",
-      "max_size": 208
-    },
-    {
-      "name": "/logger/aos",
-      "type": "aos.starter.StarterRpc",
-      "source_node": "logger",
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "pi{{ NUM }}"
-      ],
-      "destination_nodes": [
-        {
-          "name": "pi{{ NUM }}",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "logger"
-          ],
-          "time_to_live": 5000000
-        }
-      ]
-    },
-    {
-      "name": "/logger/aos/remote_timestamps/pi{{ NUM }}/logger/aos/aos-starter-StarterRpc",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "logger",
-      "logger": "NOT_LOGGED",
-      "frequency": 20,
-      "num_senders": 2,
-      "max_size": 200
-    },
-    {
-      "name": "/logger/aos",
-      "type": "aos.starter.Status",
-      "source_node": "logger",
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "pi{{ NUM }}"
-      ],
-      "destination_nodes": [
-        {
-          "name": "pi{{ NUM }}",
-          "priority": 5,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "logger"
-          ],
-          "time_to_live": 5000000
-        }
-      ]
-    },
-    {
-      "name": "/pi{{ NUM }}/aos/remote_timestamps/logger/pi{{ NUM }}/aos/aos-starter-Status",
-      "type": "aos.message_bridge.RemoteMessage",
-      "frequency": 100,
-      "source_node": "pi{{ NUM }}",
-      "max_size": 208
-    },
-    {
-       "name": "/pi{{ NUM }}/aos/remote_timestamps/logger/pi{{ NUM }}/aos/aos-message_bridge-Timestamp",
-       "type": "aos.message_bridge.RemoteMessage",
-       "source_node": "pi{{ NUM }}",
-       "logger": "NOT_LOGGED",
-       "frequency": 15,
-       "num_senders": 2,
-       "max_size": 200
-    },
-    {
-      "name": "/logger/aos/remote_timestamps/pi{{ NUM }}/logger/aos/aos-starter-Status",
-      "type": "aos.message_bridge.RemoteMessage",
-      "source_node": "logger",
-      "logger": "NOT_LOGGED",
-      "frequency": 50,
-      "num_senders": 2,
-      "max_size": 200
     },
     {
       "name": "/pi{{ NUM }}/constants",
@@ -454,9 +326,6 @@
         "pi-9971-{{ NUM }}"
       ],
       "port": 9971
-    },
-    {
-      "name": "logger"
     },
     {
       "name": "imu"
