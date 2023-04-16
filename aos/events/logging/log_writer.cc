@@ -496,6 +496,8 @@ std::unique_ptr<LogNamer> Logger::StopLogging(
   log_event_uuid_ = UUID::Zero();
   log_start_uuid_ = std::nullopt;
 
+  log_namer_->Close();
+
   return std::move(log_namer_);
 }
 
