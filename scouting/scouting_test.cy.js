@@ -96,14 +96,26 @@ describe('Scouting app tests', () => {
     cy.get('.badge').eq(89).contains('Final 1 Match 3');
   });
 
-  it('should: be let users enter match information manually.', () => {
+  it('should: prevent users from enter invalid match information.', () => {
+    switchToTab('Entry');
+    headerShouldBe(' Team Selection ');
+
+    setInputTo('#match_number', '1');
+    setInputTo('#team_number', '5254');
+    setInputTo('#set_number', '1');
+    cy.get('#comp_level').select('Qualifications');
+
+    cy.contains('button', 'Next').should('be.disabled');
+  });
+
+  it('should: let users enter match information manually.', () => {
     switchToTab('Entry');
     headerShouldBe(' Team Selection ');
 
     setInputTo('#match_number', '3');
     setInputTo('#team_number', '5254');
     setInputTo('#set_number', '2');
-    setInputTo('#comp_level', '3: sf');
+    cy.get('#comp_level').select('Semi Finals');
 
     clickButton('Next');
 

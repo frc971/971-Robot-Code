@@ -14,6 +14,7 @@
       <label for="match_number">Match Number</label>
       <input
         [(ngModel)]="matchNumber"
+        (ngModelChange)="updateTeamSelectionValidity()"
         type="number"
         id="match_number"
         min="1"
@@ -24,6 +25,7 @@
       <label for="team_number">Team Number</label>
       <input
         [(ngModel)]="teamNumber"
+        (ngModelChange)="updateTeamSelectionValidity()"
         type="number"
         id="team_number"
         min="1"
@@ -34,6 +36,7 @@
       <label for="set_number">Set Number</label>
       <input
         [(ngModel)]="setNumber"
+        (ngModelChange)="updateTeamSelectionValidity()"
         type="number"
         id="set_number"
         min="1"
@@ -42,7 +45,12 @@
     </div>
     <div class="row">
       <label for="comp_level">Comp Level</label>
-      <select [(ngModel)]="compLevel" type="number" id="comp_level">
+      <select
+        [(ngModel)]="compLevel"
+        (ngModelChange)="updateTeamSelectionValidity()"
+        type="number"
+        id="comp_level"
+      >
         <option *ngFor="let level of COMP_LEVELS" [ngValue]="level">
           {{COMP_LEVEL_LABELS[level]}}
         </option>
@@ -51,7 +59,11 @@
     <div class="buttons">
       <!-- hack to right align the next button -->
       <div></div>
-      <button class="btn btn-primary" (click)="changeSectionTo('Init');">
+      <button
+        class="btn btn-primary"
+        (click)="changeSectionTo('Init');"
+        [disabled]="!teamSelectionIsValid"
+      >
         Next
       </button>
     </div>
@@ -313,5 +325,6 @@
     <h2>Successfully submitted data.</h2>
   </div>
 
+  <span class="progress_message" role="alert">{{ progressMessage }}</span>
   <span class="error_message" role="alert">{{ errorMessage }}</span>
 </ng-container>

@@ -24,6 +24,8 @@ import {
   ActionType,
   Action,
 } from '../../webserver/requests/messages/submit_actions_generated';
+import {Match} from '../../webserver/requests/messages/request_all_matches_response_generated';
+import {MatchListRequestor} from '@org_frc971/scouting/www/rpc';
 
 type Section =
   | 'Team Selection'
@@ -113,22 +115,80 @@ export class EntryComponent implements OnInit {
 
   section: Section = 'Team Selection';
   @Input() matchNumber: number = 1;
+  // TODO(phil): Change the type of teamNumber to a string.
   @Input() teamNumber: number = 1;
   @Input() setNumber: number = 1;
   @Input() compLevel: CompLevel = 'qm';
   @Input() skipTeamSelection = false;
 
+  matchList: Match[] = [];
+
   actionList: ActionT[] = [];
+  progressMessage: string = '';
   errorMessage: string = '';
   autoPhase: boolean = true;
   lastObject: ObjectType = null;
 
   matchStartTimestamp: number = 0;
 
+  teamSelectionIsValid = false;
+
+  constructor(private readonly matchListRequestor: MatchListRequestor) {}
+
   ngOnInit() {
     // When the user navigated from the match list, we can skip the team
     // selection. I.e. we trust that the user clicked the correct button.
     this.section = this.skipTeamSelection ? 'Init' : 'Team Selection';
+
+    if (this.section == 'Team Selection') {
+      this.fetchMatchList();
+    }
+  }
+
+  async fetchMatchList() {
+    this.progressMessage = 'Fetching match list. Please be patient.';
+    this.errorMessage = '';
+
+    try {
+      this.matchList = await this.matchListRequestor.fetchMatchList();
+      this.progressMessage = 'Successfully fetched match list.';
+    } catch (e) {
+      this.errorMessage = e;
+      this.progressMessage = '';
+    }
+  }
+
+  // This gets called when the user changes something on the Init screen.
+  // It makes sure that the user can't click "Next" until the information is
+  // valid.
+  updateTeamSelectionValidity(): void {
+    this.teamSelectionIsValid = this.matchIsInMatchList();
+  }
+
+  matchIsInMatchList(): boolean {
+    // If the user deletes the content of the teamNumber field, the value here
+    // is undefined. Guard against that.
+    if (this.teamNumber == null) {
+      return false;
+    }
+    const teamNumber = this.teamNumber.toString();
+
+    for (const match of this.matchList) {
+      if (
+        this.matchNumber == match.matchNumber() &&
+        this.setNumber == match.setNumber() &&
+        this.compLevel == match.compLevel() &&
+        (teamNumber === match.r1() ||
+          teamNumber === match.r2() ||
+          teamNumber === match.r3() ||
+          teamNumber === match.b1() ||
+          teamNumber === match.b2() ||
+          teamNumber === match.b3())
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   addAction(action: ActionT): void {
@@ -183,6 +243,10 @@ export class EntryComponent implements OnInit {
   }
 
   changeSectionTo(target: Section) {
+    // Clear the messages since they won't be relevant in the next section.
+    this.errorMessage = '';
+    this.progressMessage = '';
+
     this.section = target;
   }
 
