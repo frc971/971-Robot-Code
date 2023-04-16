@@ -129,6 +129,7 @@ export class EntryComponent implements OnInit {
   autoPhase: boolean = true;
   lastObject: ObjectType = null;
 
+  preScouting: boolean = false;
   matchStartTimestamp: number = 0;
 
   teamSelectionIsValid = false;
@@ -160,9 +161,9 @@ export class EntryComponent implements OnInit {
 
   // This gets called when the user changes something on the Init screen.
   // It makes sure that the user can't click "Next" until the information is
-  // valid.
+  // valid, or this is for pre-scouting.
   updateTeamSelectionValidity(): void {
-    this.teamSelectionIsValid = this.matchIsInMatchList();
+    this.teamSelectionIsValid = this.preScouting || this.matchIsInMatchList();
   }
 
   matchIsInMatchList(): boolean {
@@ -384,6 +385,7 @@ export class EntryComponent implements OnInit {
     SubmitActions.addSetNumber(builder, this.setNumber);
     SubmitActions.addCompLevel(builder, compLevelFb);
     SubmitActions.addActionsList(builder, actionsVector);
+    SubmitActions.addPreScouting(builder, this.preScouting);
     builder.finish(SubmitActions.endSubmitActions(builder));
 
     const buffer = builder.asUint8Array();

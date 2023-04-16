@@ -108,6 +108,21 @@ describe('Scouting app tests', () => {
     cy.contains('button', 'Next').should('be.disabled');
   });
 
+  it('should: allow users to scout non-existent matches when pre-scouting.', () => {
+    switchToTab('Entry');
+    headerShouldBe(' Team Selection ');
+    setInputTo('#team_number', '1');
+
+    // The default team information should be invalid.
+    cy.contains('button', 'Next').should('be.disabled');
+
+    // Click the checkmark to designate this as pre-scouting.
+    // We should now be able to continue scouting.
+    cy.get('#pre_scouting').click();
+    clickButton('Next');
+    headerShouldBe('1 Init ');
+  });
+
   it('should: let users enter match information manually.', () => {
     switchToTab('Entry');
     headerShouldBe(' Team Selection ');

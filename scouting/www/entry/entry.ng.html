@@ -56,6 +56,17 @@
         </option>
       </select>
     </div>
+    <div class="row">
+      <label>
+        <input
+          id="pre_scouting"
+          type="checkbox"
+          [(ngModel)]="preScouting"
+          (ngModelChange)="updateTeamSelectionValidity()"
+        />
+        Pre-scouting
+      </label>
+    </div>
     <div class="buttons">
       <!-- hack to right align the next button -->
       <div></div>
