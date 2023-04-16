@@ -28,6 +28,11 @@ type Shift struct {
 }
 
 type Stats2023 struct {
+	// This is set to `true` for "pre-scouted" matches. This means that the
+	// match information is unlikely to correspond with an entry in the
+	// `TeamMatch` table.
+	PreScouting bool `gorm:"primaryKey"`
+
 	TeamNumber                                                     string `gorm:"primaryKey"`
 	MatchNumber                                                    int32  `gorm:"primaryKey"`
 	SetNumber                                                      int32  `gorm:"primaryKey"`
@@ -50,6 +55,7 @@ type Stats2023 struct {
 }
 
 type Action struct {
+	PreScouting bool   `gorm:"primaryKey"`
 	TeamNumber  string `gorm:"primaryKey"`
 	MatchNumber int32  `gorm:"primaryKey"`
 	SetNumber   int32  `gorm:"primaryKey"`
@@ -155,28 +161,30 @@ func (database *Database) AddToShift(sh Shift) error {
 }
 
 func (database *Database) AddAction(a Action) error {
-	result := database.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(&a)
+	// TODO(phil): Add check for a corresponding match in the `TeamMatch`
+	// table. Similar to `AddToStats2023()` below.
+	result := database.Create(&a)
 	return result.Error
 }
 
 func (database *Database) AddToStats2023(s Stats2023) error {
-	matches, err := database.QueryMatchesString(s.TeamNumber)
-	if err != nil {
-		return err
-	}
-	foundMatch := false
-	for _, match := range matches {
-		if match.MatchNumber == s.MatchNumber {
-			foundMatch = true
-			break
+	if !s.PreScouting {
+		matches, err := database.QueryMatchesString(s.TeamNumber)
+		if err != nil {
+			return err
 		}
-	}
-	if !foundMatch {
-		return errors.New(fmt.Sprint(
-			"Failed to find team ", s.TeamNumber,
-			" in match ", s.MatchNumber, " in the schedule."))
+		foundMatch := false
+		for _, match := range matches {
+			if match.MatchNumber == s.MatchNumber {
+				foundMatch = true
+				break
+			}
+		}
+		if !foundMatch {
+			return errors.New(fmt.Sprint(
+				"Failed to find team ", s.TeamNumber,
+				" in match ", s.MatchNumber, " in the schedule."))
+		}
 	}
 
 	result := database.Create(&s)

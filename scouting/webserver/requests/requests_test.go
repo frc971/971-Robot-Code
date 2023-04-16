@@ -292,7 +292,6 @@ func TestConvertActionsToStat(t *testing.T) {
 		MatchNumber: 3,
 		SetNumber:   1,
 		CompLevel:   "quals",
-		CollectedBy: "katie",
 		ActionsList: []*submit_actions.ActionT{
 			{
 				ActionTaken: &submit_actions.ActionTypeT{
@@ -408,6 +407,7 @@ func TestConvertActionsToStat(t *testing.T) {
 				Timestamp: 4200,
 			},
 		},
+		PreScouting: false,
 	}).Pack(builder))
 
 	submitActions := submit_actions.GetRootAsSubmitActions(builder.FinishedBytes(), 0)
@@ -418,7 +418,8 @@ func TestConvertActionsToStat(t *testing.T) {
 	}
 
 	expected := db.Stats2023{
-		TeamNumber: "4244", MatchNumber: 3, SetNumber: 1,
+		PreScouting: false,
+		TeamNumber:  "4244", MatchNumber: 3, SetNumber: 1,
 		CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 1,
 		MiddleCubesAuto: 0, HighCubesAuto: 0, CubesDroppedAuto: 1,
 		LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
@@ -427,7 +428,7 @@ func TestConvertActionsToStat(t *testing.T) {
 		MiddleCones: 0, HighCones: 1, ConesDropped: 0, SuperchargedPieces: 1,
 		AvgCycle: 950, Mobility: true, DockedAuto: true, EngagedAuto: true,
 		BalanceAttemptAuto: false, Docked: true, Engaged: false,
-		BalanceAttempt: true, CollectedBy: "katie",
+		BalanceAttempt: true, CollectedBy: "",
 	}
 
 	if expected != response {
@@ -824,6 +825,7 @@ func TestAddingActions(t *testing.T) {
 				Timestamp: 1009,
 			},
 		},
+		PreScouting: true,
 	}).Pack(builder))
 
 	_, err := debug.SubmitActions("http://localhost:8080", builder.FinishedBytes())
@@ -860,6 +862,7 @@ func TestAddingActions(t *testing.T) {
 
 	expectedActions := []db.Action{
 		{
+			PreScouting:     true,
 			TeamNumber:      "1234",
 			MatchNumber:     4,
 			SetNumber:       1,
@@ -869,6 +872,7 @@ func TestAddingActions(t *testing.T) {
 			Timestamp:       2400,
 		},
 		{
+			PreScouting:     true,
 			TeamNumber:      "1234",
 			MatchNumber:     4,
 			SetNumber:       1,
@@ -879,10 +883,28 @@ func TestAddingActions(t *testing.T) {
 		},
 	}
 
+	expectedStats := []db.Stats2023{
+		db.Stats2023{
+			PreScouting: true,
+			TeamNumber:  "1234", MatchNumber: 4, SetNumber: 1,
+			CompLevel: "qual", StartingQuadrant: 0, LowCubesAuto: 0,
+			MiddleCubesAuto: 0, HighCubesAuto: 0, CubesDroppedAuto: 0,
+			LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
+			ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 0,
+			HighCubes: 0, CubesDropped: 0, LowCones: 0,
+			MiddleCones: 0, HighCones: 0, ConesDropped: 0, SuperchargedPieces: 0,
+			AvgCycle: 0, Mobility: false, DockedAuto: false, EngagedAuto: false,
+			BalanceAttemptAuto: false, Docked: false, Engaged: false,
+			BalanceAttempt: false, CollectedBy: "debug_cli",
+		},
+	}
+
 	if !reflect.DeepEqual(expectedActions, database.actions) {
 		t.Fatal("Expected ", expectedActions, ", but got:", database.actions)
 	}
-
+	if !reflect.DeepEqual(expectedStats, database.stats2023) {
+		t.Fatal("Expected ", expectedStats, ", but got:", database.stats2023)
+	}
 }
 
 // A mocked database we can use for testing. Add functionality to this as

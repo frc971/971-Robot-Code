@@ -68,6 +68,13 @@ table SubmitActions {
     set_number:int (id: 2);
     comp_level:string (id: 3);
     actions_list:[Action] (id:4);
-    //TODO: delete this field
-    collected_by:string (id: 5);
+
+    // Do not use this field. The information is collected by the webserver,
+    // not the web page.
+    collected_by:string (id: 5, deprecated);
+
+    // If this is for pre-scouting, then the server should accept this
+    // submission. I.e. checking that the match information exists in the match
+    // list should be skipped.
+    pre_scouting:bool (id: 6);
 }

@@ -377,10 +377,12 @@ func ConvertActionsToStat(submitActions *submit_actions.SubmitActions) (db.Stats
 	cycles := int64(0)
 	picked_up := false
 	lastPlacedTime := int64(0)
-	stat := db.Stats2023{TeamNumber: string(submitActions.TeamNumber()), MatchNumber: submitActions.MatchNumber(), SetNumber: submitActions.SetNumber(), CompLevel: string(submitActions.CompLevel()),
+	stat := db.Stats2023{
+		PreScouting: submitActions.PreScouting(),
+		TeamNumber:  string(submitActions.TeamNumber()), MatchNumber: submitActions.MatchNumber(), SetNumber: submitActions.SetNumber(), CompLevel: string(submitActions.CompLevel()),
 		StartingQuadrant: 0, LowCubesAuto: 0, MiddleCubesAuto: 0, HighCubesAuto: 0, CubesDroppedAuto: 0,
 		LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0, ConesDroppedAuto: 0, LowCubes: 0, MiddleCubes: 0, HighCubes: 0,
-		CubesDropped: 0, LowCones: 0, MiddleCones: 0, HighCones: 0, ConesDropped: 0, SuperchargedPieces: 0, AvgCycle: 0, CollectedBy: string(submitActions.CollectedBy()),
+		CubesDropped: 0, LowCones: 0, MiddleCones: 0, HighCones: 0, ConesDropped: 0, SuperchargedPieces: 0, AvgCycle: 0, CollectedBy: "",
 	}
 	// Loop over all actions.
 	for i := 0; i < submitActions.ActionsListLength(); i++ {
@@ -825,6 +827,7 @@ func (handler submitActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.R
 		request.ActionsList(&action, i)
 
 		dbAction := db.Action{
+			PreScouting: request.PreScouting(),
 			TeamNumber:  string(request.TeamNumber()),
 			MatchNumber: request.MatchNumber(),
 			SetNumber:   request.SetNumber(),
@@ -847,6 +850,20 @@ func (handler submitActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.R
 			respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to add action to database: ", err))
 			return
 		}
+	}
+
+	stats, err := ConvertActionsToStat(request)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to convert actions to stats: ", err))
+		return
+	}
+
+	stats.CollectedBy = username
+
+	err = handler.db.AddToStats2023(stats)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit stats: ", stats, ": ", err))
+		return
 	}
 
 	builder := flatbuffers.NewBuilder(50 * 1024)
