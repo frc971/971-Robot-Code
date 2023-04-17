@@ -241,6 +241,8 @@ named_segments.append(
         control2=np.array([2.972776, -1.026820]),
         end=points['GroundPickupBackCube'],
         control_alpha_rolls=[(.9, -np.pi / 2.0)],
+        alpha_unitizer=np.matrix(
+            f"{1.0 / 20.0} 0 0; 0 {1.0 / 15.0} 0; 0 0 {1.0 / 90.0}"),
     ))
 
 points['GroundPickupFrontCube'] = to_theta_with_circular_index_and_roll(
@@ -254,6 +256,8 @@ named_segments.append(
         control2=np.array([4.28246270189025, 1.492916470137478]),
         end=points['GroundPickupFrontCube'],
         control_alpha_rolls=[(.9, np.pi / 2.0)],
+        alpha_unitizer=np.matrix(
+            f"{1.0 / 20.0} 0 0; 0 {1.0 / 15.0} 0; 0 0 {1.0 / 90.0}"),
     ))
 
 points['ScoreBackMidConeUp'] = to_theta_with_circular_index_and_roll(
@@ -334,13 +338,11 @@ points['HPPickupBackConeUp'] = to_theta_with_circular_index_and_roll(
 named_segments.append(
     ThetaSplineSegment(
         name="NeutralToHPPickupBackConeUp",
-        start=points['Neutral'],
-        control1=np.array([2.7014360412658567, -0.32490272351246796]),
-        control2=np.array([0.8282769211604871, -1.8026615176254461]),
-        end=points['HPPickupBackConeUp'],
-        control_alpha_rolls=[(.9, np.pi / 2.0)],
-        alpha_unitizer=np.matrix(
-            f"{1.0 / 15.0} 0 0; 0 {1.0 / 15.0} 0; 0 0 {1.0 / 100.0}"),
+        start=points["Neutral"],
+        control1=np.array([2.4081612851752787, -0.4499932641262525]),
+        control2=np.array([1.5966343156908454, -1.4332589701944083]),
+        end=points["HPPickupBackConeUp"],
+        control_alpha_rolls=[(0.9, np.pi * 0.5)],
     ))
 
 points['HPPickupFrontConeUp'] = np.array(
