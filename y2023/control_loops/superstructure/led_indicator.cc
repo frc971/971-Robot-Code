@@ -164,14 +164,12 @@ void LedIndicator::DecideColor() {
     if (superstructure_status_fetcher_->end_effector_state() ==
             EndEffectorState::LOADED &&
         intaking) {
-      if (flash_counter_.Flash()) {
-        if (cone) {
-          DisplayLed(255, 165, 0);
-        } else {
-          DisplayLed(138, 43, 226);
-        }
-        return;
+      if (cone) {
+        DisplayLed(255, 165, 0);
+      } else {
+        DisplayLed(138, 43, 226);
       }
+      return;
     }
 
     // Check if there is a target that is in sight
