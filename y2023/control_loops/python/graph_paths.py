@@ -538,7 +538,7 @@ named_segments.append(
     ))
 
 points['GroundPickupFrontConeUp'] = to_theta_with_circular_index_and_roll(
-    0.313099, 0.390, -np.pi / 2.0, circular_index=0)
+    0.313099, 0.380, -np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
