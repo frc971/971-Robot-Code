@@ -319,6 +319,8 @@ void AutonomousActor::ChargedUp() {
 
   if (!WaitForArmGoal(0.05)) return;
 
+  std::this_thread::sleep_for(chrono::milliseconds(100));
+
   AOS_LOG(
       INFO, "Placed first cube %lf s\n",
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
@@ -378,7 +380,7 @@ void AutonomousActor::ChargedUp() {
         INFO, "Done backing up %lf s\n",
         aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 
-    const ProfileParametersT kInPlaceTurn = MakeProfileParameters(2.5, 7.0);
+    const ProfileParametersT kInPlaceTurn = MakeProfileParameters(2.7, 8.0);
     StartDrive(0.0, aos::math::NormalizeAngle(M_PI / 2.0 - Theta()), kDrive,
                kInPlaceTurn);
 
@@ -556,6 +558,14 @@ void AutonomousActor::ChargedUpCableSide() {
 
   std::this_thread::sleep_for(chrono::milliseconds(200));
   Neutral();
+  AOS_LOG(
+      INFO, "Going to neutral %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!WaitForArmGoal(0.05)) return;
+  AOS_LOG(
+      INFO, "Done at neutral %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
 }
 
 void AutonomousActor::SendSuperstructureGoal() {
@@ -617,7 +627,7 @@ void AutonomousActor::MidConeScore() {
 
 void AutonomousActor::Neutral() {
   set_arm_goal_position(control_loops::superstructure::arm::NeutralIndex());
-  set_wrist_goal(0.0);
+  set_wrist_goal(1.0);
   SendSuperstructureGoal();
 }
 
@@ -631,7 +641,7 @@ void AutonomousActor::Balance() {
 void AutonomousActor::HighCubeScore() {
   set_arm_goal_position(
       control_loops::superstructure::arm::ScoreFrontHighCubeIndex());
-  set_wrist_goal(0.6);
+  set_wrist_goal(1.0);
   SendSuperstructureGoal();
 }
 
