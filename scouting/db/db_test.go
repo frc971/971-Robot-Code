@@ -813,27 +813,27 @@ func TestReturnActionsDB(t *testing.T) {
 	correct := []Action{
 		Action{
 			TeamNumber: "1235", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			CompletedAction: []byte(""), Timestamp: 0000, CollectedBy: "",
+			CompletedAction: []byte(""), TimeStamp: 0000, CollectedBy: "",
 		},
 		Action{
 			TeamNumber: "1236", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			CompletedAction: []byte(""), Timestamp: 0321, CollectedBy: "",
+			CompletedAction: []byte(""), TimeStamp: 0321, CollectedBy: "",
 		},
 		Action{
 			TeamNumber: "1237", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			CompletedAction: []byte(""), Timestamp: 0222, CollectedBy: "",
+			CompletedAction: []byte(""), TimeStamp: 0222, CollectedBy: "",
 		},
 		Action{
 			TeamNumber: "1238", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			CompletedAction: []byte(""), Timestamp: 0110, CollectedBy: "",
+			CompletedAction: []byte(""), TimeStamp: 0110, CollectedBy: "",
 		},
 		Action{
 			TeamNumber: "1239", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			CompletedAction: []byte(""), Timestamp: 0004, CollectedBy: "",
+			CompletedAction: []byte(""), TimeStamp: 0004, CollectedBy: "",
 		},
 		Action{
 			TeamNumber: "1233", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
-			CompletedAction: []byte(""), Timestamp: 0005, CollectedBy: "",
+			CompletedAction: []byte(""), TimeStamp: 0005, CollectedBy: "",
 		},
 	}
 
