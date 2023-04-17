@@ -285,10 +285,13 @@ std::vector<Detection> YOLOV5Impl::ProcessImage(cv::Mat frame) {
               << " H: " << filtered_detections[i].box.height;
       cv::rectangle(frame, filtered_detections[i].box, cv::Scalar(255, 0, 0),
                     2);
+
       cv::putText(
-          frame, std::to_string(filtered_detections[i].class_id),
+          frame,
+          "#" + std::to_string(filtered_detections[i].class_id) + " at " +
+              std::to_string(filtered_detections[i].confidence) + " confidence",
           cv::Point(filtered_detections[i].box.x, filtered_detections[i].box.y),
-          cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+          cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar(0, 0, 255), 2, cv::LINE_AA);
     }
     cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
     cv::imshow("yolo", frame);
