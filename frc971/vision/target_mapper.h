@@ -86,6 +86,8 @@ class TargetMapper {
   // Removes constraints with very large errors
   void RemoveOutlierConstraints();
 
+  void CountConstraints();
+
   // Constructs the nonlinear least squares optimization problem from the
   // pose graph constraints.
   void BuildTargetPoseOptimizationProblem(
@@ -103,6 +105,10 @@ class TargetMapper {
   ceres::examples::MapOfPoses ideal_target_poses_;
   ceres::examples::MapOfPoses target_poses_;
   ceres::examples::VectorOfConstraints target_constraints_;
+
+  // Counts of each pair of target ids we observe, so we can scale cost based on
+  // the inverse of this and remove bias towards certain pairs
+  std::map<std::pair<TargetId, TargetId>, size_t> constraint_counts_;
 
   // Transformation moving the target map we solved for to where it actually
   // should be in the world
