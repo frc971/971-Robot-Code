@@ -207,6 +207,13 @@ export class EntryComponent implements OnInit {
       this.mobilityCompleted = true;
     }
 
+    if (action.type == 'autoBalanceAction') {
+      // Timestamp is a unique index in the database so
+      // adding one makes sure it dosen't overlap with the
+      // start teleop action that is added at the same time.
+      action.timestamp += 1;
+    }
+
     if (
       action.type == 'pickupObjectAction' ||
       action.type == 'placeObjectAction'

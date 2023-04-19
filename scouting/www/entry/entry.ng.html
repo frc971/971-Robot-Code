@@ -162,18 +162,11 @@
           <input #attempted type="checkbox" />
           Attempted to dock and engage but failed
         </label>
-        <br />
-        <button
-          class="btn btn-info"
-          (click)="addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
-        >
-          Submit Balancing
-        </button>
       </div>
       <button
         *ngIf="autoPhase"
         class="btn btn-dark"
-        (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
+        (click)="autoPhase = false; addAction({type: 'endAutoPhase'}); addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
       >
         Start Teleop
       </button>
@@ -252,18 +245,11 @@
           <input #attempted type="checkbox" />
           Attempted to dock and engage but failed
         </label>
-        <br />
-        <button
-          class="btn btn-info"
-          (click)="addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
-        >
-          Submit Balancing
-        </button>
       </div>
       <button
         *ngIf="autoPhase"
         class="btn btn-dark"
-        (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
+        (click)="autoPhase = false; addAction({type: 'endAutoPhase'}); addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
       >
         Start Teleop
       </button>
