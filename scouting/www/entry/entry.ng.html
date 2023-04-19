@@ -142,7 +142,7 @@
         CUBE
       </button>
       <button
-        *ngIf="autoPhase"
+        *ngIf="autoPhase && !mobilityCompleted"
         class="btn btn-light"
         (click)="addAction({type: 'mobilityAction', mobility: true});"
       >
@@ -223,7 +223,7 @@
         LOW
       </button>
       <button
-        *ngIf="autoPhase"
+        *ngIf="autoPhase && !mobilityCompleted"
         class="btn btn-light"
         (click)="addAction({type: 'mobilityAction', mobility: true});"
       >

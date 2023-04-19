@@ -127,6 +127,7 @@ export class EntryComponent implements OnInit {
   progressMessage: string = '';
   errorMessage: string = '';
   autoPhase: boolean = true;
+  mobilityCompleted: boolean = false;
   lastObject: ObjectType = null;
 
   preScouting: boolean = false;
@@ -200,6 +201,10 @@ export class EntryComponent implements OnInit {
     } else {
       // Unix nanosecond timestamp relative to match start.
       action.timestamp = Date.now() * 1e6 - this.matchStartTimestamp;
+    }
+
+    if (action.type == 'mobilityAction') {
+      this.mobilityCompleted = true;
     }
 
     if (
