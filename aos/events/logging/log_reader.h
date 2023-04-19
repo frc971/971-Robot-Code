@@ -15,9 +15,11 @@
 #include "aos/condition.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/event_loop_tmpl.h"
+#include "aos/events/logging/config_remapper.h"
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
+#include "aos/events/logging/replay_channels.h"
 #include "aos/events/logging/replay_timing_generated.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/events/simulated_event_loop.h"
@@ -34,11 +36,6 @@ namespace aos {
 namespace logger {
 
 class EventNotifier;
-
-// Vector of pair of name and type of the channel
-using ReplayChannels = std::vector<std::pair<std::string, std::string>>;
-// Vector of channel indices
-using ReplayChannelIndices = std::vector<size_t>;
 
 // We end up with one of the following 3 log file types.
 //
@@ -217,34 +214,21 @@ class LogReader {
   void SetEndTime(std::string end_time);
   void SetEndTime(realtime_clock::time_point end_time);
 
-  // Enum to use for indicating how RemapLoggedChannel behaves when there is
-  // already a channel with the remapped name (e.g., as may happen when
-  // replaying a logfile that was itself generated from replay).
-  enum class RemapConflict {
-    // LOG(FATAL) on conflicts in remappings.
-    kDisallow,
-    // If we run into a conflict, attempt to remap the channel we would be
-    // overriding (and continue to do so if remapping *that* channel also
-    // generates a conflict).
-    // This will mean that if we repeatedly replay a log, we will end up
-    // stacking more and more /original's on the start of the oldest version
-    // of the channels.
-    kCascade
-  };
-
   // Causes the logger to publish the provided channel on a different name so
   // that replayed applications can publish on the proper channel name without
   // interference. This operates on raw channel names, without any node or
   // application specific mappings.
-  void RemapLoggedChannel(
-      std::string_view name, std::string_view type,
-      std::string_view add_prefix = "/original", std::string_view new_type = "",
-      RemapConflict conflict_handling = RemapConflict::kCascade);
+  void RemapLoggedChannel(std::string_view name, std::string_view type,
+                          std::string_view add_prefix = "/original",
+                          std::string_view new_type = "",
+                          ConfigRemapper::RemapConflict conflict_handling =
+                              ConfigRemapper::RemapConflict::kCascade);
   template <typename T>
-  void RemapLoggedChannel(
-      std::string_view name, std::string_view add_prefix = "/original",
-      std::string_view new_type = "",
-      RemapConflict conflict_handling = RemapConflict::kCascade) {
+  void RemapLoggedChannel(std::string_view name,
+                          std::string_view add_prefix = "/original",
+                          std::string_view new_type = "",
+                          ConfigRemapper::RemapConflict conflict_handling =
+                              ConfigRemapper::RemapConflict::kCascade) {
     RemapLoggedChannel(name, T::GetFullyQualifiedName(), add_prefix, new_type,
                        conflict_handling);
   }
@@ -257,15 +241,18 @@ class LogReader {
   // TODO(austin): If you have 2 nodes remapping something to the same channel,
   // this doesn't handle that.  No use cases exist yet for that, so it isn't
   // being done yet.
-  void RemapLoggedChannel(
-      std::string_view name, std::string_view type, const Node *node,
-      std::string_view add_prefix = "/original", std::string_view new_type = "",
-      RemapConflict conflict_handling = RemapConflict::kCascade);
+  void RemapLoggedChannel(std::string_view name, std::string_view type,
+                          const Node *node,
+                          std::string_view add_prefix = "/original",
+                          std::string_view new_type = "",
+                          ConfigRemapper::RemapConflict conflict_handling =
+                              ConfigRemapper::RemapConflict::kCascade);
   template <typename T>
-  void RemapLoggedChannel(
-      std::string_view name, const Node *node,
-      std::string_view add_prefix = "/original", std::string_view new_type = "",
-      RemapConflict conflict_handling = RemapConflict::kCascade) {
+  void RemapLoggedChannel(std::string_view name, const Node *node,
+                          std::string_view add_prefix = "/original",
+                          std::string_view new_type = "",
+                          ConfigRemapper::RemapConflict conflict_handling =
+                              ConfigRemapper::RemapConflict::kCascade) {
     RemapLoggedChannel(name, T::GetFullyQualifiedName(), node, add_prefix,
                        new_type, conflict_handling);
   }
@@ -325,11 +312,7 @@ class LogReader {
   // Returns true if the channel exists on the node and was logged.
   template <typename T>
   bool HasLoggedChannel(std::string_view name, const Node *node = nullptr) {
-    const Channel *channel =
-        configuration::GetChannel(logged_configuration(), name,
-                                  T::GetFullyQualifiedName(), "", node, true);
-    if (channel == nullptr) return false;
-    return channel->logger() != LoggerConfig::NOT_LOGGED;
+    return config_remapper_.HasOriginalChannel<T>(name, node);
   }
 
   // Returns a list of all the original channels from remapping.
@@ -407,9 +390,10 @@ class LogReader {
 
   // Queues at least max_out_of_order_duration_ messages into channels_.
   void QueueMessages();
-  // Handle constructing a configuration with all the additional remapped
-  // channels from calls to RemapLoggedChannel.
-  void MakeRemappedConfig();
+
+  // Checks if any states have their event loops initialized which indicates
+  // events have been scheduled
+  void CheckEventsAreNotScheduled();
 
   // Returns the number of nodes.
   size_t nodes_count() const {
@@ -911,21 +895,8 @@ class LogReader {
   // less than the second node.
   std::unique_ptr<message_bridge::MultiNodeNoncausalOffsetEstimator> filters_;
 
-  std::unique_ptr<FlatbufferDetachedBuffer<Configuration>>
-      remapped_configuration_buffer_;
-
   std::unique_ptr<SimulatedEventLoopFactory> event_loop_factory_unique_ptr_;
   SimulatedEventLoopFactory *event_loop_factory_ = nullptr;
-
-  // Map of channel indices to new name. The channel index will be an index into
-  // logged_configuration(), and the string key will be the name of the channel
-  // to send on instead of the logged channel name.
-  struct RemappedChannel {
-    std::string remapped_name;
-    std::string new_type;
-  };
-  std::map<size_t, RemappedChannel> remapped_channels_;
-  std::vector<MapT> maps_;
 
   // Number of nodes which still have data to send.  This is used to figure out
   // when to exit.
@@ -935,7 +906,6 @@ class LogReader {
   // running and have yet to hit the realtime end time, if any.
   size_t live_nodes_with_realtime_time_end_ = 0;
 
-  const Configuration *remapped_configuration_ = nullptr;
   const Configuration *replay_configuration_ = nullptr;
 
   // If a ReplayChannels was passed to LogReader, this will hold the
@@ -956,6 +926,7 @@ class LogReader {
 
   realtime_clock::time_point start_time_ = realtime_clock::min_time;
   realtime_clock::time_point end_time_ = realtime_clock::max_time;
+  ConfigRemapper config_remapper_;
 };
 
 }  // namespace logger

@@ -363,7 +363,7 @@ TEST_F(RealtimeMultiNodeLoggerDeathTest,
                    &config_.message(), &replay_channels);
   EXPECT_DEATH(
       reader.RemapLoggedChannel<aos::examples::Ping>("/fake", "/original"),
-      "which is not included in the replay channels passed to LogReader");
+      "which is not included in the replay channels passed to");
 }
 
 }  // namespace aos::logger::testing

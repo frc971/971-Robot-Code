@@ -422,10 +422,12 @@ cc_library(
     ],
     hdrs = [
         "log_reader.h",
+        "replay_channels.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":config_remapper",
         ":log_namer",
         ":log_writer",
         ":logfile_utils",
@@ -448,6 +450,58 @@ cc_library(
         "//aos/util:threaded_queue",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "config_remapper",
+    srcs = [
+        "config_remapper.cc",
+    ],
+    hdrs = [
+        "config_remapper.h",
+        "replay_channels.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":logfile_utils",
+        ":logger_fbs",
+        "//aos/events:event_loop",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:multinode_timestamp_filter",
+        "//aos/network:remote_message_fbs",
+        "//aos/network:remote_message_schema",
+        "//aos/network:team_number",
+        "//aos/network:timestamp_filter",
+        "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "config_remapper_test",
+    srcs = ["config_remapper_test.cc"],
+    copts = select({
+        "//tools:cpu_k8": ["-DLZMA=1"],
+        "//tools:cpu_arm64": ["-DLZMA=1"],
+        "//conditions:default": [],
+    }),
+    data = [
+        ":multinode_pingpong_combined_config",
+        ":multinode_pingpong_split3_config",
+        ":multinode_pingpong_split4_config",
+        ":multinode_pingpong_split4_mixed1_config",
+        ":multinode_pingpong_split4_mixed2_config",
+        ":multinode_pingpong_split4_reliable_config",
+        ":multinode_pingpong_split_config",
+        ":multinode_pingpong_triangle_split_config",
+        "//aos/events:pingpong_config",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":config_remapper",
+        ":multinode_logger_test_lib",
     ],
 )
 

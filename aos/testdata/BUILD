@@ -27,7 +27,7 @@ filegroup(
         "invalid_source_node.json",
         "self_forward.json",
     ],
-    visibility = ["//aos:__pkg__"],
+    visibility = ["//visibility:public"],
 )
 
 genrule(
