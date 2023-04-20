@@ -115,7 +115,7 @@
     <h6 class="text-muted">
       Last Action: {{actionList[actionList.length - 1].type}}
     </h6>
-    <!-- 
+    <!--
       Decrease distance between buttons during auto to make space for auto balancing
       selection and keep all buttons visible without scrolling on most devices.
     -->
@@ -162,14 +162,13 @@
           <input #attempted type="checkbox" />
           Attempted to dock and engage but failed
         </label>
+        <button
+          class="btn btn-dark"
+          (click)="autoPhase = false; addAction({type: 'endAutoPhase'}); addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
+        >
+          Start Teleop
+        </button>
       </div>
-      <button
-        *ngIf="autoPhase"
-        class="btn btn-dark"
-        (click)="autoPhase = false; addAction({type: 'endAutoPhase'}); addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
-      >
-        Start Teleop
-      </button>
       <button
         *ngIf="!autoPhase"
         class="btn btn-info"
@@ -183,7 +182,7 @@
     <h6 class="text-muted">
       Last Action: {{actionList[actionList.length - 1].type}}
     </h6>
-    <!-- 
+    <!--
       Decrease distance between buttons during auto to make space for auto balancing
       selection and keep all buttons visible without scrolling on most devices.
     -->
@@ -245,14 +244,13 @@
           <input #attempted type="checkbox" />
           Attempted to dock and engage but failed
         </label>
+        <button
+          class="btn btn-dark"
+          (click)="autoPhase = false; addAction({type: 'endAutoPhase'}); addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
+        >
+          Start Teleop
+        </button>
       </div>
-      <button
-        *ngIf="autoPhase"
-        class="btn btn-dark"
-        (click)="autoPhase = false; addAction({type: 'endAutoPhase'}); addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
-      >
-        Start Teleop
-      </button>
       <button
         *ngIf="!autoPhase"
         class="btn btn-info"
