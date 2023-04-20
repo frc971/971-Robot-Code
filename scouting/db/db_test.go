@@ -341,7 +341,7 @@ func TestQueryingStats2023ByTeam(t *testing.T) {
 
 	// Validate that requesting status for a single team gets us the
 	// expected data.
-	statsFor6344, err := fixture.db.ReturnStats2023ForTeam("6344", 3, 1, "qm")
+	statsFor6344, err := fixture.db.ReturnStats2023ForTeam("6344", 3, 1, "qm", false)
 	check(t, err, "Failed ReturnStats2023()")
 
 	if !reflect.DeepEqual([]Stats2023{stats[0]}, statsFor6344) {
@@ -350,7 +350,7 @@ func TestQueryingStats2023ByTeam(t *testing.T) {
 
 	// Validate that requesting team data for a non-existent match returns
 	// nothing.
-	statsForMissing, err := fixture.db.ReturnStats2023ForTeam("6344", 9, 1, "qm")
+	statsForMissing, err := fixture.db.ReturnStats2023ForTeam("6344", 9, 1, "qm", false)
 	check(t, err, "Failed ReturnStats2023()")
 
 	if !reflect.DeepEqual([]Stats2023{}, statsForMissing) {

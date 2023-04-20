@@ -70,7 +70,7 @@ type Database interface {
 	ReturnAllDriverRankings() ([]db.DriverRankingData, error)
 	ReturnAllShifts() ([]db.Shift, error)
 	ReturnStats2023() ([]db.Stats2023, error)
-	ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string) ([]db.Stats2023, error)
+	ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]db.Stats2023, error)
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryNotes(int32) ([]string, error)
 	AddNotes(db.NotesData) error
@@ -162,7 +162,7 @@ func findIndexInList(list []string, comp_level string) (int, error) {
 
 func (handler requestAllMatchesHandler) teamHasBeenDataScouted(key MatchAssemblyKey, teamNumber string) (bool, error) {
 	stats, err := handler.db.ReturnStats2023ForTeam(
-		teamNumber, key.MatchNumber, key.SetNumber, key.CompLevel)
+		teamNumber, key.MatchNumber, key.SetNumber, key.CompLevel, false)
 	if err != nil {
 		return false, err
 	}

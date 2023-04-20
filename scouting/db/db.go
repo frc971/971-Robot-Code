@@ -249,11 +249,11 @@ func (database *Database) ReturnStats2023() ([]Stats2023, error) {
 	return stats2023, result.Error
 }
 
-func (database *Database) ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string) ([]Stats2023, error) {
+func (database *Database) ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]Stats2023, error) {
 	var stats2023 []Stats2023
 	result := database.
-		Where("team_number = ? AND match_number = ? AND set_number = ? AND comp_level = ?",
-			teamNumber, matchNumber, setNumber, compLevel).
+		Where("team_number = ? AND match_number = ? AND set_number = ? AND comp_level = ? AND pre_scouting = ?",
+			teamNumber, matchNumber, setNumber, compLevel, preScouting).
 		Find(&stats2023)
 	return stats2023, result.Error
 }

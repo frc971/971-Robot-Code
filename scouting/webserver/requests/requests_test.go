@@ -936,10 +936,10 @@ func (database *MockDatabase) ReturnStats2023() ([]db.Stats2023, error) {
 	return database.stats2023, nil
 }
 
-func (database *MockDatabase) ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string) ([]db.Stats2023, error) {
+func (database *MockDatabase) ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]db.Stats2023, error) {
 	var results []db.Stats2023
 	for _, stats := range database.stats2023 {
-		if stats.TeamNumber == teamNumber && stats.MatchNumber == matchNumber && stats.SetNumber == setNumber && stats.CompLevel == compLevel {
+		if stats.TeamNumber == teamNumber && stats.MatchNumber == matchNumber && stats.SetNumber == setNumber && stats.CompLevel == compLevel && stats.PreScouting == preScouting {
 			results = append(results, stats)
 		}
 	}
