@@ -73,6 +73,27 @@ cc_binary(
 )
 
 cc_library(
+    name = "file_operations",
+    srcs = ["file_operations.cc"],
+    hdrs = ["file_operations.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "s3_operations",
+    srcs = ["s3_operations.cc"],
+    hdrs = ["s3_operations.h"],
+    deps = [
+        ":file_operations",
+        ":s3_fetcher",
+    ],
+)
+
+cc_library(
     name = "log_backend",
     srcs = ["log_backend.cc"],
     hdrs = ["log_backend.h"],
@@ -141,6 +162,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":file_operations",
         ":boot_timestamp",
         ":snappy_encoder",
         ":buffer_encoder",
@@ -162,6 +184,7 @@ cc_library(
     ] + select({
         "//tools:cpu_k8": [
             ":s3_fetcher",
+            ":s3_operations",
             ":lzma_encoder",
         ],
         "//tools:cpu_arm64": [":lzma_encoder"],

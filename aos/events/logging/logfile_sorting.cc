@@ -11,6 +11,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/strings/str_join.h"
 
+#include "aos/events/logging/file_operations.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
@@ -19,7 +20,7 @@
 #include "sys/stat.h"
 
 #if ENABLE_S3
-#include "aos/events/logging/s3_fetcher.h"
+#include "aos/events/logging/s3_operations.h"
 #endif
 
 DEFINE_bool(quiet_sorting, false,
@@ -30,69 +31,12 @@ namespace logger {
 namespace {
 namespace chrono = std::chrono;
 
-// Check if string ends with ending
-bool EndsWith(std::string_view str, std::string_view ending) {
-  return str.size() >= ending.size() &&
-         str.substr(str.size() - ending.size()) == ending;
-}
-
-class FileOperations {
- public:
-  virtual ~FileOperations() = default;
-
-  virtual bool Exists() = 0;
-  virtual void FindLogs(std::vector<std::string> *files) = 0;
-};
-
-// Implements FileOperations with standard POSIX filesystem APIs. These work on
-// files local to the machine they're running on.
-class LocalFileOperations final : public FileOperations {
- public:
-  LocalFileOperations(std::string_view filename) : filename_(filename) {}
-
-  bool Exists() override {
-    struct stat stat_results;
-    int error = stat(filename_.c_str(), &stat_results);
-    return error == 0;
-  }
-
-  void FindLogs(std::vector<std::string> *files) override;
-
- private:
-  std::string filename_;
-};
-
-bool IsValidFilename(std::string_view filename) {
-  return EndsWith(filename, ".bfbs") || EndsWith(filename, ".bfbs.xz") ||
-         EndsWith(filename, ".bfbs.sz");
-}
-
-#if ENABLE_S3
-class S3FileOperations final : public FileOperations {
- public:
-  S3FileOperations(std::string_view url) : object_urls_(ListS3Objects(url)) {}
-
-  bool Exists() override { return !object_urls_.empty(); }
-  void FindLogs(std::vector<std::string> *files) override {
-    // We already have a recursive listing, so just grab all the objects from
-    // there.
-    for (const std::string &object_url : object_urls_) {
-      if (IsValidFilename(object_url)) {
-        files->push_back(object_url);
-      }
-    }
-  }
-
- private:
-  const std::vector<std::string> object_urls_;
-};
-#endif
-
-std::unique_ptr<FileOperations> MakeFileOperations(std::string_view filename) {
+std::unique_ptr<internal::FileOperations> MakeFileOperations(
+    std::string_view filename) {
   static constexpr std::string_view kS3 = "s3:";
   if (filename.substr(0, kS3.size()) == kS3) {
 #if ENABLE_S3
-    return std::make_unique<S3FileOperations>(filename);
+    return std::make_unique<internal::S3FileOperations>(filename);
 #else
     LOG(FATAL) << "Reading files from S3 not supported on this platform";
 #endif
@@ -100,31 +44,7 @@ std::unique_ptr<FileOperations> MakeFileOperations(std::string_view filename) {
   if (filename.find("://") != filename.npos) {
     LOG(FATAL) << "This looks like a URL of an unknown type: " << filename;
   }
-  return std::make_unique<LocalFileOperations>(filename);
-}
-
-void LocalFileOperations::FindLogs(std::vector<std::string> *files) {
-  DIR *directory = opendir(filename_.c_str());
-
-  if (directory == nullptr) {
-    if (IsValidFilename(filename_)) {
-      files->emplace_back(filename_);
-    }
-    return;
-  }
-
-  struct dirent *directory_entry;
-  while ((directory_entry = readdir(directory)) != nullptr) {
-    std::string next_filename = directory_entry->d_name;
-    if (next_filename == "." || next_filename == "..") {
-      continue;
-    }
-
-    std::string path = filename_ + "/" + next_filename;
-    std::make_unique<LocalFileOperations>(path)->FindLogs(files);
-  }
-
-  closedir(directory);
+  return std::make_unique<internal::LocalFileOperations>(filename);
 }
 
 bool ConfigOnly(const LogFileHeader *header) {

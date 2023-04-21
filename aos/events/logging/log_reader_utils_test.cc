@@ -1,5 +1,6 @@
 #include "aos/events/logging/log_reader_utils.h"
 
+#include "aos/events/logging/file_operations.h"
 #include "aos/events/logging/multinode_logger_test_lib.h"
 #include "aos/events/ping_lib.h"
 #include "aos/events/pong_lib.h"
@@ -126,4 +127,31 @@ TEST_P(MultinodeLoggerOneConfigTest, SingleNodeLogReplay) {
   EXPECT_EQ(pong_count, 0);
   reader.Deregister();
 }
+
+// Verify that it is OK to list single file.
+TEST(FileOperationTest, SingleFile) {
+  std::string log_file = aos::testing::TestTmpDir() + "/test.bfbs";
+  util::WriteStringToFileOrDie(log_file, "test");
+  internal::LocalFileOperations file_op(log_file);
+  EXPECT_TRUE(file_op.Exists());
+  std::vector<std::string> logs;
+  file_op.FindLogs(&logs);
+  ASSERT_EQ(logs.size(), 1);
+  EXPECT_EQ(logs.front(), log_file);
+}
+
+// Verify that it is OK to list folder with log file.
+TEST(FileOperationTest, ListDirectory) {
+  std::string log_folder = aos::testing::TestTmpDir() + "/log_folder/";
+  std::filesystem::create_directories(log_folder);
+  std::string log_file = log_folder + "test.bfbs";
+  util::WriteStringToFileOrDie(log_file, "test");
+  internal::LocalFileOperations file_op(log_folder);
+  EXPECT_TRUE(file_op.Exists());
+  std::vector<std::string> logs;
+  file_op.FindLogs(&logs);
+  ASSERT_EQ(logs.size(), 1);
+  EXPECT_EQ(logs.front(), log_file);
+}
+
 }  // namespace aos::logger::testing
