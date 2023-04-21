@@ -68,8 +68,38 @@ DEFINE_bool(ignore_corrupt_messages, false,
 
 namespace aos::logger {
 namespace {
-
 namespace chrono = std::chrono;
+
+std::unique_ptr<DataDecoder> ResolveDecoder(std::string_view filename,
+                                            bool quiet) {
+  static constexpr std::string_view kS3 = "s3:";
+
+  std::unique_ptr<DataDecoder> decoder;
+
+  if (filename.substr(0, kS3.size()) == kS3) {
+#if ENABLE_S3
+    decoder = std::make_unique<S3Fetcher>(filename);
+#else
+    LOG(FATAL) << "Reading files from S3 not supported on this platform";
+#endif
+  } else {
+    decoder = std::make_unique<DummyDecoder>(filename);
+  }
+
+  static constexpr std::string_view kXz = ".xz";
+  static constexpr std::string_view kSnappy = SnappyDecoder::kExtension;
+  if (filename.substr(filename.size() - kXz.size()) == kXz) {
+#if ENABLE_LZMA
+    decoder = std::make_unique<ThreadedLzmaDecoder>(std::move(decoder), quiet);
+#else
+    (void)quiet;
+    LOG(FATAL) << "Reading xz-compressed files not supported on this platform";
+#endif
+  } else if (filename.substr(filename.size() - kSnappy.size()) == kSnappy) {
+    decoder = std::make_unique<SnappyDecoder>(std::move(decoder));
+  }
+  return decoder;
+}
 
 template <typename T>
 void PrintOptionalOrNull(std::ostream *os, const std::optional<T> &t) {
@@ -1164,32 +1194,11 @@ size_t PackMessageInline(uint8_t *buffer, const Context &context,
 }
 
 SpanReader::SpanReader(std::string_view filename, bool quiet)
-    : filename_(filename) {
-  static constexpr std::string_view kS3 = "s3:";
-  if (filename.substr(0, kS3.size()) == kS3) {
-#if ENABLE_S3
-    decoder_ = std::make_unique<S3Fetcher>(filename);
-#else
-    LOG(FATAL) << "Reading files from S3 not supported on this platform";
-#endif
-  } else {
-    decoder_ = std::make_unique<DummyDecoder>(filename);
-  }
+    : SpanReader(filename, ResolveDecoder(filename, quiet)) {}
 
-  static constexpr std::string_view kXz = ".xz";
-  static constexpr std::string_view kSnappy = SnappyDecoder::kExtension;
-  if (filename.substr(filename.size() - kXz.size()) == kXz) {
-#if ENABLE_LZMA
-    decoder_ =
-        std::make_unique<ThreadedLzmaDecoder>(std::move(decoder_), quiet);
-#else
-    (void)quiet;
-    LOG(FATAL) << "Reading xz-compressed files not supported on this platform";
-#endif
-  } else if (filename.substr(filename.size() - kSnappy.size()) == kSnappy) {
-    decoder_ = std::make_unique<SnappyDecoder>(std::move(decoder_));
-  }
-}
+SpanReader::SpanReader(std::string_view filename,
+                       std::unique_ptr<DataDecoder> decoder)
+    : filename_(filename), decoder_(std::move(decoder)) {}
 
 absl::Span<const uint8_t> SpanReader::PeekMessage() {
   // Make sure we have enough for the size.

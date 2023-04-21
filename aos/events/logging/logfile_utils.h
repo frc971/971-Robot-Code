@@ -166,7 +166,12 @@ size_t PackMessageInline(uint8_t *data, const Context &contex,
 // Class to read chunks out of a log file.
 class SpanReader {
  public:
+  // It creates a reader and makes proper decoder based on information encoded
+  // in the filename.
   SpanReader(std::string_view filename, bool quiet = false);
+
+  // Opens new reader from provided decoder.
+  SpanReader(std::string_view filename, std::unique_ptr<DataDecoder> decoder);
 
   std::string_view filename() const { return filename_; }
 
