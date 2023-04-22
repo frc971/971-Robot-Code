@@ -66,6 +66,8 @@ DEFINE_bool(ignore_corrupt_messages, false,
             "corrupt message found by MessageReader be silently ignored, "
             "providing access to all uncorrupted messages in a logfile.");
 
+DECLARE_bool(quiet_sorting);
+
 namespace aos::logger {
 namespace {
 namespace chrono = std::chrono;
@@ -1279,6 +1281,23 @@ bool SpanReader::ReadBlock() {
   total_read_ += count;
 
   return true;
+}
+
+LogReadersPool::LogReadersPool(const LogSource *log_source, size_t pool_size)
+    : log_source_(log_source), pool_size_(pool_size) {}
+
+SpanReader *LogReadersPool::BorrowReader(std::string_view id) {
+  if (part_readers_.size() > pool_size_) {
+    // Don't leave arbitrary numbers of readers open, because they each take
+    // resources, so close a big batch at once periodically.
+    part_readers_.clear();
+  }
+  if (log_source_ == nullptr) {
+    part_readers_.emplace_back(id, FLAGS_quiet_sorting);
+  } else {
+    part_readers_.emplace_back(id, log_source_->GetDecoder(id));
+  }
+  return &part_readers_.back();
 }
 
 std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(

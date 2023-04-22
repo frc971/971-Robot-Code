@@ -319,12 +319,9 @@ struct PartsSorter {
   // There are enough of these in the wild that this is worth supporting.
   std::vector<UnsortedOldParts> old_parts;
 
-  // Some implementations have slow destructors, so save those for later to let
-  // the slow parts can mostly run in parallel.
-  std::vector<SpanReader> part_readers;
-
   // Populates the class's datastructures from the input file list.
-  void PopulateFromFiles(const std::vector<std::string> &parts);
+  void PopulateFromFiles(ReadersPool *readers,
+                         const std::vector<std::string> &parts);
 
   // Wrangles everything into a map of boot uuids -> boot counts.
   MapBoots ComputeBootCounts();
@@ -340,19 +337,18 @@ struct PartsSorter {
   // Reformats parts_list into a list of logfiles and returns it.  This destroys
   // state in PartsSorter.
   std::vector<LogFile> FormatNewParts();
+
+  // Returns a list of all the parts that we have sorted.
+  std::vector<LogFile> SortParts();
 };
 
-void PartsSorter::PopulateFromFiles(const std::vector<std::string> &parts) {
+void PartsSorter::PopulateFromFiles(ReadersPool *readers,
+                                    const std::vector<std::string> &parts) {
   // Now extract everything into our datastructures above for sorting.
   for (const std::string &part : parts) {
-    if (part_readers.size() > 50) {
-      // Don't leave arbitrary numbers of readers open, because they each take
-      // resources, so close a big batch at once periodically.
-      part_readers.clear();
-    }
-    part_readers.emplace_back(part, FLAGS_quiet_sorting);
+    SpanReader *reader = readers->BorrowReader(part);
     std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> log_header =
-        ReadHeader(&part_readers.back());
+        ReadHeader(reader);
     if (!log_header) {
       if (!FLAGS_quiet_sorting) {
         LOG(WARNING) << "Skipping " << part << " without a header";
@@ -1970,27 +1966,29 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
   return result;
 }
 
-std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
-  PartsSorter sorter;
-  sorter.PopulateFromFiles(parts);
-
-  if (sorter.old_parts.empty() && sorter.parts_list.empty()) {
-    if (parts.empty()) {
-      return std::vector<LogFile>{};
-    } else {
+std::vector<LogFile> PartsSorter::SortParts() {
+  if (old_parts.empty() && parts_list.empty()) {
+    if (!corrupted.empty()) {
       LogFile log_file;
-      log_file.corrupted = std::move(sorter.corrupted);
+      log_file.corrupted = std::move(corrupted);
       return std::vector<LogFile>{log_file};
     }
+    return std::vector<LogFile>{};
   }
-  CHECK_NE(sorter.old_parts.empty(), sorter.parts_list.empty())
+  CHECK_NE(old_parts.empty(), parts_list.empty())
       << ": Can't have a mix of old and new parts.";
-
-  if (!sorter.old_parts.empty()) {
-    return sorter.FormatOldParts();
+  if (!old_parts.empty()) {
+    return FormatOldParts();
+  } else {
+    return FormatNewParts();
   }
+}
 
-  return sorter.FormatNewParts();
+std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
+  LogReadersPool readers;
+  PartsSorter sorter;
+  sorter.PopulateFromFiles(&readers, parts);
+  return sorter.SortParts();
 }
 
 std::vector<std::string> FindNodes(const std::vector<LogFile> &parts) {

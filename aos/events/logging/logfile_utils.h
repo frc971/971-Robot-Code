@@ -228,6 +228,30 @@ class SpanReader {
   bool is_finished_ = false;
 };
 
+//  Class to borrow log readers from pool based on their ids. This is used as a
+//  factory and helps with performance when construction or descrution of
+//  decoders are not free. For instance,, S3 fetchers are slow to destroy.
+class ReadersPool {
+ public:
+  virtual ~ReadersPool() = default;
+
+  // Borrow reader from pool based on the id.
+  virtual SpanReader *BorrowReader(std::string_view id) = 0;
+};
+
+class LogReadersPool : public ReadersPool {
+ public:
+  explicit LogReadersPool(const LogSource *log_source = nullptr,
+                          size_t pool_size = 50);
+
+  SpanReader *BorrowReader(std::string_view id) override;
+
+ private:
+  const LogSource *log_source_;
+  std::vector<SpanReader> part_readers_;
+  const size_t pool_size_;
+};
+
 // Reads the last header from a log file.  This handles any duplicate headers
 // that were written.
 std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> ReadHeader(
