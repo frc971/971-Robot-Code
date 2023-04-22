@@ -1991,6 +1991,13 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
   return sorter.SortParts();
 }
 
+std::vector<LogFile> SortParts(const LogSource &log_source) {
+  LogReadersPool readers(&log_source);
+  PartsSorter sorter;
+  sorter.PopulateFromFiles(&readers, log_source.ListFiles());
+  return sorter.SortParts();
+}
+
 std::vector<std::string> FindNodes(const std::vector<LogFile> &parts) {
   std::set<std::string> nodes;
   for (const LogFile &log_file : parts) {

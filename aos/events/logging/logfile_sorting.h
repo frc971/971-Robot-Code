@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "aos/configuration.h"
+#include "aos/events/logging/log_backend.h"
 #include "aos/time/time.h"
 #include "aos/uuid.h"
 
@@ -132,6 +133,9 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts);
 
 // Takes a bunch of parts and sorts them based on part_uuid and part_index.
 std::vector<LogFile> SortParts(const std::vector<std::string> &parts);
+
+// Sort parts of a single log.
+std::vector<LogFile> SortParts(const LogSource &log_source);
 
 // Finds all the nodes which have parts logged from their point of view.
 std::vector<std::string> FindNodes(const std::vector<LogFile> &parts);
