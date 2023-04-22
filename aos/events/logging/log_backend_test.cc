@@ -27,14 +27,26 @@ WriteResult Write(LogSink *log_sink, std::string_view content) {
 
 TEST(LogBackendTest, CreateSimpleFile) {
   const std::string logevent = aos::testing::TestTmpDir() + "/logevent/";
+  const std::string filename = "test.bfbs";
   FileBackend backend(logevent);
-  auto file = backend.RequestFile("test.log");
+  auto file = backend.RequestFile(filename);
   ASSERT_EQ(file->OpenForWrite(), WriteCode::kOk);
   auto result = Write(file.get(), "test");
   EXPECT_EQ(result.code, WriteCode::kOk);
   EXPECT_EQ(result.messages_written, 1);
   EXPECT_EQ(file->Close(), WriteCode::kOk);
-  EXPECT_TRUE(std::filesystem::exists(logevent + "test.log"));
+  EXPECT_TRUE(std::filesystem::exists(logevent + filename));
+
+  EXPECT_THAT(backend.ListFiles(), ::testing::ElementsAre(filename));
+
+  auto decoder = backend.GetDecoder(filename);
+  std::vector<uint8_t> buffer;
+  buffer.resize(10);
+  const auto count = decoder->Read(buffer.data(), buffer.data() + 10);
+  ASSERT_EQ(count, 4);
+  buffer.resize(4);
+  std::string view(buffer.begin(), buffer.end());
+  EXPECT_EQ(view, "test");
 }
 
 TEST(LogBackendTest, CreateRenamableFile) {

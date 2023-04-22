@@ -11,6 +11,7 @@
 
 #include "absl/types/span.h"
 
+#include "aos/events/logging/buffer_encoder.h"
 #include "aos/time/time.h"
 
 namespace aos::logger {
@@ -237,7 +238,7 @@ class FileHandler : public LogSink {
   int flags_ = 0;
 };
 
-// Class that decouples log writing and media (file system or memory). It is
+// Interface to decouple log writing and media (file system or memory). It is
 // handy to use for tests.
 class LogBackend {
  public:
@@ -249,8 +250,21 @@ class LogBackend {
   virtual std::unique_ptr<LogSink> RequestFile(std::string_view id) = 0;
 };
 
+// Interface to decouple reading of logs and media (file system, memory or S3).
+class LogSource {
+ public:
+  virtual ~LogSource() = default;
+
+  // Provides a list of readable sources for log reading.
+  virtual std::vector<std::string> ListFiles() const = 0;
+
+  // Entry point for reading the content of log file.
+  virtual std::unique_ptr<DataDecoder> GetDecoder(
+      std::string_view id) const = 0;
+};
+
 // Implements requests log files from file system.
-class FileBackend : public LogBackend {
+class FileBackend : public LogBackend, public LogSource {
  public:
   // base_name is the path to the folder where log files are.
   explicit FileBackend(std::string_view base_name);
@@ -258,6 +272,12 @@ class FileBackend : public LogBackend {
 
   // Request file from a file system. It is not open yet.
   std::unique_ptr<LogSink> RequestFile(std::string_view id) override;
+
+  // List all files that looks like log files under base_name.
+  std::vector<std::string> ListFiles() const override;
+
+  // Open decoder to read the content of the file.
+  std::unique_ptr<DataDecoder> GetDecoder(std::string_view id) const override;
 
  private:
   const std::string base_name_;

@@ -100,6 +100,8 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":buffer_encoder",
+        ":file_operations",
         "//aos/time",
         "//aos/util:file",
         "@com_github_google_glog//:glog",

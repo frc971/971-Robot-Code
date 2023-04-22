@@ -4,9 +4,11 @@
 
 #include <filesystem>
 
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "glog/logging.h"
 
+#include "aos/events/logging/file_operations.h"
 #include "aos/util/file.h"
 
 DEFINE_bool(direct, false,
@@ -332,6 +334,31 @@ FileBackend::FileBackend(std::string_view base_name)
 std::unique_ptr<LogSink> FileBackend::RequestFile(std::string_view id) {
   const std::string filename = absl::StrCat(base_name_, separator_, id);
   return std::make_unique<FileHandler>(filename);
+}
+
+std::vector<std::string> FileBackend::ListFiles() const {
+  std::filesystem::path directory(base_name_);
+  if (!is_directory(directory)) {
+    directory = directory.parent_path();
+  }
+  internal::LocalFileOperations operations(directory.string());
+  std::vector<std::string> files;
+  operations.FindLogs(&files);
+
+  std::vector<std::string> names;
+  const std::string prefix = absl::StrCat(base_name_, separator_);
+  for (const auto &file : files) {
+    CHECK(absl::StartsWith(file, prefix));
+    names.push_back(file.substr(prefix.size()));
+  }
+  return names;
+}
+
+std::unique_ptr<DataDecoder> FileBackend::GetDecoder(
+    std::string_view id) const {
+  const std::string filename = absl::StrCat(base_name_, separator_, id);
+  CHECK(std::filesystem::exists(filename));
+  return std::make_unique<DummyDecoder>(filename);
 }
 
 RenamableFileBackend::RenamableFileBackend(std::string_view base_name)
