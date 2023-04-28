@@ -1748,12 +1748,12 @@ std::ostream &operator<<(std::ostream &os, const TimestampedMessage &m) {
   return os;
 }
 
-LogPartsSorter::LogPartsSorter(LogParts log_parts)
+MessageSorter::MessageSorter(LogParts log_parts)
     : parts_message_reader_(log_parts),
       source_node_index_(configuration::SourceNodeIndex(parts().config.get())) {
 }
 
-Message *LogPartsSorter::Front() {
+Message *MessageSorter::Front() {
   // Queue up data until enough data has been queued that the front message is
   // sorted enough to be safe to pop.  This may do nothing, so we should make
   // sure the nothing path is checked quickly.
@@ -1825,9 +1825,9 @@ Message *LogPartsSorter::Front() {
   return &(*messages_.begin());
 }
 
-void LogPartsSorter::PopFront() { messages_.erase(messages_.begin()); }
+void MessageSorter::PopFront() { messages_.erase(messages_.begin()); }
 
-std::string LogPartsSorter::DebugString() const {
+std::string MessageSorter::DebugString() const {
   std::stringstream ss;
   ss << "messages: [\n";
   int count = 0;
@@ -1845,7 +1845,7 @@ std::string LogPartsSorter::DebugString() const {
   return ss.str();
 }
 
-NodeMerger::NodeMerger(std::vector<LogParts> parts) {
+PartsMerger::PartsMerger(std::vector<LogParts> parts) {
   CHECK_GE(parts.size(), 1u);
   // Enforce that we are sorting things only from a single node from a single
   // boot.
@@ -1860,25 +1860,25 @@ NodeMerger::NodeMerger(std::vector<LogParts> parts) {
   node_ = configuration::GetNodeIndex(parts[0].config.get(), part0_node);
 
   for (LogParts &part : parts) {
-    parts_sorters_.emplace_back(std::move(part));
+    message_sorters_.emplace_back(std::move(part));
   }
 
   monotonic_start_time_ = monotonic_clock::max_time;
   realtime_start_time_ = realtime_clock::min_time;
-  for (const LogPartsSorter &parts_sorter : parts_sorters_) {
+  for (const MessageSorter &message_sorter : message_sorters_) {
     // We want to capture the earliest meaningful start time here. The start
     // time defaults to min_time when there's no meaningful value to report, so
     // let's ignore those.
-    if (parts_sorter.monotonic_start_time() != monotonic_clock::min_time) {
+    if (message_sorter.monotonic_start_time() != monotonic_clock::min_time) {
       bool accept = false;
       // We want to prioritize start times from the logger node.  Really, we
       // want to prioritize start times with a valid realtime_clock time.  So,
       // if we have a start time without a RT clock, prefer a start time with a
       // RT clock, even it if is later.
-      if (parts_sorter.realtime_start_time() != realtime_clock::min_time) {
+      if (message_sorter.realtime_start_time() != realtime_clock::min_time) {
         // We've got a good one.  See if the current start time has a good RT
         // clock, or if we should use this one instead.
-        if (parts_sorter.monotonic_start_time() < monotonic_start_time_) {
+        if (message_sorter.monotonic_start_time() < monotonic_start_time_) {
           accept = true;
         } else if (realtime_start_time_ == realtime_clock::min_time) {
           // The previous start time doesn't have a good RT time, so it is very
@@ -1888,14 +1888,14 @@ NodeMerger::NodeMerger(std::vector<LogParts> parts) {
         }
       } else if (realtime_start_time_ == realtime_clock::min_time) {
         // We don't have a RT time, so take the oldest.
-        if (parts_sorter.monotonic_start_time() < monotonic_start_time_) {
+        if (message_sorter.monotonic_start_time() < monotonic_start_time_) {
           accept = true;
         }
       }
 
       if (accept) {
-        monotonic_start_time_ = parts_sorter.monotonic_start_time();
-        realtime_start_time_ = parts_sorter.realtime_start_time();
+        monotonic_start_time_ = message_sorter.monotonic_start_time();
+        realtime_start_time_ = message_sorter.realtime_start_time();
       }
     }
   }
@@ -1907,16 +1907,16 @@ NodeMerger::NodeMerger(std::vector<LogParts> parts) {
   }
 }
 
-std::vector<const LogParts *> NodeMerger::Parts() const {
+std::vector<const LogParts *> PartsMerger::Parts() const {
   std::vector<const LogParts *> p;
-  p.reserve(parts_sorters_.size());
-  for (const LogPartsSorter &parts_sorter : parts_sorters_) {
-    p.emplace_back(&parts_sorter.parts());
+  p.reserve(message_sorters_.size());
+  for (const MessageSorter &message_sorter : message_sorters_) {
+    p.emplace_back(&message_sorter.parts());
   }
   return p;
 }
 
-Message *NodeMerger::Front() {
+Message *PartsMerger::Front() {
   // Return the current Front if we have one, otherwise go compute one.
   if (current_ != nullptr) {
     Message *result = current_->Front();
@@ -1928,33 +1928,33 @@ Message *NodeMerger::Front() {
   // duplicates.
   Message *oldest = nullptr;
   sorted_until_ = monotonic_clock::max_time;
-  for (LogPartsSorter &parts_sorter : parts_sorters_) {
-    Message *m = parts_sorter.Front();
+  for (MessageSorter &message_sorter : message_sorters_) {
+    Message *m = message_sorter.Front();
     if (!m) {
-      sorted_until_ = std::min(sorted_until_, parts_sorter.sorted_until());
+      sorted_until_ = std::min(sorted_until_, message_sorter.sorted_until());
       continue;
     }
     if (oldest == nullptr || *m < *oldest) {
       oldest = m;
-      current_ = &parts_sorter;
+      current_ = &message_sorter;
     } else if (*m == *oldest) {
       // Found a duplicate.  If there is a choice, we want the one which has
       // the timestamp time.
       if (!m->data->has_monotonic_timestamp_time) {
-        parts_sorter.PopFront();
+        message_sorter.PopFront();
       } else if (!oldest->data->has_monotonic_timestamp_time) {
         current_->PopFront();
-        current_ = &parts_sorter;
+        current_ = &message_sorter;
         oldest = m;
       } else {
         CHECK_EQ(m->data->monotonic_timestamp_time,
                  oldest->data->monotonic_timestamp_time);
-        parts_sorter.PopFront();
+        message_sorter.PopFront();
       }
     }
 
     // PopFront may change this, so compute it down here.
-    sorted_until_ = std::min(sorted_until_, parts_sorter.sorted_until());
+    sorted_until_ = std::min(sorted_until_, message_sorter.sorted_until());
   }
 
   if (oldest) {
@@ -1971,7 +1971,7 @@ Message *NodeMerger::Front() {
   return oldest;
 }
 
-void NodeMerger::PopFront() {
+void PartsMerger::PopFront() {
   CHECK(current_ != nullptr) << "Popping before calling Front()";
   current_->PopFront();
   current_ = nullptr;
@@ -1989,25 +1989,25 @@ BootMerger::BootMerger(std::vector<LogParts> files) {
     boots[boot_count].emplace_back(std::move(files[i]));
   }
 
-  node_mergers_.reserve(boots.size());
+  parts_mergers_.reserve(boots.size());
   for (size_t i = 0; i < boots.size(); ++i) {
     VLOG(2) << "Boot " << i;
     for (auto &p : boots[i]) {
       VLOG(2) << "Part " << p;
     }
-    node_mergers_.emplace_back(
-        std::make_unique<NodeMerger>(std::move(boots[i])));
+    parts_mergers_.emplace_back(
+        std::make_unique<PartsMerger>(std::move(boots[i])));
   }
 }
 
 Message *BootMerger::Front() {
-  Message *result = node_mergers_[index_]->Front();
+  Message *result = parts_mergers_[index_]->Front();
 
   if (result != nullptr) {
     return result;
   }
 
-  if (index_ + 1u == node_mergers_.size()) {
+  if (index_ + 1u == parts_mergers_.size()) {
     // At the end of the last node merger, just return.
     return nullptr;
   } else {
@@ -2016,12 +2016,12 @@ Message *BootMerger::Front() {
   }
 }
 
-void BootMerger::PopFront() { node_mergers_[index_]->PopFront(); }
+void BootMerger::PopFront() { parts_mergers_[index_]->PopFront(); }
 
 std::vector<const LogParts *> BootMerger::Parts() const {
   std::vector<const LogParts *> results;
-  for (const std::unique_ptr<NodeMerger> &node_merger : node_mergers_) {
-    std::vector<const LogParts *> node_parts = node_merger->Parts();
+  for (const std::unique_ptr<PartsMerger> &parts_merger : parts_mergers_) {
+    std::vector<const LogParts *> node_parts = parts_merger->Parts();
 
     results.insert(results.end(), std::make_move_iterator(node_parts.begin()),
                    std::make_move_iterator(node_parts.end()));
@@ -2165,7 +2165,7 @@ TimestampMapper::MatchResult TimestampMapper::MaybeQueueMatched() {
     CHECK_GE(matched_messages_.back().monotonic_event_time, last_message_time_);
     last_message_time_ = matched_messages_.back().monotonic_event_time;
 
-    // We are thin wrapper around node_merger.  Call it directly.
+    // We are thin wrapper around parts_merger.  Call it directly.
     boot_merger_.PopFront();
     timestamp_callback_(&matched_messages_.back());
     if (CheckReplayChannelsAndMaybePop(matched_messages_.back())) {

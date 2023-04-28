@@ -583,13 +583,13 @@ class SortingElementTest : public ::testing::Test {
   std::vector<uint32_t> queue_index_;
 };
 
-using LogPartsSorterTest = SortingElementTest;
-using LogPartsSorterDeathTest = LogPartsSorterTest;
-using NodeMergerTest = SortingElementTest;
+using MessageSorterTest = SortingElementTest;
+using MessageSorterDeathTest = MessageSorterTest;
+using PartsMergerTest = SortingElementTest;
 using TimestampMapperTest = SortingElementTest;
 
 // Tests that we can pull messages out of a log sorted in order.
-TEST_F(LogPartsSorterTest, Pull) {
+TEST_F(MessageSorterTest, Pull) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
     TestDetachedBufferWriter writer(logfile0_);
@@ -606,35 +606,35 @@ TEST_F(LogPartsSorterTest, Pull) {
 
   const std::vector<LogFile> parts = SortParts({logfile0_});
 
-  LogPartsSorter parts_sorter(parts[0].parts[0]);
+  MessageSorter message_sorter(parts[0].parts[0]);
 
   // Confirm we aren't sorted until any time until the message is popped.
   // Peeking shouldn't change the sorted until time.
-  EXPECT_EQ(parts_sorter.sorted_until(), monotonic_clock::min_time);
+  EXPECT_EQ(message_sorter.sorted_until(), monotonic_clock::min_time);
 
   std::deque<Message> output;
 
-  ASSERT_TRUE(parts_sorter.Front() != nullptr);
-  output.emplace_back(std::move(*parts_sorter.Front()));
-  parts_sorter.PopFront();
-  EXPECT_EQ(parts_sorter.sorted_until(), e + chrono::milliseconds(1900));
+  ASSERT_TRUE(message_sorter.Front() != nullptr);
+  output.emplace_back(std::move(*message_sorter.Front()));
+  message_sorter.PopFront();
+  EXPECT_EQ(message_sorter.sorted_until(), e + chrono::milliseconds(1900));
 
-  ASSERT_TRUE(parts_sorter.Front() != nullptr);
-  output.emplace_back(std::move(*parts_sorter.Front()));
-  parts_sorter.PopFront();
-  EXPECT_EQ(parts_sorter.sorted_until(), e + chrono::milliseconds(1900));
+  ASSERT_TRUE(message_sorter.Front() != nullptr);
+  output.emplace_back(std::move(*message_sorter.Front()));
+  message_sorter.PopFront();
+  EXPECT_EQ(message_sorter.sorted_until(), e + chrono::milliseconds(1900));
 
-  ASSERT_TRUE(parts_sorter.Front() != nullptr);
-  output.emplace_back(std::move(*parts_sorter.Front()));
-  parts_sorter.PopFront();
-  EXPECT_EQ(parts_sorter.sorted_until(), monotonic_clock::max_time);
+  ASSERT_TRUE(message_sorter.Front() != nullptr);
+  output.emplace_back(std::move(*message_sorter.Front()));
+  message_sorter.PopFront();
+  EXPECT_EQ(message_sorter.sorted_until(), monotonic_clock::max_time);
 
-  ASSERT_TRUE(parts_sorter.Front() != nullptr);
-  output.emplace_back(std::move(*parts_sorter.Front()));
-  parts_sorter.PopFront();
-  EXPECT_EQ(parts_sorter.sorted_until(), monotonic_clock::max_time);
+  ASSERT_TRUE(message_sorter.Front() != nullptr);
+  output.emplace_back(std::move(*message_sorter.Front()));
+  message_sorter.PopFront();
+  EXPECT_EQ(message_sorter.sorted_until(), monotonic_clock::max_time);
 
-  ASSERT_TRUE(parts_sorter.Front() == nullptr);
+  ASSERT_TRUE(message_sorter.Front() == nullptr);
 
   EXPECT_EQ(output[0].timestamp.boot, 0);
   EXPECT_EQ(output[0].timestamp.time, e + chrono::milliseconds(1000));
@@ -647,7 +647,7 @@ TEST_F(LogPartsSorterTest, Pull) {
 }
 
 // Tests that we can pull messages out of a log sorted in order.
-TEST_F(LogPartsSorterTest, WayBeforeStart) {
+TEST_F(MessageSorterTest, WayBeforeStart) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
     TestDetachedBufferWriter writer(logfile0_);
@@ -666,11 +666,11 @@ TEST_F(LogPartsSorterTest, WayBeforeStart) {
 
   const std::vector<LogFile> parts = SortParts({logfile0_});
 
-  LogPartsSorter parts_sorter(parts[0].parts[0]);
+  MessageSorter message_sorter(parts[0].parts[0]);
 
   // Confirm we aren't sorted until any time until the message is popped.
   // Peeking shouldn't change the sorted until time.
-  EXPECT_EQ(parts_sorter.sorted_until(), monotonic_clock::min_time);
+  EXPECT_EQ(message_sorter.sorted_until(), monotonic_clock::min_time);
 
   std::deque<Message> output;
 
@@ -678,13 +678,13 @@ TEST_F(LogPartsSorterTest, WayBeforeStart) {
        {e + chrono::milliseconds(1900), e + chrono::milliseconds(1900),
         e + chrono::milliseconds(1900), monotonic_clock::max_time,
         monotonic_clock::max_time}) {
-    ASSERT_TRUE(parts_sorter.Front() != nullptr);
-    output.emplace_back(std::move(*parts_sorter.Front()));
-    parts_sorter.PopFront();
-    EXPECT_EQ(parts_sorter.sorted_until(), t);
+    ASSERT_TRUE(message_sorter.Front() != nullptr);
+    output.emplace_back(std::move(*message_sorter.Front()));
+    message_sorter.PopFront();
+    EXPECT_EQ(message_sorter.sorted_until(), t);
   }
 
-  ASSERT_TRUE(parts_sorter.Front() == nullptr);
+  ASSERT_TRUE(message_sorter.Front() == nullptr);
 
   EXPECT_EQ(output[0].timestamp.boot, 0u);
   EXPECT_EQ(output[0].timestamp.time, e - chrono::milliseconds(1000));
@@ -699,7 +699,7 @@ TEST_F(LogPartsSorterTest, WayBeforeStart) {
 }
 
 // Tests that messages too far out of order trigger death.
-TEST_F(LogPartsSorterDeathTest, Pull) {
+TEST_F(MessageSorterDeathTest, Pull) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
     TestDetachedBufferWriter writer(logfile0_);
@@ -717,25 +717,25 @@ TEST_F(LogPartsSorterDeathTest, Pull) {
 
   const std::vector<LogFile> parts = SortParts({logfile0_});
 
-  LogPartsSorter parts_sorter(parts[0].parts[0]);
+  MessageSorter message_sorter(parts[0].parts[0]);
 
   // Confirm we aren't sorted until any time until the message is popped.
   // Peeking shouldn't change the sorted until time.
-  EXPECT_EQ(parts_sorter.sorted_until(), monotonic_clock::min_time);
+  EXPECT_EQ(message_sorter.sorted_until(), monotonic_clock::min_time);
   std::deque<Message> output;
 
-  ASSERT_TRUE(parts_sorter.Front() != nullptr);
-  parts_sorter.PopFront();
-  ASSERT_TRUE(parts_sorter.Front() != nullptr);
-  ASSERT_TRUE(parts_sorter.Front() != nullptr);
-  parts_sorter.PopFront();
+  ASSERT_TRUE(message_sorter.Front() != nullptr);
+  message_sorter.PopFront();
+  ASSERT_TRUE(message_sorter.Front() != nullptr);
+  ASSERT_TRUE(message_sorter.Front() != nullptr);
+  message_sorter.PopFront();
 
-  EXPECT_DEATH({ parts_sorter.Front(); },
+  EXPECT_DEATH({ message_sorter.Front(); },
                "Max out of order of 100000000ns exceeded.");
 }
 
 // Tests that we can merge data from 2 separate files, including duplicate data.
-TEST_F(NodeMergerTest, TwoFileMerger) {
+TEST_F(PartsMergerTest, TwoFileMerger) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
     TestDetachedBufferWriter writer0(logfile0_);
@@ -766,7 +766,7 @@ TEST_F(NodeMergerTest, TwoFileMerger) {
   const std::vector<LogFile> parts = SortParts({logfile0_, logfile1_});
   ASSERT_EQ(parts.size(), 1u);
 
-  NodeMerger merger(FilterPartsForNode(parts, "pi1"));
+  PartsMerger merger(FilterPartsForNode(parts, "pi1"));
 
   EXPECT_EQ(merger.sorted_until(), monotonic_clock::min_time);
 
@@ -823,7 +823,7 @@ TEST_F(NodeMergerTest, TwoFileMerger) {
 
 // Tests that we can merge timestamps with various combinations of
 // monotonic_timestamp_time.
-TEST_F(NodeMergerTest, TwoFileTimestampMerger) {
+TEST_F(PartsMergerTest, TwoFileTimestampMerger) {
   const aos::monotonic_clock::time_point e = monotonic_clock::epoch();
   {
     TestDetachedBufferWriter writer0(logfile0_);
@@ -867,7 +867,7 @@ TEST_F(NodeMergerTest, TwoFileTimestampMerger) {
   const std::vector<LogFile> parts = SortParts({logfile0_, logfile1_});
   ASSERT_EQ(parts.size(), 1u);
 
-  NodeMerger merger(FilterPartsForNode(parts, "pi1"));
+  PartsMerger merger(FilterPartsForNode(parts, "pi1"));
 
   EXPECT_EQ(merger.sorted_until(), monotonic_clock::min_time);
 

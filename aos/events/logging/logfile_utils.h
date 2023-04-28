@@ -535,9 +535,9 @@ struct TimestampedMessage {
 std::ostream &operator<<(std::ostream &os, const TimestampedMessage &m);
 
 // Class to sort the resulting messages from a PartsMessageReader.
-class LogPartsSorter {
+class MessageSorter {
  public:
-  LogPartsSorter(LogParts log_parts);
+  MessageSorter(LogParts log_parts);
 
   // Returns the parts that this is sorting messages from.
   const LogParts &parts() const { return parts_message_reader_.parts(); }
@@ -581,18 +581,18 @@ class LogPartsSorter {
   std::vector<size_t> source_node_index_;
 };
 
-// Class to run merge sort on the messages from multiple LogPartsSorter
-// instances.
-class NodeMerger {
+// Class to run merge sort on the messages associated with specific node and
+// boot.
+class PartsMerger {
  public:
-  NodeMerger(std::vector<LogParts> parts);
+  PartsMerger(std::vector<LogParts> parts);
 
   // Copying and moving will mess up the internal raw pointers.  Just don't do
   // it.
-  NodeMerger(NodeMerger const &) = delete;
-  NodeMerger(NodeMerger &&) = delete;
-  void operator=(NodeMerger const &) = delete;
-  void operator=(NodeMerger &&) = delete;
+  PartsMerger(PartsMerger const &) = delete;
+  PartsMerger(PartsMerger &&) = delete;
+  void operator=(PartsMerger const &) = delete;
+  void operator=(PartsMerger &&) = delete;
 
   // Node index in the configuration of this node.
   int node() const { return node_; }
@@ -601,7 +601,7 @@ class NodeMerger {
   std::vector<const LogParts *> Parts() const;
 
   const Configuration *configuration() const {
-    return parts_sorters_[0].parts().config.get();
+    return message_sorters_[0].parts().config.get();
   }
 
   monotonic_clock::time_point monotonic_start_time() const {
@@ -626,10 +626,10 @@ class NodeMerger {
 
  private:
   // Unsorted list of all parts sorters.
-  std::vector<LogPartsSorter> parts_sorters_;
+  std::vector<MessageSorter> message_sorters_;
   // Pointer to the parts sorter holding the current Front message if one
   // exists, or nullptr if a new one needs to be found.
-  LogPartsSorter *current_ = nullptr;
+  MessageSorter *current_ = nullptr;
   // Cached sorted_until value.
   aos::monotonic_clock::time_point sorted_until_ = monotonic_clock::min_time;
 
@@ -660,30 +660,31 @@ class BootMerger {
   void operator=(BootMerger &&) = delete;
 
   // Node index in the configuration of this node.
-  int node() const { return node_mergers_[0]->node(); }
+  int node() const { return parts_mergers_[0]->node(); }
 
   // List of parts being sorted together.
   std::vector<const LogParts *> Parts() const;
 
   const Configuration *configuration() const {
-    return node_mergers_[0]->configuration();
+    return parts_mergers_[0]->configuration();
   }
 
   monotonic_clock::time_point monotonic_start_time(size_t boot) const {
-    CHECK_LT(boot, node_mergers_.size());
-    return node_mergers_[boot]->monotonic_start_time();
+    CHECK_LT(boot, parts_mergers_.size());
+    return parts_mergers_[boot]->monotonic_start_time();
   }
   realtime_clock::time_point realtime_start_time(size_t boot) const {
-    CHECK_LT(boot, node_mergers_.size());
-    return node_mergers_[boot]->realtime_start_time();
+    CHECK_LT(boot, parts_mergers_.size());
+    return parts_mergers_[boot]->realtime_start_time();
   }
   monotonic_clock::time_point monotonic_oldest_time(size_t boot) const {
-    CHECK_LT(boot, node_mergers_.size());
-    return node_mergers_[boot]->monotonic_oldest_time();
+    CHECK_LT(boot, parts_mergers_.size());
+    return parts_mergers_[boot]->monotonic_oldest_time();
   }
 
   bool started() const {
-    return node_mergers_[index_]->sorted_until() != monotonic_clock::min_time ||
+    return parts_mergers_[index_]->sorted_until() !=
+               monotonic_clock::min_time ||
            index_ != 0;
   }
 
@@ -699,7 +700,7 @@ class BootMerger {
 
   // TODO(austin): Sanjay points out this is pretty inefficient.  Don't keep so
   // many things open.
-  std::vector<std::unique_ptr<NodeMerger>> node_mergers_;
+  std::vector<std::unique_ptr<PartsMerger>> parts_mergers_;
 };
 
 // Class to match timestamps with the corresponding data from other nodes.
