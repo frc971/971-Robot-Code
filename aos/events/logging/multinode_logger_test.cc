@@ -3802,6 +3802,52 @@ TEST(MultinodeLoggerLoopTest, Loop) {
   auto result = ConfirmReadable(filenames);
 }
 
+// Tests that RestartLogging works in the simple case.  Unfortunately, the
+// failure cases involve simulating time elapsing in callbacks, which is really
+// hard.  The best we can reasonably do is make sure 2 back to back logs are
+// parseable together.
+TEST_P(MultinodeLoggerTest, RestartLogging) {
+  time_converter_.AddMonotonic(
+      {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
+  std::vector<std::string> filenames;
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger, logfile_base1_);
+    aos::monotonic_clock::time_point last_rotation_time =
+        pi1_logger.event_loop->monotonic_now();
+    pi1_logger.logger->set_on_logged_period([&] {
+      const auto now = pi1_logger.event_loop->monotonic_now();
+      if (now > last_rotation_time + std::chrono::seconds(5)) {
+        pi1_logger.AppendAllFilenames(&filenames);
+        std::unique_ptr<MultiNodeFilesLogNamer> namer =
+            pi1_logger.MakeLogNamer(logfile_base2_);
+        pi1_logger.log_namer = namer.get();
+
+        pi1_logger.logger->RestartLogging(std::move(namer));
+        last_rotation_time = now;
+      }
+    });
+
+    event_loop_factory_.RunFor(chrono::milliseconds(7000));
+
+    pi1_logger.AppendAllFilenames(&filenames);
+  }
+
+  for (const auto &x : filenames) {
+    LOG(INFO) << x;
+  }
+
+  EXPECT_GE(filenames.size(), 2u);
+
+  ConfirmReadable(filenames);
+
+  // TODO(austin): It would be good to confirm that any one time messages end up
+  // in both logs correctly.
+}
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos

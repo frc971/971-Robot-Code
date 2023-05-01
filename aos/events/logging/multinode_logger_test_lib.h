@@ -43,6 +43,9 @@ struct ConfigParams {
 struct LoggerState {
   void StartLogger(std::string logfile_base);
 
+  std::unique_ptr<MultiNodeFilesLogNamer> MakeLogNamer(
+      std::string logfile_base);
+
   std::unique_ptr<EventLoop> event_loop;
   std::unique_ptr<Logger> logger;
   const Configuration *configuration;

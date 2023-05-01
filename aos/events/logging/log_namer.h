@@ -216,6 +216,10 @@ class LogNamer {
   // Returns all the nodes that data is being written for.
   const std::vector<const Node *> &nodes() const { return nodes_; }
 
+  // Closes all existing log data writers. No more data may be written after
+  // this.
+  virtual WriteCode Close() = 0;
+
   // Returns the node the logger is running on.
   const Node *node() const { return node_; }
   const UUID &logger_node_boot_uuid() const { return logger_node_boot_uuid_; }
@@ -387,7 +391,7 @@ class MultiNodeLogNamer : public LogNamer {
   // Closes all existing log files. No more data may be written after this.
   //
   // This may set ran_out_of_space().
-  void Close();
+  WriteCode Close() override;
 
   // Accessors for various statistics. See the identically-named methods in
   // DetachedBufferWriter for documentation. These are aggregated across all

@@ -714,9 +714,13 @@ NewDataWriter *MultiNodeLogNamer::MakeTimestampWriter(const Channel *channel) {
   return data_writer_.get();
 }
 
-void MultiNodeLogNamer::Close() {
+WriteCode MultiNodeLogNamer::Close() {
   data_writers_.clear();
   data_writer_.reset();
+  if (ran_out_of_space_) {
+    return WriteCode::kOutOfSpace;
+  }
+  return WriteCode::kOk;
 }
 
 void MultiNodeLogNamer::ResetStatistics() {

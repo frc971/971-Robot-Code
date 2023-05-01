@@ -250,9 +250,12 @@ class Logger {
   // Fetches from each channel until all the data is logged.  This is dangerous
   // because it lets you log for more than 1 period.  All calls need to verify
   // that t isn't greater than 1 period in the future.
-  // Returns true if there is at least one message that has been fetched but
-  // not yet written.
-  bool LogUntil(monotonic_clock::time_point t);
+  //
+  // Returns true if there is at least one message written, and also returns the
+  // timestamp of the newest record that any fetcher is pointing to, or min_time
+  // if there are no messages published on any logged channels.
+  std::pair<bool, monotonic_clock::time_point> LogUntil(
+      monotonic_clock::time_point t);
 
   void RecordFetchResult(aos::monotonic_clock::time_point start,
                          aos::monotonic_clock::time_point end, bool got_new,
