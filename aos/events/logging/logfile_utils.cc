@@ -154,6 +154,7 @@ void DetachedBufferWriter::Close() {
   while (encoder_->queue_size() > 0) {
     Flush(monotonic_clock::max_time);
   }
+  encoder_.reset();
   ran_out_of_space_ = file_handler_->Close() == WriteCode::kOutOfSpace;
 }
 
