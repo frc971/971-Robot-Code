@@ -1155,8 +1155,12 @@ const Node *GetNode(const Configuration *config, const Node *node) {
 }
 
 const Node *GetNode(const Configuration *config, std::string_view name) {
-  CHECK(config->has_nodes())
-      << ": Asking for a node from a single node configuration.";
+  if (!MultiNode(config)) {
+    if (name.empty()) {
+      return nullptr;
+    }
+    LOG(FATAL) << ": Asking for a named node from a single node configuration.";
+  }
   for (const Node *node : *config->nodes()) {
     CHECK(node->has_name()) << ": Malformed node " << FlatbufferToJson(node);
     if (node->name()->string_view() == name) {
