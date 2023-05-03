@@ -397,6 +397,7 @@ class PartsMessageReader {
   const LogParts parts_;
   size_t next_part_index_ = 1u;
   bool done_ = false;
+
   MessageReader message_reader_;
   // We instantiate the next one early, to allow implementations to prefetch.
   // TODO(Brian): To get optimal performance when downloading, this needs more
@@ -898,9 +899,13 @@ class TimestampMapper {
   std::function<bool(TimestampedMessage &)> replay_channels_callback_;
 };
 
-// Returns the node name with a trailing space, or an empty string if we are on
-// a single node.
-std::string MaybeNodeName(const Node *);
+// Returns the node name, or an empty string if we are a single node.
+inline std::string_view MaybeNodeName(const Node *node) {
+  if (node != nullptr) {
+    return node->name()->string_view();
+  }
+  return "";
+}
 
 // Class to copy a RemoteMessage into the provided buffer.
 class RemoteMessageCopier : public DataEncoder::Copier {

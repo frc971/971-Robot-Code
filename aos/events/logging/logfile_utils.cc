@@ -1785,8 +1785,8 @@ Message *MessageSorter::Front() {
 
         std::optional<size_t> boot = parts_message_reader_.boot_count(
             source_node_index_[m->channel_index]);
-        CHECK(boot) << ": Failed to find boot for node " << MaybeNodeName(node)
-                    << ", with index " << source_node_index_[m->channel_index];
+        CHECK(boot) << ": Failed to find boot for node '" << MaybeNodeName(node)
+                    << "', with index " << source_node_index_[m->channel_index];
         monotonic_remote_boot = *boot;
       }
 
@@ -2499,13 +2499,6 @@ std::string TimestampMapper::DebugString() const {
     ss << "] queued_until " << ns.peer->queued_until_;
   }
   return ss.str();
-}
-
-std::string MaybeNodeName(const Node *node) {
-  if (node != nullptr) {
-    return node->name()->str() + " ";
-  }
-  return "";
 }
 
 }  // namespace aos::logger

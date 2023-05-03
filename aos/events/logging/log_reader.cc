@@ -489,7 +489,7 @@ void LogReader::State::RunOnStart() {
   SetRealtimeOffset(monotonic_start_time(boot_count()),
                     realtime_start_time(boot_count()));
 
-  VLOG(1) << "Starting " << MaybeNodeName(node()) << "at time "
+  VLOG(1) << "Starting for node '" << MaybeNodeName(node()) << "' at time "
           << monotonic_start_time(boot_count());
   auto fn = [this]() {
     for (size_t i = 0; i < on_starts_.size(); ++i) {
@@ -525,7 +525,7 @@ void LogReader::State::OnEnd(std::function<void()> fn) {
 }
 
 void LogReader::State::RunOnEnd() {
-  VLOG(1) << "Ending " << MaybeNodeName(node()) << "at time "
+  VLOG(1) << "Ending for node '" << MaybeNodeName(node()) << "' at time "
           << monotonic_start_time(boot_count());
   auto fn = [this]() {
     for (size_t i = 0; i < on_ends_.size(); ++i) {
@@ -733,7 +733,7 @@ void LogReader::StartAfterRegister(
   for (std::unique_ptr<State> &state : states_) {
     CHECK(state);
     VLOG(1) << "Start time is " << state->monotonic_start_time(0)
-            << " for node " << MaybeNodeName(state->node()) << "now "
+            << " for node '" << MaybeNodeName(state->node()) << "' now "
             << state->monotonic_now();
     if (state->monotonic_start_time(0) == monotonic_clock::min_time) {
       continue;
@@ -764,8 +764,8 @@ void LogReader::StartAfterRegister(
                                state->realtime_start_time(0));
     }
     VLOG(1) << "Start time is " << state->monotonic_start_time(0)
-            << " for node " << MaybeNodeName(state->event_loop()->node())
-            << "now " << state->monotonic_now();
+            << " for node '" << MaybeNodeName(state->event_loop()->node())
+            << "' now " << state->monotonic_now();
   }
 
   if (FLAGS_timestamps_to_csv) {
@@ -956,7 +956,8 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
   state->set_timer_handler(event_loop->AddTimer([this, state]() {
     if (state->MultiThreadedOldestMessageTime() == BootTimestamp::max_time()) {
       --live_nodes_;
-      VLOG(1) << MaybeNodeName(state->event_loop()->node()) << "Node down!";
+      VLOG(1) << "Node '" << MaybeNodeName(state->event_loop()->node())
+              << "' down!";
       if (exit_on_finish_ && live_nodes_ == 0 &&
           event_loop_factory_ != nullptr) {
         event_loop_factory_->Exit();
@@ -1071,9 +1072,9 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
         state->SetRealtimeOffset(timestamped_message.monotonic_event_time.time,
                                  timestamped_message.realtime_event_time);
 
-        VLOG(1) << MaybeNodeName(state->event_loop()->node()) << "Sending "
-                << timestamped_message.monotonic_event_time << " "
-                << state->DebugString();
+        VLOG(1) << "For node '" << MaybeNodeName(state->event_loop()->node())
+                << "' sending at " << timestamped_message.monotonic_event_time
+                << " : " << state->DebugString();
         // TODO(austin): std::move channel_data in and make that efficient in
         // simulation.
         state->Send(std::move(timestamped_message));
@@ -1099,8 +1100,8 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
                   << configuration::CleanedChannelToString(
                          logged_configuration()->channels()->Get(
                              timestamped_message.channel_index))
-                  << " on node " << MaybeNodeName(state->event_loop()->node())
-                  << timestamped_message;
+                  << " on node '" << MaybeNodeName(state->event_loop()->node())
+                  << "' at " << timestamped_message;
 
           // The user might be working with log files from 1 node but forgot to
           // configure the infrastructure to log data for a remote channel on
@@ -1177,30 +1178,31 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
     const BootTimestamp next_time = state->MultiThreadedOldestMessageTime();
     if (next_time != BootTimestamp::max_time()) {
       if (next_time.boot != state->boot_count()) {
-        VLOG(1) << "Next message for "
+        VLOG(1) << "Next message for node '"
                 << MaybeNodeName(state->event_loop()->node())
-                << "is on the next boot, " << next_time << " now is "
+                << "' is on the next boot, " << next_time << " now is "
                 << state->monotonic_now();
         CHECK(event_loop_factory_);
         state->NotifyLogfileEnd();
         return;
       }
       if (event_loop_factory_ != nullptr) {
-        VLOG(1) << "Scheduling " << MaybeNodeName(state->event_loop()->node())
-                << "wakeup for " << next_time.time << "("
+        VLOG(1) << "Scheduling for node '"
+                << MaybeNodeName(state->event_loop()->node()) << "' wakeup for "
+                << next_time.time << "("
                 << state->ToDistributedClock(next_time.time)
                 << " distributed), now is " << state->monotonic_now();
       } else {
-        VLOG(1) << "Scheduling " << MaybeNodeName(state->event_loop()->node())
-                << "wakeup for " << next_time.time << ", now is "
-                << state->monotonic_now();
+        VLOG(1) << "Scheduling for node '"
+                << MaybeNodeName(state->event_loop()->node()) << "' wakeup for "
+                << next_time.time << ", now is " << state->monotonic_now();
       }
       // TODO(james): This can result in negative times getting passed-through
       // in realtime replay.
       state->Schedule(next_time.time);
     } else {
-      VLOG(1) << MaybeNodeName(state->event_loop()->node())
-              << "No next message, scheduling shutdown";
+      VLOG(1) << "Node '" << MaybeNodeName(state->event_loop()->node())
+              << "': No next message, scheduling shutdown";
       state->NotifyLogfileEnd();
       // Set a timer up immediately after now to die. If we don't do this,
       // then the watchers waiting on the message we just read will never get
@@ -1213,7 +1215,8 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
       }
     }
 
-    VLOG(1) << MaybeNodeName(state->event_loop()->node()) << "Done sending at "
+    VLOG(1) << "Node '" << MaybeNodeName(state->event_loop()->node())
+            << "': Done sending at "
             << state->event_loop()->context().monotonic_event_time << " now "
             << state->monotonic_now();
   }));
@@ -2231,8 +2234,8 @@ TimestampedMessage LogReader::State::PopOldest() {
 
     TimestampedMessage result = std::move(*result_ptr);
 
-    VLOG(2) << MaybeNodeName(event_loop_->node()) << "PopOldest Popping "
-            << result.monotonic_event_time;
+    VLOG(2) << "Node '" << MaybeNodeName(event_loop_->node())
+            << "': PopOldest Popping " << result.monotonic_event_time;
     timestamp_mapper_->PopFront();
     SeedSortedMessages();
 
@@ -2272,7 +2275,7 @@ BootTimestamp LogReader::State::SingleThreadedOldestMessageTime() {
   if (result_ptr == nullptr) {
     return BootTimestamp::max_time();
   }
-  VLOG(2) << MaybeNodeName(node()) << "oldest message at "
+  VLOG(2) << "Node '" << MaybeNodeName(node()) << "': oldest message at "
           << result_ptr->monotonic_event_time.time;
   if (result_ptr->monotonic_event_time.boot == boot_count()) {
     ObserveNextMessage(result_ptr->monotonic_event_time.time,
