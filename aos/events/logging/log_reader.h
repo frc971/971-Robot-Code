@@ -289,6 +289,9 @@ class LogReader {
   }
 
   std::string_view name() const { return log_files_[0].name; }
+  std::string_view log_event_uuid() const {
+    return log_files_[0].log_event_uuid;
+  }
 
   // Set whether to exit the SimulatedEventLoopFactory when we finish reading
   // the logfile.
@@ -730,8 +733,8 @@ class LogReader {
     std::vector<message_bridge::NoncausalOffsetEstimator *> filters_;
     message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters_;
 
-    // List of NodeEventLoopFactorys (or nullptr if it isn't a forwarded
-    // channel) which correspond to the originating node.
+    // List of States (or nullptr if it isn't a forwarded channel) which
+    // correspond to the originating node.
     std::vector<State *> channel_source_state_;
 
     // This is a cache for channel, connection mapping to the corresponding
