@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -17,6 +18,8 @@ namespace chrono = std::chrono;
 DEFINE_string(file, "/media/sda1/foo", "File to write to.");
 
 DEFINE_uint32(write_size, 4096, "Size of hunk to write");
+DEFINE_int32(nice, -20,
+             "Priority to nice to. Set to 0 to not change the priority.");
 DEFINE_bool(sync, false, "If true, sync the file after each written block.");
 DEFINE_bool(writev, false, "If true, use writev.");
 DEFINE_bool(direct, false, "If true, O_DIRECT.");
@@ -68,6 +71,11 @@ int main(int argc, char **argv) {
   aos::monotonic_clock::time_point last_time = start_time;
   size_t last_written_data = 0;
   size_t written_data = 0;
+
+  if (FLAGS_nice != 0) {
+    PCHECK(-1 != setpriority(PRIO_PROCESS, 0, FLAGS_nice))
+        << ": Renicing to " << FLAGS_nice << " failed";
+  }
 
   while (true) {
     if (FLAGS_writev) {
