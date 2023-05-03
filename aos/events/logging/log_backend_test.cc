@@ -14,13 +14,24 @@
 #include "gtest/gtest.h"
 
 namespace aos::logger::testing {
+namespace {
+// Helper to write simple string to the log sink
+WriteResult Write(LogSink *log_sink, std::string_view content) {
+  auto span = absl::Span<const uint8_t>(
+      reinterpret_cast<const unsigned char *>(content.data()), content.size());
+  auto queue = absl::Span<const absl::Span<const uint8_t>>(&span, 1);
+  return log_sink->Write(queue);
+}
+}  // namespace
+
 TEST(LogBackendTest, CreateSimpleFile) {
   const std::string logevent = aos::testing::TestTmpDir() + "/logevent/";
   FileBackend backend(logevent);
   auto file = backend.RequestFile("test.log");
   ASSERT_EQ(file->OpenForWrite(), WriteCode::kOk);
-  auto result = write(file->fd(), "test", 4);
-  EXPECT_GT(result, 0);
+  auto result = Write(file.get(), "test");
+  EXPECT_EQ(result.code, WriteCode::kOk);
+  EXPECT_EQ(result.messages_written, 1);
   EXPECT_EQ(file->Close(), WriteCode::kOk);
   EXPECT_TRUE(std::filesystem::exists(logevent + "test.log"));
 }
@@ -30,8 +41,9 @@ TEST(LogBackendTest, CreateRenamableFile) {
   RenamableFileBackend backend(logevent);
   auto file = backend.RequestFile("test.log");
   ASSERT_EQ(file->OpenForWrite(), WriteCode::kOk);
-  auto result = write(file->fd(), "testtest", 8);
-  EXPECT_GT(result, 0);
+  auto result = Write(file.get(), "test");
+  EXPECT_EQ(result.code, WriteCode::kOk);
+  EXPECT_EQ(result.messages_written, 1);
   EXPECT_EQ(file->Close(), WriteCode::kOk);
   EXPECT_TRUE(std::filesystem::exists(logevent + "test.log"));
 }
@@ -42,8 +54,9 @@ TEST(LogBackendTest, UseTempRenamableFile) {
   backend.EnableTempFiles();
   auto file = backend.RequestFile("test.log");
   ASSERT_EQ(file->OpenForWrite(), WriteCode::kOk);
-  auto result = write(file->fd(), "testtest", 8);
-  EXPECT_GT(result, 0);
+  auto result = Write(file.get(), "test");
+  EXPECT_EQ(result.code, WriteCode::kOk);
+  EXPECT_EQ(result.messages_written, 1);
   EXPECT_TRUE(std::filesystem::exists(logevent + "test.log.tmp"));
 
   EXPECT_EQ(file->Close(), WriteCode::kOk);
@@ -56,8 +69,9 @@ TEST(LogBackendTest, RenameBaseAfterWrite) {
   RenamableFileBackend backend(logevent);
   auto file = backend.RequestFile("test.log");
   ASSERT_EQ(file->OpenForWrite(), WriteCode::kOk);
-  auto result = write(file->fd(), "testtest", 8);
-  EXPECT_GT(result, 0);
+  auto result = Write(file.get(), "test");
+  EXPECT_EQ(result.code, WriteCode::kOk);
+  EXPECT_EQ(result.messages_written, 1);
   EXPECT_TRUE(std::filesystem::exists(logevent + "test.log"));
 
   std::string renamed = aos::testing::TestTmpDir() + "/renamed/";
@@ -77,8 +91,9 @@ TEST(LogBackendTest, UseTestAndRenameBaseAfterWrite) {
   backend.EnableTempFiles();
   auto file = backend.RequestFile("test.log");
   ASSERT_EQ(file->OpenForWrite(), WriteCode::kOk);
-  auto result = write(file->fd(), "testtest", 8);
-  EXPECT_GT(result, 0);
+  auto result = Write(file.get(), "test");
+  EXPECT_EQ(result.code, WriteCode::kOk);
+  EXPECT_EQ(result.messages_written, 1);
   EXPECT_TRUE(std::filesystem::exists(logevent + "test.log.tmp"));
 
   std::string renamed = aos::testing::TestTmpDir() + "/renamed/";
@@ -364,7 +379,8 @@ TEST_F(FileWriteTestBase, AlignedToUnaligned) {
   auto result = handler->Write(queue);
   EXPECT_EQ(result.code, WriteCode::kOk);
   EXPECT_EQ(result.messages_written, queue.size());
-  EXPECT_GT(handler->written_aligned(), 0);
+  FileHandler *file_handler = reinterpret_cast<FileHandler *>(handler.get());
+  EXPECT_GT(file_handler->written_aligned(), 0);
 
   ASSERT_EQ(handler->Close(), WriteCode::kOk);
   EXPECT_TRUE(std::filesystem::exists(file));

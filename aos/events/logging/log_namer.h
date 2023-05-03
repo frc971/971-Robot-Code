@@ -43,7 +43,8 @@ class NewDataWriter {
 
   void UpdateMaxMessageSize(size_t new_size) {
     if (new_size > max_message_size_) {
-      CHECK(!header_written_);
+      CHECK(!header_written_) << ": Tried to update to " << new_size << ", was "
+                              << max_message_size_ << " for " << name();
       max_message_size_ = new_size;
     }
   }
@@ -77,10 +78,8 @@ class NewDataWriter {
   // update the remote timestamps.
   void UpdateBoot(const UUID &source_node_boot_uuid);
 
-  // Returns the filename of the writer.
-  std::string_view filename() const {
-    return writer ? writer->filename() : "(closed)";
-  }
+  // Returns the name of the writer. It may be a filename, but assume it is not.
+  std::string_view name() const { return writer ? writer->name() : "(closed)"; }
 
   void Close();
 

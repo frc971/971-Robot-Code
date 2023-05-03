@@ -80,12 +80,11 @@ void PrintOptionalOrNull(std::ostream *os, const std::optional<T> &t) {
 }
 }  // namespace
 
-DetachedBufferWriter::DetachedBufferWriter(
-    std::unique_ptr<FileHandler> file_handler,
-    std::unique_ptr<DataEncoder> encoder)
-    : file_handler_(std::move(file_handler)), encoder_(std::move(encoder)) {
-  CHECK(file_handler_);
-  ran_out_of_space_ = file_handler_->OpenForWrite() == WriteCode::kOutOfSpace;
+DetachedBufferWriter::DetachedBufferWriter(std::unique_ptr<LogSink> log_sink,
+                                           std::unique_ptr<DataEncoder> encoder)
+    : log_sink_(std::move(log_sink)), encoder_(std::move(encoder)) {
+  CHECK(log_sink_);
+  ran_out_of_space_ = log_sink_->OpenForWrite() == WriteCode::kOutOfSpace;
   if (ran_out_of_space_) {
     LOG(WARNING) << "And we are out of space";
   }
@@ -108,7 +107,7 @@ DetachedBufferWriter::DetachedBufferWriter(DetachedBufferWriter &&other) {
 // (because that data will then be its data).
 DetachedBufferWriter &DetachedBufferWriter::operator=(
     DetachedBufferWriter &&other) {
-  std::swap(file_handler_, other.file_handler_);
+  std::swap(log_sink_, other.log_sink_);
   std::swap(encoder_, other.encoder_);
   std::swap(ran_out_of_space_, other.ran_out_of_space_);
   std::swap(acknowledge_ran_out_of_space_, other.acknowledge_ran_out_of_space_);
@@ -147,7 +146,7 @@ void DetachedBufferWriter::CopyMessage(DataEncoder::Copier *copier,
 }
 
 void DetachedBufferWriter::Close() {
-  if (!file_handler_->is_open()) {
+  if (!log_sink_->is_open()) {
     return;
   }
   encoder_->Finish();
@@ -155,7 +154,7 @@ void DetachedBufferWriter::Close() {
     Flush(monotonic_clock::max_time);
   }
   encoder_.reset();
-  ran_out_of_space_ = file_handler_->Close() == WriteCode::kOutOfSpace;
+  ran_out_of_space_ = log_sink_->Close() == WriteCode::kOutOfSpace;
 }
 
 void DetachedBufferWriter::Flush(aos::monotonic_clock::time_point now) {
@@ -178,7 +177,7 @@ void DetachedBufferWriter::Flush(aos::monotonic_clock::time_point now) {
     return;
   }
 
-  const WriteResult result = file_handler_->Write(queue);
+  const WriteResult result = log_sink_->Write(queue);
   encoder_->Clear(result.messages_written);
   ran_out_of_space_ = result.code == WriteCode::kOutOfSpace;
 }

@@ -230,8 +230,6 @@ Logger::~Logger() {
   }
 }
 
-
-
 std::string Logger::WriteConfiguration(LogNamer *log_namer) {
   std::string config_sha256;
 
@@ -348,8 +346,7 @@ std::unique_ptr<LogNamer> Logger::RestartLogging(
   // Make sure we read up until "now" and log it.  This sets us up so that we
   // are unlikely to fetch a message far in the future and have a ton of data
   // before the offical start time.
-  monotonic_clock::time_point newest_record =
-      monotonic_clock::min_time;
+  monotonic_clock::time_point newest_record = monotonic_clock::min_time;
   while (true) {
     aos::monotonic_clock::time_point next_time =
         last_synchronized_time_ + polling_period_;
@@ -737,7 +734,7 @@ void Logger::WriteData(NewDataWriter *writer, const FetcherStruct &f) {
     VLOG(2) << "Wrote data as node " << FlatbufferToJson(node_)
             << " for channel "
             << configuration::CleanedChannelToString(f.fetcher->channel())
-            << " to " << writer->filename();
+            << " to " << writer->name();
   }
 }
 
@@ -762,7 +759,7 @@ void Logger::WriteTimestamps(NewDataWriter *timestamp_writer,
     VLOG(2) << "Wrote timestamps as node " << FlatbufferToJson(node_)
             << " for channel "
             << configuration::CleanedChannelToString(f.fetcher->channel())
-            << " to " << timestamp_writer->filename() << " timestamp";
+            << " to " << timestamp_writer->name() << " timestamp";
   }
 }
 

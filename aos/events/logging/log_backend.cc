@@ -135,7 +135,7 @@ WriteCode FileHandler::OpenForWrite() {
     }
 
     flags_ = fcntl(fd_, F_GETFL, 0);
-    PCHECK(flags_ >= 0) << ": Failed to get flags for " << this->filename();
+    PCHECK(flags_ >= 0) << ": Failed to get flags for " << filename_;
 
     EnableDirect();
 
@@ -151,10 +151,10 @@ void FileHandler::EnableDirect() {
     // Track if we failed to set O_DIRECT.  Note: Austin hasn't seen this call
     // fail.  The write call tends to fail instead.
     if (fcntl(fd_, F_SETFL, new_flags) == -1) {
-      PLOG(WARNING) << "Failed to set O_DIRECT on " << filename();
+      PLOG(WARNING) << "Failed to set O_DIRECT on " << filename_;
       supports_odirect_ = false;
     } else {
-      VLOG(1) << "Enabled O_DIRECT on " << filename();
+      VLOG(1) << "Enabled O_DIRECT on " << filename_;
       flags_ = new_flags;
     }
   }
@@ -164,7 +164,7 @@ void FileHandler::DisableDirect() {
   if (supports_odirect_ && ODirectEnabled()) {
     flags_ = flags_ & (~O_DIRECT);
     PCHECK(fcntl(fd_, F_SETFL, flags_) != -1) << ": Failed to disable O_DIRECT";
-    VLOG(1) << "Disabled O_DIRECT on " << filename();
+    VLOG(1) << "Disabled O_DIRECT on " << filename_;
   }
 }
 
@@ -296,7 +296,6 @@ WriteCode FileHandler::WriteV(const std::vector<struct iovec> &iovec,
       posix_fadvise(fd_, last_synced_bytes_,
                     total_write_bytes_ - last_synced_bytes_,
                     POSIX_FADV_DONTNEED);
-
     }
     last_synced_bytes_ = total_write_bytes_;
   }
@@ -305,7 +304,7 @@ WriteCode FileHandler::WriteV(const std::vector<struct iovec> &iovec,
   if (aligned) {
     written_aligned_ += written;
   }
-  write_stats_.UpdateStats(end - start, written, iovec.size());
+  WriteStatistics()->UpdateStats(end - start, written, iovec.size());
   return WriteCode::kOk;
 }
 
@@ -329,7 +328,7 @@ WriteCode FileHandler::Close() {
 FileBackend::FileBackend(std::string_view base_name)
     : base_name_(base_name), separator_(base_name_.back() == '/' ? "" : "_") {}
 
-std::unique_ptr<FileHandler> FileBackend::RequestFile(std::string_view id) {
+std::unique_ptr<LogSink> FileBackend::RequestFile(std::string_view id) {
   const std::string filename = absl::StrCat(base_name_, separator_, id);
   return std::make_unique<FileHandler>(filename);
 }
@@ -337,7 +336,7 @@ std::unique_ptr<FileHandler> FileBackend::RequestFile(std::string_view id) {
 RenamableFileBackend::RenamableFileBackend(std::string_view base_name)
     : base_name_(base_name), separator_(base_name_.back() == '/' ? "" : "_") {}
 
-std::unique_ptr<FileHandler> RenamableFileBackend::RequestFile(
+std::unique_ptr<LogSink> RenamableFileBackend::RequestFile(
     std::string_view id) {
   const std::string filename =
       absl::StrCat(base_name_, separator_, id, temp_suffix_);
