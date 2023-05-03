@@ -133,6 +133,25 @@ class RawFetcher {
   Ftrace ftrace_;
 };
 
+using SharedSpan = std::shared_ptr<const absl::Span<const uint8_t>>;
+
+// Holds storage for a span object and the data referenced by that span for
+// compatibility with SharedSpan users. If constructed with MakeSharedSpan, span
+// points to only the aligned segment of the entire data.
+struct AlignedOwningSpan {
+  AlignedOwningSpan(absl::Span<const uint8_t> new_span) : span(new_span) {}
+
+  AlignedOwningSpan(const AlignedOwningSpan &) = delete;
+  AlignedOwningSpan &operator=(const AlignedOwningSpan &) = delete;
+  absl::Span<const uint8_t> span;
+  char *data() { return reinterpret_cast<char *>(this + 1); }
+};
+
+// Constructs a span which owns its data through a shared_ptr. The owning span
+// points to a const view of the data; also returns a temporary mutable span
+// which is only valid while the const shared span is kept alive.
+std::pair<SharedSpan, absl::Span<uint8_t>> MakeSharedSpan(size_t size);
+
 // Raw version of sender.  Sends a block of data.  This is used for reflection
 // and as a building block to implement typed senders.
 class RawSender {

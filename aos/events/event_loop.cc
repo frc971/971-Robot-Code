@@ -34,6 +34,25 @@ std::string_view ErrorToString(const RawSender::Error err) {
 }
 }  // namespace
 
+std::pair<SharedSpan, absl::Span<uint8_t>> MakeSharedSpan(size_t size) {
+  AlignedOwningSpan *const span = reinterpret_cast<AlignedOwningSpan *>(
+      malloc(sizeof(AlignedOwningSpan) + size + kChannelDataAlignment - 1));
+
+  absl::Span<uint8_t> mutable_span(
+      reinterpret_cast<uint8_t *>(RoundChannelData(span->data(), size)), size);
+  // Use the placement new operator to construct an actual absl::Span in place.
+  new (span) AlignedOwningSpan(mutable_span);
+
+  return std::make_pair(
+      SharedSpan(std::shared_ptr<AlignedOwningSpan>(span,
+                                                    [](AlignedOwningSpan *s) {
+                                                      s->~AlignedOwningSpan();
+                                                      free(s);
+                                                    }),
+                 &span->span),
+      mutable_span);
+}
+
 std::ostream &operator<<(std::ostream &os, const RawSender::Error err) {
   os << ErrorToString(err);
   return os;

@@ -1978,8 +1978,7 @@ bool LogReader::State::Send(const TimestampedMessage &timestamped_message) {
   // Send!  Use the replayed queue index here instead of the logged queue index
   // for the remote queue index.  This makes re-logging work.
   const auto err = sender->Send(
-      RawSender::SharedSpan(timestamped_message.data,
-                            &timestamped_message.data->span),
+      SharedSpan(timestamped_message.data, &timestamped_message.data->span),
       timestamped_message.monotonic_remote_time.time,
       timestamped_message.realtime_remote_time, remote_queue_index,
       (channel_source_state_[timestamped_message.channel_index] != nullptr
