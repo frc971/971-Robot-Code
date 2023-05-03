@@ -1063,11 +1063,12 @@ LocklessQueueSender::Result LocklessQueueSender::Send(
                    "Retrying.";
         continue;
       } else {
-        VLOG(3) << "Messages sent too fast. Returning. Attempted index: "
+        VLOG(1) << "Messages sent too fast. Returning. Attempted index: "
                 << decremented_queue_index.index()
                 << " message sent time: " << message->header.monotonic_sent_time
                 << "  message to replace sent time: "
                 << to_replace_monotonic_sent_time;
+
         // Since we are not using the message obtained from scratch_index
         // and we are not retrying, we need to invalidate its queue_index.
         message->header.queue_index.Invalidate();
