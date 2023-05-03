@@ -140,8 +140,10 @@ absl::Span<const absl::Span<const uint8_t>> LzmaEncoder::queue() {
   }
   // For the last buffer in the queue, we must account for the possibility that
   // the buffer isn't full yet.
-  return_queue_.emplace_back(absl::MakeConstSpan(
-      queue_.back().data(), queue_.back().size() - stream_.avail_out));
+  if (queue_.back().size() != stream_.avail_out) {
+    return_queue_.emplace_back(absl::MakeConstSpan(
+        queue_.back().data(), queue_.back().size() - stream_.avail_out));
+  }
   return return_queue_;
 }
 

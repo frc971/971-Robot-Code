@@ -52,7 +52,9 @@ void logger::QueueAligner::FillAlignedQueue(
     const absl::Span<const absl::Span<const uint8_t>> &queue) {
   aligned_queue_.clear();
 
+  size_t queue_index = 0;
   for (const auto &span : queue) {
+    ++queue_index;
     // Generally, every span might have 3 optional parts (i.e. 2^3 cases):
     // 1. unaligned prefix -  from start till first aligned block.
     // 2. aligned main - block with aligned start and size
@@ -65,7 +67,9 @@ void logger::QueueAligner::FillAlignedQueue(
     VLOG(2) << "Consider span starting at " << std::hex << start
             << " with size " << size;
 
-    CHECK_GT(size, 0u) << ": Nobody should be sending empty messages.";
+    CHECK_GT(size, 0u)
+        << ": Nobody should be sending empty messages.  Queue index "
+        << (queue_index - 1) << " out of " << queue.size();
 
     const auto next_aligned =
         IsAligned(start) ? start : AlignToLeft(start) + FileHandler::kSector;
