@@ -73,6 +73,18 @@ void FileHandler::DisableDirect() {
   }
 }
 
+inline bool IsAlignedStart(const absl::Span<const uint8_t> span) {
+  return (reinterpret_cast<size_t>(span.data()) % FileHandler::kSector) == 0;
+}
+
+inline bool IsAlignedLength(const absl::Span<const uint8_t> span) {
+  return (span.size() % FileHandler::kSector) == 0;
+}
+
+inline bool HasAtleastOneSector(const absl::Span<const uint8_t> span) {
+  return span.size() >= FileHandler::kSector;
+}
+
 WriteResult FileHandler::Write(
     const absl::Span<const absl::Span<const uint8_t>> &queue) {
   iovec_.clear();
@@ -89,7 +101,15 @@ WriteResult FileHandler::Write(
   // kSector in memory, and the length being written is a multiple of kSector.
   // Some of the callers use an aligned ResizeableBuffer to generate 512 byte
   // aligned buffers for this code to find and use.
-  bool aligned = (total_write_bytes_ % kSector) == 0;
+  bool was_aligned = (total_write_bytes_ % kSector) == 0;
+
+  if (was_aligned) {
+    VLOG(1) << "Started aligned at offset " << total_write_bytes_ << " on "
+            << filename();
+  } else {
+    VLOG(1) << "Started unaligned at offset " << total_write_bytes_ << " on "
+            << filename();
+  }
 
   // Index we are filling in next.  Keeps resetting back to 0 as we write
   // intermediates.
@@ -100,10 +120,9 @@ WriteResult FileHandler::Write(
 
     // Make sure the address is aligned, or give up.  This should be uncommon,
     // but is always possible.
-    if ((reinterpret_cast<size_t>(iovec_[write_index].iov_base) % kSector) !=
-        0) {
+    if (!IsAlignedStart(queue[i])) {
       // Flush if we were aligned and have data.
-      if (aligned && write_index != 0) {
+      if (was_aligned && write_index != 0) {
         VLOG(1) << "Was aligned, now is not, writing previous data";
         const auto code =
             WriteV(iovec_.data(), write_index, true, counted_size);
@@ -122,11 +141,12 @@ WriteResult FileHandler::Write(
         iovec_[write_index].iov_base = const_cast<uint8_t *>(queue[i].data());
         iovec_[write_index].iov_len = queue[i].size();
       }
-      aligned = false;
+      was_aligned = false;
     } else {
-      // We are now starting aligned again, and have data worth writing!  Flush
+      // We are now starting aligned again, and have data worth writing! Flush
       // what was there before.
-      if (!aligned && iovec_[write_index].iov_len >= kSector &&
+      if (!was_aligned && HasAtleastOneSector(queue[i]) &&
+          ((total_write_bytes_ + counted_size) % kSector) == 0 &&
           write_index != 0) {
         VLOG(1) << "Was not aligned, now is, writing previous data";
 
@@ -146,44 +166,65 @@ WriteResult FileHandler::Write(
 
         iovec_[write_index].iov_base = const_cast<uint8_t *>(queue[i].data());
         iovec_[write_index].iov_len = queue[i].size();
-        aligned = true;
+        was_aligned = true;
       }
     }
 
     // Now, see if the length is a multiple of kSector.  The goal is to figure
     // out if/how much memory we can write out with O_DIRECT so that only the
     // last little bit is done with non-direct IO to keep it fast.
-    if ((iovec_[write_index].iov_len % kSector) != 0) {
-      VLOG(1) << "Unaligned length " << iovec_[write_index].iov_len << " on "
-              << filename();
-      // If we've got over a sector of data to write, write it out with O_DIRECT
-      // and then continue writing the rest unaligned.
-      if (aligned && iovec_[write_index].iov_len > kSector) {
-        const size_t aligned_size =
-            iovec_[write_index].iov_len & (~(kSector - 1));
-        VLOG(1) << "Was aligned, writing last chunk rounded from "
-                << queue[i].size() << " to " << aligned_size;
-        iovec_[write_index].iov_len = aligned_size;
+    if (!IsAlignedLength(queue[i])) {
+      VLOG(1) << "Unaligned length " << queue[i].size() << " on " << filename();
+      // If we've got over a sector of data to write, write it out with
+      // O_DIRECT and then continue writing the rest unaligned.
+      if (was_aligned) {
+        if (!HasAtleastOneSector(queue[i])) {
+          if (write_index > 0) {
+            const auto code =
+                WriteV(iovec_.data(), write_index, true, counted_size);
+            if (code == WriteCode::kOutOfSpace) {
+              return {
+                  .code = code,
+                  .messages_written = i,
+              };
+            }
 
-        const auto code =
-            WriteV(iovec_.data(), write_index + 1, true, counted_size + aligned_size);
-        if (code == WriteCode::kOutOfSpace) {
-          return {
-              .code = code,
-              .messages_written = i,
-          };
+            // Now, everything before here has been written.  Make an iovec out
+            // of the rest and keep going.
+            write_index = 0;
+            counted_size = 0;
+
+            iovec_[write_index].iov_base =
+                const_cast<uint8_t *>(queue[i].data());
+            iovec_[write_index].iov_len = queue[i].size();
+          }
+        } else {
+          const size_t aligned_size =
+              iovec_[write_index].iov_len & (~(kSector - 1));
+          VLOG(1) << "Was aligned, writing last chunk rounded from "
+                  << queue[i].size() << " to " << aligned_size;
+          iovec_[write_index].iov_len = aligned_size;
+
+          const auto code = WriteV(iovec_.data(), write_index + 1, true,
+                                   counted_size + aligned_size);
+          if (code == WriteCode::kOutOfSpace) {
+            return {
+                .code = code,
+                .messages_written = i,
+            };
+          }
+
+          // Now, everything before here has been written.  Make an iovec out of
+          // the rest and keep going.
+          write_index = 0;
+          counted_size = 0;
+
+          iovec_[write_index].iov_base =
+              const_cast<uint8_t *>(queue[i].data() + aligned_size);
+          iovec_[write_index].iov_len = queue[i].size() - aligned_size;
         }
-
-        // Now, everything before here has been written.  Make an iovec out of
-        // the rest and keep going.
-        write_index = 0;
-        counted_size = 0;
-
-        iovec_[write_index].iov_base =
-            const_cast<uint8_t *>(queue[i].data() + aligned_size);
-        iovec_[write_index].iov_len = queue[i].size() - aligned_size;
       }
-      aligned = false;
+      was_aligned = false;
     }
     VLOG(1) << "Writing " << iovec_[write_index].iov_len << " to "
             << filename();
@@ -193,7 +234,7 @@ WriteResult FileHandler::Write(
 
   // Either write the aligned data if it is all aligned, or write the rest
   // unaligned if we wrote aligned up above.
-  const auto code = WriteV(iovec_.data(), write_index, aligned, counted_size);
+  const auto code = WriteV(iovec_.data(), write_index, was_aligned, counted_size);
   return {
       .code = code,
       .messages_written = queue.size(),
@@ -210,23 +251,57 @@ WriteCode FileHandler::WriteV(struct iovec *iovec_data, size_t iovec_size,
     DisableDirect();
   }
 
+  CHECK_GT(iovec_size, 0u);
   const auto start = aos::monotonic_clock::now();
+
+  if (aligned) {
+    CHECK_EQ((total_write_bytes_ % FileHandler::kSector), 0u)
+        << ": Failed after writing " << total_write_bytes_
+        << " to the file, attempting aligned write with unaligned start.";
+    for (size_t i = 0; i < iovec_size; ++i) {
+      absl::Span<const uint8_t> data(
+          reinterpret_cast<const uint8_t *>(iovec_data[i].iov_base),
+          iovec_data[i].iov_len);
+      VLOG(2) << "  iov_base " << static_cast<void *>(iovec_data[i].iov_base)
+              << ", iov_len " << iovec_data[i].iov_len;
+      CHECK(IsAlignedStart(data) && IsAlignedLength(data));
+      CHECK_GT(data.size(), 0u);
+    }
+  } else {
+    size_t accumulated_write_bytes = total_write_bytes_;
+    for (size_t i = 0; i < iovec_size; ++i) {
+      absl::Span<const uint8_t> data(
+          reinterpret_cast<const uint8_t *>(iovec_data[i].iov_base),
+          iovec_data[i].iov_len);
+      VLOG(2) << "  accumulated_write_bytes 0x" << std::hex
+              << accumulated_write_bytes << " (" << std::dec
+              << accumulated_write_bytes << "), iov_base "
+              << static_cast<void *>(iovec_data[i].iov_base) << ", iov_len 0x"
+              << std::hex << iovec_data[i].iov_len << " (" << std::dec
+              << iovec_data[i].iov_len << ")";
+
+      if ((accumulated_write_bytes % FileHandler::kSector) == 0) {
+        CHECK(!IsAlignedStart(data) || !IsAlignedLength(data));
+      }
+
+      accumulated_write_bytes += data.size();
+      CHECK_GT(data.size(), 0u);
+    }
+  }
 
   if (VLOG_IS_ON(2)) {
     size_t to_be_written = 0;
     for (size_t i = 0; i < iovec_size; ++i) {
-      VLOG(2) << "  iov_base " << static_cast<void *>(iovec_data[i].iov_base)
-              << ", iov_len " << iovec_data[i].iov_len;
       to_be_written += iovec_data[i].iov_len;
     }
-    CHECK_GT(to_be_written, 0u);
     VLOG(2) << "Going to write " << to_be_written;
+    CHECK_GT(to_be_written, 0u);
   }
 
   const ssize_t written = writev(fd_, iovec_data, iovec_size);
   VLOG(2) << "Wrote " << written << ", for iovec size " << iovec_size;
 
-  if (FLAGS_sync && written > 0) {
+  if (FLAGS_sync) {
     // Flush asynchronously and force the data out of the cache.
     sync_file_range(fd_, total_write_bytes_, written, SYNC_FILE_RANGE_WRITE);
     if (last_synced_bytes_ != 0) {

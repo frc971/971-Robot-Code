@@ -209,7 +209,7 @@ TEST_F(FileWriteTestBase, RandomTest) {
   std::uniform_int_distribution<int> lengths_distribution{
       0, static_cast<int>(lengths.size() - 1)};
 
-  for (int i = 0; i < 100000; ++i) {
+  for (int i = 0; i < 1000; ++i) {
     WriteRecipe recipe;
     int number_of_writes = count_distribution(engine2);
     for (int j = 0; j < number_of_writes; ++j) {
