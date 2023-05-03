@@ -84,9 +84,9 @@ cc_library(
 )
 
 cc_library(
-    name = "s3_operations",
-    srcs = ["s3_operations.cc"],
-    hdrs = ["s3_operations.h"],
+    name = "s3_file_operations",
+    srcs = ["s3_file_operations.cc"],
+    hdrs = ["s3_file_operations.h"],
     deps = [
         ":file_operations",
         ":s3_fetcher",
@@ -186,7 +186,7 @@ cc_library(
     ] + select({
         "//tools:cpu_k8": [
             ":s3_fetcher",
-            ":s3_operations",
+            ":s3_file_operations",
             ":lzma_encoder",
         ],
         "//tools:cpu_arm64": [":lzma_encoder"],

@@ -1,5 +1,5 @@
-#ifndef AOS_EVENTS_LOGGING_S3_OPERATIONS_H_
-#define AOS_EVENTS_LOGGING_S3_OPERATIONS_H_
+#ifndef AOS_EVENTS_LOGGING_S3_FILE_OPERATIONS_H_
+#define AOS_EVENTS_LOGGING_S3_FILE_OPERATIONS_H_
 
 #include "aos/events/logging/file_operations.h"
 
@@ -19,4 +19,4 @@ class S3FileOperations final : public FileOperations {
 
 }  // namespace aos::logger::internal
 
-#endif  // AOS_EVENTS_LOGGING_S3_OPERATIONS_H_
+#endif  // AOS_EVENTS_LOGGING_S3_FILE_OPERATIONS_H_

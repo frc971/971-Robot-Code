@@ -20,7 +20,7 @@
 #include "sys/stat.h"
 
 #if ENABLE_S3
-#include "aos/events/logging/s3_operations.h"
+#include "aos/events/logging/s3_file_operations.h"
 #endif
 
 DEFINE_bool(quiet_sorting, false,

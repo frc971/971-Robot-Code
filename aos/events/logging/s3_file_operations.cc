@@ -1,4 +1,4 @@
-#include "aos/events/logging/s3_operations.h"
+#include "aos/events/logging/s3_file_operations.h"
 
 #include "aos/events/logging/s3_fetcher.h"
 
