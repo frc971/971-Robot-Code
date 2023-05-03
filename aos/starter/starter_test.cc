@@ -1,9 +1,11 @@
+#include <chrono>
 #include <csignal>
 #include <future>
 #include <thread>
 
 #include "aos/events/ping_generated.h"
 #include "aos/events/pong_generated.h"
+#include "aos/ipc_lib/event.h"
 #include "aos/network/team_number.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
@@ -19,11 +21,9 @@ namespace starter {
 
 class StarterdTest : public ::testing::Test {
  public:
-  StarterdTest() : shm_dir_(aos::testing::TestTmpDir() + "/aos") {
-    FLAGS_shm_base = shm_dir_;
-
+  StarterdTest() {
     // Nuke the shm dir:
-    aos::util::UnlinkRecursive(shm_dir_);
+    aos::util::UnlinkRecursive(FLAGS_shm_base);
   }
 
  protected:
@@ -35,11 +35,10 @@ class StarterdTest : public ::testing::Test {
           }
         })
         ->Setup(starter->event_loop()->monotonic_now(),
-                std::chrono::seconds(1));
+                std::chrono::milliseconds(100));
   }
 
   gflags::FlagSaver flag_saver_;
-  std::string shm_dir_;
   // Used to track when the test completes so that we can clean up the starter
   // in its thread.
   std::atomic<bool> test_done_{false};
@@ -79,8 +78,8 @@ TEST_P(StarterdConfigParamTest, MultiNodeStartStopTest) {
                                     "args": ["--shm_base", "%s", "--config", "%s", "--override_hostname", "%s"]
                                   }
                                 ]})",
-          ArtifactPath("aos/events/ping"), shm_dir_, config_file,
-          GetParam().hostname, ArtifactPath("aos/events/pong"), shm_dir_,
+          ArtifactPath("aos/events/ping"), FLAGS_shm_base, config_file,
+          GetParam().hostname, ArtifactPath("aos/events/pong"), FLAGS_shm_base,
           config_file, GetParam().hostname));
 
   const aos::Configuration *config_msg = &new_config.message();
@@ -161,10 +160,23 @@ TEST_P(StarterdConfigParamTest, MultiNodeStartStopTest) {
 
   SetupStarterCleanup(&starter);
 
-  std::thread starterd_thread([&starter] { starter.Run(); });
-  std::thread client_thread([&client_loop] { client_loop.Run(); });
-  watcher_loop.Run();
+  Event starter_started;
+  std::thread starterd_thread([&starter, &starter_started] {
+    starter.event_loop()->OnRun(
+        [&starter_started]() { starter_started.Set(); });
+    starter.Run();
+  });
+  starter_started.Wait();
 
+  Event client_started;
+  std::thread client_thread([&client_loop, &client_started] {
+    client_loop.OnRun([&client_started]() { client_started.Set(); });
+    client_loop.Run();
+  });
+  client_started.Wait();
+
+  watcher_loop.Run();
+  ASSERT_TRUE(success);
   test_done_ = true;
   client_thread.join();
   starterd_thread.join();
@@ -197,8 +209,8 @@ TEST_F(StarterdTest, DeathTest) {
                                     "args": ["--shm_base", "%s"]
                                   }
                                 ]})",
-                             ArtifactPath("aos/events/ping"), shm_dir_,
-                             ArtifactPath("aos/events/pong"), shm_dir_));
+                             ArtifactPath("aos/events/ping"), FLAGS_shm_base,
+                             ArtifactPath("aos/events/pong"), FLAGS_shm_base));
 
   const aos::Configuration *config_msg = &new_config.message();
 
@@ -257,7 +269,13 @@ TEST_F(StarterdTest, DeathTest) {
 
   SetupStarterCleanup(&starter);
 
-  std::thread starterd_thread([&starter] { starter.Run(); });
+  Event starter_started;
+  std::thread starterd_thread([&starter, &starter_started] {
+    starter.event_loop()->OnRun(
+        [&starter_started]() { starter_started.Set(); });
+    starter.Run();
+  });
+  starter_started.Wait();
   watcher_loop.Run();
 
   test_done_ = true;
@@ -287,8 +305,8 @@ TEST_F(StarterdTest, Autostart) {
                                     "args": ["--shm_base", "%s"]
                                   }
                                 ]})",
-                             ArtifactPath("aos/events/ping"), shm_dir_,
-                             ArtifactPath("aos/events/pong"), shm_dir_));
+                             ArtifactPath("aos/events/ping"), FLAGS_shm_base,
+                             ArtifactPath("aos/events/pong"), FLAGS_shm_base));
 
   const aos::Configuration *config_msg = &new_config.message();
 
@@ -346,7 +364,13 @@ TEST_F(StarterdTest, Autostart) {
 
   SetupStarterCleanup(&starter);
 
-  std::thread starterd_thread([&starter] { starter.Run(); });
+  Event starter_started;
+  std::thread starterd_thread([&starter, &starter_started] {
+    starter.event_loop()->OnRun(
+        [&starter_started]() { starter_started.Set(); });
+    starter.Run();
+  });
+  starter_started.Wait();
   watcher_loop.Run();
 
   test_done_ = true;
@@ -362,25 +386,23 @@ TEST_F(StarterdTest, DeathNoRestartTest) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(config_file);
 
-  const std::string test_dir = aos::testing::TestTmpDir();
-
   auto new_config = aos::configuration::MergeWithConfig(
       &config.message(), absl::StrFormat(
                              R"({"applications": [
                                   {
                                     "name": "ping",
                                     "executable_name": "%s",
-                                    "args": ["--shm_base", "%s/aos"],
+                                    "args": ["--shm_base", "%s"],
                                     "autorestart": false
                                   },
                                   {
                                     "name": "pong",
                                     "executable_name": "%s",
-                                    "args": ["--shm_base", "%s/aos"]
+                                    "args": ["--shm_base", "%s"]
                                   }
                                 ]})",
-                             ArtifactPath("aos/events/ping"), test_dir,
-                             ArtifactPath("aos/events/pong"), test_dir));
+                             ArtifactPath("aos/events/ping"), FLAGS_shm_base,
+                             ArtifactPath("aos/events/pong"), FLAGS_shm_base));
 
   const aos::Configuration *config_msg = &new_config.message();
 
@@ -439,11 +461,133 @@ TEST_F(StarterdTest, DeathNoRestartTest) {
 
   SetupStarterCleanup(&starter);
 
-  std::thread starterd_thread([&starter] { starter.Run(); });
+  Event starter_started;
+  std::thread starterd_thread([&starter, &starter_started] {
+    starter.event_loop()->OnRun(
+        [&starter_started]() { starter_started.Set(); });
+    starter.Run();
+  });
+  starter_started.Wait();
   watcher_loop.Run();
 
   test_done_ = true;
 
+  starterd_thread.join();
+}
+
+TEST_F(StarterdTest, StarterChainTest) {
+  // This test was written in response to a bug that was found
+  // in StarterClient::Succeed. The bug caused the timeout handler
+  // to be reset after the success handler was called.
+  // the bug has been fixed, and this test will ensure it does
+  // not regress.
+  const std::string config_file =
+      ArtifactPath("aos/events/pingpong_config.json");
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(config_file);
+  auto new_config = aos::configuration::MergeWithConfig(
+      &config.message(), absl::StrFormat(
+                             R"({"applications": [
+                                {
+                                  "name": "ping",
+                                  "executable_name": "%s",
+                                  "args": ["--shm_base", "%s"],
+                                  "autorestart": false
+                                },
+                                {
+                                  "name": "pong",
+                                  "executable_name": "%s",
+                                  "args": ["--shm_base", "%s"]
+                                }
+                              ]})",
+                             ArtifactPath("aos/events/ping"), FLAGS_shm_base,
+                             ArtifactPath("aos/events/pong"), FLAGS_shm_base));
+
+  const aos::Configuration *config_msg = &new_config.message();
+  // Set up starter with config file
+  aos::starter::Starter starter(config_msg);
+  aos::ShmEventLoop client_loop(config_msg);
+  client_loop.SkipAosLog();
+  StarterClient client(&client_loop);
+  bool success = false;
+  auto client_node = client_loop.node();
+
+  // limit the amount of time we will wait for the test to finish.
+  client_loop
+      .AddTimer([&client_loop] {
+        client_loop.Exit();
+        FAIL() << "ERROR: The test has failed, the watcher has timed out. "
+                  "The chain of stages defined below did not complete "
+                  "within the time limit.";
+      })
+      ->Setup(client_loop.monotonic_now() + std::chrono::seconds(20));
+
+  // variables have been defined, here we define the body of the test.
+  // We want stage1 to succeed, triggering stage2.
+  // We want stage2 to timeout, triggering stage3.
+
+  auto stage3 = [&client_loop, &success]() {
+    LOG(INFO) << "Begin stage3.";
+    SUCCEED();
+    success = true;
+    client_loop.Exit();
+    LOG(INFO) << "End stage3.";
+  };
+  auto stage2 = [this, &starter, &client, &client_node, &stage3] {
+    LOG(INFO) << "Begin stage2";
+    test_done_ = true;  // trigger `starter` to exit.
+
+    // wait for the starter event loop to close, so we can
+    // intentionally trigger a timeout.
+    int attempts = 0;
+    while (starter.event_loop()->is_running()) {
+      ++attempts;
+      if (attempts > 5) {
+        LOG(INFO) << "Timeout while waiting for starter to exit";
+        return;
+      }
+      LOG(INFO) << "Waiting for starter to close.";
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    client.SetTimeoutHandler(stage3);
+    client.SetSuccessHandler([]() {
+      LOG(INFO) << "stage3 success handler called.";
+      FAIL() << ": Command should not have succeeded here.";
+    });
+    // we want this command to timeout
+    client.SendCommands({{Command::START, "ping", {client_node}}},
+                        std::chrono::seconds(5));
+    LOG(INFO) << "End stage2";
+  };
+  auto stage1 = [&client, &client_node, &stage2] {
+    LOG(INFO) << "Begin stage1";
+    client.SetTimeoutHandler(
+        []() { FAIL() << ": Command should not have timed out."; });
+    client.SetSuccessHandler(stage2);
+    client.SendCommands({{Command::STOP, "ping", {client_node}}},
+                        std::chrono::seconds(5));
+    LOG(INFO) << "End stage1";
+  };
+  // start the test body
+  client_loop.AddTimer(stage1)->Setup(client_loop.monotonic_now() +
+                                      std::chrono::milliseconds(1));
+
+  // prepare the cleanup for starter. This will finish when we call
+  // `test_done_ = true;`.
+  SetupStarterCleanup(&starter);
+
+  // run `starter.Run()` in a thread to simulate it running on
+  // another process.
+  Event started;
+  std::thread starterd_thread([&starter, &started] {
+    starter.event_loop()->OnRun([&started]() { started.Set(); });
+    starter.Run();
+  });
+
+  started.Wait();
+  client_loop.Run();
+  EXPECT_TRUE(success);
+  ASSERT_FALSE(starter.event_loop()->is_running());
   starterd_thread.join();
 }
 

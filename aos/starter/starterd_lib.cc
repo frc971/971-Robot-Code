@@ -35,7 +35,10 @@ Starter::Starter(const aos::Configuration *event_loop_config)
         SendStatus();
         status_count_ = 0;
       })),
-      cleanup_timer_(event_loop_.AddTimer([this] { event_loop_.Exit(); })),
+      cleanup_timer_(event_loop_.AddTimer([this] {
+        event_loop_.Exit();
+        LOG(INFO) << "Starter event loop exit finished.";
+      })),
       max_status_count_(
           event_loop_.GetChannel<aos::starter::Status>("/aos")->frequency() -
           1),
