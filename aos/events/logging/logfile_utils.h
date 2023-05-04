@@ -269,7 +269,11 @@ class UnpackedMessageHeader;
 // handles any per-file state left before merging below.
 class MessageReader {
  public:
-  MessageReader(std::string_view filename);
+  // TODO (Alexei): it's deprecated and needs to be removed.
+  explicit MessageReader(std::string_view filename)
+      : MessageReader(SpanReader(filename)) {}
+
+  explicit MessageReader(SpanReader span_reader);
 
   std::string_view filename() const { return span_reader_.filename(); }
 
@@ -353,12 +357,17 @@ class MessageReader {
 // A class to seamlessly read messages from a list of part files.
 class PartsMessageReader {
  public:
-  PartsMessageReader(LogParts log_parts);
+  // TODO (Alexei): it's deprecated, need to removed.
+  explicit PartsMessageReader(LogParts log_parts)
+      : PartsMessageReader(LogPartsAccess(std::nullopt, std::move(log_parts))) {
+  }
+
+  explicit PartsMessageReader(LogPartsAccess log_parts_access);
 
   std::string_view filename() const { return message_reader_.filename(); }
 
   // Returns the LogParts that holds the filenames we are reading.
-  const LogParts &parts() const { return parts_; }
+  const LogParts &parts() const { return log_parts_access_.parts(); }
 
   const LogFileHeader *log_file_header() const {
     return message_reader_.log_file_header();
@@ -389,12 +398,15 @@ class PartsMessageReader {
   }
 
  private:
+  static SpanReader MakeSpanReader(const LogPartsAccess &log_parts_access,
+                                   size_t part_number);
+
   // Opens the next log and updates message_reader_.  Sets done_ if there is
   // nothing more to do.
   void NextLog();
   void ComputeBootCounts();
 
-  const LogParts parts_;
+  const LogPartsAccess log_parts_access_;
   size_t next_part_index_ = 1u;
   bool done_ = false;
 
@@ -544,7 +556,11 @@ std::ostream &operator<<(std::ostream &os, const TimestampedMessage &m);
 // Class to sort the resulting messages from a PartsMessageReader.
 class MessageSorter {
  public:
-  MessageSorter(LogParts log_parts);
+  // TODO (Alexei): it's deperecated and need to be removed.
+  explicit MessageSorter(LogParts log_parts)
+      : MessageSorter(LogPartsAccess(std::nullopt, std::move(log_parts))) {}
+
+  explicit MessageSorter(const LogPartsAccess log_parts_access);
 
   // Returns the parts that this is sorting messages from.
   const LogParts &parts() const { return parts_message_reader_.parts(); }
@@ -635,6 +651,7 @@ class PartsMerger {
  private:
   // Unsorted list of all parts sorters.
   std::vector<MessageSorter> message_sorters_;
+
   // Pointer to the parts sorter holding the current Front message if one
   // exists, or nullptr if a new one needs to be found.
   MessageSorter *current_ = nullptr;

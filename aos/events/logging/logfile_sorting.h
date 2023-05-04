@@ -151,84 +151,77 @@ std::vector<std::string> FindLogs(std::string filename);
 // Recursively searches for logfiles in argv[1] and onward.
 std::vector<std::string> FindLogs(int argc, char **argv);
 
-// Validates that collection of log files or log parts shares the same configs.
-template <typename TCollection>
-bool CheckMatchingConfigs(const TCollection &items) {
-  const Configuration *config = nullptr;
-  for (const auto &item : items) {
-    VLOG(1) << item;
-    if (config == nullptr) {
-      config = item.config.get();
-    } else {
-      if (config != item.config.get()) {
-        LOG(ERROR) << ": Config mismatched: " << config << " vs. "
-                   << item.config.get();
-        return false;
-      }
-    }
+// Proxy container to bind log parts with log source. It helps with reading logs
+// from virtual media such as memory or S3.
+class LogPartsAccess {
+ public:
+  LogPartsAccess(std::optional<const LogSource *> log_source,
+                 LogParts log_parts)
+      : log_source_(std::move(log_source)), log_parts_(std::move(log_parts)) {
+    CHECK(!log_parts_.parts.empty());
   }
-  if (config == nullptr) {
-    LOG(ERROR) << ": No configs are found";
-    return false;
+
+  std::string_view node_name() const { return log_parts_.node; }
+
+  std::string_view source_boot_uuid() const {
+    return log_parts_.source_boot_uuid;
   }
-  return true;
+
+  size_t boot_count() const { return log_parts_.boot_count; }
+
+  const Configuration *config() const { return log_parts_.config.get(); }
+
+  std::optional<const LogSource *> log_source() const { return log_source_; }
+
+  std::string GetPartAt(size_t index) const {
+    CHECK_LT(index, log_parts_.parts.size());
+    return log_parts_.parts[index];
+  }
+
+  // TODO (Alexei): do we need to reduce it to concrete operations?
+  const LogParts &parts() const { return log_parts_; }
+
+  size_t size() const { return log_parts_.parts.size(); }
+
+ private:
+  std::optional<const LogSource *> log_source_;
+  LogParts log_parts_;
+};
+
+// Provides unified access to config field stored in LogPartsAccess. It is used
+// in CheckMatchingConfigs.
+inline const Configuration *GetConfig(const LogPartsAccess &log_parts_access) {
+  return log_parts_access.config();
 }
+
+// Output of LogPartsAccess for debug purposes.
+std::ostream &operator<<(std::ostream &stream,
+                         const LogPartsAccess &log_parts_access);
 
 // Collection of log parts that associated with pair: node and boot.
 class SelectedLogParts {
  public:
-  SelectedLogParts(std::optional<const LogSource *> log_source,
-                   std::string_view node_name, size_t boot_count,
-                   std::vector<LogParts> log_parts)
-      : log_source_(log_source),
-        node_name_(node_name),
-        boot_count_(boot_count),
-        log_parts_(std::move(log_parts)) {
-    CHECK_GT(log_parts_.size(), 0u) << ": Nothing was selected for node "
-                                    << node_name << " boot " << boot_count;
-    configs_matched_ = CheckMatchingConfigs(log_parts_);
-
-    // Enforce that we are sorting things only from a single node from a single
-    // boot.
-    const std::string_view part0_source_boot_uuid =
-        log_parts_.front().source_boot_uuid;
-    for (const auto &part : log_parts_) {
-      CHECK_EQ(node_name_, part.node) << ": Can't merge different nodes.";
-      CHECK_EQ(part0_source_boot_uuid, part.source_boot_uuid)
-          << ": Can't merge different boots.";
-      CHECK_EQ(boot_count_, part.boot_count);
-    }
-  }
+  SelectedLogParts(std::string_view node_name, size_t boot_index,
+                   std::vector<LogPartsAccess> log_parts);
 
   // Use items in fancy loops.
-  auto begin() { return log_parts_.begin(); }
-  auto end() { return log_parts_.end(); }
-  auto cbegin() const { return log_parts_.cbegin(); }
-  auto cend() const { return log_parts_.cend(); }
   auto begin() const { return log_parts_.begin(); }
   auto end() const { return log_parts_.end(); }
 
-  const Configuration *config() const {
-    // TODO (Alexei): it is a first usage of assumption that all parts have
-    // matching configs. Should it be strong requirement and validated in the
-    // constructor?
-    CHECK(configs_matched_);
-    return log_parts_.front().config.get();
-  }
+  // Config that shared across all log parts.
+  const Configuration *config() const { return config_; }
 
   const std::string &node_name() const { return node_name_; }
 
   // Number of boots found in the log parts.
-  size_t boot_count() const { return boot_count_; }
+  size_t boot_count() const { return boot_index_; }
 
  private:
-  std::optional<const LogSource *> log_source_;
   std::string node_name_;
-  size_t boot_count_;
-  std::vector<LogParts> log_parts_;
+  size_t boot_index_;
+  std::vector<LogPartsAccess> log_parts_;
 
-  // Indicates that all parts shared the same config.
-  bool configs_matched_;
+  const Configuration *config_;
 };
 
 // Container that keeps a sorted list of log files and provides functions that
@@ -252,39 +245,17 @@ class LogFilesContainer {
   }
 
   // Returns numbers of reboots found in log files associated with the node.
-  size_t BootsForNode(std::string_view node_name) const {
-    const auto &node_item = nodes_boots_.find(std::string(node_name));
-    CHECK(node_item != nodes_boots_.end())
-        << ": Missing parts associated with node " << node_name;
-    CHECK_GT(node_item->second, 0u) << ": No boots for node " << node_name;
-    return node_item->second;
-  }
+  size_t BootsForNode(std::string_view node_name) const;
 
   // Get only log parts that associated with node and boot number.
   SelectedLogParts SelectParts(std::string_view node_name,
-                               size_t boot_count) const {
-    std::vector<LogParts> result;
-    for (const LogFile &log_file : log_files_) {
-      for (const LogParts &part : log_file.parts) {
-        if (part.node == node_name && part.boot_count == boot_count) {
-          result.emplace_back(part);
-        }
-      }
-    }
-    return SelectedLogParts(log_source_, node_name, boot_count, result);
-  }
+                               size_t boot_index) const;
 
-  // It provides access to boots of the first element. I'm not sure why...
-  const auto &front_boots() const { return log_files_.front().boots; }
+  // It provides access to boots logged by all log files in the container.
+  const std::shared_ptr<const Boots> &boots() const { return boots_; }
 
   // Access the configuration shared with all log files in the container.
-  const Configuration *config() const {
-    // TODO (Alexei): it is a first usage of assumption that all parts have
-    // matching configs. Should it be strong requirement and validated in the
-    // constructor?
-    CHECK(configs_matched_);
-    return log_files_.front().config.get();
-  }
+  const Configuration *config() const { return config_; }
 
   // List of logger nodes for given set of log files.
   const auto &logger_nodes() const { return logger_nodes_; }
@@ -295,40 +266,17 @@ class LogFilesContainer {
 
  private:
   LogFilesContainer(std::optional<const LogSource *> log_source,
-                    std::vector<LogFile> log_files)
-      : log_source_(log_source), log_files_(std::move(log_files)) {
-    CHECK_GT(log_files_.size(), 0u);
-
-    std::unordered_set<std::string> logger_nodes;
-
-    // Scan and collect all related nodes and number of reboots per node.
-    for (const LogFile &log_file : log_files_) {
-      for (const LogParts &part : log_file.parts) {
-        auto node_item = nodes_boots_.find(part.node);
-        if (node_item != nodes_boots_.end()) {
-          node_item->second = std::max(node_item->second, part.boot_count + 1);
-        } else {
-          nodes_boots_[part.node] = part.boot_count + 1;
-        }
-      }
-      logger_nodes.insert(log_file.logger_node);
-    }
-    while (!logger_nodes.empty()) {
-      logger_nodes_.emplace_back(
-          logger_nodes.extract(logger_nodes.begin()).value());
-    }
-    configs_matched_ = CheckMatchingConfigs(log_files_);
-  }
+                    std::vector<LogFile> log_files);
 
   std::optional<const LogSource *> log_source_;
   std::vector<LogFile> log_files_;
 
+  const Configuration *config_;
+  std::shared_ptr<const Boots> boots_;
+
   // Keeps information about nodes and number of reboots per node.
   std::unordered_map<std::string, size_t> nodes_boots_;
   std::vector<std::string> logger_nodes_;
-
-  // Indicates that all parts shared the same config.
-  bool configs_matched_;
 };
 
 }  // namespace logger

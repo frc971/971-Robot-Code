@@ -43,7 +43,7 @@ int Main(int argc, char **argv) {
 
   // Now, build up the estimator used to solve for time.
   message_bridge::MultiNodeNoncausalOffsetEstimator multinode_estimator(
-      config, config, log_files.front_boots(), FLAGS_skip_order_validation,
+      config, config, log_files.boots(), FLAGS_skip_order_validation,
       chrono::seconds(0));
   multinode_estimator.set_reboot_found(
       [config](distributed_clock::time_point reboot_time,

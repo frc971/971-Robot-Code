@@ -2084,5 +2084,113 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
   return stream;
 }
 
+// Validates that collection of log files or log parts shares the same configs.
+template <typename TCollection>
+bool CheckMatchingConfigs(const TCollection &items) {
+  const Configuration *config = nullptr;
+  for (const auto &item : items) {
+    VLOG(1) << item;
+    if (config == nullptr) {
+      config = GetConfig(item);
+    } else {
+      if (config != GetConfig(item)) {
+        LOG(ERROR) << ": Config mismatched: " << config << " vs. "
+                   << GetConfig(item);
+        return false;
+      }
+    }
+  }
+  if (config == nullptr) {
+    LOG(ERROR) << ": No configs are found";
+    return false;
+  }
+  return true;
+}
+
+// Provides unified access to config field stored in LogFile. It is used in
+// CheckMatchingConfigs.
+inline const Configuration *GetConfig(const LogFile &log_file) {
+  return log_file.config.get();
+}
+
+// Output of LogPartsAccess for debug purposes.
+std::ostream &operator<<(std::ostream &stream,
+                         const LogPartsAccess &log_parts_access) {
+  stream << log_parts_access.parts();
+  return stream;
+}
+
+SelectedLogParts::SelectedLogParts(std::string_view node_name,
+                                   size_t boot_index,
+                                   std::vector<LogPartsAccess> log_parts)
+    : node_name_(node_name),
+      boot_index_(boot_index),
+      log_parts_(std::move(log_parts)) {
+  CHECK_GT(log_parts_.size(), 0u) << ": Nothing was selected for node "
+                                  << node_name_ << " boot " << boot_index_;
+  CHECK(CheckMatchingConfigs(log_parts_));
+  config_ = log_parts_.front().config();
+
+  // Enforce that we are sorting things only from a single node from a single
+  // boot.
+  const std::string_view part0_source_boot_uuid =
+      log_parts_.front().source_boot_uuid();
+  for (const auto &part : log_parts_) {
+    CHECK_EQ(node_name_, part.node_name()) << ": Can't merge different nodes.";
+    CHECK_EQ(part0_source_boot_uuid, part.source_boot_uuid())
+        << ": Can't merge different boots.";
+    CHECK_EQ(boot_index_, part.boot_count());
+  }
+}
+
+LogFilesContainer::LogFilesContainer(
+    std::optional<const LogSource *> log_source, std::vector<LogFile> log_files)
+    : log_source_(log_source), log_files_(std::move(log_files)) {
+  CHECK_GT(log_files_.size(), 0u);
+  CHECK(CheckMatchingConfigs(log_files_));
+  config_ = log_files_.front().config.get();
+  boots_ = log_files_.front().boots;
+
+  std::unordered_set<std::string> logger_nodes;
+
+  // Scan and collect all related nodes and number of reboots per node.
+  for (const LogFile &log_file : log_files_) {
+    for (const LogParts &part : log_file.parts) {
+      auto node_item = nodes_boots_.find(part.node);
+      if (node_item != nodes_boots_.end()) {
+        node_item->second = std::max(node_item->second, part.boot_count + 1);
+      } else {
+        nodes_boots_[part.node] = part.boot_count + 1;
+      }
+    }
+    logger_nodes.insert(log_file.logger_node);
+  }
+  while (!logger_nodes.empty()) {
+    logger_nodes_.emplace_back(
+        logger_nodes.extract(logger_nodes.begin()).value());
+  }
+}
+
+size_t LogFilesContainer::BootsForNode(std::string_view node_name) const {
+  const auto &node_item = nodes_boots_.find(std::string(node_name));
+  CHECK(node_item != nodes_boots_.end())
+      << ": Missing parts associated with node " << node_name;
+  CHECK_GT(node_item->second, 0u) << ": No boots for node " << node_name;
+  return node_item->second;
+}
+
+SelectedLogParts LogFilesContainer::SelectParts(std::string_view node_name,
+                                                size_t boot_index) const {
+  std::vector<LogPartsAccess> result;
+  for (const LogFile &log_file : log_files_) {
+    for (const LogParts &part : log_file.parts) {
+      if (part.node == node_name && part.boot_count == boot_index) {
+        result.emplace_back(log_source_, part);
+      }
+    }
+  }
+  return SelectedLogParts(node_name, boot_index, result);
+}
+
 }  // namespace logger
 }  // namespace aos

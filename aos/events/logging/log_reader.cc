@@ -598,7 +598,7 @@ void LogReader::RegisterWithoutStarting(
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
           event_loop_factory_->configuration(), logged_configuration(),
-          log_files_.front_boots(), FLAGS_skip_order_validation,
+          log_files_.boots(), FLAGS_skip_order_validation,
           chrono::duration_cast<chrono::nanoseconds>(
               chrono::duration<double>(FLAGS_time_estimation_buffer_seconds)));
 
@@ -785,7 +785,7 @@ void LogReader::Register(EventLoop *event_loop) {
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
           event_loop->configuration(), logged_configuration(),
-          log_files_.front_boots(), FLAGS_skip_order_validation,
+          log_files_.boots(), FLAGS_skip_order_validation,
           chrono::duration_cast<chrono::nanoseconds>(
               chrono::duration<double>(FLAGS_time_estimation_buffer_seconds)));
 
