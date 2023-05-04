@@ -1,0 +1,152 @@
+{
+ "target_poses": [
+{
+   "id": 1,
+   "position": {
+    "x": 7.243997790506,
+    "y": -2.933106182702,
+    "z": 0.462948446708
+   },
+   "orientation": {
+    "w": 0.50135307601,
+    "x": -0.503852469447,
+    "y": 0.496681622743,
+    "z": -0.498081467069
+   },
+   "confidence": 0.0,
+   "pose_error": 0.0,
+   "distortion_factor": 0.0,
+   "pose_error_ratio": 0.0
+  },
+  {
+   "id": 2,
+   "position": {
+    "x": 7.233087584818,
+    "y": -1.266935526895,
+    "z": 0.458422750798
+   },
+   "orientation": {
+    "w": 0.503123586992,
+    "x": -0.498312711799,
+    "y": 0.4917162543,
+    "z": -0.506721050214
+   },
+   "confidence": 0.0,
+   "pose_error": 0.0,
+   "distortion_factor": 0.0,
+   "pose_error_ratio": 0.0
+  },
+  {
+   "id": 3,
+   "position": {
+    "x": 7.226895621731,
+    "y": 0.399357924781,
+    "z": 0.451036794292
+   },
+   "orientation": {
+    "w": 0.509600379834,
+    "x": -0.495432434727,
+    "y": 0.487971656326,
+    "z": -0.506693021577
+   },
+   "confidence": 0.0,
+   "pose_error": 0.0,
+   "distortion_factor": 0.0,
+   "pose_error_ratio": 0.0
+  },
+  {
+   "id": 4,
+   "position": {
+    "x": 7.909,
+    "y": 2.74,
+    "z": 0.695
+   },
+   "orientation": {
+    "w": -0.5,
+    "x": 0.5,
+    "y": -0.5,
+    "z": 0.5
+   },
+   "confidence": 0.0,
+   "pose_error": 0.0,
+   "distortion_factor": 0.0,
+   "pose_error_ratio": 0.0
+  },
+  {
+   "id": 5,
+   "position": {
+    "x": -7.908,
+    "y": 2.74,
+    "z": 0.695
+   },
+   "orientation": {
+    "w": 0.5,
+    "x": -0.5,
+    "y": -0.5,
+    "z": 0.5
+   },
+   "confidence": 0.0,
+   "pose_error": 0.0,
+   "distortion_factor": 0.0,
+   "pose_error_ratio": 0.0
+  },
+  {
+   "id": 6,
+   "position": {
+    "x": -7.239001740201,
+    "y": 0.422111705663,
+    "z": 0.464955016203
+   },
+   "orientation": {
+    "w": 0.498420780853,
+    "x": -0.499263204799,
+    "y": -0.500023026083,
+    "z": 0.502284730939
+   },
+   "confidence": 0.0,
+   "pose_error": 0.0,
+   "distortion_factor": 0.0,
+   "pose_error_ratio": 0.0
+  },
+  {
+   "id": 7,
+   "position": {
+    "x": -7.241093280921,
+    "y": -1.270115952319,
+    "z": 0.463955457197
+   },
+   "orientation": {
+    "w": -0.499112246574,
+    "x": 0.499432412584,
+    "y": 0.501866879868,
+    "z": -0.49958369216
+   },
+   "confidence": 0.0,
+   "pose_error": 0.0,
+   "distortion_factor": 0.0,
+   "pose_error_ratio": 0.0
+  },
+  {
+   "id": 8,
+   "position": {
+    "x": -7.240827110532,
+    "y": -2.95806661736,
+    "z": 0.458620705581
+   },
+   "orientation": {
+    "w": -0.499747319421,
+    "x": 0.499461045816,
+    "y": 0.501623538198,
+    "z": -0.499164333279
+   },
+   "confidence": 0.0,
+   "pose_error": 0.0,
+   "distortion_factor": 0.0,
+   "pose_error_ratio": 0.0
+  }
+ ],
+ "field_name": "johnson",
+ "monotonic_timestamp_ns": 0,
+ "rejections": 0
+}
+

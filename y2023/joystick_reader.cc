@@ -71,7 +71,7 @@ const ButtonLocation kHPConePickup(1, 11);
 const ButtonLocation kSuck(2, 3);
 const ButtonLocation kBack(2, 4);
 
-const ButtonLocation kStayIn(2, 12);
+const ButtonLocation kStayIn(3, 2);
 
 const ButtonLocation kConeDownTip(1, 9);
 const ButtonLocation kConeDownBase(1, 10);

@@ -12,7 +12,7 @@
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_bool(lowlight_camera, true, "Switch to use imx462 image sensor.");
-DEFINE_int32(gain, 200, "analogue_gain");
+DEFINE_int32(gain, 150, "analogue_gain");
 
 DEFINE_double(red, 1.252, "Red gain");
 DEFINE_double(green, 1, "Green gain");
