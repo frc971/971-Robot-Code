@@ -628,12 +628,12 @@ func (handler requestShiftScheduleHandler) ServeHTTP(w http.ResponseWriter, req 
 	for _, shifts := range shiftData {
 		response.ShiftSchedule = append(response.ShiftSchedule, &request_shift_schedule_response.MatchAssignmentT{
 			MatchNumber: shifts.MatchNumber,
-			R1scouter:   shifts.R1scouter,
-			R2scouter:   shifts.R2scouter,
-			R3scouter:   shifts.R3scouter,
-			B1scouter:   shifts.B1scouter,
-			B2scouter:   shifts.B2scouter,
-			B3scouter:   shifts.B3scouter,
+			R1Scouter:   shifts.R1scouter,
+			R2Scouter:   shifts.R2scouter,
+			R3Scouter:   shifts.R3scouter,
+			B1Scouter:   shifts.B1scouter,
+			B2Scouter:   shifts.B2scouter,
+			B3Scouter:   shifts.B3scouter,
 		})
 	}
 
@@ -668,12 +668,12 @@ func (handler submitShiftScheduleHandler) ServeHTTP(w http.ResponseWriter, req *
 		request.ShiftSchedule(&match_assignment, i)
 		current_shift := db.Shift{
 			MatchNumber: match_assignment.MatchNumber(),
-			R1scouter:   string(match_assignment.R1scouter()),
-			R2scouter:   string(match_assignment.R2scouter()),
-			R3scouter:   string(match_assignment.R3scouter()),
-			B1scouter:   string(match_assignment.B1scouter()),
-			B2scouter:   string(match_assignment.B2scouter()),
-			B3scouter:   string(match_assignment.B3scouter()),
+			R1scouter:   string(match_assignment.R1Scouter()),
+			R2scouter:   string(match_assignment.R2Scouter()),
+			R3scouter:   string(match_assignment.R3Scouter()),
+			B1scouter:   string(match_assignment.B1Scouter()),
+			B2scouter:   string(match_assignment.B2Scouter()),
+			B3scouter:   string(match_assignment.B3Scouter()),
 		}
 		err = handler.db.AddToShift(current_shift)
 		if err != nil {

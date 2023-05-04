@@ -553,21 +553,21 @@ func TestRequestShiftSchedule(t *testing.T) {
 		ShiftSchedule: []*request_shift_schedule_response.MatchAssignmentT{
 			{
 				MatchNumber: 1,
-				R1scouter:   "Bob",
-				R2scouter:   "James",
-				R3scouter:   "Robert",
-				B1scouter:   "Alice",
-				B2scouter:   "Mary",
-				B3scouter:   "Patricia",
+				R1Scouter:   "Bob",
+				R2Scouter:   "James",
+				R3Scouter:   "Robert",
+				B1Scouter:   "Alice",
+				B2Scouter:   "Mary",
+				B3Scouter:   "Patricia",
 			},
 			{
 				MatchNumber: 2,
-				R1scouter:   "Liam",
-				R2scouter:   "Noah",
-				R3scouter:   "Oliver",
-				B1scouter:   "Emma",
-				B2scouter:   "Charlotte",
-				B3scouter:   "Amelia",
+				R1Scouter:   "Liam",
+				R2Scouter:   "Noah",
+				R3Scouter:   "Oliver",
+				B1Scouter:   "Emma",
+				B2Scouter:   "Charlotte",
+				B3Scouter:   "Amelia",
 			},
 		},
 	}
@@ -592,12 +592,12 @@ func TestSubmitShiftSchedule(t *testing.T) {
 	builder.Finish((&submit_shift_schedule.SubmitShiftScheduleT{
 		ShiftSchedule: []*submit_shift_schedule.MatchAssignmentT{
 			{MatchNumber: 1,
-				R1scouter: "Bob",
-				R2scouter: "James",
-				R3scouter: "Robert",
-				B1scouter: "Alice",
-				B2scouter: "Mary",
-				B3scouter: "Patricia"},
+				R1Scouter: "Bob",
+				R2Scouter: "James",
+				R3Scouter: "Robert",
+				B1Scouter: "Alice",
+				B2Scouter: "Mary",
+				B3Scouter: "Patricia"},
 		},
 	}).Pack(builder))
 
