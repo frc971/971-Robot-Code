@@ -730,6 +730,7 @@ void LogReader::StartAfterRegister(
   // running until the last node.
 
   for (std::unique_ptr<State> &state : states_) {
+    CHECK(state);
     VLOG(1) << "Start time is " << state->monotonic_start_time(0)
             << " for node " << MaybeNodeName(state->node()) << "now "
             << state->monotonic_now();
