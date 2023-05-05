@@ -225,10 +225,12 @@ void StarterClient::Succeed() {
   // Clear commands prior to calling handlers to allow the handler to call
   // SendCommands() again if desired.
   current_commands_.clear();
+  // Clear the timer before calling success handler, in case the success
+  // handler needs to modify timeout handler.
+  timeout_timer_->Disable();
   if (success_handler_) {
     success_handler_();
   }
-  timeout_timer_->Disable();
 }
 
 bool SendCommandBlocking(aos::starter::Command command, std::string_view name,

@@ -118,6 +118,7 @@ cc_test(
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",
         "//aos/events:simulated_event_loop",
+        "//aos/ipc_lib:event",
         "//aos/testing:googletest",
         "//aos/testing:path",
         "//aos/testing:tmpdir",
