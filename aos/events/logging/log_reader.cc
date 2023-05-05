@@ -1,5 +1,6 @@
 #include "aos/events/logging/log_reader.h"
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -1977,9 +1978,8 @@ bool LogReader::State::Send(const TimestampedMessage &timestamped_message) {
 
   // Send!  Use the replayed queue index here instead of the logged queue index
   // for the remote queue index.  This makes re-logging work.
-  const auto err = sender->Send(
-      RawSender::SharedSpan(timestamped_message.data,
-                            &timestamped_message.data->span),
+  const RawSender::Error err = sender->Send(
+      SharedSpan(timestamped_message.data, &timestamped_message.data->span),
       timestamped_message.monotonic_remote_time.time,
       timestamped_message.realtime_remote_time, remote_queue_index,
       (channel_source_state_[timestamped_message.channel_index] != nullptr

@@ -49,41 +49,6 @@ class ScopedMarkRealtimeRestorer {
   const bool prior_;
 };
 
-// Holds storage for a span object and the data referenced by that span for
-// compatibility with RawSender::SharedSpan users. If constructed with
-// MakeSharedSpan, span points to only the aligned segment of the entire data.
-struct AlignedOwningSpan {
-  AlignedOwningSpan(const AlignedOwningSpan &) = delete;
-  AlignedOwningSpan &operator=(const AlignedOwningSpan &) = delete;
-  absl::Span<const uint8_t> span;
-  char data[];
-};
-
-// Constructs a span which owns its data through a shared_ptr. The owning span
-// points to a const view of the data; also returns a temporary mutable span
-// which is only valid while the const shared span is kept alive.
-std::pair<RawSender::SharedSpan, absl::Span<uint8_t>> MakeSharedSpan(
-    size_t size) {
-  AlignedOwningSpan *const span = reinterpret_cast<AlignedOwningSpan *>(
-      malloc(sizeof(AlignedOwningSpan) + size + kChannelDataAlignment - 1));
-
-  absl::Span<uint8_t> mutable_span(
-      reinterpret_cast<uint8_t *>(RoundChannelData(&span->data[0], size)),
-      size);
-  // Use the placement new operator to construct an actual absl::Span in place.
-  new (&span->span) absl::Span(mutable_span);
-
-  return std::make_pair(
-      RawSender::SharedSpan(
-          std::shared_ptr<AlignedOwningSpan>(span,
-                                             [](AlignedOwningSpan *s) {
-                                               s->~AlignedOwningSpan();
-                                               free(s);
-                                             }),
-          &span->span),
-      mutable_span);
-}
-
 // Container for both a message, and the context for it for simulation.  This
 // makes tracking the timestamps associated with the data easy.
 struct SimulatedMessage final {
@@ -93,8 +58,8 @@ struct SimulatedMessage final {
 
   // Creates a SimulatedMessage with size bytes of storage.
   // This is a shared_ptr so we don't have to implement refcounting or copying.
-  static std::shared_ptr<SimulatedMessage> Make(
-      SimulatedChannel *channel, const RawSender::SharedSpan data);
+  static std::shared_ptr<SimulatedMessage> Make(SimulatedChannel *channel,
+                                                const SharedSpan data);
 
   // Context for the data.
   Context context;
@@ -103,7 +68,7 @@ struct SimulatedMessage final {
 
   // Owning span to this message's data. Depending on the sender may either
   // represent the data of just the flatbuffer, or max channel size.
-  RawSender::SharedSpan data;
+  SharedSpan data;
 
   // Mutable view of above data. If empty, this message is not mutable.
   absl::Span<uint8_t> mutable_data;
@@ -336,7 +301,7 @@ class SimulatedChannel {
 namespace {
 
 std::shared_ptr<SimulatedMessage> SimulatedMessage::Make(
-    SimulatedChannel *channel, RawSender::SharedSpan data) {
+    SimulatedChannel *channel, SharedSpan data) {
   // The allocations in here are due to infrastructure and don't count in the no
   // mallocs in RT code.
   ScopedNotRealtime nrt;
@@ -1165,8 +1130,7 @@ RawSender::Error SimulatedSender::DoSend(
 }
 
 RawSender::Error SimulatedSender::DoSend(
-    const RawSender::SharedSpan data,
-    monotonic_clock::time_point monotonic_remote_time,
+    const SharedSpan data, monotonic_clock::time_point monotonic_remote_time,
     realtime_clock::time_point realtime_remote_time,
     uint32_t remote_queue_index, const UUID &source_boot_uuid) {
   CHECK_LE(data->size(), this->size())
