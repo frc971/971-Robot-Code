@@ -69,7 +69,9 @@ SctpServer::SctpServer(int streams, std::string_view local_host,
   }
 }
 
-void SctpServer::SetPriorityScheduler(sctp_assoc_t assoc_id) {
+void SctpServer::SetPriorityScheduler([[maybe_unused]] sctp_assoc_t assoc_id) {
+// Kernel 4.9 does not have SCTP_SS_PRIO
+#ifdef SCTP_SS_PRIO
   struct sctp_assoc_value scheduler;
   memset(&scheduler, 0, sizeof(scheduler));
   scheduler.assoc_id = assoc_id;
@@ -79,10 +81,14 @@ void SctpServer::SetPriorityScheduler(sctp_assoc_t assoc_id) {
     LOG_FIRST_N(WARNING, 1) << "Failed to set scheduler: " << strerror(errno)
                             << " [" << errno << "]";
   }
+#endif
 }
 
-void SctpServer::SetStreamPriority(sctp_assoc_t assoc_id, int stream_id,
-                                   uint16_t priority) {
+void SctpServer::SetStreamPriority([[maybe_unused]] sctp_assoc_t assoc_id,
+                                   [[maybe_unused]] int stream_id,
+                                   [[maybe_unused]] uint16_t priority) {
+// Kernel 4.9 does not have SCTP_STREAM_SCHEDULER_VALUE
+#ifdef SCTP_STREAM_SCHEDULER_VALUE
   struct sctp_stream_value sctp_priority;
   memset(&sctp_priority, 0, sizeof(sctp_priority));
   sctp_priority.assoc_id = assoc_id;
@@ -93,6 +99,7 @@ void SctpServer::SetStreamPriority(sctp_assoc_t assoc_id, int stream_id,
     LOG_FIRST_N(WARNING, 1) << "Failed to set scheduler: " << strerror(errno)
                             << " [" << errno << "]";
   }
+#endif
 }
 
 }  // namespace message_bridge

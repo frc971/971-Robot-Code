@@ -51,7 +51,9 @@ void SctpClient::LogSctpStatus(sctp_assoc_t assoc_id) {
   message_bridge::LogSctpStatus(fd(), assoc_id);
 }
 
-void SctpClient::SetPriorityScheduler(sctp_assoc_t assoc_id) {
+void SctpClient::SetPriorityScheduler([[maybe_unused]] sctp_assoc_t assoc_id) {
+// Kernel 4.9 does not have SCTP_SS_PRIO
+#ifdef SCTP_SS_PRIO
   struct sctp_assoc_value scheduler;
   memset(&scheduler, 0, sizeof(scheduler));
   scheduler.assoc_id = assoc_id;
@@ -61,6 +63,7 @@ void SctpClient::SetPriorityScheduler(sctp_assoc_t assoc_id) {
     LOG_FIRST_N(WARNING, 1) << "Failed to set scheduler: " << strerror(errno)
                             << " [" << errno << "]";
   }
+#endif
 }
 
 }  // namespace message_bridge
