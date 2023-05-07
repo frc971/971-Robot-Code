@@ -8,6 +8,15 @@
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/pose.h"
 
+#if !defined(__clang__) && defined(__GNUC__)
+// GCC miss-detects that when zero is set to true, the member variables could be
+// uninitialized.  Rather than spend the CPU to initialize them in addition to
+// the memory for no good reason, tell GCC to stop doing that.  Clang appears to
+// get it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 namespace y2019 {
 namespace control_loops {
 
@@ -80,37 +89,71 @@ class TypedLocalizer
     // those mappings for all the remaining corrections.
     // As such, we need to store the EKF functions that the remaining targets
     // will need in arrays:
-    ::aos::SizedArray<::std::function<Output(const State &, const Input &)>,
+    ::aos::SizedArray<HFunction, max_targets_per_frame> h_functions;
+    ::aos::SizedArray<Eigen::Matrix<Scalar, kNOutputs, kNStates>,
                       max_targets_per_frame>
-        h_functions;
-    ::aos::SizedArray<::std::function<Eigen::Matrix<Scalar, kNOutputs,
-                                                    kNStates>(const State &)>,
-                      max_targets_per_frame>
-        dhdx_functions;
+        dhdx;
     make_h_queue_.CorrectKnownHBuilder(
         z, nullptr,
         ExpectedObservationBuilder(this, camera, targets, &h_functions,
-                                   &dhdx_functions),
+                                   &dhdx),
         R, t);
     // Fetch cache:
     for (size_t ii = 1; ii < targets.size(); ++ii) {
       TargetViewToMatrices(targets[ii], &z, &R);
       h_queue_.CorrectKnownH(
           z, nullptr,
-          ExpectedObservationFunctor(h_functions[ii], dhdx_functions[ii]), R,
+          ExpectedObservationFunctor(h_functions[ii], dhdx[ii]), R,
           t);
     }
   }
 
  private:
+  class HFunction {
+   public:
+    HFunction() : zero_(true) {}
+    HFunction(const Camera *camera, const TargetView &best_view,
+              const TargetView &target_view, TypedLocalizer *localizer)
+        : zero_(false),
+          camera_(camera),
+          best_view_(best_view),
+          target_view_(target_view),
+          localizer_(localizer) {}
+    Output operator()(const State &X, const Input &) {
+      if (zero_) {
+        return Output::Zero();
+      }
+
+      // This function actually handles determining what the Output should
+      // be at a given state, now that we have chosen the target that
+      // we want to match to.
+      *localizer_->robot_pose_->mutable_pos() << X(0, 0), X(1, 0), 0.0;
+      localizer_->robot_pose_->set_theta(X(2, 0));
+      const Pose relative_pose =
+          best_view_.target->pose().Rebase(&camera_->pose());
+      const Scalar heading = relative_pose.heading();
+      const Scalar distance = relative_pose.xy_norm();
+      const Scalar skew =
+          ::aos::math::NormalizeAngle(relative_pose.rel_theta() - heading);
+      return Output(heading, distance, skew);
+    }
+
+   private:
+    bool zero_ = false;
+
+    const Camera *camera_;
+    TargetView best_view_;
+    TargetView target_view_;
+    TypedLocalizer *localizer_;
+  };
+
+  friend class HFunction;
+
   class ExpectedObservationFunctor
       : public HybridEkf::ExpectedObservationFunctor {
    public:
-    ExpectedObservationFunctor(
-        ::std::function<Output(const State &, const Input &)> h,
-        ::std::function<
-            Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
-            dhdx)
+    ExpectedObservationFunctor(const HFunction &h,
+                               Eigen::Matrix<Scalar, kNOutputs, kNStates> dhdx)
         : h_(h), dhdx_(dhdx) {}
 
     Output H(const State &state, const Input &input) final {
@@ -118,14 +161,13 @@ class TypedLocalizer
     }
 
     virtual Eigen::Matrix<Scalar, kNOutputs, kNStates> DHDX(
-        const State &state) final {
-      return dhdx_(state);
+        const State &) final {
+      return dhdx_;
     }
 
    private:
-    ::std::function<Output(const State &, const Input &)> h_;
-    ::std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
-        dhdx_;
+    HFunction h_;
+    Eigen::Matrix<Scalar, kNOutputs, kNStates> dhdx_;
   };
   class ExpectedObservationBuilder
       : public HybridEkf::ExpectedObservationBuilder {
@@ -134,23 +176,20 @@ class TypedLocalizer
         TypedLocalizer *localizer, const Camera &camera,
         const ::aos::SizedArray<TargetView, max_targets_per_frame>
             &target_views,
-        ::aos::SizedArray<::std::function<Output(const State &, const Input &)>,
-                          max_targets_per_frame> *h_functions,
-        ::aos::SizedArray<::std::function<Eigen::Matrix<
-                              Scalar, kNOutputs, kNStates>(const State &)>,
-                          max_targets_per_frame> *dhdx_functions)
+        ::aos::SizedArray<HFunction, max_targets_per_frame> *h_functions,
+        ::aos::SizedArray<Eigen::Matrix<Scalar, kNOutputs, kNStates>,
+                          max_targets_per_frame> *dhdx)
         : localizer_(localizer),
           camera_(camera),
           target_views_(target_views),
           h_functions_(h_functions),
-          dhdx_functions_(dhdx_functions) {}
+          dhdx_(dhdx) {}
 
     virtual ExpectedObservationFunctor *MakeExpectedObservations(
         const State &state, const StateSquare &P) {
-      ::std::function<Output(const State &, const Input &)> h;
-      ::std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
-          dhdx;
-      localizer_->MakeH(camera_, target_views_, h_functions_, dhdx_functions_,
+      HFunction h;
+      Eigen::Matrix<Scalar, kNOutputs, kNStates> dhdx;
+      localizer_->MakeH(camera_, target_views_, h_functions_, dhdx_,
                         state, P, &h, &dhdx);
       functor_.emplace(h, dhdx);
       return &functor_.value();
@@ -160,13 +199,12 @@ class TypedLocalizer
     TypedLocalizer *localizer_;
     const Camera &camera_;
     const ::aos::SizedArray<TargetView, max_targets_per_frame> &target_views_;
-    ::aos::SizedArray<::std::function<Output(const State &, const Input &)>,
-                      max_targets_per_frame> *h_functions_;
-    ::aos::SizedArray<::std::function<Eigen::Matrix<Scalar, kNOutputs,
-                                                    kNStates>(const State &)>,
-                      max_targets_per_frame> *dhdx_functions_;
+    ::aos::SizedArray<HFunction, max_targets_per_frame> *h_functions_;
+    ::aos::SizedArray<Eigen::Matrix<Scalar, kNOutputs, kNStates>,
+                      max_targets_per_frame> *dhdx_;
     std::optional<ExpectedObservationFunctor> functor_;
   };
+
   // The threshold to use for completely rejecting potentially bad target
   // matches.
   // TODO(james): Tune
@@ -220,15 +258,11 @@ class TypedLocalizer
   void MakeH(
       const Camera &camera,
       const ::aos::SizedArray<TargetView, max_targets_per_frame> &target_views,
-      ::aos::SizedArray<::std::function<Output(const State &, const Input &)>,
-                        max_targets_per_frame> *h_functions,
-      ::aos::SizedArray<::std::function<Eigen::Matrix<Scalar, kNOutputs,
-                                                      kNStates>(const State &)>,
-                        max_targets_per_frame> *dhdx_functions,
-      const State &X_hat, const StateSquare &P,
-      ::std::function<Output(const State &, const Input &)> *h,
-      ::std::function<Eigen::Matrix<Scalar, kNOutputs, kNStates>(const State &)>
-          *dhdx) {
+      ::aos::SizedArray<HFunction, max_targets_per_frame> *h_functions,
+      ::aos::SizedArray<Eigen::Matrix<Scalar, kNOutputs, kNStates>,
+                        max_targets_per_frame> *dhdx,
+      const State &X_hat, const StateSquare &P, HFunction *h,
+      Eigen::Matrix<Scalar, kNOutputs, kNStates> *current_dhdx) {
     // Because we need to match camera targets ("views") to actual field
     // targets, and because we want to take advantage of the correlations
     // between the targets (i.e., if we see two targets in the image, they
@@ -358,13 +392,11 @@ class TypedLocalizer
       AOS_LOG(DEBUG, "Unable to identify potential target matches.\n");
       // If we can't get a match, provide H = zero, which will make this
       // correction step a nop.
-      *h = [](const State &, const Input &) { return Output::Zero(); };
-      *dhdx = [](const State &) {
-        return Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero();
-      };
+      *h = HFunction();
+      *current_dhdx = Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero();
       for (size_t ii = 0; ii < target_views.size(); ++ii) {
         h_functions->push_back(*h);
-        dhdx_functions->push_back(*dhdx);
+        dhdx->push_back(*current_dhdx);
       }
     } else {
       // Go through and brute force the issue of what the best combination of
@@ -377,11 +409,9 @@ class TypedLocalizer
         size_t view_idx = best_frames[ii];
         if (view_idx >= camera_views.size()) {
           AOS_LOG(ERROR, "Somehow, the view scorer failed.\n");
-          h_functions->push_back(
-              [](const State &, const Input &) { return Output::Zero(); });
-          dhdx_functions->push_back([](const State &) {
-            return Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero();
-          });
+          h_functions->emplace_back();
+          dhdx->push_back(
+              Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero());
           continue;
         }
         const Eigen::Matrix<Scalar, kNOutputs, kNStates> best_H =
@@ -394,38 +424,18 @@ class TypedLocalizer
                   "Rejecting target at (%f, %f, %f, %f) due to high score.\n",
                   target_view.reading.heading, target_view.reading.distance,
                   target_view.reading.skew, target_view.reading.height);
-          h_functions->push_back(
-              [](const State &, const Input &) { return Output::Zero(); });
-          dhdx_functions->push_back([](const State &) {
-            return Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero();
-          });
+          h_functions->emplace_back();
+          dhdx->push_back(Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero());
         } else {
-          h_functions->push_back([this, &camera, best_view, target_view](
-                                     const State &X, const Input &) {
-            // This function actually handles determining what the Output should
-            // be at a given state, now that we have chosen the target that
-            // we want to match to.
-            *robot_pose_->mutable_pos() << X(0, 0), X(1, 0), 0.0;
-            robot_pose_->set_theta(X(2, 0));
-            const Pose relative_pose =
-                best_view.target->pose().Rebase(&camera.pose());
-            const Scalar heading = relative_pose.heading();
-            const Scalar distance = relative_pose.xy_norm();
-            const Scalar skew = ::aos::math::NormalizeAngle(
-                relative_pose.rel_theta() - heading);
-            return Output(heading, distance, skew);
-          });
+          h_functions->emplace_back(&camera, best_view, target_view, this);
 
           // TODO(james): Experiment to better understand whether we want to
           // recalculate H or not.
-          dhdx_functions->push_back(
-              [best_H](const Eigen::Matrix<Scalar, kNStates, 1> &) {
-                return best_H;
-              });
+          dhdx->push_back(best_H);
         }
       }
       *h = h_functions->at(0);
-      *dhdx = dhdx_functions->at(0);
+      *current_dhdx = dhdx->at(0);
     }
   }
 
@@ -563,7 +573,11 @@ class TypedLocalizer
       make_h_queue_;
 
   friend class ExpectedObservationBuilder;
-};  // class TypedLocalizer
+};
+
+#if !defined(__clang__) && defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 }  // namespace control_loops
 }  // namespace y2019
