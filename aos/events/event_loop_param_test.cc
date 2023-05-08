@@ -3254,12 +3254,12 @@ TEST_P(AbstractEventLoopTest, SendingAfterSendingTooFast) {
 
   auto sender = event_loop->MakeSender<TestMessage>("/test");
 
-  // We are sending messages at 1 kHz, so we will be sending too fast after
-  // queue_size (1600) ms. After this, keep sending messages, and exactly a
-  // channel storage duration (2s) after we send the first message we should
-  // be able to successfully send a message.
+  // We are sending bunches of messages at 100 Hz, so we will be sending too
+  // fast after queue_size (800) ms. After this, keep sending messages, and
+  // exactly a channel storage duration (2s) after we send the first message we
+  // should be able to successfully send a message.
 
-  const monotonic_clock::duration kInterval = std::chrono::milliseconds(1);
+  const std::chrono::milliseconds kInterval = std::chrono::milliseconds(10);
   const monotonic_clock::duration channel_storage_duration =
       std::chrono::nanoseconds(
           event_loop->configuration()->channel_storage_duration());
@@ -3270,33 +3270,38 @@ TEST_P(AbstractEventLoopTest, SendingAfterSendingTooFast) {
   auto start = monotonic_clock::min_time;
 
   event_loop->AddPhasedLoop(
-      [&](int) {
-        const auto actual_err = SendTestMessage(sender);
-        const bool done_waiting = (start != monotonic_clock::min_time &&
-                                   sender.monotonic_sent_time() >=
-                                       (start + channel_storage_duration));
-        const auto expected_err =
-            (msgs_sent < queue_size || done_waiting
-                 ? RawSender::Error::kOk
-                 : RawSender::Error::kMessagesSentTooFast);
+      [&](int elapsed_cycles) {
+        // The queue is setup for 800 messages/sec.  We want to fill that up at
+        // a rate of 2000 messages/sec so we make sure we fill it up.
+        for (int i = 0; i < 2 * kInterval.count() * elapsed_cycles; ++i) {
+          const auto actual_err = SendTestMessage(sender);
+          const bool done_waiting = (start != monotonic_clock::min_time &&
+                                     sender.monotonic_sent_time() >=
+                                         (start + channel_storage_duration));
+          const auto expected_err =
+              (msgs_sent < queue_size || done_waiting
+                   ? RawSender::Error::kOk
+                   : RawSender::Error::kMessagesSentTooFast);
 
-        if (start == monotonic_clock::min_time) {
-          start = sender.monotonic_sent_time();
-        }
+          if (start == monotonic_clock::min_time) {
+            start = sender.monotonic_sent_time();
+          }
 
-        ASSERT_EQ(actual_err, expected_err);
-        counter.Count(actual_err);
-        msgs_sent++;
+          ASSERT_EQ(actual_err, expected_err);
+          counter.Count(actual_err);
+          msgs_sent++;
 
-        EXPECT_EQ(counter.failures(),
-                  msgs_sent <= queue_size
-                      ? 0
-                      : (msgs_sent - queue_size) -
-                            (actual_err == RawSender::Error::kOk ? 1 : 0));
-        EXPECT_EQ(counter.just_failed(), actual_err != RawSender::Error::kOk);
+          EXPECT_EQ(counter.failures(),
+                    msgs_sent <= queue_size
+                        ? 0
+                        : (msgs_sent - queue_size) -
+                              (actual_err == RawSender::Error::kOk ? 1 : 0));
+          EXPECT_EQ(counter.just_failed(), actual_err != RawSender::Error::kOk);
 
-        if (done_waiting) {
-          Exit();
+          if (done_waiting) {
+            Exit();
+            return;
+          }
         }
       },
       kInterval);
