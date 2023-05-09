@@ -135,15 +135,22 @@ SctpClientConnection::SctpClientConnection(
 
     if (configuration::ChannelIsSendableOnNode(channel, remote_node_) &&
         configuration::ChannelIsReadableOnNode(channel, event_loop_->node())) {
-      LOG(INFO) << "Receiving channel "
-                << configuration::CleanedChannelToString(channel);
+      VLOG(1) << "Receiving channel "
+              << configuration::CleanedChannelToString(channel);
       max_size = std::max(channel->max_size(), max_size);
     }
   }
 
   // Buffer up the max size a bit so everything fits nicely.
   LOG(INFO) << "Max message size for all servers is " << max_size;
-  client_.SetMaxSize(max_size + 100);
+  // RemoteMessage header appears to be between 100 and 204 bytes of overhead
+  // from the vector of data.  No need to get super tight to that bound.
+  client_.SetMaxSize(max_size + 204);
+
+  // 1 client talks to 1 server.  With interleaving support 1 turned on, we'll
+  // at most see 1 partial message, and 1 incoming part, for a total of 2
+  // messages in flight.
+  client_.SetPoolSize(2u);
 
   event_loop_->epoll()->OnReadable(client_.fd(),
                                    [this]() { MessageReceived(); });
@@ -193,6 +200,7 @@ void SctpClientConnection::MessageReceived() {
   } else if (message->message_type == Message::kMessage) {
     HandleData(message.get());
   }
+  client_.FreeMessage(std::move(message));
 }
 
 void SctpClientConnection::SendConnect() {
@@ -262,7 +270,7 @@ void SctpClientConnection::HandleData(const Message *message) {
       monotonic_clock::time_point(
           chrono::nanoseconds(remote_data->monotonic_sent_time())) ==
           channel_state->last_timestamp) {
-    LOG(INFO) << "Duplicate message from " << message->PeerAddress();
+    VLOG(1) << "Duplicate message from " << message->PeerAddress();
     connection_->mutate_duplicate_packets(connection_->duplicate_packets() + 1);
     // Duplicate message, ignore.
   } else {

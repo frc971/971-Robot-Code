@@ -48,9 +48,14 @@ class SctpClient {
   void LogSctpStatus(sctp_assoc_t assoc_id);
 
   void SetMaxSize(size_t max_size) { sctp_.SetMaxSize(max_size); }
+  void SetPoolSize(size_t pool_size) { sctp_.SetPoolSize(pool_size); }
 
   void SetAssociationId(sctp_assoc_t sac_assoc_id) {
     sac_assoc_id_ = sac_assoc_id;
+  }
+
+  void FreeMessage(aos::unique_c_ptr<Message> &&message) {
+    sctp_.FreeMessage(std::move(message));
   }
 
  private:
