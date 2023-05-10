@@ -25,11 +25,13 @@ namespace flatbuffers {
 // Helper class to verify the integrity of a FlatBuffer
 class Verifier FLATBUFFERS_FINAL_CLASS {
  public:
+  static constexpr uoffset_t kDefaultMaxTables = 3000000;
+
   struct Options {
     // The maximum nesting of tables and vectors before we call it invalid.
     uoffset_t max_depth = 64;
     // The maximum number of tables we will verify before we call it invalid.
-    uoffset_t max_tables = 1000000;
+    uoffset_t max_tables = kDefaultMaxTables;
     // If true, verify all data is aligned.
     bool check_alignment = true;
     // If true, run verifier on nested flatbuffers
@@ -44,7 +46,8 @@ class Verifier FLATBUFFERS_FINAL_CLASS {
 
   // Deprecated API, please construct with Verifier::Options.
   Verifier(const uint8_t *const buf, const size_t buf_len,
-           const uoffset_t max_depth = 64, const uoffset_t max_tables = 1000000,
+           const uoffset_t max_depth = 64,
+           const uoffset_t max_tables = kDefaultMaxTables,
            const bool check_alignment = true)
       : Verifier(buf, buf_len, [&] {
           Options opts;
