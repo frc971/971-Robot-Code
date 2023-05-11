@@ -74,33 +74,31 @@ int main(int argc, char *argv[]) {
   std::unique_ptr<aos::EventLoop> clock_event_loop;
   std::unique_ptr<aos::ClockPublisher> clock_publisher;
   if (FLAGS_include_clocks) {
-    reader.OnStart(node, [&clock_event_loop, &reader, &clock_publisher,
-                          &factory, node]() {
-      clock_event_loop =
-          reader.event_loop_factory()->MakeEventLoop("clock", node);
-      clock_publisher = std::make_unique<aos::ClockPublisher>(
-          &factory, clock_event_loop.get());
-    });
+    reader.OnStart(
+        node, [&clock_event_loop, &reader, &clock_publisher, &factory, node]() {
+          clock_event_loop =
+              reader.event_loop_factory()->MakeEventLoop("clock", node);
+          clock_publisher = std::make_unique<aos::ClockPublisher>(
+              &factory, clock_event_loop.get());
+        });
   }
 
   std::unique_ptr<aos::EventLoop> mcap_event_loop;
   CHECK(!FLAGS_output_path.empty());
   std::unique_ptr<aos::McapLogger> relogger;
-  factory.GetNodeEventLoopFactory(node)
-      ->OnStartup([&relogger, &mcap_event_loop, &reader, node]() {
-        mcap_event_loop =
-            reader.event_loop_factory()->MakeEventLoop("mcap", node);
-        relogger = std::make_unique<aos::McapLogger>(
-            mcap_event_loop.get(), FLAGS_output_path,
-            FLAGS_mode == "flatbuffer"
-                ? aos::McapLogger::Serialization::kFlatbuffer
-                : aos::McapLogger::Serialization::kJson,
-            FLAGS_canonical_channel_names
-                ? aos::McapLogger::CanonicalChannelNames::kCanonical
-                : aos::McapLogger::CanonicalChannelNames::kShortened,
-            FLAGS_compress ? aos::McapLogger::Compression::kLz4
-                           : aos::McapLogger::Compression::kNone);
-      });
+  factory.GetNodeEventLoopFactory(node)->OnStartup([&relogger, &mcap_event_loop,
+                                                    &reader, node]() {
+    mcap_event_loop = reader.event_loop_factory()->MakeEventLoop("mcap", node);
+    relogger = std::make_unique<aos::McapLogger>(
+        mcap_event_loop.get(), FLAGS_output_path,
+        FLAGS_mode == "flatbuffer" ? aos::McapLogger::Serialization::kFlatbuffer
+                                   : aos::McapLogger::Serialization::kJson,
+        FLAGS_canonical_channel_names
+            ? aos::McapLogger::CanonicalChannelNames::kCanonical
+            : aos::McapLogger::CanonicalChannelNames::kShortened,
+        FLAGS_compress ? aos::McapLogger::Compression::kLz4
+                       : aos::McapLogger::Compression::kNone);
+  });
   reader.event_loop_factory()->Run();
   reader.Deregister();
 }
