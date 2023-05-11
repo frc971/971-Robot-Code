@@ -2,12 +2,12 @@ namespace scouting.webserver.requests;
 
 table MatchAssignment {
     match_number:int (id:0);
-    R1scouter:string (id:1);
-    R2scouter:string (id:2);
-    R3scouter:string (id:3);
-    B1scouter:string (id:4);
-    B2scouter:string (id:5);
-    B3scouter:string (id:6);
+    r1_scouter:string (id:1);
+    r2_scouter:string (id:2);
+    r3_scouter:string (id:3);
+    b1_scouter:string (id:4);
+    b2_scouter:string (id:5);
+    b3_scouter:string (id:6);
 }
 
 table RequestShiftScheduleResponse {
