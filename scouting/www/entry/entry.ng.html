@@ -311,6 +311,44 @@
     </div>
   </div>
   <div *ngSwitchCase="'Review and Submit'" id="Review" class="container-fluid">
+    <div class="row">
+      <ul id="review_data">
+        <li
+          *ngFor="let action of actionList"
+          [ngValue]="action"
+          style="display: flex"
+        >
+          <div [ngSwitch]="action.type" style="padding: 0px">
+            <span *ngSwitchCase="'startMatchAction'">
+              Started match at position {{action.position}}
+            </span>
+            <span *ngSwitchCase="'pickupObjectAction'">
+              Picked up {{stringifyObjectType(action.objectType)}}
+            </span>
+            <span *ngSwitchCase="'placeObjectAction'">
+              Placed at {{stringifyScoreLevel(action.scoreLevel)}}
+            </span>
+            <span *ngSwitchCase="'autoBalanceAction'">
+              Docked: {{action.docked}}, engaged: {{action.engaged}}, attempted
+              to balance and engage: {{action.balanceAttempt}}
+            </span>
+            <span *ngSwitchCase="'endAutoPhase'">Ended auto phase</span>
+            <span *ngSwitchCase="'endMatchAction'">
+              Ended Match; docked: {{action.docked}}, engaged:
+              {{action.engaged}}, attempted to dock and engage:
+              {{action.balanceAttempt}}
+            </span>
+            <span *ngSwitchCase="'robotDeathAction'">
+              Robot on: {{action.robotOn}}
+            </span>
+            <span *ngSwitchCase="'mobilityAction'">
+              Mobility: {{action.mobility}}
+            </span>
+            <span *ngSwitchDefault>{{action.type}}</span>
+          </div>
+        </li>
+      </ul>
+    </div>
     <div class="d-grid gap-5">
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button class="btn btn-warning" (click)="submitActions();">Submit</button>

@@ -19,3 +19,7 @@ button {
   max-width: 105px;
   text-align: center;
 }
+
+.row ul div span {
+  padding: 0px;
+}
