@@ -77,6 +77,10 @@ class MessageBridgeServerStatus {
   // Enables sending out any statistics messages.
   void EnableStatistics();
 
+  // Increments invalid_connection_count_, marking that we had another bad
+  // connection that got rejected.
+  void increment_invalid_connection_count() { ++invalid_connection_count_; }
+
  private:
   static constexpr std::chrono::nanoseconds kStatisticsPeriod =
       std::chrono::seconds(1);
@@ -126,6 +130,8 @@ class MessageBridgeServerStatus {
   bool send_ = true;
 
   std::vector<uint32_t> partial_deliveries_;
+
+  size_t invalid_connection_count_ = 0u;
 };
 
 }  // namespace message_bridge

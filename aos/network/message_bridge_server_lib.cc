@@ -261,14 +261,17 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
   return -1;
 }
 
-MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
+MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
+                                         std::string config_sha256)
     : event_loop_(event_loop),
       timestamp_loggers_(event_loop_),
       server_(max_channels() + kControlStreams(), "",
               event_loop->node()->port()),
-      server_status_(event_loop, [this](const Context &context) {
-        timestamp_state_->SendData(&server_, context);
-      }) {
+      server_status_(event_loop,
+                     [this](const Context &context) {
+                       timestamp_state_->SendData(&server_, context);
+                     }),
+      config_sha256_(std::move(config_sha256)) {
   CHECK(event_loop_->node() != nullptr) << ": No nodes configured.";
 
   size_t max_size = 0;
@@ -288,7 +291,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop)
                            configuration::GetNode(event_loop->configuration(),
                                                   destination_node_name),
                            event_loop->node()->name()->string_view(),
-                           UUID::Zero())
+                           UUID::Zero(), config_sha256_)
             .span()
             .size();
     VLOG(1) << "Connection to " << destination_node_name << " has size "
@@ -467,6 +470,34 @@ void MessageBridgeServer::MessageReceived() {
   }
 }
 
+void MessageBridgeServer::MaybeIncrementInvalidConnectionCount(
+    const Node *node) {
+  server_status_.increment_invalid_connection_count();
+
+  if (node == nullptr) {
+    return;
+  }
+
+  if (!node->has_name()) {
+    return;
+  }
+
+  const aos::Node *client_node = configuration::GetNode(
+      event_loop_->configuration(), node->name()->string_view());
+
+  if (client_node == nullptr) {
+    return;
+  }
+
+  const int node_index =
+      configuration::GetNodeIndex(event_loop_->configuration(), client_node);
+
+  ServerConnection *connection = server_status_.server_connection()[node_index];
+
+  connection->mutate_invalid_connection_count(
+      connection->invalid_connection_count() + 1);
+}
+
 void MessageBridgeServer::HandleData(const Message *message) {
   VLOG(2) << "Received data of length " << message->size;
 
@@ -475,13 +506,47 @@ void MessageBridgeServer::HandleData(const Message *message) {
     const Connect *connect = flatbuffers::GetRoot<Connect>(message->data());
     {
       flatbuffers::Verifier verifier(message->data(), message->size);
-      CHECK(connect->Verify(verifier));
+      if (!connect->Verify(verifier)) {
+        LOG_EVERY_T(WARNING, 1.0)
+            << "Failed to verify message, disconnecting client";
+        server_.Abort(message->header.rcvinfo.rcv_assoc_id);
+
+        MaybeIncrementInvalidConnectionCount(nullptr);
+        return;
+      }
     }
     VLOG(1) << FlatbufferToJson(connect);
 
-    CHECK_LE(connect->channels_to_transfer()->size(),
-             static_cast<size_t>(max_channels()))
-        << ": Client has more channels than we do";
+    if (!connect->has_config_sha256()) {
+      LOG_EVERY_T(WARNING, 1.0)
+          << "Client missing config_sha256, disconnecting client";
+      server_.Abort(message->header.rcvinfo.rcv_assoc_id);
+
+      MaybeIncrementInvalidConnectionCount(connect->node());
+      return;
+    }
+
+    if (connect->config_sha256()->string_view() != config_sha256_) {
+      LOG_EVERY_T(WARNING, 1.0) << "Client config sha256 of "
+                                << connect->config_sha256()->string_view()
+                                << " doesn't match our config sha256 of "
+                                << config_sha256_ << ", disconnecting client";
+      server_.Abort(message->header.rcvinfo.rcv_assoc_id);
+
+      MaybeIncrementInvalidConnectionCount(connect->node());
+      return;
+    }
+
+    if (connect->channels_to_transfer()->size() >
+        static_cast<size_t>(max_channels())) {
+      LOG_EVERY_T(WARNING, 1.0)
+          << "Client has more channels than we do, disconnecting client";
+      server_.Abort(message->header.rcvinfo.rcv_assoc_id);
+
+      MaybeIncrementInvalidConnectionCount(connect->node());
+      return;
+    }
+
     monotonic_clock::time_point monotonic_now = event_loop_->monotonic_now();
 
     // Account for the control channel and delivery times channel.

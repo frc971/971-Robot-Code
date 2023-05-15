@@ -99,11 +99,11 @@ SctpClientConnection::SctpClientConnection(
     aos::ShmEventLoop *const event_loop, std::string_view remote_name,
     const Node *my_node, std::string_view local_host,
     std::vector<SctpClientChannelState> *channels, int client_index,
-    MessageBridgeClientStatus *client_status)
+    MessageBridgeClientStatus *client_status, std::string_view config_sha256)
     : event_loop_(event_loop),
       connect_message_(MakeConnectMessage(event_loop->configuration(), my_node,
-                                          remote_name,
-                                          event_loop->boot_uuid())),
+                                          remote_name, event_loop->boot_uuid(),
+                                          config_sha256)),
       message_reception_reply_(MakeMessageHeaderReply()),
       remote_node_(CHECK_NOTNULL(
           configuration::GetNode(event_loop->configuration(), remote_name))),
@@ -342,8 +342,11 @@ void SctpClientConnection::HandleData(const Message *message) {
           << " cumtsn=" << message->header.rcvinfo.rcv_cumtsn << ")";
 }
 
-MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop)
-    : event_loop_(event_loop), client_status_(event_loop_) {
+MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop,
+                                         std::string config_sha256)
+    : event_loop_(event_loop),
+      client_status_(event_loop_),
+      config_sha256_(std::move(config_sha256)) {
   std::string_view node_name = event_loop->node()->name()->string_view();
 
   // Find all the channels which are supposed to be delivered to us.
@@ -390,7 +393,8 @@ MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop)
     // Open an unspecified connection (:: in ipv6 terminology)
     connections_.emplace_back(new SctpClientConnection(
         event_loop, source_node, event_loop->node(), "", &channels_,
-        client_status_.FindClientIndex(source_node), &client_status_));
+        client_status_.FindClientIndex(source_node), &client_status_,
+        config_sha256_));
   }
 }
 

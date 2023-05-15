@@ -11,6 +11,7 @@
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/team_number.h"
 #include "aos/network/timestamp_channel.h"
+#include "aos/sha256.h"
 
 namespace aos {
 namespace logger {

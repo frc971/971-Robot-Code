@@ -13,6 +13,7 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/sha256.h"
 #include "gflags/gflags.h"
 
 DEFINE_string(
@@ -131,9 +132,8 @@ int PrintRaw(int argc, char **argv) {
                                         .max_vector_size = static_cast<size_t>(
                                             FLAGS_max_vector_size)})
               << std::endl;
-    CHECK_EQ(
-        full_header->configuration_sha256()->string_view(),
-        aos::logger::Sha256(raw_header_reader->raw_log_file_header().span()));
+    CHECK_EQ(full_header->configuration_sha256()->string_view(),
+             aos::Sha256(raw_header_reader->raw_log_file_header().span()));
     full_header = raw_header_reader->log_file_header();
   }
 

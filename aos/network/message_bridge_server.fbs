@@ -41,6 +41,10 @@ table ServerConnection {
 
   // Number of times we've established a connection to the server.
   connection_count:uint (id: 8);
+
+  // Number of times we've had an invalid connection with something wrong in
+  // the connection message, but we were able to match which node it was.
+  invalid_connection_count:uint (id: 9);
 }
 
 // Statistics for all connections to all the clients.
@@ -49,6 +53,11 @@ table ServerStatistics {
 
   // Count of timestamp send failures
   timestamp_send_failures:uint64 (id: 1);
+
+  // Number of times we've had an invalid connection with something wrong in
+  // the connection message.  The most likely cause is that the config sha256
+  // doesn't match between nodes.
+  invalid_connection_count:uint (id: 2);
 }
 
 root_type ServerStatistics;

@@ -37,7 +37,8 @@ class SctpClientConnection {
                        std::string_view local_host,
                        std::vector<SctpClientChannelState> *channels,
                        int client_index,
-                       MessageBridgeClientStatus *client_status);
+                       MessageBridgeClientStatus *client_status,
+                       std::string_view config_sha256);
 
   ~SctpClientConnection() { event_loop_->epoll()->DeleteFd(client_.fd()); }
 
@@ -101,7 +102,7 @@ class SctpClientConnection {
 // node.
 class MessageBridgeClient {
  public:
-  MessageBridgeClient(aos::ShmEventLoop *event_loop);
+  MessageBridgeClient(aos::ShmEventLoop *event_loop, std::string config_sha256);
 
   ~MessageBridgeClient() {}
 
@@ -116,6 +117,8 @@ class MessageBridgeClient {
 
   // List of connections.  These correspond to the nodes in source_node_names_
   std::vector<std::unique_ptr<SctpClientConnection>> connections_;
+
+  std::string config_sha256_;
 };
 
 }  // namespace message_bridge

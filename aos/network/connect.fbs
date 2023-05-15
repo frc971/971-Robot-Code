@@ -13,6 +13,9 @@ table Connect {
 
   // The UUID that this node booted with.
   boot_uuid: string (id: 2);
+
+  // Sha256 of the AOS config that this node is running with.
+  config_sha256: string (id: 3);
 }
 
 root_type Connect;

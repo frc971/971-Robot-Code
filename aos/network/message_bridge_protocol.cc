@@ -13,7 +13,8 @@ namespace message_bridge {
 
 aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
     const Configuration *config, const Node *my_node,
-    std::string_view remote_name, const UUID &boot_uuid) {
+    std::string_view remote_name, const UUID &boot_uuid,
+    std::string_view config_sha256) {
   CHECK(config->has_nodes()) << ": Config must have nodes to transfer.";
 
   flatbuffers::FlatBufferBuilder fbb;
@@ -46,10 +47,14 @@ aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
   flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Channel>>>
       channels_offset = fbb.CreateVector(channel_offsets);
 
+  flatbuffers::Offset<flatbuffers::String> config_sha256_offset =
+      fbb.CreateString(config_sha256);
+
   Connect::Builder connect_builder(fbb);
   connect_builder.add_channels_to_transfer(channels_offset);
   connect_builder.add_node(node_offset);
   connect_builder.add_boot_uuid(boot_uuid_offset);
+  connect_builder.add_config_sha256(config_sha256_offset);
   fbb.Finish(connect_builder.Finish());
 
   return fbb.Release();

@@ -34,7 +34,8 @@ constexpr size_t kTimestampStream() { return 1; }
 // Builds up a subscription request for my_node to remote_name.
 aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
     const Configuration *config, const Node *my_node,
-    std::string_view remote_name, const UUID &boot_uuid);
+    std::string_view remote_name, const UUID &boot_uuid,
+    std::string_view config_sha256);
 
 }  // namespace message_bridge
 }  // namespace aos

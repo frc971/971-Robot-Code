@@ -2,6 +2,7 @@
 #include "aos/init.h"
 #include "aos/logging/dynamic_logging.h"
 #include "aos/network/message_bridge_server_lib.h"
+#include "aos/sha256.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
@@ -20,7 +21,7 @@ int Main() {
     event_loop.SetRuntimeRealtimePriority(FLAGS_rt_priority);
   }
 
-  MessageBridgeServer app(&event_loop);
+  MessageBridgeServer app(&event_loop, Sha256(config.span()));
 
   logging::DynamicLogging dynamic_logging(&event_loop);
 

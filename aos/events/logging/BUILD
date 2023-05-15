@@ -146,6 +146,7 @@ cc_library(
         ":buffer_encoder",
         ":logger_fbs",
         ":log_backend",
+        "//aos:sha256",
         "//aos:uuid",
         "//aos:configuration",
         "//aos:flatbuffer_merge",
@@ -158,7 +159,6 @@ cc_library(
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/types:span",
-        "@boringssl//:crypto",
     ] + select({
         "//tools:cpu_k8": [
             ":s3_fetcher",
@@ -380,6 +380,7 @@ cc_library(
     deps = [
         ":log_namer",
         "//aos:configuration",
+        "//aos:sha256",
         "//aos/events:event_loop",
         "//aos/events:simulated_event_loop",
         "//aos/network:message_bridge_server_fbs",
@@ -435,6 +436,7 @@ cc_binary(
         "//aos:configuration",
         "//aos:init",
         "//aos:json_to_flatbuffer",
+        "//aos:sha256",
         "//aos/events:simulated_event_loop",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",

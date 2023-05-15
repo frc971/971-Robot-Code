@@ -776,3 +776,17 @@ cc_library(
         "//third_party/cargo:cxx_cc",
     ],
 )
+
+cc_library(
+    name = "sha256",
+    srcs = [
+        "sha256.cc",
+    ],
+    hdrs = ["sha256.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@boringssl//:crypto",
+        "@com_google_absl//absl/types:span",
+    ],
+)

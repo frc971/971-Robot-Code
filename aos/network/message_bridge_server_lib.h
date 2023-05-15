@@ -109,7 +109,7 @@ class ChannelState {
 // node.  It handles the session and dispatches data to the ChannelState.
 class MessageBridgeServer {
  public:
-  MessageBridgeServer(aos::ShmEventLoop *event_loop);
+  MessageBridgeServer(aos::ShmEventLoop *event_loop, std::string config_sha256);
 
   ~MessageBridgeServer() { event_loop_->epoll()->DeleteFd(server_.fd()); }
 
@@ -125,6 +125,10 @@ class MessageBridgeServer {
   // Called when data (either a connection request or delivery timestamps) is
   // received.
   void HandleData(const Message *message);
+
+  // Increments the invalid connection count overall, and per node if we know
+  // which node (ie, node is not nullptr).
+  void MaybeIncrementInvalidConnectionCount(const Node *node);
 
   // The maximum number of channels we support on a single connection. We need
   // to configure the SCTP socket with this before any clients connect, so we
@@ -147,6 +151,8 @@ class MessageBridgeServer {
   // List of channels.  The entries that aren't sent from this node are left
   // null.
   std::vector<std::unique_ptr<ChannelState>> channels_;
+
+  std::string config_sha256_;
 };
 
 }  // namespace message_bridge

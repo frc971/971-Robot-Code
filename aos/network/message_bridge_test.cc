@@ -8,6 +8,7 @@
 #include "aos/network/message_bridge_client_lib.h"
 #include "aos/network/message_bridge_server_lib.h"
 #include "aos/network/team_number.h"
+#include "aos/sha256.h"
 #include "aos/testing/path.h"
 #include "aos/util/file.h"
 #include "gtest/gtest.h"
@@ -53,6 +54,7 @@ class MessageBridgeParameterizedTest
   MessageBridgeParameterizedTest()
       : config(aos::configuration::ReadConfig(
             ArtifactPath(absl::StrCat("aos/network/", GetParam().config)))),
+        config_sha256(Sha256(config.span())),
         pi1_boot_uuid_(UUID::Random()),
         pi2_boot_uuid_(UUID::Random()) {
     util::UnlinkRecursive(ShmBase("pi1"));
@@ -73,14 +75,16 @@ class MessageBridgeParameterizedTest
     FLAGS_boot_uuid = pi2_boot_uuid_.ToString();
   }
 
-  void MakePi1Server() {
+  void MakePi1Server(std::string server_config_sha256 = "") {
     OnPi1();
     FLAGS_application_name = "pi1_message_bridge_server";
     pi1_server_event_loop =
         std::make_unique<aos::ShmEventLoop>(&config.message());
     pi1_server_event_loop->SetRuntimeRealtimePriority(1);
-    pi1_message_bridge_server =
-        std::make_unique<MessageBridgeServer>(pi1_server_event_loop.get());
+    pi1_message_bridge_server = std::make_unique<MessageBridgeServer>(
+        pi1_server_event_loop.get(), server_config_sha256.size() == 0
+                                         ? config_sha256
+                                         : server_config_sha256);
   }
 
   void RunPi1Server(chrono::nanoseconds duration) {
@@ -118,8 +122,8 @@ class MessageBridgeParameterizedTest
     pi1_client_event_loop =
         std::make_unique<aos::ShmEventLoop>(&config.message());
     pi1_client_event_loop->SetRuntimeRealtimePriority(1);
-    pi1_message_bridge_client =
-        std::make_unique<MessageBridgeClient>(pi1_client_event_loop.get());
+    pi1_message_bridge_client = std::make_unique<MessageBridgeClient>(
+        pi1_client_event_loop.get(), config_sha256);
   }
 
   void StartPi1Client() {
@@ -183,8 +187,8 @@ class MessageBridgeParameterizedTest
     pi2_server_event_loop =
         std::make_unique<aos::ShmEventLoop>(&config.message());
     pi2_server_event_loop->SetRuntimeRealtimePriority(1);
-    pi2_message_bridge_server =
-        std::make_unique<MessageBridgeServer>(pi2_server_event_loop.get());
+    pi2_message_bridge_server = std::make_unique<MessageBridgeServer>(
+        pi2_server_event_loop.get(), config_sha256);
   }
 
   void RunPi2Server(chrono::nanoseconds duration) {
@@ -222,8 +226,8 @@ class MessageBridgeParameterizedTest
     pi2_client_event_loop =
         std::make_unique<aos::ShmEventLoop>(&config.message());
     pi2_client_event_loop->SetRuntimeRealtimePriority(1);
-    pi2_message_bridge_client =
-        std::make_unique<MessageBridgeClient>(pi2_client_event_loop.get());
+    pi2_message_bridge_client = std::make_unique<MessageBridgeClient>(
+        pi2_client_event_loop.get(), config_sha256);
   }
 
   void RunPi2Client(chrono::nanoseconds duration) {
@@ -297,6 +301,8 @@ class MessageBridgeParameterizedTest
   }
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config;
+  std::string config_sha256;
+
   const UUID pi1_boot_uuid_;
   const UUID pi2_boot_uuid_;
 
@@ -1340,6 +1346,108 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
   StopPi2Client();
   pi1_remote_timestamp_event_loop.Exit();
   pi1_remote_timestamp_thread.join();
+}
+
+// Test that differing config sha256's result in no connection.
+TEST_P(MessageBridgeParameterizedTest, MismatchedSha256) {
+  // This is rather annoying to set up.  We need to start up a client and
+  // server, on the same node, but get them to think that they are on different
+  // nodes.
+  //
+  // We need the client to not post directly to "/test" like it would in a
+  // real system, otherwise we will re-send the ping message... So, use an
+  // application specific map to have the client post somewhere else.
+  //
+  // To top this all off, each of these needs to be done with a ShmEventLoop,
+  // which needs to run in a separate thread...  And it is really hard to get
+  // everything started up reliably.  So just be super generous on timeouts and
+  // hope for the best.  We can be more generous in the future if we need to.
+  //
+  // We are faking the application names by passing in --application_name=foo
+  OnPi1();
+
+  MakePi1Server("dummy sha256");
+  MakePi1Client();
+
+  // And build the app for testing.
+  MakePi1Test();
+  aos::Fetcher<ServerStatistics> pi1_server_statistics_fetcher =
+      pi1_test_event_loop->MakeFetcher<ServerStatistics>("/pi1/aos");
+  aos::Fetcher<ClientStatistics> pi1_client_statistics_fetcher =
+      pi1_test_event_loop->MakeFetcher<ClientStatistics>("/pi1/aos");
+
+  // Now do it for "raspberrypi2", the client.
+  OnPi2();
+  MakePi2Server();
+
+  // And build the app for testing.
+  MakePi2Test();
+  aos::Fetcher<ServerStatistics> pi2_server_statistics_fetcher =
+      pi2_test_event_loop->MakeFetcher<ServerStatistics>("/pi2/aos");
+  aos::Fetcher<ClientStatistics> pi2_client_statistics_fetcher =
+      pi2_test_event_loop->MakeFetcher<ClientStatistics>("/pi2/aos");
+
+  // Wait until we are connected, then send.
+
+  StartPi1Test();
+  StartPi2Test();
+  StartPi1Server();
+  StartPi1Client();
+  StartPi2Server();
+
+  {
+    MakePi2Client();
+
+    RunPi2Client(chrono::milliseconds(3050));
+
+    // Now confirm we are synchronized.
+    EXPECT_TRUE(pi1_server_statistics_fetcher.Fetch());
+    EXPECT_TRUE(pi1_client_statistics_fetcher.Fetch());
+    EXPECT_TRUE(pi2_server_statistics_fetcher.Fetch());
+    EXPECT_TRUE(pi2_client_statistics_fetcher.Fetch());
+
+    const ServerConnection *const pi1_connection =
+        pi1_server_statistics_fetcher->connections()->Get(0);
+    const ClientConnection *const pi1_client_connection =
+        pi1_client_statistics_fetcher->connections()->Get(0);
+    const ServerConnection *const pi2_connection =
+        pi2_server_statistics_fetcher->connections()->Get(0);
+    const ClientConnection *const pi2_client_connection =
+        pi2_client_statistics_fetcher->connections()->Get(0);
+
+    // Make sure one direction is disconnected with a bunch of connection
+    // attempts and failures.
+    EXPECT_EQ(pi1_connection->state(), State::DISCONNECTED);
+    EXPECT_EQ(pi1_connection->connection_count(), 0u);
+    EXPECT_GT(pi1_connection->invalid_connection_count(), 10u);
+
+    EXPECT_EQ(pi2_client_connection->state(), State::DISCONNECTED);
+    EXPECT_GT(pi2_client_connection->connection_count(), 10u);
+
+    // And the other direction is happy.
+    EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
+    EXPECT_EQ(pi2_connection->connection_count(), 1u);
+    EXPECT_TRUE(pi2_connection->has_connected_since_time());
+    EXPECT_FALSE(pi2_connection->has_monotonic_offset());
+    EXPECT_TRUE(pi2_connection->has_boot_uuid());
+
+    EXPECT_EQ(pi1_client_connection->state(), State::CONNECTED);
+    EXPECT_EQ(pi1_client_connection->connection_count(), 1u);
+
+    VLOG(1) << aos::FlatbufferToJson(pi2_server_statistics_fetcher.get());
+    VLOG(1) << aos::FlatbufferToJson(pi1_server_statistics_fetcher.get());
+    VLOG(1) << aos::FlatbufferToJson(pi2_client_statistics_fetcher.get());
+    VLOG(1) << aos::FlatbufferToJson(pi1_client_statistics_fetcher.get());
+
+    StopPi2Client();
+  }
+
+  // Shut everyone else down
+  StopPi1Server();
+  StopPi1Client();
+  StopPi2Server();
+  StopPi1Test();
+  StopPi2Test();
 }
 
 INSTANTIATE_TEST_SUITE_P(

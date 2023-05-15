@@ -40,6 +40,7 @@ FlatbufferDetachedBuffer<ServerStatistics> MakeServerStatistics(
     connection_builder.add_connected_since_time(
         monotonic_clock::min_time.time_since_epoch().count());
     connection_builder.add_connection_count(0);
+    connection_builder.add_invalid_connection_count(0);
     connection_offsets.emplace_back(connection_builder.Finish());
   }
   flatbuffers::Offset<
@@ -231,6 +232,11 @@ void MessageBridgeServerStatus::SendStatistics() {
           connection->connection_count());
     }
 
+    if (connection->invalid_connection_count() != 0) {
+      server_connection_builder.add_invalid_connection_count(
+          connection->invalid_connection_count());
+    }
+
     // TODO(austin): If it gets stale, drop it too.
     if (!filters_[node_index].MissingSamples()) {
       server_connection_builder.add_monotonic_offset(
@@ -254,6 +260,8 @@ void MessageBridgeServerStatus::SendStatistics() {
   server_statistics_builder.add_connections(server_connections_offset);
   server_statistics_builder.add_timestamp_send_failures(
       timestamp_failure_counter_.failures());
+  server_statistics_builder.add_invalid_connection_count(
+      invalid_connection_count_);
 
   builder.CheckOk(builder.Send(server_statistics_builder.Finish()));
 }
