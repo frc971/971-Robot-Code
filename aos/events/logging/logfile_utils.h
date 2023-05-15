@@ -51,7 +51,7 @@ class DetachedBufferWriter {
   // Marker struct for one of our constructor overloads.
   struct already_out_of_space_t {};
 
-  DetachedBufferWriter(std::unique_ptr<FileHandler> file_handler,
+  DetachedBufferWriter(std::unique_ptr<LogSink> log_sink,
                        std::unique_ptr<DataEncoder> encoder);
   // Creates a dummy instance which won't even open a file. It will act as if
   // opening the file ran out of space immediately.
@@ -64,11 +64,11 @@ class DetachedBufferWriter {
   DetachedBufferWriter &operator=(DetachedBufferWriter &&other);
   DetachedBufferWriter &operator=(const DetachedBufferWriter &) = delete;
 
-  std::string_view filename() const { return file_handler_->filename(); }
+  std::string_view name() const { return log_sink_->name(); }
 
   // This will be true until Close() is called, unless the file couldn't be
   // created due to running out of space.
-  bool is_open() const { return file_handler_->is_open(); }
+  bool is_open() const { return log_sink_->is_open(); }
 
   // Queues up a finished FlatBufferBuilder to be encoded and written.
   //
@@ -106,7 +106,7 @@ class DetachedBufferWriter {
     return encoder_->total_bytes();
   }
 
-  WriteStats* WriteStatistics() const { return file_handler_->WriteStatistics(); }
+  WriteStats *WriteStatistics() const { return log_sink_->WriteStatistics(); }
 
  private:
   // Performs a single writev call with as much of the data we have queued up as
@@ -124,7 +124,7 @@ class DetachedBufferWriter {
   // the current time.  It just needs to be close.
   void FlushAtThreshold(aos::monotonic_clock::time_point now);
 
-  std::unique_ptr<FileHandler> file_handler_;
+  std::unique_ptr<LogSink> log_sink_;
   std::unique_ptr<DataEncoder> encoder_;
 
   bool ran_out_of_space_ = false;
@@ -132,17 +132,6 @@ class DetachedBufferWriter {
 
   aos::monotonic_clock::time_point last_flush_time_ =
       aos::monotonic_clock::min_time;
-};
-
-// Specialized writer to single file
-class DetachedBufferFileWriter : public FileBackend,
-                                 public DetachedBufferWriter {
- public:
-  DetachedBufferFileWriter(std::string_view filename,
-                           std::unique_ptr<DataEncoder> encoder)
-      : FileBackend("/"),
-        DetachedBufferWriter(FileBackend::RequestFile(filename),
-                             std::move(encoder)) {}
 };
 
 // Repacks the provided RemoteMessage into fbb.

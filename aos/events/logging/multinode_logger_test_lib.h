@@ -43,11 +43,14 @@ struct ConfigParams {
 struct LoggerState {
   void StartLogger(std::string logfile_base);
 
+  std::unique_ptr<MultiNodeFilesLogNamer> MakeLogNamer(
+      std::string logfile_base);
+
   std::unique_ptr<EventLoop> event_loop;
   std::unique_ptr<Logger> logger;
   const Configuration *configuration;
   const Node *node;
-  MultiNodeLogNamer *log_namer;
+  MultiNodeFilesLogNamer *log_namer;
   CompressionParams params;
 
   void AppendAllFilenames(std::vector<std::string> *filenames);

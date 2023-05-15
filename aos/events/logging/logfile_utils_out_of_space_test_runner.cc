@@ -18,8 +18,9 @@ int main(int argc, char **argv) {
   std::array<uint8_t, 10240> data;
   data.fill(0);
 
-  aos::logger::DetachedBufferFileWriter writer(
-      FLAGS_tmpfs + "/file",
+  aos::logger::FileBackend file_backend("/");
+  aos::logger::DetachedBufferWriter writer(
+      file_backend.RequestFile(FLAGS_tmpfs + "/file"),
       std::make_unique<aos::logger::DummyEncoder>(data.size()));
   for (int i = 0; i < 8; ++i) {
     aos::logger::DataEncoder::SpanCopier coppier(data);

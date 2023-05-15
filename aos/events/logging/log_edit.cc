@@ -48,12 +48,13 @@ int main(int argc, char **argv) {
     aos::logger::SpanReader span_reader(orig_path);
     CHECK(!span_reader.ReadMessage().empty()) << ": Empty header, aborting";
 
-    aos::logger::DetachedBufferFileWriter buffer_writer(
-        FLAGS_logfile,
+    aos::logger::FileBackend file_backend("/");
+    aos::logger::DetachedBufferWriter buffer_writer(
+        file_backend.RequestFile(FLAGS_logfile),
         std::make_unique<aos::logger::DummyEncoder>(FLAGS_max_message_size));
     {
-      aos::logger::DataEncoder::SpanCopier coppier(header.span());
-      buffer_writer.CopyMessage(&coppier, aos::monotonic_clock::min_time);
+      aos::logger::DataEncoder::SpanCopier copier(header.span());
+      buffer_writer.CopyMessage(&copier, aos::monotonic_clock::min_time);
     }
 
     while (true) {
@@ -63,8 +64,8 @@ int main(int argc, char **argv) {
       }
 
       {
-        aos::logger::DataEncoder::SpanCopier coppier(msg_data);
-        buffer_writer.CopyMessage(&coppier, aos::monotonic_clock::min_time);
+        aos::logger::DataEncoder::SpanCopier copier(msg_data);
+        buffer_writer.CopyMessage(&copier, aos::monotonic_clock::min_time);
       }
     }
   } else {

@@ -45,7 +45,7 @@ NewDataWriter::~NewDataWriter() {
 void NewDataWriter::Rotate() {
   // No need to rotate if nothing has been written.
   if (header_written_) {
-    VLOG(1) << "Rotated " << filename();
+    VLOG(1) << "Rotated " << name();
     ++parts_index_;
     reopen_(this);
     header_written_ = false;
@@ -77,7 +77,7 @@ void NewDataWriter::Reboot(const UUID &source_node_boot_uuid) {
 
   state_[node_index_].boot_uuid = source_node_boot_uuid;
 
-  VLOG(1) << "Rebooted " << filename();
+  VLOG(1) << "Rebooted " << name();
 }
 
 void NewDataWriter::UpdateBoot(const UUID &source_node_boot_uuid) {
@@ -101,7 +101,7 @@ void NewDataWriter::UpdateRemote(
 
   // Did the remote boot UUID change?
   if (state.boot_uuid != remote_node_boot_uuid) {
-    VLOG(1) << filename() << " Remote " << remote_node_index << " updated to "
+    VLOG(1) << name() << " Remote " << remote_node_index << " updated to "
             << remote_node_boot_uuid << " from " << state.boot_uuid;
     state.boot_uuid = remote_node_boot_uuid;
     state.oldest_remote_monotonic_timestamp = monotonic_clock::max_time;
@@ -124,7 +124,7 @@ void NewDataWriter::UpdateRemote(
   if (!reliable) {
     if (state.oldest_remote_unreliable_monotonic_timestamp >
         monotonic_remote_time) {
-      VLOG(1) << filename() << " Remote " << remote_node_index
+      VLOG(1) << name() << " Remote " << remote_node_index
               << " oldest_remote_unreliable_monotonic_timestamp updated from "
               << state.oldest_remote_unreliable_monotonic_timestamp << " to "
               << monotonic_remote_time;
@@ -136,7 +136,7 @@ void NewDataWriter::UpdateRemote(
   } else {
     if (state.oldest_remote_reliable_monotonic_timestamp >
         monotonic_remote_time) {
-      VLOG(1) << filename() << " Remote " << remote_node_index
+      VLOG(1) << name() << " Remote " << remote_node_index
               << " oldest_remote_reliable_monotonic_timestamp updated from "
               << state.oldest_remote_reliable_monotonic_timestamp << " to "
               << monotonic_remote_time;
@@ -153,7 +153,7 @@ void NewDataWriter::UpdateRemote(
     if (monotonic_event_time <
         logger_state.oldest_logger_remote_unreliable_monotonic_timestamp) {
       VLOG(1)
-          << filename() << " Remote " << node_index_
+          << name() << " Remote " << node_index_
           << " oldest_logger_remote_unreliable_monotonic_timestamp updated "
              "from "
           << logger_state.oldest_logger_remote_unreliable_monotonic_timestamp
@@ -169,7 +169,7 @@ void NewDataWriter::UpdateRemote(
 
   // Did any of the timestamps change?
   if (state.oldest_remote_monotonic_timestamp > monotonic_remote_time) {
-    VLOG(1) << filename() << " Remote " << remote_node_index
+    VLOG(1) << name() << " Remote " << remote_node_index
             << " oldest_remote_monotonic_timestamp updated from "
             << state.oldest_remote_monotonic_timestamp << " to "
             << monotonic_remote_time;
@@ -205,7 +205,7 @@ void NewDataWriter::CopyMessage(DataEncoder::Copier *coppier,
   CHECK_EQ(state_[node_index_].boot_uuid, source_node_boot_uuid);
   CHECK(writer);
   CHECK(header_written_) << ": Attempting to write message before header to "
-                         << writer->filename();
+                         << writer->name();
   writer->CopyMessage(coppier, now);
 }
 
@@ -214,7 +214,7 @@ NewDataWriter::MakeHeader() {
   const size_t logger_node_index = log_namer_->logger_node_index();
   const UUID &logger_node_boot_uuid = log_namer_->logger_node_boot_uuid();
   if (state_[logger_node_index].boot_uuid == UUID::Zero()) {
-    VLOG(1) << filename() << " Logger node is " << logger_node_index
+    VLOG(1) << name() << " Logger node is " << logger_node_index
             << " and uuid is " << logger_node_boot_uuid;
     state_[logger_node_index].boot_uuid = logger_node_boot_uuid;
   } else {
@@ -227,7 +227,7 @@ NewDataWriter::MakeHeader() {
 void NewDataWriter::QueueHeader(
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> &&header) {
   CHECK(!header_written_) << ": Attempting to write duplicate header to "
-                          << writer->filename();
+                          << writer->name();
   CHECK(header.message().has_source_node_boot_uuid());
   CHECK_EQ(state_[node_index_].boot_uuid,
            UUID::FromString(header.message().source_node_boot_uuid()));
@@ -245,7 +245,7 @@ void NewDataWriter::QueueHeader(
     reopen_(this);
   }
 
-  VLOG(1) << "Writing to " << filename() << " "
+  VLOG(1) << "Writing to " << name() << " "
           << aos::FlatbufferToJson(
                  header, {.multi_line = false, .max_vector_size = 100});
 
@@ -560,14 +560,14 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   return result;
 }
 
-MultiNodeLogNamer::MultiNodeLogNamer(
-    std::unique_ptr<RenamableFileBackend> log_backend, EventLoop *event_loop)
+MultiNodeLogNamer::MultiNodeLogNamer(std::unique_ptr<LogBackend> log_backend,
+                                     EventLoop *event_loop)
     : MultiNodeLogNamer(std::move(log_backend), event_loop->configuration(),
                         event_loop, event_loop->node()) {}
 
-MultiNodeLogNamer::MultiNodeLogNamer(
-    std::unique_ptr<RenamableFileBackend> log_backend,
-    const Configuration *configuration, EventLoop *event_loop, const Node *node)
+MultiNodeLogNamer::MultiNodeLogNamer(std::unique_ptr<LogBackend> log_backend,
+                                     const Configuration *configuration,
+                                     EventLoop *event_loop, const Node *node)
     : LogNamer(configuration, event_loop, node),
       log_backend_(std::move(log_backend)),
       encoder_factory_([](size_t max_message_size) {
@@ -714,9 +714,13 @@ NewDataWriter *MultiNodeLogNamer::MakeTimestampWriter(const Channel *channel) {
   return data_writer_.get();
 }
 
-void MultiNodeLogNamer::Close() {
+WriteCode MultiNodeLogNamer::Close() {
   data_writers_.clear();
   data_writer_.reset();
+  if (ran_out_of_space_) {
+    return WriteCode::kOutOfSpace;
+  }
+  return WriteCode::kOk;
 }
 
 void MultiNodeLogNamer::ResetStatistics() {
@@ -822,7 +826,6 @@ void MultiNodeLogNamer::CloseWriter(
     return;
   }
   DetachedBufferWriter *const writer = writer_pointer->get();
-  const bool was_open = writer->is_open();
   writer->Close();
 
   const auto *stats = writer->WriteStatistics();
@@ -839,11 +842,6 @@ void MultiNodeLogNamer::CloseWriter(
   if (writer->ran_out_of_space()) {
     ran_out_of_space_ = true;
     writer->acknowledge_out_of_space();
-  }
-
-  if (!was_open) {
-    CHECK(access(std::string(writer->filename()).c_str(), F_OK) == -1)
-        << ": File should not exist: " << writer->filename();
   }
 }
 

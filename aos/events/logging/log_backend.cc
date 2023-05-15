@@ -16,9 +16,104 @@ DEFINE_bool(
     "If true, sync data to disk as we go so we don't get too far ahead.  Also "
     "fadvise that we are done with the memory once it hits disk.");
 
+DEFINE_uint32(queue_reserve, 32, "Pre-reserved size of write queue.");
+
 namespace aos::logger {
 namespace {
 constexpr const char *kTempExtension = ".tmp";
+
+// Assuming that kSector is power of 2, it aligns address to the left size.
+inline size_t AlignToLeft(size_t value) {
+  return value & (~(FileHandler::kSector - 1));
+}
+
+inline bool IsAligned(size_t value) {
+  return value % FileHandler::kSector == 0;
+}
+
+inline bool IsAlignedStart(const absl::Span<const uint8_t> span) {
+  return (reinterpret_cast<size_t>(span.data()) % FileHandler::kSector) == 0;
+}
+
+inline bool IsAlignedLength(const absl::Span<const uint8_t> span) {
+  return (span.size() % FileHandler::kSector) == 0;
+}
+
+}  // namespace
+
+logger::QueueAligner::QueueAligner() {
+  aligned_queue_.reserve(FLAGS_queue_reserve);
+}
+
+void logger::QueueAligner::FillAlignedQueue(
+    const absl::Span<const absl::Span<const uint8_t>> &queue) {
+  aligned_queue_.clear();
+
+  for (const auto &span : queue) {
+    // Generally, every span might have 3 optional parts (i.e. 2^3 cases):
+    // 1. unaligned prefix -  from start till first aligned block.
+    // 2. aligned main - block with aligned start and size
+    // 3. unaligned suffix - block with aligned start, and size less than one
+    // sector. If size of the span is less than 1 sector, let's call it prefix.
+
+    auto *data = span.data();
+    size_t size = span.size();
+    const auto start = reinterpret_cast<size_t>(data);
+    VLOG(2) << "Consider span starting at " << std::hex << start
+            << " with size " << size;
+
+    CHECK_GT(size, 0u) << ": Nobody should be sending empty messages.";
+
+    const auto next_aligned =
+        IsAligned(start) ? start : AlignToLeft(start) + FileHandler::kSector;
+    const auto prefix_size = next_aligned - start;
+    VLOG(2) << "Calculated prefix size " << std::hex << prefix_size;
+
+    if (prefix_size >= size) {
+      // size of prefix >= size of span - alignment is not possible, accept the
+      // whole span
+      VLOG(2) << "Only prefix found";
+      CHECK_GT(size, 0u);
+      aligned_queue_.emplace_back(data, size, false);
+      continue;
+    }
+    CHECK_LT(prefix_size, FileHandler::kSector)
+        << ": Wrong calculation of 'next' aligned position";
+    if (prefix_size > 0) {
+      // Cut the prefix and move to the main part.
+      VLOG(2) << "Cutting prefix at " << std::hex << start << " of size "
+              << prefix_size;
+      aligned_queue_.emplace_back(data, prefix_size, false);
+      data += prefix_size;
+      size -= prefix_size;
+      CHECK(data <= span.data() + span.size()) << " :Boundaries after prefix";
+    }
+
+    if (IsAligned(size)) {
+      // the rest is aligned.
+      VLOG(2) << "Returning aligned main part";
+      CHECK_GT(size, 0u);
+      aligned_queue_.emplace_back(data, size, true);
+      continue;
+    }
+
+    const auto aligned_size = AlignToLeft(size);
+    CHECK(aligned_size < size) << ": Wrong calculation of 'main' size";
+    if (aligned_size > 0) {
+      VLOG(2) << "Cutting main part starting " << std::hex
+              << reinterpret_cast<size_t>(data) << " of size " << aligned_size;
+      aligned_queue_.emplace_back(data, aligned_size, true);
+
+      data += aligned_size;
+      size -= aligned_size;
+      CHECK(data <= span.data() + span.size()) << " :Boundaries after main";
+    }
+
+    VLOG(2) << "Cutting suffix part starting " << std::hex
+            << reinterpret_cast<size_t>(data) << " of size " << size;
+    CHECK_GT(size, 0u);
+    aligned_queue_.emplace_back(data, size, false);
+  }
 }
 
 FileHandler::FileHandler(std::string filename)
@@ -40,7 +135,7 @@ WriteCode FileHandler::OpenForWrite() {
     }
 
     flags_ = fcntl(fd_, F_GETFL, 0);
-    PCHECK(flags_ >= 0) << ": Failed to get flags for " << this->filename();
+    PCHECK(flags_ >= 0) << ": Failed to get flags for " << filename_;
 
     EnableDirect();
 
@@ -56,10 +151,10 @@ void FileHandler::EnableDirect() {
     // Track if we failed to set O_DIRECT.  Note: Austin hasn't seen this call
     // fail.  The write call tends to fail instead.
     if (fcntl(fd_, F_SETFL, new_flags) == -1) {
-      PLOG(WARNING) << "Failed to set O_DIRECT on " << filename();
+      PLOG(WARNING) << "Failed to set O_DIRECT on " << filename_;
       supports_odirect_ = false;
     } else {
-      VLOG(1) << "Enabled O_DIRECT on " << filename();
+      VLOG(1) << "Enabled O_DIRECT on " << filename_;
       flags_ = new_flags;
     }
   }
@@ -69,7 +164,7 @@ void FileHandler::DisableDirect() {
   if (supports_odirect_ && ODirectEnabled()) {
     flags_ = flags_ & (~O_DIRECT);
     PCHECK(fcntl(fd_, F_SETFL, flags_) != -1) << ": Failed to disable O_DIRECT";
-    VLOG(1) << "Disabled O_DIRECT on " << filename();
+    VLOG(1) << "Disabled O_DIRECT on " << filename_;
   }
 }
 
@@ -77,9 +172,9 @@ WriteResult FileHandler::Write(
     const absl::Span<const absl::Span<const uint8_t>> &queue) {
   iovec_.clear();
   CHECK_LE(queue.size(), static_cast<size_t>(IOV_MAX));
-  iovec_.resize(queue.size());
-  // Size of the data currently in iovec_.
-  size_t counted_size = 0;
+
+  queue_aligner_.FillAlignedQueue(queue);
+  CHECK_LE(queue_aligner_.aligned_queue().size(), static_cast<size_t>(IOV_MAX));
 
   // Ok, we now need to figure out if we were aligned, and if we were, how much
   // of the data we are being asked to write is aligned.
@@ -89,119 +184,47 @@ WriteResult FileHandler::Write(
   // kSector in memory, and the length being written is a multiple of kSector.
   // Some of the callers use an aligned ResizeableBuffer to generate 512 byte
   // aligned buffers for this code to find and use.
-  bool aligned = (total_write_bytes_ % kSector) == 0;
+  bool was_aligned = IsAligned(total_write_bytes_);
+  VLOG(1) << "Started " << (was_aligned ? "aligned" : "unaligned")
+          << " at offset " << total_write_bytes_ << " on " << filename();
 
-  // Index we are filling in next.  Keeps resetting back to 0 as we write
-  // intermediates.
-  size_t write_index = 0;
-  for (size_t i = 0; i < queue.size(); ++i) {
-    iovec_[write_index].iov_base = const_cast<uint8_t *>(queue[i].data());
-    iovec_[write_index].iov_len = queue[i].size();
-
-    // Make sure the address is aligned, or give up.  This should be uncommon,
-    // but is always possible.
-    if ((reinterpret_cast<size_t>(iovec_[write_index].iov_base) % kSector) !=
-        0) {
-      // Flush if we were aligned and have data.
-      if (aligned && write_index != 0) {
-        VLOG(1) << "Was aligned, now is not, writing previous data";
-        const auto code =
-            WriteV(iovec_.data(), write_index, true, counted_size);
+  // Walk through aligned queue and batch writes based on aligned flag
+  for (const auto &item : queue_aligner_.aligned_queue()) {
+    if (was_aligned != item.aligned) {
+      // Switching aligned context. Let's flush current batch.
+      if (!iovec_.empty()) {
+        // Flush current queue if we need.
+        const auto code = WriteV(iovec_, was_aligned);
         if (code == WriteCode::kOutOfSpace) {
+          // We cannot say anything about what number of messages was written
+          // for sure.
           return {
               .code = code,
-              .messages_written = i,
+              .messages_written = queue.size(),
           };
         }
-
-        // Now, everything before here has been written.  Make an iovec out of
-        // the rest and keep going.
-        write_index = 0;
-        counted_size = 0;
-
-        iovec_[write_index].iov_base = const_cast<uint8_t *>(queue[i].data());
-        iovec_[write_index].iov_len = queue[i].size();
+        iovec_.clear();
       }
-      aligned = false;
-    } else {
-      // We are now starting aligned again, and have data worth writing!  Flush
-      // what was there before.
-      if (!aligned && iovec_[write_index].iov_len >= kSector &&
-          write_index != 0) {
-        VLOG(1) << "Was not aligned, now is, writing previous data";
-
-        const auto code =
-            WriteV(iovec_.data(), write_index, false, counted_size);
-        if (code == WriteCode::kOutOfSpace) {
-          return {
-              .code = code,
-              .messages_written = i,
-          };
-        }
-
-        // Now, everything before here has been written.  Make an iovec out of
-        // the rest and keep going.
-        write_index = 0;
-        counted_size = 0;
-
-        iovec_[write_index].iov_base = const_cast<uint8_t *>(queue[i].data());
-        iovec_[write_index].iov_len = queue[i].size();
-        aligned = true;
-      }
+      // Write queue is flushed. WriteV updates the total_write_bytes_.
+      was_aligned = IsAligned(total_write_bytes_) && item.aligned;
     }
-
-    // Now, see if the length is a multiple of kSector.  The goal is to figure
-    // out if/how much memory we can write out with O_DIRECT so that only the
-    // last little bit is done with non-direct IO to keep it fast.
-    if ((iovec_[write_index].iov_len % kSector) != 0) {
-      VLOG(1) << "Unaligned length " << iovec_[write_index].iov_len << " on "
-              << filename();
-      // If we've got over a sector of data to write, write it out with O_DIRECT
-      // and then continue writing the rest unaligned.
-      if (aligned && iovec_[write_index].iov_len > kSector) {
-        const size_t aligned_size =
-            iovec_[write_index].iov_len & (~(kSector - 1));
-        VLOG(1) << "Was aligned, writing last chunk rounded from "
-                << queue[i].size() << " to " << aligned_size;
-        iovec_[write_index].iov_len = aligned_size;
-
-        const auto code =
-            WriteV(iovec_.data(), write_index + 1, true, counted_size + aligned_size);
-        if (code == WriteCode::kOutOfSpace) {
-          return {
-              .code = code,
-              .messages_written = i,
-          };
-        }
-
-        // Now, everything before here has been written.  Make an iovec out of
-        // the rest and keep going.
-        write_index = 0;
-        counted_size = 0;
-
-        iovec_[write_index].iov_base =
-            const_cast<uint8_t *>(queue[i].data() + aligned_size);
-        iovec_[write_index].iov_len = queue[i].size() - aligned_size;
-      }
-      aligned = false;
-    }
-    VLOG(1) << "Writing " << iovec_[write_index].iov_len << " to "
-            << filename();
-    counted_size += iovec_[write_index].iov_len;
-    ++write_index;
+    iovec_.push_back(
+        {.iov_base = const_cast<uint8_t *>(item.data), .iov_len = item.size});
   }
 
-  // Either write the aligned data if it is all aligned, or write the rest
-  // unaligned if we wrote aligned up above.
-  const auto code = WriteV(iovec_.data(), write_index, aligned, counted_size);
+  WriteCode result_code = WriteCode::kOk;
+  if (!iovec_.empty()) {
+    // Flush current queue if we need.
+    result_code = WriteV(iovec_, was_aligned);
+  }
   return {
-      .code = code,
+      .code = result_code,
       .messages_written = queue.size(),
   };
 }
 
-WriteCode FileHandler::WriteV(struct iovec *iovec_data, size_t iovec_size,
-                              bool aligned, size_t counted_size) {
+WriteCode FileHandler::WriteV(const std::vector<struct iovec> &iovec,
+                              bool aligned) {
   // Configure the file descriptor to match the mode we should be in.  This is
   // safe to over-call since it only does the syscall if needed.
   if (aligned) {
@@ -210,41 +233,40 @@ WriteCode FileHandler::WriteV(struct iovec *iovec_data, size_t iovec_size,
     DisableDirect();
   }
 
+  VLOG(2) << "Flushing queue of " << iovec.size() << " elements, "
+          << (aligned ? "aligned" : "unaligned");
+
+  CHECK_GT(iovec.size(), 0u);
   const auto start = aos::monotonic_clock::now();
 
-  if (VLOG_IS_ON(2)) {
-    size_t to_be_written = 0;
-    for (size_t i = 0; i < iovec_size; ++i) {
-      VLOG(2) << "  iov_base " << static_cast<void *>(iovec_data[i].iov_base)
-              << ", iov_len " << iovec_data[i].iov_len;
-      to_be_written += iovec_data[i].iov_len;
+  // Validation of alignment assumptions.
+  if (aligned) {
+    CHECK(IsAligned(total_write_bytes_))
+        << ": Failed after writing " << total_write_bytes_
+        << " to the file, attempting aligned write with unaligned start.";
+
+    for (const auto &iovec_item : iovec) {
+      absl::Span<const uint8_t> data(
+          reinterpret_cast<const uint8_t *>(iovec_item.iov_base),
+          iovec_item.iov_len);
+      VLOG(2) << "  iov_base " << static_cast<void *>(iovec_item.iov_base)
+              << ", iov_len " << iovec_item.iov_len;
+      CHECK(IsAlignedStart(data) && IsAlignedLength(data));
     }
-    CHECK_GT(to_be_written, 0u);
-    VLOG(2) << "Going to write " << to_be_written;
   }
 
-  const ssize_t written = writev(fd_, iovec_data, iovec_size);
-  VLOG(2) << "Wrote " << written << ", for iovec size " << iovec_size;
-
-  if (FLAGS_sync && written > 0) {
-    // Flush asynchronously and force the data out of the cache.
-    sync_file_range(fd_, total_write_bytes_, written, SYNC_FILE_RANGE_WRITE);
-    if (last_synced_bytes_ != 0) {
-      // Per Linus' recommendation online on how to do fast file IO, do a
-      // blocking flush of the previous write chunk, and then tell the kernel to
-      // drop the pages from the cache.  This makes sure we can't get too far
-      // ahead.
-      sync_file_range(fd_, last_synced_bytes_,
-                      total_write_bytes_ - last_synced_bytes_,
-                      SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE |
-                          SYNC_FILE_RANGE_WAIT_AFTER);
-      posix_fadvise(fd_, last_synced_bytes_,
-                    total_write_bytes_ - last_synced_bytes_,
-                    POSIX_FADV_DONTNEED);
-
-    }
-    last_synced_bytes_ = total_write_bytes_;
+  // Calculation of expected written size.
+  size_t counted_size = 0;
+  for (const auto &iovec_item : iovec) {
+    CHECK_GT(iovec_item.iov_len, 0u);
+    counted_size += iovec_item.iov_len;
   }
+
+  VLOG(2) << "Going to write " << counted_size;
+  CHECK_GT(counted_size, 0u);
+
+  const ssize_t written = writev(fd_, iovec.data(), iovec.size());
+  VLOG(2) << "Wrote " << written << ", for iovec size " << iovec.size();
 
   const auto end = aos::monotonic_clock::now();
   if (written == -1 && errno == ENOSPC) {
@@ -259,8 +281,30 @@ WriteCode FileHandler::WriteV(struct iovec *iovec_data, size_t iovec_size,
     return WriteCode::kOutOfSpace;
   }
 
+  if (FLAGS_sync) {
+    // Flush asynchronously and force the data out of the cache.
+    sync_file_range(fd_, total_write_bytes_, written, SYNC_FILE_RANGE_WRITE);
+    if (last_synced_bytes_ != 0) {
+      // Per Linus' recommendation online on how to do fast file IO, do a
+      // blocking flush of the previous write chunk, and then tell the kernel to
+      // drop the pages from the cache.  This makes sure we can't get too far
+      // ahead.
+      sync_file_range(fd_, last_synced_bytes_,
+                      total_write_bytes_ - last_synced_bytes_,
+                      SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE |
+                          SYNC_FILE_RANGE_WAIT_AFTER);
+      posix_fadvise(fd_, last_synced_bytes_,
+                    total_write_bytes_ - last_synced_bytes_,
+                    POSIX_FADV_DONTNEED);
+    }
+    last_synced_bytes_ = total_write_bytes_;
+  }
+
   total_write_bytes_ += written;
-  write_stats_.UpdateStats(end - start, written, iovec_size);
+  if (aligned) {
+    written_aligned_ += written;
+  }
+  WriteStatistics()->UpdateStats(end - start, written, iovec.size());
   return WriteCode::kOk;
 }
 
@@ -284,7 +328,7 @@ WriteCode FileHandler::Close() {
 FileBackend::FileBackend(std::string_view base_name)
     : base_name_(base_name), separator_(base_name_.back() == '/' ? "" : "_") {}
 
-std::unique_ptr<FileHandler> FileBackend::RequestFile(std::string_view id) {
+std::unique_ptr<LogSink> FileBackend::RequestFile(std::string_view id) {
   const std::string filename = absl::StrCat(base_name_, separator_, id);
   return std::make_unique<FileHandler>(filename);
 }
@@ -292,7 +336,7 @@ std::unique_ptr<FileHandler> FileBackend::RequestFile(std::string_view id) {
 RenamableFileBackend::RenamableFileBackend(std::string_view base_name)
     : base_name_(base_name), separator_(base_name_.back() == '/' ? "" : "_") {}
 
-std::unique_ptr<FileHandler> RenamableFileBackend::RequestFile(
+std::unique_ptr<LogSink> RenamableFileBackend::RequestFile(
     std::string_view id) {
   const std::string filename =
       absl::StrCat(base_name_, separator_, id, temp_suffix_);
@@ -408,4 +452,5 @@ WriteCode RenamableFileBackend::RenamableFileHandler::Close() {
   }
   return WriteCode::kOk;
 }
+
 }  // namespace aos::logger

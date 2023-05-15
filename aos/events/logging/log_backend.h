@@ -77,6 +77,71 @@ struct WriteResult {
   size_t messages_written = 0;
 };
 
+// Interface that abstract writing to log from media.
+class LogSink {
+ public:
+  LogSink() = default;
+  virtual ~LogSink() = default;
+
+  LogSink(const LogSink &) = delete;
+  LogSink &operator=(const LogSink &) = delete;
+
+  // Try to open file. App will crash if there are other than out-of-space
+  // problems with backend media.
+  virtual WriteCode OpenForWrite() = 0;
+
+  // Close the file handler.
+  virtual WriteCode Close() = 0;
+
+  // Returns true if sink is open and need to be closed.
+  virtual bool is_open() const = 0;
+
+  // Peeks messages from queue and writes it to file. Returns code when
+  // out-of-space problem occurred along with number of messages from queue that
+  // was written.
+  virtual WriteResult Write(
+      const absl::Span<const absl::Span<const uint8_t>> &queue) = 0;
+
+  // Get access to statistics related to the write operations.
+  WriteStats *WriteStatistics() { return &write_stats_; }
+
+  // Name of the log sink.
+  virtual std::string_view name() const = 0;
+
+ private:
+  WriteStats write_stats_;
+};
+
+// Source for iovec with an additional flag that pointer and size of data is
+// aligned and be ready for O_DIRECT operation.
+struct AlignedIovec {
+  const uint8_t *data;
+  size_t size;
+  bool aligned;
+
+  AlignedIovec(const uint8_t *data, size_t size, bool aligned)
+      : data(data), size(size), aligned(aligned) {}
+};
+
+// Converts queue of pieces to write to the disk to the queue where every
+// element is either aligned for O_DIRECT operation or marked as not aligned.
+class QueueAligner {
+ public:
+  QueueAligner();
+
+  // Reads input queue and fills with aligned and unaligned pieces. It is easy
+  // to deal with smaller pieces and batch it during the write operation.
+  void FillAlignedQueue(
+      const absl::Span<const absl::Span<const uint8_t>> &queue);
+
+  const std::vector<AlignedIovec> &aligned_queue() const {
+    return aligned_queue_;
+  }
+
+ private:
+  std::vector<AlignedIovec> aligned_queue_;
+};
+
 // FileHandler is a replacement for bare filename in log writing and reading
 // operations.
 //
@@ -94,30 +159,28 @@ struct WriteResult {
 //  4) Not all filesystems support O_DIRECT, and different sizes may be optimal
 //     for different machines.  The defaults should work decently anywhere and
 //     be tunable for faster systems.
-// TODO (Alexei): need 2 variations, to support systems with and without
-// O_DIRECT
-class FileHandler {
+class FileHandler : public LogSink {
  public:
   // Size of an aligned sector used to detect when the data is aligned enough to
   // use O_DIRECT instead.
   static constexpr size_t kSector = 512u;
 
   explicit FileHandler(std::string filename);
-  virtual ~FileHandler();
+  ~FileHandler() override;
 
   FileHandler(const FileHandler &) = delete;
   FileHandler &operator=(const FileHandler &) = delete;
 
   // Try to open file. App will crash if there are other than out-of-space
   // problems with backend media.
-  virtual WriteCode OpenForWrite();
+  WriteCode OpenForWrite() override;
 
   // Close the file handler.
-  virtual WriteCode Close();
+  WriteCode Close() override;
 
   // This will be true until Close() is called, unless the file couldn't be
   // created due to running out of space.
-  bool is_open() const { return fd_ != -1; }
+  bool is_open() const override { return fd_ != -1; }
 
   // Peeks messages from queue and writes it to file. Returns code when
   // out-of-space problem occurred along with number of messages from queue that
@@ -127,17 +190,18 @@ class FileHandler {
   // write faster if the spans passed in start at aligned addresses, and are
   // multiples of kSector long (and the data written so far is also a multiple
   // of kSector length).
-  virtual WriteResult Write(
-      const absl::Span<const absl::Span<const uint8_t>> &queue);
+  WriteResult Write(
+      const absl::Span<const absl::Span<const uint8_t>> &queue) override;
 
-  // TODO (Alexei): it is rather leaked abstraction.
-  // Path to the concrete log file.
+  // Name of the log sink mostly for informational purposes.
+  std::string_view name() const override { return filename_; }
+
+  // Number of bytes written in aligned mode. It is mostly for testing.
+  size_t written_aligned() const { return written_aligned_; }
+
+ protected:
+  // This is used by subclasses who need to access filename.
   std::string_view filename() const { return filename_; }
-
-  int fd() const { return fd_; }
-
-  // Get access to statistics related to the write operations.
-  WriteStats *WriteStatistics() { return &write_stats_; }
 
  private:
   // Enables O_DIRECT on the open file if it is supported.  Cheap to call if it
@@ -149,11 +213,9 @@ class FileHandler {
 
   bool ODirectEnabled() const { return !!(flags_ & O_DIRECT); }
 
-  // Writes a chunk of iovecs.  aligned is true if all the data is kSector byte
-  // aligned and multiples of it in length, and counted_size is the sum of the
-  // sizes of all the chunks of data.
-  WriteCode WriteV(struct iovec *iovec_data, size_t iovec_size, bool aligned,
-                   size_t counted_size);
+  // Writes a chunk of iovecs. aligned is true if all the data is kSector byte
+  // aligned and multiples of it in length.
+  WriteCode WriteV(const std::vector<struct iovec> &iovec, bool aligned);
 
   const std::string filename_;
 
@@ -163,13 +225,15 @@ class FileHandler {
   // churn.
   std::vector<struct iovec> iovec_;
 
+  QueueAligner queue_aligner_;
+
   int total_write_bytes_ = 0;
   int last_synced_bytes_ = 0;
 
+  size_t written_aligned_ = 0;
+
   bool supports_odirect_ = true;
   int flags_ = 0;
-
-  WriteStats write_stats_;
 };
 
 // Class that decouples log writing and media (file system or memory). It is
@@ -181,7 +245,7 @@ class LogBackend {
   // Request file-like object from the log backend. It maybe a file on a disk or
   // in memory. id is usually generated by log namer and looks like name of the
   // file within a log folder.
-  virtual std::unique_ptr<FileHandler> RequestFile(std::string_view id) = 0;
+  virtual std::unique_ptr<LogSink> RequestFile(std::string_view id) = 0;
 };
 
 // Implements requests log files from file system.
@@ -192,7 +256,7 @@ class FileBackend : public LogBackend {
   ~FileBackend() override = default;
 
   // Request file from a file system. It is not open yet.
-  std::unique_ptr<FileHandler> RequestFile(std::string_view id) override;
+  std::unique_ptr<LogSink> RequestFile(std::string_view id) override;
 
  private:
   const std::string base_name_;
@@ -210,7 +274,7 @@ class RenamableFileBackend : public LogBackend {
         : FileHandler(std::move(filename)), owner_(owner) {}
     ~RenamableFileHandler() final = default;
 
-    // Returns false if not enough memory, true otherwise.
+    // Closes and if needed renames file.
     WriteCode Close() final;
 
    private:
@@ -221,11 +285,11 @@ class RenamableFileBackend : public LogBackend {
   ~RenamableFileBackend() = default;
 
   // Request file from a file system. It is not open yet.
-  std::unique_ptr<FileHandler> RequestFile(std::string_view id) override;
+  std::unique_ptr<LogSink> RequestFile(std::string_view id) override;
 
   // TODO (Alexei): it is called by Logger, and left here for compatibility.
   // Logger should not call it.
-  std::string_view base_name() { return base_name_; }
+  std::string_view base_name() const { return base_name_; }
 
   // If temp files are enabled, then this will write files with the .tmp
   // suffix, and then rename them to the desired name after they are fully

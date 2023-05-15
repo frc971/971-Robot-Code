@@ -1276,6 +1276,21 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
         //       .oldest_remote_unreliable_monotonic_timestamp=9223372036.854775807sec,
         //       .oldest_local_unreliable_monotonic_timestamp=9223372036.854775807sec
         //      }
+        //  4) One reliable, one unreliable, local times don't match. 1 < 2
+        //     same message got sent, and with reliable timestamps, we don't
+        //     know how long it took to cross the network.
+        //      {
+        //       .oldest_remote_reliable_monotonic_timestamp=9223372036.854775807sec,
+        //       .oldest_local_reliable_monotonic_timestamp=9223372036.854775807sec
+        //       .oldest_remote_unreliable_monotonic_timestamp=10.122999611sec,
+        //       .oldest_local_unreliable_monotonic_timestamp=9.400951024sec,
+        //      }
+        //      {
+        //       .oldest_remote_reliable_monotonic_timestamp=11.798054208sec,
+        //       .oldest_local_reliable_monotonic_timestamp=23457.772660691sec,
+        //       .oldest_remote_unreliable_monotonic_timestamp=9223372036.854775807sec,
+        //       .oldest_local_unreliable_monotonic_timestamp=9223372036.854775807sec
+        //      }
         //
         //  Writing all this out for which timestamps we have out of all 32
         //  combinations, and which cases each of the correspond to:
@@ -1286,10 +1301,10 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
         //  {  }, {ru} no match -> fail, won't be in the list
         //  { u}, {  } no match -> fail, won't be in the list
         //  { u}, { u} no match -> 1
-        //  { u}, {r } no match -> fail
+        //  { u}, {r } no match -> 4
         //  { u}, {ru} no match -> 1
         //  {r }, {  } no match -> fail, won't be in the list
-        //  {r }, { u} no match -> fail
+        //  {r }, { u} no match -> 4
         //  {r }, {r } no match -> 2
         //  {r }, {ru} no match -> 2
         //  {ru}, {  } no match -> fail, won't be in the list
@@ -1353,11 +1368,13 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
                       aos::monotonic_clock::max_time;
 
               if (both_unreliable) {
+                VLOG(1) << "Both Unreliable";
                 return std::get<1>(a)
                            .oldest_local_unreliable_monotonic_timestamp <
                        std::get<1>(b)
                            .oldest_local_unreliable_monotonic_timestamp;
               } else if (both_reliable) {
+                VLOG(1) << "Both Reliable";
                 CHECK_NE(
                     std::get<1>(a).oldest_local_reliable_monotonic_timestamp,
                     std::get<1>(b).oldest_local_reliable_monotonic_timestamp)
@@ -1367,6 +1384,42 @@ std::map<std::string, NodeBootState> PartsSorter::ComputeNewBootConstraints() {
                 return std::get<1>(a)
                            .oldest_local_reliable_monotonic_timestamp <
                        std::get<1>(b).oldest_local_reliable_monotonic_timestamp;
+
+              } else if (std::get<1>(a)
+                                 .oldest_local_reliable_monotonic_timestamp !=
+                             aos::monotonic_clock::max_time &&
+                         std::get<1>(b)
+                                 .oldest_local_unreliable_monotonic_timestamp !=
+                             aos::monotonic_clock::max_time) {
+                VLOG(1)
+                    << " Comparing Reliable  "
+                    << std::get<1>(a).oldest_local_reliable_monotonic_timestamp;
+                VLOG(1) << "   Versus Uneliable  "
+                        << std::get<1>(b)
+                               .oldest_local_unreliable_monotonic_timestamp;
+
+                return std::get<1>(a)
+                           .oldest_local_reliable_monotonic_timestamp <
+                       std::get<1>(b)
+                           .oldest_local_unreliable_monotonic_timestamp;
+
+              } else if (std::get<1>(a)
+                                 .oldest_local_unreliable_monotonic_timestamp !=
+                             aos::monotonic_clock::max_time &&
+                         std::get<1>(b)
+                                 .oldest_local_reliable_monotonic_timestamp !=
+                             aos::monotonic_clock::max_time) {
+                VLOG(1) << " Comparing Unreliable  "
+                        << std::get<1>(a)
+                               .oldest_local_unreliable_monotonic_timestamp;
+                VLOG(1)
+                    << "   Versus Reliable     "
+                    << std::get<1>(b).oldest_local_reliable_monotonic_timestamp;
+
+                return std::get<1>(a)
+                           .oldest_local_unreliable_monotonic_timestamp <
+                       std::get<1>(b).oldest_local_reliable_monotonic_timestamp;
+
               } else {
                 LOG(FATAL) << "Broken logic, unable to compare timestamps "
                            << std::get<1>(a) << ", " << std::get<1>(b);

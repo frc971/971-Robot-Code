@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/multinode_logger_test_lib.h"
 #include "aos/events/message_counter.h"
@@ -1814,8 +1816,16 @@ TEST_P(MultinodeLoggerTest, LoggerRenameFolder) {
   logfile_base1_ = tmp_dir_ + "/new-good/multi_logfile1";
   logfile_base2_ = tmp_dir_ + "/new-good/multi_logfile2";
   logfiles_ = MakeLogFiles(logfile_base1_, logfile_base2_);
-  ASSERT_TRUE(pi1_logger.logger->RenameLogBase(logfile_base1_));
-  ASSERT_TRUE(pi2_logger.logger->RenameLogBase(logfile_base2_));
+
+  // Sequence of set_base_name and Rotate simulates rename operation. Since
+  // rename is not supported by all namers, RenameLogBase moved from logger to
+  // the higher level abstraction, yet log_namers support rename, and it is
+  // legal to test it here.
+  pi1_logger.log_namer->set_base_name(logfile_base1_);
+  pi1_logger.logger->Rotate();
+  pi2_logger.log_namer->set_base_name(logfile_base2_);
+  pi2_logger.logger->Rotate();
+
   for (auto &file : logfiles_) {
     struct stat s;
     EXPECT_EQ(0, stat(file.c_str(), &s));
@@ -1834,7 +1844,7 @@ TEST_P(MultinodeLoggerDeathTest, LoggerRenameFile) {
   StartLogger(&pi1_logger);
   event_loop_factory_.RunFor(chrono::milliseconds(10000));
   logfile_base1_ = tmp_dir_ + "/new-renamefile/new_multi_logfile1";
-  EXPECT_DEATH({ pi1_logger.logger->RenameLogBase(logfile_base1_); },
+  EXPECT_DEATH({ pi1_logger.log_namer->set_base_name(logfile_base1_); },
                "Rename of file base from");
 }
 
@@ -3593,6 +3603,146 @@ TEST(MissingDirectionTest, OneDirectionAfterRebootReliable) {
   ConfirmReadable(filenames);
 }
 
+// Tests that we properly handle only one direction ever existing after a reboot
+// with mixed unreliable vs reliable, where reliable has an earlier timestamp
+// than unreliable.
+TEST(MissingDirectionTest, OneDirectionAfterRebootMixedCase1) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ArtifactPath(
+          "aos/events/logging/multinode_pingpong_split4_mixed1_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+  const size_t pi1_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi1->node());
+  NodeEventLoopFactory *const pi2 =
+      event_loop_factory.GetNodeEventLoopFactory("pi2");
+  const size_t pi2_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi2->node());
+  std::vector<std::string> filenames;
+
+  {
+    CHECK_EQ(pi1_index, 0u);
+    CHECK_EQ(pi2_index, 1u);
+
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch(),
+        {BootTimestamp::epoch(), BootTimestamp::epoch()});
+
+    const chrono::nanoseconds reboot_time = chrono::milliseconds(5000);
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch() + reboot_time,
+        {BootTimestamp{.boot = 1, .time = monotonic_clock::epoch()},
+         BootTimestamp::epoch() + reboot_time});
+  }
+
+  const std::string kLogfile2_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+  util::UnlinkRecursive(kLogfile2_1);
+
+  // The following sequence using the above reference config creates
+  // a reliable message timestamp < unreliable message timestamp.
+  {
+    pi1->DisableStatistics();
+    pi2->DisableStatistics();
+
+    event_loop_factory.RunFor(chrono::milliseconds(95));
+
+    pi1->AlwaysStart<Ping>("ping");
+
+    event_loop_factory.RunFor(chrono::milliseconds(5250));
+
+    pi1->EnableStatistics();
+
+    event_loop_factory.RunFor(chrono::milliseconds(1000));
+
+    LoggerState pi2_logger = MakeLoggerState(
+        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+
+    pi2_logger.StartLogger(kLogfile2_1);
+
+    event_loop_factory.RunFor(chrono::milliseconds(5000));
+    pi2_logger.AppendAllFilenames(&filenames);
+  }
+
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  ConfirmReadable(filenames);
+}
+
+// Tests that we properly handle only one direction ever existing after a reboot
+// with mixed unreliable vs reliable, where unreliable has an earlier timestamp
+// than reliable.
+TEST(MissingDirectionTest, OneDirectionAfterRebootMixedCase2) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ArtifactPath(
+          "aos/events/logging/multinode_pingpong_split4_mixed2_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+  const size_t pi1_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi1->node());
+  NodeEventLoopFactory *const pi2 =
+      event_loop_factory.GetNodeEventLoopFactory("pi2");
+  const size_t pi2_index = configuration::GetNodeIndex(
+      event_loop_factory.configuration(), pi2->node());
+  std::vector<std::string> filenames;
+
+  {
+    CHECK_EQ(pi1_index, 0u);
+    CHECK_EQ(pi2_index, 1u);
+
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch(),
+        {BootTimestamp::epoch(), BootTimestamp::epoch()});
+
+    const chrono::nanoseconds reboot_time = chrono::milliseconds(5000);
+    time_converter.AddNextTimestamp(
+        distributed_clock::epoch() + reboot_time,
+        {BootTimestamp{.boot = 1, .time = monotonic_clock::epoch()},
+         BootTimestamp::epoch() + reboot_time});
+  }
+
+  const std::string kLogfile2_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+  util::UnlinkRecursive(kLogfile2_1);
+
+  // The following sequence using the above reference config creates
+  // an unreliable message timestamp < reliable message timestamp.
+  {
+    pi1->DisableStatistics();
+    pi2->DisableStatistics();
+
+    event_loop_factory.RunFor(chrono::milliseconds(95));
+
+    pi1->AlwaysStart<Ping>("ping");
+
+    event_loop_factory.RunFor(chrono::milliseconds(5250));
+
+    pi1->EnableStatistics();
+
+    event_loop_factory.RunFor(chrono::milliseconds(1000));
+
+    LoggerState pi2_logger = MakeLoggerState(
+        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+
+    pi2_logger.StartLogger(kLogfile2_1);
+
+    event_loop_factory.RunFor(chrono::milliseconds(5000));
+    pi2_logger.AppendAllFilenames(&filenames);
+  }
+
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  ConfirmReadable(filenames);
+}
+
 // Tests that we properly handle what used to be a time violation in one
 // direction.  This can occur when one direction goes down after sending some
 // data, but the other keeps working.  The down direction ends up resolving to a
@@ -3800,6 +3950,52 @@ TEST(MultinodeLoggerLoopTest, Loop) {
   // Make sure we can read this.
   const std::vector<LogFile> sorted_parts = SortParts(filenames);
   auto result = ConfirmReadable(filenames);
+}
+
+// Tests that RestartLogging works in the simple case.  Unfortunately, the
+// failure cases involve simulating time elapsing in callbacks, which is really
+// hard.  The best we can reasonably do is make sure 2 back to back logs are
+// parseable together.
+TEST_P(MultinodeLoggerTest, RestartLogging) {
+  time_converter_.AddMonotonic(
+      {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
+  std::vector<std::string> filenames;
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger, logfile_base1_);
+    aos::monotonic_clock::time_point last_rotation_time =
+        pi1_logger.event_loop->monotonic_now();
+    pi1_logger.logger->set_on_logged_period([&] {
+      const auto now = pi1_logger.event_loop->monotonic_now();
+      if (now > last_rotation_time + std::chrono::seconds(5)) {
+        pi1_logger.AppendAllFilenames(&filenames);
+        std::unique_ptr<MultiNodeFilesLogNamer> namer =
+            pi1_logger.MakeLogNamer(logfile_base2_);
+        pi1_logger.log_namer = namer.get();
+
+        pi1_logger.logger->RestartLogging(std::move(namer));
+        last_rotation_time = now;
+      }
+    });
+
+    event_loop_factory_.RunFor(chrono::milliseconds(7000));
+
+    pi1_logger.AppendAllFilenames(&filenames);
+  }
+
+  for (const auto &x : filenames) {
+    LOG(INFO) << x;
+  }
+
+  EXPECT_GE(filenames.size(), 2u);
+
+  ConfirmReadable(filenames);
+
+  // TODO(austin): It would be good to confirm that any one time messages end up
+  // in both logs correctly.
 }
 
 }  // namespace testing
