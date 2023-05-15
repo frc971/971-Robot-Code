@@ -115,7 +115,15 @@ class SctpReadWrite {
     }
   }
 
+  // Returns a message returned from ReadMessage back to the pool.
+  void FreeMessage(aos::unique_c_ptr<Message> &&message);
+
+  // Allocates messages for the pool.  SetMaxSize must be set first.
+  void SetPoolSize(size_t pool_size);
+
  private:
+  aos::unique_c_ptr<Message> AcquireMessage();
+
   void CloseSocket();
   void DoSetMaxSize();
 
@@ -131,6 +139,9 @@ class SctpReadWrite {
   size_t max_size_ = 1000;
 
   std::vector<aos::unique_c_ptr<Message>> partial_messages_;
+
+  bool use_pool_ = false;
+  std::vector<aos::unique_c_ptr<Message>> free_messages_;
 };
 
 // Returns the max network buffer available for reading for a socket.

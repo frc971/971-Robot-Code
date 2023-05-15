@@ -334,12 +334,23 @@ bool SctpReadWrite::SendMessage(
   return true;
 }
 
-// We read each fragment into a fresh Message, because most of them won't be
-// fragmented. If we do end up with a fragment, then we copy the data out of it.
-aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
-  CHECK(fd_ != -1);
+void SctpReadWrite::FreeMessage(aos::unique_c_ptr<Message> &&message) {
+  if (use_pool_) {
+    free_messages_.emplace_back(std::move(message));
+  }
+}
 
-  while (true) {
+void SctpReadWrite::SetPoolSize(size_t pool_size) {
+  CHECK(!use_pool_);
+  free_messages_.reserve(pool_size);
+  for (size_t i = 0; i < pool_size; ++i) {
+    free_messages_.emplace_back(AcquireMessage());
+  }
+  use_pool_ = true;
+}
+
+aos::unique_c_ptr<Message> SctpReadWrite::AcquireMessage() {
+  if (!use_pool_) {
     constexpr size_t kMessageAlign = alignof(Message);
     const size_t max_message_size =
         ((sizeof(Message) + max_size_ + 1 + (kMessageAlign - 1)) /
@@ -347,6 +358,22 @@ aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
         kMessageAlign;
     aos::unique_c_ptr<Message> result(reinterpret_cast<Message *>(
         aligned_alloc(kMessageAlign, max_message_size)));
+    return result;
+  } else {
+    CHECK_GT(free_messages_.size(), 0u);
+    aos::unique_c_ptr<Message> result = std::move(free_messages_.back());
+    free_messages_.pop_back();
+    return result;
+  }
+}
+
+// We read each fragment into a fresh Message, because most of them won't be
+// fragmented. If we do end up with a fragment, then we copy the data out of it.
+aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
+  CHECK(fd_ != -1);
+
+  while (true) {
+    aos::unique_c_ptr<Message> result = AcquireMessage();
 
     struct msghdr inmessage;
     memset(&inmessage, 0, sizeof(struct msghdr));

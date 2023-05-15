@@ -277,6 +277,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   // Start out with a decent size big enough to hold timestamps.
   size_t max_size = 204;
 
+  size_t destination_nodes = 0u;
   // Seed up all the per-node connection state.
   // We are making the assumption here that every connection is bidirectional
   // (data is being sent both ways).  This is pretty safe because we are
@@ -284,6 +285,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   for (std::string_view destination_node_name :
        configuration::DestinationNodeNames(event_loop->configuration(),
                                            event_loop->node())) {
+    ++destination_nodes;
     // Find the largest connection message so we can size our buffers big enough
     // to receive a connection message.  The connect message comes from the
     // client to the server, so swap the node arguments.
@@ -389,6 +391,16 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   // Buffer up the max size a bit so everything fits nicely.
   LOG(INFO) << "Max message size for all clients is " << max_size;
   server_.SetMaxSize(max_size);
+
+  // Since we are doing interleaving mode 1, we will see at most 1 message being
+  // delivered at a time for an association.  That means, if a message is
+  // started to be delivered, all the following parts will be from the same
+  // message in the same stream.  The server can have at most 1 association per
+  // client active, and can then (reasonably) have 1 new client connecting
+  // trying to talk.  And 2 messages per association (one partially filled one,
+  // and 1 new one with more of the data).
+  server_.SetPoolSize((destination_nodes + 1) * 2);
+
   reconnected_.reserve(max_channels());
 }
 
@@ -466,6 +478,7 @@ void MessageBridgeServer::MessageReceived() {
   } else if (message->message_type == Message::kMessage) {
     HandleData(message.get());
   }
+  server_.FreeMessage(std::move(message));
 }
 
 void MessageBridgeServer::MaybeIncrementInvalidConnectionCount(

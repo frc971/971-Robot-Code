@@ -30,6 +30,11 @@ class SctpServer {
   // Receives the next packet from the remote.
   aos::unique_c_ptr<Message> Read() { return sctp_.ReadMessage(); }
 
+  // Frees the message returned by Read();
+  void FreeMessage(aos::unique_c_ptr<Message> &&message) {
+    sctp_.FreeMessage(std::move(message));
+  }
+
   // Sends a block of data to a client on a stream with a TTL.  Returns true on
   // success.
   bool Send(std::string_view data, sctp_assoc_t snd_assoc_id, int stream,
@@ -53,6 +58,8 @@ class SctpServer {
                          uint16_t priority);
 
   void SetMaxSize(size_t max_size) { sctp_.SetMaxSize(max_size); }
+
+  void SetPoolSize(size_t pool_size) { sctp_.SetPoolSize(pool_size); }
 
  private:
   struct sockaddr_storage sockaddr_local_;
