@@ -1845,21 +1845,12 @@ std::string MessageSorter::DebugString() const {
   return ss.str();
 }
 
-PartsMerger::PartsMerger(std::vector<LogParts> parts) {
-  CHECK_GE(parts.size(), 1u);
-  // Enforce that we are sorting things only from a single node from a single
-  // boot.
-  const std::string_view part0_node = parts[0].node;
-  const std::string_view part0_source_boot_uuid = parts[0].source_boot_uuid;
-  for (size_t i = 1; i < parts.size(); ++i) {
-    CHECK_EQ(part0_node, parts[i].node) << ": Can't merge different nodes.";
-    CHECK_EQ(part0_source_boot_uuid, parts[i].source_boot_uuid)
-        << ": Can't merge different boots.";
-  }
+PartsMerger::PartsMerger(std::string_view node_name, size_t boot_count,
+                         const LogFilesContainer &log_files) {
+  const auto parts = log_files.SelectParts(node_name, boot_count);
+  node_ = configuration::GetNodeIndex(parts.config(), node_name);
 
-  node_ = configuration::GetNodeIndex(parts[0].config.get(), part0_node);
-
-  for (LogParts &part : parts) {
+  for (LogParts part : parts) {
     message_sorters_.emplace_back(std::move(part));
   }
 
@@ -1977,26 +1968,14 @@ void PartsMerger::PopFront() {
   current_ = nullptr;
 }
 
-BootMerger::BootMerger(std::vector<LogParts> files) {
-  std::vector<std::vector<LogParts>> boots;
-
-  // Now, we need to split things out by boot.
-  for (size_t i = 0; i < files.size(); ++i) {
-    const size_t boot_count = files[i].boot_count;
-    if (boot_count + 1 > boots.size()) {
-      boots.resize(boot_count + 1);
-    }
-    boots[boot_count].emplace_back(std::move(files[i]));
-  }
-
-  parts_mergers_.reserve(boots.size());
-  for (size_t i = 0; i < boots.size(); ++i) {
+BootMerger::BootMerger(std::string_view node_name,
+                       const LogFilesContainer &log_files) {
+  size_t number_of_boots = log_files.BootsForNode(node_name);
+  parts_mergers_.reserve(number_of_boots);
+  for (size_t i = 0; i < number_of_boots; ++i) {
     VLOG(2) << "Boot " << i;
-    for (auto &p : boots[i]) {
-      VLOG(2) << "Part " << p;
-    }
     parts_mergers_.emplace_back(
-        std::make_unique<PartsMerger>(std::move(boots[i])));
+        std::make_unique<PartsMerger>(node_name, i, log_files));
   }
 }
 
@@ -2030,8 +2009,9 @@ std::vector<const LogParts *> BootMerger::Parts() const {
   return results;
 }
 
-TimestampMapper::TimestampMapper(std::vector<LogParts> parts)
-    : boot_merger_(std::move(parts)),
+TimestampMapper::TimestampMapper(std::string_view node_name,
+                                 const LogFilesContainer &log_files)
+    : boot_merger_(node_name, log_files),
       timestamp_callback_([](TimestampedMessage *) {}) {
   for (const LogParts *part : boot_merger_.Parts()) {
     if (!configuration_) {
@@ -2041,7 +2021,7 @@ TimestampMapper::TimestampMapper(std::vector<LogParts> parts)
     }
   }
   const Configuration *config = configuration_.get();
-  // Only fill out nodes_data_ if there are nodes.  Otherwise everything gets
+  // Only fill out nodes_data_ if there are nodes. Otherwise, everything is
   // pretty simple.
   if (configuration::MultiNode(config)) {
     nodes_data_.resize(config->nodes()->size());

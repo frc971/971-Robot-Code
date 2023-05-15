@@ -9,6 +9,8 @@
 #include <vector>
 
 #include "flatbuffers/flatbuffers.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
 
 #include "aos/condition.h"
 #include "aos/events/event_loop.h"
@@ -100,6 +102,9 @@ class LogReader {
             const Configuration *replay_configuration = nullptr,
             const ReplayChannels *replay_channels = nullptr);
   LogReader(std::vector<LogFile> log_files,
+            const Configuration *replay_configuration = nullptr,
+            const ReplayChannels *replay_channels = nullptr);
+  LogReader(LogFilesContainer log_files,
             const Configuration *replay_configuration = nullptr,
             const ReplayChannels *replay_channels = nullptr);
   ~LogReader();
@@ -334,10 +339,7 @@ class LogReader {
     return event_loop_factory_;
   }
 
-  std::string_view name() const { return log_files_[0].name; }
-  std::string_view log_event_uuid() const {
-    return log_files_[0].log_event_uuid;
-  }
+  std::string_view name() const { return log_files_.name(); }
 
   // Set whether to exit the SimulatedEventLoopFactory when we finish reading
   // the logfile.
@@ -420,7 +422,7 @@ class LogReader {
   // entire event loop once all nodes are stopped.
   void NoticeRealtimeEnd();
 
-  const std::vector<LogFile> log_files_;
+  const LogFilesContainer log_files_;
 
   // Class to manage sending RemoteMessages on the provided node after the
   // correct delay.

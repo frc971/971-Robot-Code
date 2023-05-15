@@ -4,6 +4,9 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "aos/configuration.h"
@@ -137,15 +140,6 @@ std::vector<LogFile> SortParts(const std::vector<std::string> &parts);
 // Sort parts of a single log.
 std::vector<LogFile> SortParts(const LogSource &log_source);
 
-// Finds all the nodes which have parts logged from their point of view.
-std::vector<std::string> FindNodes(const std::vector<LogFile> &parts);
-// Finds all the parts which are from the point of view of a single node.
-std::vector<LogParts> FilterPartsForNode(const std::vector<LogFile> &parts,
-                                         std::string_view node);
-
-// Finds all the nodes on which the loggers which generated these log files ran.
-std::vector<std::string> FindLoggerNodes(const std::vector<LogFile> &parts);
-
 // Recursively searches the file/folder for .bfbs and .bfbs.xz files and adds
 // them to the vector.
 void FindLogs(std::vector<std::string> *files, std::string filename);
@@ -156,6 +150,186 @@ std::vector<std::string> FindLogs(std::string filename);
 
 // Recursively searches for logfiles in argv[1] and onward.
 std::vector<std::string> FindLogs(int argc, char **argv);
+
+// Validates that collection of log files or log parts shares the same configs.
+template <typename TCollection>
+bool CheckMatchingConfigs(const TCollection &items) {
+  const Configuration *config = nullptr;
+  for (const auto &item : items) {
+    VLOG(1) << item;
+    if (config == nullptr) {
+      config = item.config.get();
+    } else {
+      if (config != item.config.get()) {
+        LOG(ERROR) << ": Config mismatched: " << config << " vs. "
+                   << item.config.get();
+        return false;
+      }
+    }
+  }
+  if (config == nullptr) {
+    LOG(ERROR) << ": No configs are found";
+    return false;
+  }
+  return true;
+}
+
+// Collection of log parts that associated with pair: node and boot.
+class SelectedLogParts {
+ public:
+  SelectedLogParts(std::optional<const LogSource *> log_source,
+                   std::string_view node_name, size_t boot_count,
+                   std::vector<LogParts> log_parts)
+      : log_source_(log_source),
+        node_name_(node_name),
+        boot_count_(boot_count),
+        log_parts_(std::move(log_parts)) {
+    CHECK_GT(log_parts_.size(), 0u) << ": Nothing was selected for node "
+                                    << node_name << " boot " << boot_count;
+    configs_matched_ = CheckMatchingConfigs(log_parts_);
+
+    // Enforce that we are sorting things only from a single node from a single
+    // boot.
+    const std::string_view part0_source_boot_uuid =
+        log_parts_.front().source_boot_uuid;
+    for (const auto &part : log_parts_) {
+      CHECK_EQ(node_name_, part.node) << ": Can't merge different nodes.";
+      CHECK_EQ(part0_source_boot_uuid, part.source_boot_uuid)
+          << ": Can't merge different boots.";
+      CHECK_EQ(boot_count_, part.boot_count);
+    }
+  }
+
+  // Use items in fancy loops.
+  auto begin() { return log_parts_.begin(); }
+  auto end() { return log_parts_.end(); }
+  auto cbegin() const { return log_parts_.cbegin(); }
+  auto cend() const { return log_parts_.cend(); }
+  auto begin() const { return log_parts_.begin(); }
+  auto end() const { return log_parts_.end(); }
+
+  const Configuration *config() const {
+    // TODO (Alexei): it is a first usage of assumption that all parts have
+    // matching configs. Should it be strong requirement and validated in the
+    // constructor?
+    CHECK(configs_matched_);
+    return log_parts_.front().config.get();
+  }
+
+  const std::string &node_name() const { return node_name_; }
+
+  // Number of boots found in the log parts.
+  size_t boot_count() const { return boot_count_; }
+
+ private:
+  std::optional<const LogSource *> log_source_;
+  std::string node_name_;
+  size_t boot_count_;
+  std::vector<LogParts> log_parts_;
+
+  // Indicates that all parts shared the same config.
+  bool configs_matched_;
+};
+
+// Container that keeps a sorted list of log files and provides functions that
+// commonly used during log reading.
+class LogFilesContainer {
+ public:
+  // Initializes log file container with the list of sorted files (results of
+  // SortParts).
+  explicit LogFilesContainer(std::vector<LogFile> log_files)
+      : LogFilesContainer(std::nullopt, std::move(log_files)) {}
+
+  // Sorts and initializes log container with files from an abstract log source.
+  explicit LogFilesContainer(const LogSource *log_source)
+      : LogFilesContainer(log_source, SortParts(*log_source)) {}
+
+  // Returns true when at least on of the log files associated with node.
+  bool ContainsPartsForNode(std::string_view node_name) const {
+    // TODO (Alexei): Implement
+    // https://en.cppreference.com/w/cpp/container/unordered_map/find with C++20
+    return nodes_boots_.count(std::string(node_name)) > 0;
+  }
+
+  // Returns numbers of reboots found in log files associated with the node.
+  size_t BootsForNode(std::string_view node_name) const {
+    const auto &node_item = nodes_boots_.find(std::string(node_name));
+    CHECK(node_item != nodes_boots_.end())
+        << ": Missing parts associated with node " << node_name;
+    CHECK_GT(node_item->second, 0u) << ": No boots for node " << node_name;
+    return node_item->second;
+  }
+
+  // Get only log parts that associated with node and boot number.
+  SelectedLogParts SelectParts(std::string_view node_name,
+                               size_t boot_count) const {
+    std::vector<LogParts> result;
+    for (const LogFile &log_file : log_files_) {
+      for (const LogParts &part : log_file.parts) {
+        if (part.node == node_name && part.boot_count == boot_count) {
+          result.emplace_back(part);
+        }
+      }
+    }
+    return SelectedLogParts(log_source_, node_name, boot_count, result);
+  }
+
+  // It provides access to boots of the first element. I'm not sure why...
+  const auto &front_boots() const { return log_files_.front().boots; }
+
+  // Access the configuration shared with all log files in the container.
+  const Configuration *config() const {
+    // TODO (Alexei): it is a first usage of assumption that all parts have
+    // matching configs. Should it be strong requirement and validated in the
+    // constructor?
+    CHECK(configs_matched_);
+    return log_files_.front().config.get();
+  }
+
+  // List of logger nodes for given set of log files.
+  const auto &logger_nodes() const { return logger_nodes_; }
+
+  // TODO (Alexei): it is not clear what it represents for multiple log events.
+  // Review its usage.
+  std::string_view name() const { return log_files_[0].name; }
+
+ private:
+  LogFilesContainer(std::optional<const LogSource *> log_source,
+                    std::vector<LogFile> log_files)
+      : log_source_(log_source), log_files_(std::move(log_files)) {
+    CHECK_GT(log_files_.size(), 0u);
+
+    std::unordered_set<std::string> logger_nodes;
+
+    // Scan and collect all related nodes and number of reboots per node.
+    for (const LogFile &log_file : log_files_) {
+      for (const LogParts &part : log_file.parts) {
+        auto node_item = nodes_boots_.find(part.node);
+        if (node_item != nodes_boots_.end()) {
+          node_item->second = std::max(node_item->second, part.boot_count + 1);
+        } else {
+          nodes_boots_[part.node] = part.boot_count + 1;
+        }
+      }
+      logger_nodes.insert(log_file.logger_node);
+    }
+    while (!logger_nodes.empty()) {
+      logger_nodes_.emplace_back(
+          logger_nodes.extract(logger_nodes.begin()).value());
+    }
+    configs_matched_ = CheckMatchingConfigs(log_files_);
+  }
+
+  std::optional<const LogSource *> log_source_;
+  std::vector<LogFile> log_files_;
+
+  // Keeps information about nodes and number of reboots per node.
+  std::unordered_map<std::string, size_t> nodes_boots_;
+  std::vector<std::string> logger_nodes_;
+
+  // Indicates that all parts shared the same config.
+  bool configs_matched_;
+};
 
 }  // namespace logger
 }  // namespace aos

@@ -1998,45 +1998,6 @@ std::vector<LogFile> SortParts(const LogSource &log_source) {
   return sorter.SortParts();
 }
 
-std::vector<std::string> FindNodes(const std::vector<LogFile> &parts) {
-  std::set<std::string> nodes;
-  for (const LogFile &log_file : parts) {
-    for (const LogParts &part : log_file.parts) {
-      nodes.insert(part.node);
-    }
-  }
-  std::vector<std::string> node_list;
-  while (!nodes.empty()) {
-    node_list.emplace_back(std::move(nodes.extract(nodes.begin()).value()));
-  }
-  return node_list;
-}
-
-std::vector<std::string> FindLoggerNodes(const std::vector<LogFile> &parts) {
-  std::set<std::string> nodes;
-  for (const LogFile &log_file : parts) {
-    nodes.insert(log_file.logger_node);
-  }
-  std::vector<std::string> node_list;
-  while (!nodes.empty()) {
-    node_list.emplace_back(nodes.extract(nodes.begin()).value());
-  }
-  return node_list;
-}
-
-std::vector<LogParts> FilterPartsForNode(const std::vector<LogFile> &parts,
-                                         std::string_view node) {
-  std::vector<LogParts> result;
-  for (const LogFile &log_file : parts) {
-    for (const LogParts &part : log_file.parts) {
-      if (part.node == node) {
-        result.emplace_back(part);
-      }
-    }
-  }
-  return result;
-}
-
 std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
   stream << "{\n";
   if (!file.log_event_uuid.empty()) {

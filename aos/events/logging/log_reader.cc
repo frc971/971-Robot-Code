@@ -238,10 +238,16 @@ class EventNotifier {
 LogReader::LogReader(std::string_view filename,
                      const Configuration *replay_configuration,
                      const ReplayChannels *replay_channels)
-    : LogReader(SortParts({std::string(filename)}), replay_configuration,
-                replay_channels) {}
+    : LogReader(LogFilesContainer(SortParts({std::string(filename)})),
+                replay_configuration, replay_channels) {}
 
 LogReader::LogReader(std::vector<LogFile> log_files,
+                     const Configuration *replay_configuration,
+                     const ReplayChannels *replay_channels)
+    : LogReader(LogFilesContainer(std::move(log_files)), replay_configuration,
+                replay_channels) {}
+
+LogReader::LogReader(LogFilesContainer log_files,
                      const Configuration *replay_configuration,
                      const ReplayChannels *replay_channels)
     : log_files_(std::move(log_files)),
@@ -250,21 +256,10 @@ LogReader::LogReader(std::vector<LogFile> log_files,
   SetStartTime(FLAGS_start_time);
   SetEndTime(FLAGS_end_time);
 
-  CHECK_GT(log_files_.size(), 0u);
   {
-    // Validate that we have the same config everwhere.  This will be true if
-    // all the parts were sorted together and the configs match.
-    const Configuration *config = nullptr;
-    for (const LogFile &log_file : log_files_) {
-      if (log_file.config.get() == nullptr) {
-        LOG(FATAL) << "Couldn't find a config in " << log_file;
-      }
-      if (config == nullptr) {
-        config = log_file.config.get();
-      } else {
-        CHECK_EQ(config, log_file.config.get());
-      }
-    }
+    // Log files container validates that log files shared the same config.
+    const Configuration *config = log_files_.config();
+    CHECK_NOTNULL(config);
   }
 
   if (replay_channels_ != nullptr) {
@@ -398,7 +393,7 @@ LogReader::~LogReader() {
 }
 
 const Configuration *LogReader::logged_configuration() const {
-  return log_files_[0].config.get();
+  return log_files_.config();
 }
 
 const Configuration *LogReader::configuration() const {
@@ -603,25 +598,23 @@ void LogReader::RegisterWithoutStarting(
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
           event_loop_factory_->configuration(), logged_configuration(),
-          log_files_[0].boots, FLAGS_skip_order_validation,
+          log_files_.front_boots(), FLAGS_skip_order_validation,
           chrono::duration_cast<chrono::nanoseconds>(
               chrono::duration<double>(FLAGS_time_estimation_buffer_seconds)));
 
   std::vector<TimestampMapper *> timestamp_mappers;
   for (const Node *node : configuration::GetNodes(configuration())) {
-    const size_t node_index =
-        configuration::GetNodeIndex(configuration(), node);
-    std::vector<LogParts> filtered_parts = FilterPartsForNode(
-        log_files_, node != nullptr ? node->name()->string_view() : "");
+    size_t node_index = configuration::GetNodeIndex(configuration(), node);
+    std::string_view node_name = MaybeNodeName(node);
 
     // We don't run with threading on the buffering for simulated event loops
     // because we haven't attempted to validate how the interactions beteen the
     // buffering and the timestamp mapper works when running multiple nodes
     // concurrently.
     states_[node_index] = std::make_unique<State>(
-        filtered_parts.size() == 0u
+        !log_files_.ContainsPartsForNode(node_name)
             ? nullptr
-            : std::make_unique<TimestampMapper>(std::move(filtered_parts)),
+            : std::make_unique<TimestampMapper>(node_name, log_files_),
         filters_.get(), std::bind(&LogReader::NoticeRealtimeEnd, this), node,
         State::ThreadedBuffering::kNo, MaybeMakeReplayChannelIndices(node),
         before_send_callbacks_);
@@ -792,21 +785,20 @@ void LogReader::Register(EventLoop *event_loop) {
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
           event_loop->configuration(), logged_configuration(),
-          log_files_[0].boots, FLAGS_skip_order_validation,
+          log_files_.front_boots(), FLAGS_skip_order_validation,
           chrono::duration_cast<chrono::nanoseconds>(
               chrono::duration<double>(FLAGS_time_estimation_buffer_seconds)));
 
   std::vector<TimestampMapper *> timestamp_mappers;
   for (const Node *node : configuration::GetNodes(configuration())) {
+    auto node_name = MaybeNodeName(node);
     const size_t node_index =
         configuration::GetNodeIndex(configuration(), node);
-    std::vector<LogParts> filtered_parts = FilterPartsForNode(
-        log_files_, node != nullptr ? node->name()->string_view() : "");
 
     states_[node_index] = std::make_unique<State>(
-        filtered_parts.size() == 0u
+        !log_files_.ContainsPartsForNode(node_name)
             ? nullptr
-            : std::make_unique<TimestampMapper>(std::move(filtered_parts)),
+            : std::make_unique<TimestampMapper>(node_name, log_files_),
         filters_.get(), std::bind(&LogReader::NoticeRealtimeEnd, this), node,
         State::ThreadedBuffering::kYes, MaybeMakeReplayChannelIndices(node),
         before_send_callbacks_);
@@ -1115,8 +1107,8 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
           // case and tell the user what is happening so they can either update
           // their config to log the channel or can find a log with the data.
           const std::vector<std::string> logger_nodes =
-              FindLoggerNodes(log_files_);
-          if (logger_nodes.size()) {
+              log_files_.logger_nodes();
+          if (!logger_nodes.empty()) {
             // We have old logs which don't have the logger nodes logged.  In
             // that case, we can't be helpful :(
             bool data_logged = false;

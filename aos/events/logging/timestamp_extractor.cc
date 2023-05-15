@@ -17,30 +17,10 @@ namespace aos::logger {
 
 namespace chrono = std::chrono;
 
-std::string LogFileVectorToString(std::vector<logger::LogFile> log_files) {
-  std::stringstream ss;
-  for (const auto &f : log_files) {
-    ss << f << "\n";
-  }
-  return ss.str();
-}
-
 int Main(int argc, char **argv) {
   const std::vector<std::string> unsorted_logfiles = FindLogs(argc, argv);
-  const std::vector<LogFile> log_files = SortParts(unsorted_logfiles);
-
-  CHECK_GT(log_files.size(), 0u);
-  // Validate that we have the same config everwhere.  This will be true if
-  // all the parts were sorted together and the configs match.
-  const Configuration *config = nullptr;
-  for (const LogFile &log_file : log_files) {
-    VLOG(1) << log_file;
-    if (config == nullptr) {
-      config = log_file.config.get();
-    } else {
-      CHECK_EQ(config, log_file.config.get());
-    }
-  }
+  const LogFilesContainer log_files(SortParts(unsorted_logfiles));
+  const Configuration *config = log_files.config();
 
   CHECK(configuration::MultiNode(config))
       << ": Timestamps only make sense in a multi-node world.";
@@ -49,15 +29,13 @@ int Main(int argc, char **argv) {
   std::vector<std::unique_ptr<TimestampMapper>> mappers;
 
   for (const Node *node : configuration::GetNodes(config)) {
-    std::vector<LogParts> filtered_parts =
-        FilterPartsForNode(log_files, node->name()->string_view());
-
+    auto node_name = MaybeNodeName(node);
     // Confirm that all the parts are from the same boot if there are enough
     // parts to not be from the same boot.
-    if (!filtered_parts.empty()) {
+    if (!log_files.ContainsPartsForNode(node_name)) {
       // Filter the parts relevant to each node when building the mapper.
       mappers.emplace_back(
-          std::make_unique<TimestampMapper>(std::move(filtered_parts)));
+          std::make_unique<TimestampMapper>(node_name, log_files));
     } else {
       mappers.emplace_back(nullptr);
     }
@@ -65,7 +43,7 @@ int Main(int argc, char **argv) {
 
   // Now, build up the estimator used to solve for time.
   message_bridge::MultiNodeNoncausalOffsetEstimator multinode_estimator(
-      config, config, log_files[0].boots, FLAGS_skip_order_validation,
+      config, config, log_files.front_boots(), FLAGS_skip_order_validation,
       chrono::seconds(0));
   multinode_estimator.set_reboot_found(
       [config](distributed_clock::time_point reboot_time,

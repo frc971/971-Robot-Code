@@ -592,7 +592,8 @@ class MessageSorter {
 // boot.
 class PartsMerger {
  public:
-  PartsMerger(std::vector<LogParts> parts);
+  PartsMerger(std::string_view node_name, size_t boot_count,
+              const LogFilesContainer &log_files);
 
   // Copying and moving will mess up the internal raw pointers.  Just don't do
   // it.
@@ -657,7 +658,7 @@ class PartsMerger {
 // stream.
 class BootMerger {
  public:
-  BootMerger(std::vector<LogParts> file);
+  BootMerger(std::string_view node_name, const LogFilesContainer &log_files);
 
   // Copying and moving will mess up the internal raw pointers.  Just don't do
   // it.
@@ -716,7 +717,8 @@ class BootMerger {
 // notifying when new data is queued as well as queueing until a point in time.
 class TimestampMapper {
  public:
-  TimestampMapper(std::vector<LogParts> file);
+  TimestampMapper(std::string_view node_name,
+                  const LogFilesContainer &log_files);
 
   // Copying and moving will mess up the internal raw pointers.  Just don't do
   // it.
