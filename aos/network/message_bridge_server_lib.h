@@ -68,7 +68,7 @@ class ChannelState {
   // This will potentially grow to the number of associations as we find reconnects.
   int NodeDisconnected(sctp_assoc_t assoc_id);
   int NodeConnected(const Node *node, sctp_assoc_t assoc_id, int stream,
-                    SctpServer *server,
+                    SctpServer *server, FixedAllocator *allocator,
                     aos::monotonic_clock::time_point monotonic_now,
                     std::vector<sctp_assoc_t> *reconnected);
 
@@ -83,10 +83,12 @@ class ChannelState {
   bool Matches(const Channel *other_channel);
 
   // Sends the data in context using the provided server.
-  void SendData(SctpServer *server, const Context &context);
+  void SendData(SctpServer *server, FixedAllocator *allocator,
+                const Context &context);
 
   // Packs a context into a size prefixed message header for transmission.
-  flatbuffers::FlatBufferBuilder PackContext(const Context &context);
+  flatbuffers::FlatBufferBuilder PackContext(FixedAllocator *allocator,
+                                             const Context &context);
 
   // Handles reception of delivery times.
   void HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t ssn,
@@ -109,6 +111,10 @@ class ChannelState {
 // node.  It handles the session and dispatches data to the ChannelState.
 class MessageBridgeServer {
  public:
+  // Size to reserve when building the RemoteData message for the header over
+  // the data size.
+  static constexpr size_t kRemoteDataHeaderMaxSize = 208u;
+
   MessageBridgeServer(aos::ShmEventLoop *event_loop, std::string config_sha256);
 
   ~MessageBridgeServer() { event_loop_->epoll()->DeleteFd(server_.fd()); }
@@ -152,11 +158,13 @@ class MessageBridgeServer {
   // null.
   std::vector<std::unique_ptr<ChannelState>> channels_;
 
-  std::string config_sha256_;
+  const std::string config_sha256_;
 
   // List of assoc_id's that have been found already when connecting.  This is a
   // member variable so the memory is allocated in the constructor.
   std::vector<sctp_assoc_t> reconnected_;
+
+  FixedAllocator allocator_;
 };
 
 }  // namespace message_bridge

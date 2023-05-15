@@ -27,8 +27,10 @@ bool ChannelState::Matches(const Channel *other_channel) {
 }
 
 flatbuffers::FlatBufferBuilder ChannelState::PackContext(
-    const Context &context) {
-  flatbuffers::FlatBufferBuilder fbb(channel_->max_size() + 100);
+    FixedAllocator *allocator, const Context &context) {
+  flatbuffers::FlatBufferBuilder fbb(
+      channel_->max_size() + MessageBridgeServer::kRemoteDataHeaderMaxSize,
+      allocator);
   fbb.ForceDefaults(true);
   VLOG(2) << "Found " << peers_.size() << " peers on channel "
           << channel_->name()->string_view() << " "
@@ -58,10 +60,11 @@ flatbuffers::FlatBufferBuilder ChannelState::PackContext(
   return fbb;
 }
 
-void ChannelState::SendData(SctpServer *server, const Context &context) {
+void ChannelState::SendData(SctpServer *server, FixedAllocator *allocator,
+                            const Context &context) {
   // TODO(austin): I don't like allocating this buffer when we are just freeing
   // it at the end of the function.
-  flatbuffers::FlatBufferBuilder fbb = PackContext(context);
+  flatbuffers::FlatBufferBuilder fbb = PackContext(allocator, context);
 
   // TODO(austin): Track which connections need to be reliable and handle
   // resending properly.
@@ -193,6 +196,7 @@ int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
 
 int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
                                 int stream, SctpServer *server,
+                                FixedAllocator *allocator,
                                 aos::monotonic_clock::time_point monotonic_now,
                                 std::vector<sctp_assoc_t> *reconnected) {
   VLOG(1) << "Channel " << channel_->name()->string_view() << " "
@@ -210,14 +214,18 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
                      peer.sac_assoc_id) == reconnected->end())) {
         reconnected->push_back(peer.sac_assoc_id);
         if (peer.sac_assoc_id == assoc_id) {
-          LOG_EVERY_T(WARNING, 0.025)
-              << "Node " << node->name()->string_view() << " reconnecting on "
-              << assoc_id << " with the same ID, something got lost";
+          if (VLOG_IS_ON(1)) {
+            LOG_EVERY_T(WARNING, 0.025)
+                << "Node " << node->name()->string_view() << " reconnecting on "
+                << assoc_id << " with the same ID, something got lost";
+          }
         } else {
-          LOG_EVERY_T(WARNING, 0.025)
-              << "Node " << node->name()->string_view() << " "
-              << " already connected on " << peer.sac_assoc_id
-              << " aborting old connection and switching to " << assoc_id;
+          if (VLOG_IS_ON(1)) {
+            LOG_EVERY_T(WARNING, 0.025)
+                << "Node " << node->name()->string_view() << " "
+                << " already connected on " << peer.sac_assoc_id
+                << " aborting old connection and switching to " << assoc_id;
+          }
           server->Abort(peer.sac_assoc_id);
         }
       }
@@ -236,10 +244,8 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
                 << (last_message_fetcher_->context().data != nullptr);
         if (last_message_fetcher_->context().data != nullptr) {
           // SendData sends to all...  Only send to the new one.
-          // TODO(austin): I don't like allocating this buffer when we are just
-          // freeing it at the end of the function.
           flatbuffers::FlatBufferBuilder fbb =
-              PackContext(last_message_fetcher_->context());
+              PackContext(allocator, last_message_fetcher_->context());
 
           if (server->Send(std::string_view(reinterpret_cast<const char *>(
                                                 fbb.GetBufferPointer()),
@@ -268,9 +274,11 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
               event_loop->node()->port()),
       server_status_(event_loop,
                      [this](const Context &context) {
-                       timestamp_state_->SendData(&server_, context);
+                       timestamp_state_->SendData(&server_, &allocator_,
+                                                  context);
                      }),
-      config_sha256_(std::move(config_sha256)) {
+      config_sha256_(std::move(config_sha256)),
+      allocator_(0) {
   CHECK_EQ(config_sha256_.size(), 64u) << ": Wrong length sha256sum";
   CHECK(event_loop_->node() != nullptr) << ": No nodes configured.";
 
@@ -309,6 +317,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   LOG(INFO) << "Hostname: " << event_loop_->node()->hostname()->string_view();
 
   int channel_index = 0;
+  size_t max_channel_size = 0u;
   const Channel *const timestamp_channel = configuration::GetChannel(
       event_loop_->configuration(), "/aos", Timestamp::GetFullyQualifiedName(),
       event_loop_->name(), event_loop_->node());
@@ -330,6 +339,10 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
           any_reliable = true;
         }
       }
+
+      max_channel_size =
+          std::max(static_cast<size_t>(channel->max_size()), max_channel_size);
+
       std::unique_ptr<ChannelState> state(new ChannelState{
           channel, channel_index,
           any_reliable ? event_loop_->MakeRawFetcher(channel) : nullptr});
@@ -363,7 +376,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
         event_loop_->MakeRawWatcher(
             channel, [this, state_ptr](const Context &context,
                                        const void * /*message*/) {
-              state_ptr->SendData(&server_, context);
+              state_ptr->SendData(&server_, &allocator_, context);
             });
       } else {
         for (const Connection *connection : *channel->destination_nodes()) {
@@ -400,6 +413,8 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   // trying to talk.  And 2 messages per association (one partially filled one,
   // and 1 new one with more of the data).
   server_.SetPoolSize((destination_nodes + 1) * 2);
+
+  allocator_ = FixedAllocator(max_channel_size + kRemoteDataHeaderMaxSize);
 
   reconnected_.reserve(max_channels());
 }
@@ -518,8 +533,10 @@ void MessageBridgeServer::HandleData(const Message *message) {
     {
       flatbuffers::Verifier verifier(message->data(), message->size);
       if (!connect->Verify(verifier)) {
-        LOG_EVERY_T(WARNING, 1.0)
-            << "Failed to verify message, disconnecting client";
+        if (VLOG_IS_ON(1)) {
+          LOG_EVERY_T(WARNING, 1.0)
+              << "Failed to verify message, disconnecting client";
+        }
         server_.Abort(message->header.rcvinfo.rcv_assoc_id);
 
         MaybeIncrementInvalidConnectionCount(nullptr);
@@ -529,8 +546,9 @@ void MessageBridgeServer::HandleData(const Message *message) {
     VLOG(1) << FlatbufferToJson(connect);
 
     if (!connect->has_config_sha256()) {
-      LOG_EVERY_T(WARNING, 1.0)
-          << "Client missing config_sha256, disconnecting client";
+      if (VLOG_IS_ON(1)) {
+        LOG(WARNING) << "Client missing config_sha256, disconnecting client";
+      }
       server_.Abort(message->header.rcvinfo.rcv_assoc_id);
 
       MaybeIncrementInvalidConnectionCount(connect->node());
@@ -538,10 +556,12 @@ void MessageBridgeServer::HandleData(const Message *message) {
     }
 
     if (connect->config_sha256()->string_view() != config_sha256_) {
-      LOG_EVERY_T(WARNING, 1.0) << "Client config sha256 of "
-                                << connect->config_sha256()->string_view()
-                                << " doesn't match our config sha256 of "
-                                << config_sha256_ << ", disconnecting client";
+      if (VLOG_IS_ON(1)) {
+        LOG(WARNING) << "Client config sha256 of "
+                     << connect->config_sha256()->string_view()
+                     << " doesn't match our config sha256 of " << config_sha256_
+                     << ", disconnecting client";
+      }
       server_.Abort(message->header.rcvinfo.rcv_assoc_id);
 
       MaybeIncrementInvalidConnectionCount(connect->node());
@@ -550,8 +570,10 @@ void MessageBridgeServer::HandleData(const Message *message) {
 
     if (connect->channels_to_transfer()->size() >
         static_cast<size_t>(max_channels())) {
-      LOG_EVERY_T(WARNING, 1.0)
-          << "Client has more channels than we do, disconnecting client";
+      if (VLOG_IS_ON(1)) {
+        LOG(WARNING)
+            << "Client has more channels than we do, disconnecting client";
+      }
       server_.Abort(message->header.rcvinfo.rcv_assoc_id);
 
       MaybeIncrementInvalidConnectionCount(connect->node());
@@ -579,7 +601,8 @@ void MessageBridgeServer::HandleData(const Message *message) {
         if (channel_state->Matches(channel)) {
           node_index = channel_state->NodeConnected(
               connect->node(), message->header.rcvinfo.rcv_assoc_id,
-              channel_index, &server_, monotonic_now, &reconnected_);
+              channel_index, &server_, &allocator_, monotonic_now,
+              &reconnected_);
           CHECK_NE(node_index, -1)
               << ": Failed to find node "
               << aos::FlatbufferToJson(connect->node()) << " for connection "
@@ -589,8 +612,14 @@ void MessageBridgeServer::HandleData(const Message *message) {
         }
       }
       if (!matched) {
-        LOG(ERROR) << "Remote tried registering for unknown channel "
-                   << FlatbufferToJson(channel);
+        if (VLOG_IS_ON(1)) {
+          LOG(ERROR) << "Remote tried registering for unknown channel "
+                     << FlatbufferToJson(channel);
+        }
+        server_.Abort(message->header.rcvinfo.rcv_assoc_id);
+
+        MaybeIncrementInvalidConnectionCount(connect->node());
+        return;
       }
       ++channel_index;
     }
@@ -629,11 +658,13 @@ void MessageBridgeServer::HandleData(const Message *message) {
       message->LogRcvInfo();
     }
   } else {
-    message->LogRcvInfo();
-    // TODO(sarah.newman): add some versioning concept such that if this was a
-    // fatal error, we would never get here.
-    LOG_FIRST_N(ERROR, 20) << "Unexpected stream id "
-                           << message->header.rcvinfo.rcv_sid;
+    // We should never see the client sending us something on the wrong stream.
+    // Just explode...  In theory, this could let a client DOS us, but we trust
+    // the client.
+    if (VLOG_IS_ON(2)) {
+      message->LogRcvInfo();
+    }
+    LOG(FATAL) << "Unexpected stream id " << message->header.rcvinfo.rcv_sid;
   }
 }
 

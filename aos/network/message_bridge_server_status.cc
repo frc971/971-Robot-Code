@@ -88,6 +88,7 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
       send_data_(send_data) {
   server_connection_offsets_.reserve(
       statistics_.message().connections()->size());
+  client_offsets_.reserve(statistics_.message().connections()->size());
 
   filters_.resize(event_loop->configuration()->nodes()->size());
   partial_deliveries_.resize(event_loop->configuration()->nodes()->size());
@@ -290,7 +291,7 @@ void MessageBridgeServerStatus::Tick() {
 
   if (client_statistics_fetcher_.get()) {
     // Build up the list of client offsets.
-    std::vector<flatbuffers::Offset<ClientOffset>> client_offsets;
+    client_offsets_.clear();
 
     // Iterate through the connections this node has made.
     for (const ClientConnection *connection :
@@ -377,10 +378,10 @@ void MessageBridgeServerStatus::Tick() {
       client_offset_builder.add_node(node_offset);
       client_offset_builder.add_monotonic_offset(
           connection->monotonic_offset());
-      client_offsets.emplace_back(client_offset_builder.Finish());
+      client_offsets_.emplace_back(client_offset_builder.Finish());
     }
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<ClientOffset>>>
-        offsets_offset = fbb->CreateVector(client_offsets);
+        offsets_offset = fbb->CreateVector(client_offsets_);
 
     Timestamp::Builder builder(*fbb);
     builder.add_offsets(offsets_offset);

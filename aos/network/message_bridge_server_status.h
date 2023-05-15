@@ -68,7 +68,7 @@ class MessageBridgeServerStatus {
   ServerConnection *FindServerConnection(std::string_view node_name);
   ServerConnection *FindServerConnection(const Node *node);
 
-  std::vector<ServerConnection *> server_connection() {
+  const std::vector<ServerConnection *> &server_connection() {
     return server_connection_;
   }
 
@@ -132,6 +132,8 @@ class MessageBridgeServerStatus {
   std::vector<uint32_t> partial_deliveries_;
 
   size_t invalid_connection_count_ = 0u;
+
+  std::vector<flatbuffers::Offset<ClientOffset>> client_offsets_;
 };
 
 }  // namespace message_bridge
