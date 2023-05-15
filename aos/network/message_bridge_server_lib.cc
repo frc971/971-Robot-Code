@@ -389,6 +389,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   // Buffer up the max size a bit so everything fits nicely.
   LOG(INFO) << "Max message size for all clients is " << max_size;
   server_.SetMaxSize(max_size);
+  reconnected_.reserve(max_channels());
 }
 
 void MessageBridgeServer::NodeConnected(sctp_assoc_t assoc_id) {
@@ -555,8 +556,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
     // number of messages is overwhelming right now at first boot. This also
     // should mean that we only send a single abort per association change,
     // which is more correct behavior.
-    std::vector<sctp_assoc_t> reconnected;
-    reconnected.reserve(connect->channels_to_transfer()->size());
+    reconnected_.clear();
     for (const Channel *channel : *connect->channels_to_transfer()) {
       bool matched = false;
       for (std::unique_ptr<ChannelState> &channel_state : channels_) {
@@ -566,7 +566,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
         if (channel_state->Matches(channel)) {
           node_index = channel_state->NodeConnected(
               connect->node(), message->header.rcvinfo.rcv_assoc_id,
-              channel_index, &server_, monotonic_now, &reconnected);
+              channel_index, &server_, monotonic_now, &reconnected_);
           CHECK_NE(node_index, -1);
           matched = true;
           break;

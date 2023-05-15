@@ -153,6 +153,10 @@ class MessageBridgeServer {
   std::vector<std::unique_ptr<ChannelState>> channels_;
 
   std::string config_sha256_;
+
+  // List of assoc_id's that have been found already when connecting.  This is a
+  // member variable so the memory is allocated in the constructor.
+  std::vector<sctp_assoc_t> reconnected_;
 };
 
 }  // namespace message_bridge
