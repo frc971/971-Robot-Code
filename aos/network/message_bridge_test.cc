@@ -1366,7 +1366,8 @@ TEST_P(MessageBridgeParameterizedTest, MismatchedSha256) {
   // We are faking the application names by passing in --application_name=foo
   OnPi1();
 
-  MakePi1Server("dummy sha256");
+  MakePi1Server(
+      "dummy sha256                                                    ");
   MakePi1Client();
 
   // And build the app for testing.

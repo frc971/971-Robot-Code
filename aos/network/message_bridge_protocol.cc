@@ -34,11 +34,16 @@ aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
         if (connection->name()->string_view() == node_name &&
             channel->source_node()->string_view() == remote_name) {
           // Remove the schema to save some space on the wire.
-          aos::FlatbufferDetachedBuffer<Channel> cleaned_channel =
-              RecursiveCopyFlatBuffer<Channel>(channel);
-          cleaned_channel.mutable_message()->clear_schema();
-          channel_offsets.emplace_back(
-              CopyFlatBuffer<Channel>(&cleaned_channel.message(), &fbb));
+          flatbuffers::Offset<flatbuffers::String> name_offset =
+              fbb.CreateSharedString(channel->name()->string_view());
+          flatbuffers::Offset<flatbuffers::String> type_offset =
+              fbb.CreateSharedString(channel->type()->string_view());
+
+          // We only really care about name, type, and max size.
+          Channel::Builder channel_builder(fbb);
+          channel_builder.add_name(name_offset);
+          channel_builder.add_type(type_offset);
+          channel_offsets.emplace_back(channel_builder.Finish());
         }
       }
     }

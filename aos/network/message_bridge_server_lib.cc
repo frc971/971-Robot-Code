@@ -13,18 +13,17 @@
 #include "aos/network/sctp_server.h"
 #include "aos/network/timestamp_channel.h"
 #include "glog/logging.h"
+#include "glog/raw_logging.h"
 
 namespace aos {
 namespace message_bridge {
 namespace chrono = std::chrono;
 
 bool ChannelState::Matches(const Channel *other_channel) {
-  // Confirm the normal tuple, plus make sure that the other side isn't going to
-  // send more data over than we expect with a mismatching size.
-  return (
-      channel_->name()->string_view() == other_channel->name()->string_view() &&
-      channel_->type()->string_view() == other_channel->type()->string_view() &&
-      channel_->max_size() == other_channel->max_size());
+  return channel_->name()->string_view() ==
+             other_channel->name()->string_view() &&
+         channel_->type()->string_view() ==
+             other_channel->type()->string_view();
 }
 
 flatbuffers::FlatBufferBuilder ChannelState::PackContext(
@@ -272,9 +271,11 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
                        timestamp_state_->SendData(&server_, context);
                      }),
       config_sha256_(std::move(config_sha256)) {
+  CHECK_EQ(config_sha256_.size(), 64u) << ": Wrong length sha256sum";
   CHECK(event_loop_->node() != nullptr) << ": No nodes configured.";
 
-  size_t max_size = 0;
+  // Start out with a decent size big enough to hold timestamps.
+  size_t max_size = 204;
 
   // Seed up all the per-node connection state.
   // We are making the assumption here that every connection is bidirectional
@@ -327,10 +328,6 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
           any_reliable = true;
         }
       }
-      max_size =
-          std::max(static_cast<size_t>(channel->max_size() *
-                                       channel->destination_nodes()->size()),
-                   max_size);
       std::unique_ptr<ChannelState> state(new ChannelState{
           channel, channel_index,
           any_reliable ? event_loop_->MakeRawFetcher(channel) : nullptr});
@@ -391,7 +388,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
 
   // Buffer up the max size a bit so everything fits nicely.
   LOG(INFO) << "Max message size for all clients is " << max_size;
-  server_.SetMaxSize(max_size + 100u);
+  server_.SetMaxSize(max_size);
 }
 
 void MessageBridgeServer::NodeConnected(sctp_assoc_t assoc_id) {
