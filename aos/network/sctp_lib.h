@@ -105,11 +105,21 @@ class SctpReadWrite {
 
   int fd() const { return fd_; }
 
-  void SetMaxSize(size_t max_size) {
+  void SetMaxReadSize(size_t max_size) {
     CHECK(partial_messages_.empty())
         << ": May not update size with queued fragments because we do not "
            "track individual message sizes";
-    max_size_ = max_size;
+    max_read_size_ = max_size;
+    if (fd_ != -1) {
+      DoSetMaxSize();
+    }
+  }
+
+  void SetMaxWriteSize(size_t max_size) {
+    CHECK(partial_messages_.empty())
+        << ": May not update size with queued fragments because we do not "
+           "track individual message sizes";
+    max_write_size_ = max_size;
     if (fd_ != -1) {
       DoSetMaxSize();
     }
@@ -136,7 +146,8 @@ class SctpReadWrite {
   // We use this as a unique identifier that just increments for each message.
   uint32_t send_ppid_ = 0;
 
-  size_t max_size_ = 1000;
+  size_t max_read_size_ = 1000;
+  size_t max_write_size_ = 1000;
 
   std::vector<aos::unique_c_ptr<Message>> partial_messages_;
 

@@ -126,7 +126,8 @@
           "timestamp_logger": "REMOTE_LOGGER",
           "timestamp_logger_nodes": ["pi1"]
         }
-      ]
+      ],
+      "max_size": 20480
     },
     {
       "name": "/test",
@@ -141,7 +142,8 @@
           "timestamp_logger": "REMOTE_LOGGER",
           "timestamp_logger_nodes": ["pi2"]
         }
-      ]
+      ],
+      "max_size": 20480
     },
     {
       "name": "/unreliable",
@@ -155,7 +157,8 @@
           "timestamp_logger_nodes": ["pi1"],
           "time_to_live": 5000000
         }
-      ]
+      ],
+      "max_size": 20480
     }
   ],
   "maps": [

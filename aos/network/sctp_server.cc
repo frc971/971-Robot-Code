@@ -64,7 +64,8 @@ SctpServer::SctpServer(int streams, std::string_view local_host,
 
     PCHECK(listen(fd(), 100) == 0);
 
-    SetMaxSize(1000);
+    SetMaxReadSize(1000);
+    SetMaxWriteSize(1000);
     break;
   }
 }

@@ -357,6 +357,8 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
   MakePi1Server();
   MakePi1Client();
 
+  const std::string long_data = std::string(10000, 'a');
+
   // And build the app which sends the pings.
   FLAGS_application_name = "ping";
   aos::ShmEventLoop ping_event_loop(&config.message());
@@ -422,7 +424,8 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
   int ping_count = 0;
   int pi1_server_statistics_count = 0;
   ping_event_loop.MakeWatcher("/pi1/aos", [this, &ping_count, &ping_sender,
-                                           &pi1_server_statistics_count](
+                                           &pi1_server_statistics_count,
+                                           &long_data](
                                               const ServerStatistics &stats) {
     VLOG(1) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
 
@@ -460,6 +463,7 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
     if (connected) {
       VLOG(1) << "Connected!  Sent ping.";
       auto builder = ping_sender.MakeBuilder();
+      builder.fbb()->CreateString(long_data);
       examples::Ping::Builder ping_builder =
           builder.MakeBuilder<examples::Ping>();
       ping_builder.add_value(ping_count + 971);

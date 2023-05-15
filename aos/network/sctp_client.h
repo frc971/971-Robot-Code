@@ -47,7 +47,8 @@ class SctpClient {
 
   void LogSctpStatus(sctp_assoc_t assoc_id);
 
-  void SetMaxSize(size_t max_size) { sctp_.SetMaxSize(max_size); }
+  void SetMaxReadSize(size_t max_size) { sctp_.SetMaxReadSize(max_size); }
+  void SetMaxWriteSize(size_t max_size) { sctp_.SetMaxWriteSize(max_size); }
   void SetPoolSize(size_t pool_size) { sctp_.SetPoolSize(pool_size); }
 
   void SetAssociationId(sctp_assoc_t sac_assoc_id) {

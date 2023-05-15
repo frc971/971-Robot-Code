@@ -128,7 +128,9 @@ SctpClientConnection::SctpClientConnection(
   event_loop_->OnRun(
       [this]() { connect_timer_->Setup(event_loop_->monotonic_now()); });
 
-  int max_size = connect_message_.span().size();
+  size_t max_write_size =
+      std::max(static_cast<size_t>(208u), connect_message_.span().size());
+  size_t max_read_size = 0u;
 
   for (const Channel *channel : *event_loop_->configuration()->channels()) {
     CHECK(channel->has_source_node());
@@ -137,15 +139,18 @@ SctpClientConnection::SctpClientConnection(
         configuration::ChannelIsReadableOnNode(channel, event_loop_->node())) {
       VLOG(1) << "Receiving channel "
               << configuration::CleanedChannelToString(channel);
-      max_size = std::max(channel->max_size(), max_size);
+      max_read_size = std::max(static_cast<size_t>(channel->max_size() + 208u),
+                               max_read_size);
     }
   }
 
   // Buffer up the max size a bit so everything fits nicely.
-  LOG(INFO) << "Max message size for all servers is " << max_size;
+  LOG(INFO) << "Max read message size for all servers is " << max_read_size;
+  LOG(INFO) << "Max write message size for all servers is " << max_write_size;
   // RemoteMessage header appears to be between 100 and 204 bytes of overhead
   // from the vector of data.  No need to get super tight to that bound.
-  client_.SetMaxSize(max_size + 204);
+  client_.SetMaxReadSize(max_read_size);
+  client_.SetMaxWriteSize(max_write_size);
 
   // 1 client talks to 1 server.  With interleaving support 1 turned on, we'll
   // at most see 1 partial message, and 1 incoming part, for a total of 2

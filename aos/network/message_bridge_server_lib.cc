@@ -403,7 +403,8 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
 
   // Buffer up the max size a bit so everything fits nicely.
   LOG(INFO) << "Max message size for all clients is " << max_size;
-  server_.SetMaxSize(max_size);
+  server_.SetMaxReadSize(max_size);
+  server_.SetMaxWriteSize(max_channel_size + kRemoteDataHeaderMaxSize);
 
   // Since we are doing interleaving mode 1, we will see at most 1 message being
   // delivered at a time for an association.  That means, if a message is

@@ -57,7 +57,8 @@ class SctpServer {
   void SetStreamPriority(sctp_assoc_t assoc_id, int stream_id,
                          uint16_t priority);
 
-  void SetMaxSize(size_t max_size) { sctp_.SetMaxSize(max_size); }
+  void SetMaxReadSize(size_t max_size) { sctp_.SetMaxReadSize(max_size); }
+  void SetMaxWriteSize(size_t max_size) { sctp_.SetMaxWriteSize(max_size); }
 
   void SetPoolSize(size_t pool_size) { sctp_.SetPoolSize(pool_size); }
 

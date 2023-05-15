@@ -353,7 +353,7 @@ aos::unique_c_ptr<Message> SctpReadWrite::AcquireMessage() {
   if (!use_pool_) {
     constexpr size_t kMessageAlign = alignof(Message);
     const size_t max_message_size =
-        ((sizeof(Message) + max_size_ + 1 + (kMessageAlign - 1)) /
+        ((sizeof(Message) + max_read_size_ + 1 + (kMessageAlign - 1)) /
          kMessageAlign) *
         kMessageAlign;
     aos::unique_c_ptr<Message> result(reinterpret_cast<Message *>(
@@ -379,7 +379,7 @@ aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
     memset(&inmessage, 0, sizeof(struct msghdr));
 
     struct iovec iov;
-    iov.iov_len = max_size_ + 1;
+    iov.iov_len = max_read_size_ + 1;
     iov.iov_base = result->mutable_data();
 
     inmessage.msg_iov = &iov;
@@ -404,7 +404,7 @@ aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
     CHECK(!(inmessage.msg_flags & MSG_CTRUNC))
         << ": Control message truncated.";
 
-    CHECK_LE(size, static_cast<ssize_t>(max_size_))
+    CHECK_LE(size, static_cast<ssize_t>(max_read_size_))
         << ": Message overflowed buffer on stream "
         << result->header.rcvinfo.rcv_sid << ".";
 
@@ -472,7 +472,7 @@ aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
           << result->header.rcvinfo.rcv_assoc_id;
 
       // Now copy the data over and update the size.
-      CHECK_LE(partial_message->size + result->size, max_size_)
+      CHECK_LE(partial_message->size + result->size, max_read_size_)
           << ": Assembled fragments overflowed buffer on stream "
           << result->header.rcvinfo.rcv_sid << ".";
       memcpy(partial_message->mutable_data() + partial_message->size,
@@ -568,10 +568,10 @@ void SctpReadWrite::CloseSocket() {
 }
 
 void SctpReadWrite::DoSetMaxSize() {
-  size_t max_size = max_size_;
+  size_t max_size = max_write_size_;
 
   // This sets the max packet size that we can send.
-  CHECK_GE(ReadWMemMax(), max_size)
+  CHECK_GE(ReadWMemMax(), max_write_size_)
       << "wmem_max is too low. To increase wmem_max temporarily, do sysctl "
          "-w net.core.wmem_max="
       << max_size;
