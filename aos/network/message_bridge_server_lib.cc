@@ -567,7 +567,10 @@ void MessageBridgeServer::HandleData(const Message *message) {
           node_index = channel_state->NodeConnected(
               connect->node(), message->header.rcvinfo.rcv_assoc_id,
               channel_index, &server_, monotonic_now, &reconnected_);
-          CHECK_NE(node_index, -1);
+          CHECK_NE(node_index, -1)
+              << ": Failed to find node "
+              << aos::FlatbufferToJson(connect->node()) << " for connection "
+              << aos::FlatbufferToJson(connect);
           matched = true;
           break;
         }
