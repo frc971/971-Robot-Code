@@ -29,8 +29,7 @@ bool ChannelState::Matches(const Channel *other_channel) {
 flatbuffers::FlatBufferBuilder ChannelState::PackContext(
     FixedAllocator *allocator, const Context &context) {
   flatbuffers::FlatBufferBuilder fbb(
-      channel_->max_size() + MessageBridgeServer::kRemoteDataHeaderMaxSize,
-      allocator);
+      channel_->max_size() + kHeaderSizeOverhead(), allocator);
   fbb.ForceDefaults(true);
   VLOG(2) << "Found " << peers_.size() << " peers on channel "
           << channel_->name()->string_view() << " "
@@ -402,9 +401,11 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   CHECK(timestamp_state_ != nullptr);
 
   // Buffer up the max size a bit so everything fits nicely.
-  LOG(INFO) << "Max message size for all clients is " << max_size;
+  LOG(INFO) << "Max message read size for all clients is " << max_size;
+  LOG(INFO) << "Max message write size for all clients is "
+            << max_channel_size + kHeaderSizeOverhead();
   server_.SetMaxReadSize(max_size);
-  server_.SetMaxWriteSize(max_channel_size + kRemoteDataHeaderMaxSize);
+  server_.SetMaxWriteSize(max_channel_size + kHeaderSizeOverhead());
 
   // Since we are doing interleaving mode 1, we will see at most 1 message being
   // delivered at a time for an association.  That means, if a message is
@@ -415,7 +416,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   // and 1 new one with more of the data).
   server_.SetPoolSize((destination_nodes + 1) * 2);
 
-  allocator_ = FixedAllocator(max_channel_size + kRemoteDataHeaderMaxSize);
+  allocator_ = FixedAllocator(max_channel_size + kHeaderSizeOverhead());
 
   reconnected_.reserve(max_channels());
 }

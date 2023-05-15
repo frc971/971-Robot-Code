@@ -129,7 +129,7 @@ SctpClientConnection::SctpClientConnection(
       [this]() { connect_timer_->Setup(event_loop_->monotonic_now()); });
 
   size_t max_write_size =
-      std::max(static_cast<size_t>(208u), connect_message_.span().size());
+      std::max(kHeaderSizeOverhead(), connect_message_.span().size());
   size_t max_read_size = 0u;
 
   for (const Channel *channel : *event_loop_->configuration()->channels()) {
@@ -139,8 +139,9 @@ SctpClientConnection::SctpClientConnection(
         configuration::ChannelIsReadableOnNode(channel, event_loop_->node())) {
       VLOG(1) << "Receiving channel "
               << configuration::CleanedChannelToString(channel);
-      max_read_size = std::max(static_cast<size_t>(channel->max_size() + 208u),
-                               max_read_size);
+      max_read_size = std::max(
+          static_cast<size_t>(channel->max_size() + kHeaderSizeOverhead()),
+          max_read_size);
     }
   }
 

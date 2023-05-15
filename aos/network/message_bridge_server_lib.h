@@ -111,10 +111,6 @@ class ChannelState {
 // node.  It handles the session and dispatches data to the ChannelState.
 class MessageBridgeServer {
  public:
-  // Size to reserve when building the RemoteData message for the header over
-  // the data size.
-  static constexpr size_t kRemoteDataHeaderMaxSize = 208u;
-
   MessageBridgeServer(aos::ShmEventLoop *event_loop, std::string config_sha256);
 
   ~MessageBridgeServer() { event_loop_->epoll()->DeleteFd(server_.fd()); }

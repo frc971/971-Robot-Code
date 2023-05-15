@@ -31,6 +31,10 @@ constexpr size_t kConnectStream() { return 0; }
 // The stream on which timestamp replies are sent.
 constexpr size_t kTimestampStream() { return 1; }
 
+// Overhead constant for headers.  Both remote timestamps and the extra context
+// inside RemoteData need to fit inside this.
+constexpr size_t kHeaderSizeOverhead() { return 208u; }
+
 // Builds up a subscription request for my_node to remote_name.
 aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
     const Configuration *config, const Node *my_node,
