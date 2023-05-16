@@ -404,11 +404,6 @@ aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
     CHECK(!(inmessage.msg_flags & MSG_CTRUNC))
         << ": Control message truncated.";
 
-    CHECK_LE(size, static_cast<ssize_t>(max_read_size_))
-        << ": Message overflowed buffer on stream "
-        << result->header.rcvinfo.rcv_sid << ".";
-
-    result->size = size;
     if (MSG_NOTIFICATION & inmessage.msg_flags) {
       result->message_type = Message::kNotification;
     } else {
@@ -436,6 +431,25 @@ aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
           << ": Failed to find a SCTP_RCVINFO cmsghdr. flags: "
           << inmessage.msg_flags;
     }
+
+    // Client just sent too big a block of data.  Eat it and signal up the
+    // chain.
+    result->size = size;
+    if (size > static_cast<ssize_t>(max_read_size_)) {
+      Abort(result->header.rcvinfo.rcv_assoc_id);
+      result->message_type = Message::kOverflow;
+
+      VLOG(1) << "Message overflowed buffer on stream "
+              << result->header.rcvinfo.rcv_sid << ", disconnecting."
+              << " Check for config mismatch or rogue device.";
+      return result;
+    }
+
+    CHECK_LE(size, static_cast<ssize_t>(max_read_size_))
+        << ": Message overflowed buffer on stream "
+        << result->header.rcvinfo.rcv_sid << "."
+        << " Check for config mismatch or rogue device.";
+
     if (result->message_type == Message::kNotification) {
       // Notifications are never fragmented, just return it now.
       CHECK(inmessage.msg_flags & MSG_EOR)

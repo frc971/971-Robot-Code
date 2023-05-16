@@ -206,6 +206,8 @@ void SctpClientConnection::MessageReceived() {
     }
   } else if (message->message_type == Message::kMessage) {
     HandleData(message.get());
+  } else if (message->message_type == Message::kOverflow) {
+    NodeDisconnected();
   }
   client_.FreeMessage(std::move(message));
 }

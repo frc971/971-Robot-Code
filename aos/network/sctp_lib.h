@@ -53,7 +53,14 @@ struct Message {
   struct sockaddr_storage sin;
 
   // Data type. Is it a block of data, or is it a struct sctp_notification?
-  enum MessageType { kMessage, kNotification } message_type;
+  enum MessageType {
+    // Block of data?
+    kMessage,
+    // struct sctp_notification?
+    kNotification,
+    // Client sent too large a message and was disconnected.
+    kOverflow,
+  } message_type;
 
   size_t size = 0u;
   uint8_t *mutable_data() {

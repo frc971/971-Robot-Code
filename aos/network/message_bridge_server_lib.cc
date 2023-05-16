@@ -495,6 +495,9 @@ void MessageBridgeServer::MessageReceived() {
     }
   } else if (message->message_type == Message::kMessage) {
     HandleData(message.get());
+  } else if (message->message_type == Message::kOverflow) {
+    MaybeIncrementInvalidConnectionCount(nullptr);
+    NodeDisconnected(message->header.rcvinfo.rcv_assoc_id);
   }
   server_.FreeMessage(std::move(message));
 }

@@ -8,6 +8,7 @@
 #include "aos/events/pong_generated.h"
 #include "aos/ipc_lib/event.h"
 #include "aos/network/message_bridge_client_lib.h"
+#include "aos/network/message_bridge_protocol.h"
 #include "aos/network/message_bridge_server_lib.h"
 #include "aos/network/team_number.h"
 #include "aos/sha256.h"
@@ -1354,8 +1355,9 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
   pi1_remote_timestamp_thread.join();
 }
 
-// Test that differing config sha256's result in no connection.
-TEST_P(MessageBridgeParameterizedTest, MismatchedSha256) {
+// Test that a client which connects with too big a message gets disconnected
+// without crashing.
+TEST_P(MessageBridgeParameterizedTest, TooBigConnect) {
   // This is rather annoying to set up.  We need to start up a client and
   // server, on the same node, but get them to think that they are on different
   // nodes.
@@ -1403,7 +1405,48 @@ TEST_P(MessageBridgeParameterizedTest, MismatchedSha256) {
   StartPi2Server();
 
   {
-    MakePi2Client();
+    // Now, spin up a SctpClient and send a massive hunk of data.  This should
+    // trigger a disconnect, but no crash.
+    OnPi2();
+    FLAGS_application_name = "pi2_message_bridge_client";
+    pi2_client_event_loop =
+        std::make_unique<aos::ShmEventLoop>(&config.message());
+    pi2_client_event_loop->SetRuntimeRealtimePriority(1);
+
+    const aos::Node *const remote_node = CHECK_NOTNULL(
+        configuration::GetNode(pi2_client_event_loop->configuration(), "pi1"));
+
+    const aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect>
+        connect_message(MakeConnectMessage(
+            pi2_client_event_loop->configuration(),
+            pi2_client_event_loop->node(), "pi1",
+            pi2_client_event_loop->boot_uuid(), config_sha256));
+
+    SctpClient client(remote_node->hostname()->string_view(),
+                      remote_node->port(),
+                      connect_message.message().channels_to_transfer()->size() +
+                          kControlStreams(),
+                      "");
+
+    client.SetMaxReadSize(100000);
+    client.SetMaxWriteSize(100000);
+
+    client.SetPoolSize(2u);
+
+    const std::string big_data(100000, 'a');
+
+    pi2_client_event_loop->epoll()->OnReadable(client.fd(), [&]() {
+      aos::unique_c_ptr<Message> message = client.Read();
+      client.FreeMessage(std::move(message));
+    });
+
+    aos::TimerHandler *const send_big_message = pi2_client_event_loop->AddTimer(
+        [&]() { CHECK(client.Send(kConnectStream(), big_data, 0)); });
+
+    pi2_client_event_loop->OnRun([this, send_big_message]() {
+      send_big_message->Schedule(pi2_client_event_loop->monotonic_now() +
+                                 chrono::seconds(1));
+    });
 
     RunPi2Client(chrono::milliseconds(3050));
 
@@ -1411,7 +1454,7 @@ TEST_P(MessageBridgeParameterizedTest, MismatchedSha256) {
     EXPECT_TRUE(pi1_server_statistics_fetcher.Fetch());
     EXPECT_TRUE(pi1_client_statistics_fetcher.Fetch());
     EXPECT_TRUE(pi2_server_statistics_fetcher.Fetch());
-    EXPECT_TRUE(pi2_client_statistics_fetcher.Fetch());
+    EXPECT_FALSE(pi2_client_statistics_fetcher.Fetch());
 
     const ServerConnection *const pi1_connection =
         pi1_server_statistics_fetcher->connections()->Get(0);
@@ -1419,17 +1462,12 @@ TEST_P(MessageBridgeParameterizedTest, MismatchedSha256) {
         pi1_client_statistics_fetcher->connections()->Get(0);
     const ServerConnection *const pi2_connection =
         pi2_server_statistics_fetcher->connections()->Get(0);
-    const ClientConnection *const pi2_client_connection =
-        pi2_client_statistics_fetcher->connections()->Get(0);
 
     // Make sure one direction is disconnected with a bunch of connection
     // attempts and failures.
     EXPECT_EQ(pi1_connection->state(), State::DISCONNECTED);
     EXPECT_EQ(pi1_connection->connection_count(), 0u);
-    EXPECT_GT(pi1_connection->invalid_connection_count(), 10u);
-
-    EXPECT_EQ(pi2_client_connection->state(), State::DISCONNECTED);
-    EXPECT_GT(pi2_client_connection->connection_count(), 10u);
+    EXPECT_GE(pi1_server_statistics_fetcher->invalid_connection_count(), 1u);
 
     // And the other direction is happy.
     EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
@@ -1443,8 +1481,9 @@ TEST_P(MessageBridgeParameterizedTest, MismatchedSha256) {
 
     VLOG(1) << aos::FlatbufferToJson(pi2_server_statistics_fetcher.get());
     VLOG(1) << aos::FlatbufferToJson(pi1_server_statistics_fetcher.get());
-    VLOG(1) << aos::FlatbufferToJson(pi2_client_statistics_fetcher.get());
     VLOG(1) << aos::FlatbufferToJson(pi1_client_statistics_fetcher.get());
+
+    pi2_client_event_loop->epoll()->DeleteFd(client.fd());
 
     StopPi2Client();
   }
