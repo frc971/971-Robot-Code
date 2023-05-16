@@ -1,11 +1,12 @@
 #include "aos/util/simulation_logger.h"
+#include "aos/events/logging/logfile_utils.h"
 
 namespace aos::util {
 LoggerState::LoggerState(aos::SimulatedEventLoopFactory *factory,
                          const aos::Node *node, std::string_view output_folder)
     : event_loop_(factory->MakeEventLoop("logger", node)),
       namer_(std::make_unique<aos::logger::MultiNodeFilesLogNamer>(
-          absl::StrCat(output_folder, "/", node->name()->string_view(), "/"),
+          absl::StrCat(output_folder, "/", logger::MaybeNodeName(node), "/"),
           event_loop_.get())),
       logger_(std::make_unique<aos::logger::Logger>(event_loop_.get())) {
   event_loop_->SkipTimingReport();

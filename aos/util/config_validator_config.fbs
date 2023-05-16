@@ -1,0 +1,55 @@
+namespace aos.util;
+
+// This file defines a schema for what to validate when we run the
+// config_validator against an AOS config.
+// The primary purpose of this config is to allow the user to specify what
+// sets of nodes they expect to be able to log on so that we can validate the
+// logging configurations. In the future this may also include flags to indicate
+// how aggressively to do certain checks.
+//
+// This flatbuffer should not exist in serialized form anywhere, and so is
+// safe to modify in non-backwards-compatible ways.
+
+// Species a set of nodes that you should be able to combine the logs from and
+// subsequently replay. E.g., this allows you to write a check that says
+// "If you combine logs from pi2 & pi4, you should be able to replay data from
+// nodes pi2, pi4, and pi6"; or
+// "When logs from all nodes are combined, you should be able to replay data
+// for all nodes;" or
+// "Each node should log all the data needed to replay its own data"
+// (this would require muliple LoggerNodeSetValidation's).
+//
+// Each LoggerNodeSetValidation table represents a single set of logging nodes
+// that should be able to replay data on some number of other nodes. An empty
+// list of loggers or replay_nodes indicates "all nodes." The above examples
+// could then be represented by, e.g.:
+// "pi2 & pi4 -> pi2, pi4, & pi6":
+//   {"loggers": ["pi2", "pi4"], "replay_nodes": ["pi2", "pi4", "pi6"]}
+// "all -> all": {"logger": [], "replay_nodes": []}
+// "each node -> itself": [
+//   {"logger": ["pi1"], "replay_nodes": ["pi1"]},
+//   {"logger": ["pi2"], "replay_nodes": ["pi2"]},
+//   {"logger": ["pi3"], "replay_nodes": ["pi3"]},
+//   {"logger": ["pi4"], "replay_nodes": ["pi4"]}]
+table LoggerNodeSetValidation {
+  loggers:[string] (id: 0);
+  replay_nodes:[string] (id: 1);
+}
+
+// This table specifies which
+table LoggingConfigValidation {
+  // If true, all channels should be logged by some valid set of loggers.
+  // Essentially, this is checking that no channels are configured to be
+  // NOT_LOGGED except for remote timestamp channels.
+  all_channels_logged:bool = true (id: 0);
+  // A list of all the sets of logger nodes that we care about. Typically this
+  // should at least include an entry that says that "logs from all nodes should
+  // combine to allow you to replay all nodes."
+  logger_sets:[LoggerNodeSetValidation] (id: 1);
+}
+
+table ConfigValidatorConfig {
+  logging:LoggingConfigValidation (id: 0);
+}
+
+root_type ConfigValidatorConfig;
