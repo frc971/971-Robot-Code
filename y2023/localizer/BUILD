@@ -220,6 +220,7 @@ cc_binary(
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_reader",
         "//aos/events/logging:log_writer",
+        "//aos/util:simulation_logger",
         "//y2023/control_loops/drivetrain:drivetrain_base",
     ],
 )

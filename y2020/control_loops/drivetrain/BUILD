@@ -207,6 +207,7 @@ cc_binary(
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_reader",
         "//aos/events/logging:log_writer",
+        "//aos/util:simulation_logger",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
         "//frc971/control_loops/drivetrain:trajectory_generator",
         "//y2020:constants",

@@ -528,3 +528,13 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",
     ],
 )
+
+cc_library(
+    name = "simulation_logger",
+    srcs = ["simulation_logger.cc"],
+    hdrs = ["simulation_logger.h"],
+    deps = [
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_writer",
+    ],
+)
