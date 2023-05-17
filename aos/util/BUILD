@@ -1,10 +1,10 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
-load("config_validator_macro.bzl", "config_validator_rule")
+load("config_validator_macro.bzl", "config_validator_test")
 
 package(default_visibility = ["//visibility:public"])
 
-config_validator_rule(
+config_validator_test(
     name = "config_validator_test",
     config = "//aos/events:pingpong_config",
 )
@@ -499,7 +499,7 @@ cc_library(
     ],
 )
 
-cc_binary(
+cc_library(
     name = "config_validator",
     testonly = True,
     srcs = ["config_validator.cc"],
