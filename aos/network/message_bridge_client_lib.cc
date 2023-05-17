@@ -170,44 +170,48 @@ void SctpClientConnection::MessageReceived() {
     return;
   }
 
-  if (message->message_type == Message::kNotification) {
-    const union sctp_notification *snp =
-        (const union sctp_notification *)message->data();
+  switch (message->message_type) {
+    case Message::kNotification: {
+      const union sctp_notification *snp =
+          (const union sctp_notification *)message->data();
 
-    switch (snp->sn_header.sn_type) {
-      case SCTP_ASSOC_CHANGE: {
-        const struct sctp_assoc_change *sac = &snp->sn_assoc_change;
-        switch (sac->sac_state) {
-          case SCTP_RESTART:
-            NodeDisconnected();
-            [[fallthrough]];
-          case SCTP_COMM_UP:
-            NodeConnected(sac->sac_assoc_id);
+      switch (snp->sn_header.sn_type) {
+        case SCTP_ASSOC_CHANGE: {
+          const struct sctp_assoc_change *sac = &snp->sn_assoc_change;
+          switch (sac->sac_state) {
+            case SCTP_RESTART:
+              NodeDisconnected();
+              [[fallthrough]];
+            case SCTP_COMM_UP:
+              NodeConnected(sac->sac_assoc_id);
 
-            VLOG(1) << "Received up from " << message->PeerAddress() << " on "
-                    << sac->sac_assoc_id << " state " << sac->sac_state;
-            break;
-          case SCTP_COMM_LOST:
-          case SCTP_SHUTDOWN_COMP:
-          case SCTP_CANT_STR_ASSOC: {
-            NodeDisconnected();
-            VLOG(1) << "Disconnect from " << message->PeerAddress() << " on "
-                    << sac->sac_assoc_id << " state " << sac->sac_state;
-          } break;
-          default:
-            LOG(FATAL) << "Never seen state " << sac->sac_state << " before.";
-            break;
-        }
-      } break;
-    }
+              VLOG(1) << "Received up from " << message->PeerAddress() << " on "
+                      << sac->sac_assoc_id << " state " << sac->sac_state;
+              break;
+            case SCTP_COMM_LOST:
+            case SCTP_SHUTDOWN_COMP:
+            case SCTP_CANT_STR_ASSOC: {
+              NodeDisconnected();
+              VLOG(1) << "Disconnect from " << message->PeerAddress() << " on "
+                      << sac->sac_assoc_id << " state " << sac->sac_state;
+            } break;
+            default:
+              LOG(FATAL) << "Never seen state " << sac->sac_state << " before.";
+              break;
+          }
+        } break;
+      }
 
-    if (VLOG_IS_ON(1)) {
-      PrintNotification(message.get());
-    }
-  } else if (message->message_type == Message::kMessage) {
-    HandleData(message.get());
-  } else if (message->message_type == Message::kOverflow) {
-    NodeDisconnected();
+      if (VLOG_IS_ON(1)) {
+        PrintNotification(message.get());
+      }
+    } break;
+    case Message::kMessage:
+      HandleData(message.get());
+      break;
+    case Message::kOverflow:
+      NodeDisconnected();
+      break;
   }
   client_.FreeMessage(std::move(message));
 }

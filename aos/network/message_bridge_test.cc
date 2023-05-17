@@ -1346,6 +1346,109 @@ TEST_P(MessageBridgeParameterizedTest, ReliableSentBeforeServerStartup) {
   pi1_remote_timestamp_thread.reset();
 }
 
+// Test that differing config sha256's result in no connection.
+TEST_P(MessageBridgeParameterizedTest, MismatchedSha256) {
+  // This is rather annoying to set up.  We need to start up a client and
+  // server, on the same node, but get them to think that they are on different
+  // nodes.
+  //
+  // We need the client to not post directly to "/test" like it would in a
+  // real system, otherwise we will re-send the ping message... So, use an
+  // application specific map to have the client post somewhere else.
+  //
+  // To top this all off, each of these needs to be done with a ShmEventLoop,
+  // which needs to run in a separate thread...  And it is really hard to get
+  // everything started up reliably.  So just be super generous on timeouts and
+  // hope for the best.  We can be more generous in the future if we need to.
+  //
+  // We are faking the application names by passing in --application_name=foo
+  OnPi1();
+
+  MakePi1Server(
+      "dummy sha256                                                    ");
+  MakePi1Client();
+
+  // And build the app for testing.
+  MakePi1Test();
+  aos::Fetcher<ServerStatistics> pi1_server_statistics_fetcher =
+      pi1_test_event_loop->MakeFetcher<ServerStatistics>("/pi1/aos");
+  aos::Fetcher<ClientStatistics> pi1_client_statistics_fetcher =
+      pi1_test_event_loop->MakeFetcher<ClientStatistics>("/pi1/aos");
+
+  // Now do it for "raspberrypi2", the client.
+  OnPi2();
+  MakePi2Server();
+
+  // And build the app for testing.
+  MakePi2Test();
+  aos::Fetcher<ServerStatistics> pi2_server_statistics_fetcher =
+      pi2_test_event_loop->MakeFetcher<ServerStatistics>("/pi2/aos");
+  aos::Fetcher<ClientStatistics> pi2_client_statistics_fetcher =
+      pi2_test_event_loop->MakeFetcher<ClientStatistics>("/pi2/aos");
+
+  // Wait until we are connected, then send.
+
+  StartPi1Test();
+  StartPi2Test();
+  StartPi1Server();
+  StartPi1Client();
+  StartPi2Server();
+
+  {
+    MakePi2Client();
+
+    RunPi2Client(chrono::milliseconds(3050));
+
+    // Now confirm we are synchronized.
+    EXPECT_TRUE(pi1_server_statistics_fetcher.Fetch());
+    EXPECT_TRUE(pi1_client_statistics_fetcher.Fetch());
+    EXPECT_TRUE(pi2_server_statistics_fetcher.Fetch());
+    EXPECT_TRUE(pi2_client_statistics_fetcher.Fetch());
+
+    const ServerConnection *const pi1_connection =
+        pi1_server_statistics_fetcher->connections()->Get(0);
+    const ClientConnection *const pi1_client_connection =
+        pi1_client_statistics_fetcher->connections()->Get(0);
+    const ServerConnection *const pi2_connection =
+        pi2_server_statistics_fetcher->connections()->Get(0);
+    const ClientConnection *const pi2_client_connection =
+        pi2_client_statistics_fetcher->connections()->Get(0);
+
+    // Make sure one direction is disconnected with a bunch of connection
+    // attempts and failures.
+    EXPECT_EQ(pi1_connection->state(), State::DISCONNECTED);
+    EXPECT_EQ(pi1_connection->connection_count(), 0u);
+    EXPECT_GT(pi1_connection->invalid_connection_count(), 10u);
+
+    EXPECT_EQ(pi2_client_connection->state(), State::DISCONNECTED);
+    EXPECT_GT(pi2_client_connection->connection_count(), 10u);
+
+    // And the other direction is happy.
+    EXPECT_EQ(pi2_connection->state(), State::CONNECTED);
+    EXPECT_EQ(pi2_connection->connection_count(), 1u);
+    EXPECT_TRUE(pi2_connection->has_connected_since_time());
+    EXPECT_FALSE(pi2_connection->has_monotonic_offset());
+    EXPECT_TRUE(pi2_connection->has_boot_uuid());
+
+    EXPECT_EQ(pi1_client_connection->state(), State::CONNECTED);
+    EXPECT_EQ(pi1_client_connection->connection_count(), 1u);
+
+    VLOG(1) << aos::FlatbufferToJson(pi2_server_statistics_fetcher.get());
+    VLOG(1) << aos::FlatbufferToJson(pi1_server_statistics_fetcher.get());
+    VLOG(1) << aos::FlatbufferToJson(pi2_client_statistics_fetcher.get());
+    VLOG(1) << aos::FlatbufferToJson(pi1_client_statistics_fetcher.get());
+
+    StopPi2Client();
+  }
+
+  // Shut everyone else down
+  StopPi1Server();
+  StopPi1Client();
+  StopPi2Server();
+  StopPi1Test();
+  StopPi2Test();
+}
+
 // Test that a client which connects with too big a message gets disconnected
 // without crashing.
 TEST_P(MessageBridgeParameterizedTest, TooBigConnect) {
@@ -1454,8 +1557,8 @@ TEST_P(MessageBridgeParameterizedTest, TooBigConnect) {
     const ServerConnection *const pi2_connection =
         pi2_server_statistics_fetcher->connections()->Get(0);
 
-    // Make sure one direction is disconnected with a bunch of connection
-    // attempts and failures.
+    // Make sure the server we just sent a bunch of junk to is grumpy and
+    // disconnected the bad client.
     EXPECT_EQ(pi1_connection->state(), State::DISCONNECTED);
     EXPECT_EQ(pi1_connection->connection_count(), 0u);
     EXPECT_GE(pi1_server_statistics_fetcher->invalid_connection_count(), 1u);

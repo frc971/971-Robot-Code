@@ -445,11 +445,6 @@ aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
       return result;
     }
 
-    CHECK_LE(size, static_cast<ssize_t>(max_read_size_))
-        << ": Message overflowed buffer on stream "
-        << result->header.rcvinfo.rcv_sid << "."
-        << " Check for config mismatch or rogue device.";
-
     if (result->message_type == Message::kNotification) {
       // Notifications are never fragmented, just return it now.
       CHECK(inmessage.msg_flags & MSG_EOR)
