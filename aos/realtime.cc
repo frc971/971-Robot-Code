@@ -20,7 +20,7 @@
 #include "glog/raw_logging.h"
 
 DEFINE_bool(
-    die_on_malloc, false,
+    die_on_malloc, true,
     "If true, die when the application allocates memory in a RT section.");
 DEFINE_bool(skip_realtime_scheduler, false,
             "If true, skip changing the scheduler.  Pretend that we changed "

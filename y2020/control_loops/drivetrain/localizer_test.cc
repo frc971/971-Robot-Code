@@ -15,7 +15,6 @@
 
 DEFINE_string(output_file, "",
               "If set, logs all channels to the provided logfile.");
-DECLARE_bool(die_on_malloc);
 
 // This file tests that the full 2020 localizer behaves sanely.
 
@@ -147,7 +146,6 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
     CHECK_EQ(aos::configuration::GetNodeIndex(configuration(), pi1_), 1);
     set_team_id(frc971::control_loops::testing::kTeamNumber);
     set_battery_voltage(12.0);
-    FLAGS_die_on_malloc = true;
 
     if (!FLAGS_output_file.empty()) {
       logger_event_loop_ = MakeEventLoop("logger", roborio_);

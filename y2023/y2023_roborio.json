@@ -339,9 +339,6 @@
     {
       "name": "drivetrain",
       "executable_name": "drivetrain",
-      "args": [
-        "--die_on_malloc"
-      ],
       "nodes": [
         "roborio"
       ]
@@ -349,9 +346,6 @@
     {
       "name": "trajectory_generator",
       "executable_name": "trajectory_generator",
-      "args": [
-        "--die_on_malloc"
-      ],
       "nodes": [
         "roborio"
       ]
@@ -359,9 +353,6 @@
     {
       "name": "superstructure",
       "executable_name": "superstructure",
-      "args": [
-        "--die_on_malloc"
-      ],
       "nodes": [
         "roborio"
       ]
@@ -389,6 +380,9 @@
     {
       "name": "wpilib_interface",
       "executable_name": "wpilib_interface",
+      "args": [
+        "--nodie_on_malloc"
+      ],
       "nodes": [
         "roborio"
       ]

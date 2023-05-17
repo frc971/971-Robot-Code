@@ -16,7 +16,6 @@
 
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
-DECLARE_bool(die_on_malloc);
 
 namespace frc971 {
 namespace control_loops {
@@ -78,7 +77,6 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
         drivetrain_plant_(drivetrain_plant_event_loop_.get(),
                           drivetrain_plant_imu_event_loop_.get(), dt_config_,
                           std::chrono::microseconds(500)) {
-    FLAGS_die_on_malloc = true;
     set_team_id(frc971::control_loops::testing::kTeamNumber);
     set_battery_voltage(12.0);
 
