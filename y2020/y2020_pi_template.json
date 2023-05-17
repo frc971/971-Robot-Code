@@ -92,10 +92,17 @@
           "time_to_live": 5000000,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "roborio"
+            "pi{{ NUM }}"
           ]
         }
       ]
+    },
+    {
+      "name": "/pi{{ NUM }}/aos/remote_timestamps/roborio/pi{{ NUM }}/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "pi{{ NUM }}",
+      "max_size": 208
     },
     {
       "name": "/pi{{ NUM }}/camera",

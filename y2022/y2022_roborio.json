@@ -459,7 +459,7 @@
           "priority": 5,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "imu"
+            "roborio"
           ],
           "time_to_live": 0
         }

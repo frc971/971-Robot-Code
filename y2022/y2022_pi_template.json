@@ -104,7 +104,7 @@
           "time_to_live": 5000000,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "roborio"
+            "pi{{ NUM }}"
           ]
         },
         {
@@ -113,7 +113,7 @@
           "time_to_live": 5000000,
           "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
           "timestamp_logger_nodes": [
-            "imu"
+            "pi{{ NUM }}"
           ]
         }
       ]
