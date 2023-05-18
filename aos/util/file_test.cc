@@ -7,8 +7,6 @@
 #include "aos/testing/tmpdir.h"
 #include "gtest/gtest.h"
 
-DECLARE_bool(die_on_malloc);
-
 namespace aos {
 namespace util {
 namespace testing {
@@ -52,9 +50,6 @@ TEST(FileTest, ReadNormalFileNoMalloc) {
 
   FileReader reader(test_file);
 
-  gflags::FlagSaver flag_saver;
-  FLAGS_die_on_malloc = true;
-  RegisterMallocHook();
   aos::ScopedRealtime realtime;
   {
     std::array<char, 20> contents;
@@ -79,9 +74,6 @@ TEST(FileTest, WriteNormalFileNoMalloc) {
 
   FileWriter writer(test_file);
 
-  gflags::FlagSaver flag_saver;
-  FLAGS_die_on_malloc = true;
-  RegisterMallocHook();
   FileWriter::WriteResult result;
   {
     aos::ScopedRealtime realtime;
@@ -104,9 +96,6 @@ TEST(FileTest, WriteFileError) {
   // Mess up the file management by closing the file descriptor.
   PCHECK(0 == close(writer.fd()));
 
-  gflags::FlagSaver flag_saver;
-  FLAGS_die_on_malloc = true;
-  RegisterMallocHook();
   FileWriter::WriteResult result;
   {
     aos::ScopedRealtime realtime;
