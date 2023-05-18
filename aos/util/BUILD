@@ -1,10 +1,10 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
-load("config_validator_macro.bzl", "config_validator_rule")
+load("config_validator_macro.bzl", "config_validator_test")
 
 package(default_visibility = ["//visibility:public"])
 
-config_validator_rule(
+config_validator_test(
     name = "config_validator_test",
     config = "//aos/events:pingpong_config",
 )
@@ -499,17 +499,14 @@ cc_library(
     ],
 )
 
-cc_binary(
+cc_library(
     name = "config_validator",
     testonly = True,
     srcs = ["config_validator.cc"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//aos:init",
+        ":config_validator_lib",
         "//aos:json_to_flatbuffer",
-        "//aos/events:simulated_event_loop",
-        "//aos/events/logging:log_reader",
-        "//aos/events/logging:log_writer",
         "//aos/testing:googletest",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
@@ -536,5 +533,51 @@ cc_library(
     deps = [
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_writer",
+    ],
+)
+
+flatbuffer_cc_library(
+    name = "config_validator_config_fbs",
+    srcs = ["config_validator_config.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "config_validator_lib",
+    testonly = True,
+    srcs = ["config_validator_lib.cc"],
+    hdrs = ["config_validator_lib.h"],
+    deps = [
+        ":config_validator_config_fbs",
+        ":simulation_logger",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/events/logging:log_writer",
+        "//aos/network:timestamp_channel",
+        "//aos/testing:tmpdir",
+        "@com_github_google_glog//:glog",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_test(
+    name = "config_validator_lib_test",
+    srcs = ["config_validator_lib_test.cc"],
+    data = [
+        "//aos/util/test_data:multinode_common_logger",
+        "//aos/util/test_data:multinode_extraneous_timestamp",
+        "//aos/util/test_data:multinode_invalid_timestamp_logger_list",
+        "//aos/util/test_data:multinode_no_logged_timestamps",
+        "//aos/util/test_data:multinode_no_statistics",
+        "//aos/util/test_data:multinode_timestamp_typo",
+        "//aos/util/test_data:valid_multinode_config",
+        "//aos/util/test_data:valid_singlenode_config",
+    ],
+    deps = [
+        ":config_validator_lib",
+        "//aos:json_to_flatbuffer",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
     ],
 )

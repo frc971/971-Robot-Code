@@ -2,6 +2,12 @@ load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//tools/build_rules:template.bzl", "jinja2_template")
+load("//aos/util:config_validator_macro.bzl", "config_validator_test")
+
+config_validator_test(
+    name = "config_validator_test",
+    config = "//y2020:aos_config",
+)
 
 robot_downloader(
     binaries = [

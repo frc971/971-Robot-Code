@@ -1,16 +1,9 @@
-#include <chrono>
-
-#include "aos/configuration.h"
-#include "aos/events/logging/log_reader.h"
-#include "aos/events/logging/log_writer.h"
-#include "aos/events/simulated_event_loop.h"
-#include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
-#include "aos/network/team_number.h"
-#include "gflags/gflags.h"
-#include "gtest/gtest.h"
+#include "aos/util/config_validator_lib.h"
 
 DEFINE_string(config, "", "Name of the config file to replay using.");
+DEFINE_string(validation_config, "{}",
+              "JSON config to use to validate the config.");
 /* This binary is used to validate that all of the
    needed remote timestamps channels are in the config
    to log the timestamps.
@@ -26,9 +19,11 @@ TEST(ConfigValidatorTest, ReadConfig) {
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 
-  aos::SimulatedEventLoopFactory factory(&config.message());
-
-  factory.RunFor(std::chrono::seconds(1));
+  const aos::FlatbufferDetachedBuffer<aos::util::ConfigValidatorConfig>
+      validator_config =
+          aos::JsonToFlatbuffer<aos::util::ConfigValidatorConfig>(
+              FLAGS_validation_config);
+  aos::util::ConfigIsValid(&config.message(), &validator_config.message());
 }
 
 // TODO(milind): add more tests, the above one doesn't
