@@ -834,7 +834,7 @@ func (handler submitActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.R
 			CompLevel:   string(request.CompLevel()),
 			//TODO: Serialize CompletedAction
 			CompletedAction: []byte{},
-			TimeStamp:       action.Timestamp(),
+			Timestamp:       action.Timestamp(),
 			CollectedBy:     username,
 		}
 

@@ -869,7 +869,7 @@ func TestAddingActions(t *testing.T) {
 			CompLevel:       "qual",
 			CollectedBy:     "debug_cli",
 			CompletedAction: []byte{},
-			TimeStamp:       2400,
+			Timestamp:       2400,
 		},
 		{
 			PreScouting:     true,
@@ -879,7 +879,7 @@ func TestAddingActions(t *testing.T) {
 			CompLevel:       "qual",
 			CollectedBy:     "debug_cli",
 			CompletedAction: []byte{},
-			TimeStamp:       1009,
+			Timestamp:       1009,
 		},
 	}
 
