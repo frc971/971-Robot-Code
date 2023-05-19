@@ -3,6 +3,7 @@
 
 #include <arpa/inet.h>
 #include <linux/sctp.h>
+#include <linux/version.h>
 
 #include <memory>
 #include <optional>
@@ -14,6 +15,8 @@
 #include "glog/logging.h"
 
 #include "aos/unique_malloc_ptr.h"
+
+#define HAS_SCTP_AUTH LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
 
 namespace aos {
 namespace message_bridge {
@@ -92,7 +95,7 @@ void LogSctpStatus(int fd, sctp_assoc_t assoc_id);
 // Manages reading and writing SCTP messages.
 class SctpReadWrite {
  public:
-  SctpReadWrite() = default;
+  SctpReadWrite(std::vector<uint8_t> auth_key = {});
   ~SctpReadWrite() { CloseSocket(); }
 
   // Opens a new socket.
@@ -161,6 +164,8 @@ class SctpReadWrite {
 
   bool use_pool_ = false;
   std::vector<aos::unique_c_ptr<Message>> free_messages_;
+
+  std::vector<uint8_t> auth_key_;
 };
 
 // Returns the max network buffer available for reading for a socket.

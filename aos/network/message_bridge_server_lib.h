@@ -167,7 +167,10 @@ class ChannelState {
 // node.  It handles the session and dispatches data to the ChannelState.
 class MessageBridgeServer {
  public:
-  MessageBridgeServer(aos::ShmEventLoop *event_loop, std::string config_sha256);
+  // When the `auth_key` byte-vector is non-empty, it will be used as the shared
+  // key to authenticate every channel (See RFC4895 for more info).
+  MessageBridgeServer(aos::ShmEventLoop *event_loop, std::string config_sha256,
+                      std::vector<uint8_t> auth_key);
 
   // Delete copy/move constructors explicitly--we internally pass around
   // pointers to internal state.

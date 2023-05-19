@@ -160,6 +160,25 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "sctp_test",
+    srcs = [
+        "sctp_test.cc",
+    ],
+    tags = [
+        # Fakeroot is required to enable "net.sctp.auth_enable".
+        "requires-fakeroot",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":sctp_client",
+        ":sctp_lib",
+        ":sctp_server",
+        "//aos/events:epoll",
+        "//aos/testing:googletest",
+    ],
+)
+
 cc_library(
     name = "sctp_server",
     srcs = [
@@ -269,6 +288,7 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":message_bridge_server_lib",
+        ":sctp_lib",
         "//aos:init",
         "//aos:json_to_flatbuffer",
         "//aos:sha256",
@@ -351,11 +371,13 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":message_bridge_client_lib",
+        ":sctp_lib",
         "//aos:init",
         "//aos:json_to_flatbuffer",
         "//aos:sha256",
         "//aos/events:shm_event_loop",
         "//aos/logging:dynamic_logging",
+        "//aos/util:file",
     ],
 )
 

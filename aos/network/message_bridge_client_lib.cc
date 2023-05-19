@@ -100,7 +100,8 @@ SctpClientConnection::SctpClientConnection(
     aos::ShmEventLoop *const event_loop, std::string_view remote_name,
     const Node *my_node, std::string_view local_host,
     std::vector<SctpClientChannelState> *channels, int client_index,
-    MessageBridgeClientStatus *client_status, std::string_view config_sha256)
+    MessageBridgeClientStatus *client_status, std::string_view config_sha256,
+    std::vector<uint8_t> auth_key)
     : event_loop_(event_loop),
       connect_message_(MakeConnectMessage(event_loop->configuration(), my_node,
                                           remote_name, event_loop->boot_uuid(),
@@ -111,7 +112,7 @@ SctpClientConnection::SctpClientConnection(
       client_(remote_node_->hostname()->string_view(), remote_node_->port(),
               connect_message_.message().channels_to_transfer()->size() +
                   kControlStreams(),
-              local_host, 0),
+              local_host, 0, std::move(auth_key)),
       channels_(channels),
       stream_to_channel_(
           StreamToChannel(event_loop->configuration(), my_node, remote_node_)),
@@ -364,7 +365,8 @@ void SctpClientConnection::HandleData(const Message *message) {
 }
 
 MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop,
-                                         std::string config_sha256)
+                                         std::string config_sha256,
+                                         std::vector<uint8_t> auth_key)
     : event_loop_(event_loop),
       client_status_(event_loop_),
       config_sha256_(std::move(config_sha256)) {
@@ -415,7 +417,7 @@ MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop,
     connections_.emplace_back(new SctpClientConnection(
         event_loop, source_node, event_loop->node(), "", &channels_,
         client_status_.FindClientIndex(source_node), &client_status_,
-        config_sha256_));
+        config_sha256_, auth_key));
   }
 }
 

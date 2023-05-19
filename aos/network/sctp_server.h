@@ -24,7 +24,7 @@ namespace message_bridge {
 class SctpServer {
  public:
   SctpServer(int streams, std::string_view local_host = "0.0.0.0",
-             int local_port = 9971);
+             int local_port = 9971, std::vector<uint8_t> sctp_auth_key = {});
 
   ~SctpServer() {}
 

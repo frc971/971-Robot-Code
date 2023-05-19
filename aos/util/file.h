@@ -29,6 +29,10 @@ std::string ReadFileToStringOrDie(const std::string_view filename);
 std::optional<std::string> MaybeReadFileToString(
     const std::string_view filename);
 
+// Returns the complete contents of filename as a byte vector. LOG(FATAL)s if
+// any errors are encountered.
+std::vector<uint8_t> ReadFileToVecOrDie(const std::string_view filename);
+
 // Creates filename if it doesn't exist and sets the contents to contents.
 void WriteStringToFileOrDie(const std::string_view filename,
                             const std::string_view contents,

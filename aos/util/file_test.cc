@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 
+#include "gmock/gmock-matchers.h"
 #include "gtest/gtest.h"
 
 #include "aos/realtime.h"
@@ -13,12 +14,23 @@ namespace aos {
 namespace util {
 namespace testing {
 
+using ::testing::ElementsAre;
+
 // Basic test of reading a normal file.
 TEST(FileTest, ReadNormalFile) {
   const std::string tmpdir(aos::testing::TestTmpDir());
   const std::string test_file = tmpdir + "/test_file";
   ASSERT_EQ(0, system(("echo contents > " + test_file).c_str()));
   EXPECT_EQ("contents\n", ReadFileToStringOrDie(test_file));
+}
+
+// Basic test of reading a normal file.
+TEST(FileTest, ReadNormalFileToBytes) {
+  const std::string tmpdir(aos::testing::TestTmpDir());
+  const std::string test_file = tmpdir + "/test_file";
+  ASSERT_EQ(0, system(("echo contents > " + test_file).c_str()));
+  EXPECT_THAT(ReadFileToVecOrDie(test_file),
+              ElementsAre('c', 'o', 'n', 't', 'e', 'n', 't', 's', '\n'));
 }
 
 // Tests reading a file with 0 size, among other weird things.

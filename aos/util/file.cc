@@ -47,6 +47,22 @@ std::optional<std::string> MaybeReadFileToString(
   return r;
 }
 
+std::vector<uint8_t> ReadFileToVecOrDie(const std::string_view filename) {
+  std::vector<uint8_t> r;
+  ScopedFD fd(open(::std::string(filename).c_str(), O_RDONLY));
+  PCHECK(fd.get() != -1) << ": opening " << filename;
+  while (true) {
+    uint8_t buffer[1024];
+    const ssize_t result = read(fd.get(), buffer, sizeof(buffer));
+    PCHECK(result >= 0) << ": reading from " << filename;
+    if (result == 0) {
+      break;
+    }
+    std::copy(buffer, buffer + result, std::back_inserter(r));
+  }
+  return r;
+}
+
 void WriteStringToFileOrDie(const std::string_view filename,
                             const std::string_view contents,
                             mode_t permissions) {

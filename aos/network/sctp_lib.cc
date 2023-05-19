@@ -31,6 +31,25 @@ typedef union {
   struct sctp_sndrcvinfo sndrcvinfo;
 } _sctp_cmsg_data_t;
 
+// Returns true if SCTP authentication is available and enabled.
+bool SctpAuthIsEnabled() {
+#if HAS_SCTP_AUTH
+  struct stat current_stat;
+  if (stat("/proc/sys/net/sctp/auth_enable", &current_stat) != -1) {
+    int value = std::stoi(
+        util::ReadFileToStringOrDie("/proc/sys/net/sctp/auth_enable"));
+    CHECK(value == 0 || value == 1)
+        << "Unknown auth enable sysctl value: " << value;
+    return value == 1;
+  } else {
+    LOG(WARNING) << "/proc/sys/net/sctp/auth_enable doesn't exist.";
+    return false;
+  }
+#else
+  return false;
+#endif
+}
+
 }  // namespace
 
 bool Ipv6Enabled() {
@@ -270,6 +289,44 @@ void SctpReadWrite::OpenSocket(const struct sockaddr_storage &sockaddr_local) {
                       sizeof(subscribe)) == 0);
   }
 
+  if (!auth_key_.empty()) {
+    CHECK(SctpAuthIsEnabled())
+        << "SCTP Authentication is disabled. Enable it with 'sysctl -w "
+           "net.sctp.auth_enable=1' and try again.";
+#if HAS_SCTP_AUTH
+    // Set up the key with id `1`.
+    sctp_authkey *const authkey =
+        (sctp_authkey *)malloc(sizeof(sctp_authkey) + auth_key_.size());
+    authkey->sca_keynumber = 1;
+    authkey->sca_keylength = auth_key_.size();
+    authkey->sca_assoc_id = SCTP_ALL_ASSOC;
+    memcpy(&authkey->sca_key, auth_key_.data(), auth_key_.size());
+
+    PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_AUTH_KEY, authkey,
+                      sizeof(sctp_authkey) + auth_key_.size()) == 0);
+    free(authkey);
+
+    // Set key `1` as active.
+    struct sctp_authkeyid authkeyid;
+    authkeyid.scact_keynumber = 1;
+    authkeyid.scact_assoc_id = SCTP_ALL_ASSOC;
+    PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_AUTH_ACTIVE_KEY, &authkeyid,
+                      sizeof(authkeyid)) == 0);
+
+    // Set up authentication for data chunks.
+    struct sctp_authchunk authchunk;
+    authchunk.sauth_chunk = 0;
+
+    PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_AUTH_CHUNK, &authchunk,
+                      sizeof(authchunk)) == 0);
+
+    // Disallow the null key.
+    authkeyid.scact_keynumber = 0;
+    PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_AUTH_DELETE_KEY, &authkeyid,
+                      sizeof(authkeyid)) == 0);
+#endif
+  }
+
   DoSetMaxSize();
 }
 
@@ -334,6 +391,9 @@ bool SctpReadWrite::SendMessage(
   VLOG(2) << "Sent " << data.size();
   return true;
 }
+
+SctpReadWrite::SctpReadWrite(std::vector<uint8_t> auth_key)
+    : auth_key_(std::move(auth_key)) {}
 
 void SctpReadWrite::FreeMessage(aos::unique_c_ptr<Message> &&message) {
   if (use_pool_) {
