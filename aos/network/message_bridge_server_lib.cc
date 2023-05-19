@@ -530,8 +530,10 @@ void MessageBridgeServer::MaybeIncrementInvalidConnectionCount(
 
   ServerConnection *connection = server_status_.server_connection()[node_index];
 
-  connection->mutate_invalid_connection_count(
-      connection->invalid_connection_count() + 1);
+  if (connection != nullptr) {
+    connection->mutate_invalid_connection_count(
+        connection->invalid_connection_count() + 1);
+  }
 }
 
 void MessageBridgeServer::HandleData(const Message *message) {
