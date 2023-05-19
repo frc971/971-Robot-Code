@@ -2,7 +2,7 @@
 #define AOS_NETWORK_SCTP_LIB_H_
 
 #include <arpa/inet.h>
-#include <netinet/sctp.h>
+#include <linux/sctp.h>
 
 #include <memory>
 #include <optional>

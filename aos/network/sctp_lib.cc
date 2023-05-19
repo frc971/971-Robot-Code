@@ -1,9 +1,10 @@
 #include "aos/network/sctp_lib.h"
 
 #include <arpa/inet.h>
+#include <linux/sctp.h>
 #include <net/if.h>
 #include <netdb.h>
-#include <netinet/sctp.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -211,7 +212,7 @@ void LogSctpStatus(int fd, sctp_assoc_t assoc_id) {
   status.sstat_assoc_id = assoc_id;
 
   socklen_t size = sizeof(status);
-  const int result = getsockopt(fd, SOL_SCTP, SCTP_STATUS,
+  const int result = getsockopt(fd, IPPROTO_SCTP, SCTP_STATUS,
                                 reinterpret_cast<void *>(&status), &size);
   if (result == -1 && errno == EINVAL) {
     LOG(INFO) << "sctp_status) not associated";
@@ -265,7 +266,7 @@ void SctpReadWrite::OpenSocket(const struct sockaddr_storage &sockaddr_local) {
     subscribe.sctp_association_event = 1;
     subscribe.sctp_stream_change_event = 1;
     subscribe.sctp_partial_delivery_event = 1;
-    PCHECK(setsockopt(fd(), SOL_SCTP, SCTP_EVENTS, (char *)&subscribe,
+    PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_EVENTS, (char *)&subscribe,
                       sizeof(subscribe)) == 0);
   }
 

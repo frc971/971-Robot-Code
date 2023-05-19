@@ -1,10 +1,10 @@
 #include "aos/network/sctp_server.h"
 
 #include <arpa/inet.h>
+#include <linux/sctp.h>
 #include <net/if.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <netinet/sctp.h>
 #include <sys/socket.h>
 
 #include <cstdio>

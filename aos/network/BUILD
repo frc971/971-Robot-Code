@@ -156,7 +156,6 @@ cc_library(
     deps = [
         "//aos:unique_malloc_ptr",
         "//aos/util:file",
-        "//third_party/lksctp-tools:sctp",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -175,7 +174,6 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":sctp_lib",
-        "//third_party/lksctp-tools:sctp",
     ],
 )
 
@@ -260,7 +258,6 @@ cc_library(
         "//aos:unique_malloc_ptr",
         "//aos/events:shm_event_loop",
         "//aos/events/logging:log_reader",
-        "//third_party/lksctp-tools:sctp",
     ],
 )
 
@@ -294,7 +291,6 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":sctp_lib",
-        "//third_party/lksctp-tools:sctp",
     ],
 )
 

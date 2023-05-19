@@ -1,8 +1,8 @@
 #include "aos/network/sctp_client.h"
 
 #include <arpa/inet.h>
+#include <linux/sctp.h>
 #include <net/if.h>
-#include <netinet/sctp.h>
 #include <sys/socket.h>
 
 #include <cstdlib>

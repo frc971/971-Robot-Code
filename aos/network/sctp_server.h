@@ -2,10 +2,10 @@
 #define AOS_NETWORK_SCTP_SERVER_H_
 
 #include <arpa/inet.h>
+#include <linux/sctp.h>
 #include <net/if.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <netinet/sctp.h>
 #include <sys/socket.h>
 
 #include <cstdio>
