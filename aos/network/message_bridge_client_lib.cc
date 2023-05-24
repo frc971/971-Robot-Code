@@ -396,7 +396,7 @@ MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop,
                     << configuration::CleanedChannelToString(channel)
                     << ", won't resend it.";
             channels_[channel_index].last_queue_index =
-                raw_fetcher->context().queue_index;
+                raw_fetcher->context().remote_queue_index;
             channels_[channel_index].last_timestamp =
                 raw_fetcher->context().monotonic_remote_time;
           }
