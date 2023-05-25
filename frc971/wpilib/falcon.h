@@ -1,0 +1,91 @@
+#ifndef FRC971_WPILIB_FALCON_H_
+#define FRC971_WPILIB_FALCON_H_
+
+#include <chrono>
+#include <cinttypes>
+#include <vector>
+
+#include "ctre/phoenixpro/TalonFX.hpp"
+#include "glog/logging.h"
+
+#include "aos/init.h"
+#include "aos/logging/logging.h"
+#include "frc971/control_loops/drivetrain/drivetrain_can_position_generated.h"
+
+namespace control_loops = ::frc971::control_loops;
+
+namespace frc971 {
+namespace wpilib {
+
+static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
+
+// Gets info from and writes to falcon motors using the TalonFX controller.
+class Falcon {
+ public:
+  Falcon(int device_id, std::string canbus,
+         std::vector<ctre::phoenixpro::BaseStatusSignalValue *> *signals,
+         double stator_current_limit, double supply_current_limit);
+
+  void PrintConfigs();
+
+  void WriteConfigs(ctre::phoenixpro::signals::InvertedValue invert);
+
+  ctre::phoenixpro::hardware::TalonFX *talon() { return &talon_; }
+
+  void SerializePosition(flatbuffers::FlatBufferBuilder *fbb);
+
+  std::optional<flatbuffers::Offset<control_loops::CANFalcon>> TakeOffset();
+
+  int device_id() const { return device_id_; }
+  float device_temp() const { return device_temp_.GetValue().value(); }
+  float supply_voltage() const { return supply_voltage_.GetValue().value(); }
+  float supply_current() const { return supply_current_.GetValue().value(); }
+  float torque_current() const { return torque_current_.GetValue().value(); }
+  float duty_cycle() const { return duty_cycle_.GetValue().value(); }
+  float position() const {
+    return static_cast<units::angle::radian_t>(position_.GetValue()).value();
+  }
+
+  // returns the monotonic timestamp of the latest timesynced reading in the
+  // timebase of the the syncronized CAN bus clock.
+  int64_t GetTimestamp() {
+    std::chrono::nanoseconds latest_timestamp =
+        torque_current_.GetTimestamp().GetTime();
+
+    return latest_timestamp.count();
+  }
+
+  void RefreshNontimesyncedSignals() { device_temp_.Refresh(); };
+
+  void set_stator_current_limit(double stator_current_limit) {
+    stator_current_limit_ = stator_current_limit;
+  }
+
+  void set_supply_current_limit(double supply_current_limit) {
+    supply_current_limit_ = supply_current_limit;
+  }
+
+ private:
+  ctre::phoenixpro::hardware::TalonFX talon_;
+  int device_id_;
+
+  ctre::phoenixpro::signals::InvertedValue inverted_;
+
+  ctre::phoenixpro::StatusSignalValue<units::temperature::celsius_t>
+      device_temp_;
+  ctre::phoenixpro::StatusSignalValue<units::voltage::volt_t> supply_voltage_;
+  ctre::phoenixpro::StatusSignalValue<units::current::ampere_t> supply_current_,
+      torque_current_;
+  ctre::phoenixpro::StatusSignalValue<units::angle::turn_t> position_;
+  ctre::phoenixpro::StatusSignalValue<units::dimensionless::scalar_t>
+      duty_cycle_;
+
+  double stator_current_limit_;
+  double supply_current_limit_;
+
+  std::optional<flatbuffers::Offset<control_loops::CANFalcon>>
+      last_position_offset_;
+};
+}  // namespace wpilib
+}  // namespace frc971
+#endif  // FRC971_WPILIB_FALCON_H_
