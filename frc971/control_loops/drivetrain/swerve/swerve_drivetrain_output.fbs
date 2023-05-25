@@ -1,0 +1,16 @@
+namespace frc971.control_loops.drivetrain.swerve;
+
+table SwerveModuleOutput {
+  // Current in Amps.
+  rotation_current:double (id: 0);
+  translation_current:double (id: 1);
+}
+
+table Output {
+  front_left_output:SwerveModuleOutput (id: 0);
+  front_right_output:SwerveModuleOutput (id: 1);
+  back_left_output:SwerveModuleOutput (id: 2);
+  back_right_output:SwerveModuleOutput (id: 3);
+}
+
+root_type Output;

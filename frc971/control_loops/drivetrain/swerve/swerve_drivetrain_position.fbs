@@ -1,0 +1,22 @@
+namespace frc971.control_loops.drivetrain.swerve;
+
+table SwerveModulePosition {
+  // Rotation in radians
+  rotation_encoder:double (id: 0);
+  // Translation in meters
+  translation_encoder:double (id: 1);
+
+  // Speed in radians/s
+  rotation_speed:double (id: 2);
+  // Speed in m/s
+  translation_speed:double (id: 3);
+}
+
+table Position {
+  front_left_position:SwerveModulePosition (id: 0);
+  front_right_position:SwerveModulePosition (id: 1);
+  back_left_position:SwerveModulePosition (id: 2);
+  back_right_position:SwerveModulePosition (id: 3);
+}
+
+root_type Position;
