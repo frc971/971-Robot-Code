@@ -317,7 +317,9 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   LOG(INFO) << "Hostname: " << event_loop_->node()->hostname()->string_view();
 
   int channel_index = 0;
+  size_t max_channel_buffer_size = 0u;
   size_t max_channel_size = 0u;
+  size_t reliable_buffer_size = 0u;
   const Channel *const timestamp_channel = configuration::GetChannel(
       event_loop_->configuration(), "/aos", Timestamp::GetFullyQualifiedName(),
       event_loop_->name(), event_loop_->node());
@@ -336,12 +338,19 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
       bool any_reliable = false;
       for (const Connection *connection : *channel->destination_nodes()) {
         if (connection->time_to_live() == 0) {
+          reliable_buffer_size +=
+              static_cast<size_t>(channel->max_size() + kHeaderSizeOverhead());
           any_reliable = true;
         }
       }
 
-      max_channel_size =
-          std::max(static_cast<size_t>(channel->max_size()), max_channel_size);
+      max_channel_size = std::max(
+          static_cast<size_t>(channel->max_size() + kHeaderSizeOverhead()),
+          max_channel_size);
+      max_channel_buffer_size = std::max(
+          static_cast<size_t>(channel->max_size() + kHeaderSizeOverhead()) *
+              channel->destination_nodes()->size(),
+          max_channel_buffer_size);
 
       std::unique_ptr<ChannelState> state(new ChannelState{
           channel, channel_index,
@@ -404,9 +413,12 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   // Buffer up the max size a bit so everything fits nicely.
   LOG(INFO) << "Max message read size for all clients is " << max_size;
   LOG(INFO) << "Max message write size for all clients is "
-            << max_channel_size + kHeaderSizeOverhead();
+            << max_channel_buffer_size;
+  LOG(INFO) << "Reliable buffer size for all clients is "
+            << reliable_buffer_size;
   server_.SetMaxReadSize(max_size);
-  server_.SetMaxWriteSize(max_channel_size + kHeaderSizeOverhead());
+  server_.SetMaxWriteSize(
+      std::max(max_channel_buffer_size, reliable_buffer_size));
 
   // Since we are doing interleaving mode 1, we will see at most 1 message being
   // delivered at a time for an association.  That means, if a message is
@@ -417,7 +429,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   // and 1 new one with more of the data).
   server_.SetPoolSize((destination_nodes + 1) * 2);
 
-  allocator_ = FixedAllocator(max_channel_size + kHeaderSizeOverhead());
+  allocator_ = FixedAllocator(max_channel_size);
 
   reconnected_.reserve(max_channels());
 }
