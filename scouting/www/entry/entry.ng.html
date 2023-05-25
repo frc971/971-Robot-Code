@@ -151,15 +151,33 @@
       <!-- 'Balancing' during auto. -->
       <div *ngIf="autoPhase" class="d-grid gap-2">
         <label>
-          <input #docked type="checkbox" />
+          <input
+            #docked
+            type="radio"
+            id="option1"
+            name="docked_engaged"
+            value="docked"
+          />
           Docked (on the charging station)
         </label>
         <label>
-          <input #engaged type="checkbox" />
-          Engaged (level &amp; station lights on)
+          <input
+            #engaged
+            type="radio"
+            id="option2"
+            name="docked_engaged"
+            value="dockedengaged"
+          />
+          Docked &amp; Engaged (level &amp; station lights on)
         </label>
         <label>
-          <input #attempted type="checkbox" />
+          <input
+            #attempted
+            type="radio"
+            id="option3"
+            name="docked_engaged"
+            value="failed"
+          />
           Attempted to dock and engage but failed
         </label>
         <button
@@ -233,15 +251,33 @@
       <!-- 'Balancing' during auto. -->
       <div *ngIf="autoPhase" class="d-grid gap-1">
         <label>
-          <input #docked type="checkbox" />
+          <input
+            #docked
+            type="radio"
+            id="option1"
+            name="docked_engaged"
+            value="docked"
+          />
           Docked (on the charging station)
         </label>
         <label>
-          <input #engaged type="checkbox" />
-          Engaged (level &amp; station lights on)
+          <input
+            #engaged
+            type="radio"
+            id="option2"
+            name="docked_engaged"
+            value="dockedengaged"
+          />
+          Docked &amp; Engaged (level &amp; station lights on)
         </label>
         <label>
-          <input #attempted type="checkbox" />
+          <input
+            #attempted
+            type="radio"
+            id="option3"
+            name="docked_engaged"
+            value="failed"
+          />
           Attempted to dock and engage but failed
         </label>
         <button
@@ -273,15 +309,33 @@
         DEAD
       </button>
       <label>
-        <input #docked type="checkbox" />
+        <input
+          #docked
+          type="radio"
+          id="option1"
+          name="docked_engaged"
+          value="docked"
+        />
         Docked (on the charging station)
       </label>
       <label>
-        <input #engaged type="checkbox" />
-        Engaged (level &amp; station lights on)
+        <input
+          #engaged
+          type="radio"
+          id="option2"
+          name="docked_engaged"
+          value="dockedengaged"
+        />
+        Docked &amp; Engaged (level &amp; station lights on)
       </label>
       <label>
-        <input #attempted type="checkbox" />
+        <input
+          #attempted
+          type="radio"
+          id="option3"
+          name="docked_engaged"
+          value="failed"
+        />
         Attempted to dock and engage but failed
       </label>
       <button
