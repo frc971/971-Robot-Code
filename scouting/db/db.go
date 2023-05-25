@@ -62,9 +62,8 @@ type Action struct {
 	CompLevel   string `gorm:"primaryKey"`
 	// This contains a serialized scouting.webserver.requests.ActionType flatbuffer.
 	CompletedAction []byte
-	// TODO(phil): Get all the spellings of "timestamp" to be the same.
-	TimeStamp   int64 `gorm:"primaryKey"`
-	CollectedBy string
+	Timestamp       int64 `gorm:"primaryKey"`
+	CollectedBy     string
 }
 
 type NotesData struct {
