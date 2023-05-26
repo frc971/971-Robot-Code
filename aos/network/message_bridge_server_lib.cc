@@ -335,8 +335,8 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   for (const Channel *channel : *event_loop_->configuration()->channels()) {
     CHECK(channel->has_source_node());
 
-    if (configuration::ChannelIsSendableOnNode(channel, event_loop_->node()) &&
-        channel->has_destination_nodes()) {
+    if (configuration::ChannelIsForwardedFromNode(channel,
+                                                  event_loop_->node())) {
       bool any_reliable = false;
       for (const Connection *connection : *channel->destination_nodes()) {
         if (connection->time_to_live() == 0) {

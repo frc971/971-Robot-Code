@@ -157,6 +157,10 @@ bool ChannelIsSendableOnNode(const Channel *channel, const Node *node);
 // provided node.
 bool ChannelIsReadableOnNode(const Channel *channel, const Node *node);
 
+// Returns true if the provided channel is sent on the provided node and gets
+// forwarded to any other nodes.
+bool ChannelIsForwardedFromNode(const Channel *channel, const Node *node);
+
 // Returns true if the message is supposed to be logged on this node.
 bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node);
 bool ChannelMessageIsLoggedOnNode(const Channel *channel,

@@ -1353,6 +1353,15 @@ bool ChannelIsReadableOnNode(const Channel *channel, const Node *node) {
   return false;
 }
 
+bool ChannelIsForwardedFromNode(const Channel *channel, const Node *node) {
+  if (node == nullptr) {
+    return false;
+  }
+  return ChannelIsSendableOnNode(channel, node) &&
+         channel->has_destination_nodes() &&
+         channel->destination_nodes()->size() > 0u;
+}
+
 bool ChannelMessageIsLoggedOnNode(const Channel *channel, const Node *node) {
   if (node == nullptr) {
     // Single node world.  If there is a local logger, then we want to use

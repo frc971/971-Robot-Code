@@ -438,6 +438,63 @@ TEST_F(ConfigurationTest, ChannelIsReadableOnNode) {
       ChannelIsReadableOnNode(&bad_channel2.message(), &node.message()));
 }
 
+// Tests that our channel is forwarded helpers work as intended.
+TEST_F(ConfigurationTest, ChannelIsForwardedFromNode) {
+  FlatbufferDetachedBuffer<Channel> forwarded_channel(JsonToFlatbuffer(
+      R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "destination_nodes": [
+    {
+      "name": "baz"
+    },
+    {
+      "name": "foo"
+    }
+  ]
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> single_node_channel(JsonToFlatbuffer(
+      R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping"
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Channel> zero_length_vector_channel(JsonToFlatbuffer(
+      R"channel({
+  "name": "/test",
+  "type": "aos.examples.Ping",
+  "source_node": "bar",
+  "destination_nodes": [
+  ]
+})channel",
+      Channel::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Node> node(JsonToFlatbuffer(
+      R"node({
+  "name": "bar"
+})node",
+      Node::MiniReflectTypeTable()));
+
+  FlatbufferDetachedBuffer<Node> readable_node(JsonToFlatbuffer(
+      R"node({
+  "name": "foo"
+})node",
+      Node::MiniReflectTypeTable()));
+
+  EXPECT_TRUE(ChannelIsForwardedFromNode(&forwarded_channel.message(),
+                                         &node.message()));
+  EXPECT_FALSE(ChannelIsForwardedFromNode(&forwarded_channel.message(),
+                                          &readable_node.message()));
+  EXPECT_FALSE(
+      ChannelIsForwardedFromNode(&single_node_channel.message(), nullptr));
+  EXPECT_FALSE(ChannelIsForwardedFromNode(&zero_length_vector_channel.message(),
+                                          &node.message()));
+}
+
 // Tests that our node message is logged helpers work as intended.
 TEST_F(ConfigurationTest, ChannelMessageIsLoggedOnNode) {
   FlatbufferDetachedBuffer<Channel> logged_on_self_channel(JsonToFlatbuffer(
