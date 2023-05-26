@@ -133,7 +133,9 @@ void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
             peer.timestamp_logger->MakeBuilder();
 
         flatbuffers::Offset<flatbuffers::Vector<uint8_t>> boot_uuid_offset =
-            server_status->BootUUID(peer.node_index).PackVector(builder.fbb());
+            server_status->BootUUID(peer.node_index)
+                .value()
+                .PackVector(builder.fbb());
 
         RemoteMessage::Builder remote_message_builder =
             builder.MakeBuilder<RemoteMessage>();
@@ -540,7 +542,8 @@ void MessageBridgeServer::MaybeIncrementInvalidConnectionCount(
   const int node_index =
       configuration::GetNodeIndex(event_loop_->configuration(), client_node);
 
-  ServerConnection *connection = server_status_.server_connection()[node_index];
+  ServerConnection *connection =
+      server_status_.nodes()[node_index].value().server_connection;
 
   if (connection != nullptr) {
     connection->mutate_invalid_connection_count(

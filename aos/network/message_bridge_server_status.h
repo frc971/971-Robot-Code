@@ -24,6 +24,21 @@ class MessageBridgeServerStatus {
   // Time after which we consider the timestamp stale, and reset the filter.
   static constexpr std::chrono::milliseconds kTimestampStaleTimeout{1000};
 
+  // Struct containing all of the relevant state for a given node.
+  struct NodeState {
+    // Mutable status for this node, to be sent out in the ServerStatistics
+    // message.
+    ServerConnection *server_connection;
+    // Fetcher to retrieve timestamps for the connection to the other node, for
+    // feeding the timestamp filter.
+    aos::Fetcher<Timestamp> timestamp_fetcher;
+    // Filter for calculating current time offsets to the other node.
+    ClippedAverageFilter filter;
+    // Current boot UUID of the other node, if available.
+    std::optional<UUID> boot_uuid;
+    uint32_t partial_deliveries = 0;
+  };
+
   MessageBridgeServerStatus(aos::EventLoop *event_loop,
                             std::function<void(const Context &)> send_data =
                                 std::function<void(const Context &)>());
@@ -48,29 +63,28 @@ class MessageBridgeServerStatus {
   void Connect(int node_index, monotonic_clock::time_point monotonic_now);
   void Disconnect(int node_index);
 
-  // Returns the boot UUID for a node, or an empty string_view if there isn't
-  // one.
-  const UUID &BootUUID(int node_index) const { return boot_uuids_[node_index]; }
+  // Returns the boot UUID for a node, or nullopt if there isn't one.
+  const std::optional<UUID> &BootUUID(int node_index) const {
+    return nodes_[node_index].value().boot_uuid;
+  }
 
   void AddPartialDeliveries(int node_index, uint32_t partial_deliveries) {
-    partial_deliveries_[node_index] += partial_deliveries;
+    nodes_[node_index].value().partial_deliveries += partial_deliveries;
   }
 
   void ResetPartialDeliveries(int node_index) {
-    partial_deliveries_[node_index] = 0;
+    nodes_[node_index].value().partial_deliveries = 0;
   }
 
   uint32_t PartialDeliveries(int node_index) const {
-    return partial_deliveries_[node_index];
+    return nodes_[node_index].value().partial_deliveries;
   }
 
   // Returns the ServerConnection message which is updated by the server.
   ServerConnection *FindServerConnection(std::string_view node_name);
   ServerConnection *FindServerConnection(const Node *node);
 
-  const std::vector<ServerConnection *> &server_connection() {
-    return server_connection_;
-  }
+  const std::vector<std::optional<NodeState>> &nodes() { return nodes_; }
 
   // Disables sending out any statistics messages.
   void DisableStatistics(bool destroy_senders);
@@ -106,16 +120,7 @@ class MessageBridgeServerStatus {
   aos::Fetcher<ClientStatistics> client_statistics_fetcher_;
 
   // ServerConnection to fill out the offsets for from each node.
-  std::vector<ServerConnection *> server_connection_;
-  // All of these are indexed by the other node index.
-  // Fetcher to grab timestamps and therefore offsets from the other nodes.
-  std::vector<aos::Fetcher<Timestamp>> timestamp_fetchers_;
-  // Bidirectional filters for each connection.
-  std::vector<ClippedAverageFilter> filters_;
-
-  // List of UUIDs for each node.
-  std::vector<UUID> boot_uuids_;
-  std::vector<bool> has_boot_uuids_;
+  std::vector<std::optional<NodeState>> nodes_;
 
   // Sender for the timestamps that we are forwarding over the network.
   aos::Sender<Timestamp> timestamp_sender_;
@@ -128,8 +133,6 @@ class MessageBridgeServerStatus {
   std::function<void(const Context &)> send_data_;
 
   bool send_ = true;
-
-  std::vector<uint32_t> partial_deliveries_;
 
   size_t invalid_connection_count_ = 0u;
 

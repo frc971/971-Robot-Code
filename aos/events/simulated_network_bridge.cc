@@ -276,8 +276,9 @@ class RawMessageDelayer {
       fbb.ForceDefaults(true);
       // Reset the filter every time the UUID changes.  There's probably a more
       // clever way to do this, but that means a better concept of rebooting.
-      if (server_status_->BootUUID(destination_node_index_) !=
-          send_node_factory_->boot_uuid()) {
+      if (!server_status_->BootUUID(destination_node_index_).has_value() ||
+          (server_status_->BootUUID(destination_node_index_).value() !=
+           send_node_factory_->boot_uuid())) {
         server_status_->ResetFilter(destination_node_index_);
         server_status_->SetBootUUID(destination_node_index_,
                                     send_node_factory_->boot_uuid());
@@ -442,9 +443,9 @@ SimulatedMessageBridge::SimulatedMessageBridge(
               node_state->event_loop->node());
 
           size_t node_index = 0;
-          for (ServerConnection *connection :
-               node_state->server_status->server_connection()) {
-            if (connection != nullptr) {
+          for (const std::optional<MessageBridgeServerStatus::NodeState>
+                   &connection : node_state->server_status->nodes()) {
+            if (connection.has_value()) {
               node_state->server_status->ResetFilter(node_index);
             }
             ++node_index;
@@ -636,8 +637,9 @@ void SimulatedMessageBridge::State::SetEventLoop(
 
   {
     size_t node_index = 0;
-    for (ServerConnection *connection : server_status->server_connection()) {
-      if (connection) {
+    for (const std::optional<MessageBridgeServerStatus::NodeState> &connection :
+         server_status->nodes()) {
+      if (connection.has_value()) {
         if (boot_uuids_[node_index] != UUID::Zero()) {
           switch (server_state_[node_index]) {
             case message_bridge::State::DISCONNECTED:

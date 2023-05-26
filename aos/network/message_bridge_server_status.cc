@@ -90,13 +90,7 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
       statistics_.message().connections()->size());
   client_offsets_.reserve(statistics_.message().connections()->size());
 
-  filters_.resize(event_loop->configuration()->nodes()->size());
-  partial_deliveries_.resize(event_loop->configuration()->nodes()->size());
-  boot_uuids_.resize(event_loop->configuration()->nodes()->size(),
-                     UUID::Zero());
-  has_boot_uuids_.resize(event_loop->configuration()->nodes()->size(), false);
-  timestamp_fetchers_.resize(event_loop->configuration()->nodes()->size());
-  server_connection_.resize(event_loop->configuration()->nodes()->size());
+  nodes_.resize(event_loop->configuration()->nodes()->size());
 
   // Seed up all the per-node connection state.
   // We are making the assumption here that every connection is bidirectional
@@ -117,13 +111,13 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
                                   Timestamp::GetFullyQualifiedName(),
                                   event_loop_->name(), destination_node);
 
-    timestamp_fetchers_[node_index] = event_loop_->MakeFetcher<Timestamp>(
-        other_timestamp_channel->name()->string_view());
-
-    // And then find the server connection that we should be populating
-    // statistics into.
-    server_connection_[node_index] =
-        FindServerConnection(destination_node->name()->string_view());
+    nodes_[node_index] = NodeState{
+        .server_connection =
+            FindServerConnection(destination_node->name()->string_view()),
+        .timestamp_fetcher = event_loop_->MakeFetcher<Timestamp>(
+            other_timestamp_channel->name()->string_view()),
+        .filter = {},
+        .boot_uuid = std::nullopt};
   }
 
   statistics_timer_ = event_loop_->AddTimer([this]() { Tick(); });
@@ -150,40 +144,40 @@ ServerConnection *MessageBridgeServerStatus::FindServerConnection(
 
 void MessageBridgeServerStatus::SetBootUUID(int node_index,
                                             const UUID &boot_uuid) {
-  has_boot_uuids_[node_index] = true;
-  boot_uuids_[node_index] = boot_uuid;
+  nodes_[node_index].value().boot_uuid = boot_uuid;
   SendStatistics();
   last_statistics_send_time_ = event_loop_->monotonic_now();
 }
 
 void MessageBridgeServerStatus::ClearBootUUID(int node_index) {
-  has_boot_uuids_[node_index] = false;
+  nodes_[node_index].value().boot_uuid.reset();
   SendStatistics();
   last_statistics_send_time_ = event_loop_->monotonic_now();
 }
 
 void MessageBridgeServerStatus::ResetFilter(int node_index) {
-  filters_[node_index].Reset();
-  server_connection_[node_index]->mutate_monotonic_offset(0);
+  nodes_[node_index].value().filter.Reset();
+  nodes_[node_index].value().server_connection->mutate_monotonic_offset(0);
 }
 
 void MessageBridgeServerStatus::Connect(
     int node_index, monotonic_clock::time_point monotonic_now) {
-  server_connection_[node_index]->mutate_state(State::CONNECTED);
+  ServerConnection *message = nodes_[node_index].value().server_connection;
+  message->mutate_state(State::CONNECTED);
   // Only count connections if the timestamp changes.  This deduplicates
   // multiple channel connections at the same point in time.
-  if (server_connection_[node_index]->connected_since_time() !=
+  if (message->connected_since_time() !=
       monotonic_now.time_since_epoch().count()) {
-    server_connection_[node_index]->mutate_connection_count(
-        server_connection_[node_index]->connection_count() + 1);
-    server_connection_[node_index]->mutate_connected_since_time(
+    message->mutate_connection_count(message->connection_count() + 1);
+    message->mutate_connected_since_time(
         monotonic_now.time_since_epoch().count());
   }
 }
 
 void MessageBridgeServerStatus::Disconnect(int node_index) {
-  server_connection_[node_index]->mutate_state(State::DISCONNECTED);
-  server_connection_[node_index]->mutate_connected_since_time(
+  ServerConnection *message = nodes_[node_index].value().server_connection;
+  message->mutate_state(State::DISCONNECTED);
+  message->mutate_connected_since_time(
       aos::monotonic_clock::min_time.time_since_epoch().count());
 }
 
@@ -208,8 +202,10 @@ void MessageBridgeServerStatus::SendStatistics() {
 
     flatbuffers::Offset<flatbuffers::String> boot_uuid_offset;
     if (connection->state() == State::CONNECTED &&
-        has_boot_uuids_[node_index]) {
-      boot_uuid_offset = boot_uuids_[node_index].PackString(builder.fbb());
+        nodes_[node_index].value().boot_uuid.has_value()) {
+      boot_uuid_offset =
+          nodes_[node_index].value().boot_uuid.value().PackString(
+              builder.fbb());
     }
 
     ServerConnection::Builder server_connection_builder =
@@ -220,7 +216,7 @@ void MessageBridgeServerStatus::SendStatistics() {
         connection->dropped_packets());
     server_connection_builder.add_sent_packets(connection->sent_packets());
     server_connection_builder.add_partial_deliveries(
-        partial_deliveries_[node_index]);
+        PartialDeliveries(node_index));
 
     if (connection->connected_since_time() !=
         monotonic_clock::min_time.time_since_epoch().count()) {
@@ -239,7 +235,7 @@ void MessageBridgeServerStatus::SendStatistics() {
     }
 
     // TODO(austin): If it gets stale, drop it too.
-    if (!filters_[node_index].MissingSamples()) {
+    if (!nodes_[node_index].value().filter.MissingSamples()) {
       server_connection_builder.add_monotonic_offset(
           connection->monotonic_offset());
     }
@@ -313,22 +309,22 @@ void MessageBridgeServerStatus::Tick() {
         continue;
       }
 
-      timestamp_fetchers_[node_index].Fetch();
+      aos::Fetcher<Timestamp> &timestamp_fetcher =
+          nodes_[node_index].value().timestamp_fetcher;
+      timestamp_fetcher.Fetch();
 
       // Find the offset computed on their node for this client connection
       // using their timestamp message.
       bool has_their_offset = false;
       chrono::nanoseconds their_offset = chrono::nanoseconds(0);
-      if (timestamp_fetchers_[node_index].get() != nullptr) {
+      if (timestamp_fetcher.get() != nullptr) {
         for (const ClientOffset *client_offset :
-             *timestamp_fetchers_[node_index]->offsets()) {
+             *timestamp_fetcher->offsets()) {
           if (client_offset->node()->name()->string_view() ==
               event_loop_->node()->name()->string_view()) {
             // Make sure it has an offset and the message isn't stale.
             if (client_offset->has_monotonic_offset()) {
-              if (timestamp_fetchers_[node_index]
-                          .context()
-                          .monotonic_event_time +
+              if (timestamp_fetcher.context().monotonic_event_time +
                       MessageBridgeServerStatus::kTimestampStaleTimeout >
                   event_loop_->context().monotonic_event_time) {
                 their_offset =
@@ -344,26 +340,24 @@ void MessageBridgeServerStatus::Tick() {
         }
       }
 
-      if (has_their_offset &&
-          server_connection_[node_index]->state() == State::CONNECTED) {
+      ServerConnection *message = nodes_[node_index].value().server_connection;
+      ClippedAverageFilter &filter = nodes_[node_index].value().filter;
+      if (has_their_offset && message->state() == State::CONNECTED) {
         // Update the filters.
-        if (filters_[node_index].MissingSamples()) {
+        if (filter.MissingSamples()) {
           // Update the offset the first time.  This should be representative.
-          filters_[node_index].set_base_offset(
+          filter.set_base_offset(
               chrono::nanoseconds(connection->monotonic_offset()));
         }
         // The message_bridge_clients are the ones running the first filter.  So
         // set the values from that and let the averaging filter run from there.
-        filters_[node_index].FwdSet(
-            timestamp_fetchers_[node_index].context().monotonic_remote_time,
-            chrono::nanoseconds(connection->monotonic_offset()));
-        filters_[node_index].RevSet(
-            client_statistics_fetcher_.context().monotonic_event_time,
-            their_offset);
+        filter.FwdSet(timestamp_fetcher.context().monotonic_remote_time,
+                      chrono::nanoseconds(connection->monotonic_offset()));
+        filter.RevSet(client_statistics_fetcher_.context().monotonic_event_time,
+                      their_offset);
 
         // Publish!
-        server_connection_[node_index]->mutate_monotonic_offset(
-            -filters_[node_index].offset().count());
+        message->mutate_monotonic_offset(-filter.offset().count());
       }
 
       // Now fill out the Timestamp message with the offset from the client.
