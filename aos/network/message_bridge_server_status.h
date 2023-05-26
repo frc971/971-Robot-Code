@@ -3,6 +3,8 @@
 
 #include <chrono>
 #include <functional>
+#include <map>
+#include <vector>
 
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_client_generated.h"
@@ -29,8 +31,18 @@ class MessageBridgeServerStatus {
     // Mutable status for this node, to be sent out in the ServerStatistics
     // message.
     ServerConnection *server_connection;
-    // Fetcher to retrieve timestamps for the connection to the other node, for
-    // feeding the timestamp filter.
+    // Mapping of channel index in the Configuration to the statistics for that
+    // channel.
+    std::map<const aos::Channel *, ServerChannelStatisticsT> channel_statistics;
+    // Buffer for the above offsets, because flatbuffers doesn't provide a great
+    // API for creating vectors of tables (namely, CreateUninitializedVector
+    // doesn't work for tables because it can't handle offsets and
+    // CreateVector(len, generator_function) creates an intermediate
+    // std::vector).
+    std::vector<flatbuffers::Offset<ServerChannelStatistics>>
+        channel_offsets_buffer;
+    // Fetcher to retrieve timestamps for the connection to the other node,
+    // for feeding the timestamp filter.
     aos::Fetcher<Timestamp> timestamp_fetcher;
     // Filter for calculating current time offsets to the other node.
     ClippedAverageFilter filter;
@@ -79,6 +91,12 @@ class MessageBridgeServerStatus {
   uint32_t PartialDeliveries(int node_index) const {
     return nodes_[node_index].value().partial_deliveries;
   }
+
+  // Track an additional sent/dropped packets on each channel. node_index
+  // represents the node being sent to.
+  // node_index must be a valid client node.
+  void AddSentPacket(int node_index, const aos::Channel *channel);
+  void AddDroppedPacket(int node_index, const aos::Channel *channel);
 
   // Returns the ServerConnection message which is updated by the server.
   ServerConnection *FindServerConnection(std::string_view node_name);

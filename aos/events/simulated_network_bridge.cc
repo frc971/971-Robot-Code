@@ -54,6 +54,8 @@ class RawMessageDelayer {
     if (server_status) {
       server_connection_ =
           server_status_->FindServerConnection(send_node_factory_->node());
+      server_index_ = configuration::GetNodeIndex(
+          send_node_factory_->configuration(), send_node_factory_->node());
     }
     if (delivery_time_is_logged_ && timestamp_loggers != nullptr &&
         !forwarding_disabled_) {
@@ -153,13 +155,11 @@ class RawMessageDelayer {
         << " at " << fetch_node_factory_->monotonic_now();
 
     if (timer_) {
-      server_connection_->mutate_sent_packets(
-          server_connection_->sent_packets() + 1);
+      server_status_->AddSentPacket(server_index_, channel_);
       timer_->Schedule(monotonic_delivered_time);
       timer_scheduled_ = true;
     } else {
-      server_connection_->mutate_dropped_packets(
-          server_connection_->dropped_packets() + 1);
+      server_status_->AddDroppedPacket(server_index_, channel_);
       sent_ = true;
     }
   }
@@ -192,13 +192,11 @@ class RawMessageDelayer {
         << " at " << fetch_node_factory_->monotonic_now();
 
     if (timer_) {
-      server_connection_->mutate_sent_packets(
-          server_connection_->sent_packets() + 1);
+      server_status_->AddSentPacket(server_index_, channel_);
       timer_->Schedule(monotonic_delivered_time);
       timer_scheduled_ = true;
     } else {
-      server_connection_->mutate_dropped_packets(
-          server_connection_->dropped_packets() + 1);
+      server_status_->AddDroppedPacket(server_index_, channel_);
       sent_ = true;
       Schedule();
     }
@@ -218,8 +216,7 @@ class RawMessageDelayer {
 
       if (server_connection_->state() != State::CONNECTED) {
         sent_ = true;
-        server_connection_->mutate_dropped_packets(
-            server_connection_->dropped_packets() + 1);
+        server_status_->AddDroppedPacket(server_index_, channel_);
         continue;
       }
 
@@ -241,8 +238,7 @@ class RawMessageDelayer {
                    << fetcher_->context().monotonic_event_time << " now is "
                    << fetch_node_factory_->monotonic_now();
       sent_ = true;
-      server_connection_->mutate_dropped_packets(
-          server_connection_->dropped_packets() + 1);
+      server_status_->AddDroppedPacket(server_index_, channel_);
     }
   }
 
@@ -400,6 +396,7 @@ class RawMessageDelayer {
   bool sent_ = false;
 
   ServerConnection *server_connection_ = nullptr;
+  int server_index_ = -1;
   MessageBridgeClientStatus *client_status_ = nullptr;
   int client_index_ = -1;
   ClientConnection *client_connection_ = nullptr;

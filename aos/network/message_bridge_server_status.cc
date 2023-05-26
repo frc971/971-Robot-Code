@@ -18,6 +18,21 @@ namespace {
 
 namespace chrono = std::chrono;
 
+std::vector<const Channel *> ChannelsForNodePair(
+    const Configuration *configuration, const aos::Node *source_node,
+    const aos::Node *destination_node) {
+  std::vector<const Channel *> result;
+  for (size_t channel_index = 0;
+       channel_index < configuration->channels()->size(); ++channel_index) {
+    const aos::Channel *channel = configuration->channels()->Get(channel_index);
+    if (configuration::ChannelIsForwardedFromNode(channel, source_node) &&
+        configuration::ChannelIsReadableOnNode(channel, destination_node)) {
+      result.push_back(channel);
+    }
+  }
+  return result;
+}
+
 // Builds up the "empty" server statistics message to be pointed to by all the
 // connections, updated at runtime, and periodically sent.
 FlatbufferDetachedBuffer<ServerStatistics> MakeServerStatistics(
@@ -111,13 +126,30 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
                                   Timestamp::GetFullyQualifiedName(),
                                   event_loop_->name(), destination_node);
 
-    nodes_[node_index] = NodeState{
-        .server_connection =
-            FindServerConnection(destination_node->name()->string_view()),
-        .timestamp_fetcher = event_loop_->MakeFetcher<Timestamp>(
-            other_timestamp_channel->name()->string_view()),
-        .filter = {},
-        .boot_uuid = std::nullopt};
+    ServerConnection *const server_connection =
+        FindServerConnection(destination_node->name()->string_view());
+    std::map<const Channel *, ServerChannelStatisticsT> channel_statistics;
+    for (const Channel *channel :
+         ChannelsForNodePair(event_loop_->configuration(), event_loop_->node(),
+                             destination_node)) {
+      ServerChannelStatisticsT initial_statistics;
+      initial_statistics.channel_index =
+          configuration::ChannelIndex(event_loop_->configuration(), channel);
+      initial_statistics.sent_packets = 0;
+      initial_statistics.dropped_packets = 0;
+      channel_statistics[channel] = initial_statistics;
+    }
+
+    nodes_[node_index] =
+        NodeState{.server_connection = server_connection,
+                  .channel_statistics = channel_statistics,
+                  .channel_offsets_buffer =
+                      std::vector<flatbuffers::Offset<ServerChannelStatistics>>(
+                          channel_statistics.size()),
+                  .timestamp_fetcher = event_loop_->MakeFetcher<Timestamp>(
+                      other_timestamp_channel->name()->string_view()),
+                  .filter = {},
+                  .boot_uuid = std::nullopt};
   }
 
   statistics_timer_ = event_loop_->AddTimer([this]() { Tick(); });
@@ -140,6 +172,23 @@ ServerConnection *MessageBridgeServerStatus::FindServerConnection(
 ServerConnection *MessageBridgeServerStatus::FindServerConnection(
     const Node *node) {
   return FindServerConnection(node->name()->string_view());
+}
+
+void MessageBridgeServerStatus::AddSentPacket(int node_index,
+                                              const aos::Channel *channel) {
+  CHECK(nodes_[node_index].has_value());
+  NodeState &node = nodes_[node_index].value();
+  ServerConnection *connection = node.server_connection;
+  connection->mutate_sent_packets(connection->sent_packets() + 1);
+  node.channel_statistics[channel].sent_packets++;
+}
+void MessageBridgeServerStatus::AddDroppedPacket(int node_index,
+                                                 const aos::Channel *channel) {
+  CHECK(nodes_[node_index].has_value());
+  NodeState &node = nodes_[node_index].value();
+  ServerConnection *connection = node.server_connection;
+  connection->mutate_dropped_packets(connection->dropped_packets() + 1);
+  node.channel_statistics[channel].dropped_packets++;
 }
 
 void MessageBridgeServerStatus::SetBootUUID(int node_index,
@@ -193,6 +242,7 @@ void MessageBridgeServerStatus::SendStatistics() {
     const int node_index =
         configuration::GetNodeIndex(event_loop_->configuration(),
                                     connection->node()->name()->string_view());
+    CHECK(nodes_[node_index].has_value());
 
     flatbuffers::Offset<flatbuffers::String> node_name_offset =
         builder.fbb()->CreateString(connection->node()->name()->string_view());
@@ -208,6 +258,22 @@ void MessageBridgeServerStatus::SendStatistics() {
               builder.fbb());
     }
 
+    {
+      size_t index = 0;
+      CHECK_EQ(nodes_[node_index].value().channel_offsets_buffer.size(),
+               nodes_[node_index].value().channel_statistics.size());
+      for (const auto &channel :
+           nodes_[node_index].value().channel_statistics) {
+        nodes_[node_index].value().channel_offsets_buffer.at(index) =
+            ServerChannelStatistics::Pack(*builder.fbb(), &channel.second);
+        index++;
+      }
+    }
+    const flatbuffers::Offset<
+        flatbuffers::Vector<flatbuffers::Offset<ServerChannelStatistics>>>
+        channels_offset = builder.fbb()->CreateVector(
+            nodes_[node_index].value().channel_offsets_buffer);
+
     ServerConnection::Builder server_connection_builder =
         builder.MakeBuilder<ServerConnection>();
     server_connection_builder.add_node(node_offset);
@@ -217,6 +283,7 @@ void MessageBridgeServerStatus::SendStatistics() {
     server_connection_builder.add_sent_packets(connection->sent_packets());
     server_connection_builder.add_partial_deliveries(
         PartialDeliveries(node_index));
+    server_connection_builder.add_channels(channels_offset);
 
     if (connection->connected_since_time() !=
         monotonic_clock::min_time.time_since_epoch().count()) {

@@ -2,6 +2,19 @@ include "aos/configuration.fbs";
 
 namespace aos.message_bridge;
 
+// Per-channel statistics for any channels being forwarded to other nodes by the
+// message bridge server.
+table ServerChannelStatistics {
+  // Index into the configuration channels list for this channel.
+  channel_index:uint64 (id: 0);
+  // Total number of messages that were sent (this does not necessarily
+  // mean that the message made it to the client).
+  sent_packets:uint (id: 1);
+  // Total number of messages that were dropped while sending (e.g.,
+  // those dropped by the kernel).
+  dropped_packets:uint (id: 2);
+}
+
 // State of the connection.
 enum State: ubyte {
   CONNECTED,
@@ -45,6 +58,10 @@ table ServerConnection {
   // Number of times we've had an invalid connection with something wrong in
   // the connection message, but we were able to match which node it was.
   invalid_connection_count:uint (id: 9);
+
+  // Statistics for every channel being forwarded to this node. Ordering is arbitrary;
+  // the channels are identified by an index in the ServerChannelStatistics.
+  channels:[ServerChannelStatistics] (id: 10);
 }
 
 // Statistics for all connections to all the clients.

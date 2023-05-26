@@ -59,6 +59,7 @@
       "name": "/roborio/aos",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "roborio",
+      "max_size": 2048,
       "frequency": 10,
       "num_senders": 2
     },

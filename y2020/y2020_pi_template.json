@@ -57,6 +57,7 @@
       "name": "/pi{{ NUM }}/aos",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "pi{{ NUM }}",
+      "max_size": 2048,
       "frequency": 10,
       "num_senders": 2
     },

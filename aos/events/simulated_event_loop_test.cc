@@ -619,6 +619,17 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
 
           EXPECT_TRUE(connection->has_monotonic_offset());
           EXPECT_EQ(connection->monotonic_offset(), 0);
+
+          EXPECT_TRUE(connection->has_channels());
+          int accumulated_sent_count = 0;
+          int accumulated_dropped_count = 0;
+          for (const message_bridge::ServerChannelStatistics *channel :
+               *connection->channels()) {
+            accumulated_sent_count += channel->sent_packets();
+            accumulated_dropped_count += channel->dropped_packets();
+          }
+          EXPECT_EQ(connection->sent_packets(), accumulated_sent_count);
+          EXPECT_EQ(connection->dropped_packets(), accumulated_dropped_count);
         }
         ++pi1_server_statistics_count;
       });
@@ -639,6 +650,18 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
         EXPECT_EQ(connection->monotonic_offset(), 0);
         EXPECT_EQ(connection->connection_count(), 1u);
         EXPECT_EQ(connection->connected_since_time(), 0);
+
+        EXPECT_TRUE(connection->has_channels());
+        int accumulated_sent_count = 0;
+        int accumulated_dropped_count = 0;
+        for (const message_bridge::ServerChannelStatistics *channel :
+             *connection->channels()) {
+          accumulated_sent_count += channel->sent_packets();
+          accumulated_dropped_count += channel->dropped_packets();
+        }
+        EXPECT_EQ(connection->sent_packets(), accumulated_sent_count);
+        EXPECT_EQ(connection->dropped_packets(), accumulated_dropped_count);
+
         ++pi2_server_statistics_count;
       });
 
@@ -658,6 +681,18 @@ TEST_P(RemoteMessageSimulatedEventLoopTest, MultinodePingPong) {
         EXPECT_EQ(connection->monotonic_offset(), 0);
         EXPECT_EQ(connection->connection_count(), 1u);
         EXPECT_EQ(connection->connected_since_time(), 0);
+
+        EXPECT_TRUE(connection->has_channels());
+        int accumulated_sent_count = 0;
+        int accumulated_dropped_count = 0;
+        for (const message_bridge::ServerChannelStatistics *channel :
+             *connection->channels()) {
+          accumulated_sent_count += channel->sent_packets();
+          accumulated_dropped_count += channel->dropped_packets();
+        }
+        EXPECT_EQ(connection->sent_packets(), accumulated_sent_count);
+        EXPECT_EQ(connection->dropped_packets(), accumulated_dropped_count);
+
         ++pi3_server_statistics_count;
       });
 

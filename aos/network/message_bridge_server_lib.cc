@@ -79,14 +79,12 @@ void ChannelState::SendData(SctpServer *server, FixedAllocator *allocator,
                          fbb.GetSize()),
                      peer.sac_assoc_id, peer.stream,
                      peer.connection->time_to_live() / 1000000)) {
-      peer.server_connection_statistics->mutate_sent_packets(
-          peer.server_connection_statistics->sent_packets() + 1);
+      peer.server_status->AddSentPacket(peer.node_index, channel_);
       if (peer.logged_remotely) {
         ++sent_count;
       }
     } else {
-      peer.server_connection_statistics->mutate_dropped_packets(
-          peer.server_connection_statistics->dropped_packets() + 1);
+      peer.server_status->AddDroppedPacket(peer.node_index, channel_);
     }
   }
 
@@ -254,11 +252,9 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
                                             fbb.GetSize()),
                            peer.sac_assoc_id, peer.stream,
                            peer.connection->time_to_live() / 1000000)) {
-            peer.server_connection_statistics->mutate_sent_packets(
-                peer.server_connection_statistics->sent_packets() + 1);
+            peer.server_status->AddSentPacket(peer.node_index, channel_);
           } else {
-            peer.server_connection_statistics->mutate_dropped_packets(
-                peer.server_connection_statistics->dropped_packets() + 1);
+            peer.server_status->AddDroppedPacket(peer.node_index, channel_);
           }
         }
       }

@@ -191,6 +191,7 @@
       "name": "/logger/aos",
       "type": "aos.message_bridge.ServerStatistics",
       "source_node": "logger",
+      "max_size": 2048,
       "frequency": 10,
       "num_senders": 2
     },
