@@ -1,4 +1,4 @@
-namespace y2023.control_loops.drivetrain;
+namespace frc971.control_loops.drivetrain;
 
 table CANFalcon {
   // The CAN id of the falcon

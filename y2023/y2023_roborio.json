@@ -154,7 +154,7 @@
     },
     {
       "name": "/drivetrain",
-      "type": "y2023.control_loops.drivetrain.CANPosition",
+      "type": "frc971.control_loops.drivetrain.CANPosition",
       "source_node": "roborio",
       "frequency": 220,
       "num_senders": 2,

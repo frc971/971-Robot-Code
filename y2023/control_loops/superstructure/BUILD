@@ -58,8 +58,8 @@ flatbuffer_cc_library(
     deps = [
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//frc971/vision:calibration_fbs",
-        "//y2023/control_loops/drivetrain:drivetrain_can_position_fbs",
     ],
 )
 
@@ -103,12 +103,12 @@ cc_library(
         "//aos/events:event_loop",
         "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops:control_loop",
+        "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/shooter_interpolation:interpolation",
         "//y2023:constants",
         "//y2023/constants:constants_fbs",
         "//y2023/constants:simulated_constants_sender",
-        "//y2023/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//y2023/control_loops/superstructure/arm",
         "//y2023/control_loops/superstructure/arm:arm_trajectories_fbs",
     ],

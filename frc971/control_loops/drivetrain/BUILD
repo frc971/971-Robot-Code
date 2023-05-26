@@ -8,6 +8,12 @@ load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 package(default_visibility = ["//visibility:public"])
 
 flatbuffer_cc_library(
+    name = "drivetrain_can_position_fbs",
+    srcs = ["drivetrain_can_position.fbs"],
+    gen_reflections = 1,
+)
+
+flatbuffer_cc_library(
     name = "spline_goal_fbs",
     srcs = ["spline_goal.fbs"],
     gen_reflections = 1,
@@ -352,11 +358,11 @@ cc_library(
         ":drivetrain_config",
         ":drivetrain_states",
         ":gear",
+        ":spline_goal_fbs",
         "//aos:math",
-        "//frc971/control_loops:polytope",
         "//frc971/control_loops:coerce_goal",
         "//frc971/control_loops:control_loops_fbs",
-        ":spline_goal_fbs",
+        "//frc971/control_loops:polytope",
         "//frc971/control_loops:state_feedback_loop",
     ] + select({
         "@platforms//os:linux": [
@@ -364,8 +370,8 @@ cc_library(
             ":drivetrain_output_fbs",
             ":drivetrain_position_fbs",
             ":drivetrain_status_fbs",
-            "//frc971/input:robot_state_fbs",
             "//aos/util:log_interval",
+            "//frc971/input:robot_state_fbs",
         ],
         "@platforms//os:none": [
             ":drivetrain_goal_float_fbs",
@@ -469,8 +475,8 @@ cc_library(
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:state_feedback_loop",
         "//frc971/queues:gyro_fbs",
-        "//frc971/wpilib:imu_fbs",
         "//frc971/wpilib:imu_batch_fbs",
+        "//frc971/wpilib:imu_fbs",
         "//y2016:constants",
         "//y2016/control_loops/drivetrain:polydrivetrain_plants",
     ] + cpu_select({
@@ -498,17 +504,17 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":drivetrain_config",
-        ":trajectory_generator",
-        ":drivetrain_lib",
-        ":localizer_fbs",
         ":drivetrain_goal_fbs",
-        ":drivetrain_status_fbs",
-        ":drivetrain_position_fbs",
+        ":drivetrain_lib",
         ":drivetrain_output_fbs",
+        ":drivetrain_position_fbs",
+        ":drivetrain_status_fbs",
         ":drivetrain_test_lib",
-        "//frc971/control_loops:control_loop_test",
+        ":localizer_fbs",
+        ":trajectory_generator",
         "//aos/events/logging:log_writer",
         "//aos/testing:googletest",
+        "//frc971/control_loops:control_loop_test",
         "//frc971/queues:gyro_fbs",
         "//frc971/wpilib:imu_fbs",
     ] + cpu_select({
@@ -633,8 +639,8 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":distance_spline",
-        "//aos/testing:googletest",
         "//aos:flatbuffers",
+        "//aos/testing:googletest",
         "//aos/testing:test_shm",
         "@com_github_gflags_gflags//:gflags",
     ] + cpu_select({
@@ -712,8 +718,8 @@ cc_test(
     linkstatic = True,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":trajectory",
         ":drivetrain_test_lib",
+        ":trajectory",
         "//aos/testing:googletest",
         "//aos/testing:test_shm",
         "//y2016:constants",

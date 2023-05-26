@@ -40,6 +40,7 @@
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
 #include "frc971/autonomous/auto_mode_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_can_position_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
 #include "frc971/queues/gyro_generated.h"
@@ -57,7 +58,6 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2023/can_configuration_generated.h"
 #include "y2023/constants.h"
-#include "y2023/control_loops/drivetrain/drivetrain_can_position_generated.h"
 #include "y2023/control_loops/superstructure/led_indicator.h"
 #include "y2023/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_position_generated.h"
@@ -224,9 +224,9 @@ class Falcon {
 
   ctre::phoenixpro::hardware::TalonFX *talon() { return &talon_; }
 
-  flatbuffers::Offset<drivetrain::CANFalcon> WritePosition(
-      flatbuffers::FlatBufferBuilder *fbb) {
-    drivetrain::CANFalcon::Builder builder(*fbb);
+  flatbuffers::Offset<frc971::control_loops::drivetrain::CANFalcon>
+  WritePosition(flatbuffers::FlatBufferBuilder *fbb) {
+    frc971::control_loops::drivetrain::CANFalcon::Builder builder(*fbb);
     builder.add_id(device_id_);
     builder.add_device_temp(device_temp());
     builder.add_supply_voltage(supply_voltage());
@@ -289,7 +289,9 @@ class CANSensorReader {
       : event_loop_(event_loop),
         signals_(signals_registry.begin(), signals_registry.end()),
         can_position_sender_(
-            event_loop->MakeSender<drivetrain::CANPosition>("/drivetrain")),
+            event_loop
+                ->MakeSender<frc971::control_loops::drivetrain::CANPosition>(
+                    "/drivetrain")),
         roller_falcon_data_(std::nullopt) {
     event_loop->SetRuntimeRealtimePriority(40);
     event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({1}));
@@ -340,7 +342,9 @@ class CANSensorReader {
       falcon->RefreshNontimesyncedSignals();
     }
 
-    aos::SizedArray<flatbuffers::Offset<drivetrain::CANFalcon>, kCANFalconCount>
+    aos::SizedArray<
+        flatbuffers::Offset<frc971::control_loops::drivetrain::CANFalcon>,
+        kCANFalconCount>
         falcons;
 
     for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
@@ -349,11 +353,14 @@ class CANSensorReader {
     }
 
     auto falcons_list =
-        builder.fbb()->CreateVector<flatbuffers::Offset<drivetrain::CANFalcon>>(
-            falcons);
+        builder.fbb()
+            ->CreateVector<flatbuffers::Offset<
+                frc971::control_loops::drivetrain::CANFalcon>>(falcons);
 
-    drivetrain::CANPosition::Builder can_position_builder =
-        builder.MakeBuilder<drivetrain::CANPosition>();
+    frc971::control_loops::drivetrain::CANPosition::Builder
+        can_position_builder =
+            builder
+                .MakeBuilder<frc971::control_loops::drivetrain::CANPosition>();
 
     can_position_builder.add_falcons(falcons_list);
     can_position_builder.add_timestamp(right_front_->GetTimestamp());
@@ -379,7 +386,8 @@ class CANSensorReader {
   aos::EventLoop *event_loop_;
 
   const std::vector<ctre::phoenixpro::BaseStatusSignalValue *> signals_;
-  aos::Sender<drivetrain::CANPosition> can_position_sender_;
+  aos::Sender<frc971::control_loops::drivetrain::CANPosition>
+      can_position_sender_;
 
   std::shared_ptr<Falcon> right_front_, right_back_, right_under_, left_front_,
       left_back_, left_under_, roller_falcon_;
