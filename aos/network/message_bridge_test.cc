@@ -1468,8 +1468,7 @@ TEST_P(MessageBridgeParameterizedTest, TooBigConnect) {
   // We are faking the application names by passing in --application_name=foo
   OnPi1();
 
-  MakePi1Server(
-      "dummy sha256                                                    ");
+  MakePi1Server();
   MakePi1Client();
 
   // And build the app for testing.
@@ -1522,12 +1521,21 @@ TEST_P(MessageBridgeParameterizedTest, TooBigConnect) {
                           kControlStreams(),
                       "");
 
-    client.SetMaxReadSize(100000);
-    client.SetMaxWriteSize(100000);
-
     client.SetPoolSize(2u);
 
-    const std::string big_data(100000, 'a');
+    // Passes on a machine with:
+    // 5.4.0-147-generic
+    // net.core.wmem_default = 212992
+    // net.core.wmem_max = 212992
+    // net.core.rmem_default = 212992
+    // net.core.rmem_max = 212992
+    // If too large it appears the message is never delivered to the
+    // application.
+    constexpr size_t kBigMessageSize = 64000;
+    client.SetMaxReadSize(kBigMessageSize);
+    client.SetMaxWriteSize(kBigMessageSize);
+
+    const std::string big_data(kBigMessageSize, 'a');
 
     pi2_client_event_loop->epoll()->OnReadable(client.fd(), [&]() {
       aos::unique_c_ptr<Message> message = client.Read();
