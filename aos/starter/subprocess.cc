@@ -102,25 +102,29 @@ SignalListener::~SignalListener() { loop_->epoll()->DeleteFd(signalfd_.fd()); }
 Application::Application(std::string_view name,
                          std::string_view executable_name,
                          aos::EventLoop *event_loop,
-                         std::function<void()> on_change)
+                         std::function<void()> on_change,
+                         QuietLogging quiet_flag)
     : name_(name),
       path_(executable_name),
       event_loop_(event_loop),
       start_timer_(event_loop_->AddTimer([this] {
         status_ = aos::starter::State::RUNNING;
-        LOG(INFO) << "Started '" << name_ << "' pid: " << pid_;
+        LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
+            << "Started '" << name_ << "' pid: " << pid_;
       })),
       restart_timer_(event_loop_->AddTimer([this] { DoStart(); })),
       stop_timer_(event_loop_->AddTimer([this] {
         if (kill(pid_, SIGKILL) == 0) {
-          LOG(WARNING) << "Failed to stop, sending SIGKILL to '" << name_
-                       << "' pid: " << pid_;
+          LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+              << "Failed to stop, sending SIGKILL to '" << name_
+              << "' pid: " << pid_;
         }
       })),
       pipe_timer_(event_loop_->AddTimer([this]() { FetchOutputs(); })),
       child_status_handler_(
           event_loop_->AddTimer([this]() { MaybeHandleSignal(); })),
-      on_change_(on_change) {
+      on_change_(on_change),
+      quiet_flag_(quiet_flag) {
   event_loop_->OnRun([this]() {
     // Every second poll to check if the child is dead. This is used as a
     // default for the case where the user is not directly catching SIGCHLD and
@@ -132,12 +136,13 @@ Application::Application(std::string_view name,
 
 Application::Application(const aos::Application *application,
                          aos::EventLoop *event_loop,
-                         std::function<void()> on_change)
+                         std::function<void()> on_change,
+                         QuietLogging quiet_flag)
     : Application(application->name()->string_view(),
                   application->has_executable_name()
                       ? application->executable_name()->string_view()
                       : application->name()->string_view(),
-                  event_loop, on_change) {
+                  event_loop, on_change, quiet_flag) {
   user_name_ = application->has_user() ? application->user()->str() : "";
   user_ = application->has_user() ? FindUid(user_name_.c_str()) : std::nullopt;
   group_ = application->has_user() ? FindPrimaryGidForUser(user_name_.c_str())
@@ -179,7 +184,8 @@ void Application::DoStart() {
 
   if (pid != 0) {
     if (pid == -1) {
-      PLOG(WARNING) << "Failed to fork '" << name_ << "'";
+      PLOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+          << "Failed to fork '" << name_ << "'";
       stop_reason_ = aos::starter::LastStopReason::FORK_ERR;
       status_ = aos::starter::State::STOPPED;
     } else {
@@ -187,7 +193,8 @@ void Application::DoStart() {
       id_ = next_id_++;
       start_time_ = event_loop_->monotonic_now();
       status_ = aos::starter::State::STARTING;
-      LOG(INFO) << "Starting '" << name_ << "' pid " << pid_;
+      LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
+          << "Starting '" << name_ << "' pid " << pid_;
 
       // Set up timer which moves application to RUNNING state if it is still
       // alive in 1 second.
@@ -286,7 +293,8 @@ void Application::DoStart() {
   // If we got here, something went wrong
   status_pipes_.write->Write(
       static_cast<uint32_t>(aos::starter::LastStopReason::EXECV_ERR));
-  PLOG(WARNING) << "Could not execute " << name_ << " (" << path_ << ')';
+  PLOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+      << "Could not execute " << name_ << " (" << path_ << ')';
 
   _exit(EXIT_FAILURE);
 }
@@ -323,8 +331,9 @@ void Application::DoStop(bool restart) {
   switch (status_) {
     case aos::starter::State::STARTING:
     case aos::starter::State::RUNNING: {
-      LOG(INFO) << "Stopping '" << name_ << "' pid: " << pid_ << " with signal "
-                << SIGINT;
+      LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
+          << "Stopping '" << name_ << "' pid: " << pid_ << " with signal "
+          << SIGINT;
       status_ = aos::starter::State::STOPPING;
 
       kill(pid_, SIGINT);
@@ -369,7 +378,8 @@ void Application::DoStop(bool restart) {
 void Application::QueueStart() {
   status_ = aos::starter::State::WAITING;
 
-  LOG(INFO) << "Restarting " << name_ << " in 3 seconds";
+  LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
+      << "Restarting " << name_ << " in 3 seconds";
   restart_timer_->Schedule(event_loop_->monotonic_now() +
                            std::chrono::seconds(3));
   start_timer_->Disable();
@@ -531,11 +541,13 @@ bool Application::MaybeHandleSignal() {
   switch (status_) {
     case aos::starter::State::STARTING: {
       if (exit_code_.value() == 0) {
-        LOG(INFO) << "Application '" << name_ << "' pid " << pid_
-                  << " exited with status " << exit_code_.value();
+        LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
+            << "Application '" << name_ << "' pid " << pid_
+            << " exited with status " << exit_code_.value();
       } else {
-        LOG(WARNING) << "Failed to start '" << name_ << "' on pid " << pid_
-                     << " : Exited with status " << exit_code_.value();
+        LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+            << "Failed to start '" << name_ << "' on pid " << pid_
+            << " : Exited with status " << exit_code_.value();
       }
       if (autorestart()) {
         QueueStart();
@@ -547,12 +559,13 @@ bool Application::MaybeHandleSignal() {
     }
     case aos::starter::State::RUNNING: {
       if (exit_code_.value() == 0) {
-        LOG(INFO) << "Application '" << name_ << "' pid " << pid_
-                  << " exited with status " << exit_code_.value();
+        LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
+            << "Application '" << name_ << "' pid " << pid_
+            << " exited with status " << exit_code_.value();
       } else {
-        LOG(WARNING) << "Application '" << name_ << "' pid " << pid_
-                     << " exited unexpectedly with status "
-                     << exit_code_.value();
+        LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+            << "Application '" << name_ << "' pid " << pid_
+            << " exited unexpectedly with status " << exit_code_.value();
       }
       if (autorestart()) {
         QueueStart();
@@ -563,8 +576,9 @@ bool Application::MaybeHandleSignal() {
       break;
     }
     case aos::starter::State::STOPPING: {
-      LOG(INFO) << "Successfully stopped '" << name_ << "' pid: " << pid_
-                << " with status " << exit_code_.value();
+      LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
+          << "Successfully stopped '" << name_ << "' pid: " << pid_
+          << " with status " << exit_code_.value();
       status_ = aos::starter::State::STOPPED;
 
       // Disable force stop timer since the process already died

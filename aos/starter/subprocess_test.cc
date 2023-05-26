@@ -100,4 +100,83 @@ TEST_F(SubprocessTest, CaptureStderr) {
   ASSERT_EQ(aos::starter::State::STOPPED, echo_stderr.status());
 }
 
+TEST_F(SubprocessTest, UnactiveQuietFlag) {
+  const std::string config_file =
+      ::aos::testing::ArtifactPath("aos/events/pingpong_config.json");
+
+  ::testing::internal::CaptureStderr();
+
+  // Set up application without quiet flag active
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(config_file);
+  aos::ShmEventLoop event_loop(&config.message());
+  bool observed_stopped = false;
+  Application error_out(
+      "false", "false", &event_loop,
+      [&observed_stopped, &error_out]() {
+        if (error_out.status() == aos::starter::State::STOPPED) {
+          observed_stopped = true;
+        }
+      },
+      Application::QuietLogging::kNo);
+  ASSERT_FALSE(error_out.autorestart());
+
+  error_out.Start();
+  aos::TimerHandler *exit_timer =
+      event_loop.AddTimer([&event_loop]() { event_loop.Exit(); });
+  event_loop.OnRun([&event_loop, exit_timer]() {
+    exit_timer->Schedule(event_loop.monotonic_now() +
+                         std::chrono::milliseconds(1500));
+  });
+
+  event_loop.Run();
+
+  // Ensure presence of logs without quiet flag
+  std::string output = ::testing::internal::GetCapturedStderr();
+  std::string expectedStart = "Failed to start 'false'";
+  std::string expectedRun = "exited unexpectedly with status";
+
+  ASSERT_TRUE(output.find(expectedStart) != std::string::npos ||
+              output.find(expectedRun) != std::string::npos);
+  EXPECT_TRUE(observed_stopped);
+  EXPECT_EQ(aos::starter::State::STOPPED, error_out.status());
+}
+
+TEST_F(SubprocessTest, ActiveQuietFlag) {
+  const std::string config_file =
+      ::aos::testing::ArtifactPath("aos/events/pingpong_config.json");
+
+  ::testing::internal::CaptureStderr();
+
+  // Set up application with quiet flag active
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(config_file);
+  aos::ShmEventLoop event_loop(&config.message());
+  bool observed_stopped = false;
+  Application error_out(
+      "false", "false", &event_loop,
+      [&observed_stopped, &error_out]() {
+        if (error_out.status() == aos::starter::State::STOPPED) {
+          observed_stopped = true;
+        }
+      },
+      Application::QuietLogging::kYes);
+  ASSERT_FALSE(error_out.autorestart());
+
+  error_out.Start();
+  aos::TimerHandler *exit_timer =
+      event_loop.AddTimer([&event_loop]() { event_loop.Exit(); });
+  event_loop.OnRun([&event_loop, exit_timer]() {
+    exit_timer->Schedule(event_loop.monotonic_now() +
+                         std::chrono::milliseconds(1500));
+  });
+
+  event_loop.Run();
+
+  // Ensure lack of logs with quiet flag
+  ASSERT_TRUE(::testing::internal::GetCapturedStderr().empty());
+  EXPECT_TRUE(observed_stopped);
+  EXPECT_EQ(aos::starter::State::STOPPED, error_out.status());
+}
+
 }  // namespace aos::starter::testing

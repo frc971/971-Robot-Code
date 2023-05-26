@@ -55,15 +55,18 @@ class MemoryCGroup {
 // automatically.
 class Application {
  public:
+  enum class QuietLogging { kYes, kNo };
   Application(const aos::Application *application, aos::EventLoop *event_loop,
-              std::function<void()> on_change);
+              std::function<void()> on_change,
+              QuietLogging quiet_flag = QuietLogging::kNo);
 
   // executable_name is the actual executable path.
   // When sudo is not used, name is used as argv[0] when exec'ing
   // executable_name. When sudo is used it's not possible to pass in a
   // distinct argv[0].
   Application(std::string_view name, std::string_view executable_name,
-              aos::EventLoop *event_loop, std::function<void()> on_change);
+              aos::EventLoop *event_loop, std::function<void()> on_change,
+              QuietLogging quiet_flag = QuietLogging::kNo);
 
   flatbuffers::Offset<aos::starter::ApplicationStatus> PopulateStatus(
       flatbuffers::FlatBufferBuilder *builder, util::Top *top);
@@ -178,6 +181,8 @@ class Application {
   std::function<void()> on_change_;
 
   std::unique_ptr<MemoryCGroup> memory_cgroup_;
+
+  QuietLogging quiet_flag_ = QuietLogging::kNo;
 
   DISALLOW_COPY_AND_ASSIGN(Application);
 };
