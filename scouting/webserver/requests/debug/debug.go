@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2023_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
@@ -163,4 +164,10 @@ func SubmitActions(server string, requestBytes []byte) (*submit_actions_response
 	return sendMessage[submit_actions_response.SubmitActionsResponseT](
 		server+"/requests/submit/submit_actions", requestBytes,
 		submit_actions_response.GetRootAsSubmitActionsResponse)
+}
+
+func Delete2023DataScouting(server string, requestBytes []byte) (*delete_2023_data_scouting_response.Delete2023DataScoutingResponseT, error) {
+	return sendMessage[delete_2023_data_scouting_response.Delete2023DataScoutingResponseT](
+		server+"/requests/delete/delete_2023_data_scouting", requestBytes,
+		delete_2023_data_scouting_response.GetRootAsDelete2023DataScoutingResponse)
 }

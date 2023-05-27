@@ -1,0 +1,7 @@
+namespace scouting.webserver.requests;
+
+table Delete2023DataScoutingResponse {
+    // empty response
+}
+
+root_type Delete2023DataScoutingResponse;

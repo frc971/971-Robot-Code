@@ -1,4 +1,6 @@
 import {Component, OnInit} from '@angular/core';
+import {Builder, ByteBuffer} from 'flatbuffers';
+import {ErrorResponse} from '../../webserver/requests/messages/error_response_generated';
 import {
   Ranking,
   RequestAllDriverRankingsResponse,
@@ -11,6 +13,8 @@ import {
   Note,
   RequestAllNotesResponse,
 } from '../../webserver/requests/messages/request_all_notes_response_generated';
+import {Delete2023DataScouting} from '../../webserver/requests/messages/delete_2023_data_scouting_generated';
+import {Delete2023DataScoutingResponse} from '../../webserver/requests/messages/delete_2023_data_scouting_response_generated';
 
 import {ViewDataRequestor} from '../rpc';
 
@@ -104,16 +108,83 @@ export class ViewComponent {
   }
 
   // TODO(Filip): Add delete functionality.
-  // Gets called when a user clicks the delete icon.
-  async deleteData() {
+  // Gets called when a user clicks the delete icon (note scouting).
+  async deleteNoteData() {
     const block_alerts = document.getElementById(
       'block_alerts'
     ) as HTMLInputElement;
-    if (!block_alerts.checked) {
-      if (!window.confirm('Actually delete data?')) {
-        this.errorMessage = 'Deleting data has not been implemented yet.';
-        return;
-      }
+    if (block_alerts.checked || window.confirm('Actually delete data?')) {
+      this.errorMessage = 'Deleting data has not been implemented yet.';
+      return;
+    }
+  }
+
+  // TODO(Filip): Add delete functionality.
+  // Gets called when a user clicks the delete icon (driver ranking).
+  async deleteDriverRankingData() {
+    const block_alerts = document.getElementById(
+      'block_alerts'
+    ) as HTMLInputElement;
+    if (block_alerts.checked || window.confirm('Actually delete data?')) {
+      this.errorMessage = 'Deleting data has not been implemented yet.';
+      return;
+    }
+  }
+
+  // Gets called when a user clicks the delete icon.
+  async deleteDataScouting(
+    compLevel: string,
+    matchNumber: number,
+    setNumber: number,
+    teamNumber: string
+  ) {
+    const block_alerts = document.getElementById(
+      'block_alerts'
+    ) as HTMLInputElement;
+    if (block_alerts.checked || window.confirm('Actually delete data?')) {
+      await this.requestDeleteDataScouting(
+        compLevel,
+        matchNumber,
+        setNumber,
+        teamNumber
+      );
+      await this.fetchStats2023();
+    }
+  }
+
+  async requestDeleteDataScouting(
+    compLevel: string,
+    matchNumber: number,
+    setNumber: number,
+    teamNumber: string
+  ) {
+    this.progressMessage = 'Deleting data. Please be patient.';
+    const builder = new Builder();
+    const compLevelData = builder.createString(compLevel);
+    const teamNumberData = builder.createString(teamNumber);
+
+    builder.finish(
+      Delete2023DataScouting.createDelete2023DataScouting(
+        builder,
+        compLevelData,
+        matchNumber,
+        setNumber,
+        teamNumberData
+      )
+    );
+
+    const buffer = builder.asUint8Array();
+    const res = await fetch('/requests/delete/delete_2023_data_scouting', {
+      method: 'POST',
+      body: buffer,
+    });
+
+    if (!res.ok) {
+      const resBuffer = await res.arrayBuffer();
+      const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
+      const parsedResponse = ErrorResponse.getRootAsErrorResponse(fbBuffer);
+      const errorMessage = parsedResponse.errorMessage();
+      this.errorMessage = `Received ${res.status} ${res.statusText}: "${errorMessage}"`;
     }
   }
 

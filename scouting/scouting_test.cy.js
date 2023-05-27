@@ -8,6 +8,10 @@ const SEMI_FINAL_2_MATCH_3_TEAM_5254 = 86 * 6 + 1;
 // (index 3) which resolves to team 3990 in quals match 1.
 const QUALS_MATCH_1_TEAM_3990 = 0 * 6 + 3;
 
+// On the 2st row of matches (index 1) click on the fourth team
+// (index 3) which resolves to team 4481 in quals match 1.
+const QUALS_MATCH_2_TEAM_4481 = 1 * 6 + 3;
+
 function disableAlerts() {
   cy.get('#block_alerts').check({force: true}).should('be.checked');
 }
@@ -64,6 +68,54 @@ function getNthReviewField(fieldName, n) {
   let element = cy.get('li').filter(`:contains("${fieldName}: ")`).eq(n);
   element.scrollIntoView();
   return element;
+}
+
+function submitDataScouting(
+  matchButtonKey = SEMI_FINAL_2_MATCH_3_TEAM_5254,
+  teamNumber = 5254
+) {
+  // Click on a random team in the Match list. The exact details here are not
+  // important, but we need to know what they are. This could as well be any
+  // other team from any other match.
+  cy.get('button.match-item').eq(matchButtonKey).click();
+
+  // Select Starting Position.
+  headerShouldBe(teamNumber + ' Init ');
+  cy.get('[type="radio"]').first().check();
+  clickButton('Start Match');
+
+  // Pick and Place Cone in Auto.
+  clickButton('CONE');
+  clickButton('HIGH');
+
+  // Pick and Place Cube in Teleop.
+  clickButton('Start Teleop');
+  clickButton('CUBE');
+  clickButton('LOW');
+
+  // Robot dead and revive.
+  clickButton('DEAD');
+  clickButton('Revive');
+
+  // Endgame.
+  clickButton('Endgame');
+  cy.contains(/Docked & Engaged/).click();
+
+  clickButton('End Match');
+  headerShouldBe(teamNumber + ' Review and Submit ');
+  cy.get('#review_data li')
+    .eq(0)
+    .should('have.text', ' Started match at position 1 ');
+  cy.get('#review_data li').eq(1).should('have.text', ' Picked up kCone ');
+  cy.get('#review_data li')
+    .last()
+    .should(
+      'have.text',
+      ' Ended Match; docked: false, engaged: true, attempted to dock and engage: false '
+    );
+
+  clickButton('Submit');
+  headerShouldBe(teamNumber + ' Success ');
 }
 
 before(() => {
@@ -139,54 +191,37 @@ describe('Scouting app tests', () => {
 
   //TODO(FILIP): Verify last action when the last action header gets added.
   it('should: be able to submit data scouting.', () => {
-    // Click on a random team in the Match list. The exact details here are not
-    // important, but we need to know what they are. This could as well be any
-    // other team from any other match.
-    cy.get('button.match-item').eq(SEMI_FINAL_2_MATCH_3_TEAM_5254).click();
-
-    // Select Starting Position.
-    headerShouldBe('5254 Init ');
-    cy.get('[type="radio"]').first().check();
-    clickButton('Start Match');
-
-    // Pick and Place Cone in Auto.
-    clickButton('CONE');
-    clickButton('HIGH');
-
-    // Pick and Place Cube in Teleop.
-    clickButton('Start Teleop');
-    clickButton('CUBE');
-    clickButton('LOW');
-
-    // Robot dead and revive.
-    clickButton('DEAD');
-    clickButton('Revive');
-
-    // Endgame.
-    clickButton('Endgame');
-    cy.contains(/Docked & Engaged/).click();
-
-    clickButton('End Match');
-    headerShouldBe('5254 Review and Submit ');
-    cy.get('#review_data li')
-      .eq(0)
-      .should('have.text', ' Started match at position 1 ');
-    cy.get('#review_data li').eq(1).should('have.text', ' Picked up kCone ');
-    cy.get('#review_data li')
-      .last()
-      .should(
-        'have.text',
-        ' Ended Match; docked: false, engaged: true, attempted to dock and engage: false '
-      );
-
-    clickButton('Submit');
-    headerShouldBe('5254 Success ');
+    submitDataScouting();
 
     // Now that the data is submitted, the button should be disabled.
     switchToTab('Match List');
     cy.get('button.match-item')
       .eq(SEMI_FINAL_2_MATCH_3_TEAM_5254)
       .should('be.disabled');
+  });
+
+  it('should: be able to delete data scouting entry', () => {
+    // Submit data to delete.
+    submitDataScouting(QUALS_MATCH_2_TEAM_4481, 4481);
+
+    switchToTab('View');
+
+    cy.get('[data-bs-toggle="dropdown"]').click();
+    cy.get('[id="stats_source_dropdown"]').click();
+
+    // Check that table contains data.
+    cy.get('table.table tbody td').should('contain', '4481');
+
+    // Find and click the delete button for the row containing team 4481.
+    cy.get('table.table tbody td')
+      .contains('4481')
+      .parent()
+      .find('[id^="delete_button_"]')
+      .click();
+    cy.on('window:confirm', () => true);
+
+    // Check that deleted data is not in table.
+    cy.get('table.table tbody').should('not.contain', '4481');
   });
 
   it('should: be able to return to correct screen with undo for pick and place.', () => {

@@ -7,6 +7,7 @@ go_library(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     visibility = ["//visibility:public"],
     deps = [
+        "//scouting/webserver/requests/messages:delete_2023_data_scouting_response_go_fbs",
         "//scouting/webserver/requests/messages:error_response_go_fbs",
         "//scouting/webserver/requests/messages:request_2023_data_scouting_response_go_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_response_go_fbs",

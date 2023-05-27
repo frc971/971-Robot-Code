@@ -23,6 +23,8 @@ FILE_NAMES = (
     "submit_driver_ranking_response",
     "submit_actions",
     "submit_actions_response",
+    "delete_2023_data_scouting",
+    "delete_2023_data_scouting_response",
 )
 
 filegroup(

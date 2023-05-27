@@ -10,6 +10,8 @@ ng_pkg(
     ],
     deps = [
         ":node_modules/@angular/forms",
+        "//scouting/webserver/requests/messages:delete_2023_data_scouting_response_ts_fbs",
+        "//scouting/webserver/requests/messages:delete_2023_data_scouting_ts_fbs",
         "//scouting/webserver/requests/messages:error_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_2023_data_scouting_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_2023_data_scouting_ts_fbs",
