@@ -176,9 +176,9 @@ TEST_P(StarterdConfigParamTest, MultiNodeStartStopTest) {
   client_started.Wait();
 
   watcher_loop.Run();
-  ASSERT_TRUE(success);
   test_done_ = true;
   client_thread.join();
+  ASSERT_TRUE(success);
   starterd_thread.join();
 }
 
