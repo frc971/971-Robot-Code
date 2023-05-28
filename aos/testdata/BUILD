@@ -20,6 +20,7 @@ filegroup(
         "invalid_channel_name1.json",
         "invalid_channel_name2.json",
         "invalid_channel_name3.json",
+        "invalid_channel_name4.json",
         "invalid_destination_node.json",
         "invalid_logging_configuration.json",
         "invalid_nodes.json",

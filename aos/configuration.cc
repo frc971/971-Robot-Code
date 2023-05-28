@@ -338,6 +338,9 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
       if (c->name()->string_view().back() == '/') {
         LOG(FATAL) << "Channel names can't end with '/'";
       }
+      if (c->name()->string_view().front() != '/') {
+        LOG(FATAL) << "Channel names must start with '/'";
+      }
       if (c->name()->string_view().find("//") != std::string_view::npos) {
         LOG(FATAL) << ": Invalid channel name " << c->name()->string_view()
                    << ", can't use //.";

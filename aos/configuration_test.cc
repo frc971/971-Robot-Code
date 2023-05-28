@@ -136,6 +136,13 @@ TEST_F(ConfigurationDeathTest, InvalidChannelName) {
         LOG(FATAL) << "Foo";
       },
       "Invalid channel name");
+  EXPECT_DEATH(
+      {
+        FlatbufferDetachedBuffer<Configuration> config =
+            ReadConfig(ArtifactPath("aos/testdata/invalid_channel_name4.json"));
+        LOG(FATAL) << "Foo";
+      },
+      "Channel names must start with '/'");
 }
 
 // Tests that we can modify a config with a json snippet.
