@@ -337,7 +337,9 @@ void RegisterMallocHook() {
         has_malloc_hook = false;
       }
     } else {
-      RAW_LOG(INFO, "Replacing glibc malloc");
+      if (VLOG_IS_ON(1)) {
+        RAW_LOG(INFO, "Replacing glibc malloc");
+      }
       if (&malloc != &aos_malloc_hook) {
         has_malloc_hook = false;
       }
