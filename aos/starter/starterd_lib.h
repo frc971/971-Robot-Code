@@ -78,6 +78,11 @@ class Starter {
   const int max_status_count_;
 
   std::unordered_map<std::string, Application> applications_;
+
+  // Lock and list of all the queues.  This makes it so we can initialize the
+  // queues in parallel, and also so starterd owns the memory for all the
+  // queues from cgroup's point of view.
+  std::mutex queue_mutex_;
   std::vector<std::unique_ptr<aos::ipc_lib::MemoryMappedQueue>> shm_queues_;
 
   // Capture the --shm_base flag at construction time.  This makes it much
