@@ -29,6 +29,9 @@ DEFINE_bool(writev, false, "If true, use writev.");
 DEFINE_bool(direct, false, "If true, O_DIRECT.");
 DEFINE_uint32(chunks, 1, "Chunks to write using writev.");
 DEFINE_uint32(chunk_size, 512, "Chunk size to write using writev.");
+DEFINE_uint64(overall_size, 0,
+              "If nonzero, write this many bytes and then stop.  Must be a "
+              "multiple of --write_size");
 
 // Stolen from aos/events/logging/DummyEncoder
 class AlignedReallocator {
@@ -45,7 +48,19 @@ class AlignedReallocator {
 
 void trap_sig(int signum) { exit(signum); }
 
+aos::monotonic_clock::time_point start_time = aos::monotonic_clock::min_time;
+std::atomic<size_t> written_data = 0;
+
 void cleanup() {
+  LOG(INFO) << "Overall average write speed: "
+            << ((written_data) /
+                chrono::duration<double>(aos::monotonic_clock::now() -
+                                         start_time)
+                    .count() /
+                1024. / 1024.)
+            << " MB/s for " << static_cast<double>(written_data) / 1024. / 1024.
+            << "MB";
+
   // Delete FLAGS_file at shutdown
   PCHECK(std::filesystem::remove(FLAGS_file) != 0) << "Failed to cleanup file";
 }
@@ -100,11 +115,10 @@ int main(int argc, char **argv) {
            O_RDWR | O_CLOEXEC | O_CREAT | (FLAGS_direct ? O_DIRECT : 0), 0774);
   PCHECK(fd != -1);
 
-  const aos::monotonic_clock::time_point start_time =
-      aos::monotonic_clock::now();
+  start_time = aos::monotonic_clock::now();
   aos::monotonic_clock::time_point last_time = start_time;
   size_t last_written_data = 0;
-  size_t written_data = 0;
+  written_data = 0;
 
   if (FLAGS_nice != 0) {
     PCHECK(-1 != setpriority(PRIO_PROCESS, 0, FLAGS_nice))
@@ -112,6 +126,11 @@ int main(int argc, char **argv) {
   }
 
   while (true) {
+    // Bail if we have written our limit.
+    if (written_data >= FLAGS_overall_size && FLAGS_overall_size != 0) {
+      break;
+    }
+
     if (FLAGS_writev) {
       PCHECK(writev(fd, iovec.data(), iovec.size()) ==
              static_cast<ssize_t>(data.size()))
@@ -157,7 +176,12 @@ int main(int argc, char **argv) {
           << ((written_data - last_written_data) /
               chrono::duration<double>(monotonic_now - last_time).count() /
               1024. / 1024.)
-          << " MB/s";
+          << " MB/s, average of "
+          << (written_data /
+              chrono::duration<double>(monotonic_now - start_time).count() /
+              1024. / 1024.)
+          << " MB/s for " << static_cast<double>(written_data) / 1024. / 1024.
+          << "MB";
       last_time = monotonic_now;
       last_written_data = written_data;
     }
