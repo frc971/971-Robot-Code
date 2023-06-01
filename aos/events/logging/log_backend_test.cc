@@ -28,7 +28,7 @@ WriteResult Write(LogSink *log_sink, std::string_view content) {
 TEST(LogBackendTest, CreateSimpleFile) {
   const std::string logevent = aos::testing::TestTmpDir() + "/logevent/";
   const std::string filename = "test.bfbs";
-  FileBackend backend(logevent);
+  FileBackend backend(logevent, false);
   auto file = backend.RequestFile(filename);
   ASSERT_EQ(file->OpenForWrite(), WriteCode::kOk);
   auto result = Write(file.get(), "test");
@@ -51,7 +51,7 @@ TEST(LogBackendTest, CreateSimpleFile) {
 
 TEST(LogBackendTest, CreateRenamableFile) {
   const std::string logevent = aos::testing::TestTmpDir() + "/logevent/";
-  RenamableFileBackend backend(logevent);
+  RenamableFileBackend backend(logevent, false);
   auto file = backend.RequestFile("test.log");
   ASSERT_EQ(file->OpenForWrite(), WriteCode::kOk);
   auto result = Write(file.get(), "test");
@@ -63,7 +63,7 @@ TEST(LogBackendTest, CreateRenamableFile) {
 
 TEST(LogBackendTest, UseTempRenamableFile) {
   const std::string logevent = aos::testing::TestTmpDir() + "/logevent/";
-  RenamableFileBackend backend(logevent);
+  RenamableFileBackend backend(logevent, false);
   backend.EnableTempFiles();
   auto file = backend.RequestFile("test.log");
   ASSERT_EQ(file->OpenForWrite(), WriteCode::kOk);
@@ -79,7 +79,7 @@ TEST(LogBackendTest, UseTempRenamableFile) {
 
 TEST(LogBackendTest, RenameBaseAfterWrite) {
   const std::string logevent = aos::testing::TestTmpDir() + "/logevent/";
-  RenamableFileBackend backend(logevent);
+  RenamableFileBackend backend(logevent, false);
   auto file = backend.RequestFile("test.log");
   ASSERT_EQ(file->OpenForWrite(), WriteCode::kOk);
   auto result = Write(file.get(), "test");
@@ -100,7 +100,7 @@ TEST(LogBackendTest, RenameBaseAfterWrite) {
 
 TEST(LogBackendTest, UseTestAndRenameBaseAfterWrite) {
   const std::string logevent = aos::testing::TestTmpDir() + "/logevent/";
-  RenamableFileBackend backend(logevent);
+  RenamableFileBackend backend(logevent, false);
   backend.EnableTempFiles();
   auto file = backend.RequestFile("test.log");
   ASSERT_EQ(file->OpenForWrite(), WriteCode::kOk);
@@ -279,7 +279,7 @@ struct FileWriteTestBase : public ::testing::Test {
     std::filesystem::remove_all(file);
     VLOG(1) << "Writing to " << file.c_str();
 
-    FileBackend backend(logevent);
+    FileBackend backend(logevent, false);
     auto handler = backend.RequestFile("test.log");
     ASSERT_EQ(handler->OpenForWrite(), WriteCode::kOk);
 
@@ -385,7 +385,7 @@ TEST_F(FileWriteTestBase, AlignedToUnaligned) {
   std::filesystem::remove_all(file);
   VLOG(1) << "Writing to " << file.c_str();
 
-  FileBackend backend(logevent);
+  FileBackend backend(logevent, false);
   auto handler = backend.RequestFile("test.log");
   ASSERT_EQ(handler->OpenForWrite(), WriteCode::kOk);
 

@@ -14,6 +14,10 @@
 #include "aos/init.h"
 #include "aos/logging/log_namer.h"
 
+DEFINE_bool(direct, false,
+            "If true, write using O_DIRECT and write 512 byte aligned blocks "
+            "whenever possible.");
+
 DEFINE_string(config, "aos_config.json", "Config file to use.");
 
 DEFINE_bool(skip_renicing, false,
@@ -50,7 +54,9 @@ int main(int argc, char *argv[]) {
   aos::ShmEventLoop event_loop(&config.message());
 
   auto log_namer = std::make_unique<aos::logger::MultiNodeFilesLogNamer>(
-      absl::StrCat(aos::logging::GetLogName("fbs_log"), "/"), &event_loop);
+      &event_loop, std::make_unique<aos::logger::RenamableFileBackend>(
+                       absl::StrCat(aos::logging::GetLogName("fbs_log"), "/"),
+                       FLAGS_direct));
 
   if (FLAGS_snappy_compress) {
     log_namer->set_extension(aos::logger::SnappyDecoder::kExtension);

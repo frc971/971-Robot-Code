@@ -18,6 +18,9 @@ DEFINE_double(rotate_every, 0.0,
 DECLARE_int32(flush_size);
 DEFINE_double(disabled_time, 5.0,
               "Continue logging if disabled for this amount of time or less");
+DEFINE_bool(direct, false,
+            "If true, write using O_DIRECT and write 512 byte aligned blocks "
+            "whenever possible.");
 
 std::unique_ptr<aos::logger::MultiNodeFilesLogNamer> MakeLogNamer(
     aos::EventLoop *event_loop) {
@@ -29,7 +32,8 @@ std::unique_ptr<aos::logger::MultiNodeFilesLogNamer> MakeLogNamer(
   }
 
   return std::make_unique<aos::logger::MultiNodeFilesLogNamer>(
-      absl::StrCat(log_name.value(), "/"), event_loop);
+      event_loop, std::make_unique<aos::logger::RenamableFileBackend>(
+                      absl::StrCat(log_name.value(), "/"), FLAGS_direct));
 }
 
 int main(int argc, char *argv[]) {

@@ -19,7 +19,8 @@ int main(int argc, char **argv) {
   std::array<uint8_t, 10240> data;
   data.fill(0);
 
-  aos::logger::FileBackend file_backend("/");
+  // Don't use odirect
+  aos::logger::FileBackend file_backend("/", false);
   aos::logger::DetachedBufferWriter writer(
       file_backend.RequestFile(FLAGS_tmpfs + "/file"),
       std::make_unique<aos::logger::DummyEncoder>(data.size()));

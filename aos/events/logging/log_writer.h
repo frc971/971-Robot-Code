@@ -154,6 +154,7 @@ class Logger {
 
   // Shortcut to call StartLogging with a MultiNodeFilesLogNamer when event
   // processing starts.
+  // Doesn't try to use odirect.
   void StartLoggingOnRun(std::string base_name) {
     event_loop_->OnRun([this, base_name]() {
       StartLogging(std::make_unique<MultiNodeFilesLogNamer>(

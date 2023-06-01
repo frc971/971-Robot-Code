@@ -11,9 +11,6 @@
 #include "aos/events/logging/file_operations.h"
 #include "aos/util/file.h"
 
-DEFINE_bool(direct, false,
-            "If true, write using O_DIRECT and write 512 byte aligned blocks "
-            "whenever possible.");
 DEFINE_bool(
     sync, false,
     "If true, sync data to disk as we go so we don't get too far ahead.  Also "
@@ -123,8 +120,8 @@ void logger::QueueAligner::FillAlignedQueue(
   }
 }
 
-FileHandler::FileHandler(std::string filename)
-    : filename_(std::move(filename)), supports_odirect_(FLAGS_direct) {}
+FileHandler::FileHandler(std::string filename, bool supports_odirect)
+    : filename_(std::move(filename)), supports_odirect_(supports_odirect) {}
 
 FileHandler::~FileHandler() { Close(); }
 
@@ -332,12 +329,14 @@ WriteCode FileHandler::Close() {
   return ran_out_of_space ? WriteCode::kOutOfSpace : WriteCode::kOk;
 }
 
-FileBackend::FileBackend(std::string_view base_name)
-    : base_name_(base_name), separator_(base_name_.back() == '/' ? "" : "_") {}
+FileBackend::FileBackend(std::string_view base_name, bool supports_odirect)
+    : supports_odirect_(supports_odirect),
+      base_name_(base_name),
+      separator_(base_name_.back() == '/' ? "" : "_") {}
 
 std::unique_ptr<LogSink> FileBackend::RequestFile(std::string_view id) {
   const std::string filename = absl::StrCat(base_name_, separator_, id);
-  return std::make_unique<FileHandler>(filename);
+  return std::make_unique<FileHandler>(filename, supports_odirect_);
 }
 
 std::vector<std::string> FileBackend::ListFiles() const {
@@ -365,14 +364,18 @@ std::unique_ptr<DataDecoder> FileBackend::GetDecoder(
   return std::make_unique<DummyDecoder>(filename);
 }
 
-RenamableFileBackend::RenamableFileBackend(std::string_view base_name)
-    : base_name_(base_name), separator_(base_name_.back() == '/' ? "" : "_") {}
+RenamableFileBackend::RenamableFileBackend(std::string_view base_name,
+                                           bool supports_odirect)
+    : supports_odirect_(supports_odirect),
+      base_name_(base_name),
+      separator_(base_name_.back() == '/' ? "" : "_") {}
 
 std::unique_ptr<LogSink> RenamableFileBackend::RequestFile(
     std::string_view id) {
   const std::string filename =
       absl::StrCat(base_name_, separator_, id, temp_suffix_);
-  return std::make_unique<RenamableFileHandler>(this, filename);
+  return std::make_unique<RenamableFileHandler>(this, filename,
+                                                supports_odirect_);
 }
 
 void RenamableFileBackend::EnableTempFiles() {

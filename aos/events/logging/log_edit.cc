@@ -24,6 +24,9 @@ DEFINE_int32(
     "Max size of a message to be written.  This sets the buffers inside "
     "the encoders.");
 
+DEFINE_bool(direct, false,
+            "If true, write using O_DIRECT and write 512 byte aligned blocks "
+            "whenever possible.");
 int main(int argc, char **argv) {
   gflags::SetUsageMessage(R"(This tool lets us manipulate log files.)");
   aos::InitGoogle(&argc, &argv);
@@ -49,7 +52,7 @@ int main(int argc, char **argv) {
     aos::logger::SpanReader span_reader(orig_path);
     CHECK(!span_reader.ReadMessage().empty()) << ": Empty header, aborting";
 
-    aos::logger::FileBackend file_backend("/");
+    aos::logger::FileBackend file_backend("/", FLAGS_direct);
     aos::logger::DetachedBufferWriter buffer_writer(
         file_backend.RequestFile(FLAGS_logfile),
         std::make_unique<aos::logger::DummyEncoder>(FLAGS_max_message_size));

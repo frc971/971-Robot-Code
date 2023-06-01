@@ -37,7 +37,7 @@ class TestDetachedBufferWriter : public FileBackend,
   // Pick a max size that is rather conservative.
   static constexpr size_t kMaxMessageSize = 128 * 1024;
   TestDetachedBufferWriter(std::string_view filename)
-      : FileBackend("/"),
+      : FileBackend("/", false),
         DetachedBufferWriter(FileBackend::RequestFile(filename),
                              std::make_unique<DummyEncoder>(kMaxMessageSize)) {}
   void WriteSizedFlatbuffer(flatbuffers::DetachedBuffer &&buffer) {

@@ -499,14 +499,21 @@ class MultiNodeLogNamer : public LogNamer {
 class MultiNodeFilesLogNamer : public MultiNodeLogNamer {
  public:
   MultiNodeFilesLogNamer(std::string_view base_name, EventLoop *event_loop)
-      : MultiNodeLogNamer(std::make_unique<RenamableFileBackend>(base_name),
-                          event_loop) {}
+      : MultiNodeLogNamer(
+            std::make_unique<RenamableFileBackend>(base_name, false),
+            event_loop) {}
 
   MultiNodeFilesLogNamer(std::string_view base_name,
                          const Configuration *configuration,
                          EventLoop *event_loop, const Node *node)
-      : MultiNodeLogNamer(std::make_unique<RenamableFileBackend>(base_name),
-                          configuration, event_loop, node) {}
+      : MultiNodeLogNamer(
+            std::make_unique<RenamableFileBackend>(base_name, false),
+            configuration, event_loop, node) {}
+
+  MultiNodeFilesLogNamer(EventLoop *event_loop,
+                         std::unique_ptr<RenamableFileBackend> backend)
+      : MultiNodeLogNamer(std::move(backend), event_loop) {}
+
   ~MultiNodeFilesLogNamer() override = default;
 
   std::string_view base_name() const {

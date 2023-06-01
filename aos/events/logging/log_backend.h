@@ -167,7 +167,7 @@ class FileHandler : public LogSink {
   // use O_DIRECT instead.
   static constexpr size_t kSector = 512u;
 
-  explicit FileHandler(std::string filename);
+  explicit FileHandler(std::string filename, bool supports_odirect);
   ~FileHandler() override;
 
   FileHandler(const FileHandler &) = delete;
@@ -267,7 +267,7 @@ class LogSource {
 class FileBackend : public LogBackend, public LogSource {
  public:
   // base_name is the path to the folder where log files are.
-  explicit FileBackend(std::string_view base_name);
+  explicit FileBackend(std::string_view base_name, bool supports_direct);
   ~FileBackend() override = default;
 
   // Request file from a file system. It is not open yet.
@@ -280,6 +280,7 @@ class FileBackend : public LogBackend, public LogSource {
   std::unique_ptr<DataDecoder> GetDecoder(std::string_view id) const override;
 
  private:
+  const bool supports_odirect_;
   const std::string base_name_;
   const std::string_view separator_;
 };
@@ -291,8 +292,9 @@ class RenamableFileBackend : public LogBackend {
   // Adds call to rename, when closed.
   class RenamableFileHandler final : public FileHandler {
    public:
-    RenamableFileHandler(RenamableFileBackend *owner, std::string filename)
-        : FileHandler(std::move(filename)), owner_(owner) {}
+    RenamableFileHandler(RenamableFileBackend *owner, std::string filename,
+                         bool supports_odirect)
+        : FileHandler(std::move(filename), supports_odirect), owner_(owner) {}
     ~RenamableFileHandler() final = default;
 
     // Closes and if needed renames file.
@@ -302,7 +304,8 @@ class RenamableFileBackend : public LogBackend {
     RenamableFileBackend *owner_;
   };
 
-  explicit RenamableFileBackend(std::string_view base_name);
+  explicit RenamableFileBackend(std::string_view base_name,
+                                bool supports_odirect);
   ~RenamableFileBackend() = default;
 
   // Request file from a file system. It is not open yet.
@@ -331,6 +334,7 @@ class RenamableFileBackend : public LogBackend {
   // base name was changed or temp files enabled.
   WriteCode RenameFileAfterClose(std::string_view filename);
 
+  const bool supports_odirect_;
   std::string base_name_;
   std::string_view separator_;
 
