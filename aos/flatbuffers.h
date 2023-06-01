@@ -188,6 +188,7 @@ class FlatbufferVector : public NonSizePrefixedFlatbuffer<T> {
   // Builds a Flatbuffer by copying the data from the other flatbuffer.
   FlatbufferVector(const NonSizePrefixedFlatbuffer<T> &other) {
     data_.resize(other.span().size());
+    CHECK(other.span().data());
     memcpy(data_.data(), other.span().data(), data_.size());
   }
 
