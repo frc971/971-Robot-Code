@@ -168,6 +168,16 @@ describe('Scouting app tests', () => {
 
     clickButton('End Match');
     headerShouldBe('5254 Review and Submit ');
+    cy.get('#review_data li')
+      .eq(0)
+      .should('have.text', ' Started match at position 1 ');
+    cy.get('#review_data li').eq(1).should('have.text', ' Picked up kCone ');
+    cy.get('#review_data li')
+      .last()
+      .should(
+        'have.text',
+        ' Ended Match; docked: true, engaged: true, attempted to dock and engage: true '
+      );
 
     clickButton('Submit');
     headerShouldBe('5254 Success ');

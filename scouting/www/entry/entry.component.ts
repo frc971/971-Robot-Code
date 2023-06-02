@@ -255,6 +255,14 @@ export class EntryComponent implements OnInit {
     }
   }
 
+  stringifyObjectType(objectType: ObjectType): String {
+    return ObjectType[objectType];
+  }
+
+  stringifyScoreLevel(scoreLevel: ScoreLevel): String {
+    return ScoreLevel[scoreLevel];
+  }
+
   changeSectionTo(target: Section) {
     // Clear the messages since they won't be relevant in the next section.
     this.errorMessage = '';
