@@ -164,7 +164,7 @@ describe('Scouting app tests', () => {
 
     // Endgame.
     clickButton('Endgame');
-    cy.get('[type="checkbox"]').check();
+    cy.contains(/Docked & Engaged/).click();
 
     clickButton('End Match');
     headerShouldBe('5254 Review and Submit ');
@@ -176,7 +176,7 @@ describe('Scouting app tests', () => {
       .last()
       .should(
         'have.text',
-        ' Ended Match; docked: true, engaged: true, attempted to dock and engage: true '
+        ' Ended Match; docked: false, engaged: true, attempted to dock and engage: false '
       );
 
     clickButton('Submit');
