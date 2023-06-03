@@ -615,8 +615,8 @@ http_archive(
 http_archive(
     name = "postgresql_amd64",
     build_file = "@//debian:postgresql_amd64.BUILD",
-    sha256 = "2b8bb77deaf58f798c296ce31ee7a32781395d55e05dcddc8a7da7e827f38d7f",
-    url = "https://www.frc971.org/Build-Dependencies/postgresql_amd64.tar.gz",
+    sha256 = "483e199d0e7feae7cca0df132c649b5c20ddcc1a17760e656c25709f44f57a65",
+    url = "https://www.frc971.org/Build-Dependencies/postgresql_amd64_v2.tar.gz",
 )
 
 http_archive(
@@ -1200,8 +1200,8 @@ http_archive(
 http_archive(
     name = "opencv_k8",
     build_file = "@//debian:opencv.BUILD",
-    sha256 = "b730f5d0c8eb59411157b4e84bfdddd3a6fceed10b842716d9d1b74ad322ea14",
-    url = "https://www.frc971.org/Build-Dependencies/opencv_amd64_v3.tar.gz",
+    sha256 = "1d8f839fd135a700ca0576a503b15b0a198fef5b36f22efae5cae9eaa17935d1",
+    url = "https://www.frc971.org/Build-Dependencies/opencv_amd64_v4.tar.gz",
 )
 
 http_archive(
@@ -1231,8 +1231,8 @@ http_archive(
 http_archive(
     name = "gstreamer_k8",
     build_file = "@//debian:gstreamer.BUILD",
-    sha256 = "d4994261a432c188716f0bdf30fc3f0dff6727319d9c58e7156e2b3ed5105248",
-    url = "https://www.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_amd64.tar.gz",
+    sha256 = "09765cb1dd8abc643cb1dd91d536aef3e6604ff05f5f92898d508ed857455d0b",
+    url = "https://www.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_amd64_v2.tar.gz",
 )
 
 http_archive(
