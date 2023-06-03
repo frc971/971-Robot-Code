@@ -227,7 +227,10 @@ _common_srcs_list = [
 cc_library(
     name = "gstreamer",
     srcs = cpu_select({
-        "amd64": [s % "x86_64-linux-gnu" if "%" in s else s for s in _common_srcs_list],
+        "amd64": [s % "x86_64-linux-gnu" if "%" in s else s for s in _common_srcs_list] + [
+            "usr/lib/x86_64-linux-gnu/libcrypto.so.1.1",
+            "usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+        ],
         "roborio": [
         ],
         "armhf": [
@@ -325,8 +328,6 @@ cc_library(
     includes = cpu_select({
         "amd64": [
             "usr/lib/x86_64-linux-gnu/glib-2.0/include",
-            "usr/lib/x86_64-linux-gnu/libcrypto.so.1.1",
-            "usr/lib/x86_64-linux-gnu/libssl.so.1.1",
         ],
         "armhf": [
             "usr/lib/arm-linux-gnueabihf/glib-2.0/include",
