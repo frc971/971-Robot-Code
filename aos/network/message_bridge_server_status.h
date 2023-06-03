@@ -51,9 +51,9 @@ class MessageBridgeServerStatus {
     uint32_t partial_deliveries = 0;
   };
 
-  MessageBridgeServerStatus(aos::EventLoop *event_loop,
-                            std::function<void(const Context &)> send_data =
-                                std::function<void(const Context &)>());
+  MessageBridgeServerStatus(
+      aos::EventLoop *event_loop,
+      std::function<void()> send_data = std::function<void()>());
 
   MessageBridgeServerStatus(const MessageBridgeServerStatus &) = delete;
   MessageBridgeServerStatus(MessageBridgeServerStatus &&) = delete;
@@ -61,7 +61,7 @@ class MessageBridgeServerStatus {
       delete;
   MessageBridgeServerStatus &operator=(MessageBridgeServerStatus &&) = delete;
 
-  void set_send_data(std::function<void(const Context &)> send_data) {
+  void set_send_data(std::function<void()> send_data) {
     send_data_ = send_data;
   }
 
@@ -97,6 +97,7 @@ class MessageBridgeServerStatus {
   // node_index must be a valid client node.
   void AddSentPacket(int node_index, const aos::Channel *channel);
   void AddDroppedPacket(int node_index, const aos::Channel *channel);
+  void AddPacketRetry(int node_index, const aos::Channel *channel);
 
   // Returns the ServerConnection message which is updated by the server.
   ServerConnection *FindServerConnection(std::string_view node_name);
@@ -148,7 +149,7 @@ class MessageBridgeServerStatus {
   aos::monotonic_clock::time_point last_statistics_send_time_ =
       aos::monotonic_clock::min_time;
 
-  std::function<void(const Context &)> send_data_;
+  std::function<void()> send_data_;
 
   bool send_ = true;
 

@@ -49,6 +49,7 @@ FlatbufferDetachedBuffer<ServerStatistics> MakeServerStatistics(
     connection_builder.add_node(node_offset);
     connection_builder.add_state(State::DISCONNECTED);
     connection_builder.add_dropped_packets(0);
+    connection_builder.add_retry_count(0);
     connection_builder.add_sent_packets(0);
     connection_builder.add_monotonic_offset(0);
     connection_builder.add_partial_deliveries(0);
@@ -90,7 +91,7 @@ ServerConnection *FindServerConnection(ServerStatistics *statistics,
 }  // namespace
 
 MessageBridgeServerStatus::MessageBridgeServerStatus(
-    aos::EventLoop *event_loop, std::function<void(const Context &)> send_data)
+    aos::EventLoop *event_loop, std::function<void()> send_data)
     : event_loop_(event_loop),
       sender_(event_loop_->MakeSender<ServerStatistics>("/aos")),
       statistics_(MakeServerStatistics(
@@ -137,6 +138,7 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
           configuration::ChannelIndex(event_loop_->configuration(), channel);
       initial_statistics.sent_packets = 0;
       initial_statistics.dropped_packets = 0;
+      initial_statistics.retry_count = 0;
       channel_statistics[channel] = initial_statistics;
     }
 
@@ -182,6 +184,7 @@ void MessageBridgeServerStatus::AddSentPacket(int node_index,
   connection->mutate_sent_packets(connection->sent_packets() + 1);
   node.channel_statistics[channel].sent_packets++;
 }
+
 void MessageBridgeServerStatus::AddDroppedPacket(int node_index,
                                                  const aos::Channel *channel) {
   CHECK(nodes_[node_index].has_value());
@@ -189,6 +192,14 @@ void MessageBridgeServerStatus::AddDroppedPacket(int node_index,
   ServerConnection *connection = node.server_connection;
   connection->mutate_dropped_packets(connection->dropped_packets() + 1);
   node.channel_statistics[channel].dropped_packets++;
+}
+
+void MessageBridgeServerStatus::AddPacketRetry(int node_index,
+                                               const aos::Channel *channel) {
+  NodeState &node = nodes_[node_index].value();
+  ServerConnection *connection = node.server_connection;
+  connection->mutate_retry_count(connection->retry_count() + 1);
+  node.channel_statistics[channel].retry_count++;
 }
 
 void MessageBridgeServerStatus::SetBootUUID(int node_index,
@@ -281,6 +292,7 @@ void MessageBridgeServerStatus::SendStatistics() {
     server_connection_builder.add_dropped_packets(
         connection->dropped_packets());
     server_connection_builder.add_sent_packets(connection->sent_packets());
+    server_connection_builder.add_retry_count(connection->retry_count());
     server_connection_builder.add_partial_deliveries(
         PartialDeliveries(node_index));
     server_connection_builder.add_channels(channels_offset);
@@ -465,18 +477,10 @@ void MessageBridgeServerStatus::Tick() {
   timestamp_failure_counter_.Count(err);
   // Reply only if we successfully sent the timestamp
   if (err == RawSender::Error::kOk) {
-    Context context;
-    context.monotonic_event_time = timestamp_sender_.monotonic_sent_time();
-    context.realtime_event_time = timestamp_sender_.realtime_sent_time();
-    context.queue_index = timestamp_sender_.sent_queue_index();
-    context.size = timestamp_copy.span().size();
-    context.source_boot_uuid = event_loop_->boot_uuid();
-    context.data = timestamp_copy.span().data();
-
     // Since we are building up the timestamp to send here, we need to trigger
     // the SendData call ourselves.
     if (send_data_) {
-      send_data_(context);
+      send_data_();
     }
   }
 }

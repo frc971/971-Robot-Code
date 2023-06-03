@@ -515,7 +515,7 @@ SimulatedMessageBridge::SimulatedMessageBridge(
 
     if (channel == timestamp_channel) {
       source_event_loop->second.SetSendData(
-          [captured_delayers = delayers.get()](const Context &) {
+          [captured_delayers = delayers.get()]() {
             for (std::unique_ptr<RawMessageDelayer> &delayer :
                  captured_delayers->v) {
               delayer->Schedule();

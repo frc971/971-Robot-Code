@@ -408,6 +408,50 @@ aos_config(
     deps = ["//aos/events:aos_config"],
 )
 
+cc_library(
+    name = "message_bridge_test_lib",
+    testonly = True,
+    srcs = ["message_bridge_test_lib.cc"],
+    hdrs = ["message_bridge_test_lib.h"],
+    deps = [
+        ":message_bridge_client_lib",
+        ":message_bridge_server_lib",
+        "//aos:json_to_flatbuffer",
+        "//aos:sha256",
+        "//aos/events:ping_fbs",
+        "//aos/events:pong_fbs",
+        "//aos/events:shm_event_loop",
+        "//aos/ipc_lib:event",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+    ],
+)
+
+cc_test(
+    name = "message_bridge_retry_test",
+    srcs = [
+        "message_bridge_retry_test.cc",
+    ],
+    data = [
+        ":message_bridge_test_common_config",
+    ],
+    # Somewhat flaky due to relying on the behavior & timing of the host system's network stack.
+    flaky = True,
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":message_bridge_server_lib",
+        ":message_bridge_test_lib",
+        "//aos:json_to_flatbuffer",
+        "//aos:sha256",
+        "//aos/events:ping_fbs",
+        "//aos/events:pong_fbs",
+        "//aos/events:shm_event_loop",
+        "//aos/ipc_lib:event",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+    ],
+)
+
 cc_test(
     name = "message_bridge_test",
     srcs = [
@@ -418,11 +462,12 @@ cc_test(
         ":message_bridge_test_common_config",
     ],
     flaky = True,
-    shard_count = 10,
+    shard_count = 16,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":message_bridge_client_lib",
         ":message_bridge_server_lib",
+        ":message_bridge_test_lib",
         "//aos:json_to_flatbuffer",
         "//aos:sha256",
         "//aos/events:ping_fbs",

@@ -99,7 +99,7 @@ class SimulatedMessageBridge {
 
     void SetEventLoop(std::unique_ptr<aos::EventLoop> loop);
 
-    void SetSendData(std::function<void(const Context &)> fn) {
+    void SetSendData(std::function<void()> fn) {
       CHECK(!fn_);
       fn_ = std::move(fn);
       if (server_status) {
@@ -209,7 +209,7 @@ class SimulatedMessageBridge {
 
     std::vector<std::pair<const Channel *, DelayersVector *>> delayer_watchers_;
 
-    std::function<void(const Context &)> fn_;
+    std::function<void()> fn_;
 
     NodeEventLoopFactory *node_factory_;
     std::unique_ptr<aos::EventLoop> event_loop;

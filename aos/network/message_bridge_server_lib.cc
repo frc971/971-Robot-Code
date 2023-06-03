@@ -16,6 +16,39 @@
 #include "aos/network/sctp_server.h"
 #include "aos/network/timestamp_channel.h"
 
+// For retrying sends on reliable channels, we will do an additive backoff
+// strategy where we start at FLAGS_min_retry_period_ms and then add
+// kRetryAdditivePeriod every time the retry fails, up until
+// FLAGS_max_retry_period_ms. These numbers are somewhat arbitrarily chosen.
+// For the minimum retry period, choose 10ms as that is slow enough that the
+// kernel should have had time to clear its buffers, while being fast enough
+// that hopefully it is a relatively minor blip for anything that isn't
+// timing-critical (and timing-critical things that hit the retry logic are
+// probably in trouble).
+DEFINE_uint32(min_retry_period_ms, 10,
+              "Maximum retry timer period--the exponential backoff will not "
+              "exceed this period, in milliseconds.");
+// Amount of backoff to add every time a retry fails. Chosen semi-arbitrarily;
+// 100ms is large enough that the backoff actually does increase at a reasonable
+// rate, while preventing the period from growing so fast that it can readily
+// take multiple seconds for a retry to occur.
+DEFINE_uint32(retry_period_additive_backoff_ms, 100,
+              "Amount of time to add to the retry period every time a retry "
+              "fails, in milliseconds.");
+// Max out retry period at 10 seconds---this is generally a much longer
+// timescale than anything normally happening on our systems, while still being
+// short enough that the retries will regularly happen (basically, the maximum
+// should be short enough that a human trying to debug issues with the system
+// will still see the retries regularly happening as they debug, rather than
+// having to wait minutes or hours for a retry to occur).
+DEFINE_uint32(max_retry_period_ms, 10000,
+              "Maximum retry timer period--the additive backoff will not "
+              "exceed this period, in milliseconds.");
+
+DEFINE_int32(force_wmem_max, -1,
+             "If set to a nonnegative numbers, the wmem buffer size to use, in "
+             "bytes. Intended solely for testing purposes.");
+
 namespace aos {
 namespace message_bridge {
 namespace chrono = std::chrono;
@@ -28,9 +61,9 @@ bool ChannelState::Matches(const Channel *other_channel) {
 }
 
 flatbuffers::FlatBufferBuilder ChannelState::PackContext(
-    FixedAllocator *allocator, const Context &context) {
+    const Context &context) {
   flatbuffers::FlatBufferBuilder fbb(
-      channel_->max_size() + kHeaderSizeOverhead(), allocator);
+      channel_->max_size() + kHeaderSizeOverhead(), allocator_);
   fbb.ForceDefaults(true);
   VLOG(2) << "Found " << peers_.size() << " peers on channel "
           << channel_->name()->string_view() << " "
@@ -60,32 +93,135 @@ flatbuffers::FlatBufferBuilder ChannelState::PackContext(
   return fbb;
 }
 
-void ChannelState::SendData(SctpServer *server, FixedAllocator *allocator,
-                            const Context &context) {
-  // TODO(austin): I don't like allocating this buffer when we are just freeing
-  // it at the end of the function.
-  flatbuffers::FlatBufferBuilder fbb = PackContext(allocator, context);
+ChannelState::ChannelState(aos::EventLoop *event_loop, const Channel *channel,
+                           int channel_index, SctpServer *server,
+                           FixedAllocator *allocator)
+    : event_loop_(event_loop),
+      channel_index_(channel_index),
+      channel_(channel),
+      server_(server),
+      allocator_(allocator),
+      last_message_fetcher_(event_loop->MakeRawFetcher(channel)),
+      retry_timer_(event_loop->AddTimer([this]() { SendData(); })),
+      retry_period_(std::chrono::milliseconds(FLAGS_min_retry_period_ms)) {
+  retry_timer_->set_name(absl::StrFormat("retry%d", channel_index));
+}
 
-  // TODO(austin): Track which connections need to be reliable and handle
-  // resending properly.
+bool ChannelState::PeerReadyToFetchNext(const Peer &peer,
+                                        const Context &context) const {
+  if (peer.sac_assoc_id == 0) {
+    // The peer is not connected; don't wait for it.
+    return true;
+  }
+  if (context.data == nullptr) {
+    // There is nothing on the Fetcher that we could still be trying to send.
+    return true;
+  }
+  if (!peer.last_sent_index.has_value()) {
+    // Nothing has been sent yet, so we can't possibly be ready to fetch the
+    // next message.
+    return false;
+  }
+  if (peer.last_sent_index.value() != context.queue_index) {
+    return false;
+  }
+  return true;
+}
+
+bool ChannelState::ReadyToFetchNext() const {
+  for (const Peer &peer : peers_) {
+    if (!PeerReadyToFetchNext(peer, last_message_fetcher_->context())) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool ChannelState::AnyNodeConnected() const {
+  for (const Peer &peer : peers_) {
+    if (peer.sac_assoc_id != 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void ChannelState::SendData() {
+  // The goal of this logic is to make it so that we continually send out any
+  // message data available on the current channel, until we reach a point where
+  // either (a) we run out of messages to send or (b) sends start to fail.
+  do {
+    if (ReadyToFetchNext()) {
+      retry_period_ = std::chrono::milliseconds(FLAGS_min_retry_period_ms);
+      if (!last_message_fetcher_->FetchNext()) {
+        return;
+      }
+    }
+  } while (TrySendData(last_message_fetcher_->context()));
+}
+
+bool ChannelState::TrySendData(const Context &context) {
+  CHECK(context.data != nullptr)
+      << configuration::StrippedChannelToString(channel_);
+  // TODO(austin): I don't like allocating this buffer when we are just
+  // freeing it at the end of the function.
+  flatbuffers::FlatBufferBuilder fbb = PackContext(context);
+
   size_t sent_count = 0;
   bool logged_remotely = false;
+  bool retry_required = false;
+  VLOG(1) << "Send for " << configuration::StrippedChannelToString(channel_)
+          << " with " << context.queue_index << " and data " << context.data;
   for (Peer &peer : peers_) {
+    if (PeerReadyToFetchNext(peer, context)) {
+      VLOG(1) << "Skipping send for "
+              << configuration::StrippedChannelToString(channel_) << " to "
+              << FlatbufferToJson(peer.connection) << " with queue index of "
+              << context.queue_index;
+      // Either:
+      // * We already sent on this connection; we do not need to do anything
+      //   further.
+      // * The peer in question is not connected.
+      continue;
+    }
     logged_remotely = logged_remotely || peer.logged_remotely;
 
+    const int time_to_live_ms = peer.connection->time_to_live() / 1000000;
+    CHECK((time_to_live_ms == 0) == (peer.connection->time_to_live() == 0))
+        << ": TTLs below 1ms are not supported, as they would get rounded "
+           "down "
+           "to zero, which is used to indicate a reliable connection.";
+
     if (peer.sac_assoc_id != 0 &&
-        server->Send(std::string_view(
-                         reinterpret_cast<const char *>(fbb.GetBufferPointer()),
-                         fbb.GetSize()),
-                     peer.sac_assoc_id, peer.stream,
-                     peer.connection->time_to_live() / 1000000)) {
+        server_->Send(std::string_view(reinterpret_cast<const char *>(
+                                           fbb.GetBufferPointer()),
+                                       fbb.GetSize()),
+                      peer.sac_assoc_id, peer.stream, time_to_live_ms)) {
       peer.server_status->AddSentPacket(peer.node_index, channel_);
       if (peer.logged_remotely) {
         ++sent_count;
       }
+      peer.last_sent_index = context.queue_index;
     } else {
-      peer.server_status->AddDroppedPacket(peer.node_index, channel_);
+      if (time_to_live_ms == 0) {
+        // Reliable connection that failed to send; set a retry timer.
+        retry_required = true;
+        peer.server_status->AddPacketRetry(peer.node_index, channel_);
+      } else {
+        // Unreliable connection that failed to send; losses
+        // are permitted, so just mark it as sent.
+        peer.server_status->AddDroppedPacket(peer.node_index, channel_);
+        peer.last_sent_index = context.queue_index;
+      }
     }
+  }
+
+  if (retry_required) {
+    retry_timer_->Schedule(event_loop_->monotonic_now() + retry_period_);
+    retry_period_ = std::min(
+        retry_period_ +
+            std::chrono::milliseconds(FLAGS_retry_period_additive_backoff_ms),
+        std::chrono::milliseconds(FLAGS_max_retry_period_ms));
   }
 
   if (logged_remotely) {
@@ -110,6 +246,7 @@ void ChannelState::SendData(SctpServer *server, FixedAllocator *allocator,
   // TODO(austin): ~10 MB chunks on disk and push them over the logging
   // channel?  Threadsafe disk backed queue object which can handle restarts
   // and flushes.  Whee.
+  return !retry_required;
 }
 
 void ChannelState::HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t /*ssn*/,
@@ -181,13 +318,17 @@ void ChannelState::AddPeer(const Connection *connection, int node_index,
 }
 
 int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
-  VLOG(1) << "Disconnected " << assoc_id;
+  VLOG(1) << "Disconnected " << assoc_id << " for "
+          << configuration::StrippedChannelToString(channel_);
   for (ChannelState::Peer &peer : peers_) {
     if (peer.sac_assoc_id == assoc_id) {
       // TODO(austin): This will not handle multiple clients from
       // a single node.  But that should be rare.
       peer.sac_assoc_id = 0;
       peer.stream = 0;
+      // We do not guarantee the consistent delivery of reliable channels
+      // through node disconnects.
+      peer.last_sent_index.reset();
       return peer.node_index;
     }
   }
@@ -195,8 +336,7 @@ int ChannelState::NodeDisconnected(sctp_assoc_t assoc_id) {
 }
 
 int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
-                                int stream, SctpServer *server,
-                                FixedAllocator *allocator,
+                                int stream,
                                 aos::monotonic_clock::time_point monotonic_now,
                                 std::vector<sctp_assoc_t> *reconnected) {
   VLOG(1) << "Channel " << channel_->name()->string_view() << " "
@@ -226,38 +366,35 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
                 << " already connected on " << peer.sac_assoc_id
                 << " aborting old connection and switching to " << assoc_id;
           }
-          server->Abort(peer.sac_assoc_id);
+          server_->Abort(peer.sac_assoc_id);
+          // sac_assoc_id will be set again before NodeConnected() exits, but we
+          // clear it here so that AnyNodeConnected() (or any other similar
+          // function calls) observe the node as having had an aborted
+          // connection.
+          peer.sac_assoc_id = 0;
         }
       }
 
+      // Clear the last sent index to force a retry of any reliable channels.
+      peer.last_sent_index.reset();
+
+      if (!AnyNodeConnected()) {
+        // If no one else is connected yet, reset the Fetcher.
+        last_message_fetcher_->Fetch();
+        retry_period_ = std::chrono::milliseconds(FLAGS_min_retry_period_ms);
+      }
+      // Unreliable channels aren't supposed to send out the latest fetched
+      // message.
+      if (peer.connection->time_to_live() != 0 &&
+          last_message_fetcher_->context().data != nullptr) {
+        peer.last_sent_index = last_message_fetcher_->context().queue_index;
+      }
       peer.sac_assoc_id = assoc_id;
       peer.stream = stream;
       peer.server_status->Connect(peer.node_index, monotonic_now);
 
-      server->SetStreamPriority(assoc_id, stream, peer.connection->priority());
-      if (last_message_fetcher_ && peer.connection->time_to_live() == 0) {
-        last_message_fetcher_->Fetch();
-        VLOG(1) << "Got a connection on a reliable channel "
-                << configuration::StrippedChannelToString(
-                       last_message_fetcher_->channel())
-                << ", sending? "
-                << (last_message_fetcher_->context().data != nullptr);
-        if (last_message_fetcher_->context().data != nullptr) {
-          // SendData sends to all...  Only send to the new one.
-          flatbuffers::FlatBufferBuilder fbb =
-              PackContext(allocator, last_message_fetcher_->context());
-
-          if (server->Send(std::string_view(reinterpret_cast<const char *>(
-                                                fbb.GetBufferPointer()),
-                                            fbb.GetSize()),
-                           peer.sac_assoc_id, peer.stream,
-                           peer.connection->time_to_live() / 1000000)) {
-            peer.server_status->AddSentPacket(peer.node_index, channel_);
-          } else {
-            peer.server_status->AddDroppedPacket(peer.node_index, channel_);
-          }
-        }
-      }
+      server_->SetStreamPriority(assoc_id, stream, peer.connection->priority());
+      SendData();
       return peer.node_index;
     }
   }
@@ -270,11 +407,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
       timestamp_loggers_(event_loop_),
       server_(max_channels() + kControlStreams(), "",
               event_loop->node()->port()),
-      server_status_(event_loop,
-                     [this](const Context &context) {
-                       timestamp_state_->SendData(&server_, &allocator_,
-                                                  context);
-                     }),
+      server_status_(event_loop, [this]() { timestamp_state_->SendData(); }),
       config_sha256_(std::move(config_sha256)),
       allocator_(0) {
   CHECK_EQ(config_sha256_.size(), 64u) << ": Wrong length sha256sum";
@@ -333,12 +466,10 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
 
     if (configuration::ChannelIsForwardedFromNode(channel,
                                                   event_loop_->node())) {
-      bool any_reliable = false;
       for (const Connection *connection : *channel->destination_nodes()) {
         if (connection->time_to_live() == 0) {
           reliable_buffer_size +=
               static_cast<size_t>(channel->max_size() + kHeaderSizeOverhead());
-          any_reliable = true;
         }
       }
 
@@ -351,8 +482,7 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
           max_channel_buffer_size);
 
       std::unique_ptr<ChannelState> state(new ChannelState{
-          channel, channel_index,
-          any_reliable ? event_loop_->MakeRawFetcher(channel) : nullptr});
+          event_loop, channel, channel_index, &server_, &allocator_});
 
       for (const Connection *connection : *channel->destination_nodes()) {
         const Node *other_node = configuration::GetNode(
@@ -380,11 +510,8 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
       if (channel != timestamp_channel) {
         // Call SendData for every message.
         ChannelState *state_ptr = state.get();
-        event_loop_->MakeRawWatcher(
-            channel, [this, state_ptr](const Context &context,
-                                       const void * /*message*/) {
-              state_ptr->SendData(&server_, &allocator_, context);
-            });
+        event_loop_->MakeRawNoArgWatcher(
+            channel, [state_ptr](const Context &) { state_ptr->SendData(); });
       } else {
         for (const Connection *connection : *channel->destination_nodes()) {
           CHECK_GE(connection->time_to_live(), 1000u);
@@ -394,8 +521,8 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
       }
       channels_.emplace_back(std::move(state));
     } else if (channel == timestamp_channel) {
-      std::unique_ptr<ChannelState> state(
-          new ChannelState{channel, channel_index, nullptr});
+      std::unique_ptr<ChannelState> state(new ChannelState{
+          event_loop_, channel, channel_index, &server_, &allocator_});
       for (const Connection *connection : *channel->destination_nodes()) {
         CHECK_GE(connection->time_to_live(), 1000u);
       }
@@ -415,8 +542,12 @@ MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
   LOG(INFO) << "Reliable buffer size for all clients is "
             << reliable_buffer_size;
   server_.SetMaxReadSize(max_size);
-  server_.SetMaxWriteSize(
-      std::max(max_channel_buffer_size, reliable_buffer_size));
+  if (FLAGS_force_wmem_max >= 0) {
+    server_.SetMaxWriteSize(FLAGS_force_wmem_max);
+  } else {
+    server_.SetMaxWriteSize(
+        std::max(max_channel_buffer_size, reliable_buffer_size));
+  }
 
   // Since we are doing interleaving mode 1, we will see at most 1 message being
   // delivered at a time for an association.  That means, if a message is
@@ -624,8 +755,7 @@ void MessageBridgeServer::HandleData(const Message *message) {
         if (channel_state->Matches(channel)) {
           node_index = channel_state->NodeConnected(
               connect->node(), message->header.rcvinfo.rcv_assoc_id,
-              channel_index, &server_, &allocator_, monotonic_now,
-              &reconnected_);
+              channel_index, monotonic_now, &reconnected_);
           CHECK_NE(node_index, -1)
               << ": Failed to find node "
               << aos::FlatbufferToJson(connect->node()) << " for connection "

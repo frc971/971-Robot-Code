@@ -13,6 +13,8 @@ table ServerChannelStatistics {
   // Total number of messages that were dropped while sending (e.g.,
   // those dropped by the kernel).
   dropped_packets:uint (id: 2);
+  // Count of the total number of retries attempted on this channel.
+  retry_count:uint (id: 3);
 }
 
 // State of the connection.
@@ -62,6 +64,10 @@ table ServerConnection {
   // Statistics for every channel being forwarded to this node. Ordering is arbitrary;
   // the channels are identified by an index in the ServerChannelStatistics.
   channels:[ServerChannelStatistics] (id: 10);
+
+  // Total number of retries attempted on all channels. Typically due to kernel
+  // send buffers filling up.
+  retry_count:uint (id: 11);
 }
 
 // Statistics for all connections to all the clients.

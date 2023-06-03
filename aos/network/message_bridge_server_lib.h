@@ -28,11 +28,9 @@ namespace message_bridge {
 // new message from the event loop.
 class ChannelState {
  public:
-  ChannelState(const Channel *channel, int channel_index,
-               std::unique_ptr<aos::RawFetcher> last_message_fetcher)
-      : channel_index_(channel_index),
-        channel_(channel),
-        last_message_fetcher_(std::move(last_message_fetcher)) {}
+  ChannelState(aos::EventLoop *event_loop, const Channel *channel,
+               int channel_index, SctpServer *server,
+               FixedAllocator *allocator);
 
   // Class to encapsulate all the state per client on a channel.  A client may
   // be subscribed to multiple channels.
@@ -61,6 +59,12 @@ class ChannelState {
     // If true, this message will be logged on a receiving node.  We need to
     // keep it around to log it locally if that fails.
     bool logged_remotely = false;
+
+    // Last "successfully" sent message for this connection. For reliable
+    // connections, this being set to a value will indicate that the message was
+    // truly successfully sent. For unreliable connections, this will get set as
+    // soon as we've attempted to send it.
+    std::optional<size_t> last_sent_index = std::nullopt;
   };
 
   // Needs to be called when a node (might have) disconnected.
@@ -70,7 +74,6 @@ class ChannelState {
   // reconnects.
   int NodeDisconnected(sctp_assoc_t assoc_id);
   int NodeConnected(const Node *node, sctp_assoc_t assoc_id, int stream,
-                    SctpServer *server, FixedAllocator *allocator,
                     aos::monotonic_clock::time_point monotonic_now,
                     std::vector<sctp_assoc_t> *reconnected);
 
@@ -84,13 +87,12 @@ class ChannelState {
   // channel.
   bool Matches(const Channel *other_channel);
 
-  // Sends the data in context using the provided server.
-  void SendData(SctpServer *server, FixedAllocator *allocator,
-                const Context &context);
+  // Sends as much data on this channel as is possible using the internal
+  // fetcher.
+  void SendData();
 
   // Packs a context into a size prefixed message header for transmission.
-  flatbuffers::FlatBufferBuilder PackContext(FixedAllocator *allocator,
-                                             const Context &context);
+  flatbuffers::FlatBufferBuilder PackContext(const Context &context);
 
   // Handles reception of delivery times.
   void HandleDelivery(sctp_assoc_t rcv_assoc_id, uint16_t ssn,
@@ -99,14 +101,66 @@ class ChannelState {
                       MessageBridgeServerStatus *server_status);
 
  private:
+  // When sending a message, we must guarantee that reliable messages make it to
+  // their destinations. Unfortunately, we cannot purely rely on the kernel to
+  // provide this guarantee, as the internal send buffer can fill up, resulting
+  // in Send() calls failing. To guarantee that we end up sending reliable
+  // messages, we do the following:
+  // * For channels with no reliable connections, we send the message and do not
+  //   retry if the kernel rejects it.
+  // * For channels with at least one reliable connection:
+  //   * We will always attempt to retry failed sends on reliable connections
+  //     (if a channel has mixed reliable/unreliable connections, the unreliable
+  //     connections are not retried).
+  //   * Until we have successfully sent message X on every single reliable
+  //     connection, we will not progress to sending X+1 on *any* connection.
+  //     This reduces the number of Fetchers that we must maintain for each
+  //     channel.
+  //   * If a given client node is not connected (or becomes disconnected), then
+  //     it will be ignored and will not block the progression of sending of
+  //     reliable messages to other nodes (connection state is tracked through
+  //     Peer::sac_assoc_id).
+  //   * Retries will be performed with an additive backoff up to a set
+  //     maximum. The backoff duration resets once the retry succeeds.
+  //   * If we fall so far behind that the Fetcher drops off the end of the
+  //     queue, then we kill the message bridge.
+
+  // Returns false if a retry will be required for the message in question, and
+  // true if it was sent "successfully" (note that for unreliable messages, we
+  // may drop the message but still return true here).
+  bool TrySendData(const Context &context);
+
+  // Returns true if all of the peer connections are in a state where we are
+  // permitted to progress to sending the next message. As described above, this
+  // will never block on any unreliable connections, but will not return true
+  // until every reliable connection has successfully sent the currently fetched
+  // message.
+  bool ReadyToFetchNext() const;
+  // Returns true if the given peer can move to the next message (used by
+  // ReadyToFetchNext()).
+  bool PeerReadyToFetchNext(const Peer &peer, const Context &context) const;
+
+  bool AnyNodeConnected() const;
+
+  aos::EventLoop *const event_loop_;
   const int channel_index_;
   const Channel *const channel_;
 
+  SctpServer *server_;
+  FixedAllocator *allocator_;
+
   std::vector<Peer> peers_;
 
-  // A fetcher to use to send the last message when a node connects and is
-  // reliable.
+  // A fetcher to use to send the message. For reliable channels this is
+  // used both on startup to fetch the latest message as well as to
+  // support retries of messages. For unreliable channels, we use the
+  // Fetcher to minimize the diff with the reliable codepath, but it
+  // provides no utility over just using a Watcher directly.
   std::unique_ptr<aos::RawFetcher> last_message_fetcher_;
+  // For reliable channels, the timer to use to retry sends on said channel.
+  aos::TimerHandler *retry_timer_;
+  // Current retry period.
+  std::chrono::milliseconds retry_period_;
 };
 
 // This encapsulates the state required to talk to *all* the clients from this
@@ -114,6 +168,13 @@ class ChannelState {
 class MessageBridgeServer {
  public:
   MessageBridgeServer(aos::ShmEventLoop *event_loop, std::string config_sha256);
+
+  // Delete copy/move constructors explicitly--we internally pass around
+  // pointers to internal state.
+  MessageBridgeServer(MessageBridgeServer &&) = delete;
+  MessageBridgeServer(const MessageBridgeServer &) = delete;
+  MessageBridgeServer &operator=(MessageBridgeServer &&) = delete;
+  MessageBridgeServer &operator=(const MessageBridgeServer &) = delete;
 
   ~MessageBridgeServer() { event_loop_->epoll()->DeleteFd(server_.fd()); }
 
