@@ -325,6 +325,8 @@ cc_library(
     includes = cpu_select({
         "amd64": [
             "usr/lib/x86_64-linux-gnu/glib-2.0/include",
+            "usr/lib/x86_64-linux-gnu/libcrypto.so.1.1",
+            "usr/lib/x86_64-linux-gnu/libssl.so.1.1",
         ],
         "armhf": [
             "usr/lib/arm-linux-gnueabihf/glib-2.0/include",

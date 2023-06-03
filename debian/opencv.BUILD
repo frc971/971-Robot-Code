@@ -266,6 +266,8 @@ cc_library(
             "usr/lib/x86_64-linux-gnu/libmfx.so.1",
             "usr/lib/x86_64-linux-gnu/libquadmath.so.0",
             "usr/lib/x86_64-linux-gnu/libnuma.so.1",
+            "usr/lib/x86_64-linux-gnu/libcrypto.so.1.1",
+            "usr/lib/x86_64-linux-gnu/libssl.so.1.1",
         ],
         "@platforms//cpu:armv7": [s % "arm-linux-gnueabihf" if "%" in s else s for s in _common_srcs_list],
         "@platforms//cpu:arm64": [s % "aarch64-linux-gnu" if "%" in s else s for s in _common_srcs_list],

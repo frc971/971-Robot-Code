@@ -109,6 +109,7 @@ def download_deps(apt_args, packages, excludes, force_includes,
                   force_excludes):
     deps = get_all_deps(apt_args, packages)
     exclude_deps = get_all_deps(apt_args, excludes)
+    exclude_deps -= set({b'libssl1.1'})
     deps -= exclude_deps
     force_include_deps = get_all_deps(apt_args, force_includes)
     deps |= force_include_deps
