@@ -667,3 +667,17 @@ cc_test(
         "//aos/testing:tmpdir",
     ],
 )
+
+cc_binary(
+    name = "sctp_perf",
+    srcs = [
+        "sctp_perf.cc",
+    ],
+    copts = ["-Wno-cast-align"],
+    deps = [
+        ":sctp_client",
+        ":sctp_server",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+    ],
+)
