@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <optional>
 #include <string_view>
 #if __has_feature(memory_sanitizer)
 #include <sanitizer/msan_interface.h>
@@ -17,14 +18,27 @@
 namespace aos {
 namespace util {
 
-::std::string ReadFileToStringOrDie(const std::string_view filename) {
-  ::std::string r;
+std::string ReadFileToStringOrDie(const std::string_view filename) {
+  std::optional<std::string> r = MaybeReadFileToString(filename);
+  PCHECK(r.has_value()) << "Failed to read " << filename << " to string";
+  return r.value();
+}
+
+std::optional<std::string> MaybeReadFileToString(
+    const std::string_view filename) {
+  std::string r;
   ScopedFD fd(open(::std::string(filename).c_str(), O_RDONLY));
-  PCHECK(fd.get() != -1) << ": opening " << filename;
+  if (fd.get() == -1) {
+    PLOG(ERROR) << "Failed to open " << filename;
+    return std::nullopt;
+  }
   while (true) {
     char buffer[1024];
     const ssize_t result = read(fd.get(), buffer, sizeof(buffer));
-    PCHECK(result >= 0) << ": reading from " << filename;
+    if (result < 0) {
+      PLOG(ERROR) << "Failed to read from " << filename;
+      return std::nullopt;
+    }
     if (result == 0) {
       break;
     }

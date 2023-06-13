@@ -22,7 +22,12 @@ namespace util {
 
 // Returns the complete contents of filename. LOG(FATAL)s if any errors are
 // encountered.
-::std::string ReadFileToStringOrDie(const std::string_view filename);
+std::string ReadFileToStringOrDie(const std::string_view filename);
+
+// Returns the complete contents of filename. Returns nullopt, but never dies
+// if any errors are encountered.
+std::optional<std::string> MaybeReadFileToString(
+    const std::string_view filename);
 
 // Creates filename if it doesn't exist and sets the contents to contents.
 void WriteStringToFileOrDie(const std::string_view filename,
