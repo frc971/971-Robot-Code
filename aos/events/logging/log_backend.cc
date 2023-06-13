@@ -351,7 +351,8 @@ std::vector<std::string> FileBackend::ListFiles() const {
   std::vector<std::string> names;
   const std::string prefix = absl::StrCat(base_name_, separator_);
   for (const auto &file : files) {
-    CHECK(absl::StartsWith(file, prefix));
+    CHECK(absl::StartsWith(file, prefix))
+        << ": File " << file << ", prefix " << prefix;
     names.push_back(file.substr(prefix.size()));
   }
   return names;
