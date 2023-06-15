@@ -111,6 +111,26 @@ void PrintOptionalOrNull(std::ostream *os, const std::optional<T> &t) {
     *os << "null";
   }
 }
+
+// A dummy LogSink implementation that handles the special case when we create
+// a DetachedBufferWriter when there's no space left on the system. The
+// DetachedBufferWriter frequently dereferences log_sink_, so we want a class
+// here that effectively refuses to do anything meaningful.
+class OutOfDiskSpaceLogSink : public LogSink {
+ public:
+  WriteCode OpenForWrite() override { return WriteCode::kOutOfSpace; }
+  WriteCode Close() override { return WriteCode::kOk; }
+  bool is_open() const override { return false; }
+  WriteResult Write(
+      const absl::Span<const absl::Span<const uint8_t>> &) override {
+    return WriteResult{
+        .code = WriteCode::kOutOfSpace,
+        .messages_written = 0,
+    };
+  }
+  std::string_view name() const override { return "<out_of_disk_space>"; }
+};
+
 }  // namespace
 
 DetachedBufferWriter::DetachedBufferWriter(std::unique_ptr<LogSink> log_sink,
@@ -121,6 +141,10 @@ DetachedBufferWriter::DetachedBufferWriter(std::unique_ptr<LogSink> log_sink,
   if (ran_out_of_space_) {
     LOG(WARNING) << "And we are out of space";
   }
+}
+
+DetachedBufferWriter::DetachedBufferWriter(already_out_of_space_t)
+    : DetachedBufferWriter(std::make_unique<OutOfDiskSpaceLogSink>(), nullptr) {
 }
 
 DetachedBufferWriter::~DetachedBufferWriter() {

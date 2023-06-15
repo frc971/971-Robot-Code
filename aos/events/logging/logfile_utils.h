@@ -56,11 +56,11 @@ class DetachedBufferWriter {
                        std::unique_ptr<DataEncoder> encoder);
   // Creates a dummy instance which won't even open a file. It will act as if
   // opening the file ran out of space immediately.
-  DetachedBufferWriter(already_out_of_space_t) : ran_out_of_space_(true) {}
+  DetachedBufferWriter(already_out_of_space_t);
   DetachedBufferWriter(DetachedBufferWriter &&other);
   DetachedBufferWriter(const DetachedBufferWriter &) = delete;
 
-  ~DetachedBufferWriter();
+  virtual ~DetachedBufferWriter();
 
   DetachedBufferWriter &operator=(DetachedBufferWriter &&other);
   DetachedBufferWriter &operator=(const DetachedBufferWriter &) = delete;
