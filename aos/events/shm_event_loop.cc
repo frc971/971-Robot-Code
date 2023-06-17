@@ -379,12 +379,12 @@ class ShmSender : public RawSender {
       : RawSender(event_loop, channel),
         lockless_queue_memory_(shm_base, FLAGS_permissions,
                                event_loop->configuration(), channel),
-        lockless_queue_sender_(VerifySender(
-            ipc_lib::LocklessQueueSender::Make(
-                lockless_queue_memory_.queue(),
-                std::chrono::nanoseconds(
-                    event_loop->configuration()->channel_storage_duration())),
-            channel)),
+        lockless_queue_sender_(
+            VerifySender(ipc_lib::LocklessQueueSender::Make(
+                             lockless_queue_memory_.queue(),
+                             configuration::ChannelStorageDuration(
+                                 event_loop->configuration(), channel)),
+                         channel)),
         wake_upper_(lockless_queue_memory_.queue()) {}
 
   ~ShmSender() override { shm_event_loop()->CheckCurrentThread(); }

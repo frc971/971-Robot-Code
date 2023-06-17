@@ -231,6 +231,10 @@ std::optional<FlatbufferDetachedBuffer<reflection::Schema>>
 GetSchemaDetachedBuffer(const Configuration *config,
                         std::string_view schema_type);
 
+// Returns the storage duration for a channel.
+std::chrono::nanoseconds ChannelStorageDuration(const Configuration *config,
+                                                const Channel *channel);
+
 // Adds the specified channel to the config and returns the new, merged, config.
 // The channel name is derived from the specified name, the type and schema from
 // the provided schema, the source node from the specified node, and all other

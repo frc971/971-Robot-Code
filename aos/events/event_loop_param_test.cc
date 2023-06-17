@@ -2241,7 +2241,9 @@ TEST_P(AbstractEventLoopTest, SenderTimingReport) {
   // Sanity check channel frequencies to ensure that we've designed the test
   // correctly.
   ASSERT_EQ(800, sender.channel()->frequency());
-  ASSERT_EQ(2000000000, loop1->configuration()->channel_storage_duration());
+  ASSERT_EQ(2000000000, configuration::ChannelStorageDuration(
+                            loop1->configuration(), sender.channel())
+                            .count());
   constexpr int kMaxAllowedMessages = 800 * 2;
   constexpr int kSendMessages = kMaxAllowedMessages * 2;
   constexpr int kDroppedMessages = kSendMessages - kMaxAllowedMessages;
@@ -3195,15 +3197,8 @@ int TestChannelFrequency(EventLoop *event_loop) {
 }
 
 int TestChannelQueueSize(EventLoop *event_loop) {
-  const int frequency = TestChannelFrequency(event_loop);
-  const auto channel_storage_duration = std::chrono::nanoseconds(
-      event_loop->configuration()->channel_storage_duration());
-  const int queue_size =
-      frequency * std::chrono::duration_cast<std::chrono::duration<double>>(
-                      channel_storage_duration)
-                      .count();
-
-  return queue_size;
+  return configuration::QueueSize(event_loop->configuration(),
+                                  event_loop->GetChannel<TestMessage>("/test"));
 }
 
 RawSender::Error SendTestMessage(aos::Sender<TestMessage> &sender) {
@@ -3244,10 +3239,9 @@ TEST_P(AbstractEventLoopTest, SendingMessagesTooFast) {
   });
 
   const auto kRepeatOffset = std::chrono::milliseconds(1);
-  const auto base_offset =
-      std::chrono::nanoseconds(
-          event_loop->configuration()->channel_storage_duration()) -
-      (kRepeatOffset * (queue_size / 2));
+  const auto base_offset = configuration::ChannelStorageDuration(
+                               event_loop->configuration(), sender.channel()) -
+                           (kRepeatOffset * (queue_size / 2));
   event_loop->OnRun([&event_loop, &timer, &base_offset, &kRepeatOffset]() {
     timer->Schedule(event_loop->monotonic_now() + base_offset, kRepeatOffset);
   });
@@ -3271,8 +3265,8 @@ TEST_P(AbstractEventLoopTest, SendingAfterSendingTooFast) {
 
   const std::chrono::milliseconds kInterval = std::chrono::milliseconds(10);
   const monotonic_clock::duration channel_storage_duration =
-      std::chrono::nanoseconds(
-          event_loop->configuration()->channel_storage_duration());
+      configuration::ChannelStorageDuration(event_loop->configuration(),
+                                            sender.channel());
   const int queue_size = TestChannelQueueSize(event_loop.get());
 
   int msgs_sent = 0;

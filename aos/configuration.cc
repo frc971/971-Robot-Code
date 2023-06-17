@@ -367,7 +367,7 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
                std::numeric_limits<uint16_t>::max())
           << ": More messages/second configured than the queue can hold on "
           << CleanedChannelToString(c) << ", " << c->frequency() << "hz for "
-          << config.message().channel_storage_duration() << "ns";
+          << ChannelStorageDuration(&config.message(), c).count() << "ns";
 
       if (c->has_logger_nodes()) {
         // Confirm that we don't have duplicate logger nodes.
@@ -1609,9 +1609,15 @@ std::vector<size_t> SourceNodeIndex(const Configuration *config) {
   return result;
 }
 
+chrono::nanoseconds ChannelStorageDuration(const Configuration *config,
+                                           const Channel *channel) {
+  CHECK(channel != nullptr);
+  return chrono::nanoseconds(config->channel_storage_duration());
+}
+
 int QueueSize(const Configuration *config, const Channel *channel) {
   return QueueSize(channel->frequency(),
-                   chrono::nanoseconds(config->channel_storage_duration()));
+                   ChannelStorageDuration(config, channel));
 }
 
 int QueueSize(size_t frequency, chrono::nanoseconds channel_storage_duration) {

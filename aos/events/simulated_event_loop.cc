@@ -808,8 +808,8 @@ SimulatedChannel *SimulatedEventLoop::GetSimulatedChannel(
              ->emplace(SimpleChannel(channel),
                        std::unique_ptr<SimulatedChannel>(new SimulatedChannel(
                            channel,
-                           std::chrono::nanoseconds(
-                               configuration()->channel_storage_duration()),
+                           configuration::ChannelStorageDuration(
+                               configuration(), channel),
                            scheduler_)))
              .first;
   }

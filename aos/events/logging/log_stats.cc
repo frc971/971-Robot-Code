@@ -146,7 +146,7 @@ class ChannelStats {
     current_message_time_ = context.monotonic_event_time;
     channel_storage_duration_messages_.push(current_message_time_);
     while (channel_storage_duration_messages_.front() +
-               std::chrono::nanoseconds(config_->channel_storage_duration()) <=
+               aos::configuration::ChannelStorageDuration(config_, channel_) <=
            current_message_time_) {
       channel_storage_duration_messages_.pop();
     }
@@ -188,7 +188,10 @@ class ChannelStats {
   double max_messages_per_sec() const {
     return max_messages_per_period_ /
            std::min(SecondsActive(),
-                    1e-9 * config_->channel_storage_duration());
+                    std::chrono::duration<double>(
+                        aos::configuration::ChannelStorageDuration(config_,
+                                                                   channel_))
+                        .count());
   }
   size_t avg_message_size() const {
     return total_message_size_ / total_num_messages_;

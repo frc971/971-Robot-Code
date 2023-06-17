@@ -545,10 +545,8 @@ TEST(SingleNodeLoggerNoFixtureTest, ReadTooFast) {
         });
 
     constexpr std::chrono::microseconds kSendPeriod{10};
-    const int max_legal_messages =
-        ping_sender.channel()->frequency() *
-        event_loop_factory.configuration()->channel_storage_duration() /
-        1000000000;
+    const int max_legal_messages = configuration::QueueSize(
+        event_loop_factory.configuration(), ping_sender.channel());
 
     ping_spammer_event_loop->OnRun(
         [&ping_spammer_event_loop, kSendPeriod, timer_handler]() {
