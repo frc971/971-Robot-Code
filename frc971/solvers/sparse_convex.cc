@@ -1,11 +1,7 @@
-#ifndef FRC971_SOLVERS_CONVEX_H_
-#define FRC971_SOLVERS_CONVEX_H_
+#include "frc971/solvers/sparse_convex.h"
 
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <Eigen/Dense>
-#include <iomanip>
+#include <Eigen/Sparse>
+#include <Eigen/SparseLU>
 
 #include "absl/strings/str_join.h"
 #include "glog/logging.h"
@@ -13,116 +9,30 @@
 namespace frc971 {
 namespace solvers {
 
-// TODO(austin): Steal JET from Ceres to generate the derivatives easily and
-// quickly?
-//
-// States is the number of inputs to the optimization problem.
-// M is the number of inequality constraints.
-// N is the number of equality constraints.
-template <size_t States, size_t M, size_t N>
-class ConvexProblem {
- public:
-  // Returns the function to minimize and it's derivatives.
-  virtual double f0(
-      Eigen::Ref<const Eigen::Matrix<double, States, 1>> X) const = 0;
-  virtual Eigen::Matrix<double, States, 1> df0(
-      Eigen::Ref<const Eigen::Matrix<double, States, 1>> X) const = 0;
-  virtual Eigen::Matrix<double, States, States> ddf0(
-      Eigen::Ref<const Eigen::Matrix<double, States, 1>> X) const = 0;
+Eigen::VectorXd SparseSolver::Rt(const Derivatives &derivatives,
+                                 Eigen::VectorXd y, double t_inverse) {
+  Eigen::VectorXd result(derivatives.states() +
+                         derivatives.inequality_constraints() +
+                         derivatives.equality_constraints());
 
-  // Returns the constraints f(X) < 0, and their derivative.
-  virtual Eigen::Matrix<double, M, 1> f(
-      Eigen::Ref<const Eigen::Matrix<double, States, 1>> X) const = 0;
-  virtual Eigen::Matrix<double, M, States> df(
-      Eigen::Ref<const Eigen::Matrix<double, States, 1>> X) const = 0;
+  // states x 1
+  Eigen::Ref<Eigen::VectorXd> r_dual =
+      result.block(0, 0, derivatives.states(), 1);
+  // inequality_constraints x 1
+  Eigen::Ref<Eigen::VectorXd> r_cent = result.block(
+      derivatives.states(), 0, derivatives.inequality_constraints(), 1);
+  // equality_constraints x 1
+  Eigen::Ref<Eigen::VectorXd> r_pri =
+      result.block(derivatives.states() + derivatives.inequality_constraints(),
+                   0, derivatives.equality_constraints(), 1);
 
-  // Returns the equality constraints of the form A x = b
-  virtual Eigen::Matrix<double, N, States> A() const = 0;
-  virtual Eigen::Matrix<double, N, 1> b() const = 0;
-};
-
-// Implements a Primal-Dual Interior point method convex solver.
-// See 11.7 of https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf
-//
-// States is the number of inputs to the optimization problem.
-// M is the number of inequality constraints.
-// N is the number of equality constraints.
-template <size_t States, size_t M, size_t N>
-class Solver {
- public:
-  // Ratio to require the cost to decrease when line searching.
-  static constexpr double kAlpha = 0.05;
-  // Line search step parameter.
-  static constexpr double kBeta = 0.5;
-  static constexpr double kMu = 2.0;
-  // Terminal condition for the primal problem (equality constraints) and dual
-  // (gradient + inequality constraints).
-  static constexpr double kEpsilonF = 1e-6;
-  // Terminal condition for nu, the surrogate duality gap.
-  static constexpr double kEpsilon = 1e-6;
-
-  // Solves the problem given a feasible initial solution.
-  Eigen::Matrix<double, States, 1> Solve(
-      const ConvexProblem<States, M, N> &problem,
-      Eigen::Ref<const Eigen::Matrix<double, States, 1>> X_initial);
-
- private:
-  // Class to hold all the derivataves and function evaluations.
-  struct Derivatives {
-    Eigen::Matrix<double, States, 1> gradient;
-    Eigen::Matrix<double, States, States> hessian;
-
-    // Inequality function f
-    Eigen::Matrix<double, M, 1> f;
-    // df
-    Eigen::Matrix<double, M, States> df;
-
-    // ddf is assumed to be 0 because for the linear constraint distance
-    // function we are using, it is actually 0, and by assuming it is zero
-    // rather than passing it through as 0 to the solver, we can save enough CPU
-    // to make it worth it.
-
-    // A
-    Eigen::Matrix<double, N, States> A;
-    // Ax - b
-    Eigen::Matrix<double, N, 1> Axmb;
-  };
-
-  // Computes all the values for the given problem at the given state.
-  Derivatives ComputeDerivative(
-      const ConvexProblem<States, M, N> &problem,
-      const Eigen::Ref<const Eigen::Matrix<double, States + M + N, 1>> y);
-
-  // Computes Rt at the given state and with the given t_inverse.  See 11.53 of
-  // cvxbook.pdf.
-  Eigen::Matrix<double, States + M + N, 1> Rt(
-      const Derivatives &derivatives,
-      Eigen::Matrix<double, States + M + N, 1> y, double t_inverse);
-
-  // Prints out all the derivatives with VLOG at the provided verbosity.
-  void PrintDerivatives(
-      const Derivatives &derivatives,
-      const Eigen::Ref<const Eigen::Matrix<double, States + M + N, 1>> y,
-      std::string_view prefix, int verbosity);
-};
-
-template <size_t States, size_t M, size_t N>
-Eigen::Matrix<double, States + M + N, 1> Solver<States, M, N>::Rt(
-    const Derivatives &derivatives, Eigen::Matrix<double, States + M + N, 1> y,
-    double t_inverse) {
-  Eigen::Matrix<double, States + M + N, 1> result;
-
-  Eigen::Ref<Eigen::Matrix<double, States, 1>> r_dual =
-      result.template block<States, 1>(0, 0);
-  Eigen::Ref<Eigen::Matrix<double, M, 1>> r_cent =
-      result.template block<M, 1>(States, 0);
-  Eigen::Ref<Eigen::Matrix<double, N, 1>> r_pri =
-      result.template block<N, 1>(States + M, 0);
-
-  Eigen::Ref<const Eigen::Matrix<double, M, 1>> lambda =
-      y.template block<M, 1>(States, 0);
-  Eigen::Ref<const Eigen::Matrix<double, N, 1>> v =
-      y.template block<N, 1>(States + M, 0);
+  // inequality_constraints x 1
+  Eigen::Ref<const Eigen::VectorXd> lambda =
+      y.block(derivatives.states(), 0, derivatives.inequality_constraints(), 1);
+  // equality_constraints x 1
+  Eigen::Ref<const Eigen::VectorXd> v =
+      y.block(derivatives.states() + derivatives.inequality_constraints(), 0,
+              derivatives.equality_constraints(), 1);
 
   r_dual = derivatives.gradient + derivatives.df.transpose() * lambda +
            derivatives.A.transpose() * v;
@@ -132,22 +42,51 @@ Eigen::Matrix<double, States + M + N, 1> Solver<States, M, N>::Rt(
   return result;
 }
 
-template <size_t States, size_t M, size_t N>
-Eigen::Matrix<double, States, 1> Solver<States, M, N>::Solve(
-    const ConvexProblem<States, M, N> &problem,
-    Eigen::Ref<const Eigen::Matrix<double, States, 1>> X_initial) {
+void AppendColumns(std::vector<Eigen::Triplet<double>> *triplet_list,
+                   size_t starting_row, size_t starting_column,
+                   const Eigen::SparseMatrix<double> &matrix) {
+  for (int k = 0; k < matrix.outerSize(); ++k) {
+    for (Eigen::SparseMatrix<double, Eigen::ColMajor>::InnerIterator it(matrix,
+                                                                        k);
+         it; ++it) {
+      (*triplet_list)
+          .emplace_back(it.row() + starting_row, it.col() + starting_column,
+                        it.value());
+    }
+  }
+}
+
+void AppendColumns(
+    std::vector<Eigen::Triplet<double>> *triplet_list, size_t starting_row,
+    size_t starting_column,
+    const Eigen::DiagonalMatrix<double, Eigen::Dynamic> &matrix) {
+  for (int k = 0; k < matrix.rows(); ++k) {
+    (*triplet_list)
+        .emplace_back(k + starting_row, k + starting_column,
+                      matrix.diagonal()(k));
+  }
+}
+
+Eigen::VectorXd SparseSolver::Solve(
+    const SparseConvexProblem &problem,
+    Eigen::Ref<const Eigen::VectorXd> X_initial) {
+  CHECK_EQ(static_cast<size_t>(X_initial.rows()), problem.states());
+  CHECK_EQ(X_initial.cols(), 1);
+
   const Eigen::IOFormat kHeavyFormat(Eigen::StreamPrecision, 0, ", ",
                                      ",\n                        "
                                      "                                     ",
                                      "[", "]", "[", "]");
 
-  Eigen::Matrix<double, States + M + N, 1> y =
-      Eigen::Matrix<double, States + M + N, 1>::Constant(1.0);
-  y.template block<States, 1>(0, 0) = X_initial;
+  Eigen::VectorXd y = Eigen::VectorXd::Constant(
+      problem.states() + problem.inequality_constraints() +
+          problem.equality_constraints(),
+      1.0);
+  y.block(0, 0, problem.states(), 1) = X_initial;
 
   Derivatives derivatives = ComputeDerivative(problem, y);
 
-  for (size_t i = 0; i < M; ++i) {
+  for (size_t i = 0; i < problem.inequality_constraints(); ++i) {
     CHECK_LE(derivatives.f(i, 0), 0.0)
         << ": Initial state " << X_initial.transpose().format(kHeavyFormat)
         << " not feasible";
@@ -158,30 +97,51 @@ Eigen::Matrix<double, States, 1> Solver<States, M, N>::Solve(
   size_t iteration = 0;
   while (true) {
     // Solve for the primal-dual search direction by solving the newton step.
-    Eigen::Ref<const Eigen::Matrix<double, M, 1>> lambda =
-        y.template block<M, 1>(States, 0);
+
+    // inequality_constraints x 1;
+    Eigen::Ref<const Eigen::VectorXd> lambda =
+        y.block(problem.states(), 0, problem.inequality_constraints(), 1);
 
     const double nu = -(derivatives.f.transpose() * lambda)(0, 0);
     const double t_inverse = nu / (kMu * lambda.rows());
-    Eigen::Matrix<double, States + M + N, 1> rt_orig =
-        Rt(derivatives, y, t_inverse);
+    Eigen::VectorXd rt_orig = Rt(derivatives, y, t_inverse);
 
-    Eigen::Matrix<double, States + M + N, States + M + N> m1;
-    m1.setZero();
-    m1.template block<States, States>(0, 0) = derivatives.hessian;
-    m1.template block<States, M>(0, States) = derivatives.df.transpose();
-    m1.template block<States, N>(0, States + M) = derivatives.A.transpose();
-    m1.template block<M, States>(States, 0) =
-        -(Eigen::DiagonalMatrix<double, M>(lambda) * derivatives.df);
-    m1.template block<M, M>(States, States) =
-        Eigen::DiagonalMatrix<double, M>(-derivatives.f);
-    m1.template block<N, States>(States + M, 0) = derivatives.A;
+    std::vector<Eigen::Triplet<double>> triplet_list;
 
-    Eigen::Matrix<double, States + M + N, 1> dy =
-        m1.colPivHouseholderQr().solve(-rt_orig);
+    AppendColumns(&triplet_list, 0, 0, derivatives.hessian);
+    AppendColumns(&triplet_list, 0, problem.states(),
+                  derivatives.df.transpose());
+    AppendColumns(&triplet_list, 0,
+                  problem.states() + problem.inequality_constraints(),
+                  derivatives.A.transpose());
 
-    Eigen::Ref<Eigen::Matrix<double, M, 1>> dlambda =
-        dy.template block<M, 1>(States, 0);
+    // TODO(austin): I think I can do better on the next 2, making them more
+    // efficient and not creating the intermediate matrix.
+    AppendColumns(&triplet_list, problem.states(), 0,
+                  -(Eigen::DiagonalMatrix<double, Eigen::Dynamic>(lambda) *
+                    derivatives.df));
+    AppendColumns(
+        &triplet_list, problem.states(), problem.states(),
+        Eigen::DiagonalMatrix<double, Eigen::Dynamic>(-derivatives.f));
+
+    AppendColumns(&triplet_list,
+                  problem.states() + problem.inequality_constraints(), 0,
+                  derivatives.A);
+
+    Eigen::SparseMatrix<double> m1(
+        problem.states() + problem.inequality_constraints() +
+            problem.equality_constraints(),
+        problem.states() + problem.inequality_constraints() +
+            problem.equality_constraints());
+    m1.setFromTriplets(triplet_list.begin(), triplet_list.end());
+
+    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+    solver.analyzePattern(m1);
+    solver.factorize(m1);
+    Eigen::VectorXd dy = solver.solve(-rt_orig);
+
+    Eigen::Ref<Eigen::VectorXd> dlambda =
+        dy.block(problem.states(), 0, problem.inequality_constraints(), 1);
 
     double s = 1.0;
 
@@ -221,8 +181,8 @@ Eigen::Matrix<double, States, 1> Solver<States, M, N>::Solve(
 
     const double rt_orig_squared_norm = rt_orig.squaredNorm();
 
-    Eigen::Matrix<double, States + M + N, 1> next_y;
-    Eigen::Matrix<double, States + M + N, 1> rt;
+    Eigen::VectorXd next_y;
+    Eigen::VectorXd rt;
     Derivatives next_derivatives;
     while (true) {
       next_y = y + s * dy;
@@ -265,17 +225,19 @@ Eigen::Matrix<double, States, 1> Solver<States, M, N>::Solve(
     y = next_y;
 
     const Eigen::Ref<const Eigen::VectorXd> next_lambda =
-        y.template block<M, 1>(States, 0);
+        y.block(problem.states(), 0, problem.inequality_constraints(), 1);
 
     // See if we hit our convergence criteria.
     const double r_primal_squared_norm =
-        rt.template block<N, 1>(States + M, 0).squaredNorm();
+        rt.block(problem.states() + problem.inequality_constraints(), 0,
+                 problem.equality_constraints(), 1)
+            .squaredNorm();
     VLOG(1) << "  rt_next(" << iteration << ") is " << rt.norm() << " -> "
             << std::setprecision(12) << std::fixed << std::setfill(' ')
             << rt.transpose().format(kHeavyFormat);
     if (r_primal_squared_norm < kEpsilonF * kEpsilonF) {
       const double r_dual_squared_norm =
-          rt.template block<States, 1>(0, 0).squaredNorm();
+          rt.block(0, 0, problem.states(), 1).squaredNorm();
       if (r_dual_squared_norm < kEpsilonF * kEpsilonF) {
         const double next_nu =
             -(next_derivatives.f.transpose() * next_lambda)(0, 0);
@@ -317,33 +279,52 @@ Eigen::Matrix<double, States, 1> Solver<States, M, N>::Solve(
     }
   }
 
-  return y.template block<States, 1>(0, 0);
+  return y.block(0, 0, problem.states(), 1);
 }
 
-template <size_t States, size_t M, size_t N>
-typename Solver<States, M, N>::Derivatives
-Solver<States, M, N>::ComputeDerivative(
-    const ConvexProblem<States, M, N> &problem,
-    const Eigen::Ref<const Eigen::Matrix<double, States + M + N, 1>> y) {
-  const Eigen::Ref<const Eigen::Matrix<double, States, 1>> x =
-      y.template block<States, 1>(0, 0);
+SparseSolver::Derivatives SparseSolver::ComputeDerivative(
+    const SparseConvexProblem &problem,
+    const Eigen::Ref<const Eigen::VectorXd> y) {
+  // states x 1
+  const Eigen::Ref<const Eigen::VectorXd> x =
+      y.block(0, 0, problem.states(), 1);
 
   Derivatives derivatives;
   derivatives.gradient = problem.df0(x);
+  CHECK_EQ(static_cast<size_t>(derivatives.gradient.rows()), problem.states());
+  CHECK_EQ(static_cast<size_t>(derivatives.gradient.cols()), 1u);
+
   derivatives.hessian = problem.ddf0(x);
+  CHECK_EQ(static_cast<size_t>(derivatives.hessian.rows()), problem.states());
+  CHECK_EQ(static_cast<size_t>(derivatives.hessian.cols()), problem.states());
+
   derivatives.f = problem.f(x);
+  CHECK_EQ(static_cast<size_t>(derivatives.f.rows()),
+           problem.inequality_constraints());
+  CHECK_EQ(static_cast<size_t>(derivatives.f.cols()), 1u);
+
   derivatives.df = problem.df(x);
+  CHECK_EQ(static_cast<size_t>(derivatives.df.rows()),
+           problem.inequality_constraints());
+  CHECK_EQ(static_cast<size_t>(derivatives.df.cols()), problem.states());
+
   derivatives.A = problem.A();
+  CHECK_EQ(static_cast<size_t>(derivatives.A.rows()),
+           problem.equality_constraints());
+  CHECK_EQ(static_cast<size_t>(derivatives.A.cols()), problem.states());
+
   derivatives.Axmb =
-      derivatives.A * y.template block<States, 1>(0, 0) - problem.b();
+      derivatives.A * y.block(0, 0, problem.states(), 1) - problem.b();
+  CHECK_EQ(static_cast<size_t>(derivatives.Axmb.rows()),
+           problem.equality_constraints());
+  CHECK_EQ(static_cast<size_t>(derivatives.Axmb.cols()), 1u);
+
   return derivatives;
 }
 
-template <size_t States, size_t M, size_t N>
-void Solver<States, M, N>::PrintDerivatives(
-    const Derivatives &derivatives,
-    const Eigen::Ref<const Eigen::Matrix<double, States + M + N, 1>> y,
-    std::string_view prefix, int verbosity) {
+void SparseSolver::PrintDerivatives(const Derivatives &derivatives,
+                                    const Eigen::Ref<const Eigen::VectorXd> y,
+                                    std::string_view prefix, int verbosity) {
   const Eigen::Ref<const Eigen::VectorXd> x =
       y.block(0, 0, derivatives.hessian.rows(), 1);
   const Eigen::Ref<const Eigen::VectorXd> lambda =
@@ -364,22 +345,17 @@ void Solver<States, M, N>::PrintDerivatives(
     VLOG(verbosity) << "   " << prefix
                     << "lambda: " << lambda.transpose().format(heavy);
     VLOG(verbosity) << "   " << prefix << "v: " << v.transpose().format(heavy);
+    VLOG(verbosity) << "  " << prefix << "hessian:     " << derivatives.hessian;
     VLOG(verbosity) << "  " << prefix
-                    << "hessian:     " << derivatives.hessian.format(heavy);
-    VLOG(verbosity) << "  " << prefix
-                    << "gradient:    " << derivatives.gradient.format(heavy);
-    VLOG(verbosity) << "  " << prefix
-                    << "A:           " << derivatives.A.format(heavy);
+                    << "gradient:    " << derivatives.gradient;
+    VLOG(verbosity) << "  " << prefix << "A:           " << derivatives.A;
     VLOG(verbosity) << "  " << prefix
                     << "Ax-b:        " << derivatives.Axmb.format(heavy);
     VLOG(verbosity) << "  " << prefix
                     << "f:           " << derivatives.f.format(heavy);
-    VLOG(verbosity) << "  " << prefix
-                    << "df:          " << derivatives.df.format(heavy);
+    VLOG(verbosity) << "  " << prefix << "df:          " << derivatives.df;
   }
 }
 
-};  // namespace solvers
-};  // namespace frc971
-
-#endif  // FRC971_SOLVERS_CONVEX_H_
+}  // namespace solvers
+}  // namespace frc971
