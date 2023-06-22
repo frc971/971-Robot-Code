@@ -98,6 +98,10 @@ flatbuffers::Offset<Channel> CopyChannel(const Channel *c,
                                          std::string_view new_name,
                                          std::string_view new_type,
                                          flatbuffers::FlatBufferBuilder *fbb) {
+  CHECK_EQ(Channel::MiniReflectTypeTable()->num_elems, 14u)
+      << ": Merging logic needs to be updated when the number of channel "
+         "fields changes.";
+
   flatbuffers::Offset<flatbuffers::String> name_offset =
       fbb->CreateSharedString(new_name.empty() ? c->name()->string_view()
                                                : new_name);
@@ -147,6 +151,9 @@ flatbuffers::Offset<Channel> CopyChannel(const Channel *c,
   }
   if (c->has_num_readers()) {
     channel_builder.add_num_readers(c->num_readers());
+  }
+  if (c->has_channel_storage_duration()) {
+    channel_builder.add_channel_storage_duration(c->channel_storage_duration());
   }
   return channel_builder.Finish();
 }
@@ -1475,7 +1482,7 @@ void LogReader::MakeRemappedConfig() {
   fbb.ForceDefaults(true);
   std::vector<flatbuffers::Offset<Channel>> channel_offsets;
 
-  CHECK_EQ(Channel::MiniReflectTypeTable()->num_elems, 13u)
+  CHECK_EQ(Channel::MiniReflectTypeTable()->num_elems, 14u)
       << ": Merging logic needs to be updated when the number of channel "
          "fields changes.";
 
@@ -1546,6 +1553,10 @@ void LogReader::MakeRemappedConfig() {
               channel_builder.add_num_senders(2);
               if (c->has_frequency()) {
                 channel_builder.add_frequency(c->frequency());
+              }
+              if (c->has_channel_storage_duration()) {
+                channel_builder.add_channel_storage_duration(
+                    c->channel_storage_duration());
               }
               channel_offsets.emplace_back(channel_builder.Finish());
             }

@@ -968,7 +968,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
   std::map<std::string_view, flatbuffers::Offset<reflection::Schema>>
       schema_cache;
 
-  CHECK_EQ(Channel::MiniReflectTypeTable()->num_elems, 13u)
+  CHECK_EQ(Channel::MiniReflectTypeTable()->num_elems, 14u)
       << ": Merging logic needs to be updated when the number of channel "
          "fields changes.";
 
@@ -1064,6 +1064,10 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
       }
       if (c->has_num_readers()) {
         channel_builder.add_num_readers(c->num_readers());
+      }
+      if (c->has_channel_storage_duration()) {
+        channel_builder.add_channel_storage_duration(
+            c->channel_storage_duration());
       }
       channel_offsets.emplace_back(channel_builder.Finish());
     }
@@ -1612,6 +1616,9 @@ std::vector<size_t> SourceNodeIndex(const Configuration *config) {
 chrono::nanoseconds ChannelStorageDuration(const Configuration *config,
                                            const Channel *channel) {
   CHECK(channel != nullptr);
+  if (channel->has_channel_storage_duration()) {
+    return chrono::nanoseconds(channel->channel_storage_duration());
+  }
   return chrono::nanoseconds(config->channel_storage_duration());
 }
 

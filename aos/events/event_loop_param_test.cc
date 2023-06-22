@@ -3332,5 +3332,24 @@ TEST_P(AbstractEventLoopTest, SendingTooFastWithMultipleLoops) {
   EXPECT_EQ(SendTestMessage(sender2), RawSender::Error::kMessagesSentTooFast);
 }
 
+// Tests that a longer storage durations store more messages.
+TEST_P(AbstractEventLoopTest, SendingTooFastWithLongDuration) {
+  auto loop1 = MakePrimary();
+
+  auto sender1 = loop1->MakeSender<TestMessage>("/test3");
+
+  // Send queue_size messages split between the senders.
+  const int queue_size =
+      configuration::QueueSize(loop1->configuration(), sender1.channel());
+  EXPECT_EQ(queue_size, 100 * 10);
+  for (int i = 0; i < queue_size; i++) {
+    ASSERT_EQ(SendTestMessage(sender1), RawSender::Error::kOk);
+  }
+
+  // Since queue_size messages have been sent, and little time has elapsed,
+  // this should return an error.
+  EXPECT_EQ(SendTestMessage(sender1), RawSender::Error::kMessagesSentTooFast);
+}
+
 }  // namespace testing
 }  // namespace aos

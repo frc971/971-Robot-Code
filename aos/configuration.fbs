@@ -105,6 +105,10 @@ table Channel {
   //
   // Currently, this must be set if and only if read_method is PIN.
   num_readers:int (id: 12);
+
+  // Length of this channel in nanoseconds.  This overrides
+  // channel_storage_duration below in Configuration for just this channel.
+  channel_storage_duration:long = 2000000000 (id: 13);
 }
 
 // Table to support renaming channel names.
