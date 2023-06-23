@@ -17,7 +17,7 @@ std::string ShmFolder(std::string_view shm_base, const Channel *channel) {
 
 std::string ShmPath(std::string_view shm_base, const Channel *channel) {
   CHECK(channel->has_type());
-  return ShmFolder(shm_base, channel) + channel->type()->str() + ".v4";
+  return ShmFolder(shm_base, channel) + channel->type()->str() + ".v5";
 }
 
 void PageFaultDataWrite(char *data, size_t size) {
@@ -67,6 +67,15 @@ LocklessQueueConfiguration MakeQueueConfiguration(
   // copy.
   config.num_pinners = channel->num_readers();
   config.queue_size = configuration::QueueSize(configuration, channel);
+  CHECK_LT(config.queue_size,
+           std::numeric_limits<QueueIndex::PackedIndexType>::max())
+      << ": More messages/second configured than the queue can hold on "
+      << configuration::CleanedChannelToString(channel) << ", "
+      << channel->frequency() << "hz for "
+      << std::chrono::duration<double>(
+             configuration::ChannelStorageDuration(configuration, channel))
+             .count()
+      << "sec";
   config.message_data_size = channel->max_size();
 
   return config;

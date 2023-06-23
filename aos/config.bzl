@@ -1,4 +1,5 @@
 load("//tools/build_rules:label.bzl", "expand_label")
+load("//tools/build_rules:select.bzl", "address_size_select")
 
 AosConfigInfo = provider(fields = [
     "transitive_flatbuffers",
@@ -9,6 +10,10 @@ def aos_config(name, src, flatbuffers = [], deps = [], visibility = None, teston
     _aos_config(
         name = name,
         src = src,
+        flags = address_size_select({
+            "32": ["--max_queue_size_override=0xffff"],
+            "64": ["--max_queue_size_override=0xffffffff"],
+        }),
         config_json = name + ".json",
         config_stripped = name + ".stripped.json",
         config_binary = name + ".bfbs",
@@ -38,7 +43,7 @@ def _aos_config_impl(ctx):
     ctx.actions.run(
         outputs = [config, stripped_config, binary_config],
         inputs = all_files,
-        arguments = [
+        arguments = ctx.attr.flags + [
             config.path,
             stripped_config.path,
             binary_config.path,
@@ -73,6 +78,9 @@ _aos_config = rule(
         "src": attr.label(
             mandatory = True,
             allow_files = True,
+        ),
+        "flags": attr.string_list(
+            doc = "Additional flags to pass to config_flattener.",
         ),
         "deps": attr.label_list(
             providers = [AosConfigInfo],

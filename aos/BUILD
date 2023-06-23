@@ -277,6 +277,7 @@ cc_library(
         ":flatbuffers",
         ":json_to_flatbuffer",
         "//aos:unique_malloc_ptr",
+        "//aos/ipc_lib:index",
         "//aos/network:team_number",
         "//aos/util:file",
         "@com_github_google_glog//:glog",

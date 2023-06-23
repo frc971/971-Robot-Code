@@ -141,6 +141,32 @@ cc_test(
 )
 
 cc_library(
+    name = "index32",
+    srcs = ["index.cc"],
+    hdrs = ["index.h"],
+    defines = [
+        "AOS_QUEUE_ATOMIC_SIZE=32",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":shm_observers",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "index32_test",
+    srcs = ["index_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":index32",
+        "//aos/testing:googletest",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
     name = "index",
     srcs = ["index.cc"],
     hdrs = ["index.h"],

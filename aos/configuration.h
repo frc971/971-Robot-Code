@@ -209,9 +209,9 @@ bool ApplicationShouldStart(const Configuration *config, const Node *my_node,
                             const Application *application);
 
 // Returns the number of messages in the queue.
-int QueueSize(const Configuration *config, const Channel *channel);
-int QueueSize(size_t frequency,
-              std::chrono::nanoseconds channel_storage_duration);
+size_t QueueSize(const Configuration *config, const Channel *channel);
+size_t QueueSize(size_t frequency,
+                 std::chrono::nanoseconds channel_storage_duration);
 
 // Returns the number of scratch buffers in the queue.
 int QueueScratchBufferSize(const Channel *channel);

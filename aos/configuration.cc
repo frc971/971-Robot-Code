@@ -23,10 +23,17 @@
 
 #include "aos/configuration_generated.h"
 #include "aos/flatbuffer_merge.h"
+#include "aos/ipc_lib/index.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
 #include "aos/unique_malloc_ptr.h"
 #include "aos/util/file.h"
+
+DEFINE_uint32(max_queue_size_override, 0,
+              "If nonzero, this is the max number of elements in a queue to "
+              "enforce.  If zero, use the number that the processor that this "
+              "application is compiled for can support.  This is mostly useful "
+              "for config validation, and shouldn't be touched.");
 
 namespace aos {
 namespace {
@@ -364,7 +371,10 @@ void ValidateConfiguration(const Flatbuffer<Configuration> &config) {
       }
 
       CHECK_LT(QueueSize(&config.message(), c) + QueueScratchBufferSize(c),
-               std::numeric_limits<uint16_t>::max())
+               FLAGS_max_queue_size_override != 0
+                   ? FLAGS_max_queue_size_override
+                   : std::numeric_limits<
+                         ipc_lib::QueueIndex::PackedIndexType>::max())
           << ": More messages/second configured than the queue can hold on "
           << CleanedChannelToString(c) << ", " << c->frequency() << "hz for "
           << ChannelStorageDuration(&config.message(), c).count() << "ns";
@@ -1622,12 +1632,13 @@ chrono::nanoseconds ChannelStorageDuration(const Configuration *config,
   return chrono::nanoseconds(config->channel_storage_duration());
 }
 
-int QueueSize(const Configuration *config, const Channel *channel) {
+size_t QueueSize(const Configuration *config, const Channel *channel) {
   return QueueSize(channel->frequency(),
                    ChannelStorageDuration(config, channel));
 }
 
-int QueueSize(size_t frequency, chrono::nanoseconds channel_storage_duration) {
+size_t QueueSize(size_t frequency,
+                 chrono::nanoseconds channel_storage_duration) {
   // Use integer arithmetic and round up at all cost.
   return static_cast<int>(
       (999999999 + static_cast<int64_t>(frequency) *

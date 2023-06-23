@@ -20,6 +20,23 @@ using aos::testing::ArtifactPath;
 namespace aos {
 namespace starter {
 
+class ThreadedStarterRunner {
+ public:
+  ThreadedStarterRunner(Starter *starter)
+      : my_thread_([this, starter]() {
+          starter->event_loop()->OnRun([this]() { event_.Set(); });
+          starter->Run();
+        }) {
+    event_.Wait();
+  }
+
+  ~ThreadedStarterRunner() { my_thread_.join(); }
+
+ private:
+  aos::Event event_;
+  std::thread my_thread_;
+};
+
 class StarterdTest : public ::testing::Test {
  public:
   StarterdTest() {
@@ -161,26 +178,17 @@ TEST_P(StarterdConfigParamTest, MultiNodeStartStopTest) {
 
   SetupStarterCleanup(&starter);
 
-  Event starter_started;
-  std::thread starterd_thread([&starter, &starter_started] {
-    starter.event_loop()->OnRun(
-        [&starter_started]() { starter_started.Set(); });
-    starter.Run();
-  });
-  starter_started.Wait();
+  ThreadedStarterRunner starterd_thread(&starter);
 
-  Event client_started;
-  std::thread client_thread([&client_loop, &client_started] {
-    client_loop.OnRun([&client_started]() { client_started.Set(); });
-    client_loop.Run();
-  });
-  client_started.Wait();
+  aos::Event event;
+  client_loop.OnRun([&event]() { event.Set(); });
+  std::thread client_thread([&client_loop] { client_loop.Run(); });
+  event.Wait();
 
   watcher_loop.Run();
   test_done_ = true;
   client_thread.join();
   ASSERT_TRUE(success);
-  starterd_thread.join();
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -270,18 +278,10 @@ TEST_F(StarterdTest, DeathTest) {
 
   SetupStarterCleanup(&starter);
 
-  Event starter_started;
-  std::thread starterd_thread([&starter, &starter_started] {
-    starter.event_loop()->OnRun(
-        [&starter_started]() { starter_started.Set(); });
-    starter.Run();
-  });
-  starter_started.Wait();
+  ThreadedStarterRunner starterd_thread(&starter);
   watcher_loop.Run();
 
   test_done_ = true;
-
-  starterd_thread.join();
 }
 
 TEST_F(StarterdTest, Autostart) {
@@ -365,18 +365,10 @@ TEST_F(StarterdTest, Autostart) {
 
   SetupStarterCleanup(&starter);
 
-  Event starter_started;
-  std::thread starterd_thread([&starter, &starter_started] {
-    starter.event_loop()->OnRun(
-        [&starter_started]() { starter_started.Set(); });
-    starter.Run();
-  });
-  starter_started.Wait();
+  ThreadedStarterRunner starterd_thread(&starter);
   watcher_loop.Run();
 
   test_done_ = true;
-
-  starterd_thread.join();
 }
 
 // Tests that starterd respects autorestart.
@@ -462,18 +454,10 @@ TEST_F(StarterdTest, DeathNoRestartTest) {
 
   SetupStarterCleanup(&starter);
 
-  Event starter_started;
-  std::thread starterd_thread([&starter, &starter_started] {
-    starter.event_loop()->OnRun(
-        [&starter_started]() { starter_started.Set(); });
-    starter.Run();
-  });
-  starter_started.Wait();
+  ThreadedStarterRunner starterd_thread(&starter);
   watcher_loop.Run();
 
   test_done_ = true;
-
-  starterd_thread.join();
 }
 
 TEST_F(StarterdTest, StarterChainTest) {
@@ -579,17 +563,11 @@ TEST_F(StarterdTest, StarterChainTest) {
 
   // run `starter.Run()` in a thread to simulate it running on
   // another process.
-  Event started;
-  std::thread starterd_thread([&starter, &started] {
-    starter.event_loop()->OnRun([&started]() { started.Set(); });
-    starter.Run();
-  });
+  ThreadedStarterRunner starterd_thread(&starter);
 
-  started.Wait();
   client_loop.Run();
   EXPECT_TRUE(success);
   ASSERT_FALSE(starter.event_loop()->is_running());
-  starterd_thread.join();
 }
 
 }  // namespace starter

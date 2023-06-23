@@ -26,12 +26,12 @@ class ShmEventLoopTestFactory : public EventLoopTestFactory {
     }
 
     // Clean up anything left there before.
-    unlink((FLAGS_shm_base + "/test/aos.TestMessage.v4").c_str());
-    unlink((FLAGS_shm_base + "/test1/aos.TestMessage.v4").c_str());
-    unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v4").c_str());
-    unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v4").c_str());
-    unlink((FLAGS_shm_base + "/aos/aos.timing.Report.v4").c_str());
-    unlink((FLAGS_shm_base + "/aos/aos.logging.LogMessageFbs.v4").c_str());
+    unlink((FLAGS_shm_base + "/test/aos.TestMessage.v5").c_str());
+    unlink((FLAGS_shm_base + "/test1/aos.TestMessage.v5").c_str());
+    unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v5").c_str());
+    unlink((FLAGS_shm_base + "/test2/aos.TestMessage.v5").c_str());
+    unlink((FLAGS_shm_base + "/aos/aos.timing.Report.v5").c_str());
+    unlink((FLAGS_shm_base + "/aos/aos.logging.LogMessageFbs.v5").c_str());
   }
 
   ~ShmEventLoopTestFactory() { FLAGS_override_hostname = ""; }

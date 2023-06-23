@@ -1,6 +1,7 @@
 #ifndef AOS_IPC_LIB_INDEX_H_
 #define AOS_IPC_LIB_INDEX_H_
 
+#include <stdint.h>
 #include <sys/types.h>
 
 #include <atomic>
@@ -9,6 +10,18 @@
 #include "glog/logging.h"
 
 #include "aos/ipc_lib/shm_observers.h"
+
+#ifndef AOS_QUEUE_ATOMIC_SIZE
+#if UINTPTR_MAX == 0xffffffff
+#define AOS_QUEUE_ATOMIC_SIZE 32
+/* 32-bit */
+#elif UINTPTR_MAX == 0xffffffffffffffff
+#define AOS_QUEUE_ATOMIC_SIZE 64
+/* 64-bit */
+#else
+#error "Unknown pointer size"
+#endif
+#endif
 
 namespace aos {
 namespace ipc_lib {
@@ -40,13 +53,19 @@ class QueueIndexTest;
 // Structure for holding the index into the queue.
 class QueueIndex {
  public:
+#if AOS_QUEUE_ATOMIC_SIZE == 64
+  typedef uint32_t PackedIndexType;
+#else
+  typedef uint16_t PackedIndexType;
+#endif
+
   // Returns an invalid queue element which uses a reserved value.
-  static QueueIndex Invalid() { return QueueIndex(0xffffffff, 0); }
+  static QueueIndex Invalid() { return QueueIndex(sentinal_value(), 0); }
   // Returns a queue element pointing to 0.
   static QueueIndex Zero(uint32_t count) { return QueueIndex(0, count); }
 
   // Returns true if the index is valid.
-  bool valid() const { return index_ != 0xffffffff; }
+  bool valid() const { return index_ != sentinal_value(); }
 
   // Returns the modulo base used to wrap to avoid overlapping with the reserved
   // number.
@@ -88,10 +107,14 @@ class QueueIndex {
     return QueueIndex(index, count_);
   }
 
-  // Returns true if the lowest 16 bits of the queue index from the Index could
-  // plausibly match this queue index.
-  bool IsPlausible(uint16_t queue_index) const {
-    return valid() && (queue_index == static_cast<uint16_t>(index_ & 0xffff));
+  // Returns true if the lowest bits of the queue index from the Index could
+  // plausibly match this queue index.  The number of bits matched depends on
+  // the the size of atomics in use.
+  bool IsPlausible(PackedIndexType queue_index) const {
+    return valid() &&
+           (queue_index ==
+            static_cast<PackedIndexType>(
+                index_ & std::numeric_limits<PackedIndexType>::max()));
   }
 
   bool operator==(const QueueIndex other) const {
@@ -170,21 +193,39 @@ struct AtomicQueueIndex {
 // Structure holding the queue index and the index into the message list.
 class Index {
  public:
+#if AOS_QUEUE_ATOMIC_SIZE == 64
+  typedef uint64_t IndexType;
+  typedef uint32_t MessageIndexType;
+#else
+  typedef uint32_t IndexType;
+  typedef uint16_t MessageIndexType;
+#endif
+  typedef QueueIndex::PackedIndexType PackedIndexType;
+
   // Constructs an Index.  queue_index is the QueueIndex of this message, and
   // message_index is the index into the messages structure.
-  Index(QueueIndex queue_index, uint16_t message_index)
+  Index(QueueIndex queue_index, MessageIndexType message_index)
       : Index(queue_index.index_, message_index) {}
-  Index(uint32_t queue_index, uint16_t message_index)
-      : index_((queue_index & 0xffff) |
-               (static_cast<uint32_t>(message_index) << 16)) {
+  Index(uint32_t queue_index, MessageIndexType message_index)
+      : index_(static_cast<IndexType>(
+                   queue_index & std::numeric_limits<PackedIndexType>::max()) |
+               (static_cast<IndexType>(message_index)
+                << std::numeric_limits<PackedIndexType>::digits)) {
     CHECK_LE(message_index, MaxMessages());
   }
 
   // Index of this message in the message array.
-  uint16_t message_index() const { return (index_ >> 16) & 0xffff; }
+  MessageIndexType message_index() const {
+    return (index_ >> std::numeric_limits<PackedIndexType>::digits) &
+           std::numeric_limits<MessageIndexType>::max();
+  }
 
-  // Lowest 16 bits of the queue index of this message in the queue.
-  uint16_t queue_index() const { return index_ & 0xffff; }
+  // Lowest bits of the queue index of this message in the queue.  This will
+  // either be 16 or 32 bits, depending on if we have 32 or 64 bit atomics under
+  // the cover.
+  PackedIndexType queue_index() const {
+    return index_ & std::numeric_limits<PackedIndexType>::max();
+  }
 
   // Returns true if the provided queue index plausibly represents this Index.
   bool IsPlausible(QueueIndex queue_index) const {
@@ -197,29 +238,33 @@ class Index {
   bool valid() const { return index_ != sentinal_value(); }
 
   // Returns the raw Index.  This should only be used for debug.
-  uint32_t get() const { return index_; }
+  IndexType get() const { return index_; }
 
   // Returns the maximum number of messages we can store before overflowing.
-  static constexpr uint16_t MaxMessages() { return 0xfffe; }
+  static constexpr MessageIndexType MaxMessages() {
+    return std::numeric_limits<MessageIndexType>::max() - 1;
+  }
 
   bool operator==(const Index other) const { return other.index_ == index_; }
   bool operator!=(const Index other) const { return other.index_ != index_; }
 
   // Returns a string representing the index.
-  ::std::string DebugString() const;
+  std::string DebugString() const;
 
  private:
-  Index(uint32_t index) : index_(index) {}
+  Index(IndexType index) : index_(index) {}
 
   friend class AtomicIndex;
 
-  static constexpr uint32_t sentinal_value() { return 0xffffffffu; }
+  static constexpr IndexType sentinal_value() {
+    return std::numeric_limits<IndexType>::max();
+  }
 
-  // Note: a value of 0xffffffff is a sentinal to represent an invalid entry.
+  // Note: a value of all 1 bits is a sentinal to represent an invalid entry.
   // This works because we would need to have a queue index of 0x*ffff, *and*
   // have 0xffff messages in the message list.  That constraint is easy to
   // enforce by limiting the max messages.
-  uint32_t index_;
+  IndexType index_;
 };
 
 // Atomic storage for setting and getting Index objects.
@@ -257,7 +302,7 @@ class AtomicIndex {
   }
 
  private:
-  ::std::atomic<uint32_t> index_;
+  ::std::atomic<Index::IndexType> index_;
 };
 
 }  // namespace ipc_lib

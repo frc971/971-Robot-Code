@@ -454,7 +454,7 @@ size_t LocklessQueueMessageDataSize(const LocklessQueueMemory *memory);
 // before and after a time with a binary search.
 
 // Prints to stdout the data inside the queue for debugging.
-void PrintLocklessQueueMemory(LocklessQueueMemory *memory);
+void PrintLocklessQueueMemory(const LocklessQueueMemory *memory);
 
 }  // namespace ipc_lib
 }  // namespace aos

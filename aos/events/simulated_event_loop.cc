@@ -149,6 +149,12 @@ class SimulatedChannel {
         channel_storage_duration_(channel_storage_duration),
         next_queue_index_(ipc_lib::QueueIndex::Zero(number_buffers())),
         scheduler_(scheduler) {
+    // Gut check that things fit.  Configuration validation should have caught
+    // this before we get here.
+    CHECK_LT(static_cast<size_t>(number_buffers()),
+             std::numeric_limits<
+                 decltype(available_buffer_indices_)::value_type>::max())
+        << configuration::CleanedChannelToString(channel);
     available_buffer_indices_.resize(number_buffers());
     for (int i = 0; i < number_buffers(); ++i) {
       available_buffer_indices_[i] = i;
@@ -291,7 +297,7 @@ class SimulatedChannel {
   // replay) and we want to prevent new senders from being accidentally created.
   bool allow_new_senders_ = true;
 
-  std::vector<uint16_t> available_buffer_indices_;
+  std::vector<ipc_lib::QueueIndex::PackedIndexType> available_buffer_indices_;
 
   const EventScheduler *scheduler_;
 

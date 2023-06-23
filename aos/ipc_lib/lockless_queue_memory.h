@@ -119,6 +119,14 @@ struct LocklessQueueMemory {
         SizeOfSenders() + pinner_index * sizeof(Pinner));
   }
 
+  const Sender *GetSender(size_t sender_index) const {
+    static_assert(alignof(Sender) <= kDataAlignment,
+                  "kDataAlignment is too small");
+    return reinterpret_cast<const Sender *>(
+        &data[0] + SizeOfQueue() + SizeOfMessages() + SizeOfWatchers() +
+        sender_index * sizeof(Sender));
+  }
+
   Sender *GetSender(size_t sender_index) {
     static_assert(alignof(Sender) <= kDataAlignment,
                   "kDataAlignment is too small");

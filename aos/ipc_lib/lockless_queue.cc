@@ -627,7 +627,8 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
       ::aos::ipc_lib::Sender *s = memory->GetSender(i);
       // Nobody else can possibly be touching these because we haven't set
       // initialized to true yet.
-      s->scratch_index.RelaxedStore(Index(0xffff, i + memory->queue_size()));
+      s->scratch_index.RelaxedStore(
+          Index(QueueIndex::Invalid(), i + memory->queue_size()));
       s->to_replace.RelaxedInvalidate();
     }
 
@@ -636,7 +637,8 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
       // Nobody else can possibly be touching these because we haven't set
       // initialized to true yet.
       pinner->scratch_index.RelaxedStore(
-          Index(0xffff, i + memory->num_senders() + memory->queue_size()));
+          Index(QueueIndex::Invalid(),
+                i + memory->num_senders() + memory->queue_size()));
       pinner->pinned.Invalidate();
     }
 
@@ -1400,7 +1402,7 @@ namespace {
 
 // Prints out the mutex state.  Not safe to use while the mutex is being
 // changed.
-::std::string PrintMutex(aos_mutex *mutex) {
+::std::string PrintMutex(const aos_mutex *mutex) {
   ::std::stringstream s;
   s << "aos_mutex(" << ::std::hex << mutex->futex;
 
@@ -1418,7 +1420,7 @@ namespace {
 
 }  // namespace
 
-void PrintLocklessQueueMemory(LocklessQueueMemory *memory) {
+void PrintLocklessQueueMemory(const LocklessQueueMemory *memory) {
   const size_t queue_size = memory->queue_size();
   ::std::cout << "LocklessQueueMemory (" << memory << ") {" << ::std::endl;
   ::std::cout << "  aos_mutex queue_setup_lock = "
@@ -1452,7 +1454,7 @@ void PrintLocklessQueueMemory(LocklessQueueMemory *memory) {
   ::std::cout << "  Message messages[" << memory->num_messages() << "] {"
               << ::std::endl;
   for (size_t i = 0; i < memory->num_messages(); ++i) {
-    Message *m = memory->GetMessage(Index(i, i));
+    const Message *m = memory->GetMessage(Index(i, i));
     ::std::cout << "    [" << i << "] -> Message 0x" << std::hex
                 << (reinterpret_cast<uintptr_t>(
                         memory->GetMessage(Index(i, i))) -
@@ -1484,8 +1486,9 @@ void PrintLocklessQueueMemory(LocklessQueueMemory *memory) {
     ::std::cout << "      }" << ::std::endl;
     const bool corrupt = CheckBothRedzones(memory, m);
     if (corrupt) {
-      absl::Span<char> pre_redzone = m->PreRedzone(memory->message_data_size());
-      absl::Span<char> post_redzone =
+      absl::Span<const char> pre_redzone =
+          m->PreRedzone(memory->message_data_size());
+      absl::Span<const char> post_redzone =
           m->PostRedzone(memory->message_data_size(), memory->message_size());
 
       ::std::cout << "      pre-redzone: \""
@@ -1514,7 +1517,7 @@ void PrintLocklessQueueMemory(LocklessQueueMemory *memory) {
   ::std::cout << "  Sender senders[" << memory->num_senders() << "] {"
               << ::std::endl;
   for (size_t i = 0; i < memory->num_senders(); ++i) {
-    Sender *s = memory->GetSender(i);
+    const Sender *s = memory->GetSender(i);
     ::std::cout << "    [" << i << "] -> Sender {" << ::std::endl;
     ::std::cout << "      aos_mutex tid = " << PrintMutex(&s->tid)
                 << ::std::endl;
@@ -1529,7 +1532,7 @@ void PrintLocklessQueueMemory(LocklessQueueMemory *memory) {
   ::std::cout << "  Pinner pinners[" << memory->num_pinners() << "] {"
               << ::std::endl;
   for (size_t i = 0; i < memory->num_pinners(); ++i) {
-    Pinner *p = memory->GetPinner(i);
+    const Pinner *p = memory->GetPinner(i);
     ::std::cout << "    [" << i << "] -> Pinner {" << ::std::endl;
     ::std::cout << "      aos_mutex tid = " << PrintMutex(&p->tid)
                 << ::std::endl;
@@ -1545,7 +1548,7 @@ void PrintLocklessQueueMemory(LocklessQueueMemory *memory) {
   ::std::cout << "  Watcher watchers[" << memory->num_watchers() << "] {"
               << ::std::endl;
   for (size_t i = 0; i < memory->num_watchers(); ++i) {
-    Watcher *w = memory->GetWatcher(i);
+    const Watcher *w = memory->GetWatcher(i);
     ::std::cout << "    [" << i << "] -> Watcher {" << ::std::endl;
     ::std::cout << "      aos_mutex tid = " << PrintMutex(&w->tid)
                 << ::std::endl;

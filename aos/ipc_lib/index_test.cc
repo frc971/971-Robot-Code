@@ -133,6 +133,37 @@ TEST(IndexTest, TestRecoverIndices) {
   EXPECT_EQ(index.message_index(), 11);
 }
 
+#if AOS_QUEUE_ATOMIC_SIZE == 64
+// Tests that the 64 bit plausible has sane behavior.
+TEST(IndexTest, TestPlausible) {
+  QueueIndex five = QueueIndex::Zero(100).IncrementBy(5);
+  QueueIndex ffff = QueueIndex::Zero(100).IncrementBy(0xffff);
+
+  // Tests some various combinations of indices.
+  for (int i = 0; i < 100; ++i) {
+    Index index(five, i);
+    EXPECT_EQ(index.queue_index(), 5 + i * 0x10000);
+
+    EXPECT_TRUE(index.IsPlausible(five));
+
+    EXPECT_EQ(index.message_index(), i);
+
+    five = five.IncrementBy(0x10000);
+  }
+
+  // Tests that a queue index with a value of 0xffff doesn't match an invalid
+  // index.
+  for (int i = 0; i < 100; ++i) {
+    Index index(ffff, i);
+    EXPECT_EQ(index.queue_index(), 0xffff);
+
+    EXPECT_TRUE(index.IsPlausible(ffff));
+    EXPECT_FALSE(index.IsPlausible(QueueIndex::Invalid()));
+
+    EXPECT_EQ(index.message_index(), i);
+  }
+}
+#else
 // Tests that Plausible behaves.
 TEST(IndexTest, TestPlausible) {
   QueueIndex five = QueueIndex::Zero(100).IncrementBy(5);
@@ -161,6 +192,16 @@ TEST(IndexTest, TestPlausible) {
 
     EXPECT_EQ(index.message_index(), i);
   }
+}
+#endif
+
+// Tests that the max message size makes sense.
+TEST(IndexTest, TestMaxMessages) {
+#if AOS_QUEUE_ATOMIC_SIZE == 64
+  EXPECT_EQ(Index::MaxMessages(), 0xfffffffe);
+#else
+  EXPECT_EQ(Index::MaxMessages(), 0xfffe);
+#endif
 }
 
 }  // namespace testing
