@@ -41,7 +41,7 @@ def mirrored_go_dependencies():
             strip_prefix = info["strip_prefix"],
             type = "zip",
             urls = [
-                "https://www.frc971.org/Build-Dependencies/go_deps/" + info["filename"],
+                "https://software.frc971.org/Build-Dependencies/go_deps/" + info["filename"],
             ],
             sha256 = info["sha256"],
             importpath = info["importpath"],

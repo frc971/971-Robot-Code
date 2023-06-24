@@ -234,14 +234,14 @@ generate_repositories_for_debs(opencv_amd64_debs)
 
 generate_repositories_for_debs(
     gstreamer_amd64_debs,
-    base_url = "https://www.frc971.org/Build-Dependencies/gstreamer_bullseye_amd64_deps",
+    base_url = "https://software.frc971.org/Build-Dependencies/gstreamer_bullseye_amd64_deps",
 )
 
 generate_repositories_for_debs(gstreamer_armhf_debs)
 
 generate_repositories_for_debs(
     gstreamer_arm64_debs,
-    base_url = "https://www.frc971.org/Build-Dependencies/gstreamer_bullseye_arm64_deps",
+    base_url = "https://software.frc971.org/Build-Dependencies/gstreamer_bullseye_arm64_deps",
 )
 
 generate_repositories_for_debs(m4_debs)
@@ -412,7 +412,7 @@ http_archive(
     patches = ["//debian:nlopt.patch"],
     sha256 = "2d65815b21c30813499fe19c63947f7da56b10c0d4a459dce05417899b43e461",
     strip_prefix = "nlopt-496be736b8b249273838b891f4c8ca3669551127",
-    url = "https://www.frc971.org/Build-Dependencies/nlopt-496be736b8b249273838b891f4c8ca3669551127.zip",
+    url = "https://software.frc971.org/Build-Dependencies/nlopt-496be736b8b249273838b891f4c8ca3669551127.zip",
 )
 
 http_archive(
@@ -465,7 +465,7 @@ http_archive(
     patches = ["//debian:boringssl.patch"],
     sha256 = "bcab08a22c28f5322316542aa2c3a9ef0a9f9fde9be22d489cee574867b24675",
     strip_prefix = "boringssl-613fe9dbe74b58d6aaaf0d22fe57dccd964c7413",
-    urls = ["https://www.frc971.org/Build-Dependencies/boringssl-613fe9dbe74b58d6aaaf0d22fe57dccd964c7413.zip"],
+    urls = ["https://software.frc971.org/Build-Dependencies/boringssl-613fe9dbe74b58d6aaaf0d22fe57dccd964c7413.zip"],
 )
 
 # C++ rules for Bazel.
@@ -474,7 +474,7 @@ http_archive(
     sha256 = "ed36cc7a6f46b7c28ab4009db4a37e350e1ba367446b0886bcc9cdc1df92752e",
     strip_prefix = "rules_cc-608c7b605fb844a20e96a3eddc9b49ad2542adab",
     urls = [
-        "https://www.frc971.org/Build-Dependencies/rules_cc-608c7b605fb844a20e96a3eddc9b49ad2542adab.zip",
+        "https://software.frc971.org/Build-Dependencies/rules_cc-608c7b605fb844a20e96a3eddc9b49ad2542adab.zip",
     ],
 )
 
@@ -498,7 +498,7 @@ http_archive(
     patches = ["//debian:fts.patch"],
     sha256 = "f53c6b86c25b4827d50365efe760a08edfea39c027dd08674ae696c9093d6a37",
     strip_prefix = "roborio-academic",
-    url = "https://www.frc971.org/Build-Dependencies/cortexa9_vfpv3-roborio-academic-2023-x86_64-linux-gnu-Toolchain-12.1.0.tgz",
+    url = "https://software.frc971.org/Build-Dependencies/cortexa9_vfpv3-roborio-academic-2023-x86_64-linux-gnu-Toolchain-12.1.0.tgz",
 )
 
 # The main partition from https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-11-08/2021-10-30-raspios-bullseye-armhf-lite.zip.sig
@@ -509,7 +509,7 @@ http_archive(
     name = "armhf_debian_rootfs",
     build_file = "@//:compilers/debian_rootfs.BUILD",
     sha256 = "734f26a0cfc943cc3cae88412536186adfc4ed148cc167e6ffb298497c686280",
-    url = "https://www.frc971.org/Build-Dependencies/2021-10-30-raspios-bullseye-armhf-lite_rootfs.tar.bz2",
+    url = "https://software.frc971.org/Build-Dependencies/2021-10-30-raspios-bullseye-armhf-lite_rootfs.tar.bz2",
 )
 
 # The main partition from https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-11-08/2021-10-30-raspios-bullseye-armhf-lite.zip.sig
@@ -520,7 +520,7 @@ http_archive(
     name = "arm64_debian_rootfs",
     build_file = "@//:compilers/debian_rootfs.BUILD",
     sha256 = "7e6ad432fec0a36f8b66c3fc2ab8795ea446e61f7dce7a206b55602677cf0904",
-    url = "https://www.frc971.org/Build-Dependencies/2021-10-30-raspios-bullseye-arm64-lite_rootfs.tar.bz2",
+    url = "https://software.frc971.org/Build-Dependencies/2021-10-30-raspios-bullseye-arm64-lite_rootfs.tar.bz2",
 )
 
 # Created with:
@@ -533,7 +533,7 @@ http_archive(
     name = "amd64_debian_sysroot",
     build_file = "@//:compilers/debian_rootfs.BUILD",
     sha256 = "5e10f4cac85a98a39da1716b218bc05fff4666c61cc471a7df27876710bc86d2",
-    url = "https://www.frc971.org/Build-Dependencies/2022-01-06-debian-bullseye_rootfs.tar.bz2",
+    url = "https://software.frc971.org/Build-Dependencies/2022-01-06-debian-bullseye_rootfs.tar.bz2",
 )
 
 local_repository(
@@ -577,14 +577,14 @@ filegroup(
     visibility = ["//visibility:public"],
 )""",
     sha256 = "5312c79b19e9883b3cebd9d65b4438a2bf05b41da0bcd8c35e19d22c3b2e1859",
-    urls = ["https://www.frc971.org/Build-Dependencies/test_image_frc971.vision.CameraImage_2023.01.28.tar.gz"],
+    urls = ["https://software.frc971.org/Build-Dependencies/test_image_frc971.vision.CameraImage_2023.01.28.tar.gz"],
 )
 
 http_file(
     name = "game_pieces_edgetpu_model",
     downloaded_file_path = "edgetpu_model.tflite",
     sha256 = "3d37f34805d017153064076519aaf4b532658a3b8f2518bce8787f27a5c3064c",
-    urls = ["https://www.frc971.org/Build-Dependencies/models/2023/model_edgetpu_2023.04.09_3.tflite"],
+    urls = ["https://software.frc971.org/Build-Dependencies/models/2023/model_edgetpu_2023.04.09_3.tflite"],
 )
 
 # Recompressed from libusb-1.0.21.7z.
@@ -592,7 +592,7 @@ http_file(
     name = "libusb_1_0_windows",
     downloaded_file_path = "libusb-1.0.21-windows.tar.xz",
     sha256 = "fc2ba03992f343aabbaf9eb90559c6e00cdc6a2bd914d7cebea85857d5244015",
-    urls = ["https://www.frc971.org/Build-Dependencies/libusb-1.0.21-windows.tar.xz"],
+    urls = ["https://software.frc971.org/Build-Dependencies/libusb-1.0.21-windows.tar.xz"],
 )
 
 # The data tarball of the same-named Debian package.
@@ -600,7 +600,7 @@ http_archive(
     name = "f2c",
     build_file = "@//debian:f2c.BUILD",
     sha256 = "2c677437f8217a2e2b23e41b33995d0571644fc1bea46de858f8913a5053e3f4",
-    url = "https://www.frc971.org/Build-Dependencies/f2c_20100827-1_amd64.xz.tar.xz",
+    url = "https://software.frc971.org/Build-Dependencies/f2c_20100827-1_amd64.xz.tar.xz",
 )
 
 # Downloaded from http://www.netlib.org/clapack/.
@@ -609,28 +609,28 @@ http_archive(
     build_file = "@//debian:clapack.BUILD",
     sha256 = "6dc4c382164beec8aaed8fd2acc36ad24232c406eda6db462bd4c41d5e455fac",
     strip_prefix = "CLAPACK-3.2.1/",
-    url = "https://www.frc971.org/Build-Dependencies/clapack-3.2.1.tgz",
+    url = "https://software.frc971.org/Build-Dependencies/clapack-3.2.1.tgz",
 )
 
 http_archive(
     name = "postgresql_amd64",
     build_file = "@//debian:postgresql_amd64.BUILD",
     sha256 = "483e199d0e7feae7cca0df132c649b5c20ddcc1a17760e656c25709f44f57a65",
-    url = "https://www.frc971.org/Build-Dependencies/postgresql_amd64_v2.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/postgresql_amd64_v2.tar.gz",
 )
 
 http_archive(
     name = "patch",
     build_file = "@//debian:patch.BUILD",
     sha256 = "b5ce139648a2e04f5585948ddad2fdae24dd4ee7976ac5a22d6ae7bd5674631e",
-    url = "https://www.frc971.org/Build-Dependencies/patch.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/patch.tar.gz",
 )
 
 http_archive(
     name = "rsync",
     build_file = "@//debian:rsync.BUILD",
     sha256 = "53be65a9214aaa6d1b9176f135184fb4a78ccefd58f95ce0da37e6a392dfeb60",
-    url = "https://www.frc971.org/Build-Dependencies/rsync.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/rsync.tar.gz",
 )
 
 # //debian:ssh
@@ -638,56 +638,56 @@ http_archive(
     name = "ssh",
     build_file = "@//debian:ssh.BUILD",
     sha256 = "470fdc1252a2133a9d3c3da778e892a5b88f04f402cb04d8eb1cff7853242034",
-    url = "https://www.frc971.org/Build-Dependencies/ssh_v3.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/ssh_v3.tar.gz",
 )
 
 http_archive(
     name = "apache2",
     build_file = "@//debian:apache2.BUILD",
     sha256 = "98b0ad6d911751ba0aa486429e6278f995e7bbabd928c7d3d44c888fa2bf371b",
-    url = "https://www.frc971.org/Build-Dependencies/apache2.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/apache2.tar.gz",
 )
 
 http_archive(
     name = "pandoc",
     build_file = "@//debian:pandoc.BUILD",
     sha256 = "9f7a7adb3974a1f14715054c349ff3edc2909e920dbe3438fca437a83845f3c4",
-    url = "https://www.frc971.org/Build-Dependencies/pandoc.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/pandoc.tar.gz",
 )
 
 http_archive(
     name = "libusb",
     build_file = "@//debian:libusb.BUILD",
     sha256 = "3ca5cc2d317226f6646866ff9e8c443db3b0f6c82f828e800240982727531590",
-    url = "https://www.frc971.org/Build-Dependencies/libusb.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/libusb.tar.gz",
 )
 
 http_archive(
     name = "mingw_compiler",
     build_file = "@//debian:mingw_compiler.BUILD",
     sha256 = "45e86a8460f2151a4f0306e7ae7b06761029d2412ee16f63d1e8d2d29354e378",
-    url = "https://www.frc971.org/Build-Dependencies/mingw_compiler.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/mingw_compiler.tar.gz",
 )
 
 http_archive(
     name = "patchelf",
     build_file = "@//debian:patchelf.BUILD",
     sha256 = "bf8b709909d7d9e30815dd228eeded7dc282e3ce3919d0589ccbb56ac8632abc",
-    url = "https://www.frc971.org/Build-Dependencies/patchelf.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/patchelf.tar.gz",
 )
 
 http_archive(
     name = "arm_frc_gnueabi_deps",
     build_file = "@//debian:arm_frc_gnueabi_deps.BUILD",
     sha256 = "4b26fe45010817dc136488ee1604ade21bd7c264c29f17d864fc6eba9d7442c4",
-    url = "https://www.frc971.org/Build-Dependencies/arm_frc_gnueabi_deps.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/arm_frc_gnueabi_deps.tar.gz",
 )
 
 http_archive(
     name = "gtk_runtime",
     build_file = "@//debian:gtk_runtime.BUILD",
     sha256 = "5a6014d1783363be6bc95843d03bbb6513e650eaea60be2b1a4c65bf21981f9b",
-    url = "https://www.frc971.org/Build-Dependencies/gtk_runtime-4.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/gtk_runtime-4.tar.gz",
 )
 
 # Downloaded from
@@ -697,7 +697,7 @@ http_archive(
     build_file = "@//:compilers/gcc_arm_none_eabi.BUILD",
     sha256 = "bb17109f0ee697254a5d4ae6e5e01440e3ea8f0277f2e8169bf95d07c7d5fe69",
     strip_prefix = "gcc-arm-none-eabi-7-2018-q2-update/",
-    url = "https://www.frc971.org/Build-Dependencies/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2",
+    url = "https://software.frc971.org/Build-Dependencies/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2",
 )
 
 # Java11 JDK.
@@ -711,7 +711,7 @@ remote_java_repository(
         "@platforms//os:linux",
     ],
     urls = [
-        "https://www.frc971.org/Build-Dependencies/zulu11.54.25-ca-jdk11.0.14.1-linux_x64.tar.gz",
+        "https://software.frc971.org/Build-Dependencies/zulu11.54.25-ca-jdk11.0.14.1-linux_x64.tar.gz",
     ],
     version = "11",
 )
@@ -726,7 +726,7 @@ remote_java_repository(
         "@platforms//os:linux",
     ],
     urls = [
-        "https://www.frc971.org/Build-Dependencies/zulu11.54.25-ca-jdk11.0.14.1-linux_aarch64.tar.gz",
+        "https://software.frc971.org/Build-Dependencies/zulu11.54.25-ca-jdk11.0.14.1-linux_aarch64.tar.gz",
     ],
     version = "11",
 )
@@ -1152,7 +1152,7 @@ http_file(
     name = "sample_logfile",
     downloaded_file_path = "log.fbs",
     sha256 = "45d1d19fb82786c476d3f21a8d62742abaeeedf4c16a00ec37ae350dcb61f1fc",
-    urls = ["https://www.frc971.org/Build-Dependencies/small_sample_logfile2.fbs"],
+    urls = ["https://software.frc971.org/Build-Dependencies/small_sample_logfile2.fbs"],
 )
 
 http_archive(
@@ -1165,7 +1165,7 @@ filegroup(
 )
     """,
     sha256 = "115dcd2fe005cb9cad3325707aa7f4466390c43a08555edf331c06c108bdf692",
-    url = "https://www.frc971.org/Build-Dependencies/2021-03-20_drivetrain_spin_wheels.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/2021-03-20_drivetrain_spin_wheels.tar.gz",
 )
 
 http_archive(
@@ -1178,7 +1178,7 @@ filegroup(
 )
     """,
     sha256 = "2b9a3ecc83f2aba89a1909ae38fe51e6718a5b4d0e7c131846dfb2845df9cd19",
-    url = "https://www.frc971.org/Build-Dependencies/2021-10-03_superstructure_shoot_balls.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/2021-10-03_superstructure_shoot_balls.tar.gz",
 )
 
 # OpenCV arm64 (for raspberry pi)
@@ -1186,7 +1186,7 @@ http_archive(
     name = "opencv_arm64",
     build_file = "@//debian:opencv.BUILD",
     sha256 = "d284fae46ca710cf24c81ff7ace34929773466bff38f365a80371bea3b36a2ed",
-    url = "https://www.frc971.org/Build-Dependencies/opencv_arm64.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/opencv_arm64.tar.gz",
 )
 
 # OpenCV armhf (for raspberry pi)
@@ -1194,14 +1194,14 @@ http_archive(
     name = "opencv_armhf",
     build_file = "@//debian:opencv.BUILD",
     sha256 = "064165507bad1afa8f7b22961a9a9067b243abc70064d713d26b37bc8dc2bf56",
-    url = "https://www.frc971.org/Build-Dependencies/opencv_armhf_v4.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/opencv_armhf_v4.tar.gz",
 )
 
 http_archive(
     name = "opencv_k8",
     build_file = "@//debian:opencv.BUILD",
     sha256 = "1d8f839fd135a700ca0576a503b15b0a198fef5b36f22efae5cae9eaa17935d1",
-    url = "https://www.frc971.org/Build-Dependencies/opencv_amd64_v4.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/opencv_amd64_v4.tar.gz",
 )
 
 http_archive(
@@ -1232,21 +1232,21 @@ http_archive(
     name = "gstreamer_k8",
     build_file = "@//debian:gstreamer.BUILD",
     sha256 = "09765cb1dd8abc643cb1dd91d536aef3e6604ff05f5f92898d508ed857455d0b",
-    url = "https://www.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_amd64_v2.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_amd64_v2.tar.gz",
 )
 
 http_archive(
     name = "gstreamer_armhf",
     build_file = "@//debian:gstreamer.BUILD",
     sha256 = "c5ac4c604952c274a50636e244f0d091bd1de302032446f24f0e9e03ae9c76f7",
-    url = "https://www.frc971.org/Build-Dependencies/gstreamer_armhf.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/gstreamer_armhf.tar.gz",
 )
 
 http_archive(
     name = "gstreamer_arm64",
     build_file = "@//debian:gstreamer.BUILD",
     sha256 = "42b414c565ffdbae3d2d7796a66da9de42a650de757fa6554fd624f0cc3aaa9b",
-    url = "https://www.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_arm64.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_arm64.tar.gz",
 )
 
 # //debian:lzma_amd64
@@ -1267,7 +1267,7 @@ cc_library(
 )
 """,
     sha256 = "6fa0ad579b78bd41a0133024c34063b140442dd2ad4201fd2bf4c55229e7c13f",
-    urls = ["https://www.frc971.org/Build-Dependencies/lzma_amd64-2.tar.gz"],
+    urls = ["https://software.frc971.org/Build-Dependencies/lzma_amd64-2.tar.gz"],
 )
 
 # //debian:lzma_arm64
@@ -1288,7 +1288,7 @@ cc_library(
 )
 """,
     sha256 = "b4ab9fd7cf3bfdb9e3fc67ac4a3c84db7f7e3c48431ccfc6e6e210f5829d17c9",
-    urls = ["https://www.frc971.org/Build-Dependencies/lzma_arm64-2.tar.gz"],
+    urls = ["https://software.frc971.org/Build-Dependencies/lzma_arm64-2.tar.gz"],
 )
 
 local_repository(
@@ -1365,7 +1365,7 @@ exports_files(
 """,
     patch_cmds = ["touch lib/x86_64-linux-gnu/BUILD"],
     sha256 = "059e14f77dce365c57b96284aae98c892f61e269b3fbb7d07714b7135c2e5617",
-    urls = ["https://www.frc971.org/Build-Dependencies/libtinfo5_amd64.tar.gz"],
+    urls = ["https://software.frc971.org/Build-Dependencies/libtinfo5_amd64.tar.gz"],
 )
 
 http_archive(
@@ -1381,7 +1381,7 @@ exports_files(
 """,
     patch_cmds = ["touch lib/aarch64-linux-gnu/BUILD"],
     sha256 = "df4ea5194c80df8d1f5f6ed68b47ce9dbf78aa8cdebbc61cf00654d9075f8e3c",
-    urls = ["https://www.frc971.org/Build-Dependencies/libtinfo5_arm64.tar.gz"],
+    urls = ["https://software.frc971.org/Build-Dependencies/libtinfo5_arm64.tar.gz"],
 )
 
 http_archive(
@@ -1391,7 +1391,7 @@ http_archive(
         "unlink usr/bin/X11",
     ],
     sha256 = "a7491bf6c47ed0037992fa493f9c25af3ab00a695d706e1fdc122a8b798c0d7c",
-    urls = ["https://www.frc971.org/Build-Dependencies/xvfb_amd64.tar.gz"],
+    urls = ["https://software.frc971.org/Build-Dependencies/xvfb_amd64.tar.gz"],
 )
 
 local_repository(
@@ -1405,7 +1405,7 @@ http_archive(
     build_file = "//debian:curl.BUILD",
     sha256 = "01ae0c123dee45b01bbaef94c0bc00ed2aec89cb2ee0fd598e0d302a6b5e0a98",
     strip_prefix = "curl-7.69.1",
-    url = "https://www.frc971.org/Build-Dependencies/curl-7.69.1.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/curl-7.69.1.tar.gz",
 )
 
 http_archive(
@@ -1431,7 +1431,7 @@ http_archive(
     patch_args = ["-p1"],
     patches = ["//debian:aws_sdk.patch"],
     sha256 = "de6570d10c246189fd8c02100f7f0d9af8499a3ef94a131eeb85619f3bd6c604",
-    url = "https://www.frc971.org/Build-Dependencies/aws_sdk-1.10.34.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/aws_sdk-1.10.34.tar.gz",
 )
 
 # Source code of LZ4 (files under lib/) are under BSD 2-Clause.
@@ -1544,7 +1544,7 @@ filegroup(
 )""",
     sha256 = "629b150e4c71679e1ac30b8a2dfa558a04bbcca7ad0edd61bd6878d3b243edb6",
     url =
-        "https://www.frc971.org/Build-Dependencies/foxglove-d6b00825.tar.gz",
+        "https://software.frc971.org/Build-Dependencies/foxglove-d6b00825.tar.gz",
 )
 
 #
@@ -1556,7 +1556,7 @@ http_archive(
     patches = ["//third_party/vl53l1x:vl53l1x.patch"],
     sha256 = "06a66254ab7a8b061f93ff0f65abb6088c3ea50335475bb6ac11087beb65d174",
     strip_prefix = "en.STSW-IMG009_v3.5.2/API",
-    url = "https://www.frc971.org/Build-Dependencies/en.STSW-IMG009.zip",
+    url = "https://software.frc971.org/Build-Dependencies/en.STSW-IMG009.zip",
 )
 
 http_archive(
@@ -1568,7 +1568,7 @@ filegroup(
     visibility = ["//visibility:public"],
 )""",
     sha256 = "2356b9d0b3be59d01e837bfbbee21de55b16232d5e00c66701c20b64ff3272e3",
-    url = "https://www.frc971.org/Build-Dependencies/2023_arducam_apriltag_test_images.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/2023_arducam_apriltag_test_images.tar.gz",
 )
 
 http_archive(
@@ -1576,7 +1576,7 @@ http_archive(
     build_file = "//third_party:libedgetpu/libedgetpu.BUILD",
     sha256 = "c900faf2c9ea9599fda60c3d03ac43d0d7b34119659c9e35638b81cd14354b57",
     strip_prefix = "libedgetpu-bazel",
-    url = "https://www.frc971.org/Build-Dependencies/libedgetpu-ddfa7bde33c23afd8c2892182faa3e5b4e6ad94e.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/libedgetpu-ddfa7bde33c23afd8c2892182faa3e5b4e6ad94e.tar.gz",
 )
 
 http_archive(
@@ -1584,7 +1584,7 @@ http_archive(
     build_file = "//third_party:libtensorflowlite/libtensorflowlite.BUILD",
     sha256 = "a073dfddb3cb25113ba7eac6edb5569d0ae7988cad881d3f665e8ca0b8b85108",
     strip_prefix = "tensorflow-bazel",
-    url = "https://www.frc971.org/Build-Dependencies/tensorflow-a4dfb8d1a71385bd6d122e4f27f86dcebb96712d.tar.gz",
+    url = "https://software.frc971.org/Build-Dependencies/tensorflow-a4dfb8d1a71385bd6d122e4f27f86dcebb96712d.tar.gz",
 )
 
 http_archive(

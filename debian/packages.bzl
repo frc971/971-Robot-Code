@@ -12,7 +12,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 #    you can pass flags here to control those. See the --help for details.
 # 2. The "download_packages" steps prints the location of the deb packages
 #    after it prints the "_files" dictionary. Take the deb packages from there
-#    and upload them to https://www.frc971.org/Build-Dependencies/.
+#    and upload them to https://software.frc971.org/Build-Dependencies/.
 # 3. Add the newly uploaded deb packages as WORKSPACE entries using the
 #    "generate_repositories_for_debs" helper. Load the "_files" dictionary
 #    created earlier and the "generate_repositories_for_debs" helper and call
@@ -20,7 +20,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 # 4. Add a "generate_deb_tarball" target to //debian/BUILD. Pass in the
 #    "_files" dictionary created earlier by loading it from the .bzl file.
 # 5. Invoke "bazel build" on the "generate_deb_tarball" target you just created
-#    and upload the resulting tarball to https://www.frc971.org/Build-Dependencies.
+#    and upload the resulting tarball to https://software.frc971.org/Build-Dependencies.
 # 6. Add a new "new_http_archive" entry to the WORKSPACE file for the tarball
 #    you just uploaded.
 
@@ -32,7 +32,7 @@ def download_packages(name, packages, excludes = [], force_includes = [], force_
 
     Use "bazel run" on these targets to download the packages and generate the
     list to use in a .bzl file. Once you have the packages on
-    https://www.frc971.org/Build-Dependencies/ you can add them to a to
+    https://software.frc971.org/Build-Dependencies/ you can add them to a to
     combine_packages rule.
 
     force_includes lets you include packages that are excluded by default. The
@@ -91,7 +91,7 @@ def _convert_deb_to_target(deb):
     target = target.replace("~", "_")
     return "deb_%s_repo" % target
 
-def generate_repositories_for_debs(files, base_url = "https://www.frc971.org/Build-Dependencies"):
+def generate_repositories_for_debs(files, base_url = "https://software.frc971.org/Build-Dependencies"):
     """A WORKSPACE helper to add all the deb packages in the dictionary as a repo.
 
     The files dictionary must be one generated with the "download_packages"
