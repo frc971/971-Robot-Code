@@ -1,0 +1,17 @@
+include "frc971/control_loops/can_falcon.fbs";
+namespace y2023_bot4;
+
+table SwerveModuleCANPosition {
+  rotation: frc971.control_loops.CANFalcon (id: 0);
+  translation: frc971.control_loops.CANFalcon (id: 1);
+}
+
+// CAN Readings from the CAN sensor reader loop for each swerve module
+table AbsoluteCANPosition {
+  front_left: SwerveModuleCANPosition (id: 0);
+  front_right: SwerveModuleCANPosition (id: 1);
+  back_left: SwerveModuleCANPosition (id: 2);
+  back_right: SwerveModuleCANPosition (id: 3);
+}
+
+root_type AbsoluteCANPosition;
