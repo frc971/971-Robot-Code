@@ -61,7 +61,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "//tools:cpu_k8": ["@opencv_k8//:opencv"],
-        "//tools:cpu_armhf": ["@opencv_armhf//:opencv"],
         "//tools:cpu_arm64": ["@opencv_arm64//:opencv"],
         "//conditions:default": [":unavailable"],
     }),
@@ -72,7 +71,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "//tools:cpu_k8": ["@gstreamer_k8//:gstreamer"],
-        "//tools:cpu_armhf": ["@gstreamer_armhf//:gstreamer"],
         "//tools:cpu_arm64": ["@gstreamer_arm64//:gstreamer"],
         "//conditions:default": [":unavailable"],
     }),
@@ -83,7 +81,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "//tools:cpu_k8": ["@halide_k8//:halide"],
-        "//tools:cpu_armhf": ["@halide_armhf//:halide"],
         "//conditions:default": [":unavailable"],
     }),
 )
@@ -95,7 +92,6 @@ cc_library(
     # to minimize the chances of needing to download the other version unnecessarily.
     deps = select({
         "//tools:cpu_k8": ["@halide_k8//:gengen"],
-        "//tools:cpu_armhf": ["@halide_armhf//:gengen"],
         "//conditions:default": [":unavailable"],
     }),
 )
@@ -107,7 +103,6 @@ cc_library(
     # to minimize the chances of needing to download the other version unnecessarily.
     deps = select({
         "//tools:cpu_k8": ["@halide_k8//:runtime"],
-        "//tools:cpu_armhf": ["@halide_armhf//:runtime"],
         "//tools:cpu_arm64": ["@halide_arm64//:runtime"],
         "//conditions:default": [":unavailable"],
     }),
