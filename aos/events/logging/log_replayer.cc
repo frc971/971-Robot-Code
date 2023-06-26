@@ -52,11 +52,8 @@ DEFINE_string(merge_with_config, "",
 namespace aos::logger {
 
 int Main(int argc, char *argv[]) {
-  const std::vector<std::string> unsorted_logfiles =
-      aos::logger::FindLogs(argc, argv);
-
   const std::vector<aos::logger::LogFile> logfiles =
-      aos::logger::SortParts(unsorted_logfiles);
+      aos::logger::SortParts(aos::logger::FindLogs(argc, argv));
 
   aos::logger::LogReader config_reader(logfiles);
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =

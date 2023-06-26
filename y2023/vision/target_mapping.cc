@@ -398,9 +398,6 @@ void TargetMapperReplay::MaybeSolve() {
 }
 
 void MappingMain(int argc, char *argv[]) {
-  std::vector<std::string> unsorted_logfiles =
-      aos::logger::FindLogs(argc, argv);
-
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections;
 
   std::optional<aos::FlatbufferDetachedBuffer<aos::Configuration>> config =
@@ -410,7 +407,7 @@ void MappingMain(int argc, char *argv[]) {
 
   // Open logfiles
   aos::logger::LogReader reader(
-      aos::logger::SortParts(unsorted_logfiles),
+      aos::logger::SortParts(aos::logger::FindLogs(argc, argv)),
       config.has_value() ? &config->message() : nullptr);
 
   TargetMapperReplay mapper_replay(&reader);

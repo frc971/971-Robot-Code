@@ -98,11 +98,8 @@ int Main(int argc, char *argv[]) {
     WriteFlatbufferToJson(output_path + ".json", config);
     LOG(INFO) << "Done writing json to " << output_path << ".json";
   } else {
-    const std::vector<std::string> unsorted_logfiles =
-        aos::logger::FindLogs(argc, argv);
-
     const std::vector<aos::logger::LogFile> logfiles =
-        aos::logger::SortParts(unsorted_logfiles);
+        aos::logger::SortParts(aos::logger::FindLogs(argc, argv));
 
     WriteConfig(logfiles[0].config.get(), output_path);
   }

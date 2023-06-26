@@ -17,11 +17,9 @@ namespace vision {
 namespace {
 
 void ViewerMain(int argc, char *argv[]) {
-  std::vector<std::string> unsorted_logfiles =
-      aos::logger::FindLogs(argc, argv);
-
   // open logfiles
-  aos::logger::LogReader reader(aos::logger::SortParts(unsorted_logfiles));
+  aos::logger::LogReader reader(
+      aos::logger::SortParts(aos::logger::FindLogs(argc, argv)));
   reader.Register();
   const aos::Node *node = nullptr;
   if (aos::configuration::MultiNode(reader.configuration())) {

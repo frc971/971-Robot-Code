@@ -47,10 +47,9 @@ void ReplayRoborio(ReplayData *data) {
   data->match_start = monotonic_clock::min_time;
   data->match_end = monotonic_clock::min_time;
 
-  std::vector<std::string> unsorted_logfiles =
-      aos::logger::FindLogs(FLAGS_roborio_log);
   // Open logfiles
-  aos::logger::LogReader reader(aos::logger::SortParts(unsorted_logfiles));
+  aos::logger::LogReader reader(
+      aos::logger::SortParts(aos::logger::FindLogs(FLAGS_roborio_log)));
   reader.Register();
   const aos::Node *roborio =
       aos::configuration::GetNode(reader.configuration(), "roborio");
@@ -149,11 +148,9 @@ void ReplayPi(const ReplayData &data) {
         << "Can't use match timestamps if match never ended";
   }
 
-  std::vector<std::string> unsorted_logfiles =
-      aos::logger::FindLogs(FLAGS_logger_pi_log);
-
   // Open logfiles
-  aos::logger::LogReader reader(aos::logger::SortParts(unsorted_logfiles));
+  aos::logger::LogReader reader(
+      aos::logger::SortParts(aos::logger::FindLogs(FLAGS_logger_pi_log)));
   reader.Register();
   const aos::Node *pi =
       aos::configuration::GetNode(reader.configuration(), FLAGS_pi);

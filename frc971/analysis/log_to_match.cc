@@ -7,9 +7,8 @@
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
-  std::vector<std::string> unsorted_logfiles =
-      aos::logger::FindLogs(argc, argv);
-  aos::logger::LogReader reader(aos::logger::SortParts(unsorted_logfiles));
+  aos::logger::LogReader reader(
+      aos::logger::SortParts(aos::logger::FindLogs(argc, argv)));
   reader.Register();
   const aos::Node *roborio =
       aos::configuration::GetNode(reader.configuration(), "roborio");

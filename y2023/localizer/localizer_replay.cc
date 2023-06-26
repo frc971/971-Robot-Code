@@ -25,13 +25,9 @@ int main(int argc, char **argv) {
   const aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
 
-  // find logfiles
-  std::vector<std::string> unsorted_logfiles =
-      aos::logger::FindLogs(argc, argv);
-
   // sort logfiles
   const std::vector<aos::logger::LogFile> logfiles =
-      aos::logger::SortParts(unsorted_logfiles);
+      aos::logger::SortParts(aos::logger::FindLogs(argc, argv));
 
   // open logfiles
   aos::logger::LogReader reader(logfiles, &config.message());
