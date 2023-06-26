@@ -10,6 +10,7 @@
 #include "aos/network/message_bridge_client_generated.h"
 #include "aos/network/message_bridge_client_status.h"
 #include "aos/network/sctp_client.h"
+#include "aos/network/sctp_config_request_generated.h"
 #include "aos/network/sctp_lib.h"
 
 namespace aos {
@@ -38,9 +39,14 @@ class SctpClientConnection {
                        std::vector<SctpClientChannelState> *channels,
                        int client_index,
                        MessageBridgeClientStatus *client_status,
-                       std::string_view config_sha256);
+                       std::string_view config_sha256,
+                       SctpAuthMethod requested_authentication);
 
   ~SctpClientConnection() { event_loop_->epoll()->DeleteFd(client_.fd()); }
+
+  void SetAuthKey(absl::Span<const uint8_t> auth_key) {
+    client_.SetAuthKey(auth_key);
+  }
 
  private:
   // Reads a message from the socket.  Could be a notification.
@@ -102,11 +108,15 @@ class SctpClientConnection {
 // node.
 class MessageBridgeClient {
  public:
-  MessageBridgeClient(aos::ShmEventLoop *event_loop, std::string config_sha256);
+  MessageBridgeClient(aos::ShmEventLoop *event_loop, std::string config_sha256,
+                      SctpAuthMethod requested_authentication);
 
   ~MessageBridgeClient() {}
 
  private:
+  // Sends a request for the currently active authentication key.
+  void RequestAuthKey();
+
   // Event loop to schedule everything on.
   aos::ShmEventLoop *event_loop_;
 
@@ -119,6 +129,12 @@ class MessageBridgeClient {
   std::vector<std::unique_ptr<SctpClientConnection>> connections_;
 
   std::string config_sha256_;
+
+  // We use this timer to poll the active authentication key.
+  aos::TimerHandler *refresh_key_timer_;
+
+  // Used to request the current sctp settings to be used.
+  aos::Sender<SctpConfigRequest> sctp_config_request_;
 };
 
 }  // namespace message_bridge

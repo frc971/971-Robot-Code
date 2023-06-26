@@ -13,6 +13,7 @@
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/remote_data_generated.h"
 #include "aos/network/remote_message_generated.h"
+#include "aos/network/sctp_config_generated.h"
 #include "aos/network/sctp_server.h"
 #include "aos/network/timestamp_channel.h"
 
@@ -49,9 +50,14 @@ DEFINE_int32(force_wmem_max, -1,
              "If set to a nonnegative numbers, the wmem buffer size to use, in "
              "bytes. Intended solely for testing purposes.");
 
+DECLARE_bool(use_sctp_authentication);
+
 namespace aos {
 namespace message_bridge {
 namespace chrono = std::chrono;
+
+// How often we should poll for the active SCTP authentication key.
+constexpr chrono::seconds kRefreshAuthKeyPeriod{3};
 
 bool ChannelState::Matches(const Channel *other_channel) {
   return channel_->name()->string_view() ==
@@ -401,18 +407,36 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
   return -1;
 }
 
-MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
-                                         std::string config_sha256)
+MessageBridgeServer::MessageBridgeServer(
+    aos::ShmEventLoop *event_loop, std::string config_sha256,
+    SctpAuthMethod requested_authentication)
     : event_loop_(event_loop),
       timestamp_loggers_(event_loop_),
       server_(max_channels() + kControlStreams(), "",
-              event_loop->node()->port()),
+              event_loop->node()->port(), requested_authentication),
       server_status_(event_loop, [this]() { timestamp_state_->SendData(); }),
       config_sha256_(std::move(config_sha256)),
-      allocator_(0) {
+      allocator_(0),
+      refresh_key_timer_(event_loop->AddTimer([this]() { RequestAuthKey(); })),
+      sctp_config_request_(event_loop_->MakeSender<SctpConfigRequest>("/aos")) {
   CHECK_EQ(config_sha256_.size(), 64u) << ": Wrong length sha256sum";
   CHECK(event_loop_->node() != nullptr) << ": No nodes configured.";
 
+  // Set up the SCTP configuration watcher and timer.
+  if (requested_authentication == SctpAuthMethod::kAuth && HasSctpAuth()) {
+    event_loop_->MakeWatcher("/aos", [this](const SctpConfig &config) {
+      if (config.has_key()) {
+        server_.SetAuthKey(*config.key());
+      }
+    });
+
+    // We poll in case the SCTP authentication key has changed.
+    refresh_key_timer_->set_name("refresh_key");
+    event_loop_->OnRun([this]() {
+      refresh_key_timer_->Schedule(event_loop_->monotonic_now(),
+                                   kRefreshAuthKeyPeriod);
+    });
+  }
   // Start out with a decent size big enough to hold timestamps.
   size_t max_size = 204;
 
@@ -819,6 +843,13 @@ void MessageBridgeServer::HandleData(const Message *message) {
     }
     LOG(FATAL) << "Unexpected stream id " << message->header.rcvinfo.rcv_sid;
   }
+}
+
+void MessageBridgeServer::RequestAuthKey() {
+  auto sender = sctp_config_request_.MakeBuilder();
+  auto builder = sender.MakeBuilder<SctpConfigRequest>();
+  builder.add_request_key(true);
+  sender.CheckOk(sender.Send(builder.Finish()));
 }
 
 }  // namespace message_bridge

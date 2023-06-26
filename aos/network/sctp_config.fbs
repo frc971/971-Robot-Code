@@ -1,0 +1,10 @@
+namespace aos.message_bridge;
+
+// SCTP Configuration options for message bridge.
+table SctpConfig {
+  // The authentication key to use.
+  key:[ubyte] (id: 0);
+}
+
+root_type SctpConfig;
+

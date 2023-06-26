@@ -121,6 +121,38 @@
       "max_size": 2048
     },
     {
+      "name": "/pi1/aos",
+      "type": "aos.message_bridge.SctpConfig",
+      "source_node": "pi1",
+      "frequency": 10,
+      "num_senders": 1,
+      "max_size": 256
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.message_bridge.SctpConfig",
+      "source_node": "pi2",
+      "frequency": 10,
+      "num_senders": 1,
+      "max_size": 256
+    },
+    {
+      "name": "/pi1/aos",
+      "type": "aos.message_bridge.SctpConfigRequest",
+      "source_node": "pi1",
+      "frequency": 1,
+      "num_senders": 2,
+      "max_size": 32
+    },
+    {
+      "name": "/pi2/aos",
+      "type": "aos.message_bridge.SctpConfigRequest",
+      "source_node": "pi2",
+      "frequency": 1,
+      "num_senders": 2,
+      "max_size": 32
+    },
+    {
       "name": "/test",
       "type": "aos.examples.Ping",
       "source_node": "pi1",

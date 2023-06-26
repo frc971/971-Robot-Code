@@ -1,0 +1,10 @@
+namespace aos.message_bridge;
+
+// SCTP configuration requests for message bridge.
+table SctpConfigRequest {
+  // When set, the authentication key is being requested.
+  request_key:bool (id: 0);
+}
+
+root_type SctpConfigRequest;
+

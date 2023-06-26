@@ -15,6 +15,7 @@
 #include "aos/network/message_bridge_server_status.h"
 #include "aos/network/remote_data_generated.h"
 #include "aos/network/remote_message_generated.h"
+#include "aos/network/sctp_config_request_generated.h"
 #include "aos/network/sctp_server.h"
 #include "aos/network/timestamp_channel.h"
 #include "aos/network/timestamp_generated.h"
@@ -167,7 +168,8 @@ class ChannelState {
 // node.  It handles the session and dispatches data to the ChannelState.
 class MessageBridgeServer {
  public:
-  MessageBridgeServer(aos::ShmEventLoop *event_loop, std::string config_sha256);
+  MessageBridgeServer(aos::ShmEventLoop *event_loop, std::string config_sha256,
+                      SctpAuthMethod requested_authentication);
 
   // Delete copy/move constructors explicitly--we internally pass around
   // pointers to internal state.
@@ -202,6 +204,9 @@ class MessageBridgeServer {
     return event_loop_->configuration()->channels()->size();
   }
 
+  // Sends a request for the currently active authentication key.
+  void RequestAuthKey();
+
   // Event loop to schedule everything on.
   aos::ShmEventLoop *event_loop_;
 
@@ -224,6 +229,12 @@ class MessageBridgeServer {
   std::vector<sctp_assoc_t> reconnected_;
 
   FixedAllocator allocator_;
+
+  // We use this timer to poll the active authentication key.
+  aos::TimerHandler *refresh_key_timer_;
+
+  // Used to request the current sctp settings to be used.
+  aos::Sender<SctpConfigRequest> sctp_config_request_;
 };
 
 }  // namespace message_bridge

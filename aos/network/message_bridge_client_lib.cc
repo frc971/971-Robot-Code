@@ -13,9 +13,13 @@
 #include "aos/network/message_bridge_protocol.h"
 #include "aos/network/remote_data_generated.h"
 #include "aos/network/sctp_client.h"
+#include "aos/network/sctp_config_generated.h"
+#include "aos/network/sctp_config_request_generated.h"
 #include "aos/network/timestamp_generated.h"
 #include "aos/unique_malloc_ptr.h"
 #include "aos/util/file.h"
+
+DECLARE_bool(use_sctp_authentication);
 
 // This application receives messages from another node and re-publishes them on
 // this node.
@@ -29,6 +33,9 @@ namespace aos {
 namespace message_bridge {
 namespace {
 namespace chrono = std::chrono;
+
+// How often we should poll for the active SCTP authentication key.
+constexpr chrono::seconds kRefreshAuthKeyPeriod{3};
 
 std::vector<int> StreamToChannel(const Configuration *config,
                                  const Node *my_node, const Node *other_node) {
@@ -100,7 +107,8 @@ SctpClientConnection::SctpClientConnection(
     aos::ShmEventLoop *const event_loop, std::string_view remote_name,
     const Node *my_node, std::string_view local_host,
     std::vector<SctpClientChannelState> *channels, int client_index,
-    MessageBridgeClientStatus *client_status, std::string_view config_sha256)
+    MessageBridgeClientStatus *client_status, std::string_view config_sha256,
+    SctpAuthMethod requested_authentication)
     : event_loop_(event_loop),
       connect_message_(MakeConnectMessage(event_loop->configuration(), my_node,
                                           remote_name, event_loop->boot_uuid(),
@@ -111,7 +119,7 @@ SctpClientConnection::SctpClientConnection(
       client_(remote_node_->hostname()->string_view(), remote_node_->port(),
               connect_message_.message().channels_to_transfer()->size() +
                   kControlStreams(),
-              local_host, 0),
+              local_host, 0, requested_authentication),
       channels_(channels),
       stream_to_channel_(
           StreamToChannel(event_loop->configuration(), my_node, remote_node_)),
@@ -363,12 +371,33 @@ void SctpClientConnection::HandleData(const Message *message) {
           << " cumtsn=" << message->header.rcvinfo.rcv_cumtsn << ")";
 }
 
-MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop,
-                                         std::string config_sha256)
+MessageBridgeClient::MessageBridgeClient(
+    aos::ShmEventLoop *event_loop, std::string config_sha256,
+    SctpAuthMethod requested_authentication)
     : event_loop_(event_loop),
       client_status_(event_loop_),
-      config_sha256_(std::move(config_sha256)) {
+      config_sha256_(std::move(config_sha256)),
+      refresh_key_timer_(event_loop->AddTimer([this]() { RequestAuthKey(); })),
+      sctp_config_request_(event_loop_->MakeSender<SctpConfigRequest>("/aos")) {
   std::string_view node_name = event_loop->node()->name()->string_view();
+
+  // Set up the SCTP configuration watcher and timer.
+  if (requested_authentication == SctpAuthMethod::kAuth && HasSctpAuth()) {
+    event_loop->MakeWatcher("/aos", [this](const SctpConfig &config) {
+      if (config.has_key()) {
+        for (auto &conn : connections_) {
+          conn->SetAuthKey(*config.key());
+        }
+      }
+    });
+
+    // We poll in case the SCTP authentication key has changed.
+    refresh_key_timer_->set_name("refresh_key");
+    event_loop_->OnRun([this]() {
+      refresh_key_timer_->Schedule(event_loop_->monotonic_now(),
+                                   kRefreshAuthKeyPeriod);
+    });
+  }
 
   // Find all the channels which are supposed to be delivered to us.
   channels_.resize(event_loop_->configuration()->channels()->size());
@@ -415,8 +444,15 @@ MessageBridgeClient::MessageBridgeClient(aos::ShmEventLoop *event_loop,
     connections_.emplace_back(new SctpClientConnection(
         event_loop, source_node, event_loop->node(), "", &channels_,
         client_status_.FindClientIndex(source_node), &client_status_,
-        config_sha256_));
+        config_sha256_, requested_authentication));
   }
+}
+
+void MessageBridgeClient::RequestAuthKey() {
+  auto sender = sctp_config_request_.MakeBuilder();
+  auto builder = sender.MakeBuilder<SctpConfigRequest>();
+  builder.add_request_key(true);
+  sender.CheckOk(sender.Send(builder.Finish()));
 }
 
 }  // namespace message_bridge

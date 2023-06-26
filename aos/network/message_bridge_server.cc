@@ -10,6 +10,9 @@
 
 DEFINE_string(config, "aos_config.json", "Path to the config.");
 DEFINE_int32(rt_priority, -1, "If > 0, run as this RT priority");
+DEFINE_bool(
+    wants_sctp_authentication, false,
+    "When set, try to use SCTP authentication if provided by the kernel");
 
 namespace aos {
 namespace message_bridge {
@@ -25,7 +28,10 @@ int Main() {
     event_loop.SetRuntimeRealtimePriority(FLAGS_rt_priority);
   }
 
-  MessageBridgeServer app(&event_loop, Sha256(config.span()));
+  MessageBridgeServer app(&event_loop, Sha256(config.span()),
+                          FLAGS_wants_sctp_authentication
+                              ? SctpAuthMethod::kAuth
+                              : SctpAuthMethod::kNoAuth);
 
   logging::DynamicLogging dynamic_logging(&event_loop);
 

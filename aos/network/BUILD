@@ -88,6 +88,31 @@ cc_static_flatbuffer(
 )
 
 flatbuffer_cc_library(
+    name = "sctp_config_fbs",
+    srcs = ["sctp_config.fbs"],
+    gen_reflections = 1,
+)
+
+cc_static_flatbuffer(
+    name = "sctp_config_schema",
+    function = "aos::message_bridge::SctpConfig",
+    target = ":sctp_config_fbs_reflection_out",
+)
+
+flatbuffer_cc_library(
+    name = "sctp_config_request_fbs",
+    srcs = ["sctp_config_request.fbs"],
+    gen_reflections = 1,
+)
+
+cc_static_flatbuffer(
+    name = "sctp_config_request_schema",
+    function = "aos::message_bridge::SctpConfigRequest",
+    target = ":sctp_config_request_fbs_reflection_out",
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_cc_library(
     name = "message_bridge_server_fbs",
     srcs = ["message_bridge_server.fbs"],
     gen_reflections = 1,
@@ -271,6 +296,8 @@ cc_library(
         ":message_bridge_server_status",
         ":remote_data_fbs",
         ":remote_message_fbs",
+        ":sctp_config_fbs",
+        ":sctp_config_request_fbs",
         ":sctp_lib",
         ":sctp_server",
         ":timestamp_channel",
@@ -355,6 +382,8 @@ cc_library(
         ":remote_data_fbs",
         ":remote_message_fbs",
         ":sctp_client",
+        ":sctp_config_fbs",
+        ":sctp_config_request_fbs",
         ":timestamp_fbs",
         "//aos/events:shm_event_loop",
         "//aos/events/logging:log_reader",
@@ -387,6 +416,8 @@ aos_config(
     src = "message_bridge_test_combined_timestamps_common.json",
     flatbuffers = [
         ":remote_message_fbs",
+        ":sctp_config_fbs",
+        ":sctp_config_request_fbs",
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",
         "//aos/network:message_bridge_client_fbs",
@@ -402,6 +433,8 @@ aos_config(
     src = "message_bridge_test_common.json",
     flatbuffers = [
         ":remote_message_fbs",
+        ":sctp_config_fbs",
+        ":sctp_config_request_fbs",
         "//aos/events:ping_fbs",
         "//aos/events:pong_fbs",
         "//aos/network:message_bridge_client_fbs",
