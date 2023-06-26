@@ -11,13 +11,16 @@ bool IsValidFilename(std::string_view filename) {
          absl::EndsWith(filename, ".bfbs.sz");
 }
 
-void LocalFileOperations::FindLogs(std::vector<std::string> *files) {
-  auto MaybeAddFile = [&files](std::string_view filename) {
+void LocalFileOperations::FindLogs(std::vector<File> *files) {
+  auto MaybeAddFile = [&files](std::string_view filename, size_t size) {
     if (!IsValidFilename(filename)) {
       VLOG(1) << "Ignoring " << filename << " with invalid extension.";
     } else {
       VLOG(1) << "Found log " << filename;
-      files->emplace_back(filename);
+      files->emplace_back(File{
+          .name = std::string(filename),
+          .size = size,
+      });
     }
   };
   if (std::filesystem::is_directory(filename_)) {
@@ -28,10 +31,10 @@ void LocalFileOperations::FindLogs(std::vector<std::string> *files) {
         VLOG(1) << file << " is not file.";
         continue;
       }
-      MaybeAddFile(file.path().string());
+      MaybeAddFile(file.path().string(), file.file_size());
     }
   } else {
-    MaybeAddFile(filename_);
+    MaybeAddFile(filename_, std::filesystem::file_size(filename_));
   }
 }
 

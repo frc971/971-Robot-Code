@@ -334,32 +334,35 @@ FileBackend::FileBackend(std::string_view base_name, bool supports_odirect)
       base_name_(base_name),
       separator_(base_name_.back() == '/' ? "" : "_") {}
 
-std::unique_ptr<LogSink> FileBackend::RequestFile(std::string_view id) {
+std::unique_ptr<LogSink> FileBackend::RequestFile(const std::string_view id) {
   const std::string filename = absl::StrCat(base_name_, separator_, id);
   return std::make_unique<FileHandler>(filename, supports_odirect_);
 }
 
-std::vector<std::string> FileBackend::ListFiles() const {
+std::vector<FileBackend::File> FileBackend::ListFiles() const {
   std::filesystem::path directory(base_name_);
   if (!is_directory(directory)) {
     directory = directory.parent_path();
   }
   internal::LocalFileOperations operations(directory.string());
-  std::vector<std::string> files;
+  std::vector<internal::FileOperations::File> files;
   operations.FindLogs(&files);
 
-  std::vector<std::string> names;
+  std::vector<File> names;
   const std::string prefix = absl::StrCat(base_name_, separator_);
   for (const auto &file : files) {
-    CHECK(absl::StartsWith(file, prefix))
-        << ": File " << file << ", prefix " << prefix;
-    names.push_back(file.substr(prefix.size()));
+    CHECK(absl::StartsWith(file.name, prefix))
+        << ": File " << file.name << ", prefix " << prefix;
+    names.emplace_back(File{
+        .name = file.name.substr(prefix.size()),
+        .size = file.size,
+    });
   }
   return names;
 }
 
 std::unique_ptr<DataDecoder> FileBackend::GetDecoder(
-    std::string_view id) const {
+    const std::string_view id) const {
   const std::string filename = absl::StrCat(base_name_, separator_, id);
   CHECK(std::filesystem::exists(filename));
   return std::make_unique<DummyDecoder>(filename);
@@ -372,7 +375,7 @@ RenamableFileBackend::RenamableFileBackend(std::string_view base_name,
       separator_(base_name_.back() == '/' ? "" : "_") {}
 
 std::unique_ptr<LogSink> RenamableFileBackend::RequestFile(
-    std::string_view id) {
+    const std::string_view id) {
   const std::string filename =
       absl::StrCat(base_name_, separator_, id, temp_suffix_);
   return std::make_unique<RenamableFileHandler>(this, filename,

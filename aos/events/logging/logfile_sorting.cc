@@ -110,18 +110,19 @@ std::string ConcatenateParts(
 
 }  // namespace
 
-void FindLogs(std::vector<std::string> *files, std::string filename) {
+void FindLogs(std::vector<internal::FileOperations::File> *files,
+              std::string filename) {
   MakeFileOperations(filename)->FindLogs(files);
 }
 
-std::vector<std::string> FindLogs(std::string filename) {
-  std::vector<std::string> files;
+std::vector<internal::FileOperations::File> FindLogs(std::string filename) {
+  std::vector<internal::FileOperations::File> files;
   FindLogs(&files, filename);
   return files;
 }
 
-std::vector<std::string> FindLogs(int argc, char **argv) {
-  std::vector<std::string> found_logfiles;
+std::vector<internal::FileOperations::File> FindLogs(int argc, char **argv) {
+  std::vector<internal::FileOperations::File> found_logfiles;
 
   for (int i = 1; i < argc; i++) {
     std::string filename = argv[i];
@@ -320,8 +321,9 @@ struct PartsSorter {
   std::vector<UnsortedOldParts> old_parts;
 
   // Populates the class's datastructures from the input file list.
-  void PopulateFromFiles(ReadersPool *readers,
-                         const std::vector<std::string> &parts);
+  void PopulateFromFiles(
+      ReadersPool *readers,
+      const std::vector<internal::FileOperations::File> &parts);
 
   // Wrangles everything into a map of boot uuids -> boot counts.
   MapBoots ComputeBootCounts();
@@ -342,18 +344,19 @@ struct PartsSorter {
   std::vector<LogFile> SortParts();
 };
 
-void PartsSorter::PopulateFromFiles(ReadersPool *readers,
-                                    const std::vector<std::string> &parts) {
+void PartsSorter::PopulateFromFiles(
+    ReadersPool *readers,
+    const std::vector<internal::FileOperations::File> &parts) {
   // Now extract everything into our datastructures above for sorting.
-  for (const std::string &part : parts) {
-    SpanReader *reader = readers->BorrowReader(part);
+  for (const internal::FileOperations::File &part : parts) {
+    SpanReader *reader = readers->BorrowReader(part.name);
     std::optional<SizePrefixedFlatbufferVector<LogFileHeader>> log_header =
         ReadHeader(reader);
     if (!log_header) {
       if (!FLAGS_quiet_sorting) {
-        LOG(WARNING) << "Skipping " << part << " without a header";
+        LOG(WARNING) << "Skipping " << part.name << " without a header";
       }
-      corrupted.emplace_back(part);
+      corrupted.emplace_back(part.name);
       continue;
     }
 
@@ -433,11 +436,12 @@ void PartsSorter::PopulateFromFiles(ReadersPool *readers,
       continue;
     }
 
-    VLOG(1) << "Header " << FlatbufferToJson(log_header.value()) << " " << part;
+    VLOG(1) << "Header " << FlatbufferToJson(log_header.value()) << " "
+            << part.name;
 
     if (configuration_sha256.empty()) {
       CHECK(log_header->message().has_configuration())
-          << ": Failed to find header on " << part;
+          << ": Failed to find header on " << part.name;
       // If we don't have a configuration_sha256, we need to have a
       // configuration directly inside the header.  This ends up being a bit
       // unwieldy to deal with, so let's instead copy the configuration, hash
@@ -464,7 +468,7 @@ void PartsSorter::PopulateFromFiles(ReadersPool *readers,
       configuration_sha256 = std::move(config_copy_sha256);
     } else {
       CHECK(!log_header->message().has_configuration())
-          << ": Found header where one shouldn't be on " << part;
+          << ": Found header where one shouldn't be on " << part.name;
       config_sha256_list.emplace(configuration_sha256);
     }
 
@@ -475,12 +479,12 @@ void PartsSorter::PopulateFromFiles(ReadersPool *readers,
         !log_header->message().has_parts_index() &&
         !log_header->message().has_node()) {
       std::optional<SizePrefixedFlatbufferVector<MessageHeader>> first_message =
-          ReadNthMessage(part, 0);
+          ReadNthMessage(part.name, 0);
       if (!first_message) {
         if (!FLAGS_quiet_sorting) {
-          LOG(WARNING) << "Skipping " << part << " without any messages";
+          LOG(WARNING) << "Skipping " << part.name << " without any messages";
         }
-        corrupted.emplace_back(part);
+        corrupted.emplace_back(part.name);
         continue;
       }
       const monotonic_clock::time_point first_message_time(
@@ -500,11 +504,11 @@ void PartsSorter::PopulateFromFiles(ReadersPool *readers,
         old_parts.back().parts.realtime_start_time = realtime_start_time;
         old_parts.back().parts.config_sha256 = configuration_sha256;
         old_parts.back().unsorted_parts.emplace_back(
-            std::make_pair(first_message_time, part));
+            std::make_pair(first_message_time, part.name));
         old_parts.back().name = name;
       } else {
         result->unsorted_parts.emplace_back(
-            std::make_pair(first_message_time, part));
+            std::make_pair(first_message_time, part.name));
         CHECK_EQ(result->name, name);
         CHECK_EQ(result->parts.config_sha256, configuration_sha256);
       }
@@ -890,7 +894,7 @@ void PartsSorter::PopulateFromFiles(ReadersPool *readers,
       CHECK_EQ(it->second.realtime_start_time, realtime_start_time);
     }
 
-    it->second.parts.emplace_back(std::make_pair(part, parts_index));
+    it->second.parts.emplace_back(std::make_pair(part.name, parts_index));
   }
 }
 
@@ -1985,16 +1989,39 @@ std::vector<LogFile> PartsSorter::SortParts() {
 }
 
 std::vector<LogFile> SortParts(const std::vector<std::string> &parts) {
-  LogReadersPool readers;
-  PartsSorter sorter;
-  sorter.PopulateFromFiles(&readers, parts);
-  return sorter.SortParts();
+  std::vector<internal::FileOperations::File> full_parts;
+  full_parts.reserve(parts.size());
+  for (const auto &p : parts) {
+    full_parts.emplace_back(internal::FileOperations::File{
+        .name = p,
+        .size = 0u,
+    });
+  }
+  return SortParts(full_parts);
 }
 
 std::vector<LogFile> SortParts(const LogSource &log_source) {
   LogReadersPool readers(&log_source);
   PartsSorter sorter;
-  sorter.PopulateFromFiles(&readers, log_source.ListFiles());
+  std::vector<LogSource::File> files = log_source.ListFiles();
+  std::vector<internal::FileOperations::File> arg;
+  arg.reserve(files.size());
+  for (LogSource::File &f : files) {
+    arg.emplace_back(internal::FileOperations::File{
+        .name = std::move(f.name),
+        .size = f.size,
+    });
+  }
+  sorter.PopulateFromFiles(&readers, arg);
+  return sorter.SortParts();
+}
+
+std::vector<LogFile> SortParts(
+    const std::vector<internal::FileOperations::File> &files) {
+  LogReadersPool readers;
+  PartsSorter sorter;
+
+  sorter.PopulateFromFiles(&readers, files);
   return sorter.SortParts();
 }
 

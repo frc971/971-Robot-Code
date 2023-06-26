@@ -179,22 +179,25 @@ void S3Fetcher::StartRequest() {
   get_next_chunk_ = GetS3Client().GetObjectCallable(get_request);
 }
 
-std::vector<std::string> ListS3Objects(std::string_view url) {
+std::vector<std::pair<std::string, size_t>> ListS3Objects(
+    std::string_view url) {
   Aws::S3::Model::ListObjectsV2Request list_request;
   const ObjectName object_name = ParseUrl(url);
   list_request.SetBucket(object_name.bucket);
   list_request.SetPrefix(object_name.key);
   Aws::S3::Model::ListObjectsV2Outcome list_outcome =
       GetS3Client().ListObjectsV2(list_request);
-  std::vector<std::string> result;
+  std::vector<std::pair<std::string, size_t>> result;
   while (true) {
     CHECK(list_outcome.IsSuccess()) << ": Listing objects for " << url
                                     << " failed: " << list_outcome.GetError();
     auto &list_result = list_outcome.GetResult();
     for (const Aws::S3::Model::Object &object : list_result.GetContents()) {
-      result.push_back(absl::StrCat("s3://", list_outcome.GetResult().GetName(),
-                                    "/", object.GetKey()));
-      VLOG(2) << "got " << result.back();
+      result.emplace_back(
+          absl::StrCat("s3://", list_outcome.GetResult().GetName(), "/",
+                       object.GetKey()),
+          object.GetSize());
+      VLOG(2) << "got " << result.back().first;
     }
     if (!list_result.GetIsTruncated()) {
       break;

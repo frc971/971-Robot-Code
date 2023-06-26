@@ -25,6 +25,8 @@ WriteResult Write(LogSink *log_sink, std::string_view content) {
 }
 }  // namespace
 
+MATCHER_P(FileEq, o, "") { return arg.name == o.name && arg.size == o.size; }
+
 TEST(LogBackendTest, CreateSimpleFile) {
   const std::string logevent = aos::testing::TestTmpDir() + "/logevent/";
   const std::string filename = "test.bfbs";
@@ -37,7 +39,11 @@ TEST(LogBackendTest, CreateSimpleFile) {
   EXPECT_EQ(file->Close(), WriteCode::kOk);
   EXPECT_TRUE(std::filesystem::exists(logevent + filename));
 
-  EXPECT_THAT(backend.ListFiles(), ::testing::ElementsAre(filename));
+  EXPECT_THAT(backend.ListFiles(),
+              ::testing::ElementsAre(FileEq(LogSource::File{
+                  .name = filename,
+                  .size = 4,
+              })));
 
   auto decoder = backend.GetDecoder(filename);
   std::vector<uint8_t> buffer;

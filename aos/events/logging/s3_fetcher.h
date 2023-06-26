@@ -54,8 +54,8 @@ struct ObjectName {
 ObjectName ParseUrl(std::string_view url);
 
 // Does an S3 object listing with the given URL prefix. Returns the URLs for all
-// the objects under it.
-std::vector<std::string> ListS3Objects(std::string_view url);
+// the objects under it, and the size.
+std::vector<std::pair<std::string, size_t>> ListS3Objects(std::string_view url);
 
 }  // namespace aos::logger
 

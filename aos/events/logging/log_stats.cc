@@ -287,16 +287,8 @@ int main(int argc, char **argv) {
     LOG(FATAL) << "Expected at least 1 logfile as an argument.";
   }
 
-  // find logfiles
-  std::vector<std::string> unsorted_logfiles =
-      aos::logger::FindLogs(argc, argv);
-
-  // sort logfiles
-  const std::vector<aos::logger::LogFile> logfiles =
-      aos::logger::SortParts(unsorted_logfiles);
-
-  // open logfiles
-  aos::logger::LogReader reader(logfiles);
+  aos::logger::LogReader reader(
+      aos::logger::SortParts(aos::logger::FindLogs(argc, argv)));
 
   LogfileStats logfile_stats;
   std::vector<ChannelStats> channel_stats;

@@ -134,10 +134,10 @@ TEST(FileOperationTest, SingleFile) {
   util::WriteStringToFileOrDie(log_file, "test");
   internal::LocalFileOperations file_op(log_file);
   EXPECT_TRUE(file_op.Exists());
-  std::vector<std::string> logs;
+  std::vector<internal::LocalFileOperations::File> logs;
   file_op.FindLogs(&logs);
   ASSERT_EQ(logs.size(), 1);
-  EXPECT_EQ(logs.front(), log_file);
+  EXPECT_EQ(logs.front().name, log_file);
 }
 
 // Verify that it is OK to list folder with log file.
@@ -148,10 +148,10 @@ TEST(FileOperationTest, ListDirectory) {
   util::WriteStringToFileOrDie(log_file, "test");
   internal::LocalFileOperations file_op(log_folder);
   EXPECT_TRUE(file_op.Exists());
-  std::vector<std::string> logs;
+  std::vector<internal::LocalFileOperations::File> logs;
   file_op.FindLogs(&logs);
   ASSERT_EQ(logs.size(), 1);
-  EXPECT_EQ(logs.front(), log_file);
+  EXPECT_EQ(logs.front().name, log_file);
 }
 
 }  // namespace aos::logger::testing

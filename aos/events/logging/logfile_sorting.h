@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "aos/configuration.h"
+#include "aos/events/logging/file_operations.h"
 #include "aos/events/logging/log_backend.h"
 #include "aos/time/time.h"
 #include "aos/uuid.h"
@@ -136,20 +137,23 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts);
 
 // Takes a bunch of parts and sorts them based on part_uuid and part_index.
 std::vector<LogFile> SortParts(const std::vector<std::string> &parts);
+std::vector<LogFile> SortParts(
+    const std::vector<internal::FileOperations::File> &parts);
 
 // Sort parts of a single log.
 std::vector<LogFile> SortParts(const LogSource &log_source);
 
 // Recursively searches the file/folder for .bfbs and .bfbs.xz files and adds
 // them to the vector.
-void FindLogs(std::vector<std::string> *files, std::string filename);
+void FindLogs(std::vector<internal::FileOperations::File> *files,
+              std::string filename);
 
 // Recursively searches the file/folder for .bfbs and .bfbs.xz files and returns
 // them in a vector.
-std::vector<std::string> FindLogs(std::string filename);
+std::vector<internal::FileOperations::File> FindLogs(std::string filename);
 
 // Recursively searches for logfiles in argv[1] and onward.
-std::vector<std::string> FindLogs(int argc, char **argv);
+std::vector<internal::FileOperations::File> FindLogs(int argc, char **argv);
 
 // Proxy container to bind log parts with log source. It helps with reading logs
 // from virtual media such as memory or S3.

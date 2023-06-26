@@ -25,11 +25,8 @@ DEFINE_double(
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
-  const std::vector<std::string> unsorted_logfiles =
-      aos::logger::FindLogs(argc, argv);
-
   const std::vector<aos::logger::LogFile> logfiles =
-      aos::logger::SortParts(unsorted_logfiles);
+      aos::logger::SortParts(aos::logger::FindLogs(argc, argv));
 
   aos::logger::LogReader reader(logfiles);
 

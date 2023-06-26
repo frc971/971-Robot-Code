@@ -11,10 +11,10 @@ class S3FileOperations final : public FileOperations {
 
   bool Exists() final { return !object_urls_.empty(); }
 
-  void FindLogs(std::vector<std::string> *files) final;
+  void FindLogs(std::vector<File> *files) final;
 
  private:
-  const std::vector<std::string> object_urls_;
+  const std::vector<File> object_urls_;
 };
 
 }  // namespace aos::logger::internal

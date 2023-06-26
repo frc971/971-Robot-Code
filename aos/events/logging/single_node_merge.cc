@@ -20,8 +20,7 @@ namespace aos::logger {
 namespace chrono = std::chrono;
 
 int Main(int argc, char **argv) {
-  const std::vector<std::string> unsorted_logfiles = FindLogs(argc, argv);
-  const LogFilesContainer log_files(SortParts(unsorted_logfiles));
+  const LogFilesContainer log_files(SortParts(FindLogs(argc, argv)));
   const Configuration *config = log_files.config();
 
   // Haven't tested this on a single node log, and don't really see a need to

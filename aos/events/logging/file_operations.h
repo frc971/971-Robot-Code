@@ -14,10 +14,15 @@ bool IsValidFilename(std::string_view filename);
 // associated with either a single file or directory that contains log files.
 class FileOperations {
  public:
+  struct File {
+    std::string name;
+    size_t size;
+  };
+
   virtual ~FileOperations() = default;
 
   virtual bool Exists() = 0;
-  virtual void FindLogs(std::vector<std::string> *files) = 0;
+  virtual void FindLogs(std::vector<File> *files) = 0;
 };
 
 // Implements FileOperations with standard POSIX filesystem APIs. These work on
@@ -29,7 +34,7 @@ class LocalFileOperations final : public FileOperations {
 
   bool Exists() override { return std::filesystem::exists(filename_); }
 
-  void FindLogs(std::vector<std::string> *files) override;
+  void FindLogs(std::vector<File> *files) override;
 
  private:
   std::string filename_;

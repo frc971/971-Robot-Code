@@ -88,7 +88,7 @@ cc_library(
     srcs = ["s3_file_operations.cc"],
     hdrs = ["s3_file_operations.h"],
     deps = [
-        ":file_operations",
+        ":log_backend",
         ":s3_fetcher",
     ],
 )
