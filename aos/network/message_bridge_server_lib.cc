@@ -402,12 +402,11 @@ int ChannelState::NodeConnected(const Node *node, sctp_assoc_t assoc_id,
 }
 
 MessageBridgeServer::MessageBridgeServer(aos::ShmEventLoop *event_loop,
-                                         std::string config_sha256,
-                                         std::vector<uint8_t> auth_key)
+                                         std::string config_sha256)
     : event_loop_(event_loop),
       timestamp_loggers_(event_loop_),
       server_(max_channels() + kControlStreams(), "",
-              event_loop->node()->port(), auth_key),
+              event_loop->node()->port()),
       server_status_(event_loop, [this]() { timestamp_state_->SendData(); }),
       config_sha256_(std::move(config_sha256)),
       allocator_(0) {

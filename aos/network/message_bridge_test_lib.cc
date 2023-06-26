@@ -81,8 +81,7 @@ void MessageBridgeParameterizedTest::MakePi1Server(
   pi1_server_event_loop->SetRuntimeRealtimePriority(1);
   pi1_message_bridge_server = std::make_unique<MessageBridgeServer>(
       pi1_server_event_loop.get(),
-      server_config_sha256.size() == 0 ? config_sha256 : server_config_sha256,
-      /*auth_key=*/std::vector<uint8_t>({}));
+      server_config_sha256.size() == 0 ? config_sha256 : server_config_sha256);
 }
 
 void MessageBridgeParameterizedTest::RunPi1Server(
@@ -116,8 +115,7 @@ void MessageBridgeParameterizedTest::MakePi1Client() {
       std::make_unique<aos::ShmEventLoop>(&config.message());
   pi1_client_event_loop->SetRuntimeRealtimePriority(1);
   pi1_message_bridge_client = std::make_unique<MessageBridgeClient>(
-      pi1_client_event_loop.get(), config_sha256,
-      /*auth_key=*/std::vector<uint8_t>({}));
+      pi1_client_event_loop.get(), config_sha256);
 }
 
 void MessageBridgeParameterizedTest::StartPi1Client() {
@@ -170,8 +168,7 @@ void MessageBridgeParameterizedTest::MakePi2Server() {
       std::make_unique<aos::ShmEventLoop>(&config.message());
   pi2_server_event_loop->SetRuntimeRealtimePriority(1);
   pi2_message_bridge_server = std::make_unique<MessageBridgeServer>(
-      pi2_server_event_loop.get(), config_sha256,
-      /*auth_key=*/std::vector<uint8_t>({}));
+      pi2_server_event_loop.get(), config_sha256);
 }
 
 void MessageBridgeParameterizedTest::RunPi2Server(
@@ -205,8 +202,7 @@ void MessageBridgeParameterizedTest::MakePi2Client() {
       std::make_unique<aos::ShmEventLoop>(&config.message());
   pi2_client_event_loop->SetRuntimeRealtimePriority(1);
   pi2_message_bridge_client = std::make_unique<MessageBridgeClient>(
-      pi2_client_event_loop.get(), config_sha256,
-      /*auth_key=*/std::vector<uint8_t>({}));
+      pi2_client_event_loop.get(), config_sha256);
 }
 
 void MessageBridgeParameterizedTest::RunPi2Client(

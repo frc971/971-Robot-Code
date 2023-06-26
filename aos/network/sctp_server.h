@@ -13,6 +13,7 @@
 #include <cstring>
 #include <memory>
 
+#include "absl/types/span.h"
 #include "glog/logging.h"
 
 #include "aos/network/sctp_lib.h"
@@ -24,7 +25,8 @@ namespace message_bridge {
 class SctpServer {
  public:
   SctpServer(int streams, std::string_view local_host = "0.0.0.0",
-             int local_port = 9971, std::vector<uint8_t> sctp_auth_key = {});
+             int local_port = 9971,
+             SctpAuthMethod requested_authentication = SctpAuthMethod::kNoAuth);
 
   ~SctpServer() {}
 
@@ -62,6 +64,10 @@ class SctpServer {
   void SetMaxWriteSize(size_t max_size) { sctp_.SetMaxWriteSize(max_size); }
 
   void SetPoolSize(size_t pool_size) { sctp_.SetPoolSize(pool_size); }
+
+  void SetAuthKey(absl::Span<const uint8_t> auth_key) {
+    sctp_.SetAuthKey(auth_key);
+  }
 
  private:
   struct sockaddr_storage sockaddr_local_;

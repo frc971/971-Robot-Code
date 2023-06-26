@@ -23,8 +23,8 @@ namespace message_bridge {
 
 SctpClient::SctpClient(std::string_view remote_host, int remote_port,
                        int streams, std::string_view local_host, int local_port,
-                       std::vector<uint8_t> sctp_auth_key)
-    : sctp_(std::move(sctp_auth_key)) {
+                       SctpAuthMethod requested_authentication)
+    : sctp_(requested_authentication) {
   bool use_ipv6 = Ipv6Enabled();
   sockaddr_local_ = ResolveSocket(local_host, local_port, use_ipv6);
   sockaddr_remote_ = ResolveSocket(remote_host, remote_port, use_ipv6);

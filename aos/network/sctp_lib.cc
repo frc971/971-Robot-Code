@@ -10,7 +10,10 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <cerrno>
+#include <fstream>
 #include <string_view>
+#include <vector>
 
 #include "aos/util/file.h"
 
@@ -31,9 +34,9 @@ typedef union {
   struct sctp_sndrcvinfo sndrcvinfo;
 } _sctp_cmsg_data_t;
 
+#if HAS_SCTP_AUTH
 // Returns true if SCTP authentication is available and enabled.
 bool SctpAuthIsEnabled() {
-#if HAS_SCTP_AUTH
   struct stat current_stat;
   if (stat("/proc/sys/net/sctp/auth_enable", &current_stat) != -1) {
     int value = std::stoi(
@@ -45,10 +48,18 @@ bool SctpAuthIsEnabled() {
     LOG(WARNING) << "/proc/sys/net/sctp/auth_enable doesn't exist.";
     return false;
   }
-#else
-  return false;
-#endif
 }
+
+std::vector<uint8_t> GenerateSecureRandomSequence(size_t count) {
+  std::ifstream rng("/dev/random", std::ios::in | std::ios::binary);
+  CHECK(rng) << "Unable to open /dev/random";
+  std::vector<uint8_t> out(count, 0);
+  rng.read(reinterpret_cast<char *>(out.data()), count);
+  CHECK(rng) << "Couldn't read from random device";
+  rng.close();
+  return out;
+}
+#endif
 
 }  // namespace
 
@@ -289,28 +300,22 @@ void SctpReadWrite::OpenSocket(const struct sockaddr_storage &sockaddr_local) {
                       sizeof(subscribe)) == 0);
   }
 
-  if (!auth_key_.empty()) {
-    CHECK(SctpAuthIsEnabled())
-        << "SCTP Authentication is disabled. Enable it with 'sysctl -w "
-           "net.sctp.auth_enable=1' and try again.";
 #if HAS_SCTP_AUTH
-    // Set up the key with id `1`.
-    sctp_authkey *const authkey =
-        (sctp_authkey *)malloc(sizeof(sctp_authkey) + auth_key_.size());
-    authkey->sca_keynumber = 1;
-    authkey->sca_keylength = auth_key_.size();
-    authkey->sca_assoc_id = SCTP_ALL_ASSOC;
-    memcpy(&authkey->sca_key, auth_key_.data(), auth_key_.size());
+  if (sctp_authentication_) {
+    CHECK(SctpAuthIsEnabled())
+        << "SCTP Authentication key requested, but authentication isn't "
+           "enabled... Use `sysctl -w net.sctp.auth_enable=1` to enable";
 
-    PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_AUTH_KEY, authkey,
-                      sizeof(sctp_authkey) + auth_key_.size()) == 0);
-    free(authkey);
+    // Unfortunately there's no way to delete the null key if we don't have
+    // another key active so this is the only way to prevent unauthenticated
+    // traffic until the real shared key is established.
+    SetAuthKey(GenerateSecureRandomSequence(16));
 
-    // Set key `1` as active.
+    // Disallow the null key.
     struct sctp_authkeyid authkeyid;
-    authkeyid.scact_keynumber = 1;
+    authkeyid.scact_keynumber = 0;
     authkeyid.scact_assoc_id = SCTP_ALL_ASSOC;
-    PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_AUTH_ACTIVE_KEY, &authkeyid,
+    PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_AUTH_DELETE_KEY, &authkeyid,
                       sizeof(authkeyid)) == 0);
 
     // Set up authentication for data chunks.
@@ -319,13 +324,8 @@ void SctpReadWrite::OpenSocket(const struct sockaddr_storage &sockaddr_local) {
 
     PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_AUTH_CHUNK, &authchunk,
                       sizeof(authchunk)) == 0);
-
-    // Disallow the null key.
-    authkeyid.scact_keynumber = 0;
-    PCHECK(setsockopt(fd(), IPPROTO_SCTP, SCTP_AUTH_DELETE_KEY, &authkeyid,
-                      sizeof(authkeyid)) == 0);
-#endif
   }
+#endif
 
   DoSetMaxSize();
 }
@@ -335,6 +335,8 @@ bool SctpReadWrite::SendMessage(
     std::optional<struct sockaddr_storage> sockaddr_remote,
     sctp_assoc_t snd_assoc_id) {
   CHECK(fd_ != -1);
+  LOG_IF(FATAL, sctp_authentication_ && current_key_.empty())
+      << "Expected SCTP authentication but no key active";
   struct iovec iov;
   iov.iov_base = const_cast<char *>(data.data());
   iov.iov_len = data.size();
@@ -392,9 +394,6 @@ bool SctpReadWrite::SendMessage(
   return true;
 }
 
-SctpReadWrite::SctpReadWrite(std::vector<uint8_t> auth_key)
-    : auth_key_(std::move(auth_key)) {}
-
 void SctpReadWrite::FreeMessage(aos::unique_c_ptr<Message> &&message) {
   if (use_pool_) {
     free_messages_.emplace_back(std::move(message));
@@ -432,6 +431,8 @@ aos::unique_c_ptr<Message> SctpReadWrite::AcquireMessage() {
 // fragmented. If we do end up with a fragment, then we copy the data out of it.
 aos::unique_c_ptr<Message> SctpReadWrite::ReadMessage() {
   CHECK(fd_ != -1);
+  LOG_IF(FATAL, sctp_authentication_ && current_key_.empty())
+      << "Expected SCTP authentication but no key active";
 
   while (true) {
     aos::unique_c_ptr<Message> result = AcquireMessage();
@@ -696,6 +697,55 @@ bool SctpReadWrite::ProcessNotification(const Message *message) {
   }
   return false;
 }
+
+void SctpReadWrite::SetAuthKey(absl::Span<const uint8_t> auth_key) {
+  PCHECK(fd_ != -1);
+  if (auth_key.empty()) {
+    return;
+  }
+  // We are already using the key, nothing to do.
+  if (auth_key == current_key_) {
+    return;
+  }
+#if !(HAS_SCTP_AUTH)
+  LOG(FATAL) << "SCTP Authentication key requested, but authentication isn't "
+                "available... You may need a newer kernel";
+#else
+  LOG_IF(FATAL, !SctpAuthIsEnabled())
+      << "SCTP Authentication key requested, but authentication isn't "
+         "enabled... Use `sysctl -w net.sctp.auth_enable=1` to enable";
+  // Set up the key with id `1`.
+  std::unique_ptr<sctp_authkey> authkey(
+      (sctp_authkey *)malloc(sizeof(sctp_authkey) + auth_key.size()));
+
+  authkey->sca_keynumber = 1;
+  authkey->sca_keylength = auth_key.size();
+  authkey->sca_assoc_id = SCTP_ALL_ASSOC;
+  memcpy(&authkey->sca_key, auth_key.data(), auth_key.size());
+
+  if (setsockopt(fd(), IPPROTO_SCTP, SCTP_AUTH_KEY, authkey.get(),
+                 sizeof(sctp_authkey) + auth_key.size()) != 0) {
+    if (errno == EACCES) {
+      // TODO(adam.snaider): Figure out why this fails when expected nodes are
+      // not connected.
+      PLOG_EVERY_N(ERROR, 100) << "Setting authentication key failed";
+      return;
+    } else {
+      PLOG(FATAL) << "Setting authentication key failed";
+    }
+  }
+
+  // Set key `1` as active.
+  struct sctp_authkeyid authkeyid;
+  authkeyid.scact_keynumber = 1;
+  authkeyid.scact_assoc_id = SCTP_ALL_ASSOC;
+  if (setsockopt(fd(), IPPROTO_SCTP, SCTP_AUTH_ACTIVE_KEY, &authkeyid,
+                 sizeof(authkeyid)) != 0) {
+    PLOG(FATAL) << "Setting key id `1` as active failed";
+  }
+  current_key_.assign(auth_key.begin(), auth_key.end());
+#endif
+}  // namespace message_bridge
 
 void Message::LogRcvInfo() const {
   LOG(INFO) << "\tSNDRCV (stream=" << header.rcvinfo.rcv_sid

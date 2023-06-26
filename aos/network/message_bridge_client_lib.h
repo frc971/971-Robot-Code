@@ -38,8 +38,7 @@ class SctpClientConnection {
                        std::vector<SctpClientChannelState> *channels,
                        int client_index,
                        MessageBridgeClientStatus *client_status,
-                       std::string_view config_sha256,
-                       std::vector<uint8_t> auth_key);
+                       std::string_view config_sha256);
 
   ~SctpClientConnection() { event_loop_->epoll()->DeleteFd(client_.fd()); }
 
@@ -103,10 +102,7 @@ class SctpClientConnection {
 // node.
 class MessageBridgeClient {
  public:
-  // When the `auth_key` byte-vector is non-empty, it will be used as the shared
-  // key to authenticate every channel (See RFC4895 for more info).
-  MessageBridgeClient(aos::ShmEventLoop *event_loop, std::string config_sha256,
-                      std::vector<uint8_t> auth_key);
+  MessageBridgeClient(aos::ShmEventLoop *event_loop, std::string config_sha256);
 
   ~MessageBridgeClient() {}
 

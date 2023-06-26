@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <string_view>
 
+#include "absl/types/span.h"
 #include "glog/logging.h"
 
 #include "aos/network/sctp_lib.h"
@@ -18,7 +19,7 @@ class SctpClient {
  public:
   SctpClient(std::string_view remote_host, int remote_port, int streams,
              std::string_view local_host = "0.0.0.0", int local_port = 9971,
-             std::vector<uint8_t> sctp_auth_key = {});
+             SctpAuthMethod requested_authentication = SctpAuthMethod::kNoAuth);
 
   ~SctpClient() {}
 
@@ -59,6 +60,10 @@ class SctpClient {
 
   void FreeMessage(aos::unique_c_ptr<Message> &&message) {
     sctp_.FreeMessage(std::move(message));
+  }
+
+  void SetAuthKey(absl::Span<const uint8_t> auth_key) {
+    sctp_.SetAuthKey(auth_key);
   }
 
  private:

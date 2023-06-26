@@ -22,11 +22,9 @@ DEFINE_bool(client, false,
 DEFINE_uint32(skip_first_n, 10,
               "Skip the first 'n' messages when computing statistics.");
 
-#if HAS_SCTP_AUTH
 DEFINE_string(sctp_auth_key_file, "",
               "When set, use the provided key for SCTP authentication as "
               "defined in RFC 4895");
-#endif
 
 DECLARE_bool(die_on_malloc);
 
@@ -36,13 +34,16 @@ namespace {
 
 using util::ReadFileToVecOrDie;
 
+SctpAuthMethod SctpAuthMethod() {
+  return FLAGS_sctp_auth_key_file.empty() ? SctpAuthMethod::kNoAuth
+                                          : SctpAuthMethod::kAuth;
+}
+
 std::vector<uint8_t> GetSctpAuthKey() {
-#if HAS_SCTP_AUTH
-  if (!FLAGS_sctp_auth_key_file.empty()) {
-    return ReadFileToVecOrDie(FLAGS_sctp_auth_key_file);
+  if (SctpAuthMethod() == SctpAuthMethod::kNoAuth) {
+    return {};
   }
-#endif
-  return {};
+  return ReadFileToVecOrDie(FLAGS_sctp_auth_key_file);
 }
 
 }  // namespace
@@ -53,7 +54,8 @@ class Server {
  public:
   Server(aos::ShmEventLoop *event_loop)
       : event_loop_(event_loop),
-        server_(2, "0.0.0.0", FLAGS_port, GetSctpAuthKey()) {
+        server_(2, "0.0.0.0", FLAGS_port, SctpAuthMethod()) {
+    server_.SetAuthKey(GetSctpAuthKey());
     event_loop_->epoll()->OnReadable(server_.fd(),
                                      [this]() { MessageReceived(); });
     server_.SetMaxReadSize(FLAGS_rx_size + 100);
@@ -134,7 +136,8 @@ class Client {
   Client(aos::ShmEventLoop *event_loop)
       : event_loop_(event_loop),
         client_(FLAGS_host, FLAGS_port, 2, "0.0.0.0", FLAGS_port,
-                GetSctpAuthKey()) {
+                SctpAuthMethod()) {
+    client_.SetAuthKey(GetSctpAuthKey());
     client_.SetMaxReadSize(FLAGS_rx_size + 100);
     client_.SetMaxWriteSize(FLAGS_rx_size + 100);
 

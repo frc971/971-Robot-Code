@@ -11,6 +11,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
@@ -20,6 +21,8 @@
 
 namespace aos {
 namespace message_bridge {
+
+constexpr bool HasSctpAuth() { return HAS_SCTP_AUTH; }
 
 // Check if ipv6 is enabled.
 // If we don't try IPv6, and omit AI_ADDRCONFIG when resolving addresses, the
@@ -92,10 +95,31 @@ std::string GetHostname();
 // Gets and logs the contents of the sctp_status message.
 void LogSctpStatus(int fd, sctp_assoc_t assoc_id);
 
+// Authentication method used for the SCTP socket.
+enum class SctpAuthMethod {
+  // Use unauthenticated sockets.
+  kNoAuth,
+  // Use RFC4895 authentication for SCTP.
+  kAuth,
+};
+
 // Manages reading and writing SCTP messages.
 class SctpReadWrite {
  public:
-  SctpReadWrite(std::vector<uint8_t> auth_key = {});
+  // When `requested_authentication` is kAuth, it will use SCTP authentication
+  // if it's provided by the kernel. Note that this will ignore the value of
+  // `requested_authentication` if the kernel is too old and will fall back to
+  // an unauthenticated channel.
+  SctpReadWrite(
+      SctpAuthMethod requested_authentication = SctpAuthMethod::kNoAuth)
+      : sctp_authentication_(HasSctpAuth() ? requested_authentication ==
+                                                 SctpAuthMethod::kAuth
+                                           : false) {
+    LOG_IF(WARNING,
+           requested_authentication == SctpAuthMethod::kAuth && !HasSctpAuth())
+        << "SCTP authentication requested but not provided by the kernel... "
+           "You may need a newer kernel";
+  }
   ~SctpReadWrite() { CloseSocket(); }
 
   // Opens a new socket.
@@ -142,6 +166,9 @@ class SctpReadWrite {
   // Allocates messages for the pool.  SetMaxSize must be set first.
   void SetPoolSize(size_t pool_size);
 
+  // Set the active authentication key to `auth_key`.
+  void SetAuthKey(absl::Span<const uint8_t> auth_key);
+
  private:
   aos::unique_c_ptr<Message> AcquireMessage();
 
@@ -165,7 +192,9 @@ class SctpReadWrite {
   bool use_pool_ = false;
   std::vector<aos::unique_c_ptr<Message>> free_messages_;
 
-  std::vector<uint8_t> auth_key_;
+  // Use SCTP authentication (RFC4895).
+  bool sctp_authentication_;
+  std::vector<uint8_t> current_key_;
 };
 
 // Returns the max network buffer available for reading for a socket.

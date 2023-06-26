@@ -157,6 +157,7 @@ cc_library(
         "//aos:unique_malloc_ptr",
         "//aos/util:file",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/types:span",
     ],
 )
 

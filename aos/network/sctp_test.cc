@@ -93,9 +93,10 @@ class SctpTest : public ::testing::Test {
  public:
   SctpTest(std::vector<uint8_t> server_key = {},
            std::vector<uint8_t> client_key = {},
+           SctpAuthMethod requested_authentication = SctpAuthMethod::kNoAuth,
            std::chrono::milliseconds timeout = 1000ms)
-      : server_(kStreams, "", kPort, std::move(server_key)),
-        client_("localhost", kPort, kStreams, "", 0, std::move(client_key)),
+      : server_(kStreams, "", kPort, requested_authentication),
+        client_("localhost", kPort, kStreams, "", 0, requested_authentication),
         client_receiver_(
             epoll_, client_,
             [this](SctpClient &client,
@@ -114,6 +115,8 @@ class SctpTest : public ::testing::Test {
             [this](SctpServer &server, std::vector<uint8_t> message) {
               HandleMessage(server, std::move(message));
             }) {
+    server_.SetAuthKey(server_key);
+    client_.SetAuthKey(client_key);
     timeout_.SetTime(aos::monotonic_clock::now() + timeout,
                      std::chrono::milliseconds::zero());
     epoll_.OnReadable(timeout_.fd(), [this]() { TimeOut(); });
@@ -176,7 +179,8 @@ class SctpTest : public ::testing::Test {
 // Verifies we can ping the server, and the server replies.
 class SctpPingPongTest : public SctpTest {
  public:
-  SctpPingPongTest() : SctpTest({}, {}, /*timeout=*/2s) {
+  SctpPingPongTest()
+      : SctpTest({}, {}, SctpAuthMethod::kNoAuth, /*timeout=*/2s) {
     // Start by having the client send "ping".
     client_.Send(0, "ping", 0);
   }
@@ -220,7 +224,7 @@ TEST_F(SctpPingPongTest, Test) {}
 class SctpAuthTest : public SctpTest {
  public:
   SctpAuthTest()
-      : SctpTest({1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6},
+      : SctpTest({1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6}, SctpAuthMethod::kAuth,
                  /*timeout*/ 20s) {
     // Start by having the client send "ping".
     client_.Send(0, "ping", 0);
@@ -254,11 +258,54 @@ class SctpAuthTest : public SctpTest {
 
 TEST_F(SctpAuthTest, Test) {}
 
+// Tests that we can dynamically change the SCTP authentication key used.
+class SctpChangingAuthKeysTest : public SctpTest {
+ public:
+  SctpChangingAuthKeysTest()
+      : SctpTest({1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6},
+                 SctpAuthMethod::kAuth) {
+    // Start by having the client send "ping".
+    client_.SetAuthKey({5, 4, 3, 2, 1});
+    server_.SetAuthKey({5, 4, 3, 2, 1});
+    client_.Send(0, "ping", 0);
+  }
+
+  void HandleMessage(SctpServer &server,
+                     std::vector<uint8_t> message) override {
+    // Server should receive a ping message.
+    EXPECT_THAT(message, ElementsAre('p', 'i', 'n', 'g'));
+    got_ping_ = true;
+    ASSERT_NE(assoc_, 0);
+    // Reply with "pong".
+    server.Send("pong", assoc_, 0, 0);
+  }
+  void HandleMessage(SctpClient &, std::vector<uint8_t> message) override {
+    // Client should receive a "pong" message.
+    EXPECT_THAT(message, ElementsAre('p', 'o', 'n', 'g'));
+    got_pong_ = true;
+    // We are done.
+    Quit();
+  }
+
+  ~SctpChangingAuthKeysTest() {
+    EXPECT_TRUE(got_ping_);
+    EXPECT_TRUE(got_pong_);
+  }
+
+ protected:
+  bool got_ping_ = false;
+  bool got_pong_ = false;
+};
+
+TEST_F(SctpChangingAuthKeysTest, Test) {}
+
 // Keys don't match, we should send the `ping` message but the server should
 // never receive it. We then time out as nothing calls Quit.
 class SctpMismatchedAuthTest : public SctpTest {
  public:
-  SctpMismatchedAuthTest() : SctpTest({1, 2, 3, 4, 5, 6}, {5, 6, 7, 8, 9, 10}) {
+  SctpMismatchedAuthTest()
+      : SctpTest({1, 2, 3, 4, 5, 6}, {5, 6, 7, 8, 9, 10},
+                 SctpAuthMethod::kAuth) {
     // Start by having the client send "ping".
     client_.Send(0, "ping", 0);
   }
@@ -278,7 +325,8 @@ TEST_F(SctpMismatchedAuthTest, Test) {}
 // see the same behaviour.
 class SctpOneNullKeyTest : public SctpTest {
  public:
-  SctpOneNullKeyTest() : SctpTest({1, 2, 3, 4, 5, 6}, {}) {
+  SctpOneNullKeyTest()
+      : SctpTest({1, 2, 3, 4, 5, 6}, {}, SctpAuthMethod::kAuth) {
     // Start by having the client send "ping".
     client_.Send(0, "ping", 0);
   }
@@ -293,6 +341,27 @@ class SctpOneNullKeyTest : public SctpTest {
 };
 
 TEST_F(SctpOneNullKeyTest, Test) {}
+
+// If we want SCTP authentication but we don't set the auth keys, we shouldn't
+// be able to send data.
+class SctpAuthKeysNotSet : public SctpTest {
+ public:
+  SctpAuthKeysNotSet() : SctpTest({}, {}, SctpAuthMethod::kAuth) {
+    // Start by having the client send "ping".
+    client_.Send(0, "ping", 0);
+  }
+
+  void HandleMessage(SctpServer &, std::vector<uint8_t>) override {
+    FAIL() << "Haven't setup authentication keys. Should not get message.";
+    Quit();
+  }
+
+  // We expect to time out since we never get the message.
+  void TimeOut() override { Quit(); }
+};
+
+TEST_F(SctpAuthKeysNotSet, Test) {}
+
 #endif  // HAS_SCTP_AUTH
 
 }  // namespace aos::message_bridge::testing
