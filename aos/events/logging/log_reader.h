@@ -63,6 +63,24 @@ using ReplayChannelIndices = std::vector<size_t>;
 //
 // We also need to be able to generate multiple views of a log file depending on
 // the target.
+//
+// In general, we aim to guarantee that if you are using the LogReader
+// "normally" you should be able to observe all the messages that existed on the
+// live system between the start time and the end of the logfile, and that
+// CHECK-failures will be generated if the LogReader cannot satisfy that
+// guarantee. There are currently a few deliberate exceptions to this:
+// * Any channel marked NOT_LOGGED in the configuration is known not to
+//   have been logged and thus will be silently absent in log replay.
+// * If an incomplete set of log files is provided to the reader (e.g.,
+//   only logs logged on a single node on a multi-node system), then
+//   any *individual* channel as observed on a given node will be
+//   consistent, but similarly to a NOT_LOGGED channel, some data may
+//   not be available.
+// * At the end of a log, data for some channels/nodes may end before
+//   others; during this time period, you may observe silently dropped
+//   messages. This will be most obvious on uncleanly terminated logs or
+//   when merging logfiles across nodes (as the logs on different nodes
+//   will not finish at identical times).
 
 // Replays all the channels in the logfile to the event loop.
 class LogReader {
@@ -153,6 +171,12 @@ class LogReader {
   std::vector<const Node *> LoggedNodes() const;
 
   // Returns the starting timestamp for the log file.
+  // All logged channels for the specified node should be entirely available
+  // after the specified time (i.e., any message that was available on the node
+  // in question after the monotonic start time but before the logs end and
+  // whose channel is present in any of the provided logs will either be
+  // available in the log or will result in an internal CHECK-failure of the
+  // LogReader if it would be skipped).
   monotonic_clock::time_point monotonic_start_time(
       const Node *node = nullptr) const;
   realtime_clock::time_point realtime_start_time(

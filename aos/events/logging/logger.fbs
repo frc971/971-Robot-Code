@@ -17,8 +17,15 @@ table LogFileHeader {
   // Time this log file started on the monotonic clock in nanoseconds.
   // If this isn't known (the log file is being recorded from another node
   // where we don't know the time offset), both timestamps will be min_time.
+  // This log file may contain data from before the start times (e.g.,
+  // fetched message data), but should guarantee that all data within the
+  // logfile *after* start_time is present until the end of the file (note
+  // that there may be incomplete data at the very end of a log if it is
+  // truncated poorly).
+  // These timestamps are from the perspective of `node`.
   monotonic_start_time:int64 = -9223372036854775808 (id: 0);
   // Time this log file started on the realtime clock in nanoseconds.
+  // Will only be populated if logger_node == node.
   realtime_start_time:int64 = -9223372036854775808 (id: 1);
 
   // Messages are not written in order to disk.  They will be out of order by

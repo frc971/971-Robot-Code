@@ -750,18 +750,10 @@ void LogReader::StartAfterRegister(
       << ": Hmm, we have a node starting before the start of time.  Offset "
          "everything.";
 
-  // While we are starting the system up, we might be relying on matching data
-  // to timestamps on log files where the timestamp log file starts before the
-  // data.  In this case, it is reasonable to expect missing data.
   {
-    const bool prior_ignore_missing_data = ignore_missing_data_;
-    ignore_missing_data_ = true;
     VLOG(1) << "Running until " << start_time << " in Register";
     event_loop_factory_->RunFor(start_time.time_since_epoch());
     VLOG(1) << "At start time";
-    // Now that we are running for real, missing data means that the log file is
-    // corrupted or went wrong.
-    ignore_missing_data_ = prior_ignore_missing_data;
   }
 
   for (std::unique_ptr<State> &state : states_) {

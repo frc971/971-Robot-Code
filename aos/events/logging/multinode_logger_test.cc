@@ -768,7 +768,7 @@ TEST_P(MultinodeLoggerTest, MismatchedClocks) {
   }
 
   LogReader reader(
-      SortParts(MakeLogFiles(logfile_base1_, logfile_base2_, 3, 2)));
+      SortParts(MakeLogFiles(logfile_base1_, logfile_base2_, 3, 3)));
 
   SimulatedEventLoopFactory log_reader_factory(reader.configuration());
   log_reader_factory.set_send_delay(chrono::microseconds(0));
