@@ -8,6 +8,7 @@
 #include "ctre/phoenix6/TalonFX.hpp"
 #include "glog/logging.h"
 
+#include "aos/commonmath.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/drivetrain/drivetrain_can_position_generated.h"
@@ -18,6 +19,7 @@ namespace frc971 {
 namespace wpilib {
 
 static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
+static constexpr double kMaxBringupPower = 12.0;
 
 // Gets info from and writes to falcon motors using the TalonFX controller.
 class Falcon {
@@ -29,6 +31,7 @@ class Falcon {
   void PrintConfigs();
 
   void WriteConfigs(ctre::phoenix6::signals::InvertedValue invert);
+  ctre::phoenix::StatusCode WriteCurrent(double current, double max_voltage);
 
   ctre::phoenix6::hardware::TalonFX *talon() { return &talon_; }
 

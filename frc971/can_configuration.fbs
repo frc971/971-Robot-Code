@@ -1,4 +1,4 @@
-namespace y2023;
+namespace frc971;
 
 // Message which triggers wpilib_interface to print out the current
 // configuration, and optionally re-apply it.

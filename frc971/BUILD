@@ -1,3 +1,5 @@
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -19,5 +21,14 @@ py_library(
     name = "python_init",
     srcs = ["__init__.py"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_cc_library(
+    name = "can_configuration_fbs",
+    srcs = [
+        ":can_configuration.fbs",
+    ],
+    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )

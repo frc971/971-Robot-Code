@@ -40,6 +40,7 @@
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
 #include "frc971/autonomous/auto_mode_generated.h"
+#include "frc971/can_configuration_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_can_position_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
@@ -56,7 +57,6 @@
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
-#include "y2023/can_configuration_generated.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/superstructure/led_indicator.h"
 #include "y2023/control_loops/superstructure/superstructure_output_generated.h"
@@ -67,6 +67,7 @@ DEFINE_bool(ctre_diag_server, false,
             "devices on the CAN bus using Phoenix Tuner");
 
 using ::aos::monotonic_clock;
+using ::frc971::CANConfiguration;
 using ::y2023::constants::Values;
 namespace superstructure = ::y2023::control_loops::superstructure;
 namespace drivetrain = ::y2023::control_loops::drivetrain;

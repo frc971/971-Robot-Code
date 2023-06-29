@@ -300,7 +300,7 @@
     },
     {
       "name": "/roborio",
-      "type": "y2023.CANConfiguration",
+      "type": "frc971.CANConfiguration",
       "source_node": "roborio",
       "frequency": 2
     },

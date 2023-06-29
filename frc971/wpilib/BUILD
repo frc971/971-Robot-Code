@@ -506,6 +506,7 @@ cc_library(
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
         "//aos:init",
+        "//aos:math",
         "//aos/events:shm_event_loop",
         "//aos/logging",
         "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",

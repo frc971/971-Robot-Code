@@ -1,6 +1,7 @@
 #include "frc971/wpilib/falcon.h"
 
 using frc971::wpilib::Falcon;
+using frc971::wpilib::kMaxBringupPower;
 
 Falcon::Falcon(int device_id, std::string canbus,
                std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
@@ -74,6 +75,23 @@ void Falcon::WriteConfigs(ctre::phoenix6::signals::InvertedValue invert) {
   }
 
   PrintConfigs();
+}
+
+ctre::phoenix::StatusCode Falcon::WriteCurrent(double current,
+                                               double max_voltage) {
+  ctre::phoenix6::controls::TorqueCurrentFOC control(
+      static_cast<units::current::ampere_t>(current));
+  // Using 0_Hz here makes it a one-shot update.
+  control.UpdateFreqHz = 0_Hz;
+  control.MaxAbsDutyCycle =
+      ::aos::Clip(max_voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0;
+  ctre::phoenix::StatusCode status = talon()->SetControl(control);
+  if (!status.IsOK()) {
+    AOS_LOG(ERROR, "Failed to write control to falcon %d: %s: %s", device_id(),
+            status.GetName(), status.GetDescription());
+  }
+
+  return status;
 }
 
 void Falcon::SerializePosition(flatbuffers::FlatBufferBuilder *fbb) {
