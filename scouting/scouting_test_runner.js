@@ -4,9 +4,13 @@ const process = require('process');
 const cypress = require('cypress');
 
 // Set up the xvfb binary.
-process.env[
-  'PATH'
-] = `${process.env.RUNFILES_DIR}/xvfb_amd64/wrapped_bin:${process.env.PATH}`;
+// TODO(philipp): Figure out how to point Xvfb at the sandboxed usr/bin
+// directory. Currently impossible as it's hardcoded to use /usr/bin.
+process.env['PATH'] = [
+  `${process.env.RUNFILES_DIR}/xvfb_amd64/wrapped_bin`,
+  `${process.env.RUNFILES_DIR}/xvfb_amd64/usr/bin`,
+  process.env.PATH,
+].join(':');
 
 // Start the web server, database, and fake TBA server.
 // We use file descriptor 3 ('pipe') for the test server to let us know when

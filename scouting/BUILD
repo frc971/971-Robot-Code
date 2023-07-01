@@ -19,6 +19,11 @@ sh_binary(
     ],
 )
 
+# TODO(philipp): Sandbox the following:
+# - libnss3
+# - libdrm2
+# - libgbm1
+# - x11-xkb-utils (See TODO in scouting/scouting_test_runner.js)
 cypress_test(
     name = "scouting_test",
     data = [
