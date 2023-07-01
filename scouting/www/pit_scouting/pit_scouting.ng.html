@@ -1,0 +1,30 @@
+<div class="header">
+  <h2>Pit Scouting</h2>
+</div>
+<ng-container [ngSwitch]="section">
+  <div *ngSwitchCase="'Data'" id="pitImageSelection" class="container-fluid">
+    <label for="teamNumber">Team Number</label>
+    <input
+      [(ngModel)]="teamNumber"
+      type="string"
+      id="teamNumber"
+      min="1"
+      max="9999"
+    />
+    <form action="setPitImage()">
+      <label for="pitImage">Select pit image:</label>
+      <br />
+      <input
+        id="pitImage"
+        [(ngModel)]="pitImage"
+        type="file"
+        accept="image/*"
+      />
+    </form>
+    <button id="submit-button" class="btn btn-success" (click)="submitData()">
+      Submit
+    </button>
+  </div>
+
+  <span class="error_message" role="alert">{{ errorMessage }}</span>
+</ng-container>

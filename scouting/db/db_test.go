@@ -609,6 +609,82 @@ func TestQueryShiftDB(t *testing.T) {
 	}
 }
 
+func TestQueryPitImages(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	testDatabase := []PitImage{
+		PitImage{
+			TeamNumber: "723", CheckSum: "8be8h9829hf98wp",
+			ImagePath: "image1.jpg", ImageData: []byte{14, 15, 32, 54},
+		},
+		PitImage{
+			TeamNumber: "237", CheckSum: "br78232b6r7iaa",
+			ImagePath: "bot.png", ImageData: []byte{32, 54, 23, 00},
+		},
+		PitImage{
+			TeamNumber: "125A", CheckSum: "b63c728bqiq8a73",
+			ImagePath: "file123.jpeg", ImageData: []byte{32, 05, 01, 28},
+		},
+	}
+
+	for i := 0; i < len(testDatabase); i++ {
+		err := fixture.db.AddPitImage(testDatabase[i])
+		check(t, err, fmt.Sprint("Failed to add pit image", i))
+	}
+
+	correct := []RequestedPitImage{
+		RequestedPitImage{
+			TeamNumber: "723", CheckSum: "8be8h9829hf98wp",
+			ImagePath: "image1.jpg",
+		},
+	}
+
+	got, err := fixture.db.QueryPitImages("723")
+	check(t, err, "Failed to query shift for team 723")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Fatalf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
+func TestQueryPitImageByChecksum(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	testDatabase := []PitImage{
+		PitImage{
+			TeamNumber: "723", CheckSum: "8be8h9829hf98wp",
+			ImagePath: "image1.jpg", ImageData: []byte{05, 32, 00, 74, 28},
+		},
+		PitImage{
+			TeamNumber: "237", CheckSum: "br78232b6r7iaa",
+			ImagePath: "bot.png", ImageData: []byte{32, 54, 23, 00},
+		},
+		PitImage{
+			TeamNumber: "125A", CheckSum: "b63c728bqiq8a73",
+			ImagePath: "file123.jpeg", ImageData: []byte{32, 05, 01, 28},
+		},
+	}
+
+	for i := 0; i < len(testDatabase); i++ {
+		err := fixture.db.AddPitImage(testDatabase[i])
+		check(t, err, fmt.Sprint("Failed to add pit image", i))
+	}
+
+	correctPitImage := PitImage{
+		TeamNumber: "125A", CheckSum: "b63c728bqiq8a73",
+		ImagePath: "file123.jpeg", ImageData: []byte{32, 05, 01, 28},
+	}
+
+	got, err := fixture.db.QueryPitImageByChecksum("b63c728bqiq8a73")
+	check(t, err, "Failed to query shift for checksum 'b63c728bqiq8a73'")
+
+	if !reflect.DeepEqual(correctPitImage, got) {
+		t.Fatalf("Got %#v,\nbut expected %#v.", got, correctPitImage)
+	}
+}
+
 func TestQueryRankingsDB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()

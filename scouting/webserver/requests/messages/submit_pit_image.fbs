@@ -1,0 +1,9 @@
+namespace scouting.webserver.requests;
+
+table SubmitPitImage {
+	team_number:string (id:0);
+	image_path:string (id:1);
+	image_data:[ubyte] (id:2);
+}
+
+root_type SubmitPitImage;

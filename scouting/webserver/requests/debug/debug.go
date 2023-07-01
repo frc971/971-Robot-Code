@@ -16,10 +16,12 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule_response"
 	flatbuffers "github.com/google/flatbuffers/go"
 )
@@ -136,6 +138,12 @@ func RequestNotes(server string, requestBytes []byte) (*request_notes_for_team_r
 		request_notes_for_team_response.GetRootAsRequestNotesForTeamResponse)
 }
 
+func RequestPitImages(server string, requestBytes []byte) (*request_pit_images_response.RequestPitImagesResponseT, error) {
+	return sendMessage[request_pit_images_response.RequestPitImagesResponseT](
+		server+"/requests/request/pit_images", requestBytes,
+		request_pit_images_response.GetRootAsRequestPitImagesResponse)
+}
+
 func RequestAllNotes(server string, requestBytes []byte) (*request_all_notes_response.RequestAllNotesResponseT, error) {
 	return sendMessage[request_all_notes_response.RequestAllNotesResponseT](
 		server+"/requests/request/all_notes", requestBytes,
@@ -164,6 +172,12 @@ func SubmitActions(server string, requestBytes []byte) (*submit_actions_response
 	return sendMessage[submit_actions_response.SubmitActionsResponseT](
 		server+"/requests/submit/submit_actions", requestBytes,
 		submit_actions_response.GetRootAsSubmitActionsResponse)
+}
+
+func SubmitPitImage(server string, requestBytes []byte) (*submit_pit_image_response.SubmitPitImageResponseT, error) {
+	return sendMessage[submit_pit_image_response.SubmitPitImageResponseT](
+		server+"/requests/submit/submit_pit_image", requestBytes,
+		submit_pit_image_response.GetRootAsSubmitPitImageResponse)
 }
 
 func Delete2023DataScouting(server string, requestBytes []byte) (*delete_2023_data_scouting_response.Delete2023DataScoutingResponseT, error) {

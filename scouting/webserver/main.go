@@ -133,7 +133,7 @@ func main() {
 	defer database.Delete()
 
 	scoutingServer := server.NewScoutingServer()
-	static.ServePages(scoutingServer, *dirPtr)
+	static.ServePages(scoutingServer, *dirPtr, database)
 	requests.HandleRequests(database, scoutingServer)
 	scoutingServer.Start(*portPtr)
 	fmt.Println("Serving", *dirPtr, "on port", *portPtr)

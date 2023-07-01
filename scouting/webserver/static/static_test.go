@@ -1,13 +1,29 @@
 package static
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
+	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 )
+
+type MockDatabase struct {
+	images []db.PitImage
+}
+
+func (database *MockDatabase) QueryPitImageByChecksum(checksum string) (db.PitImage, error) {
+	for _, data := range database.images {
+		if data.CheckSum == checksum {
+			return data, nil
+		}
+	}
+
+	return db.PitImage{}, errors.New("Could not find pit image")
+}
 
 func expectEqual(t *testing.T, actual string, expected string) {
 	if actual != expected {
@@ -16,6 +32,15 @@ func expectEqual(t *testing.T, actual string, expected string) {
 }
 
 func TestServing(t *testing.T) {
+	database := MockDatabase{
+		images: []db.PitImage{
+			{
+				TeamNumber: "971", CheckSum: "3yi32rhewd23",
+				ImagePath: "abc.png", ImageData: []byte("hello"),
+			},
+		},
+	}
+
 	cases := []struct {
 		// The path to request from the server.
 		path string
@@ -26,10 +51,11 @@ func TestServing(t *testing.T) {
 		{"/", "<h1>This is the index</h1>\n"},
 		{"/root.txt", "Hello, this is the root page!"},
 		{"/page.txt", "Hello from a page!"},
+		{"/sha256/3yi32rhewd23/abc.png", "hello"},
 	}
 
 	scoutingServer := server.NewScoutingServer()
-	ServePages(scoutingServer, "test_pages")
+	ServePages(scoutingServer, "test_pages", &database)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -43,8 +69,9 @@ func TestServing(t *testing.T) {
 // Makes sure that requesting / sets the proper headers so it doesn't get
 // cached.
 func TestDisallowedCache(t *testing.T) {
+	database := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	ServePages(scoutingServer, "test_pages")
+	ServePages(scoutingServer, "test_pages", &database)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -61,8 +88,9 @@ func TestDisallowedCache(t *testing.T) {
 // Makes sure that requesting anything other than / doesn't set the "do not
 // cache" headers.
 func TestAllowedCache(t *testing.T) {
+	database := MockDatabase{}
 	scoutingServer := server.NewScoutingServer()
-	ServePages(scoutingServer, "test_pages")
+	ServePages(scoutingServer, "test_pages", &database)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
 
@@ -77,10 +105,22 @@ func TestAllowedCache(t *testing.T) {
 }
 
 func TestSha256(t *testing.T) {
+	database := MockDatabase{
+		images: []db.PitImage{
+			{
+				TeamNumber: "971", CheckSum: "3yi32rhewd23",
+				ImagePath: "abc.png", ImageData: []byte{32, 54, 23, 00},
+			},
+		},
+	}
 	scoutingServer := server.NewScoutingServer()
-	ServePages(scoutingServer, "test_pages")
+	ServePages(scoutingServer, "test_pages", &database)
 	scoutingServer.Start(8080)
 	defer scoutingServer.Stop()
+
+	//Validate receiving the correct byte sequence from image request.
+	byteDataReceived := getData("sha256/3yi32rhewd23/abc.png", t)
+	expectEqual(t, string(byteDataReceived), string([]byte{32, 54, 23, 00}))
 
 	// Validate a valid checksum.
 	dataReceived := getData("sha256/553b9b29647a112136986cf93c57b988d1f12dc43d3b774f14a24e58d272dbff/root.txt", t)

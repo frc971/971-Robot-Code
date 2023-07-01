@@ -64,6 +64,15 @@
       View
     </a>
   </li>
+  <li class="nav-item">
+    <a
+      class="nav-link"
+      [class.active]="tabIs('Pit')"
+      (click)="switchTabToGuarded('Pit')"
+    >
+      Pit
+    </a>
+  </li>
 </ul>
 
 <ng-container [ngSwitch]="tab">
@@ -83,4 +92,5 @@
   <app-driver-ranking *ngSwitchCase="'DriverRanking'"></app-driver-ranking>
   <shift-schedule *ngSwitchCase="'ShiftSchedule'"></shift-schedule>
   <app-view *ngSwitchCase="'View'"></app-view>
+  <app-pit-scouting *ngSwitchCase="'Pit'"></app-pit-scouting>
 </ng-container>

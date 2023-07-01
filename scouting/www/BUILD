@@ -19,6 +19,7 @@ ng_application(
         "//scouting/www/entry",
         "//scouting/www/match_list",
         "//scouting/www/notes",
+        "//scouting/www/pit_scouting",
         "//scouting/www/shift_schedule",
         "//scouting/www/view",
     ],

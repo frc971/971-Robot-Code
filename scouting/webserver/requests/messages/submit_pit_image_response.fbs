@@ -1,0 +1,7 @@
+namespace scouting.webserver.requests;
+
+table SubmitPitImageResponse {
+    // empty response
+}
+
+root_type SubmitPitImageResponse;

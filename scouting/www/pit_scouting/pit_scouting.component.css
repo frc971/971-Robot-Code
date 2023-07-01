@@ -1,0 +1,8 @@
+* {
+  padding: 10px;
+}
+
+button {
+  touch-action: manipulation;
+  margin-top: 1vh;
+}

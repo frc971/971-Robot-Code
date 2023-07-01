@@ -1,0 +1,13 @@
+namespace scouting.webserver.requests;
+
+table PitImage {
+	team_number:string (id:0);
+	check_sum:string (id:1);
+	image_path:string (id:2);
+}
+
+table RequestPitImagesResponse {
+	pit_image_list: [PitImage] (id:0);
+}
+
+root_type RequestPitImagesResponse;

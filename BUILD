@@ -71,6 +71,10 @@ npm_link_package(
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response //scouting/webserver/requests/messages:submit_driver_ranking_response_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2023_data_scouting //scouting/webserver/requests/messages:delete_2023_data_scouting_go_fbs
 # gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2023_data_scouting_response //scouting/webserver/requests/messages:delete_2023_data_scouting_response_go_fbs
+# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image //scouting/webserver/requests/messages:submit_pit_image_go_fbs
+# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image_response //scouting/webserver/requests/messages:submit_pit_image_response_go_fbs
+# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images //scouting/webserver/requests/messages:request_pit_images_go_fbs
+# gazelle:resolve go github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response //scouting/webserver/requests/messages:request_pit_images_response_go_fbs
 
 gazelle(
     name = "gazelle",

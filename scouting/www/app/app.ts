@@ -6,7 +6,8 @@ type Tab =
   | 'Entry'
   | 'DriverRanking'
   | 'ShiftSchedule'
-  | 'View';
+  | 'View'
+  | 'Pit';
 
 // Ignore the guard for tabs that don't require the user to enter any data.
 const unguardedTabs: Tab[] = ['MatchList'];

@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 )
 
@@ -26,6 +28,10 @@ var noCacheHeaders = map[string]string{
 	"Cache-Control":   "no-cache, private, max-age=0",
 	"Pragma":          "no-cache",
 	"X-Accel-Expires": "0",
+}
+
+type ScoutingDatabase interface {
+	QueryPitImageByChecksum(checksum string) (db.PitImage, error)
 }
 
 func MaybeNoCache(h http.Handler) http.Handler {
@@ -98,7 +104,7 @@ func findAllFileShas(directory string) map[string]string {
 	return shaSums
 }
 
-func HandleShaUrl(directory string, h http.Handler) http.Handler {
+func HandleShaUrl(directory string, h http.Handler, scoutingDatabase ScoutingDatabase) http.Handler {
 	shaSums := findAllFileShas(directory)
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
@@ -132,9 +138,20 @@ func HandleShaUrl(directory string, h http.Handler) http.Handler {
 			// We found a file with this checksum. Serve that file.
 			r.URL.Path = path
 		} else {
-			// No file with this checksum found.
-			w.WriteHeader(http.StatusNotFound)
-			return
+			pitImage, err := scoutingDatabase.QueryPitImageByChecksum(hash)
+			if err == nil {
+				if parts[3] != pitImage.ImagePath {
+					log.Println("Got ", parts[3], "expected", pitImage.ImagePath)
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				w.Header().Add("Content-Type", mime.TypeByExtension(pitImage.ImagePath))
+				w.Write(pitImage.ImageData)
+				return
+			} else { // No file with this checksum found.
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 		}
 
 		h.ServeHTTP(w, r)
@@ -143,11 +160,10 @@ func HandleShaUrl(directory string, h http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-// Serve pages in the specified directory.
-func ServePages(scoutingServer server.ScoutingServer, directory string) {
+func ServePages(scoutingServer server.ScoutingServer, directory string, scoutingDatabase ScoutingDatabase) {
 	// Serve the / endpoint given a folder of pages.
 	scoutingServer.Handle("/", MaybeNoCache(http.FileServer(http.Dir(directory))))
 
 	// Also serve files in a checksum-addressable manner.
-	scoutingServer.Handle("/sha256/", HandleShaUrl(directory, http.FileServer(http.Dir(directory))))
+	scoutingServer.Handle("/sha256/", HandleShaUrl(directory, http.FileServer(http.Dir(directory)), scoutingDatabase))
 }

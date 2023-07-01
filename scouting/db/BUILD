@@ -18,9 +18,7 @@ go_test(
     name = "db_test",
     size = "small",
     srcs = ["db_test.go"],
-    data = [
-        "//scouting/db/testdb_server",
-    ],
+    data = ["//scouting/db/testdb_server"],
     embed = [":db"],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = ["@com_github_davecgh_go_spew//spew"],

@@ -17,11 +17,14 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_pit_image"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/server"
 	flatbuffers "github.com/google/flatbuffers/go"
@@ -511,6 +514,86 @@ func TestRequestNotes(t *testing.T) {
 
 	if response.Notes[0].Data != "Notes" {
 		t.Fatal("requested notes did not match", response)
+	}
+}
+
+func TestSubmitPitImage(t *testing.T) {
+	database := MockDatabase{}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&database, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&submit_pit_image.SubmitPitImageT{
+		TeamNumber: "483A", ImagePath: "483Arobot.jpg",
+		ImageData: []byte{12, 43, 54, 34, 98},
+	}).Pack(builder))
+
+	_, err := debug.SubmitPitImage("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to submit pit image: ", err)
+	}
+
+	expected := []db.PitImage{
+		{
+			TeamNumber: "483A", CheckSum: "177d9dc52bc25f391232e82521259c378964c068832a9178d73448ba4ac5e0b1",
+			ImagePath: "483Arobot.jpg", ImageData: []byte{12, 43, 54, 34, 98},
+		},
+	}
+
+	if !reflect.DeepEqual(database.images, expected) {
+		t.Fatal("Submitted image did not match", expected, database.images)
+	}
+}
+
+func TestRequestPitImages(t *testing.T) {
+	db := MockDatabase{
+		images: []db.PitImage{
+			{
+				TeamNumber: "932", ImagePath: "pitimage.jpg",
+				ImageData: []byte{3, 34, 44, 65}, CheckSum: "abcdf",
+			},
+			{
+				TeamNumber: "234", ImagePath: "234robot.png",
+				ImageData: []byte{64, 54, 21, 21, 76, 32}, CheckSum: "egrfd",
+			},
+			{
+				TeamNumber: "93A", ImagePath: "abcd.jpg",
+				ImageData: []byte{92, 94, 10, 30, 57, 32, 32}, CheckSum: "rgegfd",
+			},
+		},
+	}
+
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&db, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_pit_images.RequestPitImagesT{"932"}).Pack(builder))
+
+	response, err := debug.RequestPitImages("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request pit images: ", err)
+	}
+
+	expected := request_pit_images_response.RequestPitImagesResponseT{
+		PitImageList: []*request_pit_images_response.PitImageT{
+			{
+				TeamNumber: "932", ImagePath: "pitimage.jpg", CheckSum: "abcdf",
+			},
+		},
+	}
+
+	if len(expected.PitImageList) != len(response.PitImageList) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+
+	for i, pit_image := range expected.PitImageList {
+		if !reflect.DeepEqual(*pit_image, *response.PitImageList[i]) {
+			t.Fatal("Expected for pit image", i, ":", *pit_image, ", but got:", *response.PitImageList[i])
+		}
 	}
 }
 
@@ -1024,6 +1107,7 @@ type MockDatabase struct {
 	driver_ranking []db.DriverRankingData
 	stats2023      []db.Stats2023
 	actions        []db.Action
+	images         []db.PitImage
 }
 
 func (database *MockDatabase) AddToMatch(match db.TeamMatch) error {
@@ -1085,6 +1169,20 @@ func (database *MockDatabase) QueryAllShifts(int) ([]db.Shift, error) {
 	return []db.Shift{}, nil
 }
 
+func (database *MockDatabase) QueryPitImages(requestedTeam string) ([]db.RequestedPitImage, error) {
+	var results []db.RequestedPitImage
+	for _, data := range database.images {
+		if data.TeamNumber == requestedTeam {
+			results = append(results, db.RequestedPitImage{
+				TeamNumber: data.TeamNumber,
+				ImagePath:  data.ImagePath,
+				CheckSum:   data.CheckSum,
+			})
+		}
+	}
+	return results, nil
+}
+
 func (database *MockDatabase) AddDriverRanking(data db.DriverRankingData) error {
 	database.driver_ranking = append(database.driver_ranking, data)
 	return nil
@@ -1096,6 +1194,11 @@ func (database *MockDatabase) ReturnAllDriverRankings() ([]db.DriverRankingData,
 
 func (database *MockDatabase) AddAction(action db.Action) error {
 	database.actions = append(database.actions, action)
+	return nil
+}
+
+func (database *MockDatabase) AddPitImage(pitImage db.PitImage) error {
+	database.images = append(database.images, pitImage)
 	return nil
 }
 

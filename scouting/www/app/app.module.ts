@@ -9,6 +9,7 @@ import {NotesModule} from '../notes';
 import {ShiftScheduleModule} from '../shift_schedule';
 import {ViewModule} from '../view';
 import {DriverRankingModule} from '../driver_ranking';
+import {PitScoutingModule} from '../pit_scouting';
 
 @NgModule({
   declarations: [App],
@@ -21,6 +22,7 @@ import {DriverRankingModule} from '../driver_ranking';
     ShiftScheduleModule,
     DriverRankingModule,
     ViewModule,
+    PitScoutingModule,
   ],
   exports: [App],
   bootstrap: [App],

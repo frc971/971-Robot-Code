@@ -1,0 +1,7 @@
+namespace scouting.webserver.requests;
+
+table RequestPitImages {
+    team_number:string (id: 0);
+}
+
+root_type RequestPitImages;
