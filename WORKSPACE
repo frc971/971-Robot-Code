@@ -1138,8 +1138,8 @@ rust_repository_set(
         "aarch64-unknown-linux-gnu",
     ],
     register_toolchain = False,
-    rustfmt_version = "1.62.0",
-    version = "1.62.0",
+    rustfmt_version = "1.70.0",
+    version = "1.70.0",
 )
 
 # Flatbuffers
