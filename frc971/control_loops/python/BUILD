@@ -175,6 +175,20 @@ py_library(
     ],
 )
 
+py_library(
+    name = "angular_system_current",
+    srcs = ["angular_system_current.py"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":controls",
+        "//aos/util:py_trapezoid_profile",
+        "//frc971/control_loops:python_init",
+        "@pip//matplotlib",
+        "@pip//pygobject",
+    ],
+)
+
 py_binary(
     name = "spline_graph",
     srcs = [
