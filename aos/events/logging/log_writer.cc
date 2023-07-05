@@ -231,18 +231,23 @@ Logger::~Logger() {
   }
 }
 
+aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> PackConfiguration(
+    const Configuration *const configuration) {
+  flatbuffers::FlatBufferBuilder fbb;
+  flatbuffers::Offset<aos::Configuration> configuration_offset =
+      CopyFlatBuffer(configuration, &fbb);
+  LogFileHeader::Builder log_file_header_builder(fbb);
+  log_file_header_builder.add_configuration(configuration_offset);
+  fbb.FinishSizePrefixed(log_file_header_builder.Finish());
+  return fbb.Release();
+}
+
 std::string Logger::WriteConfiguration(LogNamer *log_namer) {
   std::string config_sha256;
 
   if (separate_config_) {
-    flatbuffers::FlatBufferBuilder fbb;
-    flatbuffers::Offset<aos::Configuration> configuration_offset =
-        CopyFlatBuffer(configuration_, &fbb);
-    LogFileHeader::Builder log_file_header_builder(fbb);
-    log_file_header_builder.add_configuration(configuration_offset);
-    fbb.FinishSizePrefixed(log_file_header_builder.Finish());
-    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> config_header(
-        fbb.Release());
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> config_header =
+        PackConfiguration(configuration_);
     config_sha256 = Sha256(config_header.span());
     LOG(INFO) << "Config sha256 of " << config_sha256;
     log_namer->WriteConfiguration(&config_header, config_sha256);

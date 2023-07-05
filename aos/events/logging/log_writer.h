@@ -20,6 +20,11 @@
 namespace aos {
 namespace logger {
 
+// Packs the provided configuration into the separate config LogFileHeader
+// container.
+aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> PackConfiguration(
+    const Configuration *const configuration);
+
 // Logs all channels available in the event loop to disk every 100 ms.
 // Start by logging one message per channel to capture any state and
 // configuration that is sent rately on a channel and would affect execution.
