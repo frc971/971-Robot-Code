@@ -67,9 +67,9 @@ int main(int argc, char **argv) {
         ->AddTimer([&fbb, &sender]() {
           sender->CheckOk(sender->Send(fbb.GetBufferPointer(), fbb.GetSize()));
         })
-        ->Setup(cli_info.event_loop->monotonic_now(),
-                std::chrono::duration_cast<std::chrono::nanoseconds>(
-                    std::chrono::duration<double>(1.0 / FLAGS_rate)));
+        ->Schedule(cli_info.event_loop->monotonic_now(),
+                   std::chrono::duration_cast<std::chrono::nanoseconds>(
+                       std::chrono::duration<double>(1.0 / FLAGS_rate)));
     cli_info.event_loop->Run();
   }
 

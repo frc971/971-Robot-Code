@@ -176,7 +176,7 @@ void StarterClient::SendCommands(
     builder.CheckOk(builder.Send(command_builder.Finish()));
   }
 
-  timeout_timer_->Setup(event_loop_->monotonic_now() + timeout);
+  timeout_timer_->Schedule(event_loop_->monotonic_now() + timeout);
 }
 
 bool StarterClient::CheckCommandsSucceeded() {

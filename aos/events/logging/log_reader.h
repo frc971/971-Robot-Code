@@ -471,7 +471,7 @@ class LogReader {
     // OldestMessageTime.
     void SeedSortedMessages();
 
-    void SetupStartupTimer() {
+    void SetUpStartupTimer() {
       const monotonic_clock::time_point start_time =
           monotonic_start_time(boot_count());
       if (start_time == monotonic_clock::min_time) {
@@ -483,7 +483,7 @@ class LogReader {
       if (node_event_loop_factory_) {
         CHECK_GE(start_time + clock_offset(), event_loop_->monotonic_now());
       }
-      startup_timer_->Setup(start_time + clock_offset());
+      startup_timer_->Schedule(start_time + clock_offset());
     }
 
     void set_startup_timer(TimerHandler *timer_handler) {
@@ -653,8 +653,8 @@ class LogReader {
     void ClearTimeFlags();
 
     // Sets the next wakeup time on the replay callback.
-    void Setup(monotonic_clock::time_point next_time) {
-      timer_handler_->Setup(
+    void Schedule(monotonic_clock::time_point next_time) {
+      timer_handler_->Schedule(
           std::max(monotonic_now(), next_time + clock_offset()));
     }
 

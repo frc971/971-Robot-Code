@@ -37,7 +37,7 @@ TEST(GlibMainLoopTest, CreateRunDestroy) {
         event_loop.Exit();
         ran = true;
       })
-      ->Setup(event_loop.monotonic_now() + std::chrono::milliseconds(100));
+      ->Schedule(event_loop.monotonic_now() + std::chrono::milliseconds(100));
   event_loop.Run();
   EXPECT_TRUE(ran);
 }
@@ -122,7 +122,7 @@ TEST(GlibMainLoopTest, TimeoutRemoveSelf) {
         event_loop.Exit();
         ran = true;
       })
-      ->Setup(event_loop.monotonic_now() + std::chrono::milliseconds(100));
+      ->Schedule(event_loop.monotonic_now() + std::chrono::milliseconds(100));
   event_loop.Run();
   EXPECT_TRUE(ran);
   EXPECT_EQ(runs, 1);

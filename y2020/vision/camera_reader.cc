@@ -455,15 +455,15 @@ void CameraReader::ReadImage() {
     if (!FLAGS_skip_sift) {
       LOG(INFO) << "No image, sleeping";
     }
-    read_image_timer_->Setup(event_loop_->monotonic_now() +
-                             std::chrono::milliseconds(10));
+    read_image_timer_->Schedule(event_loop_->monotonic_now() +
+                                std::chrono::milliseconds(10));
     return;
   }
 
   ProcessImage(reader_->LatestImage());
 
   reader_->SendLatestImage();
-  read_image_timer_->Setup(event_loop_->monotonic_now());
+  read_image_timer_->Schedule(event_loop_->monotonic_now());
 }
 
 flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sift::ImageMatch>>>

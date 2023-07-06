@@ -99,7 +99,7 @@ void SensorReader::DoStart() {
   }
 
   // Now that we are configured, actually fill in the defaults.
-  timer_handler_->Setup(
+  timer_handler_->Schedule(
       event_loop_->monotonic_now() +
           (pwm_trigger_ ? chrono::milliseconds(3) : chrono::milliseconds(4)),
       period_);
@@ -153,7 +153,7 @@ void SensorReader::Loop() {
     // PWM pulse.
     const auto next_time = last_tick_timepoint + period_;
 
-    timer_handler_->Setup(next_time, period_);
+    timer_handler_->Schedule(next_time, period_);
   }
 }
 

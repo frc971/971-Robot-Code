@@ -431,7 +431,7 @@ TEST(TimestampProblemTest, SolveNewton) {
   const BootTimestamp e{0, monotonic_clock::epoch()};
   const BootTimestamp ta = e + chrono::milliseconds(500);
 
-  // Setup a time problem with an interesting shape that isn't simple and
+  // Set up a time problem with an interesting shape that isn't simple and
   // parallel.
   NoncausalTimestampFilter a(node_a, node_b);
   a.Sample(e, {0, chrono::milliseconds(1000)});

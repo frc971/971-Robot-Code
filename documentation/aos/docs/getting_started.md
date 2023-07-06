@@ -429,8 +429,8 @@ Ping::Ping(EventLoop *event_loop)
       "/test", [this](const examples::Pong &pong) { HandlePong(pong); });
 
   event_loop_->OnRun([this]() {
-    timer_handle_->Setup(event_loop_->monotonic_now(),
-                         chrono::milliseconds(FLAGS_sleep_ms));
+    timer_handle_->Schedule(event_loop_->monotonic_now(),
+                            chrono::milliseconds(FLAGS_sleep_ms));
   });
 }
 
@@ -515,8 +515,8 @@ logic on the existence of a channel.
 
 This creates a timer (and gives it a name, which is optional but helpful for
 debugging). Timers in AOS call callbacks (in this case a lambda that calls
-`SendPing();`) at requested times/intervals per the `Setup` call (which is done
-below).
+`SendPing();`) at requested times/intervals per the `Schedule` call (which is
+done below).
 
 ```cpp
   event_loop_->MakeWatcher(
@@ -528,8 +528,8 @@ received on the `/test` `aos.examples.Pong` channel.
 
 ```cpp
   event_loop_->OnRun([this]() {
-    timer_handle_->Setup(event_loop_->monotonic_now(),
-                         chrono::milliseconds(FLAGS_sleep_ms));
+    timer_handle_->Schedule(event_loop_->monotonic_now(),
+                            chrono::milliseconds(FLAGS_sleep_ms));
   });
 ```
 

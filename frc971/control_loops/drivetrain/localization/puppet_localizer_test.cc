@@ -100,8 +100,8 @@ class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {
           output_builder.add_theta(drivetrain_plant_.state()(2));
           builder.CheckOk(builder.Send(output_builder.Finish()));
         })
-        ->Setup(imu_test_event_loop_->monotonic_now(),
-                std::chrono::milliseconds(5));
+        ->Schedule(imu_test_event_loop_->monotonic_now(),
+                   std::chrono::milliseconds(5));
   }
 
   virtual ~LocalizedDrivetrainTest() override {}

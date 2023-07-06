@@ -40,7 +40,7 @@ void MakeAndTestApplication(int value, F constructor) {
             builder.CheckOk(builder.Send(ping.Finish()));
           }
         })
-        ->Setup(
+        ->Schedule(
             ping_event_loop->monotonic_now() + std::chrono::milliseconds(10),
             std::chrono::milliseconds(10));
     ASSERT_EQ(starting_count, started_test_count());

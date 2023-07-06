@@ -107,7 +107,8 @@ class ActionTest : public ::testing::Test {
 
   void RunAt(monotonic_clock::time_point exec_time, std::function<void()> fn) {
     TimerHandler *timer = test_event_loop_->AddTimer(fn);
-    test_event_loop_->OnRun([timer, exec_time]() { timer->Setup(exec_time); });
+    test_event_loop_->OnRun(
+        [timer, exec_time]() { timer->Schedule(exec_time); });
   }
 
   FlatbufferDetachedBuffer<Configuration> configuration_;

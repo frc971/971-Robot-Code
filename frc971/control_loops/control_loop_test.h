@@ -69,7 +69,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
         robot_status_event_loop_->AddTimer([this]() { SendJoystickState(); });
 
     robot_status_event_loop_->OnRun([this]() {
-      send_joystick_state_timer_->Setup(
+      send_joystick_state_timer_->Schedule(
           robot_status_event_loop_->monotonic_now(), dt_);
     });
   }
@@ -88,7 +88,7 @@ class ControlLoopTestTemplated : public TestBaseClass {
       enabled_ = enabled;
       SendJoystickState();
       SendRobotState();
-      send_joystick_state_timer_->Setup(
+      send_joystick_state_timer_->Schedule(
           robot_status_event_loop_->monotonic_now(), dt_);
     }
   }

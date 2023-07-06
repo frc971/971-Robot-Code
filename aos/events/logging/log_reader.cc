@@ -210,7 +210,7 @@ class EventNotifier {
       // Whops, time went backwards.  Just do it now.
       HandleTime();
     } else {
-      event_timer_->Setup(candidate_monotonic + clock_offset_);
+      event_timer_->Schedule(candidate_monotonic + clock_offset_);
     }
   }
 
@@ -1197,7 +1197,7 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
       }
       // TODO(james): This can result in negative times getting passed-through
       // in realtime replay.
-      state->Setup(next_time.time);
+      state->Schedule(next_time.time);
     } else {
       VLOG(1) << MaybeNodeName(state->event_loop()->node())
               << "No next message, scheduling shutdown";
@@ -1208,8 +1208,8 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
       // Doesn't apply to single-EventLoop replay since the watchers in question
       // are not under our control.
       if (event_loop_factory_ != nullptr) {
-        state->Setup(monotonic_now + event_loop_factory_->send_delay() +
-                     std::chrono::nanoseconds(1));
+        state->Schedule(monotonic_now + event_loop_factory_->send_delay() +
+                        std::chrono::nanoseconds(1));
       }
     }
 
@@ -1241,8 +1241,8 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
                           std::chrono::duration<double>(
                               FLAGS_threaded_look_ahead_seconds)));
       state->MaybeSetClockOffset();
-      state->Setup(next_time.time);
-      state->SetupStartupTimer();
+      state->Schedule(next_time.time);
+      state->SetUpStartupTimer();
     });
   }
 }
@@ -2101,7 +2101,7 @@ void LogReader::RemoteMessageSender::ScheduleTimestamp() {
 
   if (scheduled_time_ != remote_timestamps_.front().monotonic_timestamp_time) {
     CHECK_NOTNULL(timer_);
-    timer_->Setup(remote_timestamps_.front().monotonic_timestamp_time);
+    timer_->Schedule(remote_timestamps_.front().monotonic_timestamp_time);
     scheduled_time_ = remote_timestamps_.front().monotonic_timestamp_time;
     CHECK_GE(scheduled_time_, event_loop_->monotonic_now())
         << event_loop_->node()->name()->string_view();

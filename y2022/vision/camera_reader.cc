@@ -197,8 +197,8 @@ void CameraReader::ReadImage() {
   }
   // If we are not reading from the disk, we read the live camera stream.
   if (!reader_->ReadLatestImage()) {
-    read_image_timer_->Setup(event_loop_->monotonic_now() +
-                             std::chrono::milliseconds(10));
+    read_image_timer_->Schedule(event_loop_->monotonic_now() +
+                                std::chrono::milliseconds(10));
     return;
   }
 
@@ -212,7 +212,7 @@ void CameraReader::ReadImage() {
   ProcessImage(image_mat, image.monotonic_timestamp_ns());
 
   reader_->SendLatestImage();
-  read_image_timer_->Setup(event_loop_->monotonic_now());
+  read_image_timer_->Schedule(event_loop_->monotonic_now());
 
   // Disable the LEDs based on localizer output
   if (localizer_output_fetcher_.Fetch()) {

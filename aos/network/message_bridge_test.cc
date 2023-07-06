@@ -89,12 +89,12 @@ class MessageBridgeParameterizedTest
   }
 
   void RunPi1Server(chrono::nanoseconds duration) {
-    // Setup a shutdown callback.
+    // Set up a shutdown callback.
     aos::TimerHandler *const quit = pi1_server_event_loop->AddTimer(
         [this]() { pi1_server_event_loop->Exit(); });
     pi1_server_event_loop->OnRun([this, quit, duration]() {
       // Stop between timestamps, not exactly on them.
-      quit->Setup(pi1_server_event_loop->monotonic_now() + duration);
+      quit->Schedule(pi1_server_event_loop->monotonic_now() + duration);
     });
 
     pi1_server_event_loop->Run();
@@ -193,12 +193,12 @@ class MessageBridgeParameterizedTest
   }
 
   void RunPi2Server(chrono::nanoseconds duration) {
-    // Setup a shutdown callback.
+    // Set up a shutdown callback.
     aos::TimerHandler *const quit = pi2_server_event_loop->AddTimer(
         [this]() { pi2_server_event_loop->Exit(); });
     pi2_server_event_loop->OnRun([this, quit, duration]() {
       // Stop between timestamps, not exactly on them.
-      quit->Setup(pi2_server_event_loop->monotonic_now() + duration);
+      quit->Schedule(pi2_server_event_loop->monotonic_now() + duration);
     });
 
     pi2_server_event_loop->Run();
@@ -237,7 +237,7 @@ class MessageBridgeParameterizedTest
         [this]() { pi2_client_event_loop->Exit(); });
     pi2_client_event_loop->OnRun([this, quit, duration]() {
       // Stop between timestamps, not exactly on them.
-      quit->Setup(pi2_client_event_loop->monotonic_now() + duration);
+      quit->Schedule(pi2_client_event_loop->monotonic_now() + duration);
     });
 
     // And go!
@@ -594,7 +594,8 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
       [&ping_event_loop]() { ping_event_loop.Exit(); });
   ping_event_loop.OnRun([quit, &ping_event_loop]() {
     // Stop between timestamps, not exactly on them.
-    quit->Setup(ping_event_loop.monotonic_now() + chrono::milliseconds(5050));
+    quit->Schedule(ping_event_loop.monotonic_now() +
+                   chrono::milliseconds(5050));
   });
 
   // Find the channel index for both the /pi1/aos Timestamp channel and Ping

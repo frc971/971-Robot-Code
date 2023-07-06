@@ -95,7 +95,7 @@ There are a couple options for building code that are given here-- setting up ei
      2. `sudo sysctl --system`
 
   4. In order to run certain tests, you need to give yourself
-     permissions--follow the "Setup real-time niceties" section of
+     permissions--follow the "Set up real-time niceties" section of
      [aos/events/README.md](aos/events/README.md).
 
 ### Setting up access to a workspace on the build server

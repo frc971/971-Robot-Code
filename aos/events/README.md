@@ -2,7 +2,7 @@
 
 Running ping<->pong is a nice way to test that you can run some basic code and shows how messaging can work between two nodes
 
-### Setup real-time niceties:
+### Set up real-time niceties:
   1. Add the following lines to `/etc/security/limits.d/rt.conf`, replacing "USERNAME" with the username you're running under.  You'll probably need to do this as root, e.g., `sudo nano /etc/security/limits.d/rt.conf`
 ```
 USERNAME - nice -20

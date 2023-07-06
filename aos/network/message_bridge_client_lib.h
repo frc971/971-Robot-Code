@@ -59,8 +59,8 @@ class SctpClientConnection {
   // gets dropped, the server might be waiting for this, so if we don't hear
   // from the server for a while we'll try sending it again.
   void ScheduleConnectTimeout() {
-    connect_timer_->Setup(event_loop_->context().monotonic_event_time +
-                          kReconnectTimeout);
+    connect_timer_->Schedule(event_loop_->context().monotonic_event_time +
+                             kReconnectTimeout);
   }
 
   // Event loop to register the server on.

@@ -127,7 +127,7 @@ SctpClientConnection::SctpClientConnection(
   connect_timer_->set_name(std::string("connect_") +
                            remote_node_->name()->str());
   event_loop_->OnRun(
-      [this]() { connect_timer_->Setup(event_loop_->monotonic_now()); });
+      [this]() { connect_timer_->Schedule(event_loop_->monotonic_now()); });
 
   size_t max_write_size =
       std::max(kHeaderSizeOverhead(), connect_message_.span().size());
@@ -248,7 +248,7 @@ void SctpClientConnection::NodeConnected(sctp_assoc_t assoc_id) {
 void SctpClientConnection::NodeDisconnected() {
   client_.SetAssociationId(0);
 
-  connect_timer_->Setup(
+  connect_timer_->Schedule(
       event_loop_->monotonic_now() + chrono::milliseconds(100),
       chrono::milliseconds(100));
   client_status_->Disconnect(client_index_);

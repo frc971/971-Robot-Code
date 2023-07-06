@@ -339,7 +339,7 @@ TEST(SimulatedEventLoopDeathTest, MakeEventLoopWhileRunning) {
   });
 
   event_loop->OnRun([&event_loop, &timer] {
-    timer->Setup(event_loop->monotonic_now() + chrono::milliseconds(50));
+    timer->Schedule(event_loop->monotonic_now() + chrono::milliseconds(50));
   });
 
   simulated_event_loop_factory.Run();
@@ -400,8 +400,8 @@ TEST(SimulatedEventLoopTest, RunForTimerHandler) {
   int counter = 0;
   auto timer = event_loop->AddTimer([&counter]() { ++counter; });
   event_loop->OnRun([&event_loop, &timer] {
-    timer->Setup(event_loop->monotonic_now() + chrono::milliseconds(50),
-                 chrono::milliseconds(100));
+    timer->Schedule(event_loop->monotonic_now() + chrono::milliseconds(50),
+                    chrono::milliseconds(100));
   });
 
   simulated_event_loop_factory.RunFor(chrono::seconds(1));
@@ -444,12 +444,12 @@ TEST(SimulatedEventLoopTest, WatcherTimingReport) {
   // Quit after 1 timing report, mid way through the next cycle.
   {
     auto end_timer = loop1->AddTimer([&factory]() { factory.Exit(); });
-    end_timer->Setup(loop1->monotonic_now() + chrono::milliseconds(2500));
+    end_timer->Schedule(loop1->monotonic_now() + chrono::milliseconds(2500));
     end_timer->set_name("end");
   }
 
   loop1->OnRun([&test_timer, &loop1]() {
-    test_timer->Setup(loop1->monotonic_now() + chrono::milliseconds(1500));
+    test_timer->Schedule(loop1->monotonic_now() + chrono::milliseconds(1500));
   });
 
   factory.Run();

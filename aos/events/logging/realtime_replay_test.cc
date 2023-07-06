@@ -110,7 +110,7 @@ TEST_F(RealtimeLoggerTest, RealtimeReplay) {
       shm_event_loop.MakeFetcher<examples::Ping>("/test");
 
   shm_event_loop.AddTimer([]() { LOG(INFO) << "Hello, World!"; })
-      ->Setup(shm_event_loop.monotonic_now(), std::chrono::seconds(1));
+      ->Schedule(shm_event_loop.monotonic_now(), std::chrono::seconds(1));
 
   shm_event_loop.Run();
   reader.Deregister();
@@ -149,7 +149,7 @@ TEST_F(RealtimeLoggerTest, SingleNodeReplayChannels) {
       shm_event_loop.MakeFetcher<examples::Pong>("/test");
 
   shm_event_loop.AddTimer([]() { LOG(INFO) << "Hello, World!"; })
-      ->Setup(shm_event_loop.monotonic_now(), std::chrono::seconds(1));
+      ->Schedule(shm_event_loop.monotonic_now(), std::chrono::seconds(1));
 
   // End timer should not be called in this case, it should automatically quit
   // the event loop and check for number of fetches messages
@@ -165,8 +165,8 @@ TEST_F(RealtimeLoggerTest, SingleNodeReplayChannels) {
       });
   shm_event_loop.OnRun([&shm_event_loop, end_timer, run_seconds]() {
     LOG(INFO) << "Quitting in: " << run_seconds;
-    end_timer->Setup(shm_event_loop.monotonic_now() +
-                     std::chrono::seconds(run_seconds));
+    end_timer->Schedule(shm_event_loop.monotonic_now() +
+                        std::chrono::seconds(run_seconds));
   });
 
   shm_event_loop.Run();
@@ -213,7 +213,7 @@ TEST_F(RealtimeMultiNodeLoggerTest, ReplayChannelsPingTest) {
       shm_event_loop.MakeFetcher<examples::Ping>("/test");
 
   shm_event_loop.AddTimer([]() { LOG(INFO) << "Hello, World!"; })
-      ->Setup(shm_event_loop.monotonic_now(), std::chrono::seconds(1));
+      ->Schedule(shm_event_loop.monotonic_now(), std::chrono::seconds(1));
 
   shm_event_loop.Run();
   reader.Deregister();
@@ -262,7 +262,7 @@ TEST_F(RealtimeMultiNodeLoggerTest, RemappedReplayChannelsTest) {
       shm_event_loop.MakeFetcher<examples::Ping>("/test");
 
   shm_event_loop.AddTimer([]() { LOG(INFO) << "Hello, World!"; })
-      ->Setup(shm_event_loop.monotonic_now(), std::chrono::seconds(1));
+      ->Schedule(shm_event_loop.monotonic_now(), std::chrono::seconds(1));
 
   shm_event_loop.Run();
   reader.Deregister();
@@ -321,8 +321,8 @@ TEST_F(RealtimeMultiNodeLoggerTest, DoesNotExistInReplayChannelsTest) {
   size_t run_seconds = 3;
   shm_event_loop.OnRun([&shm_event_loop, end_timer, run_seconds]() {
     LOG(INFO) << "Quitting in: " << run_seconds;
-    end_timer->Setup(shm_event_loop.monotonic_now() +
-                     std::chrono::seconds(run_seconds));
+    end_timer->Schedule(shm_event_loop.monotonic_now() +
+                        std::chrono::seconds(run_seconds));
   });
 
   shm_event_loop.Run();

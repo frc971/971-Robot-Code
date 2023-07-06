@@ -33,7 +33,7 @@ export function plotDemo(conn: Connection, parentDiv: Element): void {
   const aosPlotter = new AosPlotter(conn);
 
   {
-    // Setup a plot that shows some arbitrary PDP current values.
+    // Set up a plot that shows some arbitrary PDP current values.
     const pdpValues =
         aosPlotter.addMessageSource('/aos', 'frc971.PDPValues');
     const timingPlot = aosPlotter.addPlot(parentDiv);
@@ -55,7 +55,7 @@ export function plotDemo(conn: Connection, parentDiv: Element): void {
   {
     const timingReport =
         aosPlotter.addMessageSource('/aos', 'aos.timing.Report');
-    // Setup a plot that just shows some arbitrary timing data.
+    // Set up a plot that just shows some arbitrary timing data.
     const timingPlot = aosPlotter.addPlot(parentDiv);
     timingPlot.plot.getAxisLabels().setTitle('Timing Report Wakeups');
     timingPlot.plot.getAxisLabels().setYLabel('PID');

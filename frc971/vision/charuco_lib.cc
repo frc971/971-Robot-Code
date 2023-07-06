@@ -124,8 +124,8 @@ ImageCallback::ImageCallback(
                               age_double);
         if (FLAGS_disable_delay > 0) {
           if (!disabling_) {
-            timer_fn_->Setup(event_loop_->monotonic_now() +
-                             chrono::milliseconds(FLAGS_disable_delay));
+            timer_fn_->Schedule(event_loop_->monotonic_now() +
+                                chrono::milliseconds(FLAGS_disable_delay));
             disabling_ = true;
           }
         } else {

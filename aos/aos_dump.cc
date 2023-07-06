@@ -114,8 +114,8 @@ int main(int argc, char **argv) {
 
     cli_info.event_loop->OnRun(
         [handle, event_loop = &cli_info.event_loop.value()]() {
-          handle->Setup(event_loop->monotonic_now() +
-                        std::chrono::milliseconds(FLAGS_timeout));
+          handle->Schedule(event_loop->monotonic_now() +
+                           std::chrono::milliseconds(FLAGS_timeout));
         });
   }
 

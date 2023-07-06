@@ -144,7 +144,7 @@ class ShmEventLoopTest : public ::testing::TestWithParam<ReadMethod> {
           factory()->Exit();
           ran = true;
         })
-        ->Setup(loop1->monotonic_now() + std::chrono::seconds(4));
+        ->Schedule(loop1->monotonic_now() + std::chrono::seconds(4));
     factory()->Run();
     EXPECT_TRUE(ran);
   }
@@ -234,7 +234,7 @@ TEST_P(ShmEventLoopTest, AllHandlersAreRealtime) {
   loop->OnRun([&loop, &did_onrun, &sender, timer]() {
     EXPECT_TRUE(IsRealtime());
     did_onrun = true;
-    timer->Setup(loop->monotonic_now() + chrono::milliseconds(100));
+    timer->Schedule(loop->monotonic_now() + chrono::milliseconds(100));
 
     aos::Sender<TestMessage>::Builder msg = sender.MakeBuilder();
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();

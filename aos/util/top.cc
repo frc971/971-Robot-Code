@@ -131,7 +131,7 @@ Top::Top(aos::EventLoop *event_loop, bool track_threads)
       track_threads_(track_threads) {
   TimerHandler *timer = event_loop_->AddTimer([this]() { UpdateReadings(); });
   event_loop_->OnRun([timer, this]() {
-    timer->Setup(event_loop_->monotonic_now(), kSamplePeriod);
+    timer->Schedule(event_loop_->monotonic_now(), kSamplePeriod);
   });
 }
 

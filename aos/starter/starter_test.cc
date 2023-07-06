@@ -35,8 +35,8 @@ class StarterdTest : public ::testing::Test {
             starter->Cleanup();
           }
         })
-        ->Setup(starter->event_loop()->monotonic_now(),
-                std::chrono::milliseconds(100));
+        ->Schedule(starter->event_loop()->monotonic_now(),
+                   std::chrono::milliseconds(100));
   }
 
   gflags::FlagSaver flag_saver_;
@@ -109,7 +109,7 @@ TEST_P(StarterdConfigParamTest, MultiNodeStartStopTest) {
         watcher_loop.Exit();
         FAIL();
       })
-      ->Setup(watcher_loop.monotonic_now() + std::chrono::seconds(7));
+      ->Schedule(watcher_loop.monotonic_now() + std::chrono::seconds(7));
 
   std::atomic<int> test_stage = 0;
   // Watch on the client loop since we need to interact with the StarterClient.
@@ -228,7 +228,7 @@ TEST_F(StarterdTest, DeathTest) {
         watcher_loop.Exit();
         FAIL();
       })
-      ->Setup(watcher_loop.monotonic_now() + std::chrono::seconds(11));
+      ->Schedule(watcher_loop.monotonic_now() + std::chrono::seconds(11));
 
   int test_stage = 0;
   uint64_t id;
@@ -323,7 +323,7 @@ TEST_F(StarterdTest, Autostart) {
         watcher_loop.Exit();
         FAIL();
       })
-      ->Setup(watcher_loop.monotonic_now() + std::chrono::seconds(7));
+      ->Schedule(watcher_loop.monotonic_now() + std::chrono::seconds(7));
 
   int pong_running_count = 0;
   watcher_loop.MakeWatcher("/aos", [&watcher_loop, &pong_running_count](
@@ -420,7 +420,7 @@ TEST_F(StarterdTest, DeathNoRestartTest) {
         watcher_loop.Exit();
         SUCCEED();
       })
-      ->Setup(watcher_loop.monotonic_now() + std::chrono::seconds(11));
+      ->Schedule(watcher_loop.monotonic_now() + std::chrono::seconds(11));
 
   int test_stage = 0;
   uint64_t id;
@@ -521,7 +521,7 @@ TEST_F(StarterdTest, StarterChainTest) {
                   "The chain of stages defined below did not complete "
                   "within the time limit.";
       })
-      ->Setup(client_loop.monotonic_now() + std::chrono::seconds(20));
+      ->Schedule(client_loop.monotonic_now() + std::chrono::seconds(20));
 
   // variables have been defined, here we define the body of the test.
   // We want stage1 to succeed, triggering stage2.
@@ -570,8 +570,8 @@ TEST_F(StarterdTest, StarterChainTest) {
     LOG(INFO) << "End stage1";
   };
   // start the test body
-  client_loop.AddTimer(stage1)->Setup(client_loop.monotonic_now() +
-                                      std::chrono::milliseconds(1));
+  client_loop.AddTimer(stage1)->Schedule(client_loop.monotonic_now() +
+                                         std::chrono::milliseconds(1));
 
   // prepare the cleanup for starter. This will finish when we call
   // `test_done_ = true;`.

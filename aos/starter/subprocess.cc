@@ -125,8 +125,8 @@ Application::Application(std::string_view name,
     // Every second poll to check if the child is dead. This is used as a
     // default for the case where the user is not directly catching SIGCHLD and
     // calling MaybeHandleSignal for us.
-    child_status_handler_->Setup(event_loop_->monotonic_now(),
-                                 std::chrono::seconds(1));
+    child_status_handler_->Schedule(event_loop_->monotonic_now(),
+                                    std::chrono::seconds(1));
   });
 }
 
@@ -172,8 +172,8 @@ void Application::DoStart() {
     stderr_.clear();
   }
 
-  pipe_timer_->Setup(event_loop_->monotonic_now(),
-                     std::chrono::milliseconds(100));
+  pipe_timer_->Schedule(event_loop_->monotonic_now(),
+                        std::chrono::milliseconds(100));
 
   const pid_t pid = fork();
 
@@ -189,10 +189,10 @@ void Application::DoStart() {
       status_ = aos::starter::State::STARTING;
       LOG(INFO) << "Starting '" << name_ << "' pid " << pid_;
 
-      // Setup timer which moves application to RUNNING state if it is still
+      // Set up timer which moves application to RUNNING state if it is still
       // alive in 1 second.
-      start_timer_->Setup(event_loop_->monotonic_now() +
-                          std::chrono::seconds(1));
+      start_timer_->Schedule(event_loop_->monotonic_now() +
+                             std::chrono::seconds(1));
       // Since we are the parent process, clear our write-side of all the pipes.
       status_pipes_.write.reset();
       stdout_pipes_.write.reset();
@@ -331,8 +331,8 @@ void Application::DoStop(bool restart) {
 
       // Watchdog timer to SIGKILL application if it is still running 1 second
       // after SIGINT
-      stop_timer_->Setup(event_loop_->monotonic_now() +
-                         std::chrono::seconds(1));
+      stop_timer_->Schedule(event_loop_->monotonic_now() +
+                            std::chrono::seconds(1));
       queue_restart_ = restart;
       on_change_();
       break;
@@ -370,7 +370,8 @@ void Application::QueueStart() {
   status_ = aos::starter::State::WAITING;
 
   LOG(INFO) << "Restarting " << name_ << " in 3 seconds";
-  restart_timer_->Setup(event_loop_->monotonic_now() + std::chrono::seconds(3));
+  restart_timer_->Schedule(event_loop_->monotonic_now() +
+                           std::chrono::seconds(3));
   start_timer_->Disable();
   stop_timer_->Disable();
   on_change_();

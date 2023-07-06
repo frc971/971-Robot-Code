@@ -109,8 +109,9 @@ class CameraReader {
         gpio_pwm_control_(GPIOPWMControl(GPIO_PIN_SCK_PWM, duty_cycle_)),
         gpio_disable_control_(
             GPIOControl(GPIO_PIN_MOSI_DISABLE, kGPIOOut, kGPIOLow)) {
-    event_loop->OnRun(
-        [this]() { read_image_timer_->Setup(event_loop_->monotonic_now()); });
+    event_loop->OnRun([this]() {
+      read_image_timer_->Schedule(event_loop_->monotonic_now());
+    });
   }
 
   void SetDutyCycle(double duty_cycle) {

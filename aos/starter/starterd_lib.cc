@@ -50,8 +50,8 @@ Starter::Starter(const aos::Configuration *event_loop_config)
   event_loop_.SkipAosLog();
 
   event_loop_.OnRun([this] {
-    status_timer_->Setup(event_loop_.monotonic_now(),
-                         std::chrono::milliseconds(1000));
+    status_timer_->Schedule(event_loop_.monotonic_now(),
+                            std::chrono::milliseconds(1000));
   });
 
   if (!aos::configuration::MultiNode(config_msg_)) {
@@ -172,8 +172,8 @@ void Starter::Cleanup() {
   for (auto &application : applications_) {
     application.second.Terminate();
   }
-  cleanup_timer_->Setup(event_loop_.monotonic_now() +
-                        std::chrono::milliseconds(1500));
+  cleanup_timer_->Schedule(event_loop_.monotonic_now() +
+                           std::chrono::milliseconds(1500));
 }
 
 void Starter::OnSignal(signalfd_siginfo info) {

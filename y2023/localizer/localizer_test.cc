@@ -86,8 +86,8 @@ class LocalizerTest : public ::testing::Test {
         }
       });
       roborio_test_event_loop_->OnRun([timer, this]() {
-        timer->Setup(roborio_test_event_loop_->monotonic_now(),
-                     std::chrono::milliseconds(5));
+        timer->Schedule(roborio_test_event_loop_->monotonic_now(),
+                        std::chrono::milliseconds(5));
       });
     }
     {
@@ -168,8 +168,8 @@ class LocalizerTest : public ::testing::Test {
             builder.CheckOk(builder.Send(map_builder.Finish()));
           });
       camera_test_event_loop_->OnRun([timer, this]() {
-        timer->Setup(camera_test_event_loop_->monotonic_now(),
-                     std::chrono::milliseconds(50));
+        timer->Schedule(camera_test_event_loop_->monotonic_now(),
+                        std::chrono::milliseconds(50));
       });
     }
 
@@ -203,7 +203,7 @@ class LocalizerTest : public ::testing::Test {
     localizer_control_x_ = x;
     localizer_control_y_ = y;
     localizer_control_theta_ = theta;
-    localizer_control_send_timer_->Setup(
+    localizer_control_send_timer_->Schedule(
         roborio_test_event_loop_->monotonic_now());
   }
   ::testing::AssertionResult IsNear(double expected, double actual,

@@ -897,8 +897,8 @@ EventLoopLocalizer::EventLoopLocalizer(
     }
   });
   event_loop_->OnRun([this, superstructure_timer]() {
-    superstructure_timer->Setup(event_loop_->monotonic_now(),
-                                std::chrono::milliseconds(20));
+    superstructure_timer->Schedule(event_loop_->monotonic_now(),
+                                   std::chrono::milliseconds(20));
   });
 
   for (size_t camera_index = 0; camera_index < kPisToUse.size();
@@ -949,8 +949,8 @@ EventLoopLocalizer::EventLoopLocalizer(
     }
   });
   event_loop_->OnRun([this, estimate_timer]() {
-    estimate_timer->Setup(event_loop_->monotonic_now(),
-                          std::chrono::milliseconds(100));
+    estimate_timer->Schedule(event_loop_->monotonic_now(),
+                             std::chrono::milliseconds(100));
   });
 }
 

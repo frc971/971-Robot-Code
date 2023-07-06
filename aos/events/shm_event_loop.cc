@@ -588,8 +588,8 @@ class ShmTimerHandler final : public TimerHandler {
     disabled_ = false;
     const auto monotonic_now = Call(monotonic_clock::now, base_);
     if (event_.valid()) {
-      // If someone called Setup inside Call, rescheduling is already taken care
-      // of.  Bail.
+      // If someone called Schedule inside Call, rescheduling is already taken
+      // care of. Bail.
       return;
     }
     if (disabled_) {
@@ -618,8 +618,8 @@ class ShmTimerHandler final : public TimerHandler {
     }
   }
 
-  void Setup(monotonic_clock::time_point base,
-             monotonic_clock::duration repeat_offset) override {
+  void Schedule(monotonic_clock::time_point base,
+                monotonic_clock::duration repeat_offset) override {
     shm_event_loop_->CheckCurrentThread();
     if (event_.valid()) {
       shm_event_loop_->RemoveEvent(&event_);

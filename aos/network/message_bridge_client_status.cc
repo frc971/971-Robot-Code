@@ -67,8 +67,8 @@ MessageBridgeClientStatus::MessageBridgeClientStatus(aos::EventLoop *event_loop)
   statistics_timer_->set_name("statistics");
   event_loop_->OnRun([this]() {
     if (send_) {
-      statistics_timer_->Setup(event_loop_->monotonic_now() + kStatisticsPeriod,
-                               kStatisticsPeriod);
+      statistics_timer_->Schedule(
+          event_loop_->monotonic_now() + kStatisticsPeriod, kStatisticsPeriod);
     }
   });
 }
@@ -230,8 +230,8 @@ void MessageBridgeClientStatus::DisableStatistics(bool destroy_sender) {
 void MessageBridgeClientStatus::EnableStatistics() {
   CHECK(sender_.valid());
   send_ = true;
-  statistics_timer_->Setup(event_loop_->monotonic_now() + kStatisticsPeriod,
-                           kStatisticsPeriod);
+  statistics_timer_->Schedule(event_loop_->monotonic_now() + kStatisticsPeriod,
+                              kStatisticsPeriod);
 }
 
 }  // namespace message_bridge

@@ -47,8 +47,8 @@ TEST_F(SubprocessTest, CaptureOutputs) {
   event_loop.OnRun([&event_loop, exit_timer]() {
     // Note: we are using the backup poll in this test to capture SIGCHLD.  This
     // runs at 1 hz, so make sure we let it run at least once.
-    exit_timer->Setup(event_loop.monotonic_now() +
-                      std::chrono::milliseconds(1500));
+    exit_timer->Schedule(event_loop.monotonic_now() +
+                         std::chrono::milliseconds(1500));
   });
 
   event_loop.Run();
@@ -90,7 +90,7 @@ TEST_F(SubprocessTest, CaptureStderr) {
   // Note: we are using the backup poll in this test to capture SIGCHLD.  This
   // runs at 1 hz, so make sure we let it run at least once.
   event_loop.AddTimer([&event_loop]() { event_loop.Exit(); })
-      ->Setup(event_loop.monotonic_now() + std::chrono::milliseconds(1500));
+      ->Schedule(event_loop.monotonic_now() + std::chrono::milliseconds(1500));
 
   event_loop.Run();
 

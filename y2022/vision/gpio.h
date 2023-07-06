@@ -332,13 +332,13 @@ class GPIOSWPWMControl {
           // If the leds are currently off, turn them on for duty_cycle % of
           // period If they are currently on, turn them off for 1 -
           // duty_cycle % of period
-          pwm_timer_->Setup(
+          pwm_timer_->Schedule(
               event_loop_->monotonic_now() +
               std::chrono::microseconds(leds_on_ ? (period_us - on_time_us)
                                                  : on_time_us));
           leds_on_ = !leds_on_;
         })) {
-    pwm_timer_->Setup(event_loop_->monotonic_now());
+    pwm_timer_->Schedule(event_loop_->monotonic_now());
   };
 
   void set_duty_cycle(double duty_cycle) { duty_cycle_ = duty_cycle; }

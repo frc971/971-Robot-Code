@@ -605,7 +605,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     test_event_loop_
         ->AddTimer(
             [this, velocity_finisher] { finisher_goal_ = velocity_finisher; })
-        ->Setup(test_event_loop_->monotonic_now() + time_offset);
+        ->Schedule(test_event_loop_->monotonic_now() + time_offset);
   }
 
   // Simulates the friction of a ball in the flywheel
@@ -617,12 +617,12 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
           superstructure_plant_.set_finisher_voltage_offset(voltage_offset);
           ball_in_finisher_ = ball_in_finisher;
         })
-        ->Setup(test_event_loop_->monotonic_now() + time_offset);
+        ->Schedule(test_event_loop_->monotonic_now() + time_offset);
     test_event_loop_
         ->AddTimer(
             [this] { superstructure_plant_.set_finisher_voltage_offset(0); })
-        ->Setup(test_event_loop_->monotonic_now() + time_offset +
-                chrono::seconds(1));
+        ->Schedule(test_event_loop_->monotonic_now() + time_offset +
+                   chrono::seconds(1));
   }
 
   const aos::Node *const roborio_;
@@ -878,7 +878,7 @@ TEST_F(SuperstructureTest, SpinUp) {
         EXPECT_TRUE((subsystems_not_ready->Get(0) == Subsystem::ACCELERATOR) !=
                     (subsystems_not_ready->Get(1) == Subsystem::ACCELERATOR));
       })
-      ->Setup(test_event_loop_->monotonic_now() + chrono::milliseconds(1));
+      ->Schedule(test_event_loop_->monotonic_now() + chrono::milliseconds(1));
 
   // Give it a lot of time to get there.
   RunFor(chrono::seconds(8));

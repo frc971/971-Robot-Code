@@ -87,7 +87,7 @@ being output.
 
 Using the monotonic clock to schedule a timer for 1 second from now:
 ```cpp
-  timer_->Setup(event_loop_->monotonic_now() + std::chrono::seconds(1));
+  timer_->Schedule(event_loop_->monotonic_now() + std::chrono::seconds(1));
 ```
 
 Using the realtime clock to timestamp a debug file:
@@ -204,8 +204,8 @@ event_loop_->MakeWatcher(
       HandlePong(pong);
       // Will always get scheduled for the same time, regardless of how long
       // HandlePong() takes.
-      delay_timer->Setup(event_loop_->context().monotonic_event_time +
-                         std::chrono::seconds(1));
+      delay_timer->Schedule(event_loop_->context().monotonic_event_time +
+                            std::chrono::seconds(1));
     });
 ```
 
@@ -215,9 +215,10 @@ event_loop_->MakeWatcher(
 Timers allow events to be scheduled at some scheduled time. When you create a
 Timer via the `AddTimer` method on an `EventLoop`, you specify the function that
 will get called when the timer is triggered. In order to actually schedule an
-event on the timer you must call `Setup`. Calling `Setup` clears any existing
-state of the timer. You can either schedule a timer to be called once at a
-particular time in the future or schedule it to be called at a regular interval.
+event on the timer you must call `Schedule`. Calling `Schedule` clears any
+existing state of the timer. You can either schedule a timer to be called once
+at a particular time in the future or schedule it to be called at a regular
+interval.
 
 When scheduled for a periodic interval, the timer will skip "extra" cycles if
 the next trigger would occur in the past. I.e., if your next trigger is
@@ -243,7 +244,7 @@ Scheduling a timer to get called one second from now:
 
   // Later, when you decide you need to schedule the timer for one second from
   // now:
-  timer_handle_->Setup(event_loop_->monotonic_now() + std::chrono::seconds(1));
+  timer_handle_->Schedule(event_loop_->monotonic_now() + std::chrono::seconds(1));
 ```
 
 Scheduling a timer to get called one second after startup, and at 100Hz
@@ -253,7 +254,7 @@ thereafter.
   // In the constructor of your class:
   timer_handle_ = event_loop_->AddTimer([this]() { SomeMethod(); });
   event_loop_->OnRun([this]() {
-    timer_handle_->Setup(
+    timer_handle_->Schedule(
         event_loop_->monotonic_now() + std::chrono::seconds(1),
         std::chrono::milliseconds(10));
   });
@@ -267,7 +268,7 @@ Setting up a timer to call a method at 1 Hz until some condition is met:
   // In the constructor of your class:
   timer_handle_ = event_loop_->AddTimer([this]() { SomeMethod(); });
   event_loop_->OnRun([this]() {
-    timer_handle_->Setup(event_loop_->monotonic_now(), std::chrono::seconds(1));
+    timer_handle_->Schedule(event_loop_->monotonic_now(), std::chrono::seconds(1));
   });
 ...
 
@@ -289,11 +290,11 @@ from the [Event Loop Context](#event-loop-context):
   timer_handle_ = event_loop_->AddTimer([this]() { SendPing(); });
   // Accessing event_loop_->context() outside of an EventLoop handler is
   // unsupported.
-  //timer_handle_->Setup(event_loop_->context().monotonic_event_time);
+  //timer_handle_->Schedule(event_loop_->context().monotonic_event_time);
   event_loop_->OnRun([this]() {
       // The context *is* defined during the OnRun() handlers.
       // So far, this code is fine.
-      timer_handle_->Setup(event_loop_->context().monotonic_event_time);
+      timer_handle_->Schedule(event_loop_->context().monotonic_event_time);
 
       // Do some really long initialization (ideally, this would be done
       // *before* the OnRun(), but maybe it relies on the EventLoop being
@@ -305,7 +306,7 @@ from the [Event Loop Context](#event-loop-context):
 void Ping::SendPing() {
   LOG(INFO) << "Ping!";
   // This is (typically) bad!
-  timer_handle_->Setup(event_loop_->context().monotonic_event_time + std::chrono::seconds(1));
+  timer_handle_->Schedule(event_loop_->context().monotonic_event_time + std::chrono::seconds(1));
 }
 ```
 When the above code is run, if t=0sec during the `OnRun`, then the first handler
@@ -332,7 +333,7 @@ function at slightly less than your desired 1 Hz.
 
 There are situations where writing timers using the above patterns may make
 sense. But typically you should just use the second argument to the timer
-`Setup` call demonstrated earlier. Doing this means that in the same
+`Schedule` call demonstrated earlier. Doing this means that in the same
 situation with a 100 second delay, your timer callback will get called
 at t=0sec, t=101sec, t=102sec, and so on.
 
@@ -350,9 +351,9 @@ this this feature may also be provided for Timers.
 
 Phased Loops are useful when you want your timer callbacks to happen
 at the same intervals, regardless of what base time you used in
-your original `Setup` call. In the typical use-case with a regular Timer
+your original `Schedule` call. In the typical use-case with a regular Timer
 people will write something like
-`timer_handle_->Setup(event_loop_->monotonic_now(), period)`. But because
+`timer_handle_->Schedule(event_loop_->monotonic_now(), period)`. But because
 the `monotonic_now()` call defines the effective offset, and because the
 value of it is non-deterministic, the exact schedule of the resulting
 periodic calls is less predictable than with a Phased Loop. This
@@ -1178,10 +1179,10 @@ class Pong {
       std::this_thread::sleep_for(std::chrono::seconds(10));
       // Schedule delayed_timer_ for start + 5 seconds, which is currently ~5
       // seconds in the past.
-      delayed_timer_->Setup(start_time + std::chrono::seconds(5));
+      delayed_timer_->Schedule(start_time + std::chrono::seconds(5));
       // Next, insert early_timer_ ahead of delayed_timer_. It's callback will
       // get called first.
-      early_timer_->Setup(start_time);
+      early_timer_->Schedule(start_time);
     });
   }
 
@@ -1193,8 +1194,8 @@ class Pong {
     // Schedule our next callback for 1 second after our schedule callback time.
     // Note that when we are running behind schedule, this time may be in the
     // past.
-    early_timer_->Setup(event_loop_->context().monotonic_event_time +
-                        std::chrono::seconds(1));
+    early_timer_->Schedule(event_loop_->context().monotonic_event_time +
+                           std::chrono::seconds(1));
   }
   void DelayedTimerCallback() {
     LOG(INFO) << "Delayed Timer. Scheduled time of "

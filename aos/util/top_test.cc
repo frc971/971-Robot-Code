@@ -63,7 +63,7 @@ TEST_F(TopTest, QuerySingleProcess) {
   Top top(&event_loop_);
   top.set_track_pids({pid});
   event_loop_.AddTimer([this]() { event_loop_.Exit(); })
-      ->Setup(event_loop_.monotonic_now() + std::chrono::seconds(2));
+      ->Schedule(event_loop_.monotonic_now() + std::chrono::seconds(2));
   event_loop_.Run();
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
@@ -111,7 +111,7 @@ TEST_F(TopTest, TopProcesses) {
   Top top(&event_loop_);
   top.set_track_top_processes(true);
   event_loop_.AddTimer([this]() { event_loop_.Exit(); })
-      ->Setup(event_loop_.monotonic_now() + std::chrono::seconds(2));
+      ->Schedule(event_loop_.monotonic_now() + std::chrono::seconds(2));
   event_loop_.SkipTimingReport();
   event_loop_.SkipAosLog();
   event_loop_.Run();
@@ -155,7 +155,7 @@ TEST_F(TopTest, AllTopProcesses) {
   Top top(&event_loop_);
   top.set_track_top_processes(true);
   event_loop_.AddTimer([this]() { event_loop_.Exit(); })
-      ->Setup(event_loop_.monotonic_now() + std::chrono::seconds(2));
+      ->Schedule(event_loop_.monotonic_now() + std::chrono::seconds(2));
   event_loop_.Run();
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);

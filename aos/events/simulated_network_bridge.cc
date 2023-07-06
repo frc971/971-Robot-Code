@@ -155,7 +155,7 @@ class RawMessageDelayer {
     if (timer_) {
       server_connection_->mutate_sent_packets(
           server_connection_->sent_packets() + 1);
-      timer_->Setup(monotonic_delivered_time);
+      timer_->Schedule(monotonic_delivered_time);
       timer_scheduled_ = true;
     } else {
       server_connection_->mutate_dropped_packets(
@@ -194,7 +194,7 @@ class RawMessageDelayer {
     if (timer_) {
       server_connection_->mutate_sent_packets(
           server_connection_->sent_packets() + 1);
-      timer_->Setup(monotonic_delivered_time);
+      timer_->Schedule(monotonic_delivered_time);
       timer_scheduled_ = true;
     } else {
       server_connection_->mutate_dropped_packets(
@@ -328,7 +328,7 @@ class RawMessageDelayer {
 
     if (scheduled_time_ !=
         remote_timestamps_.front().monotonic_timestamp_time) {
-      timestamp_timer_->Setup(
+      timestamp_timer_->Schedule(
           remote_timestamps_.front().monotonic_timestamp_time);
       scheduled_time_ = remote_timestamps_.front().monotonic_timestamp_time;
       return;

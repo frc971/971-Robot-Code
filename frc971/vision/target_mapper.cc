@@ -367,7 +367,7 @@ void TargetMapper::BuildTargetPoseOptimizationProblem(
 
 std::unique_ptr<ceres::CostFunction>
 TargetMapper::BuildMapFittingOptimizationProblem(ceres::Problem *problem) {
-  // Setup robot visualization
+  // Set up robot visualization.
   vis_robot_.ClearImage();
   constexpr int kImageWidth = 1280;
   constexpr double kFocalLength = 500.0;

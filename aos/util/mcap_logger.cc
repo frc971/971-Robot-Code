@@ -122,7 +122,7 @@ McapLogger::McapLogger(EventLoop *event_loop, const std::string &output_path,
       canonical_channels_(canonical_channels),
       compression_(compression),
       configuration_channel_([]() {
-        // Setup a fake Channel for providing the configuration in the MCAP
+        // Set up a fake Channel for providing the configuration in the MCAP
         // file. This is included for convenience so that consumers of the MCAP
         // file can actually dereference things like the channel indices in AOS
         // timing reports.

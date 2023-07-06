@@ -47,8 +47,9 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
   set_max_drivetrain_voltage(12.0);
   replan_timer_ = event_loop->AddTimer([this]() { Replan(); });
   event_loop->OnRun([this, event_loop]() {
-    replan_timer_->Setup(event_loop->monotonic_now());
-    button_poll_->Setup(event_loop->monotonic_now(), chrono::milliseconds(50));
+    replan_timer_->Schedule(event_loop->monotonic_now());
+    button_poll_->Schedule(event_loop->monotonic_now(),
+                           chrono::milliseconds(50));
   });
 
   button_poll_ = event_loop->AddTimer([this]() {
@@ -67,12 +68,12 @@ AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
         is_planned_ = false;
         // Only kick the planning out by 2 seconds. If we end up enabled in that
         // second, then we will kick it out further based on the code below.
-        replan_timer_->Setup(now + std::chrono::seconds(2));
+        replan_timer_->Schedule(now + std::chrono::seconds(2));
       }
       if (joystick_state_fetcher_->enabled()) {
         if (!is_planned_) {
           // Only replan once we've been disabled for 5 seconds.
-          replan_timer_->Setup(now + std::chrono::seconds(5));
+          replan_timer_->Schedule(now + std::chrono::seconds(5));
         }
       }
     }

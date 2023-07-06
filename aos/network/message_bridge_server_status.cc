@@ -131,8 +131,8 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
       event_loop_->node()->name()->string_view(), "_server_statistics"));
   event_loop_->OnRun([this]() {
     if (send_) {
-      statistics_timer_->Setup(event_loop_->monotonic_now() + kPingPeriod,
-                               kPingPeriod);
+      statistics_timer_->Schedule(event_loop_->monotonic_now() + kPingPeriod,
+                                  kPingPeriod);
     }
   });
 }
@@ -433,8 +433,8 @@ void MessageBridgeServerStatus::EnableStatistics() {
   send_ = true;
   CHECK(sender_.valid());
   CHECK(timestamp_sender_.valid());
-  statistics_timer_->Setup(event_loop_->monotonic_now() + kPingPeriod,
-                           kPingPeriod);
+  statistics_timer_->Schedule(event_loop_->monotonic_now() + kPingPeriod,
+                              kPingPeriod);
 }
 
 }  // namespace message_bridge

@@ -25,8 +25,8 @@ Ping::Ping(EventLoop *event_loop, std::string_view channel_name)
   }
 
   event_loop_->OnRun([this]() {
-    timer_handle_->Setup(event_loop_->monotonic_now(),
-                         chrono::milliseconds(FLAGS_sleep_ms));
+    timer_handle_->Schedule(event_loop_->monotonic_now(),
+                            chrono::milliseconds(FLAGS_sleep_ms));
   });
 
   event_loop_->SetRuntimeRealtimePriority(5);

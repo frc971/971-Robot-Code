@@ -107,8 +107,8 @@ TEST_F(LoopOutputHandlerTest, WatchdogTest) {
 
   // Kick off the ping timer handler.
   test_event_loop_->OnRun([this, &timer_handle]() {
-    timer_handle->Setup(test_event_loop_->monotonic_now(),
-                        chrono::milliseconds(5));
+    timer_handle->Schedule(test_event_loop_->monotonic_now(),
+                           chrono::milliseconds(5));
   });
 
   event_loop_factory_.RunFor(chrono::seconds(2));

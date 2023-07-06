@@ -178,8 +178,8 @@ void GlibMainLoop::BeforeWait() {
   if (timeout_ms == -1) {
     timeout_timer_->Disable();
   } else {
-    timeout_timer_->Setup(event_loop_->monotonic_now() +
-                          std::chrono::milliseconds(timeout_ms));
+    timeout_timer_->Schedule(event_loop_->monotonic_now() +
+                             std::chrono::milliseconds(timeout_ms));
   }
 }
 

@@ -30,7 +30,7 @@ class LoopOutputHandler {
     // TODO(austin): Name thread.
     event_loop_->MakeWatcher(name, [this](const T &t) {
       // Push the watchdog out a bit further.
-      timer_handler_->Setup(event_loop_->monotonic_now() + timeout_);
+      timer_handler_->Schedule(event_loop_->monotonic_now() + timeout_);
       Write(t);
     });
 
@@ -38,7 +38,7 @@ class LoopOutputHandler {
     timer_handler_ = event_loop_->AddTimer([this]() { Stop(); });
 
     event_loop_->OnRun([this]() {
-      timer_handler_->Setup(event_loop_->monotonic_now() + timeout_);
+      timer_handler_->Schedule(event_loop_->monotonic_now() + timeout_);
     });
   }
 

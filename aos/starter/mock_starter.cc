@@ -59,7 +59,7 @@ MockStarter::MockStarter(aos::EventLoop *event_loop)
   }
 
   event_loop_->OnRun([this, send_timer]() {
-    send_timer->Setup(event_loop_->monotonic_now(), std::chrono::seconds(1));
+    send_timer->Schedule(event_loop_->monotonic_now(), std::chrono::seconds(1));
 
     for (const aos::Application *application :
          *event_loop_->configuration()->applications()) {

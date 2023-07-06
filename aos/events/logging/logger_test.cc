@@ -434,8 +434,8 @@ TEST_F(LoggerTest, ManyMessages) {
 
     // 100 ms / 0.05 ms -> 2000 messages.  Should be enough to crash it.
     ping_spammer_event_loop->OnRun([&ping_spammer_event_loop, timer_handler]() {
-      timer_handler->Setup(ping_spammer_event_loop->monotonic_now(),
-                           chrono::microseconds(50));
+      timer_handler->Schedule(ping_spammer_event_loop->monotonic_now(),
+                              chrono::microseconds(50));
     });
 
     Logger logger(logger_event_loop.get());
@@ -496,7 +496,7 @@ TEST(SingleNodeLoggerNoFixtureTest, ReadTooFast) {
 
     ping_spammer_event_loop->OnRun(
         [&ping_spammer_event_loop, kSendPeriod, timer_handler]() {
-          timer_handler->Setup(
+          timer_handler->Schedule(
               ping_spammer_event_loop->monotonic_now() + kSendPeriod / 2,
               kSendPeriod);
         });

@@ -297,7 +297,8 @@ class CANSensorReader {
     timer_handler_->set_name("CANSensorReader Loop");
 
     event_loop->OnRun([this]() {
-      timer_handler_->Setup(event_loop_->monotonic_now(), 1 / kCANUpdateFreqHz);
+      timer_handler_->Schedule(event_loop_->monotonic_now(),
+                               1 / kCANUpdateFreqHz);
     });
   }
 
@@ -987,7 +988,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     AddLoop(&sensor_reader_event_loop);
 
     // Thread 5.
-    // Setup CAN.
+    // Set up CAN.
     if (!FLAGS_ctre_diag_server) {
       c_Phoenix_Diagnostics_SetSecondsToStart(-1);
       c_Phoenix_Diagnostics_Dispose();
@@ -1022,7 +1023,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     AddLoop(&can_output_event_loop);
 
     // Thread 6
-    // Setup superstructure output
+    // Set up superstructure output.
     ::aos::ShmEventLoop output_event_loop(&config.message());
     output_event_loop.set_name("PWMOutputWriter");
     SuperstructureWriter superstructure_writer(&output_event_loop);
@@ -1039,7 +1040,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     AddLoop(&output_event_loop);
 
     // Thread 7
-    // Setup led_indicator
+    // Set up led_indicator.
     ::aos::ShmEventLoop led_indicator_event_loop(&config.message());
     led_indicator_event_loop.set_name("LedIndicator");
     control_loops::superstructure::LedIndicator led_indicator(

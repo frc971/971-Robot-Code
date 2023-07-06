@@ -52,18 +52,18 @@ TEST_F(DynamicLoggingTest, TestVLog) {
         CHECK_EQ(message.Send(builder.Finish()), RawSender::Error::kOk);
         --log_level;
         if (log_level >= 0) {
-          timer_handler->Setup(event_loop_send_->monotonic_now() +
-                               chrono::microseconds(100));
+          timer_handler->Schedule(event_loop_send_->monotonic_now() +
+                                  chrono::microseconds(100));
         }
       });
-  timer_handler->Setup(event_loop_send_->monotonic_now() +
-                       chrono::microseconds(50));
+  timer_handler->Schedule(event_loop_send_->monotonic_now() +
+                          chrono::microseconds(50));
 
   // VLOG(1) at t=0us, t=100us, t=200us
   aos::TimerHandler *vlog_timer_handler =
       event_loop_main_->AddTimer([]() { VLOG(1) << "VLOG 1"; });
-  vlog_timer_handler->Setup(event_loop_main_->monotonic_now(),
-                            chrono::microseconds(100));
+  vlog_timer_handler->Schedule(event_loop_main_->monotonic_now(),
+                               chrono::microseconds(100));
 
   DynamicLogging dynamic_logging(event_loop_main_.get());
 

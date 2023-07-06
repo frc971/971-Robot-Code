@@ -23,8 +23,8 @@ class ImageDecimator {
       }
     });
     event_loop->OnRun([event_loop, timer]() {
-      timer->Setup(event_loop->monotonic_now(),
-                   std::chrono::milliseconds(1000));
+      timer->Schedule(event_loop->monotonic_now(),
+                      std::chrono::milliseconds(1000));
     });
   }
 

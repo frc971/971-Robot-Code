@@ -65,7 +65,8 @@ WebsocketHandler::WebsocketHandler(::seasocks::Server *server,
   });
 
   event_loop_->OnRun([this, timer]() {
-    timer->Setup(event_loop_->monotonic_now(), std::chrono::milliseconds(100));
+    timer->Schedule(event_loop_->monotonic_now(),
+                    std::chrono::milliseconds(100));
   });
 }
 
@@ -189,7 +190,8 @@ WebProxy::WebProxy(aos::EventLoop *event_loop, aos::internal::EPoll *epoll,
     });
 
     event_loop->OnRun([timer, event_loop]() {
-      timer->Setup(event_loop->monotonic_now(), std::chrono::milliseconds(10));
+      timer->Schedule(event_loop->monotonic_now(),
+                      std::chrono::milliseconds(10));
     });
   }
 }
@@ -237,7 +239,7 @@ void Subscriber::RunIteration(bool fetch_new) {
           fbb.Finish(message_offset);
 
           // Now, the flatbuffer is built from the back to the front.  So any
-          // extra memory will be at the front.  Setup the end and start
+          // extra memory will be at the front.  Set up the end and start
           // pointers on the mbuf.
           mbuf_set_end(mbuffer, packet_size);
           mbuf_set_pos(mbuffer, packet_size - fbb.GetSize());

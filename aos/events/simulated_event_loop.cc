@@ -478,8 +478,8 @@ class SimulatedTimerHandler : public TimerHandler,
                                  ::std::function<void()> fn);
   ~SimulatedTimerHandler() { Disable(); }
 
-  void Setup(monotonic_clock::time_point base,
-             monotonic_clock::duration repeat_offset) override;
+  void Schedule(monotonic_clock::time_point base,
+                monotonic_clock::duration repeat_offset) override;
 
   void HandleEvent() noexcept;
 
@@ -1155,8 +1155,8 @@ SimulatedTimerHandler::SimulatedTimerHandler(
       scheduler_(scheduler),
       token_(scheduler_->InvalidToken()) {}
 
-void SimulatedTimerHandler::Setup(monotonic_clock::time_point base,
-                                  monotonic_clock::duration repeat_offset) {
+void SimulatedTimerHandler::Schedule(monotonic_clock::time_point base,
+                                     monotonic_clock::duration repeat_offset) {
   CHECK_GE(base, monotonic_clock::epoch());
   // The allocations in here are due to infrastructure and don't count in the no
   // mallocs in RT code.

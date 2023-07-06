@@ -603,7 +603,7 @@ TEST_F(LocalizedDrivetrainTest, FetchersHandleTimeGap) {
   event_loop_factory()->set_network_delay(std::chrono::nanoseconds(1));
   test_event_loop_
       ->AddTimer([this]() { drivetrain_plant_.set_send_messages(false); })
-      ->Setup(test_event_loop_->monotonic_now());
+      ->Schedule(test_event_loop_->monotonic_now());
   test_event_loop_->AddPhasedLoop(
       [this](int) {
         auto builder = camera_sender_.MakeBuilder();
@@ -617,7 +617,7 @@ TEST_F(LocalizedDrivetrainTest, FetchersHandleTimeGap) {
         drivetrain_plant_.set_send_messages(true);
         SimulateSensorReset();
       })
-      ->Setup(test_event_loop_->monotonic_now() + std::chrono::seconds(10));
+      ->Schedule(test_event_loop_->monotonic_now() + std::chrono::seconds(10));
 
   RunFor(chrono::seconds(20));
 }

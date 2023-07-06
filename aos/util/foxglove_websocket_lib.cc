@@ -154,7 +154,7 @@ FoxgloveWebsocketServer::FoxgloveWebsocketServer(
   });
 
   event_loop_->OnRun([timer, this]() {
-    timer->Setup(event_loop_->monotonic_now(), kPollPeriod);
+    timer->Schedule(event_loop_->monotonic_now(), kPollPeriod);
   });
 }
 FoxgloveWebsocketServer::~FoxgloveWebsocketServer() { server_.stop(); }

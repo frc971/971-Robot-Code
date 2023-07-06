@@ -8,8 +8,8 @@ ClockPublisher::ClockPublisher(aos::SimulatedEventLoopFactory *factory,
   aos::TimerHandler *timer_handler =
       event_loop->AddTimer([this]() { SendTimepoints(); });
   event_loop->OnRun([timer_handler, event_loop]() {
-    timer_handler->Setup(event_loop->context().monotonic_event_time,
-                         std::chrono::seconds(1));
+    timer_handler->Schedule(event_loop->context().monotonic_event_time,
+                            std::chrono::seconds(1));
   });
 }
 

@@ -394,7 +394,8 @@ TEST_P(AbstractEventLoopTest, DoubleSendAfterStartup) {
   // Add a timer to actually quit.
   auto test_timer = loop2->AddTimer([this]() { this->Exit(); });
   loop2->OnRun([&test_timer, &loop2]() {
-    test_timer->Setup(loop2->monotonic_now(), ::std::chrono::milliseconds(100));
+    test_timer->Schedule(loop2->monotonic_now(),
+                         ::std::chrono::milliseconds(100));
   });
 
   Run();
@@ -433,7 +434,8 @@ TEST_P(AbstractEventLoopTest, FetchNext) {
   });
 
   loop2->OnRun([&test_timer, &loop2]() {
-    test_timer->Setup(loop2->monotonic_now(), ::std::chrono::milliseconds(100));
+    test_timer->Schedule(loop2->monotonic_now(),
+                         ::std::chrono::milliseconds(100));
   });
 
   Run();
@@ -473,7 +475,8 @@ TEST_P(AbstractEventLoopTest, FetchNextAfterSend) {
   });
 
   loop2->OnRun([&test_timer, &loop2]() {
-    test_timer->Setup(loop2->monotonic_now(), ::std::chrono::milliseconds(100));
+    test_timer->Schedule(loop2->monotonic_now(),
+                         ::std::chrono::milliseconds(100));
   });
 
   Run();
@@ -518,7 +521,8 @@ TEST_P(AbstractEventLoopTest, FetchDataFromBeforeCreation) {
   });
 
   loop2->OnRun([&test_timer, &loop2]() {
-    test_timer->Setup(loop2->monotonic_now(), ::std::chrono::milliseconds(100));
+    test_timer->Schedule(loop2->monotonic_now(),
+                         ::std::chrono::milliseconds(100));
   });
 
   Run();
@@ -537,7 +541,7 @@ TEST_P(AbstractEventLoopTest, CheckTimerDisabled) {
 
   loop->OnRun([&loop, timer]() {
     EXPECT_TRUE(timer->IsDisabled());
-    timer->Setup(loop->monotonic_now() + chrono::milliseconds(100));
+    timer->Schedule(loop->monotonic_now() + chrono::milliseconds(100));
     EXPECT_FALSE(timer->IsDisabled());
   });
 
@@ -556,11 +560,11 @@ TEST_P(AbstractEventLoopTest, CheckTimerRunInPastDisabled) {
   });
 
   auto timer = loop->AddTimer([&loop, timer2]() {
-    timer2->Setup(loop->monotonic_now() - chrono::nanoseconds(1));
+    timer2->Schedule(loop->monotonic_now() - chrono::nanoseconds(1));
   });
 
   loop->OnRun([&loop, timer]() {
-    timer->Setup(loop->monotonic_now() + chrono::seconds(1));
+    timer->Schedule(loop->monotonic_now() + chrono::seconds(1));
     EXPECT_FALSE(timer->IsDisabled());
   });
 
@@ -583,8 +587,8 @@ TEST_P(AbstractEventLoopTest, CheckTimerRepeatOnCountDisabled) {
   });
 
   loop->OnRun([&loop, timer]() {
-    timer->Setup(loop->monotonic_now() + chrono::seconds(1),
-                 chrono::seconds(1));
+    timer->Schedule(loop->monotonic_now() + chrono::seconds(1),
+                    chrono::seconds(1));
     EXPECT_FALSE(timer->IsDisabled());
   });
   Run();
@@ -610,8 +614,8 @@ TEST_P(AbstractEventLoopTest, CheckTimerRepeatTillEndTimerDisabled) {
   auto timer = loop->AddTimer([]() { LOG(INFO) << "timer called"; });
 
   loop->OnRun([&loop, timer]() {
-    timer->Setup(loop->monotonic_now() + chrono::seconds(1),
-                 chrono::seconds(1));
+    timer->Schedule(loop->monotonic_now() + chrono::seconds(1),
+                    chrono::seconds(1));
     EXPECT_FALSE(timer->IsDisabled());
   });
 
@@ -684,7 +688,8 @@ TEST_P(AbstractEventLoopTest, FetchAndFetchNextTogether) {
   });
 
   loop2->OnRun([&test_timer, &loop2]() {
-    test_timer->Setup(loop2->monotonic_now(), ::std::chrono::milliseconds(100));
+    test_timer->Schedule(loop2->monotonic_now(),
+                         ::std::chrono::milliseconds(100));
   });
 
   Run();
@@ -855,8 +860,9 @@ TEST_P(AbstractEventLoopDeathTest, InvalidChannelName) {
 TEST_P(AbstractEventLoopDeathTest, NegativeTimeTimer) {
   auto loop = Make();
   TimerHandler *time = loop->AddTimer([]() {});
-  EXPECT_DEATH(time->Setup(monotonic_clock::epoch() - std::chrono::seconds(1)),
-               "-1.000");
+  EXPECT_DEATH(
+      time->Schedule(monotonic_clock::epoch() - std::chrono::seconds(1)),
+      "-1.000");
 }
 
 // Verify that registering a watcher twice for "/test" fails.
@@ -1132,7 +1138,7 @@ TEST_P(AbstractEventLoopTest, AOSLogTimer) {
     this->Exit();
   });
 
-  loop2->OnRun([&]() { test_timer->Setup(loop2->monotonic_now()); });
+  loop2->OnRun([&]() { test_timer->Schedule(loop2->monotonic_now()); });
 
   Run();
   EXPECT_TRUE(fetcher.Fetch());
@@ -1176,7 +1182,7 @@ TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
 
   const monotonic_clock::time_point start_time = loop->monotonic_now();
   // TODO(austin): This should be an error...  Should be done in OnRun only.
-  test_timer->Setup(start_time + chrono::seconds(1), chrono::seconds(1));
+  test_timer->Schedule(start_time + chrono::seconds(1), chrono::seconds(1));
 
   Run();
 
@@ -1278,13 +1284,13 @@ TEST_P(AbstractEventLoopTest, TimerChangeParameters) {
 
   monotonic_clock::time_point s;
   auto modifier_timer = loop->AddTimer([&test_timer, &s]() {
-    test_timer->Setup(s + chrono::milliseconds(1750),
-                      chrono::milliseconds(600));
+    test_timer->Schedule(s + chrono::milliseconds(1750),
+                         chrono::milliseconds(600));
   });
 
   s = loop->monotonic_now();
-  test_timer->Setup(s, chrono::milliseconds(500));
-  modifier_timer->Setup(s + chrono::milliseconds(1250));
+  test_timer->Schedule(s, chrono::milliseconds(500));
+  modifier_timer->Schedule(s + chrono::milliseconds(1250));
   EndEventLoop(loop.get(), chrono::milliseconds(3950));
   Run();
 
@@ -1310,8 +1316,8 @@ TEST_P(AbstractEventLoopTest, TimerDisable) {
   auto ender_timer = loop->AddTimer([&test_timer]() { test_timer->Disable(); });
 
   monotonic_clock::time_point s = loop->monotonic_now();
-  test_timer->Setup(s, ::std::chrono::milliseconds(500));
-  ender_timer->Setup(s + ::std::chrono::milliseconds(1250));
+  test_timer->Schedule(s, ::std::chrono::milliseconds(500));
+  ender_timer->Schedule(s + ::std::chrono::milliseconds(1250));
   EndEventLoop(loop.get(), ::std::chrono::milliseconds(2000));
   Run();
 
@@ -1335,7 +1341,7 @@ TEST_P(AbstractEventLoopTest, TimerDisableSelf) {
     test_timer->Disable();
   });
 
-  test_timer->Setup(loop->monotonic_now(), ::std::chrono::milliseconds(20));
+  test_timer->Schedule(loop->monotonic_now(), ::std::chrono::milliseconds(20));
   EndEventLoop(loop.get(), ::std::chrono::milliseconds(80));
   Run();
 
@@ -1367,15 +1373,16 @@ TEST_P(AbstractEventLoopTest, TimerDisableOther) {
         const auto start = loop->monotonic_now();
 
         for (int i = 0; i < shuffle_events; ++i) {
-          loop->AddTimer([]() {})->Setup(start + std::chrono::milliseconds(10));
+          loop->AddTimer([]() {})->Schedule(start +
+                                            std::chrono::milliseconds(10));
         }
 
         if (setup_order) {
-          test_timer->Setup(start + ::std::chrono::milliseconds(20));
-          ender_timer->Setup(start + ::std::chrono::milliseconds(20));
+          test_timer->Schedule(start + ::std::chrono::milliseconds(20));
+          ender_timer->Schedule(start + ::std::chrono::milliseconds(20));
         } else {
-          ender_timer->Setup(start + ::std::chrono::milliseconds(20));
-          test_timer->Setup(start + ::std::chrono::milliseconds(20));
+          ender_timer->Schedule(start + ::std::chrono::milliseconds(20));
+          test_timer->Schedule(start + ::std::chrono::milliseconds(20));
         }
         EndEventLoop(loop.get(), ::std::chrono::milliseconds(40));
         Run();
@@ -1557,7 +1564,7 @@ TEST_P(AbstractEventLoopTest, MessageSendTime) {
     triggered = true;
   });
 
-  test_timer->Setup(loop1->monotonic_now() + ::std::chrono::seconds(1));
+  test_timer->Schedule(loop1->monotonic_now() + ::std::chrono::seconds(1));
 
   EndEventLoop(loop1.get(), ::std::chrono::seconds(2));
   Run();
@@ -1646,7 +1653,7 @@ TEST_P(AbstractEventLoopTest, MessageSendTimeNoArg) {
     triggered = true;
   });
 
-  test_timer->Setup(loop1->monotonic_now() + ::std::chrono::seconds(1));
+  test_timer->Schedule(loop1->monotonic_now() + ::std::chrono::seconds(1));
 
   EndEventLoop(loop1.get(), ::std::chrono::seconds(2));
   Run();
@@ -2011,7 +2018,7 @@ TEST_P(AbstractEventLoopTest, PhasedLoopRescheduleInPast) {
         EXPECT_EQ(count, expected_count);
         expected_times.push_back(loop1->context().monotonic_event_time);
 
-        manager_timer->Setup(loop1->context().monotonic_event_time);
+        manager_timer->Schedule(loop1->context().monotonic_event_time);
       },
       kInterval, kOffset);
   phased_loop->set_name("Test loop");
@@ -2056,7 +2063,7 @@ TEST_P(AbstractEventLoopTest, PhasedLoopRescheduleNow) {
         EXPECT_EQ(count, 1);
         expected_times.push_back(loop1->context().monotonic_event_time);
 
-        manager_timer->Setup(loop1->context().monotonic_event_time);
+        manager_timer->Schedule(loop1->context().monotonic_event_time);
       },
       kInterval, kOffset);
   phased_loop->set_name("Test loop");
@@ -2103,7 +2110,7 @@ TEST_P(AbstractEventLoopTest, PhasedLoopRescheduleFuture) {
         EXPECT_EQ(count, expected_count);
         expected_times.push_back(loop1->context().monotonic_event_time);
 
-        manager_timer->Setup(loop1->context().monotonic_event_time);
+        manager_timer->Schedule(loop1->context().monotonic_event_time);
       },
       kInterval, kOffset);
   phased_loop->set_name("Test loop");
@@ -2152,7 +2159,7 @@ TEST_P(AbstractEventLoopTest, PhasedLoopRescheduleWithLaterOffset) {
         EXPECT_EQ(1, count);
         expected_times.push_back(loop1->context().monotonic_event_time);
 
-        manager_timer->Setup(loop1->context().monotonic_event_time);
+        manager_timer->Schedule(loop1->context().monotonic_event_time);
       },
       kInterval, kOffset);
   phased_loop->set_name("Test loop");
@@ -2202,7 +2209,7 @@ TEST_P(AbstractEventLoopTest, PhasedLoopRescheduleWithEarlierOffset) {
         EXPECT_EQ(1, count);
         expected_times.push_back(loop1->context().monotonic_event_time);
 
-        manager_timer->Setup(loop1->context().monotonic_event_time);
+        manager_timer->Schedule(loop1->context().monotonic_event_time);
       },
       kInterval, kOffset);
   phased_loop->set_name("Test loop");
@@ -2258,7 +2265,7 @@ TEST_P(AbstractEventLoopTest, SenderTimingReport) {
   EndEventLoop(loop1.get(), chrono::milliseconds(2500));
 
   loop1->OnRun([&test_timer, &loop1]() {
-    test_timer->Setup(loop1->monotonic_now() + chrono::milliseconds(1500));
+    test_timer->Schedule(loop1->monotonic_now() + chrono::milliseconds(1500));
   });
 
   Run();
@@ -2482,7 +2489,7 @@ TEST_P(AbstractEventLoopTest, WatcherTimingReport) {
   EndEventLoop(loop1.get(), chrono::milliseconds(2500));
 
   loop1->OnRun([&test_timer, &loop1]() {
-    test_timer->Setup(loop1->monotonic_now() + chrono::milliseconds(1500));
+    test_timer->Schedule(loop1->monotonic_now() + chrono::milliseconds(1500));
   });
 
   Run();
@@ -2557,8 +2564,8 @@ TEST_P(AbstractEventLoopTest, FetcherTimingReport) {
   EndEventLoop(loop1.get(), chrono::milliseconds(2500));
 
   loop1->OnRun([test_timer, test_timer2, &loop1]() {
-    test_timer->Setup(loop1->monotonic_now() + chrono::milliseconds(1400));
-    test_timer2->Setup(loop1->monotonic_now() + chrono::milliseconds(1600));
+    test_timer->Schedule(loop1->monotonic_now() + chrono::milliseconds(1400));
+    test_timer2->Schedule(loop1->monotonic_now() + chrono::milliseconds(1600));
   });
 
   Run();
@@ -2888,7 +2895,8 @@ TEST_P(AbstractEventLoopTest, NonRealtimeEventLoopTimer) {
 
   loop1->OnRun([&test_timer, &loop1]() {
     CheckNotRealtime();
-    test_timer->Setup(loop1->monotonic_now(), ::std::chrono::milliseconds(100));
+    test_timer->Schedule(loop1->monotonic_now(),
+                         ::std::chrono::milliseconds(100));
   });
 
   Run();
@@ -2930,7 +2938,8 @@ TEST_P(AbstractEventLoopTest, RealtimeEventLoopTimer) {
 
   loop1->OnRun([&test_timer, &loop1]() {
     CheckRealtime();
-    test_timer->Setup(loop1->monotonic_now(), ::std::chrono::milliseconds(100));
+    test_timer->Schedule(loop1->monotonic_now(),
+                         ::std::chrono::milliseconds(100));
   });
 
   Run();
@@ -3240,7 +3249,7 @@ TEST_P(AbstractEventLoopTest, SendingMessagesTooFast) {
           event_loop->configuration()->channel_storage_duration()) -
       (kRepeatOffset * (queue_size / 2));
   event_loop->OnRun([&event_loop, &timer, &base_offset, &kRepeatOffset]() {
-    timer->Setup(event_loop->monotonic_now() + base_offset, kRepeatOffset);
+    timer->Schedule(event_loop->monotonic_now() + base_offset, kRepeatOffset);
   });
 
   Run();

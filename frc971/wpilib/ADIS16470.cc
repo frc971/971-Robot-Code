@@ -283,8 +283,8 @@ void ADIS16470::DoInitializeStep() {
       state_ = State::kWaitForReset;
       // Datasheet says it takes 193 ms to come out of reset, so give it some
       // margin on top of that.
-      initialize_timer_->Setup(event_loop_->monotonic_now() +
-                               chrono::milliseconds(250));
+      initialize_timer_->Schedule(event_loop_->monotonic_now() +
+                                  chrono::milliseconds(250));
     } break;
 
     case State::kWaitForReset: {

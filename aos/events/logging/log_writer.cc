@@ -328,8 +328,8 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
   // logged without ordering concerns.
   LogUntil(last_synchronized_time_);
 
-  timer_handler_->Setup(event_loop_->monotonic_now() + polling_period_,
-                        polling_period_);
+  timer_handler_->Schedule(event_loop_->monotonic_now() + polling_period_,
+                           polling_period_);
 }
 
 std::unique_ptr<LogNamer> Logger::RestartLogging(

@@ -34,7 +34,7 @@ CanLogger::CanLogger(aos::EventLoop *event_loop,
 
   aos::TimerHandler *timer_handler = event_loop->AddTimer([this]() { Poll(); });
   timer_handler->set_name("CAN logging Loop");
-  timer_handler->Setup(event_loop->monotonic_now(), kPollPeriod);
+  timer_handler->Schedule(event_loop->monotonic_now(), kPollPeriod);
 }
 
 void CanLogger::Poll() {

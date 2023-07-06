@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 
   if (FLAGS_monotonic_start_time > 0) {
     event_loop->AddTimer([&reader]() { reader.event_loop_factory()->Exit(); })
-        ->Setup(aos::monotonic_clock::time_point(
+        ->Schedule(aos::monotonic_clock::time_point(
             std::chrono::duration_cast<std::chrono::nanoseconds>(
                 std::chrono::duration<double>(FLAGS_monotonic_start_time))));
 
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 
   if (FLAGS_monotonic_end_time > 0) {
     event_loop->AddTimer([&web_proxy]() { web_proxy.StopRecording(); })
-        ->Setup(aos::monotonic_clock::time_point(
+        ->Schedule(aos::monotonic_clock::time_point(
             std::chrono::duration_cast<std::chrono::nanoseconds>(
                 std::chrono::duration<double>(FLAGS_monotonic_end_time))));
   }

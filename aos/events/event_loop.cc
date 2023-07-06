@@ -562,7 +562,7 @@ void EventLoop::MaybeScheduleTimingReports() {
     // Set it up to send once per second.
     timing_reports_timer->set_name("timing_reports");
     OnRun([this, timing_reports_timer]() {
-      timing_reports_timer->Setup(
+      timing_reports_timer->Schedule(
           monotonic_now() + std::chrono::milliseconds(FLAGS_timing_report_ms),
           std::chrono::milliseconds(FLAGS_timing_report_ms));
     });

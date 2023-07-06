@@ -29,7 +29,7 @@ class Plotter {
   // matplotlib-like interface
   // The basic pattern is:
   // 1) Call Figure()
-  // 2) Setup the lines, labels, etc. for the figure.
+  // 2) Set up the lines, labels, etc. for the figure.
   // 3) Repeat 1-2 however many times.
   // 4) Call Publish().
   // 5) Repeat 1-5 however many times.

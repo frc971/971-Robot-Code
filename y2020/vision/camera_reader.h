@@ -47,8 +47,9 @@ class CameraReader {
       matcher.train();
     }
 
-    event_loop->OnRun(
-        [this]() { read_image_timer_->Setup(event_loop_->monotonic_now()); });
+    event_loop->OnRun([this]() {
+      read_image_timer_->Schedule(event_loop_->monotonic_now());
+    });
   }
 
  private:

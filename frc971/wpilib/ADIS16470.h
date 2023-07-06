@@ -71,8 +71,8 @@ class ADIS16470 {
 
   void BeginInitialization() {
     state_ = State::kUninitialized;
-    initialize_timer_->Setup(event_loop_->monotonic_now() +
-                             std::chrono::milliseconds(25));
+    initialize_timer_->Schedule(event_loop_->monotonic_now() +
+                                std::chrono::milliseconds(25));
   }
 
   aos::EventLoop *const event_loop_;

@@ -31,7 +31,7 @@ CameraMonitor::CameraMonitor(aos::EventLoop *event_loop)
 }
 
 void CameraMonitor::SetImageTimeout() {
-  image_timeout_->Setup(event_loop_->context().monotonic_event_time +
-                        kImageTimeout);
+  image_timeout_->Schedule(event_loop_->context().monotonic_event_time +
+                           kImageTimeout);
 }
 }  // namespace y2023::vision
