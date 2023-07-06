@@ -20,6 +20,12 @@ MakeIntegralShooterPlantCoefficients() {
   U_max(0, 0) = 12.0;
   Eigen::Matrix<double, 1, 1> U_min;
   U_min(0, 0) = -12.0;
+  Eigen::Matrix<double, 1, 3> U_limit_coefficient;
+  U_limit_coefficient(0, 0) = 0.0;
+  U_limit_coefficient(0, 1) = 0.0;
+  U_limit_coefficient(0, 2) = 0.0;
+  Eigen::Matrix<double, 1, 1> U_limit_constant;
+  U_limit_constant(0, 0) = 12.0;
   Eigen::Matrix<double, 3, 3> A_continuous;
   A_continuous(0, 0) = 0.0;
   A_continuous(0, 1) = 1.0;
@@ -35,7 +41,8 @@ MakeIntegralShooterPlantCoefficients() {
   B_continuous(1, 0) = 443.75;
   B_continuous(2, 0) = 0.0;
   return StateFeedbackHybridPlantCoefficients<3, 1, 1>(
-      A_continuous, B_continuous, C, D, U_max, U_min, false);
+      A_continuous, B_continuous, C, D, U_max, U_min, U_limit_coefficient,
+      U_limit_constant, false);
 }
 
 StateFeedbackControllerCoefficients<3, 1, 1>
@@ -129,6 +136,8 @@ TEST(StateFeedbackLoopTest, UnequalSizes) {
       Eigen::Matrix<double, 7, 4>::Identity(),
       Eigen::Matrix<double, 4, 1>::Constant(1),
       Eigen::Matrix<double, 4, 1>::Constant(-1),
+      Eigen::Matrix<double, 4, 2>::Zero(),
+      Eigen::Matrix<double, 4, 1>::Constant(0),
       frc971::controls::kLoopFrequency, false);
 
   // Build a plant.

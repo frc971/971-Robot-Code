@@ -400,10 +400,28 @@ class ControlLoop(object):
             (plant_coefficient_type, self._name)
         ]
 
+        num_states = self.A.shape[0]
+        num_inputs = self.B.shape[1]
+        num_outputs = self.C.shape[0]
+
         ans.append(self._DumpMatrix('C', self.C, scalar_type))
         ans.append(self._DumpMatrix('D', self.D, scalar_type))
         ans.append(self._DumpMatrix('U_max', self.U_max, scalar_type))
         ans.append(self._DumpMatrix('U_min', self.U_min, scalar_type))
+
+        if not hasattr(self, 'U_limit_coefficient'):
+            self.U_limit_coefficient = numpy.matrix(
+                numpy.zeros((num_inputs, num_states)))
+
+        if not hasattr(self, 'U_limit_constant'):
+            self.U_limit_constant = self.U_max
+
+        ans.append(
+            self._DumpMatrix('U_limit_coefficient', self.U_limit_coefficient,
+                             scalar_type))
+        ans.append(
+            self._DumpMatrix('U_limit_constant', self.U_limit_constant,
+                             scalar_type))
 
         delayed_u_string = str(self.delayed_u)
         if plant_coefficient_type.startswith('StateFeedbackPlant'):
@@ -411,9 +429,10 @@ class ControlLoop(object):
             ans.append(self._DumpMatrix('B', self.B, scalar_type))
             ans.append('  const std::chrono::nanoseconds dt(%d);\n' %
                        (self.dt * 1e9))
-            ans.append('  return %s'
-                       '(A, B, C, D, U_max, U_min, dt, %s);\n' %
-                       (plant_coefficient_type, delayed_u_string))
+            ans.append(
+                '  return %s'
+                '(A, B, C, D, U_max, U_min, U_limit_coefficient, U_limit_constant, dt, %s);\n'
+                % (plant_coefficient_type, delayed_u_string))
         elif plant_coefficient_type.startswith('StateFeedbackHybridPlant'):
             ans.append(
                 self._DumpMatrix('A_continuous', self.A_continuous,
@@ -423,8 +442,8 @@ class ControlLoop(object):
                                  scalar_type))
             ans.append(
                 '  return %s'
-                '(A_continuous, B_continuous, C, D, U_max, U_min, %s);\n' %
-                (plant_coefficient_type, delayed_u_string))
+                '(A_continuous, B_continuous, C, D, U_max, U_min, U_limit_coefficient, U_limit_constant, %s);\n'
+                % (plant_coefficient_type, delayed_u_string))
         else:
             glog.fatal('Unsupported plant type %s', plant_coefficient_type)
 

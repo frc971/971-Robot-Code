@@ -9,7 +9,6 @@
 #include "Eigen/Dense"
 
 #include "aos/logging/logging.h"
-#include "frc971/control_loops/drivetrain/down_estimator.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
