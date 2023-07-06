@@ -7,6 +7,17 @@ prettier_bin.prettier_binary(
 )
 
 sh_binary(
+    name = "clang_format",
+    srcs = ["clang_format.sh"],
+    data = [
+        "@llvm_k8//:bin",
+    ],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
+sh_binary(
     name = "gofmt",
     srcs = ["gofmt.sh"],
     data = [
@@ -70,6 +81,7 @@ sh_binary(
     ],
     data = [
         ":buildifier",
+        ":clang_format",
         ":gofmt",
         ":prettier",
         ":rustfmt",

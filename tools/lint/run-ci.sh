@@ -23,6 +23,10 @@ if ((RUNNING_IN_CI == 1)); then
     export GOCACHE=/tmp/lint_go_cache
 fi
 
+clang_format() {
+    ./tools/lint/clang_format
+}
+
 gofmt() {
     ./tools/lint/gofmt
 }
@@ -110,6 +114,7 @@ git_status_is_clean() {
 
 # All the linters that we are going to run.
 readonly -a LINTERS=(
+    #clang_format
     gofmt
     gomod
     update_go_repos
