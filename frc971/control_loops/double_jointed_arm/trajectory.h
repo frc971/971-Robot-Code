@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Eigen/Dense"
+
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 
 namespace frc971 {
@@ -278,7 +279,6 @@ class Trajectory {
   }
 
   const Path &path() const { return *path_; }
-
 
  private:
   friend class testing::TrajectoryTest_IndicesForDistanceTest_Test;

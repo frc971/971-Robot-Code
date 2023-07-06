@@ -1,11 +1,11 @@
 // This file is designed to be compiled for Windows to run on the driver's
 // station. It forwards UDP packets to the pistol grip controller over USB.
 
+#include <errno.h>
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <errno.h>
 #include <string.h>
 
 #ifdef __WINNT__
@@ -14,8 +14,8 @@
 #define PRId8 "hhd"
 #define PRIx8 "hhx"
 #else
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #endif
 
 #include <string>

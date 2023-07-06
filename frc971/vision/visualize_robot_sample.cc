@@ -1,19 +1,18 @@
-#include "frc971/vision/visualize_robot.h"
-
-#include "aos/init.h"
-#include "aos/logging/logging.h"
-#include "glog/logging.h"
+#include <math.h>
 
 #include "Eigen/Dense"
-
-#include <math.h>
+#include "glog/logging.h"
 #include <opencv2/aruco.hpp>
 #include <opencv2/aruco/charuco.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+
+#include "aos/init.h"
+#include "aos/logging/logging.h"
 #include "aos/time/time.h"
+#include "frc971/vision/visualize_robot.h"
 
 namespace frc971 {
 namespace vision {

@@ -35,7 +35,7 @@ bool AnalogTriggerOutput::IsAnalogTrigger() const { return true; }
 
 int AnalogTriggerOutput::GetChannel() const { return m_trigger->GetIndex(); }
 
-AnalogTriggerOutput::AnalogTriggerOutput(const AnalogTrigger& trigger,
+AnalogTriggerOutput::AnalogTriggerOutput(const AnalogTrigger &trigger,
                                          AnalogTriggerType outputType)
     : m_trigger(&trigger), m_outputType(outputType) {
   HAL_Report(HALUsageReporting::kResourceType_AnalogTriggerOutput,

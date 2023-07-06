@@ -1,10 +1,10 @@
-#include "frc971/vision/foxglove_image_converter_lib.h"
+#include "gtest/gtest.h"
 
 #include "aos/events/simulated_event_loop.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
-#include "gtest/gtest.h"
+#include "frc971/vision/foxglove_image_converter_lib.h"
 
 DECLARE_int32(jpeg_quality);
 

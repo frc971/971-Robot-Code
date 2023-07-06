@@ -15,15 +15,16 @@
 #include <thread>
 
 #include "absl/strings/str_format.h"
+#include "flatbuffers/flatbuffers.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/events/glib_main_loop.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/network/web_proxy_generated.h"
 #include "aos/seasocks/seasocks_logger.h"
-#include "flatbuffers/flatbuffers.h"
 #include "frc971/vision/vision_generated.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 #include "internal/Embedded.h"
 #include "seasocks/Server.h"
 #include "seasocks/StringUtil.h"

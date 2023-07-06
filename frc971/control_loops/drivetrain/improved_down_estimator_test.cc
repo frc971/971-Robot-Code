@@ -1,14 +1,15 @@
 #include "frc971/control_loops/drivetrain/improved_down_estimator.h"
 
-#include <Eigen/Geometry>
 #include <random>
 
-#include "frc971/control_loops/quaternion_utils.h"
-#include "aos/testing/random_seed.h"
-#include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
-#include "frc971/control_loops/runge_kutta.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+#include <Eigen/Geometry>
+
+#include "aos/testing/random_seed.h"
+#include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
+#include "frc971/control_loops/quaternion_utils.h"
+#include "frc971/control_loops/runge_kutta.h"
 
 namespace frc971 {
 namespace control_loops {

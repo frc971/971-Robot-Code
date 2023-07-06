@@ -1,13 +1,14 @@
 #include <chrono>
 #include <memory>
 
+#include "gtest/gtest.h"
+
 #include "aos/events/logging/log_writer.h"
 #include "frc971/control_loops/capped_test_plant.h"
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/subsystem_simulator.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-#include "gtest/gtest.h"
 #include "y2023/constants/simulated_constants_sender.h"
 #include "y2023/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2023/control_loops/superstructure/roll/integral_roll_plant.h"

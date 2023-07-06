@@ -1,6 +1,7 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_Q_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_Q_H_
 #include <array>
+
 #include "aos/macros.h"
 
 namespace frc971 {

@@ -6,10 +6,11 @@
 #include <functional>
 #include <type_traits>
 
+#include "glog/logging.h"
+
 #include "aos/die.h"
 #include "aos/logging/context.h"
 #include "aos/logging/implementations.h"
-#include "glog/logging.h"
 
 namespace aos {
 namespace logging {

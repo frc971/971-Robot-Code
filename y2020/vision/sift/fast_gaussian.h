@@ -3,9 +3,10 @@
 
 #include <type_traits>
 
-#include <opencv2/core/mat.hpp>
-#include "HalideBuffer.h"
 #include "glog/logging.h"
+#include <opencv2/core/mat.hpp>
+
+#include "HalideBuffer.h"
 
 namespace frc971 {
 namespace vision {
@@ -39,6 +40,6 @@ void FastGaussianAndSubtract(const cv::Mat &source, cv::Mat *blurred,
                              cv::Mat *difference, double sigma);
 
 }  // namespace vision
-}  // namespace vision
+}  // namespace frc971
 
 #endif  // Y2020_VISION_SIFT_FAST_GAUSSIAN_H_

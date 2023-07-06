@@ -8,13 +8,13 @@
 #pragma once
 
 #include <hal/SPITypes.h>
-#include <wpi/deprecated.h>
 
 #include <cstdint>
 #include <memory>
 #include <span>
 
 #include "absl/types/span.h"
+#include <wpi/deprecated.h>
 
 namespace frc {
 

@@ -29,9 +29,7 @@ class ColumnZeroingEstimator {
 
   bool offset_ready() const { return offset_ready_; }
 
-  bool error() const {
-    return error_ || indexer_.error() || turret_.error();
-  }
+  bool error() const { return error_ || indexer_.error() || turret_.error(); }
 
   bool zeroed() const {
     return zeroed_ && indexer_.zeroed() && turret_.zeroed();
@@ -67,9 +65,9 @@ class ColumnZeroingEstimator {
   const double turret_zeroed_distance_;
 };
 
-}  // column
-}  // superstructure
-}  // control_loops
-}  // y2017
+}  // namespace column
+}  // namespace superstructure
+}  // namespace control_loops
+}  // namespace y2017
 
 #endif  // y2017_CONTROL_LOOPS_SUPERSTRUCTURE_COLUMN_H_

@@ -1,7 +1,6 @@
-#include "y2014_bot3/control_loops/rollers/rollers.h"
-
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "y2014_bot3/control_loops/rollers/rollers.h"
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

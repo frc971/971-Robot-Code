@@ -3,6 +3,7 @@
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
+
 #include "frc971/vision/calibration_accumulator.h"
 
 namespace frc971 {

@@ -2,9 +2,10 @@
 
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
+#include "glog/logging.h"
+
 #include "aos/realtime.h"
 #include "aos/time/time.h"
-#include "glog/logging.h"
 #include "osqp++.h"
 #include "osqp.h"
 #include "y2022/control_loops/superstructure/catapult/catapult_plant.h"

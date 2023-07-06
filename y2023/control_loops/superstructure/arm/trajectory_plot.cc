@@ -1,10 +1,11 @@
+#include "gflags/gflags.h"
+
 #include "aos/init.h"
 #include "frc971/analysis/in_process_plotter.h"
 #include "frc971/control_loops/binomial.h"
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/double_jointed_arm/ekf.h"
 #include "frc971/control_loops/fixed_quadrature.h"
-#include "gflags/gflags.h"
 #include "y2023/control_loops/superstructure/arm/arm_constants.h"
 #include "y2023/control_loops/superstructure/arm/generated_graph.h"
 #include "y2023/control_loops/superstructure/arm/trajectory.h"
@@ -62,7 +63,8 @@ void Main() {
             << ", kAlpha2Max=" << FLAGS_alpha2_max;
 
   const ::Eigen::DiagonalMatrix<double, 3> alpha_unitizer(
-      (::Eigen::DiagonalMatrix<double, 3>().diagonal() << (1.0 / FLAGS_alpha0_max),
+      (::Eigen::DiagonalMatrix<double, 3>().diagonal()
+           << (1.0 / FLAGS_alpha0_max),
        (1.0 / FLAGS_alpha1_max), (1.0 / FLAGS_alpha2_max))
           .finished());
   trajectory.OptimizeTrajectory(alpha_unitizer, FLAGS_vmax_plan);

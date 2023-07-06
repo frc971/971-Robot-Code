@@ -35,7 +35,6 @@ aos::Alliance LocalizationUtils::Alliance() {
   return (joystick_state_fetcher_.get() != nullptr)
              ? joystick_state_fetcher_->alliance()
              : aos::Alliance::kInvalid;
-
 }
 
 std::optional<aos::monotonic_clock::duration> LocalizationUtils::ClockOffset(

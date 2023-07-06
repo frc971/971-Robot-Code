@@ -2,6 +2,7 @@
 #define MOTORS_ALGORITHMS_H_
 
 #include <stdint.h>
+
 #include <array>
 
 namespace frc971 {

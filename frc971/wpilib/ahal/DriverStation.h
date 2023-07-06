@@ -9,14 +9,14 @@
 
 #include <atomic>
 // #include <condition_variable>
-#include <memory>
 #include <functional>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <thread>
 
-#include "hal/DriverStation.h"
 #include "frc971/wpilib/ahal/SensorBase.h"
+#include "hal/DriverStation.h"
 
 namespace frc {
 
@@ -33,8 +33,10 @@ class DriverStation {
   static DriverStation &GetInstance();
   static void ReportError(const std::string_view &error);
   static void ReportWarning(const std::string_view &error);
-  static void ReportError(bool is_error, int code, const std::string_view &error,
-                          const std::string_view &location, const std::string_view &stack);
+  static void ReportError(bool is_error, int code,
+                          const std::string_view &error,
+                          const std::string_view &location,
+                          const std::string_view &stack);
 
   static const int kJoystickPorts = 6;
 

@@ -13,8 +13,9 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "aos/time/time.h"
 #include "glog/logging.h"
+
+#include "aos/time/time.h"
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 

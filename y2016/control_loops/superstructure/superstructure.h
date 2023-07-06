@@ -3,8 +3,8 @@
 
 #include <memory>
 
-#include "frc971/control_loops/control_loop.h"
 #include "aos/util/trapezoid_profile.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2016/control_loops/superstructure/superstructure_controls.h"

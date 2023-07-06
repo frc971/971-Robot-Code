@@ -1,8 +1,9 @@
+#include "glog/logging.h"
+
 #include "aos/init.h"
 #include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/drivetrain/localization/localizer_output_generated.h"
 #include "frc971/vision/vision_generated.h"
-#include "glog/logging.h"
 #include "y2023/localizer/localizer.h"
 #include "y2023/localizer/utils.h"
 
@@ -89,12 +90,12 @@ void LocalizationVerifierMain() {
 
     const std::string_view pi_name =
         camera->calibration()->node_name()->string_view();
-    event_loop.MakeWatcher(absl::StrCat("/", pi_name, "/camera"),
-                           [H_robot_camera, &localizer_fetcher](
-                               const frc971::vision::TargetMap &target_map) {
-                             HandleDetections(target_map, H_robot_camera,
-                                              &localizer_fetcher);
-                           });
+    event_loop.MakeWatcher(
+        absl::StrCat("/", pi_name, "/camera"),
+        [H_robot_camera,
+         &localizer_fetcher](const frc971::vision::TargetMap &target_map) {
+          HandleDetections(target_map, H_robot_camera, &localizer_fetcher);
+        });
   }
   event_loop.Run();
 }

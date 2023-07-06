@@ -4,11 +4,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <Eigen/Dense>
 #include <iomanip>
 
 #include "absl/strings/str_join.h"
 #include "glog/logging.h"
+#include <Eigen/Dense>
 
 namespace frc971 {
 namespace solvers {

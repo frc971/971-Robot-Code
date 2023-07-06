@@ -21,14 +21,14 @@ DEFINE_string(constants, "y2019/vision/constants.cc",
               "Path to the constants file to update");
 
 DEFINE_double(beginning_tape_measure_reading, 11,
-             "The tape measure measurement (in inches) of the first image.");
+              "The tape measure measurement (in inches) of the first image.");
 DEFINE_int32(image_count, 75, "The number of images to capture");
-DEFINE_double(
-    tape_start_x, -12.5,
-    "The starting location of the tape measure in x relative to the CG in inches.");
-DEFINE_double(
-    tape_start_y, -0.5,
-    "The starting location of the tape measure in y relative to the CG in inches.");
+DEFINE_double(tape_start_x, -12.5,
+              "The starting location of the tape measure in x relative to the "
+              "CG in inches.");
+DEFINE_double(tape_start_y, -0.5,
+              "The starting location of the tape measure in y relative to the "
+              "CG in inches.");
 
 DEFINE_double(
     tape_direction_x, -1.0,
@@ -37,20 +37,20 @@ DEFINE_double(
     tape_direction_y, 0.0,
     "The y component of \"1\" inch along the tape measure in meters.");
 
+using ::aos::monotonic_clock;
 using ::aos::events::DataSocket;
 using ::aos::events::RXUdpSocket;
 using ::aos::events::TCPServer;
 using ::aos::vision::DataRef;
 using ::aos::vision::Int32Codec;
-using ::aos::monotonic_clock;
 using aos::vision::Segment;
 
-using ceres::NumericDiffCostFunction;
 using ceres::CENTRAL;
 using ceres::CostFunction;
+using ceres::NumericDiffCostFunction;
 using ceres::Problem;
-using ceres::Solver;
 using ceres::Solve;
+using ceres::Solver;
 
 namespace y2019 {
 namespace vision {
@@ -195,8 +195,8 @@ void main(int argc, char **argv) {
 
         // Now build up the residual block.
         auto ftor = [template_point, target_point](
-            const double *const intrinsics, const double *const extrinsics,
-            double *residual) {
+                        const double *const intrinsics,
+                        const double *const extrinsics, double *residual) {
           const IntrinsicParams intrinsic_params =
               IntrinsicParams::get(intrinsics);
           const ExtrinsicParams extrinsic_params =
@@ -293,7 +293,7 @@ void main(int argc, char **argv) {
   DumpCameraConstants(FLAGS_constants.c_str(), info.camera_id, results);
 }
 
-}  // namespace y2019
 }  // namespace vision
+}  // namespace y2019
 
 int main(int argc, char **argv) { y2019::vision::main(argc, argv); }

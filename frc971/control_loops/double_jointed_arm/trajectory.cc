@@ -1,11 +1,12 @@
 #include "frc971/control_loops/double_jointed_arm/trajectory.h"
 
 #include "Eigen/Dense"
+#include "gflags/gflags.h"
+
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/dlqr.h"
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/jacobian.h"
-#include "gflags/gflags.h"
 
 DEFINE_double(lqr_proximal_pos, 0.15, "Position LQR gain");
 DEFINE_double(lqr_proximal_vel, 4.0, "Velocity LQR gain");
@@ -394,8 +395,7 @@ void TrajectoryFollower::Reset() {
   const ::Eigen::Matrix<double, 4, 4> final_A =
       ::frc971::control_loops::NumericalJacobianX<4, 2>(
           [this](const auto &x_blocked, const auto &U, double dt) {
-            return this->dynamics_->UnboundedDiscreteDynamics(
-                x_blocked, U, dt);
+            return this->dynamics_->UnboundedDiscreteDynamics(x_blocked, U, dt);
           },
           x_blocked, U, 0.00505);
 
@@ -505,9 +505,9 @@ void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 6, 1> &X,
       const ::Eigen::Matrix<double, 6, 1> R =
           Trajectory::R(theta_, ::Eigen::Matrix<double, 2, 1>::Zero());
 
-      U_ff_ = dynamics_->FF_U(
-          X.block<4, 1>(0, 0), ::Eigen::Matrix<double, 2, 1>::Zero(),
-          ::Eigen::Matrix<double, 2, 1>::Zero());
+      U_ff_ = dynamics_->FF_U(X.block<4, 1>(0, 0),
+                              ::Eigen::Matrix<double, 2, 1>::Zero(),
+                              ::Eigen::Matrix<double, 2, 1>::Zero());
       const ::Eigen::Matrix<double, 2, 6> K = K_at_state(X, U_ff_);
       U_ = U_unsaturated_ = U_ff_ + K * (R - X);
 

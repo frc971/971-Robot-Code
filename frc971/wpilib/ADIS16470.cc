@@ -2,9 +2,10 @@
 
 #include <cinttypes>
 
+#include "glog/logging.h"
+
 #include "aos/containers/sized_array.h"
 #include "aos/time/time.h"
-#include "glog/logging.h"
 #include "hal/HAL.h"
 
 namespace frc971 {

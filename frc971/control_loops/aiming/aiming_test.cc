@@ -1,8 +1,9 @@
 #include "frc971/control_loops/aiming/aiming.h"
 
-#include "frc971/control_loops/pose.h"
 #include "gtest/gtest.h"
+
 #include "frc971/constants.h"
+#include "frc971/control_loops/pose.h"
 
 namespace frc971::control_loops::aiming::testing {
 

@@ -1,6 +1,9 @@
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 
 #include "flatbuffers/flatbuffers.h"
+#include "glog/logging.h"
+#include "gtest/gtest.h"
+
 #include "frc971/control_loops/capped_test_plant.h"
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/control_loop_test.h"
@@ -14,8 +17,6 @@
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_subsystem_goal_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_generated.h"
 #include "frc971/zeroing/zeroing.h"
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;
 

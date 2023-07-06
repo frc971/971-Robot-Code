@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Eigen/Dense"
+
 #include "aos/util/math.h"
 
 namespace frc971 {
@@ -158,7 +159,7 @@ class TypedPose {
   // Position and yaw relative to base_.
   Pos pos_;
   Scalar theta_;
-}; // class TypedPose
+};  // class TypedPose
 
 typedef TypedPose<double> Pose;
 
@@ -222,6 +223,7 @@ class TypedLineSegment {
   ::std::vector<TypedPose<Scalar>> PlotPoints() const {
     return {pose1_, pose2_};
   }
+
  private:
   TypedPose<Scalar> pose1_;
   TypedPose<Scalar> pose2_;

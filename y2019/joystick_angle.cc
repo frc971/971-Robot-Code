@@ -1,7 +1,8 @@
+#include "y2019/joystick_angle.h"
+
 #include <cmath>
 
 #include "frc971/zeroing/wrap.h"
-#include "y2019/joystick_angle.h"
 
 namespace y2019 {
 namespace input {

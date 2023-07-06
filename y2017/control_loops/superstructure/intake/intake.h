@@ -21,7 +21,8 @@ class Intake {
   // intake to stay out far enough to avoid collisions.
   void set_min_position(double min_position) { min_position_ = min_position; }
 
-  // Moves min_position_ to a position which won't affect any other goal requests.
+  // Moves min_position_ to a position which won't affect any other goal
+  // requests.
   void clear_min_position() {
     min_position_ = constants::Values::kIntakeRange.lower_hard;
   }

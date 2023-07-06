@@ -12,42 +12,42 @@
 #include <wpi/mutex.h>
 
 // Forward declared manually to avoid needing to pull in entire HAL header.
-extern "C" const char* HAL_GetErrorMessage(int32_t code);
+extern "C" const char *HAL_GetErrorMessage(int32_t code);
 
 #define wpi_setErrnoErrorWithContext(context) \
   this->SetErrnoError((context), __FILE__, __FUNCTION__, __LINE__)
 #define wpi_setErrnoError() wpi_setErrnoErrorWithContext("")
-#define wpi_setImaqErrorWithContext(code, context)                             \
-  do {                                                                         \
+#define wpi_setImaqErrorWithContext(code, context) \
+  do {                                             \
   } while (0)
-#define wpi_setErrorWithContext(code, context)                             \
-  do {                                                                     \
+#define wpi_setErrorWithContext(code, context) \
+  do {                                         \
   } while (0)
-#define wpi_setErrorWithContextRange(code, min, max, req, context)          \
-  do {                                                                      \
-  } while (0)
-
-#define wpi_setHALError(code)                                     \
-  do {                                                            \
+#define wpi_setErrorWithContextRange(code, min, max, req, context) \
+  do {                                                             \
   } while (0)
 
-#define wpi_setHALErrorWithRange(code, min, max, req)                        \
-  do {                                                                       \
+#define wpi_setHALError(code) \
+  do {                        \
+  } while (0)
+
+#define wpi_setHALErrorWithRange(code, min, max, req) \
+  do {                                                \
   } while (0)
 
 #define wpi_setError(code) wpi_setErrorWithContext(code, "")
-#define wpi_setStaticErrorWithContext(object, code, context)                 \
-  do {                                                                       \
+#define wpi_setStaticErrorWithContext(object, code, context) \
+  do {                                                       \
   } while (0)
 #define wpi_setStaticError(object, code) \
   wpi_setStaticErrorWithContext(object, code, "")
 
-#define wpi_setGlobalErrorWithContext(code, context)                \
-  do {                                                              \
+#define wpi_setGlobalErrorWithContext(code, context) \
+  do {                                               \
   } while (0)
 
-#define wpi_setGlobalHALError(code)                                       \
-  do {                                                                    \
+#define wpi_setGlobalHALError(code) \
+  do {                              \
   } while (0)
 
 #define wpi_setGlobalError(code) wpi_setGlobalErrorWithContext(code, "")

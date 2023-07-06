@@ -1,10 +1,11 @@
 #include "frc971/control_loops/double_jointed_arm/trajectory.h"
-#include "frc971/control_loops/double_jointed_arm/test_constants.h"
+
+#include "gtest/gtest.h"
 
 #include "frc971/control_loops/double_jointed_arm/demo_path.h"
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/double_jointed_arm/ekf.h"
-#include "gtest/gtest.h"
+#include "frc971/control_loops/double_jointed_arm/test_constants.h"
 
 namespace frc971 {
 namespace control_loops {

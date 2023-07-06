@@ -1,10 +1,11 @@
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/events/ping_generated.h"
 #include "aos/events/pong_generated.h"
 #include "aos/events/pong_lib.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
-#include "glog/logging.h"
 
 DEFINE_string(config, "pingpong_config.json", "Path to the config.");
 

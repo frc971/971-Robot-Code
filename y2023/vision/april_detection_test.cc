@@ -1,17 +1,18 @@
 #include <string>
 
+#include "glog/logging.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/simulated_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/path.h"
-#include "aprilrobotics.h"
 #include "frc971/constants/constants_sender_lib.h"
 #include "frc971/vision/target_mapper.h"
 #include "frc971/vision/vision_generated.h"
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 #include "y2023/constants/constants_generated.h"
 #include "y2023/constants/constants_list_generated.h"
+#include "y2023/vision/aprilrobotics.h"
 
 namespace y2023::vision::testing {
 class AprilDetectionTest : public ::testing::Test {

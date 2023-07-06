@@ -1,23 +1,23 @@
-#include <Eigen/Dense>
 #include <iostream>
 
-#include "y2019/vision/target_finder.h"
+#include "gflags/gflags.h"
+#include <Eigen/Dense>
 
 #include "aos/vision/blob/move_scale.h"
 #include "aos/vision/blob/stream_view.h"
 #include "aos/vision/blob/transpose.h"
 #include "aos/vision/debug/debug_framework.h"
 #include "aos/vision/math/vector.h"
-#include "gflags/gflags.h"
+#include "y2019/vision/target_finder.h"
 
-using aos::vision::ImageRange;
-using aos::vision::ImageFormat;
-using aos::vision::RangeImage;
 using aos::vision::AnalysisAllocator;
 using aos::vision::BlobList;
-using aos::vision::Vector;
-using aos::vision::Segment;
+using aos::vision::ImageFormat;
+using aos::vision::ImageRange;
 using aos::vision::PixelRef;
+using aos::vision::RangeImage;
+using aos::vision::Segment;
+using aos::vision::Vector;
 
 DEFINE_int32(camera, 10, "The camera to use the intrinsics for");
 
@@ -56,9 +56,10 @@ std::vector<PixelRef> GetNColors(size_t num_colors) {
 
 class FilterHarness : public aos::vision::FilterHarness {
  public:
- FilterHarness() {
-   *(target_finder_.mutable_intrinsics()) = GetCamera(FLAGS_camera)->intrinsics;
- }
+  FilterHarness() {
+    *(target_finder_.mutable_intrinsics()) =
+        GetCamera(FLAGS_camera)->intrinsics;
+  }
   aos::vision::RangeImage Threshold(aos::vision::ImagePtr image) override {
     return target_finder_.Threshold(image);
   }
@@ -228,12 +229,16 @@ class FilterHarness : public aos::vision::FilterHarness {
       } else if (key == 'h') {
         printf("Key Mappings:\n");
         printf(" z: Toggle drawing final target pose.\n");
-        printf(" x: Toggle drawing re-projected targets and print solver results.\n");
+        printf(
+            " x: Toggle drawing re-projected targets and print solver "
+            "results.\n");
         printf(" c: Toggle drawing proposed target groupings.\n");
         printf(" v: Toggle drawing ordered target components.\n");
         printf(" b: Toggle drawing proposed target components.\n");
         printf(" n: Toggle drawing countours before and after warping.\n");
-        printf(" m: Toggle drawing raw blob data (may need to change image to toggle a redraw).\n");
+        printf(
+            " m: Toggle drawing raw blob data (may need to change image to "
+            "toggle a redraw).\n");
         printf(" h: Print this message.\n");
         printf(" a: May log camera image to /tmp/debug_viewer_jpeg_<#>.yuyv\n");
         printf(" q: Exit the application.\n");
@@ -354,7 +359,7 @@ class FilterHarness : public aos::vision::FilterHarness {
 };
 
 }  // namespace vision
-}  // namespace y2017
+}  // namespace y2019
 
 int main(int argc, char **argv) {
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

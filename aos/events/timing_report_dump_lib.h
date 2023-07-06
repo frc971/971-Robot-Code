@@ -3,12 +3,13 @@
 #include <map>
 #include <string>
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/event_loop_generated.h"
 #include "aos/json_to_flatbuffer.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 namespace aos {
 // A class to handle printing timing report statistics in a useful format on the

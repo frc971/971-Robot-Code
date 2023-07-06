@@ -1,8 +1,9 @@
 #include "aos/ipc_lib/signalfd.h"
 
-#include "aos/testing/test_logging.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+
+#include "aos/testing/test_logging.h"
 
 namespace aos {
 namespace ipc_lib {

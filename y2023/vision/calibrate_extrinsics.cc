@@ -1,7 +1,8 @@
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
-
 #include "absl/strings/str_format.h"
+#include <opencv2/core/eigen.hpp>
+
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
 #include "aos/init.h"
@@ -15,8 +16,6 @@
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "y2023/constants/constants_generated.h"
 #include "y2023/vision/vision_util.h"
-
-#include <opencv2/core/eigen.hpp>
 
 DEFINE_string(pi, "pi-7971-2", "Pi name to calibrate.");
 DEFINE_bool(plot, false, "Whether to plot the resulting data.");

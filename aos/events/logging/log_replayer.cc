@@ -7,6 +7,10 @@
 #include <string_view>
 #include <vector>
 
+#include "flatbuffers/flatbuffers.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/configuration_generated.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/log_reader.h"
@@ -21,9 +25,6 @@
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/util/file.h"
-#include "flatbuffers/flatbuffers.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 DEFINE_string(config, "", "If specified, overrides logged configuration.");
 DEFINE_bool(

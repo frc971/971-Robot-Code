@@ -1,7 +1,8 @@
 #include "frc971/imu_reader/imu.h"
 
-#include "aos/util/crc32.h"
 #include "glog/logging.h"
+
+#include "aos/util/crc32.h"
 
 namespace frc971::imu {
 

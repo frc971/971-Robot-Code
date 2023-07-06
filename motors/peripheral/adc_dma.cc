@@ -65,7 +65,8 @@ constexpr uint32_t pdb_sc(int pdb_input) {
 
 }  // namespace
 
-AdcDmaSampler::AdcDmaSampler(int counts_per_cycle) : counts_per_cycle_(counts_per_cycle) {
+AdcDmaSampler::AdcDmaSampler(int counts_per_cycle)
+    : counts_per_cycle_(counts_per_cycle) {
   for (int adc = 0; adc < 2; ++adc) {
     for (int i = 0; i < 2; ++i) {
       adc_sc1s_[adc][kNumberAdcSamples + i] = ADC_SC1_ADCH(0x1f);
@@ -117,7 +118,6 @@ void AdcDmaSampler::Initialize() {
 
     static constexpr int kHscAdder = 2 * kAdcClockDivider;
 
-
     static constexpr int kConversionTime =
         kSfcAdder + 1 /* AverageNum */ * (kBct + kLstAdder + kHscAdder);
 
@@ -165,9 +165,8 @@ void AdcDmaSampler::Initialize() {
     DMA.CERQ = result_dma_channel(adc);
     DMA.CERQ = reconfigure_dma_channel(adc);
 
-    ADC(adc)
-        ->SC2 |= ADC_SC2_ADTRG /* Use hardware triggering */ |
-                 ADC_SC2_DMAEN /* Enable DMA triggers */;
+    ADC(adc)->SC2 |= ADC_SC2_ADTRG /* Use hardware triggering */ |
+                     ADC_SC2_DMAEN /* Enable DMA triggers */;
 
     int next_result_channel, next_reconfigure_channel;
     if (adc == 0) {

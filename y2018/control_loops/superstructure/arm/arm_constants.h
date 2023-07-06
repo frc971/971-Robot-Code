@@ -44,10 +44,9 @@ constexpr ::frc971::control_loops::arm::ArmConstants kArmConstants = {
     .num_distal_motors = 2.0,
 };
 
+}  // namespace arm
+}  // namespace superstructure
+}  // namespace control_loops
+}  // namespace y2018
 
-} // namespace arm
-} // namespace superstructure
-} // namespace control_loops
-} // namespace y2018
-
-#endif // Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_ARM_CONSTANTS_H_
+#endif  // Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_ARM_CONSTANTS_H_

@@ -6,12 +6,13 @@
 #ifdef LZMA
 #include "aos/events/logging/lzma_encoder.h"
 #endif
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/events/logging/snappy_encoder.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/log_namer.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 DEFINE_string(config, "aos_config.json", "Config file to use.");
 

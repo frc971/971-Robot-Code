@@ -30,7 +30,7 @@ LedIndicator::LedIndicator(aos::EventLoop *event_loop)
   candle_.ConfigAllSettings(config, 0);
 
   event_loop_->AddPhasedLoop([&](int) { DecideColor(); },
-                            std::chrono::milliseconds(20));
+                             std::chrono::milliseconds(20));
 }
 
 // This method will be called once per scheduler run

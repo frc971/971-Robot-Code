@@ -1,7 +1,6 @@
-#include "y2014/control_loops/claw/claw.h"
-
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "y2014/control_loops/claw/claw.h"
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

@@ -2,6 +2,7 @@
 #define AOS_IPC_LIB_MEMORY_MAPPED_QUEUE_H_
 
 #include "absl/types/span.h"
+
 #include "aos/configuration.h"
 #include "aos/ipc_lib/lockless_queue.h"
 

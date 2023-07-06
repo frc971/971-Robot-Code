@@ -1,8 +1,8 @@
 #include "motors/print/uart.h"
 
-#include "motors/core/kinetis.h"
-
 #include <atomic>
+
+#include "motors/core/kinetis.h"
 
 namespace frc971 {
 namespace motors {

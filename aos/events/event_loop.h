@@ -9,6 +9,9 @@
 #include <string_view>
 
 #include "absl/container/btree_set.h"
+#include "flatbuffers/flatbuffers.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
 #include "aos/events/channel_preallocated_allocator.h"
@@ -22,8 +25,6 @@
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
 #include "aos/uuid.h"
-#include "flatbuffers/flatbuffers.h"
-#include "glog/logging.h"
 
 DECLARE_bool(timing_reports);
 DECLARE_int32(timing_report_ms);

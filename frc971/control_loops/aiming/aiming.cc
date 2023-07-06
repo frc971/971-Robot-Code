@@ -1,6 +1,7 @@
 #include "frc971/control_loops/aiming/aiming.h"
 
 #include "glog/logging.h"
+
 #include "frc971/zeroing/wrap.h"
 
 namespace frc971::control_loops::aiming {
@@ -104,8 +105,9 @@ TurretGoal AimerGoal(const ShotConfig &config, const RobotState &state) {
   // in the derivative of atan because xdot and ydot are the derivatives of
   // robot_pos and we are working with the atan of (target_pos - robot_pos).
   const double atan_diff =
-      (squared_norm < 1e-3) ? 0.0 : (rel_x * rel_ydot - rel_y * rel_xdot) /
-                                        squared_norm;
+      (squared_norm < 1e-3)
+          ? 0.0
+          : (rel_x * rel_ydot - rel_y * rel_xdot) / squared_norm;
   // heading = atan2(relative_y, relative_x) - robot_theta
   // dheading / dt =
   //     (rel_x * rel_y' - rel_y * rel_x') / (rel_x^2 + rel_y^2) - dtheta / dt

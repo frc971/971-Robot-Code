@@ -32,8 +32,8 @@ void WaitPid(const v8::FunctionCallbackInfo<v8::Value> &args) {
     if (errno == EINTR) {
       continue;
     }
-    isolate->ThrowException(v8::Exception::Error(
-        CreateString(isolate, "waitpid() failed")));
+    isolate->ThrowException(
+        v8::Exception::Error(CreateString(isolate, "waitpid() failed")));
     return;
   }
 

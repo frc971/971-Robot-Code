@@ -1,10 +1,9 @@
 #include "frc971/solvers/sparse_convex.h"
 
-#include <Eigen/Sparse>
-#include <Eigen/SparseLU>
-
 #include "absl/strings/str_join.h"
 #include "glog/logging.h"
+#include <Eigen/Sparse>
+#include <Eigen/SparseLU>
 
 namespace frc971 {
 namespace solvers {

@@ -4,8 +4,12 @@
 #include "Eigen/Dense"
 
 #ifdef __linux__
+// For reasons I haven't looked into, these headers fail to compile when
+// included after the glog header. Prevent clang-format from ordering them.
+// clang-format off
 #include "third_party/cddlib/lib-src/setoper.h"
 #include "third_party/cddlib/lib-src/cdd.h"
+// clang-format on
 
 #include "glog/logging.h"
 #endif  // __linux__
@@ -64,11 +68,14 @@ template <int number_of_dimensions, int num_constraints, int num_vertices,
 class HVPolytope : public Polytope<number_of_dimensions, Scalar> {
  public:
   // Constructs a polytope given the H and k matrices.
-  HVPolytope(Eigen::Ref<const Eigen::Matrix<Scalar, num_constraints,
-                                            number_of_dimensions>> H,
-             Eigen::Ref<const Eigen::Matrix<Scalar, num_constraints, 1>> k,
-             Eigen::Ref<const Eigen::Matrix<Scalar, number_of_dimensions,
-                                            num_vertices>> vertices)
+  HVPolytope(
+      Eigen::Ref<
+          const Eigen::Matrix<Scalar, num_constraints, number_of_dimensions>>
+          H,
+      Eigen::Ref<const Eigen::Matrix<Scalar, num_constraints, 1>> k,
+      Eigen::Ref<
+          const Eigen::Matrix<Scalar, number_of_dimensions, num_vertices>>
+          vertices)
       : H_(H), k_(k), vertices_(vertices) {}
 
   Eigen::Ref<const Eigen::Matrix<Scalar, num_constraints, number_of_dimensions>>
@@ -81,8 +88,7 @@ class HVPolytope : public Polytope<number_of_dimensions, Scalar> {
     return H_;
   }
 
-  Eigen::Ref<const Eigen::Matrix<Scalar, num_constraints, 1>> static_k()
-      const {
+  Eigen::Ref<const Eigen::Matrix<Scalar, num_constraints, 1>> static_k() const {
     return k_;
   }
   Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> k()
@@ -95,8 +101,8 @@ class HVPolytope : public Polytope<number_of_dimensions, Scalar> {
     return vertices_;
   }
 
-  Eigen::Matrix<Scalar, number_of_dimensions, num_vertices>
-  StaticVertices() const {
+  Eigen::Matrix<Scalar, number_of_dimensions, num_vertices> StaticVertices()
+      const {
     return vertices_;
   }
 
@@ -106,18 +112,16 @@ class HVPolytope : public Polytope<number_of_dimensions, Scalar> {
   const Eigen::Matrix<Scalar, number_of_dimensions, num_vertices> vertices_;
 };
 
-
-
 #ifdef __linux__
 
 template <int number_of_dimensions>
 class HPolytope : public Polytope<number_of_dimensions> {
  public:
   // Constructs a polytope given the H and k matrices.
-  HPolytope(
-      Eigen::Ref<
-          const Eigen::Matrix<double, Eigen::Dynamic, number_of_dimensions>> H,
-      Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k)
+  HPolytope(Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic,
+                                           number_of_dimensions>>
+                H,
+            Eigen::Ref<const Eigen::Matrix<double, Eigen::Dynamic, 1>> k)
       : H_(H), k_(k), vertices_(CalculateVertices(H, k)) {}
 
   // This is an initialization function shared across all instantiations of this

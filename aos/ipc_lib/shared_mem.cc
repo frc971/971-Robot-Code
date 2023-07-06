@@ -11,9 +11,10 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "glog/logging.h"
+
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/core_lib.h"
-#include "glog/logging.h"
 
 // the path for the shared memory segment. see shm_open(3) for restrictions
 #define AOS_SHM_NAME "/aos_shared_mem"

@@ -5,13 +5,14 @@
 #include <cstdio>
 #include <cstring>
 
+#include "external/com_google_protobuf/src/google/protobuf/stubs/stringprintf.h"
+
 #include "aos/actions/actions.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
 #include "aos/network/team_number.h"
 #include "aos/util/log_interval.h"
 #include "aos/vision/events/udp.h"
-#include "external/com_google_protobuf/src/google/protobuf/stubs/stringprintf.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/input/action_joystick_input.h"

@@ -1,6 +1,7 @@
 #include "aos/seasocks/seasocks_logger.h"
 
 #include "glog/logging.h"
+
 #include "seasocks/PrintfLogger.h"
 
 namespace aos {

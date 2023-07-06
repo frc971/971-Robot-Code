@@ -1,15 +1,16 @@
 #include "y2022/vision/target_estimator.h"
 
 #include "absl/strings/str_format.h"
-#include "aos/time/time.h"
 #include "ceres/ceres.h"
-#include "frc971/control_loops/quaternion_utils.h"
-#include "frc971/vision/geometry.h"
 #include "opencv2/core/core.hpp"
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc.hpp"
+
+#include "aos/time/time.h"
+#include "frc971/control_loops/quaternion_utils.h"
+#include "frc971/vision/geometry.h"
 #include "y2022/constants.h"
 
 DEFINE_bool(freeze_roll, false, "If true, don't solve for roll");

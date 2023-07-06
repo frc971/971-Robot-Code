@@ -12,8 +12,8 @@
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "frc971/wpilib/imu_batch_generated.h"
 #include "frc971/queues/gyro_generated.h"
+#include "frc971/wpilib/imu_batch_generated.h"
 
 namespace frc971 {
 namespace control_loops {

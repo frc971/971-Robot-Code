@@ -1,14 +1,15 @@
 #include "y2022/vision/ball_color.h"
 
 #include <cmath>
+
+#include "glog/logging.h"
+#include "gtest/gtest.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
 #include "aos/events/simulated_event_loop.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/test_logging.h"
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 #include "y2022/constants.h"
 
 DEFINE_string(output_folder, "",

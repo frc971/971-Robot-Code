@@ -2,6 +2,7 @@
 #define MOTORS_PERIPHERAL_SPI_H_
 
 #include "absl/types/span.h"
+
 #include "motors/core/kinetis.h"
 #include "motors/peripheral/uart_buffer.h"
 #include "motors/util.h"

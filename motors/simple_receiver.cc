@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -72,22 +73,26 @@ const DrivetrainConfig<float> &GetDrivetrainConfig() {
       chrono::duration_cast<chrono::nanoseconds>(
           chrono::duration<float>(::motors::seems_reasonable::kDt)),
       ::motors::seems_reasonable::kRobotRadius,
-      ::motors::seems_reasonable::kWheelRadius, ::motors::seems_reasonable::kV,
+      ::motors::seems_reasonable::kWheelRadius,
+      ::motors::seems_reasonable::kV,
 
       ::motors::seems_reasonable::kHighGearRatio,
       ::motors::seems_reasonable::kLowGearRatio,
       ::motors::seems_reasonable::kJ,
       ::motors::seems_reasonable::kMass,
       kThreeStateDriveShifter,
-      kThreeStateDriveShifter, true /* default_high_gear */,
+      kThreeStateDriveShifter,
+      true /* default_high_gear */,
       0 /* down_offset if using constants use
-                                   constants::GetValues().down_error */, 0.8 /* wheel_non_linearity */,
-      1.2 /* quickturn_wheel_multiplier */, 1.5 /* wheel_multiplier */,
+                                   constants::GetValues().down_error */
+      ,
+      0.8 /* wheel_non_linearity */,
+      1.2 /* quickturn_wheel_multiplier */,
+      1.5 /* wheel_multiplier */,
   };
 
   return kDrivetrainConfig;
 };
-
 
 ::std::atomic<PolyDrivetrain<float> *> global_polydrivetrain{nullptr};
 ::std::atomic<Spring *> global_spring{nullptr};
@@ -381,16 +386,18 @@ void AccelerometerInit() {
       return;
     }
   }
-  if (!AccelerometerWrite(
-          0x20, (1 << 5) /* Normal mode */ | (1 << 3) /* 100 Hz */ |
-                    (1 << 2) /* Z enabled */ | (1 << 1) /* Y enabled */ |
-                    (1 << 0) /* X enabled */,
-          end_micros)) {
+  if (!AccelerometerWrite(0x20,
+                          (1 << 5) /* Normal mode */ | (1 << 3) /* 100 Hz */ |
+                              (1 << 2) /* Z enabled */ |
+                              (1 << 1) /* Y enabled */ |
+                              (1 << 0) /* X enabled */,
+                          end_micros)) {
   }
   // If want to read LSB, need to enable BDU to avoid splitting reads.
-  if (!AccelerometerWrite(0x23, (0 << 6) /* Data LSB at lower address */ |
-                                    (3 << 4) /* 400g full scale */ |
-                                    (0 << 0) /* 4-wire interface */,
+  if (!AccelerometerWrite(0x23,
+                          (0 << 6) /* Data LSB at lower address */ |
+                              (3 << 4) /* 400g full scale */ |
+                              (0 << 0) /* 4-wire interface */,
                           end_micros)) {
   }
   accelerometer_inited = true;
@@ -775,7 +782,7 @@ extern "C" int main(void) {
   NVIC_ENABLE_IRQ(IRQ_PIT_CH3);
   printf("Done starting up2\n");
 
-  //DoReceiverTest2();
+  // DoReceiverTest2();
   while (true) {
   }
 

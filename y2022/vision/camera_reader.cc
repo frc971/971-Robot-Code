@@ -4,6 +4,8 @@
 #include <cmath>
 #include <thread>
 
+#include "opencv2/imgproc.hpp"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffer_merge.h"
@@ -11,7 +13,6 @@
 #include "frc971/vision/calibration_generated.h"
 #include "frc971/vision/v4l2_reader.h"
 #include "frc971/vision/vision_generated.h"
-#include "opencv2/imgproc.hpp"
 #include "y2022/vision/blob_detector.h"
 
 DEFINE_string(image_png, "", "A set of PNG images");

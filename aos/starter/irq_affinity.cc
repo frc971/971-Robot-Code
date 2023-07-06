@@ -4,12 +4,13 @@
 #include <sys/resource.h>
 #include <sys/types.h>
 
+#include "gflags/gflags.h"
+
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/starter/irq_affinity_lib.h"
 #include "aos/starter/kthread_generated.h"
 #include "aos/util/top.h"
-#include "gflags/gflags.h"
 
 DEFINE_string(config, "aos_config.json", "File path of aos configuration");
 

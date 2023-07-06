@@ -1,11 +1,11 @@
 #ifndef Y2019_JEVOIS_CAMERA_IMAGE_STREAM_H_
 #define Y2019_JEVOIS_CAMERA_IMAGE_STREAM_H_
 
+#include <memory>
+
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/image/camera_params.pb.h"
 #include "y2019/jevois/camera/reader.h"
-
-#include <memory>
 
 namespace y2019 {
 namespace camera {

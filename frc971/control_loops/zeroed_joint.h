@@ -11,19 +11,19 @@ namespace control_loops {
 namespace testing {
 class WristTest_NoWindupPositive_Test;
 class WristTest_NoWindupNegative_Test;
-};
+};  // namespace testing
 
 // Note: Everything in this file assumes that there is a 1 cycle delay between
 // power being requested and it showing up at the motor.  It assumes that
 // X_hat(2, 1) is the voltage being applied as well.  It will go unstable if
 // that isn't true.
 
-template<int kNumZeroSensors>
+template <int kNumZeroSensors>
 class ZeroedJoint;
 
 // This class implements the CapU function correctly given all the extra
 // information that we know about from the wrist motor.
-template<int kNumZeroSensors>
+template <int kNumZeroSensors>
 class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
  public:
   ZeroedStateFeedbackLoop(StateFeedbackLoop<3, 1, 1> loop,
@@ -31,8 +31,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
       : StateFeedbackLoop<3, 1, 1>(loop),
         zeroed_joint_(zeroed_joint),
         voltage_(0.0),
-        last_voltage_(0.0) {
-  }
+        last_voltage_(0.0) {}
 
   // Caps U, but this time respects the state of the wrist as well.
   virtual void CapU();
@@ -45,6 +44,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
 
   // Zeros the accumulator.
   void ZeroPower() { voltage_ = 0.0; }
+
  private:
   ZeroedJoint<kNumZeroSensors> *zeroed_joint_;
 
@@ -54,7 +54,7 @@ class ZeroedStateFeedbackLoop : public StateFeedbackLoop<3, 1, 1> {
   double uncapped_voltage_;
 };
 
-template<int kNumZeroSensors>
+template <int kNumZeroSensors>
 void ZeroedStateFeedbackLoop<kNumZeroSensors>::CapU() {
   const double old_voltage = voltage_;
   voltage_ += U(0, 0);
@@ -74,18 +74,18 @@ void ZeroedStateFeedbackLoop<kNumZeroSensors>::CapU() {
 
   const bool is_ready =
       zeroed_joint_->state_ == ZeroedJoint<kNumZeroSensors>::READY;
-  double limit = is_ready ?
-      12.0 : zeroed_joint_->config_data_.max_zeroing_voltage;
+  double limit =
+      is_ready ? 12.0 : zeroed_joint_->config_data_.max_zeroing_voltage;
 
   // Make sure that reality and the observer can't get too far off.  There is a
   // delay by one cycle between the applied voltage and X_hat(2, 0), so compare
   // against last cycle's voltage.
   if (X_hat(2, 0) > last_voltage_ + 2.0) {
-    //X_hat(2, 0) = last_voltage_ + 2.0;
+    // X_hat(2, 0) = last_voltage_ + 2.0;
     voltage_ -= X_hat(2, 0) - (last_voltage_ + 2.0);
     LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
-  } else if (X_hat(2, 0) < last_voltage_ -2.0) {
-    //X_hat(2, 0) = last_voltage_ - 2.0;
+  } else if (X_hat(2, 0) < last_voltage_ - 2.0) {
+    // X_hat(2, 0) = last_voltage_ - 2.0;
     voltage_ += X_hat(2, 0) - (last_voltage_ - 2.0);
     LOG(DEBUG, "X_hat(2, 0) = %f\n", X_hat(2, 0));
   }
@@ -99,10 +99,9 @@ void ZeroedStateFeedbackLoop<kNumZeroSensors>::CapU() {
   last_voltage_ = voltage_;
 }
 
-
 // Class to zero and control a joint with any number of zeroing sensors with a
 // state feedback controller.
-template<int kNumZeroSensors>
+template <int kNumZeroSensors>
 class ZeroedJoint {
  public:
   // Sturcture to hold the hardware configuration information.
@@ -229,7 +228,7 @@ class ZeroedJoint {
     MOVING_OFF,
     ZEROING,
     READY,
-    ESTOP
+    ESTOP,
   };
 
   // Internal state for zeroing.
@@ -362,7 +361,7 @@ double ZeroedJoint<kNumZeroSensors>::Update(
           // again.
           const double calibration =
               position->hall_effect_positions[active_sensor_index];
-          if (!is_between(last_off_position_, position->position, 
+          if (!is_between(last_off_position_, position->position,
                           calibration)) {
             LOG(ERROR, "Got a bogus calibration number.  Trying again.\n");
             LOG(ERROR,
@@ -405,8 +404,8 @@ double ZeroedJoint<kNumZeroSensors>::Update(
   // Update the observer.
   loop_->Update(position != NULL, !output_enabled);
 
-  LOG(DEBUG, "X_hat={%f, %f, %f}\n",
-      loop_->X_hat(0, 0), loop_->X_hat(1, 0), loop_->X_hat(2, 0));
+  LOG(DEBUG, "X_hat={%f, %f, %f}\n", loop_->X_hat(0, 0), loop_->X_hat(1, 0),
+      loop_->X_hat(2, 0));
 
   capped_goal_ = false;
   // Verify that the zeroing goal hasn't run away.
@@ -420,13 +419,16 @@ double ZeroedJoint<kNumZeroSensors>::Update(
     case ZEROING:
       // Check if we have cliped and adjust the goal.
       if (loop_->uncapped_voltage() > config_data_.max_zeroing_voltage) {
-        double dx = (loop_->uncapped_voltage() -
-                     config_data_.max_zeroing_voltage) / loop_->K(0, 0);
+        double dx =
+            (loop_->uncapped_voltage() - config_data_.max_zeroing_voltage) /
+            loop_->K(0, 0);
         zeroing_position_ -= dx;
         capped_goal_ = true;
-      } else if(loop_->uncapped_voltage() < -config_data_.max_zeroing_voltage) {
-        double dx = (loop_->uncapped_voltage() +
-                     config_data_.max_zeroing_voltage) / loop_->K(0, 0);
+      } else if (loop_->uncapped_voltage() <
+                 -config_data_.max_zeroing_voltage) {
+        double dx =
+            (loop_->uncapped_voltage() + config_data_.max_zeroing_voltage) /
+            loop_->K(0, 0);
         zeroing_position_ -= dx;
         capped_goal_ = true;
       }

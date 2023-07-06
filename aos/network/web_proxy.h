@@ -5,6 +5,8 @@
 #include <map>
 #include <set>
 
+#include "flatbuffers/flatbuffers.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/mutex/mutex.h"
@@ -12,7 +14,6 @@
 #include "aos/network/rawrtc.h"
 #include "aos/network/web_proxy_generated.h"
 #include "aos/seasocks/seasocks_logger.h"
-#include "flatbuffers/flatbuffers.h"
 #include "seasocks/Server.h"
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"

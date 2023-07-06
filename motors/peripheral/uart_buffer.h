@@ -10,7 +10,7 @@ namespace frc971 {
 namespace teensy {
 
 // Manages a circular buffer of data to send out.
-template<int kSize>
+template <int kSize>
 class UartBuffer {
  public:
   // Returns the number of characters added.

@@ -1,3 +1,5 @@
+#include "gflags/gflags.h"
+
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
@@ -6,7 +8,6 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
 #include "aos/util/simulation_logger.h"
-#include "gflags/gflags.h"
 #include "y2023/control_loops/drivetrain/drivetrain_base.h"
 #include "y2023/localizer/localizer.h"
 
@@ -35,14 +36,12 @@ int main(int argc, char **argv) {
   // open logfiles
   aos::logger::LogReader reader(logfiles, &config.message());
 
-  reader.RemapLoggedChannel("/localizer",
-                            "y2023.localizer.Status");
+  reader.RemapLoggedChannel("/localizer", "y2023.localizer.Status");
   for (const auto pi : {"pi1", "pi2", "pi3", "pi4"}) {
     reader.RemapLoggedChannel(absl::StrCat("/", pi, "/camera"),
                               "y2023.localizer.Visualization");
   }
-  reader.RemapLoggedChannel("/localizer",
-                            "frc971.controls.LocalizerOutput");
+  reader.RemapLoggedChannel("/localizer", "frc971.controls.LocalizerOutput");
 
   auto factory =
       std::make_unique<aos::SimulatedEventLoopFactory>(reader.configuration());

@@ -4,11 +4,11 @@
 #include <array>
 #include <memory>
 
-#include "frc971/control_loops/control_loop.h"
-#include "aos/time/time.h"
-#include "frc971/control_loops/state_feedback_loop.h"
 #include "Eigen/Dense"
 
+#include "aos/time/time.h"
+#include "frc971/control_loops/control_loop.h"
+#include "frc971/control_loops/state_feedback_loop.h"
 #include "y2017/control_loops/superstructure/shooter/shooter_integral_plant.h"
 #include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2017/control_loops/superstructure/superstructure_status_generated.h"

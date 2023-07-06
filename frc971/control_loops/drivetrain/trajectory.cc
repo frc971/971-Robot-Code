@@ -2,8 +2,9 @@
 
 #include <chrono>
 
-#include "aos/util/math.h"
 #include "Eigen/Dense"
+
+#include "aos/util/math.h"
 #include "frc971/control_loops/c2d.h"
 #include "frc971/control_loops/dlqr.h"
 #include "frc971/control_loops/drivetrain/distance_spline.h"

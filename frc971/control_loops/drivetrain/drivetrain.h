@@ -2,6 +2,7 @@
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_H_
 
 #include "Eigen/Dense"
+
 #include "aos/util/log_interval.h"
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/control_loops_generated.h"

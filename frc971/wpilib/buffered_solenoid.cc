@@ -5,9 +5,7 @@
 namespace frc971 {
 namespace wpilib {
 
-void BufferedSolenoid::Set(bool value) {
-  pcm_->DoSet(number_, value);
-}
+void BufferedSolenoid::Set(bool value) { pcm_->DoSet(number_, value); }
 
 }  // namespace wpilib
 }  // namespace frc971

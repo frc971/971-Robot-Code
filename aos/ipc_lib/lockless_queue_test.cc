@@ -10,6 +10,9 @@
 #include <random>
 #include <thread>
 
+#include "gflags/gflags.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/epoll.h"
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/event.h"
@@ -17,8 +20,6 @@
 #include "aos/ipc_lib/signalfd.h"
 #include "aos/realtime.h"
 #include "aos/util/phased_loop.h"
-#include "gflags/gflags.h"
-#include "gtest/gtest.h"
 
 DEFINE_int32(min_iterations, 100,
              "Minimum number of stress test iterations to run");

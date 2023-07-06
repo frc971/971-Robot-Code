@@ -3,6 +3,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -43,19 +44,24 @@ const DrivetrainConfig<float> &GetDrivetrainConfig() {
       chrono::duration_cast<chrono::nanoseconds>(
           chrono::duration<float>(::motors::seems_reasonable::kDt)),
       ::motors::seems_reasonable::kRobotRadius,
-      ::motors::seems_reasonable::kWheelRadius, ::motors::seems_reasonable::kV,
+      ::motors::seems_reasonable::kWheelRadius,
+      ::motors::seems_reasonable::kV,
 
       ::motors::seems_reasonable::kHighGearRatio,
-      ::motors::seems_reasonable::kLowGearRatio, ::motors::seems_reasonable::kJ,
-      ::motors::seems_reasonable::kMass, kThreeStateDriveShifter,
-      kThreeStateDriveShifter, true /* default_high_gear */,
-      0 /* down_offset */, 0.8 /* wheel_non_linearity */,
-      1.2 /* quickturn_wheel_multiplier */, 1.5 /* wheel_multiplier */,
+      ::motors::seems_reasonable::kLowGearRatio,
+      ::motors::seems_reasonable::kJ,
+      ::motors::seems_reasonable::kMass,
+      kThreeStateDriveShifter,
+      kThreeStateDriveShifter,
+      true /* default_high_gear */,
+      0 /* down_offset */,
+      0.8 /* wheel_non_linearity */,
+      1.2 /* quickturn_wheel_multiplier */,
+      1.5 /* wheel_multiplier */,
   };
 
   return kDrivetrainConfig;
 };
-
 
 ::std::atomic<PolyDrivetrain<float> *> global_polydrivetrain{nullptr};
 

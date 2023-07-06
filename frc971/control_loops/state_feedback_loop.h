@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "Eigen/Dense"
+
 #include "unsupported/Eigen/MatrixFunctions"
 
 #if defined(__linux__)
-#include "aos/logging/logging.h"
 #include "glog/logging.h"
+
+#include "aos/logging/logging.h"
 #endif
 #include "aos/macros.h"
 
@@ -356,7 +358,8 @@ class StateFeedbackObserver {
           &&observers)
       : coefficients_(::std::move(observers)) {
     last_U_ = Eigen::Matrix<Scalar, number_of_inputs, Eigen::Dynamic>(
-        number_of_inputs, std::max(static_cast<size_t>(1u), coefficients().delayed_u));
+        number_of_inputs,
+        std::max(static_cast<size_t>(1u), coefficients().delayed_u));
   }
 
   StateFeedbackObserver(StateFeedbackObserver &&other)

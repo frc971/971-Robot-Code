@@ -3,6 +3,7 @@
 #include <string_view>
 
 #include "opencv2/imgproc.hpp"
+
 #include "y2023/constants/constants_generated.h"
 
 namespace y2023::vision {

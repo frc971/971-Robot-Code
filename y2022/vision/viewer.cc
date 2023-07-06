@@ -1,12 +1,13 @@
 #include <algorithm>
 #include <map>
+#include <random>
+
+#include "absl/strings/str_format.h"
 #include <opencv2/calib3d.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <random>
 
-#include "absl/strings/str_format.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/time/time.h"

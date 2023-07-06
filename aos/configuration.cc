@@ -18,14 +18,15 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/configuration_generated.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
 #include "aos/unique_malloc_ptr.h"
 #include "aos/util/file.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 namespace aos {
 namespace {

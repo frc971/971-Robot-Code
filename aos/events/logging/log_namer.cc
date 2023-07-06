@@ -7,12 +7,13 @@
 #include <vector>
 
 #include "absl/strings/str_cat.h"
+#include "flatbuffers/flatbuffers.h"
+#include "glog/logging.h"
+
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/uuid.h"
-#include "flatbuffers/flatbuffers.h"
-#include "glog/logging.h"
 
 DECLARE_int32(flush_size);
 

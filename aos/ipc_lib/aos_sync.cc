@@ -30,10 +30,11 @@
 #include <type_traits>
 
 #include "absl/base/call_once.h"
+#include "glog/logging.h"
+
 #include "aos/macros.h"
 #include "aos/thread_local.h"
 #include "aos/util/compiler_memory_barrier.h"
-#include "glog/logging.h"
 
 using ::aos::linux_code::ipc_lib::RunShmObservers;
 

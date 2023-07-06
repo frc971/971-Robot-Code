@@ -4,6 +4,8 @@
 // replayed, so that it can then be run through the plotting tool or analyzed
 // in some other way. The original drivetrain status data will be on the
 // /original/drivetrain channel.
+#include "gflags/gflags.h"
+
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
@@ -14,7 +16,6 @@
 #include "aos/util/simulation_logger.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/trajectory_generator.h"
-#include "gflags/gflags.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/drivetrain/localizer.h"

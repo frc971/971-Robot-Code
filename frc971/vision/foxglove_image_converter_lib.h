@@ -1,7 +1,8 @@
 #ifndef FRC971_VISION_FOXGLOVE_IMAGE_CONVERTER_H_
 #define FRC971_VISION_FOXGLOVE_IMAGE_CONVERTER_H_
-#include "aos/events/event_loop.h"
 #include "external/com_github_foxglove_schemas/CompressedImage_generated.h"
+
+#include "aos/events/event_loop.h"
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/vision_generated.h"
 

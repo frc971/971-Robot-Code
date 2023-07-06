@@ -4,6 +4,8 @@
 #include <deque>
 
 #include "absl/types/span.h"
+#include "glog/logging.h"
+
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/shm_event_loop.h"
@@ -16,7 +18,6 @@
 #include "aos/network/sctp_server.h"
 #include "aos/network/timestamp_channel.h"
 #include "aos/network/timestamp_generated.h"
-#include "glog/logging.h"
 
 namespace aos {
 namespace message_bridge {
@@ -65,7 +66,8 @@ class ChannelState {
   // Needs to be called when a node (might have) disconnected.
   // Returns the node index which [dis]connected, or -1 if it didn't match.
   // reconnected is a vector of associations which have already connected.
-  // This will potentially grow to the number of associations as we find reconnects.
+  // This will potentially grow to the number of associations as we find
+  // reconnects.
   int NodeDisconnected(sctp_assoc_t assoc_id);
   int NodeConnected(const Node *node, sctp_assoc_t assoc_id, int stream,
                     SctpServer *server, FixedAllocator *allocator,

@@ -1,3 +1,5 @@
+#include "gtest/gtest.h"
+
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
 #include "aos/events/ping_lib.h"
@@ -6,7 +8,6 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
-#include "gtest/gtest.h"
 
 DECLARE_string(override_hostname);
 

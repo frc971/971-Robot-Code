@@ -86,6 +86,7 @@ cc_binary(
         "//third_party:opencv",
         "//y2023/constants:constants_fbs",
         "//y2023/constants:simulated_constants_sender",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 
@@ -122,6 +123,7 @@ cc_library(
         "//third_party:opencv",
         "//third_party/apriltag",
         "//y2023/constants:constants_fbs",
+        "@org_tuxfamily_eigen//:eigen",
     ],
 )
 

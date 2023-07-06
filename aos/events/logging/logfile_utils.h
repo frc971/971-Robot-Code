@@ -16,6 +16,8 @@
 
 #include "absl/container/btree_set.h"
 #include "absl/types/span.h"
+#include "flatbuffers/flatbuffers.h"
+
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/boot_timestamp.h"
@@ -25,7 +27,6 @@
 #include "aos/events/logging/logger_generated.h"
 #include "aos/flatbuffers.h"
 #include "aos/network/remote_message_generated.h"
-#include "flatbuffers/flatbuffers.h"
 
 namespace aos::logger {
 

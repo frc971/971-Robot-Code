@@ -2,11 +2,12 @@
 
 #include <chrono>
 
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 #include "aos/configuration.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/macros.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace message_bridge {

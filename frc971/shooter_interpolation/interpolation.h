@@ -21,7 +21,7 @@ class InterpolationTable {
   // power for a shot
   YValue Get(double x) const;
 
-  bool GetInRange(double x, YValue* type) const;
+  bool GetInRange(double x, YValue *type) const;
 
  private:
   // Contains the list of angle entries in the interpolation table
@@ -29,21 +29,20 @@ class InterpolationTable {
 };
 
 template <typename YValue>
-InterpolationTable<YValue>::InterpolationTable(const ::std::vector<Point> &table)
-  : table_(table) {
-    ::std::sort(table_.begin(), table_.end(),
-                [](const Point &a, const Point &b) {
-                return a.first < b.first;
-                });
-  }
+InterpolationTable<YValue>::InterpolationTable(
+    const ::std::vector<Point> &table)
+    : table_(table) {
+  ::std::sort(table_.begin(), table_.end(),
+              [](const Point &a, const Point &b) { return a.first < b.first; });
+}
 
 template <typename YValue>
 YValue InterpolationTable<YValue>::Get(double x) const {
   // Points to to the smallest item such that it->first >= dist, or end() if no
   // such item exists.
-  auto it = ::std::lower_bound(table_.begin(), table_.end(), x,
-                               [](const Point &a,
-                                  double dist) { return a.first < dist; });
+  auto it = ::std::lower_bound(
+      table_.begin(), table_.end(), x,
+      [](const Point &a, double dist) { return a.first < dist; });
   if (it == table_.begin()) {
     return it->second;
   } else if (it == table_.end()) {
@@ -59,12 +58,12 @@ YValue InterpolationTable<YValue>::Get(double x) const {
 }
 
 template <typename YValue>
-bool InterpolationTable<YValue>::GetInRange(double x, YValue* result) const {
+bool InterpolationTable<YValue>::GetInRange(double x, YValue *result) const {
   // Points to to the smallest item such that it->first >= dist, or end() if no
   // such item exists.
-  auto it = ::std::lower_bound(table_.begin(), table_.end(), x,
-                               [](const Point &a,
-                                  double dist) { return a.first < dist; });
+  auto it = ::std::lower_bound(
+      table_.begin(), table_.end(), x,
+      [](const Point &a, double dist) { return a.first < dist; });
   if (it == table_.begin()) {
     return false;
   } else if (it == table_.end()) {

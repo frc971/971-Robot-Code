@@ -4,12 +4,13 @@
 #include <optional>
 #include <string>
 
-#include "aos/network/team_number.h"
-#include "aos/time/time.h"
-#include "frc971/vision/geometry.h"
 #include "opencv2/features2d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc.hpp"
+
+#include "aos/network/team_number.h"
+#include "aos/time/time.h"
+#include "frc971/vision/geometry.h"
 
 DEFINE_bool(
     use_outdoors, true,

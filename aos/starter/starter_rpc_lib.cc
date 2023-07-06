@@ -1,9 +1,10 @@
-#include "starter_rpc_lib.h"
+#include "aos/starter/starter_rpc_lib.h"
+
+#include "glog/logging.h"
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/starter/starterd_lib.h"
-#include "glog/logging.h"
 
 namespace aos {
 namespace starter {

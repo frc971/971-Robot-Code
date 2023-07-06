@@ -2,11 +2,12 @@
 #include <string>
 #include <vector>
 
+#include "gflags/gflags.h"
+
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/init.h"
 #include "aos/network/multinode_timestamp_filter.h"
-#include "gflags/gflags.h"
 
 // This is a simple application to match up data with timestamps for a node in a
 // log.  It doesn't solve the timestamp problem, but is still quite useful for

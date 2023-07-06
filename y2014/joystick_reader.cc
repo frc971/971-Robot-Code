@@ -393,8 +393,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
                      : (data.IsPressed(kRollersOut) ? -12.0 : intake_power_));
         goal_builder.add_centering(intaking ? 12.0 : 0.0);
 
-        if (builder.Send(goal_builder.Finish()) !=
-            aos::RawSender::Error::kOk) {
+        if (builder.Send(goal_builder.Finish()) != aos::RawSender::Error::kOk) {
           AOS_LOG(WARNING, "sending claw goal failed\n");
         }
       }
@@ -407,8 +406,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
         goal_builder.add_shot_requested(data.IsPressed(kFire));
         goal_builder.add_unload_requested(data.IsPressed(kUnload));
         goal_builder.add_load_requested(data.IsPressed(kReload));
-        if (builder.Send(goal_builder.Finish()) !=
-            aos::RawSender::Error::kOk) {
+        if (builder.Send(goal_builder.Finish()) != aos::RawSender::Error::kOk) {
           AOS_LOG(WARNING, "sending shooter goal failed\n");
         }
       }

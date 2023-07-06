@@ -7,7 +7,9 @@ static constexpr double kInchesToMeters = 0.0254;
 
 CameraCalibration camera_1 = {
     {
-        -1.01208 / 180.0 * M_PI, 342.679, 1.79649 / 180.0 * M_PI,
+        -1.01208 / 180.0 * M_PI,
+        342.679,
+        1.79649 / 180.0 * M_PI,
     },
     {
         {{-5.08996 * kInchesToMeters, 1.82468 * kInchesToMeters,
@@ -25,7 +27,9 @@ CameraCalibration camera_1 = {
 
 CameraCalibration camera_4 = {
     {
-        3.73623 / 180.0 * M_PI, 588.1, 0.269291 / 180.0 * M_PI,
+        3.73623 / 180.0 * M_PI,
+        588.1,
+        0.269291 / 180.0 * M_PI,
     },
     {
         {{6.02674 * kInchesToMeters, 4.57805 * kInchesToMeters,
@@ -43,7 +47,9 @@ CameraCalibration camera_4 = {
 
 CameraCalibration camera_5 = {
     {
-        1.00774 / 180.0 * M_PI, 658.554, 2.43864 / 180.0 * M_PI,
+        1.00774 / 180.0 * M_PI,
+        658.554,
+        2.43864 / 180.0 * M_PI,
     },
     {
         {{5.51248 * kInchesToMeters, 2.04087 * kInchesToMeters,
@@ -61,7 +67,9 @@ CameraCalibration camera_5 = {
 
 CameraCalibration camera_6 = {
     {
-        -1.15844 / 180.0 * M_PI, 348.161, 1.16894 / 180.0 * M_PI,
+        -1.15844 / 180.0 * M_PI,
+        348.161,
+        1.16894 / 180.0 * M_PI,
     },
     {
         {{4.73183 * kInchesToMeters, 2.0984 * kInchesToMeters,
@@ -79,7 +87,9 @@ CameraCalibration camera_6 = {
 
 CameraCalibration camera_7 = {
     {
-        -2.24098 / 180.0 * M_PI, 339.231, 1.15487 / 180.0 * M_PI,
+        -2.24098 / 180.0 * M_PI,
+        339.231,
+        1.15487 / 180.0 * M_PI,
     },
     {
         {{3.50224 * kInchesToMeters, 3.95441 * kInchesToMeters,
@@ -97,7 +107,9 @@ CameraCalibration camera_7 = {
 
 CameraCalibration camera_8 = {
     {
-        37.1859 / 180.0 * M_PI, 339.517, 0.0405714 / 180.0 * M_PI,
+        37.1859 / 180.0 * M_PI,
+        339.517,
+        0.0405714 / 180.0 * M_PI,
     },
     {
         {{3.57002 * kInchesToMeters, 5.26966 * kInchesToMeters,
@@ -115,7 +127,9 @@ CameraCalibration camera_8 = {
 
 CameraCalibration camera_9 = {
     {
-        35.4154 / 180.0 * M_PI, 337.471, 3.30546 / 180.0 * M_PI,
+        35.4154 / 180.0 * M_PI,
+        337.471,
+        3.30546 / 180.0 * M_PI,
     },
     {
         {{4.25679 * kInchesToMeters, -2.93066 * kInchesToMeters,
@@ -133,7 +147,9 @@ CameraCalibration camera_9 = {
 
 CameraCalibration camera_10 = {
     {
-        -0.305107 / 180.0 * M_PI, 336.952, -0.0804389 / 180.0 * M_PI,
+        -0.305107 / 180.0 * M_PI,
+        336.952,
+        -0.0804389 / 180.0 * M_PI,
     },
     {
         {{-5.64467 * kInchesToMeters, 2.41348 * kInchesToMeters,
@@ -151,7 +167,9 @@ CameraCalibration camera_10 = {
 
 CameraCalibration camera_14 = {
     {
-        0.108434 / 180.0 * M_PI, 338.756, 0.606249 / 180.0 * M_PI,
+        0.108434 / 180.0 * M_PI,
+        338.756,
+        0.606249 / 180.0 * M_PI,
     },
     {
         {{5.90372 * kInchesToMeters, 2.08009 * kInchesToMeters,
@@ -169,7 +187,9 @@ CameraCalibration camera_14 = {
 
 CameraCalibration camera_15 = {
     {
-        -0.855459 / 180.0 * M_PI, 348.799, 1.4559 / 180.0 * M_PI,
+        -0.855459 / 180.0 * M_PI,
+        348.799,
+        1.4559 / 180.0 * M_PI,
     },
     {
         {{3.15291 * kInchesToMeters, 4.16556 * kInchesToMeters,
@@ -187,7 +207,9 @@ CameraCalibration camera_15 = {
 
 CameraCalibration camera_16 = {
     {
-        -1.30906 / 180.0 * M_PI, 347.372, 2.18486 / 180.0 * M_PI,
+        -1.30906 / 180.0 * M_PI,
+        347.372,
+        2.18486 / 180.0 * M_PI,
     },
     {
         {{4.98126 * kInchesToMeters, 1.96988 * kInchesToMeters,
@@ -205,7 +227,9 @@ CameraCalibration camera_16 = {
 
 CameraCalibration camera_17 = {
     {
-        34.8231 / 180.0 * M_PI, 338.051, 2.43035 / 180.0 * M_PI,
+        34.8231 / 180.0 * M_PI,
+        338.051,
+        2.43035 / 180.0 * M_PI,
     },
     {
         {{3.17222 * kInchesToMeters, -2.49752 * kInchesToMeters,
@@ -223,7 +247,9 @@ CameraCalibration camera_17 = {
 
 CameraCalibration camera_18 = {
     {
-        33.9761 / 180.0 * M_PI, 338.017, -2.32243 / 180.0 * M_PI,
+        33.9761 / 180.0 * M_PI,
+        338.017,
+        -2.32243 / 180.0 * M_PI,
     },
     {
         {{3.95182 * kInchesToMeters, 5.50479 * kInchesToMeters,
@@ -241,7 +267,9 @@ CameraCalibration camera_18 = {
 
 CameraCalibration camera_19 = {
     {
-        -0.341036 / 180.0 * M_PI, 324.626, 1.2545 / 180.0 * M_PI,
+        -0.341036 / 180.0 * M_PI,
+        324.626,
+        1.2545 / 180.0 * M_PI,
     },
     {
         {{-6.93309 * kInchesToMeters, 2.64735 * kInchesToMeters,

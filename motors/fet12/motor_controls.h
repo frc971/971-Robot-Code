@@ -4,10 +4,10 @@
 #include <array>
 #include <complex>
 
+#include "Eigen/Dense"
+
 #include "motors/math.h"
 #include "motors/motor.h"
-
-#include "Eigen/Dense"
 
 namespace frc971 {
 namespace motors {
@@ -57,8 +57,7 @@ class MotorControlsImplementation : public MotorControls {
   float overall_measured_current_ = 0;
 
   ::Eigen::Matrix<float, 3, 1> I_last_ = ::Eigen::Matrix<float, 3, 1>::Zero();
-  ::Eigen::Matrix<float, 3, 1> I_prev_ =
-      ::Eigen::Matrix<float, 3, 1>::Zero();
+  ::Eigen::Matrix<float, 3, 1> I_prev_ = ::Eigen::Matrix<float, 3, 1>::Zero();
 
   int16_t debug_[9];
 };

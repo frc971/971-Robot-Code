@@ -3,9 +3,10 @@
 #include <chrono>
 #include <memory>
 
+#include "gtest/gtest.h"
+
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-#include "gtest/gtest.h"
 #include "y2014/constants.h"
 #include "y2014/control_loops/claw/claw.h"
 #include "y2014/control_loops/claw/claw_goal_generated.h"
@@ -336,8 +337,7 @@ TEST_F(ClawTest, HandlesNAN) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_bottom_angle(::std::nan(""));
     goal_builder.add_separation_angle(::std::nan(""));
-    EXPECT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    EXPECT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   SetEnabled(true);
@@ -351,8 +351,7 @@ TEST_F(ClawTest, ZerosCorrectly) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_bottom_angle(0.1);
     goal_builder.add_separation_angle(0.2);
-    EXPECT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    EXPECT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   SetEnabled(true);
@@ -449,8 +448,7 @@ TEST_P(ZeroingClawTest, ParameterizedZero) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_bottom_angle(0.1);
     goal_builder.add_separation_angle(0.2);
-    EXPECT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    EXPECT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   SetEnabled(true);
@@ -618,8 +616,7 @@ TEST_F(WindupClawTest, NoWindupPositive) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_bottom_angle(0.1);
     goal_builder.add_separation_angle(0.2);
-    EXPECT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    EXPECT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   TestWindup(ClawMotor::UNKNOWN_LOCATION,
@@ -636,8 +633,7 @@ TEST_F(WindupClawTest, NoWindupNegative) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_bottom_angle(0.1);
     goal_builder.add_separation_angle(0.2);
-    EXPECT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    EXPECT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   TestWindup(ClawMotor::UNKNOWN_LOCATION,
@@ -654,8 +650,7 @@ TEST_F(WindupClawTest, NoWindupNegativeFineTune) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_bottom_angle(0.1);
     goal_builder.add_separation_angle(0.2);
-    EXPECT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    EXPECT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   TestWindup(ClawMotor::FINE_TUNE_BOTTOM,

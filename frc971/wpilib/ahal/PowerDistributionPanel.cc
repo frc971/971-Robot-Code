@@ -9,10 +9,10 @@
 
 #include <sstream>
 
-#include "hal/HAL.h"
-#include "hal/PowerDistribution.h"
-#include "hal/Ports.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
+#include "hal/HAL.h"
+#include "hal/Ports.h"
+#include "hal/PowerDistribution.h"
 
 using namespace frc;
 #define WPI_LIB_FATAL_ERROR(tag, msg)

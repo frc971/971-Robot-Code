@@ -3,6 +3,10 @@
 #include <filesystem>
 
 #include "absl/strings/str_format.h"
+#include "glog/logging.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
@@ -17,9 +21,6 @@
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
-#include "glog/logging.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
 
 #ifdef LZMA
 #include "aos/events/logging/lzma_encoder.h"

@@ -86,7 +86,6 @@ TEST(ThreadedQueueTest, StatefulQueue) {
   ASSERT_EQ(state, 0);
 }
 
-
 // Tests that we can exit early without any issues.
 TEST(ThreadedQueueTest, ExitEarly) {
   // There used to exist a deadlock in this case where StopPushing would

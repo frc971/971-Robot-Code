@@ -1,9 +1,10 @@
 #include "aos/realtime.h"
 
-#include "aos/init.h"
 #include "glog/logging.h"
 #include "glog/raw_logging.h"
 #include "gtest/gtest.h"
+
+#include "aos/init.h"
 
 DECLARE_bool(die_on_malloc);
 

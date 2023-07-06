@@ -24,6 +24,6 @@ class ImageWriter {
 };
 
 }  // namespace vision
-}  // namespace y2017
+}  // namespace y2019
 
 #endif  // Y2019_VISION_IMAGE_WRITER_H_

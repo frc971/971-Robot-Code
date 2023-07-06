@@ -1,6 +1,7 @@
 #include "motors/algorithms.h"
 
 #include <inttypes.h>
+
 #include <cmath>
 
 #include "gtest/gtest.h"

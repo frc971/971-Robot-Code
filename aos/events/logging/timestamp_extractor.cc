@@ -2,11 +2,12 @@
 #include <string>
 #include <vector>
 
+#include "gflags/gflags.h"
+
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/init.h"
 #include "aos/network/multinode_timestamp_filter.h"
-#include "gflags/gflags.h"
 
 DECLARE_bool(timestamps_to_csv);
 DEFINE_bool(skip_order_validation, false,

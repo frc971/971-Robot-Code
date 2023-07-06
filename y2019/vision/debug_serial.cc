@@ -1,4 +1,10 @@
-#include "y2019/jevois/serial.h"
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <chrono>
+#include <fstream>
+#include <iostream>
+#include <thread>
 
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"
@@ -6,13 +12,6 @@
 #include "y2019/jevois/serial.h"
 #include "y2019/jevois/structures.h"
 #include "y2019/jevois/uart.h"
-
-#include <fcntl.h>
-#include <unistd.h>
-#include <chrono>
-#include <fstream>
-#include <iostream>
-#include <thread>
 
 namespace y2019 {
 namespace vision {
@@ -86,7 +85,7 @@ void main(int argc, char **argv) {
   }
 }
 
-}  // namespace y2019
 }  // namespace vision
+}  // namespace y2019
 
 int main(int argc, char **argv) { y2019::vision::main(argc, argv); }

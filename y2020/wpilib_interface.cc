@@ -20,6 +20,10 @@
 #include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
 
+#include "ctre/phoenix/motorcontrol/can/TalonFX.h"
+#include "ctre/phoenix/motorcontrol/can/VictorSPX.h"
+#include "gflags/gflags.h"
+
 #include "aos/commonmath.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
@@ -31,8 +35,6 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-#include "ctre/phoenix/motorcontrol/can/TalonFX.h"
-#include "ctre/phoenix/motorcontrol/can/VictorSPX.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
@@ -49,7 +51,6 @@
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
-#include "gflags/gflags.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/superstructure/shooter/shooter_tuning_readings_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_output_generated.h"

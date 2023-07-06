@@ -1,11 +1,12 @@
 #include <iostream>
 #include <map>
 
+#include "gflags/gflags.h"
+
 #include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
-#include "gflags/gflags.h"
 
 DEFINE_bool(all, false,
             "If true, print out the channels for all nodes in the config file, "

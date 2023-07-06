@@ -15,9 +15,10 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
+#include "glog/logging.h"
+
 #include "aos/scoped/scoped_fd.h"
 #include "aos/util/file.h"
-#include "glog/logging.h"
 
 namespace frc971 {
 namespace vision {
@@ -263,8 +264,9 @@ void Pad::SetSubdevFormat(uint32_t width, uint32_t height, uint32_t code) {
   format.format.quantization = V4L2_QUANTIZATION_DEFAULT;
   format.format.xfer_func = V4L2_XFER_FUNC_DEFAULT;
 
-  LOG(INFO) << "Setting " << entity()->name() << " pad " << index() << " format to "
-            << width << "x" << height << " code 0x" << std::hex << code;
+  LOG(INFO) << "Setting " << entity()->name() << " pad " << index()
+            << " format to " << width << "x" << height << " code 0x" << std::hex
+            << code;
 
   PCHECK(ioctl(fd, VIDIOC_SUBDEV_S_FMT, &format) == 0);
 

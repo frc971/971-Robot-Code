@@ -1,12 +1,12 @@
 #include "y2020/vision/sift/get_gaussian_kernel.h"
 
-#include <opencv2/core/mat.hpp>
-#include <opencv2/imgproc.hpp>
 #include <tuple>
 
 #include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include <opencv2/core/mat.hpp>
+#include <opencv2/imgproc.hpp>
 
 namespace frc971 {
 namespace vision {

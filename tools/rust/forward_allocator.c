@@ -24,29 +24,28 @@
 __attribute__((weak)) uint8_t __rust_alloc_error_handler_should_panic = 0;
 
 uint8_t *__rdl_alloc(uintptr_t size, uintptr_t align);
-__attribute__((weak))
-uint8_t *__rust_alloc(uintptr_t size, uintptr_t align) {
+__attribute__((weak)) uint8_t *__rust_alloc(uintptr_t size, uintptr_t align) {
   return __rdl_alloc(size, align);
 }
 void __rdl_dealloc(uint8_t *ptr, uintptr_t size, uintptr_t align);
-__attribute__((weak))
-void __rust_dealloc(uint8_t *ptr, uintptr_t size, uintptr_t align) {
+__attribute__((weak)) void __rust_dealloc(uint8_t *ptr, uintptr_t size,
+                                          uintptr_t align) {
   __rdl_dealloc(ptr, size, align);
 }
 uint8_t *__rdl_realloc(uint8_t *ptr, uintptr_t old_size, uintptr_t align,
                        uintptr_t new_size);
-__attribute__((weak))
-uint8_t *__rust_realloc(uint8_t *ptr, uintptr_t old_size, uintptr_t align,
-                        uintptr_t new_size) {
+__attribute__((weak)) uint8_t *__rust_realloc(uint8_t *ptr, uintptr_t old_size,
+                                              uintptr_t align,
+                                              uintptr_t new_size) {
   return __rdl_realloc(ptr, old_size, align, new_size);
 }
 uint8_t *__rdl_alloc_zeroed(uintptr_t size, uintptr_t align);
-__attribute__((weak))
-uint8_t *__rust_alloc_zeroed(uintptr_t size, uintptr_t align) {
+__attribute__((weak)) uint8_t *__rust_alloc_zeroed(uintptr_t size,
+                                                   uintptr_t align) {
   return __rdl_alloc_zeroed(size, align);
 }
 void __rdl_oom(uintptr_t size, uintptr_t align);
-__attribute__((weak))
-void __rust_alloc_error_handler(uintptr_t size, uintptr_t align) {
+__attribute__((weak)) void __rust_alloc_error_handler(uintptr_t size,
+                                                      uintptr_t align) {
   __rdl_oom(size, align);
 }

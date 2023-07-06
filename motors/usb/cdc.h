@@ -3,8 +3,8 @@
 
 #include <array>
 
-#include "motors/usb/usb.h"
 #include "motors/usb/queue.h"
+#include "motors/usb/usb.h"
 #include "motors/util.h"
 
 // CDC (Communications Device Class) is a "class standard" which takes 30 pages

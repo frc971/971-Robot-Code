@@ -2,10 +2,11 @@
 
 #include <vector>
 
-#include "aos/testing/test_shm.h"
-#include "aos/flatbuffers.h"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
+
+#include "aos/flatbuffers.h"
+#include "aos/testing/test_shm.h"
 #if defined(SUPPORT_PLOT)
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #endif

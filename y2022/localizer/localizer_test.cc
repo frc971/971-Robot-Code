@@ -1,10 +1,11 @@
 #include "y2022/localizer/localizer.h"
 
+#include "gtest/gtest.h"
+
 #include "aos/events/logging/log_writer.h"
 #include "aos/events/simulated_event_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/pose.h"
-#include "gtest/gtest.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2022/vision/target_estimate_generated.h"

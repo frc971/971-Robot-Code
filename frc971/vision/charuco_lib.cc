@@ -2,17 +2,18 @@
 
 #include <chrono>
 #include <functional>
+#include <string_view>
+
+#include "glog/logging.h"
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <string_view>
 
 #include "aos/events/event_loop.h"
 #include "aos/flatbuffers.h"
 #include "aos/network/team_number.h"
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/vision_generated.h"
-#include "glog/logging.h"
 
 DEFINE_string(board_template_path, "",
               "If specified, write an image to the specified path for the "

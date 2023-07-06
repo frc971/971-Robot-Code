@@ -10,6 +10,8 @@
 #include <iterator>
 #include <stdexcept>
 
+#include "glog/logging.h"
+
 #include "aos/events/aos_logging.h"
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop_generated.h"
@@ -21,7 +23,6 @@
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/util/file.h"
 #include "aos/util/phased_loop.h"
-#include "glog/logging.h"
 
 namespace {
 

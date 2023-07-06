@@ -6,8 +6,8 @@
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
-#include "frc971/control_loops/drivetrain/localizer.h"
 #include "frc971/control_loops/drivetrain/localization/localizer_output_generated.h"
+#include "frc971/control_loops/drivetrain/localizer.h"
 
 namespace frc971 {
 namespace control_loops {

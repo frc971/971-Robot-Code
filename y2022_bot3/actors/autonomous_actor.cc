@@ -174,7 +174,8 @@ void AutonomousActor::SplineAuto() {
 
 void AutonomousActor::SendSuperstructureGoal() {
   auto builder = superstructure_goal_sender_.MakeBuilder();
-  superstructure::Goal::Builder superstructure_builder = builder.MakeBuilder<superstructure::Goal>();
+  superstructure::Goal::Builder superstructure_builder =
+      builder.MakeBuilder<superstructure::Goal>();
   if (builder.Send(superstructure_builder.Finish()) !=
       aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Sending superstructure goal failed.\n");

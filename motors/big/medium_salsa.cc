@@ -1,10 +1,9 @@
-#include "motors/core/kinetis.h"
-
 #include <stdio.h>
 
 #include <atomic>
 
 #include "motors/big/motor_controls.h"
+#include "motors/core/kinetis.h"
 #include "motors/core/time.h"
 #include "motors/motor.h"
 #include "motors/peripheral/adc.h"
@@ -133,9 +132,10 @@ void ftm0_isr(void) {
   }
   const BalancedReadings balanced = BalanceReadings(to_balance);
 
-  global_motor.load(::std::memory_order_relaxed)->CurrentInterrupt(
-      balanced,
-      global_motor.load(::std::memory_order_relaxed)->wrapped_encoder());
+  global_motor.load(::std::memory_order_relaxed)
+      ->CurrentInterrupt(
+          balanced,
+          global_motor.load(::std::memory_order_relaxed)->wrapped_encoder());
 }
 
 }  // extern "C"
@@ -210,8 +210,8 @@ void ZeroMotor() {
       // value we store because writing anything resets it to CNTIN (ie 0).
       "str %[scratch], [%[cnt]]\n"
       : [scratch] "=&l"(scratch)
-      : [pdir_word] "l"(&PERIPHERAL_BITBAND(GPIOE_PDIR, 24)),
-        [cnt] "l"(&FTM1->CNT));
+      : [pdir_word] "l"(&PERIPHERAL_BITBAND(GPIOE_PDIR, 24)), [cnt] "l"(
+                                                                  &FTM1->CNT));
   __enable_irq();
 #endif
 }
@@ -290,7 +290,7 @@ extern "C" int main(void) {
   FTM0_EXTTRIG = FTM_EXTTRIG_INITTRIGEN;
   // Don't let any memory accesses sneak past here, because we actually
   // need everything to be starting up.
-  __asm__("" :: : "memory");
+  __asm__("" ::: "memory");
 
   // Give everything a chance to get going.
   delay(100);

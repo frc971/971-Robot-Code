@@ -4,14 +4,15 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "glog/logging.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/test_message_generated.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/logging/log_message_generated.h"
 #include "aos/logging/logging.h"
 #include "aos/realtime.h"
-#include "glog/logging.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

@@ -76,9 +76,9 @@ constexpr uint8_t microsoft_vendor_code() { return 0x67; }
 // The total number of endpoints supported by this hardware.
 constexpr int number_endpoints() { return 16; }
 
-__attribute__((aligned(512))) BdtEntry
-    usb0_buffer_descriptor_table[number_endpoints() * 2 /* rx/tx */ *
-                                 2 /* even/odd */];
+__attribute__((aligned(512)))
+BdtEntry usb0_buffer_descriptor_table[number_endpoints() * 2 /* rx/tx */ *
+                                      2 /* even/odd */];
 
 // Returns the specified BDT entry.
 BdtEntry *MutableBdtEntry(int endpoint, Direction direction, EvenOdd odd) {
@@ -121,13 +121,13 @@ UsbDevice::UsbDevice(int index, uint16_t vendor_id, uint16_t product_id)
 
   device_descriptor_ =
       device_descriptor_list_.CreateDescriptor(18, UsbDescriptorType::kDevice);
-  device_descriptor_->AddUint16(0x0200);  // bcdUSB
-  device_descriptor_->AddByte(iad_device_class());  // bDeviceClass
+  device_descriptor_->AddUint16(0x0200);               // bcdUSB
+  device_descriptor_->AddByte(iad_device_class());     // bDeviceClass
   device_descriptor_->AddByte(iad_device_subclass());  // bDeviceSubClass
   device_descriptor_->AddByte(iad_device_protocol());  // bDeviceProtocol
-  device_descriptor_->AddByte(kEndpoint0MaxSize);  // bMaxPacketSize0
-  device_descriptor_->AddUint16(vendor_id);  // idVendor
-  device_descriptor_->AddUint16(product_id);  // idProduct
+  device_descriptor_->AddByte(kEndpoint0MaxSize);      // bMaxPacketSize0
+  device_descriptor_->AddUint16(vendor_id);            // idVendor
+  device_descriptor_->AddUint16(product_id);           // idProduct
   // Increment this whenever you need Windows boxes to actually pay attention to
   // changes.
   device_descriptor_->AddUint16(25);  // bcdDevice
@@ -211,7 +211,7 @@ void UsbDevice::Initialize() {
   config_descriptor_->AddByte(0);  // iConfiguration
   config_descriptor_->AddByte((1 << 7) /* Reserved */ |
                               (1 << 6) /* Self-powered */);  // bmAttribute
-  config_descriptor_->AddByte(2 /* 4mA */);  // bMaxPower
+  config_descriptor_->AddByte(2 /* 4mA */);                  // bMaxPower
 
   device_descriptor_.reset();
   config_descriptor_.reset();
@@ -440,9 +440,9 @@ void UsbDevice::HandleEndpoint0Token(const uint8_t stat) {
       break;
 
     case UsbPid::kOut:
-     for (UsbFunction *function : functions_) {
-       switch (function->HandleEndpoint0OutPacket(
-           bdt_entry->address, G_USB_BD_BC(bdt_entry->buffer_descriptor))) {
+      for (UsbFunction *function : functions_) {
+        switch (function->HandleEndpoint0OutPacket(
+            bdt_entry->address, G_USB_BD_BC(bdt_entry->buffer_descriptor))) {
           case SetupResponse::kIgnored:
             break;
           case SetupResponse::kHandled:
@@ -473,7 +473,7 @@ void UsbDevice::HandleEndpoint0Token(const uint8_t stat) {
         // TODO(Brian): Keep track of which direction it is and how much we've
         // finished so we actually know when to stall it, both here and for
         // kOut tokens.
-        //StallEndpoint0();
+        // StallEndpoint0();
       }
 
       // If we have a new address, there is nothing left in the setup request
@@ -755,19 +755,27 @@ void UsbDevice::HandleEndpoint0SetupPacket(const SetupPacket &setup_packet) {
               // Microsoft is going to set them to; not like they document it
               // anywhere obvious...
               if (descriptor_index == 0xEE && setup_packet.index == 0) {
-                static uint8_t
-                    kMicrosoftOsStringDescriptor
-                        [] = {
-                            0x12,  // bLength
-                            static_cast<uint8_t>(
-                                UsbDescriptorType::kString),  // bDescriptorType
-                            0x4D,
-                            0x00, 0x53, 0x00, 0x46, 0x00, 0x54, 0x00, 0x31,
-                            0x00, 0x30, 0x00, 0x30,
-                            0x00,                     // qwSignature
-                            microsoft_vendor_code(),  // bMS_VendorCode
-                            0x00                      // bPad
-                        };
+                static uint8_t kMicrosoftOsStringDescriptor[] = {
+                    0x12,  // bLength
+                    static_cast<uint8_t>(
+                        UsbDescriptorType::kString),  // bDescriptorType
+                    0x4D,
+                    0x00,
+                    0x53,
+                    0x00,
+                    0x46,
+                    0x00,
+                    0x54,
+                    0x00,
+                    0x31,
+                    0x00,
+                    0x30,
+                    0x00,
+                    0x30,
+                    0x00,                     // qwSignature
+                    microsoft_vendor_code(),  // bMS_VendorCode
+                    0x00                      // bPad
+                };
                 QueueEndpoint0Data(
                     reinterpret_cast<char *>(kMicrosoftOsStringDescriptor),
                     ::std::min<int>(setup_packet.length,

@@ -2,15 +2,16 @@
 
 #include <chrono>
 #include <cmath>
-#include <opencv2/highgui/highgui.hpp>
 #include <thread>
+
+#include "glog/logging.h"
+#include "opencv2/imgproc.hpp"
+#include <opencv2/highgui/highgui.hpp>
 
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
 #include "frc971/input/joystick_state_generated.h"
 #include "frc971/vision/vision_generated.h"
-#include "glog/logging.h"
-#include "opencv2/imgproc.hpp"
 
 namespace y2022 {
 namespace vision {

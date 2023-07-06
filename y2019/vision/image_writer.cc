@@ -1,14 +1,16 @@
-#include <fstream>
+#include "y2019/vision/image_writer.h"
+
 #include <sys/stat.h>
 
+#include <fstream>
+
 #include "glog/logging.h"
-#include "y2019/vision/image_writer.h"
 
 namespace y2019 {
 namespace vision {
 
 ImageWriter::ImageWriter() {
-  LOG(INFO) <<  "Initializing image writer";
+  LOG(INFO) << "Initializing image writer";
   SetDirPath();
 }
 

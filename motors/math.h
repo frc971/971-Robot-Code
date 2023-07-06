@@ -100,7 +100,7 @@ class GenericInitializer {
 extern ::std::array<GenericInitializer *, 10> global_initializers;
 
 // Manages initializing and access to an integer table of a single size.
-template<int kTableSize>
+template <int kTableSize>
 class SinCosIntTable {
  public:
   static const float *sin_int_table() {
@@ -192,7 +192,7 @@ inline ::std::complex<float> ImaginaryExpFloat(float theta) {
 // multiple denominators are needed in the same program, in which case using the
 // biggest denominator for all of them will use the least memory.
 
-template<class Rotation, int kTableSize = Rotation::den>
+template <class Rotation, int kTableSize = Rotation::den>
 float FastSinInt(uint32_t theta) {
   return math_internal::FastTableLookupInt<Rotation, kTableSize>(
       theta, math_internal::SinCosIntTable<kTableSize>::sin_int_table());
@@ -204,7 +204,7 @@ float FastCosInt(uint32_t theta) {
       theta, math_internal::SinCosIntTable<kTableSize>::cos_int_table());
 }
 
-template<class Rotation>
+template <class Rotation>
 ::std::complex<float> ImaginaryExpInt(uint32_t theta) {
   return ::std::complex<float>(FastCosInt<Rotation>(theta),
                                FastSinInt<Rotation>(theta));

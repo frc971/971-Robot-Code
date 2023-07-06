@@ -3,9 +3,10 @@
 
 #include <assert.h>
 #include <string.h>
+
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 #include "aos/macros.h"
 #include "motors/core/kinetis.h"
@@ -175,9 +176,7 @@ class UsbDescriptorList {
           end_index_(end_index),
           next_index_(start_index_) {}
 
-    char *data() const {
-      return &descriptor_list_->data_[0];
-    }
+    char *data() const { return &descriptor_list_->data_[0]; }
 
     UsbDescriptorList *const descriptor_list_;
     const int start_index_, end_index_;

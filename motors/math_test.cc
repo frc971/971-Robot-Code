@@ -1,7 +1,7 @@
 #include "motors/math.h"
 
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 namespace frc971 {
 namespace motors {
@@ -9,20 +9,18 @@ namespace testing {
 
 class SinCosIntTest : public ::testing::Test {
  public:
-  void SetUp() override {
-    MathInit();
-  }
+  void SetUp() override { MathInit(); }
 
   template <class Rotation, int kTableSize>
   void CheckSinCos() {
     static constexpr float kTolerance = 0.004;
-    SCOPED_TRACE("num=" + ::std::to_string(Rotation::num) + " den=" +
-                 ::std::to_string(Rotation::den) + " table_size=" +
-                 ::std::to_string(kTableSize));
+    SCOPED_TRACE("num=" + ::std::to_string(Rotation::num) +
+                 " den=" + ::std::to_string(Rotation::den) +
+                 " table_size=" + ::std::to_string(kTableSize));
     for (uint32_t theta = 0; theta < Rotation::den; ++theta) {
       const float theta_float = ThetaToFloat<Rotation>(theta);
-      SCOPED_TRACE("theta=" + ::std::to_string(theta) + " theta_float=" +
-                   ::std::to_string(theta_float));
+      SCOPED_TRACE("theta=" + ::std::to_string(theta) +
+                   " theta_float=" + ::std::to_string(theta_float));
       EXPECT_THAT((FastSinInt<Rotation, kTableSize>(theta)),
                   ::testing::FloatNear(sin(theta_float), kTolerance));
       EXPECT_THAT((FastCosInt<Rotation, kTableSize>(theta)),
@@ -77,9 +75,7 @@ TEST_F(SinCosIntTest, Numerator5LargerTable) {
 
 class SinCosFloatTest : public ::testing::Test {
  public:
-  void SetUp() override {
-    MathInit();
-  }
+  void SetUp() override { MathInit(); }
 
   void CheckSinCos(float theta) {
     ASSERT_GE(theta, -0.2f);

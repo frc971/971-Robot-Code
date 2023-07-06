@@ -3,6 +3,7 @@
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
+#include "glog/logging.h"
 
 #include "aos/events/event_loop.h"
 #include "aos/time/time.h"
@@ -10,7 +11,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/control_loops/runge_kutta.h"
-#include "glog/logging.h"
 
 namespace frc971 {
 namespace control_loops {

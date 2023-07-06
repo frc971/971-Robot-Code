@@ -5,11 +5,12 @@
 
 #include <chrono>
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/init.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 namespace chrono = std::chrono;
 
@@ -22,7 +23,7 @@ DEFINE_bool(direct, false, "If true, O_DIRECT.");
 DEFINE_uint32(chunks, 1, "Chunks to write using writev.");
 DEFINE_uint32(chunk_size, 512, "Chunk size to write using writev.");
 
-int main(int argc, char ** argv) {
+int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
   std::vector<uint8_t> data;
@@ -52,13 +53,14 @@ int main(int argc, char ** argv) {
     iovec[i].iov_base = &data[i * FLAGS_chunk_size];
     iovec[i].iov_len = FLAGS_chunk_size;
   }
-  iovec[FLAGS_chunks - 1].iov_base = &data[(FLAGS_chunks - 1) * FLAGS_chunk_size];
-  iovec[FLAGS_chunks - 1].iov_len = data.size() - (FLAGS_chunks - 1) * FLAGS_chunk_size;
+  iovec[FLAGS_chunks - 1].iov_base =
+      &data[(FLAGS_chunks - 1) * FLAGS_chunk_size];
+  iovec[FLAGS_chunks - 1].iov_len =
+      data.size() - (FLAGS_chunks - 1) * FLAGS_chunk_size;
 
-  int fd = open(
-      FLAGS_file.c_str(),
-      O_RDWR | O_CLOEXEC | O_CREAT | (FLAGS_direct ? O_DIRECT : 0),
-      0774);
+  int fd =
+      open(FLAGS_file.c_str(),
+           O_RDWR | O_CLOEXEC | O_CREAT | (FLAGS_direct ? O_DIRECT : 0), 0774);
   PCHECK(fd != -1);
 
   const aos::monotonic_clock::time_point start_time =

@@ -1,10 +1,11 @@
 #include <cmath>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
 #include <regex>
 
 #include "absl/strings/str_format.h"
+#include <opencv2/calib3d.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/network/team_number.h"

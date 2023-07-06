@@ -5,8 +5,8 @@
 #include <cstdint>
 
 #include "frc971/constants.h"
-#include "y2018/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
+#include "y2018/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2018/control_loops/superstructure/arm/arm_constants.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
 

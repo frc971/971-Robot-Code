@@ -18,10 +18,11 @@
 extern char *program_invocation_name;
 extern char *program_invocation_short_name;
 
+#include "glog/logging.h"
+
 #include "aos/die.h"
 #include "aos/logging/implementations.h"
 #include "aos/thread_local.h"
-#include "glog/logging.h"
 
 namespace aos {
 namespace logging {

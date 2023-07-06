@@ -34,8 +34,8 @@ TEST(WrapTest, ExhaustiveWrap) {
           break;
         }
       }
-      EXPECT_TRUE(found_interval) << ": Wrap(" << i << ", " << j
-                                  << ") = " << wrapped_val;
+      EXPECT_TRUE(found_interval)
+          << ": Wrap(" << i << ", " << j << ") = " << wrapped_val;
     }
   }
 }

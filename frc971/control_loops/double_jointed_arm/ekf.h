@@ -2,6 +2,7 @@
 #define FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_EKF_H_
 
 #include "Eigen/Dense"
+
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 
 namespace frc971 {

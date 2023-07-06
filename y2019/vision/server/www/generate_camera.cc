@@ -1,14 +1,14 @@
-#include "y2019/constants.h"
-#include "y2019/vision/constants.h"
-
 #include <fstream>
 #include <iostream>
+
+#include "y2019/constants.h"
+#include "y2019/vision/constants.h"
 
 namespace y2019 {
 namespace vision {
 void DumpPose(std::basic_ostream<char> *o, const vision::CameraGeometry &pose) {
   *o << "{x: " << pose.location[0] << ", y: " << pose.location[1]
-    << ", theta: " << pose.heading << "}";
+     << ", theta: " << pose.heading << "}";
 }
 void DumpTypescriptConstants(const char *fname) {
   ::std::ofstream out_file(fname);
@@ -23,7 +23,7 @@ void DumpTypescriptConstants(const char *fname) {
   }
   out_file << "];\n";
 }
-}  // namespace constants
+}  // namespace vision
 }  // namespace y2019
 
 int main(int argc, char *argv[]) {

@@ -10,8 +10,8 @@
 #include <memory>
 #include <string>
 
-#include "hal/Types.h"
 #include "frc971/wpilib/ahal/SensorBase.h"
+#include "hal/Types.h"
 
 namespace frc {
 

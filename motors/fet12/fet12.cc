@@ -1,10 +1,9 @@
-#include "motors/core/kinetis.h"
-
 #include <inttypes.h>
 #include <stdio.h>
 
 #include <atomic>
 
+#include "motors/core/kinetis.h"
 #include "motors/core/time.h"
 #include "motors/fet12/motor_controls.h"
 #include "motors/motor.h"
@@ -189,8 +188,8 @@ void ZeroMotor() {
       // value we store because writing anything resets it to CNTIN (ie 0).
       "str %[scratch], [%[cnt]]\n"
       : [scratch] "=&l"(scratch)
-      : [pdir_word] "l"(&PERIPHERAL_BITBAND(GPIOA_PDIR, 7)),
-        [cnt] "l"(&FTM1->CNT));
+      : [pdir_word] "l"(&PERIPHERAL_BITBAND(GPIOA_PDIR, 7)), [cnt] "l"(
+                                                                 &FTM1->CNT));
   __enable_irq();
 #endif
 }
@@ -277,7 +276,7 @@ extern "C" int main(void) {
   FTM0_EXTTRIG = FTM_EXTTRIG_INITTRIGEN;
   // Don't let any memory accesses sneak past here, because we actually
   // need everything to be starting up.
-  __asm__("" :: : "memory");
+  __asm__("" ::: "memory");
 
   // Give everything a chance to get going.
   delay(100);

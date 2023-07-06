@@ -66,9 +66,7 @@ class EventLoopLocalizer
 
   Localizer::State Xhat() const override { return localizer_.X_hat(); }
 
-  TargetSelector *target_selector() override {
-    return &target_selector_;
-  }
+  TargetSelector *target_selector() override { return &target_selector_; }
 
  private:
   void HandleFrame(const CameraFrame *frame);

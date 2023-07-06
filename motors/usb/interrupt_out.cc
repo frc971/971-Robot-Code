@@ -35,13 +35,12 @@ void InterruptOut::Initialize() {
     endpoint_descriptor->AddByte(
         m_endpoint_attributes_interrupt());  // bmAttributes
     endpoint_descriptor->AddUint16(kSize);   // wMaxPacketSize
-    endpoint_descriptor->AddByte(1);  // bInterval
+    endpoint_descriptor->AddByte(1);         // bInterval
   }
 }
 
 void InterruptOut::HandleOutFinished(int endpoint, BdtEntry *bdt_entry) {
   if (endpoint == endpoint_) {
-
     DisableInterrupts disable_interrupts;
     if (first_rx_held_ == nullptr) {
       first_rx_held_ = bdt_entry;

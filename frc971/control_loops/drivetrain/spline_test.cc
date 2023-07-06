@@ -4,6 +4,7 @@
 
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
+
 #include "frc971/analysis/in_process_plotter.h"
 
 DEFINE_bool(plot, false, "If true, plot");
@@ -15,9 +16,8 @@ namespace testing {
 
 std::string TestName() {
   const ::testing::TestInfo *info =
-        ::testing::UnitTest::GetInstance()->current_test_info();
-  return std::string(info->test_case_name()) + "." +
-         std::string(info->name());
+      ::testing::UnitTest::GetInstance()->current_test_info();
+  return std::string(info->test_case_name()) + "." + std::string(info->name());
 }
 
 // Test fixture with a spline from 0, 0 to 1, 1
@@ -34,6 +34,7 @@ class SplineTest : public ::testing::Test {
       plotter_->Spin();
     }
   }
+
  protected:
   SplineTest()
       : control_points_((::Eigen::Matrix<double, 2, 4>() << 0.0, 0.5, 0.5, 1.0,

@@ -3,12 +3,13 @@
 #include <queue>
 
 #include "absl/strings/str_format.h"
+#include "gflags/gflags.h"
+
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/time/time.h"
-#include "gflags/gflags.h"
 
 DEFINE_string(
     name, "",

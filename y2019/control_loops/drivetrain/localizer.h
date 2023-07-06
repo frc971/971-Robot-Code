@@ -95,15 +95,13 @@ class TypedLocalizer
         dhdx;
     make_h_queue_.CorrectKnownHBuilder(
         z, nullptr,
-        ExpectedObservationBuilder(this, camera, targets, &h_functions,
-                                   &dhdx),
+        ExpectedObservationBuilder(this, camera, targets, &h_functions, &dhdx),
         R, t);
     // Fetch cache:
     for (size_t ii = 1; ii < targets.size(); ++ii) {
       TargetViewToMatrices(targets[ii], &z, &R);
       h_queue_.CorrectKnownH(
-          z, nullptr,
-          ExpectedObservationFunctor(h_functions[ii], dhdx[ii]), R,
+          z, nullptr, ExpectedObservationFunctor(h_functions[ii], dhdx[ii]), R,
           t);
     }
   }
@@ -189,8 +187,8 @@ class TypedLocalizer
         const State &state, const StateSquare &P) {
       HFunction h;
       Eigen::Matrix<Scalar, kNOutputs, kNStates> dhdx;
-      localizer_->MakeH(camera_, target_views_, h_functions_, dhdx_,
-                        state, P, &h, &dhdx);
+      localizer_->MakeH(camera_, target_views_, h_functions_, dhdx_, state, P,
+                        &h, &dhdx);
       functor_.emplace(h, dhdx);
       return &functor_.value();
     }
@@ -410,8 +408,7 @@ class TypedLocalizer
         if (view_idx >= camera_views.size()) {
           AOS_LOG(ERROR, "Somehow, the view scorer failed.\n");
           h_functions->emplace_back();
-          dhdx->push_back(
-              Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero());
+          dhdx->push_back(Eigen::Matrix<Scalar, kNOutputs, kNStates>::Zero());
           continue;
         }
         const Eigen::Matrix<Scalar, kNOutputs, kNStates> best_H =

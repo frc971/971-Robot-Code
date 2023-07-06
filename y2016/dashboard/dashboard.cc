@@ -8,9 +8,6 @@
 #include <thread>
 #include <vector>
 
-#include "internal/Embedded.h"
-#include "seasocks/Server.h"
-
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
@@ -20,6 +17,8 @@
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
 #include "frc971/autonomous/auto_mode_generated.h"
+#include "internal/Embedded.h"
+#include "seasocks/Server.h"
 #include "y2016/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2016/queues/ball_detector_generated.h"
 #include "y2016/vision/vision_generated.h"

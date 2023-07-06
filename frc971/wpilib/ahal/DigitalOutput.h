@@ -10,8 +10,8 @@
 #include <memory>
 #include <string>
 
-#include "hal/Types.h"
 #include "frc971/wpilib/ahal/DigitalSource.h"
+#include "hal/Types.h"
 
 namespace frc {
 

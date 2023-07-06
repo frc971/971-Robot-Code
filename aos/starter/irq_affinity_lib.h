@@ -48,7 +48,6 @@ class InterruptsStatus {
   const std::vector<InterruptState> &states() const { return states_; }
 
  private:
-
   // Buffer to hold the contents of /proc/interrupts to avoid re-allocating
   // continually.
   std::vector<char> interrupts_content_;

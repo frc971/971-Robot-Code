@@ -1,19 +1,20 @@
 #include <chrono>
 #include <memory>
 
+#include "gtest/gtest.h"
+
 #include "aos/events/logging/log_writer.h"
 #include "frc971/control_loops/capped_test_plant.h"
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
+#include "frc971/control_loops/subsystem_simulator.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-#include "gtest/gtest.h"
 #include "y2022/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2022/control_loops/superstructure/catapult/catapult_plant.h"
 #include "y2022/control_loops/superstructure/climber/climber_plant.h"
 #include "y2022/control_loops/superstructure/intake/intake_plant.h"
 #include "y2022/control_loops/superstructure/superstructure.h"
 #include "y2022/control_loops/superstructure/turret/turret_plant.h"
-#include "frc971/control_loops/subsystem_simulator.h"
 
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
@@ -35,10 +36,11 @@ typedef Superstructure::PotAndAbsoluteEncoderSubsystem
     PotAndAbsoluteEncoderSubsystem;
 typedef Superstructure::RelativeEncoderSubsystem RelativeEncoderSubsystem;
 using DrivetrainStatus = ::frc971::control_loops::drivetrain::Status;
-using PotAndAbsoluteEncoderSimulator = frc971::control_loops::SubsystemSimulator<
-    frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus,
-    PotAndAbsoluteEncoderSubsystem::State,
-    constants::Values::PotAndAbsEncoderConstants>;
+using PotAndAbsoluteEncoderSimulator =
+    frc971::control_loops::SubsystemSimulator<
+        frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus,
+        PotAndAbsoluteEncoderSubsystem::State,
+        constants::Values::PotAndAbsEncoderConstants>;
 using RelativeEncoderSimulator = frc971::control_loops::SubsystemSimulator<
     frc971::control_loops::RelativeEncoderProfiledJointStatus,
     RelativeEncoderSubsystem::State, constants::Values::PotConstants>;

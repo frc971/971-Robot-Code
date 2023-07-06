@@ -1,8 +1,9 @@
 #include "aos/util/config_validator_lib.h"
 
+#include "gtest/gtest-spi.h"
+
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/path.h"
-#include "gtest/gtest-spi.h"
 
 using aos::testing::ArtifactPath;
 namespace aos::util::testing {

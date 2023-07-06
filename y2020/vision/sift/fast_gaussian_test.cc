@@ -1,8 +1,8 @@
 #include "y2020/vision/sift/fast_gaussian.h"
 
+#include "gtest/gtest.h"
 #include <opencv2/imgproc.hpp>
 
-#include "gtest/gtest.h"
 #include "y2020/vision/sift/fast_gaussian_all.h"
 
 namespace frc971 {

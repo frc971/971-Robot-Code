@@ -11,11 +11,12 @@
 #include <sstream>
 
 #include "absl/strings/escaping.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/ipc_lib/lockless_queue_memory.h"
 #include "aos/realtime.h"
 #include "aos/util/compiler_memory_barrier.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 DEFINE_bool(dump_lockless_queue_data, false,
             "If true, print the data out when dumping the queue.");

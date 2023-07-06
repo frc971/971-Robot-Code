@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Eigen/Dense"
+
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
 #include "frc971/control_loops/c2d.h"
@@ -238,10 +239,12 @@ struct HybridKalmanCoefficients final {
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_outputs>
           &R_continuous,
       const Eigen::Matrix<Scalar, number_of_states, number_of_states>
-          &P_steady_state, size_t delayed_u)
+          &P_steady_state,
+      size_t delayed_u)
       : Q_continuous(Q_continuous),
         R_continuous(R_continuous),
-        P_steady_state(P_steady_state), delayed_u(delayed_u) {
+        P_steady_state(P_steady_state),
+        delayed_u(delayed_u) {
     CHECK(!delayed_u) << ": Delayed hybrid filters aren't supported yet.";
   }
 };

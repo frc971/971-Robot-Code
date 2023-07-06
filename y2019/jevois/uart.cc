@@ -3,6 +3,7 @@
 #include <array>
 
 #include "absl/types/span.h"
+
 #include "aos/util/bitpacking.h"
 #include "y2019/jevois/jevois_crc.h"
 #ifdef __linux__

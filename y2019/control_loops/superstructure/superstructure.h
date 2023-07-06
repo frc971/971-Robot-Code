@@ -1,8 +1,8 @@
 #ifndef Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 #define Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 
-#include "frc971/control_loops/control_loop.h"
 #include "aos/events/event_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2019/constants.h"

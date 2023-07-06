@@ -6,6 +6,8 @@
 #include <random>
 #include <thread>
 
+#include "gflags/gflags.h"
+
 #include "aos/condition.h"
 #include "aos/init.h"
 #include "aos/ipc_lib/latency_lib.h"
@@ -14,7 +16,6 @@
 #include "aos/mutex/mutex.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"
-#include "gflags/gflags.h"
 
 DEFINE_int32(seconds, 10, "Duration of the test to run");
 DEFINE_int32(

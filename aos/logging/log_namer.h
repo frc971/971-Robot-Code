@@ -1,8 +1,8 @@
 #ifndef AOS_LOGGING_LOG_NAMER_H_
 #define AOS_LOGGING_LOG_NAMER_H_
 
-#include <string>
 #include <optional>
+#include <string>
 
 namespace aos {
 namespace logging {

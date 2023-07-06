@@ -1,5 +1,6 @@
 #include <memory>
 
+#include "glog/logging.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -7,7 +8,6 @@
 #include "aos/init.h"
 #include "aos/time/time.h"
 #include "y2020/vision/sift/fast_gaussian.h"
-#include "glog/logging.h"
 #include "y2020/vision/sift/sift971.h"
 
 DEFINE_string(image, "", "Image to test with");
@@ -15,7 +15,7 @@ DEFINE_string(image, "", "Image to test with");
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
 
-  cv::setNumThreads	(4);
+  cv::setNumThreads(4);
 
   const cv::Mat raw_image = cv::imread(FLAGS_image);
   CHECK(!raw_image.empty()) << ": Failed to read: " << FLAGS_image;
@@ -58,7 +58,8 @@ int main(int argc, char **argv) {
 #endif
 
   LOG(INFO);
-  std::unique_ptr<frc971::vision::SIFT971_Impl> sift(new frc971::vision::SIFT971_Impl());
+  std::unique_ptr<frc971::vision::SIFT971_Impl> sift(
+      new frc971::vision::SIFT971_Impl());
   std::vector<cv::KeyPoint> keypoints;
   cv::Mat descriptors;
   LOG(INFO) << "detectAndCompute on " << image.rows << "x" << image.cols;

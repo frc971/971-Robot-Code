@@ -1,8 +1,8 @@
-#include "y2019/control_loops/superstructure/collision_avoidance.h"
+#include "gtest/gtest.h"
 
 #include "aos/commonmath.h"
 #include "aos/flatbuffers.h"
-#include "gtest/gtest.h"
+#include "y2019/control_loops/superstructure/collision_avoidance.h"
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_status_generated.h"
 
@@ -81,8 +81,7 @@ FlatbufferDetachedBuffer<Status> MakeZeroStatus() {
     wrist_offset = wrist_builder.Finish();
   }
 
-  flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
-      elevator_offset;
+  flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus> elevator_offset;
   {
     PotAndAbsoluteEncoderProfiledJointStatus::Builder elevator_builder(fbb);
 
@@ -90,8 +89,7 @@ FlatbufferDetachedBuffer<Status> MakeZeroStatus() {
     elevator_offset = elevator_builder.Finish();
   }
 
-  flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus>
-      intake_offset;
+  flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus> intake_offset;
   {
     AbsoluteEncoderProfiledJointStatus::Builder intake_builder(fbb);
 
@@ -462,15 +460,15 @@ TEST_P(CollisionAvoidanceTests, FixWristCollision) {
 // Fix Collision Wrist Above Elevator
 TEST_P(CollisionAvoidanceTests, FixWristElevatorCollision) {
   // changes the goals
-  unsafe_goal_.mutable_message()->mutable_wrist()->mutate_unsafe_goal ( 0.0);
-  unsafe_goal_.mutable_message()->mutable_elevator()->mutate_unsafe_goal ( 0.0);
-  unsafe_goal_.mutable_message()->mutable_intake()->mutate_unsafe_goal (
+  unsafe_goal_.mutable_message()->mutable_wrist()->mutate_unsafe_goal(0.0);
+  unsafe_goal_.mutable_message()->mutable_elevator()->mutate_unsafe_goal(0.0);
+  unsafe_goal_.mutable_message()->mutable_intake()->mutate_unsafe_goal(
       avoidance.kIntakeOutAngle + avoidance.kEpsIntake);
 
   // sets the status position messgaes
-  status_.mutable_message()->mutable_wrist()->mutate_position ( 0.0);
-  status_.mutable_message()->mutable_elevator()->mutate_position ( 0.0);
-  status_.mutable_message()->mutable_intake()->mutate_position (
+  status_.mutable_message()->mutable_wrist()->mutate_position(0.0);
+  status_.mutable_message()->mutable_elevator()->mutate_position(0.0);
+  status_.mutable_message()->mutable_intake()->mutate_position(
       avoidance.kIntakeOutAngle + avoidance.kEpsIntake);
 
   Iterate();
@@ -484,7 +482,7 @@ TEST_P(CollisionAvoidanceTests, FixWristElevatorCollision) {
 }
 
 INSTANTIATE_TEST_SUITE_P(CollisionAvoidancePieceTest, CollisionAvoidanceTests,
-                        ::testing::Bool());
+                         ::testing::Bool());
 
 }  // namespace testing
 }  // namespace superstructure

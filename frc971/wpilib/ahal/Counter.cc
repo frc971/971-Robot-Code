@@ -7,11 +7,11 @@
 
 #include "frc971/wpilib/ahal/Counter.h"
 
-#include "hal/HAL.h"
 #include "frc971/wpilib/ahal/AnalogTrigger.h"
 #include "frc971/wpilib/ahal/Base.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
+#include "hal/HAL.h"
 
 using namespace frc;
 
@@ -31,7 +31,7 @@ Counter::Counter(int channel) : Counter(kTwoPulse) {
   ClearDownSource();
 }
 
-Counter::Counter(DigitalSource* source) : Counter(kTwoPulse) {
+Counter::Counter(DigitalSource *source) : Counter(kTwoPulse) {
   SetUpSource(source);
   ClearDownSource();
 }
@@ -41,13 +41,13 @@ Counter::Counter(std::shared_ptr<DigitalSource> source) : Counter(kTwoPulse) {
   ClearDownSource();
 }
 
-Counter::Counter(const AnalogTrigger& trigger) : Counter(kTwoPulse) {
+Counter::Counter(const AnalogTrigger &trigger) : Counter(kTwoPulse) {
   SetUpSource(trigger.CreateOutput(AnalogTriggerType::kState));
   ClearDownSource();
 }
 
-Counter::Counter(EncodingType encodingType, DigitalSource* upSource,
-                 DigitalSource* downSource, bool inverted)
+Counter::Counter(EncodingType encodingType, DigitalSource *upSource,
+                 DigitalSource *downSource, bool inverted)
     : Counter(encodingType,
               std::shared_ptr<DigitalSource>(upSource,
                                              NullDeleter<DigitalSource>()),
@@ -96,7 +96,7 @@ void Counter::SetUpSource(int channel) {
   SetUpSource(std::make_shared<DigitalInput>(channel));
 }
 
-void Counter::SetUpSource(AnalogTrigger* analogTrigger,
+void Counter::SetUpSource(AnalogTrigger *analogTrigger,
                           AnalogTriggerType triggerType) {
   SetUpSource(std::shared_ptr<AnalogTrigger>(analogTrigger,
                                              NullDeleter<AnalogTrigger>()),
@@ -109,7 +109,7 @@ void Counter::SetUpSource(std::shared_ptr<AnalogTrigger> analogTrigger,
   SetUpSource(analogTrigger->CreateOutput(triggerType));
 }
 
-void Counter::SetUpSource(DigitalSource* source) {
+void Counter::SetUpSource(DigitalSource *source) {
   SetUpSource(
       std::shared_ptr<DigitalSource>(source, NullDeleter<DigitalSource>()));
 }
@@ -125,7 +125,7 @@ void Counter::SetUpSource(std::shared_ptr<DigitalSource> source) {
   HAL_CHECK_STATUS(status);
 }
 
-void Counter::SetUpSource(DigitalSource& source) {
+void Counter::SetUpSource(DigitalSource &source) {
   SetUpSource(
       std::shared_ptr<DigitalSource>(&source, NullDeleter<DigitalSource>()));
 }
@@ -157,7 +157,7 @@ void Counter::SetDownSource(int channel) {
   SetDownSource(std::make_shared<DigitalInput>(channel));
 }
 
-void Counter::SetDownSource(AnalogTrigger* analogTrigger,
+void Counter::SetDownSource(AnalogTrigger *analogTrigger,
                             AnalogTriggerType triggerType) {
   SetDownSource(std::shared_ptr<AnalogTrigger>(analogTrigger,
                                                NullDeleter<AnalogTrigger>()),
@@ -170,12 +170,12 @@ void Counter::SetDownSource(std::shared_ptr<AnalogTrigger> analogTrigger,
   SetDownSource(analogTrigger->CreateOutput(triggerType));
 }
 
-void Counter::SetDownSource(DigitalSource* source) {
+void Counter::SetDownSource(DigitalSource *source) {
   SetDownSource(
       std::shared_ptr<DigitalSource>(source, NullDeleter<DigitalSource>()));
 }
 
-void Counter::SetDownSource(DigitalSource& source) {
+void Counter::SetDownSource(DigitalSource &source) {
   SetDownSource(
       std::shared_ptr<DigitalSource>(&source, NullDeleter<DigitalSource>()));
 }

@@ -1,8 +1,8 @@
-#include "y2023/constants/constants_generated.h"
-#include "y2023/constants/constants_list_generated.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/testing/path.h"
 #include "frc971/constants/constants_sender_lib.h"
+#include "y2023/constants/constants_generated.h"
+#include "y2023/constants/constants_list_generated.h"
 
 namespace y2023 {
 bool SendSimulationConstants(aos::SimulatedEventLoopFactory *factory, int team,

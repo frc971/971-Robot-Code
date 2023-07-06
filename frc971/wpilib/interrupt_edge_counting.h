@@ -9,7 +9,6 @@
 #include "aos/logging/logging.h"
 #include "aos/macros.h"
 #include "aos/stl_mutex/stl_mutex.h"
-
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/Encoder.h"
 

@@ -3,7 +3,6 @@
 #include <functional>
 
 #include "aos/logging/logging.h"
-
 #include "y2014/constants.h"
 #include "y2014/control_loops/claw/claw_goal_generated.h"
 #include "y2014/control_loops/claw/claw_status_generated.h"
@@ -63,8 +62,7 @@ bool ShootActor::IntakeOff() {
     claw_builder.add_intake(0.0);
     claw_builder.add_centering(0.0);
 
-    if (builder.Send(claw_builder.Finish()) !=
-        aos::RawSender::Error::kOk) {
+    if (builder.Send(claw_builder.Finish()) != aos::RawSender::Error::kOk) {
       AOS_LOG(WARNING, "sending claw goal failed\n");
       return false;
     }
@@ -89,8 +87,7 @@ bool ShootActor::RunAction(const aos::common::actions::DoubleParam *) {
   shooter_builder.add_shot_requested(false);
   shooter_builder.add_unload_requested(false);
   shooter_builder.add_load_requested(false);
-  if (builder.Send(shooter_builder.Finish()) !=
-      aos::RawSender::Error::kOk) {
+  if (builder.Send(shooter_builder.Finish()) != aos::RawSender::Error::kOk) {
     AOS_LOG(WARNING, "sending shooter goal failed\n");
     return false;
   }
@@ -124,8 +121,7 @@ void ShootActor::InnerRunAction() {
     goal_builder.add_shot_requested(true);
     goal_builder.add_unload_requested(false);
     goal_builder.add_load_requested(false);
-    if (builder.Send(goal_builder.Finish()) !=
-        aos::RawSender::Error::kOk) {
+    if (builder.Send(goal_builder.Finish()) != aos::RawSender::Error::kOk) {
       AOS_LOG(WARNING, "sending shooter goal failed\n");
       return;
     }

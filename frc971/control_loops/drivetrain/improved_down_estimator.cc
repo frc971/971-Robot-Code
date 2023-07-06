@@ -2,6 +2,7 @@
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
+
 #include "frc971/control_loops/quaternion_utils.h"
 
 namespace frc971 {

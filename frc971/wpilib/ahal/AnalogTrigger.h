@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include <memory>
-
 #include <hal/Types.h>
+
+#include <memory>
 
 #include "frc971/wpilib/ahal/AnalogTriggerOutput.h"
 
@@ -24,13 +24,13 @@ class AnalogTrigger {
 
  public:
   explicit AnalogTrigger(int channel);
-  explicit AnalogTrigger(AnalogInput* channel);
-  explicit AnalogTrigger(DutyCycle* dutyCycle);
+  explicit AnalogTrigger(AnalogInput *channel);
+  explicit AnalogTrigger(DutyCycle *dutyCycle);
 
   virtual ~AnalogTrigger();
 
-  AnalogTrigger(AnalogTrigger&& rhs);
-  AnalogTrigger& operator=(AnalogTrigger&& rhs);
+  AnalogTrigger(AnalogTrigger &&rhs);
+  AnalogTrigger &operator=(AnalogTrigger &&rhs);
 
   void SetLimitsVoltage(double lower, double upper);
 
@@ -55,8 +55,8 @@ class AnalogTrigger {
 
  private:
   hal::Handle<HAL_AnalogTriggerHandle> m_trigger;
-  AnalogInput* m_analogInput = nullptr;
-  DutyCycle* m_dutyCycle = nullptr;
+  AnalogInput *m_analogInput = nullptr;
+  DutyCycle *m_dutyCycle = nullptr;
   bool m_ownsAnalog = false;
 };
 

@@ -3,8 +3,9 @@
 
 #include <iostream>
 
-#include "aos/containers/sized_array.h"
 #include "flatbuffers/flatbuffers.h"
+
+#include "aos/containers/sized_array.h"
 
 namespace aos {
 

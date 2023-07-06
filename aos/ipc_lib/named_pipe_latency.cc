@@ -5,6 +5,8 @@
 #include <random>
 #include <thread>
 
+#include "gflags/gflags.h"
+
 #include "aos/events/epoll.h"
 #include "aos/init.h"
 #include "aos/ipc_lib/latency_lib.h"
@@ -12,7 +14,6 @@
 #include "aos/logging/logging.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"
-#include "gflags/gflags.h"
 
 // This is a demo program which uses named pipes to communicate.
 // It measures both latency of a random timer thread, and latency of the

@@ -8,10 +8,11 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "flatbuffers/flatbuffers.h"
+
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/uuid.h"
-#include "flatbuffers/flatbuffers.h"
 
 namespace aos {
 namespace logger {

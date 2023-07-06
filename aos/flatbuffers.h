@@ -5,11 +5,12 @@
 #include <string_view>
 
 #include "absl/types/span.h"
+#include "flatbuffers/flatbuffers.h"  // IWYU pragma: export
+#include "glog/logging.h"
+
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/macros.h"
 #include "aos/util/file.h"
-#include "flatbuffers/flatbuffers.h"  // IWYU pragma: export
-#include "glog/logging.h"
 
 namespace aos {
 

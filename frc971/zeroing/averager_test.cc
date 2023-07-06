@@ -1,5 +1,6 @@
-#include "gtest/gtest.h"
 #include "frc971/zeroing/averager.h"
+
+#include "gtest/gtest.h"
 
 namespace frc971 {
 namespace zeroing {

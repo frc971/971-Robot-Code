@@ -2,18 +2,18 @@
 #define Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_ARM_H_
 
 #include "aos/time/time.h"
-#include "frc971/zeroing/zeroing.h"
-#include "y2018/constants.h"
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/double_jointed_arm/ekf.h"
-#include "y2018/control_loops/superstructure/arm/generated_graph.h"
 #include "frc971/control_loops/double_jointed_arm/graph.h"
 #include "frc971/control_loops/double_jointed_arm/trajectory.h"
+#include "frc971/zeroing/zeroing.h"
+#include "y2018/constants.h"
+#include "y2018/control_loops/superstructure/arm/generated_graph.h"
 #include "y2018/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2018/control_loops/superstructure/superstructure_status_generated.h"
 
-using frc971::control_loops::arm::TrajectoryFollower;
 using frc971::control_loops::arm::EKF;
+using frc971::control_loops::arm::TrajectoryFollower;
 
 namespace y2018 {
 namespace control_loops {

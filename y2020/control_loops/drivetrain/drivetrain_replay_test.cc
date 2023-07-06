@@ -8,6 +8,7 @@
 // longer be valid.
 // TODO(james): Do something about that when the time comes--could just copy
 // the existing drivetrain config into this file and use it directly.
+#include "gflags/gflags.h"
 #include "gtest/gtest.h"
 
 #include "aos/configuration.h"
@@ -19,13 +20,10 @@
 #include "aos/network/team_number.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/trajectory_schema.h"
-#include "gflags/gflags.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
-DEFINE_string(
-    logfile,
-    "external/drivetrain_replay/",
-    "Name of the logfile to read from.");
+DEFINE_string(logfile, "external/drivetrain_replay/",
+              "Name of the logfile to read from.");
 DEFINE_string(config, "y2020/aos_config.json",
               "Name of the config file to replay using.");
 
@@ -43,9 +41,9 @@ class DrivetrainReplayTest : public ::testing::Test {
     // TODO(james): Actually enforce not sending on the same buses as the
     // logfile spews out.
     reader_.RemapLoggedChannel("/drivetrain",
-                              "frc971.control_loops.drivetrain.Status");
+                               "frc971.control_loops.drivetrain.Status");
     reader_.RemapLoggedChannel("/drivetrain",
-                              "frc971.control_loops.drivetrain.Output");
+                               "frc971.control_loops.drivetrain.Output");
 
     // Patch in any new channels.
     updated_config_ = aos::configuration::MergeWithConfig(
@@ -98,9 +96,7 @@ class DrivetrainReplayTest : public ::testing::Test {
                 "/drivetrain");
   }
 
-  ~DrivetrainReplayTest() {
-    reader_.Deregister();
-  }
+  ~DrivetrainReplayTest() { reader_.Deregister(); }
 
   aos::logger::LogReader reader_;
   const aos::Node *roborio_;

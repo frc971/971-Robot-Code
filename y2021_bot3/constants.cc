@@ -8,9 +8,10 @@
 #endif
 
 #include "absl/base/call_once.h"
+#include "glog/logging.h"
+
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
-#include "glog/logging.h"
 
 namespace y2021_bot3 {
 namespace constants {

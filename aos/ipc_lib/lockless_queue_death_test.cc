@@ -15,6 +15,10 @@
 #include <memory>
 #include <thread>
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+#include "gtest/gtest.h"
+
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/lockless_queue.h"
 #include "aos/ipc_lib/lockless_queue_memory.h"
@@ -23,9 +27,6 @@
 #include "aos/realtime.h"
 #include "aos/testing/prevent_exit.h"
 #include "aos/testing/test_logging.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace ipc_lib {

@@ -2,8 +2,9 @@
 
 #include <iostream>
 
-#include "frc971/input/driver_station_data.h"
 #include "gtest/gtest.h"
+
+#include "frc971/input/driver_station_data.h"
 
 using y2019::input::joysticks::GetJoystickPosition;
 using y2019::input::joysticks::JoystickAngle;

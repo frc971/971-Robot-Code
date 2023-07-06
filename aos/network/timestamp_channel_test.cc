@@ -1,12 +1,13 @@
 #include "aos/network/timestamp_channel.h"
 
+#include "gtest/gtest.h"
+
 #include "aos/configuration.h"
 #include "aos/events/ping_generated.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
-#include "gtest/gtest.h"
 
 DECLARE_string(override_hostname);
 

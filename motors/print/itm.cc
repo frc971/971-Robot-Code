@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "absl/types/span.h"
+
 #include "motors/core/itm.h"
 
 namespace frc971 {

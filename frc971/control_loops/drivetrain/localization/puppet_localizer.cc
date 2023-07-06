@@ -44,9 +44,9 @@ void PuppetLocalizer::Reset(
 }
 
 void PuppetLocalizer::Update(const Eigen::Matrix<double, 2, 1> &U,
-                       aos::monotonic_clock::time_point now,
-                       double left_encoder, double right_encoder,
-                       double gyro_rate, const Eigen::Vector3d &accel) {
+                             aos::monotonic_clock::time_point now,
+                             double left_encoder, double right_encoder,
+                             double gyro_rate, const Eigen::Vector3d &accel) {
   ekf_.UpdateEncodersAndGyro(left_encoder, right_encoder, gyro_rate,
                              U.cast<float>(), accel.cast<float>(), now);
   if (localizer_output_fetcher_.Fetch()) {

@@ -1,7 +1,8 @@
-#include "aos/events/shm_event_loop.h"
-#include "aos/init.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+
+#include "aos/events/shm_event_loop.h"
+#include "aos/init.h"
 #include "y2020/control_loops/superstructure/shooter/shooter_tuning_params_generated.h"
 
 DEFINE_double(velocity_initial_finisher, 300.0, "Initial finisher velocity");

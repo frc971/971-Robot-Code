@@ -1,10 +1,11 @@
 #ifndef AOS_MUTEX_H_
 #define AOS_MUTEX_H_
 
+#include "glog/logging.h"
+
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/macros.h"
 #include "aos/type_traits/type_traits.h"
-#include "glog/logging.h"
 
 namespace aos {
 

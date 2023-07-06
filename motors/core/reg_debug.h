@@ -1,8 +1,8 @@
 #ifndef MOTORS_CORE_REG_DEBUG_H_
 #define MOTORS_CORE_REG_DEBUG_H_
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 // Cortex-M4 always has 32 registers according to its Technical Reference
 // Manual.

@@ -1,4 +1,4 @@
-#include "flip_image.h"
+#include "y2019/image_streamer/flip_image.h"
 
 #ifdef __clang__
 // CImg has undefined behavior that Clang warns about. Just suppress the

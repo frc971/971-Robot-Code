@@ -9,9 +9,9 @@
 
 #include <cstdio>
 
-#include "hal/HAL.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
 #include "frc971/wpilib/ahal/WPILibVersion.h"
+#include "hal/HAL.h"
 
 using namespace frc;
 

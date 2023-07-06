@@ -6,13 +6,13 @@
 /*----------------------------------------------------------------------------*/
 
 #include "hal/Relay.h"
-#include "frc971/wpilib/ahal/Relay.h"
 
 #include <sstream>
 
+#include "frc971/wpilib/ahal/Relay.h"
+#include "frc971/wpilib/ahal/WPIErrors.h"
 #include "hal/HAL.h"
 #include "hal/Ports.h"
-#include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;
 
@@ -51,7 +51,8 @@ Relay::Relay(int channel, Relay::Direction direction)
   }
   if (m_direction == kBothDirections || m_direction == kReverseOnly) {
     int32_t status = 0;
-    m_reverseHandle = HAL_InitializeRelayPort(portHandle, false, nullptr, &status);
+    m_reverseHandle =
+        HAL_InitializeRelayPort(portHandle, false, nullptr, &status);
     if (status != 0) {
       wpi_setErrorWithContextRange(status, 0, HAL_GetNumRelayChannels(),
                                    channel, HAL_GetErrorMessage(status));

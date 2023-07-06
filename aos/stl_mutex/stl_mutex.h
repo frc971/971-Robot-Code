@@ -3,9 +3,10 @@
 
 #include <mutex>
 
+#include "glog/logging.h"
+
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/macros.h"
-#include "glog/logging.h"
 
 namespace aos {
 

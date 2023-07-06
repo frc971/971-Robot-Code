@@ -44,7 +44,6 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
     last_disable_has_piece_time_ = monotonic_now;
   }
 
-
   // If we've had the piece for enough time, go to lower pump_voltage
   low_pump_voltage = *has_piece && filtered_pressure_ < kVacuumOnThreshold;
 
@@ -64,7 +63,8 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
     if (unsafe_goal->grab_piece() && unsafe_goal->gamepiece_mode() == 0) {
       output->intake_suction_top = false;
       output->intake_suction_bottom = true;
-    } else if (unsafe_goal->grab_piece() && unsafe_goal->gamepiece_mode() == 1) {
+    } else if (unsafe_goal->grab_piece() &&
+               unsafe_goal->gamepiece_mode() == 1) {
       output->intake_suction_top = true;
       output->intake_suction_bottom = true;
     } else {

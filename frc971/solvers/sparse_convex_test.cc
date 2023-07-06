@@ -36,8 +36,7 @@ class SimpleQP : public SparseConvexProblem {
   }
 
   // Returns the constraints f(X) < 0, and their derivitive.
-  Eigen::VectorXd f(
-      Eigen::Ref<const Eigen::VectorXd> X) const override {
+  Eigen::VectorXd f(Eigen::Ref<const Eigen::VectorXd> X) const override {
     return C_ * X - c_;
   }
   Eigen::SparseMatrix<double> df(
@@ -49,9 +48,7 @@ class SimpleQP : public SparseConvexProblem {
   Eigen::SparseMatrix<double> A() const override {
     return Eigen::Matrix<double, 1, 2>(1, -1).sparseView();
   }
-  Eigen::VectorXd b() const override {
-    return Eigen::Matrix<double, 1, 1>(0);
-  }
+  Eigen::VectorXd b() const override { return Eigen::Matrix<double, 1, 1>(0); }
 
  private:
   Eigen::Matrix<double, 2, 2> Q_;

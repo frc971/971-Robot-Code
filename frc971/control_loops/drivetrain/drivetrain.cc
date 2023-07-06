@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "Eigen/Dense"
+
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/drivetrain/down_estimator.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
@@ -219,7 +220,8 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
     case GyroType::FLIPPED_SPARTAN_GYRO:
       if (!yaw_gyro_zero_.has_value()) {
         yaw_gyro_zeroer_.AddData(last_gyro_rate_);
-        if (yaw_gyro_zeroer_.full() && yaw_gyro_zeroer_.GetRange() < kMaxYawGyroZeroingRange) {
+        if (yaw_gyro_zeroer_.full() &&
+            yaw_gyro_zeroer_.GetRange() < kMaxYawGyroZeroingRange) {
           yaw_gyro_zero_ = yaw_gyro_zeroer_.GetAverage()(0);
           VLOG(1) << "Zeroed to " << *yaw_gyro_zero_ << " Range "
                   << yaw_gyro_zeroer_.GetRange();

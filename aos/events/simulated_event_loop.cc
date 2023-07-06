@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
+
 #include "aos/events/aos_logging.h"
 #include "aos/events/simulated_network_bridge.h"
 #include "aos/init.h"

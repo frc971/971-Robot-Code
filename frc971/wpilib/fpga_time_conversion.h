@@ -1,11 +1,12 @@
 #ifndef FRC971_WPILIB_FPGA_TIME_CONVERSION_H_
 #define FRC971_WPILIB_FPGA_TIME_CONVERSION_H_
 
-#include <optional>
 #include <chrono>
+#include <optional>
+
+#include "glog/logging.h"
 
 #include "aos/time/time.h"
-#include "glog/logging.h"
 #include "hal/cpp/fpga_clock.h"
 
 namespace frc971 {

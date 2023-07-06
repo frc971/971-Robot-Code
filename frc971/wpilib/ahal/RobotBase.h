@@ -12,8 +12,8 @@
 #include <thread>
 
 #include "aos/realtime.h"
-#include "hal/HAL.h"
 #include "frc971/wpilib/ahal/Base.h"
+#include "hal/HAL.h"
 
 namespace frc {
 

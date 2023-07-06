@@ -5,6 +5,7 @@
 #include <thread>
 
 #include "Eigen/Dense"
+
 #include "aos/condition.h"
 #include "aos/mutex/mutex.h"
 #include "frc971/control_loops/control_loops_generated.h"

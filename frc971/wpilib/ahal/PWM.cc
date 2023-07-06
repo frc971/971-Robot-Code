@@ -6,12 +6,13 @@
 /*----------------------------------------------------------------------------*/
 
 #include "hal/PWM.h"
-#include "frc971/wpilib/ahal/PWM.h"
 
 #include <sstream>
 
-#include "frc971/wpilib/ahal/WPIErrors.h"
 #include "glog/logging.h"
+
+#include "frc971/wpilib/ahal/PWM.h"
+#include "frc971/wpilib/ahal/WPIErrors.h"
 #include "hal/HAL.h"
 #include "hal/Ports.h"
 

@@ -1,10 +1,11 @@
 #include <pwd.h>
 #include <sys/types.h>
 
+#include "gflags/gflags.h"
+
 #include "aos/init.h"
 #include "aos/starter/starterd_lib.h"
 #include "aos/util/file.h"
-#include "gflags/gflags.h"
 
 DEFINE_string(config, "aos_config.json", "File path of aos configuration");
 DEFINE_string(user, "",
@@ -41,7 +42,8 @@ int main(int argc, char **argv) {
     constexpr int kUnchanged = -1;
     if (setresgid(/* ruid */ gid, /* euid */ gid,
                   /* suid */ kUnchanged) != 0) {
-      PLOG(FATAL) << "Failed to change GID to " << FLAGS_user << ", group " << gid;
+      PLOG(FATAL) << "Failed to change GID to " << FLAGS_user << ", group "
+                  << gid;
     }
 
     if (setresuid(/* ruid */ uid, /* euid */ uid,

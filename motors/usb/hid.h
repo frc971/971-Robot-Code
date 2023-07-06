@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <string.h>
+
 #include <array>
 
 #include "motors/usb/usb.h"

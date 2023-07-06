@@ -114,7 +114,7 @@ git_status_is_clean() {
 
 # All the linters that we are going to run.
 readonly -a LINTERS=(
-    #clang_format
+    clang_format
     gofmt
     gomod
     update_go_repos

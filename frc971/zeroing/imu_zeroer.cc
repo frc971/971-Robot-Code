@@ -80,7 +80,7 @@ bool ImuZeroer::InsertMeasurement(const IMUValues &values) {
   last_gyro_sample_ << values.gyro_x(), values.gyro_y(), values.gyro_z();
   gyro_averager_.AddData(last_gyro_sample_);
   last_accel_sample_ << values.accelerometer_x(), values.accelerometer_y(),
-                           values.accelerometer_z();
+      values.accelerometer_z();
   accel_averager_.AddData(last_accel_sample_);
   return true;
 }

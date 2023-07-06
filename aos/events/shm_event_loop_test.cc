@@ -2,12 +2,13 @@
 
 #include <string_view>
 
+#include "glog/logging.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/event_loop_param_test.h"
 #include "aos/events/test_message_generated.h"
 #include "aos/network/team_number.h"
 #include "aos/realtime.h"
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

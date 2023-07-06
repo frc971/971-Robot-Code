@@ -2,11 +2,12 @@
 
 #include <random>
 
+#include "gtest/gtest.h"
+
 #include "aos/testing/random_seed.h"
 #include "aos/testing/test_shm.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/drivetrain/trajectory.h"
-#include "gtest/gtest.h"
 
 namespace frc971 {
 namespace control_loops {

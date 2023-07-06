@@ -5,6 +5,8 @@
 #include <string_view>
 #include <vector>
 
+#include "flatbuffers/flatbuffers.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/log_namer.h"
 #include "aos/events/logging/logfile_utils.h"
@@ -14,7 +16,6 @@
 #include "aos/network/remote_message_generated.h"
 #include "aos/time/time.h"
 #include "aos/uuid.h"
-#include "flatbuffers/flatbuffers.h"
 
 namespace aos {
 namespace logger {

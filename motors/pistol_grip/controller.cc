@@ -1,5 +1,3 @@
-#include "motors/core/kinetis.h"
-
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -8,6 +6,7 @@
 
 #include "frc971/control_loops/drivetrain/integral_haptic_trigger.h"
 #include "frc971/control_loops/drivetrain/integral_haptic_wheel.h"
+#include "motors/core/kinetis.h"
 #include "motors/core/time.h"
 #include "motors/motor.h"
 #include "motors/peripheral/can.h"
@@ -41,10 +40,10 @@ float WheelCoggingTorque(uint32_t index) {
   return wheel_cogging_torque.load(::std::memory_order_relaxed)[index];
 }
 
-using ::frc971::control_loops::drivetrain::MakeIntegralHapticTriggerPlant;
 using ::frc971::control_loops::drivetrain::MakeIntegralHapticTriggerObserver;
-using ::frc971::control_loops::drivetrain::MakeIntegralHapticWheelPlant;
+using ::frc971::control_loops::drivetrain::MakeIntegralHapticTriggerPlant;
 using ::frc971::control_loops::drivetrain::MakeIntegralHapticWheelObserver;
+using ::frc971::control_loops::drivetrain::MakeIntegralHapticWheelPlant;
 
 // Returns an identifier for the processor we're running on.
 // This isn't guaranteed to be unique, but it should be close enough.
@@ -107,7 +106,8 @@ float analog_ratio(uint16_t reading) {
          static_cast<float>(kMax - kMin);
 }
 
-constexpr float InterpolateFloat(float x1, float x0, float y1, float y0, float x) {
+constexpr float InterpolateFloat(float x1, float x0, float y1, float y0,
+                                 float x) {
   return (x - x0) * (y1 - y0) / (x1 - x0) + y0;
 }
 
@@ -188,8 +188,7 @@ float CoggingCurrent1(uint32_t encoder, int32_t absolute_encoder) {
   }
   if (i >= 100) {
     printf("reading1: %d %d a:%d e:%d\n", goal,
-           static_cast<int>(goal_current * 10000.0f),
-           static_cast<int>(encoder),
+           static_cast<int>(goal_current * 10000.0f), static_cast<int>(encoder),
            static_cast<int>(error));
     static int counting_up = 0;
     if (absolute_encoder <= -6900) {
@@ -230,9 +229,9 @@ extern "C" void ftm0_isr() {
   (void)CoggingCurrent1;
   float goal_current = global_wheel_current.load(::std::memory_order_relaxed) +
                        WheelCoggingTorque(encoder);
-  //float goal_current = CoggingCurrent1(encoder, absolute_encoder);
-  // float goal_current = kWheelCoggingTorque[encoder];
-  // float goal_current = 0.0f;
+  // float goal_current = CoggingCurrent1(encoder, absolute_encoder);
+  //  float goal_current = kWheelCoggingTorque[encoder];
+  //  float goal_current = 0.0f;
 
   // Controller 0 is mechanical and doesn't need the motor controls.
   if (processor_index == 0) {
@@ -244,8 +243,7 @@ extern "C" void ftm0_isr() {
         ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
     global_wheel_angle.store(angle);
   }
-  //global_motor1.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt();
-
+  // global_motor1.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt();
 
   /*
   SmallInitReadings position_readings;
@@ -329,8 +327,7 @@ float CoggingCurrent0(uint32_t encoder, int32_t absolute_encoder) {
 
   if (i >= 100) {
     printf("reading0: %d %d a:%d e:%d\n", goal,
-           static_cast<int>(goal_current * 10000.0f),
-           static_cast<int>(encoder),
+           static_cast<int>(goal_current * 10000.0f), static_cast<int>(encoder),
            static_cast<int>(error));
     static int counting_up = 0;
     if (absolute_encoder <= -1390) {
@@ -373,9 +370,9 @@ extern "C" void ftm3_isr() {
   const float goal_current =
       global_trigger_current.load(::std::memory_order_relaxed) +
       TriggerCoggingTorque(encoder);
-  //const float goal_current = kTriggerCoggingTorque[encoder];
-  //const float goal_current = 0.0f;
-  //const float goal_current = CoggingCurrent0(encoder, absolute_encoder);
+  // const float goal_current = kTriggerCoggingTorque[encoder];
+  // const float goal_current = 0.0f;
+  // const float goal_current = CoggingCurrent0(encoder, absolute_encoder);
 
   if (processor_index == 0) {
     global_motor0.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt(0);
@@ -386,8 +383,7 @@ extern "C" void ftm3_isr() {
         ->CurrentInterrupt(BalanceSimpleReadings(readings.currents), encoder);
     global_trigger_angle.store(trigger_angle);
   }
-  //global_motor0.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt();
-
+  // global_motor0.load(::std::memory_order_relaxed)->CycleFixedPhaseInterupt();
 
   /*
   SmallInitReadings position_readings;
@@ -974,9 +970,9 @@ extern "C" int main() {
   printf("stack start: %p\n", __stack_end__);
 
   trigger_cogging_torque.store(processor_index == 0 ? kTriggerCoggingTorque0
-                                                     : kTriggerCoggingTorque1);
+                                                    : kTriggerCoggingTorque1);
   wheel_cogging_torque.store(processor_index == 0 ? kWheelCoggingTorque0
-                                                   : kWheelCoggingTorque1);
+                                                  : kWheelCoggingTorque1);
 
   printf("Zeroing motors for %d:%x\n", static_cast<int>(processor_index),
          (unsigned int)ProcessorIdentifier());

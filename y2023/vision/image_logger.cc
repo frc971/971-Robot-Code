@@ -1,14 +1,15 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/events/logging/log_writer.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/logging/log_namer.h"
 #include "frc971/input/joystick_state_generated.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 DEFINE_string(config, "aos_config.json", "Config file to use.");
 

@@ -1,6 +1,7 @@
+#include "glog/logging.h"
+
 #include "aos/init.h"
 #include "aos/seasocks/seasocks_logger.h"
-#include "glog/logging.h"
 #include "internal/Embedded.h"
 #include "seasocks/Server.h"
 

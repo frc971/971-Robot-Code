@@ -1,6 +1,7 @@
 #include "aos/events/simulated_network_bridge.h"
 
 #include "absl/strings/str_cat.h"
+
 #include "aos/configuration.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"

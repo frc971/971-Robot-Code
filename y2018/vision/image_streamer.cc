@@ -1,25 +1,26 @@
-#include "aos/vision/image/image_stream.h"
-
 #include <sys/stat.h>
+
 #include <deque>
 #include <fstream>
 #include <string>
+
+#include "gflags/gflags.h"
 
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"
 #include "aos/vision/blob/codec.h"
 #include "aos/vision/events/socket_types.h"
 #include "aos/vision/events/udp.h"
+#include "aos/vision/image/image_stream.h"
 #include "aos/vision/image/reader.h"
-#include "gflags/gflags.h"
 #include "y2018/vision.pb.h"
 
+using ::aos::monotonic_clock;
 using ::aos::events::DataSocket;
 using ::aos::events::RXUdpSocket;
 using ::aos::events::TCPServer;
 using ::aos::vision::DataRef;
 using ::aos::vision::Int32Codec;
-using ::aos::monotonic_clock;
 using ::y2018::VisionControl;
 
 DEFINE_bool(single_camera, true, "If true, only use video0");
@@ -286,7 +287,7 @@ class CameraStream : public ::aos::vision::ImageStreamEvent {
   bool active_ = false;
 };
 
-int main(int argc, char ** argv) {
+int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, false);
 
   TCPServer<MjpegDataSocket> tcp_server_(80);
@@ -294,7 +295,7 @@ int main(int argc, char ** argv) {
   params0.set_exposure(FLAGS_camera0_exposure);
   params0.set_brightness(-40);
   params0.set_width(320);
-  //params0.set_fps(10);
+  // params0.set_fps(10);
   params0.set_height(240);
 
   aos::vision::CameraParams params1 = params0;

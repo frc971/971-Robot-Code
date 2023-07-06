@@ -44,10 +44,9 @@ constexpr ArmConstants kArmConstants = {
     .num_distal_motors = 2.0,
 };
 
-} // namespace testing
-} // namespace arm
-} // namespace control_loops
-} // namespace frc971
+}  // namespace testing
+}  // namespace arm
+}  // namespace control_loops
+}  // namespace frc971
 
-#endif // FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_TEST_CONSTANTS_H_
-
+#endif  // FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_TEST_CONSTANTS_H_

@@ -1,8 +1,9 @@
 #include "aos/util/error_counter.h"
 
+#include "gtest/gtest.h"
+
 #include "aos/events/event_loop_generated.h"
 #include "aos/flatbuffers.h"
-#include "gtest/gtest.h"
 
 namespace aos::util::testing {
 // Exercises the basic API for the ErrorCounter class, ensuring that everything

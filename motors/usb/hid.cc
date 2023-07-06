@@ -60,7 +60,7 @@ void HidFunction::Initialize() {
     endpoint_descriptor->AddByte(
         m_endpoint_attributes_interrupt());                  // bmAttributes
     endpoint_descriptor->AddUint16(in_endpoint_max_size());  // wMaxPacketSize
-    endpoint_descriptor->AddByte(0x8);                        // bInterval
+    endpoint_descriptor->AddByte(0x8);                       // bInterval
   }
 }
 

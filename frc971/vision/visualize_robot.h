@@ -1,12 +1,11 @@
 #ifndef FRC971_VISION_VISUALIZE_ROBOT_H_
 #define FRC971_VISION_VISUALIZE_ROBOT_H_
 
+#include "Eigen/Dense"
+#include "Eigen/Geometry"
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-
-#include "Eigen/Dense"
-#include "Eigen/Geometry"
 
 namespace frc971 {
 namespace vision {

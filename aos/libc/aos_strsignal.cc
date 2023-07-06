@@ -2,8 +2,9 @@
 
 #include <csignal>
 
-#include "aos/thread_local.h"
 #include "glog/logging.h"
+
+#include "aos/thread_local.h"
 
 const char *aos_strsignal(int signal) {
   AOS_THREAD_LOCAL char buffer[512];
@@ -17,15 +18,15 @@ const char *aos_strsignal(int signal) {
 
 // sys_strsignal depricated in glibc2.32
 #ifdef __GLIBC__
-  #if __GLIBC_PREREQ(2, 32)
+#if __GLIBC_PREREQ(2, 32)
   if (signal > 0 && signal < NSIG && sigdescr_np(signal) != nullptr) {
     return sigdescr_np(signal);
   }
-  #else
+#else
   if (signal > 0 && signal < NSIG && sys_siglist[signal] != nullptr) {
     return sys_siglist[signal];
   }
-  #endif
+#endif
 // If not using GLIBC assume we can use sys_siglist
 #else
   if (signal > 0 && signal < NSIG && sys_siglist[signal] != nullptr) {

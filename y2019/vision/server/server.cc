@@ -1,11 +1,16 @@
+#include "seasocks/Server.h"
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 #include <array>
 #include <cmath>
 #include <memory>
 #include <set>
 #include <sstream>
+
+#include "google/protobuf/util/json_util.h"
 
 #include "aos/containers/ring_buffer.h"
 #include "aos/events/shm_event_loop.h"
@@ -15,9 +20,7 @@
 #include "aos/time/time.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/pose.h"
-#include "google/protobuf/util/json_util.h"
 #include "internal/Embedded.h"
-#include "seasocks/Server.h"
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
 #include "y2019/constants.h"
@@ -157,123 +160,122 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
   DebugData debug_data;
   ::aos::RingBuffer<DrivetrainPosition, 200> drivetrain_log;
 
-  event_loop.MakeWatcher(
-      "/camera", [websocket_handler, server, &latest_frames, &last_target_time,
-                  &drivetrain_status_fetcher, &superstructure_status_fetcher,
-                  &last_send_time, &drivetrain_log, &debug_data](
-                     const ::y2019::control_loops::drivetrain::CameraFrame
-                         &camera_frames) {
-        while (drivetrain_status_fetcher.FetchNext()) {
-          DrivetrainPosition drivetrain_position{
-              drivetrain_status_fetcher.context().monotonic_event_time,
-              drivetrain_status_fetcher->x(), drivetrain_status_fetcher->y(),
-              drivetrain_status_fetcher->theta()};
+  event_loop.MakeWatcher("/camera", [websocket_handler, server, &latest_frames,
+                                     &last_target_time,
+                                     &drivetrain_status_fetcher,
+                                     &superstructure_status_fetcher,
+                                     &last_send_time, &drivetrain_log,
+                                     &debug_data](const ::y2019::control_loops::
+                                                      drivetrain::CameraFrame
+                                                          &camera_frames) {
+    while (drivetrain_status_fetcher.FetchNext()) {
+      DrivetrainPosition drivetrain_position{
+          drivetrain_status_fetcher.context().monotonic_event_time,
+          drivetrain_status_fetcher->x(), drivetrain_status_fetcher->y(),
+          drivetrain_status_fetcher->theta()};
 
-          drivetrain_log.Push(drivetrain_position);
+      drivetrain_log.Push(drivetrain_position);
+    }
+    superstructure_status_fetcher.Fetch();
+    if (!drivetrain_status_fetcher.get() ||
+        !superstructure_status_fetcher.get()) {
+      // Try again if we don't have any drivetrain statuses.
+      return;
+    }
+    const auto now = aos::monotonic_clock::now();
+
+    {
+      const auto &new_frame = camera_frames;
+      // TODO(james): Maybe we only want to fill out a new frame if it has
+      // targets or the saved target is > 0.1 sec old? Not sure, but for now
+      if (new_frame.camera() < latest_frames.size()) {
+        latest_frames[new_frame.camera()].capture_time =
+            aos::monotonic_clock::time_point(
+                chrono::nanoseconds(new_frame.timestamp()));
+        latest_frames[new_frame.camera()].targets.clear();
+        if (new_frame.has_targets() && new_frame.targets()->size() > 0) {
+          last_target_time[new_frame.camera()] =
+              latest_frames[new_frame.camera()].capture_time;
         }
-        superstructure_status_fetcher.Fetch();
-        if (!drivetrain_status_fetcher.get() ||
-            !superstructure_status_fetcher.get()) {
-          // Try again if we don't have any drivetrain statuses.
-          return;
+        for (const control_loops::drivetrain::CameraTarget *target :
+             *new_frame.targets()) {
+          latest_frames[new_frame.camera()].targets.emplace_back();
+          const float heading = target->heading();
+          const float distance = target->distance();
+          latest_frames[new_frame.camera()].targets.back().x =
+              ::std::cos(heading) * distance;
+          latest_frames[new_frame.camera()].targets.back().y =
+              ::std::sin(heading) * distance;
+          latest_frames[new_frame.camera()].targets.back().theta =
+              target->skew();
         }
-        const auto now = aos::monotonic_clock::now();
+      }
+    }
 
-        {
-          const auto &new_frame = camera_frames;
-          // TODO(james): Maybe we only want to fill out a new frame if it has
-          // targets or the saved target is > 0.1 sec old? Not sure, but for now
-          if (new_frame.camera() < latest_frames.size()) {
-            latest_frames[new_frame.camera()].capture_time =
-                aos::monotonic_clock::time_point(
-                    chrono::nanoseconds(new_frame.timestamp()));
-            latest_frames[new_frame.camera()].targets.clear();
-            if (new_frame.has_targets() && new_frame.targets()->size() > 0) {
-              last_target_time[new_frame.camera()] =
-                  latest_frames[new_frame.camera()].capture_time;
-            }
-            for (const control_loops::drivetrain::CameraTarget *target :
-                 *new_frame.targets()) {
-              latest_frames[new_frame.camera()].targets.emplace_back();
-              const float heading = target->heading();
-              const float distance = target->distance();
-              latest_frames[new_frame.camera()].targets.back().x =
-                  ::std::cos(heading) * distance;
-              latest_frames[new_frame.camera()].targets.back().y =
-                  ::std::sin(heading) * distance;
-              latest_frames[new_frame.camera()].targets.back().theta =
-                  target->skew();
-            }
-          }
-        }
+    for (size_t ii = 0; ii < latest_frames.size(); ++ii) {
+      CameraDebug *camera_debug = debug_data.add_camera_debug();
+      LocalCameraFrame cur_frame = latest_frames[ii];
+      constants::Values::CameraCalibration camera_info =
+          constants::GetValues().cameras[ii];
+      frc971::control_loops::TypedPose<double> camera_pose = camera_info.pose;
 
-        for (size_t ii = 0; ii < latest_frames.size(); ++ii) {
-          CameraDebug *camera_debug = debug_data.add_camera_debug();
-          LocalCameraFrame cur_frame = latest_frames[ii];
-          constants::Values::CameraCalibration camera_info =
-              constants::GetValues().cameras[ii];
-          frc971::control_loops::TypedPose<double> camera_pose =
-              camera_info.pose;
+      const DrivetrainPosition robot_position =
+          ComputePosition(drivetrain_log, cur_frame.capture_time);
+      const ::frc971::control_loops::TypedPose<double> robot_pose(
+          {robot_position.x, robot_position.y, 0}, robot_position.theta);
 
-          const DrivetrainPosition robot_position =
-              ComputePosition(drivetrain_log, cur_frame.capture_time);
-          const ::frc971::control_loops::TypedPose<double> robot_pose(
-              {robot_position.x, robot_position.y, 0}, robot_position.theta);
+      camera_pose.set_base(&robot_pose);
 
-          camera_pose.set_base(&robot_pose);
+      camera_debug->set_current_frame_age(
+          ::aos::time::DurationInSeconds(now - cur_frame.capture_time));
+      camera_debug->set_time_since_last_target(
+          ::aos::time::DurationInSeconds(now - last_target_time[ii]));
+      for (const auto &target : cur_frame.targets) {
+        frc971::control_loops::TypedPose<double> target_pose(
+            &camera_pose, {target.x, target.y, 0}, target.theta);
+        Pose *pose = camera_debug->add_targets();
+        pose->set_x(target_pose.abs_pos().x());
+        pose->set_y(target_pose.abs_pos().y());
+        pose->set_theta(target_pose.abs_theta());
+      }
+    }
 
-          camera_debug->set_current_frame_age(
-              ::aos::time::DurationInSeconds(now - cur_frame.capture_time));
-          camera_debug->set_time_since_last_target(
-              ::aos::time::DurationInSeconds(now - last_target_time[ii]));
-          for (const auto &target : cur_frame.targets) {
-            frc971::control_loops::TypedPose<double> target_pose(
-                &camera_pose, {target.x, target.y, 0}, target.theta);
-            Pose *pose = camera_debug->add_targets();
-            pose->set_x(target_pose.abs_pos().x());
-            pose->set_y(target_pose.abs_pos().y());
-            pose->set_theta(target_pose.abs_theta());
-          }
-        }
+    if (now > last_send_time + chrono::milliseconds(100)) {
+      last_send_time = now;
+      debug_data.mutable_robot_pose()->set_x(drivetrain_status_fetcher->x());
+      debug_data.mutable_robot_pose()->set_y(drivetrain_status_fetcher->y());
+      debug_data.mutable_robot_pose()->set_theta(
+          drivetrain_status_fetcher->theta());
+      {
+        LineFollowDebug *line_debug = debug_data.mutable_line_follow_debug();
+        line_debug->set_frozen(
+            drivetrain_status_fetcher->line_follow_logging()->frozen());
+        line_debug->set_have_target(
+            drivetrain_status_fetcher->line_follow_logging()->have_target());
+        line_debug->mutable_goal_target()->set_x(
+            drivetrain_status_fetcher->line_follow_logging()->x());
+        line_debug->mutable_goal_target()->set_y(
+            drivetrain_status_fetcher->line_follow_logging()->y());
+        line_debug->mutable_goal_target()->set_theta(
+            drivetrain_status_fetcher->line_follow_logging()->theta());
+      }
 
-        if (now > last_send_time + chrono::milliseconds(100)) {
-          last_send_time = now;
-          debug_data.mutable_robot_pose()->set_x(drivetrain_status_fetcher->x());
-          debug_data.mutable_robot_pose()->set_y(drivetrain_status_fetcher->y());
-          debug_data.mutable_robot_pose()->set_theta(
-              drivetrain_status_fetcher->theta());
-          {
-            LineFollowDebug *line_debug =
-                debug_data.mutable_line_follow_debug();
-            line_debug->set_frozen(
-                drivetrain_status_fetcher->line_follow_logging()->frozen());
-            line_debug->set_have_target(
-                drivetrain_status_fetcher->line_follow_logging()->have_target());
-            line_debug->mutable_goal_target()->set_x(
-                drivetrain_status_fetcher->line_follow_logging()->x());
-            line_debug->mutable_goal_target()->set_y(
-                drivetrain_status_fetcher->line_follow_logging()->y());
-            line_debug->mutable_goal_target()->set_theta(
-                drivetrain_status_fetcher->line_follow_logging()->theta());
-          }
+      Sensors *sensors = debug_data.mutable_sensors();
+      sensors->set_wrist(superstructure_status_fetcher->wrist()->position());
+      sensors->set_elevator(
+          superstructure_status_fetcher->elevator()->position());
+      sensors->set_intake(superstructure_status_fetcher->intake()->position());
+      sensors->set_stilts(superstructure_status_fetcher->stilts()->position());
+      sensors->set_has_piece(superstructure_status_fetcher->has_piece());
 
-          Sensors *sensors = debug_data.mutable_sensors();
-          sensors->set_wrist(
-              superstructure_status_fetcher->wrist()->position());
-          sensors->set_elevator(
-              superstructure_status_fetcher->elevator()->position());
-          sensors->set_intake(superstructure_status_fetcher->intake()->position());
-          sensors->set_stilts(superstructure_status_fetcher->stilts()->position());
-          sensors->set_has_piece(superstructure_status_fetcher->has_piece());
+      ::std::string json;
+      google::protobuf::util::MessageToJsonString(debug_data, &json);
+      server->execute(
+          std::make_shared<UpdateData>(websocket_handler, ::std::move(json)));
 
-          ::std::string json;
-          google::protobuf::util::MessageToJsonString(debug_data, &json);
-          server->execute(std::make_shared<UpdateData>(websocket_handler,
-                                                       ::std::move(json)));
-
-          debug_data.Clear();
-        }
-      });
+      debug_data.Clear();
+    }
+  });
   event_loop.Run();
 }
 
@@ -305,9 +307,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  server.serve(
-      serve_www ? "/home/admin/bin/www" : "y2019/vision/server/www",
-      1180);
+  server.serve(serve_www ? "/home/admin/bin/www" : "y2019/vision/server/www",
+               1180);
 
   return 0;
 }

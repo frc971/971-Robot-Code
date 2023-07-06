@@ -8,10 +8,11 @@
 #endif
 
 #include "absl/base/call_once.h"
+#include "glog/logging.h"
+
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
 #include "frc971/wpilib/wpilib_utils.h"
-#include "glog/logging.h"
 #include "y2022/control_loops/superstructure/catapult/integral_catapult_plant.h"
 #include "y2022/control_loops/superstructure/climber/integral_climber_plant.h"
 #include "y2022/control_loops/superstructure/intake/integral_intake_plant.h"
@@ -219,7 +220,7 @@ Values MakeValues(uint16_t team) {
                                       0.0172237531191 - 0.0172237531191 +
                                       0.00443383743660001 - 0.0117667224279;
 
-      intake_front->potentiometer_offset = + 3.572389;
+      intake_front->potentiometer_offset = +3.572389;
       intake_front->subsystem_params.zeroing_constants
           .measured_absolute_position = 0.238611243887673;
 

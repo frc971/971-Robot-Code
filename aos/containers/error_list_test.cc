@@ -1,7 +1,8 @@
 #include "aos/containers/error_list.h"
 
-#include "aos/json_to_flatbuffer_generated.h"
 #include "gtest/gtest.h"
+
+#include "aos/json_to_flatbuffer_generated.h"
 
 namespace aos {
 namespace testing {

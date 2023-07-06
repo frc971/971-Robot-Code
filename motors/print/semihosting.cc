@@ -1,6 +1,7 @@
 #include "motors/print/semihosting.h"
 
 #include "absl/types/span.h"
+
 #include "motors/core/semihosting.h"
 
 namespace frc971 {

@@ -56,7 +56,7 @@ void PrintTable(std::ostream *os, std::string_view prefix,
 const std::string kIndent = "  ";
 
 std::string MaybeNodeName(std::string_view prefix_if_node,
-                               const aos::Node *node) {
+                          const aos::Node *node) {
   if (node == nullptr) {
     return "";
   }

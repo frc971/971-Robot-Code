@@ -19,9 +19,7 @@ class GaussianNoise {
   double AddNoiseToSample(double sample);
 
   // Sets the standard deviation of the gaussian noise.
-  inline void set_standard_deviation(double stddev) {
-    stddev_ = stddev;
-  }
+  inline void set_standard_deviation(double stddev) { stddev_ = stddev; }
 
  private:
   double stddev_;

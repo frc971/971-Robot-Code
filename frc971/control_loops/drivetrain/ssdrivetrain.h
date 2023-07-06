@@ -2,10 +2,9 @@
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_
 
 #include "aos/commonmath.h"
-#include "frc971/control_loops/control_loop.h"
-#include "frc971/control_loops/polytope.h"
 #include "aos/util/trapezoid_profile.h"
 #include "frc971/control_loops/coerce_goal.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
@@ -13,6 +12,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_states.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
+#include "frc971/control_loops/polytope.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
 namespace frc971 {

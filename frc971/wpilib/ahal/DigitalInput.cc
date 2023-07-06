@@ -10,10 +10,10 @@
 #include <limits>
 #include <sstream>
 
+#include "frc971/wpilib/ahal/WPIErrors.h"
 #include "hal/DIO.h"
 #include "hal/HAL.h"
 #include "hal/Ports.h"
-#include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;
 

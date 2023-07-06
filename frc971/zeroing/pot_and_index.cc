@@ -78,8 +78,8 @@ void PotAndIndexPulseZeroingEstimator::UpdateEstimate(
   // If there are no index pulses to use or we don't have enough samples yet to
   // have a well-filtered starting position then we use the filtered value as
   // our best guess.
-  if (!zeroed_ &&
-      (info.index_pulses() == last_used_index_pulse_count_ || !offset_ready())) {
+  if (!zeroed_ && (info.index_pulses() == last_used_index_pulse_count_ ||
+                   !offset_ready())) {
     offset_ = start_average;
   } else if (!zeroed_ || last_used_index_pulse_count_ != info.index_pulses()) {
     // Note the accurate start position and the current index pulse count so

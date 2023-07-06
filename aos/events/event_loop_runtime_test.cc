@@ -1,10 +1,11 @@
+#include "glog/logging.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/event_loop_runtime_test_lib_rs_cxxgen.h"
 #include "aos/events/ping_generated.h"
 #include "aos/events/pong_generated.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/testing/path.h"
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 
 namespace aos::events::testing {
 namespace {

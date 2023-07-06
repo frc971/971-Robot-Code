@@ -11,6 +11,9 @@
 
 #include "absl/strings/escaping.h"
 #include "absl/types/span.h"
+#include "flatbuffers/flatbuffers.h"
+#include "openssl/sha.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/boot_timestamp.h"
 #include "aos/events/logging/logfile_sorting.h"
@@ -25,8 +28,6 @@
 #include "aos/time/time.h"
 #include "aos/util/file.h"
 #include "aos/uuid.h"
-#include "flatbuffers/flatbuffers.h"
-#include "openssl/sha.h"
 
 DEFINE_bool(skip_missing_forwarding_entries, false,
             "If true, drop any forwarding entries with missing data.  If "
@@ -2340,7 +2341,8 @@ void LogReader::State::NotifyLogfileStart() {
   // handlers that would've happened before requested start time until that
   // start time.
   if (start_event_notifier_) {
-    // Only call OnStart() if the start time for this node (realtime_start_time())
+    // Only call OnStart() if the start time for this node
+    // (realtime_start_time())
     if (start_event_notifier_->realtime_event_time() >
         realtime_start_time(boot_count())) {
       VLOG(1) << "Skipping, " << start_event_notifier_->realtime_event_time()

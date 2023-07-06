@@ -1,7 +1,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
-#include "y2023/vision/aprilrobotics.h"
 #include "frc971/constants/constants_sender_lib.h"
+#include "y2023/vision/aprilrobotics.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 

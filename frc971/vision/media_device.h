@@ -12,8 +12,9 @@
 #include <string_view>
 #include <vector>
 
-#include "aos/scoped/scoped_fd.h"
 #include "glog/logging.h"
+
+#include "aos/scoped/scoped_fd.h"
 
 namespace frc971 {
 namespace vision {

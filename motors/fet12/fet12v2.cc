@@ -1,10 +1,9 @@
-#include "motors/core/kinetis.h"
-
 #include <inttypes.h>
 #include <stdio.h>
 
 #include <atomic>
 
+#include "motors/core/kinetis.h"
 #include "motors/core/time.h"
 #include "motors/fet12/current_equalization.h"
 #include "motors/fet12/motor_controls.h"
@@ -134,8 +133,7 @@ void ftm0_isr(void) {
   adc_dma->Reset();
   const uint32_t wrapped_encoder =
       global_motor.load(::std::memory_order_relaxed)->wrapped_encoder();
-  const BalancedReadings balanced =
-      BalanceSimpleReadings(decoupled);
+  const BalancedReadings balanced = BalanceSimpleReadings(decoupled);
 
 #if 1
 
@@ -216,19 +214,18 @@ void ftm0_isr(void) {
           : static_cast<float>(kIcc);
   const float throttle_limit = ::std::min(
       kPeakCurrent,
-      (-abs_bemf + ::std::sqrt(static_cast<float>(
-                       bemf * bemf +
-                       4.0f * static_cast<float>(kR) * 1.5f *
-                           static_cast<float>(kVcc) * max_bat_cur))) /
+      (-abs_bemf +
+       ::std::sqrt(static_cast<float>(
+           bemf * bemf + 4.0f * static_cast<float>(kR) * 1.5f *
+                             static_cast<float>(kVcc) * max_bat_cur))) /
           (2.0f * 1.5f * static_cast<float>(kR)));
 
   constexpr float kNegativeCurrent = 100.0f;
-  float goal_current =
-      -::std::min(
-          ::std::max(filtered_throttle * (kPeakCurrent + kNegativeCurrent) -
-                         kNegativeCurrent,
-                     -throttle_limit),
-          throttle_limit);
+  float goal_current = -::std::min(
+      ::std::max(filtered_throttle * (kPeakCurrent + kNegativeCurrent) -
+                     kNegativeCurrent,
+                 -throttle_limit),
+      throttle_limit);
 
   if (!throttle_zeroed) {
     goal_current = 0.0f;
@@ -242,8 +239,8 @@ void ftm0_isr(void) {
     }
   }
 
-  //float goal_current =
-      //-::std::min(filtered_throttle * kPeakCurrent, throttle_limit);
+  // float goal_current =
+  //-::std::min(filtered_throttle * kPeakCurrent, throttle_limit);
   const float overall_measured_current =
       global_motor.load(::std::memory_order_relaxed)
           ->overall_measured_current();
@@ -254,8 +251,7 @@ void ftm0_isr(void) {
   const int16_t fuse_current_10 = static_cast<int16_t>(10.0f * fuse_current);
   fuse_badness += 0.00002f * (fuse_current * fuse_current - fuse_badness);
 
-  global_motor.load(::std::memory_order_relaxed)
-      ->SetGoalCurrent(goal_current);
+  global_motor.load(::std::memory_order_relaxed)->SetGoalCurrent(goal_current);
   global_motor.load(::std::memory_order_relaxed)
       ->CurrentInterrupt(balanced, wrapped_encoder);
 
@@ -278,11 +274,14 @@ void ftm0_isr(void) {
     global_debug_buffer.samples[buffer_size].est_omega =
         global_motor.load(::std::memory_order_relaxed)->estimated_velocity();
     global_debug_buffer.samples[buffer_size].commands[0] =
-        global_motor.load(::std::memory_order_relaxed)->get_switching_points_cycles(0);
+        global_motor.load(::std::memory_order_relaxed)
+            ->get_switching_points_cycles(0);
     global_debug_buffer.samples[buffer_size].commands[1] =
-        global_motor.load(::std::memory_order_relaxed)->get_switching_points_cycles(1);
+        global_motor.load(::std::memory_order_relaxed)
+            ->get_switching_points_cycles(1);
     global_debug_buffer.samples[buffer_size].commands[2] =
-        global_motor.load(::std::memory_order_relaxed)->get_switching_points_cycles(2);
+        global_motor.load(::std::memory_order_relaxed)
+            ->get_switching_points_cycles(2);
     global_debug_buffer.samples[buffer_size].commanded_currents[0] =
         global_motor.load(::std::memory_order_relaxed)->i_goal(0);
     global_debug_buffer.samples[buffer_size].commanded_currents[1] =
@@ -299,7 +298,8 @@ void ftm0_isr(void) {
                        kNegativeCurrent,
                    0.0f);
     global_debug_buffer.samples[buffer_size].fuse_badness = fuse_badness;
-    global_debug_buffer.samples[buffer_size].cycles_since_start = cycles_since_start;
+    global_debug_buffer.samples[buffer_size].cycles_since_start =
+        cycles_since_start;
 
     global_debug_buffer.size.fetch_add(1);
   }
@@ -384,7 +384,6 @@ void ftm0_isr(void) {
   }
   ++i;
 #endif
-
 }
 
 }  // extern "C"
@@ -468,8 +467,8 @@ void ZeroMotor() {
       // value we store because writing anything resets it to CNTIN (ie 0).
       "str %[scratch], [%[cnt]]\n"
       : [scratch] "=&l"(scratch)
-      : [pdir_word] "l"(&PERIPHERAL_BITBAND(GPIOB_PDIR, 11)),
-        [cnt] "l"(&FTM1->CNT));
+      : [pdir_word] "l"(&PERIPHERAL_BITBAND(GPIOB_PDIR, 11)), [cnt] "l"(
+                                                                  &FTM1->CNT));
   __enable_irq();
 #endif
 }
@@ -573,16 +572,15 @@ extern "C" int main(void) {
   // This has to happen after messing with SYNCONF, and should happen after
   // messing with various other things so the values can get flushed out of the
   // buffers.
-  FTM2->SYNC =
-      FTM_SYNC_SWSYNC /* Flush everything out right now */ |
-      FTM_SYNC_CNTMAX /* Load new values at the end of the cycle */;
+  FTM2->SYNC = FTM_SYNC_SWSYNC /* Flush everything out right now */ |
+               FTM_SYNC_CNTMAX /* Load new values at the end of the cycle */;
   // Wait for the software synchronization to finish.
   while (FTM2->SYNC & FTM_SYNC_SWSYNC) {
   }
   FTM2->SC = FTM_SC_CLKS(1) /* Use the system clock */ |
-      FTM_SC_PS(0) /* Don't prescale the clock */;
+             FTM_SC_PS(0) /* Don't prescale the clock */;
   // TODO:
-  //FTM2->MODE &= ~FTM_MODE_WPDIS;
+  // FTM2->MODE &= ~FTM_MODE_WPDIS;
 
   FTM2->EXTTRIG = FTM_EXTTRIG_CH0TRIG | FTM_EXTTRIG_CH1TRIG;
 
@@ -616,7 +614,7 @@ extern "C" int main(void) {
   FTM0_EXTTRIG = FTM_EXTTRIG_INITTRIGEN;
   // Don't let any memory accesses sneak past here, because we actually
   // need everything to be starting up.
-  __asm__("" :: : "memory");
+  __asm__("" ::: "memory");
 
   // Give everything a chance to get going.
   delay(100);
@@ -670,10 +668,9 @@ extern "C" int main(void) {
       for (size_t i = 0; i < global_debug_buffer.samples.size(); ++i) {
         const auto &sample = global_debug_buffer.samples[i];
 #if 1
-        printf("%u, %d, %d, %d, %u, %u, %u, %u\n", i,
-               sample.currents[0], sample.currents[1], sample.currents[2],
-               sample.commands[0], sample.commands[1], sample.commands[2],
-               sample.position);
+        printf("%u, %d, %d, %d, %u, %u, %u, %u\n", i, sample.currents[0],
+               sample.currents[1], sample.currents[2], sample.commands[0],
+               sample.commands[1], sample.commands[2], sample.position);
 #else
         printf("%" PRIu16 ",%" PRIu16 ",%" PRIu16 ",%" PRId16 ",%" PRId16
                ",%" PRId16 "\n",
@@ -695,7 +692,7 @@ extern "C" int main(void) {
       }
       printf("Done dumping data\n");
     } else {
-      //const auto &sample = global_debug_buffer.samples.back();
+      // const auto &sample = global_debug_buffer.samples.back();
       const DebugBuffer::Sample sample = global_debug_buffer.samples[0];
 #if 1
       printf("%" PRIu32

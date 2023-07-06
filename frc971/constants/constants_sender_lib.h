@@ -1,13 +1,14 @@
 #ifndef FRC971_CONSTANTS_CONSTANTS_SENDER_H_
 #define FRC971_CONSTANTS_CONSTANTS_SENDER_H_
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 namespace frc971::constants {
 
@@ -81,9 +82,7 @@ class ConstantsFetcher {
     });
   }
 
-  const ConstantsData& constants() const {
-    return *fetcher_.get();
-  }
+  const ConstantsData &constants() const { return *fetcher_.get(); }
 
  private:
   aos::Fetcher<ConstantsData> fetcher_;

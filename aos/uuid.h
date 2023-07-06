@@ -6,8 +6,9 @@
 #include <string>
 
 #include "absl/types/span.h"
-#include "aos/thread_local.h"
 #include "flatbuffers/flatbuffers.h"
+
+#include "aos/thread_local.h"
 
 namespace aos {
 

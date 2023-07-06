@@ -7,11 +7,12 @@
 #include <functional>
 #include <string>
 
+#include "glog/logging.h"
+
 #include "aos/vision/blob/codec.h"
 #include "aos/vision/blob/stream_view.h"
 #include "aos/vision/debug/debug_framework.h"
 #include "aos/vision/debug/overlay.h"
-#include "glog/logging.h"
 
 namespace aos {
 namespace vision {

@@ -2,6 +2,7 @@
 
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+
 #include "y2022/control_loops/superstructure/catapult/catapult_plant.h"
 
 namespace y2022 {

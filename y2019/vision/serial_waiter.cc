@@ -2,8 +2,8 @@
 
 #include <chrono>
 
-#include "y2019/jevois/serial.h"
 #include "aos/time/time.h"
+#include "y2019/jevois/serial.h"
 
 using ::aos::monotonic_clock;
 using ::y2019::jevois::open_via_terminos;

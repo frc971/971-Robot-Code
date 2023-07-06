@@ -1,10 +1,11 @@
+#include "glog/logging.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/ping_lib.h"
 #include "aos/events/pong_lib.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/path.h"
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

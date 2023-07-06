@@ -3,6 +3,7 @@
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
+
 #include "aos/containers/ring_buffer.h"
 #include "aos/containers/sized_array.h"
 #include "aos/events/event_loop.h"

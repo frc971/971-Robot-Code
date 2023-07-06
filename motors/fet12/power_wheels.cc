@@ -1,11 +1,10 @@
-#include "motors/core/kinetis.h"
-
 #include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
 
 #include <atomic>
 
+#include "motors/core/kinetis.h"
 #include "motors/core/time.h"
 #include "motors/peripheral/adc.h"
 #include "motors/usb/cdc.h"
@@ -232,7 +231,7 @@ extern "C" int main(void) {
 
   // Don't let any memory accesses sneak past here, because we actually
   // need everything to be starting up.
-  __asm__("" :: : "memory");
+  __asm__("" ::: "memory");
 
   // Give everything a chance to get going.
   delay(100);
@@ -265,8 +264,8 @@ extern "C" int main(void) {
     }
     static constexpr int kThrottleMin = 700;
     static constexpr int kThrottleMax = 2000;
-    //static constexpr int kThrottleMin = 1100;
-    //static constexpr int kThrottleMax = 3190;
+    // static constexpr int kThrottleMin = 1100;
+    // static constexpr int kThrottleMax = 3190;
     const float pedal_position = ::std::min(
         1.0f,
         ::std::max(0.0f,

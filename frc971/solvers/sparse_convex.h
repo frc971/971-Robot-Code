@@ -4,10 +4,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <Eigen/Sparse>
 #include <iomanip>
 
 #include "glog/logging.h"
+#include <Eigen/Sparse>
 
 namespace frc971 {
 namespace solvers {
@@ -104,21 +104,18 @@ class SparseSolver {
   };
 
   // Computes all the values for the given problem at the given state.
-  Derivatives ComputeDerivative(
-      const SparseConvexProblem &problem,
-      const Eigen::Ref<const Eigen::VectorXd> y);
+  Derivatives ComputeDerivative(const SparseConvexProblem &problem,
+                                const Eigen::Ref<const Eigen::VectorXd> y);
 
   // Computes Rt at the given state and with the given t_inverse.  See 11.53 of
   // cvxbook.pdf.
-  Eigen::VectorXd Rt(
-      const Derivatives &derivatives,
-      Eigen::VectorXd y, double t_inverse);
+  Eigen::VectorXd Rt(const Derivatives &derivatives, Eigen::VectorXd y,
+                     double t_inverse);
 
   // Prints out all the derivatives with VLOG at the provided verbosity.
-  void PrintDerivatives(
-      const Derivatives &derivatives,
-      const Eigen::Ref<const Eigen::VectorXd> y,
-      std::string_view prefix, int verbosity);
+  void PrintDerivatives(const Derivatives &derivatives,
+                        const Eigen::Ref<const Eigen::VectorXd> y,
+                        std::string_view prefix, int verbosity);
 };
 
 }  // namespace solvers

@@ -6,9 +6,9 @@
 #include "aos/vision/debug/overlay.h"
 #include "aos/vision/math/vector.h"
 
+using aos::vision::BlobList;
 using aos::vision::ImageRange;
 using aos::vision::RangeImage;
-using aos::vision::BlobList;
 using aos::vision::Vector;
 
 namespace y2017 {
@@ -71,7 +71,7 @@ class TargetFinder {
   aos::vision::PixelLinesOverlay *GetOverlay() { return &overlay_; }
 
   // Convert target location into meters and radians.
-  void GetAngleDist(const aos::vision::Vector<2>& target, double down_angle,
+  void GetAngleDist(const aos::vision::Vector<2> &target, double down_angle,
                     double *dist, double *angle);
 
  private:

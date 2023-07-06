@@ -4,10 +4,11 @@
 #include <cstring>
 #include <type_traits>
 
+#include "glog/logging.h"
+
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/DigitalSource.h"
 #include "frc971/wpilib/ahal/Encoder.h"
-#include "glog/logging.h"
 #include "hal/HAL.h"
 
 // Interface to the roboRIO FPGA's DMA features.

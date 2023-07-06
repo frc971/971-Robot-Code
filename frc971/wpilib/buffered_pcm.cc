@@ -3,9 +3,9 @@
 #include <cinttypes>
 
 #include "aos/logging/logging.h"
+#include "hal/CTREPCM.h"
 #include "hal/HAL.h"
 #include "hal/Ports.h"
-#include "hal/CTREPCM.h"
 
 namespace frc971 {
 namespace wpilib {

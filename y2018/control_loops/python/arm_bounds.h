@@ -25,7 +25,6 @@ typedef CGAL::Polygon_with_holes_2<K> Polygon;
 typedef K::Line_2 Line;
 typedef K::Vector_2 Vector;
 
-
 // Returns true if the point p3 is to the left of the vector from p1 to p2.
 inline bool is_left(Point p1, Point p2, Point p3) {
   switch (CGAL::orientation(p1, p2, p3)) {
@@ -91,9 +90,9 @@ class BoundsCheck {
                     {bbox.xmin(), bbox.ymax()}};
 
     return std::vector<Segment>({{points[0], points[1]},
-                                  {points[1], points[2]},
-                                  {points[2], points[3]},
-                                  {points[3], points[0]}});
+                                 {points[1], points[2]},
+                                 {points[2], points[3]},
+                                 {points[3], points[0]}});
   }
 
   static bool check_inside(Point pt, const std::vector<Point> &points) {

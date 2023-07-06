@@ -4,9 +4,9 @@
 #include <iostream>
 
 #include "aos/logging/logging.h"
-#include "y2018/constants.h"
 #include "frc971/control_loops/double_jointed_arm/demo_path.h"
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
+#include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/arm/arm_constants.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
 
@@ -172,7 +172,7 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
         break;
       }
     }
-    [[fallthrough]];
+      [[fallthrough]];
 
     case State::GOTO_PATH:
       if (outputs_disabled) {

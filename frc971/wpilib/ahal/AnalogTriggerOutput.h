@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "hal/AnalogTrigger.h"
 #include "frc971/wpilib/ahal/DigitalSource.h"
+#include "hal/AnalogTrigger.h"
 
 namespace frc {
 
@@ -66,7 +66,7 @@ class AnalogTriggerOutput : public DigitalSource {
   // Uses pointer rather than smart pointer because a user can not construct
   // an AnalogTriggerOutput themselves and because the AnalogTriggerOutput
   // should always be in scope at the same time as an AnalogTrigger.
-  const AnalogTrigger* m_trigger;
+  const AnalogTrigger *m_trigger;
   AnalogTriggerType m_outputType;
 };
 

@@ -2,10 +2,11 @@
 
 #include <iostream>
 
-#include "aos/init.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+
+#include "aos/init.h"
 
 DEFINE_bool(print_logs, false,
             "Print the log messages as they are being generated.");

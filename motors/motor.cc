@@ -1,13 +1,13 @@
 #include "motors/motor.h"
 
+#include <inttypes.h>
 #include <limits.h>
 #include <stdio.h>
-#include <inttypes.h>
 
 #include <array>
 
-#include "motors/peripheral/configuration.h"
 #include "motors/peripheral/can.h"
+#include "motors/peripheral/configuration.h"
 
 extern "C" float analog_ratio(uint16_t reading);
 extern "C" float absolute_wheel(uint16_t reading);
@@ -184,7 +184,7 @@ void Motor::CurrentInterrupt(const BalancedReadings &balanced,
       static_cast<uint32_t>(switching_points_ratio_[2] * switching_points_max)};
 #if USE_CUTOFF
   constexpr uint32_t kMax = 2995;
-  //constexpr uint32_t kMax = 1445;
+  // constexpr uint32_t kMax = 1445;
   static bool done = false;
   bool done_now = false;
   if (switching_points[0] > kMax || switching_points[1] > kMax ||
@@ -223,7 +223,7 @@ void Motor::CurrentInterrupt(const BalancedReadings &balanced,
     done = true;
   }
   if (!done) {
-#else  // USE_CUTOFF
+#else   // USE_CUTOFF
   if (true) {
 #endif  // USE_CUTOFF
     output_registers_[0][0] = CalculateOnTime(switching_points[0]);
@@ -262,7 +262,7 @@ void Motor::CurrentInterrupt(const BalancedReadings &balanced,
   constexpr int kStartupWait = 2 * 20000;
 #endif
   constexpr int kSubsampling = 1;
-  //constexpr int kPoints = 5000;
+  // constexpr int kPoints = 5000;
   constexpr int kPoints = 1000;
   constexpr int kSamplingEnd = kStartupWait + kPoints * kSubsampling;
   (void)kSamplingEnd;
@@ -277,7 +277,7 @@ void Motor::CurrentInterrupt(const BalancedReadings &balanced,
     ++j;
 #if SAMPLE_UNTIL_DONE
   } else if (!done) {
-#else  // SAMPLE_UNTIL_DONE
+#else   // SAMPLE_UNTIL_DONE
   } else if (j < kSamplingEnd && (j % kSubsampling) == 0) {
 #endif  // SAMPLE_UNTIL_DONE
     {
@@ -329,14 +329,14 @@ void Motor::CurrentInterrupt(const BalancedReadings &balanced,
       point[5] = pwm_ftm_->C5V - pwm_ftm_->C4V;
 #endif
 #endif
-// End obnoxious #if 0/#if 1
+      // End obnoxious #if 0/#if 1
       point[9] = captured_wrapped_encoder;
-      //SmallInitReadings readings;
+      // SmallInitReadings readings;
       //{
-        //DisableInterrupts disable_interrupts;
-        //readings = AdcReadSmallInit(disable_interrupts);
+      // DisableInterrupts disable_interrupts;
+      // readings = AdcReadSmallInit(disable_interrupts);
       //}
-      //point[10] = readings.motor0_abs;
+      // point[10] = readings.motor0_abs;
     }
 
 #if DO_STEP_RESPONSE
@@ -359,12 +359,12 @@ void Motor::CurrentInterrupt(const BalancedReadings &balanced,
       pwm_ftm_->C2V = 0;
       pwm_ftm_->C3V = 0;
     }
-#endif  // DO_STEP_RESPONSE/DO_PULSE_SWEEP
+#endif                // DO_STEP_RESPONSE/DO_PULSE_SWEEP
 
     ++j;
 #if SAMPLE_UNTIL_DONE
   } else if (false) {
-#else  // SAMPLE_UNTIL_DONE
+#else   // SAMPLE_UNTIL_DONE
   } else if (j < kSamplingEnd) {
     ++j;
   } else if (j == kSamplingEnd) {
@@ -373,7 +373,7 @@ void Motor::CurrentInterrupt(const BalancedReadings &balanced,
     ++j;
 #if SAMPLE_UNTIL_DONE
   } else if (done) {
-#else  // SAMPLE_UNTIL_DONE
+#else   // SAMPLE_UNTIL_DONE
   } else {
 #endif  // SAMPLE_UNTIL_DONE
     // Time to write the data out.
@@ -382,7 +382,8 @@ void Motor::CurrentInterrupt(const BalancedReadings &balanced,
       if (to_write > 64) {
         to_write = 64;
       }
-      int result = printing_implementation_->Write(((const char *)data) + written, to_write);
+      int result = printing_implementation_->Write(
+          ((const char *)data) + written, to_write);
       if (result >= 0) {
         written += result;
       } else {

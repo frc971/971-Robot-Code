@@ -1,10 +1,11 @@
 #include "aos/starter/subprocess.h"
 
+#include "gtest/gtest.h"
+
 #include "aos/events/shm_event_loop.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
-#include "gtest/gtest.h"
 
 namespace aos::starter::testing {
 

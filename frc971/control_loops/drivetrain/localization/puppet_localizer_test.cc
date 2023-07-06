@@ -2,16 +2,17 @@
 
 #include <queue>
 
+#include "gtest/gtest.h"
+
 #include "aos/events/logging/log_writer.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/team_number.h"
 #include "aos/network/testing_time_converter.h"
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
-#include "frc971/control_loops/team_number_test_environment.h"
-#include "gtest/gtest.h"
-#include "frc971/control_loops/drivetrain/localization/localizer_output_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
+#include "frc971/control_loops/drivetrain/localization/localizer_output_generated.h"
+#include "frc971/control_loops/team_number_test_environment.h"
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_string(output_folder, "",
@@ -38,7 +39,6 @@ namespace chrono = std::chrono;
 using aos::monotonic_clock;
 using frc971::control_loops::drivetrain::DrivetrainLoop;
 using frc971::control_loops::drivetrain::testing::DrivetrainSimulation;
-
 
 // TODO(james): Make it so this actually tests the full system of the localizer.
 class LocalizedDrivetrainTest : public frc971::testing::ControlLoopTest {

@@ -1,9 +1,9 @@
 #ifndef MOTORS_PERIPHERAL_ADC_DMA_H_
 #define MOTORS_PERIPHERAL_ADC_DMA_H_
 
-#include <array>
-
 #include <stdint.h>
+
+#include <array>
 
 #include "motors/core/kinetis.h"
 #include "motors/peripheral/configuration.h"

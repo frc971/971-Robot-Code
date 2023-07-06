@@ -2,6 +2,9 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "glog/logging.h"
+#include "glog/raw_logging.h"
+
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/shm_event_loop.h"
@@ -12,8 +15,6 @@
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/sctp_server.h"
 #include "aos/network/timestamp_channel.h"
-#include "glog/logging.h"
-#include "glog/raw_logging.h"
 
 namespace aos {
 namespace message_bridge {

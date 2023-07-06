@@ -112,7 +112,7 @@ class Application {
  private:
   typedef aos::util::ScopedPipe::PipePair PipePair;
 
-  static constexpr const char* const kSudo{"sudo"};
+  static constexpr const char *const kSudo{"sudo"};
 
   void set_args(
       const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>

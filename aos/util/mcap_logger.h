@@ -1,11 +1,12 @@
 #ifndef AOS_UTIL_MCAP_LOGGER_H_
 #define AOS_UTIL_MCAP_LOGGER_H_
 
+#include "single_include/nlohmann/json.hpp"
+
 #include "aos/configuration_generated.h"
 #include "aos/events/event_loop.h"
 #include "aos/fast_string_builder.h"
 #include "aos/flatbuffer_utils.h"
-#include "single_include/nlohmann/json.hpp"
 
 namespace aos {
 

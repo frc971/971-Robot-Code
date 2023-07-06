@@ -3,15 +3,17 @@
 #include <queue>
 #include <random>
 
+#include "gflags/gflags.h"
+
 #include "aos/testing/random_seed.h"
 #include "aos/testing/test_shm.h"
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
 #include "frc971/control_loops/drivetrain/trajectory.h"
-#include "gflags/gflags.h"
 #if defined(SUPPORT_PLOT)
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #endif
 #include "gtest/gtest.h"
+
 #include "y2019/constants.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 
@@ -490,9 +492,9 @@ TEST_P(ParameterizedLocalizerTest, SplineTest) {
     const double left_enc = state(StateIdx::kLeftEncoder, 0);
     const double right_enc = state(StateIdx::kRightEncoder, 0);
 
-    const double gyro = (state(StateIdx::kRightVelocity) -
-                         state(StateIdx::kLeftVelocity)) /
-                        dt_config_.robot_radius / 2.0;
+    const double gyro =
+        (state(StateIdx::kRightVelocity) - state(StateIdx::kLeftVelocity)) /
+        dt_config_.robot_radius / 2.0;
     const TestLocalizer::State xdot = DiffEq(state, U);
     const Eigen::Vector3d accel(
         localizer_.CalcLongitudinalVelocity(xdot) -

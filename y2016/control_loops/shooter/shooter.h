@@ -3,9 +3,9 @@
 
 #include <memory>
 
-#include "frc971/control_loops/control_loop.h"
 #include "aos/events/event_loop.h"
 #include "aos/time/time.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2016/control_loops/shooter/shooter_goal_generated.h"
 #include "y2016/control_loops/shooter/shooter_integral_plant.h"

@@ -2,8 +2,9 @@
 #define FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_DYNAMICS_H_
 
 #include "Eigen/Dense"
-#include "frc971/control_loops/runge_kutta.h"
 #include "gflags/gflags.h"
+
+#include "frc971/control_loops/runge_kutta.h"
 
 DECLARE_bool(gravity);
 

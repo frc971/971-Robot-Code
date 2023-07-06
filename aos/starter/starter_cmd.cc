@@ -8,11 +8,12 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "gflags/gflags.h"
+
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/starter/starter_rpc_lib.h"
 #include "aos/time/time.h"
-#include "gflags/gflags.h"
-#include "starter_rpc_lib.h"
 
 DEFINE_string(config, "aos_config.json", "File path of aos configuration");
 // TODO(james): Bash autocompletion for node names.

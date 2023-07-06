@@ -4,6 +4,8 @@
 #include <functional>
 #include <string_view>
 
+#include "gtest/gtest.h"
+
 #include "aos/events/event_loop_param_test.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/message_counter.h"
@@ -16,7 +18,6 @@
 #include "aos/network/testing_time_converter.h"
 #include "aos/network/timestamp_generated.h"
 #include "aos/testing/path.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

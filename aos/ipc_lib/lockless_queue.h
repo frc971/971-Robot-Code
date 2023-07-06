@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/data_alignment.h"
 #include "aos/ipc_lib/index.h"

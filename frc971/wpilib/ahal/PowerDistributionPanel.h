@@ -7,10 +7,10 @@
 
 #pragma once
 
+#include <hal/Types.h>
+
 #include <memory>
 #include <string>
-
-#include <hal/Types.h>
 
 #include "frc971/wpilib/ahal/SensorBase.h"
 

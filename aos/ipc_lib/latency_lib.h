@@ -7,8 +7,9 @@
 
 #include <chrono>
 
-#include "aos/time/time.h"
 #include "glog/logging.h"
+
+#include "aos/time/time.h"
 
 namespace aos {
 

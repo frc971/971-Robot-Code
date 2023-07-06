@@ -1,7 +1,8 @@
 #include "aos/network/sctp_lib.h"
 
-#include "aos/init.h"
 #include "gflags/gflags.h"
+
+#include "aos/init.h"
 
 DEFINE_string(host, "", "host to resolve");
 DEFINE_int32(port, 2977, "port to use");

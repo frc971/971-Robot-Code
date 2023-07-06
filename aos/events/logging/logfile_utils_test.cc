@@ -6,6 +6,12 @@
 #include <string>
 
 #include "absl/strings/escaping.h"
+#include "external/com_github_google_flatbuffers/src/annotated_binary_text_gen.h"
+#include "external/com_github_google_flatbuffers/src/binary_annotator.h"
+#include "flatbuffers/reflection_generated.h"
+#include "gflags/gflags.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/test_message_generated.h"
 #include "aos/flatbuffer_merge.h"
@@ -15,11 +21,6 @@
 #include "aos/testing/random_seed.h"
 #include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
-#include "external/com_github_google_flatbuffers/src/annotated_binary_text_gen.h"
-#include "external/com_github_google_flatbuffers/src/binary_annotator.h"
-#include "flatbuffers/reflection_generated.h"
-#include "gflags/gflags.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace logger {

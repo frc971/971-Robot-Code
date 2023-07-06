@@ -1,9 +1,10 @@
+#include "gflags/gflags.h"
+
 #include "aos/init.h"
 #include "frc971/analysis/in_process_plotter.h"
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/double_jointed_arm/ekf.h"
 #include "frc971/control_loops/double_jointed_arm/trajectory.h"
-#include "gflags/gflags.h"
 #include "y2018/control_loops/superstructure/arm/arm_constants.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
 

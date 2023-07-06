@@ -1,15 +1,15 @@
+#include "frc971/control_loops/position_sensor_sim.h"
+
 #include <unistd.h>
 
 #include <memory>
-
 #include <random>
+
+#include "flatbuffers/flatbuffers.h"
+#include "gtest/gtest.h"
 
 #include "aos/die.h"
 #include "frc971/control_loops/control_loops_generated.h"
-#include "frc971/control_loops/position_sensor_sim.h"
-#include "gtest/gtest.h"
-
-#include "flatbuffers/flatbuffers.h"
 
 namespace frc971 {
 namespace control_loops {

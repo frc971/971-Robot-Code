@@ -1,8 +1,9 @@
 #ifndef AOS_EVENTS_EVENT_LOOP_EVENT_H
 #define AOS_EVENTS_EVENT_LOOP_EVENT_H
 
-#include "aos/time/time.h"
 #include "glog/logging.h"
+
+#include "aos/time/time.h"
 
 namespace aos {
 

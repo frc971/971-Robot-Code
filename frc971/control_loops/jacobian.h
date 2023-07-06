@@ -28,7 +28,7 @@ template <int num_states, int num_inputs, typename F>
 template <int num_states, int num_u, typename F, typename... Args>
 ::Eigen::Matrix<double, num_states, num_states> NumericalJacobianX(
     const F &fn, ::Eigen::Matrix<double, num_states, 1> X,
-    ::Eigen::Matrix<double, num_u, 1> U, Args &&... args) {
+    ::Eigen::Matrix<double, num_u, 1> U, Args &&...args) {
   return NumericalJacobian<num_states, num_states>(
       [&](::Eigen::Matrix<double, num_states, 1> X) {
         return fn(X, U, args...);
@@ -40,7 +40,7 @@ template <int num_states, int num_u, typename F, typename... Args>
 template <int num_states, int num_u, typename F, typename... Args>
 ::Eigen::Matrix<double, num_states, num_u> NumericalJacobianU(
     const F &fn, ::Eigen::Matrix<double, num_states, 1> X,
-    ::Eigen::Matrix<double, num_u, 1> U, Args &&... args) {
+    ::Eigen::Matrix<double, num_u, 1> U, Args &&...args) {
   return NumericalJacobian<num_states, num_u>(
       [&](::Eigen::Matrix<double, num_u, 1> U) { return fn(X, U, args...); },
       U);

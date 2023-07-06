@@ -1,12 +1,13 @@
 #include <iostream>
 
+#include "gflags/gflags.h"
+
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/util/file.h"
-#include "gflags/gflags.h"
 
 DEFINE_string(logfile, "/tmp/logfile.bfbs",
               "Name of the logfile to read from.");

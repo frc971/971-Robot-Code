@@ -1,13 +1,14 @@
 #include <chrono>
 #include <memory>
 
+#include "gtest/gtest.h"
+
+#include "aos/events/logging/log_writer.h"
 #include "frc971/control_loops/capped_test_plant.h"
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-#include "gtest/gtest.h"
 #include "y2021_bot3/control_loops/superstructure/superstructure.h"
-#include "aos/events/logging/log_writer.h"
 
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
@@ -185,19 +186,19 @@ TEST_F(SuperstructureTest, Disabled) {
 TEST_F(SuperstructureTest, PlotterTest) {
   double speed = 10.0;
   test_event_loop_->AddPhasedLoop(
-    [&](int) {
-      auto builder = superstructure_goal_sender_.MakeBuilder();
-      Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-      goal_builder.add_intake_speed(speed);
-      goal_builder.add_outtake_speed(speed);
-      goal_builder.add_climber_speed(speed);
-      builder.CheckOk(builder.Send(goal_builder.Finish()));
-      speed += .001;
-      if (speed >= 12) {
-        speed = -12;
-      }
-    },
-    frc971::controls::kLoopFrequency);
+      [&](int) {
+        auto builder = superstructure_goal_sender_.MakeBuilder();
+        Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+        goal_builder.add_intake_speed(speed);
+        goal_builder.add_outtake_speed(speed);
+        goal_builder.add_climber_speed(speed);
+        builder.CheckOk(builder.Send(goal_builder.Finish()));
+        speed += .001;
+        if (speed >= 12) {
+          speed = -12;
+        }
+      },
+      frc971::controls::kLoopFrequency);
   RunFor(std::chrono::seconds(10));
 }
 

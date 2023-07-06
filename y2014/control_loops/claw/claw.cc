@@ -953,15 +953,15 @@ void ClawMotor::RunIteration(const Goal *goal, const Position *position,
   if (output) {
     if (goal) {
       // setup the intake
-      output_struct.intake_voltage =
-          (goal->intake() > 12.0)
-              ? 12
-              : (goal->intake() < -12.0) ? -12.0 : goal->intake();
+      output_struct.intake_voltage = (goal->intake() > 12.0) ? 12
+                                     : (goal->intake() < -12.0)
+                                         ? -12.0
+                                         : goal->intake();
       output_struct.tusk_voltage = goal->centering();
-      output_struct.tusk_voltage =
-          (goal->centering() > 12.0)
-              ? 12
-              : (goal->centering() < -12.0) ? -12.0 : goal->centering();
+      output_struct.tusk_voltage = (goal->centering() > 12.0) ? 12
+                                   : (goal->centering() < -12.0)
+                                       ? -12.0
+                                       : goal->centering();
     }
     output_struct.top_claw_voltage = claw_.U(1, 0);
     output_struct.bottom_claw_voltage = claw_.U(0, 0);

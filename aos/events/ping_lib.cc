@@ -1,10 +1,11 @@
 #include "aos/events/ping_lib.h"
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/events/ping_generated.h"
 #include "aos/events/pong_generated.h"
 #include "aos/json_to_flatbuffer.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 DEFINE_int32(sleep_ms, 10, "Time to sleep between pings");
 

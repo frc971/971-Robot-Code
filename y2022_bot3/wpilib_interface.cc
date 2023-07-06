@@ -12,6 +12,7 @@
 #include <thread>
 
 #include "ctre/phoenix/CANifier.h"
+
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Counter.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
@@ -21,6 +22,9 @@
 #include "frc971/wpilib/ahal/TalonFX.h"
 #include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
+
+#include "ctre/phoenix/motorcontrol/can/TalonFX.h"
+#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 
 #include "aos/commonmath.h"
 #include "aos/events/event_loop.h"
@@ -32,8 +36,6 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-#include "ctre/phoenix/motorcontrol/can/TalonFX.h"
-#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
@@ -89,10 +91,10 @@ double climber_pot_translate(double voltage) {
 }
 
 // TODO(niko): Might have to move these to medium once we know the actual values
-constexpr double kMaxFastEncoderPulsesPerSecond = std::max(
-    {Values::kMaxDrivetrainEncoderPulsesPerSecond(),
-     Values::kMaxIntakeEncoderPulsesPerSecond(),
-     Values::kMaxClimberEncoderPulsesPerSecond()});
+constexpr double kMaxFastEncoderPulsesPerSecond =
+    std::max({Values::kMaxDrivetrainEncoderPulsesPerSecond(),
+              Values::kMaxIntakeEncoderPulsesPerSecond(),
+              Values::kMaxClimberEncoderPulsesPerSecond()});
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
 constexpr double kMaxMediumEncoderPulsesPerSecond = 0;
@@ -203,8 +205,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       CopyPosition(climber_encoder_right_, &climber_right,
                    Values::kClimberEncoderCountsPerRevolution(),
                    (Values::kClimberEncoderRatio() *
-                     Values::kClimberEncoderCountsPerRevolution()) /
-                    (2.0 * M_PI),
+                    Values::kClimberEncoderCountsPerRevolution()) /
+                       (2.0 * M_PI),
                    climber_pot_translate, true,
                    values_->climber_right.potentiometer_offset);
 
@@ -212,8 +214,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       CopyPosition(climber_encoder_left_, &climber_left,
                    Values::kClimberEncoderCountsPerRevolution(),
                    (Values::kClimberEncoderRatio() *
-                     Values::kClimberEncoderCountsPerRevolution()) /
-                    (2.0 * M_PI),
+                    Values::kClimberEncoderCountsPerRevolution()) /
+                       (2.0 * M_PI),
                    climber_pot_translate, true,
                    values_->climber_left.potentiometer_offset);
 

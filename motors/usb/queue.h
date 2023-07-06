@@ -1,8 +1,8 @@
 #ifndef MOTORS_USB_QUEUE_H_
 #define MOTORS_USB_QUEUE_H_
 
-#include <memory>
 #include <atomic>
+#include <memory>
 
 namespace frc971 {
 namespace teensy {
@@ -28,9 +28,7 @@ class Queue {
                       write_cursor_.load(::std::memory_order_relaxed));
   }
 
-  size_t space_available() const {
-    return size_ - data_queued() - 1;
-  }
+  size_t space_available() const { return size_ - data_queued() - 1; }
 
   bool empty() const {
     return read_cursor_.load(::std::memory_order_relaxed) ==

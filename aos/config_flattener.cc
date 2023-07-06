@@ -1,12 +1,13 @@
 #include <string>
 #include <vector>
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/util/file.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 namespace aos {
 

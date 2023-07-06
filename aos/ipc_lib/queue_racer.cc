@@ -4,8 +4,9 @@
 #include <cstring>
 #include <limits>
 
-#include "aos/ipc_lib/event.h"
 #include "gtest/gtest.h"
+
+#include "aos/ipc_lib/event.h"
 
 namespace aos {
 namespace ipc_lib {

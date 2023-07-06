@@ -1,9 +1,10 @@
 #include "y2022/control_loops/superstructure/collision_avoidance.h"
 
-#include "aos/commonmath.h"
-#include "aos/flatbuffers.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+
+#include "aos/commonmath.h"
+#include "aos/flatbuffers.h"
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 

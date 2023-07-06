@@ -1,9 +1,10 @@
 #include "aos/events/logging/lzma_encoder.h"
 
-#include "aos/events/logging/buffer_encoder_param_test.h"
-#include "aos/util/file.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+
+#include "aos/events/logging/buffer_encoder_param_test.h"
+#include "aos/util/file.h"
 
 DECLARE_int32(lzma_threads);
 

@@ -8,12 +8,12 @@
 #include <tflite/public/edgetpu_c.h>
 
 #include <chrono>
-#include <opencv2/dnn.hpp>
 #include <string>
 
 #include "absl/types/span.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+#include <opencv2/dnn.hpp>
 
 DEFINE_double(conf_threshold, 0.9,
               "Threshold value for confidence scores. Detections with a "

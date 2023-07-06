@@ -7,6 +7,8 @@
 #include <vector>
 
 #include "absl/strings/escaping.h"
+#include "gflags/gflags.h"
+
 #include "aos/aos_cli_utils.h"
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
@@ -14,7 +16,6 @@
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/sha256.h"
-#include "gflags/gflags.h"
 
 DEFINE_string(
     name, "",

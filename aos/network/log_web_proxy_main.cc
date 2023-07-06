@@ -4,13 +4,14 @@
 // /path/to/logfile And then opening the plotting webpage at
 // http://localhost:8080/graph.html
 
+#include "gflags/gflags.h"
+
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/init.h"
 #include "aos/network/web_proxy.h"
-#include "gflags/gflags.h"
 
 DEFINE_string(data_dir, "www", "Directory to serve data files from");
 DEFINE_string(node, "", "Directory to serve data files from");
@@ -64,8 +65,7 @@ int main(int argc, char **argv) {
   }
 
   aos::web_proxy::WebProxy web_proxy(
-      event_loop.get(),
-      reader.event_loop_factory()->scheduler_epoll(),
+      event_loop.get(), reader.event_loop_factory()->scheduler_epoll(),
       aos::web_proxy::StoreHistory::kYes, FLAGS_buffer_size);
 
   web_proxy.SetDataPath(FLAGS_data_dir.c_str());

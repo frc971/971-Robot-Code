@@ -12,6 +12,7 @@
 #include <thread>
 
 #include "ctre/phoenix/CANifier.h"
+
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Counter.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
@@ -19,6 +20,8 @@
 #include "frc971/wpilib/ahal/Encoder.h"
 #include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
+
+#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 
 #include "aos/commonmath.h"
 #include "aos/events/event_loop.h"
@@ -30,7 +33,6 @@
 #include "aos/util/log_interval.h"
 #include "aos/util/phased_loop.h"
 #include "aos/util/wrapping_counter.h"
-#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"

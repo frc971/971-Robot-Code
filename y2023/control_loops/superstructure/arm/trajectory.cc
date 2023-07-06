@@ -1,12 +1,13 @@
 #include "y2023/control_loops/superstructure/arm/trajectory.h"
 
 #include "Eigen/Dense"
+#include "gflags/gflags.h"
+
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/dlqr.h"
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/jacobian.h"
 #include "frc971/control_loops/runge_kutta.h"
-#include "gflags/gflags.h"
 #include "y2023/control_loops/superstructure/arm/arm_trajectories_generated.h"
 
 DEFINE_double(lqr_proximal_pos, 0.5, "Position LQR gain");

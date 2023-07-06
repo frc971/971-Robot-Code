@@ -35,15 +35,22 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
 
       chrono::duration_cast<chrono::nanoseconds>(
           chrono::duration<double>(drivetrain::kDt)),
-      drivetrain::kRobotRadius, drivetrain::kWheelRadius, drivetrain::kV,
+      drivetrain::kRobotRadius,
+      drivetrain::kWheelRadius,
+      drivetrain::kV,
 
-      drivetrain::kHighGearRatio, drivetrain::kLowGearRatio,
+      drivetrain::kHighGearRatio,
+      drivetrain::kLowGearRatio,
       drivetrain::kJ,
       drivetrain::kMass,
-      kThreeStateDriveShifter, kThreeStateDriveShifter,
-      true /* default_high_gear */, 0 /* down_offset if using constants use
-                                   constants::GetValues().down_error */,
-      0.8 /* wheel_non_linearity */, 1.2 /* quickturn_wheel_multiplier */,
+      kThreeStateDriveShifter,
+      kThreeStateDriveShifter,
+      true /* default_high_gear */,
+      0 /* down_offset if using constants use
+     constants::GetValues().down_error */
+      ,
+      0.8 /* wheel_non_linearity */,
+      1.2 /* quickturn_wheel_multiplier */,
       1.5 /* wheel_multiplier */,
   };
 

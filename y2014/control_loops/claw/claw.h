@@ -3,10 +3,10 @@
 
 #include <memory>
 
-#include "frc971/control_loops/control_loop.h"
-#include "frc971/control_loops/polytope.h"
 #include "frc971/control_loops/coerce_goal.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/hall_effect_tracker.h"
+#include "frc971/control_loops/polytope.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2014/constants.h"
 #include "y2014/control_loops/claw/claw_goal_generated.h"

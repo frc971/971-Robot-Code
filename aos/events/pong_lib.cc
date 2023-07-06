@@ -1,9 +1,10 @@
 #include "aos/events/pong_lib.h"
 
+#include "glog/logging.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/ping_generated.h"
 #include "aos/events/pong_generated.h"
-#include "glog/logging.h"
 
 namespace aos {
 

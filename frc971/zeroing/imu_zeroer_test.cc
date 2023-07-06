@@ -1,6 +1,8 @@
-#include "aos/flatbuffers.h"
-#include "gtest/gtest.h"
 #include "frc971/zeroing/imu_zeroer.h"
+
+#include "gtest/gtest.h"
+
+#include "aos/flatbuffers.h"
 
 namespace frc971::zeroing {
 
@@ -113,7 +115,8 @@ TEST(ImuZeroerTest, ZeroOnLowNoiseData) {
         (static_cast<double>(ii) / (kMinSamplesToZero - 1) - 0.5) * 0.001;
     zeroer.InsertAndProcessMeasurement(
         MakeMeasurement({0.01 + offset, 0.02 + offset, 0.03 + offset},
-                        {4 + offset, 5 + offset, 6 + offset}).message());
+                        {4 + offset, 5 + offset, 6 + offset})
+            .message());
   }
   ASSERT_TRUE(zeroer.Zeroed());
   ASSERT_FALSE(zeroer.Faulted());
@@ -143,7 +146,8 @@ TEST(ImuZeroerTest, NoZeroOnHighNoiseData) {
         (static_cast<double>(ii) / (kMinSamplesToZero - 1) - 0.5) * 1.0;
     zeroer.InsertAndProcessMeasurement(
         MakeMeasurement({0.01 + offset, 0.02 + offset, 0.03 + offset},
-                        {4 + offset, 5 + offset, 6 + offset}).message());
+                        {4 + offset, 5 + offset, 6 + offset})
+            .message());
   }
   ASSERT_FALSE(zeroer.Zeroed());
   ASSERT_FALSE(zeroer.Faulted());

@@ -1,26 +1,27 @@
-#include "aos/vision/image/image_stream.h"
-
 #include <sys/stat.h>
+
 #include <deque>
 #include <fstream>
 #include <string>
+
+#include "gflags/gflags.h"
 
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"
 #include "aos/vision/blob/codec.h"
 #include "aos/vision/events/socket_types.h"
 #include "aos/vision/events/udp.h"
+#include "aos/vision/image/image_stream.h"
 #include "aos/vision/image/reader.h"
-#include "gflags/gflags.h"
 #include "y2019/image_streamer/flip_image.h"
 #include "y2019/vision.pb.h"
 
+using ::aos::monotonic_clock;
 using ::aos::events::DataSocket;
 using ::aos::events::RXUdpSocket;
 using ::aos::events::TCPServer;
 using ::aos::vision::DataRef;
 using ::aos::vision::Int32Codec;
-using ::aos::monotonic_clock;
 using ::y2019::VisionControl;
 
 DEFINE_string(roborio_ip, "10.9.71.2", "RoboRIO IP Address");

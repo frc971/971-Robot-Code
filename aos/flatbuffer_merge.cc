@@ -2,9 +2,10 @@
 
 #include <cstdio>
 
-#include "aos/flatbuffer_utils.h"
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/minireflect.h"
+
+#include "aos/flatbuffer_utils.h"
 
 namespace aos {
 

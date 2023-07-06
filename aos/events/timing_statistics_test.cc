@@ -1,7 +1,8 @@
 #include "aos/events/timing_statistics.h"
 
-#include "aos/flatbuffers.h"
 #include "gtest/gtest.h"
+
+#include "aos/flatbuffers.h"
 
 namespace aos {
 namespace internal {

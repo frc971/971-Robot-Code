@@ -19,11 +19,18 @@ cd "${BUILD_WORKSPACE_DIRECTORY}"
 # Find all the C/C++ files in the repo.
 # Exclude third-party code. Both in //third_party and the third-party code
 # checked in to the main repo directly.
+# Also exclude the pistol grip vtables. Those are likely auto-generated and
+# shouldn't be auto-formatted too.
 cc_files=($(git ls-tree --name-only --full-tree -r @ \
     | grep -v -e '^third_party/' \
-        -e '^motors/core/kinetis.h$' \
-        -e '^y2023/vision/rkisp1-config.h$' \
-    | (grep -e '\.c$' -e '\.cc$' -e '\.h' || :)))
+        -e '^motors/core/kinetis\.h$' \
+        -e '^motors/core/mk20dx128\.*c$' \
+        -e '^motors/core/nonstd\..*$' \
+        -e '^motors/pistol_grip/vtable_.*\.cc$' \
+        -e '^motors/teensy_loader_cli/' \
+        -e '^motors/usb/usb_' \
+        -e '^y2023/vision/rkisp1-config\.h$' \
+    | (grep -e '\.c$' -e '\.cc$' -e '\.h$' || :)))
 
 # If we have any C/C++ files, format them.
 if ((${#cc_files[@]} > 0)); then

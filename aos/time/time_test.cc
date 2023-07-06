@@ -2,10 +2,11 @@
 
 #include <thread>
 
-#include "aos/macros.h"
-#include "aos/util/death_test_log_implementation.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+
+#include "aos/macros.h"
+#include "aos/util/death_test_log_implementation.h"
 
 namespace aos {
 namespace time {

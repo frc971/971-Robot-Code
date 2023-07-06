@@ -1,5 +1,3 @@
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/text_format.h>
 #include <sys/stat.h>
 
 #include <cstdio>
@@ -9,6 +7,9 @@
 #include <memory>
 #include <thread>
 #include <vector>
+
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/text_format.h>
 
 #include "aos/logging/implementations.h"
 #include "aos/logging/logging.h"

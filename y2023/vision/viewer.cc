@@ -1,15 +1,15 @@
+#include "absl/strings/match.h"
+#include "opencv2/calib3d.hpp"
+#include "opencv2/imgproc.hpp"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "absl/strings/match.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/time/time.h"
 #include "frc971/constants/constants_sender_lib.h"
 #include "frc971/vision/vision_generated.h"
-#include "opencv2/calib3d.hpp"
-#include "opencv2/imgproc.hpp"
 #include "y2023/vision/vision_util.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");

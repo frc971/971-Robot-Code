@@ -1,5 +1,7 @@
 #include "aos/events/logging/logfile_sorting.h"
 
+#include <dirent.h>
+
 #include <algorithm>
 #include <map>
 #include <string>
@@ -8,12 +10,12 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/strings/str_join.h"
+
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
 #include "aos/sha256.h"
 #include "aos/time/time.h"
-#include "dirent.h"
 #include "sys/stat.h"
 
 #if ENABLE_S3

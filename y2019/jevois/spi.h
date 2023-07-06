@@ -6,6 +6,7 @@
 #include <optional>
 
 #include "absl/types/span.h"
+
 #include "y2019/jevois/structures.h"
 
 // This file manages serializing and deserializing the various structures for

@@ -1,5 +1,7 @@
 #include <fcntl.h>
 
+#include "gflags/gflags.h"
+
 #include "aos/init.h"
 #include "aos/logging/implementations.h"
 #include "aos/logging/replay.h"
@@ -8,7 +10,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain.q.h"
 #include "frc971/control_loops/drivetrain/localizer.q.h"
 #include "frc971/wpilib/imu.q.h"
-#include "gflags/gflags.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 #include "y2019/control_loops/drivetrain/event_loop_localizer.h"
@@ -29,9 +30,10 @@ namespace control_loops {
 namespace drivetrain {
 using ::y2019::constants::Field;
 
-typedef TypedLocalizer<
-    constants::Values::kNumCameras, Field::kNumTargets, Field::kNumObstacles,
-    EventLoopLocalizer::kMaxTargetsPerFrame, double> TestLocalizer;
+typedef TypedLocalizer<constants::Values::kNumCameras, Field::kNumTargets,
+                       Field::kNumObstacles,
+                       EventLoopLocalizer::kMaxTargetsPerFrame, double>
+    TestLocalizer;
 typedef typename TestLocalizer::Camera TestCamera;
 typedef typename TestCamera::Pose Pose;
 typedef typename TestCamera::LineSegment Obstacle;
@@ -42,7 +44,7 @@ void PlotPlotPts(const ::std::vector<Pose> &poses,
                  const ::std::map<::std::string, ::std::string> &kwargs) {
   ::std::vector<double> x;
   ::std::vector<double> y;
-  for (const Pose & p : poses) {
+  for (const Pose &p : poses) {
     x.push_back(p.abs_pos().x());
     y.push_back(p.abs_pos().y());
   }
@@ -336,8 +338,8 @@ class LocalizerReplayer {
   // Whether the robot has been enabled yet.
   bool has_been_enabled_ = false;
   // Cache of last gyro value to forward to the localizer.
-  double latest_gyro_ = 0.0;      // rad/sec
-  double battery_voltage_ = 12.0; // volts
+  double latest_gyro_ = 0.0;       // rad/sec
+  double battery_voltage_ = 12.0;  // volts
   ::Eigen::Matrix<double, 2, 1> last_U_{0, 0};
   ::Eigen::Matrix<double, 2, 1> last_last_U_{0, 0};
 

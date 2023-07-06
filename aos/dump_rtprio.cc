@@ -19,11 +19,12 @@
 #include <set>
 #include <string>
 
+#include "glog/logging.h"
+
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/time/time.h"
 #include "aos/util/top.h"
-#include "glog/logging.h"
 
 DEFINE_string(config, "aos_config.json", "File path of aos configuration");
 

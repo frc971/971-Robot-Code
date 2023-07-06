@@ -1,7 +1,7 @@
-#include "y2019/vision/constants.h"
-
 #include <fstream>
 #include <sstream>
+
+#include "y2019/vision/constants.h"
 
 namespace y2019 {
 namespace vision {
@@ -31,8 +31,9 @@ static std::string fmt_meters(double v) {
 }
 
 void IntrinsicParams::Dump(std::basic_ostream<char> *o) const {
-  *o << "    {\n        " << fmt_rad(mount_angle) << ", " << focal_length;
-  *o << ", " << fmt_rad(barrel_mount) << ",\n    },\n";
+  *o << "    {\n        " << fmt_rad(mount_angle) << ",\n        "
+     << focal_length;
+  *o << ",\n        " << fmt_rad(barrel_mount) << ",\n    },\n";
 }
 
 void CameraGeometry::Dump(std::basic_ostream<char> *o) const {

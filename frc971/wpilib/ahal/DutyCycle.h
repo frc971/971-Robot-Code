@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include <memory>
-
 #include <hal/Types.h>
+
+#include <memory>
 
 namespace frc {
 class DigitalSource;
@@ -41,7 +41,7 @@ class DutyCycle {
    *
    * @param source The DigitalSource to use.
    */
-  explicit DutyCycle(DigitalSource& source);
+  explicit DutyCycle(DigitalSource &source);
   /**
    * Constructs a DutyCycle input from a DigitalSource input.
    *
@@ -49,7 +49,7 @@ class DutyCycle {
    *
    * @param source The DigitalSource to use.
    */
-  explicit DutyCycle(DigitalSource* source);
+  explicit DutyCycle(DigitalSource *source);
   /**
    * Constructs a DutyCycle input from a DigitalSource input.
    *
@@ -64,8 +64,8 @@ class DutyCycle {
    */
   virtual ~DutyCycle();
 
-  DutyCycle(DutyCycle&&) = default;
-  DutyCycle& operator=(DutyCycle&&) = default;
+  DutyCycle(DutyCycle &&) = default;
+  DutyCycle &operator=(DutyCycle &&) = default;
 
   /**
    * Get the frequency of the duty cycle signal.

@@ -26,8 +26,7 @@ constexpr double kMaxDutyCycle = 0.2;
 #endif
 
 constexpr int kPhaseBOffset = kCountsPerRevolution / 3;
-constexpr int kPhaseCOffset =
-    2 * kCountsPerRevolution / 3;
+constexpr int kPhaseCOffset = 2 * kCountsPerRevolution / 3;
 
 // volts
 constexpr double vcc = 14.0;
@@ -128,7 +127,8 @@ LittleMotorControlsImplementation::LittleMotorControlsImplementation()
     filtered_current_ = command_current;
   }
   const float goal_current_in = filtered_current_;
-  static constexpr float kMaxEffectiveVcc = static_cast<float>(vcc * kMaxDutyCycle);
+  static constexpr float kMaxEffectiveVcc =
+      static_cast<float>(vcc * kMaxDutyCycle);
   const float estimated_velocity_voltage =
       estimated_velocity_ / static_cast<float>(Kv / 2.0);
   const float max_current = (kMaxEffectiveVcc - estimated_velocity_voltage) /
@@ -143,7 +143,8 @@ LittleMotorControlsImplementation::LittleMotorControlsImplementation()
   const ::Eigen::Matrix<float, 3, 1> measured_current =
       (::Eigen::Matrix<float, 3, 1>() << scale_current_reading(raw_currents[0]),
        scale_current_reading(raw_currents[1]),
-       scale_current_reading(raw_currents[2])).finished();
+       scale_current_reading(raw_currents[2]))
+          .finished();
 
   const ComplexMatrix<3, 1> E1 =
       E1Unrotated_ *

@@ -1,7 +1,8 @@
-#include "aos/events/shm_event_loop.h"
-#include "aos/init.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+
+#include "aos/events/shm_event_loop.h"
+#include "aos/init.h"
 #include "y2020/setpoint_generated.h"
 
 DEFINE_double(accelerator, 250.0, "Accelerator speed");

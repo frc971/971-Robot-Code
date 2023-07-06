@@ -1,6 +1,6 @@
-#include <cmath>
-
 #include "y2020/control_loops/superstructure/hood/hood_encoder_zeroing_estimator.h"
+
+#include <cmath>
 
 namespace y2020::control_loops::superstructure::hood {
 

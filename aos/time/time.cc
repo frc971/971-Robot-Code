@@ -156,9 +156,8 @@ std::optional<realtime_clock::time_point> realtime_clock::FromString(
     return std::nullopt;
   }
 
-  return realtime_clock::time_point(
-      std::chrono::seconds(seconds) +
-      std::chrono::nanoseconds(nanoseconds_data));
+  return realtime_clock::time_point(std::chrono::seconds(seconds) +
+                                    std::chrono::nanoseconds(nanoseconds_data));
 }
 #endif
 

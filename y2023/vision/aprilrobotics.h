@@ -1,6 +1,13 @@
 
 #include <string>
 
+#include "Eigen/Dense"
+#include "opencv2/core/eigen.hpp"
+#include "opencv2/imgproc.hpp"
+#include "third_party/apriltag/apriltag.h"
+#include "third_party/apriltag/apriltag_pose.h"
+#include "third_party/apriltag/tag16h5.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/network/team_number.h"
@@ -12,11 +19,6 @@
 #include "frc971/vision/target_mapper.h"
 #include "frc971/vision/vision_generated.h"
 #include "frc971/vision/visualize_robot.h"
-#include "opencv2/core/eigen.hpp"
-#include "opencv2/imgproc.hpp"
-#include "third_party/apriltag/apriltag.h"
-#include "third_party/apriltag/apriltag_pose.h"
-#include "third_party/apriltag/tag16h5.h"
 #include "y2023/constants/constants_generated.h"
 
 namespace y2023 {

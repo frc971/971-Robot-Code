@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+
 #include "aos/time/time.h"
 
 namespace aos::logger {

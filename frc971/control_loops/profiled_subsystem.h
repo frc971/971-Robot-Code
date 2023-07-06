@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "Eigen/Dense"
+
 #include "aos/util/trapezoid_profile.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/control_loop.h"

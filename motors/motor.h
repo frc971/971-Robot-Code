@@ -111,9 +111,7 @@ class Motor final {
     return static_cast<int32_t>(wrapped_encoder_reading) + encoder_offset_;
   }
 
-  int encoder() {
-    return encoder_multiplier_ * encoder_ftm_->CNT;
-  }
+  int encoder() { return encoder_multiplier_ * encoder_ftm_->CNT; }
   uint32_t wrapped_encoder() {
     return (encoder() + encoder_calibration_offset_) %
            controls_->mechanical_counts_per_revolution();
@@ -155,13 +153,9 @@ class Motor final {
     return controls_->estimated_velocity();
   }
 
-  inline int16_t i_goal(size_t ii) const {
-    return controls_->i_goal(ii);
-  }
+  inline int16_t i_goal(size_t ii) const { return controls_->i_goal(ii); }
 
-  inline int16_t goal_current() const {
-    return goal_current_;
-  }
+  inline int16_t goal_current() const { return goal_current_; }
 
   inline float overall_measured_current() const {
     return controls_->overall_measured_current();

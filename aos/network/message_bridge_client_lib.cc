@@ -3,6 +3,9 @@
 #include <chrono>
 #include <string_view>
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/network/connect_generated.h"
@@ -13,8 +16,6 @@
 #include "aos/network/timestamp_generated.h"
 #include "aos/unique_malloc_ptr.h"
 #include "aos/util/file.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 // This application receives messages from another node and re-publishes them on
 // this node.

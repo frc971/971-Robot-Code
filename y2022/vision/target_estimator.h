@@ -7,6 +7,7 @@
 #include "Eigen/Geometry"
 #include "opencv2/core/types.hpp"
 #include "opencv2/imgproc.hpp"
+
 #include "y2022/vision/blob_detector.h"
 #include "y2022/vision/target_estimate_generated.h"
 

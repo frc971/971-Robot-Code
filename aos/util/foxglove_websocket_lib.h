@@ -3,8 +3,9 @@
 #include <map>
 #include <set>
 
-#include "aos/events/event_loop.h"
 #include "foxglove/websocket/server.hpp"
+
+#include "aos/events/event_loop.h"
 
 namespace aos {
 // This class implements a live AOS -> Foxglove Websocket Protocol connection,

@@ -8,6 +8,8 @@
 #include <chrono>
 #include <thread>
 
+#include "gtest/gtest.h"
+
 #include "aos/die.h"
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/core_lib.h"
@@ -18,7 +20,6 @@
 #include "aos/testing/test_shm.h"
 #include "aos/time/time.h"
 #include "aos/type_traits/type_traits.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

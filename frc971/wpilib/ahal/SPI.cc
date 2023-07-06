@@ -8,13 +8,14 @@
 #include "frc971/wpilib/ahal/SPI.h"
 
 #include <hal/SPI.h>
-#include <wpi/SmallVector.h>
-#include <wpi/mutex.h>
 
 #include <cstring>
 #include <utility>
 
 #include "absl/types/span.h"
+#include <wpi/SmallVector.h>
+#include <wpi/mutex.h>
+
 #include "frc971/wpilib/ahal/DigitalSource.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
 

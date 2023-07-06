@@ -6,12 +6,13 @@
 #include <string>
 #include <string_view>
 
+#include "flatbuffers/flatbuffers.h"
+#include "flatbuffers/reflection.h"
+
 #include "aos/fast_string_builder.h"
 #include "aos/flatbuffer_utils.h"
 #include "aos/flatbuffers.h"
 #include "aos/util/file.h"
-#include "flatbuffers/flatbuffers.h"
-#include "flatbuffers/reflection.h"
 
 namespace aos {
 

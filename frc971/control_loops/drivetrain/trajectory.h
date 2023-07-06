@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "Eigen/Dense"
+
 #include "aos/flatbuffers.h"
 #include "frc971/control_loops/drivetrain/distance_spline.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"

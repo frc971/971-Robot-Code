@@ -2,8 +2,9 @@
 
 #include <unistd.h>
 
-#include "frc971/control_loops/polytope.h"
 #include "gtest/gtest.h"
+
+#include "frc971/control_loops/polytope.h"
 
 namespace frc971 {
 namespace control_loops {

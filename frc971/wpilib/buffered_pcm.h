@@ -1,9 +1,9 @@
 #ifndef FRC971_WPILIB_BUFFERED_PCM_H_
 #define FRC971_WPILIB_BUFFERED_PCM_H_
 
-#include <memory>
-
 #include <hal/HAL.h>
+
+#include <memory>
 
 #include "frc971/wpilib/buffered_solenoid.h"
 

@@ -1,6 +1,7 @@
+#include "gflags/gflags.h"
+
 #include "aos/init.h"
 #include "aos/util/file.h"
-#include "gflags/gflags.h"
 #include "y2023/localizer/map_expander_lib.h"
 
 DEFINE_string(target_map, "y2023/vision/maps/target_map.json",

@@ -13,11 +13,12 @@
 #include <string_view>
 
 #include "FRC_NetworkCommunication/FRCComm.h"
+#include "wpi/SmallString.h"
+
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
 #include "hal/HAL.h"
 #include "hal/Power.h"
-#include "wpi/SmallString.h"
 
 using namespace frc;
 

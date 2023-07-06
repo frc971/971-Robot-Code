@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "Eigen/Dense"
+
 #include "aos/commonmath.h"
 #include "frc971/constants.h"
 #include "frc971/control_loops/profiled_subsystem.h"

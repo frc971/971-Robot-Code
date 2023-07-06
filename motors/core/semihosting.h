@@ -26,16 +26,12 @@ struct Close {
   uint32_t handle;
 
   // Returns 0 if it succeeds, or -1 if not.
-  int Execute() {
-    return integer_operation(0x02, this);
-  }
+  int Execute() { return integer_operation(0x02, this); }
 };
 
 struct Errno {
   // Returns the current errno value.
-  int Execute() {
-    return integer_operation(0x13, nullptr);
-  }
+  int Execute() { return integer_operation(0x13, nullptr); }
 };
 
 struct FileLength {
@@ -43,9 +39,7 @@ struct FileLength {
   uint32_t handle;
 
   // Returns the current length of the file or -1.
-  int Execute() {
-    return integer_operation(0x0C, this);
-  }
+  int Execute() { return integer_operation(0x0C, this); }
 };
 
 struct GetCommandLine {
@@ -62,9 +56,7 @@ struct GetCommandLine {
   }
 
   // Returns 0 if it succeeds, or -1 if not.
-  int Execute() {
-    return integer_operation(0x15, this);
-  }
+  int Execute() { return integer_operation(0x15, this); }
 };
 
 struct IsTty {
@@ -73,9 +65,7 @@ struct IsTty {
 
   // Returns 0 if it's a file, 1 if it's an interactive device, or something
   // else otherwise.
-  int Execute() {
-    return integer_operation(0x09, this);
-  }
+  int Execute() { return integer_operation(0x09, this); }
 };
 
 struct Open {
@@ -102,9 +92,7 @@ struct Open {
   int name_length;
 
   // Returns a non-zero file handle if it succeeds, or -1 if not.
-  int Execute() {
-    return integer_operation(0x01, this);
-  }
+  int Execute() { return integer_operation(0x01, this); }
 };
 
 struct Read {
@@ -128,9 +116,7 @@ struct Read {
 };
 
 struct ReadCharacter {
-  char Execute() {
-    return integer_operation(0x07, nullptr);
-  }
+  char Execute() { return integer_operation(0x07, nullptr); }
 };
 
 struct Seek {
@@ -140,16 +126,12 @@ struct Seek {
   uint32_t position;
 
   // Returns 0 if it succeeds, or a negative value if not.
-  int Execute() {
-    return integer_operation(0x0A, this);
-  }
+  int Execute() { return integer_operation(0x0A, this); }
 };
 
 struct RealtimeTime {
   // Returns the number of seconds since 00:00 January 1, 1970.
-  uint32_t Execute() {
-    return integer_operation(0x11, nullptr);
-  }
+  uint32_t Execute() { return integer_operation(0x11, nullptr); }
 };
 
 struct Write {
@@ -167,17 +149,13 @@ struct Write {
   }
 
   // Returns 0 if it succeeds, or the number of bytes NOT written.
-  int Execute() {
-    return integer_operation(0x05, this);
-  }
+  int Execute() { return integer_operation(0x05, this); }
 };
 
 struct WriteDebugCharacter {
   const char *character;
 
-  void Execute() {
-    integer_operation(0x03, this);
-  }
+  void Execute() { integer_operation(0x03, this); }
 };
 
 struct WriteDebug {

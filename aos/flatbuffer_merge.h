@@ -4,8 +4,9 @@
 #include <cstddef>
 #include <string>
 
-#include "aos/flatbuffers.h"
 #include "flatbuffers/flatbuffers.h"
+
+#include "aos/flatbuffers.h"
 
 namespace aos {
 

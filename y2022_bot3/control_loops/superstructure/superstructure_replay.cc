@@ -3,6 +3,8 @@
 // replayed, so that it can then be run through the plotting tool or analyzed
 // in some other way. The original superstructure status data will be on the
 // /original/superstructure channel.
+#include "gflags/gflags.h"
+
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
 #include "aos/events/simulated_event_loop.h"
@@ -10,7 +12,6 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/logging/log_message_generated.h"
 #include "aos/network/team_number.h"
-#include "gflags/gflags.h"
 #include "y2022_bot3/constants.h"
 #include "y2022_bot3/control_loops/superstructure/superstructure.h"
 

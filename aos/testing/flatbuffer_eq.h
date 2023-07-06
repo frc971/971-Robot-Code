@@ -1,10 +1,11 @@
 #ifndef AOS_TESTING_FLATBUFFER_EQ_H_
 #define AOS_TESTING_FLATBUFFER_EQ_H_
 
+#include "gmock/gmock.h"
+
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
-#include "gmock/gmock.h"
 
 namespace aos {
 namespace testing {

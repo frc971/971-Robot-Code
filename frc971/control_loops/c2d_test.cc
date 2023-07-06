@@ -2,8 +2,9 @@
 
 #include <functional>
 
-#include "frc971/control_loops/runge_kutta.h"
 #include "gtest/gtest.h"
+
+#include "frc971/control_loops/runge_kutta.h"
 
 namespace frc971 {
 namespace controls {
@@ -65,8 +66,9 @@ TEST_F(C2DTest, DiscretizeQ) {
       },
       Eigen::Matrix<double, 2, 2>::Zero(), 0, 1.0);
   EXPECT_LT((Q_d_integrated - Q_d).norm(), 1e-10)
-      << "Expected these to be nearly equal:\nQ_d:\n" << Q_d
-      << "\nQ_d_integrated:\n" << Q_d_integrated;
+      << "Expected these to be nearly equal:\nQ_d:\n"
+      << Q_d << "\nQ_d_integrated:\n"
+      << Q_d_integrated;
 }
 
 // Tests that the "fast" discretization produces nearly identical results.

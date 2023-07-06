@@ -1,14 +1,15 @@
 #include <iostream>
 
+#include "gflags/gflags.h"
+
 #include "aos/configuration.h"
-#include "aos/events/logging/log_writer.h"
 #include "aos/events/logging/log_reader.h"
+#include "aos/events/logging/log_writer.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
 #include "frc971/control_loops/drivetrain/drivetrain.h"
-#include "gflags/gflags.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 #include "y2019/control_loops/drivetrain/event_loop_localizer.h"
 

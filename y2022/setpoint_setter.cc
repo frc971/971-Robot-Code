@@ -1,7 +1,8 @@
-#include "aos/events/shm_event_loop.h"
-#include "aos/init.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+
+#include "aos/events/shm_event_loop.h"
+#include "aos/init.h"
 #include "y2022/setpoint_generated.h"
 
 DEFINE_double(catapult_position, 0.03, "Catapult shot position");

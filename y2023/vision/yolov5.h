@@ -6,11 +6,12 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <vector>
+
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
-#include <vector>
 
 namespace y2023 {
 namespace vision {

@@ -1,7 +1,6 @@
-#include "y2018/control_loops/superstructure/superstructure.h"
-
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "y2018/control_loops/superstructure/superstructure.h"
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

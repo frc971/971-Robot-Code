@@ -4,8 +4,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "aos/flatbuffers.h"
 #include "glog/logging.h"
+
+#include "aos/flatbuffers.h"
 
 namespace aos::logger {
 

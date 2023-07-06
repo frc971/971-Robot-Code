@@ -2,16 +2,17 @@
 #define Y2020_VISION_CHARUCO_LIB_H_
 
 #include <functional>
-#include <opencv2/aruco/charuco.hpp>
-#include <opencv2/calib3d.hpp>
 #include <string_view>
 
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
 #include "absl/types/span.h"
+#include "external/com_github_foxglove_schemas/ImageAnnotations_generated.h"
+#include <opencv2/aruco/charuco.hpp>
+#include <opencv2/calib3d.hpp>
+
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_server_generated.h"
-#include "external/com_github_foxglove_schemas/ImageAnnotations_generated.h"
 #include "frc971/vision/calibration_generated.h"
 
 DECLARE_bool(visualize);

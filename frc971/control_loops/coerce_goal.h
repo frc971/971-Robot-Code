@@ -2,6 +2,7 @@
 #define FRC971_CONTROL_LOOPS_COERCE_GOAL_H_
 
 #include "Eigen/Dense"
+
 #include "frc971/control_loops/polytope.h"
 
 namespace frc971 {

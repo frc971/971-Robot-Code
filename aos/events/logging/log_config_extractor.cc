@@ -1,6 +1,10 @@
-#include <iostream>
 #include <filesystem>
+#include <iostream>
 #include <vector>
+
+#include "flatbuffers/flatbuffers.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
 
 #include "aos/configuration_generated.h"
 #include "aos/events/logging/log_reader.h"
@@ -8,9 +12,6 @@
 #include "aos/flatbuffer_merge.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
-#include "flatbuffers/flatbuffers.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 DEFINE_string(output_path, "/tmp/",
               "Destination folder for output files. If this flag is not used, "

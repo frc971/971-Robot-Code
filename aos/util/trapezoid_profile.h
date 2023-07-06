@@ -2,6 +2,7 @@
 #define AOS_UTIL_TRAPEZOID_PROFILE_H_
 
 #include "Eigen/Dense"
+
 #include "aos/macros.h"
 #include "aos/time/time.h"
 

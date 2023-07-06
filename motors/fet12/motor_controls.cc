@@ -163,7 +163,8 @@ MotorControlsImplementation::MotorControlsImplementation()
   const ::Eigen::Matrix<float, 3, 1> measured_current =
       (::Eigen::Matrix<float, 3, 1>() << scale_current_reading(raw_currents[0]),
        scale_current_reading(raw_currents[1]),
-       scale_current_reading(raw_currents[2])).finished();
+       scale_current_reading(raw_currents[2]))
+          .finished();
 
   const ComplexMatrix<3, 1> E1 =
       E1Unrotated_ *

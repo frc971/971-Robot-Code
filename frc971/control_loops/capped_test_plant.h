@@ -1,8 +1,9 @@
 #ifndef FRC971_CONTROL_LOOPS_CAPPED_TEST_PLANT_H_
 #define FRC971_CONTROL_LOOPS_CAPPED_TEST_PLANT_H_
 
-#include "frc971/control_loops/state_feedback_loop.h"
 #include "gtest/gtest.h"
+
+#include "frc971/control_loops/state_feedback_loop.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -27,6 +28,6 @@ class CappedTestPlant : public StateFeedbackPlant<2, 1, 1> {
   double voltage_offset_ = 0.0;
 };
 
-}  // namespace frc971
 }  // namespace control_loops
+}  // namespace frc971
 #endif  // FRC971_CONTROL_LOOPS_CAPPED_TEST_PLANT_H_

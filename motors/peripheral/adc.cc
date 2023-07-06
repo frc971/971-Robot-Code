@@ -6,7 +6,9 @@ namespace frc971 {
 namespace motors {
 namespace {
 
-#define ADC_SC2_BASE (ADC_SC2_REFSEL(0) /* Use the external reference pins. */)
+#define ADC_SC2_BASE \
+  (ADC_SC2_REFSEL(0) /* Use the external reference pins. \
+                                         */)
 
 #define ADC_FINISH_CALIBRATION(n, PM) \
   do {                                \

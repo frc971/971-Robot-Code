@@ -3,8 +3,9 @@
 
 #include <unordered_map>
 
-#include "aos/events/simulated_event_loop.h"
 #include "ceres/ceres.h"
+
+#include "aos/events/simulated_event_loop.h"
 #include "frc971/vision/ceres/types.h"
 #include "frc971/vision/target_map_generated.h"
 #include "frc971/vision/visualize_robot.h"

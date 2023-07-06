@@ -5,8 +5,9 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "aos/events/event_loop.h"
 #include "glog/logging.h"
+
+#include "aos/events/event_loop.h"
 
 namespace aos {
 namespace event_loop_internal {
@@ -36,9 +37,8 @@ typename Sender<T>::Builder Sender<T>::MakeBuilder() {
 
 template <typename Watch>
 void EventLoop::MakeWatcher(const std::string_view channel_name, Watch &&w) {
-  using MessageType =
-      typename event_loop_internal::watch_message_type_trait<decltype(
-          &Watch::operator())>::message_type;
+  using MessageType = typename event_loop_internal::watch_message_type_trait<
+      decltype(&Watch::operator())>::message_type;
   const Channel *channel = configuration::GetChannel(
       configuration_, channel_name, MessageType::GetFullyQualifiedName(),
       name(), node());

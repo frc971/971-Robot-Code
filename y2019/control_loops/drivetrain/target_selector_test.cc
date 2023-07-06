@@ -1,7 +1,8 @@
 #include "y2019/control_loops/drivetrain/target_selector.h"
 
-#include "aos/events/simulated_event_loop.h"
 #include "gtest/gtest.h"
+
+#include "aos/events/simulated_event_loop.h"
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 
 namespace y2019 {
@@ -81,8 +82,7 @@ TEST_P(TargetSelectorParamTest, ExpectReturn) {
         builder.MakeBuilder<superstructure::Goal>();
 
     goal_builder.add_suction(suction_offset);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   {
     auto builder = target_selector_hint_sender_.MakeBuilder();

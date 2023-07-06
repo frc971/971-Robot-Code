@@ -15,6 +15,7 @@ class TrajectoryGenerator {
   TrajectoryGenerator(aos::EventLoop *event_loop,
                       const DrivetrainConfig<double> &config);
   void HandleSplineGoal(const SplineGoal &goal);
+
  private:
   aos::EventLoop *const event_loop_;
   const DrivetrainConfig<double> dt_config_;

@@ -2,6 +2,8 @@
 
 #include <queue>
 
+#include "gtest/gtest.h"
+
 #include "aos/events/logging/log_writer.h"
 #include "aos/network/message_bridge_server_generated.h"
 #include "aos/network/team_number.h"
@@ -9,7 +11,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain.h"
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-#include "gtest/gtest.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 

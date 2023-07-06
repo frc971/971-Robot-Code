@@ -7,11 +7,11 @@
 
 #include "frc971/wpilib/ahal/AnalogTrigger.h"
 
-#include <memory>
-#include <utility>
-
 #include <hal/FRCUsageReporting.h>
 #include <hal/HAL.h>
+
+#include <memory>
+#include <utility>
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Base.h"
@@ -25,7 +25,7 @@ AnalogTrigger::AnalogTrigger(int channel)
   m_ownsAnalog = true;
 }
 
-AnalogTrigger::AnalogTrigger(AnalogInput* input) {
+AnalogTrigger::AnalogTrigger(AnalogInput *input) {
   m_analogInput = input;
   int32_t status = 0;
   m_trigger = HAL_InitializeAnalogTrigger(input->m_port, &status);
@@ -40,7 +40,7 @@ AnalogTrigger::AnalogTrigger(AnalogInput* input) {
   HAL_Report(HALUsageReporting::kResourceType_AnalogTrigger, index + 1);
 }
 
-AnalogTrigger::AnalogTrigger(DutyCycle* input) {
+AnalogTrigger::AnalogTrigger(DutyCycle *input) {
   m_dutyCycle = input;
   int32_t status = 0;
   m_trigger = HAL_InitializeAnalogTriggerDutyCycle(input->m_handle, &status);
@@ -72,7 +72,7 @@ AnalogTrigger::AnalogTrigger(AnalogTrigger &&rhs)
   std::swap(m_ownsAnalog, rhs.m_ownsAnalog);
 }
 
-AnalogTrigger& AnalogTrigger::operator=(AnalogTrigger&& rhs) {
+AnalogTrigger &AnalogTrigger::operator=(AnalogTrigger &&rhs) {
   m_trigger = std::move(rhs.m_trigger);
   std::swap(m_analogInput, rhs.m_analogInput);
   std::swap(m_dutyCycle, rhs.m_dutyCycle);

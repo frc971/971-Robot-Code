@@ -2,12 +2,12 @@
 
 #include <chrono>
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 #include "frc971/control_loops/drivetrain/trajectory.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 #if defined(SUPPORT_PLOT)
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #endif
@@ -182,8 +182,7 @@ void DrivetrainSimulation::SendTruthMessage() {
   status_builder.add_x(state_.x());
   status_builder.add_y(state_.y());
   status_builder.add_theta(state_(2));
-  CHECK_EQ(builder.Send(status_builder.Finish()),
-           aos::RawSender::Error::kOk);
+  CHECK_EQ(builder.Send(status_builder.Finish()), aos::RawSender::Error::kOk);
 }
 
 void DrivetrainSimulation::SendPositionMessage() {

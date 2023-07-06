@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "flatbuffers/flatbuffers.h"
+
 #include "frc971/constants.h"
 #include "frc971/control_loops/control_loops_generated.h"
 

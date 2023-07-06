@@ -5,6 +5,7 @@
 
 #include "Eigen/Dense"
 #include "absl/types/span.h"
+
 #include "aos/containers/sized_array.h"
 #include "frc971/control_loops/drivetrain/spline.h"
 #include "frc971/control_loops/drivetrain/trajectory_generated.h"

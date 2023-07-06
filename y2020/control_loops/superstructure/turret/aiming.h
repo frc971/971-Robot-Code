@@ -2,11 +2,11 @@
 #define y2020_CONTROL_LOOPS_SUPERSTRUCTURE_TURRET_AIMING_H_
 
 #include "aos/flatbuffers.h"
+#include "frc971/control_loops/aiming/aiming.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "frc971/input/joystick_state_generated.h"
-#include "frc971/control_loops/aiming/aiming.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 
 namespace y2020 {
@@ -62,7 +62,7 @@ class Aimer {
   // position and shooter speed.
   double shot_distance_ = 0.0;  // meters
   // Real-world distance to the target.
-  double target_distance_ = 0.0;  // meters
+  double target_distance_ = 0.0;   // meters
   double inner_port_angle_ = 0.0;  // radians
 
   Eigen::Matrix<double, 2, 2> Tlr_to_la_;

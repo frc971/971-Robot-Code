@@ -4,10 +4,10 @@
 #include <array>
 #include <complex>
 
+#include "Eigen/Dense"
+
 #include "motors/math.h"
 #include "motors/motor.h"
-
-#include "Eigen/Dense"
 
 namespace frc971 {
 namespace motors {
@@ -41,8 +41,8 @@ class LittleMotorControlsImplementation : public MotorControls {
   }
 
   ::std::array<float, 3> DoIteration(const float raw_currents[3],
-                                        uint32_t theta,
-                                        const float command_current) override;
+                                     uint32_t theta,
+                                     const float command_current) override;
 
   int16_t Debug(uint32_t theta) override;
 

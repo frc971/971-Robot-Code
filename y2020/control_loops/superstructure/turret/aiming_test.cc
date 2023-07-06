@@ -1,8 +1,9 @@
 #include "y2020/control_loops/superstructure/turret/aiming.h"
 
+#include "gtest/gtest.h"
+
 #include "aos/network/team_number.h"
 #include "frc971/control_loops/pose.h"
-#include "gtest/gtest.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 

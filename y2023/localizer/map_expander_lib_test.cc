@@ -1,6 +1,7 @@
 #include "y2023/localizer/map_expander_lib.h"
 
 #include "gtest/gtest.h"
+
 #include "aos/testing/flatbuffer_eq.h"
 
 namespace y2023::localizer::testing {

@@ -3,8 +3,5 @@
 #include <chrono>
 
 namespace frc971 {
-namespace testing {
-
-
-}  // namespace testing
+namespace testing {}  // namespace testing
 }  // namespace frc971

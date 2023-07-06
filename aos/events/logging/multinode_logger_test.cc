@@ -1,5 +1,8 @@
 #include <algorithm>
 
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/multinode_logger_test_lib.h"
 #include "aos/events/message_counter.h"
@@ -8,8 +11,6 @@
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/timestamp_generated.h"
 #include "aos/testing/tmpdir.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace logger {

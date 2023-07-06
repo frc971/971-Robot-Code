@@ -8,6 +8,8 @@
 #include <chrono>
 #include <memory>
 
+#include "gtest/gtest.h"
+
 #include "aos/events/shm_event_loop.h"
 #include "frc971/codelab/basic_goal_generated.h"
 #include "frc971/codelab/basic_output_generated.h"
@@ -15,7 +17,6 @@
 #include "frc971/codelab/basic_status_generated.h"
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-#include "gtest/gtest.h"
 
 namespace frc971 {
 namespace codelab {
@@ -123,8 +124,7 @@ TEST_F(BasicControlLoopTest, IntakeLimitTransitionsToTrue) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(true);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   basic_simulation_.set_limit_sensor(false);
@@ -137,8 +137,7 @@ TEST_F(BasicControlLoopTest, IntakeLimitTransitionsToTrue) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(true);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   basic_simulation_.set_limit_sensor(true);
 
@@ -154,8 +153,7 @@ TEST_F(BasicControlLoopTest, IntakeLimitNotSet) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(true);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   basic_simulation_.set_limit_sensor(false);
 
@@ -171,8 +169,7 @@ TEST_F(BasicControlLoopTest, NoIntakeLimitNotSet) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(false);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   basic_simulation_.set_limit_sensor(false);
 
@@ -188,8 +185,7 @@ TEST_F(BasicControlLoopTest, IntakeLimitSet) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(true);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   basic_simulation_.set_limit_sensor(true);
 
@@ -204,8 +200,7 @@ TEST_F(BasicControlLoopTest, NoIntakeLimitSet) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(false);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   basic_simulation_.set_limit_sensor(true);
 
@@ -234,8 +229,7 @@ TEST_F(BasicControlLoopTest, Disabled) {
     auto builder = goal_sender_.MakeBuilder();
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_intake(true);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   SetEnabled(false);

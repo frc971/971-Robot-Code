@@ -2,6 +2,9 @@
 #define AOS_EVENTS_LOGGING_MULTINODE_LOGGER_TEST_LIB_H
 
 #include "absl/strings/str_format.h"
+#include "glog/logging.h"
+#include "gmock/gmock.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/log_writer.h"
 #include "aos/events/logging/snappy_encoder.h"
@@ -9,8 +12,6 @@
 #include "aos/network/testing_time_converter.h"
 #include "aos/testing/path.h"
 #include "aos/util/file.h"
-#include "glog/logging.h"
-#include "gmock/gmock.h"
 
 #ifdef LZMA
 #include "aos/events/logging/lzma_encoder.h"

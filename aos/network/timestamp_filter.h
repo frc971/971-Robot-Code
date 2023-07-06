@@ -8,10 +8,11 @@
 #include <deque>
 
 #include "absl/numeric/int128.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/events/logging/boot_timestamp.h"
 #include "aos/time/time.h"
-#include "glog/logging.h"
 
 namespace aos {
 namespace message_bridge {

@@ -2,12 +2,13 @@
 
 #include <chrono>
 
+#include "gtest/gtest.h"
+
 #include "aos/configuration.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/macros.h"
 #include "aos/network/testing_time_converter.h"
 #include "aos/network/timestamp_filter.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace message_bridge {

@@ -2,9 +2,10 @@
 
 #include <cmath>
 
-#include "aos/util/math.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+
+#include "aos/util/math.h"
 
 namespace frc971::vision::testing {
 

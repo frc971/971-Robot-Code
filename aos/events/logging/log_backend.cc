@@ -5,8 +5,9 @@
 #include <filesystem>
 
 #include "absl/strings/str_cat.h"
-#include "aos/util/file.h"
 #include "glog/logging.h"
+
+#include "aos/util/file.h"
 
 DEFINE_bool(direct, false,
             "If true, write using O_DIRECT and write 512 byte aligned blocks "

@@ -3,8 +3,9 @@
 #include <algorithm>
 #include <string>
 
-#include "aos/vision/blob/test_utils.h"
 #include "gtest/gtest.h"
+
+#include "aos/vision/blob/test_utils.h"
 
 namespace aos {
 namespace vision {

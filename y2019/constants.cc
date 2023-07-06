@@ -8,9 +8,10 @@
 #endif
 
 #include "absl/base/call_once.h"
+#include "glog/logging.h"
+
 #include "aos/network/team_number.h"
 #include "aos/stl_mutex/stl_mutex.h"
-#include "glog/logging.h"
 #include "y2019/control_loops/superstructure/elevator/integral_elevator_plant.h"
 #include "y2019/control_loops/superstructure/intake/integral_intake_plant.h"
 #include "y2019/control_loops/superstructure/stilts/integral_stilts_plant.h"

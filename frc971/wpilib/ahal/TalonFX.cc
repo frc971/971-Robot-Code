@@ -39,4 +39,3 @@ TalonFX::TalonFX(int channel) : PWM(channel) {
 
   HAL_Report(HALUsageReporting::kResourceType_VictorSP, GetChannel());
 }
-

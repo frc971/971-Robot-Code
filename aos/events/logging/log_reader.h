@@ -8,6 +8,8 @@
 #include <tuple>
 #include <vector>
 
+#include "flatbuffers/flatbuffers.h"
+
 #include "aos/condition.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/logfile_sorting.h"
@@ -24,7 +26,6 @@
 #include "aos/time/time.h"
 #include "aos/util/threaded_queue.h"
 #include "aos/uuid.h"
-#include "flatbuffers/flatbuffers.h"
 
 namespace aos {
 namespace logger {

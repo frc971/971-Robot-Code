@@ -4,11 +4,12 @@
 #include <cstdio>
 #include <string_view>
 
-#include "aos/flatbuffer_utils.h"
-#include "aos/json_tokenizer.h"
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/minireflect.h"
 #include "glog/logging.h"
+
+#include "aos/flatbuffer_utils.h"
+#include "aos/json_tokenizer.h"
 
 // TODO(austin): Can we just do an Offset<void> ?  It doesn't matter, so maybe
 // just say that.

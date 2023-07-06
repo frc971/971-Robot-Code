@@ -1,8 +1,9 @@
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 
-#include "frc971/zeroing/zeroing_test.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+
+#include "frc971/zeroing/zeroing_test.h"
 
 namespace frc971 {
 namespace zeroing {

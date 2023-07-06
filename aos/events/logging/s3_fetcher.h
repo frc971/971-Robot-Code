@@ -45,7 +45,7 @@ class S3Fetcher final : public DataDecoder {
   void StartRequest();
 };
 
-Aws::S3::S3Client& GetS3Client();
+Aws::S3::S3Client &GetS3Client();
 
 struct ObjectName {
   std::string bucket, key;

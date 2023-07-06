@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "absl/types/span.h"
+
 #include "aos/containers/sized_array.h"
 #include "motors/core/kinetis.h"
 

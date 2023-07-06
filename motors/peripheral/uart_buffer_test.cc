@@ -232,14 +232,14 @@ TEST(UartBufferTest, PopSpanMultiple) {
     const auto result = buffer.PopSpan(5);
     ASSERT_EQ(5u, result.size());
     for (int i = 0; i < 5; ++i) {
-    EXPECT_EQ(static_cast<char>(i), result[i]);
+      EXPECT_EQ(static_cast<char>(i), result[i]);
     }
   }
   {
     const auto result = buffer.PopSpan(10);
     ASSERT_EQ(5u, result.size());
     for (int i = 0; i < 5; ++i) {
-    EXPECT_EQ(static_cast<char>(i + 5), result[i]);
+      EXPECT_EQ(static_cast<char>(i + 5), result[i]);
     }
   }
   ASSERT_TRUE(buffer.PopSpan(5).empty());
@@ -259,7 +259,7 @@ TEST(UartBufferTest, PopSpanWrapMultiple) {
     const auto result = buffer.PopSpan(5);
     ASSERT_EQ(5u, result.size());
     for (int i = 0; i < 5; ++i) {
-    EXPECT_EQ(static_cast<char>(i), result[i]);
+      EXPECT_EQ(static_cast<char>(i), result[i]);
     }
   }
   for (int i = 0; i < 5; ++i) {
@@ -269,14 +269,14 @@ TEST(UartBufferTest, PopSpanWrapMultiple) {
     const auto result = buffer.PopSpan(10);
     ASSERT_EQ(5u, result.size());
     for (int i = 0; i < 5; ++i) {
-    EXPECT_EQ(static_cast<char>(i + 5), result[i]);
+      EXPECT_EQ(static_cast<char>(i + 5), result[i]);
     }
   }
   {
     const auto result = buffer.PopSpan(10);
     ASSERT_EQ(5u, result.size());
     for (int i = 0; i < 5; ++i) {
-    EXPECT_EQ(static_cast<char>(i + 20), result[i]);
+      EXPECT_EQ(static_cast<char>(i + 20), result[i]);
     }
   }
 }

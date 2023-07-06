@@ -2,6 +2,8 @@
 #include <thread>
 
 #include "absl/strings/str_cat.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/ping_generated.h"
 #include "aos/events/pong_generated.h"
 #include "aos/ipc_lib/event.h"
@@ -11,7 +13,6 @@
 #include "aos/sha256.h"
 #include "aos/testing/path.h"
 #include "aos/util/file.h"
-#include "gtest/gtest.h"
 
 DECLARE_string(boot_uuid);
 
@@ -423,54 +424,54 @@ TEST_P(MessageBridgeParameterizedTest, PingPong) {
   // Wait until we are connected, then send.
   int ping_count = 0;
   int pi1_server_statistics_count = 0;
-  ping_event_loop.MakeWatcher("/pi1/aos", [this, &ping_count, &ping_sender,
-                                           &pi1_server_statistics_count,
-                                           &long_data](
-                                              const ServerStatistics &stats) {
-    VLOG(1) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
+  ping_event_loop.MakeWatcher(
+      "/pi1/aos",
+      [this, &ping_count, &ping_sender, &pi1_server_statistics_count,
+       &long_data](const ServerStatistics &stats) {
+        VLOG(1) << "/pi1/aos ServerStatistics " << FlatbufferToJson(&stats);
 
-    ASSERT_TRUE(stats.has_connections());
-    EXPECT_EQ(stats.connections()->size(), 1);
+        ASSERT_TRUE(stats.has_connections());
+        EXPECT_EQ(stats.connections()->size(), 1);
 
-    bool connected = false;
-    for (const ServerConnection *connection : *stats.connections()) {
-      // Confirm that we are estimating the server time offset correctly. It
-      // should be about 0 since we are on the same machine here.
-      if (connection->has_monotonic_offset()) {
-        EXPECT_LT(chrono::nanoseconds(connection->monotonic_offset()),
-                  chrono::milliseconds(1));
-        EXPECT_GT(chrono::nanoseconds(connection->monotonic_offset()),
-                  chrono::milliseconds(-1));
-        ++pi1_server_statistics_count;
-      }
+        bool connected = false;
+        for (const ServerConnection *connection : *stats.connections()) {
+          // Confirm that we are estimating the server time offset correctly. It
+          // should be about 0 since we are on the same machine here.
+          if (connection->has_monotonic_offset()) {
+            EXPECT_LT(chrono::nanoseconds(connection->monotonic_offset()),
+                      chrono::milliseconds(1));
+            EXPECT_GT(chrono::nanoseconds(connection->monotonic_offset()),
+                      chrono::milliseconds(-1));
+            ++pi1_server_statistics_count;
+          }
 
-      if (connection->node()->name()->string_view() ==
-          pi2_client_event_loop->node()->name()->string_view()) {
-        if (connection->state() == State::CONNECTED) {
-          EXPECT_TRUE(connection->has_boot_uuid());
-          EXPECT_EQ(connection->connection_count(), 1u);
-          EXPECT_LT(monotonic_clock::time_point(chrono::nanoseconds(
-                        connection->connected_since_time())),
-                    monotonic_clock::now());
-          connected = true;
-        } else {
-          EXPECT_FALSE(connection->has_connection_count());
-          EXPECT_FALSE(connection->has_connected_since_time());
+          if (connection->node()->name()->string_view() ==
+              pi2_client_event_loop->node()->name()->string_view()) {
+            if (connection->state() == State::CONNECTED) {
+              EXPECT_TRUE(connection->has_boot_uuid());
+              EXPECT_EQ(connection->connection_count(), 1u);
+              EXPECT_LT(monotonic_clock::time_point(chrono::nanoseconds(
+                            connection->connected_since_time())),
+                        monotonic_clock::now());
+              connected = true;
+            } else {
+              EXPECT_FALSE(connection->has_connection_count());
+              EXPECT_FALSE(connection->has_connected_since_time());
+            }
+          }
         }
-      }
-    }
 
-    if (connected) {
-      VLOG(1) << "Connected!  Sent ping.";
-      auto builder = ping_sender.MakeBuilder();
-      builder.fbb()->CreateString(long_data);
-      examples::Ping::Builder ping_builder =
-          builder.MakeBuilder<examples::Ping>();
-      ping_builder.add_value(ping_count + 971);
-      EXPECT_EQ(builder.Send(ping_builder.Finish()), RawSender::Error::kOk);
-      ++ping_count;
-    }
-  });
+        if (connected) {
+          VLOG(1) << "Connected!  Sent ping.";
+          auto builder = ping_sender.MakeBuilder();
+          builder.fbb()->CreateString(long_data);
+          examples::Ping::Builder ping_builder =
+              builder.MakeBuilder<examples::Ping>();
+          ping_builder.add_value(ping_count + 971);
+          EXPECT_EQ(builder.Send(ping_builder.Finish()), RawSender::Error::kOk);
+          ++ping_count;
+        }
+      });
 
   // Confirm both client and server statistics messages have decent offsets in
   // them.

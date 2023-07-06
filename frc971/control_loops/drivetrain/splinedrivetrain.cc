@@ -1,6 +1,7 @@
 #include "frc971/control_loops/drivetrain/splinedrivetrain.h"
 
 #include "Eigen/Dense"
+
 #include "aos/json_to_flatbuffer.h"
 #include "aos/realtime.h"
 #include "aos/util/math.h"

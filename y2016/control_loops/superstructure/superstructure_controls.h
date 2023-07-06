@@ -3,12 +3,11 @@
 
 #include <memory>
 
-#include "frc971/control_loops/control_loop.h"
 #include "aos/util/trapezoid_profile.h"
+#include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/profiled_subsystem.h"
 #include "frc971/control_loops/simple_capped_state_feedback_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-
 #include "frc971/zeroing/zeroing.h"
 #include "y2016/control_loops/superstructure/integral_arm_plant.h"
 #include "y2016/control_loops/superstructure/superstructure_position_generated.h"
@@ -104,7 +103,6 @@ class Intake : public ::frc971::control_loops::SingleDOFProfiledSubsystem<> {
  public:
   Intake();
 };
-
 
 class Arm : public ::frc971::control_loops::ProfiledSubsystem<6, 2> {
  public:

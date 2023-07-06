@@ -1,13 +1,14 @@
 #include <iostream>
 #include <memory>
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffers.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "frc971/control_loops/double_jointed_arm/graph.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/superstructure/arm/arm_constants.h"
 #include "y2023/control_loops/superstructure/arm/arm_trajectories_generated.h"

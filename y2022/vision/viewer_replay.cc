@@ -1,13 +1,14 @@
+#include "opencv2/calib3d.hpp"
+#include "opencv2/features2d.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc.hpp"
+
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/input/joystick_state_generated.h"
 #include "frc971/vision/vision_generated.h"
-#include "opencv2/calib3d.hpp"
-#include "opencv2/features2d.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc.hpp"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2022/vision/blob_detector.h"
 

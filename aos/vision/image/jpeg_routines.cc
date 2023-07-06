@@ -10,8 +10,9 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "aos/logging/logging.h"
 #include "third_party/libjpeg/jpeglib.h"
+
+#include "aos/logging/logging.h"
 
 namespace aos {
 namespace vision {

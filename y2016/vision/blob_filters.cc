@@ -1,4 +1,5 @@
 #include "y2016/vision/blob_filters.h"
+
 #include <unistd.h>
 
 namespace aos {
@@ -75,7 +76,7 @@ std::vector<std::pair<Vector<2>, Vector<2>>> CornerFinder::Find(
     if (do_overlay_) {
       for (FittedLine &line : lines) {
         overlay_->AddLine(Vector<2>(line.st.x, line.st.y),
-                           Vector<2>(line.ed.x, line.ed.y), {255, 0, 0});
+                          Vector<2>(line.ed.x, line.ed.y), {255, 0, 0});
       }
     }
 

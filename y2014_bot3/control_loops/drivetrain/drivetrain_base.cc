@@ -35,15 +35,23 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
 
       chrono::duration_cast<chrono::nanoseconds>(
           chrono::duration<double>(drivetrain::kDt)),
-      drivetrain::kRobotRadius, drivetrain::kWheelRadius, drivetrain::kV,
+      drivetrain::kRobotRadius,
+      drivetrain::kWheelRadius,
+      drivetrain::kV,
 
-      drivetrain::kHighGearRatio, drivetrain::kLowGearRatio, drivetrain::kJ,
+      drivetrain::kHighGearRatio,
+      drivetrain::kLowGearRatio,
+      drivetrain::kJ,
       drivetrain::kMass,
 
       // No shifter sensors, so we could put anything for the things below.
-      kThreeStateDriveShifter, kThreeStateDriveShifter,
-      false /* default_high_gear */, 0.0, 0.60 /* wheel_non_linearity */,
-      0.60 /* quickturn_wheel_multiplier */, 0.7 /* wheel_multiplier */,
+      kThreeStateDriveShifter,
+      kThreeStateDriveShifter,
+      false /* default_high_gear */,
+      0.0,
+      0.60 /* wheel_non_linearity */,
+      0.60 /* quickturn_wheel_multiplier */,
+      0.7 /* wheel_multiplier */,
   };
 
   return kDrivetrainConfig;

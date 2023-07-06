@@ -1,10 +1,11 @@
-#include <google/protobuf/stubs/stringprintf.h>
 #include <unistd.h>
 
 #include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <mutex>
+
+#include <google/protobuf/stubs/stringprintf.h>
 
 #include "aos/actions/actions.h"
 #include "aos/init.h"

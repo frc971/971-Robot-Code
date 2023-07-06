@@ -3,16 +3,17 @@
 #include <future>
 #include <thread>
 
+#include "gtest/gtest.h"
+
 #include "aos/events/ping_generated.h"
 #include "aos/events/pong_generated.h"
 #include "aos/ipc_lib/event.h"
 #include "aos/network/team_number.h"
+#include "aos/starter/starter_rpc_lib.h"
+#include "aos/starter/starterd_lib.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
-#include "gtest/gtest.h"
-#include "starter_rpc_lib.h"
-#include "starterd_lib.h"
 
 using aos::testing::ArtifactPath;
 

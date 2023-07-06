@@ -8,14 +8,12 @@
 #include <linux/kernel.h> /* Needed for pr_info() */
 #include <linux/kfifo.h>
 #include <linux/module.h> /* Needed by all modules */
-#include <linux/poll.h>
-
-#include <linux/of_gpio.h>
-#include <linux/spi/spi.h>
-#include <linux/of_address.h>
 #include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_gpio.h>
 #include <linux/of_platform.h>
-
+#include <linux/poll.h>
+#include <linux/spi/spi.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("frc971");
@@ -115,10 +113,10 @@ static ssize_t adis16505_dev_read(struct file *f, char *d, size_t s,
         return -EAGAIN;
       }
 
-      err = wait_event_interruptible(ts->wq,
-                                     (spin_lock(&ts->fifo_read_lock),
-                                      empty = !kfifo_is_empty(&ts->fifo),
-                                      spin_unlock(&ts->fifo_read_lock), empty));
+      err = wait_event_interruptible(
+          ts->wq,
+          (spin_lock(&ts->fifo_read_lock), empty = !kfifo_is_empty(&ts->fifo),
+           spin_unlock(&ts->fifo_read_lock), empty));
       if (err != 0) {
         return err;
       }
@@ -330,4 +328,4 @@ static struct spi_driver adis16505_driver = {
     .remove = adis16505_remove,
 };
 
-module_spi_driver(adis16505_driver); 
+module_spi_driver(adis16505_driver);

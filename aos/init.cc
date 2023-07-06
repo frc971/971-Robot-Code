@@ -11,9 +11,10 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "aos/realtime.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+
+#include "aos/realtime.h"
 
 DEFINE_bool(coredump, false, "If true, write core dumps on failure.");
 

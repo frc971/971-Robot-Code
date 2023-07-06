@@ -6,8 +6,9 @@
 #include <atomic>
 #include <string>
 
-#include "aos/ipc_lib/shm_observers.h"
 #include "glog/logging.h"
+
+#include "aos/ipc_lib/shm_observers.h"
 
 namespace aos {
 namespace ipc_lib {

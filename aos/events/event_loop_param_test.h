@@ -5,6 +5,8 @@
 #include <string_view>
 #include <vector>
 
+#include "gtest/gtest.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/test_message_generated.h"
 #include "aos/events/test_message_schema.h"
@@ -15,7 +17,6 @@
 #include "aos/network/message_bridge_client_schema.h"
 #include "aos/network/message_bridge_server_schema.h"
 #include "aos/network/timestamp_schema.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

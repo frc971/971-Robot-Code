@@ -3,9 +3,10 @@
 #include <cmath>
 #include <numeric>
 
+#include "glog/logging.h"
+
 #include "aos/containers/error_list.h"
 #include "frc971/zeroing/wrap.h"
-#include "glog/logging.h"
 
 namespace frc971 {
 namespace zeroing {

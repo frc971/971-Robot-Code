@@ -7,9 +7,10 @@
 
 #include <cstdint>
 
+#include "google/protobuf/message.h"
+
 #include "aos/vision/events/tcp_server.h"
 #include "aos/vision/image/image_types.h"
-#include "google/protobuf/message.h"
 
 namespace aos {
 namespace events {

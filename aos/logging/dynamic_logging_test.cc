@@ -2,11 +2,12 @@
 
 #include <sys/stat.h>
 
+#include "glog/logging.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/testing/path.h"
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 
 using aos::testing::ArtifactPath;
 

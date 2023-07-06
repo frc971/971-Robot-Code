@@ -1,3 +1,6 @@
+#include "glog/logging.h"
+#include "gtest/gtest.h"
+
 #include "aos/configuration.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/simulated_event_loop.h"
@@ -7,8 +10,6 @@
 #include "frc971/constants/constants_sender_lib.h"
 #include "frc971/constants/testdata/constants_data_generated.h"
 #include "frc971/constants/testdata/constants_list_generated.h"
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 
 namespace frc971::constants {
 namespace testing {
@@ -84,10 +85,10 @@ TEST_F(ConstantSenderTest, DieOnDataUpdate) {
       constants_sender_event_loop_->MakeSender<testdata::ConstantsData>(
           "/constants");
   constants_sender_event_loop_->OnRun([&sender]() {
-      auto builder = sender.MakeBuilder();
-      builder.CheckOk(builder.Send(
-          builder.MakeBuilder<testdata::ConstantsData>().Finish()));
-      });
+    auto builder = sender.MakeBuilder();
+    builder.CheckOk(
+        builder.Send(builder.MakeBuilder<testdata::ConstantsData>().Finish()));
+  });
   EXPECT_DEATH(event_loop_factory_.RunFor(std::chrono::seconds(1)),
                "changes to constants");
 }

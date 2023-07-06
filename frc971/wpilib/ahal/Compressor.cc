@@ -155,7 +155,8 @@ bool Compressor::GetCompressorCurrentTooHighFault() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCTREPCMCompressorCurrentTooHighFault(m_compressorHandle, &status);
+  value =
+      HAL_GetCTREPCMCompressorCurrentTooHighFault(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -179,8 +180,8 @@ bool Compressor::GetCompressorCurrentTooHighStickyFault() const {
   int32_t status = 0;
   bool value;
 
-  value =
-      HAL_GetCTREPCMCompressorCurrentTooHighStickyFault(m_compressorHandle, &status);
+  value = HAL_GetCTREPCMCompressorCurrentTooHighStickyFault(m_compressorHandle,
+                                                            &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -204,7 +205,8 @@ bool Compressor::GetCompressorShortedStickyFault() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCTREPCMCompressorShortedStickyFault(m_compressorHandle, &status);
+  value =
+      HAL_GetCTREPCMCompressorShortedStickyFault(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -247,7 +249,8 @@ bool Compressor::GetCompressorNotConnectedStickyFault() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCTREPCMCompressorNotConnectedStickyFault(m_compressorHandle, &status);
+  value = HAL_GetCTREPCMCompressorNotConnectedStickyFault(m_compressorHandle,
+                                                          &status);
 
   if (status) {
     wpi_setWPIError(Timeout);
@@ -267,7 +270,8 @@ bool Compressor::GetCompressorNotConnectedFault() const {
   int32_t status = 0;
   bool value;
 
-  value = HAL_GetCTREPCMCompressorNotConnectedFault(m_compressorHandle, &status);
+  value =
+      HAL_GetCTREPCMCompressorNotConnectedFault(m_compressorHandle, &status);
 
   if (status) {
     wpi_setWPIError(Timeout);

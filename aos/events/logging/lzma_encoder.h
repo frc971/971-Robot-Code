@@ -7,10 +7,11 @@
 #include <thread>
 
 #include "absl/types/span.h"
+#include "flatbuffers/flatbuffers.h"
+
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/events/logging/buffer_encoder.h"
 #include "aos/events/logging/logger_generated.h"
-#include "flatbuffers/flatbuffers.h"
 #include "lzma.h"
 
 namespace aos::logger {

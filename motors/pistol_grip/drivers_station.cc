@@ -2,6 +2,7 @@
 // communicates over CAN with the one in the pistol grip controller.
 
 #include <stdio.h>
+
 #include <atomic>
 
 #include "motors/core/kinetis.h"

@@ -60,7 +60,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
           .finished() /*imu_transform*/,
   };
 
-  if (::aos::network::GetTeamNumber() != constants::Values::kCodingRobotTeamNumber) {
+  if (::aos::network::GetTeamNumber() !=
+      constants::Values::kCodingRobotTeamNumber) {
     // TODO(james): Check X/Y axis
     // transformations.
     kDrivetrainConfig.imu_transform = (Eigen::Matrix<double, 3, 3>() << 1.0,

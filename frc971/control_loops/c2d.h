@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include <Eigen/Dense>
+
 #include "aos/time/time.h"
 // We need to include MatrixFunctions for the matrix exponential.
 #include "unsupported/Eigen/MatrixFunctions"

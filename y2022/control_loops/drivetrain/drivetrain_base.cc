@@ -9,8 +9,8 @@
 #include "y2022/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
 #include "y2022/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 
-using ::frc971::control_loops::drivetrain::DrivetrainConfig;
 using ::frc971::control_loops::drivetrain::DownEstimatorConfig;
+using ::frc971::control_loops::drivetrain::DrivetrainConfig;
 
 namespace chrono = ::std::chrono;
 

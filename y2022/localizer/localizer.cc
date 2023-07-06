@@ -909,43 +909,43 @@ EventLoopLocalizer::EventLoopLocalizer(
             absl::StrCat("/", kPisToUse[camera_index], "/camera"));
   }
   aos::TimerHandler *estimate_timer = event_loop_->AddTimer([this]() {
-      const bool maybe_in_auto = utils_.MaybeInAutonomous();
-      model_based_.set_use_aggressive_image_corrections(!maybe_in_auto);
-      for (size_t camera_index = 0; camera_index < kPisToUse.size();
-           ++camera_index) {
-        if (model_based_.NumQueuedImageDebugs() ==
-                ModelBasedLocalizer::kDebugBufferSize ||
-            (last_visualization_send_ + kMinVisualizationPeriod <
-             event_loop_->monotonic_now())) {
-          auto builder = visualization_sender_.MakeBuilder();
-          visualization_sender_.CheckOk(
-              builder.Send(model_based_.PopulateVisualization(builder.fbb())));
+    const bool maybe_in_auto = utils_.MaybeInAutonomous();
+    model_based_.set_use_aggressive_image_corrections(!maybe_in_auto);
+    for (size_t camera_index = 0; camera_index < kPisToUse.size();
+         ++camera_index) {
+      if (model_based_.NumQueuedImageDebugs() ==
+              ModelBasedLocalizer::kDebugBufferSize ||
+          (last_visualization_send_ + kMinVisualizationPeriod <
+           event_loop_->monotonic_now())) {
+        auto builder = visualization_sender_.MakeBuilder();
+        visualization_sender_.CheckOk(
+            builder.Send(model_based_.PopulateVisualization(builder.fbb())));
+      }
+      if (target_estimate_fetchers_[camera_index].Fetch()) {
+        const std::optional<aos::monotonic_clock::duration> monotonic_offset =
+            utils_.ClockOffset(kPisToUse[camera_index]);
+        if (!monotonic_offset.has_value()) {
+          model_based_.TallyRejection(
+              RejectionReason::MESSAGE_BRIDGE_DISCONNECTED);
+          continue;
         }
-        if (target_estimate_fetchers_[camera_index].Fetch()) {
-          const std::optional<aos::monotonic_clock::duration> monotonic_offset =
-              utils_.ClockOffset(kPisToUse[camera_index]);
-          if (!monotonic_offset.has_value()) {
-            model_based_.TallyRejection(
-                RejectionReason::MESSAGE_BRIDGE_DISCONNECTED);
-            continue;
-          }
-          // TODO(james): Get timestamp from message contents.
-          aos::monotonic_clock::time_point capture_time(
-              target_estimate_fetchers_[camera_index]
-                  .context()
-                  .monotonic_remote_time -
-              monotonic_offset.value());
-          if (capture_time > target_estimate_fetchers_[camera_index]
-                                 .context()
-                                 .monotonic_event_time) {
-            model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
-            continue;
-          }
-          capture_time -= imu_watcher_.pico_offset_error();
-          model_based_.HandleImageMatch(
-              capture_time, target_estimate_fetchers_[camera_index].get(),
-              camera_index);
+        // TODO(james): Get timestamp from message contents.
+        aos::monotonic_clock::time_point capture_time(
+            target_estimate_fetchers_[camera_index]
+                .context()
+                .monotonic_remote_time -
+            monotonic_offset.value());
+        if (capture_time > target_estimate_fetchers_[camera_index]
+                               .context()
+                               .monotonic_event_time) {
+          model_based_.TallyRejection(RejectionReason::IMAGE_FROM_FUTURE);
+          continue;
         }
+        capture_time -= imu_watcher_.pico_offset_error();
+        model_based_.HandleImageMatch(
+            capture_time, target_estimate_fetchers_[camera_index].get(),
+            camera_index);
+      }
     }
   });
   event_loop_->OnRun([this, estimate_timer]() {
@@ -959,7 +959,6 @@ void EventLoopLocalizer::HandleImu(
     aos::monotonic_clock::time_point sample_time_pi,
     std::optional<Eigen::Vector2d> encoders, Eigen::Vector3d gyro,
     Eigen::Vector3d accel) {
-
   model_based_.HandleImu(
       sample_time_pico, gyro, accel, encoders,
       utils_.VoltageOrZero(event_loop_->context().monotonic_event_time));

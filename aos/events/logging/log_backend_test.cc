@@ -7,11 +7,12 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "aos/containers/resizeable_buffer.h"
-#include "aos/testing/tmpdir.h"
 #include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+
+#include "aos/containers/resizeable_buffer.h"
+#include "aos/testing/tmpdir.h"
 
 namespace aos::logger::testing {
 namespace {

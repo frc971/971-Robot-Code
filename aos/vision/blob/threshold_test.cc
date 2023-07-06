@@ -3,10 +3,11 @@
 #include <random>
 #include <vector>
 
-#include "aos/vision/blob/range_image.h"
-#include "aos/vision/image/image_types.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+
+#include "aos/vision/blob/range_image.h"
+#include "aos/vision/image/image_types.h"
 
 namespace aos {
 namespace vision {

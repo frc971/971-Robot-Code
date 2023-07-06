@@ -3,10 +3,11 @@
 #include <chrono>
 #include <vector>
 
-#include "aos/testing/test_shm.h"
-#include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
+
+#include "aos/testing/test_shm.h"
+#include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #if defined(SUPPORT_PLOT)
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
 #endif
@@ -446,8 +447,9 @@ TEST_P(ParameterizedSplineTest, PathRelativeMathTest) {
     absolute_state = RungeKuttaU(
         [this](const Eigen::Matrix<double, 5, 1> &X,
                const Eigen::Matrix<double, 2, 1> &U) {
-          return ContinuousDynamics(finished_trajectory_->velocity_drivetrain().plant(),
-                                    dt_config_.Tlr_to_la(), X, U);
+          return ContinuousDynamics(
+              finished_trajectory_->velocity_drivetrain().plant(),
+              dt_config_.Tlr_to_la(), X, U);
         },
         absolute_state, U, aos::time::DurationInSeconds(dt_config_.dt));
     const Eigen::Matrix<double, 5, 1> goal_absolute_state =

@@ -1,11 +1,12 @@
 #include "aos/network/web_proxy.h"
 
+#include "glog/logging.h"
+
 #include "aos/flatbuffer_merge.h"
 #include "aos/network/connect_generated.h"
 #include "aos/network/web_proxy_generated.h"
 #include "aos/network/web_proxy_utils.h"
 #include "aos/seasocks/seasocks_logger.h"
-#include "glog/logging.h"
 #include "internal/Embedded.h"
 
 extern "C" {

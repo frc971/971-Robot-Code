@@ -2,14 +2,15 @@
 
 #include <algorithm>
 #include <limits>
-#include <opencv2/highgui/highgui.hpp>
 
 #include "Eigen/Dense"
+#include "external/com_github_foxglove_schemas/CompressedImage_schema.h"
+#include "external/com_github_foxglove_schemas/ImageAnnotations_schema.h"
+#include <opencv2/highgui/highgui.hpp>
+
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
-#include "external/com_github_foxglove_schemas/CompressedImage_schema.h"
-#include "external/com_github_foxglove_schemas/ImageAnnotations_schema.h"
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/wpilib/imu_batch_generated.h"

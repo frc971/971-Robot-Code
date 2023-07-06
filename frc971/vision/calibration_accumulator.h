@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Eigen/Dense"
+
 #include "aos/events/simulated_event_loop.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/quaternion_utils.h"

@@ -94,13 +94,13 @@ using ExtrinsicParams = TemplatedExtrinsicParams<double>;
 // Projects a point from idealized template space to camera space.
 template <typename Extrinsics>
 aos::vision::Vector<2> Project(aos::vision::Vector<2> pt,
-                                  const IntrinsicParams &intrinsics,
-                                  const Extrinsics &extrinsics);
+                               const IntrinsicParams &intrinsics,
+                               const Extrinsics &extrinsics);
 
 template <typename T, typename Extrinsics>
 ::Eigen::Matrix<T, 2, 1> Project(::Eigen::Matrix<T, 2, 1> pt,
-                                  const IntrinsicParams &intrinsics,
-                                  const Extrinsics &extrinsics);
+                                 const IntrinsicParams &intrinsics,
+                                 const Extrinsics &extrinsics);
 
 Target Project(const Target &target, const IntrinsicParams &intrinsics,
                const ExtrinsicParams &extrinsics);
@@ -146,7 +146,7 @@ struct TargetResult {
   float skew;
 };
 
-template<typename T>
+template <typename T>
 ::Eigen::Matrix<T, 2, 1> ToEigenMatrix(aos::vision::Vector<2> pt) {
   return (::Eigen::Matrix<T, 2, 1>() << T(pt.x()), T(pt.y())).finished();
 }
@@ -163,8 +163,8 @@ aos::vision::Vector<2> Project(aos::vision::Vector<2> pt,
 
 template <typename T, typename Extrinsics>
 ::Eigen::Matrix<T, 2, 1> Project(::Eigen::Matrix<T, 2, 1> pt,
-                              const IntrinsicParams &intrinsics,
-                              const Extrinsics &extrinsics) {
+                                 const IntrinsicParams &intrinsics,
+                                 const Extrinsics &extrinsics) {
   const T y = extrinsics.y;    // height
   const T z = extrinsics.z;    // distance
   const T r1 = extrinsics.r1;  // skew
@@ -184,7 +184,8 @@ template <typename T, typename Extrinsics>
     const T s = sin(theta);
     const T c = cos(theta);
     pts = (::Eigen::Matrix<T, 3, 3>() << c, T(0), -s, T(0), T(1), T(0), s, T(0),
-           c).finished() *
+           c)
+              .finished() *
           pts;
   }
 
@@ -199,7 +200,8 @@ template <typename T, typename Extrinsics>
     const T s = sin(theta);
     const T c = cos(theta);
     pts = (::Eigen::Matrix<T, 3, 3>() << c, T(0), -s, T(0), T(1), T(0), s, T(0),
-           c).finished() *
+           c)
+              .finished() *
           pts;
   }
 
@@ -212,7 +214,8 @@ template <typename T, typename Extrinsics>
     const T c = T(cos(theta));
 
     pts = (::Eigen::Matrix<T, 3, 3>() << T(1), T(0), T(0), T(0), c, -s, T(0), s,
-           c).finished() *
+           c)
+              .finished() *
           pts;
   }
 
@@ -233,7 +236,7 @@ template <typename T, typename Extrinsics>
   // pixel-space.
   const T scale = fl / res.z();
   return ::Eigen::Matrix<T, 2, 1>(res.x() * scale + 320.0,
-                                   240.0 - res.y() * scale);
+                                  240.0 - res.y() * scale);
 }
 
 }  // namespace vision

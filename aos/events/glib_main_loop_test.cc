@@ -2,12 +2,13 @@
 
 #include <thread>
 
-#include "aos/configuration.h"
-#include "aos/events/shm_event_loop.h"
-#include "aos/testing/path.h"
 #include "glib-2.0/glib.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+
+#include "aos/configuration.h"
+#include "aos/events/shm_event_loop.h"
+#include "aos/testing/path.h"
 
 namespace aos {
 namespace testing {

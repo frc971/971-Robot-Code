@@ -66,9 +66,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void set_intake_max_velocity(double intake_max_velocity) {
     intake_max_velocity_ = intake_max_velocity;
   }
-  void set_gear_servo(double gear_servo) {
-    gear_servo_ = gear_servo;
-  }
+  void set_gear_servo(double gear_servo) { gear_servo_ = gear_servo; }
   void set_use_vision_for_shots(bool use_vision_for_shots) {
     use_vision_for_shots_ = use_vision_for_shots;
   }
@@ -116,19 +114,19 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
         indexer_offset = indexer_builder.Finish();
 
     flatbuffers::Offset<frc971::ProfileParameters>
-        turret_profile_parameters_offset = frc971::CreateProfileParameters(
-            *builder.fbb(), 6.0, 15.0);
+        turret_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 6.0, 15.0);
     control_loops::superstructure::TurretGoal::Builder turret_builder =
         builder.MakeBuilder<control_loops::superstructure::TurretGoal>();
     turret_builder.add_angle(turret_goal_);
     turret_builder.add_track(vision_track_);
     turret_builder.add_profile_params(turret_profile_parameters_offset);
-    flatbuffers::Offset<control_loops::superstructure::TurretGoal> turret_offset =
-      turret_builder.Finish();
+    flatbuffers::Offset<control_loops::superstructure::TurretGoal>
+        turret_offset = turret_builder.Finish();
 
     flatbuffers::Offset<frc971::ProfileParameters>
-        hood_profile_parameters_offset = frc971::CreateProfileParameters(
-            *builder.fbb(), 5.0, 25.0);
+        hood_profile_parameters_offset =
+            frc971::CreateProfileParameters(*builder.fbb(), 5.0, 25.0);
     control_loops::superstructure::HoodGoal::Builder hood_builder =
         builder.MakeBuilder<control_loops::superstructure::HoodGoal>();
     hood_builder.add_angle(hood_goal_);

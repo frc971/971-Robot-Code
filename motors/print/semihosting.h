@@ -2,6 +2,7 @@
 #define MOTORS_PRINT_SEMIHOSTING_H_
 
 #include "absl/types/span.h"
+
 #include "motors/print/print.h"
 
 namespace frc971 {

@@ -7,12 +7,10 @@
 
 #include "aos/macros.h"
 #include "aos/time/time.h"
-
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Counter.h"
 #include "frc971/wpilib/ahal/DigitalSource.h"
 #include "frc971/wpilib/ahal/Encoder.h"
-
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/dma_edge_counting.h"
 

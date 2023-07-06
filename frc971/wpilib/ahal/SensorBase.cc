@@ -8,6 +8,7 @@
 #include "frc971/wpilib/ahal/SensorBase.h"
 
 #include "FRC_NetworkCommunication/LoadOut.h"
+
 #include "frc971/wpilib/ahal/WPIErrors.h"
 #include "hal/AnalogInput.h"
 #include "hal/AnalogOutput.h"

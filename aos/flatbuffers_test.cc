@@ -1,10 +1,11 @@
 #include "aos/flatbuffers.h"
 
 #include "absl/strings/str_cat.h"
+#include "gtest/gtest.h"
+
 #include "aos/json_to_flatbuffer.h"
 #include "aos/json_to_flatbuffer_generated.h"
 #include "aos/testing/tmpdir.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

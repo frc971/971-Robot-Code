@@ -5,9 +5,10 @@
 #include <cstdlib>
 #include <string_view>
 
+#include "glog/logging.h"
+
 #include "aos/network/sctp_lib.h"
 #include "aos/unique_malloc_ptr.h"
-#include "glog/logging.h"
 
 namespace aos {
 namespace message_bridge {

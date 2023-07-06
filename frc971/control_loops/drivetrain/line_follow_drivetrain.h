@@ -1,6 +1,7 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_LINE_FOLLOW_DRIVETRAIN_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_LINE_FOLLOW_DRIVETRAIN_H_
 #include "Eigen/Dense"
+
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"

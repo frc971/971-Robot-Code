@@ -1,9 +1,10 @@
 #ifndef AOS_UTIL_CONFIG_VALIDATOR_H_
 #define AOS_UTIL_CONFIG_VALIDATOR_H_
 
+#include "gtest/gtest.h"
+
 #include "aos/configuration.h"
 #include "aos/util/config_validator_config_generated.h"
-#include "gtest/gtest.h"
 namespace aos::util {
 
 void ConfigIsValid(const aos::Configuration *config,

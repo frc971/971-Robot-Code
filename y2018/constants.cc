@@ -9,9 +9,10 @@
 #include "sanitizer/lsan_interface.h"
 #endif
 
+#include "glog/logging.h"
+
 #include "aos/network/team_number.h"
 #include "aos/stl_mutex/stl_mutex.h"
-#include "glog/logging.h"
 #include "y2018/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2018/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 

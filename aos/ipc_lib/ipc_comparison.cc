@@ -19,6 +19,8 @@
 #include <string>
 #include <thread>
 
+#include "gflags/gflags.h"
+
 #include "aos/condition.h"
 #include "aos/init.h"
 #include "aos/ipc_lib/event.h"
@@ -27,7 +29,6 @@
 #include "aos/mutex/mutex.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"
-#include "gflags/gflags.h"
 
 DEFINE_string(method, "", "Which IPC method to use");
 DEFINE_int32(messages, 1000000, "How many messages to send back and forth");

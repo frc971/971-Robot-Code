@@ -1,7 +1,6 @@
-#include "frc971/vision/foxglove_image_converter_lib.h"
-
-#include "aos/init.h"
 #include "aos/events/shm_event_loop.h"
+#include "aos/init.h"
+#include "frc971/vision/foxglove_image_converter_lib.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 

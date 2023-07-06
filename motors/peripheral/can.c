@@ -1,13 +1,12 @@
 #include "motors/peripheral/can.h"
 
+#include <inttypes.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "motors/core/kinetis.h"
 #include "motors/util.h"
-
-#include <stdio.h>
-#include <inttypes.h>
 
 // General note: this peripheral is really weird about accessing its memory.  It
 // goes much farther than normal memory-mapped device semantics. In particular,
@@ -44,7 +43,8 @@ void can_init(uint32_t id0, uint32_t id1) {
   // isn't what we want. It will ignore the attempt to change some of the bits
   // because it's not in freeze mode, but whatever.
   CAN0_MCR = CAN_MCR_FRZ | CAN_MCR_HALT;
-  while (!(CAN0_MCR & CAN_MCR_FRZACK)) {}
+  while (!(CAN0_MCR & CAN_MCR_FRZACK)) {
+  }
 
   // Initializing this before touching the mailboxes because the reference
   // manual slightly implies you have to, and the registers and RAM on this
@@ -87,13 +87,13 @@ void can_init(uint32_t id0, uint32_t id1) {
   // We're going with a sample point fraction of 0.875 because that's what
   // SocketCAN defaults to.
   // This results in a baud rate of 500 kHz.
-  CAN0_CTRL1 = CAN_CTRL1_PRESDIV(
-                   1) /* Divide the crystal frequency by 2 to get 8 MHz. */ |
-               CAN_CTRL1_RJW(0) /* RJW/SJW of 1, which is most common. */ |
-               CAN_CTRL1_PSEG1(7) /* 8 time quanta before sampling. */ |
-               CAN_CTRL1_PSEG2(1) /* 2 time quanta after sampling. */ |
-               CAN_CTRL1_SMP /* Use triple sampling. */ |
-               CAN_CTRL1_PROPSEG(4) /* 5 time quanta before sampling. */;
+  CAN0_CTRL1 =
+      CAN_CTRL1_PRESDIV(1) /* Divide the crystal frequency by 2 to get 8 MHz. */
+      | CAN_CTRL1_RJW(0) /* RJW/SJW of 1, which is most common. */ |
+      CAN_CTRL1_PSEG1(7) /* 8 time quanta before sampling. */ |
+      CAN_CTRL1_PSEG2(1) /* 2 time quanta after sampling. */ |
+      CAN_CTRL1_SMP /* Use triple sampling. */ |
+      CAN_CTRL1_PROPSEG(4) /* 5 time quanta before sampling. */;
   // TASD calculation:
   // 25 - (fcanclk * (maxmb + 3 - (rfen * 8) - (rfen * rffn * 2)) * 2) /
   //    (fsys * (1 + (pseg1 + 1) + (pseg2 + 1) + (propseg + 1)) * (presdiv + 1))

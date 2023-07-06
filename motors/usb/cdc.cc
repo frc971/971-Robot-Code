@@ -1,7 +1,7 @@
 #include "motors/usb/cdc.h"
 
-#include <string.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "motors/core/time.h"
 
@@ -129,8 +129,8 @@ void AcmTty::Initialize() {
   {
     const auto interface_descriptor = CreateDescriptor(
         interface_descriptor_length(), UsbDescriptorType::kInterface);
-    interface_descriptor->AddByte(status_interface_);  // bInterfaceNumber
-    interface_descriptor->AddByte(0);  // bAlternateSetting
+    interface_descriptor->AddByte(status_interface_);       // bInterfaceNumber
+    interface_descriptor->AddByte(0);                       // bAlternateSetting
     interface_descriptor->AddByte(1);                       // bNumEndpoints
     interface_descriptor->AddByte(communications_class());  // bInterfaceClass
     interface_descriptor->AddByte(
@@ -157,7 +157,7 @@ void AcmTty::Initialize() {
     call_management->AddByte(
         cdc_descriptor_subtype::call_management());  // bDescriptorSubtype
     // We don't do call management.
-    call_management->AddByte(0);  // bmCapabilities
+    call_management->AddByte(0);                // bmCapabilities
     call_management->AddByte(data_interface_);  // bDataInterface
   }
 
@@ -184,7 +184,7 @@ void AcmTty::Initialize() {
     cdc_union_descriptor->AddByte(
         cdc_descriptor_subtype::union_function());     // bDescriptorSubtype
     cdc_union_descriptor->AddByte(status_interface_);  // bMasterInterface
-    cdc_union_descriptor->AddByte(data_interface_);  // bSlaveInterface
+    cdc_union_descriptor->AddByte(data_interface_);    // bSlaveInterface
   }
 
   {

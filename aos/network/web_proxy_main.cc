@@ -1,8 +1,9 @@
+#include "gflags/gflags.h"
+
 #include "aos/events/shm_event_loop.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/init.h"
 #include "aos/network/web_proxy.h"
-#include "gflags/gflags.h"
 
 DEFINE_string(config, "aos_config.json", "File path of aos configuration");
 DEFINE_string(data_dir, "www", "Directory to serve data files from");

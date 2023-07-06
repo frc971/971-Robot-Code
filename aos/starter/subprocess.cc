@@ -280,7 +280,7 @@ void Application::DoStart() {
   }
 
   std::vector<char *> cargs = CArgs();
-  const char* path = run_as_sudo_ ? kSudo : path_.c_str();
+  const char *path = run_as_sudo_ ? kSudo : path_.c_str();
   execvp(path, cargs.data());
 
   // If we got here, something went wrong

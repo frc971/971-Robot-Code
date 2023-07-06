@@ -15,9 +15,10 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "aos/thread_local.h"
 #include "glog/logging.h"
 #include "glog/raw_logging.h"
+
+#include "aos/thread_local.h"
 
 DEFINE_bool(
     die_on_malloc, true,

@@ -1,8 +1,9 @@
 #ifndef Y2023_LOCALIZER_MAP_EXPANDER_LIB_H_
 #define Y2023_LOCALIZER_MAP_EXPANDER_LIB_H_
 
-#include <Eigen/Dense>
 #include <map>
+
+#include <Eigen/Dense>
 
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"

@@ -51,7 +51,8 @@ EventScheduler::OldestEvent() {
                           monotonic_clock::max_time);
   }
 
-  const monotonic_clock::time_point monotonic_time = events_list_.begin()->first;
+  const monotonic_clock::time_point monotonic_time =
+      events_list_.begin()->first;
   if (cached_event_list_monotonic_time_ != monotonic_time) {
     cached_event_list_time_ = ToDistributedClock(monotonic_time);
     cached_event_list_monotonic_time_ = monotonic_time;

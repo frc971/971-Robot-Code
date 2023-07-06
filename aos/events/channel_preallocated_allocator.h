@@ -1,9 +1,10 @@
 #ifndef AOS_EVENTS_CHANNEL_PREALLOCATED_ALLOCATOR_
 #define AOS_EVENTS_CHANNEL_PREALLOCATED_ALLOCATOR_
 
+#include "flatbuffers/flatbuffers.h"
+
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
-#include "flatbuffers/flatbuffers.h"
 
 namespace aos {
 

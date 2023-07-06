@@ -10,11 +10,11 @@
 #include <memory>
 #include <string>
 
-#include "hal/Counter.h"
-#include "hal/Types.h"
 #include "frc971/wpilib/ahal/AnalogTrigger.h"
 #include "frc971/wpilib/ahal/CounterBase.h"
 #include "frc971/wpilib/ahal/SensorBase.h"
+#include "hal/Counter.h"
+#include "hal/Types.h"
 
 namespace frc {
 
@@ -80,7 +80,7 @@ class Counter : public CounterBase {
    * @param source A pointer to the existing DigitalSource object. It will be
    *               set as the Up Source.
    */
-  explicit Counter(DigitalSource* source);
+  explicit Counter(DigitalSource *source);
 
   /**
    * Create an instance of a counter from a Digital Source (such as a Digital
@@ -107,7 +107,7 @@ class Counter : public CounterBase {
    *
    * @param trigger The reference to the existing AnalogTrigger object.
    */
-  explicit Counter(const AnalogTrigger& trigger);
+  explicit Counter(const AnalogTrigger &trigger);
 
   /**
    * Create an instance of a Counter object.
@@ -121,8 +121,8 @@ class Counter : public CounterBase {
    *                     source
    * @param inverted     True to invert the output (reverse the direction)
    */
-  Counter(EncodingType encodingType, DigitalSource* upSource,
-          DigitalSource* downSource, bool inverted);
+  Counter(EncodingType encodingType, DigitalSource *upSource,
+          DigitalSource *downSource, bool inverted);
 
   /**
    * Create an instance of a Counter object.
@@ -141,8 +141,8 @@ class Counter : public CounterBase {
 
   ~Counter() override;
 
-  Counter(Counter&&) = default;
-  Counter& operator=(Counter&&) = default;
+  Counter(Counter &&) = default;
+  Counter &operator=(Counter &&) = default;
 
   /**
    * Set the upsource for the counter as a digital input channel.
@@ -160,7 +160,7 @@ class Counter : public CounterBase {
    * @param triggerType   The analog trigger output that will trigger the
    *                      counter.
    */
-  void SetUpSource(AnalogTrigger* analogTrigger, AnalogTriggerType triggerType);
+  void SetUpSource(AnalogTrigger *analogTrigger, AnalogTriggerType triggerType);
 
   /**
    * Set the up counting source to be an analog trigger.
@@ -173,7 +173,7 @@ class Counter : public CounterBase {
   void SetUpSource(std::shared_ptr<AnalogTrigger> analogTrigger,
                    AnalogTriggerType triggerType);
 
-  void SetUpSource(DigitalSource* source);
+  void SetUpSource(DigitalSource *source);
 
   /**
    * Set the source object that causes the counter to count up.
@@ -191,7 +191,7 @@ class Counter : public CounterBase {
    *
    * @param source Reference to the DigitalSource object to set as the up source
    */
-  void SetUpSource(DigitalSource& source);
+  void SetUpSource(DigitalSource &source);
 
   /**
    * Set the edge sensitivity on an up counting source.
@@ -224,7 +224,7 @@ class Counter : public CounterBase {
    * @param triggerType   The analog trigger output that will trigger the
    *                      counter.
    */
-  void SetDownSource(AnalogTrigger* analogTrigger,
+  void SetDownSource(AnalogTrigger *analogTrigger,
                      AnalogTriggerType triggerType);
 
   /**
@@ -245,7 +245,7 @@ class Counter : public CounterBase {
    *
    * @param source Pointer to the DigitalSource object to set as the down source
    */
-  void SetDownSource(DigitalSource* source);
+  void SetDownSource(DigitalSource *source);
 
   /**
    * Set the source object that causes the counter to count down.
@@ -255,7 +255,7 @@ class Counter : public CounterBase {
    * @param source Reference to the DigitalSource object to set as the down
    *               source
    */
-  void SetDownSource(DigitalSource& source);
+  void SetDownSource(DigitalSource &source);
 
   void SetDownSource(std::shared_ptr<DigitalSource> source);
 

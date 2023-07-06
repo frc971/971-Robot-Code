@@ -5,12 +5,13 @@
 #include <map>
 
 #include "absl/strings/str_join.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/events/logging/boot_timestamp.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
-#include "glog/logging.h"
 
 DEFINE_bool(timestamps_to_csv, false,
             "If true, write all the time synchronization information to a set "
@@ -278,8 +279,7 @@ Problem::Derivatives TimestampProblem::ComputeDerivatives(
   result.hessian = Eigen::MatrixXd::Zero(states(), states());
 
   // Constrain the average of the times.
-  result.A =
-      Eigen::MatrixXd::Ones(1, states()) / static_cast<double>(states());
+  result.A = Eigen::MatrixXd::Ones(1, states()) / static_cast<double>(states());
   result.Axmb = Eigen::VectorXd::Zero(1);
 
   if (active_constraints.size() > 0 || all) {

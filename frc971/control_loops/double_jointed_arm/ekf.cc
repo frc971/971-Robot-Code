@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "Eigen/Dense"
+
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/jacobian.h"
 

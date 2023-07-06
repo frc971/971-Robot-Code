@@ -1,14 +1,12 @@
 #include "aos/ipc_lib/core_lib.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #include "aos/ipc_lib/shared_mem_types.h"
 
-static uint8_t aos_8max(uint8_t l, uint8_t r) {
-  return (l > r) ? l : r;
-}
+static uint8_t aos_8max(uint8_t l, uint8_t r) { return (l > r) ? l : r; }
 void *shm_malloc_aligned(size_t length, uint8_t alignment) {
   // minimum alignments from
   // <http://software.intel.com/en-us/articles/data-alignment-when-migrating-to-64-bit-intel-architecture/>
@@ -28,8 +26,7 @@ void *shm_malloc_aligned(size_t length, uint8_t alignment) {
 
   void *msg = NULL;
   aos_shm_core *shm_core = global_core->mem_struct;
-  int result =
-      mutex_grab(&shm_core->msg_alloc_lock);
+  int result = mutex_grab(&shm_core->msg_alloc_lock);
 #ifdef NDEBUG
   (void)result;
 #else
@@ -40,12 +37,14 @@ void *shm_malloc_aligned(size_t length, uint8_t alignment) {
   shm_core->msg_alloc = (uint8_t *)shm_core->msg_alloc - align_extra;
   msg = shm_core->msg_alloc;
   if (msg <= global_core->shared_mem) {
-    fprintf(stderr, "core_lib: RAN OUT OF SHARED MEMORY!!!----------------------------------------------------------\n");
+    fprintf(stderr,
+            "core_lib: RAN OUT OF SHARED "
+            "MEMORY!!!---------------------------------------------------------"
+            "-\n");
     printf("if you didn't see the stderr output just then, you should have\n");
     abort();
   }
-  //printf("alloc %p\n", msg);
+  // printf("alloc %p\n", msg);
   mutex_unlock(&shm_core->msg_alloc_lock);
   return msg;
 }
-

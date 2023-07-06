@@ -8,8 +8,8 @@
 #include "frc971/wpilib/ahal/DutyCycle.h"
 
 #include <hal/DutyCycle.h>
-#include <hal/HAL.h>
 #include <hal/FRCUsageReporting.h>
+#include <hal/HAL.h>
 
 #include "frc971/wpilib/ahal/Base.h"
 #include "frc971/wpilib/ahal/DigitalSource.h"
@@ -17,7 +17,7 @@
 
 using namespace frc;
 
-DutyCycle::DutyCycle(DigitalSource* source)
+DutyCycle::DutyCycle(DigitalSource *source)
     : m_source{source, NullDeleter<DigitalSource>()} {
   if (m_source == nullptr) {
     wpi_setWPIError(NullParameter);
@@ -26,7 +26,7 @@ DutyCycle::DutyCycle(DigitalSource* source)
   }
 }
 
-DutyCycle::DutyCycle(DigitalSource& source)
+DutyCycle::DutyCycle(DigitalSource &source)
     : m_source{&source, NullDeleter<DigitalSource>()} {
   InitDutyCycle();
 }

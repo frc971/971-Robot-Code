@@ -6,10 +6,11 @@
 #include <sstream>
 #include <utility>
 
+#include "glog/logging.h"
+
 #include "aos/init.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 #include "frc971/control_loops/control_loops_generated.h"
-#include "glog/logging.h"
 #include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 #include "y2020/control_loops/superstructure/shooter/shooter_tuning_params_generated.h"

@@ -3,10 +3,11 @@
 #include <chrono>
 #include <memory>
 
+#include "gtest/gtest.h"
+
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-#include "gtest/gtest.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/column/column_plant.h"
 #include "y2017/control_loops/superstructure/hood/hood_plant.h"
@@ -636,8 +637,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(5));
 
@@ -693,8 +693,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -741,8 +740,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(8));
   VerifyNearGoal();
@@ -793,8 +791,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   superstructure_plant_.set_peak_intake_velocity(23.0);
   superstructure_plant_.set_peak_turret_velocity(23.0);
@@ -849,8 +846,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   superstructure_plant_.set_peak_intake_velocity(0.2);
@@ -912,8 +908,7 @@ TEST_F(SuperstructureTest, RespectsRange) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 
@@ -971,8 +966,7 @@ TEST_F(SuperstructureTest, RespectsRange) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -1032,8 +1026,7 @@ TEST_F(SuperstructureTest, RespectsRange) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -1095,8 +1088,7 @@ TEST_F(SuperstructureTest, ZeroTest) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -1154,8 +1146,7 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 
@@ -1203,8 +1194,7 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 
@@ -1251,8 +1241,7 @@ TEST_F(SuperstructureTest, ResetTest) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 
@@ -1284,8 +1273,7 @@ TEST_F(SuperstructureTest, DisabledGoalTest) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -1317,8 +1305,7 @@ TEST_F(SuperstructureTest, DisabledGoalTest) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(100));
@@ -1371,8 +1358,7 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
     goal_builder.add_shooter(shooter_offset);
     goal_builder.add_indexer(indexer_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Run disabled for 2 seconds
@@ -1442,8 +1428,7 @@ TEST_F(SuperstructureTest, ShooterSpinUpAndDown) {
     goal_builder.add_indexer(indexer_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(5));
@@ -1479,8 +1464,7 @@ TEST_F(SuperstructureTest, ShooterSpinUpAndDown) {
     goal_builder.add_indexer(indexer_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Make sure we don't apply voltage on spin-down.
@@ -1526,8 +1510,7 @@ TEST_F(SuperstructureTest, ShooterDisabled) {
     goal_builder.add_indexer(indexer_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(5));
   EXPECT_EQ(nullptr, superstructure_output_fetcher_.get());
@@ -1573,8 +1556,7 @@ TEST_F(SuperstructureTest, StuckIndexerTest) {
     goal_builder.add_indexer(indexer_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(5));
@@ -1676,8 +1658,7 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
     goal_builder.add_indexer(indexer_offset);
     goal_builder.add_shooter(shooter_offset);
 
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(5));

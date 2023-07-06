@@ -1,11 +1,10 @@
 #include "frc971/vision/visualize_robot.h"
 
+#include "glog/logging.h"
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-
-#include "glog/logging.h"
 
 namespace frc971 {
 namespace vision {

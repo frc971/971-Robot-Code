@@ -1,16 +1,17 @@
 #include "aos/configuration.h"
 
 #include "absl/strings/strip.h"
+#include "flatbuffers/reflection.h"
+#include "glog/logging.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/ping_generated.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/flatbuffer_eq.h"
 #include "aos/testing/path.h"
 #include "aos/testing/test_logging.h"
 #include "aos/util/file.h"
-#include "flatbuffers/reflection.h"
-#include "glog/logging.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace configuration {

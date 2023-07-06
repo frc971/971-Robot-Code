@@ -10,10 +10,10 @@
 #include <limits>
 #include <sstream>
 
+#include "frc971/wpilib/ahal/WPIErrors.h"
 #include "hal/DIO.h"
 #include "hal/HAL.h"
 #include "hal/Ports.h"
-#include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;
 
@@ -80,10 +80,10 @@ void DigitalOutput::Set(bool value) {
 }
 
 /**
-   * Gets the value being output from the Digital Output.
-   *
-   * @return the state of the digital output.
-   */
+ * Gets the value being output from the Digital Output.
+ *
+ * @return the state of the digital output.
+ */
 bool DigitalOutput::Get() const {
   if (StatusIsFatal()) return false;
 

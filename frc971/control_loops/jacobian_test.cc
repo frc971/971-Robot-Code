@@ -7,8 +7,8 @@ namespace control_loops {
 namespace testing {
 
 ::Eigen::Matrix<double, 4, 4> A = (::Eigen::Matrix<double, 4, 4>() << 1, 2, 4,
-                                   1, 5, 2, 3, 4, 5, 1, 3, 2, 1, 1, 3,
-                                   7).finished();
+                                   1, 5, 2, 3, 4, 5, 1, 3, 2, 1, 1, 3, 7)
+                                      .finished();
 
 ::Eigen::Matrix<double, 4, 2> B =
     (::Eigen::Matrix<double, 4, 2>() << 1, 1, 2, 1, 3, 2, 3, 7).finished();

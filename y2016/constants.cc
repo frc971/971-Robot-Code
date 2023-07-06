@@ -10,9 +10,10 @@
 #endif
 
 #include "absl/base/call_once.h"
+#include "glog/logging.h"
+
 #include "aos/network/team_number.h"
 #include "aos/stl_mutex/stl_mutex.h"
-#include "glog/logging.h"
 #include "y2016/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2016/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 

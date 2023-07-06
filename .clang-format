@@ -7,9 +7,30 @@ DerivePointerAlignment: false
 PointerAlignment: Right
 Standard: Cpp11
 IncludeCategories:
-    # Force node headers to be considered third-party headers.
-    - Regex:     '^<(node|v8).h>$'
+    # Force some headers to be considered third-party headers.
+    - Regex:     '^<(cxx|Halide|HalidBuffer|lzma|node|v8|osqp|oscqp\+\+|snappy|snappy-sinksource).h>$'
       Priority:  3
+    # Force some more third-party headers to be appropriately categorized.
+    - Regex:     '^(<|")(absl|ceres|ctre|Eigen|external|FRC_NetworkCommunication|foxglove|flatbuffers|glib-2.0|glog|gflags|gmock|gtest|google|libusb-1.0|lz4|opencv2|openssl|rawrtcc|sanitizer|single_include|third_party|wpi)/.*(>|")$'
+      Priority:  3
+    # The default regexes. For some reason, if we don't specify them here, then
+    # clang-format will overwrite them with the custom ones we specify above.
+    - Regex:           '^<ext/.*\.h>'
+      Priority:        2
+      SortPriority:    0
+      CaseSensitive:   false
+    - Regex:           '^<.*\.h>'
+      Priority:        1
+      SortPriority:    0
+      CaseSensitive:   false
+    - Regex:           '^<.*'
+      Priority:        2
+      SortPriority:    0
+      CaseSensitive:   false
+    - Regex:           '.*'
+      Priority:        4
+      SortPriority:    0
+      CaseSensitive:   false
 
 ---
 Language:        JavaScript

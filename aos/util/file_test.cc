@@ -3,9 +3,10 @@
 #include <cstdlib>
 #include <string>
 
+#include "gtest/gtest.h"
+
 #include "aos/realtime.h"
 #include "aos/testing/tmpdir.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace util {

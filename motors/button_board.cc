@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+
 #include <atomic>
 #include <cmath>
 
@@ -150,8 +151,8 @@ void SendJoystickData(teensy::HidFunction *joystick0,
         ((PERIPHERAL_BITBAND(GPIOA_PDIR, 12) << 0) |
          (PERIPHERAL_BITBAND(GPIOD_PDIR, 0) << 1) |
          (PERIPHERAL_BITBAND(GPIOB_PDIR, 17) << 2) |
-         (PERIPHERAL_BITBAND(GPIOB_PDIR, 16) << 3) | (DecodeAnalog(report1[0]) << 4) |
-         (DecodeAnalog(report1[1]) << 6)) ^
+         (PERIPHERAL_BITBAND(GPIOB_PDIR, 16) << 3) |
+         (DecodeAnalog(report1[0]) << 4) | (DecodeAnalog(report1[1]) << 6)) ^
         0x0f;
     report1[5] = (DecodeAnalog(report1[2])) | (DecodeAnalog(report1[3]) << 2);
 

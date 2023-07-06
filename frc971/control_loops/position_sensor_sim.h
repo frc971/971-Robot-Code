@@ -1,8 +1,9 @@
 #ifndef FRC971_CONTROL_LOOPS_POSITION_SENSOR_SIM_H_
 #define FRC971_CONTROL_LOOPS_POSITION_SENSOR_SIM_H_
 
-#include "aos/testing/random_seed.h"
 #include "flatbuffers/flatbuffers.h"
+
+#include "aos/testing/random_seed.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/gaussian_noise.h"
 

@@ -2,8 +2,9 @@
 #define Y2022_CONTROL_LOOPS_SUPERSTRUCTURE_CATAPULT_CATAPULT_H_
 
 #include "Eigen/Dense"
-#include "frc971/control_loops/state_feedback_loop.h"
 #include "glog/logging.h"
+
+#include "frc971/control_loops/state_feedback_loop.h"
 #include "osqp++.h"
 #include "y2022/constants.h"
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"

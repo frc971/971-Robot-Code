@@ -2,6 +2,7 @@
 #define MOTORS_PERIPHERAL_UART_H_
 
 #include "absl/types/span.h"
+
 #include "aos/containers/sized_array.h"
 #include "motors/core/kinetis.h"
 #include "motors/peripheral/uart_buffer.h"
@@ -27,9 +28,7 @@ class Uart {
   }
 
   // Returns all the data which is currently available.
-  aos::SizedArray<char, 4> Read(const DisableInterrupts &) {
-    return DoRead();
-  }
+  aos::SizedArray<char, 4> Read(const DisableInterrupts &) { return DoRead(); }
 
   bool SpaceAvailable() const { return module_->S1 & M_UART_TDRE; }
   // Only call this if SpaceAvailable() has just returned true.

@@ -1,9 +1,10 @@
 #ifndef FRC971_VISION_GEOMETRY_H_
 #define FRC971_VISION_GEOMETRY_H_
 
-#include "aos/util/math.h"
 #include "glog/logging.h"
 #include "opencv2/core/types.hpp"
+
+#include "aos/util/math.h"
 
 namespace frc971::vision {
 

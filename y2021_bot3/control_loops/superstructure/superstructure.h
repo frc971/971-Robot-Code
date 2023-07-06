@@ -1,8 +1,8 @@
 #ifndef Y2021_BOT3_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 #define Y2021_BOT3_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 
-#include "frc971/control_loops/control_loop.h"
 #include "aos/events/event_loop.h"
+#include "frc971/control_loops/control_loop.h"
 #include "y2021_bot3/constants.h"
 #include "y2021_bot3/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2021_bot3/control_loops/superstructure/superstructure_output_generated.h"

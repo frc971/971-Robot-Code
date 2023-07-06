@@ -4,7 +4,6 @@
 #include "aos/events/shm_event_loop.h"
 #include "frc971/vision/vision_generated.h"
 #include "y2023/vision/game_pieces_generated.h"
-
 #include "y2023/vision/yolov5.h"
 
 namespace y2023 {

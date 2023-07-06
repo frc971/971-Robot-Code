@@ -1,11 +1,12 @@
 #include "aos/util/mcap_logger.h"
 
 #include "absl/strings/str_replace.h"
-#include "aos/configuration_schema.h"
-#include "aos/flatbuffer_merge.h"
 #include "lz4/lz4.h"
 #include "lz4/lz4frame.h"
 #include "single_include/nlohmann/json.hpp"
+
+#include "aos/configuration_schema.h"
+#include "aos/flatbuffer_merge.h"
 
 DEFINE_uint64(mcap_chunk_size, 10'000'000,
               "Size, in bytes, of individual MCAP chunks");

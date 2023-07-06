@@ -1,3 +1,5 @@
+#include "frc971/shooter_interpolation/interpolation.h"
+
 #include <unistd.h>
 
 #include <memory>
@@ -6,19 +8,16 @@
 
 #include "gtest/gtest.h"
 
-#include "frc971/shooter_interpolation/interpolation.h"
-
 namespace frc971 {
 namespace shooter_interpolation {
 
 struct TestShotParams {
   double angle;
   double power;
-  static TestShotParams BlendY(double x, const TestShotParams& a, const TestShotParams& b) {
-    return TestShotParams{
-      Blend(x, a.angle, b.angle),
-      Blend(x, a.power, b.power)
-    };
+  static TestShotParams BlendY(double x, const TestShotParams &a,
+                               const TestShotParams &b) {
+    return TestShotParams{Blend(x, a.angle, b.angle),
+                          Blend(x, a.power, b.power)};
   }
 };
 
@@ -32,7 +31,10 @@ using TestInterpolationTable = InterpolationTable<TestShotParams>;
 // correctly
 TEST(InterpolationTable, ExactNumbers) {
   ::std::vector<::std::pair<double, TestShotParams>> data = {
-      {1, {10, 10}}, {3, {20, 20}}, {2, {15, 12345678}}, {4, {10, 567.323}},
+      {1, {10, 10}},
+      {3, {20, 20}},
+      {2, {15, 12345678}},
+      {4, {10, 567.323}},
   };
 
   TestInterpolationTable interpolation(data);
@@ -44,7 +46,10 @@ TEST(InterpolationTable, ExactNumbers) {
 // correctly
 TEST(InterpolationTable, InexactNumbers) {
   ::std::vector<::std::pair<double, TestShotParams>> data = {
-      {1, {10, 10}}, {3, {20, 20}}, {2, {15, 15}}, {4, {10, 567.323}},
+      {1, {10, 10}},
+      {3, {20, 20}},
+      {2, {15, 15}},
+      {4, {10, 567.323}},
   };
 
   TestInterpolationTable interpolation(data);
@@ -56,7 +61,10 @@ TEST(InterpolationTable, InexactNumbers) {
 // processed correctly
 TEST(InterpolationTable, OutOfScopeNumbers) {
   ::std::vector<::std::pair<double, TestShotParams>> data = {
-      {1, {10, 10}}, {3, {20, 20}}, {2, {15, 12345678}}, {4, {10, 567.323}},
+      {1, {10, 10}},
+      {3, {20, 20}},
+      {2, {15, 12345678}},
+      {4, {10, 567.323}},
   };
 
   TestInterpolationTable interpolation(data);

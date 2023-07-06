@@ -5,6 +5,8 @@
 #include <string>
 
 #include "absl/types/span.h"
+#include "glog/logging.h"
+
 #include "aos/containers/ring_buffer.h"
 #include "aos/events/epoll.h"
 #include "aos/events/event_loop.h"
@@ -13,7 +15,6 @@
 #include "aos/scoped/scoped_fd.h"
 #include "aos/util/threaded_consumer.h"
 #include "frc971/vision/vision_generated.h"
-#include "glog/logging.h"
 
 namespace frc971 {
 namespace vision {

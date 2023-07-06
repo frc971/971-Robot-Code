@@ -2,11 +2,12 @@
 
 #include <iostream>
 
+#include "gflags/gflags.h"
+
 #include "aos/aos_cli_utils.h"
 #include "aos/configuration.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
-#include "gflags/gflags.h"
 
 DEFINE_int64(max_vector_size, 100,
              "If positive, vectors longer than this will not be printed");

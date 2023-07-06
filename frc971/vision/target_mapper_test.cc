@@ -2,12 +2,13 @@
 
 #include <random>
 
+#include "glog/logging.h"
+#include "gtest/gtest.h"
+
 #include "aos/events/simulated_event_loop.h"
 #include "aos/testing/path.h"
 #include "aos/testing/random_seed.h"
 #include "aos/util/math.h"
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 
 DECLARE_int32(min_target_id);
 DECLARE_int32(max_target_id);

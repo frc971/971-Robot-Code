@@ -1,18 +1,18 @@
-#include <Eigen/Dense>
 #include <iostream>
 
-#include "y2017/vision/target_finder.h"
+#include <Eigen/Dense>
 
 #include "aos/vision/blob/move_scale.h"
 #include "aos/vision/blob/stream_view.h"
 #include "aos/vision/blob/transpose.h"
 #include "aos/vision/debug/debug_framework.h"
 #include "aos/vision/math/vector.h"
+#include "y2017/vision/target_finder.h"
 
-using aos::vision::ImageRange;
-using aos::vision::ImageFormat;
-using aos::vision::RangeImage;
 using aos::vision::BlobList;
+using aos::vision::ImageFormat;
+using aos::vision::ImageRange;
+using aos::vision::RangeImage;
 
 namespace y2017 {
 namespace vision {

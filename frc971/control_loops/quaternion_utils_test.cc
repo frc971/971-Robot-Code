@@ -1,13 +1,14 @@
-#include "Eigen/Dense"
+#include "frc971/control_loops/quaternion_utils.h"
 
 #include <random>
 
-#include "aos/testing/random_seed.h"
-#include "frc971/control_loops/jacobian.h"
-#include "frc971/control_loops/quaternion_utils.h"
-#include "frc971/control_loops/runge_kutta.h"
+#include "Eigen/Dense"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+
+#include "aos/testing/random_seed.h"
+#include "frc971/control_loops/jacobian.h"
+#include "frc971/control_loops/runge_kutta.h"
 
 namespace frc971 {
 namespace controls {

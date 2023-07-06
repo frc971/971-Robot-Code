@@ -74,7 +74,8 @@ class CollisionAvoidance {
   // elevator is below kElevatorClearHeight.
   static constexpr double kWristElevatorCollisionMinAngle = -M_PI / 4.0;
   static constexpr double kWristElevatorCollisionMaxAngle = M_PI / 4.0;
-  static constexpr double kWristElevatorCollisionMaxAngleWithoutObject = M_PI / 6.0;
+  static constexpr double kWristElevatorCollisionMaxAngleWithoutObject =
+      M_PI / 6.0;
 
   // Tolerance for the elevator.
   static constexpr double kEps = 0.02;

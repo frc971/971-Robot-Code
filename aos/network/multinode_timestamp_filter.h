@@ -7,13 +7,14 @@
 
 #include "Eigen/Dense"
 #include "absl/container/btree_set.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/events/logging/boot_timestamp.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
-#include "glog/logging.h"
 
 namespace aos {
 namespace message_bridge {
@@ -317,7 +318,6 @@ class TimestampProblem : public Problem {
 
   // Points to solve equality constraints to.
   absl::Span<const logger::BootTimestamp> points_;
-
 };
 
 // Helpers to convert times between the monotonic and distributed clocks for
@@ -552,8 +552,7 @@ class MultiNodeNoncausalOffsetEstimator final
   void FlushAllSamples(bool finish);
 
   // Adds the solution to last_distributed_.
-  void UpdateSolution(
-      std::vector<logger::BootTimestamp> result_times);
+  void UpdateSolution(std::vector<logger::BootTimestamp> result_times);
 
   void WriteFilter(
       NoncausalTimestampFilter *next_filter,

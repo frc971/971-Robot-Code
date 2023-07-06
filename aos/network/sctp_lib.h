@@ -10,9 +10,10 @@
 #include <string_view>
 #include <vector>
 
-#include "aos/unique_malloc_ptr.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+
+#include "aos/unique_malloc_ptr.h"
 
 namespace aos {
 namespace message_bridge {

@@ -69,10 +69,10 @@ void ColumnZeroingEstimator::UpdateEstimate(const ColumnPosition &position) {
 flatbuffers::Offset<ColumnZeroingEstimator::State>
 ColumnZeroingEstimator::GetEstimatorState(
     flatbuffers::FlatBufferBuilder *fbb) const {
-  flatbuffers::Offset<frc971::HallEffectAndPositionEstimatorState> indexer_offset =
-      indexer_.GetEstimatorState(fbb);
-  flatbuffers::Offset<frc971::HallEffectAndPositionEstimatorState> turret_offset =
-      turret_.GetEstimatorState(fbb);
+  flatbuffers::Offset<frc971::HallEffectAndPositionEstimatorState>
+      indexer_offset = indexer_.GetEstimatorState(fbb);
+  flatbuffers::Offset<frc971::HallEffectAndPositionEstimatorState>
+      turret_offset = turret_.GetEstimatorState(fbb);
 
   State::Builder state_builder(*fbb);
   state_builder.add_indexer(indexer_offset);
@@ -84,5 +84,5 @@ ColumnZeroingEstimator::GetEstimatorState(
 
 }  // namespace column
 }  // namespace superstructure
-}  // control_loops
-}  // y2017
+}  // namespace control_loops
+}  // namespace y2017

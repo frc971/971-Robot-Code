@@ -2,12 +2,13 @@
 
 #include <chrono>
 
-#include "aos/testing/test_shm.h"
-#include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
-#include "frc971/control_loops/drivetrain/trajectory.h"
 #include "gflags/gflags.h"
 #include "gtest/gtest.h"
 #include "third_party/matplotlib-cpp/matplotlibcpp.h"
+
+#include "aos/testing/test_shm.h"
+#include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
+#include "frc971/control_loops/drivetrain/trajectory.h"
 
 DECLARE_bool(plot);
 

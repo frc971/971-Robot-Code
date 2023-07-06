@@ -4,10 +4,11 @@
 #include <iomanip>
 #include <iostream>
 
-#include "aos/events/event_loop.h"
-#include "frc971/can_logger/can_logging_generated.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+
+#include "aos/events/event_loop.h"
+#include "frc971/can_logger/can_logging_generated.h"
 
 namespace frc971 {
 namespace can_logger {

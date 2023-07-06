@@ -7,7 +7,7 @@ volatile uint32_t systick_millis_count = 0;
 
 namespace {
 
-template<int kMultiplier>
+template <int kMultiplier>
 uint32_t do_time(void) {
   __disable_irq();
   uint32_t current = SYST_CVR;

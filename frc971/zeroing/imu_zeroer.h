@@ -48,14 +48,14 @@ class ImuZeroer {
   // Max variation (difference between the maximum and minimum value) in a
   // kSamplesToAverage range before we allow using the samples for zeroing.
   // These values are currently based on looking at results from the ADIS16448.
-  static constexpr double kGyroMaxVariation = 0.02;        // rad / sec
+  static constexpr double kGyroMaxVariation = 0.02;  // rad / sec
   // Maximum magnitude we allow the gyro zero to have--this is used to prevent
   // us from zeroing the gyro if we just happen to be spinning at a very
   // consistent non-zero rate. Currently this is only plausible in simulation.
   static constexpr double kGyroMaxZeroingMagnitude = 0.1;  // rad / sec
   // Max variation in the range before we consider the accelerometer readings to
   // be steady.
-  static constexpr double kAccelMaxVariation = 0.05;    // g's
+  static constexpr double kAccelMaxVariation = 0.05;  // g's
   // If we ever are able to rezero and get a zero that is more than
   // kGyroFaultVariation away from the original zeroing, fault.
   static constexpr double kGyroFaultVariation = 0.05;  // rad / sec

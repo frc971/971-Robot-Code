@@ -7,6 +7,7 @@
 #include <cstdint>
 
 #include "Eigen/Dense"
+
 #include "aos/containers/sized_array.h"
 #include "aos/time/time.h"
 

@@ -1,7 +1,8 @@
 #include "y2019/vision/target_finder.h"
 
-#include "aos/vision/blob/hierarchical_contour_merge.h"
 #include "ceres/ceres.h"
+
+#include "aos/vision/blob/hierarchical_contour_merge.h"
 
 using namespace aos::vision;
 
@@ -75,7 +76,7 @@ constexpr double k_3 = 0.04201;
 
 constexpr int iterations = 7;
 
-}
+}  // namespace
 
 ::Eigen::Vector2f UnWarpPoint(const Point point) {
   const double x0 = ((double)point.x - c_x) / f_x;
@@ -566,8 +567,9 @@ std::vector<IntermediateResult> TargetFinder::FilterResults(
 
   // Sort the target list so that the widest (ie closest) target is first.
   sort(filtered.begin(), filtered.end(),
-       [](const IntermediateResult &a, const IntermediateResult &b)
-           -> bool { return a.target_width > b.target_width; });
+       [](const IntermediateResult &a, const IntermediateResult &b) -> bool {
+         return a.target_width > b.target_width;
+       });
 
   frame_count_++;
   if (!filtered.empty()) {
@@ -588,8 +590,8 @@ bool TargetFinder::TestExposure(const std::vector<IntermediateResult> &results,
                                 int pixel_count, int *desired_exposure) {
   // TODO(ben): Add these values to config file.
   constexpr double low_dist = 0.8;
-  constexpr int low_exposure  = 60;
-  constexpr int mid_exposure  = 200;
+  constexpr int low_exposure = 60;
+  constexpr int mid_exposure = 200;
 
   bool needs_update = false;
   if (results.size() > 0) {

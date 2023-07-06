@@ -1,5 +1,6 @@
-#include "frc971/zeroing/wrap.h"
 #include "gtest/gtest.h"
+
+#include "frc971/zeroing/wrap.h"
 
 namespace frc971 {
 namespace zeroing {

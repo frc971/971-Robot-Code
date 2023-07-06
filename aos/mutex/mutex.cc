@@ -4,8 +4,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include "aos/type_traits/type_traits.h"
 #include "glog/logging.h"
+
+#include "aos/type_traits/type_traits.h"
 
 namespace aos {
 

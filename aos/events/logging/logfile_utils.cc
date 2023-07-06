@@ -10,13 +10,14 @@
 #include <filesystem>
 
 #include "absl/strings/escaping.h"
+#include "flatbuffers/flatbuffers.h"
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/events/logging/snappy_encoder.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/util/file.h"
-#include "flatbuffers/flatbuffers.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 #if defined(__x86_64__)
 #define ENABLE_LZMA (!__has_feature(memory_sanitizer))

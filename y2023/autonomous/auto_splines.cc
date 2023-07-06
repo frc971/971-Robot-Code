@@ -1,7 +1,7 @@
 #include "y2023/autonomous/auto_splines.h"
 
-#include "frc971/control_loops/control_loops_generated.h"
 #include "aos/flatbuffer_merge.h"
+#include "frc971/control_loops/control_loops_generated.h"
 
 namespace y2023 {
 namespace autonomous {

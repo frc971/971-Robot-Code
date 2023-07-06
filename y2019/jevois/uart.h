@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "absl/types/span.h"
+
 #include "aos/containers/sized_array.h"
 #include "y2019/jevois/cobs.h"
 #include "y2019/jevois/structures.h"

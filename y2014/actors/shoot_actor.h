@@ -16,8 +16,7 @@ namespace actors {
 class ShootActor
     : public ::aos::common::actions::ActorBase<aos::common::actions::Goal> {
  public:
-  typedef ::aos::common::actions::TypedActionFactory<
-      aos::common::actions::Goal>
+  typedef ::aos::common::actions::TypedActionFactory<aos::common::actions::Goal>
       Factory;
 
   explicit ShootActor(::aos::EventLoop *event_loop);

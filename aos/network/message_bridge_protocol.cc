@@ -2,11 +2,12 @@
 
 #include <string_view>
 
+#include "flatbuffers/flatbuffers.h"
+
 #include "aos/configuration.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/flatbuffers.h"
 #include "aos/network/connect_generated.h"
-#include "flatbuffers/flatbuffers.h"
 
 namespace aos {
 namespace message_bridge {

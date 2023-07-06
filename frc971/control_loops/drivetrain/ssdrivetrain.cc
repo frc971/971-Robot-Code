@@ -1,12 +1,12 @@
 #include "frc971/control_loops/drivetrain/ssdrivetrain.h"
 
 #include "aos/commonmath.h"
-#include "frc971/control_loops/polytope.h"
 #include "frc971/control_loops/coerce_goal.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/drivetrain/drivetrain_goal_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/control_loops/polytope.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
 namespace frc971 {

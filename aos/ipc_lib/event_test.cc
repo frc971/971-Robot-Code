@@ -3,9 +3,10 @@
 #include <chrono>
 #include <thread>
 
+#include "gtest/gtest.h"
+
 #include "aos/testing/test_logging.h"
 #include "aos/time/time.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

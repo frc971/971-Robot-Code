@@ -1,10 +1,11 @@
 #ifndef Y2022_CONTROL_LOOPS_SUPERSTRUCTURE_LED_INDICATOR_H_
 #define Y2022_CONTROL_LOOPS_SUPERSTRUCTURE_LED_INDICATOR_H_
 
+#include "ctre/phoenix/led/CANdle.h"
+
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_client_generated.h"
 #include "aos/network/message_bridge_server_generated.h"
-#include "ctre/phoenix/led/CANdle.h"
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"

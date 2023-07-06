@@ -15,8 +15,9 @@ class SimpleCappedStateFeedbackLoop
     : public StateFeedbackLoop<number_of_states, number_of_inputs,
                                number_of_outputs> {
  public:
-  SimpleCappedStateFeedbackLoop(StateFeedbackLoop<
-      number_of_states, number_of_inputs, number_of_outputs> &&loop)
+  SimpleCappedStateFeedbackLoop(
+      StateFeedbackLoop<number_of_states, number_of_inputs, number_of_outputs>
+          &&loop)
       : StateFeedbackLoop<number_of_states, number_of_inputs,
                           number_of_outputs>(::std::move(loop)),
         min_voltages_(
@@ -66,8 +67,7 @@ class SimpleCappedStateFeedbackLoop
 
  private:
   void CapU() override {
-    this->mutable_U() =
-        this->U().array().min(max_voltages_).max(min_voltages_);
+    this->mutable_U() = this->U().array().min(max_voltages_).max(min_voltages_);
   }
 
   ::Eigen::Array<double, number_of_inputs, 1> min_voltages_;

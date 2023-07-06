@@ -1,7 +1,8 @@
 #include "y2017/control_loops/superstructure/vision_distance_average.h"
 
-#include "aos/flatbuffers.h"
 #include "gtest/gtest.h"
+
+#include "aos/flatbuffers.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -14,9 +15,7 @@ class VisionDistanceAverageTest : public ::testing::Test {
     return current_time_;
   }
 
-  VisionDistanceAverage* average() {
-    return &average_;
-  }
+  VisionDistanceAverage *average() { return &average_; }
 
   void TickInvalid() {
     flatbuffers::FlatBufferBuilder fbb;
@@ -43,9 +42,7 @@ class VisionDistanceAverageTest : public ::testing::Test {
     average_.Tick(tick_time(), &status.message());
   }
 
-  void TickNullptr() {
-    average_.Tick(tick_time(), nullptr); 
-  }
+  void TickNullptr() { average_.Tick(tick_time(), nullptr); }
 
  private:
   ::aos::monotonic_clock::time_point current_time_ =

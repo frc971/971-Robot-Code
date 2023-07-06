@@ -19,11 +19,11 @@ class Context;
 namespace y2019 {
 namespace vision {
 
+using aos::vision::BlobList;
+using aos::vision::ContourNode;
 using aos::vision::ImageRange;
 using aos::vision::RangeImage;
-using aos::vision::BlobList;
 using aos::vision::Vector;
-using aos::vision::ContourNode;
 
 struct Polygon {
   ::std::vector<aos::vision::Segment<2>> segments;

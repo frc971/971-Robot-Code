@@ -1,18 +1,18 @@
 #include "frc971/vision/extrinsics_calibration.h"
 
-#include "aos/time/time.h"
 #include "ceres/ceres.h"
-#include "frc971/analysis/in_process_plotter.h"
-#include "frc971/control_loops/runge_kutta.h"
-#include "frc971/vision/calibration_accumulator.h"
-#include "frc971/vision/charuco_lib.h"
-#include "frc971/vision/visualize_robot.h"
-
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+
+#include "aos/time/time.h"
+#include "frc971/analysis/in_process_plotter.h"
+#include "frc971/control_loops/runge_kutta.h"
+#include "frc971/vision/calibration_accumulator.h"
+#include "frc971/vision/charuco_lib.h"
+#include "frc971/vision/visualize_robot.h"
 
 namespace frc971 {
 namespace vision {

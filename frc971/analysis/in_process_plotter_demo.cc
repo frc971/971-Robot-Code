@@ -1,6 +1,5 @@
-#include "frc971/analysis/in_process_plotter.h"
-
 #include "aos/init.h"
+#include "frc971/analysis/in_process_plotter.h"
 
 // To run this example, do:
 // bazel run -c opt //frc971/analysis:in_process_plotter_demo

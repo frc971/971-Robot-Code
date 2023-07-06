@@ -58,5 +58,5 @@ struct ShotConfig {
 };
 
 TurretGoal AimerGoal(const ShotConfig &config, const RobotState &state);
-}
+}  // namespace frc971::control_loops::aiming
 #endif  // FRC971_CONTROL_LOOPS_AIMING_AIMING_H_

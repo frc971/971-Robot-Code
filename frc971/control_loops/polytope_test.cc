@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "Eigen/Dense"
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 #include "aos/testing/test_logging.h"
 
@@ -77,25 +77,29 @@ class HPolytopeTest : public ::testing::Test {
 // Tests that the vertices for various polytopes calculated from H and k are
 // correct.
 TEST_F(HPolytopeTest, CalculatedVertices) {
-  EXPECT_THAT(MatrixToVectors(Polytope1().Vertices()),
-              ::testing::UnorderedElementsAreArray(
-                  MatrixToVectors((Eigen::Matrix<double, 2, 4>() << -12, -12,
-                                   12, 12, -12, 12, 12, -12).finished())));
-  EXPECT_THAT(MatrixToVectors(Polytope2().Vertices()),
-              ::testing::UnorderedElementsAreArray(
-                  MatrixToVectors((Eigen::Matrix<double, 2, 4>() << 24, 0, -24,
-                                   0, -12, 12, 12, -12).finished())));
+  EXPECT_THAT(
+      MatrixToVectors(Polytope1().Vertices()),
+      ::testing::UnorderedElementsAreArray(MatrixToVectors(
+          (Eigen::Matrix<double, 2, 4>() << -12, -12, 12, 12, -12, 12, 12, -12)
+              .finished())));
+  EXPECT_THAT(
+      MatrixToVectors(Polytope2().Vertices()),
+      ::testing::UnorderedElementsAreArray(MatrixToVectors(
+          (Eigen::Matrix<double, 2, 4>() << 24, 0, -24, 0, -12, 12, 12, -12)
+              .finished())));
   EXPECT_THAT(MatrixToVectors(Polytope3().Vertices()),
               ::testing::UnorderedElementsAreArray(MatrixToVectors(
                   (Eigen::Matrix<double, 1, 2>() << 5, -4).finished())));
-  EXPECT_THAT(MatrixToVectors(Polytope4().Vertices()),
-              ::testing::UnorderedElementsAreArray(
-                  MatrixToVectors((Eigen::Matrix<double, 2, 4>() << 1, 1.5, 1.5,
-                                   2, 0, -0.5, 0.5, 0).finished())));
-  EXPECT_THAT(MatrixToVectors(Polytope5().Vertices()),
-              ::testing::UnorderedElementsAreArray(
-                  MatrixToVectors((Eigen::Matrix<double, 2, 4>() << 0.5, 1, 1.5,
-                                   1, 0, 0.5, 0, -0.5).finished())));
+  EXPECT_THAT(
+      MatrixToVectors(Polytope4().Vertices()),
+      ::testing::UnorderedElementsAreArray(MatrixToVectors(
+          (Eigen::Matrix<double, 2, 4>() << 1, 1.5, 1.5, 2, 0, -0.5, 0.5, 0)
+              .finished())));
+  EXPECT_THAT(
+      MatrixToVectors(Polytope5().Vertices()),
+      ::testing::UnorderedElementsAreArray(MatrixToVectors(
+          (Eigen::Matrix<double, 2, 4>() << 0.5, 1, 1.5, 1, 0, 0.5, 0, -0.5)
+              .finished())));
 }
 
 }  // namespace controls

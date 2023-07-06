@@ -1,5 +1,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
+
 #include "aos/init.h"
 #include "aos/util/file.h"
 #include "frc971/analysis/in_process_plotter.h"
@@ -157,7 +158,8 @@ std::pair<std::vector<double>, std::vector<double>> NodePlotter::ReadLines(
     std::string_view node1, std::string_view node2, bool flip) {
   std::vector<double> samplefile12_t;
   std::vector<double> samplefile12_o;
-  const std::string path = absl::StrCat("/tmp/timestamp_noncausal_", node1, "_", node2, ".csv");
+  const std::string path =
+      absl::StrCat("/tmp/timestamp_noncausal_", node1, "_", node2, ".csv");
 
   if (!aos::util::PathExists(path)) {
     return {};

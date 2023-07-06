@@ -4,10 +4,11 @@
 #include <fstream>
 #include <string>
 
-#include "aos/events/logging/buffer_encoder_param_test.h"
 #include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+
+#include "aos/events/logging/buffer_encoder_param_test.h"
 
 namespace aos::logger::testing {
 

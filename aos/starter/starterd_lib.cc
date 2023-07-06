@@ -1,12 +1,13 @@
-#include "starterd_lib.h"
+#include "aos/starter/starterd_lib.h"
 
 #include <algorithm>
 #include <utility>
 
 #include "absl/strings/str_format.h"
-#include "aos/json_to_flatbuffer.h"
 #include "glog/logging.h"
 #include "glog/stl_logging.h"
+
+#include "aos/json_to_flatbuffer.h"
 
 // FLAGS_shm_base is defined elsewhere, declare it here so it can be used
 // to override the shared memory folder for unit testing.

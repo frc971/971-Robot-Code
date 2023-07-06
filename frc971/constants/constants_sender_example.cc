@@ -1,12 +1,13 @@
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
-#include "constants_sender_lib.h"
+#include "frc971/constants/constants_sender_lib.h"
 #include "frc971/constants/testdata/constants_data_generated.h"
 #include "frc971/constants/testdata/constants_list_generated.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 DEFINE_string(config, "frc971/constants/testdata/aos_config.json",
               "Path to the config.");

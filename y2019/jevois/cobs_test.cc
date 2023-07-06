@@ -1,8 +1,9 @@
 #include "y2019/jevois/cobs.h"
 
 #include "absl/types/span.h"
-#include "aos/testing/test_logging.h"
 #include "gtest/gtest.h"
+
+#include "aos/testing/test_logging.h"
 
 namespace frc971 {
 namespace jevois {

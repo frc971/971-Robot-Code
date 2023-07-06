@@ -2,7 +2,6 @@
 #define FRC971_WPILIB_DRIVETRAIN_WRITER_H_
 
 #include "aos/commonmath.h"
-
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/wpilib/ahal/PWM.h"
 #include "frc971/wpilib/loop_output_handler.h"

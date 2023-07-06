@@ -6,13 +6,13 @@
 /*----------------------------------------------------------------------------*/
 
 #include "frc971/wpilib/ahal/AnalogInput.h"
-#include "hal/AnalogInput.h"
 
 #include <sstream>
 
+#include "frc971/wpilib/ahal/WPIErrors.h"
+#include "hal/AnalogInput.h"
 #include "hal/HAL.h"
 #include "hal/Ports.h"
-#include "frc971/wpilib/ahal/WPIErrors.h"
 
 using namespace frc;
 

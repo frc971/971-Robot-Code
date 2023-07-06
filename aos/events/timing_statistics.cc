@@ -1,7 +1,8 @@
 #include "aos/events/timing_statistics.h"
 
-#include "aos/events/event_loop_generated.h"
 #include "glog/logging.h"
+
+#include "aos/events/event_loop_generated.h"
 
 namespace aos {
 namespace internal {

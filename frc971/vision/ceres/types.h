@@ -52,7 +52,7 @@ struct Pose3d {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-inline std::istream& operator>>(std::istream& input, Pose3d& pose) {
+inline std::istream &operator>>(std::istream &input, Pose3d &pose) {
   input >> pose.p.x() >> pose.p.y() >> pose.p.z() >> pose.q.x() >> pose.q.y() >>
       pose.q.z() >> pose.q.w();
   // Normalize the quaternion to account for precision loss due to
@@ -61,9 +61,7 @@ inline std::istream& operator>>(std::istream& input, Pose3d& pose) {
   return input;
 }
 
-typedef std::map<int,
-                 Pose3d,
-                 std::less<int>,
+typedef std::map<int, Pose3d, std::less<int>,
                  Eigen::aligned_allocator<std::pair<const int, Pose3d>>>
     MapOfPoses;
 
@@ -88,8 +86,8 @@ struct Constraint3d {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-inline std::istream& operator>>(std::istream& input, Constraint3d& constraint) {
-  Pose3d& t_be = constraint.t_be;
+inline std::istream &operator>>(std::istream &input, Constraint3d &constraint) {
+  Pose3d &t_be = constraint.t_be;
   input >> constraint.id_begin >> constraint.id_end >> t_be;
 
   for (int i = 0; i < 6 && input.good(); ++i) {

@@ -7,9 +7,9 @@
 
 #include "frc971/wpilib/ahal/Encoder.h"
 
-#include "hal/HAL.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/WPIErrors.h"
+#include "hal/HAL.h"
 
 using namespace frc;
 

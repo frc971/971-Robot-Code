@@ -2,8 +2,9 @@
 
 #include <chrono>
 
-#include "aos/network/testing_time_converter.h"
 #include "gtest/gtest.h"
+
+#include "aos/network/testing_time_converter.h"
 
 namespace aos {
 

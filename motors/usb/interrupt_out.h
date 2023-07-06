@@ -1,11 +1,11 @@
 #ifndef MOTORS_USB_INTERRUPT_OUT_H_
 #define MOTORS_USB_INTERRUPT_OUT_H_
 
-#include "motors/usb/usb.h"
-#include "motors/util.h"
-
 #include <array>
 #include <string>
+
+#include "motors/usb/usb.h"
+#include "motors/util.h"
 
 namespace frc971 {
 namespace teensy {

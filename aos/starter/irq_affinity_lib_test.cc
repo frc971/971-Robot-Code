@@ -1,7 +1,7 @@
 #include "aos/starter/irq_affinity_lib.h"
 
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 namespace aos::testing {
 
@@ -270,9 +270,10 @@ TEST(InterruptsStatusTest, Desktop) {
   EXPECT_EQ(status.states()[0].interrupt_number, 8);
   EXPECT_EQ(status.states()[0].chip_name, "IR-IO-APIC");
   EXPECT_THAT(status.states()[0].count,
-              ::testing::ElementsAre(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+              ::testing::ElementsAre(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                     0, 0, 0, 0, 0, 0));
   EXPECT_EQ(status.states()[0].hwirq, "8-edge");
   EXPECT_THAT(status.states()[0].actions, ::testing::ElementsAre("rtc0"));
 }
 
-} // aos::testing
+}  // namespace aos::testing

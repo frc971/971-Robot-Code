@@ -1,9 +1,10 @@
+#include "gflags/gflags.h"
+
 #include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/events/timing_report_dump_lib.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
-#include "gflags/gflags.h"
 
 DEFINE_string(config, "aos_config.json", "The path to the config to use.");
 DEFINE_string(application, "",

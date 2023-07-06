@@ -9,9 +9,10 @@
 #include <cstring>
 #include <string_view>
 
+#include "glog/logging.h"
+
 #include "aos/network/sctp_lib.h"
 #include "aos/unique_malloc_ptr.h"
-#include "glog/logging.h"
 
 DEFINE_int32(sinit_max_init_timeout, 0,
              "Timeout in milliseconds for retrying the INIT packet when "

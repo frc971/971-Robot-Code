@@ -1,8 +1,9 @@
 #include "y2023/control_loops/superstructure/arm/trajectory.h"
 
+#include "gtest/gtest.h"
+
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/double_jointed_arm/ekf.h"
-#include "gtest/gtest.h"
 #include "y2023/control_loops/superstructure/arm/arm_constants.h"
 #include "y2023/control_loops/superstructure/roll/integral_hybrid_roll_plant.h"
 #include "y2023/control_loops/superstructure/roll/integral_roll_plant.h"

@@ -1,8 +1,8 @@
 #include "motors/seems_reasonable/spring.h"
 
-#include "frc971/zeroing/wrap.h"
-
 #include <cmath>
+
+#include "frc971/zeroing/wrap.h"
 
 namespace motors {
 namespace seems_reasonable {

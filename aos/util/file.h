@@ -12,9 +12,10 @@
 
 #include "absl/strings/numbers.h"
 #include "absl/types/span.h"
-#include "aos/scoped/scoped_fd.h"
 #include "flatbuffers/util.h"
 #include "glog/logging.h"
+
+#include "aos/scoped/scoped_fd.h"
 
 namespace aos {
 namespace util {

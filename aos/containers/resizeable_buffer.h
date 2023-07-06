@@ -18,8 +18,12 @@ class AllocatorResizeableBuffer {
  public:
   AllocatorResizeableBuffer() = default;
 
-  AllocatorResizeableBuffer(const AllocatorResizeableBuffer &other) { *this = other; }
-  AllocatorResizeableBuffer(AllocatorResizeableBuffer &&other) { *this = std::move(other); }
+  AllocatorResizeableBuffer(const AllocatorResizeableBuffer &other) {
+    *this = other;
+  }
+  AllocatorResizeableBuffer(AllocatorResizeableBuffer &&other) {
+    *this = std::move(other);
+  }
   AllocatorResizeableBuffer &operator=(const AllocatorResizeableBuffer &other) {
     resize(other.size());
     memcpy(storage_.get(), other.storage_.get(), size());

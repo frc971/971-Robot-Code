@@ -1,15 +1,16 @@
+#include "gflags/gflags.h"
+
 #include "aos/configuration.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_writer.h"
-#include "aos/util/simulation_logger.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/network/team_number.h"
+#include "aos/util/simulation_logger.h"
+#include "y2022/control_loops/drivetrain/drivetrain_base.h"
 #include "y2022/localizer/localizer.h"
 #include "y2022/localizer/localizer_schema.h"
-#include "gflags/gflags.h"
-#include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_string(config, "y2022/aos_config.json",
               "Name of the config file to replay using.");
@@ -39,10 +40,8 @@ int main(int argc, char **argv) {
   // open logfiles
   aos::logger::LogReader reader(logfiles, &config.message());
 
-  reader.RemapLoggedChannel("/localizer",
-                            "frc971.controls.LocalizerStatus");
-  reader.RemapLoggedChannel("/localizer",
-                            "frc971.controls.LocalizerOutput");
+  reader.RemapLoggedChannel("/localizer", "frc971.controls.LocalizerStatus");
+  reader.RemapLoggedChannel("/localizer", "frc971.controls.LocalizerOutput");
   reader.RemapLoggedChannel("/localizer",
                             "frc971.controls.LocalizerVisualization");
 

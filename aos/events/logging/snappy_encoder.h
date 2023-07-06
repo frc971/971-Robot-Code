@@ -4,10 +4,11 @@
 #include <string_view>
 
 #include "absl/types/span.h"
+#include "flatbuffers/flatbuffers.h"
+
 #include "aos/containers/resizeable_buffer.h"
 #include "aos/events/logging/buffer_encoder.h"
 #include "aos/events/logging/logger_generated.h"
-#include "flatbuffers/flatbuffers.h"
 #include "snappy-sinksource.h"
 #include "snappy.h"
 
@@ -16,7 +17,8 @@ namespace aos::logger {
 // Encodes buffers using snappy.
 class SnappyEncoder final : public DataEncoder {
  public:
-  explicit SnappyEncoder(size_t max_message_size, size_t chunk_size = 128 * 1024);
+  explicit SnappyEncoder(size_t max_message_size,
+                         size_t chunk_size = 128 * 1024);
 
   size_t Encode(Copier *copy, size_t start_byte) final;
 

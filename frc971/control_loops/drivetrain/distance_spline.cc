@@ -1,8 +1,9 @@
 #include "frc971/control_loops/drivetrain/distance_spline.h"
 
+#include "glog/logging.h"
+
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/drivetrain/spline.h"
-#include "glog/logging.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -56,8 +57,8 @@ namespace drivetrain {
     }
   }
 
-  const double dalpha =
-      static_cast<double>(splines().size()) / static_cast<double>(num_alpha - 1);
+  const double dalpha = static_cast<double>(splines().size()) /
+                        static_cast<double>(num_alpha - 1);
   double last_alpha = 0.0;
   for (size_t i = 1; i < num_alpha; ++i) {
     const double alpha = dalpha * i;

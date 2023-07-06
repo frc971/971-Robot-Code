@@ -5,6 +5,7 @@
 #include "absl/strings/escaping.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+
 #include "aos/scoped/scoped_fd.h"
 
 namespace aos {
@@ -165,7 +166,8 @@ void InterruptsStatus::Update(std::string_view contents) {
               } else {
                 // And then either "Level/Edge" and then the actions, or just
                 // the actions. Kernel has CONFIG_GENERIC_IRQ_SHOW_LEVEL
-                // enabled if the string starts with either..  Strip it until someone finds a use.
+                // enabled if the string starts with either..  Strip it until
+                // someone finds a use.
                 if (absl::StartsWith(trailing_element, "Level")) {
                   trailing_element =
                       absl::StripAsciiWhitespace(trailing_element.substr(5));

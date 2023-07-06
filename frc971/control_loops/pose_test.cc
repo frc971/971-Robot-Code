@@ -97,8 +97,7 @@ TEST(PoseTest, TransformationMatrixTest) {
   pose.set_theta(M_PI_2);
   TransformationMatrix expected;
   expected << 0, -1, 0, 1, 1, 0, 0, 2, 0, 0, 1, 3, 0, 0, 0, 1;
-  TransformationMatrix pose_transformation =
-      pose.AsTransformationMatrix();
+  TransformationMatrix pose_transformation = pose.AsTransformationMatrix();
   ASSERT_LT((expected - pose_transformation).norm(), 1e-15)
       << "expected:\n"
       << expected << "\nBut got:\n"

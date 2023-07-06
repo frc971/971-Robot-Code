@@ -3,12 +3,13 @@
 
 #include <iostream>
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/aos_cli_utils.h"
 #include "aos/configuration.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 
 DEFINE_double(rate, -1, "Rate at which to send the message (-1 to send once).");
 

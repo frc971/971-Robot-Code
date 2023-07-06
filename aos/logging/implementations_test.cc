@@ -4,10 +4,11 @@
 #include <cinttypes>
 #include <string>
 
-#include "aos/logging/printf_formats.h"
-#include "aos/time/time.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
+
+#include "aos/logging/printf_formats.h"
+#include "aos/time/time.h"
 
 using ::testing::AssertionFailure;
 using ::testing::AssertionResult;

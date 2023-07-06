@@ -5,10 +5,11 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/events/event_loop.h"
 #include "aos/network/remote_message_generated.h"
-#include "glog/logging.h"
 
 namespace aos {
 namespace message_bridge {

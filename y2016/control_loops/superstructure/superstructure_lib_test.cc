@@ -3,12 +3,13 @@
 #include <chrono>
 #include <memory>
 
+#include "gtest/gtest.h"
+
 #include "aos/commonmath.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
-#include "gtest/gtest.h"
 #include "y2016/constants.h"
 #include "y2016/control_loops/superstructure/arm_plant.h"
 #include "y2016/control_loops/superstructure/intake_plant.h"
@@ -418,8 +419,7 @@ TEST_F(SuperstructureTest, DoesNothing) {
     goal_builder.add_max_angular_acceleration_intake(20);
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(5));
@@ -442,8 +442,7 @@ TEST_F(SuperstructureTest, ReachesGoal) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Give it a lot of time to get there.
@@ -469,8 +468,7 @@ TEST_F(SuperstructureTest, RespectsRange) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
 
@@ -497,8 +495,7 @@ TEST_F(SuperstructureTest, RespectsRange) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -526,8 +523,7 @@ TEST_F(SuperstructureTest, RespectsRange) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -556,8 +552,7 @@ TEST_F(SuperstructureTest, ZeroTest) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(10));
@@ -592,8 +587,7 @@ TEST_F(SuperstructureTest, LowerHardstopStartup) {
     goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.upper);
     goal_builder.add_angle_wrist(constants::Values::kWristRange.upper +
                                  constants::Values::kShoulderRange.upper);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   // We have to wait for it to put the elevator in a safe position as well.
   RunFor(chrono::seconds(15));
@@ -616,8 +610,7 @@ TEST_F(SuperstructureTest, UpperHardstopStartup) {
     goal_builder.add_angle_intake(constants::Values::kIntakeRange.lower);
     goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.lower);
     goal_builder.add_angle_wrist(0.0);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   // We have to wait for it to put the superstructure in a safe position as
   // well.
@@ -642,8 +635,7 @@ TEST_F(SuperstructureTest, ResetTest) {
     goal_builder.add_angle_intake(constants::Values::kIntakeRange.lower + 0.3);
     goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.upper);
     goal_builder.add_angle_wrist(0.0);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(15));
 
@@ -669,8 +661,7 @@ TEST_F(SuperstructureTest, DisabledGoalTest) {
     goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.lower +
                                     0.03);
     goal_builder.add_angle_wrist(constants::Values::kWristRange.lower + 0.03);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::milliseconds(100));
@@ -708,8 +699,7 @@ TEST_F(SuperstructureTest, DisabledWhileZeroingHigh) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Expected states to cycle through and check in order.
@@ -781,8 +771,7 @@ TEST_F(SuperstructureTest, DisabledWhileZeroingLow) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Expected states to cycle through and check in order.
@@ -859,8 +848,7 @@ TEST_F(SuperstructureTest, IntegratorTest) {
     goal_builder.add_angle_intake(0.0);
     goal_builder.add_angle_shoulder(0.0);
     goal_builder.add_angle_wrist(0.0);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(8));
@@ -884,8 +872,7 @@ TEST_F(SuperstructureTest, DisabledZeroTest) {
     goal_builder.add_angle_shoulder(
         constants::Values::kShoulderEncoderIndexDifference * 10);
     goal_builder.add_angle_wrist(0.0);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Run disabled for 2 seconds
@@ -940,8 +927,7 @@ TEST_F(SuperstructureTest, ShoulderAccelerationLimitTest) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(6));
@@ -961,8 +947,7 @@ TEST_F(SuperstructureTest, ShoulderAccelerationLimitTest) {
     goal_builder.add_max_angular_acceleration_shoulder(1);
     goal_builder.add_max_angular_velocity_wrist(1);
     goal_builder.add_max_angular_acceleration_wrist(1);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // TODO(austin): The profile isn't feasible, so when we try to track it, we
@@ -991,8 +976,7 @@ TEST_F(SuperstructureTest, IntakeAccelerationLimitTest) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(6));
@@ -1012,8 +996,7 @@ TEST_F(SuperstructureTest, IntakeAccelerationLimitTest) {
     goal_builder.add_max_angular_acceleration_shoulder(1);
     goal_builder.add_max_angular_velocity_wrist(1);
     goal_builder.add_max_angular_acceleration_wrist(1);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   superstructure_plant_.set_peak_intake_acceleration(1.20);
@@ -1040,8 +1023,7 @@ TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(6));
@@ -1062,8 +1044,7 @@ TEST_F(SuperstructureTest, WristAccelerationLimitTest) {
     goal_builder.add_max_angular_acceleration_shoulder(1);
     goal_builder.add_max_angular_velocity_wrist(1);
     goal_builder.add_max_angular_acceleration_wrist(1);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   superstructure_plant_.set_peak_intake_acceleration(1.05);
@@ -1091,8 +1072,7 @@ TEST_F(SuperstructureTest, SaturatedIntakeProfileTest) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(6));
@@ -1113,8 +1093,7 @@ TEST_F(SuperstructureTest, SaturatedIntakeProfileTest) {
     goal_builder.add_max_angular_acceleration_shoulder(100);
     goal_builder.add_max_angular_velocity_wrist(1);
     goal_builder.add_max_angular_acceleration_wrist(100);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   superstructure_plant_.set_peak_intake_velocity(4.65);
@@ -1141,8 +1120,7 @@ TEST_F(SuperstructureTest, SaturatedShoulderProfileTest) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(6));
@@ -1162,8 +1140,7 @@ TEST_F(SuperstructureTest, SaturatedShoulderProfileTest) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(1);
     goal_builder.add_max_angular_acceleration_wrist(100);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   superstructure_plant_.set_peak_intake_velocity(1.0);
@@ -1191,8 +1168,7 @@ TEST_F(SuperstructureTest, SaturatedWristProfileTest) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(6));
@@ -1213,8 +1189,7 @@ TEST_F(SuperstructureTest, SaturatedWristProfileTest) {
     goal_builder.add_max_angular_acceleration_shoulder(1.0);
     goal_builder.add_max_angular_velocity_wrist(10.0);
     goal_builder.add_max_angular_acceleration_wrist(160.0);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   superstructure_plant_.set_peak_intake_velocity(1.0);
@@ -1242,8 +1217,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
     goal_builder.add_angle_shoulder(
         constants::Values::kShoulderRange.lower);  // Down
     goal_builder.add_angle_wrist(0.0);             // Stowed
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(15));
@@ -1255,8 +1229,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
         constants::Values::kIntakeRange.upper);   // stowed
     goal_builder.add_angle_shoulder(M_PI / 4.0);  // in the collision area
     goal_builder.add_angle_wrist(M_PI / 2.0);     // down
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(5));
@@ -1288,8 +1261,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenMovingArmFromStart) {
         constants::Values::kIntakeRange.upper);   // stowed
     goal_builder.add_angle_shoulder(M_PI / 2.0);  // in the collision area
     goal_builder.add_angle_wrist(M_PI);           // forward
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(5));
@@ -1310,8 +1282,7 @@ TEST_F(SuperstructureTest, AvoidCollisionWhenStowingArm) {
     goal_builder.add_angle_intake(0.0);
     goal_builder.add_angle_shoulder(0.0);
     goal_builder.add_angle_wrist(M_PI);  // intentionally asking for forward
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(15));
@@ -1338,8 +1309,7 @@ TEST_F(SuperstructureTest, DetectAndFixCollisionBetweenArmAndIntake) {
     goal_builder.add_angle_intake(0.0);
     goal_builder.add_angle_shoulder(M_PI * 0.5);
     goal_builder.add_angle_wrist(0.0);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(6));
@@ -1380,8 +1350,7 @@ TEST_F(SuperstructureTest, DetectAndFixShoulderInDrivebase) {
     goal_builder.add_angle_intake(0.0);
     goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.lower);
     goal_builder.add_angle_wrist(0.0);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(6));
@@ -1425,8 +1394,7 @@ TEST_F(SuperstructureTest, LandingDownVoltageLimit) {
     goal_builder.add_angle_intake(0.0);
     goal_builder.add_angle_shoulder(constants::Values::kShoulderRange.lower);
     goal_builder.add_angle_wrist(0.0);  // intentionally asking for forward
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   RunFor(chrono::seconds(6));
@@ -1455,8 +1423,7 @@ TEST_F(SuperstructureTest, LandSlowly) {
     goal_builder.add_angle_intake(0.0);
     goal_builder.add_angle_shoulder(M_PI * 0.25);
     goal_builder.add_angle_wrist(0.0);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(8));
 
@@ -1473,8 +1440,7 @@ TEST_F(SuperstructureTest, LandSlowly) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Wait until we hit the transition point.
@@ -1498,8 +1464,7 @@ TEST_F(SuperstructureTest, TakeOffQuickly) {
     goal_builder.add_angle_intake(0.0);
     goal_builder.add_angle_shoulder(0.0);
     goal_builder.add_angle_wrist(0.0);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(8));
 
@@ -1516,8 +1481,7 @@ TEST_F(SuperstructureTest, TakeOffQuickly) {
     goal_builder.add_max_angular_acceleration_shoulder(20);
     goal_builder.add_max_angular_velocity_wrist(20);
     goal_builder.add_max_angular_acceleration_wrist(20);
-    ASSERT_EQ(builder.Send(goal_builder.Finish()),
-              aos::RawSender::Error::kOk);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   // Wait until we hit the transition point.

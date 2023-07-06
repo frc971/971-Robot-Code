@@ -1,7 +1,8 @@
 #include <cmath>
 
-#include "aos/util/math.h"
 #include "ceres/ceres.h"
+
+#include "aos/util/math.h"
 #include "y2019/vision/target_finder.h"
 
 using ceres::CENTRAL;

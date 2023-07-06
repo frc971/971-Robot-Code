@@ -13,8 +13,7 @@ struct ShifterHallEffect {
   double clear_high, clear_low;
 };
 
-
-} // constants
-} // bot3
+}  // namespace constants
+}  // namespace bot3
 
 #endif

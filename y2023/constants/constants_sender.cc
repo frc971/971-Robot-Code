@@ -1,10 +1,11 @@
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 #include "frc971/constants/constants_sender_lib.h"
-#include "gflags/gflags.h"
-#include "glog/logging.h"
 #include "y2023/constants/constants_generated.h"
 #include "y2023/constants/constants_list_generated.h"
 

@@ -1,4 +1,5 @@
 #include "aos/util/simulation_logger.h"
+
 #include "aos/events/logging/logfile_utils.h"
 
 namespace aos::util {
@@ -30,7 +31,8 @@ std::vector<std::unique_ptr<LoggerState>> MakeLoggersForNodes(
 std::vector<std::unique_ptr<LoggerState>> MakeLoggersForAllNodes(
     aos::SimulatedEventLoopFactory *factory, std::string_view output_folder) {
   std::vector<std::unique_ptr<LoggerState>> loggers;
-  for (const aos::Node *node : configuration::GetNodes(factory->configuration())) {
+  for (const aos::Node *node :
+       configuration::GetNodes(factory->configuration())) {
     loggers.emplace_back(
         std::make_unique<LoggerState>(factory, node, output_folder));
   }

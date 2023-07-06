@@ -72,14 +72,16 @@ class FastStringBuilder {
 template <typename T, typename>
 void FastStringBuilder::AppendInt(T val, bool use_hex) {
   if (use_hex) {
-    // This is not fast like the decimal path, but hex should be used in limited cases.
+    // This is not fast like the decimal path, but hex should be used in limited
+    // cases.
     std::stringstream ss;
     ss << std::hex << val;
     str_ += ss.str();
   } else {
     std::size_t index = str_.size();
     Resize(absl::numbers_internal::kFastToBufferSize);
-    char *end = absl::numbers_internal::FastIntToBuffer(val, str_.data() + index);
+    char *end =
+        absl::numbers_internal::FastIntToBuffer(val, str_.data() + index);
     str_.resize(end - str_.data());
   }
 }

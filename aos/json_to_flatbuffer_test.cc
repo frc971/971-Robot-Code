@@ -1,10 +1,11 @@
 #include "aos/json_to_flatbuffer.h"
 
+#include "flatbuffers/minireflect.h"
+#include "gtest/gtest.h"
+
 #include "aos/flatbuffer_merge.h"
 #include "aos/json_to_flatbuffer_generated.h"
 #include "aos/testing/path.h"
-#include "flatbuffers/minireflect.h"
-#include "gtest/gtest.h"
 
 namespace aos {
 namespace testing {

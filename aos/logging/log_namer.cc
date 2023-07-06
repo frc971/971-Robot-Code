@@ -14,8 +14,9 @@
 #include <ctime>
 #include <string>
 
-#include "aos/configuration.h"
 #include "glog/logging.h"
+
+#include "aos/configuration.h"
 
 DEFINE_string(logging_folder,
 #ifdef AOS_ARCHITECTURE_arm_frc

@@ -1,6 +1,12 @@
+#include "y2017/control_loops/superstructure/column/column_zeroing.h"
+
 #include <unistd.h>
+
 #include <memory>
 #include <random>
+
+#include "glog/logging.h"
+#include "gtest/gtest.h"
 
 #include "aos/die.h"
 #include "aos/flatbuffers.h"
@@ -8,10 +14,7 @@
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "frc971/zeroing/zeroing.h"
-#include "glog/logging.h"
-#include "gtest/gtest.h"
 #include "y2017/constants.h"
-#include "y2017/control_loops/superstructure/column/column_zeroing.h"
 
 namespace y2017 {
 namespace control_loops {
@@ -66,8 +69,8 @@ class ZeroingTest : public ::testing::Test {
     column_position_builder.add_turret(turret_offset);
     fbb.Finish(column_position_builder.Finish());
 
-
-    aos::FlatbufferDetachedBuffer<ColumnPosition> column_position(fbb.Release());
+    aos::FlatbufferDetachedBuffer<ColumnPosition> column_position(
+        fbb.Release());
     LOG(INFO) << "Position: " << aos::FlatbufferToJson(column_position);
 
     column_zeroing_estimator_.UpdateEstimate(column_position.message());

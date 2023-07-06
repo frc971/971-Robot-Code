@@ -11,6 +11,7 @@
 #include <thread>
 
 #include "ctre/phoenix/CANifier.h"
+
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Compressor.h"
 #include "frc971/wpilib/ahal/Counter.h"

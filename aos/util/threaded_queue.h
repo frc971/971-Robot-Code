@@ -38,9 +38,8 @@ class ThreadedQueue {
     // get called after setting done to true.
     bool done = false;
   };
-  ThreadedQueue(
-      std::function<PushResult(SharedState)> push_request_handler,
-      SharedState initial_state);
+  ThreadedQueue(std::function<PushResult(SharedState)> push_request_handler,
+                SharedState initial_state);
   ~ThreadedQueue();
   // Sets state. Triggers a new call to push_request_handler.
   void SetState(const SharedState &state);

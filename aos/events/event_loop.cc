@@ -1,10 +1,11 @@
 #include "aos/events/event_loop.h"
 
+#include "glog/logging.h"
+
 #include "aos/configuration.h"
 #include "aos/configuration_generated.h"
 #include "aos/logging/implementations.h"
 #include "aos/realtime.h"
-#include "glog/logging.h"
 
 DEFINE_bool(timing_reports, true, "Publish timing reports.");
 DEFINE_int32(timing_report_ms, 1000,

@@ -1,9 +1,10 @@
 #include "y2023/localizer/localizer.h"
 
+#include "gflags/gflags.h"
+
 #include "aos/containers/sized_array.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/control_loops/pose.h"
-#include "gflags/gflags.h"
 #include "y2023/constants.h"
 #include "y2023/localizer/utils.h"
 

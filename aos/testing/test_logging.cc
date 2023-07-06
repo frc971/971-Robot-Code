@@ -4,10 +4,11 @@
 #include <vector>
 
 #include "absl/base/call_once.h"
+#include "gtest/gtest.h"
+
 #include "aos/logging/implementations.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/thread_local.h"
-#include "gtest/gtest.h"
 
 using ::aos::logging::LogMessage;
 

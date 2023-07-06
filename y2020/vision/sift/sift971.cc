@@ -109,10 +109,11 @@
 #include <cstdarg>
 #include <iostream>
 #include <mutex>
+
+#include "glog/logging.h"
 #include <opencv2/core/hal/hal.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "glog/logging.h"
 #include "y2020/vision/sift/fast_gaussian.h"
 
 using namespace cv;

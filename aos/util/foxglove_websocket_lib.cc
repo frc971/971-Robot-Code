@@ -1,9 +1,10 @@
 #include "aos/util/foxglove_websocket_lib.h"
 
 #include "absl/strings/escaping.h"
+#include "gflags/gflags.h"
+
 #include "aos/flatbuffer_merge.h"
 #include "aos/util/mcap_logger.h"
-#include "gflags/gflags.h"
 
 DEFINE_uint32(sorting_buffer_ms, 100,
               "Amount of time to buffer messages to sort them before sending "

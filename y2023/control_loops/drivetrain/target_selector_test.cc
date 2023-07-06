@@ -1,7 +1,8 @@
 #include "y2023/control_loops/drivetrain/target_selector.h"
 
-#include "frc971/input/joystick_state_generated.h"
 #include "gtest/gtest.h"
+
+#include "frc971/input/joystick_state_generated.h"
 #include "y2023/constants/simulated_constants_sender.h"
 
 using Side = frc971::control_loops::drivetrain::RobotSide;

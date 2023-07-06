@@ -1,13 +1,13 @@
-#include "frc971/control_loops/drivetrain/trajectory.h"
-
 #include <chrono>
+
+#include "gflags/gflags.h"
+#include "third_party/matplotlib-cpp/matplotlibcpp.h"
 
 #include "aos/logging/implementations.h"
 #include "aos/network/team_number.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/dlqr.h"
-#include "gflags/gflags.h"
-#include "third_party/matplotlib-cpp/matplotlibcpp.h"
+#include "frc971/control_loops/drivetrain/trajectory.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 
 // Notes:

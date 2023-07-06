@@ -6,8 +6,7 @@
 // This whole file is deprecated. Use //aos/time instead.
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 // Returns the current number of nanoseconds. This will wrap naturally.

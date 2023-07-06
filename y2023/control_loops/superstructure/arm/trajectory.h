@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Eigen/Dense"
+
 #include "frc971/control_loops/binomial.h"
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/fixed_quadrature.h"

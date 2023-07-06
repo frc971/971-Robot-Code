@@ -10,10 +10,10 @@ namespace {
 
 using reflection::BaseType;
 
-void IntToString(int64_t val, reflection::BaseType type,
-                 FastStringBuilder *out, bool use_hex) {
-  // For 1-byte types in hex mode, we need to cast to 2 bytes to get the desired output and
-  // not unprintable characters.
+void IntToString(int64_t val, reflection::BaseType type, FastStringBuilder *out,
+                 bool use_hex) {
+  // For 1-byte types in hex mode, we need to cast to 2 bytes to get the desired
+  // output and not unprintable characters.
   if (use_hex) {
     if (BaseType::UByte == type) {
       out->AppendInt(static_cast<uint16_t>(val), true);
@@ -163,7 +163,8 @@ void FieldToString(
     case BaseType::UInt:
     case BaseType::Long:
     case BaseType::ULong:
-      IntOrEnumToString(GetAnyFieldI(*table, *field), type, enums, out, json_options.use_hex);
+      IntOrEnumToString(GetAnyFieldI(*table, *field), type, enums, out,
+                        json_options.use_hex);
       break;
     case BaseType::Float:
     case BaseType::Double:

@@ -1,5 +1,6 @@
-#include "y2019/vision/constants.h"
 #include <iostream>
+
+#include "y2019/vision/constants.h"
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {

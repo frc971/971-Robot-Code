@@ -6,11 +6,12 @@
 #include <string>
 #include <thread>
 
+#include "gtest/gtest.h"
+
 #include "aos/events/shm_event_loop.h"
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/path.h"
 #include "aos/testing/tmpdir.h"
-#include "gtest/gtest.h"
 
 namespace aos::util::testing {
 
