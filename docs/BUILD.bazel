@@ -40,6 +40,7 @@ PAGES = dict([
         symbols = [
             "cargo_bootstrap_repository",
             "cargo_build_script",
+            "cargo_dep_env",
             "cargo_env",
         ],
     ),
@@ -48,6 +49,7 @@ PAGES = dict([
         symbols = [
             "rust_binary",
             "rust_library",
+            "rust_library_group",
             "rust_static_library",
             "rust_shared_library",
             "rust_proc_macro",
@@ -80,10 +82,10 @@ PAGES = dict([
         header_template = ":rust_bindgen.vm",
         symbols = [
             "rust_bindgen_library",
+            "rust_bindgen",
+            "rust_bindgen_toolchain",
             "rust_bindgen_dependencies",
             "rust_bindgen_register_toolchains",
-            "rust_bindgen_toolchain",
-            "rust_bindgen",
         ],
     ),
     page(
@@ -107,6 +109,7 @@ PAGES = dict([
         symbols = [
             "rustfmt_aspect",
             "rustfmt_test",
+            "rustfmt_toolchain",
         ],
     ),
     page(
@@ -115,15 +118,17 @@ PAGES = dict([
         symbols = [
             "rust_grpc_library",
             "rust_proto_library",
-            "rust_proto_repositories",
+            "rust_proto_dependencies",
             "rust_proto_transitive_repositories",
             "rust_proto_toolchain",
+            "rust_prost_library",
         ],
     ),
     page(
         name = "rust_repositories",
         symbols = [
             "rules_rust_dependencies",
+            "rust_analyzer_toolchain_repository",
             "rust_register_toolchains",
             "rust_repositories",
             "rust_repository_set",

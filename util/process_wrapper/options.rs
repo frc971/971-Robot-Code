@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::env;
 use std::fmt;
+use std::fs::File;
+use std::io::{self, Write};
 use std::process::exit;
 
 use crate::flags::{FlagParseError, Flags, ParseOutcome};
@@ -16,8 +18,8 @@ pub(crate) enum OptionError {
 impl fmt::Display for OptionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::FlagError(e) => write!(f, "error parsing flags: {}", e),
-            Self::Generic(s) => write!(f, "{}", s),
+            Self::FlagError(e) => write!(f, "error parsing flags: {e}"),
+            Self::Generic(s) => write!(f, "{s}"),
         }
     }
 }
@@ -110,13 +112,13 @@ pub(crate) fn options() -> Result<Options, OptionError> {
         .map_err(OptionError::FlagError)?
     {
         ParseOutcome::Help(help) => {
-            eprintln!("{}", help);
+            eprintln!("{help}");
             exit(0);
         }
         ParseOutcome::Parsed(p) => p,
     };
     let current_dir = std::env::current_dir()
-        .map_err(|e| OptionError::Generic(format!("failed to get current directory: {}", e)))?
+        .map_err(|e| OptionError::Generic(format!("failed to get current directory: {e}")))?
         .to_str()
         .ok_or_else(|| OptionError::Generic("current directory not utf-8".to_owned()))?
         .to_owned();
@@ -125,7 +127,7 @@ pub(crate) fn options() -> Result<Options, OptionError> {
         .into_iter()
         .map(|arg| {
             let (key, val) = arg.split_once('=').ok_or_else(|| {
-                OptionError::Generic(format!("empty key for substitution '{}'", arg))
+                OptionError::Generic(format!("empty key for substitution '{arg}'"))
             })?;
             let v = if val == "${pwd}" {
                 current_dir.as_str()
@@ -155,8 +157,7 @@ pub(crate) fn options() -> Result<Options, OptionError> {
             let copy_dest = &co[1];
             if copy_source == copy_dest {
                 return Err(OptionError::Generic(format!(
-                    "\"--copy-output\" source ({}) and dest ({}) need to be different.",
-                    copy_source, copy_dest
+                    "\"--copy-output\" source ({copy_source}) and dest ({copy_dest}) need to be different.",
                 )));
             }
             Ok((copy_source.to_owned(), copy_dest.to_owned()))
@@ -169,8 +170,7 @@ pub(crate) fn options() -> Result<Options, OptionError> {
             "json" => Ok(rustc::ErrorFormat::Json),
             "rendered" => Ok(rustc::ErrorFormat::Rendered),
             _ => Err(OptionError::Generic(format!(
-                "invalid --rustc-output-format '{}'",
-                v
+                "invalid --rustc-output-format '{v}'",
             ))),
         })
         .transpose()?;
@@ -185,7 +185,7 @@ pub(crate) fn options() -> Result<Options, OptionError> {
     );
     // Append all the arguments fetched from files to those provided via command line.
     child_args.append(&mut file_arguments);
-    let child_args = prepare_args(child_args, &subst_mappings);
+    let child_args = prepare_args(child_args, &subst_mappings)?;
     // Split the executable path from the rest of the arguments.
     let (exec_path, args) = child_args.split_first().ok_or_else(|| {
         OptionError::Generic(
@@ -234,15 +234,66 @@ fn env_from_files(paths: Vec<String>) -> Result<HashMap<String, String>, OptionE
     Ok(env_vars)
 }
 
-fn prepare_args(mut args: Vec<String>, subst_mappings: &[(String, String)]) -> Vec<String> {
+fn prepare_arg(mut arg: String, subst_mappings: &[(String, String)]) -> String {
     for (f, replace_with) in subst_mappings {
-        for arg in args.iter_mut() {
-            let from = format!("${{{}}}", f);
-            let new = arg.replace(from.as_str(), replace_with);
-            *arg = new;
-        }
+        let from = format!("${{{f}}}");
+        arg = arg.replace(&from, replace_with);
     }
-    args
+    arg
+}
+
+/// Apply substitutions to the given param file. Returns the new filename.
+fn prepare_param_file(
+    filename: &str,
+    subst_mappings: &[(String, String)],
+) -> Result<String, OptionError> {
+    let expanded_file = format!("{filename}.expanded");
+    let format_err = |err: io::Error| {
+        OptionError::Generic(format!(
+            "{} writing path: {:?}, current directory: {:?}",
+            err,
+            expanded_file,
+            std::env::current_dir()
+        ))
+    };
+    let mut out = io::BufWriter::new(File::create(&expanded_file).map_err(format_err)?);
+    fn process_file(
+        filename: &str,
+        out: &mut io::BufWriter<File>,
+        subst_mappings: &[(String, String)],
+        format_err: &impl Fn(io::Error) -> OptionError,
+    ) -> Result<(), OptionError> {
+        for arg in read_file_to_array(filename).map_err(OptionError::Generic)? {
+            let arg = prepare_arg(arg, subst_mappings);
+            if let Some(arg_file) = arg.strip_prefix('@') {
+                process_file(arg_file, out, subst_mappings, format_err)?;
+            } else {
+                writeln!(out, "{arg}").map_err(format_err)?;
+            }
+        }
+        Ok(())
+    }
+    process_file(filename, &mut out, subst_mappings, &format_err)?;
+    Ok(expanded_file)
+}
+
+/// Apply substitutions to the provided arguments, recursing into param files.
+fn prepare_args(
+    args: Vec<String>,
+    subst_mappings: &[(String, String)],
+) -> Result<Vec<String>, OptionError> {
+    args.into_iter()
+        .map(|arg| {
+            let arg = prepare_arg(arg, subst_mappings);
+            if let Some(param_file) = arg.strip_prefix('@') {
+                // Note that substitutions may also apply to the param file path!
+                prepare_param_file(param_file, subst_mappings)
+                    .map(|filename| format!("@{filename}"))
+            } else {
+                Ok(arg)
+            }
+        })
+        .collect()
 }
 
 fn environment_block(
@@ -260,14 +311,14 @@ fn environment_block(
     environment_variables.extend(environment_file_block.into_iter());
     for (f, replace_with) in &[stable_stamp_mappings, volatile_stamp_mappings].concat() {
         for value in environment_variables.values_mut() {
-            let from = format!("{{{}}}", f);
+            let from = format!("{{{f}}}");
             let new = value.replace(from.as_str(), replace_with);
             *value = new;
         }
     }
     for (f, replace_with) in subst_mappings {
         for value in environment_variables.values_mut() {
-            let from = format!("${{{}}}", f);
+            let from = format!("${{{f}}}");
             let new = value.replace(from.as_str(), replace_with);
             *value = new;
         }

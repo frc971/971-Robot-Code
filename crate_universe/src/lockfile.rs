@@ -1,6 +1,6 @@
 //! Utility module for interracting with different kinds of lock files
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::ffi::OsStr;
 use std::fs;
@@ -14,13 +14,14 @@ use sha2::{Digest as Sha2Digest, Sha256};
 
 use crate::config::Config;
 use crate::context::Context;
+use crate::metadata::Cargo;
 use crate::splicing::{SplicingManifest, SplicingMetadata};
 
 pub fn lock_context(
     mut context: Context,
     config: &Config,
     splicing_manifest: &SplicingManifest,
-    cargo_bin: &Path,
+    cargo_bin: &Cargo,
     rustc_bin: &Path,
 ) -> Result<Context> {
     // Ensure there is no existing checksum which could impact the lockfile results
@@ -35,12 +36,12 @@ pub fn lock_context(
     })
 }
 
-/// Write a [crate::planning::PlannedContext] to disk
+/// Write a [crate::context::Context] to disk
 pub fn write_lockfile(lockfile: Context, path: &Path, dry_run: bool) -> Result<()> {
     let content = serde_json::to_string_pretty(&lockfile)?;
 
     if dry_run {
-        println!("{:#?}", content);
+        println!("{content:#?}");
     } else {
         // Ensure the parent directory exists
         if let Some(parent) = path.parent() {
@@ -61,11 +62,11 @@ impl Digest {
         context: &Context,
         config: &Config,
         splicing_manifest: &SplicingManifest,
-        cargo_bin: &Path,
+        cargo_bin: &Cargo,
         rustc_bin: &Path,
     ) -> Result<Self> {
         let splicing_metadata = SplicingMetadata::try_from((*splicing_manifest).clone())?;
-        let cargo_version = Self::bin_version(cargo_bin)?;
+        let cargo_version = cargo_bin.full_version()?;
         let rustc_version = Self::bin_version(rustc_bin)?;
         let cargo_bazel_version = env!("CARGO_PKG_VERSION");
 
@@ -129,7 +130,7 @@ impl Digest {
         Self(hasher.finalize().encode_hex::<String>())
     }
 
-    fn bin_version(binary: &Path) -> Result<String> {
+    pub fn bin_version(binary: &Path) -> Result<String> {
         let safe_vars = [OsStr::new("HOMEDRIVE"), OsStr::new("PATHEXT")];
         let env = std::env::vars_os().filter(|(var, _)| safe_vars.contains(&var.as_os_str()));
 
@@ -137,7 +138,8 @@ impl Digest {
             .arg("--version")
             .env_clear()
             .envs(env)
-            .output()?;
+            .output()
+            .with_context(|| format!("Failed to run {} to get its version", binary.display()))?;
 
         if !output.status.success() {
             bail!("Failed to query cargo version")
@@ -152,7 +154,7 @@ impl Digest {
         // computed consistently. If a new binary is released then this
         // condition should be removed
         // https://github.com/rust-lang/cargo/issues/10547
-        let corrections = HashMap::from([
+        let corrections = BTreeMap::from([
             (
                 "cargo 1.60.0 (d1fd9fe 2022-03-01)",
                 "cargo 1.60.0 (d1fd9fe2c 2022-03-01)",
@@ -209,7 +211,7 @@ mod test {
 
         assert_eq!(
             digest,
-            Digest("9711073103bd532b7d9c2e32e805280d29fc8591c3e76f9fe489fc372e2866db".to_owned())
+            Digest("fcca6635448d70091bffb6409f5edb153a46fcf7e889e39a33a9b9ff6e345ca0".to_owned())
         );
     }
 
@@ -217,6 +219,7 @@ mod test {
     fn digest_with_config() {
         let context = Context::default();
         let config = Config {
+            generate_binaries: false,
             generate_build_scripts: false,
             annotations: BTreeMap::from([(
                 CrateId::new("rustonomicon".to_owned(), "1.0.0".to_owned()),
@@ -229,6 +232,7 @@ mod test {
             supported_platform_triples: BTreeSet::from([
                 "aarch64-apple-darwin".to_owned(),
                 "aarch64-unknown-linux-gnu".to_owned(),
+                "aarch64-pc-windows-msvc".to_owned(),
                 "wasm32-unknown-unknown".to_owned(),
                 "wasm32-wasi".to_owned(),
                 "x86_64-apple-darwin".to_owned(),
@@ -252,7 +256,7 @@ mod test {
 
         assert_eq!(
             digest,
-            Digest("756a613410573552bb8a85d6fcafd24a9df3000b8d943bf74c38bda9c306ef0e".to_owned())
+            Digest("c90e7e5a98e49884c9962f99aea5cf20d5a32df243dbb549001c50badf0a02d3".to_owned())
         );
     }
 
@@ -283,7 +287,7 @@ mod test {
 
         assert_eq!(
             digest,
-            Digest("851b789765d8ee248fd3d55840ffd702ba2f8b0ca6aed2faa45ea63d1b011a99".to_owned())
+            Digest("e199dd859bd5b75d6b152f364f8cc6ad6c3a2a68ae777dfb8b250c2d90e35f28".to_owned())
         );
     }
 
@@ -332,7 +336,7 @@ mod test {
 
         assert_eq!(
             digest,
-            Digest("a9f7ea66f1b04331f8e09c64cd0b972e4c2a136907d7ef90e81ae2654e3c002c".to_owned())
+            Digest("0222be160f1031346cc209a8732c678bf32acb08f891fdfa0e9965d0ad22a33a".to_owned())
         );
     }
 }

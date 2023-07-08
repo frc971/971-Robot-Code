@@ -20,16 +20,17 @@ impl FromStr for Label {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let re = Regex::new(r"^(@[\w\d\-_\.]*)?/{0,2}([\w\d\-_\./]+)?:?([\+\w\d\-_\./]+)$")?;
+        let re = Regex::new(r"^(@@?[\w\d\-_\.]*)?/{0,2}([\w\d\-_\./+]+)?(:([\+\w\d\-_\./]+))?$")?;
         let cap = re
             .captures(s)
-            .with_context(|| format!("Failed to parse label from string: {}", s))?;
+            .with_context(|| format!("Failed to parse label from string: {s}"))?;
 
         let repository = cap
             .get(1)
             .map(|m| m.as_str().trim_start_matches('@').to_owned());
+
         let package = cap.get(2).map(|m| m.as_str().to_owned());
-        let mut target = cap.get(3).map(|m| m.as_str().to_owned());
+        let mut target = cap.get(4).map(|m| m.as_str().to_owned());
 
         if target.is_none() {
             if let Some(pkg) = &package {
@@ -56,14 +57,14 @@ impl Display for Label {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Add the repository
         if let Some(repo) = &self.repository {
-            write!(f, "@{}", repo)?;
+            write!(f, "@{repo}")?;
         }
 
         write!(f, "//")?;
 
         // Add the package
         if let Some(pkg) = &self.package {
-            write!(f, "{}", pkg)?;
+            write!(f, "{pkg}")?;
         }
 
         write!(f, ":{}", self.target)?;
@@ -192,6 +193,15 @@ mod test {
     use tempfile::tempdir;
 
     #[test]
+    fn full_label_bzlmod() {
+        let label = Label::from_str("@@repo//package/sub_package:target").unwrap();
+        assert_eq!(label.to_string(), "@repo//package/sub_package:target");
+        assert_eq!(label.repository.unwrap(), "repo");
+        assert_eq!(label.package.unwrap(), "package/sub_package");
+        assert_eq!(label.target, "target");
+    }
+
+    #[test]
     fn full_label() {
         let label = Label::from_str("@repo//package/sub_package:target").unwrap();
         assert_eq!(label.to_string(), "@repo//package/sub_package:target");
@@ -258,13 +268,25 @@ mod test {
     }
 
     #[test]
+    fn label_contains_plus() {
+        let label = Label::from_str("@repo//vendor/wasi-0.11.0+wasi-snapshot-preview1:BUILD.bazel")
+            .unwrap();
+        assert_eq!(label.repository.unwrap(), "repo");
+        assert_eq!(
+            label.package.unwrap(),
+            "vendor/wasi-0.11.0+wasi-snapshot-preview1"
+        );
+        assert_eq!(label.target, "BUILD.bazel");
+    }
+
+    #[test]
     fn invalid_double_colon() {
         assert!(Label::from_str("::target").is_err());
     }
 
     #[test]
-    fn invalid_double_at() {
-        assert!(Label::from_str("@@repo//pkg:target").is_err());
+    fn invalid_triple_at() {
+        assert!(Label::from_str("@@@repo//pkg:target").is_err());
     }
 
     #[test]
@@ -282,8 +304,8 @@ mod test {
         let actual_file = subdir.join("greatgrandchild");
         create_dir_all(subdir).unwrap();
         {
-            File::create(&workspace).unwrap();
-            File::create(&build_file).unwrap();
+            File::create(workspace).unwrap();
+            File::create(build_file).unwrap();
             File::create(&actual_file).unwrap();
         }
         let label = Label::from_absolute_path(&actual_file).unwrap();
@@ -300,7 +322,7 @@ mod test {
         let actual_file = subdir.join("greatgrandchild");
         create_dir_all(subdir).unwrap();
         {
-            File::create(&build_file).unwrap();
+            File::create(build_file).unwrap();
             File::create(&actual_file).unwrap();
         }
         let err = Label::from_absolute_path(&actual_file)
@@ -318,7 +340,7 @@ mod test {
         let actual_file = subdir.join("greatgrandchild");
         create_dir_all(subdir).unwrap();
         {
-            File::create(&workspace).unwrap();
+            File::create(workspace).unwrap();
             File::create(&actual_file).unwrap();
         }
         let err = Label::from_absolute_path(&actual_file)

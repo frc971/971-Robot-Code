@@ -6,13 +6,13 @@
 set -euo pipefail
 
 if [[ -z "${BUILD_WORKSPACE_DIRECTORY:-}" ]]; then
-    echo "This script should be run under Bazel"
+    >&2 echo "This script should be run under Bazel"
     exit 1
 fi
 
 PACKAGE_NAME="$1"
 if [[ -z "${PACKAGE_NAME:-}" ]]; then
-    echo "The first argument should be the package name of the test target"
+    >&2 echo "The first argument should be the package name of the test target"
     exit 1
 fi
 
@@ -28,7 +28,7 @@ local_repository(
     path = "${BUILD_WORKSPACE_DIRECTORY}",
 )
 load("@rules_rust//rust:repositories.bzl", "rust_repositories")
-rust_repositories(include_rustc_srcs = True)
+rust_repositories()
 load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
 rust_analyzer_dependencies()
 EOF

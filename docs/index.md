@@ -22,11 +22,8 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 # https://github.com/bazelbuild/rules_rust/releases
 http_archive(
     name = "rules_rust",
-    sha256 = "6bfe75125e74155955d8a9854a8811365e6c0f3d33ed700bc17f39e32522c822",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_rust/releases/download/0.9.0/rules_rust-v0.9.0.tar.gz",
-        "https://github.com/bazelbuild/rules_rust/releases/download/0.9.0/rules_rust-v0.9.0.tar.gz",
-    ],
+    sha256 = "37f40490169dc94013c7566c75c861977a2c02ce5505b7e975da0f7d5f2231c8",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.16.1/rules_rust-v0.16.1.tar.gz"],
 )
 
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
@@ -36,10 +33,7 @@ rules_rust_dependencies()
 rust_register_toolchains()
 ```
 
-The rules are under active development, as such the lastest commit on the
-`main` branch should be used. `main` is only tested against `5.0.0` as the
-minimum supported version of Bazel. Though previous versions may still be
-functional in certain environments.
+The rules are released, and releases can be found on [the GitHub Releases page](https://github.com/bazelbuild/rules_rust/releases). We recommend using the latest release from that page.
 
 ## Rules
 
@@ -51,7 +45,7 @@ functional in certain environments.
 - [rust_bindgen](rust_bindgen.md): rules for generating C++ bindings.
 - [rust_wasm_bindgen](rust_wasm_bindgen.md): rules for generating [WebAssembly](https://www.rust-lang.org/what/wasm) bindings.
 - [cargo](cargo.md): Rules dedicated to Cargo compatibility. ie: [`build.rs` scripts](https://doc.rust-lang.org/cargo/reference/build-scripts.html).
-- [crate_universe](crate_universe.md): Rules for generating Bazel targets for external crate depednencies.
+- [crate_universe](crate_universe.md): Rules for generating Bazel targets for external crate dependencies.
 
 You can also browse the [full API in one page](flatten.md).
 
@@ -64,21 +58,49 @@ You can also browse the [full API in one page](flatten.md).
 To build with a particular version of the Rust compiler, pass that version to [`rust_register_toolchains`](flatten.md#rust_register_toolchains):
 
 ```python
-rust_register_toolchains(version = "1.62.1", edition="2018")
+rust_register_toolchains(
+    edition = "2021",
+    versions = [
+        "1.66.1"
+    ],
+)
 ```
 
-As well as an exact version, `version` can be set to `"nightly"` or `"beta"`. If set to these values, `iso_date` must also be set:
+As well as an exact version, `versions` can accept `nightly/{iso_date}` and `beta/{iso_date}` strings for toolchains from different release channels.
 
 ```python
-rust_register_toolchains(version = "nightly", iso_date = "2022-07-18", edition="2018")
+rust_register_toolchains(
+    edition = "2021"
+    versions = [
+        "nightly/2022-12-15",
+    ],
+)
 ```
 
-Similarly, `rustfmt_version` may also be configured:
+By default, a `stable` and `nightly` toolchain will be registered if no versions are passed to `rust_register_toolchains`. However,
+if only 1 version is passed and it is from the `nightly` or `beta` release channels (i.e. __not__ `stable`), then a build setting must
+also be set in the project's `.bazelrc` file.
 
-```python
-rust_register_toolchains(rustfmt_version = "1.62.1")
+```text
+build --@rules_rust//rust/toolchain/channel=nightly
 ```
+
+Failure to do so will result in rules attempting to match a `stable` toolchain when one was not registered.
 
 ## External Dependencies
 
 [crate_universe](crate_universe.md) is a tool built into `rules_rust` that can be used to fetch dependencies. Additionally, [cargo-raze](https://github.com/google/cargo-raze) is an older third-party which can also fetch dependencies.
+
+## Supported bazel versions
+
+The oldest version of Bazel the `main` branch is tested against is `6.0.0`. Previous versions may still be functional in certain environments, but this is the minimum version we strive to fully support.
+
+We test these rules against the latest rolling releases of Bazel, and aim for compatibility with them, but prioritise stable releases over rolling releases where necessary.
+
+## Supported platforms
+
+We aim to support Linux, macOS, and Windows.
+
+Windows support is less complete than the other two platforms, but most things work, and we welcome contributions to help improve its support.
+
+Windows support for some features requires `--enable_runfiles` to be passed to Bazel, we recommend putting it in your bazelrc. See [Using Bazel on Windows](https://bazel.build/configure/windows) for more Windows-specific recommendations.
