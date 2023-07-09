@@ -220,8 +220,10 @@ class NodeEventLoopFactory {
   // Starts the node up by calling the OnStartup handlers.  These get called
   // every time a node is started.
 
-  // Called when a node has started.  This is typically when a log file starts
-  // for a node.
+  // Called when a node has started. This will most commonly be at the monotonic
+  // clock epoch. In log replay, this will occur prior to any messages
+  // (including "fetched" messages) being replayed for that node.
+  // Called on every boot.
   void OnStartup(std::function<void()> &&fn);
 
   // Called when a node shuts down.  These get called every time a node is shut

@@ -140,9 +140,29 @@ class LogReader {
   }
 
   // Called whenever a log file starts for a node.
+  // More precisely, this will be called on each boot at max of
+  // (realtime_start_time in the logfiles, SetStartTime()). If a given boot
+  // occurs entirely before the realtime_start_time, the OnStart handler will
+  // never get called for that boot.
+  //
+  // realtime_start_time is defined below, but/ essentially is the time at which
+  // message channels will start being internall consistent on a given node
+  // (i.e., when the logger started). Note: If you wish to see a watcher
+  // triggered for *every* message in a log, OnStart() will not be
+  // sufficient--messages (possibly multiple messages) may be present on
+  // channels prior to the start time. If attempting to do this, prefer to use
+  // NodeEventLoopFactory::OnStart.
   void OnStart(std::function<void()> fn);
   void OnStart(const Node *node, std::function<void()> fn);
-  // Called whenever a log file ends for a node.
+  // Called whenever a log file ends for a node on a given boot, or at the
+  // realtime_end_time specified by a flag or SetEndTime().
+  //
+  // A log file "ends" when there are no more messages to be replayed for that
+  // boot.
+  //
+  // If OnStart() is not called for a given boot, the OnEnd() handlers will not
+  // be called either. OnEnd() handlers will not be called if the logfile for a
+  // given boot has missing data that causes us to terminate replay early.
   void OnEnd(std::function<void()> fn);
   void OnEnd(const Node *node, std::function<void()> fn);
 

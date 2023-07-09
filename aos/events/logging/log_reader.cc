@@ -2335,7 +2335,12 @@ void LogReader::State::ClearTimeFlags() {
 }
 
 void LogReader::State::NotifyLogfileStart() {
+  // If the start_event_notifier_ is set, that means that a realtime start time
+  // was set manually; when the override is set, we want to delay any startup
+  // handlers that would've happened before requested start time until that
+  // start time.
   if (start_event_notifier_) {
+    // Only call OnStart() if the start time for this node (realtime_start_time())
     if (start_event_notifier_->realtime_event_time() >
         realtime_start_time(boot_count())) {
       VLOG(1) << "Skipping, " << start_event_notifier_->realtime_event_time()
@@ -2351,6 +2356,9 @@ void LogReader::State::NotifyLogfileStart() {
 }
 
 void LogReader::State::NotifyFlagStart() {
+  // Should only be called if start_event_notifier_ has been set (which happens
+  // as part of setting an explicit start time); only call the startup functions
+  // that occurred *before* the start flag value.
   if (start_event_notifier_->realtime_event_time() >=
       realtime_start_time(boot_count())) {
     RunOnStart();
@@ -2358,16 +2366,22 @@ void LogReader::State::NotifyFlagStart() {
 }
 
 void LogReader::State::NotifyLogfileEnd() {
+  // Don't execute the OnEnd handlers if the logfile was ended artifically
+  // early.
   if (found_last_message_) {
     return;
   }
 
+  // Ensure that we only call OnEnd() if OnStart() was already called for this
+  // boot (and don't call OnEnd() twice).
   if (!stopped_ && started_) {
     RunOnEnd();
   }
 }
 
 void LogReader::State::NotifyFlagEnd() {
+  // Ensure that we only call OnEnd() if OnStart() was already called for this
+  // boot (and don't call OnEnd() twice).
   if (!stopped_ && started_) {
     RunOnEnd();
     SetFoundLastMessage(true);
