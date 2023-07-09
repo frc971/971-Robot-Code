@@ -212,6 +212,7 @@ cc_test(
     name = "lockless_queue_test",
     timeout = "eternal",
     srcs = ["lockless_queue_test.cc"],
+    shard_count = 10,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event",
