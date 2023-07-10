@@ -77,15 +77,24 @@ MemoryCGroup::~MemoryCGroup() {
 
 SignalListener::SignalListener(aos::ShmEventLoop *loop,
                                std::function<void(signalfd_siginfo)> callback)
-    : SignalListener(loop, callback,
+    : SignalListener(loop->epoll(), std::move(callback)) {}
+
+SignalListener::SignalListener(aos::internal::EPoll *epoll,
+                               std::function<void(signalfd_siginfo)> callback)
+    : SignalListener(epoll, callback,
                      {SIGHUP, SIGINT, SIGQUIT, SIGABRT, SIGFPE, SIGSEGV,
                       SIGPIPE, SIGTERM, SIGBUS, SIGXCPU, SIGCHLD}) {}
 
 SignalListener::SignalListener(aos::ShmEventLoop *loop,
                                std::function<void(signalfd_siginfo)> callback,
                                std::initializer_list<unsigned int> signals)
-    : loop_(loop), callback_(std::move(callback)), signalfd_(signals) {
-  loop->epoll()->OnReadable(signalfd_.fd(), [this] {
+    : SignalListener(loop->epoll(), std::move(callback), std::move(signals)) {}
+
+SignalListener::SignalListener(aos::internal::EPoll *epoll,
+                               std::function<void(signalfd_siginfo)> callback,
+                               std::initializer_list<unsigned int> signals)
+    : epoll_(epoll), callback_(std::move(callback)), signalfd_(signals) {
+  epoll_->OnReadable(signalfd_.fd(), [this] {
     signalfd_siginfo info = signalfd_.Read();
 
     if (info.ssi_signo == 0) {
@@ -97,7 +106,7 @@ SignalListener::SignalListener(aos::ShmEventLoop *loop,
   });
 }
 
-SignalListener::~SignalListener() { loop_->epoll()->DeleteFd(signalfd_.fd()); }
+SignalListener::~SignalListener() { epoll_->DeleteFd(signalfd_.fd()); }
 
 Application::Application(std::string_view name,
                          std::string_view executable_name,
@@ -123,7 +132,7 @@ Application::Application(std::string_view name,
       pipe_timer_(event_loop_->AddTimer([this]() { FetchOutputs(); })),
       child_status_handler_(
           event_loop_->AddTimer([this]() { MaybeHandleSignal(); })),
-      on_change_(on_change),
+      on_change_({on_change}),
       quiet_flag_(quiet_flag) {
   event_loop_->OnRun([this]() {
     // Every second poll to check if the child is dead. This is used as a
@@ -205,7 +214,7 @@ void Application::DoStart() {
       stdout_pipes_.write.reset();
       stderr_pipes_.write.reset();
     }
-    on_change_();
+    OnChange();
     return;
   }
 
@@ -343,7 +352,7 @@ void Application::DoStop(bool restart) {
       stop_timer_->Schedule(event_loop_->monotonic_now() +
                             std::chrono::seconds(1));
       queue_restart_ = restart;
-      on_change_();
+      OnChange();
       break;
     }
     case aos::starter::State::WAITING: {
@@ -354,7 +363,7 @@ void Application::DoStop(bool restart) {
         DoStart();
       } else {
         status_ = aos::starter::State::STOPPED;
-        on_change_();
+        OnChange();
       }
       break;
     }
@@ -384,7 +393,7 @@ void Application::QueueStart() {
                            std::chrono::seconds(3));
   start_timer_->Disable();
   stop_timer_->Disable();
-  on_change_();
+  OnChange();
 }
 
 std::vector<char *> Application::CArgs() {
@@ -553,7 +562,7 @@ bool Application::MaybeHandleSignal() {
         QueueStart();
       } else {
         status_ = aos::starter::State::STOPPED;
-        on_change_();
+        OnChange();
       }
       break;
     }
@@ -571,7 +580,7 @@ bool Application::MaybeHandleSignal() {
         QueueStart();
       } else {
         status_ = aos::starter::State::STOPPED;
-        on_change_();
+        OnChange();
       }
       break;
     }
@@ -584,7 +593,7 @@ bool Application::MaybeHandleSignal() {
       // Disable force stop timer since the process already died
       stop_timer_->Disable();
 
-      on_change_();
+      OnChange();
       if (terminating_) {
         return true;
       }
@@ -604,6 +613,12 @@ bool Application::MaybeHandleSignal() {
   }
 
   return false;
+}
+
+void Application::OnChange() {
+  for (auto &fn : on_change_) {
+    fn();
+  }
 }
 
 }  // namespace aos::starter

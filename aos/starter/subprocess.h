@@ -21,14 +21,19 @@ class SignalListener {
  public:
   SignalListener(aos::ShmEventLoop *loop,
                  std::function<void(signalfd_siginfo)> callback);
+  SignalListener(aos::internal::EPoll *epoll,
+                 std::function<void(signalfd_siginfo)> callback);
   SignalListener(aos::ShmEventLoop *loop,
+                 std::function<void(signalfd_siginfo)> callback,
+                 std::initializer_list<unsigned int> signals);
+  SignalListener(aos::internal::EPoll *epoll,
                  std::function<void(signalfd_siginfo)> callback,
                  std::initializer_list<unsigned int> signals);
 
   ~SignalListener();
 
  private:
-  aos::ShmEventLoop *loop_;
+  aos::internal::EPoll *epoll_;
   std::function<void(signalfd_siginfo)> callback_;
   aos::ipc_lib::SignalFd signalfd_;
 
@@ -91,6 +96,13 @@ class Application {
 
   void Terminate();
 
+  // Adds a callback which gets notified when the application changes state.
+  // This is in addition to any existing callbacks and doesn't replace any of
+  // them.
+  void AddOnChange(std::function<void()> fn) {
+    on_change_.emplace_back(std::move(fn));
+  }
+
   void set_args(std::vector<std::string> args);
   void set_capture_stdout(bool capture);
   void set_capture_stderr(bool capture);
@@ -126,6 +138,8 @@ class Application {
   void DoStop(bool restart);
 
   void QueueStart();
+
+  void OnChange();
 
   // Copy flatbuffer vector of strings to vector of std::string.
   static std::vector<std::string> FbsVectorToVector(
@@ -178,7 +192,7 @@ class Application {
   aos::TimerHandler *start_timer_, *restart_timer_, *stop_timer_, *pipe_timer_,
       *child_status_handler_;
 
-  std::function<void()> on_change_;
+  std::vector<std::function<void()>> on_change_;
 
   std::unique_ptr<MemoryCGroup> memory_cgroup_;
 
