@@ -298,7 +298,7 @@ void EventLoop::SendTimingReport() {
   // of the buffer.  We only have to care because we are using this in a very
   // raw fashion.
   CHECK_LE(timing_report_.span().size(), timing_report_sender_->size())
-      << ": Timing report bigger than the sender size.";
+      << ": Timing report bigger than the sender size for " << name() << ".";
   std::copy(timing_report_.span().data(),
             timing_report_.span().data() + timing_report_.span().size(),
             reinterpret_cast<uint8_t *>(timing_report_sender_->data()) +
