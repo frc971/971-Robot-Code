@@ -231,6 +231,7 @@ TargetMapper::TargetMapper(
         PoseUtils::TargetPoseFromFbs(*target_pose_fbs).pose;
   }
   target_poses_ = ideal_target_poses_;
+  CountConstraints();
 }
 
 TargetMapper::TargetMapper(
@@ -241,7 +242,28 @@ TargetMapper::TargetMapper(
       target_constraints_(target_constraints),
       T_frozen_actual_(Eigen::Vector3d::Zero()),
       R_frozen_actual_(Eigen::Quaterniond::Identity()),
-      vis_robot_(cv::Size(1280, 1000)) {}
+      vis_robot_(cv::Size(1280, 1000)) {
+  CountConstraints();
+}
+
+namespace {
+std::pair<TargetMapper::TargetId, TargetMapper::TargetId> MakeIdPair(
+    const ceres::examples::Constraint3d &constraint) {
+  auto min_id = std::min(constraint.id_begin, constraint.id_end);
+  auto max_id = std::max(constraint.id_begin, constraint.id_end);
+  return std::make_pair(min_id, max_id);
+}
+}  // namespace
+
+void TargetMapper::CountConstraints() {
+  for (const auto &constraint : target_constraints_) {
+    auto id_pair = MakeIdPair(constraint);
+    if (constraint_counts_.count(id_pair) == 0) {
+      constraint_counts_[id_pair] = 0;
+    }
+    constraint_counts_[id_pair]++;
+  }
+}
 
 std::optional<TargetMapper::TargetPose> TargetMapper::GetTargetPoseById(
     std::vector<TargetMapper::TargetPose> target_poses, TargetId target_id) {
@@ -296,10 +318,23 @@ void TargetMapper::BuildTargetPoseOptimizationProblem(
 
     const Eigen::Matrix<double, 6, 6> sqrt_information =
         constraint.information.llt().matrixL();
+
+    auto id_pair = MakeIdPair(constraint);
+    CHECK_GT(constraint_counts_.count(id_pair), 0ul)
+        << "Should have counted constraints for " << id_pair.first << "->"
+        << id_pair.second;
+
+    // Normalize constraint cost by occurances
+    size_t constraint_count = constraint_counts_[id_pair];
+    // Scale all costs so the total cost comes out to more reasonable numbers
+    constexpr double kGlobalWeight = 1000.0;
+    double constraint_weight =
+        kGlobalWeight / static_cast<double>(constraint_count);
+
     // Ceres will take ownership of the pointer.
     ceres::CostFunction *cost_function =
-        ceres::examples::PoseGraph3dErrorTerm::Create(constraint.t_be,
-                                                      sqrt_information);
+        ceres::examples::PoseGraph3dErrorTerm::Create(
+            constraint.t_be, sqrt_information, constraint_weight);
 
     problem->AddResidualBlock(cost_function, loss_function,
                               pose_begin_iter->second.p.data(),

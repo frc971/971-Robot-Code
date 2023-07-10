@@ -69,16 +69,17 @@ namespace examples {
 // where I is the information matrix which is the inverse of the covariance.
 class PoseGraph3dErrorTerm {
  public:
-  PoseGraph3dErrorTerm(const Pose3d& t_ab_measured,
-                       const Eigen::Matrix<double, 6, 6>& sqrt_information)
-      : t_ab_measured_(t_ab_measured), sqrt_information_(sqrt_information) {}
+  PoseGraph3dErrorTerm(const Pose3d &t_ab_measured,
+                       const Eigen::Matrix<double, 6, 6> &sqrt_information,
+                       double weight)
+      : t_ab_measured_(t_ab_measured),
+        sqrt_information_(sqrt_information),
+        weight_(weight) {}
 
   template <typename T>
-  bool operator()(const T* const p_a_ptr,
-                  const T* const q_a_ptr,
-                  const T* const p_b_ptr,
-                  const T* const q_b_ptr,
-                  T* residuals_ptr) const {
+  bool operator()(const T *const p_a_ptr, const T *const q_a_ptr,
+                  const T *const p_b_ptr, const T *const q_b_ptr,
+                  T *residuals_ptr) const {
     Eigen::Map<const Eigen::Matrix<T, 3, 1>> p_a(p_a_ptr);
     Eigen::Map<const Eigen::Quaternion<T>> q_a(q_a_ptr);
 
@@ -107,14 +108,17 @@ class PoseGraph3dErrorTerm {
     // Scale the residuals by the measurement uncertainty.
     residuals.applyOnTheLeft(sqrt_information_.template cast<T>());
 
+    // Scale residual by the weight.
+    residuals *= T(weight_);
+
     return true;
   }
 
-  static ceres::CostFunction* Create(
-      const Pose3d& t_ab_measured,
-      const Eigen::Matrix<double, 6, 6>& sqrt_information) {
+  static ceres::CostFunction *Create(
+      const Pose3d &t_ab_measured,
+      const Eigen::Matrix<double, 6, 6> &sqrt_information, double weight) {
     return new ceres::AutoDiffCostFunction<PoseGraph3dErrorTerm, 6, 3, 4, 3, 4>(
-        new PoseGraph3dErrorTerm(t_ab_measured, sqrt_information));
+        new PoseGraph3dErrorTerm(t_ab_measured, sqrt_information, weight));
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -124,6 +128,8 @@ class PoseGraph3dErrorTerm {
   const Pose3d t_ab_measured_;
   // The square root of the measurement information matrix.
   const Eigen::Matrix<double, 6, 6> sqrt_information_;
+  // Scalar for the cost of the constraint
+  const double weight_;
 };
 
 }  // namespace examples
