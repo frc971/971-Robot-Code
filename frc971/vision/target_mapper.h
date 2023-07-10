@@ -58,7 +58,34 @@ class TargetMapper {
   bool operator()(const S *const translation, const S *const rotation,
                   S *residual) const;
 
+  void DumpConstraints(std::string_view path) const;
+  void DumpStats(std::string_view path) const;
+
  private:
+  // Error in an estimated pose
+  struct PoseError {
+    double angle;
+    double distance;
+  };
+
+  // Stores info on how much all the constraints differ from our solved target
+  // map
+  struct Stats {
+    // Average error for translation and rotation
+    PoseError avg_err;
+    // Standard deviation for translation and rotation error
+    PoseError std_dev;
+    // Maximum error for translation and rotation
+    PoseError max_err;
+  };
+
+  // Compute the error of a single constraint
+  PoseError ComputeError(const ceres::examples::Constraint3d &constraint) const;
+  // Compute cumulative stats for all constraints
+  Stats ComputeStats() const;
+  // Removes constraints with very large errors
+  void RemoveOutlierConstraints();
+
   // Constructs the nonlinear least squares optimization problem from the
   // pose graph constraints.
   void BuildTargetPoseOptimizationProblem(
@@ -67,7 +94,8 @@ class TargetMapper {
 
   // Constructs the nonlinear least squares optimization problem for the solved
   // -> actual pose solver.
-  void BuildMapFittingOptimizationProblem(ceres::Problem *problem);
+  std::unique_ptr<ceres::CostFunction> BuildMapFittingOptimizationProblem(
+      ceres::Problem *problem);
 
   // Returns true if the solve was successful.
   bool SolveOptimizationProblem(ceres::Problem *problem);
@@ -82,6 +110,8 @@ class TargetMapper {
   Eigen::Quaterniond R_frozen_actual_;
 
   mutable VisualizeRobot vis_robot_;
+
+  Stats stats_with_outliers_;
 };
 
 // Utility functions for dealing with ceres::examples::Pose3d structs

@@ -16,6 +16,12 @@ DEFINE_int32(
 DEFINE_int32(min_target_id, 1, "Minimum target id to solve for");
 DEFINE_int32(max_target_id, 8, "Maximum target id to solve for");
 DEFINE_bool(visualize_solver, false, "If true, visualize the solving process.");
+// This does seem like a strict threshold for a constaint to be considered an
+// outlier, but most inliers were very close together and this is what worked
+// best for map solving.
+DEFINE_double(outlier_std_devs, 1.0,
+              "Number of standard deviations above average error needed for a "
+              "constraint to be considered an outlier and get removed.");
 
 namespace frc971::vision {
 Eigen::Affine3d PoseUtils::Pose3dToAffine3d(
@@ -323,7 +329,8 @@ void TargetMapper::BuildTargetPoseOptimizationProblem(
   problem->SetParameterBlockConstant(pose_start_iter->second.q.coeffs().data());
 }
 
-void TargetMapper::BuildMapFittingOptimizationProblem(ceres::Problem *problem) {
+std::unique_ptr<ceres::CostFunction>
+TargetMapper::BuildMapFittingOptimizationProblem(ceres::Problem *problem) {
   // Setup robot visualization
   vis_robot_.ClearImage();
   constexpr int kImageWidth = 1280;
@@ -335,19 +342,20 @@ void TargetMapper::BuildMapFittingOptimizationProblem(ceres::Problem *problem) {
   const size_t num_residuals = num_targets * 6;
   // Set up the only cost function (also known as residual). This uses
   // auto-differentiation to obtain the derivative (jacobian).
-  ceres::CostFunction *cost_function =
-      new ceres::AutoDiffCostFunction<TargetMapper, ceres::DYNAMIC, 3, 4>(
-          this, num_residuals, ceres::DO_NOT_TAKE_OWNERSHIP);
+  std::unique_ptr<ceres::CostFunction> cost_function = std::make_unique<
+      ceres::AutoDiffCostFunction<TargetMapper, ceres::DYNAMIC, 3, 4>>(
+      this, num_residuals, ceres::DO_NOT_TAKE_OWNERSHIP);
 
   ceres::LossFunction *loss_function = new ceres::HuberLoss(2.0);
   ceres::LocalParameterization *quaternion_local_parameterization =
       new ceres::EigenQuaternionParameterization;
 
-  problem->AddResidualBlock(cost_function, loss_function,
+  problem->AddResidualBlock(cost_function.get(), loss_function,
                             T_frozen_actual_.vector().data(),
                             R_frozen_actual_.coeffs().data());
   problem->SetParameterization(R_frozen_actual_.coeffs().data(),
                                quaternion_local_parameterization);
+  return cost_function;
 }
 
 // Taken from ceres/examples/slam/pose_graph_3d/pose_graph_3d.cc
@@ -357,7 +365,7 @@ bool TargetMapper::SolveOptimizationProblem(ceres::Problem *problem) {
   ceres::Solver::Options options;
   options.max_num_iterations = FLAGS_max_num_iterations;
   options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
-  options.minimizer_progress_to_stdout = true;
+  options.minimizer_progress_to_stdout = false;
 
   ceres::Solver::Summary summary;
   ceres::Solve(options, problem, &summary);
@@ -369,16 +377,28 @@ bool TargetMapper::SolveOptimizationProblem(ceres::Problem *problem) {
 
 void TargetMapper::Solve(std::string_view field_name,
                          std::optional<std::string_view> output_dir) {
-  ceres::Problem target_pose_problem;
+  ceres::Problem target_pose_problem_1;
   BuildTargetPoseOptimizationProblem(target_constraints_, &target_poses_,
-                                     &target_pose_problem);
-  CHECK(SolveOptimizationProblem(&target_pose_problem))
-      << "The target pose solve was not successful, exiting.";
+                                     &target_pose_problem_1);
+  CHECK(SolveOptimizationProblem(&target_pose_problem_1))
+      << "The target pose solve 1 was not successful, exiting.";
 
-  ceres::Problem map_fitting_problem;
-  BuildMapFittingOptimizationProblem(&map_fitting_problem);
+  RemoveOutlierConstraints();
+
+  // Solve again once we've thrown out bad constraints
+  ceres::Problem target_pose_problem_2;
+  BuildTargetPoseOptimizationProblem(target_constraints_, &target_poses_,
+                                     &target_pose_problem_2);
+  CHECK(SolveOptimizationProblem(&target_pose_problem_2))
+      << "The target pose solve 2 was not successful, exiting.";
+
+  ceres::Problem map_fitting_problem(
+      {.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP});
+  std::unique_ptr<ceres::CostFunction> map_fitting_cost_function =
+      BuildMapFittingOptimizationProblem(&map_fitting_problem);
   CHECK(SolveOptimizationProblem(&map_fitting_problem))
       << "The map fitting solve was not successful, exiting.";
+  map_fitting_cost_function.release();
 
   Eigen::Affine3d H_frozen_actual = T_frozen_actual_ * R_frozen_actual_;
   LOG(INFO) << "H_frozen_actual: "
@@ -411,6 +431,19 @@ void TargetMapper::Solve(std::string_view field_name,
         absl::StrCat(output_dir.value(), "/", field_name, ".json");
     LOG(INFO) << "Writing map to file: " << output_path;
     aos::util::WriteStringToFileOrDie(output_path, map_json);
+  }
+
+  for (TargetId id_start = FLAGS_min_target_id; id_start < FLAGS_max_target_id;
+       id_start++) {
+    for (TargetId id_end = id_start + 1; id_end <= FLAGS_max_target_id;
+         id_end++) {
+      auto H_start_end =
+          PoseUtils::Pose3dToAffine3d(target_poses_.at(id_start)).inverse() *
+          PoseUtils::Pose3dToAffine3d(target_poses_.at(id_end));
+      auto constraint = PoseUtils::Affine3dToPose3d(H_start_end);
+      LOG(INFO) << id_start << "->" << id_end << ": " << constraint.p.norm()
+                << " meters";
+    }
   }
 }
 
@@ -499,8 +532,10 @@ bool TargetMapper::operator()(const S *const translation,
     VLOG(2);
     auto R_ideal_actual = Eigen::AngleAxis<S>(H_ideal_actual.rotation());
 
-    constexpr double kTranslationScalar = 100.0;
-    constexpr double kRotationScalar = 1000.0;
+    // Weight translation errors higher than rotation.
+    // 1 m in position error = 0.01 radian (or ~0.573 degrees)
+    constexpr double kTranslationScalar = 1000.0;
+    constexpr double kRotationScalar = 100.0;
 
     // Penalize based on how much our actual poses matches the ideal
     // ones. We've already solved for the relative poses, now figure out
@@ -535,6 +570,130 @@ bool TargetMapper::operator()(const S *const translation,
   }
 
   return true;
+}
+
+TargetMapper::PoseError TargetMapper::ComputeError(
+    const ceres::examples::Constraint3d &constraint) const {
+  // Compute the difference between the map-based transform of the end target
+  // in the start target frame, to the one from this constraint
+  auto H_start_end_map =
+      PoseUtils::Pose3dToAffine3d(target_poses_.at(constraint.id_begin))
+          .inverse() *
+      PoseUtils::Pose3dToAffine3d(target_poses_.at(constraint.id_end));
+  auto H_start_end_constraint = PoseUtils::Pose3dToAffine3d(constraint.t_be);
+  ceres::examples::Pose3d delta_pose = PoseUtils::Affine3dToPose3d(
+      H_start_end_map.inverse() * H_start_end_constraint);
+  double distance = delta_pose.p.norm();
+  Eigen::AngleAxisd err_angle(delta_pose.q);
+  double angle = std::abs(err_angle.angle());
+  return {.angle = angle, .distance = distance};
+}
+
+TargetMapper::Stats TargetMapper::ComputeStats() const {
+  Stats stats{.avg_err = {.angle = 0.0, .distance = 0.0},
+              .std_dev = {.angle = 0.0, .distance = 0.0},
+              .max_err = {.angle = 0.0, .distance = 0.0}};
+
+  for (const auto &constraint : target_constraints_) {
+    PoseError err = ComputeError(constraint);
+
+    // Update our statistics
+    stats.avg_err.distance += err.distance;
+    if (err.distance > stats.max_err.distance) {
+      stats.max_err.distance = err.distance;
+    }
+
+    stats.avg_err.angle += err.angle;
+    if (err.angle > stats.max_err.angle) {
+      stats.max_err.angle = err.angle;
+    }
+  }
+
+  stats.avg_err.distance /= static_cast<double>(target_constraints_.size());
+  stats.avg_err.angle /= static_cast<double>(target_constraints_.size());
+
+  for (const auto &constraint : target_constraints_) {
+    PoseError err = ComputeError(constraint);
+
+    // Update our statistics
+    stats.std_dev.distance +=
+        std::pow(err.distance - stats.avg_err.distance, 2);
+
+    stats.std_dev.angle += std::pow(err.angle - stats.avg_err.angle, 2);
+  }
+
+  stats.std_dev.distance = std::sqrt(
+      stats.std_dev.distance / static_cast<double>(target_constraints_.size()));
+  stats.std_dev.angle = std::sqrt(
+      stats.std_dev.angle / static_cast<double>(target_constraints_.size()));
+
+  return stats;
+}
+
+void TargetMapper::RemoveOutlierConstraints() {
+  stats_with_outliers_ = ComputeStats();
+  size_t original_size = target_constraints_.size();
+  target_constraints_.erase(
+      std::remove_if(
+          target_constraints_.begin(), target_constraints_.end(),
+          [&](const auto &constraint) {
+            PoseError err = ComputeError(constraint);
+            // Remove constraints with errors significantly above
+            // the average
+            if (err.distance > stats_with_outliers_.avg_err.distance +
+                                   FLAGS_outlier_std_devs *
+                                       stats_with_outliers_.std_dev.distance) {
+              return true;
+            }
+            if (err.angle > stats_with_outliers_.avg_err.angle +
+                                FLAGS_outlier_std_devs *
+                                    stats_with_outliers_.std_dev.angle) {
+              return true;
+            }
+            return false;
+          }),
+      target_constraints_.end());
+
+  LOG(INFO) << "Removed " << (original_size - target_constraints_.size())
+            << " outlier constraints out of " << original_size << " total";
+}
+
+void TargetMapper::DumpStats(std::string_view path) const {
+  LOG(INFO) << "Dumping mapping stats to " << path;
+  Stats stats = ComputeStats();
+  std::ofstream fout(path.data());
+  fout << "Stats after outlier rejection: " << std::endl;
+  fout << "Average error - angle: " << stats.avg_err.angle
+       << ", distance: " << stats.avg_err.distance << std::endl
+       << std::endl;
+  fout << "Standard deviation - angle: " << stats.std_dev.angle
+       << ", distance: " << stats.std_dev.distance << std::endl
+       << std::endl;
+  fout << "Max error - angle: " << stats.max_err.angle
+       << ", distance: " << stats.max_err.distance << std::endl;
+
+  fout << std::endl << "Stats before outlier rejection:" << std::endl;
+  fout << "Average error - angle: " << stats_with_outliers_.avg_err.angle
+       << ", distance: " << stats_with_outliers_.avg_err.distance << std::endl
+       << std::endl;
+  fout << "Standard deviation - angle: " << stats_with_outliers_.std_dev.angle
+       << ", distance: " << stats_with_outliers_.std_dev.distance << std::endl
+       << std::endl;
+  fout << "Max error - angle: " << stats_with_outliers_.max_err.angle
+       << ", distance: " << stats_with_outliers_.max_err.distance << std::endl;
+
+  fout.flush();
+  fout.close();
+}
+
+void TargetMapper::DumpConstraints(std::string_view path) const {
+  LOG(INFO) << "Dumping target constraints to " << path;
+  std::ofstream fout(path.data());
+  for (const auto &constraint : target_constraints_) {
+    fout << constraint << std::endl;
+  }
+  fout.flush();
+  fout.close();
 }
 
 }  // namespace frc971::vision

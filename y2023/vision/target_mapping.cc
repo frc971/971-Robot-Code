@@ -46,7 +46,9 @@ DEFINE_double(pause_on_distance, 1.0,
 DEFINE_uint64(skip_to, 1,
               "Start at combined image of this number (1 is the first image)");
 DEFINE_bool(solve, true, "Whether to solve for the field's target map.");
-DEFINE_string(dump_constraints_to, "/tmp/constraints.txt",
+DEFINE_string(dump_constraints_to, "/tmp/mapping_constraints.txt",
+              "Write the target constraints to this path");
+DEFINE_string(dump_stats_to, "/tmp/mapping_stats.txt",
               "Write the target constraints to this path");
 DECLARE_int32(frozen_target_id);
 DECLARE_int32(min_target_id);
@@ -381,53 +383,15 @@ void TargetMapperReplay::MaybeSolve() {
                        }),
         target_constraints.end());
 
-    if (!FLAGS_dump_constraints_to.empty()) {
-      std::ofstream fout(FLAGS_dump_constraints_to);
-      for (const auto &constraint : target_constraints) {
-        fout << constraint << std::endl;
-      }
-      fout.flush();
-      fout.close();
-    }
-
-    // Give seed constraints with a higher confidence to ground the solver.
-    // This "distance from camera" controls the noise of the seed measurement
-    constexpr double kSeedDistanceFromCamera = 1.0;
-
-    constexpr double kSeedDistortionFactor = 0.0;
-    const DataAdapter::TimestampedDetection frozen_detection_seed = {
-        .time = aos::distributed_clock::min_time,
-        .H_robot_target = PoseUtils::Pose3dToAffine3d(
-            kFixedTargetMapper.GetTargetPoseById(FLAGS_frozen_target_id)
-                .value()
-                .pose),
-        .distance_from_camera = kSeedDistanceFromCamera,
-        .distortion_factor = kSeedDistortionFactor,
-        .id = FLAGS_frozen_target_id};
-
-    constexpr TargetMapper::TargetId kAbsMinTargetId = 1;
-    constexpr TargetMapper::TargetId kAbsMaxTargetId = 8;
-    for (TargetMapper::TargetId id = kAbsMinTargetId; id <= kAbsMaxTargetId;
-         id++) {
-      if (id == FLAGS_frozen_target_id) {
-        continue;
-      }
-
-      const DataAdapter::TimestampedDetection detection_seed = {
-          .time = aos::distributed_clock::min_time,
-          .H_robot_target = PoseUtils::Pose3dToAffine3d(
-              kFixedTargetMapper.GetTargetPoseById(id).value().pose),
-          .distance_from_camera = kSeedDistanceFromCamera,
-          .distortion_factor = kSeedDistortionFactor,
-          .id = id};
-      target_constraints.emplace_back(DataAdapter::ComputeTargetConstraint(
-          frozen_detection_seed, detection_seed,
-          DataAdapter::ComputeConfidence(frozen_detection_seed,
-                                         detection_seed)));
-    }
-
     TargetMapper mapper(FLAGS_json_path, target_constraints);
     mapper.Solve(FLAGS_field_name, FLAGS_output_dir);
+
+    if (!FLAGS_dump_constraints_to.empty()) {
+      mapper.DumpConstraints(FLAGS_dump_constraints_to);
+    }
+    if (!FLAGS_dump_stats_to.empty()) {
+      mapper.DumpStats(FLAGS_dump_stats_to);
+    }
   }
 }
 
