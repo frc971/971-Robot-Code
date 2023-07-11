@@ -390,6 +390,7 @@ cc_library(
         ":logger_fbs",
         "//aos:uuid",
         "@com_github_google_flatbuffers//:flatbuffers",
+        "@com_github_google_glog//:glog",
     ],
 )
 

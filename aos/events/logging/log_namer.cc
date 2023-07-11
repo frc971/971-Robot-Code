@@ -730,7 +730,7 @@ void MultiNodeLogNamer::ResetStatistics() {
     if (!data_writer.second.writer) continue;
     data_writer.second.writer->WriteStatistics()->ResetStats();
   }
-  if (data_writer_) {
+  if (data_writer_ != nullptr && data_writer_->writer != nullptr) {
     data_writer_->writer->WriteStatistics()->ResetStats();
   }
   max_write_time_ = std::chrono::nanoseconds::zero();

@@ -9,6 +9,7 @@
 
 #include "absl/container/btree_map.h"
 #include "flatbuffers/flatbuffers.h"
+#include "glog/logging.h"
 
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
@@ -346,6 +347,7 @@ class MultiNodeLogNamer : public LogNamer {
   bool ran_out_of_space() const {
     return accumulate_data_writers<bool>(
         ran_out_of_space_, [](bool x, const NewDataWriter &data_writer) {
+          CHECK_NOTNULL(data_writer.writer);
           return x ||
                  (data_writer.writer && data_writer.writer->ran_out_of_space());
         });
@@ -358,6 +360,7 @@ class MultiNodeLogNamer : public LogNamer {
   size_t maximum_total_bytes() const {
     return accumulate_data_writers<size_t>(
         0, [](size_t x, const NewDataWriter &data_writer) {
+          CHECK_NOTNULL(data_writer.writer);
           return std::max(x, data_writer.writer->total_bytes());
         });
   }
@@ -374,6 +377,7 @@ class MultiNodeLogNamer : public LogNamer {
     return accumulate_data_writers(
         max_write_time_,
         [](std::chrono::nanoseconds x, const NewDataWriter &data_writer) {
+          CHECK_NOTNULL(data_writer.writer);
           return std::max(
               x, data_writer.writer->WriteStatistics()->max_write_time());
         });
@@ -383,6 +387,7 @@ class MultiNodeLogNamer : public LogNamer {
         std::make_tuple(max_write_time_bytes_, max_write_time_),
         [](std::tuple<int, std::chrono::nanoseconds> x,
            const NewDataWriter &data_writer) {
+          CHECK_NOTNULL(data_writer.writer);
           if (data_writer.writer->WriteStatistics()->max_write_time() >
               std::get<1>(x)) {
             return std::make_tuple(
@@ -397,6 +402,7 @@ class MultiNodeLogNamer : public LogNamer {
         std::make_tuple(max_write_time_messages_, max_write_time_),
         [](std::tuple<int, std::chrono::nanoseconds> x,
            const NewDataWriter &data_writer) {
+          CHECK_NOTNULL(data_writer.writer);
           if (data_writer.writer->WriteStatistics()->max_write_time() >
               std::get<1>(x)) {
             return std::make_tuple(
@@ -411,12 +417,14 @@ class MultiNodeLogNamer : public LogNamer {
     return accumulate_data_writers(
         total_write_time_,
         [](std::chrono::nanoseconds x, const NewDataWriter &data_writer) {
+          CHECK_NOTNULL(data_writer.writer);
           return x + data_writer.writer->WriteStatistics()->total_write_time();
         });
   }
   int total_write_count() const {
     return accumulate_data_writers(
         total_write_count_, [](int x, const NewDataWriter &data_writer) {
+          CHECK_NOTNULL(data_writer.writer);
           return x + data_writer.writer->WriteStatistics()->total_write_count();
         });
   }
@@ -430,6 +438,7 @@ class MultiNodeLogNamer : public LogNamer {
   int total_write_bytes() const {
     return accumulate_data_writers(
         total_write_bytes_, [](int x, const NewDataWriter &data_writer) {
+          CHECK_NOTNULL(data_writer.writer);
           return x + data_writer.writer->WriteStatistics()->total_write_bytes();
         });
   }
@@ -463,10 +472,11 @@ class MultiNodeLogNamer : public LogNamer {
   T accumulate_data_writers(T t, BinaryOperation op) const {
     for (const std::pair<const Channel *const, NewDataWriter> &data_writer :
          data_writers_) {
-      if (!data_writer.second.writer) continue;
-      t = op(std::move(t), data_writer.second);
+      if (data_writer.second.writer != nullptr) {
+        t = op(std::move(t), data_writer.second);
+      }
     }
-    if (data_writer_) {
+    if (data_writer_ != nullptr && data_writer_->writer != nullptr) {
       t = op(std::move(t), *data_writer_);
     }
     return t;
