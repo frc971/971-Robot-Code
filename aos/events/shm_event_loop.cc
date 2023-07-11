@@ -40,8 +40,18 @@ const char *Filename(const char *path) {
 
 DEFINE_string(shm_base, "/dev/shm/aos",
               "Directory to place queue backing mmaped files in.");
+// This value is affected by the umask of the process which is calling it
+// and is set to the user's value by default (check yours running `umask` on
+// the command line).
+// Any file mode requested is transformed using: mode & ~umask and the default
+// umask is 0022 (allow any permissions for the user, dont allow writes for
+// groups or others).
+// See https://man7.org/linux/man-pages/man2/umask.2.html for more details.
+// WITH THE DEFAULT UMASK YOU WONT ACTUALLY GET THESE PERMISSIONS :)
 DEFINE_uint32(permissions, 0770,
-              "Permissions to make shared memory files and folders.");
+              "Permissions to make shared memory files and folders, "
+              "effected by the processes umask. "
+              "See shm_event_loop.cc for more details.");
 DEFINE_string(application_name, Filename(program_invocation_name),
               "The application name");
 
