@@ -1,18 +1,12 @@
-use std::{
-    marker::PhantomData,
-    mem::ManuallyDrop,
-    ops::{Deref, DerefMut},
-    pin::Pin,
-    ptr,
-};
+use std::{marker::PhantomData, pin::Pin, ptr};
 
 use autocxx::WithinBox;
 use cxx::UniquePtr;
 
 pub use aos_configuration::{Channel, Configuration, ConfigurationExt, Node};
 use aos_configuration_fbs::aos::Configuration as RustConfiguration;
-use aos_events_event_loop_runtime::EventLoopRuntime;
 pub use aos_events_event_loop_runtime::{CppExitHandle, EventLoop, ExitHandle};
+use aos_events_event_loop_runtime::{EventLoopHolder, EventLoopRuntime, EventLoopRuntimeHolder};
 use aos_flatbuffers::{transmute_table_to, Flatbuffer};
 
 autocxx::include_cpp! (
@@ -44,9 +38,7 @@ pub struct SimulatedEventLoopFactory<'config> {
 }
 
 impl<'config> SimulatedEventLoopFactory<'config> {
-    pub fn new<'new_config: 'config>(
-        config: &'new_config impl Flatbuffer<RustConfiguration<'static>>,
-    ) -> Self {
+    pub fn new(config: &'config impl Flatbuffer<RustConfiguration<'static>>) -> Self {
         // SAFETY: `_marker` represents the lifetime of this pointer we're handing off to C++ to
         // store.
         let event_loop_factory = unsafe {
@@ -75,7 +67,7 @@ impl<'config> SimulatedEventLoopFactory<'config> {
         // * `self` has a valid C++ object.
         // * C++ doesn't need the lifetimes of `name` or `node` to last any longer than this method
         //   call.
-        // * The return value is `'static` because it's wrapped in `unique_ptr`.
+        // * The return value manages its lifetime via `unique_ptr`.
         //
         // Note that dropping `self` before the return value will abort from C++, but this is still
         // sound.
@@ -85,9 +77,26 @@ impl<'config> SimulatedEventLoopFactory<'config> {
         }
     }
 
-    /// Creates an [`EventLoopRuntime`] wrapper which also owns its underlying EventLoop.
-    pub fn make_runtime(&mut self, name: &str, node: Option<&Node>) -> SimulatedEventLoopRuntime {
-        SimulatedEventLoopRuntime::new(self.make_event_loop(name, node))
+    /// Creates an [`EventLoopRuntime`] wrapper which also owns its underlying [`EventLoop`].
+    ///
+    /// All setup must be performed with `fun`, which is called before this function returns. `fun`
+    /// may create further objects to use in async functions via [`EventLoop.spawn`] etc, but it is
+    /// the only place to set things up before the EventLoop is run.
+    ///
+    /// Note that dropping the return value will drop this EventLoop.
+    pub fn make_runtime<F>(
+        &mut self,
+        name: &str,
+        node: Option<&Node>,
+        fun: F,
+    ) -> EventLoopRuntimeHolder<SimulatedEventLoopHolder>
+    where
+        F: for<'event_loop> FnOnce(&mut EventLoopRuntime<'event_loop>),
+    {
+        let event_loop = self.make_event_loop(name, node);
+        // SAFETY: We just created this EventLoop, so we are the exclusive owner of it.
+        let holder = unsafe { SimulatedEventLoopHolder::new(event_loop) };
+        EventLoopRuntimeHolder::new(holder, fun)
     }
 
     pub fn make_exit_handle(&mut self) -> ExitHandle {
@@ -103,39 +112,24 @@ impl<'config> SimulatedEventLoopFactory<'config> {
     // pub fn spawn_on_startup(&mut self, spawner: impl FnMut());
 }
 
-pub struct SimulatedEventLoopRuntime(ManuallyDrop<EventLoopRuntime<'static>>);
+pub struct SimulatedEventLoopHolder(UniquePtr<EventLoop>);
 
-impl SimulatedEventLoopRuntime {
-    pub fn new(event_loop: UniquePtr<EventLoop>) -> Self {
-        // SAFETY: We own the underlying EventLoop, so `'static` is the correct lifetime. Anything
-        // using this `EventLoopRuntime` will need to borrow the object we're returning, which will
-        // ensure it stays alive.
-        let runtime = unsafe { EventLoopRuntime::<'static>::new(event_loop.into_raw()) };
-        Self(ManuallyDrop::new(runtime))
+impl SimulatedEventLoopHolder {
+    /// SAFETY: `event_loop` must be the exclusive owner of the underlying EventLoop.
+    pub unsafe fn new(event_loop: UniquePtr<EventLoop>) -> Self {
+        Self(event_loop)
     }
 }
 
-impl Drop for SimulatedEventLoopRuntime {
-    fn drop(&mut self) {
-        let event_loop = self.raw_event_loop();
-        // SAFETY: We're not going to touch this field again.
-        unsafe { ManuallyDrop::drop(&mut self.0) };
-        // SAFETY: `new` created this from `into_raw`. We just dropped the only Rust reference to
-        // it.
-        unsafe { UniquePtr::from_raw(event_loop) };
+// SAFETY: The UniquePtr functions we're using here mirror most of the EventLoopHolder requirements
+// exactly. Safety requirements on [`SimulatedEventLoopHolder.new`] take care of the rest.
+unsafe impl EventLoopHolder for SimulatedEventLoopHolder {
+    fn into_raw(self) -> *mut ffi::aos::EventLoop {
+        self.0.into_raw()
     }
-}
 
-impl Deref for SimulatedEventLoopRuntime {
-    type Target = EventLoopRuntime<'static>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for SimulatedEventLoopRuntime {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    unsafe fn from_raw(raw: *mut ffi::aos::EventLoop) -> Self {
+        Self(UniquePtr::from_raw(raw))
     }
 }
 
@@ -172,41 +166,49 @@ mod tests {
         let mut event_loop_factory = SimulatedEventLoopFactory::new(&config);
         {
             let pi1 = Some(config.message().get_node("pi1").unwrap());
-            let mut runtime1 = event_loop_factory.make_runtime("runtime1", pi1);
-            let channel = runtime1
-                .configuration()
-                .get_channel("/test", "aos.examples.Ping", "test", pi1)
-                .unwrap();
-            let mut runtime2 = event_loop_factory.make_runtime("runtime2", pi1);
 
-            {
-                let mut watcher = runtime1.make_raw_watcher(channel);
-                let exit_handle = event_loop_factory.make_exit_handle();
-                runtime1.spawn(async move {
-                    watcher.next().await;
-                    GLOBAL_STATE.with(|g| {
-                        let g = &mut *g.borrow_mut();
-                        g.watcher_count = g.watcher_count + 1;
+            let exit_handle = event_loop_factory.make_exit_handle();
+            let _runtime1 = {
+                let pi1_ref = &pi1;
+                event_loop_factory.make_runtime("runtime1", pi1, move |runtime1| {
+                    assert!(pi1_ref.unwrap().has_name());
+                    let channel = runtime1
+                        .get_raw_channel("/test", "aos.examples.Ping")
+                        .unwrap();
+                    let mut watcher = runtime1.make_raw_watcher(channel);
+                    runtime1.spawn(async move {
+                        watcher.next().await;
+                        GLOBAL_STATE.with(|g| {
+                            let g = &mut *g.borrow_mut();
+                            g.watcher_count = g.watcher_count + 1;
+                        });
+                        exit_handle.exit().await
                     });
-                    exit_handle.exit().await
-                });
-            }
+                })
+            };
 
-            {
-                let mut sender = runtime2.make_raw_sender(channel);
-                runtime2.spawn(async move {
-                    GLOBAL_STATE.with(|g| {
-                        let g = &mut *g.borrow_mut();
-                        g.startup_count = g.startup_count + 1;
+            let _runtime2 = {
+                let pi1_ref = &pi1;
+                event_loop_factory.make_runtime("runtime2", pi1, |runtime2| {
+                    assert!(pi1_ref.unwrap().has_name());
+                    let channel = runtime2
+                        .get_raw_channel("/test", "aos.examples.Ping")
+                        .unwrap();
+                    let mut sender = runtime2.make_raw_sender(channel);
+                    runtime2.spawn(async move {
+                        GLOBAL_STATE.with(|g| {
+                            let g = &mut *g.borrow_mut();
+                            g.startup_count = g.startup_count + 1;
+                        });
+
+                        let mut builder = sender.make_builder();
+                        let ping = PingBuilder::new(builder.fbb()).finish();
+                        // SAFETY: We're using the correct message type.
+                        unsafe { builder.send(ping) }.expect("send should succeed");
+                        pending().await
                     });
-
-                    let mut builder = sender.make_builder();
-                    let ping = PingBuilder::new(builder.fbb()).finish();
-                    // SAFETY: We're using the correct message type.
-                    unsafe { builder.send(ping) }.expect("send should succeed");
-                    pending().await
-                });
-            }
+                })
+            };
 
             GLOBAL_STATE.with(|g| {
                 let g = g.borrow();
