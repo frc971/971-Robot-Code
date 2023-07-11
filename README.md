@@ -320,6 +320,16 @@ assigning an IP address to the roboRIO.  James says to also note that this
 implies that the roboRIO will also have a 169.254.*.* IP addresss, and
 that the only simple way to figure it out is to use mDNS.
 
+### LSP Setup for Rust
+
+You can run `bazel run //tools:gen_rust_project` to generate a rust-project.json
+file which rust-analyzer will pick up. You will need to execute this rule
+periodically as it will be outdated whenever the BUILD files change.
+
+> **Note** that there's currently no way to tell rust-analyzer *how* to compile
+the code, so while it will give you completion support, go to definition, and
+other niceties, it won't show compilation errors or warnings at this point.
+
 
 ### Other resources
   1. Intro to [AOS](./aos/README.md), our robot Operating System

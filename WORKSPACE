@@ -1089,7 +1089,9 @@ local_repository(
     path = "third_party/rules_rust",
 )
 
-load("@rules_rust//rust:repositories.bzl", "rust_repository_set")
+load("@rules_rust//rust:repositories.bzl", "rust_analyzer_toolchain_repository", "rust_repository_set")
+
+RUST_VERSION = "1.70.0"
 
 rust_repository_set(
     name = "rust",
@@ -1102,8 +1104,8 @@ rust_repository_set(
         "aarch64-unknown-linux-gnu",
     ],
     register_toolchain = False,
-    rustfmt_version = "1.70.0",
-    versions = ["1.70.0"],
+    rustfmt_version = RUST_VERSION,
+    versions = [RUST_VERSION],
 )
 
 load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
@@ -1157,7 +1159,7 @@ crates_repository(
     ],
     rust_toolchain_cargo_template = "@rust__{triple}__{channel}_tools//:bin/{tool}",
     rust_toolchain_rustc_template = "@rust__{triple}__{channel}_tools//:bin/{tool}",
-    rust_version = "1.70.0",
+    rust_version = RUST_VERSION,
     supported_platform_triples = [
         "x86_64-unknown-linux-gnu",
         "arm-unknown-linux-gnueabi",
@@ -1169,6 +1171,15 @@ crates_repository(
 load("@crate_index//:defs.bzl", "crate_repositories")
 
 crate_repositories()
+
+load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
+
+rust_analyzer_dependencies()
+
+register_toolchains(rust_analyzer_toolchain_repository(
+    name = "rust_analyzer_toolchain",
+    version = RUST_VERSION,
+))
 
 http_archive(
     name = "cxxbridge-cmd",
