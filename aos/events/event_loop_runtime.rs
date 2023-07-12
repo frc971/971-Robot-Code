@@ -61,7 +61,7 @@ use autocxx::{
 };
 use cxx::UniquePtr;
 use flatbuffers::{root_unchecked, Follow, FollowWith, FullyQualifiedName};
-use futures::{future::FusedFuture, never::Never};
+use futures::{future::pending, future::FusedFuture, never::Never};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -69,6 +69,7 @@ pub use aos_configuration::{Channel, Configuration, Node};
 use aos_configuration::{ChannelLookupError, ConfigurationExt};
 
 pub use aos_uuid::UUID;
+pub use ffi::aos::ExitHandle as CppExitHandle;
 
 autocxx::include_cpp! (
 #include "aos/events/event_loop_runtime.h"
@@ -82,6 +83,7 @@ generate!("aos::SenderForRust")
 generate!("aos::FetcherForRust")
 generate!("aos::OnRunForRust")
 generate!("aos::EventLoopRuntime")
+generate!("aos::ExitHandle")
 
 subclass!("aos::ApplicationFuture", RustApplicationFuture)
 
@@ -1194,3 +1196,28 @@ mod panic_waker {
 }
 
 use panic_waker::panic_waker;
+
+pub struct ExitHandle(UniquePtr<CppExitHandle>);
+
+impl ExitHandle {
+    /// Exits the EventLoops represented by this handle. You probably want to immediately return
+    /// from the context this is called in. Awaiting [`exit`] instead of using this function is an
+    /// easy way to do that.
+    pub fn exit_sync(mut self) {
+        self.0.as_mut().unwrap().Exit();
+    }
+
+    /// Exits the EventLoops represented by this handle, and never returns. Immediately awaiting
+    /// this from a [`EventLoopRuntime::spawn`]ed task is usually what you want, it will ensure
+    /// that no more code from that task runs.
+    pub async fn exit(self) -> Never {
+        self.exit_sync();
+        pending().await
+    }
+}
+
+impl From<UniquePtr<CppExitHandle>> for ExitHandle {
+    fn from(inner: UniquePtr<ffi::aos::ExitHandle>) -> Self {
+        Self(inner)
+    }
+}
