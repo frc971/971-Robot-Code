@@ -8,12 +8,11 @@ use std::{
 
 use autocxx::WithinBox;
 use cxx::UniquePtr;
-use futures::{future::pending, never::Never};
 
 pub use aos_configuration::{Channel, Configuration, ConfigurationExt, Node};
 use aos_configuration_fbs::aos::Configuration as RustConfiguration;
-pub use aos_events_event_loop_runtime::EventLoop;
 use aos_events_event_loop_runtime::EventLoopRuntime;
+pub use aos_events_event_loop_runtime::{CppExitHandle, EventLoop, ExitHandle};
 use aos_flatbuffers::{transmute_table_to, Flatbuffer};
 
 autocxx::include_cpp! (
@@ -22,9 +21,9 @@ autocxx::include_cpp! (
 
 safety!(unsafe)
 
-generate!("aos::ExitHandle")
 generate!("aos::SimulatedEventLoopFactoryForRust")
 
+extern_cpp_type!("aos::ExitHandle", crate::CppExitHandle)
 extern_cpp_type!("aos::Configuration", crate::Configuration)
 extern_cpp_type!("aos::Node", crate::Node)
 extern_cpp_type!("aos::EventLoop", crate::EventLoop)
@@ -92,7 +91,7 @@ impl<'config> SimulatedEventLoopFactory<'config> {
     }
 
     pub fn make_exit_handle(&mut self) -> ExitHandle {
-        ExitHandle(self.as_mut().MakeExitHandle())
+        self.as_mut().MakeExitHandle().into()
     }
 
     pub fn run(&mut self) {
@@ -102,27 +101,6 @@ impl<'config> SimulatedEventLoopFactory<'config> {
     // TODO(Brian): Expose OnStartup. Just take a callback for creating things, and rely on
     // dropping the created objects instead of OnShutdown.
     // pub fn spawn_on_startup(&mut self, spawner: impl FnMut());
-}
-
-// TODO(Brian): Move this and the `generate!` somewhere else once we wrap ShmEventLoop, which also
-// uses it.
-pub struct ExitHandle(UniquePtr<ffi::aos::ExitHandle>);
-
-impl ExitHandle {
-    /// Exits the EventLoops represented by this handle. You probably want to immediately return
-    /// from the context this is called in. Awaiting [`exit`] instead of using this function is an
-    /// easy way to do that.
-    pub fn exit_sync(mut self) {
-        self.0.as_mut().unwrap().Exit();
-    }
-
-    /// Exits the EventLoops represented by this handle, and never returns. Immediately awaiting
-    /// this from a [`EventLoopRuntime::spawn`]ed task is usually what you want, it will ensure
-    /// that no more code from that task runs.
-    pub async fn exit(self) -> Never {
-        self.exit_sync();
-        pending().await
-    }
 }
 
 pub struct SimulatedEventLoopRuntime(ManuallyDrop<EventLoopRuntime<'static>>);
