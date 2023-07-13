@@ -64,11 +64,35 @@ void FromHex(const char *val, uint8_t *result, size_t count) {
   }
 }
 
-uint32_t RandomSeed() {
-  std::random_device rd;
-  return rd();
-}
 }  // namespace
+
+namespace internal {
+std::mt19937 FullySeededRandomGenerator() {
+  // Total bits that the mt19937 has internally that we could plausibly
+  // initialize with.
+  // The internal state ends up being ~1200 bytes, which is significantly more
+  // than the 128 bits we want for UUIDs, but since we should only need to
+  // generate this randomness once, it should be fine.
+  // If the performance cost ends up causing issues, then we can revisit the
+  // need to *fully* seed the twister.
+  constexpr size_t kInternalEntropy =
+      std::mt19937::state_size * sizeof(std::mt19937::result_type);
+  // Number, rounded up, of random values required.
+  constexpr size_t kSeedsRequired =
+      ((kInternalEntropy - 1) / sizeof(std::random_device::result_type)) + 1;
+  std::random_device random_device;
+// Older LLVM libstdc++'s just return 0 for the random device entropy.
+#if !defined(__clang__) || (__clang_major__ > 13)
+  CHECK_EQ(sizeof(std::random_device::result_type) * 8, random_device.entropy())
+      << ": Does your random_device actually support generating entropy?";
+#endif
+  std::array<std::random_device::result_type, kSeedsRequired> random_data;
+  std::generate(std::begin(random_data), std::end(random_data),
+                std::ref(random_device));
+  std::seed_seq seeds(std::begin(random_data), std::end(random_data));
+  return std::mt19937(seeds);
+}
+}  // namespace internal
 
 UUID UUID::Random() {
   // Note: This only provides 32 bits of randomness to each thread. However, by
@@ -76,12 +100,9 @@ UUID UUID::Random() {
   // overall randomness of each call to Random() (since, essentially, the
   // randomness is coming from the combination of the initial seed + the number
   // of times that Random() has been called in the given thread).
-  // TODO(james): Seed with a minimum of 128 bits of randomness, or even the
-  // full 624 bits of the internal mersenne twister state (see
-  // https://codereview.stackexchange.com/questions/109260/seed-stdmt19937-from-stdrandom-device/109266#109266).
   //
   // thread_local to guarantee safe use of the generator itself.
-  thread_local std::mt19937 gen(RandomSeed());
+  thread_local std::mt19937 gen(internal::FullySeededRandomGenerator());
 
   std::uniform_int_distribution<> dis(0, 255);
   UUID result;

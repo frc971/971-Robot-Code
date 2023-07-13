@@ -3,6 +3,7 @@
 
 #include <array>
 #include <ostream>
+#include <random>
 #include <string>
 
 #include "absl/types/span.h"
@@ -20,6 +21,9 @@ class UUID {
   static constexpr size_t kDataSize = 16;
 
   // Returns a randomly generated UUID.  This is known as a UUID4.
+  // The first Random() call in a thread will tend to be slightly slower than
+  // the rest so that it can seed the pseudo-random number generator used
+  // internally.
   static UUID Random();
 
   // Returns a uuid with all '0's.
@@ -94,6 +98,13 @@ class UUID {
 };
 
 std::ostream &operator<<(std::ostream &os, const UUID &uuid);
+
+namespace internal {
+// Initializes a mt19937 with as much entropy as it can take (rather than just a
+// 32-bit value from std::random_device).
+// Exposed for testing purposes.
+std::mt19937 FullySeededRandomGenerator();
+}  // namespace internal
 
 }  // namespace aos
 

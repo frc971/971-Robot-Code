@@ -19,6 +19,7 @@
 #include "glog/raw_logging.h"
 
 #include "aos/thread_local.h"
+#include "aos/uuid.h"
 
 DEFINE_bool(
     die_on_malloc, true,
@@ -184,6 +185,10 @@ cpu_set_t GetCurrentThreadAffinity() {
 }
 
 void SetCurrentThreadRealtimePriority(int priority) {
+  // Ensure that we won't get expensive reads of /dev/random when the realtime
+  // scheduler is running.
+  UUID::Random();
+
   if (FLAGS_skip_realtime_scheduler) {
     LOG(WARNING) << "Ignoring request to switch to the RT scheduler due to "
                     "--skip_realtime_scheduler.";

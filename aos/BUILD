@@ -177,6 +177,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":realtime",
+        ":uuid",
         "//aos:die",
         "//aos/logging:implementations",
     ],
@@ -209,6 +210,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":thread_local",
+        ":uuid",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -714,7 +716,9 @@ cc_library(
 
 cc_test(
     name = "uuid_collision_test",
+    timeout = "eternal",
     srcs = ["uuid_collision_test.cc"],
+    shard_count = 2,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":uuid",

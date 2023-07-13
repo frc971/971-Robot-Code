@@ -15,6 +15,7 @@
 #include "glog/logging.h"
 
 #include "aos/realtime.h"
+#include "aos/uuid.h"
 
 DEFINE_bool(coredump, false, "If true, write core dumps on failure.");
 
@@ -37,6 +38,10 @@ void InitGoogle(int *argc, char ***argv) {
   }
 
   RegisterMallocHook();
+  // Ensure that the random number generator for the UUID code is initialized
+  // (it does some potentially expensive random number generation).
+  UUID::Random();
+
   initialized = true;
 }
 
