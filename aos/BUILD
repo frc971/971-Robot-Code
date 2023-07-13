@@ -713,6 +713,16 @@ cc_library(
 )
 
 cc_test(
+    name = "uuid_collision_test",
+    srcs = ["uuid_collision_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":uuid",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_test(
     name = "uuid_test",
     srcs = ["uuid_test.cc"],
     target_compatible_with = ["@platforms//os:linux"],

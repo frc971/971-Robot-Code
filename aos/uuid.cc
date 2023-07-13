@@ -64,14 +64,26 @@ void FromHex(const char *val, uint8_t *result, size_t count) {
   }
 }
 
+uint32_t RandomSeed() {
+  std::random_device rd;
+  return rd();
+}
 }  // namespace
 
 UUID UUID::Random() {
-  std::random_device rd;
-  std::mt19937 gen(rd());
+  // Note: This only provides 32 bits of randomness to each thread. However, by
+  // keeping persistent pseudo-random number generators, we can increase the
+  // overall randomness of each call to Random() (since, essentially, the
+  // randomness is coming from the combination of the initial seed + the number
+  // of times that Random() has been called in the given thread).
+  // TODO(james): Seed with a minimum of 128 bits of randomness, or even the
+  // full 624 bits of the internal mersenne twister state (see
+  // https://codereview.stackexchange.com/questions/109260/seed-stdmt19937-from-stdrandom-device/109266#109266).
+  //
+  // thread_local to guarantee safe use of the generator itself.
+  thread_local std::mt19937 gen(RandomSeed());
 
   std::uniform_int_distribution<> dis(0, 255);
-  std::uniform_int_distribution<> dis2(8, 11);
   UUID result;
   for (size_t i = 0; i < kDataSize; ++i) {
     result.data_[i] = dis(gen);
