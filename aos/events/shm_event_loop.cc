@@ -50,7 +50,7 @@ DEFINE_string(shm_base, "/dev/shm/aos",
 // WITH THE DEFAULT UMASK YOU WONT ACTUALLY GET THESE PERMISSIONS :)
 DEFINE_uint32(permissions, 0770,
               "Permissions to make shared memory files and folders, "
-              "effected by the processes umask. "
+              "affected by the process's umask. "
               "See shm_event_loop.cc for more details.");
 DEFINE_string(application_name, Filename(program_invocation_name),
               "The application name");
