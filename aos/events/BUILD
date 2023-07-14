@@ -96,6 +96,20 @@ cc_test(
 )
 
 cc_library(
+    name = "context",
+    hdrs = [
+        "context.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:flatbuffers",
+        "//aos:uuid",
+        "//aos/time",
+    ],
+)
+
+cc_library(
     name = "event_loop",
     srcs = [
         "event_loop.cc",
@@ -109,6 +123,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        ":context",
         ":event_loop_fbs",
         ":timing_statistics",
         "//aos:configuration",

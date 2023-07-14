@@ -226,7 +226,8 @@ class SimpleShmFetcher {
         queue_index.index(), &context_.monotonic_event_time,
         &context_.realtime_event_time, &context_.monotonic_remote_time,
         &context_.realtime_remote_time, &context_.remote_queue_index,
-        &context_.source_boot_uuid, &context_.size, copy_buffer);
+        &context_.source_boot_uuid, &context_.size, copy_buffer,
+        std::ref(should_fetch_));
 
     if (read_result == ipc_lib::LocklessQueueReader::Result::GOOD) {
       if (pin_data()) {
@@ -320,6 +321,11 @@ class SimpleShmFetcher {
   std::optional<ipc_lib::LocklessQueuePinner> pinner_;
 
   Context context_;
+
+  // Pre-allocated should_fetch function so we don't allocate.
+  std::function<bool(const Context &)> should_fetch_ = [](const Context &) {
+    return true;
+  };
 };
 
 class ShmFetcher : public RawFetcher {

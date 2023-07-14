@@ -692,6 +692,11 @@ TEST(LocklessQueueTest, Death) {
         // increments.
         char last_data = '0';
         int i = 0;
+
+        std::function<bool(const Context &)> should_read = [](const Context &) {
+          return true;
+        };
+
         while (true) {
           monotonic_clock::time_point monotonic_sent_time;
           realtime_clock::time_point realtime_sent_time;
@@ -702,10 +707,11 @@ TEST(LocklessQueueTest, Death) {
           char read_data[1024];
           size_t length;
 
-          LocklessQueueReader::Result read_result = reader.Read(
-              i, &monotonic_sent_time, &realtime_sent_time,
-              &monotonic_remote_time, &realtime_remote_time,
-              &remote_queue_index, &source_boot_uuid, &length, &(read_data[0]));
+          LocklessQueueReader::Result read_result =
+              reader.Read(i, &monotonic_sent_time, &realtime_sent_time,
+                          &monotonic_remote_time, &realtime_remote_time,
+                          &remote_queue_index, &source_boot_uuid, &length,
+                          &(read_data[0]), std::ref(should_read));
 
           if (read_result != LocklessQueueReader::Result::GOOD) {
             if (read_result == LocklessQueueReader::Result::TOO_OLD) {

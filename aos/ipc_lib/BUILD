@@ -209,6 +209,7 @@ cc_library(
         "//aos:configuration",
         "//aos:realtime",
         "//aos:uuid",
+        "//aos/events:context",
         "//aos/time",
         "//aos/util:compiler_memory_barrier",
         "@com_github_google_glog//:glog",

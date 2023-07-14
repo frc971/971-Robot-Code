@@ -1269,7 +1269,7 @@ LocklessQueueReader::Result LocklessQueueReader::Read(
     monotonic_clock::time_point *monotonic_remote_time,
     realtime_clock::time_point *realtime_remote_time,
     uint32_t *remote_queue_index, UUID *source_boot_uuid, size_t *length,
-    char *data) const {
+    char *data, std::function<bool(const Context &)> should_read) const {
   const size_t queue_size = memory_->queue_size();
 
   // Build up the QueueIndex.
@@ -1343,34 +1343,80 @@ LocklessQueueReader::Result LocklessQueueReader::Read(
 
   // Then read the data out.  Copy it all out to be deterministic and so we can
   // make length be from either end.
-  *monotonic_sent_time = m->header.monotonic_sent_time;
-  *realtime_sent_time = m->header.realtime_sent_time;
-  if (m->header.remote_queue_index == 0xffffffffu) {
-    *remote_queue_index = queue_index.index();
+  if (!should_read) {
+    *monotonic_sent_time = m->header.monotonic_sent_time;
+    *realtime_sent_time = m->header.realtime_sent_time;
+    if (m->header.remote_queue_index == 0xffffffffu) {
+      *remote_queue_index = queue_index.index();
+    } else {
+      *remote_queue_index = m->header.remote_queue_index;
+    }
+    *monotonic_remote_time = m->header.monotonic_remote_time;
+    *realtime_remote_time = m->header.realtime_remote_time;
+    *source_boot_uuid = m->header.source_boot_uuid;
+    *length = m->header.length;
   } else {
-    *remote_queue_index = m->header.remote_queue_index;
+    // Cache the header results so we don't modify the outputs unless the filter
+    // function says "go".
+    Context context;
+    context.monotonic_event_time = m->header.monotonic_sent_time;
+    context.realtime_event_time = m->header.realtime_sent_time;
+    context.monotonic_remote_time = m->header.monotonic_remote_time;
+    context.realtime_remote_time = m->header.realtime_remote_time;
+    context.queue_index = queue_index.index();
+    if (m->header.remote_queue_index == 0xffffffffu) {
+      context.remote_queue_index = context.queue_index;
+    } else {
+      context.remote_queue_index = m->header.remote_queue_index;
+    }
+    context.source_boot_uuid = m->header.source_boot_uuid;
+    context.size = m->header.length;
+    context.data = nullptr;
+    context.buffer_index = -1;
+
+    // And finally, confirm that the message *still* points to the queue index
+    // we want.  This means it didn't change out from under us. If something
+    // changed out from under us, we were reading it much too late in its
+    // lifetime.
+    aos_compiler_memory_barrier();
+    const QueueIndex final_queue_index = m->header.queue_index.Load(queue_size);
+    if (final_queue_index != queue_index) {
+      VLOG(3) << "Changed out from under us.  Reading " << std::hex
+              << queue_index.index() << ", finished with "
+              << final_queue_index.index() << ", delta: " << std::dec
+              << (final_queue_index.index() - queue_index.index());
+      return Result::OVERWROTE;
+    }
+
+    // We now know that the context is safe to use.  See if we are supposed to
+    // take the message or not.
+    if (!should_read(context)) {
+      return Result::FILTERED;
+    }
+
+    // And now take it.
+    *monotonic_sent_time = context.monotonic_event_time;
+    *realtime_sent_time = context.realtime_event_time;
+    *remote_queue_index = context.remote_queue_index;
+    *monotonic_remote_time = context.monotonic_remote_time;
+    *realtime_remote_time = context.realtime_remote_time;
+    *source_boot_uuid = context.source_boot_uuid;
+    *length = context.size;
   }
-  *monotonic_remote_time = m->header.monotonic_remote_time;
-  *realtime_remote_time = m->header.realtime_remote_time;
-  *source_boot_uuid = m->header.source_boot_uuid;
   if (data) {
     memcpy(data, m->data(memory_->message_data_size()),
            memory_->message_data_size());
-  }
-  *length = m->header.length;
 
-  // And finally, confirm that the message *still* points to the queue index we
-  // want.  This means it didn't change out from under us.
-  // If something changed out from under us, we were reading it much too late in
-  // it's lifetime.
-  aos_compiler_memory_barrier();
-  const QueueIndex final_queue_index = m->header.queue_index.Load(queue_size);
-  if (final_queue_index != queue_index) {
-    VLOG(3) << "Changed out from under us.  Reading " << std::hex
-            << queue_index.index() << ", finished with "
-            << final_queue_index.index() << ", delta: " << std::dec
-            << (final_queue_index.index() - queue_index.index());
-    return Result::OVERWROTE;
+    // Check again since we touched the message again.
+    aos_compiler_memory_barrier();
+    const QueueIndex final_queue_index = m->header.queue_index.Load(queue_size);
+    if (final_queue_index != queue_index) {
+      VLOG(3) << "Changed out from under us.  Reading " << std::hex
+              << queue_index.index() << ", finished with "
+              << final_queue_index.index() << ", delta: " << std::dec
+              << (final_queue_index.index() - queue_index.index());
+      return Result::OVERWROTE;
+    }
   }
 
   return Result::GOOD;

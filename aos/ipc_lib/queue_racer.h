@@ -48,7 +48,12 @@ class QueueRacer {
   // necesitates a loser check at the end.
   //
   // If both are set, run an even looser test.
-  void RunIteration(bool race_reads, int write_wrap_count);
+  //
+  // set_should_read is used to determine if we should pass in a valid
+  // should_read function, and should_read_result is the return result of that
+  // function.
+  void RunIteration(bool race_reads, int write_wrap_count, bool set_should_read,
+                    bool should_read_result);
 
   size_t CurrentIndex() {
     return LocklessQueueReader(queue_).LatestIndex().index();
@@ -64,7 +69,8 @@ class QueueRacer {
   // clean up all the threads.  Otherwise we get an assert on the way out of
   // RunIteration instead of getting all the way back to gtest.
   void CheckReads(bool race_reads, int write_wrap_count,
-                  ::std::vector<ThreadState> *threads);
+                  ::std::vector<ThreadState> *threads, bool set_should_read,
+                  bool should_read_result);
 
   LocklessQueue queue_;
   const uint64_t num_threads_;
@@ -80,6 +86,14 @@ class QueueRacer {
   ::std::atomic<uint64_t> started_writes_;
   // Number of writes completed.
   ::std::atomic<uint64_t> finished_writes_;
+
+  std::function<bool(uint32_t, monotonic_clock::time_point,
+                     realtime_clock::time_point, monotonic_clock::time_point,
+                     realtime_clock::time_point, uint32_t, UUID, size_t)>
+      should_read_ = [](uint32_t, monotonic_clock::time_point,
+                        realtime_clock::time_point, monotonic_clock::time_point,
+                        realtime_clock::time_point, uint32_t, UUID,
+                        size_t) { return true; };
 };
 
 }  // namespace ipc_lib
