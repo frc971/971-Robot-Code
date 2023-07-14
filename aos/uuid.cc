@@ -95,12 +95,6 @@ std::mt19937 FullySeededRandomGenerator() {
 }  // namespace internal
 
 UUID UUID::Random() {
-  // Note: This only provides 32 bits of randomness to each thread. However, by
-  // keeping persistent pseudo-random number generators, we can increase the
-  // overall randomness of each call to Random() (since, essentially, the
-  // randomness is coming from the combination of the initial seed + the number
-  // of times that Random() has been called in the given thread).
-  //
   // thread_local to guarantee safe use of the generator itself.
   thread_local std::mt19937 gen(internal::FullySeededRandomGenerator());
 
