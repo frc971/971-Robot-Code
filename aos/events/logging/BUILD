@@ -28,14 +28,31 @@ cc_static_flatbuffer(
 )
 
 flatbuffer_cc_library(
+    name = "log_replayer_stats_fbs",
+    srcs = ["log_replayer_stats.fbs"],
+    gen_reflections = True,
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":replay_config_fbs",
+    ],
+)
+
+cc_static_flatbuffer(
+    name = "log_replayer_stats_schema",
+    function = "aos::LogReplayerStatsSchema",
+    target = ":log_replayer_stats_fbs_reflection_out",
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_cc_library(
     name = "replay_config_fbs",
     srcs = ["log_replayer_config.fbs"],
     gen_reflections = True,
-    includes = [
-        "//aos:configuration_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//aos:configuration_fbs",
+    ],
 )
 
 cc_library(
@@ -59,6 +76,8 @@ cc_binary(
     deps = [
         ":log_reader",
         ":log_reader_utils",
+        ":log_replayer_stats_fbs",
+        ":log_replayer_stats_schema",
         ":replay_config_fbs",
         ":replay_timing_fbs",
         ":replay_timing_schema",

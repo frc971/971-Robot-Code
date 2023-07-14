@@ -16,6 +16,8 @@
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/log_reader_utils.h"
 #include "aos/events/logging/log_replayer_config_generated.h"
+#include "aos/events/logging/log_replayer_stats_generated.h"
+#include "aos/events/logging/log_replayer_stats_schema.h"
 #include "aos/events/logging/logfile_sorting.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/replay_timing_generated.h"
@@ -48,6 +50,8 @@ DEFINE_string(
 DEFINE_string(merge_with_config, "",
               "A valid json string to be merged with config. This is used to "
               "add extra applications needed to run only for log_replayer");
+DEFINE_bool(print_stats, true,
+            "if set, prints the LogReplayerStats message as JSON to stdout");
 
 namespace aos::logger {
 
@@ -74,6 +78,16 @@ int Main(int argc, char *argv[]) {
             aos::timing::ReplayTimingSchema()),
         aos::configuration::GetMyNode(raw_config), channel_overrides);
   }
+
+  // Add the LogReplayerStats channel
+  const aos::Configuration *raw_config = &config.message();
+  aos::ChannelT channel_overrides;
+  channel_overrides.max_size = 10000;
+  channel_overrides.frequency = 1;
+  config = aos::configuration::AddChannelToConfiguration(
+      raw_config, "/replay",
+      aos::FlatbufferSpan<reflection::Schema>(aos::LogReplayerStatsSchema()),
+      aos::configuration::GetMyNode(raw_config), channel_overrides);
 
   if (!FLAGS_merge_with_config.empty()) {
     config = aos::configuration::MergeWithConfig(&config.message(),
@@ -139,7 +153,49 @@ int Main(int argc, char *argv[]) {
     event_loop.SkipAosLog();
     event_loop.SkipTimingReport();
 
+    aos::Sender<aos::LogReplayerStats> stats_sender =
+        event_loop.MakeSender<aos::LogReplayerStats>("/replay");
+    auto builder = stats_sender.MakeBuilder();
+    auto node_name = builder.fbb()->CreateString(event_loop.node()->name());
+    flatbuffers::Offset<aos::ReplayConfig> replay_config_offset;
+    if (replay_config.has_value()) {
+      replay_config_offset =
+          aos::CopyFlatBuffer(&replay_config.value().message(), builder.fbb());
+    }
+
+    auto stats_builder = builder.MakeBuilder<aos::LogReplayerStats>();
+    if (replay_config.has_value()) {
+      stats_builder.add_replay_config(replay_config_offset);
+    }
+
     reader.Register(&event_loop);
+
+    // Save off the start and end times of replay.
+    reader.OnStart(event_loop.node(), [&event_loop, &stats_builder,
+                                       &node_name]() {
+      stats_builder.add_node(node_name);
+      stats_builder.add_realtime_start_time(
+          std::chrono::nanoseconds(event_loop.realtime_now().time_since_epoch())
+              .count());
+
+      stats_builder.add_monotonic_start_time(
+          std::chrono::nanoseconds(
+              event_loop.monotonic_now().time_since_epoch())
+              .count());
+    });
+
+    reader.OnEnd(event_loop.node(), [&event_loop, &stats_builder, &builder]() {
+      stats_builder.add_realtime_end_time(
+          std::chrono::nanoseconds(event_loop.realtime_now().time_since_epoch())
+              .count());
+
+      stats_builder.add_monotonic_end_time(
+          std::chrono::nanoseconds(
+              event_loop.monotonic_now().time_since_epoch())
+              .count());
+      builder.CheckOk(builder.Send(stats_builder.Finish()));
+    });
+
     reader.OnEnd(event_loop.node(), [&event_loop]() { event_loop.Exit(); });
 
     if (FLAGS_plot_timing) {
@@ -152,6 +208,13 @@ int Main(int argc, char *argv[]) {
     event_loop.Run();
 
     reader.Deregister();
+
+    if (FLAGS_print_stats) {
+      aos::Fetcher<aos::LogReplayerStats> stats_fetcher =
+          event_loop.MakeFetcher<aos::LogReplayerStats>("/replay");
+      CHECK(stats_fetcher.Fetch()) << "Failed to fetch LogReplayerStats!";
+      std::cout << aos::FlatbufferToJson(stats_fetcher.get());
+    }
   }
 
   return EXIT_SUCCESS;

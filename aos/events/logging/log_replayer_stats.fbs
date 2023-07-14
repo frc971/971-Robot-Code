@@ -1,0 +1,19 @@
+include "log_replayer_config.fbs";
+
+namespace aos;
+
+table LogReplayerStats {
+	// The ReplayConfig passed to log_replayer.
+	replay_config:ReplayConfig (id: 0);
+	// Realtime start and end times of log replay, in nanoseconds.
+	realtime_start_time:int64 (id: 1);
+	realtime_end_time:int64 (id: 2);
+	// Monotonic start and end times of log replay, in nanoseconds.
+	monotonic_start_time:int64 (id: 3);
+	monotonic_end_time:int64 (id: 4);
+    // Name of the node where the log originated from.
+    // Note: Currently, only single node replay is supported.
+	node:string (id: 5);
+}
+
+root_type LogReplayerStats;
