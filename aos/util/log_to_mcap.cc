@@ -17,6 +17,12 @@ DEFINE_bool(compress, true, "Whether to use LZ4 compression in MCAP file.");
 DEFINE_bool(include_clocks, true,
             "Whether to add a /clocks channel that publishes all nodes' clock "
             "offsets.");
+DEFINE_bool(include_pre_start_messages, false,
+            "If set, *all* messages in the logfile will be included, including "
+            "any that may have occurred prior to the start of the log. This "
+            "can be used to see additional data, but given that data may be "
+            "incomplete prior to the start of the log, you should be careful "
+            "about interpretting data flow when using this flag.");
 
 // Converts an AOS log to an MCAP log that can be fed into Foxglove. To try this
 // out, run:
@@ -73,21 +79,15 @@ int main(int argc, char *argv[]) {
 
   std::unique_ptr<aos::EventLoop> clock_event_loop;
   std::unique_ptr<aos::ClockPublisher> clock_publisher;
-  if (FLAGS_include_clocks) {
-    reader.OnStart(
-        node, [&clock_event_loop, &reader, &clock_publisher, &factory, node]() {
-          clock_event_loop =
-              reader.event_loop_factory()->MakeEventLoop("clock", node);
-          clock_publisher = std::make_unique<aos::ClockPublisher>(
-              &factory, clock_event_loop.get());
-        });
-  }
 
   std::unique_ptr<aos::EventLoop> mcap_event_loop;
   CHECK(!FLAGS_output_path.empty());
   std::unique_ptr<aos::McapLogger> relogger;
-  factory.GetNodeEventLoopFactory(node)->OnStartup([&relogger, &mcap_event_loop,
-                                                    &reader, node]() {
+  auto startup_handler = [&relogger, &mcap_event_loop, &reader,
+                          &clock_event_loop, &clock_publisher, &factory,
+                          node]() {
+    CHECK(!mcap_event_loop) << ": log_to_mcap does not support generating MCAP "
+                               "files from multi-boot logs.";
     mcap_event_loop = reader.event_loop_factory()->MakeEventLoop("mcap", node);
     relogger = std::make_unique<aos::McapLogger>(
         mcap_event_loop.get(), FLAGS_output_path,
@@ -98,7 +98,22 @@ int main(int argc, char *argv[]) {
             : aos::McapLogger::CanonicalChannelNames::kShortened,
         FLAGS_compress ? aos::McapLogger::Compression::kLz4
                        : aos::McapLogger::Compression::kNone);
-  });
+    if (FLAGS_include_clocks) {
+      clock_event_loop =
+          reader.event_loop_factory()->MakeEventLoop("clock", node);
+      clock_publisher = std::make_unique<aos::ClockPublisher>(
+          &factory, clock_event_loop.get());
+    }
+  };
+  if (FLAGS_include_pre_start_messages) {
+    // Note: This condition is subtly different from just using --fetch from
+    // mcap_logger.cc. Namely, if there is >1 message on a given channel prior
+    // to the logfile start, then fetching in the reader OnStart() is
+    // insufficient to get *all* log data.
+    factory.GetNodeEventLoopFactory(node)->OnStartup(startup_handler);
+  } else {
+    reader.OnStart(node, startup_handler);
+  }
   reader.event_loop_factory()->Run();
   reader.Deregister();
 }
