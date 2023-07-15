@@ -45,7 +45,7 @@ The main central location for our code is our [Gerrit](https://www.gerritcoderev
   3. Contact Brian Silverman or Stephan Massalt with your SVN username to get access to the code in Gerrit.
   4. When you log into Gerrit the first time, please [add your Email Address](http://software.frc971.org/gerrit/settings/#EmailAddresses)
   5. Add your SSH key to Gerrit in order to be able to check out code
-    1. If you don't already have an ssh key, you can create one using `ssh-keygen`.  This will create a public/private key pair-- the default location for your public key will be `~/.ssh/id_rsa.pub`
+    1. If you don't already have an ssh key, you can create one using `ssh-keygen -t ed25519`.  This will create a public/private key pair-- the default location for your public key will be `~/.ssh/id_ed25519.pub`
     2. Log into Gerrit and go to `Settings->SSH Keys` and paste your public key into the `New SSH Key` text box and clicking on `ADD NEW SSH KEY`
   6. Install `git`: `sudo apt install git`
   7. Go to [the 971-Robot-Code project in Gerrit](https://software.frc971.org/gerrit/#/admin/projects/971-Robot-Code) and run the command to Download the 971-Robot-Code repository.
@@ -105,27 +105,27 @@ In order to use the build server, you'll first need to get ssh access set up.  (
 # In windows:
 # Important use Powershell!
 cd ~/.ssh
-ssh-keygen -f id_971_rsa
-chmod 600 id_971_rsa
+ssh-keygen -t ed25519 -f id_971_ed25519
+chmod 600 id_971_ed25519
 ```
 ```console
 # In Linux and MacOS:
 cd ~
-ssh-keygen -f ~/.ssh/id_971_rsa
-chmod 600 ./.ssh/id_971_rsa
+ssh-keygen -t ed25519 -f ~/.ssh/id_971_ed25519
+chmod 600 ./.ssh/id_971_ed25519
 ```
-  2. Send the contents of id_971_rsa.pub to Stephan Massalt along with the password that you want to use. WAIT for feedback, as he needs to setup the account.
+  2. Send the contents of id_971_ed25519.pub to Stephan Massalt along with the password that you want to use. WAIT for feedback, as he needs to setup the account.
 ```console
-cat ~/.ssh/id_971_rsa.pub
+cat ~/.ssh/id_971_ed25519.pub
 # Then send the stuff that gets printed to Stephan via slack.
 ```
   3. Once you hear back from Stephan, test SSH.
 ```console
-ssh [user]@build.frc971.org -p 2222 -i ~/.ssh/id_971_rsa
+ssh [user]@build.frc971.org -p 2222 -i ~/.ssh/id_971_ed25519
 ```
   4. If that doesnt work, then send the error msg to #coding However, if it does then use the `exit` command and then SSH tunnel.
 ```console
-ssh [user]@build.frc971.org -p 2222 -i ~/.ssh/id_971_rsa -L 9971:127.0.0.1:3389
+ssh [user]@build.frc971.org -p 2222 -i ~/.ssh/id_971_ed25519 -L 9971:127.0.0.1:3389
 ```
   5. So at this point you run the Remote Desktop app in Windows.  Once
 you get there, all you need to do is put `127.0.0.1:9971` for the
