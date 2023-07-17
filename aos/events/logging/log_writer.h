@@ -66,6 +66,15 @@ class Logger {
     separate_config_ = separate_config;
   }
 
+  // Sets the amount to run the logger behind the current time.  This lets us
+  // make decisions about rotating or stopping logging before something happens.
+  // Using this to start logging in the past isn't yet supported.  This can be
+  // changed at runtime, but will only influence future writes, not what is
+  // already written.
+  void set_logging_delay(std::chrono::nanoseconds logging_delay) {
+    logging_delay_ = logging_delay;
+  }
+
   // Sets the period between polling the data. Defaults to 100ms.
   //
   // Changing this while a set of files is being written may result in
@@ -139,11 +148,14 @@ class Logger {
   void StartLogging(std::unique_ptr<LogNamer> log_namer,
                     std::optional<UUID> log_start_uuid = std::nullopt);
 
-  // Restart logging using a new naming scheme. Intended for log rotation.
-  // Returns a unique_ptr to the prior log_namer instance.
+  // Restarts logging using a new naming scheme. Intended for log rotation.
+  // Returns a unique_ptr to the prior log_namer instance.  If provided,
+  // end_time is the time to log until.  It must be in the past.  Times before
+  // the last_synchronized_time are ignored.
   std::unique_ptr<LogNamer> RestartLogging(
       std::unique_ptr<LogNamer> log_namer,
-      std::optional<UUID> log_start_uuid = std::nullopt);
+      std::optional<UUID> log_start_uuid = std::nullopt,
+      std::optional<monotonic_clock::time_point> end_time = std::nullopt);
 
   // Stops logging. Ensures any messages through end_time make it into the log.
   //
@@ -331,6 +343,16 @@ class Logger {
 
   // Fetcher for all the statistics from all the nodes.
   aos::Fetcher<message_bridge::ServerStatistics> server_statistics_fetcher_;
+
+  monotonic_clock::time_point log_until_time_ = monotonic_clock::min_time;
+
+  std::function<bool(const Context &)> fetch_next_if_fn_ =
+      [this](const Context &context) {
+        return context.monotonic_event_time < log_until_time_;
+      };
+
+  // Amount of time to run the logger behind now.
+  std::chrono::nanoseconds logging_delay_ = std::chrono::nanoseconds(0);
 };
 
 }  // namespace logger
