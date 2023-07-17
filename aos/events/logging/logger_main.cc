@@ -79,12 +79,11 @@ int main(int argc, char *argv[]) {
   aos::logger::Logger logger(&event_loop);
 
   if (FLAGS_rotate_every != 0.0) {
-    logger.set_on_logged_period([&] {
-      const auto now = event_loop.monotonic_now();
-      if (now > last_rotation_time +
-                    std::chrono::duration<double>(FLAGS_rotate_every)) {
+    logger.set_on_logged_period([&](aos::monotonic_clock::time_point t) {
+      if (t > last_rotation_time +
+                  std::chrono::duration<double>(FLAGS_rotate_every)) {
         logger.Rotate();
-        last_rotation_time = now;
+        last_rotation_time = t;
       }
     });
   }

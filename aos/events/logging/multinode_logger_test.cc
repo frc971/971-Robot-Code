@@ -3016,13 +3016,14 @@ TEST_P(MultinodeLoggerTest, MissingPartsFromMiddle) {
     StartLogger(&pi1_logger);
     aos::monotonic_clock::time_point last_rotation_time =
         pi1_logger.event_loop->monotonic_now();
-    pi1_logger.logger->set_on_logged_period([&] {
-      const auto now = pi1_logger.event_loop->monotonic_now();
-      if (now > last_rotation_time + std::chrono::seconds(5)) {
-        pi1_logger.logger->Rotate();
-        last_rotation_time = now;
-      }
-    });
+    pi1_logger.logger->set_on_logged_period(
+        [&](aos::monotonic_clock::time_point) {
+          const auto now = pi1_logger.event_loop->monotonic_now();
+          if (now > last_rotation_time + std::chrono::seconds(5)) {
+            pi1_logger.logger->Rotate();
+            last_rotation_time = now;
+          }
+        });
 
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
   }
@@ -4216,18 +4217,19 @@ TEST_P(MultinodeLoggerTest, RestartLogging) {
     StartLogger(&pi1_logger, logfile_base1_);
     aos::monotonic_clock::time_point last_rotation_time =
         pi1_logger.event_loop->monotonic_now();
-    pi1_logger.logger->set_on_logged_period([&] {
-      const auto now = pi1_logger.event_loop->monotonic_now();
-      if (now > last_rotation_time + std::chrono::seconds(5)) {
-        pi1_logger.AppendAllFilenames(&filenames);
-        std::unique_ptr<MultiNodeFilesLogNamer> namer =
-            pi1_logger.MakeLogNamer(logfile_base2_);
-        pi1_logger.log_namer = namer.get();
+    pi1_logger.logger->set_on_logged_period(
+        [&](aos::monotonic_clock::time_point) {
+          const auto now = pi1_logger.event_loop->monotonic_now();
+          if (now > last_rotation_time + std::chrono::seconds(5)) {
+            pi1_logger.AppendAllFilenames(&filenames);
+            std::unique_ptr<MultiNodeFilesLogNamer> namer =
+                pi1_logger.MakeLogNamer(logfile_base2_);
+            pi1_logger.log_namer = namer.get();
 
-        pi1_logger.logger->RestartLogging(std::move(namer));
-        last_rotation_time = now;
-      }
-    });
+            pi1_logger.logger->RestartLogging(std::move(namer));
+            last_rotation_time = now;
+          }
+        });
 
     event_loop_factory_.RunFor(chrono::milliseconds(7000));
 

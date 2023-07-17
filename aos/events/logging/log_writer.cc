@@ -865,7 +865,7 @@ void Logger::DoLogData(const monotonic_clock::time_point end_time,
     LogUntil(std::min(last_synchronized_time_ + polling_period_, end_time));
 
     if (run_on_logged) {
-      on_logged_period_();
+      on_logged_period_(last_synchronized_time_);
     }
 
     // If we missed cycles, we could be pretty far behind.  Spin until we are

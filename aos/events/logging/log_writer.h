@@ -54,11 +54,14 @@ class Logger {
     logger_version_ = version;
   }
 
-  // Sets the callback to run after each period of data is logged. Defaults to
-  // doing nothing.
+  // Sets the callback to run *after* each period of data is logged.  Defaults
+  // to doing nothing.  The argument to the callback is the time which we just
+  // wrote until.  This is not called when rotating or finishing logs.
   //
   // This callback may safely do things like call Rotate().
-  void set_on_logged_period(std::function<void()> on_logged_period) {
+  void set_on_logged_period(
+      std::function<void(aos::monotonic_clock::time_point t)>
+          on_logged_period) {
     on_logged_period_ = std::move(on_logged_period);
   }
 
@@ -307,7 +310,10 @@ class Logger {
   std::string logger_sha1_;
   std::string logger_version_;
 
-  std::function<void()> on_logged_period_ = []() {};
+  // The callback to get called on each logged period.  See
+  // set_on_logged_period() above for more details.
+  std::function<void(aos::monotonic_clock::time_point t)> on_logged_period_ =
+      [](aos::monotonic_clock::time_point) {};
 
   std::chrono::nanoseconds max_message_fetch_time_ =
       std::chrono::nanoseconds::zero();
