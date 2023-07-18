@@ -1,6 +1,7 @@
 #include "aos/ipc_lib/lockless_queue.h"
 
 #include <linux/futex.h>
+#include <pwd.h>
 #include <sys/types.h>
 #include <syscall.h>
 #include <unistd.h>
@@ -647,7 +648,20 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
     // redo initialization.
     memory->initialized = true;
   } else {
-    CHECK_EQ(uid, memory->uid) << ": UIDs must match for all processes";
+    if (memory->uid != uid) {
+      // Subsequent calls to getpwuid() overwrite this
+      // pointer, pull the thing we care about into a
+      // string.
+      struct passwd const *user_pw = getpwuid(uid);
+      std::string user_username = user_pw->pw_name;
+      struct passwd const *memory_pw = getpwuid(memory->uid);
+      std::string memory_username = memory_pw->pw_name;
+      LOG(FATAL) << "Current user " << user_username << " (uid:" << uid << ") "
+                 << "doesn't match shared memory user " << memory_username
+                 << " (uid:" << memory->uid << "). "
+                 << "Login as " << memory_username
+                 << " user to access this channel.";
+    }
   }
 
   return memory;
