@@ -182,6 +182,10 @@ class Logger {
     });
   }
 
+  // Returns the current log event UUID.  This is randomly assigned when the log
+  // starts or restarts.
+  const UUID &log_event_uuid() const { return log_event_uuid_; }
+
  private:
   // Structure to track both a fetcher, and if the data fetched has been
   // written.  We may want to delay writing data to disk so that we don't let
