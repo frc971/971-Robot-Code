@@ -102,8 +102,71 @@ inline bool RawFetcher::FetchNext() {
   return false;
 }
 
+inline bool RawFetcher::FetchNextIf(std::function<bool(const Context &)> fn) {
+  DCHECK(fn);
+  const auto result = DoFetchNextIf(std::move(fn));
+  if (result.first) {
+    if (timing_.fetcher) {
+      timing_.fetcher->mutate_count(timing_.fetcher->count() + 1);
+    }
+    const monotonic_clock::time_point monotonic_time = result.second;
+    ftrace_.FormatMessage(
+        "%.*s: fetch next if: now=%" PRId64 " event=%" PRId64 " queue=%" PRIu32,
+        static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
+        static_cast<int64_t>(monotonic_time.time_since_epoch().count()),
+        static_cast<int64_t>(
+            context_.monotonic_event_time.time_since_epoch().count()),
+        context_.queue_index);
+    const float latency =
+        std::chrono::duration_cast<std::chrono::duration<float>>(
+            monotonic_time - context_.monotonic_event_time)
+            .count();
+    timing_.latency.Add(latency);
+    return true;
+  }
+  ftrace_.FormatMessage(
+      "%.*s: fetch next: still event=%" PRId64 " queue=%" PRIu32,
+      static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
+      static_cast<int64_t>(
+          context_.monotonic_event_time.time_since_epoch().count()),
+      context_.queue_index);
+  return false;
+}
+
 inline bool RawFetcher::Fetch() {
   const auto result = DoFetch();
+  if (result.first) {
+    if (timing_.fetcher) {
+      timing_.fetcher->mutate_count(timing_.fetcher->count() + 1);
+    }
+    const monotonic_clock::time_point monotonic_time = result.second;
+    ftrace_.FormatMessage(
+        "%.*s: fetch latest: now=%" PRId64 " event=%" PRId64 " queue=%" PRIu32,
+        static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
+        static_cast<int64_t>(monotonic_time.time_since_epoch().count()),
+        static_cast<int64_t>(
+            context_.monotonic_event_time.time_since_epoch().count()),
+        context_.queue_index);
+    const float latency =
+        std::chrono::duration_cast<std::chrono::duration<float>>(
+            monotonic_time - context_.monotonic_event_time)
+            .count();
+    timing_.latency.Add(latency);
+    return true;
+  }
+  ftrace_.FormatMessage(
+      "%.*s: fetch latest: still event=%" PRId64 " queue=%" PRIu32,
+      static_cast<int>(ftrace_prefix_.size()), ftrace_prefix_.data(),
+      static_cast<int64_t>(
+          context_.monotonic_event_time.time_since_epoch().count()),
+      context_.queue_index);
+  return false;
+}
+
+inline bool RawFetcher::FetchIf(std::function<bool(const Context &)> fn) {
+  DCHECK(fn);
+
+  const auto result = DoFetchIf(std::move(fn));
   if (result.first) {
     if (timing_.fetcher) {
       timing_.fetcher->mutate_count(timing_.fetcher->count() + 1);

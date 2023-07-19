@@ -471,7 +471,7 @@ cc_test(
     name = "shm_event_loop_test",
     srcs = ["shm_event_loop_test.cc"],
     flaky = True,
-    shard_count = 24,
+    shard_count = 50,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":event_loop_param_test",

@@ -393,6 +393,11 @@ class SimulatedFetcher : public RawFetcher {
   ~SimulatedFetcher() { simulated_channel_->UnregisterFetcher(this); }
 
   std::pair<bool, monotonic_clock::time_point> DoFetchNext() override {
+    return DoFetchNextIf(std::function<bool(const Context &context)>());
+  }
+
+  std::pair<bool, monotonic_clock::time_point> DoFetchNextIf(
+      std::function<bool(const Context &context)> fn) override {
     // The allocations in here are due to infrastructure and don't count in the
     // no mallocs in RT code.
     ScopedNotRealtime nrt;
@@ -404,12 +409,27 @@ class SimulatedFetcher : public RawFetcher {
                          << configuration::StrippedChannelToString(
                                 simulated_channel_->channel());
 
-    SetMsg(msgs_.front());
+    if (fn) {
+      Context context = msgs_.front()->context;
+      context.data = nullptr;
+      context.buffer_index = -1;
+
+      if (!fn(context)) {
+        return std::make_pair(false, monotonic_clock::min_time);
+      }
+    }
+
+    SetMsg(std::move(msgs_.front()));
     msgs_.pop_front();
     return std::make_pair(true, event_loop()->monotonic_now());
   }
 
   std::pair<bool, monotonic_clock::time_point> DoFetch() override {
+    return DoFetchIf(std::function<bool(const Context &context)>());
+  }
+
+  std::pair<bool, monotonic_clock::time_point> DoFetchIf(
+      std::function<bool(const Context &context)> fn) override {
     // The allocations in here are due to infrastructure and don't count in the
     // no mallocs in RT code.
     ScopedNotRealtime nrt;
@@ -417,9 +437,31 @@ class SimulatedFetcher : public RawFetcher {
       // TODO(austin): Can we just do this logic unconditionally?  It is a lot
       // simpler.  And call clear, obviously.
       if (!msg_ && simulated_channel_->latest_message()) {
-        SetMsg(simulated_channel_->latest_message());
+        std::shared_ptr<SimulatedMessage> latest_message =
+            simulated_channel_->latest_message();
+
+        if (fn) {
+          Context context = latest_message->context;
+          context.data = nullptr;
+          context.buffer_index = -1;
+
+          if (!fn(context)) {
+            return std::make_pair(false, monotonic_clock::min_time);
+          }
+        }
+        SetMsg(std::move(latest_message));
         return std::make_pair(true, event_loop()->monotonic_now());
       } else {
+        return std::make_pair(false, monotonic_clock::min_time);
+      }
+    }
+
+    if (fn) {
+      Context context = msgs_.back()->context;
+      context.data = nullptr;
+      context.buffer_index = -1;
+
+      if (!fn(context)) {
         return std::make_pair(false, monotonic_clock::min_time);
       }
     }

@@ -48,9 +48,16 @@ class RawFetcher {
   // Fetches the next message in the queue without blocking. Returns true if
   // there was a new message and we got it.
   bool FetchNext();
+  // Fetches the next message if there is one, and the provided function returns
+  // true.  The data and buffer_index are the only pieces of the Context which
+  // are zeroed out.  The function must be valid.
+  bool FetchNextIf(std::function<bool(const Context &context)> fn);
 
   // Fetches the latest message without blocking.
   bool Fetch();
+  // Fetches the latest message conditionally without blocking.  fn must be
+  // valid.
+  bool FetchIf(std::function<bool(const Context &context)> fn);
 
   // Returns the channel this fetcher uses.
   const Channel *channel() const { return channel_; }
@@ -67,7 +74,11 @@ class RawFetcher {
   friend class EventLoop;
   // Implementation
   virtual std::pair<bool, monotonic_clock::time_point> DoFetchNext() = 0;
+  virtual std::pair<bool, monotonic_clock::time_point> DoFetchNextIf(
+      std::function<bool(const Context &)> fn) = 0;
   virtual std::pair<bool, monotonic_clock::time_point> DoFetch() = 0;
+  virtual std::pair<bool, monotonic_clock::time_point> DoFetchIf(
+      std::function<bool(const Context &)> fn) = 0;
 
   EventLoop *const event_loop_;
   const Channel *const channel_;
@@ -241,11 +252,35 @@ class Fetcher {
     return result;
   }
 
+  // Fetches the next message if there is one, and the provided function returns
+  // true.  The data and buffer_index are the only pieces of the Context which
+  // are zeroed out.  The function must be valid.
+  bool FetchNextIf(std::function<bool(const Context &)> fn) {
+    const bool result = CHECK_NOTNULL(fetcher_)->FetchNextIf(std::move(fn));
+    if (result) {
+      CheckChannelDataAlignment(fetcher_->context().data,
+                                fetcher_->context().size);
+    }
+    return result;
+  }
+
   // Fetches the most recent message. Returns true if it fetched a new message.
   // This will return the latest message regardless of if it was sent before or
   // after the fetcher was created.
   bool Fetch() {
     const bool result = CHECK_NOTNULL(fetcher_)->Fetch();
+    if (result) {
+      CheckChannelDataAlignment(fetcher_->context().data,
+                                fetcher_->context().size);
+    }
+    return result;
+  }
+
+  // Fetches the most recent message conditionally. Returns true if it fetched a
+  // new message. This will return the latest message regardless of if it was
+  // sent before or after the fetcher was created.  The function must be valid.
+  bool FetchIf(std::function<bool(const Context &)> fn) {
+    const bool result = CHECK_NOTNULL(fetcher_)->FetchIf(std::move(fn));
     if (result) {
       CheckChannelDataAlignment(fetcher_->context().data,
                                 fetcher_->context().size);

@@ -165,14 +165,16 @@ class SimpleShmFetcher {
     }
   }
 
-  bool FetchNext() {
+  bool FetchNext() { return FetchNextIf(std::ref(should_fetch_)); }
+
+  bool FetchNextIf(std::function<bool(const Context &)> fn) {
     const ipc_lib::LocklessQueueReader::Result read_result =
-        DoFetch(actual_queue_index_);
+        DoFetch(actual_queue_index_, std::move(fn));
 
     return read_result == ipc_lib::LocklessQueueReader::Result::GOOD;
   }
 
-  bool Fetch() {
+  bool FetchIf(std::function<bool(const Context &)> fn) {
     const ipc_lib::QueueIndex queue_index = reader_.LatestIndex();
     // actual_queue_index_ is only meaningful if it was set by Fetch or
     // FetchNext.  This happens when valid_data_ has been set.  So, only
@@ -187,7 +189,7 @@ class SimpleShmFetcher {
     }
 
     const ipc_lib::LocklessQueueReader::Result read_result =
-        DoFetch(queue_index);
+        DoFetch(queue_index, std::move(fn));
 
     CHECK(read_result != ipc_lib::LocklessQueueReader::Result::NOTHING_NEW)
         << ": Queue index went backwards.  This should never happen.  "
@@ -195,6 +197,8 @@ class SimpleShmFetcher {
 
     return read_result == ipc_lib::LocklessQueueReader::Result::GOOD;
   }
+
+  bool Fetch() { return FetchIf(std::ref(should_fetch_)); }
 
   Context context() const { return context_; }
 
@@ -229,7 +233,8 @@ class SimpleShmFetcher {
 
  private:
   ipc_lib::LocklessQueueReader::Result DoFetch(
-      ipc_lib::QueueIndex queue_index) {
+      ipc_lib::QueueIndex queue_index,
+      std::function<bool(const Context &context)> fn) {
     // TODO(austin): Get behind and make sure it dies.
     char *copy_buffer = nullptr;
     if (copy_data()) {
@@ -239,8 +244,7 @@ class SimpleShmFetcher {
         queue_index.index(), &context_.monotonic_event_time,
         &context_.realtime_event_time, &context_.monotonic_remote_time,
         &context_.realtime_remote_time, &context_.remote_queue_index,
-        &context_.source_boot_uuid, &context_.size, copy_buffer,
-        std::ref(should_fetch_));
+        &context_.source_boot_uuid, &context_.size, copy_buffer, std::move(fn));
 
     if (read_result == ipc_lib::LocklessQueueReader::Result::GOOD) {
       if (pin_data()) {
@@ -336,9 +340,7 @@ class SimpleShmFetcher {
   Context context_;
 
   // Pre-allocated should_fetch function so we don't allocate.
-  std::function<bool(const Context &)> should_fetch_ = [](const Context &) {
-    return true;
-  };
+  const std::function<bool(const Context &)> should_fetch_;
 };
 
 class ShmFetcher : public RawFetcher {
@@ -364,9 +366,29 @@ class ShmFetcher : public RawFetcher {
     return std::make_pair(false, monotonic_clock::min_time);
   }
 
+  std::pair<bool, monotonic_clock::time_point> DoFetchNextIf(
+      std::function<bool(const Context &context)> fn) override {
+    shm_event_loop()->CheckCurrentThread();
+    if (simple_shm_fetcher_.FetchNextIf(std::move(fn))) {
+      context_ = simple_shm_fetcher_.context();
+      return std::make_pair(true, monotonic_clock::now());
+    }
+    return std::make_pair(false, monotonic_clock::min_time);
+  }
+
   std::pair<bool, monotonic_clock::time_point> DoFetch() override {
     shm_event_loop()->CheckCurrentThread();
     if (simple_shm_fetcher_.Fetch()) {
+      context_ = simple_shm_fetcher_.context();
+      return std::make_pair(true, monotonic_clock::now());
+    }
+    return std::make_pair(false, monotonic_clock::min_time);
+  }
+
+  std::pair<bool, monotonic_clock::time_point> DoFetchIf(
+      std::function<bool(const Context &context)> fn) override {
+    shm_event_loop()->CheckCurrentThread();
+    if (simple_shm_fetcher_.FetchIf(std::move(fn))) {
       context_ = simple_shm_fetcher_.context();
       return std::make_pair(true, monotonic_clock::now());
     }
