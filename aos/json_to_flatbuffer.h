@@ -86,12 +86,17 @@ void FlatbufferToJson(FastStringBuilder *builder,
 
 // Writes a Flatbuffer to a file, or dies.
 template <typename T>
-inline void WriteFlatbufferToJson(std::string_view filename,
-                                  const Flatbuffer<T> &msg) {
+inline void WriteFlatbufferToJson(std::string_view filename, const T *msg) {
   std::ofstream json_file(std::string(filename), std::ios::out);
   CHECK(json_file) << ": Couldn't open " << filename;
   json_file << FlatbufferToJson(msg);
   json_file.close();
+}
+
+template <typename T>
+inline void WriteFlatbufferToJson(std::string_view filename,
+                                  const Flatbuffer<T> &msg) {
+  WriteFlatbufferToJson(filename, &msg.message());
 }
 
 // Writes a NonSizePrefixedFlatbuffer to a binary file, or dies.
