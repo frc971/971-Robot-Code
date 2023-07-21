@@ -249,7 +249,7 @@ std::string Logger::WriteConfiguration(LogNamer *log_namer) {
     aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> config_header =
         PackConfiguration(configuration_);
     config_sha256 = Sha256(config_header.span());
-    LOG(INFO) << "Config sha256 of " << config_sha256;
+    VLOG(1) << "Config sha256 of " << config_sha256;
     log_namer->WriteConfiguration(&config_header, config_sha256);
   }
 
