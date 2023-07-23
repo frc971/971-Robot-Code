@@ -49,7 +49,7 @@ index cba9ccb1d..37fab16a7 100644
  
      # Modern build environments should be able to set this to use atomic
      # operations for reference counting rather than locks. However, it's
-@@ -86,17 +103,26 @@ posix_copts = [
+@@ -86,17 +103,29 @@ posix_copts = [
  boringssl_copts = select({
      ":linux_x86_64": posix_copts,
      ":linux_ppc64le": posix_copts,
@@ -62,7 +62,10 @@ index cba9ccb1d..37fab16a7 100644
      ],
      "//conditions:default": ["-DOPENSSL_NO_ASM"],
 +}) + compiler_select({
-+    "clang": [],
++    "clang": [
++      "-Wno-unused-but-set-variable",
++      "-Wno-array-parameter",
++    ],
 +    "gcc": [
 +      "-Wno-array-parameter",
 +    ],

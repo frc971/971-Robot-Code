@@ -92,8 +92,8 @@ class BaseTrajectory {
   }
 
   const StateFeedbackLoop<2, 2, 2, double, StateFeedbackHybridPlant<2, 2, 2>,
-                          HybridKalman<2, 2, 2>>
-      &velocity_drivetrain() const {
+                          HybridKalman<2, 2, 2>> &
+  velocity_drivetrain() const {
     return *velocity_drivetrain_;
   }
 

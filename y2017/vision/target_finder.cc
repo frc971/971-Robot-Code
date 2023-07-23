@@ -68,14 +68,12 @@ double TargetFinder::DetectConnectedTarget(const RangeImage &img) {
   RangeImage t_img = Transpose(img);
   int total = 0;
   int split = 0;
-  int count = t_img.mini();
   for (const auto &row : t_img) {
     if (row.size() == 1) {
       total++;
     } else if (row.size() == 2) {
       split++;
     }
-    count++;
   }
   return (double)split / total;
 }

@@ -8,6 +8,8 @@ cc_library(
     copts = [
         "-w",
         "-Dverbose=-1",
+        "-Wno-unused-but-set-variable",
+        "-Wno-implicit-function-declaration",
     ],
     includes = [
         ".",

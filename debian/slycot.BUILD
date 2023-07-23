@@ -15,6 +15,7 @@ f2c_library(
     ] + compiler_select({
         "clang": [
             "-Wno-unused-but-set-parameter",
+            "-Wno-deprecated-non-prototype",
         ],
         "gcc": [
             "-Wno-discarded-qualifiers",

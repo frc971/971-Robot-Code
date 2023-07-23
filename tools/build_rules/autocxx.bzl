@@ -138,6 +138,7 @@ def _autocxx_library_gen_impl(ctx):
     gen_rs.add_all(["--outdir", out_rs_json.dirname])
     gen_rs.add("--gen-rs-archive")
     gen_rs.add("--gen-cpp")
+    #gen_rs.add("--auto-allowlist")
 
     gen_rs.add_all(["--generate-exact", ctx.attr.sections_to_generate])
 

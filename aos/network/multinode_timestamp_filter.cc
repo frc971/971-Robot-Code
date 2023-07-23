@@ -1820,7 +1820,6 @@ bool MultiNodeNoncausalOffsetEstimator::FlushAndClose(bool destructor) {
   }
 
   if (filter_fps_.size() != 0 && !destructor) {
-    size_t node_a_index = 0;
     for (const auto &filters : filters_per_node_) {
       for (const auto &filter : filters) {
         while (true) {
@@ -1832,7 +1831,6 @@ bool MultiNodeNoncausalOffsetEstimator::FlushAndClose(bool destructor) {
           WriteFilter(filter.filter, *sample);
         }
       }
-      ++node_a_index;
     }
   }
 

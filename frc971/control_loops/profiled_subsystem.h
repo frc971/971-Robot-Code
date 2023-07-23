@@ -61,8 +61,9 @@ class ProfiledSubsystem {
   }
 
   // Returns the controller.
-  const StateFeedbackLoop<number_of_states, number_of_inputs, number_of_outputs>
-      &controller() const {
+  const StateFeedbackLoop<number_of_states, number_of_inputs,
+                          number_of_outputs> &
+  controller() const {
     return *loop_;
   }
 

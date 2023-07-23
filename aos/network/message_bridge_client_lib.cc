@@ -62,7 +62,6 @@ std::vector<bool> StreamReplyWithTimestamp(const Configuration *config,
                                            const Node *my_node,
                                            const Node *other_node) {
   std::vector<bool> stream_reply_with_timestamp;
-  int channel_index = 0;
   for (const Channel *channel : *config->channels()) {
     if (configuration::ChannelIsSendableOnNode(channel, other_node)) {
       const Connection *connection =
@@ -78,7 +77,6 @@ std::vector<bool> StreamReplyWithTimestamp(const Configuration *config,
             configuration::ChannelMessageIsLoggedOnNode(channel, my_node));
       }
     }
-    ++channel_index;
   }
 
   return stream_reply_with_timestamp;

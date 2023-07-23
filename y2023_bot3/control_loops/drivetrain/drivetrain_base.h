@@ -7,8 +7,8 @@ namespace y2023_bot3 {
 namespace control_loops {
 namespace drivetrain {
 
-const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
-    &GetDrivetrainConfig();
+const ::frc971::control_loops::drivetrain::DrivetrainConfig<double> &
+GetDrivetrainConfig();
 
 }  // namespace drivetrain
 }  // namespace control_loops

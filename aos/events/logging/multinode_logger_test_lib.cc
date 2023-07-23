@@ -544,14 +544,12 @@ std::vector<std::tuple<std::string, std::string, int>> CountChannelsMatching(
   }
 
   std::vector<std::tuple<std::string, std::string, int>> result;
-  int channel = 0;
   for (size_t i = 0; i < counts.size(); ++i) {
     if (counts[i] != 0) {
       const Channel *channel = config->channels()->Get(i);
       result.push_back(std::make_tuple(channel->name()->str(),
                                        channel->type()->str(), counts[i]));
     }
-    ++channel;
   }
 
   return result;

@@ -51,7 +51,7 @@ void log_do(log_level level, const char *format, ...)
 // It's currently using __PRETTY_FUNCTION__ because both GCC and Clang support
 // that and it gives nicer results in C++ than the standard __func__ (which
 // would also work).
-//#define LOG_CURRENT_FUNCTION __PRETTY_FUNCTION__
+// #define LOG_CURRENT_FUNCTION __PRETTY_FUNCTION__
 #define LOG_CURRENT_FUNCTION __func__
 
 #define LOG_SOURCENAME __FILE__

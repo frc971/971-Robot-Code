@@ -295,7 +295,9 @@ cc_library(
         "-Wno-unused-but-set-variable",
     ] + compiler_select({
         "clang": [
+            "-Wno-deprecated-non-prototype",
             "-Wno-self-assign",
+            "-Wno-unused-but-set-parameter",
         ],
         "gcc": [
             "-Wno-implicit-fallthrough",

@@ -120,8 +120,8 @@ class StateFeedbackHybridPlant {
     return coefficients().U_max;
   }
   Scalar U_max(int i, int j) const { return U_max()(i, j); }
-  const Eigen::Matrix<Scalar, number_of_inputs, number_of_states>
-      &U_limit_coefficient() const {
+  const Eigen::Matrix<Scalar, number_of_inputs, number_of_states> &
+  U_limit_coefficient() const {
     return coefficients().U_limit_coefficient;
   }
   Scalar U_limit_coefficient(int i, int j) const {
@@ -145,14 +145,14 @@ class StateFeedbackHybridPlant {
   Scalar &mutable_Y(int i) { return mutable_Y()(i); }
 
   const StateFeedbackHybridPlantCoefficients<number_of_states, number_of_inputs,
-                                             number_of_outputs, Scalar>
-      &coefficients(int index) const {
+                                             number_of_outputs, Scalar> &
+  coefficients(int index) const {
     return *coefficients_[index];
   }
 
   const StateFeedbackHybridPlantCoefficients<number_of_states, number_of_inputs,
-                                             number_of_outputs, Scalar>
-      &coefficients() const {
+                                             number_of_outputs, Scalar> &
+  coefficients() const {
     return *coefficients_[index_];
   }
 
@@ -398,14 +398,14 @@ class HybridKalman {
   int index() const { return index_; }
 
   const HybridKalmanCoefficients<number_of_states, number_of_inputs,
-                                 number_of_outputs>
-      &coefficients(int index) const {
+                                 number_of_outputs> &
+  coefficients(int index) const {
     return *coefficients_[index];
   }
 
   const HybridKalmanCoefficients<number_of_states, number_of_inputs,
-                                 number_of_outputs>
-      &coefficients() const {
+                                 number_of_outputs> &
+  coefficients() const {
     return *coefficients_[index_];
   }
 

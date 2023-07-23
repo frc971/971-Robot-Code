@@ -21,6 +21,7 @@ cc_binary(
         "-Wno-unused-parameter",
         "-Wno-sign-compare",
         "-fexceptions",
+        "-Wno-unused-but-set-variable",
     ],
     includes = [
         ".",

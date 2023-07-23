@@ -44,9 +44,7 @@ class SctpClient {
   void SetPriorityScheduler(sctp_assoc_t assoc_id);
 
   // Remote to send to.
-  struct sockaddr_storage sockaddr_remote() const {
-    return sockaddr_remote_;
-  }
+  struct sockaddr_storage sockaddr_remote() const { return sockaddr_remote_; }
 
   void LogSctpStatus(sctp_assoc_t assoc_id);
 

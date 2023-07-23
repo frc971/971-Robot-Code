@@ -170,9 +170,7 @@ class RawRTCConnection {
   void Open();
 
   // Returns the connection if Open has been called.
-  struct rawrtc_peer_connection *connection() {
-    return connection_;
-  }
+  struct rawrtc_peer_connection *connection() { return connection_; }
 
  private:
   // Trampolines from C -> C++.

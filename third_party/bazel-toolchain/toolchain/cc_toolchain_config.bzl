@@ -53,6 +53,12 @@ def cc_toolchain_config(
     target_os_arch_key = _os_arch_pair(target_os, target_arch)
     _check_os_arch_keys([host_os_arch_key, target_os_arch_key])
 
+    ## doesn't seem to have a feature for this.
+    llvm_version_split = llvm_version.split(".")
+    llvm_major_ver = int(llvm_version_split[0]) if len(llvm_version_split) else 0
+
+    llvm_subfolder = llvm_version_split[0] if llvm_major_ver > 14 else llvm_version
+
     # A bunch of variables that get passed straight through to
     # `create_cc_toolchain_config_info`.
     # TODO: What do these values mean, and are they actually all correct?
@@ -129,7 +135,7 @@ def cc_toolchain_config(
 
     resource_dir = [
         "-resource-dir",
-        "{}lib/clang/{}".format(target_toolchain_path_prefix, llvm_version),
+        "{}lib/clang/{}".format(target_toolchain_path_prefix, llvm_subfolder),
     ]
 
     # Default compiler flags:
@@ -278,7 +284,7 @@ def cc_toolchain_config(
             common_include_flags = [
                 "-nostdinc",
                 "-isystem",
-                target_toolchain_path_prefix + "lib/clang/{}/include".format(llvm_version),
+                target_toolchain_path_prefix + "lib/clang/{}/include".format(llvm_subfolder),
                 "-isystem",
                 sysroot_path + "/usr/local/include",
                 "-isystem",
@@ -293,6 +299,7 @@ def cc_toolchain_config(
                 sysroot_path + "/usr/include",
             ]
             compile_not_cxx_flags.extend(common_include_flags)
+
             cxx_flags.extend([
                 "-nostdinc++",
                 "-isystem",
@@ -321,13 +328,12 @@ def cc_toolchain_config(
     coverage_link_flags = ["-fprofile-instr-generate"]
 
     ## NOTE: framework paths is missing here; unix_cc_toolchain_config
-    ## doesn't seem to have a feature for this.
 
     # C++ built-in include directories:
     cxx_builtin_include_directories = [
         target_toolchain_path_prefix + "include/c++/v1",
-        target_toolchain_path_prefix + "lib/clang/{}/include".format(llvm_version),
-        target_toolchain_path_prefix + "lib64/clang/{}/include".format(llvm_version),
+        target_toolchain_path_prefix + "lib/clang/{}/include".format(llvm_subfolder),
+        target_toolchain_path_prefix + "lib64/clang/{}/include".format(llvm_subfolder),
     ]
 
     sysroot_prefix = ""
@@ -354,8 +360,6 @@ def cc_toolchain_config(
 
     # Tool paths:
     # `llvm-strip` was introduced in V7 (https://reviews.llvm.org/D46407):
-    llvm_version = llvm_version.split(".")
-    llvm_major_ver = int(llvm_version[0]) if len(llvm_version) else 0
     strip_binary = (tools_path_prefix + "bin/llvm-strip") if llvm_major_ver >= 7 else _host_tools.get_and_assert(host_tools_info, "strip")
 
     # TODO: The command line formed on darwin does not work with llvm-ar.
