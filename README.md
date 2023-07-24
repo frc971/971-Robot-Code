@@ -121,11 +121,11 @@ cat ~/.ssh/id_971_ed25519.pub
 ```
   3. Once you hear back from Stephan, test SSH.
 ```console
-ssh [user]@build.frc971.org -p 2222 -i ~/.ssh/id_971_ed25519
+ssh REPLACE_WITH_YOUR_USERNAME@build.frc971.org -p 2222 -i ~/.ssh/id_971_ed25519
 ```
   4. If that doesnt work, then send the error msg to #coding However, if it does then use the `exit` command and then SSH tunnel.
 ```console
-ssh [user]@build.frc971.org -p 2222 -i ~/.ssh/id_971_ed25519 -L 9971:127.0.0.1:3389
+ssh REPLACE_WITH_YOUR_USERNAME@build.frc971.org -p 2222 -i ~/.ssh/id_971_ed25519 -L 9971:127.0.0.1:3389
 ```
   5. So at this point you run the Remote Desktop app in Windows.  Once
 you get there, all you need to do is put `127.0.0.1:9971` for the
