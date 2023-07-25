@@ -47,20 +47,12 @@ load(
     opencv_arm64_debs = "files",
 )
 load(
-    ":opencv_armhf.bzl",
-    opencv_armhf_debs = "files",
-)
-load(
     ":opencv_amd64.bzl",
     opencv_amd64_debs = "files",
 )
 load(
     ":gstreamer_amd64.bzl",
     gstreamer_amd64_debs = "files",
-)
-load(
-    ":gstreamer_armhf.bzl",
-    gstreamer_armhf_debs = "files",
 )
 load(
     ":gstreamer_arm64.bzl",
@@ -366,12 +358,6 @@ generate_deb_tarball(
 )
 
 generate_deb_tarball(
-    name = "opencv_armhf_v4",
-    files = opencv_armhf_debs,
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-generate_deb_tarball(
     name = "opencv_amd64",
     files = opencv_amd64_debs,
     target_compatible_with = ["@platforms//os:linux"],
@@ -380,12 +366,6 @@ generate_deb_tarball(
 generate_deb_tarball(
     name = "gstreamer_amd64",
     files = gstreamer_amd64_debs,
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-generate_deb_tarball(
-    name = "gstreamer_armhf",
-    files = gstreamer_armhf_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

@@ -159,20 +159,12 @@ load(
     opencv_arm64_debs = "files",
 )
 load(
-    "//debian:opencv_armhf.bzl",
-    opencv_armhf_debs = "files",
-)
-load(
     "//debian:opencv_amd64.bzl",
     opencv_amd64_debs = "files",
 )
 load(
     "//debian:gstreamer_amd64.bzl",
     gstreamer_amd64_debs = "files",
-)
-load(
-    "//debian:gstreamer_armhf.bzl",
-    gstreamer_armhf_debs = "files",
 )
 load(
     "//debian:gstreamer_arm64.bzl",
@@ -228,16 +220,12 @@ generate_repositories_for_debs(gtk_runtime_debs)
 
 generate_repositories_for_debs(opencv_arm64_debs)
 
-generate_repositories_for_debs(opencv_armhf_debs)
-
 generate_repositories_for_debs(opencv_amd64_debs)
 
 generate_repositories_for_debs(
     gstreamer_amd64_debs,
     base_url = "https://software.frc971.org/Build-Dependencies/gstreamer_bullseye_amd64_deps",
 )
-
-generate_repositories_for_debs(gstreamer_armhf_debs)
 
 generate_repositories_for_debs(
     gstreamer_arm64_debs,
@@ -268,12 +256,6 @@ llvm_version = "13.0.0"
 llvm(
     name = "llvm_k8",
     distribution = "clang+llvm-%s-x86_64-linux-gnu-ubuntu-16.04.tar.xz" % llvm_version,
-    llvm_version = llvm_version,
-)
-
-llvm(
-    name = "llvm_armv7",
-    distribution = "clang+llvm-%s-armv7a-linux-gnueabihf.tar.xz" % llvm_version,
     llvm_version = llvm_version,
 )
 
@@ -325,56 +307,43 @@ llvm_dbg_copts = [
 
 llvm_toolchain(
     name = "llvm_toolchain",
-    additional_target_compatible_with = {
-        "linux-armv7": [
-            "@//tools/platforms/hardware:raspberry_pi",
-        ],
-    },
+    additional_target_compatible_with = {},
     conlyopts = {
         "linux-x86_64": llvm_conlyopts,
-        "linux-armv7": llvm_conlyopts,
         "linux-aarch64": llvm_conlyopts,
     },
     copts = {
         "linux-x86_64": llvm_copts,
-        "linux-armv7": llvm_copts,
         "linux-aarch64": llvm_copts,
     },
     cxxopts = {
         "linux-x86_64": llvm_cxxopts,
-        "linux-armv7": llvm_cxxopts,
         "linux-aarch64": llvm_cxxopts,
     },
     dbg_copts = {
         "linux-x86_64": llvm_dbg_copts,
-        "linux-armv7": llvm_dbg_copts,
         "linux-aarch64": llvm_dbg_copts,
     },
     fastbuild_copts = {
         "linux-x86_64": llvm_fastbuild_copts,
-        "linux-armv7": llvm_fastbuild_copts,
         "linux-aarch64": llvm_fastbuild_copts,
     },
     llvm_version = llvm_version,
     opt_copts = {
         "linux-x86_64": llvm_opt_copts,
-        "linux-armv7": llvm_opt_copts,
         "linux-aarch64": llvm_opt_copts,
     },
     standard_libraries = {
         "linux-x86_64": "libstdc++-10",
-        "linux-armv7": "libstdc++-10",
         "linux-aarch64": "libstdc++-10",
     },
     static_libstdcxx = False,
     sysroot = {
         "linux-x86_64": "@amd64_debian_sysroot//:sysroot_files",
-        "linux-armv7": "@armhf_debian_rootfs//:sysroot_files",
         "linux-aarch64": "@arm64_debian_rootfs//:sysroot_files",
     },
     target_toolchain_roots = {
         "linux-x86_64": "@llvm_k8//",
-        "linux-armv7": "@llvm_armv7//",
         "linux-aarch64": "@llvm_aarch64//",
     },
     toolchain_roots = {
@@ -499,17 +468,6 @@ http_archive(
     sha256 = "f53c6b86c25b4827d50365efe760a08edfea39c027dd08674ae696c9093d6a37",
     strip_prefix = "roborio-academic",
     url = "https://software.frc971.org/Build-Dependencies/cortexa9_vfpv3-roborio-academic-2023-x86_64-linux-gnu-Toolchain-12.1.0.tgz",
-)
-
-# The main partition from https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-11-08/2021-10-30-raspios-bullseye-armhf-lite.zip.sig
-# The following files and folders are removed to make bazel happy with it:
-#   usr/share/ca-certificates
-#   lib/systemd/system/system-systemd\\x2dcryptsetup.slice
-http_archive(
-    name = "armhf_debian_rootfs",
-    build_file = "@//:compilers/debian_rootfs.BUILD",
-    sha256 = "734f26a0cfc943cc3cae88412536186adfc4ed148cc167e6ffb298497c686280",
-    url = "https://software.frc971.org/Build-Dependencies/2021-10-30-raspios-bullseye-armhf-lite_rootfs.tar.bz2",
 )
 
 # The main partition from https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-11-08/2021-10-30-raspios-bullseye-armhf-lite.zip.sig
@@ -1189,14 +1147,6 @@ http_archive(
     url = "https://software.frc971.org/Build-Dependencies/opencv_arm64.tar.gz",
 )
 
-# OpenCV armhf (for raspberry pi)
-http_archive(
-    name = "opencv_armhf",
-    build_file = "@//debian:opencv.BUILD",
-    sha256 = "064165507bad1afa8f7b22961a9a9067b243abc70064d713d26b37bc8dc2bf56",
-    url = "https://software.frc971.org/Build-Dependencies/opencv_armhf_v4.tar.gz",
-)
-
 http_archive(
     name = "opencv_k8",
     build_file = "@//debian:opencv.BUILD",
@@ -1221,25 +1171,10 @@ http_archive(
 )
 
 http_archive(
-    name = "halide_armhf",
-    build_file = "@//debian:halide.BUILD",
-    sha256 = "6b3fe3396391b57990a2c41d8dcea74b0734d1b2a0fd42fe0858d954aa45df2b",
-    strip_prefix = "Halide-14.0.0-arm-32-linux/",
-    url = "https://github.com/halide/Halide/releases/download/v14.0.0/Halide-14.0.0-arm-32-linux-6b9ed2afd1d6d0badf04986602c943e287d44e46.tar.gz",
-)
-
-http_archive(
     name = "gstreamer_k8",
     build_file = "@//debian:gstreamer.BUILD",
     sha256 = "09765cb1dd8abc643cb1dd91d536aef3e6604ff05f5f92898d508ed857455d0b",
     url = "https://software.frc971.org/Build-Dependencies/gstreamer_1.20.1-1~bpo11+1_amd64_v2.tar.gz",
-)
-
-http_archive(
-    name = "gstreamer_armhf",
-    build_file = "@//debian:gstreamer.BUILD",
-    sha256 = "c5ac4c604952c274a50636e244f0d091bd1de302032446f24f0e9e03ae9c76f7",
-    url = "https://software.frc971.org/Build-Dependencies/gstreamer_armhf.tar.gz",
 )
 
 http_archive(
@@ -1592,10 +1527,10 @@ http_archive(
     build_file = "//third_party:julia/julia.BUILD",
     patch_cmds = [
         "echo 'LIB_SYMLINKS = {' > files.bzl",
-        '''find lib/ -type l -exec bash -c 'echo "\\"{}\\": \\"$(readlink {})\\","' \\; | sort >> files.bzl''',
+        """find lib/ -type l -exec bash -c 'echo "\\"{}\\": \\"$(readlink {})\\","' \\; | sort >> files.bzl""",
         "echo '}' >> files.bzl",
         "echo 'LIBS = [' >> files.bzl",
-        '''find lib/ -type f -exec bash -c 'echo "\\"{}\\","' \\; | sort >> files.bzl''',
+        """find lib/ -type f -exec bash -c 'echo "\\"{}\\","' \\; | sort >> files.bzl""",
         "echo ']' >> files.bzl",
     ],
     sha256 = "e71a24816e8fe9d5f4807664cbbb42738f5aa9fe05397d35c81d4c5d649b9d05",

@@ -37,7 +37,6 @@ def fast_gaussian(sigmas, sizes):
         ]) + " " + cpu_select({
             "amd64": "k8",
             "roborio": "roborio",
-            "armhf": "armv7",
             "arm64": "aarch64",
             "cortex-m": "cortex-m",
             "cortex-m0plus": "cortex-m0plus",
@@ -47,7 +46,6 @@ def fast_gaussian(sigmas, sizes):
         target_compatible_with = platforms.any_of([
             "@platforms//cpu:arm64",
             "@platforms//cpu:x86_64",
-            "//tools:cpu_armhf",
         ]),
     )
 

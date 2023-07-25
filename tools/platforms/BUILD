@@ -12,18 +12,6 @@ platform(
 )
 
 platform(
-    name = "linux_armv7",
-    constraint_values = [
-        "@platforms//os:linux",
-        "@platforms//cpu:armv7",
-        "//tools/platforms/hardware:raspberry_pi",
-        "//tools/platforms/go:lacks_support",
-        "//tools/platforms/rust:has_support",
-        "//tools/platforms/nodejs:lacks_support",
-    ],
-)
-
-platform(
     name = "linux_arm64",
     constraint_values = [
         "@platforms//os:linux",

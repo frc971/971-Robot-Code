@@ -48,14 +48,6 @@ config_setting(
 #)
 
 config_setting(
-    name = "cpu_armhf",
-    constraint_values = [
-        "@platforms//cpu:armv7",
-        "//tools/platforms/hardware:raspberry_pi",
-    ],
-)
-
-config_setting(
     name = "cpu_armv7",
     constraint_values = [
         "@platforms//cpu:armv7",
