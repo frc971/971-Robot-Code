@@ -199,6 +199,13 @@ flatbuffer_cc_library(
     ],
 )
 
+flatbuffer_cc_library(
+    name = "can_falcon_fbs",
+    srcs = [
+        "can_falcon.fbs",
+    ],
+)
+
 cc_test(
     name = "position_sensor_sim_test",
     srcs = [

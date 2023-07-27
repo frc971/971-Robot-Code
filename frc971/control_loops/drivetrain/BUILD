@@ -11,6 +11,7 @@ flatbuffer_cc_library(
     name = "drivetrain_can_position_fbs",
     srcs = ["drivetrain_can_position.fbs"],
     gen_reflections = 1,
+    deps = ["//frc971/control_loops:can_falcon_fbs"],
 )
 
 flatbuffer_cc_library(

@@ -1,0 +1,26 @@
+namespace frc971.control_loops;
+
+table CANFalcon {
+  // The CAN id of the falcon
+  id:int (id: 0);
+
+  // In Amps
+  supply_current:float (id: 1);
+
+  // In Amps
+  // Stator current where positive current means torque is applied in
+  // the motor's forward direction as determined by its Inverted setting.
+  torque_current:float (id: 2);
+
+  // In Volts
+  supply_voltage:float (id: 3);
+
+  // In degrees Celsius
+  device_temp:float (id: 4);
+
+  // In meters traveled on the drivetrain
+  position:float (id: 5);
+
+  // Nominal range is -1 to 1, but can be -2 to +2
+  duty_cycle: float (id: 6);
+}

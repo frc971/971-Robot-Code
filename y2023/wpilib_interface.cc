@@ -224,9 +224,9 @@ class Falcon {
 
   ctre::phoenixpro::hardware::TalonFX *talon() { return &talon_; }
 
-  flatbuffers::Offset<frc971::control_loops::drivetrain::CANFalcon>
-  WritePosition(flatbuffers::FlatBufferBuilder *fbb) {
-    frc971::control_loops::drivetrain::CANFalcon::Builder builder(*fbb);
+  flatbuffers::Offset<frc971::control_loops::CANFalcon> WritePosition(
+      flatbuffers::FlatBufferBuilder *fbb) {
+    frc971::control_loops::CANFalcon::Builder builder(*fbb);
     builder.add_id(device_id_);
     builder.add_device_temp(device_temp());
     builder.add_supply_voltage(supply_voltage());
@@ -342,9 +342,8 @@ class CANSensorReader {
       falcon->RefreshNontimesyncedSignals();
     }
 
-    aos::SizedArray<
-        flatbuffers::Offset<frc971::control_loops::drivetrain::CANFalcon>,
-        kCANFalconCount>
+    aos::SizedArray<flatbuffers::Offset<frc971::control_loops::CANFalcon>,
+                    kCANFalconCount>
         falcons;
 
     for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
@@ -354,8 +353,8 @@ class CANSensorReader {
 
     auto falcons_list =
         builder.fbb()
-            ->CreateVector<flatbuffers::Offset<
-                frc971::control_loops::drivetrain::CANFalcon>>(falcons);
+            ->CreateVector<
+                flatbuffers::Offset<frc971::control_loops::CANFalcon>>(falcons);
 
     frc971::control_loops::drivetrain::CANPosition::Builder
         can_position_builder =
