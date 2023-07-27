@@ -6,17 +6,18 @@ using frc971::wpilib::kCANUpdateFreqHz;
 CANSensorReader::CANSensorReader(
     aos::EventLoop *event_loop,
     std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry,
-    std::vector<std::shared_ptr<Falcon>> falcons)
+    std::vector<std::shared_ptr<Falcon>> falcons,
+    std::function<void(ctre::phoenix::StatusCode status)> flatbuffer_callback)
     : event_loop_(event_loop),
       signals_(signals_registry.begin(), signals_registry.end()),
-      can_position_sender_(
-          event_loop->MakeSender<control_loops::drivetrain::CANPosition>(
-              "/drivetrain")),
-      falcons_(falcons) {
+      falcons_(falcons),
+      flatbuffer_callback_(flatbuffer_callback) {
   event_loop->SetRuntimeRealtimePriority(40);
 
   // TODO(max): Decide if we want to keep this on this core.
   event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({1}));
+
+  CHECK(flatbuffer_callback_);
   timer_handler_ = event_loop->AddTimer([this]() { Loop(); });
   timer_handler_->set_name("CANSensorReader Loop");
 
@@ -35,30 +36,5 @@ void CANSensorReader::Loop() {
             status.GetName(), status.GetDescription());
   }
 
-  auto builder = can_position_sender_.MakeBuilder();
-
-  for (auto falcon : falcons_) {
-    falcon->RefreshNontimesyncedSignals();
-    falcon->SerializePosition(builder.fbb());
-  }
-
-  auto falcon_offsets =
-      builder.fbb()
-          ->CreateVector<flatbuffers::Offset<control_loops::CANFalcon>>(
-              falcons_.size(), [this](size_t index) {
-                auto offset = falcons_.at(index)->TakeOffset();
-                CHECK(offset.has_value());
-                return offset.value();
-              });
-
-  control_loops::drivetrain::CANPosition::Builder can_position_builder =
-      builder.MakeBuilder<control_loops::drivetrain::CANPosition>();
-
-  can_position_builder.add_falcons(falcon_offsets);
-  if (!falcons_.empty()) {
-    can_position_builder.add_timestamp(falcons_.at(0)->GetTimestamp());
-  }
-  can_position_builder.add_status(static_cast<int>(status));
-
-  builder.CheckOk(builder.Send(can_position_builder.Finish()));
+  flatbuffer_callback_(status);
 }

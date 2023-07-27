@@ -16,7 +16,9 @@ class CANSensorReader {
   CANSensorReader(
       aos::EventLoop *event_loop,
       std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry,
-      std::vector<std::shared_ptr<Falcon>> falcons);
+      std::vector<std::shared_ptr<Falcon>> falcons,
+      std::function<void(ctre::phoenix::StatusCode status)>
+          flatbuffer_callback);
 
  private:
   void Loop();
@@ -24,7 +26,6 @@ class CANSensorReader {
   aos::EventLoop *event_loop_;
 
   const std::vector<ctre::phoenix6::BaseStatusSignal *> signals_;
-  aos::Sender<control_loops::drivetrain::CANPosition> can_position_sender_;
 
   // This is a vector of falcons becuase we don't need to care
   // about falcons individually.
@@ -32,6 +33,9 @@ class CANSensorReader {
 
   // Pointer to the timer handler used to modify the wakeup.
   ::aos::TimerHandler *timer_handler_;
+
+  // Callback used to send the CANPosition flatbuffer
+  std::function<void(ctre::phoenix::StatusCode status)> flatbuffer_callback_;
 };
 }  // namespace wpilib
 }  // namespace frc971
