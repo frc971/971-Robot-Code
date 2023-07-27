@@ -56,7 +56,7 @@ use std::{
 };
 
 use autocxx::{
-    subclass::{is_subclass, CppSubclass},
+    subclass::{subclass, CppSubclass},
     WithinBox,
 };
 use cxx::UniquePtr;
@@ -102,7 +102,7 @@ pub type EventLoop = ffi::aos::EventLoop;
 /// enforcing the lifetime: it destroys this object along with the C++ `EventLoopRuntime`, which
 /// must be outlived by the EventLoop.
 #[doc(hidden)]
-#[is_subclass(superclass("aos::ApplicationFuture"))]
+#[subclass]
 pub struct RustApplicationFuture {
     /// This logically has a `'event_loop` bound, see the class comment for details.
     future: Pin<Box<dyn Future<Output = Never>>>,
