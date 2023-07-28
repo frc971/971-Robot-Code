@@ -41,22 +41,32 @@ def _aos_config_impl(ctx):
 
     all_files = flatbuffers_depset.to_list() + src_depset.to_list()
     ctx.actions.run(
-        outputs = [config, stripped_config, binary_config],
+        outputs = [stripped_config, binary_config],
         inputs = all_files,
         arguments = ctx.attr.flags + [
-            config.path,
-            stripped_config.path,
-            binary_config.path,
+            "--stripped_output=" + stripped_config.path,
+            "--binary_output=" + binary_config.path,
             (ctx.label.workspace_root or ".") + "/" + ctx.files.src[0].short_path,
             ctx.bin_dir.path,
         ] + [f.path for f in flatbuffers_depset.to_list()],
         progress_message = "Flattening config",
         executable = ctx.executable._config_flattener,
     )
-    runfiles = ctx.runfiles(files = [config, stripped_config, binary_config])
+    ctx.actions.run(
+        outputs = [config],
+        inputs = all_files,
+        arguments = ctx.attr.flags + [
+            "--full_output=" + config.path,
+            (ctx.label.workspace_root or ".") + "/" + ctx.files.src[0].short_path,
+            ctx.bin_dir.path,
+        ] + [f.path for f in flatbuffers_depset.to_list()],
+        progress_message = "Flattening config",
+        executable = ctx.executable._config_flattener,
+    )
+    runfiles = ctx.runfiles(files = [stripped_config, binary_config])
     return [
         DefaultInfo(
-            files = depset([config, stripped_config, binary_config]),
+            files = depset([stripped_config, binary_config]),
             runfiles = runfiles,
         ),
         AosConfigInfo(
