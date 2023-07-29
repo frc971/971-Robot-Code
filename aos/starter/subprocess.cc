@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include "absl/strings/str_split.h"
 #include "glog/logging.h"
 
 #include "aos/flatbuffer_merge.h"
@@ -30,6 +31,53 @@ class ScopedCompleteSignalBlocker {
  private:
   sigset_t old_mask_;
 };
+
+namespace {
+std::optional<ino_t> GetInodeForPath(const std::filesystem::path &path) {
+  struct stat stat_buf;
+  if (0 != stat(path.c_str(), &stat_buf)) {
+    return std::nullopt;
+  }
+  return stat_buf.st_ino;
+}
+bool InodeChanged(const std::filesystem::path &path, ino_t previous_inode) {
+  const std::optional<ino_t> current_inode = GetInodeForPath(path);
+  if (!current_inode.has_value()) {
+    return true;
+  }
+  return current_inode.value() != previous_inode;
+}
+}  // namespace
+
+std::filesystem::path ResolvePath(std::string_view command) {
+  std::filesystem::path command_path = command;
+  if (command.find("/") != std::string_view::npos) {
+    CHECK(std::filesystem::exists(command_path))
+        << ": " << command << " does not exist.";
+    return std::filesystem::canonical(command_path);
+  }
+  const char *system_path = getenv("PATH");
+  std::string system_path_buffer;
+  if (system_path == nullptr) {
+    const size_t default_path_length = confstr(_CS_PATH, nullptr, 0);
+    PCHECK(default_path_length != 0) << ": Unable to resolve " << command;
+    system_path_buffer.resize(default_path_length);
+    confstr(_CS_PATH, system_path_buffer.data(), system_path_buffer.size());
+    system_path = system_path_buffer.c_str();
+    VLOG(2) << "Using default path of " << system_path
+            << " in the absence of PATH being set.";
+  }
+  const std::vector<std::string_view> search_paths =
+      absl::StrSplit(system_path, ':');
+  for (const std::string_view search_path : search_paths) {
+    const std::filesystem::path candidate =
+        std::filesystem::path(search_path) / command_path;
+    if (std::filesystem::exists(candidate)) {
+      return std::filesystem::canonical(candidate);
+    }
+  }
+  LOG(FATAL) << "Unable to resolve " << command;
+}
 
 // RAII class to become root and restore back to the original user and group
 // afterwards.
@@ -150,12 +198,24 @@ Application::Application(std::string_view name,
                          std::function<void()> on_change,
                          QuietLogging quiet_flag)
     : name_(name),
-      path_(executable_name),
+      path_(ResolvePath(executable_name)),
       event_loop_(event_loop),
       start_timer_(event_loop_->AddTimer([this] {
         status_ = aos::starter::State::RUNNING;
         LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
             << "Started '" << name_ << "' pid: " << pid_;
+        // Check if the file on disk changed while we were starting up. We allow
+        // this state for the same reason that we don't just use /proc/$pid/exe
+        // to determine if the file is deleted--we may be running a script or
+        // sudo or the such and determining the state of the file that we
+        // actually care about sounds like more work than we want to deal with.
+        if (InodeChanged(path_, pre_fork_inode_)) {
+          file_state_ = FileState::CHANGED_DURING_STARTUP;
+        } else {
+          file_state_ = FileState::NO_CHANGE;
+        }
+
+        OnChange();
       })),
       restart_timer_(event_loop_->AddTimer([this] { DoStart(); })),
       stop_timer_(event_loop_->AddTimer([this] {
@@ -237,7 +297,12 @@ void Application::DoStart() {
     // particular, the exit handler for shm_event_loop could be called here if
     // we don't exec() quickly enough.
     ScopedCompleteSignalBlocker signal_blocker;
-
+    {
+      const std::optional<ino_t> inode = GetInodeForPath(path_);
+      CHECK(inode.has_value())
+          << ": " << path_ << " does not seem to be stat'able.";
+      pre_fork_inode_ = inode.value();
+    }
     const pid_t pid = fork();
 
     if (pid != 0) {
@@ -352,7 +417,7 @@ void Application::DoStart() {
 
   if (run_as_sudo_) {
     // For sudo we must supply the actual path
-    args_.insert(args_.begin(), path_);
+    args_.insert(args_.begin(), path_.c_str());
     args_.insert(args_.begin(), kSudo);
   } else {
     // argv[0] should be the program name
@@ -415,6 +480,7 @@ void Application::DoStop(bool restart) {
   switch (status_) {
     case aos::starter::State::STARTING:
     case aos::starter::State::RUNNING: {
+      file_state_ = FileState::NOT_RUNNING;
       LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo ||
                        quiet_flag_ == QuietLogging::kNotForDebugging)
           << "Stopping '" << name_ << "' pid: " << pid_ << " with signal "
@@ -526,9 +592,32 @@ std::optional<gid_t> Application::FindPrimaryGidForUser(const char *name) {
   }
 }
 
+FileState Application::UpdateFileState() {
+  // On every call, check if a different file is present on disk. Note that
+  // while the applications is running, the file cannot be changed without the
+  // inode changing.
+  // We could presumably use inotify or the such to watch the file instead,
+  // but this works and we do not expect substantial cost from reading the inode
+  // of a file every time we send out a status message.
+  if (InodeChanged(path_, pre_fork_inode_)) {
+    switch (file_state_) {
+      case FileState::NO_CHANGE:
+        file_state_ = FileState::CHANGED;
+        break;
+      case FileState::NOT_RUNNING:
+      case FileState::CHANGED_DURING_STARTUP:
+      case FileState::CHANGED:
+        break;
+    }
+  }
+  return file_state_;
+}
+
 flatbuffers::Offset<aos::starter::ApplicationStatus>
 Application::PopulateStatus(flatbuffers::FlatBufferBuilder *builder,
                             util::Top *top) {
+  UpdateFileState();
+
   CHECK_NOTNULL(builder);
   auto name_fbs = builder->CreateString(name_);
 
@@ -557,6 +646,7 @@ Application::PopulateStatus(flatbuffers::FlatBufferBuilder *builder,
   // Note that even if process_info is null, calling add_process_info is fine.
   status_builder.add_process_info(process_info);
   status_builder.add_last_start_time(start_time_.time_since_epoch().count());
+  status_builder.add_file_state(file_state_);
   return status_builder.Finish();
 }
 
@@ -629,6 +719,7 @@ bool Application::MaybeHandleSignal() {
   start_timer_->Disable();
   exit_time_ = event_loop_->monotonic_now();
   exit_code_ = WIFEXITED(status) ? WEXITSTATUS(status) : WTERMSIG(status);
+  file_state_ = FileState::NOT_RUNNING;
 
   if (auto read_result = status_pipes_.read->Read()) {
     stop_reason_ = static_cast<aos::starter::LastStopReason>(*read_result);

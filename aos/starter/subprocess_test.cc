@@ -3,6 +3,8 @@
 #include <signal.h>
 #include <sys/types.h>
 
+#include "absl/strings/str_join.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/shm_event_loop.h"
@@ -225,4 +227,169 @@ TEST_F(SubprocessTest, ShortLivedApp) {
 
   event_loop.Run();
 }
+
+// Test that if the binary changes out from under us that we note it in the
+// FileState.
+TEST_F(SubprocessTest, ChangeBinaryContents) {
+  const std::string config_file =
+      ::aos::testing::ArtifactPath("aos/events/pingpong_config.json");
+
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(config_file);
+  aos::ShmEventLoop event_loop(&config.message());
+
+  // Create a local copy of the sleep binary so that we can delete it.
+  const std::filesystem::path full_executable_path =
+      absl::StrCat(aos::testing::TestTmpDir(), "/", "sleep_binary");
+  aos::util::WriteStringToFileOrDie(
+      full_executable_path.native(),
+      aos::util::ReadFileToStringOrDie(ResolvePath("sleep").native()), S_IRWXU);
+
+  const std::filesystem::path executable_name =
+      absl::StrCat(aos::testing::TestTmpDir(), "/", "sleep_symlink");
+  // Create a symlink that points to the actual binary, and test that a
+  // Creating a symlink in particular lets us ensure that our logic actually
+  // pays attention to the target file that we are running rather than the
+  // symlink itself (it also saves us having to cp a binary somewhere where we
+  // can overwrite it).
+  std::filesystem::create_symlink(full_executable_path.native(),
+                                  executable_name);
+
+  // Wait until we are running, go through and test that various variations in
+  // file state result in the expected behavior, and then exit.
+  Application sleep(
+      "sleep", executable_name.native(), &event_loop,
+      [&sleep, &event_loop, executable_name, full_executable_path]() {
+        switch (sleep.status()) {
+          case aos::starter::State::RUNNING:
+            EXPECT_EQ(aos::starter::FileState::NO_CHANGE,
+                      sleep.UpdateFileState());
+            // Delete the symlink; this should have no effect, because the
+            // Application class should be looking at the original path.
+            std::filesystem::remove(executable_name);
+            EXPECT_EQ(aos::starter::FileState::NO_CHANGE,
+                      sleep.UpdateFileState());
+            // Delete the executable; it should be changed.
+            std::filesystem::remove(full_executable_path);
+            EXPECT_EQ(aos::starter::FileState::CHANGED,
+                      sleep.UpdateFileState());
+            // Replace the executable itself; it should be changed.
+            aos::util::WriteStringToFileOrDie(full_executable_path.native(),
+                                              "abcdef");
+            EXPECT_EQ(aos::starter::FileState::CHANGED,
+                      sleep.UpdateFileState());
+            // Terminate.
+            event_loop.Exit();
+            break;
+          case aos::starter::State::WAITING:
+          case aos::starter::State::STARTING:
+          case aos::starter::State::STOPPING:
+          case aos::starter::State::STOPPED:
+            EXPECT_EQ(aos::starter::FileState::NOT_RUNNING,
+                      sleep.UpdateFileState());
+            break;
+        }
+      });
+  ASSERT_FALSE(sleep.autorestart());
+  // Ensure that the subprocess will run longer than we care about (we just call
+  // Terminate() below to stop it).
+  sleep.set_args({"1000"});
+
+  sleep.Start();
+  aos::TimerHandler *exit_timer = event_loop.AddTimer([&event_loop]() {
+    event_loop.Exit();
+    FAIL() << "We should have already exited.";
+  });
+  event_loop.OnRun([&event_loop, exit_timer]() {
+    exit_timer->Schedule(event_loop.monotonic_now() +
+                         std::chrono::milliseconds(5000));
+  });
+
+  event_loop.Run();
+  sleep.Terminate();
+}
+
+class ResolvePathTest : public ::testing::Test {
+ protected:
+  ResolvePathTest() {
+    // Before doing anything else,
+    if (getenv("PATH") != nullptr) {
+      original_path_ = getenv("PATH");
+      PCHECK(0 == unsetenv("PATH"));
+    }
+  }
+
+  ~ResolvePathTest() {
+    if (!original_path_.empty()) {
+      PCHECK(0 == setenv("PATH", original_path_.c_str(), /*overwrite=*/1));
+    } else {
+      PCHECK(0 == unsetenv("PATH"));
+    }
+  }
+
+  std::filesystem::path GetLocalPath(const std::string filename) {
+    return absl::StrCat(aos::testing::TestTmpDir(), "/", filename);
+  }
+
+  std::filesystem::path CreateFile(const std::string filename) {
+    const std::filesystem::path file = GetLocalPath(filename);
+    VLOG(2) << "Creating file at " << file;
+    util::WriteStringToFileOrDie(file.native(), "contents");
+    return file;
+  }
+
+  void SetPath(const std::vector<std::string> &path) {
+    PCHECK(0 ==
+           setenv("PATH", absl::StrJoin(path, ":").c_str(), /*overwrite=*/1));
+  }
+
+  // Keep track of original PATH environment variable so that we can restore
+  // it.
+  std::string original_path_;
+};
+
+// Tests that we can resolve paths when there is no PATH environment variable.
+TEST_F(ResolvePathTest, ResolveWithUnsetPath) {
+  const std::filesystem::path local_echo = CreateFile("echo");
+  // Because the default path will be in /bin and /usr/bin (typically), we have
+  // to choose some utility that we can reasonably expect to be available in the
+  // test environment.
+  const std::filesystem::path echo_path = ResolvePath("echo");
+  EXPECT_THAT((std::vector<std::string>{"/bin/echo", "/usr/bin/echo"}),
+              ::testing::Contains(echo_path.native()));
+
+  // Test that a file with /'s in the name ignores the PATH.
+  const std::filesystem::path local_echo_path =
+      ResolvePath(local_echo.native());
+  EXPECT_EQ(local_echo_path, local_echo);
+}
+
+// Test that when the PATH environment variable is set that we can use it.
+TEST_F(ResolvePathTest, ResolveWithPath) {
+  const std::filesystem::path local_folder = GetLocalPath("bin/");
+  const std::filesystem::path local_folder2 = GetLocalPath("bin2/");
+  aos::util::MkdirP(local_folder.native(), S_IRWXU);
+  aos::util::MkdirP(local_folder2.native(), S_IRWXU);
+  SetPath({local_folder, local_folder2});
+  const std::filesystem::path binary = CreateFile("bin/binary");
+  const std::filesystem::path duplicate_binary = CreateFile("bin2/binary");
+  const std::filesystem::path other_name = CreateFile("bin2/other_name");
+
+  EXPECT_EQ(binary, ResolvePath("binary"));
+  EXPECT_EQ(other_name, ResolvePath("other_name"));
+  // And check that if we specify the full path for the duplicate binary that we
+  // can find it.
+  EXPECT_EQ(duplicate_binary, ResolvePath(duplicate_binary.native()));
+}
+
+// Test that we fail to find non-existent files.
+TEST_F(ResolvePathTest, DieOnFakeFile) {
+  // Fail to find something that searches the PATH.
+  SetPath({"foo", "bar"});
+  EXPECT_DEATH(ResolvePath("fake_file"), "Unable to resolve");
+
+  // Fail to find a local file.
+  EXPECT_DEATH(ResolvePath("./fake_file"), "./fake_file does not exist");
+}
+
 }  // namespace aos::starter::testing
