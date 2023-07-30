@@ -13,6 +13,9 @@ ng_application(
     html_assets = [
         "favicon.ico",
     ],
+    tags = [
+        "no-remote-cache",
+    ],
     deps = [
         "//:node_modules/@angular/animations",
         "//scouting/www/driver_ranking",
@@ -35,6 +38,9 @@ assemble_static_files(
         "dev": "",
         "third_party/y2023": "pictures",
     },
+    tags = [
+        "no-remote-cache",
+    ],
     visibility = ["//visibility:public"],
 )
 

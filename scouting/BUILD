@@ -10,6 +10,9 @@ sh_binary(
         "//scouting/webserver",
         "//scouting/www:static_files",
     ],
+    tags = [
+        "no-remote-cache",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "@bazel_tools//tools/bash/runfiles",
@@ -23,6 +26,9 @@ cypress_test(
         "//scouting/testing:scouting_test_servers",
     ],
     runner = "scouting_test_runner.js",
+    tags = [
+        "no-remote-cache",
+    ],
 )
 
 apache_wrapper(

@@ -102,6 +102,9 @@ def ng_application(
         name = "_app",
         srcs = srcs,
         deps = deps + APPLICATION_DEPS,
+        tags = [
+            "no-remote-cache",
+        ],
         visibility = ["//visibility:private"],
     )
 
@@ -110,6 +113,9 @@ def ng_application(
         name = "_polyfills",
         srcs = ["polyfills.ts"],
         deps = ["//:node_modules/zone.js"],
+        tags = [
+            "no-remote-cache",
+        ],
         visibility = ["//visibility:private"],
     )
     esbuild(
@@ -123,6 +129,9 @@ def ng_application(
         metafile = False,
         format = "esm",
         minify = True,
+        tags = [
+            "no-remote-cache",
+        ],
         visibility = ["//visibility:private"],
     )
 
@@ -200,6 +209,9 @@ def _pkg_web(name, entry_point, entry_deps, html_assets, assets, production, vis
                ["--scripts", "--module", "%s/main.js" % bundle],
         # The input HTML template, all assets for potential access for stamping
         srcs = [":index.html", ":%s" % bundle, ":polyfills-bundle"] + html_assets,
+        tags = [
+            "no-remote-cache",
+        ],
         visibility = ["//visibility:private"],
     )
 
@@ -304,6 +316,9 @@ def rollup_bundle(name, entry_point, deps = [], visibility = None, **kwargs):
     terser_minified(
         name = name + "__min",
         srcs = [name + ".js"],
+        tags = [
+            "no-remote-cache",
+        ],
         sourcemap = False,
     )
 
