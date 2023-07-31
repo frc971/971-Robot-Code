@@ -8,6 +8,8 @@
 
 #include "glog/logging.h"
 
+#include "aos/flatbuffer_merge.h"
+
 namespace aos::starter {
 
 // RAII class to become root and restore back to the original user and group
@@ -202,6 +204,7 @@ void Application::DoStart() {
       id_ = next_id_++;
       start_time_ = event_loop_->monotonic_now();
       status_ = aos::starter::State::STARTING;
+      latest_timing_report_version_.reset();
       LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
           << "Starting '" << name_ << "' pid " << pid_;
 
@@ -306,6 +309,16 @@ void Application::DoStart() {
       << "Could not execute " << name_ << " (" << path_ << ')';
 
   _exit(EXIT_FAILURE);
+}
+
+void Application::ObserveTimingReport(
+    const aos::monotonic_clock::time_point send_time,
+    const aos::timing::Report *msg) {
+  if (msg->name()->string_view() == name_ && msg->pid() == pid_ &&
+      msg->has_version()) {
+    latest_timing_report_version_ = msg->version()->str();
+    last_timing_report_ = send_time;
+  }
 }
 
 void Application::FetchOutputs() {
@@ -462,6 +475,12 @@ Application::PopulateStatus(flatbuffers::FlatBufferBuilder *builder,
   if (exit_code_.has_value()) {
     status_builder.add_last_exit_code(exit_code_.value());
   }
+  status_builder.add_has_active_timing_report(
+      last_timing_report_ +
+          // Leave a bit of margin on the timing report receipt time, to allow
+          // for timing errors.
+          3 * std::chrono::milliseconds(FLAGS_timing_report_ms) >
+      event_loop_->monotonic_now());
   status_builder.add_last_stop_reason(stop_reason_);
   if (pid_ != -1) {
     status_builder.add_pid(pid_);
@@ -572,9 +591,17 @@ bool Application::MaybeHandleSignal() {
             << "Application '" << name_ << "' pid " << pid_
             << " exited with status " << exit_code_.value();
       } else {
-        LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
-            << "Application '" << name_ << "' pid " << pid_
-            << " exited unexpectedly with status " << exit_code_.value();
+        if (quiet_flag_ == QuietLogging::kNo) {
+          std::string version_string =
+              latest_timing_report_version_.has_value()
+                  ? absl::StrCat("'", latest_timing_report_version_.value(),
+                                 "'")
+                  : "unknown";
+          LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+              << "Application '" << name_ << "' pid " << pid_ << " version "
+              << version_string << " exited unexpectedly with status "
+              << exit_code_.value();
+        }
       }
       if (autorestart()) {
         QueueStart();

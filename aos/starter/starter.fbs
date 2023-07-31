@@ -82,6 +82,12 @@ table ApplicationStatus {
   // actually stopping and the parent process receiving the signal indicating that the application
   // finished stopping.
   process_info: util.ProcessInfo (id: 7);
+
+  // Indicates whether we have observed a recent AOS timing report from
+  // the application. Staleness is calculated based on the timing report period
+  // specified for the starterd application (defaults to 1 Hz, can be overridden
+  // by --timing_report_ms).
+  has_active_timing_report: bool (id: 8);
 }
 
 root_type Status;

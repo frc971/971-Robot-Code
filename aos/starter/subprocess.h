@@ -124,6 +124,12 @@ class Application {
     memory_cgroup_->SetLimit("memory.limit_in_bytes", limit);
   }
 
+  // Observe a timing report message, and save it if it is relevant to us.
+  // It is the responsibility of the caller to manage this, because the lifetime
+  // of the Application itself is such that it cannot own Fetchers readily.
+  void ObserveTimingReport(const aos::monotonic_clock::time_point send_time,
+                           const aos::timing::Report *msg);
+
  private:
   typedef aos::util::ScopedPipe::PipePair PipePair;
 
@@ -191,6 +197,12 @@ class Application {
   aos::EventLoop *event_loop_;
   aos::TimerHandler *start_timer_, *restart_timer_, *stop_timer_, *pipe_timer_,
       *child_status_handler_;
+
+  // Version string from the most recent valid timing report for this
+  // application. Cleared when the application restarts.
+  std::optional<std::string> latest_timing_report_version_;
+  aos::monotonic_clock::time_point last_timing_report_ =
+      aos::monotonic_clock::min_time;
 
   std::vector<std::function<void()>> on_change_;
 

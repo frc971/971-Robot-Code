@@ -59,6 +59,10 @@ class Starter {
   // limit.
   void HandleStateChange();
 
+  // Called periodically to run through the timing report fetcher and alert all
+  // the Application's to the new messages.
+  void ServiceTimingReportFetcher();
+
   void SendStatus();
 
   // Creates a MemoryMappedQueue for the given channel, to pre-allocate shared
@@ -76,6 +80,8 @@ class Starter {
 
   int status_count_ = 0;
   const int max_status_count_;
+
+  aos::Fetcher<aos::timing::Report> timing_report_fetcher_;
 
   std::unordered_map<std::string, Application> applications_;
 

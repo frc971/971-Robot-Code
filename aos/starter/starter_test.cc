@@ -358,6 +358,8 @@ TEST_F(StarterdTest, Autostart) {
       ASSERT_EQ(pong_app_status->pid(), pong_app_status->process_info()->pid());
       ASSERT_TRUE(pong_app_status->process_info()->has_cpu_usage());
       ASSERT_LE(0.0, pong_app_status->process_info()->cpu_usage());
+      ASSERT_TRUE(pong_app_status->has_has_active_timing_report());
+      ASSERT_TRUE(pong_app_status->has_active_timing_report());
       watcher_loop.Exit();
       SUCCEED();
     }

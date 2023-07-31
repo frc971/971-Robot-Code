@@ -37,6 +37,7 @@ Starter::Starter(const aos::Configuration *event_loop_config)
       event_loop_(event_loop_config),
       status_sender_(event_loop_.MakeSender<aos::starter::Status>("/aos")),
       status_timer_(event_loop_.AddTimer([this] {
+        ServiceTimingReportFetcher();
         SendStatus();
         status_count_ = 0;
       })),
@@ -47,6 +48,8 @@ Starter::Starter(const aos::Configuration *event_loop_config)
       max_status_count_(
           event_loop_.GetChannel<aos::starter::Status>("/aos")->frequency() -
           1),
+      timing_report_fetcher_(
+          event_loop_.MakeFetcher<aos::timing::Report>("/aos")),
       shm_base_(FLAGS_shm_base),
       listener_(&event_loop_,
                 [this](signalfd_siginfo signal) { OnSignal(signal); }),
@@ -264,6 +267,16 @@ void Starter::Run() {
   }
 
   event_loop_.Run();
+}
+
+void Starter::ServiceTimingReportFetcher() {
+  while (timing_report_fetcher_.FetchNext()) {
+    for (auto &application : applications_) {
+      application.second.ObserveTimingReport(
+          timing_report_fetcher_.context().monotonic_event_time,
+          timing_report_fetcher_.get());
+    }
+  }
 }
 
 void Starter::SendStatus() {
