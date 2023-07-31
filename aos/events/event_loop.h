@@ -808,6 +808,16 @@ class EventLoop {
   // Returns the boot UUID.
   virtual const UUID &boot_uuid() const = 0;
 
+  // Sets the version string that will be used in any newly constructed
+  // EventLoop objects. This can be overridden for individual EventLoop's by
+  // calling EventLoop::SetVersionString(). The version string is populated into
+  // the timing report message. Makes a copy of the provided string_view.
+  static void SetDefaultVersionString(std::string_view version);
+
+  // Overrides the version string for this event loop. Makes a copy of the
+  // provided string_view.
+  void SetVersionString(std::string_view version);
+
  protected:
   // Sets the name of the event loop.  This is the application name.
   virtual void set_name(const std::string_view name) = 0;
@@ -897,6 +907,13 @@ class EventLoop {
 
  private:
   virtual pid_t GetTid() = 0;
+
+  // Default version string to be used in the timing report for any newly
+  // created EventLoop objects.
+  static std::optional<std::string> default_version_string_;
+
+  // Timing report version string for this event loop.
+  std::optional<std::string> version_string_;
 
   FlatbufferDetachedBuffer<timing::Report> timing_report_;
 

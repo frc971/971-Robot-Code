@@ -35,6 +35,8 @@ std::string_view ErrorToString(const RawSender::Error err) {
 }
 }  // namespace
 
+std::optional<std::string> EventLoop::default_version_string_;
+
 std::pair<SharedSpan, absl::Span<uint8_t>> MakeSharedSpan(size_t size) {
   AlignedOwningSpan *const span = reinterpret_cast<AlignedOwningSpan *>(
       malloc(sizeof(AlignedOwningSpan) + size + kChannelDataAlignment - 1));
@@ -146,7 +148,8 @@ PhasedLoopHandler::PhasedLoopHandler(EventLoop *event_loop,
 PhasedLoopHandler::~PhasedLoopHandler() {}
 
 EventLoop::EventLoop(const Configuration *configuration)
-    : timing_report_(flatbuffers::DetachedBuffer()),
+    : version_string_(default_version_string_),
+      timing_report_(flatbuffers::DetachedBuffer()),
       configuration_(configuration) {}
 
 EventLoop::~EventLoop() {
@@ -472,8 +475,13 @@ void EventLoop::UpdateTimingReport() {
   flatbuffers::Offset<flatbuffers::String> name_offset =
       fbb.CreateString(name());
 
+  const flatbuffers::Offset<flatbuffers::String> version_offset =
+      version_string_.has_value() ? fbb.CreateString(version_string_.value())
+                                  : flatbuffers::Offset<flatbuffers::String>();
+
   timing::Report::Builder report_builder(fbb);
   report_builder.add_name(name_offset);
+  report_builder.add_version(version_offset);
   report_builder.add_pid(GetTid());
   if (timer_offsets.size() > 0) {
     report_builder.add_timers(timers_offset);
@@ -641,6 +649,18 @@ void EventLoop::SetTimerContext(
 }
 
 cpu_set_t EventLoop::DefaultAffinity() { return aos::DefaultAffinity(); }
+
+void EventLoop::SetDefaultVersionString(std::string_view version) {
+  default_version_string_ = version;
+}
+
+void EventLoop::SetVersionString(std::string_view version) {
+  CHECK(!is_running())
+      << ": Can't do things that might alter the timing report while running.";
+  version_string_ = version;
+
+  UpdateTimingReport();
+}
 
 void WatcherState::set_timing_report(timing::Watcher *watcher) {
   watcher_ = watcher;

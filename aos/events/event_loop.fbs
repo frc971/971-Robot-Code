@@ -95,6 +95,11 @@ table Report {
   // Identifier for the event loop.  This should change every time a process
   // gets restarted.
   pid:int (id: 1);
+  // Version string associated with this application. This can be empty or
+  // anything (an actual version, a git sha, etc.). This provides a convenient
+  // way for applications to self-report their version in a way that gets
+  // logged.
+  version:string (id: 8);
 
   // List of statistics for each watcher, sender, fetcher, timer, and
   // phased loop.

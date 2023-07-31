@@ -181,10 +181,16 @@ void TimingReportDump::PrintReport(const timing::Report &report) {
     LOG(INFO) << "Failed to send " << report.send_failures()
               << " timing report(s) in " << report.name()->string_view();
   }
+  std::string version_string;
+  if (report.has_version()) {
+    version_string =
+        absl::StrCat("version: \"", report.version()->string_view(), "\" ");
+  }
   std::cout << report.name()->string_view() << "[" << report.pid() << "] ("
-            << MaybeNodeName("", event_loop_->node()) << ") ("
-            << event_loop_->context().monotonic_event_time << ","
+            << MaybeNodeName("", event_loop_->node()) << ") " << version_string
+            << "(" << event_loop_->context().monotonic_event_time << ","
             << event_loop_->context().realtime_event_time << "):" << std::endl;
+
   if (report.has_watchers() && report.watchers()->size() > 0) {
     PrintWatchers(&std::cout, *report.watchers());
   }
@@ -314,6 +320,9 @@ void TimingReportDump::AccumulateReport(const timing::Report &raw_report) {
   if (accumulated_statistics_.count(map_key) == 0) {
     accumulated_statistics_[map_key].name = raw_report.name()->str();
     accumulated_statistics_[map_key].pid = raw_report.pid();
+    if (raw_report.has_version()) {
+      accumulated_statistics_[map_key].version = raw_report.version()->str();
+    }
   }
 
   timing::ReportT report;

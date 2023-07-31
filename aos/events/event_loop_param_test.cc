@@ -1488,6 +1488,84 @@ TEST_P(AbstractEventLoopTest, TimerIntervalAndDuration) {
   }
 }
 
+// Test that setting a default version string results in it getting populated
+// correctly.
+TEST_P(AbstractEventLoopTest, DefaultVersionStringInTimingReport) {
+  gflags::FlagSaver flag_saver;
+  FLAGS_timing_report_ms = 1000;
+
+  EventLoop::SetDefaultVersionString("default_version_string");
+
+  auto loop = MakePrimary();
+
+  Fetcher<timing::Report> report_fetcher =
+      loop->MakeFetcher<timing::Report>("/aos");
+
+  TimerHandler *exit_timer = loop->AddTimer([this]() { Exit(); });
+  loop->OnRun([exit_timer, &loop, &report_fetcher]() {
+    report_fetcher.Fetch();
+    exit_timer->Schedule(loop->monotonic_now() + std::chrono::seconds(2));
+  });
+
+  Run();
+
+  bool found_primary_report = false;
+  while (report_fetcher.FetchNext()) {
+    if (report_fetcher->name()->string_view() == "primary") {
+      found_primary_report = true;
+      EXPECT_EQ("default_version_string",
+                report_fetcher->version()->string_view());
+    } else {
+      FAIL() << report_fetcher->name()->string_view();
+    }
+  }
+
+  if (do_timing_reports() == DoTimingReports::kYes) {
+    EXPECT_TRUE(found_primary_report);
+  } else {
+    EXPECT_FALSE(found_primary_report);
+  }
+}
+
+// Test that overriding the default version string results in it getting
+// populated correctly.
+TEST_P(AbstractEventLoopTest, OverrideDersionStringInTimingReport) {
+  gflags::FlagSaver flag_saver;
+  FLAGS_timing_report_ms = 1000;
+
+  EventLoop::SetDefaultVersionString("default_version_string");
+
+  auto loop = MakePrimary();
+  loop->SetVersionString("override_version");
+
+  Fetcher<timing::Report> report_fetcher =
+      loop->MakeFetcher<timing::Report>("/aos");
+
+  TimerHandler *exit_timer = loop->AddTimer([this]() { Exit(); });
+  loop->OnRun([exit_timer, &loop, &report_fetcher]() {
+    report_fetcher.Fetch();
+    exit_timer->Schedule(loop->monotonic_now() + std::chrono::seconds(2));
+  });
+
+  Run();
+
+  bool found_primary_report = false;
+  while (report_fetcher.FetchNext()) {
+    if (report_fetcher->name()->string_view() == "primary") {
+      found_primary_report = true;
+      EXPECT_EQ("override_version", report_fetcher->version()->string_view());
+    } else {
+      FAIL() << report_fetcher->name()->string_view();
+    }
+  }
+
+  if (do_timing_reports() == DoTimingReports::kYes) {
+    EXPECT_TRUE(found_primary_report);
+  } else {
+    EXPECT_FALSE(found_primary_report);
+  }
+}
+
 // Verify that we can change a timer's parameters during execution.
 TEST_P(AbstractEventLoopTest, TimerChangeParameters) {
   auto loop = MakePrimary();
@@ -3407,6 +3485,19 @@ TEST_P(AbstractEventLoopDeathTest, WrongDetachedBuffer) {
       builder.Detach(builder.MakeBuilder<TestMessage>().Finish());
   EXPECT_DEATH(sender2.CheckOk(sender2.SendDetached(std::move(detached))),
                "May only send the buffer detached from this Sender");
+}
+
+// Tests that senders fail when created on the wrong node.
+TEST_P(AbstractEventLoopDeathTest, SetVersionWhileRunning) {
+  auto loop1 = MakePrimary();
+
+  loop1->OnRun([&loop1, this]() {
+    EXPECT_DEATH({ loop1->SetVersionString("abcdef"); },
+                 "timing report while running");
+    Exit();
+  });
+
+  Run();
 }
 
 int TestChannelFrequency(EventLoop *event_loop) {

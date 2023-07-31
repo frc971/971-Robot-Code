@@ -11,6 +11,7 @@ DEFINE_string(config, "pingpong_config.json", "Path to the config.");
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);
+  aos::EventLoop::SetDefaultVersionString("ping_version");
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(FLAGS_config);
