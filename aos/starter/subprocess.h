@@ -43,7 +43,14 @@ class SignalListener {
 // Class to use the V1 cgroup API to limit memory usage.
 class MemoryCGroup {
  public:
-  MemoryCGroup(std::string_view name);
+  // Enum to control if MemoryCGroup should create the cgroup and remove it on
+  // its own, or if it should assume it already exists and just use it.
+  enum class Create {
+    kDoCreate,
+    kDoNotCreate,
+  };
+
+  MemoryCGroup(std::string_view name, Create should_create = Create::kDoCreate);
   ~MemoryCGroup();
 
   // Adds a thread ID to be managed by the cgroup.
@@ -54,6 +61,7 @@ class MemoryCGroup {
 
  private:
   std::string cgroup_;
+  Create should_create_;
 };
 
 // Manages a running process, allowing starting and stopping, and restarting
@@ -120,6 +128,17 @@ class Application {
   void SetMemoryLimit(size_t limit) {
     if (!memory_cgroup_) {
       memory_cgroup_ = std::make_unique<MemoryCGroup>(name_);
+    }
+    memory_cgroup_->SetLimit("memory.limit_in_bytes", limit);
+  }
+
+  // Sets the cgroup and memory limit to a pre-existing cgroup which is
+  // externally managed.  This lets us configure the cgroup of an application
+  // without root access.
+  void SetExistingCgroupMemoryLimit(std::string_view name, size_t limit) {
+    if (!memory_cgroup_) {
+      memory_cgroup_ = std::make_unique<MemoryCGroup>(
+          name, MemoryCGroup::Create::kDoNotCreate);
     }
     memory_cgroup_->SetLimit("memory.limit_in_bytes", limit);
   }

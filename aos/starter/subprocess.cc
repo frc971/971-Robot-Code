@@ -38,22 +38,25 @@ class Sudo {
   gid_t rgid_, egid_, sgid_;
 };
 
-MemoryCGroup::MemoryCGroup(std::string_view name)
-    : cgroup_(absl::StrCat("/sys/fs/cgroup/memory/aos_", name)) {
-  Sudo sudo;
-  int ret = mkdir(cgroup_.c_str(), 0755);
+MemoryCGroup::MemoryCGroup(std::string_view name, Create should_create)
+    : cgroup_(absl::StrCat("/sys/fs/cgroup/memory/aos_", name)),
+      should_create_(should_create) {
+  if (should_create_ == Create::kDoCreate) {
+    Sudo sudo;
+    int ret = mkdir(cgroup_.c_str(), 0755);
 
-  if (ret != 0) {
-    if (errno == EEXIST) {
-      PCHECK(rmdir(cgroup_.c_str()) == 0)
-          << ": Failed to remove previous cgroup " << cgroup_;
-      ret = mkdir(cgroup_.c_str(), 0755);
+    if (ret != 0) {
+      if (errno == EEXIST) {
+        PCHECK(rmdir(cgroup_.c_str()) == 0)
+            << ": Failed to remove previous cgroup " << cgroup_;
+        ret = mkdir(cgroup_.c_str(), 0755);
+      }
     }
-  }
 
-  if (ret != 0) {
-    PLOG(FATAL) << ": Failed to create cgroup aos_" << cgroup_
-                << ", do you have permission?";
+    if (ret != 0) {
+      PLOG(FATAL) << ": Failed to create cgroup aos_" << cgroup_
+                  << ", do you have permission?";
+    }
   }
 }
 
@@ -61,20 +64,32 @@ void MemoryCGroup::AddTid(pid_t pid) {
   if (pid == 0) {
     pid = getpid();
   }
-  Sudo sudo;
-  util::WriteStringToFileOrDie(absl::StrCat(cgroup_, "/tasks").c_str(),
-                               std::to_string(pid));
+  if (should_create_ == Create::kDoCreate) {
+    Sudo sudo;
+    util::WriteStringToFileOrDie(absl::StrCat(cgroup_, "/tasks").c_str(),
+                                 std::to_string(pid));
+  } else {
+    util::WriteStringToFileOrDie(absl::StrCat(cgroup_, "/tasks").c_str(),
+                                 std::to_string(pid));
+  }
 }
 
 void MemoryCGroup::SetLimit(std::string_view limit_name, uint64_t limit_value) {
-  Sudo sudo;
-  util::WriteStringToFileOrDie(absl::StrCat(cgroup_, "/", limit_name).c_str(),
-                               std::to_string(limit_value));
+  if (should_create_ == Create::kDoCreate) {
+    Sudo sudo;
+    util::WriteStringToFileOrDie(absl::StrCat(cgroup_, "/", limit_name).c_str(),
+                                 std::to_string(limit_value));
+  } else {
+    util::WriteStringToFileOrDie(absl::StrCat(cgroup_, "/", limit_name).c_str(),
+                                 std::to_string(limit_value));
+  }
 }
 
 MemoryCGroup::~MemoryCGroup() {
-  Sudo sudo;
-  PCHECK(rmdir(absl::StrCat(cgroup_).c_str()) == 0);
+  if (should_create_ == Create::kDoCreate) {
+    Sudo sudo;
+    PCHECK(rmdir(absl::StrCat(cgroup_).c_str()) == 0);
+  }
 }
 
 SignalListener::SignalListener(aos::ShmEventLoop *loop,
