@@ -58,9 +58,17 @@ void NewDataWriter::Rotate() {
   if (header_written_) {
     VLOG(1) << "Rotated " << name();
     ++parts_index_;
+
+    aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> header =
+        MakeHeader();
+
+    if (header.span().size() > max_message_size_) {
+      max_message_size_ = header.span().size();
+    }
+
     reopen_(this);
     header_written_ = false;
-    QueueHeader(MakeHeader());
+    QueueHeader(std::move(header));
   }
 }
 
@@ -307,6 +315,7 @@ void NewDataWriter::CopyMessage(DataEncoder::Copier *coppier,
   CHECK(writer);
   CHECK(header_written_) << ": Attempting to write message before header to "
                          << writer->name();
+  CHECK_LE(coppier->size(), max_message_size_);
   writer->CopyMessage(coppier, now);
 }
 
@@ -353,6 +362,7 @@ void NewDataWriter::QueueHeader(
 
   CHECK(writer);
   DataEncoder::SpanCopier coppier(header.span());
+  CHECK_LE(coppier.size(), max_message_size_);
   writer->CopyMessage(&coppier, aos::monotonic_clock::now());
   header_written_ = true;
   monotonic_start_time_ = log_namer_->monotonic_start_time(

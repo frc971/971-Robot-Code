@@ -4374,6 +4374,98 @@ TEST(MultinodeLoggerLoopTest, StartDisconnected) {
   auto result = ConfirmReadable(filenames);
 }
 
+// Class to spam Pong messages blindly.
+class PongSender {
+ public:
+  PongSender(EventLoop *loop, std::string_view channel_name)
+      : sender_(loop->MakeSender<examples::Pong>(channel_name)) {
+    loop->AddPhasedLoop(
+        [this](int) {
+          aos::Sender<examples::Pong>::Builder builder = sender_.MakeBuilder();
+          examples::Pong::Builder pong_builder =
+              builder.MakeBuilder<examples::Pong>();
+          CHECK_EQ(builder.Send(pong_builder.Finish()), RawSender::Error::kOk);
+        },
+        chrono::milliseconds(10));
+  }
+
+ private:
+  aos::Sender<examples::Pong> sender_;
+};
+
+// Tests that we log correctly as nodes connect slowly.
+TEST(MultinodeLoggerLoopTest, StaggeredConnect) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(ArtifactPath(
+          "aos/events/logging/multinode_pingpong_pi3_pingpong_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+
+  time_converter.StartEqual();
+
+  const std::string kLogfile1_1 =
+      aos::testing::TestTmpDir() + "/multi_logfile1/";
+  util::UnlinkRecursive(kLogfile1_1);
+
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+  NodeEventLoopFactory *const pi2 =
+      event_loop_factory.GetNodeEventLoopFactory("pi2");
+  NodeEventLoopFactory *const pi3 =
+      event_loop_factory.GetNodeEventLoopFactory("pi3");
+
+  // What we want is for pi2 to send a message at t=1000 on the first channel
+  // (/atest1 pong), and t=1 on the second channel (/atest3 pong).  That'll make
+  // the max out of order duration be large.
+  //
+  // Then, we disconnect, and only send messages on a third channel
+  // (/atest2 pong). The order is key, they need to sort in this order in the
+  // config so we observe them in the order which grows the
+  // max_out_of_order_duration.
+
+  pi1->Disconnect(pi2->node());
+  pi2->Disconnect(pi1->node());
+
+  pi1->Disconnect(pi3->node());
+  pi3->Disconnect(pi1->node());
+
+  std::vector<std::string> filenames;
+  pi2->AlwaysStart<PongSender>("pongsender", "/test2");
+  pi3->AlwaysStart<PongSender>("pongsender", "/test3");
+
+  event_loop_factory.RunFor(chrono::seconds(10));
+
+  {
+    // Now start a receiving node first.  This sets up 2 tight bounds between
+    // 2 of the nodes.
+    LoggerState pi1_logger = MakeLoggerState(
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+    pi1_logger.StartLogger(kLogfile1_1);
+
+    event_loop_factory.RunFor(chrono::seconds(10));
+
+    // Now, reconnect, and everything should recover.
+    pi1->Connect(pi2->node());
+    pi2->Connect(pi1->node());
+
+    event_loop_factory.RunFor(chrono::seconds(10));
+
+    pi1->Connect(pi3->node());
+    pi3->Connect(pi1->node());
+
+    event_loop_factory.RunFor(chrono::seconds(10));
+
+    pi1_logger.AppendAllFilenames(&filenames);
+  }
+
+  // Make sure we can read this.
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
+  auto result = ConfirmReadable(filenames);
+}
+
 }  // namespace testing
 }  // namespace logger
 }  // namespace aos
