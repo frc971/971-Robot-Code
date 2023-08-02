@@ -115,8 +115,10 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
 
   std::vector<std::string> MakeLogFiles(std::string logfile_base1,
                                         std::string logfile_base2,
-                                        size_t pi1_data_count = 3,
-                                        size_t pi2_data_count = 3,
+                                        size_t pi1_data_count = 1,
+                                        size_t pi2_data_count = 1,
+                                        size_t pi1_timestamp_count = 2,
+                                        size_t pi2_timestamp_count = 2,
                                         bool relogged_config = false);
 
   std::vector<std::string> MakePi1RebootLogfiles();

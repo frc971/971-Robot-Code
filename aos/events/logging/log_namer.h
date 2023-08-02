@@ -506,14 +506,12 @@ class MultiNodeLogNamer : public LogNamer {
 
  private:
   // Opens up a writer for timestamps forwarded back.
-  void OpenForwardedTimestampWriter(const Channel *channel,
+  void OpenForwardedTimestampWriter(const Node *source_node,
                                     NewDataWriter *data_writer);
 
   // Opens up a writer for remote data.
-  void OpenWriter(const Channel *channel, NewDataWriter *data_writer);
-
-  // Opens the main data writer file for this node responsible for data_writer_.
-  void MakeDataWriter();
+  void OpenDataWriter(const Node *source_node, NewDataWriter *data_writer);
+  void OpenTimestampWriter(NewDataWriter *data_writer);
 
   void CreateBufferWriter(std::string_view path, size_t max_message_size,
                           std::unique_ptr<DetachedBufferWriter> *destination);
@@ -523,14 +521,17 @@ class MultiNodeLogNamer : public LogNamer {
   // A version of std::accumulate which operates over all of our DataWriters.
   template <typename T, typename BinaryOperation>
   T accumulate_data_writers(T t, BinaryOperation op) const {
-    for (const std::pair<const Channel *const, NewDataWriter> &data_writer :
-         data_writers_) {
+    for (const std::pair<const Node *const, NewDataWriter> &data_writer :
+         node_data_writers_) {
       if (data_writer.second.writer != nullptr) {
         t = op(std::move(t), data_writer.second);
       }
     }
-    if (data_writer_ != nullptr && data_writer_->writer != nullptr) {
-      t = op(std::move(t), *data_writer_);
+    for (const std::pair<const Node *const, NewDataWriter> &data_writer :
+         node_timestamp_writers_) {
+      if (data_writer.second.writer != nullptr) {
+        t = op(std::move(t), data_writer.second);
+      }
     }
     return t;
   }
@@ -552,15 +553,10 @@ class MultiNodeLogNamer : public LogNamer {
   int total_write_messages_ = 0;
   int total_write_bytes_ = 0;
 
-  // File to write both delivery timestamps and local data to.
-  std::unique_ptr<NewDataWriter> data_writer_;
-
-  std::map<const Channel *, NewDataWriter> data_writers_;
-
   // Data writer per remote node.
-  std::map<const Node *, NewDataWriter *> node_data_writers_;
+  std::map<const Node *, NewDataWriter> node_data_writers_;
   // Remote timestamp writers per node.
-  std::map<const Node *, NewDataWriter *> node_timestamp_writers_;
+  std::map<const Node *, NewDataWriter> node_timestamp_writers_;
 };
 
 // This is specialized log namer that deals with directory centric log events.
