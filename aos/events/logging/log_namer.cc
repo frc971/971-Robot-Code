@@ -765,6 +765,13 @@ NewDataWriter *MultiNodeLogNamer::MakeForwardedTimestampWriter(
     nodes_.emplace_back(node);
   }
 
+  // If we have a remote timestamp writer for a particular node, use the same
+  // writer for all remote timestamp channels of that node.
+  if (node_timestamp_writers_.find(node) != node_timestamp_writers_.end()) {
+    return node_timestamp_writers_.find(node)->second;
+  }
+
+  // If there are no remote timestamp writers for the node, create one.
   NewDataWriter data_writer(
       this, configuration::GetNode(configuration_, node), node_,
       [this, channel](NewDataWriter *data_writer) {
@@ -772,8 +779,10 @@ NewDataWriter *MultiNodeLogNamer::MakeForwardedTimestampWriter(
       },
       [this](NewDataWriter *data_writer) { CloseWriter(&data_writer->writer); },
       PackRemoteMessageSize());
-  return &(
-      data_writers_.emplace(channel, std::move(data_writer)).first->second);
+
+  data_writers_.emplace(channel, std::move(data_writer));
+  node_timestamp_writers_.emplace(node, &data_writers_.find(channel)->second);
+  return &(data_writers_.find(channel)->second);
 }
 
 NewDataWriter *MultiNodeLogNamer::MakeTimestampWriter(const Channel *channel) {
@@ -797,6 +806,7 @@ NewDataWriter *MultiNodeLogNamer::MakeTimestampWriter(const Channel *channel) {
 WriteCode MultiNodeLogNamer::Close() {
   data_writers_.clear();
   node_data_writers_.clear();
+  node_timestamp_writers_.clear();
   data_writer_.reset();
   if (ran_out_of_space_) {
     return WriteCode::kOutOfSpace;
@@ -825,9 +835,10 @@ void MultiNodeLogNamer::ResetStatistics() {
 void MultiNodeLogNamer::OpenForwardedTimestampWriter(
     const Channel *channel, NewDataWriter *data_writer) {
   std::string filename =
-      absl::StrCat("timestamps", channel->name()->string_view(), "/",
-                   channel->type()->string_view(), ".part",
-                   data_writer->parts_index(), ".bfbs", extension_);
+      absl::StrCat("timestamps/", data_writer->node()->name()->string_view(),
+                   "/source_", channel->source_node()->string_view(),
+                   "_timestamp_", data_writer->node()->name()->string_view(),
+                   ".part", data_writer->parts_index(), ".bfbs", extension_);
   CreateBufferWriter(filename, data_writer->max_message_size(),
                      &data_writer->writer);
 }

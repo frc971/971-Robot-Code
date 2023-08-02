@@ -156,59 +156,23 @@ std::vector<std::string> MultinodeLoggerTest::MakeLogFiles(
   result.emplace_back(logfile_base2 + "_pi1_data/pi1_data.part1" + Extension());
   result.emplace_back(logfile_base1 + "_pi2_data/pi2_data.part0" + Extension());
   result.emplace_back(logfile_base1 + "_pi2_data/pi2_data.part1" + Extension());
-  if (shared()) {
-    result.emplace_back(logfile_base1 +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                        "aos.message_bridge.RemoteMessage.part0" +
-                        Extension());
-    result.emplace_back(logfile_base1 +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                        "aos.message_bridge.RemoteMessage.part1" +
-                        Extension());
-    result.emplace_back(logfile_base1 +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                        "aos.message_bridge.RemoteMessage.part2" +
-                        Extension());
-    result.emplace_back(logfile_base2 +
-                        "_timestamps/pi2/aos/remote_timestamps/pi1/"
-                        "aos.message_bridge.RemoteMessage.part0" +
-                        Extension());
-    result.emplace_back(logfile_base2 +
-                        "_timestamps/pi2/aos/remote_timestamps/pi1/"
-                        "aos.message_bridge.RemoteMessage.part1" +
-                        Extension());
-  } else {
-    result.emplace_back(logfile_base1 +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/pi1/aos/"
-                        "aos-message_bridge-Timestamp/"
-                        "aos.message_bridge.RemoteMessage.part0" +
-                        Extension());
-    result.emplace_back(logfile_base1 +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/pi1/aos/"
-                        "aos-message_bridge-Timestamp/"
-                        "aos.message_bridge.RemoteMessage.part1" +
-                        Extension());
-    result.emplace_back(logfile_base2 +
-                        "_timestamps/pi2/aos/remote_timestamps/pi1/pi2/aos/"
-                        "aos-message_bridge-Timestamp/"
-                        "aos.message_bridge.RemoteMessage.part0" +
-                        Extension());
-    result.emplace_back(logfile_base2 +
-                        "_timestamps/pi2/aos/remote_timestamps/pi1/pi2/aos/"
-                        "aos-message_bridge-Timestamp/"
-                        "aos.message_bridge.RemoteMessage.part1" +
-                        Extension());
-    result.emplace_back(logfile_base1 +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/test/"
-                        "aos-examples-Ping/"
-                        "aos.message_bridge.RemoteMessage.part0" +
-                        Extension());
-    result.emplace_back(logfile_base1 +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/test/"
-                        "aos-examples-Ping/"
-                        "aos.message_bridge.RemoteMessage.part1" +
-                        Extension());
-  }
+  // shared and not shared config types will have the same output since the data
+  // writers are consolidated to per node instead of per channel.
+  result.emplace_back(logfile_base1 +
+                      "_timestamps/pi2/source_pi1_timestamp_pi2.part0" +
+                      Extension());
+  result.emplace_back(logfile_base1 +
+                      "_timestamps/pi2/source_pi1_timestamp_pi2.part1" +
+                      Extension());
+  result.emplace_back(logfile_base1 +
+                      "_timestamps/pi2/source_pi1_timestamp_pi2.part2" +
+                      Extension());
+  result.emplace_back(logfile_base2 +
+                      "_timestamps/pi1/source_pi2_timestamp_pi1.part0" +
+                      Extension());
+  result.emplace_back(logfile_base2 +
+                      "_timestamps/pi1/source_pi2_timestamp_pi1.part1" +
+                      Extension());
 
   return result;
 }
@@ -230,56 +194,10 @@ std::vector<std::string> MultinodeLoggerTest::MakePi1RebootLogfiles() {
                       Extension());
   result.emplace_back(absl::StrCat(
       logfile_base1_, "_", std::get<0>(GetParam()).sha256, Extension()));
-  if (shared()) {
-    for (size_t i = 0; i < 6; ++i) {
-      result.emplace_back(
-          absl::StrCat(logfile_base1_,
-                       "_timestamps/pi1/aos/remote_timestamps/pi2/"
-                       "aos.message_bridge.RemoteMessage.part",
-                       i, Extension()));
-    }
-  } else {
-    result.emplace_back(logfile_base1_ +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/pi1/aos/"
-                        "aos-message_bridge-Timestamp/"
-                        "aos.message_bridge.RemoteMessage.part0" +
-                        Extension());
-    result.emplace_back(logfile_base1_ +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/pi1/aos/"
-                        "aos-message_bridge-Timestamp/"
-                        "aos.message_bridge.RemoteMessage.part1" +
-                        Extension());
-    result.emplace_back(logfile_base1_ +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/pi1/aos/"
-                        "aos-message_bridge-Timestamp/"
-                        "aos.message_bridge.RemoteMessage.part2" +
-                        Extension());
-    result.emplace_back(logfile_base1_ +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/pi1/aos/"
-                        "aos-message_bridge-Timestamp/"
-                        "aos.message_bridge.RemoteMessage.part3" +
-                        Extension());
-
-    result.emplace_back(logfile_base1_ +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/test/"
-                        "aos-examples-Ping/"
-                        "aos.message_bridge.RemoteMessage.part0" +
-                        Extension());
-    result.emplace_back(logfile_base1_ +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/test/"
-                        "aos-examples-Ping/"
-                        "aos.message_bridge.RemoteMessage.part1" +
-                        Extension());
-    result.emplace_back(logfile_base1_ +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/test/"
-                        "aos-examples-Ping/"
-                        "aos.message_bridge.RemoteMessage.part2" +
-                        Extension());
-    result.emplace_back(logfile_base1_ +
-                        "_timestamps/pi1/aos/remote_timestamps/pi2/test/"
-                        "aos-examples-Ping/"
-                        "aos.message_bridge.RemoteMessage.part3" +
-                        Extension());
+  for (size_t i = 0; i < 6; ++i) {
+    result.emplace_back(absl::StrCat(
+        logfile_base1_, "_timestamps/pi2/source_pi1_timestamp_pi2.part", i,
+        Extension()));
   }
   return result;
 }
@@ -309,15 +227,9 @@ std::vector<std::vector<std::string>> MultinodeLoggerTest::StructureLogFiles() {
       std::vector<std::string>{logfiles_[8], logfiles_[9]},
       std::vector<std::string>{logfiles_[10], logfiles_[11]}};
 
-  if (shared()) {
-    result.emplace_back(
-        std::vector<std::string>{logfiles_[12], logfiles_[13], logfiles_[14]});
-    result.emplace_back(std::vector<std::string>{logfiles_[15], logfiles_[16]});
-  } else {
-    result.emplace_back(std::vector<std::string>{logfiles_[12], logfiles_[13]});
-    result.emplace_back(std::vector<std::string>{logfiles_[14], logfiles_[15]});
-    result.emplace_back(std::vector<std::string>{logfiles_[16], logfiles_[17]});
-  }
+  result.emplace_back(
+      std::vector<std::string>{logfiles_[12], logfiles_[13], logfiles_[14]});
+  result.emplace_back(std::vector<std::string>{logfiles_[15], logfiles_[16]});
 
   return result;
 }
@@ -395,7 +307,7 @@ void MultinodeLoggerTest::VerifyParts(
   // depends on if we have the remote timestamps split across 2 files, or just
   // across 1, depending on if we are using a split or combined timestamp
   // channel config.
-  EXPECT_EQ(missing_rt_count, shared() ? 4u : 5u);
+  EXPECT_EQ(missing_rt_count, shared() ? 4u : 4u);
 
   EXPECT_EQ(log_event_uuids.size(), 2u);
   EXPECT_EQ(parts_uuids.size(), ToLogReaderVector(sorted_parts).size());
