@@ -134,7 +134,7 @@ py_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":python_init",
-        "//frc971/control_loops/python:angular_system",
+        "//frc971/control_loops/python:angular_system_current",
         "//frc971/control_loops/python:controls",
         "@pip//glog",
         "@pip//python_gflags",
