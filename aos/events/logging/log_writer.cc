@@ -708,7 +708,8 @@ void Logger::WriteData(NewDataWriter *writer, const FetcherStruct &f) {
         static_cast<int>(node_index_) != f.data_node_index
             ? f.fetcher->context().monotonic_remote_time
             : f.fetcher->context().monotonic_event_time;
-    writer->CopyMessage(&coppier, source_node_boot_uuid, start, message_time);
+    writer->CopyDataMessage(&coppier, source_node_boot_uuid, start,
+                            message_time);
     RecordCreateMessageTime(start, coppier.end_time(), f);
 
     VLOG(2) << "Wrote data as node " << FlatbufferToJson(node_)
@@ -733,8 +734,9 @@ void Logger::WriteTimestamps(NewDataWriter *timestamp_writer,
     ContextDataCopier coppier(f.fetcher->context(), f.channel_index,
                               LogType::kLogDeliveryTimeOnly, event_loop_);
 
-    timestamp_writer->CopyMessage(&coppier, event_loop_->boot_uuid(), start,
-                                  f.fetcher->context().monotonic_event_time);
+    timestamp_writer->CopyTimestampMessage(
+        &coppier, event_loop_->boot_uuid(), start,
+        f.fetcher->context().monotonic_event_time);
     RecordCreateMessageTime(start, coppier.end_time(), f);
 
     VLOG(2) << "Wrote timestamps as node " << FlatbufferToJson(node_)
@@ -784,7 +786,7 @@ void Logger::WriteContent(NewDataWriter *contents_writer,
     RemoteMessageCopier coppier(msg, channel_index, monotonic_timestamp_time,
                                 event_loop_);
 
-    contents_writer->CopyMessage(
+    contents_writer->CopyRemoteTimestampMessage(
         &coppier, UUID::FromVector(msg->boot_uuid()), start,
         monotonic_clock::time_point(
             chrono::nanoseconds(msg->monotonic_sent_time())));

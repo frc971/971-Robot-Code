@@ -48,7 +48,7 @@ std::unique_ptr<internal::FileOperations> MakeFileOperations(
 }
 
 bool ConfigOnly(const LogFileHeader *header) {
-  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 34u);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 35u);
   if (header->has_monotonic_start_time()) return false;
   if (header->has_realtime_start_time()) return false;
   if (header->has_max_out_of_order_duration()) return false;
@@ -80,6 +80,7 @@ bool ConfigOnly(const LogFileHeader *header) {
     return false;
   if (header->has_logger_sha1()) return false;
   if (header->has_logger_version()) return false;
+  if (header->has_data_stored()) return false;
 
   return header->has_configuration();
 }

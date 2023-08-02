@@ -41,7 +41,8 @@ class NewDataWriter {
   NewDataWriter(LogNamer *log_namer, const Node *node, const Node *logger_node,
                 std::function<void(NewDataWriter *)> reopen,
                 std::function<void(NewDataWriter *)> close,
-                size_t max_message_size);
+                size_t max_message_size,
+                std::initializer_list<StoredDataType> types);
 
   void UpdateMaxMessageSize(size_t new_size) {
     if (new_size > max_message_size_) {
@@ -74,11 +75,20 @@ class NewDataWriter {
                     bool reliable,
                     monotonic_clock::time_point monotonic_timestamp_time =
                         monotonic_clock::min_time);
+
   // Coppies a message with the provided boot UUID.
-  void CopyMessage(DataEncoder::Copier *coppier,
-                   const UUID &source_node_boot_uuid,
-                   aos::monotonic_clock::time_point now,
-                   aos::monotonic_clock::time_point message_time);
+  void CopyDataMessage(DataEncoder::Copier *copier,
+                       const UUID &source_node_boot_uuid,
+                       aos::monotonic_clock::time_point now,
+                       aos::monotonic_clock::time_point message_time);
+  void CopyTimestampMessage(DataEncoder::Copier *copier,
+                            const UUID &source_node_boot_uuid,
+                            aos::monotonic_clock::time_point now,
+                            aos::monotonic_clock::time_point message_time);
+  void CopyRemoteTimestampMessage(
+      DataEncoder::Copier *copier, const UUID &source_node_boot_uuid,
+      aos::monotonic_clock::time_point now,
+      aos::monotonic_clock::time_point message_time);
 
   // Updates the current boot for the source node.  This is useful when you want
   // to queue a message that may trigger a reboot rotation, but then need to
@@ -144,6 +154,11 @@ class NewDataWriter {
   // Signals that a node has rebooted.
   void Reboot(const UUID &source_node_boot_uuid);
 
+  void CopyMessage(DataEncoder::Copier *copier,
+                   const UUID &source_node_boot_uuid,
+                   aos::monotonic_clock::time_point now,
+                   aos::monotonic_clock::time_point message_time);
+
   void QueueHeader(
       aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> &&header);
 
@@ -182,6 +197,11 @@ class NewDataWriter {
   // Since the messages can be logged out of order, this helps determine if
   // max out of order duration was violated.
   monotonic_clock::time_point newest_message_time_ = monotonic_clock::min_time;
+
+  // An array with a bool for each value of StoredDataType representing if that
+  // data type is allowed to be logged by this object.
+  std::array<bool, static_cast<size_t>(StoredDataType::MAX) + 1>
+      allowed_data_types_;
 };
 
 // Interface describing how to name, track, and add headers to log file parts.
@@ -302,7 +322,9 @@ class LogNamer {
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
       size_t node_index, const std::vector<NewDataWriter::State> &state,
       const UUID &parts_uuid, int parts_index,
-      std::chrono::nanoseconds max_out_of_order_duration);
+      std::chrono::nanoseconds max_out_of_order_duration,
+      const std::array<bool, static_cast<size_t>(StoredDataType::MAX) + 1>
+          &allowed_data_types);
 
   EventLoop *event_loop_;
   const Configuration *const configuration_;

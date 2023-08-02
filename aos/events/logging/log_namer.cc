@@ -10,6 +10,8 @@
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
 
+#include "aos/containers/error_list.h"
+#include "aos/containers/sized_array.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/flatbuffer_merge.h"
@@ -24,7 +26,8 @@ NewDataWriter::NewDataWriter(LogNamer *log_namer, const Node *node,
                              const Node *logger_node,
                              std::function<void(NewDataWriter *)> reopen,
                              std::function<void(NewDataWriter *)> close,
-                             size_t max_message_size)
+                             size_t max_message_size,
+                             std::initializer_list<StoredDataType> types)
     : node_(node),
       node_index_(configuration::GetNodeIndex(log_namer->configuration_, node)),
       logger_node_index_(
@@ -34,8 +37,14 @@ NewDataWriter::NewDataWriter(LogNamer *log_namer, const Node *node,
       close_(std::move(close)),
       max_message_size_(max_message_size),
       max_out_of_order_duration_(log_namer_->base_max_out_of_order_duration()) {
+  allowed_data_types_.fill(false);
+
   state_.resize(configuration::NodesCount(log_namer->configuration_));
   CHECK_LT(node_index_, state_.size());
+  for (StoredDataType type : types) {
+    CHECK_LT(static_cast<size_t>(type), allowed_data_types_.size());
+    allowed_data_types_[static_cast<size_t>(type)] = true;
+  }
 }
 
 NewDataWriter::~NewDataWriter() {
@@ -190,6 +199,34 @@ void NewDataWriter::UpdateRemote(
   }
 }
 
+void NewDataWriter::CopyDataMessage(
+    DataEncoder::Copier *coppier, const UUID &source_node_boot_uuid,
+    aos::monotonic_clock::time_point now,
+    aos::monotonic_clock::time_point message_time) {
+  CHECK(allowed_data_types_[static_cast<size_t>(StoredDataType::DATA)])
+      << ": Tried to write data on non-data writer.";
+  CopyMessage(coppier, source_node_boot_uuid, now, message_time);
+}
+
+void NewDataWriter::CopyTimestampMessage(
+    DataEncoder::Copier *coppier, const UUID &source_node_boot_uuid,
+    aos::monotonic_clock::time_point now,
+    aos::monotonic_clock::time_point message_time) {
+  CHECK(allowed_data_types_[static_cast<size_t>(StoredDataType::TIMESTAMPS)])
+      << ": Tried to write timestamps on non-timestamp writer.";
+  CopyMessage(coppier, source_node_boot_uuid, now, message_time);
+}
+
+void NewDataWriter::CopyRemoteTimestampMessage(
+    DataEncoder::Copier *coppier, const UUID &source_node_boot_uuid,
+    aos::monotonic_clock::time_point now,
+    aos::monotonic_clock::time_point message_time) {
+  CHECK(allowed_data_types_[static_cast<size_t>(
+      StoredDataType::REMOTE_TIMESTAMPS)])
+      << ": Tried to write remote timestamps on non-remote timestamp writer.";
+  CopyMessage(coppier, source_node_boot_uuid, now, message_time);
+}
+
 void NewDataWriter::CopyMessage(DataEncoder::Copier *coppier,
                                 const UUID &source_node_boot_uuid,
                                 aos::monotonic_clock::time_point now,
@@ -285,7 +322,8 @@ NewDataWriter::MakeHeader() {
     CHECK_EQ(state_[logger_node_index].boot_uuid, logger_node_boot_uuid);
   }
   return log_namer_->MakeHeader(node_index_, state_, parts_uuid(), parts_index_,
-                                max_out_of_order_duration_);
+                                max_out_of_order_duration_,
+                                allowed_data_types_);
 }
 
 void NewDataWriter::QueueHeader(
@@ -342,11 +380,13 @@ LogNamer::NodeState *LogNamer::GetNodeState(size_t node_index,
 aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
     size_t node_index, const std::vector<NewDataWriter::State> &state,
     const UUID &parts_uuid, int parts_index,
-    std::chrono::nanoseconds max_out_of_order_duration) {
+    std::chrono::nanoseconds max_out_of_order_duration,
+    const std::array<bool, static_cast<size_t>(StoredDataType::MAX) + 1>
+        &allowed_data_types) {
   const UUID &source_node_boot_uuid = state[node_index].boot_uuid;
   const Node *const source_node =
       configuration::GetNode(configuration_, node_index);
-  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 34u);
+  CHECK_EQ(LogFileHeader::MiniReflectTypeTable()->num_elems, 35u);
   flatbuffers::FlatBufferBuilder fbb;
   fbb.ForceDefaults(true);
 
@@ -524,6 +564,18 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
       flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>>
       boot_uuids_offset = fbb.CreateVector(boot_uuid_offsets);
 
+  aos::ErrorList<StoredDataType> allowed_data_types_vector;
+  for (size_t type = static_cast<size_t>(StoredDataType::MIN);
+       type <= static_cast<size_t>(StoredDataType::MAX); ++type) {
+    if (allowed_data_types[type]) {
+      allowed_data_types_vector.Set(static_cast<StoredDataType>(type));
+    }
+  }
+
+  flatbuffers::Offset<flatbuffers::Vector<StoredDataType>> data_stored_offset =
+      fbb.CreateVector(allowed_data_types_vector.data(),
+                       allowed_data_types_vector.size());
+
   aos::logger::LogFileHeader::Builder log_file_header_builder(fbb);
 
   log_file_header_builder.add_name(name_offset);
@@ -617,6 +669,8 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   log_file_header_builder
       .add_oldest_logger_local_unreliable_monotonic_timestamps(
           oldest_logger_local_unreliable_monotonic_timestamps_offset);
+
+  log_file_header_builder.add_data_stored(data_stored_offset);
   fbb.FinishSizePrefixed(log_file_header_builder.Finish());
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> result(
       fbb.Release());
@@ -710,7 +764,7 @@ NewDataWriter *MultiNodeLogNamer::MakeWriter(const Channel *channel) {
       MakeDataWriter();
     }
     data_writer_->UpdateMaxMessageSize(
-        PackMessageSize(LogType::kLogRemoteMessage, channel->max_size()));
+        PackMessageSize(LogType::kLogMessage, channel->max_size()));
     return data_writer_.get();
   }
 
@@ -743,9 +797,8 @@ NewDataWriter *MultiNodeLogNamer::MakeWriter(const Channel *channel) {
         OpenWriter(channel, data_writer);
       },
       [this](NewDataWriter *data_writer) { CloseWriter(&data_writer->writer); },
-      0);
-  data_writer.UpdateMaxMessageSize(
-      PackMessageSize(LogType::kLogRemoteMessage, channel->max_size()));
+      PackMessageSize(LogType::kLogRemoteMessage, channel->max_size()),
+      {StoredDataType::DATA});
 
   data_writers_.emplace(channel, std::move(data_writer));
   node_data_writers_.emplace(source_node, &data_writers_.find(channel)->second);
@@ -778,7 +831,7 @@ NewDataWriter *MultiNodeLogNamer::MakeForwardedTimestampWriter(
         OpenForwardedTimestampWriter(channel, data_writer);
       },
       [this](NewDataWriter *data_writer) { CloseWriter(&data_writer->writer); },
-      PackRemoteMessageSize());
+      PackRemoteMessageSize(), {StoredDataType::REMOTE_TIMESTAMPS});
 
   data_writers_.emplace(channel, std::move(data_writer));
   node_timestamp_writers_.emplace(node, &data_writers_.find(channel)->second);
@@ -871,7 +924,9 @@ void MultiNodeLogNamer::MakeDataWriter() {
         },
         // Default size is 0 so it will be obvious if something doesn't fix it
         // afterwards.
-        0);
+        0,
+        std::initializer_list<StoredDataType>{StoredDataType::DATA,
+                                              StoredDataType::TIMESTAMPS});
   }
 }
 

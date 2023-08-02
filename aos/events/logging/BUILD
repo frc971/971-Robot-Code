@@ -389,6 +389,8 @@ cc_library(
         ":logfile_utils",
         ":logger_fbs",
         "//aos:uuid",
+        "//aos/containers:error_list",
+        "//aos/containers:sized_array",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",
     ],

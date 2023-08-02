@@ -2,6 +2,15 @@ include "aos/configuration.fbs";
 
 namespace aos.logger;
 
+enum StoredDataType : uint8 {
+  // We have message data in this file.
+  DATA = 0,
+  // We have timestamps of delivered data in this file.
+  TIMESTAMPS = 1,
+  // We have remote timestamps in this file.
+  REMOTE_TIMESTAMPS = 2,
+}
+
 // A log file is a sequence of size prefixed flatbuffers.
 // The first flatbuffer will be the LogFileHeader, followed by an arbitrary
 // number of MessageHeaders.
@@ -209,6 +218,10 @@ table LogFileHeader {
   // Logger textual version.  This is normally the release name stamped into
   // the binary.
   logger_version:string (id:33);
+
+  // The types of data stored in this log file.  This can be used to find logs
+  // with only timestamps in them to pre-solve the time problem.
+  data_stored:[StoredDataType] (id:34);
 }
 
 // Table holding a message.

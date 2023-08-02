@@ -124,6 +124,49 @@ TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
 
     EXPECT_EQ(log_header[15].message().parts_index(), 0);
     EXPECT_EQ(log_header[16].message().parts_index(), 1);
+
+    // And that the data_stored field is right.
+    EXPECT_THAT(*log_header[2].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::DATA,
+                                       StoredDataType::TIMESTAMPS));
+    EXPECT_THAT(*log_header[3].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::DATA,
+                                       StoredDataType::TIMESTAMPS));
+    EXPECT_THAT(*log_header[4].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::DATA,
+                                       StoredDataType::TIMESTAMPS));
+
+    EXPECT_THAT(*log_header[5].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::DATA,
+                                       StoredDataType::TIMESTAMPS));
+    EXPECT_THAT(*log_header[6].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::DATA,
+                                       StoredDataType::TIMESTAMPS));
+    EXPECT_THAT(*log_header[7].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::DATA,
+                                       StoredDataType::TIMESTAMPS));
+
+    EXPECT_THAT(*log_header[8].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::DATA));
+    EXPECT_THAT(*log_header[9].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::DATA));
+
+    EXPECT_THAT(*log_header[10].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::DATA));
+    EXPECT_THAT(*log_header[11].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::DATA));
+
+    EXPECT_THAT(*log_header[12].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::REMOTE_TIMESTAMPS));
+    EXPECT_THAT(*log_header[13].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::REMOTE_TIMESTAMPS));
+    EXPECT_THAT(*log_header[14].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::REMOTE_TIMESTAMPS));
+
+    EXPECT_THAT(*log_header[15].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::REMOTE_TIMESTAMPS));
+    EXPECT_THAT(*log_header[16].message().data_stored(),
+                ::testing::ElementsAre(StoredDataType::REMOTE_TIMESTAMPS));
   }
 
   const std::vector<LogFile> sorted_parts = SortParts(logfiles_);
