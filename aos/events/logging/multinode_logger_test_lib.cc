@@ -148,26 +148,14 @@ std::vector<std::string> MultinodeLoggerTest::MakeLogFiles(
     result.emplace_back(
         absl::StrCat(logfile_base1, "_pi1_data.part", i, Extension()));
   }
-  result.emplace_back(logfile_base1 + "_pi2_data/test/aos.examples.Pong.part0" +
-                      Extension());
-  result.emplace_back(logfile_base1 + "_pi2_data/test/aos.examples.Pong.part1" +
-                      Extension());
   for (size_t i = 0; i < pi2_data_count; ++i) {
     result.emplace_back(
         absl::StrCat(logfile_base2, "_pi2_data.part", i, Extension()));
   }
-  result.emplace_back(logfile_base2 +
-                      "_pi1_data/pi1/aos/aos.message_bridge.Timestamp.part0" +
-                      Extension());
-  result.emplace_back(logfile_base2 +
-                      "_pi1_data/pi1/aos/aos.message_bridge.Timestamp.part1" +
-                      Extension());
-  result.emplace_back(logfile_base1 +
-                      "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part0" +
-                      Extension());
-  result.emplace_back(logfile_base1 +
-                      "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part1" +
-                      Extension());
+  result.emplace_back(logfile_base2 + "_pi1_data/pi1_data.part0" + Extension());
+  result.emplace_back(logfile_base2 + "_pi1_data/pi1_data.part1" + Extension());
+  result.emplace_back(logfile_base1 + "_pi2_data/pi2_data.part0" + Extension());
+  result.emplace_back(logfile_base1 + "_pi2_data/pi2_data.part1" + Extension());
   if (shared()) {
     result.emplace_back(logfile_base1 +
                         "_timestamps/pi1/aos/remote_timestamps/pi2/"
@@ -232,25 +220,13 @@ std::vector<std::string> MultinodeLoggerTest::MakePi1RebootLogfiles() {
   result.emplace_back(logfile_base1_ + "_pi1_data.part2" + Extension());
   result.emplace_back(logfile_base1_ + "_pi1_data.part3" + Extension());
   result.emplace_back(logfile_base1_ + "_pi1_data.part4" + Extension());
-  result.emplace_back(logfile_base1_ +
-                      "_pi2_data/test/aos.examples.Pong.part0" + Extension());
-  result.emplace_back(logfile_base1_ +
-                      "_pi2_data/test/aos.examples.Pong.part1" + Extension());
-  result.emplace_back(logfile_base1_ +
-                      "_pi2_data/test/aos.examples.Pong.part2" + Extension());
-  result.emplace_back(logfile_base1_ +
-                      "_pi2_data/test/aos.examples.Pong.part3" + Extension());
-  result.emplace_back(logfile_base1_ +
-                      "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part0" +
+  result.emplace_back(logfile_base1_ + "_pi2_data/pi2_data.part0" +
                       Extension());
-  result.emplace_back(logfile_base1_ +
-                      "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part1" +
+  result.emplace_back(logfile_base1_ + "_pi2_data/pi2_data.part1" +
                       Extension());
-  result.emplace_back(logfile_base1_ +
-                      "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part2" +
+  result.emplace_back(logfile_base1_ + "_pi2_data/pi2_data.part2" +
                       Extension());
-  result.emplace_back(logfile_base1_ +
-                      "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part3" +
+  result.emplace_back(logfile_base1_ + "_pi2_data/pi2_data.part3" +
                       Extension());
   result.emplace_back(absl::StrCat(
       logfile_base1_, "_", std::get<0>(GetParam()).sha256, Extension()));
@@ -312,9 +288,6 @@ std::vector<std::string> MultinodeLoggerTest::MakePi1SingleDirectionLogfiles() {
   std::vector<std::string> result;
   result.emplace_back(logfile_base1_ + "_pi1_data.part0" + Extension());
   result.emplace_back(logfile_base1_ + "_pi1_data.part1" + Extension());
-  result.emplace_back(logfile_base1_ +
-                      "_pi2_data/pi2/aos/aos.message_bridge.Timestamp.part0" +
-                      Extension());
   result.emplace_back(absl::StrCat(
       logfile_base1_, "_", std::get<0>(GetParam()).sha256, Extension()));
   return result;
@@ -331,19 +304,19 @@ std::vector<std::string> MultinodeLoggerTest::MakePi1DeadNodeLogfiles() {
 std::vector<std::vector<std::string>> MultinodeLoggerTest::StructureLogFiles() {
   std::vector<std::vector<std::string>> result{
       std::vector<std::string>{logfiles_[2], logfiles_[3], logfiles_[4]},
-      std::vector<std::string>{logfiles_[5], logfiles_[6]},
-      std::vector<std::string>{logfiles_[7], logfiles_[8], logfiles_[9]},
-      std::vector<std::string>{logfiles_[10], logfiles_[11]},
-      std::vector<std::string>{logfiles_[12], logfiles_[13]}};
+      // std::vector<std::string>{logfiles_[5], logfiles_[6]},
+      std::vector<std::string>{logfiles_[5], logfiles_[6], logfiles_[7]},
+      std::vector<std::string>{logfiles_[8], logfiles_[9]},
+      std::vector<std::string>{logfiles_[10], logfiles_[11]}};
 
   if (shared()) {
     result.emplace_back(
-        std::vector<std::string>{logfiles_[14], logfiles_[15], logfiles_[16]});
-    result.emplace_back(std::vector<std::string>{logfiles_[17], logfiles_[18]});
+        std::vector<std::string>{logfiles_[12], logfiles_[13], logfiles_[14]});
+    result.emplace_back(std::vector<std::string>{logfiles_[15], logfiles_[16]});
   } else {
+    result.emplace_back(std::vector<std::string>{logfiles_[12], logfiles_[13]});
     result.emplace_back(std::vector<std::string>{logfiles_[14], logfiles_[15]});
     result.emplace_back(std::vector<std::string>{logfiles_[16], logfiles_[17]});
-    result.emplace_back(std::vector<std::string>{logfiles_[18], logfiles_[19]});
   }
 
   return result;
@@ -422,7 +395,7 @@ void MultinodeLoggerTest::VerifyParts(
   // depends on if we have the remote timestamps split across 2 files, or just
   // across 1, depending on if we are using a split or combined timestamp
   // channel config.
-  EXPECT_EQ(missing_rt_count, shared() ? 5u : 6u);
+  EXPECT_EQ(missing_rt_count, shared() ? 4u : 5u);
 
   EXPECT_EQ(log_event_uuids.size(), 2u);
   EXPECT_EQ(parts_uuids.size(), ToLogReaderVector(sorted_parts).size());

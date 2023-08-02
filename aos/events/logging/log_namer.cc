@@ -727,15 +727,29 @@ NewDataWriter *MultiNodeLogNamer::MakeWriter(const Channel *channel) {
     nodes_.emplace_back(source_node);
   }
 
+  // If we already have a data writer for the node, then use the same writer for
+  // all channels of that node.
+  if (node_data_writers_.find(source_node) != node_data_writers_.end()) {
+    node_data_writers_.find(source_node)
+        ->second->UpdateMaxMessageSize(
+            PackMessageSize(LogType::kLogRemoteMessage, channel->max_size()));
+    return node_data_writers_.find(source_node)->second;
+  }
+
+  // If we don't have a data writer for the node, create one.
   NewDataWriter data_writer(
       this, source_node, node_,
       [this, channel](NewDataWriter *data_writer) {
         OpenWriter(channel, data_writer);
       },
       [this](NewDataWriter *data_writer) { CloseWriter(&data_writer->writer); },
+      0);
+  data_writer.UpdateMaxMessageSize(
       PackMessageSize(LogType::kLogRemoteMessage, channel->max_size()));
-  return &(
-      data_writers_.emplace(channel, std::move(data_writer)).first->second);
+
+  data_writers_.emplace(channel, std::move(data_writer));
+  node_data_writers_.emplace(source_node, &data_writers_.find(channel)->second);
+  return &(data_writers_.find(channel)->second);
 }
 
 NewDataWriter *MultiNodeLogNamer::MakeForwardedTimestampWriter(
@@ -782,6 +796,7 @@ NewDataWriter *MultiNodeLogNamer::MakeTimestampWriter(const Channel *channel) {
 
 WriteCode MultiNodeLogNamer::Close() {
   data_writers_.clear();
+  node_data_writers_.clear();
   data_writer_.reset();
   if (ran_out_of_space_) {
     return WriteCode::kOutOfSpace;
@@ -820,9 +835,9 @@ void MultiNodeLogNamer::OpenForwardedTimestampWriter(
 void MultiNodeLogNamer::OpenWriter(const Channel *channel,
                                    NewDataWriter *data_writer) {
   const std::string filename = absl::StrCat(
-      CHECK_NOTNULL(channel->source_node())->string_view(), "_data",
-      channel->name()->string_view(), "/", channel->type()->string_view(),
-      ".part", data_writer->parts_index(), ".bfbs", extension_);
+      CHECK_NOTNULL(channel->source_node())->string_view(), "_data/",
+      channel->source_node()->string_view(), "_data.part",
+      data_writer->parts_index(), ".bfbs", extension_);
   CreateBufferWriter(filename, data_writer->max_message_size(),
                      &data_writer->writer);
 }

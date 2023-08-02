@@ -534,6 +534,9 @@ class MultiNodeLogNamer : public LogNamer {
   std::unique_ptr<NewDataWriter> data_writer_;
 
   std::map<const Channel *, NewDataWriter> data_writers_;
+
+  // Data writer per remote node.
+  std::map<const Node *, NewDataWriter *> node_data_writers_;
 };
 
 // This is specialized log namer that deals with directory centric log events.
