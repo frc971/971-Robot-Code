@@ -52,6 +52,10 @@ class NewDataWriter {
   }
   size_t max_message_size() const { return max_message_size_; }
 
+  std::chrono::nanoseconds max_out_of_order_duration() const {
+    return max_out_of_order_duration_;
+  }
+
   NewDataWriter(NewDataWriter &&other) = default;
   aos::logger::NewDataWriter &operator=(NewDataWriter &&other) = default;
   NewDataWriter(const NewDataWriter &) = delete;
@@ -73,7 +77,8 @@ class NewDataWriter {
   // Coppies a message with the provided boot UUID.
   void CopyMessage(DataEncoder::Copier *coppier,
                    const UUID &source_node_boot_uuid,
-                   aos::monotonic_clock::time_point now);
+                   aos::monotonic_clock::time_point now,
+                   aos::monotonic_clock::time_point message_time);
 
   // Updates the current boot for the source node.  This is useful when you want
   // to queue a message that may trigger a reboot rotation, but then need to
@@ -160,6 +165,23 @@ class NewDataWriter {
   std::vector<State> state_;
 
   size_t max_message_size_;
+
+  // Each data writer logs the channels for that node, i.e.
+  // each data writer writes one file. We may encounter messages which
+  // violate the max out of order duration specified in the header of that file.
+  // Rotate the data writer and start a new part for that particular file.
+  // This shouldn't affect the headers of other data writers, so make this
+  // a property of individual data writer instead of the overall log.
+  std::chrono::nanoseconds max_out_of_order_duration_;
+
+  // Monotonic time point of the latest message we've logged so far, i.e
+  // Message X - time Z
+  // Message Y - time Z + 1
+  // newest_message_time_ = Z + 1 (even if X was logged after Y)
+  //
+  // Since the messages can be logged out of order, this helps determine if
+  // max out of order duration was violated.
+  monotonic_clock::time_point newest_message_time_ = monotonic_clock::min_time;
 };
 
 // Interface describing how to name, track, and add headers to log file parts.
@@ -252,6 +274,14 @@ class LogNamer {
     return node_state->monotonic_start_time;
   }
 
+  // This returns the initial out of order duration set in the header template
+  // by the logger based on polling period. It may be different than the actual
+  // duration used by the data writer.
+  std::chrono::nanoseconds base_max_out_of_order_duration() const {
+    return std::chrono::nanoseconds(
+        header_.message().max_out_of_order_duration());
+  }
+
  protected:
   // Structure with state per node about times and such.
   struct NodeState {
@@ -271,7 +301,8 @@ class LogNamer {
   // them with the arguments provided.
   aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> MakeHeader(
       size_t node_index, const std::vector<NewDataWriter::State> &state,
-      const UUID &parts_uuid, int parts_index);
+      const UUID &parts_uuid, int parts_index,
+      std::chrono::nanoseconds max_out_of_order_duration);
 
   EventLoop *event_loop_;
   const Configuration *const configuration_;

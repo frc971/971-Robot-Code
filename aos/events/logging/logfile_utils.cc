@@ -1598,7 +1598,9 @@ SpanReader PartsMessageReader::MakeSpanReader(
 
 PartsMessageReader::PartsMessageReader(LogPartsAccess log_parts_access)
     : log_parts_access_(std::move(log_parts_access)),
-      message_reader_(MakeSpanReader(log_parts_access_, 0)) {
+      message_reader_(MakeSpanReader(log_parts_access_, 0)),
+      max_out_of_order_duration_(
+          log_parts_access_.max_out_of_order_duration()) {
   if (log_parts_access_.size() >= 2) {
     next_message_reader_.emplace(MakeSpanReader(log_parts_access_, 1));
   }

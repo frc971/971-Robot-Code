@@ -446,6 +446,8 @@ void MultinodeLoggerTest::VerifyParts(
 
   EXPECT_THAT(sorted_parts[0].corrupted, ::testing::Eq(corrupted_parts));
   EXPECT_THAT(sorted_parts[1].corrupted, ::testing::Eq(corrupted_parts));
+
+  EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
 }
 
 void MultinodeLoggerTest::AddExtension(std::string_view extension) {
@@ -652,6 +654,23 @@ std::vector<std::tuple<std::string, std::string, int>> CountChannelsTimestamp(
         }
         return false;
       });
+}
+
+bool AllPartsMatchOutOfOrderDuration(
+    const std::vector<LogFile> &files,
+    std::chrono::nanoseconds max_out_of_order_duration) {
+  for (const LogFile &file : files) {
+    for (const LogParts &parts : file.parts) {
+      if (parts.max_out_of_order_duration != max_out_of_order_duration) {
+        LOG(ERROR) << "Found an out of order duration of "
+                   << parts.max_out_of_order_duration.count()
+                   << "ns instead of " << max_out_of_order_duration.count()
+                   << "ns for " << parts;
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 }  // namespace testing

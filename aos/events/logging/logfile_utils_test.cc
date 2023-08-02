@@ -216,7 +216,12 @@ TEST(PartsMessageReaderTest, ReadWrite) {
     writer.QueueSpan(m2.span());
   }
 
+  // When parts are sorted, we choose the highest max out of order duration for
+  // all parts with the same part uuid.
   const std::vector<LogFile> parts = SortParts({logfile0, logfile1});
+
+  EXPECT_EQ(parts.size(), 1);
+  EXPECT_EQ(parts[0].parts.size(), 1);
 
   PartsMessageReader reader(parts[0].parts[0]);
 
@@ -225,16 +230,18 @@ TEST(PartsMessageReaderTest, ReadWrite) {
   // Confirm that the timestamps track, and the filename also updates.
   // Read the first message.
   EXPECT_EQ(reader.newest_timestamp(), monotonic_clock::min_time);
+  // Since config1 has higher max out of order duration, that will be used to
+  // read partfiles with same part uuid, i.e logfile0 and logfile1.
   EXPECT_EQ(
       reader.max_out_of_order_duration(),
-      std::chrono::nanoseconds(config0.message().max_out_of_order_duration()));
+      std::chrono::nanoseconds(config1.message().max_out_of_order_duration()));
   EXPECT_TRUE(reader.ReadMessage());
   EXPECT_EQ(reader.filename(), logfile0);
   EXPECT_EQ(reader.newest_timestamp(),
             monotonic_clock::time_point(chrono::nanoseconds(1)));
   EXPECT_EQ(
       reader.max_out_of_order_duration(),
-      std::chrono::nanoseconds(config0.message().max_out_of_order_duration()));
+      std::chrono::nanoseconds(config1.message().max_out_of_order_duration()));
 
   // Read the second message.
   EXPECT_TRUE(reader.ReadMessage());
@@ -252,6 +259,11 @@ TEST(PartsMessageReaderTest, ReadWrite) {
       reader.max_out_of_order_duration(),
       std::chrono::nanoseconds(config1.message().max_out_of_order_duration()));
   EXPECT_EQ(reader.newest_timestamp(), monotonic_clock::max_time);
+
+  // Verify that the parts metadata has the correct max out of order duration.
+  EXPECT_EQ(
+      parts[0].parts[0].max_out_of_order_duration,
+      std::chrono::nanoseconds(config1.message().max_out_of_order_duration()));
 }
 
 // Tests that Message's operator < works as expected.

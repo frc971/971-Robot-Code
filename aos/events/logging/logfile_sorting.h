@@ -84,6 +84,9 @@ struct LogParts {
 
   // Information about all the boots that the system has observed.
   std::shared_ptr<const Boots> boots;
+
+  // Highest max out of order durations among all parts.
+  std::chrono::nanoseconds max_out_of_order_duration;
 };
 
 // Datastructure to hold parts from the same run of the logger which have no
@@ -177,6 +180,10 @@ class LogPartsAccess {
 
   std::optional<const LogSource *> log_source() const { return log_source_; }
 
+  std::chrono::nanoseconds max_out_of_order_duration() const {
+    return log_parts_.max_out_of_order_duration;
+  }
+
   std::string GetPartAt(size_t index) const {
     CHECK_LT(index, log_parts_.parts.size());
     return log_parts_.parts[index];
@@ -241,7 +248,7 @@ class LogFilesContainer {
   explicit LogFilesContainer(const LogSource *log_source)
       : LogFilesContainer(log_source, SortParts(*log_source)) {}
 
-  // Returns true when at least on of the log files associated with node.
+  // Returns true when at least one of the log files associated with node.
   bool ContainsPartsForNode(std::string_view node_name) const {
     // TODO (Alexei): Implement
     // https://en.cppreference.com/w/cpp/container/unordered_map/find with C++20

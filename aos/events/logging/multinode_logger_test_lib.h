@@ -99,6 +99,13 @@ std::vector<std::tuple<std::string, std::string, int>> CountChannelsTimestamp(
     std::shared_ptr<const aos::Configuration> config,
     std::string_view filename);
 
+// Returns true if all of the max_out_of_order_duration's match the provided
+// max_out_of_order_duration.
+bool AllPartsMatchOutOfOrderDuration(
+    const std::vector<LogFile> &files,
+    std::chrono::nanoseconds max_out_of_order_duration =
+        std::chrono::milliseconds(300));
+
 class MultinodeLoggerTest : public ::testing::TestWithParam<
                                 std::tuple<ConfigParams, CompressionParams>> {
  public:

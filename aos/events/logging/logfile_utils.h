@@ -288,8 +288,8 @@ class MessageReader {
     return raw_log_file_header_;
   }
 
-  // Returns the minimum maount of data needed to queue up for sorting before
-  // ware guarenteed to not see data out of order.
+  // Returns the minimum amount of data needed to queue up for sorting before
+  // we're guarenteed to not see data out of order.
   std::chrono::nanoseconds max_out_of_order_duration() const {
     return max_out_of_order_duration_;
   }
@@ -376,7 +376,7 @@ class PartsMessageReader {
   // Returns the minimum amount of data needed to queue up for sorting before
   // we are guarenteed to not see data out of order.
   std::chrono::nanoseconds max_out_of_order_duration() const {
-    return message_reader_.max_out_of_order_duration();
+    return max_out_of_order_duration_;
   }
 
   // Returns the newest timestamp read out of the log file.
@@ -432,6 +432,8 @@ class PartsMessageReader {
 
   // Per node boot counts.
   std::vector<std::optional<size_t>> boot_counts_;
+
+  const std::chrono::nanoseconds max_out_of_order_duration_;
 };
 
 // Stores MessageHeader as a flat header and inline, aligned block of data.

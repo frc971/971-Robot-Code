@@ -32,6 +32,10 @@ table LogFileHeader {
   // at most this duration (in nanoseconds).  If the log reader buffers until
   // it finds messages this much newer than it's simulation time, it will never
   // find a message out of order.
+  //
+  // By definition this is the time for log reader to buffer messages after startup,
+  // i.e. messages sent before startup are not taken into account when checking for
+  // max out of order duration.
   max_out_of_order_duration:long (id: 2);
 
   // The configuration of the channels.  It is valid to have a log file with

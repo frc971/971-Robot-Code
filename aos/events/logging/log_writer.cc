@@ -269,6 +269,7 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
 
   log_event_uuid_ = UUID::Random();
   log_start_uuid_ = log_start_uuid;
+  log_namer_->SetHeaderTemplate(MakeHeader(config_sha256));
 
   // We want to do as much work as possible before the initial Fetch. Time
   // between that and actually starting to log opens up the possibility of
@@ -286,8 +287,6 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
           f.channel, CHECK_NOTNULL(f.timestamp_node));
     }
   }
-
-  log_namer_->SetHeaderTemplate(MakeHeader(config_sha256));
 
   const aos::monotonic_clock::time_point beginning_time =
       event_loop_->monotonic_now();
@@ -705,7 +704,11 @@ void Logger::WriteData(NewDataWriter *writer, const FetcherStruct &f) {
     ContextDataCopier coppier(f.fetcher->context(), f.channel_index, f.log_type,
                               event_loop_);
 
-    writer->CopyMessage(&coppier, source_node_boot_uuid, start);
+    aos::monotonic_clock::time_point message_time =
+        static_cast<int>(node_index_) != f.data_node_index
+            ? f.fetcher->context().monotonic_remote_time
+            : f.fetcher->context().monotonic_event_time;
+    writer->CopyMessage(&coppier, source_node_boot_uuid, start, message_time);
     RecordCreateMessageTime(start, coppier.end_time(), f);
 
     VLOG(2) << "Wrote data as node " << FlatbufferToJson(node_)
@@ -730,7 +733,8 @@ void Logger::WriteTimestamps(NewDataWriter *timestamp_writer,
     ContextDataCopier coppier(f.fetcher->context(), f.channel_index,
                               LogType::kLogDeliveryTimeOnly, event_loop_);
 
-    timestamp_writer->CopyMessage(&coppier, event_loop_->boot_uuid(), start);
+    timestamp_writer->CopyMessage(&coppier, event_loop_->boot_uuid(), start,
+                                  f.fetcher->context().monotonic_event_time);
     RecordCreateMessageTime(start, coppier.end_time(), f);
 
     VLOG(2) << "Wrote timestamps as node " << FlatbufferToJson(node_)
@@ -780,8 +784,10 @@ void Logger::WriteContent(NewDataWriter *contents_writer,
     RemoteMessageCopier coppier(msg, channel_index, monotonic_timestamp_time,
                                 event_loop_);
 
-    contents_writer->CopyMessage(&coppier, UUID::FromVector(msg->boot_uuid()),
-                                 start);
+    contents_writer->CopyMessage(
+        &coppier, UUID::FromVector(msg->boot_uuid()), start,
+        monotonic_clock::time_point(
+            chrono::nanoseconds(msg->monotonic_sent_time())));
 
     RecordCreateMessageTime(start, coppier.end_time(), f);
   }

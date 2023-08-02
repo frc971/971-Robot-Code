@@ -32,7 +32,8 @@ NewDataWriter::NewDataWriter(LogNamer *log_namer, const Node *node,
       log_namer_(log_namer),
       reopen_(std::move(reopen)),
       close_(std::move(close)),
-      max_message_size_(max_message_size) {
+      max_message_size_(max_message_size),
+      max_out_of_order_duration_(log_namer_->base_max_out_of_order_duration()) {
   state_.resize(configuration::NodesCount(log_namer->configuration_));
   CHECK_LT(node_index_, state_.size());
 }
@@ -79,6 +80,11 @@ void NewDataWriter::Reboot(const UUID &source_node_boot_uuid) {
   state_[node_index_].boot_uuid = source_node_boot_uuid;
 
   VLOG(1) << "Rebooted " << name();
+  newest_message_time_ = monotonic_clock::min_time;
+  // When a node reboots, parts_uuid changes but the same writer continues to
+  // write the data, so we can reset the max out of order duration. If we don't
+  // do this, the max out of order duration can grow to an unreasonable value.
+  max_out_of_order_duration_ = log_namer_->base_max_out_of_order_duration();
 }
 
 void NewDataWriter::UpdateBoot(const UUID &source_node_boot_uuid) {
@@ -186,7 +192,8 @@ void NewDataWriter::UpdateRemote(
 
 void NewDataWriter::CopyMessage(DataEncoder::Copier *coppier,
                                 const UUID &source_node_boot_uuid,
-                                aos::monotonic_clock::time_point now) {
+                                aos::monotonic_clock::time_point now,
+                                aos::monotonic_clock::time_point message_time) {
   // Trigger a reboot if we detect the boot UUID change.
   UpdateBoot(source_node_boot_uuid);
 
@@ -194,9 +201,65 @@ void NewDataWriter::CopyMessage(DataEncoder::Copier *coppier,
     QueueHeader(MakeHeader());
   }
 
+  bool max_out_of_order_duration_exceeded = false;
+  // Enforce max out of duration contract.
+  //
+  // Updates the newest message time.
+  // Rotate the part file if current message is more than
+  // max_out_of_order_duration behind the newest message we've logged so far.
+  if (message_time > newest_message_time_) {
+    newest_message_time_ = message_time;
+  }
+
+  // Don't consider messages before start up when checking for max out of order
+  // duration.
+  monotonic_clock::time_point monotonic_start_time =
+      log_namer_->monotonic_start_time(node_index_, source_node_boot_uuid);
+
+  if (std::chrono::nanoseconds((newest_message_time_ -
+                                std::max(monotonic_start_time, message_time))) >
+      max_out_of_order_duration_) {
+    // If the new message is older than 2 * max_out_order_duration, doubling it
+    // won't be sufficient.
+    //
+    // Example: newest_message_time = 10, logged_message_time = 5,
+    // max_ooo_duration = 2
+    //
+    // In this case actual max_ooo_duration = 10 - 5 = 5, but we double the
+    // existing max_ooo_duration we get 4 which is not sufficient.
+    //
+    // Take the max of the two values.
+    max_out_of_order_duration_ =
+        2 * std::max(max_out_of_order_duration_,
+                     std::chrono::nanoseconds(
+                         (newest_message_time_ - message_time)));
+    max_out_of_order_duration_exceeded = true;
+  }
+
   // If the start time has changed for this node, trigger a rotation.
-  if (log_namer_->monotonic_start_time(node_index_, source_node_boot_uuid) !=
-      monotonic_start_time_) {
+  if ((monotonic_start_time != monotonic_start_time_) ||
+      max_out_of_order_duration_exceeded) {
+    // If we just received a start time now, we will rotate parts shortly. Use a
+    // reasonable max out of order durationin the new header based on start time
+    // information available now.
+    if ((monotonic_start_time_ == monotonic_clock::min_time) &&
+        (monotonic_start_time != monotonic_clock::min_time)) {
+      // If we're writing current messages  but we receive an older start time,
+      // we can pick a reasonable max ooo duration number for the next part.
+      //
+      // For example - Our current max ooo duration is 0.3 seconds. We're
+      // writing messages at 20 seconds and recieve a start time of 1 second. We
+      // don't need max ooo duration to be (20 - 1) = 19 seconds although that
+      // would still work.
+      //
+      // Pick the minimum max out of duration value that satisifies the
+      // requirement but bound the minimum at the base value we started with.
+      max_out_of_order_duration_ =
+          std::max(log_namer_->base_max_out_of_order_duration(),
+                   std::min(max_out_of_order_duration_,
+                            std::chrono::nanoseconds(newest_message_time_ -
+                                                     monotonic_start_time)));
+    }
     CHECK(header_written_);
     Rotate();
   }
@@ -221,8 +284,8 @@ NewDataWriter::MakeHeader() {
   } else {
     CHECK_EQ(state_[logger_node_index].boot_uuid, logger_node_boot_uuid);
   }
-  return log_namer_->MakeHeader(node_index_, state_, parts_uuid(),
-                                parts_index_);
+  return log_namer_->MakeHeader(node_index_, state_, parts_uuid(), parts_index_,
+                                max_out_of_order_duration_);
 }
 
 void NewDataWriter::QueueHeader(
@@ -278,7 +341,8 @@ LogNamer::NodeState *LogNamer::GetNodeState(size_t node_index,
 
 aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
     size_t node_index, const std::vector<NewDataWriter::State> &state,
-    const UUID &parts_uuid, int parts_index) {
+    const UUID &parts_uuid, int parts_index,
+    std::chrono::nanoseconds max_out_of_order_duration) {
   const UUID &source_node_boot_uuid = state[node_index].boot_uuid;
   const Node *const source_node =
       configuration::GetNode(configuration_, node_index);
@@ -479,8 +543,9 @@ aos::SizePrefixedFlatbufferDetachedBuffer<LogFileHeader> LogNamer::MakeHeader(
   if (!configuration_offset.IsNull()) {
     log_file_header_builder.add_configuration(configuration_offset);
   }
+
   log_file_header_builder.add_max_out_of_order_duration(
-      header_.message().max_out_of_order_duration());
+      max_out_of_order_duration.count());
 
   NodeState *node_state = GetNodeState(node_index, source_node_boot_uuid);
   log_file_header_builder.add_monotonic_start_time(

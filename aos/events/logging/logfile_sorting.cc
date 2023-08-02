@@ -138,7 +138,7 @@ std::vector<internal::FileOperations::File> FindLogs(int argc, char **argv) {
 
 // Start by grouping all parts by UUID, and extracting the part index.
 // Datastructure to hold all the info extracted from a set of parts which go
-// together so we can sort them afterwords.
+// together so we can sort them afterwards.
 struct UnsortedLogParts {
   // Start times.
   aos::monotonic_clock::time_point monotonic_start_time;
@@ -165,6 +165,15 @@ struct UnsortedLogParts {
   std::vector<std::pair<std::string, int>> parts;
 
   std::string config_sha256;
+
+  // Largest max out of order duration among parts with monotonic start
+  // time greater than min_time
+  std::optional<std::chrono::nanoseconds>
+      max_out_of_order_duration_valid_start_time = std::nullopt;
+  // Largest max out of order duration among parts with monotonic start time
+  // equal to min_time.
+  std::optional<std::chrono::nanoseconds>
+      max_out_of_order_duration_min_start_time = std::nullopt;
 };
 
 // Struct to hold both the node, and the parts associated with it.
@@ -370,6 +379,9 @@ void PartsSorter::PopulateFromFiles(
     const realtime_clock::time_point logger_realtime_start_time(
         chrono::nanoseconds(
             log_header->message().logger_realtime_start_time()));
+    const std::chrono::nanoseconds max_out_of_order_duration =
+        std::chrono::nanoseconds(
+            log_header->message().max_out_of_order_duration());
 
     const std::string_view node =
         log_header->message().has_node()
@@ -505,6 +517,8 @@ void PartsSorter::PopulateFromFiles(
         old_parts.back().parts.config_sha256 = configuration_sha256;
         old_parts.back().unsorted_parts.emplace_back(
             std::make_pair(first_message_time, part.name));
+        old_parts.back().parts.max_out_of_order_duration =
+            max_out_of_order_duration;
         old_parts.back().name = name;
       } else {
         result->unsorted_parts.emplace_back(
@@ -582,6 +596,24 @@ void PartsSorter::PopulateFromFiles(
       it->second.config_sha256 = configuration_sha256;
     } else {
       CHECK_EQ(it->second.config_sha256, configuration_sha256);
+    }
+    // Keep track of the largest max out of order duration times based on
+    // whether monotonic start time is available. We'll decide which value to
+    // use later when creating log files.
+    if (monotonic_start_time == monotonic_clock::min_time) {
+      it->second.max_out_of_order_duration_min_start_time =
+          it->second.max_out_of_order_duration_min_start_time.has_value()
+              ? std::max(
+                    it->second.max_out_of_order_duration_min_start_time.value(),
+                    max_out_of_order_duration)
+              : max_out_of_order_duration;
+    } else {
+      it->second.max_out_of_order_duration_valid_start_time =
+          it->second.max_out_of_order_duration_valid_start_time.has_value()
+              ? std::max(it->second.max_out_of_order_duration_valid_start_time
+                             .value(),
+                         max_out_of_order_duration)
+              : max_out_of_order_duration;
     }
 
     // We've got a newer log with boot_uuids, and oldest timestamps.  Fill in
@@ -1885,7 +1917,14 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
       new_parts.parts_uuid = parts.first.first;
       new_parts.node = std::move(parts.second.node);
       new_parts.boots = boot_counts;
-
+      // If there are no part files which have a monotonic start time greater
+      // than min time, use the max of whatever we have, else chose the max out
+      // of order duration of parts with monotonic start time greater than min
+      // time.
+      new_parts.max_out_of_order_duration =
+          parts.second.max_out_of_order_duration_valid_start_time.has_value()
+              ? parts.second.max_out_of_order_duration_valid_start_time.value()
+              : parts.second.max_out_of_order_duration_min_start_time.value();
       {
         auto boot_count_it =
             boot_counts->boot_count_map.find(new_parts.source_boot_uuid);
@@ -2096,6 +2135,9 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
     stream << ",\n  \"logger_realtime_start_time\": \""
            << parts.logger_realtime_start_time << "\"";
   }
+  stream << ",\n  \"max_out_of_order_duration\": \""
+         << parts.max_out_of_order_duration.count() << "\"";
+
   stream << ",\n  \"monotonic_start_time\": \"" << parts.monotonic_start_time
          << "\",\n  \"realtime_start_time\": \"" << parts.realtime_start_time
          << "\",\n  \"parts\": [";
