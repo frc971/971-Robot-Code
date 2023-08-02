@@ -546,6 +546,7 @@ std::vector<std::tuple<std::string, std::string, int>> CountChannelsTimestamp(
 bool AllPartsMatchOutOfOrderDuration(
     const std::vector<LogFile> &files,
     std::chrono::nanoseconds max_out_of_order_duration) {
+  bool result = true;
   for (const LogFile &file : files) {
     for (const LogParts &parts : file.parts) {
       if (parts.max_out_of_order_duration != max_out_of_order_duration) {
@@ -553,11 +554,32 @@ bool AllPartsMatchOutOfOrderDuration(
                    << parts.max_out_of_order_duration.count()
                    << "ns instead of " << max_out_of_order_duration.count()
                    << "ns for " << parts;
-        return false;
+        result = false;
       }
     }
   }
-  return true;
+  return result;
+}
+
+bool AllRebootPartsMatchOutOfOrderDuration(
+    const std::vector<LogFile> &files, const std::string node,
+    std::chrono::nanoseconds max_out_of_order_duration) {
+  bool result = true;
+  for (const LogFile &file : files) {
+    for (const LogParts &parts : file.parts) {
+      if (parts.node == node && parts.boot_count == 0) {
+        continue;
+      }
+      if (parts.max_out_of_order_duration != max_out_of_order_duration) {
+        LOG(ERROR) << "Found an out of order duration of "
+                   << parts.max_out_of_order_duration.count()
+                   << "ns instead of " << max_out_of_order_duration.count()
+                   << "ns for " << parts;
+        result = false;
+      }
+    }
+  }
+  return result;
 }
 
 }  // namespace testing

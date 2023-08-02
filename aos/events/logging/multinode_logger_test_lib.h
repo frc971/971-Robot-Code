@@ -106,6 +106,12 @@ bool AllPartsMatchOutOfOrderDuration(
     std::chrono::nanoseconds max_out_of_order_duration =
         std::chrono::milliseconds(300));
 
+// Skips checking the part file with boot_count 0 for 'node'.
+bool AllRebootPartsMatchOutOfOrderDuration(
+    const std::vector<LogFile> &files, const std::string node,
+    std::chrono::nanoseconds max_out_of_order_duration =
+        std::chrono::milliseconds(300));
+
 class MultinodeLoggerTest : public ::testing::TestWithParam<
                                 std::tuple<ConfigParams, CompressionParams>> {
  public:
