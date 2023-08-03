@@ -494,3 +494,39 @@ ts_project(
         "//aos/network/www:proxy",
     ],
 )
+
+cc_library(
+    name = "falcon",
+    srcs = [
+        "falcon.cc",
+    ],
+    hdrs = [
+        "falcon.h",
+    ],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
+    deps = [
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//aos/logging",
+        "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
+        "//third_party:phoenix",
+        "//third_party:phoenixpro",
+        "//third_party:wpilib",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "can_sensor_reader",
+    srcs = ["can_sensor_reader.cc"],
+    hdrs = ["can_sensor_reader.h"],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":falcon",
+        "//aos:realtime",
+        "//aos/containers:sized_array",
+        "//aos/events:event_loop",
+        "//aos/events:shm_event_loop",
+    ],
+)
