@@ -426,7 +426,6 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":down_estimator",
         ":drivetrain_goal_fbs",
         ":drivetrain_output_fbs",
         ":drivetrain_position_fbs",

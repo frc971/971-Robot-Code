@@ -42,6 +42,8 @@ struct StateFeedbackPlantCoefficients final {
         D(other.D),
         U_min(other.U_min),
         U_max(other.U_max),
+        U_limit_coefficient(other.U_limit_coefficient),
+        U_limit_constant(other.U_limit_constant),
         dt(other.dt),
         delayed_u(other.delayed_u) {}
 
@@ -52,6 +54,9 @@ struct StateFeedbackPlantCoefficients final {
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> &D,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_max,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min,
+      const Eigen::Matrix<Scalar, number_of_inputs, number_of_states>
+          &U_limit_coefficient,
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_limit_constant,
       const std::chrono::nanoseconds dt, size_t delayed_u)
       : A(A),
         B(B),
@@ -59,6 +64,8 @@ struct StateFeedbackPlantCoefficients final {
         D(D),
         U_min(U_min),
         U_max(U_max),
+        U_limit_coefficient(U_limit_coefficient),
+        U_limit_constant(U_limit_constant),
         dt(dt),
         delayed_u(delayed_u) {}
 
@@ -68,6 +75,9 @@ struct StateFeedbackPlantCoefficients final {
   const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> D;
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_min;
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_max;
+  const Eigen::Matrix<Scalar, number_of_inputs, number_of_states>
+      U_limit_coefficient;
+  const Eigen::Matrix<Scalar, number_of_inputs, 1> U_limit_constant;
   const std::chrono::nanoseconds dt;
 
   // If true, this adds a single cycle output delay model to the plant.  This is
@@ -134,6 +144,19 @@ class StateFeedbackPlant {
     return coefficients().U_max;
   }
   Scalar U_max(int i, int j = 0) const { return U_max()(i, j); }
+  const Eigen::Matrix<Scalar, number_of_inputs, number_of_states>
+      &U_limit_coefficient() const {
+    return coefficients().U_limit_coefficient;
+  }
+  Scalar U_limit_coefficient(int i, int j) const {
+    return U_limit_coefficient()(i, j);
+  }
+  const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_limit_constant() const {
+    return coefficients().U_limit_constant;
+  }
+  Scalar U_limit_constant(int i, int j = 0) const {
+    return U_limit_constant()(i, j);
+  }
 
   const std::chrono::nanoseconds dt() const { return coefficients().dt; }
 
@@ -549,11 +572,24 @@ class StateFeedbackLoop {
   // If U is outside the hardware range, limit it before the plant tries to use
   // it.
   virtual void CapU() {
+    // TODO(Ravago): this runs before the state update step, so it's limiting
+    // the future control based on the old state. This gets even worse when we
+    // have delayed_u.
+    Eigen::Matrix<Scalar, number_of_inputs, 1> U_max_computed =
+        plant().U_limit_coefficient() * plant().X() +
+        plant().U_limit_constant();
+    Eigen::Matrix<Scalar, number_of_inputs, 1> U_min_computed =
+        plant().U_limit_coefficient() * plant().X() -
+        plant().U_limit_constant();
+
+    U_max_computed = U_max_computed.cwiseMin(plant().U_max());
+    U_min_computed = U_min_computed.cwiseMax(plant().U_min());
+
     for (int i = 0; i < kNumInputs; ++i) {
-      if (U(i, 0) > plant().U_max(i, 0)) {
-        U_(i, 0) = plant().U_max(i, 0);
-      } else if (U(i, 0) < plant().U_min(i, 0)) {
-        U_(i, 0) = plant().U_min(i, 0);
+      if (U(i, 0) > U_max_computed(i, 0)) {
+        U_(i, 0) = U_max_computed(i, 0);
+      } else if (U(i, 0) < U_min_computed(i, 0)) {
+        U_(i, 0) = U_min_computed(i, 0);
       }
     }
   }

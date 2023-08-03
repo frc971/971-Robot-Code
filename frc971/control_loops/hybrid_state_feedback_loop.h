@@ -30,6 +30,8 @@ struct StateFeedbackHybridPlantCoefficients final {
         D(other.D),
         U_min(other.U_min),
         U_max(other.U_max),
+        U_limit_coefficient(other.U_limit_coefficient),
+        U_limit_constant(other.U_limit_constant),
         delayed_u(other.delayed_u) {}
 
   StateFeedbackHybridPlantCoefficients(
@@ -40,13 +42,19 @@ struct StateFeedbackHybridPlantCoefficients final {
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_states> &C,
       const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> &D,
       const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_max,
-      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min, size_t delayed_u)
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_min,
+      const Eigen::Matrix<Scalar, number_of_inputs, number_of_states>
+          &U_limit_coefficient,
+      const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_limit_constant,
+      size_t delayed_u)
       : A_continuous(A_continuous),
         B_continuous(B_continuous),
         C(C),
         D(D),
         U_min(U_min),
         U_max(U_max),
+        U_limit_coefficient(U_limit_coefficient),
+        U_limit_constant(U_limit_constant),
         delayed_u(delayed_u) {}
 
   const Eigen::Matrix<Scalar, number_of_states, number_of_states> A_continuous;
@@ -55,6 +63,9 @@ struct StateFeedbackHybridPlantCoefficients final {
   const Eigen::Matrix<Scalar, number_of_outputs, number_of_inputs> D;
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_min;
   const Eigen::Matrix<Scalar, number_of_inputs, 1> U_max;
+  const Eigen::Matrix<Scalar, number_of_inputs, number_of_states>
+      U_limit_coefficient;
+  const Eigen::Matrix<Scalar, number_of_inputs, 1> U_limit_constant;
 
   const size_t delayed_u;
 };
@@ -109,6 +120,19 @@ class StateFeedbackHybridPlant {
     return coefficients().U_max;
   }
   Scalar U_max(int i, int j) const { return U_max()(i, j); }
+  const Eigen::Matrix<Scalar, number_of_inputs, number_of_states>
+      &U_limit_coefficient() const {
+    return coefficients().U_limit_coefficient;
+  }
+  Scalar U_limit_coefficient(int i, int j) const {
+    return U_limit_coefficient()(i, j);
+  }
+  const Eigen::Matrix<Scalar, number_of_inputs, 1> &U_limit_constant() const {
+    return coefficients().U_limit_constant;
+  }
+  Scalar U_limit_constant(int i, int j = 0) const {
+    return U_limit_constant()(i, j);
+  }
 
   const Eigen::Matrix<Scalar, number_of_states, 1> &X() const { return X_; }
   Scalar X(int i) const { return X()(i); }
