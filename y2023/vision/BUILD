@@ -307,7 +307,6 @@ cc_library(
     name = "yolov5_lib",
     srcs = ["yolov5.cc"],
     hdrs = ["yolov5.h"],
-    copts = ["-Wno-unused-parameter"],
     deps = [
         "//third_party:opencv",
         "@com_github_gflags_gflags//:gflags",

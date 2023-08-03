@@ -17,6 +17,11 @@
 #include "aos/network/sctp_server.h"
 #include "aos/network/timestamp_channel.h"
 
+// The casts required to read datastructures from sockets trip - Wcast - align.
+#ifdef __clang
+#pragma clang diagnostic ignored "-Wcast-align"
+#endif
+
 // For retrying sends on reliable channels, we will do an additive backoff
 // strategy where we start at FLAGS_min_retry_period_ms and then add
 // kRetryAdditivePeriod every time the retry fails, up until

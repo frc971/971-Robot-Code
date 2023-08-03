@@ -45,7 +45,6 @@ cc_binary(
         "-Wno-unused-parameter",
         "-Wno-unused-variable",
         "-Wno-double-promotion",
-        "-Wno-format",
         "-Wno-unused-function",
     ],
     includes = ["."],

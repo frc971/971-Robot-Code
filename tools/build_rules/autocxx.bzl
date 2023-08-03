@@ -9,10 +9,6 @@ def _cc_toolchain_flags(ctx, cc_toolchain):
         requested_features = ctx.features,
         unsupported_features = ctx.disabled_features,
     )
-    compiler_path = cc_common.get_tool_for_action(
-        feature_configuration = feature_configuration,
-        action_name = ACTION_NAMES.cpp_compile,
-    )
     preprocessor_defines = []
     for lib in ctx.attr.libs:
         preprocessor_defines.append(lib[CcInfo].compilation_context.defines)
@@ -43,8 +39,6 @@ def _cc_toolchain_flags(ctx, cc_toolchain):
 # the path. There are headers involved which use `#pragma once`, so just copying
 # them is a bad idea. Instead, we generate forwarding headers.
 def _autocxx_library_gen_impl(ctx):
-    rust_toolchain = ctx.toolchains[Label("@rules_rust//rust:toolchain")]
-
     # TODO(Brian): Provide some way to override this globally in WORKSPACE? Need
     # a real strategy for coordinating toolchains and flags, see the TODO below
     # where cc_command_line is used for details.

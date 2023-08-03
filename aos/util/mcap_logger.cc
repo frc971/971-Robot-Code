@@ -3,7 +3,7 @@
 #include "absl/strings/str_replace.h"
 #include "lz4/lz4.h"
 #include "lz4/lz4frame.h"
-#include "single_include/nlohmann/json.hpp"
+#include "nlohmann/json.hpp"
 
 #include "aos/configuration_schema.h"
 #include "aos/flatbuffer_merge.h"

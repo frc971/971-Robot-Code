@@ -5,7 +5,6 @@ cc_binary(
     ],
     copts = [
         "-DUSE_LIBUSB",
-        "-Wno-format-nonliteral",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [

@@ -1797,7 +1797,7 @@ MessageSorter::MessageSorter(const LogPartsAccess log_parts_access)
       source_node_index_(configuration::SourceNodeIndex(parts().config.get())) {
 }
 
-Message *MessageSorter::Front() {
+const Message *MessageSorter::Front() {
   // Queue up data until enough data has been queued that the front message is
   // sorted enough to be safe to pop.  This may do nothing, so we should make
   // sure the nothing path is checked quickly.
@@ -1970,10 +1970,10 @@ std::vector<const LogParts *> PartsMerger::Parts() const {
   return p;
 }
 
-Message *PartsMerger::Front() {
+const Message *PartsMerger::Front() {
   // Return the current Front if we have one, otherwise go compute one.
   if (current_ != nullptr) {
-    Message *result = current_->Front();
+    const Message *result = current_->Front();
     CHECK_GE(result->timestamp.time, last_message_time_);
     VLOG(1) << this << " PartsMerger::Front for node " << node_name() << " "
             << *result;
@@ -1982,10 +1982,10 @@ Message *PartsMerger::Front() {
 
   // Otherwise, do a simple search for the oldest message, deduplicating any
   // duplicates.
-  Message *oldest = nullptr;
+  const Message *oldest = nullptr;
   sorted_until_ = monotonic_clock::max_time;
   for (MessageSorter &message_sorter : message_sorters_) {
-    Message *msg = message_sorter.Front();
+    const Message *msg = message_sorter.Front();
     if (!msg) {
       sorted_until_ = std::min(sorted_until_, message_sorter.sorted_until());
       continue;
@@ -2072,9 +2072,9 @@ std::string_view BootMerger::node_name() const {
   return configuration::NodeName(configuration().get(), node());
 }
 
-Message *BootMerger::Front() {
+const Message *BootMerger::Front() {
   if (parts_mergers_[index_].get() != nullptr) {
-    Message *result = parts_mergers_[index_]->Front();
+    const Message *result = parts_mergers_[index_]->Front();
 
     if (result != nullptr) {
       VLOG(1) << this << " BootMerger::Front " << node_name() << " " << *result;
@@ -2088,7 +2088,7 @@ Message *BootMerger::Front() {
     return nullptr;
   } else {
     ++index_;
-    Message *result = Front();
+    const Message *result = Front();
     VLOG(1) << this << " BootMerger::Front " << node_name() << " " << *result;
     return result;
   }
@@ -2199,7 +2199,7 @@ void SplitTimestampBootMerger::QueueTimestamps(
   while (true) {
     // Load all the timestamps.  If we find data, ignore it and drop it on the
     // floor.  It will be read when boot_merger_ is used.
-    Message *msg = timestamp_boot_merger_->Front();
+    const Message *msg = timestamp_boot_merger_->Front();
     if (!msg) {
       queue_timestamps_ran_ = true;
       return;
@@ -2258,8 +2258,8 @@ monotonic_clock::time_point SplitTimestampBootMerger::monotonic_oldest_time(
                   timestamp_boot_merger_->monotonic_oldest_time(boot));
 }
 
-Message *SplitTimestampBootMerger::Front() {
-  Message *boot_merger_front = boot_merger_.Front();
+const Message *SplitTimestampBootMerger::Front() {
+  const Message *boot_merger_front = boot_merger_.Front();
 
   if (timestamp_boot_merger_) {
     CHECK(queue_timestamps_ran_);
@@ -2403,7 +2403,7 @@ void TimestampMapper::AddPeer(TimestampMapper *timestamp_mapper) {
   }
 }
 
-void TimestampMapper::QueueMessage(Message *msg) {
+void TimestampMapper::QueueMessage(const Message *msg) {
   matched_messages_.emplace_back(
       TimestampedMessage{.channel_index = msg->channel_index,
                          .queue_index = msg->queue_index,
@@ -2469,7 +2469,7 @@ TimestampMapper::MatchResult TimestampMapper::MaybeQueueMatched() {
   if (nodes_data_.empty()) {
     // Simple path.  We are single node, so there are no timestamps to match!
     CHECK_EQ(messages_.size(), 0u);
-    Message *msg = boot_merger_.Front();
+    const Message *msg = boot_merger_.Front();
     if (!msg) {
       return MatchResult::kEndOfFile;
     }
@@ -2745,7 +2745,7 @@ void TimestampMapper::QueueUnmatchedUntil(BootTimestamp t) {
 }
 
 bool TimestampMapper::Queue() {
-  Message *msg = boot_merger_.Front();
+  const Message *msg = boot_merger_.Front();
   if (msg == nullptr) {
     return false;
   }

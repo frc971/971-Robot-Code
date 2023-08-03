@@ -5,7 +5,6 @@ go 1.17
 require (
 	github.com/bazelbuild/rules_go v0.38.1
 	github.com/buildkite/go-buildkite v2.2.0+incompatible
-	github.com/golang/protobuf v1.5.2
 	github.com/google/flatbuffers v2.0.5+incompatible
 	google.golang.org/grpc v1.50.0
 	gorm.io/driver/postgres v1.3.7
@@ -24,6 +23,7 @@ require (
 )
 
 require (
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect

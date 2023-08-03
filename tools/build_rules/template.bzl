@@ -40,7 +40,7 @@ jinja2_template_rule = rule(
         ),
         "_jinja2": attr.label(
             default = "//tools/build_rules:jinja2_generator",
-            cfg = "host",
+            cfg = "exec",
             executable = True,
         ),
     },

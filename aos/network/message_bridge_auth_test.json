@@ -1,0 +1,32 @@
+{
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "frequency": 200,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/aos",
+      "type": "aos.timing.Report",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/aos",
+      "type": "aos.message_bridge.SctpConfig",
+      "frequency": 10,
+      "num_senders": 1,
+      "max_size": 256
+    },
+    {
+      "name": "/aos",
+      "type": "aos.message_bridge.SctpConfigRequest",
+      "frequency": 1,
+      "num_senders": 2,
+      "max_size": 32
+    }
+  ]
+}

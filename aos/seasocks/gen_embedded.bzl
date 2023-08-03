@@ -22,7 +22,7 @@ _do_gen_embedded = rule(
         "_gen_embedded": attr.label(
             executable = True,
             default = Label("//aos/seasocks:gen_embedded"),
-            cfg = "host",
+            cfg = "exec",
         ),
     },
     output_to_genfiles = True,

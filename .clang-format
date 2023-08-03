@@ -11,7 +11,7 @@ IncludeCategories:
     - Regex:     '^<(cxx|Halide|HalidBuffer|lzma|node|v8|osqp|oscqp\+\+|snappy|snappy-sinksource).h>$'
       Priority:  3
     # Force some more third-party headers to be appropriately categorized.
-    - Regex:     '^(<|")(absl|ceres|ctre|Eigen|external|FRC_NetworkCommunication|foxglove|flatbuffers|glib-2.0|glog|gflags|gmock|gtest|google|libusb-1.0|lz4|opencv2|openssl|rawrtcc|sanitizer|single_include|third_party|wpi)/.*(>|")$'
+    - Regex:     '^(<|")(absl|ceres|ctre|Eigen|external|FRC_NetworkCommunication|foxglove|flatbuffers|glib-2.0|glog|gflags|gmock|gtest|google|libusb-1.0|lz4|opencv2|openssl|rawrtcc|sanitizer|nlohmann|third_party|wpi)/.*(>|")$'
       Priority:  3
     # The default regexes. For some reason, if we don't specify them here, then
     # clang-format will overwrite them with the custom ones we specify above.

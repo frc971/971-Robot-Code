@@ -9,6 +9,11 @@
 #include "aos/network/sctp_lib.h"
 #include "aos/network/sctp_server.h"
 
+// The casts required to read datastructures from sockets trip - Wcast - align.
+#ifdef __clang
+#pragma clang diagnostic ignored "-Wcast-align"
+#endif
+
 DEFINE_string(config, "aos_config.json", "Path to the config.");
 DEFINE_uint32(port, 1323, "Port to run the sctp test on");
 DEFINE_uint32(payload_size, 1000, "Size of data to send in bytes");

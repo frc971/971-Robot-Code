@@ -19,6 +19,11 @@
 #include "aos/unique_malloc_ptr.h"
 #include "aos/util/file.h"
 
+// The casts required to read datastructures from sockets trip - Wcast - align.
+#ifdef __clang
+#pragma clang diagnostic ignored "-Wcast-align"
+#endif
+
 DECLARE_bool(use_sctp_authentication);
 
 // This application receives messages from another node and re-publishes them on

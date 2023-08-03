@@ -1,7 +1,7 @@
 #ifndef AOS_UTIL_MCAP_LOGGER_H_
 #define AOS_UTIL_MCAP_LOGGER_H_
 
-#include "single_include/nlohmann/json.hpp"
+#include "nlohmann/json.hpp"
 
 #include "aos/configuration_generated.h"
 #include "aos/events/event_loop.h"

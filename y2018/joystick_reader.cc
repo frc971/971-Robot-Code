@@ -5,7 +5,7 @@
 #include <cstring>
 #include <mutex>
 
-#include <google/protobuf/stubs/stringprintf.h>
+#include "absl/strings/str_format.h"
 
 #include "aos/actions/actions.h"
 #include "aos/init.h"
@@ -43,7 +43,6 @@ namespace input {
 namespace joysticks {
 
 namespace arm = ::y2018::control_loops::superstructure::arm;
-using google::protobuf::StringPrintf;
 
 const ButtonLocation kIntakeClosed(3, 2);
 const ButtonLocation kDuck(3, 9);
@@ -110,7 +109,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
     const uint16_t team = ::aos::network::GetTeamNumber();
 
     video_tx_.reset(new ProtoTXUdpSocket<VisionControl>(
-        StringPrintf("10.%d.%d.179", team / 100, team % 100), 5000));
+        absl::StrFormat("10.%d.%d.179", team / 100, team % 100), 5000));
   }
 
   void HandleTeleop(

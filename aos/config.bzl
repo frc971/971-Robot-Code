@@ -82,7 +82,7 @@ _aos_config = rule(
         "config_binary": attr.output(mandatory = True),
         "_config_flattener": attr.label(
             executable = True,
-            cfg = "host",
+            cfg = "exec",
             default = Label("//aos:config_flattener"),
         ),
         "src": attr.label(

@@ -35,6 +35,8 @@
 
 #include <usb.h>
 
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+
 void usage(const char *err)
 {
 	if(err != NULL) fprintf(stderr, "%s\n\n", err);

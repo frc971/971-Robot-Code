@@ -1,5 +1,7 @@
 #include "yolov5.h"
 
+#pragma clang diagnostic ignored "-Wunused-parameter"
+
 #include <tensorflow/lite/c/common.h>
 #include <tensorflow/lite/interpreter.h>
 #include <tensorflow/lite/kernels/register.h>

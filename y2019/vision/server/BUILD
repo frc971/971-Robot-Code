@@ -1,6 +1,7 @@
 load("//tools/build_rules:js.bzl", "ts_project")
 load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
-load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load("//frc971/downloader:downloader.bzl", "aos_downloader_dir")
 
 ts_project(
@@ -31,10 +32,16 @@ aos_downloader_dir(
     visibility = ["//visibility:public"],
 )
 
-cc_proto_library(
-    name = "server_data_proto",
+proto_library(
+    name = "server_data_proto_proto",
     srcs = ["server_data.proto"],
     target_compatible_with = ["@platforms//os:linux"],
+)
+
+cc_proto_library(
+    name = "server_data_proto",
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["server_data_proto_proto"],
 )
 
 cc_binary(
@@ -63,5 +70,6 @@ cc_binary(
         "//y2019:constants",
         "//y2019/control_loops/drivetrain:camera_fbs",
         "//y2019/control_loops/superstructure:superstructure_status_fbs",
+        "@com_google_protobuf//:protobuf",
     ],
 )

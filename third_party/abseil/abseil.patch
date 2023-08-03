@@ -51,7 +51,7 @@ index 04e7b444..81884a6d 100644
 +    "-Wno-shorten-64-to-32"
 +    "-Wno-stringop-overflow"
  )
- 
+
  list(APPEND ABSL_LLVM_TEST_FLAGS
 @@ -133,7 +153,7 @@ list(APPEND ABSL_LLVM_TEST_FLAGS
      "-Woverlength-strings"
@@ -128,7 +128,7 @@ index 84f4bffc..21f487a1 100644
 +    "-Wno-shorten-64-to-32",
 +    "-Wno-stringop-overflow",
  ]
- 
+
  ABSL_LLVM_TEST_FLAGS = [
 @@ -134,7 +154,7 @@ ABSL_LLVM_TEST_FLAGS = [
      "-Woverlength-strings",
@@ -191,7 +191,7 @@ index 06eeb67b..d2a3e74f 100644
 +    "-Wno-shorten-64-to-32",
 +    "-Wno-stringop-overflow",
  ]
- 
+
  ABSL_LLVM_TEST_ADDITIONAL_FLAGS = [
 diff --git a/absl/random/internal/BUILD.bazel b/absl/random/internal/BUILD.bazel
 index 81ca669b..e839860e 100644
@@ -222,9 +222,9 @@ index edeabd81..49674f5f 100644
 --- a/absl/time/internal/cctz/BUILD.bazel
 +++ b/absl/time/internal/cctz/BUILD.bazel
 @@ -16,6 +16,13 @@ package(features = ["-parse_headers"])
- 
+
  licenses(["notice"])
- 
+
 +load(
 +    "//absl:copts/configure_copts.bzl",
 +    "ABSL_DEFAULT_COPTS",
@@ -233,7 +233,7 @@ index edeabd81..49674f5f 100644
 +)
 +
  ### libraries
- 
+
  cc_library(
 @@ -24,6 +31,8 @@ cc_library(
      hdrs = [
@@ -253,3 +253,23 @@ index edeabd81..49674f5f 100644
      # OS X and iOS no longer use `linkopts = ["-framework CoreFoundation"]`
      # as (1) bazel adds it automatically, and (2) it caused problems when
      # cross-compiling for Android.
+diff --git a/absl/copts/configure_copts.bzl b/absl/copts/configure_copts.bzl
+index ca5f26da..0b10dc0b 100644
+--- a/absl/copts/configure_copts.bzl
++++ b/absl/copts/configure_copts.bzl
+@@ -46,13 +46,8 @@ ABSL_DEFAULT_LINKOPTS = select({
+ # environment to build an accelerated RandenHwAes library.
+ ABSL_RANDOM_RANDEN_COPTS = select({
+     # APPLE
+-    ":cpu_darwin_x86_64": ABSL_RANDOM_HWAES_X64_FLAGS,
+-    ":cpu_darwin": ABSL_RANDOM_HWAES_X64_FLAGS,
+-    ":cpu_x64_windows_msvc": ABSL_RANDOM_HWAES_MSVC_X64_FLAGS,
+-    ":cpu_x64_windows": ABSL_RANDOM_HWAES_MSVC_X64_FLAGS,
+-    ":cpu_k8": ABSL_RANDOM_HWAES_X64_FLAGS,
+-    ":cpu_ppc": ["-mcrypto"],
+-    ":cpu_aarch64": ABSL_RANDOM_HWAES_ARM64_FLAGS,
++    "@platforms//cpu:x86_64": ABSL_RANDOM_HWAES_X64_FLAGS,
++    "@platforms//cpu:aarch64": ABSL_RANDOM_HWAES_ARM64_FLAGS,
+
+     # Supported by default or unsupported.
+     "//conditions:default": [],

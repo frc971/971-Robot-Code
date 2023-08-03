@@ -98,19 +98,6 @@ def _impl(ctx):
 
     builtin_sysroot = None
 
-    all_compile_actions = [
-        ACTION_NAMES.c_compile,
-        ACTION_NAMES.cpp_compile,
-        ACTION_NAMES.linkstamp_compile,
-        ACTION_NAMES.assemble,
-        ACTION_NAMES.preprocess_assemble,
-        ACTION_NAMES.cpp_header_parsing,
-        ACTION_NAMES.cpp_module_compile,
-        ACTION_NAMES.cpp_module_codegen,
-        ACTION_NAMES.clif_match,
-        ACTION_NAMES.lto_backend,
-    ]
-
     all_cpp_compile_actions = [
         ACTION_NAMES.cpp_compile,
         ACTION_NAMES.linkstamp_compile,
@@ -118,26 +105,6 @@ def _impl(ctx):
         ACTION_NAMES.cpp_module_compile,
         ACTION_NAMES.cpp_module_codegen,
         ACTION_NAMES.clif_match,
-    ]
-
-    preprocessor_compile_actions = [
-        ACTION_NAMES.c_compile,
-        ACTION_NAMES.cpp_compile,
-        ACTION_NAMES.linkstamp_compile,
-        ACTION_NAMES.preprocess_assemble,
-        ACTION_NAMES.cpp_header_parsing,
-        ACTION_NAMES.cpp_module_compile,
-        ACTION_NAMES.clif_match,
-    ]
-
-    codegen_compile_actions = [
-        ACTION_NAMES.c_compile,
-        ACTION_NAMES.cpp_compile,
-        ACTION_NAMES.linkstamp_compile,
-        ACTION_NAMES.assemble,
-        ACTION_NAMES.preprocess_assemble,
-        ACTION_NAMES.cpp_module_codegen,
-        ACTION_NAMES.lto_backend,
     ]
 
     all_link_actions = [

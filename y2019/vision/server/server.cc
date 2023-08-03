@@ -269,7 +269,7 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
       sensors->set_has_piece(superstructure_status_fetcher->has_piece());
 
       ::std::string json;
-      google::protobuf::util::MessageToJsonString(debug_data, &json);
+      (void)google::protobuf::util::MessageToJsonString(debug_data, &json);
       server->execute(
           std::make_shared<UpdateData>(websocket_handler, ::std::move(json)));
 

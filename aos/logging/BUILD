@@ -31,7 +31,6 @@ cc_library(
     name = "log_namer",
     srcs = ["log_namer.cc"],
     hdrs = ["log_namer.h"],
-    copts = ["-Wno-format-nonliteral"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [

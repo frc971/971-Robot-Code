@@ -114,7 +114,7 @@ cc_library(
         "//aos:flatbuffer_utils",
         "//aos/events:event_loop",
         "@com_github_lz4_lz4//:lz4",
-        "@com_github_nlohmann_json//:json",
+        "@com_github_nlohmann_json//:nlohmann_json",
     ],
 )
 
@@ -159,7 +159,7 @@ cc_test(
     deps = [
         ":mcap_logger",
         "//aos/testing:googletest",
-        "@com_github_nlohmann_json//:json",
+        "@com_github_nlohmann_json//:nlohmann_json",
     ],
 )
 

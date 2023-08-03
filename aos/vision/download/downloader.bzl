@@ -41,7 +41,7 @@ aos_vision_downloader = rule(
     attrs = {
         "_downloader": attr.label(
             executable = True,
-            cfg = "host",
+            cfg = "exec",
             default = Label("//aos/vision/download:downloader"),
         ),
         "srcs": attr.label_list(

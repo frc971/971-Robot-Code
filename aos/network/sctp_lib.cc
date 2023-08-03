@@ -17,6 +17,11 @@
 
 #include "aos/util/file.h"
 
+// The casts required to read datastructures from sockets trip - Wcast - align.
+#ifdef __clang
+#pragma clang diagnostic ignored "-Wcast-align"
+#endif
+
 DEFINE_string(interface, "", "network interface");
 DEFINE_bool(disable_ipv6, false, "disable ipv6");
 DEFINE_int32(rmem, 0, "If nonzero, set rmem to this size.");

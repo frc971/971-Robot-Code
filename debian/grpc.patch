@@ -1,0 +1,28 @@
+diff --git a/bazel/copts.bzl b/bazel/copts.bzl
+index f63e39ee93..78fdb3ac61 100644
+--- a/bazel/copts.bzl
++++ b/bazel/copts.bzl
+@@ -58,5 +58,5 @@ GRPC_LLVM_WARNING_FLAGS = [
+
+ GRPC_DEFAULT_COPTS = select({
+     "//:use_strict_warning": GRPC_LLVM_WARNING_FLAGS + ["-DUSE_STRICT_WARNING=1"],
+-    "//conditions:default": [],
++    "//conditions:default": ["-Wno-missing-constinit"],
+ })
+diff --git a/bazel/grpc_extra_deps.bzl b/bazel/grpc_extra_deps.bzl
+index 4d8afa3131..4241197815 100644
+--- a/bazel/grpc_extra_deps.bzl
++++ b/bazel/grpc_extra_deps.bzl
+@@ -52,9 +52,9 @@ def grpc_extra_deps(ignore_version_differences = False):
+
+     api_dependencies()
+
+-    go_rules_dependencies()
+-    go_register_toolchains(version = "1.18")
+-    gazelle_dependencies()
++    #go_rules_dependencies()
++    #go_register_toolchains(version = "1.18")
++    #gazelle_dependencies()
+
+     # Pull-in the go 3rd party dependencies for protoc_gen_validate, which is
+     # needed for building C++ xDS protos

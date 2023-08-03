@@ -1,6 +1,7 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary")
-load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -14,19 +15,31 @@ flatbuffer_cc_library(
     visibility = ["//visibility:public"],
 )
 
-cc_proto_library(
-    name = "vision_result",
+proto_library(
+    name = "vision_result_proto",
     srcs = ["vision_result.proto"],
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-cc_proto_library(
-    name = "vision_config",
+proto_library(
+    name = "vision_config_proto",
     srcs = ["vision_config.proto"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//aos/vision/image:camera_params",
+        "//aos/vision/image:camera_params_proto",
     ],
+)
+
+cc_proto_library(
+    name = "vision_result",
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["vision_result_proto"],
+)
+
+cc_proto_library(
+    name = "vision_config",
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["vision_config_proto"],
 )
 
 cc_binary(

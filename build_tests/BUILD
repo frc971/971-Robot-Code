@@ -1,5 +1,6 @@
 load("//tools/build_rules:js.bzl", "ts_project")
-load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_go_library", "flatbuffer_py_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//tools/build_rules:apache.bzl", "apache_wrapper")
@@ -38,17 +39,22 @@ sh_test(
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-cc_proto_library(
-    name = "proto_build_test_library",
+proto_library(
+    name = "proto_build_test_library_proto",
     srcs = ["proto.proto"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":proto_build_test_library_base",
-        "@com_google_protobuf//:cc_wkt_protos",
+        "@com_google_protobuf//:empty_proto",
     ],
 )
 
 cc_proto_library(
+    name = "proto_build_test_library",
+    deps = [":proto_build_test_library_proto"],
+)
+
+proto_library(
     name = "proto_build_test_library_base",
     srcs = ["proto_base.proto"],
     target_compatible_with = ["@platforms//os:linux"],

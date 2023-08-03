@@ -1,6 +1,7 @@
 load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
-load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 robot_downloader(
@@ -137,11 +138,18 @@ aos_config(
     ],
 )
 
-cc_proto_library(
-    name = "vision_proto",
+proto_library(
+    name = "vision_proto_proto",
     srcs = ["vision.proto"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "vision_proto",
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = ["vision_proto_proto"],
 )
 
 py_library(

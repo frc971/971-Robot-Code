@@ -18,6 +18,12 @@
 
 #include "aos/configuration.h"
 
+#if defined(__clang)
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 DEFINE_string(logging_folder,
 #ifdef AOS_ARCHITECTURE_arm_frc
               "",

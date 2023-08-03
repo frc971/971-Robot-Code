@@ -3,6 +3,9 @@ load("//aos:config.bzl", "aos_config")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
+load("@com_github_grpc_grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -137,6 +140,36 @@ cc_static_flatbuffer(
     visibility = ["//visibility:public"],
 )
 
+proto_library(
+    name = "message_bridge_auth_proto",
+    srcs = [
+        "message_bridge_auth.proto",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = [":__pkg__"],
+)
+
+cc_proto_library(
+    name = "message_bridge_auth_proto_cc",
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":message_bridge_auth_proto",
+    ],
+)
+
+cc_grpc_library(
+    name = "message_bridge_auth_proto_grpc_cc",
+    srcs = [
+        ":message_bridge_auth_proto",
+    ],
+    grpc_only = True,
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":message_bridge_auth_proto_cc",
+    ],
+)
+
 cc_library(
     name = "team_number",
     srcs = [
@@ -172,10 +205,6 @@ cc_library(
     ],
     hdrs = [
         "sctp_lib.h",
-    ],
-    copts = [
-        # The casts required to read datastructures from sockets trip -Wcast-align.
-        "-Wno-cast-align",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
@@ -213,9 +242,6 @@ cc_library(
     ],
     hdrs = [
         "sctp_server.h",
-    ],
-    copts = [
-        "-Wno-cast-align",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
@@ -285,9 +311,6 @@ cc_library(
     hdrs = [
         "message_bridge_server_lib.h",
     ],
-    copts = [
-        "-Wno-cast-align",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":connect_fbs",
@@ -334,9 +357,6 @@ cc_library(
     hdrs = [
         "sctp_client.h",
     ],
-    copts = [
-        "-Wno-cast-align",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":sctp_lib",
@@ -370,9 +390,6 @@ cc_library(
     hdrs = [
         "message_bridge_client_lib.h",
     ],
-    copts = [
-        "-Wno-cast-align",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":connect_fbs",
@@ -397,9 +414,6 @@ cc_binary(
     srcs = [
         "message_bridge_client.cc",
     ],
-    copts = [
-        "-Wno-cast-align",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":message_bridge_client_lib",
@@ -410,6 +424,68 @@ cc_binary(
         "//aos/events:shm_event_loop",
         "//aos/logging:dynamic_logging",
         "//aos/util:file",
+    ],
+)
+
+cc_library(
+    name = "message_bridge_auth_server_lib",
+    srcs = [
+        "message_bridge_auth_server_lib.cc",
+    ],
+    hdrs = [
+        "message_bridge_auth_server_lib.h",
+    ],
+    deps = [
+        ":message_bridge_auth_proto_cc",
+        ":message_bridge_auth_proto_grpc_cc",
+        "//aos/logging",
+        "//aos/util:file",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "message_bridge_auth_client_lib",
+    srcs = [
+        "message_bridge_auth_client_lib.cc",
+    ],
+    hdrs = [
+        "message_bridge_auth_client_lib.h",
+    ],
+    deps = [
+        ":message_bridge_auth_proto_grpc_cc",
+        ":message_bridge_client_fbs",
+        ":message_bridge_server_fbs",
+        ":sctp_config_fbs",
+        ":sctp_config_request_fbs",
+        "//aos/events:event_loop",
+        "//aos/logging",
+        "//aos/util:file",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "message_bridge_auth_test",
+    srcs = [
+        "message_bridge_auth_test.cc",
+    ],
+    data = [
+        ":message_bridge_auth_test_config",
+    ],
+    deps = [
+        ":message_bridge_auth_client_lib",
+        ":message_bridge_auth_server_lib",
+        "//aos:configuration",
+        "//aos/events:simulated_event_loop",
+        "//aos/logging",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//aos/util:file",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -425,6 +501,17 @@ aos_config(
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
         "//aos/network:timestamp_fbs",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//aos/events:aos_config"],
+)
+
+aos_config(
+    name = "message_bridge_auth_test_config",
+    src = "message_bridge_auth_test.json",
+    flatbuffers = [
+        ":sctp_config_fbs",
+        ":sctp_config_request_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = ["//aos/events:aos_config"],
@@ -772,7 +859,6 @@ cc_binary(
     srcs = [
         "sctp_perf.cc",
     ],
-    copts = ["-Wno-cast-align"],
     deps = [
         ":sctp_client",
         ":sctp_server",

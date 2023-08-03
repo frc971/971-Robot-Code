@@ -139,6 +139,26 @@ bool operator<(const FlatbufferDetachedBuffer<Node> &lhs,
 namespace configuration {
 namespace {
 
+template <typename T>
+struct FbsContainer {
+  FbsContainer(aos::FlatbufferDetachedBuffer<T> table) {
+    this->table =
+        std::make_unique<FlatbufferDetachedBuffer<T>>(std::move(table));
+  }
+  std::unique_ptr<FlatbufferDetachedBuffer<T>> table;
+  bool operator==(const FbsContainer<T> &other) const {
+    return *this->table == *other.table;
+  }
+  bool operator<(const FbsContainer<T> &other) const {
+    return *this->table < *other.table;
+  }
+};
+
+typedef FbsContainer<Channel> ChannelContainer;
+typedef FbsContainer<Connection> ConnectionContainer;
+typedef FbsContainer<Application> ApplicationContainer;
+typedef FbsContainer<Node> NodeContainer;
+
 // Extracts the folder part of a path.  Returns ./ if there is no path.
 std::string_view ExtractFolder(const std::string_view filename) {
   auto last_slash_pos = filename.find_last_of("/\\");
@@ -635,7 +655,7 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 
   // Store all the channels in a sorted set.  This lets us track channels we
   // have seen before and merge the updates in.
-  absl::btree_set<FlatbufferDetachedBuffer<Channel>> channels;
+  absl::btree_set<ChannelContainer> channels;
 
   if (config.message().has_channels()) {
     auto_merge_config.mutable_message()->clear_channels();
@@ -658,21 +678,21 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
       if (!result.second) {
         // Already there, so merge the new table into the original.
         // Schemas merge poorly, so pick the newest one.
-        if (result.first->message().has_schema() && c->has_schema()) {
-          result.first->mutable_message()->clear_schema();
+        if (result.first->table->message().has_schema() && c->has_schema()) {
+          result.first->table->mutable_message()->clear_schema();
         }
         auto merged =
-            MergeFlatBuffers(*result.first, RecursiveCopyFlatBuffer(c));
+            MergeFlatBuffers(*result.first->table, RecursiveCopyFlatBuffer(c));
 
         if (merged.message().has_destination_nodes()) {
-          absl::btree_set<FlatbufferDetachedBuffer<Connection>> connections;
+          absl::btree_set<ConnectionContainer> connections;
           for (const Connection *connection :
                *merged.message().destination_nodes()) {
             auto connection_result =
                 connections.insert(RecursiveCopyFlatBuffer(connection));
             if (!connection_result.second) {
-              *connection_result.first =
-                  MergeFlatBuffers(*connection_result.first,
+              *connection_result.first->table =
+                  MergeFlatBuffers(*connection_result.first->table,
                                    RecursiveCopyFlatBuffer(connection));
             }
           }
@@ -682,10 +702,9 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
             flatbuffers::FlatBufferBuilder fbb;
             fbb.ForceDefaults(true);
             std::vector<flatbuffers::Offset<Connection>> connection_offsets;
-            for (const FlatbufferDetachedBuffer<Connection> &connection :
-                 connections) {
+            for (const ConnectionContainer &connection : connections) {
               connection_offsets.push_back(
-                  RecursiveCopyFlatBuffer(&connection.message(), &fbb));
+                  RecursiveCopyFlatBuffer(&connection.table->message(), &fbb));
             }
             flatbuffers::Offset<
                 flatbuffers::Vector<flatbuffers::Offset<Connection>>>
@@ -699,13 +718,13 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
           }
         }
 
-        *result.first = std::move(merged);
+        *result.first->table = std::move(merged);
       }
     }
   }
 
   // Now repeat this for the application list.
-  absl::btree_set<FlatbufferDetachedBuffer<Application>> applications;
+  absl::btree_set<ApplicationContainer> applications;
   if (config.message().has_applications()) {
     auto_merge_config.mutable_message()->clear_applications();
     for (const Application *a : *config.message().applications()) {
@@ -716,16 +735,16 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
       auto result = applications.insert(RecursiveCopyFlatBuffer(a));
       if (!result.second) {
         if (a->has_args()) {
-          result.first->mutable_message()->clear_args();
+          result.first->table->mutable_message()->clear_args();
         }
-        *result.first =
-            MergeFlatBuffers(*result.first, RecursiveCopyFlatBuffer(a));
+        *result.first->table =
+            MergeFlatBuffers(*result.first->table, RecursiveCopyFlatBuffer(a));
       }
     }
   }
 
   // Now repeat this for the node list.
-  absl::btree_set<FlatbufferDetachedBuffer<Node>> nodes;
+  absl::btree_set<NodeContainer> nodes;
   if (config.message().has_nodes()) {
     auto_merge_config.mutable_message()->clear_nodes();
     for (const Node *n : *config.message().nodes()) {
@@ -735,8 +754,8 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
 
       auto result = nodes.insert(RecursiveCopyFlatBuffer(n));
       if (!result.second) {
-        *result.first =
-            MergeFlatBuffers(*result.first, RecursiveCopyFlatBuffer(n));
+        *result.first->table =
+            MergeFlatBuffers(*result.first->table, RecursiveCopyFlatBuffer(n));
       }
     }
   }
@@ -750,9 +769,9 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
       channels_offset;
   {
     ::std::vector<flatbuffers::Offset<Channel>> channel_offsets;
-    for (const FlatbufferDetachedBuffer<Channel> &c : channels) {
+    for (const ChannelContainer &c : channels) {
       channel_offsets.emplace_back(
-          RecursiveCopyFlatBuffer<Channel>(&c.message(), &fbb));
+          RecursiveCopyFlatBuffer<Channel>(&c.table->message(), &fbb));
     }
     channels_offset = fbb.CreateVector(channel_offsets);
   }
@@ -762,9 +781,9 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
       applications_offset;
   {
     ::std::vector<flatbuffers::Offset<Application>> applications_offsets;
-    for (const FlatbufferDetachedBuffer<Application> &a : applications) {
+    for (const ApplicationContainer &a : applications) {
       applications_offsets.emplace_back(
-          RecursiveCopyFlatBuffer<Application>(&a.message(), &fbb));
+          RecursiveCopyFlatBuffer<Application>(&a.table->message(), &fbb));
     }
     applications_offset = fbb.CreateVector(applications_offsets);
   }
@@ -774,9 +793,9 @@ FlatbufferDetachedBuffer<Configuration> MergeConfiguration(
       nodes_offset;
   {
     ::std::vector<flatbuffers::Offset<Node>> node_offsets;
-    for (const FlatbufferDetachedBuffer<Node> &n : nodes) {
+    for (const NodeContainer &n : nodes) {
       node_offsets.emplace_back(
-          RecursiveCopyFlatBuffer<Node>(&n.message(), &fbb));
+          RecursiveCopyFlatBuffer<Node>(&n.table->message(), &fbb));
     }
     nodes_offset = fbb.CreateVector(node_offsets);
   }

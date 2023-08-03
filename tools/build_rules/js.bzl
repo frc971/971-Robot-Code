@@ -57,12 +57,10 @@ NG_PROD_DEFINE = {
 def ng_application(
         name,
         deps = [],
-        test_deps = [],
         extra_srcs = [],
         assets = None,
         html_assets = APPLICATION_HTML_ASSETS,
-        visibility = ["//visibility:public"],
-        **kwargs):
+        visibility = ["//visibility:public"]):
     """
     Bazel macro for compiling an Angular application. Creates {name}, test, serve targets.
 
@@ -81,11 +79,9 @@ def ng_application(
     Args:
       name: the rule name
       deps: direct dependencies of the application
-      test_deps: additional dependencies for tests
       html_assets: assets to insert into the index.html, [styles.css, favicon.ico] by default
       assets: assets to include in the file bundle
       visibility: visibility of the primary targets ({name}, 'test', 'serve')
-      **kwargs: extra args passed to main Angular CLI rules
     """
     assets = assets if assets else native.glob(["assets/**/*"])
     html_assets = html_assets if html_assets else []
@@ -231,7 +227,7 @@ def _pkg_web(name, entry_point, entry_deps, html_assets, assets, production, vis
     #    visibility = visibility,
     #)
 
-def ng_pkg(name, generate_public_api = True, extra_srcs = [], deps = [], test_deps = [], visibility = ["//visibility:public"], **kwargs):
+def ng_pkg(name, generate_public_api = True, extra_srcs = [], deps = [], visibility = ["//visibility:public"], **kwargs):
     """
     Bazel macro for compiling an npm-like Angular package project. Creates '{name}' and 'test' targets.
 
@@ -247,7 +243,6 @@ def ng_pkg(name, generate_public_api = True, extra_srcs = [], deps = [], test_de
     Args:
       name: the rule name
       deps: package dependencies
-      test_deps: additional dependencies for tests
       visibility: visibility of the primary targets ('{name}', 'test')
     """
 
@@ -284,8 +279,7 @@ def ng_pkg(name, generate_public_api = True, extra_srcs = [], deps = [], test_de
         name = name,
         srcs = srcs + [":_index"],
         deps = deps + PACKAGE_DEPS,
-        #visibility = ["//visibility:private"],
-        visibility = ["//visibility:public"],
+        visibility = visibility,
         **kwargs
     )
 

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package aos.message_bridge;
+
+message SctpKeyResponse {
+  // Active SCTP authentication key.
+  bytes key = 1;
+}
+
+message SctpKeyRequest {}
+
+service SctpConfigService {
+  // Returns the active SCTP authentication key that should be used
+  // across nodes in message bridge.
+  rpc GetActiveKey(SctpKeyRequest) returns (SctpKeyResponse) {}
+}

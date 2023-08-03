@@ -113,7 +113,15 @@ build --sandbox_tmpfs_path=/tmp
 # Prevent cypress from using its own binary. We want to use the hermetic one.
 build --action_env=CYPRESS_INSTALL_BINARY=0
 
+# From our one and only phil.schrader: https://groups.google.com/g/bazel-discuss/c/5cbRuLuTwNg :)
+# Enable -Werror and warnings for our code
+# TODO: It would be nice to enable Wcast-align and Wcast-qual.
+build --per_file_copt=-third_party/.*,-external/.*@-Werror,-Wextra,-Wpointer-arith,-Wstrict-aliasing,-Wwrite-strings,-Wtype-limits,-Wsign-compare,-Wformat=2
+# NOTE: Explicitly disable -Werror because the `-external/.*` filter does not work
+build --per_file_copt=third_party/.*,external/.*@-Wno-sign-compare,-Wno-cast-align,-Wno-error,-Wno-unused-parameter,-Wno-cast-qual,-Wno-format-nonliteral,-Wno-tautological-type-limit-compare,-Wno-missing-field-initializers,-Wno-unused-function,-Wno-cast-function-type,-Wno-comment,-Wno-typedef-redefinition,-Wno-tautological-unsigned-enum-zero-compare,-Wno-extra,-Wno-type-limits,-Wno-attributes,-Wno-deprecated
+
 # Load a local file that users can use to customize bazel invocations.  This
 # should stay the last line in this file so users can override things when they
 # want.
 try-import %workspace%/.bazelrc.user
+

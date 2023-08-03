@@ -8,6 +8,9 @@
 #pragma clang diagnostic ignored "-Wnull-pointer-arithmetic"
 #pragma clang diagnostic ignored "-Wchar-subscripts"
 #pragma clang diagnostic ignored "-Wtautological-unsigned-char-zero-compare"
+#pragma clang diagnostic ignored "-Wcast-qual"
+#pragma clang diagnostic ignored "-Wcast-align"
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
 #endif
 
 #define cimg_display 0

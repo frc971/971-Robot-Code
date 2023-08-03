@@ -276,16 +276,6 @@ llvm_copts = [
     "-D_FILE_OFFSET_BITS=64",
     "-fmessage-length=100",
     "-fmacro-backtrace-limit=0",
-    "-Wextra",
-    "-Wpointer-arith",
-    "-Wstrict-aliasing",
-    "-Wcast-qual",
-    "-Wcast-align",
-    "-Wwrite-strings",
-    "-Wtype-limits",
-    "-Wsign-compare",
-    "-Wformat=2",
-    "-Werror",
     "-ggdb3",
 ]
 
@@ -388,9 +378,9 @@ http_archive(
     name = "com_google_absl",
     patch_args = ["-p1"],
     patches = ["//third_party/abseil:abseil.patch"],
-    sha256 = "91209b5eecd9c3d862b230fefbc2728c7f2764ff6d5866ec398d48db1aaa1e90",
-    strip_prefix = "abseil-cpp-bb63a76710554cebbeb20306739a7b832be38c4a",
-    url = "https://github.com/abseil/abseil-cpp/archive/bb63a76710554cebbeb20306739a7b832be38c4a.zip",
+    sha256 = "ea1d31db00eb37e607bfda17ffac09064670ddf05da067944c4766f517876390",
+    strip_prefix = "abseil-cpp-c2435f8342c2d0ed8101cb43adfd605fdc52dca2",
+    url = "https://github.com/abseil/abseil-cpp/archive/c2435f8342c2d0ed8101cb43adfd605fdc52dca2.zip",
 )
 
 local_repository(
@@ -426,15 +416,6 @@ local_repository(
 local_repository(
     name = "com_github_rawrtc_rawrtc",
     path = "third_party/rawrtc/rawrtc",
-)
-
-http_archive(
-    name = "boringssl",
-    patch_args = ["-p1"],
-    patches = ["//debian:boringssl.patch"],
-    sha256 = "bcab08a22c28f5322316542aa2c3a9ef0a9f9fde9be22d489cee574867b24675",
-    strip_prefix = "boringssl-613fe9dbe74b58d6aaaf0d22fe57dccd964c7413",
-    urls = ["https://software.frc971.org/Build-Dependencies/boringssl-613fe9dbe74b58d6aaaf0d22fe57dccd964c7413.zip"],
 )
 
 # C++ rules for Bazel.
@@ -687,11 +668,6 @@ remote_java_repository(
         "https://software.frc971.org/Build-Dependencies/zulu11.54.25-ca-jdk11.0.14.1-linux_aarch64.tar.gz",
     ],
     version = "11",
-)
-
-local_repository(
-    name = "com_google_protobuf",
-    path = "third_party/protobuf",
 )
 
 local_repository(
@@ -1387,6 +1363,30 @@ go_dependencies()
 gazelle_dependencies()
 
 http_archive(
+    name = "com_google_protobuf",
+    sha256 = "ace0abf35274ee0f08d5564635505ed55a0bc346a6534413d3c5b040fc926332",
+    strip_prefix = "protobuf-24.3",
+    url = "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v24.3.zip",
+)
+
+http_archive(
+    name = "com_github_grpc_grpc",
+    patch_args = ["-p1"],
+    patches = ["//debian:grpc.patch"],
+    sha256 = "a3a65f0129c4922c5d7f4c11dcd40083a12ca54076fd3a927bcd63c53b7e44a5",
+    strip_prefix = "grpc-1.59.2",
+    url = "https://github.com/grpc/grpc/archive/refs/tags/v1.59.2.tar.gz",
+)
+
+load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
+
+grpc_deps()
+
+load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")
+
+grpc_extra_deps()
+
+http_archive(
     name = "com_github_bazelbuild_buildtools",
     sha256 = "44a6e5acc007e197d45ac3326e7f993f0160af9a58e8777ca7701e00501c0857",
     strip_prefix = "buildtools-4.2.4",
@@ -1435,11 +1435,6 @@ http_archive(
     ],
     sha256 = "a7491bf6c47ed0037992fa493f9c25af3ab00a695d706e1fdc122a8b798c0d7c",
     urls = ["https://software.frc971.org/Build-Dependencies/xvfb_amd64.tar.gz"],
-)
-
-local_repository(
-    name = "com_github_nlohmann_json",
-    path = "third_party/com_github_nlohmann_json",
 )
 
 # https://curl.haxx.se/download/curl-7.69.1.tar.gz

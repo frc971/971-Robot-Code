@@ -17,6 +17,7 @@ rewrite downloads.sourceforge.net/(.*) software.frc971.org/Build-Dependencies/do
 rewrite cdn.cypress.io/(.*) software.frc971.org/Build-Dependencies/cdn.cypress.io/$1
 rewrite www.googleapis.com/(.*) software.frc971.org/Build-Dependencies/www.googleapis.com/$1
 allow crates.io
+allow golang.org
 allow go.dev
 allow registry.npmjs.org
 

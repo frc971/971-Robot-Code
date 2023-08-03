@@ -579,9 +579,8 @@ class MessageSorter {
   // The time this data is sorted until.
   monotonic_clock::time_point sorted_until() const { return sorted_until_; }
 
-  // Returns the next sorted message from the log file.  It is safe to call
-  // std::move() on the result to move the data flatbuffer from it.
-  Message *Front();
+  // Returns the next sorted message from the log file.
+  const Message *Front();
   // Pops the front message.  This should only be called after a call to
   // Front().
   void PopFront();
@@ -656,9 +655,8 @@ class PartsMerger {
   // The time this data is sorted until.
   monotonic_clock::time_point sorted_until() const { return sorted_until_; }
 
-  // Returns the next sorted message from the set of log files.  It is safe to
-  // call std::move() on the result to move the data flatbuffer from it.
-  Message *Front();
+  // Returns the next sorted message from the set of log files.
+  const Message *Front();
   // Pops the front message.  This should only be called after a call to
   // Front().
   void PopFront();
@@ -717,9 +715,8 @@ class BootMerger {
 
   bool started() const;
 
-  // Returns the next sorted message from the set of log files.  It is safe to
-  // call std::move() on the result to move the data flatbuffer from it.
-  Message *Front();
+  // Returns the next sorted message from the set of log files.
+  const Message *Front();
   // Pops the front message.  This should only be called after a call to
   // Front().
   void PopFront();
@@ -787,9 +784,8 @@ class SplitTimestampBootMerger {
     return boot_merger_.started();
   }
 
-  // Returns the next sorted message from the set of log files.  It is safe to
-  // call std::move() on the result to move the data flatbuffer from it.
-  Message *Front();
+  // Returns the next sorted message from the set of log files.
+  const Message *Front();
 
   // Pops the front message.  This should only be called after a call to
   // Front().
@@ -975,7 +971,7 @@ class TimestampMapper {
   void QueueUnmatchedUntil(BootTimestamp t);
 
   // Queues m into matched_messages_.
-  void QueueMessage(Message *m);
+  void QueueMessage(const Message *m);
 
   // If a replay_channels_callback was set and the callback returns false, a
   // matched message is popped and true is returned. Otherwise false is

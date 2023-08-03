@@ -22,6 +22,9 @@
 #include "pico/stdlib.h"
 #include "quadrature_encoder.pio.h"
 
+#pragma GCC diagnostic ignored "-Wformat"
+#pragma GCC diagnostic ignored "-Wformat-extra-args"
+
 // Pinout definitions for the imu
 #define RST_IMU 22
 #define DR_IMU 20

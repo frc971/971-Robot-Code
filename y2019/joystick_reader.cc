@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "external/com_google_protobuf/src/google/protobuf/stubs/stringprintf.h"
+#include "absl/strings/str_format.h"
 
 #include "aos/actions/actions.h"
 #include "aos/init.h"
@@ -46,8 +46,6 @@ namespace input {
 namespace joysticks {
 
 namespace superstructure = y2019::control_loops::superstructure;
-
-using google::protobuf::StringPrintf;
 
 struct ElevatorWristPosition {
   double elevator;
@@ -178,7 +176,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
               : true;
     }
     video_tx_.reset(new ProtoTXUdpSocket<VisionControl>(
-        StringPrintf("10.%d.%d.179", team / 100, team % 100), 5000));
+        absl::StrFormat("10.%d.%d.179", team / 100, team % 100), 5000));
   }
 
   void AutoEnded() override {

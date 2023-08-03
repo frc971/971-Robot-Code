@@ -1,4 +1,5 @@
-load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary")
 load("//tools:platforms.bzl", "platforms")
@@ -13,16 +14,28 @@ flatbuffer_cc_library(
     visibility = ["//visibility:public"],
 )
 
-cc_proto_library(
-    name = "vision_data",
+proto_library(
+    name = "vision_data_proto",
     srcs = ["vision_data.proto"],
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-cc_proto_library(
-    name = "calibration",
+proto_library(
+    name = "calibration_proto",
     srcs = ["calibration.proto"],
     target_compatible_with = ["@platforms//os:linux"],
+)
+
+cc_proto_library(
+    name = "vision_data",
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["vision_data_proto"],
+)
+
+cc_proto_library(
+    name = "calibration",
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["calibration_proto"],
 )
 
 _calibration_values_embedded_before = """

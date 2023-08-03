@@ -68,7 +68,7 @@ aos_downloader = rule(
     attrs = {
         "_downloader": attr.label(
             executable = True,
-            cfg = "host",
+            cfg = "exec",
             default = Label("//frc971/downloader"),
         ),
         "start_srcs": attr.label_list(
