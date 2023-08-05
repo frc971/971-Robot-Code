@@ -331,7 +331,9 @@ void RegisterMallocHook() {
   if (FLAGS_die_on_malloc) {
     // tcmalloc redefines __libc_malloc, so use this as a feature test.
     if (&__libc_malloc == &tc_malloc) {
-      RAW_LOG(INFO, "Hooking tcmalloc for die_on_malloc");
+      if (VLOG_IS_ON(1)) {
+        RAW_LOG(INFO, "Hooking tcmalloc for die_on_malloc");
+      }
       if (&MallocHook_AddNewHook != nullptr) {
         CHECK(MallocHook_AddNewHook(&NewHook));
       } else {
