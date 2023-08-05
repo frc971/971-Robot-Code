@@ -378,11 +378,15 @@ MessageBridgeClient::MessageBridgeClient(
       client_status_(event_loop_),
       config_sha256_(std::move(config_sha256)),
       refresh_key_timer_(event_loop->AddTimer([this]() { RequestAuthKey(); })),
-      sctp_config_request_(event_loop_->MakeSender<SctpConfigRequest>("/aos")) {
+      sctp_config_request_(
+          event_loop_->TryMakeSender<SctpConfigRequest>("/aos")) {
   std::string_view node_name = event_loop->node()->name()->string_view();
 
   // Set up the SCTP configuration watcher and timer.
   if (requested_authentication == SctpAuthMethod::kAuth && HasSctpAuth()) {
+    CHECK(sctp_config_request_.valid())
+        << ": Must have SctpConfig channel configured to use SCTP "
+           "authentication.";
     event_loop->MakeWatcher("/aos", [this](const SctpConfig &config) {
       if (config.has_key()) {
         for (auto &conn : connections_) {
@@ -449,6 +453,7 @@ MessageBridgeClient::MessageBridgeClient(
 }
 
 void MessageBridgeClient::RequestAuthKey() {
+  CHECK(sctp_config_request_.valid());
   auto sender = sctp_config_request_.MakeBuilder();
   auto builder = sender.MakeBuilder<SctpConfigRequest>();
   builder.add_request_key(true);
