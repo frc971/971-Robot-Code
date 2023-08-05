@@ -17,7 +17,8 @@ INSTANTIATE_TEST_SUITE_P(
     All, MultinodeLoggerOneConfigTest,
     ::testing::Combine(::testing::Values(ConfigParams{
                            "multinode_pingpong_combined_config.json", true,
-                           kCombinedConfigSha1(), kCombinedConfigSha1()}),
+                           kCombinedConfigSha1(), kCombinedConfigSha1(),
+                           FileStrategy::kCombine}),
                        ::testing::ValuesIn(SupportedCompressionAlgorithms())));
 
 // This test is to check if we are able to get the right channels from a log
@@ -91,7 +92,8 @@ TEST_P(MultinodeLoggerOneConfigTest, SingleNodeLogReplay) {
 
   {
     LoggerState pi1_logger = MakeLoggerState(
-        pi1_, &event_loop_factory_, SupportedCompressionAlgorithms()[0]);
+        pi1_, &event_loop_factory_, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     pi2_->DisableStatistics();
     pi2_->Disconnect(pi1_->node());
     pi1_->Disconnect(pi2_->node());

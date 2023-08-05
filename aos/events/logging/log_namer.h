@@ -504,6 +504,24 @@ class MultiNodeLogNamer : public LogNamer {
   LogBackend *log_backend() { return log_backend_.get(); }
   const LogBackend *log_backend() const { return log_backend_.get(); }
 
+  // Returns the data writer or timestamp writer if we find one for the provided
+  // node.
+  NewDataWriter *FindNodeDataWriter(const Node *node, size_t max_message_size);
+  NewDataWriter *FindNodeTimestampWriter(const Node *node,
+                                         size_t max_message_size);
+
+  // Saves the data writer or timestamp writer for the provided node.
+  NewDataWriter *AddNodeDataWriter(const Node *node, NewDataWriter &&writer);
+  NewDataWriter *AddNodeTimestampWriter(const Node *node,
+                                        NewDataWriter &&writer);
+
+  void CloseWriter(std::unique_ptr<DetachedBufferWriter> *writer_pointer);
+
+  void CreateBufferWriter(std::string_view path, size_t max_message_size,
+                          std::unique_ptr<DetachedBufferWriter> *destination);
+
+  std::string extension_;
+
  private:
   // Opens up a writer for timestamps forwarded back.
   void OpenForwardedTimestampWriter(const Node *source_node,
@@ -513,10 +531,8 @@ class MultiNodeLogNamer : public LogNamer {
   void OpenDataWriter(const Node *source_node, NewDataWriter *data_writer);
   void OpenTimestampWriter(NewDataWriter *data_writer);
 
-  void CreateBufferWriter(std::string_view path, size_t max_message_size,
-                          std::unique_ptr<DetachedBufferWriter> *destination);
-
-  void CloseWriter(std::unique_ptr<DetachedBufferWriter> *writer_pointer);
+  // Tracks the node in nodes_.
+  void NoticeNode(const Node *source_node);
 
   // A version of std::accumulate which operates over all of our DataWriters.
   template <typename T, typename BinaryOperation>
@@ -542,7 +558,6 @@ class MultiNodeLogNamer : public LogNamer {
   std::vector<std::string> all_filenames_;
 
   std::function<std::unique_ptr<DataEncoder>(size_t)> encoder_factory_;
-  std::string extension_;
 
   // Storage for statistics from previously-rotated DetachedBufferWriters.
   std::chrono::nanoseconds max_write_time_ = std::chrono::nanoseconds::zero();
@@ -609,6 +624,30 @@ class MultiNodeFilesLogNamer : public MultiNodeLogNamer {
   const RenamableFileBackend *renamable_file_backend() const {
     return reinterpret_cast<const RenamableFileBackend *>(log_backend());
   }
+};
+
+// Class which dumps all data from each node into a single file per node.  This
+// is mostly interesting for testing.
+class MinimalFileMultiNodeLogNamer : public MultiNodeFilesLogNamer {
+ public:
+  MinimalFileMultiNodeLogNamer(std::string_view base_name,
+                               EventLoop *event_loop)
+      : MultiNodeFilesLogNamer(base_name, event_loop) {}
+  MinimalFileMultiNodeLogNamer(std::string_view base_name,
+                               const Configuration *configuration,
+                               EventLoop *event_loop, const Node *node)
+      : MultiNodeFilesLogNamer(base_name, configuration, event_loop, node) {}
+
+  NewDataWriter *MakeWriter(const Channel *channel) override;
+
+  NewDataWriter *MakeForwardedTimestampWriter(const Channel *channel,
+                                              const Node *node) override;
+
+  NewDataWriter *MakeTimestampWriter(const Channel *channel) override;
+
+ private:
+  // Names the data writer.
+  void OpenNodeWriter(const Node *source_node, NewDataWriter *data_writer);
 };
 
 }  // namespace logger

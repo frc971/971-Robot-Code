@@ -26,9 +26,14 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Combine(
         ::testing::Values(
             ConfigParams{"multinode_pingpong_combined_config.json", true,
-                         kCombinedConfigSha1(), kCombinedConfigSha1()},
+                         kCombinedConfigSha1(), kCombinedConfigSha1(),
+                         FileStrategy::kKeepSeparate},
             ConfigParams{"multinode_pingpong_split_config.json", false,
-                         kSplitConfigSha1(), kReloggedSplitConfigSha1()}),
+                         kSplitConfigSha1(), kReloggedSplitConfigSha1(),
+                         FileStrategy::kKeepSeparate},
+            ConfigParams{"multinode_pingpong_split_config.json", false,
+                         kSplitConfigSha1(), kReloggedSplitConfigSha1(),
+                         FileStrategy::kCombine}),
         ::testing::ValuesIn(SupportedCompressionAlgorithms())));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -36,13 +41,22 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Combine(
         ::testing::Values(
             ConfigParams{"multinode_pingpong_combined_config.json", true,
-                         kCombinedConfigSha1(), kCombinedConfigSha1()},
+                         kCombinedConfigSha1(), kCombinedConfigSha1(),
+                         FileStrategy::kKeepSeparate},
             ConfigParams{"multinode_pingpong_split_config.json", false,
-                         kSplitConfigSha1(), kReloggedSplitConfigSha1()}),
+                         kSplitConfigSha1(), kReloggedSplitConfigSha1(),
+                         FileStrategy::kKeepSeparate},
+            ConfigParams{"multinode_pingpong_split_config.json", false,
+                         kSplitConfigSha1(), kReloggedSplitConfigSha1(),
+                         FileStrategy::kCombine}),
         ::testing::ValuesIn(SupportedCompressionAlgorithms())));
 
 // Tests that we can write and read simple multi-node log files.
 TEST_P(MultinodeLoggerTest, SimpleMultiNode) {
+  if (file_strategy() == FileStrategy::kCombine) {
+    GTEST_SKIP() << "We don't need to test the combined file writer this deep.";
+  }
+
   std::vector<std::string> actual_filenames;
   time_converter_.StartEqual();
 
@@ -1133,6 +1147,10 @@ TEST_P(MultinodeLoggerTest, SortEmptyParts) {
 // Tests that we can sort a bunch of parts with the end missing off a
 // file.  We should use the part we can read.
 TEST_P(MultinodeLoggerTest, SortTruncatedParts) {
+  if (file_strategy() == FileStrategy::kCombine) {
+    GTEST_SKIP() << "We don't need to test the combined file writer this deep.";
+  }
+
   std::vector<std::string> actual_filenames;
   time_converter_.StartEqual();
   // Make a bunch of parts.
@@ -2085,6 +2103,9 @@ TEST_P(MultinodeLoggerDeathTest, LoggerRenameFile) {
 // This should be enough that we can then re-run the logger and get a valid log
 // back.
 TEST_P(MultinodeLoggerTest, RemoteReboot) {
+  if (file_strategy() == FileStrategy::kCombine) {
+    GTEST_SKIP() << "We don't need to test the combined file writer this deep.";
+  }
   std::vector<std::string> actual_filenames;
 
   const UUID pi1_boot0 = UUID::Random();
@@ -2424,6 +2445,10 @@ TEST_P(MultinodeLoggerTest, RemoteReboot) {
 // Tests that we can sort a log which only has timestamps from the remote
 // because the local message_bridge_client failed to connect.
 TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
+  if (file_strategy() == FileStrategy::kCombine) {
+    GTEST_SKIP() << "We don't need to test the combined file writer this deep.";
+  }
+
   const UUID pi1_boot0 = UUID::Random();
   const UUID pi2_boot0 = UUID::Random();
   const UUID pi2_boot1 = UUID::Random();
@@ -2926,6 +2951,9 @@ TEST_P(MultinodeLoggerTest, DuplicateLogFiles) {
 
 // Tests that we explode if someone loses a part out of the middle of a log.
 TEST_P(MultinodeLoggerTest, MissingPartsFromMiddle) {
+  if (file_strategy() == FileStrategy::kCombine) {
+    GTEST_SKIP() << "We don't need to test the combined file writer this deep.";
+  }
   time_converter_.AddMonotonic(
       {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
   {
@@ -3137,13 +3165,16 @@ TEST(MultinodeRebootLoggerTest, StartTimeBeforeData) {
   std::vector<std::string> filenames;
   {
     LoggerState pi1_logger = MakeLoggerState(
-        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     LoggerState pi3_logger = MakeLoggerState(
-        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     {
       // And now start the logger.
       LoggerState pi2_logger = MakeLoggerState(
-          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+          FileStrategy::kKeepSeparate);
 
       event_loop_factory.RunFor(chrono::milliseconds(1000));
 
@@ -3178,7 +3209,8 @@ TEST(MultinodeRebootLoggerTest, StartTimeBeforeData) {
 
       // Start logging again on pi2 after it is up.
       LoggerState pi2_logger = MakeLoggerState(
-          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+          FileStrategy::kKeepSeparate);
       pi2_logger.StartLogger(kLogfile2_2);
 
       event_loop_factory.RunFor(chrono::milliseconds(10000));
@@ -3299,13 +3331,16 @@ TEST(MultinodeRebootLoggerTest,
   std::vector<std::string> filenames;
   {
     LoggerState pi1_logger = MakeLoggerState(
-        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     LoggerState pi3_logger = MakeLoggerState(
-        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     {
       // And now start the logger.
       LoggerState pi2_logger = MakeLoggerState(
-          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+          FileStrategy::kKeepSeparate);
 
       pi1_logger.StartLogger(kLogfile1_1);
       pi3_logger.StartLogger(kLogfile3_1);
@@ -3343,7 +3378,8 @@ TEST(MultinodeRebootLoggerTest,
 
       // Start logging again on pi2 after it is up.
       LoggerState pi2_logger = MakeLoggerState(
-          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+          FileStrategy::kKeepSeparate);
       pi2_logger.StartLogger(kLogfile2_2);
 
       // And allow remote messages now that we have some local ones.
@@ -3462,13 +3498,16 @@ TEST(MultinodeRebootLoggerTest, RebootStartStopTimes) {
   std::vector<std::string> filenames;
   {
     LoggerState pi1_logger = MakeLoggerState(
-        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     LoggerState pi3_logger = MakeLoggerState(
-        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     {
       // And now start the logger.
       LoggerState pi2_logger = MakeLoggerState(
-          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+          FileStrategy::kKeepSeparate);
 
       pi1_logger.StartLogger(kLogfile1_1);
       pi3_logger.StartLogger(kLogfile3_1);
@@ -3502,7 +3541,8 @@ TEST(MultinodeRebootLoggerTest, RebootStartStopTimes) {
 
       // Start logging again on pi2 after it is up.
       LoggerState pi2_logger = MakeLoggerState(
-          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+          pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+          FileStrategy::kKeepSeparate);
       pi2_logger.StartLogger(kLogfile2_2);
 
       event_loop_factory.RunFor(chrono::milliseconds(5000));
@@ -3612,7 +3652,8 @@ TEST(MissingDirectionTest, OneDirection) {
 
   {
     LoggerState pi2_logger = MakeLoggerState(
-        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
 
     event_loop_factory.RunFor(chrono::milliseconds(95));
 
@@ -3623,7 +3664,8 @@ TEST(MissingDirectionTest, OneDirection) {
     pi2->Connect(pi1->node());
 
     LoggerState pi1_logger = MakeLoggerState(
-        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     pi1_logger.StartLogger(kLogfile1_1);
 
     event_loop_factory.RunFor(chrono::milliseconds(5000));
@@ -3682,7 +3724,8 @@ TEST(MissingDirectionTest, OneDirectionAfterReboot) {
   // second boot.
   {
     LoggerState pi2_logger = MakeLoggerState(
-        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
 
     event_loop_factory.RunFor(chrono::milliseconds(95));
 
@@ -3751,7 +3794,8 @@ TEST(MissingDirectionTest, OneDirectionAfterRebootReliable) {
   // second boot.
   {
     LoggerState pi2_logger = MakeLoggerState(
-        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
 
     event_loop_factory.RunFor(chrono::milliseconds(95));
 
@@ -3830,7 +3874,8 @@ TEST(MissingDirectionTest, OneDirectionAfterRebootMixedCase1) {
     event_loop_factory.RunFor(chrono::milliseconds(1000));
 
     LoggerState pi2_logger = MakeLoggerState(
-        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
 
     pi2_logger.StartLogger(kLogfile2_1);
 
@@ -3900,7 +3945,8 @@ TEST(MissingDirectionTest, OneDirectionAfterRebootMixedCase2) {
     event_loop_factory.RunFor(chrono::milliseconds(1000));
 
     LoggerState pi2_logger = MakeLoggerState(
-        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
 
     pi2_logger.StartLogger(kLogfile2_1);
 
@@ -4097,18 +4143,21 @@ TEST(MultinodeLoggerLoopTest, Loop) {
     // Now start a receiving node first.  This sets up 2 tight bounds between
     // 2 of the nodes.
     LoggerState pi2_logger = MakeLoggerState(
-        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi2, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     pi2_logger.StartLogger(kLogfile2_1);
 
     event_loop_factory.RunFor(chrono::seconds(100));
 
     // And now start the third leg.
     LoggerState pi3_logger = MakeLoggerState(
-        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi3, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     pi3_logger.StartLogger(kLogfile3_1);
 
     LoggerState pi1_logger = MakeLoggerState(
-        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     pi1_logger.StartLogger(kLogfile1_1);
 
     event_loop_factory.RunFor(chrono::seconds(100));
@@ -4258,7 +4307,8 @@ TEST(MultinodeLoggerLoopTest, PreviousBootData) {
     // Now start a receiving node first.  This sets up 2 tight bounds between
     // 2 of the nodes.
     LoggerState pi1_logger = MakeLoggerState(
-        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     pi1_logger.StartLogger(kLogfile1_1);
 
     std::unique_ptr<EventLoop> pi2_event_loop = pi2->MakeEventLoop("pong");
@@ -4373,7 +4423,8 @@ TEST(MultinodeLoggerLoopTest, StartDisconnected) {
     // Now start a receiving node first.  This sets up 2 tight bounds between
     // 2 of the nodes.
     LoggerState pi1_logger = MakeLoggerState(
-        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     pi1_logger.StartLogger(kLogfile1_1);
 
     event_loop_factory.RunFor(chrono::seconds(10));
@@ -4462,7 +4513,8 @@ TEST(MultinodeLoggerLoopTest, StaggeredConnect) {
     // Now start a receiving node first.  This sets up 2 tight bounds between
     // 2 of the nodes.
     LoggerState pi1_logger = MakeLoggerState(
-        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0]);
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
     pi1_logger.StartLogger(kLogfile1_1);
 
     event_loop_factory.RunFor(chrono::seconds(10));

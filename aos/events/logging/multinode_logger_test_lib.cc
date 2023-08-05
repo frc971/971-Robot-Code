@@ -17,6 +17,7 @@ using aos::testing::ArtifactPath;
 LoggerState MakeLoggerState(NodeEventLoopFactory *node,
                             SimulatedEventLoopFactory *factory,
                             CompressionParams params,
+                            FileStrategy file_strategy,
                             const Configuration *configuration) {
   if (configuration == nullptr) {
     configuration = factory->configuration();
@@ -26,14 +27,18 @@ LoggerState MakeLoggerState(NodeEventLoopFactory *node,
           configuration,
           configuration::GetNode(configuration, node->node()),
           nullptr,
-          params};
+          params,
+          file_strategy};
 }
 
 std::unique_ptr<MultiNodeFilesLogNamer> LoggerState::MakeLogNamer(
     std::string logfile_base) {
   std::unique_ptr<MultiNodeFilesLogNamer> namer =
-      std::make_unique<MultiNodeFilesLogNamer>(logfile_base, configuration,
-                                               event_loop.get(), node);
+      file_strategy == FileStrategy::kCombine
+          ? std::make_unique<MinimalFileMultiNodeLogNamer>(
+                logfile_base, configuration, event_loop.get(), node)
+          : std::make_unique<MultiNodeFilesLogNamer>(
+                logfile_base, configuration, event_loop.get(), node);
   namer->set_extension(params.extension);
   namer->set_encoder_factory(params.encoder_factory);
   return namer;
@@ -106,7 +111,8 @@ MultinodeLoggerTest::MultinodeLoggerTest()
   event_loop_factory_.SetTimeConverter(&time_converter_);
 
   LOG(INFO) << "Logging data to " << logfiles_[0] << ", " << logfiles_[1]
-            << " and " << logfiles_[2];
+            << " and " << logfiles_[2] << " shared? " << shared()
+            << " combine? " << (file_strategy() == FileStrategy::kCombine);
 
   pi1_->OnStartup([this]() {
     pi1_->AlwaysStart<Ping>("ping");
@@ -122,6 +128,10 @@ bool MultinodeLoggerTest::shared() const {
   return std::get<0>(GetParam()).shared;
 }
 
+FileStrategy MultinodeLoggerTest::file_strategy() const {
+  return std::get<0>(GetParam()).file_strategy;
+}
+
 std::vector<std::string> MultinodeLoggerTest::MakeLogFiles(
     std::string logfile_base1, std::string logfile_base2, size_t pi1_data_count,
     size_t pi2_data_count, size_t pi1_timestamps_count,
@@ -132,38 +142,60 @@ std::vector<std::string> MultinodeLoggerTest::MakeLogFiles(
   std::vector<std::string> result;
   result.emplace_back(absl::StrCat(logfile_base1, "_", sha256, Extension()));
   result.emplace_back(absl::StrCat(logfile_base2, "_", sha256, Extension()));
-  for (size_t i = 0; i < pi1_data_count; ++i) {
-    result.emplace_back(
-        absl::StrCat(logfile_base1, "_pi1_data.part", i, Extension()));
+
+  if (file_strategy() == FileStrategy::kCombine) {
+    for (size_t i = 0; i < pi1_data_count + pi1_timestamps_count; ++i) {
+      result.emplace_back(
+          absl::StrCat(logfile_base1, "_pi1_pi1_all.part", i, Extension()));
+    }
+    for (size_t i = 0; i < 3; ++i) {
+      result.emplace_back(
+          absl::StrCat(logfile_base1, "_pi1_pi2_all.part", i, Extension()));
+    }
+
+    for (size_t i = 0; i < pi2_data_count + pi2_timestamps_count; ++i) {
+      result.emplace_back(
+          absl::StrCat(logfile_base2, "_pi2_pi2_all.part", i, Extension()));
+    }
+
+    for (size_t i = 0; i < 3; ++i) {
+      result.emplace_back(
+          absl::StrCat(logfile_base2, "_pi2_pi1_all.part", i, Extension()));
+    }
+  } else {
+    for (size_t i = 0; i < pi1_data_count; ++i) {
+      result.emplace_back(
+          absl::StrCat(logfile_base1, "_pi1_data.part", i, Extension()));
+    }
+    for (size_t i = 0; i < pi1_timestamps_count; ++i) {
+      result.emplace_back(
+          absl::StrCat(logfile_base1, "_pi1_timestamps.part", i, Extension()));
+    }
+    for (size_t i = 0; i < pi2_data_count; ++i) {
+      result.emplace_back(
+          absl::StrCat(logfile_base2, "_pi2_data.part", i, Extension()));
+    }
+    for (size_t i = 0; i < pi2_timestamps_count; ++i) {
+      result.emplace_back(
+          absl::StrCat(logfile_base2, "_pi2_timestamps.part", i, Extension()));
+    }
+    result.emplace_back(logfile_base2 + "_data/pi1_data.part0" + Extension());
+    result.emplace_back(logfile_base2 + "_data/pi1_data.part1" + Extension());
+    result.emplace_back(logfile_base1 + "_data/pi2_data.part0" + Extension());
+    result.emplace_back(logfile_base1 + "_data/pi2_data.part1" + Extension());
+    // shared and not shared config types will have the same output since the
+    // data writers are consolidated to per node instead of per channel.
+    result.emplace_back(logfile_base1 + "_timestamps/remote_pi2.part0" +
+                        Extension());
+    result.emplace_back(logfile_base1 + "_timestamps/remote_pi2.part1" +
+                        Extension());
+    result.emplace_back(logfile_base1 + "_timestamps/remote_pi2.part2" +
+                        Extension());
+    result.emplace_back(logfile_base2 + "_timestamps/remote_pi1.part0" +
+                        Extension());
+    result.emplace_back(logfile_base2 + "_timestamps/remote_pi1.part1" +
+                        Extension());
   }
-  for (size_t i = 0; i < pi1_timestamps_count; ++i) {
-    result.emplace_back(
-        absl::StrCat(logfile_base1, "_pi1_timestamps.part", i, Extension()));
-  }
-  for (size_t i = 0; i < pi2_data_count; ++i) {
-    result.emplace_back(
-        absl::StrCat(logfile_base2, "_pi2_data.part", i, Extension()));
-  }
-  for (size_t i = 0; i < pi2_timestamps_count; ++i) {
-    result.emplace_back(
-        absl::StrCat(logfile_base2, "_pi2_timestamps.part", i, Extension()));
-  }
-  result.emplace_back(logfile_base2 + "_data/pi1_data.part0" + Extension());
-  result.emplace_back(logfile_base2 + "_data/pi1_data.part1" + Extension());
-  result.emplace_back(logfile_base1 + "_data/pi2_data.part0" + Extension());
-  result.emplace_back(logfile_base1 + "_data/pi2_data.part1" + Extension());
-  // shared and not shared config types will have the same output since the data
-  // writers are consolidated to per node instead of per channel.
-  result.emplace_back(logfile_base1 + "_timestamps/remote_pi2.part0" +
-                      Extension());
-  result.emplace_back(logfile_base1 + "_timestamps/remote_pi2.part1" +
-                      Extension());
-  result.emplace_back(logfile_base1 + "_timestamps/remote_pi2.part2" +
-                      Extension());
-  result.emplace_back(logfile_base2 + "_timestamps/remote_pi1.part0" +
-                      Extension());
-  result.emplace_back(logfile_base2 + "_timestamps/remote_pi1.part1" +
-                      Extension());
 
   return result;
 }
@@ -191,26 +223,36 @@ std::vector<std::string> MultinodeLoggerTest::MakePi1RebootLogfiles() {
 
 std::vector<std::string> MultinodeLoggerTest::MakePi1DeadNodeLogfiles() {
   std::vector<std::string> result;
-  result.emplace_back(logfile_base1_ + "_pi1_data.part0" + Extension());
-  result.emplace_back(absl::StrCat(
-      logfile_base1_, "_", std::get<0>(GetParam()).sha256, Extension()));
+  if (file_strategy() == FileStrategy::kCombine) {
+    result.emplace_back(logfile_base1_ + "_pi1_pi1_all.part0" + Extension());
+    result.emplace_back(absl::StrCat(
+        logfile_base1_, "_", std::get<0>(GetParam()).sha256, Extension()));
+  } else {
+    result.emplace_back(logfile_base1_ + "_pi1_data.part0" + Extension());
+    result.emplace_back(absl::StrCat(
+        logfile_base1_, "_", std::get<0>(GetParam()).sha256, Extension()));
+  }
   return result;
 }
 
 std::vector<std::vector<std::string>> MultinodeLoggerTest::StructureLogFiles() {
-  std::vector<std::vector<std::string>> result{
-      std::vector<std::string>{logfiles_[2]},
-      std::vector<std::string>{logfiles_[3], logfiles_[4]},
-      std::vector<std::string>{logfiles_[5]},
-      std::vector<std::string>{logfiles_[6], logfiles_[7]},
-      std::vector<std::string>{logfiles_[8], logfiles_[9]},
-      std::vector<std::string>{logfiles_[10], logfiles_[11]}};
-
-  result.emplace_back(
-      std::vector<std::string>{logfiles_[12], logfiles_[13], logfiles_[14]});
-  result.emplace_back(std::vector<std::string>{logfiles_[15], logfiles_[16]});
-
-  return result;
+  if (file_strategy() == FileStrategy::kCombine) {
+    return std::vector<std::vector<std::string>>{
+        std::vector<std::string>{logfiles_[2], logfiles_[3], logfiles_[4]},
+        std::vector<std::string>{logfiles_[5], logfiles_[6], logfiles_[7]},
+        std::vector<std::string>{logfiles_[8], logfiles_[9], logfiles_[10]},
+        std::vector<std::string>{logfiles_[11], logfiles_[12], logfiles_[13]}};
+  } else {
+    return std::vector<std::vector<std::string>>{
+        std::vector<std::string>{logfiles_[2]},
+        std::vector<std::string>{logfiles_[3], logfiles_[4]},
+        std::vector<std::string>{logfiles_[5]},
+        std::vector<std::string>{logfiles_[6], logfiles_[7]},
+        std::vector<std::string>{logfiles_[8], logfiles_[9]},
+        std::vector<std::string>{logfiles_[10], logfiles_[11]},
+        std::vector<std::string>{logfiles_[12], logfiles_[13], logfiles_[14]},
+        std::vector<std::string>{logfiles_[15], logfiles_[16]}};
+  }
 }
 
 std::string MultinodeLoggerTest::Extension() {
@@ -223,7 +265,8 @@ LoggerState MultinodeLoggerTest::MakeLogger(
   if (factory == nullptr) {
     factory = &event_loop_factory_;
   }
-  return MakeLoggerState(node, factory, std::get<1>(GetParam()), configuration);
+  return MakeLoggerState(node, factory, std::get<1>(GetParam()),
+                         file_strategy(), configuration);
 }
 
 void MultinodeLoggerTest::StartLogger(LoggerState *logger,
@@ -286,7 +329,8 @@ void MultinodeLoggerTest::VerifyParts(
   // depends on if we have the remote timestamps split across 2 files, or just
   // across 1, depending on if we are using a split or combined timestamp
   // channel config.
-  EXPECT_EQ(missing_rt_count, shared() ? 4u : 4u);
+  EXPECT_EQ(missing_rt_count,
+            file_strategy() == FileStrategy::kCombine ? 2u : 4u);
 
   EXPECT_EQ(log_event_uuids.size(), 2u);
   EXPECT_EQ(parts_uuids.size(), ToLogReaderVector(sorted_parts).size());

@@ -27,6 +27,13 @@ struct CompressionParams {
       encoder_factory;
 };
 
+enum class FileStrategy {
+  // Use MinimalFileMultiNodeLogNamer
+  kCombine,
+  // Use MultiNodeFilesLogNamer
+  kKeepSeparate,
+};
+
 // Parameters to run all the tests with.
 struct ConfigParams {
   // The config file to use.
@@ -39,6 +46,8 @@ struct ConfigParams {
   std::string_view sha256;
   // sha256 of the relogged config
   std::string_view relogged_sha256;
+  // If kCombine, use MinimalFileMultiNodeLogNamer.
+  FileStrategy file_strategy;
 };
 
 struct LoggerState {
@@ -53,6 +62,7 @@ struct LoggerState {
   const Node *node;
   MultiNodeFilesLogNamer *log_namer;
   CompressionParams params;
+  FileStrategy file_strategy;
 
   void AppendAllFilenames(std::vector<std::string> *filenames);
 
@@ -72,6 +82,7 @@ constexpr std::string_view kReloggedSplitConfigSha1() {
 LoggerState MakeLoggerState(NodeEventLoopFactory *node,
                             SimulatedEventLoopFactory *factory,
                             CompressionParams params,
+                            FileStrategy file_strategy,
                             const Configuration *configuration = nullptr);
 std::vector<std::vector<std::string>> ToLogReaderVector(
     const std::vector<LogFile> &log_files);
@@ -118,6 +129,7 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
   MultinodeLoggerTest();
 
   bool shared() const;
+  FileStrategy file_strategy() const;
 
   std::vector<std::string> MakeLogFiles(std::string logfile_base1,
                                         std::string logfile_base2,
