@@ -299,7 +299,7 @@ cc_library(
     deps = [
         ":configuration",
         ":for_rust",
-        "//third_party/cargo:cxx_cc",
+        "@crate_index//:cxx_cc",
     ],
 )
 
@@ -321,7 +321,7 @@ autocxx_library(
     deps = [
         ":configuration_rust_fbs",
         ":flatbuffers_rs",
-        "//third_party/cargo:thiserror",
+        "@crate_index//:thiserror",
     ],
 )
 
@@ -754,7 +754,7 @@ autocxx_library(
     ],
     override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
     rs_deps = [
-        "//third_party/cargo:uuid",
+        "@crate_index//:uuid",
     ],
     target_compatible_with = select({
         "//conditions:default": ["//tools/platforms/rust:has_support"],
@@ -788,7 +788,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//third_party/cargo:cxx_cc",
+        "@crate_index//:cxx_cc",
     ],
 )
 

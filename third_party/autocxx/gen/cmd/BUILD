@@ -22,11 +22,11 @@ rust_binary(
     version = "0.16.0",
     deps = [
         "//third_party/autocxx/engine:autocxx_engine",
-        "@//third_party/cargo:clap",
-        "@//third_party/cargo:env_logger",
-        "@//third_party/cargo:indexmap",
-        "@//third_party/cargo:miette",
-        "@//third_party/cargo:pathdiff",
-        "@//third_party/cargo:proc_macro2",
+        "@crate_index//:clap",
+        "@crate_index//:env_logger",
+        "@crate_index//:indexmap",
+        "@crate_index//:miette",
+        "@crate_index//:pathdiff",
+        "@crate_index//:proc-macro2",
     ],
 )

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{anyhow, Context, Result};
 use cfg_expr::targets::{get_builtin_target_by_triple, TargetInfo};
@@ -56,8 +56,8 @@ pub fn resolve_cfg_platforms(
     // (`x86_64-unknown-linux-gun` vs `cfg(target = "x86_64-unkonwn-linux-gnu")`). So
     // in order to parse configurations, the text is renamed for the check but the
     // original is retained for comaptibility with the manifest.
-    let rename = |cfg: &str| -> String { format!("cfg(target = \"{}\")", cfg) };
-    let original_cfgs: HashMap<String, String> = configurations
+    let rename = |cfg: &str| -> String { format!("cfg(target = \"{cfg}\")") };
+    let original_cfgs: BTreeMap<String, String> = configurations
         .iter()
         .filter(|cfg| !cfg.starts_with("cfg("))
         .map(|cfg| (rename(cfg), cfg.clone()))
@@ -73,8 +73,8 @@ pub fn resolve_cfg_platforms(
         })
         // Check the current configuration with against each supported triple
         .map(|cfg| {
-            let expression = Expression::parse(&cfg)
-                .context(format!("Failed to parse expression: '{}'", cfg))?;
+            let expression =
+                Expression::parse(&cfg).context(format!("Failed to parse expression: '{cfg}'"))?;
 
             let triples = target_infos
                 .iter()
@@ -116,6 +116,7 @@ mod test {
             "aarch64-apple-darwin".to_owned(),
             "aarch64-apple-ios".to_owned(),
             "aarch64-linux-android".to_owned(),
+            "aarch64-pc-windows-msvc".to_owned(),
             "aarch64-unknown-linux-gnu".to_owned(),
             "arm-unknown-linux-gnueabi".to_owned(),
             "armv7-unknown-linux-gnueabi".to_owned(),
@@ -165,9 +166,7 @@ mod test {
         assert_eq!(configurations, BTreeMap::new(),)
     }
 
-    #[test]
-    fn resolve_targeted() {
-        let configuration = r#"cfg(target = "x86_64-unknown-linux-gnu")"#.to_owned();
+    fn mock_resolve_context(configuration: String) -> CrateContext {
         let mut deps = SelectList::default();
         deps.insert(
             CrateDependency {
@@ -175,10 +174,10 @@ mod test {
                 target: "mock_crate_b".to_owned(),
                 alias: None,
             },
-            Some(configuration.clone()),
+            Some(configuration),
         );
 
-        let context = CrateContext {
+        CrateContext {
             name: "mock_crate_a".to_owned(),
             version: "0.1.0".to_owned(),
             common_attrs: CommonAttributes {
@@ -186,18 +185,39 @@ mod test {
                 ..CommonAttributes::default()
             },
             ..CrateContext::default()
-        };
+        }
+    }
 
-        let configurations =
-            resolve_cfg_platforms(vec![&context], &supported_platform_triples()).unwrap();
+    #[test]
+    fn resolve_targeted() {
+        let data = BTreeMap::from([
+            (
+                r#"cfg(target = "x86_64-unknown-linux-gnu")"#.to_owned(),
+                BTreeSet::from(["x86_64-unknown-linux-gnu".to_owned()]),
+            ),
+            (
+                r#"cfg(any(target_os = "macos", target_os = "ios"))"#.to_owned(),
+                BTreeSet::from([
+                    "aarch64-apple-darwin".to_owned(),
+                    "aarch64-apple-ios".to_owned(),
+                    "i686-apple-darwin".to_owned(),
+                    "x86_64-apple-darwin".to_owned(),
+                    "x86_64-apple-ios".to_owned(),
+                ]),
+            ),
+        ]);
 
-        assert_eq!(
-            configurations,
-            BTreeMap::from([(
-                configuration,
-                BTreeSet::from(["x86_64-unknown-linux-gnu".to_owned()])
-            )])
-        );
+        data.into_iter().for_each(|(configuration, expectation)| {
+            let context = mock_resolve_context(configuration.clone());
+
+            let configurations =
+                resolve_cfg_platforms(vec![&context], &supported_platform_triples()).unwrap();
+
+            assert_eq!(
+                configurations,
+                BTreeMap::from([(configuration, expectation,)])
+            );
+        })
     }
 
     #[test]

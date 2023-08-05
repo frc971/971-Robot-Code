@@ -1,6 +1,5 @@
 load("@rules_rust//rust:toolchain.bzl", "rust_stdlib_filegroup", "rust_toolchain")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
-load("@rules_rust//rust:defs.bzl", "rust_binary")
 
 # We have to declare our toolchains individually to get the corect constraints
 # configured so we can robustly select the correct one for each of our
@@ -16,7 +15,7 @@ toolchain(
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
     ],
-    toolchain = "@rust__x86_64-unknown-linux-gnu_tools//:rust_toolchain",
+    toolchain = "@rust__x86_64-unknown-linux-gnu__stable_tools//:rust_toolchain",
     toolchain_type = "@rules_rust//rust:toolchain",
 )
 
@@ -33,7 +32,7 @@ toolchain(
         # subtle order dependencies.
         "//tools/platforms/hardware:raspberry_pi",
     ],
-    toolchain = "@rust__armv7-unknown-linux-gnueabihf_tools//:rust_toolchain",
+    toolchain = "@rust__armv7-unknown-linux-gnueabihf__stable_tools//:rust_toolchain",
     toolchain_type = "@rules_rust//rust:toolchain",
 )
 
@@ -47,7 +46,7 @@ toolchain(
         "@platforms//os:linux",
         "@platforms//cpu:arm64",
     ],
-    toolchain = "@rust__aarch64-unknown-linux-gnu_tools//:rust_toolchain",
+    toolchain = "@rust__aarch64-unknown-linux-gnu__stable_tools//:rust_toolchain",
     toolchain_type = "@rules_rust//rust:toolchain",
 )
 
@@ -62,7 +61,7 @@ toolchain(
         "@platforms//cpu:armv7",
         "//tools/platforms/hardware:roborio",
     ],
-    toolchain = "@rust__arm-unknown-linux-gnueabi_tools//:rust_toolchain",
+    toolchain = "@rust__arm-unknown-linux-gnueabi__stable_tools//:rust_toolchain",
     toolchain_type = "@rules_rust//rust:toolchain",
 )
 
@@ -95,8 +94,7 @@ rust_toolchain(
     clippy_driver = ":noop_error_exit",
     default_edition = "2021",
     dylib_ext = ".so",
-    exec_triple = "none",
-    os = "none",
+    exec_triple = "none-none-none",
     rust_doc = ":noop_error_exit",
     rust_std = ":empty_stdlib",
     rustc = ":noop_error_exit",
@@ -106,7 +104,7 @@ rust_toolchain(
     staticlib_ext = ".a",
     stdlib_linkflags = [],
     tags = ["manual"],
-    target_triple = "none",
+    target_triple = "none-none-none",
 )
 
 toolchain(
@@ -119,17 +117,6 @@ toolchain(
     ],
     toolchain = ":noop_rust_toolchain_impl",
     toolchain_type = "@rules_rust//rust:toolchain",
-)
-
-rust_binary(
-    name = "tweak_cargo_raze_output",
-    srcs = ["tweak_cargo_raze_output.rs"],
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//third_party/cargo:anyhow",
-        "//third_party/cargo:toml",
-    ],
 )
 
 cc_library(

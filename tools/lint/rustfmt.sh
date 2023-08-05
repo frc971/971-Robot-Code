@@ -11,7 +11,7 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
   { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
 # --- end runfiles.bash initialization v2 ---
 
-readonly RUSTFMT="$(rlocation rust__x86_64-unknown-linux-gnu_tools/bin/rustfmt)"
+readonly RUSTFMT="$(rlocation rust__x86_64-unknown-linux-gnu__stable_tools/bin/rustfmt)"
 
 # Run everything from the root of the tree.
 cd "${BUILD_WORKSPACE_DIRECTORY}"

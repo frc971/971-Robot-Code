@@ -9,8 +9,8 @@ rust_library(
     version = "2.1.1",
     visibility = ["//visibility:public"],
     deps = [
-        "@//third_party/cargo:bitflags",
-        "@//third_party/cargo:smallvec",
-        "@//third_party/cargo:thiserror",
+        "@crate_index//:bitflags",
+        "@crate_index//:smallvec",
+        "@crate_index//:thiserror",
     ],
 )

@@ -22,9 +22,9 @@ rust_proc_macro(
     version = "0.16.0",
     deps = [
         "//third_party/autocxx/parser:autocxx_parser",
-        "@//third_party/cargo:proc_macro2",
-        "@//third_party/cargo:proc_macro_error",
-        "@//third_party/cargo:quote",
-        "@//third_party/cargo:syn",
+        "@crate_index//:proc-macro-error",
+        "@crate_index//:proc-macro2",
+        "@crate_index//:quote",
+        "@crate_index//:syn",
     ],
 )

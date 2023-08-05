@@ -152,7 +152,7 @@ cc_library(
     deps = [
         ":event_loop",
         "//aos:for_rust",
-        "//third_party/cargo:cxx_cc",
+        "@crate_index//:cxx_cc",
     ],
 )
 
@@ -166,9 +166,9 @@ autocxx_library(
     override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
     rs_deps = [
         "@com_github_google_flatbuffers//rust",
-        "//third_party/cargo:uuid",
-        "//third_party/cargo:futures",
-        "//third_party/cargo:thiserror",
+        "@crate_index//:uuid",
+        "@crate_index//:futures",
+        "@crate_index//:thiserror",
     ],
     target_compatible_with = select({
         "//conditions:default": ["//tools/platforms/rust:has_support"],
@@ -516,7 +516,7 @@ cc_library(
     deps = [
         ":simulated_event_loop",
         "//aos:for_rust",
-        "//third_party/cargo:cxx_cc",
+        "@crate_index//:cxx_cc",
     ],
 )
 
@@ -533,7 +533,7 @@ autocxx_library(
         "@com_github_google_flatbuffers//rust",
         "//aos:configuration_rust_fbs",
         "//aos:flatbuffers_rs",
-        "//third_party/cargo:futures",
+        "@crate_index//:futures",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -555,7 +555,7 @@ rust_test(
     deps = [
         ":ping_rust_fbs",
         "//aos:init_rs",
-        "//third_party/cargo:futures",
+        "@crate_index//:futures",
         "@rules_rust//tools/runfiles",
     ],
 )

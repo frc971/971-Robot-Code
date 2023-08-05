@@ -6,7 +6,10 @@ use anyhow::Context;
 use clap::Parser;
 
 use crate::cli::Result;
-use crate::metadata::{write_metadata, CargoUpdateRequest, Generator, MetadataGenerator};
+use crate::config::Config;
+use crate::metadata::{
+    write_metadata, Cargo, CargoUpdateRequest, FeatureGenerator, Generator, MetadataGenerator,
+};
 use crate::splicing::{generate_lockfile, Splicer, SplicingManifest, WorkspaceMetadata};
 
 /// Command line options for the `splice` subcommand
@@ -22,7 +25,7 @@ pub struct SpliceOptions {
     pub cargo_lockfile: Option<PathBuf>,
 
     /// The desired update/repin behavior
-    #[clap(long, env = "CARGO_BAZEL_REPIN", default_missing_value = "true")]
+    #[clap(long, env = "CARGO_BAZEL_REPIN", num_args=0..=1, default_missing_value = "true")]
     pub repin: Option<CargoUpdateRequest>,
 
     /// The directory in which to build the workspace. If this argument is not
@@ -41,6 +44,10 @@ pub struct SpliceOptions {
     /// The path to a Cargo configuration file.
     #[clap(long)]
     pub cargo_config: Option<PathBuf>,
+
+    /// The path to the config file (containing `cargo_bazel::config::Config`.)
+    #[clap(long)]
+    pub config: PathBuf,
 
     /// The path to a Cargo binary to use for gathering metadata
     #[clap(long, env = "CARGO")]
@@ -72,25 +79,39 @@ pub fn splice(opt: SpliceOptions) -> Result<()> {
     // Splice together the manifest
     let manifest_path = splicer.splice_workspace(&opt.cargo)?;
 
+    let cargo = Cargo::new(opt.cargo);
+
     // Generate a lockfile
     let cargo_lockfile = generate_lockfile(
         &manifest_path,
         &opt.cargo_lockfile,
-        &opt.cargo,
+        cargo.clone(),
         &opt.rustc,
         &opt.repin,
     )?;
 
+    let config = Config::try_from_path(&opt.config)?;
+
+    let feature_map = FeatureGenerator::new(cargo.clone(), opt.rustc.clone()).generate(
+        manifest_path.as_path_buf(),
+        &config.supported_platform_triples,
+    )?;
     // Write the registry url info to the manifest now that a lockfile has been generated
-    WorkspaceMetadata::write_registry_urls(&cargo_lockfile, &manifest_path)?;
+    WorkspaceMetadata::write_registry_urls_and_feature_map(
+        &cargo,
+        &cargo_lockfile,
+        feature_map,
+        manifest_path.as_path_buf(),
+        manifest_path.as_path_buf(),
+    )?;
 
     let output_dir = opt.output_dir.clone();
 
     // Write metadata to the workspace for future reuse
     let (cargo_metadata, _) = Generator::new()
-        .with_cargo(opt.cargo)
+        .with_cargo(cargo)
         .with_rustc(opt.rustc)
-        .generate(&manifest_path.as_path_buf())?;
+        .generate(manifest_path.as_path_buf())?;
 
     let cargo_lockfile_path = manifest_path
         .as_path_buf()

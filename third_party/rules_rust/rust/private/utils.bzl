@@ -15,7 +15,7 @@
 """Utility functions not specific to the rust toolchain."""
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", find_rules_cc_toolchain = "find_cpp_toolchain")
-load(":providers.bzl", "BuildInfo", "CrateInfo", "DepInfo", "DepVariantInfo")
+load(":providers.bzl", "BuildInfo", "CrateGroupInfo", "CrateInfo", "DepInfo", "DepVariantInfo")
 
 UNSUPPORTED_FEATURES = [
     "thin_lto",
@@ -135,7 +135,7 @@ def get_lib_name_default(lib):
 # so the following doesn't work:
 #     args.add_all(
 #         cc_toolchain.dynamic_runtime_lib(feature_configuration = feature_configuration),
-#         map_each = lambda x: get_lib_name(x, for_windows = toolchain.os.startswith("windows)),
+#         map_each = lambda x: get_lib_name(x, for_windows = toolchain.target_os.startswith("windows)),
 #         format_each = "-ldylib=%s",
 #     )
 def get_lib_name_for_windows(lib):
@@ -223,7 +223,19 @@ def get_preferred_artifact(library_to_link, use_pic):
             library_to_link.dynamic_library
         )
 
-def _expand_location(ctx, env, data):
+# The normal ctx.expand_location, but with an additional deduplication step.
+# We do this to work around a potential crash, see
+# https://github.com/bazelbuild/bazel/issues/16664
+def dedup_expand_location(ctx, input, targets = []):
+    return ctx.expand_location(input, _deduplicate(targets))
+
+def _deduplicate(xs):
+    return {x: True for x in xs}.keys()
+
+def concat(xss):
+    return [x for xs in xss for x in xs]
+
+def _expand_location_for_build_script_runner(ctx, env, data):
     """A trivial helper for `expand_dict_value_locations` and `expand_list_element_locations`
 
     Args:
@@ -240,7 +252,7 @@ def _expand_location(ctx, env, data):
             env = env.replace(directive, "$${pwd}/" + directive)
     return ctx.expand_make_variables(
         env,
-        ctx.expand_location(env, data),
+        dedup_expand_location(ctx, env, data),
         {},
     )
 
@@ -273,7 +285,7 @@ def expand_dict_value_locations(ctx, env, data):
     Returns:
         dict: A dict of environment variables with expanded location macros
     """
-    return dict([(k, _expand_location(ctx, v, data)) for (k, v) in env.items()])
+    return dict([(k, _expand_location_for_build_script_runner(ctx, v, data)) for (k, v) in env.items()])
 
 def expand_list_element_locations(ctx, args, data):
     """Performs location-macro expansion on a list of string values.
@@ -296,7 +308,7 @@ def expand_list_element_locations(ctx, args, data):
     Returns:
         list: A list of arguments with expanded location macros
     """
-    return [_expand_location(ctx, arg, data) for arg in args]
+    return [_expand_location_for_build_script_runner(ctx, arg, data) for arg in args]
 
 def name_to_crate_name(name):
     """Converts a build target's name into the name of its associated crate.
@@ -463,6 +475,7 @@ def transform_deps(deps):
         dep_info = dep[DepInfo] if DepInfo in dep else None,
         build_info = dep[BuildInfo] if BuildInfo in dep else None,
         cc_info = dep[CcInfo] if CcInfo in dep else None,
+        crate_group_info = dep[CrateGroupInfo] if CrateGroupInfo in dep else None,
     ) for dep in deps]
 
 def get_import_macro_deps(ctx):
@@ -667,6 +680,48 @@ def can_build_metadata(toolchain, ctx, crate_type):
     # 3) process_wrapper is enabled (this is disabled when compiling process_wrapper itself),
     # 4) the crate_type is rlib or lib.
     return toolchain._pipelined_compilation and \
-           toolchain.os != "windows" and \
+           toolchain.exec_triple.system != "windows" and \
            ctx.attr._process_wrapper and \
            crate_type in ("rlib", "lib")
+
+def crate_root_src(name, srcs, crate_type):
+    """Determines the source file for the crate root, should it not be specified in `attr.crate_root`.
+
+    Args:
+        name (str): The name of the target.
+        srcs (list): A list of all sources for the target Crate.
+        crate_type (str): The type of this crate ("bin", "lib", "rlib", "cdylib", etc).
+
+    Returns:
+        File: The root File object for a given crate. See the following links for more details:
+            - https://doc.rust-lang.org/cargo/reference/cargo-targets.html#library
+            - https://doc.rust-lang.org/cargo/reference/cargo-targets.html#binaries
+    """
+    default_crate_root_filename = "main.rs" if crate_type == "bin" else "lib.rs"
+
+    crate_root = (
+        (srcs[0] if len(srcs) == 1 else None) or
+        _shortest_src_with_basename(srcs, default_crate_root_filename) or
+        _shortest_src_with_basename(srcs, name + ".rs")
+    )
+    if not crate_root:
+        file_names = [default_crate_root_filename, name + ".rs"]
+        fail("No {} source file found.".format(" or ".join(file_names)), "srcs")
+    return crate_root
+
+def _shortest_src_with_basename(srcs, basename):
+    """Finds the shortest among the paths in srcs that match the desired basename.
+
+    Args:
+        srcs (list): A list of File objects
+        basename (str): The target basename to match against.
+
+    Returns:
+        File: The File object with the shortest path that matches `basename`
+    """
+    shortest = None
+    for f in srcs:
+        if f.basename == basename:
+            if not shortest or len(f.dirname) < len(shortest.dirname):
+                shortest = f
+    return shortest

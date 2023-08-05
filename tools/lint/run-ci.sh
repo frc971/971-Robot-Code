@@ -68,30 +68,6 @@ rustfmt() {
     ./tools/lint/rustfmt
 }
 
-cargo_lockfile() {
-    cd "${BUILD_WORKSPACE_DIRECTORY}"
-    cp third_party/cargo/Cargo.raze.lock Cargo.lock
-    external/rust__x86_64-unknown-linux-gnu_tools/bin/cargo generate-lockfile --locked --manifest-path=Cargo.toml
-    rm Cargo.lock
-}
-
-cargo_raze() {
-    local -r cargo_raze="$(readlink -f external/cargo_raze/impl/cargo_raze_bin)"
-    export CARGO="$(readlink -f external/rust__x86_64-unknown-linux-gnu_tools/bin/cargo)"
-    export RUSTC="$(readlink -f external/rust__x86_64-unknown-linux-gnu_tools/bin/rustc)"
-    cd "${BUILD_WORKSPACE_DIRECTORY}"
-    # Note we don't run with --generate-lockfile here. If there's a new
-    # dependency, we don't want to download it, just failing with an error
-    # is sufficient.
-    "${cargo_raze}" --manifest-path=Cargo.toml
-}
-
-tweak_cargo_raze() {
-    local -r tweaker="$(readlink -f tools/rust/tweak_cargo_raze_output)"
-    cd "${BUILD_WORKSPACE_DIRECTORY}"
-    "${tweaker}" .
-}
-
 buildifier() {
     ./tools/lint/buildifier
 }
@@ -122,9 +98,6 @@ readonly -a LINTERS=(
     tweak_gazelle_go_deps
     clean_up_go_mirrors
     rustfmt
-    cargo_lockfile
-    cargo_raze
-    tweak_cargo_raze
     buildifier
     prettier
     yapf

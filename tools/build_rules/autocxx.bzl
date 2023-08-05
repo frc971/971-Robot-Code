@@ -225,7 +225,7 @@ _autocxx_library_gen = rule(
         ),
         "_cxx_codegen": attr.label(
             executable = True,
-            default = Label("@//third_party/cargo:cargo_bin_cxxbridge"),
+            default = Label("@cxxbridge-cmd//:cxxbridge-cmd"),
             cfg = "exec",
         ),
         "_libclang": attr.label(
@@ -324,7 +324,7 @@ def autocxx_library(
         target_compatible_with = target_compatible_with,
         testonly = testonly,
         deps = deps + libs + [
-            "//third_party/cargo:cxx_cc",
+            "@crate_index//:cxx_cc",
         ],
         srcs = [gen_cc_srcs_name],
         hdrs = [gen_hdr_srcs_name],
@@ -337,13 +337,13 @@ def autocxx_library(
         testonly = testonly,
         srcs = srcs + cxxbridge_srcs,
         proc_macro_deps = [
-            "//third_party/cargo:cxxbridge_macro",
+            "@crate_index//:cxxbridge-macro",
         ],
         crate_features = crate_features,
         crate_name = crate_name,
         deps = deps + rs_deps + [
             cc_library_name,
-            "//third_party/cargo:cxx",
+            "@crate_index//:cxx",
             "//third_party/autocxx",
         ],
         compile_data = [gen_compile_data_name],

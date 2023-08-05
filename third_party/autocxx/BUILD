@@ -13,7 +13,7 @@ rust_library(
     crate_root = "src/lib.rs",
     edition = "2021",
     proc_macro_deps = [
-        "//third_party/cargo:aquamarine",
+        "@crate_index//:aquamarine",
         "//third_party/autocxx/macro:autocxx_macro",
     ],
     rustc_flags = [
@@ -26,7 +26,7 @@ rust_library(
     ],
     version = "0.16.0",
     deps = [
-        "//third_party/cargo:cxx",
-        "//third_party/cargo:moveit",
+        "@crate_index//:cxx",
+        "@crate_index//:moveit",
     ],
 )

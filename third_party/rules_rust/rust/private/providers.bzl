@@ -19,6 +19,7 @@ CrateInfo = provider(
     fields = {
         "aliases": "Dict[Label, String]: Renamed and aliased crates",
         "compile_data": "depset[File]: Compile data required by this crate.",
+        "compile_data_targets": "depset[Label]: Compile data targets required by this crate.",
         "deps": "depset[DepVariantInfo]: This crate's (rust or cc) dependencies' providers.",
         "edition": "str: The edition of this crate.",
         "is_test": "bool: If the crate is being compiled in a test context",
@@ -56,6 +57,13 @@ DepInfo = provider(
     },
 )
 
+CrateGroupInfo = provider(
+    doc = "A provider containing a group of crates.",
+    fields = {
+        "dep_variant_infos": "depset[DepVariantInfo]: Dependency information from all crates in the group.",
+    },
+)
+
 BuildInfo = provider(
     doc = "A provider containing `rustc` build settings for a given Crate.",
     fields = {
@@ -71,11 +79,13 @@ BuildInfo = provider(
 DepVariantInfo = provider(
     doc = "A wrapper provider for a dependency of a crate. The dependency can be a Rust " +
           "dependency, in which case the `crate_info` and `dep_info` fields will be populated, " +
-          "a Rust build script dependency, in which case `build_info` will be populated, or a " +
-          "C/C++ dependency, in which case `cc_info` will be populated.",
+          "a Rust build script dependency, in which case `build_info` will be populated, a C/C++" +
+          "dependency, in which case `cc_info` will be populated, or a Rust crate group, in which" +
+          "case `crate_group_info` will be populated.",
     fields = {
         "build_info": "BuildInfo: The BuildInfo of a Rust dependency",
         "cc_info": "CcInfo: The CcInfo of a C/C++ dependency",
+        "crate_group_info": "CrateGroupInfo: The CrateGroupInfo of a Rust crate group dependency",
         "crate_info": "CrateInfo: The CrateInfo of a Rust dependency",
         "dep_info": "DepInfo: The DepInfo of a Rust dependency",
     },
@@ -93,6 +103,7 @@ StdLibInfo = provider(
         "core_files": "List[File]: `.a` files related to the `core` and `adler` modules",
         "dot_a_files": "Depset[File]: Generated `.a` files",
         "memchr_files": "Depset[File]: `.a` files associated with the `memchr` module.",
+        "panic_files": "Depset[File]: `.a` files associated with `panic_unwind` and `panic_abort`.",
         "self_contained_files": "List[File]: All `.o` files from the `self-contained` directory.",
         "srcs": "List[Target]: All targets from the original `srcs` attribute.",
         "std_files": "Depset[File]: `.a` files associated with the `std` module.",

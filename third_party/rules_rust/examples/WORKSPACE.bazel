@@ -30,13 +30,19 @@ rust_bindgen_dependencies()
 
 rust_bindgen_register_toolchains()
 
-load("@rules_rust//proto:repositories.bzl", "rust_proto_repositories")
+load("@rules_rust//bindgen:transitive_repositories.bzl", "rust_bindgen_transitive_dependencies")
 
-rust_proto_repositories()
+rust_bindgen_transitive_dependencies()
 
-load("@rules_rust//proto:transitive_repositories.bzl", "rust_proto_transitive_repositories")
+load("@rules_rust//proto/protobuf:repositories.bzl", "rust_proto_protobuf_dependencies", "rust_proto_protobuf_register_toolchains")
 
-rust_proto_transitive_repositories()
+rust_proto_protobuf_dependencies()
+
+rust_proto_protobuf_register_toolchains()
+
+load("@rules_rust//proto/protobuf:transitive_repositories.bzl", "rust_proto_protobuf_transitive_repositories")
+
+rust_proto_protobuf_transitive_repositories()
 
 load("@rules_rust//wasm_bindgen:repositories.bzl", "rust_wasm_bindgen_dependencies", "rust_wasm_bindgen_register_toolchains")
 
@@ -61,13 +67,12 @@ rust_repository_set(
     edition = "2018",
     exec_triple = "x86_64-unknown-linux-gnu",
     extra_target_triples = [],
-    rustfmt_version = "1.4.12",
     sha256s = {
         "rust-1.46.0-x86_64-unknown-linux-gnu": "e3b98bc3440fe92817881933f9564389eccb396f5f431f33d48b979fa2fbdcf5",
         "rust-std-1.46.0-x86_64-unknown-linux-gnu": "ac04aef80423f612c0079829b504902de27a6997214eb58ab0765d02f7ec1dbc",
         "rustfmt-1.4.12-x86_64-unknown-linux-gnu": "1894e76913303d66bf40885a601462844eec15fca9e76a6d13c390d7000d64b0",
     },
-    version = "1.46.0",
+    versions = ["1.46.0"],
 )
 
 ###############################################################################
@@ -136,18 +141,18 @@ http_archive(
 ###############################################################################
 
 http_archive(
-    name = "bazel_toolchains",
-    sha256 = "179ec02f809e86abf56356d8898c8bd74069f1bd7c56044050c2cd3d79d0e024",
-    strip_prefix = "bazel-toolchains-4.1.0",
-    urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/releases/download/4.1.0/bazel-toolchains-4.1.0.tar.gz",
-        "https://github.com/bazelbuild/bazel-toolchains/releases/download/4.1.0/bazel-toolchains-4.1.0.tar.gz",
-    ],
+    name = "bazelci_rules",
+    sha256 = "eca21884e6f66a88c358e580fd67a6b148d30ab57b1680f62a96c00f9bc6a07e",
+    strip_prefix = "bazelci_rules-1.0.0",
+    url = "https://github.com/bazelbuild/continuous-integration/releases/download/rules-1.0.0/bazelci_rules-1.0.0.tar.gz",
 )
 
-load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
+load("@bazelci_rules//:rbe_repo.bzl", "rbe_preconfig")
 
 # Creates a default toolchain config for RBE.
 # Use this as is if you are using the rbe_ubuntu16_04 container,
 # otherwise refer to RBE docs.
-rbe_autoconfig(name = "buildkite_config")
+rbe_preconfig(
+    name = "buildkite_config",
+    toolchain = "ubuntu1804-bazel-java11",
+)

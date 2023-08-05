@@ -1078,6 +1078,12 @@ http_archive(
     url = "https://crates.io/api/v1/crates/tinyjson/2.3.0/download",
 )
 
+# Flatbuffers
+local_repository(
+    name = "com_github_google_flatbuffers",
+    path = "third_party/flatbuffers",
+)
+
 local_repository(
     name = "rules_rust",
     path = "third_party/rules_rust",
@@ -1097,14 +1103,105 @@ rust_repository_set(
     ],
     register_toolchain = False,
     rustfmt_version = "1.70.0",
-    version = "1.70.0",
+    versions = ["1.70.0"],
 )
 
-# Flatbuffers
-local_repository(
-    name = "com_github_google_flatbuffers",
-    path = "third_party/flatbuffers",
+load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")
+
+crate_universe_dependencies()
+
+load("@rules_rust//crate_universe:defs.bzl", "crate", "crates_repository")
+
+# Run `CARGO_BAZEL_REPIN=1 bazel sync --only=crate_index` to update the lock file
+# after adding or removing any dependencies.
+crates_repository(
+    name = "crate_index",
+    annotations = {
+        "link-cplusplus": [
+            # Bazel toolchains take care of linking the C++ standard library, so don't add
+            # an extra flag via Rust by enabling the `nothing` feature. I'm not even sure
+            # it would end up on the link command line, but this crate's build.rs attempts
+            # to find a C++ compiler itself otherwise which definitely doesn't work.
+            crate.annotation(
+                crate_features = ["nothing"],
+            ),
+        ],
+        "cxx": [
+            crate.annotation(
+                additive_build_file = "@//third_party/cargo:cxx/include.BUILD.bazel",
+                extra_aliased_targets = ["cxx_cc"],
+                gen_build_script = False,
+            ),
+        ],
+        "log": [
+            crate.annotation(
+                rustc_flags = ["--cfg=atomic_cas"],
+            ),
+        ],
+    },
+    cargo_lockfile = "//:Cargo.lock",
+    generator_sha256s = {"x86_64-unknown-linux-gnu": "1987a00e7ae12c705fa010b340410230ae8a47d7d95c02900191968b2e745649"},
+    generator_urls = {
+        "x86_64-unknown-linux-gnu": "https://software.frc971.org/Build-Dependencies/cargo-bazel-x86_64-unknown-linux-gnu",
+    },
+    lockfile = "//:Cargo.Bazel.lock",
+    manifests = [
+        "//:Cargo.toml",
+        "//third_party/autocxx:Cargo.toml",
+        "//third_party/autocxx:engine/Cargo.toml",
+        "//third_party/autocxx:parser/Cargo.toml",
+        "//third_party/autocxx:gen/cmd/Cargo.toml",
+        "//third_party/autocxx:macro/Cargo.toml",
+        "//third_party/autocxx:integration-tests/Cargo.toml",
+        "@com_github_google_flatbuffers//rust:flatbuffers/Cargo.toml",
+    ],
+    rust_toolchain_cargo_template = "@rust__{triple}__{channel}_tools//:bin/{tool}",
+    rust_toolchain_rustc_template = "@rust__{triple}__{channel}_tools//:bin/{tool}",
+    rust_version = "1.70.0",
+    supported_platform_triples = [
+        "x86_64-unknown-linux-gnu",
+        "arm-unknown-linux-gnueabi",
+        "armv7-unknown-linux-gnueabihf",
+        "aarch64-unknown-linux-gnu",
+    ],
 )
+
+load("@crate_index//:defs.bzl", "crate_repositories")
+
+crate_repositories()
+
+http_archive(
+    name = "cxxbridge-cmd",
+    build_file = "//third_party/cargo:cxxbridge-cmd/include.BUILD.bazel",
+    sha256 = "df13eece12ed9e7bd4fb071a6af4c44421bb9024d339d029f5333bcdaca00000",
+    strip_prefix = "cxxbridge-cmd-1.0.100",
+    type = "tar.gz",
+    urls = ["https://crates.io/api/v1/crates/cxxbridge-cmd/1.0.100/download"],
+)
+
+crates_repository(
+    name = "cxxbridge_cmd_deps",
+    cargo_lockfile = "//third_party/cargo:cxxbridge-cmd/Cargo.lock",
+    generator_sha256s = {"x86_64-unknown-linux-gnu": "1987a00e7ae12c705fa010b340410230ae8a47d7d95c02900191968b2e745649"},
+    generator_urls = {
+        "x86_64-unknown-linux-gnu": "https://software.frc971.org/Build-Dependencies/cargo-bazel-x86_64-unknown-linux-gnu",
+    },
+    lockfile = "//third_party/cargo:cxxbridge-cmd/Cargo.Bazel.lock",
+    manifests = ["@cxxbridge-cmd//:Cargo.toml"],
+    rust_toolchain_cargo_template = "@rust__{triple}__{channel}_tools//:bin/{tool}",
+    rust_toolchain_rustc_template = "@rust__{triple}__{channel}_tools//:bin/{tool}",
+    rust_version = "1.70.0",
+    supported_platform_triples = [
+        "x86_64-unknown-linux-gnu",
+        "arm-unknown-linux-gnueabi",
+        "armv7-unknown-linux-gnueabihf",
+        "aarch64-unknown-linux-gnu",
+    ],
+)
+
+load("@cxxbridge_cmd_deps//:defs.bzl", cxxbridge_cmd_deps = "crate_repositories")
+
+cxxbridge_cmd_deps()
 
 http_file(
     name = "sample_logfile",
@@ -1386,38 +1483,6 @@ http_file(
     sha256 = "ae745dd09cf4c9570c1c038a72630c07b073f0ed4b05983d64108ff748a40d3f",
     urls = ["https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.22/mcap-linux-amd64"],
 )
-
-http_archive(
-    name = "cargo_raze",
-    patches = ["@//third_party/cargo_raze:cargo_raze.patch"],
-    sha256 = "08bfc8859ff686ecb55005a3c4a9cf790115de0abdbcc69cf57b15be0745a859",
-    strip_prefix = "cargo-raze-0.14.2",
-    url = "https://github.com/google/cargo-raze/archive/v0.14.2.tar.gz",
-)
-
-http_archive(
-    name = "rules_foreign_cc",
-    patch_args = ["-p1"],
-    patches = ["@//third_party/rules_foreign_cc:backport_d93bd96dc719760c968b54730258ad0a5b10f8fb.patch"],
-    sha256 = "69023642d5781c68911beda769f91fcbc8ca48711db935a75da7f6536b65047f",
-    strip_prefix = "rules_foreign_cc-0.6.0",
-    url = "https://github.com/bazelbuild/rules_foreign_cc/archive/0.6.0.tar.gz",
-)
-
-load("@cargo_raze//:repositories.bzl", "cargo_raze_repositories")
-
-cargo_raze_repositories()
-
-# cargo_raze_transitive_deps wants to do `rust_repositories`, which we do
-# manually to get the right platforms. rules_foreign_cc is currently the only
-# other thing it has, so just do that manually.
-load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
-
-rules_foreign_cc_dependencies()
-
-load("//third_party/cargo:crates.bzl", "raze_fetch_remote_crates")
-
-raze_fetch_remote_crates()
 
 http_archive(
     name = "com_github_zaphoyd_websocketpp",

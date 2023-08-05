@@ -32,7 +32,7 @@ fn run_buildrs() -> Result<(), String> {
     let exec_root = env::current_dir().expect("Failed to get current directory");
     let manifest_dir_env = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR was not set");
     let rustc_env = env::var("RUSTC").expect("RUSTC was not set");
-    let manifest_dir = exec_root.join(&manifest_dir_env);
+    let manifest_dir = exec_root.join(manifest_dir_env);
     let rustc = exec_root.join(&rustc_env);
     let Options {
         progname,
@@ -48,15 +48,36 @@ fn run_buildrs() -> Result<(), String> {
         input_dep_env_paths,
     } = parse_args()?;
 
-    let out_dir_abs = exec_root.join(&out_dir);
+    let out_dir_abs = exec_root.join(out_dir);
     // For some reason Google's RBE does not create the output directory, force create it.
     create_dir_all(&out_dir_abs)
         .unwrap_or_else(|_| panic!("Failed to make output directory: {:?}", out_dir_abs));
 
+    if should_symlink_exec_root() {
+        // Symlink the execroot to the manifest_dir so that we can use relative paths in the arguments.
+        let exec_root_paths = std::fs::read_dir(&exec_root)
+            .map_err(|err| format!("Failed while listing exec root: {err:?}"))?;
+        for path in exec_root_paths {
+            let path = path
+                .map_err(|err| {
+                    format!("Failed while getting path from exec root listing: {err:?}")
+                })?
+                .path();
+
+            let file_name = path
+                .file_name()
+                .ok_or_else(|| "Failed while getting file name".to_string())?;
+            let link = manifest_dir.join(file_name);
+
+            symlink_if_not_exists(&path, &link)
+                .map_err(|err| format!("Failed to symlink {path:?} to {link:?}: {err}"))?;
+        }
+    }
+
     let target_env_vars =
         get_target_env_vars(&rustc_env).expect("Error getting target env vars from rustc");
 
-    let mut command = Command::new(exec_root.join(&progname));
+    let mut command = Command::new(exec_root.join(progname));
     command
         .current_dir(&manifest_dir)
         .envs(target_env_vars)
@@ -127,7 +148,7 @@ fn run_buildrs() -> Result<(), String> {
         format!(
             "Build script process failed{}\n--stdout:\n{}\n--stderr:\n{}",
             if let Some(exit_code) = process_output.status.code() {
-                format!(" with exit code {}", exit_code)
+                format!(" with exit code {exit_code}")
             } else {
                 String::new()
             },
@@ -172,6 +193,42 @@ fn run_buildrs() -> Result<(), String> {
     write(&link_search_paths_file, link_search_paths.as_bytes())
         .unwrap_or_else(|_| panic!("Unable to write file {:?}", link_search_paths_file));
     Ok(())
+}
+
+fn should_symlink_exec_root() -> bool {
+    env::var("RULES_RUST_SYMLINK_EXEC_ROOT")
+        .map(|s| s == "1")
+        .unwrap_or(false)
+}
+
+/// Create a symlink from `link` to `original` if `link` doesn't already exist.
+#[cfg(windows)]
+fn symlink_if_not_exists(original: &Path, link: &Path) -> Result<(), String> {
+    if original.is_dir() {
+        std::os::windows::fs::symlink_dir(original, link)
+            .or_else(swallow_already_exists)
+            .map_err(|err| format!("Failed to create directory symlink: {err}"))
+    } else {
+        std::os::windows::fs::symlink_file(original, link)
+            .or_else(swallow_already_exists)
+            .map_err(|err| format!("Failed to create file symlink: {err}"))
+    }
+}
+
+/// Create a symlink from `link` to `original` if `link` doesn't already exist.
+#[cfg(not(windows))]
+fn symlink_if_not_exists(original: &Path, link: &Path) -> Result<(), String> {
+    std::os::unix::fs::symlink(original, link)
+        .or_else(swallow_already_exists)
+        .map_err(|err| format!("Failed to create symlink: {err}"))
+}
+
+fn swallow_already_exists(err: std::io::Error) -> std::io::Result<()> {
+    if err.kind() == std::io::ErrorKind::AlreadyExists {
+        Ok(())
+    } else {
+        Err(err)
+    }
 }
 
 /// A representation of expected command line arguments.
@@ -236,15 +293,14 @@ fn get_target_env_vars<P: AsRef<Path>>(rustc: &P) -> Result<BTreeMap<String, Str
             env::var("TARGET").expect("missing TARGET")
         ))
         .output()
-        .map_err(|err| format!("Error running rustc to get target information: {}", err))?;
+        .map_err(|err| format!("Error running rustc to get target information: {err}"))?;
     if !output.status.success() {
         return Err(format!(
-            "Error running rustc to get target information: {:?}",
-            output
+            "Error running rustc to get target information: {output:?}",
         ));
     }
     let stdout = std::str::from_utf8(&output.stdout)
-        .map_err(|err| format!("Non-UTF8 stdout from rustc: {:?}", err))?;
+        .map_err(|err| format!("Non-UTF8 stdout from rustc: {err:?}"))?;
 
     Ok(parse_rustc_cfg_output(stdout))
 }
@@ -280,7 +336,7 @@ fn main() {
         Ok(_) => 0,
         Err(err) => {
             // Neatly print errors
-            eprintln!("{}", err);
+            eprintln!("{err}");
             1
         }
     });
