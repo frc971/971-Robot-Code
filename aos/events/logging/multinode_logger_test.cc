@@ -509,7 +509,7 @@ TEST_P(MultinodeLoggerTest, MultiNodeRemapMutateCallback) {
     pi2_logger.AppendAllFilenames(&actual_filenames);
   }
 
-  const std::vector<LogFile> sorted_parts = SortParts(logfiles_);
+  const std::vector<LogFile> sorted_parts = SortParts(actual_filenames);
   EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
 
   LogReader reader(sorted_parts, &config_.message());
@@ -583,7 +583,7 @@ TEST_P(MultinodeLoggerTest, MultiNodeMutateCallback) {
     pi2_logger.AppendAllFilenames(&actual_filenames);
   }
 
-  const std::vector<LogFile> sorted_parts = SortParts(logfiles_);
+  const std::vector<LogFile> sorted_parts = SortParts(actual_filenames);
   EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
 
   LogReader reader(sorted_parts, &config_.message());
@@ -638,6 +638,8 @@ TEST_P(MultinodeLoggerTest, MultiNodeMutateCallback) {
 // is forwarded
 TEST_P(MultinodeLoggerTest, OnlyDoBeforeSendCallbackOnSenderNode) {
   time_converter_.StartEqual();
+
+  std::vector<std::string> filenames;
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
     LoggerState pi2_logger = MakeLogger(pi2_);
@@ -648,9 +650,12 @@ TEST_P(MultinodeLoggerTest, OnlyDoBeforeSendCallbackOnSenderNode) {
     StartLogger(&pi2_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
+
+    pi1_logger.AppendAllFilenames(&filenames);
+    pi2_logger.AppendAllFilenames(&filenames);
   }
 
-  const std::vector<LogFile> sorted_parts = SortParts(logfiles_);
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
   EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
   LogReader reader(sorted_parts);
 
@@ -725,7 +730,7 @@ TEST_P(MultinodeLoggerDeathTest, AddCallbackAfterRegister) {
     pi2_logger.AppendAllFilenames(&actual_filenames);
   }
 
-  const std::vector<LogFile> sorted_parts = SortParts(logfiles_);
+  const std::vector<LogFile> sorted_parts = SortParts(actual_filenames);
   EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
 
   LogReader reader(sorted_parts, &config_.message());
@@ -745,6 +750,8 @@ TEST_P(MultinodeLoggerDeathTest, AddCallbackAfterRegister) {
 // the LogReader constructor.
 TEST_P(MultinodeLoggerDeathTest, MultiNodeBadReplayConfig) {
   time_converter_.StartEqual();
+
+  std::vector<std::string> filenames;
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
     LoggerState pi2_logger = MakeLogger(pi2_);
@@ -755,6 +762,9 @@ TEST_P(MultinodeLoggerDeathTest, MultiNodeBadReplayConfig) {
     StartLogger(&pi2_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
+
+    pi1_logger.AppendAllFilenames(&filenames);
+    pi2_logger.AppendAllFilenames(&filenames);
   }
 
   // Test that, if we add an additional node to the replay config that the
@@ -769,7 +779,7 @@ TEST_P(MultinodeLoggerDeathTest, MultiNodeBadReplayConfig) {
         }
       )");
 
-  const std::vector<LogFile> sorted_parts = SortParts(logfiles_);
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
   EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
   EXPECT_DEATH(LogReader(sorted_parts, &extra_nodes_config.message()),
                "Log file and replay config need to have matching nodes lists.");
@@ -915,6 +925,7 @@ TEST_P(MultinodeLoggerTest, MismatchedClocks) {
   const chrono::nanoseconds logger_run3 = time_converter_.AddMonotonic(
       {chrono::milliseconds(400), chrono::milliseconds(400)});
 
+  std::vector<std::string> actual_filenames;
   {
     LoggerState pi2_logger = MakeLogger(pi2_);
 
@@ -955,14 +966,17 @@ TEST_P(MultinodeLoggerTest, MismatchedClocks) {
           (pi2_->monotonic_now() - pi1_->monotonic_now()) - initial_pi2_offset,
           event_loop_factory_.send_delay() +
               event_loop_factory_.network_delay());
+
+      pi1_logger.AppendAllFilenames(&actual_filenames);
     }
 
     // And log a bit more on pi2.
     event_loop_factory_.RunFor(logger_run3);
+
+    pi2_logger.AppendAllFilenames(&actual_filenames);
   }
 
-  const std::vector<LogFile> sorted_parts =
-      SortParts(MakeLogFiles(logfile_base1_, logfile_base2_, 1, 1, 2, 2));
+  const std::vector<LogFile> sorted_parts = SortParts(actual_filenames);
   EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
   LogReader reader(sorted_parts);
 
@@ -1088,6 +1102,8 @@ TEST_P(MultinodeLoggerTest, SortParts) {
 // Tests that we can sort a bunch of parts with an empty part.  We should ignore
 // it and remove it from the sorted list.
 TEST_P(MultinodeLoggerTest, SortEmptyParts) {
+  std::vector<std::string> actual_filenames;
+
   time_converter_.StartEqual();
   // Make a bunch of parts.
   {
@@ -1100,15 +1116,17 @@ TEST_P(MultinodeLoggerTest, SortEmptyParts) {
     StartLogger(&pi2_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(2000));
+    pi1_logger.AppendAllFilenames(&actual_filenames);
+    pi2_logger.AppendAllFilenames(&actual_filenames);
   }
 
   // TODO(austin): Should we flip out if the file can't open?
   const std::string kEmptyFile("foobarinvalidfiledoesnotexist" + Extension());
 
   aos::util::WriteStringToFileOrDie(kEmptyFile, "");
-  logfiles_.emplace_back(kEmptyFile);
+  actual_filenames.emplace_back(kEmptyFile);
 
-  const std::vector<LogFile> sorted_parts = SortParts(logfiles_);
+  const std::vector<LogFile> sorted_parts = SortParts(actual_filenames);
   VerifyParts(sorted_parts, {kEmptyFile});
 }
 
@@ -1153,6 +1171,8 @@ TEST_P(MultinodeLoggerTest, SortTruncatedParts) {
 // Tests that if we remap a logged channel, it shows up correctly.
 TEST_P(MultinodeLoggerTest, RemapLoggedChannel) {
   time_converter_.StartEqual();
+
+  std::vector<std::string> filenames;
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
     LoggerState pi2_logger = MakeLogger(pi2_);
@@ -1163,9 +1183,12 @@ TEST_P(MultinodeLoggerTest, RemapLoggedChannel) {
     StartLogger(&pi2_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
+
+    pi1_logger.AppendAllFilenames(&filenames);
+    pi2_logger.AppendAllFilenames(&filenames);
   }
 
-  const std::vector<LogFile> sorted_parts = SortParts(logfiles_);
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
   EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
   LogReader reader(sorted_parts);
 
@@ -1534,6 +1557,8 @@ TEST_P(MultinodeLoggerTest, RenameForwardedLoggedChannel) {
 TEST_P(MultinodeLoggerTest, SingleNodeReplay) {
   time_converter_.StartEqual();
   constexpr chrono::milliseconds kStartupDelay(95);
+  std::vector<std::string> filenames;
+
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
     LoggerState pi2_logger = MakeLogger(pi2_);
@@ -1544,10 +1569,13 @@ TEST_P(MultinodeLoggerTest, SingleNodeReplay) {
     StartLogger(&pi2_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(20000));
+
+    pi1_logger.AppendAllFilenames(&filenames);
+    pi2_logger.AppendAllFilenames(&filenames);
   }
 
-  LogReader full_reader(SortParts(logfiles_));
-  LogReader single_node_reader(SortParts(logfiles_));
+  LogReader full_reader(SortParts(filenames));
+  LogReader single_node_reader(SortParts(filenames));
 
   SimulatedEventLoopFactory full_factory(full_reader.configuration());
   SimulatedEventLoopFactory single_node_factory(
@@ -1927,8 +1955,8 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
     LoggerState pi2_logger = MakeLogger(
         log_reader_factory.GetNodeEventLoopFactory("pi2"), &log_reader_factory);
 
-    StartLogger(&pi1_logger, tmp_dir_ + "/relogged1");
-    StartLogger(&pi2_logger, tmp_dir_ + "/relogged2");
+    StartLogger(&pi1_logger, tmp_dir_ + "/logs/relogged1");
+    StartLogger(&pi2_logger, tmp_dir_ + "/logs/relogged2");
 
     log_reader_factory.Run();
   }
@@ -1938,8 +1966,9 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
   // And verify that we can run the LogReader over the relogged files without
   // hitting any fatal errors.
   {
-    LogReader relogged_reader(SortParts(MakeLogFiles(
-        tmp_dir_ + "/relogged1", tmp_dir_ + "/relogged2", 1, 1, 2, 2, true)));
+    LogReader relogged_reader(SortParts(
+        MakeLogFiles(tmp_dir_ + "/logs/relogged1", tmp_dir_ + "/logs/relogged2",
+                     1, 1, 2, 2, true)));
     relogged_reader.Register();
 
     relogged_reader.event_loop_factory()->Run();
@@ -1948,8 +1977,8 @@ TEST_P(MultinodeLoggerTest, MessageHeader) {
   // configuration.
   {
     LogReader relogged_reader(
-        SortParts(MakeLogFiles(tmp_dir_ + "/relogged1", tmp_dir_ + "/relogged2",
-                               1, 1, 2, 2, true)),
+        SortParts(MakeLogFiles(tmp_dir_ + "/logs/relogged1",
+                               tmp_dir_ + "/logs/relogged2", 1, 1, 2, 2, true)),
         reader.configuration());
     relogged_reader.Register();
 
@@ -1979,7 +2008,7 @@ TEST_P(MultinodeLoggerTest, LoggerStartTime) {
   ASSERT_THAT(actual_filenames,
               ::testing::UnorderedElementsAreArray(logfiles_));
 
-  for (const LogFile &log_file : SortParts(logfiles_)) {
+  for (const LogFile &log_file : SortParts(actual_filenames)) {
     for (const LogParts &log_part : log_file.parts) {
       if (log_part.node == log_file.logger_node) {
         EXPECT_EQ(log_part.logger_monotonic_start_time,
@@ -2003,13 +2032,11 @@ TEST_P(MultinodeLoggerTest, LoggerStartTime) {
 
 // Test that renaming the base, renames the folder.
 TEST_P(MultinodeLoggerTest, LoggerRenameFolder) {
-  util::UnlinkRecursive(tmp_dir_ + "/renamefolder");
-  util::UnlinkRecursive(tmp_dir_ + "/new-good");
   time_converter_.AddMonotonic(
       {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
-  logfile_base1_ = tmp_dir_ + "/renamefolder/multi_logfile1";
-  logfile_base2_ = tmp_dir_ + "/renamefolder/multi_logfile2";
-  logfiles_ = MakeLogFiles(logfile_base1_, logfile_base2_);
+  logfile_base1_ = tmp_dir_ + "/logs/renamefolder/multi_logfile1";
+  logfile_base2_ = tmp_dir_ + "/logs/renamefolder/multi_logfile2";
+
   LoggerState pi1_logger = MakeLogger(pi1_);
   LoggerState pi2_logger = MakeLogger(pi2_);
 
@@ -2017,8 +2044,8 @@ TEST_P(MultinodeLoggerTest, LoggerRenameFolder) {
   StartLogger(&pi2_logger);
 
   event_loop_factory_.RunFor(chrono::milliseconds(10000));
-  logfile_base1_ = tmp_dir_ + "/new-good/multi_logfile1";
-  logfile_base2_ = tmp_dir_ + "/new-good/multi_logfile2";
+  logfile_base1_ = tmp_dir_ + "/logs/new-good/multi_logfile1";
+  logfile_base2_ = tmp_dir_ + "/logs/new-good/multi_logfile2";
   logfiles_ = MakeLogFiles(logfile_base1_, logfile_base2_);
 
   // Sequence of set_base_name and Rotate simulates rename operation. Since
@@ -2040,14 +2067,13 @@ TEST_P(MultinodeLoggerTest, LoggerRenameFolder) {
 TEST_P(MultinodeLoggerDeathTest, LoggerRenameFile) {
   time_converter_.AddMonotonic(
       {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
-  util::UnlinkRecursive(tmp_dir_ + "/renamefile");
-  logfile_base1_ = tmp_dir_ + "/renamefile/multi_logfile1";
-  logfile_base2_ = tmp_dir_ + "/renamefile/multi_logfile2";
-  logfiles_ = MakeLogFiles(logfile_base1_, logfile_base2_);
+  logfile_base1_ = tmp_dir_ + "/logs/renamefile/multi_logfile1";
+  logfile_base2_ = tmp_dir_ + "/logs/renamefile/multi_logfile2";
+
   LoggerState pi1_logger = MakeLogger(pi1_);
   StartLogger(&pi1_logger);
   event_loop_factory_.RunFor(chrono::milliseconds(10000));
-  logfile_base1_ = tmp_dir_ + "/new-renamefile/new_multi_logfile1";
+  logfile_base1_ = tmp_dir_ + "/logs/new-renamefile/new_multi_logfile1";
   EXPECT_DEATH({ pi1_logger.log_namer->set_base_name(logfile_base1_); },
                "Rename of file base from");
 }
@@ -2818,6 +2844,8 @@ TEST_P(MultinodeLoggerTest, RemoteRebootOnlyTimestamps) {
 // Tests that we properly handle one direction of message_bridge being
 // unavailable.
 TEST_P(MultinodeLoggerTest, OneDirectionWithNegativeSlope) {
+  std::vector<std::string> actual_filenames;
+
   pi1_->Disconnect(pi2_->node());
   time_converter_.AddMonotonic(
       {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
@@ -2833,11 +2861,12 @@ TEST_P(MultinodeLoggerTest, OneDirectionWithNegativeSlope) {
     StartLogger(&pi1_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
+    pi1_logger.AppendAllFilenames(&actual_filenames);
   }
 
   // Confirm that we can parse the result.  LogReader has enough internal
   // CHECKs to confirm the right thing happened.
-  ConfirmReadable(pi1_single_direction_logfiles_);
+  ConfirmReadable(actual_filenames);
 }
 
 // Tests that we properly handle one direction of message_bridge being
@@ -2850,6 +2879,8 @@ TEST_P(MultinodeLoggerTest, OneDirectionWithPositiveSlope) {
   time_converter_.AddMonotonic(
       {chrono::milliseconds(10000),
        chrono::milliseconds(10000) + chrono::milliseconds(1)});
+
+  std::vector<std::string> filenames;
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
 
@@ -2858,11 +2889,12 @@ TEST_P(MultinodeLoggerTest, OneDirectionWithPositiveSlope) {
     StartLogger(&pi1_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
+    pi1_logger.AppendAllFilenames(&filenames);
   }
 
   // Confirm that we can parse the result.  LogReader has enough internal
   // CHECKs to confirm the right thing happened.
-  ConfirmReadable(pi1_single_direction_logfiles_);
+  ConfirmReadable(filenames);
 }
 
 // Tests that we explode if someone passes in a part file twice with a better
@@ -2870,6 +2902,8 @@ TEST_P(MultinodeLoggerTest, OneDirectionWithPositiveSlope) {
 TEST_P(MultinodeLoggerTest, DuplicateLogFiles) {
   time_converter_.AddMonotonic(
       {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
+
+  std::vector<std::string> filenames;
   {
     LoggerState pi1_logger = MakeLogger(pi1_);
 
@@ -2878,10 +2912,12 @@ TEST_P(MultinodeLoggerTest, DuplicateLogFiles) {
     StartLogger(&pi1_logger);
 
     event_loop_factory_.RunFor(chrono::milliseconds(10000));
+
+    pi1_logger.AppendAllFilenames(&filenames);
   }
 
   std::vector<std::string> duplicates;
-  for (const std::string &f : pi1_single_direction_logfiles_) {
+  for (const std::string &f : filenames) {
     duplicates.emplace_back(f);
     duplicates.emplace_back(f);
   }
@@ -3058,17 +3094,14 @@ TEST(MultinodeRebootLoggerTest, StartTimeBeforeData) {
       event_loop_factory.configuration(), pi3->node());
 
   const std::string kLogfile1_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile1/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile1/";
   const std::string kLogfile2_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.1/";
   const std::string kLogfile2_2 =
-      aos::testing::TestTmpDir() + "/multi_logfile2.2/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.2/";
   const std::string kLogfile3_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile3/";
-  util::UnlinkRecursive(kLogfile1_1);
-  util::UnlinkRecursive(kLogfile2_1);
-  util::UnlinkRecursive(kLogfile2_2);
-  util::UnlinkRecursive(kLogfile3_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile3/";
+
   const UUID pi1_boot0 = UUID::Random();
   const UUID pi2_boot0 = UUID::Random();
   const UUID pi2_boot1 = UUID::Random();
@@ -3228,17 +3261,13 @@ TEST(MultinodeRebootLoggerTest,
       event_loop_factory.configuration(), pi3->node());
 
   const std::string kLogfile1_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile1/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile1/";
   const std::string kLogfile2_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.1/";
   const std::string kLogfile2_2 =
-      aos::testing::TestTmpDir() + "/multi_logfile2.2/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.2/";
   const std::string kLogfile3_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile3/";
-  util::UnlinkRecursive(kLogfile1_1);
-  util::UnlinkRecursive(kLogfile2_1);
-  util::UnlinkRecursive(kLogfile2_2);
-  util::UnlinkRecursive(kLogfile3_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile3/";
   const UUID pi1_boot0 = UUID::Random();
   const UUID pi2_boot0 = UUID::Random();
   const UUID pi2_boot1 = UUID::Random();
@@ -3405,17 +3434,13 @@ TEST(MultinodeRebootLoggerTest, RebootStartStopTimes) {
       event_loop_factory.configuration(), pi3->node());
 
   const std::string kLogfile1_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile1/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile1/";
   const std::string kLogfile2_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.1/";
   const std::string kLogfile2_2 =
-      aos::testing::TestTmpDir() + "/multi_logfile2.2/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.2/";
   const std::string kLogfile3_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile3/";
-  util::UnlinkRecursive(kLogfile1_1);
-  util::UnlinkRecursive(kLogfile2_1);
-  util::UnlinkRecursive(kLogfile2_2);
-  util::UnlinkRecursive(kLogfile3_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile3/";
   {
     CHECK_EQ(pi1_index, 0u);
     CHECK_EQ(pi2_index, 1u);
@@ -3576,11 +3601,9 @@ TEST(MissingDirectionTest, OneDirection) {
   }
 
   const std::string kLogfile2_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.1/";
   const std::string kLogfile1_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile1.1/";
-  util::UnlinkRecursive(kLogfile2_1);
-  util::UnlinkRecursive(kLogfile1_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile1.1/";
 
   pi2->Disconnect(pi1->node());
 
@@ -3650,8 +3673,7 @@ TEST(MissingDirectionTest, OneDirectionAfterReboot) {
   }
 
   const std::string kLogfile2_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
-  util::UnlinkRecursive(kLogfile2_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.1/";
 
   pi1->AlwaysStart<Ping>("ping");
 
@@ -3720,8 +3742,7 @@ TEST(MissingDirectionTest, OneDirectionAfterRebootReliable) {
   }
 
   const std::string kLogfile2_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
-  util::UnlinkRecursive(kLogfile2_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.1/";
 
   pi1->AlwaysStart<Ping>("ping");
 
@@ -3790,8 +3811,7 @@ TEST(MissingDirectionTest, OneDirectionAfterRebootMixedCase1) {
   }
 
   const std::string kLogfile2_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
-  util::UnlinkRecursive(kLogfile2_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.1/";
 
   // The following sequence using the above reference config creates
   // a reliable message timestamp < unreliable message timestamp.
@@ -3861,8 +3881,7 @@ TEST(MissingDirectionTest, OneDirectionAfterRebootMixedCase2) {
   }
 
   const std::string kLogfile2_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
-  util::UnlinkRecursive(kLogfile2_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.1/";
 
   // The following sequence using the above reference config creates
   // an unreliable message timestamp < reliable message timestamp.
@@ -3926,8 +3945,7 @@ TEST_P(MultinodeLoggerTest, OneDirectionTimeDrift) {
            chrono::milliseconds(10000) + chrono::milliseconds(5)});
 
   const std::string kLogfile =
-      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
-  util::UnlinkRecursive(kLogfile);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.1/";
 
   {
     LoggerState pi2_logger = MakeLogger(pi2_);
@@ -3969,7 +3987,7 @@ TEST_P(MultinodeLoggerTest, StartOneNodeBeforeOther) {
       {chrono::milliseconds(10000), chrono::milliseconds(10000)});
 
   const std::string kLogfile =
-      aos::testing::TestTmpDir() + "/multi_logfile2.1/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2.1/";
   util::UnlinkRecursive(kLogfile);
 
   pi2_->Disconnect(pi1_->node());
@@ -4036,14 +4054,11 @@ TEST(MultinodeLoggerLoopTest, Loop) {
       event_loop_factory.GetNodeEventLoopFactory("pi3");
 
   const std::string kLogfile1_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile1/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile1/";
   const std::string kLogfile2_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile2/";
+      aos::testing::TestTmpDir() + "/logs/multi_logfile2/";
   const std::string kLogfile3_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile3/";
-  util::UnlinkRecursive(kLogfile1_1);
-  util::UnlinkRecursive(kLogfile2_1);
-  util::UnlinkRecursive(kLogfile3_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile3/";
 
   {
     // Make pi1 boot before everything else.
@@ -4159,6 +4174,9 @@ TEST_P(MultinodeLoggerTest, RestartLogging) {
 // Tests that when we have evidence of 2 boots, and then start logging, the
 // max_out_of_order_duration ends up reasonable on the boot with the start time.
 TEST(MultinodeLoggerLoopTest, PreviousBootData) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_reboot_ooo_config.json"));
@@ -4172,8 +4190,7 @@ TEST(MultinodeLoggerLoopTest, PreviousBootData) {
   const UUID pi2_boot1 = UUID::Random();
 
   const std::string kLogfile1_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile1/";
-  util::UnlinkRecursive(kLogfile1_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile1/";
 
   {
     constexpr size_t kPi1Index = 0;
@@ -4272,6 +4289,9 @@ TEST(MultinodeLoggerLoopTest, PreviousBootData) {
 // Tests that when we start without a connection, and then start logging, the
 // max_out_of_order_duration ends up reasonable.
 TEST(MultinodeLoggerLoopTest, StartDisconnected) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_reboot_ooo_config.json"));
@@ -4283,8 +4303,7 @@ TEST(MultinodeLoggerLoopTest, StartDisconnected) {
   time_converter.StartEqual();
 
   const std::string kLogfile1_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile1/";
-  util::UnlinkRecursive(kLogfile1_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile1/";
 
   NodeEventLoopFactory *const pi1 =
       event_loop_factory.GetNodeEventLoopFactory("pi1");
@@ -4395,6 +4414,9 @@ class PongSender {
 
 // Tests that we log correctly as nodes connect slowly.
 TEST(MultinodeLoggerLoopTest, StaggeredConnect) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_pi3_pingpong_config.json"));
@@ -4406,8 +4428,7 @@ TEST(MultinodeLoggerLoopTest, StaggeredConnect) {
   time_converter.StartEqual();
 
   const std::string kLogfile1_1 =
-      aos::testing::TestTmpDir() + "/multi_logfile1/";
-  util::UnlinkRecursive(kLogfile1_1);
+      aos::testing::TestTmpDir() + "/logs/multi_logfile1/";
 
   NodeEventLoopFactory *const pi1 =
       event_loop_factory.GetNodeEventLoopFactory("pi1");

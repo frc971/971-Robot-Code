@@ -94,30 +94,16 @@ MultinodeLoggerTest::MultinodeLoggerTest()
       pi2_index_(configuration::GetNodeIndex(
           event_loop_factory_.configuration(), pi2_->node())),
       tmp_dir_(aos::testing::TestTmpDir()),
-      logfile_base1_(tmp_dir_ + "/multi_logfile1"),
-      logfile_base2_(tmp_dir_ + "/multi_logfile2"),
+      logfile_base1_(tmp_dir_ + "/logs/multi_logfile1"),
+      logfile_base2_(tmp_dir_ + "/logs/multi_logfile2"),
       pi1_reboot_logfiles_(MakePi1RebootLogfiles()),
       logfiles_(MakeLogFiles(logfile_base1_, logfile_base2_)),
-      pi1_single_direction_logfiles_(MakePi1SingleDirectionLogfiles()),
       structured_logfiles_(StructureLogFiles()) {
+  util::UnlinkRecursive(tmp_dir_ + "/logs");
+  std::filesystem::create_directory(tmp_dir_ + "/logs");
+
   LOG(INFO) << "Config " << std::get<0>(GetParam()).config;
   event_loop_factory_.SetTimeConverter(&time_converter_);
-
-  // Go through and remove the logfiles if they already exist.
-  for (const auto &file : logfiles_) {
-    unlink(file.c_str());
-    unlink((file + ".xz").c_str());
-  }
-
-  for (const auto &file :
-       MakeLogFiles(tmp_dir_ + "/relogged1", tmp_dir_ + "/relogged2", 3, 3, 3,
-                    3, true)) {
-    unlink(file.c_str());
-  }
-
-  for (const auto &file : pi1_reboot_logfiles_) {
-    unlink(file.c_str());
-  }
 
   LOG(INFO) << "Logging data to " << logfiles_[0] << ", " << logfiles_[1]
             << " and " << logfiles_[2];
@@ -200,15 +186,6 @@ std::vector<std::string> MultinodeLoggerTest::MakePi1RebootLogfiles() {
     result.emplace_back(absl::StrCat(
         logfile_base1_, "_timestamps/remote_pi2.part", i, Extension()));
   }
-  return result;
-}
-
-std::vector<std::string> MultinodeLoggerTest::MakePi1SingleDirectionLogfiles() {
-  std::vector<std::string> result;
-  result.emplace_back(logfile_base1_ + "_pi1_data.part0" + Extension());
-  result.emplace_back(logfile_base1_ + "_pi1_timestamps.part0" + Extension());
-  result.emplace_back(absl::StrCat(
-      logfile_base1_, "_", std::get<0>(GetParam()).sha256, Extension()));
   return result;
 }
 

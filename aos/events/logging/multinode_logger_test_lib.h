@@ -129,8 +129,6 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
 
   std::vector<std::string> MakePi1RebootLogfiles();
 
-  std::vector<std::string> MakePi1SingleDirectionLogfiles();
-
   std::vector<std::string> MakePi1DeadNodeLogfiles();
 
   std::vector<std::vector<std::string>> StructureLogFiles();
@@ -163,7 +161,6 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
   std::string logfile_base2_;
   std::vector<std::string> pi1_reboot_logfiles_;
   std::vector<std::string> logfiles_;
-  std::vector<std::string> pi1_single_direction_logfiles_;
 
   std::vector<std::vector<std::string>> structured_logfiles_;
 };
