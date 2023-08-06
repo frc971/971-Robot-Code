@@ -26,7 +26,7 @@
 #include "ctre/phoenix/cci/Diagnostics_CCI.h"
 #include "ctre/phoenix/motorcontrol/can/TalonFX.h"
 #include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
-#include "ctre/phoenixpro/TalonFX.hpp"
+#include "ctre/phoenix6/TalonFX.hpp"
 
 #include "aos/commonmath.h"
 #include "aos/containers/sized_array.h"
@@ -121,7 +121,7 @@ static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
 class Falcon {
  public:
   Falcon(int device_id, std::string canbus,
-         std::vector<ctre::phoenixpro::BaseStatusSignalValue *> *signals)
+         std::vector<ctre::phoenix6::BaseStatusSignal *> *signals)
       : talon_(device_id, canbus),
         device_id_(device_id),
         device_temp_(talon_.GetDeviceTemp()),
@@ -152,7 +152,7 @@ class Falcon {
   }
 
   void PrintConfigs() {
-    ctre::phoenixpro::configs::TalonFXConfiguration configuration;
+    ctre::phoenix6::configs::TalonFXConfiguration configuration;
     ctre::phoenix::StatusCode status =
         talon_.GetConfigurator().Refresh(configuration);
     if (!status.IsOK()) {
@@ -162,10 +162,10 @@ class Falcon {
     AOS_LOG(INFO, "configuration: %s", configuration.ToString().c_str());
   }
 
-  void WriteConfigs(ctre::phoenixpro::signals::InvertedValue invert) {
+  void WriteConfigs(ctre::phoenix6::signals::InvertedValue invert) {
     inverted_ = invert;
 
-    ctre::phoenixpro::configs::CurrentLimitsConfigs current_limits;
+    ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
     current_limits.StatorCurrentLimit =
         constants::Values::kDrivetrainStatorCurrentLimit();
     current_limits.StatorCurrentLimitEnable = true;
@@ -173,14 +173,14 @@ class Falcon {
         constants::Values::kDrivetrainSupplyCurrentLimit();
     current_limits.SupplyCurrentLimitEnable = true;
 
-    ctre::phoenixpro::configs::MotorOutputConfigs output_configs;
+    ctre::phoenix6::configs::MotorOutputConfigs output_configs;
     output_configs.NeutralMode =
-        ctre::phoenixpro::signals::NeutralModeValue::Brake;
+        ctre::phoenix6::signals::NeutralModeValue::Brake;
     output_configs.DutyCycleNeutralDeadband = 0;
 
     output_configs.Inverted = inverted_;
 
-    ctre::phoenixpro::configs::TalonFXConfiguration configuration;
+    ctre::phoenix6::configs::TalonFXConfiguration configuration;
     configuration.CurrentLimits = current_limits;
     configuration.MotorOutput = output_configs;
 
@@ -195,7 +195,7 @@ class Falcon {
   }
 
   void WriteRollerConfigs() {
-    ctre::phoenixpro::configs::CurrentLimitsConfigs current_limits;
+    ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
     current_limits.StatorCurrentLimit =
         constants::Values::kRollerStatorCurrentLimit();
     current_limits.StatorCurrentLimitEnable = true;
@@ -203,12 +203,12 @@ class Falcon {
         constants::Values::kRollerSupplyCurrentLimit();
     current_limits.SupplyCurrentLimitEnable = true;
 
-    ctre::phoenixpro::configs::MotorOutputConfigs output_configs;
+    ctre::phoenix6::configs::MotorOutputConfigs output_configs;
     output_configs.NeutralMode =
-        ctre::phoenixpro::signals::NeutralModeValue::Brake;
+        ctre::phoenix6::signals::NeutralModeValue::Brake;
     output_configs.DutyCycleNeutralDeadband = 0;
 
-    ctre::phoenixpro::configs::TalonFXConfiguration configuration;
+    ctre::phoenix6::configs::TalonFXConfiguration configuration;
     configuration.CurrentLimits = current_limits;
     configuration.MotorOutput = output_configs;
 
@@ -222,7 +222,7 @@ class Falcon {
     PrintConfigs();
   }
 
-  ctre::phoenixpro::hardware::TalonFX *talon() { return &talon_; }
+  ctre::phoenix6::hardware::TalonFX *talon() { return &talon_; }
 
   flatbuffers::Offset<frc971::control_loops::CANFalcon> WritePosition(
       flatbuffers::FlatBufferBuilder *fbb) {
@@ -235,8 +235,7 @@ class Falcon {
     builder.add_duty_cycle(duty_cycle());
 
     double invert =
-        (inverted_ ==
-                 ctre::phoenixpro::signals::InvertedValue::Clockwise_Positive
+        (inverted_ == ctre::phoenix6::signals::InvertedValue::Clockwise_Positive
              ? 1
              : -1);
 
@@ -266,26 +265,24 @@ class Falcon {
   void RefreshNontimesyncedSignals() { device_temp_.Refresh(); };
 
  private:
-  ctre::phoenixpro::hardware::TalonFX talon_;
+  ctre::phoenix6::hardware::TalonFX talon_;
   int device_id_;
 
-  ctre::phoenixpro::signals::InvertedValue inverted_;
+  ctre::phoenix6::signals::InvertedValue inverted_;
 
-  ctre::phoenixpro::StatusSignalValue<units::temperature::celsius_t>
-      device_temp_;
-  ctre::phoenixpro::StatusSignalValue<units::voltage::volt_t> supply_voltage_;
-  ctre::phoenixpro::StatusSignalValue<units::current::ampere_t> supply_current_,
+  ctre::phoenix6::StatusSignal<units::temperature::celsius_t> device_temp_;
+  ctre::phoenix6::StatusSignal<units::voltage::volt_t> supply_voltage_;
+  ctre::phoenix6::StatusSignal<units::current::ampere_t> supply_current_,
       torque_current_;
-  ctre::phoenixpro::StatusSignalValue<units::angle::turn_t> position_;
-  ctre::phoenixpro::StatusSignalValue<units::dimensionless::scalar_t>
-      duty_cycle_;
+  ctre::phoenix6::StatusSignal<units::angle::turn_t> position_;
+  ctre::phoenix6::StatusSignal<units::dimensionless::scalar_t> duty_cycle_;
 };
 
 class CANSensorReader {
  public:
   CANSensorReader(
       aos::EventLoop *event_loop,
-      std::vector<ctre::phoenixpro::BaseStatusSignalValue *> signals_registry)
+      std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry)
       : event_loop_(event_loop),
         signals_(signals_registry.begin(), signals_registry.end()),
         can_position_sender_(
@@ -328,7 +325,7 @@ class CANSensorReader {
  private:
   void Loop() {
     ctre::phoenix::StatusCode status =
-        ctre::phoenixpro::BaseStatusSignalValue::WaitForAll(2000_ms, signals_);
+        ctre::phoenix6::BaseStatusSignal::WaitForAll(2000_ms, signals_);
 
     if (!status.IsOK()) {
       AOS_LOG(ERROR, "Failed to read signals from falcons: %s: %s",
@@ -384,7 +381,7 @@ class CANSensorReader {
 
   aos::EventLoop *event_loop_;
 
-  const std::vector<ctre::phoenixpro::BaseStatusSignalValue *> signals_;
+  const std::vector<ctre::phoenix6::BaseStatusSignal *> signals_;
   aos::Sender<frc971::control_loops::drivetrain::CANPosition>
       can_position_sender_;
 
@@ -761,7 +758,7 @@ class SuperstructureCANWriter
   void WriteConfigs() { roller_falcon_->WriteRollerConfigs(); }
 
   void Write(const superstructure::Output &output) override {
-    ctre::phoenixpro::controls::DutyCycleOut roller_control(
+    ctre::phoenix6::controls::DutyCycleOut roller_control(
         SafeSpeed(-output.roller_voltage()));
     roller_control.UpdateFreqHz = 0_Hz;
     roller_control.EnableFOC = true;
@@ -777,7 +774,7 @@ class SuperstructureCANWriter
 
   void Stop() override {
     AOS_LOG(WARNING, "Superstructure CAN output too old.\n");
-    ctre::phoenixpro::controls::DutyCycleOut stop_command(0.0);
+    ctre::phoenix6::controls::DutyCycleOut stop_command(0.0);
     stop_command.UpdateFreqHz = 0_Hz;
     stop_command.EnableFOC = true;
 
@@ -818,11 +815,11 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
     left_under_ = std::move(left_under);
   }
 
-  void set_right_inverted(ctre::phoenixpro::signals::InvertedValue invert) {
+  void set_right_inverted(ctre::phoenix6::signals::InvertedValue invert) {
     right_inverted_ = invert;
   }
 
-  void set_left_inverted(ctre::phoenixpro::signals::InvertedValue invert) {
+  void set_left_inverted(ctre::phoenix6::signals::InvertedValue invert) {
     left_inverted_ = invert;
   }
 
@@ -851,12 +848,12 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
 
   void Write(
       const ::frc971::control_loops::drivetrain::Output &output) override {
-    ctre::phoenixpro::controls::DutyCycleOut left_control(
+    ctre::phoenix6::controls::DutyCycleOut left_control(
         SafeSpeed(output.left_voltage()));
     left_control.UpdateFreqHz = 0_Hz;
     left_control.EnableFOC = true;
 
-    ctre::phoenixpro::controls::DutyCycleOut right_control(
+    ctre::phoenix6::controls::DutyCycleOut right_control(
         SafeSpeed(output.right_voltage()));
     right_control.UpdateFreqHz = 0_Hz;
     right_control.EnableFOC = true;
@@ -886,7 +883,7 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
 
   void Stop() override {
     AOS_LOG(WARNING, "drivetrain output too old\n");
-    ctre::phoenixpro::controls::DutyCycleOut stop_command(0.0);
+    ctre::phoenix6::controls::DutyCycleOut stop_command(0.0);
     stop_command.UpdateFreqHz = 0_Hz;
     stop_command.EnableFOC = true;
 
@@ -901,7 +898,7 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
     return (::aos::Clip(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
   }
 
-  ctre::phoenixpro::signals::InvertedValue left_inverted_, right_inverted_;
+  ctre::phoenix6::signals::InvertedValue left_inverted_, right_inverted_;
   std::shared_ptr<Falcon> right_front_, right_back_, right_under_, left_front_,
       left_back_, left_under_;
 };
@@ -934,7 +931,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     std::shared_ptr<frc::DigitalOutput> superstructure_reading =
         make_unique<frc::DigitalOutput>(25);
 
-    std::vector<ctre::phoenixpro::BaseStatusSignalValue *> signals_registry;
+    std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry;
     std::shared_ptr<Falcon> right_front =
         std::make_shared<Falcon>(1, "Drivetrain Bus", &signals_registry);
     std::shared_ptr<Falcon> right_back =
@@ -1013,9 +1010,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     drivetrain_writer.set_falcons(right_front, right_back, right_under,
                                   left_front, left_back, left_under);
     drivetrain_writer.set_right_inverted(
-        ctre::phoenixpro::signals::InvertedValue::Clockwise_Positive);
+        ctre::phoenix6::signals::InvertedValue::Clockwise_Positive);
     drivetrain_writer.set_left_inverted(
-        ctre::phoenixpro::signals::InvertedValue::CounterClockwise_Positive);
+        ctre::phoenix6::signals::InvertedValue::CounterClockwise_Positive);
 
     SuperstructureCANWriter superstructure_can_writer(&can_output_event_loop);
     superstructure_can_writer.set_roller_falcon(roller);
