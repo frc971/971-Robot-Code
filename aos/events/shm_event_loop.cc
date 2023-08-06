@@ -73,6 +73,14 @@ const Node *MaybeMyNode(const Configuration *configuration) {
   return configuration::GetMyNode(configuration);
 }
 
+void IgnoreWakeupSignal() {
+  struct sigaction action;
+  action.sa_handler = SIG_IGN;
+  PCHECK(sigemptyset(&action.sa_mask) == 0);
+  action.sa_flags = 0;
+  PCHECK(sigaction(ipc_lib::kWakeupSignal, &action, nullptr) == 0);
+}
+
 }  // namespace
 
 ShmEventLoop::ShmEventLoop(const Configuration *configuration)
@@ -81,6 +89,11 @@ ShmEventLoop::ShmEventLoop(const Configuration *configuration)
       shm_base_(FLAGS_shm_base),
       name_(FLAGS_application_name),
       node_(MaybeMyNode(configuration)) {
+  // Ignore the wakeup signal by default. Otherwise, we have race conditions on
+  // shutdown where a wakeup signal will uncleanly terminate the process.
+  // See LocklessQueueWakeUpper::Wakeup() for some more information.
+  IgnoreWakeupSignal();
+
   CHECK(IsInitialized()) << ": Need to initialize AOS first.";
   ClearContext();
   if (configuration->has_nodes()) {
