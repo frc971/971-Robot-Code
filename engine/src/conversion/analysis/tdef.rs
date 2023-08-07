@@ -19,11 +19,12 @@ use crate::{
         convert_error::{ConvertErrorWithContext, ErrorContext},
         error_reporter::convert_apis,
         parse::BindgenSemanticAttributes,
-        ConvertError,
+        ConvertErrorFromCpp,
     },
     types::QualifiedName,
 };
 
+#[derive(std::fmt::Debug)]
 pub(crate) struct TypedefAnalysis {
     pub(crate) kind: TypedefKind,
     pub(crate) deps: HashSet<QualifiedName>,
@@ -31,6 +32,7 @@ pub(crate) struct TypedefAnalysis {
 
 /// Analysis phase where typedef analysis has been performed but no other
 /// analyses just yet.
+#[derive(std::fmt::Debug)]
 pub(crate) struct TypedefPhase;
 
 impl AnalysisPhase for TypedefPhase {
@@ -57,7 +59,7 @@ pub(crate) fn convert_typedef_targets(
             Ok(Box::new(std::iter::once(match item {
                 TypedefKind::Type(ity) => get_replacement_typedef(
                     name,
-                    ity,
+                    ity.into(),
                     old_tyname,
                     &mut type_converter,
                     &mut extra_apis,
@@ -87,7 +89,7 @@ fn get_replacement_typedef(
 ) -> Result<Api<TypedefPhase>, ConvertErrorWithContext> {
     if !ity.generics.params.is_empty() {
         return Err(ConvertErrorWithContext(
-            ConvertError::TypedefTakesGenericParameters,
+            ConvertErrorFromCpp::TypedefTakesGenericParameters,
             Some(ErrorContext::new_for_item(name.name.get_final_ident())),
         ));
     }
@@ -108,7 +110,7 @@ fn get_replacement_typedef(
             ty: syn::Type::Path(ref typ),
             ..
         }) if QualifiedName::from_type_path(typ) == name.name => Err(ConvertErrorWithContext(
-            ConvertError::InfinitelyRecursiveTypedef(name.name.clone()),
+            ConvertErrorFromCpp::InfinitelyRecursiveTypedef(name.name.clone()),
             Some(ErrorContext::new_for_item(name.name.get_final_ident())),
         )),
         Ok(mut final_type) => {
@@ -116,10 +118,10 @@ fn get_replacement_typedef(
             extra_apis.append(&mut final_type.extra_apis);
             Ok(Api::Typedef {
                 name,
-                item: TypedefKind::Type(ity),
+                item: TypedefKind::Type(ity.into()),
                 old_tyname,
                 analysis: TypedefAnalysis {
-                    kind: TypedefKind::Type(converted_type),
+                    kind: TypedefKind::Type(converted_type.into()),
                     deps: final_type.types_encountered,
                 },
             })
