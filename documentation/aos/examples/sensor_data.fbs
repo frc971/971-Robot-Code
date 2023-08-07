@@ -1,0 +1,7 @@
+namespace examples;
+
+table SensorData {
+  hardware_capture_time_ns:uint64 (id: 0);
+}
+
+root_type SensorData;

@@ -7,9 +7,9 @@ import tempfile
 
 DESCRIPTION = """
 This script provides a convenient way to experiment with the starter
-and starter_cmd in particular. To run this, run:
+and aos_starter in particular. To run this, run:
 $ bazel run  //aos/starter:starter_demo
-This will then print out instructions for running starter_cmd.
+This will then print out instructions for running aos_starter.
 
 If running via bazel, you should not need to specify the positional
 arguments.
@@ -21,11 +21,7 @@ if __name__ == '__main__':
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("starterd", help="Location of starterd")
     parser.add_argument("configs", help="Location of the config files")
-    parser.add_argument("ping", help="Location of ping")
-    parser.add_argument("pong", help="Location of pong")
-    parser.add_argument("starter_cmd", help="Location of starter_cmd")
-    parser.add_argument("aos_dump", help="Location of aos_dump")
-    parser.add_argument("logger_main", help="Location of logger_main")
+    parser.add_argument("binaries", nargs='+', help="Binaries to provide")
     args = parser.parse_args()
 
     # Copy all the interesting files into a temporary directory and run
@@ -37,14 +33,11 @@ if __name__ == '__main__':
     # can take a new --shm_base to allow cleaner running on shared systems.
     with tempfile.TemporaryDirectory() as tmpdir:
         shutil.copy(args.starterd, tmpdir + "/starterd")
-        shutil.copy(args.ping, tmpdir + "/ping")
-        shutil.copy(args.pong, tmpdir + "/pong")
-        shutil.copy(args.starter_cmd, tmpdir + "/starter_cmd")
-        shutil.copy(args.aos_dump, tmpdir + "/aos_dump")
-        shutil.copy(args.logger_main, tmpdir + "/logger_main")
+        for binary in args.binaries:
+            shutil.copy(binary, tmpdir + "/" + os.path.basename(binary))
         print(f"Running starter from {tmpdir}")
 
-        print(f"\n\nTo run starter_cmd, do:\ncd {tmpdir}\n./starter_cmd\n\n")
+        print(f"\n\nTo run aos_starter, do:\ncd {tmpdir}\n./aos_starter\n\n")
 
         for config in args.configs.split(' '):
             basename = os.path.basename(config)

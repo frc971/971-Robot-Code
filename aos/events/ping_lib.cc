@@ -7,7 +7,7 @@
 #include "aos/events/pong_generated.h"
 #include "aos/json_to_flatbuffer.h"
 
-DEFINE_int32(sleep_ms, 10, "Time to sleep between pings");
+DEFINE_int32(sleep_us, 10000, "Time to sleep between pings");
 
 namespace aos {
 
@@ -26,7 +26,7 @@ Ping::Ping(EventLoop *event_loop, std::string_view channel_name)
 
   event_loop_->OnRun([this]() {
     timer_handle_->Schedule(event_loop_->monotonic_now(),
-                            chrono::milliseconds(FLAGS_sleep_ms));
+                            chrono::microseconds(FLAGS_sleep_us));
   });
 
   event_loop_->SetRuntimeRealtimePriority(5);
@@ -35,7 +35,7 @@ Ping::Ping(EventLoop *event_loop, std::string_view channel_name)
 void Ping::SendPing() {
   if (last_pong_value_ != count_ && (!quiet_ || VLOG_IS_ON(1))) {
     LOG(WARNING) << "Did not receive response to " << count_ << " within "
-                 << FLAGS_sleep_ms << "ms.";
+                 << FLAGS_sleep_us << "us.";
   }
   ++count_;
   aos::Sender<examples::Ping>::Builder builder = sender_.MakeBuilder();

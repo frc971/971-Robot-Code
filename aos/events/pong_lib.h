@@ -15,7 +15,9 @@ class Pong {
   void set_quiet(bool quiet) { quiet_ = quiet; }
 
  private:
+  void HandlePing(const examples::Ping &ping);
   EventLoop *event_loop_;
+  aos::Fetcher<examples::Ping> fetcher_;
   aos::Sender<examples::Pong> sender_;
   int32_t last_value_ = 0;
   int32_t last_send_time_ = 0;

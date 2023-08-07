@@ -158,7 +158,23 @@ struct Context {
   // Pointer to the data.
   const void *data;
 
-  // buffer_index and source_boot_uuid members omitted.
+  // Index of the message buffer. This will be in [0, NumberBuffers) on
+  // read_method=PIN channels, and -1 for other channels.
+  //
+  // This only tells you about the underlying storage for this message, not
+  // anything about its position in the queue. This is only useful for advanced
+  // zero-copy use cases, on read_method=PIN channels.
+  //
+  // This will uniquely identify a message on this channel at a point in time.
+  // For senders, this point in time is while the sender has the message. With
+  // read_method==PIN, this point in time includes while the caller has access
+  // to this context. For other read_methods, this point in time may be before
+  // the caller has access to this context, which makes this pretty useless.
+  int buffer_index;
+
+  // UUID of the remote node which sent this message, or this node in the case
+  // of events which are local to this node.
+  UUID source_boot_uuid = UUID::Zero();
 
   // Efficiently copies the flatbuffer into a FlatbufferVector, allocating
   // memory in the process.  It is vital that T matches the type of the
@@ -781,14 +797,18 @@ a wakeup on your process for every new message. This can be advantageous over
 3. You need to access the most-recently-sent message that may have been sent
    before your process started.
 
-There are two main options for fetching data with a Fetcher:
+There are four main options for fetching data with a Fetcher:
 
 1. `Fetch()`: Allows you to fetch the latest message on a channel.
 2. `FetchNext()`: Allows you to fetch the message immediately after the
    previously fetched message. This lets you use a fetcher to observe
    every single message on the channel.
+3. `FetchIf()` and `FetchNextIf()`: Identical to the above, but take a
+   predicate that causes the fetcher to only fetch if the next message
+   causes the predicate to return true (e.g., if you only want to fetch
+   messages up until a certain point in time).
 
-Both `Fetch*()` calls return true if they got a new message and false otherwise,
+All `Fetch*()` calls return true if they got a new message and false otherwise,
 making
 ```cpp
 if (fetcher_.Fetch()) {
@@ -1050,6 +1070,10 @@ See `//aos/realtime.*` for the code that manages entering and exitting realtime
 schedulers, as well as for managing the malloc hook that intercepts attempted
 memory allocations.
 
+Additionally, the ROS2 design docs website has a [reasonable
+introduction](https://design.ros2.org/articles/realtime_background.html)
+to working with realtime code.
+
 ### Timing Reports
 
 Timing reports are an FlatBuffer message sent out periodically by an
@@ -1252,13 +1276,522 @@ in the running state.
 
 ## ShmEventLoop
 
-## Realtime Code
+The `ShmEventLoop` is an implementation of the `EventLoop` API that is intended
+to run in realtime on a Linux system and uses shared memory to communicate
+between processes. This is currently the only `EventLoop` implementation for
+actually running realtime processes (the `SimulatedEventLoop` being the only
+other implementation of the `EventLoop` API, and it is only meant for
+simulation).
 
-The ROS2 design docs website has a [reasonable
-introduction](https://design.ros2.org/articles/realtime_background.html)
-to working with realtime code.
+Additionally, there are a set of common utilities & applications that go with
+the `ShmEventLoop` to form a complete realtime AOS system:
+
+* The `message_bridge_server` and `message_bridge_client` processes use the
+  `ShmEventLoop` to read data from shared memory channels, forward it to other
+  node(s) over SCTP, and then republish the data onto the shared memory channels
+  on the other node(s).
+* The `starterd` manages starting & stopping applications, and allows
+  dynamically starting, stopping, and viewing the status of applications by
+  way of AOS channels.
+* The logger (which is sometimes configured in specialized ways, but generally
+  uses the `LogWriter` class).
+* `aos_dump`, `aos_send`, `aos_starter`, `aos_timing_report_streamer`, and other
+  utilities allow engineers to debug the system at the command line by exposing
+  AOS channels in various ways (see [Command-line Utilities](#command-line-utilities)).
+
+The `ShmEventLoop` does a few key things beyond just implementing what is
+required by the `EventLoop` API:
+
+* Has `Run()` and `Exit()` calls to directly start/stop execution of the event
+  loop.
+* Does signal handling to capture `SIGINT` and automatically exit.
+* Allows controlling the scheduling of the process (realtime priority, CPU
+  affinity)---technically these are actually part of the `EventLoop` API,
+  but are meaningless for any other `EventLoop` implementations.
+* Exposes the `EPoll` implementation used to back the `EventLoop` (this
+  becomes useful when wanting to interact with sockets, files, and sometimes
+  even other event loops/schedulers).
+
+### Design of the `ShmEventLoop`
+
+The goal of the `ShmEventLoop` is to provide an `EventLoop` implementation that
+can run on most Linux systems, and which has good enough performance to support
+soft/firm real-time system where large amounts of data (e.g., raw images) may
+need to be moved over the pub-sub channels. In order to implement the core
+`EventLoop` API, we use two things:
+
+1. An IPC (InterProcess Communication) library using a lockless shared-memory
+   queue for managing the pub-sub channels.
+2. `epoll` for managing event scheduling.
+
+For each `EventLoop` feature, this means:
+
+* `Watcher`s are implemented by having the sending event loop general signals,
+  where each `Watcher` then has an associated `signalfd` that we use `epoll` to
+  watch and wakeup on when the new messages arrived.
+* `Timer`s and `PhasedLoop`s are implemented using `timerfd` and `epoll` to
+  wakeup when the timers expire.
+* `Sender`s and `Fetcher`s do not have to directly interact with the event
+  scheduling (beyond generating signals on sends, in the case of `Sender`s),
+  but do use the IPC library.
+
+Outside of the "core" `EventLoop` API, the `ShmEventLoop` is also responsible
+for setting the current process priority, pinning it to the requested CPU
+core(s), and doing things like preventing calls to `malloc` while the
+`ShmEventLoop` is [Running](#running).
+
+For additional detail on the underlying IPC design, reference the [Design
+Doc](https://docs.google.com/document/d/10xulameLtEqjBFkm54UcN-5N-w5Q_XFNILvNf1Jl1Y4/edit#heading=h.y9blqcmsacou)
+and the code at `//aos/ipc_lib:lockless_queue`.
+
+### IPC Performance Considerations
+
+This section provides a discussion of how to use the `EventLoop` API in
+situations where you may have strong performance constraints (e.g.,
+you are processing large numbers of camera images that require transferring
+large amounts of data).
+
+Some discussion in this section can theoretically apply to any `EventLoop`
+implementation---everything discussed here just uses the generic `EventLoop`
+API and does not actually require doing anything that is specific to the
+`ShmEventLoop`. However, it is useful to discuss how the actual implementation
+works to understand the performance implications of different options.
+
+At a high level, the most common issues which we have observed regarding
+performance are:
+
+1. Copying messages can be very expensive, particularly for raw camera images;
+   for this reason, the `EventLoop` API provides zero-copy constructs that
+   allow the sender to construct messages in-place in shared memory and for
+   readers to read the message directly from shared memory without copying
+   it first. There are a variety of places where the "normal" APIs will do
+   copies by default, as well as some convenience APIs that are more rarely
+   used but which do do extraneous copies.
+2. For processes which must consume large numbers of individual messages (e.g.,
+   a logger), using `Watcher`s may get expensive due to the cost of waking
+   up for every signal. Using `Fetcher`s + a polling timer can mitigate this.
+3. Be aware that querying the clocks on the `ShmEventLoop` with
+   `monotonic_now()` and `realtime_now()` calls will actually query the system
+   clocks---if you want the time of the current event, use the [Event Loop
+   Context](#event-loop-context) (note that "doing too many clock queries"
+   is not typically a major issue).
+
+#### Avoiding Copies
+
+Copying around large chunks of memory can be expensive. As such, the `EventLoop`
+API is designed to allow you to avoid extraneous copies if you do not want to do
+so. This does mean paying attention to what you are doing at each step of the
+process.
+
+*Sending*: When sending a message, you should make sure to use the
+`aos::Sender::MakeBuilder()` call, which provides a `FlatBufferBuilder` that
+constructs your message in-place in shared-memory (the `Sender` will acquire
+ownership of a single slot in the shared memory queue, and leave the message
+unpublished until you call `Send`). If you need to fill your message with
+a large blob (e.g., an image), you can use the
+[CreateUninitializedVector](https://flatbuffers.dev/classflatbuffers_1_1_flat_buffer_builder.html#a2305b63d367845972b51669dd995cc50)
+method to get a pointer to a fixed-length buffer where you can fill in your
+data. Be aware that the `aos::Sender::Send()` method which takes a
+`NonSizePrefixedFlatbuffer` will do a copy, because it takes a FlatBuffer
+which has been constructed outside if its shared memory buffer. This is distinct
+from the `aos::Sender::Builder::Send()` calls, which assume that you have built
+your flatbuffer up using the provided `Builder` and so don't need to do extra
+copies---the `aos::Sender::Builder::Send()` calls are what almost all existing
+code uses. As an aside,
+because `Sender`s must construct messages in-place, there is a configurable
+limit on the maximum number of senders per-channel. If we allowed arbitrarily
+many senders per channel, then they could consume all of the slots in the
+shared memory queue and prevent any messages from actually flowing.
+
+*Receving*: By default, `Fetcher`s and `Watcher`s will copy a message on
+receipt. This allows us to allow arbitrarily many processes to be fetching on a
+given channel by default. However, if the `read_method` for a channel is set to
+`PIN` in the [configuration](#Configurations) then each reader will acquire a
+slot in the shared memory queue (this causes there to be a limit on the maximum
+number of allowed readers). If `PIN`d, then when you read the message you are
+reading directly from shared memory. Note that there is an independent
+`num_watchers` setting in the configuration for a channel; this maximum exists
+because the shared memory queue must have a fixed-length list of processes to
+notify when a message is sent.
+
+*`NoArgWatcher`s*: Regardless of whether you want zero-copy performance or not,
+being aware of `NoArgWatcher`s is useful as they allow you to receive a
+callback when a message is received with needing to actually copy the message
+out. This is typically paired with a `Fetcher` for that message, although there
+may also be situations where you just need to trigger some work or event
+whenever a channel is sent on, without caring about the message contents. See
+[Watchers](#watchers) for more discussion.
+
+#### High-rate Messages
+
+When dealing with high-rate (usually starting at ~1 kHz) messages, the context
+switches associated with using a watcher to wake up your process on every single
+message can become non-trivial. In applications where you really do want to wake
+up for every single messages, this may still be appropriate, but if instead you
+just need to ensure that you are handling every message in a reasonably timely
+manner it can be much cheaper to set up a periodic timer at a lower frequency
+(e.g., the logger generally polls at ~10 Hz; but even just getting below a
+kilohertz is typically good). In order to ensure that you read every message,
+you can then use a [Fetcher](#fetchers) with `FetchNext()` to iterate over
+all the messages received in the last polling period.
+
+### Typical `ShmEventLoop` usage
+
+There is a good sample `main()` in the [Getting Started](/getting_started/#writing-the-ping-main);
+the key pattern that is typically followed is:
+
+```cpp
+// We pull in a config that is stored somewhere on disk (as pointed to by
+// a --config flag).
+aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+    aos::configuration::ReadConfig(FLAGS_config);
+
+aos::ShmEventLoop event_loop(&config.message());
+
+// The application being run is provided with an EventLoop*, which enables it to
+// access the EventLoop API without knowing whether it is on a realtime system
+// or just running in simulation.
+aos::Ping ping(&event_loop);
+
+// Actually run the EventLoop. This will block until event_loop.Exit() is
+// called or we receive a signal to exit (e.g., a Ctrl-C on the command line).
+event_loop.Run();
+```
+
+### Running (and Exiting) the `ShmEventLoop`
+
+In the vast majority of cases, your code will simply call `Run()` on the
+`ShmEventLoop` and not have to think about it any more. However, there are
+situations where you need to worry about more complexity.
+
+A few things to be aware of:
+
+* When the `ShmEventLoop` is [Running](#running), the process priority will be
+  elevated and if the priority is real-time it will die on attempted `malloc`s.
+  I.e., "Running" == Real-time.
+* If you wish to programmatically exit your process (e.g., it is a one-shot
+  process that just does some work and exits), use the `ExitHandle` API.
+  This way you can use `ShmEventLoop::MakeExitHandle` to provide your
+  application with a way to exit the process at runtime, and then use a
+  different `ExitHandle` implementation for testing.
+
+### `EPoll` interface
+
+As previously mentioned, the `ShmEventLoop` uses `epoll` under the hood to
+trigger wakeups on new events. Typically, you do not need to care about this;
+however, the `EPoll` class is exposed from the `ShmEventLoop` in order to enable
+you to interact with the system outside of the standard `EventLoop` API while
+still having your callbacks and events occur within the main thread of the
+`EventLoop`. In order to enable testing & simulation, most applications that do
+this will take an abstract `EventLoop*` and an `EPoll*` in their constructor;
+however, for cases where the application truly only makes sense to run against
+a `ShmEventLoop`, it may take a `ShmEventLoop` directly. By breaking out of
+the normal `EventLoop` API your application will become harder to simulate,
+replay, etc. However, this is useful in some situations, e.g.:
+
+* An application that must provide a web server of some sort to external
+  applications, such as for a live debugging webpage.
+* Interacting with a CAN bus, UDP/TCP socket, etc. in order to interface with
+  and control some external system.
+* Building a camera driver that must read/send out camera images when they
+  become available.
+
+## Multi-Node
+
+AOS is built to support distributed systems where applications are running on
+separate devices which communicate with one another. The API is designed on the
+theory that typical applications should not really need to care about what node
+a channel that they are sending/listening on is forwarded to/from. However,
+it is expected that some applications will care and that you will need to care
+about the data flow for the system as a whole.
+
+There are two key things that change when you begin working with a multi-node
+AOS system as compared to a single-node system (or when working within a single
+node on a multi-node system):
+
+1. Clocks & time may not be fully synchronized across nodes. By default, AOS
+   also allows individual nodes on a system to reboot, complicating clock
+   management further.
+2. Message delivery between nodes can be unreliable, and will generally have
+   significantly worse latency than message delivery within a node. Note that
+   there are options to, e.g., allow for reliable message delivery but any
+   network-based messaging will be constrained by the networking setup of your
+   system.
+
+
+See [Configuring Multi-Node Systems](#configuring-multi-node-systems) for
+information on how to set up an AOS configuration to be multi-node.
+
+Note: Currently, while "single-node" is technically a distinct mode from
+"multi-node" in AOS configurations, it is possible that we will deprecate the
+single-node mode in the future in the favor of simply requiring that any
+single-node systems be multi-node systems with one node.
+
+### Message Forwarding & Reliability
+
+Any given channel can be configured to be forwarded between nodes. That channel
+may only be sent on from one node (the `source_node`), and can be forwarded to
+arbitrarily many other nodes. Each individual forwarding connection can be
+configured separately, such that forwarding channel `/foo` from node A to node B
+may be at a higher priority or reliability than from node A to node C. For each
+forwarding connection, you may configure:
+
+* Where & how to log timestamp information associated with the forwarding.
+* The SCTP priority with which to forward the message.
+* Whether to guarantee delivery of the message, akin to TCP ("reliable forwarding").
+* The time to live to set for messages with unreliable forwarding.
+
+As alluded to, message forwarding is currently assumed to be implemented by
+[SCTP](https://en.wikipedia.org/wiki/Stream_Control_Transmission_Protocol) at
+runtime. In simulation, forwarding is entirely deterministic and reliable
+unless the user configures the `SimulatedNetworkBridge` otherwise. Should
+any additional `EventLoop` implementations be added in the future that do
+_not_ use SCTP, they would be expected to provide similar options for
+configuration, although one could reasonable create an implementation that did
+not implement all the possible configurability. For that matter, some SCTP
+implementations may not implement the priority option.
+
+Ordering is guaranteed within a channel---an observer on a channel will never
+observe a newer message before an older message. Ordering between channels is
+not guaranteed. Consider, for instance, two channels:
+
+* Channel `/big_and_slow` sends infrequent but large messages. At t=0sec it
+  sends a 100MB message which takes ~1 sec to transfer across the network.
+* Channel `/small_and_fast` sends frequent but small and high priority messages.
+  At t=0.01sec it sends a 100 byte message which crosses the network in <1ms.
+
+Depending on the SCTP implementation, it is entirely possible that the
+`/small_and_fast` message will arrive at the destination node before the
+`/big_and_slow` message. This is desired behavior (we wouldn't want a
+low-priority channel able to block the delivery of high-priority messages).
+
+Once the messages have arrived on the destination node, ordering will again be
+~guaranteed[^ordering-guarantee] across channels, but with respect to the time
+at which the message was sent in shared memory by the message bridge on
+the current node.
+
+[^ordering-guarantee]: There is actually an outstanding bug where in some
+  corner-cases, ordering is not actually guaranteed. See
+  https://github.com/frc971/971-Robot-Code/issues/29
+
+#### Forwarded Message Metadata
+
+Forwarded messages have additional metadata populated in the [Event Loop
+Context](#event-loop-context). The following fields become relevant for
+forwarded messages:
+
+```cpp
+// For a single-node configuration, these two are identical to *_event_time.
+// In a multinode configuration, these are the times that the message was
+// sent on the original node.
+monotonic_clock::time_point monotonic_remote_time;
+realtime_clock::time_point realtime_remote_time;
+
+// Index into the remote queue.  Useful to determine if data was lost.  In a
+// single-node configuration, this will match queue_index.
+uint32_t remote_queue_index;
+
+// UUID of the remote node which sent this message, or this node in the case
+// of events which are local to this node.
+UUID source_boot_uuid = UUID::Zero();
+```
+
+The remote times tell you the time at which the message was sent on the original
+node, and represent the clocks _on that node_. As such, in order to meaningfully
+compare the remote times to local times (e.g., if you want to figure out how
+long ago the message was actually sent) you must either (a) trust the realtime
+clocks; or (b) [compensate for the monotonic clock
+offsets](#correlating-monotonic-clocks-across-nodes). If you want the "event"
+time for when your current watcher or the such got triggered, use the regular
+`monotonic_event_time`. The only real use of the `remote_queue_index` would be
+to detect when messages were dropped over the network.
+
+The `source_boot_uuid` can be used to determine if the source node rebooted
+between observing messages. Arbitrarily many messages may have been dropped by
+the forwarding during a reboot, as we cannot guarantee that every single message
+sent from a rebooting node while it is rebooting gets forwarded.
+
+#### Reliable vs. Unreliable Forwarding
+
+"Unreliable" forwarding is essentially what it sounds like---messages will be
+forwarded; if they do not make it within the `time_to_live`, then they will not
+get delivered to the receiving node. Unreliable messages that were sent from the
+sending node prior to the recipient node having become connected to the sending
+node are simply dropped. Unreliable forwarding is generally the default state
+for most channels.
+
+"Reliable" forwarding, on the other hand, carries two primary guarantees beyond
+the normal unreliable messages:
+
+* As long as two nodes are connected, all messages on reliable channels will be
+  forwarded, regardless of how much time must be spent retrying (this generally
+  makes reliable forwarding a poor choice for high-rate, latency-critical
+  messages).
+* When two nodes connect, the most recently sent message (if any) on each
+  reliable channel will get forwarded to the receiving node. This makes it so
+  that, e.g., if you have a central node that sends out a configuration message
+  once on startup then you can make it so that whenever the edge nodes connect
+  they will get the configuration message forwarded to them, even if they were
+  not online when the configuration message was originally published.
+
+Note that if the message bridges on two nodes disconnect and then reconnect in
+the future (without a node reboot occurring), then the semantics of reliable
+messages are similar to what happens on boot. Namely:
+
+* If no reliable messages were sent during the disconnect, then nothing happens.
+* If 1 or more reliable messages were sent during the disconnect, then the
+  latest message will get forwarded to the destination node.
+
+#### Message Bridge
+
+The applications that manage the forwarding of messages between nodes are
+collectively known as the "message bridge." In simulation, this is managed by
+the `SimulatedMessageBridge`, which at it's core is a bunch of
+`std::deque`'s that are used to introduce simulated network latency (and/or
+unreliability) to the simulation. At runtime, the `message_bridge_client` and
+`message_bridge_server` handle forwarding messages from shared memory channels
+to SCTP. The server is responsible for listening to messages sent on the
+`source_node` and forwarding them to the network, while the client is
+responsible for subscribing to the server, receiving messages, and republishing
+them onto the shared memory channels locally.
+
+The message bridge processes themselves are "just" regular AOS processes. They
+use a `ShmEventLoop` to interface with AOS, and do need to break out of the
+normal abstractions to interact with SCTP. The main things which they do which
+do break out of the abstractions which most users should worry about are:
+
+* The `message_bridge_client` uses `RawSender`s to allow itself to send on
+  channels which other applications cannot (since you shouldn't be able to send
+  on channels where you are not the `source_node`). Additionally, when sending
+  these messages, the client manually populates the various remote message
+  metadata.
+* The `message_bridge_server` sends special `RemoteMessage` messages on the
+  remote timestamp channels (the sending of these does not actually require
+  anything special, but the logger treats these messages specially).
+
+Typically, the operation of message bridge should be reasonably transparent to
+most users; however, there are times when it is useful to watch the message
+bridge status messages. The status messages contain a variety of information,
+but the main pieces of information that you are likely to care about are:
+
+* The connection state. Unless the state for a given node is `CONNECTED`, then
+  messages will not be flowing. Note that states for the message bridge client
+  and server are tracked separately, so it is possible that you may be connected
+  to a node such that you are receiving messages from it but not successfully
+  sending to it, or vice-versa.
+* The current estimates of the monotonic clock offsets between the nodes. See
+  [Correlating Monotonic Clocks Across
+  Nodes](#correlating-monotonic-clocks-across-nodes)
+
+### Cross-node Clocks
+
+Dealing with time & clocks across nodes can be tricky. While we do require that
+the monotonic clock on each device (generally corresponding to `CLOCK_MONOTONIC`
+on the system, and virtually always a time since boot) be monotonic, the
+realtime clock (i.e., the clock providing the time since the Unix Epoch) may not
+be monotonic, or even if it is monotonic, it may jump or speed up/slow down
+significantly. If you have NTP (or some similar protocol) set up on your system,
+then you may be able to control the behavior of the clocks more tightly than we
+guarantee, but AOS itself does not provide any guarantees around the realtime
+clock.
+
+Additionally, the log reading code currently makes assumptions about how quickly
+the monotonic clocks on different nodes can drift apart from one another. This
+is currently a [hard-coded value if 1ms /
+sec](https://github.com/frc971/971-Robot-Code/blob/790cb54590e4f28f61e2f1bcd2e6e12ca47d7713/aos/network/timestamp_filter.h#L21-L26)
+(i.e., we assume that over one second of time on one node's clock, the other
+node's clock will have advanced by somewhere between 999 and 1001 milliseconds).
+This number could plausibly be changed, but we have not yet encountered clocks
+actually drifting by enough to require that.
+
+#### Correlating Monotonic Clocks Across Nodes
+
+When dealing with time across nodes, we rely on the ongoing flow of messages to
+try and estimate the offsets between different clocks. The results of this
+estimation are published in the `aos.message_bridge.ServerStatistics` and
+`aos.message_bridge.ClientStatistics` messages (note that the offsets provided
+in these messages may be slightly different, as they are estimated independently).
+These estimates should be reasonable, but are currently not well validated in
+all possible corner cases. If you discover a situation where they are too
+unreliable for your use-case, that would be something we would want to fix.
+
+As an example, consider a situation where you are receiving sensor data from a
+node named `sensor`. This sensor data is on the channel `/input` with a type of
+`SensorData`. You wish to determine how old the sensor data is, but do not have
+accurate realtime clocks set up on your machine. As such, you would have
+something like:
+
+```cpp
+class SensorAgeReader {
+ public:
+  SensorAgeReader(aos::EventLoop *event_loop)
+      : event_loop_(event_loop),
+        clock_offset_fetcher_(
+            event_loop->MakeFetcher<aos::message_bridge::ServerStatistics>(
+                "/aos")) {
+    event_loop_->MakeWatcher(
+        "/input", [this](const SensorData &msg) { HandleSensorData(msg); });
+  }
+
+  void HandleSensorData(const SensorData &msg) {
+    std::chrono::nanoseconds monotonic_offset{0};
+    clock_offset_fetcher_.Fetch();
+    if (clock_offset_fetcher_.get() != nullptr) {
+      for (const auto connection : *clock_offset_fetcher_->connections()) {
+        if (connection->has_node() && connection->node()->has_name() &&
+            connection->node()->name()->string_view() == "sensor") {
+          if (connection->has_monotonic_offset()) {
+            monotonic_offset =
+                std::chrono::nanoseconds(connection->monotonic_offset());
+          } else {
+            // If we don't have a monotonic offset, that means we aren't
+            // connected, in which case we should just exit early.
+            // The ServerStatistics message will always populate statuses for
+            // every node, so we don't have to worry about missing the "sensor"
+            // node (although it can be good practice to check that the node you
+            // are looking for actually exists, to protect against programming
+            // errors).
+            LOG(WARNING) << "Message bridge disconnected.";
+            return;
+          }
+          break;
+        }
+      }
+    } else {
+      LOG(WARNING) << "No message bridge status available.";
+      return;
+    }
+    const aos::monotonic_clock::time_point now = event_loop_->monotonic_now();
+    // The monotonic_remote_time will be the time that the message was sent on
+    // the source node; by offsetting it by the monotonic_offset, we should get
+    // a reasonable estimate of when it was sent. This does not account for any
+    // delays between the sensor reading and when it actually got sent.
+    const aos::monotonic_clock::time_point send_time(
+        event_loop_->context().monotonic_remote_time - monotonic_offset);
+    // Many sensors may include some sort of hardware timestamp indicating when
+    // the measurement was taken, which is likely before the sent time. This can
+    // be populated as a data field inside of the message, and if it is using
+    // the same monotonic clock as AOS is then we can do the same offset
+    // computation, but get a timestamp for when the data was actually captured.
+    const aos::monotonic_clock::time_point capture_time(
+        std::chrono::nanoseconds(msg.hardware_capture_time_ns()) -
+        monotonic_offset);
+    LOG(INFO) << "The sensor data was sent "
+              << aos::time::DurationInSeconds(now - send_time)
+              << " seconds ago.";
+    LOG(INFO) << "The sensor data was read off of the hardware "
+              << aos::time::DurationInSeconds(now - capture_time)
+              << " seconds ago.";
+  }
+
+  aos::EventLoop *event_loop_;
+  aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
+};
+```
 
 ## Configurations
+
+### Configuring Multi-Node Systems
 
 ## FlatBuffers
 
@@ -1271,12 +1804,6 @@ See [FlatBuffers](/flatbuffers).
 ### Channel Storage Duration
 
 ### Sent Too Fast
-
-## Multi-Node
-
-### Message Bridge
-
-### Correlating Monotonic Clocks Across Nodes
 
 ## Simulation
 
