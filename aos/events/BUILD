@@ -3,7 +3,7 @@ load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
-load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -179,6 +179,12 @@ autocxx_library(
         "//aos:configuration_rs",
         "//aos:uuid_rs",
     ],
+)
+
+rust_doc(
+    name = "event_loop_runtime_doc",
+    crate = ":event_loop_runtime",
+    target_compatible_with = ["@platforms//cpu:x86_64"],
 )
 
 rust_doc_test(
@@ -520,6 +526,15 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "shm_event_loop_for_rust",
+    hdrs = ["shm_event_loop_for_rust.h"],
+    deps = [
+        ":event_loop",
+        ":simulated_event_loop",
+    ],
+)
+
 autocxx_library(
     name = "simulated_event_loop_rs",
     srcs = ["simulated_event_loop.rs"],
@@ -557,6 +572,66 @@ rust_test(
         "//aos:init_rs",
         "@crate_index//:futures",
         "@rules_rust//tools/runfiles",
+    ],
+)
+
+autocxx_library(
+    name = "shm_event_loop_rs",
+    srcs = ["shm_event_loop.rs"],
+    crate_name = "aos_events_shm_event_loop",
+    libs = [
+        ":shm_event_loop",
+        ":shm_event_loop_for_rust",
+    ],
+    rs_deps = [
+        "@com_github_google_flatbuffers//rust",
+        "@crate_index//:futures",
+        "//aos:configuration_rust_fbs",
+        "//aos:flatbuffers_rs",
+    ],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":event_loop_runtime",
+        "//aos:configuration_rs",
+    ],
+)
+
+rust_doc(
+    name = "shm_event_loop_rs_doc",
+    crate = ":shm_event_loop_rs",
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+)
+
+rust_test(
+    name = "shm_event_loop_rs_test",
+    crate = ":shm_event_loop_rs",
+    data = [":pingpong_config"],
+    # TODO: Make Rust play happy with pic vs nopic. Details at:
+    # https://github.com/bazelbuild/rules_rust/issues/118
+    rustc_flags = ["-Crelocation-model=static"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":ping_rust_fbs",
+        "//aos:init_rs",
+        "@crate_index//:futures",
+        "@rules_rust//tools/runfiles",
+    ],
+)
+
+rust_doc_test(
+    name = "shm_event_loop_rs_doc_test",
+    crate = ":shm_event_loop_rs",
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":ping_rust_fbs",
+        ":pong_rust_fbs",
     ],
 )
 
