@@ -173,6 +173,7 @@ cc_library(
         "//aos:sha256",
         "//aos:uuid",
         "//aos:configuration",
+        "//aos/containers:error_list",
         "//aos:flatbuffer_merge",
         "//aos:flatbuffers",
         "//aos/containers:resizeable_buffer",

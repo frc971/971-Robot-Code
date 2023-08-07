@@ -87,6 +87,10 @@ struct LogParts {
 
   // Highest max out of order durations among all parts.
   std::chrono::nanoseconds max_out_of_order_duration;
+
+  // The types of data we know are in this log file.  If we have no info, this
+  // will be a vector of all the potential types.
+  std::vector<StoredDataType> data_stored;
 };
 
 // Datastructure to hold parts from the same run of the logger which have no

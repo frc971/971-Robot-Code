@@ -11,6 +11,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/strings/str_join.h"
 
+#include "aos/containers/error_list.h"
 #include "aos/events/logging/file_operations.h"
 #include "aos/events/logging/logfile_utils.h"
 #include "aos/flatbuffer_merge.h"
@@ -175,6 +176,9 @@ struct UnsortedLogParts {
   // equal to min_time.
   std::optional<std::chrono::nanoseconds>
       max_out_of_order_duration_min_start_time = std::nullopt;
+
+  // All the data types we've seen so far, or all of them if we don't know.
+  aos::ErrorList<StoredDataType> data_stored;
 };
 
 // Struct to hold both the node, and the parts associated with it.
@@ -521,6 +525,9 @@ void PartsSorter::PopulateFromFiles(
         old_parts.back().parts.max_out_of_order_duration =
             max_out_of_order_duration;
         old_parts.back().name = name;
+        old_parts.back().parts.data_stored = {
+            StoredDataType::DATA, StoredDataType::TIMESTAMPS,
+            StoredDataType::REMOTE_TIMESTAMPS};
       } else {
         result->unsorted_parts.emplace_back(
             std::make_pair(first_message_time, part.name));
@@ -597,6 +604,15 @@ void PartsSorter::PopulateFromFiles(
       it->second.config_sha256 = configuration_sha256;
     } else {
       CHECK_EQ(it->second.config_sha256, configuration_sha256);
+    }
+    if (log_header->message().has_data_stored()) {
+      for (const StoredDataType type : *log_header->message().data_stored()) {
+        it->second.data_stored.Set(type);
+      }
+    } else {
+      it->second.data_stored.Set(StoredDataType::DATA);
+      it->second.data_stored.Set(StoredDataType::TIMESTAMPS);
+      it->second.data_stored.Set(StoredDataType::REMOTE_TIMESTAMPS);
     }
     // Keep track of the largest max out of order duration times based on
     // whether monotonic start time is available. We'll decide which value to
@@ -1918,6 +1934,10 @@ std::vector<LogFile> PartsSorter::FormatNewParts() {
       new_parts.parts_uuid = parts.first.first;
       new_parts.node = std::move(parts.second.node);
       new_parts.boots = boot_counts;
+      new_parts.data_stored.reserve(parts.second.data_stored.size());
+      for (const StoredDataType data : parts.second.data_stored) {
+        new_parts.data_stored.push_back(data);
+      }
       // If there are no part files which have a monotonic start time greater
       // than min time, use the max of whatever we have, else chose the max out
       // of order duration of parts with monotonic start time greater than min
@@ -2141,7 +2161,14 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
 
   stream << ",\n  \"monotonic_start_time\": \"" << parts.monotonic_start_time
          << "\",\n  \"realtime_start_time\": \"" << parts.realtime_start_time
-         << "\",\n  \"parts\": [";
+         << "\",\n  \"data_stored\": [";
+  for (size_t i = 0; i < parts.data_stored.size(); ++i) {
+    if (i != 0u) {
+      stream << ", ";
+    }
+    stream << "\"" << EnumNameStoredDataType(parts.data_stored[i]) << "\"";
+  }
+  stream << "],\n  \"parts\": [";
 
   for (size_t i = 0; i < parts.parts.size(); ++i) {
     if (i != 0u) {
