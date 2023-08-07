@@ -6,13 +6,17 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use crate::minisyn::FnArg;
 use itertools::Itertools;
 use quote::quote;
-use syn::{parse_quote, FnArg};
+use syn::parse_quote;
 
 use crate::{
     conversion::{
-        api::{Api, ApiName, CastMutability, Provenance, References, TraitSynthesis},
+        api::{
+            Api, ApiName, CastMutability, DeletedOrDefaulted, Provenance, References,
+            TraitSynthesis,
+        },
         apivec::ApiVec,
     },
     types::{make_ident, QualifiedName},
@@ -112,7 +116,7 @@ fn create_cast(from: &QualifiedName, to: &QualifiedName, mutable: CastMutability
                 mutable,
             }),
             synthetic_cpp: Some((CppFunctionBody::Cast, CppFunctionKind::Function)),
-            is_deleted: false,
+            is_deleted: DeletedOrDefaulted::Neither,
             provenance: Provenance::SynthesizedOther,
             variadic: false,
         }),

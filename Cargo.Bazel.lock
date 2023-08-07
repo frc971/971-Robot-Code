@@ -1,5 +1,5 @@
 {
-  "checksum": "9496d946b25ee32f2e88d66571320aad6d52655f5f4e1f646ddb64b89eca1136",
+  "checksum": "7305dfa1e83bfd0222912e22f8294905db9c35e036a34182aaaf7bafa13c28ac",
   "crates": {
     "addr2line 0.20.0": {
       "name": "addr2line",
@@ -233,6 +233,43 @@
       },
       "license": "MIT"
     },
+    "anstyle 1.0.1": {
+      "name": "anstyle",
+      "version": "1.0.1",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/anstyle/1.0.1/download",
+          "sha256": "3a30da5c5f2d5e72842e00bcb57657162cdabef0931f40e2deb9b4140440cecd"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "anstyle",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "anstyle",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "1.0.1"
+      },
+      "license": "MIT OR Apache-2.0"
+    },
     "anyhow 1.0.71": {
       "name": "anyhow",
       "version": "1.0.71",
@@ -348,13 +385,13 @@
       },
       "license": "MIT"
     },
-    "assert_cmd 1.0.8": {
+    "assert_cmd 2.0.12": {
       "name": "assert_cmd",
-      "version": "1.0.8",
+      "version": "2.0.12",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/assert_cmd/1.0.8/download",
-          "sha256": "c98233c6673d8601ab23e77eb38f999c51100d46c5703b17288c57fddf3a1ffe"
+          "url": "https://crates.io/api/v1/crates/assert_cmd/2.0.12/download",
+          "sha256": "88903cb14723e4d4003335bb7f8a14f27691649105346a0f0957466c096adfe6"
         }
       },
       "targets": [
@@ -376,7 +413,11 @@
         "deps": {
           "common": [
             {
-              "id": "bstr 0.2.17",
+              "id": "anstyle 1.0.1",
+              "target": "anstyle"
+            },
+            {
+              "id": "bstr 1.6.0",
               "target": "bstr"
             },
             {
@@ -384,7 +425,7 @@
               "target": "doc_comment"
             },
             {
-              "id": "predicates 2.1.5",
+              "id": "predicates 3.0.3",
               "target": "predicates"
             },
             {
@@ -402,8 +443,8 @@
           ],
           "selects": {}
         },
-        "edition": "2018",
-        "version": "1.0.8"
+        "edition": "2021",
+        "version": "2.0.12"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -490,15 +531,24 @@
       },
       "license": "Apache-2.0 OR MIT"
     },
-    "autocxx 0.22.3": {
+    "autocxx 0.26.0": {
       "name": "autocxx",
-      "version": "0.22.3",
+      "version": "0.26.0",
       "repository": null,
       "targets": [
         {
           "Library": {
             "crate_name": "autocxx",
             "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        },
+        {
+          "BuildScript": {
+            "crate_name": "build_script_build",
+            "crate_root": "build.rs",
             "srcs": [
               "**/*.rs"
             ]
@@ -513,11 +563,15 @@
         "deps": {
           "common": [
             {
+              "id": "autocxx 0.26.0",
+              "target": "build_script_build"
+            },
+            {
               "id": "cxx 1.0.97",
               "target": "cxx"
             },
             {
-              "id": "moveit 0.5.1",
+              "id": "moveit 0.6.0",
               "target": "moveit"
             }
           ],
@@ -533,24 +587,29 @@
           ],
           "selects": {}
         },
-        "version": "0.22.3"
+        "version": "0.26.0"
+      },
+      "build_script_attrs": {
+        "data_glob": [
+          "**"
+        ]
       },
       "license": "MIT OR Apache-2.0"
     },
-    "autocxx-bindgen 0.59.17": {
+    "autocxx-bindgen 0.65.1": {
       "name": "autocxx-bindgen",
-      "version": "0.59.17",
+      "version": "0.65.1",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/autocxx-bindgen/0.59.17/download",
-          "sha256": "f9a9a26dd38d385d23b1bf61bd231b77f690c4368aef4c77cee1b7a6da2e2042"
+          "url": "https://crates.io/api/v1/crates/autocxx-bindgen/0.65.1/download",
+          "sha256": "6c9fb7b8dd83a582e12157367773d8d1195f2dea54d4250aaf3426abae3237aa"
         }
       },
       "targets": [
         {
           "Library": {
             "crate_name": "autocxx_bindgen",
-            "crate_root": "src/lib.rs",
+            "crate_root": "lib.rs",
             "srcs": [
               "**/*.rs"
             ]
@@ -573,9 +632,6 @@
         ],
         "crate_features": {
           "common": [
-            "clap",
-            "default",
-            "env_logger",
             "log",
             "logging",
             "runtime",
@@ -587,7 +643,7 @@
         "deps": {
           "common": [
             {
-              "id": "autocxx-bindgen 0.59.17",
+              "id": "autocxx-bindgen 0.65.1",
               "target": "build_script_build"
             },
             {
@@ -601,14 +657,6 @@
             {
               "id": "clang-sys 1.6.1",
               "target": "clang_sys"
-            },
-            {
-              "id": "clap 2.34.0",
-              "target": "clap"
-            },
-            {
-              "id": "env_logger 0.9.3",
-              "target": "env_logger"
             },
             {
               "id": "itertools 0.10.5",
@@ -631,6 +679,10 @@
               "target": "peeking_take_while"
             },
             {
+              "id": "prettyplease 0.2.12",
+              "target": "prettyplease"
+            },
+            {
               "id": "proc-macro2 1.0.63",
               "target": "proc_macro2"
             },
@@ -651,6 +703,10 @@
               "target": "shlex"
             },
             {
+              "id": "syn 2.0.28",
+              "target": "syn"
+            },
+            {
               "id": "which 4.4.0",
               "target": "which"
             }
@@ -658,7 +714,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.59.17"
+        "version": "0.65.1"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -667,9 +723,9 @@
       },
       "license": "BSD-3-Clause"
     },
-    "autocxx-engine 0.22.3": {
+    "autocxx-engine 0.26.0": {
       "name": "autocxx-engine",
-      "version": "0.22.3",
+      "version": "0.26.0",
       "repository": null,
       "targets": [
         {
@@ -693,6 +749,7 @@
             "cc",
             "default",
             "reproduction_case",
+            "runtime",
             "serde_json"
           ],
           "selects": {}
@@ -700,7 +757,7 @@
         "deps": {
           "common": [
             {
-              "id": "autocxx-bindgen 0.59.17",
+              "id": "autocxx-bindgen 0.65.1",
               "target": "autocxx_bindgen"
             },
             {
@@ -724,12 +781,16 @@
               "target": "log"
             },
             {
-              "id": "miette 4.7.1",
+              "id": "miette 5.10.0",
               "target": "miette"
             },
             {
               "id": "once_cell 1.18.0",
               "target": "once_cell"
+            },
+            {
+              "id": "prettyplease 0.2.12",
+              "target": "prettyplease"
             },
             {
               "id": "proc-macro2 1.0.63",
@@ -748,7 +809,7 @@
               "target": "serde_json"
             },
             {
-              "id": "syn 1.0.109",
+              "id": "syn 2.0.28",
               "target": "syn"
             },
             {
@@ -778,19 +839,19 @@
               "target": "indoc"
             },
             {
-              "id": "strum_macros 0.24.3",
-              "target": "strum_macros"
+              "id": "rustversion 1.0.13",
+              "target": "rustversion"
             }
           ],
           "selects": {}
         },
-        "version": "0.22.3"
+        "version": "0.26.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "autocxx-gen 0.22.3": {
+    "autocxx-gen 0.26.0": {
       "name": "autocxx-gen",
-      "version": "0.22.3",
+      "version": "0.26.0",
       "repository": null,
       "targets": [],
       "library_target_name": null,
@@ -813,7 +874,7 @@
               "target": "indexmap"
             },
             {
-              "id": "miette 4.7.1",
+              "id": "miette 5.10.0",
               "target": "miette"
             },
             {
@@ -830,7 +891,7 @@
         "deps_dev": {
           "common": [
             {
-              "id": "assert_cmd 1.0.8",
+              "id": "assert_cmd 2.0.12",
               "target": "assert_cmd"
             },
             {
@@ -849,13 +910,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.22.3"
+        "version": "0.26.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "autocxx-integration-tests 0.22.3": {
+    "autocxx-integration-tests 0.26.0": {
       "name": "autocxx-integration-tests",
-      "version": "0.22.3",
+      "version": "0.26.0",
       "repository": null,
       "targets": [
         {
@@ -900,6 +961,10 @@
               "target": "log"
             },
             {
+              "id": "moveit 0.6.0",
+              "target": "moveit"
+            },
+            {
               "id": "once_cell 1.18.0",
               "target": "once_cell"
             },
@@ -914,6 +979,10 @@
             {
               "id": "rust_info 0.3.2",
               "target": "rust_info"
+            },
+            {
+              "id": "static_assertions 1.1.0",
+              "target": "static_assertions"
             },
             {
               "id": "syn 1.0.109",
@@ -938,19 +1007,23 @@
               "target": "indoc"
             },
             {
+              "id": "rustversion 1.0.13",
+              "target": "rustversion"
+            },
+            {
               "id": "test-log 0.2.12",
               "target": "test_log"
             }
           ],
           "selects": {}
         },
-        "version": "0.22.3"
+        "version": "0.26.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "autocxx-macro 0.22.3": {
+    "autocxx-macro 0.26.0": {
       "name": "autocxx-macro",
-      "version": "0.22.3",
+      "version": "0.26.0",
       "repository": null,
       "targets": [
         {
@@ -983,20 +1056,20 @@
               "target": "quote"
             },
             {
-              "id": "syn 1.0.109",
+              "id": "syn 2.0.28",
               "target": "syn"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.22.3"
+        "version": "0.26.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "autocxx-parser 0.22.3": {
+    "autocxx-parser 0.26.0": {
       "name": "autocxx-parser",
-      "version": "0.22.3",
+      "version": "0.26.0",
       "repository": null,
       "targets": [
         {
@@ -1055,7 +1128,7 @@
               "target": "serde_json"
             },
             {
-              "id": "syn 1.0.109",
+              "id": "syn 2.0.28",
               "target": "syn"
             },
             {
@@ -1066,7 +1139,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.22.3"
+        "version": "0.26.0"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -1160,6 +1233,45 @@
           ],
           "selects": {}
         }
+      },
+      "license": "MIT OR Apache-2.0"
+    },
+    "backtrace-ext 0.2.1": {
+      "name": "backtrace-ext",
+      "version": "0.2.1",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/backtrace-ext/0.2.1/download",
+          "sha256": "537beee3be4a18fb023b570f80e3ae28003db9167a751266b259926e25539d50"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "backtrace_ext",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "backtrace_ext",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "backtrace 0.3.68",
+              "target": "backtrace"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2018",
+        "version": "0.2.1"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -1364,13 +1476,49 @@
       },
       "license": "MIT/Apache-2.0"
     },
-    "bstr 0.2.17": {
-      "name": "bstr",
-      "version": "0.2.17",
+    "bitflags 2.3.3": {
+      "name": "bitflags",
+      "version": "2.3.3",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/bstr/0.2.17/download",
-          "sha256": "ba3569f383e8f1598449f1a423e72e99569137b47740b1da11ef19af3d5c3223"
+          "url": "https://crates.io/api/v1/crates/bitflags/2.3.3/download",
+          "sha256": "630be753d4e58660abd17930c71b647fe46c27ea6b63cc59e1e3851406972e42"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "bitflags",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "bitflags",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "2.3.3"
+      },
+      "license": "MIT OR Apache-2.0"
+    },
+    "bstr 1.6.0": {
+      "name": "bstr",
+      "version": "1.6.0",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/bstr/1.6.0/download",
+          "sha256": "6798148dccfbff0fae41c7574d2fa8f1ef3492fba0face179de5d8d447d67b05"
         }
       },
       "targets": [
@@ -1391,9 +1539,8 @@
         ],
         "crate_features": {
           "common": [
+            "alloc",
             "default",
-            "lazy_static",
-            "regex-automata",
             "std",
             "unicode"
           ],
@@ -1402,22 +1549,18 @@
         "deps": {
           "common": [
             {
-              "id": "lazy_static 1.4.0",
-              "target": "lazy_static"
-            },
-            {
               "id": "memchr 2.5.0",
               "target": "memchr"
             },
             {
-              "id": "regex-automata 0.1.10",
+              "id": "regex-automata 0.3.2",
               "target": "regex_automata"
             }
           ],
           "selects": {}
         },
-        "edition": "2018",
-        "version": "0.2.17"
+        "edition": "2021",
+        "version": "1.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -2107,7 +2250,7 @@
               "target": "quote"
             },
             {
-              "id": "syn 2.0.22",
+              "id": "syn 2.0.28",
               "target": "syn"
             }
           ],
@@ -2190,7 +2333,7 @@
               "target": "quote"
             },
             {
-              "id": "syn 2.0.22",
+              "id": "syn 2.0.28",
               "target": "syn"
             }
           ],
@@ -3020,7 +3163,7 @@
               "target": "quote"
             },
             {
-              "id": "syn 2.0.22",
+              "id": "syn 2.0.28",
               "target": "syn"
             }
           ],
@@ -3411,42 +3554,6 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "heck 0.4.1": {
-      "name": "heck",
-      "version": "0.4.1",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/heck/0.4.1/download",
-          "sha256": "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "heck",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "heck",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default"
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.4.1"
-      },
-      "license": "MIT OR Apache-2.0"
-    },
     "hermit-abi 0.1.19": {
       "name": "hermit-abi",
       "version": "0.1.19",
@@ -3772,6 +3879,59 @@
         ]
       },
       "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+    },
+    "is-terminal 0.4.9": {
+      "name": "is-terminal",
+      "version": "0.4.9",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/is-terminal/0.4.9/download",
+          "sha256": "cb0889898416213fab133e1d33a0e5858a48177452750691bde3666d0fdbaf8b"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "is_terminal",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "is_terminal",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [],
+          "selects": {
+            "cfg(not(any(windows, target_os = \"hermit\", target_os = \"unknown\")))": [
+              {
+                "id": "rustix 0.38.7",
+                "target": "rustix"
+              }
+            ],
+            "cfg(target_os = \"hermit\")": [
+              {
+                "id": "hermit-abi 0.3.2",
+                "target": "hermit_abi"
+              }
+            ],
+            "cfg(windows)": [
+              {
+                "id": "windows-sys 0.48.0",
+                "target": "windows_sys"
+              }
+            ]
+          }
+        },
+        "edition": "2018",
+        "version": "0.4.9"
+      },
+      "license": "MIT"
     },
     "is_ci 1.1.1": {
       "name": "is_ci",
@@ -4269,6 +4429,45 @@
       },
       "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
     },
+    "linux-raw-sys 0.4.5": {
+      "name": "linux-raw-sys",
+      "version": "0.4.5",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/linux-raw-sys/0.4.5/download",
+          "sha256": "57bcfdad1b858c2db7c38303a6d2ad4dfaf5eb53dfeb0910128b2c26d6158503"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "linux_raw_sys",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "linux_raw_sys",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "errno",
+            "general",
+            "ioctl",
+            "no_std"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.4.5"
+      },
+      "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+    },
     "log 0.4.19": {
       "name": "log",
       "version": "0.4.19",
@@ -4369,13 +4568,13 @@
       },
       "license": "Unlicense/MIT"
     },
-    "miette 4.7.1": {
+    "miette 5.10.0": {
       "name": "miette",
-      "version": "4.7.1",
+      "version": "5.10.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/miette/4.7.1/download",
-          "sha256": "1c90329e44f9208b55f45711f9558cec15d7ef8295cc65ecd6d4188ae8edc58c"
+          "url": "https://crates.io/api/v1/crates/miette/5.10.0/download",
+          "sha256": "59bb584eaeeab6bd0226ccf3509a69d7936d148cf3d036ad350abe35e8c6856e"
         }
       },
       "targets": [
@@ -4396,11 +4595,12 @@
         ],
         "crate_features": {
           "common": [
-            "atty",
             "backtrace",
+            "backtrace-ext",
             "default",
             "fancy",
             "fancy-no-backtrace",
+            "is-terminal",
             "owo-colors",
             "supports-color",
             "supports-hyperlinks",
@@ -4413,12 +4613,16 @@
         "deps": {
           "common": [
             {
-              "id": "atty 0.2.14",
-              "target": "atty"
-            },
-            {
               "id": "backtrace 0.3.68",
               "target": "backtrace"
+            },
+            {
+              "id": "backtrace-ext 0.2.1",
+              "target": "backtrace_ext"
+            },
+            {
+              "id": "is-terminal 0.4.9",
+              "target": "is_terminal"
             },
             {
               "id": "once_cell 1.18.0",
@@ -4429,15 +4633,15 @@
               "target": "owo_colors"
             },
             {
-              "id": "supports-color 1.3.1",
+              "id": "supports-color 2.0.0",
               "target": "supports_color"
             },
             {
-              "id": "supports-hyperlinks 1.2.0",
+              "id": "supports-hyperlinks 2.1.0",
               "target": "supports_hyperlinks"
             },
             {
-              "id": "supports-unicode 1.0.2",
+              "id": "supports-unicode 2.0.0",
               "target": "supports_unicode"
             },
             {
@@ -4463,23 +4667,23 @@
         "proc_macro_deps": {
           "common": [
             {
-              "id": "miette-derive 4.7.1",
+              "id": "miette-derive 5.10.0",
               "target": "miette_derive"
             }
           ],
           "selects": {}
         },
-        "version": "4.7.1"
+        "version": "5.10.0"
       },
       "license": "Apache-2.0"
     },
-    "miette-derive 4.7.1": {
+    "miette-derive 5.10.0": {
       "name": "miette-derive",
-      "version": "4.7.1",
+      "version": "5.10.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/miette-derive/4.7.1/download",
-          "sha256": "6b5bc45b761bcf1b5e6e6c4128cd93b84c218721a8d9b894aa0aff4ed180174c"
+          "url": "https://crates.io/api/v1/crates/miette-derive/5.10.0/download",
+          "sha256": "49e7bc1560b95a3c4a25d03de42fe76ca718ab92d1a22a55b9b4cf67b3ae635c"
         }
       },
       "targets": [
@@ -4509,14 +4713,14 @@
               "target": "quote"
             },
             {
-              "id": "syn 1.0.109",
+              "id": "syn 2.0.28",
               "target": "syn"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "4.7.1"
+        "version": "5.10.0"
       },
       "license": "Apache-2.0"
     },
@@ -4595,13 +4799,13 @@
       },
       "license": "MIT OR Zlib OR Apache-2.0"
     },
-    "moveit 0.5.1": {
+    "moveit 0.6.0": {
       "name": "moveit",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/moveit/0.5.1/download",
-          "sha256": "d7d756ffe4e38013507d35bf726a93fcdae2cae043ab5ce477f13857a335030d"
+          "url": "https://crates.io/api/v1/crates/moveit/0.6.0/download",
+          "sha256": "87d7335204cb6ef7bd647fa6db0be3e4d7aa25b5823a7aa030027ddf512cefba"
         }
       },
       "targets": [
@@ -4638,7 +4842,7 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "0.5.1"
+        "version": "0.6.0"
       },
       "license": "Apache-2.0 OR MIT"
     },
@@ -5041,13 +5245,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "predicates 2.1.5": {
+    "predicates 3.0.3": {
       "name": "predicates",
-      "version": "2.1.5",
+      "version": "3.0.3",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/predicates/2.1.5/download",
-          "sha256": "59230a63c37f3e18569bdb90e4a89cbf5bf8b06fea0b84e65ea10cc4df47addd"
+          "url": "https://crates.io/api/v1/crates/predicates/3.0.3/download",
+          "sha256": "09963355b9f467184c04017ced4a2ba2d75cbcb4e7462690d388233253d4b1a9"
         }
       },
       "targets": [
@@ -5075,6 +5279,10 @@
         "deps": {
           "common": [
             {
+              "id": "anstyle 1.0.1",
+              "target": "anstyle"
+            },
+            {
               "id": "difflib 0.4.0",
               "target": "difflib"
             },
@@ -5090,7 +5298,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "2.1.5"
+        "version": "3.0.3"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -5164,6 +5372,74 @@
         },
         "edition": "2021",
         "version": "1.0.9"
+      },
+      "license": "MIT OR Apache-2.0"
+    },
+    "prettyplease 0.2.12": {
+      "name": "prettyplease",
+      "version": "0.2.12",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/prettyplease/0.2.12/download",
+          "sha256": "6c64d9ba0963cdcea2e1b2230fbae2bab30eb25a174be395c41e764bfb65dd62"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "prettyplease",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        },
+        {
+          "BuildScript": {
+            "crate_name": "build_script_build",
+            "crate_root": "build.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "prettyplease",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "verbatim"
+          ],
+          "selects": {}
+        },
+        "deps": {
+          "common": [
+            {
+              "id": "prettyplease 0.2.12",
+              "target": "build_script_build"
+            },
+            {
+              "id": "proc-macro2 1.0.63",
+              "target": "proc_macro2"
+            },
+            {
+              "id": "syn 2.0.28",
+              "target": "syn"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.2.12"
+      },
+      "build_script_attrs": {
+        "data_glob": [
+          "**"
+        ],
+        "links": "prettyplease02"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -5569,36 +5845,6 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "regex-automata 0.1.10": {
-      "name": "regex-automata",
-      "version": "0.1.10",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/regex-automata/0.1.10/download",
-          "sha256": "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "regex_automata",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "regex_automata",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2015",
-        "version": "0.1.10"
-      },
-      "license": "Unlicense/MIT"
-    },
     "regex-automata 0.3.2": {
       "name": "regex-automata",
       "version": "0.3.2",
@@ -5628,6 +5874,7 @@
           "common": [
             "alloc",
             "dfa-onepass",
+            "dfa-search",
             "hybrid",
             "meta",
             "nfa-backtrack",
@@ -5965,6 +6212,107 @@
       },
       "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
     },
+    "rustix 0.38.7": {
+      "name": "rustix",
+      "version": "0.38.7",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/rustix/0.38.7/download",
+          "sha256": "172891ebdceb05aa0005f533a6cbfca599ddd7d966f6f5d4d9b2e70478e70399"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "rustix",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        },
+        {
+          "BuildScript": {
+            "crate_name": "build_script_build",
+            "crate_root": "build.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "rustix",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std",
+            "termios",
+            "use-libc-auxv"
+          ],
+          "selects": {}
+        },
+        "deps": {
+          "common": [
+            {
+              "id": "bitflags 2.3.3",
+              "target": "bitflags"
+            },
+            {
+              "id": "rustix 0.38.7",
+              "target": "build_script_build"
+            }
+          ],
+          "selects": {
+            "cfg(all(any(target_os = \"android\", target_os = \"linux\"), any(rustix_use_libc, miri, not(all(target_os = \"linux\", target_endian = \"little\", any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\")))))))": [
+              {
+                "id": "linux-raw-sys 0.4.5",
+                "target": "linux_raw_sys"
+              }
+            ],
+            "cfg(all(not(rustix_use_libc), not(miri), target_os = \"linux\", target_endian = \"little\", any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\"))))": [
+              {
+                "id": "linux-raw-sys 0.4.5",
+                "target": "linux_raw_sys"
+              }
+            ],
+            "cfg(all(not(windows), any(rustix_use_libc, miri, not(all(target_os = \"linux\", target_endian = \"little\", any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\")))))))": [
+              {
+                "id": "errno 0.3.1",
+                "target": "errno",
+                "alias": "libc_errno"
+              },
+              {
+                "id": "libc 0.2.147",
+                "target": "libc"
+              }
+            ],
+            "cfg(windows)": [
+              {
+                "id": "errno 0.3.1",
+                "target": "errno",
+                "alias": "libc_errno"
+              },
+              {
+                "id": "windows-sys 0.48.0",
+                "target": "windows_sys"
+              }
+            ]
+          }
+        },
+        "edition": "2021",
+        "version": "0.38.7"
+      },
+      "build_script_attrs": {
+        "data_glob": [
+          "**"
+        ]
+      },
+      "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+    },
     "rustversion 1.0.13": {
       "name": "rustversion",
       "version": "1.0.13",
@@ -6221,7 +6569,7 @@
               "target": "quote"
             },
             {
-              "id": "syn 2.0.22",
+              "id": "syn 2.0.28",
               "target": "syn"
             }
           ],
@@ -6470,6 +6818,36 @@
       },
       "license": "MIT"
     },
+    "static_assertions 1.1.0": {
+      "name": "static_assertions",
+      "version": "1.1.0",
+      "repository": {
+        "Http": {
+          "url": "https://crates.io/api/v1/crates/static_assertions/1.1.0/download",
+          "sha256": "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "static_assertions",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "static_assertions",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2015",
+        "version": "1.1.0"
+      },
+      "license": "MIT OR Apache-2.0"
+    },
     "strsim 0.10.0": {
       "name": "strsim",
       "version": "0.10.0",
@@ -6530,73 +6908,13 @@
       },
       "license": "MIT"
     },
-    "strum_macros 0.24.3": {
-      "name": "strum_macros",
-      "version": "0.24.3",
-      "repository": {
-        "Http": {
-          "url": "https://crates.io/api/v1/crates/strum_macros/0.24.3/download",
-          "sha256": "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
-        }
-      },
-      "targets": [
-        {
-          "ProcMacro": {
-            "crate_name": "strum_macros",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "strum_macros",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "heck 0.4.1",
-              "target": "heck"
-            },
-            {
-              "id": "proc-macro2 1.0.63",
-              "target": "proc_macro2"
-            },
-            {
-              "id": "quote 1.0.29",
-              "target": "quote"
-            },
-            {
-              "id": "syn 1.0.109",
-              "target": "syn"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "proc_macro_deps": {
-          "common": [
-            {
-              "id": "rustversion 1.0.13",
-              "target": "rustversion"
-            }
-          ],
-          "selects": {}
-        },
-        "version": "0.24.3"
-      },
-      "license": "MIT"
-    },
-    "supports-color 1.3.1": {
+    "supports-color 2.0.0": {
       "name": "supports-color",
-      "version": "1.3.1",
+      "version": "2.0.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/supports-color/1.3.1/download",
-          "sha256": "8ba6faf2ca7ee42fdd458f4347ae0a9bd6bcc445ad7cb57ad82b383f18870d6f"
+          "url": "https://crates.io/api/v1/crates/supports-color/2.0.0/download",
+          "sha256": "4950e7174bffabe99455511c39707310e7e9b440364a2fcb1cc21521be57b354"
         }
       },
       "targets": [
@@ -6618,8 +6936,8 @@
         "deps": {
           "common": [
             {
-              "id": "atty 0.2.14",
-              "target": "atty"
+              "id": "is-terminal 0.4.9",
+              "target": "is_terminal"
             },
             {
               "id": "is_ci 1.1.1",
@@ -6629,17 +6947,17 @@
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.3.1"
+        "version": "2.0.0"
       },
       "license": "Apache-2.0"
     },
-    "supports-hyperlinks 1.2.0": {
+    "supports-hyperlinks 2.1.0": {
       "name": "supports-hyperlinks",
-      "version": "1.2.0",
+      "version": "2.1.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/supports-hyperlinks/1.2.0/download",
-          "sha256": "590b34f7c5f01ecc9d78dba4b3f445f31df750a67621cf31626f3b7441ce6406"
+          "url": "https://crates.io/api/v1/crates/supports-hyperlinks/2.1.0/download",
+          "sha256": "f84231692eb0d4d41e4cdd0cabfdd2e6cd9e255e65f80c9aa7c98dd502b4233d"
         }
       },
       "targets": [
@@ -6661,24 +6979,24 @@
         "deps": {
           "common": [
             {
-              "id": "atty 0.2.14",
-              "target": "atty"
+              "id": "is-terminal 0.4.9",
+              "target": "is_terminal"
             }
           ],
           "selects": {}
         },
-        "edition": "2018",
-        "version": "1.2.0"
+        "edition": "2021",
+        "version": "2.1.0"
       },
       "license": "Apache-2.0"
     },
-    "supports-unicode 1.0.2": {
+    "supports-unicode 2.0.0": {
       "name": "supports-unicode",
-      "version": "1.0.2",
+      "version": "2.0.0",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/supports-unicode/1.0.2/download",
-          "sha256": "a8b945e45b417b125a8ec51f1b7df2f8df7920367700d1f98aedd21e5735f8b2"
+          "url": "https://crates.io/api/v1/crates/supports-unicode/2.0.0/download",
+          "sha256": "4b6c2cb240ab5dd21ed4906895ee23fe5a48acdbd15a3ce388e7b62a9b66baf7"
         }
       },
       "targets": [
@@ -6700,14 +7018,14 @@
         "deps": {
           "common": [
             {
-              "id": "atty 0.2.14",
-              "target": "atty"
+              "id": "is-terminal 0.4.9",
+              "target": "is_terminal"
             }
           ],
           "selects": {}
         },
         "edition": "2018",
-        "version": "1.0.2"
+        "version": "2.0.0"
       },
       "license": "Apache-2.0"
     },
@@ -6790,13 +7108,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "syn 2.0.22": {
+    "syn 2.0.28": {
       "name": "syn",
-      "version": "2.0.22",
+      "version": "2.0.28",
       "repository": {
         "Http": {
-          "url": "https://crates.io/api/v1/crates/syn/2.0.22/download",
-          "sha256": "2efbeae7acf4eabd6bcdcbd11c92f45231ddda7539edc7806bd1a04a03b24616"
+          "url": "https://crates.io/api/v1/crates/syn/2.0.28/download",
+          "sha256": "04361975b3f5e348b2189d8dc55bc942f278b2d482a6a0365de5bdd62d351567"
         }
       },
       "targets": [
@@ -6820,11 +7138,13 @@
             "clone-impls",
             "default",
             "derive",
+            "extra-traits",
             "full",
             "parsing",
             "printing",
             "proc-macro",
-            "quote"
+            "quote",
+            "visit-mut"
           ],
           "selects": {}
         },
@@ -6846,7 +7166,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "2.0.22"
+        "version": "2.0.28"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -7334,7 +7654,7 @@
               "target": "quote"
             },
             {
-              "id": "syn 2.0.22",
+              "id": "syn 2.0.28",
               "target": "syn"
             }
           ],
@@ -8568,25 +8888,33 @@
   },
   "binary_crates": [],
   "workspace_members": {
-    "autocxx 0.22.3": "third_party/autocxx",
-    "autocxx-engine 0.22.3": "third_party/autocxx/engine",
-    "autocxx-gen 0.22.3": "third_party/autocxx/gen/cmd",
-    "autocxx-integration-tests 0.22.3": "third_party/autocxx/integration-tests",
-    "autocxx-macro 0.22.3": "third_party/autocxx/macro",
-    "autocxx-parser 0.22.3": "third_party/autocxx/parser",
+    "autocxx 0.26.0": "third_party/autocxx",
+    "autocxx-engine 0.26.0": "third_party/autocxx/engine",
+    "autocxx-gen 0.26.0": "third_party/autocxx/gen/cmd",
+    "autocxx-integration-tests 0.26.0": "third_party/autocxx/integration-tests",
+    "autocxx-macro 0.26.0": "third_party/autocxx/macro",
+    "autocxx-parser 0.26.0": "third_party/autocxx/parser",
     "compile_with_bazel 0.0.0": "",
     "flatbuffers 22.10.26": "third_party/flatbuffers/rust/flatbuffers"
   },
   "conditions": {
     "aarch64-pc-windows-gnullvm": [],
     "cfg(all(any(target_os = \"android\", target_os = \"linux\"), any(rustix_use_libc, miri, not(all(target_os = \"linux\", any(target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\"), all(target_endian = \"little\", any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"powerpc64\", target_arch = \"riscv64\", target_arch = \"mips\", target_arch = \"mips64\"))))))))": [],
+    "cfg(all(any(target_os = \"android\", target_os = \"linux\"), any(rustix_use_libc, miri, not(all(target_os = \"linux\", target_endian = \"little\", any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\")))))))": [],
     "cfg(all(not(rustix_use_libc), not(miri), target_os = \"linux\", any(target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\"), all(target_endian = \"little\", any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"powerpc64\", target_arch = \"riscv64\", target_arch = \"mips\", target_arch = \"mips64\")))))": [
       "aarch64-unknown-linux-gnu",
       "arm-unknown-linux-gnueabi",
       "armv7-unknown-linux-gnueabihf",
       "x86_64-unknown-linux-gnu"
     ],
+    "cfg(all(not(rustix_use_libc), not(miri), target_os = \"linux\", target_endian = \"little\", any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\"))))": [
+      "aarch64-unknown-linux-gnu",
+      "arm-unknown-linux-gnueabi",
+      "armv7-unknown-linux-gnueabihf",
+      "x86_64-unknown-linux-gnu"
+    ],
     "cfg(all(not(windows), any(rustix_use_libc, miri, not(all(target_os = \"linux\", any(target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\"), all(target_endian = \"little\", any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"powerpc64\", target_arch = \"riscv64\", target_arch = \"mips\", target_arch = \"mips64\"))))))))": [],
+    "cfg(all(not(windows), any(rustix_use_libc, miri, not(all(target_os = \"linux\", target_endian = \"little\", any(target_arch = \"arm\", all(target_arch = \"aarch64\", target_pointer_width = \"64\"), target_arch = \"riscv64\", all(rustix_use_experimental_asm, target_arch = \"powerpc64\"), all(rustix_use_experimental_asm, target_arch = \"mips\"), all(rustix_use_experimental_asm, target_arch = \"mips32r6\"), all(rustix_use_experimental_asm, target_arch = \"mips64\"), all(rustix_use_experimental_asm, target_arch = \"mips64r6\"), target_arch = \"x86\", all(target_arch = \"x86_64\", target_pointer_width = \"64\")))))))": [],
     "cfg(all(target_arch = \"aarch64\", target_env = \"msvc\", not(windows_raw_dylib)))": [],
     "cfg(all(target_arch = \"wasm32\", not(target_os = \"wasi\")))": [],
     "cfg(all(target_arch = \"x86\", target_env = \"gnu\", not(windows_raw_dylib)))": [],
@@ -8608,6 +8936,12 @@
       "x86_64-unknown-linux-gnu"
     ],
     "cfg(not(all(target_arch = \"arm\", target_os = \"none\")))": [
+      "aarch64-unknown-linux-gnu",
+      "arm-unknown-linux-gnueabi",
+      "armv7-unknown-linux-gnueabihf",
+      "x86_64-unknown-linux-gnu"
+    ],
+    "cfg(not(any(windows, target_os = \"hermit\", target_os = \"unknown\")))": [
       "aarch64-unknown-linux-gnu",
       "arm-unknown-linux-gnueabi",
       "armv7-unknown-linux-gnueabihf",

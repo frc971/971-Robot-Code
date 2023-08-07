@@ -14,9 +14,9 @@ use syn::{
 };
 
 use crate::conversion::{
-    api::{CppVisibility, Layout, References, SpecialMemberKind, Virtualness},
+    api::{CppVisibility, DeletedOrDefaulted, Layout, References, SpecialMemberKind, Virtualness},
     convert_error::{ConvertErrorWithContext, ErrorContext},
-    ConvertError,
+    ConvertErrorFromCpp,
 };
 
 /// The set of all annotations that autocxx_bindgen has added
@@ -31,7 +31,7 @@ impl BindgenSemanticAttributes {
     // item can't be processed.
     pub(crate) fn new_retaining_others(attrs: &mut Vec<Attribute>) -> Self {
         let metadata = Self::new(attrs);
-        attrs.retain(|a| a.path.segments.last().unwrap().ident != "cpp_semantics");
+        attrs.retain(|a| a.path().segments.last().unwrap().ident != "cpp_semantics");
         metadata
     }
 
@@ -40,7 +40,7 @@ impl BindgenSemanticAttributes {
             attrs
                 .iter()
                 .filter_map(|attr| {
-                    if attr.path.segments.last().unwrap().ident == "cpp_semantics" {
+                    if attr.path().segments.last().unwrap().ident == "cpp_semantics" {
                         let r: Result<BindgenSemanticAttribute, syn::Error> = attr.parse_args();
                         r.ok()
                     } else {
@@ -58,13 +58,13 @@ impl BindgenSemanticAttributes {
     ) -> Result<(), ConvertErrorWithContext> {
         if self.has_attr("unused_template_param") {
             Err(ConvertErrorWithContext(
-                ConvertError::UnusedTemplateParam,
-                Some(ErrorContext::new_for_item(id_for_context.clone())),
+                ConvertErrorFromCpp::UnusedTemplateParam,
+                Some(ErrorContext::new_for_item(id_for_context.clone().into())),
             ))
         } else if self.get_cpp_visibility() != CppVisibility::Public {
             Err(ConvertErrorWithContext(
-                ConvertError::NonPublicNestedType,
-                Some(ErrorContext::new_for_item(id_for_context.clone())),
+                ConvertErrorFromCpp::NonPublicNestedType,
+                Some(ErrorContext::new_for_item(id_for_context.clone().into())),
             ))
         } else {
             Ok(())
@@ -95,6 +95,16 @@ impl BindgenSemanticAttributes {
             Virtualness::Virtual
         } else {
             Virtualness::None
+        }
+    }
+
+    pub(super) fn get_deleted_or_defaulted(&self) -> DeletedOrDefaulted {
+        if self.has_attr("deleted") {
+            DeletedOrDefaulted::Deleted
+        } else if self.has_attr("defaulted") {
+            DeletedOrDefaulted::Defaulted
+        } else {
+            DeletedOrDefaulted::Neither
         }
     }
 
@@ -144,12 +154,12 @@ impl BindgenSemanticAttributes {
             } else if a.is_ident("arg_type_reference") {
                 let r: Result<Ident, syn::Error> = a.parse_args();
                 if let Ok(ls) = r {
-                    results.ref_params.insert(ls);
+                    results.ref_params.insert(ls.into());
                 }
             } else if a.is_ident("arg_type_rvalue_reference") {
                 let r: Result<Ident, syn::Error> = a.parse_args();
                 if let Ok(ls) = r {
-                    results.rvalue_ref_params.insert(ls);
+                    results.rvalue_ref_params.insert(ls.into());
                 }
             }
         }

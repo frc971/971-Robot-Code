@@ -25,6 +25,6 @@ rust_proc_macro(
         "@crate_index//:proc-macro-error",
         "@crate_index//:proc-macro2",
         "@crate_index//:quote",
-        "@crate_index//:syn",
+        "@crate_index//:syn-2.0.28",
     ],
 )

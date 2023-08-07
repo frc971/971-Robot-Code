@@ -87,8 +87,7 @@ impl CodeCheckerFns for StringFinder {
         for msg in &self.0 {
             if !toks.contains(msg) {
                 return Err(TestError::RsCodeExaminationFail(format!(
-                    "Couldn't find string '{}'",
-                    msg
+                    "Couldn't find string '{msg}'"
                 )));
             };
         }
@@ -110,8 +109,7 @@ impl CodeCheckerFns for RustCodeFinder {
             let needle = msg.to_string();
             if !haystack.contains(&needle) {
                 return Err(TestError::RsCodeExaminationFail(format!(
-                    "Couldn't find tokens '{}'",
-                    needle
+                    "Couldn't find tokens '{needle}'"
                 )));
             };
         }
@@ -146,7 +144,7 @@ impl<'a> CodeCheckerFns for CppMatcher<'a> {
         for filename in cpp {
             let file = File::open(filename).unwrap();
             let lines = BufReader::new(file).lines();
-            for l in lines.filter_map(|l| l.ok()) {
+            for l in lines.map_while(Result::ok) {
                 if self.negative_matches.iter().any(|neg| l.contains(neg)) {
                     return Err(TestError::CppCodeExaminationFail);
                 }

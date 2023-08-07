@@ -55,7 +55,7 @@ pub(crate) fn make_non_pod(s: &mut ItemStruct, layout: Option<Layout>) {
     let doc_attr = s
         .attrs
         .iter()
-        .filter(|a| a.path.get_ident().iter().any(|p| *p == "doc"))
+        .filter(|a| a.path().get_ident().iter().any(|p| *p == "doc"))
         .cloned();
     let repr_attr = if let Some(layout) = &layout {
         let align = make_lit_int(layout.align);
@@ -85,9 +85,9 @@ pub(crate) fn make_non_pod(s: &mut ItemStruct, layout: Option<Layout>) {
         .filter_map(|(counter, gp)| match gp {
             GenericParam::Type(gpt) => {
                 let id = &gpt.ident;
-                let field_name = make_ident(&format!("_phantom_{}", counter));
+                let field_name = make_ident(format!("_phantom_{counter}"));
                 let toks = quote! {
-                    #field_name: ::std::marker::PhantomData<::std::cell::UnsafeCell< #id >>
+                    #field_name: ::core::marker::PhantomData<::core::cell::UnsafeCell< #id >>
                 };
                 Some(Field::parse_named.parse2(toks).unwrap())
             }
