@@ -36,11 +36,13 @@ Starter::Starter(const aos::Configuration *event_loop_config)
     : config_msg_(event_loop_config),
       event_loop_(event_loop_config),
       status_sender_(event_loop_.MakeSender<aos::starter::Status>("/aos")),
-      status_timer_(event_loop_.AddTimer([this] {
-        ServiceTimingReportFetcher();
-        SendStatus();
-        status_count_ = 0;
-      })),
+      status_timer_(event_loop_.AddPhasedLoop(
+          [this](int elapsed_cycles) {
+            ServiceTimingReportFetcher(elapsed_cycles);
+            SendStatus();
+            status_count_ = 0;
+          },
+          std::chrono::milliseconds(1000))),
       cleanup_timer_(event_loop_.AddTimer([this] {
         event_loop_.Exit();
         LOG(INFO) << "Starter event loop exit finished.";
@@ -55,11 +57,6 @@ Starter::Starter(const aos::Configuration *event_loop_config)
                 [this](signalfd_siginfo signal) { OnSignal(signal); }),
       top_(&event_loop_) {
   event_loop_.SkipAosLog();
-
-  event_loop_.OnRun([this] {
-    status_timer_->Schedule(event_loop_.monotonic_now(),
-                            std::chrono::milliseconds(1000));
-  });
 
   if (!aos::configuration::MultiNode(config_msg_)) {
     event_loop_.MakeWatcher(
@@ -269,7 +266,14 @@ void Starter::Run() {
   event_loop_.Run();
 }
 
-void Starter::ServiceTimingReportFetcher() {
+void Starter::ServiceTimingReportFetcher(int elapsed_cycles) {
+  // If there is any chance that it has been longer than one cycle since we last
+  // serviced the fetcher, call Fetch(). This reduces the chances that the
+  // fetcher falls behind when the system is under heavy load. Dropping a few
+  // timing report messages when the system is under stress is fine.
+  if (timing_report_fetcher_.get() == nullptr || elapsed_cycles > 1) {
+    timing_report_fetcher_.Fetch();
+  }
   while (timing_report_fetcher_.FetchNext()) {
     for (auto &application : applications_) {
       application.second.ObserveTimingReport(

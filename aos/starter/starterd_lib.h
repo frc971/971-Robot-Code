@@ -61,7 +61,7 @@ class Starter {
 
   // Called periodically to run through the timing report fetcher and alert all
   // the Application's to the new messages.
-  void ServiceTimingReportFetcher();
+  void ServiceTimingReportFetcher(int elapsed_cycles);
 
   void SendStatus();
 
@@ -75,7 +75,7 @@ class Starter {
 
   aos::ShmEventLoop event_loop_;
   aos::Sender<aos::starter::Status> status_sender_;
-  aos::TimerHandler *status_timer_;
+  aos::PhasedLoopHandler *status_timer_;
   aos::TimerHandler *cleanup_timer_;
 
   int status_count_ = 0;
