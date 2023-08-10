@@ -15,7 +15,7 @@ class CANSensorReader {
  public:
   CANSensorReader(
       aos::EventLoop *event_loop,
-      std::vector<ctre::phoenixpro::BaseStatusSignalValue *> signals_registry,
+      std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry,
       std::vector<std::shared_ptr<Falcon>> falcons);
 
  private:
@@ -23,7 +23,7 @@ class CANSensorReader {
 
   aos::EventLoop *event_loop_;
 
-  const std::vector<ctre::phoenixpro::BaseStatusSignalValue *> signals_;
+  const std::vector<ctre::phoenix6::BaseStatusSignal *> signals_;
   aos::Sender<control_loops::drivetrain::CANPosition> can_position_sender_;
 
   // This is a vector of falcons becuase we don't need to care

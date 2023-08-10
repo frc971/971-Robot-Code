@@ -510,7 +510,7 @@ cc_library(
         "//aos/logging",
         "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//third_party:phoenix",
-        "//third_party:phoenixpro",
+        "//third_party:phoenix6",
         "//third_party:wpilib",
         "@com_github_google_glog//:glog",
     ],

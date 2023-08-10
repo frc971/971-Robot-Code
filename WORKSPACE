@@ -724,29 +724,29 @@ local_repository(
 )
 
 http_archive(
-    name = "ctre_phoenixpro_api_cpp_headers",
+    name = "ctre_phoenix6_api_cpp_headers",
     build_file_content = """
 cc_library(
     name = 'api-cpp',
     visibility = ['//visibility:public'],
-    hdrs = glob(['ctre/phoenixpro/**/*.hpp', 'units/*.h']),
+    hdrs = glob(['ctre/phoenix6/**/*.hpp', 'units/*.h']),
     includes = ["."],
     deps = ["@//third_party/allwpilib/wpimath"],
 )
 """,
-    sha256 = "340a9c8e726e2eb365b7a40a722df05fe7c7072c5c4a617fa0218eb6d074ad9f",
+    sha256 = "3c4da9f46c751d4981697da26d3c8680f40c87090782f5adf63412e34508f372",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.11/api-cpp-23.0.11-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/23.2.2/api-cpp-23.2.2-headers.zip",
     ],
 )
 
 http_archive(
-    name = "ctre_phoenixpro_api_cpp_athena",
+    name = "ctre_phoenix6_api_cpp_athena",
     build_file_content = """
 filegroup(
     name = 'shared_libraries',
     srcs = [
-        'linux/athena/shared/libCTRE_PhoenixPro.so',
+        'linux/athena/shared/libCTRE_Phoenix6.so',
     ],
     visibility = ['//visibility:public'],
 )
@@ -754,18 +754,18 @@ filegroup(
 cc_library(
     name = 'api-cpp',
     visibility = ['//visibility:public'],
-    srcs = ['linux/athena/shared/libCTRE_PhoenixPro.so'],
+    srcs = ['linux/athena/shared/libCTRE_Phoenix6.so'],
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "11f392bebfe54f512be9ef59809e1a10c4497e0ce92970645f054e7e04fe7ef6",
+    sha256 = "8391cbd24582c951a8fdbcff533243be718fc54e091c068d5441bb0c18ff822c",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/api-cpp/23.0.11/api-cpp-23.0.11-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/23.2.2/api-cpp-23.2.2-linuxathena.zip",
     ],
 )
 
 http_archive(
-    name = "ctre_phoenixpro_tools_headers",
+    name = "ctre_phoenix6_tools_headers",
     build_file_content = """
 cc_library(
     name = 'tools',
@@ -773,14 +773,14 @@ cc_library(
     hdrs = glob(['ctre/**/*.h', 'ctre/**/*.hpp']),
 )
 """,
-    sha256 = "7585e1bd9e581dd745e7f040ab521b966b40a04d05bc7fa82d6dafe2fb65764e",
+    sha256 = "33781c9db0a204e257928351c700295aec2bf6e2abb6a49ef237a95e98442a18",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.11/tools-23.0.11-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/23.2.2/tools-23.2.2-headers.zip",
     ],
 )
 
 http_archive(
-    name = "ctre_phoenixpro_tools_athena",
+    name = "ctre_phoenix6_tools_athena",
     build_file_content = """
 filegroup(
     name = 'shared_libraries',
@@ -797,9 +797,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "b1daadfe782c43ed32c2e1a3956998f9604a3fc9282ef866fd8dc1482f3b8cc9",
+    sha256 = "75ec607f81ab470bc7c01fda2b8ca7b71b7dc3378b370f806f8646db27600504",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenixpro/tools/23.0.11/tools-23.0.11-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/23.2.2/tools-23.2.2-linuxathena.zip",
     ],
 )
 

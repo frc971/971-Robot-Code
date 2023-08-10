@@ -18,10 +18,10 @@ robot_downloader(
     data = [
         ":aos_config",
         ":message_bridge_client.sh",
+        "@ctre_phoenix6_api_cpp_athena//:shared_libraries",
+        "@ctre_phoenix6_tools_athena//:shared_libraries",
         "@ctre_phoenix_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix_cci_athena//:shared_libraries",
-        "@ctre_phoenixpro_api_cpp_athena//:shared_libraries",
-        "@ctre_phoenixpro_tools_athena//:shared_libraries",
     ],
     dirs = [
         "//y2022/actors:splines",
@@ -270,7 +270,7 @@ cc_binary(
         "//frc971/wpilib:wpilib_interface",
         "//frc971/wpilib:wpilib_robot_base",
         "//third_party:phoenix",
-        "//third_party:phoenixpro",
+        "//third_party:phoenix6",
         "//third_party:wpilib",
         "//y2022/control_loops/superstructure:led_indicator_lib",
         "//y2022/control_loops/superstructure:superstructure_can_position_fbs",

@@ -8,8 +8,8 @@ robot_downloader(
     ],
     data = [
         ":aos_config",
-        "@ctre_phoenixpro_api_cpp_athena//:shared_libraries",
-        "@ctre_phoenixpro_tools_athena//:shared_libraries",
+        "@ctre_phoenix6_api_cpp_athena//:shared_libraries",
+        "@ctre_phoenix6_tools_athena//:shared_libraries",
     ],
     dirs = [
         "//y2022_bot3/actors:splines",

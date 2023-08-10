@@ -5,7 +5,7 @@
 #include <cinttypes>
 #include <vector>
 
-#include "ctre/phoenixpro/TalonFX.hpp"
+#include "ctre/phoenix6/TalonFX.hpp"
 #include "glog/logging.h"
 
 #include "aos/init.h"
@@ -23,14 +23,14 @@ static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
 class Falcon {
  public:
   Falcon(int device_id, std::string canbus,
-         std::vector<ctre::phoenixpro::BaseStatusSignalValue *> *signals,
+         std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
          double stator_current_limit, double supply_current_limit);
 
   void PrintConfigs();
 
-  void WriteConfigs(ctre::phoenixpro::signals::InvertedValue invert);
+  void WriteConfigs(ctre::phoenix6::signals::InvertedValue invert);
 
-  ctre::phoenixpro::hardware::TalonFX *talon() { return &talon_; }
+  ctre::phoenix6::hardware::TalonFX *talon() { return &talon_; }
 
   void SerializePosition(flatbuffers::FlatBufferBuilder *fbb);
 
@@ -66,19 +66,17 @@ class Falcon {
   }
 
  private:
-  ctre::phoenixpro::hardware::TalonFX talon_;
+  ctre::phoenix6::hardware::TalonFX talon_;
   int device_id_;
 
-  ctre::phoenixpro::signals::InvertedValue inverted_;
+  ctre::phoenix6::signals::InvertedValue inverted_;
 
-  ctre::phoenixpro::StatusSignalValue<units::temperature::celsius_t>
-      device_temp_;
-  ctre::phoenixpro::StatusSignalValue<units::voltage::volt_t> supply_voltage_;
-  ctre::phoenixpro::StatusSignalValue<units::current::ampere_t> supply_current_,
+  ctre::phoenix6::StatusSignal<units::temperature::celsius_t> device_temp_;
+  ctre::phoenix6::StatusSignal<units::voltage::volt_t> supply_voltage_;
+  ctre::phoenix6::StatusSignal<units::current::ampere_t> supply_current_,
       torque_current_;
-  ctre::phoenixpro::StatusSignalValue<units::angle::turn_t> position_;
-  ctre::phoenixpro::StatusSignalValue<units::dimensionless::scalar_t>
-      duty_cycle_;
+  ctre::phoenix6::StatusSignal<units::angle::turn_t> position_;
+  ctre::phoenix6::StatusSignal<units::dimensionless::scalar_t> duty_cycle_;
 
   double stator_current_limit_;
   double supply_current_limit_;

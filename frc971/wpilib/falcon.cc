@@ -3,7 +3,7 @@
 using frc971::wpilib::Falcon;
 
 Falcon::Falcon(int device_id, std::string canbus,
-               std::vector<ctre::phoenixpro::BaseStatusSignalValue *> *signals,
+               std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
                double stator_current_limit, double supply_current_limit)
     : talon_(device_id, canbus),
       device_id_(device_id),
@@ -37,7 +37,7 @@ Falcon::Falcon(int device_id, std::string canbus,
 }
 
 void Falcon::PrintConfigs() {
-  ctre::phoenixpro::configs::TalonFXConfiguration configuration;
+  ctre::phoenix6::configs::TalonFXConfiguration configuration;
   ctre::phoenix::StatusCode status =
       talon_.GetConfigurator().Refresh(configuration);
   if (!status.IsOK()) {
@@ -47,23 +47,22 @@ void Falcon::PrintConfigs() {
   AOS_LOG(INFO, "configuration: %s", configuration.ToString().c_str());
 }
 
-void Falcon::WriteConfigs(ctre::phoenixpro::signals::InvertedValue invert) {
+void Falcon::WriteConfigs(ctre::phoenix6::signals::InvertedValue invert) {
   inverted_ = invert;
 
-  ctre::phoenixpro::configs::CurrentLimitsConfigs current_limits;
+  ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
   current_limits.StatorCurrentLimit = stator_current_limit_;
   current_limits.StatorCurrentLimitEnable = true;
   current_limits.SupplyCurrentLimit = supply_current_limit_;
   current_limits.SupplyCurrentLimitEnable = true;
 
-  ctre::phoenixpro::configs::MotorOutputConfigs output_configs;
-  output_configs.NeutralMode =
-      ctre::phoenixpro::signals::NeutralModeValue::Brake;
+  ctre::phoenix6::configs::MotorOutputConfigs output_configs;
+  output_configs.NeutralMode = ctre::phoenix6::signals::NeutralModeValue::Brake;
   output_configs.DutyCycleNeutralDeadband = 0;
 
   output_configs.Inverted = inverted_;
 
-  ctre::phoenixpro::configs::TalonFXConfiguration configuration;
+  ctre::phoenix6::configs::TalonFXConfiguration configuration;
   configuration.CurrentLimits = current_limits;
   configuration.MotorOutput = output_configs;
 
