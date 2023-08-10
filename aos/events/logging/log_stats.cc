@@ -21,6 +21,11 @@ DEFINE_bool(excessive_size_only, false,
             "Only print channels that have a set max message size that is more "
             "than double of the max message size.");
 
+DEFINE_double(
+    run_for, 0.0,
+    "If set to a positive value, only process the log for this many seconds. "
+    "Otherwise, process the log until the end of the log.");
+
 // This class implements a histogram for tracking message period
 // percentiles.
 class Histogram {
@@ -355,7 +360,13 @@ int main(int argc, char **argv) {
     LOG(FATAL) << "Could not find any channels";
   }
 
-  log_reader_factory.Run();
+  if (FLAGS_run_for > 0.0) {
+    log_reader_factory.RunFor(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::duration<double>(FLAGS_run_for)));
+  } else {
+    log_reader_factory.Run();
+  }
 
   std::cout << std::endl;
 
