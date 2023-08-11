@@ -156,6 +156,13 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
   void VerifyParts(const std::vector<LogFile> &sorted_parts,
                    const std::vector<std::string> &corrupted_parts = {});
 
+  std::vector<std::pair<std::vector<realtime_clock::time_point>,
+                        std::vector<realtime_clock::time_point>>>
+  ConfirmReadable(
+      const std::vector<std::string> &files,
+      realtime_clock::time_point start_time = realtime_clock::min_time,
+      realtime_clock::time_point end_time = realtime_clock::max_time);
+
   void AddExtension(std::string_view extension);
 
   // Config and factory.

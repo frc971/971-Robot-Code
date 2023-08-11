@@ -2289,5 +2289,33 @@ SelectedLogParts LogFilesContainer::SelectParts(std::string_view node_name,
   return SelectedLogParts(node_name, boot_index, result);
 }
 
+bool LogFilesContainer::TimestampsStoredSeparately() const {
+  for (const LogFile &log_file : log_files_) {
+    for (const LogParts &part : log_file.parts) {
+      bool has_data = false;
+      bool has_timestamps = false;
+      bool has_remote_timestamps = false;
+      for (StoredDataType type : part.data_stored) {
+        switch (type) {
+          case StoredDataType::DATA:
+            has_data = true;
+            break;
+          case StoredDataType::TIMESTAMPS:
+            has_timestamps = true;
+            break;
+          case StoredDataType::REMOTE_TIMESTAMPS:
+            has_remote_timestamps = true;
+            break;
+        }
+      }
+
+      if (has_data && (has_timestamps || has_remote_timestamps)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 }  // namespace logger
 }  // namespace aos

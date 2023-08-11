@@ -279,6 +279,10 @@ class LogFilesContainer {
   // Review its usage.
   std::string_view name() const { return log_files_[0].name; }
 
+  // Returns true if the timestamps (remote and local) are stored only in files
+  // distinct from the data.
+  bool TimestampsStoredSeparately() const;
+
  private:
   LogFilesContainer(std::optional<const LogSource *> log_source,
                     std::vector<LogFile> log_files);

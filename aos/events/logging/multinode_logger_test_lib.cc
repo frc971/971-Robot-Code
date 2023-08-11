@@ -499,6 +499,20 @@ ConfirmReadable(const std::vector<std::string> &files,
   }
 }
 
+std::vector<std::pair<std::vector<realtime_clock::time_point>,
+                      std::vector<realtime_clock::time_point>>>
+MultinodeLoggerTest::ConfirmReadable(const std::vector<std::string> &files,
+                                     realtime_clock::time_point start_time,
+                                     realtime_clock::time_point end_time) {
+  LogFilesContainer c(SortParts(files));
+  if (file_strategy() == FileStrategy::kCombine) {
+    EXPECT_FALSE(c.TimestampsStoredSeparately());
+  } else {
+    EXPECT_TRUE(c.TimestampsStoredSeparately());
+  }
+  return testing::ConfirmReadable(files, start_time, end_time);
+}
+
 // Counts the number of messages on a channel.  Returns (channel name, channel
 // type, count) for every message matching matcher()
 std::vector<std::tuple<std::string, std::string, int>> CountChannelsMatching(
