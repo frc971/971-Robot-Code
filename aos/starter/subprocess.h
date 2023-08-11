@@ -81,6 +81,8 @@ class Application {
               aos::EventLoop *event_loop, std::function<void()> on_change,
               QuietLogging quiet_flag = QuietLogging::kNo);
 
+  ~Application();
+
   flatbuffers::Offset<aos::starter::ApplicationStatus> PopulateStatus(
       flatbuffers::FlatBufferBuilder *builder, util::Top *top);
   aos::starter::State status() const { return status_; };
@@ -119,6 +121,7 @@ class Application {
   bool autostart() const { return autostart_; }
 
   bool autorestart() const { return autorestart_; }
+  void set_autorestart(bool autorestart) { autorestart_ = autorestart; }
 
   const std::string &GetStdout();
   const std::string &GetStderr();

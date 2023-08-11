@@ -1,5 +1,8 @@
 #include "aos/starter/subprocess.h"
 
+#include <signal.h>
+#include <sys/types.h>
+
 #include "gtest/gtest.h"
 
 #include "aos/events/shm_event_loop.h"
@@ -179,4 +182,47 @@ TEST_F(SubprocessTest, ActiveQuietFlag) {
   EXPECT_EQ(aos::starter::State::STOPPED, error_out.status());
 }
 
+// Tests that Nothing Bad™ happens if the event loop outlives the Application.
+//
+// Note that this is a bit of a hope test, as there is no guarantee that we
+// will trigger a crash even if the resources tied to the event loop in the
+// aos::Application aren't properly released.
+TEST_F(SubprocessTest, ShortLivedApp) {
+  const std::string config_file =
+      ::aos::testing::ArtifactPath("aos/events/pingpong_config.json");
+
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(config_file);
+  aos::ShmEventLoop event_loop(&config.message());
+
+  auto application =
+      std::make_unique<Application>("sleep", "sleep", &event_loop, []() {});
+  application->set_args({"10"});
+  application->Start();
+  pid_t pid = application->get_pid();
+
+  int ticks = 0;
+  aos::TimerHandler *exit_timer = event_loop.AddTimer([&event_loop, &ticks,
+                                                       &application, pid]() {
+    ticks++;
+    if (application && application->status() == aos::starter::State::RUNNING) {
+      // Kill the application, it will autorestart.
+      kill(pid, SIGTERM);
+      application.reset();
+    }
+
+    // event loop lives for longer.
+    if (ticks >= 5) {
+      // Now we exit.
+      event_loop.Exit();
+    }
+  });
+
+  event_loop.OnRun([&event_loop, exit_timer]() {
+    exit_timer->Schedule(event_loop.monotonic_now(),
+                         std::chrono::milliseconds(1000));
+  });
+
+  event_loop.Run();
+}
 }  // namespace aos::starter::testing

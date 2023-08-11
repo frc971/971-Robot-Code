@@ -663,4 +663,12 @@ void Application::OnChange() {
   }
 }
 
+Application::~Application() {
+  start_timer_->Disable();
+  restart_timer_->Disable();
+  stop_timer_->Disable();
+  pipe_timer_->Disable();
+  child_status_handler_->Disable();
+}
+
 }  // namespace aos::starter
