@@ -63,6 +63,7 @@ cc_library(
     srcs = [
         "absolute_and_absolute_encoder.cc",
         "absolute_encoder.cc",
+        "continuous_absolute_encoder.cc",
         "hall_effect_and_position.cc",
         "pot_and_absolute_encoder.cc",
         "pot_and_index.cc",
@@ -71,6 +72,7 @@ cc_library(
     hdrs = [
         "absolute_and_absolute_encoder.h",
         "absolute_encoder.h",
+        "continuous_absolute_encoder.h",
         "hall_effect_and_position.h",
         "pot_and_absolute_encoder.h",
         "pot_and_index.h",
@@ -93,6 +95,7 @@ cc_test(
     srcs = [
         "absolute_and_absolute_encoder_test.cc",
         "absolute_encoder_test.cc",
+        "continuous_absolute_encoder_test.cc",
         "hall_effect_and_position_test.cc",
         "pot_and_absolute_encoder_test.cc",
         "pot_and_index_test.cc",
