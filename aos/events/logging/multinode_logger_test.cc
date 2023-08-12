@@ -3069,16 +3069,16 @@ TEST_P(MultinodeLoggerTest, LogDifferentConfig) {
         MakeLogger(log_reader_factory.GetNodeEventLoopFactory("pi2"),
                    &log_reader_factory, reader.logged_configuration());
 
-    pi1_logger.StartLogger(tmp_dir_ + "/relogged1");
-    pi2_logger.StartLogger(tmp_dir_ + "/relogged2");
+    pi1_logger.StartLogger(tmp_dir_ + "/logs/relogged1");
+    pi2_logger.StartLogger(tmp_dir_ + "/logs/relogged2");
 
     log_reader_factory.Run();
 
     for (auto &x : pi1_logger.log_namer->all_filenames()) {
-      log_files.emplace_back(absl::StrCat(tmp_dir_, "/relogged1_", x));
+      log_files.emplace_back(absl::StrCat(tmp_dir_, "/logs/relogged1_", x));
     }
     for (auto &x : pi2_logger.log_namer->all_filenames()) {
-      log_files.emplace_back(absl::StrCat(tmp_dir_, "/relogged2_", x));
+      log_files.emplace_back(absl::StrCat(tmp_dir_, "/logs/relogged2_", x));
     }
   }
 
@@ -3101,6 +3101,9 @@ TEST_P(MultinodeLoggerTest, LogDifferentConfig) {
 // data is published.  While the scenario below is a bit convoluted, we have
 // seen logs like this generated out in the wild.
 TEST(MultinodeRebootLoggerTest, StartTimeBeforeData) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_split3_config.json"));
@@ -3272,6 +3275,9 @@ TEST(MultinodeRebootLoggerTest, StartTimeBeforeData) {
 // come back.
 TEST(MultinodeRebootLoggerTest,
      LocalMessageBeforeRemoteBeforeStartAfterReboot) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_split3_config.json"));
@@ -3449,6 +3455,9 @@ TEST(MultinodeRebootLoggerTest,
 // Tests that setting the start and stop flags across a reboot works as
 // expected.
 TEST(MultinodeRebootLoggerTest, RebootStartStopTimes) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_split3_config.json"));
@@ -3607,6 +3616,9 @@ TEST(MultinodeRebootLoggerTest, RebootStartStopTimes) {
 
 // Tests that we properly handle one direction being down.
 TEST(MissingDirectionTest, OneDirection) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_split4_config.json"));
@@ -3681,6 +3693,9 @@ TEST(MissingDirectionTest, OneDirection) {
 // Tests that we properly handle only one direction ever existing after a
 // reboot.
 TEST(MissingDirectionTest, OneDirectionAfterReboot) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_split4_config.json"));
@@ -3750,6 +3765,9 @@ TEST(MissingDirectionTest, OneDirectionAfterReboot) {
 // Tests that we properly handle only one direction ever existing after a
 // reboot with only reliable data.
 TEST(MissingDirectionTest, OneDirectionAfterRebootReliable) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(
           ArtifactPath("aos/events/logging/"
@@ -3821,6 +3839,9 @@ TEST(MissingDirectionTest, OneDirectionAfterRebootReliable) {
 // reboot with mixed unreliable vs reliable, where reliable has an earlier
 // timestamp than unreliable.
 TEST(MissingDirectionTest, OneDirectionAfterRebootMixedCase1) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_split4_mixed1_config.json"));
@@ -3892,6 +3913,9 @@ TEST(MissingDirectionTest, OneDirectionAfterRebootMixedCase1) {
 // reboot with mixed unreliable vs reliable, where unreliable has an earlier
 // timestamp than reliable.
 TEST(MissingDirectionTest, OneDirectionAfterRebootMixedCase2) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(ArtifactPath(
           "aos/events/logging/multinode_pingpong_split4_mixed2_config.json"));
@@ -4034,7 +4058,6 @@ TEST_P(MultinodeLoggerTest, StartOneNodeBeforeOther) {
 
   const std::string kLogfile =
       aos::testing::TestTmpDir() + "/logs/multi_logfile2.1/";
-  util::UnlinkRecursive(kLogfile);
 
   pi2_->Disconnect(pi1_->node());
   pi1_->Disconnect(pi2_->node());
@@ -4083,6 +4106,9 @@ TEST_P(MultinodeLoggerTest, StartOneNodeBeforeOther) {
 // Tests that when we have a loop without all the logs at all points in time,
 // we can sort it properly.
 TEST(MultinodeLoggerLoopTest, Loop) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig(
           ArtifactPath("aos/events/logging/"
