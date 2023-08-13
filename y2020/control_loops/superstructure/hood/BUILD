@@ -44,6 +44,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//frc971/zeroing",
+        "//frc971/zeroing:absolute_and_absolute_encoder",
         "//y2020:constants",
     ],
 )

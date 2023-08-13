@@ -75,6 +75,7 @@ cc_library(
         "//aos/events:event_loop",
         "//frc971/control_loops:control_loop",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2022_bot3:constants",
     ],
 )

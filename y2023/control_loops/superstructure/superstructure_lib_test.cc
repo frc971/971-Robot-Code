@@ -9,6 +9,7 @@
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/subsystem_simulator.h"
 #include "frc971/control_loops/team_number_test_environment.h"
+#include "frc971/zeroing/absolute_encoder.h"
 #include "y2023/constants/simulated_constants_sender.h"
 #include "y2023/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2023/control_loops/superstructure/roll/integral_roll_plant.h"

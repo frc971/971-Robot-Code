@@ -2,6 +2,7 @@
 #define Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_COLUMN_H_
 
 #include "frc971/constants.h"
+#include "frc971/zeroing/hall_effect_and_position.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/superstructure_position_generated.h"

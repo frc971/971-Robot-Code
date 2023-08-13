@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include "frc971/zeroing/absolute_and_absolute_encoder.h"
+
 namespace y2020::control_loops::superstructure::hood {
 
 HoodEncoderZeroingEstimator::HoodEncoderZeroingEstimator(

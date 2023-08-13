@@ -41,6 +41,7 @@ cc_library(
     deps = [
         ":catapult_plants",
         "//aos:realtime",
+        "//frc971/zeroing:pot_and_absolute_encoder",
         "//third_party/osqp-cpp",
         "//y2022:constants",
         "//y2022/control_loops/superstructure:superstructure_goal_fbs",

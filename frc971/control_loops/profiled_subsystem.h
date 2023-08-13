@@ -15,6 +15,7 @@
 #include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "frc971/control_loops/simple_capped_state_feedback_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/zeroing/pot_and_index.h"
 #include "frc971/zeroing/zeroing.h"
 
 namespace frc971 {

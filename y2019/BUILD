@@ -41,6 +41,8 @@ cc_library(
         "//frc971/control_loops:pose",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
         "//frc971/control_loops/drivetrain:camera",
+        "//frc971/zeroing:absolute_encoder",
+        "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2019/control_loops/drivetrain:polydrivetrain_plants",
         "//y2019/control_loops/superstructure/elevator:elevator_plants",
         "//y2019/control_loops/superstructure/intake:intake_plants",

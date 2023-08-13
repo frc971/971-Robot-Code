@@ -254,6 +254,8 @@ cc_library(
         "//frc971/control_loops:pose",
         "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
         "//frc971/shooter_interpolation:interpolation",
+        "//frc971/zeroing:absolute_encoder",
+        "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2023/control_loops/drivetrain:polydrivetrain_plants",
         "//y2023/control_loops/superstructure/arm:arm_constants",
         "//y2023/control_loops/superstructure/roll:roll_plants",

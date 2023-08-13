@@ -86,6 +86,7 @@ cc_library(
         "//aos/events:event_loop",
         "//frc971/control_loops:control_loop",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2022:constants",
         "//y2022/control_loops/superstructure/catapult",
         "//y2022/control_loops/superstructure/turret:aiming",

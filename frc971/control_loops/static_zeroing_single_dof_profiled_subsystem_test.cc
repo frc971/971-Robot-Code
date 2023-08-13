@@ -16,6 +16,8 @@
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_position_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_subsystem_goal_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_generated.h"
+#include "frc971/zeroing/absolute_encoder.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "frc971/zeroing/zeroing.h"
 
 using ::frc971::control_loops::PositionSensorSimulator;

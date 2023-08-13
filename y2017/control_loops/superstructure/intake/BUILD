@@ -43,6 +43,7 @@ cc_library(
     deps = [
         ":intake_plants",
         "//frc971/control_loops:profiled_subsystem",
+        "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2017:constants",
         "//y2017/control_loops/superstructure:superstructure_goal_fbs",
     ],

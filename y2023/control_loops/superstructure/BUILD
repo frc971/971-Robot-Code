@@ -106,6 +106,8 @@ cc_library(
         "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/shooter_interpolation:interpolation",
+        "//frc971/zeroing:absolute_encoder",
+        "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2023:constants",
         "//y2023/constants:constants_fbs",
         "//y2023/constants:simulated_constants_sender",

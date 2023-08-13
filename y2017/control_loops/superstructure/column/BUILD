@@ -71,6 +71,8 @@ cc_library(
         "//frc971:constants",
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/zeroing",
+        "//frc971/zeroing:hall_effect_and_position",
+        "//frc971/zeroing:pulse_index",
         "//frc971/zeroing:wrap",
         "//y2017:constants",
         "//y2017/control_loops/superstructure:superstructure_position_fbs",

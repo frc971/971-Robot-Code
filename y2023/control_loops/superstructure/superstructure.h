@@ -7,6 +7,8 @@
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_can_position_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/zeroing/absolute_encoder.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2023/constants.h"
 #include "y2023/constants/constants_generated.h"
 #include "y2023/control_loops/superstructure/arm/arm.h"

@@ -5,6 +5,7 @@
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 #include "frc971/control_loops/double_jointed_arm/ekf.h"
 #include "frc971/control_loops/double_jointed_arm/graph.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2023/constants.h"
 #include "y2023/control_loops/superstructure/arm/generated_graph.h"

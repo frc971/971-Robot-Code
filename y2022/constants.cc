@@ -13,6 +13,7 @@
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
 #include "frc971/wpilib/wpilib_utils.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2022/control_loops/superstructure/catapult/integral_catapult_plant.h"
 #include "y2022/control_loops/superstructure/climber/integral_climber_plant.h"
 #include "y2022/control_loops/superstructure/intake/integral_intake_plant.h"

@@ -16,6 +16,7 @@ cc_library(
         "//frc971/control_loops/double_jointed_arm:graph",
         "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
         "//frc971/zeroing",
+        "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2023:constants",
         "//y2023/control_loops/superstructure:superstructure_position_fbs",
         "//y2023/control_loops/superstructure:superstructure_status_fbs",

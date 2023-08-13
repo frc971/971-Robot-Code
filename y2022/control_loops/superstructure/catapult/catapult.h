@@ -5,6 +5,7 @@
 #include "glog/logging.h"
 
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "osqp++.h"
 #include "y2022/constants.h"
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"

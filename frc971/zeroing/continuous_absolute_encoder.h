@@ -5,6 +5,7 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+#include "aos/containers/error_list.h"
 #include "frc971/zeroing/zeroing.h"
 
 namespace frc971 {
