@@ -28,10 +28,12 @@ INSTANTIATE_TEST_SUITE_P(
         ::testing::Values(
             ConfigParams{"multinode_pingpong_combined_config.json", true,
                          kCombinedConfigSha1(), kCombinedConfigSha1(),
-                         FileStrategy::kCombine},
+                         FileStrategy::kCombine,
+                         ForceTimestampBuffering::kForceBufferTimestamps},
             ConfigParams{"multinode_pingpong_split_config.json", false,
                          kSplitConfigSha1(), kReloggedSplitConfigSha1(),
-                         FileStrategy::kCombine}),
+                         FileStrategy::kCombine,
+                         ForceTimestampBuffering::kForceBufferTimestamps}),
         ::testing::ValuesIn(SupportedCompressionAlgorithms())));
 
 // Tests that we can read a config and remap a channel

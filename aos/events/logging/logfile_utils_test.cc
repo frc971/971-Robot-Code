@@ -779,7 +779,10 @@ TEST_F(PartsMergerTest, TwoFileMerger) {
   LogFilesContainer log_files(parts);
   ASSERT_EQ(parts.size(), 1u);
 
-  PartsMerger merger("pi1", 0, log_files);
+  PartsMerger merger(
+      log_files.SelectParts("pi1", 0,
+                            {StoredDataType::DATA, StoredDataType::TIMESTAMPS,
+                             StoredDataType::REMOTE_TIMESTAMPS}));
 
   EXPECT_EQ(merger.sorted_until(), monotonic_clock::min_time);
 
@@ -881,7 +884,10 @@ TEST_F(PartsMergerTest, TwoFileTimestampMerger) {
   LogFilesContainer log_files(parts);
   ASSERT_EQ(parts.size(), 1u);
 
-  PartsMerger merger("pi1", 0, log_files);
+  PartsMerger merger(
+      log_files.SelectParts("pi1", 0,
+                            {StoredDataType::DATA, StoredDataType::TIMESTAMPS,
+                             StoredDataType::REMOTE_TIMESTAMPS}));
 
   EXPECT_EQ(merger.sorted_until(), monotonic_clock::min_time);
 
@@ -949,11 +955,13 @@ TEST_F(TimestampMapperTest, ReadNode0First) {
 
   size_t mapper0_count = 0;
 
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
 
@@ -1094,13 +1102,15 @@ TEST_F(TimestampMapperTest, ReplayChannelsCallbackTest) {
   // messages due to the channel filter callbacks used
   size_t mapper0_count = 0;
 
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
   mapper0.set_replay_channels_callback(
       [&](const TimestampedMessage &) -> bool { return mapper0_count != 2; });
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
   mapper1.set_replay_channels_callback(
@@ -1231,11 +1241,13 @@ TEST_F(TimestampMapperTest, MessageWithTimestampTime) {
   ASSERT_EQ(parts.size(), 1u);
 
   size_t mapper0_count = 0;
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
 
@@ -1353,11 +1365,13 @@ TEST_F(TimestampMapperTest, ReadNode1First) {
   ASSERT_EQ(parts[1].logger_node, "pi2");
 
   size_t mapper0_count = 0;
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
 
@@ -1473,11 +1487,13 @@ TEST_F(TimestampMapperTest, ReadMissingDataBefore) {
   ASSERT_EQ(parts[1].logger_node, "pi2");
 
   size_t mapper0_count = 0;
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
 
@@ -1557,11 +1573,13 @@ TEST_F(TimestampMapperTest, ReadMissingDataAfter) {
   ASSERT_EQ(parts[1].logger_node, "pi2");
 
   size_t mapper0_count = 0;
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
 
@@ -1642,11 +1660,13 @@ TEST_F(TimestampMapperTest, ReadMissingDataMiddle) {
   ASSERT_EQ(parts[1].logger_node, "pi2");
 
   size_t mapper0_count = 0;
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
 
@@ -1717,11 +1737,13 @@ TEST_F(TimestampMapperTest, ReadSameTimestamp) {
   ASSERT_EQ(parts[1].logger_node, "pi2");
 
   size_t mapper0_count = 0;
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
 
@@ -1781,7 +1803,8 @@ TEST_F(TimestampMapperTest, StartTime) {
   LogFilesContainer log_files(parts);
 
   size_t mapper0_count = 0;
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
 
@@ -1823,7 +1846,8 @@ TEST_F(TimestampMapperTest, NoPeer) {
   ASSERT_EQ(parts[1].logger_node, "pi2");
 
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
 
@@ -1897,11 +1921,13 @@ TEST_F(TimestampMapperTest, QueueUntilNode0) {
   ASSERT_EQ(parts[1].logger_node, "pi2");
 
   size_t mapper0_count = 0;
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
 
@@ -2154,7 +2180,9 @@ TEST_F(BootMergerTest, SortAcrossReboot) {
   ASSERT_EQ(parts.size(), 1u);
   ASSERT_EQ(parts[0].parts.size(), 2u);
 
-  BootMerger merger("pi2", log_files);
+  BootMerger merger("pi2", log_files,
+                    {StoredDataType::DATA, StoredDataType::TIMESTAMPS,
+                     StoredDataType::REMOTE_TIMESTAMPS});
 
   EXPECT_EQ(merger.node(), 1u);
 
@@ -2338,11 +2366,13 @@ TEST_F(RebootTimestampMapperTest, ReadNode0First) {
   ASSERT_EQ(parts[0].logger_node, "pi1");
 
   size_t mapper0_count = 0;
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
 
@@ -2557,11 +2587,13 @@ TEST_F(RebootTimestampMapperTest, Node2Reboot) {
   ASSERT_EQ(parts[0].logger_node, "pi1");
 
   size_t mapper0_count = 0;
-  TimestampMapper mapper0("pi1", log_files);
+  TimestampMapper mapper0("pi1", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper0.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper0_count; });
   size_t mapper1_count = 0;
-  TimestampMapper mapper1("pi2", log_files);
+  TimestampMapper mapper1("pi2", log_files,
+                          TimestampQueueStrategy::kQueueTogether);
   mapper1.set_timestamp_callback(
       [&](TimestampedMessage *) { ++mapper1_count; });
 

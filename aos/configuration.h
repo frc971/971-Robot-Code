@@ -128,6 +128,10 @@ const Node *GetMyNode(const Configuration *config);
 const Node *GetNodeFromHostname(const Configuration *config,
                                 std::string_view name);
 
+// Returns a printable name for the node.  (singlenode) if we are on a single
+// node system, and the name otherwise.
+std::string_view NodeName(const Configuration *config, size_t node_index);
+
 // Returns a vector of the nodes in the config.  (nullptr is considered the node
 // in a single node world.)
 std::vector<const Node *> GetNodes(const Configuration *config);

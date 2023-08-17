@@ -21,7 +21,7 @@ namespace chrono = std::chrono;
 
 int Main(int argc, char **argv) {
   const LogFilesContainer log_files(SortParts(FindLogs(argc, argv)));
-  const Configuration *config = log_files.config();
+  const Configuration *config = log_files.config().get();
 
   // Haven't tested this on a single node log, and don't really see a need to
   // right now.  The higher layers just work.
@@ -37,8 +37,8 @@ int Main(int argc, char **argv) {
     // parts to not be from the same boot.
     if (log_files.ContainsPartsForNode(node_name)) {
       // Filter the parts relevant to each node when building the mapper.
-      mappers.emplace_back(
-          std::make_unique<TimestampMapper>(node_name, log_files));
+      mappers.emplace_back(std::make_unique<TimestampMapper>(
+          node_name, log_files, TimestampQueueStrategy::kQueueTogether));
       if (node_name == FLAGS_node) {
         node_mapper = mappers.back().get();
       }

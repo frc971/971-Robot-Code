@@ -1380,6 +1380,14 @@ InterpolatedTimeConverter::QueueNextTimestamp() {
     }
     if (rebooted) {
       CHECK(reboot_found_);
+      if (VLOG_IS_ON(2)) {
+        VLOG(2) << "Notified reboot of";
+        size_t node_index = 0;
+        for (logger::BootTimestamp t : std::get<1>(*next_time)) {
+          VLOG(2) << "  Node " << node_index << " " << t;
+          ++node_index;
+        }
+      }
       reboot_found_(std::get<0>(*next_time), std::get<1>(*next_time));
     }
   }
@@ -2163,12 +2171,15 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
   BitSet64 all_live_nodes(problem.size());
   const BitSet64 all_nodes = ~BitSet64(problem.size());
 
-  for (size_t node_index = 0; node_index < timestamp_mappers_.size();
-       ++node_index) {
-    if (timestamp_mappers_[node_index] != nullptr) {
-      // Make sure we have enough data queued such that if we are going to
-      // have a timestamp on this filter, we do have a timestamp queued.
-      timestamp_mappers_[node_index]->QueueFor(time_estimation_buffer_seconds_);
+  if (time_estimation_buffer_seconds_ != chrono::seconds(0)) {
+    for (size_t node_index = 0; node_index < timestamp_mappers_.size();
+         ++node_index) {
+      if (timestamp_mappers_[node_index] != nullptr) {
+        // Make sure we have enough data queued such that if we are going to
+        // have a timestamp on this filter, we do have a timestamp queued.
+        timestamp_mappers_[node_index]->QueueFor(
+            time_estimation_buffer_seconds_);
+      }
     }
   }
 
@@ -2187,6 +2198,10 @@ TimestampProblem MultiNodeNoncausalOffsetEstimator::MakeProblem() {
           all_live_nodes.Set(filter.b_index, true);
           problem.add_clock_offset_filter(node_a_index, filter.filter,
                                           filter.b_index, filter.b_filter);
+
+          if (time_estimation_buffer_seconds_ == chrono::seconds(0)) {
+            continue;
+          }
 
           if (timestamp_mappers_[node_a_index] != nullptr) {
             // Now, we have cases at startup where we have a couple of points

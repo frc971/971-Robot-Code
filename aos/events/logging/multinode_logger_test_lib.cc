@@ -8,6 +8,8 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/testing/tmpdir.h"
 
+DECLARE_bool(force_timestamp_loading);
+
 namespace aos {
 namespace logger {
 namespace testing {
@@ -104,6 +106,10 @@ MultinodeLoggerTest::MultinodeLoggerTest()
       pi1_reboot_logfiles_(MakePi1RebootLogfiles()),
       logfiles_(MakeLogFiles(logfile_base1_, logfile_base2_)),
       structured_logfiles_(StructureLogFiles()) {
+  FLAGS_force_timestamp_loading =
+      std::get<0>(GetParam()).timestamp_buffering ==
+      ForceTimestampBuffering::kForceBufferTimestamps;
+
   util::UnlinkRecursive(tmp_dir_ + "/logs");
   std::filesystem::create_directory(tmp_dir_ + "/logs");
 

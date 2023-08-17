@@ -1144,6 +1144,13 @@ const Node *GetNodeFromHostname(const Configuration *config,
   return nullptr;
 }
 
+std::string_view NodeName(const Configuration *config, size_t node_index) {
+  if (!configuration::MultiNode(config)) {
+    return "(singlenode)";
+  }
+  return config->nodes()->Get(node_index)->name()->string_view();
+}
+
 const Node *GetMyNode(const Configuration *config) {
   const std::string hostname = (FLAGS_override_hostname.size() > 0)
                                    ? FLAGS_override_hostname

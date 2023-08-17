@@ -18,7 +18,8 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Combine(::testing::Values(ConfigParams{
                            "multinode_pingpong_combined_config.json", true,
                            kCombinedConfigSha1(), kCombinedConfigSha1(),
-                           FileStrategy::kCombine}),
+                           FileStrategy::kCombine,
+                           ForceTimestampBuffering::kForceBufferTimestamps}),
                        ::testing::ValuesIn(SupportedCompressionAlgorithms())));
 
 // This test is to check if we are able to get the right channels from a log

@@ -180,7 +180,9 @@ class LogPartsAccess {
 
   size_t boot_count() const { return log_parts_.boot_count; }
 
-  const Configuration *config() const { return log_parts_.config.get(); }
+  std::shared_ptr<const Configuration> config() const {
+    return log_parts_.config;
+  }
 
   std::optional<const LogSource *> log_source() const { return log_source_; }
 
@@ -203,12 +205,6 @@ class LogPartsAccess {
   LogParts log_parts_;
 };
 
-// Provides unified access to config field stored in LogPartsAccess. It is used
-// in CheckMatchingConfigs.
-inline const Configuration *GetConfig(const LogPartsAccess &log_parts_access) {
-  return log_parts_access.config();
-}
-
 // Output of LogPartsAccess for debug purposes.
 std::ostream &operator<<(std::ostream &stream,
                          const LogPartsAccess &log_parts_access);
@@ -223,20 +219,22 @@ class SelectedLogParts {
   auto begin() const { return log_parts_.begin(); }
   auto end() const { return log_parts_.end(); }
 
+  bool empty() const { return log_parts_.empty(); }
+
   // Config that shared across all log parts.
-  const Configuration *config() const { return config_; }
+  std::shared_ptr<const Configuration> config() const { return config_; }
 
   const std::string &node_name() const { return node_name_; }
 
-  // Number of boots found in the log parts.
-  size_t boot_count() const { return boot_index_; }
+  // Returns the boot index found in the log parts.
+  size_t boot_index() const { return boot_index_; }
 
  private:
   std::string node_name_;
-  size_t boot_index_;
+  size_t boot_index_ = 0u;
   std::vector<LogPartsAccess> log_parts_;
 
-  const Configuration *config_;
+  std::shared_ptr<const Configuration> config_ = nullptr;
 };
 
 // Container that keeps a sorted list of log files and provides functions that
@@ -262,15 +260,16 @@ class LogFilesContainer {
   // Returns numbers of reboots found in log files associated with the node.
   size_t BootsForNode(std::string_view node_name) const;
 
-  // Get only log parts that associated with node and boot number.
-  SelectedLogParts SelectParts(std::string_view node_name,
-                               size_t boot_index) const;
+  // Get only log parts that associated with node, boot number, and with data of
+  // any of the types provided.
+  SelectedLogParts SelectParts(std::string_view node_name, size_t boot_index,
+                               const std::vector<StoredDataType> &types) const;
 
   // It provides access to boots logged by all log files in the container.
   const std::shared_ptr<const Boots> &boots() const { return boots_; }
 
   // Access the configuration shared with all log files in the container.
-  const Configuration *config() const { return config_; }
+  std::shared_ptr<const Configuration> config() const { return config_; }
 
   // List of logger nodes for given set of log files.
   const auto &logger_nodes() const { return logger_nodes_; }
@@ -283,6 +282,9 @@ class LogFilesContainer {
   // distinct from the data.
   bool TimestampsStoredSeparately() const;
 
+  // Returns true if we have timestamps in any of the files.
+  bool HasTimestamps(std::string_view node_name) const;
+
  private:
   LogFilesContainer(std::optional<const LogSource *> log_source,
                     std::vector<LogFile> log_files);
@@ -290,7 +292,7 @@ class LogFilesContainer {
   std::optional<const LogSource *> log_source_;
   std::vector<LogFile> log_files_;
 
-  const Configuration *config_;
+  std::shared_ptr<const Configuration> config_;
   std::shared_ptr<const Boots> boots_;
 
   // Keeps information about nodes and number of reboots per node.

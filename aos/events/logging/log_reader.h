@@ -459,6 +459,7 @@ class LogReader {
     // details.
     enum class ThreadedBuffering { kYes, kNo };
     State(std::unique_ptr<TimestampMapper> timestamp_mapper,
+          TimestampQueueStrategy timestamp_queue_strategy,
           message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters,
           std::function<void()> notice_realtime_end, const Node *node,
           ThreadedBuffering threading,
@@ -498,9 +499,19 @@ class LogReader {
       return node_event_loop_factory_->boot_count();
     }
 
+    // Reads all the timestamps into RAM so we don't need to manage buffering
+    // them.  For logs where the timestamps are in separate files, this
+    // minimizes RAM usage in the cases where the log reader decides to buffer
+    // to the end of the file, or where the time estimation buffer needs to be
+    // set high to sort.  This means we devote our RAM to holding lots of
+    // timestamps instead of timestamps and much larger data for a shorter
+    // period.  For logs where timestamps are stored with the data, this
+    // triggers those files to be read twice.
+    void ReadTimestamps();
+
     // Primes the queues inside State.  Should be called before calling
     // OldestMessageTime.
-    void SeedSortedMessages();
+    void MaybeSeedSortedMessages();
 
     void SetUpStartupTimer() {
       const monotonic_clock::time_point start_time =
@@ -741,6 +752,7 @@ class LogReader {
     void SendMessageTimings();
     // Log file.
     std::unique_ptr<TimestampMapper> timestamp_mapper_;
+    const TimestampQueueStrategy timestamp_queue_strategy_;
 
     // Senders.
     std::vector<std::unique_ptr<RawSender>> channels_;
@@ -890,6 +902,9 @@ class LogReader {
   // reports if this is the primary direction or not.
   message_bridge::NoncausalOffsetEstimator *GetFilter(const Node *node_a,
                                                       const Node *node_b);
+
+  // Returns the timestamp queueing strategy to use.
+  TimestampQueueStrategy ComputeTimestampQueueStrategy() const;
 
   // List of filters for a connection.  The pointer to the first node will be
   // less than the second node.

@@ -2210,6 +2210,12 @@ inline const Configuration *GetConfig(const LogFile &log_file) {
   return log_file.config.get();
 }
 
+// Provides unified access to config field stored in LogPartsAccess. It is used
+// in CheckMatchingConfigs.
+inline const Configuration *GetConfig(const LogPartsAccess &log_parts_access) {
+  return log_parts_access.config().get();
+}
+
 // Output of LogPartsAccess for debug purposes.
 std::ostream &operator<<(std::ostream &stream,
                          const LogPartsAccess &log_parts_access) {
@@ -2223,10 +2229,17 @@ SelectedLogParts::SelectedLogParts(std::string_view node_name,
     : node_name_(node_name),
       boot_index_(boot_index),
       log_parts_(std::move(log_parts)) {
-  CHECK_GT(log_parts_.size(), 0u) << ": Nothing was selected for node "
-                                  << node_name_ << " boot " << boot_index_;
+  if (log_parts_.empty()) {
+    VLOG(1) << "Nothing was selected for node " << node_name_ << " boot "
+            << boot_index_;
+    return;
+  }
   CHECK(CheckMatchingConfigs(log_parts_));
   config_ = log_parts_.front().config();
+
+  for (LogPartsAccess &part : log_parts_) {
+    CHECK_EQ(config_.get(), part.config().get());
+  }
 
   // Enforce that we are sorting things only from a single node from a single
   // boot.
@@ -2245,13 +2258,14 @@ LogFilesContainer::LogFilesContainer(
     : log_source_(log_source), log_files_(std::move(log_files)) {
   CHECK_GT(log_files_.size(), 0u);
   CHECK(CheckMatchingConfigs(log_files_));
-  config_ = log_files_.front().config.get();
+  config_ = log_files_.front().config;
   boots_ = log_files_.front().boots;
 
   std::unordered_set<std::string> logger_nodes;
 
   // Scan and collect all related nodes and number of reboots per node.
   for (const LogFile &log_file : log_files_) {
+    CHECK_EQ(config_.get(), log_file.config.get());
     for (const LogParts &part : log_file.parts) {
       auto node_item = nodes_boots_.find(part.node);
       if (node_item != nodes_boots_.end()) {
@@ -2276,12 +2290,28 @@ size_t LogFilesContainer::BootsForNode(std::string_view node_name) const {
   return node_item->second;
 }
 
-SelectedLogParts LogFilesContainer::SelectParts(std::string_view node_name,
-                                                size_t boot_index) const {
+SelectedLogParts LogFilesContainer::SelectParts(
+    std::string_view node_name, size_t boot_index,
+    const std::vector<StoredDataType> &types) const {
   std::vector<LogPartsAccess> result;
   for (const LogFile &log_file : log_files_) {
     for (const LogParts &part : log_file.parts) {
       if (part.node == node_name && part.boot_count == boot_index) {
+        bool found = false;
+        for (const StoredDataType type : types) {
+          for (const StoredDataType part_type : part.data_stored) {
+            if (type == part_type) {
+              found = true;
+              break;
+            }
+          }
+          if (found) {
+            break;
+          }
+        }
+        if (!found) {
+          continue;
+        }
         result.emplace_back(log_source_, part);
       }
     }
@@ -2315,6 +2345,27 @@ bool LogFilesContainer::TimestampsStoredSeparately() const {
     }
   }
   return true;
+}
+
+bool LogFilesContainer::HasTimestamps(std::string_view node_name) const {
+  for (const LogFile &log_file : log_files_) {
+    for (const LogParts &part : log_file.parts) {
+      if (part.node != node_name) {
+        continue;
+      }
+
+      for (StoredDataType type : part.data_stored) {
+        switch (type) {
+          case StoredDataType::DATA:
+            break;
+          case StoredDataType::TIMESTAMPS:
+          case StoredDataType::REMOTE_TIMESTAMPS:
+            return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 }  // namespace logger

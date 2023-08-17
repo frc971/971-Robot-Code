@@ -35,6 +35,19 @@ DEFINE_bool(skip_missing_forwarding_entries, false,
             "false, CHECK.");
 
 DECLARE_bool(timestamps_to_csv);
+DEFINE_bool(
+    enable_timestamp_loading, true,
+    "Enable loading all the timestamps into RAM at startup if they are in "
+    "separate files.  This fixes any timestamp queueing problems for the cost "
+    "of storing timestamps in RAM only on logs with timestamps logged in "
+    "separate files from data.  Only disable this if you are reading a really "
+    "long log file and are experiencing memory problems due to loading all the "
+    "timestamps into RAM.");
+DEFINE_bool(
+    force_timestamp_loading, false,
+    "Force loading all the timestamps into RAM at startup.  This fixes any "
+    "timestamp queueing problems for the cost of storing timestamps in RAM and "
+    "potentially reading each log twice.");
 
 DEFINE_bool(skip_order_validation, false,
             "If true, ignore any out of orderness in replay");
@@ -175,14 +188,14 @@ LogReader::LogReader(LogFilesContainer log_files,
     : log_files_(std::move(log_files)),
       replay_configuration_(replay_configuration),
       replay_channels_(replay_channels),
-      config_remapper_(log_files_.config(), replay_configuration_,
+      config_remapper_(log_files_.config().get(), replay_configuration_,
                        replay_channels_) {
   SetStartTime(FLAGS_start_time);
   SetEndTime(FLAGS_end_time);
 
   {
     // Log files container validates that log files shared the same config.
-    const Configuration *config = log_files_.config();
+    const Configuration *config = log_files_.config().get();
     CHECK_NOTNULL(config);
   }
 
@@ -298,7 +311,7 @@ void LogReader::State::QueueThreadUntil(BootTimestamp time) {
                                     BootTimestamp>::PushResult result{
               *message, queue_until >= last_queued_message_, false};
           timestamp_mapper_->PopFront();
-          SeedSortedMessages();
+          MaybeSeedSortedMessages();
           return result;
         },
         time);
@@ -425,12 +438,20 @@ void LogReader::RegisterWithoutStarting(
     SimulatedEventLoopFactory *event_loop_factory) {
   event_loop_factory_ = event_loop_factory;
   config_remapper_.set_configuration(event_loop_factory_->configuration());
+
+  const TimestampQueueStrategy timestamp_queue_strategy =
+      ComputeTimestampQueueStrategy();
+
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
           event_loop_factory_->configuration(), logged_configuration(),
           log_files_.boots(), FLAGS_skip_order_validation,
-          chrono::duration_cast<chrono::nanoseconds>(
-              chrono::duration<double>(FLAGS_time_estimation_buffer_seconds)));
+          timestamp_queue_strategy ==
+                  TimestampQueueStrategy::kQueueTimestampsAtStartup
+              ? chrono::seconds(0)
+              : chrono::duration_cast<chrono::nanoseconds>(
+                    chrono::duration<double>(
+                        FLAGS_time_estimation_buffer_seconds)));
 
   std::vector<TimestampMapper *> timestamp_mappers;
   for (const Node *node : configuration::GetNodes(configuration())) {
@@ -444,8 +465,10 @@ void LogReader::RegisterWithoutStarting(
     states_[node_index] = std::make_unique<State>(
         !log_files_.ContainsPartsForNode(node_name)
             ? nullptr
-            : std::make_unique<TimestampMapper>(node_name, log_files_),
-        filters_.get(), std::bind(&LogReader::NoticeRealtimeEnd, this), node,
+            : std::make_unique<TimestampMapper>(node_name, log_files_,
+                                                timestamp_queue_strategy),
+        timestamp_queue_strategy, filters_.get(),
+        std::bind(&LogReader::NoticeRealtimeEnd, this), node,
         State::ThreadedBuffering::kNo, MaybeMakeReplayChannelIndices(node),
         before_send_callbacks_);
     State *state = states_[node_index].get();
@@ -473,6 +496,14 @@ void LogReader::RegisterWithoutStarting(
       if (other_state != state) {
         state->AddPeer(other_state);
       }
+    }
+  }
+
+  // Now that every state has a peer, load all the timestamps into RAM.
+  if (timestamp_queue_strategy ==
+      TimestampQueueStrategy::kQueueTimestampsAtStartup) {
+    for (std::unique_ptr<State> &state : states_) {
+      state->ReadTimestamps();
     }
   }
 
@@ -511,7 +542,7 @@ void LogReader::RegisterWithoutStarting(
   filters_->CheckGraph();
 
   for (std::unique_ptr<State> &state : states_) {
-    state->SeedSortedMessages();
+    state->MaybeSeedSortedMessages();
   }
 
   // Forwarding is tracked per channel.  If it is enabled, we want to turn it
@@ -561,7 +592,8 @@ void LogReader::StartAfterRegister(
     CHECK(state);
     VLOG(1) << "Start time is " << state->monotonic_start_time(0)
             << " for node '" << MaybeNodeName(state->node()) << "' now "
-            << state->monotonic_now();
+            << (state->event_loop() != nullptr ? state->monotonic_now()
+                                               : monotonic_clock::min_time);
     if (state->monotonic_start_time(0) == monotonic_clock::min_time) {
       continue;
     }
@@ -608,16 +640,33 @@ message_bridge::NoncausalOffsetEstimator *LogReader::GetFilter(
   return nullptr;
 }
 
+TimestampQueueStrategy LogReader::ComputeTimestampQueueStrategy() const {
+  if ((log_files_.TimestampsStoredSeparately() &&
+       FLAGS_enable_timestamp_loading) ||
+      FLAGS_force_timestamp_loading) {
+    return TimestampQueueStrategy::kQueueTimestampsAtStartup;
+  } else {
+    return TimestampQueueStrategy::kQueueTogether;
+  }
+}
+
 // TODO(jkuszmaul): Make in-line modifications to
 // ServerStatistics/ClientStatistics messages for ShmEventLoop-based replay to
 // avoid messing up anything that depends on them having valid offsets.
 void LogReader::Register(EventLoop *event_loop) {
+  const TimestampQueueStrategy timestamp_queue_strategy =
+      ComputeTimestampQueueStrategy();
+
   filters_ =
       std::make_unique<message_bridge::MultiNodeNoncausalOffsetEstimator>(
           event_loop->configuration(), logged_configuration(),
           log_files_.boots(), FLAGS_skip_order_validation,
-          chrono::duration_cast<chrono::nanoseconds>(
-              chrono::duration<double>(FLAGS_time_estimation_buffer_seconds)));
+          timestamp_queue_strategy ==
+                  TimestampQueueStrategy::kQueueTimestampsAtStartup
+              ? chrono::seconds(0)
+              : chrono::duration_cast<chrono::nanoseconds>(
+                    chrono::duration<double>(
+                        FLAGS_time_estimation_buffer_seconds)));
 
   std::vector<TimestampMapper *> timestamp_mappers;
   for (const Node *node : configuration::GetNodes(configuration())) {
@@ -628,8 +677,10 @@ void LogReader::Register(EventLoop *event_loop) {
     states_[node_index] = std::make_unique<State>(
         !log_files_.ContainsPartsForNode(node_name)
             ? nullptr
-            : std::make_unique<TimestampMapper>(node_name, log_files_),
-        filters_.get(), std::bind(&LogReader::NoticeRealtimeEnd, this), node,
+            : std::make_unique<TimestampMapper>(node_name, log_files_,
+                                                timestamp_queue_strategy),
+        timestamp_queue_strategy, filters_.get(),
+        std::bind(&LogReader::NoticeRealtimeEnd, this), node,
         State::ThreadedBuffering::kYes, MaybeMakeReplayChannelIndices(node),
         before_send_callbacks_);
     State *state = states_[node_index].get();
@@ -653,6 +704,16 @@ void LogReader::Register(EventLoop *event_loop) {
       }
     }
   }
+
+  // Now that all the peers are added, we can buffer up all the timestamps if
+  // needed.
+  if (timestamp_queue_strategy ==
+      TimestampQueueStrategy::kQueueTimestampsAtStartup) {
+    for (std::unique_ptr<State> &state : states_) {
+      state->ReadTimestamps();
+    }
+  }
+
   for (const Node *node : configuration::GetNodes(configuration())) {
     if (node == nullptr || node->name()->string_view() ==
                                event_loop->node()->name()->string_view()) {
@@ -1048,7 +1109,7 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
             << state->monotonic_now();
   }));
 
-  state->SeedSortedMessages();
+  state->MaybeSeedSortedMessages();
 
   if (state->SingleThreadedOldestMessageTime() != BootTimestamp::max_time()) {
     state->set_startup_timer(
@@ -1232,6 +1293,7 @@ const Channel *LogReader::RemapChannel(const EventLoop *event_loop,
 
 LogReader::State::State(
     std::unique_ptr<TimestampMapper> timestamp_mapper,
+    TimestampQueueStrategy timestamp_queue_strategy,
     message_bridge::MultiNodeNoncausalOffsetEstimator *multinode_filters,
     std::function<void()> notice_realtime_end, const Node *node,
     LogReader::State::ThreadedBuffering threading,
@@ -1239,6 +1301,7 @@ LogReader::State::State(
     const std::vector<std::function<void(void *message)>>
         &before_send_callbacks)
     : timestamp_mapper_(std::move(timestamp_mapper)),
+      timestamp_queue_strategy_(timestamp_queue_strategy),
       notice_realtime_end_(notice_realtime_end),
       node_(node),
       multinode_filters_(multinode_filters),
@@ -1703,6 +1766,10 @@ TimestampedMessage LogReader::State::PopOldest() {
         message.value().monotonic_event_time +
         std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::duration<double>(FLAGS_threaded_look_ahead_seconds)));
+    VLOG(1) << "Popped " << message.value()
+            << configuration::CleanedChannelToString(
+                   event_loop_->configuration()->channels()->Get(
+                       factory_channel_index_[message->channel_index]));
     return message.value();
   } else {  // single threaded
     CHECK(timestamp_mapper_ != nullptr);
@@ -1714,7 +1781,7 @@ TimestampedMessage LogReader::State::PopOldest() {
     VLOG(2) << "Node '" << MaybeNodeName(event_loop_->node())
             << "': PopOldest Popping " << result.monotonic_event_time;
     timestamp_mapper_->PopFront();
-    SeedSortedMessages();
+    MaybeSeedSortedMessages();
 
     CHECK_EQ(result.monotonic_event_time.boot, boot_count());
 
@@ -1761,8 +1828,27 @@ BootTimestamp LogReader::State::SingleThreadedOldestMessageTime() {
   return result_ptr->monotonic_event_time;
 }
 
-void LogReader::State::SeedSortedMessages() {
+void LogReader::State::ReadTimestamps() {
   if (!timestamp_mapper_) return;
+  timestamp_mapper_->QueueTimestamps();
+
+  // TODO(austin): Maybe make timestamp mapper do this so we don't need to clear
+  // it out?
+  //
+  // If we don't clear the timestamp callback, we end up getting a callback both
+  // when SplitTimestampBootMerger sees the timestamp, and when TimestampMapper
+  // sees it.
+  timestamp_mapper_->set_timestamp_callback([](TimestampedMessage *) {});
+}
+
+void LogReader::State::MaybeSeedSortedMessages() {
+  if (!timestamp_mapper_) return;
+
+  // The whole purpose of seeding is to make timestamp_mapper load timestamps.
+  // So if we have already loaded them, skip seeding.
+  if (timestamp_queue_strategy_ ==
+      TimestampQueueStrategy::kQueueTimestampsAtStartup)
+    return;
 
   timestamp_mapper_->QueueFor(chrono::duration_cast<chrono::seconds>(
       chrono::duration<double>(FLAGS_time_estimation_buffer_seconds)));

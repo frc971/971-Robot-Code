@@ -34,6 +34,11 @@ enum class FileStrategy {
   kKeepSeparate,
 };
 
+enum class ForceTimestampBuffering {
+  kForceBufferTimestamps,
+  kAutoBuffer,
+};
+
 // Parameters to run all the tests with.
 struct ConfigParams {
   // The config file to use.
@@ -48,6 +53,9 @@ struct ConfigParams {
   std::string_view relogged_sha256;
   // If kCombine, use MinimalFileMultiNodeLogNamer.
   FileStrategy file_strategy;
+  // If kForceBufferTimestamps, set --force_timestamp_loading to force buffering
+  // timestamps at the start.
+  ForceTimestampBuffering timestamp_buffering;
 };
 
 struct LoggerState {
@@ -164,6 +172,8 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
       realtime_clock::time_point end_time = realtime_clock::max_time);
 
   void AddExtension(std::string_view extension);
+
+  gflags::FlagSaver flag_saver_;
 
   // Config and factory.
   aos::FlatbufferDetachedBuffer<aos::Configuration> config_;
