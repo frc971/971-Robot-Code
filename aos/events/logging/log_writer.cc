@@ -684,6 +684,8 @@ void Logger::ResetStatisics() {
   total_copy_time_ = std::chrono::nanoseconds::zero();
   total_copy_count_ = 0;
   total_copy_bytes_ = 0;
+  max_log_delay_ = std::chrono::nanoseconds::zero();
+  max_log_delay_channel_ = -1;
 }
 
 void Logger::Rotate() {
@@ -911,6 +913,11 @@ void Logger::RecordCreateMessageTime(aos::monotonic_clock::time_point start,
     max_copy_time_ = duration;
     max_copy_time_channel_ = fetcher.channel_index;
     max_copy_time_size_ = fetcher.fetcher->context().size;
+  }
+  const auto log_delay = end - fetcher.fetcher->context().monotonic_event_time;
+  if (log_delay > max_log_delay_) {
+    max_log_delay_ = log_delay;
+    max_log_delay_channel_ = fetcher.channel_index;
   }
 }
 

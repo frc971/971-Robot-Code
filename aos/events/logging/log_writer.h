@@ -77,6 +77,8 @@ class Logger {
   void set_logging_delay(std::chrono::nanoseconds logging_delay) {
     logging_delay_ = logging_delay;
   }
+  // Returns the current logging delay.
+  std::chrono::nanoseconds logging_delay() const { return logging_delay_; }
 
   // Sets the period between polling the data. Defaults to 100ms.
   //
@@ -136,6 +138,13 @@ class Logger {
   int total_copy_count() const { return total_copy_count_; }
   // The total number of bytes copied.
   int64_t total_copy_bytes() const { return total_copy_bytes_; }
+
+  // The maximum time between when a message was sent and when it was logged.
+  // This is 0 if no message has been logged.
+  std::chrono::nanoseconds max_log_delay() const { return max_log_delay_; }
+  // The channel for longest logging delay, or -1 if no messages have been
+  // logged.
+  int max_log_delay_channel() const { return max_log_delay_channel_; }
 
   void ResetStatisics();
 
@@ -327,6 +336,9 @@ class Logger {
       std::chrono::nanoseconds::zero();
   int total_message_fetch_count_ = 0;
   int64_t total_message_fetch_bytes_ = 0;
+
+  std::chrono::nanoseconds max_log_delay_ = std::chrono::nanoseconds::zero();
+  int max_log_delay_channel_ = -1;
 
   std::chrono::nanoseconds total_nop_fetch_time_ =
       std::chrono::nanoseconds::zero();
