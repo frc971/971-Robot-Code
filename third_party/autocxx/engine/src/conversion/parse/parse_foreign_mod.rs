@@ -15,8 +15,9 @@ use crate::conversion::{
     convert_error::ConvertErrorWithContext,
     convert_error::ErrorContext,
 };
+use crate::minisyn::{minisynize_punctuated, minisynize_vec};
 use crate::{
-    conversion::ConvertError,
+    conversion::ConvertErrorFromCpp,
     types::{Namespace, QualifiedName},
 };
 use std::collections::HashMap;
@@ -72,11 +73,11 @@ impl ParseForeignMod {
                 self.funcs_to_convert.push(FuncToConvert {
                     provenance: Provenance::Bindgen,
                     self_ty: None,
-                    ident: item.sig.ident,
-                    doc_attrs,
-                    inputs: item.sig.inputs,
-                    output: item.sig.output,
-                    vis: item.vis,
+                    ident: item.sig.ident.into(),
+                    doc_attrs: minisynize_vec(doc_attrs),
+                    inputs: minisynize_punctuated(item.sig.inputs),
+                    output: item.sig.output.into(),
+                    vis: item.vis.into(),
                     virtualness: annotations.get_virtualness(),
                     cpp_vis: annotations.get_cpp_visibility(),
                     special_member: annotations.special_member_kind(),
@@ -86,18 +87,18 @@ impl ParseForeignMod {
                     original_name: annotations.get_original_name(),
                     synthesized_this_type: None,
                     add_to_trait: None,
-                    is_deleted: annotations.has_attr("deleted"),
+                    is_deleted: annotations.get_deleted_or_defaulted(),
                     synthetic_cpp: None,
                     variadic: item.sig.variadic.is_some(),
                 });
                 Ok(())
             }
             ForeignItem::Static(item) => Err(ConvertErrorWithContext(
-                ConvertError::StaticData(item.ident.to_string()),
-                Some(ErrorContext::new_for_item(item.ident)),
+                ConvertErrorFromCpp::StaticData(item.ident.to_string()),
+                Some(ErrorContext::new_for_item(item.ident.into())),
             )),
             _ => Err(ConvertErrorWithContext(
-                ConvertError::UnexpectedForeignItem,
+                ConvertErrorFromCpp::UnexpectedForeignItem,
                 None,
             )),
         }
@@ -111,14 +112,14 @@ impl ParseForeignMod {
             _ => return,
         };
         for i in imp.items {
-            if let ImplItem::Method(itm) = i {
+            if let ImplItem::Fn(itm) = i {
                 let effective_fun_name = match get_called_function(&itm.block) {
                     Some(id) => id.clone(),
                     None => itm.sig.ident,
                 };
                 self.method_receivers.insert(
                     effective_fun_name,
-                    QualifiedName::new(&self.ns, ty_id.clone()),
+                    QualifiedName::new(&self.ns, ty_id.clone().into()),
                 );
             }
         }
@@ -151,7 +152,7 @@ impl ParseForeignMod {
 /// name of the actual function call inside the block's body.
 fn get_called_function(block: &Block) -> Option<&Ident> {
     match block.stmts.first() {
-        Some(Stmt::Expr(Expr::Call(ExprCall { func, .. }))) => match **func {
+        Some(Stmt::Expr(Expr::Call(ExprCall { func, .. }), _)) => match **func {
             Expr::Path(ref exp) => exp.path.segments.first().map(|ps| &ps.ident),
             _ => None,
         },

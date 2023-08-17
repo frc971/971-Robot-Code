@@ -12,9 +12,13 @@ use syn::{parse_quote, punctuated::Punctuated, token::Comma, FnArg, ReturnType};
 
 use crate::{
     conversion::{
-        api::{Api, ApiName, CppVisibility, FuncToConvert, Provenance, References, TraitSynthesis},
+        api::{
+            Api, ApiName, CppVisibility, DeletedOrDefaulted, FuncToConvert, Provenance, References,
+            TraitSynthesis,
+        },
         apivec::ApiVec,
     },
+    minisyn::minisynize_punctuated,
     types::{make_ident, QualifiedName},
 };
 
@@ -73,8 +77,8 @@ fn create_alloc_and_free(ty_name: QualifiedName) -> impl Iterator<Item = Api<Pod
                 fun: Box::new(FuncToConvert {
                     ident,
                     doc_attrs: Vec::new(),
-                    inputs,
-                    output,
+                    inputs: minisynize_punctuated(inputs),
+                    output: output.into(),
                     vis: parse_quote! { pub },
                     virtualness: crate::conversion::api::Virtualness::None,
                     cpp_vis: CppVisibility::Public,
@@ -86,7 +90,7 @@ fn create_alloc_and_free(ty_name: QualifiedName) -> impl Iterator<Item = Api<Pod
                     synthesized_this_type: None,
                     synthetic_cpp: Some((cpp_function_body, CppFunctionKind::Function)),
                     add_to_trait: Some(synthesis),
-                    is_deleted: false,
+                    is_deleted: DeletedOrDefaulted::Neither,
                     provenance: Provenance::SynthesizedOther,
                     variadic: false,
                 }),

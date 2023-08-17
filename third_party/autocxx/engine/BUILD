@@ -17,9 +17,9 @@ rust_library(
     crate_root = "src/lib.rs",
     edition = "2021",
     proc_macro_deps = [
+        "@crate_index//:rustversion",
         "@crate_index//:indoc",
         "@crate_index//:aquamarine",
-        "@crate_index//:strum_macros",
     ],
     rustc_flags = [
         "--cap-lints=allow",
@@ -39,13 +39,13 @@ rust_library(
         "@crate_index//:log",
         "@crate_index//:miette",
         "@crate_index//:once_cell",
+        "@crate_index//:prettyplease",
         "@crate_index//:proc-macro2",
         "@crate_index//:quote",
         "@crate_index//:regex",
         "@crate_index//:serde_json",
-        "@crate_index//:syn",
+        "@crate_index//:syn-2.0.28",
         "@crate_index//:tempfile",
         "@crate_index//:thiserror",
-        "@crate_index//:version_check",
     ],
 )

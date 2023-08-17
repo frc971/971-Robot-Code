@@ -32,7 +32,7 @@ rust_library(
         "@crate_index//:quote",
         "@crate_index//:serde",
         "@crate_index//:serde_json",
-        "@crate_index//:syn",
+        "@crate_index//:syn-2.0.28",
         "@crate_index//:thiserror",
     ],
 )

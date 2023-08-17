@@ -19,9 +19,9 @@ use crate::{
             type_converter::{self, add_analysis, TypeConversionContext, TypeConverter},
         },
         api::{
-            ApiName, CastMutability, CppVisibility, FuncToConvert, NullPhase, Provenance,
-            References, SpecialMemberKind, SubclassName, TraitImplSignature, TraitSynthesis,
-            UnsafetyNeeded, Virtualness,
+            ApiName, CastMutability, CppVisibility, DeletedOrDefaulted, FuncToConvert, NullPhase,
+            Provenance, References, SpecialMemberKind, SubclassName, TraitImplSignature,
+            TraitSynthesis, UnsafetyNeeded, Virtualness,
         },
         apivec::ApiVec,
         convert_error::ErrorContext,
@@ -29,6 +29,7 @@ use crate::{
         error_reporter::{convert_apis, report_any_error},
     },
     known_types::known_types,
+    minisyn::minisynize_punctuated,
     types::validate_ident_ok_for_rust,
 };
 use indexmap::map::IndexMap as HashMap;
@@ -40,14 +41,14 @@ use itertools::Itertools;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    parse_quote, punctuated::Punctuated, token::Comma, FnArg, Ident, Pat, ReturnType, Type,
-    TypePath, TypePtr, TypeReference, Visibility,
+    parse_quote, punctuated::Punctuated, token::Comma, FnArg, Ident, Pat, PatType, ReturnType,
+    Type, TypePath, TypePtr, TypeReference, Visibility,
 };
 
 use crate::{
     conversion::{
         api::{AnalysisPhase, Api, TypeKind},
-        ConvertError,
+        ConvertErrorFromCpp,
     },
     types::{make_ident, validate_ident_ok_for_cxx, Namespace, QualifiedName},
 };
@@ -64,13 +65,14 @@ use self::{
 };
 
 use super::{
+    depth_first::HasFieldsAndBases,
     doc_label::make_doc_attrs,
     pod::{PodAnalysis, PodPhase},
     tdef::TypedefAnalysis,
     type_converter::{Annotated, PointerTreatment},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub(crate) enum ReceiverMutability {
     Const,
     Mutable,
@@ -85,7 +87,7 @@ pub(crate) enum MethodKind {
     PureVirtual(ReceiverMutability),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) enum TraitMethodKind {
     CopyConstructor,
     MoveConstructor,
@@ -95,11 +97,11 @@ pub(crate) enum TraitMethodKind {
     Dealloc,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct TraitMethodDetails {
     pub(crate) trt: TraitImplSignature,
     pub(crate) avoid_self: bool,
-    pub(crate) method_name: Ident,
+    pub(crate) method_name: crate::minisyn::Ident,
     /// For traits, where we're trying to implement a specific existing
     /// interface, we may need to reorder the parameters to fit that
     /// interface.
@@ -109,7 +111,7 @@ pub(crate) struct TraitMethodDetails {
     pub(crate) trait_call_is_unsafe: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) enum FnKind {
     Function,
     Method {
@@ -129,31 +131,31 @@ pub(crate) enum FnKind {
 
 /// Strategy for ensuring that the final, callable, Rust name
 /// is what the user originally expected.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 
 pub(crate) enum RustRenameStrategy {
     /// cxx::bridge name matches user expectations
     None,
     /// Even the #[rust_name] attribute would cause conflicts, and we need
     /// to use a 'use XYZ as ABC'
-    RenameInOutputMod(Ident),
+    RenameInOutputMod(crate::minisyn::Ident),
     /// This function requires us to generate a Rust function to do
     /// parameter conversion.
     RenameUsingWrapperFunction,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct FnAnalysis {
     /// Each entry in the cxx::bridge needs to have a unique name, even if
     /// (from the perspective of Rust and C++) things are in different
     /// namespaces/mods.
-    pub(crate) cxxbridge_name: Ident,
+    pub(crate) cxxbridge_name: crate::minisyn::Ident,
     /// ... so record also the name under which we wish to expose it in Rust.
     pub(crate) rust_name: String,
     pub(crate) rust_rename_strategy: RustRenameStrategy,
     pub(crate) params: Punctuated<FnArg, Comma>,
     pub(crate) kind: FnKind,
-    pub(crate) ret_type: ReturnType,
+    pub(crate) ret_type: crate::minisyn::ReturnType,
     pub(crate) param_details: Vec<ArgumentAnalysis>,
     pub(crate) ret_conversion: Option<TypeConversionPolicy>,
     pub(crate) requires_unsafe: UnsafetyNeeded,
@@ -172,12 +174,13 @@ pub(crate) struct FnAnalysis {
     pub(crate) rust_wrapper_needed: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct ArgumentAnalysis {
     pub(crate) conversion: TypeConversionPolicy,
-    pub(crate) name: Pat,
+    pub(crate) name: crate::minisyn::Pat,
     pub(crate) self_type: Option<(QualifiedName, ReceiverMutability)>,
     pub(crate) has_lifetime: bool,
+    pub(crate) is_mutable_reference: bool,
     pub(crate) deps: HashSet<QualifiedName>,
     pub(crate) requires_unsafe: UnsafetyNeeded,
     pub(crate) is_placement_return_destination: bool,
@@ -187,6 +190,7 @@ pub(crate) struct ReturnTypeAnalysis {
     rt: ReturnType,
     conversion: Option<TypeConversionPolicy>,
     was_reference: bool,
+    was_mutable_reference: bool,
     deps: HashSet<QualifiedName>,
     placement_param_needed: Option<(FnArg, ArgumentAnalysis)>,
 }
@@ -197,12 +201,14 @@ impl Default for ReturnTypeAnalysis {
             rt: parse_quote! {},
             conversion: None,
             was_reference: false,
+            was_mutable_reference: false,
             deps: Default::default(),
             placement_param_needed: None,
         }
     }
 }
 
+#[derive(std::fmt::Debug)]
 pub(crate) struct PodAndConstructorAnalysis {
     pub(crate) pod: PodAnalysis,
     pub(crate) constructors: PublicConstructors,
@@ -210,6 +216,7 @@ pub(crate) struct PodAndConstructorAnalysis {
 
 /// An analysis phase where we've analyzed each function, but
 /// haven't yet determined which constructors/etc. belong to each type.
+#[derive(std::fmt::Debug)]
 pub(crate) struct FnPrePhase1;
 
 impl AnalysisPhase for FnPrePhase1 {
@@ -220,6 +227,7 @@ impl AnalysisPhase for FnPrePhase1 {
 
 /// An analysis phase where we've analyzed each function, and identified
 /// what implicit constructors/destructors are present in each type.
+#[derive(std::fmt::Debug)]
 pub(crate) struct FnPrePhase2;
 
 impl AnalysisPhase for FnPrePhase2 {
@@ -228,6 +236,7 @@ impl AnalysisPhase for FnPrePhase2 {
     type FunAnalysis = FnAnalysis;
 }
 
+#[derive(Debug)]
 pub(crate) struct PodAndDepAnalysis {
     pub(crate) pod: PodAnalysis,
     pub(crate) constructor_and_allocator_deps: Vec<QualifiedName>,
@@ -236,6 +245,7 @@ pub(crate) struct PodAndDepAnalysis {
 
 /// Analysis phase after we've finished analyzing functions and determined
 /// which constructors etc. belong to them.
+#[derive(std::fmt::Debug)]
 pub(crate) struct FnPhase;
 
 /// Indicates which kinds of public constructors are known to exist for a type.
@@ -283,6 +293,7 @@ pub(crate) struct FnAnalyzer<'a> {
     generic_types: HashSet<QualifiedName>,
     types_in_anonymous_namespace: HashSet<QualifiedName>,
     existing_superclass_trait_api_names: HashSet<QualifiedName>,
+    force_wrapper_generation: bool,
 }
 
 impl<'a> FnAnalyzer<'a> {
@@ -290,6 +301,7 @@ impl<'a> FnAnalyzer<'a> {
         apis: ApiVec<PodPhase>,
         unsafe_policy: &'a UnsafePolicy,
         config: &'a IncludeCppConfig,
+        force_wrapper_generation: bool,
     ) -> ApiVec<FnPrePhase2> {
         let mut me = Self {
             unsafe_policy,
@@ -305,6 +317,7 @@ impl<'a> FnAnalyzer<'a> {
             generic_types: Self::build_generic_type_set(&apis),
             existing_superclass_trait_api_names: HashSet::new(),
             types_in_anonymous_namespace: Self::build_types_in_anonymous_namespace(&apis),
+            force_wrapper_generation,
         };
         let mut results = ApiVec::new();
         convert_apis(
@@ -427,7 +440,7 @@ impl<'a> FnAnalyzer<'a> {
         ty: Box<Type>,
         ns: &Namespace,
         pointer_treatment: PointerTreatment,
-    ) -> Result<Annotated<Box<Type>>, ConvertError> {
+    ) -> Result<Annotated<Box<Type>>, ConvertErrorFromCpp> {
         let ctx = TypeConversionContext::OuterType { pointer_treatment };
         let mut annotated = self.type_converter.convert_boxed_type(ty, ns, &ctx)?;
         self.extra_apis.append(&mut annotated.extra_apis);
@@ -513,7 +526,7 @@ impl<'a> FnAnalyzer<'a> {
                     **fun,
                     FuncToConvert {
                         special_member: Some(SpecialMemberKind::Destructor),
-                        is_deleted: false,
+                        is_deleted: DeletedOrDefaulted::Neither | DeletedOrDefaulted::Defaulted,
                         cpp_vis: CppVisibility::Public,
                         ..
                     }
@@ -741,6 +754,10 @@ impl<'a> FnAnalyzer<'a> {
                     sophistication,
                     false,
                 )
+                .map_err(|err| ConvertErrorFromCpp::Argument {
+                    arg: describe_arg(i),
+                    err: Box::new(err),
+                })
             })
             .partition(Result::is_ok);
         let (mut params, mut param_details): (Punctuated<_, Comma>, Vec<_>) =
@@ -775,7 +792,7 @@ impl<'a> FnAnalyzer<'a> {
                 if initial_rust_name.ends_with('_') {
                     initial_rust_name // case 2
                 } else if validate_ident_ok_for_rust(cpp_name).is_err() {
-                    format!("{}_", cpp_name) // case 5
+                    format!("{cpp_name}_") // case 5
                 } else {
                     cpp_name.to_string() // cases 3, 4, 6
                 }
@@ -829,7 +846,7 @@ impl<'a> FnAnalyzer<'a> {
                 let is_move =
                     matches!(fun.special_member, Some(SpecialMemberKind::MoveConstructor));
                 if let Some(constructor_suffix) = rust_name.strip_prefix(nested_type_ident) {
-                    rust_name = format!("new{}", constructor_suffix);
+                    rust_name = format!("new{constructor_suffix}");
                 }
                 rust_name = predetermined_rust_name
                     .unwrap_or_else(|| self.get_overload_name(ns, type_ident, rust_name));
@@ -868,7 +885,7 @@ impl<'a> FnAnalyzer<'a> {
                             impl_for: self_ty,
                             details: Box::new(TraitMethodDetails {
                                 trt: TraitImplSignature {
-                                    ty,
+                                    ty: ty.into(),
                                     trait_signature: parse_quote! {
                                         autocxx::moveit::new:: #trait_id
                                     },
@@ -904,7 +921,7 @@ impl<'a> FnAnalyzer<'a> {
                         impl_for: self_ty,
                         details: Box::new(TraitMethodDetails {
                             trt: TraitImplSignature {
-                                ty,
+                                ty: ty.into(),
                                 trait_signature: parse_quote! {
                                     Drop
                                 },
@@ -934,7 +951,7 @@ impl<'a> FnAnalyzer<'a> {
                     // fn make_unique(...args) -> UniquePtr<Type>
                     // If there are multiple constructors, bindgen generates
                     // new, new1, new2 etc. and we'll keep those suffixes.
-                    rust_name = format!("new{}", constructor_suffix);
+                    rust_name = format!("new{constructor_suffix}");
                     MethodKind::Constructor {
                         is_default: matches!(
                             fun.special_member,
@@ -1033,10 +1050,10 @@ impl<'a> FnAnalyzer<'a> {
                 ..
             } => {
                 if param_details.len() < 2 {
-                    set_ignore_reason(ConvertError::ConstructorWithOnlyOneParam);
+                    set_ignore_reason(ConvertErrorFromCpp::ConstructorWithOnlyOneParam);
                 }
                 if param_details.len() > 2 {
-                    set_ignore_reason(ConvertError::ConstructorWithMultipleParams);
+                    set_ignore_reason(ConvertErrorFromCpp::ConstructorWithMultipleParams);
                 }
                 self.reanalyze_parameter(
                     0,
@@ -1058,10 +1075,10 @@ impl<'a> FnAnalyzer<'a> {
                 ..
             } => {
                 if param_details.len() < 2 {
-                    set_ignore_reason(ConvertError::ConstructorWithOnlyOneParam);
+                    set_ignore_reason(ConvertErrorFromCpp::ConstructorWithOnlyOneParam);
                 }
                 if param_details.len() > 2 {
-                    set_ignore_reason(ConvertError::ConstructorWithMultipleParams);
+                    set_ignore_reason(ConvertErrorFromCpp::ConstructorWithMultipleParams);
                 }
                 self.reanalyze_parameter(
                     0,
@@ -1099,14 +1116,14 @@ impl<'a> FnAnalyzer<'a> {
         // or note whether the type is abstract.
         let externally_callable = match fun.cpp_vis {
             CppVisibility::Private => {
-                set_ignore_reason(ConvertError::PrivateMethod);
+                set_ignore_reason(ConvertErrorFromCpp::PrivateMethod);
                 false
             }
             CppVisibility::Protected => false,
             CppVisibility::Public => true,
         };
         if fun.variadic {
-            set_ignore_reason(ConvertError::Variadic);
+            set_ignore_reason(ConvertErrorFromCpp::Variadic);
         }
         if let Some(problem) = bads.into_iter().next() {
             match problem {
@@ -1116,7 +1133,7 @@ impl<'a> FnAnalyzer<'a> {
         } else if fun.unused_template_param {
             // This indicates that bindgen essentially flaked out because templates
             // were too complex.
-            set_ignore_reason(ConvertError::UnusedTemplateParam)
+            set_ignore_reason(ConvertErrorFromCpp::UnusedTemplateParam)
         } else if matches!(
             fun.special_member,
             Some(SpecialMemberKind::AssignmentOperator)
@@ -1124,11 +1141,11 @@ impl<'a> FnAnalyzer<'a> {
             // Be careful with the order of this if-else tree. Anything above here means we won't
             // treat it as an assignment operator, but anything below we still consider when
             // deciding which other C++ special member functions are implicitly defined.
-            set_ignore_reason(ConvertError::AssignmentOperator)
+            set_ignore_reason(ConvertErrorFromCpp::AssignmentOperator)
         } else if fun.references.rvalue_ref_return {
-            set_ignore_reason(ConvertError::RValueReturn)
-        } else if fun.is_deleted {
-            set_ignore_reason(ConvertError::Deleted)
+            set_ignore_reason(ConvertErrorFromCpp::RValueReturn)
+        } else if matches!(fun.is_deleted, DeletedOrDefaulted::Deleted) {
+            set_ignore_reason(ConvertErrorFromCpp::Deleted)
         } else {
             match kind {
                 FnKind::Method {
@@ -1140,21 +1157,21 @@ impl<'a> FnAnalyzer<'a> {
                         | MethodKind::Virtual(..),
                     ..
                 } if !known_types().is_cxx_acceptable_receiver(impl_for) => {
-                    set_ignore_reason(ConvertError::UnsupportedReceiver);
+                    set_ignore_reason(ConvertErrorFromCpp::UnsupportedReceiver);
                 }
                 FnKind::Method { ref impl_for, .. } if !self.is_on_allowlist(impl_for) => {
                     // Bindgen will output methods for types which have been encountered
                     // virally as arguments on other allowlisted types. But we don't want
                     // to generate methods unless the user has specifically asked us to.
                     // It may, for instance, be a private type.
-                    set_ignore_reason(ConvertError::MethodOfNonAllowlistedType);
+                    set_ignore_reason(ConvertErrorFromCpp::MethodOfNonAllowlistedType);
                 }
                 FnKind::Method { ref impl_for, .. } | FnKind::TraitMethod { ref impl_for, .. } => {
                     if self.is_generic_type(impl_for) {
-                        set_ignore_reason(ConvertError::MethodOfGenericType);
+                        set_ignore_reason(ConvertErrorFromCpp::MethodOfGenericType);
                     }
                     if self.types_in_anonymous_namespace.contains(impl_for) {
-                        set_ignore_reason(ConvertError::MethodInAnonymousNamespace);
+                        set_ignore_reason(ConvertErrorFromCpp::MethodInAnonymousNamespace);
                     }
                 }
                 _ => {}
@@ -1199,12 +1216,46 @@ impl<'a> FnAnalyzer<'a> {
 
         let requires_unsafe = self.should_be_unsafe(&param_details, &kind);
 
-        let num_input_references = param_details.iter().filter(|pd| pd.has_lifetime).count();
-        if num_input_references != 1 && return_analysis.was_reference {
+        // The following sections reject some types of function because of the arrangement
+        // of Rust references. We could lift these restrictions when/if we switch to using
+        // CppRef to represent C++ references.
+        if return_analysis.was_reference {
             // cxx only allows functions to return a reference if they take exactly
-            // one reference as a parameter. Let's see...
-            set_ignore_reason(ConvertError::NotOneInputReference(rust_name.clone()));
+            // one reference as a parameter. Let's see.
+            let num_input_references = param_details.iter().filter(|pd| pd.has_lifetime).count();
+            if num_input_references == 0 {
+                set_ignore_reason(ConvertErrorFromCpp::NoInputReference(rust_name.clone()));
+            }
+            if num_input_references > 1 {
+                set_ignore_reason(ConvertErrorFromCpp::MultipleInputReferences(
+                    rust_name.clone(),
+                ));
+            }
         }
+        if return_analysis.was_mutable_reference {
+            // This one's a bit more subtle. We can't have:
+            //    fn foo(thing: &Thing) -> &mut OtherThing
+            // because Rust doesn't allow it.
+            // We could probably allow:
+            //    fn foo(thing: &mut Thing, thing2: &mut OtherThing) -> &mut OtherThing
+            // but probably cxx doesn't allow that. (I haven't checked). Even if it did,
+            // there's ambiguity here so won't allow it.
+            let num_input_mutable_references = param_details
+                .iter()
+                .filter(|pd| pd.has_lifetime && pd.is_mutable_reference)
+                .count();
+            if num_input_mutable_references == 0 {
+                set_ignore_reason(ConvertErrorFromCpp::NoMutableInputReference(
+                    rust_name.clone(),
+                ));
+            }
+            if num_input_mutable_references > 1 {
+                set_ignore_reason(ConvertErrorFromCpp::MultipleMutableInputReferences(
+                    rust_name.clone(),
+                ));
+            }
+        }
+
         let mut ret_type = return_analysis.rt;
         let ret_type_conversion = return_analysis.conversion;
 
@@ -1248,19 +1299,23 @@ impl<'a> FnAnalyzer<'a> {
             _ if ret_type_conversion_needed => true,
             _ if cpp_name_incompatible_with_cxx => true,
             _ if fun.synthetic_cpp.is_some() => true,
+            _ if self.force_wrapper_generation => true,
             _ => false,
         };
 
         let cpp_wrapper = if wrapper_function_needed {
             // Generate a new layer of C++ code to wrap/unwrap parameters
             // and return values into/out of std::unique_ptrs.
-            let cpp_construction_ident = make_ident(&effective_cpp_name);
+            let cpp_construction_ident = make_ident(effective_cpp_name);
             let joiner = if cxxbridge_name.to_string().ends_with('_') {
                 ""
             } else {
                 "_"
             };
-            cxxbridge_name = make_ident(&format!("{}{}autocxx_wrapper", cxxbridge_name, joiner));
+            cxxbridge_name = make_ident(
+                self.config
+                    .uniquify_name_per_mod(&format!("{cxxbridge_name}{joiner}autocxx_wrapper")),
+            );
             let (payload, cpp_function_kind) = match fun.synthetic_cpp.as_ref().cloned() {
                 Some((payload, cpp_function_kind)) => (payload, cpp_function_kind),
                 None => match kind {
@@ -1321,10 +1376,10 @@ impl<'a> FnAnalyzer<'a> {
             params.clear();
             for pd in &param_details {
                 let type_name = pd.conversion.converted_rust_type();
-                let arg_name = if pd.self_type.is_some() {
+                let arg_name: syn::Pat = if pd.self_type.is_some() {
                     parse_quote!(autocxx_gen_this)
                 } else {
-                    pd.name.clone()
+                    pd.name.clone().into()
                 };
                 params.push(parse_quote!(
                     #arg_name: #type_name
@@ -1358,12 +1413,15 @@ impl<'a> FnAnalyzer<'a> {
             _ if any_param_needs_rust_conversion || return_needs_rust_conversion => true,
             FnKind::TraitMethod { .. } => true,
             FnKind::Method { .. } => cxxbridge_name != rust_name,
+            _ if self.force_wrapper_generation => true,
             _ => false,
         };
 
         // Naming, part two.
         // Work out our final naming strategy.
-        validate_ident_ok_for_cxx(&cxxbridge_name.to_string()).unwrap_or_else(set_ignore_reason);
+        validate_ident_ok_for_cxx(&cxxbridge_name.to_string())
+            .map_err(ConvertErrorFromCpp::InvalidIdent)
+            .unwrap_or_else(set_ignore_reason);
         let rust_name_ident = make_ident(&rust_name);
         let rust_rename_strategy = match kind {
             _ if rust_wrapper_needed => RustRenameStrategy::RenameUsingWrapperFunction,
@@ -1380,10 +1438,10 @@ impl<'a> FnAnalyzer<'a> {
             params,
             ret_conversion: ret_type_conversion,
             kind,
-            ret_type,
+            ret_type: ret_type.into(),
             param_details,
             requires_unsafe,
-            vis,
+            vis: vis.into(),
             cpp_wrapper,
             deps,
             ignore_reason,
@@ -1422,7 +1480,7 @@ impl<'a> FnAnalyzer<'a> {
         sophistication: TypeConversionSophistication,
         construct_into_self: bool,
         is_move_constructor: bool,
-    ) -> Result<(), ConvertError> {
+    ) -> Result<(), ConvertErrorFromCpp> {
         self.convert_fn_arg(
             fun.inputs.iter().nth(param_idx).unwrap(),
             ns,
@@ -1484,7 +1542,7 @@ impl<'a> FnAnalyzer<'a> {
                             AsRef < #to_type >
                         },
                         parse_quote! {
-                            &'a mut ::std::pin::Pin < &'a mut #from_type_path >
+                            &'a mut ::core::pin::Pin < &'a mut #from_type_path >
                         },
                         "as_ref",
                     ),
@@ -1493,7 +1551,7 @@ impl<'a> FnAnalyzer<'a> {
                             autocxx::PinMut < #to_type >
                         },
                         parse_quote! {
-                            ::std::pin::Pin < &'a mut #from_type_path >
+                            ::core::pin::Pin < &'a mut #from_type_path >
                         },
                         "pin_mut",
                     ),
@@ -1505,7 +1563,7 @@ impl<'a> FnAnalyzer<'a> {
                         impl_for: from_type.clone(),
                         details: Box::new(TraitMethodDetails {
                             trt: TraitImplSignature {
-                                ty,
+                                ty: ty.into(),
                                 trait_signature,
                                 unsafety: None,
                             },
@@ -1549,7 +1607,7 @@ impl<'a> FnAnalyzer<'a> {
                 impl_for: ty.clone(),
                 details: Box::new(TraitMethodDetails {
                     trt: TraitImplSignature {
-                        ty: Type::Path(typ),
+                        ty: Type::Path(typ).into(),
                         trait_signature: parse_quote! { autocxx::moveit::MakeCppStorage },
                         unsafety: Some(parse_quote! { unsafe }),
                     },
@@ -1590,7 +1648,7 @@ impl<'a> FnAnalyzer<'a> {
         force_rust_conversion: Option<RustConversionType>,
         sophistication: TypeConversionSophistication,
         construct_into_self: bool,
-    ) -> Result<(FnArg, ArgumentAnalysis), ConvertError> {
+    ) -> Result<(FnArg, ArgumentAnalysis), ConvertErrorFromCpp> {
         Ok(match arg {
             FnArg::Typed(pt) => {
                 let mut pt = pt.clone();
@@ -1627,12 +1685,11 @@ impl<'a> FnAnalyzer<'a> {
                                     };
                                     Ok((this_type, receiver_mutability))
                                 }
-                                _ => Err(ConvertError::UnexpectedThisType(QualifiedName::new(
-                                    ns,
-                                    make_ident(fn_name),
-                                ))),
+                                _ => Err(ConvertErrorFromCpp::UnexpectedThisType(
+                                    QualifiedName::new(ns, make_ident(fn_name)),
+                                )),
                             },
-                            _ => Err(ConvertError::UnexpectedThisType(QualifiedName::new(
+                            _ => Err(ConvertErrorFromCpp::UnexpectedThisType(QualifiedName::new(
                                 ns,
                                 make_ident(fn_name),
                             ))),
@@ -1646,8 +1703,9 @@ impl<'a> FnAnalyzer<'a> {
                         syn::Pat::Ident(pp)
                     }
                     syn::Pat::Ident(pp) => {
-                        validate_ident_ok_for_cxx(&pp.ident.to_string())?;
-                        pointer_treatment = references.param_treatment(&pp.ident);
+                        validate_ident_ok_for_cxx(&pp.ident.to_string())
+                            .map_err(ConvertErrorFromCpp::InvalidIdent)?;
+                        pointer_treatment = references.param_treatment(&pp.ident.clone().into());
                         syn::Pat::Ident(pp)
                     }
                     _ => old_pat,
@@ -1684,12 +1742,16 @@ impl<'a> FnAnalyzer<'a> {
                     FnArg::Typed(pt),
                     ArgumentAnalysis {
                         self_type,
-                        name: new_pat,
+                        name: new_pat.into(),
                         conversion,
                         has_lifetime: matches!(
                             annotated_type.kind,
                             type_converter::TypeKind::Reference
                                 | type_converter::TypeKind::MutableReference
+                        ),
+                        is_mutable_reference: matches!(
+                            annotated_type.kind,
+                            type_converter::TypeKind::MutableReference
                         ),
                         deps: annotated_type.types_encountered,
                         requires_unsafe,
@@ -1859,7 +1921,7 @@ impl<'a> FnAnalyzer<'a> {
         ns: &Namespace,
         references: &References,
         sophistication: TypeConversionSophistication,
-    ) -> Result<ReturnTypeAnalysis, ConvertError> {
+    ) -> Result<ReturnTypeAnalysis, ConvertErrorFromCpp> {
         Ok(match rt {
             ReturnType::Default => ReturnTypeAnalysis::default(),
             ReturnType::Type(rarrow, boxed_type) => {
@@ -1902,9 +1964,9 @@ impl<'a> FnAnalyzer<'a> {
                                 conversion: Some(TypeConversionPolicy::new_for_placement_return(
                                     ty.clone(),
                                 )),
-                                was_reference: false,
                                 deps: annotated_type.types_encountered,
                                 placement_param_needed: Some((fnarg, analysis)),
+                                ..Default::default()
                             }
                         } else {
                             // There are some types which we can't currently represent within a moveit::new::New.
@@ -1917,14 +1979,18 @@ impl<'a> FnAnalyzer<'a> {
                             ReturnTypeAnalysis {
                                 rt: ReturnType::Type(*rarrow, boxed_type),
                                 conversion,
-                                was_reference: false,
                                 deps: annotated_type.types_encountered,
-                                placement_param_needed: None,
+                                ..Default::default()
                             }
                         }
                     }
                     _ => {
-                        let was_reference = references.ref_return;
+                        let was_mutable_reference = matches!(
+                            annotated_type.kind,
+                            type_converter::TypeKind::MutableReference
+                        );
+                        let was_reference = was_mutable_reference
+                            || matches!(annotated_type.kind, type_converter::TypeKind::Reference);
                         let conversion = Some(
                             if was_reference
                                 && matches!(
@@ -1941,6 +2007,7 @@ impl<'a> FnAnalyzer<'a> {
                             rt: ReturnType::Type(*rarrow, boxed_type),
                             conversion,
                             was_reference,
+                            was_mutable_reference,
                             deps: annotated_type.types_encountered,
                             placement_param_needed: None,
                         }
@@ -2091,9 +2158,12 @@ impl<'a> FnAnalyzer<'a> {
                     Box::new(FuncToConvert {
                         self_ty: Some(self_ty.clone()),
                         ident,
-                        doc_attrs: make_doc_attrs(format!("Synthesized {}.", special_member)),
-                        inputs,
-                        output: ReturnType::Default,
+                        doc_attrs: make_doc_attrs(format!("Synthesized {special_member}."))
+                            .into_iter()
+                            .map(Into::into)
+                            .collect(),
+                        inputs: minisynize_punctuated(inputs),
+                        output: ReturnType::Default.into(),
                         vis: parse_quote! { pub },
                         virtualness: Virtualness::None,
                         cpp_vis: CppVisibility::Public,
@@ -2102,7 +2172,7 @@ impl<'a> FnAnalyzer<'a> {
                         references,
                         original_name: None,
                         synthesized_this_type: None,
-                        is_deleted: false,
+                        is_deleted: DeletedOrDefaulted::Neither,
                         add_to_trait: None,
                         synthetic_cpp: None,
                         provenance: Provenance::SynthesizedOther,
@@ -2192,7 +2262,7 @@ impl Api<FnPhase> {
         )
     }
 
-    pub(crate) fn cxxbridge_name(&self) -> Option<Ident> {
+    pub(crate) fn cxxbridge_name(&self) -> Option<crate::minisyn::Ident> {
         match self {
             Api::Function { ref analysis, .. } => Some(analysis.cxxbridge_name.clone()),
             Api::StringConstructor { .. }
@@ -2222,5 +2292,62 @@ fn extract_type_from_pinned_mut_ref(ty: &TypePath) -> Type {
             }
         }
         _ => panic!("did not find angle bracketed args"),
+    }
+}
+
+impl HasFieldsAndBases for Api<FnPrePhase1> {
+    fn name(&self) -> &QualifiedName {
+        self.name()
+    }
+
+    fn field_and_base_deps(&self) -> Box<dyn Iterator<Item = &QualifiedName> + '_> {
+        match self {
+            Api::Struct {
+                analysis:
+                    PodAnalysis {
+                        field_definition_deps,
+                        bases,
+                        ..
+                    },
+                ..
+            } => Box::new(field_definition_deps.iter().chain(bases.iter())),
+            _ => Box::new(std::iter::empty()),
+        }
+    }
+}
+
+impl HasFieldsAndBases for Api<FnPrePhase2> {
+    fn name(&self) -> &QualifiedName {
+        self.name()
+    }
+
+    fn field_and_base_deps(&self) -> Box<dyn Iterator<Item = &QualifiedName> + '_> {
+        match self {
+            Api::Struct {
+                analysis:
+                    PodAndConstructorAnalysis {
+                        pod:
+                            PodAnalysis {
+                                field_definition_deps,
+                                bases,
+                                ..
+                            },
+                        ..
+                    },
+                ..
+            } => Box::new(field_definition_deps.iter().chain(bases.iter())),
+            _ => Box::new(std::iter::empty()),
+        }
+    }
+}
+
+/// Stringify a function argument for diagnostics
+fn describe_arg(arg: &FnArg) -> String {
+    match arg {
+        FnArg::Receiver(_) => "the function receiver (this/self paramter)".into(),
+        FnArg::Typed(PatType { pat, .. }) => match pat.as_ref() {
+            Pat::Ident(pti) => pti.ident.to_string(),
+            _ => "another argument we don't know how to describe".into(),
+        },
     }
 }
