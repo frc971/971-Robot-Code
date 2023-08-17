@@ -55,8 +55,8 @@ size_t ScopedPipe::ScopedReadPipe::Read(std::string *buffer) {
         read(fd(), buffer->data() + buffer->size() - kBufferSize, kBufferSize);
     if (result == -1) {
       if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        buffer->resize(original_size);
-        return 0;
+        buffer->resize(original_size + read_bytes);
+        return read_bytes;
       }
       PLOG(FATAL) << "Error on reading pipe.";
     } else if (result < kBufferSize) {

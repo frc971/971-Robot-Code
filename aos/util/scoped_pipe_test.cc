@@ -44,6 +44,21 @@ TEST(ScopedPipeTest, StringPipe) {
   }
 }
 
+// Tests using string read/write methods on the ScopedPipe objects.
+TEST(ScopedPipeTest, StringPipe2048) {
+  ScopedPipe::PipePair pipe = ScopedPipe::MakePipe();
+  std::string buffer;
+  ASSERT_EQ(0u, pipe.read->Read(&buffer))
+      << "Shouldn't get anything on empty read.";
+  ASSERT_TRUE(buffer.empty());
+
+  std::string a(2048, 'a');
+  pipe.write->Write(absl::Span<const uint8_t>(
+      reinterpret_cast<const uint8_t *>(a.data()), a.size()));
+  ASSERT_EQ(2048u, pipe.read->Read(&buffer));
+  ASSERT_EQ(a, buffer);
+}
+
 // Tests that calling SetCloexec succeeds and does indeed set FD_CLOEXEC.
 TEST(ScopedPipeTest, SetCloexec) {
   ScopedPipe::PipePair pipe = ScopedPipe::MakePipe();
