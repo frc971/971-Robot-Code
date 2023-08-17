@@ -16,6 +16,12 @@ generate!("aos::InitFromRust")
 ///
 /// Panics if non-test initialization has already been performed.
 pub fn test_init() {
+    init();
+    // TODO(Brian): Do we want any of the other stuff that `:gtest_main` has?
+    // TODO(Brian): Call `aos::SetShmBase` like `:gtest_main` does.
+}
+
+pub fn init() {
     static ONCE: Once = Once::new();
     ONCE.call_once(|| {
         let argv0 = std::env::args().next().expect("must have argv[0]");
@@ -23,7 +29,4 @@ pub fn test_init() {
         // SAFETY: argv0 is a NUL-terminated string.
         unsafe { ffi::aos::InitFromRust(argv0.as_ptr()) };
     });
-
-    // TODO(Brian): Do we want any of the other stuff that `:gtest_main` has?
-    // TODO(Brian): Call `aos::SetShmBase` like `:gtest_main` does.
 }

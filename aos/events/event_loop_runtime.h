@@ -6,6 +6,7 @@
 // particularly ergonomic for C++. See the Rust wrapper for detailed
 // documentation.
 
+#include <chrono>
 #include <memory>
 #include <optional>
 
@@ -139,6 +140,41 @@ class OnRunForRust {
   EventLoopRuntime *const runtime_;
 };
 
+class TimerForRust {
+ public:
+  static std::unique_ptr<TimerForRust> Make(EventLoopRuntime *runtime);
+
+  TimerForRust(const TimerForRust &) = delete;
+  TimerForRust(TimerForRust &&) = delete;
+
+  TimerForRust &operator=(const TimerForRust &) = delete;
+  TimerForRust &operator=(TimerForRust &&) = delete;
+
+  ~TimerForRust() { timer_->Disable(); }
+
+  void Schedule(int64_t base, int64_t repeat_offset) {
+    timer_->Schedule(
+        monotonic_clock::time_point(std::chrono::nanoseconds(base)),
+        std::chrono::nanoseconds(repeat_offset));
+  }
+
+  void Disable() { timer_->Disable(); }
+
+  bool IsDisabled() const { return timer_->IsDisabled(); }
+
+  void set_name(rust::Str name) { timer_->set_name(RustStrToStringView(name)); }
+  rust::Str name() const { return StringViewToRustStr(timer_->name()); }
+
+  // If true, the timer is expired.
+  bool Poll();
+
+ private:
+  TimerForRust() = default;
+
+  TimerHandler *timer_;
+  bool expired_ = false;
+};
+
 class EventLoopRuntime {
  public:
   EventLoopRuntime(EventLoop *event_loop) : event_loop_(event_loop) {}
@@ -199,8 +235,11 @@ class EventLoopRuntime {
 
   OnRunForRust MakeOnRun() { return OnRunForRust(this); }
 
+  std::unique_ptr<TimerForRust> AddTimer() { return TimerForRust::Make(this); }
+
  private:
   friend class OnRunForRust;
+  friend class TimerForRust;
 
   // Polls the top-level future once. This is what all the callbacks should do.
   void DoPoll() {

@@ -3,7 +3,7 @@ load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
-load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_doc_test", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_doc", "rust_doc_test", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -184,7 +184,6 @@ autocxx_library(
 rust_doc(
     name = "event_loop_runtime_doc",
     crate = ":event_loop_runtime",
-    target_compatible_with = ["@platforms//cpu:x86_64"],
 )
 
 rust_doc_test(
@@ -262,6 +261,60 @@ cc_binary(
         "//aos:init",
         "//aos:json_to_flatbuffer",
         "@com_github_google_glog//:glog",
+    ],
+)
+
+rust_binary(
+    name = "ping_rs",
+    srcs = [
+        "ping.rs",
+    ],
+    data = [
+        ":pingpong_config",
+    ],
+    rustc_flags = ["-Crelocation-model=static"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":event_loop_runtime",
+        ":ping_rust_fbs",
+        ":pong_rust_fbs",
+        ":shm_event_loop_rs",
+        "//aos:configuration_rs",
+        "//aos:configuration_rust_fbs",
+        "//aos:flatbuffers_rs",
+        "//aos:init_rs",
+        "@com_github_google_flatbuffers//rust",
+        "@crate_index//:futures",
+    ],
+)
+
+rust_binary(
+    name = "pong_rs",
+    srcs = [
+        "pong.rs",
+    ],
+    data = [
+        ":pingpong_config",
+    ],
+    rustc_flags = ["-Crelocation-model=static"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":event_loop_runtime",
+        ":ping_rust_fbs",
+        ":pong_rust_fbs",
+        ":shm_event_loop_rs",
+        "//aos:configuration_rs",
+        "//aos:configuration_rust_fbs",
+        "//aos:flatbuffers_rs",
+        "//aos:init_rs",
+        "@com_github_google_flatbuffers//rust",
+        "@crate_index//:futures",
     ],
 )
 
