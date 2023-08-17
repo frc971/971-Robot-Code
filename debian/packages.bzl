@@ -24,7 +24,7 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 # 6. Add a new "new_http_archive" entry to the WORKSPACE file for the tarball
 #    you just uploaded.
 
-def download_packages(name, packages, excludes = [], force_includes = [], force_excludes = [], target_compatible_with = None):
+def download_packages(name, packages, excludes = [], force_includes = [], force_excludes = [], target_compatible_with = None, release = "bullseye"):
     """Downloads a set of packages as well as their dependencies.
 
     You can also specify excludes in case some of the dependencies are meta
@@ -65,8 +65,8 @@ source "$${RUNFILES_DIR:-/dev/null}/$$f" 2>/dev/null || \\
 # --- end runfiles.bash initialization v2 ---
 
 
-exec "$$(rlocation org_frc971/debian/download_packages)" %s %s %s %s "$$@"
-END""" % (force_includes, force_excludes, excludes_list, package_list),
+exec "$$(rlocation org_frc971/debian/download_packages)" %s %s %s %s --release=%s "$$@"
+END""" % (force_includes, force_excludes, excludes_list, package_list, release),
         target_compatible_with = target_compatible_with,
     )
     native.sh_binary(
