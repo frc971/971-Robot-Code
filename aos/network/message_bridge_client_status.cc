@@ -37,6 +37,7 @@ FlatbufferDetachedBuffer<ClientStatistics> MakeClientStatistics(
     connection_builder.add_connected_since_time(
         monotonic_clock::min_time.time_since_epoch().count());
     connection_builder.add_connection_count(0);
+    connection_builder.add_timestamp_send_failures(0);
     connection_offsets.emplace_back(connection_builder.Finish());
   }
   flatbuffers::Offset<
@@ -143,6 +144,11 @@ void MessageBridgeClientStatus::SendStatistics() {
     }
     client_connection_builder.add_partial_deliveries(
         connection->partial_deliveries());
+
+    if (connection->timestamp_send_failures() != 0) {
+      client_connection_builder.add_timestamp_send_failures(
+          connection->timestamp_send_failures());
+    }
 
     if (!uuid_offset.IsNull()) {
       client_connection_builder.add_boot_uuid(uuid_offset);

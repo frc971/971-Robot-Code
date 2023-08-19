@@ -3,6 +3,7 @@
 
 #include <string_view>
 
+#include "aos/containers/ring_buffer.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/logger_generated.h"
 #include "aos/events/shm_event_loop.h"
@@ -49,6 +50,18 @@ class SctpClientConnection {
   }
 
  private:
+  // Datastructure to hold the timestamps we failed to deliver in.  All the
+  // fields match the reply exactly.
+  struct SavedTimestamp {
+    size_t channel_index;
+    int64_t monotonic_sent_time;
+    int64_t realtime_sent_time;
+    uint32_t queue_index;
+    int64_t monotonic_remote_time;
+    int64_t realtime_remote_time;
+    uint32_t remote_queue_index;
+  };
+
   // Reads a message from the socket.  Could be a notification.
   void MessageReceived();
 
@@ -61,6 +74,9 @@ class SctpClientConnection {
   void NodeDisconnected();
   void HandleData(const Message *message);
 
+  // Sends a timestamp, and returns true on success, false on failure.
+  bool SendTimestamp(SavedTimestamp timestamp);
+
   // Schedules connect_timer_ for a ways in the future. If one of our messages
   // gets dropped, the server might be waiting for this, so if we don't hear
   // from the server for a while we'll try sending it again.
@@ -68,6 +84,9 @@ class SctpClientConnection {
     connect_timer_->Schedule(event_loop_->context().monotonic_event_time +
                              kReconnectTimeout);
   }
+
+  // Sends out as many queued timestamps as we have and can send.
+  void SendTimestamps();
 
   // Event loop to register the server on.
   aos::ShmEventLoop *const event_loop_;
@@ -97,11 +116,20 @@ class SctpClientConnection {
   // Timer which fires to handle reconnections.
   aos::TimerHandler *connect_timer_;
 
+  // Timer which fires to handle resending timestamps.
+  aos::TimerHandler *timestamp_retry_buffer_;
+
   // ClientConnection statistics message to modify.  This will be published
   // periodicially.
   MessageBridgeClientStatus *client_status_;
   int client_index_;
   ClientConnection *connection_;
+
+  // Boot UUID for the remote for any timestamps in the buffer.
+  UUID timestamps_uuid_ = UUID::Zero();
+
+  // Any timestamps that we were unable to send back.
+  aos::RingBuffer<SavedTimestamp, 1024> timestamp_buffer_;
 };
 
 // This encapsulates the state required to talk to *all* the servers from this

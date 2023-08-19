@@ -73,6 +73,7 @@ void MessageBridgeParameterizedTest::OnPi2() {
 void MessageBridgeParameterizedTest::MakePi1Server(
     std::string server_config_sha256) {
   OnPi1();
+  LOG(INFO) << "Making pi1 server";
   FLAGS_application_name = "pi1_message_bridge_server";
   pi1_server_event_loop =
       std::make_unique<aos::ShmEventLoop>(&config.message());
@@ -85,6 +86,7 @@ void MessageBridgeParameterizedTest::MakePi1Server(
 
 void MessageBridgeParameterizedTest::RunPi1Server(
     chrono::nanoseconds duration) {
+  LOG(INFO) << "Running pi1 server";
   // Set up a shutdown callback.
   aos::TimerHandler *const quit = pi1_server_event_loop->AddTimer(
       [this]() { pi1_server_event_loop->Exit(); });
@@ -97,11 +99,13 @@ void MessageBridgeParameterizedTest::RunPi1Server(
 }
 
 void MessageBridgeParameterizedTest::StartPi1Server() {
+  LOG(INFO) << "Starting pi1 server";
   pi1_server_thread =
       std::make_unique<ThreadedEventLoopRunner>(pi1_server_event_loop.get());
 }
 
 void MessageBridgeParameterizedTest::StopPi1Server() {
+  LOG(INFO) << "Stopping pi1 server";
   pi1_server_thread.reset();
   pi1_message_bridge_server.reset();
   pi1_server_event_loop.reset();
@@ -109,6 +113,7 @@ void MessageBridgeParameterizedTest::StopPi1Server() {
 
 void MessageBridgeParameterizedTest::MakePi1Client() {
   OnPi1();
+  LOG(INFO) << "Making pi1 client";
   FLAGS_application_name = "pi1_message_bridge_client";
   pi1_client_event_loop =
       std::make_unique<aos::ShmEventLoop>(&config.message());
@@ -118,11 +123,13 @@ void MessageBridgeParameterizedTest::MakePi1Client() {
 }
 
 void MessageBridgeParameterizedTest::StartPi1Client() {
+  LOG(INFO) << "Starting pi1 client";
   pi1_client_thread =
       std::make_unique<ThreadedEventLoopRunner>(pi1_client_event_loop.get());
 }
 
 void MessageBridgeParameterizedTest::StopPi1Client() {
+  LOG(INFO) << "Stopping pi1 client";
   pi1_client_thread.reset();
   pi1_message_bridge_client.reset();
   pi1_client_event_loop.reset();
@@ -130,6 +137,7 @@ void MessageBridgeParameterizedTest::StopPi1Client() {
 
 void MessageBridgeParameterizedTest::MakePi1Test() {
   OnPi1();
+  LOG(INFO) << "Making pi1 test";
   FLAGS_application_name = "test1";
   pi1_test_event_loop = std::make_unique<aos::ShmEventLoop>(&config.message());
 
@@ -154,14 +162,19 @@ void MessageBridgeParameterizedTest::MakePi1Test() {
 }
 
 void MessageBridgeParameterizedTest::StartPi1Test() {
+  LOG(INFO) << "Starting pi1 test";
   pi1_test_thread =
       std::make_unique<ThreadedEventLoopRunner>(pi1_test_event_loop.get());
 }
 
-void MessageBridgeParameterizedTest::StopPi1Test() { pi1_test_thread.reset(); }
+void MessageBridgeParameterizedTest::StopPi1Test() {
+  LOG(INFO) << "Stopping pi1 test";
+  pi1_test_thread.reset();
+}
 
 void MessageBridgeParameterizedTest::MakePi2Server() {
   OnPi2();
+  LOG(INFO) << "Making pi2 server";
   FLAGS_application_name = "pi2_message_bridge_server";
   pi2_server_event_loop =
       std::make_unique<aos::ShmEventLoop>(&config.message());
@@ -172,6 +185,7 @@ void MessageBridgeParameterizedTest::MakePi2Server() {
 
 void MessageBridgeParameterizedTest::RunPi2Server(
     chrono::nanoseconds duration) {
+  LOG(INFO) << "Running pi2 server";
   // Schedule a shutdown callback.
   aos::TimerHandler *const quit = pi2_server_event_loop->AddTimer(
       [this]() { pi2_server_event_loop->Exit(); });
@@ -184,11 +198,13 @@ void MessageBridgeParameterizedTest::RunPi2Server(
 }
 
 void MessageBridgeParameterizedTest::StartPi2Server() {
+  LOG(INFO) << "Starting pi2 server";
   pi2_server_thread =
       std::make_unique<ThreadedEventLoopRunner>(pi2_server_event_loop.get());
 }
 
 void MessageBridgeParameterizedTest::StopPi2Server() {
+  LOG(INFO) << "Stopping pi2 server";
   pi2_server_thread.reset();
   pi2_message_bridge_server.reset();
   pi2_server_event_loop.reset();
@@ -196,6 +212,7 @@ void MessageBridgeParameterizedTest::StopPi2Server() {
 
 void MessageBridgeParameterizedTest::MakePi2Client() {
   OnPi2();
+  LOG(INFO) << "Making pi2 client";
   FLAGS_application_name = "pi2_message_bridge_client";
   pi2_client_event_loop =
       std::make_unique<aos::ShmEventLoop>(&config.message());
@@ -206,6 +223,7 @@ void MessageBridgeParameterizedTest::MakePi2Client() {
 
 void MessageBridgeParameterizedTest::RunPi2Client(
     chrono::nanoseconds duration) {
+  LOG(INFO) << "Running pi2 client";
   // Run for 5 seconds to make sure we have time to estimate the offset.
   aos::TimerHandler *const quit = pi2_client_event_loop->AddTimer(
       [this]() { pi2_client_event_loop->Exit(); });
@@ -219,11 +237,13 @@ void MessageBridgeParameterizedTest::RunPi2Client(
 }
 
 void MessageBridgeParameterizedTest::StartPi2Client() {
+  LOG(INFO) << "Starting pi2 client";
   pi2_client_thread =
       std::make_unique<ThreadedEventLoopRunner>(pi2_client_event_loop.get());
 }
 
 void MessageBridgeParameterizedTest::StopPi2Client() {
+  LOG(INFO) << "Stopping pi2 client";
   pi2_client_thread.reset();
   pi2_message_bridge_client.reset();
   pi2_client_event_loop.reset();
@@ -231,6 +251,7 @@ void MessageBridgeParameterizedTest::StopPi2Client() {
 
 void MessageBridgeParameterizedTest::MakePi2Test() {
   OnPi2();
+  LOG(INFO) << "Making pi2 test";
   FLAGS_application_name = "test2";
   pi2_test_event_loop = std::make_unique<aos::ShmEventLoop>(&config.message());
 
@@ -255,10 +276,15 @@ void MessageBridgeParameterizedTest::MakePi2Test() {
 }
 
 void MessageBridgeParameterizedTest::StartPi2Test() {
+  LOG(INFO) << "Starting pi2 test";
   pi2_test_thread =
       std::make_unique<ThreadedEventLoopRunner>(pi2_test_event_loop.get());
 }
 
-void MessageBridgeParameterizedTest::StopPi2Test() { pi2_test_thread.reset(); }
+void MessageBridgeParameterizedTest::StopPi2Test() {
+  LOG(INFO) << "Stopping pi2 test";
+  pi2_test_thread.reset();
+}
+
 }  // namespace message_bridge::testing
 }  // namespace aos

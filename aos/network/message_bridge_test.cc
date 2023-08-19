@@ -733,7 +733,9 @@ TEST_P(MessageBridgeParameterizedTest, ServerRestart) {
   {
     MakePi2Server();
 
-    RunPi2Server(chrono::milliseconds(3050));
+    // Wait long enough for the client to connect again.  It currently takes 3
+    // seconds of connection to estimate the time offset.
+    RunPi2Server(chrono::milliseconds(4050));
 
     // And confirm we are synchronized again.
     EXPECT_TRUE(pi1_server_statistics_fetcher.Fetch());

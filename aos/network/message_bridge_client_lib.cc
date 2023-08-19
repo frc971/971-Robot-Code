@@ -134,6 +134,10 @@ SctpClientConnection::SctpClientConnection(
   connect_timer_ = event_loop_->AddTimer([this]() { SendConnect(); });
   connect_timer_->set_name(std::string("connect_") +
                            remote_node_->name()->str());
+  timestamp_retry_buffer_ =
+      event_loop_->AddTimer([this]() { SendTimestamps(); });
+  timestamp_retry_buffer_->set_name(std::string("timestamp_retry_") +
+                                    remote_node_->name()->str());
   event_loop_->OnRun(
       [this]() { connect_timer_->Schedule(event_loop_->monotonic_now()); });
 
@@ -265,6 +269,11 @@ void SctpClientConnection::NodeDisconnected() {
   connect_timer_->Schedule(
       event_loop_->monotonic_now() + chrono::milliseconds(100),
       chrono::milliseconds(100));
+
+  // Don't try resending timestamps since there is nobody to send them to.  Let
+  // Connect handle that instead.  HandleData will retry when they reply.
+  timestamp_retry_buffer_->Disable();
+
   client_status_->Disconnect(client_index_);
   client_status_->SampleReset(client_index_);
 }
@@ -304,6 +313,7 @@ void SctpClientConnection::HandleData(const Message *message) {
         chrono::nanoseconds(remote_data->monotonic_sent_time()));
 
     // Publish the message.
+    UUID remote_boot_uuid = UUID::FromVector(remote_data->boot_uuid());
     RawSender *sender = channel_state->sender.get();
     sender->CheckOk(sender->Send(
         remote_data->data()->data(), remote_data->data()->size(),
@@ -311,48 +321,60 @@ void SctpClientConnection::HandleData(const Message *message) {
             chrono::nanoseconds(remote_data->monotonic_sent_time())),
         realtime_clock::time_point(
             chrono::nanoseconds(remote_data->realtime_sent_time())),
-        remote_data->queue_index(),
-        UUID::FromVector(remote_data->boot_uuid())));
+        remote_data->queue_index(), remote_boot_uuid));
 
     client_status_->SampleFilter(
         client_index_,
         monotonic_clock::time_point(
             chrono::nanoseconds(remote_data->monotonic_sent_time())),
-        sender->monotonic_sent_time(),
-        UUID::FromVector(remote_data->boot_uuid()));
+        sender->monotonic_sent_time(), remote_boot_uuid);
 
     if (stream_reply_with_timestamp_[stream]) {
-      // TODO(austin): Send back less if we are only acking.  Maybe only a
-      // stream id?  Nothing if we are only forwarding?
+      SavedTimestamp timestamp{
+          .channel_index = remote_data->channel_index(),
+          .monotonic_sent_time = remote_data->monotonic_sent_time(),
+          .realtime_sent_time = remote_data->realtime_sent_time(),
+          .queue_index = remote_data->queue_index(),
+          .monotonic_remote_time =
+              sender->monotonic_sent_time().time_since_epoch().count(),
+          .realtime_remote_time =
+              sender->realtime_sent_time().time_since_epoch().count(),
+          .remote_queue_index = sender->sent_queue_index(),
+      };
 
-      // Now fill out the message received reply.  This uses a MessageHeader
-      // container so it can be directly logged.
-      message_reception_reply_.mutable_message()->mutate_channel_index(
-          remote_data->channel_index());
-      message_reception_reply_.mutable_message()->mutate_monotonic_sent_time(
-          remote_data->monotonic_sent_time());
-      message_reception_reply_.mutable_message()->mutate_realtime_sent_time(
-          remote_data->realtime_sent_time());
-      message_reception_reply_.mutable_message()->mutate_queue_index(
-          remote_data->queue_index());
+      // Sort out if we should try to queue the timestamp or just send it
+      // directly.  We don't want to get too far ahead.
+      //
+      // In this case, the other side rebooted.  There is no sense telling it
+      // about previous timestamps.  Wipe them and reset which boot we are.
+      if (remote_boot_uuid != timestamps_uuid_) {
+        timestamp_buffer_.Reset();
+        timestamps_uuid_ = remote_boot_uuid;
+      }
 
-      // And capture the relevant data needed to generate the forwarding
-      // MessageHeader.
-      message_reception_reply_.mutable_message()->mutate_monotonic_remote_time(
-          sender->monotonic_sent_time().time_since_epoch().count());
-      message_reception_reply_.mutable_message()->mutate_realtime_remote_time(
-          sender->realtime_sent_time().time_since_epoch().count());
-      message_reception_reply_.mutable_message()->mutate_remote_queue_index(
-          sender->sent_queue_index());
+      // Then, we only can send if there are no pending timestamps.
+      bool push_timestamp = false;
+      if (timestamp_buffer_.empty()) {
+        if (!SendTimestamp(timestamp)) {
+          // Whops, we failed to send, queue and try again.
+          push_timestamp = true;
+        }
+      } else {
+        push_timestamp = true;
+      }
 
-      // Unique ID is channel_index and monotonic clock.
-      // TODO(austin): Depending on if we are the logger node or not, we need to
-      // guarentee that this ack gets received too...  Same path as the logger.
-      client_.Send(kTimestampStream(),
-                   std::string_view(reinterpret_cast<const char *>(
-                                        message_reception_reply_.span().data()),
-                                    message_reception_reply_.span().size()),
-                   0);
+      if (push_timestamp) {
+        // Trigger the timer if we are the first timestamp added, or if the
+        // timer was disabled because the far side disconnected.
+        if (timestamp_buffer_.empty() ||
+            timestamp_retry_buffer_->IsDisabled()) {
+          timestamp_retry_buffer_->Schedule(event_loop_->monotonic_now() +
+                                            chrono::milliseconds(100));
+        }
+        VLOG(1) << this << " Queued timestamp " << timestamp.channel_index
+                << " " << timestamp.queue_index;
+        timestamp_buffer_.Push(timestamp);
+      }
     }
   }
 
@@ -369,6 +391,62 @@ void SctpClientConnection::HandleData(const Message *message) {
           << std::hex << message->header.rcvinfo.rcv_flags << std::dec
           << " ppid=" << message->header.rcvinfo.rcv_ppid
           << " cumtsn=" << message->header.rcvinfo.rcv_cumtsn << ")";
+}
+
+bool SctpClientConnection::SendTimestamp(SavedTimestamp timestamp) {
+  // Now fill out the message received reply.  This uses a MessageHeader
+  // container so it can be directly logged.
+  message_reception_reply_.mutable_message()->mutate_channel_index(
+      timestamp.channel_index);
+  message_reception_reply_.mutable_message()->mutate_monotonic_sent_time(
+      timestamp.monotonic_sent_time);
+  message_reception_reply_.mutable_message()->mutate_realtime_sent_time(
+      timestamp.realtime_sent_time);
+  message_reception_reply_.mutable_message()->mutate_queue_index(
+      timestamp.queue_index);
+
+  // And capture the relevant data needed to generate the forwarding
+  // MessageHeader.
+  message_reception_reply_.mutable_message()->mutate_monotonic_remote_time(
+      timestamp.monotonic_remote_time);
+  message_reception_reply_.mutable_message()->mutate_realtime_remote_time(
+      timestamp.realtime_remote_time);
+  message_reception_reply_.mutable_message()->mutate_remote_queue_index(
+      timestamp.remote_queue_index);
+
+  // Unique ID is channel_index and monotonic clock.
+  VLOG(1) << this << " Sent timestamp " << timestamp.channel_index << " "
+          << timestamp.queue_index;
+  if (!client_.Send(
+          kTimestampStream(),
+          std::string_view(reinterpret_cast<const char *>(
+                               message_reception_reply_.span().data()),
+                           message_reception_reply_.span().size()),
+          0)) {
+    // Count the failure.
+    connection_->mutate_timestamp_send_failures(
+        connection_->timestamp_send_failures() + 1);
+    return false;
+  }
+  return true;
+}
+
+void SctpClientConnection::SendTimestamps() {
+  // This is only called from the timer, and the timer is only enabled when
+  // there is something in the buffer.  Explode if that assumption is false.
+  CHECK(!timestamp_buffer_.empty());
+  do {
+    if (!SendTimestamp(timestamp_buffer_[0])) {
+      timestamp_retry_buffer_->Schedule(event_loop_->monotonic_now() +
+                                        chrono::milliseconds(100));
+      return;
+    } else {
+      VLOG(1) << this << " Resent timestamp "
+              << timestamp_buffer_[0].channel_index << " "
+              << timestamp_buffer_[0].queue_index;
+      timestamp_buffer_.Shift();
+    }
+  } while (!timestamp_buffer_.empty());
 }
 
 MessageBridgeClient::MessageBridgeClient(

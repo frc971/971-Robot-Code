@@ -35,6 +35,9 @@ table ClientConnection {
 
   // Number of times we've established a connection to the server.
   connection_count:uint (id: 8);
+
+  // Number of timestamps we have failed to send.
+  timestamp_send_failures: uint (id: 9);
 }
 
 // Statistics for all clients.

@@ -385,6 +385,7 @@ cc_library(
         ":sctp_config_fbs",
         ":sctp_config_request_fbs",
         ":timestamp_fbs",
+        "//aos/containers:ring_buffer",
         "//aos/events:shm_event_loop",
         "//aos/events/logging:log_reader",
     ],
