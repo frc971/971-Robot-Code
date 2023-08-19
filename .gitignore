@@ -23,3 +23,5 @@
 
 node_modules
 /.aspect
+
+/rust-project.json

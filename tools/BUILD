@@ -4,6 +4,15 @@ package(default_visibility = ["//visibility:public"])
 
 exports_files(["test_sharding_compliant"])
 
+alias(
+    name = "gen_rust_project",
+    actual = "@rules_rust//tools/rust_analyzer:gen_rust_project",
+    target_compatible_with = select({
+        "//tools/platforms/rust:has_support": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+)
+
 # Don't use these directly! Use //tools/build_rules/*.bzl instead.
 config_setting(
     name = "compiler_clang",
