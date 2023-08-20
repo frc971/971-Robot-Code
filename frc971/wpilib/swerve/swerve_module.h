@@ -8,14 +8,15 @@ namespace wpilib {
 namespace swerve {
 
 struct SwerveModule {
-  SwerveModule(int rotation_id, int translation_id, std::string canbus,
+  SwerveModule(FalconParams rotation_params, FalconParams translation_params,
+               std::string canbus,
                std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
                double stator_current_limit, double supply_current_limit)
-      : rotation(std::make_shared<Falcon>(rotation_id, canbus, signals,
+      : rotation(std::make_shared<Falcon>(rotation_params, canbus, signals,
                                           stator_current_limit,
                                           supply_current_limit)),
-        translation(std::make_shared<Falcon>(translation_id, canbus, signals,
-                                             stator_current_limit,
+        translation(std::make_shared<Falcon>(translation_params, canbus,
+                                             signals, stator_current_limit,
                                              supply_current_limit)) {}
 
   void WriteModule(
