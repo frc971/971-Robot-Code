@@ -659,7 +659,7 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
       LOG(FATAL) << "Current user " << user_username << " (uid:" << uid << ") "
                  << "doesn't match shared memory user " << memory_username
                  << " (uid:" << memory->uid << "). "
-                 << "Login as " << memory_username
+                 << "Log in as " << memory_username
                  << " user to access this channel.";
     }
   }
