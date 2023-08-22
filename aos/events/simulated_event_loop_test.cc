@@ -2101,6 +2101,18 @@ TEST(SimulatedEventLoopDeathTest, ExitHandleOutlivesFactory) {
                "All ExitHandles must be destroyed before the factory");
 }
 
+// Test that AllowApplicationCreationDuring can't happen in OnRun callbacks.
+TEST(SimulatedEventLoopDeathTest, AllowApplicationCreationDuringInOnRun) {
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(
+          ArtifactPath("aos/events/multinode_pingpong_test_split_config.json"));
+  auto factory = std::make_unique<SimulatedEventLoopFactory>(&config.message());
+  NodeEventLoopFactory *pi1 = factory->GetNodeEventLoopFactory("pi1");
+  std::unique_ptr<EventLoop> loop = pi1->MakeEventLoop("foo");
+  loop->OnRun([&]() { factory->AllowApplicationCreationDuring([]() {}); });
+  EXPECT_DEATH(factory->RunFor(chrono::seconds(1)), "OnRun");
+}
+
 // Tests that messages don't survive a reboot of a node.
 TEST(SimulatedEventLoopTest, ChannelClearedOnReboot) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =

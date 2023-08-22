@@ -459,6 +459,10 @@ EventSchedulerScheduler::OldestEvent() {
 }
 
 void EventSchedulerScheduler::TemporarilyStopAndRun(std::function<void()> fn) {
+  if (in_on_run_) {
+    LOG(FATAL)
+        << "Can't call AllowApplicationCreationDuring from an OnRun callback.";
+  }
   const bool was_running = is_running_;
   if (is_running_) {
     is_running_ = false;
@@ -475,11 +479,13 @@ void EventSchedulerScheduler::MaybeRunOnStartup() {
   for (EventScheduler *scheduler : schedulers_) {
     scheduler->MaybeRunOnStartup();
   }
+  in_on_run_ = true;
   // We must trigger all the OnRun's *after* all the OnStartup callbacks are
   // triggered because that is the contract that we have stated.
   for (EventScheduler *scheduler : schedulers_) {
     scheduler->MaybeRunOnRun();
   }
+  in_on_run_ = false;
 }
 
 }  // namespace aos

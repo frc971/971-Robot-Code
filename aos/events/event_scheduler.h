@@ -357,6 +357,8 @@ class EventSchedulerScheduler {
 
   // True if we are running.
   bool is_running_ = false;
+
+  bool in_on_run_ = false;
   // The current time.
   distributed_clock::time_point now_ = distributed_clock::epoch();
   // List of schedulers to run in sync.

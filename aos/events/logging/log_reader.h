@@ -517,9 +517,18 @@ class LogReader {
       const monotonic_clock::time_point start_time =
           monotonic_start_time(boot_count());
       if (start_time == monotonic_clock::min_time) {
-        LOG(ERROR)
-            << "No start time, skipping, please figure out when this happens";
-        NotifyLogfileStart();
+        if (event_loop_->node()) {
+          LOG(ERROR) << "No start time for "
+                     << event_loop_->node()->name()->string_view()
+                     << ", skipping.";
+        } else {
+          LOG(ERROR) << "No start time, skipping.";
+        }
+
+        // This is called from OnRun. There is too much complexity in supporting
+        // OnStartup callbacks from inside OnRun.  Instead, schedule a timer for
+        // "now", and have that do what we need.
+        startup_timer_->Schedule(event_loop_->monotonic_now());
         return;
       }
       if (node_event_loop_factory_) {

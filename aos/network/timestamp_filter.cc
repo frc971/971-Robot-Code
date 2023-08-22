@@ -1279,7 +1279,8 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
         << " seconds after the last sample at " << std::get<0>(timestamps_[0])
         << ".  Increase --time_estimation_buffer_seconds to greater than "
         << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
-               .count();
+               .count()
+        << ", or set --force_timestamp_loading";
     return;
   }
   CHECK_GT(monotonic_now, frozen_time_)
@@ -1287,7 +1288,8 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
       << " before the frozen time of " << frozen_time_
       << ".  Increase "
          "--time_estimation_buffer_seconds to greater than "
-      << chrono::duration<double>(frozen_time_ - monotonic_now).count();
+      << chrono::duration<double>(frozen_time_ - monotonic_now).count()
+      << ", or set --force_timestamp_loading";
 
   // Future samples get quite a bit harder.  We want the line to track the
   // highest point without volating the slope constraint.
@@ -1333,7 +1335,8 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
         << " seconds after the last sample at " << std::get<0>(timestamps_[0])
         << ".  Increase --time_estimation_buffer_seconds to greater than "
         << chrono::duration<double>(monotonic_now - std::get<0>(timestamps_[0]))
-               .count();
+               .count()
+        << ", or set --force_timestamp_loading";
 
     // Back propagate the max velocity and remove any elements violating the
     // velocity constraint.  This is to handle the case where the offsets were
@@ -1357,8 +1360,8 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
           << chrono::duration<double>(monotonic_now - std::get<0>(back)).count()
           << " seconds in the past.  Increase --time_estimation_buffer_seconds "
              "to greater than "
-          << chrono::duration<double>(monotonic_now - std::get<0>(back))
-                 .count();
+          << chrono::duration<double>(monotonic_now - std::get<0>(back)).count()
+          << ", or set --force_timestamp_loading";
       VLOG(1) << node_names_
               << " Removing now invalid sample during back propegation of "
               << TimeString(back);
@@ -1554,7 +1557,8 @@ void NoncausalTimestampFilter::SingleFilter::Sample(
               << ": " << node_names_
               << " Can't pop an already frozen sample.  Increase "
                  "--time_estimation_buffer_seconds to greater than "
-              << chrono::duration<double>(prior_dt).count();
+              << chrono::duration<double>(prior_dt).count()
+              << ", or set --force_timestamp_loading";
 
           VLOG(1) << "Prior slope is too positive, removing prior point "
                   << TimeString(*prior_it);
