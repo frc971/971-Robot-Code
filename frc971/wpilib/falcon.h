@@ -35,7 +35,9 @@ class Falcon {
 
   ctre::phoenix6::hardware::TalonFX *talon() { return &talon_; }
 
-  void SerializePosition(flatbuffers::FlatBufferBuilder *fbb);
+  // The position of the Falcon output shaft is multiplied by gear_ratio
+  void SerializePosition(flatbuffers::FlatBufferBuilder *fbb,
+                         double gear_ratio);
 
   std::optional<flatbuffers::Offset<control_loops::CANFalcon>> TakeOffset();
 

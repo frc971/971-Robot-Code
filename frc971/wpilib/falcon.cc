@@ -94,7 +94,8 @@ ctre::phoenix::StatusCode Falcon::WriteCurrent(double current,
   return status;
 }
 
-void Falcon::SerializePosition(flatbuffers::FlatBufferBuilder *fbb) {
+void Falcon::SerializePosition(flatbuffers::FlatBufferBuilder *fbb,
+                               double gear_ratio) {
   control_loops::CANFalcon::Builder builder(*fbb);
   builder.add_id(device_id_);
   builder.add_device_temp(device_temp());
@@ -102,7 +103,7 @@ void Falcon::SerializePosition(flatbuffers::FlatBufferBuilder *fbb) {
   builder.add_supply_current(supply_current());
   builder.add_torque_current(torque_current());
   builder.add_duty_cycle(duty_cycle());
-  builder.add_position(position());
+  builder.add_position(position() * gear_ratio);
 
   last_position_offset_ = builder.Finish();
 }
