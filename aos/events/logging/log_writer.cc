@@ -31,7 +31,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
         DoLogData(event_loop_->monotonic_now() - logging_delay_, true);
       })),
       server_statistics_fetcher_(
-          configuration::MultiNode(event_loop_->configuration())
+          configuration::NodesCount(event_loop_->configuration()) > 1u
               ? event_loop_->MakeFetcher<message_bridge::ServerStatistics>(
                     "/aos")
               : aos::Fetcher<message_bridge::ServerStatistics>()) {
@@ -152,7 +152,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
     const bool log_message = is_logged && is_readable;
 
     bool log_delivery_times = false;
-    if (configuration::MultiNode(configuration_)) {
+    if (configuration::NodesCount(configuration_) > 1u) {
       const aos::Connection *connection =
           configuration::ConnectionToNode(config_channel, node_);
 
@@ -467,7 +467,7 @@ std::unique_ptr<LogNamer> Logger::StopLogging(
 
 void Logger::WriteHeader(aos::monotonic_clock::time_point monotonic_start_time,
                          aos::realtime_clock::time_point realtime_start_time) {
-  if (configuration::MultiNode(configuration_)) {
+  if (configuration::NodesCount(configuration_) > 1u) {
     server_statistics_fetcher_.Fetch();
   }
 
@@ -490,7 +490,7 @@ void Logger::WriteHeader(aos::monotonic_clock::time_point monotonic_start_time,
 }
 
 void Logger::WriteMissingTimestamps() {
-  if (configuration::MultiNode(configuration_)) {
+  if (configuration::NodesCount(configuration_) > 1u) {
     server_statistics_fetcher_.Fetch();
   } else {
     return;

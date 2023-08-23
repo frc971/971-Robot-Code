@@ -4318,6 +4318,51 @@ TEST_P(MultinodeLoggerTest, SkipMissingForwardingEntries) {
   auto result = ConfirmReadable(filenames);
 }
 
+// Tests that we call OnEnd without --skip_missing_forwarding_entries.
+TEST(MultinodeLoggerConfigTest, SingleNode) {
+  util::UnlinkRecursive(aos::testing::TestTmpDir() + "/logs");
+  std::filesystem::create_directory(aos::testing::TestTmpDir() + "/logs");
+
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(
+          ArtifactPath("aos/events/logging/multinode_single_node_config.json"));
+  message_bridge::TestingTimeConverter time_converter(
+      configuration::NodesCount(&config.message()));
+  SimulatedEventLoopFactory event_loop_factory(&config.message());
+  event_loop_factory.SetTimeConverter(&time_converter);
+
+  time_converter.StartEqual();
+
+  const std::string kLogfile1_1 =
+      aos::testing::TestTmpDir() + "/logs/multi_logfile1/";
+
+  NodeEventLoopFactory *const pi1 =
+      event_loop_factory.GetNodeEventLoopFactory("pi1");
+
+  std::vector<std::string> filenames;
+
+  {
+    // Now start a receiving node first.  This sets up 2 tight bounds between
+    // 2 of the nodes.
+    LoggerState pi1_logger = MakeLoggerState(
+        pi1, &event_loop_factory, SupportedCompressionAlgorithms()[0],
+        FileStrategy::kKeepSeparate);
+    pi1_logger.StartLogger(kLogfile1_1);
+
+    event_loop_factory.RunFor(chrono::seconds(10));
+
+    pi1_logger.AppendAllFilenames(&filenames);
+  }
+
+  // Make sure we can read this.
+  const std::vector<LogFile> sorted_parts = SortParts(filenames);
+  EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
+  auto result = ConfirmReadable(filenames);
+
+  // TODO(austin): Probably want to stop caring about ServerStatistics,
+  // ClientStatistics, and Timestamp since they don't really make sense.
+}
+
 // Tests that when we have evidence of 2 boots, and then start logging, the
 // max_out_of_order_duration ends up reasonable on the boot with the start time.
 TEST(MultinodeLoggerLoopTest, PreviousBootData) {

@@ -1,0 +1,33 @@
+{
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "pi1",
+      "frequency": 200,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/aos",
+      "type": "aos.timing.Report",
+      "source_node": "pi1",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 2048
+    },
+    {
+      "name": "/aos",
+      "type": "aos.logging.DynamicLogCommand",
+      "logger": "LOCAL_LOGGER",
+      "source_node": "pi1"
+    }
+  ],
+  "nodes": [
+    {
+      "name": "pi1",
+      "hostname": "raspberrypi",
+      "port": 9971
+    }
+  ]
+}

@@ -546,7 +546,7 @@ void LogReader::RegisterWithoutStarting(
   // off.  Otherwise messages replayed will get forwarded across to the other
   // nodes, and also replayed on the other nodes.  This may not satisfy all
   // our users, but it'll start the discussion.
-  if (configuration::MultiNode(event_loop_factory_->configuration())) {
+  if (configuration::NodesCount(event_loop_factory_->configuration()) > 1u) {
     for (size_t i = 0; i < logged_configuration()->channels()->size(); ++i) {
       const Channel *channel = logged_configuration()->channels()->Get(i);
       const Node *node = configuration::GetNode(

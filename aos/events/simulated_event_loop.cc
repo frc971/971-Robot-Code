@@ -1342,7 +1342,7 @@ SimulatedEventLoopFactory::SimulatedEventLoopFactory(
         new NodeEventLoopFactory(&scheduler_scheduler_, this, node));
   }
 
-  if (configuration::MultiNode(configuration)) {
+  if (configuration::NodesCount(configuration) > 1u) {
     bridge_ = std::make_unique<message_bridge::SimulatedMessageBridge>(this);
   }
 }
