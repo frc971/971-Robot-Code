@@ -4276,6 +4276,48 @@ TEST_P(MultinodeLoggerTest, RestartLogging) {
   // up in both logs correctly.
 }
 
+// Tests that we call OnEnd without --skip_missing_forwarding_entries.
+TEST_P(MultinodeLoggerTest, SkipMissingForwardingEntries) {
+  if (file_strategy() == FileStrategy::kCombine) {
+    GTEST_SKIP() << "We don't need to test the combined file writer this deep.";
+  }
+  time_converter_.AddMonotonic(
+      {BootTimestamp::epoch(), BootTimestamp::epoch() + chrono::seconds(1000)});
+
+  std::vector<std::string> filenames;
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger);
+    aos::monotonic_clock::time_point last_rotation_time =
+        pi1_logger.event_loop->monotonic_now();
+    pi1_logger.logger->set_on_logged_period(
+        [&](aos::monotonic_clock::time_point) {
+          const auto now = pi1_logger.event_loop->monotonic_now();
+          if (now > last_rotation_time + std::chrono::seconds(5)) {
+            pi1_logger.logger->Rotate();
+            last_rotation_time = now;
+          }
+        });
+
+    event_loop_factory_.RunFor(chrono::milliseconds(15000));
+    pi1_logger.AppendAllFilenames(&filenames);
+  }
+
+  // If we remove the last remote data part, we'll trigger missing data for
+  // timestamps.
+  filenames.erase(std::remove_if(filenames.begin(), filenames.end(),
+                                 [](const std::string &s) {
+                                   return s.find("data/pi2_data.part3.bfbs") !=
+                                          std::string::npos;
+                                 }),
+                  filenames.end());
+
+  auto result = ConfirmReadable(filenames);
+}
+
 // Tests that when we have evidence of 2 boots, and then start logging, the
 // max_out_of_order_duration ends up reasonable on the boot with the start time.
 TEST(MultinodeLoggerLoopTest, PreviousBootData) {

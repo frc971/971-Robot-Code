@@ -381,9 +381,6 @@ void LogReader::State::RunOnEnd() {
 
   stopped_ = true;
   started_ = true;
-  if (message_queuer_.has_value()) {
-    message_queuer_->StopPushing();
-  }
 }
 
 std::vector<
@@ -623,8 +620,9 @@ void LogReader::StartAfterRegister(
                                state->realtime_start_time(0));
     }
     VLOG(1) << "Start time is " << state->monotonic_start_time(0)
-            << " for node '" << MaybeNodeName(state->event_loop()->node())
-            << "' now " << state->monotonic_now();
+            << " for node '" << MaybeNodeName(state->node()) << "' now "
+            << (state->event_loop() != nullptr ? state->monotonic_now()
+                                               : monotonic_clock::min_time);
   }
 
   if (FLAGS_timestamps_to_csv) {
@@ -1024,6 +1022,9 @@ void LogReader::RegisterDuringStartup(EventLoop *event_loop, const Node *node) {
                      "from one of the nodes it is logged on.";
             }
           }
+          // The log file is now done, prod the callbacks.
+          state->NotifyLogfileEnd();
+
           // Now that we found the end of one channel, artificially stop the
           // rest by setting the found_last_message bit.  It is confusing when
           // part of your data gets replayed but not all.  The rest of them will
@@ -1955,6 +1956,10 @@ void LogReader::State::NotifyFlagEnd() {
     SetFoundLastMessage(true);
     CHECK(notice_realtime_end_);
     notice_realtime_end_();
+
+    if (message_queuer_.has_value()) {
+      message_queuer_->StopPushing();
+    }
   }
 }
 

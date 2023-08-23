@@ -494,6 +494,9 @@ ConfirmReadable(const std::vector<std::string> &files,
     reader.Deregister();
 
     for (auto x : result) {
+      EXPECT_EQ(x.first.size(), x.second.size())
+          << ": Got a different number of start and end times, that is very "
+             "bad.";
       for (auto y : x.first) {
         VLOG(1) << "Start " << y;
       }
