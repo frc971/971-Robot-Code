@@ -7,6 +7,8 @@
 #include "absl/types/span.h"
 #include "openssl/sha.h"
 
+#include "aos/util/file.h"
+
 namespace aos {
 
 std::string Sha256(const absl::Span<const uint8_t> str) {
@@ -21,6 +23,15 @@ std::string Sha256(const absl::Span<const uint8_t> str) {
        << static_cast<int>(hash[i]);
   }
   return ss.str();
+}
+
+std::string Sha256(std::string_view str) {
+  return Sha256({reinterpret_cast<const uint8_t *>(str.data()), str.size()});
+}
+
+std::string Sha256OfFile(std::filesystem::path file) {
+  const std::string contents = aos::util::ReadFileToStringOrDie(file.string());
+  return Sha256(contents);
 }
 
 }  // namespace aos

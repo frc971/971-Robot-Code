@@ -809,7 +809,18 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
+        "//aos/util:file",
         "@boringssl//:crypto",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "sha256_test",
+    srcs = ["sha256_test.cc"],
+    deps = [
+        ":sha256",
+        "//aos/testing:googletest",
+        "//aos/testing:tmpdir",
     ],
 )
