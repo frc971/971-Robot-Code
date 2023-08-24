@@ -191,7 +191,7 @@ def cc_toolchain_config(
 
     # Flags related to C++ standard.
     cxx_flags = [
-        "-std=c++17",
+        "-std=c++20",
     ]
     compile_not_cxx_flags = []
 
