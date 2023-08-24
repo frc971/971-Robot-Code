@@ -290,7 +290,7 @@ llvm_copts = [
 ]
 
 llvm_cxxopts = [
-    "-std=gnu++17",
+    "-std=gnu++20",
 ]
 
 llvm_opt_copts = [

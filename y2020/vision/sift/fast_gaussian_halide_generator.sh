@@ -59,6 +59,6 @@ export LD_LIBRARY_PATH="${SYSROOT}/usr/lib:${SYSROOT}/lib:${ZLIB1G_DEV}/usr/lib/
   -lstdc++ -lpthread -ldl -lm -lz \
   "${SOURCE}" \
   "${HALIDE}/share/Halide/tools/GenGen.cpp" \
-  --std=gnu++17 \
+  --std=gnu++20 \
   -ggdb3 \
   -o "${BINARY}"
