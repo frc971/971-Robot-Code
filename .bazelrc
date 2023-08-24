@@ -112,3 +112,8 @@ build --sandbox_tmpfs_path=/tmp
 
 # Prevent cypress from using its own binary. We want to use the hermetic one.
 build --action_env=CYPRESS_INSTALL_BINARY=0
+
+# Load a local file that users can use to customize bazel invocations.  This
+# should stay the last line in this file so users can override things when they
+# want.
+try-import %workspace%/.bazelrc.user

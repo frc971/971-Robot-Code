@@ -1,6 +1,7 @@
 *.pyc
 /bazel-*
 /compile_commands.json
+/.bazelrc.user
 
 # The `tools/build_rules/apache_runner.py` helper looks for this file by
 # default. We don't want folks to check it in.
