@@ -209,7 +209,6 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        ":thread_local",
         ":uuid",
         "@com_github_google_glog//:glog",
     ],
@@ -654,15 +653,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "thread_local",
-    hdrs = [
-        "thread_local.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-)
-
 cc_test(
     name = "realtime_test",
     srcs = [
@@ -706,7 +696,6 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        ":thread_local",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",

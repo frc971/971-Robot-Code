@@ -22,7 +22,6 @@ cc_library(
         ":sizes",
         "//aos:die",
         "//aos:macros",
-        "//aos:thread_local",
         "//aos/libc:aos_strerror",
         "//aos/stl_mutex",
         "//aos/time",

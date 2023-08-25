@@ -10,7 +10,6 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//aos:thread_local",
         "@com_github_google_glog//:glog",
     ],
 )
@@ -59,9 +58,6 @@ cc_library(
         "aos_strerror.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        "//aos:thread_local",
-    ],
 )
 
 cc_test(

@@ -6,8 +6,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "aos/thread_local.h"
-
 // This code uses an overloaded function to handle the result from either
 // version of strerror_r correctly without needing a way to get the choice out
 // of the compiler/glibc/whatever explicitly.
@@ -41,7 +39,7 @@ __attribute__((unused)) char *aos_strerror_handle_result(int error, int ret,
 }  // namespace
 
 const char *aos_strerror(int error) {
-  AOS_THREAD_LOCAL char buffer[kBufferSize];
+  thread_local char buffer[kBufferSize];
 
   // Call the overload for whichever version we're using.
   return aos_strerror_handle_result(

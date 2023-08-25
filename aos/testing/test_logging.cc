@@ -8,7 +8,6 @@
 
 #include "aos/logging/implementations.h"
 #include "aos/stl_mutex/stl_mutex.h"
-#include "aos/thread_local.h"
 
 using ::aos::logging::LogMessage;
 

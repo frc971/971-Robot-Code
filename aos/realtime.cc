@@ -18,7 +18,6 @@
 #include "glog/logging.h"
 #include "glog/raw_logging.h"
 
-#include "aos/thread_local.h"
 #include "aos/uuid.h"
 
 DEFINE_bool(
@@ -229,7 +228,7 @@ void ExpandStackSize() {
 namespace {
 // Bool to track if malloc hooks have failed to be configured.
 bool has_malloc_hook = true;
-AOS_THREAD_LOCAL bool is_realtime = false;
+thread_local bool is_realtime = false;
 }  // namespace
 
 bool MarkRealtime(bool realtime) {

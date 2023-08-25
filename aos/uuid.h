@@ -9,8 +9,6 @@
 #include "absl/types/span.h"
 #include "flatbuffers/flatbuffers.h"
 
-#include "aos/thread_local.h"
-
 namespace aos {
 
 // Class to generate and hold a UUID.
@@ -76,7 +74,7 @@ class UUID {
   // Be careful using this. It's mostly useful for low-level tracing of UUIDs
   // through the system.
   const char *thread_local_string() const {
-    AOS_THREAD_LOCAL char buffer[kStringSize + 1];
+    thread_local char buffer[kStringSize + 1];
     CopyTo(buffer);
     return buffer;
   }
