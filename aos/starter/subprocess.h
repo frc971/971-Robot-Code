@@ -102,8 +102,12 @@ class Application {
 
   void Start() { HandleCommand(aos::starter::Command::START); }
 
+  // Stops the command by sending a SIGINT first, followed by a SIGKILL if it's
+  // still alive in 1s.
   void Stop() { HandleCommand(aos::starter::Command::STOP); }
 
+  // Stops the command the same way as Stop() does, but updates internal state
+  // to reflect that the application was terminated.
   void Terminate();
 
   // Adds a callback which gets notified when the application changes state.

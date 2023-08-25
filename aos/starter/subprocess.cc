@@ -151,13 +151,11 @@ Application::Application(std::string_view name,
           event_loop_->AddTimer([this]() { MaybeHandleSignal(); })),
       on_change_({on_change}),
       quiet_flag_(quiet_flag) {
-  event_loop_->OnRun([this]() {
-    // Every second poll to check if the child is dead. This is used as a
-    // default for the case where the user is not directly catching SIGCHLD and
-    // calling MaybeHandleSignal for us.
-    child_status_handler_->Schedule(event_loop_->monotonic_now(),
-                                    std::chrono::seconds(1));
-  });
+  // Every second poll to check if the child is dead. This is used as a
+  // default for the case where the user is not directly catching SIGCHLD and
+  // calling MaybeHandleSignal for us.
+  child_status_handler_->Schedule(event_loop_->monotonic_now(),
+                                  std::chrono::seconds(1));
 }
 
 Application::Application(const aos::Application *application,
