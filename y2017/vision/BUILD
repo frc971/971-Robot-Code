@@ -40,7 +40,6 @@ cc_binary(
         ":vision_config",
         ":vision_result",
         "//aos/logging",
-        "//aos/logging:implementations",
         "//aos/time",
         "//aos/vision/blob:codec",
         "//aos/vision/blob:find_blob",

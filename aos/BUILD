@@ -179,7 +179,7 @@ cc_library(
         ":realtime",
         ":uuid",
         "//aos:die",
-        "//aos/logging:implementations",
+        "//aos/logging",
     ],
 )
 

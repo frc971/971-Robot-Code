@@ -59,7 +59,6 @@ cc_test(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":implementations",
         ":logging",
         "//aos/testing:googletest",
         "@com_github_google_glog//:glog",
@@ -75,15 +74,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos:macros",
-    ],
-)
-
-cc_library(
-    name = "implementations",
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":logging",
     ],
 )
 

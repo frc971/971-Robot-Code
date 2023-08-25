@@ -189,7 +189,7 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//aos/logging:implementations",
+        "//aos/logging",
     ],
 )
 

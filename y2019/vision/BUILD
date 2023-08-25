@@ -136,7 +136,6 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/logging",
-        "//aos/logging:implementations",
         "//y2019/jevois:serial",
         "//y2019/jevois:structures",
         "//y2019/jevois:uart",
@@ -152,7 +151,6 @@ cc_binary(
     deps = [
         ":target_finder",
         "//aos/logging",
-        "//aos/logging:implementations",
         "//aos/vision/blob:codec",
         "//aos/vision/blob:find_blob",
         "//aos/vision/events:epoll_events",

@@ -104,7 +104,6 @@ cc_binary(
         "//aos:condition",
         "//aos:init",
         "//aos/logging",
-        "//aos/logging:implementations",
         "//aos/mutex",
         "@com_github_gflags_gflags//:gflags",
     ],

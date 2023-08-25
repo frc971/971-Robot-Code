@@ -39,7 +39,6 @@ gtk_dependent_cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/logging",
-        "//aos/logging:implementations",
         "//aos/util:global_factory",
         "//aos/vision/blob:codec",
         "//aos/vision/blob:find_blob",

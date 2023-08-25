@@ -6,7 +6,6 @@ gtk_dependent_cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/logging",
-        "//aos/logging:implementations",
         "//aos/vision/blob:range_image",
         "//aos/vision/blob:stream_view",
         "//aos/vision/blob:threshold",
@@ -26,7 +25,6 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/logging",
-        "//aos/logging:implementations",
         "//aos/vision/events:epoll_events",
         "//aos/vision/image:image_stream",
     ],

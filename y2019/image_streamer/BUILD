@@ -9,7 +9,6 @@ cc_binary(
     deps = [
         ":flip_image",
         "//aos/logging",
-        "//aos/logging:implementations",
         "//aos/vision/blob:codec",
         "//aos/vision/events:epoll_events",
         "//aos/vision/events:socket_types",

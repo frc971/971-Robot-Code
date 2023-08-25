@@ -6,7 +6,6 @@ cc_binary(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos/logging",
-        "//aos/logging:implementations",
         "//aos/vision/blob:codec",
         "//aos/vision/events:epoll_events",
         "//aos/vision/events:socket_types",

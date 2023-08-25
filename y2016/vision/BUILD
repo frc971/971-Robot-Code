@@ -96,7 +96,6 @@ cc_binary(
         ":stereo_geometry",
         ":vision_data",
         "//aos/logging",
-        "//aos/logging:implementations",
         "//aos/time",
         "//aos/vision/events:epoll_events",
         "//aos/vision/events:socket_types",

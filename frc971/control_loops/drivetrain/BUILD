@@ -583,7 +583,7 @@ cc_binary(
         ":distance_spline",
         ":spline",
         ":trajectory",
-        "//aos/logging:implementations",
+        "//aos/logging",
         "//aos/network:team_number",
         "//y2020/control_loops/drivetrain:drivetrain_base",
         "@org_tuxfamily_eigen//:eigen",
@@ -694,7 +694,7 @@ cc_binary(
     deps = [
         ":distance_spline",
         ":trajectory",
-        "//aos/logging:implementations",
+        "//aos/logging",
         "//aos/network:team_number",
         "//third_party/matplotlib-cpp",
         "//y2019/control_loops/drivetrain:drivetrain_base",

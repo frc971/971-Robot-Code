@@ -27,7 +27,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":googletest",
-        "//aos/logging:implementations",
+        "//aos/logging",
         "//aos/stl_mutex",
         "@com_google_absl//absl/base",
     ],

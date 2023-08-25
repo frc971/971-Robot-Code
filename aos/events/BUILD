@@ -133,7 +133,7 @@ cc_library(
         "//aos:realtime",
         "//aos:uuid",
         "//aos/ipc_lib:data_alignment",
-        "//aos/logging:implementations",
+        "//aos/logging",
         "//aos/time",
         "//aos/util:phased_loop",
         "@com_github_google_flatbuffers//:flatbuffers",
@@ -712,7 +712,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":event_loop",
-        "//aos/logging:implementations",
+        "//aos/logging",
         "//aos/logging:log_message_fbs",
     ],
 )
