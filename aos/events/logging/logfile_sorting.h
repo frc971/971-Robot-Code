@@ -150,6 +150,9 @@ std::vector<LogFile> SortParts(
 // Sort parts of a single log.
 std::vector<LogFile> SortParts(const LogSource &log_source);
 
+// Validates that collection of log files or log parts shares the same configs.
+bool HasMatchingConfigs(const std::vector<LogFile> &items);
+
 // Recursively searches the file/folder for .bfbs and .bfbs.xz files and adds
 // them to the vector.
 void FindLogs(std::vector<internal::FileOperations::File> *files,

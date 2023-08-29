@@ -2183,7 +2183,7 @@ std::ostream &operator<<(std::ostream &stream, const LogParts &parts) {
 
 // Validates that collection of log files or log parts shares the same configs.
 template <typename TCollection>
-bool CheckMatchingConfigs(const TCollection &items) {
+bool HasMatchingConfigsTemplate(const TCollection &items) {
   const Configuration *config = nullptr;
   for (const auto &item : items) {
     VLOG(1) << item;
@@ -2204,14 +2204,19 @@ bool CheckMatchingConfigs(const TCollection &items) {
   return true;
 }
 
+// Validates that collection of log files or log parts shares the same configs.
+bool HasMatchingConfigs(const std::vector<LogFile> &items) {
+  return HasMatchingConfigsTemplate(items);
+}
+
 // Provides unified access to config field stored in LogFile. It is used in
-// CheckMatchingConfigs.
+// HasMatchingConfigs.
 inline const Configuration *GetConfig(const LogFile &log_file) {
   return log_file.config.get();
 }
 
 // Provides unified access to config field stored in LogPartsAccess. It is used
-// in CheckMatchingConfigs.
+// in HasMatchingConfigs.
 inline const Configuration *GetConfig(const LogPartsAccess &log_parts_access) {
   return log_parts_access.config().get();
 }
@@ -2234,7 +2239,7 @@ SelectedLogParts::SelectedLogParts(std::string_view node_name,
             << boot_index_;
     return;
   }
-  CHECK(CheckMatchingConfigs(log_parts_));
+  CHECK(HasMatchingConfigsTemplate(log_parts_));
   config_ = log_parts_.front().config();
 
   for (LogPartsAccess &part : log_parts_) {
@@ -2257,7 +2262,7 @@ LogFilesContainer::LogFilesContainer(
     std::optional<const LogSource *> log_source, std::vector<LogFile> log_files)
     : log_source_(log_source), log_files_(std::move(log_files)) {
   CHECK_GT(log_files_.size(), 0u);
-  CHECK(CheckMatchingConfigs(log_files_));
+  CHECK(HasMatchingConfigsTemplate(log_files_));
   config_ = log_files_.front().config;
   boots_ = log_files_.front().boots;
 
