@@ -10,10 +10,11 @@
 #include <memory>
 #include <string_view>
 
-#include "aos/logging/sizes.h"
-
 namespace aos {
 namespace logging {
+
+#define LOG_MESSAGE_LEN 512
+#define LOG_MESSAGE_NAME_LEN 100
 
 class LogImplementation;
 

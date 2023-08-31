@@ -18,10 +18,8 @@
 #include "aos/logging/context.h"
 #include "aos/logging/interface.h"
 #include "aos/logging/logging.h"
-#include "aos/logging/sizes.h"
 #include "aos/macros.h"
 #include "aos/time/time.h"
-#include "aos/type_traits/type_traits.h"
 
 // This file has various concrete LogImplementations.
 
@@ -47,7 +45,6 @@ struct LogMessage {
   char name[LOG_MESSAGE_NAME_LEN];
   char message[LOG_MESSAGE_LEN];
 };
-static_assert(shm_ok<LogMessage>::value, "it's going in a queue");
 
 // Returns left > right. LOG_UNKNOWN is most important.
 static inline bool log_gt_important(log_level left, log_level right) {

@@ -20,7 +20,6 @@ extern char *program_invocation_short_name;
 
 #include "glog/logging.h"
 
-#include "aos/die.h"
 #include "aos/logging/implementations.h"
 
 namespace aos {
@@ -86,9 +85,8 @@ void Context::ClearName() { name_size = std::numeric_limits<size_t>::max(); }
 std::string_view Context::MyName() {
   if (name_size == std::numeric_limits<size_t>::max()) {
     ::std::string my_name = GetMyName();
-    if (my_name.size() + 1 > sizeof(Context::name)) {
-      Die("logging: process/thread name '%s' is too long\n", my_name.c_str());
-    }
+    CHECK_LE(my_name.size() + 1, sizeof(Context::name))
+        << ": process/thread name '" << my_name << "' is too long";
     strcpy(name, my_name.c_str());
     name_size = my_name.size();
   }

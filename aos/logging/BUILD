@@ -8,6 +8,7 @@ cc_library(
         "context.cc",
         "implementations.cc",
         "interface.cc",
+        "printf_formats.h",
     ],
     hdrs = [
         "context.h",
@@ -18,16 +19,11 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
-        ":printf_formats",
-        ":sizes",
         "//aos:die",
         "//aos:macros",
         "//aos/libc:aos_strerror",
-        "//aos/stl_mutex",
         "//aos/time",
-        "//aos/type_traits",
         "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
     ],
 )
 
@@ -44,14 +40,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "sizes",
-    hdrs = [
-        "sizes.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
 cc_test(
     name = "implementations_test",
     srcs = [
@@ -62,18 +50,6 @@ cc_test(
         ":logging",
         "//aos/testing:googletest",
         "@com_github_google_glog//:glog",
-    ],
-)
-
-cc_library(
-    name = "printf_formats",
-    hdrs = [
-        "printf_formats.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//aos:macros",
     ],
 )
 
