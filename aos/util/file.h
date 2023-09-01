@@ -64,18 +64,22 @@ class FileReader {
  public:
   FileReader(std::string_view filename);
   // Reads the entire contents of the file into the internal buffer and returns
-  // a string_view of it.
-  // Note: The result may not be null-terminated.
-  absl::Span<char> ReadContents(absl::Span<char> buffer);
+  // a string_view of it.  Returns nullopt if we failed to read the contents
+  // (currently only on EREMOTEIO). Note: The result may not be null-terminated.
+  std::optional<absl::Span<char>> ReadContents(absl::Span<char> buffer);
   // Returns the value of the file as a string, for a fixed-length file.
   // Returns nullopt if the result is smaller than kSize. Ignores any
   // bytes beyond kSize.
   template <int kSize>
   std::optional<std::array<char, kSize>> ReadString() {
     std::array<char, kSize> result;
-    const absl::Span<char> used_span =
+    const std::optional<absl::Span<char>> used_span =
         ReadContents(absl::Span<char>(result.data(), result.size()));
-    if (used_span.size() == kSize) {
+    if (!used_span.has_value()) {
+      return std::nullopt;
+    }
+
+    if (used_span->size() == kSize) {
       return result;
     } else {
       return std::nullopt;
@@ -83,8 +87,8 @@ class FileReader {
   }
   // Returns the value of the file as an integer. Crashes if it doesn't fit in a
   // 32-bit integer. The value may start with 0x for a hex value, otherwise it
-  // must be base 10.
-  int32_t ReadInt32();
+  // must be base 10.  Returns nullopt if we failed to read the file.
+  std::optional<int32_t> ReadInt32();
 
  private:
   aos::ScopedFD file_;

@@ -91,10 +91,10 @@ TEST(FileTest, ReadNormalFileNoMalloc) {
   aos::ScopedRealtime realtime;
   {
     std::array<char, 20> contents;
-    absl::Span<char> read_result =
+    std::optional<absl::Span<char>> read_result =
         reader.ReadContents({contents.data(), contents.size()});
     EXPECT_EQ("123456789\n",
-              std::string_view(read_result.data(), read_result.size()));
+              std::string_view(read_result->data(), read_result->size()));
   }
   {
     std::optional<std::array<char, 10>> read_result = reader.ReadString<10>();
