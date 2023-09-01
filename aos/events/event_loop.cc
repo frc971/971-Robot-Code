@@ -62,8 +62,12 @@ std::ostream &operator<<(std::ostream &os, const RawSender::Error err) {
 }
 
 void RawSender::CheckOk(const RawSender::Error err) {
-  CHECK_EQ(err, Error::kOk) << "Messages were sent too fast on channel: "
-                            << configuration::CleanedChannelToString(channel_);
+  if (err != Error::kOk) {
+    event_loop_->SendTimingReport();
+    CHECK_EQ(err, Error::kOk)
+        << "Messages were sent too fast on channel: "
+        << configuration::CleanedChannelToString(channel_);
+  }
 }
 
 RawSender::RawSender(EventLoop *event_loop, const Channel *channel)
