@@ -4,6 +4,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_auth.grpc.pb.h"
 #include "aos/network/sctp_config_generated.h"
+#include "aos/network/sctp_config_request_generated.h"
 #include "grpcpp/channel.h"
 
 namespace aos::message_bridge::auth {
@@ -29,7 +30,10 @@ class MessageBridgeAuthClient {
   // Returns an empty vector on failure.
   std::vector<uint8_t> GetSctpKey();
 
+  EventLoop *const event_loop_;
   Sender<SctpConfig> sender_;
+  TimerHandler *poll_timer_;
+  Fetcher<SctpConfigRequest> config_request_fetcher_;
   const std::unique_ptr<SctpConfigService::Stub> client_;
 };
 }  // namespace aos::message_bridge::auth

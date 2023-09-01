@@ -24,13 +24,27 @@ using ::grpc::Status;
 
 MessageBridgeAuthClient::MessageBridgeAuthClient(
     EventLoop *const event_loop, std::shared_ptr<Channel> channel)
-    : sender_(event_loop->MakeSender<SctpConfig>("/aos")),
+    : event_loop_(event_loop),
+      sender_(event_loop_->MakeSender<SctpConfig>("/aos")),
+      poll_timer_(event_loop_->AddTimer([this] {
+        // We use a polling model as opposed to a watcher. The reason is that
+        // if the watcher is not fast enough to handle the messages, we may
+        // fill up the channel and crash. A polling model doesn't have that
+        // problem and we don't generally care if we miss a message as we will
+        // get another request in the future anyway.
+        if (config_request_fetcher_.Fetch()) {
+          if (config_request_fetcher_->request_key()) {
+            VLOG(1) << "Got SCTP authentication request from /aos";
+            SendKey();
+          }
+        }
+      })),
+      config_request_fetcher_(
+          event_loop_->MakeFetcher<SctpConfigRequest>("/aos")),
       client_(SctpConfigService::NewStub(channel)) {
-  event_loop->MakeWatcher("/aos", [this](const SctpConfigRequest &stats) {
-    if (stats.request_key()) {
-      VLOG(1) << "Got SCTP authentication request from /aos";
-      SendKey();
-    }
+  event_loop_->OnRun([this] {
+    poll_timer_->Schedule(event_loop_->monotonic_now(),
+                          std::chrono::milliseconds(1000));
   });
 }
 
@@ -48,6 +62,8 @@ void MessageBridgeAuthClient::SendKey() {
 
 std::vector<uint8_t> MessageBridgeAuthClient::GetSctpKey() {
   ClientContext context;
+  context.set_deadline(std::chrono::system_clock::now() +
+                       std::chrono::seconds(1));
   SctpKeyRequest request;
   SctpKeyResponse response;
   Status status = client_->GetActiveKey(&context, request, &response);
