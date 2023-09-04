@@ -20,6 +20,7 @@ REQUIRED_DEPS=(
     gcc-arm-none-eabi
     swig
     u-boot-tools
+    qemu-user-static
 )
 for dep in "${REQUIRED_DEPS[@]}"; do
     if ! dpkg-query -W -f='${Status}' "${dep}" | grep -q "install ok installed"; then
