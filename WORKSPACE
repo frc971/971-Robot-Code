@@ -734,9 +734,9 @@ cc_library(
     deps = ["@//third_party/allwpilib/wpimath"],
 )
 """,
-    sha256 = "3c4da9f46c751d4981697da26d3c8680f40c87090782f5adf63412e34508f372",
+    sha256 = "84b5b18ab6a7e10b88dd7b3c11a903830d90666dcfe99bb6eb7faeb0eb5645f6",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/23.2.2/api-cpp-23.2.2-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/23.10.0-alpha-1/api-cpp-23.10.0-alpha-1-headers.zip",
     ],
 )
 
@@ -758,9 +758,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "8391cbd24582c951a8fdbcff533243be718fc54e091c068d5441bb0c18ff822c",
+    sha256 = "a7646f9d1078fcafef21ddd02a82bc5b5de74dab4c02e6081ec7bab379dc5cdd",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/23.2.2/api-cpp-23.2.2-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/23.10.0-alpha-1/api-cpp-23.10.0-alpha-1-linuxathena.zip",
     ],
 )
 
@@ -773,9 +773,9 @@ cc_library(
     hdrs = glob(['ctre/**/*.h', 'ctre/**/*.hpp']),
 )
 """,
-    sha256 = "33781c9db0a204e257928351c700295aec2bf6e2abb6a49ef237a95e98442a18",
+    sha256 = "fe09ec0e093114dcf45795c497e35073c66ab4d2ecb427f5940ce05e24dcc498",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/23.2.2/tools-23.2.2-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/23.10.0-alpha-1/tools-23.10.0-alpha-1-headers.zip",
     ],
 )
 
@@ -797,9 +797,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "75ec607f81ab470bc7c01fda2b8ca7b71b7dc3378b370f806f8646db27600504",
+    sha256 = "3a2fa4b4c6ce221d3f65daebaa9e8fc0e4ff025971fc6a2e8d386809ca0f11c7",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/23.2.2/tools-23.2.2-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/23.10.0-alpha-1/tools-23.10.0-alpha-1-linuxathena.zip",
     ],
 )
 
