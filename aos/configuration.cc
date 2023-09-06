@@ -1648,9 +1648,10 @@ size_t QueueSize(size_t frequency,
                  chrono::nanoseconds channel_storage_duration) {
   // Use integer arithmetic and round up at all cost.
   return static_cast<int>(
-      (999999999 + static_cast<int64_t>(frequency) *
-                       static_cast<int64_t>(channel_storage_duration.count())) /
-      static_cast<int64_t>(1000000000));
+      (999'999'999 +
+       static_cast<int64_t>(frequency) *
+           static_cast<int64_t>(channel_storage_duration.count())) /
+      static_cast<int64_t>(1'000'000'000));
 }
 
 int QueueScratchBufferSize(const Channel *channel) {
