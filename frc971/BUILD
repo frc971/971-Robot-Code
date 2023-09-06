@@ -2,6 +2,8 @@ load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files(["halide_generator.sh"])
+
 cc_library(
     name = "shifter_hall_effect",
     hdrs = [
@@ -31,4 +33,20 @@ flatbuffer_cc_library(
     ],
     gen_reflections = 1,
     visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "halide_generator_compile_script",
+    srcs = [
+        "//frc971:halide_generator.sh",
+    ],
+    data = [
+        "@amd64_debian_sysroot//:sysroot_files",
+        "@deb_zlib1g_dev_1_2_11_dfsg_2_amd64_deb_repo//file",
+        "@halide_k8//:build_files",
+        "@llvm_toolchain//:all-components-x86_64-linux",
+    ],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
 )
