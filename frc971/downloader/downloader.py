@@ -126,7 +126,7 @@ def main(argv):
             os.chmod(os.path.join(temp_dir, "starterd"), 0o775 | stat.S_ISUID)
 
         rsync_cmd = ([
-            "external/rsync/usr/bin/rsync",
+            "external/rsync/rsync",
             "-e",
             ssh_path,
             "-c",

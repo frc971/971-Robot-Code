@@ -112,6 +112,27 @@ download_packages(
 )
 
 download_packages(
+    name = "download_rsync_packages",
+    excludes = [
+    ],
+    packages = [
+        "rsync",
+    ],
+)
+
+download_packages(
+    name = "download_ssh_packages",
+    excludes = [
+        "libcbor0.8",
+        "libsemanage2",
+        "libsepol2",
+    ],
+    packages = [
+        "ssh",
+    ],
+)
+
+download_packages(
     name = "download_gtk_runtime",
     excludes = [
         "libstdc++6",
@@ -425,6 +446,7 @@ generate_deb_tarball(
 
 exports_files([
     "ssh_wrapper.sh",
+    "rsync_wrapper.sh",
     "curl.BUILD",
     "BUILD.zlib.bazel",
 ])

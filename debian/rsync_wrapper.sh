@@ -11,10 +11,11 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
   { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
 # --- end runfiles.bash initialization v2 ---
 
-LIB_PATH="$(rlocation ssh/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1)"
+LIB_PATH="$(rlocation rsync/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1)"
 LIB_PATH="${LIB_PATH%/libcrypto.so.1.1}"
 export LD_LIBRARY_PATH="${LIB_PATH}"
 
-TOOL_PATH="$(rlocation ssh/%(TOOL))"
+
+TOOL_PATH="$(rlocation rsync/usr/bin/rsync)"
 
 exec "${TOOL_PATH}" "$@"

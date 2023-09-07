@@ -587,16 +587,16 @@ http_archive(
 http_archive(
     name = "rsync",
     build_file = "@//debian:rsync.BUILD",
-    sha256 = "53be65a9214aaa6d1b9176f135184fb4a78ccefd58f95ce0da37e6a392dfeb60",
-    url = "https://software.frc971.org/Build-Dependencies/rsync.tar.gz",
+    sha256 = "75ea8ce442c94fd12c0d00eb24860ac1de5ea6af56154bb1b195a96018c9e8a2",
+    url = "https://software.frc971.org/Build-Dependencies/rsync-2023.09.06.tar.gz",
 )
 
 # //debian:ssh
 http_archive(
     name = "ssh",
     build_file = "@//debian:ssh.BUILD",
-    sha256 = "470fdc1252a2133a9d3c3da778e892a5b88f04f402cb04d8eb1cff7853242034",
-    url = "https://software.frc971.org/Build-Dependencies/ssh_v3.tar.gz",
+    sha256 = "9c4a9eefa605283486fb15a44ef9977d4a95b55c3a41c4e71cfbacd1cf20a4b5",
+    url = "https://software.frc971.org/Build-Dependencies/ssh-2023.09.06.tar.gz",
 )
 
 http_archive(
