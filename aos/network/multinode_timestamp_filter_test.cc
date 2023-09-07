@@ -407,7 +407,7 @@ TEST(TimestampProblemTest, SolveToyNewton) {
 
   std::vector<size_t> used_constraints;
   std::tie(y, solution_node, iterations, used_constraints) =
-      solver.SolveConstrainedNewton(&problem, 20, constraints);
+      solver.SolveConstrainedNewton(&problem, 20, constraints).value();
 
   LOG(INFO) << y.transpose();
 

@@ -877,20 +877,27 @@ bool TimestampProblem::AddConstraints(
   return updated;
 }
 
-std::tuple<std::vector<BootTimestamp>, Eigen::VectorXd, size_t, size_t>
+std::optional<
+    std::tuple<std::vector<BootTimestamp>, Eigen::VectorXd, size_t, size_t>>
 SolveConstrainedNewton(NewtonSolver *solver, TimestampProblem *problem,
                        const size_t max_iterations) {
   std::vector<size_t> active_constraints;
 
   while (true) {
-    Eigen::VectorXd y;
     size_t iteration;
     size_t solution_node;
-    std::vector<size_t> new_active_constraints;
 
-    std::tie(y, solution_node, iteration, new_active_constraints) =
-        solver->SolveConstrainedNewton(problem, max_iterations,
-                                       active_constraints);
+    auto solver_result = solver->SolveConstrainedNewton(problem, max_iterations,
+                                                        active_constraints);
+    if (!solver_result.has_value()) {
+      return std::nullopt;
+    }
+
+    std::tie(std::ignore, solution_node, iteration, std::ignore) =
+        *solver_result;
+    Eigen::VectorXd y = std::move(std::get<0>(*solver_result));
+    std::vector<size_t> new_active_constraints =
+        std::move(std::get<3>(*solver_result));
 
     std::vector<BootTimestamp> result =
         problem->PackResults(iteration > max_iterations ||
@@ -913,7 +920,7 @@ SolveConstrainedNewton(NewtonSolver *solver, TimestampProblem *problem,
   }
 }
 
-std::tuple<Eigen::VectorXd, size_t, size_t, std::vector<size_t>>
+std::optional<std::tuple<Eigen::VectorXd, size_t, size_t, std::vector<size_t>>>
 NewtonSolver::SolveConstrainedNewton(
     Problem *problem, const size_t max_iterations,
     const absl::Span<const size_t> original_active_constraints) {
@@ -1197,8 +1204,9 @@ NewtonSolver::SolveConstrainedNewton(
     }
   }
 
-  if (iteration > max_iterations) {
-    LOG(FATAL) << "Failed to converge on solve " << my_solve_number_;
+  if (iteration > max_iterations && FLAGS_crash_on_solve_failure) {
+    LOG(ERROR) << "Failed to converge on solve " << my_solve_number_;
+    return std::nullopt;
   }
 
   return std::make_tuple(std::move(y), solution_node, iteration,
@@ -1345,35 +1353,45 @@ void TimestampProblem::Debug() {
   }
 }
 
-std::optional<const std::tuple<distributed_clock::time_point,
-                               std::vector<BootTimestamp>> *>
+std::optional<std::optional<const std::tuple<distributed_clock::time_point,
+                                             std::vector<BootTimestamp>> *>>
 InterpolatedTimeConverter::QueueNextTimestamp() {
-  std::optional<
-      std::tuple<distributed_clock::time_point, std::vector<BootTimestamp>>>
+  std::optional<std::optional<
+      std::tuple<distributed_clock::time_point, std::vector<BootTimestamp>>>>
       next_time = NextTimestamp();
-  if (!next_time) {
-    VLOG(1) << "Last timestamp, calling it quits";
-    at_end_ = true;
+  if (!next_time.has_value()) {
+    VLOG(1) << "Error in processing timestamps.";
     return std::nullopt;
   }
+  if (!next_time.value().has_value()) {
+    VLOG(1) << "Last timestamp, calling it quits";
+    std::optional<std::optional<const std::tuple<distributed_clock::time_point,
+                                                 std::vector<BootTimestamp>> *>>
+        result;
+    result.emplace(std::nullopt);
+    // Check that C++ actually works how we think it does...
+    CHECK(result.has_value());
+    at_end_ = true;
+    return result;
+  }
 
-  VLOG(1) << "Fetched next timestamp while solving: " << std::get<0>(*next_time)
-          << " ->";
-  for (BootTimestamp t : std::get<1>(*next_time)) {
+  VLOG(1) << "Fetched next timestamp while solving: "
+          << std::get<0>(**next_time) << " ->";
+  for (BootTimestamp t : std::get<1>(**next_time)) {
     VLOG(1) << "  " << t;
   }
 
-  CHECK_EQ(node_count_, std::get<1>(*next_time).size());
+  CHECK_EQ(node_count_, std::get<1>(**next_time).size());
 
   if (times_.empty()) {
-    for (BootTimestamp t : std::get<1>(*next_time)) {
+    for (BootTimestamp t : std::get<1>(**next_time)) {
       CHECK_EQ(t.boot, 0u);
     }
   } else {
     bool rebooted = false;
     for (size_t i = 0; i < node_count_; ++i) {
       if (std::get<1>(times_.back())[i].boot !=
-          std::get<1>(*next_time)[i].boot) {
+          std::get<1>(**next_time)[i].boot) {
         rebooted = true;
         break;
       }
@@ -1383,15 +1401,15 @@ InterpolatedTimeConverter::QueueNextTimestamp() {
       if (VLOG_IS_ON(2)) {
         VLOG(2) << "Notified reboot of";
         size_t node_index = 0;
-        for (logger::BootTimestamp t : std::get<1>(*next_time)) {
+        for (logger::BootTimestamp t : std::get<1>(**next_time)) {
           VLOG(2) << "  Node " << node_index << " " << t;
           ++node_index;
         }
       }
-      reboot_found_(std::get<0>(*next_time), std::get<1>(*next_time));
+      reboot_found_(std::get<0>(**next_time), std::get<1>(**next_time));
     }
   }
-  times_.emplace_back(std::move(*next_time));
+  times_.emplace_back(std::move(**next_time));
   return &times_.back();
 }
 
@@ -1693,7 +1711,7 @@ MultiNodeNoncausalOffsetEstimator::MultiNodeNoncausalOffsetEstimator(
   }
 }
 
-void MultiNodeNoncausalOffsetEstimator::FlushAndClose(bool destructor) {
+bool MultiNodeNoncausalOffsetEstimator::FlushAndClose(bool destructor) {
   // Write out all the data in our filters.
   FlushAllSamples(true);
   if (fp_) {
@@ -1726,6 +1744,7 @@ void MultiNodeNoncausalOffsetEstimator::FlushAndClose(bool destructor) {
         }
       }
     }
+    filter_fps_.clear();
   }
   if (sample_fps_.size() != 0) {
     for (std::vector<FILE *> &filter_fp : sample_fps_) {
@@ -1735,6 +1754,7 @@ void MultiNodeNoncausalOffsetEstimator::FlushAndClose(bool destructor) {
         }
       }
     }
+    sample_fps_.clear();
   }
 
   if (all_done_) {
@@ -1744,13 +1764,14 @@ void MultiNodeNoncausalOffsetEstimator::FlushAndClose(bool destructor) {
         std::optional<std::tuple<BootTimestamp, BootDuration>> next =
             filter.filter->Consume();
         if (next) {
-          skip_order_validation_
-              ? LOG(WARNING)
-              : LOG(FATAL) << "MultiNodeNoncausalOffsetEstimator reported all "
-                              "done, but "
-                           << node_a_index << " -> " << filter.b_index
-                           << " found more data at time " << std::get<0>(*next)
-                           << ".  Time estimation was silently wrong.";
+          LOG(ERROR) << "MultiNodeNoncausalOffsetEstimator reported all "
+                        "done, but "
+                     << node_a_index << " -> " << filter.b_index
+                     << " found more data at time " << std::get<0>(*next)
+                     << ".  Time estimation was silently wrong.";
+          if (!skip_order_validation_) {
+            return false;
+          }
         }
       }
       ++node_a_index;
@@ -1761,14 +1782,21 @@ void MultiNodeNoncausalOffsetEstimator::FlushAndClose(bool destructor) {
   if (!node_samples_.empty()) {
     for (NodeSamples &node : node_samples_) {
       for (SingleNodeSamples &timestamps : node.nodes) {
-        CHECK(timestamps.messages.empty());
+        if (!timestamps.messages.empty()) {
+          LOG(ERROR) << "Timestamps still remaining.";
+          return false;
+        }
       }
     }
   }
+  return true;
 }
 
 MultiNodeNoncausalOffsetEstimator::~MultiNodeNoncausalOffsetEstimator() {
-  FlushAndClose(true);
+  const bool success = FlushAndClose(true);
+  if (!non_fatal_destructor_checks_) {
+    CHECK(success);
+  }
 }
 
 UUID MultiNodeNoncausalOffsetEstimator::boot_uuid(size_t node_index,
@@ -2438,7 +2466,8 @@ MultiNodeNoncausalOffsetEstimator::MakeCandidateTimes() const {
   return std::make_tuple(candidate_times, boots_all_match);
 }
 
-std::tuple<NoncausalTimestampFilter *, std::vector<BootTimestamp>, int>
+std::optional<
+    std::tuple<NoncausalTimestampFilter *, std::vector<BootTimestamp>, int>>
 MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
     TimestampProblem *problem,
     const std::vector<CandidateTimes> candidate_times,
@@ -2497,8 +2526,11 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
 
     if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
       UpdateSolution(std::move(solution));
-      FlushAndClose(false);
-      LOG(FATAL) << "Failed to converge.";
+      if (!FlushAndClose(false)) {
+        return std::nullopt;
+      }
+      LOG(ERROR) << "Failed to converge.";
+      return std::nullopt;
     }
 
     if (!problem->ValidateSolution(solution, true)) {
@@ -2512,13 +2544,16 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
         problem->Debug();
         if (!skip_order_validation_) {
           UpdateSolution(solution);
-          FlushAndClose(false);
-          LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
+          if (!FlushAndClose(false)) {
+            return std::nullopt;
+          }
+          LOG(ERROR) << "Bailing, use --skip_order_validation to continue.  "
                         "Use at your own risk.";
+          return std::nullopt;
         }
       } else {
         // Aw, our initial attempt to solve failed.  Now, let's try again with
-        // constriants.
+        // constraints.
         for (size_t node_index = 0; node_index < base_times.size();
              ++node_index) {
           problem->set_base_clock(node_index, solution[node_index]);
@@ -2530,14 +2565,24 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
         }
 
         problem->set_points(points);
-        std::tie(solution, solution_y, solution_index, iterations) =
+        auto solver_result =
             SolveConstrainedNewton(&solver, problem, kMaxIterations);
+        if (!solver_result.has_value()) {
+          return std::nullopt;
+        }
+        solution = std::move(std::get<0>(solver_result.value()));
+        solution_y = std::move(std::get<1>(solver_result.value()));
+        std::tie(std::ignore, std::ignore, solution_index, iterations) =
+            *solver_result;
 
         if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
           UpdateSolution(std::move(solution));
-          FlushAndClose(false);
-          LOG(FATAL) << "Failed to converge for problem "
+          if (!FlushAndClose(false)) {
+            return std::nullopt;
+          }
+          LOG(ERROR) << "Failed to converge for problem "
                      << solver.my_solve_number();
+          return std::nullopt;
         }
         if (!problem->ValidateSolution(solution, false)) {
           LOG(WARNING) << "Invalid solution, constraints not met for problem "
@@ -2548,9 +2593,12 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
           problem->Debug();
           if (!skip_order_validation_) {
             UpdateSolution(solution);
-            FlushAndClose(false);
-            LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
+            if (!FlushAndClose(false)) {
+              return std::nullopt;
+            }
+            LOG(ERROR) << "Bailing, use --skip_order_validation to continue.  "
                           "Use at your own risk.";
+            return std::nullopt;
           }
         }
       }
@@ -2563,7 +2611,7 @@ MultiNodeNoncausalOffsetEstimator::SimultaneousSolution(
   return std::make_tuple(next_filter, std::move(result_times), solution_index);
 }
 
-void MultiNodeNoncausalOffsetEstimator::CheckInvalidDistance(
+bool MultiNodeNoncausalOffsetEstimator::CheckInvalidDistance(
     const std::vector<BootTimestamp> &result_times,
     const std::vector<BootTimestamp> &solution) {
   // If times are close enough, drop the invalid time.
@@ -2577,7 +2625,7 @@ void MultiNodeNoncausalOffsetEstimator::CheckInvalidDistance(
               << (result_times[i].time - solution[i].time).count() << "ns";
     }
     VLOG(1) << "Ignoring because it is close enough.";
-    return;
+    return true;
   }
   // Somehow the new solution is better *and* worse than the old
   // solution...  This is an internal failure because that means time
@@ -2594,13 +2642,18 @@ void MultiNodeNoncausalOffsetEstimator::CheckInvalidDistance(
     LOG(ERROR) << "Skipping because --skip_order_validation";
   } else {
     UpdateSolution(solution);
-    FlushAndClose(false);
-    LOG(FATAL) << "Please investigate.  Use --max_invalid_distance_ns="
+    if (!FlushAndClose(false)) {
+      return false;
+    }
+    LOG(ERROR) << "Please investigate.  Use --max_invalid_distance_ns="
                << invalid_distance.count() << " to ignore this.";
+    return false;
   }
+  return true;
 }
 
-std::tuple<NoncausalTimestampFilter *, std::vector<BootTimestamp>, int>
+std::optional<
+    std::tuple<NoncausalTimestampFilter *, std::vector<BootTimestamp>, int>>
 MultiNodeNoncausalOffsetEstimator::SequentialSolution(
     TimestampProblem *problem,
     const std::vector<CandidateTimes> candidate_times,
@@ -2704,9 +2757,12 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
 
     if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
       UpdateSolution(std::move(solution));
-      FlushAndClose(false);
-      LOG(FATAL) << "Failed to converge for problem "
+      if (!FlushAndClose(false)) {
+        return std::nullopt;
+      }
+      LOG(ERROR) << "Failed to converge for problem "
                  << solver.my_solve_number();
+      return std::nullopt;
     }
 
     // Bypass checking if order validation is turned off.  This lets us dump a
@@ -2725,9 +2781,12 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
         problem->Debug();
         if (!skip_order_validation_) {
           UpdateSolution(solution);
-          FlushAndClose(false);
-          LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
+          if (!FlushAndClose(false)) {
+            return std::nullopt;
+          }
+          LOG(ERROR) << "Bailing, use --skip_order_validation to continue.  "
                         "Use at your own risk.";
+          return std::nullopt;
         }
       } else {
         // Seed with our last solution.
@@ -2737,14 +2796,24 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
         }
         // And now resolve constrained.
         problem->set_points(points);
-        std::tie(solution, solution_y, solution_index, iterations) =
+        auto solver_result =
             SolveConstrainedNewton(&solver, problem, kMaxIterations);
+        if (!solver_result.has_value()) {
+          return std::nullopt;
+        }
+        solution = std::move(std::get<0>(solver_result.value()));
+        solution_y = std::move(std::get<1>(solver_result.value()));
+        std::tie(std::ignore, std::ignore, solution_index, iterations) =
+            *solver_result;
 
         if (iterations > kMaxIterations && FLAGS_crash_on_solve_failure) {
           UpdateSolution(std::move(solution));
-          FlushAndClose(false);
-          LOG(FATAL) << "Failed to converge for problem "
+          if (!FlushAndClose(false)) {
+            return std::nullopt;
+          }
+          LOG(ERROR) << "Failed to converge for problem "
                      << solver.my_solve_number();
+          return std::nullopt;
         }
         if (!problem->ValidateSolution(solution, false)) {
           LOG(WARNING) << "Invalid solution, constraints not met for problem "
@@ -2755,9 +2824,12 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
           problem->Debug();
           if (!skip_order_validation_) {
             UpdateSolution(solution);
-            FlushAndClose(false);
-            LOG(FATAL) << "Bailing, use --skip_order_validation to continue.  "
+            if (!FlushAndClose(false)) {
+              return std::nullopt;
+            }
+            LOG(ERROR) << "Bailing, use --skip_order_validation to continue.  "
                           "Use at your own risk.";
+            return std::nullopt;
           }
         }
       }
@@ -2791,7 +2863,9 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
         solution_index = node_a_index;
         break;
       case TimeComparison::kInvalid: {
-        CheckInvalidDistance(result_times, solution);
+        if (!CheckInvalidDistance(result_times, solution)) {
+          return std::nullopt;
+        }
         if (next_node_filter) {
           std::optional<std::tuple<logger::BootTimestamp, logger::BootDuration>>
               result = next_node_filter->Consume();
@@ -2814,18 +2888,18 @@ MultiNodeNoncausalOffsetEstimator::SequentialSolution(
   return std::make_tuple(next_filter, std::move(result_times), solution_index);
 }
 
-std::tuple<NoncausalTimestampFilter *, std::vector<BootTimestamp>, int>
+std::optional<
+    std::tuple<NoncausalTimestampFilter *, std::vector<BootTimestamp>, int>>
 MultiNodeNoncausalOffsetEstimator::NextSolution(
     TimestampProblem *problem, const std::vector<BootTimestamp> &base_times) {
   // Ok, now solve for the minimum time on each channel.
-  std::vector<BootTimestamp> result_times;
-
   bool boots_all_match = true;
   std::vector<CandidateTimes> candidate_times;
   std::tie(candidate_times, boots_all_match) = MakeCandidateTimes();
 
-  NoncausalTimestampFilter *next_filter = nullptr;
-  size_t solution_index = 0;
+  std::optional<
+      std::tuple<NoncausalTimestampFilter *, std::vector<BootTimestamp>, int>>
+      result;
 
   // We can significantly speed things up if we know that all the boots match by
   // solving for everything at once.  If the boots don't match, the combined min
@@ -2833,21 +2907,21 @@ MultiNodeNoncausalOffsetEstimator::NextSolution(
   // actually using the boot from the candidate times to figure out which
   // interpolation function to use under the hood.
   if (boots_all_match) {
-    std::tie(next_filter, result_times, solution_index) =
+    result =
         SimultaneousSolution(problem, std::move(candidate_times), base_times);
   } else {
     // If all the boots don't match, fall back to the old method of comparing
     // all the solutions individually.
-    std::tie(next_filter, result_times, solution_index) =
+    result =
         SequentialSolution(problem, std::move(candidate_times), base_times);
   }
-  if (VLOG_IS_ON(1)) {
-    VLOG(1) << "Best solution is for node " << solution_index;
-    for (size_t i = 0; i < result_times.size(); ++i) {
-      VLOG(1) << "  " << result_times[i];
+  if (VLOG_IS_ON(1) && result.has_value()) {
+    VLOG(1) << "Best solution is for node " << std::get<2>(*result);
+    for (size_t i = 0; i < std::get<1>(*result).size(); ++i) {
+      VLOG(1) << "  " << std::get<1>(*result)[i];
     }
   }
-  return std::make_tuple(next_filter, std::move(result_times), solution_index);
+  return result;
 }
 
 void MultiNodeNoncausalOffsetEstimator::UpdateSolution(
@@ -2917,19 +2991,24 @@ void MultiNodeNoncausalOffsetEstimator::WriteFilter(
   }
 }
 
-std::optional<
-    std::tuple<distributed_clock::time_point, std::vector<BootTimestamp>>>
+std::optional<std::optional<
+    std::tuple<distributed_clock::time_point, std::vector<BootTimestamp>>>>
 MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
   // TODO(austin): Detect and handle there being fewer nodes in the log file
   // than in replay, or them being in a different order.
   TimestampProblem problem = MakeProblem();
 
   // Ok, now solve for the minimum time on each channel.
-  std::vector<BootTimestamp> result_times;
+  auto next_solution = NextSolution(&problem, last_monotonics_);
+  if (!next_solution.has_value()) {
+    return std::nullopt;
+  }
+  std::vector<BootTimestamp> result_times =
+      std::move(std::get<1>(next_solution.value()));
   NoncausalTimestampFilter *next_filter = nullptr;
   int solution_node_index = 0;
-  std::tie(next_filter, result_times, solution_node_index) =
-      NextSolution(&problem, last_monotonics_);
+  std::tie(next_filter, std::ignore, solution_node_index) =
+      next_solution.value();
 
   CHECK(!all_done_);
 
@@ -2969,7 +3048,13 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
     if (fp_) {
       fflush(fp_);
     }
-    return std::nullopt;
+    std::optional<std::optional<
+        std::tuple<distributed_clock::time_point, std::vector<BootTimestamp>>>>
+        result;
+    result.emplace(std::nullopt);
+    CHECK(result.has_value());
+    CHECK(!result.value().has_value());
+    return result;
   }
 
   {
@@ -3026,11 +3111,13 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
         }
         UpdateSolution(std::move(result_times));
         WriteFilter(next_filter, sample);
-        FlushAndClose(false);
-        LOG(FATAL)
+        if (!FlushAndClose(false)) {
+          return std::nullopt;
+        }
+        LOG(ERROR)
             << "Found a solution before the last returned solution on node "
             << solution_node_index;
-        break;
+        return std::nullopt;
       case TimeComparison::kEq:
         WriteFilter(next_filter, sample);
         return NextTimestamp();
@@ -3053,9 +3140,12 @@ MultiNodeNoncausalOffsetEstimator::NextTimestamp() {
         }
         UpdateSolution(std::move(result_times));
         WriteFilter(next_filter, sample);
-        FlushAndClose(false);
-        LOG(FATAL) << "Please investigate.  Use --max_invalid_distance_ns="
+        if (!FlushAndClose(false)) {
+          return std::nullopt;
+        }
+        LOG(ERROR) << "Please investigate.  Use --max_invalid_distance_ns="
                    << invalid_distance.count() << " to ignore this.";
+        return std::nullopt;
       } break;
     }
   }

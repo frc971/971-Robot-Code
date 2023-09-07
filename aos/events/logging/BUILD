@@ -545,6 +545,24 @@ cc_binary(
     ],
 )
 
+cc_library(
+    name = "logfile_validator",
+    srcs = [
+        "logfile_validator.cc",
+    ],
+    hdrs = ["logfile_validator.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":logfile_utils",
+        "//aos:configuration",
+        "//aos/events:simulated_event_loop",
+        "//aos/network:multinode_timestamp_filter",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
 cc_binary(
     name = "timestamp_extractor",
     srcs = [
@@ -554,6 +572,7 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":logfile_utils",
+        ":logfile_validator",
         "//aos:configuration",
         "//aos:init",
         "//aos/events:simulated_event_loop",
@@ -652,6 +671,7 @@ cc_library(
     deps = [
         ":log_reader",
         ":log_writer",
+        ":logfile_validator",
         ":snappy_encoder",
         "//aos/events:message_counter",
         "//aos/events:ping_lib",

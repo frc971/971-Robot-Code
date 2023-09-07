@@ -3,6 +3,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/events/logging/log_reader.h"
 #include "aos/events/logging/logfile_utils.h"
+#include "aos/events/logging/logfile_validator.h"
 #include "aos/events/ping_lib.h"
 #include "aos/events/pong_lib.h"
 #include "aos/events/simulated_event_loop.h"
@@ -442,6 +443,7 @@ ConfirmReadable(const std::vector<std::string> &files,
 
     reader.Deregister();
   }
+  CHECK(LogIsReadableIfMultiNode(LogFilesContainer{SortParts(files)}));
   {
     std::vector<std::pair<std::vector<realtime_clock::time_point>,
                           std::vector<realtime_clock::time_point>>>

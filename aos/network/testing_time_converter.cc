@@ -22,7 +22,10 @@ TestingTimeConverter ::TestingTimeConverter(size_t node_count)
 
 TestingTimeConverter::~TestingTimeConverter() {
   if (at_end_) {
-    CHECK(!NextTimestamp()) << ": At the end but there is more data.";
+    auto next_timestamp = NextTimestamp();
+    CHECK(next_timestamp.has_value()) << ": Unexpected error";
+    CHECK(!next_timestamp.value().has_value())
+        << ": At the end but there is more data.";
   }
 }
 
@@ -105,13 +108,17 @@ void TestingTimeConverter::AddNextTimestamp(
   ts_.emplace_back(std::make_tuple(time, std::move(times)));
 }
 
-std::optional<std::tuple<distributed_clock::time_point,
-                         std::vector<logger::BootTimestamp>>>
+std::optional<std::optional<std::tuple<distributed_clock::time_point,
+                                       std::vector<logger::BootTimestamp>>>>
 TestingTimeConverter::NextTimestamp() {
   CHECK(!first_) << ": Tried to pull a timestamp before one was added.  This "
                     "is unlikely to be what you want.";
   if (ts_.empty()) {
-    return std::nullopt;
+    std::optional<std::optional<std::tuple<distributed_clock::time_point,
+                                           std::vector<logger::BootTimestamp>>>>
+        result;
+    result.emplace(std::nullopt);
+    return result;
   }
   auto result = ts_.front();
   ts_.pop_front();

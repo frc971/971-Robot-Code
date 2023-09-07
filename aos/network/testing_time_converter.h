@@ -41,8 +41,8 @@ class TestingTimeConverter final : public InterpolatedTimeConverter {
   void AddNextTimestamp(distributed_clock::time_point time,
                         std::vector<logger::BootTimestamp> times);
 
-  std::optional<std::tuple<distributed_clock::time_point,
-                           std::vector<logger::BootTimestamp>>>
+  std::optional<std::optional<std::tuple<distributed_clock::time_point,
+                                         std::vector<logger::BootTimestamp>>>>
   NextTimestamp() override;
 
   void set_boot_uuid(size_t node_index, size_t boot_count, UUID uuid) {

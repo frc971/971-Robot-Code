@@ -121,7 +121,8 @@ class NewtonSolver {
   // Returns the solution, the solution_node field from the final derivatives,
   // the number of iterations it took, and a list of the constraints actually
   // used in the solution.
-  std::tuple<Eigen::VectorXd, size_t, size_t, std::vector<size_t>>
+  std::optional<
+      std::tuple<Eigen::VectorXd, size_t, size_t, std::vector<size_t>>>
   SolveConstrainedNewton(Problem *problem, size_t max_iterations,
                          const absl::Span<const size_t> constraint_indices);
 
@@ -354,8 +355,9 @@ class InterpolatedTimeConverter : public TimeConverter {
 
   // Queues 1 more timestamp in the interpolation list.  This is public for
   // timestamp_extractor so it can hammer on the log until everything is queued.
-  std::optional<const std::tuple<distributed_clock::time_point,
-                                 std::vector<logger::BootTimestamp>> *>
+  // Return type matches that of NextTimestamp().
+  [[nodiscard]] std::optional<std::optional<const std::tuple<
+      distributed_clock::time_point, std::vector<logger::BootTimestamp>> *>>
   QueueNextTimestamp();
 
  private:
@@ -364,8 +366,12 @@ class InterpolatedTimeConverter : public TimeConverter {
   // A timestamp is a sample of the distributed clock and a corresponding point
   // on every monotonic clock for all the nodes in the factory that this will be
   // hooked up to.
-  virtual std::optional<std::tuple<distributed_clock::time_point,
-                                   std::vector<logger::BootTimestamp>>>
+  // If !NextTimestamp().has_value(), then an error occurred. If
+  // !NextTimestamp().value().has_value(), then there is merely no next
+  // timestamp available.
+  // TODO(james): Swap this to std::expected when available.
+  virtual std::optional<std::optional<std::tuple<
+      distributed_clock::time_point, std::vector<logger::BootTimestamp>>>>
   NextTimestamp() = 0;
 
   // Queues timestamps util the last time in the queue matches the provided
@@ -373,7 +379,9 @@ class InterpolatedTimeConverter : public TimeConverter {
   template <typename F>
   void QueueUntil(F not_done) {
     while (!at_end_ && (times_.empty() || not_done(times_.back()))) {
-      QueueNextTimestamp();
+      // Check the outer std::optional to watch for errors.
+      CHECK(QueueNextTimestamp().has_value())
+          << ": An error occurred when queueing timestamps.";
     }
 
     CHECK(!times_.empty())
@@ -472,10 +480,6 @@ class MultiNodeNoncausalOffsetEstimator final
   void SetTimestampMappers(
       std::vector<logger::TimestampMapper *> timestamp_mappers);
 
-  std::optional<std::tuple<distributed_clock::time_point,
-                           std::vector<logger::BootTimestamp>>>
-  NextTimestamp() override;
-
   UUID boot_uuid(size_t node_index, size_t boot_count) override;
 
   // Checks that all the nodes in the graph are connected.  Needs all filters to
@@ -504,6 +508,14 @@ class MultiNodeNoncausalOffsetEstimator final
   // Returns the configuration that we are replaying into.
   const aos::Configuration *configuration() const { return configuration_; }
 
+  // Runs some checks that normally run with fatal CHECK's in the destructor.
+  // Returns false if any checks failed. This is used to allow the
+  // logfile_validator to non-fatally identify certain log sorting issues.
+  [[nodiscard]] bool RunDestructorChecks() {
+    non_fatal_destructor_checks_ = true;
+    return FlushAndClose(false);
+  }
+
  private:
   static constexpr int kMaxIterations = 400;
 
@@ -516,35 +528,39 @@ class MultiNodeNoncausalOffsetEstimator final
 
   TimestampProblem MakeProblem();
 
+  std::optional<std::optional<std::tuple<distributed_clock::time_point,
+                                         std::vector<logger::BootTimestamp>>>>
+  NextTimestamp() override;
+
   // Returns the list of candidate times to solve for.
   std::tuple<std::vector<CandidateTimes>, bool> MakeCandidateTimes() const;
 
   // Returns the next solution, the filter which has the control point for it
   // (or nullptr if a start time triggered this to be returned), and the node
   // which triggered it.
-  std::tuple<NoncausalTimestampFilter *, std::vector<logger::BootTimestamp>,
-             int>
+  std::optional<std::tuple<NoncausalTimestampFilter *,
+                           std::vector<logger::BootTimestamp>, int>>
   NextSolution(TimestampProblem *problem,
                const std::vector<logger::BootTimestamp> &base_times);
 
   // Returns the solution (if there is one) for the list of candidate times by
   // solving all the problems simultaneously.  They must be from the same boot.
-  std::tuple<NoncausalTimestampFilter *, std::vector<logger::BootTimestamp>,
-             int>
+  std::optional<std::tuple<NoncausalTimestampFilter *,
+                           std::vector<logger::BootTimestamp>, int>>
   SimultaneousSolution(TimestampProblem *problem,
                        const std::vector<CandidateTimes> candidate_times,
                        const std::vector<logger::BootTimestamp> &base_times);
 
   // Returns the solution (if there is one) for the list of candidate times by
   // solving the problems one after another.  They can be from any boot.
-  std::tuple<NoncausalTimestampFilter *, std::vector<logger::BootTimestamp>,
-             int>
+  std::optional<std::tuple<NoncausalTimestampFilter *,
+                           std::vector<logger::BootTimestamp>, int>>
   SequentialSolution(TimestampProblem *problem,
                      const std::vector<CandidateTimes> candidate_times,
                      const std::vector<logger::BootTimestamp> &base_times);
 
-  // Explodes if the invalid distance is too far.
-  void CheckInvalidDistance(
+  // Returns false if the invalid distance is too far.
+  [[nodiscard]] bool CheckInvalidDistance(
       const std::vector<logger::BootTimestamp> &result_times,
       const std::vector<logger::BootTimestamp> &solution);
 
@@ -560,15 +576,18 @@ class MultiNodeNoncausalOffsetEstimator final
 
   // Writes everything to disk anc closes it all out in preparation for either
   // destruction or crashing.
-  void FlushAndClose(bool destructor);
+  // Returns true if everything is healthy; returns false if we discovered
+  // sorting issues when closing things out.
+  [[nodiscard]] bool FlushAndClose(bool destructor);
 
   const Configuration *configuration_;
   const Configuration *logged_configuration_;
 
   std::shared_ptr<const logger::Boots> boots_;
 
-  // If true, skip any validation which would trigger if we see evidence that
-  // time estimation between nodes was incorrect.
+  // If true, don't fatally die on any order validation failures which would
+  // trigger if we see evidence that time estimation between nodes was
+  // incorrect.
   const bool skip_order_validation_;
 
   // List of filters for a connection.  The pointer to the first node will be
@@ -598,6 +617,7 @@ class MultiNodeNoncausalOffsetEstimator final
 
   bool first_solution_ = true;
   bool all_done_ = false;
+  bool non_fatal_destructor_checks_ = false;
 
   // Optional file pointers to save the results of the noncausal filter in. This
   // lives here so we can give each sample a distributed clock.

@@ -288,6 +288,8 @@ class LogFilesContainer {
   // Returns true if we have timestamps in any of the files.
   bool HasTimestamps(std::string_view node_name) const;
 
+  const std::vector<LogFile> &log_files() const { return log_files_; }
+
  private:
   LogFilesContainer(std::optional<const LogSource *> log_source,
                     std::vector<LogFile> log_files);
