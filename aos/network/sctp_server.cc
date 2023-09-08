@@ -81,8 +81,7 @@ void SctpServer::SetPriorityScheduler([[maybe_unused]] sctp_assoc_t assoc_id) {
   scheduler.assoc_value = SCTP_SS_PRIO;
   if (setsockopt(fd(), IPPROTO_SCTP, SCTP_STREAM_SCHEDULER, &scheduler,
                  sizeof(scheduler)) != 0) {
-    LOG_FIRST_N(WARNING, 1) << "Failed to set scheduler: " << strerror(errno)
-                            << " [" << errno << "]";
+    PLOG(FATAL) << "Failed to set scheduler.";
   }
 #endif
 }
@@ -99,8 +98,13 @@ void SctpServer::SetStreamPriority([[maybe_unused]] sctp_assoc_t assoc_id,
   sctp_priority.stream_value = priority;
   if (setsockopt(fd(), IPPROTO_SCTP, SCTP_STREAM_SCHEDULER_VALUE,
                  &sctp_priority, sizeof(sctp_priority)) != 0) {
-    LOG_FIRST_N(WARNING, 1) << "Failed to set scheduler: " << strerror(errno)
-                            << " [" << errno << "]";
+    // Treat "Protocol not available" as equivalent to the
+    // SCTP_STREAM_SCHEDULER_VALUE not being defined--silently ignore it.
+    if (errno == ENOPROTOOPT) {
+      VLOG(1) << "Stream scheduler not supported on this kernel.";
+      return;
+    }
+    PLOG(FATAL) << "Failed to set scheduler.";
   }
 #endif
 }
