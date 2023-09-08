@@ -144,6 +144,11 @@ Application::Application(std::string_view name,
           LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
               << "Failed to stop, sending SIGKILL to '" << name_
               << "' pid: " << pid_;
+        } else {
+          PLOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+              << "Failed to send SIGKILL to '" << name_ << "' pid: " << pid_;
+          stop_timer_->Schedule(event_loop_->monotonic_now() +
+                                std::chrono::seconds(1));
         }
       })),
       pipe_timer_(event_loop_->AddTimer([this]() { FetchOutputs(); })),
