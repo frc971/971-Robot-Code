@@ -177,6 +177,11 @@ void ConfigIsValid(const aos::Configuration *config,
   const std::string log_path = aos::testing::TestTmpDir() + "/logs/";
   for (const bool send_data_on_channels : {false, true}) {
     SCOPED_TRACE(send_data_on_channels);
+    // Single nodes (multi-nodes with node count = 1) will not produce readable
+    // logs in the absense of data.
+    if (!send_data_on_channels && (configuration::NodesCount(config) == 1u)) {
+      continue;
+    }
     for (const LoggerNodeSetValidation *logger_set :
          *validation_config->logging()->logger_sets()) {
       SCOPED_TRACE(aos::FlatbufferToJson(logger_set));
