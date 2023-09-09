@@ -182,6 +182,8 @@ void ConfigIsValid(const aos::Configuration *config,
     if (!send_data_on_channels && (configuration::NodesCount(config) == 1u)) {
       continue;
     }
+    // Send timing report when we are sending data.
+    const bool do_skip_timing_report = !send_data_on_channels;
     for (const LoggerNodeSetValidation *logger_set :
          *validation_config->logging()->logger_sets()) {
       SCOPED_TRACE(aos::FlatbufferToJson(logger_set));
@@ -192,9 +194,11 @@ void ConfigIsValid(const aos::Configuration *config,
         for (const auto &node : *logger_set->loggers()) {
           logger_nodes.push_back(node->str());
         }
-        loggers = MakeLoggersForNodes(&factory, logger_nodes, log_path);
+        loggers = MakeLoggersForNodes(&factory, logger_nodes, log_path,
+                                      do_skip_timing_report);
       } else {
-        loggers = MakeLoggersForAllNodes(&factory, log_path);
+        loggers =
+            MakeLoggersForAllNodes(&factory, log_path, do_skip_timing_report);
       }
 
       std::vector<std::unique_ptr<EventLoop>> test_loops;

@@ -9,7 +9,8 @@ namespace aos::util {
 class LoggerState {
  public:
   LoggerState(aos::SimulatedEventLoopFactory *factory, const aos::Node *node,
-              std::string_view output_folder);
+              std::string_view output_folder,
+              bool do_skip_timing_report = true);
 
  private:
   std::unique_ptr<aos::EventLoop> event_loop_;
@@ -23,11 +24,12 @@ class LoggerState {
 std::vector<std::unique_ptr<LoggerState>> MakeLoggersForNodes(
     aos::SimulatedEventLoopFactory *factory,
     const std::vector<std::string> &nodes_to_log,
-    std::string_view output_folder);
+    std::string_view output_folder, bool do_skip_timing_report = true);
 
 // Creates loggers for all of the nodes.
 std::vector<std::unique_ptr<LoggerState>> MakeLoggersForAllNodes(
-    aos::SimulatedEventLoopFactory *factory, std::string_view output_folder);
+    aos::SimulatedEventLoopFactory *factory, std::string_view output_folder,
+    bool do_skip_timing_report = true);
 
 }  // namespace aos::util
 #endif  // AOS_UTIL_SIMULATION_LOGGER_H_
