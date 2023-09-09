@@ -62,7 +62,8 @@ class QueueRacer {
  private:
   // Wipes the queue memory out so we get a clean start.
   void Reset() {
-    memset(queue_.memory(), 0, LocklessQueueMemorySize(queue_.config()));
+    memset(reinterpret_cast<void *>(queue_.memory()), 0,
+           LocklessQueueMemorySize(queue_.config()));
   }
 
   // This is a separate method so that when all the ASSERT_* methods, we still

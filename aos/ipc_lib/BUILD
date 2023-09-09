@@ -233,6 +233,22 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "lockless_queue_stepping",
+    testonly = True,
+    srcs = [
+        "lockless_queue_stepping.cc",
+    ],
+    hdrs = ["lockless_queue_stepping.h"],
+    deps = [
+        ":lockless_queue",
+        ":shm_observers",
+        "//aos/libc:aos_strsignal",
+        "//aos/testing:prevent_exit",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
 cc_test(
     name = "lockless_queue_test",
     timeout = "eternal",
@@ -242,11 +258,11 @@ cc_test(
     deps = [
         ":event",
         ":lockless_queue",
+        ":lockless_queue_stepping",
         ":queue_racer",
         ":signalfd",
         "//aos/events:epoll",
         "//aos/testing:googletest",
-        "//aos/testing:prevent_exit",
         "//aos/util:phased_loop",
     ],
 )
@@ -258,6 +274,7 @@ cc_test(
     deps = [
         ":event",
         ":lockless_queue",
+        ":lockless_queue_stepping",
         ":queue_racer",
         ":shm_observers",
         ":signalfd",

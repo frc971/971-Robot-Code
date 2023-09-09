@@ -414,14 +414,15 @@ class LocklessQueueReader {
     GOOD,
     // The message is in the future and we haven't written it yet.
     NOTHING_NEW,
-    // There is a message, but should_read() returned false so we didn't fetch
-    // it.
+    // There is a message, but should_read_callback() returned false so we
+    // didn't fetch it.
     FILTERED,
     // The message got overwritten while we were reading it.
     OVERWROTE,
   };
 
-  LocklessQueueReader(LocklessQueue queue) : memory_(queue.const_memory()) {
+  LocklessQueueReader(LocklessQueue queue)
+      : memory_(queue.memory()), const_memory_(queue.const_memory()) {
     queue.Initialize();
   }
 
@@ -433,14 +434,14 @@ class LocklessQueueReader {
   // message, but the filter function returned false, return FILTERED.
   //
   // data may be nullptr to indicate the data should not be copied.
-  Result Read(uint32_t queue_index,
-              monotonic_clock::time_point *monotonic_sent_time,
-              realtime_clock::time_point *realtime_sent_time,
-              monotonic_clock::time_point *monotonic_remote_time,
-              realtime_clock::time_point *realtime_remote_time,
-              uint32_t *remote_queue_index, UUID *source_boot_uuid,
-              size_t *length, char *data,
-              std::function<bool(const Context &context)> should_read) const;
+  Result Read(
+      uint32_t queue_index, monotonic_clock::time_point *monotonic_sent_time,
+      realtime_clock::time_point *realtime_sent_time,
+      monotonic_clock::time_point *monotonic_remote_time,
+      realtime_clock::time_point *realtime_remote_time,
+      uint32_t *remote_queue_index, UUID *source_boot_uuid, size_t *length,
+      char *data,
+      std::function<bool(const Context &context)> should_read_callback) const;
 
   // Returns the index to the latest queue message.  Returns empty_queue_index()
   // if there are no messages in the queue.  Do note that this index wraps if
@@ -448,7 +449,8 @@ class LocklessQueueReader {
   QueueIndex LatestIndex() const;
 
  private:
-  const LocklessQueueMemory *const memory_;
+  LocklessQueueMemory *const memory_;
+  const LocklessQueueMemory *const_memory_;
 };
 
 // Returns the number of messages which are logically in the queue at a time.
