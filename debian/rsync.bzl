@@ -1,3 +1,9 @@
 files = {
-    "rsync_3.1.2-1+deb9u2_amd64.deb": "f2987623a6e5b5aedf56e679bedd2e6f7d54cdb4815ac4149c4d135da16ff9c2",
+    "init-system-helpers_1.60_all.deb": "43420922c5e3aa747f8854236bf381a35179bba3885b242edb104751dad20644",
+    "liblz4-1_1.9.3-2_amd64.deb": "79ac6e9ca19c483f2e8effcc3401d723dd9dbb3a4ae324714de802adb21a8117",
+    "libpopt0_1.18-2_amd64.deb": "2f9fca8afbc5a18211ad46fa5f5df323662ba4d5212fa36bfc30dd551ae86b28",
+    "libssl1.1_1.1.1n-0+deb11u5_amd64.deb": "08be73a6a5454a8978c5a71ea5ca4b3a6909ce6cc927890729ebd6f9af12d9d8",
+    "libxxhash0_0.8.0-2_amd64.deb": "3fb82550a71d27d05672472508548576dfb34486847bc860d3066cda5aaf186f",
+    "lsb-base_11.1.0_all.deb": "89ed6332074d827a65305f9a51e591dff20641d61ff5e11f4e1822a9987e96fe",
+    "rsync_3.2.3-4+deb11u1_amd64.deb": "2ba613ac761266dcfc8518b06c257c790c4d02ea311163829871dc38fbf08ba0",
 }
