@@ -194,6 +194,7 @@ cc_test(
     tags = [
         # Fakeroot is required to enable "net.sctp.auth_enable".
         "requires-fakeroot",
+        "no-remote-exec",
     ],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [

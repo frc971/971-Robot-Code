@@ -28,7 +28,9 @@ constexpr int kStreams = 1;
 namespace {
 void EnableSctpAuthIfAvailable() {
 #if HAS_SCTP_AUTH
-  CHECK(system("/usr/sbin/sysctl net.sctp.auth_enable=1 || /sbin/sysctl "
+  CHECK(system("/usr/sbin/modprobe sctp || /sbin/modprobe sctp; "
+               "/usr/sbin/sysctl net.sctp.auth_enable=1 || "
+               "/sbin/sysctl "
                "net.sctp.auth_enable=1") == 0)
       << "Couldn't enable sctp authentication.";
 #endif
