@@ -531,6 +531,13 @@ NoncausalTimestampFilter::InterpolateWithOtherFilter(
   if (!use_other) {
     return std::make_pair(pointer, std::make_pair(t0, t1));
   }
+
+  // The invariant of pointer is that other_points is bounded by t0, t1. Confirm
+  // it before we return things depending on it since it is easy.
+  CHECK_GT(std::get<0>(pointer.other_points_[0].second), std::get<0>(t0));
+  CHECK_LT(std::get<0>(
+               pointer.other_points_[pointer.other_points_.size() - 1].second),
+           std::get<0>(t1));
   // We have 2 timestamps bookending everything, and a list of points in the
   // middle.
   //
@@ -660,11 +667,14 @@ NoncausalTimestampFilter::SingleFilter::FindTimestamps(
 
   const size_t index = std::distance(timestamps_.begin(), it);
 
+  // Now, update the pointer cache.
   pointer.index_ = index - 1;
   t0 = timestamp(index - 1);
   pointer.t0_ = t0;
   t1 = timestamp(index);
   pointer.t1_ = t1;
+  // And clear out the point cache since the points changed.
+  pointer.other_points_.clear();
 
   if (other != nullptr && !other->timestamps_empty()) {
     // Ok, we now need to find all points within our range in the matched
@@ -688,8 +698,6 @@ NoncausalTimestampFilter::SingleFilter::FindTimestamps(
 
       if (std::get<0>(*other_t0_it) + std::get<1>(*other_t0_it) <
           std::get<0>(pointer.t1_)) {
-        pointer.other_points_.clear();
-
         // Now, we've got a range.  [other_t0_it, other_t1_it).
         for (auto other_it = other_t0_it; other_it != other_t1_it; ++other_it) {
           const std::tuple<monotonic_clock::time_point,

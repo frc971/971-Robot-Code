@@ -306,7 +306,12 @@ class NoncausalTimestampFilter {
     std::tuple<monotonic_clock::time_point, std::chrono::nanoseconds> t1_ =
         std::make_tuple(monotonic_clock::min_time, std::chrono::nanoseconds(0));
 
-    // List of points and their associated times going the other way.
+    // List of points and their associated times going the other way.  This lets
+    // us handle when there is a large gap in timestamps, but time drifts in
+    // such a way to create an impossible situation when the points are
+    // connected by straight lines.
+    //
+    // These need to be between t0 and t1.
     std::vector<std::pair<size_t, std::tuple<monotonic_clock::time_point,
                                              std::chrono::nanoseconds>>>
         other_points_;
@@ -869,6 +874,14 @@ class NoncausalTimestampFilter {
     return result;
   }
 
+  // Interpolates between two points for time ta using the provided pointer, t0,
+  // and t1.  If use_other is true, then we use other_points_ inside pointer to
+  // also interpolate with.  This lets us handle cases where we have
+  // observations only going one way, but the filter lines cross because time
+  // drifted.
+  //
+  // Returns the 2 points which define the line we should interpolate along, and
+  // an updated pointer caching what points were actually used.
   static std::pair<
       Pointer,
       std::pair<

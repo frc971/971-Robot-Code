@@ -770,25 +770,32 @@ void NewtonSolver::PrintDerivatives(const Problem::Derivatives &derivatives,
     const Eigen::Ref<const Eigen::VectorXd> v =
         y.block(x.rows() + lambda.rows(), 0, derivatives.A.rows(), 1);
     SOLVE_VLOG(my_solve_number_, verbosity)
-        << "   " << prefix << "x: " << x.transpose().format(heavy);
+        << std::setprecision(12) << "   " << prefix
+        << "x: " << x.transpose().format(heavy);
     SOLVE_VLOG(my_solve_number_, verbosity)
-        << "   " << prefix << "lambda: " << lambda.transpose().format(heavy);
+        << std::setprecision(12) << "   " << prefix
+        << "lambda: " << lambda.transpose().format(heavy);
     SOLVE_VLOG(my_solve_number_, verbosity)
-        << "   " << prefix << "v: " << v.transpose().format(heavy);
+        << std::setprecision(12) << "   " << prefix
+        << "v: " << v.transpose().format(heavy);
     SOLVE_VLOG(my_solve_number_, verbosity)
-        << "  " << prefix
+        << std::setprecision(12) << "  " << prefix
         << "hessian:     " << derivatives.hessian.format(heavy);
     SOLVE_VLOG(my_solve_number_, verbosity)
-        << "  " << prefix
+        << std::setprecision(12) << "  " << prefix
         << "gradient:    " << derivatives.gradient.format(heavy);
     SOLVE_VLOG(my_solve_number_, verbosity)
-        << "  " << prefix << "A:           " << derivatives.A.format(heavy);
+        << std::setprecision(12) << "  " << prefix
+        << "A:           " << derivatives.A.format(heavy);
     SOLVE_VLOG(my_solve_number_, verbosity)
-        << "  " << prefix << "Ax-b:        " << derivatives.Axmb.format(heavy);
+        << std::setprecision(12) << "  " << prefix
+        << "Ax-b:        " << derivatives.Axmb.format(heavy);
     SOLVE_VLOG(my_solve_number_, verbosity)
-        << "  " << prefix << "f:           " << derivatives.f.format(heavy);
+        << std::setprecision(12) << "  " << prefix
+        << "f:           " << derivatives.f.format(heavy);
     SOLVE_VLOG(my_solve_number_, verbosity)
-        << "  " << prefix << "df:          " << derivatives.df.format(heavy);
+        << std::setprecision(12) << "  " << prefix
+        << "df:          " << derivatives.df.format(heavy);
   }
 }
 
