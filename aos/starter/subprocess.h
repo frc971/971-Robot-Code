@@ -68,7 +68,14 @@ class MemoryCGroup {
 // automatically.
 class Application {
  public:
-  enum class QuietLogging { kYes, kNo };
+  enum class QuietLogging {
+    kYes,
+    kNo,
+    // For debugging child processes not behaving as expected. When a child
+    // experiences an event such as exiting with an error code or dying to due a
+    // signal, this option will cause a log statement to be printed.
+    kNotForDebugging,
+  };
   Application(const aos::Application *application, aos::EventLoop *event_loop,
               std::function<void()> on_change,
               QuietLogging quiet_flag = QuietLogging::kNo);
@@ -126,6 +133,8 @@ class Application {
 
   bool autorestart() const { return autorestart_; }
   void set_autorestart(bool autorestart) { autorestart_ = autorestart; }
+
+  LastStopReason stop_reason() const { return stop_reason_; }
 
   const std::string &GetStdout();
   const std::string &GetStderr();

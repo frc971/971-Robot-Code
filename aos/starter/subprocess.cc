@@ -141,11 +141,13 @@ Application::Application(std::string_view name,
       restart_timer_(event_loop_->AddTimer([this] { DoStart(); })),
       stop_timer_(event_loop_->AddTimer([this] {
         if (kill(pid_, SIGKILL) == 0) {
-          LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+          LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo ||
+                              quiet_flag_ == QuietLogging::kNotForDebugging)
               << "Failed to stop, sending SIGKILL to '" << name_
               << "' pid: " << pid_;
         } else {
-          PLOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+          PLOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo ||
+                               quiet_flag_ == QuietLogging::kNotForDebugging)
               << "Failed to send SIGKILL to '" << name_ << "' pid: " << pid_;
           stop_timer_->Schedule(event_loop_->monotonic_now() +
                                 std::chrono::seconds(1));
@@ -213,7 +215,8 @@ void Application::DoStart() {
 
   if (pid != 0) {
     if (pid == -1) {
-      PLOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+      PLOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo ||
+                           quiet_flag_ == QuietLogging::kNotForDebugging)
           << "Failed to fork '" << name_ << "'";
       stop_reason_ = aos::starter::LastStopReason::FORK_ERR;
       status_ = aos::starter::State::STOPPED;
@@ -323,7 +326,8 @@ void Application::DoStart() {
   // If we got here, something went wrong
   status_pipes_.write->Write(
       static_cast<uint32_t>(aos::starter::LastStopReason::EXECV_ERR));
-  PLOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+  PLOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo ||
+                       quiet_flag_ == QuietLogging::kNotForDebugging)
       << "Could not execute " << name_ << " (" << path_ << ')';
 
   _exit(EXIT_FAILURE);
@@ -371,12 +375,18 @@ void Application::DoStop(bool restart) {
   switch (status_) {
     case aos::starter::State::STARTING:
     case aos::starter::State::RUNNING: {
-      LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
+      LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo ||
+                       quiet_flag_ == QuietLogging::kNotForDebugging)
           << "Stopping '" << name_ << "' pid: " << pid_ << " with signal "
           << SIGINT;
       status_ = aos::starter::State::STOPPING;
 
-      kill(pid_, SIGINT);
+      if (kill(pid_, SIGINT) != 0) {
+        PLOG_IF(INFO, quiet_flag_ == QuietLogging::kNo ||
+                          quiet_flag_ == QuietLogging::kNotForDebugging)
+            << "Failed to send signal " << SIGINT << " to '" << name_
+            << "' pid: " << pid_;
+      }
 
       // Watchdog timer to SIGKILL application if it is still running 1 second
       // after SIGINT
@@ -591,7 +601,8 @@ bool Application::MaybeHandleSignal() {
             << "Application '" << name_ << "' pid " << pid_
             << " exited with status " << exit_code_.value();
       } else {
-        LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
+        LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo ||
+                            quiet_flag_ == QuietLogging::kNotForDebugging)
             << "Failed to start '" << name_ << "' on pid " << pid_
             << " : Exited with status " << exit_code_.value();
       }
@@ -609,7 +620,8 @@ bool Application::MaybeHandleSignal() {
             << "Application '" << name_ << "' pid " << pid_
             << " exited with status " << exit_code_.value();
       } else {
-        if (quiet_flag_ == QuietLogging::kNo) {
+        if (quiet_flag_ == QuietLogging::kNo ||
+            quiet_flag_ == QuietLogging::kNotForDebugging) {
           std::string version_string =
               latest_timing_report_version_.has_value()
                   ? absl::StrCat("'", latest_timing_report_version_.value(),
