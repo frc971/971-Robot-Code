@@ -37,12 +37,12 @@ bool MultiNodeLogIsReadable(const LogFilesContainer &log_files,
   multinode_estimator.set_reboot_found(
       [config](distributed_clock::time_point reboot_time,
                const std::vector<logger::BootTimestamp> &node_times) {
-        LOG(INFO) << "Rebooted at distributed " << reboot_time;
+        VLOG(1) << "Rebooted at distributed " << reboot_time;
         size_t node_index = 0;
         for (const logger::BootTimestamp &time : node_times) {
-          LOG(INFO) << "  "
-                    << config->nodes()->Get(node_index)->name()->string_view()
-                    << " " << time;
+          VLOG(1) << "  "
+                  << config->nodes()->Get(node_index)->name()->string_view()
+                  << " " << time;
           ++node_index;
         }
       });
@@ -94,7 +94,7 @@ bool MultiNodeLogIsReadable(const LogFilesContainer &log_files,
   // logger on purpose.  It loads in *all* the timestamps in 1 go per node,
   // ignoring memory usage.
   for (const Node *node : configuration::GetNodes(config)) {
-    LOG(INFO) << "Reading all data for " << node->name()->string_view();
+    VLOG(1) << "Reading all data for " << node->name()->string_view();
     const size_t node_index = configuration::GetNodeIndex(config, node);
     TimestampMapper *timestamp_mapper = mappers[node_index].get();
     if (timestamp_mapper == nullptr) {
@@ -117,11 +117,11 @@ bool MultiNodeLogIsReadable(const LogFilesContainer &log_files,
   if (!next_timestamp.has_value() || !next_timestamp.value().has_value()) {
     return preempt_destructor(false);
   }
-  LOG(INFO) << "Starting at:";
+  VLOG(1) << "Starting at:";
   for (const Node *node : configuration::GetNodes(config)) {
     const size_t node_index = configuration::GetNodeIndex(config, node);
-    LOG(INFO) << "  " << node->name()->string_view() << " -> "
-              << std::get<1>(*next_timestamp.value().value())[node_index].time;
+    VLOG(1) << "  " << node->name()->string_view() << " -> "
+            << std::get<1>(*next_timestamp.value().value())[node_index].time;
   }
 
   std::vector<monotonic_clock::time_point> just_monotonic(
@@ -148,7 +148,7 @@ bool MultiNodeLogIsReadable(const LogFilesContainer &log_files,
         std::get<0>(*next_timestamp.value().value()));
   }
 
-  LOG(INFO) << "Done";
+  VLOG(1) << "Done";
 
   return preempt_destructor(true);
 }
