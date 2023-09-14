@@ -143,7 +143,7 @@ mod tests {
     use runfiles::Runfiles;
 
     use aos_configuration::read_config_from;
-    use aos_init::test_init;
+    use aos_test_init::test_init;
     use ping_rust_fbs::aos::examples::PingBuilder;
 
     // A really basic test of the functionality here.

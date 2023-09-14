@@ -198,6 +198,25 @@ autocxx_library(
     visibility = ["//visibility:public"],
 )
 
+autocxx_library(
+    name = "test_init_rs",
+    testonly = True,
+    srcs = ["test_init.rs"],
+    crate_name = "aos_test_init",
+    libs = [
+        "//aos/testing:tmpdir",
+    ],
+    override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":init_rs",
+    ],
+)
+
 cc_library(
     name = "realtime",
     srcs = [

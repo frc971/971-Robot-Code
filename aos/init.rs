@@ -8,19 +8,7 @@ safety!(unsafe)
 generate!("aos::InitFromRust")
 );
 
-/// Initializes things for a test.
-///
-/// TODO(Brian): Should we provide a proc macro attribute that handles calling this?
-///
-/// # Panics
-///
-/// Panics if non-test initialization has already been performed.
-pub fn test_init() {
-    init();
-    // TODO(Brian): Do we want any of the other stuff that `:gtest_main` has?
-    // TODO(Brian): Call `aos::SetShmBase` like `:gtest_main` does.
-}
-
+/// Initializes AOS.
 pub fn init() {
     static ONCE: Once = Once::new();
     ONCE.call_once(|| {

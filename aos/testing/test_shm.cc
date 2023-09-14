@@ -2,6 +2,8 @@
 
 #include <sys/mman.h>
 
+#include "gflags/gflags.h"
+
 #include "aos/logging/logging.h"
 #include "aos/testing/test_logging.h"
 

@@ -404,3 +404,14 @@ cc_library(
         "shm_observers.h",
     ],
 )
+
+cc_library(
+    name = "shm_base",
+    srcs = ["shm_base.cc"],
+    hdrs = ["shm_base.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)

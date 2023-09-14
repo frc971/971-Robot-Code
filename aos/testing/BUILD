@@ -8,6 +8,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos:init",
+        "//aos/testing:tmpdir",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_googletest//:gtest",
@@ -100,6 +101,9 @@ cc_library(
     hdrs = ["tmpdir.h"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//aos/ipc_lib:shm_base",
+    ],
 )
 
 cc_library(

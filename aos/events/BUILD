@@ -460,6 +460,7 @@ cc_library(
         "//aos:init",
         "//aos:realtime",
         "//aos/ipc_lib:lockless_queue",
+        "//aos/ipc_lib:shm_base",
         "//aos/ipc_lib:signalfd",
         "//aos/stl_mutex",
         "//aos/util:phased_loop",
@@ -622,7 +623,7 @@ rust_test(
     rustc_flags = ["-Crelocation-model=static"],
     deps = [
         ":ping_rust_fbs",
-        "//aos:init_rs",
+        "//aos:test_init_rs",
         "@crate_index//:futures",
         "@rules_rust//tools/runfiles",
     ],
@@ -672,7 +673,7 @@ rust_test(
     }),
     deps = [
         ":ping_rust_fbs",
-        "//aos:init_rs",
+        "//aos:test_init_rs",
         "@crate_index//:futures",
         "@rules_rust//tools/runfiles",
     ],

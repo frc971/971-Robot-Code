@@ -3,8 +3,6 @@
 DECLARE_string(boot_uuid);
 
 namespace aos {
-void SetShmBase(const std::string_view base);
-
 namespace message_bridge::testing {
 
 namespace chrono = std::chrono;
@@ -20,7 +18,7 @@ std::string ShmBase(const std::string_view node) {
 }
 
 void DoSetShmBase(const std::string_view node) {
-  aos::SetShmBase(ShmBase(node));
+  aos::testing::SetShmBase(ShmBase(node));
 }
 
 ThreadedEventLoopRunner::ThreadedEventLoopRunner(aos::ShmEventLoop *event_loop)

@@ -233,7 +233,7 @@ mod tests {
 
     use aos_configuration::read_config_from;
     use aos_events_event_loop_runtime::{Sender, Watcher};
-    use aos_init::test_init;
+    use aos_test_init::test_init;
     use ping_rust_fbs::aos::examples as ping;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Barrier;

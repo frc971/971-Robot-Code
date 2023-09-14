@@ -38,8 +38,6 @@ const char *Filename(const char *path) {
 
 }  // namespace
 
-DEFINE_string(shm_base, "/dev/shm/aos",
-              "Directory to place queue backing mmaped files in.");
 // This value is affected by the umask of the process which is calling it
 // and is set to the user's value by default (check yours running `umask` on
 // the command line).
@@ -58,10 +56,6 @@ DEFINE_string(application_name, Filename(program_invocation_name),
 namespace aos {
 
 using namespace shm_event_loop_internal;
-
-void SetShmBase(const std::string_view base) {
-  FLAGS_shm_base = std::string(base) + "/aos";
-}
 
 namespace {
 

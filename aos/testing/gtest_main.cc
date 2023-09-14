@@ -7,6 +7,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/init.h"
+#include "aos/testing/tmpdir.h"
 
 DEFINE_bool(print_logs, false,
             "Print the log messages as they are being generated.");
@@ -14,7 +15,6 @@ DEFINE_string(log_file, "",
               "Print all log messages to FILE instead of standard output.");
 
 namespace aos {
-void SetShmBase(const std::string_view base) __attribute__((weak));
 
 namespace testing {
 
@@ -48,12 +48,7 @@ GTEST_API_ int main(int argc, char **argv) {
 
   // Point shared memory away from /dev/shm if we are testing.  We don't care
   // about RT in this case, so if it is backed by disk, we are fine.
-  if (::aos::SetShmBase) {
-    const char *tmpdir_c_str = getenv("TEST_TMPDIR");
-    if (tmpdir_c_str != nullptr) {
-      aos::SetShmBase(tmpdir_c_str);
-    }
-  }
+  aos::testing::SetTestShmBase();
 
   return RUN_ALL_TESTS();
 }
