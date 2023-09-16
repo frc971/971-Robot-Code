@@ -12,13 +12,12 @@
 #include "frc971/vision/vision_generated.h"
 #include "y2023/vision/vision_util.h"
 
-DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
-DEFINE_string(channel, "/camera", "Channel name for the image.");
-
 DEFINE_string(capture, "",
               "If set, capture a single image and save it to this filename.");
-
+DEFINE_string(channel, "/camera", "Channel name for the image.");
+DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_int32(rate, 100, "Time in milliseconds to wait between images");
+DEFINE_double(scale, 1.0, "Scale factor for images being displayed");
 
 namespace y2023 {
 namespace vision {
@@ -57,6 +56,10 @@ bool DisplayLoop(const cv::Mat intrinsics, const cv::Mat dist_coeffs,
 
   cv::Mat undistorted_image;
   cv::undistort(bgr_image, undistorted_image, intrinsics, dist_coeffs);
+  if (FLAGS_scale != 1.0) {
+    cv::resize(undistorted_image, undistorted_image, cv::Size(), FLAGS_scale,
+               FLAGS_scale);
+  }
   cv::imshow("Display", undistorted_image);
 
   int keystroke = cv::waitKey(1);
