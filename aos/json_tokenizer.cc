@@ -23,6 +23,19 @@ void Tokenizer::ConsumeWhitespace() {
         }
         ConsumeChar();
       }
+    } else if (Consume("//")) {
+      // C++ style comment.  Keep consuming chars until newline, or until the
+      // end of the file if this is the last line (no newline at end of file).
+      while (true) {
+        ConsumeChar();
+        if (AtEnd()) {
+          return;
+        }
+        if (Char() == '\n') {
+          ++linenumber_;
+          break;
+        }
+      }
     } else {
       // There is no fail.  Once we are out of whitespace (including 0 of it),
       // declare success.

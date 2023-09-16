@@ -41,7 +41,11 @@ class JsonToFlatbufferTest : public ::testing::Test {
     printf("Back to string via TypeTable: %s\n", back_typetable.c_str());
     printf("Back to string via reflection: %s\n", back_reflection.c_str());
 
-    return back_typetable == out && back_reflection == out;
+    const bool as_expected = back_typetable == out && back_reflection == out;
+    if (!as_expected) {
+      printf("But expected: %s\n", out.c_str());
+    }
+    return as_expected;
   }
 };
 
@@ -230,9 +234,33 @@ TEST_F(JsonToFlatbufferTest, EmptyMessage) {
   EXPECT_TRUE(JsonAndBack("{  }"));
 }
 
-// Tests that comments get stripped.
-TEST_F(JsonToFlatbufferTest, Comments) {
-  EXPECT_TRUE(JsonAndBack("{ /* foo */ \"vector_foo_double\": [ 9, 7, 1 ] }",
+// Tests that C style comments get stripped.
+TEST_F(JsonToFlatbufferTest, CStyleComments) {
+  EXPECT_TRUE(JsonAndBack(R"({
+  /* foo */
+  "vector_foo_double": [ 9, 7, 1 ] /* foo */
+} /* foo */)",
+                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+}
+
+// Tests that C++ style comments get stripped.
+TEST_F(JsonToFlatbufferTest, CppStyleComments) {
+  EXPECT_TRUE(JsonAndBack(R"({
+  // foo
+  "vector_foo_double": [ 9, 7, 1 ] // foo
+} // foo)",
+                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+}
+
+// Tests that mixed style comments get stripped.
+TEST_F(JsonToFlatbufferTest, MixedStyleComments) {
+  // Weird comments do not throw us off.
+  EXPECT_TRUE(JsonAndBack(R"({
+  // foo /* foo */
+  "vector_foo_double": [ 9, 7, 1 ] /* // foo */
+}
+// foo
+/* foo */)",
                           "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
 }
 
