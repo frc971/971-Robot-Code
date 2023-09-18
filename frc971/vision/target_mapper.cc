@@ -224,7 +224,7 @@ TargetMapper::TargetMapper(
     : target_constraints_(target_constraints),
       T_frozen_actual_(Eigen::Vector3d::Zero()),
       R_frozen_actual_(Eigen::Quaterniond::Identity()),
-      vis_robot_(cv::Size(1280, 1000)) {
+      vis_robot_(cv::Size(kImageWidth_, kImageHeight_)) {
   aos::FlatbufferDetachedBuffer<TargetMap> target_map =
       aos::JsonFileToFlatbuffer<TargetMap>(target_poses_path);
   for (const auto *target_pose_fbs : *target_map.message().target_poses()) {
@@ -243,7 +243,7 @@ TargetMapper::TargetMapper(
       target_constraints_(target_constraints),
       T_frozen_actual_(Eigen::Vector3d::Zero()),
       R_frozen_actual_(Eigen::Quaterniond::Identity()),
-      vis_robot_(cv::Size(1280, 1000)) {
+      vis_robot_(cv::Size(kImageWidth_, kImageHeight_)) {
   CountConstraints();
 }
 
@@ -369,9 +369,10 @@ std::unique_ptr<ceres::CostFunction>
 TargetMapper::BuildMapFittingOptimizationProblem(ceres::Problem *problem) {
   // Set up robot visualization.
   vis_robot_.ClearImage();
-  constexpr int kImageWidth = 1280;
-  constexpr double kFocalLength = 500.0;
-  vis_robot_.SetDefaultViewpoint(kImageWidth, kFocalLength);
+  // Compute focal length so that image shows field with viewpoint at 10m above
+  // it (default for viewer)
+  const double kFocalLength = kImageWidth_ * 10.0 / kFieldWidth_;
+  vis_robot_.SetDefaultViewpoint(kImageWidth_, kFocalLength);
 
   const size_t num_targets = FLAGS_max_target_id - FLAGS_min_target_id;
   // Translation and rotation error for each target
@@ -428,6 +429,7 @@ void TargetMapper::Solve(std::string_view field_name,
   CHECK(SolveOptimizationProblem(&target_pose_problem_2))
       << "The target pose solve 2 was not successful, exiting.";
 
+  LOG(INFO) << "Solving the overall map's best alignment to the previous map";
   ceres::Problem map_fitting_problem(
       {.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP});
   std::unique_ptr<ceres::CostFunction> map_fitting_cost_function =
@@ -503,7 +505,6 @@ std::string TargetMapper::MapToJson(std::string_view field_name) const {
 }
 
 namespace {
-
 // Hacks to extract a double from a scalar, which is either a ceres jet or a
 // double. Only used for debugging and displaying.
 template <typename S>
@@ -587,8 +588,11 @@ bool TargetMapper::operator()(const S *const translation,
         kRotationScalar * R_ideal_actual.angle() * R_ideal_actual.axis().z();
 
     if (FLAGS_visualize_solver) {
+      LOG(INFO) << std::to_string(id) + std::string("-est") << " at "
+                << ScalarAffineToDouble(H_world_actual).matrix();
       vis_robot_.DrawFrameAxes(ScalarAffineToDouble(H_world_actual),
-                               std::to_string(id), cv::Scalar(0, 255, 0));
+                               std::to_string(id) + std::string("-est"),
+                               cv::Scalar(0, 255, 0));
       vis_robot_.DrawFrameAxes(ScalarAffineToDouble(H_world_ideal),
                                std::to_string(id), cv::Scalar(255, 255, 255));
     }
