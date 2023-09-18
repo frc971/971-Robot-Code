@@ -100,7 +100,8 @@ class SimulatedWatcher : public WatcherState, public EventScheduler::Event {
 
   void Handle() noexcept override;
 
-  void Startup(EventLoop * /*event_loop*/) override {}
+  void Construct() override {}
+  void Startup() override {}
 
   void Schedule(std::shared_ptr<SimulatedMessage> message);
 

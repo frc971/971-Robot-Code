@@ -2,10 +2,12 @@
 #define AOS_IPC_LIB_ROBUST_OWNERSHIP_TRACKER_H_
 
 #include <linux/futex.h>
+#include <sys/syscall.h>
 
 #include <string>
 
 #include "aos/ipc_lib/aos_sync.h"
+#include "aos/util/top.h"
 
 namespace aos::ipc_lib {
 
@@ -27,11 +29,6 @@ class ThreadOwnerStatusSnapshot {
 
   // Returns true if no one has claimed ownership.
   bool IsUnclaimed() const { return futex_ == 0; }
-
-  // Returns true if either ownership hasn't been acquired or the owner died.
-  bool IsUnclaimedOrOwnerIsDead() const {
-    return IsUnclaimed() || OwnerIsDead();
-  }
 
   // Returns the thread ID (a.k.a. "tid") of the owning thread. Use this when
   // trying to access the /proc entry that corresponds to the owning thread for
@@ -55,17 +52,57 @@ class ThreadOwnerStatusSnapshot {
 // All methods other than Load* must be accessed under a mutex.
 class RobustOwnershipTracker {
  public:
-  // Loads all the contents of the ownership tracker with Acquire memory
-  // ordering.
+  static constexpr uint64_t kNoStartTimeTicks =
+      std::numeric_limits<uint64_t>::max();
+
+  static uint64_t ReadStartTimeTicks(pid_t tid) {
+    if (tid == 0) {
+      return kNoStartTimeTicks;
+    }
+    std::optional<aos::util::ProcStat> proc_stat = util::ReadProcStat(tid);
+    if (!proc_stat.has_value()) {
+      return kNoStartTimeTicks;
+    }
+    return proc_stat->start_time_ticks;
+  }
+
+  // Loads the realtime-compatible contents of the ownership tracker with
+  // Acquire memory ordering.
   ThreadOwnerStatusSnapshot LoadAcquire() const {
     return ThreadOwnerStatusSnapshot(
         __atomic_load_n(&(mutex_.futex), __ATOMIC_ACQUIRE));
   }
 
-  // Loads all the contents of the ownership tracker with Relaxed memory order.
+  // Loads all the realtime-compatible contents of the ownership tracker with
+  // Relaxed memory order.
   ThreadOwnerStatusSnapshot LoadRelaxed() const {
     return ThreadOwnerStatusSnapshot(
         __atomic_load_n(&(mutex_.futex), __ATOMIC_RELAXED));
+  }
+
+  // Checks both the robust futex and dredges through /proc to see if the thread
+  // is alive. As per the class description, this must only be called under a
+  // mutex. This must not be called in a realtime context and it is slow.
+  bool OwnerIsDefinitelyAbsolutelyDead() const {
+    auto loaded = LoadAcquire();
+    if (loaded.OwnerIsDead()) {
+      return true;
+    }
+    if (loaded.IsUnclaimed()) {
+      return false;
+    }
+    const uint64_t proc_start_time_ticks = ReadStartTimeTicks(loaded.tid());
+    if (proc_start_time_ticks == kNoStartTimeTicks) {
+      LOG(ERROR) << "Detected that PID " << loaded.tid() << " died.";
+      return true;
+    }
+
+    if (proc_start_time_ticks != start_time_ticks_) {
+      LOG(ERROR) << "Detected that PID " << loaded.tid()
+                 << " died from a starttime missmatch.";
+      return true;
+    }
+    return false;
   }
 
   // Clears all ownership state.
@@ -79,6 +116,7 @@ class RobustOwnershipTracker {
     // want the kernel to know about this element via the linked list the next
     // time someone takes ownership.
     __atomic_store_n(&(mutex_.futex), 0, __ATOMIC_RELEASE);
+    start_time_ticks_ = kNoStartTimeTicks;
   }
 
   // Returns true if this thread holds ownership.
@@ -86,7 +124,15 @@ class RobustOwnershipTracker {
 
   // Acquires ownership. Other threads will know that this thread holds the
   // ownership or be notified if this thread dies.
-  void Acquire() { death_notification_init(&mutex_); }
+  void Acquire() {
+    pid_t tid = syscall(SYS_gettid);
+    assert(tid > 0);
+    const uint64_t proc_start_time_ticks = ReadStartTimeTicks(tid);
+    CHECK_NE(proc_start_time_ticks, kNoStartTimeTicks);
+
+    start_time_ticks_ = proc_start_time_ticks;
+    death_notification_init(&mutex_);
+  }
 
   // Releases ownership.
   //
@@ -94,6 +140,7 @@ class RobustOwnershipTracker {
   void Release() {
     // Must be opposite order of Acquire.
     death_notification_release(&mutex_);
+    start_time_ticks_ = kNoStartTimeTicks;
   }
 
   // Marks the owner as dead if the specified tid is the current owner. In other
@@ -118,6 +165,9 @@ class RobustOwnershipTracker {
   //   appropriately.
   // - Owners can clean up after dead threads.
   aos_mutex mutex_;
+
+  // Thread's start time ticks.
+  std::atomic<uint64_t> start_time_ticks_;
 };
 
 }  // namespace aos::ipc_lib

@@ -408,7 +408,8 @@ class WatcherState {
   void set_timing_report(timing::Watcher *watcher);
   void ResetReport();
 
-  virtual void Startup(EventLoop *event_loop) = 0;
+  virtual void Construct() = 0;
+  virtual void Startup() = 0;
 
  protected:
   const int channel_index_;

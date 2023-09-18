@@ -172,7 +172,7 @@ bool DoCleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
   size_t valid_senders = 0;
   for (size_t i = 0; i < num_senders; ++i) {
     Sender *sender = memory->GetSender(i);
-    if (!sender->ownership_tracker.LoadAcquire().OwnerIsDead()) {
+    if (!sender->ownership_tracker.OwnerIsDefinitelyAbsolutelyDead()) {
       // Not dead.
       ++valid_senders;
       continue;
@@ -257,7 +257,7 @@ bool DoCleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
   // read it before it's set.
   for (size_t i = 0; i < num_pinners; ++i) {
     Pinner *const pinner = memory->GetPinner(i);
-    if (!pinner->ownership_tracker.LoadAcquire().OwnerIsDead()) {
+    if (!pinner->ownership_tracker.OwnerIsDefinitelyAbsolutelyDead()) {
       continue;
     }
     pinner->pinned.Invalidate();
@@ -280,7 +280,7 @@ bool DoCleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
     num_missing = 0;
     for (size_t i = 0; i < num_senders; ++i) {
       Sender *const sender = memory->GetSender(i);
-      if (sender->ownership_tracker.LoadAcquire().OwnerIsDead()) {
+      if (sender->ownership_tracker.OwnerIsDefinitelyAbsolutelyDead()) {
         if (!need_recovery[i]) {
           return false;
         }
@@ -325,7 +325,7 @@ bool DoCleanup(LocklessQueueMemory *memory, const GrabQueueSetupLockOrDie &) {
     const size_t starting_num_missing = num_missing;
     for (size_t i = 0; i < num_senders; ++i) {
       Sender *sender = memory->GetSender(i);
-      if (!sender->ownership_tracker.LoadAcquire().OwnerIsDead()) {
+      if (!sender->ownership_tracker.OwnerIsDefinitelyAbsolutelyDead()) {
         CHECK(!need_recovery[i]) << ": Somebody else recovered a sender: " << i;
         continue;
       }
@@ -733,7 +733,8 @@ LocklessQueueWatcher::LocklessQueueWatcher(LocklessQueueMemory *memory,
     // it needs to happen-after whatever that process did before dying.
     auto *const ownership_tracker =
         &(memory_->GetWatcher(i)->ownership_tracker);
-    if (ownership_tracker->LoadAcquire().IsUnclaimedOrOwnerIsDead()) {
+    if (ownership_tracker->LoadAcquire().IsUnclaimed() ||
+        ownership_tracker->OwnerIsDefinitelyAbsolutelyDead()) {
       watcher_index_ = i;
       // Relaxed is OK here because we're the only task going to touch it
       // between here and the write in death_notification_init below (other

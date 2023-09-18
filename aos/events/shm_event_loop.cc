@@ -557,10 +557,14 @@ class ShmWatcherState : public WatcherState {
     event_loop_->RemoveEvent(&event_);
   }
 
-  void Startup(EventLoop *event_loop) override {
+  void Construct() override {
+    event_loop_->CheckCurrentThread();
+    CHECK(RegisterWakeup(event_loop_->runtime_realtime_priority()));
+  }
+
+  void Startup() override {
     event_loop_->CheckCurrentThread();
     simple_shm_fetcher_.PointAtNextQueueIndex();
-    CHECK(RegisterWakeup(event_loop->runtime_realtime_priority()));
   }
 
   // Returns true if there is new data available.
@@ -1048,6 +1052,16 @@ void ShmEventLoop::Run() {
     if (!CPU_EQUAL(&affinity_, &default_affinity)) {
       ::aos::SetCurrentThreadAffinity(affinity_);
     }
+
+    // Construct the watchers, but don't update the next pointer. This also
+    // cleans up any watchers that previously died, and puts the nonrt work
+    // before going realtime.  After this happens, we will start queueing
+    // signals (which may be a bit of extra work to process, but won't cause any
+    // messages to be lost).
+    for (::std::unique_ptr<WatcherState> &watcher : watchers_) {
+      watcher->Construct();
+    }
+
     // Now, all the callbacks are setup.  Lock everything into memory and go RT.
     if (priority_ != 0) {
       ::aos::InitRT();
@@ -1059,9 +1073,10 @@ void ShmEventLoop::Run() {
     set_is_running(true);
 
     // Now that we are realtime (but before the OnRun handlers run), snap the
-    // queue index.
+    // queue index pointer to the newest message. This happens in RT so that we
+    // minimize the risk of losing messages.
     for (::std::unique_ptr<WatcherState> &watcher : watchers_) {
-      watcher->Startup(this);
+      watcher->Startup();
     }
 
     // Now that we are RT, run all the OnRun handlers.
