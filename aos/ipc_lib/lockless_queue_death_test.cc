@@ -104,10 +104,12 @@ TEST(LocklessQueueTest, Death) {
         // TestShmRobustness doesn't handle robust futexes.  It is happy to just
         // not crash with them.  We know what they are, and what the tid of the
         // holder is.  So go pretend to be the kernel and fix it for it.
-        PretendOwnerDied(&memory->queue_setup_lock, tid.Get());
+        PretendThatOwnerIsDeadForTesting(&memory->queue_setup_lock, tid.Get());
 
         for (size_t i = 0; i < config.num_senders; ++i) {
-          if (PretendOwnerDied(&memory->GetSender(i)->tid, tid.Get())) {
+          if (memory->GetSender(i)
+                  ->ownership_tracker.PretendThatOwnerIsDeadForTesting(
+                      tid.Get())) {
             // Print out before and after results if a sender died.  That is the
             // more fun case.
             print = true;

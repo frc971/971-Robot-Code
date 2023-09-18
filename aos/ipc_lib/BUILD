@@ -193,10 +193,12 @@ cc_library(
         "lockless_queue.cc",
         "lockless_queue_memory.h",
         "memory_mapped_queue.cc",
+        "robust_ownership_tracker.cc",
     ],
     hdrs = [
         "lockless_queue.h",
         "memory_mapped_queue.h",
+        "robust_ownership_tracker.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],

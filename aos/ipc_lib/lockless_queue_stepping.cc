@@ -458,14 +458,6 @@ void SharedTid::Set() { *tid_ = gettid(); }
 
 pid_t SharedTid::Get() { return *tid_; }
 
-bool PretendOwnerDied(aos_mutex *mutex, pid_t tid) {
-  if ((mutex->futex & FUTEX_TID_MASK) == tid) {
-    mutex->futex = FUTEX_OWNER_DIED;
-    return true;
-  }
-  return false;
-}
-
 }  // namespace testing
 }  // namespace ipc_lib
 }  // namespace aos

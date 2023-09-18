@@ -140,10 +140,6 @@ class SharedTid {
   pid_t *tid_;
 };
 
-// Sets FUTEX_OWNER_DIED if the owner was tid.  This fakes what the kernel does
-// with a robust mutex.
-bool PretendOwnerDied(aos_mutex *mutex, pid_t tid);
-
 #endif
 
 }  // namespace testing

@@ -14,6 +14,7 @@
 #include "aos/ipc_lib/aos_sync.h"
 #include "aos/ipc_lib/data_alignment.h"
 #include "aos/ipc_lib/index.h"
+#include "aos/ipc_lib/robust_ownership_tracker.h"
 #include "aos/time/time.h"
 #include "aos/uuid.h"
 
@@ -29,7 +30,7 @@ struct Watcher {
   // Note: this is only modified with the queue_setup_lock lock held, but may
   // always be read.
   // Any state modification should happen before the lock is acquired.
-  aos_mutex tid;
+  RobustOwnershipTracker ownership_tracker;
 
   // PID of the watcher.
   std::atomic<pid_t> pid;
@@ -46,7 +47,7 @@ struct Sender {
   //
   // Note: this is only modified with the queue_setup_lock lock held, but may
   // always be read.
-  aos_mutex tid;
+  RobustOwnershipTracker ownership_tracker;
 
   // Index of the message we will be filling out.
   AtomicIndex scratch_index;
@@ -59,7 +60,7 @@ struct Sender {
 // Structure to hold the state required to pin messages.
 struct Pinner {
   // The same as Sender::tid. See there for docs.
-  aos_mutex tid;
+  RobustOwnershipTracker ownership_tracker;
 
   // Queue index of the message we have pinned, or Invalid if there isn't one.
   AtomicQueueIndex pinned;
@@ -200,6 +201,10 @@ LocklessQueueMemory *InitializeLocklessQueueMemory(
 
 const static unsigned int kWakeupSignal = SIGRTMIN + 2;
 
+// Sets FUTEX_OWNER_DIED if the owner was tid.  This fakes what the kernel does
+// with a robust mutex.
+bool PretendThatOwnerIsDeadForTesting(aos_mutex *mutex, pid_t tid);
+
 // A convenient wrapper for accessing a lockless queue.
 class LocklessQueue {
  public:
@@ -268,7 +273,7 @@ class LocklessQueueWakeUpper {
   // up.  This isn't a copy of Watcher since tid is simpler to work with here
   // than the futex above.
   struct WatcherCopy {
-    pid_t tid;
+    ThreadOwnerStatusSnapshot ownership_snapshot;
     pid_t pid;
     int priority;
   };

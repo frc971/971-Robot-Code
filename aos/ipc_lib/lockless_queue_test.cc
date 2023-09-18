@@ -538,7 +538,7 @@ TEST_F(LocklessQueueTest, FetchEqFetchNext) {
         ::aos::ipc_lib::LocklessQueueMemory *const memory =
             reinterpret_cast<::aos::ipc_lib::LocklessQueueMemory *>(raw_memory);
         LocklessQueue queue(memory, memory, config);
-        PretendOwnerDied(&memory->queue_setup_lock, tid.Get());
+        PretendThatOwnerIsDeadForTesting(&memory->queue_setup_lock, tid.Get());
 
         if (VLOG_IS_ON(1)) {
           PrintLocklessQueueMemory(memory);
