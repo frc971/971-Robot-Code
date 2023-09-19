@@ -253,6 +253,16 @@ cc_library(
 )
 
 cc_test(
+    name = "robust_ownership_tracker_test",
+    srcs = ["robust_ownership_tracker_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":lockless_queue",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_test(
     name = "lockless_queue_test",
     timeout = "eternal",
     srcs = ["lockless_queue_test.cc"],

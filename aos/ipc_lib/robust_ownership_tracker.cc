@@ -5,10 +5,6 @@
 namespace aos {
 namespace ipc_lib {
 
-bool RobustOwnershipTracker::PretendThatOwnerIsDeadForTesting(pid_t died_tid) {
-  return ipc_lib::PretendThatOwnerIsDeadForTesting(&mutex_, died_tid);
-}
-
 ::std::string RobustOwnershipTracker::DebugString() const {
   ::std::stringstream s;
   s << "{.tid=aos_mutex(" << ::std::hex << mutex_.futex;

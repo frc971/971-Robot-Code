@@ -10,6 +10,9 @@
 #include "aos/util/top.h"
 
 namespace aos::ipc_lib {
+namespace testing {
+class RobustOwnershipTrackerTest;
+}  // namespace testing
 
 // Results of atomically loading the ownership state via RobustOwnershipTracker
 // below. This allows the state to be compared and queried later.
@@ -122,6 +125,11 @@ class RobustOwnershipTracker {
   // Returns true if this thread holds ownership.
   bool IsHeldBySelf() { return death_notification_is_held(&mutex_); }
 
+  // Returns true if the mutex is held by the provided tid.  This is primarily
+  // intended for testing. There should be no need to call this in production
+  // code.
+  bool IsHeldBy(pid_t tid) { return LoadRelaxed().tid() == tid; }
+
   // Acquires ownership. Other threads will know that this thread holds the
   // ownership or be notified if this thread dies.
   void Acquire() {
@@ -143,18 +151,12 @@ class RobustOwnershipTracker {
     start_time_ticks_ = kNoStartTimeTicks;
   }
 
-  // Marks the owner as dead if the specified tid is the current owner. In other
-  // words, after this call, a call to `LoadAcquire().OwnerIsDead()` may start
-  // returning true.
-  //
-  // The motivation here is for use in testing. DO NOT USE in production code.
-  // The logic here is only good enough for testing.
-  bool PretendThatOwnerIsDeadForTesting(pid_t tid);
-
   // Returns a string representing this object.
   std::string DebugString() const;
 
  private:
+  friend class testing::RobustOwnershipTrackerTest;
+
   // Robust futex to track ownership the normal way. The futex is inside the
   // mutex here. We use the wrapper mutex because the death_notification_*
   // functions operate on that instead of the futex directly.
