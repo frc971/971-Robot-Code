@@ -138,6 +138,14 @@ class NewtonSolver {
   Eigen::VectorXd Rt(const Problem::Derivatives &derivatives,
                      Eigen::Ref<const Eigen::VectorXd> y, double t);
 
+  // Returns the squared norm of r for the unconstrained problem.
+  // (10.3.1 in Convex Optimization,
+  //  https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf)
+  double RSquaredUnconstrained(const Problem::Derivatives &derivatives,
+                               Eigen::Ref<const Eigen::VectorXd> y,
+                               Eigen::Ref<const Eigen::VectorXd> step,
+                               double t);
+
   // Returns the constrained newtons step, t_inverse, and Rt.
   std::tuple<Eigen::VectorXd, double, Eigen::VectorXd> ConstrainedNewton(
       const Eigen::Ref<const Eigen::VectorXd> y,

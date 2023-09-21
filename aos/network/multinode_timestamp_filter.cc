@@ -508,6 +508,35 @@ Eigen::VectorXd NewtonSolver::Newton(const Problem::Derivatives &derivatives,
   return step;
 }
 
+double NewtonSolver::RSquaredUnconstrained(
+    const Problem::Derivatives &derivatives,
+    Eigen::Ref<const Eigen::VectorXd> y, Eigen::Ref<const Eigen::VectorXd> step,
+    double t) {
+  // See https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf section 10.3.1
+  //
+  // Note: all the prints are transposed so they fit on one line instead of
+  // having a ton of massive column vectors being printed all the time.
+  SOLVE_VLOG(my_solve_number_, 2)
+      << "    r_primal: " << std::setprecision(12) << std::fixed
+      << std::setfill(' ') << derivatives.Axmb.transpose().format(kHeavyFormat);
+  SOLVE_VLOG(my_solve_number_, 2)
+      << "    r_dual: " << std::setprecision(12) << std::fixed
+      << std::setfill(' ')
+      << derivatives.gradient.transpose().format(kHeavyFormat) << " + "
+      << ((y.block(derivatives.gradient.rows(), 0, 1, 1) +
+           t * step.block(derivatives.gradient.rows(), 0, 1, 1))
+              .transpose() *
+          derivatives.A)
+             .transpose()
+             .format(kHeavyFormat);
+  return (derivatives.gradient +
+          derivatives.A.transpose() *
+              (y.block(derivatives.gradient.rows(), 0, 1, 1) +
+               t * step.block(derivatives.gradient.rows(), 0, 1, 1)))
+             .squaredNorm() +
+         derivatives.Axmb.squaredNorm();
+}
+
 std::tuple<Eigen::VectorXd, size_t, size_t> NewtonSolver::SolveNewton(
     Problem *problem, const size_t max_iterations) {
   SOLVE_VLOG(my_solve_number_, 2)
@@ -515,13 +544,16 @@ std::tuple<Eigen::VectorXd, size_t, size_t> NewtonSolver::SolveNewton(
 
   problem->Prepare(my_solve_number_);
 
-  Eigen::VectorXd data = Eigen::VectorXd::Zero(problem->states());
+  Eigen::VectorXd y = Eigen::VectorXd::Zero(problem->states() + 1);
 
   size_t iteration = 0;
   size_t solution_node;
+
+  // The derivatives and squared norm of r(y).
+  Problem::Derivatives derivatives = problem->ComputeDerivatives(
+      my_solve_number_, y, false, false, absl::Span<const size_t>());
+  double r_orig_squared = RSquaredUnconstrained(derivatives, y, y, 0.0);
   while (true) {
-    const Problem::Derivatives derivatives = problem->ComputeDerivatives(
-        my_solve_number_, data, false, false, absl::Span<const size_t>());
     const Eigen::VectorXd step = Newton(derivatives, iteration);
     solution_node = derivatives.solution_node;
 
@@ -530,10 +562,11 @@ std::tuple<Eigen::VectorXd, size_t, size_t> NewtonSolver::SolveNewton(
         << std::setfill(' ') << step.transpose().format(kHeavyFormat);
 
     // We now have a search direction.  Line search and go.
+    double t = 1.0;
 
-    // We got there if the max step is small (this is strongly correlated to the
-    // gradient since the Hessian is constant), and our solution node's time is
-    // also close.
+    // We got there if the max step is small (this is strongly correlated to
+    // the gradient since the Hessian is constant), and our solution node's
+    // time is also close.
 
     // Grad is < epsilon.
     // Dual is < epsilon too.
@@ -543,7 +576,30 @@ std::tuple<Eigen::VectorXd, size_t, size_t> NewtonSolver::SolveNewton(
       break;
     }
 
-    data += step.block(0, 0, problem->states(), 1);
+    // Now, do line search.
+    while (true) {
+      SOLVE_VLOG(my_solve_number_, 3) << "   Trying t: " << t;
+      Problem::Derivatives new_derivatives =
+          problem->ComputeDerivatives(my_solve_number_, y + t * step, false,
+                                      false, absl::Span<const size_t>());
+      const double r_squared =
+          RSquaredUnconstrained(new_derivatives, y, step, t);
+      // See Boyd, section 10.3.2, algorithm 10.2
+      if (r_squared <= std::pow(1.0 - kAlpha * t, 2.0) * r_orig_squared) {
+        // Save the derivatives and norm computed for the next iteration to save
+        // CPU.
+        derivatives = std::move(new_derivatives);
+        r_orig_squared = r_squared;
+        SOLVE_VLOG(my_solve_number_, 3)
+            << "  Line search terminated with a step of " << t;
+        break;
+      } else {
+        CHECK_NE(t, 0.0) << ": Failed on solve " << my_solve_number_;
+      }
+      t *= kBeta;
+    }
+
+    y += t * step;
 
     ++iteration;
 
@@ -555,8 +611,8 @@ std::tuple<Eigen::VectorXd, size_t, size_t> NewtonSolver::SolveNewton(
     // true for the first solution.  Because we control the solver, as we
     // determine that the double is getting too big, we can move that
     // information to the int64 base clock.  Threshold this to not be *too* big
-    // since it makes it hard to debug as the data keeps jumping around.
-    problem->Update(my_solve_number_, data);
+    // since it makes it hard to debug as y keeps jumping around.
+    problem->Update(my_solve_number_, y);
 
     // And finally, don't let us iterate forever.  If it isn't converging,
     // report back.
@@ -571,7 +627,8 @@ std::tuple<Eigen::VectorXd, size_t, size_t> NewtonSolver::SolveNewton(
 
   SOLVE_VLOG(my_solve_number_, 1)
       << "Took " << iteration << " iterations to solve.";
-  return std::make_tuple(std::move(data), solution_node, iteration);
+  return std::make_tuple(y.block(0, 0, problem->states(), 1), solution_node,
+                         iteration);
 }
 
 Problem::Derivatives NewtonSolver::AddConstraintSlackVariable(
