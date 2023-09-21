@@ -116,6 +116,10 @@ class TargetMapper {
   Eigen::Translation3d T_frozen_actual_;
   Eigen::Quaterniond R_frozen_actual_;
 
+  const double kFieldWidth_ = 20.0;  // 20 meters across
+  const int kImageWidth_ = 1000;
+  const int kImageHeight_ =
+      kImageWidth_ * 3.0 / 4.0;  // Roughly matches field aspect ratio
   mutable VisualizeRobot vis_robot_;
 
   Stats stats_with_outliers_;
