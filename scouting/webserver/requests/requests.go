@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2023_data_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2023_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting_response"
@@ -58,6 +60,8 @@ type SubmitDriverRankingResponseT = submit_driver_ranking_response.SubmitDriverR
 type SubmitActions = submit_actions.SubmitActions
 type Action = submit_actions.Action
 type SubmitActionsResponseT = submit_actions_response.SubmitActionsResponseT
+type Delete2023DataScouting = delete_2023_data_scouting.Delete2023DataScouting
+type Delete2023DataScoutingResponseT = delete_2023_data_scouting_response.Delete2023DataScoutingResponseT
 
 // The interface we expect the database abstraction to conform to.
 // We use an interface here because it makes unit testing easier.
@@ -76,6 +80,8 @@ type Database interface {
 	AddNotes(db.NotesData) error
 	AddDriverRanking(db.DriverRankingData) error
 	AddAction(db.Action) error
+	DeleteFromStats(string, int32, int32, string) error
+	DeleteFromActions(string, int32, int32, string) error
 }
 
 // Handles unknown requests. Just returns a 404.
@@ -871,6 +877,50 @@ func (handler submitActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.R
 	w.Write(builder.FinishedBytes())
 }
 
+type Delete2023DataScoutingHandler struct {
+	db Database
+}
+
+func (handler Delete2023DataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "Delete2023DataScouting", delete_2023_data_scouting.GetRootAsDelete2023DataScouting)
+	if !success {
+		return
+	}
+
+	err = handler.db.DeleteFromStats(
+		string(request.CompLevel()),
+		request.MatchNumber(),
+		request.SetNumber(),
+		string(request.TeamNumber()))
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete from stats: %v", err))
+		return
+	}
+
+	err = handler.db.DeleteFromActions(
+		string(request.CompLevel()),
+		request.MatchNumber(),
+		request.SetNumber(),
+		string(request.TeamNumber()))
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete from actions: %v", err))
+		return
+	}
+
+	var response Delete2023DataScoutingResponseT
+	builder := flatbuffers.NewBuilder(10)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.HandleFunc("/requests", unknown)
 	scoutingServer.Handle("/requests/request/all_matches", requestAllMatchesHandler{db})
@@ -883,4 +933,5 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.Handle("/requests/request/shift_schedule", requestShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_driver_ranking", SubmitDriverRankingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_actions", submitActionsHandler{db})
+	scoutingServer.Handle("/requests/delete/delete_2023_data_scouting", Delete2023DataScoutingHandler{db})
 }

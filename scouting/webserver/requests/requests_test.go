@@ -7,6 +7,7 @@ import (
 
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/debug"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2023_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings"
@@ -907,6 +908,112 @@ func TestAddingActions(t *testing.T) {
 	}
 }
 
+// Validates that we can delete stats.
+func TestDeleteFromStats(t *testing.T) {
+	database := MockDatabase{
+		stats2023: []db.Stats2023{
+			{
+				TeamNumber: "3634", MatchNumber: 1, SetNumber: 2,
+				CompLevel: "quals", StartingQuadrant: 3, LowCubesAuto: 10,
+				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 0,
+				LowConesAuto: 1, MiddleConesAuto: 2, HighConesAuto: 1,
+				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
+				HighCubes: 2, CubesDropped: 1, LowCones: 1,
+				MiddleCones: 2, HighCones: 0, ConesDropped: 1, SuperchargedPieces: 0,
+				AvgCycle: 34, Mobility: false, DockedAuto: true, EngagedAuto: false,
+				BalanceAttemptAuto: false, Docked: false, Engaged: false,
+				BalanceAttempt: true, CollectedBy: "isaac",
+			},
+			{
+				TeamNumber: "2343", MatchNumber: 1, SetNumber: 2,
+				CompLevel: "quals", StartingQuadrant: 1, LowCubesAuto: 0,
+				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 2,
+				LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
+				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
+				HighCubes: 1, CubesDropped: 0, LowCones: 0,
+				MiddleCones: 2, HighCones: 1, ConesDropped: 1, SuperchargedPieces: 0,
+				AvgCycle: 53, Mobility: false, DockedAuto: false, EngagedAuto: false,
+				BalanceAttemptAuto: true, Docked: false, Engaged: false,
+				BalanceAttempt: true, CollectedBy: "unknown",
+			},
+		},
+		actions: []db.Action{
+			{
+				PreScouting:     true,
+				TeamNumber:      "3634",
+				MatchNumber:     1,
+				SetNumber:       2,
+				CompLevel:       "quals",
+				CollectedBy:     "debug_cli",
+				CompletedAction: []byte{},
+				Timestamp:       2400,
+			},
+			{
+				PreScouting:     true,
+				TeamNumber:      "2343",
+				MatchNumber:     1,
+				SetNumber:       2,
+				CompLevel:       "quals",
+				CollectedBy:     "debug_cli",
+				CompletedAction: []byte{},
+				Timestamp:       1009,
+			},
+		},
+	}
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&database, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&delete_2023_data_scouting.Delete2023DataScoutingT{
+		CompLevel:   "quals",
+		MatchNumber: 1,
+		SetNumber:   2,
+		TeamNumber:  "2343",
+	}).Pack(builder))
+
+	_, err := debug.Delete2023DataScouting("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to delete from data scouting ", err)
+	}
+
+	expectedActions := []db.Action{
+		{
+			PreScouting:     true,
+			TeamNumber:      "3634",
+			MatchNumber:     1,
+			SetNumber:       2,
+			CompLevel:       "quals",
+			CollectedBy:     "debug_cli",
+			CompletedAction: []byte{},
+			Timestamp:       2400,
+		},
+	}
+
+	expectedStats := []db.Stats2023{
+		{
+			TeamNumber: "3634", MatchNumber: 1, SetNumber: 2,
+			CompLevel: "quals", StartingQuadrant: 3, LowCubesAuto: 10,
+			MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 0,
+			LowConesAuto: 1, MiddleConesAuto: 2, HighConesAuto: 1,
+			ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
+			HighCubes: 2, CubesDropped: 1, LowCones: 1,
+			MiddleCones: 2, HighCones: 0, ConesDropped: 1, SuperchargedPieces: 0,
+			AvgCycle: 34, Mobility: false, DockedAuto: true, EngagedAuto: false,
+			BalanceAttemptAuto: false, Docked: false, Engaged: false,
+			BalanceAttempt: true, CollectedBy: "isaac",
+		},
+	}
+
+	if !reflect.DeepEqual(expectedActions, database.actions) {
+		t.Fatal("Expected ", expectedActions, ", but got:", database.actions)
+	}
+	if !reflect.DeepEqual(expectedStats, database.stats2023) {
+		t.Fatal("Expected ", expectedStats, ", but got:", database.stats2023)
+	}
+}
+
 // A mocked database we can use for testing. Add functionality to this as
 // needed for your tests.
 
@@ -994,4 +1101,30 @@ func (database *MockDatabase) AddAction(action db.Action) error {
 
 func (database *MockDatabase) ReturnActions() ([]db.Action, error) {
 	return database.actions, nil
+}
+
+func (database *MockDatabase) DeleteFromStats(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
+	for i, stat := range database.stats2023 {
+		if stat.CompLevel == compLevel_ &&
+			stat.MatchNumber == matchNumber_ &&
+			stat.SetNumber == setNumber_ &&
+			stat.TeamNumber == teamNumber_ {
+			// Match found, remove the element from the array.
+			database.stats2023 = append(database.stats2023[:i], database.stats2023[i+1:]...)
+		}
+	}
+	return nil
+}
+
+func (database *MockDatabase) DeleteFromActions(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
+	for i, action := range database.actions {
+		if action.CompLevel == compLevel_ &&
+			action.MatchNumber == matchNumber_ &&
+			action.SetNumber == setNumber_ &&
+			action.TeamNumber == teamNumber_ {
+			// Match found, remove the element from the array.
+			database.actions = append(database.actions[:i], database.actions[i+1:]...)
+		}
+	}
+	return nil
 }

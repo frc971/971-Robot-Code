@@ -8,6 +8,8 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//scouting/db",
+        "//scouting/webserver/requests/messages:delete_2023_data_scouting_go_fbs",
+        "//scouting/webserver/requests/messages:delete_2023_data_scouting_response_go_fbs",
         "//scouting/webserver/requests/messages:error_response_go_fbs",
         "//scouting/webserver/requests/messages:request_2023_data_scouting_go_fbs",
         "//scouting/webserver/requests/messages:request_2023_data_scouting_response_go_fbs",
@@ -42,6 +44,7 @@ go_test(
     deps = [
         "//scouting/db",
         "//scouting/webserver/requests/debug",
+        "//scouting/webserver/requests/messages:delete_2023_data_scouting_go_fbs",
         "//scouting/webserver/requests/messages:request_2023_data_scouting_go_fbs",
         "//scouting/webserver/requests/messages:request_2023_data_scouting_response_go_fbs",
         "//scouting/webserver/requests/messages:request_all_driver_rankings_go_fbs",

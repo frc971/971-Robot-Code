@@ -505,6 +505,75 @@ func TestDeleteFromStats(t *testing.T) {
 	}
 }
 
+func TestDeleteFromActions(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	startingActions := []Action{
+		Action{
+			TeamNumber: "1235", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), Timestamp: 0000, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1236", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), Timestamp: 0321, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1237", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), Timestamp: 0222, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1238", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), Timestamp: 0110, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1239", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), Timestamp: 0004, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1233", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), Timestamp: 0005, CollectedBy: "",
+		},
+	}
+
+	correct := []Action{
+		Action{
+			TeamNumber: "1235", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), Timestamp: 0000, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1236", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), Timestamp: 0321, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1237", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), Timestamp: 0222, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1238", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), Timestamp: 0110, CollectedBy: "",
+		},
+		Action{
+			TeamNumber: "1233", MatchNumber: 94, SetNumber: 1, CompLevel: "quals",
+			CompletedAction: []byte(""), Timestamp: 0005, CollectedBy: "",
+		},
+	}
+
+	for _, action := range startingActions {
+		err := fixture.db.AddAction(action)
+		check(t, err, "Failed to add stat")
+	}
+
+	err := fixture.db.DeleteFromActions("quals", 94, 1, "1239")
+
+	got, err := fixture.db.ReturnActions()
+	check(t, err, "Failed ReturnActions()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
 func TestQueryShiftDB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
