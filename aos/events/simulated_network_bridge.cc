@@ -234,7 +234,7 @@ class RawMessageDelayer {
       // channel within the same callback.
       LOG(WARNING) << "Not forwarding message on "
                    << configuration::CleanedChannelToString(fetcher_->channel())
-                   << " because we aren't running.  Set at "
+                   << " because we aren't running.  Sent at "
                    << fetcher_->context().monotonic_event_time << " now is "
                    << fetch_node_factory_->monotonic_now();
       sent_ = true;
