@@ -159,7 +159,7 @@ class SimpleShmFetcher {
     }
   }
 
-  bool FetchNext() { return FetchNextIf(std::ref(should_fetch_)); }
+  bool FetchNext() { return FetchNextIf(should_fetch_); }
 
   bool FetchNextIf(std::function<bool(const Context &)> fn) {
     const ipc_lib::LocklessQueueReader::Result read_result =
@@ -192,7 +192,7 @@ class SimpleShmFetcher {
     return read_result == ipc_lib::LocklessQueueReader::Result::GOOD;
   }
 
-  bool Fetch() { return FetchIf(std::ref(should_fetch_)); }
+  bool Fetch() { return FetchIf(should_fetch_); }
 
   Context context() const { return context_; }
 
