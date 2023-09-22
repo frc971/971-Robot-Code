@@ -11,6 +11,7 @@
 #include "aos/network/sctp_client.h"
 #include "aos/network/sctp_lib.h"
 #include "aos/network/sctp_server.h"
+#include "sctp_lib.h"
 
 DECLARE_bool(disable_ipv6);
 
@@ -28,10 +29,10 @@ constexpr int kStreams = 1;
 namespace {
 void EnableSctpAuthIfAvailable() {
 #if HAS_SCTP_AUTH
-  CHECK(system("/usr/sbin/modprobe sctp || /sbin/modprobe sctp; "
-               "/usr/sbin/sysctl net.sctp.auth_enable=1 || "
-               "/sbin/sysctl "
-               "net.sctp.auth_enable=1") == 0)
+  // Open an SCTP socket to bring the kernel SCTP module
+  SctpServer server(1, "localhost");
+  CHECK(system("/usr/sbin/sysctl net.sctp.auth_enable=1 || "
+               "/sbin/sysctl net.sctp.auth_enable=1") == 0)
       << "Couldn't enable sctp authentication.";
 #endif
 }
