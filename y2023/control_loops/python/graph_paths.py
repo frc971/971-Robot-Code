@@ -22,7 +22,7 @@ points = {}
 points['Neutral'] = np.array((np.pi, 0.0, 0.0))
 
 points['GroundPickupBackConeUp'] = to_theta_with_circular_index_and_roll(
-    -1.07774334, 0.39, np.pi / 2.0, circular_index=1)
+    -1.07774334, 0.40, np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -231,7 +231,7 @@ named_segments.append(
     ))
 
 points['GroundPickupBackCube'] = to_theta_with_circular_index_and_roll(
-    -1.102, 0.28, -np.pi / 2.0, circular_index=1)
+    -1.102, 0.30, -np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -246,7 +246,7 @@ named_segments.append(
     ))
 
 points['GroundPickupFrontCube'] = to_theta_with_circular_index_and_roll(
-    0.325603, 0.255189, np.pi / 2.0, circular_index=0)
+    0.325603, 0.275189, np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -261,7 +261,7 @@ named_segments.append(
     ))
 
 points['ScoreBackMidConeUp'] = to_theta_with_circular_index_and_roll(
-    -1.45013, 1.00354, np.pi / 2.0, circular_index=1)
+    -1.45013, 1.02354, np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -476,7 +476,7 @@ named_segments.append(
     ))
 
 points['ScoreBackLowCube'] = to_theta_with_circular_index_and_roll(
-    -1.102, 0.3712121, -np.pi / 2.0, circular_index=1)
+    -1.102, 0.4012121, -np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -489,7 +489,7 @@ named_segments.append(
     ))
 
 points['ScoreBackMidCube'] = to_theta_with_circular_index_and_roll(
-    -1.27896, 0.84, -np.pi / 2.0, circular_index=1)
+    -1.27896, 0.89, -np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -515,7 +515,7 @@ named_segments.append(
 #points['ScoreBackHighCube'] = to_theta_with_circular_index_and_roll(
 #    -1.60932, 1.16839, np.pi / 2.0, circular_index=0)
 points['ScoreBackHighCube'] = np.array(
-    (4.77284735761704, -1.19952193130714, -np.pi / 2.0))
+    (4.77284735761704, -1.130291162076371, -np.pi / 2.0))
 
 named_segments.append(
     ThetaSplineSegment(

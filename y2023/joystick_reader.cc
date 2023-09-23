@@ -186,7 +186,7 @@ const std::vector<ArmSetpoint> setpoints = {
     },
     {
         .index = arm::ScoreBackMidConeUpIndex(),
-        .wrist_goal = kConeWrist,
+        .wrist_goal = kConeWrist + 0.05,
         .game_piece = GamePiece::CONE_UP,
         .buttons = {{kMidConeScoreRight, SpotSelectionHint::RIGHT},
                     {kMidConeScoreLeft, SpotSelectionHint::LEFT}},
