@@ -41,6 +41,7 @@ cc_library(
     name = "flatbuffers",
     hdrs = ["//:public_headers"],
     copts = ["-Wno-cast-align"],
+    defines = ["FLATBUFFERS_USE_STD_SPAN"],
     linkstatic = 1,
     strip_include_prefix = "/include",
     deps = ["//src:flatbuffers"],

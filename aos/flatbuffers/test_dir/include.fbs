@@ -1,0 +1,12 @@
+namespace aos.fbs.testing.included;
+enum TestEnum : ubyte {
+  A = 0,
+  B = 1,
+}
+
+table IncludedTable {
+ foo:TestEnum (id: 0);
+}
+
+root_type IncludedTable;
+

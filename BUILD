@@ -11,6 +11,8 @@ exports_files([
     "tsconfig.json",
     "tsconfig.node.json",
     "rollup.config.js",
+    # Expose .clang-format so that the static flatbuffer codegen can format its files nicely.
+    ".clang-format",
 ])
 
 # The root repo tsconfig

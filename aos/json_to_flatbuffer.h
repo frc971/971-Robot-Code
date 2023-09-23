@@ -12,6 +12,7 @@
 #include "aos/fast_string_builder.h"
 #include "aos/flatbuffer_utils.h"
 #include "aos/flatbuffers.h"
+#include "aos/flatbuffers/builder.h"
 #include "aos/util/file.h"
 
 namespace aos {
@@ -38,6 +39,15 @@ inline flatbuffers::Offset<T> JsonToFlatbuffer(
       JsonToFlatbuffer(data, FlatbufferType(T::MiniReflectTypeTable()), fbb).o);
 }
 
+template <typename T>
+inline fbs::Builder<T> JsonToStaticFlatbuffer(const std::string_view data) {
+  const aos::FlatbufferDetachedBuffer<typename T::Flatbuffer> fbs =
+      JsonToFlatbuffer<typename T::Flatbuffer>(data);
+  fbs::Builder<T> builder(std::make_unique<aos::fbs::VectorAllocator>());
+  CHECK(builder.get()->FromFlatbuffer(&fbs.message()));
+  return builder;
+}
+
 struct JsonOptions {
   // controls if the Json is written out on multiple lines or one.
   bool multi_line = false;
@@ -53,7 +63,7 @@ struct JsonOptions {
 // Converts a flatbuffer into a Json string.
 // The methods below are generally more useful than TableFlatbufferToJson.
 ::std::string TableFlatbufferToJson(const flatbuffers::Table *t,
-                                    const ::flatbuffers::TypeTable *typetable,
+                                    const flatbuffers::TypeTable *typetable,
                                     JsonOptions json_options = {});
 
 // Converts a Flatbuffer<T> holding a flatbuffer to JSON.

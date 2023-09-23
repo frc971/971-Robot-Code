@@ -1,0 +1,40 @@
+include "aos/flatbuffers/test_dir/include.fbs";
+
+// TODO: test example with multiple namespaces per file.
+namespace aos.fbs.testing;
+
+struct SubStruct {
+  x:double;
+  y:double;
+}
+
+table SubTable {
+ foo:short (id: 0);
+ bar:short (id: 1, deprecated);
+ baz:float (id: 2);
+}
+
+attribute "static_length";
+attribute "static_vector_string_length";
+
+table TestTable {
+  scalar:int (id: 0);
+  vector_of_scalars:[int] (id: 1, static_length: 3);
+  string:string (id: 2, static_length: 20);
+  vector_of_strings:[string] (id: 3, static_length: 3, static_vector_string_length: 10);
+  substruct:SubStruct (id: 4);
+  subtable:SubTable (id: 5);
+  // The force-aligned vector is deliberately put in the middle of the table
+  // both by ID and alphabetically (both of these can affect the order in which
+  // certain things are evaluated, and during development there were some issues
+  // with this).
+  vector_aligned:[int] (id: 6, force_align: 64, static_length: 3);
+  vector_of_structs:[SubStruct] (id: 7, static_length: 3);
+  vector_of_tables:[SubTable] (id: 8, static_length: 3);
+  included_table:aos.fbs.testing.included.IncludedTable (id: 9);
+  unspecified_length_vector:[ubyte] (id: 10);
+  unspecified_length_string:string (id: 11);
+  unspecified_length_vector_of_strings:[string] (id: 12);
+}
+
+root_type TestTable;

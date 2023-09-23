@@ -1,0 +1,44 @@
+namespace aos.fbs.testing;
+
+attribute "static_length";
+
+table FirstUnion {
+  foo:int (id: 0);
+}
+
+table SecondUnion {
+  bar:double (id: 0);
+}
+
+union UnionType { FirstUnion, SecondUnion }
+
+table TableWithUnion {
+  union_field:UnionType (id: 1);
+}
+
+table MissingVectorLength {
+  vector_no_length:[int] (id: 0);
+}
+
+table NonIntegerVectorLength {
+  vector_badlength:[int] (id: 0, static_length: "abc");
+}
+
+table NegativeVectorLength {
+  vector_badlength:[int] (id: 0, static_length: -1);
+}
+
+table ZeroVectorLength {
+  vector_badlength:[int] (id: 0, static_length: 0);
+}
+
+table MissingStringLength {
+  string_no_length:string (id: 0);
+}
+
+table MissingSubStringLength {
+  substring_no_length:[string] (id: 0, static_length: 3);
+}
+
+// Arbitrary.
+root_type TableWithUnion;

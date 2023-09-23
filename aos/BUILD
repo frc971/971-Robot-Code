@@ -418,6 +418,7 @@ cc_library(
         ":flatbuffer_utils",
         ":flatbuffers",
         ":json_tokenizer",
+        "//aos/flatbuffers:builder",
         "//aos/util:file",
         "@com_github_google_flatbuffers//:flatbuffers",
         "@com_github_google_glog//:glog",

@@ -1,0 +1,826 @@
+#include "aos/flatbuffers/static_flatbuffers.h"
+
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_replace.h"
+#include "glog/logging.h"
+
+#include "aos/flatbuffers/static_table.h"
+#include "aos/json_to_flatbuffer.h"
+namespace aos::fbs {
+namespace {
+// Represents a given field within a type with all of the data that we actually
+// care about.
+struct FieldData {
+  // Field name.
+  std::string name;
+  // Whether it is an inline data type (scalar/struct vs vector/table/string).
+  bool is_inline = true;
+  // Whether this is a struct or not.
+  bool is_struct = false;
+  // Full C++ type of this field.
+  std::string full_type = "";
+  // Full flatbuffer type for this field.
+  // Only specified for Tables.
+  std::optional<std::string> fbs_type = std::nullopt;
+  // Size of this field in the inline field data (i.e., size of the field for
+  // is_inline fields; 4 bytes for the offset for vectors/tables/strings).
+  size_t inline_size = 0u;
+  // Alignment of the inline data.
+  size_t inline_alignment = 0u;
+  // vtable offset of the field.
+  size_t vtable_offset = 0u;
+};
+
+const reflection::Object *GetObject(const reflection::Schema *schema,
+                                    const int index) {
+  return (index == -1) ? schema->root_table() : schema->objects()->Get(index);
+}
+
+// Returns the flatbuffer field attribute with the specified name, if available.
+std::optional<std::string_view> GetAttribute(const reflection::Field *field,
+                                             std::string_view attribute) {
+  if (!field->has_attributes()) {
+    return std::nullopt;
+  }
+  const reflection::KeyValue *kv =
+      field->attributes()->LookupByKey(attribute.data());
+  if (kv == nullptr) {
+    return std::nullopt;
+  }
+  return kv->value()->string_view();
+}
+
+// Returns the implied value of an attribute that specifies a length (i.e., 0 if
+// the attribute is not specified; the integer value otherwise).
+int64_t GetLengthAttributeOrZero(const reflection::Field *field,
+                                 std::string_view attribute) {
+  std::optional<std::string_view> str = GetAttribute(field, attribute);
+  if (!str.has_value()) {
+    return 0;
+  }
+  int64_t value;
+  CHECK(absl::SimpleAtoi(str.value(), &value))
+      << ": Field " << field->name()->string_view()
+      << " must specify a positive integer for the " << attribute
+      << " attribute. Got \"" << str.value() << "\".";
+  CHECK_LE(0, value) << ": Field " << field->name()->string_view()
+                     << " must have a non-negative " << attribute << ".";
+  return value;
+}
+
+const std::string ScalarCppType(const reflection::BaseType type) {
+  switch (type) {
+    case reflection::BaseType::Bool:
+      return "bool";
+    case reflection::BaseType::Byte:
+      return "int8_t";
+    case reflection::BaseType::UByte:
+      return "uint8_t";
+    case reflection::BaseType::Short:
+      return "int16_t";
+    case reflection::BaseType::UShort:
+      return "uint16_t";
+    case reflection::BaseType::Int:
+      return "int32_t";
+    case reflection::BaseType::UInt:
+      return "uint32_t";
+    case reflection::BaseType::Long:
+      return "int64_t";
+    case reflection::BaseType::ULong:
+      return "uint64_t";
+    case reflection::BaseType::Float:
+      return "float";
+    case reflection::BaseType::Double:
+      return "double";
+    case reflection::BaseType::UType:
+    case reflection::BaseType::String:
+    case reflection::BaseType::Vector:
+    case reflection::BaseType::Obj:
+    case reflection::BaseType::None:
+    case reflection::BaseType::Union:
+    case reflection::BaseType::Array:
+    case reflection::BaseType::MaxBaseType:
+      LOG(FATAL) << ": Type " << reflection::EnumNameBaseType(type)
+                 << " not a scalar.";
+  }
+  LOG(FATAL) << "Unreachable";
+}
+
+const std::string FlatbufferNameToCppName(const std::string_view input) {
+  return absl::StrReplaceAll(input, {{".", "::"}});
+}
+
+const std::string AosNameForRawFlatbuffer(const std::string_view base_name) {
+  return absl::StrCat(base_name, "Static");
+}
+
+const std::string IncludePathForFbs(
+    std::string_view fbs_file, std::string_view include_suffix = "static") {
+  fbs_file.remove_suffix(4);
+  return absl::StrCat(fbs_file, "_", include_suffix, ".h");
+}
+
+std::string ScalarOrEnumType(const reflection::Schema *schema,
+                             const reflection::BaseType type, int index) {
+  return (index < 0) ? ScalarCppType(type)
+                     : FlatbufferNameToCppName(
+                           schema->enums()->Get(index)->name()->string_view());
+}
+
+void PopulateTypeData(const reflection::Schema *schema,
+                      const reflection::Field *field_fbs, FieldData *field) {
+  VLOG(1) << aos::FlatbufferToJson(field_fbs);
+  const reflection::Type *type = field_fbs->type();
+  field->inline_size = type->base_size();
+  field->inline_alignment = type->base_size();
+  switch (type->base_type()) {
+    case reflection::BaseType::Bool:
+    case reflection::BaseType::Byte:
+    case reflection::BaseType::UByte:
+    case reflection::BaseType::Short:
+    case reflection::BaseType::UShort:
+    case reflection::BaseType::Int:
+    case reflection::BaseType::UInt:
+    case reflection::BaseType::Long:
+    case reflection::BaseType::ULong:
+    case reflection::BaseType::Float:
+    case reflection::BaseType::Double:
+      // We have a scalar field, so things are relatively
+      // straightforwards.
+      field->is_inline = true;
+      field->is_struct = false;
+      field->full_type =
+          ScalarOrEnumType(schema, type->base_type(), type->index());
+      return;
+    case reflection::BaseType::String: {
+      field->is_inline = false;
+      field->is_struct = false;
+      field->full_type =
+          absl::StrFormat("::aos::fbs::String<%d>",
+                          GetLengthAttributeOrZero(field_fbs, "static_length"));
+      return;
+    }
+    case reflection::BaseType::Vector: {
+      // We need to extract the name of the elements of the vector.
+      std::string element_type;
+      bool elements_are_inline = true;
+      if (type->base_type() == reflection::BaseType::Vector) {
+        switch (type->element()) {
+          case reflection::BaseType::Obj: {
+            const reflection::Object *element_object =
+                GetObject(schema, type->index());
+            element_type =
+                FlatbufferNameToCppName(element_object->name()->string_view());
+            elements_are_inline = element_object->is_struct();
+            if (!element_object->is_struct()) {
+              element_type = AosNameForRawFlatbuffer(element_type);
+              field->fbs_type = element_object->name()->string_view();
+            }
+            break;
+          }
+          case reflection::BaseType::String:
+            element_type =
+                absl::StrFormat("::aos::fbs::String<%d>",
+                                GetLengthAttributeOrZero(
+                                    field_fbs, "static_vector_string_length"));
+            elements_are_inline = false;
+            break;
+          case reflection::BaseType::Vector:
+            LOG(FATAL) << "Vectors of vectors do not exist in flatbuffers.";
+          default:
+            element_type =
+                ScalarOrEnumType(schema, type->element(), type->index());
+        };
+      }
+      field->is_inline = false;
+      field->is_struct = false;
+      field->full_type =
+          absl::StrFormat("::aos::fbs::Vector<%s, %d, %s, %s>", element_type,
+                          GetLengthAttributeOrZero(field_fbs, "static_length"),
+                          elements_are_inline ? "true" : "false",
+                          GetAttribute(field_fbs, "force_align").value_or("0"));
+      return;
+    }
+    case reflection::BaseType::Obj: {
+      const reflection::Object *object = GetObject(schema, type->index());
+      field->is_inline = object->is_struct();
+      field->is_struct = object->is_struct();
+      const std::string flatbuffer_name =
+          FlatbufferNameToCppName(object->name()->string_view());
+      if (field->is_inline) {
+        field->full_type = flatbuffer_name;
+        field->inline_size = object->bytesize();
+        field->inline_alignment = object->minalign();
+      } else {
+        field->fbs_type = object->name()->string_view();
+        field->full_type = AosNameForRawFlatbuffer(flatbuffer_name);
+      }
+      return;
+    }
+    case reflection::BaseType::None:
+    case reflection::BaseType::UType:
+    case reflection::BaseType::Union:
+    case reflection::BaseType::Array:
+    case reflection::BaseType::MaxBaseType:
+      LOG(FATAL) << ": Type " << reflection::EnumNameBaseType(type->base_type())
+                 << " not supported currently.";
+  };
+}
+
+std::string MakeMoveConstructor(std::string_view type_name) {
+  return absl::StrFormat(R"code(
+  // We need to provide a MoveConstructor to allow this table to be
+  // used inside of vectors, but we do not want it readily available to
+  // users. See TableMover for more details.
+  %s(%s &&) = default;
+  friend struct ::aos::fbs::internal::TableMover<%s>;
+  )code",
+                         type_name, type_name, type_name);
+}
+
+std::string MakeConstructor(std::string_view type_name) {
+  const std::string constructor_body =
+      R"code(
+    CHECK_EQ(buffer.size(), kSize);
+    CHECK_EQ(0u, reinterpret_cast<size_t>(buffer.data()) % kAlign);
+    PopulateVtable();
+)code";
+  return absl::StrFormat(R"code(
+  // Constructors for creating a flatbuffer object.
+  // Users should typically use the Builder class to create these objects,
+  // in order to allow it to populate the root table offset.
+
+  // The buffer provided to these constructors should be aligned to kAlign
+  // and kSize in length.
+  // The parent/allocator may not be nullptr.
+  %s(std::span<uint8_t> buffer, ::aos::fbs::ResizeableObject *parent) : Table(buffer, parent) {
+    %s
+  }
+  %s(std::span<uint8_t> buffer, ::aos::fbs::Allocator *allocator) : Table(buffer, allocator) {
+    %s
+  }
+  %s(std::span<uint8_t> buffer, ::std::unique_ptr<::aos::fbs::Allocator> allocator) : Table(buffer, ::std::move(allocator)) {
+    %s
+  }
+)code",
+                         type_name, constructor_body, type_name,
+                         constructor_body, type_name, constructor_body);
+}
+
+std::string MemberName(const FieldData &data) {
+  return absl::StrCat(data.name, "_");
+}
+
+std::string ObjectAbsoluteOffsetName(const FieldData &data) {
+  return absl::StrCat("object_absolute_offset_", data.name);
+}
+
+std::string InlineAbsoluteOffsetName(const FieldData &data) {
+  return absl::StrCat("kInlineAbsoluteOffset_", data.name);
+}
+
+// Generate the clear_* method for the requested field.
+std::string MakeClearer(const FieldData &field) {
+  std::string logical_clearer;
+  if (!field.is_inline) {
+    logical_clearer = MemberName(field) + ".reset();";
+  }
+  return absl::StrFormat(R"code(
+  // Clears the %s field. This will cause has_%s() to return false.
+  void clear_%s() {
+    %s
+    ClearField(%s, %d, %d);
+  }
+  )code",
+                         field.name, field.name, field.name, logical_clearer,
+                         InlineAbsoluteOffsetName(field), field.inline_size,
+                         field.vtable_offset);
+}
+
+// Generate the has_* method for the requested field.
+std::string MakeHaser(const FieldData &field) {
+  return absl::StrFormat(R"code(
+  // Returns true if the %s field is set and can be accessed.
+  bool has_%s() const {
+    return AsFlatbuffer().has_%s();
+  }
+  )code",
+                         field.name, field.name, field.name);
+}
+
+// Generates the accessors for fields which are stored inline in the flatbuffer
+// table (scalars, structs, and enums) .
+std::string MakeInlineAccessors(const FieldData &field,
+                                const size_t inline_absolute_offset) {
+  CHECK_EQ(inline_absolute_offset % field.inline_alignment, 0u)
+      << ": Unaligned field " << field.name << " on " << field.full_type
+      << " with inline offset of " << inline_absolute_offset
+      << " and alignment of " << field.inline_alignment;
+  const std::string setter =
+      absl::StrFormat(R"code(
+  // Sets the %s field, causing it to be populated if it is not already.
+  // This will populate the field even if the specified value is the default.
+  void set_%s(const %s &value) {
+    SetField<%s>(%s, %d, value);
+  }
+  )code",
+                      field.name, field.name, field.full_type, field.full_type,
+                      InlineAbsoluteOffsetName(field), field.vtable_offset);
+  const std::string getters = absl::StrFormat(
+      R"code(
+  // Returns the value of %s if set; nullopt otherwise.
+  std::optional<%s> %s() const {
+    return has_%s() ? std::make_optional(Get<%s>(%s)) : std::nullopt;;
+  }
+  // Returns a pointer to modify the %s field.
+  // The pointer may be invalidated by mutations/movements of the underlying buffer.
+  // Returns nullptr if the field is not set.
+  %s* mutable_%s() {
+    return has_%s() ? MutableGet<%s>(%s) : nullptr;
+  }
+  )code",
+      field.name, field.full_type, field.name, field.name, field.full_type,
+      InlineAbsoluteOffsetName(field), field.name, field.full_type, field.name,
+      field.name, field.full_type, InlineAbsoluteOffsetName(field));
+  const std::string clearer = MakeClearer(field);
+  return setter + getters + clearer + MakeHaser(field);
+}
+
+// Generates the accessors for fields which are not inline fields and have an
+// offset to the actual field content stored inline in the flatbuffer table.
+std::string MakeOffsetDataAccessors(const FieldData &field) {
+  const std::string setter = absl::StrFormat(
+      R"code(
+  // Creates an empty object for the %s field, which you can
+  // then populate/modify as desired.
+  // The field must not be populated yet.
+  %s* add_%s() {
+    CHECK(!%s.has_value());
+    constexpr size_t kVtableIndex = %d;
+    // Construct the *Static object that we will use for managing this subtable.
+    %s.emplace(BufferForObject(%s, %s::kSize, kAlign), this);
+    // Actually set the appropriate fields in the flatbuffer memory itself.
+    SetField<::flatbuffers::uoffset_t>(%s, kVtableIndex, %s + %s::kOffset - %s);
+    return &%s.value().t;
+  }
+  )code",
+      field.name, field.full_type, field.name, MemberName(field),
+      field.vtable_offset, MemberName(field), ObjectAbsoluteOffsetName(field),
+      field.full_type, InlineAbsoluteOffsetName(field),
+      ObjectAbsoluteOffsetName(field), field.full_type,
+      InlineAbsoluteOffsetName(field), MemberName(field));
+  const std::string getters = absl::StrFormat(
+      R"code(
+  // Returns a pointer to the %s field, if set. nullptr otherwise.
+  const %s* %s() const {
+    return %s.has_value() ? &%s.value().t : nullptr;
+  }
+  %s* mutable_%s() {
+    return %s.has_value() ? &%s.value().t : nullptr;
+  }
+  )code",
+      field.name, field.full_type, field.name, MemberName(field),
+      MemberName(field), field.full_type, field.name, MemberName(field),
+      MemberName(field));
+  return setter + getters + MakeClearer(field) + MakeHaser(field);
+}
+
+std::string MakeAccessors(const FieldData &field,
+                          size_t inline_absolute_offset) {
+  return field.is_inline ? MakeInlineAccessors(field, inline_absolute_offset)
+                         : MakeOffsetDataAccessors(field);
+}
+
+std::string MakeMembers(const FieldData &field,
+                        std::string_view offset_data_absolute_offset,
+                        size_t inline_absolute_offset) {
+  if (field.is_inline) {
+    return absl::StrFormat(
+        R"code(
+    // Offset from the start of the buffer to the inline data for the %s field.
+    static constexpr size_t %s = %d;
+    )code",
+        field.name, InlineAbsoluteOffsetName(field), inline_absolute_offset);
+  } else {
+    return absl::StrFormat(
+        R"code(
+    // Members relating to the %s field.
+    //
+    // *Static object used for managing this subtable. Will be nullopt
+    // when the field is not populated.
+    // We use the TableMover to be able to make this object moveable.
+    std::optional<::aos::fbs::internal::TableMover<%s>> %s;
+    // Offset from the start of the buffer to the start of the actual
+    // data for this field. Will be updated even when the table is not
+    // populated, so that we know where to construct it when requested.
+    size_t %s = %s;
+    // Offset from the start of the buffer to the offset in the inline data for
+    // this field.
+    static constexpr size_t %s = %d;
+    )code",
+        field.name, field.full_type, MemberName(field),
+        ObjectAbsoluteOffsetName(field), offset_data_absolute_offset,
+        InlineAbsoluteOffsetName(field), inline_absolute_offset);
+  }
+}
+
+std::string MakeFullClearer(const std::vector<FieldData> &fields) {
+  std::vector<std::string> clearers;
+  for (const FieldData &field : fields) {
+    clearers.emplace_back(absl::StrFormat("clear_%s();", field.name));
+  }
+  return absl::StrFormat(R"code(
+  // Clears every field of the table, removing any existing state.
+  void Clear() { %s })code",
+                         absl::StrJoin(clearers, "\n"));
+}
+
+std::string MakeCopier(const std::vector<FieldData> &fields) {
+  std::vector<std::string> copiers;
+  for (const FieldData &field : fields) {
+    if (field.is_struct) {
+      copiers.emplace_back(absl::StrFormat(R"code(
+      if (other->has_%s()) {
+        set_%s(*other->%s());
+      }
+      )code",
+                                           field.name, field.name, field.name));
+    } else if (field.is_inline) {
+      copiers.emplace_back(absl::StrFormat(R"code(
+      if (other->has_%s()) {
+        set_%s(other->%s());
+      }
+      )code",
+                                           field.name, field.name, field.name));
+    } else {
+      copiers.emplace_back(absl::StrFormat(R"code(
+      if (other->has_%s()) {
+        if (!CHECK_NOTNULL(add_%s())->FromFlatbuffer(other->%s())) {
+          // Fail if we were unable to copy (e.g., if we tried to copy in a long
+          // vector and do not have the space for it).
+          return false;
+        }
+      }
+      )code",
+                                           field.name, field.name, field.name));
+    }
+  }
+  return absl::StrFormat(
+      R"code(
+  // Copies the contents of the provided flatbuffer into this flatbuffer,
+  // returning true on success.
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
+    Clear();
+    %s
+    return true;
+  }
+)code",
+      absl::StrJoin(copiers, "\n"));
+}
+
+std::string MakeSubObjectList(const std::vector<FieldData> &fields) {
+  size_t num_object_fields = 0;
+  std::vector<std::string> object_offsets;
+  std::vector<std::string> objects;
+  std::vector<std::string> inline_offsets;
+  for (const FieldData &field : fields) {
+    if (!field.is_inline) {
+      ++num_object_fields;
+      object_offsets.push_back(
+          absl::StrFormat("&%s", ObjectAbsoluteOffsetName(field)));
+      objects.push_back(absl::StrFormat("&%s->t", MemberName(field)));
+      inline_offsets.push_back(InlineAbsoluteOffsetName(field));
+    }
+  }
+  if (num_object_fields == 0) {
+    return R"code(
+  // This object has no non-inline subobjects, so we don't have to do anything special.
+  size_t NumberOfSubObjects() const final { return 0; }
+  using ::aos::fbs::ResizeableObject::SubObject;
+  SubObject GetSubObject(size_t) final { LOG(FATAL) << "No subobjects."; }
+  )code";
+  }
+  return absl::StrFormat(R"code(
+  size_t NumberOfSubObjects() const final { return %d; }
+  using ::aos::fbs::ResizeableObject::SubObject;
+  SubObject GetSubObject(size_t index) final {
+    SubObject object;
+    // Note: The below arrays are local variables rather than class members to
+    // avoid having to deal with what happens to them if the object is moved.
+
+    // Array of the members that we use for tracking where the buffers for
+    // each subobject belong.
+    // Pointers because these may need to be modified when memory is
+    // inserted into the buffer.
+    const std::array<size_t*, %d> subobject_object_offsets{%s};
+    // Actual subobjects; note that the pointers will be invalid when the
+    // field is not populated.
+    const std::array<::aos::fbs::ResizeableObject*, %d> subobject_objects{%s};
+    // Absolute offsets from the start of the buffer to where the inline
+    // entry is for each table. These offsets do not need to change at
+    // runtime (because memory is never inserted into the start of
+    // a given table), but the offsets pointed to by these offsets
+    // may need to be updated.
+    const std::array<size_t, %d> subobject_inline_offsets{%s};
+    object.inline_entry = MutableGet<::flatbuffers::uoffset_t>(subobject_inline_offsets[index]);
+    object.object = (*object.inline_entry == 0) ? nullptr : subobject_objects[index];
+    object.absolute_offset = subobject_object_offsets[index];
+    return object;
+  }
+  )code",
+                         num_object_fields, num_object_fields,
+                         absl::StrJoin(object_offsets, ", "), num_object_fields,
+                         absl::StrJoin(objects, ", "), num_object_fields,
+                         absl::StrJoin(inline_offsets, ", "));
+}
+
+std::string AlignCppString(const std::string_view expression,
+                           const std::string_view alignment) {
+  return absl::StrFormat("::aos::fbs::PaddedSize(%s, %s)", expression,
+                         alignment);
+}
+
+std::string MakeInclude(std::string_view path, bool system = false) {
+  return absl::StrFormat("#include %s%s%s\n", system ? "<" : "\"", path,
+                         system ? ">" : "\"");
+}
+
+}  // namespace
+GeneratedObject GenerateCodeForObject(const reflection::Schema *schema,
+                                      int object_index) {
+  return GenerateCodeForObject(schema, GetObject(schema, object_index));
+}
+GeneratedObject GenerateCodeForObject(const reflection::Schema *schema,
+                                      const reflection::Object *object) {
+  std::vector<FieldData> fields;
+  for (const reflection::Field *field_fbs : *object->fields()) {
+    if (field_fbs->deprecated()) {
+      // Don't codegen anything for deprecated fields.
+      continue;
+    }
+    FieldData field{.name = field_fbs->name()->str(),
+                    .vtable_offset = field_fbs->offset()};
+    PopulateTypeData(schema, field_fbs, &field);
+    fields.push_back(field);
+  }
+  const size_t nominal_min_align = object->minalign();
+  std::string out_of_line_member_size = "";
+  // inline_absolute_offset tracks the current position of the inline table
+  // contents so that we can assign static offsets to each field.
+  size_t inline_absolute_offset = sizeof(soffset_t);
+  // offset_data_relative_offset tracks the current size of the various
+  // sub-tables/vectors/strings that get stored at the end of the buffer.
+  // For simplicity, the offset data will start at a fully aligned offset
+  // (which may be larger than the soffset_t at the start of the table).
+  // Note that this is a string because it's irritating to actually pipe the
+  // numbers for size/alignment up here, so we just accumulate them here and
+  // then write the expression directly into the C++.
+  std::string offset_data_relative_offset = "0";
+  const std::string offset_data_start_expression =
+      "::aos::fbs::PaddedSize(kVtableStart + kVtableSize, kAlign)";
+  std::string accessors;
+  std::string members;
+  std::set<std::string> includes = {
+      MakeInclude("optional", true),
+      MakeInclude("aos/flatbuffers/static_table.h"),
+      MakeInclude("aos/flatbuffers/static_vector.h")};
+  for (const reflection::SchemaFile *file : *schema->fbs_files()) {
+    includes.insert(
+        MakeInclude(IncludePathForFbs(file->filename()->string_view())));
+    includes.insert(MakeInclude(
+        IncludePathForFbs(file->filename()->string_view(), "generated")));
+    for (const flatbuffers::String *included : *file->included_filenames()) {
+      includes.insert(MakeInclude(IncludePathForFbs(included->string_view())));
+    }
+  }
+  std::vector<std::string> alignments;
+  std::set<std::string> subobject_names;
+  for (const FieldData &field : fields) {
+    inline_absolute_offset =
+        PaddedSize(inline_absolute_offset, field.inline_alignment);
+    if (!field.is_inline) {
+      // All sub-fields will get aligned to the parent alignment. This makes
+      // some book-keeping a bit easier, at the expense of some gratuitous
+      // padding.
+      offset_data_relative_offset =
+          AlignCppString(offset_data_relative_offset, "kAlign");
+      alignments.push_back(field.full_type + "::kAlign");
+    } else {
+      alignments.push_back(std::to_string(field.inline_alignment));
+    }
+    const std::string offset_data_absolute_offset =
+        offset_data_start_expression + " + " + offset_data_relative_offset;
+    accessors += MakeAccessors(field, inline_absolute_offset);
+    members +=
+        MakeMembers(field, offset_data_absolute_offset, inline_absolute_offset);
+
+    inline_absolute_offset += field.inline_size;
+    if (!field.is_inline) {
+      offset_data_relative_offset +=
+          absl::StrFormat(" + %s::kSize", field.full_type);
+    }
+    if (field.fbs_type.has_value()) {
+      // Is this not getting populate for the root schema?
+      subobject_names.insert(field.fbs_type.value());
+    }
+  }
+
+  const std::string alignment =
+      absl::StrCat("static constexpr size_t kAlign = std::max<size_t>({",
+                   absl::StrJoin(alignments, ", "), "});\n");
+  const std::string size =
+      absl::StrCat("static constexpr size_t kSize = ",
+                   AlignCppString(offset_data_start_expression + " + " +
+                                      offset_data_relative_offset,
+                                  "kAlign"),
+                   ";");
+  const size_t inline_data_size = inline_absolute_offset;
+  const std::string constants = absl::StrFormat(
+      R"code(
+  // Space taken up by the inline portion of the flatbuffer table data, in bytes.
+  static constexpr size_t kInlineDataSize = %d;
+  // Space taken up by the vtable for this object, in bytes.
+  static constexpr size_t kVtableSize = sizeof(::flatbuffers::voffset_t) * (2 + %d);
+  // Offset from the start of the internal memory buffer to the start of the vtable.
+  static constexpr size_t kVtableStart = ::aos::fbs::PaddedSize(kInlineDataSize, alignof(::flatbuffers::voffset_t));
+  // Required alignment of this object. The buffer that this object gets constructed
+  // into must be aligned to this value.
+  %s
+  // Nominal size of this object, in bytes. The object may grow beyond this size,
+  // but will always start at this size and so the initial buffer must match
+  // this size.
+  %s
+  static_assert(%d <= kAlign, "Flatbuffer schema minalign should not exceed our required alignment.");
+  // Offset from the start of the memory buffer to the start of any out-of-line data (subtables,
+  // vectors, strings).
+  static constexpr size_t kOffsetDataStart = %s;
+  // Size required for a buffer that includes a root table offset at the start.
+  static constexpr size_t kRootSize = ::aos::fbs::PaddedSize(kSize + sizeof(::flatbuffers::uoffset_t), kAlign);
+  // Minimum size required to build this flatbuffer in an entirely unaligned buffer
+  // (including the root table offset). Made to be a multiple of kAlign for convenience.
+  static constexpr size_t kUnalignedBufferSize = kRootSize + kAlign;
+  // Offset at which the table vtable offset occurs. This is only needed for vectors.
+  static constexpr size_t kOffset = 0;
+  // Various overrides to support the Table parent class.
+  size_t FixedVtableOffset() const final { return kVtableStart; }
+  size_t VtableSize() const final { return kVtableSize; }
+  size_t InlineTableSize() const final { return kInlineDataSize; }
+  size_t OffsetDataStart() const final { return kOffsetDataStart; }
+  size_t Alignment() const final { return kAlign; }
+  // Exposes the name of the flatbuffer type to allow interchangeable use
+  // of the Flatbuffer and FlatbufferStatic types in various AOS methods.
+  static const char *GetFullyQualifiedName() { return Flatbuffer::GetFullyQualifiedName(); }
+)code",
+      inline_data_size, object->fields()->size(), alignment, size,
+      nominal_min_align, offset_data_start_expression);
+  const std::string_view fbs_type_name = object->name()->string_view();
+  const std::string type_namespace = FlatbufferNameToCppName(
+      fbs_type_name.substr(0, fbs_type_name.find_last_of(".")));
+  const std::string type_name = AosNameForRawFlatbuffer(
+      fbs_type_name.substr(fbs_type_name.find_last_of(".") + 1));
+  const std::string object_code = absl::StrFormat(
+      R"code(
+namespace %s {
+class %s : public ::aos::fbs::Table {
+  public:
+  // The underlying "raw" flatbuffer type for this type.
+  typedef %s Flatbuffer;
+  // Returns this object as a flatbuffer type. This reference may not be valid
+  // following mutations to the underlying flatbuffer, due to how memory may get
+  // may get moved around.
+  const Flatbuffer &AsFlatbuffer() const { return *GetFlatbuffer<Flatbuffer>(); }
+%s
+%s
+  virtual ~%s() {}
+%s
+%s
+%s
+  private:
+%s
+%s
+%s
+};
+}
+  )code",
+      type_namespace, type_name, FlatbufferNameToCppName(fbs_type_name),
+      constants, MakeConstructor(type_name), type_name, accessors,
+      MakeFullClearer(fields), MakeCopier(fields),
+      MakeMoveConstructor(type_name), members, MakeSubObjectList(fields));
+
+  GeneratedObject result;
+  result.name = fbs_type_name;
+  result.include_declarations = includes;
+  result.code = object_code;
+  result.subobjects = subobject_names;
+  return result;
+}
+
+namespace {
+
+// Generated C++ code for an entire fbs file.
+// This includes all of the actual C++ code that will be written to a file (call
+// GenerateCode() to actually get the desired contents of the file).
+struct GeneratedCode {
+  // Prefix (for include guards).
+  std::string contents_prefix;
+  // Full set of required #include declarations.
+  std::set<std::string> include_declarations;
+  // Ordered list of objects (order is necessary to ensure that any dependencies
+  // between objects are managed correctly).
+  std::vector<GeneratedObject> objects;
+  // Suffix (for include guards).
+  std::string contents_suffix;
+
+  // Combine the above things into the string that actually needs to be written
+  // to a file.
+  std::string GenerateCode() const;
+  // Combines the code for multiple objects into one.
+  static GeneratedCode MergeCode(const std::vector<GeneratedObject> &objects);
+};
+
+std::string GeneratedCode::GenerateCode() const {
+  std::string result =
+      contents_prefix + absl::StrJoin(include_declarations, "");
+  for (const auto &object : objects) {
+    result += object.code;
+  }
+  result += contents_suffix;
+  return result;
+}
+
+GeneratedCode GeneratedCode::MergeCode(
+    const std::vector<GeneratedObject> &objects) {
+  GeneratedCode result;
+  // TODO(james): Should we use #ifdef include guards instead?
+  result.contents_prefix =
+      "#pragma once\n// This is a generated file. Do not modify.\n";
+  // We need to get the ordering of objects correct in order to ensure that
+  // depended-on objects appear before their dependees.
+  // In order to do this, we:
+  // 1) Assume that any objects not in the provided vector must exist in
+  //    #includes and so can be ignored.
+  // 2) Create a list of all the objects we have been provided but which we have
+  //    not yet added to the results vector.
+  // 3) Until said list is empty, we iterate over it and find any object(s)
+  //    which have no dependencies in the list itself, and add them to the
+  //    result.
+  // We aren't going to worry about efficient graph traversal here or anything.
+  // We also don't currently attempt to support circular dependencies.
+  std::map<std::string_view, const GeneratedObject *> remaining_objects;
+  for (const auto &object : objects) {
+    remaining_objects[object.name] = &object;
+  }
+  while (!remaining_objects.empty()) {
+    std::string_view to_remove;
+    for (const auto &pair : remaining_objects) {
+      bool has_dependencies = false;
+      for (const std::string_view subobject : pair.second->subobjects) {
+        if (remaining_objects.contains(subobject)) {
+          has_dependencies = true;
+        }
+      }
+      if (has_dependencies) {
+        continue;
+      }
+      to_remove = pair.first;
+      result.objects.push_back(*pair.second);
+      result.include_declarations.insert(
+          pair.second->include_declarations.begin(),
+          pair.second->include_declarations.end());
+      break;
+    }
+    // In order to support circular dependencies, two main things have to
+    // change:
+    // 1. We have to dynamically allow depopulating table members (rather than
+    //    just supporting dynamically lengthed vectors).
+    // 2. Some of the codegen needs to be tweaked so that we can have the
+    // generated
+    //    C++ classes depend on one another.
+    CHECK(!to_remove.empty())
+        << ": Circular dependencies in flatbuffers schemas are not supported.";
+    CHECK_EQ(1u, remaining_objects.erase(to_remove))
+        << ": Failed to remove " << to_remove;
+  }
+  return result;
+}
+}  // namespace
+
+std::string GenerateCodeForRootTableFile(const reflection::Schema *schema) {
+  const reflection::Object *root_object = CHECK_NOTNULL(GetObject(schema, -1));
+  const std::string_view root_file =
+      root_object->declaration_file()->string_view();
+  std::vector<GeneratedObject> objects = {
+      GenerateCodeForObject(schema, root_object)};
+  for (const reflection::Object *object : *schema->objects()) {
+    if (object->is_struct()) {
+      continue;
+    }
+    if (object->declaration_file()->string_view() == root_file) {
+      objects.push_back(GenerateCodeForObject(schema, object));
+    }
+  }
+  return GeneratedCode::MergeCode(objects).GenerateCode();
+}
+}  // namespace aos::fbs
