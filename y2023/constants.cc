@@ -101,12 +101,12 @@ Values MakeValues(uint16_t team) {
           M_PI * 2.0 * constants::Values::kDistalEncoderRatio() *
           (3.12725165289659 + 0.002) / 3.1485739705977704;
 
-      roll_joint->zeroing.measured_absolute_position = 1.79390317510529;
+      roll_joint->zeroing.measured_absolute_position = 1.82824749141201;
       roll_joint->potentiometer_offset =
           0.624713611895747 + 3.10458504917251 - 0.0966407797407789 +
           0.0257708772364788 - 0.0395076737853459 - 6.87914956118006 -
           0.097581301615046 + 3.3424421683095 - 3.97605190912604 +
-          0.709274294168941;
+          0.709274294168941 - 0.0817908884966825;
 
       wrist->subsystem_params.zeroing_constants.measured_absolute_position =
           0.919903042931046;
