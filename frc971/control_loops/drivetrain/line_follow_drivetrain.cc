@@ -257,7 +257,7 @@ void LineFollowDrivetrain::Update(
        relative_pose_.rel_pos().y(), relative_pose_.rel_theta(),
        abs_state(3, 0), abs_state(4, 0))
           .finished();
-  if (velocity_sign_ * goal_velocity_ < 0) {
+  if (velocity_sign_ * goal_velocity_ < -0.1) {
     goal_theta = rel_state(2, 0);
   }
   controls_goal_ << goal_theta, goal_velocity_, 0.0;
