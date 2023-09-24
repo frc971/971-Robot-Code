@@ -12,6 +12,8 @@
 
 #include "aos/network/team_number.h"
 #include "aos/stl_mutex/stl_mutex.h"
+#include "frc971/zeroing/absolute_encoder.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2019/control_loops/superstructure/elevator/integral_elevator_plant.h"
 #include "y2019/control_loops/superstructure/intake/integral_intake_plant.h"
 #include "y2019/control_loops/superstructure/stilts/integral_stilts_plant.h"

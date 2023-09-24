@@ -5,6 +5,7 @@
 
 #include "aos/commonmath.h"
 #include "frc971/control_loops/control_loop.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "frc971/zeroing/wrap.h"
 #include "frc971/zeroing/zeroing.h"
 #include "y2018/constants.h"

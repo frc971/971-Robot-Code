@@ -9,6 +9,7 @@
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "frc971/shooter_interpolation/interpolation.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2022_bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2022_bot3/control_loops/superstructure/climber/climber_plant.h"
 #include "y2022_bot3/control_loops/superstructure/intake/intake_plant.h"

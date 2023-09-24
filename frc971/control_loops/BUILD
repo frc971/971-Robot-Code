@@ -416,6 +416,7 @@ cc_library(
         "//aos/util:trapezoid_profile",
         "//frc971/control_loops:control_loop",
         "//frc971/zeroing",
+        "//frc971/zeroing:pot_and_index",
     ],
 )
 
@@ -661,6 +662,9 @@ cc_test(
         ":static_zeroing_single_dof_profiled_subsystem_test_subsystem_output_fbs",
         "//aos/testing:googletest",
         "//frc971/control_loops:control_loop_test",
+        "//frc971/zeroing:absolute_and_absolute_encoder",
+        "//frc971/zeroing:absolute_encoder",
+        "//frc971/zeroing:pot_and_absolute_encoder",
     ],
 )
 

@@ -61,20 +61,8 @@ cc_test(
 cc_library(
     name = "zeroing",
     srcs = [
-        "absolute_and_absolute_encoder.cc",
-        "absolute_encoder.cc",
-        "hall_effect_and_position.cc",
-        "pot_and_absolute_encoder.cc",
-        "pot_and_index.cc",
-        "pulse_index.cc",
     ],
     hdrs = [
-        "absolute_and_absolute_encoder.h",
-        "absolute_encoder.h",
-        "hall_effect_and_position.h",
-        "pot_and_absolute_encoder.h",
-        "pot_and_index.h",
-        "pulse_index.h",
         "zeroing.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
@@ -88,19 +76,10 @@ cc_library(
     ],
 )
 
-cc_test(
-    name = "zeroing_test",
-    srcs = [
-        "absolute_and_absolute_encoder_test.cc",
-        "absolute_encoder_test.cc",
-        "hall_effect_and_position_test.cc",
-        "pot_and_absolute_encoder_test.cc",
-        "pot_and_index_test.cc",
-        "pulse_index_test.cc",
-        "relative_encoder_test.cc",
-        "zeroing_test.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
+cc_library(
+    name = "zeroing_test_lib",
+    testonly = True,
+    hdrs = ["zeroing_test.h"],
     deps = [
         ":zeroing",
         "//aos/testing:googletest",
@@ -108,6 +87,46 @@ cc_test(
         "//frc971/control_loops:position_sensor_sim",
     ],
 )
+
+[
+    (
+        cc_library(
+            name = lib,
+            srcs = [lib + ".cc"],
+            hdrs = [lib + ".h"],
+            deps = [
+                ":wrap",
+                ":zeroing",
+                "//aos/containers:error_list",
+                "//aos/logging",
+                "//frc971:constants",
+                "//frc971/control_loops:control_loops_fbs",
+                "@com_github_google_glog//:glog",
+            ],
+        ),
+        cc_test(
+            name = lib + "_test",
+            srcs = [lib + "_test.cc"],
+            deps = [
+                lib,
+                ":zeroing",
+                ":zeroing_test_lib",
+                "//aos/testing:googletest",
+                "//frc971/control_loops:control_loops_fbs",
+                "//frc971/control_loops:position_sensor_sim",
+            ],
+        ),
+    )
+    for lib in [
+        "absolute_and_absolute_encoder",
+        "absolute_encoder",
+        "continuous_absolute_encoder",
+        "hall_effect_and_position",
+        "pot_and_absolute_encoder",
+        "pot_and_index",
+        "pulse_index",
+    ]
+]
 
 cc_library(
     name = "wrap",

@@ -2,6 +2,7 @@
 #define Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_INTAKE_INTAKE_H_
 
 #include "frc971/control_loops/profiled_subsystem.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
 

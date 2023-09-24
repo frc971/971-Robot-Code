@@ -37,8 +37,8 @@ void DrivetrainWriter::HandleCANConfiguration(
 
 void DrivetrainWriter::WriteConfigs() {
   for (auto module : {front_left_, front_right_, back_left_, back_right_}) {
-    module->rotation->WriteConfigs(false);
-    module->translation->WriteConfigs(false);
+    module->rotation->WriteConfigs();
+    module->translation->WriteConfigs();
   }
 }
 

@@ -69,6 +69,8 @@ cc_library(
         "//aos/events:event_loop",
         "//frc971/control_loops:control_loop",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//frc971/zeroing:absolute_encoder",
+        "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2019:constants",
         "//y2019:status_light_fbs",
     ],

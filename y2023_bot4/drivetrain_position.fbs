@@ -1,0 +1,16 @@
+include "frc971/control_loops/control_loops.fbs";
+namespace y2023_bot4;
+
+table AbsoluteDrivetrainPosition {
+  // Position of the follower wheels from the encoders
+  follower_wheel_one_position:double (id: 0);
+  follower_wheel_two_position:double (id: 1);
+
+  // Position from the mag encoder on each module.
+  front_left_position: frc971.AbsolutePosition (id: 2);
+  front_right_position: frc971.AbsolutePosition (id: 3);
+  back_left_position: frc971.AbsolutePosition (id: 4);
+  back_right_position: frc971.AbsolutePosition  (id: 5);
+}
+
+root_type AbsoluteDrivetrainPosition;

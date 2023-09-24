@@ -5,6 +5,8 @@
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
+#include "frc971/zeroing/absolute_encoder.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2019/constants.h"
 #include "y2019/control_loops/superstructure/collision_avoidance.h"
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"

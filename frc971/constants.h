@@ -70,6 +70,28 @@ struct PotAndAbsoluteEncoderZeroingConstants {
 
 struct RelativeEncoderZeroingConstants {};
 
+struct ContinuousAbsoluteEncoderZeroingConstants {
+  // The number of samples in the moving average filter.
+  size_t average_filter_size;
+  // The distance that the absolute encoder needs to complete a full rotation.
+  // It is presumed that this will always be 2 * pi for any subsystem using this
+  // class, unless you have a continuous system that for some reason doesn't
+  // have a logical period of 1 revolution in radians.
+  double one_revolution_distance;
+  // Measured absolute position of the encoder when at zero.
+  double measured_absolute_position;
+
+  // Threshold for deciding if we are moving. moving_buffer_size samples need to
+  // be within this distance of each other before we use the middle one to zero.
+  double zeroing_threshold;
+  // Buffer size for deciding if we are moving.
+  size_t moving_buffer_size;
+
+  // Value between 0 and 1 indicating what fraction of a revolution
+  // it is acceptable for the offset to move.
+  double allowable_encoder_error;
+};
+
 struct AbsoluteEncoderZeroingConstants {
   // The number of samples in the moving average filter.
   size_t average_filter_size;

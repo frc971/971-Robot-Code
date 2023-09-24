@@ -11,6 +11,7 @@
 #include "frc971/constants.h"
 #include "frc971/control_loops/profiled_subsystem.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/zeroing/pulse_index.h"
 #include "y2017/control_loops/superstructure/column/column_integral_plant.h"
 #include "y2017/control_loops/superstructure/column/stuck_column_integral_plant.h"
 

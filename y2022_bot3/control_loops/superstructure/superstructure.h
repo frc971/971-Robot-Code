@@ -4,6 +4,7 @@
 #include "aos/events/event_loop.h"
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2022_bot3/constants.h"
 #include "y2022_bot3/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022_bot3/control_loops/superstructure/superstructure_output_generated.h"

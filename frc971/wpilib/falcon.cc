@@ -3,11 +3,12 @@
 using frc971::wpilib::Falcon;
 using frc971::wpilib::kMaxBringupPower;
 
-Falcon::Falcon(int device_id, std::string canbus,
+Falcon::Falcon(int device_id, bool inverted, std::string canbus,
                std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
                double stator_current_limit, double supply_current_limit)
     : talon_(device_id, canbus),
       device_id_(device_id),
+      inverted_(inverted),
       device_temp_(talon_.GetDeviceTemp()),
       supply_voltage_(talon_.GetSupplyVoltage()),
       supply_current_(talon_.GetSupplyCurrent()),
@@ -37,6 +38,12 @@ Falcon::Falcon(int device_id, std::string canbus,
   signals->push_back(&duty_cycle_);
 }
 
+Falcon::Falcon(FalconParams params, std::string canbus,
+               std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
+               double stator_current_limit, double supply_current_limit)
+    : Falcon(params.device_id, params.inverted, canbus, signals,
+             stator_current_limit, supply_current_limit) {}
+
 void Falcon::PrintConfigs() {
   ctre::phoenix6::configs::TalonFXConfiguration configuration;
   ctre::phoenix::StatusCode status =
@@ -48,9 +55,7 @@ void Falcon::PrintConfigs() {
   AOS_LOG(INFO, "configuration: %s", configuration.ToString().c_str());
 }
 
-void Falcon::WriteConfigs(ctre::phoenix6::signals::InvertedValue invert) {
-  inverted_ = invert;
-
+void Falcon::WriteConfigs() {
   ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
   current_limits.StatorCurrentLimit = stator_current_limit_;
   current_limits.StatorCurrentLimitEnable = true;
@@ -94,7 +99,8 @@ ctre::phoenix::StatusCode Falcon::WriteCurrent(double current,
   return status;
 }
 
-void Falcon::SerializePosition(flatbuffers::FlatBufferBuilder *fbb) {
+void Falcon::SerializePosition(flatbuffers::FlatBufferBuilder *fbb,
+                               double gear_ratio) {
   control_loops::CANFalcon::Builder builder(*fbb);
   builder.add_id(device_id_);
   builder.add_device_temp(device_temp());
@@ -102,7 +108,7 @@ void Falcon::SerializePosition(flatbuffers::FlatBufferBuilder *fbb) {
   builder.add_supply_current(supply_current());
   builder.add_torque_current(torque_current());
   builder.add_duty_cycle(duty_cycle());
-  builder.add_position(position());
+  builder.add_position(position() * gear_ratio);
 
   last_position_offset_ = builder.Finish();
 }

@@ -43,6 +43,7 @@ cc_library(
     deps = [
         ":hood_plants",
         "//frc971/control_loops:profiled_subsystem",
+        "//frc971/zeroing:pulse_index",
         "//y2017:constants",
         "//y2017/control_loops/superstructure:superstructure_goal_fbs",
         "//y2017/control_loops/superstructure:superstructure_position_fbs",
