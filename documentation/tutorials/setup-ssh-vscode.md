@@ -6,15 +6,14 @@
 2. Have credentials to access the build server, this should include ssh keys and the ssh config file for the build server: [Setting up access to a workspace on the build server](../../README.md#Setting-up-access-to-a-workspace-on-the-build-server)
 
 ## Setting up ssh config
-1. Paste this into your `~/.ssh/config` file, this assumes that your private key is named `id_971_rsa`
+1. Paste this into your `~/.ssh/config` file, this assumes that your private key is named `id_ed25519`
 
 ```
 Host frc971
     HostName build.frc971.org
     User <SVN username>
     Port 2222
-    IdentityFile ~/.ssh/id_971_rsa
-    LocalForward 9971 127.0.0.1:3389
+    IdentityFile ~/.ssh/id_ed25519
 ```
 
 ## Configuring vscode
@@ -28,6 +27,9 @@ Host frc971
 
 5. Click `Connect to Host...` and then `frc971`
 
+6. Click `Open Folder` and then select `971-ROBOT-CODE`
+
 ## Useful extensions
 - GitLens by Eric Amodio
 - C/C++ by Microsoft
+- Live Share by Microsoft

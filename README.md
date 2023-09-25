@@ -37,20 +37,20 @@ To do this, add the following to your commit message.  Gerrit will enforce that 
 Git has support for adding Signed-off-by lines by using `git commit -s`, or you can setup a git commit hook to automatically sign off your commits.  [Stack Overflow](https://stackoverflow.com/questions/15015894/git-add-signed-off-by-line-using-format-signoff-not-working) has instructions for how to do this if you are interested.
 
 ## Access to the code
-The main central location for our code is our [Gerrit](https://www.gerritcodereview.com/) server at https://software.frc971.org/gerrit. To download a copy of the 971 code on your computer, follow these steps:
-  1. Fill out an SVN account request form to get an SVN account.
-    1. Mention that you are part of the software team and need Gerrit access
-    2. It is recommended to use your firstname in all lowercase for your username
-  2. Go to our [Gerrit server](https://software.frc971.org/gerrit) and create an account.
-  3. Contact Brian Silverman or Stephan Massalt with your SVN username to get access to the code in Gerrit.
-  4. When you log into Gerrit the first time, please [add your Email Address](http://software.frc971.org/gerrit/settings/#EmailAddresses)
-  5. Add your SSH key to Gerrit in order to be able to check out code
-    1. If you don't already have an ssh key, you can create one using `ssh-keygen -t ed25519`.  This will create a public/private key pair-- the default location for your public key will be `~/.ssh/id_ed25519.pub`
-    2. Log into Gerrit and go to `Settings->SSH Keys` and paste your public key into the `New SSH Key` text box and clicking on `ADD NEW SSH KEY`
-  6. Install `git`: `sudo apt install git`
-  7. Go to [the 971-Robot-Code project in Gerrit](https://software.frc971.org/gerrit/#/admin/projects/971-Robot-Code) and run the command to Download the 971-Robot-Code repository.
-    1. We recommend downloading the code via SSH using the `clone with commit-msg hook` command
-    2. NOTE: Running with the option to `clone with commit-msg hook` will save you trouble later.
+The main central location for our code is our [Gerrit](https://www.gerritcodereview.com/) server at https://software.frc971.org/gerrit. If you are on a platform not compatible with our codebase follow the instructions [here](#setting-up-access-to-a-workspace-on-the-build-server) to set up access to the build server. To download a copy of the 971 code on your computer, follow these steps:
+  1. Fill out the 971 system access request form to get a gerrit account.
+  - The form is pinned in the `#coding` channel in slack.  
+  - You need to be fully signed up for the team and have turned in all the forms and pass the safety test
+    - More information on signing up with the team can be found here: https://frc971.org/join
+  2. Wait for Stephan Massalt to setup the account and message you the credentials. 
+  3. When you log into Gerrit the first time, please [add your Email Address](http://software.frc971.org/gerrit/settings/#EmailAddresses)  
+  4. Add your SSH key to Gerrit in order to be able to check out code
+  - If you don't already have an ssh key, you can create one using `ssh-keygen -t ed25519`.  This will create a public/private key pair-- the default location for your public key will be `~/.ssh/id_ed25519.pub`
+  - Log into Gerrit and go to `Settings->SSH Keys` and paste your public key into the `New SSH Key` text box and clicking on `ADD NEW SSH KEY`
+  5. Install `git`: `sudo apt install git`
+  6. Go to [the 971-Robot-Code project in Gerrit](https://software.frc971.org/gerrit/#/admin/projects/971-Robot-Code) and run the command to Download the 971-Robot-Code repository.
+  - We recommend downloading the code via SSH using the `clone with commit-msg hook` command
+  - NOTE: Running with the option to `clone with commit-msg hook` will save you trouble later.
 
 To learn more about git, open a terminal and run `man git`, or see [git(1)](https://manpages.debian.org/buster/git-man/git.1.en.html) (especially the NOTES section).
 
@@ -114,10 +114,12 @@ cd ~
 ssh-keygen -t ed25519 -f ~/.ssh/id_971_ed25519
 chmod 600 ./.ssh/id_971_ed25519
 ```
-  2. Send the contents of id_971_ed25519.pub to Stephan Massalt along with the password that you want to use. WAIT for feedback, as he needs to setup the account.
+  2. Complete the 971 system access request form for a buildserver account. WAIT for feedback, as he needs to setup the account.
+  - The form is pinned in the `#coding` channel in slack.  
+  - When asked for your public SSH key, provide the contents of `id_971_ed25519.pub`
 ```console
 cat ~/.ssh/id_971_ed25519.pub
-# Then send the stuff that gets printed to Stephan via slack.
+# This output is your public SSH key for the request form.
 ```
   3. Once you hear back from Stephan, test SSH.
 ```console
@@ -127,18 +129,19 @@ ssh REPLACE_WITH_YOUR_USERNAME@build.frc971.org -p 2222 -i ~/.ssh/id_971_ed25519
 ```console
 ssh REPLACE_WITH_YOUR_USERNAME@build.frc971.org -p 2222 -i ~/.ssh/id_971_ed25519 -L 9971:127.0.0.1:3389
 ```
-  5. So at this point you run the Remote Desktop app in Windows.  Once
+  5. Now that you have buildserver access setup, you can follow the [vscode instructions](documentation/tutorials/setup-ssh-vscode.md) to use the buildserver with vscode.
+  6. For a graphical interface you can use the Remote Desktop app in Windows.  Once
 you get there, all you need to do is put `127.0.0.1:9971` for the
-computer name, and use your SVN username.  Once you get connected,
+computer name, and use your gerrit username.  Once you get connected,
 accept the server certificate and then enter your password that you
-gave Stephan. (It's either something unique or your SVN pwd) Then
+gave Stephan. (It's either something unique or your gerrit pwd) Then
 select the Default panel config.  You can exit the Remote Desktop if
 you are good w/ the raw cmd line interface.  And for future logins all
 you have to do is tunnel and then login using the app.  Now if you
 have a graphical application that you are developing (e.g., spline
 UI), then you have to run the build command in the Remote Desktop
 application.
-  6. Very important: In order for you to be able to commit, you need
+  7. Very important: In order for you to be able to commit, you need
   to configure your email address in `git`.  To do this, run the
   following command, replacing `<YOUR EMAIL>` with the email that you are
   using for Gerrit:
