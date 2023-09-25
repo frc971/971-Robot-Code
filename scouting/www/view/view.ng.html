@@ -98,8 +98,8 @@
             </div>
           </th>
           <th scope="col">Team</th>
-          <th scope="col">Set</th>
           <th scope="col">Comp Level</th>
+          <th scope="col">Scout</th>
           <th scope="col"></th>
         </tr>
       </thead>
@@ -107,8 +107,8 @@
         <tr *ngFor="let stat2023 of statList; index as i;">
           <th scope="row">{{stat2023.matchNumber()}}</th>
           <td>{{stat2023.teamNumber()}}</td>
-          <td>{{stat2023.setNumber()}}</td>
           <td>{{COMP_LEVEL_LABELS[stat2023.compLevel()]}}</td>
+          <td>{{stat2023.collectedBy()}}</td>
           <!-- Delete Icon. -->
           <td>
             <button
