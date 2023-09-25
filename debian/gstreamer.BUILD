@@ -262,8 +262,8 @@ cc_library(
         "usr/include",
         "usr/include/glib-2.0",
         "usr/include/gstreamer-1.0",
-        "usr/include/libsoup-2.4",
         "usr/include/json-glib-1.0",
+        "usr/include/libsoup-2.4",
         "usr/include/opencv4",
     ],
     linkopts = [

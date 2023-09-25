@@ -188,14 +188,14 @@ cc_test(
     shard_count = 8,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":localizer",
         ":drivetrain_base",
+        ":localizer",
         "//aos/testing:googletest",
         "//aos/testing:random_seed",
         "//aos/testing:test_shm",
+        "//frc971/control_loops/drivetrain:splinedrivetrain",
         "//frc971/control_loops/drivetrain:trajectory",
         "//y2019:constants",
-        "//frc971/control_loops/drivetrain:splinedrivetrain",
         "@com_github_gflags_gflags//:gflags",
     ] + cpu_select({
         "amd64": [

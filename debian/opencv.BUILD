@@ -263,10 +263,10 @@ cc_library(
     name = "opencv",
     srcs = select({
         "@platforms//cpu:x86_64": [s % "x86_64-linux-gnu" if "%" in s else s for s in _common_srcs_list] + [
-            "usr/lib/x86_64-linux-gnu/libmfx.so.1",
-            "usr/lib/x86_64-linux-gnu/libquadmath.so.0",
-            "usr/lib/x86_64-linux-gnu/libnuma.so.1",
             "usr/lib/x86_64-linux-gnu/libcrypto.so.1.1",
+            "usr/lib/x86_64-linux-gnu/libmfx.so.1",
+            "usr/lib/x86_64-linux-gnu/libnuma.so.1",
+            "usr/lib/x86_64-linux-gnu/libquadmath.so.0",
             "usr/lib/x86_64-linux-gnu/libssl.so.1.1",
         ],
         "@platforms//cpu:armv7": [s % "arm-linux-gnueabihf" if "%" in s else s for s in _common_srcs_list],
