@@ -22,7 +22,7 @@ points = {}
 points['Neutral'] = np.array((np.pi, 0.0, 0.0))
 
 points['GroundPickupBackConeUp'] = to_theta_with_circular_index_and_roll(
-    -1.07774334, 0.40, np.pi / 2.0, circular_index=1)
+    -1.07774334, 0.39, np.pi / 2.0, circular_index=1)
 
 named_segments.append(
     ThetaSplineSegment(
@@ -346,7 +346,7 @@ named_segments.append(
     ))
 
 points['HPPickupFrontConeUp'] = np.array(
-    (5.16514378449353, 1.25, -np.pi / 2.0))
+    (5.16514378449353, 1.2461538461538462, -np.pi / 2.0))
 #        to_theta_with_circular_index_and_roll(
 #    0.265749, 1.28332, -np.pi / 2.0, circular_index=1)
 
@@ -538,7 +538,7 @@ named_segments.append(
     ))
 
 points['GroundPickupFrontConeUp'] = to_theta_with_circular_index_and_roll(
-    0.313099, 0.380, -np.pi / 2.0, circular_index=0)
+    0.313099, 0.39, -np.pi / 2.0, circular_index=0)
 
 named_segments.append(
     ThetaSplineSegment(
