@@ -12,6 +12,25 @@
 
 namespace aos::starter {
 
+// Blocks all signals while an instance of this class is in scope.
+class ScopedCompleteSignalBlocker {
+ public:
+  ScopedCompleteSignalBlocker() {
+    sigset_t mask;
+    sigfillset(&mask);
+    // Remember the current mask.
+    PCHECK(sigprocmask(SIG_SETMASK, &mask, &old_mask_) == 0);
+  }
+
+  ~ScopedCompleteSignalBlocker() {
+    // Restore the remembered mask.
+    PCHECK(sigprocmask(SIG_SETMASK, &old_mask_, nullptr) == 0);
+  }
+
+ private:
+  sigset_t old_mask_;
+};
+
 // RAII class to become root and restore back to the original user and group
 // afterwards.
 class Sudo {
@@ -211,35 +230,56 @@ void Application::DoStart() {
   pipe_timer_->Schedule(event_loop_->monotonic_now(),
                         std::chrono::milliseconds(100));
 
-  const pid_t pid = fork();
+  {
+    // Block all signals during the fork() call. Together with the default
+    // signal handler restoration below, This prevents signal handlers from
+    // getting called in the child and accidentally affecting the parent. In
+    // particular, the exit handler for shm_event_loop could be called here if
+    // we don't exec() quickly enough.
+    ScopedCompleteSignalBlocker signal_blocker;
 
-  if (pid != 0) {
-    if (pid == -1) {
-      PLOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo ||
-                           quiet_flag_ == QuietLogging::kNotForDebugging)
-          << "Failed to fork '" << name_ << "'";
-      stop_reason_ = aos::starter::LastStopReason::FORK_ERR;
-      status_ = aos::starter::State::STOPPED;
-    } else {
-      pid_ = pid;
-      id_ = next_id_++;
-      start_time_ = event_loop_->monotonic_now();
-      status_ = aos::starter::State::STARTING;
-      latest_timing_report_version_.reset();
-      LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
-          << "Starting '" << name_ << "' pid " << pid_;
+    const pid_t pid = fork();
 
-      // Set up timer which moves application to RUNNING state if it is still
-      // alive in 1 second.
-      start_timer_->Schedule(event_loop_->monotonic_now() +
-                             std::chrono::seconds(1));
-      // Since we are the parent process, clear our write-side of all the pipes.
-      status_pipes_.write.reset();
-      stdout_pipes_.write.reset();
-      stderr_pipes_.write.reset();
+    if (pid != 0) {
+      if (pid == -1) {
+        PLOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo ||
+                             quiet_flag_ == QuietLogging::kNotForDebugging)
+            << "Failed to fork '" << name_ << "'";
+        stop_reason_ = aos::starter::LastStopReason::FORK_ERR;
+        status_ = aos::starter::State::STOPPED;
+      } else {
+        pid_ = pid;
+        id_ = next_id_++;
+        start_time_ = event_loop_->monotonic_now();
+        status_ = aos::starter::State::STARTING;
+        latest_timing_report_version_.reset();
+        LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
+            << "Starting '" << name_ << "' pid " << pid_;
+
+        // Set up timer which moves application to RUNNING state if it is still
+        // alive in 1 second.
+        start_timer_->Schedule(event_loop_->monotonic_now() +
+                               std::chrono::seconds(1));
+        // Since we are the parent process, clear our write-side of all the
+        // pipes.
+        status_pipes_.write.reset();
+        stdout_pipes_.write.reset();
+        stderr_pipes_.write.reset();
+      }
+      OnChange();
+      return;
     }
-    OnChange();
-    return;
+
+    // Clear any signal handlers so that they don't accidentally interfere with
+    // the parent process. Is there a better way to iterate over all the
+    // signals? Right now we're just dealing with the most common ones.
+    for (int signal : {SIGINT, SIGHUP, SIGTERM}) {
+      struct sigaction action;
+      sigemptyset(&action.sa_mask);
+      action.sa_flags = 0;
+      action.sa_handler = SIG_DFL;
+      PCHECK(sigaction(signal, &action, nullptr) == 0);
+    }
   }
 
   if (memory_cgroup_) {

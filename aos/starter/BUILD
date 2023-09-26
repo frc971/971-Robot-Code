@@ -93,6 +93,24 @@ cc_test(
     ],
 )
 
+# Similar to subprocess_test, but here are all the tests that are not flaky.
+cc_test(
+    name = "subprocess_reliable_test",
+    srcs = ["subprocess_reliable_test.cc"],
+    data = [
+        "//aos/events:pingpong_config",
+    ],
+    # The roborio compiler doesn't support <filesystem>.
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":subprocess",
+        "//aos/events:shm_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "//aos/testing:tmpdir",
+    ],
+)
+
 cc_test(
     name = "starter_test",
     srcs = ["starter_test.cc"],
