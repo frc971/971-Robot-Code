@@ -715,8 +715,11 @@ void SctpReadWrite::SetAuthKey(absl::Span<const uint8_t> auth_key) {
       << "SCTP Authentication key requested, but authentication isn't "
          "enabled... Use `sysctl -w net.sctp.auth_enable=1` to enable";
   // Set up the key with id `1`.
-  std::unique_ptr<sctp_authkey> authkey(
-      (sctp_authkey *)malloc(sizeof(sctp_authkey) + auth_key.size()));
+  // NOTE: `sctp_authkey` is a variable-sized struct which is why it needs
+  // to be heap allocated. Regardless, this object doesn't have to persist past
+  // the `setsockopt` call below.
+  std::unique_ptr<sctp_authkey> authkey(static_cast<sctp_authkey *>(
+      ::operator new(sizeof(sctp_authkey) + auth_key.size())));
 
   authkey->sca_keynumber = 1;
   authkey->sca_keylength = auth_key.size();
