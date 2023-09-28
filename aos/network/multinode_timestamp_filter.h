@@ -84,6 +84,10 @@ class NewtonSolver {
   // Ratio to let the cost increase when line searching.  A small increase is
   // fine since we aren't perfectly convex.
   static constexpr double kAlpha = -0.15;
+  // Ratio to require the cost to decrease when line searching.
+  static constexpr double kUnconstrainedAlpha = 0.5;
+  // Unconstrained min line search distance to guarantee forward progress.
+  static constexpr double kLineSearchStopThreshold = 0.4;
   // Line search step parameter.
   static constexpr double kBeta = 0.5;
   static constexpr double kMu = 2.0;
@@ -160,7 +164,8 @@ class NewtonSolver {
   // used for the equality constraint.  The last term is the scalar on the
   // equality constraint.  This needs to be removed from the solution to get the
   // actual newton step.
-  Eigen::VectorXd Newton(const Problem::Derivatives &derivatives,
+  Eigen::VectorXd Newton(const Eigen::Ref<const Eigen::VectorXd> y,
+                         const Problem::Derivatives &derivatives,
                          size_t iteration);
 
   // The solve number for this instance of the problem.

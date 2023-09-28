@@ -459,7 +459,8 @@ Problem::Derivatives TimestampProblem::ComputeDerivatives(
   return result;
 }
 
-Eigen::VectorXd NewtonSolver::Newton(const Problem::Derivatives &derivatives,
+Eigen::VectorXd NewtonSolver::Newton(const Eigen::Ref<const Eigen::VectorXd> y,
+                                     const Problem::Derivatives &derivatives,
                                      size_t iteration) {
   // https://www.cs.purdue.edu/homes/jhonorio/16spring-cs52000-equality.pdf
   // https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf chapter 10 is good
@@ -479,6 +480,10 @@ Eigen::VectorXd NewtonSolver::Newton(const Problem::Derivatives &derivatives,
   Eigen::VectorXd b = Eigen::VectorXd::Zero(a.rows());
   b.block(0, 0, derivatives.gradient.rows(), 1) = -derivatives.gradient;
   if (derivatives.Axmb.rows()) {
+    const Eigen::Ref<const Eigen::VectorXd> v =
+        y.block(derivatives.hessian.rows(), 0, derivatives.A.rows(), 1);
+    b.block(0, 0, derivatives.gradient.rows(), 1) -=
+        derivatives.A.transpose() * v;
     b.block(derivatives.gradient.rows(), 0, derivatives.Axmb.rows(), 1) =
         -derivatives.Axmb;
   }
@@ -517,9 +522,6 @@ double NewtonSolver::RSquaredUnconstrained(
   // Note: all the prints are transposed so they fit on one line instead of
   // having a ton of massive column vectors being printed all the time.
   SOLVE_VLOG(my_solve_number_, 2)
-      << "    r_primal: " << std::setprecision(12) << std::fixed
-      << std::setfill(' ') << derivatives.Axmb.transpose().format(kHeavyFormat);
-  SOLVE_VLOG(my_solve_number_, 2)
       << "    r_dual: " << std::setprecision(12) << std::fixed
       << std::setfill(' ')
       << derivatives.gradient.transpose().format(kHeavyFormat) << " + "
@@ -527,8 +529,10 @@ double NewtonSolver::RSquaredUnconstrained(
            t * step.block(derivatives.gradient.rows(), 0, 1, 1))
               .transpose() *
           derivatives.A)
-             .transpose()
              .format(kHeavyFormat);
+  SOLVE_VLOG(my_solve_number_, 2)
+      << "    r_primal: " << std::setprecision(12) << std::fixed
+      << std::setfill(' ') << derivatives.Axmb.transpose().format(kHeavyFormat);
   return (derivatives.gradient +
           derivatives.A.transpose() *
               (y.block(derivatives.gradient.rows(), 0, 1, 1) +
@@ -554,12 +558,18 @@ std::tuple<Eigen::VectorXd, size_t, size_t> NewtonSolver::SolveNewton(
       my_solve_number_, y, false, false, absl::Span<const size_t>());
   double r_orig_squared = RSquaredUnconstrained(derivatives, y, y, 0.0);
   while (true) {
-    const Eigen::VectorXd step = Newton(derivatives, iteration);
+    SOLVE_VLOG(my_solve_number_, 1) << "Starting iteration " << iteration;
+
+    const Eigen::VectorXd step = Newton(y, derivatives, iteration);
     solution_node = derivatives.solution_node;
 
+    SOLVE_VLOG(my_solve_number_, 1)
+        << "  y(" << iteration << ") is " << y.transpose().format(kHeavyFormat);
+    PrintDerivatives(derivatives, y, "", 3);
     SOLVE_VLOG(my_solve_number_, 2)
-        << "Step " << iteration << " -> " << std::setprecision(12) << std::fixed
-        << std::setfill(' ') << step.transpose().format(kHeavyFormat);
+        << "  initial step(" << iteration << ") -> " << std::setprecision(12)
+        << std::fixed << std::setfill(' ')
+        << step.transpose().format(kHeavyFormat);
 
     // We now have a search direction.  Line search and go.
     double t = 1.0;
@@ -576,16 +586,30 @@ std::tuple<Eigen::VectorXd, size_t, size_t> NewtonSolver::SolveNewton(
       break;
     }
 
+    SOLVE_VLOG(my_solve_number_, 2)
+        << "  Not close enough, "
+        << step.block(0, 0, problem->states(), 1).lpNorm<Eigen::Infinity>()
+        << " >= 1e-4 || " << derivatives.Axmb.squaredNorm() << " >= 1e-8";
+
     // Now, do line search.
     while (true) {
-      SOLVE_VLOG(my_solve_number_, 3) << "   Trying t: " << t;
       Problem::Derivatives new_derivatives =
           problem->ComputeDerivatives(my_solve_number_, y + t * step, false,
                                       false, absl::Span<const size_t>());
       const double r_squared =
           RSquaredUnconstrained(new_derivatives, y, step, t);
+      SOLVE_VLOG(my_solve_number_, 2)
+          << std::setprecision(12) << std::setfill(' ') << "   |r| < |r+1| "
+          << r_orig_squared << " < " << r_squared << " for step size " << t;
       // See Boyd, section 10.3.2, algorithm 10.2
-      if (r_squared <= std::pow(1.0 - kAlpha * t, 2.0) * r_orig_squared) {
+      if (r_squared <=
+              std::pow(1.0 - kUnconstrainedAlpha * t, 2.0) * r_orig_squared ||
+          t < kLineSearchStopThreshold) {
+        // This is modified because we have seen cases where the way we handle
+        // equality constraints sometimes ends up increasing the cost slightly.
+        // We are better off taking a small step and trying again than shrinking
+        // our step forever.
+        //
         // Save the derivatives and norm computed for the next iteration to save
         // CPU.
         derivatives = std::move(new_derivatives);
@@ -1350,7 +1374,8 @@ void TimestampProblem::Update(size_t solve_number,
       }
 
       SOLVE_VLOG(solve_number, 2)
-          << "    live " << points_[j].time << " vs solution "
+          << std::setprecision(12) << std::fixed << "    live "
+          << points_[j].time << " vs solution "
           << base_clock_[j].time +
                  std::chrono::nanoseconds(static_cast<int64_t>(
                      std::round(data(NodeToFullSolutionIndex(j)))))
