@@ -750,6 +750,10 @@ NewtonSolver::ConstrainedNewton(const Eigen::Ref<const Eigen::VectorXd> y,
   const Eigen::Ref<const Eigen::VectorXd> lambda =
       y.block(x.rows(), 0, derivatives.f.rows(), 1);
 
+  CHECK_LT(0, lambda.rows())
+      << ": You are calling the unconstrained Newton solver without inequality "
+         "constraints. This is not supported.";
+
   const Eigen::Ref<const Eigen::VectorXd> v =
       y.block(x.rows() + lambda.rows(), 0, derivatives.A.rows(), 1);
 
@@ -1085,6 +1089,13 @@ NewtonSolver::SolveConstrainedNewton(
     }
 
     PrintDerivatives(derivatives, y, "", 1);
+
+    if (derivatives.f.rows() == 0) {
+      LOG(ERROR) << "No inequality constraints provided in constrained solver. "
+                    "This suggests an inconsistency in the solver code, please "
+                    "investigate.";
+      return std::nullopt;
+    }
 
     // Figure out our descent direction.
     Eigen::VectorXd dy;
