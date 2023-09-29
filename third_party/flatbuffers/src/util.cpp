@@ -212,9 +212,16 @@ bool FileExists(const char *name) {
   return g_file_exists_function(name);
 }
 
-bool DirExists(const char *name) {
-  // clang-format off
+#ifdef __clang__
+#define NO_MSAN_ATTRIBUTE __attribute__((no_sanitize("memory")))
+#else
+#define NO_MSAN_ATTRIBUTE
+#endif
 
+// For no obvious reason, clang's sanitizer thinks that the mode bits from
+// stat() are uninitialized in some circumstances.
+bool DirExists(const char *name) NO_MSAN_ATTRIBUTE {
+  // clang-format off
   #ifdef _WIN32
     #define flatbuffers_stat _stat
     #define FLATBUFFERS_S_IFDIR _S_IFDIR
