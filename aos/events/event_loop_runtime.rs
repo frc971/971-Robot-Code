@@ -1461,6 +1461,12 @@ impl Add<Duration> for MonotonicInstant {
     }
 }
 
+impl From<MonotonicInstant> for i64 {
+    fn from(value: MonotonicInstant) -> Self {
+        value.0
+    }
+}
+
 impl fmt::Debug for MonotonicInstant {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.duration_since_epoch().fmt(f)
@@ -1486,6 +1492,12 @@ impl RealtimeInstant {
                 "monotonic_clock::time_point should always be after the epoch",
             )))
         }
+    }
+}
+
+impl From<RealtimeInstant> for i64 {
+    fn from(value: RealtimeInstant) -> Self {
+        value.0
     }
 }
 

@@ -163,7 +163,9 @@ impl<'config> ShmEventLoop<'config> {
     /// ```
     pub fn run_with<'env, F>(mut self, fun: F)
     where
-        F: for<'event_loop> FnOnce(&mut Scoped<'event_loop, 'env, EventLoopRuntime<'event_loop>>),
+        F: for<'event_loop> FnOnce(
+            &'event_loop mut Scoped<'event_loop, 'env, EventLoopRuntime<'event_loop>>,
+        ),
     {
         // SAFETY: The runtime and the event loop (i.e. self) both get destroyed at the end of this
         // scope: first the runtime followed by the event loop. The runtime gets exclusive access
@@ -259,12 +261,11 @@ mod tests {
                 let mut event_loop = ShmEventLoop::new(config);
                 let exit_handle = event_loop.make_exit_handle();
                 event_loop.run_with(|runtime| {
-                    let mut watcher: Watcher<ping::Ping> = runtime
-                        .make_watcher("/test")
-                        .expect("Can't create `Ping` watcher");
-                    let on_run = runtime.on_run();
-                    runtime.spawn(async move {
-                        on_run.await;
+                    runtime.spawn(async {
+                        let mut watcher: Watcher<ping::Ping> = runtime
+                            .make_watcher("/test")
+                            .expect("Can't create `Ping` watcher");
+                        runtime.on_run().await;
                         barrier.wait();
                         let ping = watcher.next().await;
                         assert_eq!(ping.message().unwrap().value(), VALUE);
@@ -277,12 +278,11 @@ mod tests {
                 let mut event_loop = ShmEventLoop::new(config);
                 let exit_handle = event_loop.make_exit_handle();
                 event_loop.run_with(|runtime| {
-                    let mut sender: Sender<ping::Ping> = runtime
-                        .make_sender("/test")
-                        .expect("Can't create `Ping` sender");
-                    let on_run = runtime.on_run();
-                    runtime.spawn(async move {
-                        on_run.await;
+                    runtime.spawn(async {
+                        let mut sender: Sender<ping::Ping> = runtime
+                            .make_sender("/test")
+                            .expect("Can't create `Ping` sender");
+                        runtime.on_run().await;
                         // Give the waiting thread a chance to start.
                         barrier.wait();
                         let mut sender = sender.make_builder();
