@@ -131,18 +131,18 @@ class EventLoopRuntime;
 
 class OnRunForRust {
  public:
-  OnRunForRust(EventLoopRuntime *runtime);
+  OnRunForRust(const EventLoopRuntime *runtime);
   ~OnRunForRust();
 
   bool is_running() const;
 
  private:
-  EventLoopRuntime *const runtime_;
+  const EventLoopRuntime *const runtime_;
 };
 
 class TimerForRust {
  public:
-  static std::unique_ptr<TimerForRust> Make(EventLoopRuntime *runtime);
+  static std::unique_ptr<TimerForRust> Make(const EventLoopRuntime *runtime);
 
   TimerForRust(const TimerForRust &) = delete;
   TimerForRust(TimerForRust &&) = delete;
@@ -185,9 +185,9 @@ class EventLoopRuntime {
         << ": Some child objects were not destroyed first";
   }
 
-  EventLoop *event_loop() { return event_loop_; }
+  EventLoop *event_loop() const { return event_loop_; }
 
-  void Spawn(std::unique_ptr<ApplicationFuture> task) {
+  void Spawn(std::unique_ptr<ApplicationFuture> task) const {
     CHECK(!task_) << ": May only call Spawn once";
     task_ = std::move(task);
     DoPoll();
@@ -219,30 +219,32 @@ class EventLoopRuntime {
 
   rust::Str name() const { return StringViewToRustStr(event_loop_->name()); }
 
-  WatcherForRust MakeWatcher(const Channel *channel) {
+  WatcherForRust MakeWatcher(const Channel *channel) const {
     event_loop_->MakeRawNoArgWatcher(channel,
                                      [this](const Context &) { DoPoll(); });
     return WatcherForRust(event_loop_->MakeRawFetcher(channel));
   }
 
-  SenderForRust MakeSender(const Channel *channel) {
+  SenderForRust MakeSender(const Channel *channel) const {
     return SenderForRust(event_loop_->MakeRawSender(channel));
   }
 
-  FetcherForRust MakeFetcher(const Channel *channel) {
+  FetcherForRust MakeFetcher(const Channel *channel) const {
     return FetcherForRust(event_loop_->MakeRawFetcher(channel));
   }
 
-  OnRunForRust MakeOnRun() { return OnRunForRust(this); }
+  OnRunForRust MakeOnRun() const { return OnRunForRust(this); }
 
-  std::unique_ptr<TimerForRust> AddTimer() { return TimerForRust::Make(this); }
+  std::unique_ptr<TimerForRust> AddTimer() const {
+    return TimerForRust::Make(this);
+  }
 
  private:
   friend class OnRunForRust;
   friend class TimerForRust;
 
   // Polls the top-level future once. This is what all the callbacks should do.
-  void DoPoll() {
+  void DoPoll() const {
     if (task_) {
       CHECK(task_->Poll()) << ": Rust panic, aborting";
     }
@@ -250,9 +252,20 @@ class EventLoopRuntime {
 
   EventLoop *const event_loop_;
 
-  std::unique_ptr<ApplicationFuture> task_;
+  // For Rust's EventLoopRuntime to be semantically equivelant to C++'s event
+  // loop, we need the ability to have shared references (&EventLoopRuntime) on
+  // the Rust side. Without that, the API would be overly restrictive to be
+  // usable. In order for the generated code to use &self references on methods,
+  // they need to be marked `const` on the C++ side. We use the `mutable`
+  // keyword to allow mutation through `const` methods.
+  //
+  // SAFETY:
+  //   * The event loop runtime must be `!Sync` in the Rust side (default).
+  //   * We can't expose exclusive references (&mut) to either of the mutable
+  //     fields on the Rust side from a shared reference (&).
+  mutable std::unique_ptr<ApplicationFuture> task_;
 
-  int child_count_ = 0;
+  mutable int child_count_ = 0;
 };
 
 }  // namespace aos

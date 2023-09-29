@@ -259,7 +259,7 @@ impl<T: EventLoopHolder> EventLoopRuntimeHolder<T> {
 
 impl<T: EventLoopHolder> Drop for EventLoopRuntimeHolder<T> {
     fn drop(&mut self) {
-        let event_loop = self.0.as_mut().event_loop();
+        let event_loop = self.0.event_loop();
         // SAFETY: We're not going to touch this field again. The underlying EventLoop will not be
         // run again because we're going to drop it next.
         unsafe { ManuallyDrop::drop(&mut self.0) };
@@ -399,8 +399,8 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     ///
     /// The returned value should only be used for destroying it (_after_ `self` is dropped) or
     /// calling other C++ APIs.
-    pub fn raw_event_loop(&mut self) -> *mut ffi::aos::EventLoop {
-        self.0.as_mut().event_loop()
+    pub fn raw_event_loop(&self) -> *mut ffi::aos::EventLoop {
+        self.0.event_loop()
     }
 
     /// Returns a reference to the name of this EventLoop.
@@ -563,8 +563,8 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// }});
     /// # }
     /// ```
-    pub fn spawn(&mut self, task: impl Future<Output = Never> + 'event_loop) {
-        self.0.as_mut().Spawn(RustApplicationFuture::new(task));
+    pub fn spawn(&self, task: impl Future<Output = Never> + 'event_loop) {
+        self.0.Spawn(RustApplicationFuture::new(task));
     }
 
     pub fn configuration(&self) -> &'event_loop Configuration {
@@ -590,10 +590,10 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// # Panics
     ///
     /// Dropping `self` before the returned object is dropped will panic.
-    pub fn make_raw_watcher(&mut self, channel: &'event_loop Channel) -> RawWatcher {
+    pub fn make_raw_watcher(&self, channel: &'event_loop Channel) -> RawWatcher {
         // SAFETY: `channel` is valid for the necessary lifetime, all other requirements fall under
         // the usual autocxx heuristics.
-        RawWatcher(unsafe { self.0.as_mut().MakeWatcher(channel) }.within_box())
+        RawWatcher(unsafe { self.0.MakeWatcher(channel) }.within_box())
     }
 
     /// Provides type-safe async blocking access to messages on a channel. `T` should be a
@@ -603,7 +603,7 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// # Panics
     ///
     /// Dropping `self` before the returned object is dropped will panic.
-    pub fn make_watcher<T>(&mut self, channel_name: &str) -> Result<Watcher<T>, ChannelLookupError>
+    pub fn make_watcher<T>(&self, channel_name: &str) -> Result<Watcher<T>, ChannelLookupError>
     where
         for<'a> T: FollowWith<'a>,
         for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>,
@@ -619,10 +619,10 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// # Panics
     ///
     /// Dropping `self` before the returned object is dropped will panic.
-    pub fn make_raw_sender(&mut self, channel: &'event_loop Channel) -> RawSender {
+    pub fn make_raw_sender(&self, channel: &'event_loop Channel) -> RawSender {
         // SAFETY: `channel` is valid for the necessary lifetime, all other requirements fall under
         // the usual autocxx heuristics.
-        RawSender(unsafe { self.0.as_mut().MakeSender(channel) }.within_box())
+        RawSender(unsafe { self.0.MakeSender(channel) }.within_box())
     }
 
     /// Allows sending messages on a channel with a type-safe API.
@@ -630,7 +630,7 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// # Panics
     ///
     /// Dropping `self` before the returned object is dropped will panic.
-    pub fn make_sender<T>(&mut self, channel_name: &str) -> Result<Sender<T>, ChannelLookupError>
+    pub fn make_sender<T>(&self, channel_name: &str) -> Result<Sender<T>, ChannelLookupError>
     where
         for<'a> T: FollowWith<'a>,
         for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>,
@@ -646,10 +646,10 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// # Panics
     ///
     /// Dropping `self` before the returned object is dropped will panic.
-    pub fn make_raw_fetcher(&mut self, channel: &'event_loop Channel) -> RawFetcher {
+    pub fn make_raw_fetcher(&self, channel: &'event_loop Channel) -> RawFetcher {
         // SAFETY: `channel` is valid for the necessary lifetime, all other requirements fall under
         // the usual autocxx heuristics.
-        RawFetcher(unsafe { self.0.as_mut().MakeFetcher(channel) }.within_box())
+        RawFetcher(unsafe { self.0.MakeFetcher(channel) }.within_box())
     }
 
     /// Provides type-safe access to messages on a channel, without the ability to wait for a new
@@ -659,7 +659,7 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// # Panics
     ///
     /// Dropping `self` before the returned object is dropped will panic.
-    pub fn make_fetcher<T>(&mut self, channel_name: &str) -> Result<Fetcher<T>, ChannelLookupError>
+    pub fn make_fetcher<T>(&self, channel_name: &str) -> Result<Fetcher<T>, ChannelLookupError>
     where
         for<'a> T: FollowWith<'a>,
         for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>,
@@ -676,8 +676,8 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// subsequent code will have any realtime scheduling applied. This means it can rely on
     /// consistent timing, but it can no longer create any EventLoop child objects or do anything
     /// else non-realtime.
-    pub fn on_run(&mut self) -> OnRun {
-        OnRun(self.0.as_mut().MakeOnRun().within_box())
+    pub fn on_run(&self) -> OnRun {
+        OnRun(self.0.MakeOnRun().within_box())
     }
 
     pub fn is_running(&self) -> bool {
@@ -685,12 +685,12 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     }
 
     /// Returns an unarmed timer.
-    pub fn add_timer(&mut self) -> Timer {
-        Timer(self.0.as_mut().AddTimer())
+    pub fn add_timer(&self) -> Timer {
+        Timer(self.0.AddTimer())
     }
 
     /// Returns a timer that goes off every `duration`-long ticks.
-    pub fn add_interval(&mut self, duration: Duration) -> Timer {
+    pub fn add_interval(&self, duration: Duration) -> Timer {
         let mut timer = self.add_timer();
         timer.setup(self.monotonic_now(), Some(duration));
         timer
