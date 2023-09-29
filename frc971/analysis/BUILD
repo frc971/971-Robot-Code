@@ -58,6 +58,7 @@ ts_project(
         "//y2022/control_loops/superstructure:turret_plotter",
         "//y2022/localizer:localizer_plotter",
         "//y2022/vision:vision_plotter",
+        "//y2023/control_loops/superstructure:superstructure_plotter",
         "//y2023/localizer:corrections_plotter",
         "//y2023/localizer:localizer_plotter",
     ],
