@@ -15,6 +15,7 @@
 DEFINE_bool(spline_auto, false, "Run simple test S-spline auto mode.");
 DEFINE_bool(charged_up, true, "If true run charged up autonomous mode");
 DEFINE_bool(charged_up_cable, false, "If true run cable side autonomous mode");
+DEFINE_bool(do_balance, true, "If true run the balance.");
 
 namespace y2023 {
 namespace autonomous {
@@ -364,6 +365,7 @@ void AutonomousActor::ChargedUp() {
   AOS_LOG(
       INFO, "Placed second cube %lf s\n",
       aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
   InitializeEncoders();
 
   const ProfileParametersT kDrive = MakeProfileParameters(2.0, 4.0);
@@ -380,6 +382,11 @@ void AutonomousActor::ChargedUp() {
     AOS_LOG(
         INFO, "Done backing up %lf s\n",
         aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+    if (!FLAGS_do_balance) {
+      StopSpitting();
+      return;
+    }
 
     const ProfileParametersT kInPlaceTurn = MakeProfileParameters(2.7, 8.0);
     StartDrive(0.0, aos::math::NormalizeAngle(M_PI / 2.0 - Theta()), kDrive,
