@@ -36,6 +36,9 @@ void EndEffector::RunIteration(
         state_ = EndEffectorState::LOADED;
         break;
       case EndEffectorState::LOADED:
+        // In case we thought we had a cube, force it to cone.
+        game_piece_ = vision::Class::CONE_UP;
+        break;
       case EndEffectorState::SPITTING:
         break;
     }
