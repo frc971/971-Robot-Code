@@ -1,6 +1,3 @@
-load("//tools:platforms.bzl", "platforms")
-load("//tools/build_rules:select.bzl", "cpu_select")
-
 # Incompatible library in case one isn't available for a specific architecture.
 cc_library(
     name = "unavailable",

@@ -1,11 +1,11 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("@aspect_rules_js//npm:defs.bzl", "npm_link_package")
 
-licenses(["notice"])
-
 package(
     default_visibility = ["//visibility:public"],
 )
+
+licenses(["notice"])
 
 npm_link_package(
     name = "node_modules/flatbuffers",
