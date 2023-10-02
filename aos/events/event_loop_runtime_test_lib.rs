@@ -8,7 +8,7 @@ use pong_rust_fbs::aos::examples::{Pong, PongBuilder};
 mod tests {
     use super::*;
 
-    use std::cell::RefCell;
+    use std::{borrow::Borrow, cell::RefCell};
 
     #[derive(Debug, Default)]
     struct GlobalState {
@@ -45,7 +45,7 @@ mod tests {
     }
 
     impl<'event_loop> TestApplication<'event_loop> {
-        fn new(mut runtime: EventLoopRuntime<'event_loop>) -> Self {
+        fn new(runtime: EventLoopRuntime<'event_loop>) -> Self {
             let ping_channel = runtime
                 .get_raw_channel("/test", "aos.examples.Ping")
                 .expect("Should have Ping channel");
@@ -57,7 +57,7 @@ mod tests {
             );
             let on_run = runtime.on_run();
             runtime.spawn(async move {
-                on_run.await;
+                on_run.borrow().await;
                 GLOBAL_STATE.with(|g| {
                     let g = &mut *g.borrow_mut();
                     assert_eq!(g.creation_count, g.drop_count + 1);
@@ -165,12 +165,12 @@ mod tests {
     }
 
     impl<'event_loop> TypedTestApplication<'event_loop> {
-        fn new(mut runtime: EventLoopRuntime<'event_loop>) -> Self {
+        fn new(runtime: EventLoopRuntime<'event_loop>) -> Self {
             let mut ping_watcher = runtime.make_watcher::<Ping<'static>>("/test").unwrap();
             let mut pong_sender = runtime.make_sender::<Pong<'static>>("/test").unwrap();
             let on_run = runtime.on_run();
             runtime.spawn(async move {
-                on_run.await;
+                on_run.borrow().await;
                 GLOBAL_STATE.with(|g| {
                     let g = &mut *g.borrow_mut();
                     assert_eq!(g.creation_count, g.drop_count + 1);
@@ -274,7 +274,7 @@ mod tests {
     }
 
     impl<'event_loop> PanicApplication<'event_loop> {
-        fn new(mut runtime: EventLoopRuntime<'event_loop>) -> Self {
+        fn new(runtime: EventLoopRuntime<'event_loop>) -> Self {
             runtime.spawn(async move {
                 panic!("Test Rust panic");
             });
@@ -292,10 +292,10 @@ mod tests {
     }
 
     impl<'event_loop> PanicOnRunApplication<'event_loop> {
-        fn new(mut runtime: EventLoopRuntime<'event_loop>) -> Self {
+        fn new(runtime: EventLoopRuntime<'event_loop>) -> Self {
             let on_run = runtime.on_run();
             runtime.spawn(async move {
-                on_run.await;
+                on_run.borrow().await;
                 panic!("Test Rust panic");
             });
 

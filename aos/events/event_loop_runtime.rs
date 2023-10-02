@@ -1426,7 +1426,7 @@ impl<'context> Context<'context> {
 #[repr(transparent)]
 pub struct OnRun(Pin<Box<ffi::aos::OnRunForRust>>);
 
-impl Future for OnRun {
+impl Future for &'_ OnRun {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, _: &mut std::task::Context) -> Poll<()> {

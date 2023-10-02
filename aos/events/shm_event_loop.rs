@@ -65,6 +65,7 @@ impl<'config> ShmEventLoop<'config> {
     /// # use aos_events_shm_event_loop::*;
     /// use ping_rust_fbs::aos::examples as ping;
     /// use pong_rust_fbs::aos::examples as pong;
+    /// use std::borrow::Borrow;
     /// use std::cell::Cell;
     /// use std::path::Path;
     /// use aos_configuration::read_config_from;
@@ -81,7 +82,7 @@ impl<'config> ShmEventLoop<'config> {
     ///   let on_run = runtime.on_run();
     ///   // Sends a single ping message.
     ///   let send_task = async move {
-    ///     on_run.await;
+    ///     on_run.borrow().await;
     ///     let mut builder = sender.make_builder();
     ///     let mut ping = ping::PingBuilder::new(builder.fbb());
     ///     ping.add_value(10);
@@ -237,6 +238,7 @@ mod tests {
     use aos_events_event_loop_runtime::{Sender, Watcher};
     use aos_test_init::test_init;
     use ping_rust_fbs::aos::examples as ping;
+    use std::borrow::Borrow;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Barrier;
 
@@ -265,7 +267,7 @@ mod tests {
                         let mut watcher: Watcher<ping::Ping> = runtime
                             .make_watcher("/test")
                             .expect("Can't create `Ping` watcher");
-                        runtime.on_run().await;
+                        runtime.on_run().borrow().await;
                         barrier.wait();
                         let ping = watcher.next().await;
                         assert_eq!(ping.message().unwrap().value(), VALUE);
@@ -282,7 +284,7 @@ mod tests {
                         let mut sender: Sender<ping::Ping> = runtime
                             .make_sender("/test")
                             .expect("Can't create `Ping` sender");
-                        runtime.on_run().await;
+                        runtime.on_run().borrow().await;
                         // Give the waiting thread a chance to start.
                         barrier.wait();
                         let mut sender = sender.make_builder();

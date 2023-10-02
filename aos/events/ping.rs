@@ -6,6 +6,7 @@ use clap::{CommandFactory, Parser};
 use core::cell::Cell;
 use core::time::Duration;
 use futures::never::Never;
+use std::borrow::Borrow;
 use std::path::Path;
 
 use ping_rust_fbs::aos::examples as ping;
@@ -26,6 +27,7 @@ fn main() {
     let config = config::read_config_from(Path::new("pingpong_config.json")).unwrap();
     let ping = PingTask::new();
     ShmEventLoop::new(&config).run_with(|runtime| {
+        runtime.set_realtime_priority(5);
         runtime.spawn(ping.tasks(runtime, app.sleep));
     });
 }
@@ -48,12 +50,14 @@ impl PingTask {
         unreachable!("Let's hope `never_type` gets stabilized soon :)");
     }
 
-    async fn ping(&self, event_loop: &EventLoopRuntime<'_>, sleep: u64) -> Never {
+    pub async fn ping(&self, event_loop: &EventLoopRuntime<'_>, sleep: u64) -> Never {
         // The sender is used to send messages back to the pong channel.
         let mut ping_sender: Sender<ping::Ping> = event_loop.make_sender("/test").unwrap();
         let mut interval = event_loop.add_interval(Duration::from_micros(sleep));
 
-        event_loop.on_run().await;
+        let on_run = event_loop.on_run();
+        on_run.borrow().await;
+
         loop {
             interval.tick().await;
             self.counter.set(self.counter.get() + 1);
@@ -67,13 +71,14 @@ impl PingTask {
         }
     }
 
-    async fn handle_pong(&self, event_loop: &EventLoopRuntime<'_>) -> Never {
+    pub async fn handle_pong(&self, event_loop: &EventLoopRuntime<'_>) -> Never {
         // The watcher gives us incoming ping messages.
         let mut pong_watcher: Watcher<pong::Pong> = event_loop.make_watcher("/test").unwrap();
 
-        event_loop.on_run().await;
+        let on_run = event_loop.on_run();
+        on_run.borrow().await;
         loop {
-            let pong = dbg!(pong_watcher.next().await);
+            let pong = pong_watcher.next().await;
             assert_eq!(
                 pong.message().unwrap().value(),
                 self.counter.get(),
