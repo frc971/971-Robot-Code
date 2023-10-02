@@ -22,7 +22,7 @@ rust_binary(
     version = "0.16.0",
     deps = [
         "//third_party/autocxx/engine:autocxx_engine",
-        "@crate_index//:clap",
+        "@crate_index//:clap3",
         "@crate_index//:env_logger",
         "@crate_index//:indexmap",
         "@crate_index//:miette",

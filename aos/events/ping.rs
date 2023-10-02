@@ -1,6 +1,8 @@
 use aos_configuration as config;
 use aos_events_event_loop_runtime::{EventLoopRuntime, Sender, Watcher};
 use aos_events_shm_event_loop::ShmEventLoop;
+use aos_init::WithCppFlags;
+use clap::{CommandFactory, Parser};
 use core::cell::Cell;
 use core::time::Duration;
 use futures::never::Never;
@@ -9,12 +11,22 @@ use std::path::Path;
 use ping_rust_fbs::aos::examples as ping;
 use pong_rust_fbs::aos::examples as pong;
 
+/// Ping portion of a ping/pong system.
+#[derive(Parser, Debug)]
+#[command(name = "ping")]
+struct App {
+    /// Time to sleep between pings.
+    #[arg(long, default_value_t = 10000, value_name = "MICROS")]
+    sleep: u64,
+}
+
 fn main() {
+    let app = App::parse_with_cpp_flags();
     aos_init::init();
     let config = config::read_config_from(Path::new("pingpong_config.json")).unwrap();
     let ping = PingTask::new();
     ShmEventLoop::new(&config).run_with(|runtime| {
-        runtime.spawn(ping.tasks(runtime));
+        runtime.spawn(ping.tasks(runtime, app.sleep));
     });
 }
 
@@ -31,15 +43,15 @@ impl PingTask {
     }
 
     /// Returns a future with all the tasks for the ping process
-    pub async fn tasks(&self, event_loop: &EventLoopRuntime<'_>) -> Never {
-        futures::join!(self.ping(event_loop), self.handle_pong(event_loop));
+    pub async fn tasks(&self, event_loop: &EventLoopRuntime<'_>, sleep: u64) -> Never {
+        futures::join!(self.ping(event_loop, sleep), self.handle_pong(event_loop));
         unreachable!("Let's hope `never_type` gets stabilized soon :)");
     }
 
-    async fn ping(&self, event_loop: &EventLoopRuntime<'_>) -> Never {
+    async fn ping(&self, event_loop: &EventLoopRuntime<'_>, sleep: u64) -> Never {
         // The sender is used to send messages back to the pong channel.
         let mut ping_sender: Sender<ping::Ping> = event_loop.make_sender("/test").unwrap();
-        let mut interval = event_loop.add_interval(Duration::from_secs(1));
+        let mut interval = event_loop.add_interval(Duration::from_micros(sleep));
 
         event_loop.on_run().await;
         loop {

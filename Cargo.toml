@@ -18,6 +18,7 @@ members = [
 ]
 
 [dependencies]
+clap = { version = "4.4", features = ["derive", "string"] }
 cxx = "1.0"
 cxxbridge-macro = "1.0"
 uuid = "1.0"

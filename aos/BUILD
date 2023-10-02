@@ -184,12 +184,29 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "init_for_rust",
+    srcs = [
+        "init_for_rust.cc",
+    ],
+    hdrs = [
+        "init_for_rust.h",
+    ],
+    deps = [
+        ":for_rust",
+        ":init",
+        "//aos/logging",
+        "@com_github_gflags_gflags//:gflags",
+        "@crate_index//:cxx_cc",
+    ],
+)
+
 autocxx_library(
     name = "init_rs",
     srcs = ["init.rs"],
     crate_name = "aos_init",
     libs = [
-        ":init",
+        ":init_for_rust",
     ],
     override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
     target_compatible_with = select({
@@ -197,6 +214,19 @@ autocxx_library(
         "//tools:has_msan": ["@platforms//:incompatible"],
     }),
     visibility = ["//visibility:public"],
+    deps = [
+        "@crate_index//:clap",
+    ],
+)
+
+rust_test(
+    name = "init_rs_test",
+    crate = ":init_rs",
+    rustc_flags = ["-Crelocation-model=static"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
 )
 
 autocxx_library(

@@ -1,13 +1,21 @@
 use aos_configuration as config;
 use aos_events_event_loop_runtime::{EventLoopRuntime, Sender, Watcher};
 use aos_events_shm_event_loop::ShmEventLoop;
+use aos_init::WithCppFlags;
+use clap::Parser;
 use futures::never::Never;
 use std::path::Path;
 
 use ping_rust_fbs::aos::examples as ping;
 use pong_rust_fbs::aos::examples as pong;
 
+/// Pong portion of a ping/pong system.
+#[derive(Parser, Debug)]
+#[command(name = "pong")]
+struct App {}
+
 fn main() {
+    let _app = App::parse_with_cpp_flags();
     aos_init::init();
     let config = config::read_config_from(Path::new("pingpong_config.json")).unwrap();
     ShmEventLoop::new(&config).run_with(|runtime| {

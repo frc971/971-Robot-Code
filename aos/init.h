@@ -10,10 +10,10 @@ void InitGoogle(int *argc, char ***argv);
 // ShmEventLoop can confirm the world was initialized before running.
 bool IsInitialized();
 
-// A special initialization function that initializes the C++ parts in a way
-// compatible with Rust. This requires careful coordination with `:init_rs`, do
-// not use it from anywhere else.
-void InitFromRust(const char *argv0);
+// Marks the system as initialized. This is only meant to be used from
+// init_for_rust. DO NOT call this from anywhere else, use InitGoogle
+// instead.
+void MarkInitialized();
 
 }  // namespace aos
 

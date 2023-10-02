@@ -282,6 +282,7 @@ rust_binary(
         "//aos:flatbuffers_rs",
         "//aos:init_rs",
         "@com_github_google_flatbuffers//rust",
+        "@crate_index//:clap",
         "@crate_index//:futures",
     ],
 )
@@ -309,6 +310,7 @@ rust_binary(
         "//aos:flatbuffers_rs",
         "//aos:init_rs",
         "@com_github_google_flatbuffers//rust",
+        "@crate_index//:clap",
         "@crate_index//:futures",
     ],
 )
