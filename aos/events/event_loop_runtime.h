@@ -239,6 +239,14 @@ class EventLoopRuntime {
     return TimerForRust::Make(this);
   }
 
+  void SetRuntimeRealtimePriority(int priority) const {
+    event_loop_->SetRuntimeRealtimePriority(priority);
+  }
+
+  void SetRuntimeAffinity(const cpu_set_t &cpuset) const {
+    event_loop_->SetRuntimeAffinity(cpuset);
+  }
+
  private:
   friend class OnRunForRust;
   friend class TimerForRust;

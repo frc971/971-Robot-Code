@@ -695,6 +695,11 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
         timer.setup(self.monotonic_now(), Some(duration));
         timer
     }
+
+    /// Sets the scheduler priority to run the event loop at.
+    pub fn set_realtime_priority(&self, priority: i32) {
+        self.0.SetRuntimeRealtimePriority(priority.into());
+    }
 }
 
 /// An event loop primitive that allows sleeping asynchronously.
