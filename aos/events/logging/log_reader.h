@@ -388,9 +388,6 @@ class LogReader {
   const Channel *RemapChannel(const EventLoop *event_loop, const Node *node,
                               const Channel *channel);
 
-  // Queues at least max_out_of_order_duration_ messages into channels_.
-  void QueueMessages();
-
   // Checks if any states have their event loops initialized which indicates
   // events have been scheduled
   void CheckEventsAreNotScheduled();
