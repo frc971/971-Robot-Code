@@ -47,7 +47,7 @@ use std::{
     future::Future,
     marker::PhantomData,
     mem::ManuallyDrop,
-    ops::Add,
+    ops::{Add, Deref, DerefMut},
     panic::{catch_unwind, AssertUnwindSafe},
     pin::Pin,
     slice,
@@ -60,7 +60,9 @@ use autocxx::{
     WithinBox,
 };
 use cxx::UniquePtr;
-use flatbuffers::{root_unchecked, Follow, FollowWith, FullyQualifiedName};
+use flatbuffers::{
+    root_unchecked, Allocator, FlatBufferBuilder, Follow, FollowWith, FullyQualifiedName,
+};
 use futures::{future::pending, future::FusedFuture, never::Never};
 use thiserror::Error;
 use uuid::Uuid;
@@ -1165,11 +1167,6 @@ where
 pub struct RawSender(Pin<Box<ffi::aos::SenderForRust>>);
 
 impl RawSender {
-    fn buffer(&mut self) -> &mut [u8] {
-        // SAFETY: This is a valid slice, and `u8` doesn't have any alignment requirements.
-        unsafe { slice::from_raw_parts_mut(self.0.as_mut().data(), self.0.as_mut().size()) }
-    }
-
     /// Returns an object which can be used to build a message.
     ///
     /// # Examples
@@ -1212,11 +1209,14 @@ impl RawSender {
     /// # }
     /// ```
     pub fn make_builder(&mut self) -> RawBuilder {
-        // TODO(Brian): Actually use the provided buffer instead of just using its
-        // size to allocate a separate one.
-        //
-        // See https://github.com/google/flatbuffers/issues/7385.
-        let fbb = flatbuffers::FlatBufferBuilder::with_capacity(self.buffer().len());
+        // SAFETY: This is a valid slice, and `u8` doesn't have any alignment
+        // requirements. Additionally, the lifetime of the builder is tied to
+        // the lifetime of self so the buffer won't be accessible again until
+        // the builder is destroyed.
+        let allocator = ChannelPreallocatedAllocator::new(unsafe {
+            slice::from_raw_parts_mut(self.0.as_mut().data(), self.0.as_mut().size())
+        });
+        let fbb = FlatBufferBuilder::new_in(allocator);
         RawBuilder {
             raw_sender: self,
             fbb,
@@ -1227,11 +1227,13 @@ impl RawSender {
 /// Used for building a message. See [`RawSender::make_builder`] for details.
 pub struct RawBuilder<'sender> {
     raw_sender: &'sender mut RawSender,
-    fbb: flatbuffers::FlatBufferBuilder<'sender>,
+    fbb: FlatBufferBuilder<'sender, ChannelPreallocatedAllocator<'sender>>,
 }
 
 impl<'sender> RawBuilder<'sender> {
-    pub fn fbb(&mut self) -> &mut flatbuffers::FlatBufferBuilder<'sender> {
+    pub fn fbb(
+        &mut self,
+    ) -> &mut FlatBufferBuilder<'sender, ChannelPreallocatedAllocator<'sender>> {
         &mut self.fbb
     }
 
@@ -1329,7 +1331,9 @@ where
     for<'a> T: FollowWith<'a>,
     for<'a> <T as FollowWith<'a>>::Inner: Follow<'a>,
 {
-    pub fn fbb(&mut self) -> &mut flatbuffers::FlatBufferBuilder<'sender> {
+    pub fn fbb(
+        &mut self,
+    ) -> &mut FlatBufferBuilder<'sender, ChannelPreallocatedAllocator<'sender>> {
         self.0.fbb()
     }
 
@@ -1564,5 +1568,46 @@ impl ExitHandle {
 impl From<UniquePtr<CppExitHandle>> for ExitHandle {
     fn from(inner: UniquePtr<ffi::aos::ExitHandle>) -> Self {
         Self(inner)
+    }
+}
+
+pub struct ChannelPreallocatedAllocator<'a> {
+    buffer: &'a mut [u8],
+}
+
+impl<'a> ChannelPreallocatedAllocator<'a> {
+    pub fn new(buffer: &'a mut [u8]) -> Self {
+        Self { buffer }
+    }
+}
+
+#[derive(Debug, Error)]
+#[error("Can't allocate more memory with a fixed size allocator")]
+pub struct OutOfMemory;
+
+// SAFETY: Allocator follows the required behavior.
+unsafe impl Allocator for ChannelPreallocatedAllocator<'_> {
+    type Error = OutOfMemory;
+    fn grow_downwards(&mut self) -> Result<(), Self::Error> {
+        // Fixed size allocator can't grow.
+        Err(OutOfMemory)
+    }
+
+    fn len(&self) -> usize {
+        self.buffer.len()
+    }
+}
+
+impl Deref for ChannelPreallocatedAllocator<'_> {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        self.buffer
+    }
+}
+
+impl DerefMut for ChannelPreallocatedAllocator<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.buffer
     }
 }
