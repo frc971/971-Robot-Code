@@ -1192,6 +1192,7 @@ impl RawSender {
     /// # unsafe {
     /// let mut builder1 = sender.make_builder();
     /// builder1.fbb();
+    /// drop(builder1);
     /// let mut builder2 = sender.make_builder();
     /// let pong = PongBuilder::new(builder2.fbb()).finish();
     /// builder2.send(pong);
@@ -1292,6 +1293,7 @@ where
     /// # fn compile_check(mut sender: aos_events_event_loop_runtime::Sender<Pong<'static>>) {
     /// let mut builder1 = sender.make_builder();
     /// builder1.fbb();
+    /// drop(builder1);
     /// let mut builder2 = sender.make_builder();
     /// let pong = PongBuilder::new(builder2.fbb()).finish();
     /// builder2.send(pong);

@@ -16,6 +16,7 @@
 
 #[cfg(not(feature = "std"))]
 use alloc::{vec, vec::Vec};
+use arrayvec::ArrayVec;
 use core::cmp::max;
 use core::convert::Infallible;
 use core::fmt::{Debug, Display};
@@ -131,15 +132,16 @@ pub struct FlatBufferBuilder<'fbb, A: Allocator = DefaultAllocator> {
     allocator: A,
     head: ReverseIndex,
 
-    field_locs: Vec<FieldLoc>,
-    written_vtable_revpos: Vec<UOffsetT>,
+    // TODO(Adam): Make vectors generic.
+    field_locs: ArrayVec<FieldLoc, 100>,
+    written_vtable_revpos: ArrayVec<UOffsetT, 20>,
 
     nested: bool,
     finished: bool,
 
     min_align: usize,
     force_defaults: bool,
-    strings_pool: Vec<WIPOffset<&'fbb str>>,
+    strings_pool: ArrayVec<WIPOffset<&'fbb str>, 20>,
 
     _phantom: PhantomData<&'fbb ()>,
 }
@@ -189,15 +191,15 @@ impl<'fbb, A: Allocator> FlatBufferBuilder<'fbb, A> {
             allocator,
             head,
 
-            field_locs: Vec::new(),
-            written_vtable_revpos: Vec::new(),
+            field_locs: ArrayVec::new(),
+            written_vtable_revpos: ArrayVec::new(),
 
             nested: false,
             finished: false,
 
             min_align: 0,
             force_defaults: false,
-            strings_pool: Vec::new(),
+            strings_pool: ArrayVec::new(),
 
             _phantom: PhantomData,
         }
