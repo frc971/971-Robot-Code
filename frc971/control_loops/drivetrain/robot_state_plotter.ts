@@ -34,6 +34,9 @@ export function plotRobotState(conn: Connection, element: Element) : void {
   const brownOut = robotStatePlot.addMessageLine(robotState, ['browned_out']);
   brownOut.setColor(BROWN);
   brownOut.setDrawLine(false);
+  robotStatePlot.addMessageLine(robotState, ['outputs_enabled'])
+      .setColor(CYAN)
+      .setDrawLine(false);
   const enabled = robotStatePlot.addMessageLine(joystickState, ['enabled']);
   enabled.setColor(GREEN);
   enabled.setDrawLine(false);
