@@ -1,0 +1,6 @@
+namespace y2023_bot3.control_loops.superstructure;
+
+table Output {
+}
+
+root_type Output;

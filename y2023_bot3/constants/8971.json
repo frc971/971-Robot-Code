@@ -1,0 +1,5 @@
+{
+  "robot": {
+  },
+  {% include 'y2023_bot3/constants/common.json' %}
+}
