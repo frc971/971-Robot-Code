@@ -17,6 +17,9 @@ class SimulatedEventLoopFactoryForRust {
   }
 
   void Run() { factory_.Run(); }
+  void RunFor(int64_t nanos) {
+    factory_.RunFor(std::chrono::nanoseconds(nanos));
+  }
 
   std::unique_ptr<ExitHandle> MakeExitHandle() {
     return factory_.MakeExitHandle();

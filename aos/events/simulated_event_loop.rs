@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, pin::Pin, ptr};
+use std::{marker::PhantomData, pin::Pin, ptr, time::Duration};
 
 use autocxx::WithinBox;
 use cxx::UniquePtr;
@@ -105,6 +105,15 @@ impl<'config> SimulatedEventLoopFactory<'config> {
 
     pub fn run(&mut self) {
         self.as_mut().Run();
+    }
+
+    pub fn run_for(&mut self, duration: Duration) {
+        self.as_mut().RunFor(
+            duration
+                .as_nanos()
+                .try_into()
+                .expect("Out of range: Internal clock uses 64 bits"),
+        );
     }
 
     // TODO(Brian): Expose OnStartup. Just take a callback for creating things, and rely on
