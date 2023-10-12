@@ -483,6 +483,11 @@
   </div>
   <div *ngSwitchCase="'Success'" id="Success" class="container-fluid">
     <h2>Successfully submitted data.</h2>
+    <div class="d-grid gap-5" *ngIf="nextTeamNumber != ''">
+      <button class="btn btn-primary" (click)="goToNextTeam();">
+        SCOUT NEXT TEAM
+      </button>
+    </div>
   </div>
 
   <span class="progress_message" role="alert">{{ progressMessage }}</span>

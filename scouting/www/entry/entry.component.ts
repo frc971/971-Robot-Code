@@ -129,6 +129,8 @@ export class EntryComponent implements OnInit {
   errorMessage: string = '';
   autoPhase: boolean = true;
   mobilityCompleted: boolean = false;
+  selectedValue = 0;
+  nextTeamNumber = '';
 
   preScouting: boolean = false;
   matchStartTimestamp: number = 0;
@@ -142,10 +144,13 @@ export class EntryComponent implements OnInit {
     // When the user navigated from the match list, we can skip the team
     // selection. I.e. we trust that the user clicked the correct button.
     this.section = this.skipTeamSelection ? 'Init' : 'Team Selection';
+    this.fetchMatchList();
+  }
 
-    if (this.section == 'Team Selection') {
-      this.fetchMatchList();
-    }
+  goToNextTeam() {
+    this.ngOnInit();
+    this.teamNumber = this.nextTeamNumber;
+    this.nextTeamNumber = '';
   }
 
   async fetchMatchList() {
@@ -174,19 +179,18 @@ export class EntryComponent implements OnInit {
     if (this.teamNumber == null) {
       return false;
     }
-    const teamNumber = this.teamNumber;
 
     for (const match of this.matchList) {
       if (
         this.matchNumber == match.matchNumber() &&
         this.setNumber == match.setNumber() &&
         this.compLevel == match.compLevel() &&
-        (teamNumber === match.r1() ||
-          teamNumber === match.r2() ||
-          teamNumber === match.r3() ||
-          teamNumber === match.b1() ||
-          teamNumber === match.b2() ||
-          teamNumber === match.b3())
+        (this.teamNumber === match.r1() ||
+          this.teamNumber === match.r2() ||
+          this.teamNumber === match.r3() ||
+          this.teamNumber === match.b1() ||
+          this.teamNumber === match.b2() ||
+          this.teamNumber === match.b3())
       ) {
         return true;
       }
@@ -429,6 +433,73 @@ export class EntryComponent implements OnInit {
       // We successfully submitted the data. Report success.
       this.section = 'Success';
       this.actionList = [];
+
+      // Keep track of the position of the last robot, use to figure out what the next robot in the same position is.
+
+      let lastTeamPos = '0';
+      for (const match of this.matchList) {
+        if (
+          this.matchNumber === match.matchNumber() &&
+          this.setNumber === match.setNumber() &&
+          this.compLevel === match.compLevel()
+        ) {
+          this.teamNumber = this.teamNumber;
+          if (this.teamNumber == match.r1()) {
+            lastTeamPos = 'r1';
+          } else if (this.teamNumber == match.r2()) {
+            lastTeamPos = 'r2';
+          } else if (this.teamNumber == match.r3()) {
+            lastTeamPos = 'r3';
+          } else if (this.teamNumber == match.b1()) {
+            lastTeamPos = 'b1';
+          } else if (this.teamNumber == match.b2()) {
+            lastTeamPos = 'b2';
+          } else if (this.teamNumber == match.b3()) {
+            lastTeamPos = 'b3';
+          } else {
+            console.log('Position of scouted team not found.');
+          }
+          break;
+        }
+      }
+      if (lastTeamPos != '0') {
+        this.matchNumber += 1;
+        for (const match of this.matchList) {
+          if (
+            this.matchNumber == match.matchNumber() &&
+            this.setNumber == match.setNumber() &&
+            this.compLevel == match.compLevel()
+          ) {
+            if (lastTeamPos == 'r1') {
+              this.nextTeamNumber = match.r1();
+            } else if (lastTeamPos == 'r2') {
+              this.nextTeamNumber = match.r2();
+            } else if (lastTeamPos == 'r3') {
+              this.nextTeamNumber = match.r3();
+            } else if (lastTeamPos == 'b1') {
+              this.nextTeamNumber = match.b1();
+            } else if (lastTeamPos == 'b2') {
+              this.nextTeamNumber = match.b2();
+            } else if (lastTeamPos == 'b3') {
+              this.nextTeamNumber = match.b3();
+            } else {
+              console.log('Position of last team not found.');
+            }
+            break;
+          }
+        }
+      } else {
+        console.log('Last team position not found.');
+      }
+      this.matchList = [];
+      this.progressMessage = '';
+      this.errorMessage = '';
+      this.autoPhase = true;
+      this.actionList = [];
+      this.mobilityCompleted = false;
+      this.preScouting = false;
+      this.matchStartTimestamp = 0;
+      this.selectedValue = 0;
     } else {
       const resBuffer = await res.arrayBuffer();
       const fbBuffer = new ByteBuffer(new Uint8Array(resBuffer));
