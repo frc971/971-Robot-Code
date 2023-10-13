@@ -62,6 +62,15 @@ struct FooStruct {
   nested_struct:FooStructNested;
 }
 
+struct ScalarSweepStruct {
+  foo_float:float;
+  foo_double:double;
+  foo_int32:int32;
+  foo_uint32:uint32;
+  foo_int64:int64;
+  foo_uint64:uint64;
+}
+
 struct StructEnum {
   foo_enum:BaseType;
 }
@@ -131,9 +140,11 @@ table Configuration {
   foo_struct:FooStruct (id: 34);
   vector_foo_struct:[FooStruct] (id: 35);
   foo_struct_enum:StructEnum (id: 36);
+  foo_struct_scalars:ScalarSweepStruct (id: 37);
+  vector_foo_struct_scalars:[ScalarSweepStruct] (id: 38);
 
-  foo_enum_nonconsecutive:NonConsecutive (id: 37);
-  foo_enum_nonconsecutive_default:NonConsecutive = Big (id: 38);
+  foo_enum_nonconsecutive:NonConsecutive (id: 39);
+  foo_enum_nonconsecutive_default:NonConsecutive = Big (id: 40);
 }
 
 root_type Configuration;

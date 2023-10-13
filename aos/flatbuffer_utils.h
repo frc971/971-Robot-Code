@@ -43,6 +43,12 @@ class FlatbufferType final {
   // Returns whether this type is an enum.
   bool IsEnum() const;
 
+  // Returns whether this type is a struct.
+  bool IsStruct() const;
+
+  // Returns whether this type is a table.
+  bool IsTable() const;
+
   // Returns whether the given field is a sequence (table, struct, or union).
   //
   // Only valid for sequences (tables, structs, or unions).
@@ -84,6 +90,7 @@ class FlatbufferType final {
   //
   // Only valid for sequences (tables, structs, or unions).
   size_t FieldInlineSize(int index) const;
+  size_t InlineSize() const;
 
   // Returns the total number of fields.
   //
@@ -94,6 +101,16 @@ class FlatbufferType final {
   //
   // Only valid for sequences (tables, structs, or unions).
   FlatbufferType FieldType(int index) const;
+
+  // Returns the offset of the specified field within the struct.
+  //
+  // Only valid for structs.
+  size_t StructFieldOffset(int index) const;
+
+  // Returns the required alignment for this type.
+  size_t Alignment() const;
+  // The required alignment of the inline data for the specified field.
+  size_t FieldInlineAlignment(size_t field_index) const;
 
  private:
   explicit FlatbufferType(const reflection::Schema *schema,

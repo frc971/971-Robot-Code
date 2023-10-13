@@ -87,6 +87,62 @@ TEST_F(JsonToFlatbufferTest, Basic) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_enum_nonconsecutive\": \"Big\" }"));
 }
 
+TEST_F(JsonToFlatbufferTest, Structs) {
+  EXPECT_TRUE(
+      JsonAndBack("{ \"foo_struct\": { \"foo_byte\": 1, \"nested_struct\": { "
+                  "\"foo_byte\": 2 } } }"));
+  EXPECT_TRUE(JsonAndBack(
+      "{ \"foo_struct_scalars\": { \"foo_float\": 1.234, \"foo_double\": "
+      "4.567, \"foo_int32\": -971, \"foo_uint32\": 4294967294, \"foo_int64\": "
+      "-1030, \"foo_uint64\": 18446744073709551614 } }"));
+  // Confirm that we parse integers into floating point fields correctly.
+  EXPECT_TRUE(JsonAndBack(
+      "{ \"foo_struct_scalars\": { \"foo_float\": 1, \"foo_double\": "
+      "2, \"foo_int32\": 3, \"foo_uint32\": 4, \"foo_int64\": "
+      "5, \"foo_uint64\": 6 } }",
+      "{ \"foo_struct_scalars\": { \"foo_float\": 1.0, \"foo_double\": "
+      "2.0, \"foo_int32\": 3, \"foo_uint32\": 4, \"foo_int64\": "
+      "5, \"foo_uint64\": 6 } }"));
+  EXPECT_TRUE(JsonAndBack(
+      "{ \"vector_foo_struct_scalars\": [ { \"foo_float\": 1.234, "
+      "\"foo_double\": 4.567, \"foo_int32\": -971, \"foo_uint32\": 4294967294, "
+      "\"foo_int64\": -1030, \"foo_uint64\": 18446744073709551614 }, { "
+      "\"foo_float\": 2.0, \"foo_double\": 4.1, \"foo_int32\": 10, "
+      "\"foo_uint32\": 13, \"foo_int64\": 15, \"foo_uint64\": 18 } ] }"));
+  EXPECT_TRUE(
+      JsonAndBack("{ \"foo_struct_enum\": { \"foo_enum\": \"UByte\" } }"));
+  EXPECT_TRUE(
+      JsonAndBack("{ \"vector_foo_struct\": [ { \"foo_byte\": 1, "
+                  "\"nested_struct\": { \"foo_byte\": 2 } } ] }"));
+  EXPECT_TRUE(JsonAndBack(
+      "{ \"vector_foo_struct\": [ { \"foo_byte\": 1, \"nested_struct\": { "
+      "\"foo_byte\": 2 } }, { \"foo_byte\": 3, \"nested_struct\": { "
+      "\"foo_byte\": 4 } }, { \"foo_byte\": 5, \"nested_struct\": { "
+      "\"foo_byte\": 6 } } ] }"));
+}
+
+// Confirm that we correctly die when input JSON is missing fields inside of a
+// struct.
+TEST_F(JsonToFlatbufferTest, StructMissingField) {
+  ::testing::internal::CaptureStderr();
+  EXPECT_FALSE(
+      JsonAndBack("{ \"foo_struct\": { \"nested_struct\": { "
+                  "\"foo_byte\": 2 } } }"));
+  EXPECT_FALSE(JsonAndBack(
+      "{ \"foo_struct\": { \"foo_byte\": 1, \"nested_struct\": {  } } }"));
+  EXPECT_FALSE(JsonAndBack("{ \"foo_struct\": { \"foo_byte\": 1 } }"));
+  std::string output = ::testing::internal::GetCapturedStderr();
+  EXPECT_EQ(
+      R"output(All fields must be specified for struct types (field foo_byte missing).
+All fields must be specified for struct types (field foo_byte missing).
+All fields must be specified for struct types (field foo_byte missing).
+All fields must be specified for struct types (field foo_byte missing).
+All fields must be specified for struct types (field nested_struct missing).
+All fields must be specified for struct types (field nested_struct missing).
+)output",
+      output);
+}
+
 // Tests that Inf is handled correctly
 TEST_F(JsonToFlatbufferTest, Inf) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_float\": inf }"));
@@ -209,7 +265,7 @@ TEST_F(JsonToFlatbufferTest, Array) {
 }
 
 // Test nested messages, and arrays of nested messages.
-TEST_F(JsonToFlatbufferTest, NestedStruct) {
+TEST_F(JsonToFlatbufferTest, NestedTable) {
   EXPECT_TRUE(
       JsonAndBack("{ \"single_application\": { \"name\": \"woot\" } }"));
 

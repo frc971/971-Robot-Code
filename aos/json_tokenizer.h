@@ -5,6 +5,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/strings/numbers.h"
 #include "flatbuffers/util.h"
 
 namespace aos {
@@ -41,7 +42,7 @@ class Tokenizer {
 
   // Parses the current field value as a long long.  Returns false if it failed
   // to parse.
-  bool FieldAsInt(long long *value);
+  bool FieldAsInt(absl::int128 *value);
   // Parses the current field value as a double.  Returns false if it failed
   // to parse.
   bool FieldAsDouble(double *value);

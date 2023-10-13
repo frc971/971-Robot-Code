@@ -531,14 +531,9 @@ Tokenizer::TokenType Tokenizer::Next() {
   return TokenType::kError;
 }
 
-bool Tokenizer::FieldAsInt(long long *value) {
+bool Tokenizer::FieldAsInt(absl::int128 *value) {
   const char *pos = field_value().c_str();
-  errno = 0;
-  *value = strtoll(field_value().c_str(), const_cast<char **>(&pos), 10);
-  if (pos != field_value().c_str() + field_value().size() || errno != 0) {
-    return false;
-  }
-  return true;
+  return absl::SimpleAtoi(pos, value);
 }
 
 bool Tokenizer::FieldAsDouble(double *value) {

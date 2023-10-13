@@ -19,6 +19,26 @@ bool FlatbufferType::IsSequence() const {
   LOG(FATAL) << "Unimplemented";
 }
 
+bool FlatbufferType::IsTable() const {
+  if (type_table_) {
+    return type_table_->st == flatbuffers::ST_TABLE;
+  }
+  if (object_) {
+    return !object_->is_struct();
+  }
+  LOG(FATAL) << "Unimplemented";
+}
+
+bool FlatbufferType::IsStruct() const {
+  if (type_table_) {
+    return type_table_->st == flatbuffers::ST_STRUCT;
+  }
+  if (object_) {
+    return object_->is_struct();
+  }
+  LOG(FATAL) << "Unimplemented";
+}
+
 bool FlatbufferType::IsEnum() const {
   if (type_table_) {
     return type_table_->st == flatbuffers::ST_ENUM;
@@ -256,10 +276,64 @@ size_t BaseTypeInlineSize(reflection::BaseType base_type) {
 
 }  // namespace
 
+size_t FlatbufferType::InlineSize() const {
+  DCHECK(IsSequence());
+  if (type_table_) {
+    return flatbuffers::InlineSize(flatbuffers::ElementaryType::ET_SEQUENCE,
+                                   type_table_);
+  }
+  if (object_) {
+    return object_->is_struct() ? object_->bytesize() : /*offset size*/ 4u;
+  }
+  if (enum_) {
+    return BaseTypeInlineSize(enum_->underlying_type()->base_type());
+  }
+  LOG(FATAL) << "Unimplemented";
+}
+
+// Returns the required alignment for this type.
+size_t FlatbufferType::Alignment() const {
+  if (type_table_) {
+    // Attempt to derive alignment as max alignment of the members.
+    size_t alignment = 1u;
+    for (size_t field_index = 0;
+         field_index < static_cast<size_t>(NumberFields()); ++field_index) {
+      alignment = std::max(alignment, FieldInlineAlignment(field_index));
+    }
+    return alignment;
+  }
+  if (object_) {
+    return object_->minalign();
+  }
+  // We don't do a great job of supporting unions in general, and as of this
+  // writing did not try to look up what the alignment rules for unions were.
+  LOG(FATAL) << "Unimplemented";
+}
+
+size_t FlatbufferType::FieldInlineAlignment(size_t field_index) const {
+  if (FieldIsSequence(field_index) && FieldType(field_index).IsStruct()) {
+    return FieldType(field_index).Alignment();
+  }
+  return FieldInlineSize(field_index);
+}
+
+size_t FlatbufferType::StructFieldOffset(int index) const {
+  DCHECK(IsStruct());
+  if (type_table_) {
+    return type_table_->values[index];
+  }
+  if (object_) {
+    return ReflectionObjectField(index)->offset();
+  }
+  LOG(FATAL) << "Unimplemented";
+}
+
 size_t FlatbufferType::FieldInlineSize(int index) const {
   DCHECK(IsSequence());
   if (type_table_) {
-    return flatbuffers::InlineSize(FieldElementaryType(index), type_table_);
+    return flatbuffers::InlineSize(
+        FieldElementaryType(index),
+        FieldIsSequence(index) ? FieldType(index).type_table_ : nullptr);
   }
   if (object_ || enum_) {
     const reflection::Type *const type = ReflectionType(index);
