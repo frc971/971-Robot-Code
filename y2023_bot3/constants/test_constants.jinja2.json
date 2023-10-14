@@ -1,0 +1,8 @@
+{
+  "constants": [
+    {
+      "team": 7971,
+      "data": {% include 'y2023_bot3/constants/test_data/test_team.json' %}
+    }
+  ]
+}

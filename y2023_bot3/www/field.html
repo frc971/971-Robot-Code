@@ -1,0 +1,63 @@
+<html>
+  <head>
+    <script src="field_main_bundle.min.js" defer></script>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div id="field"> </div>
+    <div id="legend"> </div>
+    <div id="readouts">
+      <table>
+        <tr>
+          <th colspan="2">Robot State</th>
+        </tr>
+        <tr>
+          <td>X</td>
+          <td id="x"> NA </td>
+        </tr>
+        <tr>
+          <td>Y</td>
+          <td id="y"> NA </td>
+        </tr>
+        <tr>
+          <td>Theta</td>
+          <td id="theta"> NA </td>
+        </tr>
+      </table>
+
+      <table>
+        <tr>
+          <th colspan="2">Superstructure</th>
+        </tr>
+  </table>
+  <table>
+    <tr>
+      <th colspan="2">Game Piece</th>
+    </tr>
+    <tr>
+      <td>Game Piece Held</td>
+      <td id="game_piece"> NA </td>
+    </tr>
+    <tr>
+      <td>Game Piece Position (+ = left, 0 = empty)</td>
+      <td id="game_piece_position"> NA </td>
+    </tr>
+  </table>
+
+  <h3>Zeroing Faults:</h3>
+  <p id="zeroing_faults"> NA </p>
+  </div>
+  <div id="middle_readouts">
+    <div id="vision_readouts">
+    </div>
+    <div id="message_bridge_status">
+      <div>
+        <div>Node</div>
+        <div>Client</div>
+        <div>Server</div>
+      </div>
+    </div>
+  </div>
+  </body>
+</html>
+

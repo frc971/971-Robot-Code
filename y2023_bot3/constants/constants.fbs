@@ -1,0 +1,10 @@
+namespace y2023_bot3;
+
+table RobotConstants {
+}
+
+table Constants {
+  robot:RobotConstants (id: 0);
+}
+
+root_type Constants;
