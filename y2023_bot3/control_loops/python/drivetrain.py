@@ -14,14 +14,14 @@ gflags.DEFINE_bool('plot', False, 'If true, plot the loop response.')
 
 # TODO(max): Change constants based on robot / CAD
 kDrivetrain = drivetrain.DrivetrainParams(
-    J=6.5,
-    mass=68.0,
+    J=2.2,
+    mass=44.7,
     # TODO(austin): Measure radius a bit better.
-    robot_radius=0.39,
+    robot_radius=0.25,
     wheel_radius=2.5 * 0.0254,
     motor_type=control_loop.Falcon(),
-    num_motors=3,
-    G=(14.0 / 52.0) * (26.0 / 58.0),
+    num_motors=2,
+    G=(14.0 / 68.0) * (30.0 / 54.0),
     q_pos=0.24,
     q_vel=2.5,
     efficiency=0.92,
