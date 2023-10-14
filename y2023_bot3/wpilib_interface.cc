@@ -257,16 +257,12 @@ class CANSensorReader {
 
   void set_falcons(std::shared_ptr<Falcon> right_front,
                    std::shared_ptr<Falcon> right_back,
-                   std::shared_ptr<Falcon> right_under,
                    std::shared_ptr<Falcon> left_front,
-                   std::shared_ptr<Falcon> left_back,
-                   std::shared_ptr<Falcon> left_under) {
+                   std::shared_ptr<Falcon> left_back) {
     right_front_ = std::move(right_front);
     right_back_ = std::move(right_back);
-    right_under_ = std::move(right_under);
     left_front_ = std::move(left_front);
     left_back_ = std::move(left_back);
-    left_under_ = std::move(left_under);
   }
 
  private:
@@ -281,8 +277,7 @@ class CANSensorReader {
 
     auto builder = can_position_sender_.MakeBuilder();
 
-    for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
-                        left_back_, left_under_}) {
+    for (auto falcon : {right_front_, right_back_, left_front_, left_back_}) {
       falcon->RefreshNontimesyncedSignals();
     }
 
@@ -290,8 +285,7 @@ class CANSensorReader {
                     kCANFalconCount>
         falcons;
 
-    for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
-                        left_back_, left_under_}) {
+    for (auto falcon : {right_front_, right_back_, left_front_, left_back_}) {
       falcons.push_back(falcon->WritePosition(builder.fbb()));
     }
 
@@ -318,8 +312,7 @@ class CANSensorReader {
   aos::Sender<frc971::control_loops::drivetrain::CANPosition>
       can_position_sender_;
 
-  std::shared_ptr<Falcon> right_front_, right_back_, right_under_, left_front_,
-      left_back_, left_under_;
+  std::shared_ptr<Falcon> right_front_, right_back_, left_front_, left_back_;
 
   // Pointer to the timer handler used to modify the wakeup.
   ::aos::TimerHandler *timer_handler_;
@@ -546,16 +539,12 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
 
   void set_falcons(std::shared_ptr<Falcon> right_front,
                    std::shared_ptr<Falcon> right_back,
-                   std::shared_ptr<Falcon> right_under,
                    std::shared_ptr<Falcon> left_front,
-                   std::shared_ptr<Falcon> left_back,
-                   std::shared_ptr<Falcon> left_under) {
+                   std::shared_ptr<Falcon> left_back) {
     right_front_ = std::move(right_front);
     right_back_ = std::move(right_back);
-    right_under_ = std::move(right_under);
     left_front_ = std::move(left_front);
     left_back_ = std::move(left_back);
-    left_under_ = std::move(left_under);
   }
 
   void set_right_inverted(ctre::phoenix6::signals::InvertedValue invert) {
@@ -567,8 +556,7 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
   }
 
   void HandleCANConfiguration(const frc971::CANConfiguration &configuration) {
-    for (auto falcon : {right_front_, right_back_, right_under_, left_front_,
-                        left_back_, left_under_}) {
+    for (auto falcon : {right_front_, right_back_, left_front_, left_back_}) {
       falcon->PrintConfigs();
     }
     if (configuration.reapply()) {
@@ -578,13 +566,11 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
 
  private:
   void WriteConfigs() {
-    for (auto falcon :
-         {right_front_.get(), right_back_.get(), right_under_.get()}) {
+    for (auto falcon : {right_front_.get(), right_back_.get()}) {
       falcon->WriteConfigs(right_inverted_);
     }
 
-    for (auto falcon :
-         {left_front_.get(), left_back_.get(), left_under_.get()}) {
+    for (auto falcon : {left_front_.get(), left_back_.get()}) {
       falcon->WriteConfigs(left_inverted_);
     }
   }
@@ -601,8 +587,7 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
     right_control.UpdateFreqHz = 0_Hz;
     right_control.EnableFOC = true;
 
-    for (auto falcon :
-         {left_front_.get(), left_back_.get(), left_under_.get()}) {
+    for (auto falcon : {left_front_.get(), left_back_.get()}) {
       ctre::phoenix::StatusCode status =
           falcon->talon()->SetControl(left_control);
 
@@ -612,8 +597,7 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
       }
     }
 
-    for (auto falcon :
-         {right_front_.get(), right_back_.get(), right_under_.get()}) {
+    for (auto falcon : {right_front_.get(), right_back_.get()}) {
       ctre::phoenix::StatusCode status =
           falcon->talon()->SetControl(right_control);
 
@@ -630,9 +614,8 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
     stop_command.UpdateFreqHz = 0_Hz;
     stop_command.EnableFOC = true;
 
-    for (auto falcon :
-         {right_front_.get(), right_back_.get(), right_under_.get(),
-          left_front_.get(), left_back_.get(), left_under_.get()}) {
+    for (auto falcon : {right_front_.get(), right_back_.get(),
+                        left_front_.get(), left_back_.get()}) {
       falcon->talon()->SetControl(stop_command);
     }
   }
@@ -642,8 +625,7 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
   }
 
   ctre::phoenix6::signals::InvertedValue left_inverted_, right_inverted_;
-  std::shared_ptr<Falcon> right_front_, right_back_, right_under_, left_front_,
-      left_back_, left_under_;
+  std::shared_ptr<Falcon> right_front_, right_back_, left_front_, left_back_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -679,14 +661,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         std::make_shared<Falcon>(1, "Drivetrain Bus", &signals_registry);
     std::shared_ptr<Falcon> right_back =
         std::make_shared<Falcon>(2, "Drivetrain Bus", &signals_registry);
-    std::shared_ptr<Falcon> right_under =
-        std::make_shared<Falcon>(3, "Drivetrain Bus", &signals_registry);
     std::shared_ptr<Falcon> left_front =
         std::make_shared<Falcon>(4, "Drivetrain Bus", &signals_registry);
     std::shared_ptr<Falcon> left_back =
         std::make_shared<Falcon>(5, "Drivetrain Bus", &signals_registry);
-    std::shared_ptr<Falcon> left_under =
-        std::make_shared<Falcon>(6, "Drivetrain Bus", &signals_registry);
 
     // Thread 3.
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
@@ -694,8 +672,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     CANSensorReader can_sensor_reader(&can_sensor_reader_event_loop,
                                       std::move(signals_registry));
 
-    can_sensor_reader.set_falcons(right_front, right_back, right_under,
-                                  left_front, left_back, left_under);
+    can_sensor_reader.set_falcons(right_front, right_back, left_front,
+                                  left_back);
 
     AddLoop(&can_sensor_reader_event_loop);
 
@@ -727,8 +705,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     can_output_event_loop.set_name("CANOutputWriter");
     DrivetrainWriter drivetrain_writer(&can_output_event_loop);
 
-    drivetrain_writer.set_falcons(right_front, right_back, right_under,
-                                  left_front, left_back, left_under);
+    drivetrain_writer.set_falcons(right_front, right_back, left_front,
+                                  left_back);
     drivetrain_writer.set_right_inverted(
         ctre::phoenix6::signals::InvertedValue::Clockwise_Positive);
     drivetrain_writer.set_left_inverted(
