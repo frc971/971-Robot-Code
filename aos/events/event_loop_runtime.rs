@@ -252,9 +252,10 @@ impl<T: EventLoopHolder> EventLoopRuntimeHolder<T> {
         //
         // `EventLoopHolder`s safety requirements prevent anybody else from touching the underlying
         // `aos::EventLoop`.
-        let mut runtime = unsafe { EventLoopRuntime::new(event_loop.into_raw()) };
+        let cpp_runtime = unsafe { CppEventLoopRuntime::new(event_loop.into_raw()).within_box() };
+        let mut runtime = unsafe { EventLoopRuntime::new(&cpp_runtime) };
         fun(&mut runtime);
-        Self(ManuallyDrop::new(runtime.into_cpp()), PhantomData)
+        Self(ManuallyDrop::new(cpp_runtime), PhantomData)
     }
 }
 
@@ -271,7 +272,7 @@ impl<T: EventLoopHolder> Drop for EventLoopRuntimeHolder<T> {
 }
 
 pub struct EventLoopRuntime<'event_loop>(
-    Pin<Box<CppEventLoopRuntime>>,
+    &'event_loop CppEventLoopRuntime,
     // See documentation of [`new`] for details.
     InvariantLifetime<'event_loop>,
 );
@@ -362,38 +363,8 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// Following these rules is very tricky. Be very cautious calling this function. It exposes an
     /// unbound lifetime, which means you should wrap it directly in a function that attaches a
     /// correct lifetime.
-    pub unsafe fn new(event_loop: *mut CppEventLoop) -> Self {
-        Self(
-            // SAFETY: We push all the validity requirements for this up to our caller.
-            unsafe { CppEventLoopRuntime::new(event_loop) }.within_box(),
-            InvariantLifetime::default(),
-        )
-    }
-
-    /// Creates a Rust wrapper from the underlying C++ object, with an unbound lifetime.
-    ///
-    /// This may never be useful, but it's here for this big scary comment to explain why it's not
-    /// useful.
-    ///
-    /// # Safety
-    ///
-    /// See [`new`] for safety restrictions on `'event_loop` when calling this. In particular, see
-    /// the note about how tricky doing this correctly is, and remember that for this function the
-    /// event loop in question isn't even an argument to this function so it's even trickier. Also
-    /// note that you cannot call this on the result of [`into_cpp`] without violating those
-    /// restrictions.
-    pub unsafe fn from_cpp(cpp: Pin<Box<CppEventLoopRuntime>>) -> Self {
-        Self(cpp, InvariantLifetime::default())
-    }
-
-    /// Extracts the underlying C++ object, without the corresponding Rust lifetime. This is useful
-    /// to stop the propagation of Rust lifetimes without destroying the underlying object which
-    /// contains all the state.
-    ///
-    /// Note that you *cannot* call [`from_cpp`] on the result of this, because that will violate
-    /// [`from_cpp`]'s safety requirements.
-    pub fn into_cpp(self) -> Pin<Box<CppEventLoopRuntime>> {
-        self.0
+    pub unsafe fn new(event_loop: &'event_loop CppEventLoopRuntime) -> Self {
+        Self(event_loop, InvariantLifetime::default())
     }
 
     /// Returns the pointer passed into the constructor.

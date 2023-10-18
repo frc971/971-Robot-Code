@@ -1,6 +1,6 @@
 pub use aos_configuration::{Configuration, ConfigurationExt};
 pub use aos_events_event_loop_runtime::{
-    CppEventLoop, CppExitHandle, EventLoopRuntime, ExitHandle,
+    CppEventLoop, CppEventLoopRuntime, CppExitHandle, EventLoopRuntime, ExitHandle,
 };
 
 use aos_configuration_fbs::aos::Configuration as RustConfiguration;
@@ -172,7 +172,9 @@ impl<'config> ShmEventLoop<'config> {
         // SAFETY: The runtime and the event loop (i.e. self) both get destroyed at the end of this
         // scope: first the runtime followed by the event loop. The runtime gets exclusive access
         // during initialization in `fun` while the event loop remains unused.
-        let runtime = unsafe { EventLoopRuntime::new(self.inner.as_mut().event_loop_mut()) };
+        let cpp_runtime =
+            unsafe { CppEventLoopRuntime::new(self.inner.as_mut().event_loop_mut()).within_box() };
+        let runtime = unsafe { EventLoopRuntime::new(&cpp_runtime) };
         let mut runtime = Scoped::new(runtime);
         fun(&mut runtime);
         self.run();
