@@ -1,6 +1,7 @@
 pub use aos_configuration::{Configuration, ConfigurationExt};
-pub use aos_events_event_loop_runtime::EventLoop;
-pub use aos_events_event_loop_runtime::{CppExitHandle, EventLoopRuntime, ExitHandle};
+pub use aos_events_event_loop_runtime::{
+    CppEventLoop, CppExitHandle, EventLoopRuntime, ExitHandle,
+};
 
 use aos_configuration_fbs::aos::Configuration as RustConfiguration;
 use aos_flatbuffers::{transmute_table_to, Flatbuffer};
@@ -20,7 +21,7 @@ generate!("aos::ShmEventLoopForRust")
 
 extern_cpp_type!("aos::ExitHandle", crate::CppExitHandle)
 extern_cpp_type!("aos::Configuration", crate::Configuration)
-extern_cpp_type!("aos::EventLoop", crate::EventLoop)
+extern_cpp_type!("aos::EventLoop", crate::CppEventLoop)
 );
 
 /// A Rust-owned C++ `ShmEventLoop` object.

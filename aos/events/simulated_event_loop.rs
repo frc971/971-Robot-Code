@@ -5,7 +5,7 @@ use cxx::UniquePtr;
 
 pub use aos_configuration::{Channel, Configuration, ConfigurationExt, Node};
 use aos_configuration_fbs::aos::Configuration as RustConfiguration;
-pub use aos_events_event_loop_runtime::{CppExitHandle, EventLoop, ExitHandle};
+pub use aos_events_event_loop_runtime::{CppEventLoop, CppExitHandle, ExitHandle};
 use aos_events_event_loop_runtime::{EventLoopHolder, EventLoopRuntime, EventLoopRuntimeHolder};
 use aos_flatbuffers::{transmute_table_to, Flatbuffer};
 
@@ -20,7 +20,7 @@ generate!("aos::SimulatedEventLoopFactoryForRust")
 extern_cpp_type!("aos::ExitHandle", crate::CppExitHandle)
 extern_cpp_type!("aos::Configuration", crate::Configuration)
 extern_cpp_type!("aos::Node", crate::Node)
-extern_cpp_type!("aos::EventLoop", crate::EventLoop)
+extern_cpp_type!("aos::EventLoop", crate::CppEventLoop)
 );
 
 /// A Rust-owned C++ `SimulatedEventLoopFactory` object.
@@ -62,7 +62,7 @@ impl<'config> SimulatedEventLoopFactory<'config> {
     /// You probably don't want to call this directly if you're creating a Rust application. This
     /// is intended for creating C++ applications. Use [`make_runtime`] instead when creating Rust
     /// applications.
-    pub fn make_event_loop(&mut self, name: &str, node: Option<&Node>) -> UniquePtr<EventLoop> {
+    pub fn make_event_loop(&mut self, name: &str, node: Option<&Node>) -> UniquePtr<CppEventLoop> {
         // SAFETY:
         // * `self` has a valid C++ object.
         // * C++ doesn't need the lifetimes of `name` or `node` to last any longer than this method
@@ -121,11 +121,11 @@ impl<'config> SimulatedEventLoopFactory<'config> {
     // pub fn spawn_on_startup(&mut self, spawner: impl FnMut());
 }
 
-pub struct SimulatedEventLoopHolder(UniquePtr<EventLoop>);
+pub struct SimulatedEventLoopHolder(UniquePtr<CppEventLoop>);
 
 impl SimulatedEventLoopHolder {
     /// SAFETY: `event_loop` must be the exclusive owner of the underlying EventLoop.
-    pub unsafe fn new(event_loop: UniquePtr<EventLoop>) -> Self {
+    pub unsafe fn new(event_loop: UniquePtr<CppEventLoop>) -> Self {
         Self(event_loop)
     }
 }

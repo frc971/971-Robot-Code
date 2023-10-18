@@ -71,6 +71,7 @@ pub use aos_configuration::{Channel, Configuration, Node};
 use aos_configuration::{ChannelLookupError, ConfigurationExt};
 
 pub use aos_uuid::UUID;
+pub use ffi::aos::EventLoop as CppEventLoop;
 pub use ffi::aos::EventLoopRuntime as CppEventLoopRuntime;
 pub use ffi::aos::ExitHandle as CppExitHandle;
 
@@ -96,8 +97,6 @@ extern_cpp_type!("aos::Channel", crate::Channel)
 extern_cpp_type!("aos::Node", crate::Node)
 extern_cpp_type!("aos::UUID", crate::UUID)
 );
-
-pub type EventLoop = ffi::aos::EventLoop;
 
 /// A marker type which is invariant with respect to the given lifetime.
 ///
@@ -169,13 +168,13 @@ impl RustApplicationFuture {
 /// mostly-exclusive. In other words, nothing else may mutate it in any way except processing events
 /// (including dropping, because this object has to be the one to drop it).
 ///
-/// This also implies semantics similar to `Pin<&mut ffi::aos::EventLoop>` for the underlying object.
+/// This also implies semantics similar to `Pin<&mut CppEventLoop>` for the underlying object.
 /// Implementations of this trait must have exclusive ownership of it, and the underlying object
 /// must not be moved.
 pub unsafe trait EventLoopHolder {
     /// Converts this holder into a raw C++ pointer. This may be fed through other Rust and C++
     /// code, and eventually passed back to [`from_raw`].
-    fn into_raw(self) -> *mut ffi::aos::EventLoop;
+    fn into_raw(self) -> *mut CppEventLoop;
 
     /// Converts a raw C++ pointer back to a holder object.
     ///
@@ -183,7 +182,7 @@ pub unsafe trait EventLoopHolder {
     ///
     /// `raw` must be the result of [`into_raw`] on an instance of this same type. These raw
     /// pointers *are not* interchangeable between implementations of this trait.
-    unsafe fn from_raw(raw: *mut ffi::aos::EventLoop) -> Self;
+    unsafe fn from_raw(raw: *mut CppEventLoop) -> Self;
 }
 
 /// Owns an [`EventLoopRuntime`] and its underlying `aos::EventLoop`, with safe management of the
@@ -272,7 +271,7 @@ impl<T: EventLoopHolder> Drop for EventLoopRuntimeHolder<T> {
 }
 
 pub struct EventLoopRuntime<'event_loop>(
-    Pin<Box<ffi::aos::EventLoopRuntime>>,
+    Pin<Box<CppEventLoopRuntime>>,
     // See documentation of [`new`] for details.
     InvariantLifetime<'event_loop>,
 );
@@ -363,10 +362,10 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// Following these rules is very tricky. Be very cautious calling this function. It exposes an
     /// unbound lifetime, which means you should wrap it directly in a function that attaches a
     /// correct lifetime.
-    pub unsafe fn new(event_loop: *mut ffi::aos::EventLoop) -> Self {
+    pub unsafe fn new(event_loop: *mut CppEventLoop) -> Self {
         Self(
             // SAFETY: We push all the validity requirements for this up to our caller.
-            unsafe { ffi::aos::EventLoopRuntime::new(event_loop) }.within_box(),
+            unsafe { CppEventLoopRuntime::new(event_loop) }.within_box(),
             InvariantLifetime::default(),
         )
     }
@@ -383,7 +382,7 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// event loop in question isn't even an argument to this function so it's even trickier. Also
     /// note that you cannot call this on the result of [`into_cpp`] without violating those
     /// restrictions.
-    pub unsafe fn from_cpp(cpp: Pin<Box<ffi::aos::EventLoopRuntime>>) -> Self {
+    pub unsafe fn from_cpp(cpp: Pin<Box<CppEventLoopRuntime>>) -> Self {
         Self(cpp, InvariantLifetime::default())
     }
 
@@ -393,7 +392,7 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     ///
     /// Note that you *cannot* call [`from_cpp`] on the result of this, because that will violate
     /// [`from_cpp`]'s safety requirements.
-    pub fn into_cpp(self) -> Pin<Box<ffi::aos::EventLoopRuntime>> {
+    pub fn into_cpp(self) -> Pin<Box<CppEventLoopRuntime>> {
         self.0
     }
 
@@ -401,7 +400,7 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     ///
     /// The returned value should only be used for destroying it (_after_ `self` is dropped) or
     /// calling other C++ APIs.
-    pub fn raw_event_loop(&self) -> *mut ffi::aos::EventLoop {
+    pub fn raw_event_loop(&self) -> *mut CppEventLoop {
         self.0.event_loop()
     }
 

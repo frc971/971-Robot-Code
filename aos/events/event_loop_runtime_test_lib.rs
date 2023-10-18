@@ -1,7 +1,7 @@
 //! These test helpers have to live in a separate file because autocxx only generates one set of
 //! outputs per file, and that needs to be the non-`#[cfg(test)]` stuff.
 
-use aos_events_event_loop_runtime::{EventLoop, EventLoopRuntime, Fetcher, RawFetcher};
+use aos_events_event_loop_runtime::{CppEventLoop, EventLoopRuntime, Fetcher, RawFetcher};
 use ping_rust_fbs::aos::examples::{root_as_ping, Ping};
 use pong_rust_fbs::aos::examples::{Pong, PongBuilder};
 
@@ -151,7 +151,9 @@ mod tests {
         }
     }
 
-    unsafe fn make_test_application(event_loop: *mut EventLoop) -> Box<TestApplication<'static>> {
+    unsafe fn make_test_application(
+        event_loop: *mut CppEventLoop,
+    ) -> Box<TestApplication<'static>> {
         GLOBAL_STATE.with(|g| {
             let g = &mut *g.borrow_mut();
             g.creation_count += 1;
@@ -260,7 +262,7 @@ mod tests {
     }
 
     unsafe fn make_typed_test_application(
-        event_loop: *mut EventLoop,
+        event_loop: *mut CppEventLoop,
     ) -> Box<TypedTestApplication<'static>> {
         GLOBAL_STATE.with(|g| {
             let g = &mut *g.borrow_mut();
@@ -283,7 +285,9 @@ mod tests {
         }
     }
 
-    unsafe fn make_panic_application(event_loop: *mut EventLoop) -> Box<PanicApplication<'static>> {
+    unsafe fn make_panic_application(
+        event_loop: *mut CppEventLoop,
+    ) -> Box<PanicApplication<'static>> {
         Box::new(PanicApplication::new(EventLoopRuntime::new(event_loop)))
     }
 
@@ -304,7 +308,7 @@ mod tests {
     }
 
     unsafe fn make_panic_on_run_application(
-        event_loop: *mut EventLoop,
+        event_loop: *mut CppEventLoop,
     ) -> Box<PanicOnRunApplication<'static>> {
         Box::new(PanicOnRunApplication::new(EventLoopRuntime::new(
             event_loop,
@@ -315,19 +319,19 @@ mod tests {
     mod ffi_bridge {
         extern "Rust" {
             unsafe fn make_test_application(
-                event_loop: *mut EventLoop,
+                event_loop: *mut CppEventLoop,
             ) -> Box<TestApplication<'static>>;
 
             unsafe fn make_typed_test_application(
-                event_loop: *mut EventLoop,
+                event_loop: *mut CppEventLoop,
             ) -> Box<TypedTestApplication<'static>>;
 
             unsafe fn make_panic_application(
-                event_loop: *mut EventLoop,
+                event_loop: *mut CppEventLoop,
             ) -> Box<PanicApplication<'static>>;
 
             unsafe fn make_panic_on_run_application(
-                event_loop: *mut EventLoop,
+                event_loop: *mut CppEventLoop,
             ) -> Box<PanicOnRunApplication<'static>>;
 
             fn completed_test_count() -> u32;
@@ -359,7 +363,7 @@ mod tests {
         unsafe extern "C++" {
             include!("aos/events/event_loop.h");
             #[namespace = "aos"]
-            type EventLoop = crate::EventLoop;
+            type CppEventLoop = crate::CppEventLoop;
         }
     }
 }
