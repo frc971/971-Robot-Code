@@ -2,10 +2,13 @@
 
 #include <fcntl.h>
 #include <sys/epoll.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/timerfd.h>
 #include <unistd.h>
 
 #include <atomic>
+#include <cstring>
 #include <vector>
 
 #include "glog/logging.h"
@@ -203,17 +206,47 @@ void EPoll::DeleteFd(int fd) {
   LOG(FATAL) << "fd " << fd << " not found";
 }
 
+namespace {
+bool IsSocket(int fd) {
+  struct stat st;
+  if (fstat(fd, &st) == -1) {
+    return false;
+  }
+  return static_cast<bool>(S_ISSOCK(st.st_mode));
+}
+
+::std::string GetSocketErrorStr(int fd) {
+  ::std::string error_str;
+  if (IsSocket(fd)) {
+    int error = 0;
+    socklen_t errlen = sizeof(error);
+    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&error, &errlen) == 0) {
+      if (error) {
+        error_str = "Socket error: " + ::std::string(strerror(error));
+      }
+    }
+  }
+  return error_str;
+}
+}  // namespace
+
 void EPoll::InOutEventData::DoCallbacks(uint32_t events) {
   if (events & kInEvents) {
-    CHECK(in_fn) << ": No handler registered for input events on " << fd;
+    CHECK(in_fn) << ": No handler registered for input events on descriptor "
+                 << fd << ". Received events = 0x" << std::hex << events
+                 << std::dec;
     in_fn();
   }
   if (events & kOutEvents) {
-    CHECK(out_fn) << ": No handler registered for output events on " << fd;
+    CHECK(out_fn) << ": No handler registered for output events on descriptor "
+                  << fd << ". Received events = 0x" << std::hex << events
+                  << std::dec;
     out_fn();
   }
   if (events & kErrorEvents) {
-    CHECK(err_fn) << ": No handler registered for error events on " << fd;
+    CHECK(err_fn) << ": No handler registered for error events on descriptor "
+                  << fd << ". Received events = 0x" << std::hex << events
+                  << std::dec << ". " << GetSocketErrorStr(fd);
     err_fn();
   }
 }
