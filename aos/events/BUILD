@@ -259,6 +259,38 @@ cc_binary(
     ],
 )
 
+rust_test(
+    name = "pingpong_test_rs",
+    srcs = [
+        "pingpong_test.rs",
+    ],
+    data = [":pingpong_config"],
+    # TODO(adam.snaider): Remove later. For now we need this because when
+    # a rust test crashes inside of C++, the output gets captured which makes
+    # it pretty much impossible to figure out what happened.
+    env = {"RUST_TEST_NOCAPTURE": "1"},
+    rustc_flags = ["-Crelocation-model=static"],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":event_loop_runtime",
+        ":ping_lib_rs",
+        ":ping_rust_fbs",
+        ":pong_lib_rs",
+        ":pong_rust_fbs",
+        ":simulated_event_loop_rs",
+        "//aos:configuration_rs",
+        "//aos:configuration_rust_fbs",
+        "//aos:flatbuffers_rs",
+        "//aos:test_init_rs",
+        "@com_github_google_flatbuffers//rust",
+        "@crate_index//:futures",
+        "@rules_rust//tools/runfiles",
+    ],
+)
+
 rust_binary(
     name = "ping_rs",
     srcs = [
