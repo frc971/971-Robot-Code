@@ -4,7 +4,7 @@ load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_doc", "rust_doc_test", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_doc", "rust_doc_test", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -273,16 +273,27 @@ rust_binary(
         "//tools:has_msan": ["@platforms//:incompatible"],
     }),
     deps = [
-        ":event_loop_runtime",
-        ":ping_rust_fbs",
-        ":pong_rust_fbs",
+        ":ping_lib_rs",
         ":shm_event_loop_rs",
         "//aos:configuration_rs",
         "//aos:configuration_rust_fbs",
         "//aos:flatbuffers_rs",
         "//aos:init_rs",
-        "@com_github_google_flatbuffers//rust",
         "@crate_index//:clap",
+    ],
+)
+
+rust_library(
+    name = "ping_lib_rs",
+    srcs = [
+        "ping_lib.rs",
+    ],
+    crate_name = "ping_lib",
+    deps = [
+        ":event_loop_runtime",
+        ":ping_rust_fbs",
+        ":pong_rust_fbs",
+        "@com_github_google_flatbuffers//rust",
         "@crate_index//:futures",
     ],
 )
@@ -301,16 +312,27 @@ rust_binary(
         "//tools:has_msan": ["@platforms//:incompatible"],
     }),
     deps = [
-        ":event_loop_runtime",
-        ":ping_rust_fbs",
-        ":pong_rust_fbs",
+        ":pong_lib_rs",
         ":shm_event_loop_rs",
         "//aos:configuration_rs",
         "//aos:configuration_rust_fbs",
         "//aos:flatbuffers_rs",
         "//aos:init_rs",
-        "@com_github_google_flatbuffers//rust",
         "@crate_index//:clap",
+    ],
+)
+
+rust_library(
+    name = "pong_lib_rs",
+    srcs = [
+        "pong_lib.rs",
+    ],
+    crate_name = "pong_lib",
+    deps = [
+        ":event_loop_runtime",
+        ":ping_rust_fbs",
+        ":pong_rust_fbs",
+        "@com_github_google_flatbuffers//rust",
         "@crate_index//:futures",
     ],
 )
