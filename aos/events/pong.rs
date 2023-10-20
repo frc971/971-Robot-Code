@@ -19,14 +19,14 @@ fn main() {
     aos_init::init();
     let config = config::read_config_from(Path::new("pingpong_config.json")).unwrap();
     ShmEventLoop::new(&config).run_with(|runtime| {
-        let task = pong(runtime);
+        let task = pong(*runtime);
         runtime.set_realtime_priority(5);
         runtime.spawn(task);
     });
 }
 
 /// Responds to ping messages with an equivalent pong.
-async fn pong(event_loop: &EventLoopRuntime<'_>) -> Never {
+async fn pong(event_loop: EventLoopRuntime<'_>) -> Never {
     // The watcher gives us incoming ping messages.
     let mut ping_watcher: Watcher<ping::Ping> = event_loop.make_watcher("/test").unwrap();
 

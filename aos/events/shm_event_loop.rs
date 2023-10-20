@@ -165,9 +165,7 @@ impl<'config> ShmEventLoop<'config> {
     /// ```
     pub fn run_with<'env, F>(mut self, fun: F)
     where
-        F: for<'event_loop> FnOnce(
-            &'event_loop mut Scoped<'event_loop, 'env, EventLoopRuntime<'event_loop>>,
-        ),
+        F: for<'event_loop> FnOnce(Scoped<'event_loop, 'env, EventLoopRuntime<'event_loop>>),
     {
         // SAFETY: The runtime and the event loop (i.e. self) both get destroyed at the end of this
         // scope: first the runtime followed by the event loop. The runtime gets exclusive access
@@ -175,8 +173,8 @@ impl<'config> ShmEventLoop<'config> {
         let cpp_runtime =
             unsafe { CppEventLoopRuntime::new(self.inner.as_mut().event_loop_mut()).within_box() };
         let runtime = unsafe { EventLoopRuntime::new(&cpp_runtime) };
-        let mut runtime = Scoped::new(runtime);
-        fun(&mut runtime);
+        let runtime = Scoped::new(runtime);
+        fun(runtime);
         self.run();
     }
 
@@ -201,6 +199,7 @@ impl<'config> ShmEventLoop<'config> {
 /// any `'scope`, this allows the compiler to propagate lifetime bounds which
 /// outlive any of the possible `'scope`. This is the simplest way to express
 /// this concept to the compiler right now.
+#[derive(Clone, Copy)]
 pub struct Scoped<'scope, 'env: 'scope, T: 'scope> {
     data: T,
     _env: PhantomData<fn(&'env ()) -> &'env ()>,
@@ -266,7 +265,7 @@ mod tests {
                 let mut event_loop = ShmEventLoop::new(config);
                 let exit_handle = event_loop.make_exit_handle();
                 event_loop.run_with(|runtime| {
-                    runtime.spawn(async {
+                    runtime.spawn(async move {
                         let mut watcher: Watcher<ping::Ping> = runtime
                             .make_watcher("/test")
                             .expect("Can't create `Ping` watcher");
@@ -283,7 +282,7 @@ mod tests {
                 let mut event_loop = ShmEventLoop::new(config);
                 let exit_handle = event_loop.make_exit_handle();
                 event_loop.run_with(|runtime| {
-                    runtime.spawn(async {
+                    runtime.spawn(async move {
                         let mut sender: Sender<ping::Ping> = runtime
                             .make_sender("/test")
                             .expect("Can't create `Ping` sender");

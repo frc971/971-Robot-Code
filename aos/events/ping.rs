@@ -28,7 +28,7 @@ fn main() {
     let ping = PingTask::new();
     ShmEventLoop::new(&config).run_with(|runtime| {
         runtime.set_realtime_priority(5);
-        runtime.spawn(ping.tasks(runtime, app.sleep));
+        runtime.spawn(ping.tasks(*runtime, app.sleep));
     });
 }
 
@@ -45,8 +45,8 @@ impl PingTask {
     }
 
     /// Returns a future with all the tasks for the ping process
-    pub async fn tasks(&self, event_loop: &EventLoopRuntime<'_>, sleep: u64) -> Never {
-        futures::join!(self.ping(event_loop, sleep), self.handle_pong(event_loop));
+    pub async fn tasks(&self, event_loop: EventLoopRuntime<'_>, sleep: u64) -> Never {
+        futures::join!(self.ping(&event_loop, sleep), self.handle_pong(&event_loop));
         unreachable!("Let's hope `never_type` gets stabilized soon :)");
     }
 

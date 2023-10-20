@@ -91,7 +91,7 @@ impl<'config> SimulatedEventLoopFactory<'config> {
         fun: F,
     ) -> EventLoopRuntimeHolder<SimulatedEventLoopHolder>
     where
-        F: for<'event_loop> FnOnce(&mut EventLoopRuntime<'event_loop>),
+        F: for<'event_loop> FnOnce(EventLoopRuntime<'event_loop>),
     {
         let event_loop = self.make_event_loop(name, node);
         // SAFETY: We just created this EventLoop, so we are the exclusive owner of it.

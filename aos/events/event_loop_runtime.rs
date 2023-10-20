@@ -236,7 +236,7 @@ impl<T: EventLoopHolder> EventLoopRuntimeHolder<T> {
     /// ```
     pub fn new<F>(event_loop: T, fun: F) -> Self
     where
-        F: for<'event_loop> FnOnce(&mut EventLoopRuntime<'event_loop>),
+        F: for<'event_loop> FnOnce(EventLoopRuntime<'event_loop>),
     {
         // SAFETY: The EventLoopRuntime never escapes this function, which means the only code that
         // observes its lifetime is `fun`. `fun` must be generic across any value of its
@@ -253,8 +253,8 @@ impl<T: EventLoopHolder> EventLoopRuntimeHolder<T> {
         // `EventLoopHolder`s safety requirements prevent anybody else from touching the underlying
         // `aos::EventLoop`.
         let cpp_runtime = unsafe { CppEventLoopRuntime::new(event_loop.into_raw()).within_box() };
-        let mut runtime = unsafe { EventLoopRuntime::new(&cpp_runtime) };
-        fun(&mut runtime);
+        let runtime = unsafe { EventLoopRuntime::new(&cpp_runtime) };
+        fun(runtime);
         Self(ManuallyDrop::new(cpp_runtime), PhantomData)
     }
 }
@@ -271,6 +271,7 @@ impl<T: EventLoopHolder> Drop for EventLoopRuntimeHolder<T> {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct EventLoopRuntime<'event_loop>(
     &'event_loop CppEventLoopRuntime,
     // See documentation of [`new`] for details.
