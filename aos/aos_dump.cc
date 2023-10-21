@@ -51,8 +51,6 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  uint64_t message_count = 0;
-
   aos::monotonic_clock::time_point next_send_time =
       aos::monotonic_clock::min_time;
 
@@ -74,7 +72,6 @@ int main(int argc, char **argv) {
           cli_info.event_loop->MakeRawFetcher(channel);
       if (fetcher->Fetch()) {
         printer.PrintMessage(channel, fetcher->context());
-        ++message_count;
       }
     }
 

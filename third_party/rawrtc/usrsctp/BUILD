@@ -50,6 +50,7 @@ cc_library(
     ] + compiler_select({
         "clang": [
             "-Wno-unused-but-set-variable",
+            "-Wno-deprecated-non-prototype",
         ],
         "gcc": [
             "-Wno-discarded-qualifiers",

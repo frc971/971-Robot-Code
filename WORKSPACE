@@ -251,11 +251,11 @@ local_repository(
 
 load("@com_grail_bazel_toolchain//toolchain:rules.bzl", "llvm", "llvm_toolchain")
 
-llvm_version = "13.0.0"
+llvm_version = "16.0.3"
 
 llvm(
     name = "llvm_k8",
-    distribution = "clang+llvm-%s-x86_64-linux-gnu-ubuntu-16.04.tar.xz" % llvm_version,
+    distribution = "clang+llvm-%s-x86_64-linux-gnu-ubuntu-22.04.tar.xz" % llvm_version,
     llvm_version = llvm_version,
 )
 

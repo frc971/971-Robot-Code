@@ -181,6 +181,102 @@ _llvm_distributions = {
     "clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz": "76d0bf002ede7a893f69d9ad2c4e101d15a8f4186fbfe24e74856c8449acd7c1",
     "clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz": "2c2fb857af97f41a5032e9ecadf7f78d3eff389a5cd3c9ec620d24f134ceb3c8",
     "clang+llvm-13.0.0-aarch64-linux-gnu.tar.xz": "968d65d2593850ee9b37fcda074fb7641529bd45d2f976af6c8197de3c22612f",
+
+    # 13.0.1
+    "clang+llvm-13.0.1-aarch64-linux-gnu.tar.xz": "15ff2db12683e69e552b6668f7ca49edaa01ce32cb1cbc8f8ed2e887ab291069",
+    "clang+llvm-13.0.1-amd64-unknown-freebsd12.tar.xz": "8101c8d3a920bf930b33987ada5373f43537c5de8c194be0ea10530fd0ad5617",
+    "clang+llvm-13.0.1-amd64-unknown-freebsd13.tar.xz": "f1ba8ec77b5e82399af738ad9897a8aafc11c5692ceb331c8373eae77018d428",
+    "clang+llvm-13.0.1-armv7a-linux-gnueabihf.tar.xz": "1215720114538f57acbe2f3b0614c23f4fc551ba2976afa3779a3c01aaaf1221",
+    "clang+llvm-13.0.1-i386-unknown-freebsd12.tar.xz": "e3c921e0f130afa6a6ebac23c31b66b32563a5ec53a2f4ed4676f31a81379f70",
+    "clang+llvm-13.0.1-i386-unknown-freebsd13.tar.xz": "e85c46bd64a0217f3df1f42421a502648d6741ef29fd5d44674b87af119ce25d",
+    "clang+llvm-13.0.1-powerpc64le-linux-rhel-7.9.tar.xz": "ab659c290536182a99c064d4537d2fb1273bb2b1bf8c6a43866f033bf1ece4a8",
+    "clang+llvm-13.0.1-powerpc64le-linux-ubuntu-18.04.5.tar.xz": "7a4be2508aa0b4ee3f72c312af4b62ea14581a5db61aa703ea0822f46e5598cb",
+    "clang+llvm-13.0.1-x86_64-apple-darwin.tar.xz": "dec02d17698514d0fc7ace8869c38937851c542b02adf102c4e898f027145a4d",
+    "clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz": "84a54c69781ad90615d1b0276a83ff87daaeded99fbc64457c350679df7b4ff0",
+
+    # 14.0.0
+    "clang+llvm-14.0.0-aarch64-linux-gnu.tar.xz": "1792badcd44066c79148ffeb1746058422cc9d838462be07e3cb19a4b724a1ee",
+    "clang+llvm-14.0.0-amd64-pc-solaris2.11.tar.xz": "a708470fdbaadf530d6cfd56f92fde1328cb47ef8439ecf1a2126523e7c94a50",
+    "clang+llvm-14.0.0-amd64-unknown-freebsd12.tar.xz": "7eaff7ee2a32babd795599f41f4a5ffe7f161721ebf5630f48418e626650105e",
+    "clang+llvm-14.0.0-amd64-unknown-freebsd13.tar.xz": "b68d73fd57be385e7f06046a87381f7520c8861f492c294e6301d2843d9a1f57",
+    "clang+llvm-14.0.0-armv7a-linux-gnueabihf.tar.xz": "17d5f60c3d5f9494be7f67b2dc9e6017cd5e8457e53465968a54ec7069923bfe",
+    "clang+llvm-14.0.0-i386-unknown-freebsd12.tar.xz": "5ed9d93a8425132e8117d7061d09c2989ce6b2326f25c46633e2b2dee955bb00",
+    "clang+llvm-14.0.0-i386-unknown-freebsd13.tar.xz": "81f49eb466ce9149335ac8918a5f02fa724d562a94464ed13745db0165b4a220",
+    "clang+llvm-14.0.0-powerpc64-ibm-aix-7.2.tar.xz": "4ad5866de6c69d989cbbc989201b46dfdcd7d2b23a712fcad7baa09c204f10de",
+    "clang+llvm-14.0.0-powerpc64le-linux-rhel-7.9.tar.xz": "7a31de37959fdf3be897b01f284a91c28cd38a2e2fa038ff58121d1b6f6eb087",
+    "clang+llvm-14.0.0-powerpc64le-linux-ubuntu-18.04.tar.xz": "2d504c4920885c86b306358846178bc2232dfac83b47c3b1d05861a8162980e6",
+    "clang+llvm-14.0.0-sparcv9-sun-solaris2.11.tar.xz": "b342cdaaea3b44de5b0f45052e2df49bcdf69dcc8ad0c23ec5afc04668929681",
+    "clang+llvm-14.0.0-x86_64-apple-darwin.tar.xz": "cf5af0f32d78dcf4413ef6966abbfd5b1445fe80bba57f2ff8a08f77e672b9b3",
+    "clang+llvm-14.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz": "61582215dafafb7b576ea30cc136be92c877ba1f1c31ddbbd372d6d65622fef5",
+    "clang+llvm-14.0.0-x86_64-linux-sles12.4.tar.xz": "78f70cc94c3b6f562455b15cebb63e75571d50c3d488d53d9aa4cd9dded30627",
+
+    # 15.0.0
+    "clang+llvm-15.0.0-aarch64-linux-gnu.tar.xz": "527ed550784681f95ec7a1be8fbf5a24bd03d7da9bf31afb6523996f45670be3",
+    "clang+llvm-15.0.0-amd64-pc-solaris2.11.tar.xz": "5b9fd6a30ce6941adf74667d2076a49aa047fa040e3690f7af26c264d4ce58e7",
+    "clang+llvm-15.0.0-arm64-apple-darwin21.0.tar.xz": "cfd5c3fa07d7fccea0687f5b4498329a6172b7a15bbc45b547d0ac86bd3452a5",
+    "clang+llvm-15.0.0-armv7a-linux-gnueabihf.tar.xz": "58ce8877642fc1399736ffc81bc8ef6244440fc78d72e097a07475b8b25e2bf1",
+    "clang+llvm-15.0.0-powerpc64-ibm-aix-7.2.tar.xz": "c5f63401fa88ea96ca7110bd81ead1bf1a2575962e9cc84a6713ec29c02b1c10",
+    "clang+llvm-15.0.0-powerpc64le-linux-rhel-8.4.tar.xz": "c94448766b6b92cfc8f35e611308c9680a9ad2177f88d358c2b06e9b108d61bd",
+    "clang+llvm-15.0.0-powerpc64le-linux-ubuntu-18.04.6.tar.xz": "6bcedc3d18552732f219c1d0f8c4b0c917ff5f800400a31dabfe8d040cbf1f02",
+    "clang+llvm-15.0.0-sparc64-unknown-linux-gnu.tar.xz": "b5a8108040d5d5d69d6106fa89a6cffc71a16a3583b74c1f15c42f392a47a3d9",
+    "clang+llvm-15.0.0-sparcv9-sun-solaris2.11.tar.xz": "4354854976355ca6f4ac90231a97121844c4fc9f998c9850527390120c62f01f",
+    "clang+llvm-15.0.0-x86_64-apple-darwin.tar.xz": "8fb11e6ada98b901398b2e7b0378a3a59e88c88c754e95d8f6b54613254d7d65",
+
+    # 15.0.6
+    "clang+llvm-15.0.6-aarch64-linux-gnu.tar.xz": "8ca4d68cf103da8331ca3f35fe23d940c1b78fb7f0d4763c1c059e352f5d1bec",
+    "clang+llvm-15.0.6-arm64-apple-darwin21.0.tar.xz": "32bc7b8eee3d98f72dd4e5651e6da990274ee2d28c5c19a7d8237eb817ce8d91",
+    "clang+llvm-15.0.6-armv7a-linux-gnueabihf.tar.xz": "c12e9298f9a9ed3a96342e9ffb2c02146a0cd7535231fef57c7217bd3a36f53b",
+    "clang+llvm-15.0.6-powerpc64-ibm-aix-7.2.tar.xz": "6bc1c2fcc8069e28773f6a0d16624160cd6de01b8f15aab27652eedad665d462",
+    "clang+llvm-15.0.6-powerpc64le-linux-rhel-8.4.tar.xz": "c26e5563e6ff46a03bc45fe27547c69283b64cba2359ccd3a42f735c995c0511",
+    "clang+llvm-15.0.6-powerpc64le-linux-ubuntu-18.04.tar.xz": "7fc9f07ff0fcf191df93fe4adc1da555e43f62fe1d3ddafb15c943f72b1bda17",
+    "clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04.tar.xz": "38bc7f5563642e73e69ac5626724e206d6d539fbef653541b34cae0ba9c3f036",
+
+    # 15.0.7
+    "clang+llvm-15.0.7-arm64-apple-darwin22.0.tar.xz": "867c6afd41158c132ef05a8f1ddaecf476a26b91c85def8e124414f9a9ba188d",
+    "clang+llvm-15.0.7-powerpc64-ibm-aix-7.2.tar.xz": "6cbc7c7f4395abb9c1a5bdcab3811bd6b1a6c4d08756ba674bfbbd732e2b23ac",
+    "clang+llvm-15.0.7-powerpc64le-linux-rhel-8.4.tar.xz": "2163cc934437146dc30810a21a46327ba3983f123c3bea19be316a64135b6414",
+    "clang+llvm-15.0.7-powerpc64le-linux-ubuntu-18.04.tar.xz": "19a16d768e15966923b0cbf8fc7dc148c89e316857acd89ad3aff72dcfcd61f4",
+    "clang+llvm-15.0.7-x86_64-apple-darwin21.0.tar.xz": "d16b6d536364c5bec6583d12dd7e6cf841b9f508c4430d9ee886726bd9983f1c",
+
+    # 16.0.0
+    "clang+llvm-16.0.0-aarch64-linux-gnu.tar.xz": "b750ba3120e6153fc5b316092f19b52cf3eb64e19e5f44bd1b962cb54a20cf0a",
+    "clang+llvm-16.0.0-amd64-pc-solaris2.11.tar.xz": "b637b7da383d3417ac4862342911cb467fba2ec00f48f163eb8308f2bbb9b7ad",
+    "clang+llvm-16.0.0-amd64-unknown-freebsd13.tar.xz": "c4fe6293349b3ab7d802793103d1d44f58831884e63ff1b40ce29c3e7408257b",
+    "clang+llvm-16.0.0-arm64-apple-darwin22.0.tar.xz": "2041587b90626a4a87f0de14a5842c14c6c3374f42c8ed12726ef017416409d9",
+    "clang+llvm-16.0.0-powerpc64-ibm-aix-7.2.tar.xz": "e51209eeea3c3db41084d8625ab3357991980831e0b641d633ec23e9d858333f",
+    "clang+llvm-16.0.0-powerpc64le-linux-rhel-8.4.tar.xz": "eb56949af9a83a12754f7cf254886d30c4be8a1da4dd0f27db790a7fcd35a3bf",
+    "clang+llvm-16.0.0-powerpc64le-linux-ubuntu-18.04.tar.xz": "ae34b037cde14f19c3c431de5fc04e06fa43d2cce3f8d44a63659b48afdf1f7a",
+    "clang+llvm-16.0.0-sparc64-unknown-linux-gnu.tar.xz": "a2627fcb6d97405b38c9e4c17ccfdc5d61fdd1bee742dcce0726ed39e2dcd92c",
+    "clang+llvm-16.0.0-sparcv9-sun-solaris2.11.tar.xz": "45c2ac0c10c3876332407a1ea893dccbde77a490f4a9b54a00e4881681a3c5ea",
+    "clang+llvm-16.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz": "2b8a69798e8dddeb57a186ecac217a35ea45607cb2b3cf30014431cff4340ad1",
+
+    # 16.0.1
+    "clang+llvm-16.0.1-aarch64-linux-gnu.tar.xz": "83e38451772120b016432687c0a3aab391808442b86f54966ef44c73a26280ac",
+    "clang+llvm-16.0.1-amd64-unknown-freebsd13.tar.xz": "970359de2a1a09a93a9e1cf3405e5758dfe463567b20a168f9156bd72b7f8ac6",
+    "clang+llvm-16.0.1-arm64-apple-darwin22.0.tar.xz": "cb487fa991f047dc79ae36430cbb9ef14621c1262075373955b1d97215c75879",
+    "clang+llvm-16.0.1-powerpc64-ibm-aix-7.2.tar.xz": "c56d9cf643b7f39e40436e55b59b3bd88057ec0fa084bd8e06ac17fb20ea2a21",
+    "clang+llvm-16.0.1-powerpc64le-linux-rhel-8.4.tar.xz": "c89a9af64a35ee58ef4eac7b52c173707140dc7eac6839ff254b656de8eb6c3c",
+    "clang+llvm-16.0.1-powerpc64le-linux-ubuntu-20.04.tar.xz": "08b39f9e6c19086aaf029d155c42a4db96ce662f84d6e89d8c9037d3baeee036",
+
+    # 16.0.2
+    "clang+llvm-16.0.2-aarch64-linux-gnu.tar.xz": "de89d138cfb17e2d81fdaca2f9c5e0c042014beea6bcacde7f27db40b69c0bdc",
+    "clang+llvm-16.0.2-amd64-unknown-freebsd13.tar.xz": "0cd92b6a84e7477aa8070465f01eec8198e0b1e38d1b6da8c61859a633ec9a71",
+    "clang+llvm-16.0.2-arm64-apple-darwin22.0.tar.xz": "539861297b8aa6be8e89bf68268b07d79d7a1fde87f4b98f123709f13933f326",
+    "clang+llvm-16.0.2-powerpc64-ibm-aix-7.2.tar.xz": "8c9cbf29b261f1af905f41032b446fd78bd560b549ab31d05a16d0cc972df23d",
+    "clang+llvm-16.0.2-powerpc64le-linux-rhel-8.4.tar.xz": "fe21023b64d2298d65fea0f4832a27a9948121662b54a8c8ce8a9331c4039c36",
+    "clang+llvm-16.0.2-x86_64-linux-gnu-ubuntu-22.04.tar.xz": "9530eccdffedb9761f23cbd915cf95d861b1d95f340ea36ded68bd6312af912e",
+
+    # 16.0.3
+    "clang+llvm-16.0.3-aarch64-linux-gnu.tar.xz": "315fd821ddb3e4b10c4dfabe7f200d1d17902b6a5ccd5dd665a0cd454bca379f",
+    "clang+llvm-16.0.3-arm64-apple-darwin22.0.tar.xz": "b9068eee1cf1e17848241ea581a2abe6cb4a15d470ec515c100f8b52e4c6a7cb",
+    "clang+llvm-16.0.3-powerpc64-ibm-aix-7.2.tar.xz": "f0372ea5b665ca1b8524b933b84ccbe59e9441537388815b24323aa4aab7db2f",
+    "clang+llvm-16.0.3-powerpc64le-linux-rhel-8.4.tar.xz": "9804721c746d74a85ce935d938509277af728fad1548835f539660ff1380e04d",
+    "clang+llvm-16.0.3-x86_64-linux-gnu-ubuntu-22.04.tar.xz": "638d32fd0032f99bafaab3bae63a406adb771825a02b6b7da119ee7e71af26c6",
+
+    # 16.0.4
+    "clang+llvm-16.0.4-amd64-unknown-freebsd13.tar.xz": "cf9d73bcf05b8749c7f3efbe86654b8fe0209f28993eafe26c27eb85885593f7",
+    "clang+llvm-16.0.4-arm64-apple-darwin22.0.tar.xz": "429b8061d620108fee636313df55a0602ea0d14458c6d3873989e6b130a074bd",
+    "clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04.tar.xz": "fd464333bd55b482eb7385f2f4e18248eb43129a3cda4c0920ad9ac3c12bdacf",
 }
 
 # Note: Unlike the user-specified llvm_mirror attribute, the URL prefixes in
@@ -201,6 +297,16 @@ _llvm_distributions_base_url = {
     "12.0.0": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
     "12.0.1": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
     "13.0.0": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
+    "13.0.1": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
+    "14.0.0": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
+    "15.0.0": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
+    "15.0.6": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
+    "15.0.7": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
+    "16.0.0": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
+    "16.0.1": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
+    "16.0.2": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
+    "16.0.3": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
+    "16.0.4": "https://github.com/llvm/llvm-project/releases/download/llvmorg-",
 }
 
 def _get_auth(ctx, urls):

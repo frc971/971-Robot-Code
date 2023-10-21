@@ -6,8 +6,8 @@
 namespace y2014 {
 namespace control_loops {
 
-const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
-    &GetDrivetrainConfig();
+const ::frc971::control_loops::drivetrain::DrivetrainConfig<double> &
+GetDrivetrainConfig();
 
 }  // namespace control_loops
 }  // namespace y2014

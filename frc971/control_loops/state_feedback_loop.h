@@ -144,8 +144,8 @@ class StateFeedbackPlant {
     return coefficients().U_max;
   }
   Scalar U_max(int i, int j = 0) const { return U_max()(i, j); }
-  const Eigen::Matrix<Scalar, number_of_inputs, number_of_states>
-      &U_limit_coefficient() const {
+  const Eigen::Matrix<Scalar, number_of_inputs, number_of_states> &
+  U_limit_coefficient() const {
     return coefficients().U_limit_coefficient;
   }
   Scalar U_limit_coefficient(int i, int j) const {
@@ -173,14 +173,14 @@ class StateFeedbackPlant {
   size_t coefficients_size() const { return coefficients_.size(); }
 
   const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
-                                       number_of_outputs, Scalar>
-      &coefficients(int index) const {
+                                       number_of_outputs, Scalar> &
+  coefficients(int index) const {
     return *coefficients_[index];
   }
 
   const StateFeedbackPlantCoefficients<number_of_states, number_of_inputs,
-                                       number_of_outputs, Scalar>
-      &coefficients() const {
+                                       number_of_outputs, Scalar> &
+  coefficients() const {
     return *coefficients_[index_];
   }
 
@@ -326,14 +326,14 @@ class StateFeedbackController {
   int index() const { return index_; }
 
   const StateFeedbackControllerCoefficients<number_of_states, number_of_inputs,
-                                            number_of_outputs, Scalar>
-      &coefficients(int index) const {
+                                            number_of_outputs, Scalar> &
+  coefficients(int index) const {
     return *coefficients_[index];
   }
 
   const StateFeedbackControllerCoefficients<number_of_states, number_of_inputs,
-                                            number_of_outputs, Scalar>
-      &coefficients() const {
+                                            number_of_outputs, Scalar> &
+  coefficients() const {
     return *coefficients_[index_];
   }
 
@@ -450,14 +450,14 @@ class StateFeedbackObserver {
   int index() const { return index_; }
 
   const StateFeedbackObserverCoefficients<number_of_states, number_of_inputs,
-                                          number_of_outputs, Scalar>
-      &coefficients(int index) const {
+                                          number_of_outputs, Scalar> &
+  coefficients(int index) const {
     return *coefficients_[index];
   }
 
   const StateFeedbackObserverCoefficients<number_of_states, number_of_inputs,
-                                          number_of_outputs, Scalar>
-      &coefficients() const {
+                                          number_of_outputs, Scalar> &
+  coefficients() const {
     return *coefficients_[index_];
   }
 
@@ -550,8 +550,8 @@ class StateFeedbackLoop {
   PlantType *mutable_plant() { return &plant_; }
 
   const StateFeedbackController<number_of_states, number_of_inputs,
-                                number_of_outputs, Scalar>
-      &controller() const {
+                                number_of_outputs, Scalar> &
+  controller() const {
     return controller_;
   }
 

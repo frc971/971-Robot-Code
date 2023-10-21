@@ -30,3 +30,17 @@ index d4297c80..a72c6991 100644
      linkopts = select({
          "//:qnx": [],
          "//:windows": [],
+diff --git a/googletest/test/BUILD.bazel b/googletest/test/BUILD.bazel
+index 1890b6ff..9bd00bd2 100644
+--- a/googletest/test/BUILD.bazel
++++ b/googletest/test/BUILD.bazel
+@@ -151,6 +151,9 @@ cc_test(
+     name = "gtest_unittest",
+     size = "small",
+     srcs = ["gtest_unittest.cc"],
++    copts = [
++        "-Wno-unused-but-set-variable",
++    ],
+     shard_count = 2,
+     deps = ["//:gtest_main"],
+ )

@@ -90,6 +90,7 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
     ]
 
     linux_or_darwin_copts = wasm_copts + [
+        "-Wno-unused-but-set-variable",
         "-DGLOG_EXPORT=__attribute__((visibility(\\\"default\\\")))",
         # For src/utilities.cc.
         "-DHAVE_SYS_SYSCALL_H",

@@ -10,8 +10,8 @@ namespace drivetrain {
 const double kDrivetrainEncoderRatio =
     (17.0 / 50.0) /*output reduction*/ * (64.0 / 24.0) /*encoder gears*/;
 
-const ::frc971::control_loops::drivetrain::DrivetrainConfig<double>
-    &GetDrivetrainConfig();
+const ::frc971::control_loops::drivetrain::DrivetrainConfig<double> &
+GetDrivetrainConfig();
 
 }  // namespace drivetrain
 }  // namespace control_loops

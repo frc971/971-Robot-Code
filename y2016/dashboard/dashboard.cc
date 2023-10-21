@@ -42,11 +42,11 @@ constexpr int kEstopped = 2;
 
 // Define the following if we want to use a local www directory and feed in
 // dummy data.
-//#define DASHBOARD_TESTING
+// #define DASHBOARD_TESTING
 
 // Define the following if we want to read from the vision queue, which has
 // caused problems in the past when auto aiming that still need to be addressed.
-//#define DASHBOARD_READ_VISION_QUEUE
+// #define DASHBOARD_READ_VISION_QUEUE
 
 DataCollector::DataCollector(::aos::EventLoop *event_loop)
     : event_loop_(event_loop),

@@ -426,6 +426,7 @@ cc_library(
             "-Wno-cast-qual",
             "-Wno-format-nonliteral",
             "-Wno-tautological-type-limit-compare",
+            "-Wno-unused-but-set-variable",
         ],
     }) + select({
         ":macos": [
