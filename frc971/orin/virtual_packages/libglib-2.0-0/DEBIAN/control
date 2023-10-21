@@ -1,0 +1,7 @@
+Package: libglib-2.0-0
+Version: 2.74.6-2
+Architecture: arm64
+Depends: libglib2.0-bin
+Maintainer: Austin Schuh <austin.linux@gmail.com>
+Provides: libglib-2.0-0
+Description: Adapter for libglib2.0-bin

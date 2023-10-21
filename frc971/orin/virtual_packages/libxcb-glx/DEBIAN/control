@@ -1,0 +1,7 @@
+Package: libxcb-glx
+Version: 1.15-1
+Architecture: arm64
+Depends: libxcb-glx0
+Maintainer: Austin Schuh <austin.linux@gmail.com>
+Provides: libxcb-glx
+Description: Adapter for libxcb-glx0

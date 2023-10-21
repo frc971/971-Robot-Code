@@ -1,0 +1,7 @@
+Package: wayland
+Version: 1.21.0-1
+Architecture: arm64
+Depends: libwayland-client0, libwayland-cursor0, libwayland-egl1, libwayland-server0
+Maintainer: Austin Schuh <austin.linux@gmail.com>
+Provides: wayland
+Description: Adapter for wayland

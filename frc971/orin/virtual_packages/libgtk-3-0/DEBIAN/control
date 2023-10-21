@@ -1,0 +1,7 @@
+Package: libgtk-3.0
+Version: 3.24.38-2~deb12u1
+Architecture: arm64
+Depends: libgtk-3-0
+Maintainer: Austin Schuh <austin.linux@gmail.com>
+Provides: libgtk-3.0
+Description: Adapter for libgtk-3-0

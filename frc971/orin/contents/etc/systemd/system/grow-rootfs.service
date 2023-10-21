@@ -1,0 +1,19 @@
+[Unit]
+Description=Grow partition and filesystem to fit disk
+DefaultDependencies=no
+Before=local-fs.target
+Before=shutdown.target
+After=-.mount
+BindsTo=-.mount
+
+# Backport of <https://github.com/systemd/systemd/pull/14618>.
+After=systemd-remount-fs.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c "/sbin/xfs_growfs $(systemctl show --property What --value -- -.mount)"
+TimeoutSec=0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
