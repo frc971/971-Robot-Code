@@ -54,8 +54,27 @@ flatbuffer_cc_library(
     gen_reflections = 1,
     deps = [
         "//frc971:can_configuration_fbs",
+        "//frc971/control_loops:can_falcon_fbs",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
+    ],
+)
+
+cc_library(
+    name = "end_effector",
+    srcs = [
+        "end_effector.cc",
+    ],
+    hdrs = [
+        "end_effector.h",
+    ],
+    deps = [
+        ":superstructure_goal_fbs",
+        ":superstructure_status_fbs",
+        "//aos/events:event_loop",
+        "//aos/time",
+        "//frc971/control_loops:control_loop",
+        "//y2023_bot3:constants",
     ],
 )
 
@@ -70,6 +89,7 @@ cc_library(
     data = [
     ],
     deps = [
+        ":end_effector",
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",

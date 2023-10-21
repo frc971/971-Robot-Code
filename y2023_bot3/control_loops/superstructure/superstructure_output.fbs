@@ -3,6 +3,8 @@ namespace y2023_bot3.control_loops.superstructure;
 table Output {
   // Pivot joint voltage
   pivot_joint_voltage:double (id: 0);
+  // Roller voltage on the end effector (positive is spitting, negative is sucking)
+  roller_voltage:double (id: 1);
 }
 
 root_type Output;

@@ -39,6 +39,12 @@ struct Values {
   static constexpr double kDrivetrainSupplyCurrentLimit() { return 35.0; }
   static constexpr double kDrivetrainStatorCurrentLimit() { return 60.0; }
 
+  // timeout to ensure code doesn't get stuck after releasing the "intake"
+  // button
+  static constexpr std::chrono::milliseconds kExtraIntakingTime() {
+    return std::chrono::milliseconds{100};
+  }
+
   static double DrivetrainEncoderToMeters(int32_t in) {
     return ((static_cast<double>(in) /
              kDrivetrainEncoderCountsPerRevolution()) *

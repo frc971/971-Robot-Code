@@ -1,11 +1,18 @@
 include "frc971/control_loops/control_loops.fbs";
 include "frc971/can_configuration.fbs";
+include "frc971/control_loops/can_falcon.fbs";
 
 namespace y2023_bot3.control_loops.superstructure;
 
 table Position {
   // The position of the pivot joint in radians
   pivot_joint_position:frc971.PotAndAbsolutePosition (id: 0);
+
+  // If this is true, the cube beam break is triggered.
+  end_effector_cube_beam_break:bool (id: 1);
+
+  // Roller falcon data
+  roller_falcon:frc971.control_loops.CANFalcon (id: 2);
 }
 
 root_type Position;

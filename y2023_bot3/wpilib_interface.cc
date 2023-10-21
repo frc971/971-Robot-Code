@@ -258,11 +258,18 @@ class CANSensorReader {
   void set_falcons(std::shared_ptr<Falcon> right_front,
                    std::shared_ptr<Falcon> right_back,
                    std::shared_ptr<Falcon> left_front,
-                   std::shared_ptr<Falcon> left_back) {
+                   std::shared_ptr<Falcon> left_back,
+                   std::shared_ptr<Falcon> roller_falcon) {
     right_front_ = std::move(right_front);
     right_back_ = std::move(right_back);
     left_front_ = std::move(left_front);
     left_back_ = std::move(left_back);
+    roller_falcon = std::move(roller_falcon);
+  }
+
+  std::optional<frc971::control_loops::CANFalconT> roller_falcon_data() {
+    std::unique_lock<aos::stl_mutex> lock(roller_mutex_);
+    return roller_falcon_data_;
   }
 
  private:
@@ -312,7 +319,12 @@ class CANSensorReader {
   aos::Sender<frc971::control_loops::drivetrain::CANPosition>
       can_position_sender_;
 
-  std::shared_ptr<Falcon> right_front_, right_back_, left_front_, left_back_;
+  std::shared_ptr<Falcon> right_front_, right_back_, left_front_, left_back_,
+      roller_falcon;
+
+  std::optional<frc971::control_loops::CANFalconT> roller_falcon_data_;
+
+  aos::stl_mutex roller_mutex_;
 
   // Pointer to the timer handler used to modify the wakeup.
   ::aos::TimerHandler *timer_handler_;
@@ -359,6 +371,27 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   void RunIteration() override {
     superstructure_reading_->Set(true);
+    {
+      auto builder = superstructure_position_sender_.MakeBuilder();
+
+      flatbuffers::Offset<frc971::control_loops::CANFalcon>
+          roller_falcon_offset;
+      auto optional_roller_falcon = can_sensor_reader_->roller_falcon_data();
+      if (optional_roller_falcon.has_value()) {
+        roller_falcon_offset = frc971::control_loops::CANFalcon::Pack(
+            *builder.fbb(), &optional_roller_falcon.value());
+      }
+
+      superstructure::Position::Builder position_builder =
+          builder.MakeBuilder<superstructure::Position>();
+      position_builder.add_end_effector_cube_beam_break(
+          end_effector_cube_beam_break_->Get());
+
+      if (!roller_falcon_offset.IsNull()) {
+        position_builder.add_roller_falcon(roller_falcon_offset);
+      }
+      builder.CheckOk(builder.Send(position_builder.Finish()));
+    }
 
     {
       auto builder = drivetrain_position_sender_.MakeBuilder();
@@ -446,7 +479,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
-  std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_;
+  std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_,
+      end_effector_cube_beam_break_;
 
   frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
 
@@ -665,6 +699,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         std::make_shared<Falcon>(4, "Drivetrain Bus", &signals_registry);
     std::shared_ptr<Falcon> left_back =
         std::make_shared<Falcon>(5, "Drivetrain Bus", &signals_registry);
+    std::shared_ptr<Falcon> roller_falcon =
+        std::make_shared<Falcon>(13, "Drivetrain Bus", &signals_registry);
 
     // Thread 3.
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
@@ -673,7 +709,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                       std::move(signals_registry));
 
     can_sensor_reader.set_falcons(right_front, right_back, left_front,
-                                  left_back);
+                                  left_back, roller_falcon);
 
     AddLoop(&can_sensor_reader_event_loop);
 

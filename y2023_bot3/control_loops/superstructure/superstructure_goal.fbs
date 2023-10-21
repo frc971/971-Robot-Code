@@ -11,8 +11,17 @@ enum PivotGoal: ubyte {
   SCORE_MID_BACK = 5,
 }
 
+enum RollerGoal: ubyte {
+    IDLE = 0,
+    INTAKE_CUBE = 1,
+    SPIT = 2,
+    SPIT_MID = 3,
+}
+
 table Goal {
-  pivot_goal:PivotGoal (id: 0);
+    pivot_goal:PivotGoal (id: 0);
+    roller_goal:RollerGoal (id: 1);
+    preloaded_with_cube:bool (id: 2);
 }
 
 
