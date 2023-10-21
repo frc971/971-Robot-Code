@@ -5,7 +5,9 @@ import pathlib
 import collections
 import subprocess
 import shlex
+import datetime
 import os
+import shutil
 
 IMAGE = "arm64_bookworm_debian_yocto.img"
 YOCTO = "/home/austin/local/jetpack/robot-yocto/build"
@@ -295,7 +297,8 @@ def main():
             "gstreamer1.0-plugins-ugly", "gstreamer1.0-nice", "usbutils",
             "locales", "trace-cmd", "clinfo", "jq", "strace", "sysstat",
             "lm-sensors", "can-utils", "xfsprogs", "gstreamer1.0-tools",
-            "bridge-utils", "net-tools", "apt-file", "parted", "xxd"
+            "bridge-utils", "net-tools", "apt-file", "parted", "xxd",
+            "libv4l-dev"
         ])
         target(["apt-get", "clean"])
 
@@ -311,16 +314,43 @@ def main():
         install_virtual_packages(virtual_packages)
 
         yocto_package_names = [
-            'tegra-argus-daemon', 'tegra-firmware', 'tegra-firmware-tegra234',
-            'tegra-firmware-vic', 'tegra-firmware-xusb',
-            'tegra-libraries-argus-daemon-base', 'tegra-libraries-camera',
-            'tegra-libraries-core', 'tegra-libraries-cuda',
-            'tegra-libraries-eglcore', 'tegra-libraries-glescore',
-            'tegra-libraries-glxcore', 'tegra-libraries-multimedia',
+            'tegra-argus-daemon',
+            'tegra-firmware',
+            'tegra-firmware-tegra234',
+            'tegra-firmware-vic',
+            'tegra-firmware-xusb',
+            'tegra-libraries-argus-daemon-base',
+            'tegra-libraries-camera',
+            'tegra-libraries-core',
+            'tegra-libraries-cuda',
+            'tegra-libraries-eglcore',
+            'tegra-libraries-glescore',
+            'tegra-libraries-glxcore',
+            'tegra-libraries-multimedia',
             'tegra-libraries-multimedia-utils',
-            'tegra-libraries-multimedia-v4l', 'tegra-libraries-nvsci',
-            'tegra-libraries-vulkan', 'tegra-nvphs', 'tegra-nvphs-base',
-            'libnvidia-egl-wayland1'
+            'tegra-libraries-multimedia-v4l',
+            'tegra-libraries-nvsci',
+            'tegra-libraries-vulkan',
+            'tegra-nvphs',
+            'tegra-nvphs-base',
+            'libnvidia-egl-wayland1',
+            'tegra-mmapi',
+            'tegra-mmapi-dev',
+            'cuda-cudart-11-8',
+            'cuda-cudart-11-8-dev',
+            'cuda-cudart-11-8-stubs',
+            'libcurand-11-8',
+            'libcurand-11-8-dev',
+            'libcurand-11-8-stubs',
+            'cuda-nvcc-11-8',
+            'tegra-cmake-overrides',
+            'cuda-target-environment',
+            'libnpp-11-8',
+            'libnpp-11-8-stubs',
+            'libnpp-11-8-dev',
+            'cuda-cccl-11-8',
+            'cuda-nvcc-11-8',
+            'cuda-nvcc-headers-11-8',
         ]
         yocto_packages = list_yocto_packages()
         packages = list_packages()
@@ -406,6 +436,56 @@ def main():
                 "cd /root/ && git clone --separate-git-dir=/root/.dotfiles https://github.com/AustinSchuh/.dotfiles.git tmpdotfiles && rsync --recursive --verbose --exclude .git tmpdotfiles/ /root/ && rm -r tmpdotfiles && git --git-dir=/root/.dotfiles/ --work-tree=/root/ config --local status.showUntrackedFiles no"
             )
             target(["vim", "-c", "\":qa!\""])
+
+        tarball = datetime.date.today().strftime(
+            f"{os.getcwd()}/%Y-%m-%d-bookworm-arm64-nvidia-rootfs.tar")
+        print(tarball)
+
+        subprocess.run([
+            "sudo",
+            "tar",
+            "--exclude=./usr/share/ca-certificates",
+            "--exclude=./home",
+            "--exclude=./root",
+            "--exclude=./usr/src",
+            "--exclude=./usr/lib/mesa-diverted",
+            "--exclude=./usr/bin/X11",
+            "--exclude=./usr/lib/systemd/system/system-systemd*cryptsetup.slice",
+            "--exclude=./dev",
+            "--exclude=./usr/local/cuda-11.8/bin/fatbinary",
+            "--exclude=./usr/local/cuda-11.8/bin/ptxas",
+            "-cf",
+            tarball,
+            ".",
+        ],
+                       cwd=partition,
+                       check=True)
+
+        # Pack ptxas and fatbinary into the spots that clang expect them to make compiling easy.
+        nvidia_cuda_toolkit_path = 'nvidia-cuda-toolkit'
+        if not os.path.exists(nvidia_cuda_toolkit_path):
+            os.mkdir(nvidia_cuda_toolkit_path)
+
+            subprocess.run(['apt-get', 'download', 'nvidia-cuda-toolkit'],
+                           cwd=nvidia_cuda_toolkit_path,
+                           check=True)
+
+            subprocess.run(
+                ['dpkg', '-x',
+                 os.listdir(nvidia_cuda_toolkit_path)[0], '.'],
+                cwd=nvidia_cuda_toolkit_path,
+                check=True)
+
+        subprocess.run([
+            "sudo", "tar",
+            '--transform=s|usr/bin/ptxas|usr/local/cuda-11.8/bin/ptxas|',
+            '--transform=s|usr/bin/fatbinary|usr/local/cuda-11.8/bin/aarch64-unknown-linux-gnu-fatbinary|',
+            "--append", "-f", tarball, "usr/bin/fatbinary", "usr/bin/ptxas"
+        ],
+                       cwd=nvidia_cuda_toolkit_path,
+                       check=True)
+
+        subprocess.run(["sha256sum", tarball], check=True)
 
 
 if __name__ == '__main__':

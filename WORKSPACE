@@ -325,12 +325,12 @@ llvm_toolchain(
     },
     standard_libraries = {
         "linux-x86_64": "libstdc++-10",
-        "linux-aarch64": "libstdc++-10",
+        "linux-aarch64": "libstdc++-12",
     },
     static_libstdcxx = False,
     sysroot = {
         "linux-x86_64": "@amd64_debian_sysroot//:sysroot_files",
-        "linux-aarch64": "@arm64_debian_rootfs//:sysroot_files",
+        "linux-aarch64": "@arm64_debian_sysroot//:sysroot_files",
     },
     target_toolchain_roots = {
         "linux-x86_64": "@llvm_k8//",
@@ -451,15 +451,12 @@ http_archive(
     url = "https://software.frc971.org/Build-Dependencies/cortexa9_vfpv3-roborio-academic-2023-x86_64-linux-gnu-Toolchain-12.1.0.tgz",
 )
 
-# The main partition from https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-11-08/2021-10-30-raspios-bullseye-armhf-lite.zip.sig
-# The following files and folders are removed to make bazel happy with it:
-#   usr/share/ca-certificates
-#   lib/systemd/system/system-systemd\\x2dcryptsetup.slice
+# The main partition built from //frc971/orin/build_rootfs.py.
 http_archive(
-    name = "arm64_debian_rootfs",
-    build_file = "@//:compilers/debian_rootfs.BUILD",
-    sha256 = "7e6ad432fec0a36f8b66c3fc2ab8795ea446e61f7dce7a206b55602677cf0904",
-    url = "https://software.frc971.org/Build-Dependencies/2021-10-30-raspios-bullseye-arm64-lite_rootfs.tar.bz2",
+    name = "arm64_debian_sysroot",
+    build_file = "@//:compilers/orin_debian_rootfs.BUILD",
+    sha256 = "a1d8297cebdf8dcc380afaa9703d56864f256775d4d239210d0883a9f2d009bc",
+    url = "https://software.frc971.org/Build-Dependencies/2023-11-18-bookworm-arm64-nvidia-rootfs.tar.xz",
 )
 
 # Created with:

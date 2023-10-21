@@ -1,6 +1,8 @@
 #ifndef FRC971_VISION_GEOMETRY_H_
 #define FRC971_VISION_GEOMETRY_H_
 
+#include <optional>
+
 #include "glog/logging.h"
 #include "opencv2/core/types.hpp"
 
