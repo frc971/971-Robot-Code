@@ -4,6 +4,8 @@ include "frc971/can_configuration.fbs";
 namespace y2023_bot3.control_loops.superstructure;
 
 table Position {
+  // The position of the pivot joint in radians
+  pivot_joint_position:frc971.PotAndAbsolutePosition (id: 0);
 }
 
 root_type Position;

@@ -2,8 +2,17 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2023_bot3.control_loops.superstructure;
 
-table Goal {
+enum PivotGoal: ubyte {
+  PICKUP_FRONT = 0,
+  PICKUP_BACK = 1,
+  SCORE_LOW_FRONT = 2,
+  SCORE_LOW_BACK = 3,
+  SCORE_MID_FRONT = 4,
+  SCORE_MID_BACK = 5,
+}
 
+table Goal {
+  pivot_goal:PivotGoal (id: 0);
 }
 
 

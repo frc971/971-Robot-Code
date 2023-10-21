@@ -1,6 +1,8 @@
 namespace y2023_bot3.control_loops.superstructure;
 
 table Output {
+  // Pivot joint voltage
+  pivot_joint_voltage:double (id: 0);
 }
 
 root_type Output;
