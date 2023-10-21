@@ -251,7 +251,7 @@ local_repository(
 
 load("@com_grail_bazel_toolchain//toolchain:rules.bzl", "llvm", "llvm_toolchain")
 
-llvm_version = "16.0.3"
+llvm_version = "17.0.2"
 
 llvm(
     name = "llvm_k8",

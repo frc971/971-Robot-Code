@@ -74,14 +74,14 @@ int dlqr(::Eigen::Matrix<double, kN, kN> A, ::Eigen::Matrix<double, kN, kM> B,
   memset(BETA, 0, sizeof(BETA));
 
   long LDS = 2 * kN + kM;
-  ::Eigen::Matrix<double, 2 * kN + kM, 2 *kN + kM> S_schur =
+  ::Eigen::Matrix<double, 2 * kN + kM, 2 * kN + kM> S_schur =
       ::Eigen::Matrix<double, 2 * kN + kM, 2 * kN + kM>::Zero();
 
-  ::Eigen::Matrix<double, 2 * kN + kM, 2 *kN> T =
+  ::Eigen::Matrix<double, 2 * kN + kM, 2 * kN> T =
       ::Eigen::Matrix<double, 2 * kN + kM, 2 * kN>::Zero();
   long LDT = 2 * kN + kM;
 
-  ::Eigen::Matrix<double, 2 * kN, 2 *kN> U =
+  ::Eigen::Matrix<double, 2 * kN, 2 * kN> U =
       ::Eigen::Matrix<double, 2 * kN, 2 * kN>::Zero();
   long LDU = 2 * kN;
 

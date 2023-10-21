@@ -14,12 +14,12 @@ extern "C" {
 //
 // reg must be an address in one of the peripheral modules (on AIPS0, AIPS1, or
 // GPIO) (0x40000000 - 0x400FFFFF).
-#define PERIPHERAL_BITBAND(reg, bit)                                       \
-  (*(volatile uint32_t *)(((uint32_t) & (reg)-0x40000000) * 32 + (bit)*4 + \
+#define PERIPHERAL_BITBAND(reg, bit)                                         \
+  (*(volatile uint32_t *)(((uint32_t) & (reg)-0x40000000) * 32 + (bit) * 4 + \
                           0x42000000))
 
 #define NVIC_SET_SANE_PRIORITY(irqnum, priority) \
-  NVIC_SET_PRIORITY(irqnum, ((priority)&0xF) << 4)
+  NVIC_SET_PRIORITY(irqnum, ((priority) & 0xF) << 4)
 #define NVIC_GET_SANE_PRIORITY(irqnum) (NVIC_GET_PRIORITY(irqnum) >> 4)
 
 // A sufficient memory barrier between writing some data and telling the
@@ -60,12 +60,12 @@ static inline void InterruptMemoryBarrier() {
 #define CAN_MCR_IRMQ ((uint32_t)(1 << 16))
 #define CAN_MCR_LPRIOEN ((uint32_t)(1 << 13))
 #define CAN_MCR_AEN ((uint32_t)(1 << 12))
-#define CAN_MCR_IDAM(n) ((uint32_t)(((n)&3) << 8))
-#define CAN_MCR_MAXMB(n) ((uint32_t)((n)&0x7F))
-#define CAN_CTRL1_PRESDIV(n) ((uint32_t)(((n)&0xFF) << 24))
-#define CAN_CTRL1_RJW(n) ((uint32_t)(((n)&3) << 22))
-#define CAN_CTRL1_PSEG1(n) ((uint32_t)(((n)&7) << 19))
-#define CAN_CTRL1_PSEG2(n) ((uint32_t)(((n)&7) << 16))
+#define CAN_MCR_IDAM(n) ((uint32_t)(((n) & 3) << 8))
+#define CAN_MCR_MAXMB(n) ((uint32_t)((n) & 0x7F))
+#define CAN_CTRL1_PRESDIV(n) ((uint32_t)(((n) & 0xFF) << 24))
+#define CAN_CTRL1_RJW(n) ((uint32_t)(((n) & 3) << 22))
+#define CAN_CTRL1_PSEG1(n) ((uint32_t)(((n) & 7) << 19))
+#define CAN_CTRL1_PSEG2(n) ((uint32_t)(((n) & 7) << 16))
 #define CAN_CTRL1_BOFFMSK ((uint32_t)(1 << 15))
 #define CAN_CTRL1_ERRMSK ((uint32_t)(1 << 14))
 #define CAN_CTRL1_CLKSRC ((uint32_t)(1 << 13))
@@ -77,7 +77,7 @@ static inline void InterruptMemoryBarrier() {
 #define CAN_CTRL1_TSYN ((uint32_t)(1 << 5))
 #define CAN_CTRL1_LBUF ((uint32_t)(1 << 4))
 #define CAN_CTRL1_LOM ((uint32_t)(1 << 3))
-#define CAN_CTRL1_PROPSEG(n) ((uint32_t)((n)&7))
+#define CAN_CTRL1_PROPSEG(n) ((uint32_t)((n) & 7))
 #define CAN_ESR1_SYNCH ((uint32_t)(1 << 18))
 #define CAN_ESR1_TWRNINT ((uint32_t)(1 << 17))
 #define CAN_ESR1_RWRNINT ((uint32_t)(1 << 16))
@@ -96,8 +96,8 @@ static inline void InterruptMemoryBarrier() {
 #define CAN_ESR1_ERRINT ((uint32_t)(1 << 1))
 #define CAN_ESR1_WAKINT ((uint32_t)1)
 #define CAN_CTRL2_WRMFRZ ((uint32_t)(1 << 28))
-#define CAN_CTRL2_RFFN(n) ((uint32_t)(((n)&0xF) << 24))
-#define CAN_CTRL2_TASD(n) ((uint32_t)(((n)&0x1F) << 19))
+#define CAN_CTRL2_RFFN(n) ((uint32_t)(((n) & 0xF) << 24))
+#define CAN_CTRL2_TASD(n) ((uint32_t)(((n) & 0x1F) << 19))
 #define CAN_CTRL2_MRP ((uint32_t)(1 << 18))
 #define CAN_CTRL2_RRS ((uint32_t)(1 << 17))
 #define CAN_CTRL2_EACEN ((uint32_t)(1 << 16))
@@ -114,13 +114,13 @@ typedef struct {
 #define CAN0_RXIMRS ((volatile uint32_t *)0x40024880)
 #define CAN1_MESSAGES ((volatile CanMessageBuffer *)0x400A4080)
 #define CAN1_RXIMRS ((volatile uint32_t *)0x400A4880)
-#define CAN_MB_CONTROL_INSERT_DLC(dlc) ((uint32_t)(((dlc)&0xF) << 16))
+#define CAN_MB_CONTROL_INSERT_DLC(dlc) ((uint32_t)(((dlc) & 0xF) << 16))
 #define CAN_MB_CONTROL_EXTRACT_DLC(control_timestamp) \
   ((control_timestamp >> 16) & 0xF)
 #define CAN_MB_CONTROL_RTR ((uint32_t)(1 << 20))
 #define CAN_MB_CONTROL_IDE ((uint32_t)(1 << 21))
 #define CAN_MB_CONTROL_SRR ((uint32_t)(1 << 22))
-#define CAN_MB_CONTROL_INSERT_CODE(n) ((uint32_t)(((n)&0xF) << 24))
+#define CAN_MB_CONTROL_INSERT_CODE(n) ((uint32_t)(((n) & 0xF) << 24))
 #define CAN_MB_CONTROL_EXTRACT_CODE(n) ((uint32_t)(((n) >> 24) & 0xF))
 #define CAN_MB_CONTROL_CODE_BUSY_MASK CAN_MB_CONTROL_INSERT_CODE(1)
 #define CAN_MB_PRIO_ID_PRIORITY_MASK ((uint32_t)((1 << 29) - 1))
@@ -134,7 +134,7 @@ typedef struct {
 #define CAN_MB_CODE_TX_DATA 0xC
 #define CAN_MB_CODE_TX_REMOTE 0xC
 #define CAN_MB_CODE_TX_TANSWER 0xE
-#define CAN_MB_CODE_IS_BUSY(code) ((code)&1)
+#define CAN_MB_CODE_IS_BUSY(code) ((code) & 1)
 
 // We have to define these, and leave them defined, because the C preprocessor
 // is annoying...
@@ -147,7 +147,7 @@ typedef struct {
 #define dma_chN_isr(n) DO_CONCATENATE(dma_ch, n, _isr)
 #define IRQ_DMA_CHn(n) DO_CONCATENATE(IRQ_DMA, _CH, n)
 
-#define USB0_ENDPTn(n) (*(volatile uint8_t *)(0x400720C0 + ((n)*4)))
+#define USB0_ENDPTn(n) (*(volatile uint8_t *)(0x400720C0 + ((n) * 4)))
 
 // TODO(Brian): Just write the structs out, and do all this in kinetis.h.
 #define ALL_FTM_REGISTERS         \
