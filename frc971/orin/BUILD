@@ -8,6 +8,14 @@ halide_library(
     visibility = ["//visibility:public"],
 )
 
+halide_library(
+    name = "ycbcr422",
+    src = "crcv_generator.cc",
+    args = "rows=1088 cols=1456 ystride=1536 cbcrstride=1536",
+    function = "ycbcr422",
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "cuda",
     srcs = [
@@ -92,5 +100,25 @@ cc_test(
         "//aos/testing:googletest",
         "//aos/testing:random_seed",
         "//third_party:cudart",
+    ],
+)
+
+cc_binary(
+    name = "argus_camera",
+    srcs = [
+        "argus_camera.cc",
+    ],
+    target_compatible_with = ["@platforms//cpu:arm64"],
+    deps = [
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//aos/util:file",
+        "//frc971/orin:ycbcr",
+        "//frc971/orin:ycbcr422",
+        "//frc971/vision:vision_fbs",
+        "@arm64_debian_sysroot//:argus",
+        "@arm64_debian_sysroot//:egl",
+        "@arm64_debian_sysroot//:eglstream",
+        "@arm64_debian_sysroot//:nvbufsurface",
     ],
 )
