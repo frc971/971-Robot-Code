@@ -1,0 +1,11 @@
+[Match]
+Name=eth0
+
+[Network]
+Address=10.9.71.20/24
+Gateway=10.9.71.13
+DNS=8.8.8.8
+
+# ipv6 adds an extra 10 seconds to boot, and we don't use it...
+# Disable all the route discovery and stuff
+LinkLocalAddressing=no
