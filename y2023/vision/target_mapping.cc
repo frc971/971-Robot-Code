@@ -74,7 +74,6 @@ namespace calibration = frc971::vision::calibration;
 class TargetMapperReplay {
  public:
   TargetMapperReplay(aos::logger::LogReader *reader);
-  ~TargetMapperReplay();
 
   // Solves for the target poses with the accumulated detections if FLAGS_solve.
   void MaybeSolve();
@@ -103,7 +102,6 @@ class TargetMapperReplay {
   aos::logger::LogReader *reader_;
   // April tag detections from all pis
   std::vector<DataAdapter::TimestampedDetection> timestamped_target_detections_;
-  std::vector<std::unique_ptr<AprilRoboticsDetector>> detectors_;
 
   VisualizeRobot vis_robot_;
   // Set of node names which are currently drawn on the display
@@ -147,7 +145,6 @@ Eigen::Affine3d TargetMapperReplay::CameraToRobotDetection(
 TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
     : reader_(reader),
       timestamped_target_detections_(),
-      detectors_(),
       vis_robot_(cv::Size(1280, 1000)),
       drawn_nodes_(),
       display_count_(0),
@@ -200,13 +197,6 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
     vis_robot_.ClearImage();
     const double kFocalLength = 500.0;
     vis_robot_.SetDefaultViewpoint(kImageWidth, kFocalLength);
-  }
-}
-
-TargetMapperReplay::~TargetMapperReplay() {
-  // Clean up all the pointers
-  for (auto &detector_ptr : detectors_) {
-    detector_ptr.reset();
   }
 }
 
@@ -269,8 +259,8 @@ void TargetMapperReplay::HandleAprilTags(
             .id = static_cast<TargetMapper::TargetId>(target_pose.id)});
 
     if (FLAGS_visualize_solver) {
-      // If we've already drawn in the current image,
-      // display it before clearing and adding the new poses
+      // If we've already drawn this node_name in the current image,
+      // display the image before clearing and adding the new poses
       if (drawn_nodes_.count(node_name) != 0) {
         display_count_++;
         cv::putText(vis_robot_.image_,
@@ -279,10 +269,20 @@ void TargetMapperReplay::HandleAprilTags(
                     cv::Scalar(255, 255, 255));
 
         if (display_count_ >= FLAGS_skip_to) {
+          VLOG(1) << "Showing image for node " << node_name
+                  << " since we've drawn it already";
           cv::imshow("View", vis_robot_.image_);
-          cv::waitKey(max_delta_T_world_robot_ > FLAGS_pause_on_distance
-                          ? 0
-                          : FLAGS_wait_key);
+          // Pause if delta_T is too large, but only after first image (to make
+          // sure the delta's are correct
+          if (max_delta_T_world_robot_ > FLAGS_pause_on_distance &&
+              display_count_ > 1) {
+            LOG(INFO) << "Pausing since the delta between robot estimates is "
+                      << max_delta_T_world_robot_ << " which is > threshold of "
+                      << FLAGS_pause_on_distance;
+            cv::waitKey(0);
+          } else {
+            cv::waitKey(FLAGS_wait_key);
+          }
           max_delta_T_world_robot_ = 0.0;
         } else {
           VLOG(1) << "At poses #" << std::to_string(display_count_);
@@ -294,19 +294,18 @@ void TargetMapperReplay::HandleAprilTags(
       Eigen::Affine3d H_world_target = PoseUtils::Pose3dToAffine3d(
           kFixedTargetMapper.GetTargetPoseById(target_pose_fbs->id())->pose);
       Eigen::Affine3d H_world_robot = H_world_target * H_robot_target.inverse();
-      VLOG(2) << node_name << ", " << target_pose_fbs->id()
+      VLOG(2) << node_name << ", id " << target_pose_fbs->id()
               << ", t = " << pi_distributed_time
               << ", pose_error = " << target_pose_fbs->pose_error()
               << ", pose_error_ratio = " << target_pose_fbs->pose_error_ratio()
-              << ", robot_pos (x,y,z) + "
+              << ", robot_pos (x,y,z) = "
               << H_world_robot.translation().transpose();
 
-      label << "id " << target_pose_fbs->id() << ": err "
+      label << "id " << target_pose_fbs->id() << ": err (% of max): "
             << (target_pose_fbs->pose_error() / FLAGS_max_pose_error)
-            << " ratio " << target_pose_fbs->pose_error_ratio() << " ";
+            << " err_ratio: " << target_pose_fbs->pose_error_ratio() << " ";
 
-      vis_robot_.DrawRobotOutline(H_world_robot,
-                                  std::to_string(target_pose_fbs->id()),
+      vis_robot_.DrawRobotOutline(H_world_robot, node_name,
                                   kPiColors.at(node_name));
       vis_robot_.DrawFrameAxes(H_world_target,
                                std::to_string(target_pose_fbs->id()),
@@ -318,27 +317,37 @@ void TargetMapperReplay::HandleAprilTags(
       max_delta_T_world_robot_ =
           std::max(delta_T_world_robot, max_delta_T_world_robot_);
 
+      VLOG(1) << "Drew in info for robot " << node_name << " and target #"
+              << target_pose_fbs->id();
       drew = true;
       last_draw_time_ = pi_distributed_time;
       last_H_world_robot_ = H_world_robot;
     }
   }
-  if (drew) {
-    size_t pi_number =
-        static_cast<size_t>(node_name[node_name.size() - 1] - '0');
-    cv::putText(vis_robot_.image_, label.str(),
-                cv::Point(10, 10 + 20 * pi_number), cv::FONT_HERSHEY_PLAIN, 1.0,
-                kPiColors.at(node_name));
 
-    drawn_nodes_.emplace(node_name);
-  } else if (pi_distributed_time - last_draw_time_ >
-                 std::chrono::milliseconds(30) &&
-             display_count_ >= FLAGS_skip_to) {
-    // Clear the image if we haven't draw in a while
-    vis_robot_.ClearImage();
-    cv::imshow("View", vis_robot_.image_);
-    cv::waitKey(FLAGS_wait_key);
-    max_delta_T_world_robot_ = 0.0;
+  if (FLAGS_visualize_solver) {
+    if (drew) {
+      // Collect all the labels from a given node, and add the text
+      size_t pi_number =
+          static_cast<size_t>(node_name[node_name.size() - 1] - '0');
+      cv::putText(vis_robot_.image_, label.str(),
+                  cv::Point(10, 10 + 20 * pi_number), cv::FONT_HERSHEY_PLAIN,
+                  1.0, kPiColors.at(node_name));
+
+      drawn_nodes_.emplace(node_name);
+    } else if (pi_distributed_time - last_draw_time_ >
+                   std::chrono::milliseconds(30) &&
+               display_count_ >= FLAGS_skip_to) {
+      cv::putText(vis_robot_.image_, "No detections", cv::Point(10, 0),
+                  cv::FONT_HERSHEY_PLAIN, 1.0, kPiColors.at(node_name));
+      // Display and clear the image if we haven't draw in a while
+      VLOG(1) << "Displaying image due to time lapse";
+      cv::imshow("View", vis_robot_.image_);
+      cv::waitKey(FLAGS_wait_key);
+      vis_robot_.ClearImage();
+      max_delta_T_world_robot_ = 0.0;
+      drawn_nodes_.clear();
+    }
   }
 }
 
@@ -385,7 +394,8 @@ void TargetMapperReplay::MaybeSolve() {
                        }),
         target_constraints.end());
 
-    LOG(INFO) << "Solving for locations of tags";
+    LOG(INFO) << "Solving for locations of tags with "
+              << target_constraints.size() << " constraints";
     TargetMapper mapper(FLAGS_json_path, target_constraints);
     mapper.Solve(FLAGS_field_name, FLAGS_output_dir);
 
