@@ -238,23 +238,9 @@ impl<T: EventLoopHolder> EventLoopRuntimeHolder<T> {
     where
         F: for<'event_loop> FnOnce(EventLoopRuntime<'event_loop>),
     {
-        // SAFETY: The EventLoopRuntime never escapes this function, which means the only code that
-        // observes its lifetime is `fun`. `fun` must be generic across any value of its
-        // `'event_loop` lifetime parameter, which means we can choose any lifetime here, which
-        // satisfies the safety requirements.
-        //
-        // This is a similar pattern as `std::thread::scope`, `ghost-cell`, etc. Note that unlike
-        // `std::thread::scope`, our inner functions (the async ones) are definitely not allowed to
-        // capture things from the calling scope of this function, so there's no `'env` equivalent.
-        // `ghost-cell` ends up looking very similar despite doing different things with the
-        // pattern, while `std::thread::scope` has a lot of additional complexity to achieve a
-        // similar result.
-        //
-        // `EventLoopHolder`s safety requirements prevent anybody else from touching the underlying
-        // `aos::EventLoop`.
+        // SAFETY: The event loop pointer produced by into_raw must be valid.
         let cpp_runtime = unsafe { CppEventLoopRuntime::new(event_loop.into_raw()).within_box() };
-        let runtime = unsafe { EventLoopRuntime::new(&cpp_runtime) };
-        fun(runtime);
+        EventLoopRuntime::with(&cpp_runtime, fun);
         Self(ManuallyDrop::new(cpp_runtime), PhantomData)
     }
 }
@@ -271,6 +257,9 @@ impl<T: EventLoopHolder> Drop for EventLoopRuntimeHolder<T> {
     }
 }
 
+/// Manages the Rust interface to a *single* `aos::EventLoop`.
+///
+/// This is intended to be used by a single application.
 #[derive(Copy, Clone)]
 pub struct EventLoopRuntime<'event_loop>(
     &'event_loop CppEventLoopRuntime,
@@ -278,13 +267,12 @@ pub struct EventLoopRuntime<'event_loop>(
     InvariantLifetime<'event_loop>,
 );
 
-/// Manages the Rust interface to a *single* `aos::EventLoop`. This is intended to be used by a
-/// single application.
 impl<'event_loop> EventLoopRuntime<'event_loop> {
-    /// Creates a new runtime. This must be the only user of the underlying `aos::EventLoop`.
+    /// Creates a new runtime for the underlying event loop.
     ///
     /// Consider using [`EventLoopRuntimeHolder.new`] instead, if you're working with an
-    /// `aos::EventLoop` owned (indirectly) by Rust code.
+    /// `aos::EventLoop` owned (indirectly) by Rust code or using [`EventLoopRuntime::with`] as a safe
+    /// alternative.
     ///
     /// One common pattern is calling this in the constructor of an object whose lifetime is managed
     /// by C++; C++ doesn't inherit the Rust lifetime but we do have a lot of C++ code that obeys
@@ -366,6 +354,26 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// correct lifetime.
     pub unsafe fn new(event_loop: &'event_loop CppEventLoopRuntime) -> Self {
         Self(event_loop, InvariantLifetime::default())
+    }
+
+    /// Safely builds a "constrained" EventLoopRuntime with `fun`.
+    ///
+    /// We constrain the scope of the `[EventLoopRuntime]` by tying it to **any** `'a` lifetime. The
+    /// idea is that the only things that satisfy this lifetime are either ``static` or produced by
+    /// the event loop itself with a '`event_loop` runtime.
+    pub fn with<F>(event_loop: &'event_loop CppEventLoopRuntime, fun: F)
+    where
+        F: for<'a> FnOnce(EventLoopRuntime<'a>),
+    {
+        // SAFETY: We satisfy the event loop lifetime constraint by scoping it inside of a higher-
+        // rank lifetime in FnOnce. This is similar to what is done in std::thread::scope, and the
+        // point is that `fun` can only assume that `'static` and types produced by this typewith a
+        // 'event_loop lifetime are the only lifetimes that will satisfy `'a`. This is possible due
+        // to this type's invariance over its lifetime, otherwise, one could easily make a Subtype
+        // that, due to its shorter lifetime, would include things from its outer scope.
+        unsafe {
+            fun(Self::new(event_loop));
+        }
     }
 
     /// Returns the pointer passed into the constructor.
