@@ -303,6 +303,9 @@ void TargetMapper::BuildTargetPoseOptimizationProblem(
   ceres::LocalParameterization *quaternion_local_parameterization =
       new ceres::EigenQuaternionParameterization;
 
+  int min_constraint_id = std::numeric_limits<int>::max();
+  int max_constraint_id = std::numeric_limits<int>::min();
+
   for (ceres::examples::VectorOfConstraints::const_iterator constraints_iter =
            constraints.begin();
        constraints_iter != constraints.end(); ++constraints_iter) {
@@ -325,6 +328,15 @@ void TargetMapper::BuildTargetPoseOptimizationProblem(
         << "Should have counted constraints for " << id_pair.first << "->"
         << id_pair.second;
 
+    VLOG(1) << "Adding constraint pair: " << id_pair.first << " and "
+            << id_pair.second;
+    // Store min & max id's; assumes first id < second id
+    if (id_pair.first < min_constraint_id) {
+      min_constraint_id = id_pair.first;
+    }
+    if (id_pair.second > max_constraint_id) {
+      max_constraint_id = id_pair.second;
+    }
     // Normalize constraint cost by occurances
     size_t constraint_count = constraint_counts_[id_pair];
     // Scale all costs so the total cost comes out to more reasonable numbers
@@ -358,6 +370,12 @@ void TargetMapper::BuildTargetPoseOptimizationProblem(
   // setting one of the poses as constant so the optimizer cannot change it.
   CHECK_NE(poses->count(FLAGS_frozen_target_id), 0ul)
       << "Got no poses for frozen target id " << FLAGS_frozen_target_id;
+  CHECK_GE(FLAGS_frozen_target_id, min_constraint_id)
+      << "target to freeze index " << FLAGS_frozen_target_id
+      << " must be in range of constraints, > " << min_constraint_id;
+  CHECK_LE(FLAGS_frozen_target_id, max_constraint_id)
+      << "target to freeze index " << FLAGS_frozen_target_id
+      << " must be in range of constraints, < " << max_constraint_id;
   ceres::examples::MapOfPoses::iterator pose_start_iter =
       poses->find(FLAGS_frozen_target_id);
   CHECK(pose_start_iter != poses->end()) << "There are no poses.";
@@ -479,8 +497,8 @@ void TargetMapper::Solve(std::string_view field_name,
           PoseUtils::Pose3dToAffine3d(target_poses_.at(id_start)).inverse() *
           PoseUtils::Pose3dToAffine3d(target_poses_.at(id_end));
       auto constraint = PoseUtils::Affine3dToPose3d(H_start_end);
-      LOG(INFO) << id_start << "->" << id_end << ": " << constraint.p.norm()
-                << " meters";
+      VLOG(1) << id_start << "->" << id_end << ": " << constraint.p.norm()
+              << " meters";
     }
   }
 }

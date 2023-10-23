@@ -20,38 +20,39 @@
 #include "y2023/vision/aprilrobotics.h"
 #include "y2023/vision/vision_util.h"
 
-DEFINE_string(json_path, "y2023/vision/maps/target_map.json",
-              "Specify path for json with initial pose guesses.");
 DEFINE_string(config, "",
               "If set, override the log's config file with this one.");
 DEFINE_string(constants_path, "y2023/constants/constants.json",
               "Path to the constant file");
-DEFINE_string(output_dir, "y2023/vision/maps",
-              "Directory to write solved target map to");
+DEFINE_string(dump_constraints_to, "/tmp/mapping_constraints.txt",
+              "Write the target constraints to this path");
+DEFINE_string(dump_stats_to, "/tmp/mapping_stats.txt",
+              "Write the mapping stats to this path");
 DEFINE_string(field_name, "charged_up",
               "Field name, for the output json filename and flatbuffer field");
-DEFINE_int32(team_number, 0,
-             "Required: Use the calibration for a node with this team number");
-DEFINE_string(mcap_output_path, "/tmp/log.mcap", "Log to output.");
-DEFINE_string(pi, "pi1", "Pi name to generate mcap log for; defaults to pi1.");
+DEFINE_string(json_path, "y2023/vision/maps/target_map.json",
+              "Specify path for json with initial pose guesses.");
 DEFINE_double(max_pose_error, 1e-6,
               "Throw out target poses with a higher pose error than this");
 DEFINE_double(
     max_pose_error_ratio, 0.4,
     "Throw out target poses with a higher pose error ratio than this");
-DEFINE_uint64(wait_key, 0,
-              "Time in ms to wait between images, if no click (0 to wait "
-              "indefinitely until click).");
+DEFINE_string(mcap_output_path, "", "Log to output.");
+DEFINE_string(output_dir, "y2023/vision/maps",
+              "Directory to write solved target map to");
 DEFINE_double(pause_on_distance, 1.0,
               "Pause if two consecutive implied robot positions differ by more "
               "than this many meters");
+DEFINE_string(pi, "pi1", "Pi name to generate mcap log for; defaults to pi1.");
 DEFINE_uint64(skip_to, 1,
               "Start at combined image of this number (1 is the first image)");
 DEFINE_bool(solve, true, "Whether to solve for the field's target map.");
-DEFINE_string(dump_constraints_to, "/tmp/mapping_constraints.txt",
-              "Write the target constraints to this path");
-DEFINE_string(dump_stats_to, "/tmp/mapping_stats.txt",
-              "Write the target constraints to this path");
+DEFINE_int32(team_number, 0,
+             "Required: Use the calibration for a node with this team number");
+DEFINE_uint64(wait_key, 1,
+              "Time in ms to wait between images, if no click (0 to wait "
+              "indefinitely until click).");
+
 DECLARE_int32(frozen_target_id);
 DECLARE_int32(min_target_id);
 DECLARE_int32(max_target_id);
@@ -307,7 +308,6 @@ void TargetMapperReplay::HandleAprilTags(
       vis_robot_.DrawRobotOutline(H_world_robot,
                                   std::to_string(target_pose_fbs->id()),
                                   kPiColors.at(node_name));
-
       vis_robot_.DrawFrameAxes(H_world_target,
                                std::to_string(target_pose_fbs->id()),
                                kPiColors.at(node_name));
@@ -385,6 +385,7 @@ void TargetMapperReplay::MaybeSolve() {
                        }),
         target_constraints.end());
 
+    LOG(INFO) << "Solving for locations of tags";
     TargetMapper mapper(FLAGS_json_path, target_constraints);
     mapper.Solve(FLAGS_field_name, FLAGS_output_dir);
 
