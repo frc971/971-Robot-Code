@@ -133,12 +133,11 @@ impl SimulatedEventLoopHolder {
 // SAFETY: The UniquePtr functions we're using here mirror most of the EventLoopHolder requirements
 // exactly. Safety requirements on [`SimulatedEventLoopHolder.new`] take care of the rest.
 unsafe impl EventLoopHolder for SimulatedEventLoopHolder {
-    fn into_raw(self) -> *mut ffi::aos::EventLoop {
-        self.0.into_raw()
-    }
-
-    unsafe fn from_raw(raw: *mut ffi::aos::EventLoop) -> Self {
-        Self(UniquePtr::from_raw(raw))
+    fn as_raw(&self) -> *const CppEventLoop {
+        self.0
+            .as_ref()
+            .map(|event_loop| event_loop as *const CppEventLoop)
+            .unwrap_or(core::ptr::null())
     }
 }
 

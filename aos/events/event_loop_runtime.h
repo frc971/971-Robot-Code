@@ -177,7 +177,16 @@ class TimerForRust {
 
 class EventLoopRuntime {
  public:
-  EventLoopRuntime(EventLoop *event_loop) : event_loop_(event_loop) {}
+  EventLoopRuntime(const EventLoop *event_loop)
+      // SAFETY: A &EventLoop in Rust becomes a const EventLoop*. While
+      // that's generally a reasonable convention, they are semantically
+      // different. In Rust, a &mut EventLoop is very restrictive as it enforces
+      // uniqueness of the reference. Additionally, a &EventLoop doesn't convey
+      // const-ness in the C++ sense. So to make the FFI boundary more
+      // ergonomic, we allow a &EventLoop passed from rust to be translated into
+      // an EventLoop* in C++. This is safe so long as EventLoop is !Sync and no
+      // &mut EventLoop references are constructed in Rust.
+      : event_loop_(const_cast<EventLoop *>(event_loop)) {}
   ~EventLoopRuntime() {
     // Do this first, because it may hold child objects.
     task_.reset();

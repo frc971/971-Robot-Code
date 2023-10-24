@@ -46,7 +46,6 @@ use std::{
     fmt,
     future::Future,
     marker::PhantomData,
-    mem::ManuallyDrop,
     ops::{Add, Deref, DerefMut},
     panic::{catch_unwind, AssertUnwindSafe},
     pin::Pin,
@@ -162,35 +161,29 @@ impl RustApplicationFuture {
 ///
 /// # Safety
 ///
-/// Objects implementing this trait *must* have mostly-exclusive (except for running it) ownership
-/// of the `aos::EventLoop` *for its entire lifetime*, which *must* be dropped when this object is.
-/// See [`EventLoopRuntime.new`]'s safety requirements for why this can be important and details of
-/// mostly-exclusive. In other words, nothing else may mutate it in any way except processing events
-/// (including dropping, because this object has to be the one to drop it).
+/// Objects implementing this trait must guarantee that the underlying event loop (as returned
+/// from [`EventLoopHolder::as_raw`]), must be valid for as long as this object is. One way to do
+/// this may be by managing ownership of the event loop with Rust's ownership semantics. However,
+/// this is not strictly necessary.
 ///
 /// This also implies semantics similar to `Pin<&mut CppEventLoop>` for the underlying object.
-/// Implementations of this trait must have exclusive ownership of it, and the underlying object
-/// must not be moved.
+/// Implementations of this trait must guarantee that the underlying object must not be moved while
+/// this object exists.
 pub unsafe trait EventLoopHolder {
-    /// Converts this holder into a raw C++ pointer. This may be fed through other Rust and C++
-    /// code, and eventually passed back to [`from_raw`].
-    fn into_raw(self) -> *mut CppEventLoop;
-
-    /// Converts a raw C++ pointer back to a holder object.
+    /// Returns the raw C++ pointer of the underlying event loop.
     ///
-    /// # Safety
-    ///
-    /// `raw` must be the result of [`into_raw`] on an instance of this same type. These raw
-    /// pointers *are not* interchangeable between implementations of this trait.
-    unsafe fn from_raw(raw: *mut CppEventLoop) -> Self;
+    /// Caller can only assume this pointer is valid while `self` is still alive.
+    fn as_raw(&self) -> *const CppEventLoop;
 }
 
 /// Owns an [`EventLoopRuntime`] and its underlying `aos::EventLoop`, with safe management of the
 /// associated Rust lifetimes.
-pub struct EventLoopRuntimeHolder<T: EventLoopHolder>(
-    ManuallyDrop<Pin<Box<CppEventLoopRuntime>>>,
-    PhantomData<T>,
-);
+pub struct EventLoopRuntimeHolder<T: EventLoopHolder> {
+    // NOTE: `runtime` must get dropped first, so we declare it before the event_loop:
+    // https://doc.rust-lang.org/reference/destructors.html
+    _runtime: Pin<Box<CppEventLoopRuntime>>,
+    _event_loop: T,
+}
 
 impl<T: EventLoopHolder> EventLoopRuntimeHolder<T> {
     /// Creates a new [`EventLoopRuntime`] and runs an initialization function on it. This is a
@@ -238,22 +231,14 @@ impl<T: EventLoopHolder> EventLoopRuntimeHolder<T> {
     where
         F: for<'event_loop> FnOnce(EventLoopRuntime<'event_loop>),
     {
-        // SAFETY: The event loop pointer produced by into_raw must be valid.
-        let cpp_runtime = unsafe { CppEventLoopRuntime::new(event_loop.into_raw()).within_box() };
-        EventLoopRuntime::with(&cpp_runtime, fun);
-        Self(ManuallyDrop::new(cpp_runtime), PhantomData)
-    }
-}
-
-impl<T: EventLoopHolder> Drop for EventLoopRuntimeHolder<T> {
-    fn drop(&mut self) {
-        let event_loop = self.0.event_loop();
-        // SAFETY: We're not going to touch this field again. The underlying EventLoop will not be
-        // run again because we're going to drop it next.
-        unsafe { ManuallyDrop::drop(&mut self.0) };
-        // SAFETY: We took this from `into_raw`, and we just dropped the runtime which may contain
-        // Rust references to it.
-        unsafe { drop(T::from_raw(event_loop)) };
+        // SAFETY: The event loop pointer produced by as_raw must be valid and it will get dropped
+        // first (see https://doc.rust-lang.org/reference/destructors.html)
+        let runtime = unsafe { CppEventLoopRuntime::new(event_loop.as_raw()).within_box() };
+        EventLoopRuntime::with(&runtime, fun);
+        Self {
+            _runtime: runtime,
+            _event_loop: event_loop,
+        }
     }
 }
 
@@ -274,9 +259,9 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// `aos::EventLoop` owned (indirectly) by Rust code or using [`EventLoopRuntime::with`] as a safe
     /// alternative.
     ///
-    /// One common pattern is calling this in the constructor of an object whose lifetime is managed
-    /// by C++; C++ doesn't inherit the Rust lifetime but we do have a lot of C++ code that obeys
-    /// these rules implicitly.
+    /// One common pattern is wrapping the lifetime behind a higher-rank trait bound (such as
+    /// [`FnOnce`]). This would constraint the lifetime to `'static` and objects with `'event_loop`
+    /// returned by this runtime.
     ///
     /// Call [`spawn`] to respond to events. The non-event-driven APIs may be used without calling
     /// this.
@@ -290,14 +275,11 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// together. It all boils down to choosing `'event_loop` correctly, which is very complicated.
     /// Here are the rules:
     ///
-    /// 1. The `aos::EventLoop` APIs, and any other consumer-facing APIs, of the underlying
-    ///    `aos::EventLoop` *must* be exclusively used by this object, and things it calls, for
-    ///    `'event_loop`.
-    /// 2. `'event_loop` extends until after the last time the underlying `aos::EventLoop` is run.
-    ///    This is often beyond the lifetime of this Rust `EventLoopRuntime` object.
-    /// 3. `'event_loop` must outlive this object, because this object stores references to the
+    /// 1. `'event_loop` extends until after the last time the underlying `aos::EventLoop` is run.
+    ///    **This is often beyond the lifetime of this Rust `EventLoopRuntime` object**.
+    /// 2. `'event_loop` must outlive this object, because this object stores references to the
     ///    underlying `aos::EventLoop`.
-    /// 4. Any other references stored in the underlying `aos::EventLoop` must be valid for
+    /// 3. Any other references stored in the underlying `aos::EventLoop` must be valid for
     ///    `'event_loop`. The easiest way to ensure this is by not using the `aos::EventLoop` before
     ///    passing it to this object.
     ///
@@ -305,13 +287,15 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     ///
     /// 1. The underlying `aos::EventLoop` must be dropped after this object.
     /// 2. This object will store various references valid for `'event_loop` with a duration of
-    ///   `'event_loop`, which is safe as long as they're both the same `'event_loop`. Note that
-    ///   this requires this type to be invariant with respect to `'event_loop`.
-    /// 3. `event_loop` (the pointer being passed in) is effectively `Pin`, which is also implied
-    ///    by the underlying `aos::EventLoop` C++ type.
-    /// 4. You cannot create multiple `EventLoopRuntime`s from the same underlying `aos::EventLoop`
-    ///    or otherwise use it from a different application. The first one may create
-    ///    mutable Rust references while the second one expects exclusive ownership, for example.
+    ///   `'event_loop`, which is safe as long as
+    ///
+    /// * `'event_loop` outlives the underlying event loop, and
+    /// * `'event_loop` references are not used once the event loop is destroyed
+    ///
+    /// Note that this requires this type to be invariant with respect to `'event_loop`. This can
+    /// be achieved by using [`EventLoopRuntime::with`] since `'event_loop` referenes can't leave
+    /// `fun` and the runtime holding `'event_loop` references will be destroyed before the event
+    /// loop.
     ///
     /// `aos::EventLoop`'s public API is exclusively for consumers of the event loop. Some
     /// subclasses extend this API. Additionally, all useful implementations of `aos::EventLoop`
@@ -320,18 +304,6 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// `aos::EventLoop` (such as `aos::SimulatedEventLoopFactory`). This access to run the event
     /// loop functions independently of the consuming functions in every way except lifetime of the
     /// `aos::EventLoop`, and may be used independently of `'event_loop`.
-    ///
-    /// ## Discussion of the rules
-    ///
-    /// Rule 1 is similar to rule 3 (they're both similar to mutable borrowing), but rule 1 extends
-    /// for the entire lifetime of the object instead of being limited to the lifetime of an
-    /// individual borrow by an instance of this type. This is similar to the way [`Pin`]'s
-    /// estrictions extend for the entire lifetime of the object, until it is dropped.
-    ///
-    /// Rule 2 and corollaries 2 and 3 go together, and are essential for making [`spawn`]ed tasks
-    /// useful. The `aos::EventLoop` is full of indirect circular references, both within itself
-    /// and via all of the callbacks. This is sound if all of these references have the *exact
-    /// same* Rust lifetime, which is `'event_loop`.
     ///
     /// ## Alternatives and why they don't work
     ///
@@ -349,9 +321,9 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     ///
     /// ## Final cautions
     ///
-    /// Following these rules is very tricky. Be very cautious calling this function. It exposes an
-    /// unbound lifetime, which means you should wrap it directly in a function that attaches a
-    /// correct lifetime.
+    /// Following these rules is very tricky. Be very cautious calling this function. The
+    /// exposed lifetime doesn't actually convey all the rules to the compiler. To the compiler,
+    /// `'event_loop` ends when this object is dropped which is not the case!
     pub unsafe fn new(event_loop: &'event_loop CppEventLoopRuntime) -> Self {
         Self(event_loop, InvariantLifetime::default())
     }
@@ -367,7 +339,7 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     {
         // SAFETY: We satisfy the event loop lifetime constraint by scoping it inside of a higher-
         // rank lifetime in FnOnce. This is similar to what is done in std::thread::scope, and the
-        // point is that `fun` can only assume that `'static` and types produced by this typewith a
+        // point is that `fun` can only assume that `'static` and types produced by this type with a
         // 'event_loop lifetime are the only lifetimes that will satisfy `'a`. This is possible due
         // to this type's invariance over its lifetime, otherwise, one could easily make a Subtype
         // that, due to its shorter lifetime, would include things from its outer scope.
