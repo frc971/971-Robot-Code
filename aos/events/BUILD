@@ -190,39 +190,38 @@ rust_doc_test(
     ],
 )
 
-# TODO(Adam): Reewrite with SimulatedEventLoop for rust and reenable.
-# autocxx_library(
-#     name = "event_loop_runtime_test_lib_rs",
-#     testonly = True,
-#     srcs = ["event_loop_runtime_test_lib.rs"],
-#     libs = [
-#         ":event_loop",
-#     ],
-#     rs_deps = [
-#         ":event_loop_runtime",
-#         ":ping_rust_fbs",
-#         ":pong_rust_fbs",
-#     ],
-#     target_compatible_with = select({
-#         "//conditions:default": ["//tools/platforms/rust:has_support"],
-#         "//tools:has_msan": ["@platforms//:incompatible"],
-#     }),
-# )
+autocxx_library(
+    name = "event_loop_runtime_test_lib_rs",
+    testonly = True,
+    srcs = ["event_loop_runtime_test_lib.rs"],
+    libs = [
+        ":event_loop",
+    ],
+    rs_deps = [
+        ":event_loop_runtime",
+        ":ping_rust_fbs",
+        ":pong_rust_fbs",
+    ],
+    target_compatible_with = select({
+        "//conditions:default": ["//tools/platforms/rust:has_support"],
+        "//tools:has_msan": ["@platforms//:incompatible"],
+    }),
+)
 
-# cc_test(
-#     name = "event_loop_runtime_test",
-#     srcs = ["event_loop_runtime_test.cc"],
-#     data = [":pingpong_config"],
-#     deps = [
-#         ":event_loop_runtime_test_lib_rs",
-#         ":ping_fbs",
-#         ":pong_fbs",
-#         ":simulated_event_loop",
-#         "//aos/testing:googletest",
-#         "//aos/testing:path",
-#         "@com_github_google_glog//:glog",
-#     ],
-# )
+cc_test(
+    name = "event_loop_runtime_test",
+    srcs = ["event_loop_runtime_test.cc"],
+    data = [":pingpong_config"],
+    deps = [
+        ":event_loop_runtime_test_lib_rs",
+        ":ping_fbs",
+        ":pong_fbs",
+        ":simulated_event_loop",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+        "@com_github_google_glog//:glog",
+    ],
+)
 
 cc_library(
     name = "ping_lib",
