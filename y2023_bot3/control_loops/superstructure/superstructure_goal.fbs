@@ -3,12 +3,13 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 namespace y2023_bot3.control_loops.superstructure;
 
 enum PivotGoal: ubyte {
-  PICKUP_FRONT = 0,
-  PICKUP_BACK = 1,
-  SCORE_LOW_FRONT = 2,
-  SCORE_LOW_BACK = 3,
-  SCORE_MID_FRONT = 4,
-  SCORE_MID_BACK = 5,
+  NEUTRAL = 0,
+  PICKUP_FRONT = 1,
+  PICKUP_BACK = 2,
+  SCORE_LOW_FRONT = 3,
+  SCORE_LOW_BACK = 4,
+  SCORE_MID_FRONT = 5,
+  SCORE_MID_BACK = 6,
 }
 
 enum RollerGoal: ubyte {
