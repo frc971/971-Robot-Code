@@ -225,6 +225,7 @@ autocxx_library(
     testonly = True,
     srcs = ["test_init.rs"],
     crate_name = "aos_test_init",
+    docs = False,
     libs = [
         "//aos/testing:tmpdir",
     ],

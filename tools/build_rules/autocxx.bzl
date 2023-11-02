@@ -251,7 +251,8 @@ def autocxx_library(
         testonly = None,
         crate_features = None,
         crate_name = None,
-        gen_debug = None):
+        gen_debug = None,
+        docs = True):
     """A macro to generate Rust <-> C++ interop code with autocxx.
 
     Creates the following rules:
@@ -343,4 +344,5 @@ def autocxx_library(
         ],
         compile_data = [gen_compile_data_name],
         rustc_env_files = [gen_env_files_name],
+        docs = docs,
     )

@@ -3,7 +3,7 @@ load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
-load("//tools/rust:defs.bzl", "flatbuffer_rust_library", "rust_binary", "rust_doc", "rust_doc_test", "rust_library", "rust_test")
+load("//tools/rust:defs.bzl", "flatbuffer_rust_library", "rust_binary", "rust_doc_test", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -163,11 +163,6 @@ autocxx_library(
     ],
 )
 
-rust_doc(
-    name = "event_loop_runtime_doc",
-    crate = ":event_loop_runtime",
-)
-
 rust_doc_test(
     name = "event_loop_runtime_doc_test",
     crate = ":event_loop_runtime",
@@ -181,6 +176,7 @@ autocxx_library(
     name = "event_loop_runtime_test_lib_rs",
     testonly = True,
     srcs = ["event_loop_runtime_test_lib.rs"],
+    docs = False,
     libs = [
         ":event_loop",
     ],
@@ -663,12 +659,6 @@ autocxx_library(
         ":event_loop_runtime",
         "//aos:configuration_rs",
     ],
-)
-
-rust_doc(
-    name = "shm_event_loop_rs_doc",
-    crate = ":shm_event_loop_rs",
-    target_compatible_with = ["@platforms//cpu:x86_64"],
 )
 
 rust_test(
