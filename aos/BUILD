@@ -1,9 +1,9 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library", "flatbuffer_rust_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
+load("//tools/rust:defs.bzl", "flatbuffer_rust_library", "rust_library", "rust_test")
 
 exports_files(["aos_dump_autocomplete.sh"])
 
@@ -209,10 +209,6 @@ autocxx_library(
         ":init_for_rust",
     ],
     override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     visibility = ["//visibility:public"],
     deps = [
         "@crate_index//:clap",
@@ -222,11 +218,6 @@ autocxx_library(
 rust_test(
     name = "init_rs_test",
     crate = ":init_rs",
-    rustc_flags = ["-Crelocation-model=static"],
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
 )
 
 autocxx_library(
@@ -238,10 +229,6 @@ autocxx_library(
         "//aos/testing:tmpdir",
     ],
     override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     visibility = ["//visibility:public"],
     deps = [
         ":init_rs",
@@ -305,10 +292,6 @@ flatbuffer_rust_library(
     name = "configuration_rust_fbs",
     srcs = ["configuration.fbs"],
     crate_name = "aos_configuration_fbs",
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     visibility = ["//visibility:public"],
 )
 
@@ -362,10 +345,6 @@ autocxx_library(
         ":configuration_fbs",
     ],
     override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     visibility = ["//visibility:public"],
     deps = [
         ":configuration_rust_fbs",
@@ -380,9 +359,6 @@ rust_test(
     data = [
         "//aos/testdata:test_configs",
     ],
-    # TODO: Make Rust play happy with pic vs nopic. Details at:
-    # https://github.com/bazelbuild/rules_rust/issues/118
-    rustc_flags = ["-Crelocation-model=static"],
 )
 
 flatbuffer_ts_library(
@@ -404,10 +380,6 @@ flatbuffer_rust_library(
     name = "json_to_flatbuffer_rust_fbs",
     srcs = ["json_to_flatbuffer.fbs"],
     crate_name = "aos_json_to_flatbuffer_fbs",
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     visibility = ["//aos:__subpackages__"],
 )
 
@@ -548,10 +520,6 @@ rust_library(
     name = "flatbuffers_rs",
     srcs = ["flatbuffers.rs"],
     crate_name = "aos_flatbuffers",
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_google_flatbuffers//rust",
@@ -796,10 +764,6 @@ autocxx_library(
     rs_deps = [
         "@crate_index//:uuid",
     ],
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     visibility = ["//visibility:public"],
 )
 

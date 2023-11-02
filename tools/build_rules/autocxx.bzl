@@ -1,4 +1,4 @@
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@org_frc971//tools/rust:defs.bzl", "rust_library")
 load("@rules_cc//cc:find_cc_toolchain.bzl", "find_cc_toolchain")
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 
@@ -241,7 +241,7 @@ _autocxx_library_gen = rule(
 def autocxx_library(
         name,
         visibility = None,
-        target_compatible_with = None,
+        target_compatible_with = ["//tools/platforms/rust:has_support"],
         libs = [],
         srcs = [],
         cxxbridge_srcs = [],

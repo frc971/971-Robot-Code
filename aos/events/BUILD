@@ -1,10 +1,9 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_rust_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_doc", "rust_doc_test", "rust_library", "rust_test")
+load("//tools/rust:defs.bzl", "flatbuffer_rust_library", "rust_binary", "rust_doc", "rust_doc_test", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -46,19 +45,11 @@ flatbuffer_ts_library(
 flatbuffer_rust_library(
     name = "ping_rust_fbs",
     srcs = ["ping.fbs"],
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
 )
 
 flatbuffer_rust_library(
     name = "pong_rust_fbs",
     srcs = ["pong.fbs"],
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
 )
 
 static_flatbuffer(
@@ -165,10 +156,6 @@ autocxx_library(
         "@crate_index//:futures",
         "@crate_index//:thiserror",
     ],
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     visibility = ["//visibility:public"],
     deps = [
         "//aos:configuration_rs",
@@ -202,10 +189,6 @@ autocxx_library(
         ":ping_rust_fbs",
         ":pong_rust_fbs",
     ],
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
 )
 
 cc_test(
@@ -268,11 +251,6 @@ rust_test(
     # a rust test crashes inside of C++, the output gets captured which makes
     # it pretty much impossible to figure out what happened.
     env = {"RUST_TEST_NOCAPTURE": "1"},
-    rustc_flags = ["-Crelocation-model=static"],
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     deps = [
         ":event_loop_runtime",
         ":ping_lib_rs",
@@ -298,11 +276,6 @@ rust_binary(
     data = [
         ":pingpong_config",
     ],
-    rustc_flags = ["-Crelocation-model=static"],
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     deps = [
         ":ping_lib_rs",
         ":shm_event_loop_rs",
@@ -337,11 +310,6 @@ rust_binary(
     data = [
         ":pingpong_config",
     ],
-    rustc_flags = ["-Crelocation-model=static"],
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     deps = [
         ":pong_lib_rs",
         ":shm_event_loop_rs",
@@ -668,9 +636,6 @@ rust_test(
     data = [
         ":multinode_pingpong_test_combined_config",
     ],
-    # TODO: Make Rust play happy with pic vs nopic. Details at:
-    # https://github.com/bazelbuild/rules_rust/issues/118
-    rustc_flags = ["-Crelocation-model=static"],
     deps = [
         ":ping_rust_fbs",
         "//aos:test_init_rs",
@@ -693,10 +658,6 @@ autocxx_library(
         "//aos:configuration_rust_fbs",
         "//aos:flatbuffers_rs",
     ],
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     visibility = ["//visibility:public"],
     deps = [
         ":event_loop_runtime",
@@ -714,13 +675,6 @@ rust_test(
     name = "shm_event_loop_rs_test",
     crate = ":shm_event_loop_rs",
     data = [":pingpong_config"],
-    # TODO: Make Rust play happy with pic vs nopic. Details at:
-    # https://github.com/bazelbuild/rules_rust/issues/118
-    rustc_flags = ["-Crelocation-model=static"],
-    target_compatible_with = select({
-        "//conditions:default": ["//tools/platforms/rust:has_support"],
-        "//tools:has_msan": ["@platforms//:incompatible"],
-    }),
     deps = [
         ":ping_rust_fbs",
         "//aos:test_init_rs",
