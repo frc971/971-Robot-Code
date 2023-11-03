@@ -47,7 +47,7 @@ pub trait WithCppFlags: Parser {
         Self::parse_with_cpp_flags_from(env::args_os())
     }
 
-    /// Like [`parse_with_cpp_flags`] but read from an iterator.
+    /// Like [`WithCppFlags::parse_with_cpp_flags`] but read from an iterator.
     fn parse_with_cpp_flags_from<I, T>(itr: I) -> Self
     where
         I: IntoIterator<Item = T>,
@@ -128,6 +128,7 @@ impl CxxFlag {
         }
     }
 
+    #[allow(dead_code)]
     fn get_option(name: &str) -> String {
         unsafe {
             let name = CString::new(name).expect("Flag may not have NUL");

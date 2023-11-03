@@ -22,7 +22,7 @@
 //!    future".
 //! 3. Multiple applications are better suited to multiple `EventLoopRuntime`s, on separate
 //!    `aos::EventLoop`s. Otherwise they can't send messages to each other, among other
-//!    restrictions. https://github.com/frc971/971-Robot-Code/issues/12 covers creating an adapter
+//!    restrictions. <https://github.com/frc971/971-Robot-Code/issues/12> covers creating an adapter
 //!    that provides multiple `EventLoop`s on top of a single underlying implementation.
 //!
 //! ## Design
@@ -31,7 +31,7 @@
 //! considerations in arriving at this design include:
 //!   * `EventLoop` implementations alias the objects they're returning from C++, which means
 //!     creating Rust unique references to them is unsound. See
-//!     https://github.com/google/autocxx/issues/1146 for details.
+//!     <https://github.com/google/autocxx/issues/1146> for details.
 //!   * For various reasons autocxx can't directly wrap APIs using types ergonomic for C++. This and
 //!     the previous point mean we wrap all of the C++ objects specifically for this class.
 //!   * Rust's lifetimes are only flexible enough to track everything with a single big lifetime.
@@ -40,7 +40,7 @@
 //!   * We can't use [`futures::stream::Stream`] and all of its nice [`futures::stream::StreamExt`]
 //!     helpers for watchers because we need lifetime-generic `Item` types. Effectively we're making
 //!     a lending stream. This is very close to lending iterators, which is one of the motivating
-//!     examples for generic associated types (https://github.com/rust-lang/rust/issues/44265).
+//!     examples for generic associated types (<https://github.com/rust-lang/rust/issues/44265>).
 
 use std::{
     fmt,
@@ -263,7 +263,7 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// [`FnOnce`]). This would constraint the lifetime to `'static` and objects with `'event_loop`
     /// returned by this runtime.
     ///
-    /// Call [`spawn`] to respond to events. The non-event-driven APIs may be used without calling
+    /// Call [`EventLoopRuntime::spawn`] to respond to events. The non-event-driven APIs may be used without calling
     /// this.
     ///
     /// This is an async runtime, but it's a somewhat unusual one. See the module-level
@@ -313,7 +313,7 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// same object from C++, which is a common operation. See the module-level documentation for
     /// details.
     ///
-    /// [`spawn`]ed tasks need to hold `&'event_loop` references to things like channels. Using a
+    /// spawned tasks need to hold `&'event_loop` references to things like channels. Using a
     /// separate `'config` lifetime wouldn't change much; the tasks still need to do things which
     /// require them to not outlive something they don't control. This is fundamental to
     /// self-referential objects, which `aos::EventLoop` is based around, but Rust requires unsafe
@@ -396,7 +396,7 @@ impl<'event_loop> EventLoopRuntime<'event_loop> {
     /// will never complete. `task` will not be polled after the underlying `aos::EventLoop` exits.
     ///
     /// Note that task will be polled immediately, to give it a chance to initialize. If you want to
-    /// defer work until the event loop starts running, await [`on_run`] in the task.
+    /// defer work until the event loop starts running, await [`EventLoopRuntime::on_run`] in the task.
     ///
     /// # Panics
     ///
@@ -775,7 +775,7 @@ impl Future for TimerTick<'_> {
 ///
 /// We also run into some limitations in the borrow checker trying to implement `poll`, I think it's
 /// the same one mentioned here:
-/// https://blog.rust-lang.org/2022/08/05/nll-by-default.html#looking-forward-what-can-we-expect-for-the-borrow-checker-of-the-future
+/// <https://blog.rust-lang.org/2022/08/05/nll-by-default.html#looking-forward-what-can-we-expect-for-the-borrow-checker-of-the-future>
 /// We get around that one by moving the unbounded lifetime from the pointer dereference into the
 /// function with the if statement.
 // SAFETY: If this outlives the parent EventLoop, the C++ code will LOG(FATAL).
@@ -1197,7 +1197,7 @@ impl<'sender> RawBuilder<'sender> {
 
         use ffi::aos::RawSender_Error as FfiError;
         // SAFETY: This is a valid buffer we're passing.
-        match unsafe { self.raw_sender.0.as_mut().SendBuffer(data.len()) } {
+        match self.raw_sender.0.as_mut().SendBuffer(data.len()) {
             FfiError::kOk => Ok(()),
             FfiError::kMessagesSentTooFast => Err(SendError::MessagesSentTooFast),
             FfiError::kInvalidRedzone => Err(SendError::InvalidRedzone),
@@ -1496,8 +1496,8 @@ pub struct ExitHandle(UniquePtr<CppExitHandle>);
 
 impl ExitHandle {
     /// Exits the EventLoops represented by this handle. You probably want to immediately return
-    /// from the context this is called in. Awaiting [`exit`] instead of using this function is an
-    /// easy way to do that.
+    /// from the context this is called in. Awaiting [`ExitHandle::exit`] instead of using this
+    /// function is an easy way to do that.
     pub fn exit_sync(mut self) {
         self.0.as_mut().unwrap().Exit();
     }

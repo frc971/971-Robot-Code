@@ -20,6 +20,7 @@ impl PingTask {
     }
 
     /// Returns a future with all the tasks for the ping process
+    #[allow(unreachable_code)]
     pub async fn tasks(&self, event_loop: EventLoopRuntime<'_>, sleep: u64) -> Never {
         futures::join!(self.ping(&event_loop, sleep), self.handle_pong(&event_loop));
         unreachable!("Let's hope `never_type` gets stabilized soon :)");

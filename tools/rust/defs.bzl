@@ -17,9 +17,10 @@ def rust_doc_test(target_compatible_with = ["//tools/platforms/rust:has_support"
         **kwargs
     )
 
-def rust_doc(target_compatible_with = ["//tools/platforms/rust:has_support"], **kwargs):
+def rust_doc(target_compatible_with = ["//tools/platforms/rust:has_support"], rustdoc_flags = ["-Dwarnings"], **kwargs):
     _rust_doc(
         target_compatible_with = target_compatible_with,
+        rustdoc_flags = rustdoc_flags,
         **kwargs
     )
 
@@ -48,8 +49,8 @@ def rust_library(target_compatible_with = ["//tools/platforms/rust:has_support"]
         rust_doc(
             name = kwargs["name"] + "_doc",
             crate = kwargs["name"],
-            rustdoc_flags = ["--document-private-items"],
             target_compatible_with = ["//tools/platforms/rust:has_support"],
+            rustdoc_flags = ["--document-private-items", "-Dwarnings"],
         )
 
 def rust_test(target_compatible_with = ["//tools/platforms/rust:has_support"], rustc_flags = [], **kwargs):

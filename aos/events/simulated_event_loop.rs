@@ -60,7 +60,7 @@ impl<'config> SimulatedEventLoopFactory<'config> {
     /// Creates a Rust-owned EventLoop.
     ///
     /// You probably don't want to call this directly if you're creating a Rust application. This
-    /// is intended for creating C++ applications. Use [`make_runtime`] instead when creating Rust
+    /// is intended for creating C++ applications. Use [`Self::make_runtime`] instead when creating Rust
     /// applications.
     pub fn make_event_loop(&mut self, name: &str, node: Option<&Node>) -> UniquePtr<CppEventLoop> {
         // SAFETY:
@@ -77,7 +77,7 @@ impl<'config> SimulatedEventLoopFactory<'config> {
         }
     }
 
-    /// Creates an [`EventLoopRuntime`] wrapper which also owns its underlying [`EventLoop`].
+    /// Creates an [`EventLoopRuntime`] wrapper which also owns its underlying [`CppEventLoop`].
     ///
     /// All setup must be performed with `fun`, which is called before this function returns. `fun`
     /// may create further objects to use in async functions via [`EventLoop.spawn`] etc, but it is
