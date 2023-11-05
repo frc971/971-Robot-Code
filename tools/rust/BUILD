@@ -99,7 +99,6 @@ rust_toolchain(
     rust_std = ":empty_stdlib",
     rustc = ":noop_error_exit",
     rustc_lib = ":noop_error_exit",
-    rustc_srcs = None,
     rustfmt = ":noop_error_exit",
     staticlib_ext = ".a",
     stdlib_linkflags = [],
