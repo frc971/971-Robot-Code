@@ -461,7 +461,7 @@ int VerifyMessages(LocklessQueue *queue, LocklessQueueMemory *memory) {
     LocklessQueueReader::Result read_result = reader.Read(
         i, &monotonic_sent_time, &realtime_sent_time, &monotonic_remote_time,
         &realtime_remote_time, &remote_queue_index, &source_boot_uuid, &length,
-        &(read_data[0]), std::ref(should_read_callback));
+        &(read_data[0]), should_read_callback);
 
     if (read_result != LocklessQueueReader::Result::GOOD) {
       if (read_result == LocklessQueueReader::Result::TOO_OLD) {

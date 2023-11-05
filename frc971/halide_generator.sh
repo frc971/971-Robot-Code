@@ -33,8 +33,8 @@ export LD_LIBRARY_PATH="${SYSROOT}/usr/lib:${SYSROOT}/lib:${ZLIB1G_DEV}/usr/lib/
   -fcolor-diagnostics \
   -I"${HALIDE}/include" \
   -nostdinc \
-  -isystem"${SYSROOT}/usr/include/c++/10" \
-  -isystem"${SYSROOT}/usr/include/${MULTIARCH}/c++/10" \
+  -isystem"${SYSROOT}/usr/include/c++/12" \
+  -isystem"${SYSROOT}/usr/include/${MULTIARCH}/c++/12" \
   -isystem"${SYSROOT}/usr/include/c++/7/backward" \
   -isystem"${LLVM_TOOLCHAIN}/lib/clang/17/include" \
   -isystem"${SYSROOT}/usr/include/${MULTIARCH}" \

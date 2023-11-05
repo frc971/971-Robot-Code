@@ -324,7 +324,7 @@ llvm_toolchain(
         "linux-aarch64": llvm_opt_copts,
     },
     standard_libraries = {
-        "linux-x86_64": "libstdc++-10",
+        "linux-x86_64": "libstdc++-12",
         "linux-aarch64": "libstdc++-12",
     },
     static_libstdcxx = False,
@@ -459,17 +459,12 @@ http_archive(
     url = "https://software.frc971.org/Build-Dependencies/2023-11-18-bookworm-arm64-nvidia-rootfs.tar.xz",
 )
 
-# Created with:
-#   `debootstrap buster buster_sysroot`
-# and then chrooting in and running:
-#   apt install libc6-dev libstdc++-7-dev
-# removing the apt cache,
-# and then tarring up the result
+# Sysroot generated using //frc971/amd64/build_rootfs.py
 http_archive(
     name = "amd64_debian_sysroot",
-    build_file = "@//:compilers/debian_rootfs.BUILD",
-    sha256 = "5e10f4cac85a98a39da1716b218bc05fff4666c61cc471a7df27876710bc86d2",
-    url = "https://software.frc971.org/Build-Dependencies/2022-01-06-debian-bullseye_rootfs.tar.bz2",
+    build_file = "@//:compilers/amd64_debian_rootfs.BUILD",
+    sha256 = "3c098330f8bc57dccb4191167cfbba4c47f3bacf52926479c95ad2e50834b3c2",
+    url = "https://software.frc971.org/Build-Dependencies/2023-11-09-bookworm-amd64-nvidia-rootfs.tar.xz",
 )
 
 local_repository(
