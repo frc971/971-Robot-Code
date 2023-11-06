@@ -42,6 +42,29 @@ cc_test(
 )
 
 cc_library(
+    name = "inlined_vector",
+    hdrs = [
+        "inlined_vector.h",
+    ],
+    deps = [
+        "@com_google_absl//absl/container:inlined_vector",
+    ],
+)
+
+cc_test(
+    name = "inlined_vector_test",
+    srcs = [
+        "inlined_vector_test.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":inlined_vector",
+        "//aos:realtime",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
     name = "sized_array",
     hdrs = [
         "sized_array.h",
