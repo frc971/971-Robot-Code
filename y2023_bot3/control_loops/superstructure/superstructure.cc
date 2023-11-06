@@ -15,7 +15,6 @@ namespace superstructure {
 
 using ::aos::monotonic_clock;
 
-using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::RelativeEncoderProfiledJointStatus;
 
@@ -53,6 +52,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
+
   status_builder.add_zeroed(true);
   status_builder.add_end_effector_state(end_effector_.state());
 

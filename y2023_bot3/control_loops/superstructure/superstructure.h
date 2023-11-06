@@ -22,6 +22,11 @@ namespace superstructure {
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
+  using PotAndAbsoluteEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
+          ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
+
   explicit Superstructure(::aos::EventLoop *event_loop,
                           std::shared_ptr<const constants::Values> values,
                           const ::std::string &name = "/superstructure");
