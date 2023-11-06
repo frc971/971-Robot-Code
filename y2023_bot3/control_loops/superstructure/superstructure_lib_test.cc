@@ -66,13 +66,21 @@ class SuperstructureSimulation {
         superstructure_position_sender_.MakeBuilder();
 
     Position::Builder position_builder = builder.MakeBuilder<Position>();
+    position_builder.add_end_effector_cube_beam_break(
+        end_effector_cube_beam_break_);
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
+  }
+
+  void set_end_effector_cube_beam_break(bool triggered) {
+    end_effector_cube_beam_break_ = triggered;
   }
 
  private:
   ::aos::EventLoop *event_loop_;
   ::aos::PhasedLoopHandler *phased_loop_handle_ = nullptr;
+
+  bool end_effector_cube_beam_break_ = false;
 
   ::aos::Sender<Position> superstructure_position_sender_;
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
@@ -240,6 +248,211 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 TEST_F(SuperstructureTest, DisableTest) {
   RunFor(chrono::seconds(2));
   CheckIfZeroed();
+}
+
+TEST_F(SuperstructureTest, EndEffectorGoal) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  double spit_voltage = EndEffector::kRollerCubeSpitVoltage();
+  double suck_voltage = EndEffector::kRollerCubeSuckVoltage();
+
+  RollerGoal roller_goal = RollerGoal::INTAKE_CUBE;
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_roller_goal(roller_goal);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+  superstructure_plant_.set_end_effector_cube_beam_break(false);
+
+  // This makes sure that we intake as normal when
+  // requesting intake.
+  RunFor(constants::Values::kExtraIntakingTime());
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), suck_voltage);
+  EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
+            EndEffectorState::INTAKING);
+
+  superstructure_plant_.set_end_effector_cube_beam_break(true);
+
+  // Checking that after the beambreak is set once intaking that the
+  // state changes to LOADED.
+  RunFor(dt());
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
+            EndEffectorState::LOADED);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_roller_goal(RollerGoal::IDLE);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+  superstructure_plant_.set_end_effector_cube_beam_break(false);
+
+  //  Checking that it's going back to intaking because we lost the
+  //  beambreak sensor.
+  RunFor(dt() * 2);
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), suck_voltage);
+  EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
+            EndEffectorState::INTAKING);
+
+  // Checking that we go back to idle after beambreak is lost and we
+  // set our goal to idle.
+  RunFor(dt() * 2 + constants::Values::kExtraIntakingTime());
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
+            EndEffectorState::IDLE);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_roller_goal(roller_goal);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+
+  // Going through intake -> loaded -> spitting
+  // Making sure that it's intaking normally.
+  RunFor(constants::Values::kExtraIntakingTime());
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), suck_voltage);
+  EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
+            EndEffectorState::INTAKING);
+
+  superstructure_plant_.set_end_effector_cube_beam_break(true);
+
+  // Checking that it's loaded once beambreak is sensing something.
+  RunFor(dt());
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
+            EndEffectorState::LOADED);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_roller_goal(RollerGoal::SPIT);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+  superstructure_plant_.set_end_effector_cube_beam_break(true);
+  // Checking that it stays spitting until 2 seconds after the
+  // beambreak is lost.
+  RunFor(dt() * 10);
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), spit_voltage);
+  EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
+            EndEffectorState::SPITTING);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_roller_goal(RollerGoal::IDLE);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+
+  // Checking that it goes to idle after it's given time to stop spitting.
+  RunFor(dt() * 3);
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_output_fetcher_->roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
+            EndEffectorState::IDLE);
+}
+
+// Test that we are able to signal that the cube was preloaded
+TEST_F(SuperstructureTest, Preloaded) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_preloaded_with_cube(true);
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(dt());
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  EXPECT_EQ(superstructure_status_fetcher_->end_effector_state(),
+            EndEffectorState::LOADED);
+}
+
+// Tests that the end effector does nothing when the goal is to remain
+// still.
+TEST_F(SuperstructureTest, DoesNothing) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_roller_goal(RollerGoal::IDLE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+  RunFor(chrono::seconds(10));
+  VerifyNearGoal();
+
+  EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
+}
+// Tests that loops can reach a goal.
+TEST_F(SuperstructureTest, ReachesGoal) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_roller_goal(RollerGoal::IDLE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+  // Give it a lot of time to get there.
+  RunFor(chrono::seconds(15));
+
+  VerifyNearGoal();
 }
 
 }  // namespace testing

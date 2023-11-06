@@ -18,14 +18,6 @@ void EndEffector::RunIteration(
     bool beambreak_status, double *roller_voltage, bool preloaded_with_cube) {
   *roller_voltage = 0.0;
 
-  if (roller_goal == RollerGoal::SPIT) {
-    state_ = EndEffectorState::SPITTING;
-  }
-
-  if (roller_goal == RollerGoal::SPIT_MID) {
-    state_ = EndEffectorState::SPITTING_MID;
-  }
-
   // If we started off preloaded, skip to the loaded state.
   // Make sure we weren't already there just in case.
   if (preloaded_with_cube) {
@@ -41,6 +33,14 @@ void EndEffector::RunIteration(
       case EndEffectorState::SPITTING_MID:
         break;
     }
+  }
+
+  if (roller_goal == RollerGoal::SPIT) {
+    state_ = EndEffectorState::SPITTING;
+  }
+
+  if (roller_goal == RollerGoal::SPIT_MID) {
+    state_ = EndEffectorState::SPITTING_MID;
   }
 
   switch (state_) {
@@ -72,12 +72,30 @@ void EndEffector::RunIteration(
       break;
     case EndEffectorState::LOADED:
       timer_ = timestamp;
+      if (!preloaded_with_cube && !beambreak_status) {
+        state_ = EndEffectorState::INTAKING;
+        break;
+      }
+
       break;
+
     case EndEffectorState::SPITTING:
       *roller_voltage = kRollerCubeSpitVoltage();
+
+      if (roller_goal == RollerGoal::IDLE) {
+        state_ = EndEffectorState::IDLE;
+      }
+
       break;
+
     case EndEffectorState::SPITTING_MID:
       *roller_voltage = kRollerCubeSpitMidVoltage();
+
+      if (roller_goal == RollerGoal::IDLE) {
+        state_ = EndEffectorState::IDLE;
+      }
+
+      break;
   }
 }
 
