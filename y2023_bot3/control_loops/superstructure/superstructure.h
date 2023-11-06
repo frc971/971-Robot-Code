@@ -10,6 +10,7 @@
 #include "y2023_bot3/constants.h"
 #include "y2023_bot3/constants/constants_generated.h"
 #include "y2023_bot3/control_loops/superstructure/end_effector.h"
+#include "y2023_bot3/control_loops/superstructure/pivot_joint.h"
 #include "y2023_bot3/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2023_bot3/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2023_bot3/control_loops/superstructure/superstructure_position_generated.h"
@@ -48,6 +49,8 @@ class Superstructure
   EndEffector end_effector_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
+
+  PivotJoint pivot_joint_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

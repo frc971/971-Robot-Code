@@ -31,6 +31,11 @@ using ::frc971::control_loops::
 using ::frc971::control_loops::PositionSensorSimulator;
 using ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 using DrivetrainStatus = ::frc971::control_loops::drivetrain::Status;
+using PotAndAbsoluteEncoderSimulator =
+    frc971::control_loops::SubsystemSimulator<
+        frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus,
+        Superstructure::PotAndAbsoluteEncoderSubsystem::State,
+        constants::Values::PotAndAbsEncoderConstants>;
 
 // Class which simulates the superstructure and sends out queue messages with
 // the position.
@@ -45,7 +50,15 @@ class SuperstructureSimulation {
         superstructure_status_fetcher_(
             event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
-            event_loop_->MakeFetcher<Output>("/superstructure")) {
+            event_loop_->MakeFetcher<Output>("/superstructure")),
+        pivot_joint_(new CappedTestPlant(pivot_joint::MakePivotJointPlant()),
+                     PositionSensorSimulator(
+                         values->pivot_joint.subsystem_params.zeroing_constants
+                             .one_revolution_distance),
+                     values->pivot_joint, constants::Values::kPivotJointRange(),
+                     values->pivot_joint.subsystem_params.zeroing_constants
+                         .measured_absolute_position,
+                     dt) {
     (void)values;
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
@@ -53,6 +66,10 @@ class SuperstructureSimulation {
           if (!first_) {
             EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
             EXPECT_TRUE(superstructure_status_fetcher_.Fetch());
+
+            pivot_joint_.Simulate(
+                superstructure_output_fetcher_->pivot_joint_voltage(),
+                superstructure_status_fetcher_->pivot_joint());
           }
           first_ = false;
           SendPositionMessage();
@@ -65,9 +82,16 @@ class SuperstructureSimulation {
     ::aos::Sender<Position>::Builder builder =
         superstructure_position_sender_.MakeBuilder();
 
+    frc971::PotAndAbsolutePosition::Builder pivot_joint_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> pivot_joint_offset =
+        pivot_joint_.encoder()->GetSensorValues(&pivot_joint_builder);
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
     position_builder.add_end_effector_cube_beam_break(
         end_effector_cube_beam_break_);
+    position_builder.add_pivot_joint_position(pivot_joint_offset);
+
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
   }
@@ -75,6 +99,8 @@ class SuperstructureSimulation {
   void set_end_effector_cube_beam_break(bool triggered) {
     end_effector_cube_beam_break_ = triggered;
   }
+
+  PotAndAbsoluteEncoderSimulator *pivot_joint() { return &pivot_joint_; }
 
  private:
   ::aos::EventLoop *event_loop_;
@@ -85,6 +111,8 @@ class SuperstructureSimulation {
   ::aos::Sender<Position> superstructure_position_sender_;
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
+
+  PotAndAbsoluteEncoderSimulator pivot_joint_;
 
   bool first_ = true;
 };
@@ -139,6 +167,44 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     ASSERT_TRUE(superstructure_goal_fetcher_.get() != nullptr) << ": No goal";
     ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr)
         << ": No status";
+
+    if (superstructure_goal_fetcher_->has_pivot_goal()) {
+      double pivot_goal = 0.0;
+
+      switch (superstructure_goal_fetcher_->pivot_goal()) {
+        case PivotGoal::NEUTRAL:
+          pivot_goal = 0;
+          break;
+
+        case PivotGoal::PICKUP_FRONT:
+          pivot_goal = 0.25;
+          break;
+
+        case PivotGoal::PICKUP_BACK:
+          pivot_goal = 0.30;
+          break;
+
+        case PivotGoal::SCORE_LOW_FRONT:
+          pivot_goal = 0.35;
+          break;
+
+        case PivotGoal::SCORE_LOW_BACK:
+          pivot_goal = 0.40;
+          break;
+
+        case PivotGoal::SCORE_MID_FRONT:
+          pivot_goal = 0.45;
+          break;
+
+        case PivotGoal::SCORE_MID_BACK:
+          pivot_goal = 0.5;
+          break;
+      }
+
+      EXPECT_NEAR(pivot_goal,
+                  superstructure_status_fetcher_->pivot_joint()->position(),
+                  0.001);
+    }
   }
 
   void CheckIfZeroed() {
@@ -248,6 +314,137 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 TEST_F(SuperstructureTest, DisableTest) {
   RunFor(chrono::seconds(2));
   CheckIfZeroed();
+}
+
+TEST_F(SuperstructureTest, PivotGoal) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  PivotGoal pivot_goal = PivotGoal::PICKUP_FRONT;
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(pivot_goal);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+
+  RunFor(dt() * 30);
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  VerifyNearGoal();
+
+  pivot_goal = PivotGoal::PICKUP_BACK;
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(pivot_goal);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+
+  RunFor(dt() * 30);
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  VerifyNearGoal();
+
+  pivot_goal = PivotGoal::SCORE_LOW_FRONT;
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(pivot_goal);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+
+  RunFor(dt() * 30);
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  VerifyNearGoal();
+
+  pivot_goal = PivotGoal::SCORE_LOW_BACK;
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(pivot_goal);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+
+  RunFor(dt() * 30);
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  VerifyNearGoal();
+
+  pivot_goal = PivotGoal::SCORE_MID_FRONT;
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(pivot_goal);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+
+  RunFor(dt() * 30);
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  VerifyNearGoal();
+
+  pivot_goal = PivotGoal::SCORE_MID_BACK;
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(pivot_goal);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+
+  RunFor(dt() * 30);
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  VerifyNearGoal();
+
+  pivot_goal = PivotGoal::NEUTRAL;
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+    goal_builder.add_pivot_goal(pivot_goal);
+
+    builder.CheckOk(builder.Send(goal_builder.Finish()));
+  }
+
+  RunFor(dt() * 30);
+
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  VerifyNearGoal();
 }
 
 TEST_F(SuperstructureTest, EndEffectorGoal) {

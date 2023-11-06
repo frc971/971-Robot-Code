@@ -62,19 +62,19 @@ struct Values {
            control_loops::drivetrain::kWheelRadius;
   }
 
-  struct PotAndAbsEncoderConstants {
-    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
-        ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
-        subsystem_params;
-    double potentiometer_offset;
-  };
-
   // Pivot Joint (placeholders)
   static constexpr double kPivotJointEncoderCountsPerRevolution() {
     return 4096.0;
   }
 
-  static constexpr double kPivotJointEncoderRatio() { return 1.0; }
+  static constexpr double kPivotJointEncoderRatio() { return (18.0 / 48.0); }
+
+  static constexpr double kPivotJointPotRatio() { return (18.0 / 48.0); }
+
+  static constexpr double kPivotJointPotRadiansPerVolt() {
+    return kPivotJointPotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
 
   static constexpr double kMaxPivotJointEncoderPulsesPerSecond() {
     return control_loops::superstructure::pivot_joint::kFreeSpeed /
@@ -91,6 +91,13 @@ struct Values {
         .upper = 4.0,         // Front Soft
     };
   }
+
+  struct PotAndAbsEncoderConstants {
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+        subsystem_params;
+    double potentiometer_offset;
+  };
 
   PotAndAbsEncoderConstants pivot_joint;
 
