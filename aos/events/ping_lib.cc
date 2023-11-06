@@ -3,8 +3,8 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
-#include "aos/events/ping_generated.h"
-#include "aos/events/pong_generated.h"
+#include "aos/events/ping_static.h"
+#include "aos/events/pong_static.h"
 #include "aos/json_to_flatbuffer.h"
 
 DEFINE_int32(sleep_us, 10000, "Time to sleep between pings");
@@ -15,7 +15,7 @@ namespace chrono = std::chrono;
 
 Ping::Ping(EventLoop *event_loop, std::string_view channel_name)
     : event_loop_(event_loop),
-      sender_(event_loop_->MakeSender<examples::Ping>(channel_name)) {
+      sender_(event_loop_->MakeSender<examples::PingStatic>(channel_name)) {
   timer_handle_ = event_loop_->AddTimer([this]() { SendPing(); });
   timer_handle_->set_name("ping");
 
@@ -38,12 +38,12 @@ void Ping::SendPing() {
                  << FLAGS_sleep_us << "us.";
   }
   ++count_;
-  aos::Sender<examples::Ping>::Builder builder = sender_.MakeBuilder();
-  examples::Ping::Builder ping_builder = builder.MakeBuilder<examples::Ping>();
-  ping_builder.add_value(count_);
-  ping_builder.add_send_time(
-      event_loop_->monotonic_now().time_since_epoch().count());
-  builder.CheckOk(builder.Send(ping_builder.Finish()));
+  aos::Sender<examples::PingStatic>::StaticBuilder builder =
+      sender_.MakeStaticBuilder();
+  examples::PingStatic *ping = builder.get();
+  ping->set_value(count_);
+  ping->set_send_time(event_loop_->monotonic_now().time_since_epoch().count());
+  builder.CheckOk(builder.Send());
   VLOG(2) << "Sending ping";
 }
 

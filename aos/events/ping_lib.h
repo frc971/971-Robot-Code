@@ -5,8 +5,8 @@
 #include <string_view>
 
 #include "aos/events/event_loop.h"
-#include "aos/events/ping_generated.h"
-#include "aos/events/pong_generated.h"
+#include "aos/events/ping_static.h"
+#include "aos/events/pong_static.h"
 
 namespace aos {
 
@@ -25,7 +25,7 @@ class Ping {
   void HandlePong(const examples::Pong &pong);
 
   aos::EventLoop *event_loop_;
-  aos::Sender<examples::Ping> sender_;
+  aos::Sender<examples::PingStatic> sender_;
   // Timer handle which sends the Ping message.
   aos::TimerHandler *timer_handle_;
   // Number of pings sent.

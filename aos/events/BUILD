@@ -33,11 +33,9 @@ cc_static_flatbuffer(
     target = ":event_loop_fbs_reflection_out",
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "ping_fbs",
-    srcs = ["ping.fbs"],
-    gen_reflections = 1,
-    target_compatible_with = ["@platforms//os:linux"],
+    src = "ping.fbs",
 )
 
 flatbuffer_ts_library(
@@ -64,11 +62,9 @@ flatbuffer_rust_library(
     }),
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "pong_fbs",
-    srcs = ["pong.fbs"],
-    gen_reflections = 1,
-    target_compatible_with = ["@platforms//os:linux"],
+    src = "pong.fbs",
 )
 
 cc_library(

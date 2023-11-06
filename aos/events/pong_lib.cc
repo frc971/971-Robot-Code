@@ -3,8 +3,8 @@
 #include "glog/logging.h"
 
 #include "aos/events/event_loop.h"
-#include "aos/events/ping_generated.h"
-#include "aos/events/pong_generated.h"
+#include "aos/events/ping_static.h"
+#include "aos/events/pong_static.h"
 
 DEFINE_bool(fetch, false, "Poll & fetch messages instead of using a watcher.");
 DEFINE_uint32(fetch_period_ms, 10, "Frequency at which to fetch.");
@@ -14,7 +14,7 @@ namespace aos {
 Pong::Pong(EventLoop *event_loop)
     : event_loop_(event_loop),
       fetcher_(event_loop_->MakeFetcher<examples::Ping>("/test")),
-      sender_(event_loop_->MakeSender<examples::Pong>("/test")) {
+      sender_(event_loop_->MakeSender<examples::PongStatic>("/test")) {
   if (FLAGS_fetch) {
     event_loop_
         ->AddPhasedLoop(
@@ -40,11 +40,12 @@ void Pong::HandlePing(const examples::Ping &ping) {
   }
   last_value_ = ping.value();
   last_send_time_ = ping.send_time();
-  aos::Sender<examples::Pong>::Builder builder = sender_.MakeBuilder();
-  examples::Pong::Builder pong_builder = builder.MakeBuilder<examples::Pong>();
-  pong_builder.add_value(ping.value());
-  pong_builder.add_initial_send_time(ping.send_time());
-  builder.CheckOk(builder.Send(pong_builder.Finish()));
+  aos::Sender<examples::PongStatic>::StaticBuilder builder =
+      sender_.MakeStaticBuilder();
+  examples::PongStatic *pong = builder.get();
+  pong->set_value(ping.value());
+  pong->set_initial_send_time(ping.send_time());
+  builder.CheckOk(builder.Send());
 }
 
 }  // namespace aos
