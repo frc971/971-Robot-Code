@@ -20,6 +20,7 @@
 #include "aos/events/event_loop_generated.h"
 #include "aos/events/timing_statistics.h"
 #include "aos/flatbuffers.h"
+#include "aos/flatbuffers/builder.h"
 #include "aos/ftrace.h"
 #include "aos/ipc_lib/data_alignment.h"
 #include "aos/json_to_flatbuffer.h"
@@ -183,9 +184,21 @@ class RawSender {
   // Returns the associated flatbuffers-style allocator. This must be
   // deallocated before the message is sent.
   ChannelPreallocatedAllocator *fbb_allocator() {
-    fbb_allocator_ = ChannelPreallocatedAllocator(
-        reinterpret_cast<uint8_t *>(data()), size(), channel());
-    return &fbb_allocator_;
+    CHECK(!static_allocator_.has_value())
+        << ": May not mix-and-match static and raw flatbuffer builders.";
+    if (fbb_allocator_.has_value()) {
+      CHECK(!fbb_allocator_.value().allocated())
+          << ": May not have multiple active allocators on a single sender.";
+    }
+    return &fbb_allocator_.emplace(reinterpret_cast<uint8_t *>(data()), size(),
+                                   channel());
+  }
+
+  fbs::SpanAllocator *static_allocator() {
+    CHECK(!fbb_allocator_.has_value())
+        << ": May not mix-and-match static and raw flatbuffer builders.";
+    return &static_allocator_.emplace(
+        std::span<uint8_t>{reinterpret_cast<uint8_t *>(data()), size()});
   }
 
   // Index of the buffer which is currently exposed by data() and the various
@@ -228,7 +241,11 @@ class RawSender {
   internal::RawSenderTiming timing_;
   Ftrace ftrace_;
 
-  ChannelPreallocatedAllocator fbb_allocator_{nullptr, 0, nullptr};
+  // Depending on which API is being used, we will populate either
+  // fbb_allocator_ (for use with FlatBufferBuilders) or the SpanAllocator (for
+  // use with the static flatbuffer API).
+  std::optional<ChannelPreallocatedAllocator> fbb_allocator_;
+  std::optional<fbs::SpanAllocator> static_allocator_;
 };
 
 // Needed for compatibility with glog
@@ -325,10 +342,53 @@ class Fetcher {
 };
 
 // Sends messages to a channel.
+// The type T used with the Sender may either be a raw flatbuffer type (e.g.,
+// aos::examples::Ping) or the static flatbuffer type (e.g.
+// aos::examples::PingStatic). The Builder type that you use must correspond
+// with the flatbuffer type being used.
 template <typename T>
 class Sender {
  public:
   Sender() {}
+
+  // Represents a single message that is about to be sent on the channel.
+  // Uses the static flatbuffer API rather than the FlatBufferBuilder paradigm.
+  //
+  // Typical usage pattern is:
+  //
+  // Sender<PingStatic>::Builder builder = sender.MakeStaticBuilder()
+  // builder.get()->set_value(971);
+  // builder.CheckOk(builder.Send());
+  class StaticBuilder {
+   public:
+    StaticBuilder(RawSender *sender, fbs::SpanAllocator *allocator)
+        : builder_(allocator), sender_(CHECK_NOTNULL(sender)) {}
+    StaticBuilder(const StaticBuilder &) = delete;
+    StaticBuilder(StaticBuilder &&) = default;
+
+    StaticBuilder &operator=(const StaticBuilder &) = delete;
+    StaticBuilder &operator=(StaticBuilder &&) = default;
+
+    fbs::Builder<T> *builder() {
+      DCHECK(builder_.has_value());
+      return &builder_.value();
+    }
+
+    T *get() { return builder()->get(); }
+
+    RawSender::Error Send() {
+      const auto err = sender_->Send(builder_.value().buffer().size());
+      builder_.reset();
+      return err;
+    }
+
+    // Equivalent to RawSender::CheckOk
+    void CheckOk(const RawSender::Error err) { sender_->CheckOk(err); };
+
+   private:
+    std::optional<fbs::Builder<T>> builder_;
+    RawSender *sender_;
+  };
 
   // Represents a single message about to be sent to the queue.
   // The lifecycle goes:
@@ -399,6 +459,9 @@ class Sender {
   // assigning a default-constructed Builder to it) before calling this method
   // again to overwrite the value in the variable.
   Builder MakeBuilder();
+  StaticBuilder MakeStaticBuilder() {
+    return StaticBuilder(sender_.get(), sender_->static_allocator());
+  }
 
   // Sends a prebuilt flatbuffer.
   // This will copy the data out of the provided flatbuffer, and so does not

@@ -1,5 +1,6 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_rust_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
@@ -7,17 +8,15 @@ load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_doc", "rust_doc_test", "
 
 package(default_visibility = ["//visibility:public"])
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "test_message_fbs",
-    srcs = ["test_message.fbs"],
-    gen_reflections = 1,
-    target_compatible_with = ["@platforms//os:linux"],
+    src = "test_message.fbs",
 )
 
 cc_static_flatbuffer(
     name = "test_message_schema",
     function = "aos::TestMessageSchema",
-    target = ":test_message_fbs_reflection_out",
+    target = ":test_message_fbs_fbs_reflection_out",
 )
 
 flatbuffer_cc_library(
@@ -132,6 +131,7 @@ cc_library(
         "//aos:ftrace",
         "//aos:realtime",
         "//aos:uuid",
+        "//aos/flatbuffers:builder",
         "//aos/ipc_lib:data_alignment",
         "//aos/logging",
         "//aos/time",

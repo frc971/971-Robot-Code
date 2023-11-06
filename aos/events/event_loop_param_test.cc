@@ -9,6 +9,7 @@
 #include "gtest/gtest.h"
 
 #include "aos/events/test_message_generated.h"
+#include "aos/events/test_message_static.h"
 #include "aos/flatbuffer_merge.h"
 #include "aos/logging/log_message_generated.h"
 #include "aos/logging/logging.h"
@@ -89,6 +90,38 @@ TEST_P(AbstractEventLoopTest, Basic) {
     TestMessage::Builder builder = msg.MakeBuilder<TestMessage>();
     builder.add_value(200);
     msg.CheckOk(msg.Send(builder.Finish()));
+  });
+
+  loop2->MakeWatcher("/test", [&](const TestMessage &message) {
+    EXPECT_EQ(message.value(), 200);
+    this->Exit();
+  });
+
+  EXPECT_FALSE(happened);
+  Run();
+  EXPECT_TRUE(happened);
+}
+
+// Tests that watcher can receive messages from a static sender.
+// This confirms that the "static" flatbuffer API works with the EventLoop
+// senders.
+TEST_P(AbstractEventLoopTest, BasicStatic) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  aos::Sender<TestMessageStatic> sender =
+      loop1->MakeSender<TestMessageStatic>("/test");
+
+  bool happened = false;
+
+  loop2->OnRun([&]() {
+    happened = true;
+
+    aos::Sender<TestMessageStatic>::StaticBuilder msg =
+        sender.MakeStaticBuilder();
+    msg.get()->set_value(200);
+    CHECK(msg.builder()->Verify());
+    msg.CheckOk(msg.Send());
   });
 
   loop2->MakeWatcher("/test", [&](const TestMessage &message) {
@@ -3445,7 +3478,7 @@ TEST_P(AbstractEventLoopDeathTest, MultipleBuilders) {
     builder.MakeBuilder<TestMessage>().Finish();
     // But not a second one.
     EXPECT_DEATH(sender.MakeBuilder().MakeBuilder<TestMessage>().Finish(),
-                 "May not overwrite in-use allocator");
+                 "May not have multiple active allocators");
   }
 
   FlatbufferDetachedBuffer<TestMessage> detached =
@@ -3457,7 +3490,7 @@ TEST_P(AbstractEventLoopDeathTest, MultipleBuilders) {
   {
     // This is the second one, after the detached one, so it should fail.
     EXPECT_DEATH(sender.MakeBuilder().MakeBuilder<TestMessage>().Finish(),
-                 "May not overwrite in-use allocator");
+                 "May not have multiple active allocators");
   }
 
   // Clear the detached one, and then we should be able to create another.
