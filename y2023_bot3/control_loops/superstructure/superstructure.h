@@ -40,8 +40,6 @@ class Superstructure
   std::optional<double> LateralOffsetForTimeOfFlight(double reading);
 
   std::shared_ptr<const constants::Values> values_;
-  frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
-
   EndEffector end_effector_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;

@@ -24,8 +24,7 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                const ::std::string &name)
     : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
                                                                     name),
-      values_(values),
-      constants_fetcher_(event_loop) {
+      values_(values) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
