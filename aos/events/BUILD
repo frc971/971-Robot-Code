@@ -243,16 +243,11 @@ rust_test(
     # it pretty much impossible to figure out what happened.
     env = {"RUST_TEST_NOCAPTURE": "1"},
     deps = [
-        ":event_loop_runtime",
         ":ping_lib_rs",
         ":ping_rust_fbs",
         ":pong_lib_rs",
         ":pong_rust_fbs",
-        ":simulated_event_loop_rs",
-        "//aos:configuration_rs",
-        "//aos:configuration_rust_fbs",
-        "//aos:flatbuffers_rs",
-        "//aos:test_init_rs",
+        "//aos/testing:aos_rs",
         "@com_github_google_flatbuffers//rust",
         "@crate_index//:futures",
         "@rules_rust//tools/runfiles",
@@ -270,10 +265,7 @@ rust_binary(
     deps = [
         ":ping_lib_rs",
         ":shm_event_loop_rs",
-        "//aos:configuration_rs",
-        "//aos:configuration_rust_fbs",
-        "//aos:flatbuffers_rs",
-        "//aos:init_rs",
+        "//aos:aos_rs",
         "@crate_index//:clap",
     ],
 )
@@ -285,9 +277,9 @@ rust_library(
     ],
     crate_name = "ping_lib",
     deps = [
-        ":event_loop_runtime",
         ":ping_rust_fbs",
         ":pong_rust_fbs",
+        "//aos:aos_rs",
         "@com_github_google_flatbuffers//rust",
         "@crate_index//:futures",
     ],
@@ -304,10 +296,7 @@ rust_binary(
     deps = [
         ":pong_lib_rs",
         ":shm_event_loop_rs",
-        "//aos:configuration_rs",
-        "//aos:configuration_rust_fbs",
-        "//aos:flatbuffers_rs",
-        "//aos:init_rs",
+        "//aos:aos_rs",
         "@crate_index//:clap",
     ],
 )
@@ -319,9 +308,9 @@ rust_library(
     ],
     crate_name = "pong_lib",
     deps = [
-        ":event_loop_runtime",
         ":ping_rust_fbs",
         ":pong_rust_fbs",
+        "//aos:aos_rs",
         "@com_github_google_flatbuffers//rust",
         "@crate_index//:futures",
     ],

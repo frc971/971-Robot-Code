@@ -1,3 +1,5 @@
+load("//tools/rust:defs.bzl", "rust_library")
+
 cc_library(
     name = "googletest",
     testonly = True,
@@ -129,5 +131,19 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/strings",
+    ],
+)
+
+rust_library(
+    name = "aos_rs",
+    testonly = True,
+    srcs = ["aos.rs"],
+    crate_name = "aos",
+    gen_docs = False,
+    gen_doctests = False,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos:aos_rs",
+        "//aos:test_init_rs",
     ],
 )

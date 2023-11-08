@@ -806,3 +806,19 @@ cc_test(
         "//aos/testing:tmpdir",
     ],
 )
+
+rust_library(
+    name = "aos_rs",
+    srcs = ["aos.rs"],
+    crate_name = "aos",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":configuration_rs",
+        ":flatbuffers_rs",
+        ":init_rs",
+        ":uuid_rs",
+        "//aos/events:event_loop_runtime",
+        "//aos/events:shm_event_loop_rs",
+        "//aos/events:simulated_event_loop_rs",
+    ],
+)

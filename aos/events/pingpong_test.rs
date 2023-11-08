@@ -2,10 +2,10 @@
 mod tests {
     use std::{cell::Cell, time::Duration};
 
-    use aos_configuration::read_config_from;
-    use aos_events_event_loop_runtime::{EventLoopRuntimeHolder, Watcher};
-    use aos_events_simulated_event_loop::{SimulatedEventLoopFactory, SimulatedEventLoopHolder};
-    use aos_test_init::test_init;
+    use aos::configuration::read_config_from;
+    use aos::events::event_loop_runtime::{EventLoopRuntimeHolder, Watcher};
+    use aos::events::simulated_event_loop::{SimulatedEventLoopFactory, SimulatedEventLoopHolder};
+    use aos::testing::init::test_init;
     use ping_lib::PingTask;
     use ping_rust_fbs::aos::examples as ping;
     use pong_rust_fbs::aos::examples as pong;

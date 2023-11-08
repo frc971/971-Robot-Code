@@ -1,4 +1,4 @@
-use aos_events_event_loop_runtime::{EventLoopRuntime, Sender, Watcher};
+use aos::events::event_loop_runtime::{EventLoopRuntime, Sender, Watcher};
 use futures::never::Never;
 use std::borrow::Borrow;
 

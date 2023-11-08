@@ -1,4 +1,4 @@
-use aos_events_event_loop_runtime::{EventLoopRuntime, Sender, Watcher};
+use aos::events::event_loop_runtime::{EventLoopRuntime, Sender, Watcher};
 use core::cell::Cell;
 use core::time::Duration;
 use futures::never::Never;
