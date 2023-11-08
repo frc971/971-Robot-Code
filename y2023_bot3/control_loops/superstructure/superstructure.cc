@@ -33,18 +33,21 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   const Position *position,
                                   aos::Sender<Output>::Builder *output,
                                   aos::Sender<Status>::Builder *status) {
-  (void)unsafe_goal;
-  (void)position;
-
   const monotonic_clock::time_point timestamp =
       event_loop()->context().monotonic_event_time;
-  (void)timestamp;
 
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
+    end_effector_.Reset();
   }
 
   OutputT output_struct;
+
+  end_effector_.RunIteration(
+      timestamp,
+      unsafe_goal != nullptr ? unsafe_goal->roller_goal() : RollerGoal::IDLE,
+      position->end_effector_cube_beam_break(), &output_struct.roller_voltage,
+      unsafe_goal != nullptr ? unsafe_goal->preloaded_with_cube() : false);
 
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
@@ -52,6 +55,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
   status_builder.add_zeroed(true);
+  status_builder.add_end_effector_state(end_effector_.state());
 
   (void)status->Send(status_builder.Finish());
 }
