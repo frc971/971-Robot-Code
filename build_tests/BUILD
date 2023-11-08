@@ -4,7 +4,7 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_go_library", "flatbuffer_py_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//tools/build_rules:apache.bzl", "apache_wrapper")
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
 
 cc_test(
@@ -153,12 +153,6 @@ rust_library(
     target_compatible_with = ["//tools/platforms/rust:has_support"],
 )
 
-rust_test(
-    name = "hello_lib_test",
-    crate = ":hello_lib",
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
-)
-
 rust_binary(
     name = "rust_hello",
     srcs = ["rust_hello.rs"],
@@ -196,15 +190,6 @@ autocxx_library(
     srcs = ["hello_autocxx.rs"],
     libs = [":hello_autocxx_cc"],
     override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
-    target_compatible_with = ["//tools/platforms/rust:has_support"],
-)
-
-rust_test(
-    name = "hello_autocxx_test",
-    crate = ":hello_autocxx",
-    # TODO: Make Rust play happy with pic vs nopic. Details at:
-    # https://github.com/bazelbuild/rules_rust/issues/118
-    rustc_flags = ["-Crelocation-model=static"],
     target_compatible_with = ["//tools/platforms/rust:has_support"],
 )
 

@@ -3,7 +3,7 @@ load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
-load("//tools/rust:defs.bzl", "flatbuffer_rust_library", "rust_binary", "rust_doc_test", "rust_library", "rust_test")
+load("//tools/rust:defs.bzl", "flatbuffer_rust_library", "rust_binary", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -146,6 +146,10 @@ autocxx_library(
     name = "event_loop_runtime",
     srcs = ["event_loop_runtime.rs"],
     crate_name = "aos_events_event_loop_runtime",
+    doctest_deps = [
+        ":pong_rust_fbs",
+    ],
+    gen_tests = False,
     libs = [
         ":event_loop_runtime_cc",
     ],
@@ -163,20 +167,11 @@ autocxx_library(
     ],
 )
 
-rust_doc_test(
-    name = "event_loop_runtime_doc_test",
-    crate = ":event_loop_runtime",
-    target_compatible_with = ["@platforms//cpu:x86_64"],
-    deps = [
-        ":pong_rust_fbs",
-    ],
-)
-
 autocxx_library(
     name = "event_loop_runtime_test_lib_rs",
     testonly = True,
     srcs = ["event_loop_runtime_test_lib.rs"],
-    docs = False,
+    gen_docs = False,
     libs = [
         ":event_loop",
     ],
@@ -618,6 +613,15 @@ autocxx_library(
         "//aos:flatbuffers_rs",
         "@crate_index//:futures",
     ],
+    test_data = [
+        ":multinode_pingpong_test_combined_config",
+    ],
+    test_deps = [
+        ":ping_rust_fbs",
+        "//aos:test_init_rs",
+        "@crate_index//:futures",
+        "@rules_rust//tools/runfiles",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":event_loop_runtime",
@@ -626,24 +630,14 @@ autocxx_library(
     ],
 )
 
-rust_test(
-    name = "simulated_event_loop_rs_test",
-    crate = ":simulated_event_loop_rs",
-    data = [
-        ":multinode_pingpong_test_combined_config",
-    ],
-    deps = [
-        ":ping_rust_fbs",
-        "//aos:test_init_rs",
-        "@crate_index//:futures",
-        "@rules_rust//tools/runfiles",
-    ],
-)
-
 autocxx_library(
     name = "shm_event_loop_rs",
     srcs = ["shm_event_loop.rs"],
     crate_name = "aos_events_shm_event_loop",
+    doctest_deps = [
+        ":ping_rust_fbs",
+        ":pong_rust_fbs",
+    ],
     libs = [
         ":shm_event_loop",
         ":shm_event_loop_for_rust",
@@ -654,32 +648,17 @@ autocxx_library(
         "//aos:configuration_rust_fbs",
         "//aos:flatbuffers_rs",
     ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":event_loop_runtime",
-        "//aos:configuration_rs",
-    ],
-)
-
-rust_test(
-    name = "shm_event_loop_rs_test",
-    crate = ":shm_event_loop_rs",
-    data = [":pingpong_config"],
-    deps = [
+    test_data = [":pingpong_config"],
+    test_deps = [
         ":ping_rust_fbs",
         "//aos:test_init_rs",
         "@crate_index//:futures",
         "@rules_rust//tools/runfiles",
     ],
-)
-
-rust_doc_test(
-    name = "shm_event_loop_rs_doc_test",
-    crate = ":shm_event_loop_rs",
-    target_compatible_with = ["@platforms//cpu:x86_64"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":ping_rust_fbs",
-        ":pong_rust_fbs",
+        ":event_loop_runtime",
+        "//aos:configuration_rs",
     ],
 )
 

@@ -3,7 +3,7 @@ load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("//tools/build_rules:autocxx.bzl", "autocxx_library")
-load("//tools/rust:defs.bzl", "flatbuffer_rust_library", "rust_library", "rust_test")
+load("//tools/rust:defs.bzl", "flatbuffer_rust_library", "rust_library")
 
 exports_files(["aos_dump_autocomplete.sh"])
 
@@ -215,17 +215,12 @@ autocxx_library(
     ],
 )
 
-rust_test(
-    name = "init_rs_test",
-    crate = ":init_rs",
-)
-
 autocxx_library(
     name = "test_init_rs",
     testonly = True,
     srcs = ["test_init.rs"],
     crate_name = "aos_test_init",
-    docs = False,
+    gen_docs = False,
     libs = [
         "//aos/testing:tmpdir",
     ],
@@ -346,19 +341,14 @@ autocxx_library(
         ":configuration_fbs",
     ],
     override_cc_toolchain = "@llvm_toolchain//:cc-clang-x86_64-linux",
+    test_data = [
+        "//aos/testdata:test_configs",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":configuration_rust_fbs",
         ":flatbuffers_rs",
         "@crate_index//:thiserror",
-    ],
-)
-
-rust_test(
-    name = "configuration_rs_test",
-    crate = ":configuration_rs",
-    data = [
-        "//aos/testdata:test_configs",
     ],
 )
 
@@ -521,17 +511,12 @@ rust_library(
     name = "flatbuffers_rs",
     srcs = ["flatbuffers.rs"],
     crate_name = "aos_flatbuffers",
+    test_deps = [
+        ":json_to_flatbuffer_rust_fbs",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_google_flatbuffers//rust",
-    ],
-)
-
-rust_test(
-    name = "flatbuffers_rs_test",
-    crate = ":flatbuffers_rs",
-    deps = [
-        ":json_to_flatbuffer_rust_fbs",
     ],
 )
 
