@@ -116,13 +116,14 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kPracticeTeamNumber:
-      arm_proximal->zeroing.measured_absolute_position = 0.20382113250339;
+      arm_proximal->zeroing.measured_absolute_position = 0.585858300637312;
       arm_proximal->potentiometer_offset =
           0.931355973012855 + 8.6743197253382 - 0.101200335326309 -
           0.0820901660993467 - 0.0703733798337964 - 0.0294645384848748 -
-          0.577156175549626 - 0.000944609125286267 + 2.725142829769231;
+          0.577156175549626 - 0.000944609125286267 + 2.725142829769231 -
+          6.38385012428248;
 
-      arm_distal->zeroing.measured_absolute_position = 0.495791180283887;
+      arm_distal->zeroing.measured_absolute_position = 0.650190739752296;
       arm_distal->potentiometer_offset =
           0.436664933370656 + 0.49457213779426 + 6.78213223139724 -
           0.0220711555235029 - 0.0162945074111813 + 0.00630344935527365 -
@@ -130,12 +131,12 @@ Values MakeValues(uint16_t team) {
           0.125924230298394 + 0.147136306208754 - 0.69167546169753 -
           0.308761538844425 + 0.610386472488493 + 0.08384162885249 +
           0.0262274735196811 + 0.5153995156153 - 0.4485275474911 -
-          0.417143262506383;
+          0.417143262506383 + 0.0808060249784878;
 
       arm_distal->zeroing.one_revolution_distance =
           M_PI * 2.0 * constants::Values::kDistalEncoderRatio();
 
-      roll_joint->zeroing.measured_absolute_position = 0.33405867628836;
+      roll_joint->zeroing.measured_absolute_position = 0.79919822250646;
       roll_joint->potentiometer_offset =
           -(3.87038557084874 - 0.0241774522172967 + 0.0711345168020632 -
             0.866186131631967 - 0.0256788357596952 + 0.18101759154572017 -
@@ -144,10 +145,11 @@ Values MakeValues(uint16_t team) {
             0.11972765117321 - 0.318724743041507) +
           0.0201047336425017 - 1.0173426655158 - 0.186085272847293 -
           0.0317706563397807 - 2.6357823523782 + 0.871932806570122 +
-          1.09682107821155 - 0.193945964842277 + 0.811834321668829;
+          1.09682107821155 - 0.193945964842277 + 0.811834321668829 -
+          0.913134567575683;
 
       wrist->subsystem_params.zeroing_constants.measured_absolute_position =
-          3.07684945189677;
+          2.94344206522199;
 
       break;
 
