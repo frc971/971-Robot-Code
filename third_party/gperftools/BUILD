@@ -162,7 +162,6 @@ cc_library(
         "-lrt",
         "-lpthread",
     ],
-    nocopts = "-std=gnu\\+\\+1y",
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [

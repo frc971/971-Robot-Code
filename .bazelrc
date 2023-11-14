@@ -81,7 +81,6 @@ build --show_result 5
 test --test_output=errors --test_timeout=-1,-1,-1,5500
 
 build --sandbox_base=/dev/shm/
-build --experimental_multi_threaded_digest
 
 build --sandbox_fake_hostname=true
 build --sandbox_fake_username=true
@@ -93,10 +92,12 @@ common --watchfs
 # Switch to SHA256 for compatibility with distributed caching.
 startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 
-build --spawn_strategy=linux-sandbox
+build --spawn_strategy=sandboxed
 build --sandbox_default_allow_network=false
 
-build --strategy=TsProject=linux-sandbox
+build --strategy=TsProject=sandboxed
+build --strategy=CopyFile=standalone
+build --strategy=CopyDirectory=standalone
 
 # Use our hermetic JDK.
 # Note that this doesn't quite work fully, but it should. See

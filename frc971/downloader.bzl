@@ -7,7 +7,6 @@ def robot_downloader(
         binaries = [],
         data = [],
         dirs = None,
-        default_target = None,
         target_compatible_with = ["@//tools/platforms/hardware:roborio"],
         target_type = "roborio"):
     """Sets up the standard robot download targets.
@@ -15,7 +14,6 @@ def robot_downloader(
     Attrs:
       start_binaries: A list of cc_binary targets to start on the robot.
       dirs: Passed through to aos_downloader.
-      default_target: Passed through to aos_downloader.
     """
 
     aos_downloader(
@@ -28,7 +26,6 @@ def robot_downloader(
         ] + binaries + data + ["//frc971/raspi/rootfs:chrt.sh"],
         dirs = dirs,
         target_type = target_type,
-        default_target = default_target,
         target_compatible_with = target_compatible_with,
     )
 
@@ -43,6 +40,5 @@ def robot_downloader(
         ] + [expand_label(binary) + ".stripped" for binary in binaries] + data + ["//frc971/raspi/rootfs:chrt.sh"],
         dirs = dirs,
         target_type = target_type,
-        default_target = default_target,
         target_compatible_with = target_compatible_with,
     )
