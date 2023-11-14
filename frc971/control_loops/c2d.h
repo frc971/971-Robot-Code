@@ -51,7 +51,7 @@ void DiscretizeQ(
   M_gain.template block<num_states, num_states>(num_states, num_states) =
       A_continuous.transpose();
 
-  Eigen::Matrix<Scalar, 2 * num_states, 2 *num_states> phi =
+  Eigen::Matrix<Scalar, 2 * num_states, 2 * num_states> phi =
       (M_gain * ::aos::time::TypedDurationInSeconds<Scalar>(dt)).exp();
 
   // Phi12 = phi[0:num_states, num_states:2*num_states]

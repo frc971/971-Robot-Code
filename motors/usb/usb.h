@@ -95,8 +95,8 @@ enum class SetupRequestType {
 #define M_SETUP_REQUEST_TYPE_IN UINT8_C(1 << 7)
 #define G_SETUP_REQUEST_TYPE_TYPE(type) \
   static_cast<SetupRequestType>(((type) >> 5) & UINT8_C(3))
-#define G_SETUP_REQUEST_TYPE_RECIPIENT(type) ((type)&UINT8_C(0x1F))
-#define G_SETUP_REQUEST_INDEX_ENDPOINT(index) ((index)&UINT8_C(0x7F))
+#define G_SETUP_REQUEST_TYPE_RECIPIENT(type) ((type) & UINT8_C(0x1F))
+#define G_SETUP_REQUEST_INDEX_ENDPOINT(index) ((index) & UINT8_C(0x7F))
 
 // The names of the standard recipients for setup requests.
 namespace standard_setup_recipients {

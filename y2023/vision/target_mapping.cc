@@ -362,16 +362,18 @@ void TargetMapperReplay::HandlePiCaptures(aos::EventLoop *mapping_event_loop) {
   cv::cv2eigen(extrinsics_cv, extrinsics_matrix);
   const auto extrinsics = Eigen::Affine3d(extrinsics_matrix);
 
-  mapping_event_loop->MakeWatcher("/camera", [=](const TargetMap &map) {
-    aos::distributed_clock::time_point pi_distributed_time =
-        reader_->event_loop_factory()
-            ->GetNodeEventLoopFactory(mapping_event_loop->node())
-            ->ToDistributedClock(aos::monotonic_clock::time_point(
-                aos::monotonic_clock::duration(map.monotonic_timestamp_ns())));
+  mapping_event_loop->MakeWatcher(
+      "/camera", [this, mapping_event_loop, extrinsics](const TargetMap &map) {
+        aos::distributed_clock::time_point pi_distributed_time =
+            reader_->event_loop_factory()
+                ->GetNodeEventLoopFactory(mapping_event_loop->node())
+                ->ToDistributedClock(aos::monotonic_clock::time_point(
+                    aos::monotonic_clock::duration(
+                        map.monotonic_timestamp_ns())));
 
-    std::string node_name = mapping_event_loop->node()->name()->str();
-    HandleAprilTags(map, pi_distributed_time, node_name, extrinsics);
-  });
+        std::string node_name = mapping_event_loop->node()->name()->str();
+        HandleAprilTags(map, pi_distributed_time, node_name, extrinsics);
+      });
 }
 
 void TargetMapperReplay::MaybeSolve() {
