@@ -27,12 +27,15 @@ TEST(SizedArrayTest, NoUnnecessaryMalloc) {
     // And double-check that we can actually construct a new object at realtime.
     InlinedVector<int, 5> b;
   }
+// Malloc hooks don't work with asan/msan.
+#if !__has_feature(address_sanitizer) && !__has_feature(memory_sanitizer)
   EXPECT_DEATH(
       {
         aos::ScopedRealtime realtime;
         a.push_back(4);
       },
       "Malloced");
+#endif
 }
 
 // Tests that we can create/define a vector with zero statically allocated
