@@ -1629,3 +1629,15 @@ http_archive(
 load("@hedron_compile_commands//:workspace_setup.bzl", "hedron_compile_commands_setup")
 
 hedron_compile_commands_setup()
+
+http_archive(
+    name = "calibrate_multi_cameras_data",
+    build_file_content = """
+filegroup(
+    name = "calibrate_multi_cameras_data",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)""",
+    sha256 = "b106b3b975d3cf3ad3fcd5e4be7409f6095e1d531346a90c4ad6bdb7da1d08a5",
+    url = "https://software.frc971.org/Build-Dependencies/2023_calibrate_multi_cameras_data.tar.gz",
+)
