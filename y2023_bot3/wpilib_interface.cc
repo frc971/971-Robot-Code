@@ -210,6 +210,34 @@ class Falcon {
     PrintConfigs();
   }
 
+  void WritePivotConfigs() {
+    ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
+    current_limits.StatorCurrentLimit =
+        constants::Values::kPivotStatorCurrentLimit();
+    current_limits.StatorCurrentLimitEnable = true;
+    current_limits.SupplyCurrentLimit =
+        constants::Values::kPivotSupplyCurrentLimit();
+    current_limits.SupplyCurrentLimitEnable = true;
+
+    ctre::phoenix6::configs::MotorOutputConfigs output_configs;
+    output_configs.NeutralMode =
+        ctre::phoenix6::signals::NeutralModeValue::Brake;
+    output_configs.DutyCycleNeutralDeadband = 0;
+
+    ctre::phoenix6::configs::TalonFXConfiguration configuration;
+    configuration.CurrentLimits = current_limits;
+    configuration.MotorOutput = output_configs;
+
+    ctre::phoenix::StatusCode status =
+        talon_.GetConfigurator().Apply(configuration);
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
+
+    PrintConfigs();
+  }
+
   ctre::phoenix6::hardware::TalonFX *talon() { return &talon_; }
 
   flatbuffers::Offset<frc971::control_loops::CANFalcon> WritePosition(
@@ -460,13 +488,13 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       frc971::control_loops::drivetrain::Position::Builder drivetrain_builder =
           builder.MakeBuilder<frc971::control_loops::drivetrain::Position>();
       drivetrain_builder.add_left_encoder(
-          constants::Values::DrivetrainEncoderToMeters(
+          -constants::Values::DrivetrainEncoderToMeters(
               drivetrain_left_encoder_->GetRaw()));
       drivetrain_builder.add_left_speed(
           drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod()));
 
       drivetrain_builder.add_right_encoder(
-          -constants::Values::DrivetrainEncoderToMeters(
+          constants::Values::DrivetrainEncoderToMeters(
               drivetrain_right_encoder_->GetRaw()));
       drivetrain_builder.add_right_speed(-drivetrain_velocity_translate(
           drivetrain_right_encoder_->GetPeriod()));
@@ -636,7 +664,10 @@ class SuperstructureCANWriter
   }
 
  private:
-  void WriteConfigs() { roller_falcon_->WriteRollerConfigs(); }
+  void WriteConfigs() {
+    roller_falcon_->WriteRollerConfigs();
+    pivot_falcon_->WritePivotConfigs();
+  }
 
   void Write(const superstructure::Output &output) override {
     ctre::phoenix6::controls::DutyCycleOut roller_control(
@@ -645,7 +676,7 @@ class SuperstructureCANWriter
     roller_control.EnableFOC = true;
 
     ctre::phoenix6::controls::DutyCycleOut pivot_control(
-        SafeSpeed(-output.roller_voltage()));
+        SafeSpeed(output.pivot_joint_voltage()));
     pivot_control.UpdateFreqHz = 0_Hz;
     pivot_control.EnableFOC = true;
 
@@ -845,17 +876,17 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SensorReader sensor_reader(&sensor_reader_event_loop, values,
                                &can_sensor_reader);
     sensor_reader.set_pwm_trigger(true);
-    sensor_reader.set_drivetrain_left_encoder(make_encoder(1));
-    sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
+    sensor_reader.set_drivetrain_left_encoder(make_encoder(4));
+    sensor_reader.set_drivetrain_right_encoder(make_encoder(5));
     sensor_reader.set_superstructure_reading(superstructure_reading);
-    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(0));
+    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(3));
 
     sensor_reader.set_end_effector_cube_beam_break(
         make_unique<frc::DigitalInput>(22));
 
-    sensor_reader.set_pivot_encoder(make_encoder(3));
-    sensor_reader.set_pivot_absolute_pwm(make_unique<frc::DigitalInput>(3));
-    sensor_reader.set_pivot_potentiometer(make_unique<frc::AnalogInput>(3));
+    sensor_reader.set_pivot_encoder(make_encoder(0));
+    sensor_reader.set_pivot_absolute_pwm(make_unique<frc::DigitalInput>(0));
+    sensor_reader.set_pivot_potentiometer(make_unique<frc::AnalogInput>(0));
 
     AddLoop(&sensor_reader_event_loop);
 
@@ -878,14 +909,19 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     drivetrain_writer.set_falcons(right_front, right_back, left_front,
                                   left_back);
     drivetrain_writer.set_right_inverted(
-        ctre::phoenix6::signals::InvertedValue::Clockwise_Positive);
-    drivetrain_writer.set_left_inverted(
         ctre::phoenix6::signals::InvertedValue::CounterClockwise_Positive);
+    drivetrain_writer.set_left_inverted(
+        ctre::phoenix6::signals::InvertedValue::Clockwise_Positive);
+
+    SuperstructureCANWriter superstructure_can_writer(&can_output_event_loop);
+    superstructure_can_writer.set_roller_falcon(roller);
+    superstructure_can_writer.set_pivot_falcon(pivot);
 
     can_output_event_loop.MakeWatcher(
-        "/roborio",
-        [&drivetrain_writer](const frc971::CANConfiguration &configuration) {
+        "/roborio", [&drivetrain_writer, &superstructure_can_writer](
+                        const frc971::CANConfiguration &configuration) {
           drivetrain_writer.HandleCANConfiguration(configuration);
+          superstructure_can_writer.HandleCANConfiguration(configuration);
         });
 
     AddLoop(&can_output_event_loop);
@@ -899,21 +935,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_superstructure_reading(superstructure_reading);
 
     AddLoop(&output_event_loop);
-
-    // Thread 7
-    // Setup superstructure CAN output.
-    SuperstructureCANWriter superstructure_can_writer(&can_output_event_loop);
-    superstructure_can_writer.set_roller_falcon(roller);
-    superstructure_can_writer.set_pivot_falcon(pivot);
-
-    can_output_event_loop.MakeWatcher(
-        "/roborio", [&drivetrain_writer, &superstructure_can_writer](
-                        const frc971::CANConfiguration &configuration) {
-          drivetrain_writer.HandleCANConfiguration(configuration);
-          superstructure_can_writer.HandleCANConfiguration(configuration);
-        });
-
-    AddLoop(&can_output_event_loop);
 
     RunLoops();
   }

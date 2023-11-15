@@ -54,7 +54,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       pivot_joint_offset = pivot_joint_.RunIteration(
           unsafe_goal != nullptr ? unsafe_goal->pivot_goal()
                                  : PivotGoal::NEUTRAL,
-          &(output_struct.pivot_joint_voltage),
+          output != nullptr ? &(output_struct.pivot_joint_voltage) : nullptr,
           position->pivot_joint_position(), status->fbb());
 
   Status::Builder status_builder = status->MakeBuilder<Status>();

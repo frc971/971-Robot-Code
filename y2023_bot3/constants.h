@@ -43,6 +43,9 @@ struct Values {
   static constexpr double kRollerSupplyCurrentLimit() { return 30.0; }
   static constexpr double kRollerStatorCurrentLimit() { return 100.0; }
 
+  static constexpr double kPivotSupplyCurrentLimit() { return 40.0; }
+  static constexpr double kPivotStatorCurrentLimit() { return 200.0; }
+
   // timeout to ensure code doesn't get stuck after releasing the "intake"
   // button
   static constexpr std::chrono::milliseconds kExtraIntakingTime() {
@@ -62,17 +65,21 @@ struct Values {
            control_loops::drivetrain::kWheelRadius;
   }
 
-  // Pivot Joint (placeholders)
+  // Pivot Joint
   static constexpr double kPivotJointEncoderCountsPerRevolution() {
     return 4096.0;
   }
 
-  static constexpr double kPivotJointEncoderRatio() { return (18.0 / 48.0); }
+  static constexpr double kPivotJointEncoderRatio() {
+    return (24.0 / 64.0) * (15.0 / 60.0);
+  }
 
-  static constexpr double kPivotJointPotRatio() { return (18.0 / 48.0); }
+  static constexpr double kPivotJointPotRatio() {
+    return (24.0 / 64.0) * (15.0 / 60.0);
+  }
 
   static constexpr double kPivotJointPotRadiansPerVolt() {
-    return kPivotJointPotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
+    return kPivotJointPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
            (2 * M_PI /*radians*/);
   }
 
@@ -85,10 +92,10 @@ struct Values {
 
   static constexpr ::frc971::constants::Range kPivotJointRange() {
     return ::frc971::constants::Range{
-        .lower_hard = -0.10,  // Back Hard
-        .upper_hard = 4.90,   // Front Hard
-        .lower = 0.0,         // Back Soft
-        .upper = 4.0,         // Front Soft
+        .lower_hard = -1.78879503977269,  // Back Hard
+        .upper_hard = 1.76302285774785,   // Front Hard
+        .lower = -1.77156498873494,       // Back Soft
+        .upper = 1.76555657862879,        // Front Soft
     };
   }
 

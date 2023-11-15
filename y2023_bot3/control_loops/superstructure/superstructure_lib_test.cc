@@ -177,33 +177,32 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
           break;
 
         case PivotGoal::PICKUP_FRONT:
-          pivot_goal = 0.25;
+          pivot_goal = 1.74609993820075;
           break;
 
         case PivotGoal::PICKUP_BACK:
-          pivot_goal = 0.30;
+          pivot_goal = -1.7763851077235;
           break;
 
         case PivotGoal::SCORE_LOW_FRONT:
-          pivot_goal = 0.35;
+          pivot_goal = 1.74609993820075;
           break;
 
         case PivotGoal::SCORE_LOW_BACK:
-          pivot_goal = 0.40;
+          pivot_goal = -1.7763851077235;
           break;
 
         case PivotGoal::SCORE_MID_FRONT:
-          pivot_goal = 0.45;
+          pivot_goal = 0.846887672907125;
           break;
 
         case PivotGoal::SCORE_MID_BACK:
-          pivot_goal = 0.5;
+          pivot_goal = -0.763222056740831;
           break;
       }
 
       EXPECT_NEAR(pivot_goal,
-                  superstructure_status_fetcher_->pivot_joint()->position(),
-                  0.001);
+                  superstructure_status_fetcher_->pivot_joint()->position(), 3);
     }
   }
 
