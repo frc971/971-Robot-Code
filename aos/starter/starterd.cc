@@ -10,6 +10,8 @@
 DEFINE_string(config, "aos_config.json", "File path of aos configuration");
 DEFINE_string(user, "",
               "Starter runs as though this user ran a SUID binary if set.");
+DEFINE_string(version_string, "",
+              "Version to report for starterd and subprocesses.");
 
 DECLARE_string(shm_base);
 DEFINE_bool(purge_shm_base, false,
@@ -58,6 +60,9 @@ int main(int argc, char **argv) {
   const aos::Configuration *config_msg = &config.message();
 
   aos::starter::Starter starter(config_msg);
+  if (!FLAGS_version_string.empty()) {
+    starter.event_loop()->SetVersionString(FLAGS_version_string);
+  }
 
   starter.Run();
 

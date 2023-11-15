@@ -725,17 +725,22 @@ bool Application::MaybeHandleSignal() {
     stop_reason_ = static_cast<aos::starter::LastStopReason>(*read_result);
   }
 
+  const std::string starter_version_string =
+      absl::StrCat("starter version '",
+                   event_loop_->VersionString().value_or("unknown"), "'");
   switch (status_) {
     case aos::starter::State::STARTING: {
       if (exit_code_.value() == 0) {
         LOG_IF(INFO, quiet_flag_ == QuietLogging::kNo)
             << "Application '" << name_ << "' pid " << pid_
-            << " exited with status " << exit_code_.value();
+            << " exited with status " << exit_code_.value() << " and "
+            << starter_version_string;
       } else {
         LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo ||
                             quiet_flag_ == QuietLogging::kNotForDebugging)
             << "Failed to start '" << name_ << "' on pid " << pid_
-            << " : Exited with status " << exit_code_.value();
+            << " : Exited with status " << exit_code_.value() << " and "
+            << starter_version_string;
       }
       if (autorestart()) {
         QueueStart();
@@ -753,13 +758,13 @@ bool Application::MaybeHandleSignal() {
       } else {
         if (quiet_flag_ == QuietLogging::kNo ||
             quiet_flag_ == QuietLogging::kNotForDebugging) {
-          std::string version_string =
+          const std::string version_string =
               latest_timing_report_version_.has_value()
-                  ? absl::StrCat("'", latest_timing_report_version_.value(),
-                                 "'")
-                  : "unknown";
+                  ? absl::StrCat("version '",
+                                 latest_timing_report_version_.value(), "'")
+                  : starter_version_string;
           LOG_IF(WARNING, quiet_flag_ == QuietLogging::kNo)
-              << "Application '" << name_ << "' pid " << pid_ << " version "
+              << "Application '" << name_ << "' pid " << pid_ << " "
               << version_string << " exited unexpectedly with status "
               << exit_code_.value();
         }

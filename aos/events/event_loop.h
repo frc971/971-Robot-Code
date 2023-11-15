@@ -818,6 +818,10 @@ class EventLoop {
   // provided string_view.
   void SetVersionString(std::string_view version);
 
+  std::optional<std::string_view> VersionString() const {
+    return version_string_;
+  }
+
  protected:
   // Sets the name of the event loop.  This is the application name.
   virtual void set_name(const std::string_view name) = 0;

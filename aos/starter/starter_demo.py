@@ -48,5 +48,5 @@ if __name__ == '__main__':
             os.makedirs(os.path.dirname(destination), exist_ok=True)
             shutil.copy(config, destination)
             shutil.copy(config, f"{tmpdir}/aos_config.{suffix}")
-        args = [tmpdir + "/starterd"]
+        args = [tmpdir + "/starterd", "--version_string=starter_version"]
         subprocess.run(args, check=True, cwd=tmpdir)
