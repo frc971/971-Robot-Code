@@ -10,6 +10,8 @@ enum PivotGoal: ubyte {
   SCORE_LOW_BACK = 4,
   SCORE_MID_FRONT = 5,
   SCORE_MID_BACK = 6,
+  SCORE_HIGH_FRONT = 7,
+  SCORE_HIGH_BACK = 8,
 }
 
 enum RollerGoal: ubyte {
@@ -17,6 +19,7 @@ enum RollerGoal: ubyte {
     INTAKE_CUBE = 1,
     SPIT = 2,
     SPIT_MID = 3,
+    SPIT_HIGH = 4,
 }
 
 table Goal {

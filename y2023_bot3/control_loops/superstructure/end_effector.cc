@@ -32,6 +32,8 @@ void EndEffector::RunIteration(
         break;
       case EndEffectorState::SPITTING_MID:
         break;
+      case EndEffectorState::SPITTING_HIGH:
+        break;
     }
   }
 
@@ -41,6 +43,10 @@ void EndEffector::RunIteration(
 
   if (roller_goal == RollerGoal::SPIT_MID) {
     state_ = EndEffectorState::SPITTING_MID;
+  }
+
+  if (roller_goal == RollerGoal::SPIT_HIGH) {
+    state_ = EndEffectorState::SPITTING_HIGH;
   }
 
   switch (state_) {
@@ -95,6 +101,14 @@ void EndEffector::RunIteration(
         state_ = EndEffectorState::IDLE;
       }
 
+      break;
+
+    case EndEffectorState::SPITTING_HIGH:
+      *roller_voltage = kRollerCubeSpitHighVoltage();
+
+      if (roller_goal == RollerGoal::IDLE) {
+        state_ = EndEffectorState::IDLE;
+      }
       break;
   }
 }

@@ -48,6 +48,14 @@ PivotJoint::RunIteration(PivotGoal goal, double *output,
     case PivotGoal::SCORE_MID_BACK:
       pivot_goal = -0.763222056740831;
       break;
+
+    case PivotGoal::SCORE_HIGH_FRONT:
+      pivot_goal = 0.846887672907125;
+      break;
+
+    case PivotGoal::SCORE_HIGH_BACK:
+      pivot_goal = -0.763222056740831;
+      break;
   }
 
   flatbuffers::Offset<

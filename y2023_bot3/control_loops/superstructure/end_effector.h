@@ -17,6 +17,7 @@ class EndEffector {
   static constexpr double kRollerCubeSuckVoltage() { return -7.0; }
   static constexpr double kRollerCubeSpitVoltage() { return 3.0; }
   static constexpr double kRollerCubeSpitMidVoltage() { return 5.0; }
+  static constexpr double kRollerCubeSpitHighVoltage() { return 6.37; }
 
   EndEffector();
   void RunIteration(const ::aos::monotonic_clock::time_point timestamp,
