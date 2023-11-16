@@ -25,8 +25,8 @@ table Status {
   // If true, we have aborted. This is the or of all subsystem estops.
   estopped:bool (id: 1);
 
-  // The current state of the arm.
-  pivot_joint_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
+  // The current state of the pivot.
+  pivot_joint:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
 
   end_effector_state:EndEffectorState (id: 3);
 }

@@ -92,6 +92,7 @@ double drivetrain_velocity_translate(double in) {
 
 constexpr double kMaxFastEncoderPulsesPerSecond = std::max({
     Values::kMaxDrivetrainEncoderPulsesPerSecond(),
+    Values::kMaxPivotJointEncoderPulsesPerSecond(),
 });
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
@@ -426,11 +427,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
         roller_falcon_offset = frc971::control_loops::CANFalcon::Pack(
             *builder.fbb(), &optional_roller_falcon.value());
       }
-
       superstructure::Position::Builder position_builder =
           builder.MakeBuilder<superstructure::Position>();
       position_builder.add_end_effector_cube_beam_break(
           !end_effector_cube_beam_break_->Get());
+
       if (!roller_falcon_offset.IsNull()) {
         position_builder.add_roller_falcon(roller_falcon_offset);
       }
