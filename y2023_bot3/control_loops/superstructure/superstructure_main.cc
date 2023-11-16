@@ -12,8 +12,6 @@ int main(int argc, char **argv) {
 
   ::aos::ShmEventLoop event_loop(&config.message());
 
-  frc971::constants::WaitForConstants<y2023_bot3::Constants>(&config.message());
-
   std::shared_ptr<const y2023_bot3::constants::Values> values =
       std::make_shared<const y2023_bot3::constants::Values>(
           y2023_bot3::constants::MakeValues());

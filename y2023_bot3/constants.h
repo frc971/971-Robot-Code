@@ -1,5 +1,5 @@
-#ifndef Y2023_CONSTANTS_H_
-#define Y2023_CONSTANTS_H_
+#ifndef Y2023_BOT3_CONSTANTS_H_
+#define Y2023_BOT3_CONSTANTS_H_
 
 #include <array>
 #include <cmath>
@@ -8,8 +8,9 @@
 #include "frc971/constants.h"
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
+#include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2023_bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-
+#include "y2023_bot3/control_loops/superstructure/pivot_joint/pivot_joint_plant.h"
 namespace y2023_bot3 {
 namespace constants {
 
@@ -60,6 +61,40 @@ struct Values {
            control_loops::drivetrain::kHighOutputRatio *
            control_loops::drivetrain::kWheelRadius;
   }
+
+  struct PotAndAbsEncoderConstants {
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+        subsystem_params;
+    double potentiometer_offset;
+  };
+
+  // Pivot Joint (placeholders)
+  static constexpr double kPivotJointEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
+
+  static constexpr double kPivotJointEncoderRatio() { return 1.0; }
+
+  static constexpr double kMaxPivotJointEncoderPulsesPerSecond() {
+    return control_loops::superstructure::pivot_joint::kFreeSpeed /
+           (2.0 * M_PI) *
+           control_loops::superstructure::pivot_joint::kOutputRatio /
+           kPivotJointEncoderRatio() * kPivotJointEncoderCountsPerRevolution();
+  }
+
+  static constexpr ::frc971::constants::Range kPivotJointRange() {
+    return ::frc971::constants::Range{
+        .lower_hard = -0.10,  // Back Hard
+        .upper_hard = 4.90,   // Front Hard
+        .lower = 0.0,         // Back Soft
+        .upper = 4.0,         // Front Soft
+    };
+  }
+
+  PotAndAbsEncoderConstants pivot_joint;
+
+  bool pivot_joint_flipped;
 };
 
 // Creates and returns a Values instance for the constants.
@@ -73,4 +108,4 @@ Values MakeValues();
 }  // namespace constants
 }  // namespace y2023_bot3
 
-#endif  // Y2023_CONSTANTS_H_
+#endif  // Y2023_BOT3_CONSTANTS_H_

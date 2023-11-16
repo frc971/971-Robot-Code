@@ -1,6 +1,8 @@
 namespace y2023_bot3;
 
 table RobotConstants {
+    // Constants sender needs a value to send something
+    dummy_value:int (id: 0);
 }
 
 table Constants {
