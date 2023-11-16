@@ -44,6 +44,8 @@ Values MakeValues(uint16_t team) {
     // A set of constants for tests.
     case 1:
 
+      pivot_joint->potentiometer_offset = 0.0;
+
       pivot_joint->subsystem_params.zeroing_constants
           .measured_absolute_position = 0.0;
 
