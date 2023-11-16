@@ -50,6 +50,27 @@ enum LastStopReason : uint {
   SET_GRP_ERR
 }
 
+// Used to indicate the current state of the file being executed, so that we
+// can track which executables may need to be restarted.
+enum FileState : short {
+  // We are not currently in the RUNNING state, so we don't have anything to
+  // say. This will be set when the process is STARTING and STOPPING as well,
+  // because it may be in a transient state and we don't want to accidentally
+  // send out false positives regarding file changes.
+  NOT_RUNNING,
+
+  // The currently executing file is the one on disk.
+  NO_CHANGE,
+
+  // The file changed at some point between the fork() call and when we
+  // entered the RUNNING state, and we aren't currently set up to determine
+  // if the executed file is the one currently on disk.
+  CHANGED_DURING_STARTUP,
+
+  // The file has changed since it started RUNNING.
+  CHANGED,
+}
+
 table Status {
   statuses: [ApplicationStatus] (id: 0);
 }
@@ -88,6 +109,10 @@ table ApplicationStatus {
   // specified for the starterd application (defaults to 1 Hz, can be overridden
   // by --timing_report_ms).
   has_active_timing_report: bool (id: 8);
+
+  // Current state of the running executable. This can be used to detect if
+  // a process should be restarted because the file has changed on disk.
+  file_state: FileState (id: 9);
 }
 
 root_type Status;

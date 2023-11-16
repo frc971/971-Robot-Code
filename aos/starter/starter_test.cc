@@ -349,7 +349,7 @@ TEST_F(StarterdTest, Autostart) {
       // it grabbed the name after the fork() but before the execvp(). To
       // protect against that, wait an extra cycle. If things aren't fixed by
       // the second cycle, then that is a problem.
-      if (pong_running_count < 2) {
+      if (pong_running_count < 3) {
         return;
       }
       ASSERT_TRUE(pong_app_status->has_process_info());

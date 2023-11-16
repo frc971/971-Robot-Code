@@ -1,6 +1,7 @@
 #ifndef AOS_STARTER_SUBPROCESS_H_
 #define AOS_STARTER_SUBPROCESS_H_
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -14,6 +15,15 @@
 #include "aos/util/top.h"
 
 namespace aos::starter {
+
+// Replicates the path resolution that will be attempted by the shell or
+// commands like execvp. Doing this manually allows us to conveniently know what
+// is actually being executed (rather than, e.g., querying /proc/$pid/exe after
+// the execvp() call is executed).
+// This is also useful when using the below class with sudo or bash scripts,
+// because in those circumstances /proc/$pid/exe contains sudo and /bin/bash (or
+// similar binary), rather than the actual thing being executed.
+std::filesystem::path ResolvePath(std::string_view command);
 
 // Registers a signalfd listener with the given event loop and calls callback
 // whenever a signal is received.
@@ -165,6 +175,8 @@ class Application {
   void ObserveTimingReport(const aos::monotonic_clock::time_point send_time,
                            const aos::timing::Report *msg);
 
+  FileState UpdateFileState();
+
  private:
   typedef aos::util::ScopedPipe::PipePair PipePair;
 
@@ -201,7 +213,10 @@ class Application {
   static inline uint64_t next_id_ = 0;
 
   std::string name_;
-  std::string path_;
+  std::filesystem::path path_;
+  // Inode of path_ immediately prior to the most recent fork() call.
+  ino_t pre_fork_inode_;
+  FileState file_state_ = FileState::NOT_RUNNING;
   std::vector<std::string> args_;
   std::string user_name_;
   std::optional<uid_t> user_;
