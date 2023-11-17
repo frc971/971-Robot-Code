@@ -949,10 +949,10 @@ const Channel *GetChannel(const Configuration *config, std::string_view name,
     VLOG(1) << "No match for { \"name\": \"" << name << "\", \"type\": \""
             << type << "\" }";
     if (original_name != name && !quiet) {
-      LOG(WARNING) << "Remapped from {\"name\": \"" << original_name
-                   << "\", \"type\": \"" << type << "\"}, to {\"name\": \""
-                   << name << "\", \"type\": \"" << type
-                   << "\"}, but no channel by that name exists.";
+      VLOG(1) << "Remapped from {\"name\": \"" << original_name
+              << "\", \"type\": \"" << type << "\"}, to {\"name\": \"" << name
+              << "\", \"type\": \"" << type
+              << "\"}, but no channel by that name exists.";
     }
     return nullptr;
   }
