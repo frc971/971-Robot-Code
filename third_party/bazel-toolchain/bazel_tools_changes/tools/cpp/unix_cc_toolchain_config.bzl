@@ -1141,16 +1141,13 @@ def _impl(ctx):
     )
 
     cuda_flags = [
-        "--cuda-gpu-arch=sm_75",
-        "--cuda-gpu-arch=sm_80",
-        "--cuda-gpu-arch=sm_86",
-        "--cuda-gpu-arch=sm_87",
         "-x",
         "cuda",
     ]
 
     if ctx.attr.cpu == "aarch64":
         cuda_flags += [
+            "--cuda-gpu-arch=sm_87",
             "--cuda-path=external/arm64_debian_sysroot/usr/local/cuda-11.8/",
             "--ptxas-path=external/arm64_debian_sysroot/usr/local/cuda-11.8/bin/ptxas",
             "-D__CUDACC_VER_MAJOR__=11",
@@ -1159,6 +1156,8 @@ def _impl(ctx):
         pass
     elif ctx.attr.cpu == "k8":
         cuda_flags += [
+            "--cuda-gpu-arch=sm_75",
+            "--cuda-gpu-arch=sm_86",
             "--cuda-path=external/amd64_debian_sysroot/usr/lib/cuda/",
             "--ptxas-path=external/amd64_debian_sysroot/usr/bin/ptxas",
             "-D__CUDACC_VER_MAJOR__=11",

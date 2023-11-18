@@ -991,7 +991,7 @@ static void do_unionfind_first_line(unionfind_t *uf, image_u8_t *im, int h, int 
     int y = 0;
     uint8_t v;
 
-    for (int x = 1; x < w - 1; x++) {
+    for (int x = 1; x < w; x++) {
         v = im->buf[y*s + x];
 
         if (v == 127)
@@ -1010,8 +1010,15 @@ static void do_unionfind_line2(unionfind_t *uf, image_u8_t *im, int h, int w, in
     uint8_t v_1_m1 = im->buf[(y - 1)*s + 1];
     uint8_t v_m1_0;
     uint8_t v = im->buf[y*s];
+    {
+      int x = 0;
+      if (v != 127) {
+        DO_UNIONFIND2(0, -1);
+        DO_UNIONFIND2(1, -1);
+      }
+    }
 
-    for (int x = 1; x < w - 1; x++) {
+    for (int x = 1; x < w; x++) {
         v_m1_m1 = v_0_m1;
         v_0_m1 = v_1_m1;
         v_1_m1 = im->buf[(y - 1)*s + x + 1];
@@ -1034,7 +1041,7 @@ static void do_unionfind_line2(unionfind_t *uf, image_u8_t *im, int h, int w, in
             if (x == 1 || !(v_m1_0 == v_m1_m1 || v_0_m1 == v_m1_m1) ) {
                 DO_UNIONFIND2(-1, -1);
             }
-            if (!(v_0_m1 == v_1_m1)) {
+            if ((x < w - 1) && !(v_0_m1 == v_1_m1)) {
                 DO_UNIONFIND2(1, -1);
             }
         }
@@ -1521,46 +1528,52 @@ zarray_t* do_gradient_clusters(image_u8_t* threshim, int ts, int y0, int y1, int
             // A possible optimization would be to combine entries
             // within the same cluster.
 
-#define DO_CONN(dx, dy)                                                 \
-            if (1) {                                                    \
-                uint8_t v1 = threshim->buf[(y + dy)*ts + x + dx];       \
-                                                                        \
-                if (v0 + v1 == 255) {                                   \
-                    uint64_t rep1 = unionfind_get_representative(uf, (y + dy)*w + x + dx); \
-                    if (unionfind_get_set_size(uf, rep1) > 24) {        \
-                        uint64_t clusterid;                                 \
-                        if (rep0 < rep1)                                    \
-                            clusterid = (rep1 << 32) + rep0;                \
-                        else                                                \
-                            clusterid = (rep0 << 32) + rep1;                \
-                                                                            \
-                        /* XXX lousy hash function */                       \
-                        uint32_t clustermap_bucket = u64hash_2(clusterid) % nclustermap; \
-                        struct uint64_zarray_entry *entry = clustermap[clustermap_bucket]; \
-                        while (entry && entry->id != clusterid) {           \
-                            entry = entry->next;                            \
-                        }                                                   \
-                                                                            \
-                        if (!entry) {                                       \
-                            if (mem_pool_loc == mem_chunk_size) {           \
-                                mem_pool_loc = 0;                           \
-                                mem_pool_idx++;                             \
-                                mem_pools[mem_pool_idx] = calloc(mem_chunk_size, sizeof(struct uint64_zarray_entry)); \
-                            }                                               \
-                            entry = mem_pools[mem_pool_idx] + mem_pool_loc; \
-                            mem_pool_loc++;                                 \
-                                                                            \
-                            entry->id = clusterid;                          \
-                            entry->cluster = zarray_create(sizeof(struct pt)); \
-                            entry->next = clustermap[clustermap_bucket];    \
-                            clustermap[clustermap_bucket] = entry;          \
-                        }                                                   \
-                                                                            \
-                        struct pt p = { .x = 2*x + dx, .y = 2*y + dy, .gx = dx*((int) v1-v0), .gy = dy*((int) v1-v0)}; \
-                        zarray_add(entry->cluster, &p);                     \
-                    }                                                   \
-                }                                                       \
-            }
+#define DO_CONN(dx, dy)                                                        \
+  if (1) {                                                                     \
+    uint8_t v1 = threshim->buf[(y + dy) * ts + x + dx];                        \
+                                                                               \
+    if (v0 + v1 == 255) {                                                      \
+      uint64_t rep1 = unionfind_get_representative(uf, (y + dy) * w + x + dx); \
+      if (unionfind_get_set_size(uf, rep1) > 24) {                             \
+        uint64_t clusterid;                                                    \
+        if (rep0 < rep1)                                                       \
+          clusterid = (rep1 << 32) + rep0;                                     \
+        else                                                                   \
+          clusterid = (rep0 << 32) + rep1;                                     \
+                                                                               \
+        /* XXX lousy hash function */                                          \
+        uint32_t clustermap_bucket = u64hash_2(clusterid) % nclustermap;       \
+        struct uint64_zarray_entry *entry = clustermap[clustermap_bucket];     \
+        while (entry && entry->id != clusterid) {                              \
+          entry = entry->next;                                                 \
+        }                                                                      \
+                                                                               \
+        if (!entry) {                                                          \
+          if (mem_pool_loc == mem_chunk_size) {                                \
+            mem_pool_loc = 0;                                                  \
+            mem_pool_idx++;                                                    \
+            mem_pools[mem_pool_idx] =                                          \
+                calloc(mem_chunk_size, sizeof(struct uint64_zarray_entry));    \
+          }                                                                    \
+          entry = mem_pools[mem_pool_idx] + mem_pool_loc;                      \
+          mem_pool_loc++;                                                      \
+                                                                               \
+          entry->id = clusterid;                                               \
+          entry->cluster = zarray_create(sizeof(struct pt));                   \
+          entry->next = clustermap[clustermap_bucket];                         \
+          clustermap[clustermap_bucket] = entry;                               \
+        }                                                                      \
+                                                                               \
+        struct pt p = {.x = 2 * x + dx,                                        \
+                       .y = 2 * y + dy,                                        \
+                       .gx = dx * ((int)v1 - v0),                              \
+                       .gy = dy * ((int)v1 - v0)};                             \
+        /*fprintf(stderr, "Adding point %d+%d(%llx) -> (%d, %d)\n",              \
+                min(rep0, rep1), max(rep0, rep1), entry->id, p.x, p.y);       */ \
+        zarray_add(entry->cluster, &p);                                        \
+      }                                                                        \
+    }                                                                          \
+  }
 
             // do 4 connectivity. NB: Arguments must be [-1, 1] or we'll overflow .gx, .gy
             DO_CONN(1, 0);
@@ -1796,6 +1809,7 @@ zarray_t *apriltag_quad_thresh(apriltag_detector_t *td, image_u8_t *im)
 
     // make segmentation image.
     if (td->debug) {
+        srandom(0);
         image_u8x3_t *d = image_u8x3_create(w, h);
 
         uint32_t *colors = (uint32_t*) calloc(w*h, sizeof(*colors));
@@ -1803,9 +1817,6 @@ zarray_t *apriltag_quad_thresh(apriltag_detector_t *td, image_u8_t *im)
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 uint32_t v = unionfind_get_representative(uf, y*w+x);
-
-                if (unionfind_get_set_size(uf, v) < td->qtp.min_cluster_pixels)
-                    continue;
 
                 uint32_t color = colors[v];
                 uint8_t r = color >> 16,
@@ -1819,6 +1830,10 @@ zarray_t *apriltag_quad_thresh(apriltag_detector_t *td, image_u8_t *im)
                     b = bias + (random() % (200-bias));
                     colors[v] = (r << 16) | (g << 8) | b;
                 }
+
+                if (unionfind_get_set_size(uf, v) < 1) //td->qtp.min_cluster_pixels)
+                    continue;
+
 
                 d->buf[y*d->stride + 3*x + 0] = r;
                 d->buf[y*d->stride + 3*x + 1] = g;
