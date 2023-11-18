@@ -1,0 +1,138 @@
+diff --git a/include/cuco/detail/pair/pair.inl b/include/cuco/detail/pair/pair.inl
+index 3279a91..44be993 100644
+--- a/include/cuco/detail/pair/pair.inl
++++ b/include/cuco/detail/pair/pair.inl
+@@ -51,7 +51,53 @@ __host__ __device__ constexpr bool operator==(cuco::pair<T1, T2> const& lhs,
+ }  // namespace cuco
+ 
+ namespace thrust {
+-#include <cuco/detail/pair/tuple_helpers.inl>
++template <std::size_t I, typename T1, typename T2>
++__host__ __device__ constexpr auto get(cuco::pair<T1, T2>& p) ->
++  typename tuple_element<I, cuco::pair<T1, T2>>::type&
++{
++  static_assert(I < 2);
++  if constexpr (I == 0) {
++    return p.first;
++  } else {
++    return p.second;
++  }
++}
++
++template <std::size_t I, typename T1, typename T2>
++__host__ __device__ constexpr auto get(cuco::pair<T1, T2>&& p) ->
++  typename tuple_element<I, cuco::pair<T1, T2>>::type&&
++{
++  static_assert(I < 2);
++  if constexpr (I == 0) {
++    return std::move(p.first);
++  } else {
++    return std::move(p.second);
++  }
++}
++
++template <std::size_t I, typename T1, typename T2>
++__host__ __device__ constexpr auto get(cuco::pair<T1, T2> const& p) ->
++  typename tuple_element<I, cuco::pair<T1, T2>>::type const&
++{
++  static_assert(I < 2);
++  if constexpr (I == 0) {
++    return p.first;
++  } else {
++    return p.second;
++  }
++}
++
++template <std::size_t I, typename T1, typename T2>
++__host__ __device__ constexpr auto get(cuco::pair<T1, T2> const&& p) ->
++  typename tuple_element<I, cuco::pair<T1, T2>>::type const&&
++{
++  static_assert(I < 2);
++  if constexpr (I == 0) {
++    return std::move(p.first);
++  } else {
++    return std::move(p.second);
++  }
++}
+ }  // namespace thrust
+ 
+ namespace cuda::std {
+diff --git a/include/cuco/detail/static_map.inl b/include/cuco/detail/static_map.inl
+index 48799a7..336f6de 100644
+--- a/include/cuco/detail/static_map.inl
++++ b/include/cuco/detail/static_map.inl
+@@ -443,7 +443,7 @@ __device__
+                 "insert_and_find is not supported for unpackable data on pre-Volta GPUs.");
+ #endif
+ 
+-  auto current_slot{initial_slot(insert_pair.first, hash)};
++  auto current_slot{this->initial_slot(insert_pair.first, hash)};
+ 
+   while (true) {
+     key_type const existing_key = current_slot->first.load(cuda::std::memory_order_relaxed);
+@@ -514,7 +514,7 @@ __device__
+ 
+     // if we couldn't insert the key, but it wasn't a duplicate, then there must
+     // have been some other key there, so we keep looking for a slot
+-    current_slot = next_slot(current_slot);
++    current_slot = this->next_slot(current_slot);
+   }
+ }
+ 
+diff --git a/include/cuco/detail/static_map/static_map_ref.inl b/include/cuco/detail/static_map/static_map_ref.inl
+index f27f21e..e90948f 100644
+--- a/include/cuco/detail/static_map/static_map_ref.inl
++++ b/include/cuco/detail/static_map/static_map_ref.inl
+@@ -141,21 +141,6 @@ static_map_ref<Key, T, Scope, KeyEqual, ProbingScheme, StorageRef, Operators...>
+   return impl_.empty_value_sentinel();
+ }
+ 
+-template <typename Key,
+-          typename T,
+-          cuda::thread_scope Scope,
+-          typename KeyEqual,
+-          typename ProbingScheme,
+-          typename StorageRef,
+-          typename... Operators>
+-template <typename... NewOperators>
+-auto static_map_ref<Key, T, Scope, KeyEqual, ProbingScheme, StorageRef, Operators...>::with(
+-  NewOperators...) && noexcept
+-{
+-  return static_map_ref<Key, T, Scope, KeyEqual, ProbingScheme, StorageRef, NewOperators...>(
+-    std::move(*this));
+-}
+-
+ namespace detail {
+ 
+ template <typename Key,
+diff --git a/include/cuco/pair.cuh b/include/cuco/pair.cuh
+index d28cae5..1caaa24 100644
+--- a/include/cuco/pair.cuh
++++ b/include/cuco/pair.cuh
+@@ -87,8 +87,7 @@ struct alignas(detail::pair_alignment<First, Second>()) pair {
+    */
+   template <typename T, std::enable_if_t<detail::is_std_pair_like<T>::value>* = nullptr>
+   __host__ __device__ constexpr pair(T const& p)
+-    : pair{cuda::std::get<0>(thrust::raw_reference_cast(p)),
+-           cuda::std::get<1>(thrust::raw_reference_cast(p))}
++    : pair{std::get<0>(thrust::raw_reference_cast(p)), std::get<1>(thrust::raw_reference_cast(p))}
+   {
+   }
+ 
+diff --git a/include/cuco/static_map_ref.cuh b/include/cuco/static_map_ref.cuh
+index 88e40f8..7cf1d74 100644
+--- a/include/cuco/static_map_ref.cuh
++++ b/include/cuco/static_map_ref.cuh
+@@ -174,7 +174,11 @@ class static_map_ref
+    * @return `*this` with `NewOperators...`
+    */
+   template <typename... NewOperators>
+-  [[nodiscard]] __host__ __device__ auto with(NewOperators... ops) && noexcept;
++  [[nodiscard]] __host__ __device__ auto with(NewOperators... ops) && noexcept
++  {
++    return static_map_ref<Key, T, Scope, KeyEqual, ProbingScheme, StorageRef, NewOperators...>(
++      std::move(*this));
++  }
+ 
+  private:
+   impl_type impl_;  ///< Static map ref implementation

@@ -406,6 +406,7 @@ def cc_toolchain_config(
     opt_compile_flags.extend(opt_copts)
     fastbuild_compile_flags.extend(fastbuild_copts)
     link_flags.extend(linkopts)
+    cuda_flags = ["-isystem", target_toolchain_path_prefix + "lib/clang/" + llvm_subfolder + "/include/cuda_wrappers"]
 
     # Source: https://cs.opensource.google/bazel/bazel/+/master:tools/cpp/unix_cc_toolchain_config.bzl
     unix_cc_toolchain_config(
@@ -435,4 +436,5 @@ def cc_toolchain_config(
         coverage_link_flags = coverage_link_flags,
         supports_start_end_lib = supports_start_end_lib,
         builtin_sysroot = sysroot_path,
+        cuda_flags = cuda_flags,
     )
