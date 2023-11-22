@@ -86,12 +86,12 @@ class StateFeedbackHybridPlant {
 
   StateFeedbackHybridPlant(StateFeedbackHybridPlant &&other)
       : index_(other.index_) {
-    ::std::swap(coefficients_, other.coefficients_);
-    X_.swap(other.X_);
-    Y_.swap(other.Y_);
-    A_.swap(other.A_);
-    B_.swap(other.B_);
-    DelayedU_.swap(other.DelayedU_);
+    coefficients_ = ::std::move(other.coefficients_);
+    X_ = ::std::move(other.X_);
+    Y_ = ::std::move(other.Y_);
+    A_ = ::std::move(other.A_);
+    B_ = ::std::move(other.B_);
+    DelayedU_ = ::std::move(other.DelayedU_);
   }
 
   virtual ~StateFeedbackHybridPlant() {}
@@ -290,12 +290,11 @@ class HybridKalman {
   }
 
   HybridKalman(HybridKalman &&other) : index_(other.index_) {
-    ::std::swap(coefficients_, other.coefficients_);
-
-    X_hat_.swap(other.X_hat_);
-    P_.swap(other.P_);
-    Q_.swap(other.Q_);
-    R_.swap(other.R_);
+    coefficients_ = ::std::move(other.coefficients_);
+    X_hat_ = ::std::move(other.X_hat_);
+    P_ = ::std::move(other.P_);
+    Q_ = ::std::move(other.Q_);
+    R_ = ::std::move(other.R_);
   }
 
   // Getters for Q
