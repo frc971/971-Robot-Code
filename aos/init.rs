@@ -26,13 +26,16 @@ generate!("aos::GetCommandLineOption")
 pub fn init() {
     static ONCE: Once = Once::new();
     ONCE.call_once(|| {
+        // We leak the `CString` with `into_raw`. It's not sound for C++ to free
+        // it but `InitGoogleLogging` requries that it is long-lived.
         let argv0 = std::env::args()
             .map(|arg| CString::new(arg).expect("Arg may not have NUL"))
             .next()
-            .expect("Missing argv[0]?");
+            .expect("Missing argv[0]?")
+            .into_raw();
         // SAFETY: argv0 is a well-defined CString.
         unsafe {
-            ffi::aos::InitFromRust(argv0.as_ptr());
+            ffi::aos::InitFromRust(argv0);
         }
     });
 }
