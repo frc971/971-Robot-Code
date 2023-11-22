@@ -1246,12 +1246,7 @@ impl<'sender> RawBuilder<'sender> {
 
         use ffi::aos::RawSender_Error as FfiError;
         // SAFETY: This is a valid buffer we're passing.
-        match unsafe {
-            self.raw_sender
-                .0
-                .as_mut()
-                .CopyAndSend(data.as_ptr(), data.len())
-        } {
+        match unsafe { self.raw_sender.0.as_mut().SendBuffer(data.len()) } {
             FfiError::kOk => Ok(()),
             FfiError::kMessagesSentTooFast => Err(SendError::MessagesSentTooFast),
             FfiError::kInvalidRedzone => Err(SendError::InvalidRedzone),
