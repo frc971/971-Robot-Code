@@ -25,7 +25,7 @@ def halide_library(name, src, function, args, visibility = None):
         # TODO(austin): Upgrade halide...
         cmd = "$(location :" + name + "_generator) -g '" + function + "' -o $(RULEDIR) -f " + name + " -e 'o,h,html' " + select({
             "@platforms//cpu:x86_64": "target=host ",
-            "@platforms//cpu:aarch64": "target=arm-64-linux-sve2-arm_dot_prod-arm_fp16-armv81a ",
+            "@platforms//cpu:aarch64": "target=arm-64-linux ",
             "//conditions:default": "",
         }) + args,
         target_compatible_with = select({

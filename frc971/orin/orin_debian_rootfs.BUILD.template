@@ -1,0 +1,66 @@
+filegroup(
+    name = "sysroot_files",
+    srcs = {{ SYSROOT_SRCS }},
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "argus",
+    srcs = [
+        "usr/lib/libnvargus_socketclient.so",
+    ],
+    hdrs = glob(
+        include = ["usr/include/Argus/**"],
+    ),
+    includes = ["usr/include/Argus/utils/"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "eglstream",
+    hdrs = glob(
+        include = ["usr/include/EGLStream/**"],
+    ),
+    includes = ["usr/include/EGLStream/"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "nvbufsurface",
+    srcs = [
+        "usr/lib/libnvbufsurface.so.1.0.0",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "egl",
+    srcs = [
+        "usr/lib/aarch64-linux-gnu/libEGL.so",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "nppi",
+    srcs = [
+        "usr/local/cuda-11.8/lib/libnppc.so.11",
+        "usr/local/cuda-11.8/lib/libnppif.so.11",
+    ],
+    hdrs = glob(
+        include = ["usr/local/cuda-11.8/include/npp*.h"],
+    ),
+    includes = ["usr/local/cuda-11.8/include"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "cudart",
+    srcs = [
+        "usr/lib/libcuda.so.1.1",
+        "usr/local/cuda-11.8/lib/libcudart.so.11.0",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+{{ RULES }}
