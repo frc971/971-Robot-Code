@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <stdexcept>
 
 #include <wpi/SymbolExports.h>
@@ -76,9 +77,9 @@ class WPILIB_DLLEXPORT LinearSystemId {
    * @param kA The acceleration gain, in volts/(unit/sec²).
    * @throws std::domain_error if kV <= 0 or kA <= 0.
    */
-  template <typename Distance, typename = std::enable_if_t<
-                                   std::is_same_v<units::meter, Distance> ||
-                                   std::is_same_v<units::radian, Distance>>>
+  template <typename Distance>
+    requires std::same_as<units::meter, Distance> ||
+             std::same_as<units::radian, Distance>
   static LinearSystem<1, 1, 1> IdentifyVelocitySystem(
       decltype(1_V / Velocity_t<Distance>(1)) kV,
       decltype(1_V / Acceleration_t<Distance>(1)) kA) {
@@ -117,9 +118,9 @@ class WPILIB_DLLEXPORT LinearSystemId {
    *
    * @throws std::domain_error if kV <= 0 or kA <= 0.
    */
-  template <typename Distance, typename = std::enable_if_t<
-                                   std::is_same_v<units::meter, Distance> ||
-                                   std::is_same_v<units::radian, Distance>>>
+  template <typename Distance>
+    requires std::same_as<units::meter, Distance> ||
+             std::same_as<units::radian, Distance>
   static LinearSystem<2, 1, 1> IdentifyPositionSystem(
       decltype(1_V / Velocity_t<Distance>(1)) kV,
       decltype(1_V / Acceleration_t<Distance>(1)) kA) {
@@ -217,6 +218,48 @@ class WPILIB_DLLEXPORT LinearSystemId {
   static LinearSystem<2, 1, 2> DCMotorSystem(DCMotor motor,
                                              units::kilogram_square_meter_t J,
                                              double G);
+
+  /**
+   * Create a state-space model of a DC motor system from its kV
+   * (volts/(unit/sec)) and kA (volts/(unit/sec²)). These constants can be
+   * found using SysId. the states of the system are [position, velocity],
+   * inputs are [voltage], and outputs are [position].
+   *
+   * You MUST use an SI unit (i.e. meters or radians) for the Distance template
+   * argument. You may still use non-SI units (such as feet or inches) for the
+   * actual method arguments; they will automatically be converted to SI
+   * internally.
+   *
+   * The parameters provided by the user are from this feedforward model:
+   *
+   * u = K_v v + K_a a
+   *
+   * @param kV The velocity gain, in volts/(unit/sec).
+   * @param kA The acceleration gain, in volts/(unit/sec²).
+   *
+   * @throws std::domain_error if kV <= 0 or kA <= 0.
+   */
+  template <typename Distance>
+    requires std::same_as<units::meter, Distance> ||
+             std::same_as<units::radian, Distance>
+  static LinearSystem<2, 1, 2> DCMotorSystem(
+      decltype(1_V / Velocity_t<Distance>(1)) kV,
+      decltype(1_V / Acceleration_t<Distance>(1)) kA) {
+    if (kV <= decltype(kV){0}) {
+      throw std::domain_error("Kv must be greater than zero.");
+    }
+    if (kA <= decltype(kA){0}) {
+      throw std::domain_error("Ka must be greater than zero.");
+    }
+
+    Matrixd<2, 2> A{{0.0, 1.0}, {0.0, -kV.value() / kA.value()}};
+    Matrixd<2, 1> B{0.0, 1.0 / kA.value()};
+    Matrixd<2, 2> C{{1.0, 0.0}, {0.0, 1.0}};
+    Matrixd<2, 1> D{{0.0}, {0.0}};
+
+    return LinearSystem<2, 1, 2>(A, B, C, D);
+  }
+
   /**
    * Create a state-space model of differential drive drivetrain. In this model,
    * the states are [left velocity, right velocity], the inputs are [left

@@ -17,17 +17,24 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.interpolation.Interpolatable;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.proto.Geometry3D.ProtobufRotation3d;
+import edu.wpi.first.util.protobuf.Protobuf;
+import edu.wpi.first.util.struct.Struct;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.ejml.dense.row.factory.DecompositionFactory_DDRM;
+import us.hebi.quickbuf.Descriptors.Descriptor;
 
 /** A rotation in a 3D coordinate frame represented by a quaternion. */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonAutoDetect(getterVisibility = JsonAutoDetect.Visibility.NONE)
 public class Rotation3d implements Interpolatable<Rotation3d> {
-  private Quaternion m_q = new Quaternion();
+  private final Quaternion m_q;
 
   /** Constructs a Rotation3d with a default angle of 0 degrees. */
-  public Rotation3d() {}
+  public Rotation3d() {
+    m_q = new Quaternion();
+  }
 
   /**
    * Constructs a Rotation3d from a quaternion.
@@ -73,6 +80,17 @@ public class Rotation3d implements Interpolatable<Rotation3d> {
   }
 
   /**
+   * Constructs a Rotation3d with the given rotation vector representation. This representation is
+   * equivalent to axis-angle, where the normalized axis is multiplied by the rotation around the
+   * axis in radians.
+   *
+   * @param rvec The rotation vector.
+   */
+  public Rotation3d(Vector<N3> rvec) {
+    this(rvec, rvec.norm());
+  }
+
+  /**
    * Constructs a Rotation3d with the given axis-angle representation. The axis doesn't have to be
    * normalized.
    *
@@ -82,6 +100,7 @@ public class Rotation3d implements Interpolatable<Rotation3d> {
   public Rotation3d(Vector<N3> axis, double angleRadians) {
     double norm = axis.norm();
     if (norm == 0.0) {
+      m_q = new Quaternion();
       return;
     }
 
@@ -175,6 +194,7 @@ public class Rotation3d implements Interpolatable<Rotation3d> {
     if (dotNorm > 1.0 - 1E-9) {
       // If the dot product is 1, the two vectors point in the same direction so
       // there's no rotation. The default initialization of m_q will work.
+      m_q = new Quaternion();
       return;
     } else if (dotNorm < -1.0 + 1E-9) {
       // If the dot product is -1, the two vectors point in opposite directions
@@ -267,9 +287,14 @@ public class Rotation3d implements Interpolatable<Rotation3d> {
   }
 
   /**
-   * Adds the new rotation to the current rotation.
+   * Adds the new rotation to the current rotation. The other rotation is applied extrinsically,
+   * which means that it rotates around the global axes. For example, {@code new
+   * Rotation3d(Units.degreesToRadians(90), 0, 0).rotateBy(new Rotation3d(0,
+   * Units.degreesToRadians(45), 0))} rotates by 90 degrees around the +X axis and then by 45
+   * degrees around the global +Y axis. (This is equivalent to {@code new
+   * Rotation3d(Units.degreesToRadians(90), Units.degreesToRadians(45), 0)})
    *
-   * @param other The rotation to rotate by.
+   * @param other The extrinsic rotation to rotate by.
    * @return The new rotated Rotation3d.
    */
   public Rotation3d rotateBy(Rotation3d other) {
@@ -297,8 +322,15 @@ public class Rotation3d implements Interpolatable<Rotation3d> {
     final var y = m_q.getY();
     final var z = m_q.getZ();
 
-    // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_angles_conversion
-    return Math.atan2(2.0 * (w * x + y * z), 1.0 - 2.0 * (x * x + y * y));
+    // wpimath/algorithms.md
+    final var cxcy = 1.0 - 2.0 * (x * x + y * y);
+    final var sxcy = 2.0 * (w * x + y * z);
+    final var cy_sq = cxcy * cxcy + sxcy * sxcy;
+    if (cy_sq > 1e-20) {
+      return Math.atan2(sxcy, cxcy);
+    } else {
+      return 0.0;
+    }
   }
 
   /**
@@ -312,7 +344,7 @@ public class Rotation3d implements Interpolatable<Rotation3d> {
     final var y = m_q.getY();
     final var z = m_q.getZ();
 
-    // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_angles_conversion
+    // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_angles_(in_3-2-1_sequence)_conversion
     double ratio = 2.0 * (w * y - z * x);
     if (Math.abs(ratio) >= 1.0) {
       return Math.copySign(Math.PI / 2.0, ratio);
@@ -332,8 +364,15 @@ public class Rotation3d implements Interpolatable<Rotation3d> {
     final var y = m_q.getY();
     final var z = m_q.getZ();
 
-    // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_angles_conversion
-    return Math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z));
+    // wpimath/algorithms.md
+    final var cycz = 1.0 - 2.0 * (y * y + z * z);
+    final var cysz = 2.0 * (w * z + x * y);
+    final var cy_sq = cycz * cycz + cysz * cysz;
+    if (cy_sq > 1e-20) {
+      return Math.atan2(cysz, cycz);
+    } else {
+      return Math.atan2(2.0 * w * z, w * w - z * z);
+    }
   }
 
   /**
@@ -386,7 +425,7 @@ public class Rotation3d implements Interpolatable<Rotation3d> {
   public boolean equals(Object obj) {
     if (obj instanceof Rotation3d) {
       var other = (Rotation3d) obj;
-      return m_q.equals(other.m_q);
+      return Math.abs(Math.abs(m_q.dot(other.m_q)) - m_q.norm() * other.m_q.norm()) < 1e-9;
     }
     return false;
   }
@@ -400,4 +439,77 @@ public class Rotation3d implements Interpolatable<Rotation3d> {
   public Rotation3d interpolate(Rotation3d endValue, double t) {
     return plus(endValue.minus(this).times(MathUtil.clamp(t, 0, 1)));
   }
+
+  public static final class AStruct implements Struct<Rotation3d> {
+    @Override
+    public Class<Rotation3d> getTypeClass() {
+      return Rotation3d.class;
+    }
+
+    @Override
+    public String getTypeString() {
+      return "struct:Rotation3d";
+    }
+
+    @Override
+    public int getSize() {
+      return Quaternion.struct.getSize();
+    }
+
+    @Override
+    public String getSchema() {
+      return "Quaternion q";
+    }
+
+    @Override
+    public Struct<?>[] getNested() {
+      return new Struct<?>[] {Quaternion.struct};
+    }
+
+    @Override
+    public Rotation3d unpack(ByteBuffer bb) {
+      return new Rotation3d(Quaternion.struct.unpack(bb));
+    }
+
+    @Override
+    public void pack(ByteBuffer bb, Rotation3d value) {
+      Quaternion.struct.pack(bb, value.m_q);
+    }
+  }
+
+  public static final AStruct struct = new AStruct();
+
+  public static final class AProto implements Protobuf<Rotation3d, ProtobufRotation3d> {
+    @Override
+    public Class<Rotation3d> getTypeClass() {
+      return Rotation3d.class;
+    }
+
+    @Override
+    public Descriptor getDescriptor() {
+      return ProtobufRotation3d.getDescriptor();
+    }
+
+    @Override
+    public Protobuf<?, ?>[] getNested() {
+      return new Protobuf<?, ?>[] {Quaternion.proto};
+    }
+
+    @Override
+    public ProtobufRotation3d createMessage() {
+      return ProtobufRotation3d.newInstance();
+    }
+
+    @Override
+    public Rotation3d unpack(ProtobufRotation3d msg) {
+      return new Rotation3d(Quaternion.proto.unpack(msg.getQ()));
+    }
+
+    @Override
+    public void pack(ProtobufRotation3d msg, Rotation3d value) {
+      Quaternion.proto.pack(msg.getMutableQ(), value.m_q);
+    }
+  }
+
+  public static final AProto proto = new AProto();
 }
