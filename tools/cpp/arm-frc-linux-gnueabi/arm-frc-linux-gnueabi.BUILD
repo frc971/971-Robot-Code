@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-prefix = "arm-frc2023-linux-gnueabi"
+prefix = "arm-frc2024-linux-gnueabi"
 
 filegroup(
     name = "gcc",

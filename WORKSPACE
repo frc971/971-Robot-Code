@@ -446,9 +446,9 @@ http_archive(
     name = "arm_frc_linux_gnueabi_repo",
     build_file = "@//tools/cpp/arm-frc-linux-gnueabi:arm-frc-linux-gnueabi.BUILD",
     patches = ["//debian:fts.patch"],
-    sha256 = "f53c6b86c25b4827d50365efe760a08edfea39c027dd08674ae696c9093d6a37",
+    sha256 = "10349791e4f9fa33100ee52a84e7f9ba4df581963818334771253369b0d12061",
     strip_prefix = "roborio-academic",
-    url = "https://software.frc971.org/Build-Dependencies/cortexa9_vfpv3-roborio-academic-2023-x86_64-linux-gnu-Toolchain-12.1.0.tgz",
+    url = "https://github.com/wpilibsuite/opensdk/releases/download/v2024-1/cortexa9_vfpv3-roborio-academic-2024-x86_64-linux-gnu-Toolchain-12.1.0.tgz",
 )
 
 # The main partition built from //frc971/orin/build_rootfs.py.
