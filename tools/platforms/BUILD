@@ -8,6 +8,7 @@ platform(
         "//tools/platforms/go:has_support",
         "//tools/platforms/rust:has_support",
         "//tools/platforms/nodejs:has_support",
+        "//tools/platforms/gpu:nvidia",
     ],
 )
 
@@ -20,6 +21,7 @@ platform(
         "//tools/platforms/go:lacks_support",
         "//tools/platforms/rust:has_support",
         "//tools/platforms/nodejs:lacks_support",
+        "//tools/platforms/gpu:nvidia",
     ],
 )
 
@@ -37,6 +39,7 @@ platform(
         # handle that, need to figure out how to do that here or switch linkers.
         "//tools/platforms/rust:lacks_support",
         "//tools/platforms/nodejs:lacks_support",
+        "//tools/platforms/gpu:none",
     ],
 )
 
@@ -48,6 +51,7 @@ platform(
         "//tools/platforms/go:lacks_support",
         "//tools/platforms/rust:lacks_support",
         "//tools/platforms/nodejs:lacks_support",
+        "//tools/platforms/gpu:none",
     ],
 )
 
@@ -59,6 +63,7 @@ platform(
         "//tools/platforms/go:lacks_support",
         "//tools/platforms/rust:lacks_support",
         "//tools/platforms/nodejs:lacks_support",
+        "//tools/platforms/gpu:none",
     ],
 )
 

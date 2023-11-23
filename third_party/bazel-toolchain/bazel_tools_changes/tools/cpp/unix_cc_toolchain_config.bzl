@@ -221,6 +221,15 @@ def _impl(ctx):
                 with_features = [with_feature_set(features = ["fastbuild"])],
             ),
             flag_set(
+                actions = all_compile_actions,
+                with_features = [with_feature_set(features = ["cuda"])],
+                flag_groups = ([
+                    flag_group(
+                        flags = ctx.attr.cuda_flags,
+                    ),
+                ]),
+            ),
+            flag_set(
                 actions = [ACTION_NAMES.c_compile],
                 flag_groups = ([
                     flag_group(
@@ -1131,6 +1140,51 @@ def _impl(ctx):
         ],
     )
 
+    cuda_flags = [
+        "--cuda-gpu-arch=sm_80",
+        "--cuda-gpu-arch=sm_86",
+        "--cuda-gpu-arch=sm_87",
+        "-x",
+        "cuda",
+    ]
+
+    if ctx.attr.cpu == "aarch64":
+        cuda_flags += [
+            "--cuda-path=external/arm64_debian_sysroot/usr/local/cuda-11.8/",
+            "--ptxas-path=external/arm64_debian_sysroot/usr/local/cuda-11.8/bin/ptxas",
+            "-D__CUDACC_VER_MAJOR__=11",
+            "-D__CUDACC_VER_MINOR__=8",
+        ]
+        pass
+    elif ctx.attr.cpu == "k8":
+        cuda_flags += [
+            "--cuda-path=external/amd64_debian_sysroot/usr/lib/cuda/",
+            "--ptxas-path=external/amd64_debian_sysroot/usr/bin/ptxas",
+            "-D__CUDACC_VER_MAJOR__=11",
+            "-D__CUDACC_VER_MINOR__=8",
+        ]
+    else:
+        fail("Unknown cpu", ctx.attr.cpu)
+
+    cuda_feature = feature(
+        name = "cuda",
+        provides = ["cuda"],
+        flag_sets = [
+            flag_set(
+                actions = [
+                    ACTION_NAMES.cpp_compile,
+                    ACTION_NAMES.cpp_header_parsing,
+                    ACTION_NAMES.cpp_module_compile,
+                ],
+                flag_groups = [
+                    flag_group(
+                        flags = cuda_flags,
+                    ),
+                ],
+            ),
+        ],
+    )
+
     thinlto_feature = feature(
         name = "thin_lto",
         flag_sets = [
@@ -1210,6 +1264,7 @@ def _impl(ctx):
             cs_fdo_instrument_feature,
             cs_fdo_optimize_feature,
             thinlto_feature,
+            cuda_feature,
             fdo_prefetch_hints_feature,
             autofdo_feature,
             build_interface_libraries_feature,
@@ -1312,6 +1367,7 @@ cc_toolchain_config = rule(
         "coverage_link_flags": attr.string_list(),
         "supports_start_end_lib": attr.bool(),
         "builtin_sysroot": attr.string(),
+        "cuda_flags": attr.string_list(),
     },
     provides = [CcToolchainConfigInfo],
 )

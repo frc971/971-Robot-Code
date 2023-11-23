@@ -117,3 +117,23 @@ cc_library(
         "//conditions:default": [":unavailable"],
     }),
 )
+
+cc_library(
+    name = "cudart",
+    visibility = ["//visibility:public"],
+    deps = select({
+        "//tools:cpu_k8": ["@amd64_debian_sysroot//:cudart"],
+        "//tools:cpu_arm64": ["@arm64_debian_sysroot//:cudart"],
+        "//conditions:default": [":unavailable"],
+    }),
+)
+
+cc_library(
+    name = "nppi",
+    visibility = ["//visibility:public"],
+    deps = select({
+        "//tools:cpu_k8": ["@amd64_debian_sysroot//:nppi"],
+        "//tools:cpu_arm64": ["@arm64_debian_sysroot//:nppi"],
+        "//conditions:default": [":unavailable"],
+    }),
+)
