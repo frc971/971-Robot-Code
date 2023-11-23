@@ -65,6 +65,18 @@ Java_edu_wpi_first_hal_SimDeviceJNI_freeSimDevice
 
 /*
  * Class:     edu_wpi_first_hal_SimDeviceJNI
+ * Method:    getSimDeviceName
+ * Signature: (I)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_edu_wpi_first_hal_SimDeviceJNI_getSimDeviceName
+  (JNIEnv* env, jclass, jint handle)
+{
+  return MakeJString(env, HAL_GetSimDeviceName(handle));
+}
+
+/*
+ * Class:     edu_wpi_first_hal_SimDeviceJNI
  * Method:    createSimValueNative
  * Signature: (ILjava/lang/String;IIJD)I
  */
@@ -138,7 +150,7 @@ Java_edu_wpi_first_hal_SimDeviceJNI_createSimValueEnumDouble
   }
   return HAL_CreateSimValueEnumDouble(
       device, JStringRef{env, name}.c_str(), direction, len, carr.data(),
-      JDoubleArrayRef{env, optionValues}.array().data(), initialValue);
+      JSpan<const jdouble>{env, optionValues}.data(), initialValue);
 }
 
 /*

@@ -32,4 +32,5 @@ cc_library(
     ],
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     visibility = ["//visibility:public"],
+    deps = ["@allwpilib_ni_libraries//:ni-libraries"],
 )

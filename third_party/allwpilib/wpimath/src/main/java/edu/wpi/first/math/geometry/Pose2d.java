@@ -9,7 +9,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.wpi.first.math.interpolation.Interpolatable;
+import edu.wpi.first.math.proto.Geometry2D.ProtobufPose2d;
+import edu.wpi.first.util.protobuf.Protobuf;
+import edu.wpi.first.util.struct.Struct;
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
+import us.hebi.quickbuf.Descriptors.Descriptor;
 
 /** Represents a 2D pose containing translational and rotational elements. */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -136,6 +144,16 @@ public class Pose2d implements Interpolatable<Pose2d> {
   }
 
   /**
+   * Rotates the pose around the origin and returns the new pose.
+   *
+   * @param other The rotation to transform the pose by.
+   * @return The transformed pose.
+   */
+  public Pose2d rotateBy(Rotation2d other) {
+    return new Pose2d(m_translation.rotateBy(other), m_rotation.rotateBy(other));
+  }
+
+  /**
    * Transforms the pose by the given transformation and returns the new pose. See + operator for
    * the matrix multiplication performed.
    *
@@ -238,6 +256,23 @@ public class Pose2d implements Interpolatable<Pose2d> {
     return new Twist2d(translationPart.getX(), translationPart.getY(), dtheta);
   }
 
+  /**
+   * Returns the nearest Pose2d from a list of poses. If two or more poses in the list have the same
+   * distance from this pose, return the one with the closest rotation component.
+   *
+   * @param poses The list of poses to find the nearest.
+   * @return The nearest Pose2d from the list.
+   */
+  public Pose2d nearest(List<Pose2d> poses) {
+    return Collections.min(
+        poses,
+        Comparator.comparing(
+                (Pose2d other) -> this.getTranslation().getDistance(other.getTranslation()))
+            .thenComparing(
+                (Pose2d other) ->
+                    Math.abs(this.getRotation().minus(other.getRotation()).getRadians())));
+  }
+
   @Override
   public String toString() {
     return String.format("Pose2d(%s, %s)", m_translation, m_rotation);
@@ -275,4 +310,83 @@ public class Pose2d implements Interpolatable<Pose2d> {
       return this.exp(scaledTwist);
     }
   }
+
+  public static final class AStruct implements Struct<Pose2d> {
+    @Override
+    public Class<Pose2d> getTypeClass() {
+      return Pose2d.class;
+    }
+
+    @Override
+    public String getTypeString() {
+      return "struct:Pose2d";
+    }
+
+    @Override
+    public int getSize() {
+      return Translation2d.struct.getSize() + Rotation2d.struct.getSize();
+    }
+
+    @Override
+    public String getSchema() {
+      return "Translation2d translation;Rotation2d rotation";
+    }
+
+    @Override
+    public Struct<?>[] getNested() {
+      return new Struct<?>[] {Translation2d.struct, Rotation2d.struct};
+    }
+
+    @Override
+    public Pose2d unpack(ByteBuffer bb) {
+      Translation2d translation = Translation2d.struct.unpack(bb);
+      Rotation2d rotation = Rotation2d.struct.unpack(bb);
+      return new Pose2d(translation, rotation);
+    }
+
+    @Override
+    public void pack(ByteBuffer bb, Pose2d value) {
+      Translation2d.struct.pack(bb, value.m_translation);
+      Rotation2d.struct.pack(bb, value.m_rotation);
+    }
+  }
+
+  public static final AStruct struct = new AStruct();
+
+  public static final class AProto implements Protobuf<Pose2d, ProtobufPose2d> {
+    @Override
+    public Class<Pose2d> getTypeClass() {
+      return Pose2d.class;
+    }
+
+    @Override
+    public Descriptor getDescriptor() {
+      return ProtobufPose2d.getDescriptor();
+    }
+
+    @Override
+    public Protobuf<?, ?>[] getNested() {
+      return new Protobuf<?, ?>[] {Translation2d.proto, Rotation2d.proto};
+    }
+
+    @Override
+    public ProtobufPose2d createMessage() {
+      return ProtobufPose2d.newInstance();
+    }
+
+    @Override
+    public Pose2d unpack(ProtobufPose2d msg) {
+      return new Pose2d(
+          Translation2d.proto.unpack(msg.getTranslation()),
+          Rotation2d.proto.unpack(msg.getRotation()));
+    }
+
+    @Override
+    public void pack(ProtobufPose2d msg, Pose2d value) {
+      Translation2d.proto.pack(msg.getMutableTranslation(), value.m_translation);
+      Rotation2d.proto.pack(msg.getMutableRotation(), value.m_rotation);
+    }
+  }
+
+  public static final AProto proto = new AProto();
 }

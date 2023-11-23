@@ -103,8 +103,9 @@ void PWM::EnableDeadbandElimination(bool eliminateDeadband) {
 void PWM::SetBounds(double max, double deadbandMax, double center,
                     double deadbandMin, double min) {
   int32_t status = 0;
-  HAL_SetPWMConfig(m_handle, max, deadbandMax, center, deadbandMin, min,
-                   &status);
+  HAL_SetPWMConfigMicroseconds(m_handle, max * 1000.0, deadbandMax * 1000.0,
+                               center * 1000.0, deadbandMin * 1000.0,
+                               min * 1000.0, &status);
   HAL_CHECK_STATUS(status);
 }
 
@@ -124,8 +125,9 @@ void PWM::SetBounds(double max, double deadbandMax, double center,
 void PWM::SetRawBounds(int max, int deadbandMax, int center, int deadbandMin,
                        int min) {
   int32_t status = 0;
-  HAL_SetPWMConfigRaw(m_handle, max, deadbandMax, center, deadbandMin, min,
-                      &status);
+  HAL_SetPWMConfigMicroseconds(m_handle, max * 1000, deadbandMax * 1000,
+                               center * 1000, deadbandMin * 1000, min * 1000,
+                               &status);
   HAL_CHECK_STATUS(status);
 }
 
@@ -136,6 +138,8 @@ void PWM::SetRawBounds(int max, int deadbandMax, int center, int deadbandMin,
  * controller. The values determine the upper and lower speeds as well as the
  * deadband bracket.
  *
+ * Values in microseconds.
+ *
  * @param max         The Minimum pwm value
  * @param deadbandMax The high end of the deadband range
  * @param center      The center speed (off)
@@ -145,8 +149,8 @@ void PWM::SetRawBounds(int max, int deadbandMax, int center, int deadbandMin,
 void PWM::GetRawBounds(int *max, int *deadbandMax, int *center,
                        int *deadbandMin, int *min) {
   int32_t status = 0;
-  HAL_GetPWMConfigRaw(m_handle, max, deadbandMax, center, deadbandMin, min,
-                      &status);
+  HAL_GetPWMConfigMicroseconds(m_handle, max, deadbandMax, center, deadbandMin,
+                               min, &status);
   HAL_CHECK_STATUS(status);
 }
 
@@ -230,7 +234,7 @@ double PWM::GetSpeed() const {
  */
 void PWM::SetRaw(uint16_t value) {
   int32_t status = 0;
-  HAL_SetPWMRaw(m_handle, value, &status);
+  HAL_SetPWMPulseTimeMicroseconds(m_handle, value, &status);
   HAL_CHECK_STATUS(status);
 }
 
@@ -243,7 +247,7 @@ void PWM::SetRaw(uint16_t value) {
  */
 uint16_t PWM::GetRaw() const {
   int32_t status = 0;
-  uint16_t value = HAL_GetPWMRaw(m_handle, &status);
+  uint16_t value = HAL_GetPWMPulseTimeMicroseconds(m_handle, &status);
   HAL_CHECK_STATUS(status);
 
   return value;

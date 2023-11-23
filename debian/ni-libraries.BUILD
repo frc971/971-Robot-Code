@@ -8,7 +8,7 @@ cc_binary(
 )
 
 cc_binary(
-    name = "libnirio_emb_can.so.21",
+    name = "libnirio_emb_can.so.23",
     srcs = [
         "src/shims/embcan/main.c",
     ],
@@ -20,10 +20,10 @@ cc_library(
     name = "ni-libraries",
     srcs = [
         "libNiFpgaLv.so.13",
-        "libnirio_emb_can.so.21",
-        "src/lib/chipobject/libRoboRIO_FRC_ChipObject.so.23.0.0",
-        "src/lib/netcomm/libFRC_NetworkCommunication.so.23.0.0",
-        "src/lib/visa/libvisa.so.22.5.0",
+        "libnirio_emb_can.so.23",
+        "src/lib/chipobject/libRoboRIO_FRC_ChipObject.so.24.0.0",
+        "src/lib/netcomm/libFRC_NetworkCommunication.so.24.0.0",
+        "src/lib/visa/libvisa.so.23.3.0",
     ],
     hdrs = glob(["src/include/**"]),
     includes = [

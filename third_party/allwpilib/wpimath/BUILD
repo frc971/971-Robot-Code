@@ -5,6 +5,7 @@ cc_library(
     hdrs = glob(
         [
             "src/main/native/include/frc/fmt/**",
+            "src/main/native/include/units/**",
         ],
     ),
     includes = [
