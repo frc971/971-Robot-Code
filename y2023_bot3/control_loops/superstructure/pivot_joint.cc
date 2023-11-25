@@ -26,27 +26,27 @@ PivotJoint::RunIteration(PivotGoal goal, double *output,
       break;
 
     case PivotGoal::PICKUP_FRONT:
-      pivot_goal = 0.25;
+      pivot_goal = 1.74609993820075;
       break;
 
     case PivotGoal::PICKUP_BACK:
-      pivot_goal = 0.30;
+      pivot_goal = -1.7763851077235;
       break;
 
     case PivotGoal::SCORE_LOW_FRONT:
-      pivot_goal = 0.35;
+      pivot_goal = 1.74609993820075;
       break;
 
     case PivotGoal::SCORE_LOW_BACK:
-      pivot_goal = 0.40;
+      pivot_goal = -1.7763851077235;
       break;
 
     case PivotGoal::SCORE_MID_FRONT:
-      pivot_goal = 0.45;
+      pivot_goal = 0.846887672907125;
       break;
 
     case PivotGoal::SCORE_MID_BACK:
-      pivot_goal = 0.5;
+      pivot_goal = -0.763222056740831;
       break;
   }
 
@@ -55,7 +55,7 @@ PivotJoint::RunIteration(PivotGoal goal, double *output,
       pivot_joint_offset = frc971::control_loops::
           CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
               *status_fbb, pivot_goal,
-              frc971::CreateProfileParameters(*status_fbb, 12.0, 90.0));
+              frc971::CreateProfileParameters(*status_fbb, 5.0, 20.0));
 
   status_fbb->Finish(pivot_joint_offset);
 

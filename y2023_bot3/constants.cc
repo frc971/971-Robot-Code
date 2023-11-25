@@ -28,7 +28,7 @@ Values MakeValues(uint16_t team) {
   pivot_joint->subsystem_params.zeroing_voltage = 3.0;
   pivot_joint->subsystem_params.operating_voltage = 12.0;
   pivot_joint->subsystem_params.zeroing_profile_params = {0.5, 3.0};
-  pivot_joint->subsystem_params.default_profile_params = {0.5, 5.0};
+  pivot_joint->subsystem_params.default_profile_params = {5.0, 5.0};
   pivot_joint->subsystem_params.range = Values::kPivotJointRange();
   pivot_joint->subsystem_params.make_integral_loop =
       control_loops::superstructure::pivot_joint::MakeIntegralPivotJointLoop;
@@ -52,6 +52,10 @@ Values MakeValues(uint16_t team) {
       break;
 
     case kThirdRobotTeamNumber:
+      pivot_joint->subsystem_params.zeroing_constants
+          .measured_absolute_position = 0.564786179025525;
+
+      pivot_joint->potentiometer_offset = 0.304569457401797 + 2.66972311194163;
       break;
 
     default:
