@@ -12,6 +12,13 @@
 #include "y2023_bot3/control_loops/drivetrain/drivetrain_base.h"
 
 DEFINE_bool(spline_auto, false, "Run simple test S-spline auto mode.");
+DEFINE_bool(charged_up, true,
+            "If true run charged up autonomous mode. 2 Piece non-cable side");
+DEFINE_bool(charged_up_middle, false,
+            "If true run charged up middle autonomous mode. Starts middle, "
+            "places cube mid, mobility");
+DEFINE_bool(one_piece, false,
+            "End charged_up autonomous after first cube is placed.");
 
 namespace y2023_bot3 {
 namespace autonomous {
@@ -110,11 +117,32 @@ void AutonomousActor::Replan() {
                    SplineDirection::kForward);
 
     starting_position_ = test_spline_->starting_position();
+  } else if (FLAGS_charged_up) {
+    charged_up_splines_ = {
+        PlanSpline(std::bind(&AutonomousSplines::Spline1, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kBackward),
+        PlanSpline(std::bind(&AutonomousSplines::Spline2, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward),
+        PlanSpline(std::bind(&AutonomousSplines::Spline3, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kBackward),
+        PlanSpline(std::bind(&AutonomousSplines::Spline4, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward)};
+    starting_position_ = charged_up_splines_.value()[0].starting_position();
+    CHECK(starting_position_);
+  } else if (FLAGS_charged_up_middle) {
+    charged_up_middle_splines_ = {
+        PlanSpline(std::bind(&AutonomousSplines::SplineMiddle1, &auto_splines_,
+                             std::placeholders::_1, alliance_),
+                   SplineDirection::kForward)};
   }
   is_planned_ = true;
 
   MaybeSendStartingPosition();
-}
+}  // namespace autonomous
 
 void AutonomousActor::MaybeSendStartingPosition() {
   if (is_planned_ && user_indicated_safe_to_reset_ &&
@@ -134,6 +162,8 @@ void AutonomousActor::Reset() {
   alliance_ = joystick_state_fetcher_->alliance();
 
   preloaded_ = false;
+  roller_goal_ = control_loops::superstructure::RollerGoal::IDLE;
+  pivot_goal_ = control_loops::superstructure::PivotGoal::NEUTRAL;
   SendSuperstructureGoal();
 }
 
@@ -160,6 +190,13 @@ bool AutonomousActor::RunAction(
     return false;
   }
 
+  if (FLAGS_charged_up) {
+    ChargedUp();
+  } else {
+    AOS_LOG(INFO, "No autonomous mode selected.");
+    return false;
+  }
+
   return true;
 }
 
@@ -182,16 +219,262 @@ void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
   }
 }
 
+// Charged Up 2 Game Object Autonomous (non-cable side)
+void AutonomousActor::ChargedUp() {
+  aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
+
+  CHECK(charged_up_splines_);
+
+  auto &splines = *charged_up_splines_;
+
+  AOS_LOG(INFO, "Going to preload");
+
+  // Tell the superstructure that a cube was preloaded
+  if (!WaitForPreloaded()) {
+    return;
+  }
+
+  // Place & Spit firt cube high
+  AOS_LOG(INFO, "Moving arm to front high scoring position");
+
+  HighScore();
+  std::this_thread::sleep_for(chrono::milliseconds(600));
+
+  SpitHigh();
+  std::this_thread::sleep_for(chrono::milliseconds(600));
+
+  StopSpitting();
+
+  std::this_thread::sleep_for(chrono::milliseconds(200));
+  AOS_LOG(
+      INFO, "Placed first cube (HIGH) %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (FLAGS_one_piece) {
+    return;
+  }
+
+  // Drive to second cube
+  if (!splines[0].WaitForPlan()) {
+    return;
+  }
+  splines[0].Start();
+
+  // Move arm into position to intake cube and intake.
+  AOS_LOG(INFO, "Moving arm to back pickup position");
+
+  Pickup();
+
+  std::this_thread::sleep_for(chrono::milliseconds(500));
+  Intake();
+
+  AOS_LOG(
+      INFO, "Turning on rollers %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!splines[0].WaitForSplineDistanceRemaining(0.02)) {
+    return;
+  }
+
+  AOS_LOG(
+      INFO, "Got there %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  // Drive back to grid
+  if (!splines[1].WaitForPlan()) {
+    return;
+  }
+  splines[1].Start();
+  std::this_thread::sleep_for(chrono::milliseconds(600));
+
+  // Place Low
+  AOS_LOG(INFO, "Moving arm to front mid scoring position");
+
+  MidScore();
+
+  std::this_thread::sleep_for(chrono::milliseconds(600));
+  if (!splines[1].WaitForSplineDistanceRemaining(0.1)) return;
+
+  Spit();
+  std::this_thread::sleep_for(chrono::milliseconds(400));
+  StopSpitting();
+
+  AOS_LOG(
+      INFO, "Placed second cube (MID) %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  // Drive to third cube
+  if (!splines[2].WaitForPlan()) {
+    return;
+  }
+  splines[2].Start();
+
+  std::this_thread::sleep_for(chrono::milliseconds(500));
+  // Move arm into position to intake cube and intake.
+  AOS_LOG(INFO, "Moving arm to back pickup position");
+
+  Pickup();
+
+  std::this_thread::sleep_for(chrono::milliseconds(250));
+  Intake();
+
+  AOS_LOG(
+      INFO, "Turning on rollers %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  if (!splines[2].WaitForSplineDistanceRemaining(0.02)) {
+    return;
+  }
+
+  AOS_LOG(
+      INFO, "Got there %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  // Drive back to grid
+  if (!splines[3].WaitForPlan()) {
+    return;
+  }
+  splines[3].Start();
+  std::this_thread::sleep_for(chrono::milliseconds(600));
+
+  // Place Low
+  AOS_LOG(INFO, "Moving arm to front low scoring position");
+
+  LowScore();
+
+  std::this_thread::sleep_for(chrono::milliseconds(600));
+  if (!splines[3].WaitForSplineDistanceRemaining(0.1)) return;
+
+  Spit();
+  std::this_thread::sleep_for(chrono::milliseconds(600));
+  StopSpitting();
+
+  AOS_LOG(
+      INFO, "Placed low cube (LOW) %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+}
+
+// Charged Up Place and Mobility Autonomous (middle)
+void AutonomousActor::ChargedUpMiddle() {
+  aos::monotonic_clock::time_point start_time = aos::monotonic_clock::now();
+
+  CHECK(charged_up_middle_splines_);
+
+  auto &splines = *charged_up_middle_splines_;
+
+  AOS_LOG(INFO, "Going to preload");
+
+  // Tell the superstructure that a cube was preloaded
+  if (!WaitForPreloaded()) {
+    return;
+  }
+
+  // Place & Spit firt cube mid
+  AOS_LOG(INFO, "Moving arm to front mid scoring position");
+
+  MidScore();
+  std::this_thread::sleep_for(chrono::milliseconds(300));
+
+  Spit();
+  std::this_thread::sleep_for(chrono::milliseconds(300));
+
+  StopSpitting();
+
+  std::this_thread::sleep_for(chrono::milliseconds(100));
+  AOS_LOG(
+      INFO, "Placed first cube (Mid) %lf s\n",
+      aos::time::DurationInSeconds(aos::monotonic_clock::now() - start_time));
+
+  // Drive to second cube
+
+  if (!splines[0].WaitForPlan()) {
+    return;
+  }
+  splines[0].Start();
+}
+
 void AutonomousActor::SendSuperstructureGoal() {
   auto builder = superstructure_goal_sender_.MakeBuilder();
 
   control_loops::superstructure::Goal::Builder superstructure_builder =
       builder.MakeBuilder<control_loops::superstructure::Goal>();
 
+  superstructure_builder.add_pivot_goal(pivot_goal_);
+  superstructure_builder.add_roller_goal(roller_goal_);
+  superstructure_builder.add_preloaded_with_cube(preloaded_);
+
   if (builder.Send(superstructure_builder.Finish()) !=
       aos::RawSender::Error::kOk) {
     AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
   }
+}
+
+[[nodiscard]] bool AutonomousActor::WaitForPreloaded() {
+  set_preloaded(true);
+  SendSuperstructureGoal();
+
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
+                                      event_loop()->monotonic_now(),
+                                      ActorBase::kLoopOffset);
+
+  bool loaded = false;
+  while (!loaded) {
+    if (ShouldCancel()) {
+      return false;
+    }
+
+    phased_loop.SleepUntilNext();
+    superstructure_status_fetcher_.Fetch();
+    CHECK(superstructure_status_fetcher_.get() != nullptr);
+
+    loaded = (superstructure_status_fetcher_->end_effector_state() ==
+              control_loops::superstructure::EndEffectorState::LOADED);
+  }
+
+  set_preloaded(false);
+  SendSuperstructureGoal();
+
+  return true;
+}
+
+void AutonomousActor::HighScore() {
+  set_pivot_goal(control_loops::superstructure::PivotGoal::SCORE_HIGH_FRONT);
+  SendSuperstructureGoal();
+}
+void AutonomousActor::MidScore() {
+  set_pivot_goal(control_loops::superstructure::PivotGoal::SCORE_MID_FRONT);
+  SendSuperstructureGoal();
+}
+void AutonomousActor::LowScore() {
+  set_pivot_goal(control_loops::superstructure::PivotGoal::SCORE_LOW_FRONT);
+  SendSuperstructureGoal();
+}
+void AutonomousActor::Spit() {
+  set_roller_goal(control_loops::superstructure::RollerGoal::SPIT);
+  SendSuperstructureGoal();
+}
+void AutonomousActor::SpitHigh() {
+  set_roller_goal(control_loops::superstructure::RollerGoal::SPIT_HIGH);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::StopSpitting() {
+  set_roller_goal(control_loops::superstructure::RollerGoal::IDLE);
+  SendSuperstructureGoal();
+}
+void AutonomousActor::Intake() {
+  set_roller_goal(control_loops::superstructure::RollerGoal::INTAKE_CUBE);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::Pickup() {
+  set_pivot_goal(control_loops::superstructure::PivotGoal::PICKUP_BACK);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::Neutral() {
+  set_pivot_goal(control_loops::superstructure::PivotGoal::NEUTRAL);
+  SendSuperstructureGoal();
 }
 
 }  // namespace autonomous

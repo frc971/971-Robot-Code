@@ -15,7 +15,10 @@ enum EndEffectorState : ubyte {
   SPITTING = 3,
   // Waiting for the arm to be at MID shooting goal and then telling the
   // end effector to spit mid
-  SPITTING_MID = 4
+  SPITTING_MID = 4,
+  // Waiting for the arm to be at HIGH shooting goal and then telling the
+  // end effector to spit mid
+  SPITTING_HIGH = 5
 }
 
 table Status {

@@ -95,6 +95,8 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
       if (data.IsPressed(kSpit)) {
         roller_goal = RollerGoal::SPIT;
+      } else if (data.IsPressed(kSpitHigh)) {
+        roller_goal = RollerGoal::SPIT_HIGH;
       }
 
       if (data.IsPressed(kScore)) {
