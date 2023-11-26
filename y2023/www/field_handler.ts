@@ -411,7 +411,7 @@ export class FieldHandler {
           '<br/>';
       for (let i = 0; i < this.superstructureStatus.arm()
                               .rollJointEstimatorState()
-                              .errors.length;
+                              .errorsLength();
            i++) {
         zeroingErrors += ZeroingError[this.superstructureStatus.arm()
                                           .rollJointEstimatorState()
@@ -423,7 +423,7 @@ export class FieldHandler {
           '<br/>';
       for (let i = 0; i < this.superstructureStatus.arm()
                               .proximalEstimatorState()
-                              .errors.length;
+                              .errorsLength();
            i++) {
         zeroingErrors += ZeroingError[this.superstructureStatus.arm()
                                           .proximalEstimatorState()
@@ -434,7 +434,7 @@ export class FieldHandler {
           'Distal Joint Errors:' +
           '<br/>';
       for (let i = 0; i <
-           this.superstructureStatus.arm().distalEstimatorState().errors.length;
+           this.superstructureStatus.arm().distalEstimatorState().errorsLength();
            i++) {
         zeroingErrors += ZeroingError[this.superstructureStatus.arm()
                                           .distalEstimatorState()
@@ -445,7 +445,7 @@ export class FieldHandler {
           'Wrist Errors:' +
           '<br/>';
       for (let i = 0;
-           i < this.superstructureStatus.wrist().estimatorState().errors.length;
+           i < this.superstructureStatus.wrist().estimatorState().errorsLength();
            i++) {
         zeroingErrors += ZeroingError[this.superstructureStatus.wrist()
                                           .estimatorState()
