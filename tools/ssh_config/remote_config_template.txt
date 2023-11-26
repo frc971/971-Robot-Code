@@ -1,0 +1,111 @@
+host roborio
+  User admin
+  HostName localhost
+  Port 10999
+  StrictHostKeyChecking no
+
+host practice-roborio
+  User admin
+  HostName localhost
+  Port 10989
+  StrictHostKeyChecking no
+
+host third-roborio
+  User admin
+  HostName localhost
+  Port 10979
+  StrictHostKeyChecking no
+
+host pi1
+  User pi
+  HostName localhost
+  Port 10998
+  IdentityFile ~/.ssh/{{identity_file}}
+host pi2
+  User pi
+  HostName localhost
+  Port 10997
+  IdentityFile ~/.ssh/{{identity_file}}
+host pi3
+  User pi
+  HostName localhost
+  Port 10996
+  IdentityFile ~/.ssh/{{identity_file}}
+host pi4
+  User pi
+  HostName localhost
+  Port 10995
+  IdentityFile ~/.ssh/{{identity_file}}
+host pi5
+  User pi
+  HostName localhost
+  Port 10994
+  IdentityFile ~/.ssh/{{identity_file}}
+host pi6
+  User pi
+  HostName localhost
+  Port 10993
+  IdentityFile ~/.ssh/{{identity_file}}
+
+host practice-pi1
+  User pi
+  HostName localhost
+  Port 10988
+  IdentityFile ~/.ssh/{{identity_file}}
+host practice-pi2
+  User pi
+  HostName localhost
+  Port 10987
+  IdentityFile ~/.ssh/{{identity_file}}
+host practice-pi3
+  User pi
+  HostName localhost
+  Port 10986
+  IdentityFile ~/.ssh/{{identity_file}}
+host practice-pi4
+  User pi
+  HostName localhost
+  Port 10985
+  IdentityFile ~/.ssh/{{identity_file}}
+host practice-pi6
+  User pi
+  HostName localhost
+  Port 10984
+  IdentityFile ~/.ssh/{{identity_file}}
+host practice-pi5
+  User pi
+  HostName localhost
+  Port 10983
+  IdentityFile ~/.ssh/{{identity_file}}
+
+host box-pi1
+  User pi
+  HostName localhost
+  Port 10978
+  IdentityFile ~/.ssh/{{identity_file}}
+host box-pi2
+  User pi
+  HostName localhost
+  Port 10977
+  IdentityFile ~/.ssh/{{identity_file}}
+host box-pi3
+  User pi
+  HostName localhost
+  Port 10976
+  IdentityFile ~/.ssh/{{identity_file}}
+host box-pi4
+  User pi
+  HostName localhost
+  Port 10975
+  IdentityFile ~/.ssh/{{identity_file}}
+host box-pi6
+  User pi
+  HostName localhost
+  Port 10974
+  IdentityFile ~/.ssh/{{identity_file}}
+host box-pi5
+  User pi
+  HostName localhost
+  Port 10973
+  IdentityFile ~/.ssh/{{identity_file}}
+  
