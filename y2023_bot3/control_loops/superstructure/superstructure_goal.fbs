@@ -2,30 +2,7 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2023_bot3.control_loops.superstructure;
 
-enum PivotGoal: ubyte {
-  NEUTRAL = 0,
-  PICKUP_FRONT = 1,
-  PICKUP_BACK = 2,
-  SCORE_LOW_FRONT = 3,
-  SCORE_LOW_BACK = 4,
-  SCORE_MID_FRONT = 5,
-  SCORE_MID_BACK = 6,
-  SCORE_HIGH_FRONT = 7,
-  SCORE_HIGH_BACK = 8,
-}
-
-enum RollerGoal: ubyte {
-    IDLE = 0,
-    INTAKE_CUBE = 1,
-    SPIT = 2,
-    SPIT_MID = 3,
-    SPIT_HIGH = 4,
-}
-
 table Goal {
-    pivot_goal:PivotGoal (id: 0);
-    roller_goal:RollerGoal (id: 1);
-    preloaded_with_cube:bool (id: 2);
 }
 
 

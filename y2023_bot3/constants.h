@@ -10,7 +10,6 @@
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2023_bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-#include "y2023_bot3/control_loops/superstructure/pivot_joint/pivot_joint_plant.h"
 namespace y2023_bot3 {
 namespace constants {
 
@@ -40,12 +39,6 @@ struct Values {
   static constexpr double kDrivetrainSupplyCurrentLimit() { return 35.0; }
   static constexpr double kDrivetrainStatorCurrentLimit() { return 60.0; }
 
-  static constexpr double kRollerSupplyCurrentLimit() { return 30.0; }
-  static constexpr double kRollerStatorCurrentLimit() { return 100.0; }
-
-  static constexpr double kPivotSupplyCurrentLimit() { return 40.0; }
-  static constexpr double kPivotStatorCurrentLimit() { return 200.0; }
-
   // timeout to ensure code doesn't get stuck after releasing the "intake"
   // button
   static constexpr std::chrono::milliseconds kExtraIntakingTime() {
@@ -63,51 +56,6 @@ struct Values {
     return (rotations * (2.0 * M_PI)) *
            control_loops::drivetrain::kHighOutputRatio;
   }
-
-  // Pivot Joint
-  static constexpr double kPivotJointEncoderCountsPerRevolution() {
-    return 4096.0;
-  }
-
-  static constexpr double kPivotJointEncoderRatio() {
-    return (24.0 / 64.0) * (15.0 / 60.0);
-  }
-
-  static constexpr double kPivotJointPotRatio() {
-    return (24.0 / 64.0) * (15.0 / 60.0);
-  }
-
-  static constexpr double kPivotJointPotRadiansPerVolt() {
-    return kPivotJointPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
-           (2 * M_PI /*radians*/);
-  }
-
-  static constexpr double kMaxPivotJointEncoderPulsesPerSecond() {
-    return control_loops::superstructure::pivot_joint::kFreeSpeed /
-           (2.0 * M_PI) *
-           control_loops::superstructure::pivot_joint::kOutputRatio /
-           kPivotJointEncoderRatio() * kPivotJointEncoderCountsPerRevolution();
-  }
-
-  static constexpr ::frc971::constants::Range kPivotJointRange() {
-    return ::frc971::constants::Range{
-        .lower_hard = -1.78879503977269,  // Back Hard
-        .upper_hard = 1.76302285774785,   // Front Hard
-        .lower = -1.77156498873494,       // Back Soft
-        .upper = 1.76555657862879,        // Front Soft
-    };
-  }
-
-  struct PotAndAbsEncoderConstants {
-    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
-        ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
-        subsystem_params;
-    double potentiometer_offset;
-  };
-
-  PotAndAbsEncoderConstants pivot_joint;
-
-  bool pivot_joint_flipped;
 };
 
 // Creates and returns a Values instance for the constants.

@@ -88,13 +88,8 @@ double drivetrain_velocity_translate(double in) {
          control_loops::drivetrain::kWheelRadius;
 }
 
-double pivot_pot_translate(double voltage) {
-  return voltage * Values::kPivotJointPotRadiansPerVolt();
-}
-
 constexpr double kMaxFastEncoderPulsesPerSecond = std::max({
     Values::kMaxDrivetrainEncoderPulsesPerSecond(),
-    Values::kMaxPivotJointEncoderPulsesPerSecond(),
 });
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
@@ -180,62 +175,6 @@ class Falcon {
     PrintConfigs();
   }
 
-  void WriteRollerConfigs() {
-    ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
-    current_limits.StatorCurrentLimit =
-        constants::Values::kRollerStatorCurrentLimit();
-    current_limits.StatorCurrentLimitEnable = true;
-    current_limits.SupplyCurrentLimit =
-        constants::Values::kRollerSupplyCurrentLimit();
-    current_limits.SupplyCurrentLimitEnable = true;
-
-    ctre::phoenix6::configs::MotorOutputConfigs output_configs;
-    output_configs.NeutralMode =
-        ctre::phoenix6::signals::NeutralModeValue::Brake;
-    output_configs.DutyCycleNeutralDeadband = 0;
-
-    ctre::phoenix6::configs::TalonFXConfiguration configuration;
-    configuration.CurrentLimits = current_limits;
-    configuration.MotorOutput = output_configs;
-
-    ctre::phoenix::StatusCode status =
-        talon_.GetConfigurator().Apply(configuration);
-    if (!status.IsOK()) {
-      AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
-              status.GetName(), status.GetDescription());
-    }
-
-    PrintConfigs();
-  }
-
-  void WritePivotConfigs() {
-    ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
-    current_limits.StatorCurrentLimit =
-        constants::Values::kPivotStatorCurrentLimit();
-    current_limits.StatorCurrentLimitEnable = true;
-    current_limits.SupplyCurrentLimit =
-        constants::Values::kPivotSupplyCurrentLimit();
-    current_limits.SupplyCurrentLimitEnable = true;
-
-    ctre::phoenix6::configs::MotorOutputConfigs output_configs;
-    output_configs.NeutralMode =
-        ctre::phoenix6::signals::NeutralModeValue::Brake;
-    output_configs.DutyCycleNeutralDeadband = 0;
-
-    ctre::phoenix6::configs::TalonFXConfiguration configuration;
-    configuration.CurrentLimits = current_limits;
-    configuration.MotorOutput = output_configs;
-
-    ctre::phoenix::StatusCode status =
-        talon_.GetConfigurator().Apply(configuration);
-    if (!status.IsOK()) {
-      AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
-              status.GetName(), status.GetDescription());
-    }
-
-    PrintConfigs();
-  }
-
   ctre::phoenix6::hardware::TalonFX *talon() { return &talon_; }
 
   flatbuffers::Offset<frc971::control_loops::CANFalcon> WritePosition(
@@ -302,8 +241,7 @@ class CANSensorReader {
         can_position_sender_(
             event_loop
                 ->MakeSender<frc971::control_loops::drivetrain::CANPosition>(
-                    "/drivetrain")),
-        roller_falcon_data_(std::nullopt) {
+                    "/drivetrain")) {
     event_loop->SetRuntimeRealtimePriority(40);
     event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({1}));
     timer_handler_ = event_loop->AddTimer([this]() { Loop(); });
@@ -318,20 +256,11 @@ class CANSensorReader {
   void set_falcons(std::shared_ptr<Falcon> right_front,
                    std::shared_ptr<Falcon> right_back,
                    std::shared_ptr<Falcon> left_front,
-                   std::shared_ptr<Falcon> left_back,
-                   std::shared_ptr<Falcon> roller_falcon,
-                   std::shared_ptr<Falcon> pivot_falcon) {
+                   std::shared_ptr<Falcon> left_back) {
     right_front_ = std::move(right_front);
     right_back_ = std::move(right_back);
     left_front_ = std::move(left_front);
     left_back_ = std::move(left_back);
-    roller_falcon_ = std::move(roller_falcon);
-    pivot_falcon_ = std::move(pivot_falcon);
-  }
-
-  std::optional<frc971::control_loops::CANFalconT> roller_falcon_data() {
-    std::unique_lock<aos::stl_mutex> lock(roller_mutex_);
-    return roller_falcon_data_;
   }
 
  private:
@@ -346,8 +275,7 @@ class CANSensorReader {
 
     auto builder = can_position_sender_.MakeBuilder();
 
-    for (auto falcon : {right_front_, right_back_, left_front_, left_back_,
-                        roller_falcon_, pivot_falcon_}) {
+    for (auto falcon : {right_front_, right_back_, left_front_, left_back_}) {
       falcon->RefreshNontimesyncedSignals();
     }
 
@@ -374,21 +302,6 @@ class CANSensorReader {
     can_position_builder.add_status(static_cast<int>(status));
 
     builder.CheckOk(builder.Send(can_position_builder.Finish()));
-
-    {
-      std::unique_lock<aos::stl_mutex> lock(roller_mutex_);
-      frc971::control_loops::CANFalconT roller_falcon_data;
-      roller_falcon_data.id = roller_falcon_->device_id();
-      roller_falcon_data.supply_current = roller_falcon_->supply_current();
-      roller_falcon_data.torque_current = -roller_falcon_->torque_current();
-      roller_falcon_data.supply_voltage = roller_falcon_->supply_voltage();
-      roller_falcon_data.device_temp = roller_falcon_->device_temp();
-      roller_falcon_data.position = -roller_falcon_->position();
-      roller_falcon_data.duty_cycle = roller_falcon_->duty_cycle();
-      roller_falcon_data_ =
-          std::make_optional<frc971::control_loops::CANFalconT>(
-              roller_falcon_data);
-    }
   }
 
   aos::EventLoop *event_loop_;
@@ -397,12 +310,7 @@ class CANSensorReader {
   aos::Sender<frc971::control_loops::drivetrain::CANPosition>
       can_position_sender_;
 
-  std::shared_ptr<Falcon> right_front_, right_back_, left_front_, left_back_,
-      roller_falcon_, pivot_falcon_;
-
-  std::optional<frc971::control_loops::CANFalconT> roller_falcon_data_;
-
-  aos::stl_mutex roller_mutex_;
+  std::shared_ptr<Falcon> right_front_, right_back_, left_front_, left_back_;
 
   // Pointer to the timer handler used to modify the wakeup.
   ::aos::TimerHandler *timer_handler_;
@@ -452,32 +360,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     {
       auto builder = superstructure_position_sender_.MakeBuilder();
 
-      flatbuffers::Offset<frc971::control_loops::CANFalcon>
-          roller_falcon_offset;
-      frc971::PotAndAbsolutePositionT pivot;
-      CopyPosition(pivot_encoder_, &pivot,
-                   Values::kPivotJointEncoderCountsPerRevolution(),
-                   Values::kPivotJointEncoderRatio(), pivot_pot_translate, true,
-                   values_->pivot_joint.potentiometer_offset);
-
-      auto optional_roller_falcon = can_sensor_reader_->roller_falcon_data();
-      if (optional_roller_falcon.has_value()) {
-        roller_falcon_offset = frc971::control_loops::CANFalcon::Pack(
-            *builder.fbb(), &optional_roller_falcon.value());
-      }
-
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> pivot_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &pivot);
-
       superstructure::Position::Builder position_builder =
           builder.MakeBuilder<superstructure::Position>();
-      position_builder.add_end_effector_cube_beam_break(
-          !end_effector_cube_beam_break_->Get());
-      position_builder.add_pivot_joint_position(pivot_offset);
-
-      if (!roller_falcon_offset.IsNull()) {
-        position_builder.add_roller_falcon(roller_falcon_offset);
-      }
       builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
@@ -556,26 +440,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     superstructure_reading_ = superstructure_reading;
   }
 
-  void set_end_effector_cube_beam_break(
-      ::std::unique_ptr<frc::DigitalInput> sensor) {
-    end_effector_cube_beam_break_ = ::std::move(sensor);
-  }
-
-  void set_pivot_encoder(::std::unique_ptr<frc::Encoder> encoder) {
-    fast_encoder_filter_.Add(encoder.get());
-    pivot_encoder_.set_encoder(::std::move(encoder));
-  }
-
-  void set_pivot_absolute_pwm(
-      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
-    pivot_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
-  }
-
-  void set_pivot_potentiometer(
-      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
-    pivot_encoder_.set_potentiometer(::std::move(potentiometer));
-  }
-
  private:
   std::shared_ptr<const Values> values_;
 
@@ -587,95 +451,12 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
-  std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_,
-      end_effector_cube_beam_break_;
+  std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_;
 
   frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
 
-  frc971::wpilib::AbsoluteEncoderAndPotentiometer pivot_encoder_;
-
   CANSensorReader *can_sensor_reader_;
 };
-
-class SuperstructureCANWriter
-    : public ::frc971::wpilib::LoopOutputHandler<superstructure::Output> {
- public:
-  SuperstructureCANWriter(::aos::EventLoop *event_loop)
-      : ::frc971::wpilib::LoopOutputHandler<superstructure::Output>(
-            event_loop, "/superstructure") {
-    event_loop->SetRuntimeRealtimePriority(
-        constants::Values::kSuperstructureCANWriterPriority);
-
-    event_loop->OnRun([this]() { WriteConfigs(); });
-  };
-
-  void HandleCANConfiguration(const frc971::CANConfiguration &configuration) {
-    roller_falcon_->PrintConfigs();
-    pivot_falcon_->PrintConfigs();
-    if (configuration.reapply()) {
-      WriteConfigs();
-    }
-  }
-
-  void set_roller_falcon(std::shared_ptr<Falcon> roller_falcon) {
-    roller_falcon_ = std::move(roller_falcon);
-  }
-
-  void set_pivot_falcon(std::shared_ptr<Falcon> pivot_falcon) {
-    pivot_falcon_ = std::move(pivot_falcon);
-  }
-
- private:
-  void WriteConfigs() {
-    roller_falcon_->WriteRollerConfigs();
-    pivot_falcon_->WritePivotConfigs();
-  }
-
-  void Write(const superstructure::Output &output) override {
-    ctre::phoenix6::controls::DutyCycleOut roller_control(
-        SafeSpeed(-output.roller_voltage()));
-    roller_control.UpdateFreqHz = 0_Hz;
-    roller_control.EnableFOC = true;
-
-    ctre::phoenix6::controls::DutyCycleOut pivot_control(
-        SafeSpeed(output.pivot_joint_voltage()));
-    pivot_control.UpdateFreqHz = 0_Hz;
-    pivot_control.EnableFOC = true;
-
-    ctre::phoenix::StatusCode status =
-        roller_falcon_->talon()->SetControl(roller_control);
-
-    if (!status.IsOK()) {
-      AOS_LOG(ERROR, "Failed to write control to falcon: %s: %s",
-              status.GetName(), status.GetDescription());
-    }
-
-    status = pivot_falcon_->talon()->SetControl(pivot_control);
-
-    if (!status.IsOK()) {
-      AOS_LOG(ERROR, "Failed to write control to falcon: %s: %s",
-              status.GetName(), status.GetDescription());
-    }
-  }
-
-  void Stop() override {
-    AOS_LOG(WARNING, "Superstructure CAN output too old.\n");
-    ctre::phoenix6::controls::DutyCycleOut stop_command(0.0);
-    stop_command.UpdateFreqHz = 0_Hz;
-    stop_command.EnableFOC = true;
-
-    roller_falcon_->talon()->SetControl(stop_command);
-    pivot_falcon_->talon()->SetControl(stop_command);
-  }
-
-  double SafeSpeed(double voltage) {
-    return (::aos::Clip(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
-  }
-
-  std::shared_ptr<Falcon> roller_falcon_;
-  std::shared_ptr<Falcon> pivot_falcon_;
-};
-
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
                              ::frc971::control_loops::drivetrain::Output> {
  public:
@@ -817,10 +598,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         std::make_shared<Falcon>(2, "Drivetrain Bus", &signals_registry);
     std::shared_ptr<Falcon> left_back =
         std::make_shared<Falcon>(3, "Drivetrain Bus", &signals_registry);
-    std::shared_ptr<Falcon> roller =
-        std::make_shared<Falcon>(5, "Drivetrain Bus", &signals_registry);
-    std::shared_ptr<Falcon> pivot =
-        std::make_shared<Falcon>(4, "Drivetrain Bus", &signals_registry);
 
     // Thread 3.
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
@@ -829,7 +606,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                       std::move(signals_registry));
 
     can_sensor_reader.set_falcons(right_front, right_back, left_front,
-                                  left_back, roller, pivot);
+                                  left_back);
 
     AddLoop(&can_sensor_reader_event_loop);
 
@@ -842,13 +619,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_drivetrain_right_encoder(make_encoder(5));
     sensor_reader.set_superstructure_reading(superstructure_reading);
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(3));
-
-    sensor_reader.set_end_effector_cube_beam_break(
-        make_unique<frc::DigitalInput>(22));
-
-    sensor_reader.set_pivot_encoder(make_encoder(0));
-    sensor_reader.set_pivot_absolute_pwm(make_unique<frc::DigitalInput>(0));
-    sensor_reader.set_pivot_potentiometer(make_unique<frc::AnalogInput>(0));
 
     AddLoop(&sensor_reader_event_loop);
 
@@ -875,15 +645,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     drivetrain_writer.set_left_inverted(
         ctre::phoenix6::signals::InvertedValue::Clockwise_Positive);
 
-    SuperstructureCANWriter superstructure_can_writer(&can_output_event_loop);
-    superstructure_can_writer.set_roller_falcon(roller);
-    superstructure_can_writer.set_pivot_falcon(pivot);
-
     can_output_event_loop.MakeWatcher(
-        "/roborio", [&drivetrain_writer, &superstructure_can_writer](
-                        const frc971::CANConfiguration &configuration) {
+        "/roborio",
+        [&drivetrain_writer](const frc971::CANConfiguration &configuration) {
           drivetrain_writer.HandleCANConfiguration(configuration);
-          superstructure_can_writer.HandleCANConfiguration(configuration);
         });
 
     AddLoop(&can_output_event_loop);

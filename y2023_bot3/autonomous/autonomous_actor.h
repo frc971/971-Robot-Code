@@ -11,8 +11,6 @@
 #include "y2023_bot3/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2023_bot3/control_loops/superstructure/superstructure_status_generated.h"
 
-// TODO<FILIP>: Add NEUTRAL pivot pose.
-
 namespace y2023_bot3 {
 namespace autonomous {
 
@@ -24,31 +22,7 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
       const ::frc971::autonomous::AutonomousActionParams *params) override;
 
  private:
-  void set_preloaded(bool preloaded) { preloaded_ = preloaded; }
-
-  void set_pivot_goal(
-      control_loops::superstructure::PivotGoal requested_pivot_goal) {
-    pivot_goal_ = requested_pivot_goal;
-  }
-
-  void set_roller_goal(
-      control_loops::superstructure::RollerGoal requested_roller_goal) {
-    roller_goal_ = requested_roller_goal;
-  }
-
   void SendSuperstructureGoal();
-
-  [[nodiscard]] bool WaitForPreloaded();
-
-  void HighScore();
-  void MidScore();
-  void LowScore();
-  void Spit();
-  void SpitHigh();
-  void StopSpitting();
-  void Pickup();
-  void Intake();
-  void Neutral();
 
   void Reset();
 
@@ -75,11 +49,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   bool is_planned_ = false;
 
   std::optional<Eigen::Vector3d> starting_position_;
-
-  bool preloaded_ = false;
-
-  control_loops::superstructure::PivotGoal pivot_goal_;
-  control_loops::superstructure::RollerGoal roller_goal_;
 
   aos::Sender<control_loops::superstructure::Goal> superstructure_goal_sender_;
   aos::Fetcher<y2023_bot3::control_loops::superstructure::Status>

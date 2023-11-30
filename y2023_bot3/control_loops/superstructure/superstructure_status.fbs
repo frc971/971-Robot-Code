@@ -3,35 +3,12 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2023_bot3.control_loops.superstructure;
 
-enum EndEffectorState : ubyte {
-  // Not doing anything
-  IDLE = 0,
-  // Intaking the game object into the end effector
-  INTAKING = 1,
-  // The game object is loaded into the end effector
-  LOADED = 2,
-  // Waiting for the arm to be at shooting goal and then telling the
-  // end effector to spit
-  SPITTING = 3,
-  // Waiting for the arm to be at MID shooting goal and then telling the
-  // end effector to spit mid
-  SPITTING_MID = 4,
-  // Waiting for the arm to be at HIGH shooting goal and then telling the
-  // end effector to spit mid
-  SPITTING_HIGH = 5
-}
-
 table Status {
   // All subsystems know their location.
   zeroed:bool (id: 0);
 
   // If true, we have aborted. This is the or of all subsystem estops.
   estopped:bool (id: 1);
-
-  // The current state of the pivot.
-  pivot_joint:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
-
-  end_effector_state:EndEffectorState (id: 3);
 }
 
 root_type Status;
