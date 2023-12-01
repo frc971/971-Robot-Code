@@ -389,7 +389,9 @@ TEST_P(ShmEventLoopDeathTest, OutOfBoundsWrite) {
     SCOPED_TRACE(std::to_string(i));
     EXPECT_DEATH(
         {
-          ++static_cast<char *>(sender->data())[-1 - i];
+          // Can't use `data()[-1 -i]` here because that's undefined behaviour.
+          // We do manual pointer arithmetic to work around that.
+          ++(*(static_cast<char *>(sender->data()) - 1 - i));
           sender->CheckOk(sender->Send(0));
         },
         "Somebody wrote outside the buffer of their message");
