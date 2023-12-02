@@ -506,7 +506,7 @@ void ExtrinsicsMain(int argc, char *argv[]) {
         if (pose2.board_id != base_target_id) {
           // pose2.H_camera_target references boardB, so map back to boardA
           H_camera2_boardA =
-              pose1.H_camera_target * H_boardA_boardB_avg.inverse();
+              pose2.H_camera_target * H_boardA_boardB_avg.inverse();
         }
 
         // Compute camera1->camera2 map
