@@ -9,10 +9,13 @@ import datetime
 import os
 import shutil
 
+# Name of debian image to be created/modified
 IMAGE = "arm64_bookworm_debian_yocto.img"
+
+# Path to yocto build for the orin (using meta-frc971)
 YOCTO = "/home/austin/local/jetpack/robot-yocto/build"
 
-REQUIRED_DEPS = ["debootstrap", "u-boot-tools"]
+REQUIRED_DEPS = ["debootstrap", "u-boot-tools", "xfsprogs"]
 
 
 @contextlib.contextmanager
@@ -63,10 +66,12 @@ def check_required_deps(deps):
     if len(missing_deps) > 0:
         print("Missing dependencies, please install:")
         print("sudo apt-get install", " ".join(missing_deps))
+        exit()
 
 
 def make_image(image):
     """Makes an image and creates an xfs filesystem on it."""
+    print("Creating image ", f"{image}")
     result = subprocess.run([
         "dd", "if=/dev/zero", f"of={image}", "bs=1", "count=0",
         "seek=8589934592"
@@ -122,7 +127,7 @@ def copyfile(owner, permissions, file):
 def target_mkdir(owner_group, permissions, folder):
     """Creates a directory recursively with the provided permissions and ownership."""
     print("target_mkdir", owner_group, permissions, folder)
-    owner, group = owner_group.split('.')
+    owner, group = owner_group.split(':')
     target(
         ["install", "-d", "-m", permissions, "-o", owner, "-g", group, folder])
 
@@ -260,7 +265,7 @@ def main():
 
         if not os.path.exists(
                 f"{partition}/etc/apt/sources.list.d/bullseye-backports.list"):
-            copyfile("root.root", "644",
+            copyfile("root:root", "644",
                      "etc/apt/sources.list.d/bullseye-backports.list")
             target(["apt-get", "update"])
 
@@ -271,10 +276,10 @@ def main():
 
         target(["localedef", "-i", "en_US", "-f", "UTF-8", "en_US.UTF-8"])
 
-        target_mkdir("root.root", "755", "run/systemd")
-        target_mkdir("systemd-resolve.systemd-resolve", "755",
+        target_mkdir("root:root", "755", "run/systemd")
+        target_mkdir("systemd-resolve:systemd-resolve", "755",
                      "run/systemd/resolve")
-        copyfile("systemd-resolve.systemd-resolve", "644",
+        copyfile("systemd-resolve:systemd-resolve", "644",
                  "run/systemd/resolve/stub-resolv.conf")
         target(["systemctl", "enable", "systemd-resolved"])
 
@@ -396,28 +401,28 @@ def main():
 
         target(["systemctl", "enable", "nvargus-daemon.service"])
 
-        copyfile("root.root", "644", "etc/sysctl.d/sctp.conf")
-        copyfile("root.root", "644", "etc/systemd/logind.conf")
-        copyfile("root.root", "555",
+        copyfile("root:root", "644", "etc/sysctl.d/sctp.conf")
+        copyfile("root:root", "644", "etc/systemd/logind.conf")
+        copyfile("root:root", "555",
                  "etc/bash_completion.d/aos_dump_autocomplete")
-        copyfile("root.root", "644", "etc/security/limits.d/rt.conf")
-        copyfile("root.root", "644", "etc/systemd/system/usb-mount@.service")
-        copyfile("root.root", "644", "etc/chrony/chrony.conf")
-        target_mkdir("root.root", "700", "root/bin")
-        target_mkdir("pi.pi", "755", "home/pi/.ssh")
-        copyfile("pi.pi", "600", "home/pi/.ssh/authorized_keys")
-        target_mkdir("root.root", "700", "root/bin")
-        copyfile("root.root", "644", "etc/systemd/system/grow-rootfs.service")
-        copyfile("root.root", "500", "root/bin/change_hostname.sh")
-        copyfile("root.root", "700", "root/trace.sh")
-        copyfile("root.root", "440", "etc/sudoers")
-        copyfile("root.root", "644", "etc/fstab")
-        copyfile("root.root", "644",
+        copyfile("root:root", "644", "etc/security/limits.d/rt.conf")
+        copyfile("root:root", "644", "etc/systemd/system/usb-mount@.service")
+        copyfile("root:root", "644", "etc/chrony/chrony.conf")
+        target_mkdir("root:root", "700", "root/bin")
+        target_mkdir("pi:pi", "755", "home/pi/.ssh")
+        copyfile("pi:pi", "600", "home/pi/.ssh/authorized_keys")
+        target_mkdir("root:root", "700", "root/bin")
+        copyfile("root:root", "644", "etc/systemd/system/grow-rootfs.service")
+        copyfile("root:root", "500", "root/bin/change_hostname.sh")
+        copyfile("root:root", "700", "root/trace.sh")
+        copyfile("root:root", "440", "etc/sudoers")
+        copyfile("root:root", "644", "etc/fstab")
+        copyfile("root:root", "644",
                  "var/nvidia/nvcam/settings/camera_overrides.isp")
 
-        target_mkdir("root.root", "755", "etc/systemd/network")
-        copyfile("root.root", "644", "etc/systemd/network/eth0.network")
-        copyfile("root.root", "644", "etc/systemd/network/80-can.network")
+        target_mkdir("root:root", "755", "etc/systemd/network")
+        copyfile("root:root", "644", "etc/systemd/network/eth0.network")
+        copyfile("root:root", "644", "etc/systemd/network/80-can.network")
         target(["/root/bin/change_hostname.sh", "pi-971-1"])
 
         target(["systemctl", "enable", "systemd-networkd"])
