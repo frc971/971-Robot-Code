@@ -1141,6 +1141,7 @@ def _impl(ctx):
     )
 
     cuda_flags = [
+        "--cuda-gpu-arch=sm_75",
         "--cuda-gpu-arch=sm_80",
         "--cuda-gpu-arch=sm_86",
         "--cuda-gpu-arch=sm_87",
