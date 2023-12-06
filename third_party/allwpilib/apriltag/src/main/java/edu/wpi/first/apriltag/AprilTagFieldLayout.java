@@ -37,6 +37,9 @@ import java.util.Optional;
  * at the bottom-right corner of the blue alliance wall. {@link #setOrigin(OriginPosition)} can be
  * used to change the poses returned from {@link AprilTagFieldLayout#getTagPose(int)} to be from the
  * perspective of a specific alliance.
+ *
+ * <p>Tag poses represent the center of the tag, with a zero rotation representing a tag that is
+ * upright and facing away from the (blue) alliance wall (that is, towards the opposing alliance).
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonAutoDetect(getterVisibility = JsonAutoDetect.Visibility.NONE)
@@ -111,6 +114,26 @@ public class AprilTagFieldLayout {
   }
 
   /**
+   * Returns the length of the field the layout is representing in meters.
+   *
+   * @return length, in meters
+   */
+  @JsonIgnore
+  public double getFieldLength() {
+    return m_fieldDimensions.fieldLength;
+  }
+
+  /**
+   * Returns the length of the field the layout is representing in meters.
+   *
+   * @return width, in meters
+   */
+  @JsonIgnore
+  public double getFieldWidth() {
+    return m_fieldDimensions.fieldWidth;
+  }
+
+  /**
    * Sets the origin based on a predefined enumeration of coordinate frame origins. The origins are
    * calculated from the field dimensions.
    *
@@ -150,6 +173,16 @@ public class AprilTagFieldLayout {
   }
 
   /**
+   * Returns the origin used for tag pose transformation.
+   *
+   * @return the origin
+   */
+  @JsonIgnore
+  public Pose3d getOrigin() {
+    return m_origin;
+  }
+
+  /**
    * Gets an AprilTag pose by its ID.
    *
    * @param ID The ID of the tag.
@@ -186,16 +219,26 @@ public class AprilTagFieldLayout {
   }
 
   /**
-   * Deserializes a field layout from a resource within a jar file.
+   * Deserializes a field layout from a resource within a internal jar file.
+   *
+   * <p>Users should use {@link AprilTagFields#loadAprilTagLayoutField()} to load official layouts
+   * and {@link #AprilTagFieldLayout(String)} for custom layouts.
    *
    * @param resourcePath The absolute path of the resource
    * @return The deserialized layout
    * @throws IOException If the resource could not be loaded
    */
   public static AprilTagFieldLayout loadFromResource(String resourcePath) throws IOException {
-    try (InputStream stream = AprilTagFieldLayout.class.getResourceAsStream(resourcePath);
-        InputStreamReader reader = new InputStreamReader(stream)) {
+    InputStream stream = AprilTagFieldLayout.class.getResourceAsStream(resourcePath);
+    if (stream == null) {
+      // Class.getResourceAsStream() returns null if the resource does not exist.
+      throw new IOException("Could not locate resource: " + resourcePath);
+    }
+    InputStreamReader reader = new InputStreamReader(stream);
+    try {
       return new ObjectMapper().readerFor(AprilTagFieldLayout.class).readValue(reader);
+    } catch (IOException e) {
+      throw new IOException("Failed to load AprilTagFieldLayout: " + resourcePath);
     }
   }
 

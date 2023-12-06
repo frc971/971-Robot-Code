@@ -4,11 +4,14 @@
 
 package edu.wpi.first.math.kinematics;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.interpolation.Interpolatable;
 import java.util.Objects;
 
 /** Represents the state of one swerve module. */
-public class SwerveModulePosition implements Comparable<SwerveModulePosition> {
+public class SwerveModulePosition
+    implements Comparable<SwerveModulePosition>, Interpolatable<SwerveModulePosition> {
   /** Distance measured by the wheel of the module. */
   public double distanceMeters;
 
@@ -32,14 +35,15 @@ public class SwerveModulePosition implements Comparable<SwerveModulePosition> {
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof SwerveModulePosition) {
-      return Double.compare(distanceMeters, ((SwerveModulePosition) obj).distanceMeters) == 0;
+      SwerveModulePosition other = (SwerveModulePosition) obj;
+      return Math.abs(other.distanceMeters - distanceMeters) < 1E-9 && angle.equals(other.angle);
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(distanceMeters);
+    return Objects.hash(distanceMeters, angle);
   }
 
   /**
@@ -58,5 +62,21 @@ public class SwerveModulePosition implements Comparable<SwerveModulePosition> {
   public String toString() {
     return String.format(
         "SwerveModulePosition(Distance: %.2f m, Angle: %s)", distanceMeters, angle);
+  }
+
+  /**
+   * Returns a copy of this swerve module position.
+   *
+   * @return A copy.
+   */
+  public SwerveModulePosition copy() {
+    return new SwerveModulePosition(distanceMeters, angle);
+  }
+
+  @Override
+  public SwerveModulePosition interpolate(SwerveModulePosition endValue, double t) {
+    return new SwerveModulePosition(
+        MathUtil.interpolate(this.distanceMeters, endValue.distanceMeters, t),
+        this.angle.interpolate(endValue.angle, t));
   }
 }

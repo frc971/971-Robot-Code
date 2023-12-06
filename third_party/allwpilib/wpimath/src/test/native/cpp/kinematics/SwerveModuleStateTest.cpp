@@ -2,9 +2,10 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
+#include <gtest/gtest.h>
+
 #include "frc/geometry/Rotation2d.h"
 #include "frc/kinematics/SwerveModuleState.h"
-#include "gtest/gtest.h"
 
 static constexpr double kEpsilon = 1E-9;
 
@@ -38,4 +39,20 @@ TEST(SwerveModuleStateTest, NoOptimize) {
 
   EXPECT_NEAR(optimizedB.speed.value(), -2.0, kEpsilon);
   EXPECT_NEAR(optimizedB.angle.Degrees().value(), -2.0, kEpsilon);
+}
+
+TEST(SwerveModuleStateTest, Equality) {
+  frc::SwerveModuleState state1{2_mps, 90_deg};
+  frc::SwerveModuleState state2{2_mps, 90_deg};
+
+  EXPECT_EQ(state1, state2);
+}
+
+TEST(SwerveModuleStateTest, Inequality) {
+  frc::SwerveModuleState state1{1_mps, 90_deg};
+  frc::SwerveModuleState state2{2_mps, 90_deg};
+  frc::SwerveModuleState state3{1_mps, 89_deg};
+
+  EXPECT_NE(state1, state2);
+  EXPECT_NE(state1, state3);
 }

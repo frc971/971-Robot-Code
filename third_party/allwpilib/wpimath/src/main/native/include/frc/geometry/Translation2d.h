@@ -4,14 +4,16 @@
 
 #pragma once
 
+#include <initializer_list>
+#include <span>
+
 #include <wpi/SymbolExports.h>
+#include <wpi/json_fwd.h>
+#include <wpi/protobuf/Protobuf.h>
+#include <wpi/struct/Struct.h>
 
-#include "Rotation2d.h"
+#include "frc/geometry/Rotation2d.h"
 #include "units/length.h"
-
-namespace wpi {
-class json;
-}  // namespace wpi
 
 namespace frc {
 
@@ -170,6 +172,21 @@ class WPILIB_DLLEXPORT Translation2d {
    */
   bool operator==(const Translation2d& other) const;
 
+  /**
+   * Returns the nearest Translation2d from a collection of translations
+   * @param translations The collection of translations.
+   * @return The nearest Translation2d from the collection.
+   */
+  Translation2d Nearest(std::span<const Translation2d> translations) const;
+
+  /**
+   * Returns the nearest Translation2d from a collection of translations
+   * @param translations The collection of translations.
+   * @return The nearest Translation2d from the collection.
+   */
+  Translation2d Nearest(
+      std::initializer_list<Translation2d> translations) const;
+
  private:
   units::meter_t m_x = 0_m;
   units::meter_t m_y = 0_m;
@@ -183,4 +200,28 @@ void from_json(const wpi::json& json, Translation2d& state);
 
 }  // namespace frc
 
-#include "Translation2d.inc"
+template <>
+struct wpi::Struct<frc::Translation2d> {
+  static constexpr std::string_view kTypeString = "struct:Translation2d";
+  static constexpr size_t kSize = 16;
+  static constexpr std::string_view kSchema = "double x;double y";
+  static frc::Translation2d Unpack(std::span<const uint8_t, 16> data) {
+    return {units::meter_t{wpi::UnpackStruct<double, 0>(data)},
+            units::meter_t{wpi::UnpackStruct<double, 8>(data)}};
+  }
+  static void Pack(std::span<uint8_t, 16> data,
+                   const frc::Translation2d& value) {
+    wpi::PackStruct<0>(data, value.X().value());
+    wpi::PackStruct<8>(data, value.Y().value());
+  }
+};
+
+template <>
+struct WPILIB_DLLEXPORT wpi::Protobuf<frc::Translation2d> {
+  static google::protobuf::Message* New(google::protobuf::Arena* arena);
+  static frc::Translation2d Unpack(const google::protobuf::Message& msg);
+  static void Pack(google::protobuf::Message* msg,
+                   const frc::Translation2d& value);
+};
+
+#include "frc/geometry/Translation2d.inc"

@@ -11,13 +11,10 @@
 
 #include <units/length.h>
 #include <wpi/SymbolExports.h>
+#include <wpi/json_fwd.h>
 
 #include "frc/apriltag/AprilTag.h"
 #include "frc/geometry/Pose3d.h"
-
-namespace wpi {
-class json;
-}  // namespace wpi
 
 namespace frc {
 /**
@@ -34,7 +31,11 @@ namespace frc {
  * Pose3ds in the JSON are measured using the normal FRC coordinate system, NWU
  * with the origin at the bottom-right corner of the blue alliance wall.
  * SetOrigin(OriginPosition) can be used to change the poses returned from
- * GetTagPose(int) to be from the perspective of a specific alliance. */
+ * GetTagPose(int) to be from the perspective of a specific alliance.
+ *
+ * Tag poses represent the center of the tag, with a zero rotation representing
+ * a tag that is upright and facing away from the (blue) alliance wall (that is,
+ * towards the opposing alliance). */
 class WPILIB_DLLEXPORT AprilTagFieldLayout {
  public:
   enum class OriginPosition {
@@ -62,6 +63,18 @@ class WPILIB_DLLEXPORT AprilTagFieldLayout {
                       units::meter_t fieldLength, units::meter_t fieldWidth);
 
   /**
+   * Returns the length of the field the layout is representing.
+   * @return length
+   */
+  units::meter_t GetFieldLength() const;
+
+  /**
+   * Returns the length of the field the layout is representing.
+   * @return width
+   */
+  units::meter_t GetFieldWidth() const;
+
+  /**
    * Sets the origin based on a predefined enumeration of coordinate frame
    * origins. The origins are calculated from the field dimensions.
    *
@@ -75,12 +88,18 @@ class WPILIB_DLLEXPORT AprilTagFieldLayout {
   /**
    * Sets the origin for tag pose transformation.
    *
-   * This tranforms the Pose3ds returned by GetTagPose(int) to return the
+   * This transforms the Pose3ds returned by GetTagPose(int) to return the
    * correct pose relative to the provided origin.
    *
    * @param origin The new origin for tag transformations
    */
   void SetOrigin(const Pose3d& origin);
+
+  /**
+   * Returns the origin used for tag pose transformation.
+   * @return the origin
+   */
+  Pose3d GetOrigin() const;
 
   /**
    * Gets an AprilTag pose by its ID.
