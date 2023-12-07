@@ -627,9 +627,9 @@ GeneratedObject GenerateCodeForObject(const reflection::Schema *schema,
     }
   }
 
-  const std::string alignment =
-      absl::StrCat("static constexpr size_t kAlign = std::max<size_t>({",
-                   absl::StrJoin(alignments, ", "), "});\n");
+  const std::string alignment = absl::StrCat(
+      "static constexpr size_t kAlign = std::max<size_t>({kMinAlign, ",
+      absl::StrJoin(alignments, ", "), "});\n");
   const std::string size =
       absl::StrCat("static constexpr size_t kSize = ",
                    AlignCppString(offset_data_start_expression + " + " +

@@ -10,6 +10,158 @@
 #include "aos/flatbuffers/test_static.h"
 
 namespace aos::fbs::testing {
+class MinimallyAlignedTableStatic : public ::aos::fbs::Table {
+ public:
+  // The underlying "raw" flatbuffer type for this type.
+  typedef aos::fbs::testing::MinimallyAlignedTable Flatbuffer;
+  // Returns this object as a flatbuffer type. This reference may not be valid
+  // following mutations to the underlying flatbuffer, due to how memory may get
+  // may get moved around.
+  const Flatbuffer &AsFlatbuffer() const {
+    return *GetFlatbuffer<Flatbuffer>();
+  }
+
+  // Space taken up by the inline portion of the flatbuffer table data, in
+  // bytes.
+  static constexpr size_t kInlineDataSize = 5;
+  // Space taken up by the vtable for this object, in bytes.
+  static constexpr size_t kVtableSize =
+      sizeof(::flatbuffers::voffset_t) * (2 + 1);
+  // Offset from the start of the internal memory buffer to the start of the
+  // vtable.
+  static constexpr size_t kVtableStart = ::aos::fbs::PaddedSize(
+      kInlineDataSize, alignof(::flatbuffers::voffset_t));
+  // Required alignment of this object. The buffer that this object gets
+  // constructed into must be aligned to this value.
+  static constexpr size_t kAlign = std::max<size_t>({kMinAlign, 1});
+
+  // Nominal size of this object, in bytes. The object may grow beyond this
+  // size, but will always start at this size and so the initial buffer must
+  // match this size.
+  static constexpr size_t kSize = ::aos::fbs::PaddedSize(
+      ::aos::fbs::PaddedSize(kVtableStart + kVtableSize, kAlign) + 0, kAlign);
+  static_assert(
+      1 <= kAlign,
+      "Flatbuffer schema minalign should not exceed our required alignment.");
+  // Offset from the start of the memory buffer to the start of any out-of-line
+  // data (subtables, vectors, strings).
+  static constexpr size_t kOffsetDataStart =
+      ::aos::fbs::PaddedSize(kVtableStart + kVtableSize, kAlign);
+  // Size required for a buffer that includes a root table offset at the start.
+  static constexpr size_t kRootSize =
+      ::aos::fbs::PaddedSize(kSize + sizeof(::flatbuffers::uoffset_t), kAlign);
+  // Minimum size required to build this flatbuffer in an entirely unaligned
+  // buffer (including the root table offset). Made to be a multiple of kAlign
+  // for convenience.
+  static constexpr size_t kUnalignedBufferSize = kRootSize + kAlign;
+  // Offset at which the table vtable offset occurs. This is only needed for
+  // vectors.
+  static constexpr size_t kOffset = 0;
+  // Various overrides to support the Table parent class.
+  size_t FixedVtableOffset() const final { return kVtableStart; }
+  size_t VtableSize() const final { return kVtableSize; }
+  size_t InlineTableSize() const final { return kInlineDataSize; }
+  size_t OffsetDataStart() const final { return kOffsetDataStart; }
+  size_t Alignment() const final { return kAlign; }
+  // Exposes the name of the flatbuffer type to allow interchangeable use
+  // of the Flatbuffer and FlatbufferStatic types in various AOS methods.
+  static const char *GetFullyQualifiedName() {
+    return Flatbuffer::GetFullyQualifiedName();
+  }
+
+  // Constructors for creating a flatbuffer object.
+  // Users should typically use the Builder class to create these objects,
+  // in order to allow it to populate the root table offset.
+
+  // The buffer provided to these constructors should be aligned to kAlign
+  // and kSize in length.
+  // The parent/allocator may not be nullptr.
+  MinimallyAlignedTableStatic(std::span<uint8_t> buffer,
+                              ::aos::fbs::ResizeableObject *parent)
+      : Table(buffer, parent) {
+    CHECK_EQ(buffer.size(), kSize);
+    CHECK_EQ(0u, reinterpret_cast<size_t>(buffer.data()) % kAlign);
+    PopulateVtable();
+  }
+  MinimallyAlignedTableStatic(std::span<uint8_t> buffer,
+                              ::aos::fbs::Allocator *allocator)
+      : Table(buffer, allocator) {
+    CHECK_EQ(buffer.size(), kSize);
+    CHECK_EQ(0u, reinterpret_cast<size_t>(buffer.data()) % kAlign);
+    PopulateVtable();
+  }
+  MinimallyAlignedTableStatic(
+      std::span<uint8_t> buffer,
+      ::std::unique_ptr<::aos::fbs::Allocator> allocator)
+      : Table(buffer, ::std::move(allocator)) {
+    CHECK_EQ(buffer.size(), kSize);
+    CHECK_EQ(0u, reinterpret_cast<size_t>(buffer.data()) % kAlign);
+    PopulateVtable();
+  }
+
+  virtual ~MinimallyAlignedTableStatic() {}
+
+  // Sets the field field, causing it to be populated if it is not already.
+  // This will populate the field even if the specified value is the default.
+  void set_field(const uint8_t &value) {
+    SetField<uint8_t>(kInlineAbsoluteOffset_field, 4, value);
+  }
+
+  // Returns the value of field if set; nullopt otherwise.
+  std::optional<uint8_t> field() const {
+    return has_field()
+               ? std::make_optional(Get<uint8_t>(kInlineAbsoluteOffset_field))
+               : std::nullopt;
+    ;
+  }
+  // Returns a pointer to modify the field field.
+  // The pointer may be invalidated by mutations/movements of the underlying
+  // buffer. Returns nullptr if the field is not set.
+  uint8_t *mutable_field() {
+    return has_field() ? MutableGet<uint8_t>(kInlineAbsoluteOffset_field)
+                       : nullptr;
+  }
+
+  // Clears the field field. This will cause has_field() to return false.
+  void clear_field() { ClearField(kInlineAbsoluteOffset_field, 1, 4); }
+
+  // Returns true if the field field is set and can be accessed.
+  bool has_field() const { return AsFlatbuffer().has_field(); }
+
+  // Clears every field of the table, removing any existing state.
+  void Clear() { clear_field(); }
+
+  // Copies the contents of the provided flatbuffer into this flatbuffer,
+  // returning true on success.
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
+    Clear();
+
+    if (other->has_field()) {
+      set_field(other->field());
+    }
+
+    return true;
+  }
+
+ private:
+  // We need to provide a MoveConstructor to allow this table to be
+  // used inside of vectors, but we do not want it readily available to
+  // users. See TableMover for more details.
+  MinimallyAlignedTableStatic(MinimallyAlignedTableStatic &&) = default;
+  friend struct ::aos::fbs::internal::TableMover<MinimallyAlignedTableStatic>;
+
+  // Offset from the start of the buffer to the inline data for the field field.
+  static constexpr size_t kInlineAbsoluteOffset_field = 4;
+
+  // This object has no non-inline subobjects, so we don't have to do anything
+  // special.
+  size_t NumberOfSubObjects() const final { return 0; }
+  using ::aos::fbs::ResizeableObject::SubObject;
+  SubObject GetSubObject(size_t) final { LOG(FATAL) << "No subobjects."; }
+};
+}  // namespace aos::fbs::testing
+
+namespace aos::fbs::testing {
 class SubTableStatic : public ::aos::fbs::Table {
  public:
   // The underlying "raw" flatbuffer type for this type.
@@ -33,7 +185,7 @@ class SubTableStatic : public ::aos::fbs::Table {
       kInlineDataSize, alignof(::flatbuffers::voffset_t));
   // Required alignment of this object. The buffer that this object gets
   // constructed into must be aligned to this value.
-  static constexpr size_t kAlign = std::max<size_t>({4, 2});
+  static constexpr size_t kAlign = std::max<size_t>({kMinAlign, 4, 2});
 
   // Nominal size of this object, in bytes. The object may grow beyond this
   // size, but will always start at this size and so the initial buffer must
@@ -218,7 +370,7 @@ class TestTableStatic : public ::aos::fbs::Table {
   // Required alignment of this object. The buffer that this object gets
   // constructed into must be aligned to this value.
   static constexpr size_t kAlign = std::max<size_t>(
-      {aos::fbs::testing::included::IncludedTableStatic::kAlign, 4,
+      {kMinAlign, aos::fbs::testing::included::IncludedTableStatic::kAlign, 4,
        ::aos::fbs::String<20>::kAlign, 8,
        aos::fbs::testing::SubTableStatic::kAlign, ::aos::fbs::String<0>::kAlign,
        ::aos::fbs::Vector<uint8_t, 0, true, 0>::kAlign,

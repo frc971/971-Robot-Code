@@ -818,6 +818,15 @@ TEST_F(StaticFlatbuffersTest, FlatbufferTypeCoverage) {
   TestMemory(builder.buffer());
 }
 
+TEST_F(StaticFlatbuffersTest, MinimallyAlignedTable) {
+  VerifyJson<MinimallyAlignedTableStatic>("{\n \"field\": 123\n}");
+  static_assert(4u == alignof(uoffset_t),
+                "The alignment of a uoffset_t is expected to be 4.");
+  ASSERT_EQ(alignof(uoffset_t), MinimallyAlignedTableStatic::kAlign)
+      << "No table should have an alignment of less than the alignment of the "
+         "table's root offset.";
+}
+
 // Confirm that we can use the SpanAllocator with a span that provides exactly
 // the required buffer size.
 TEST_F(StaticFlatbuffersTest, ExactSizeSpanAllocator) {

@@ -8,6 +8,10 @@ struct SubStruct {
   y:double;
 }
 
+table MinimallyAlignedTable {
+  field:ubyte (id: 0);
+}
+
 table SubTable {
  foo:short (id: 0);
  bar:short (id: 1, deprecated);

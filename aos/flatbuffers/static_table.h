@@ -43,6 +43,8 @@ class Table : public ResizeableObject {
   }
 
  protected:
+  static constexpr size_t kMinAlign = alignof(uoffset_t);
+
   Table(std::span<uint8_t> buffer, ResizeableObject *parent)
       : ResizeableObject(buffer, parent) {}
   Table(std::span<uint8_t> buffer, Allocator *allocator)
