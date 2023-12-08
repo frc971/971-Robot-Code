@@ -84,6 +84,8 @@ class Builder final : public ResizeableObject {
   // Returns the actual object for you to operate on and construct the
   // flatbuffer. Unlike AsFlatbufferSpan(), this will be stable.
   T *get() { return &flatbuffer_.t; }
+  T &operator*() { return *get(); }
+  T *operator->() { return get(); }
 
  private:
   size_t Alignment() const override { return flatbuffer_.t.Alignment(); }

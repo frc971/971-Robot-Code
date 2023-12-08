@@ -40,9 +40,9 @@ void Ping::SendPing() {
   ++count_;
   aos::Sender<examples::PingStatic>::StaticBuilder builder =
       sender_.MakeStaticBuilder();
-  examples::PingStatic *ping = builder.get();
-  ping->set_value(count_);
-  ping->set_send_time(event_loop_->monotonic_now().time_since_epoch().count());
+  builder->set_value(count_);
+  builder->set_send_time(
+      event_loop_->monotonic_now().time_since_epoch().count());
   builder.CheckOk(builder.Send());
   VLOG(2) << "Sending ping";
 }

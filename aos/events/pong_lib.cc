@@ -42,9 +42,8 @@ void Pong::HandlePing(const examples::Ping &ping) {
   last_send_time_ = ping.send_time();
   aos::Sender<examples::PongStatic>::StaticBuilder builder =
       sender_.MakeStaticBuilder();
-  examples::PongStatic *pong = builder.get();
-  pong->set_value(ping.value());
-  pong->set_initial_send_time(ping.send_time());
+  builder->set_value(ping.value());
+  builder->set_initial_send_time(ping.send_time());
   builder.CheckOk(builder.Send());
 }
 

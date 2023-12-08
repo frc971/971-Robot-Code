@@ -534,7 +534,7 @@ After:
   loop->OnRun([&]() {
     aos::Sender<TestMessageStatic>::StaticBuilder msg =
         sender.MakeStaticBuilder();
-    msg.get()->set_value(200);
+    msg->set_value(200);
     msg.CheckOk(msg.Send());
   });
 ```
@@ -545,5 +545,3 @@ After:
 
 * A  `add_or_get_subtable` generated method that avoids the need for the user to
   check `has_subtable()` before calling `add_subtable()`.
-* `operator->()` in places to reduce syntactic overhead.
-* Make naming of `StaticVector` methods more consistent with `std::vector`.

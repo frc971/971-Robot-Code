@@ -119,7 +119,7 @@ TEST_P(AbstractEventLoopTest, BasicStatic) {
 
     aos::Sender<TestMessageStatic>::StaticBuilder msg =
         sender.MakeStaticBuilder();
-    msg.get()->set_value(200);
+    msg->set_value(200);
     CHECK(msg.builder()->Verify());
     msg.CheckOk(msg.Send());
   });

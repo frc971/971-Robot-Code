@@ -375,6 +375,8 @@ class Sender {
     }
 
     T *get() { return builder()->get(); }
+    T &operator*() { return *get(); }
+    T *operator->() { return get(); }
 
     RawSender::Error Send() {
       const auto err = sender_->Send(builder_.value().buffer().size());
