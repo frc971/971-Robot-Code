@@ -49,4 +49,5 @@ def static_flatbuffer(name, src, visibility = None, deps = [], **kwargs):
     native.alias(
         name = name + "_reflection_out",
         actual = name + fbs_suffix + "_reflection_out",
+        visibility = visibility,
     )
