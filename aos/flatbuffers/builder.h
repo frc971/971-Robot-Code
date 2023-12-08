@@ -19,9 +19,28 @@ template <typename T>
 class Builder final : public ResizeableObject {
  public:
   static constexpr size_t kBufferSize = T::kUnalignedBufferSize;
+  // Note on memory initialization: We zero-initialize all the memory that we
+  // create at the start. While this can be overkill, it is simpler to manage
+  // the alternatives, and we don't currently have a clear performance need for
+  // doing this more piecemeal. Note that the memory that this zero-initializes
+  // falls into three categories:
+  // 1. Padding that we need to zero-initialize (arguably we could get away
+  //    without initializing our padding, but leaving uninitialized memory
+  //    floating around generally isn't great, especially since we generally
+  //    want to be able to compress flatbuffer messages efficiently).
+  // 2. Memory that will end up getting used.
+  // 3. Memory corresponding to sub-tables/vectors that may or may not end up
+  //    getting used; if it is not used, we want it to get zero-initialized
+  //    since it will effectively be padding. If it is used, then the
+  //    zero-initialization is redundant.
+  // For messages with large byte buffers (e.g., for camera messages), we
+  // typically expect that the user will end up dynamically resizing the buffer
+  // rather than having the length statically set. In those cases, the user
+  // still has the ability to select whether or not the new memory gets
+  // zero-initialized.
   Builder(Allocator *allocator)
       : ResizeableObject(
-            allocator->AllocateOrDie(kBufferSize, T::kAlign, SetZero::kNo),
+            allocator->AllocateOrDie(kBufferSize, T::kAlign, SetZero::kYes),
             allocator),
         flatbuffer_start_(BufferStart(buffer_)),
         flatbuffer_(internal::GetSubSpan(buffer_, flatbuffer_start_, T::kSize),
@@ -30,7 +49,7 @@ class Builder final : public ResizeableObject {
   }
   Builder(std::unique_ptr<Allocator> allocator)
       : ResizeableObject(
-            allocator->AllocateOrDie(kBufferSize, T::kAlign, SetZero::kNo),
+            allocator->AllocateOrDie(kBufferSize, T::kAlign, SetZero::kYes),
             std::move(allocator)),
         flatbuffer_start_(BufferStart(buffer_)),
         flatbuffer_(internal::GetSubSpan(buffer_, flatbuffer_start_, T::kSize),

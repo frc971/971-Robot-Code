@@ -103,6 +103,9 @@ struct InlineWrapper;
 //   Note that no padding is required on the end because T::kAlign will always
 //   end up being equal to the alignment (this can only be violated if
 //   kForceAlign is used, but we do not allow that).
+//   The Vector class leaves any padding uninitialized. Until and unless we
+//   determine that it is a performance issue, it is the responsibility of the
+//   parent of this object to zero-initialize the memory.
 template <typename T, size_t kStaticLength, bool kInline,
           size_t kForceAlign = 0, bool kNullTerminate = false>
 class Vector : public ResizeableObject {
@@ -164,11 +167,7 @@ class Vector : public ResizeableObject {
       : ResizeableObject(buffer, parent) {
     CHECK_EQ(0u, reinterpret_cast<size_t>(buffer.data()) % kAlign);
     CHECK_EQ(kSize, buffer.size());
-    // Set padding and length to zero.
-    internal::ClearSpan(internal::GetSubSpan(buffer, 0, kPadding1));
     SetLength(0u);
-    internal::ClearSpan(internal::GetSubSpan(
-        buffer, kPadding1 + kLengthSize + kInlineSize, kPadding2));
     if (!kInline) {
       // Initialize the offsets for any sub-tables. These are used to track
       // where each table will get serialized in memory as memory gets

@@ -55,6 +55,14 @@ const reflection::Object *GetObjectByName(const reflection::Schema *schema,
   }
   return nullptr;
 }
+
+// Accesses all the values in the supplied span. Used to ensure that memory
+// sanitizers can observe uninitialized memory.
+void TestMemory(std::span<uint8_t> memory) {
+  std::stringstream str;
+  internal::DebugBytes(memory, str);
+  EXPECT_LT(0u, str.view().size());
+}
 }  // namespace
 
 class StaticFlatbuffersTest : public ::testing::Test {
@@ -204,6 +212,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
     EXPECT_EQ(971, object->AsFlatbuffer().baz());
     EXPECT_EQ(R"json({ "foo": 123, "baz": 971.0 })json",
               aos::FlatbufferToJson(builder.AsFlatbufferSpan()));
+    TestMemory(builder.buffer());
   }
   {
     // aos::FixedAllocator allocator(TestTableStatic::kUnalignedBufferSize);
@@ -629,6 +638,7 @@ TEST_F(StaticFlatbuffersTest, ManuallyConstructFlatbuffer) {
       ASSERT_FALSE(unspecified_vector->emplace_back(3));
       ASSERT_TRUE(builder.AsFlatbufferSpan().Verify());
     }
+    TestMemory(builder.buffer());
   }
 }
 
@@ -780,6 +790,7 @@ TEST_F(StaticFlatbuffersTest, ClearFields) {
         aos::FlatbufferToJson(builder.AsFlatbufferSpan(),
                               {.multi_line = true}));
   }
+  TestMemory(builder.buffer());
 }
 
 // Try to cover ~all supported scalar/flatbuffer types using JSON convenience
@@ -804,14 +815,14 @@ TEST_F(StaticFlatbuffersTest, FlatbufferTypeCoverage) {
   builder.get()->set_foo_float(1.111);
   ASSERT_TRUE(builder.Verify());
   ASSERT_FLOAT_EQ(1.111, builder.get()->AsFlatbuffer().foo_float());
+  TestMemory(builder.buffer());
 }
 
 // Confirm that we can use the SpanAllocator with a span that provides exactly
 // the required buffer size.
 TEST_F(StaticFlatbuffersTest, ExactSizeSpanAllocator) {
-  std::vector<uint8_t> buffer;
-  buffer.resize(Builder<TestTableStatic>::kBufferSize, 0);
-  aos::fbs::SpanAllocator allocator({buffer.data(), buffer.size()});
+  uint8_t buffer[Builder<TestTableStatic>::kBufferSize];
+  aos::fbs::SpanAllocator allocator({buffer, sizeof(buffer)});
   Builder<TestTableStatic> builder(&allocator);
   TestTableStatic *object = builder.get();
   object->set_scalar(123);
@@ -858,6 +869,7 @@ TEST_F(StaticFlatbuffersTest, ExactSizeSpanAllocator) {
   VLOG(1) << aos::FlatbufferToJson(builder.AsFlatbufferSpan(),
                                    {.multi_line = true});
   VLOG(1) << AnnotateBinaries(test_schema_, builder.buffer());
+  TestMemory(builder.buffer());
 }
 
 // Test that when we provide too small of a span to the Builder that it
@@ -872,9 +884,8 @@ TEST_F(StaticFlatbuffersTest, TooSmallSpanAllocator) {
 // Verify that if we create a span with extra headroom that that lets us
 // dynamically alter the size of vectors in the flatbuffers.
 TEST_F(StaticFlatbuffersTest, ExtraLargeSpanAllocator) {
-  std::vector<uint8_t> buffer;
-  buffer.resize(Builder<TestTableStatic>::kBufferSize + 10000, 0);
-  aos::fbs::SpanAllocator allocator({buffer.data(), buffer.size()});
+  uint8_t buffer[Builder<TestTableStatic>::kBufferSize + 10000];
+  aos::fbs::SpanAllocator allocator({buffer, sizeof(buffer)});
   Builder<TestTableStatic> builder(&allocator);
   TestTableStatic *object = builder.get();
   {
@@ -893,5 +904,6 @@ TEST_F(StaticFlatbuffersTest, ExtraLargeSpanAllocator) {
        *object->AsFlatbuffer().unspecified_length_vector()) {
     EXPECT_EQ(expected++, value);
   }
+  TestMemory(builder.buffer());
 }
 }  // namespace aos::fbs::testing
