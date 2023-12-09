@@ -1540,9 +1540,9 @@ filegroup(
     srcs = glob(["**"]),
     visibility = ["//visibility:public"],
 )""",
-    sha256 = "629b150e4c71679e1ac30b8a2dfa558a04bbcca7ad0edd61bd6878d3b243edb6",
+    sha256 = "68513024efb60dcdfc9b130d3e0466d194a8599fbd85f8e99d01c148d03e5887",
     url =
-        "https://software.frc971.org/Build-Dependencies/foxglove-d6b00825.tar.gz",
+        "https://software.frc971.org/Build-Dependencies/foxglove-9857d637e90dfeecd63ad47fa760046791f8d43c.tar.gz",
 )
 
 #
