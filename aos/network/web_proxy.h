@@ -3,6 +3,7 @@
 
 #include <deque>
 #include <map>
+#include <optional>
 #include <set>
 
 #include "flatbuffers/flatbuffers.h"
@@ -156,6 +157,7 @@ class Subscriber {
     // The last queue/packet index reported by the client.
     uint32_t reported_queue_index = 0;
     size_t reported_packet_index = 0;
+    std::optional<aos::monotonic_clock::time_point> last_report = std::nullopt;
   };
   struct Message {
     uint32_t index = 0xffffffff;
