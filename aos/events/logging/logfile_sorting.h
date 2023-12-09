@@ -150,6 +150,10 @@ std::vector<LogFile> SortParts(
 // Sort parts of a single log.
 std::vector<LogFile> SortParts(const LogSource &log_source);
 
+// Returns a list of all the logger nodes for the specified set of log files.
+// For single-node systems, the empty string will represent the logfile set.
+std::set<std::string> LoggerNodes(const std::vector<LogFile> &log_files);
+
 // Validates that collection of log files or log parts shares the same configs.
 bool HasMatchingConfigs(const std::vector<LogFile> &items);
 

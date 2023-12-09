@@ -37,19 +37,19 @@ int main(int argc, char *argv[]) {
   const std::vector<aos::logger::LogFile> logfiles =
       aos::logger::SortParts(aos::logger::FindLogs(argc, argv));
   CHECK(!logfiles.empty());
-  const std::string logger_node = logfiles.at(0).logger_node;
-  bool all_logs_from_same_node = true;
-  for (const aos::logger::LogFile &log : logfiles) {
-    if (log.logger_node != logger_node) {
-      all_logs_from_same_node = false;
-      break;
-    }
-  }
+  const std::set<std::string> logger_nodes = aos::logger::LoggerNodes(logfiles);
+  CHECK_LT(0u, logger_nodes.size());
+  const std::string logger_node = *logger_nodes.begin();
   std::string replay_node = FLAGS_node;
-  if (replay_node.empty() && all_logs_from_same_node) {
-    LOG(INFO) << "Guessing \"" << logger_node
-              << "\" as node given that --node was not specified.";
-    replay_node = logger_node;
+  if (replay_node.empty()) {
+    if (logger_nodes.size() == 1u) {
+      LOG(INFO) << "Guessing \"" << logger_node
+                << "\" as node given that --node was not specified.";
+      replay_node = logger_node;
+    } else {
+      LOG(ERROR) << "Must supply a --node for log_to_mcap.";
+      return 1;
+    }
   }
 
   std::optional<aos::FlatbufferDetachedBuffer<aos::Configuration>> config;

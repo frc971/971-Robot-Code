@@ -2085,6 +2085,14 @@ std::vector<LogFile> SortParts(
   return sorter.SortParts();
 }
 
+std::set<std::string> LoggerNodes(const std::vector<LogFile> &log_files) {
+  std::set<std::string> nodes;
+  for (const aos::logger::LogFile &log : log_files) {
+    nodes.insert(log.logger_node);
+  }
+  return nodes;
+}
+
 std::ostream &operator<<(std::ostream &stream, const LogFile &file) {
   stream << "{\n";
   if (!file.log_event_uuid.empty()) {
