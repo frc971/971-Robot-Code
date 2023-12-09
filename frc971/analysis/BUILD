@@ -177,6 +177,21 @@ cc_binary(
 )
 
 cc_binary(
+    name = "trim_log_to_enabled",
+    srcs = [
+        "trim_log_to_enabled.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:init",
+        "//aos/events:simulated_event_loop",
+        "//aos/events/logging:log_reader",
+        "//aos/util:simulation_logger",
+        "//frc971/input:joystick_state_fbs",
+    ],
+)
+
+cc_binary(
     name = "log_to_match",
     srcs = [
         "log_to_match.cc",
