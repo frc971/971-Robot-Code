@@ -216,3 +216,14 @@ cc_binary(
         "//third_party/seasocks",
     ],
 )
+
+py_binary(
+    name = "trim_and_plot_foxglove",
+    srcs = ["trim_and_plot_foxglove.py"],
+    data = [
+        ":trim_log_to_enabled",
+        "//aos/util:log_to_mcap",
+        "@foxglove_studio",
+    ],
+    deps = ["@RangeHTTPServer"],
+)

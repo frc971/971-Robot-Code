@@ -249,6 +249,13 @@ local_repository(
     path = "third_party/bazel-toolchain",
 )
 
+http_archive(
+    name = "RangeHTTPServer",
+    sha256 = "98a8e4980f91d048dc9159cfc5f115280d0b5ec59a5b01df0422b887212fa4f0",
+    strip_prefix = "RangeHTTPServer-9070394508a135789238a33259793f3c6f3c127a",
+    url = "https://github.com/jkuszmaul/RangeHTTPServer/archive/9070394508a135789238a33259793f3c6f3c127a.zip",
+)
+
 load("@com_grail_bazel_toolchain//toolchain:rules.bzl", "llvm", "llvm_toolchain")
 
 llvm_version = "17.0.2"
