@@ -464,8 +464,8 @@ http_archive(
 http_archive(
     name = "amd64_debian_sysroot",
     build_file = "@//:compilers/amd64_debian_rootfs.BUILD",
-    sha256 = "3c098330f8bc57dccb4191167cfbba4c47f3bacf52926479c95ad2e50834b3c2",
-    url = "https://software.frc971.org/Build-Dependencies/2023-11-09-bookworm-amd64-nvidia-rootfs.tar.xz",
+    sha256 = "5d9d4131f3997d8543d45e673bfb15e21d7ca4c64923da91ee8d06f801dddb59",
+    url = "https://software.frc971.org/Build-Dependencies/2023-12-10-bookworm-amd64-nvidia-rootfs.tar.xz",
 )
 
 local_repository(
