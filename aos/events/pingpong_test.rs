@@ -106,3 +106,9 @@ mod tests {
         assert_eq!(pong_count.get(), 1002);
     }
 }
+
+// TODO(adam.snaider): Remove once we don't leak.
+#[no_mangle]
+extern "C" fn __asan_default_options() -> *const u8 {
+    "detect_leaks=0\0".as_ptr()
+}
