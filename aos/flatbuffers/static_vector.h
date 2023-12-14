@@ -239,9 +239,6 @@ class Vector : public ResizeableObject {
   // Accessors for using the Vector as a flatbuffers::Vector.
   // Note that these pointers will be unstable if any memory allocations occur
   // that cause memory to get shifted around.
-  Flatbuffer *AsMutableFlatbufferVector() {
-    return reinterpret_cast<Flatbuffer *>(vector_buffer().data());
-  }
   ConstFlatbuffer *AsFlatbufferVector() const {
     return reinterpret_cast<const Flatbuffer *>(vector_buffer().data());
   }
@@ -249,6 +246,8 @@ class Vector : public ResizeableObject {
   // Copies the contents of the provided vector into this; returns false on
   // failure (e.g., if the provided vector is too long for the amount of space
   // we can allocate through reserve()).
+  // This is a deep copy, and will call FromFlatbuffer on any constituent
+  // objects.
   [[nodiscard]] bool FromFlatbuffer(ConstFlatbuffer *vector);
 
   // Returns the element at the provided index. index must be less than size().

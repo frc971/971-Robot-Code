@@ -133,6 +133,8 @@ class MinimallyAlignedTableStatic : public ::aos::fbs::Table {
 
   // Copies the contents of the provided flatbuffer into this flatbuffer,
   // returning true on success.
+  // This is a deep copy, and will call FromFlatbuffer on any constituent
+  // objects.
   [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
     Clear();
 
@@ -310,6 +312,8 @@ class SubTableStatic : public ::aos::fbs::Table {
 
   // Copies the contents of the provided flatbuffer into this flatbuffer,
   // returning true on success.
+  // This is a deep copy, and will call FromFlatbuffer on any constituent
+  // objects.
   [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
     Clear();
 
@@ -1054,6 +1058,8 @@ class TestTableStatic : public ::aos::fbs::Table {
 
   // Copies the contents of the provided flatbuffer into this flatbuffer,
   // returning true on success.
+  // This is a deep copy, and will call FromFlatbuffer on any constituent
+  // objects.
   [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
     Clear();
 

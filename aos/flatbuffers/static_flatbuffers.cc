@@ -471,6 +471,8 @@ std::string MakeCopier(const std::vector<FieldData> &fields) {
       R"code(
   // Copies the contents of the provided flatbuffer into this flatbuffer,
   // returning true on success.
+  // This is a deep copy, and will call FromFlatbuffer on any constituent
+  // objects.
   [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
     Clear();
     %s
