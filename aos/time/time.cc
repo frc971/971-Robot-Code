@@ -6,6 +6,7 @@
 #include <cstring>
 #include <ctime>
 #include <iomanip>
+#include <sstream>
 
 #ifdef __linux__
 
@@ -77,6 +78,18 @@ std::ostream &operator<<(std::ostream &stream,
                          const aos::monotonic_clock::time_point &now) {
   PrintToStream(stream, now.time_since_epoch());
   return stream;
+}
+
+std::string ToString(const aos::monotonic_clock::time_point &now) {
+  std::ostringstream stream;
+  stream << now;
+  return stream.str();
+}
+
+std::string ToString(const aos::realtime_clock::time_point &now) {
+  std::ostringstream stream;
+  stream << now;
+  return stream.str();
 }
 
 #ifdef __linux__

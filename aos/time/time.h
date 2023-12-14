@@ -81,6 +81,9 @@ std::ostream &operator<<(std::ostream &stream,
 std::ostream &operator<<(std::ostream &stream,
                          const aos::realtime_clock::time_point &now);
 
+std::string ToString(const aos::monotonic_clock::time_point &now);
+std::string ToString(const aos::realtime_clock::time_point &now);
+
 namespace time {
 #ifdef __linux__
 

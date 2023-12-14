@@ -225,4 +225,12 @@ TEST(TimeTest, OperatorStreamRealtimeNegative) {
   }
 }
 
+// Test that ToString works for monotonic and realtime time points.
+TEST(TimeTest, ToStringTimePoints) {
+  EXPECT_EQ(ToString(realtime_clock::epoch() + std::chrono::hours(5 * 24) +
+                     std::chrono::seconds(11) + std::chrono::milliseconds(5)),
+            "1970-01-06_00-00-11.005000000");
+  EXPECT_EQ(ToString(monotonic_clock::min_time), "-9223372036.854775808sec");
+}
+
 }  // namespace aos::time::testing
