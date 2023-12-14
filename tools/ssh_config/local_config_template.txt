@@ -1,0 +1,145 @@
+# Host for connecting to the build server
+Host frc971
+    HostName build.frc971.org
+    User {{username}}
+    Port 2222
+    IdentityFile ~/.ssh/{{identity_file}}
+    LocalForward 9971 127.0.0.1:3389
+
+# Hosts for connecting to specific RoboRIOs
+Host roborio
+   HostName 10.9.71.2
+   User admin
+
+Host practice-roborio
+   HostName 10.99.71.2
+   User admin
+
+Host third-roborio
+   HostName 10.89.71.2
+   User admin
+
+# Hosts for connecting to Raspberry Pis
+Host pi1
+   HostName 10.9.71.101
+   User pi
+
+Host pi2
+   HostName 10.9.71.102
+   User pi
+
+Host pi3
+   HostName 10.9.71.103
+   User pi
+
+Host pi4
+   HostName 10.9.71.104
+   User pi
+
+Host pi5
+   HostName 10.9.71.105
+   User pi
+
+Host pi6
+   HostName 10.9.71.106
+   User pi
+
+# Hosts for connecting to practice Raspberry Pis
+Host practice-pi1
+   HostName 10.99.71.101
+   User pi
+
+Host practice-pi2
+   HostName 10.99.71.102
+   User pi
+
+Host practice-pi3
+   HostName 10.99.71.103
+   User pi
+
+Host practice-pi4
+   HostName 10.99.71.104
+   User pi
+
+Host practice-pi5
+   HostName 10.99.71.105
+   User pi
+
+Host practice-pi6
+   HostName 10.99.71.106
+   User pi
+
+# Hosts for connecting to Box of Pi's
+Host box-pi1
+   HostName 10.79.71.101
+   User pi
+
+Host box-pi2
+   HostName 10.79.71.102
+   User pi
+
+Host box-pi3
+   HostName 10.79.71.103
+   User pi
+
+Host box-pi4
+   HostName 10.79.71.104
+   User pi
+
+Host box-pi5
+   HostName 10.79.71.105
+   User pi
+
+Host box-pi6
+   HostName 10.79.71.106
+   User pi
+
+Host frc971-roborio
+   HostName build.frc971.org
+   Port 2222
+   User {{username}}
+   IdentityFile ~/.ssh/{{identity_file}}
+   ForwardAgent yes
+   RemoteForward 10999 10.9.71.2:22
+   RemoteForward 10998 10.9.71.101:22
+   RemoteForward 10997 10.9.71.102:22
+   RemoteForward 10996 10.9.71.103:22
+   RemoteForward 10995 10.9.71.104:22
+   RemoteForward 10994 10.9.71.105:22
+   RemoteForward 10993 10.9.71.106:22
+
+Host frc971-practice-roborio
+   HostName build.frc971.org
+   Port 2222
+   User {{username}}
+   IdentityFile ~/.ssh/{{identity_file}}
+   ForwardAgent yes
+   RemoteForward 10989 10.99.71.2:22
+   RemoteForward 10988 10.99.71.101:22
+   RemoteForward 10987 10.99.71.102:22
+   RemoteForward 10986 10.99.71.103:22
+   RemoteForward 10985 10.99.71.104:22
+   RemoteForward 10984 10.99.71.105:22
+   RemoteForward 10983 10.99.71.106:22
+
+Host frc971-third-roborio
+   HostName build.frc971.org
+   Port 2222
+   IdentityFile ~/.ssh/{{identity_file}}
+   User {{username}}
+   ForwardAgent yes
+   RemoteForward 10979 10.89.71.2:22
+
+Host frc971-box-roborio
+   HostName build.frc971.org
+   Port 2222
+   User {{username}}
+   IdentityFile ~/.ssh/{{identity_file}}
+   ForwardAgent yes
+   RemoteForward 10979 10.79.71.2:22
+   RemoteForward 10978 10.79.71.101:22
+   RemoteForward 10977 10.79.71.102:22
+   RemoteForward 10976 10.79.71.103:22
+   RemoteForward 10975 10.79.71.104:22
+   RemoteForward 10974 10.79.71.105:22
+   RemoteForward 10973 10.79.71.106:22
