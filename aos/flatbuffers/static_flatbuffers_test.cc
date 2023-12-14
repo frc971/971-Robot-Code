@@ -913,6 +913,78 @@ TEST_F(StaticFlatbuffersTest, ExtraLargeSpanAllocator) {
        *object->AsFlatbuffer().unspecified_length_vector()) {
     EXPECT_EQ(expected++, value);
   }
+  expected = 0;
+  for (const uint8_t value : *object->unspecified_length_vector()) {
+    EXPECT_EQ(expected++, value);
+  }
   TestMemory(builder.buffer());
+}
+
+// Tests that the iterators on the Vector type work.
+TEST_F(StaticFlatbuffersTest, IteratorTest) {
+  Builder<TestTableStatic> builder(std::make_unique<VectorAllocator>());
+  {
+    auto vector = builder->add_unspecified_length_vector();
+    ASSERT_TRUE(vector->reserve(9000));
+    vector->resize(256);
+    uint8_t set_value = 0;
+    for (uint8_t &destination : *vector) {
+      destination = set_value;
+      ++set_value;
+    }
+    uint8_t expected = 0;
+    for (const uint8_t value : *builder->unspecified_length_vector()) {
+      EXPECT_EQ(expected, value);
+      ++expected;
+    }
+    // Exercise some of the random access iterator functionality to ensure that
+    // we have it implemented.
+    auto begin_it = vector->begin();
+    EXPECT_EQ(begin_it + 256, vector->end());
+    EXPECT_EQ(7, *(begin_it + 7));
+    EXPECT_EQ(255, *(vector->end() - 1));
+    EXPECT_EQ(256, vector->end() - vector->begin());
+    EXPECT_EQ(-256, vector->begin() - vector->end());
+    static_assert(std::random_access_iterator<decltype(vector->begin())>,
+                  "The vector iterator does not meet the requirements of a "
+                  "random access iterator.");
+  }
+  {
+    auto vector = builder->add_vector_of_structs();
+    vector->resize(3);
+    double set_value = 0;
+    for (SubStruct &destination : *vector) {
+      destination.mutate_x(set_value);
+      destination.mutate_y(-set_value);
+      set_value += 1.0;
+    }
+    double expected = 0;
+    for (const SubStruct &value : *builder->vector_of_structs()) {
+      EXPECT_EQ(expected, value.x());
+      EXPECT_EQ(-expected, value.y());
+      expected += 1.0;
+    }
+    static_assert(std::random_access_iterator<decltype(vector->begin())>,
+                  "The vector iterator does not meet the requirements of a "
+                  "random access iterator.");
+  }
+  {
+    auto vector = builder->add_vector_of_tables();
+    vector->resize(3);
+    int set_value = 0;
+    for (SubTableStatic &destination : *vector) {
+      destination.set_foo(set_value);
+      set_value += 1;
+    }
+    int expected = 0;
+    for (const SubTableStatic &value : *builder->vector_of_tables()) {
+      EXPECT_EQ(expected, value.foo());
+      EXPECT_FALSE(value.has_baz());
+      expected += 1;
+    }
+    static_assert(std::random_access_iterator<decltype(vector->begin())>,
+                  "The vector iterator does not meet the requirements of a "
+                  "random access iterator.");
+  }
 }
 }  // namespace aos::fbs::testing

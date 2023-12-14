@@ -109,7 +109,87 @@ struct InlineWrapper;
 template <typename T, size_t kStaticLength, bool kInline,
           size_t kForceAlign = 0, bool kNullTerminate = false>
 class Vector : public ResizeableObject {
+  template <typename VectorType, typename ValueType>
+  class generic_iterator {
+   public:
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = ValueType;
+    using difference_type = std::ptrdiff_t;
+    using pointer = value_type *;
+    using reference = value_type &;
+
+    explicit generic_iterator(VectorType *vector, size_t index)
+        : vector_(vector), index_(index) {}
+    generic_iterator(const generic_iterator &) = default;
+    generic_iterator() : vector_(nullptr), index_(0) {}
+    generic_iterator &operator=(const generic_iterator &) = default;
+
+    generic_iterator &operator++() {
+      ++index_;
+      return *this;
+    }
+    generic_iterator operator++(int) {
+      generic_iterator retval = *this;
+      ++(*this);
+      return retval;
+    }
+    generic_iterator &operator--() {
+      --index_;
+      return *this;
+    }
+    generic_iterator operator--(int) {
+      generic_iterator retval = *this;
+      --(*this);
+      return retval;
+    }
+    bool operator==(const generic_iterator &other) const {
+      CHECK_EQ(other.vector_, vector_);
+      return index_ == other.index_;
+    }
+    std::strong_ordering operator<=>(const generic_iterator &other) const {
+      CHECK_EQ(other.vector_, vector_);
+      return index_ <=> other.index_;
+    }
+    reference operator*() const { return vector_->at(index_); }
+    difference_type operator-(const generic_iterator &other) const {
+      CHECK_EQ(other.vector_, vector_);
+      return index_ - other.index_;
+    }
+    generic_iterator operator-(difference_type decrement) const {
+      return generic_iterator(vector_, index_ - decrement);
+    }
+    friend generic_iterator operator-(difference_type decrement,
+                                      const generic_iterator &rhs) {
+      return rhs - decrement;
+    }
+    generic_iterator operator+(difference_type increment) const {
+      return generic_iterator(vector_, index_ + increment);
+    }
+    friend generic_iterator operator+(difference_type increment,
+                                      const generic_iterator &rhs) {
+      return rhs + increment;
+    }
+    generic_iterator &operator+=(difference_type increment) {
+      index_ += increment;
+      return *this;
+    }
+    generic_iterator &operator-=(difference_type increment) {
+      index_ -= increment;
+      return *this;
+    }
+    reference operator[](difference_type index) const {
+      return *(*this + index);
+    }
+
+   private:
+    VectorType *vector_;
+    size_t index_;
+  };
+
  public:
+  using iterator = generic_iterator<Vector, T>;
+  using const_iterator = generic_iterator<const Vector, const T>;
+
   static_assert(kInline || !kNullTerminate,
                 "It does not make sense to null-terminate vectors of objects.");
   // Type stored inline in the serialized vector (offsets for tables/strings; T
@@ -379,6 +459,12 @@ class Vector : public ResizeableObject {
                   "objects/strings, please start a discussion.");
     return inline_data();
   }
+
+  // Iterators to allow easy use with standard C++ features.
+  iterator begin() { return iterator(this, 0); }
+  iterator end() { return iterator(this, size()); }
+  const_iterator begin() const { return const_iterator(this, 0); }
+  const_iterator end() const { return const_iterator(this, size()); }
 
   std::string SerializationDebugString() const {
     std::stringstream str;
