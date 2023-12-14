@@ -10,7 +10,7 @@ package(default_visibility = ["//visibility:public"])
 
 static_flatbuffer(
     name = "test_message_fbs",
-    src = "test_message.fbs",
+    srcs = ["test_message.fbs"],
 )
 
 cc_static_flatbuffer(
@@ -35,7 +35,7 @@ cc_static_flatbuffer(
 
 static_flatbuffer(
     name = "ping_fbs",
-    src = "ping.fbs",
+    srcs = ["ping.fbs"],
 )
 
 flatbuffer_ts_library(
@@ -64,7 +64,7 @@ flatbuffer_rust_library(
 
 static_flatbuffer(
     name = "pong_fbs",
-    src = "pong.fbs",
+    srcs = ["pong.fbs"],
 )
 
 cc_library(

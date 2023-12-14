@@ -807,12 +807,16 @@ GeneratedCode GeneratedCode::MergeCode(
 }
 }  // namespace
 
-std::string GenerateCodeForRootTableFile(const reflection::Schema *schema) {
-  const reflection::Object *root_object = CHECK_NOTNULL(GetObject(schema, -1));
+std::string GenerateCodeForRootTableFile(const reflection::Schema *schema,
+                                         std::string_view file_hint) {
+  const reflection::Object *root_object = GetObject(schema, -1);
   const std::string_view root_file =
-      root_object->declaration_file()->string_view();
-  std::vector<GeneratedObject> objects = {
-      GenerateCodeForObject(schema, root_object)};
+      (root_object == nullptr) ? file_hint
+                               : root_object->declaration_file()->string_view();
+  std::vector<GeneratedObject> objects;
+  if (root_object != nullptr) {
+    objects.push_back(GenerateCodeForObject(schema, root_object));
+  }
   for (const reflection::Object *object : *schema->objects()) {
     if (object->is_struct()) {
       continue;

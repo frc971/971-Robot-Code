@@ -2,13 +2,13 @@ load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 static_flatbuffer(
     name = "include_fbs",
-    src = "include.fbs",
+    srcs = ["include.fbs"],
     visibility = ["//visibility:public"],
 )
 
 static_flatbuffer(
     name = "type_coverage_fbs",
-    src = "type_coverage.fbs",
+    srcs = ["type_coverage.fbs"],
     visibility = ["//visibility:public"],
 )
 

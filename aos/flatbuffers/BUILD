@@ -155,7 +155,7 @@ sh_binary(
 
 static_flatbuffer(
     name = "test_fbs",
-    src = "test.fbs",
+    srcs = ["test.fbs"],
     deps = ["//aos/flatbuffers/test_dir:include_fbs"],
 )
 

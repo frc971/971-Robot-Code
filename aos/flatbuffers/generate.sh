@@ -15,8 +15,16 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
   { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
 # --- end runfiles.bash initialization v2 ---
 
-BFBS_FILE=$1
-OUT_FILE=$2
+INPUTS=($BFBS_FILES)
+SCHEMA_FILES=($BASE_FILES)
+OUTPUTS=($OUT_FILES)
 
-$(rlocation org_frc971/aos/flatbuffers/generate) --reflection_bfbs "${BFBS_FILE}" --output_file "${OUT_FILE}"
-$(rlocation llvm_k8/bin/clang-format) --style=file:"$(rlocation org_frc971/.clang-format)" -i "${OUT_FILE}"
+LEN=${#INPUTS[@]}
+
+for ((i = 0; i < $LEN; i++)); do
+  $(rlocation org_frc971/aos/flatbuffers/generate) \
+    --reflection_bfbs "${INPUTS[i]}" \
+    --output_file "${OUTPUTS[i]}" \
+    --base_file_name "$(basename ${SCHEMA_FILES[i]})"
+  $(rlocation llvm_k8/bin/clang-format) --style=file:"$(rlocation org_frc971/.clang-format)" -i "${OUTPUTS[i]}"
+done

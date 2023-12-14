@@ -31,7 +31,11 @@ struct GeneratedObject {
 
 // Produces generated code for all flatbuffer tables in the file corresponding
 // to the provided Schema object.
-std::string GenerateCodeForRootTableFile(const reflection::Schema *schema);
+// file_hint is the name of the file that we should be generating code for; this
+// is used if there is no root table specified for the fbs file so that we can
+// infer which objects to generate code for.
+std::string GenerateCodeForRootTableFile(const reflection::Schema *schema,
+                                         std::string_view file_hint);
 
 // Helper functions to generate the code for individual objects; primarily
 // exposed for testing.

@@ -1,7 +1,7 @@
 load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@aspect_bazel_lib//lib:run_binary.bzl", "run_binary")
 
-def static_flatbuffer(name, src, visibility = None, deps = [], **kwargs):
+def static_flatbuffer(name, visibility = None, deps = [], srcs = [], **kwargs):
     """Generates the code for the static C++ flatbuffer API for the specified fbs file.
 
     Generates a cc_library of name name that can be depended on by C++ code and other
@@ -13,14 +13,15 @@ def static_flatbuffer(name, src, visibility = None, deps = [], **kwargs):
 
     Args:
       name: Target name.
-      src: .fbs file to generated code for.
+      srcs: List of fbs files to codegen.
       visibility: Desired rule visibility.
       deps: List of static_flatbuffer dependencies of this rule.
     """
     fbs_suffix = "_fbs"
+
     flatbuffer_cc_library(
         name = name + fbs_suffix,
-        srcs = [src],
+        srcs = srcs,
         deps = [dep + fbs_suffix for dep in deps],
         gen_reflections = True,
         visibility = visibility,
@@ -30,19 +31,23 @@ def static_flatbuffer(name, src, visibility = None, deps = [], **kwargs):
     # Until we make this a proper rule with providers or the such, we just manage headers
     # by having a strong convention where the header will be a function of the fbs name
     # rather than a function of the rule name.
-    header_name = src.removesuffix(".fbs") + "_static.h"
+    header_names = [file.removesuffix(".fbs") + "_static.h" for file in srcs]
     reflection_out = name + fbs_suffix + "_reflection_out"
 
     run_binary(
         name = name + "_gen",
         tool = "@org_frc971//aos/flatbuffers:generate_wrapper",
         srcs = [reflection_out],
-        outs = [header_name],
-        args = ["$(execpath %s)" % (reflection_out,), "$(execpath %s)" % (header_name,)],
+        outs = header_names,
+        env = {
+            "BFBS_FILES": "$(execpaths %s)" % (reflection_out,),
+            "BASE_FILES": " ".join(srcs),
+            "OUT_FILES": " ".join(["$(execpath %s)" % (name,) for name in header_names]),
+        },
     )
     native.cc_library(
         name = name,
-        hdrs = [header_name],
+        hdrs = header_names,
         deps = ["@org_frc971//aos/flatbuffers:static_table", "@org_frc971//aos/flatbuffers:static_vector", name + fbs_suffix] + deps,
         visibility = visibility,
     )

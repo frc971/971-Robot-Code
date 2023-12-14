@@ -8,5 +8,3 @@ table IncludedTable {
  foo:TestEnum (id: 0);
 }
 
-root_type IncludedTable;
-

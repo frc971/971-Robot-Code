@@ -8,13 +8,17 @@
 
 DEFINE_string(reflection_bfbs, "", "Path to the .bfbs reflection file.");
 DEFINE_string(output_file, "", "Path to the output header to write.");
+DEFINE_string(base_file_name, "",
+              "Name of the base file to generate code for as used by the "
+              "reflection::Schema object.");
 
 namespace aos::fbs {
 int Main() {
   aos::FlatbufferVector<reflection::Schema> schema =
       aos::FileToFlatbuffer<reflection::Schema>(FLAGS_reflection_bfbs);
   aos::util::WriteStringToFileOrDie(
-      FLAGS_output_file, GenerateCodeForRootTableFile(&schema.message()));
+      FLAGS_output_file,
+      GenerateCodeForRootTableFile(&schema.message(), FLAGS_base_file_name));
   return EXIT_SUCCESS;
 }
 }  // namespace aos::fbs
