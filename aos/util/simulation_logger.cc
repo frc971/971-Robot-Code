@@ -15,7 +15,15 @@ LoggerState::LoggerState(aos::SimulatedEventLoopFactory *factory,
     event_loop_->SkipTimingReport();
   }
   event_loop_->SkipAosLog();
-  event_loop_->OnRun([this]() { logger_->StartLogging(std::move(namer_)); });
+
+  // TODO (James, Maxwell) This shouldn't be necessary to have a delay here.
+  // We'd like to have the logger start as soon as the event loop starts. The
+  // logger must be started after (not on) `factory->send_delay()` amount of
+  // time. Keep this simple, use two of those delays.
+  TimerHandler *status_timer = event_loop_->AddTimer(
+      [this]() { logger_->StartLogging(std::move(namer_)); });
+  status_timer->Schedule(
+      monotonic_clock::time_point(factory->send_delay() * 2));
 }
 
 std::vector<std::unique_ptr<LoggerState>> MakeLoggersForNodes(
