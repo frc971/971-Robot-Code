@@ -282,6 +282,7 @@ rust_library(
         "//aos:aos_rs",
         "@com_github_google_flatbuffers//rust",
         "@crate_index//:futures",
+        "@crate_index//:log",
     ],
 )
 
@@ -313,6 +314,7 @@ rust_library(
         "//aos:aos_rs",
         "@com_github_google_flatbuffers//rust",
         "@crate_index//:futures",
+        "@crate_index//:log",
     ],
 )
 

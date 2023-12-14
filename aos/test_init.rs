@@ -1,4 +1,4 @@
-use aos_init::init;
+use std::sync::Once;
 
 autocxx::include_cpp! (
 #include "aos/testing/tmpdir.h"
@@ -15,7 +15,11 @@ generate!("aos::testing::SetTestShmBase")
 ///
 /// Panics if non-test initialization has already been performed.
 pub fn test_init() {
-    init();
-    ffi::aos::testing::SetTestShmBase();
-    // TODO(Brian): Do we want any of the other stuff that `:gtest_main` has?
+    static ONCE: Once = Once::new();
+    ONCE.call_once(|| {
+        aos_init::internal::init();
+        ffi::aos::testing::SetTestShmBase();
+        env_logger::builder().is_test(true).init();
+        // TODO(Brian): Do we want any of the other stuff that `:gtest_main` has?
+    });
 }

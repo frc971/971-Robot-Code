@@ -1,13 +1,12 @@
 use aos::configuration;
 use aos::events::shm_event_loop::ShmEventLoop;
-use aos::init::WithCppFlags;
+use aos::init::Init;
 use clap::Parser;
 use ping_lib::PingTask;
 use std::path::Path;
 
 /// Ping portion of a ping/pong system.
 #[derive(Parser, Debug)]
-#[command(name = "ping")]
 struct App {
     /// Time to sleep between pings.
     #[arg(long, default_value_t = 10000, value_name = "MICROS")]
@@ -15,8 +14,7 @@ struct App {
 }
 
 fn main() {
-    let app = App::parse_with_cpp_flags();
-    aos::init::init();
+    let app = App::init();
     let config = configuration::read_config_from(Path::new("pingpong_config.json")).unwrap();
     let ping = PingTask::new();
     ShmEventLoop::new(&config).run_with(|runtime| {

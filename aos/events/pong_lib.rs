@@ -17,10 +17,12 @@ pub async fn pong(event_loop: EventLoopRuntime<'_>) -> Never {
     on_run.borrow().await;
     loop {
         let ping = ping_watcher.next().await;
+        let ping = ping.message().unwrap();
+        log::info!("Got ping: {}", ping.value());
 
         let mut builder = pong_sender.make_builder();
         let mut pong = pong::PongBuilder::new(builder.fbb());
-        pong.add_value(ping.message().unwrap().value());
+        pong.add_value(ping.value());
         pong.add_initial_send_time(event_loop.monotonic_now().into());
         let pong = pong.finish();
         builder.send(pong).expect("Can't send pong reponse");

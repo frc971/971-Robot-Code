@@ -212,6 +212,7 @@ autocxx_library(
     visibility = ["//visibility:public"],
     deps = [
         "@crate_index//:clap",
+        "@crate_index//:env_logger",
     ],
 )
 
@@ -228,6 +229,7 @@ autocxx_library(
     visibility = ["//visibility:public"],
     deps = [
         ":init_rs",
+        "@crate_index//:env_logger",
     ],
 )
 

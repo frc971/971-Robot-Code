@@ -1,3 +1,44 @@
+//! AOS Initialization
+//!
+//! This module "links" the C++ library and the Rust application together.
+//! In particular it provides the [`Init`] trait which is implemented for
+//! any struct that implements [`clap::Parser`]. The reason for this is that
+//! an important part of initializing the C++ library involves setting the
+//! gFlags which get resolved dynamically thanks to their reflection API.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use aos_init::Init;
+//! use clap::Parser;
+//!
+//! #[derive(Parser, Debug)]
+//! struct App {
+//!     /// Time to sleep between pings.
+//!     #[arg(long, default_value_t = 10000, value_name = "MICROS")]
+//!     sleep: u64,
+//! }
+//!
+//! fn main() {
+//!     // Initializes AOS and returns the App struct with the parsed CLI flags
+//!     let app: App = App::init();
+//!     // At this point your flags are parsed and AOS is initialized.
+//! }
+//! ```
+//! You can also use [`DefaultApp`] to avoid having to specify your own CLI options if you don't
+//! need them. For example:
+//!
+//! ```no_run
+//! use aos_init::{DefaultApp, Init};
+//! use clap::Parser;
+//!
+//! fn main() {
+//!     // Initializes AOS. DefaultApp doesn't have any flags to parse.
+//!     let _ = DefaultApp::init();
+//!     // At this point AOS is initialized and you can create event loop.
+//! }
+//!```
+
 use std::{
     env,
     ffi::{CString, OsStr, OsString},
@@ -22,32 +63,61 @@ generate!("aos::SetCommandLineOption")
 generate!("aos::GetCommandLineOption")
 );
 
-/// Initializes AOS.
-pub fn init() {
-    static ONCE: Once = Once::new();
-    ONCE.call_once(|| {
-        // We leak the `CString` with `into_raw`. It's not sound for C++ to free
-        // it but `InitGoogleLogging` requries that it is long-lived.
-        let argv0 = std::env::args()
-            .map(|arg| CString::new(arg).expect("Arg may not have NUL"))
-            .next()
-            .expect("Missing argv[0]?")
-            .into_raw();
-        // SAFETY: argv0 is a well-defined CString.
-        unsafe {
-            ffi::aos::InitFromRust(argv0);
-        }
-    });
+// Intended to be used only from here and test_init. Don't use it anywhere else please.
+#[doc(hidden)]
+pub mod internal {
+    use super::*;
+    /// Generic initialization for production and tests.
+    ///
+    /// Sets up the C++ side of things. Notably, it doesn't setup the command line flags.
+    pub fn init() {
+        static ONCE: Once = Once::new();
+        ONCE.call_once(|| {
+            // We leak the `CString` with `into_raw`. It's not sound for C++ to free
+            // it but `InitGoogleLogging` requries that it is long-lived.
+            let argv0 = std::env::args()
+                .map(|arg| CString::new(arg).expect("Arg may not have NUL"))
+                .next()
+                .expect("Missing argv[0]?")
+                .into_raw();
+            // SAFETY: argv0 is a well-defined CString.
+            unsafe {
+                ffi::aos::InitFromRust(argv0);
+            }
+        });
+    }
 }
 
+/// An application that doesn't need custom command line flags.
+///
+/// If you need your own command line flags, use any struct that derives [`clap::Parser`] instead.
+#[derive(Parser, Debug)]
+pub struct DefaultApp {}
+
 /// Trait used to append C++ gFlags to a clap CLI.
-pub trait WithCppFlags: Parser {
+pub trait Init: Parser {
+    /// Initializes an AOS application.
+    ///
+    /// Parses the command line flags and runs the initialization logic.
+    fn init() -> Self {
+        let this = Self::parse_with_cpp_flags();
+        // Rust logs to stderr by default. Make that true for C++ as that will be easier than
+        // managing one or multiple files across FFI. We can pipe the stderr to a file to get
+        // a log file if we want.
+        CxxFlag::set_option("logtostderr", "true".as_ref())
+            .expect("Error setting C++ flag: logtostderr");
+        internal::init();
+        // Non-test initialization below
+        env_logger::init();
+        this
+    }
+
     /// Parses the comannd line arguments while also setting the C++ gFlags.
     fn parse_with_cpp_flags() -> Self {
         Self::parse_with_cpp_flags_from(env::args_os())
     }
 
-    /// Like [`WithCppFlags::parse_with_cpp_flags`] but read from an iterator.
+    /// Like [`Init::parse_with_cpp_flags`] but read from an iterator.
     fn parse_with_cpp_flags_from<I, T>(itr: I) -> Self
     where
         I: IntoIterator<Item = T>,
@@ -100,7 +170,7 @@ pub trait WithCppFlags: Parser {
     }
 }
 
-impl<T: Parser> WithCppFlags for T {}
+impl<T: Parser> Init for T {}
 
 #[derive(Clone)]
 #[allow(unused)]
@@ -112,13 +182,19 @@ struct CxxFlag {
     filename: String,
 }
 
+#[derive(Debug)]
 struct SetFlagError;
 
 impl CxxFlag {
     /// Sets the command gFlag to the specified value.
     fn set(&self, value: &OsStr) -> Result<(), SetFlagError> {
+        Self::set_option(&self.name, value)
+    }
+
+    /// Sets the command gFlag to the specified value.
+    fn set_option(name: &str, value: &OsStr) -> Result<(), SetFlagError> {
         unsafe {
-            let name = CString::new(self.name.clone()).expect("Flag name may not have NUL");
+            let name = CString::new(name.clone()).expect("Flag name may not have NUL");
             let value = CString::new(value.as_bytes()).expect("Arg may not have NUL");
             if ffi::aos::SetCommandLineOption(name.as_ptr(), value.as_ptr()) {
                 Ok(())

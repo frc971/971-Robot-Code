@@ -40,6 +40,7 @@ impl PingTask {
             let mut builder = ping_sender.make_builder();
             let mut ping = ping::PingBuilder::new(builder.fbb());
             let iter = self.counter.get();
+            log::trace!("Ping: {iter}");
             ping.add_value(iter);
             ping.add_send_time(event_loop.monotonic_now().into());
             let ping = ping.finish();
@@ -55,11 +56,9 @@ impl PingTask {
         on_run.borrow().await;
         loop {
             let pong = pong_watcher.next().await;
-            assert_eq!(
-                pong.message().unwrap().value(),
-                self.counter.get(),
-                "Missed a reply"
-            );
+            let pong = pong.message().unwrap();
+            log::trace!("Got pong: {}", pong.value());
+            assert_eq!(pong.value(), self.counter.get(), "Missed a reply");
         }
     }
 }
