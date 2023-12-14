@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 load("config_validator_macro.bzl", "config_validator_test")
 
@@ -79,10 +79,9 @@ cc_test(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "clock_timepoints_fbs",
     srcs = ["clock_timepoints.fbs"],
-    gen_reflections = True,
     deps = ["//aos:configuration_fbs"],
 )
 
@@ -368,10 +367,9 @@ cc_test(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "process_info_fbs",
     srcs = ["process_info.fbs"],
-    gen_reflections = True,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
@@ -536,7 +534,7 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "config_validator_config_fbs",
     srcs = ["config_validator_config.fbs"],
     target_compatible_with = ["@platforms//os:linux"],

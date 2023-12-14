@@ -1,11 +1,11 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_py_library")
 load("//aos:config.bzl", "aos_config")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "vision_fbs",
     srcs = ["vision.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
@@ -17,10 +17,9 @@ flatbuffer_ts_library(
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "calibration_fbs",
     srcs = ["calibration.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
@@ -146,10 +145,9 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "target_map_fbs",
     srcs = ["target_map.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

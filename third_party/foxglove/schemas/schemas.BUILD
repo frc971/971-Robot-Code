@@ -1,12 +1,12 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "DEFAULT_FLATC_ARGS")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "DEFAULT_FLATC_ARGS", "flatbuffer_cc_library")
+load("@org_frc971//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 FLATC_ARGS = [arg for arg in DEFAULT_FLATC_ARGS if arg != "--require-explicit-ids"]
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "schemas",
     srcs = glob(["*.fbs"]),
     flatc_args = FLATC_ARGS,
-    gen_reflections = True,
     visibility = ["//visibility:public"],
 )
 

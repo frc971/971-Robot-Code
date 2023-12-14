@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_rust_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_rust_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
@@ -19,10 +19,9 @@ cc_static_flatbuffer(
     target = ":test_message_fbs_fbs_reflection_out",
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "event_loop_fbs",
     srcs = ["event_loop.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     deps = ["//aos:configuration_fbs"],
 )

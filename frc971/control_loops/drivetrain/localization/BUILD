@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 cc_library(
@@ -49,12 +49,11 @@ cc_test(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "localizer_output_fbs",
     srcs = [
         "localizer_output.fbs",
     ],
-    gen_reflections = True,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

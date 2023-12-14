@@ -1,16 +1,15 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:gtk_dependent.bzl", "gtk_dependent_cc_binary")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "vision_fbs",
     srcs = [
         "vision.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

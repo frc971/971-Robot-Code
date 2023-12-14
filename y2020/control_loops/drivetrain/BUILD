@@ -1,5 +1,5 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:js.bzl", "ts_project")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 
@@ -57,10 +57,9 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "localizer_debug_fbs",
     srcs = ["localizer_debug.fbs"],
-    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
 

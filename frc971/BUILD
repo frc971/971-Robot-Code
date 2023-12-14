@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -26,12 +26,11 @@ py_library(
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "can_configuration_fbs",
     srcs = [
         ":can_configuration.fbs",
     ],
-    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
 

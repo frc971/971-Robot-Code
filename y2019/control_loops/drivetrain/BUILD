@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:select.bzl", "cpu_select")
 
@@ -104,20 +104,18 @@ cc_binary(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "target_selector_fbs",
     srcs = ["target_selector.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "camera_fbs",
     srcs = [
         "camera.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

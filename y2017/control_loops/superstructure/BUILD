@@ -1,50 +1,46 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 package(default_visibility = ["//visibility:public"])
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "superstructure_goal_fbs",
     srcs = [
         "superstructure_goal.fbs",
     ],
-    gen_reflections = 1,
-    includes = [
-        "//frc971/control_loops:control_loops_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//frc971/control_loops:control_loops_fbs",
+    ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "superstructure_position_fbs",
     srcs = [
         "superstructure_position.fbs",
     ],
-    gen_reflections = 1,
-    includes = [
-        "//frc971/control_loops:control_loops_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//frc971/control_loops:control_loops_fbs",
+    ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "superstructure_status_fbs",
     srcs = [
         "superstructure_status.fbs",
     ],
-    gen_reflections = 1,
-    includes = [
-        "//frc971/control_loops:control_loops_fbs_includes",
-        "//frc971/control_loops:profiled_subsystem_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+    ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "superstructure_output_fbs",
     srcs = [
         "superstructure_output.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

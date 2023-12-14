@@ -1,3 +1,4 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos/seasocks:gen_embedded.bzl", "gen_embedded")
 load("//aos:config.bzl", "aos_config")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
@@ -9,10 +10,9 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "remote_message_fbs",
     srcs = ["remote_message.fbs"],
-    gen_reflections = 1,
 )
 
 cc_static_flatbuffer(
@@ -21,14 +21,13 @@ cc_static_flatbuffer(
     target = ":remote_message_fbs_reflection_out",
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "connect_fbs",
     srcs = ["connect.fbs"],
-    gen_reflections = 1,
-    includes = [
-        "//aos:configuration_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:configuration_fbs",
+    ],
 )
 
 flatbuffer_ts_library(
@@ -40,21 +39,19 @@ flatbuffer_ts_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "remote_data_fbs",
     srcs = ["remote_data.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "timestamp_fbs",
     srcs = ["timestamp.fbs"],
-    gen_reflections = 1,
-    includes = [
-        "//aos:configuration_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos:configuration_fbs",
+    ],
 )
 
 cc_static_flatbuffer(
@@ -64,10 +61,9 @@ cc_static_flatbuffer(
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "message_bridge_client_fbs",
     srcs = ["message_bridge_client.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":message_bridge_server_fbs",
@@ -90,10 +86,9 @@ cc_static_flatbuffer(
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "sctp_config_fbs",
     srcs = ["sctp_config.fbs"],
-    gen_reflections = 1,
 )
 
 cc_static_flatbuffer(
@@ -102,10 +97,9 @@ cc_static_flatbuffer(
     target = ":sctp_config_fbs_reflection_out",
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "sctp_config_request_fbs",
     srcs = ["sctp_config_request.fbs"],
-    gen_reflections = 1,
 )
 
 cc_static_flatbuffer(
@@ -115,10 +109,9 @@ cc_static_flatbuffer(
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "message_bridge_server_fbs",
     srcs = ["message_bridge_server.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:configuration_fbs",
@@ -624,11 +617,11 @@ flatbuffer_cc_library(
     name = "web_proxy_fbs",
     srcs = ["web_proxy.fbs"],
     gen_reflections = True,
-    includes = [
-        ":connect_fbs_includes",
-        "//aos:configuration_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":connect_fbs_fbs",
+        "//aos:configuration_fbs_fbs",
+    ],
 )
 
 flatbuffer_ts_library(

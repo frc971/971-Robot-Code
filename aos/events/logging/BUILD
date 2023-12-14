@@ -1,22 +1,20 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "logger_fbs",
     srcs = ["logger.fbs"],
-    gen_reflections = True,
-    includes = [
-        "//aos:configuration_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = [
+        "//aos:configuration_fbs",
+    ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "replay_timing_fbs",
     srcs = ["replay_timing.fbs"],
-    gen_reflections = True,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
@@ -27,10 +25,9 @@ cc_static_flatbuffer(
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "log_replayer_stats_fbs",
     srcs = ["log_replayer_stats.fbs"],
-    gen_reflections = True,
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":replay_config_fbs",
@@ -44,10 +41,9 @@ cc_static_flatbuffer(
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "replay_config_fbs",
     srcs = ["log_replayer_config.fbs"],
-    gen_reflections = True,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
@@ -958,10 +954,9 @@ cc_test(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "test_message_fbs",
     srcs = ["test_message.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

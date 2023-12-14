@@ -1,5 +1,6 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load(":fast_gaussian.bzl", "fast_gaussian")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library", "flatbuffer_py_library")
+load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_py_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 # Note that this file is also used directly by :fast_gaussian_halide_generator,
@@ -229,10 +230,9 @@ flatbuffer_py_library(
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "sift_fbs",
     srcs = ["sift.fbs"],
-    gen_reflections = True,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
@@ -244,13 +244,12 @@ flatbuffer_ts_library(
     visibility = ["//y2020:__subpackages__"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "sift_training_fbs",
     srcs = ["sift_training.fbs"],
-    gen_reflections = True,
-    includes = [":sift_fbs_includes"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = [":sift_fbs"],
 )
 
 py_binary(

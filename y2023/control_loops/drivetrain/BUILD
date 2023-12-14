@@ -1,5 +1,5 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 genrule(
     name = "genrule_drivetrain",
@@ -115,21 +115,19 @@ cc_binary(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "target_selector_status_fbs",
     srcs = [
         ":target_selector_status.fbs",
     ],
-    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "target_selector_hint_fbs",
     srcs = [
         ":target_selector_hint.fbs",
     ],
-    gen_reflections = 1,
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",

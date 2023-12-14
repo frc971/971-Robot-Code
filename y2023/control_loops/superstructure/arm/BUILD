@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 cc_library(
     name = "arm",
@@ -73,12 +73,11 @@ genrule(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "arm_trajectories_fbs",
     srcs = [
         "arm_trajectories.fbs",
     ],
-    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
 

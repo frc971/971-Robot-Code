@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
 load("//aos/util:config_validator_macro.bzl", "config_validator_test")
@@ -80,17 +80,15 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "drivetrain_position_fbs",
     srcs = ["drivetrain_position.fbs"],
-    gen_reflections = 1,
     deps = ["//frc971/control_loops:control_loops_fbs"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "drivetrain_can_position_fbs",
     srcs = ["drivetrain_can_position.fbs"],
-    gen_reflections = 1,
     deps = ["//frc971/control_loops:can_falcon_fbs"],
 )
 

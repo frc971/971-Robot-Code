@@ -1,5 +1,5 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:js.bzl", "ts_project")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 ts_project(
@@ -176,15 +176,14 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "ball_color_fbs",
     srcs = ["ball_color.fbs"],
-    gen_reflections = 1,
-    includes = [
-        "//frc971/input:joystick_state_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
+    deps = [
+        "//frc971/input:joystick_state_fbs",
+    ],
 )
 
 cc_library(
@@ -231,15 +230,14 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "target_estimate_fbs",
     srcs = ["target_estimate.fbs"],
-    gen_reflections = 1,
-    includes = [
-        "//frc971/vision:calibration_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2022:__subpackages__"],
+    deps = [
+        "//frc971/vision:calibration_fbs",
+    ],
 )
 
 flatbuffer_ts_library(

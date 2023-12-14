@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 
 exports_files(["roborio_irq_config.json"])
@@ -183,27 +183,24 @@ cc_binary(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "starter_fbs",
     srcs = ["starter.fbs"],
-    gen_reflections = True,
-    includes = ["//aos/util:process_info_fbs_includes"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = ["//aos/util:process_info_fbs"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "kthread_fbs",
     srcs = ["kthread.fbs"],
-    gen_reflections = True,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "starter_rpc_fbs",
     srcs = ["starter_rpc.fbs"],
-    gen_reflections = True,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

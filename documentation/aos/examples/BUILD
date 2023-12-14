@@ -1,9 +1,8 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "sensor_data_fbs",
     srcs = ["sensor_data.fbs"],
-    gen_reflections = True,
 )
 
 cc_library(

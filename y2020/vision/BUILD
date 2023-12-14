@@ -1,9 +1,8 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "galactic_search_path_fbs",
     srcs = ["galactic_search_path.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//y2020:__subpackages__"],
 )

@@ -1,5 +1,5 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -90,17 +90,15 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "robot_state_fbs",
     srcs = ["robot_state.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "joystick_state_fbs",
     srcs = ["joystick_state.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

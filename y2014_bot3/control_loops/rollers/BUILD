@@ -1,40 +1,36 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 package(default_visibility = ["//visibility:public"])
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "rollers_goal_fbs",
     srcs = [
         "rollers_goal.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "rollers_position_fbs",
     srcs = [
         "rollers_position.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "rollers_output_fbs",
     srcs = [
         "rollers_output.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "rollers_status_fbs",
     srcs = [
         "rollers_status.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

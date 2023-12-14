@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 
 package(default_visibility = ["//visibility:public"])
@@ -23,24 +23,21 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "actions_fbs",
     srcs = ["actions.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "test_action_fbs",
     srcs = ["test_action.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "test_action2_fbs",
     srcs = ["test_action2.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

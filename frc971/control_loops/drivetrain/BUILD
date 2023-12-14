@@ -1,5 +1,5 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:js.bzl", "ts_project")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 load("//tools/build_rules:select.bzl", "cpu_select")
@@ -7,54 +7,47 @@ load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 
 package(default_visibility = ["//visibility:public"])
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "drivetrain_can_position_fbs",
     srcs = ["drivetrain_can_position.fbs"],
-    gen_reflections = 1,
     deps = ["//frc971/control_loops:can_falcon_fbs"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "spline_goal_fbs",
     srcs = ["spline_goal.fbs"],
-    gen_reflections = 1,
-    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+    deps = ["//frc971/control_loops:control_loops_fbs"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "drivetrain_goal_fbs",
     srcs = ["drivetrain_goal.fbs"],
-    gen_reflections = 1,
-    includes = [
-        ":spline_goal_fbs_includes",
-        "//frc971/control_loops:control_loops_fbs_includes",
+    deps = [
+        ":spline_goal_fbs",
+        "//frc971/control_loops:control_loops_fbs",
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "drivetrain_output_fbs",
     srcs = ["drivetrain_output.fbs"],
-    gen_reflections = 1,
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "drivetrain_position_fbs",
     srcs = ["drivetrain_position.fbs"],
-    gen_reflections = 1,
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "drivetrain_status_fbs",
     srcs = ["drivetrain_status.fbs"],
-    gen_reflections = 1,
-    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+    deps = ["//frc971/control_loops:control_loops_fbs"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "trajectory_fbs",
     srcs = ["trajectory.fbs"],
-    gen_reflections = 1,
-    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+    deps = ["//frc971/control_loops:control_loops_fbs"],
 )
 
 cc_static_flatbuffer(
@@ -112,33 +105,29 @@ genrule(
     cmd = "cat $(SRCS) | sed 's/double/float/g' > $(OUTS)",
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "drivetrain_goal_float_fbs",
     srcs = ["drivetrain_goal_float.fbs"],
-    gen_reflections = 1,
-    includes = [
-        ":spline_goal_fbs_includes",
-        "//frc971/control_loops:control_loops_fbs_includes",
+    deps = [
+        ":spline_goal_fbs",
+        "//frc971/control_loops:control_loops_fbs",
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "drivetrain_output_float_fbs",
     srcs = ["drivetrain_output_float.fbs"],
-    gen_reflections = 1,
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "drivetrain_position_float_fbs",
     srcs = ["drivetrain_position_float.fbs"],
-    gen_reflections = 1,
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "drivetrain_status_float_fbs",
     srcs = ["drivetrain_status_float.fbs"],
-    gen_reflections = 1,
-    includes = ["//frc971/control_loops:control_loops_fbs_includes"],
+    deps = ["//frc971/control_loops:control_loops_fbs"],
 )
 
 aos_config(
@@ -228,10 +217,9 @@ cc_test(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "localizer_fbs",
     srcs = ["localizer.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

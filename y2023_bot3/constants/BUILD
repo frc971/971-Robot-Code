@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:template.bzl", "jinja2_template")
 
 cc_library(
@@ -35,17 +35,15 @@ jinja2_template(
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "constants_fbs",
     srcs = ["constants.fbs"],
-    gen_reflections = True,
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "constants_list_fbs",
     srcs = ["constants_list.fbs"],
-    gen_reflections = True,
     visibility = ["//visibility:public"],
     deps = [":constants_fbs"],
 )

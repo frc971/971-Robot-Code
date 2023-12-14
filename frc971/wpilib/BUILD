@@ -1,16 +1,15 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:js.bzl", "ts_project")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
 
 package(default_visibility = ["//visibility:public"])
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "logging_fbs",
     srcs = [
         "logging.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
@@ -126,12 +125,11 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "loop_output_handler_test_fbs",
     srcs = [
         "loop_output_handler_test.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
@@ -229,12 +227,11 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "pdp_values_fbs",
     srcs = [
         "pdp_values.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
@@ -268,25 +265,23 @@ cc_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "imu_fbs",
     srcs = [
         "imu.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "imu_batch_fbs",
     srcs = [
         "imu_batch.fbs",
     ],
-    gen_reflections = 1,
-    includes = [
-        ":imu_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":imu_fbs",
+    ],
 )
 
 flatbuffer_ts_library(

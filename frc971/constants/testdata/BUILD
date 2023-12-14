@@ -1,26 +1,24 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 exports_files([
     "test_constants.json",
     "syntax_error.json",
 ])
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "constants_list_fbs",
     srcs = ["constants_list.fbs"],
-    gen_reflections = 1,
-    includes = [
-        ":constants_data_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = [
+        ":constants_data_fbs",
+    ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "constants_data_fbs",
     srcs = ["constants_data.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

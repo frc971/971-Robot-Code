@@ -1,12 +1,11 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "flywheel_controller_status_fbs",
     srcs = [
         "flywheel_controller_status.fbs",
     ],
-    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
 

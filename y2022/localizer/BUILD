@@ -1,5 +1,5 @@
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:js.bzl", "ts_project")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 
@@ -16,12 +16,11 @@ ts_project(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "localizer_status_fbs",
     srcs = [
         "localizer_status.fbs",
     ],
-    gen_reflections = True,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
@@ -42,16 +41,15 @@ flatbuffer_ts_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "localizer_visualization_fbs",
     srcs = ["localizer_visualization.fbs"],
-    gen_reflections = 1,
-    includes = [
-        ":localizer_status_fbs_includes",
-        "//frc971/control_loops:control_loops_fbs_includes",
-        "//frc971/control_loops/drivetrain:drivetrain_status_fbs_includes",
-    ],
     visibility = ["//visibility:public"],
+    deps = [
+        ":localizer_status_fbs",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+    ],
 )
 
 flatbuffer_ts_library(

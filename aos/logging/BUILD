@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:flatbuffers.bzl", "cc_static_flatbuffer")
 
 # The primary client logging interface.
@@ -52,10 +52,9 @@ cc_test(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "log_message_fbs",
     srcs = ["log_message.fbs"],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
@@ -67,12 +66,11 @@ cc_static_flatbuffer(
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "dynamic_log_command_fbs",
     srcs = [
         "dynamic_log_command.fbs",
     ],
-    gen_reflections = 1,
     visibility = ["//visibility:public"],
 )
 

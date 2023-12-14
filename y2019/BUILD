@@ -1,8 +1,8 @@
 load("//frc971:downloader.bzl", "robot_downloader")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//aos:config.bzl", "aos_config")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
 
 robot_downloader(
     data = [
@@ -162,22 +162,20 @@ cc_binary(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "camera_log_fbs",
     srcs = [
         "camera_log.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "status_light_fbs",
     srcs = [
         "status_light.fbs",
     ],
-    gen_reflections = 1,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

@@ -1,4 +1,4 @@
-load("@com_github_google_flatbuffers//:build_defs.bzl", "flatbuffer_cc_library")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:js.bzl", "ts_project")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
@@ -15,12 +15,11 @@ ts_project(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "status_fbs",
     srcs = [
         "status.fbs",
     ],
-    gen_reflections = True,
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = [
@@ -39,12 +38,11 @@ flatbuffer_ts_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "visualization_fbs",
     srcs = [
         "visualization.fbs",
     ],
-    gen_reflections = True,
     visibility = ["//visibility:public"],
     deps = [
         ":status_fbs",
@@ -60,24 +58,22 @@ flatbuffer_ts_library(
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "scoring_map_fbs",
     srcs = [
         "scoring_map.fbs",
     ],
-    gen_reflections = True,
     visibility = ["//visibility:public"],
     deps = [
         "//frc971/vision:target_map_fbs",
     ],
 )
 
-flatbuffer_cc_library(
+static_flatbuffer(
     name = "relative_scoring_map_fbs",
     srcs = [
         "relative_scoring_map.fbs",
     ],
-    gen_reflections = True,
     visibility = ["//visibility:public"],
     deps = [
         ":scoring_map_fbs",
