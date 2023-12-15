@@ -1,8 +1,9 @@
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
-# In order to use deb packages in the build you have to follow these steps:
+# In order to use deb packages in the build you have to follow these steps.
 #
+# Adding new packages:
 # 1. Create a "download_packages" build step in //debian/BUILD. List the
 #    packages you care about and exclude the ones you don't care about.
 #    Invoke "bazel run" on the "download_packages" target you just created.
@@ -23,6 +24,13 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 #    and upload the resulting tarball to https://software.frc971.org/Build-Dependencies.
 # 6. Add a new "new_http_archive" entry to the WORKSPACE file for the tarball
 #    you just uploaded.
+#
+# Updating existing packages:
+# 1. Read above instructions.
+# 2. The "download_packages" build step already exists, run it.
+# 3. The .bzl file with the file list already exists.  Update it with the
+#    output from the previous step.
+# 4. Follow steps 2., 5., and 6. from "adding new packages".
 
 def download_packages(name, packages, excludes = [], force_includes = [], force_excludes = [], target_compatible_with = None, release = "bullseye"):
     """Downloads a set of packages as well as their dependencies.

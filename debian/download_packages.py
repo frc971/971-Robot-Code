@@ -147,7 +147,7 @@ def print_file_list():
     contents.sort()
     print("_files = {")
     for deb in contents:
-        print('  "%s": "%s",' % (deb, sha256_checksum(deb)))
+        print('    "%s": "%s",' % (deb, sha256_checksum(deb)))
     print("}")
 
 
