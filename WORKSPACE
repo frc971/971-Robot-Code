@@ -589,8 +589,8 @@ http_archive(
 http_archive(
     name = "pandoc",
     build_file = "@//debian:pandoc.BUILD",
-    sha256 = "9f7a7adb3974a1f14715054c349ff3edc2909e920dbe3438fca437a83845f3c4",
-    url = "https://software.frc971.org/Build-Dependencies/pandoc.tar.gz",
+    sha256 = "3c98503f29f2a7f771647b24a4b591bbe5539119b6b5a006ff09be7bec47bc0e",
+    url = "https://software.frc971.org/Build-Dependencies/pandoc-2023.12.14.tar.gz",
 )
 
 http_archive(

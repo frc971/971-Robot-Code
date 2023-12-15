@@ -1,10 +1,9 @@
 files = {
-    "libffi6_3.1-2+deb8u1_amd64.deb": "100343fca79ff265abc62467c7085fca68b8764e8c2551302ab741c771e7f0aa",
-    "libgmp10_6.0.0+dfsg-6_amd64.deb": "155a31b0f716aa3dcd7ee68e9bd57e0b76a6b31f4e41fb2d953e986315437082",
-    "libicu52_52.1-8+deb8u7_amd64.deb": "708d4499e2f6344a77d903c2c03a958f5edac32f9adf5ff3da7b572bf307e980",
-    "liblua5.1-0_5.1.5-7.1_amd64.deb": "91dfecba874f9330c8a67f17060594ed148c34c44532b60cdc10a480060e38a9",
-    "libstdc++6_4.9.2-10+deb8u1_amd64.deb": "a8f4ef6773b90bb39a8a8a0a5e3e20ca8501de6896204f665eb114d5b79f164f",
-    "libyaml-0-2_0.1.6-3_amd64.deb": "5885db15ac425eb7231c436903525b78381e034bcc53928a97997a745295d222",
-    "pandoc-data_1.12.4.2~dfsg-1_all.deb": "52c4cebd39582e3c2636febd40806a5f1ec71c7be9653addcabbe2732f52a730",
-    "pandoc_1.12.4.2~dfsg-1+b14_amd64.deb": "e2e2a33d398d92ead214391c93afdbd3f590f6ab50d9a88492e2421826484d1c",
+    "libcmark-gfm-extensions0_0.29.0.gfm.0-6_amd64.deb": "0ad7f7217a7c8b62f17974875c9f1f4fdab4279312258c8979d4fca799ca88d6",
+    "libcmark-gfm0_0.29.0.gfm.0-6_amd64.deb": "37ab49845b79e8cd077f4d171c4a3ed49efc0a36cfc85e36dda57b055a676ed9",
+    "libffi7_3.3-6_amd64.deb": "30ca89bfddae5fa6e0a2a044f22b6e50cd17c4bc6bc850c579819aeab7101f0f",
+    "libgmp10_6.2.1+dfsg-1+deb11u1_amd64.deb": "fc117ccb084a98d25021f7e01e4dfedd414fa2118fdd1e27d2d801d7248aebbc",
+    "libpcre3_8.39-13_amd64.deb": "48efcf2348967c211cd9408539edf7ec3fa9d800b33041f6511ccaecc1ffa9d0",
+    "pandoc-data_2.9.2.1-1+deb11u1_all.deb": "cc00e1c933a246017cf79667faf4de35787d3de7cf95277deaff40fb53650fd3",
+    "pandoc_2.9.2.1-1+deb11u1_amd64.deb": "af69ad43f17be275921fb05d1ae33b4bb59ba66818845175c140abcc441d1d7c",
 }
