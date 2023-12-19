@@ -25,6 +25,14 @@ DEFINE_int32(pre_send_messages, 10000,
              "-1, will not throttle messages at all. This prevents a situation "
              "where, when run on localhost, the large number of WebRTC packets "
              "can overwhelm the browser and crash the webpage.");
+// Note: sometimes it appears that WebRTC buffer up and stop sending message
+// ack's back from the client page. It is not clear *why* WebRTC is doing this,
+// but since the only reason we use those ack's is to stop ourselves from
+// overloading the client webpage, this setting lets us fall back to just a
+// time-based rate-limit when we stop receiving acks.
+DEFINE_double(max_buffer_pause_sec, 0.1,
+              "If we have not received any ack's in this amount of time, we "
+              "start to continue sending messages.");
 
 namespace aos {
 namespace web_proxy {
@@ -307,6 +315,8 @@ void Subscriber::AddListener(std::shared_ptr<ScopedDataChannel> data_channel,
             message.message().queue_index();
         channels_[index].second.reported_packet_index =
             message.message().packet_index();
+        // Note: Uses actual clock to handle simulation time.
+        channels_[index].second.last_report = aos::monotonic_clock::now();
       });
 }
 
@@ -343,6 +353,19 @@ std::shared_ptr<struct mbuf> Subscriber::NextBuffer(
     return nullptr;
   }
   if (FLAGS_pre_send_messages > 0) {
+    // Note: Uses actual clock to handle simulation time.
+    const aos::monotonic_clock::time_point now = aos::monotonic_clock::now();
+    if (channel->last_report.has_value() &&
+        channel->last_report.value() +
+                std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    std::chrono::duration<double>(FLAGS_max_buffer_pause_sec)) <
+            now) {
+      // Increment the number of messages that we will send over to the client
+      // webpage.
+      channel->reported_queue_index += FLAGS_pre_send_messages / 10;
+      channel->reported_packet_index = 0;
+      channel->last_report = now;
+    }
     // Don't buffer up an excessive number of messages to the client.
     // This currently ignores the packet index (and really, any concept of
     // message size), but the main goal is just to avoid locking up the client
@@ -385,6 +408,7 @@ void Subscriber::SkipToLastMessage(ChannelInformation *channel) {
   }
   channel->current_queue_index = message_buffer_.back().index;
   channel->reported_queue_index = message_buffer_.back().index;
+  channel->last_report.reset();
   channel->next_packet_number = 0;
 }
 
