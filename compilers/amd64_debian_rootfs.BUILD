@@ -14,10 +14,6 @@ filegroup(
         ],
         exclude = [
             "usr/share/**",
-            "usr/include/thrust/**",
-            "usr/include/nv/**",
-            "usr/include/cuda/**",
-            "usr/include/cub/**",
             "usr/bin/X11",
         ],
     ),
