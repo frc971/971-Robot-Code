@@ -102,6 +102,7 @@ cc_test(
         ":test_schema",
         "//aos:flatbuffers",
         "//aos:json_to_flatbuffer",
+        "//aos/flatbuffers/test_dir:include_reflection_fbs",
         "//aos/flatbuffers/test_dir:type_coverage_fbs",
         "//aos/testing:googletest",
         "//aos/testing:path",

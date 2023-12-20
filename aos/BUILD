@@ -239,6 +239,7 @@ static_flatbuffer(
     srcs = ["configuration.fbs"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
+    deps = ["//aos/flatbuffers/reflection:reflection_fbs"],
 )
 
 cc_static_flatbuffer(

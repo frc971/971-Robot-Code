@@ -1,0 +1,9 @@
+include "reflection/reflection.fbs";
+
+namespace aos.testing;
+
+table UseSchema {
+  schema:reflection.Schema (id: 0);
+}
+
+root_type UseSchema;

@@ -10,6 +10,7 @@
 #include "aos/flatbuffers.h"
 #include "aos/flatbuffers/builder.h"
 #include "aos/flatbuffers/interesting_schemas.h"
+#include "aos/flatbuffers/test_dir/include_reflection_static.h"
 #include "aos/flatbuffers/test_dir/type_coverage_static.h"
 #include "aos/flatbuffers/test_schema.h"
 #include "aos/flatbuffers/test_static.h"
@@ -1086,6 +1087,11 @@ TEST_F(StaticFlatbuffersTest, FlatbufferObjectTypeCoverage) {
       fbb.Release();
   EXPECT_EQ(aos::FlatbufferToJson(from_object_raw, {.multi_line = true}),
             aos::FlatbufferToJson(from_object_static, {.multi_line = true}));
+}
+
+// Tests that we can build code that uses the reflection types.
+TEST_F(StaticFlatbuffersTest, IncludeReflectionTypes) {
+  VerifyJson<::aos::testing::UseSchemaStatic>("{\n\n}");
 }
 
 }  // namespace aos::fbs::testing

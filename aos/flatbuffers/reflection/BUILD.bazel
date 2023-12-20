@@ -1,0 +1,18 @@
+load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
+load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+
+copy_file(
+    name = "reflection_fbs_copy",
+    src = "@com_github_google_flatbuffers//reflection:reflection_fbs_schema",
+    out = "reflection.fbs",
+)
+
+# This autogenerates both a reflection_static.h and a reflection_generated.h.
+# However, in order to avoid having two conflicting headers floating around,
+# we forcibly override the #include to use flatbuffers/reflection_generated.h
+# in static_flatbuffers.cc
+static_flatbuffer(
+    name = "reflection_fbs",
+    srcs = ["reflection.fbs"],
+    visibility = ["//visibility:public"],
+)

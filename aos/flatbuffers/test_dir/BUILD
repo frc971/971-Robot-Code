@@ -1,6 +1,13 @@
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 
 static_flatbuffer(
+    name = "include_reflection_fbs",
+    srcs = ["include_reflection.fbs"],
+    visibility = ["//visibility:public"],
+    deps = ["//aos/flatbuffers/reflection:reflection_fbs"],
+)
+
+static_flatbuffer(
     name = "include_fbs",
     srcs = ["include.fbs"],
     visibility = ["//visibility:public"],
