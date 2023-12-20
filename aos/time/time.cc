@@ -170,6 +170,16 @@ std::ostream &operator<<(std::ostream &stream,
           : std::chrono::duration_cast<std::chrono::seconds>(
                 now.time_since_epoch());
 
+  // We can run into some corner cases where the seconds value is large enough
+  // to cause the conversion to nanoseconds to overflow. That is undefined
+  // behaviour so we prevent it with this check here.
+  if (int64_t result;
+      __builtin_mul_overflow(seconds.count(), 1'000'000'000, &result)) {
+    stream << "(unrepresentable realtime " << now.time_since_epoch().count()
+           << ")";
+    return stream;
+  }
+
   std::time_t seconds_t = seconds.count();
   stream << std::put_time(localtime_r(&seconds_t, &tm), "%Y-%m-%d_%H-%M-%S.")
          << std::setfill('0') << std::setw(9)

@@ -208,8 +208,9 @@ TEST(TimeTest, OperatorStreamRealtimeNegative) {
     std::stringstream s;
     s << t;
 
-    EXPECT_EQ(s.str(), "1677-09-21_00-12-43.145224192");
-    EXPECT_EQ(realtime_clock::FromString(s.str()).value(), t);
+    // min_time happens to be unrepresentable because of rounding and signed
+    // integer overflow.
+    EXPECT_EQ(s.str(), "(unrepresentable realtime -9223372036854775808)");
   }
 
   {
