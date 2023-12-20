@@ -8,6 +8,7 @@
 
 #include "absl/types/span.h"
 #include "flatbuffers/flatbuffers.h"
+#include "glog/logging.h"
 
 namespace aos {
 
@@ -65,6 +66,11 @@ class UUID {
   // Packs the UUID bytes directly into a vector.
   flatbuffers::Offset<flatbuffers::Vector<uint8_t>> PackVector(
       flatbuffers::FlatBufferBuilder *fbb) const;
+
+  template <typename T>
+  void PackStaticVector(T *static_vector) const {
+    CHECK(static_vector->FromData(data_.data(), data_.size()));
+  }
 
   // Returns a human-readable string representing this UUID.
   //
