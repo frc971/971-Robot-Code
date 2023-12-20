@@ -19,6 +19,7 @@ DECLARE_uint32(permissions);
 DEFINE_uint32(queue_initialization_threads, 0,
               "Number of threads to spin up to initialize the queue.  0 means "
               "use the main thread.");
+DECLARE_bool(enable_ftrace);
 
 namespace aos::starter {
 
@@ -214,6 +215,11 @@ void Starter::OnSignal(signalfd_siginfo info) {
   if (info.ssi_signo == SIGCHLD) {
     // SIGCHLD messages can be collapsed if multiple are received, so all
     // applications must check their status.
+    if (FLAGS_enable_ftrace) {
+      ftrace_.FormatMessage("SIGCHLD");
+      ftrace_.TurnOffOrDie();
+    }
+
     for (auto iter = applications_.begin(); iter != applications_.end();) {
       if (iter->second.MaybeHandleSignal()) {
         iter = applications_.erase(iter);

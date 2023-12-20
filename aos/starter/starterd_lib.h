@@ -77,6 +77,8 @@ class Starter {
   aos::PhasedLoopHandler *status_timer_;
   aos::TimerHandler *cleanup_timer_;
 
+  aos::Ftrace ftrace_;
+
   int status_count_ = 0;
   const int max_status_count_;
 
