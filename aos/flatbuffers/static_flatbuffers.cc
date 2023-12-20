@@ -518,22 +518,22 @@ std::string MakeCopier(const std::vector<FieldData> &fields) {
   for (const FieldData &field : fields) {
     if (field.is_struct) {
       copiers.emplace_back(absl::StrFormat(R"code(
-      if (other->has_%s()) {
-        set_%s(*other->%s());
+      if (other.has_%s()) {
+        set_%s(*other.%s());
       }
       )code",
                                            field.name, field.name, field.name));
     } else if (field.is_inline) {
       copiers.emplace_back(absl::StrFormat(R"code(
-      if (other->has_%s()) {
-        set_%s(other->%s());
+      if (other.has_%s()) {
+        set_%s(other.%s());
       }
       )code",
                                            field.name, field.name, field.name));
     } else {
       copiers.emplace_back(absl::StrFormat(R"code(
-      if (other->has_%s()) {
-        if (!CHECK_NOTNULL(add_%s())->FromFlatbuffer(other->%s())) {
+      if (other.has_%s()) {
+        if (!CHECK_NOTNULL(add_%s())->FromFlatbuffer(other.%s())) {
           // Fail if we were unable to copy (e.g., if we tried to copy in a long
           // vector and do not have the space for it).
           return false;
@@ -549,10 +549,15 @@ std::string MakeCopier(const std::vector<FieldData> &fields) {
   // returning true on success.
   // This is a deep copy, and will call FromFlatbuffer on any constituent
   // objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer &other) {
     Clear();
     %s
     return true;
+  }
+  // Equivalent to FromFlatbuffer(const Flatbuffer&); this overload is provided
+  // to ease implementation of the aos::fbs::Vector internals.
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
+    return FromFlatbuffer(*CHECK_NOTNULL(other));
   }
 )code",
       absl::StrJoin(copiers, "\n"));

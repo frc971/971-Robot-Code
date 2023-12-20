@@ -137,14 +137,19 @@ class MinimallyAlignedTableStatic : public ::aos::fbs::Table {
   // returning true on success.
   // This is a deep copy, and will call FromFlatbuffer on any constituent
   // objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer &other) {
     Clear();
 
-    if (other->has_field()) {
-      set_field(other->field());
+    if (other.has_field()) {
+      set_field(other.field());
     }
 
     return true;
+  }
+  // Equivalent to FromFlatbuffer(const Flatbuffer&); this overload is provided
+  // to ease implementation of the aos::fbs::Vector internals.
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
+    return FromFlatbuffer(*CHECK_NOTNULL(other));
   }
 
   // Copies the contents of the provided flatbuffer into this flatbuffer,
@@ -337,18 +342,23 @@ class SubTableStatic : public ::aos::fbs::Table {
   // returning true on success.
   // This is a deep copy, and will call FromFlatbuffer on any constituent
   // objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer &other) {
     Clear();
 
-    if (other->has_baz()) {
-      set_baz(other->baz());
+    if (other.has_baz()) {
+      set_baz(other.baz());
     }
 
-    if (other->has_foo()) {
-      set_foo(other->foo());
+    if (other.has_foo()) {
+      set_foo(other.foo());
     }
 
     return true;
+  }
+  // Equivalent to FromFlatbuffer(const Flatbuffer&); this overload is provided
+  // to ease implementation of the aos::fbs::Vector internals.
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
+    return FromFlatbuffer(*CHECK_NOTNULL(other));
   }
 
   // Copies the contents of the provided flatbuffer into this flatbuffer,
@@ -1106,109 +1116,108 @@ class TestTableStatic : public ::aos::fbs::Table {
   // returning true on success.
   // This is a deep copy, and will call FromFlatbuffer on any constituent
   // objects.
-  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer &other) {
     Clear();
 
-    if (other->has_included_table()) {
+    if (other.has_included_table()) {
       if (!CHECK_NOTNULL(add_included_table())
-               ->FromFlatbuffer(other->included_table())) {
+               ->FromFlatbuffer(other.included_table())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
       }
     }
 
-    if (other->has_scalar()) {
-      set_scalar(other->scalar());
+    if (other.has_scalar()) {
+      set_scalar(other.scalar());
     }
 
-    if (other->has_string()) {
-      if (!CHECK_NOTNULL(add_string())->FromFlatbuffer(other->string())) {
+    if (other.has_string()) {
+      if (!CHECK_NOTNULL(add_string())->FromFlatbuffer(other.string())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
       }
     }
 
-    if (other->has_substruct()) {
-      set_substruct(*other->substruct());
+    if (other.has_substruct()) {
+      set_substruct(*other.substruct());
     }
 
-    if (other->has_subtable()) {
-      if (!CHECK_NOTNULL(add_subtable())->FromFlatbuffer(other->subtable())) {
+    if (other.has_subtable()) {
+      if (!CHECK_NOTNULL(add_subtable())->FromFlatbuffer(other.subtable())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
       }
     }
 
-    if (other->has_unspecified_length_string()) {
+    if (other.has_unspecified_length_string()) {
       if (!CHECK_NOTNULL(add_unspecified_length_string())
-               ->FromFlatbuffer(other->unspecified_length_string())) {
+               ->FromFlatbuffer(other.unspecified_length_string())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
       }
     }
 
-    if (other->has_unspecified_length_vector()) {
+    if (other.has_unspecified_length_vector()) {
       if (!CHECK_NOTNULL(add_unspecified_length_vector())
-               ->FromFlatbuffer(other->unspecified_length_vector())) {
+               ->FromFlatbuffer(other.unspecified_length_vector())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
       }
     }
 
-    if (other->has_unspecified_length_vector_of_strings()) {
+    if (other.has_unspecified_length_vector_of_strings()) {
       if (!CHECK_NOTNULL(add_unspecified_length_vector_of_strings())
-               ->FromFlatbuffer(
-                   other->unspecified_length_vector_of_strings())) {
+               ->FromFlatbuffer(other.unspecified_length_vector_of_strings())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
       }
     }
 
-    if (other->has_vector_aligned()) {
+    if (other.has_vector_aligned()) {
       if (!CHECK_NOTNULL(add_vector_aligned())
-               ->FromFlatbuffer(other->vector_aligned())) {
+               ->FromFlatbuffer(other.vector_aligned())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
       }
     }
 
-    if (other->has_vector_of_scalars()) {
+    if (other.has_vector_of_scalars()) {
       if (!CHECK_NOTNULL(add_vector_of_scalars())
-               ->FromFlatbuffer(other->vector_of_scalars())) {
+               ->FromFlatbuffer(other.vector_of_scalars())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
       }
     }
 
-    if (other->has_vector_of_strings()) {
+    if (other.has_vector_of_strings()) {
       if (!CHECK_NOTNULL(add_vector_of_strings())
-               ->FromFlatbuffer(other->vector_of_strings())) {
+               ->FromFlatbuffer(other.vector_of_strings())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
       }
     }
 
-    if (other->has_vector_of_structs()) {
+    if (other.has_vector_of_structs()) {
       if (!CHECK_NOTNULL(add_vector_of_structs())
-               ->FromFlatbuffer(other->vector_of_structs())) {
+               ->FromFlatbuffer(other.vector_of_structs())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
       }
     }
 
-    if (other->has_vector_of_tables()) {
+    if (other.has_vector_of_tables()) {
       if (!CHECK_NOTNULL(add_vector_of_tables())
-               ->FromFlatbuffer(other->vector_of_tables())) {
+               ->FromFlatbuffer(other.vector_of_tables())) {
         // Fail if we were unable to copy (e.g., if we tried to copy in a long
         // vector and do not have the space for it).
         return false;
@@ -1216,6 +1225,11 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     return true;
+  }
+  // Equivalent to FromFlatbuffer(const Flatbuffer&); this overload is provided
+  // to ease implementation of the aos::fbs::Vector internals.
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer *other) {
+    return FromFlatbuffer(*CHECK_NOTNULL(other));
   }
 
   // Copies the contents of the provided flatbuffer into this flatbuffer,

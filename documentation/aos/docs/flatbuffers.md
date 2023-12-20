@@ -454,7 +454,7 @@ some changes to accommodate better error-handling. Common accessors:
   space allocated for the vector; returns false on failure (e.g., if you are in
   a fixed-size allocator that does not support increasing the size past a
   certain point).
-* `bool FromFlatbuffer(const flatbuffers::Vector<>*)`: Attempts to copy an
+* `bool FromFlatbuffer(const flatbuffers::Vector<>&)`: Attempts to copy an
   existing vector into this `Vector`. This may attempt to call `reserve()`
   if the new vector is longer than `capacity()`. If the copy fails for
   any reason, returns `false`.

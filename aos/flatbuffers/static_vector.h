@@ -334,7 +334,10 @@ class Vector : public ResizeableObject {
   // we can allocate through reserve()).
   // This is a deep copy, and will call FromFlatbuffer on any constituent
   // objects.
-  [[nodiscard]] bool FromFlatbuffer(ConstFlatbuffer *vector);
+  [[nodiscard]] bool FromFlatbuffer(ConstFlatbuffer *vector) {
+    return FromFlatbuffer(*CHECK_NOTNULL(vector));
+  }
+  [[nodiscard]] bool FromFlatbuffer(ConstFlatbuffer &vector);
   // The remaining FromFlatbuffer() overloads are for when using the flatbuffer
   // "object" API, which uses std::vector's for representing vectors.
   [[nodiscard]] bool FromFlatbuffer(const std::vector<InlineType> &vector) {
@@ -634,10 +637,9 @@ class Vector : public ResizeableObject {
   }
   // Implementation that handles copying from a flatbuffers::Vector of an inline
   // data type.
-  [[nodiscard]] bool FromInlineFlatbuffer(ConstFlatbuffer *vector) {
-    return FromData(
-        reinterpret_cast<const InlineType *>(CHECK_NOTNULL(vector)->Data()),
-        vector->size());
+  [[nodiscard]] bool FromInlineFlatbuffer(ConstFlatbuffer &vector) {
+    return FromData(reinterpret_cast<const InlineType *>(vector.Data()),
+                    vector.size());
   }
 
   // Implementation that handles copying from a flatbuffers::Vector of a
@@ -658,8 +660,8 @@ class Vector : public ResizeableObject {
     return true;
   }
 
-  [[nodiscard]] bool FromNotInlineFlatbuffer(const Flatbuffer *vector) {
-    return FromNotInlineIterable(*vector);
+  [[nodiscard]] bool FromNotInlineFlatbuffer(const Flatbuffer &vector) {
+    return FromNotInlineIterable(vector);
   }
 
   // In order to allow for easy partial template specialization, we use a
@@ -764,7 +766,7 @@ struct InlineWrapper<T, false, void> {
   static constexpr size_t kDataSize = T::kSize;
   template <typename StaticVector>
   static bool FromFlatbuffer(
-      StaticVector *to, const typename StaticVector::ConstFlatbuffer *from) {
+      StaticVector *to, const typename StaticVector::ConstFlatbuffer &from) {
     return to->FromNotInlineFlatbuffer(from);
   }
   template <typename StaticVector>
@@ -786,7 +788,7 @@ struct InlineWrapper<T, true,
   static constexpr size_t kDataSize = sizeof(T);
   template <typename StaticVector>
   static bool FromFlatbuffer(
-      StaticVector *to, const typename StaticVector::ConstFlatbuffer *from) {
+      StaticVector *to, const typename StaticVector::ConstFlatbuffer &from) {
     return to->FromInlineFlatbuffer(from);
   }
   template <typename StaticVector>
@@ -806,7 +808,7 @@ struct InlineWrapper<bool, true, void> {
   static constexpr size_t kDataSize = 1u;
   template <typename StaticVector>
   static bool FromFlatbuffer(
-      StaticVector *to, const typename StaticVector::ConstFlatbuffer *from) {
+      StaticVector *to, const typename StaticVector::ConstFlatbuffer &from) {
     return to->FromInlineFlatbuffer(from);
   }
   template <typename StaticVector>
@@ -829,7 +831,7 @@ struct InlineWrapper<T, true,
   static constexpr size_t kDataSize = sizeof(T);
   template <typename StaticVector>
   static bool FromFlatbuffer(
-      StaticVector *to, const typename StaticVector::ConstFlatbuffer *from) {
+      StaticVector *to, const typename StaticVector::ConstFlatbuffer &from) {
     return to->FromInlineFlatbuffer(from);
   }
   template <typename StaticVector>
@@ -842,7 +844,7 @@ struct InlineWrapper<T, true,
 template <typename T, size_t kStaticLength, bool kInline, size_t kForceAlign,
           bool kNullTerminate>
 bool Vector<T, kStaticLength, kInline, kForceAlign,
-            kNullTerminate>::FromFlatbuffer(ConstFlatbuffer *vector) {
+            kNullTerminate>::FromFlatbuffer(ConstFlatbuffer &vector) {
   return internal::InlineWrapper<T, kInline>::FromFlatbuffer(this, vector);
 }
 
