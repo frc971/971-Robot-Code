@@ -19,6 +19,8 @@ struct FieldData {
   bool is_inline = true;
   // Whether this is a struct or not.
   bool is_struct = false;
+  // Whether this is a repeated type (vector or string).
+  bool is_repeated = false;
   // Full C++ type of this field.
   std::string full_type = "";
   // Full flatbuffer type for this field.
@@ -151,12 +153,14 @@ void PopulateTypeData(const reflection::Schema *schema,
       // straightforwards.
       field->is_inline = true;
       field->is_struct = false;
+      field->is_repeated = false;
       field->full_type =
           ScalarOrEnumType(schema, type->base_type(), type->index());
       return;
     case reflection::BaseType::String: {
       field->is_inline = false;
       field->is_struct = false;
+      field->is_repeated = true;
       field->full_type =
           absl::StrFormat("::aos::fbs::String<%d>",
                           GetLengthAttributeOrZero(field_fbs, "static_length"));
@@ -166,6 +170,7 @@ void PopulateTypeData(const reflection::Schema *schema,
       // We need to extract the name of the elements of the vector.
       std::string element_type;
       bool elements_are_inline = true;
+      field->is_repeated = true;
       if (type->base_type() == reflection::BaseType::Vector) {
         switch (type->element()) {
           case reflection::BaseType::Obj: {
@@ -207,6 +212,7 @@ void PopulateTypeData(const reflection::Schema *schema,
       const reflection::Object *object = GetObject(schema, type->index());
       field->is_inline = object->is_struct();
       field->is_struct = object->is_struct();
+      field->is_repeated = false;
       const std::string flatbuffer_name =
           FlatbufferNameToCppName(object->name()->string_view());
       if (field->is_inline) {
@@ -437,6 +443,76 @@ std::string MakeFullClearer(const std::vector<FieldData> &fields) {
                          absl::StrJoin(clearers, "\n"));
 }
 
+// Creates the FromFlatbuffer() method that copies from a flatbuffer object API
+// object (i.e., the FlatbufferT types).
+std::string MakeObjectCopier(const std::vector<FieldData> &fields) {
+  std::vector<std::string> copiers;
+  for (const FieldData &field : fields) {
+    if (field.is_struct) {
+      // Structs are stored as unique_ptr<FooStruct>
+      copiers.emplace_back(absl::StrFormat(R"code(
+      if (other.%s) {
+        set_%s(*other.%s);
+      }
+      )code",
+                                           field.name, field.name, field.name));
+    } else if (field.is_inline) {
+      // Inline non-struct elements are stored as FooType.
+      copiers.emplace_back(absl::StrFormat(R"code(
+      set_%s(other.%s);
+      )code",
+                                           field.name, field.name));
+    } else if (field.is_repeated) {
+      // strings are stored as std::string's.
+      // vectors are stored as std::vector's.
+      copiers.emplace_back(absl::StrFormat(R"code(
+      // Unconditionally copy strings/vectors, even if it will just end up
+      // being 0-length (this maintains consistency with the flatbuffer Pack()
+      // behavior).
+      if (!CHECK_NOTNULL(add_%s())->FromFlatbuffer(other.%s)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
+      )code",
+                                           field.name, field.name));
+    } else {
+      // Tables are stored as unique_ptr<FooTable>
+      copiers.emplace_back(absl::StrFormat(R"code(
+      if (other.%s) {
+        if (!CHECK_NOTNULL(add_%s())->FromFlatbuffer(*other.%s)) {
+          // Fail if we were unable to copy (e.g., if we tried to copy in a long
+          // vector and do not have the space for it).
+          return false;
+        }
+      }
+      )code",
+                                           field.name, field.name, field.name));
+    }
+  }
+  return absl::StrFormat(
+      R"code(
+  // Copies the contents of the provided flatbuffer into this flatbuffer,
+  // returning true on success.
+  // Because the Flatbuffer Object API does not provide any concept of an
+  // optionally populated scalar field, all scalar fields will be populated
+  // after a call to FromFlatbufferObject().
+  // This is a deep copy, and will call FromFlatbufferObject on
+  // any constituent objects.
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer::NativeTableType &other) {
+    Clear();
+    %s
+    return true;
+  }
+  [[nodiscard]] bool FromFlatbuffer(const flatbuffers::unique_ptr<Flatbuffer::NativeTableType>& other) {
+    return FromFlatbuffer(*other);
+  }
+)code",
+      absl::StrJoin(copiers, "\n"));
+}
+
+// Creates the FromFlatbuffer() method that copies from an actual flatbuffer
+// object.
 std::string MakeCopier(const std::vector<FieldData> &fields) {
   std::vector<std::string> copiers;
   for (const FieldData &field : fields) {
@@ -689,6 +765,7 @@ class %s : public ::aos::fbs::Table {
   public:
   // The underlying "raw" flatbuffer type for this type.
   typedef %s Flatbuffer;
+  typedef flatbuffers::unique_ptr<Flatbuffer::NativeTableType> FlatbufferObjectType;
   // Returns this object as a flatbuffer type. This reference may not be valid
   // following mutations to the underlying flatbuffer, due to how memory may get
   // may get moved around.
@@ -696,6 +773,7 @@ class %s : public ::aos::fbs::Table {
 %s
 %s
   virtual ~%s() {}
+%s
 %s
 %s
 %s
@@ -708,7 +786,7 @@ class %s : public ::aos::fbs::Table {
   )code",
       type_namespace, type_name, FlatbufferNameToCppName(fbs_type_name),
       constants, MakeConstructor(type_name), type_name, accessors,
-      MakeFullClearer(fields), MakeCopier(fields),
+      MakeFullClearer(fields), MakeCopier(fields), MakeObjectCopier(fields),
       MakeMoveConstructor(type_name), members, MakeSubObjectList(fields));
 
   GeneratedObject result;

@@ -203,6 +203,11 @@ class Vector : public ResizeableObject {
       typename internal::InlineWrapper<T, kInline>::FlatbufferType;
   using ConstFlatbufferType =
       typename internal::InlineWrapper<T, kInline>::ConstFlatbufferType;
+  // FlatbufferObjectType corresponds to the type used by the flatbuffer
+  // "object" API (i.e. the FlatbufferT types).
+  // This type will be something unintelligble for inline types.
+  using FlatbufferObjectType =
+      typename internal::InlineWrapper<T, kInline>::FlatbufferObjectType;
   // flatbuffers::Vector type that corresponds to this Vector.
   typedef flatbuffers::Vector<FlatbufferType> Flatbuffer;
   typedef const flatbuffers::Vector<ConstFlatbufferType> ConstFlatbuffer;
@@ -330,6 +335,66 @@ class Vector : public ResizeableObject {
   // This is a deep copy, and will call FromFlatbuffer on any constituent
   // objects.
   [[nodiscard]] bool FromFlatbuffer(ConstFlatbuffer *vector);
+  // The remaining FromFlatbuffer() overloads are for when using the flatbuffer
+  // "object" API, which uses std::vector's for representing vectors.
+  [[nodiscard]] bool FromFlatbuffer(const std::vector<InlineType> &vector) {
+    static_assert(kInline);
+    return FromData(vector.data(), vector.size());
+  }
+  // Overload for vectors of bools, since the standard library may not use a
+  // full byte per vector element.
+  [[nodiscard]] bool FromFlatbuffer(const std::vector<bool> &vector) {
+    static_assert(kInline);
+    // We won't be able to do a clean memcpy because std::vector<bool> may be
+    // implemented using bit-packing.
+    return FromIterator(vector.cbegin(), vector.cend());
+  }
+  // Overload for non-inline types. Note that to avoid having this overload get
+  // resolved with inline types, we make FlatbufferObjectType != InlineType.
+  [[nodiscard]] bool FromFlatbuffer(
+      const std::vector<FlatbufferObjectType> &vector) {
+    static_assert(!kInline);
+    return FromNotInlineIterable(vector);
+  }
+
+  // Copies values from the provided data pointer into the vector, resizing the
+  // vector as needed to match. Returns false on failure (e.g., if the
+  // underlying allocator has insufficient space to perform the copy). Only
+  // works for inline data types.
+  [[nodiscard]] bool FromData(const InlineType *input_data, size_t input_size) {
+    static_assert(kInline);
+    if (!reserve(input_size)) {
+      return false;
+    }
+
+    // We will be overwriting the whole vector very shortly; there is no need to
+    // clear the buffer to zero.
+    resize_inline(input_size, SetZero::kNo);
+
+    memcpy(inline_data(), input_data, size() * sizeof(InlineType));
+    return true;
+  }
+
+  // Copies values from the provided iterators into the vector, resizing the
+  // vector as needed to match. Returns false on failure (e.g., if the
+  // underlying allocator has insufficient space to perform the copy). Only
+  // works for inline data types.
+  // Does not attempt any optimizations if the iterators meet the
+  // std::contiguous_iterator concept; instead, it simply copies each element
+  // out one-by-one.
+  template <typename Iterator>
+  [[nodiscard]] bool FromIterator(Iterator begin, Iterator end) {
+    static_assert(kInline);
+    resize(0);
+    for (Iterator it = begin; it != end; ++it) {
+      if (!reserve(size() + 1)) {
+        return false;
+      }
+      // Should never fail, due to the reserve() above.
+      CHECK(emplace_back(*it));
+    }
+    return true;
+  }
 
   // Returns the element at the provided index. index must be less than size().
   const T &at(size_t index) const {
@@ -570,33 +635,31 @@ class Vector : public ResizeableObject {
   // Implementation that handles copying from a flatbuffers::Vector of an inline
   // data type.
   [[nodiscard]] bool FromInlineFlatbuffer(ConstFlatbuffer *vector) {
-    if (!reserve(CHECK_NOTNULL(vector)->size())) {
-      return false;
-    }
-
-    // We will be overwriting the whole vector very shortly; there is no need to
-    // clear the buffer to zero.
-    resize_inline(vector->size(), SetZero::kNo);
-
-    memcpy(inline_data(), vector->Data(), size() * sizeof(InlineType));
-    return true;
+    return FromData(
+        reinterpret_cast<const InlineType *>(CHECK_NOTNULL(vector)->Data()),
+        vector->size());
   }
 
   // Implementation that handles copying from a flatbuffers::Vector of a
   // not-inline data type.
-  [[nodiscard]] bool FromNotInlineFlatbuffer(const Flatbuffer *vector) {
-    if (!reserve(vector->size())) {
+  template <typename Iterable>
+  [[nodiscard]] bool FromNotInlineIterable(const Iterable &vector) {
+    if (!reserve(vector.size())) {
       return false;
     }
     // "Clear" the vector.
     resize_not_inline(0);
 
-    for (const typename T::Flatbuffer *entry : *vector) {
+    for (const auto &entry : vector) {
       if (!CHECK_NOTNULL(emplace_back())->FromFlatbuffer(entry)) {
         return false;
       }
     }
     return true;
+  }
+
+  [[nodiscard]] bool FromNotInlineFlatbuffer(const Flatbuffer *vector) {
+    return FromNotInlineIterable(*vector);
   }
 
   // In order to allow for easy partial template specialization, we use a
@@ -659,6 +722,7 @@ class String : public Vector<char, kStaticLength, true, 0, true> {
  public:
   typedef Vector<char, kStaticLength, true, 0, true> VectorType;
   typedef flatbuffers::String Flatbuffer;
+  typedef std::string FlatbufferObjectType;
   String(std::span<uint8_t> buffer, ResizeableObject *parent)
       : VectorType(buffer, parent) {}
   virtual ~String() {}
@@ -666,6 +730,10 @@ class String : public Vector<char, kStaticLength, true, 0, true> {
     CHECK_LT(string.size(), VectorType::capacity());
     VectorType::resize_inline(string.size(), SetZero::kNo);
     memcpy(VectorType::data(), string.data(), string.size());
+  }
+  using VectorType::FromFlatbuffer;
+  [[nodiscard]] bool FromFlatbuffer(const std::string &string) {
+    return VectorType::FromData(string.data(), string.size());
   }
   std::string_view string_view() const {
     return std::string_view(VectorType::data(), VectorType::size());
@@ -690,6 +758,7 @@ struct InlineWrapper<T, false, void> {
   typedef T ObjectType;
   typedef flatbuffers::Offset<typename T::Flatbuffer> FlatbufferType;
   typedef flatbuffers::Offset<typename T::Flatbuffer> ConstFlatbufferType;
+  typedef T::FlatbufferObjectType FlatbufferObjectType;
   static_assert((T::kSize % T::kAlign) == 0);
   static constexpr size_t kDataAlign = T::kAlign;
   static constexpr size_t kDataSize = T::kSize;
@@ -712,6 +781,7 @@ struct InlineWrapper<T, true,
   typedef T ObjectType;
   typedef T FlatbufferType;
   typedef T ConstFlatbufferType;
+  typedef T *FlatbufferObjectType;
   static constexpr size_t kDataAlign = alignof(T);
   static constexpr size_t kDataSize = sizeof(T);
   template <typename StaticVector>
@@ -731,6 +801,7 @@ struct InlineWrapper<bool, true, void> {
   typedef uint8_t ObjectType;
   typedef uint8_t FlatbufferType;
   typedef uint8_t ConstFlatbufferType;
+  typedef uint8_t *FlatbufferObjectType;
   static constexpr size_t kDataAlign = 1u;
   static constexpr size_t kDataSize = 1u;
   template <typename StaticVector>
@@ -753,6 +824,7 @@ struct InlineWrapper<T, true,
   typedef T ObjectType;
   typedef T *FlatbufferType;
   typedef const T *ConstFlatbufferType;
+  typedef T *FlatbufferObjectType;
   static constexpr size_t kDataAlign = alignof(T);
   static constexpr size_t kDataSize = sizeof(T);
   template <typename StaticVector>

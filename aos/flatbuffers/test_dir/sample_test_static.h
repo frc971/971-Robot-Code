@@ -14,6 +14,8 @@ class MinimallyAlignedTableStatic : public ::aos::fbs::Table {
  public:
   // The underlying "raw" flatbuffer type for this type.
   typedef aos::fbs::testing::MinimallyAlignedTable Flatbuffer;
+  typedef flatbuffers::unique_ptr<Flatbuffer::NativeTableType>
+      FlatbufferObjectType;
   // Returns this object as a flatbuffer type. This reference may not be valid
   // following mutations to the underlying flatbuffer, due to how memory may get
   // may get moved around.
@@ -145,6 +147,25 @@ class MinimallyAlignedTableStatic : public ::aos::fbs::Table {
     return true;
   }
 
+  // Copies the contents of the provided flatbuffer into this flatbuffer,
+  // returning true on success.
+  // Because the Flatbuffer Object API does not provide any concept of an
+  // optionally populated scalar field, all scalar fields will be populated
+  // after a call to FromFlatbufferObject().
+  // This is a deep copy, and will call FromFlatbufferObject on
+  // any constituent objects.
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer::NativeTableType &other) {
+    Clear();
+
+    set_field(other.field);
+
+    return true;
+  }
+  [[nodiscard]] bool FromFlatbuffer(
+      const flatbuffers::unique_ptr<Flatbuffer::NativeTableType> &other) {
+    return FromFlatbuffer(*other);
+  }
+
  private:
   // We need to provide a MoveConstructor to allow this table to be
   // used inside of vectors, but we do not want it readily available to
@@ -168,6 +189,8 @@ class SubTableStatic : public ::aos::fbs::Table {
  public:
   // The underlying "raw" flatbuffer type for this type.
   typedef aos::fbs::testing::SubTable Flatbuffer;
+  typedef flatbuffers::unique_ptr<Flatbuffer::NativeTableType>
+      FlatbufferObjectType;
   // Returns this object as a flatbuffer type. This reference may not be valid
   // following mutations to the underlying flatbuffer, due to how memory may get
   // may get moved around.
@@ -328,6 +351,27 @@ class SubTableStatic : public ::aos::fbs::Table {
     return true;
   }
 
+  // Copies the contents of the provided flatbuffer into this flatbuffer,
+  // returning true on success.
+  // Because the Flatbuffer Object API does not provide any concept of an
+  // optionally populated scalar field, all scalar fields will be populated
+  // after a call to FromFlatbufferObject().
+  // This is a deep copy, and will call FromFlatbufferObject on
+  // any constituent objects.
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer::NativeTableType &other) {
+    Clear();
+
+    set_baz(other.baz);
+
+    set_foo(other.foo);
+
+    return true;
+  }
+  [[nodiscard]] bool FromFlatbuffer(
+      const flatbuffers::unique_ptr<Flatbuffer::NativeTableType> &other) {
+    return FromFlatbuffer(*other);
+  }
+
  private:
   // We need to provide a MoveConstructor to allow this table to be
   // used inside of vectors, but we do not want it readily available to
@@ -354,6 +398,8 @@ class TestTableStatic : public ::aos::fbs::Table {
  public:
   // The underlying "raw" flatbuffer type for this type.
   typedef aos::fbs::testing::TestTable Flatbuffer;
+  typedef flatbuffers::unique_ptr<Flatbuffer::NativeTableType>
+      FlatbufferObjectType;
   // Returns this object as a flatbuffer type. This reference may not be valid
   // following mutations to the underlying flatbuffer, due to how memory may get
   // may get moved around.
@@ -1170,6 +1216,135 @@ class TestTableStatic : public ::aos::fbs::Table {
     }
 
     return true;
+  }
+
+  // Copies the contents of the provided flatbuffer into this flatbuffer,
+  // returning true on success.
+  // Because the Flatbuffer Object API does not provide any concept of an
+  // optionally populated scalar field, all scalar fields will be populated
+  // after a call to FromFlatbufferObject().
+  // This is a deep copy, and will call FromFlatbufferObject on
+  // any constituent objects.
+  [[nodiscard]] bool FromFlatbuffer(const Flatbuffer::NativeTableType &other) {
+    Clear();
+
+    if (other.included_table) {
+      if (!CHECK_NOTNULL(add_included_table())
+               ->FromFlatbuffer(*other.included_table)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
+    }
+
+    set_scalar(other.scalar);
+
+    // Unconditionally copy strings/vectors, even if it will just end up
+    // being 0-length (this maintains consistency with the flatbuffer Pack()
+    // behavior).
+    if (!CHECK_NOTNULL(add_string())->FromFlatbuffer(other.string)) {
+      // Fail if we were unable to copy (e.g., if we tried to copy in a long
+      // vector and do not have the space for it).
+      return false;
+    }
+
+    if (other.substruct) {
+      set_substruct(*other.substruct);
+    }
+
+    if (other.subtable) {
+      if (!CHECK_NOTNULL(add_subtable())->FromFlatbuffer(*other.subtable)) {
+        // Fail if we were unable to copy (e.g., if we tried to copy in a long
+        // vector and do not have the space for it).
+        return false;
+      }
+    }
+
+    // Unconditionally copy strings/vectors, even if it will just end up
+    // being 0-length (this maintains consistency with the flatbuffer Pack()
+    // behavior).
+    if (!CHECK_NOTNULL(add_unspecified_length_string())
+             ->FromFlatbuffer(other.unspecified_length_string)) {
+      // Fail if we were unable to copy (e.g., if we tried to copy in a long
+      // vector and do not have the space for it).
+      return false;
+    }
+
+    // Unconditionally copy strings/vectors, even if it will just end up
+    // being 0-length (this maintains consistency with the flatbuffer Pack()
+    // behavior).
+    if (!CHECK_NOTNULL(add_unspecified_length_vector())
+             ->FromFlatbuffer(other.unspecified_length_vector)) {
+      // Fail if we were unable to copy (e.g., if we tried to copy in a long
+      // vector and do not have the space for it).
+      return false;
+    }
+
+    // Unconditionally copy strings/vectors, even if it will just end up
+    // being 0-length (this maintains consistency with the flatbuffer Pack()
+    // behavior).
+    if (!CHECK_NOTNULL(add_unspecified_length_vector_of_strings())
+             ->FromFlatbuffer(other.unspecified_length_vector_of_strings)) {
+      // Fail if we were unable to copy (e.g., if we tried to copy in a long
+      // vector and do not have the space for it).
+      return false;
+    }
+
+    // Unconditionally copy strings/vectors, even if it will just end up
+    // being 0-length (this maintains consistency with the flatbuffer Pack()
+    // behavior).
+    if (!CHECK_NOTNULL(add_vector_aligned())
+             ->FromFlatbuffer(other.vector_aligned)) {
+      // Fail if we were unable to copy (e.g., if we tried to copy in a long
+      // vector and do not have the space for it).
+      return false;
+    }
+
+    // Unconditionally copy strings/vectors, even if it will just end up
+    // being 0-length (this maintains consistency with the flatbuffer Pack()
+    // behavior).
+    if (!CHECK_NOTNULL(add_vector_of_scalars())
+             ->FromFlatbuffer(other.vector_of_scalars)) {
+      // Fail if we were unable to copy (e.g., if we tried to copy in a long
+      // vector and do not have the space for it).
+      return false;
+    }
+
+    // Unconditionally copy strings/vectors, even if it will just end up
+    // being 0-length (this maintains consistency with the flatbuffer Pack()
+    // behavior).
+    if (!CHECK_NOTNULL(add_vector_of_strings())
+             ->FromFlatbuffer(other.vector_of_strings)) {
+      // Fail if we were unable to copy (e.g., if we tried to copy in a long
+      // vector and do not have the space for it).
+      return false;
+    }
+
+    // Unconditionally copy strings/vectors, even if it will just end up
+    // being 0-length (this maintains consistency with the flatbuffer Pack()
+    // behavior).
+    if (!CHECK_NOTNULL(add_vector_of_structs())
+             ->FromFlatbuffer(other.vector_of_structs)) {
+      // Fail if we were unable to copy (e.g., if we tried to copy in a long
+      // vector and do not have the space for it).
+      return false;
+    }
+
+    // Unconditionally copy strings/vectors, even if it will just end up
+    // being 0-length (this maintains consistency with the flatbuffer Pack()
+    // behavior).
+    if (!CHECK_NOTNULL(add_vector_of_tables())
+             ->FromFlatbuffer(other.vector_of_tables)) {
+      // Fail if we were unable to copy (e.g., if we tried to copy in a long
+      // vector and do not have the space for it).
+      return false;
+    }
+
+    return true;
+  }
+  [[nodiscard]] bool FromFlatbuffer(
+      const flatbuffers::unique_ptr<Flatbuffer::NativeTableType> &other) {
+    return FromFlatbuffer(*other);
   }
 
  private:

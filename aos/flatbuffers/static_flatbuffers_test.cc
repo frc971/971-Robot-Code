@@ -1042,4 +1042,50 @@ TEST_F(StaticFlatbuffersTest, FixedStackAllocator) {
   TestMemory(builder.buffer());
 }
 
+// Uses a small example to manually verify that we can copy from the flatbuffer
+// object API.
+TEST_F(StaticFlatbuffersTest, ObjectApiCopy) {
+  aos::fbs::testing::TestTableT object_t;
+  object_t.scalar = 971;
+  object_t.vector_of_strings.push_back("971");
+  object_t.vector_of_structs.push_back({1, 2});
+  object_t.subtable = std::make_unique<SubTableT>();
+  aos::fbs::VectorAllocator allocator;
+  Builder<TestTableStatic> builder(&allocator);
+  ASSERT_TRUE(builder->FromFlatbuffer(object_t));
+  ASSERT_TRUE(builder.AsFlatbufferSpan().Verify());
+  // Note that vectors and strings get set to zero-length, but present, values.
+  EXPECT_EQ(
+      "{ \"scalar\": 971, \"vector_of_scalars\": [  ], \"string\": \"\", "
+      "\"vector_of_strings\": [ \"971\" ], \"subtable\": { \"foo\": 0, "
+      "\"baz\": 0.0 }, \"vector_aligned\": [  ], \"vector_of_structs\": [ { "
+      "\"x\": 1.0, \"y\": 2.0 } ], \"vector_of_tables\": [  ], "
+      "\"unspecified_length_vector\": [  ], \"unspecified_length_string\": "
+      "\"\", \"unspecified_length_vector_of_strings\": [  ] }",
+      aos::FlatbufferToJson(builder.AsFlatbufferSpan()));
+}
+
+// More completely covers our object API copying by comparing the flatbuffer
+// Pack() methods to our FromFlatbuffer() methods.
+TEST_F(StaticFlatbuffersTest, FlatbufferObjectTypeCoverage) {
+  VerifyJson<aos::testing::ConfigurationStatic>("{\n\n}");
+  std::string populated_config =
+      aos::util::ReadFileToStringOrDie(aos::testing::ArtifactPath(
+          "aos/flatbuffers/test_dir/type_coverage.json"));
+  Builder<aos::testing::ConfigurationStatic> json_builder =
+      aos::JsonToStaticFlatbuffer<aos::testing::ConfigurationStatic>(
+          populated_config);
+  aos::testing::ConfigurationT object_t;
+  json_builder->AsFlatbuffer().UnPackTo(&object_t);
+
+  Builder<aos::testing::ConfigurationStatic> from_object_static;
+  ASSERT_TRUE(from_object_static->FromFlatbuffer(object_t));
+  flatbuffers::FlatBufferBuilder fbb;
+  fbb.Finish(aos::testing::Configuration::Pack(fbb, &object_t));
+  aos::FlatbufferDetachedBuffer<aos::testing::Configuration> from_object_raw =
+      fbb.Release();
+  EXPECT_EQ(aos::FlatbufferToJson(from_object_raw, {.multi_line = true}),
+            aos::FlatbufferToJson(from_object_static, {.multi_line = true}));
+}
+
 }  // namespace aos::fbs::testing

@@ -157,6 +157,24 @@ All created types have an `AsFlatbuffer()` method which allows you to access the
 type using the regular generated flatbuffer API and a `FromFlatbuffer()` method
 which attempts to copy the specified flatbuffer into the current object.
 
+The `FromFlatbuffer()` method works on both the "raw" flatbuffer type, as well
+as on the [Flatbuffer Object
+API](https://flatbuffers.dev/flatbuffers_guide_use_cpp.html) (i.e. the
+`FlatbufferT` types). When copying
+flatbuffers from the object-based API, we apply the same semantics that that the
+`Pack()` method does in the raw flatbuffer type. Namely, all non-table fields
+will be set:
+
+ * Scalar fields are always populated, even if their value is equal to the
+   default.
+ * Vectors are set to zero-length vectors if there is no data in the vector.
+ * Strings are set to the empty string if there is no data in the string.
+
+These limitations are a consequence of how flatbuffers are represented in the
+object API, and is not an issue when copying from regular flatbuffer types.
+For copying from raw flatbuffer objects (which is what most existing code
+uses), these caveats do not apply, and there is no loss of information.
+
 ### Sample Usage
 
 The below example constructs a table of the above example `TestTable`:
@@ -440,6 +458,20 @@ some changes to accommodate better error-handling. Common accessors:
   existing vector into this `Vector`. This may attempt to call `reserve()`
   if the new vector is longer than `capacity()`. If the copy fails for
   any reason, returns `false`.
+* `bool FromFlatbuffer(const std::vector<>&)`: Attempts to copy an
+  existing vector into this `Vector`. This may attempt to call `reserve()`
+  if the new vector is longer than `capacity()`. If the copy fails for
+  any reason, returns `false`. This is called "`FromFlatbuffer`" because
+  the [Flatbuffer Object
+  API](https://flatbuffers.dev/flatbuffers_guide_use_cpp.html) uses
+  `std::vector<>` to represent vectors.
+* `bool FromData(const T*, size_t)`: Attempts to copy a contiguous set of data
+  from the provided pointer. Only applies to inline types. This may attempt to
+  call `reserve()`, and if the call fails, it returns `false`.
+* `bool FromIterator(It begin, It end)`: Attempts to copy data from [begin, end)
+  into the vector. Does not assume that the data is stored contiguously in
+  memory. Only applies to inline types. This may attempt to
+  call `reserve()`, and if the call fails, it returns `false`.
 
 #### Managing Resizing of Vectors
 
