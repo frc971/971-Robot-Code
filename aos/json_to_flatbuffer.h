@@ -75,6 +75,12 @@ inline ::std::string FlatbufferToJson(const Flatbuffer<T> &flatbuffer,
       Flatbuffer<T>::MiniReflectTypeTable(), json_options);
 }
 
+template <typename T, typename Enable = T::Flatbuffer>
+inline ::std::string FlatbufferToJson(const fbs::Builder<T> &flatbuffer,
+                                      JsonOptions json_options = {}) {
+  return FlatbufferToJson(flatbuffer.AsFlatbufferSpan(), json_options);
+}
+
 // Converts a flatbuffer::Table to JSON.
 template <typename T>
 typename std::enable_if<

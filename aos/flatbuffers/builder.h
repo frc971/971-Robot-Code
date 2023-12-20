@@ -77,6 +77,9 @@ class Builder final : public ResizeableObject {
   FlatbufferSpan<typename T::Flatbuffer> AsFlatbufferSpan() {
     return {buffer()};
   }
+  FlatbufferSpan<const typename T::Flatbuffer> AsFlatbufferSpan() const {
+    return {buffer()};
+  }
 
   // Returns true if the flatbuffer is validly constructed. Should always return
   // true (barring some sort of memory corruption). Exposed for convenience.
