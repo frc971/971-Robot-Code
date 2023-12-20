@@ -81,6 +81,20 @@ TEST(JsonSchemaTest, ReflectionSchema) {
                     "values": {
                         "items": {
                             "properties": {
+                                "attributes": {
+                                    "items": {
+                                        "properties": {
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "value": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    "type": "array"
+                                },
                                 "documentation": {
                                     "items": {
                                         "type": "string"

@@ -523,6 +523,7 @@ struct EnumValT : public flatbuffers::NativeTable {
   int64_t value = 0;
   flatbuffers::unique_ptr<reflection::TypeT> union_type{};
   std::vector<std::string> documentation{};
+  std::vector<flatbuffers::unique_ptr<reflection::KeyValueT>> attributes{};
   EnumValT() = default;
   EnumValT(const EnumValT &o);
   EnumValT(EnumValT&&) FLATBUFFERS_NOEXCEPT = default;
@@ -602,6 +603,9 @@ struct EnumVal FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *attributes() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
+  }
+  flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *mutable_attributes() {
+    return GetPointer<flatbuffers::Vector<flatbuffers::Offset<reflection::KeyValue>> *>(VT_ATTRIBUTES);
   }
   void clear_attributes() {
     ClearField(VT_ATTRIBUTES);
@@ -2462,7 +2466,8 @@ inline bool operator==(const EnumValT &lhs, const EnumValT &rhs) {
       (lhs.name == rhs.name) &&
       (lhs.value == rhs.value) &&
       ((lhs.union_type == rhs.union_type) || (lhs.union_type && rhs.union_type && *lhs.union_type == *rhs.union_type)) &&
-      (lhs.documentation == rhs.documentation);
+      (lhs.documentation == rhs.documentation) &&
+      (lhs.attributes.size() == rhs.attributes.size() && std::equal(lhs.attributes.cbegin(), lhs.attributes.cend(), rhs.attributes.cbegin(), [](flatbuffers::unique_ptr<reflection::KeyValueT> const &a, flatbuffers::unique_ptr<reflection::KeyValueT> const &b) { return (a == b) || (a && b && *a == *b); }));
 }
 
 inline bool operator!=(const EnumValT &lhs, const EnumValT &rhs) {
@@ -2475,6 +2480,8 @@ inline EnumValT::EnumValT(const EnumValT &o)
         value(o.value),
         union_type((o.union_type) ? new reflection::TypeT(*o.union_type) : nullptr),
         documentation(o.documentation) {
+  attributes.reserve(o.attributes.size());
+  for (const auto &attributes_ : o.attributes) { attributes.emplace_back((attributes_) ? new reflection::KeyValueT(*attributes_) : nullptr); }
 }
 
 inline EnumValT &EnumValT::operator=(EnumValT o) FLATBUFFERS_NOEXCEPT {
@@ -2482,6 +2489,7 @@ inline EnumValT &EnumValT::operator=(EnumValT o) FLATBUFFERS_NOEXCEPT {
   std::swap(value, o.value);
   std::swap(union_type, o.union_type);
   std::swap(documentation, o.documentation);
+  std::swap(attributes, o.attributes);
   return *this;
 }
 
@@ -2498,6 +2506,7 @@ inline void EnumVal::UnPackTo(EnumValT *_o, const flatbuffers::resolver_function
   { auto _e = value(); _o->value = _e; }
   { auto _e = union_type(); if (_e) { if(_o->union_type) { _e->UnPackTo(_o->union_type.get(), _resolver); } else { _o->union_type = flatbuffers::unique_ptr<reflection::TypeT>(_e->UnPack(_resolver)); } } else if (_o->union_type) { _o->union_type.reset(); } }
   { auto _e = documentation(); if (_e) { _o->documentation.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { _o->documentation[_i] = _e->Get(_i)->str(); } } else { _o->documentation.resize(0); } }
+  { auto _e = attributes(); if (_e) { _o->attributes.resize(_e->size()); for (flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->attributes[_i]) { _e->Get(_i)->UnPackTo(_o->attributes[_i].get(), _resolver); } else { _o->attributes[_i] = flatbuffers::unique_ptr<reflection::KeyValueT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->attributes.resize(0); } }
 }
 
 inline flatbuffers::Offset<EnumVal> EnumVal::Pack(flatbuffers::FlatBufferBuilder &_fbb, const EnumValT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
@@ -2512,12 +2521,14 @@ inline flatbuffers::Offset<EnumVal> CreateEnumVal(flatbuffers::FlatBufferBuilder
   auto _value = _o->value;
   auto _union_type = _o->union_type ? CreateType(_fbb, _o->union_type.get(), _rehasher) : 0;
   auto _documentation = _fbb.CreateVectorOfStrings(_o->documentation);
+  auto _attributes = _fbb.CreateVector<flatbuffers::Offset<reflection::KeyValue>> (_o->attributes.size(), [](size_t i, _VectorArgs *__va) { return CreateKeyValue(*__va->__fbb, __va->__o->attributes[i].get(), __va->__rehasher); }, &_va );
   return reflection::CreateEnumVal(
       _fbb,
       _name,
       _value,
       _union_type,
-      _documentation);
+      _documentation,
+      _attributes);
 }
 
 
@@ -3211,21 +3222,24 @@ inline const flatbuffers::TypeTable *EnumValTypeTable() {
     { flatbuffers::ET_LONG, 0, -1 },
     { flatbuffers::ET_SEQUENCE, 0, 0 },
     { flatbuffers::ET_SEQUENCE, 0, 1 },
-    { flatbuffers::ET_STRING, 1, -1 }
+    { flatbuffers::ET_STRING, 1, -1 },
+    { flatbuffers::ET_SEQUENCE, 1, 2 }
   };
   static const flatbuffers::TypeFunction type_refs[] = {
     reflection::ObjectTypeTable,
-    reflection::TypeTypeTable
+    reflection::TypeTypeTable,
+    reflection::KeyValueTypeTable
   };
   static const char * const names[] = {
     "name",
     "value",
     "object",
     "union_type",
-    "documentation"
+    "documentation",
+    "attributes"
   };
   static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 5, type_codes, type_refs, nullptr, nullptr, names
+    flatbuffers::ST_TABLE, 6, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
