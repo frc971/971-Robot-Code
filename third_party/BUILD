@@ -61,7 +61,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = select({
         "//tools:cpu_k8": ["@opencv_k8//:opencv"],
-        "//tools:cpu_arm64": ["@opencv_arm64//:opencv"],
+        "//tools:cpu_arm64": ["@arm64_debian_sysroot//:opencv4"],
         "//conditions:default": [":unavailable"],
     }),
 )

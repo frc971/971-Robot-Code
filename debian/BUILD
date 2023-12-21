@@ -43,10 +43,6 @@ load(
     gtk_runtime_debs = "files",
 )
 load(
-    ":opencv_arm64.bzl",
-    opencv_arm64_debs = "files",
-)
-load(
     ":opencv_amd64.bzl",
     opencv_amd64_debs = "files",
 )
@@ -369,12 +365,6 @@ download_packages(
         "libopencv-viz-dev",
         "libopencv-viz4.5",
     ],
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
-generate_deb_tarball(
-    name = "opencv_arm64",
-    files = opencv_arm64_debs,
     target_compatible_with = ["@platforms//os:linux"],
 )
 

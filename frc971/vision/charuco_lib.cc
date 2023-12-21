@@ -248,9 +248,9 @@ void CharucoExtractor::DrawTargetPoses(cv::Mat rgb_image,
       result /= result.z();
       if (target_type_ == TargetType::kCharuco ||
           target_type_ == TargetType::kAprilTag) {
-        cv::aruco::drawAxis(rgb_image, calibration_.CameraIntrinsics(),
-                            calibration_.CameraDistCoeffs(), rvecs[i], tvecs[i],
-                            square_length_);
+        cv::drawFrameAxes(rgb_image, calibration_.CameraIntrinsics(),
+                          calibration_.CameraDistCoeffs(), rvecs[i], tvecs[i],
+                          square_length_);
       } else {
         cv::drawFrameAxes(rgb_image, calibration_.CameraIntrinsics(),
                           calibration_.CameraDistCoeffs(), rvecs[i], tvecs[i],

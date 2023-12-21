@@ -155,10 +155,6 @@ load(
     gtk_runtime_debs = "files",
 )
 load(
-    "//debian:opencv_arm64.bzl",
-    opencv_arm64_debs = "files",
-)
-load(
     "//debian:opencv_amd64.bzl",
     opencv_amd64_debs = "files",
 )
@@ -217,8 +213,6 @@ generate_repositories_for_debs(patchelf_debs)
 generate_repositories_for_debs(arm_frc_gnueabi_deps_debs)
 
 generate_repositories_for_debs(gtk_runtime_debs)
-
-generate_repositories_for_debs(opencv_arm64_debs)
 
 generate_repositories_for_debs(opencv_amd64_debs)
 
@@ -462,16 +456,16 @@ http_archive(
 http_archive(
     name = "arm64_debian_sysroot",
     build_file = "@//:compilers/orin_debian_rootfs.BUILD",
-    sha256 = "a1d8297cebdf8dcc380afaa9703d56864f256775d4d239210d0883a9f2d009bc",
-    url = "https://software.frc971.org/Build-Dependencies/2023-11-18-bookworm-arm64-nvidia-rootfs.tar.xz",
+    sha256 = "afe3061b6f1f7e4f320b141699a63b6afc3a59e522b858b1595e58f2719eb487",
+    url = "https://software.frc971.org/Build-Dependencies/2023-11-22-bookworm-arm64-nvidia-rootfs.tar.xz",
 )
 
 # Sysroot generated using //frc971/amd64/build_rootfs.py
 http_archive(
     name = "amd64_debian_sysroot",
     build_file = "@//:compilers/amd64_debian_rootfs.BUILD",
-    sha256 = "3c098330f8bc57dccb4191167cfbba4c47f3bacf52926479c95ad2e50834b3c2",
-    url = "https://software.frc971.org/Build-Dependencies/2023-11-09-bookworm-amd64-nvidia-rootfs.tar.xz",
+    sha256 = "5d9d4131f3997d8543d45e673bfb15e21d7ca4c64923da91ee8d06f801dddb59",
+    url = "https://software.frc971.org/Build-Dependencies/2023-12-10-bookworm-amd64-nvidia-rootfs.tar.xz",
 )
 
 local_repository(
@@ -1220,14 +1214,6 @@ filegroup(
     """,
     sha256 = "2b9a3ecc83f2aba89a1909ae38fe51e6718a5b4d0e7c131846dfb2845df9cd19",
     url = "https://software.frc971.org/Build-Dependencies/2021-10-03_superstructure_shoot_balls.tar.gz",
-)
-
-# OpenCV arm64 (for raspberry pi)
-http_archive(
-    name = "opencv_arm64",
-    build_file = "@//debian:opencv.BUILD",
-    sha256 = "d284fae46ca710cf24c81ff7ace34929773466bff38f365a80371bea3b36a2ed",
-    url = "https://software.frc971.org/Build-Dependencies/opencv_arm64.tar.gz",
 )
 
 http_archive(
