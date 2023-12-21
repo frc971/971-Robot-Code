@@ -71,6 +71,19 @@ flatbuffer_ts_library(
     deps = ["//frc971/control_loops:control_loops_ts_fbs"],
 )
 
+flatbuffer_ts_library(
+    name = "drivetrain_position_ts_fbs",
+    srcs = ["drivetrain_position.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+flatbuffer_ts_library(
+    name = "drivetrain_can_position_ts_fbs",
+    srcs = ["drivetrain_can_position.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//frc971/control_loops:can_falcon_ts_fbs"],
+)
+
 genrule(
     name = "drivetrain_goal_float_fbs_generated",
     srcs = ["drivetrain_goal.fbs"],

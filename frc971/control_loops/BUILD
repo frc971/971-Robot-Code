@@ -199,6 +199,13 @@ flatbuffer_cc_library(
     ],
 )
 
+flatbuffer_ts_library(
+    name = "can_falcon_ts_fbs",
+    srcs = [
+        "can_falcon.fbs",
+    ],
+)
+
 flatbuffer_cc_library(
     name = "can_falcon_fbs",
     srcs = [

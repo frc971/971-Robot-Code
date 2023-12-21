@@ -33,6 +33,8 @@ ts_project(
         "//aos/network:web_proxy_ts_fbs",
         "//aos/network/www:proxy",
         "//frc971/control_loops:control_loops_ts_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_can_position_ts_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_position_ts_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_status_ts_fbs",
         "//frc971/control_loops/drivetrain/localization:localizer_output_ts_fbs",
         "//frc971/vision:target_map_ts_fbs",
