@@ -128,7 +128,17 @@ TEST(LogBackendTest, UseTestAndRenameBaseAfterWrite) {
 
 TEST(QueueAlignmentTest, Cases) {
   QueueAligner aligner;
-  uint8_t *start = nullptr;
+
+  // Get a 512-byte-aligned pointer to a buffer. That buffer needs to be at
+  // least 3 sectors big for the purposes of this test.
+  uint8_t buffer[FileHandler::kSector * 4];
+  void *aligned_start = buffer;
+  size_t size = sizeof(buffer);
+  ASSERT_TRUE(std::align(FileHandler::kSector, FileHandler::kSector * 3,
+                         aligned_start, size) != nullptr);
+  ASSERT_GE(size, FileHandler::kSector * 3);
+
+  uint8_t *start = static_cast<uint8_t *>(aligned_start);
   {
     // Only prefix
     std::vector<absl::Span<const uint8_t>> queue;
