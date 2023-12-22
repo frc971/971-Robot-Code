@@ -20,7 +20,7 @@ jinja2_template(
     name = "constants.json",
     src = "constants.jinja2.json",
     includes = [
-        "8971.json",
+        "9984.json",
         "common.json",
     ],
     parameters = {},

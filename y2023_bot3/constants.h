@@ -14,7 +14,7 @@
 namespace y2023_bot3 {
 namespace constants {
 
-constexpr uint16_t kThirdRobotTeamNumber = 8971;
+constexpr uint16_t kThirdRobotTeamNumber = 9984;
 
 struct Values {
   static const int kZeroingSampleSize = 200;
