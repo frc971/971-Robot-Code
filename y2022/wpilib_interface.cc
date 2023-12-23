@@ -23,8 +23,7 @@
 #include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
 
-#include "ctre/phoenix/motorcontrol/can/TalonFX.h"
-#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
+#include "ctre/phoenix6/TalonFX.hpp"
 
 #include "aos/commonmath.h"
 #include "aos/events/event_loop.h"
@@ -115,6 +114,46 @@ double catapult_pot_translate(double voltage) {
          (3.0 /*turns*/ / 5.0 /*volts*/) * (2 * M_PI /*radians*/);
 }
 
+void PrintConfigs(ctre::phoenix6::hardware::TalonFX *talon) {
+  ctre::phoenix6::configs::TalonFXConfiguration configuration;
+  ctre::phoenix::StatusCode status =
+      talon->GetConfigurator().Refresh(configuration);
+  if (!status.IsOK()) {
+    AOS_LOG(ERROR, "Failed to get falcon configuration: %s: %s",
+            status.GetName(), status.GetDescription());
+  }
+  AOS_LOG(INFO, "configuration: %s", configuration.ToString().c_str());
+}
+
+void WriteConfigs(ctre::phoenix6::hardware::TalonFX *talon,
+                  double stator_current_limit, double supply_current_limit) {
+  ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
+  current_limits.StatorCurrentLimit = stator_current_limit;
+  current_limits.StatorCurrentLimitEnable = true;
+  current_limits.SupplyCurrentLimit = supply_current_limit;
+  current_limits.SupplyCurrentLimitEnable = true;
+
+  ctre::phoenix6::configs::TalonFXConfiguration configuration;
+  configuration.CurrentLimits = current_limits;
+
+  ctre::phoenix::StatusCode status =
+      talon->GetConfigurator().Apply(configuration);
+  if (!status.IsOK()) {
+    AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
+            status.GetName(), status.GetDescription());
+  }
+
+  PrintConfigs(talon);
+}
+
+void Disable(ctre::phoenix6::hardware::TalonFX *talon) {
+  ctre::phoenix6::controls::DutyCycleOut stop_command(0.0);
+  stop_command.UpdateFreqHz = 0_Hz;
+  stop_command.EnableFOC = true;
+
+  talon->SetControl(stop_command);
+}
+
 }  // namespace
 
 // Class to send position messages with sensor readings to our loops.
@@ -179,8 +218,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     imu_yaw_rate_reader_.set_input(imu_yaw_rate_input_.get());
   }
   void set_catapult_falcon_1(
-      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t1,
-      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t2) {
+      ::std::shared_ptr<ctre::phoenix6::hardware::TalonFX> t1,
+      ::std::shared_ptr<ctre::phoenix6::hardware::TalonFX> t2) {
     catapult_falcon_1_can_ = ::std::move(t1);
     catapult_falcon_2_can_ = ::std::move(t2);
   }
@@ -433,8 +472,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   frc971::wpilib::DMAPulseWidthReader imu_heading_reader_, imu_yaw_rate_reader_;
 
-  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      catapult_falcon_1_can_, catapult_falcon_2_can_;
+  ::std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> catapult_falcon_1_can_,
+      catapult_falcon_2_can_;
 };
 
 class SuperstructureWriter
@@ -465,27 +504,41 @@ class SuperstructureWriter
   }
 
   void set_catapult_falcon_1(
-      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t1,
-      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t2) {
+      ::std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> t1,
+      ::std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> t2) {
     catapult_falcon_1_can_ = ::std::move(t1);
     catapult_falcon_2_can_ = ::std::move(t2);
 
     for (auto &falcon : {catapult_falcon_1_can_, catapult_falcon_2_can_}) {
-      falcon->ConfigSupplyCurrentLimit(
-          {false, Values::kIntakeRollerSupplyCurrentLimit(),
-           Values::kIntakeRollerSupplyCurrentLimit(), 0});
-      falcon->ConfigStatorCurrentLimit(
-          {false, Values::kIntakeRollerStatorCurrentLimit(),
-           Values::kIntakeRollerStatorCurrentLimit(), 0});
-      falcon->SetStatusFramePeriod(
+      ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
+      current_limits.StatorCurrentLimit =
+          Values::kIntakeRollerStatorCurrentLimit();
+      current_limits.StatorCurrentLimitEnable = true;
+      current_limits.SupplyCurrentLimit =
+          Values::kIntakeRollerSupplyCurrentLimit();
+      current_limits.SupplyCurrentLimitEnable = true;
+
+      ctre::phoenix6::configs::TalonFXConfiguration configuration;
+      configuration.CurrentLimits = current_limits;
+
+      ctre::phoenix::StatusCode status =
+          falcon->GetConfigurator().Apply(configuration);
+      if (!status.IsOK()) {
+        AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
+                status.GetName(), status.GetDescription());
+      }
+
+      PrintConfigs(falcon.get());
+
+      // TODO(max): Figure out how to migrate these configs to phoenix6
+      /*falcon->SetStatusFramePeriod(
           ctre::phoenix::motorcontrol::Status_1_General, 1);
-      falcon->SetControlFramePeriod(
-          ctre::phoenix::motorcontrol::Control_3_General, 1);
       falcon->SetStatusFramePeriod(
           ctre::phoenix::motorcontrol::Status_Brushless_Current, 50);
+
       falcon->ConfigOpenloopRamp(0.0);
       falcon->ConfigClosedloopRamp(0.0);
-      falcon->ConfigVoltageMeasurementFilter(1);
+      falcon->ConfigVoltageMeasurementFilter(1);*/
     }
   }
 
@@ -498,40 +551,30 @@ class SuperstructureWriter
   }
 
   void set_roller_falcon_front(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+      ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> t) {
     roller_falcon_front_ = ::std::move(t);
-    roller_falcon_front_->ConfigSupplyCurrentLimit(
-        {true, Values::kIntakeRollerSupplyCurrentLimit(),
-         Values::kIntakeRollerSupplyCurrentLimit(), 0});
-    roller_falcon_front_->ConfigStatorCurrentLimit(
-        {true, Values::kIntakeRollerStatorCurrentLimit(),
-         Values::kIntakeRollerStatorCurrentLimit(), 0});
+    WriteConfigs(roller_falcon_front_.get(),
+                 Values::kIntakeRollerStatorCurrentLimit(),
+                 Values::kIntakeRollerSupplyCurrentLimit());
   }
 
   void set_roller_falcon_back(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+      ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> t) {
     roller_falcon_back_ = ::std::move(t);
-    roller_falcon_back_->ConfigSupplyCurrentLimit(
-        {true, Values::kIntakeRollerSupplyCurrentLimit(),
-         Values::kIntakeRollerSupplyCurrentLimit(), 0});
-    roller_falcon_back_->ConfigStatorCurrentLimit(
-        {true, Values::kIntakeRollerStatorCurrentLimit(),
-         Values::kIntakeRollerStatorCurrentLimit(), 0});
+    WriteConfigs(roller_falcon_back_.get(),
+                 Values::kIntakeRollerStatorCurrentLimit(),
+                 Values::kIntakeRollerSupplyCurrentLimit());
   }
 
   void set_flipper_arms_falcon(
-      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+      ::std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> t) {
     flipper_arms_falcon_ = t;
-    flipper_arms_falcon_->ConfigSupplyCurrentLimit(
-        {true, Values::kFlipperArmSupplyCurrentLimit(),
-         Values::kFlipperArmSupplyCurrentLimit(), 0});
-    flipper_arms_falcon_->ConfigStatorCurrentLimit(
-        {true, Values::kFlipperArmStatorCurrentLimit(),
-         Values::kFlipperArmStatorCurrentLimit(), 0});
+    WriteConfigs(flipper_arms_falcon_.get(),
+                 Values::kFlipperArmSupplyCurrentLimit(),
+                 Values::kFlipperArmStatorCurrentLimit());
   }
 
-  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-  flipper_arms_falcon() {
+  ::std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> flipper_arms_falcon() {
     return flipper_arms_falcon_;
   }
 
@@ -553,12 +596,10 @@ class SuperstructureWriter
     climber_servo_left_->SetRaw(0);
     climber_servo_right_->SetRaw(0);
 
-    roller_falcon_front_->Set(
-        ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
-    roller_falcon_back_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled,
-                             0);
-    flipper_arms_falcon_->Set(
-        ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+    Disable(roller_falcon_front_.get());
+    Disable(roller_falcon_back_.get());
+    Disable(flipper_arms_falcon_.get());
+
     intake_falcon_front_->SetDisabled();
     intake_falcon_back_->SetDisabled();
     transfer_roller_victor_->SetDisabled();
@@ -566,10 +607,8 @@ class SuperstructureWriter
       catapult_falcon_1_->SetDisabled();
     }
     if (catapult_falcon_1_can_) {
-      catapult_falcon_1_can_->Set(
-          ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
-      catapult_falcon_2_can_->Set(
-          ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+      Disable(catapult_falcon_1_can_.get());
+      Disable(catapult_falcon_2_can_.get());
     }
     turret_falcon_->SetDisabled();
   }
@@ -597,18 +636,31 @@ class SuperstructureWriter
       }
     }
     if (catapult_falcon_1_can_) {
-      WriteCan(output.catapult_voltage(), catapult_falcon_1_can_.get());
-      WriteCan(output.catapult_voltage(), catapult_falcon_2_can_.get());
+      WriteCanCatapult(output.catapult_voltage(), catapult_falcon_1_can_.get());
+      WriteCanCatapult(output.catapult_voltage(), catapult_falcon_2_can_.get());
     }
 
     WritePwm(-output.turret_voltage(), turret_falcon_.get());
   }
 
   static void WriteCan(const double voltage,
-                       ::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
-    falcon->Set(
-        ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
+                       ::ctre::phoenix6::hardware::TalonFX *falcon) {
+    ctre::phoenix6::controls::DutyCycleOut control(
         std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
+    control.UpdateFreqHz = 0_Hz;
+    control.EnableFOC = true;
+
+    falcon->SetControl(control);
+  }
+  // We do this to set our UpdateFreqHz higher
+  static void WriteCanCatapult(const double voltage,
+                               ::ctre::phoenix6::hardware::TalonFX *falcon) {
+    ctre::phoenix6::controls::DutyCycleOut control(
+        std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
+    control.UpdateFreqHz = 1000_Hz;
+    control.EnableFOC = true;
+
+    falcon->SetControl(control);
   }
 
   template <typename T>
@@ -619,14 +671,13 @@ class SuperstructureWriter
 
   ::std::unique_ptr<frc::TalonFX> intake_falcon_front_, intake_falcon_back_;
 
-  ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      roller_falcon_front_, roller_falcon_back_;
+  ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> roller_falcon_front_,
+      roller_falcon_back_;
 
-  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      flipper_arms_falcon_;
+  ::std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> flipper_arms_falcon_;
 
-  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      catapult_falcon_1_can_, catapult_falcon_2_can_;
+  ::std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> catapult_falcon_1_can_,
+      catapult_falcon_2_can_;
 
   ::std::unique_ptr<::frc::TalonFX> turret_falcon_, catapult_falcon_1_,
       climber_falcon_;
@@ -654,7 +705,7 @@ class CANSensorReader {
   }
 
   void set_flipper_arms_falcon(
-      ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+      ::std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> t) {
     flipper_arms_falcon_ = std::move(t);
   }
 
@@ -664,7 +715,7 @@ class CANSensorReader {
     superstructure::CANPosition::Builder can_position_builder =
         builder.MakeBuilder<superstructure::CANPosition>();
     can_position_builder.add_flipper_arm_integrated_sensor_velocity(
-        flipper_arms_falcon_->GetSelectedSensorVelocity() *
+        flipper_arms_falcon_->GetVelocity().GetValue().value() *
         kVelocityConversion);
     builder.CheckOk(builder.Send(can_position_builder.Finish()));
   }
@@ -676,8 +727,7 @@ class CANSensorReader {
   aos::EventLoop *event_loop_;
   ::aos::PhasedLoopHandler *phased_loop_handler_;
 
-  ::std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      flipper_arms_falcon_;
+  ::std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> flipper_arms_falcon_;
   aos::Sender<superstructure::CANPosition> can_position_sender_;
 };
 
@@ -769,9 +819,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     superstructure_writer.set_turret_falcon(make_unique<::frc::TalonFX>(3));
     superstructure_writer.set_roller_falcon_front(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
+        make_unique<::ctre::phoenix6::hardware::TalonFX>(0));
     superstructure_writer.set_roller_falcon_back(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(1));
+        make_unique<::ctre::phoenix6::hardware::TalonFX>(1));
 
     superstructure_writer.set_transfer_roller_victor(
         make_unique<::frc::VictorSP>(5));
@@ -782,18 +832,16 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_climber_servo_left(make_unique<frc::Servo>(7));
     superstructure_writer.set_climber_servo_right(make_unique<frc::Servo>(6));
     superstructure_writer.set_flipper_arms_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(2));
+        make_unique<::ctre::phoenix6::hardware::TalonFX>(2));
     superstructure_writer.set_superstructure_reading(superstructure_reading);
 
     if (!FLAGS_can_catapult) {
       superstructure_writer.set_catapult_falcon_1(make_unique<frc::TalonFX>(9));
     } else {
-      std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> catapult1 =
-          make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(3,
-                                                                   "Catapult");
-      std::shared_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> catapult2 =
-          make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(4,
-                                                                   "Catapult");
+      std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> catapult1 =
+          make_unique<::ctre::phoenix6::hardware::TalonFX>(3, "Catapult");
+      std::shared_ptr<::ctre::phoenix6::hardware::TalonFX> catapult2 =
+          make_unique<::ctre::phoenix6::hardware::TalonFX>(4, "Catapult");
       superstructure_writer.set_catapult_falcon_1(catapult1, catapult2);
       sensor_reader.set_catapult_falcon_1(catapult1, catapult2);
     }

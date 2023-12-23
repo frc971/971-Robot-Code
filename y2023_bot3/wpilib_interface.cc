@@ -24,8 +24,6 @@
 #undef ERROR
 
 #include "ctre/phoenix/cci/Diagnostics_CCI.h"
-#include "ctre/phoenix/motorcontrol/can/TalonFX.h"
-#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "ctre/phoenix6/TalonFX.hpp"
 
 #include "aos/commonmath.h"
@@ -599,42 +597,6 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   CANSensorReader *can_sensor_reader_;
 };
 
-class SuperstructureWriter
-    : public ::frc971::wpilib::LoopOutputHandler<superstructure::Output> {
- public:
-  SuperstructureWriter(aos::EventLoop *event_loop)
-      : frc971::wpilib::LoopOutputHandler<superstructure::Output>(
-            event_loop, "/superstructure") {
-    event_loop->SetRuntimeRealtimePriority(
-        constants::Values::kDrivetrainWriterPriority);
-  }
-
-  std::shared_ptr<frc::DigitalOutput> superstructure_reading_;
-
-  void set_superstructure_reading(
-      std::shared_ptr<frc::DigitalOutput> superstructure_reading) {
-    superstructure_reading_ = superstructure_reading;
-  }
-
- private:
-  void Stop() override { AOS_LOG(WARNING, "Superstructure output too old.\n"); }
-
-  void Write(const superstructure::Output &output) override { (void)output; }
-
-  static void WriteCan(const double voltage,
-                       ::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
-    falcon->Set(
-        ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
-        std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
-  }
-
-  template <typename T>
-  static void WritePwm(const double voltage, T *motor) {
-    motor->SetSpeed(std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) /
-                    12.0);
-  }
-};
-
 class SuperstructureCANWriter
     : public ::frc971::wpilib::LoopOutputHandler<superstructure::Output> {
  public:
@@ -925,16 +887,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         });
 
     AddLoop(&can_output_event_loop);
-
-    // Thread 6
-    // Set up superstructure output.
-    ::aos::ShmEventLoop output_event_loop(&config.message());
-    output_event_loop.set_name("PWMOutputWriter");
-    SuperstructureWriter superstructure_writer(&output_event_loop);
-
-    superstructure_writer.set_superstructure_reading(superstructure_reading);
-
-    AddLoop(&output_event_loop);
 
     RunLoops();
   }

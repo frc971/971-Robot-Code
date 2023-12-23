@@ -23,9 +23,6 @@
 #include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
 
-#include "ctre/phoenix/motorcontrol/can/TalonFX.h"
-#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
-
 #include "aos/commonmath.h"
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"

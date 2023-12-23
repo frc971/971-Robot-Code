@@ -22,8 +22,7 @@
 #include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
 
-#include "ctre/phoenix/motorcontrol/can/TalonFX.h"
-#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
+#include "ctre/phoenix6/TalonFX.hpp"
 
 #include "aos/commonmath.h"
 #include "aos/events/event_loop.h"
@@ -106,6 +105,46 @@ constexpr double kMaxMediumEncoderPulsesPerSecond =
 
 static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000,
               "medium encoders are too fast");
+
+void PrintConfigs(ctre::phoenix6::hardware::TalonFX *talon) {
+  ctre::phoenix6::configs::TalonFXConfiguration configuration;
+  ctre::phoenix::StatusCode status =
+      talon->GetConfigurator().Refresh(configuration);
+  if (!status.IsOK()) {
+    AOS_LOG(ERROR, "Failed to get falcon configuration: %s: %s",
+            status.GetName(), status.GetDescription());
+  }
+  AOS_LOG(INFO, "configuration: %s", configuration.ToString().c_str());
+}
+
+void WriteConfigs(ctre::phoenix6::hardware::TalonFX *talon,
+                  double stator_current_limit, double supply_current_limit) {
+  ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
+  current_limits.StatorCurrentLimit = stator_current_limit;
+  current_limits.StatorCurrentLimitEnable = true;
+  current_limits.SupplyCurrentLimit = supply_current_limit;
+  current_limits.SupplyCurrentLimitEnable = true;
+
+  ctre::phoenix6::configs::TalonFXConfiguration configuration;
+  configuration.CurrentLimits = current_limits;
+
+  ctre::phoenix::StatusCode status =
+      talon->GetConfigurator().Apply(configuration);
+  if (!status.IsOK()) {
+    AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
+            status.GetName(), status.GetDescription());
+  }
+
+  PrintConfigs(talon);
+}
+
+void Disable(ctre::phoenix6::hardware::TalonFX *talon) {
+  ctre::phoenix6::controls::DutyCycleOut stop_command(0.0);
+  stop_command.UpdateFreqHz = 0_Hz;
+  stop_command.EnableFOC = true;
+
+  talon->SetControl(stop_command);
+}
 
 }  // namespace
 
@@ -196,39 +235,51 @@ class SuperstructureWriter
             event_loop, "/superstructure") {}
 
   void set_intake_falcon(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+      ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> t) {
     intake_falcon_ = ::std::move(t);
     ConfigureRollerFalcon(intake_falcon_.get());
   }
 
   void set_outtake_falcon(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+      ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> t) {
     outtake_falcon_ = ::std::move(t);
     ConfigureRollerFalcon(outtake_falcon_.get());
   }
 
   void set_climber_falcon(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+      ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> t) {
     climber_falcon_ = ::std::move(t);
-    climber_falcon_->ConfigSupplyCurrentLimit(
-        {true, Values::kClimberSupplyCurrentLimit(),
-         Values::kClimberSupplyCurrentLimit(), 0});
+    ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
+    current_limits.SupplyCurrentLimit = Values::kClimberSupplyCurrentLimit();
+    current_limits.SupplyCurrentLimitEnable = true;
+
+    ctre::phoenix6::configs::TalonFXConfiguration configuration;
+    configuration.CurrentLimits = current_limits;
+
+    ctre::phoenix::StatusCode status =
+        climber_falcon_->GetConfigurator().Apply(configuration);
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
+
+    PrintConfigs(climber_falcon_.get());
   }
 
  private:
-  void ConfigureRollerFalcon(
-      ::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
-    falcon->ConfigSupplyCurrentLimit({true, Values::kRollerSupplyCurrentLimit(),
-                                      Values::kRollerSupplyCurrentLimit(), 0});
-    falcon->ConfigStatorCurrentLimit({true, Values::kRollerStatorCurrentLimit(),
-                                      Values::kRollerStatorCurrentLimit(), 0});
+  void ConfigureRollerFalcon(::ctre::phoenix6::hardware::TalonFX *falcon) {
+    WriteConfigs(falcon, Values::kRollerSupplyCurrentLimit(),
+                 Values::kRollerStatorCurrentLimit());
   }
 
   void WriteToFalcon(const double voltage,
-                     ::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
-    falcon->Set(
-        ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
+                     ::ctre::phoenix6::hardware::TalonFX *falcon) {
+    ctre::phoenix6::controls::DutyCycleOut control(
         std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
+    control.UpdateFreqHz = 0_Hz;
+    control.EnableFOC = true;
+
+    falcon->SetControl(control);
   }
 
   void Write(const superstructure::Output &output) override {
@@ -240,16 +291,15 @@ class SuperstructureWriter
 
   void Stop() override {
     AOS_LOG(WARNING, "Superstructure output too old.\n");
-    climber_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
-    intake_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
-    outtake_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+    Disable(climber_falcon_.get());
+    Disable(intake_falcon_.get());
+    Disable(outtake_falcon_.get());
   }
 
-  ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> intake_falcon_,
+  ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> intake_falcon_,
       outtake_falcon_;
 
-  ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      climber_falcon_;
+  ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> climber_falcon_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -292,11 +342,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     SuperstructureWriter superstructure_writer(&output_event_loop);
     superstructure_writer.set_intake_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
+        make_unique<::ctre::phoenix6::hardware::TalonFX>(0));
     superstructure_writer.set_outtake_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(1));
+        make_unique<::ctre::phoenix6::hardware::TalonFX>(1));
     superstructure_writer.set_climber_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(2));
+        make_unique<::ctre::phoenix6::hardware::TalonFX>(2));
 
     AddLoop(&output_event_loop);
 

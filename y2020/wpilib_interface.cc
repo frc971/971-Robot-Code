@@ -20,8 +20,7 @@
 #include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
 
-#include "ctre/phoenix/motorcontrol/can/TalonFX.h"
-#include "ctre/phoenix/motorcontrol/can/VictorSPX.h"
+#include "ctre/phoenix6/TalonFX.hpp"
 #include "gflags/gflags.h"
 
 #include "aos/commonmath.h"
@@ -110,6 +109,46 @@ constexpr double kMaxMediumEncoderPulsesPerSecond =
 
 static_assert(kMaxMediumEncoderPulsesPerSecond <= 400000.0,
               "medium encoders are too fast");
+
+void PrintConfigs(ctre::phoenix6::hardware::TalonFX *talon) {
+  ctre::phoenix6::configs::TalonFXConfiguration configuration;
+  ctre::phoenix::StatusCode status =
+      talon->GetConfigurator().Refresh(configuration);
+  if (!status.IsOK()) {
+    AOS_LOG(ERROR, "Failed to get falcon configuration: %s: %s",
+            status.GetName(), status.GetDescription());
+  }
+  AOS_LOG(INFO, "configuration: %s", configuration.ToString().c_str());
+}
+
+void WriteConfigs(ctre::phoenix6::hardware::TalonFX *talon,
+                  double stator_current_limit, double supply_current_limit) {
+  ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
+  current_limits.StatorCurrentLimit = stator_current_limit;
+  current_limits.StatorCurrentLimitEnable = true;
+  current_limits.SupplyCurrentLimit = supply_current_limit;
+  current_limits.SupplyCurrentLimitEnable = true;
+
+  ctre::phoenix6::configs::TalonFXConfiguration configuration;
+  configuration.CurrentLimits = current_limits;
+
+  ctre::phoenix::StatusCode status =
+      talon->GetConfigurator().Apply(configuration);
+  if (!status.IsOK()) {
+    AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
+            status.GetName(), status.GetDescription());
+  }
+
+  PrintConfigs(talon);
+}
+
+void Disable(ctre::phoenix6::hardware::TalonFX *talon) {
+  ctre::phoenix6::controls::DutyCycleOut stop_command(0.0);
+  stop_command.UpdateFreqHz = 0_Hz;
+  stop_command.EnableFOC = true;
+
+  talon->SetControl(stop_command);
+}
 
 }  // namespace
 
@@ -393,14 +432,12 @@ class SuperstructureWriter
   }
 
   void set_intake_roller_falcon(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+      ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> t) {
     intake_roller_falcon_ = ::std::move(t);
-    intake_roller_falcon_->ConfigSupplyCurrentLimit(
-        {true, Values::kIntakeRollerSupplyCurrentLimit(),
-         Values::kIntakeRollerSupplyCurrentLimit(), 0});
-    intake_roller_falcon_->ConfigStatorCurrentLimit(
-        {true, Values::kIntakeRollerStatorCurrentLimit(),
-         Values::kIntakeRollerStatorCurrentLimit(), 0});
+
+    WriteConfigs(intake_roller_falcon_.get(),
+                 Values::kIntakeRollerStatorCurrentLimit(),
+                 Values::kIntakeRollerSupplyCurrentLimit());
   }
 
   void set_turret_victor(::std::unique_ptr<::frc::VictorSP> t) {
@@ -408,26 +445,11 @@ class SuperstructureWriter
   }
 
   void set_feeder_falcon(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+      ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> t) {
     feeder_falcon_ = ::std::move(t);
-    {
-      auto result = feeder_falcon_->ConfigSupplyCurrentLimit(
-          {true, Values::kFeederSupplyCurrentLimit(),
-           Values::kFeederSupplyCurrentLimit(), 0});
-      if (result != ctre::phoenix::OKAY) {
-        LOG(WARNING) << "Failed to configure feeder supply current limit: "
-                     << result;
-      }
-    }
-    {
-      auto result = feeder_falcon_->ConfigStatorCurrentLimit(
-          {true, Values::kFeederStatorCurrentLimit(),
-           Values::kFeederStatorCurrentLimit(), 0});
-      if (result != ctre::phoenix::OKAY) {
-        LOG(WARNING) << "Failed to configure feeder stator current limit: "
-                     << result;
-      }
-    }
+
+    WriteConfigs(feeder_falcon_.get(), Values::kFeederStatorCurrentLimit(),
+                 Values::kFeederSupplyCurrentLimit());
   }
 
   void set_washing_machine_control_panel_victor(
@@ -452,11 +474,23 @@ class SuperstructureWriter
   }
 
   void set_climber_falcon(
-      ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX> t) {
+      ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> t) {
     climber_falcon_ = ::std::move(t);
-    climber_falcon_->ConfigSupplyCurrentLimit(
-        {true, Values::kClimberSupplyCurrentLimit(),
-         Values::kClimberSupplyCurrentLimit(), 0});
+    ctre::phoenix6::configs::CurrentLimitsConfigs current_limits;
+    current_limits.SupplyCurrentLimit = Values::kClimberSupplyCurrentLimit();
+    current_limits.SupplyCurrentLimitEnable = true;
+
+    ctre::phoenix6::configs::TalonFXConfiguration configuration;
+    configuration.CurrentLimits = current_limits;
+
+    ctre::phoenix::StatusCode status =
+        climber_falcon_->GetConfigurator().Apply(configuration);
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to set falcon configuration: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
+
+    PrintConfigs(climber_falcon_.get());
   }
 
  private:
@@ -470,20 +504,12 @@ class SuperstructureWriter
                                               kMaxBringupPower) /
                                    12.0);
 
-    intake_roller_falcon_->Set(
-        ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
-        std::clamp(-output.intake_roller_voltage(), -kMaxBringupPower,
-                   kMaxBringupPower) /
-            12.0);
+    WriteCan(-output.intake_roller_voltage(), intake_roller_falcon_.get());
 
     turret_victor_->SetSpeed(std::clamp(output.turret_voltage(),
                                         -kMaxBringupPower, kMaxBringupPower) /
                              12.0);
-
-    feeder_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
-                        std::clamp(output.feeder_voltage(), -kMaxBringupPower,
-                                   kMaxBringupPower) /
-                            12.0);
+    WriteCan(output.feeder_voltage(), feeder_falcon_.get());
     if (washing_machine_control_panel_victor_) {
       washing_machine_control_panel_victor_->SetSpeed(
           std::clamp(-output.washing_machine_spinner_voltage(),
@@ -511,12 +537,18 @@ class SuperstructureWriter
                                 12.0);
 
     if (climber_falcon_) {
-      climber_falcon_->Set(
-          ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
-          std::clamp(output.climber_voltage(), -kMaxBringupPower,
-                     kMaxBringupPower) /
-              12.0);
+      WriteCan(output.climber_voltage(), climber_falcon_.get());
     }
+  }
+
+  static void WriteCan(const double voltage,
+                       ::ctre::phoenix6::hardware::TalonFX *falcon) {
+    ctre::phoenix6::controls::DutyCycleOut control(
+        std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
+    control.UpdateFreqHz = 0_Hz;
+    control.EnableFOC = true;
+
+    falcon->SetControl(control);
   }
 
   void Stop() override {
@@ -531,10 +563,9 @@ class SuperstructureWriter
     accelerator_right_falcon_->SetDisabled();
     finisher_falcon0_->SetDisabled();
     finisher_falcon1_->SetDisabled();
-    feeder_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
-    intake_roller_falcon_->Set(
-        ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
-    climber_falcon_->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0);
+    Disable(feeder_falcon_.get());
+    Disable(intake_roller_falcon_.get());
+    Disable(climber_falcon_.get());
   }
 
   ::std::unique_ptr<::frc::VictorSP> hood_victor_, intake_joint_victor_,
@@ -543,8 +574,8 @@ class SuperstructureWriter
   ::std::unique_ptr<::frc::TalonFX> accelerator_left_falcon_,
       accelerator_right_falcon_, finisher_falcon0_, finisher_falcon1_;
 
-  ::std::unique_ptr<::ctre::phoenix::motorcontrol::can::TalonFX>
-      intake_roller_falcon_, climber_falcon_, feeder_falcon_;
+  ::std::unique_ptr<::ctre::phoenix6::hardware::TalonFX> intake_roller_falcon_,
+      climber_falcon_, feeder_falcon_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -654,10 +685,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_intake_joint_victor(
         make_unique<frc::VictorSP>(2));
     superstructure_writer.set_intake_roller_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(0));
+        make_unique<::ctre::phoenix6::hardware::TalonFX>(0));
     superstructure_writer.set_turret_victor(make_unique<frc::VictorSP>(7));
     superstructure_writer.set_feeder_falcon(
-        make_unique<ctre::phoenix::motorcontrol::can::TalonFX>(1));
+        make_unique<ctre::phoenix6::hardware::TalonFX>(1));
     superstructure_writer.set_washing_machine_control_panel_victor(
         make_unique<frc::VictorSP>(6));
     superstructure_writer.set_accelerator_left_falcon(
@@ -668,7 +699,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     superstructure_writer.set_finisher_falcon1(make_unique<::frc::TalonFX>(3));
     // TODO: check port
     superstructure_writer.set_climber_falcon(
-        make_unique<::ctre::phoenix::motorcontrol::can::TalonFX>(2));
+        make_unique<::ctre::phoenix6::hardware::TalonFX>(2));
 
     AddLoop(&output_event_loop);
 

@@ -70,6 +70,7 @@ cc_binary(
         "//frc971/wpilib:wpilib_interface",
         "//frc971/wpilib:wpilib_robot_base",
         "//third_party:phoenix",
+        "//third_party:phoenix6",
         "//third_party:wpilib",
         "//y2021_bot3/control_loops/superstructure:superstructure_output_fbs",
         "//y2021_bot3/control_loops/superstructure:superstructure_position_fbs",

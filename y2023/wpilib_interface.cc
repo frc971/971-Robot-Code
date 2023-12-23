@@ -24,8 +24,6 @@
 #undef ERROR
 
 #include "ctre/phoenix/cci/Diagnostics_CCI.h"
-#include "ctre/phoenix/motorcontrol/can/TalonFX.h"
-#include "ctre/phoenix/motorcontrol/can/TalonSRX.h"
 #include "ctre/phoenix6/TalonFX.hpp"
 
 #include "aos/commonmath.h"
@@ -716,16 +714,27 @@ class SuperstructureWriter
   }
 
   static void WriteCan(const double voltage,
-                       ::ctre::phoenix::motorcontrol::can::TalonFX *falcon) {
-    falcon->Set(
-        ctre::phoenix::motorcontrol::ControlMode::PercentOutput,
-        std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
+                       ::ctre::phoenix6::hardware::TalonFX *talon) {
+    ctre::phoenix6::controls::DutyCycleOut motor_control(SafeSpeed(voltage));
+
+    motor_control.UpdateFreqHz = 0_Hz;
+    motor_control.EnableFOC = true;
+
+    ctre::phoenix::StatusCode status = talon->SetControl(motor_control);
+
+    if (!status.IsOK()) {
+      AOS_LOG(ERROR, "Failed to write control to falcon: %s: %s",
+              status.GetName(), status.GetDescription());
+    }
   }
 
   template <typename T>
   static void WritePwm(const double voltage, T *motor) {
-    motor->SetSpeed(std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) /
-                    12.0);
+    motor->SetSpeed(SafeSpeed(voltage));
+  }
+
+  static double SafeSpeed(double voltage) {
+    return (::aos::Clip(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
   }
 
   ::std::unique_ptr<::frc::TalonFX> proximal_falcon_, distal_falcon_;
