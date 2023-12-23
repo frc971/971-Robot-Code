@@ -16,6 +16,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
@@ -582,6 +584,62 @@ func TestRequestPitImages(t *testing.T) {
 		PitImageList: []*request_pit_images_response.PitImageT{
 			{
 				TeamNumber: "932", ImagePath: "pitimage.jpg", CheckSum: "abcdf",
+			},
+		},
+	}
+
+	if len(expected.PitImageList) != len(response.PitImageList) {
+		t.Fatal("Expected ", expected, ", but got ", *response)
+	}
+
+	for i, pit_image := range expected.PitImageList {
+		if !reflect.DeepEqual(*pit_image, *response.PitImageList[i]) {
+			t.Fatal("Expected for pit image", i, ":", *pit_image, ", but got:", *response.PitImageList[i])
+		}
+	}
+}
+
+func TestRequestAllPitImages(t *testing.T) {
+	db := MockDatabase{
+		images: []db.PitImage{
+			{
+				TeamNumber: "32", ImagePath: "pitimage.jpg",
+				ImageData: []byte{3, 43, 44, 32}, CheckSum: "cdhrj",
+			},
+			{
+				TeamNumber: "231", ImagePath: "232robot.png",
+				ImageData: []byte{64, 54, 54, 21, 76, 32}, CheckSum: "rgre",
+			},
+			{
+				TeamNumber: "90", ImagePath: "abcd.jpg",
+				ImageData: []byte{92, 94, 10, 30, 57, 32, 32}, CheckSum: "erfer",
+			},
+		},
+	}
+
+	scoutingServer := server.NewScoutingServer()
+	HandleRequests(&db, scoutingServer)
+	scoutingServer.Start(8080)
+	defer scoutingServer.Stop()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&request_all_pit_images.RequestAllPitImagesT{}).Pack(builder))
+
+	response, err := debug.RequestAllPitImages("http://localhost:8080", builder.FinishedBytes())
+	if err != nil {
+		t.Fatal("Failed to request pit images: ", err)
+	}
+
+	expected := request_all_pit_images_response.RequestAllPitImagesResponseT{
+		PitImageList: []*request_all_pit_images_response.PitImageT{
+			{
+				TeamNumber: "32", ImagePath: "pitimage.jpg", CheckSum: "cdhrj",
+			},
+			{
+				TeamNumber: "231", ImagePath: "232robot.png", CheckSum: "rgre",
+			},
+			{
+				TeamNumber: "90", ImagePath: "abcd.jpg", CheckSum: "erfer",
 			},
 		},
 	}
@@ -1204,6 +1262,10 @@ func (database *MockDatabase) AddPitImage(pitImage db.PitImage) error {
 
 func (database *MockDatabase) ReturnActions() ([]db.Action, error) {
 	return database.actions, nil
+}
+
+func (database *MockDatabase) ReturnPitImages() ([]db.PitImage, error) {
+	return database.images, nil
 }
 
 func (database *MockDatabase) DeleteFromStats(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {

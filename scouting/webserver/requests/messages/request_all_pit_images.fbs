@@ -1,0 +1,6 @@
+namespace scouting.webserver.requests;
+
+table RequestAllPitImages {
+}
+
+root_type RequestAllPitImages;

@@ -19,6 +19,8 @@ ng_pkg(
         "//scouting/webserver/requests/messages:request_all_matches_ts_fbs",
         "//scouting/webserver/requests/messages:request_all_notes_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_all_notes_ts_fbs",
+        "//scouting/webserver/requests/messages:request_all_pit_images_response_ts_fbs",
+        "//scouting/webserver/requests/messages:request_all_pit_images_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )

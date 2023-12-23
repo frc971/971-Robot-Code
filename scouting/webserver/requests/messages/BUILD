@@ -19,6 +19,8 @@ FILE_NAMES = (
     "submit_pit_image_response",
     "request_pit_images",
     "request_pit_images_response",
+    "request_all_pit_images",
+    "request_all_pit_images_response",
     "request_shift_schedule",
     "request_shift_schedule_response",
     "submit_shift_schedule",

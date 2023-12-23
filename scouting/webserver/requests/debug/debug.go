@@ -15,6 +15,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
@@ -142,6 +143,12 @@ func RequestPitImages(server string, requestBytes []byte) (*request_pit_images_r
 	return sendMessage[request_pit_images_response.RequestPitImagesResponseT](
 		server+"/requests/request/pit_images", requestBytes,
 		request_pit_images_response.GetRootAsRequestPitImagesResponse)
+}
+
+func RequestAllPitImages(server string, requestBytes []byte) (*request_all_pit_images_response.RequestAllPitImagesResponseT, error) {
+	return sendMessage[request_all_pit_images_response.RequestAllPitImagesResponseT](
+		server+"/requests/request/all_pit_images", requestBytes,
+		request_all_pit_images_response.GetRootAsRequestAllPitImagesResponse)
 }
 
 func RequestAllNotes(server string, requestBytes []byte) (*request_all_notes_response.RequestAllNotesResponseT, error) {

@@ -13,6 +13,11 @@ import {
 } from '../../webserver/requests/messages/request_all_driver_rankings_response_generated';
 import {Request2023DataScouting} from '../../webserver/requests/messages/request_2023_data_scouting_generated';
 import {
+  PitImage,
+  RequestAllPitImagesResponse,
+} from '../../webserver/requests/messages/request_all_pit_images_response_generated';
+import {RequestAllPitImages} from '../../webserver/requests/messages/request_all_pit_images_generated';
+import {
   Stats2023,
   Request2023DataScoutingResponse,
 } from '../../webserver/requests/messages/request_2023_data_scouting_response_generated';
@@ -95,5 +100,26 @@ export class ViewDataRequestor {
       statList.push(parsedResponse.statsList(i));
     }
     return statList;
+  }
+
+  // Returns all pit image entries from the database.
+  async fetchPitImagesList(): Promise<PitImage[]> {
+    let fbBuffer = await this.fetchFromServer(
+      RequestAllPitImages.startRequestAllPitImages,
+      RequestAllPitImages.endRequestAllPitImages,
+      '/requests/request/all_pit_images'
+    );
+
+    const parsedResponse =
+      RequestAllPitImagesResponse.getRootAsRequestAllPitImagesResponse(
+        fbBuffer
+      );
+
+    // Convert the flatbuffer list into an array. That's more useful.
+    const pitImageList = [];
+    for (let i = 0; i < parsedResponse.pitImageListLength(); i++) {
+      pitImageList.push(parsedResponse.pitImageList(i));
+    }
+    return pitImageList;
   }
 }

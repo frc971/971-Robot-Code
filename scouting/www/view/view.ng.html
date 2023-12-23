@@ -34,6 +34,16 @@
       <a
         class="dropdown-item"
         href="#"
+        (click)="switchDataSource('PitImages')"
+        id="pit_images_source_dropdown"
+      >
+        PitImages
+      </a>
+    </li>
+    <li>
+      <a
+        class="dropdown-item"
+        href="#"
         (click)="switchDataSource('DriverRanking')"
         id="driver_ranking_source_dropdown"
       >
@@ -118,6 +128,42 @@
             >
               <i class="bi bi-trash"></i>
             </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- Pit Images Data Display. -->
+  <div *ngSwitchCase="'PitImages'">
+    <table class="table collapse-border">
+      <thead>
+        <tr>
+          <th scope="col" class="d-flex flex-row">
+            <div class="align-self-center">Team</div>
+            <div class="align-self-center" *ngIf="ascendingSort">
+              <i (click)="sortData()" class="bi bi-caret-up"></i>
+            </div>
+            <div class="align-self-center" *ngIf="!ascendingSort">
+              <i (click)="sortData()" class="bi bi-caret-down"></i>
+            </div>
+          </th>
+          <th scope="col" style="max-width: 200px; max-height: 200px">
+            Image(s)
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let pitImageArr of pitImageList">
+          <th scope="row" class="align-text">
+            {{pitImageArr[0].teamNumber()}}
+          </th>
+          <td style="display: flex">
+            <div *ngFor="let pitImage of pitImageArr" class="align-images">
+              <img
+                src="/sha256/{{ pitImage.checkSum() }}/{{ pitImage.imagePath() }}"
+                style="max-width: 50px; max-height: 50px; padding: 0; margin: 0"
+              />
+            </div>
           </td>
         </tr>
       </tbody>

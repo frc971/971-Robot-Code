@@ -5,6 +5,7 @@
   <div *ngSwitchCase="'Data'" id="pitImageSelection" class="container-fluid">
     <label for="teamNumber">Team Number</label>
     <input [(ngModel)]="teamNumber" type="text" id="teamNumber" />
+    <img id="preview" #preview style="max-height: 200px; max-width: 200px" />
     <form action="setPitImage()">
       <label for="pitImage">Select pit image:</label>
       <br />
@@ -12,6 +13,7 @@
         id="pitImage"
         [(ngModel)]="pitImage"
         type="file"
+        (change)="setPitImage($event)"
         accept="image/*"
       />
     </form>

@@ -23,6 +23,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images"
@@ -57,6 +59,8 @@ type SubmitPitImage = submit_pit_image.SubmitPitImage
 type SubmitPitImageResponseT = submit_pit_image_response.SubmitPitImageResponseT
 type RequestPitImages = request_pit_images.RequestPitImages
 type RequestPitImagesResponseT = request_pit_images_response.RequestPitImagesResponseT
+type RequestAllPitImages = request_all_pit_images.RequestAllPitImages
+type RequestAllPitImagesResponseT = request_all_pit_images_response.RequestAllPitImagesResponseT
 type RequestNotesForTeam = request_notes_for_team.RequestNotesForTeam
 type RequestNotesForTeamResponseT = request_notes_for_team_response.RequestNotesForTeamResponseT
 type RequestShiftSchedule = request_shift_schedule.RequestShiftSchedule
@@ -86,6 +90,7 @@ type Database interface {
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryNotes(string) ([]string, error)
 	QueryPitImages(string) ([]db.RequestedPitImage, error)
+	ReturnPitImages() ([]db.PitImage, error)
 	AddNotes(db.NotesData) error
 	AddPitImage(db.PitImage) error
 	AddDriverRanking(db.DriverRankingData) error
@@ -619,6 +624,42 @@ func (handler request2023DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 	w.Write(builder.FinishedBytes())
 }
 
+type requestAllPitImagesHandler struct {
+	db Database
+}
+
+func (handler requestAllPitImagesHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	_, success := parseRequest(w, requestBytes, "RequestAllPitImages", request_all_pit_images.GetRootAsRequestAllPitImages)
+	if !success {
+		return
+	}
+
+	images, err := handler.db.ReturnPitImages()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to get pit images: %v", err))
+		return
+	}
+
+	var response RequestAllPitImagesResponseT
+	for _, data := range images {
+		response.PitImageList = append(response.PitImageList, &request_all_pit_images_response.PitImageT{
+			TeamNumber: data.TeamNumber,
+			ImagePath:  data.ImagePath,
+			CheckSum:   data.CheckSum,
+		})
+	}
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 type requestPitImagesHandler struct {
 	db Database
 }
@@ -1009,6 +1050,7 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.Handle("/requests/submit/submit_notes", submitNoteScoutingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_pit_image", submitPitImageScoutingHandler{db})
 	scoutingServer.Handle("/requests/request/pit_images", requestPitImagesHandler{db})
+	scoutingServer.Handle("/requests/request/all_pit_images", requestAllPitImagesHandler{db})
 	scoutingServer.Handle("/requests/request/notes_for_team", requestNotesForTeamHandler{db})
 	scoutingServer.Handle("/requests/submit/shift_schedule", submitShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/request/shift_schedule", requestShiftScheduleHandler{db})
