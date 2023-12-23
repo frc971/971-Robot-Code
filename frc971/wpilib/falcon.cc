@@ -88,8 +88,23 @@ ctre::phoenix::StatusCode Falcon::WriteCurrent(double current,
       static_cast<units::current::ampere_t>(current));
   // Using 0_Hz here makes it a one-shot update.
   control.UpdateFreqHz = 0_Hz;
-  control.MaxAbsDutyCycle =
-      ::aos::Clip(max_voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0;
+  control.MaxAbsDutyCycle = SafeSpeed(max_voltage);
+  ctre::phoenix::StatusCode status = talon()->SetControl(control);
+  if (!status.IsOK()) {
+    AOS_LOG(ERROR, "Failed to write control to falcon %d: %s: %s", device_id(),
+            status.GetName(), status.GetDescription());
+  }
+
+  return status;
+}
+
+ctre::phoenix::StatusCode Falcon::WriteVoltage(double voltage) {
+  ctre::phoenix6::controls::DutyCycleOut control(SafeSpeed(voltage));
+
+  // Using 0_Hz here makes it a one-shot update.
+  control.UpdateFreqHz = 0_Hz;
+  control.EnableFOC = true;
+
   ctre::phoenix::StatusCode status = talon()->SetControl(control);
   if (!status.IsOK()) {
     AOS_LOG(ERROR, "Failed to write control to falcon %d: %s: %s", device_id(),

@@ -42,6 +42,8 @@ class Falcon {
   void WriteConfigs();
   ctre::phoenix::StatusCode WriteCurrent(double current, double max_voltage);
 
+  ctre::phoenix::StatusCode WriteVoltage(double voltage);
+
   ctre::phoenix6::hardware::TalonFX *talon() { return &talon_; }
 
   // The position of the Falcon output shaft is multiplied by gear_ratio
@@ -77,6 +79,10 @@ class Falcon {
 
   void set_supply_current_limit(double supply_current_limit) {
     supply_current_limit_ = supply_current_limit;
+  }
+
+  static double SafeSpeed(double voltage) {
+    return (::aos::Clip(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
   }
 
  private:
