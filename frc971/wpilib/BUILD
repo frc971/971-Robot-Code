@@ -518,6 +518,23 @@ cc_library(
 )
 
 cc_library(
+    name = "can_drivetrain_writer",
+    srcs = [
+        "can_drivetrain_writer.cc",
+    ],
+    hdrs = [
+        "can_drivetrain_writer.h",
+    ],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
+    deps = [
+        ":falcon",
+        ":loop_output_handler",
+        "//frc971:can_configuration_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
+    ],
+)
+
+cc_library(
     name = "can_sensor_reader",
     srcs = ["can_sensor_reader.cc"],
     hdrs = ["can_sensor_reader.h"],
