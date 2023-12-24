@@ -1,0 +1,16 @@
+[Install]
+WantedBy=multi-user.target
+
+[Unit]
+Description=Service to pin the device to max clock rate
+
+[Service]
+Type=oneshot
+
+# Turn the GPU on
+ExecStart=bash -c 'echo 1 > /dev/nvgpu/igpu0/power'
+# Set all the clocks to max frequency
+ExecStart=/usr/bin/jetson_clocks
+
+TimeoutSec=0
+RemainAfterExit=yes

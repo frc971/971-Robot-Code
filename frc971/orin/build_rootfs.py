@@ -988,7 +988,8 @@ def main():
             "gstreamer1.0-nice", "usbutils", "locales", "trace-cmd", "clinfo",
             "jq", "strace", "sysstat", "lm-sensors", "can-utils", "xfsprogs",
             "gstreamer1.0-tools", "bridge-utils", "net-tools", "apt-file",
-            "parted", "xxd", "libv4l-dev", "file", "pkexec", "libxkbfile1"
+            "parted", "xxd", "libv4l-dev", "file", "pkexec", "libxkbfile1",
+            "gdb"
         ])
         target(["apt-get", "clean"])
 
@@ -1043,6 +1044,7 @@ def main():
             'cuda-nvcc-headers-11-8',
             'nsight-systems-cli',
             'nsight-systems-cli-qdstrmimporter',
+            'tegra-tools-jetson-clocks',
         ]
         yocto_packages = list_yocto_packages()
         packages = list_packages()
@@ -1098,6 +1100,8 @@ def main():
         copyfile("pi:pi", "600", "home/pi/.ssh/authorized_keys")
         target_mkdir("root:root", "700", "root/bin")
         copyfile("root:root", "644", "etc/systemd/system/grow-rootfs.service")
+        copyfile("root:root", "644",
+                 "etc/systemd/system/jetson-clocks.service")
         copyfile("root:root", "500", "root/bin/change_hostname.sh")
         copyfile("root:root", "700", "root/trace.sh")
         copyfile("root:root", "440", "etc/sudoers")
@@ -1114,6 +1118,7 @@ def main():
 
         target(["systemctl", "enable", "systemd-networkd"])
         target(["systemctl", "enable", "grow-rootfs"])
+        target(["systemctl", "enable", "jetson-clocks"])
 
         target(["apt-file", "update"])
 
