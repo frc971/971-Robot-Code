@@ -535,6 +535,22 @@ cc_library(
 )
 
 cc_library(
+    name = "generic_can_writer",
+    srcs = [
+        "generic_can_writer.cc",
+    ],
+    hdrs = [
+        "generic_can_writer.h",
+    ],
+    target_compatible_with = ["//tools/platforms/hardware:roborio"],
+    deps = [
+        ":falcon",
+        ":loop_output_handler",
+        "//frc971:can_configuration_fbs",
+    ],
+)
+
+cc_library(
     name = "can_sensor_reader",
     srcs = ["can_sensor_reader.cc"],
     hdrs = ["can_sensor_reader.h"],
