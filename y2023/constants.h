@@ -54,8 +54,7 @@ struct Values {
 
   static double DrivetrainCANEncoderToMeters(double rotations) {
     return (rotations * (2.0 * M_PI)) *
-           control_loops::drivetrain::kHighOutputRatio *
-           control_loops::drivetrain::kWheelRadius;
+           control_loops::drivetrain::kHighOutputRatio;
   }
   static constexpr double kProximalEncoderCountsPerRevolution() {
     return 4096.0;
