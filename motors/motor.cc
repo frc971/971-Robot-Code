@@ -40,8 +40,10 @@ static_assert(BUS_CLOCK_FREQUENCY / SWITCHING_FREQUENCY < UINT16_MAX,
               "Need to prescale");
 
 void Motor::Init() {
-  pwm_ftm_->CNTIN = encoder_ftm_->CNTIN = 0;
-  pwm_ftm_->CNT = encoder_ftm_->CNT = 0;
+  pwm_ftm_->CNTIN = 0;
+  encoder_ftm_->CNTIN = 0;
+  pwm_ftm_->CNT = 0;
+  encoder_ftm_->CNT = 0;
 
   pwm_ftm_->MOD = counts_per_cycle() - 1;
   encoder_ftm_->MOD = controls_->mechanical_counts_per_revolution() - 1;

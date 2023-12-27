@@ -4,6 +4,7 @@ filegroup(
     name = "gcc",
     srcs = [
         "bin/arm-none-eabi-gcc",
+        ":compiler_pieces",
     ],
 )
 
@@ -61,6 +62,7 @@ filegroup(
     srcs = glob([
         "arm-none-eabi/**",
         "lib/gcc/arm-none-eabi/**",
+        "libexec/gcc/arm-none-eabi/**",
         "include/**",
     ]),
 )

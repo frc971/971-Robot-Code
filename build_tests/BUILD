@@ -213,6 +213,7 @@ py_test(
     srcs = [
         "upstream_python_test.py",
     ],
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "@pip//matplotlib",
         "@pip//numpy",

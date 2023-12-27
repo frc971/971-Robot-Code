@@ -147,17 +147,16 @@ void AdcDmaSampler::Initialize() {
   DMAMUX0.CHCFG[reconfigure_dma_channel(0)] = 0;
   DMAMUX0.CHCFG[reconfigure_dma_channel(1)] = 0;
 
-  static constexpr ssize_t kResultABOffset =
-      static_cast<ssize_t>(offsetof(KINETIS_ADC_t, RB)) -
-      static_cast<ssize_t>(offsetof(KINETIS_ADC_t, RA));
+  static constexpr long kResultABOffset =
+      static_cast<long>(offsetof(KINETIS_ADC_t, RB)) -
+      static_cast<long>(offsetof(KINETIS_ADC_t, RA));
   static_assert(kResultABOffset > 0, "Offset is backwards");
-  static constexpr ssize_t kResultOffsetBits =
-      ConstexprLog2(kResultABOffset * 2);
-  static constexpr ssize_t kSC1ABOffset =
-      static_cast<ssize_t>(offsetof(KINETIS_ADC_t, SC1B)) -
-      static_cast<ssize_t>(offsetof(KINETIS_ADC_t, SC1A));
+  static constexpr long kResultOffsetBits = ConstexprLog2(kResultABOffset * 2);
+  static constexpr long kSC1ABOffset =
+      static_cast<long>(offsetof(KINETIS_ADC_t, SC1B)) -
+      static_cast<long>(offsetof(KINETIS_ADC_t, SC1A));
   static_assert(kSC1ABOffset > 0, "Offset is backwards");
-  static constexpr ssize_t kSC1OffsetBits = ConstexprLog2(kSC1ABOffset * 2);
+  static constexpr long kSC1OffsetBits = ConstexprLog2(kSC1ABOffset * 2);
   for (int adc = 0; adc < 2; ++adc) {
     // Make sure we can actually write to all the fields in the DMA channels.
     DMA.CDNE = result_dma_channel(adc);
@@ -204,16 +203,16 @@ void AdcDmaSampler::Initialize() {
       if (next_result_channel != -1) {
         link = M_TCD_ELINK | V_TCD_LINKCH(next_result_channel);
       }
-      result_dma(adc)->CITER = result_dma(adc)->BITER =
-          link | 4 /* 4 minor iterations */;
+      result_dma(adc)->CITER = link | 4 /* 4 minor iterations */;
+      result_dma(adc)->BITER = link | 4 /* 4 minor iterations */;
     }
     {
       uint16_t link = 0;
       if (next_reconfigure_channel != -1) {
         link = M_TCD_ELINK | V_TCD_LINKCH(next_reconfigure_channel);
       }
-      reconfigure_dma(adc)->CITER = reconfigure_dma(adc)->BITER =
-          link | 4 /* 4 minor iterations */;
+      reconfigure_dma(adc)->CITER = link | 4 /* 4 minor iterations */;
+      reconfigure_dma(adc)->BITER = link | 4 /* 4 minor iterations */;
     }
     result_dma(adc)->DLASTSGA = -(kNumberAdcSamples * sizeof(uint16_t));
     reconfigure_dma(adc)->DLASTSGA = 0;

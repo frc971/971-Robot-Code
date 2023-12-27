@@ -792,7 +792,8 @@ bool ZeroMotors(uint16_t *motor0_offset, uint16_t *motor1_offset,
   uint32_t motor0_sum = 0, motor1_sum = 0, wheel_sum = 0;
 
   // First clear both encoders.
-  MOTOR0_ENCODER_FTM->CNT = MOTOR1_ENCODER_FTM->CNT = 0;
+  MOTOR0_ENCODER_FTM->CNT = 0;
+  MOTOR1_ENCODER_FTM->CNT = 0;
   for (int i = 0; i < kNumberSamples; ++i) {
     delay(1);
 
@@ -847,7 +848,10 @@ extern "C" int main() {
   PORTA_PCR13 = PORT_PCR_DSE | PORT_PCR_MUX(2);
 
   // .1ms filter time.
-  PORTA_DFWR = PORTC_DFWR = PORTD_DFWR = PORTE_DFWR = 6000;
+  PORTA_DFWR = 6000;
+  PORTC_DFWR = 6000;
+  PORTD_DFWR = 6000;
+  PORTE_DFWR = 6000;
 
   // BTN0
   PORTC_PCR7 = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(1);
@@ -946,8 +950,8 @@ extern "C" int main() {
   PIT_TCTRL3 = PIT_TCTRL_TIE | PIT_TCTRL_TEN;
 
   // Have them both wait for the GTB signal.
-  FTM0->CONF = FTM3->CONF =
-      FTM_CONF_GTBEEN | FTM_CONF_NUMTOF(kSwitchingDivisor - 1);
+  FTM0->CONF = FTM_CONF_GTBEEN | FTM_CONF_NUMTOF(kSwitchingDivisor - 1);
+  FTM3->CONF = FTM_CONF_GTBEEN | FTM_CONF_NUMTOF(kSwitchingDivisor - 1);
   // Make FTM3's period half of what it should be so we can get it a half-cycle
   // out of phase.
   const uint32_t original_mod = FTM3->MOD;
