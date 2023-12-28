@@ -143,6 +143,10 @@
         "sha256": "47cc05d99aaa09c9e72ed5809b60e7ba354e64b59c9c173ac3018642d8bb41fc",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/urllib3-1.26.13-py2.py3-none-any.whl"
     },
+    "validators==0.22.0": {
+        "sha256": "61cf7d4a62bbae559f2e54aed3b000cea9ff3e2fdbe463f51179b92c58c9585a",
+        "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/validators-0.22.0-py3-none-any.whl"
+    },
     "watchdog==2.1.9": {
         "sha256": "4f4e1c4aa54fb86316a62a87b3378c025e228178d55481d30d857c6c438897d6",
         "url": "https://software.frc971.org/Build-Dependencies/wheelhouse/watchdog-2.1.9-py3-none-manylinux2014_x86_64.whl"
