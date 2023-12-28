@@ -126,6 +126,11 @@ MessageBridgeServerStatus::MessageBridgeServerStatus(
         configuration::GetChannel(event_loop_->configuration(), "/aos",
                                   Timestamp::GetFullyQualifiedName(),
                                   event_loop_->name(), destination_node);
+    CHECK(other_timestamp_channel)
+        << "Failed to find other timestamp channel \"/aos\" type "
+        << Timestamp::GetFullyQualifiedName() << " for destination node "
+        << destination_node->name()->string_view() << " from node "
+        << event_loop_->node()->name()->string_view();
 
     ServerConnection *const server_connection =
         FindServerConnection(destination_node->name()->string_view());
