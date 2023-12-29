@@ -1,0 +1,280 @@
+#ifndef FRC971_ORIN_APRILTAG_H_
+#define FRC971_ORIN_APRILTAG_H_
+
+#include <cub/iterator/transform_input_iterator.cuh>
+
+#include "third_party/apriltag/apriltag.h"
+
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#include "frc971/orin/cuda.h"
+#include "frc971/orin/gpu_image.h"
+#include "frc971/orin/points.h"
+
+namespace frc971 {
+namespace apriltag {
+
+// Class to hold the extents of a blob of points.
+struct MinMaxExtents {
+  // Min and max coordinates (in non-decimated coordinates)
+  uint16_t min_x;
+  uint16_t min_y;
+  uint16_t max_x;
+  uint16_t max_y;
+
+  // The starting offset of this blob of points in the vector holding all the
+  // points.
+  uint32_t starting_offset;
+
+  // The number of points in the blob.
+  uint32_t count;
+
+  // Center location of the blob using the aprilrobotics algorithm.
+  __host__ __device__ float cx() const {
+    return (min_x + max_x) * 0.5f + 0.05118;
+  }
+  __host__ __device__ float cy() const {
+    return (min_y + max_y) * 0.5f + -0.028581;
+  }
+};
+
+static_assert(sizeof(MinMaxExtents) == 16, "MinMaxExtents didn't pack right.");
+
+// Class to find the blob index of a point in a point vector.
+class BlobExtentsIndexFinder {
+ public:
+  BlobExtentsIndexFinder(const MinMaxExtents *extents_device,
+                         size_t num_extents)
+      : extents_device_(extents_device), num_extents_(num_extents) {}
+
+  __host__ __device__ size_t FindBlobIndex(size_t point_index) const {
+    // Do a binary search for the blob which has the point in it's
+    // starting_offset range.
+    size_t min = 0;
+    size_t max = num_extents_;
+    while (true) {
+      if (min + 1 == max) {
+        return min;
+      }
+
+      size_t average = min + (max - min) / 2;
+
+      if (average < num_extents_ && extents_device_[average].starting_offset <=
+                                        static_cast<size_t>(point_index)) {
+        min = average;
+      } else {
+        max = average;
+      }
+    }
+  }
+
+  // Returns the extents for a blob index.
+  __host__ __device__ MinMaxExtents Get(size_t index) const {
+    return extents_device_[index];
+  }
+
+ private:
+  const MinMaxExtents *extents_device_;
+  size_t num_extents_;
+
+  // TODO(austin): Cache the last one?
+};
+
+// GPU based april tag detector.
+class GpuDetector {
+ public:
+  // The number of blobs we will consider when counting april tags.
+  static constexpr size_t kMaxBlobs = IndexPoint::kMaxBlobs;
+
+  // Constructs a detector, reserving space for detecting tags of the provided
+  // with and height, using the provided detector options.
+  GpuDetector(size_t width, size_t height,
+              const apriltag_detector_t *tag_detector);
+
+  virtual ~GpuDetector();
+
+  // Detects april tags in the provided image.
+  void Detect(const uint8_t *image);
+
+  // Debug methods to expose internal state for testing.
+  void CopyGrayTo(uint8_t *output) { gray_image_device_.MemcpyTo(output); }
+  void CopyDecimatedTo(uint8_t *output) {
+    decimated_image_device_.MemcpyTo(output);
+  }
+  void CopyThresholdedTo(uint8_t *output) {
+    thresholded_image_device_.MemcpyTo(output);
+  }
+  void CopyUnionMarkersTo(uint32_t *output) {
+    union_markers_device_.MemcpyTo(output);
+  }
+
+  void CopyUnionMarkerPairTo(QuadBoundaryPoint *output) {
+    union_marker_pair_device_.MemcpyTo(output);
+  }
+
+  void CopyCompressedUnionMarkerPairTo(QuadBoundaryPoint *output) {
+    compressed_union_marker_pair_device_.MemcpyTo(output);
+  }
+
+  std::vector<QuadBoundaryPoint> CopySortedUnionMarkerPair() {
+    std::vector<QuadBoundaryPoint> result;
+    int size = NumCompressedUnionMarkerPairs();
+    result.resize(size);
+    sorted_union_marker_pair_device_.MemcpyTo(result.data(), size);
+    return result;
+  }
+
+  int NumCompressedUnionMarkerPairs() {
+    return num_compressed_union_marker_pair_device_.Copy()[0];
+  }
+
+  void CopyUnionMarkersSizeTo(uint32_t *output) {
+    union_markers_size_device_.MemcpyTo(output);
+  }
+
+  int NumQuads() const { return num_quads_device_.Copy()[0]; }
+
+  std::vector<MinMaxExtents> CopyExtents() {
+    return extents_device_.Copy(NumQuads());
+  }
+
+  std::vector<float> CopyReducedDotBlobs() {
+    return reduced_dot_blobs_pair_device_.Copy(NumQuads());
+  }
+
+  std::vector<cub::KeyValuePair<long, MinMaxExtents>> CopySelectedExtents() {
+    return selected_extents_device_.Copy(NumQuads());
+  }
+
+  int NumSelectedPairs() const { return num_selected_blobs_device_.Copy()[0]; }
+
+  std::vector<IndexPoint> CopySelectedBlobs() {
+    return selected_blobs_device_.Copy(NumSelectedPairs());
+  }
+
+  std::vector<IndexPoint> CopySortedSelectedBlobs() {
+    return sorted_selected_blobs_device_.Copy(NumSelectedPairs());
+  }
+
+ private:
+  // Creates a GPU image wrapped around the provided memory.
+  template <typename T>
+  GpuImage<T> ToGpuImage(GpuMemory<T> &memory) {
+    if (memory.size() == width_ * height_) {
+      return GpuImage<T>{
+          .data = memory.get(),
+          .rows = height_,
+          .cols = width_,
+          .step = width_,
+      };
+    } else if (memory.size() == width_ * height_ / 4) {
+      return GpuImage<T>{
+          .data = memory.get(),
+          .rows = height_ / 2,
+          .cols = width_ / 2,
+          .step = width_ / 2,
+      };
+    } else {
+      LOG(FATAL) << "Unknown image shape";
+    }
+  }
+
+  // Size of the image.
+  const size_t width_;
+  const size_t height_;
+
+  // Detector parameters.
+  const apriltag_detector_t *tag_detector_;
+
+  // Stream to operate on.
+  CudaStream stream_;
+
+  // Events for each of the steps for timing.
+  CudaEvent start_;
+  CudaEvent after_image_memcpy_to_device_;
+  CudaEvent after_threshold_;
+  CudaEvent after_memset_;
+  CudaEvent after_unionfinding_;
+  CudaEvent after_diff_;
+  CudaEvent after_compact_;
+  CudaEvent after_sort_;
+  CudaEvent after_bounds_;
+  CudaEvent after_dot_;
+  CudaEvent after_transform_extents_;
+  CudaEvent after_filter_;
+  CudaEvent after_filtered_sort_;
+
+  // TODO(austin): Remove this...
+  HostMemory<uint8_t> color_image_host_;
+
+  // Starting color image.
+  GpuMemory<uint8_t> color_image_device_;
+  // Full size gray scale image.
+  GpuMemory<uint8_t> gray_image_device_;
+  // Half resolution, gray, decimated image.
+  GpuMemory<uint8_t> decimated_image_device_;
+  // Intermediates for thresholding.
+  GpuMemory<uint8_t> unfiltered_minmax_image_device_;
+  GpuMemory<uint8_t> minmax_image_device_;
+  GpuMemory<uint8_t> thresholded_image_device_;
+
+  // The union markers for each pixel.
+  GpuMemory<uint32_t> union_markers_device_;
+  // The size of each blob.  The blob size is stored at the index of the stored
+  // union marker id in union_markers_device_ aboe.
+  GpuMemory<uint32_t> union_markers_size_device_;
+
+  // Full list of boundary points, densly stored but mostly zero.
+  GpuMemory<QuadBoundaryPoint> union_marker_pair_device_;
+  // Unsorted list of points with 0's removed.
+  GpuMemory<QuadBoundaryPoint> compressed_union_marker_pair_device_;
+  // Blob representation sorted list of points.
+  GpuMemory<QuadBoundaryPoint> sorted_union_marker_pair_device_;
+  // Number of compressed points.
+  GpuMemory<int> num_compressed_union_marker_pair_device_{
+      /* allocate 1 integer...*/ 1};
+
+  // Number of unique blob IDs.
+  GpuMemory<size_t> num_quads_device_{/* allocate 1 integer...*/ 1};
+  // Bounds per blob, one blob per ID.
+  GpuMemory<MinMaxExtents> extents_device_;
+  // Sum of the dot products between the vector from center to each point, with
+  // the gradient at each point.
+  GpuMemory<float> reduced_dot_blobs_pair_device_;
+  // Extents of all the blobs under consideration.
+  GpuMemory<cub::KeyValuePair<long, MinMaxExtents>> selected_extents_device_;
+
+  // Number of keys in selected_blobs_device_.
+  GpuMemory<int> num_selected_blobs_device_{/* allocate 1 integer...*/ 1};
+
+  // Compacted blobs which pass our threshold.
+  GpuMemory<IndexPoint> selected_blobs_device_;
+  // Sorted list of those points.
+  GpuMemory<IndexPoint> sorted_selected_blobs_device_;
+
+  // Temporary storage for each of the steps.
+  // TODO(austin): Can we combine these and just use the max?
+  GpuMemory<uint32_t> radix_sort_tmpstorage_device_;
+  GpuMemory<uint8_t> temp_storage_compressed_union_marker_pair_device_;
+  GpuMemory<uint8_t> temp_storage_bounds_reduce_by_key_device_;
+  GpuMemory<uint8_t> temp_storage_dot_product_device_;
+  GpuMemory<uint8_t> temp_storage_compressed_filtered_blobs_device_;
+  GpuMemory<uint8_t> temp_storage_selected_extents_scan_device_;
+
+  // Cumulative duration of april tag detection.
+  std::chrono::nanoseconds execution_duration_{0};
+  // Number of detections.
+  size_t execution_count_ = 0;
+  // True if this is the first detection.
+  bool first_ = true;
+
+  // Cached quantities used for tag filtering.
+  bool normal_border_ = false;
+  bool reversed_border_ = false;
+  int min_tag_width_ = 1000000;
+};
+
+}  // namespace apriltag
+}  // namespace frc971
+
+#endif  // FRC971_ORIN_APRILTAG_H_
