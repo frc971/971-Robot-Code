@@ -533,7 +533,7 @@ class CudaAprilTagDetector {
     };
 
     // The theta algorithm used by cuda.
-    auto ComputeTheta = [&blob_centers](QuadBoundaryPoint pair) -> float {
+    auto ComputeTheta = [&blob_centers](QuadBoundaryPoint pair) -> long double {
       const int32_t x = pair.x();
       const int32_t y = pair.y();
 
@@ -546,7 +546,8 @@ class CudaAprilTagDetector {
       float dx = x - cx;
       float dy = y - cy;
 
-      return atan2f(dy, dx);
+      // make atan2 more accurate than cuda to correctly sort
+      return atan2f64(dy, dx);
     };
 
     for (size_t i = 0; i < points.size();) {
@@ -1083,7 +1084,7 @@ class CudaAprilTagDetector {
           slope_sorted_expected_grouped_points[i];
 
       CHECK_EQ(cuda_grouped_blob.size(), slope_sorted_points.size());
-      if (VLOG_IS_ON(1) && cuda_grouped_blob[0].blob_index() == 73) {
+      if (VLOG_IS_ON(1) && cuda_grouped_blob[0].blob_index() == 160) {
         for (size_t j = 0; j < cuda_grouped_points[i].size(); ++j) {
           LOG(INFO) << "For blob " << cuda_grouped_blob[0].blob_index()
                     << ", got " << cuda_grouped_blob[j] << " ("
@@ -1094,20 +1095,86 @@ class CudaAprilTagDetector {
                     << slope_sorted_points[j].y() << ")";
         }
       }
+
       size_t missmatched_runs = 0;
+
+      // recalculates the theta to be used in the following check
+      std::map<uint64_t, std::pair<float, float>> blob_centers;
+      auto ComputeTheta =
+          [&blob_centers](QuadBoundaryPoint pair) -> long double {
+        const int32_t x = pair.x();
+        const int32_t y = pair.y();
+
+        auto blob_center = blob_centers.find(pair.rep01());
+        CHECK(blob_center != blob_centers.end());
+
+        const float cx = blob_center->second.first;
+        const float cy = blob_center->second.second;
+
+        float dx = x - cx;
+        float dy = y - cy;
+
+        return atan2f64(dy, dx);
+      };
+
+      // refinds blob centers
+      for (size_t i = 0; i < slope_sorted_points.size();) {
+        uint64_t first_rep01 = slope_sorted_points[i].rep01();
+
+        int min_x, min_y, max_x, max_y;
+        min_x = max_x = slope_sorted_points[i].x();
+        min_y = max_y = slope_sorted_points[i].y();
+
+        size_t j = i;
+        for (; j < slope_sorted_points.size() &&
+               slope_sorted_points[j].rep01() == first_rep01;
+             ++j) {
+          QuadBoundaryPoint pt = slope_sorted_points[j];
+
+          int x = pt.x();
+          int y = pt.y();
+          min_x = std::min(min_x, x);
+          max_x = std::max(max_x, x);
+          min_y = std::min(min_y, y);
+          max_y = std::max(max_y, y);
+        }
+
+        const float cx = (max_x + min_x) * 0.5 + 0.05118;
+        const float cy = (max_y + min_y) * 0.5 + -0.028581;
+
+        blob_centers[first_rep01] = std::make_pair(cx, cy);
+        i = j;
+      }
+
       for (size_t j = 0; j < cuda_grouped_points[i].size(); ++j) {
         if (cuda_grouped_blob[j].x() != slope_sorted_points[j].x() ||
             cuda_grouped_blob[j].y() != slope_sorted_points[j].y()) {
+          size_t allowable_swapped_indices = 1;
+          long double max_allowed_imprecision = 3e-7;
+          // search through indixes j - a to j + a to see if they're swapped
+          // also only doesn't count if the precision needed to differentiate is
+          // less than max_allowed_imprecision
+          for (size_t k = j - allowable_swapped_indices;
+               k <= j + allowable_swapped_indices; k++) {
+            if (cuda_grouped_blob[j].x() == slope_sorted_points[k].x() &&
+                cuda_grouped_blob[j].y() == slope_sorted_points[k].y() &&
+                abs(ComputeTheta(slope_sorted_points[k]) -
+                    ComputeTheta(slope_sorted_points[j])) <
+                    max_allowed_imprecision) {
+              continue;
+            }
+          }
           ++missmatched_points;
           ++missmatched_runs;
           // We shouldn't see a lot of points in a row which don't match.
-          CHECK_LE(missmatched_runs, 4u);
           VLOG(1) << "Missmatched point in blob "
                   << cuda_grouped_blob[0].blob_index() << ", point " << j
                   << " (" << cuda_grouped_blob[j].x() << ", "
                   << cuda_grouped_blob[j].y() << ") vs ("
                   << slope_sorted_points[j].x() << ", "
-                  << slope_sorted_points[j].y() << ")";
+                  << slope_sorted_points[j].y() << ")"
+                  << " in size " << cuda_grouped_points[i].size();
+          CHECK_LE(missmatched_runs, 4u);
         } else {
           missmatched_runs = 0;
         }
@@ -1456,108 +1523,15 @@ TEST_P(SingleAprilDetectionTest, Image) {
 INSTANTIATE_TEST_SUITE_P(
     CapturedImages, SingleAprilDetectionTest,
     ::testing::Values("bfbs-capture-2013-01-18_08-54-16.869057537.bfbs",
-                      "bfbs-capture-2013-01-18_08-54-09.501047728.bfbs"
-                      // TODO(austin): Figure out why these fail...
-                      //"bfbs-capture-2013-01-18_08-51-24.861065764.bfbs",
-                      //"bfbs-capture-2013-01-18_08-52-01.846912552.bfbs",
-                      //"bfbs-capture-2013-01-18_08-52-33.462848049.bfbs",
-                      //"bfbs-capture-2013-01-18_08-54-24.931661979.bfbs",
-                      //"bfbs-capture-2013-01-18_09-29-16.806073486.bfbs",
-                      //"bfbs-capture-2013-01-18_09-33-00.993756514.bfbs",
-                      //"bfbs-capture-2013-01-18_08-57-00.171120695.bfbs"
-                      //"bfbs-capture-2013-01-18_08-57-17.858752817.bfbs",
-                      //"bfbs-capture-2013-01-18_08-57-08.096597542.bfbs"
-                      ));
-
-// Tests that QuadBoundaryPoint doesn't corrupt data.
-TEST(QuadBoundaryPoint, MasksWork) {
-  std::mt19937 generator(aos::testing::RandomSeed());
-  std::uniform_int_distribution<uint32_t> random_rep_scalar(0, 0xfffff);
-  std::uniform_int_distribution<uint32_t> random_point_scalar(0, 0x3ff);
-  std::uniform_int_distribution<uint32_t> random_dxy_scalar(0, 3);
-  std::uniform_int_distribution<uint32_t> random_bool(0, 1);
-
-  QuadBoundaryPoint point;
-
-  EXPECT_EQ(point.key, 0);
-
-  for (int i = 0; i < 25; ++i) {
-    const uint32_t rep0 = random_rep_scalar(generator);
-    for (int j = 0; j < 25; ++j) {
-      const uint32_t rep1 = random_rep_scalar(generator);
-      for (int k = 0; k < 25; ++k) {
-        const uint32_t x = random_point_scalar(generator);
-        const uint32_t y = random_point_scalar(generator);
-        for (int k = 0; k < 25; ++k) {
-          const uint32_t dxy = random_dxy_scalar(generator);
-          for (int m = 0; m < 2; ++m) {
-            const bool black_to_white = random_bool(generator) == 1;
-            if (point.rep0() != rep0) {
-              point.set_rep0(rep0);
-            }
-            if (point.rep1() != rep1) {
-              point.set_rep1(rep1);
-            }
-            if (point.base_x() != x || point.base_y() != y) {
-              point.set_base_xy(x, y);
-            }
-            switch (dxy) {
-              case 0:
-                if (point.dx() != 1 || point.dy() != 0) {
-                  point.set_dxy(dxy);
-                }
-                break;
-              case 1:
-                if (point.dx() != 1 || point.dy() != 1) {
-                  point.set_dxy(dxy);
-                }
-                break;
-              case 2:
-                if (point.dx() != 0 || point.dy() != 1) {
-                  point.set_dxy(dxy);
-                }
-                break;
-              case 3:
-                if (point.dx() != -1 || point.dy() != 1) {
-                  point.set_dxy(dxy);
-                }
-                break;
-            }
-            if (black_to_white != point.black_to_white()) {
-              point.set_black_to_white(black_to_white);
-            }
-
-            ASSERT_EQ(point.rep0(), rep0);
-            ASSERT_EQ(point.rep1(), rep1);
-            ASSERT_EQ(point.base_x(), x);
-            ASSERT_EQ(point.base_y(), y);
-            switch (dxy) {
-              case 0:
-                ASSERT_EQ(point.dx(), 1);
-                ASSERT_EQ(point.dy(), 0);
-                break;
-              case 1:
-                ASSERT_EQ(point.dx(), 1);
-                ASSERT_EQ(point.dy(), 1);
-                break;
-              case 2:
-                ASSERT_EQ(point.dx(), 0);
-                ASSERT_EQ(point.dy(), 1);
-                break;
-              case 3:
-                ASSERT_EQ(point.dx(), -1);
-                ASSERT_EQ(point.dy(), 1);
-                break;
-            }
-            ASSERT_EQ(point.x(), x * 2 + point.dx());
-            ASSERT_EQ(point.y(), y * 2 + point.dy());
-
-            ASSERT_EQ(point.black_to_white(), black_to_white);
-          }
-        }
-      }
-    }
-  }
-}
+                      "bfbs-capture-2013-01-18_08-54-09.501047728.bfbs",
+                      "bfbs-capture-2013-01-18_08-51-24.861065764.bfbs",
+                      "bfbs-capture-2013-01-18_08-52-01.846912552.bfbs",
+                      "bfbs-capture-2013-01-18_08-52-33.462848049.bfbs",
+                      "bfbs-capture-2013-01-18_08-54-24.931661979.bfbs",
+                      "bfbs-capture-2013-01-18_09-29-16.806073486.bfbs",
+                      "bfbs-capture-2013-01-18_09-33-00.993756514.bfbs",
+                      "bfbs-capture-2013-01-18_08-57-00.171120695.bfbs",
+                      "bfbs-capture-2013-01-18_08-57-17.858752817.bfbs",
+                      "bfbs-capture-2013-01-18_08-57-08.096597542.bfbs"));
 
 }  // namespace frc971::apriltag::testing

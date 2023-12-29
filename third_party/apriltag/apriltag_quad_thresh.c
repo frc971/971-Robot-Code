@@ -1014,7 +1014,9 @@ static void do_unionfind_line2(unionfind_t *uf, image_u8_t *im, int h, int w, in
       int x = 0;
       if (v != 127) {
         DO_UNIONFIND2(0, -1);
-        DO_UNIONFIND2(1, -1);
+        if (v == 255) {
+            DO_UNIONFIND2(1, -1);
+        }
       }
     }
 

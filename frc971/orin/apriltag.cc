@@ -19,6 +19,7 @@
 #include "aos/time/time.h"
 #include "frc971/orin/labeling_allegretti_2019_BKE.h"
 #include "frc971/orin/threshold.h"
+#include "frc971/orin/transform_output_iterator.h"
 
 namespace frc971 {
 namespace apriltag {
@@ -315,20 +316,29 @@ class RewriteToIndexPoint {
   __host__ __device__ __forceinline__ IndexPoint
   operator()(cub::KeyValuePair<long, QuadBoundaryPoint> pt) const {
     size_t index = blob_finder_.FindBlobIndex(pt.key);
-    MinMaxExtents extents = blob_finder_.Get(index);
     IndexPoint result(index, pt.value.point_bits());
-
-    float theta =
-        (atan2f(pt.value.y() - extents.cy(), pt.value.x() - extents.cx()) +
-         M_PI) *
-        8e6;
-    long long int theta_int = llrintf(theta);
-
-    result.set_theta(std::max<long long int>(0, theta_int));
-
     return result;
   }
 
+  BlobExtentsIndexFinder blob_finder_;
+};
+
+// Calculates Theta for a given IndexPoint
+class AddThetaToIndexPoint {
+ public:
+  AddThetaToIndexPoint(MinMaxExtents *extents_device, size_t num_extents)
+      : blob_finder_(extents_device, num_extents) {}
+  __host__ __device__ __forceinline__ IndexPoint operator()(IndexPoint a) {
+    MinMaxExtents extents = blob_finder_.Get(a.blob_index());
+    float theta =
+        (atan2f(a.y() - extents.cy(), a.x() - extents.cx()) + M_PI) * 8e6;
+    long long int theta_int = llrintf(theta);
+
+    a.set_theta(std::max<long long int>(0, theta_int));
+    return a;
+  }
+
+ private:
   BlobExtentsIndexFinder blob_finder_;
 };
 
@@ -756,9 +766,15 @@ void GpuDetector::Detect(const uint8_t *image) {
     cub::ArgIndexInputIterator<QuadBoundaryPoint *> value_index_input_iterator(
         sorted_union_marker_pair_device_.get());
     RewriteToIndexPoint rewrite(extents_device_.get(), num_quads_host);
+
     cub::TransformInputIterator<IndexPoint, RewriteToIndexPoint,
                                 cub::ArgIndexInputIterator<QuadBoundaryPoint *>>
         input_iterator(value_index_input_iterator, rewrite);
+
+    AddThetaToIndexPoint add_theta(extents_device_.get(), num_quads_host);
+
+    TransformOutputIterator<IndexPoint, IndexPoint, AddThetaToIndexPoint>
+        output_iterator(selected_blobs_device_.get(), add_theta);
 
     SelectBlobs select_blobs(
         extents_device_.get(), reduced_dot_blobs_pair_device_.get(),
@@ -767,12 +783,12 @@ void GpuDetector::Detect(const uint8_t *image) {
 
     size_t temp_storage_bytes =
         temp_storage_compressed_filtered_blobs_device_.size();
+
     CHECK_CUDA(cub::DeviceSelect::If(
         temp_storage_compressed_filtered_blobs_device_.get(),
-        temp_storage_bytes, input_iterator, selected_blobs_device_.get(),
+        temp_storage_bytes, input_iterator, output_iterator,
         num_selected_blobs_device_.get(), num_compressed_union_marker_pair_host,
         select_blobs, stream_.get()));
-
     MaybeCheckAndSynchronize();
 
     num_selected_blobs_device_.MemcpyTo(&num_selected_blobs_host);

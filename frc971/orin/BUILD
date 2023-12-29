@@ -24,6 +24,7 @@ cc_library(
         "labeling_allegretti_2019_BKE.h",
         "points.h",
         "threshold.h",
+        "transform_output_iterator.h",
     ],
     copts = [
         "-Wno-pass-failed",
@@ -63,5 +64,33 @@ cc_test(
         "//third_party/apriltag",
         "//y2023/vision:ThresholdHalide",
         "//y2023/vision:ToGreyscaleAndDecimateHalide",
+    ],
+)
+
+cc_test(
+    name = "output_iterator_test",
+    srcs = [
+        "output_iterator_test.cc",
+    ],
+    features = ["cuda"],
+    deps = [
+        ":cuda",
+        "//aos/testing:googletest",
+        "//aos/testing:random_seed",
+        "//third_party:cudart",
+    ],
+)
+
+cc_test(
+    name = "points_test",
+    srcs = [
+        "points_test.cc",
+    ],
+    features = ["cuda"],
+    deps = [
+        ":cuda",
+        "//aos/testing:googletest",
+        "//aos/testing:random_seed",
+        "//third_party:cudart",
     ],
 )

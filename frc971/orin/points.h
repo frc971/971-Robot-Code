@@ -203,9 +203,17 @@ struct IndexPoint {
   }
 
   // See QuadBoundaryPoint for a description of the rest of these.
+  // Sets the 10 bit x and y.
+  __forceinline__ __host__ __device__ void set_base_xy(uint32_t x, uint32_t y) {
+    key = (key & 0xffffffffff00000full) |
+          (static_cast<uint64_t>(x & 0x3ff) << 14) |
+          (static_cast<uint64_t>(y & 0x3ff) << 4);
+  }
+
   __forceinline__ __host__ __device__ uint32_t base_x() const {
     return ((key >> 14) & 0x3ff);
   }
+
   __forceinline__ __host__ __device__ uint32_t base_y() const {
     return ((key >> 4) & 0x3ff);
   }
