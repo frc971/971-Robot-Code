@@ -40,6 +40,7 @@ def fast_gaussian(sigmas, sizes):
             "arm64": "aarch64",
             "cortex-m": "cortex-m",
             "cortex-m0plus": "cortex-m0plus",
+            "cortex-m4f-imu": "cortex-m4f-imu",
         }),
         outs = headers + objects + htmls,
         # The tool doesn't support everything right now.

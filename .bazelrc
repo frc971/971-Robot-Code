@@ -31,6 +31,8 @@ build:cortex-m4f --platforms=//tools/platforms:cortex_m4f
 build:cortex-m4f --platform_suffix=-cortex-m4f
 build:rp2040 --platforms=//tools/platforms:rp2040
 build:rp2040 --platform_suffix=-rp2040
+build:cortex-m4f-imu --platforms=//tools/platforms:cortex-m4f-imu
+build:cortex-m4f-imu --platform_suffix=-cortex-m4f-imu
 
 build:asan --copt -fsanitize=address
 build:asan --linkopt -fsanitize=address --linkopt -ldl

@@ -21,6 +21,11 @@ constraint_value(
 )
 
 constraint_value(
+    name = "cortex-m4f-imu",
+    constraint_setting = ":hardware",
+)
+
+constraint_value(
     name = "cortex_m0plus",
     constraint_setting = ":hardware",
 )

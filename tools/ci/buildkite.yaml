@@ -44,6 +44,11 @@ steps:
     agents:
       queue: "build-no-gpu"
 
+  - label: "imu"
+    commands:
+      - tools/ci/clean-disk.sh
+      - tools/bazel ${STARTUP} --output_base=../common_output_base build ${COMMON} --config=cortex-m4f-imu ${M4F_TARGETS}
+
   - label: "rp2040"
     commands:
       - tools/ci/clean-disk.sh
