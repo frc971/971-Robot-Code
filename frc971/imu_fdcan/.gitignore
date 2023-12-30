@@ -1,0 +1,14 @@
+.DS_Store
+.metadata/
+Dual_IMU/.mxproject
+Dual_IMU/.settings
+Dual_IMU/.vscode
+Dual_IMU/*.launch
+Dual_IMU/Debug/**/*.cyclo
+Dual_IMU/Debug/**/*.d
+Dual_IMU/Debug/**/*.o
+Dual_IMU/Debug/**/*.su
+Dual_IMU/Debug/Dual_IMU.elf
+Dual_IMU/Debug/Dual_IMU.list
+Dual_IMU/Debug/Dual_IMU.map
+
