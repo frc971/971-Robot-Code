@@ -101,7 +101,7 @@ class TestDebugCli(unittest.TestCase):
 
         # First submit some data to be added to the database.
         json_path = write_json_request({
-            "team": 100,
+            "team": "100",
             "notes": "A very inspiring and useful comment",
             "good_driving": True,
             "bad_driving": False,
@@ -124,7 +124,7 @@ class TestDebugCli(unittest.TestCase):
         self.assertIn(
             textwrap.dedent("""\
             {
-            Team: (int32) 100,
+            Team: (string) (len=3) "100",
             Notes: (string) (len=35) "A very inspiring and useful comment",
             GoodDriving: (bool) true,
             BadDriving: (bool) false,
@@ -140,10 +140,10 @@ class TestDebugCli(unittest.TestCase):
 
         # First submit some data to be added to the database.
         json_path = write_json_request({
-            "matchNumber": 100,
-            "rank1": 101,
-            "rank2": 202,
-            "rank3": 303,
+            "match_number": 100,
+            "rank1": "101",
+            "rank2": "202",
+            "rank3": "303",
         })
         exit_code, _, stderr = run_debug_cli(
             ["-submitDriverRanking", json_path])
@@ -160,9 +160,9 @@ class TestDebugCli(unittest.TestCase):
             textwrap.dedent("""\
             {
             MatchNumber: (int32) 100,
-            Rank1: (int32) 101,
-            Rank2: (int32) 202,
-            Rank3: (int32) 303
+            Rank1: (string) (len=3) "101",
+            Rank2: (string) (len=3) "202",
+            Rank3: (string) (len=3) "303"
             }"""), stdout)
 
     def test_request_all_matches(self):

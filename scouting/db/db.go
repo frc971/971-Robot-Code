@@ -82,7 +82,7 @@ type Action struct {
 
 type NotesData struct {
 	ID             uint `gorm:"primaryKey"`
-	TeamNumber     int32
+	TeamNumber     string
 	Notes          string
 	GoodDriving    bool
 	BadDriving     bool
@@ -94,7 +94,7 @@ type NotesData struct {
 }
 
 type Ranking struct {
-	TeamNumber         int `gorm:"primaryKey"`
+	TeamNumber         string `gorm:"primaryKey"`
 	Losses, Wins, Ties int32
 	Rank, Dq           int32
 }
@@ -108,9 +108,9 @@ type DriverRankingData struct {
 
 	ID          uint `gorm:"primaryKey"`
 	MatchNumber int32
-	Rank1       int32
-	Rank2       int32
-	Rank3       int32
+	Rank1       string
+	Rank2       string
+	Rank3       string
 }
 
 type ParsedDriverRankingData struct {
@@ -340,14 +340,14 @@ func (database *Database) QueryAllShifts(matchNumber_ int) ([]Shift, error) {
 	return shifts, result.Error
 }
 
-func (database *Database) QueryActions(teamNumber_ int) ([]Action, error) {
+func (database *Database) QueryActions(teamNumber_ string) ([]Action, error) {
 	var actions []Action
 	result := database.
 		Where("team_number = ?", teamNumber_).Find(&actions)
 	return actions, result.Error
 }
 
-func (database *Database) QueryNotes(TeamNumber int32) ([]string, error) {
+func (database *Database) QueryNotes(TeamNumber string) ([]string, error) {
 	var rawNotes []NotesData
 	result := database.Where("team_number = ?", TeamNumber).Find(&rawNotes)
 	if result.Error != nil {
@@ -361,7 +361,7 @@ func (database *Database) QueryNotes(TeamNumber int32) ([]string, error) {
 	return notes, nil
 }
 
-func (database *Database) QueryRankings(TeamNumber int) ([]Ranking, error) {
+func (database *Database) QueryRankings(TeamNumber string) ([]Ranking, error) {
 	var rankins []Ranking
 	result := database.Where("team_number = ?", TeamNumber).Find(&rankins)
 	return rankins, result.Error

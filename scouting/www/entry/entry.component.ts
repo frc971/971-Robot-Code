@@ -115,8 +115,7 @@ export class EntryComponent implements OnInit {
 
   section: Section = 'Team Selection';
   @Input() matchNumber: number = 1;
-  // TODO(phil): Change the type of teamNumber to a string.
-  @Input() teamNumber: number = 1;
+  @Input() teamNumber: string = '1';
   @Input() setNumber: number = 1;
   @Input() compLevel: CompLevel = 'qm';
   @Input() skipTeamSelection = false;
@@ -173,7 +172,7 @@ export class EntryComponent implements OnInit {
     if (this.teamNumber == null) {
       return false;
     }
-    const teamNumber = this.teamNumber.toString();
+    const teamNumber = this.teamNumber;
 
     for (const match of this.matchList) {
       if (
@@ -392,7 +391,7 @@ export class EntryComponent implements OnInit {
         actionOffsets.push(actionOffset);
       }
     }
-    const teamNumberFb = builder.createString(this.teamNumber.toString());
+    const teamNumberFb = builder.createString(this.teamNumber);
     const compLevelFb = builder.createString(this.compLevel);
 
     const actionsVector = SubmitActions.createActionsListVector(

@@ -449,7 +449,7 @@ func TestSubmitNotes(t *testing.T) {
 
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&submit_notes.SubmitNotesT{
-		Team:           971,
+		Team:           "971",
 		Notes:          "Notes",
 		GoodDriving:    true,
 		BadDriving:     false,
@@ -467,7 +467,7 @@ func TestSubmitNotes(t *testing.T) {
 
 	expected := []db.NotesData{
 		{
-			TeamNumber:     971,
+			TeamNumber:     "971",
 			Notes:          "Notes",
 			GoodDriving:    true,
 			BadDriving:     false,
@@ -487,7 +487,7 @@ func TestSubmitNotes(t *testing.T) {
 func TestRequestNotes(t *testing.T) {
 	database := MockDatabase{
 		notes: []db.NotesData{{
-			TeamNumber:     971,
+			TeamNumber:     "971A",
 			Notes:          "Notes",
 			GoodDriving:    true,
 			BadDriving:     false,
@@ -505,7 +505,7 @@ func TestRequestNotes(t *testing.T) {
 
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&request_notes_for_team.RequestNotesForTeamT{
-		Team: 971,
+		Team: "971A",
 	}).Pack(builder))
 	response, err := debug.RequestNotes("http://localhost:8080", builder.FinishedBytes())
 	if err != nil {
@@ -714,9 +714,9 @@ func TestSubmitDriverRanking(t *testing.T) {
 	builder := flatbuffers.NewBuilder(1024)
 	builder.Finish((&submit_driver_ranking.SubmitDriverRankingT{
 		MatchNumber: 36,
-		Rank1:       1234,
-		Rank2:       1235,
-		Rank3:       1236,
+		Rank1:       "1234",
+		Rank2:       "1235",
+		Rank3:       "1236",
 	}).Pack(builder))
 
 	_, err := debug.SubmitDriverRanking("http://localhost:8080", builder.FinishedBytes())
@@ -725,7 +725,7 @@ func TestSubmitDriverRanking(t *testing.T) {
 	}
 
 	expected := []db.DriverRankingData{
-		{MatchNumber: 36, Rank1: 1234, Rank2: 1235, Rank3: 1236},
+		{MatchNumber: 36, Rank1: "1234", Rank2: "1235", Rank3: "1236"},
 	}
 
 	if !reflect.DeepEqual(database.driver_ranking, expected) {
@@ -739,15 +739,15 @@ func TestRequestDriverRankings(t *testing.T) {
 		driver_ranking: []db.DriverRankingData{
 			{
 				MatchNumber: 36,
-				Rank1:       1234,
-				Rank2:       1235,
-				Rank3:       1236,
+				Rank1:       "1234",
+				Rank2:       "1235",
+				Rank3:       "1236",
 			},
 			{
 				MatchNumber: 36,
-				Rank1:       101,
-				Rank2:       202,
-				Rank3:       303,
+				Rank1:       "101",
+				Rank2:       "202",
+				Rank3:       "303",
 			},
 		},
 	}
@@ -768,15 +768,15 @@ func TestRequestDriverRankings(t *testing.T) {
 		DriverRankingList: []*request_all_driver_rankings_response.RankingT{
 			{
 				MatchNumber: 36,
-				Rank1:       1234,
-				Rank2:       1235,
-				Rank3:       1236,
+				Rank1:       "1234",
+				Rank2:       "1235",
+				Rank3:       "1236",
 			},
 			{
 				MatchNumber: 36,
-				Rank1:       101,
-				Rank2:       202,
-				Rank3:       303,
+				Rank1:       "101",
+				Rank2:       "202",
+				Rank3:       "303",
 			},
 		},
 	}
@@ -795,7 +795,7 @@ func TestRequestAllNotes(t *testing.T) {
 	db := MockDatabase{
 		notes: []db.NotesData{
 			{
-				TeamNumber:     971,
+				TeamNumber:     "971",
 				Notes:          "Notes",
 				GoodDriving:    true,
 				BadDriving:     false,
@@ -806,7 +806,7 @@ func TestRequestAllNotes(t *testing.T) {
 				EasilyDefended: false,
 			},
 			{
-				TeamNumber:     972,
+				TeamNumber:     "972",
 				Notes:          "More Notes",
 				GoodDriving:    false,
 				BadDriving:     false,
@@ -834,7 +834,7 @@ func TestRequestAllNotes(t *testing.T) {
 	expected := request_all_notes_response.RequestAllNotesResponseT{
 		NoteList: []*request_all_notes_response.NoteT{
 			{
-				Team:           971,
+				Team:           "971",
 				Notes:          "Notes",
 				GoodDriving:    true,
 				BadDriving:     false,
@@ -845,7 +845,7 @@ func TestRequestAllNotes(t *testing.T) {
 				EasilyDefended: false,
 			},
 			{
-				Team:           972,
+				Team:           "972",
 				Notes:          "More Notes",
 				GoodDriving:    false,
 				BadDriving:     false,
@@ -1137,7 +1137,7 @@ func (database *MockDatabase) ReturnStats2023ForTeam(teamNumber string, matchNum
 	return results, nil
 }
 
-func (database *MockDatabase) QueryNotes(requestedTeam int32) ([]string, error) {
+func (database *MockDatabase) QueryNotes(requestedTeam string) ([]string, error) {
 	var results []string
 	for _, data := range database.notes {
 		if data.TeamNumber == requestedTeam {

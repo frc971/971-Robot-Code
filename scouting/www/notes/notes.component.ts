@@ -48,7 +48,7 @@ interface Keywords {
 }
 
 interface Input {
-  teamNumber: number;
+  teamNumber: string;
   notesData: string;
   keywordsData: Keywords;
 }
@@ -79,7 +79,7 @@ export class Notes {
   section: Section = 'TeamSelection';
 
   errorMessage = '';
-  teamNumberSelection: number = 971;
+  teamNumberSelection: string = '971';
 
   // Data inputted by user is stored in this array.
   // Includes the team number, notes, and keyword selection.
@@ -145,10 +145,12 @@ export class Notes {
       const builder = new Builder();
       const dataFb = builder.createString(this.newData[i].notesData);
 
+      const teamNumber = builder.createString(this.newData[i].teamNumber);
+
       builder.finish(
         SubmitNotes.createSubmitNotes(
           builder,
-          this.newData[i].teamNumber,
+          teamNumber,
           dataFb,
           this.newData[i].keywordsData.goodDriving,
           this.newData[i].keywordsData.badDriving,

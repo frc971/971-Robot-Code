@@ -58,15 +58,15 @@ func TestGetRankings(t *testing.T) {
 	}
 
 	beginningThreeExpected := []db.Ranking{
-		{TeamNumber: 359, Losses: 1, Wins: 11, Ties: 0, Rank: 1, Dq: 0},
-		{TeamNumber: 5254, Losses: 1, Wins: 11, Ties: 0, Rank: 2, Dq: 0},
-		{TeamNumber: 3990, Losses: 1, Wins: 11, Ties: 0, Rank: 3, Dq: 0},
+		{TeamNumber: "359", Losses: 1, Wins: 11, Ties: 0, Rank: 1, Dq: 0},
+		{TeamNumber: "5254", Losses: 1, Wins: 11, Ties: 0, Rank: 2, Dq: 0},
+		{TeamNumber: "3990", Losses: 1, Wins: 11, Ties: 0, Rank: 3, Dq: 0},
 	}
 
 	endThreeExpected := []db.Ranking{
-		{TeamNumber: 5943, Losses: 10, Wins: 2, Ties: 0, Rank: 34, Dq: 0},
-		{TeamNumber: 4203, Losses: 10, Wins: 2, Ties: 0, Rank: 35, Dq: 0},
-		{TeamNumber: 5149, Losses: 10, Wins: 2, Ties: 0, Rank: 36, Dq: 0},
+		{TeamNumber: "5943", Losses: 10, Wins: 2, Ties: 0, Rank: 34, Dq: 0},
+		{TeamNumber: "4203", Losses: 10, Wins: 2, Ties: 0, Rank: 35, Dq: 0},
+		{TeamNumber: "5149", Losses: 10, Wins: 2, Ties: 0, Rank: 36, Dq: 0},
 	}
 
 	if !reflect.DeepEqual(beginningThreeExpected, database.rankings[0:3]) {

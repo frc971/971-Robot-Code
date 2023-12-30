@@ -18,9 +18,7 @@
     <input
       *ngFor="let x of [1,2,3]; let i = index;"
       [(ngModel)]="team_ranking[i]"
-      type="number"
-      min="1"
-      max="9999"
+      type="text"
       id="team_input_{{i}}"
     />
     <button
