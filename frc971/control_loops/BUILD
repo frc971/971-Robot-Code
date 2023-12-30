@@ -176,6 +176,30 @@ cc_test(
 )
 
 cc_library(
+    name = "encoder_fault_detector",
+    srcs = ["encoder_fault_detector.cc"],
+    hdrs = ["encoder_fault_detector.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":encoder_fault_status_fbs",
+        "//aos/containers:sized_array",
+        "//aos/time",
+        "//frc971/control_loops:can_talonfx_fbs",
+    ],
+)
+
+cc_test(
+    name = "encoder_fault_detector_test",
+    srcs = ["encoder_fault_detector_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":encoder_fault_detector",
+        "//aos:json_to_flatbuffer",
+        "//aos/testing:googletest",
+    ],
+)
+
+cc_library(
     name = "hall_effect_tracker",
     hdrs = [
         "hall_effect_tracker.h",
@@ -197,6 +221,20 @@ static_flatbuffer(
     name = "control_loops_fbs",
     srcs = [
         "control_loops.fbs",
+    ],
+)
+
+flatbuffer_ts_library(
+    name = "encoder_fault_status_ts_fbs",
+    srcs = [
+        "encoder_fault_status.fbs",
+    ],
+)
+
+static_flatbuffer(
+    name = "encoder_fault_status_fbs",
+    srcs = [
+        "encoder_fault_status.fbs",
     ],
 )
 
