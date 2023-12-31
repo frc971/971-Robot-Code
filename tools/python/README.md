@@ -39,7 +39,7 @@ How to add new pip packages
 1. Add the new package you're interested in to `tools/python/requirements.txt`.
 2. Run the lock file generation script.
 
-        bazel run //tools/python:requirements.update
+        bazel run --run_under=//tools/python:update_helper //tools/python:requirements.update
 
 
 How to make buildkite happy with new pip packages
