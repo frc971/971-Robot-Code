@@ -12,6 +12,7 @@ pygobject
 requests
 scipy
 shapely
+validators
 yapf
 
 # TODO(phil): Migrate to absl-py. These are abandoned as far as I can tell.

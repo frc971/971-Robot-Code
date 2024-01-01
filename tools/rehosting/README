@@ -1,0 +1,6 @@
+Notes on setup:
+
+1. The buildkite pipeline is set up to enforce that we only run this against
+   the master branch, to prevent users from running un-checked-in scripts to
+   muck with the build dependency server.
+2. Runs against the queue=deploy buildkite queue.
