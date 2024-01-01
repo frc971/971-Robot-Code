@@ -23,6 +23,28 @@ cc_binary(
 )
 
 cc_binary(
+    name = "ccm",
+    srcs = [
+        "ccm.cc",
+    ],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:arm64",
+    ],
+    visibility = ["//y2023:__subpackages__"],
+    deps = [
+        "//aos:init",
+        "//aos:json_to_flatbuffer",
+        "//aos/events:shm_event_loop",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/vision:vision_fbs",
+        "//third_party:opencv",
+        "//y2023/vision:vision_util",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_binary(
     name = "viewer",
     srcs = [
         "viewer.cc",
