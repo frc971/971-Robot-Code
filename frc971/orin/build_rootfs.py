@@ -765,7 +765,7 @@ def generate_build_file(partition):
         resolved_deps.sort()
         rule_name = obj[1:].replace('/', '_')
         rule_deps = ''.join([
-            '        ":%s",\n'.format(d[1:].replace('/', '_'))
+            '        ":{}",\n'.format(d[1:].replace('/', '_'))
             for d in resolved_deps if d not in skip_set
         ])
         rules.append(
@@ -842,6 +842,8 @@ def generate_build_file(partition):
 
     with open("../../compilers/orin_debian_rootfs.BUILD", "w") as file:
         file.write(template.render(substitutions))
+
+    subprocess.run(['buildifier', "../../compilers/orin_debian_rootfs.BUILD"])
 
 
 def do_package(partition):
@@ -1112,8 +1114,11 @@ def main():
 
         target_mkdir("root:root", "755", "etc/systemd/network")
         copyfile("root:root", "644", "etc/systemd/network/eth0.network")
-        copyfile("root:root", "644", "etc/systemd/network/80-can.network")
+        copyfile("root:root", "644", "etc/systemd/network/80-cana.network")
+        copyfile("root:root", "644", "etc/systemd/network/80-canb.network")
+        copyfile("root:root", "644", "etc/systemd/network/80-canc.network")
         copyfile("root:root", "644", "etc/udev/rules.d/nvidia.rules")
+        copyfile("root:root", "644", "etc/udev/rules.d/can.rules")
         target(["/root/bin/change_hostname.sh", "pi-971-1"])
 
         target(["systemctl", "enable", "systemd-networkd"])

@@ -1,0 +1,9 @@
+[Match]
+Name=canc
+
+[CAN]
+BitRate=1M
+DataBitRate=8M
+RestartSec=1000ms
+BusErrorReporting=yes
+FDMode=yes

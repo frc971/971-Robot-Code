@@ -1,0 +1,3 @@
+SUBSYSTEM=="net", ACTION=="add", ATTR{dev_id}=="0x0", ENV{ID_PATH_TAG}=="platform-c310000_mttcan", NAME="cana"
+SUBSYSTEM=="net", ACTION=="add", ATTR{dev_id}=="0x0", ENV{ID_PATH_TAG}=="platform-14100000_pcie-pci-0001_01_00_0", NAME="canb"
+SUBSYSTEM=="net", ACTION=="add", ATTR{dev_id}=="0x1", ENV{ID_PATH_TAG}=="platform-14100000_pcie-pci-0001_01_00_0", NAME="canc"
