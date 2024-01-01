@@ -1562,6 +1562,20 @@ filegroup(
     url = "https://software.frc971.org/Build-Dependencies/2023_arducam_apriltag_test_images.tar.gz",
 )
 
+http_file(
+    name = "orin_image_apriltag",
+    downloaded_file_path = "orin_image_apriltag.bfbs",
+    sha256 = "c86604fd0b1301b301e299b1bba2573af8c586413934a386a2bd28fd9b037b84",
+    url = "https://software.frc971.org/Build-Dependencies/orin_image_apriltag.bfbs",
+)
+
+http_file(
+    name = "orin_large_image_apriltag",
+    downloaded_file_path = "orin_large_gs_apriltag.bfbs",
+    sha256 = "d933adac0d6c205c574791060be73701ead05977ff5dd9f6f4eadb45817c3ccb",
+    url = "https://software.frc971.org/Build-Dependencies/orin_large_gs_apriltag.bfbs",
+)
+
 http_archive(
     name = "libedgetpu",
     build_file = "//third_party:libedgetpu/libedgetpu.BUILD",

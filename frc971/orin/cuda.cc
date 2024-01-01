@@ -10,13 +10,19 @@ DEFINE_bool(
 namespace frc971 {
 namespace apriltag {
 
-void CheckAndSynchronize() {
-  CHECK_CUDA(cudaDeviceSynchronize());
-  CHECK_CUDA(cudaGetLastError());
+size_t overall_memory = 0;
+
+void CheckAndSynchronize(std::string_view message) {
+  CHECK_CUDA(cudaDeviceSynchronize()) << message;
+  CHECK_CUDA(cudaGetLastError()) << message;
 }
 
 void MaybeCheckAndSynchronize() {
   if (FLAGS_sync) CheckAndSynchronize();
+}
+
+void MaybeCheckAndSynchronize(std::string_view message) {
+  if (FLAGS_sync) CheckAndSynchronize(message);
 }
 
 }  // namespace apriltag

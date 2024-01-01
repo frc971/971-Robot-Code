@@ -17,11 +17,13 @@ halide_library(
 )
 
 cc_library(
-    name = "cuda",
+    name = "apriltag",
     srcs = [
         "apriltag.cc",
+        "apriltag_detect.cc",
         "cuda.cc",
         "labeling_allegretti_2019_BKE.cc",
+        "line_fit_filter.cc",
         "points.cc",
         "threshold.cc",
     ],
@@ -30,6 +32,7 @@ cc_library(
         "cuda.h",
         "gpu_image.h",
         "labeling_allegretti_2019_BKE.h",
+        "line_fit_filter.h",
         "points.h",
         "threshold.h",
         "transform_output_iterator.h",
@@ -42,6 +45,7 @@ cc_library(
     features = ["cuda"],
     deps = [
         "//aos/time",
+        "//third_party:cudart",
         "//third_party/apriltag",
         "@com_github_google_glog//:glog",
         "@com_github_nvidia_cccl//:cccl",
@@ -56,10 +60,12 @@ cc_test(
     ],
     data = [
         "@apriltag_test_bfbs_images",
+        "@orin_image_apriltag//file",
+        "@orin_large_image_apriltag//file",
     ],
     features = ["cuda"],
     deps = [
-        ":cuda",
+        ":apriltag",
         ":ycbcr",
         "//aos:flatbuffer_merge",
         "//aos:json_to_flatbuffer",
@@ -67,7 +73,6 @@ cc_test(
         "//aos/testing:path",
         "//aos/testing:random_seed",
         "//frc971/vision:vision_fbs",
-        "//third_party:cudart",
         "//third_party:opencv",
         "//third_party/apriltag",
         "//y2023/vision:ThresholdHalide",
@@ -82,10 +87,9 @@ cc_test(
     ],
     features = ["cuda"],
     deps = [
-        ":cuda",
+        ":apriltag",
         "//aos/testing:googletest",
         "//aos/testing:random_seed",
-        "//third_party:cudart",
     ],
 )
 
@@ -96,10 +100,9 @@ cc_test(
     ],
     features = ["cuda"],
     deps = [
-        ":cuda",
+        ":apriltag",
         "//aos/testing:googletest",
         "//aos/testing:random_seed",
-        "//third_party:cudart",
     ],
 )
 

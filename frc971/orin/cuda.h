@@ -139,11 +139,14 @@ class GpuMemory {
 
   // Copies data to host memory from this memory asynchronously on the provided
   // stream.
-  void MemcpyAsyncTo(T *host_memory, CudaStream *stream) const {
+  void MemcpyAsyncTo(T *host_memory, size_t size, CudaStream *stream) const {
     CHECK_CUDA(cudaMemcpyAsync(reinterpret_cast<void *>(host_memory),
                                reinterpret_cast<void *>(memory_),
-                               sizeof(T) * size_, cudaMemcpyDeviceToHost,
+                               sizeof(T) * size, cudaMemcpyDeviceToHost,
                                stream->get()));
+  }
+  void MemcpyAsyncTo(T *host_memory, CudaStream *stream) const {
+    MemcpyAsyncTo(host_memory, size_, stream);
   }
   void MemcpyAsyncTo(HostMemory<T> *host_memory, CudaStream *stream) const {
     MemcpyAsyncTo(host_memory->get(), stream);
@@ -195,11 +198,12 @@ class GpuMemory {
 };
 
 // Synchronizes and CHECKs for success the last CUDA operation.
-void CheckAndSynchronize();
+void CheckAndSynchronize(std::string_view message = "");
 
 // Synchronizes and CHECKS iff --sync is passed on the command line.  Makes it
 // so we can leave debugging in the code.
 void MaybeCheckAndSynchronize();
+void MaybeCheckAndSynchronize(std::string_view message);
 
 }  // namespace apriltag
 }  // namespace frc971
