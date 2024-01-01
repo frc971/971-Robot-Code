@@ -289,7 +289,11 @@ extern "C" int main(void) {
   PORTB_PCR19 = PORT_PCR_DSE | PORT_PCR_MUX(2);
 
   // .1ms filter time.
-  PORTA_DFWR = PORTB_DFWR = PORTC_DFWR = PORTD_DFWR = PORTE_DFWR = 6000;
+  PORTA_DFWR = 6000;
+  PORTB_DFWR = 6000;
+  PORTC_DFWR = 6000;
+  PORTD_DFWR = 6000;
+  PORTE_DFWR = 6000;
 
   // Set up the buttons. The LEDs pull them up to 5V, so the Teensy needs to not
   // be set to pull up.

@@ -623,13 +623,13 @@ http_archive(
 )
 
 # Downloaded from
-# https://developer.arm.com/-/media/Files/downloads/gnu-rm/7-2018q2/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2?revision=bc2c96c0-14b5-4bb4-9f18-bceb4050fee7?product=GNU%20Arm%20Embedded%20Toolchain,64-bit,,Linux,7-2018-q2-update
+# From https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads
 http_archive(
     name = "gcc_arm_none_eabi",
     build_file = "@//:compilers/gcc_arm_none_eabi.BUILD",
-    sha256 = "bb17109f0ee697254a5d4ae6e5e01440e3ea8f0277f2e8169bf95d07c7d5fe69",
-    strip_prefix = "gcc-arm-none-eabi-7-2018-q2-update/",
-    url = "https://software.frc971.org/Build-Dependencies/gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2",
+    sha256 = "6cd1bbc1d9ae57312bcd169ae283153a9572bd6a8e4eeae2fedfbc33b115fdbb",
+    strip_prefix = "arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi",
+    url = "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz",
 )
 
 # Java11 JDK.

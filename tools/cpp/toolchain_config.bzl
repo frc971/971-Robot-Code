@@ -296,7 +296,6 @@ def _impl(ctx):
                                 "-pipe",
                                 "-g",
                                 "-fno-common",
-                                "-ffreestanding",
                                 "-fbuiltin",
                             ],
                         ),
@@ -797,7 +796,7 @@ def _impl(ctx):
                     actions = all_cpp_compile_actions,
                     flag_groups = [
                         flag_group(
-                            flags = ["--std=gnu++1z", "-fno-exceptions", "-fno-rtti"],
+                            flags = ["--std=gnu++20", "-fno-exceptions", "-fno-rtti"],
                         ),
                     ],
                 ),
