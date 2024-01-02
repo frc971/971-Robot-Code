@@ -8,6 +8,8 @@
 #include "third_party/apriltag/apriltag.h"
 #include "third_party/apriltag/common/unionfind.h"
 #include "third_party/apriltag/tag16h5.h"
+#include "third_party/apriltag/tag36h11.h"
+#include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
 
 #include "aos/flatbuffer_merge.h"
@@ -243,17 +245,35 @@ apriltag_detector_t *MakeTagDetector(apriltag_family_t *tag_family) {
   return tag_detector;
 }
 
+// TODO(max): Create a function which will take in the calibration data
+CameraMatrix create_camera_matrix() {
+  return CameraMatrix{
+      1,
+      1,
+      1,
+      1,
+  };
+}
+
+DistCoeffs create_distortion_coefficients() {
+  return DistCoeffs{
+      0, 0, 0, 0, 0,
+  };
+}
+
 class CudaAprilTagDetector {
  public:
-  CudaAprilTagDetector(size_t width, size_t height)
-      : tag_family_(tag16h5_create()),
+  CudaAprilTagDetector(size_t width, size_t height,
+                       apriltag_family_t *tag_family = tag16h5_create())
+      : tag_family_(tag_family),
         tag_detector_(MakeTagDetector(tag_family_)),
         gray_cuda_(cv::Size(width, height), CV_8UC1),
         decimated_cuda_(gray_cuda_.size() / 2, CV_8UC1),
         thresholded_cuda_(decimated_cuda_.size(), CV_8UC1),
         union_markers_(decimated_cuda_.size(), CV_32SC1),
         union_markers_size_(decimated_cuda_.size(), CV_32SC1),
-        gpu_detector_(width, height, tag_detector_),
+        gpu_detector_(width, height, tag_detector_, create_camera_matrix(),
+                      create_distortion_coefficients()),
         width_(width),
         height_(height) {
     // Report out info about our GPU.
@@ -1716,6 +1736,8 @@ class CudaAprilTagDetector {
     }
   }
 
+  void set_undistort(bool value) { undistort_ = value; }
+
   void CheckDetections(zarray_t *aprilrobotics_detections,
                        const zarray_t *_gpu_detections) {
     zarray_t *gpu_detections = zarray_copy(_gpu_detections);
@@ -1757,7 +1779,7 @@ class CudaAprilTagDetector {
 
       // TODO(austin): Crank down the thresholds and figure out why these
       // deviate.  It should be the same function for both at this point.
-      const double threshold = valid ? 2e-3 : 1e-1;
+      const double threshold = undistort_ ? 15.0 : (valid ? 2e-3 : 1e-1);
 
       CHECK_EQ(aprilrobotics_detection->id, gpu_detection->id);
       CHECK_EQ(aprilrobotics_detection->hamming, gpu_detection->hamming);
@@ -1869,7 +1891,9 @@ class CudaAprilTagDetector {
     zarray_t *april_clusters =
         OrderAprilroboticsLikeCuda(thresholded_im, uf, cuda_grouped_points);
 
-    CheckQuads(april_clusters, sorted_selected_blobs_cuda_, fit_quads_);
+    if (!undistort_) {
+      CheckQuads(april_clusters, sorted_selected_blobs_cuda_, fit_quads_);
+    }
 
     const zarray_t *gpu_detections = gpu_detector_.Detections();
     CheckDetections(aprilrobotics_detections_, gpu_detections);
@@ -2045,6 +2069,14 @@ class CudaAprilTagDetector {
     }
   }
 
+  // Sets the camera constants for camera 24-04
+  void SetCameraFourConstants() {
+    gpu_detector_.SetCameraMatrix(
+        CameraMatrix{642.80365, 718.017517, 642.83667, 555.022461});
+    gpu_detector_.SetDistortionCoefficients(
+        DistCoeffs{-0.239969, 0.055889, 0.000086, 0.000099, -0.005468});
+  }
+
  private:
   apriltag_family_t *tag_family_;
   apriltag_detector_t *tag_detector_;
@@ -2082,6 +2114,8 @@ class CudaAprilTagDetector {
 
   bool normal_border_ = false;
   bool reversed_border_ = false;
+
+  bool undistort_ = false;
   int min_tag_width_ = 1000000;
 };
 
@@ -2236,4 +2270,52 @@ TEST(FilterTest, Unrank) {
   EXPECT_EQ(overall_count, MaxRankedIndex());
 }
 
+// Tests our Undistort is working properly
+TEST_F(AprilDetectionTest, Undistort) {
+  auto image = ReadImage("orin_capture_24_04/file/orin_capture_24_04.bfbs");
+
+  LOG(INFO) << "Image is: " << image.message().cols() << " x "
+            << image.message().rows();
+
+  CudaAprilTagDetector cuda_detector(image.message().cols(),
+                                     image.message().rows(), tag36h11_create());
+
+  cuda_detector.set_undistort(true);
+
+  const cv::Mat color_image = ToMat(&image.message());
+
+  cuda_detector.SetCameraFourConstants();
+
+  cuda_detector.DetectGPU(color_image.clone());
+  cuda_detector.DetectCPU(color_image.clone());
+  cuda_detector.Check(color_image.clone());
+  if (FLAGS_debug) {
+    cuda_detector.WriteDebug(color_image);
+  }
+}
+
+// Tests our Undistort is working properly with a tag at the edge of the image
+TEST_F(AprilDetectionTest, UndistortEdge) {
+  auto image =
+      ReadImage("orin_capture_24_04_side/file/orin_capture_24_04_side.bfbs");
+
+  LOG(INFO) << "Image is: " << image.message().cols() << " x "
+            << image.message().rows();
+
+  CudaAprilTagDetector cuda_detector(image.message().cols(),
+                                     image.message().rows(), tag36h11_create());
+
+  cuda_detector.set_undistort(true);
+
+  const cv::Mat color_image = ToMat(&image.message());
+
+  cuda_detector.SetCameraFourConstants();
+
+  cuda_detector.DetectGPU(color_image.clone());
+  cuda_detector.DetectCPU(color_image.clone());
+  cuda_detector.Check(color_image.clone());
+  if (FLAGS_debug) {
+    cuda_detector.WriteDebug(color_image);
+  }
+}
 }  // namespace frc971::apriltag::testing

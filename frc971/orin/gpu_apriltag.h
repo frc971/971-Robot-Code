@@ -73,7 +73,6 @@ class ApriltagDetector {
  private:
   apriltag_family_t *tag_family_;
   apriltag_detector_t *tag_detector_;
-  frc971::apriltag::GpuDetector gpu_detector_;
   std::string_view node_name_;
 
   const frc971::vision::calibration::CameraCalibration *calibration_;
@@ -81,6 +80,8 @@ class ApriltagDetector {
   cv::Mat projection_matrix_;
   std::optional<cv::Mat> extrinsics_;
   cv::Mat dist_coeffs_;
+
+  frc971::apriltag::GpuDetector gpu_detector_;
   cv::Size image_size_;
 
   frc971::vision::ImageCallback image_callback_;

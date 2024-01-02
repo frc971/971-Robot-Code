@@ -61,6 +61,8 @@ cc_test(
     ],
     data = [
         "@apriltag_test_bfbs_images",
+        "@orin_capture_24_04//file",
+        "@orin_capture_24_04_side//file",
         "@orin_image_apriltag//file",
         "@orin_large_image_apriltag//file",
     ],
