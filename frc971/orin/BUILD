@@ -125,3 +125,16 @@ cc_binary(
         "@arm64_debian_sysroot//:nvbufsurface",
     ],
 )
+
+cc_binary(
+    name = "gpu_apriltag",
+    srcs = ["gpu_apriltag.cc"],
+    features = ["cuda"],
+    deps = [
+        ":apriltag",
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/vision:charuco_lib",
+        "//third_party:opencv",
+    ],
+)
