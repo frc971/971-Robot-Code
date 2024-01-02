@@ -15,6 +15,7 @@
 #include "HalideRuntime.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "aos/realtime.h"
 #include "aos/time/time.h"
 #include "aos/util/file.h"
 #include "frc971/orin/ycbcr.h"
@@ -160,6 +161,7 @@ class DmaBuffer {
 
   // Extracts the DmaBuffer from the Argus::Buffer.
   static DmaBuffer *FromArgusBuffer(Argus::Buffer *buffer) {
+    aos::ScopedNotRealtime nrt;
     Argus::IBuffer *i_buffer = Argus::interface_cast<Argus::IBuffer>(buffer);
     const DmaBuffer *dmabuf =
         static_cast<const DmaBuffer *>(i_buffer->getClientData());
@@ -190,6 +192,325 @@ class DmaBuffer {
 
   int fd_ = -1;
   Argus::Buffer *buffer_ = nullptr;
+};
+
+// Class to make it easy to interact with an Argus camera inside an event loop.
+class ArgusCamera {
+ public:
+  ArgusCamera(Argus::ICameraProvider *i_camera_provider,
+              Argus::CameraDevice *camera_device) {
+    std::vector<Argus::SensorMode *> sensor_modes;
+    Argus::ICameraProperties *i_camera_properties =
+        Argus::interface_cast<Argus::ICameraProperties>(camera_device);
+    CHECK(i_camera_properties) << "Failed to get ICameraProperties Interface";
+    // Get available Sensor Modes
+    i_camera_properties->getAllSensorModes(&sensor_modes);
+    LOG(INFO) << "Found " << sensor_modes.size() << " modes";
+
+    for (Argus::SensorMode *mode : sensor_modes) {
+      Argus::ISensorMode *imode =
+          Argus::interface_cast<Argus::ISensorMode>(mode);
+      LOG(INFO) << imode->getResolution().width() << " x "
+                << imode->getResolution().height();
+      LOG(INFO) << "type " << imode->getSensorModeType().getName();
+      LOG(INFO) << "exposure min " << imode->getExposureTimeRange().min();
+      LOG(INFO) << "exposure max " << imode->getExposureTimeRange().max();
+    }
+    CHECK_GT(sensor_modes.size(), 0u);
+
+    Argus::ISensorMode *i_sensor_mode =
+        Argus::interface_cast<Argus::ISensorMode>(sensor_modes[FLAGS_mode]);
+    CHECK(i_sensor_mode);
+
+    {
+      auto range = i_sensor_mode->getFrameDurationRange();
+      LOG(INFO) << "Min: " << range.min() << ", " << range.max();
+      LOG(INFO) << "type " << i_sensor_mode->getSensorModeType().getName();
+    }
+
+    // Create the capture session using the first device and get the core
+    // interface.
+    capture_session_.reset(
+        i_camera_provider->createCaptureSession(camera_device));
+    i_capture_session_ =
+        Argus::interface_cast<Argus::ICaptureSession>(capture_session_);
+    CHECK(i_capture_session_);
+
+    CHECK_NE(egl_display_, EGL_NO_DISPLAY) << ": Failed to open display";
+
+    // Create the OutputStream.
+    stream_settings_.reset(i_capture_session_->createOutputStreamSettings(
+        Argus::STREAM_TYPE_BUFFER));
+
+    Argus::IBufferOutputStreamSettings *i_buffer_output_stream_settings =
+        Argus::interface_cast<Argus::IBufferOutputStreamSettings>(
+            stream_settings_);
+    CHECK(i_buffer_output_stream_settings != nullptr);
+    i_buffer_output_stream_settings->setBufferType(
+        Argus::BUFFER_TYPE_EGL_IMAGE);
+    i_buffer_output_stream_settings->setMetadataEnable(true);
+    LOG(INFO) << "Type: "
+              << i_buffer_output_stream_settings->getBufferType().getName();
+
+    output_stream_.reset(
+        i_capture_session_->createOutputStream(stream_settings_.get()));
+    LOG(INFO) << "Got sream";
+
+    i_buffer_output_stream_ =
+        Argus::interface_cast<Argus::IBufferOutputStream>(output_stream_);
+    CHECK(i_buffer_output_stream_ != nullptr);
+
+    // Build the DmaBuffers
+    for (size_t i = 0; i < native_buffers_.size(); ++i) {
+      native_buffers_[i] = DmaBuffer::Create(
+          i_sensor_mode->getResolution(),
+          static_cast<NvBufSurfaceColorFormat>(FLAGS_colorformat),
+          NVBUF_LAYOUT_PITCH);
+    }
+
+    // Create EGLImages from the native buffers
+    for (size_t i = 0; i < egl_images_.size(); i++) {
+      int ret = 0;
+
+      ret = NvBufSurfaceFromFd(native_buffers_[i]->fd(), (void **)(&surf_[i]));
+      CHECK(ret == 0) << ": NvBufSurfaceFromFd failed";
+
+      ret = NvBufSurfaceMapEglImage(surf_[i], 0);
+      CHECK(ret == 0) << ": NvBufSurfaceMapEglImage failed";
+
+      egl_images_[i] = surf_[i]->surfaceList[0].mappedAddr.eglImage;
+      CHECK(egl_images_[i] != EGL_NO_IMAGE_KHR)
+          << ": Failed to create EGLImage";
+    }
+
+    // Create the BufferSettings object to configure Buffer creation.
+    buffer_settings_.reset(i_buffer_output_stream_->createBufferSettings());
+    Argus::IEGLImageBufferSettings *i_buffer_settings =
+        Argus::interface_cast<Argus::IEGLImageBufferSettings>(buffer_settings_);
+    CHECK(i_buffer_settings);
+
+    // Create the Buffers for each EGLImage (and release to the stream for
+    // initial capture use)
+    for (size_t i = 0; i < buffers_.size(); i++) {
+      i_buffer_settings->setEGLImage(egl_images_[i]);
+      i_buffer_settings->setEGLDisplay(egl_display_);
+      buffers_[i].reset(
+          i_buffer_output_stream_->createBuffer(buffer_settings_.get()));
+      Argus::IBuffer *i_buffer =
+          Argus::interface_cast<Argus::IBuffer>(buffers_[i]);
+
+      // Ties Argus::Buffer and DmaBuffer together.
+      i_buffer->setClientData(native_buffers_[i].get());
+      native_buffers_[i]->set_argus_buffer(buffers_[i].get());
+
+      CHECK(Argus::interface_cast<Argus::IEGLImageBuffer>(buffers_[i]) !=
+            nullptr)
+          << ": Failed to create Buffer";
+
+      CHECK_EQ(i_buffer_output_stream_->releaseBuffer(buffers_[i].get()),
+               Argus::STATUS_OK)
+          << "Failed to release Buffer for capture use";
+    }
+
+    request_.reset(i_capture_session_->createRequest());
+    Argus::IRequest *i_request =
+        Argus::interface_cast<Argus::IRequest>(request_);
+    CHECK(i_request);
+
+    Argus::IAutoControlSettings *i_auto_control_settings =
+        Argus::interface_cast<Argus::IAutoControlSettings>(
+            i_request->getAutoControlSettings());
+    CHECK(i_auto_control_settings != nullptr);
+    i_auto_control_settings->setAwbMode(Argus::AWB_MODE_OFF);
+
+    i_auto_control_settings->setAeLock(false);
+    Argus::Range<float> isp_digital_gain_range;
+    isp_digital_gain_range.min() = 1;
+    isp_digital_gain_range.max() = 1;
+    i_auto_control_settings->setIspDigitalGainRange(isp_digital_gain_range);
+
+    Argus::IEdgeEnhanceSettings *i_ee_settings =
+        Argus::interface_cast<Argus::IEdgeEnhanceSettings>(request_);
+    CHECK(i_ee_settings != nullptr);
+
+    i_ee_settings->setEdgeEnhanceStrength(0);
+
+    i_request->enableOutputStream(output_stream_.get());
+
+    Argus::ISourceSettings *i_source_settings =
+        Argus::interface_cast<Argus::ISourceSettings>(
+            i_request->getSourceSettings());
+    CHECK(i_source_settings != nullptr);
+
+    i_source_settings->setFrameDurationRange(
+        i_sensor_mode->getFrameDurationRange().min());
+    i_source_settings->setSensorMode(sensor_modes[FLAGS_mode]);
+
+    Argus::Range<float> sensor_mode_analog_gain_range;
+    sensor_mode_analog_gain_range.min() = FLAGS_gain;
+    sensor_mode_analog_gain_range.max() = FLAGS_gain;
+    i_source_settings->setGainRange(sensor_mode_analog_gain_range);
+
+    Argus::Range<uint64_t> limit_exposure_time_range;
+    limit_exposure_time_range.min() = FLAGS_exposure;
+    limit_exposure_time_range.max() = FLAGS_exposure;
+    i_source_settings->setExposureTimeRange(limit_exposure_time_range);
+  }
+
+  void Start() {
+    if (i_capture_session_->repeat(request_.get()) != Argus::STATUS_OK) {
+      LOG(ERROR) << "Failed to submit repeat";
+    }
+
+    LOG(INFO) << "Session submitted";
+  }
+
+  // Class to manage an image buffer and return it when we are done.
+  class MappedBuffer {
+   public:
+    MappedBuffer(Argus::IBufferOutputStream *i_buffer_output_stream,
+                 Argus::Buffer *buffer)
+        : i_buffer_output_stream_(i_buffer_output_stream), buffer_(buffer) {
+      if (buffer_ == nullptr) {
+        return;
+      }
+
+      start_time_ = aos::monotonic_clock::now();
+
+      dmabuf_ = DmaBuffer::FromArgusBuffer(buffer_);
+
+      int dmabuf_fd = dmabuf_->fd();
+
+      CHECK_EQ(NvBufSurfaceFromFd(dmabuf_fd, (void **)(&nvbuf_surf_)), 0);
+
+      CHECK_EQ(NvBufSurfaceMap(nvbuf_surf_, -1, -1, NVBUF_MAP_READ), 0);
+      VLOG(1) << "Mapped";
+      NvBufSurfaceSyncForCpu(nvbuf_surf_, -1, -1);
+
+      VLOG(1) << "Planes " << nvbuf_surf_->surfaceList->planeParams.num_planes
+              << " colorFormat " << nvbuf_surf_->surfaceList->colorFormat;
+      for (size_t i = 0; i < nvbuf_surf_->surfaceList->planeParams.num_planes;
+           ++i) {
+        VLOG(1) << "Address "
+                << static_cast<void *>(
+                       nvbuf_surf_->surfaceList->mappedAddr.addr[i])
+                << ", pitch " << nvbuf_surf_->surfaceList->planeParams.pitch[i]
+                << " height " << nvbuf_surf_->surfaceList->planeParams.height[i]
+                << " width " << nvbuf_surf_->surfaceList->planeParams.width[i]
+                << " bytes per pixel "
+                << nvbuf_surf_->surfaceList->planeParams.bytesPerPix[i];
+      }
+      CHECK_EQ(nvbuf_surf_->surfaceList->planeParams.width[0],
+               static_cast<size_t>(FLAGS_width));
+      CHECK_EQ(nvbuf_surf_->surfaceList->planeParams.height[0],
+               static_cast<size_t>(FLAGS_height));
+    }
+    MappedBuffer(const MappedBuffer &other) = delete;
+    MappedBuffer &operator=(const MappedBuffer &other) = delete;
+    MappedBuffer(MappedBuffer &&other) noexcept {
+      buffer_ = other.buffer_;
+      dmabuf_ = other.dmabuf_;
+      nvbuf_surf_ = other.nvbuf_surf_;
+      i_buffer_output_stream_ = other.i_buffer_output_stream_;
+      start_time_ = other.start_time_;
+      other.buffer_ = nullptr;
+      other.dmabuf_ = nullptr;
+      other.nvbuf_surf_ = nullptr;
+    }
+
+    NvBufSurface *nvbuf_surf() { return nvbuf_surf_; }
+
+    const Argus::ICaptureMetadata *imetadata() {
+      Argus::IBuffer *ibuffer = Argus::interface_cast<Argus::IBuffer>(buffer_);
+      CHECK(ibuffer != nullptr);
+
+      aos::ScopedNotRealtime nrt;
+      const Argus::CaptureMetadata *metadata = ibuffer->getMetadata();
+      const Argus::ICaptureMetadata *imetadata =
+          Argus::interface_cast<const Argus::ICaptureMetadata>(metadata);
+      CHECK(imetadata);
+      return imetadata;
+    }
+
+    aos::monotonic_clock::time_point start_time() const { return start_time_; }
+
+    virtual ~MappedBuffer() {
+      if (buffer_ != nullptr) {
+        CHECK_EQ(NvBufSurfaceUnMap(nvbuf_surf_, -1, -1), 0);
+        aos::ScopedNotRealtime nrt;
+        i_buffer_output_stream_->releaseBuffer(buffer_);
+      }
+    }
+
+   private:
+    Argus::IBufferOutputStream *i_buffer_output_stream_;
+
+    Argus::Buffer *buffer_;
+
+    DmaBuffer *dmabuf_ = nullptr;
+
+    NvBufSurface *nvbuf_surf_ = nullptr;
+
+    aos::monotonic_clock::time_point start_time_;
+  };
+
+  MappedBuffer NextImageBlocking() {
+    VLOG(1) << "Going for frame";
+
+    Argus::Buffer *buffer;
+    {
+      Argus::Status status;
+      aos::ScopedNotRealtime nrt;
+
+      buffer = i_buffer_output_stream_->acquireBuffer(
+          std::chrono::nanoseconds(std::chrono::seconds(5)).count(), &status);
+
+      if (status == Argus::STATUS_END_OF_STREAM) {
+        return MappedBuffer(nullptr, nullptr);
+      }
+    }
+
+    // const aos::monotonic_clock::time_point now = aos::monotonic_clock::now();
+    return MappedBuffer(i_buffer_output_stream_, buffer);
+  }
+
+  void Stop() {
+    i_capture_session_->stopRepeat();
+    i_buffer_output_stream_->endOfStream();
+    i_capture_session_->waitForIdle();
+  }
+
+  virtual ~ArgusCamera() {
+    output_stream_.reset();
+
+    for (uint32_t i = 0; i < surf_.size(); i++) {
+      NvBufSurfaceUnMapEglImage(surf_[i], 0);
+    }
+    eglTerminate(egl_display_);
+  }
+
+ private:
+  Argus::UniqueObj<Argus::CaptureSession> capture_session_;
+  Argus::ICaptureSession *i_capture_session_;
+
+  EGLDisplay egl_display_ = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+
+  Argus::UniqueObj<Argus::OutputStreamSettings> stream_settings_;
+
+  Argus::UniqueObj<Argus::OutputStream> output_stream_;
+  Argus::IBufferOutputStream *i_buffer_output_stream_;
+
+  std::array<std::unique_ptr<DmaBuffer>, 10> native_buffers_;
+
+  std::array<NvBufSurface *, 10> surf_;
+
+  std::array<EGLImageKHR, 10> egl_images_;
+
+  Argus::UniqueObj<Argus::BufferSettings> buffer_settings_;
+
+  std::array<Argus::UniqueObj<Argus::Buffer>, 10> buffers_;
+
+  Argus::UniqueObj<Argus::Request> request_;
 };
 
 int Main() {
@@ -225,289 +546,85 @@ int Main() {
 
   LOG(INFO) << "Found " << camera_devices.size() << " cameras";
   for (Argus::CameraDevice *camera : camera_devices) {
-    Argus::ICameraProperties *iCameraProperties =
+    Argus::ICameraProperties *i_camera_properties =
         Argus::interface_cast<Argus::ICameraProperties>(camera);
-    LOG(INFO) << "Camera " << iCameraProperties->getModelName();
-  }
-
-  std::vector<Argus::SensorMode *> sensor_modes;
-  Argus::ICameraProperties *iCameraProperties =
-      Argus::interface_cast<Argus::ICameraProperties>(
-          camera_devices[FLAGS_camera]);
-  if (!iCameraProperties)
-    ORIGINATE_ERROR("Failed to get ICameraProperties Interface");
-  // Get available Sensor Modes
-  iCameraProperties->getAllSensorModes(&sensor_modes);
-  LOG(INFO) << "Found " << sensor_modes.size() << " modes";
-
-  for (Argus::SensorMode *mode : sensor_modes) {
-    Argus::ISensorMode *imode = Argus::interface_cast<Argus::ISensorMode>(mode);
-    LOG(INFO) << imode->getResolution().width() << " x "
-              << imode->getResolution().height();
-    LOG(INFO) << "type " << imode->getSensorModeType().getName();
-    LOG(INFO) << "exposure min " << imode->getExposureTimeRange().min();
-    LOG(INFO) << "exposure max " << imode->getExposureTimeRange().max();
-  }
-  if (sensor_modes.size() <= 0) {
-    ORIGINATE_ERROR("Preview Sensor Mode %d not available", 0);
-  }
-
-  Argus::ISensorMode *i_sensor_mode =
-      Argus::interface_cast<Argus::ISensorMode>(sensor_modes[FLAGS_mode]);
-  if (!i_sensor_mode) {
-    ORIGINATE_ERROR("Failed to get SensorMode interface");
+    LOG(INFO) << "Camera " << i_camera_properties->getModelName();
   }
 
   {
-    auto range = i_sensor_mode->getFrameDurationRange();
-    LOG(INFO) << "Min: " << range.min() << ", " << range.max();
-    LOG(INFO) << "type " << i_sensor_mode->getSensorModeType().getName();
+    ArgusCamera camera(i_camera_provider, camera_devices[FLAGS_camera]);
+
+    aos::monotonic_clock::time_point last_time = aos::monotonic_clock::epoch();
+
+    aos::TimerHandler *timer = event_loop.AddTimer([&camera, &event_loop,
+                                                    &sender, &last_time,
+                                                    &timer]() {
+      ArgusCamera::MappedBuffer buffer = camera.NextImageBlocking();
+
+      if (buffer.nvbuf_surf() == nullptr) {
+        // TODO(austin): Control-C isn't working for some reason, debug it...
+        event_loop.Exit();
+        return;
+      }
+
+      const Argus::ICaptureMetadata *imetadata = buffer.imetadata();
+
+      aos::Sender<frc971::vision::CameraImage>::Builder builder =
+          sender.MakeBuilder();
+
+      uint8_t *data_pointer = nullptr;
+      builder.fbb()->StartIndeterminateVector(FLAGS_width * FLAGS_height * 2, 1,
+                                              64, &data_pointer);
+
+      YCbCr422(buffer.nvbuf_surf(), data_pointer);
+      flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data_offset =
+          builder.fbb()->EndIndeterminateVector(FLAGS_width * FLAGS_height * 2,
+                                                1);
+
+      auto image_builder = builder.MakeBuilder<frc971::vision::CameraImage>();
+      image_builder.add_data(data_offset);
+      image_builder.add_rows(FLAGS_height);
+      image_builder.add_cols(FLAGS_width);
+      {
+        aos::ScopedNotRealtime nrt;
+        image_builder.add_monotonic_timestamp_ns(
+            imetadata->getSensorTimestamp());
+      }
+      builder.CheckOk(builder.Send(image_builder.Finish()));
+
+      const aos::monotonic_clock::time_point after_send =
+          aos::monotonic_clock::now();
+
+      VLOG(1)
+          << "Got " << imetadata->getCaptureId() << " delay "
+          << chrono::duration<double>(
+                 chrono::nanoseconds(
+                     (buffer.start_time().time_since_epoch().count() -
+                      (imetadata->getSensorTimestamp() +
+                       imetadata->getFrameReadoutTime()))))
+                 .count()
+          << " mmap "
+          << chrono::duration<double>(after_send - buffer.start_time()).count()
+          << "sec dt "
+          << chrono::duration<double>(buffer.start_time() - last_time).count()
+          << "sec, exposure " << imetadata->getSensorExposureTime();
+
+      last_time = buffer.start_time();
+      timer->Schedule(event_loop.monotonic_now());
+    });
+
+    event_loop.OnRun([&event_loop, timer]() {
+      timer->Schedule(event_loop.monotonic_now());
+    });
+
+    camera.Start();
+
+    event_loop.Run();
+    LOG(INFO) << "Event loop shutting down";
+
+    camera.Stop();
   }
 
-  // Create the capture session using the first device and get the core
-  // interface.
-  Argus::UniqueObj<Argus::CaptureSession> capture_session;
-  capture_session.reset(
-      i_camera_provider->createCaptureSession(camera_devices[FLAGS_camera]));
-  Argus::ICaptureSession *i_capture_session =
-      Argus::interface_cast<Argus::ICaptureSession>(capture_session);
-  if (!i_capture_session) {
-    ORIGINATE_ERROR("Failed to create CaptureSession");
-  }
-
-  EGLDisplay egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-  CHECK_NE(egl_display, EGL_NO_DISPLAY) << ": Failed to open display";
-
-  // Create the OutputStream.
-  Argus::UniqueObj<Argus::OutputStreamSettings> stream_settings(
-      i_capture_session->createOutputStreamSettings(Argus::STREAM_TYPE_BUFFER));
-
-  Argus::IBufferOutputStreamSettings *i_buffer_output_stream_settings =
-      Argus::interface_cast<Argus::IBufferOutputStreamSettings>(
-          stream_settings);
-  CHECK(i_buffer_output_stream_settings != nullptr);
-  i_buffer_output_stream_settings->setBufferType(Argus::BUFFER_TYPE_EGL_IMAGE);
-  i_buffer_output_stream_settings->setMetadataEnable(true);
-  LOG(INFO) << "Type: "
-            << i_buffer_output_stream_settings->getBufferType().getName();
-
-  Argus::UniqueObj<Argus::OutputStream> output_stream(
-      i_capture_session->createOutputStream(stream_settings.get()));
-  LOG(INFO) << "Got sream";
-
-  Argus::IBufferOutputStream *i_buffer_output_stream =
-      Argus::interface_cast<Argus::IBufferOutputStream>(output_stream);
-  CHECK(i_buffer_output_stream != nullptr);
-
-  // Build the DmaBuffers
-  std::array<std::unique_ptr<DmaBuffer>, 10> native_buffers;
-  for (size_t i = 0; i < native_buffers.size(); ++i) {
-    native_buffers[i] = DmaBuffer::Create(
-        i_sensor_mode->getResolution(),
-        static_cast<NvBufSurfaceColorFormat>(FLAGS_colorformat),
-        NVBUF_LAYOUT_PITCH);
-  }
-
-  std::array<NvBufSurface *, 10> surf;
-
-  // Create EGLImages from the native buffers
-  std::array<EGLImageKHR, 10> egl_images;
-  for (size_t i = 0; i < egl_images.size(); i++) {
-    int ret = 0;
-
-    ret = NvBufSurfaceFromFd(native_buffers[i]->fd(), (void **)(&surf[i]));
-    CHECK(ret == 0) << ": NvBufSurfaceFromFd failed";
-
-    ret = NvBufSurfaceMapEglImage(surf[i], 0);
-    CHECK(ret == 0) << ": NvBufSurfaceMapEglImage failed";
-
-    egl_images[i] = surf[i]->surfaceList[0].mappedAddr.eglImage;
-    CHECK(egl_images[i] != EGL_NO_IMAGE_KHR) << ": Failed to create EGLImage";
-  }
-
-  // Create the BufferSettings object to configure Buffer creation.
-  Argus::UniqueObj<Argus::BufferSettings> buffer_settings(
-      i_buffer_output_stream->createBufferSettings());
-  Argus::IEGLImageBufferSettings *i_buffer_settings =
-      Argus::interface_cast<Argus::IEGLImageBufferSettings>(buffer_settings);
-  if (!i_buffer_settings) ORIGINATE_ERROR("Failed to create BufferSettings");
-
-  // Create the Buffers for each EGLImage (and release to the stream for initial
-  // capture use)
-  std::array<Argus::UniqueObj<Argus::Buffer>, 10> buffers;
-  for (size_t i = 0; i < buffers.size(); i++) {
-    i_buffer_settings->setEGLImage(egl_images[i]);
-    i_buffer_settings->setEGLDisplay(egl_display);
-    buffers[i].reset(
-        i_buffer_output_stream->createBuffer(buffer_settings.get()));
-    Argus::IBuffer *i_buffer =
-        Argus::interface_cast<Argus::IBuffer>(buffers[i]);
-
-    // Ties Argus::Buffer and DmaBuffer together.
-    i_buffer->setClientData(native_buffers[i].get());
-    native_buffers[i]->set_argus_buffer(buffers[i].get());
-
-    CHECK(Argus::interface_cast<Argus::IEGLImageBuffer>(buffers[i]) != nullptr)
-        << ": Failed to create Buffer";
-
-    if (i_buffer_output_stream->releaseBuffer(buffers[i].get()) !=
-        Argus::STATUS_OK)
-      ORIGINATE_ERROR("Failed to release Buffer for capture use");
-  }
-
-  Argus::UniqueObj<Argus::Request> request(i_capture_session->createRequest());
-  Argus::IRequest *i_request = Argus::interface_cast<Argus::IRequest>(request);
-  CHECK(i_request);
-
-  Argus::IAutoControlSettings *i_auto_control_settings =
-      Argus::interface_cast<Argus::IAutoControlSettings>(
-          i_request->getAutoControlSettings());
-  CHECK(i_auto_control_settings != nullptr);
-  i_auto_control_settings->setAwbMode(Argus::AWB_MODE_OFF);
-
-  i_auto_control_settings->setAeLock(false);
-  Argus::Range<float> isp_digital_gain_range;
-  isp_digital_gain_range.min() = 1;
-  isp_digital_gain_range.max() = 1;
-  i_auto_control_settings->setIspDigitalGainRange(isp_digital_gain_range);
-
-  Argus::IEdgeEnhanceSettings *i_ee_settings =
-      Argus::interface_cast<Argus::IEdgeEnhanceSettings>(request);
-  CHECK(i_ee_settings != nullptr);
-
-  i_ee_settings->setEdgeEnhanceStrength(0);
-
-  i_request->enableOutputStream(output_stream.get());
-
-  Argus::ISourceSettings *i_source_settings =
-      Argus::interface_cast<Argus::ISourceSettings>(
-          i_request->getSourceSettings());
-  CHECK(i_source_settings != nullptr);
-
-  i_source_settings->setFrameDurationRange(
-      i_sensor_mode->getFrameDurationRange().min());
-  i_source_settings->setSensorMode(sensor_modes[FLAGS_mode]);
-
-  Argus::Range<float> sensor_mode_analog_gain_range;
-  sensor_mode_analog_gain_range.min() = FLAGS_gain;
-  sensor_mode_analog_gain_range.max() = FLAGS_gain;
-  i_source_settings->setGainRange(sensor_mode_analog_gain_range);
-
-  Argus::Range<uint64_t> limit_exposure_time_range;
-  limit_exposure_time_range.min() = FLAGS_exposure;
-  limit_exposure_time_range.max() = FLAGS_exposure;
-  i_source_settings->setExposureTimeRange(limit_exposure_time_range);
-
-  if (i_capture_session->repeat(request.get()) != Argus::STATUS_OK) {
-    LOG(ERROR) << "Failed to submit repeat";
-  }
-
-  LOG(INFO) << "Session submitted";
-
-  // Run.
-  //
-  // TODO(austin): Use the event loop a bit better...  That'll let us set
-  // priority + get stats.  Timer which always repeats "now" ?
-  aos::monotonic_clock::time_point last_time = aos::monotonic_clock::epoch();
-  while (true) {
-    VLOG(1) << "Going for frame";
-    Argus::Status status;
-
-    Argus::Buffer *buffer = i_buffer_output_stream->acquireBuffer(
-        std::chrono::nanoseconds(std::chrono::seconds(5)).count(), &status);
-
-    if (status == Argus::STATUS_END_OF_STREAM) {
-      break;
-    }
-
-    const aos::monotonic_clock::time_point now = aos::monotonic_clock::now();
-
-    DmaBuffer *dmabuf = DmaBuffer::FromArgusBuffer(buffer);
-    int dmabuf_fd = dmabuf->fd();
-
-    Argus::IBuffer *ibuffer = Argus::interface_cast<Argus::IBuffer>(buffer);
-    CHECK(ibuffer != nullptr);
-
-    const Argus::CaptureMetadata *metadata = ibuffer->getMetadata();
-    const Argus::ICaptureMetadata *imetadata =
-        Argus::interface_cast<const Argus::ICaptureMetadata>(metadata);
-
-    NvBufSurface *nvbuf_surf = 0;
-    CHECK_EQ(NvBufSurfaceFromFd(dmabuf_fd, (void **)(&nvbuf_surf)), 0);
-
-    CHECK_EQ(NvBufSurfaceMap(nvbuf_surf, -1, -1, NVBUF_MAP_READ), 0);
-    VLOG(1) << "Mapped";
-    NvBufSurfaceSyncForCpu(nvbuf_surf, -1, -1);
-
-    VLOG(1) << "Planes " << nvbuf_surf->surfaceList->planeParams.num_planes
-            << " colorFormat " << nvbuf_surf->surfaceList->colorFormat;
-    for (size_t i = 0; i < nvbuf_surf->surfaceList->planeParams.num_planes;
-         ++i) {
-      VLOG(1) << "Address "
-              << static_cast<void *>(
-                     nvbuf_surf->surfaceList->mappedAddr.addr[i])
-              << ", pitch " << nvbuf_surf->surfaceList->planeParams.pitch[i]
-              << " height " << nvbuf_surf->surfaceList->planeParams.height[i]
-              << " width " << nvbuf_surf->surfaceList->planeParams.width[i]
-              << " bytes per pixel "
-              << nvbuf_surf->surfaceList->planeParams.bytesPerPix[i];
-    }
-    CHECK_EQ(nvbuf_surf->surfaceList->planeParams.width[0],
-             static_cast<size_t>(FLAGS_width));
-    CHECK_EQ(nvbuf_surf->surfaceList->planeParams.height[0],
-             static_cast<size_t>(FLAGS_height));
-
-    aos::Sender<frc971::vision::CameraImage>::Builder builder =
-        sender.MakeBuilder();
-
-    uint8_t *data_pointer = nullptr;
-    builder.fbb()->StartIndeterminateVector(FLAGS_width * FLAGS_height * 2, 1,
-                                            64, &data_pointer);
-
-    YCbCr422(nvbuf_surf, data_pointer);
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data_offset =
-        builder.fbb()->EndIndeterminateVector(FLAGS_width * FLAGS_height * 2,
-                                              1);
-
-    auto image_builder = builder.MakeBuilder<frc971::vision::CameraImage>();
-    image_builder.add_data(data_offset);
-    image_builder.add_rows(FLAGS_height);
-    image_builder.add_cols(FLAGS_width);
-    image_builder.add_monotonic_timestamp_ns(imetadata->getFrameReadoutTime());
-    builder.CheckOk(builder.Send(image_builder.Finish()));
-
-    const aos::monotonic_clock::time_point after_send =
-        aos::monotonic_clock::now();
-
-    CHECK_EQ(NvBufSurfaceUnMap(nvbuf_surf, -1, -1), 0);
-
-    CHECK(imetadata);
-    VLOG(1) << "Got " << imetadata->getCaptureId() << " delay "
-            << chrono::duration<double>(
-                   chrono::nanoseconds((now.time_since_epoch().count() -
-                                        (imetadata->getSensorTimestamp() +
-                                         imetadata->getFrameReadoutTime()))))
-                   .count()
-            << " mmap " << chrono::duration<double>(after_send - now).count()
-            << "sec dt " << chrono::duration<double>(now - last_time).count()
-            << "sec " << dmabuf << " exposure "
-            << imetadata->getSensorExposureTime();
-    i_buffer_output_stream->releaseBuffer(buffer);
-
-    last_time = now;
-  }
-
-  i_capture_session->stopRepeat();
-  i_buffer_output_stream->endOfStream();
-  i_capture_session->waitForIdle();
-
-  output_stream.reset();
-
-  for (uint32_t i = 0; i < surf.size(); i++) {
-    NvBufSurfaceUnMapEglImage(surf[i], 0);
-  }
-
-  eglTerminate(egl_display);
   return 0;
 }
 
