@@ -1,0 +1,7 @@
+Package: libgstreamer-plugins-base1.0-0
+Version: 1.20.7-r0
+Architecture: arm64
+Depends: gstreamer1.0-plugins-base
+Maintainer: Austin Schuh <austin.linux@gmail.com>
+Provides: libgstreamer-plugins-base1.0-0
+Description: Adapter for libgstreamer-plugins-base1.0-0

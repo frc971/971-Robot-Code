@@ -1,0 +1,7 @@
+Package: libz1-yocto
+Version: 1:1.2.13.dfsg-1
+Architecture: arm64
+Depends: zlib1g (= 1:1.2.13.dfsg-1)
+Maintainer: Austin Schuh <austin.linux@gmail.com>
+Provides: libz1 (= 1:1.2.13.dfsg-1)
+Description: Adapter for libz1

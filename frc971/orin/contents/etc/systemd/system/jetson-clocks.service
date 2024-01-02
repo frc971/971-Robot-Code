@@ -3,6 +3,8 @@ WantedBy=multi-user.target
 
 [Unit]
 Description=Service to pin the device to max clock rate
+Requres=cpufrequtils.service
+After=cpufrequtils.service
 
 [Service]
 Type=oneshot

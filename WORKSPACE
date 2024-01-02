@@ -456,8 +456,8 @@ http_archive(
 http_archive(
     name = "arm64_debian_sysroot",
     build_file = "@//:compilers/orin_debian_rootfs.BUILD",
-    sha256 = "afe3061b6f1f7e4f320b141699a63b6afc3a59e522b858b1595e58f2719eb487",
-    url = "https://software.frc971.org/Build-Dependencies/2023-11-22-bookworm-arm64-nvidia-rootfs.tar.xz",
+    sha256 = "b775e1256ab9921a27eef9a738a6f38d900873e07332ad2149dc97eb04ecbdf5",
+    url = "https://software.frc971.org/Build-Dependencies/2024-01-01-bookworm-arm64-nvidia-rootfs.tar.xz",
 )
 
 # Sysroot generated using //frc971/amd64/build_rootfs.py
