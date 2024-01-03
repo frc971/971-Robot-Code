@@ -3,6 +3,8 @@ import {ClientStatistics} from '../../aos/network/message_bridge_client_generate
 import {ServerStatistics, State as ConnectionState} from '../../aos/network/message_bridge_server_generated'
 import {Connection} from '../../aos/network/www/proxy'
 import {ZeroingError} from '../../frc971/control_loops/control_loops_generated'
+import {Position as DrivetrainPosition} from '../../frc971/control_loops/drivetrain/drivetrain_position_generated'
+import {CANPosition as DrivetrainCANPosition} from '../../frc971/control_loops/drivetrain/drivetrain_can_position_generated'
 import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated'
 import {LocalizerOutput} from '../../frc971/control_loops/drivetrain/localization/localizer_output_generated'
 import {TargetMap} from '../../frc971/vision/target_map_generated'
@@ -27,6 +29,8 @@ export class FieldHandler {
   private canvas = document.createElement('canvas');
   private localizerOutput: LocalizerOutput|null = null;
   private drivetrainStatus: DrivetrainStatus|null = null;
+  private drivetrainPosition: DrivetrainPosition|null = null;
+  private drivetrainCANPosition: DrivetrainCANPosition|null = null;
   private superstructureStatus: SuperstructureStatus|null = null;
 
   // Image information indexed by timestamp (seconds since the epoch), so that
@@ -70,6 +74,24 @@ export class FieldHandler {
       (document.getElementById('arm_distal') as HTMLElement);
   private zeroingFaults: HTMLElement =
       (document.getElementById('zeroing_faults') as HTMLElement);
+
+  private leftDrivetrainEncoder: HTMLElement =
+      (document.getElementById('left_drivetrain_encoder') as HTMLElement);
+  private rightDrivetrainEncoder: HTMLElement =
+      (document.getElementById('right_drivetrain_encoder') as HTMLElement);
+  private falconRightFrontPosition: HTMLElement =
+      (document.getElementById('falcon_right_front') as HTMLElement);
+  private falconRightBackPosition: HTMLElement =
+      (document.getElementById('falcon_right_back') as HTMLElement);
+  private falconRightUnderPosition: HTMLElement =
+      (document.getElementById('falcon_right_under') as HTMLElement);
+  private falconLeftFrontPosition: HTMLElement =
+      (document.getElementById('falcon_left_front') as HTMLElement);
+  private falconLeftBackPosition: HTMLElement =
+      (document.getElementById('falcon_left_back') as HTMLElement);
+  private falconLeftUnderPosition: HTMLElement =
+      (document.getElementById('falcon_left_under') as HTMLElement);
+
   constructor(private readonly connection: Connection) {
     (document.getElementById('field') as HTMLElement).appendChild(this.canvas);
 
@@ -155,6 +177,14 @@ export class FieldHandler {
             this.handleDrivetrainStatus(data);
           });
       this.connection.addHandler(
+          '/drivetrain', 'frc971.control_loops.drivetrain.Position', (data) => {
+            this.handleDrivetrainPosition(data);
+          });
+      this.connection.addHandler(
+          '/drivetrain', 'y2023.control_loops.drivetrain.CANPosition', (data) => {
+            this.handleDrivetrainCANPosition(data);
+          });
+      this.connection.addHandler(
           '/localizer', 'frc971.controls.LocalizerOutput', (data) => {
             this.handleLocalizerOutput(data);
           });
@@ -208,6 +238,16 @@ export class FieldHandler {
   private handleDrivetrainStatus(data: Uint8Array): void {
     const fbBuffer = new ByteBuffer(data);
     this.drivetrainStatus = DrivetrainStatus.getRootAsStatus(fbBuffer);
+  }
+
+  private handleDrivetrainPosition(data: Uint8Array): void {
+    const fbBuffer = new ByteBuffer(data);
+    this.drivetrainPosition = DrivetrainPosition.getRootAsPosition(fbBuffer);
+  }
+
+  private handleDrivetrainCANPosition(data: Uint8Array): void {
+    const fbBuffer = new ByteBuffer(data);
+    this.drivetrainCANPosition = DrivetrainCANPosition.getRootAsCANPosition(fbBuffer);
   }
 
   private handleSuperstructureStatus(data: Uint8Array): void {
@@ -462,6 +502,34 @@ export class FieldHandler {
           this.drivetrainStatus.trajectoryLogging().theta(), '#000000FF',
           false);
     }
+
+    if (this.drivetrainPosition) {
+        this.leftDrivetrainEncoder.innerHTML =
+        this.drivetrainPosition.leftEncoder().toString();
+
+        this.rightDrivetrainEncoder.innerHTML =
+        this.drivetrainPosition.rightEncoder().toString();
+    }
+
+    if (this.drivetrainCANPosition) {
+      this.falconRightFrontPosition.innerHTML = //TODO: (niko) Improve this so that falcons are not hard-coded
+      this.drivetrainCANPosition.falcons(0).position().toString();
+
+      this.falconRightBackPosition.innerHTML =
+      this.drivetrainCANPosition.falcons(1).position().toString();
+
+      this.falconRightUnderPosition.innerHTML =
+      this.drivetrainCANPosition.falcons(2).position().toString();
+
+      this.falconLeftFrontPosition.innerHTML =
+      this.drivetrainCANPosition.falcons(3).position().toString();
+
+      this.falconLeftBackPosition.innerHTML =
+      this.drivetrainCANPosition.falcons(4).position().toString();
+
+      this.falconLeftUnderPosition.innerHTML =
+      this.drivetrainCANPosition.falcons(5).position().toString();
+  }
 
     if (this.localizerOutput) {
       if (!this.localizerOutput.zeroed()) {
