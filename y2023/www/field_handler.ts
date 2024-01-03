@@ -56,6 +56,8 @@ export class FieldHandler {
       (document.getElementById('end_effector_state') as HTMLElement);
   private wrist: HTMLElement =
       (document.getElementById('wrist') as HTMLElement);
+  private wristAbsoluteEncoder: HTMLElement =
+      (document.getElementById('wrist_encoder') as HTMLElement);
   private armState: HTMLElement =
       (document.getElementById('arm_state') as HTMLElement);
   private gamePiece: HTMLElement =
@@ -72,6 +74,18 @@ export class FieldHandler {
       (document.getElementById('arm_proximal') as HTMLElement);
   private distal: HTMLElement =
       (document.getElementById('arm_distal') as HTMLElement);
+  private rollPotentiometer: HTMLElement =
+      (document.getElementById('arm_roll_pot') as HTMLElement);
+  private rollAbsoluteEncoder: HTMLElement =
+      (document.getElementById('arm_roll_encoder') as HTMLElement);
+  private proximalPotentiometer: HTMLElement =
+      (document.getElementById('arm_proximal_pot') as HTMLElement);
+  private proximalAbsoluteEncoder: HTMLElement =
+      (document.getElementById('arm_proximal_encoder') as HTMLElement);
+  private distalPotentiometer: HTMLElement =
+      (document.getElementById('arm_distal_pot') as HTMLElement);
+  private distalAbsoluteEncoder: HTMLElement =
+      (document.getElementById('arm_distal_encoder') as HTMLElement);
   private zeroingFaults: HTMLElement =
       (document.getElementById('zeroing_faults') as HTMLElement);
 
@@ -426,6 +440,8 @@ export class FieldHandler {
             this.superstructureStatus.wrist().estimatorState().position(),
             1e-3);
       }
+      this.wristAbsoluteEncoder.innerHTML = this.superstructureStatus.wrist()
+                                            .estimatorState().position().toString();
       this.armState.innerHTML =
           ArmState[this.superstructureStatus.arm().state()];
       this.gamePiece.innerHTML = Class[this.superstructureStatus.gamePiece()];
@@ -439,6 +455,14 @@ export class FieldHandler {
                                 .rollJointEstimatorState()
                                 .position()
                                 .toFixed(2);
+      this.rollPotentiometer.innerHTML = this.superstructureStatus.arm()
+                                    .rollJointEstimatorState()
+                                    .potPosition()
+                                    .toString();
+      this.rollAbsoluteEncoder.innerHTML = this.superstructureStatus.arm()
+                                    .rollJointEstimatorState()
+                                    .absolutePosition()
+                                    .toString();
       this.proximal.innerHTML = this.superstructureStatus.arm()
                                     .proximalEstimatorState()
                                     .position()
@@ -447,6 +471,22 @@ export class FieldHandler {
                                   .distalEstimatorState()
                                   .position()
                                   .toFixed(2);
+      this.proximalPotentiometer.innerHTML = this.superstructureStatus.arm()
+                                                .proximalEstimatorState()
+                                                .potPosition()
+                                                .toString();
+      this.proximalAbsoluteEncoder.innerHTML = this.superstructureStatus.arm()
+                                                .proximalEstimatorState()
+                                                .absolutePosition()
+                                                .toString();
+      this.distalPotentiometer.innerHTML = this.superstructureStatus.arm()
+                                                .distalEstimatorState()
+                                                .potPosition()
+                                                .toString();
+      this.distalAbsoluteEncoder.innerHTML = this.superstructureStatus.arm()
+                                                .distalEstimatorState()
+                                                .absolutePosition()
+                                                .toString();
       let zeroingErrors: string = 'Roll Joint Errors:' +
           '<br/>';
       for (let i = 0; i < this.superstructureStatus.arm()
