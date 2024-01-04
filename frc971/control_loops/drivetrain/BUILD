@@ -42,7 +42,10 @@ static_flatbuffer(
 static_flatbuffer(
     name = "drivetrain_status_fbs",
     srcs = ["drivetrain_status.fbs"],
-    deps = ["//frc971/control_loops:control_loops_fbs"],
+    deps = [
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:encoder_fault_status_fbs",
+    ],
 )
 
 static_flatbuffer(
@@ -62,7 +65,10 @@ flatbuffer_ts_library(
     name = "drivetrain_status_ts_fbs",
     srcs = ["drivetrain_status.fbs"],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = ["//frc971/control_loops:control_loops_ts_fbs"],
+    deps = [
+        "//frc971/control_loops:control_loops_ts_fbs",
+        "//frc971/control_loops:encoder_fault_status_ts_fbs",
+    ],
 )
 
 flatbuffer_ts_library(
@@ -128,7 +134,10 @@ static_flatbuffer(
 static_flatbuffer(
     name = "drivetrain_status_float_fbs",
     srcs = ["drivetrain_status_float.fbs"],
-    deps = ["//frc971/control_loops:control_loops_fbs"],
+    deps = [
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:encoder_fault_status_fbs",
+    ],
 )
 
 aos_config(
@@ -136,6 +145,7 @@ aos_config(
     src = "drivetrain_simulation_channels.json",
     flatbuffers = [
         ":drivetrain_status_fbs",
+        "//frc971/control_loops:encoder_fault_status_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
@@ -162,6 +172,7 @@ aos_config(
         ":drivetrain_output_fbs",
         ":drivetrain_status_fbs",
         ":drivetrain_position_fbs",
+        ":drivetrain_can_position_fbs",
         ":localizer_fbs",
         "//frc971/queues:gyro_fbs",
         "//frc971/queues:gyro_uid_fbs",
@@ -786,6 +797,34 @@ cc_library(
     deps = [
         "//aos/containers:sized_array",
         "//frc971/control_loops:pose",
+    ],
+)
+
+cc_library(
+    name = "drivetrain_encoder_fault_detector",
+    srcs = ["drivetrain_encoder_fault_detector.cc"],
+    hdrs = ["drivetrain_encoder_fault_detector.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos/events:event_loop",
+        "//frc971/control_loops:encoder_fault_detector",
+        "//frc971/control_loops:encoder_fault_status_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_can_position_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+    ],
+)
+
+cc_test(
+    name = "drivetrain_encoder_fault_detector_test",
+    srcs = ["drivetrain_encoder_fault_detector_test.cc"],
+    data = [":simulation_config"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":drivetrain_encoder_fault_detector",
+        "//aos:json_to_flatbuffer",
+        "//aos/events:simulated_event_loop",
+        "//aos/testing:googletest",
     ],
 )
 

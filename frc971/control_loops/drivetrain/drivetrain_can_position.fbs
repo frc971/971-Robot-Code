@@ -13,6 +13,11 @@ table CANPosition {
   // The ctre::phoenix::StatusCode of the measurement
   // Should be OK = 0
   status:int (id: 2);
+
+  // These values aren't used yet but are
+  // arrays that represent falcons on left/right sides of the drivetrain
+  left_falcons: [CANTalonFX] (id: 3);
+  right_falcons: [CANTalonFX] (id: 4);
 }
 
 root_type CANPosition;
