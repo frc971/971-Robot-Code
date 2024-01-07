@@ -254,13 +254,9 @@ class CANSensorReader {
   }
 
   void set_falcons(std::shared_ptr<Falcon> right_front,
-                   std::shared_ptr<Falcon> right_back,
-                   std::shared_ptr<Falcon> left_front,
-                   std::shared_ptr<Falcon> left_back) {
+                   std::shared_ptr<Falcon> right_back) {
     right_front_ = std::move(right_front);
     right_back_ = std::move(right_back);
-    left_front_ = std::move(left_front);
-    left_back_ = std::move(left_back);
   }
 
  private:
@@ -275,7 +271,7 @@ class CANSensorReader {
 
     auto builder = can_position_sender_.MakeBuilder();
 
-    for (auto falcon : {right_front_, right_back_, left_front_, left_back_}) {
+    for (auto falcon : {right_front_, right_back_}) {
       falcon->RefreshNontimesyncedSignals();
     }
 
@@ -283,7 +279,7 @@ class CANSensorReader {
                     kCANFalconCount>
         falcons;
 
-    for (auto falcon : {right_front_, right_back_, left_front_, left_back_}) {
+    for (auto falcon : {right_front_, right_back_}) {
       falcons.push_back(falcon->WritePosition(builder.fbb()));
     }
 
@@ -310,7 +306,7 @@ class CANSensorReader {
   aos::Sender<frc971::control_loops::drivetrain::CANPosition>
       can_position_sender_;
 
-  std::shared_ptr<Falcon> right_front_, right_back_, left_front_, left_back_;
+  std::shared_ptr<Falcon> right_front_, right_back_;
 
   // Pointer to the timer handler used to modify the wakeup.
   ::aos::TimerHandler *timer_handler_;
@@ -471,25 +467,17 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
   }
 
   void set_falcons(std::shared_ptr<Falcon> right_front,
-                   std::shared_ptr<Falcon> right_back,
-                   std::shared_ptr<Falcon> left_front,
-                   std::shared_ptr<Falcon> left_back) {
+                   std::shared_ptr<Falcon> right_back) {
     right_front_ = std::move(right_front);
     right_back_ = std::move(right_back);
-    left_front_ = std::move(left_front);
-    left_back_ = std::move(left_back);
   }
 
   void set_right_inverted(ctre::phoenix6::signals::InvertedValue invert) {
     right_inverted_ = invert;
   }
 
-  void set_left_inverted(ctre::phoenix6::signals::InvertedValue invert) {
-    left_inverted_ = invert;
-  }
-
   void HandleCANConfiguration(const frc971::CANConfiguration &configuration) {
-    for (auto falcon : {right_front_, right_back_, left_front_, left_back_}) {
+    for (auto falcon : {right_front_, right_back_}) {
       falcon->PrintConfigs();
     }
     if (configuration.reapply()) {
@@ -502,33 +490,14 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
     for (auto falcon : {right_front_.get(), right_back_.get()}) {
       falcon->WriteConfigs(right_inverted_);
     }
-
-    for (auto falcon : {left_front_.get(), left_back_.get()}) {
-      falcon->WriteConfigs(left_inverted_);
-    }
   }
 
   void Write(
       const ::frc971::control_loops::drivetrain::Output &output) override {
-    ctre::phoenix6::controls::DutyCycleOut left_control(
-        SafeSpeed(output.left_voltage()));
-    left_control.UpdateFreqHz = 0_Hz;
-    left_control.EnableFOC = true;
-
     ctre::phoenix6::controls::DutyCycleOut right_control(
         SafeSpeed(output.right_voltage()));
     right_control.UpdateFreqHz = 0_Hz;
     right_control.EnableFOC = true;
-
-    for (auto falcon : {left_front_.get(), left_back_.get()}) {
-      ctre::phoenix::StatusCode status =
-          falcon->talon()->SetControl(left_control);
-
-      if (!status.IsOK()) {
-        AOS_LOG(ERROR, "Failed to write control to falcon: %s: %s",
-                status.GetName(), status.GetDescription());
-      }
-    }
 
     for (auto falcon : {right_front_.get(), right_back_.get()}) {
       ctre::phoenix::StatusCode status =
@@ -547,8 +516,7 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
     stop_command.UpdateFreqHz = 0_Hz;
     stop_command.EnableFOC = true;
 
-    for (auto falcon : {right_front_.get(), right_back_.get(),
-                        left_front_.get(), left_back_.get()}) {
+    for (auto falcon : {right_front_.get(), right_back_.get()}) {
       falcon->talon()->SetControl(stop_command);
     }
   }
@@ -557,8 +525,58 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
     return (::aos::Clip(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
   }
 
-  ctre::phoenix6::signals::InvertedValue left_inverted_, right_inverted_;
-  std::shared_ptr<Falcon> right_front_, right_back_, left_front_, left_back_;
+  ctre::phoenix6::signals::InvertedValue right_inverted_;
+  std::shared_ptr<Falcon> right_front_, right_back_;
+};
+class PWMDrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
+                                ::frc971::control_loops::drivetrain::Output> {
+ public:
+  static constexpr double kMaxBringupPower = 12.0;
+
+  PWMDrivetrainWriter(::aos::EventLoop *event_loop)
+      : ::frc971::wpilib::LoopOutputHandler<
+            ::frc971::control_loops::drivetrain::Output>(event_loop,
+                                                         "/drivetrain") {}
+
+  void set_left_controller0(::std::unique_ptr<::frc::PWM> t, bool reversed) {
+    left_controller0_ = ::std::move(t);
+    reversed_left0_ = reversed;
+  }
+
+  void set_left_controller1(::std::unique_ptr<::frc::PWM> t, bool reversed) {
+    left_controller1_ = ::std::move(t);
+    reversed_left1_ = reversed;
+  }
+
+ private:
+  void Write(
+      const ::frc971::control_loops::drivetrain::Output &output) override {
+    left_controller0_->SetSpeed(
+        SafeSpeed(reversed_left0_, output.left_voltage()));
+
+    if (left_controller1_) {
+      left_controller1_->SetSpeed(
+          SafeSpeed(reversed_left1_, output.left_voltage()));
+    }
+  }
+  void Stop() override {
+    AOS_LOG(WARNING, "drivetrain output too old\n");
+    left_controller0_->SetDisabled();
+
+    if (left_controller1_) {
+      left_controller1_->SetDisabled();
+    }
+  }
+
+  double SafeSpeed(bool reversed, double voltage) {
+    return (::aos::Clip((reversed ? -1.0 : 1.0) * voltage, -kMaxBringupPower,
+                        kMaxBringupPower) /
+            12.0);
+  }
+
+  ::std::unique_ptr<::frc::PWM> left_controller0_, left_controller1_;
+
+  bool reversed_right0_, reversed_left0_, reversed_right1_, reversed_left1_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
@@ -594,35 +612,36 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         std::make_shared<Falcon>(1, "Drivetrain Bus", &signals_registry);
     std::shared_ptr<Falcon> right_back =
         std::make_shared<Falcon>(0, "Drivetrain Bus", &signals_registry);
-    std::shared_ptr<Falcon> left_front =
-        std::make_shared<Falcon>(2, "Drivetrain Bus", &signals_registry);
-    std::shared_ptr<Falcon> left_back =
-        std::make_shared<Falcon>(3, "Drivetrain Bus", &signals_registry);
 
     // Thread 3.
+    ::aos::ShmEventLoop output_event_loop(&config.message());
+    PWMDrivetrainWriter drivetrain_writer(&output_event_loop);
+    drivetrain_writer.set_left_controller0(
+        ::std::unique_ptr<::frc::VictorSP>(new ::frc::VictorSP(0)), true);
+
+    AddLoop(&output_event_loop);
+
+    // Thread 4
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
     can_sensor_reader_event_loop.set_name("CANSensorReader");
     CANSensorReader can_sensor_reader(&can_sensor_reader_event_loop,
                                       std::move(signals_registry));
-
-    can_sensor_reader.set_falcons(right_front, right_back, left_front,
-                                  left_back);
-
+    can_sensor_reader.set_falcons(right_front, right_back);
     AddLoop(&can_sensor_reader_event_loop);
 
-    // Thread 4.
+    // Thread 5.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop, values,
                                &can_sensor_reader);
     sensor_reader.set_pwm_trigger(true);
-    sensor_reader.set_drivetrain_left_encoder(make_encoder(4));
-    sensor_reader.set_drivetrain_right_encoder(make_encoder(5));
+    sensor_reader.set_drivetrain_left_encoder(make_encoder(1));
+    sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
     sensor_reader.set_superstructure_reading(superstructure_reading);
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(3));
 
     AddLoop(&sensor_reader_event_loop);
 
-    // Thread 5.
+    // Thread 6.
     // Set up CAN.
     if (!FLAGS_ctre_diag_server) {
       c_Phoenix_Diagnostics_SetSecondsToStart(-1);
@@ -636,19 +655,16 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     ::aos::ShmEventLoop can_output_event_loop(&config.message());
     can_output_event_loop.set_name("CANOutputWriter");
-    DrivetrainWriter drivetrain_writer(&can_output_event_loop);
+    DrivetrainWriter can_drivetrain_writer(&can_output_event_loop);
 
-    drivetrain_writer.set_falcons(right_front, right_back, left_front,
-                                  left_back);
-    drivetrain_writer.set_right_inverted(
+    can_drivetrain_writer.set_falcons(right_front, right_back);
+    can_drivetrain_writer.set_right_inverted(
         ctre::phoenix6::signals::InvertedValue::CounterClockwise_Positive);
-    drivetrain_writer.set_left_inverted(
-        ctre::phoenix6::signals::InvertedValue::Clockwise_Positive);
 
     can_output_event_loop.MakeWatcher(
-        "/roborio",
-        [&drivetrain_writer](const frc971::CANConfiguration &configuration) {
-          drivetrain_writer.HandleCANConfiguration(configuration);
+        "/roborio", [&can_drivetrain_writer](
+                        const frc971::CANConfiguration &configuration) {
+          can_drivetrain_writer.HandleCANConfiguration(configuration);
         });
 
     AddLoop(&can_output_event_loop);
