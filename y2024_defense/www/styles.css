@@ -1,0 +1,74 @@
+.channel {
+  display: flex;
+  border-bottom: 1px solid;
+  font-size: 24px;
+}
+#field {
+  display: inline-block
+}
+
+#readouts,
+#middle_readouts
+{
+  display: inline-block;
+  vertical-align: top;
+  float: right;
+}
+
+
+#legend {
+  display: inline-block;
+}
+
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding: 5px;
+  margin: 10px;
+}
+
+th, td {
+  text-align: right;
+  width: 70px;
+}
+
+td:first-child {
+  width: 150px;
+}
+
+.connected, .near {
+  background-color: LightGreen;
+  border-radius: 10px;
+}
+
+.zeroing {
+  background-color: yellow;
+  border-radius: 10px;
+}
+
+.faulted {
+  background-color: red;
+  border-radius: 10px;
+}
+
+#vision_readouts > div {
+  display: table-row;
+  padding: 5px;
+}
+
+#vision_readouts > div > div {
+  display: table-cell;
+  padding: 5px;
+  text-align: right;
+}
+
+#message_bridge_status > div {
+  display: table-row;
+  padding: 5px;
+}
+
+#message_bridge_status > div > div {
+  display: table-cell;
+  padding: 5px;
+  text-align: right;
+}
