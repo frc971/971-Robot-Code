@@ -5,7 +5,9 @@
 
 #include "aos/logging/logging.h"
 #include "y2020/control_loops/superstructure/accelerator/accelerator_plant.h"
+#include "y2020/control_loops/superstructure/accelerator/integral_accelerator_plant.h"
 #include "y2020/control_loops/superstructure/finisher/finisher_plant.h"
+#include "y2020/control_loops/superstructure/finisher/integral_finisher_plant.h"
 
 namespace y2020 {
 namespace control_loops {
@@ -78,11 +80,11 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
     UpToSpeed(goal);
   }
 
-  flatbuffers::Offset<FlywheelControllerStatus> finisher_status_offset =
-      finisher_.SetStatus(fbb);
-  flatbuffers::Offset<FlywheelControllerStatus> accelerator_left_status_offset =
-      accelerator_left_.SetStatus(fbb);
-  flatbuffers::Offset<FlywheelControllerStatus>
+  flatbuffers::Offset<frc971::control_loops::flywheel::FlywheelControllerStatus>
+      finisher_status_offset = finisher_.SetStatus(fbb);
+  flatbuffers::Offset<frc971::control_loops::flywheel::FlywheelControllerStatus>
+      accelerator_left_status_offset = accelerator_left_.SetStatus(fbb);
+  flatbuffers::Offset<frc971::control_loops::flywheel::FlywheelControllerStatus>
       accelerator_right_status_offset = accelerator_right_.SetStatus(fbb);
 
   ShooterStatusBuilder status_builder(*fbb);

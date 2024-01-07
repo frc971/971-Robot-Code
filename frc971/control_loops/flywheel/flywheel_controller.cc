@@ -1,15 +1,11 @@
-#include "y2020/control_loops/superstructure/shooter/flywheel_controller.h"
+#include "frc971/control_loops/flywheel/flywheel_controller.h"
 
 #include <chrono>
 
 #include "aos/logging/logging.h"
-#include "y2020/control_loops/superstructure/accelerator/accelerator_plant.h"
-#include "y2020/control_loops/superstructure/finisher/finisher_plant.h"
-
-namespace y2020 {
+namespace frc971 {
 namespace control_loops {
-namespace superstructure {
-namespace shooter {
+namespace flywheel {
 
 // Class to current limit battery current for a flywheel controller.
 class CurrentLimitedStateFeedbackController
@@ -169,7 +165,6 @@ FlywheelController::~FlywheelController() {}
 
 double FlywheelController::velocity() const { return loop_->X_hat(1, 0); }
 
-}  // namespace shooter
-}  // namespace superstructure
+}  // namespace flywheel
 }  // namespace control_loops
-}  // namespace y2020
+}  // namespace frc971

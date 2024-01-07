@@ -1,0 +1,22 @@
+namespace frc971.control_loops.flywheel;
+
+table FlywheelControllerStatus {
+  // The current average velocity in radians/second
+  avg_angular_velocity:double (id: 0);
+
+  // The current instantaneous filtered velocity in radians/second.
+  angular_velocity:double (id: 1);
+
+  // The target speed selected by the lookup table or from manual override
+  // Can be compared to velocity to determine if ready.
+  angular_velocity_goal:double (id: 2);
+
+  // Voltage error.
+  voltage_error:double (id: 3);
+
+  // The commanded battery current.
+  commanded_current:double (id: 4);
+
+  // The angular velocity of the flywheel computed using delta x / delta t
+  dt_angular_velocity:double (id: 5);
+}

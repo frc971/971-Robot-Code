@@ -113,19 +113,6 @@ py_binary(
     ],
 )
 
-py_library(
-    name = "flywheel",
-    srcs = [
-        "flywheel.py",
-    ],
-    target_compatible_with = ["@platforms//cpu:x86_64"],
-    deps = [
-        "//frc971/control_loops/python:controls",
-        "@pip//matplotlib",
-        "@pip//pygobject",
-    ],
-)
-
 py_binary(
     name = "accelerator",
     srcs = [
@@ -134,8 +121,8 @@ py_binary(
     legacy_create_init = False,
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
-        ":flywheel",
         ":python_init",
+        "//frc971/control_loops/python:flywheel",
         "@pip//glog",
         "@pip//python_gflags",
     ],
@@ -149,8 +136,8 @@ py_binary(
     legacy_create_init = False,
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
-        ":flywheel",
         ":python_init",
+        "//frc971/control_loops/python:flywheel",
         "@pip//glog",
         "@pip//python_gflags",
     ],
