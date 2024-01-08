@@ -427,6 +427,7 @@ class WatcherState {
 template <typename T>
 RawSender::Error Sender<T>::Send(
     const NonSizePrefixedFlatbuffer<T> &flatbuffer) {
+  CHECK(valid()) << ": Sender must be initialized before sending.";
   return sender_->Send(flatbuffer.span().data(), flatbuffer.span().size());
 }
 
