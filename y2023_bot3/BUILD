@@ -158,7 +158,6 @@ cc_library(
         "//frc971/shooter_interpolation:interpolation",
         "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2023_bot3/control_loops/drivetrain:polydrivetrain_plants",
-        "//y2023_bot3/control_loops/superstructure/pivot_joint:pivot_joint_plants",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
     ],

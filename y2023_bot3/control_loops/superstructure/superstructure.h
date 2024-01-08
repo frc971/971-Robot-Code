@@ -9,8 +9,6 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2023_bot3/constants.h"
 #include "y2023_bot3/constants/constants_generated.h"
-#include "y2023_bot3/control_loops/superstructure/end_effector.h"
-#include "y2023_bot3/control_loops/superstructure/pivot_joint.h"
 #include "y2023_bot3/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2023_bot3/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2023_bot3/control_loops/superstructure/superstructure_position_generated.h"
@@ -34,8 +32,6 @@ class Superstructure
 
   double robot_velocity() const;
 
-  inline const EndEffector &end_effector() const { return end_effector_; }
-
  protected:
   virtual void RunIteration(const Goal *unsafe_goal, const Position *position,
                             aos::Sender<Output>::Builder *output,
@@ -46,12 +42,8 @@ class Superstructure
   std::optional<double> LateralOffsetForTimeOfFlight(double reading);
 
   std::shared_ptr<const constants::Values> values_;
-  EndEffector end_effector_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
-
-  PivotJoint pivot_joint_;
-
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 

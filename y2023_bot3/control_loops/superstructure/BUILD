@@ -61,24 +61,6 @@ flatbuffer_cc_library(
 )
 
 cc_library(
-    name = "end_effector",
-    srcs = [
-        "end_effector.cc",
-    ],
-    hdrs = [
-        "end_effector.h",
-    ],
-    deps = [
-        ":superstructure_goal_fbs",
-        ":superstructure_status_fbs",
-        "//aos/events:event_loop",
-        "//aos/time",
-        "//frc971/control_loops:control_loop",
-        "//y2023_bot3:constants",
-    ],
-)
-
-cc_library(
     name = "superstructure_lib",
     srcs = [
         "superstructure.cc",
@@ -89,8 +71,6 @@ cc_library(
     data = [
     ],
     deps = [
-        ":end_effector",
-        ":pivot_joint",
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",
@@ -187,23 +167,5 @@ cc_binary(
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_reader",
         "//aos/network:team_number",
-    ],
-)
-
-cc_library(
-    name = "pivot_joint",
-    srcs = [
-        "pivot_joint.cc",
-    ],
-    hdrs = [
-        "pivot_joint.h",
-    ],
-    deps = [
-        ":superstructure_goal_fbs",
-        ":superstructure_status_fbs",
-        "//aos/events:event_loop",
-        "//aos/time",
-        "//frc971/control_loops:control_loop",
-        "//y2023_bot3:constants",
     ],
 )

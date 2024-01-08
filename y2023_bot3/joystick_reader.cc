@@ -31,8 +31,6 @@ using frc971::input::driver_station::ControlBit;
 using frc971::input::driver_station::JoystickAxis;
 using frc971::input::driver_station::POVLocation;
 using Side = frc971::control_loops::drivetrain::RobotSide;
-using y2023_bot3::control_loops::superstructure::PivotGoal;
-using y2023_bot3::control_loops::superstructure::RollerGoal;
 
 namespace y2023_bot3 {
 namespace input {
@@ -90,33 +88,6 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       superstructure::Goal::Builder superstructure_goal_builder =
           builder.MakeBuilder<superstructure::Goal>();
 
-      RollerGoal roller_goal = RollerGoal::IDLE;
-      PivotGoal pivot_goal = PivotGoal::NEUTRAL;
-
-      if (data.IsPressed(kSpit)) {
-        roller_goal = RollerGoal::SPIT;
-      } else if (data.IsPressed(kSpitHigh)) {
-        roller_goal = RollerGoal::SPIT_HIGH;
-      }
-
-      if (data.IsPressed(kScore)) {
-        pivot_goal = PivotGoal::SCORE_LOW_FRONT;
-      } else if (data.IsPressed(kScoreBack)) {
-        pivot_goal = PivotGoal::SCORE_LOW_BACK;
-      } else if (data.IsPressed(kScoreMid)) {
-        pivot_goal = PivotGoal::SCORE_MID_FRONT;
-      } else if (data.IsPressed(kScoreMidBack)) {
-        pivot_goal = PivotGoal::SCORE_MID_BACK;
-      } else if (data.IsPressed(kPickup)) {
-        pivot_goal = PivotGoal::PICKUP_FRONT;
-        roller_goal = RollerGoal::INTAKE_CUBE;
-      } else if (data.IsPressed(kPickupBack)) {
-        pivot_goal = PivotGoal::PICKUP_BACK;
-        roller_goal = RollerGoal::INTAKE_CUBE;
-      }
-
-      superstructure_goal_builder.add_roller_goal(roller_goal);
-      superstructure_goal_builder.add_pivot_goal(pivot_goal);
       if (builder.Send(superstructure_goal_builder.Finish()) !=
           aos::RawSender::Error::kOk) {
         AOS_LOG(ERROR, "Sending superstructure goal failed.\n");
