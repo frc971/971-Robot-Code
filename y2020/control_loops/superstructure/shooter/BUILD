@@ -20,29 +20,12 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        ":flywheel_controller",
         "//frc971/control_loops:control_loop",
         "//frc971/control_loops:profiled_subsystem",
+        "//frc971/control_loops/flywheel:flywheel_controller",
         "//y2020/control_loops/superstructure:superstructure_goal_fbs",
         "//y2020/control_loops/superstructure:superstructure_output_fbs",
         "//y2020/control_loops/superstructure:superstructure_position_fbs",
-        "//y2020/control_loops/superstructure:superstructure_status_fbs",
-    ],
-)
-
-cc_library(
-    name = "flywheel_controller",
-    srcs = [
-        "flywheel_controller.cc",
-    ],
-    hdrs = [
-        "flywheel_controller.h",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        "//frc971/control_loops:control_loop",
-        "//frc971/control_loops:profiled_subsystem",
-        "//y2020/control_loops/superstructure:superstructure_goal_fbs",
         "//y2020/control_loops/superstructure:superstructure_status_fbs",
         "//y2020/control_loops/superstructure/accelerator:accelerator_plants",
         "//y2020/control_loops/superstructure/finisher:finisher_plants",

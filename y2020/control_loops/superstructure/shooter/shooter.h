@@ -2,8 +2,8 @@
 #define Y2020_CONTROL_LOOPS_SHOOTER_SHOOTER_H_
 
 #include "frc971/control_loops/control_loop.h"
+#include "frc971/control_loops/flywheel/flywheel_controller.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "y2020/control_loops/superstructure/shooter/flywheel_controller.h"
 #include "y2020/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_position_generated.h"
@@ -42,7 +42,8 @@ class Shooter {
   // flywheel and when it gets shot.
   static constexpr double kMinFinisherVelocityDipWithBall = 5.0;
 
-  FlywheelController finisher_, accelerator_left_, accelerator_right_;
+  frc971::control_loops::flywheel::FlywheelController finisher_,
+      accelerator_left_, accelerator_right_;
 
   void UpToSpeed(const ShooterGoal *goal);
   bool finisher_ready_ = false;

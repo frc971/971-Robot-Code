@@ -1,19 +1,17 @@
-#ifndef Y2020_CONTROL_LOOPS_SHOOTER_FLYWHEEL_CONTROLLER_H_
-#define Y2020_CONTROL_LOOPS_SHOOTER_FLYWHEEL_CONTROLLER_H_
+#ifndef FRC971_CONTROL_LOOPS_SHOOTER_FLYWHEEL_CONTROLLER_H_
+#define FRC971_CONTROL_LOOPS_SHOOTER_FLYWHEEL_CONTROLLER_H_
 
 #include <memory>
 
 #include "aos/time/time.h"
 #include "frc971/control_loops/control_loop.h"
+#include "frc971/control_loops/flywheel/flywheel_controller_status_generated.h"
+#include "frc971/control_loops/hybrid_state_feedback_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
-#include "y2020/control_loops/superstructure/accelerator/integral_accelerator_plant.h"
-#include "y2020/control_loops/superstructure/finisher/integral_finisher_plant.h"
-#include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2020 {
+namespace frc971 {
 namespace control_loops {
-namespace superstructure {
-namespace shooter {
+namespace flywheel {
 
 class CurrentLimitedStateFeedbackController;
 
@@ -75,9 +73,8 @@ class FlywheelController {
   DISALLOW_COPY_AND_ASSIGN(FlywheelController);
 };
 
-}  // namespace shooter
-}  // namespace superstructure
+}  // namespace flywheel
 }  // namespace control_loops
-}  // namespace y2020
+}  // namespace frc971
 
-#endif  // Y2020_CONTROL_LOOPS_SHOOTER_FLYWHEEL_CONTROLLER_H_
+#endif  // FRC971_CONTROL_LOOPS_SHOOTER_FLYWHEEL_CONTROLLER_H_

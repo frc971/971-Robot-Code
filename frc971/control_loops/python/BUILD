@@ -247,6 +247,21 @@ py_library(
 )
 
 py_binary(
+    name = "flywheel",
+    srcs = [
+        "flywheel.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":python_init",
+        "//frc971/control_loops/python:controls",
+        "@pip//matplotlib",
+        "@pip//pygobject",
+    ],
+)
+
+py_binary(
     name = "static_zeroing_single_dof_profiled_subsystem_test",
     srcs = [
         "static_zeroing_single_dof_profiled_subsystem_test.py",

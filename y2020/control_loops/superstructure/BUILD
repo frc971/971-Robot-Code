@@ -35,6 +35,7 @@ flatbuffer_ts_library(
     deps = [
         "//frc971/control_loops:control_loops_ts_fbs",
         "//frc971/control_loops:profiled_subsystem_ts_fbs",
+        "//frc971/control_loops/flywheel:flywheel_controller_status_ts_fbs",
     ],
 )
 
@@ -44,11 +45,12 @@ flatbuffer_cc_library(
         "superstructure_status.fbs",
     ],
     gen_reflections = 1,
-    includes = [
-        "//frc971/control_loops:control_loops_fbs_includes",
-        "//frc971/control_loops:profiled_subsystem_fbs_includes",
-    ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/flywheel:flywheel_controller_status_fbs",
+    ],
 )
 
 flatbuffer_cc_library(
@@ -133,6 +135,7 @@ cc_test(
         "//frc971/control_loops:position_sensor_sim",
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//frc971/control_loops/flywheel:flywheel_test_plant",
         "//y2020/control_loops/superstructure/hood:hood_plants",
         "//y2020/control_loops/superstructure/intake:intake_plants",
         "//y2020/control_loops/superstructure/shooter:shooter_plants",

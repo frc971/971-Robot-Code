@@ -11,6 +11,7 @@
 #include "aos/network/team_number.h"
 #include "frc971/control_loops/capped_test_plant.h"
 #include "frc971/control_loops/control_loop_test.h"
+#include "frc971/control_loops/flywheel/flywheel_test_plant.h"
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 #include "y2020/constants.h"
@@ -51,39 +52,6 @@ typedef Superstructure::AbsoluteAndAbsoluteEncoderSubsystem
 typedef Superstructure::PotAndAbsoluteEncoderSubsystem
     PotAndAbsoluteEncoderSubsystem;
 
-class FlywheelPlant : public StateFeedbackPlant<2, 1, 1> {
- public:
-  explicit FlywheelPlant(StateFeedbackPlant<2, 1, 1> &&other, double bemf,
-                         double resistance)
-      : StateFeedbackPlant<2, 1, 1>(::std::move(other)),
-        bemf_(bemf),
-        resistance_(resistance) {}
-
-  void CheckU(const Eigen::Matrix<double, 1, 1> &U) override {
-    EXPECT_LE(U(0, 0), U_max(0, 0) + 0.00001 + voltage_offset_);
-    EXPECT_GE(U(0, 0), U_min(0, 0) - 0.00001 + voltage_offset_);
-  }
-
-  double motor_current(const Eigen::Matrix<double, 1, 1> U) const {
-    return (U(0) - X(1) / bemf_) / resistance_;
-  }
-
-  double battery_current(const Eigen::Matrix<double, 1, 1> U) const {
-    return motor_current(U) * U(0) / 12.0;
-  }
-
-  double voltage_offset() const { return voltage_offset_; }
-  void set_voltage_offset(double voltage_offset) {
-    voltage_offset_ = voltage_offset;
-  }
-
- private:
-  double voltage_offset_ = 0.0;
-
-  double bemf_;
-  double resistance_;
-};
-
 // Class which simulates the superstructure and sends out queue messages with
 // the position.
 class SuperstructureSimulation {
@@ -111,14 +79,16 @@ class SuperstructureSimulation {
                             .turret.subsystem_params.zeroing_constants
                             .one_revolution_distance),
         accelerator_left_plant_(
-            new FlywheelPlant(accelerator::MakeAcceleratorPlant(),
-                              accelerator::kBemf, accelerator::kResistance)),
+            new frc971::control_loops::flywheel::FlywheelPlant(
+                accelerator::MakeAcceleratorPlant(), accelerator::kBemf,
+                accelerator::kResistance)),
         accelerator_right_plant_(
-            new FlywheelPlant(accelerator::MakeAcceleratorPlant(),
-                              accelerator::kBemf, accelerator::kResistance)),
-        finisher_plant_(new FlywheelPlant(finisher::MakeFinisherPlant(),
-                                          finisher::kBemf,
-                                          finisher::kResistance)) {
+            new frc971::control_loops::flywheel::FlywheelPlant(
+                accelerator::MakeAcceleratorPlant(), accelerator::kBemf,
+                accelerator::kResistance)),
+        finisher_plant_(new frc971::control_loops::flywheel::FlywheelPlant(
+            finisher::MakeFinisherPlant(), finisher::kBemf,
+            finisher::kResistance)) {
     InitializeHoodPosition(constants::Values::kHoodRange().upper);
     InitializeIntakePosition(constants::Values::kIntakeRange().upper);
     InitializeTurretPosition(constants::Values::kTurretRange().middle());
@@ -413,9 +383,12 @@ class SuperstructureSimulation {
   ::std::unique_ptr<CappedTestPlant> turret_plant_;
   PositionSensorSimulator turret_encoder_;
 
-  ::std::unique_ptr<FlywheelPlant> accelerator_left_plant_;
-  ::std::unique_ptr<FlywheelPlant> accelerator_right_plant_;
-  ::std::unique_ptr<FlywheelPlant> finisher_plant_;
+  ::std::unique_ptr<frc971::control_loops::flywheel::FlywheelPlant>
+      accelerator_left_plant_;
+  ::std::unique_ptr<frc971::control_loops::flywheel::FlywheelPlant>
+      accelerator_right_plant_;
+  ::std::unique_ptr<frc971::control_loops::flywheel::FlywheelPlant>
+      finisher_plant_;
 
   // The acceleration limits to check for while moving.
   double peak_hood_acceleration_ = 1e10;

@@ -1,5 +1,6 @@
 include "frc971/control_loops/control_loops.fbs";
 include "frc971/control_loops/profiled_subsystem.fbs";
+include "frc971/control_loops/flywheel/flywheel_controller_status.fbs";
 
 namespace y2020.control_loops.superstructure;
 
@@ -9,36 +10,14 @@ enum Subsystem:byte {
   TURRET
 }
 
-table FlywheelControllerStatus {
-  // The current average velocity in radians/second over the last kHistoryLength
-  // in shooter.h
-  avg_angular_velocity:double (id: 0);
-
-  // The current instantaneous filtered velocity in radians/second.
-  angular_velocity:double (id: 1);
-
-  // The target speed selected by the lookup table or from manual override
-  // Can be compared to velocity to determine if ready.
-  angular_velocity_goal:double (id: 2);
-
-  // Voltage error.
-  voltage_error:double (id: 3);
-
-  // The commanded battery current.
-  commanded_current:double (id: 4);
-
-  // The angular velocity of the flywheel computed using delta x / delta t
-  dt_angular_velocity:double (id: 5);
-}
-
 table ShooterStatus {
   // The final wheel shooting the ball
-  finisher:FlywheelControllerStatus (id: 0);
+  finisher:frc971.control_loops.flywheel.FlywheelControllerStatus (id: 0);
 
   // The subsystem to accelerate the ball before the finisher
   // Velocity is the fastest (top) wheel
-  accelerator_left:FlywheelControllerStatus (id: 1);
-  accelerator_right:FlywheelControllerStatus (id: 2);
+  accelerator_left:frc971.control_loops.flywheel.FlywheelControllerStatus (id: 1);
+  accelerator_right:frc971.control_loops.flywheel.FlywheelControllerStatus (id: 2);
 
   // If the shooter is ready, this is true.  Note: don't use this for status
   // checking, only for plotting.  Changes in goal take time to impact this.

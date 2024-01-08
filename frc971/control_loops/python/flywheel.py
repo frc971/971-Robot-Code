@@ -1,7 +1,9 @@
 from frc971.control_loops.python import control_loop
 from frc971.control_loops.python import controls
 import numpy
-from matplotlib import pylab
+
+import matplotlib
+import matplotlib.pyplot as plt
 
 import glog
 
@@ -251,21 +253,23 @@ def PlotSpinup(params, goal, iterations=400):
         t.append(initial_t + i * flywheel.dt)
         u.append(U[0, 0])
 
-    pylab.subplot(3, 1, 1)
-    pylab.plot(t, v, label='x')
-    pylab.plot(t, x_hat, label='x_hat')
-    pylab.legend()
+    matplotlib.use("GTK3Agg")
 
-    pylab.subplot(3, 1, 2)
-    pylab.plot(t, u, label='u')
-    pylab.plot(t, offset, label='voltage_offset')
-    pylab.legend()
+    plt.subplot(3, 1, 1)
+    plt.plot(t, v, label='x')
+    plt.plot(t, x_hat, label='x_hat')
+    plt.legend()
 
-    pylab.subplot(3, 1, 3)
-    pylab.plot(t, a, label='a')
-    pylab.legend()
+    plt.subplot(3, 1, 2)
+    plt.plot(t, u, label='u')
+    plt.plot(t, offset, label='voltage_offset')
+    plt.legend()
 
-    pylab.show()
+    plt.subplot(3, 1, 3)
+    plt.plot(t, a, label='a')
+    plt.legend()
+
+    plt.show()
 
 
 def WriteFlywheel(params, plant_files, controller_files, namespace):

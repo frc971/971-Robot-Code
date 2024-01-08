@@ -2,7 +2,8 @@ import {ByteBuffer} from 'flatbuffers';
 import {Connection} from '../../aos/network/www/proxy';
 import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated';
 import {LocalizerDebug, RejectionReason, ImageMatchDebug} from '../control_loops/drivetrain/localizer_debug_generated';
-import {Status as SuperstructureStatus, FlywheelControllerStatus} from '../control_loops/superstructure/superstructure_status_generated'
+import {Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
+import {FlywheelControllerStatus} from '../../frc971/control_loops/flywheel/flywheel_controller_status_generated'
 import {ImageMatchResult} from '../vision/sift/sift_generated';
 
 import {FIELD_LENGTH, FIELD_WIDTH, FT_TO_M, IN_TO_M} from './constants';
