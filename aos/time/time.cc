@@ -23,6 +23,26 @@ extern "C" volatile uint32_t systick_millis_count;
 
 namespace chrono = ::std::chrono;
 
+namespace {
+
+void PrintToStream(std::ostream &stream, chrono::nanoseconds duration) {
+  chrono::seconds seconds = chrono::duration_cast<chrono::seconds>(duration);
+  if (duration < chrono::nanoseconds(0)) {
+    stream << "-" << -seconds.count() << "." << std::setfill('0')
+           << std::setw(9)
+           << chrono::duration_cast<chrono::nanoseconds>(seconds - duration)
+                  .count()
+           << "sec";
+  } else {
+    stream << seconds.count() << "." << std::setfill('0') << std::setw(9)
+           << chrono::duration_cast<chrono::nanoseconds>(duration - seconds)
+                  .count()
+           << "sec";
+  }
+}
+
+}  // namespace
+
 #ifdef __linux__
 
 namespace std {
@@ -57,27 +77,7 @@ namespace aos {
 
 std::ostream &operator<<(std::ostream &stream,
                          const aos::monotonic_clock::time_point &now) {
-  if (now < monotonic_clock::epoch()) {
-    std::chrono::seconds seconds =
-        std::chrono::duration_cast<std::chrono::seconds>(
-            now.time_since_epoch());
-
-    stream << "-" << -seconds.count() << "." << std::setfill('0')
-           << std::setw(9)
-           << std::chrono::duration_cast<std::chrono::nanoseconds>(
-                  seconds - now.time_since_epoch())
-                  .count()
-           << "sec";
-  } else {
-    std::chrono::seconds seconds =
-        std::chrono::duration_cast<std::chrono::seconds>(
-            now.time_since_epoch());
-    stream << seconds.count() << "." << std::setfill('0') << std::setw(9)
-           << std::chrono::duration_cast<std::chrono::nanoseconds>(
-                  now.time_since_epoch() - seconds)
-                  .count()
-           << "sec";
-  }
+  PrintToStream(stream, now.time_since_epoch());
   return stream;
 }
 
