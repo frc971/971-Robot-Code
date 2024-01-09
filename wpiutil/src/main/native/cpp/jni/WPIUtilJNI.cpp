@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include "edu_wpi_first_util_WPIUtilJNI.h"
+#include "wpi/RawFrame.h"
 #include "wpi/Synchronization.h"
 #include "wpi/jni_util.h"
 #include "wpi/timestamp.h"
@@ -315,6 +316,97 @@ Java_edu_wpi_first_util_WPIUtilJNI_waitForObjectsTimeout
     return nullptr;
   }
   return MakeJIntArray(env, signaled);
+}
+
+/*
+ * Class:     edu_wpi_first_util_WPIUtilJNI
+ * Method:    allocateRawFrame
+ * Signature: ()J
+ */
+JNIEXPORT jlong JNICALL
+Java_edu_wpi_first_util_WPIUtilJNI_allocateRawFrame
+  (JNIEnv*, jclass)
+{
+  return reinterpret_cast<jlong>(new wpi::RawFrame);
+}
+
+/*
+ * Class:     edu_wpi_first_util_WPIUtilJNI
+ * Method:    freeRawFrame
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL
+Java_edu_wpi_first_util_WPIUtilJNI_freeRawFrame
+  (JNIEnv*, jclass, jlong frame)
+{
+  delete reinterpret_cast<wpi::RawFrame*>(frame);
+}
+
+/*
+ * Class:     edu_wpi_first_util_WPIUtilJNI
+ * Method:    getRawFrameDataPtr
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_edu_wpi_first_util_WPIUtilJNI_getRawFrameDataPtr
+  (JNIEnv* env, jclass, jlong frame)
+{
+  auto* f = reinterpret_cast<wpi::RawFrame*>(frame);
+  if (!f) {
+    wpi::ThrowNullPointerException(env, "frame is null");
+    return 0;
+  }
+  return reinterpret_cast<jlong>(f->data);
+}
+
+/*
+ * Class:     edu_wpi_first_util_WPIUtilJNI
+ * Method:    setRawFrameData
+ * Signature: (JLjava/lang/Object;IIIII)V
+ */
+JNIEXPORT void JNICALL
+Java_edu_wpi_first_util_WPIUtilJNI_setRawFrameData
+  (JNIEnv* env, jclass, jlong frame, jobject data, jint size, jint width,
+   jint height, jint stride, jint pixelFormat)
+{
+  auto* f = reinterpret_cast<wpi::RawFrame*>(frame);
+  if (!f) {
+    wpi::ThrowNullPointerException(env, "frame is null");
+    return;
+  }
+  auto buf = env->GetDirectBufferAddress(data);
+  if (!buf) {
+    wpi::ThrowNullPointerException(env, "data is null");
+    return;
+  }
+  // there's no way to free a passed-in direct byte buffer
+  f->SetData(buf, size, env->GetDirectBufferCapacity(data), nullptr,
+             [](void*, void*, size_t) {});
+  f->width = width;
+  f->height = height;
+  f->stride = stride;
+  f->pixelFormat = pixelFormat;
+}
+
+/*
+ * Class:     edu_wpi_first_util_WPIUtilJNI
+ * Method:    setRawFrameInfo
+ * Signature: (JIIIII)V
+ */
+JNIEXPORT void JNICALL
+Java_edu_wpi_first_util_WPIUtilJNI_setRawFrameInfo
+  (JNIEnv* env, jclass, jlong frame, jint size, jint width, jint height,
+   jint stride, jint pixelFormat)
+{
+  auto* f = reinterpret_cast<wpi::RawFrame*>(frame);
+  if (!f) {
+    wpi::ThrowNullPointerException(env, "frame is null");
+    return;
+  }
+  f->width = width;
+  f->height = height;
+  f->stride = stride;
+  f->pixelFormat = pixelFormat;
 }
 
 }  // extern "C"

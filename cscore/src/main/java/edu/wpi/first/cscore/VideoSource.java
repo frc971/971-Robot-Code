@@ -4,16 +4,23 @@
 
 package edu.wpi.first.cscore;
 
+import edu.wpi.first.util.PixelFormat;
+
 /**
  * A source for video that provides a sequence of frames. Each frame may consist of multiple images
  * (e.g. from a stereo or depth camera); these are called channels.
  */
 public class VideoSource implements AutoCloseable {
   public enum Kind {
+    /** Unknown video source. */
     kUnknown(0),
+    /** USB video source. */
     kUsb(1),
+    /** HTTP video source. */
     kHttp(2),
+    /** CV video source. */
     kCv(4),
+    /** Raw video source. */
     kRaw(8);
 
     private final int value;
@@ -235,7 +242,7 @@ public class VideoSource implements AutoCloseable {
    * @param fps desired FPS
    * @return True if set successfully
    */
-  public boolean setVideoMode(VideoMode.PixelFormat pixelFormat, int width, int height, int fps) {
+  public boolean setVideoMode(PixelFormat pixelFormat, int width, int height, int fps) {
     return CameraServerJNI.setSourceVideoMode(m_handle, pixelFormat.getValue(), width, height, fps);
   }
 
@@ -245,7 +252,7 @@ public class VideoSource implements AutoCloseable {
    * @param pixelFormat desired pixel format
    * @return True if set successfully
    */
-  public boolean setPixelFormat(VideoMode.PixelFormat pixelFormat) {
+  public boolean setPixelFormat(PixelFormat pixelFormat) {
     return CameraServerJNI.setSourcePixelFormat(m_handle, pixelFormat.getValue());
   }
 

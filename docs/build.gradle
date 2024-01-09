@@ -144,6 +144,10 @@ doxygen {
 
     exclude '*.pb.h'
 
+    // Save space by excluding protobuf and eigen
+    exclude 'Eigen/**'
+    exclude 'google/protobuf/**'
+
     aliases 'effects=\\par <i>Effects:</i>^^',
             'notes=\\par <i>Notes:</i>^^',
             'requires=\\par <i>Requires:</i>^^',
@@ -204,28 +208,25 @@ configurations {
     }
 }
 
-ext {
-    sharedCvConfigs = [:]
-    staticCvConfigs = [:]
-    useJava = true
-    useCpp = false
-    skipDev = true
-    useDocumentation = true
-}
-
-apply from: "${rootDir}/shared/opencv.gradle"
-
 task generateJavaDocs(type: Javadoc) {
-    classpath += project(":wpimath").sourceSets.main.compileClasspath
+    classpath += project(":wpilibj").sourceSets.main.compileClasspath
     options.links("https://docs.oracle.com/en/java/javase/17/docs/api/")
+    options.links("https://docs.opencv.org/4.x/javadoc/")
     options.addStringOption("tag", "pre:a:Pre-Condition")
+    options.addBooleanOption("Xdoclint/package:-edu.wpi.first.math.proto," +
+            "-edu.wpi.first.math.controller.proto," +
+            "-edu.wpi.first.math.controller.struct," +
+            "-edu.wpi.first.math.geometry.proto," +
+            "-edu.wpi.first.math.geometry.struct," +
+            "-edu.wpi.first.math.kinematics.proto," +
+            "-edu.wpi.first.math.kinematics.struct," +
+            "-edu.wpi.first.math.system.plant.proto," +
+            "-edu.wpi.first.math.system.plant.struct," +
+            "-edu.wpi.first.math.trajectory.proto", true)
     options.addBooleanOption("Xdoclint:html,missing,reference,syntax", true)
     options.addBooleanOption('html5', true)
     options.linkSource(true)
-    dependsOn project(':hal').generateUsageReporting
-    dependsOn project(':ntcore').ntcoreGenerateJavaTypes
     dependsOn project(':wpilibj').generateJavaVersion
-    dependsOn project(':wpimath').generateNat
     source project(':apriltag').sourceSets.main.java
     source project(':cameraserver').sourceSets.main.java
     source project(':cscore').sourceSets.main.java

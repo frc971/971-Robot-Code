@@ -17,8 +17,18 @@ namespace frc {
 class PowerDistribution : public wpi::Sendable,
                           public wpi::SendableHelper<PowerDistribution> {
  public:
+  /// Default module number.
   static constexpr int kDefaultModule = -1;
-  enum class ModuleType { kCTRE = 1, kRev = 2 };
+
+  /**
+   * Power distribution module type.
+   */
+  enum class ModuleType {
+    /// CTRE (Cross The Road Electronics) CTRE Power Distribution Panel (PDP).
+    kCTRE = 1,
+    /// REV Power Distribution Hub (PDH).
+    kRev = 2
+  };
 
   /**
    * Constructs a PowerDistribution object.
@@ -159,8 +169,22 @@ class PowerDistribution : public wpi::Sendable,
     uint32_t Brownout : 1;
     uint32_t CanWarning : 1;
     uint32_t HardwareFault : 1;
+
+    /**
+     * Gets whether there is a breaker fault at a specified channel.
+     * @param channel Channel to check for faults.
+     * @return If there is a breaker fault.
+     * @throws A ChannelIndexOutOfRange error if the given int is outside of the
+     * range supported by the hardware.
+     */
+    bool GetBreakerFault(int channel) const;
   };
 
+  /**
+   * Returns the power distribution faults.
+   *
+   * @return The power distribution faults.
+   */
   Faults GetFaults() const;
 
   struct StickyFaults {
@@ -192,8 +216,23 @@ class PowerDistribution : public wpi::Sendable,
     uint32_t CanWarning : 1;
     uint32_t CanBusOff : 1;
     uint32_t HasReset : 1;
+
+    /**
+     * Gets whether there is a sticky breaker fault at the specified channel.
+     * @param channel Index to check for sticky faults.
+     * @return True if there is a sticky breaker fault at the channel, otherwise
+     * false.
+     * @throws A ChannelIndexOutOfRange error if the provided channel is outside
+     * of the range supported by the hardware.
+     */
+    bool GetBreakerFault(int channel) const;
   };
 
+  /**
+   * Returns the power distribution sticky faults.
+   *
+   * @return The power distribution sticky faults.
+   */
   StickyFaults GetStickyFaults() const;
 
   void InitSendable(wpi::SendableBuilder& builder) override;

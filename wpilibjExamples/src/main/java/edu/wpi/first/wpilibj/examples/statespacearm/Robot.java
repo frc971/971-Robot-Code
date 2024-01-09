@@ -19,7 +19,6 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.motorcontrol.MotorController;
 import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 
 /**
@@ -92,7 +91,7 @@ public class Robot extends TimedRobot {
   // An encoder set up to measure arm position in radians.
   private final Encoder m_encoder = new Encoder(kEncoderAChannel, kEncoderBChannel);
 
-  private final MotorController m_motor = new PWMSparkMax(kMotorPort);
+  private final PWMSparkMax m_motor = new PWMSparkMax(kMotorPort);
 
   // A joystick to read the trigger from.
   private final Joystick m_joystick = new Joystick(kJoystickPort);
@@ -126,7 +125,7 @@ public class Robot extends TimedRobot {
       goal = new TrapezoidProfile.State(kLoweredPosition, 0.0);
     }
     // Step our TrapezoidalProfile forward 20ms and set it as our next reference
-    m_lastProfiledReference = m_profile.calculate(0.020, goal, m_lastProfiledReference);
+    m_lastProfiledReference = m_profile.calculate(0.020, m_lastProfiledReference, goal);
     m_loop.setNextR(m_lastProfiledReference.position, m_lastProfiledReference.velocity);
     // Correct our Kalman filter's state vector estimate with encoder data.
     m_loop.correct(VecBuilder.fill(m_encoder.getDistance()));
