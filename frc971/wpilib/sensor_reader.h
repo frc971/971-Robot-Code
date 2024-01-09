@@ -9,6 +9,7 @@
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
 #include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
 #include "frc971/wpilib/ahal/DigitalInput.h"
@@ -214,6 +215,13 @@ class SensorReader {
     return static_cast<double>(value) / counts_per_revolution * ratio *
            (2.0 * M_PI);
   }
+
+  void SendDrivetrainPosition(
+      aos::Sender<control_loops::drivetrain::Position>
+          drivetrain_position_sender,
+      std::function<double(double input)> velocity_translate,
+      std::function<double(double input)> encoder_to_meters, bool left_inverted,
+      bool right_inverted);
 
   ::aos::EventLoop *event_loop_;
   ::aos::Sender<::aos::RobotState> robot_state_sender_;

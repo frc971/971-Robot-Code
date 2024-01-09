@@ -401,6 +401,7 @@ cc_library(
         "//aos/time",
         "//aos/util:phased_loop",
         "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
         "//third_party:wpilib",
     ],
 )
