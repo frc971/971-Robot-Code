@@ -9,36 +9,11 @@
 #include "device_launch_parameters.h"
 #include "frc971/orin/cuda.h"
 #include "frc971/orin/gpu_image.h"
+#include "frc971/orin/line_fit_filter.h"
 #include "frc971/orin/points.h"
 
 namespace frc971 {
 namespace apriltag {
-
-// Class to hold the extents of a blob of points.
-struct MinMaxExtents {
-  // Min and max coordinates (in non-decimated coordinates)
-  uint16_t min_x;
-  uint16_t min_y;
-  uint16_t max_x;
-  uint16_t max_y;
-
-  // The starting offset of this blob of points in the vector holding all the
-  // points.
-  uint32_t starting_offset;
-
-  // The number of points in the blob.
-  uint32_t count;
-
-  // Center location of the blob using the aprilrobotics algorithm.
-  __host__ __device__ float cx() const {
-    return (min_x + max_x) * 0.5f + 0.05118;
-  }
-  __host__ __device__ float cy() const {
-    return (min_y + max_y) * 0.5f + -0.028581;
-  }
-};
-
-static_assert(sizeof(MinMaxExtents) == 16, "MinMaxExtents didn't pack right.");
 
 // Class to find the blob index of a point in a point vector.
 class BlobExtentsIndexFinder {
@@ -58,7 +33,6 @@ class BlobExtentsIndexFinder {
       }
 
       size_t average = min + (max - min) / 2;
-
       if (average < num_extents_ && extents_device_[average].starting_offset <=
                                         static_cast<size_t>(point_index)) {
         min = average;
@@ -80,6 +54,12 @@ class BlobExtentsIndexFinder {
   // TODO(austin): Cache the last one?
 };
 
+struct QuadCorners {
+  float corners[4][2];
+  bool reversed_border;
+  uint32_t blob_index;
+};
+
 // GPU based april tag detector.
 class GpuDetector {
  public:
@@ -88,35 +68,40 @@ class GpuDetector {
 
   // Constructs a detector, reserving space for detecting tags of the provided
   // with and height, using the provided detector options.
-  GpuDetector(size_t width, size_t height,
-              const apriltag_detector_t *tag_detector);
+  GpuDetector(size_t width, size_t height, apriltag_detector_t *tag_detector);
 
   virtual ~GpuDetector();
 
   // Detects april tags in the provided image.
   void Detect(const uint8_t *image);
 
+  const std::vector<QuadCorners> &FitQuads() const;
+
+  const zarray_t *Detections() const { return detections_; }
+
   // Debug methods to expose internal state for testing.
-  void CopyGrayTo(uint8_t *output) { gray_image_device_.MemcpyTo(output); }
-  void CopyDecimatedTo(uint8_t *output) {
+  void CopyGrayTo(uint8_t *output) const {
+    gray_image_device_.MemcpyTo(output);
+  }
+  void CopyDecimatedTo(uint8_t *output) const {
     decimated_image_device_.MemcpyTo(output);
   }
-  void CopyThresholdedTo(uint8_t *output) {
+  void CopyThresholdedTo(uint8_t *output) const {
     thresholded_image_device_.MemcpyTo(output);
   }
-  void CopyUnionMarkersTo(uint32_t *output) {
+  void CopyUnionMarkersTo(uint32_t *output) const {
     union_markers_device_.MemcpyTo(output);
   }
 
-  void CopyUnionMarkerPairTo(QuadBoundaryPoint *output) {
+  void CopyUnionMarkerPairTo(QuadBoundaryPoint *output) const {
     union_marker_pair_device_.MemcpyTo(output);
   }
 
-  void CopyCompressedUnionMarkerPairTo(QuadBoundaryPoint *output) {
+  void CopyCompressedUnionMarkerPairTo(QuadBoundaryPoint *output) const {
     compressed_union_marker_pair_device_.MemcpyTo(output);
   }
 
-  std::vector<QuadBoundaryPoint> CopySortedUnionMarkerPair() {
+  std::vector<QuadBoundaryPoint> CopySortedUnionMarkerPair() const {
     std::vector<QuadBoundaryPoint> result;
     int size = NumCompressedUnionMarkerPairs();
     result.resize(size);
@@ -124,39 +109,75 @@ class GpuDetector {
     return result;
   }
 
-  int NumCompressedUnionMarkerPairs() {
+  int NumCompressedUnionMarkerPairs() const {
     return num_compressed_union_marker_pair_device_.Copy()[0];
   }
 
-  void CopyUnionMarkersSizeTo(uint32_t *output) {
+  void CopyUnionMarkersSizeTo(uint32_t *output) const {
     union_markers_size_device_.MemcpyTo(output);
   }
 
   int NumQuads() const { return num_quads_device_.Copy()[0]; }
 
-  std::vector<MinMaxExtents> CopyExtents() {
+  std::vector<MinMaxExtents> CopyExtents() const {
     return extents_device_.Copy(NumQuads());
   }
 
-  std::vector<float> CopyReducedDotBlobs() {
-    return reduced_dot_blobs_pair_device_.Copy(NumQuads());
-  }
-
-  std::vector<cub::KeyValuePair<long, MinMaxExtents>> CopySelectedExtents() {
+  std::vector<cub::KeyValuePair<long, MinMaxExtents>> CopySelectedExtents()
+      const {
     return selected_extents_device_.Copy(NumQuads());
   }
 
   int NumSelectedPairs() const { return num_selected_blobs_device_.Copy()[0]; }
 
-  std::vector<IndexPoint> CopySelectedBlobs() {
+  std::vector<IndexPoint> CopySelectedBlobs() const {
     return selected_blobs_device_.Copy(NumSelectedPairs());
   }
 
-  std::vector<IndexPoint> CopySortedSelectedBlobs() {
+  std::vector<IndexPoint> CopySortedSelectedBlobs() const {
     return sorted_selected_blobs_device_.Copy(NumSelectedPairs());
   }
 
+  std::vector<LineFitPoint> CopyLineFitPoints() const {
+    return line_fit_points_device_.Copy(NumSelectedPairs());
+  }
+
+  std::vector<double> CopyErrors() const {
+    return errs_device_.Copy(NumSelectedPairs());
+  }
+
+  std::vector<double> CopyFilteredErrors() const {
+    return filtered_errs_device_.Copy(NumSelectedPairs());
+  }
+  std::vector<Peak> CopyPeaks() const {
+    return filtered_is_local_peak_device_.Copy(NumSelectedPairs());
+  }
+
+  int NumCompressedPeaks() const {
+    return num_compressed_peaks_device_.Copy()[0];
+  }
+
+  std::vector<Peak> CopyCompressedPeaks() const {
+    return compressed_peaks_device_.Copy(NumCompressedPeaks());
+  }
+
+  int NumFitQuads() const { return num_quad_peaked_quads_device_.Copy()[0]; }
+
+  std::vector<FitQuad> CopyFitQuads() const {
+    return fit_quads_device_.Copy(NumFitQuads());
+  }
+
+  void AdjustCenter(float corners[4][2]) const;
+
  private:
+  void UpdateFitQuads();
+
+  void AdjustPixelCenters();
+
+  void DecodeTags();
+
+  static void QuadDecodeTask(void *_u);
+
   // Creates a GPU image wrapped around the provided memory.
   template <typename T>
   GpuImage<T> ToGpuImage(GpuMemory<T> &memory) {
@@ -184,7 +205,7 @@ class GpuDetector {
   const size_t height_;
 
   // Detector parameters.
-  const apriltag_detector_t *tag_detector_;
+  apriltag_detector_t *tag_detector_;
 
   // Stream to operate on.
   CudaStream stream_;
@@ -193,19 +214,29 @@ class GpuDetector {
   CudaEvent start_;
   CudaEvent after_image_memcpy_to_device_;
   CudaEvent after_threshold_;
+  CudaEvent after_memcpy_gray_;
   CudaEvent after_memset_;
   CudaEvent after_unionfinding_;
   CudaEvent after_diff_;
   CudaEvent after_compact_;
   CudaEvent after_sort_;
   CudaEvent after_bounds_;
-  CudaEvent after_dot_;
   CudaEvent after_transform_extents_;
   CudaEvent after_filter_;
   CudaEvent after_filtered_sort_;
+  CudaEvent after_line_fit_;
+  CudaEvent after_line_filter_;
+  CudaEvent after_peak_compression_;
+  CudaEvent after_peak_count_memcpy_;
+  CudaEvent after_peak_sort_;
+  CudaEvent after_filtered_peak_reduce_;
+  CudaEvent after_filtered_peak_host_memcpy_;
+  CudaEvent after_quad_fit_;
+  CudaEvent after_quad_fit_memcpy_;
 
   // TODO(austin): Remove this...
   HostMemory<uint8_t> color_image_host_;
+  HostMemory<uint8_t> gray_image_host_;
 
   // Starting color image.
   GpuMemory<uint8_t> color_image_device_;
@@ -238,9 +269,6 @@ class GpuDetector {
   GpuMemory<size_t> num_quads_device_{/* allocate 1 integer...*/ 1};
   // Bounds per blob, one blob per ID.
   GpuMemory<MinMaxExtents> extents_device_;
-  // Sum of the dot products between the vector from center to each point, with
-  // the gradient at each point.
-  GpuMemory<float> reduced_dot_blobs_pair_device_;
   // Extents of all the blobs under consideration.
   GpuMemory<cub::KeyValuePair<long, MinMaxExtents>> selected_extents_device_;
 
@@ -252,6 +280,24 @@ class GpuDetector {
   // Sorted list of those points.
   GpuMemory<IndexPoint> sorted_selected_blobs_device_;
 
+  // TODO(austin): Can we bound this better?  This is a lot of memory.
+  GpuMemory<LineFitPoint> line_fit_points_device_;
+
+  GpuMemory<double> errs_device_;
+  GpuMemory<double> filtered_errs_device_;
+  GpuMemory<Peak> filtered_is_local_peak_device_;
+  GpuMemory<int> num_compressed_peaks_device_{/* allocate 1 integer...*/ 1};
+  GpuMemory<Peak> compressed_peaks_device_;
+  GpuMemory<Peak> sorted_compressed_peaks_device_;
+
+  GpuMemory<int> num_quad_peaked_quads_device_{/* allocate 1 integer...*/ 1};
+  GpuMemory<PeakExtents> peak_extents_device_;
+
+  GpuMemory<FitQuad> fit_quads_device_;
+
+  std::vector<FitQuad> fit_quads_host_;
+  std::vector<QuadCorners> quad_corners_host_;
+
   // Temporary storage for each of the steps.
   // TODO(austin): Can we combine these and just use the max?
   GpuMemory<uint32_t> radix_sort_tmpstorage_device_;
@@ -260,6 +306,7 @@ class GpuDetector {
   GpuMemory<uint8_t> temp_storage_dot_product_device_;
   GpuMemory<uint8_t> temp_storage_compressed_filtered_blobs_device_;
   GpuMemory<uint8_t> temp_storage_selected_extents_scan_device_;
+  GpuMemory<uint8_t> temp_storage_line_fit_scan_device_;
 
   // Cumulative duration of april tag detection.
   std::chrono::nanoseconds execution_duration_{0};
@@ -272,6 +319,11 @@ class GpuDetector {
   bool normal_border_ = false;
   bool reversed_border_ = false;
   int min_tag_width_ = 1000000;
+
+  zarray_t *poly0_;
+  zarray_t *poly1_;
+
+  zarray_t *detections_ = nullptr;
 };
 
 }  // namespace apriltag

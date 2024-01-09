@@ -456,8 +456,8 @@ http_archive(
 http_archive(
     name = "arm64_debian_sysroot",
     build_file = "@//:compilers/orin_debian_rootfs.BUILD",
-    sha256 = "afe3061b6f1f7e4f320b141699a63b6afc3a59e522b858b1595e58f2719eb487",
-    url = "https://software.frc971.org/Build-Dependencies/2023-11-22-bookworm-arm64-nvidia-rootfs.tar.xz",
+    sha256 = "b775e1256ab9921a27eef9a738a6f38d900873e07332ad2149dc97eb04ecbdf5",
+    url = "https://software.frc971.org/Build-Dependencies/2024-01-01-bookworm-arm64-nvidia-rootfs.tar.xz",
 )
 
 # Sysroot generated using //frc971/amd64/build_rootfs.py
@@ -1560,6 +1560,20 @@ filegroup(
 )""",
     sha256 = "2356b9d0b3be59d01e837bfbbee21de55b16232d5e00c66701c20b64ff3272e3",
     url = "https://software.frc971.org/Build-Dependencies/2023_arducam_apriltag_test_images.tar.gz",
+)
+
+http_file(
+    name = "orin_image_apriltag",
+    downloaded_file_path = "orin_image_apriltag.bfbs",
+    sha256 = "c86604fd0b1301b301e299b1bba2573af8c586413934a386a2bd28fd9b037b84",
+    url = "https://software.frc971.org/Build-Dependencies/orin_image_apriltag.bfbs",
+)
+
+http_file(
+    name = "orin_large_image_apriltag",
+    downloaded_file_path = "orin_large_gs_apriltag.bfbs",
+    sha256 = "d933adac0d6c205c574791060be73701ead05977ff5dd9f6f4eadb45817c3ccb",
+    url = "https://software.frc971.org/Build-Dependencies/orin_large_gs_apriltag.bfbs",
 )
 
 http_archive(

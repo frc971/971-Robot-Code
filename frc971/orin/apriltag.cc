@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "glog/logging.h"
+#include "third_party/apriltag/common/g2d.h"
 
 #include "aos/time/time.h"
 #include "frc971/orin/labeling_allegretti_2019_BKE.h"
@@ -23,6 +24,7 @@
 
 namespace frc971 {
 namespace apriltag {
+namespace {
 
 typedef std::chrono::duration<float, std::milli> float_milli;
 
@@ -98,12 +100,26 @@ static size_t DeviceScanInclusiveScanScratchSpace(size_t elements) {
   return temp_storage_bytes;
 }
 
+// Computes and returns the scratch space needed for DeviceScan::InclusiveScan
+// of the provided value V with the provided number of elements.
+template <typename K, typename V>
+static size_t DeviceScanInclusiveScanByKeyScratchSpace(size_t elements) {
+  size_t temp_storage_bytes = 0;
+  CHECK_CUDA(cub::DeviceScan::InclusiveScanByKey(
+      nullptr, temp_storage_bytes, (K *)(nullptr), (V *)(nullptr),
+      (V *)(nullptr), CustomFirst<V>(), elements));
+  return temp_storage_bytes;
+}
+
+}  // namespace
+
 GpuDetector::GpuDetector(size_t width, size_t height,
-                         const apriltag_detector_t *tag_detector)
+                         apriltag_detector_t *tag_detector)
     : width_(width),
       height_(height),
       tag_detector_(tag_detector),
       color_image_host_(width * height * 2),
+      gray_image_host_(width * height),
       color_image_device_(width * height * 2),
       gray_image_device_(width * height),
       decimated_image_device_(width / 2 * height / 2),
@@ -116,10 +132,17 @@ GpuDetector::GpuDetector(size_t width, size_t height,
       compressed_union_marker_pair_device_(union_marker_pair_device_.size()),
       sorted_union_marker_pair_device_(union_marker_pair_device_.size()),
       extents_device_(union_marker_pair_device_.size()),
-      reduced_dot_blobs_pair_device_(kMaxBlobs),
       selected_extents_device_(kMaxBlobs),
       selected_blobs_device_(union_marker_pair_device_.size()),
       sorted_selected_blobs_device_(selected_blobs_device_.size()),
+      line_fit_points_device_(selected_blobs_device_.size()),
+      errs_device_(line_fit_points_device_.size()),
+      filtered_errs_device_(line_fit_points_device_.size()),
+      filtered_is_local_peak_device_(line_fit_points_device_.size()),
+      compressed_peaks_device_(line_fit_points_device_.size()),
+      sorted_compressed_peaks_device_(line_fit_points_device_.size()),
+      peak_extents_device_(kMaxBlobs),
+      fit_quads_device_(kMaxBlobs),
       radix_sort_tmpstorage_device_(RadixSortScratchSpace<QuadBoundaryPoint>(
           sorted_union_marker_pair_device_.size())),
       temp_storage_compressed_union_marker_pair_device_(
@@ -138,7 +161,13 @@ GpuDetector::GpuDetector(size_t width, size_t height,
               num_selected_blobs_device_.get())),
       temp_storage_selected_extents_scan_device_(
           DeviceScanInclusiveScanScratchSpace<
-              cub::KeyValuePair<long, MinMaxExtents>>(kMaxBlobs)) {
+              cub::KeyValuePair<long, MinMaxExtents>>(kMaxBlobs)),
+      temp_storage_line_fit_scan_device_(
+          DeviceScanInclusiveScanByKeyScratchSpace<uint32_t, LineFitPoint>(
+              sorted_selected_blobs_device_.size())) {
+  fit_quads_host_.reserve(kMaxBlobs);
+  quad_corners_host_.reserve(kMaxBlobs);
+
   CHECK_EQ(tag_detector_->quad_decimate, 2);
   CHECK(!tag_detector_->qtp.deglitch);
 
@@ -155,9 +184,27 @@ GpuDetector::GpuDetector(size_t width, size_t height,
   if (min_tag_width_ < 3) {
     min_tag_width_ = 3;
   }
+
+  poly0_ = g2d_polygon_create_zeros(4);
+  poly1_ = g2d_polygon_create_zeros(4);
+
+  detections_ = zarray_create(sizeof(apriltag_detection_t *));
+  zarray_ensure_capacity(detections_, kMaxBlobs);
 }
 
-GpuDetector::~GpuDetector() {}
+GpuDetector::~GpuDetector() {
+  for (int i = 0; i < zarray_size(detections_); ++i) {
+    apriltag_detection_t *det;
+    zarray_get(detections_, i, &det);
+    apriltag_detection_destroy(det);
+  }
+
+  zarray_destroy(detections_);
+  zarray_destroy(poly1_);
+  zarray_destroy(poly0_);
+}
+
+namespace {
 
 // Computes a massive image of 4x QuadBoundaryPoint per pixel with a
 // QuadBoundaryPoint for each pixel pair which crosses a blob boundary.
@@ -306,6 +353,14 @@ struct MaskRep01 {
   }
 };
 
+// Masks out just the blob ID pair, rep01.
+struct MaskBlobIndex {
+  __host__ __device__ __forceinline__ uint32_t
+  operator()(const IndexPoint &a) const {
+    return a.blob_index();
+  }
+};
+
 // Rewrites a QuadBoundaryPoint to an IndexPoint, adding the angle to the
 // center.
 class RewriteToIndexPoint {
@@ -354,6 +409,11 @@ struct TransformQuadBoundaryPointToMinMaxExtents {
     result.min_x = result.max_x = pt.value.x();
     result.starting_offset = pt.key;
     result.count = 1;
+    result.pxgx_plus_pygy_sum =
+        static_cast<int64_t>(pt.value.x()) * pt.value.gx() +
+        static_cast<int64_t>(pt.value.y()) * pt.value.gy();
+    result.gx_sum = pt.value.gx();
+    result.gy_sum = pt.value.gy();
     return result;
   }
 };
@@ -372,6 +432,9 @@ struct QuadBoundaryPointExtents {
     result.starting_offset = std::min(a.starting_offset, b.starting_offset);
     // We want to count everything.
     result.count = a.count + b.count;
+    result.pxgx_plus_pygy_sum = a.pxgx_plus_pygy_sum + b.pxgx_plus_pygy_sum;
+    result.gx_sum = a.gx_sum + b.gx_sum;
+    result.gy_sum = a.gy_sum + b.gy_sum;
     return result;
   }
 };
@@ -426,15 +489,29 @@ struct ComputeDotProductTransform {
   size_t max_cluster_pixels_;
 };
 
+class NonzeroBlobs {
+ public:
+  __host__ __device__
+  NonzeroBlobs(const cub::KeyValuePair<long, MinMaxExtents> *extents_device)
+      : extents_device_(extents_device) {}
+
+  __host__ __device__ __forceinline__ bool operator()(
+      const IndexPoint &a) const {
+    return extents_device_[a.blob_index()].value.count > 0;
+  }
+
+ private:
+  const cub::KeyValuePair<long, MinMaxExtents> *extents_device_;
+};
+
 // Selects blobs which are big enough, not too big, and have the right color in
 // the middle.
 class SelectBlobs {
  public:
-  SelectBlobs(const MinMaxExtents *extents_device, const float *dot_products,
-              size_t tag_width, bool reversed_border, bool normal_border,
+  SelectBlobs(const MinMaxExtents *extents_device, size_t tag_width,
+              bool reversed_border, bool normal_border,
               size_t min_cluster_pixels, size_t max_cluster_pixels)
       : extents_device_(extents_device),
-        dot_products_(dot_products),
         tag_width_(tag_width),
         reversed_border_(reversed_border),
         normal_border_(normal_border),
@@ -444,7 +521,7 @@ class SelectBlobs {
   // Returns true if the blob passes the size and dot product checks and is
   // worth further consideration.
   __host__ __device__ __forceinline__ bool operator()(
-      const size_t blob_index, MinMaxExtents extents) const {
+      MinMaxExtents extents) const {
     if (extents.count < min_cluster_pixels_) {
       return false;
     }
@@ -459,7 +536,7 @@ class SelectBlobs {
     }
 
     // And the right side must be inside.
-    const bool quad_reversed_border = dot_products_[blob_index] < 0;
+    const bool quad_reversed_border = extents.dot() < 0.0;
     if (!reversed_border_ && quad_reversed_border) {
       return false;
     }
@@ -472,13 +549,12 @@ class SelectBlobs {
 
   __host__ __device__ __forceinline__ bool operator()(
       const IndexPoint &a) const {
-    bool result = (*this)(a.blob_index(), extents_device_[a.blob_index()]);
+    bool result = (*this)(extents_device_[a.blob_index()]);
 
     return result;
   }
 
   const MinMaxExtents *extents_device_;
-  const float *dot_products_;
   size_t tag_width_;
 
   bool reversed_border_;
@@ -492,16 +568,15 @@ class SelectBlobs {
 // update zero sized blobs.
 struct TransformZeroFilteredBlobSizes {
  public:
-  TransformZeroFilteredBlobSizes(const float *dot_products, size_t tag_width,
-                                 bool reversed_border, bool normal_border,
-                                 size_t min_cluster_pixels,
+  TransformZeroFilteredBlobSizes(size_t tag_width, bool reversed_border,
+                                 bool normal_border, size_t min_cluster_pixels,
                                  size_t max_cluster_pixels)
-      : select_blobs_(nullptr, dot_products, tag_width, reversed_border,
-                      normal_border, min_cluster_pixels, max_cluster_pixels) {}
+      : select_blobs_(nullptr, tag_width, reversed_border, normal_border,
+                      min_cluster_pixels, max_cluster_pixels) {}
 
   __host__ __device__ __forceinline__ cub::KeyValuePair<long, MinMaxExtents>
   operator()(cub::KeyValuePair<long, MinMaxExtents> pt) const {
-    pt.value.count *= select_blobs_(pt.key, pt.value);
+    pt.value.count *= select_blobs_(pt.value);
     pt.value.starting_offset = 0;
     return pt;
   }
@@ -534,13 +609,112 @@ struct SumPoints {
       result.key = a.key;
     }
 
-    result.value.starting_offset = b.value.starting_offset + b.value.count;
+    result.value.starting_offset = a.value.starting_offset +
+                                   b.value.starting_offset + a.value.count +
+                                   b.value.count - result.value.count;
+
     return result;
   }
 };
 
+struct TransformLineFitPoint {
+  __host__ __device__ __forceinline__ LineFitPoint
+  operator()(IndexPoint p) const {
+    LineFitPoint result;
+
+    // we now undo our fixed-point arithmetic.
+    // adjust for pixel center bias
+    constexpr int delta = 1;
+    int32_t ix2 = p.x() + delta;
+    int32_t iy2 = p.y() + delta;
+    int32_t ix = ix2 / 2;
+    int32_t iy = iy2 / 2;
+
+    int32_t W = 1;
+
+    if (ix > 0 && ix + 1 < decimated_width && iy > 0 &&
+        iy + 1 < decimated_height) {
+      int32_t grad_x = decimated_image_device_[iy * decimated_width + ix + 1] -
+                       decimated_image_device_[iy * decimated_width + ix - 1];
+
+      int32_t grad_y =
+          decimated_image_device_[(iy + 1) * decimated_width + ix] -
+          decimated_image_device_[(iy - 1) * decimated_width + ix];
+
+      // XXX Tunable. How to shape the gradient magnitude?
+      W = hypotf(grad_x, grad_y) + 1;
+    }
+
+    result.Mx = W * ix2;
+    result.My = W * iy2;
+    result.Mxx = W * ix2 * ix2;
+    result.Mxy = W * ix2 * iy2;
+    result.Myy = W * iy2 * iy2;
+    result.W = W;
+    result.blob_index = p.blob_index();
+    return result;
+  }
+
+  const uint8_t *decimated_image_device_;
+  int decimated_width;
+  int decimated_height;
+};
+
+struct SumLineFitPoints {
+  __host__ __device__ __forceinline__ LineFitPoint
+  operator()(const LineFitPoint &a, const LineFitPoint &b) const {
+    LineFitPoint result;
+    result.Mx = a.Mx + b.Mx;
+    result.My = a.My + b.My;
+    result.Mxx = a.Mxx + b.Mxx;
+    result.Mxy = a.Mxy + b.Mxy;
+    result.Myy = a.Myy + b.Myy;
+    result.W = a.W + b.W;
+    result.blob_index = a.blob_index;
+    return result;
+  }
+};
+
+struct ValidPeaks {
+  __host__ __device__ __forceinline__ bool operator()(const Peak &a) const {
+    return a.blob_index != Peak::kNoPeak();
+  }
+};
+
+struct TransformToPeakExtents {
+  __host__ __device__ __forceinline__ PeakExtents
+  operator()(const cub::KeyValuePair<long, Peak> &a) const {
+    PeakExtents result;
+    result.blob_index = a.value.blob_index;
+    result.starting_offset = a.key;
+    result.count = 1;
+    return result;
+  }
+};
+
+struct MaskPeakExtentsByBlobId {
+  __host__ __device__ __forceinline__ uint32_t operator()(const Peak &a) const {
+    return a.blob_index;
+  }
+};
+
+struct MergePeakExtents {
+  __host__ __device__ __forceinline__ PeakExtents
+  operator()(const PeakExtents &a, const PeakExtents &b) const {
+    PeakExtents result;
+    result.blob_index = a.blob_index;
+    result.starting_offset = std::min(a.starting_offset, b.starting_offset);
+    result.count = a.count + b.count;
+    return result;
+  }
+};
+
+}  // namespace
+
 void GpuDetector::Detect(const uint8_t *image) {
   color_image_host_.MemcpyFrom(image);
+  const aos::monotonic_clock::time_point start_time =
+      aos::monotonic_clock::now();
   start_.Record(&stream_);
   color_image_device_.MemcpyAsyncFrom(&color_image_host_, &stream_);
   after_image_memcpy_to_device_.Record(&stream_);
@@ -552,6 +726,10 @@ void GpuDetector::Detect(const uint8_t *image) {
       minmax_image_device_.get(), thresholded_image_device_.get(), width_,
       height_, tag_detector_->qtp.min_white_black_diff, &stream_);
   after_threshold_.Record(&stream_);
+
+  gray_image_device_.MemcpyAsyncTo(&gray_image_host_, &stream_);
+
+  after_memcpy_gray_.Record(&stream_);
 
   union_markers_size_device_.MemsetAsync(0u, &stream_);
   after_memset_.Record(&stream_);
@@ -589,7 +767,7 @@ void GpuDetector::Detect(const uint8_t *image) {
         thresholded_image_device_.get(), union_markers_device_.get(),
         union_markers_size_device_.get(), union_marker_pair_device_.get(),
         decimated_width, decimated_height);
-    MaybeCheckAndSynchronize();
+    MaybeCheckAndSynchronize("BlobDiff");
   }
 
   // TODO(austin): Can I do the first step of the zero removal in the BlobDiff
@@ -610,7 +788,7 @@ void GpuDetector::Detect(const uint8_t *image) {
         num_compressed_union_marker_pair_device_.get(),
         union_marker_pair_device_.size(), nz, stream_.get()));
 
-    MaybeCheckAndSynchronize();
+    MaybeCheckAndSynchronize("cub::DeviceSelect::If");
   }
 
   after_compact_.Record(&stream_);
@@ -633,14 +811,14 @@ void GpuDetector::Detect(const uint8_t *image) {
         QuadBoundaryPoint::kRepEndBit, QuadBoundaryPoint::kBitsInKey,
         stream_.get()));
 
-    MaybeCheckAndSynchronize();
+    MaybeCheckAndSynchronize("cub::DeviceRadixSort::SortKeys");
   }
 
   after_sort_.Record(&stream_);
 
   size_t num_quads_host = 0;
   {
-    // Our next step is to compute the extents of each blob so we can filter
+    // Our next step is to compute the extents and dot product so we can filter
     // blobs.
     cub::ArgIndexInputIterator<QuadBoundaryPoint *> value_index_input_iterator(
         sorted_union_marker_pair_device_.get());
@@ -672,7 +850,6 @@ void GpuDetector::Detect(const uint8_t *image) {
 
     num_quads_device_.MemcpyTo(&num_quads_host);
   }
-  CHECK_LE(num_quads_host, reduced_dot_blobs_pair_device_.size());
 
   // Longest april tag will be the full perimeter of the image.  Each point
   // results in 2 neighbor points, 1 straight, and one at 45 degrees.  But, we
@@ -684,46 +861,6 @@ void GpuDetector::Detect(const uint8_t *image) {
   const size_t max_april_tag_perimeter = 2 * (width_ + height_);
 
   {
-    // Now that we have the extents, compute the dot product used to detect
-    // which blobs are inside out or right side out.
-
-    // Don't care about these quantities since the previous ReduceByKey will
-    // ahve computed them too.
-    cub::DiscardOutputIterator<size_t> length_discard_iterator;
-    cub::DiscardOutputIterator<uint64_t> key_discard_iterator;
-
-    size_t dot_reduce_temp_storage_bytes =
-        temp_storage_dot_product_device_.size();
-
-    // Provide a mask to detect keys by rep01()
-    MaskRep01 mask;
-    cub::TransformInputIterator<uint64_t, MaskRep01, QuadBoundaryPoint *>
-        key_iterator(sorted_union_marker_pair_device_.get(), mask);
-
-    // Create a transform iterator which calculates the dot product for each
-    // point individually.
-    cub::ArgIndexInputIterator<QuadBoundaryPoint *> value_index_input_iterator(
-        sorted_union_marker_pair_device_.get());
-    ComputeDotProductTransform dot_operator(
-        extents_device_.get(), num_quads_host, min_tag_width_,
-        tag_detector_->qtp.min_cluster_pixels, max_april_tag_perimeter);
-    cub::TransformInputIterator<float, ComputeDotProductTransform,
-                                cub::ArgIndexInputIterator<QuadBoundaryPoint *>>
-        value_iterator(value_index_input_iterator, dot_operator);
-
-    // And now sum per key.
-    CHECK_CUDA(cub::DeviceReduce::ReduceByKey(
-        temp_storage_dot_product_device_.get(), dot_reduce_temp_storage_bytes,
-        key_iterator, key_discard_iterator, value_iterator,
-        reduced_dot_blobs_pair_device_.get(), length_discard_iterator,
-        cub::Sum(), num_compressed_union_marker_pair_host, stream_.get()));
-
-    MaybeCheckAndSynchronize();
-  }
-
-  after_dot_.Record(&stream_);
-
-  {
     // Now that we have the dot products, we need to rewrite the extents for the
     // post-thresholded world so we can find the start and end address of blobs
     // for fitting lines.
@@ -733,9 +870,8 @@ void GpuDetector::Detect(const uint8_t *image) {
     cub::ArgIndexInputIterator<MinMaxExtents *> value_index_input_iterator(
         extents_device_.get());
     TransformZeroFilteredBlobSizes rewrite(
-        reduced_dot_blobs_pair_device_.get(), min_tag_width_, reversed_border_,
-        normal_border_, tag_detector_->qtp.min_cluster_pixels,
-        max_april_tag_perimeter);
+        min_tag_width_, reversed_border_, normal_border_,
+        tag_detector_->qtp.min_cluster_pixels, max_april_tag_perimeter);
     cub::TransformInputIterator<cub::KeyValuePair<long, MinMaxExtents>,
                                 TransformZeroFilteredBlobSizes,
                                 cub::ArgIndexInputIterator<MinMaxExtents *>>
@@ -755,7 +891,7 @@ void GpuDetector::Detect(const uint8_t *image) {
         input_iterator, selected_extents_device_.get(), sum_points,
         num_quads_host));
 
-    MaybeCheckAndSynchronize();
+    MaybeCheckAndSynchronize("cub::DeviceScan::InclusiveScan");
   }
 
   after_transform_extents_.Record(&stream_);
@@ -776,10 +912,7 @@ void GpuDetector::Detect(const uint8_t *image) {
     TransformOutputIterator<IndexPoint, IndexPoint, AddThetaToIndexPoint>
         output_iterator(selected_blobs_device_.get(), add_theta);
 
-    SelectBlobs select_blobs(
-        extents_device_.get(), reduced_dot_blobs_pair_device_.get(),
-        min_tag_width_, reversed_border_, normal_border_,
-        tag_detector_->qtp.min_cluster_pixels, max_april_tag_perimeter);
+    NonzeroBlobs select_blobs(selected_extents_device_.get());
 
     size_t temp_storage_bytes =
         temp_storage_compressed_filtered_blobs_device_.size();
@@ -789,12 +922,14 @@ void GpuDetector::Detect(const uint8_t *image) {
         temp_storage_bytes, input_iterator, output_iterator,
         num_selected_blobs_device_.get(), num_compressed_union_marker_pair_host,
         select_blobs, stream_.get()));
-    MaybeCheckAndSynchronize();
 
-    num_selected_blobs_device_.MemcpyTo(&num_selected_blobs_host);
+    MaybeCheckAndSynchronize("cub::DeviceSelect::If");
+
+    num_selected_blobs_device_.MemcpyAsyncTo(&num_selected_blobs_host,
+                                             &stream_);
+    after_filter_.Record(&stream_);
+    after_filter_.Synchronize();
   }
-
-  after_filter_.Record(&stream_);
 
   {
     // Sort based on the angle.
@@ -807,52 +942,212 @@ void GpuDetector::Detect(const uint8_t *image) {
         num_selected_blobs_host, decomposer, IndexPoint::kRepEndBit,
         IndexPoint::kBitsInKey, stream_.get()));
 
-    MaybeCheckAndSynchronize();
+    MaybeCheckAndSynchronize("cub::DeviceRadixSort::SortKeys");
   }
 
   after_filtered_sort_.Record(&stream_);
 
-  // Report out how long things took.
-  LOG(INFO) << "Found " << num_compressed_union_marker_pair_host << " items";
-  LOG(INFO) << "Selected " << num_selected_blobs_host << " blobs";
+  {
+    // Now that we have the dot products, we need to rewrite the extents for the
+    // post-thresholded world so we can find the start and end address of blobs
+    // for fitting lines.
+    //
+    // Clear the size of non-passing extents and the starting offset of all
+    // extents.
+    TransformLineFitPoint rewrite(decimated_image_device_.get(), width_ / 2,
+                                  height_ / 2);
+    cub::TransformInputIterator<LineFitPoint, TransformLineFitPoint,
+                                IndexPoint *>
+        input_iterator(sorted_selected_blobs_device_.get(), rewrite);
 
+    MaskBlobIndex mask;
+    cub::TransformInputIterator<uint32_t, MaskBlobIndex, IndexPoint *>
+        key_iterator(sorted_selected_blobs_device_.get(), mask);
+
+    // Sum the counts of everything before us, and update the offset.
+    SumLineFitPoints sum_points;
+
+    // Rewrite the extents to have the starting offset and count match the
+    // post-selected values.
+    size_t temp_storage_bytes = temp_storage_line_fit_scan_device_.size();
+
+    CHECK_CUDA(cub::DeviceScan::InclusiveScanByKey(
+        temp_storage_line_fit_scan_device_.get(), temp_storage_bytes,
+        key_iterator, input_iterator, line_fit_points_device_.get(), sum_points,
+        num_selected_blobs_host));
+
+    MaybeCheckAndSynchronize("cub::DeviceScan::InclusiveScanByKey");
+  }
+  after_line_fit_.Record(&stream_);
+
+  {
+    FitLines(line_fit_points_device_.get(), num_selected_blobs_host,
+             selected_extents_device_.get(), num_quads_host, errs_device_.get(),
+             filtered_errs_device_.get(), filtered_is_local_peak_device_.get(),
+             &stream_);
+  }
+  after_line_filter_.Record(&stream_);
+
+  int num_compressed_peaks_host;
+  {
+    // Remove empty points which aren't to be considered before sorting to speed
+    // things up.
+    size_t temp_storage_bytes =
+        temp_storage_compressed_union_marker_pair_device_.size();
+    ValidPeaks peak_filter;
+    CHECK_CUDA(cub::DeviceSelect::If(
+        temp_storage_compressed_union_marker_pair_device_.get(),
+        temp_storage_bytes, filtered_is_local_peak_device_.get(),
+        compressed_peaks_device_.get(), num_compressed_peaks_device_.get(),
+        num_selected_blobs_host, peak_filter, stream_.get()));
+
+    after_peak_compression_.Record(&stream_);
+    MaybeCheckAndSynchronize("cub::DeviceSelect::If");
+    num_compressed_peaks_device_.MemcpyAsyncTo(&num_compressed_peaks_host,
+                                               &stream_);
+    after_peak_count_memcpy_.Record(&stream_);
+    after_peak_count_memcpy_.Synchronize();
+  }
+
+  {
+    // Sort based on the angle.
+    size_t temp_storage_bytes = radix_sort_tmpstorage_device_.size();
+    PeakDecomposer decomposer;
+
+    CHECK_CUDA(cub::DeviceRadixSort::SortKeys(
+        radix_sort_tmpstorage_device_.get(), temp_storage_bytes,
+        compressed_peaks_device_.get(), sorted_compressed_peaks_device_.get(),
+        num_compressed_peaks_host, decomposer, 0, PeakDecomposer::kBitsInKey,
+        stream_.get()));
+
+    MaybeCheckAndSynchronize("cub::DeviceRadixSort::SortKeys");
+  }
+
+  after_peak_sort_.Record(&stream_);
+
+  int num_quad_peaked_quads_host;
+  // Now that we have the peaks sorted, recompute the extents so we can easily
+  // pick out the number and top 10 peaks for line fitting.
+  {
+    // Our next step is to compute the extents of each blob so we can filter
+    // blobs.
+    cub::ArgIndexInputIterator<Peak *> value_index_input_iterator(
+        sorted_compressed_peaks_device_.get());
+    TransformToPeakExtents transform_extents;
+    cub::TransformInputIterator<PeakExtents, TransformToPeakExtents,
+                                cub::ArgIndexInputIterator<Peak *>>
+        value_input_iterator(value_index_input_iterator, transform_extents);
+
+    // Don't care about the output keys...
+    cub::DiscardOutputIterator<uint32_t> key_discard_iterator;
+
+    // Provide a mask to detect keys by rep01()
+    MaskPeakExtentsByBlobId mask;
+    cub::TransformInputIterator<uint32_t, MaskPeakExtentsByBlobId, Peak *>
+        key_input_iterator(sorted_compressed_peaks_device_.get(), mask);
+
+    // Reduction operator.
+    MergePeakExtents reduce;
+
+    size_t temp_storage_bytes =
+        temp_storage_bounds_reduce_by_key_device_.size();
+    cub::DeviceReduce::ReduceByKey(
+        temp_storage_bounds_reduce_by_key_device_.get(), temp_storage_bytes,
+        key_input_iterator, key_discard_iterator, value_input_iterator,
+        peak_extents_device_.get(), num_quad_peaked_quads_device_.get(), reduce,
+        num_compressed_peaks_host, stream_.get());
+    MaybeCheckAndSynchronize("cub::DeviceReduce::ReduceByKey");
+
+    after_filtered_peak_reduce_.Record(&stream_);
+
+    num_quad_peaked_quads_device_.MemcpyAsyncTo(&num_quad_peaked_quads_host,
+                                                &stream_);
+    MaybeCheckAndSynchronize("num_quad_peaked_quads_device_.MemcpyTo");
+    after_filtered_peak_host_memcpy_.Record(&stream_);
+    after_filtered_peak_host_memcpy_.Synchronize();
+  }
+
+  {
+    apriltag::FitQuads(
+        sorted_compressed_peaks_device_.get(), num_compressed_peaks_host,
+        peak_extents_device_.get(), num_quad_peaked_quads_host,
+        line_fit_points_device_.get(), tag_detector_->qtp.max_nmaxima,
+        selected_extents_device_.get(), tag_detector_->qtp.max_line_fit_mse,
+        tag_detector_->qtp.cos_critical_rad, fit_quads_device_.get(), &stream_);
+    MaybeCheckAndSynchronize("FitQuads");
+  }
+  after_quad_fit_.Record(&stream_);
+
+  {
+    fit_quads_host_.resize(num_quad_peaked_quads_host);
+    fit_quads_device_.MemcpyAsyncTo(fit_quads_host_.data(),
+                                    num_quad_peaked_quads_host, &stream_);
+    after_quad_fit_memcpy_.Record(&stream_);
+    after_quad_fit_memcpy_.Synchronize();
+  }
+
+  const aos::monotonic_clock::time_point before_fit_quads =
+      aos::monotonic_clock::now();
+  UpdateFitQuads();
+  AdjustPixelCenters();
+
+  DecodeTags();
+
+  const aos::monotonic_clock::time_point end_time = aos::monotonic_clock::now();
+
+  // TODO(austin): Bring it back to the CPU and see how good we did.
+
+  // Report out how long things took.
+
+  VLOG(1) << "Found " << num_compressed_union_marker_pair_host << " items";
+  VLOG(1) << "Selected " << num_selected_blobs_host << " right side out points";
+  VLOG(1) << "Found compressed runs: " << num_quads_host;
+  VLOG(1) << "Peaks " << num_compressed_peaks_host << " peaks";
+  VLOG(1) << "Peak Selected blobs " << num_quad_peaked_quads_host << " quads";
   CudaEvent *previous_event = &start_;
   for (auto name_event : std::vector<std::tuple<std::string_view, CudaEvent &>>{
            {"Memcpy", after_image_memcpy_to_device_},
            {"Threshold", after_threshold_},
+           {"Memcpy Gray", after_memcpy_gray_},
            {"Memset", after_memset_},
            {"Unionfinding", after_unionfinding_},
            {"Diff", after_diff_},
            {"Compact", after_compact_},
            {"Sort", after_sort_},
            {"Bounds", after_bounds_},
-           {"Dot product", after_dot_},
            {"Transform Extents", after_transform_extents_},
            {"Filter by dot product", after_filter_},
            {"Filtered sort", after_filtered_sort_},
+           {"Line Fit", after_line_fit_},
+           {"Error Filter", after_line_filter_},
+           {"Compress Peaks", after_peak_compression_},
+           {"Memcpy Peaks", after_peak_count_memcpy_},
+           {"Sort Peaks", after_peak_sort_},
+           {"Peak Extents", after_filtered_peak_reduce_},
+           {"Memcpy num Extents", after_filtered_peak_host_memcpy_},
+           {"FitQuads", after_quad_fit_},
        }) {
     std::get<1>(name_event).Synchronize();
-    LOG(INFO) << std::get<0>(name_event) << " "
-              << float_milli(
-                     std::get<1>(name_event).ElapsedTime(*previous_event))
-                     .count()
-              << "ms";
+    VLOG(1) << "    " << std::get<0>(name_event) << " "
+            << float_milli(std::get<1>(name_event).ElapsedTime(*previous_event))
+                   .count()
+            << "ms";
     previous_event = &std::get<1>(name_event);
   }
+  VLOG(1) << "  FitQuads " << float_milli(end_time - before_fit_quads).count()
+          << "ms on host";
 
-  LOG(INFO) << "Overall "
-            << float_milli(previous_event->ElapsedTime(start_)).count() << "ms";
-
+  VLOG(1) << "Overall "
+          << float_milli(previous_event->ElapsedTime(start_)).count() << "ms, "
+          << float_milli(end_time - start_time).count() << "ms on host";
   // Average.  Skip the first one as the kernel is warming up and is slower.
   if (!first_) {
     ++execution_count_;
     execution_duration_ += previous_event->ElapsedTime(start_);
-    LOG(INFO) << "Average overall "
-              << float_milli(execution_duration_ / execution_count_).count()
-              << "ms";
+    VLOG(1) << "Average overall "
+            << float_milli(execution_duration_ / execution_count_).count()
+            << "ms";
   }
-
-  LOG(INFO) << "Found compressed runs: " << num_quads_host;
 
   first_ = false;
 }

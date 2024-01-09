@@ -972,26 +972,13 @@ def main():
 
         target([
             "apt-get", "-y", "install", "bpfcc-tools", "sudo",
-            "openssh-server", "python3", "bash-completion", "git", "v4l-utils",
+            "openssh-server", "python3", "bash-completion", "git",
             "cpufrequtils", "pmount", "rsync", "vim-nox", "chrony",
-            "libopencv-calib3d406", "libopencv-contrib406",
-            "libopencv-core406", "libopencv-features2d406",
-            "libopencv-flann406", "libopencv-highgui406",
-            "libopencv-imgcodecs406", "libopencv-imgproc406",
-            "libopencv-ml406", "libopencv-objdetect406", "libopencv-photo406",
-            "libopencv-shape406", "libopencv-stitching406",
-            "libopencv-superres406", "libopencv-video406",
-            "libopencv-videoio406", "libopencv-videostab406",
-            "libopencv-viz406", "libopencv-dev", "libnice10", "pmount",
-            "libnice-dev", "feh", "libgstreamer1.0-0",
-            "libgstreamer-plugins-base1.0-0", "libgstreamer-plugins-bad1.0-0",
-            "gstreamer1.0-plugins-base", "gstreamer1.0-plugins-good",
-            "gstreamer1.0-plugins-bad", "gstreamer1.0-plugins-ugly",
-            "gstreamer1.0-nice", "usbutils", "locales", "trace-cmd", "clinfo",
-            "jq", "strace", "sysstat", "lm-sensors", "can-utils", "xfsprogs",
-            "gstreamer1.0-tools", "bridge-utils", "net-tools", "apt-file",
-            "parted", "xxd", "libv4l-dev", "file", "pkexec", "libxkbfile1",
-            "gdb"
+            "libnice10", "pmount", "libnice-dev", "feh", "usbutils", "locales",
+            "trace-cmd", "clinfo", "jq", "strace", "sysstat", "lm-sensors",
+            "can-utils", "xfsprogs", "bridge-utils", "net-tools", "apt-file",
+            "parted", "xxd", "file", "pkexec", "libxkbfile1", "gdb", "autossh",
+            "smartmontools", "nvme-cli", "libgtk-3.0"
         ])
         target(["apt-get", "clean"])
 
@@ -1001,10 +988,50 @@ def main():
         target(["usermod", "-a", "-G", "dialout", "pi"])
 
         virtual_packages = [
-            'libglib-2.0-0', 'libglvnd', 'libgtk-3-0', 'libxcb-glx', 'wayland'
+            'libglib-2.0-0',
+            'libglvnd',
+            'libgtk-3-0',
+            'libxcb-glx',
+            'wayland',
+            'libz1',
         ]
 
         install_virtual_packages(virtual_packages)
+
+        yocto_packages = list_yocto_packages()
+        packages = list_packages()
+
+        # Install the kernel and modules after all the normal packages are in.
+        yocto_packages_to_install = [
+            package for package in yocto_packages
+            if (package.name.startswith('kernel-module-') or package.name.
+                startswith('kernel-5.10') or package.name == 'kernel-modules')
+        ]
+
+        packages_to_remove = []
+
+        # Remove kernel-module-* packages + kernel- package.
+        for key in packages:
+            if key.startswith('kernel-module') or key.startswith(
+                    'kernel-5.10'):
+                already_installed = False
+                for index, yocto_package in enumerate(
+                        yocto_packages_to_install):
+                    if key == yocto_package.name and packages[
+                            key] == yocto_package.version:
+                        already_installed = True
+                        del yocto_packages_to_install[index]
+                        break
+                if not already_installed:
+                    packages_to_remove.append(key)
+
+        print("Removing", packages_to_remove)
+        if len(packages_to_remove) > 0:
+            target(['dpkg', '--purge'] + packages_to_remove)
+        print("Installing",
+              [package.name for package in yocto_packages_to_install])
+
+        install_packages(yocto_packages_to_install, packages)
 
         yocto_package_names = [
             'tegra-argus-daemon',
@@ -1047,46 +1074,89 @@ def main():
             'nsight-systems-cli',
             'nsight-systems-cli-qdstrmimporter',
             'tegra-tools-jetson-clocks',
+            'gstreamer1.0',
+            'gstreamer1.0-plugins-base',
+            'libgstallocators-1.0-0',
+            'liborc',
+            'libgstvideo-1.0-0',
+            'libnvdsbufferpool1.0.0',
+            'gstreamer1.0-plugins-nvarguscamerasrc',
+            'cuda-cudart',
+            'gstreamer1.0-plugins-nvvidconv',
+            'gstreamer1.0-plugins-tegra',
+            'gstreamer1.0-plugins-nvcompositor',
+            'gstreamer1.0-plugins-nvdrmvideosink',
+            'gstreamer1.0-plugins-nveglgles',
+            'gstreamer1.0-plugins-nvjpeg',
+            'gstreamer1.0-plugins-nvtee',
+            'gstreamer1.0-plugins-nvv4l2camerasrc',
+            'gstreamer1.0-plugins-nvvideo4linux2',
+            'gstreamer1.0-plugins-nvvideosinks',
+            'gstreamer1.0-plugins-tegra-binaryonly',
+            'libgstnvcustomhelper',
+            'gstreamer1.0-plugins-bad-videoparsersbad',
+            'libgstcodecparsers-1.0-0',
+            'libgstriff-1.0-0',
+            'liborc-0.4-0',
+            'libgstaudio-1.0-0',
+            'libgsttag-1.0-0',
+            'gstreamer1.0-plugins-good-rtp',
+            'libgstrtp-1.0-0',
+            'gstreamer1.0-plugins-good-udp',
+            # Yocto's doesn't work with gstreamer, and we don't actually care
+            # hugely.  opencv seems to work.
+            'libv4l',
+            'libv4l-dev',
+            'libgstpbutils-1.0-0',
+            'libgstnvdsseimeta1.0.0',
+            'media-ctl',
+            'libgstapp-1.0-0',
         ]
-        yocto_packages = list_yocto_packages()
-        packages = list_packages()
 
         install_packages([
             package for package in yocto_packages
             if package.name in yocto_package_names
         ], packages)
 
-        # Now, install the kernel and modules after all the normal packages are in.
-        yocto_packages_to_install = [
-            package for package in yocto_packages
-            if (package.name.startswith('kernel-module-') or package.name.
-                startswith('kernel-5.10') or package.name == 'kernel-modules')
-        ]
+        install_virtual_packages([
+            'libgstreamer1.0-0',
+            "libgstreamer-plugins-base1.0-0",
+        ])
 
-        packages_to_remove = []
+        target([
+            "apt-mark",
+            "hold",
+            "gstreamer1.0-plugins-base",
+            "libgstreamer1.0-0",
+            "liborc-0.4-0",
+        ])
 
-        # Remove kernel-module-* packages + kernel- package.
-        for key in packages:
-            if key.startswith('kernel-module') or key.startswith(
-                    'kernel-5.10'):
-                already_installed = False
-                for index, yocto_package in enumerate(
-                        yocto_packages_to_install):
-                    if key == yocto_package.name and packages[
-                            key] == yocto_package.version:
-                        already_installed = True
-                        del yocto_packages_to_install[index]
-                        break
-                if not already_installed:
-                    packages_to_remove.append(key)
-
-        print("Removing", packages_to_remove)
-        if len(packages_to_remove) > 0:
-            target(['dpkg', '--purge'] + packages_to_remove)
-        print("Installing",
-              [package.name for package in yocto_packages_to_install])
-
-        install_packages(yocto_packages_to_install, packages)
+        # Opencv depends on gstreamer, but we want our gstreamer...  So install
+        # ours first, install the adapter packages, then install theirs.
+        target([
+            "apt-get",
+            "-y",
+            "install",
+            "libopencv-calib3d406",
+            "libopencv-contrib406",
+            "libopencv-core406",
+            "libopencv-features2d406",
+            "libopencv-flann406",
+            "libopencv-highgui406",
+            "libopencv-imgcodecs406",
+            "libopencv-imgproc406",
+            "libopencv-ml406",
+            "libopencv-objdetect406",
+            "libopencv-photo406",
+            "libopencv-shape406",
+            "libopencv-stitching406",
+            "libopencv-superres406",
+            "libopencv-video406",
+            "libopencv-videoio406",
+            "libopencv-videostab406",
+            "libopencv-viz406",
+            "libopencv-dev",
+        ])
 
         target(["systemctl", "enable", "nvargus-daemon.service"])
 

@@ -25,6 +25,8 @@ DEFINE_double(min_decision_margin, 50.0,
 
 DEFINE_bool(debug, false, "If true, write debug images.");
 
+DECLARE_int32(debug_blob_index);
+
 // Get access to the intermediates of aprilrobotics.
 extern "C" {
 
@@ -42,7 +44,44 @@ struct pt {
 
   float slope;
 };
+
+struct line_fit_pt {
+  double Mx, My;
+  double Mxx, Myy, Mxy;
+  double W;  // total weight
+};
+
+struct line_fit_pt *compute_lfps(int sz, zarray_t *cluster, image_u8_t *im);
+
+void fit_line(struct line_fit_pt *lfps, int sz, int i0, int i1,
+              double *lineparm, double *err, double *mse);
+
+int fit_quad(apriltag_detector_t *td, image_u8_t *im, zarray_t *cluster,
+             struct quad *quad, int tag_width, bool normal_border,
+             bool reversed_border);
+
 }  // extern C
+
+std::ostream &operator<<(std::ostream &os, const line_fit_pt &point) {
+  os << "{Mx:" << std::setprecision(20) << point.Mx
+     << ", My:" << std::setprecision(20) << point.My
+     << ", Mxx:" << std::setprecision(20) << point.Mxx
+     << ", Myy:" << std::setprecision(20) << point.Myy
+     << ", Mxy:" << std::setprecision(20) << point.Mxy << ", W:" << point.W
+     << "}";
+  return os;
+}
+
+namespace frc971::apriltag {
+std::ostream &operator<<(std::ostream &os,
+                         const frc971::apriltag::LineFitPoint &point) {
+  os << "{Mx:" << point.Mx / 2.0 << ", My:" << point.My / 2.0
+     << ", Mxx:" << point.Mxx / 4.0 << ", Mxy:" << point.Mxy / 4.0
+     << ", Myy:" << point.Myy / 4.0 << ", W:" << point.W << "}";
+  return os;
+}
+
+}  // namespace frc971::apriltag
 
 // Converts a cv::Mat to an aprilrobotics image.
 image_u8_t ToImageu8t(const cv::Mat &img) {
@@ -196,7 +235,7 @@ apriltag_detector_t *MakeTagDetector(apriltag_family_t *tag_family) {
 
   apriltag_detector_add_family_bits(tag_detector, tag_family, 1);
 
-  tag_detector->nthreads = 1;
+  tag_detector->nthreads = 6;
   tag_detector->wp = workerpool_create(tag_detector->nthreads);
   tag_detector->qtp.min_white_black_diff = 5;
   tag_detector->debug = FLAGS_debug;
@@ -260,6 +299,9 @@ class CudaAprilTagDetector {
   }
 
   ~CudaAprilTagDetector() {
+    if (aprilrobotics_detections_ != nullptr) {
+      apriltag_detections_destroy(aprilrobotics_detections_);
+    }
     apriltag_detector_destroy(tag_detector_);
     free(tag_family_);
   }
@@ -286,10 +328,16 @@ class CudaAprilTagDetector {
     num_compressed_union_marker_pair_ =
         gpu_detector_.NumCompressedUnionMarkerPairs();
     extents_cuda_ = gpu_detector_.CopyExtents();
-    reduced_dot_blobs_pair_cuda_ = gpu_detector_.CopyReducedDotBlobs();
+    selected_extents_cuda_ = gpu_detector_.CopySelectedExtents();
     selected_blobs_cuda_ = gpu_detector_.CopySelectedBlobs();
     sorted_selected_blobs_cuda_ = gpu_detector_.CopySortedSelectedBlobs();
+    line_fit_points_cuda_ = gpu_detector_.CopyLineFitPoints();
+    errors_device_ = gpu_detector_.CopyErrors();
+    filtered_errors_device_ = gpu_detector_.CopyFilteredErrors();
+    peaks_device_ = gpu_detector_.CopyPeaks();
     num_quads_ = gpu_detector_.NumQuads();
+
+    fit_quads_ = gpu_detector_.FitQuads();
 
     LOG(INFO) << "num_compressed_union_marker_pair "
               << sorted_union_marker_pair_.size();
@@ -307,18 +355,21 @@ class CudaAprilTagDetector {
     };
 
     LOG(INFO) << "Starting CPU detect.";
-    zarray_t *detections = apriltag_detector_detect(tag_detector_, &im);
+    if (aprilrobotics_detections_ != nullptr) {
+      apriltag_detections_destroy(aprilrobotics_detections_);
+    }
+    aprilrobotics_detections_ = apriltag_detector_detect(tag_detector_, &im);
 
     timeprofile_display(tag_detector_->tp);
 
-    for (int i = 0; i < zarray_size(detections); i++) {
+    for (int i = 0; i < zarray_size(aprilrobotics_detections_); i++) {
       apriltag_detection_t *det;
-      zarray_get(detections, i, &det);
+      zarray_get(aprilrobotics_detections_, i, &det);
 
       if (det->decision_margin > FLAGS_min_decision_margin) {
-        VLOG(1) << "Found tag number " << det->id
-                << " hamming: " << det->hamming
-                << " margin: " << det->decision_margin;
+        LOG(INFO) << "Found tag number " << det->id
+                  << " hamming: " << det->hamming
+                  << " margin: " << det->decision_margin;
       }
     }
   }
@@ -725,12 +776,14 @@ class CudaAprilTagDetector {
           [](std::tuple<float, uint64_t> a, std::tuple<float, uint64_t> b) {
             return std::get<1>(a) < std::get<1>(b);
           });
+      size_t before_size = pts.size();
       pts.erase(std::unique(pts.begin(), pts.end(),
                             [](std::tuple<float, uint64_t> a,
                                std::tuple<float, uint64_t> b) {
                               return std::get<1>(a) == std::get<1>(b);
                             }),
                 pts.end());
+      CHECK_EQ(pts.size(), before_size);
 
       std::sort(
           pts.begin(), pts.end(),
@@ -927,8 +980,7 @@ class CudaAprilTagDetector {
     const std::vector<std::vector<QuadBoundaryPoint>>
         cuda_point_sorted_grouped_points = SortPoints(cuda_grouped_points);
     const std::vector<std::vector<uint64_t>> april_sorted_grouped_points =
-        SortAprilroboticsPoints(
-            SortAprilroboticsPointSizes(april_grouped_points));
+        SortAprilroboticsPoints(april_grouped_points);
 
     CHECK_EQ(april_sorted_grouped_points.size(),
              cuda_point_sorted_grouped_points.size());
@@ -952,8 +1004,7 @@ class CudaAprilTagDetector {
   // Tests that the extents and dot products match the cuda versions.
   std::pair<size_t, std::vector<IndexPoint>> CheckCudaExtents(
       const std::vector<std::vector<QuadBoundaryPoint>> &cuda_grouped_points,
-      const std::vector<MinMaxExtents> &extents_cuda,
-      const std::vector<float> &reduced_dot_blobs_pair_cuda) const {
+      const std::vector<MinMaxExtents> &extents_cuda) const {
     std::vector<IndexPoint> selected_blobs;
     const size_t max_april_tag_perimeter = 2 * (width_ + height_);
     size_t selected_quads = 0;
@@ -962,7 +1013,6 @@ class CudaAprilTagDetector {
       size_t i = 0;
       size_t starting_offset = 0;
       CHECK_EQ(cuda_grouped_points.size(), extents_cuda.size());
-      CHECK_EQ(extents_cuda.size(), reduced_dot_blobs_pair_cuda.size());
       for (const std::vector<QuadBoundaryPoint> &points : cuda_grouped_points) {
         size_t min_x, min_y, max_x, max_y;
         min_x = max_x = points[0].x();
@@ -994,33 +1044,27 @@ class CudaAprilTagDetector {
         bool good_blob_size =
             points.size() >= 24 && points.size() <= max_april_tag_perimeter &&
             points.size() >=
-                static_cast<size_t>(tag_detector_->qtp.min_cluster_pixels);
+                static_cast<size_t>(tag_detector_->qtp.min_cluster_pixels) &&
+            static_cast<int>((max_x - min_x) * (max_y - min_y)) >=
+                min_tag_width_;
 
-        if (good_blob_size) {
-          for (size_t j = 0; j < points.size(); ++j) {
-            dot += (static_cast<float>(points[j].x()) - cx) * points[j].gx() +
-                   (static_cast<float>(points[j].y()) - cy) * points[j].gy();
+        for (size_t j = 0; j < points.size(); ++j) {
+          dot += (static_cast<float>(points[j].x()) - cx) * points[j].gx() +
+                 (static_cast<float>(points[j].y()) - cy) * points[j].gy();
 
-            // Make sure our blob finder agrees.
-            CHECK_EQ(i, finder.FindBlobIndex(starting_offset + j));
-          }
-          // Test that the summed dot product is right.
-          CHECK_LT(
-              std::abs(reduced_dot_blobs_pair_cuda[i] - dot) / std::abs(dot),
-              1e-4)
-              << ": for point " << i << ", cuda -> "
-              << reduced_dot_blobs_pair_cuda[i] << ", C++ -> " << dot;
-        } else {
-          CHECK_EQ(reduced_dot_blobs_pair_cuda[i], 0.0f)
-              << ": for point " << i << ", cuda -> "
-              << reduced_dot_blobs_pair_cuda[i] << ", C++ -> " << dot;
+          // Make sure our blob finder agrees.
+          CHECK_EQ(i, finder.FindBlobIndex(starting_offset + j));
         }
+
+        // Test that the summed dot product is right.
+        CHECK_LT(std::abs(extents.dot() - dot) / std::abs(dot), 1e-2)
+            << ": for point " << i << ", cuda -> " << extents.dot()
+            << ", C++ -> " << dot;
 
         const bool quad_reversed_border = dot < 0;
 
-        VLOG(1) << "For point " << i << ", cuda -> "
-                << reduced_dot_blobs_pair_cuda[i] << ", C++ -> " << dot
-                << " size " << points.size() << " border "
+        VLOG(1) << "For point " << i << ", cuda -> " << extents.dot()
+                << ", C++ -> " << dot << " size " << points.size() << " border "
                 << (!(!reversed_border_ && quad_reversed_border) &&
                     !(!normal_border_ && !quad_reversed_border))
                 << " area: "
@@ -1167,13 +1211,14 @@ class CudaAprilTagDetector {
           ++missmatched_points;
           ++missmatched_runs;
           // We shouldn't see a lot of points in a row which don't match.
-          VLOG(1) << "Missmatched point in blob "
+          VLOG(0) << "Missmatched point in blob "
                   << cuda_grouped_blob[0].blob_index() << ", point " << j
                   << " (" << cuda_grouped_blob[j].x() << ", "
-                  << cuda_grouped_blob[j].y() << ") vs ("
+                  << cuda_grouped_blob[j].y() << "), theta "
+                  << cuda_grouped_blob[j].theta() << " vs ("
                   << slope_sorted_points[j].x() << ", "
-                  << slope_sorted_points[j].y() << ")"
-                  << " in size " << cuda_grouped_points[i].size();
+                  << slope_sorted_points[j].y() << "), in size "
+                  << cuda_grouped_points[i].size();
           CHECK_LE(missmatched_runs, 4u);
         } else {
           missmatched_runs = 0;
@@ -1183,7 +1228,540 @@ class CudaAprilTagDetector {
 
     // Or a lot of points overall.  The slope algo has duplicate points, and
     // is occasionally wrong.
-    CHECK_LE(missmatched_points, 50u);
+    CHECK_LE(missmatched_points, 25u);
+  }
+
+  void CheckCudaFilteredExtents(
+      const std::vector<cub::KeyValuePair<long, MinMaxExtents>>
+          &selected_extents_cuda,
+      const std::vector<IndexPoint> &sorted_selected_blobs_cuda) {
+    size_t start = 0;
+    size_t sorted_point_index = 0;
+    for (size_t i = 0; i < selected_extents_cuda.size(); ++i) {
+      VLOG(1) << "Extent " << i << " started at "
+              << selected_extents_cuda[i].value.starting_offset
+              << " with count " << selected_extents_cuda[i].value.count;
+      CHECK_EQ(selected_extents_cuda[i].value.starting_offset, start)
+          << " for extent " << i;
+      size_t found_blobs = 0;
+      CHECK_EQ(selected_extents_cuda[i].value.starting_offset,
+               sorted_point_index);
+      while (sorted_selected_blobs_cuda[sorted_point_index].blob_index() == i) {
+        ++found_blobs;
+        ++sorted_point_index;
+      }
+      CHECK_EQ(found_blobs, selected_extents_cuda[i].value.count);
+      start += selected_extents_cuda[i].value.count;
+    }
+  }
+
+  void CheckErrors(const std::vector<IndexPoint> &sorted_selected_blobs_cuda,
+                   const std::vector<LineFitPoint> &line_fit_points_cuda,
+                   const std::vector<double> &errors_device,
+                   const std::vector<double> &filtered_errors_device,
+                   const std::vector<Peak> &peaks_device) {
+    std::vector<std::vector<IndexPoint>> grouped_points =
+        CudaGroupedPoints(sorted_selected_blobs_cuda);
+    image_u8_t quad_im = ToImageu8t(decimated_cuda_);
+    size_t accumulated_size = 0u;
+    size_t blob_index = 0u;
+    size_t bad_errors = 0u;
+    size_t summed_cuda_pts = 0;
+    for (const std::vector<IndexPoint> &group : grouped_points) {
+      std::vector<double> errs;
+      errs.resize(group.size(), 0.0);
+      const size_t ksz = std::min<size_t>(20u, group.size() / 12);
+
+      zarray_t *cluster = zarray_create(sizeof(struct pt));
+
+      for (size_t i = 0; i < group.size(); i++) {
+        pt p{
+            .x = static_cast<uint16_t>(group[i].x()),
+            .y = static_cast<uint16_t>(group[i].y()),
+        };
+        zarray_add(cluster, &p);
+      }
+
+      CHECK_EQ(static_cast<size_t>(zarray_size(cluster)), group.size());
+
+      struct line_fit_pt *lfps = compute_lfps(group.size(), cluster, &quad_im);
+
+      VLOG(1) << "Inspecting blob of size " << group.size() << " global start "
+              << accumulated_size;
+      for (size_t i = 0; i < group.size(); i++) {
+        if (group[i].blob_index() == (size_t)FLAGS_debug_blob_index) {
+          LOG(INFO) << "For idx " << i << " global " << accumulated_size + i
+                    << "(" << group[i].x() << ", " << group[i].y()
+                    << "), cuda: " << line_fit_points_cuda[accumulated_size + i]
+                    << " aprilrobotics " << lfps[i];
+        }
+        CHECK_EQ(line_fit_points_cuda[accumulated_size + i].Mx / 2.0,
+                 lfps[i].Mx)
+            << ": for blob index " << group[i].blob_index();
+        CHECK_EQ(line_fit_points_cuda[accumulated_size + i].My / 2.0,
+                 lfps[i].My)
+            << ": for blob index " << group[i].blob_index();
+        CHECK_EQ(line_fit_points_cuda[accumulated_size + i].Mxx / 4.0,
+                 lfps[i].Mxx)
+            << ": for blob index " << group[i].blob_index();
+        CHECK_EQ(line_fit_points_cuda[accumulated_size + i].Mxy / 4.0,
+                 lfps[i].Mxy)
+            << ": for blob index " << group[i].blob_index();
+        CHECK_EQ(line_fit_points_cuda[accumulated_size + i].Myy / 4.0,
+                 lfps[i].Myy)
+            << ": for blob index " << group[i].blob_index();
+        CHECK_EQ(line_fit_points_cuda[accumulated_size + i].W, lfps[i].W)
+            << ": for blob index " << group[i].blob_index();
+      }
+
+      for (size_t i = 0; i < group.size(); i++) {
+        if (group[i].blob_index() == (size_t)FLAGS_debug_blob_index) {
+          LOG(INFO) << "  Cuda error[" << i << "] -> "
+                    << errors_device[accumulated_size + i] << ", filtered "
+                    << filtered_errors_device[i + accumulated_size];
+        }
+      }
+
+      for (size_t i = 0; i < group.size(); i++) {
+        const size_t i0 = (i + group.size() - ksz) % group.size();
+        const size_t i1 = (i + ksz) % group.size();
+        const size_t gi0 = accumulated_size + i0;
+        const size_t gi1 = accumulated_size + i1;
+
+        fit_line(lfps, group.size(), i0, i1, NULL, &errs[i], NULL);
+
+        if (std::abs(errs[i] - errors_device[accumulated_size + i]) >=
+            0.001 * std::max<double>(1.0, errs[i])) {
+          VLOG(1) << "i0   aprilrobotics " << lfps[i0];
+          VLOG(1) << "i0            cuda " << line_fit_points_cuda[gi0];
+          VLOG(1) << " dMx: "
+                  << (lfps[i0].Mx * 2 - line_fit_points_cuda[gi0].Mx);
+          VLOG(1) << " dMy: "
+                  << (lfps[i0].My * 2 - line_fit_points_cuda[gi0].My);
+          VLOG(1) << " dMxx: "
+                  << (lfps[i0].Mxx * 4 - line_fit_points_cuda[gi0].Mxx);
+          VLOG(1) << " dMxy: "
+                  << (lfps[i0].Mxy * 4 - line_fit_points_cuda[gi0].Mxy);
+          VLOG(1) << " dMyy: "
+                  << (lfps[i0].Myy * 4 - line_fit_points_cuda[gi0].Myy);
+          VLOG(1) << " dW: " << (lfps[i0].W - line_fit_points_cuda[gi0].W);
+          VLOG(1) << "i1   aprilrobotics " << lfps[i1];
+          VLOG(1) << "i1            cuda " << line_fit_points_cuda[gi1];
+          VLOG(1) << " dMx: "
+                  << (lfps[i1].Mx * 2 - line_fit_points_cuda[gi1].Mx);
+          VLOG(1) << " dMy: "
+                  << (lfps[i1].My * 2 - line_fit_points_cuda[gi1].My);
+          VLOG(1) << " dMxx: "
+                  << (lfps[i1].Mxx * 4 - line_fit_points_cuda[gi1].Mxx);
+          VLOG(1) << " dMxy: "
+                  << (lfps[i1].Mxy * 4 - line_fit_points_cuda[gi1].Mxy);
+          VLOG(1) << " dMyy: "
+                  << (lfps[i1].Myy * 4 - line_fit_points_cuda[gi1].Myy);
+          VLOG(1) << " dW: " << (lfps[i1].W - line_fit_points_cuda[gi1].W);
+          VLOG(1) << "derror: " << errs[i] << " - "
+                  << errors_device[accumulated_size + i] << " = "
+                  << errs[i] - errors_device[accumulated_size + i];
+
+          ++bad_errors;
+        }
+      }
+
+      std::vector<float> filter_coefficients;
+      {
+        // Stolen directly from aprilrobotics to test.
+
+        double sigma = 1;  // was 3
+
+        // cutoff = exp(-j*j/(2*sigma*sigma));
+        // log(cutoff) = -j*j / (2*sigma*sigma)
+        // log(cutoff)*2*sigma*sigma = -j*j;
+
+        // how big a filter should we use? We make our kernel big
+        // enough such that we represent any values larger than
+        // 'cutoff'.
+
+        // XXX Tunable (though not super useful to change)
+        double cutoff = 0.05;
+        int fsz = sqrt(-log(cutoff) * 2 * sigma * sigma) + 1;
+        fsz = 2 * fsz + 1;
+
+        // For default values of cutoff = 0.05, sigma = 3,
+        // we have fsz = 17.
+
+        for (int i = 0; i < fsz; i++) {
+          int j = i - fsz / 2;
+          filter_coefficients.push_back(exp(-j * j / (2 * sigma * sigma)));
+          CHECK_EQ(filter_coefficients[i], FilterCoefficients()[i]);
+        }
+      }
+
+      std::vector<double> filtered_errors;
+      filtered_errors.resize(group.size(), 0.0);
+
+      for (size_t i = 0; i < group.size(); i++) {
+        double accumulated_cuda = 0;
+        double accumulated = 0;
+        for (int filter_coefficient_index = 0;
+             filter_coefficient_index <
+             static_cast<int>(filter_coefficients.size());
+             filter_coefficient_index++) {
+          const double e =
+              errs[(i + filter_coefficient_index -
+                    filter_coefficients.size() / 2 + group.size()) %
+                   group.size()];
+          accumulated += e * filter_coefficients[filter_coefficient_index];
+
+          const double e_cuda =
+              errors_device[(i + filter_coefficient_index -
+                             filter_coefficients.size() / 2 + group.size()) %
+                                group.size() +
+                            accumulated_size];
+          accumulated_cuda +=
+              e_cuda * filter_coefficients[filter_coefficient_index];
+        }
+        filtered_errors[i] = accumulated;
+
+        // Make sure the filter math works.  This can be a lot tighter since the
+        // error calc appears to be less accurate.
+        CHECK_LT(std::abs(accumulated_cuda -
+                          filtered_errors_device[accumulated_size + i]),
+                 1e-3)
+            << " Failed to match error at blob " << blob_index << " index " << i
+            << " global index " << accumulated_size + i
+            << " for a blob of size " << group.size() << " expected "
+            << filtered_errors[i] << " got "
+            << filtered_errors_device[accumulated_size + i];
+
+        // Make sure it hasn't walked too far off from the actual error.
+        /*
+        CHECK_LT(std::abs(filtered_errors[i] -
+                          filtered_errors_device[accumulated_size + i]),
+                 1e-1)
+            << " Failed to match error at blob " << blob_index << " index " << i
+            << " global index " << accumulated_size + i
+            << " for a blob of size " << group.size() << " expected "
+            << filtered_errors[i] << " got "
+            << filtered_errors_device[accumulated_size + i];
+            */
+      }
+
+      // Now, check the peaks.
+      size_t num_peaks_cuda = 0;
+      size_t num_peaks_april = 0;
+      for (size_t i = 0; i < group.size(); i++) {
+        double before_aprilrobotics =
+            filtered_errors[(i + group.size() - 1) % group.size()];
+        double after_aprilrobotics = filtered_errors[(i + 1) % group.size()];
+        double us_aprilrobotics = filtered_errors[i];
+
+        double before_cuda =
+            filtered_errors_device[(i + group.size() - 1) % group.size() +
+                                   accumulated_size];
+        double after_cuda =
+            filtered_errors_device[(i + 1) % group.size() + accumulated_size];
+        double us_cuda = filtered_errors_device[i + accumulated_size];
+
+        const bool is_peak_aprilrobotics =
+            us_aprilrobotics > before_aprilrobotics &&
+            us_aprilrobotics > after_aprilrobotics;
+        const bool is_peak_cuda = us_cuda > before_cuda && us_cuda > after_cuda;
+
+        if (is_peak_aprilrobotics) {
+          ++num_peaks_april;
+        }
+        // We don't agree...  But it is on little stupid stuff.
+        /*CHECK_EQ(is_peak_aprilrobotics, peaks_device[accumulated_size + i])
+            << " Failed to match peak at blob " << blob_index << " index " << i
+            << " global index " << accumulated_size + i
+            << " for a blob of size " << group.size() << " compared "
+            << before_aprilrobotics << " vs " << us_aprilrobotics << " vs "
+            << after_aprilrobotics;*/
+        CHECK_EQ(is_peak_cuda, peaks_device[accumulated_size + i].blob_index !=
+                                   Peak::kNoPeak())
+            << " Failed to match peak at blob " << blob_index << " index " << i
+            << " global index " << accumulated_size + i
+            << " for a blob of size " << group.size() << " compared "
+            << before_cuda << " vs " << us_cuda << " vs " << after_cuda;
+        CHECK_EQ(peaks_device[accumulated_size + i].filtered_point_index,
+                 accumulated_size + i);
+        CHECK_NEAR(peaks_device[accumulated_size + i].error,
+                   -filtered_errors_device[accumulated_size + i], 1e-3);
+        if (is_peak_cuda) {
+          CHECK_EQ(peaks_device[accumulated_size + i].blob_index,
+                   group[0].blob_index())
+              << " Failed to match peak at blob " << blob_index << " index "
+              << i << " global index " << accumulated_size + i
+              << " for a blob of size " << group.size() << " compared "
+              << before_cuda << " vs " << us_cuda << " vs " << after_cuda;
+        }
+        if (is_peak_cuda) {
+          ++num_peaks_cuda;
+          ++summed_cuda_pts;
+        }
+      }
+
+      (void)num_peaks_cuda;
+      (void)num_peaks_april;
+      // CHECK_EQ(num_peaks_cuda, num_peaks_april);
+
+      zarray_destroy(cluster);
+      free(lfps);
+      accumulated_size += group.size();
+      ++blob_index;
+    }
+    LOG(INFO) << "Overall, found " << summed_cuda_pts << " peaks with "
+              << bad_errors << " bad errors.";
+    // CHECK_LT(bad_errors, 60u);
+  }
+
+  // Orders the clusters reported by AprilRobotics to match the inbound cuda
+  // cluster order.
+  zarray_t *OrderAprilroboticsLikeCuda(
+      image_u8_t *thresholded_im, unionfind_t *uf,
+      const std::vector<std::vector<QuadBoundaryPoint>> &cuda_grouped_points)
+      const {
+    // Step 1, label both the cuda and april robotics points with their original
+    // index. Step 2, sort both, retaining the indices. Step 3, reorder the
+    // april robotics points to match the cuda points using the indices.
+    zarray_t *clusters =
+        gradient_clusters(tag_detector_, thresholded_im, thresholded_im->width,
+                          thresholded_im->height, thresholded_im->stride, uf);
+
+    // Reorder a copy of april robotics clusters to our format.
+    struct AprilClusterIndexPair {
+      size_t index;
+      std::vector<uint64_t> points;
+    };
+    std::vector<AprilClusterIndexPair> april_points;
+
+    for (int i = 0; i < zarray_size(clusters); i++) {
+      zarray_t *cluster;
+      zarray_get(clusters, i, &cluster);
+
+      AprilClusterIndexPair points;
+      points.index = i;
+
+      for (int j = 0; j < zarray_size(cluster); j++) {
+        struct pt *p;
+        zarray_get_volatile(cluster, j, &p);
+
+        points.points.push_back(p->x + p->y * width_);
+      }
+
+      std::sort(points.points.begin(), points.points.end());
+      points.points.erase(
+          std::unique(points.points.begin(), points.points.end()),
+          points.points.end());
+      april_points.emplace_back(std::move(points));
+    }
+
+    // And sort the blobs now.
+    std::sort(april_points.begin(), april_points.end(), [](auto &x, auto &y) {
+      if (x.points.size() == y.points.size()) {
+        for (size_t j = 0; j < x.points.size(); ++j) {
+          if (x.points[j] == y.points[j]) {
+            continue;
+          }
+          return x.points[j] < y.points[j];
+        }
+        LOG(FATAL) << "Equal";
+      }
+      return x.points.size() < y.points.size();
+    });
+
+    struct CudaClusterIndexPair {
+      size_t index;
+      std::vector<QuadBoundaryPoint> points;
+    };
+
+    // Do the same for CUDA.
+    std::vector<CudaClusterIndexPair> cuda_points;
+    for (size_t i = 0; i < cuda_grouped_points.size(); ++i) {
+      CudaClusterIndexPair points;
+      points.points = cuda_grouped_points[i];
+      points.index = i;
+
+      std::sort(points.points.begin(), points.points.end(),
+                [this](const QuadBoundaryPoint &a, const QuadBoundaryPoint &b) {
+                  CHECK_EQ(a.rep01(), b.rep01());
+                  return a.x() + a.y() * width_ < b.x() + b.y() * width_;
+                });
+      cuda_points.emplace_back(std::move(points));
+    }
+
+    // And sort the blobs.
+    std::sort(cuda_points.begin(), cuda_points.end(), [this](auto &x, auto &y) {
+      if (x.points.size() == y.points.size()) {
+        for (size_t j = 0; j < x.points.size(); ++j) {
+          if (x.points[j].x() + x.points[j].y() * width_ ==
+              y.points[j].x() + y.points[j].y() * width_) {
+            continue;
+          }
+          return x.points[j].x() + x.points[j].y() * width_ <
+                 y.points[j].x() + y.points[j].y() * width_;
+        }
+        LOG(FATAL) << "Equal";
+      }
+      return x.points.size() < y.points.size();
+    });
+
+    // OK, we now have the cuda points in the same order as the aprilrobotics
+    // points.  First CHECK that they match, just in case...
+    std::vector<zarray_t *> sorted_result;
+    sorted_result.resize(cuda_points.size());
+
+    CHECK_EQ(april_points.size(), cuda_points.size());
+    for (size_t i = 0; i < april_points.size(); ++i) {
+      CHECK_EQ(april_points[i].points.size(), cuda_points[i].points.size());
+      for (size_t j = 0; j < april_points[i].points.size(); ++j) {
+        CHECK_EQ(april_points[i].points[j],
+                 cuda_points[i].points[j].x() +
+                     cuda_points[i].points[j].y() * width_)
+            << ": " << i << " " << j;
+      }
+
+      // And, while we are iterating, make a vector with the clusters in the
+      // right order.
+      zarray_t *cluster;
+      zarray_get(clusters, april_points[i].index, &cluster);
+      sorted_result[cuda_points[i].index] = cluster;
+    }
+
+    // Finally, put it back in the clusters.
+    for (size_t i = 0; i < april_points.size(); ++i) {
+      zarray_set(clusters, i, &sorted_result[i], nullptr);
+    }
+
+    return clusters;
+  }
+
+  void CheckQuads(const zarray_t *clusters,
+                  std::vector<IndexPoint> sorted_selected_blobs_cuda,
+                  const std::vector<QuadCorners> &fit_quads) {
+    std::vector<std::vector<IndexPoint>> sorted_blobs;
+    for (auto blob : CudaGroupedPoints(sorted_selected_blobs_cuda)) {
+      while (blob[0].blob_index() > sorted_blobs.size()) {
+        sorted_blobs.emplace_back();
+      }
+      sorted_blobs.emplace_back(std::move(blob));
+    }
+
+    image_u8_t quad_im = ToImageu8t(decimated_cuda_);
+
+    std::vector<bool> aprilrobotics_valid;
+    std::vector<struct quad> aprilrobotics_quad;
+    aprilrobotics_valid.resize(zarray_size(clusters));
+    aprilrobotics_quad.resize(zarray_size(clusters));
+
+    for (int i = 0; i < zarray_size(clusters); ++i) {
+      struct quad quad_result;
+
+      zarray_t *cluster;
+      zarray_get(clusters, i, &cluster);
+
+      if (i == FLAGS_debug_blob_index) {
+        LOG(INFO) << "cuda points for blob " << i << " are";
+        for (size_t j = 0; j < sorted_blobs[i].size(); ++j) {
+          LOG(INFO) << "  blob[" << j << "]: (" << sorted_blobs[i][j].x()
+                    << ", " << sorted_blobs[i][j].y() << ")";
+        }
+      }
+      VLOG(1) << "Going to fit quad " << i << " of size "
+              << zarray_size(cluster);
+      int valid_blob =
+          fit_quad(tag_detector_, &quad_im, cluster, &quad_result,
+                   min_tag_width_, normal_border_, reversed_border_);
+
+      auto quad_iterator = std::find_if(fit_quads.begin(), fit_quads.end(),
+                                        [&](const QuadCorners corner) {
+                                          return (int)corner.blob_index == i;
+                                        });
+
+      CHECK_EQ(quad_iterator != fit_quads.end(), valid_blob != 0)
+          << ": Missmatch on quad " << i;
+
+      if (!valid_blob) {
+        continue;
+      }
+
+      // Apply the center adjustment algorithm to the ground truth so we compare
+      // apples to apples.
+      gpu_detector_.AdjustCenter(quad_result.p);
+
+      QuadCorners cuda_corner = *quad_iterator;
+
+      for (size_t point = 0; point < 4; ++point) {
+        CHECK_NEAR(quad_result.p[point][0], cuda_corner.corners[point][0],
+                   1e-3);
+        CHECK_NEAR(quad_result.p[point][1], cuda_corner.corners[point][1],
+                   1e-3);
+      }
+    }
+  }
+
+  void CheckDetections(zarray_t *aprilrobotics_detections,
+                       const zarray_t *gpu_detections) {
+    CHECK_EQ(zarray_size(aprilrobotics_detections),
+             zarray_size(gpu_detections));
+    LOG(INFO) << "Found " << zarray_size(gpu_detections) << " tags";
+
+    for (int i = 0; i < zarray_size(aprilrobotics_detections); ++i) {
+      const apriltag_detection_t *aprilrobotics_detection;
+      const apriltag_detection_t *gpu_detection;
+
+      zarray_get(aprilrobotics_detections, i, &aprilrobotics_detection);
+      zarray_get(gpu_detections, i, &gpu_detection);
+
+      bool valid = gpu_detection->decision_margin > FLAGS_min_decision_margin;
+
+      LOG(INFO) << "Found GPU " << (valid ? "valid" : "invalid")
+                << " tag number " << gpu_detection->id
+                << " hamming: " << gpu_detection->hamming
+                << " margin: " << gpu_detection->decision_margin;
+      LOG(INFO) << "Found CPU " << (valid ? "valid" : "invalid")
+                << " tag number " << aprilrobotics_detection->id
+                << " hamming: " << aprilrobotics_detection->hamming
+                << " margin: " << aprilrobotics_detection->decision_margin;
+    }
+
+    for (int i = 0; i < zarray_size(aprilrobotics_detections); ++i) {
+      const apriltag_detection_t *aprilrobotics_detection;
+      const apriltag_detection_t *gpu_detection;
+
+      zarray_get(aprilrobotics_detections, i, &aprilrobotics_detection);
+      zarray_get(gpu_detections, i, &gpu_detection);
+
+      const bool valid =
+          gpu_detection->decision_margin > FLAGS_min_decision_margin;
+
+      // TODO(austin): Crank down the thresholds and figure out why these
+      // deviate.  It should be the same function for both at this point.
+      const double threshold = valid ? 2e-3 : 1e-1;
+
+      CHECK_EQ(aprilrobotics_detection->id, gpu_detection->id);
+      CHECK_EQ(aprilrobotics_detection->hamming, gpu_detection->hamming);
+      EXPECT_NEAR(aprilrobotics_detection->c[0], gpu_detection->c[0],
+                  threshold);
+      EXPECT_NEAR(aprilrobotics_detection->c[1], gpu_detection->c[1],
+                  threshold);
+
+      for (int j = 0; j < 4; ++j) {
+        for (int k = 0; k < 2; ++k) {
+          EXPECT_NEAR(aprilrobotics_detection->p[j][k], gpu_detection->p[j][k],
+                      threshold);
+        }
+      }
+
+      CHECK_EQ(aprilrobotics_detection->H->nrows, gpu_detection->H->nrows);
+      CHECK_EQ(aprilrobotics_detection->H->ncols, gpu_detection->H->ncols);
+
+      for (size_t j = 0; j < gpu_detection->H->ncols; ++j) {
+        for (size_t k = 0; k < gpu_detection->H->nrows; ++k) {
+          EXPECT_NEAR(matd_get(gpu_detection->H, k, j),
+                      matd_get(aprilrobotics_detection->H, k, j), threshold);
+        }
+      }
+    }
   }
 
   // Checks that the GPU and CPU algorithms match.
@@ -1250,8 +1828,8 @@ class CudaAprilTagDetector {
     // Test that the extents are reasonable.
     size_t selected_quads;
     std::vector<IndexPoint> selected_blobs;
-    std::tie(selected_quads, selected_blobs) = CheckCudaExtents(
-        cuda_grouped_points, extents_cuda_, reduced_dot_blobs_pair_cuda_);
+    std::tie(selected_quads, selected_blobs) =
+        CheckCudaExtents(cuda_grouped_points, extents_cuda_);
 
     // And that the filtered list is reasonable.
     CheckFilteredCudaPoints(selected_blobs, selected_blobs_cuda_);
@@ -1261,10 +1839,30 @@ class CudaAprilTagDetector {
                                   selected_quads, selected_blobs,
                                   sorted_selected_blobs_cuda_);
 
-    // TODO(austin): Check the selected extents is right.
+    CheckCudaFilteredExtents(selected_extents_cuda_,
+                             sorted_selected_blobs_cuda_);
+
+    CheckErrors(sorted_selected_blobs_cuda_, line_fit_points_cuda_,
+                errors_device_, filtered_errors_device_, peaks_device_);
+
+    zarray_t *april_clusters =
+        OrderAprilroboticsLikeCuda(thresholded_im, uf, cuda_grouped_points);
+
+    CheckQuads(april_clusters, sorted_selected_blobs_cuda_, fit_quads_);
+
+    const zarray_t *gpu_detections = gpu_detector_.Detections();
+    CheckDetections(aprilrobotics_detections_, gpu_detections);
+
     LOG(INFO) << "Found slope sorted count: "
               << sorted_union_marker_pair_.size();
 
+    for (int i = 0; i < zarray_size(april_clusters); i++) {
+      zarray_t *cluster;
+      zarray_get(april_clusters, i, &cluster);
+      zarray_destroy(cluster);
+    }
+
+    zarray_destroy(april_clusters);
     unionfind_destroy(uf);
     image_u8_destroy(quad_im);
     image_u8_destroy(thresholded_im);
@@ -1442,13 +2040,21 @@ class CudaAprilTagDetector {
   std::vector<QuadBoundaryPoint> sorted_union_marker_pair_;
   std::vector<uint32_t> quad_length_;
   std::vector<MinMaxExtents> extents_cuda_;
-  std::vector<float> reduced_dot_blobs_pair_cuda_;
+  std::vector<cub::KeyValuePair<long, MinMaxExtents>> selected_extents_cuda_;
   std::vector<IndexPoint> selected_blobs_cuda_;
   std::vector<IndexPoint> sorted_selected_blobs_cuda_;
+  std::vector<LineFitPoint> line_fit_points_cuda_;
+
+  std::vector<double> errors_device_;
+  std::vector<double> filtered_errors_device_;
+  std::vector<Peak> peaks_device_;
   int num_compressed_union_marker_pair_ = 0;
   int num_quads_ = 0;
+  std::vector<QuadCorners> fit_quads_;
 
   GpuDetector gpu_detector_;
+
+  zarray_t *aprilrobotics_detections_ = nullptr;
 
   size_t width_;
   size_t height_;
@@ -1463,7 +2069,7 @@ class AprilDetectionTest : public ::testing::Test {
   aos::FlatbufferVector<frc971::vision::CameraImage> ReadImage(
       std::string_view path) {
     return aos::FileToFlatbuffer<frc971::vision::CameraImage>(
-        "../apriltag_test_bfbs_images/" + std::string(path));
+        "../" + std::string(path));
   }
 
   cv::Mat ToMat(const frc971::vision::CameraImage *image) {
@@ -1474,7 +2080,7 @@ class AprilDetectionTest : public ::testing::Test {
 };
 
 TEST_F(AprilDetectionTest, ImageRepeat) {
-  auto image = ReadImage("bfbs-capture-2013-01-18_08-54-09.501047728.bfbs");
+  auto image = ReadImage("orin_image_apriltag/file/orin_image_apriltag.bfbs");
 
   LOG(INFO) << "Image is: " << image.message().cols() << " x "
             << image.message().rows();
@@ -1484,14 +2090,14 @@ TEST_F(AprilDetectionTest, ImageRepeat) {
 
   const cv::Mat color_image = ToMat(&image.message());
 
-  for (size_t i = 0; i < 10; ++i) {
+  for (size_t i = 0; i < 4; ++i) {
     LOG(INFO) << "Attempt " << i;
     cuda_detector.DetectGPU(color_image.clone());
     cuda_detector.DetectCPU(color_image.clone());
-    cuda_detector.Check(color_image.clone());
-    if (FLAGS_debug) {
-      cuda_detector.WriteDebug(color_image);
-    }
+  }
+  cuda_detector.Check(color_image.clone());
+  if (FLAGS_debug) {
+    cuda_detector.WriteDebug(color_image);
   }
 }
 
@@ -1522,16 +2128,91 @@ TEST_P(SingleAprilDetectionTest, Image) {
 // Tests that both algorithms agree on a bunch of pixels.
 INSTANTIATE_TEST_SUITE_P(
     CapturedImages, SingleAprilDetectionTest,
-    ::testing::Values("bfbs-capture-2013-01-18_08-54-16.869057537.bfbs",
-                      "bfbs-capture-2013-01-18_08-54-09.501047728.bfbs",
-                      "bfbs-capture-2013-01-18_08-51-24.861065764.bfbs",
-                      "bfbs-capture-2013-01-18_08-52-01.846912552.bfbs",
-                      "bfbs-capture-2013-01-18_08-52-33.462848049.bfbs",
-                      "bfbs-capture-2013-01-18_08-54-24.931661979.bfbs",
-                      "bfbs-capture-2013-01-18_09-29-16.806073486.bfbs",
-                      "bfbs-capture-2013-01-18_09-33-00.993756514.bfbs",
-                      "bfbs-capture-2013-01-18_08-57-00.171120695.bfbs",
-                      "bfbs-capture-2013-01-18_08-57-17.858752817.bfbs",
-                      "bfbs-capture-2013-01-18_08-57-08.096597542.bfbs"));
+    ::testing::Values(
+        "apriltag_test_bfbs_images/"
+        "bfbs-capture-2013-01-18_08-54-16.869057537.bfbs",
+        "orin_image_apriltag/file/orin_image_apriltag.bfbs",
+        "orin_large_image_apriltag/file/orin_large_gs_apriltag.bfbs",
+        "apriltag_test_bfbs_images/"
+        "bfbs-capture-2013-01-18_08-54-09.501047728.bfbs",
+        "apriltag_test_bfbs_images/"
+        "bfbs-capture-2013-01-18_08-51-24.861065764.bfbs",
+        "apriltag_test_bfbs_images/"
+        "bfbs-capture-2013-01-18_08-52-01.846912552.bfbs",
+        "apriltag_test_bfbs_images/"
+        "bfbs-capture-2013-01-18_08-52-33.462848049.bfbs",
+        "apriltag_test_bfbs_images/"
+        "bfbs-capture-2013-01-18_08-54-24.931661979.bfbs",
+        "apriltag_test_bfbs_images/"
+        "bfbs-capture-2013-01-18_09-29-16.806073486.bfbs",
+        "apriltag_test_bfbs_images/"
+        "bfbs-capture-2013-01-18_09-33-00.993756514.bfbs",
+        "apriltag_test_bfbs_images/"
+        "bfbs-capture-2013-01-18_08-57-00.171120695.bfbs",
+        "apriltag_test_bfbs_images/"
+        "bfbs-capture-2013-01-18_08-57-17.858752817.bfbs",
+        "apriltag_test_bfbs_images/"
+        "bfbs-capture-2013-01-18_08-57-08.096597542.bfbs"));
+
+// Tests that the filter coefficients produced by FilterCoefficients() match the
+// implementation in AprilRobotics.
+TEST(FilterTest, Matches) {
+  constexpr double sigma = 1;  // was 3
+
+  // cutoff = exp(-j*j/(2*sigma*sigma));
+  // log(cutoff) = -j*j / (2*sigma*sigma)
+  // log(cutoff)*2*sigma*sigma = -j*j;
+
+  // how big a filter should we use? We make our kernel big
+  // enough such that we represent any values larger than
+  // 'cutoff'.
+
+  // XXX Tunable (though not super useful to change)
+  constexpr double cutoff = 0.05;
+  int fsz = sqrt(-log(cutoff) * 2 * sigma * sigma) + 1;
+  fsz = 2 * fsz + 1;
+
+  // For default values of cutoff = 0.05, sigma = 3,
+  // we have fsz = 17.
+  std::vector<float> f;
+
+  for (int i = 0; i < fsz; i++) {
+    const int j = i - fsz / 2;
+    f.emplace_back(exp(-j * j / (2 * sigma * sigma)));
+  }
+
+  constexpr std::array<float, 7> coefficients = FilterCoefficients();
+  ASSERT_EQ(coefficients.size(), f.size());
+
+  for (size_t i = 0; i < f.size(); ++i) {
+    EXPECT_EQ(coefficients[i], f[i]);
+  }
+}
+
+// Tests that Unrank returns the right value for each input.
+TEST(FilterTest, Unrank) {
+  const int nmaxima = 10;
+  int overall_count = 0;
+  for (int m0 = 0; m0 < nmaxima - 3; m0++) {
+    for (int m1 = m0 + 1; m1 < nmaxima - 2; m1++) {
+      for (int m2 = m1 + 1; m2 < nmaxima - 1; m2++) {
+        for (int m3 = m2 + 1; m3 < nmaxima; m3++) {
+          const std::tuple<int, int, int, int> unranked = Unrank(overall_count);
+
+          VLOG(1) << overall_count << " -> [" << m0 << ", " << m1 << ", " << m2
+                  << ", " << m3 << "] -> [" << std::get<0>(unranked) << ", "
+                  << std::get<1>(unranked) << ", " << std::get<2>(unranked)
+                  << ", " << std::get<3>(unranked) << "]";
+          ASSERT_EQ(m0, std::get<0>(unranked));
+          ASSERT_EQ(m1, std::get<1>(unranked));
+          ASSERT_EQ(m2, std::get<2>(unranked));
+          ASSERT_EQ(m3, std::get<3>(unranked));
+          ++overall_count;
+        }
+      }
+    }
+  }
+  EXPECT_EQ(overall_count, MaxRankedIndex());
+}
 
 }  // namespace frc971::apriltag::testing

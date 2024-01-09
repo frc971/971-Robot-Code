@@ -262,7 +262,15 @@ void fit_line(struct line_fit_pt *lfps, int sz, int i0, int i1, double *lineparm
         *mse = eig_small;
 }
 
-float pt_compare_angle(struct pt *a, struct pt *b) {
+float pt_compare_angle(float cx, float cy, struct pt *a, struct pt *b) {
+    if (a->slope == b->slope) {
+      float dxa = a->x - cx;
+      float dya = a->y - cy;
+      float dxb = b->x - cx;
+      float dyb = b->y - cy;
+      return dya * dxb - dxa * dyb;
+    }
+
     return a->slope - b->slope;
 }
 
@@ -354,7 +362,7 @@ int quad_segment_maxima(apriltag_detector_t *td, zarray_t *cluster, struct line_
             for (int i = 0; i < fsz; i++) {
                 acc += errs[(iy + i - fsz / 2 + sz) % sz] * f[i];
             }
-            y[iy] = acc;
+            y[iy] = max(0.0, acc);
         }
 
         memcpy(errs, y, sizeof(double)*sz);
@@ -367,7 +375,7 @@ int quad_segment_maxima(apriltag_detector_t *td, zarray_t *cluster, struct line_
     int nmaxima = 0;
 
     for (int i = 0; i < sz; i++) {
-        if (errs[i] > errs[(i+1)%sz] && errs[i] > errs[(i+sz-1)%sz]) {
+        if (errs[i] > errs[(i+1)%sz] && errs[i] > errs[(i+sz-1)%sz] && errs[i] > 1e-5) {
             maxima[nmaxima] = i;
             maxima_errs[nmaxima] = errs[i];
             nmaxima++;
@@ -409,7 +417,7 @@ int quad_segment_maxima(apriltag_detector_t *td, zarray_t *cluster, struct line_
 
     double err01, err12, err23, err30;
     double mse01, mse12, mse23, mse30;
-    double params01[4], params12[4], params23[4], params30[4];
+    double params01[4], params12[4];
 
     // disallow quads where the angle is less than a critical value.
     double max_dot = td->qtp.cos_critical_rad; //25*M_PI/180);
@@ -439,11 +447,11 @@ int quad_segment_maxima(apriltag_detector_t *td, zarray_t *cluster, struct line_
                 for (int m3 = m2+1; m3 < nmaxima; m3++) {
                     int i3 = maxima[m3];
 
-                    fit_line(lfps, sz, i2, i3, params23, &err23, &mse23);
+                    fit_line(lfps, sz, i2, i3, NULL, &err23, &mse23);
                     if (mse23 > td->qtp.max_line_fit_mse)
                         continue;
 
-                    fit_line(lfps, sz, i3, i0, params30, &err30, &mse30);
+                    fit_line(lfps, sz, i3, i0, NULL, &err30, &mse30);
                     if (mse30 > td->qtp.max_line_fit_mse)
                         continue;
 
@@ -605,7 +613,7 @@ struct line_fit_pt* compute_lfps(int sz, zarray_t* cluster, image_u8_t* im) {
             double x = p->x * .5 + delta;
             double y = p->y * .5 + delta;
             int ix = x, iy = y;
-            double W = 1;
+            int W = 1;
 
             if (ix > 0 && ix+1 < im->width && iy > 0 && iy+1 < im->height) {
                 int grad_x = im->buf[iy * im->stride + ix + 1] -
@@ -615,7 +623,7 @@ struct line_fit_pt* compute_lfps(int sz, zarray_t* cluster, image_u8_t* im) {
                     im->buf[(iy-1) * im->stride + ix];
 
                 // XXX Tunable. How to shape the gradient magnitude?
-                W = sqrt(grad_x*grad_x + grad_y*grad_y) + 1;
+                W = hypotf(grad_x, grad_y) + 1;
             }
 
             double fx = x, fy = y;
@@ -630,10 +638,10 @@ struct line_fit_pt* compute_lfps(int sz, zarray_t* cluster, image_u8_t* im) {
     return lfps;
 }
 
-static inline void ptsort(struct pt *pts, int sz)
+static inline void ptsort(float cx, float cy, struct pt *pts, int sz)
 {
 #define MAYBE_SWAP(arr,apos,bpos)                                   \
-    if (pt_compare_angle(&(arr[apos]), &(arr[bpos])) > 0) {                        \
+    if (pt_compare_angle(cx, cy, &(arr[apos]), &(arr[bpos])) > 0) {                        \
         tmp = arr[apos]; arr[apos] = arr[bpos]; arr[bpos] = tmp;    \
     };
 
@@ -695,11 +703,11 @@ static inline void ptsort(struct pt *pts, int sz)
     struct pt *as = &tmp[0];
     struct pt *bs = &tmp[asz];
 
-    ptsort(as, asz);
-    ptsort(bs, bsz);
+    ptsort(cx, cy, as, asz);
+    ptsort(cx, cy, bs, bsz);
 
     #define MERGE(apos,bpos)                        \
-    if (pt_compare_angle(&(as[apos]), &(bs[bpos])) < 0)        \
+    if (pt_compare_angle(cx, cy, &(as[apos]), &(bs[bpos])) < 0)        \
         pts[outpos++] = as[apos++];             \
     else                                        \
         pts[outpos++] = bs[bpos++];
@@ -820,38 +828,7 @@ int fit_quad(
     // we now sort the points according to theta. This is a prepatory
     // step for segmenting them into four lines.
     if (1) {
-        ptsort((struct pt*) cluster->data, zarray_size(cluster));
-
-        // remove duplicate points. (A byproduct of our segmentation system.)
-        if (1) {
-            int outpos = 1;
-
-            struct pt *last;
-            zarray_get_volatile(cluster, 0, &last);
-
-            for (int i = 1; i < sz; i++) {
-
-                struct pt *p;
-                zarray_get_volatile(cluster, i, &p);
-
-                if (p->x != last->x || p->y != last->y) {
-
-                    if (i != outpos)  {
-                        struct pt *out;
-                        zarray_get_volatile(cluster, outpos, &out);
-                        memcpy(out, p, sizeof(struct pt));
-                    }
-
-                    outpos++;
-                }
-
-                last = p;
-            }
-
-            cluster->size = outpos;
-            sz = outpos;
-        }
-
+        ptsort(cx, cy, (struct pt*) cluster->data, zarray_size(cluster));
     }
 
     if (sz < 24)
@@ -877,9 +854,10 @@ int fit_quad(
         int i1 = indices[(i+1)&3];
 
         double err;
-        fit_line(lfps, sz, i0, i1, lines[i], NULL, &err);
+        double mse;
+        fit_line(lfps, sz, i0, i1, lines[i], &err, &mse);
 
-        if (err > td->qtp.max_line_fit_mse) {
+        if (mse > td->qtp.max_line_fit_mse) {
             res = 0;
             goto finish;
         }
@@ -1083,7 +1061,7 @@ static void do_quad_task(void *p)
         // fit quads to.) A typical point along an edge is added three
         // times (because it has 3 neighbors). The maximum perimeter
         // is 2w+2h.
-        if (zarray_size(cluster) > 3*(2*w+2*h)) {
+        if (zarray_size(cluster) > 2*(2*w+2*h)) {
             continue;
         }
 
@@ -1498,15 +1476,20 @@ zarray_t* do_gradient_clusters(image_u8_t* threshim, int ts, int y0, int y1, int
     mem_pools[mem_pool_idx] = calloc(mem_chunk_size, sizeof(struct uint64_zarray_entry));
 
     for (int y = y0; y < y1; y++) {
+        bool connected_last = false;
         for (int x = 1; x < w-1; x++) {
+            bool connected = false;
 
             uint8_t v0 = threshim->buf[y*ts + x];
-            if (v0 == 127)
+            if (v0 == 127) {
+                connected_last = false;
                 continue;
+            }
 
             // XXX don't query this until we know we need it?
             uint64_t rep0 = unionfind_get_representative(uf, y*w + x);
             if (unionfind_get_set_size(uf, rep0) < 25) {
+                connected_last = false;
                 continue;
             }
 
@@ -1570,9 +1553,8 @@ zarray_t* do_gradient_clusters(image_u8_t* threshim, int ts, int y0, int y1, int
                        .y = 2 * y + dy,                                        \
                        .gx = dx * ((int)v1 - v0),                              \
                        .gy = dy * ((int)v1 - v0)};                             \
-        /*fprintf(stderr, "Adding point %d+%d(%llx) -> (%d, %d)\n",              \
-                min(rep0, rep1), max(rep0, rep1), entry->id, p.x, p.y);       */ \
         zarray_add(entry->cluster, &p);                                        \
+        connected = true;                                                      \
       }                                                                        \
     }                                                                          \
   }
@@ -1582,8 +1564,12 @@ zarray_t* do_gradient_clusters(image_u8_t* threshim, int ts, int y0, int y1, int
             DO_CONN(0, 1);
 
             // do 8 connectivity
+            if (!connected_last) {
             DO_CONN(-1, 1);
+            }
+            connected = false;
             DO_CONN(1, 1);
+            connected_last = connected;
         }
     }
 #undef DO_CONN
