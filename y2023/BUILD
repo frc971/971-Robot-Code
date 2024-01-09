@@ -372,16 +372,3 @@ sh_binary(
     ],
     target_compatible_with = ["@platforms//os:linux"],
 )
-
-cc_binary(
-    name = "ssd_profiler",
-    srcs = [
-        "ssd_profiler.cc",
-    ],
-    deps = [
-        "//aos:init",
-        "//aos/containers:resizeable_buffer",
-        "//aos/time",
-        "@com_github_google_glog//:glog",
-    ],
-)
