@@ -200,16 +200,16 @@ static_flatbuffer(
 )
 
 flatbuffer_ts_library(
-    name = "can_falcon_ts_fbs",
+    name = "can_talonfx_ts_fbs",
     srcs = [
-        "can_falcon.fbs",
+        "can_talonfx.fbs",
     ],
 )
 
 static_flatbuffer(
-    name = "can_falcon_fbs",
+    name = "can_talonfx_fbs",
     srcs = [
-        "can_falcon.fbs",
+        "can_talonfx.fbs",
     ],
 )
 

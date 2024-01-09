@@ -50,7 +50,7 @@ static_flatbuffer(
     ],
     deps = [
         "//frc971:can_configuration_fbs",
-        "//frc971/control_loops:can_falcon_fbs",
+        "//frc971/control_loops:can_talonfx_fbs",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
     ],

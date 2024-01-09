@@ -10,7 +10,7 @@ package(default_visibility = ["//visibility:public"])
 static_flatbuffer(
     name = "drivetrain_can_position_fbs",
     srcs = ["drivetrain_can_position.fbs"],
-    deps = ["//frc971/control_loops:can_falcon_fbs"],
+    deps = ["//frc971/control_loops:can_talonfx_fbs"],
 )
 
 static_flatbuffer(
@@ -74,7 +74,7 @@ flatbuffer_ts_library(
     name = "drivetrain_can_position_ts_fbs",
     srcs = ["drivetrain_can_position.fbs"],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = ["//frc971/control_loops:can_falcon_ts_fbs"],
+    deps = ["//frc971/control_loops:can_talonfx_ts_fbs"],
 )
 
 genrule(

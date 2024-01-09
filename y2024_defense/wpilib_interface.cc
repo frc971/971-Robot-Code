@@ -51,12 +51,12 @@
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/drivetrain_writer.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
-#include "frc971/wpilib/falcon.h"
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/logging_generated.h"
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
+#include "frc971/wpilib/talonfx.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2024_defense/constants.h"
 
@@ -69,7 +69,7 @@ using ::frc971::CANConfiguration;
 using ::y2024_defense::constants::Values;
 
 using frc971::control_loops::drivetrain::CANPosition;
-using frc971::wpilib::Falcon;
+using frc971::wpilib::TalonFX;
 
 using std::make_unique;
 
@@ -266,27 +266,27 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     // Thread 4.
     std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry;
 
-    std::shared_ptr<Falcon> right_front = std::make_shared<Falcon>(
+    std::shared_ptr<TalonFX> right_front = std::make_shared<TalonFX>(
         1, true, "Drivetrain Bus", &signals_registry,
         constants::Values::kDrivetrainStatorCurrentLimit(),
         constants::Values::kDrivetrainSupplyCurrentLimit());
-    std::shared_ptr<Falcon> right_back = std::make_shared<Falcon>(
+    std::shared_ptr<TalonFX> right_back = std::make_shared<TalonFX>(
         2, true, "Drivetrain Bus", &signals_registry,
         constants::Values::kDrivetrainStatorCurrentLimit(),
         constants::Values::kDrivetrainSupplyCurrentLimit());
-    std::shared_ptr<Falcon> right_under = std::make_shared<Falcon>(
+    std::shared_ptr<TalonFX> right_under = std::make_shared<TalonFX>(
         3, true, "Drivetrain Bus", &signals_registry,
         constants::Values::kDrivetrainStatorCurrentLimit(),
         constants::Values::kDrivetrainSupplyCurrentLimit());
-    std::shared_ptr<Falcon> left_front = std::make_shared<Falcon>(
+    std::shared_ptr<TalonFX> left_front = std::make_shared<TalonFX>(
         4, false, "Drivetrain Bus", &signals_registry,
         constants::Values::kDrivetrainStatorCurrentLimit(),
         constants::Values::kDrivetrainSupplyCurrentLimit());
-    std::shared_ptr<Falcon> left_back = std::make_shared<Falcon>(
+    std::shared_ptr<TalonFX> left_back = std::make_shared<TalonFX>(
         5, false, "Drivetrain Bus", &signals_registry,
         constants::Values::kDrivetrainStatorCurrentLimit(),
         constants::Values::kDrivetrainSupplyCurrentLimit());
-    std::shared_ptr<Falcon> left_under = std::make_shared<Falcon>(
+    std::shared_ptr<TalonFX> left_under = std::make_shared<TalonFX>(
         6, false, "Drivetrain Bus", &signals_registry,
         constants::Values::kDrivetrainStatorCurrentLimit(),
         constants::Values::kDrivetrainSupplyCurrentLimit());
@@ -298,7 +298,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     }
 
     // Creating list of falcons for CANSensorReader
-    std::vector<std::shared_ptr<Falcon>> falcons;
+    std::vector<std::shared_ptr<TalonFX>> falcons;
     for (auto falcon : {right_front, right_back, right_under, left_front,
                         left_back, left_under}) {
       falcons.push_back(falcon);
@@ -319,14 +319,15 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         &can_sensor_reader_event_loop, std::move(signals_registry), falcons,
         [falcons, &can_position_sender](ctre::phoenix::StatusCode status) {
           auto builder = can_position_sender.MakeBuilder();
-          aos::SizedArray<flatbuffers::Offset<frc971::control_loops::CANFalcon>,
-                          6>
+          aos::SizedArray<
+              flatbuffers::Offset<frc971::control_loops::CANTalonFX>, 6>
               flatbuffer_falcons;
 
           for (auto falcon : falcons) {
             falcon->SerializePosition(
                 builder.fbb(), control_loops::drivetrain::kHighOutputRatio);
-            std::optional<flatbuffers::Offset<frc971::control_loops::CANFalcon>>
+            std::optional<
+                flatbuffers::Offset<frc971::control_loops::CANTalonFX>>
                 falcon_offset = falcon->TakeOffset();
 
             CHECK(falcon_offset.has_value());
@@ -337,14 +338,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           auto falcons_list =
               builder.fbb()
                   ->CreateVector<
-                      flatbuffers::Offset<frc971::control_loops::CANFalcon>>(
+                      flatbuffers::Offset<frc971::control_loops::CANTalonFX>>(
                       flatbuffer_falcons);
 
           frc971::control_loops::drivetrain::CANPosition::Builder
               can_position_builder = builder.MakeBuilder<
                   frc971::control_loops::drivetrain::CANPosition>();
 
-          can_position_builder.add_falcons(falcons_list);
+          can_position_builder.add_talonfxs(falcons_list);
           can_position_builder.add_timestamp(falcons.front()->GetTimestamp());
           can_position_builder.add_status(static_cast<int>(status));
 
@@ -360,8 +361,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     frc971::wpilib::CANDrivetrainWriter can_drivetrain_writer(
         &can_drivetrain_writer_event_loop);
 
-    can_drivetrain_writer.set_falcons({right_front, right_back, right_under},
-                                      {left_front, left_back, left_under});
+    can_drivetrain_writer.set_talonfxs({right_front, right_back, right_under},
+                                       {left_front, left_back, left_under});
 
     can_drivetrain_writer_event_loop.MakeWatcher(
         "/roborio", [&can_drivetrain_writer](

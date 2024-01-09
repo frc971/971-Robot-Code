@@ -553,22 +553,22 @@ export class FieldHandler {
 
     if (this.drivetrainCANPosition) {
       this.falconRightFrontPosition.innerHTML = //TODO: (niko) Improve this so that falcons are not hard-coded
-      this.drivetrainCANPosition.falcons(0).position().toString();
+      this.drivetrainCANPosition.talonfxs(0).position().toString();
 
       this.falconRightBackPosition.innerHTML =
-      this.drivetrainCANPosition.falcons(1).position().toString();
+      this.drivetrainCANPosition.talonfxs(1).position().toString();
 
       this.falconRightUnderPosition.innerHTML =
-      this.drivetrainCANPosition.falcons(2).position().toString();
+      this.drivetrainCANPosition.talonfxs(2).position().toString();
 
       this.falconLeftFrontPosition.innerHTML =
-      this.drivetrainCANPosition.falcons(3).position().toString();
+      this.drivetrainCANPosition.talonfxs(3).position().toString();
 
       this.falconLeftBackPosition.innerHTML =
-      this.drivetrainCANPosition.falcons(4).position().toString();
+      this.drivetrainCANPosition.talonfxs(4).position().toString();
 
       this.falconLeftUnderPosition.innerHTML =
-      this.drivetrainCANPosition.falcons(5).position().toString();
+      this.drivetrainCANPosition.talonfxs(5).position().toString();
   }
 
     if (this.localizerOutput) {

@@ -1,7 +1,7 @@
 #include "frc971/can_configuration_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
-#include "frc971/wpilib/falcon.h"
 #include "frc971/wpilib/loop_output_handler.h"
+#include "frc971/wpilib/talonfx.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -11,8 +11,8 @@ class CANDrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
  public:
   CANDrivetrainWriter(::aos::EventLoop *event_loop);
 
-  void set_falcons(std::vector<std::shared_ptr<Falcon>> right_falcons,
-                   std::vector<std::shared_ptr<Falcon>> left_falcons);
+  void set_talonfxs(std::vector<std::shared_ptr<TalonFX>> right_talonfxs,
+                    std::vector<std::shared_ptr<TalonFX>> left_talonfxs);
 
   void HandleCANConfiguration(const CANConfiguration &configuration);
 
@@ -26,8 +26,8 @@ class CANDrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
 
   void Stop() override;
 
-  std::vector<std::shared_ptr<Falcon>> right_falcons_;
-  std::vector<std::shared_ptr<Falcon>> left_falcons_;
+  std::vector<std::shared_ptr<TalonFX>> right_talonfxs_;
+  std::vector<std::shared_ptr<TalonFX>> left_talonfxs_;
 };
 
 }  // namespace wpilib

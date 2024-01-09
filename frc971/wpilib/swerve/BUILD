@@ -13,8 +13,8 @@ cc_library(
         "//aos/logging",
         "//frc971:can_configuration_fbs",
         "//frc971/control_loops/drivetrain/swerve:swerve_drivetrain_output_fbs",
-        "//frc971/wpilib:falcon",
         "//frc971/wpilib:loop_output_handler",
+        "//frc971/wpilib:talonfx",
         "//third_party:phoenix6",
     ],
 )
@@ -25,6 +25,6 @@ cc_library(
         "swerve_module.h",
     ],
     deps = [
-        "//frc971/wpilib:falcon",
+        "//frc971/wpilib:talonfx",
     ],
 )

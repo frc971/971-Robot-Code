@@ -89,7 +89,7 @@ static_flatbuffer(
 static_flatbuffer(
     name = "drivetrain_can_position_fbs",
     srcs = ["drivetrain_can_position.fbs"],
-    deps = ["//frc971/control_loops:can_falcon_fbs"],
+    deps = ["//frc971/control_loops:can_talonfx_fbs"],
 )
 
 cc_binary(
@@ -142,8 +142,8 @@ cc_binary(
         "//aos/events:shm_event_loop",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/wpilib:can_sensor_reader",
-        "//frc971/wpilib:falcon",
         "//frc971/wpilib:sensor_reader",
+        "//frc971/wpilib:talonfx",
         "//frc971/wpilib:wpilib_robot_base",
         "//frc971/wpilib/swerve:swerve_drivetrain_writer",
     ],

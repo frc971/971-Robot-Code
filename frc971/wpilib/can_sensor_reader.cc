@@ -6,11 +6,11 @@ using frc971::wpilib::kCANUpdateFreqHz;
 CANSensorReader::CANSensorReader(
     aos::EventLoop *event_loop,
     std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry,
-    std::vector<std::shared_ptr<Falcon>> falcons,
+    std::vector<std::shared_ptr<TalonFX>> talonfxs,
     std::function<void(ctre::phoenix::StatusCode status)> flatbuffer_callback)
     : event_loop_(event_loop),
       signals_(signals_registry.begin(), signals_registry.end()),
-      falcons_(falcons),
+      talonfxs_(talonfxs),
       flatbuffer_callback_(flatbuffer_callback) {
   event_loop->SetRuntimeRealtimePriority(40);
 
@@ -32,7 +32,7 @@ void CANSensorReader::Loop() {
       ctre::phoenix6::BaseStatusSignal::WaitForAll(20_ms, signals_);
 
   if (!status.IsOK()) {
-    AOS_LOG(ERROR, "Failed to read signals from falcons: %s: %s",
+    AOS_LOG(ERROR, "Failed to read signals from talonfx motors: %s: %s",
             status.GetName(), status.GetDescription());
   }
 

@@ -1,5 +1,5 @@
-#ifndef FRC971_WPILIB_FALCON_H_
-#define FRC971_WPILIB_FALCON_H_
+#ifndef FRC971_WPILIB_TALONFX_MOTOR_H_
+#define FRC971_WPILIB_TALONFX_MOTOR_H_
 
 #include <chrono>
 #include <cinttypes>
@@ -18,7 +18,7 @@ namespace control_loops = ::frc971::control_loops;
 namespace frc971 {
 namespace wpilib {
 
-struct FalconParams {
+struct TalonFXParams {
   int device_id;
   bool inverted;
 };
@@ -26,16 +26,17 @@ struct FalconParams {
 static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
 static constexpr double kMaxBringupPower = 12.0;
 
-// Gets info from and writes to falcon motors using the TalonFX controller.
-class Falcon {
+// Class which represents a motor controlled by a TalonFX motor controller over
+// CAN.
+class TalonFX {
  public:
-  Falcon(int device_id, bool inverted, std::string canbus,
-         std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
-         double stator_current_limit, double supply_current_limit);
+  TalonFX(int device_id, bool inverted, std::string canbus,
+          std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
+          double stator_current_limit, double supply_current_limit);
 
-  Falcon(FalconParams params, std::string canbus,
-         std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
-         double stator_current_limit, double supply_current_limit);
+  TalonFX(TalonFXParams params, std::string canbus,
+          std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
+          double stator_current_limit, double supply_current_limit);
 
   void PrintConfigs();
 
@@ -46,11 +47,11 @@ class Falcon {
 
   ctre::phoenix6::hardware::TalonFX *talon() { return &talon_; }
 
-  // The position of the Falcon output shaft is multiplied by gear_ratio
+  // The position of the TalonFX output shaft is multiplied by gear_ratio
   void SerializePosition(flatbuffers::FlatBufferBuilder *fbb,
                          double gear_ratio);
 
-  std::optional<flatbuffers::Offset<control_loops::CANFalcon>> TakeOffset();
+  std::optional<flatbuffers::Offset<control_loops::CANTalonFX>> TakeOffset();
 
   int device_id() const { return device_id_; }
   float device_temp() const { return device_temp_.GetValue().value(); }
@@ -101,9 +102,9 @@ class Falcon {
   double stator_current_limit_;
   double supply_current_limit_;
 
-  std::optional<flatbuffers::Offset<control_loops::CANFalcon>>
+  std::optional<flatbuffers::Offset<control_loops::CANTalonFX>>
       last_position_offset_;
 };
 }  // namespace wpilib
 }  // namespace frc971
-#endif  // FRC971_WPILIB_FALCON_H_
+#endif  // FRC971_WPILIB_TALONFX_MOTOR_H_
