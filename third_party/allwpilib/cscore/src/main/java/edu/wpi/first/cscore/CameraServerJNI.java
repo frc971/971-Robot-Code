@@ -4,28 +4,43 @@
 
 package edu.wpi.first.cscore;
 
-import edu.wpi.first.cscore.raw.RawFrame;
+import edu.wpi.first.util.RawFrame;
 import edu.wpi.first.util.RuntimeLoader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+/** CameraServer JNI. */
 public class CameraServerJNI {
   static boolean libraryLoaded = false;
 
   static RuntimeLoader<CameraServerJNI> loader = null;
 
+  /** Sets whether JNI should be loaded in the static block. */
   public static class Helper {
     private static AtomicBoolean extractOnStaticLoad = new AtomicBoolean(true);
 
+    /**
+     * Returns true if the JNI should be loaded in the static block.
+     *
+     * @return True if the JNI should be loaded in the static block.
+     */
     public static boolean getExtractOnStaticLoad() {
       return extractOnStaticLoad.get();
     }
 
+    /**
+     * Sets whether the JNI should be loaded in the static block.
+     *
+     * @param load Whether the JNI should be loaded in the static block.
+     */
     public static void setExtractOnStaticLoad(boolean load) {
       extractOnStaticLoad.set(load);
     }
+
+    /** Utility class. */
+    private Helper() {}
   }
 
   static {
@@ -182,21 +197,13 @@ public class CameraServerJNI {
   //
   // Image Source Functions
   //
+  public static native void putRawSourceFrame(int source, long frame);
+
   public static native void putRawSourceFrameBB(
-      int source, ByteBuffer data, int width, int height, int pixelFormat, int totalData);
+      int source, ByteBuffer data, int size, int width, int height, int stride, int pixelFormat);
 
-  public static native void putRawSourceFrame(
-      int source, long data, int width, int height, int pixelFormat, int totalData);
-
-  public static void putRawSourceFrame(int source, RawFrame raw) {
-    putRawSourceFrame(
-        source,
-        raw.getDataPtr(),
-        raw.getWidth(),
-        raw.getHeight(),
-        raw.getPixelFormat(),
-        raw.getTotalData());
-  }
+  public static native void putRawSourceFrameData(
+      int source, long data, int size, int width, int height, int stride, int pixelFormat);
 
   public static native void notifySourceError(int source, String msg);
 
@@ -263,47 +270,10 @@ public class CameraServerJNI {
   //
   public static native void setSinkDescription(int sink, String description);
 
-  private static native long grabRawSinkFrameImpl(
-      int sink,
-      RawFrame rawFrame,
-      long rawFramePtr,
-      ByteBuffer byteBuffer,
-      int width,
-      int height,
-      int pixelFormat);
+  public static native long grabRawSinkFrame(int sink, RawFrame frame, long nativeObj);
 
-  private static native long grabRawSinkFrameTimeoutImpl(
-      int sink,
-      RawFrame rawFrame,
-      long rawFramePtr,
-      ByteBuffer byteBuffer,
-      int width,
-      int height,
-      int pixelFormat,
-      double timeout);
-
-  public static long grabSinkFrame(int sink, RawFrame rawFrame) {
-    return grabRawSinkFrameImpl(
-        sink,
-        rawFrame,
-        rawFrame.getFramePtr(),
-        rawFrame.getDataByteBuffer(),
-        rawFrame.getWidth(),
-        rawFrame.getHeight(),
-        rawFrame.getPixelFormat());
-  }
-
-  public static long grabSinkFrameTimeout(int sink, RawFrame rawFrame, double timeout) {
-    return grabRawSinkFrameTimeoutImpl(
-        sink,
-        rawFrame,
-        rawFrame.getFramePtr(),
-        rawFrame.getDataByteBuffer(),
-        rawFrame.getWidth(),
-        rawFrame.getHeight(),
-        rawFrame.getPixelFormat(),
-        timeout);
-  }
+  public static native long grabRawSinkFrameTimeout(
+      int sink, RawFrame frame, long nativeObj, double timeout);
 
   public static native String getSinkError(int sink);
 
@@ -334,7 +304,9 @@ public class CameraServerJNI {
   // Telemetry Functions
   //
   public enum TelemetryKind {
+    /** kSourceBytesReceived. */
     kSourceBytesReceived(1),
+    /** kSourceFramesReceived. */
     kSourceFramesReceived(2);
 
     private final int value;
@@ -387,13 +359,12 @@ public class CameraServerJNI {
 
   public static native String[] getNetworkInterfaces();
 
-  public static native long allocateRawFrame();
-
-  public static native void freeRawFrame(long frame);
-
   public static native void runMainRunLoop();
 
   public static native int runMainRunLoopTimeout(double timeoutSeconds);
 
   public static native void stopMainRunLoop();
+
+  /** Utility class. */
+  private CameraServerJNI() {}
 }

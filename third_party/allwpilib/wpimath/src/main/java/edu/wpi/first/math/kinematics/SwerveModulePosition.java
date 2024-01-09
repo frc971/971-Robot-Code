@@ -4,19 +4,36 @@
 
 package edu.wpi.first.math.kinematics;
 
+import static edu.wpi.first.units.Units.Meters;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.interpolation.Interpolatable;
+import edu.wpi.first.math.kinematics.proto.SwerveModulePositionProto;
+import edu.wpi.first.math.kinematics.struct.SwerveModulePositionStruct;
+import edu.wpi.first.units.Distance;
+import edu.wpi.first.units.Measure;
+import edu.wpi.first.util.protobuf.ProtobufSerializable;
+import edu.wpi.first.util.struct.StructSerializable;
 import java.util.Objects;
 
 /** Represents the state of one swerve module. */
 public class SwerveModulePosition
-    implements Comparable<SwerveModulePosition>, Interpolatable<SwerveModulePosition> {
+    implements Comparable<SwerveModulePosition>,
+        Interpolatable<SwerveModulePosition>,
+        ProtobufSerializable,
+        StructSerializable {
   /** Distance measured by the wheel of the module. */
   public double distanceMeters;
 
   /** Angle of the module. */
   public Rotation2d angle = Rotation2d.fromDegrees(0);
+
+  /** SwerveModulePosition protobuf for serialization. */
+  public static final SwerveModulePositionProto proto = new SwerveModulePositionProto();
+
+  /** SwerveModulePosition struct for serialization. */
+  public static final SwerveModulePositionStruct struct = new SwerveModulePositionStruct();
 
   /** Constructs a SwerveModulePosition with zeros for distance and angle. */
   public SwerveModulePosition() {}
@@ -30,6 +47,16 @@ public class SwerveModulePosition
   public SwerveModulePosition(double distanceMeters, Rotation2d angle) {
     this.distanceMeters = distanceMeters;
     this.angle = angle;
+  }
+
+  /**
+   * Constructs a SwerveModulePosition.
+   *
+   * @param distance The distance measured by the wheel of the module.
+   * @param angle The angle of the module.
+   */
+  public SwerveModulePosition(Measure<Distance> distance, Rotation2d angle) {
+    this(distance.in(Meters), angle);
   }
 
   @Override

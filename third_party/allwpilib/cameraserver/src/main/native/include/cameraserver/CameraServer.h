@@ -22,10 +22,8 @@ namespace frc {
  */
 class CameraServer {
  public:
+  /// CameraServer base port.
   static constexpr uint16_t kBasePort = 1181;
-  static constexpr int kSize640x480 = 0;
-  static constexpr int kSize320x240 = 1;
-  static constexpr int kSize160x120 = 2;
 
   /**
    * Start automatically capturing images to send to the dashboard.
@@ -195,9 +193,31 @@ class CameraServer {
    * Get OpenCV access to the specified camera.  This allows you to get
    * images from the camera for image processing on the roboRIO.
    *
+   * @param camera Camera (e.g. as returned by startAutomaticCapture).
+   * @param pixelFormat The desired pixelFormat of captured frames from the
+   * camera
+   */
+  static cs::CvSink GetVideo(const cs::VideoSource& camera,
+                             cs::VideoMode::PixelFormat pixelFormat);
+
+  /**
+   * Get OpenCV access to the specified camera.  This allows you to get
+   * images from the camera for image processing on the roboRIO.
+   *
    * @param name Camera name
    */
   static cs::CvSink GetVideo(std::string_view name);
+
+  /**
+   * Get OpenCV access to the specified camera.  This allows you to get
+   * images from the camera for image processing on the roboRIO.
+   *
+   * @param name Camera name
+   * @param pixelFormat The desired pixelFormat of captured frames from the
+   * camera
+   */
+  static cs::CvSink GetVideo(std::string_view name,
+                             cs::VideoMode::PixelFormat pixelFormat);
 
   /**
    * Create a MJPEG stream with OpenCV input. This can be called to pass custom

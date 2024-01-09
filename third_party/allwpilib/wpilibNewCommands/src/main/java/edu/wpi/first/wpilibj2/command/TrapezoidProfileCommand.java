@@ -35,6 +35,7 @@ public class TrapezoidProfileCommand extends Command {
    * @param currentState The current state
    * @param requirements The subsystems required by this command.
    */
+  @SuppressWarnings("this-escape")
   public TrapezoidProfileCommand(
       TrapezoidProfile profile,
       Consumer<State> output,
@@ -60,6 +61,7 @@ public class TrapezoidProfileCommand extends Command {
    *     This allows you to change goals at runtime.
    */
   @Deprecated(since = "2024", forRemoval = true)
+  @SuppressWarnings("this-escape")
   public TrapezoidProfileCommand(
       TrapezoidProfile profile, Consumer<State> output, Subsystem... requirements) {
     m_profile = requireNonNullParam(profile, "profile", "TrapezoidProfileCommand");
@@ -79,7 +81,7 @@ public class TrapezoidProfileCommand extends Command {
   @SuppressWarnings("removal")
   public void execute() {
     if (m_newAPI) {
-      m_output.accept(m_profile.calculate(m_timer.get(), m_goal.get(), m_currentState.get()));
+      m_output.accept(m_profile.calculate(m_timer.get(), m_currentState.get(), m_goal.get()));
     } else {
       m_output.accept(m_profile.calculate(m_timer.get()));
     }

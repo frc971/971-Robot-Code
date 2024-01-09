@@ -8,6 +8,10 @@ import edu.wpi.first.math.MathSharedStore;
 import edu.wpi.first.math.MathUsageId;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
+import edu.wpi.first.math.kinematics.proto.MecanumDriveKinematicsProto;
+import edu.wpi.first.math.kinematics.struct.MecanumDriveKinematicsStruct;
+import edu.wpi.first.util.protobuf.ProtobufSerializable;
+import edu.wpi.first.util.struct.StructSerializable;
 import org.ejml.simple.SimpleMatrix;
 
 /**
@@ -31,7 +35,9 @@ import org.ejml.simple.SimpleMatrix;
  * field using encoders and a gyro.
  */
 public class MecanumDriveKinematics
-    implements Kinematics<MecanumDriveWheelSpeeds, MecanumDriveWheelPositions> {
+    implements Kinematics<MecanumDriveWheelSpeeds, MecanumDriveWheelPositions>,
+        ProtobufSerializable,
+        StructSerializable {
   private final SimpleMatrix m_inverseKinematics;
   private final SimpleMatrix m_forwardKinematics;
 
@@ -41,6 +47,12 @@ public class MecanumDriveKinematics
   private final Translation2d m_rearRightWheelMeters;
 
   private Translation2d m_prevCoR = new Translation2d();
+
+  /** MecanumDriveKinematics protobuf for serialization. */
+  public static final MecanumDriveKinematicsProto proto = new MecanumDriveKinematicsProto();
+
+  /** MecanumDriveKinematics struct for serialization. */
+  public static final MecanumDriveKinematicsStruct struct = new MecanumDriveKinematicsStruct();
 
   /**
    * Constructs a mecanum drive kinematics object.
@@ -206,5 +218,41 @@ public class MecanumDriveKinematics
     m_inverseKinematics.setRow(1, 0, 1, 1, fr.getX() - fr.getY());
     m_inverseKinematics.setRow(2, 0, 1, 1, rl.getX() - rl.getY());
     m_inverseKinematics.setRow(3, 0, 1, -1, -(rr.getX() + rr.getY()));
+  }
+
+  /**
+   * Returns the front-left wheel translation.
+   *
+   * @return The front-left wheel translation.
+   */
+  public Translation2d getFrontLeft() {
+    return m_frontLeftWheelMeters;
+  }
+
+  /**
+   * Returns the front-right wheel translation.
+   *
+   * @return The front-right wheel translation.
+   */
+  public Translation2d getFrontRight() {
+    return m_frontRightWheelMeters;
+  }
+
+  /**
+   * Returns the rear-left wheel translation.
+   *
+   * @return The rear-left wheel translation.
+   */
+  public Translation2d getRearLeft() {
+    return m_rearLeftWheelMeters;
+  }
+
+  /**
+   * Returns the rear-right wheel translation.
+   *
+   * @return The rear-right wheel translation.
+   */
+  public Translation2d getRearRight() {
+    return m_rearRightWheelMeters;
   }
 }

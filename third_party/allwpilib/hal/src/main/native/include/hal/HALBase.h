@@ -22,9 +22,11 @@
  * @{
  */
 
-// clang-format off
-HAL_ENUM(HAL_RuntimeType) { HAL_Runtime_RoboRIO, HAL_Runtime_RoboRIO2, HAL_Runtime_Simulation };
-// clang-format on
+HAL_ENUM(HAL_RuntimeType) {
+  HAL_Runtime_RoboRIO,
+  HAL_Runtime_RoboRIO2,
+  HAL_Runtime_Simulation
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -107,6 +109,10 @@ HAL_RuntimeType HAL_GetRuntimeType(void);
 
 /**
  * Gets the state of the "USER" button on the roboRIO.
+ *
+ * @warning the User Button is used to stop user programs from automatically
+ * loading if it is held for more then 5 seconds. Because of this, it's not
+ * recommended to be used by teams for any other purpose.
  *
  * @param[out] status the error code, or 0 for success
  * @return true if the button is currently pressed down

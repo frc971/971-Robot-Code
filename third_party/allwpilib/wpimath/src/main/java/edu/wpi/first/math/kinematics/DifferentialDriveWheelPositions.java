@@ -4,9 +4,14 @@
 
 package edu.wpi.first.math.kinematics;
 
+import static edu.wpi.first.units.Units.Meters;
+
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.Distance;
+import edu.wpi.first.units.Measure;
 import java.util.Objects;
 
+/** Represents the wheel positions for a differential drive drivetrain. */
 public class DifferentialDriveWheelPositions
     implements WheelPositions<DifferentialDriveWheelPositions> {
   /** Distance measured by the left side. */
@@ -24,6 +29,16 @@ public class DifferentialDriveWheelPositions
   public DifferentialDriveWheelPositions(double leftMeters, double rightMeters) {
     this.leftMeters = leftMeters;
     this.rightMeters = rightMeters;
+  }
+
+  /**
+   * Constructs a DifferentialDriveWheelPositions.
+   *
+   * @param left Distance measured by the left side.
+   * @param right Distance measured by the right side.
+   */
+  public DifferentialDriveWheelPositions(Measure<Distance> left, Measure<Distance> right) {
+    this(left.in(Meters), right.in(Meters));
   }
 
   @Override

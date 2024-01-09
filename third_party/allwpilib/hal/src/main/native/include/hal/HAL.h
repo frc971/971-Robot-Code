@@ -24,6 +24,7 @@
 #include "hal/HALBase.h"
 #include "hal/I2C.h"
 #include "hal/Interrupts.h"
+#include "hal/LEDs.h"
 #include "hal/Main.h"
 #include "hal/Notifier.h"
 #include "hal/PWM.h"

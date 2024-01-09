@@ -11,6 +11,7 @@ import edu.wpi.first.math.numbers.N4;
 import java.util.Random;
 import org.ejml.simple.SimpleMatrix;
 
+/** State-space utilities. */
 public final class StateSpaceUtil {
   private static Random rand = new Random();
 
@@ -139,7 +140,7 @@ public final class StateSpaceUtil {
    * @param u The input to clamp.
    * @param umin The minimum input magnitude.
    * @param umax The maximum input magnitude.
-   * @param <I> The number of inputs.
+   * @param <I> Number of inputs.
    * @return The clamped input.
    */
   public static <I extends Num> Matrix<I, N1> clampInputMaxMagnitude(
@@ -157,7 +158,7 @@ public final class StateSpaceUtil {
    *
    * @param u The input vector.
    * @param maxMagnitude The maximum magnitude any input can have.
-   * @param <I> The number of inputs.
+   * @param <I> Number of inputs.
    * @return The normalizedInput
    */
   public static <I extends Num> Matrix<I, N1> desaturateInputVector(
