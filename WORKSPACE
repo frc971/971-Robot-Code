@@ -479,9 +479,9 @@ local_repository(
 http_archive(
     name = "allwpilib_ni_libraries",
     build_file = "@//debian:ni-libraries.BUILD",
-    sha256 = "b325099ed896d1325c9cd998f07053b4e60e28a65d991f86f28203bf6728eccd",
-    strip_prefix = "ni-libraries-2024.1.1",
-    url = "https://github.com/wpilibsuite/ni-libraries/archive/refs/tags/v2024.1.1.zip",
+    sha256 = "86458884701c817351b2ec651a2f13591258da54b4f54f05d8f1ce04eb214ba5",
+    strip_prefix = "ni-libraries-2024.2.1",
+    url = "https://github.com/wpilibsuite/ni-libraries/archive/refs/tags/v2024.2.1.zip",
 )
 
 # For protobuf. Don't use these.
