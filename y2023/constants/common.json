@@ -3,4 +3,24 @@
   "ignore_targets": {
     "red": [4],
     "blue": [5]
+  },
+  "wrist": {
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 0.5,
+      "max_acceleration": 3.0
+    },
+    "default_profile_params":{
+      "max_velocity": 0.5,
+      "max_acceleration": 5.0
+    },
+    {# The range is currently duplicated from the constants.h; try to fix this. #}
+    "range": {
+        "lower_hard": -0.10,
+        "upper_hard": 4.90,
+        "lower": 0.0,
+        "upper": 4.0
+    },
+    "loop": {% include 'y2023/control_loops/superstructure/wrist/integral_wrist_plant.json' %}
   }

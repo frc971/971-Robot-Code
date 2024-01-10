@@ -41,13 +41,13 @@ def main(argv):
         return
 
     # Write the generated constants out to a file.
-    if len(argv) != 5:
+    if len(argv) != 7:
         glog.fatal(
             'Expected .h file name and .cc file name for the wrist and integral wrist.'
         )
     else:
         namespaces = ['y2023', 'control_loops', 'superstructure', 'wrist']
-        angular_system.WriteAngularSystem(kWrist, argv[1:3], argv[3:5],
+        angular_system.WriteAngularSystem(kWrist, argv[1:4], argv[4:7],
                                           namespaces)
 
 

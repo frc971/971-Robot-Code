@@ -1,4 +1,5 @@
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("@aspect_bazel_lib//lib:run_binary.bzl", "run_binary")
 load("//tools/build_rules:template.bzl", "jinja2_template")
 
 cc_library(
@@ -19,7 +20,12 @@ cc_library(
 jinja2_template(
     name = "test_constants.json",
     src = "test_constants.jinja2.json",
-    includes = glob(["test_data/*.json"]),
+    includes = glob([
+        "test_data/*.json",
+    ]) + [
+        ":wrist_common_zeroing.json",
+        "//y2023/control_loops/superstructure/wrist:wrist_json",
+    ],
     parameters = {},
     visibility = ["//visibility:public"],
 )
@@ -33,6 +39,8 @@ jinja2_template(
         "9971.json",
         "common.json",
         ":scoring_map",
+        ":wrist_common_zeroing.json",
+        "//y2023/control_loops/superstructure/wrist:wrist_json",
         "//y2023/vision/calib_files",
         "//y2023/vision/maps",
     ],
@@ -54,8 +62,11 @@ static_flatbuffer(
     srcs = ["constants.fbs"],
     visibility = ["//visibility:public"],
     deps = [
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops:state_feedback_loop_fbs",
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:target_map_fbs",
+        "//frc971/zeroing:constants_fbs",
         "//y2023/localizer:scoring_map_fbs",
     ],
 )
@@ -79,4 +90,20 @@ cc_binary(
         "//aos/testing:path",
         "//frc971/constants:constants_sender_lib",
     ],
+)
+
+cc_binary(
+    name = "json_codegen",
+    srcs = ["json_codegen.cc"],
+    deps = [
+        "//aos/util:file",
+        "//y2023:constants",
+    ],
+)
+
+run_binary(
+    name = "wrist_json_codegen",
+    outs = ["wrist_common_zeroing.json"],
+    args = ["$(location :wrist_common_zeroing.json)"],
+    tool = ":json_codegen",
 )

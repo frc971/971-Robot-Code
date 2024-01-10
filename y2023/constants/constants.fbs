@@ -1,5 +1,7 @@
 include "frc971/vision/calibration.fbs";
 include "frc971/vision/target_map.fbs";
+include "frc971/control_loops/profiled_subsystem.fbs";
+include "frc971/zeroing/constants.fbs";
 include "y2023/localizer/scoring_map.fbs";
 
 namespace y2023;
@@ -27,6 +29,7 @@ table RobotConstants {
   // Table of time-of-flight reading positions. Until we bother using one
   // of our interpolation classes, should just contain two values.
   tof:TimeOfFlight (id: 0);
+  wrist_zero:frc971.zeroing.AbsoluteEncoderZeroingConstants (id: 1);
 }
 
 // Set of april tag targets, by april tag ID, to ignore when on a
@@ -42,6 +45,7 @@ table Constants {
   scoring_map:localizer.ScoringMap (id: 2);
   robot:RobotConstants (id: 3);
   ignore_targets:IgnoreTargets (id: 4);
+  wrist:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 5);
 }
 
 root_type Constants;

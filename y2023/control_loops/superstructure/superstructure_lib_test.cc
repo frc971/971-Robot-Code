@@ -175,15 +175,23 @@ class SuperstructureSimulation {
                            chrono::nanoseconds dt)
       : event_loop_(event_loop),
         dt_(dt),
+        constants_fetcher_(event_loop),
         arm_(values->arm_proximal.zeroing, values->arm_distal.zeroing,
              values->roll_joint.zeroing, dt_),
         wrist_(new CappedTestPlant(wrist::MakeWristPlant()),
-               PositionSensorSimulator(
-                   values->wrist.subsystem_params.zeroing_constants
-                       .one_revolution_distance),
-               values->wrist, constants::Values::kCompWristRange(),
-               values->wrist.subsystem_params.zeroing_constants
-                   .measured_absolute_position,
+               PositionSensorSimulator(constants_fetcher_.constants()
+                                           .robot()
+                                           ->wrist_zero()
+                                           ->one_revolution_distance()),
+               {.subsystem_params =
+                    {constants_fetcher_.constants().wrist(),
+                     constants_fetcher_.constants().robot()->wrist_zero()}},
+               frc971::constants::Range::FromFlatbuffer(
+                   constants_fetcher_.constants().wrist()->range()),
+               constants_fetcher_.constants()
+                   .robot()
+                   ->wrist_zero()
+                   ->measured_absolute_position(),
                dt_),
         superstructure_position_sender_(
             event_loop_->MakeSender<Position>("/superstructure")),
@@ -257,6 +265,7 @@ class SuperstructureSimulation {
   ::aos::EventLoop *event_loop_;
   const chrono::nanoseconds dt_;
   ::aos::PhasedLoopHandler *phased_loop_handle_ = nullptr;
+  frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
 
   ArmSimulation arm_;
   AbsoluteEncoderSimulator wrist_;
