@@ -44,8 +44,11 @@ import java.util.Optional;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonAutoDetect(getterVisibility = JsonAutoDetect.Visibility.NONE)
 public class AprilTagFieldLayout {
+  /** Common origin positions for the AprilTag coordinate system. */
   public enum OriginPosition {
+    /** Blue alliance wall, right side. */
     kBlueAllianceWallRightSide,
+    /** Red alliance wall, right side. */
     kRedAllianceWallRightSide,
   }
 
@@ -143,7 +146,7 @@ public class AprilTagFieldLayout {
    * @param origin The predefined origin
    */
   @JsonIgnore
-  public void setOrigin(OriginPosition origin) {
+  public final void setOrigin(OriginPosition origin) {
     switch (origin) {
       case kBlueAllianceWallRightSide:
         setOrigin(new Pose3d());
@@ -168,7 +171,7 @@ public class AprilTagFieldLayout {
    * @param origin The new origin for tag transformations
    */
   @JsonIgnore
-  public void setOrigin(Pose3d origin) {
+  public final void setOrigin(Pose3d origin) {
     m_origin = origin;
   }
 

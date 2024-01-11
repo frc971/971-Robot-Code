@@ -64,20 +64,26 @@ static std::string MakeLogDir(std::string_view dir) {
   }
 #ifdef __FRC_ROBORIO__
   // prefer a mounted USB drive if one is accessible
-  constexpr std::string_view usbDir{"/u"};
   std::error_code ec;
-  auto s = fs::status(usbDir, ec);
+  auto s = fs::status("/u", ec);
   if (!ec && fs::is_directory(s) &&
       (s.permissions() & fs::perms::others_write) != fs::perms::none) {
-    return std::string{usbDir};
+    fs::create_directory("/u/logs", ec);
+    return "/u/logs";
   }
   if (RobotBase::GetRuntimeType() == kRoboRIO) {
     FRC_ReportError(warn::Warning,
                     "DataLogManager: Logging to RoboRIO 1 internal storage is "
                     "not recommended! Plug in a FAT32 formatted flash drive!");
   }
+  fs::create_directory("/home/lvuser/logs", ec);
+  return "/home/lvuser/logs";
+#else
+  std::string logDir = filesystem::GetOperatingDirectory() + "/logs";
+  std::error_code ec;
+  fs::create_directory(logDir, ec);
+  return logDir;
 #endif
-  return filesystem::GetOperatingDirectory();
 }
 
 static std::string MakeLogFilename(std::string_view filenameOverride) {
@@ -328,7 +334,7 @@ void DataLogManager::Start(std::string_view dir, std::string_view filename,
 void DataLogManager::Stop() {
   auto& inst = GetInstance();
   inst.owner.GetThread()->m_log.Stop();
-  inst.owner.Stop();
+  inst.owner.Join();
 }
 
 void DataLogManager::Log(std::string_view message) {

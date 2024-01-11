@@ -15,6 +15,7 @@ import java.util.Set;
  * subsystems its components require.
  */
 public abstract class WrapperCommand extends Command {
+  /** Command being wrapped. */
   protected final Command m_command;
 
   /**
@@ -23,6 +24,7 @@ public abstract class WrapperCommand extends Command {
    * @param command the command being wrapped. Trying to directly schedule this command or add it to
    *     a composition will throw an exception.
    */
+  @SuppressWarnings("this-escape")
   protected WrapperCommand(Command command) {
     CommandScheduler.getInstance().registerComposedCommands(command);
     m_command = command;

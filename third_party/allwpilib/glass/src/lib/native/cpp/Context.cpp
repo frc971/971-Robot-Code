@@ -137,9 +137,8 @@ static bool LoadWindowStorageImpl(const std::string& filename) {
     return false;
   } else {
     try {
-      return JsonToWindow(
-          wpi::json::parse(fileBuffer->begin(), fileBuffer->end()),
-          filename.c_str());
+      return JsonToWindow(wpi::json::parse(fileBuffer->GetCharBuffer()),
+                          filename.c_str());
     } catch (wpi::json::parse_error& e) {
       ImGui::LogText("Error loading %s: %s", filename.c_str(), e.what());
       return false;
@@ -164,9 +163,8 @@ static bool LoadStorageRootImpl(Context* ctx, const std::string& filename,
       createdStorage = true;
     }
     try {
-      storage->FromJson(
-          wpi::json::parse(fileBuffer->begin(), fileBuffer->end()),
-          filename.c_str());
+      storage->FromJson(wpi::json::parse(fileBuffer->GetCharBuffer()),
+                        filename.c_str());
     } catch (wpi::json::parse_error& e) {
       ImGui::LogText("Error loading %s: %s", filename.c_str(), e.what());
       if (createdStorage) {
@@ -180,8 +178,6 @@ static bool LoadStorageRootImpl(Context* ctx, const std::string& filename,
 
 static bool LoadStorageImpl(Context* ctx, std::string_view dir,
                             std::string_view name) {
-  WorkspaceResetImpl();
-
   bool rv = true;
   for (auto&& root : ctx->storageRoots) {
     std::string filename;
@@ -423,6 +419,7 @@ std::string glass::GetStorageDir() {
 bool glass::LoadStorage(std::string_view dir) {
   SaveStorage();
   SetStorageDir(dir);
+  WorkspaceResetImpl();
   LoadWindowStorageImpl((fs::path{gContext->storageLoadDir} /
                          fmt::format("{}-window.json", gContext->storageName))
                             .string());

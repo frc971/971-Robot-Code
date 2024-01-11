@@ -80,8 +80,8 @@ public class LTVUnicycleController {
   /**
    * Constructs a linear time-varying unicycle controller.
    *
-   * <p>See
-   * https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-intro.html#lqr-tuning
+   * <p>See <a
+   * href="https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-intro.html#lqr-tuning">https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-intro.html#lqr-tuning</a>
    * for how to select the tolerances.
    *
    * @param qelems The maximum desired error tolerance for each state.
@@ -95,8 +95,8 @@ public class LTVUnicycleController {
   /**
    * Constructs a linear time-varying unicycle controller.
    *
-   * <p>See
-   * https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-intro.html#lqr-tuning
+   * <p>See <a
+   * href="https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-intro.html#lqr-tuning">https://docs.wpilib.org/en/stable/docs/software/advanced-controls/state-space/state-space-intro.html#lqr-tuning</a>
    * for how to select the tolerances.
    *
    * @param qelems The maximum desired error tolerance for each state.
@@ -149,7 +149,7 @@ public class LTVUnicycleController {
     // A = [0  0  v]          B = [0  0]
     //     [0  0  0]              [0  1]
     var A = new Matrix<>(Nat.N3(), Nat.N3());
-    var B = new MatBuilder<>(Nat.N3(), Nat.N2()).fill(1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    var B = MatBuilder.fill(Nat.N3(), Nat.N2(), 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
     var Q = StateSpaceUtil.makeCostMatrix(qelems);
     var R = StateSpaceUtil.makeCostMatrix(relems);
 
@@ -226,8 +226,12 @@ public class LTVUnicycleController {
 
     var K = m_table.get(linearVelocityRef);
     var e =
-        new MatBuilder<>(Nat.N3(), Nat.N1())
-            .fill(m_poseError.getX(), m_poseError.getY(), m_poseError.getRotation().getRadians());
+        MatBuilder.fill(
+            Nat.N3(),
+            Nat.N1(),
+            m_poseError.getX(),
+            m_poseError.getY(),
+            m_poseError.getRotation().getRadians());
     var u = K.times(e);
 
     return new ChassisSpeeds(

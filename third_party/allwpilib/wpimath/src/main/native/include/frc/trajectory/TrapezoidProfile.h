@@ -29,8 +29,8 @@ namespace frc {
  * Run on update:
  * @code{.cpp}
  * previousProfiledReference = profile.Calculate(timeSincePreviousUpdate,
- *                                               unprofiledReference,
- *                                               previousProfiledReference);
+ *                                               previousProfiledReference,
+ *                                               unprofiledReference);
  * @endcode
  *
  * where `unprofiledReference` is free to change between calls. Note that when
@@ -52,25 +52,49 @@ class TrapezoidProfile {
       units::compound_unit<Velocity, units::inverse<units::seconds>>;
   using Acceleration_t = units::unit_t<Acceleration>;
 
+  /**
+   * Profile constraints.
+   */
   class Constraints {
    public:
+    /// Maximum velocity.
+    Velocity_t maxVelocity{0};
+
+    /// Maximum acceleration.
+    Acceleration_t maxAcceleration{0};
+
+    /**
+     * Default constructor.
+     */
     Constraints() {
       wpi::math::MathSharedStore::ReportUsage(
           wpi::math::MathUsageId::kTrajectory_TrapezoidProfile, 1);
     }
-    Constraints(Velocity_t maxVelocity_, Acceleration_t maxAcceleration_)
-        : maxVelocity{maxVelocity_}, maxAcceleration{maxAcceleration_} {
+
+    /**
+     * Constructs constraints for a Trapezoid Profile.
+     *
+     * @param maxVelocity Maximum velocity.
+     * @param maxAcceleration Maximum acceleration.
+     */
+    Constraints(Velocity_t maxVelocity, Acceleration_t maxAcceleration)
+        : maxVelocity{maxVelocity}, maxAcceleration{maxAcceleration} {
       wpi::math::MathSharedStore::ReportUsage(
           wpi::math::MathUsageId::kTrajectory_TrapezoidProfile, 1);
     }
-    Velocity_t maxVelocity{0};
-    Acceleration_t maxAcceleration{0};
   };
 
+  /**
+   * Profile state.
+   */
   class State {
    public:
+    /// The position at this state.
     Distance_t position{0};
+
+    /// The velocity at this state.
     Velocity_t velocity{0};
+
     bool operator==(const State&) const = default;
   };
 
@@ -121,10 +145,10 @@ class TrapezoidProfile {
    * where the beginning of the profile was at time t = 0.
    *
    * @param t The time since the beginning of the profile.
-   * @param goal        The desired state when the profile is complete.
    * @param current     The initial state (usually the current state).
+   * @param goal        The desired state when the profile is complete.
    */
-  State Calculate(units::second_t t, State goal, State current);
+  State Calculate(units::second_t t, State current, State goal);
 
   /**
    * Returns the time left until a target distance in the profile is reached.

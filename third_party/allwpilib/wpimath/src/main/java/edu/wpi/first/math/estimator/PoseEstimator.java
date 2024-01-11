@@ -34,6 +34,8 @@ import java.util.Objects;
  *
  * <p>{@link PoseEstimator#addVisionMeasurement} can be called as infrequently as you want; if you
  * never call it then this class will behave exactly like regular encoder odometry.
+ *
+ * @param <T> Wheel positions type.
  */
 public class PoseEstimator<T extends WheelPositions<T>> {
   private final Kinematics<?, T> m_kinematics;
@@ -80,7 +82,7 @@ public class PoseEstimator<T extends WheelPositions<T>> {
    *     numbers to trust global measurements from vision less. This matrix is in the form [x, y,
    *     theta]ᵀ, with units in meters and radians.
    */
-  public void setVisionMeasurementStdDevs(Matrix<N3, N1> visionMeasurementStdDevs) {
+  public final void setVisionMeasurementStdDevs(Matrix<N3, N1> visionMeasurementStdDevs) {
     var r = new double[3];
     for (int i = 0; i < 3; ++i) {
       r[i] = visionMeasurementStdDevs.get(i, 0) * visionMeasurementStdDevs.get(i, 0);

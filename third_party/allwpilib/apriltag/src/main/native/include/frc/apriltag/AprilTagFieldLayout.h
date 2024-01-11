@@ -38,8 +38,13 @@ namespace frc {
  * towards the opposing alliance). */
 class WPILIB_DLLEXPORT AprilTagFieldLayout {
  public:
+  /**
+   * Common origin positions for the AprilTag coordinate system.
+   */
   enum class OriginPosition {
+    /// Blue alliance wall, right side.
     kBlueAllianceWallRightSide,
+    /// Red alliance wall, right side.
     kRedAllianceWallRightSide,
   };
 
@@ -73,6 +78,12 @@ class WPILIB_DLLEXPORT AprilTagFieldLayout {
    * @return width
    */
   units::meter_t GetFieldWidth() const;
+
+  /**
+   * Returns a vector of all the april tags used in this layout.
+   * @return list of tags
+   */
+  std::vector<AprilTag> GetTags() const;
 
   /**
    * Sets the origin based on a predefined enumeration of coordinate frame
