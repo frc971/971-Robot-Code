@@ -566,6 +566,8 @@ def PlotDrivetrainSprint(drivetrain_params):
     # Distance in meters to call 1/2 field.
     kSprintDistance = 8.0
 
+    kMaxBreakerCurrent = 220
+
     vbat = 12.6
     # Measured resistance of the battery, pd board, and breakers.
     Rw = 0.023
@@ -607,20 +609,50 @@ def PlotDrivetrainSprint(drivetrain_params):
 
         # Max current we could push through the motors is what we would get if
         # we short the battery through the battery resistance into the motor.
-        max_motor_current = (vbat - (bemf_left + bemf_right) / 2.0) / (
-            Rw + drivetrain.resistance / 2.0)
+        bemf = (bemf_left + bemf_right) / 2.0
+        max_motor_current = (vbat - bemf) / (Rw + drivetrain.resistance / 2.0)
 
         max_motor_currents.append(max_motor_current /
                                   (drivetrain_params.num_motors * 2))
 
         # From this current, we can compute the voltage we can apply.
         # This is either the traction limit or the current limit.
-        max_voltage_left = bemf_left + min(
-            max_motor_current / 2,
-            left_traction_current) * drivetrain.resistance
-        max_voltage_right = bemf_right + min(
-            max_motor_current / 2,
-            right_traction_current) * drivetrain.resistance
+        max_current_request_left = min(max_motor_current / 2,
+                                       left_traction_current)
+        max_current_request_right = min(max_motor_current / 2,
+                                        right_traction_current)
+        max_voltage_left = (bemf_left +
+                            max_current_request_left * drivetrain.resistance)
+        max_voltage_right = (bemf_right +
+                             max_current_request_right * drivetrain.resistance)
+
+        # Now, make sure we don't pull more power out of the battery than the
+        # breakers will let us pull.  Do this by comparing the max power we can
+        # pull out of the battery with the requested power.
+        #
+        # TODO(austin): This all assumes the robot is symetric...
+        max_battery_wattage = kMaxBreakerCurrent * (vbat -
+                                                    kMaxBreakerCurrent * Rw)
+        if (max_current_request_left * max_voltage_left +
+                max_current_request_right * max_voltage_right >
+                max_battery_wattage):
+            # Now solve the quadratic equation to figure out what the overall
+            # motor current can be which puts us at the max battery wattage.
+            max_motor_current = (
+                -bemf + math.sqrt(bemf * bemf + 4 * drivetrain.resistance /
+                                  2.0 * max_battery_wattage)) / (
+                                      2.0 * drivetrain.resistance / 2.0)
+            # Clip each side's currents to 1/2 of the max motor current since
+            # we know we are limited.
+            max_current_request_left = min(max_motor_current / 2.0,
+                                           max_current_request_left)
+            max_current_request_right = min(max_motor_current / 2.0,
+                                            max_current_request_right)
+            # And then update the voltages.
+            max_voltage_left = (
+                bemf_left + max_current_request_left * drivetrain.resistance)
+            max_voltage_right = (
+                bemf_right + max_current_request_right * drivetrain.resistance)
 
         simulated_left_position.append(drivetrain.X[0, 0])
         simulated_left_velocity.append(drivetrain.X[1, 0])
