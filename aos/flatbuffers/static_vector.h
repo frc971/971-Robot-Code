@@ -3,6 +3,7 @@
 #include <span>
 
 #include "flatbuffers/base.h"
+#include "flatbuffers/vector.h"
 #include "glog/logging.h"
 
 #include "aos/containers/inlined_vector.h"
