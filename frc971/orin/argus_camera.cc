@@ -276,6 +276,8 @@ class ArgusCamera {
       CHECK(ret == 0) << ": NvBufSurfaceFromFd failed";
 
       ret = NvBufSurfaceMapEglImage(surf_[i], 0);
+      // This check typically fails from having X forwarding enabled.
+      // Always call argus_camera without X forwarding.
       CHECK(ret == 0) << ": NvBufSurfaceMapEglImage failed";
 
       egl_images_[i] = surf_[i]->surfaceList[0].mappedAddr.eglImage;
