@@ -703,9 +703,9 @@ cc_library(
     deps = ["@//third_party/allwpilib/wpimath"],
 )
 """,
-    sha256 = "e1254dea273c2951f8418c9651f9c3e6fd387c4dab833858502997b3b00f3b80",
+    sha256 = "1b9295ac868d619d0263f285b372a22297798e45c8fdeb83ca99154a097c5c98",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/24.0.0-beta-7/api-cpp-24.0.0-beta-7-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/24.1.0/api-cpp-24.1.0-headers.zip",
     ],
 )
 
@@ -727,9 +727,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "864e8c2c9ef0af45205f0e8cbbcb0ae27de7fa9c4b1004b3dc2ac5e2dbeb2e33",
+    sha256 = "51f4921f8995e3e80ba347a90f6fa5c0cb7d0e438923a1a736554f263e2d5b8e",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/24.0.0-beta-7/api-cpp-24.0.0-beta-7-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/api-cpp/24.1.0/api-cpp-24.1.0-linuxathena.zip",
     ],
 )
 
@@ -742,9 +742,9 @@ cc_library(
     hdrs = glob(['ctre/**/*.h', 'ctre/**/*.hpp']),
 )
 """,
-    sha256 = "a2d9f361b7547ef99ec4306c73e6199cae1815b66e283f68e6cbb91bcdd35727",
+    sha256 = "72be3e50205e2546736361e3aba9c0de5d5318b263c195600f9b558c3d92cb9e",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/24.0.0-beta-7/tools-24.0.0-beta-7-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/24.1.0/tools-24.1.0-headers.zip",
     ],
 )
 
@@ -766,9 +766,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "fe54d1883496270612529ba2d72c58fef8199491159b0d2caf5cf9fec33343c6",
+    sha256 = "76d30cb8c0988eb6accab10e77ceae492782edb64c06f7df628b8c161cf0220a",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/24.0.0-beta-7/tools-24.0.0-beta-7-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix6/tools/24.1.0/tools-24.1.0-linuxathena.zip",
     ],
 )
 
@@ -781,9 +781,9 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "2f6cf6c9edca8a6ec14a29a52974947285758a2cdade1055d8f6162c5a4ecbee",
+    sha256 = "d2790e2495a59a3b14ab4b0fd03c2e25292d6874168f5642165acb0d1bab2f99",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/api-cpp/5.32.0-beta-5/api-cpp-5.32.0-beta-5-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/api-cpp/5.33.0/api-cpp-5.33.0-headers.zip",
     ],
 )
 
@@ -805,9 +805,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "a7a98bf85aecda23bdd578cebbab9a471c3954de78dda480190028e02e0db9d9",
+    sha256 = "e67348b0db1e61797700b5c4e50b38b745f91899665b740b09fde879e4d8ad7a",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/api-cpp/5.32.0-beta-5/api-cpp-5.32.0-beta-5-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/api-cpp/5.33.0/api-cpp-5.33.0-linuxathena.zip",
     ],
 )
 
@@ -820,9 +820,9 @@ cc_library(
     hdrs = glob(['ctre/phoenix/**/*.h']),
 )
 """,
-    sha256 = "1b2b5375c7ca57148165ea1adfe6726d7e91ff3f2250cfa846732ee98de68b6c",
+    sha256 = "56cb8272d623721560eea360730d2508f4f365e2ac1060aec5fbd546cffc0771",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/cci/5.32.0-beta-5/cci-5.32.0-beta-5-headers.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/cci/5.33.0/cci-5.33.0-headers.zip",
     ],
 )
 
@@ -844,9 +844,9 @@ cc_library(
     target_compatible_with = ['@//tools/platforms/hardware:roborio'],
 )
 """,
-    sha256 = "09b1485e635b4190e5386d416979890a62c29741d153db15567a3d0a80abb05e",
+    sha256 = "7bd8e9950c3e62a3c6ce967e3491c438ba08effde51d434f85b756fa004fbec9",
     urls = [
-        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/cci/5.32.0-beta-5/cci-5.32.0-beta-5-linuxathena.zip",
+        "https://maven.ctr-electronics.com/release/com/ctre/phoenix/cci/5.33.0/cci-5.33.0-linuxathena.zip",
     ],
 )
 
