@@ -1,0 +1,5 @@
+  "target_map": {% include 'y2024/constants/target_map.json' %},
+  "ignore_targets": {
+    "red": [4],
+    "blue": [5]
+  }

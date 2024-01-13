@@ -1,0 +1,16 @@
+{
+  "constants": [
+    {
+      "team": 7971,
+      "data": {% include 'y2024/constants/7971.json' %}
+    },
+    {
+      "team": 971,
+      "data": {% include 'y2024/constants/971.json' %}
+    },
+    {
+      "team": 9971,
+      "data": {% include 'y2024/constants/9971.json' %}
+    }
+  ]
+}

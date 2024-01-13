@@ -1,0 +1,6 @@
+namespace y2024.control_loops.superstructure;
+
+table Output {
+}
+
+root_type Output;
