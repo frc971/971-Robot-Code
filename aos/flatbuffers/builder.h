@@ -47,7 +47,8 @@ class Builder final : public ResizeableObject {
                     this) {
     SetPrefix();
   }
-  Builder(std::unique_ptr<Allocator> allocator)
+  Builder(std::unique_ptr<Allocator> allocator =
+              std::make_unique<VectorAllocator>())
       : ResizeableObject(
             allocator->AllocateOrDie(kBufferSize, T::kAlign, SetZero::kYes),
             std::move(allocator)),
