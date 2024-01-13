@@ -11,7 +11,7 @@
 #include "aos/commonmath.h"
 #include "aos/init.h"
 #include "aos/logging/logging.h"
-#include "frc971/control_loops/drivetrain/drivetrain_can_position_generated.h"
+#include "frc971/control_loops/can_talonfx_static.h"
 
 namespace control_loops = ::frc971::control_loops;
 
@@ -48,10 +48,8 @@ class TalonFX {
   ctre::phoenix6::hardware::TalonFX *talon() { return &talon_; }
 
   // The position of the TalonFX output shaft is multiplied by gear_ratio
-  void SerializePosition(flatbuffers::FlatBufferBuilder *fbb,
+  void SerializePosition(control_loops::CANTalonFXStatic *can_falcon,
                          double gear_ratio);
-
-  std::optional<flatbuffers::Offset<control_loops::CANTalonFX>> TakeOffset();
 
   int device_id() const { return device_id_; }
   float device_temp() const { return device_temp_.GetValue().value(); }
@@ -101,9 +99,6 @@ class TalonFX {
 
   double stator_current_limit_;
   double supply_current_limit_;
-
-  std::optional<flatbuffers::Offset<control_loops::CANTalonFX>>
-      last_position_offset_;
 };
 }  // namespace wpilib
 }  // namespace frc971

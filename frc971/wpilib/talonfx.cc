@@ -113,26 +113,13 @@ ctre::phoenix::StatusCode TalonFX::WriteVoltage(double voltage) {
 
   return status;
 }
-
-void TalonFX::SerializePosition(flatbuffers::FlatBufferBuilder *fbb,
+void TalonFX::SerializePosition(control_loops::CANTalonFXStatic *can_talonfx,
                                 double gear_ratio) {
-  control_loops::CANTalonFX::Builder builder(*fbb);
-  builder.add_id(device_id_);
-  builder.add_device_temp(device_temp());
-  builder.add_supply_voltage(supply_voltage());
-  builder.add_supply_current(supply_current());
-  builder.add_torque_current(torque_current());
-  builder.add_duty_cycle(duty_cycle());
-  builder.add_position(position() * gear_ratio);
-
-  last_position_offset_ = builder.Finish();
-}
-
-std::optional<flatbuffers::Offset<control_loops::CANTalonFX>>
-TalonFX::TakeOffset() {
-  auto option_offset = last_position_offset_;
-
-  last_position_offset_.reset();
-
-  return option_offset;
+  can_talonfx->set_id(device_id_);
+  can_talonfx->set_device_temp(device_temp());
+  can_talonfx->set_supply_voltage(supply_voltage());
+  can_talonfx->set_supply_current(supply_current());
+  can_talonfx->set_torque_current(torque_current());
+  can_talonfx->set_duty_cycle(duty_cycle());
+  can_talonfx->set_position(position() * gear_ratio);
 }
