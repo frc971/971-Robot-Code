@@ -12,9 +12,7 @@
 #include "aos/network/timestamp_generated.h"
 #include "aos/testing/tmpdir.h"
 
-namespace aos {
-namespace logger {
-namespace testing {
+namespace aos::logger::testing {
 
 namespace chrono = std::chrono;
 using aos::message_bridge::RemoteMessage;
@@ -4682,6 +4680,4 @@ TEST(MultinodeLoggerLoopTest, StaggeredConnect) {
   auto result = ConfirmReadable(filenames);
 }
 
-}  // namespace testing
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger::testing

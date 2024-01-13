@@ -2,10 +2,7 @@
 
 #include "frc971/zeroing/wrap.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace column {
+namespace y2017::control_loops::superstructure::column {
 
 ColumnZeroingEstimator::ColumnZeroingEstimator(
     const ZeroingConstants &column_constants)
@@ -82,7 +79,4 @@ ColumnZeroingEstimator::GetEstimatorState(
   return state_builder.Finish();
 }
 
-}  // namespace column
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::column

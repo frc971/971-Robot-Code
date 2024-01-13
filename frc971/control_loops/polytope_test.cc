@@ -8,8 +8,7 @@
 
 #include "aos/testing/test_logging.h"
 
-namespace frc971 {
-namespace controls {
+namespace frc971::controls {
 
 class HPolytopeTest : public ::testing::Test {
  protected:
@@ -102,5 +101,4 @@ TEST_F(HPolytopeTest, CalculatedVertices) {
               .finished())));
 }
 
-}  // namespace controls
-}  // namespace frc971
+}  // namespace frc971::controls

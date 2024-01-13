@@ -8,8 +8,7 @@
 #include "y2016/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2016/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2016 {
-namespace actors {
+namespace y2016::actors {
 
 namespace chrono = ::std::chrono;
 
@@ -112,5 +111,4 @@ void SuperstructureActor::WaitForSuperstructure() {
   WaitUntil(::std::bind(&SuperstructureActor::SuperstructureDone, this));
 }
 
-}  // namespace actors
-}  // namespace y2016
+}  // namespace y2016::actors

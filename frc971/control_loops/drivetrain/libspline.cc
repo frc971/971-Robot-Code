@@ -10,9 +10,7 @@
 #include "frc971/control_loops/drivetrain/trajectory.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 extern "C" {
 // Based on spline.h
@@ -204,6 +202,4 @@ void TrajectoryGetPlanXVA(::std::vector<::Eigen::Matrix<double, 3, 1>> *vec,
 void SetUpLogging() { ::aos::network::OverrideTeamNumber(971); }
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain

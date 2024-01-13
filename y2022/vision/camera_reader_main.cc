@@ -14,8 +14,7 @@ DEFINE_uint32(outdoors_exposure, 2,
               "Exposure time when using --use_outdoors, in 100us increments; 0 "
               "implies auto exposure");
 
-namespace y2022 {
-namespace vision {
+namespace y2022::vision {
 namespace {
 
 using namespace frc971::vision;
@@ -59,8 +58,7 @@ void CameraReaderMain() {
 }
 
 }  // namespace
-}  // namespace vision
-}  // namespace y2022
+}  // namespace y2022::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

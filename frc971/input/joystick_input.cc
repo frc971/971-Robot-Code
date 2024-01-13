@@ -6,8 +6,7 @@
 #include "aos/logging/logging.h"
 #include "frc971/input/robot_state_generated.h"
 
-namespace frc971 {
-namespace input {
+namespace frc971::input {
 
 void JoystickInput::HandleData(const ::aos::JoystickState *joystick_state) {
   data_.Update(joystick_state);
@@ -60,5 +59,4 @@ void JoystickInput::HandleData(const ::aos::JoystickState *joystick_state) {
   RunIteration(data_);
 }
 
-}  // namespace input
-}  // namespace frc971
+}  // namespace frc971::input

@@ -6,8 +6,7 @@
 
 using namespace aos::vision;
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 TargetFinder::TargetFinder()
     : target_template_(Target::MakeTemplate()),
@@ -632,5 +631,4 @@ bool TargetFinder::TestExposure(const std::vector<IntermediateResult> &results,
   return needs_update;
 }
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision

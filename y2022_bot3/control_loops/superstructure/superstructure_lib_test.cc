@@ -15,10 +15,7 @@
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
 
-namespace y2022_bot3 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2022_bot3::control_loops::superstructure::testing {
 namespace chrono = std::chrono;
 
 using ::aos::monotonic_clock;
@@ -472,7 +469,4 @@ TEST_F(SuperstructureTest, RunRollers) {
   TestRoller(0.0);
 }
 
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2022_bot3
+}  // namespace y2022_bot3::control_loops::superstructure::testing

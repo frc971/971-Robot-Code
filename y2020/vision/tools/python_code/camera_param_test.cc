@@ -16,8 +16,7 @@
 #include "y2020/vision/sift/sift_generated.h"
 #include "y2020/vision/sift/sift_training_generated.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 namespace {
 
 class Feature {
@@ -275,5 +274,4 @@ TEST(CameraParamTest, TargetDataTest) {
 }
 
 }  // namespace
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision

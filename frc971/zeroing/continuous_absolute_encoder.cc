@@ -8,8 +8,7 @@
 #include "aos/containers/error_list.h"
 #include "frc971/zeroing/wrap.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 ContinuousAbsoluteEncoderZeroingEstimator::
     ContinuousAbsoluteEncoderZeroingEstimator(
@@ -165,5 +164,4 @@ ContinuousAbsoluteEncoderZeroingEstimator::GetEstimatorState(
   return builder.Finish();
 }
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing

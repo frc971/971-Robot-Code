@@ -19,10 +19,7 @@ DEFINE_string(output_file, "",
 
 // This file tests that the full 2020 localizer behaves sanely.
 
-namespace y2020 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace y2020::control_loops::drivetrain::testing {
 
 using aos::logger::BootTimestamp;
 using frc971::control_loops::drivetrain::DrivetrainConfig;
@@ -622,7 +619,4 @@ TEST_F(LocalizedDrivetrainTest, FetchersHandleTimeGap) {
   RunFor(chrono::seconds(20));
 }
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::drivetrain::testing

@@ -27,9 +27,7 @@
 #include "aos/realtime.h"
 #include "aos/testing/test_logging.h"
 
-namespace aos {
-namespace ipc_lib {
-namespace testing {
+namespace aos::ipc_lib::testing {
 
 namespace chrono = ::std::chrono;
 
@@ -216,6 +214,4 @@ TEST(LocklessQueueTest, Death) {
 
 #endif
 
-}  // namespace testing
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib::testing

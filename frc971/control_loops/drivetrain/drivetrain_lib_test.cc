@@ -27,10 +27,7 @@
 DEFINE_string(output_file, "",
               "If set, logs all channels to the provided logfile.");
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace frc971::control_loops::drivetrain::testing {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -1639,7 +1636,4 @@ TEST_F(DrivetrainTest, ResetDrivetrain) {
 
 // TODO(austin): Make sure the profile reset code when we disable works.
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain::testing

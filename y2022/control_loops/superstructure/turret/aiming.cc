@@ -2,10 +2,7 @@
 
 #include "y2022/control_loops/drivetrain/drivetrain_base.h"
 
-namespace y2022 {
-namespace control_loops {
-namespace superstructure {
-namespace turret {
+namespace y2022::control_loops::superstructure::turret {
 
 using frc971::control_loops::Pose;
 using frc971::control_loops::aiming::RobotState;
@@ -80,7 +77,4 @@ flatbuffers::Offset<AimerStatus> Aimer::PopulateStatus(
   return builder.Finish();
 }
 
-}  // namespace turret
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2022
+}  // namespace y2022::control_loops::superstructure::turret

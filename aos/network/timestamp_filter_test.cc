@@ -9,9 +9,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/macros.h"
 
-namespace aos {
-namespace message_bridge {
-namespace testing {
+namespace aos::message_bridge::testing {
 
 namespace chrono = std::chrono;
 using aos::monotonic_clock;
@@ -1673,6 +1671,4 @@ TEST(NoncausalOffsetEstimatorTest, FullEstimator) {
   EXPECT_EQ(estimator.GetFilter(node_b)->timestamps_size(), 2u);
 }
 
-}  // namespace testing
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge::testing

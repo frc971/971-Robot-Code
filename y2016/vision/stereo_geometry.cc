@@ -1,7 +1,6 @@
 #include "y2016/vision/stereo_geometry.h"
 
-namespace y2016 {
-namespace vision {
+namespace y2016::vision {
 
 Calibration FindCalibrationForRobotOrDie(
     const ::std::string &robot_name, const CalibrationFile &calibration_file) {
@@ -14,5 +13,4 @@ Calibration FindCalibrationForRobotOrDie(
           calibration_file.ShortDebugString().c_str());
 }
 
-}  // namespace vision
-}  // namespace y2016
+}  // namespace y2016::vision

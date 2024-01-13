@@ -16,8 +16,7 @@
 #include "y2022_bot3/control_loops/superstructure/climber/integral_climber_plant.h"
 #include "y2022_bot3/control_loops/superstructure/intake/integral_intake_plant.h"
 
-namespace y2022_bot3 {
-namespace constants {
+namespace y2022_bot3::constants {
 
 const int Values::kZeroingSampleSize;
 
@@ -143,5 +142,4 @@ Values MakeValues(uint16_t team) {
 
 Values MakeValues() { return MakeValues(aos::network::GetTeamNumber()); }
 
-}  // namespace constants
-}  // namespace y2022_bot3
+}  // namespace y2022_bot3::constants

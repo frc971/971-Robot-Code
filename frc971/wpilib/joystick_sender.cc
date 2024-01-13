@@ -8,8 +8,7 @@
 #include "frc971/wpilib/ahal/DriverStation.h"
 #include "hal/HAL.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 using aos::Joystick;
 
@@ -138,5 +137,4 @@ JoystickSender::JoystickSender(::aos::ShmEventLoop *event_loop)
   });
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

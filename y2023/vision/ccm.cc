@@ -8,8 +8,7 @@
 #include "aos/init.h"
 #include "aos/time/time.h"
 
-namespace y2023 {
-namespace vision {
+namespace y2023::vision {
 namespace {
 
 // Adapted from the opencv example code for color calibration.
@@ -73,8 +72,7 @@ void CCMMain(std::string filepath) {
 }
 
 }  // namespace
-}  // namespace vision
-}  // namespace y2023
+}  // namespace y2023::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

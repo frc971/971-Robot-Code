@@ -1,7 +1,6 @@
 #include "motors/usb/interrupt_out.h"
 
-namespace frc971 {
-namespace teensy {
+namespace frc971::teensy {
 
 void InterruptOut::Initialize() {
   interface_ = AddInterface();
@@ -86,5 +85,4 @@ void InterruptOut::HandleConfigured(int endpoint) {
   }
 }
 
-}  // namespace teensy
-}  // namespace frc971
+}  // namespace frc971::teensy

@@ -5,9 +5,7 @@
 
 #include "frc971/control_loops/quaternion_utils.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 void QuaternionUkf::Reset() {
   // The various noise matrices are tuned to provide values that seem
@@ -319,6 +317,4 @@ flatbuffers::Offset<DownEstimatorState> DrivetrainUkf::PopulateStatus(
   return builder.Finish();
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain

@@ -15,8 +15,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 namespace {
 int MakeSocketNonBlocking(int sfd) {
@@ -63,5 +62,4 @@ int OpenClient(const std::string &hostname, int portno) {
 TcpClient::TcpClient(const std::string &hostname, int portno)
     : EpollEvent(OpenClient(hostname, portno)) {}
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events

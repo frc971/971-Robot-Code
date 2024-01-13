@@ -18,8 +18,7 @@ namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
 namespace drivetrain = frc971::control_loops::drivetrain;
 
-namespace frc971 {
-namespace autonomous {
+namespace frc971::autonomous {
 
 BaseAutonomousActor::BaseAutonomousActor(
     ::aos::EventLoop *event_loop,
@@ -678,5 +677,4 @@ bool BaseAutonomousActor::SplineHandle::WaitForDone() {
   }
 }
 
-}  // namespace autonomous
-}  // namespace frc971
+}  // namespace frc971::autonomous

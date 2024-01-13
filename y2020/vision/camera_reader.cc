@@ -23,8 +23,7 @@ DEFINE_bool(ransac_pose, false,
 DEFINE_bool(use_prev_pose, true,
             "If true, use previous pose estimate as seed for next estimate.");
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 const sift::CameraCalibration *CameraReader::FindCameraCalibration() const {
   const std::string_view node_name = event_loop_->node()->name()->string_view();
@@ -541,5 +540,4 @@ CameraReader::PackFeatures(flatbuffers::FlatBufferBuilder *fbb,
   return fbb->CreateVector(features_vector);
 }
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision

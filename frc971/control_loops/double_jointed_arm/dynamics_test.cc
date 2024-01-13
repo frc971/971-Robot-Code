@@ -4,10 +4,7 @@
 
 #include "frc971/control_loops/double_jointed_arm/test_constants.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
-namespace testing {
+namespace frc971::control_loops::arm::testing {
 
 // Tests that zero inputs result in no acceleration and no motion.
 // This isn't all that rigerous, but it's a good start.
@@ -48,7 +45,4 @@ TEST(DynamicsTest, Acceleration) {
                   .isApprox(X));
 }
 
-}  // namespace testing
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm::testing

@@ -6,8 +6,7 @@
 
 #include "glog/logging.h"
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 ImageWriter::ImageWriter() {
   LOG(INFO) << "Initializing image writer";
@@ -38,5 +37,4 @@ void ImageWriter::SetDirPath() {
   }
 }
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision

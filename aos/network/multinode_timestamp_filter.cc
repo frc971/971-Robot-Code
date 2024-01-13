@@ -64,8 +64,7 @@ DEFINE_bool(constrained_solve, true,
 #define SOLVE_VLOG(solve_number, v) \
   LOG_IF(INFO, SOLVE_VLOG_IS_ON(solve_number, v))
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 namespace {
 namespace chrono = std::chrono;
 using aos::logger::BootDuration;
@@ -3359,5 +3358,4 @@ void MultiNodeNoncausalOffsetEstimator::FlushAllSamples(bool finish) {
   }
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

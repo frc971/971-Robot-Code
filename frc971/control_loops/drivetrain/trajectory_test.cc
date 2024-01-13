@@ -23,10 +23,7 @@ DECLARE_bool(plot);
 DEFINE_string(output_file, "",
               "If set, logs all channels to the provided logfile.");
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace frc971::control_loops::drivetrain::testing {
 
 namespace chrono = ::std::chrono;
 
@@ -602,7 +599,4 @@ INSTANTIATE_TEST_SUITE_P(
 // fast...  We want to maybe replan when we get behind, or something.  Maybe
 // stop moving the setpoint like our 2018 arm?
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain::testing

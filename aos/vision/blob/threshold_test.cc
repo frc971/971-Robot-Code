@@ -9,9 +9,7 @@
 #include "aos/vision/blob/range_image.h"
 #include "aos/vision/image/image_types.h"
 
-namespace aos {
-namespace vision {
-namespace testing {
+namespace aos::vision::testing {
 
 class YuyvYThresholdTest : public ::testing::Test {
  public:
@@ -189,6 +187,4 @@ TEST_F(YuyvYThresholdTest, UVIgnored) {
   }
 }
 
-}  // namespace testing
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision::testing

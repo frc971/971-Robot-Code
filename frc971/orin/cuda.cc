@@ -7,8 +7,7 @@ DEFINE_bool(
     sync, false,
     "If true, force synchronization after each step to isolate errors better.");
 
-namespace frc971 {
-namespace apriltag {
+namespace frc971::apriltag {
 
 size_t overall_memory = 0;
 
@@ -25,5 +24,4 @@ void MaybeCheckAndSynchronize(std::string_view message) {
   if (FLAGS_sync) CheckAndSynchronize(message);
 }
 
-}  // namespace apriltag
-}  // namespace frc971
+}  // namespace frc971::apriltag

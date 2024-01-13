@@ -6,8 +6,7 @@
 #include "frc971/wpilib/ahal/Utility.h"
 #include "hal/HAL.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 flatbuffers::Offset<aos::RobotState> PopulateRobotState(
     aos::Sender<::aos::RobotState>::Builder *builder, int32_t my_pid) {
@@ -36,5 +35,4 @@ flatbuffers::Offset<aos::RobotState> PopulateRobotState(
   return robot_state_builder.Finish();
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

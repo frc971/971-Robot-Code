@@ -28,10 +28,7 @@ DEFINE_string(replay_logfile, "external/superstructure_replay/",
 DEFINE_string(config, "y2020/aos_config.json",
               "Name of the config file to replay using.");
 
-namespace y2020 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2020::control_loops::superstructure::testing {
 
 namespace {
 constexpr double kNoiseScalar = 0.01;
@@ -1473,7 +1470,4 @@ INSTANTIATE_TEST_SUITE_P(ShootAnyAlliance, SuperstructureAllianceTest,
                                            aos::Alliance::kBlue,
                                            aos::Alliance::kInvalid));
 
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::superstructure::testing

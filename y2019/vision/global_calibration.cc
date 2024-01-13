@@ -52,8 +52,7 @@ using ceres::Problem;
 using ceres::Solve;
 using ceres::Solver;
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 namespace {
 
 constexpr double kInchesToMeters = 0.0254;
@@ -293,7 +292,6 @@ void main(int argc, char **argv) {
   DumpCameraConstants(FLAGS_constants.c_str(), info.camera_id, results);
 }
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision
 
 int main(int argc, char **argv) { y2019::vision::main(argc, argv); }

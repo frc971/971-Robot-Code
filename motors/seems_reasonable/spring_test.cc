@@ -2,9 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace motors {
-namespace seems_reasonable {
-namespace testing {
+namespace motors::seems_reasonable::testing {
 
 // Tests that NextGoal always returns the next goal.
 TEST(GoalTest, TestNextGoal) {
@@ -30,6 +28,4 @@ TEST(GoalTest, TestPreviousGoal) {
   EXPECT_NEAR(-2.0 * M_PI + 1.0, PreviousGoal(1.0, 1.0), 1e-6);
 }
 
-}  // namespace testing
-}  // namespace seems_reasonable
-}  // namespace motors
+}  // namespace motors::seems_reasonable::testing

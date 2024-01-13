@@ -25,8 +25,7 @@
 
 namespace chrono = ::std::chrono;
 
-namespace y2016 {
-namespace dashboard {
+namespace y2016::dashboard {
 namespace big_indicator {
 constexpr int kBlack = 0;
 constexpr int kBallIntaked = 1;
@@ -275,8 +274,7 @@ void SocketHandler::Quit() {
   data_collector_thread_.join();
 }
 
-}  // namespace dashboard
-}  // namespace y2016
+}  // namespace y2016::dashboard
 
 int main(int argc, char **argv) {
   // Make sure to reference this to force the linker to include it.

@@ -4,9 +4,7 @@
 
 #include "frc971/zeroing/wrap.h"
 
-namespace y2019 {
-namespace input {
-namespace joysticks {
+namespace y2019::input::joysticks {
 
 using ::frc971::zeroing::Wrap;
 
@@ -47,6 +45,4 @@ JoystickAngle GetJoystickPosition(float x_axis, float y_axis) {
 
   return JoystickAngle::kDefault;
 }
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2019
+}  // namespace y2019::input::joysticks

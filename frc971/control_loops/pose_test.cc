@@ -2,9 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace testing {
+namespace frc971::control_loops::testing {
 
 // Test that basic accessors on an individual Pose object work as expected.
 TEST(PoseTest, BasicPoseTest) {
@@ -195,6 +193,4 @@ TEST(LineSegmentTest, CollinearIntersectTest) {
   EXPECT_FALSE(l6.Intersects(l5));
 }
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::testing

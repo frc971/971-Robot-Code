@@ -4,9 +4,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace libc {
-namespace testing {
+namespace aos::libc::testing {
 
 // Tests the examples from the Linux man-pages release 3.44 dirname(3).
 TEST(DirnameTest, ManPageExamples) {
@@ -74,6 +72,4 @@ TEST(DirnameTest, Random) {
   }
 }
 
-}  // namespace testing
-}  // namespace libc
-}  // namespace aos
+}  // namespace aos::libc::testing

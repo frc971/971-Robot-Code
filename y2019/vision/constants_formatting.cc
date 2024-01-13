@@ -3,8 +3,7 @@
 
 #include "y2019/vision/constants.h"
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 namespace {
 // 64 should be enough for any mortal.
@@ -57,8 +56,7 @@ void DumpCameraConstants(const char *fname, int camera_id,
   std::ofstream o(fname);
   o << R"(#include "y2019/vision/constants.h"
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 static constexpr double kInchesToMeters = 0.0254;
 )";
@@ -90,11 +88,9 @@ const CameraCalibration *GetCamera(int camera_id) {
   }
 }
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision
 )";
   o.close();
 }
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision

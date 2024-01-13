@@ -31,9 +31,7 @@ using frc971::input::driver_station::ControlBit;
 using frc971::input::driver_station::JoystickAxis;
 using frc971::input::driver_station::POVLocation;
 
-namespace y2022 {
-namespace input {
-namespace joysticks {
+namespace y2022::input::joysticks {
 
 namespace superstructure = y2022::control_loops::superstructure;
 
@@ -376,9 +374,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   bool last_back_intake_has_ball_ = false;
 };
 
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2022
+}  // namespace y2022::input::joysticks
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

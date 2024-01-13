@@ -7,11 +7,7 @@
 #include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
-namespace y2020 {
-namespace control_loops {
-namespace superstructure {
-namespace turret {
-namespace testing {
+namespace y2020::control_loops::superstructure::turret::testing {
 
 class TeamNumberEnvironment : public ::testing::Environment {
  public:
@@ -259,8 +255,4 @@ TEST_F(AimerTest, WrappingModes) {
   EXPECT_EQ(0.0, goal->goal_velocity());
 }
 
-}  // namespace testing
-}  // namespace turret
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::superstructure::turret::testing

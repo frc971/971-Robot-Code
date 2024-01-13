@@ -59,8 +59,7 @@ namespace superstructure = ::y2022_bot3::control_loops::superstructure;
 namespace chrono = ::std::chrono;
 using std::make_unique;
 
-namespace y2022_bot3 {
-namespace wpilib {
+namespace y2022_bot3::wpilib {
 namespace {
 
 constexpr double kMaxBringupPower = 12.0;
@@ -390,7 +389,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 };
 
-}  // namespace wpilib
-}  // namespace y2022_bot3
+}  // namespace y2022_bot3::wpilib
 
 AOS_ROBOT_CLASS(::y2022_bot3::wpilib::WPILibRobot);

@@ -12,10 +12,7 @@ DEFINE_bool(forwards, true, "If true, run the forwards simulation.");
 DEFINE_bool(plot, true, "If true, plot");
 DEFINE_bool(plot_thetas, true, "If true, plot the angles");
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
-namespace arm {
+namespace y2018::control_loops::superstructure::arm {
 
 void Main() {
   frc971::control_loops::arm::Dynamics dynamics(kArmConstants);
@@ -355,10 +352,7 @@ void Main() {
   }
 }
 
-}  // namespace arm
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure::arm
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

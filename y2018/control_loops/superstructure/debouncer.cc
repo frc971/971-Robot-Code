@@ -1,8 +1,6 @@
 #include "y2018/control_loops/superstructure/debouncer.h"
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
+namespace y2018::control_loops::superstructure {
 
 void Debouncer::Update(bool new_state) {
   // If the incoming state is different from the one we have stored, increment
@@ -20,6 +18,4 @@ void Debouncer::Update(bool new_state) {
   }
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure

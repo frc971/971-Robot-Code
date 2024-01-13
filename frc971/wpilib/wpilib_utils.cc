@@ -1,7 +1,6 @@
 #include "frc971/wpilib/wpilib_utils.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 bool SafePotVoltageRange(::frc971::constants::Range subsystem_range,
                          double potentiometer_offset,
@@ -22,5 +21,4 @@ bool SafePotVoltageRange(::frc971::constants::Range subsystem_range,
           (kMinVoltage + limit_buffer) < max_range_voltage &&
           max_range_voltage < (kMaxVoltage - limit_buffer));
 }
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

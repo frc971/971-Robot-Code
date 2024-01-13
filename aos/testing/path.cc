@@ -2,8 +2,7 @@
 
 #include "absl/strings/str_cat.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Returns the path to the provided artifact which works when built both as an
 // external target and in the repo.
@@ -13,5 +12,4 @@ std::string ArtifactPath(std::string_view path) {
   return absl::StrCat("../org_frc971/", path);
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

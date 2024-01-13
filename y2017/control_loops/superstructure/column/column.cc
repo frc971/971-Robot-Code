@@ -15,10 +15,7 @@
 #include "y2017/control_loops/superstructure/column/column_integral_plant.h"
 #include "y2017/control_loops/superstructure/column/stuck_column_integral_plant.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace column {
+namespace y2017::control_loops::superstructure::column {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -692,7 +689,4 @@ Column::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
   return std::make_pair(indexer_status_offset, turret_status_offset);
 }
 
-}  // namespace column
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::column

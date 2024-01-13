@@ -4,9 +4,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace testing {
+namespace frc971::control_loops::testing {
 
 class VoltageTest : public ::testing::Test {};
 
@@ -240,6 +238,4 @@ TEST_F(VoltageTest, QuadrantThreeToFour6) {
   EXPECT_EQ(5.0, voltage_two);
 }
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::testing

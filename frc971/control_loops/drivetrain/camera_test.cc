@@ -2,9 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace testing {
+namespace frc971::control_loops::testing {
 
 // Check that a Target's basic operations work.
 TEST(TargetTest, BasicTargetTest) {
@@ -208,6 +206,4 @@ INSTANTIATE_TEST_SUITE_P(
         Reading({0.0, 1.0, 0.0, ::std::numeric_limits<double>::infinity()}),
         Reading({0.0, 1.0, 0.0, ::std::numeric_limits<double>::quiet_NaN()})));
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::testing

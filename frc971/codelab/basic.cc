@@ -1,7 +1,6 @@
 #include "frc971/codelab/basic.h"
 
-namespace frc971 {
-namespace codelab {
+namespace frc971::codelab {
 
 Basic::Basic(::aos::EventLoop *event_loop, const ::std::string &name)
     : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
@@ -45,5 +44,4 @@ void Basic::RunIteration(const Goal *goal, const Position *position,
   }
 }
 
-}  // namespace codelab
-}  // namespace frc971
+}  // namespace frc971::codelab

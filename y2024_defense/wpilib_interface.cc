@@ -74,8 +74,7 @@ using frc971::wpilib::TalonFX;
 
 using std::make_unique;
 
-namespace y2024_defense {
-namespace wpilib {
+namespace y2024_defense::wpilib {
 namespace {
 
 constexpr double kMaxBringupPower = 12.0;
@@ -361,7 +360,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 };
 
-}  // namespace wpilib
-}  // namespace y2024_defense
+}  // namespace y2024_defense::wpilib
 
 AOS_ROBOT_CLASS(::y2024_defense::wpilib::WPILibRobot);

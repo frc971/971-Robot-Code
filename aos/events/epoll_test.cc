@@ -6,9 +6,7 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace internal {
-namespace testing {
+namespace aos::internal::testing {
 
 // A simple wrapper around both ends of a pipe along with some helpers to easily
 // read/write data through it.
@@ -204,6 +202,4 @@ TEST_F(EPollTest, QuitInBeforeWait) {
   epoll_.Run();
 }
 
-}  // namespace testing
-}  // namespace internal
-}  // namespace aos
+}  // namespace aos::internal::testing

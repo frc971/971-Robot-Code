@@ -4,8 +4,7 @@
 
 #include "frc971/zeroing/wrap.h"
 
-namespace motors {
-namespace seems_reasonable {
+namespace motors::seems_reasonable {
 namespace {
 
 constexpr float kTwoPi = 2.0 * M_PI;
@@ -200,5 +199,4 @@ void Spring::Iterate(bool unload, bool prime, bool fire, bool force_reset,
   last_error_ = error;
 }
 
-}  // namespace seems_reasonable
-}  // namespace motors
+}  // namespace motors::seems_reasonable

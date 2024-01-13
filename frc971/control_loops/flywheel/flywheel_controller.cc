@@ -3,9 +3,8 @@
 #include <chrono>
 
 #include "aos/logging/logging.h"
-namespace frc971 {
-namespace control_loops {
-namespace flywheel {
+
+namespace frc971::control_loops::flywheel {
 
 // Class to current limit battery current for a flywheel controller.
 class CurrentLimitedStateFeedbackController
@@ -173,6 +172,4 @@ FlywheelController::~FlywheelController() {}
 
 double FlywheelController::velocity() const { return loop_->X_hat(1, 0); }
 
-}  // namespace flywheel
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::flywheel

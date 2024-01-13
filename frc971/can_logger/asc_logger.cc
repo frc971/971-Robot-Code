@@ -2,8 +2,7 @@
 
 #include <linux/can.h>
 
-namespace frc971 {
-namespace can_logger {
+namespace frc971::can_logger {
 
 AscLogger::AscLogger(aos::EventLoop *event_loop, const std::string &filename)
     : output_(filename), event_loop_(event_loop) {
@@ -138,5 +137,4 @@ void AscLogger::WriteFrame(std::ostream &file, const CanFrame &frame) {
   file << "\n";
 }
 
-}  // namespace can_logger
-}  // namespace frc971
+}  // namespace frc971::can_logger

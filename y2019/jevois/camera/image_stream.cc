@@ -2,8 +2,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace y2019 {
-namespace camera {
+namespace y2019::camera {
 
 void ImageStreamEvent::ProcessHelper(
     aos::vision::DataRef data, aos::monotonic_clock::time_point timestamp) {
@@ -14,5 +13,4 @@ void ImageStreamEvent::ProcessHelper(
   ProcessImage(data, timestamp);
 }
 
-}  // namespace camera
-}  // namespace y2019
+}  // namespace y2019::camera

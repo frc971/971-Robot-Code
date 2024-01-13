@@ -9,8 +9,7 @@
 DEFINE_bool(ignore_timestamps, false,
             "Don't require timestamps on images.  Used to allow webcams");
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 V4L2ReaderBase::V4L2ReaderBase(aos::EventLoop *event_loop,
                                std::string_view device_name,
@@ -401,5 +400,4 @@ void RockchipV4L2Reader::SetVerticalBlanking(size_t vblank) {
   PCHECK(ImageSensorIoctl(VIDIOC_S_EXT_CTRLS, &controls) == 0);
 }
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision

@@ -3,10 +3,7 @@
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/hood/hood_integral_plant.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace hood {
+namespace y2017::control_loops::superstructure::hood {
 
 namespace chrono = ::std::chrono;
 
@@ -215,7 +212,4 @@ Hood::Iterate(const ::aos::monotonic_clock::time_point monotonic_now,
   return status_builder.Finish();
 }
 
-}  // namespace hood
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::hood

@@ -2,10 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2018::control_loops::superstructure::testing {
 
 // Tests that the debouncer behaves as it should. This tests the following:
 // - The debouncer changes its internal state after the desired number of
@@ -53,7 +50,4 @@ TEST(DebouncerTest, DebouncerLongSequence) {
 
   EXPECT_EQ(true, bouncer.current_state());
 }
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure::testing

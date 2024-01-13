@@ -15,8 +15,7 @@
 // https://halide-lang.org/tutorials/tutorial_lesson_15_generators.html has an
 // introduction to much of the magic in this file.
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 namespace {
 
 // Returns a function implementating a 1-dimensional gaussian blur convolution.
@@ -206,8 +205,7 @@ class GaussianAndSubtractGenerator
   }
 };
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 HALIDE_REGISTER_GENERATOR(frc971::vision::GaussianGenerator, gaussian_generator)
 HALIDE_REGISTER_GENERATOR(frc971::vision::SubtractGenerator, subtract_generator)

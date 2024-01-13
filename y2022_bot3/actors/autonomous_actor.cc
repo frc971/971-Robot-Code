@@ -14,8 +14,7 @@
 
 DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
 
-namespace y2022_bot3 {
-namespace actors {
+namespace y2022_bot3::actors {
 
 using ::aos::monotonic_clock;
 using frc971::CreateProfileParameters;
@@ -183,5 +182,4 @@ void AutonomousActor::SendSuperstructureGoal() {
   }
 }
 
-}  // namespace actors
-}  // namespace y2022_bot3
+}  // namespace y2022_bot3::actors

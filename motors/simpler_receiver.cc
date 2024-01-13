@@ -17,8 +17,7 @@
 #include "motors/seems_reasonable/polydrivetrain_dog_motor_plant.h"
 #include "motors/util.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 namespace {
 
 using ::frc971::constants::ShifterHallEffect;
@@ -449,5 +448,4 @@ void __stack_chk_fail(void) {
   }
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

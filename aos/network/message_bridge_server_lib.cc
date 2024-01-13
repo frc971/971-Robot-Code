@@ -57,8 +57,7 @@ DEFINE_int32(force_wmem_max, -1,
 
 DECLARE_bool(use_sctp_authentication);
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 namespace chrono = std::chrono;
 
 // How often we should poll for the active SCTP authentication key.
@@ -862,5 +861,4 @@ void MessageBridgeServer::RequestAuthKey() {
   sender.CheckOk(sender.Send(builder.Finish()));
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

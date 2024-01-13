@@ -9,9 +9,7 @@
 #include "y2014/constants.h"
 #include "y2014/control_loops/shooter/shooter_motor_plant.h"
 
-namespace y2014 {
-namespace control_loops {
-namespace shooter {
+namespace y2014::control_loops::shooter {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -688,6 +686,4 @@ flatbuffers::Offset<Output> ShooterMotor::Zero(
   return output_builder.Finish();
 }
 
-}  // namespace shooter
-}  // namespace control_loops
-}  // namespace y2014
+}  // namespace y2014::control_loops::shooter

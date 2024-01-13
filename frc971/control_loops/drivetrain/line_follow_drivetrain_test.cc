@@ -14,10 +14,7 @@ DECLARE_bool(plot);
 
 namespace chrono = ::std::chrono;
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace frc971::control_loops::drivetrain::testing {
 
 class LineFollowDrivetrainTest : public ::testing::Test {
  public:
@@ -395,7 +392,4 @@ INSTANTIATE_TEST_SUITE_P(
                                    0.125 * state.x() * state.x();
                           })));
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain::testing

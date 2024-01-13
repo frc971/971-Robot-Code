@@ -17,8 +17,7 @@ DEFINE_bool(charged_up, true, "If true run charged up autonomous mode");
 DEFINE_bool(charged_up_cable, false, "If true run cable side autonomous mode");
 DEFINE_bool(do_balance, true, "If true run the balance.");
 
-namespace y2023 {
-namespace autonomous {
+namespace y2023::autonomous {
 
 using ::frc971::ProfileParametersT;
 
@@ -629,5 +628,4 @@ void AutonomousActor::IntakeCube() {
   return true;
 }
 
-}  // namespace autonomous
-}  // namespace y2023
+}  // namespace y2023::autonomous

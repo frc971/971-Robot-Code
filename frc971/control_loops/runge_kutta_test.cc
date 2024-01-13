@@ -2,9 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace testing {
+namespace frc971::control_loops::testing {
 
 // Tests that integrating dx/dt = e^x works.
 TEST(RungeKuttaTest, Exponential) {
@@ -92,6 +90,4 @@ TEST(RungeKuttaTest, RungeKuttaTimeVaryingSteps) {
   EXPECT_NEAR(y1(0, 0), RungeKuttaTimeVaryingSolution(6.0)(0, 0), 1e-7);
 }
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::testing

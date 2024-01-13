@@ -3,8 +3,7 @@
 #include "Eigen/Dense"
 #include "Eigen/Geometry"
 
-namespace frc971 {
-namespace controls {
+namespace frc971::controls {
 namespace {
 
 double SinXoverX(double x) {
@@ -132,5 +131,4 @@ Eigen::Matrix<double, 4, 3> QuaternionDerivativeDerivitive(
   return result;
 }
 
-}  // namespace controls
-}  // namespace frc971
+}  // namespace frc971::controls

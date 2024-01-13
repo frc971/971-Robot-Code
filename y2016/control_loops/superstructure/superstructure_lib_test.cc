@@ -21,10 +21,7 @@
 
 using ::frc971::control_loops::PositionSensorSimulator;
 
-namespace y2016 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2016::control_loops::superstructure::testing {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -1496,7 +1493,4 @@ TEST_F(SuperstructureTest, TakeOffQuickly) {
   EXPECT_GE(superstructure_plant_.shoulder_angular_velocity(), 0.55);
 }
 
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2016
+}  // namespace y2016::control_loops::superstructure::testing

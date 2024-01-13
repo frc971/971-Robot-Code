@@ -19,8 +19,7 @@
 #include "aos/network/timestamp_generated.h"
 #include "aos/testing/path.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 namespace {
 
 using aos::testing::ArtifactPath;
@@ -2462,5 +2461,4 @@ TEST_F(SimulatedEventLoopDisconnectTest, NoMessagesWhenDisabled) {
   }
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

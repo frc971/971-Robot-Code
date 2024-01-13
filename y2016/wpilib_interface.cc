@@ -58,8 +58,7 @@ using std::make_unique;
 namespace shooter = ::y2016::control_loops::shooter;
 namespace superstructure = ::y2016::control_loops::superstructure;
 
-namespace y2016 {
-namespace wpilib {
+namespace y2016::wpilib {
 namespace {
 constexpr double kMaxBringupPower = 12.0;
 }  // namespace
@@ -698,7 +697,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 };
 
-}  // namespace wpilib
-}  // namespace y2016
+}  // namespace y2016::wpilib
 
 AOS_ROBOT_CLASS(::y2016::wpilib::WPILibRobot);

@@ -8,11 +8,7 @@
 #include "y2023/control_loops/superstructure/roll/integral_hybrid_roll_plant.h"
 #include "y2023/control_loops/superstructure/roll/integral_roll_plant.h"
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
-namespace arm {
-namespace testing {
+namespace y2023::control_loops::superstructure::arm::testing {
 
 using frc971::control_loops::MatrixGaussianQuadrature5;
 using frc971::control_loops::arm::Dynamics;
@@ -226,8 +222,4 @@ TEST(TrajectoryTest, RunTrajectory) {
       final_theta_t.isApprox(trajectory.path().Theta(follower.goal(0))));
 }
 
-}  // namespace testing
-}  // namespace arm
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure::arm::testing

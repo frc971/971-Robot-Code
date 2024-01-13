@@ -16,8 +16,7 @@
 #include "y2016/control_loops/drivetrain/drivetrain_base.h"
 #include "y2016/vision/vision_generated.h"
 
-namespace y2016 {
-namespace actors {
+namespace y2016::actors {
 
 VisionAlignActor::VisionAlignActor(::aos::EventLoop *event_loop)
     : aos::common::actions::ActorBase<vision_align_action::Goal>(
@@ -88,5 +87,4 @@ bool VisionAlignActor::RunAction(
   return true;
 }
 
-}  // namespace actors
-}  // namespace y2016
+}  // namespace y2016::actors

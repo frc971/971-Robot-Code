@@ -17,8 +17,7 @@ DEFINE_int32(min_ice_port, -1,
 DEFINE_int32(max_ice_port, -1,
              "Maximum port number to use for ICE candidates.");
 
-namespace aos {
-namespace web_proxy {
+namespace aos::web_proxy {
 namespace {
 enum {
   TRANSPORT_BUFFER_LENGTH = 1048576,  // 1 MiB
@@ -299,5 +298,4 @@ void RawRTCConnection::StaticDataChannelHandler(
   }
 }
 
-}  // namespace web_proxy
-}  // namespace aos
+}  // namespace aos::web_proxy

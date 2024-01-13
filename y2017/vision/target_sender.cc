@@ -27,8 +27,7 @@
 #include "y2017/vision/vision_config.pb.h"
 #include "y2017/vision/vision_result.pb.h"
 
-namespace y2017 {
-namespace vision {
+namespace y2017::vision {
 
 using aos::events::DataSocket;
 using aos::events::TCPServer;
@@ -215,8 +214,7 @@ bool ReadConfiguration(const std::string &file_name, VisionConfig *cfg) {
   return true;
 }
 
-}  // namespace vision
-}  // namespace y2017
+}  // namespace y2017::vision
 
 int main(int, char **) {
   using namespace y2017::vision;

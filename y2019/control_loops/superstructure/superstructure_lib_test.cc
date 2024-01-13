@@ -17,10 +17,7 @@
 #include "y2019/control_loops/superstructure/superstructure.h"
 #include "y2019/control_loops/superstructure/wrist/wrist_plant.h"
 
-namespace y2019 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2019::control_loops::superstructure::testing {
 
 namespace {
 constexpr double kNoiseScalar = 0.01;
@@ -1010,7 +1007,4 @@ TEST_F(SuperstructureTest, DiasableTest) {
   RunFor(chrono::seconds(2));
 }
 
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::superstructure::testing

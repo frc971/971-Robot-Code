@@ -4,8 +4,7 @@
 
 using ::Eigen::Matrix;
 
-namespace aos {
-namespace util {
+namespace aos::util {
 
 TrapezoidProfile::TrapezoidProfile(::std::chrono::nanoseconds delta_time)
     : maximum_acceleration_(0), maximum_velocity_(0), timestep_(delta_time) {
@@ -118,5 +117,4 @@ void TrapezoidProfile::CalculateTimes(double distance_to_target,
   deceleration_time_ = (goal_velocity - top_velocity) / deceleration_;
 }
 
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util

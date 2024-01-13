@@ -4,8 +4,7 @@
 #include "y2019/constants.h"
 #include "y2019/vision/constants.h"
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 void DumpPose(std::basic_ostream<char> *o, const vision::CameraGeometry &pose) {
   *o << "{x: " << pose.location[0] << ", y: " << pose.location[1]
      << ", theta: " << pose.heading << "}";
@@ -23,8 +22,7 @@ void DumpTypescriptConstants(const char *fname) {
   }
   out_file << "];\n";
 }
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {

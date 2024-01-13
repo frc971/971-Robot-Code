@@ -6,8 +6,7 @@
 
 #include "aos/network/team_number.h"
 
-namespace y2023_bot4 {
-namespace constants {
+namespace y2023_bot4::constants {
 Values MakeValues(uint16_t team) {
   LOG(INFO) << "creating a Constants for team: " << team;
   Values r;
@@ -48,5 +47,4 @@ Values MakeValues(uint16_t team) {
 }
 
 Values MakeValues() { return MakeValues(aos::network::GetTeamNumber()); }
-}  // namespace constants
-}  // namespace y2023_bot4
+}  // namespace y2023_bot4::constants

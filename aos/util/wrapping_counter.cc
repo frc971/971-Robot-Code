@@ -1,7 +1,6 @@
 #include "aos/util/wrapping_counter.h"
 
-namespace aos {
-namespace util {
+namespace aos::util {
 
 WrappingCounter::WrappingCounter(int32_t initial_count)
     : count_(initial_count), last_count_(0) {}
@@ -15,5 +14,4 @@ int32_t WrappingCounter::Update(uint8_t current) {
   return count_;
 }
 
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util

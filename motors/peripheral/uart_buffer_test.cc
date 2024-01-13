@@ -2,9 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace teensy {
-namespace testing {
+namespace frc971::teensy::testing {
 
 // Tests that using PushSpan with single characters works correctly.
 TEST(UartBufferTest, PushSpanSingle) {
@@ -281,6 +279,4 @@ TEST(UartBufferTest, PopSpanWrapMultiple) {
   }
 }
 
-}  // namespace testing
-}  // namespace teensy
-}  // namespace frc971
+}  // namespace frc971::teensy::testing

@@ -7,10 +7,7 @@
 #include "frc971/control_loops/double_jointed_arm/ekf.h"
 #include "frc971/control_loops/double_jointed_arm/test_constants.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
-namespace testing {
+namespace frc971::control_loops::arm::testing {
 
 // Tests that we can pull out values along the path.
 TEST(TrajectoryTest, Theta) {
@@ -210,7 +207,4 @@ TEST(TrajectoryTest, RunTrajectory) {
       final_theta_t.isApprox(trajectory.path().Theta(follower.goal(0))));
 }
 
-}  // namespace testing
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm::testing

@@ -5,8 +5,7 @@
 
 #include "aos/ipc_lib/shm_base.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 namespace {
 std::string TestTmpDirOr(std::string fallback) {
@@ -22,5 +21,4 @@ std::string TestTmpDir() { return TestTmpDirOr("/tmp"); }
 
 void SetTestShmBase() { SetShmBase(TestTmpDirOr(FLAGS_shm_base)); }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

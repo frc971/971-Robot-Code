@@ -13,8 +13,7 @@
 
 DEFINE_bool(spline_auto, false, "Run simple test S-spline auto mode.");
 
-namespace y2024 {
-namespace autonomous {
+namespace y2024::autonomous {
 
 using ::frc971::ProfileParametersT;
 
@@ -192,5 +191,4 @@ void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
     AOS_LOG(ERROR, "Failed to reset localizer.\n");
   }
 }
-}  // namespace autonomous
-}  // namespace y2024
+}  // namespace y2024::autonomous

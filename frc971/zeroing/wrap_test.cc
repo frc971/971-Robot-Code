@@ -4,9 +4,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace zeroing {
-namespace testing {
+namespace frc971::zeroing::testing {
 
 // Tests some various positive and negative values for wrap.
 TEST(WrapTest, TestWrap) {
@@ -52,6 +50,4 @@ TEST(WrapTest, TestFloatWrap) {
   EXPECT_NEAR(1.0f, Wrap(5.0f, -9.0f, 10.0f), 1e-6f);
 }
 
-}  // namespace testing
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing::testing

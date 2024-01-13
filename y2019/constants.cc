@@ -20,8 +20,7 @@
 #include "y2019/control_loops/superstructure/wrist/integral_wrist_plant.h"
 #include "y2019/vision/constants.h"
 
-namespace y2019 {
-namespace constants {
+namespace y2019::constants {
 
 using ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator;
 
@@ -428,5 +427,4 @@ Field::Field() {
   }
 }
 
-}  // namespace constants
-}  // namespace y2019
+}  // namespace y2019::constants

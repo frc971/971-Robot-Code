@@ -6,8 +6,7 @@
 
 #include "absl/strings/str_cat.h"
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 
 std::string ShmFolder(std::string_view shm_base, const Channel *channel) {
   CHECK(channel->has_name());
@@ -140,5 +139,4 @@ MemoryMappedQueue::~MemoryMappedQueue() {
   PCHECK(munmap(const_cast<void *>(const_data_), size_) == 0);
 }
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib

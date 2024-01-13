@@ -3,9 +3,7 @@
 #include "Eigen/Dense"
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace util {
-namespace testing {
+namespace aos::util::testing {
 
 class TrapezoidProfileTest : public ::testing::Test {
  public:
@@ -120,6 +118,4 @@ TEST_F(TrapezoidProfileTest, ExactlyReachesGoal) {
   EXPECT_EQ(position()(0), 1.0);
 }
 
-}  // namespace testing
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util::testing

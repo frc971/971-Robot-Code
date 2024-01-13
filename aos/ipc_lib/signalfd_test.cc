@@ -5,9 +5,7 @@
 
 #include "aos/testing/test_logging.h"
 
-namespace aos {
-namespace ipc_lib {
-namespace testing {
+namespace aos::ipc_lib::testing {
 
 // Tests in this file use separate threads to isolate all manipulation of signal
 // masks between test cases.
@@ -72,6 +70,4 @@ TEST(SignalFdDeathTest, ExternalUnblockSignal) {
                "Some other code unblocked one or more of our signals");
 }
 
-}  // namespace testing
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib::testing

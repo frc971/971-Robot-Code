@@ -12,8 +12,7 @@
 extern "C" float analog_ratio(uint16_t reading);
 extern "C" float absolute_wheel(uint16_t reading);
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 
 Motor::Motor(BigFTM *pwm_ftm, LittleFTM *encoder_ftm, MotorControls *controls,
              const ::std::array<volatile uint32_t *, 3> &output_registers)
@@ -445,5 +444,4 @@ uint32_t Motor::CalculateOffTime(uint32_t width) const {
   return (counts_per_cycle() + width) / 2;
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

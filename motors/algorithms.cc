@@ -1,7 +1,6 @@
 #include "motors/algorithms.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 
 BalancedReadings BalanceReadings(const ReadingsToBalance to_balance) {
   // TODO(Brian): Get rid of the floating point divides.
@@ -46,5 +45,4 @@ BalancedReadings BalanceReadings(const ReadingsToBalance to_balance) {
   return result;
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

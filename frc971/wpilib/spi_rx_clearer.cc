@@ -8,8 +8,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 SpiRxClearer::SpiRxClearer() {
   const int fd = AOS_PCHECK(open("/dev/mem", O_RDWR));
@@ -40,5 +39,4 @@ void SpiRxClearer::ClearRxFifo() {
   AOS_LOG(FATAL, "Failed to clear the RX FIFO\n");
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

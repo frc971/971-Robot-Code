@@ -4,9 +4,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace util {
-namespace testing {
+namespace aos::util::testing {
 
 TEST(WrappingCounterTest, Basic) {
   WrappingCounter test_counter;
@@ -53,6 +51,4 @@ TEST(WrappingCounterTest, UnreasonableWrapping) {
   test_wrapping(0, 255);
 }
 
-}  // namespace testing
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util::testing

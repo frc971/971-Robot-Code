@@ -9,10 +9,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_test_lib.h"
 #include "frc971/control_loops/drivetrain/trajectory.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace frc971::control_loops::drivetrain::testing {
 
 typedef HybridEkf<>::StateIdx StateIdx;
 typedef HybridEkf<>::InputIdx InputIdx;
@@ -503,7 +500,4 @@ TEST_F(HybridEkfDeathTest, DieOnNoH) {
       "make_h");
 }
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain::testing

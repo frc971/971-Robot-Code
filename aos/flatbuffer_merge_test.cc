@@ -9,8 +9,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/json_to_flatbuffer_generated.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 std::string_view FromFbb(const flatbuffers::FlatBufferBuilder &fbb) {
   return std::string_view(
@@ -589,5 +588,4 @@ TEST_F(FlatbufferMerge, CompareDifferent) {
 // TODO(austin): unions
 // TODO(austin): struct
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

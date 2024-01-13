@@ -3,9 +3,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace motors {
-namespace testing {
+namespace frc971::motors::testing {
 
 class SinCosIntTest : public ::testing::Test {
  public:
@@ -95,6 +93,4 @@ TEST_F(SinCosFloatTest, Endpoints) {
   CheckSinCos(0.2);
 }
 
-}  // namespace testing
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors::testing

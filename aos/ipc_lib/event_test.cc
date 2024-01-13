@@ -8,8 +8,7 @@
 #include "aos/testing/test_logging.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
@@ -89,5 +88,4 @@ TEST_F(EventTest, WaitTimeout) {
   EXPECT_GE(finish_time - start_time, kWaitTime);
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

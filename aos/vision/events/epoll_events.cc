@@ -10,8 +10,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 void EpollEvent::DirectEvent(uint32_t events) {
   if ((events & ~(EPOLLIN | EPOLLPRI | EPOLLERR)) != 0) {
@@ -72,5 +71,4 @@ int EpollLoop::CalculateTimeout() {
   return r;
 }
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events

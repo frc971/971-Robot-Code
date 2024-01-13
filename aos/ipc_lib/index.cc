@@ -3,8 +3,7 @@
 #include <sstream>
 #include <string>
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 
 ::std::string QueueIndex::DebugString() const {
   if (valid()) {
@@ -29,5 +28,4 @@ namespace ipc_lib {
   }
 }
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib

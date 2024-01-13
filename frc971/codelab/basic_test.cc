@@ -18,9 +18,7 @@
 #include "frc971/control_loops/control_loop_test.h"
 #include "frc971/control_loops/team_number_test_environment.h"
 
-namespace frc971 {
-namespace codelab {
-namespace testing {
+namespace frc971::codelab::testing {
 
 namespace chrono = ::std::chrono;
 using aos::monotonic_clock;
@@ -238,6 +236,4 @@ TEST_F(BasicControlLoopTest, Disabled) {
   basic_simulation_.VerifyResults(0.0, false);
 }
 
-}  // namespace testing
-}  // namespace codelab
-}  // namespace frc971
+}  // namespace frc971::codelab::testing

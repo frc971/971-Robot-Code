@@ -11,8 +11,7 @@
 #include "aos/die.h"
 #include "frc971/control_loops/control_loops_generated.h"
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 class PositionSensorSimTest : public ::testing::Test {
  protected:
@@ -460,5 +459,4 @@ TEST_F(PositionSensorSimTest, AbsoluteAndAbsoluteEncoderTest) {
   EXPECT_NEAR(position->single_turn_absolute_encoder(), 0.1, 1e-10);
 }
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops

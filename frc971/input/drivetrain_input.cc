@@ -18,8 +18,7 @@ using ::frc971::input::driver_station::POVLocation;
 
 namespace drivetrain = frc971::control_loops::drivetrain;
 
-namespace frc971 {
-namespace input {
+namespace frc971::input {
 
 const ButtonLocation kShiftHigh(2, 3), kShiftHigh2(2, 2), kShiftLow(2, 1);
 
@@ -371,5 +370,4 @@ std::unique_ptr<XboxDrivetrainInputReader> XboxDrivetrainInputReader::Make(
   return drivetrain_input_reader;
 }
 
-}  // namespace input
-}  // namespace frc971
+}  // namespace frc971::input

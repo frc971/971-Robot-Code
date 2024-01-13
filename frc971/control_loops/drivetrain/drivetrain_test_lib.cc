@@ -20,10 +20,7 @@
 
 DEFINE_bool(plot, false, "If true, plot");
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace frc971::control_loops::drivetrain::testing {
 
 namespace {
 // TODO(Comran): Make one that doesn't depend on the actual values for a
@@ -383,7 +380,4 @@ void DrivetrainSimulation::MaybePlot() {
 #endif
 }
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain::testing

@@ -22,8 +22,7 @@ using frc971::teensy::InterruptBufferedUart;
 
 // All indices here refer to the ports as numbered on the PCB.
 
-namespace frc971 {
-namespace jevois {
+namespace frc971::jevois {
 namespace {
 
 // Holds all of our hardware UARTs. There is exactly one global instance for
@@ -1022,5 +1021,4 @@ int main(void) { return Main(); }
 }  // extern "C"
 
 }  // namespace
-}  // namespace jevois
-}  // namespace frc971
+}  // namespace frc971::jevois

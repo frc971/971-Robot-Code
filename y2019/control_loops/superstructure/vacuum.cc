@@ -7,9 +7,7 @@
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_output_generated.h"
 
-namespace y2019 {
-namespace control_loops {
-namespace superstructure {
+namespace y2019::control_loops::superstructure {
 
 namespace chrono = ::std::chrono;
 
@@ -86,6 +84,4 @@ void Vacuum::Iterate(const SuctionGoal *unsafe_goal, float suction_pressure,
       monotonic_now < last_disable_has_piece_time_ + chrono::milliseconds(250);
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::superstructure

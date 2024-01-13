@@ -12,8 +12,7 @@
 #include "aos/logging/context.h"
 #include "aos/logging/implementations.h"
 
-namespace aos {
-namespace logging {
+namespace aos::logging {
 namespace internal {
 
 size_t ExecuteFormat(char *output, size_t output_size, const char *format,
@@ -62,8 +61,7 @@ void VLog(log_level level, const char *format, va_list ap) {
   }
 }
 
-}  // namespace logging
-}  // namespace aos
+}  // namespace aos::logging
 
 void log_do(log_level level, const char *format, ...) {
   va_list ap;

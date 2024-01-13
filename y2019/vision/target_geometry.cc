@@ -11,8 +11,7 @@ using ceres::Problem;
 using ceres::Solve;
 using ceres::Solver;
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 static constexpr double kInchesToMeters = 0.0254;
 
@@ -349,5 +348,4 @@ IntermediateResult TargetFinder::ProcessTargetToResult(const Target &target,
   return IR;
 }
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision

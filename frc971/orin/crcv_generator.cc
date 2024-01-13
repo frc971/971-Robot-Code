@@ -15,8 +15,8 @@
 // ahead-of-time optimized functions as directed by command-line arguments.
 // https://halide-lang.org/tutorials/tutorial_lesson_15_generators.html has an
 // introduction to much of the magic in this file.
-namespace frc971 {
-namespace orin {
+
+namespace frc971::orin {
 namespace {
 
 template <typename T>
@@ -142,8 +142,7 @@ class YCbCr422 : public Halide::Generator<YCbCr422> {
   }
 };
 
-}  // namespace orin
-}  // namespace frc971
+}  // namespace frc971::orin
 
 HALIDE_REGISTER_GENERATOR(frc971::orin::YCbCr, ycbcr)
 HALIDE_REGISTER_GENERATOR(frc971::orin::YCbCr422, ycbcr422)

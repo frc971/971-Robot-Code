@@ -5,9 +5,7 @@
 #include "frc971/control_loops/control_loop.h"
 #include "y2023/vision/game_pieces_generated.h"
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
+namespace y2023::control_loops::superstructure {
 
 using ::aos::monotonic_clock;
 
@@ -147,6 +145,4 @@ void EndEffector::RunIteration(
 
 void EndEffector::Reset() { state_ = EndEffectorState::IDLE; }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure

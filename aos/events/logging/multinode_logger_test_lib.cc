@@ -11,9 +11,7 @@
 
 DECLARE_bool(force_timestamp_loading);
 
-namespace aos {
-namespace logger {
-namespace testing {
+namespace aos::logger::testing {
 
 using aos::testing::ArtifactPath;
 
@@ -626,6 +624,4 @@ bool AllRebootPartsMatchOutOfOrderDuration(
   return result;
 }
 
-}  // namespace testing
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger::testing

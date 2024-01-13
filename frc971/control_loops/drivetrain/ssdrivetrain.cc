@@ -9,9 +9,7 @@
 #include "frc971/control_loops/polytope.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 DrivetrainMotorsSS::DrivetrainMotorsSS(
     const DrivetrainConfig<double> &dt_config, StateFeedbackLoop<7, 2, 4> *kf,
@@ -300,6 +298,4 @@ void DrivetrainMotorsSS::PopulateStatus(
       profiled_gyro_left_right(kRightVelocity));
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain

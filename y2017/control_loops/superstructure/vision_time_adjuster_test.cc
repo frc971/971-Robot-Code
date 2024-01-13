@@ -10,9 +10,7 @@
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2017/vision/vision_generated.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
+namespace y2017::control_loops::superstructure {
 
 class VisionTimeAdjusterTest : public ::testing::Test {
  public:
@@ -223,6 +221,4 @@ TEST_F(VisionTimeAdjusterTest, DrivetrainAndTurretTogether) {
   }
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure

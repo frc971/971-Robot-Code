@@ -3,9 +3,7 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace ipc_lib {
-namespace testing {
+namespace aos::ipc_lib::testing {
 
 class QueueIndexTest : public ::testing::Test {
  protected:
@@ -204,6 +202,4 @@ TEST(IndexTest, TestMaxMessages) {
 #endif
 }
 
-}  // namespace testing
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib::testing

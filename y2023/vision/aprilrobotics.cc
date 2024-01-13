@@ -20,8 +20,7 @@ DEFINE_double(
 DEFINE_uint64(pose_estimation_iterations, 50,
               "Number of iterations for apriltag pose estimation.");
 
-namespace y2023 {
-namespace vision {
+namespace y2023::vision {
 
 namespace chrono = std::chrono;
 
@@ -374,5 +373,4 @@ AprilRoboticsDetector::DetectionResult AprilRoboticsDetector::DetectTags(
   return {.detections = results, .rejections = rejections_};
 }
 
-}  // namespace vision
-}  // namespace y2023
+}  // namespace y2023::vision

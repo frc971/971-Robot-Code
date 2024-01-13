@@ -7,8 +7,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/testing/path.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 using aos::testing::ArtifactPath;
 
@@ -168,5 +167,4 @@ TEST_F(MultiNodePingPongTest, AlwaysReplies) {
   EXPECT_EQ(pi2_ping_count, 1001);
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

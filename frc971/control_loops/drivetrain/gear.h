@@ -1,10 +1,7 @@
 #ifndef FRC971_CONTROL_LOOPS_GEAR_H_
 #define FRC971_CONTROL_LOOPS_GEAR_H_
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
-
+namespace frc971::control_loops::drivetrain {
 // The state of the shift.
 enum class Gear { HIGH, LOW, SHIFTING_UP, SHIFTING_DOWN };
 
@@ -18,8 +15,6 @@ inline bool IsInGear(Gear gear) {
   return gear == Gear::LOW || gear == Gear::HIGH;
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_GEAR_H_

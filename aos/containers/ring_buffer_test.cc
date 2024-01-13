@@ -3,8 +3,7 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // A class which is implicitly convertible to and from int, and tracks object
 // lifetimes.
@@ -206,5 +205,4 @@ TEST_F(RingBufferTest, CIterator) {
   EXPECT_EQ(i, buffer_.size());
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

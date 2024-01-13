@@ -5,8 +5,7 @@
 
 #include "aos/testing/test_logging.h"
 
-namespace frc971 {
-namespace jevois {
+namespace frc971::jevois {
 
 // Tests the size conversions for some known, simple values.
 TEST(CobsMaxEncodedSizeTest, Simple) {
@@ -289,5 +288,4 @@ TEST(CobsPacketizerTest, OverlappingTwoEndsAndPartial) {
             packetizer.received_packet());
 }
 
-}  // namespace jevois
-}  // namespace frc971
+}  // namespace frc971::jevois

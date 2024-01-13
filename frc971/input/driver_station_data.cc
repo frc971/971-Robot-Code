@@ -2,9 +2,7 @@
 
 #include "glog/logging.h"
 
-namespace frc971 {
-namespace input {
-namespace driver_station {
+namespace frc971::input::driver_station {
 
 Data::Data() : current_values_(), old_values_() {}
 
@@ -119,6 +117,4 @@ float Data::GetAxis(JoystickAxis axis) const {
   return current_values_.joysticks[axis.joystick() - 1].axis[axis.number() - 1];
 }
 
-}  // namespace driver_station
-}  // namespace input
-}  // namespace frc971
+}  // namespace frc971::input::driver_station

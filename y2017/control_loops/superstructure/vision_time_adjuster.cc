@@ -5,9 +5,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2017/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
+namespace y2017::control_loops::superstructure {
 
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
@@ -162,6 +160,4 @@ void VisionTimeAdjuster::Tick(monotonic_clock::time_point monotonic_now,
   }
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure

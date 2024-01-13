@@ -11,8 +11,7 @@
 #include "motors/usb/usb_serial.h"
 #include "motors/util.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 namespace {
 
 struct MediumAdcReadings {
@@ -342,5 +341,4 @@ extern "C" int main(void) {
   return 0;
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

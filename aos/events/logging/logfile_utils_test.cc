@@ -22,9 +22,7 @@
 #include "aos/testing/tmpdir.h"
 #include "aos/util/file.h"
 
-namespace aos {
-namespace logger {
-namespace testing {
+namespace aos::logger::testing {
 namespace chrono = std::chrono;
 using aos::message_bridge::RemoteMessage;
 using aos::testing::ArtifactPath;
@@ -3386,6 +3384,4 @@ TEST_F(InlinePackMessage, RemoteEquivilent) {
   }
 }
 
-}  // namespace testing
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger::testing

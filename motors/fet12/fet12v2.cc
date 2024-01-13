@@ -14,8 +14,7 @@
 #include "motors/print/print.h"
 #include "motors/util.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 namespace {
 
 constexpr double Kv = 22000.0 * 2.0 * M_PI / 60.0 / 30.0 * 3.6;
@@ -718,5 +717,4 @@ extern "C" int main(void) {
   return 0;
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

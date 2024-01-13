@@ -8,8 +8,7 @@
 #include "aos/logging/logging.h"
 #include "frc971/zeroing/wrap.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 AbsoluteAndAbsoluteEncoderZeroingEstimator::
     AbsoluteAndAbsoluteEncoderZeroingEstimator(
@@ -234,5 +233,4 @@ AbsoluteAndAbsoluteEncoderZeroingEstimator::GetEstimatorState(
   return builder.Finish();
 }
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing

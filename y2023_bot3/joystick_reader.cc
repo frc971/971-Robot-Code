@@ -32,9 +32,7 @@ using frc971::input::driver_station::JoystickAxis;
 using frc971::input::driver_station::POVLocation;
 using Side = frc971::control_loops::drivetrain::RobotSide;
 
-namespace y2023_bot3 {
-namespace input {
-namespace joysticks {
+namespace y2023_bot3::input::joysticks {
 
 namespace superstructure = y2023_bot3::control_loops::superstructure;
 
@@ -101,9 +99,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   ::aos::Fetcher<superstructure::Status> superstructure_status_fetcher_;
 };
 
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2023_bot3
+}  // namespace y2023_bot3::input::joysticks
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

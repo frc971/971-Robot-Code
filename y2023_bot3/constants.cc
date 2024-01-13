@@ -13,8 +13,7 @@
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
 
-namespace y2023_bot3 {
-namespace constants {
+namespace y2023_bot3::constants {
 
 Values MakeValues(uint16_t team) {
   LOG(INFO) << "creating a Constants for team: " << team;
@@ -38,5 +37,4 @@ Values MakeValues(uint16_t team) {
 
 Values MakeValues() { return MakeValues(aos::network::GetTeamNumber()); }
 
-}  // namespace constants
-}  // namespace y2023_bot3
+}  // namespace y2023_bot3::constants

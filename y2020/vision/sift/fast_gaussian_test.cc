@@ -5,9 +5,7 @@
 
 #include "y2020/vision/sift/fast_gaussian_all.h"
 
-namespace frc971 {
-namespace vision {
-namespace testing {
+namespace frc971::vision::testing {
 
 class FastGaussianTest : public ::testing::Test {
  public:
@@ -70,6 +68,4 @@ TEST_F(FastGaussianTest, FastGaussian) {
   ExpectEqual(fast, fast_direct, 0);
 }
 
-}  // namespace testing
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision::testing

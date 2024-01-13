@@ -7,8 +7,7 @@
 #include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/image_stream.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 class AveugleImageSource : public ImageSource {
  public:
@@ -73,5 +72,4 @@ class AveugleImageSource : public ImageSource {
 
 REGISTER_IMAGE_SOURCE("jevois", AveugleImageSource);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

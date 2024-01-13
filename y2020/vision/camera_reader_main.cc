@@ -6,8 +6,8 @@
 // bazel run //y2020/vision:camera_reader -- --config y2020/aos_config.json
 //   --override_hostname pi-7971-1  --ignore_timestamps true
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
-namespace frc971 {
-namespace vision {
+
+namespace frc971::vision {
 namespace {
 
 void CameraReaderMain() {
@@ -43,8 +43,7 @@ void CameraReaderMain() {
 }
 
 }  // namespace
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

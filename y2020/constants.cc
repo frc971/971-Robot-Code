@@ -20,8 +20,7 @@
 #include "y2020/control_loops/superstructure/intake/integral_intake_plant.h"
 #include "y2020/control_loops/superstructure/turret/integral_turret_plant.h"
 
-namespace y2020 {
-namespace constants {
+namespace y2020::constants {
 
 const int Values::kZeroingSampleSize;
 
@@ -200,5 +199,4 @@ const Values &GetValues() {
   return *values;
 }
 
-}  // namespace constants
-}  // namespace y2020
+}  // namespace y2020::constants

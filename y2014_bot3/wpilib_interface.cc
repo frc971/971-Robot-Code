@@ -57,8 +57,7 @@ using ::frc971::wpilib::JoystickSender;
 using ::frc971::wpilib::LoopOutputHandler;
 using std::make_unique;
 
-namespace y2014_bot3 {
-namespace wpilib {
+namespace y2014_bot3::wpilib {
 
 double drivetrain_translate(int32_t in) {
   return static_cast<double>(in) / (256.0 /*cpr*/ * 4.0 /*4x*/) *
@@ -357,7 +356,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 };
 
-}  // namespace wpilib
-}  // namespace y2014_bot3
+}  // namespace y2014_bot3::wpilib
 
 AOS_ROBOT_CLASS(::y2014_bot3::wpilib::WPILibRobot);

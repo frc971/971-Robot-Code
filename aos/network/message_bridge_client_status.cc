@@ -7,8 +7,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/network/message_bridge_client_generated.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 namespace {
 namespace chrono = std::chrono;
 
@@ -240,5 +239,4 @@ void MessageBridgeClientStatus::EnableStatistics() {
                               kStatisticsPeriod);
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

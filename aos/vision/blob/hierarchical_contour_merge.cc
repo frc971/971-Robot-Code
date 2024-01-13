@@ -5,8 +5,7 @@
 
 #include "aos/vision/blob/disjoint_set.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 namespace {
 
@@ -248,5 +247,4 @@ void HierarchicalMerge(ContourNode *stval, std::vector<FittedLine> *fit_lines,
   }
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

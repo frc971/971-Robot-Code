@@ -3,8 +3,7 @@
 #include <algorithm>
 #include <limits>
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 RangeImage Transpose(const RangeImage &img) {
   enum EventT {
@@ -87,5 +86,4 @@ RangeImage Transpose(const RangeImage &img) {
   return RangeImage(min_y, std::move(rows));
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

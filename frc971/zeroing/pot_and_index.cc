@@ -4,8 +4,7 @@
 
 #include "glog/logging.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 PotAndIndexPulseZeroingEstimator::PotAndIndexPulseZeroingEstimator(
     const constants::PotAndIndexPulseZeroingConstants &constants)
@@ -131,5 +130,4 @@ PotAndIndexPulseZeroingEstimator::GetEstimatorState(
   return builder.Finish();
 }
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing

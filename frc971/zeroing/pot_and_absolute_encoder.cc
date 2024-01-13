@@ -8,8 +8,7 @@
 #include "aos/containers/error_list.h"
 #include "frc971/zeroing/wrap.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 PotAndAbsoluteEncoderZeroingEstimator::PotAndAbsoluteEncoderZeroingEstimator(
     const constants::PotAndAbsoluteEncoderZeroingConstants &constants)
@@ -200,5 +199,4 @@ PotAndAbsoluteEncoderZeroingEstimator::GetEstimatorState(
   return builder.Finish();
 }
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing

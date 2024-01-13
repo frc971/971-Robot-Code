@@ -1,8 +1,7 @@
 #ifndef FRC971_SHIFTER_HALL_EFFECT_H_
 #define FRC971_SHIFTER_HALL_EFFECT_H_
 
-namespace frc971 {
-namespace constants {
+namespace frc971::constants {
 
 // Contains the constants for mapping the analog voltages that the shifter
 // sensors return to the shifter position.  The code which uses this is trying
@@ -28,7 +27,6 @@ struct DualHallShifterHallEffect {
   double high_gear_middle;
 };
 
-}  // namespace constants
-}  // namespace frc971
+}  // namespace frc971::constants
 
 #endif

@@ -5,11 +5,7 @@
 
 #include "y2022/control_loops/superstructure/catapult/catapult_plant.h"
 
-namespace y2022 {
-namespace control_loops {
-namespace superstructure {
-namespace catapult {
-namespace testing {
+namespace y2022::control_loops::superstructure::catapult::testing {
 
 // Tests that computing P and q with 2 different horizons comes out the same.
 TEST(MPCTest, HorizonTest) {
@@ -56,8 +52,4 @@ TEST(MPCTest, NearGoal) {
   EXPECT_NEAR(X_final.y(), X.y(), 1e-2);
 }
 
-}  // namespace testing
-}  // namespace catapult
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2022
+}  // namespace y2022::control_loops::superstructure::catapult::testing

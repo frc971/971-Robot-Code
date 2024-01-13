@@ -2,8 +2,7 @@
 
 #include "glog/logging.h"
 
-namespace aos {
-namespace time {
+namespace aos::time {
 
 PhasedLoop::PhasedLoop(const monotonic_clock::duration interval,
                        const monotonic_clock::time_point monotonic_now,
@@ -79,5 +78,4 @@ int PhasedLoop::Iterate(const monotonic_clock::time_point now) {
   return result;
 }
 
-}  // namespace time
-}  // namespace aos
+}  // namespace aos::time

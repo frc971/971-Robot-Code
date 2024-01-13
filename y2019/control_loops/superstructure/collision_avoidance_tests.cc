@@ -6,10 +6,7 @@
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2019 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2019::control_loops::superstructure::testing {
 
 using aos::FlatbufferDetachedBuffer;
 using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
@@ -484,7 +481,4 @@ TEST_P(CollisionAvoidanceTests, FixWristElevatorCollision) {
 INSTANTIATE_TEST_SUITE_P(CollisionAvoidancePieceTest, CollisionAvoidanceTests,
                          ::testing::Bool());
 
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::superstructure::testing

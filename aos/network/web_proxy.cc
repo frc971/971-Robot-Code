@@ -34,8 +34,7 @@ DEFINE_double(max_buffer_pause_sec, 0.1,
               "If we have not received any ack's in this amount of time, we "
               "start to continue sending messages.");
 
-namespace aos {
-namespace web_proxy {
+namespace aos::web_proxy {
 WebsocketHandler::WebsocketHandler(::seasocks::Server *server,
                                    aos::EventLoop *event_loop,
                                    StoreHistory store_history,
@@ -699,5 +698,4 @@ void ApplicationConnection::HandleSignallingData(
   }
 }
 
-}  // namespace web_proxy
-}  // namespace aos
+}  // namespace aos::web_proxy

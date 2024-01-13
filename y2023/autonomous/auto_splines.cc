@@ -3,8 +3,7 @@
 #include "aos/flatbuffer_merge.h"
 #include "frc971/control_loops/control_loops_generated.h"
 
-namespace y2023 {
-namespace autonomous {
+namespace y2023::autonomous {
 
 namespace {
 flatbuffers::Offset<frc971::MultiSpline> FixSpline(
@@ -202,5 +201,4 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
   return FixSpline(builder, multispline_builder.Finish(), alliance);
 }
 
-}  // namespace autonomous
-}  // namespace y2023
+}  // namespace y2023::autonomous

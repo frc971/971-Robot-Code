@@ -2,9 +2,7 @@
 
 #include <functional>
 
-namespace y2019 {
-namespace control_loops {
-namespace drivetrain {
+namespace y2019::control_loops::drivetrain {
 constexpr size_t EventLoopLocalizer::kMaxTargetsPerFrame;
 
 ::std::array<EventLoopLocalizer::Camera, constants::Values::kNumCameras>
@@ -110,6 +108,4 @@ void EventLoopLocalizer::HandleFrame(const CameraFrame *frame) {
   localizer_.UpdateTargets(cameras_[camera], views, t);
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::drivetrain

@@ -2,8 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 TEST(UDPTest, SendRecv) {
   RXUdpSocket rx(1109);
@@ -19,5 +18,4 @@ TEST(UDPTest, SendRecv) {
   EXPECT_EQ(txdata[3], rxdata[3]);
 }
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events

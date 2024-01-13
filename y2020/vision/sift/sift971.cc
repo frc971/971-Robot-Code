@@ -118,8 +118,7 @@
 
 using namespace cv;
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 namespace {
 
 #define USE_AVX2 0
@@ -1288,5 +1287,4 @@ Mat SIFT971_Impl::createInitialImage(const Mat &img,
   }
 }
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision

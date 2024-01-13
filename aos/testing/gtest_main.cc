@@ -14,16 +14,13 @@ DEFINE_bool(print_logs, false,
 DEFINE_string(log_file, "",
               "Print all log messages to FILE instead of standard output.");
 
-namespace aos {
-
-namespace testing {
+namespace aos::testing {
 
 // Actually declared/defined in //aos/testing:test_logging.
 void SetLogFileName(const char *filename) __attribute__((weak));
 void ForcePrintLogsDuringTests() __attribute__((weak));
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing
 
 GTEST_API_ int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

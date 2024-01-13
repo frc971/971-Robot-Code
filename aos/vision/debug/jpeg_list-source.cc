@@ -6,8 +6,7 @@
 #include "aos/vision/debug/debug_framework.h"
 #include "aos/vision/image/image_dataset.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 class JpegListImageSource : public ImageSource {
  public:
@@ -65,5 +64,4 @@ class JpegListImageSource : public ImageSource {
 
 REGISTER_IMAGE_SOURCE("jpeg_list", JpegListImageSource);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

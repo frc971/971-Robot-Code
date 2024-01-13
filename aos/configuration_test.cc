@@ -13,9 +13,7 @@
 #include "aos/testing/test_logging.h"
 #include "aos/util/file.h"
 
-namespace aos {
-namespace configuration {
-namespace testing {
+namespace aos::configuration::testing {
 
 using aos::testing::ArtifactPath;
 namespace chrono = std::chrono;
@@ -1168,6 +1166,4 @@ TEST_F(ConfigurationTest, AddChannelToConfigMultiNode) {
   ASSERT_EQ(971, channel->frequency());
 }
 
-}  // namespace testing
-}  // namespace configuration
-}  // namespace aos
+}  // namespace aos::configuration::testing

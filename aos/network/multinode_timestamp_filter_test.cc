@@ -10,9 +10,7 @@
 #include "aos/network/testing_time_converter.h"
 #include "aos/network/timestamp_filter.h"
 
-namespace aos {
-namespace message_bridge {
-namespace testing {
+namespace aos::message_bridge::testing {
 
 namespace chrono = std::chrono;
 using aos::monotonic_clock;
@@ -538,6 +536,4 @@ TEST(TimestampProblemTest, SolveNewton) {
       << derivatives.df_slope_limited;
 }
 
-}  // namespace testing
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge::testing

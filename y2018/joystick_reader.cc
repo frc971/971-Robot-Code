@@ -38,9 +38,7 @@ using ::frc971::input::driver_station::POVLocation;
 using ::y2018::control_loops::superstructure::arm::BackPoints;
 using ::y2018::control_loops::superstructure::arm::FrontPoints;
 
-namespace y2018 {
-namespace input {
-namespace joysticks {
+namespace y2018::input::joysticks {
 
 namespace arm = ::y2018::control_loops::superstructure::arm;
 
@@ -386,9 +384,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   ::std::unique_ptr<ProtoTXUdpSocket<VisionControl>> video_tx_;
 };
 
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2018
+}  // namespace y2018::input::joysticks
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

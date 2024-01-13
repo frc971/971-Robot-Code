@@ -38,8 +38,7 @@ DEFINE_uint32(disable_delay, 100, "Time after an issue to disable tracing at.");
 
 DECLARE_bool(enable_ftrace);
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 namespace chrono = std::chrono;
 using aos::monotonic_clock;
 
@@ -600,5 +599,4 @@ std::ostream &operator<<(std::ostream &os, TargetType target_type) {
   return os;
 }
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision

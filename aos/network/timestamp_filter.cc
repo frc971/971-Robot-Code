@@ -11,8 +11,7 @@
 #include "aos/configuration.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 namespace {
 namespace chrono = std::chrono;
 using logger::BootDuration;
@@ -1786,5 +1785,4 @@ void NoncausalOffsetEstimator::ReverseSample(
   }
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

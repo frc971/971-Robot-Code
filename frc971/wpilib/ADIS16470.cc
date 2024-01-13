@@ -8,8 +8,7 @@
 #include "aos/time/time.h"
 #include "hal/HAL.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 namespace {
 namespace chrono = std::chrono;
 namespace registers {
@@ -516,5 +515,4 @@ void ADIS16470::WriteRegister(uint8_t register_address, uint16_t value) {
   spi_->Write(buffer2, sizeof(buffer2));
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

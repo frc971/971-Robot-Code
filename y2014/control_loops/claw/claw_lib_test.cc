@@ -15,10 +15,7 @@
 #include "y2014/control_loops/claw/claw_position_generated.h"
 #include "y2014/control_loops/claw/claw_status_generated.h"
 
-namespace y2014 {
-namespace control_loops {
-namespace claw {
-namespace testing {
+namespace y2014::control_loops::claw::testing {
 
 using ::aos::monotonic_clock;
 using ::frc971::HallEffectStructT;
@@ -659,7 +656,4 @@ TEST_F(WindupClawTest, NoWindupNegativeFineTune) {
   VerifyNearGoal();
 }
 
-}  // namespace testing
-}  // namespace claw
-}  // namespace control_loops
-}  // namespace y2014
+}  // namespace y2014::control_loops::claw::testing

@@ -6,8 +6,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Tests logging from multiple threads.
 // tsan used to complain about this.
@@ -25,5 +24,4 @@ TEST(QueueTestutilsTest, MultithreadedLog) {
   thread.join();
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

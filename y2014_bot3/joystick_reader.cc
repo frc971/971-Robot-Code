@@ -22,9 +22,7 @@ using ::frc971::input::driver_station::ControlBit;
 using ::frc971::input::driver_station::JoystickAxis;
 using ::frc971::input::driver_station::POVLocation;
 
-namespace y2014_bot3 {
-namespace input {
-namespace joysticks {
+namespace y2014_bot3::input::joysticks {
 
 // Joystick & button addresses.
 const JoystickAxis kSteeringWheel(1, 1), kDriveThrottle(2, 2);
@@ -133,9 +131,7 @@ class Reader : public ::frc971::input::JoystickInput {
   ::frc971::autonomous::BaseAutonomousActor::Factory autonomous_action_factory_;
 };
 
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2014_bot3
+}  // namespace y2014_bot3::input::joysticks
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

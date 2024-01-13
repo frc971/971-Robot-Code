@@ -8,9 +8,7 @@
 #include "y2016/control_loops/superstructure/superstructure_controls.h"
 #include "y2016/queues/ball_detector_generated.h"
 
-namespace y2016 {
-namespace control_loops {
-namespace superstructure {
+namespace y2016::control_loops::superstructure {
 
 namespace {
 // The maximum voltage the intake roller will be allowed to use.
@@ -846,6 +844,4 @@ constexpr double Superstructure::kWristAlmostLevel;
 constexpr double Superstructure::kShoulderWristClearAngle;
 constexpr double Superstructure::kShoulderTransitionToLanded;
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2016
+}  // namespace y2016::control_loops::superstructure

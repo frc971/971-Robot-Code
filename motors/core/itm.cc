@@ -2,9 +2,7 @@
 
 #include "motors/core/kinetis.h"
 
-namespace frc971 {
-namespace motors {
-namespace itm {
+namespace frc971::motors::itm {
 namespace {
 
 // 480000 works for a bit but eventually errors out with an stlink-v2 and
@@ -52,6 +50,4 @@ void Initialize() {
   ITM.LAR = 0;
 }
 
-}  // namespace itm
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors::itm

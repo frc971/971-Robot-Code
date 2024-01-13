@@ -7,8 +7,7 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/remote_message_generated.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 // This class delays messages forwarded between two factories.
 //
@@ -760,5 +759,4 @@ void SimulatedMessageBridge::State::SetEventLoop(
   });
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

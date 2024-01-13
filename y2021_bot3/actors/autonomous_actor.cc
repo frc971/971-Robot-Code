@@ -8,8 +8,7 @@
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "y2021_bot3/control_loops/drivetrain/drivetrain_base.h"
 
-namespace y2021_bot3 {
-namespace actors {
+namespace y2021_bot3::actors {
 
 using ::aos::monotonic_clock;
 using ::frc971::ProfileParametersT;
@@ -33,5 +32,4 @@ bool AutonomousActor::RunAction(
   return true;
 }
 
-}  // namespace actors
-}  // namespace y2021_bot3
+}  // namespace y2021_bot3::actors

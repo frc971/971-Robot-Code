@@ -18,8 +18,7 @@
 #include "y2016/vision/blob_filters.h"
 // #include "y2016/vision/process_targets.h"
 
-namespace y2016 {
-namespace vision {
+namespace y2016::vision {
 using namespace aos::vision;
 
 ::aos::vision::Vector<2> CreateCenterFromTarget(double lx, double ly, double rx,
@@ -573,8 +572,7 @@ class NetworkForwardingImageStream : public aos::events::EpollWait {
   // count how many frames we miss in a row.
   int missed_count_ = 16;
 };
-}  // namespace vision
-}  // namespace y2016
+}  // namespace y2016::vision
 
 int main(int argc, char *argv[]) {
   using namespace y2016::vision;

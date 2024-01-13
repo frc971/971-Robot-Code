@@ -18,10 +18,7 @@
 
 DECLARE_int32(force_wmem_max);
 
-namespace aos {
-
-namespace message_bridge {
-namespace testing {
+namespace aos::message_bridge::testing {
 
 void SendPing(aos::Sender<examples::Ping> *sender, int value) {
   aos::Sender<examples::Ping>::Builder builder = sender->MakeBuilder();
@@ -136,6 +133,4 @@ INSTANTIATE_TEST_SUITE_P(MessageBridgeTests, MessageBridgeParameterizedTest,
                          ::testing::Values(Param{
                              "message_bridge_test_common_config.json", false}));
 
-}  // namespace testing
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge::testing

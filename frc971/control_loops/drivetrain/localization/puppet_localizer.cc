@@ -1,8 +1,6 @@
 #include "frc971/control_loops/drivetrain/localization/puppet_localizer.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 PuppetLocalizer::PuppetLocalizer(
     aos::EventLoop *event_loop,
@@ -98,6 +96,4 @@ void PuppetLocalizer::Update(const Eigen::Matrix<double, 2, 1> &U,
   }
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain

@@ -7,8 +7,7 @@
 #include "aos/json_to_flatbuffer_generated.h"
 #include "aos/testing/tmpdir.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Tests that Verify works.
 TEST(FlatbufferTest, Verify) {
@@ -87,5 +86,4 @@ TEST(FlatbufferMMapTest, Writeable) {
   }
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

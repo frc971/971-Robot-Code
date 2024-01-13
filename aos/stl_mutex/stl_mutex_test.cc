@@ -4,8 +4,7 @@
 
 #include "aos/die.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 class StlMutexDeathTest : public ::testing::Test {
  protected:
@@ -65,5 +64,4 @@ TEST_F(StlRecursiveMutexDeathTest, MultipleUnlock) {
   EXPECT_DEATH(mutex.unlock(), ".*multiple unlock.*");
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

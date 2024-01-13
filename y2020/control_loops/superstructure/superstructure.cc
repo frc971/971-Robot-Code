@@ -4,9 +4,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/network/team_number.h"
 
-namespace y2020 {
-namespace control_loops {
-namespace superstructure {
+namespace y2020::control_loops::superstructure {
 
 using frc971::control_loops::AbsoluteAndAbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
@@ -313,6 +311,4 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   }
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::superstructure

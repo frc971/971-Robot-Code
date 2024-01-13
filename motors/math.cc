@@ -2,8 +2,7 @@
 
 #include <math.h>
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 namespace math_internal {
 
 float sin_float_table[SinCosFloatTableSize() + 1]
@@ -35,5 +34,4 @@ __attribute__((cold)) void MathInit() {
   }
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

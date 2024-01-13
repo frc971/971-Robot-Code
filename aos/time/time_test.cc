@@ -8,9 +8,7 @@
 #include "aos/macros.h"
 #include "aos/util/death_test_log_implementation.h"
 
-namespace aos {
-namespace time {
-namespace testing {
+namespace aos::time::testing {
 
 namespace chrono = std::chrono;
 
@@ -226,6 +224,4 @@ TEST(TimeTest, OperatorStreamRealtimeNegative) {
   }
 }
 
-}  // namespace testing
-}  // namespace time
-}  // namespace aos
+}  // namespace aos::time::testing

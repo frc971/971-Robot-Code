@@ -4,10 +4,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace shooter {
+namespace y2017::control_loops::superstructure::shooter {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -156,7 +153,4 @@ flatbuffers::Offset<ShooterStatus> Shooter::Iterate(
   return status_offset;
 }
 
-}  // namespace shooter
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::shooter

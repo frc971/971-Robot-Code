@@ -4,8 +4,7 @@
 
 #include "seasocks/PrintfLogger.h"
 
-namespace aos {
-namespace seasocks {
+namespace aos::seasocks {
 
 void SeasocksLogger::log(::seasocks::Logger::Level level, const char *message) {
   // Convert Seasocks error codes to glog.
@@ -33,5 +32,4 @@ void SeasocksLogger::log(::seasocks::Logger::Level level, const char *message) {
   LOG_AT_LEVEL(glog_level) << "Seasocks: " << message;
 }
 
-}  // namespace seasocks
-}  // namespace aos
+}  // namespace aos::seasocks

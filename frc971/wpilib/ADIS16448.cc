@@ -11,8 +11,7 @@
 #include "aos/time/time.h"
 #include "frc971/wpilib/imu_generated.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
@@ -424,5 +423,4 @@ bool ADIS16448::Initialize() {
   return true;
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

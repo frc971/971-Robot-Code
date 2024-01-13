@@ -12,8 +12,7 @@
 
 #include "aos/vision/image/image_types.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 template <typename T, gboolean (T::*DrawMethod)(cairo_t *cr)>
 gboolean DrawCallback(GtkWidget *, cairo_t *cr, gpointer data) {
@@ -181,5 +180,4 @@ void CairoRender::Text(int x, int y, int /*text_x*/, int /*text_y*/,
   cairo_restore(cr_);
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

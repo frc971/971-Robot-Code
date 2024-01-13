@@ -6,9 +6,7 @@
 
 #include "frc971/control_loops/runge_kutta.h"
 
-namespace frc971 {
-namespace controls {
-namespace testing {
+namespace frc971::controls::testing {
 
 class C2DTest : public ::testing::Test {
  public:
@@ -86,6 +84,4 @@ TEST_F(C2DTest, DiscretizeQAFast) {
   EXPECT_LT((A_d - A_d_fast).norm(), 1e-20);
 }
 
-}  // namespace testing
-}  // namespace controls
-}  // namespace frc971
+}  // namespace frc971::controls::testing

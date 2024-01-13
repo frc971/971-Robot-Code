@@ -3,10 +3,7 @@
 #include "y2023/control_loops/superstructure/roll/integral_hybrid_roll_plant.h"
 #include "y2023/control_loops/superstructure/roll/integral_roll_plant.h"
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
-namespace arm {
+namespace y2023::control_loops::superstructure::arm {
 namespace {
 
 namespace chrono = ::std::chrono;
@@ -359,7 +356,4 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
   return status_builder.Finish();
 }
 
-}  // namespace arm
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure::arm

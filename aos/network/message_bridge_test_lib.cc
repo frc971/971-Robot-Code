@@ -2,8 +2,7 @@
 
 DECLARE_string(boot_uuid);
 
-namespace aos {
-namespace message_bridge::testing {
+namespace aos::message_bridge::testing {
 
 namespace chrono = std::chrono;
 using aos::testing::ArtifactPath;
@@ -286,5 +285,4 @@ void MessageBridgeParameterizedTest::StopPi2Test() {
   pi2_test_thread.reset();
 }
 
-}  // namespace message_bridge::testing
-}  // namespace aos
+}  // namespace aos::message_bridge::testing

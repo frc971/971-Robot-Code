@@ -12,8 +12,7 @@ DEFINE_bool(
     wants_sctp_authentication, false,
     "When set, try to use SCTP authentication if provided by the kernel");
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 using ::aos::util::ReadFileToVecOrDie;
 
@@ -42,8 +41,7 @@ int Main() {
   return EXIT_SUCCESS;
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

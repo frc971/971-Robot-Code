@@ -39,8 +39,7 @@
 //   Note that empty frames are still sent to indicate that the camera is
 //   still working even though it doesn't see any targets.
 
-namespace frc971 {
-namespace jevois {
+namespace frc971::jevois {
 namespace {
 
 constexpr float heading_min() { return -3; }
@@ -312,5 +311,4 @@ std::optional<RoborioToTeensy> SpiUnpackToTeensy(
   return message;
 }
 
-}  // namespace jevois
-}  // namespace frc971
+}  // namespace frc971::jevois

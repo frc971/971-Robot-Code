@@ -7,8 +7,7 @@
 #include "hal/HAL.h"
 #include "hal/Ports.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 BufferedPcm::BufferedPcm(int module) : module_(module) {
   for (int i = 0; i < 8; ++i) {
@@ -53,5 +52,4 @@ void BufferedPcm::Flush() {
   }
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

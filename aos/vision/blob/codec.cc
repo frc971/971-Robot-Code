@@ -1,7 +1,6 @@
 #include "aos/vision/blob/codec.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 size_t CalculateSize(const BlobList &blob_list) {
   size_t count = Int16Codec::kSize;
@@ -55,5 +54,4 @@ const char *ParseBlobList(BlobList *blob_list, const char *data) {
   return data;
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

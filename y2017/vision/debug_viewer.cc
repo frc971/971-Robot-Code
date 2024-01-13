@@ -14,8 +14,7 @@ using aos::vision::ImageFormat;
 using aos::vision::ImageRange;
 using aos::vision::RangeImage;
 
-namespace y2017 {
-namespace vision {
+namespace y2017::vision {
 
 BlobList RenderTargetListShifted(const std::vector<TargetComponent> &list) {
   BlobList out;
@@ -120,8 +119,7 @@ class FilterHarnessExample : public aos::vision::FilterHarness {
   std::vector<aos::vision::OverlayBase *> overlays_;
 };
 
-}  // namespace vision
-}  // namespace y2017
+}  // namespace y2017::vision
 
 int main(int argc, char **argv) {
   y2017::vision::FilterHarnessExample filter_harness;

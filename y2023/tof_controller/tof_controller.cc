@@ -13,8 +13,7 @@
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
 
-namespace y2023 {
-namespace tof_controller {
+namespace y2023::tof_controller {
 
 static constexpr uint kI2CBaudrate = 100000;
 static constexpr uint16_t kExpectedSensorId = 0xEBAA;
@@ -500,7 +499,6 @@ int main() {
   }
 }
 
-}  // namespace tof_controller
-}  // namespace y2023
+}  // namespace y2023::tof_controller
 
 int main() { y2023::tof_controller::main(); }

@@ -13,10 +13,7 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/testing/path.h"
 
-namespace aos {
-namespace common {
-namespace actions {
-namespace testing {
+namespace aos::common::actions::testing {
 
 namespace chrono = ::std::chrono;
 
@@ -515,7 +512,4 @@ TEST_F(ActionTest, StructParamType) {
   event_loop_factory_.RunFor(chrono::seconds(2));
 }
 
-}  // namespace testing
-}  // namespace actions
-}  // namespace common
-}  // namespace aos
+}  // namespace aos::common::actions::testing

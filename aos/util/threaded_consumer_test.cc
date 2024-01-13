@@ -2,8 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace util {
+namespace aos::util {
 
 // We expect it to be able to pass through everything we submit and recieves it
 // in the order that we submitted it. It should also be able to take in more
@@ -140,5 +139,4 @@ TEST(ThreadedConsumerTest, FinishesTasksOnQuit) {
   EXPECT_EQ(counter, 1);
 }
 
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util

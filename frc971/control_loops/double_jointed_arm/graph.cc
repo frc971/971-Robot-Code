@@ -3,9 +3,7 @@
 #include <algorithm>
 #include <cassert>
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
+namespace frc971::control_loops::arm {
 
 SearchGraph::SearchGraph(size_t num_vertexes, std::initializer_list<Edge> edges)
     : SearchGraph(num_vertexes, ::std::vector<Edge>(edges)) {}
@@ -66,6 +64,4 @@ double SearchGraph::GetCostToGoal(size_t vertex) {
   return vertexes_[vertex].cached_distance;
 }
 
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm

@@ -1,8 +1,6 @@
 #include "aos/actions/actions.h"
 
-namespace aos {
-namespace common {
-namespace actions {
+namespace aos::common::actions {
 
 void ActionQueue::EnqueueAction(::std::unique_ptr<Action> action) {
   if (current_action_) {
@@ -70,6 +68,4 @@ bool ActionQueue::GetNextActionState(bool *has_started, bool *sent_started,
   return false;
 }
 
-}  // namespace actions
-}  // namespace common
-}  // namespace aos
+}  // namespace aos::common::actions

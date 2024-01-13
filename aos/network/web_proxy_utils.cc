@@ -1,7 +1,6 @@
 #include "aos/network/web_proxy_utils.h"
 
-namespace aos {
-namespace web_proxy {
+namespace aos::web_proxy {
 
 namespace {
 // Recommended max size is 64KiB for compatibility reasons. 256KiB theoretically
@@ -98,5 +97,4 @@ std::vector<FlatbufferDetachedBuffer<MessageHeader>> PackBuffer(
   return buffers;
 }
 
-}  // namespace web_proxy
-}  // namespace aos
+}  // namespace aos::web_proxy

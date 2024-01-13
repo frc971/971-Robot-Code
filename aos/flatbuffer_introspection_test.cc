@@ -6,8 +6,7 @@
 #include "aos/testing/path.h"
 #include "aos/util/file.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 using aos::testing::ArtifactPath;
 
@@ -487,5 +486,4 @@ TEST(FlatbufferIntrospectionDeathTest, NullSchema) {
       "Need to provide a schema");
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

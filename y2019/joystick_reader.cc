@@ -41,9 +41,7 @@ using y2019::control_loops::superstructure::SuctionGoal;
 
 namespace chrono = ::std::chrono;
 
-namespace y2019 {
-namespace input {
-namespace joysticks {
+namespace y2019::input::joysticks {
 
 namespace superstructure = y2019::control_loops::superstructure;
 
@@ -669,9 +667,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       ::aos::monotonic_clock::time_point::min();
 };
 
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2019
+}  // namespace y2019::input::joysticks
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

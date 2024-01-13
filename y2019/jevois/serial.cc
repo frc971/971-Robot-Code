@@ -8,8 +8,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace y2019 {
-namespace jevois {
+namespace y2019::jevois {
 
 int open_via_terminos(const char *tty_name) {
   int itsDev = ::open(tty_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
@@ -75,5 +74,4 @@ int open_via_terminos(const char *tty_name) {
   return itsDev;
 }
 
-}  // namespace jevois
-}  // namespace y2019
+}  // namespace y2019::jevois

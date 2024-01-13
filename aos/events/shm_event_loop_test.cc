@@ -10,8 +10,7 @@
 #include "aos/network/team_number.h"
 #include "aos/realtime.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 namespace {
 namespace chrono = ::std::chrono;
 
@@ -447,5 +446,4 @@ INSTANTIATE_TEST_SUITE_P(ShmEventLoopCopyDeathTest, ShmEventLoopDeathTest,
 INSTANTIATE_TEST_SUITE_P(ShmEventLoopPinDeathTest, ShmEventLoopDeathTest,
                          ::testing::Values(ReadMethod::PIN));
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

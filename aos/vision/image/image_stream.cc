@@ -2,8 +2,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 void ImageStreamEvent::ProcessHelper(
     DataRef data, aos::monotonic_clock::time_point timestamp) {
@@ -14,5 +13,4 @@ void ImageStreamEvent::ProcessHelper(
   ProcessImage(data, timestamp);
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

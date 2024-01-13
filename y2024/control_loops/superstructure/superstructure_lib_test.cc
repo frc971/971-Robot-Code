@@ -17,10 +17,7 @@
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
 
-namespace y2024 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2024::control_loops::superstructure::testing {
 
 namespace chrono = std::chrono;
 
@@ -281,7 +278,4 @@ TEST_F(SuperstructureTest, DisableTest) {
   RunFor(chrono::seconds(2));
   CheckIfZeroed();
 }
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2024
+}  // namespace y2024::control_loops::superstructure::testing

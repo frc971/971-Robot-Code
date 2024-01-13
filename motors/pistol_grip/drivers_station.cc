@@ -15,8 +15,7 @@
 #include "motors/usb/usb.h"
 #include "motors/util.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 namespace {
 
 // TODO(Brian): Move this and the other two test functions somewhere else.
@@ -308,5 +307,4 @@ extern "C" int main(void) {
   return 0;
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

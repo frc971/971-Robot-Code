@@ -12,8 +12,7 @@
 #include "aos/vision/debug/debug_framework.h"
 #include "aos/vision/events/tcp_client.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Reads packets in the form:
 // uint32 length
@@ -152,5 +151,4 @@ class TCPImageSource : public ImageSource {
 
 REGISTER_IMAGE_SOURCE("tcp", TCPImageSource);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

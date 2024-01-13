@@ -4,9 +4,7 @@
 
 #include "frc971/zeroing/zeroing_test.h"
 
-namespace frc971 {
-namespace zeroing {
-namespace testing {
+namespace frc971::zeroing::testing {
 
 class HallEffectAndPositionZeroingTest : public ZeroingTest {
  protected:
@@ -130,6 +128,4 @@ TEST_F(HallEffectAndPositionZeroingTest, TestStartingOnNoZero) {
   EXPECT_FALSE(estimator.zeroed());
 }
 
-}  // namespace testing
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing::testing

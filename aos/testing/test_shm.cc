@@ -7,8 +7,7 @@
 #include "aos/logging/logging.h"
 #include "aos/testing/test_logging.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 namespace {
 
 const size_t kCoreSize = 0x100000;
@@ -35,5 +34,4 @@ TestSharedMemory::~TestSharedMemory() {
   global_core = NULL;
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

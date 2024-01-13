@@ -14,8 +14,7 @@
 #include "aos/vision/debug/debug_framework.h"
 #include "aos/vision/debug/overlay.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 namespace {
 
@@ -365,5 +364,4 @@ class BlobLogImageSource : public ImageSource {
 
 REGISTER_IMAGE_SOURCE("blob_log", BlobLogImageSource);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

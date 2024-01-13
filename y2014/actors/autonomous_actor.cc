@@ -17,8 +17,7 @@
 #include "y2014/queues/auto_mode_generated.h"
 #include "y2014/queues/hot_goal_generated.h"
 
-namespace y2014 {
-namespace actors {
+namespace y2014::actors {
 
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
@@ -432,5 +431,4 @@ bool AutonomousActor::RunAction(
   return true;
 }
 
-}  // namespace actors
-}  // namespace y2014
+}  // namespace y2014::actors

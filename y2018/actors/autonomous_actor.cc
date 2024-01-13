@@ -8,8 +8,7 @@
 #include "aos/util/phased_loop.h"
 #include "y2018/control_loops/drivetrain/drivetrain_base.h"
 
-namespace y2018 {
-namespace actors {
+namespace y2018::actors {
 using ::frc971::ProfileParametersT;
 
 using ::aos::monotonic_clock;
@@ -599,5 +598,4 @@ bool AutonomousActor::ThreeCubeAuto(monotonic_clock::time_point start_time) {
   return false;
 }
 
-}  // namespace actors
-}  // namespace y2018
+}  // namespace y2018::actors

@@ -5,9 +5,7 @@
 #include "absl/functional/bind_front.h"
 #include "glog/logging.h"
 
-namespace y2022 {
-namespace control_loops {
-namespace superstructure {
+namespace y2022::control_loops::superstructure {
 
 CollisionAvoidance::CollisionAvoidance() {
   clear_min_intake_front_goal();
@@ -213,6 +211,4 @@ void CollisionAvoidance::CalculateAvoidance(bool intake_front, bool catapult,
   }
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2022
+}  // namespace y2022::control_loops::superstructure

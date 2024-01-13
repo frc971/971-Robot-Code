@@ -23,8 +23,7 @@ DEFINE_string(base_intrinsics, "",
               "Intrinsics to use for estimating board pose prior to solving "
               "for the new intrinsics.");
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 namespace {
 
 void Main() {
@@ -52,8 +51,7 @@ void Main() {
 }
 
 }  // namespace
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

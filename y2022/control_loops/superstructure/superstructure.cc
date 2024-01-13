@@ -9,9 +9,7 @@
 DEFINE_bool(ignore_distance, false,
             "If true, ignore distance when shooting and obay joystick_reader");
 
-namespace y2022 {
-namespace control_loops {
-namespace superstructure {
+namespace y2022::control_loops::superstructure {
 
 using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
@@ -653,6 +651,4 @@ double Superstructure::robot_velocity() const {
               : 0.0);
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2022
+}  // namespace y2022::control_loops::superstructure

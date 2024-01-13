@@ -18,8 +18,7 @@ DEFINE_int32(sinit_max_init_timeout, 0,
              "Timeout in milliseconds for retrying the INIT packet when "
              "connecting to the message bridge server");
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 SctpClient::SctpClient(std::string_view remote_host, int remote_port,
                        int streams, std::string_view local_host, int local_port,
@@ -67,5 +66,4 @@ void SctpClient::SetPriorityScheduler([[maybe_unused]] sctp_assoc_t assoc_id) {
 #endif
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

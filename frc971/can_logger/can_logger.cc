@@ -1,7 +1,6 @@
 #include "frc971/can_logger/can_logger.h"
 
-namespace frc971 {
-namespace can_logger {
+namespace frc971::can_logger {
 
 CanLogger::CanLogger(aos::ShmEventLoop *event_loop,
                      std::string_view channel_name,
@@ -84,5 +83,4 @@ bool CanLogger::ReadFrame() {
   return true;
 }
 
-}  // namespace can_logger
-}  // namespace frc971
+}  // namespace frc971::can_logger

@@ -3,8 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 namespace {
 
 // Merge sort of multiple range images into a single range image.
@@ -142,5 +141,4 @@ int RangeImage::calc_area() const {
   return area;
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

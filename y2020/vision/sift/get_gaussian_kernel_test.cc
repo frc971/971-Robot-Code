@@ -8,9 +8,7 @@
 #include <opencv2/core/mat.hpp>
 #include <opencv2/imgproc.hpp>
 
-namespace frc971 {
-namespace vision {
-namespace testing {
+namespace frc971::vision::testing {
 
 class GetGaussianKernelTest
     : public ::testing::TestWithParam<std::tuple<int, double>> {
@@ -33,6 +31,4 @@ INSTANTIATE_TEST_SUITE_P(Values, GetGaussianKernelTest,
                                             ::testing::Values(0.01f, 0.1f,
                                                               0.9f)));
 
-}  // namespace testing
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision::testing

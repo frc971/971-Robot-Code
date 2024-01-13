@@ -40,9 +40,7 @@ DEFINE_double(forward, 1.0, "Amount to drive forwards");
 
 namespace chrono = ::std::chrono;
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 void Main() {
   const DrivetrainConfig<double> config =
@@ -229,9 +227,7 @@ void Main() {
   }
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 int main(int argc, char **argv) {
   ::gflags::ParseCommandLineFlags(&argc, &argv, false);

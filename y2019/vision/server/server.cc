@@ -28,8 +28,7 @@
 #include "y2019/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2019/vision/server/server_data.pb.h"
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 namespace chrono = ::std::chrono;
 
@@ -279,8 +278,7 @@ void DataThread(seasocks::Server *server, WebsocketHandler *websocket_handler) {
   event_loop.Run();
 }
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision
 
 int main(int argc, char **argv) {
   // Make sure to reference this to force the linker to include it.

@@ -1,9 +1,7 @@
 #ifndef FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_STATES_H_
 #define FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_STATES_H_
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops ::drivetrain {
 
 enum KalmanState {
   kLeftPosition = 0,
@@ -17,8 +15,6 @@ enum KalmanState {
 
 enum OutputState { kLeftVoltage = 0, kRightVoltage = 1 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_STATES_H_

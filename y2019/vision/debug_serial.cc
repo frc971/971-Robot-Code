@@ -13,8 +13,7 @@
 #include "y2019/jevois/structures.h"
 #include "y2019/jevois/uart.h"
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 void main(int argc, char **argv) {
   (void)argc;
@@ -85,7 +84,6 @@ void main(int argc, char **argv) {
   }
 }
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision
 
 int main(int argc, char **argv) { y2019::vision::main(argc, argv); }

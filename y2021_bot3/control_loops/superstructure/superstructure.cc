@@ -2,9 +2,7 @@
 
 #include "aos/events/event_loop.h"
 
-namespace y2021_bot3 {
-namespace control_loops {
-namespace superstructure {
+namespace y2021_bot3::control_loops::superstructure {
 
 using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
@@ -50,6 +48,4 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   (void)status->Send(status_builder.Finish());
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2021_bot3
+}  // namespace y2021_bot3::control_loops::superstructure

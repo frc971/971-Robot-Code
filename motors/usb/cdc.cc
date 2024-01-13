@@ -19,8 +19,7 @@
     }                                        \
   } while (false)
 
-namespace frc971 {
-namespace teensy {
+namespace frc971::teensy {
 namespace {
 
 // Aka the Communications Device Class code, the Communications Class code,
@@ -428,5 +427,4 @@ void AcmTty::EnqueueTxData(const DisableInterrupts &) {
   }
 }
 
-}  // namespace teensy
-}  // namespace frc971
+}  // namespace frc971::teensy

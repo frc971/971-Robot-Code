@@ -8,9 +8,7 @@
 #include "frc971/control_loops/c2d.h"
 #include "frc971/control_loops/dlqr.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 namespace {
 namespace chrono = ::std::chrono;
 }  // namespace
@@ -308,6 +306,4 @@ flatbuffers::Offset<LineFollowLogging> LineFollowDrivetrain::PopulateStatus(
   return line_follow_logging_builder.Finish();
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain

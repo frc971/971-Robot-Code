@@ -13,8 +13,7 @@
 #include "aos/mutex/mutex.h"
 #include "aos/network/team_number.h"
 
-namespace y2021_bot3 {
-namespace constants {
+namespace y2021_bot3::constants {
 
 const int Values::kZeroingSampleSize;
 
@@ -80,5 +79,4 @@ const Values &GetValuesForTeam(uint16_t team_number) {
   return *values[team_number];
 }
 
-}  // namespace constants
-}  // namespace y2021_bot3
+}  // namespace y2021_bot3::constants

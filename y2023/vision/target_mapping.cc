@@ -58,8 +58,7 @@ DECLARE_int32(min_target_id);
 DECLARE_int32(max_target_id);
 DECLARE_bool(visualize_solver);
 
-namespace y2023 {
-namespace vision {
+namespace y2023::vision {
 using frc971::vision::DataAdapter;
 using frc971::vision::ImageCallback;
 using frc971::vision::PoseUtils;
@@ -430,8 +429,7 @@ void MappingMain(int argc, char *argv[]) {
   mapper_replay.MaybeSolve();
 }
 
-}  // namespace vision
-}  // namespace y2023
+}  // namespace y2023::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

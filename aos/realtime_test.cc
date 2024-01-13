@@ -8,8 +8,7 @@
 
 DECLARE_bool(die_on_malloc);
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Tests that ScopedRealtime handles the simple case.
 TEST(RealtimeTest, ScopedRealtime) {
@@ -133,8 +132,7 @@ TEST(RealtimeDeathTest, RawFatal) {
 
 #endif
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing
 
 // We need a special gtest main to force die_on_malloc support on.  Otherwise
 // we can't test CHECK statements before turning die_on_malloc on globally.

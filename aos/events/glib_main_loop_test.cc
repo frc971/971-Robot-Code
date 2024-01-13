@@ -10,8 +10,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/testing/path.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 using aos::testing::ArtifactPath;
 
 const FlatbufferDetachedBuffer<Configuration> &Config() {
@@ -128,5 +127,4 @@ TEST(GlibMainLoopTest, TimeoutRemoveSelf) {
   EXPECT_EQ(runs, 1);
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

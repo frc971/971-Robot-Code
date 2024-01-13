@@ -5,9 +5,7 @@
 #include "aos/logging/logging.h"
 #include "frc971/control_loops/drivetrain/spline.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 ::std::vector<float> DistanceSpline::BuildDistances(size_t num_alpha) {
   num_alpha = num_alpha == 0 ? 100 * splines().size() : num_alpha;
@@ -233,6 +231,4 @@ DistanceSplineBase::AlphaAndIndex DistanceSplineBase::DistanceToAlpha(
   return {index, alpha - index};
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain

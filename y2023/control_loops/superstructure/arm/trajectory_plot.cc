@@ -23,10 +23,7 @@ DEFINE_double(vmax_plan, 9.5, "Max voltage to plan.");
 DEFINE_double(vmax_battery, 12.0, "Max battery voltage.");
 DEFINE_double(time, 2.0, "Simulation time.");
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
-namespace arm {
+namespace y2023::control_loops::superstructure::arm {
 using frc971::control_loops::MatrixGaussianQuadrature5;
 
 void Main() {
@@ -545,10 +542,7 @@ void Main() {
   }
 }
 
-}  // namespace arm
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure::arm
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

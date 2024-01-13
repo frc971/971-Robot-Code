@@ -6,9 +6,7 @@
 
 #include "frc971/zeroing/zeroing_test.h"
 
-namespace frc971 {
-namespace zeroing {
-namespace testing {
+namespace frc971::zeroing::testing {
 
 using constants::AbsoluteAndAbsoluteEncoderZeroingConstants;
 
@@ -343,6 +341,4 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
               ::testing::ElementsAre(ZeroingError::OFFSET_MOVED_TOO_FAR));
 }
 
-}  // namespace testing
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing::testing

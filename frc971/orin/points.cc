@@ -3,8 +3,7 @@
 #include <iomanip>
 #include <ostream>
 
-namespace frc971 {
-namespace apriltag {
+namespace frc971::apriltag {
 
 std::ostream &operator<<(std::ostream &os, const QuadBoundaryPoint &point) {
   std::ios_base::fmtflags original_flags = os.flags();
@@ -31,5 +30,4 @@ std::ostream &operator<<(std::ostream &os, const IndexPoint &point) {
 
 static_assert(sizeof(IndexPoint) == 8, "IndexPoint didn't pack right.");
 
-}  // namespace apriltag
-}  // namespace frc971
+}  // namespace frc971::apriltag

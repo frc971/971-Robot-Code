@@ -23,9 +23,7 @@
 
 using Side = frc971::control_loops::drivetrain::RobotSide;
 
-namespace y2024_defense {
-namespace input {
-namespace joysticks {
+namespace y2024_defense::input::joysticks {
 
 class Reader : public ::frc971::input::ActionJoystickInput {
  public:
@@ -46,9 +44,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   }
 };
 
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2024_defense
+}  // namespace y2024_defense::input::joysticks
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

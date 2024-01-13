@@ -17,10 +17,7 @@
 
 using ::frc971::control_loops::PositionSensorSimulator;
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2017::control_loops::superstructure::testing {
 namespace {
 constexpr double kNoiseScalar = 0.01;
 }  // namespace
@@ -1738,7 +1735,4 @@ TEST_F(SuperstructureTest, ReallyStuckIndexerTest) {
 // TODO(austin): Indexer zeroing error detection.
 // TODO(austin): Detect detached turret encoder
 
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::testing

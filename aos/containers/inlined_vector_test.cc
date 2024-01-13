@@ -6,8 +6,7 @@
 
 DECLARE_bool(die_on_malloc);
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Checks that we don't malloc until/unless we need to increase the size of the
 // vector.
@@ -45,5 +44,4 @@ TEST(SizedArrayTest, ZeroLengthVector) {
   zero.push_back(1);
   ASSERT_EQ(1, zero[0]);
 }
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

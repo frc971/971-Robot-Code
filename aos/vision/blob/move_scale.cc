@@ -1,7 +1,6 @@
 #include "aos/vision/blob/move_scale.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 RangeImage MoveScale(const RangeImage &img, int dx, int dy, int scale) {
   std::vector<std::vector<ImageRange>> out_range_list;
@@ -38,5 +37,4 @@ void GetBBox(const RangeImage &img, ImageBBox *bbox) {
   }
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

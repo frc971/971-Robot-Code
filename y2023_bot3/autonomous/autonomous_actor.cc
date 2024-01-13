@@ -20,8 +20,7 @@ DEFINE_bool(charged_up_middle, false,
 DEFINE_bool(one_piece, false,
             "End charged_up autonomous after first cube is placed.");
 
-namespace y2023_bot3 {
-namespace autonomous {
+namespace y2023_bot3::autonomous {
 
 using ::frc971::ProfileParametersT;
 
@@ -287,5 +286,4 @@ void AutonomousActor::SendSuperstructureGoal() {
   }
 }
 
-}  // namespace autonomous
-}  // namespace y2023_bot3
+}  // namespace y2023_bot3::autonomous

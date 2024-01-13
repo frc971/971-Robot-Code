@@ -2,8 +2,7 @@
 
 #include "motors/peripheral/configuration.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 namespace {
 
 template <int kRows, int kCols>
@@ -240,5 +239,4 @@ int16_t MotorControlsImplementation::Debug(uint32_t theta) {
   return debug_[theta];
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors
