@@ -1,0 +1,27 @@
+{
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.JoystickState"
+    },
+    {
+      "name": "/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "frequency": 400
+    },
+    {
+      "name": "/aos",
+      "type": "aos.RobotState",
+      "frequency": 250
+    },
+    {
+      "name": "/aos",
+      "type": "aos.timing.Report"
+    },
+    {
+      "name": "/loop",
+      "type": "frc971.control_loops.flywheel.FlywheelControllerStatus",
+      "frequency": 200
+    }
+  ]
+}

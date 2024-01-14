@@ -276,3 +276,19 @@ py_binary(
         "@pip//python_gflags",
     ],
 )
+
+py_binary(
+    name = "flywheel_controller_test",
+    srcs = [
+        "flywheel_controller_test.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":controls",
+        ":flywheel",
+        ":python_init",
+        "@pip//glog",
+        "@pip//python_gflags",
+    ],
+)
