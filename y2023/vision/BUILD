@@ -263,12 +263,30 @@ cc_binary(
         "//frc971/control_loops:pose",
         "//frc971/vision:calibration_fbs",
         "//frc971/vision:charuco_lib",
+        "//frc971/vision:extrinsics_calibration",
         "//frc971/vision:target_mapper",
         "//third_party:opencv",
         "//y2023/constants:constants_fbs",
         "//y2023/constants:simulated_constants_sender",
         "@org_tuxfamily_eigen//:eigen",
     ],
+)
+
+py_test(
+    name = "calibrate_multi_cameras_test",
+    srcs = ["calibrate_multi_cameras_test.py"],
+    args = [
+        "--calibrate_binary",
+        "$(location :calibrate_multi_cameras)",
+        "--logfile",
+        "external/calibrate_multi_cameras_data/fbs_log-268",
+    ],
+    data = [
+        ":calibrate_multi_cameras",
+        "//y2023/vision/calib_files",
+        "@calibrate_multi_cameras_data",
+    ],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
 )
 
 cc_binary(

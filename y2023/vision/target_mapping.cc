@@ -160,6 +160,8 @@ TargetMapperReplay::TargetMapperReplay(aos::logger::LogReader *reader)
   }
 
   reader_->RemapLoggedChannel("/imu/constants", "y2023.Constants");
+  reader_->RemapLoggedChannel("/logger/constants", "y2023.Constants");
+  reader_->RemapLoggedChannel("/roborio/constants", "y2023.Constants");
 
   reader_->Register();
 
