@@ -743,3 +743,33 @@ class Falcon(object):
         # Diameter of 1.9", weight of: 100 grams
         # TODO(austin): Get a number from Scott Westbrook for the mass
         self.motor_inertia = 0.1 * ((0.95 * 0.0254)**2.0)
+
+
+class KrakenFOC(object):
+    """Class representing the WCP Kraken X60 motor using
+    Field Oriented Controls (FOC) communication.
+
+    All numbers based on data from
+    https://wcproducts.com/products/kraken.
+    """
+
+    def __init__(self):
+        # Stall Torque in N m
+        self.stall_torque = 9.37
+        # Stall Current in Amps
+        self.stall_current = 483.0
+        # Free Speed in rad / sec
+        self.free_speed = 5800.0 / 60.0 * 2.0 * numpy.pi
+        # Free Current in Amps
+        self.free_current = 2.0
+        # Resistance of the motor, divided by 2 to account for the 2 motors
+        self.resistance = 12.0 / self.stall_current
+        # Motor velocity constant
+        self.Kv = (self.free_speed /
+                   (12.0 - self.resistance * self.free_current))
+        # Torque constant
+        self.Kt = self.stall_torque / self.stall_current
+        # Motor inertia in kg m^2
+        # Diameter of 1.9", weight of: 100 grams
+        # TODO(Filip): Update motor inertia for Kraken, currently using Falcon motor inertia
+        self.motor_inertia = 0.1 * ((0.95 * 0.0254)**2.0)
