@@ -431,7 +431,6 @@ class ArgusCamera {
       const Argus::CaptureMetadata *metadata = ibuffer->getMetadata();
       const Argus::ICaptureMetadata *imetadata =
           Argus::interface_cast<const Argus::ICaptureMetadata>(metadata);
-      CHECK(imetadata);
       return imetadata;
     }
 
@@ -572,45 +571,48 @@ int Main() {
 
       const Argus::ICaptureMetadata *imetadata = buffer.imetadata();
 
-      aos::Sender<frc971::vision::CameraImage>::Builder builder =
-          sender.MakeBuilder();
+      if (imetadata) {
+        aos::Sender<frc971::vision::CameraImage>::Builder builder =
+            sender.MakeBuilder();
 
-      uint8_t *data_pointer = nullptr;
-      builder.fbb()->StartIndeterminateVector(FLAGS_width * FLAGS_height * 2, 1,
-                                              64, &data_pointer);
+        uint8_t *data_pointer = nullptr;
+        builder.fbb()->StartIndeterminateVector(FLAGS_width * FLAGS_height * 2,
+                                                1, 64, &data_pointer);
 
-      YCbCr422(buffer.nvbuf_surf(), data_pointer);
-      flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data_offset =
-          builder.fbb()->EndIndeterminateVector(FLAGS_width * FLAGS_height * 2,
-                                                1);
+        YCbCr422(buffer.nvbuf_surf(), data_pointer);
+        flatbuffers::Offset<flatbuffers::Vector<uint8_t>> data_offset =
+            builder.fbb()->EndIndeterminateVector(
+                FLAGS_width * FLAGS_height * 2, 1);
 
-      auto image_builder = builder.MakeBuilder<frc971::vision::CameraImage>();
-      image_builder.add_data(data_offset);
-      image_builder.add_rows(FLAGS_height);
-      image_builder.add_cols(FLAGS_width);
-      {
-        aos::ScopedNotRealtime nrt;
-        image_builder.add_monotonic_timestamp_ns(
-            imetadata->getSensorTimestamp());
+        auto image_builder = builder.MakeBuilder<frc971::vision::CameraImage>();
+        image_builder.add_data(data_offset);
+        image_builder.add_rows(FLAGS_height);
+        image_builder.add_cols(FLAGS_width);
+        {
+          aos::ScopedNotRealtime nrt;
+          image_builder.add_monotonic_timestamp_ns(
+              imetadata->getSensorTimestamp());
+        }
+        builder.CheckOk(builder.Send(image_builder.Finish()));
+
+        const aos::monotonic_clock::time_point after_send =
+            aos::monotonic_clock::now();
+
+        VLOG(1)
+            << "Got " << imetadata->getCaptureId() << " delay "
+            << chrono::duration<double>(
+                   chrono::nanoseconds(
+                       (buffer.start_time().time_since_epoch().count() -
+                        (imetadata->getSensorTimestamp() +
+                         imetadata->getFrameReadoutTime()))))
+                   .count()
+            << " mmap "
+            << chrono::duration<double>(after_send - buffer.start_time())
+                   .count()
+            << "sec dt "
+            << chrono::duration<double>(buffer.start_time() - last_time).count()
+            << "sec, exposure " << imetadata->getSensorExposureTime();
       }
-      builder.CheckOk(builder.Send(image_builder.Finish()));
-
-      const aos::monotonic_clock::time_point after_send =
-          aos::monotonic_clock::now();
-
-      VLOG(1)
-          << "Got " << imetadata->getCaptureId() << " delay "
-          << chrono::duration<double>(
-                 chrono::nanoseconds(
-                     (buffer.start_time().time_since_epoch().count() -
-                      (imetadata->getSensorTimestamp() +
-                       imetadata->getFrameReadoutTime()))))
-                 .count()
-          << " mmap "
-          << chrono::duration<double>(after_send - buffer.start_time()).count()
-          << "sec dt "
-          << chrono::duration<double>(buffer.start_time() - last_time).count()
-          << "sec, exposure " << imetadata->getSensorExposureTime();
 
       last_time = buffer.start_time();
       timer->Schedule(event_loop.monotonic_now());
