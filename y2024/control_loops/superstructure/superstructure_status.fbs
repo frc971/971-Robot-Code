@@ -3,12 +3,25 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2024.control_loops.superstructure;
 
+// Contains if intake is intaking
+enum IntakeRollerState : ubyte {
+  NONE = 0,
+  SPITTING = 1,
+  INTAKING = 2,
+}
+
 table Status {
   // All subsystems know their location.
   zeroed:bool (id: 0);
 
   // If true, we have aborted. This is the or of all subsystem estops.
   estopped:bool (id: 1);
+
+  // State of the rollers
+  intake_roller_state:IntakeRollerState (id: 2);
+
+  // Estimated angle and angular velocitiy of the intake.
+  intake_pivot_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 3);
 }
 
 root_type Status;

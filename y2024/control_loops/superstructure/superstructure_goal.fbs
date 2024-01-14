@@ -2,8 +2,22 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2024.control_loops.superstructure;
 
-table Goal {
+// Represents goal for intake rollers
+enum IntakeRollerGoal : ubyte {
+    NONE = 0,
+    SPIT = 1,
+    INTAKE = 2,
 }
 
+// Represents goal for pivot on intake
+enum IntakePivotGoal : ubyte {
+    EXTENDED = 0,
+    RETRACTED = 1,
+}
+
+table Goal {
+    intake_roller_goal:IntakeRollerGoal (id: 0);
+    intake_pivot_goal:IntakePivotGoal (id: 1);
+}
 
 root_type Goal;

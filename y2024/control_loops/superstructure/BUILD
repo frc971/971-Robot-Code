@@ -56,6 +56,19 @@ static_flatbuffer(
     ],
 )
 
+static_flatbuffer(
+    name = "superstructure_can_position_fbs",
+    srcs = ["superstructure_can_position.fbs"],
+    deps = ["//frc971/control_loops:can_talonfx_fbs"],
+)
+
+flatbuffer_ts_library(
+    name = "superstructure_can_position_ts_fbs",
+    srcs = ["superstructure_can_position.fbs"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = ["//frc971/control_loops:can_talonfx_ts_fbs"],
+)
+
 cc_library(
     name = "superstructure_lib",
     srcs = [

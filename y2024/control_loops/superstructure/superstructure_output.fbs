@@ -1,6 +1,11 @@
 namespace y2024.control_loops.superstructure;
 
 table Output {
+    // Voltage of rollers on intake
+    intake_roller_voltage:double (id: 0);
+
+    // Voltage of intake pivot
+    intake_pivot_voltage:double (id: 1);
 }
 
 root_type Output;

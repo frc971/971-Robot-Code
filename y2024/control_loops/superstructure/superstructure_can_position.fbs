@@ -1,0 +1,10 @@
+include "frc971/control_loops/can_talonfx.fbs";
+
+namespace y2024.control_loops.superstructure;
+
+table CANPosition {
+    // CAN Position of the roller falcon
+    intake_roller:frc971.control_loops.CANTalonFX (id: 0);
+}
+
+root_type CANPosition;
