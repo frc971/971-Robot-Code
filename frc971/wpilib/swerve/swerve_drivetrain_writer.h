@@ -5,9 +5,9 @@
 
 #include "frc971/can_configuration_generated.h"
 #include "frc971/control_loops/drivetrain/swerve/swerve_drivetrain_output_generated.h"
-#include "frc971/wpilib/falcon.h"
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/swerve/swerve_module.h"
+#include "frc971/wpilib/talonfx.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -22,10 +22,10 @@ class DrivetrainWriter
   DrivetrainWriter(::aos::EventLoop *event_loop, int drivetrain_writer_priority,
                    double max_voltage);
 
-  void set_falcons(std::shared_ptr<SwerveModule> front_left,
-                   std::shared_ptr<SwerveModule> front_right,
-                   std::shared_ptr<SwerveModule> back_left,
-                   std::shared_ptr<SwerveModule> back_right);
+  void set_talonfxs(std::shared_ptr<SwerveModule> front_left,
+                    std::shared_ptr<SwerveModule> front_right,
+                    std::shared_ptr<SwerveModule> back_left,
+                    std::shared_ptr<SwerveModule> back_right);
 
   void HandleCANConfiguration(const CANConfiguration &configuration);
 

@@ -5,9 +5,9 @@
 #include "aos/init.h"
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/wpilib/can_sensor_reader.h"
-#include "frc971/wpilib/falcon.h"
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/swerve/swerve_drivetrain_writer.h"
+#include "frc971/wpilib/talonfx.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2023_bot4/constants.h"
 #include "y2023_bot4/drivetrain_can_position_generated.h"
@@ -18,7 +18,7 @@ DEFINE_bool(ctre_diag_server, false,
             "devices on the CAN bus using Phoenix Tuner");
 
 using frc971::wpilib::CANSensorReader;
-using frc971::wpilib::Falcon;
+using frc971::wpilib::TalonFX;
 using frc971::wpilib::swerve::DrivetrainWriter;
 using frc971::wpilib::swerve::SwerveModule;
 
@@ -46,9 +46,9 @@ flatbuffers::Offset<frc971::AbsolutePosition> module_offset(
 flatbuffers::Offset<SwerveModuleCANPosition> can_module_offset(
     SwerveModuleCANPosition::Builder builder,
     std::shared_ptr<SwerveModule> module) {
-  std::optional<flatbuffers::Offset<control_loops::CANFalcon>> rotation_offset =
-      module->rotation->TakeOffset();
-  std::optional<flatbuffers::Offset<control_loops::CANFalcon>>
+  std::optional<flatbuffers::Offset<control_loops::CANTalonFX>>
+      rotation_offset = module->rotation->TakeOffset();
+  std::optional<flatbuffers::Offset<control_loops::CANTalonFX>>
       translation_offset = module->translation->TakeOffset();
 
   CHECK(rotation_offset.has_value());
@@ -185,27 +185,27 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         aos::configuration::ReadConfig("aos_config.json");
 
     std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry;
-    std::vector<std::shared_ptr<Falcon>> falcons;
+    std::vector<std::shared_ptr<TalonFX>> falcons;
 
     // TODO(max): Change the CanBus names with TalonFX software.
     std::shared_ptr<SwerveModule> front_left = std::make_shared<SwerveModule>(
-        frc971::wpilib::FalconParams{6, false},
-        frc971::wpilib::FalconParams{5, false}, "Drivetrain Bus",
+        frc971::wpilib::TalonFXParams{6, false},
+        frc971::wpilib::TalonFXParams{5, false}, "Drivetrain Bus",
         &signals_registry, constants::Values::kDrivetrainStatorCurrentLimit(),
         constants::Values::kDrivetrainSupplyCurrentLimit());
     std::shared_ptr<SwerveModule> front_right = std::make_shared<SwerveModule>(
-        frc971::wpilib::FalconParams{3, false},
-        frc971::wpilib::FalconParams{4, false}, "Drivetrain Bus",
+        frc971::wpilib::TalonFXParams{3, false},
+        frc971::wpilib::TalonFXParams{4, false}, "Drivetrain Bus",
         &signals_registry, constants::Values::kDrivetrainStatorCurrentLimit(),
         constants::Values::kDrivetrainSupplyCurrentLimit());
     std::shared_ptr<SwerveModule> back_left = std::make_shared<SwerveModule>(
-        frc971::wpilib::FalconParams{8, false},
-        frc971::wpilib::FalconParams{7, false}, "Drivetrain Bus",
+        frc971::wpilib::TalonFXParams{8, false},
+        frc971::wpilib::TalonFXParams{7, false}, "Drivetrain Bus",
         &signals_registry, constants::Values::kDrivetrainStatorCurrentLimit(),
         constants::Values::kDrivetrainSupplyCurrentLimit());
     std::shared_ptr<SwerveModule> back_right = std::make_shared<SwerveModule>(
-        frc971::wpilib::FalconParams{2, false},
-        frc971::wpilib::FalconParams{1, false}, "Drivetrain Bus",
+        frc971::wpilib::TalonFXParams{2, false},
+        frc971::wpilib::TalonFXParams{1, false}, "Drivetrain Bus",
         &signals_registry, constants::Values::kDrivetrainStatorCurrentLimit(),
         constants::Values::kDrivetrainSupplyCurrentLimit());
 
@@ -284,8 +284,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         &drivetrain_writer_event_loop,
         constants::Values::kDrivetrainWriterPriority, 12);
 
-    drivetrain_writer.set_falcons(front_left, front_right, back_left,
-                                  back_right);
+    drivetrain_writer.set_talonfxs(front_left, front_right, back_left,
+                                   back_right);
 
     AddLoop(&drivetrain_writer_event_loop);
 

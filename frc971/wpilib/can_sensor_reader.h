@@ -7,7 +7,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/events/shm_event_loop.h"
 #include "aos/realtime.h"
-#include "frc971/wpilib/falcon.h"
+#include "frc971/wpilib/talonfx.h"
 
 namespace frc971 {
 namespace wpilib {
@@ -16,7 +16,7 @@ class CANSensorReader {
   CANSensorReader(
       aos::EventLoop *event_loop,
       std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry,
-      std::vector<std::shared_ptr<Falcon>> falcons,
+      std::vector<std::shared_ptr<TalonFX>> talonfxs,
       std::function<void(ctre::phoenix::StatusCode status)>
           flatbuffer_callback);
 
@@ -27,9 +27,9 @@ class CANSensorReader {
 
   const std::vector<ctre::phoenix6::BaseStatusSignal *> signals_;
 
-  // This is a vector of falcons becuase we don't need to care
-  // about falcons individually.
-  std::vector<std::shared_ptr<Falcon>> falcons_;
+  // This is a vector of talonfxs becuase we don't need to care
+  // about talonfxs individually.
+  std::vector<std::shared_ptr<TalonFX>> talonfxs_;
 
   // Pointer to the timer handler used to modify the wakeup.
   ::aos::TimerHandler *timer_handler_;

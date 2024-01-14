@@ -1,23 +1,23 @@
 #ifndef FRC971_WPILIB_SWERVE_SWERVE_MODULE_H_
 #define FRC971_WPILIB_SWERVE_SWERVE_MODULE_H_
 
-#include "frc971/wpilib/falcon.h"
+#include "frc971/wpilib/talonfx.h"
 
 namespace frc971 {
 namespace wpilib {
 namespace swerve {
 
 struct SwerveModule {
-  SwerveModule(FalconParams rotation_params, FalconParams translation_params,
+  SwerveModule(TalonFXParams rotation_params, TalonFXParams translation_params,
                std::string canbus,
                std::vector<ctre::phoenix6::BaseStatusSignal *> *signals,
                double stator_current_limit, double supply_current_limit)
-      : rotation(std::make_shared<Falcon>(rotation_params, canbus, signals,
-                                          stator_current_limit,
-                                          supply_current_limit)),
-        translation(std::make_shared<Falcon>(translation_params, canbus,
-                                             signals, stator_current_limit,
-                                             supply_current_limit)) {}
+      : rotation(std::make_shared<TalonFX>(rotation_params, canbus, signals,
+                                           stator_current_limit,
+                                           supply_current_limit)),
+        translation(std::make_shared<TalonFX>(translation_params, canbus,
+                                              signals, stator_current_limit,
+                                              supply_current_limit)) {}
 
   void WriteModule(
       const frc971::control_loops::drivetrain::swerve::SwerveModuleOutput
@@ -35,8 +35,8 @@ struct SwerveModule {
     translation->WriteCurrent(translation_current, max_voltage);
   }
 
-  std::shared_ptr<Falcon> rotation;
-  std::shared_ptr<Falcon> translation;
+  std::shared_ptr<TalonFX> rotation;
+  std::shared_ptr<TalonFX> translation;
 };
 
 }  // namespace swerve

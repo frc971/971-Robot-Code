@@ -1,7 +1,7 @@
 namespace frc971.control_loops;
 
-table CANFalcon {
-  // The CAN id of the falcon
+table CANTalonFX {
+  // The CAN id of the talonfx motor
   id:int (id: 0);
 
   // In Amps

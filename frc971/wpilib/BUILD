@@ -492,12 +492,12 @@ ts_project(
 )
 
 cc_library(
-    name = "falcon",
+    name = "talonfx",
     srcs = [
-        "falcon.cc",
+        "talonfx.cc",
     ],
     hdrs = [
-        "falcon.h",
+        "talonfx.h",
     ],
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
@@ -523,8 +523,8 @@ cc_library(
     ],
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
-        ":falcon",
         ":loop_output_handler",
+        ":talonfx",
         "//frc971:can_configuration_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
     ],
@@ -540,8 +540,8 @@ cc_library(
     ],
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     deps = [
-        ":falcon",
         ":loop_output_handler",
+        ":talonfx",
         "//frc971:can_configuration_fbs",
     ],
 )
@@ -553,7 +553,7 @@ cc_library(
     target_compatible_with = ["//tools/platforms/hardware:roborio"],
     visibility = ["//visibility:public"],
     deps = [
-        ":falcon",
+        ":talonfx",
         "//aos:realtime",
         "//aos/containers:sized_array",
         "//aos/events:event_loop",

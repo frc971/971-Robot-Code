@@ -1,6 +1,5 @@
 include "frc971/control_loops/control_loops.fbs";
 include "frc971/can_configuration.fbs";
-include "frc971/control_loops/can_falcon.fbs";
 
 namespace y2023_bot3.control_loops.superstructure;
 

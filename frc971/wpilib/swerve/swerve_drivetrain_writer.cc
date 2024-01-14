@@ -14,10 +14,10 @@ DrivetrainWriter::DrivetrainWriter(::aos::EventLoop *event_loop,
   event_loop->OnRun([this]() { WriteConfigs(); });
 }
 
-void DrivetrainWriter::set_falcons(std::shared_ptr<SwerveModule> front_left,
-                                   std::shared_ptr<SwerveModule> front_right,
-                                   std::shared_ptr<SwerveModule> back_left,
-                                   std::shared_ptr<SwerveModule> back_right) {
+void DrivetrainWriter::set_talonfxs(std::shared_ptr<SwerveModule> front_left,
+                                    std::shared_ptr<SwerveModule> front_right,
+                                    std::shared_ptr<SwerveModule> back_left,
+                                    std::shared_ptr<SwerveModule> back_right) {
   front_left_ = std::move(front_left);
   front_right_ = std::move(front_right);
   back_left_ = std::move(back_left);

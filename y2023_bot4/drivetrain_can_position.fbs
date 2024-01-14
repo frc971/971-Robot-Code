@@ -1,9 +1,9 @@
-include "frc971/control_loops/can_falcon.fbs";
+include "frc971/control_loops/can_talonfx.fbs";
 namespace y2023_bot4;
 
 table SwerveModuleCANPosition {
-  rotation: frc971.control_loops.CANFalcon (id: 0);
-  translation: frc971.control_loops.CANFalcon (id: 1);
+  rotation: frc971.control_loops.CANTalonFX (id: 0);
+  translation: frc971.control_loops.CANTalonFX (id: 1);
 }
 
 // CAN Readings from the CAN sensor reader loop for each swerve module
