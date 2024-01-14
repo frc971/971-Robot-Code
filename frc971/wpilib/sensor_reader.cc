@@ -85,29 +85,26 @@ monotonic_clock::time_point SensorReader::GetPWMStartTime() {
 }
 
 void SensorReader::SendDrivetrainPosition(
-    aos::Sender<control_loops::drivetrain::Position> drivetrain_position_sender,
+    aos::Sender<control_loops::drivetrain::PositionStatic>::StaticBuilder
+        builder,
     std::function<double(double input)> velocity_translate,
     std::function<double(double input)> encoder_to_meters, bool left_inverted,
     bool right_inverted) {
-  auto builder = drivetrain_position_sender.MakeBuilder();
-  frc971::control_loops::drivetrain::Position::Builder drivetrain_builder =
-      builder.MakeBuilder<frc971::control_loops::drivetrain::Position>();
-
-  drivetrain_builder.add_left_encoder(
+  builder->set_left_encoder(
       (left_inverted ? -1.0 : 1.0) *
       encoder_to_meters(drivetrain_left_encoder_->GetRaw()));
-  drivetrain_builder.add_left_speed(
+  builder->set_left_speed(
       (left_inverted ? -1.0 : 1.0) *
       velocity_translate(drivetrain_left_encoder_->GetPeriod()));
 
-  drivetrain_builder.add_right_encoder(
+  builder->set_right_encoder(
       (right_inverted ? -1.0 : 1.0) *
       encoder_to_meters(drivetrain_right_encoder_->GetRaw()));
-  drivetrain_builder.add_right_speed(
+  builder->set_right_speed(
       (right_inverted ? -1.0 : 1.0) *
       velocity_translate(drivetrain_right_encoder_->GetPeriod()));
 
-  builder.CheckOk(builder.Send(drivetrain_builder.Finish()));
+  builder.CheckOk(builder.Send());
 }
 
 void SensorReader::DoStart() {
