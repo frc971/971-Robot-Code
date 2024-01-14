@@ -43,6 +43,20 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "user_button_localized_autonomous_actor",
+    srcs = [
+        "user_button_localized_autonomous_actor.cc",
+    ],
+    hdrs = [
+        "user_button_localized_autonomous_actor.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":base_autonomous_actor",
+    ],
+)
+
 aos_config(
     name = "aos_config",
     src = "autonomous_config.json",
