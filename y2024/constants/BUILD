@@ -76,3 +76,16 @@ cc_binary(
         "//frc971/constants:constants_sender_lib",
     ],
 )
+
+cc_test(
+    name = "constants_validator_test",
+    srcs = ["constants_validator_test.cc"],
+    data = [":constants.json"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":constants_list_fbs",
+        "//aos:json_to_flatbuffer",
+        "//aos/testing:googletest",
+        "@com_github_google_glog//:glog",
+    ],
+)

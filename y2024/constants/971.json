@@ -1,8 +1,5 @@
 {
-  "cameras": [
-  ],
   "robot": {
-    }
   },
   {% include 'y2024/constants/common.json' %}
 }
