@@ -712,11 +712,10 @@ struct MergePeakExtents {
 }  // namespace
 
 void GpuDetector::Detect(const uint8_t *image) {
-  color_image_host_.MemcpyFrom(image);
   const aos::monotonic_clock::time_point start_time =
       aos::monotonic_clock::now();
   start_.Record(&stream_);
-  color_image_device_.MemcpyAsyncFrom(&color_image_host_, &stream_);
+  color_image_device_.MemcpyAsyncFrom(image, &stream_);
   after_image_memcpy_to_device_.Record(&stream_);
 
   // Threshold the image.
