@@ -365,6 +365,7 @@ bool JsonParser::DoParse(FlatbufferType type, const std::string_view data,
         }
         break;
       case Tokenizer::TokenType::kError:
+        fprintf(stderr, "Encountered an error in the tokenizer\n");
         return false;
         break;
 
@@ -437,11 +438,13 @@ bool JsonParser::DoParse(FlatbufferType type, const std::string_view data,
 
       case Tokenizer::TokenType::kStartArray:  // [
         if (stack_.size() == 0) {
-          // We don't support an array of structs at the root level.
+          fprintf(stderr,
+                  "We don't support an array of structs at the root level.\n");
           return false;
         }
         // Sanity check that we aren't trying to make a vector of vectors.
         if (in_vector()) {
+          fprintf(stderr, "We don't support vectors of vectors.\n");
           return false;
         }
         set_in_vector(true);
@@ -449,6 +452,7 @@ bool JsonParser::DoParse(FlatbufferType type, const std::string_view data,
         break;
       case Tokenizer::TokenType::kEndArray: {  // ]
         if (!in_vector()) {
+          fprintf(stderr, "Encountered ']' with no prior '['.\n");
           return false;
         }
 
@@ -514,7 +518,11 @@ bool JsonParser::DoParse(FlatbufferType type, const std::string_view data,
 
 bool JsonParser::AddElement(int field_index, absl::int128 int_value) {
   if (stack_.back().type.FieldIsRepeating(field_index) != in_vector()) {
-    fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
+    fprintf(stderr,
+            "Type and json disagree on if we are in a vector or not (JSON "
+            "believes that we are%s in a vector for field '%s').\n",
+            in_vector() ? "" : " not",
+            stack_.back().type.FieldName(field_index).data());
     return false;
   }
 
@@ -528,7 +536,11 @@ bool JsonParser::AddElement(int field_index, absl::int128 int_value) {
 
 bool JsonParser::AddElement(int field_index, double double_value) {
   if (stack_.back().type.FieldIsRepeating(field_index) != in_vector()) {
-    fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
+    fprintf(stderr,
+            "Type and json disagree on if we are in a vector or not (JSON "
+            "believes that we are%s in a vector for field '%s').\n",
+            in_vector() ? "" : " not",
+            stack_.back().type.FieldName(field_index).data());
     return false;
   }
 
@@ -542,7 +554,11 @@ bool JsonParser::AddElement(int field_index, double double_value) {
 
 bool JsonParser::AddElement(int field_index, const ::std::string &data) {
   if (stack_.back().type.FieldIsRepeating(field_index) != in_vector()) {
-    fprintf(stderr, "Type and json disagree on if we are in a vector or not\n");
+    fprintf(stderr,
+            "Type and json disagree on if we are in a vector or not (JSON "
+            "believes that we are%s in a vector for field '%s').\n",
+            in_vector() ? "" : " not",
+            stack_.back().type.FieldName(field_index).data());
     return false;
   }
 
