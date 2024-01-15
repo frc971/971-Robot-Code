@@ -37,6 +37,8 @@ Robot2020 = RobotType(width=0.8128, length=0.8636)  # 32 in x 34 in
 Robot2021 = Robot2020
 Robot2022 = RobotType(width=0.8763, length=0.96647)
 Robot2023 = RobotType(width=0.6061, length=0.77581)
+#TODO (Nathan): Update 2024 robot dimensions when CAD is done
+Robot2024 = RobotType(width=0.9017, length=0.9525)  # 35.5 in x 37.5 in
 
 FIELDS = {
     "2019 Field":
@@ -127,9 +129,17 @@ FIELDS = {
               length=8.10895,
               robot=Robot2023,
               field_id="//third_party/y2023/field/2023.png"),
+    "2024 Field":
+    FieldType("2024 Field",
+              tags=[],
+              year=2024,
+              width=16.54175,
+              length=8.21055,
+              robot=Robot2024,
+              field_id="//third_party/y2024/field/2024.png"),
 }
 
-FIELD = FIELDS["2023 Field"]
+FIELD = FIELDS["2024 Field"]
 
 
 def get_json_folder(field):
@@ -139,6 +149,7 @@ def get_json_folder(field):
         return "y2022/actors/splines"
     elif field.year == 2023:
         return "y2023/autonomous/splines"
+    #TODO: Update 2024 spline jsons
     else:
         return "frc971/control_loops/python/spline_jsons"
 
