@@ -48,11 +48,18 @@ class CurrentLimitedStateFeedbackController
 
     // Limit to the battery voltage and the current limit voltage.
     mutable_U(0, 0) = std::clamp(U(0, 0), lower_limit, upper_limit);
-    if (R(1) > 50.0) {
-      mutable_U(0, 0) = std::clamp(U(0, 0), 1.0, 12.0);
-    } else {
-      mutable_U(0, 0) = std::clamp(U(0, 0), 0.0, 12.0);
+
+    double lower_clamp = (std::abs(R(1)) > 50.0) ? 1.0 : 0.0;
+    double upper_clamp = 12.0;
+
+    if (R(1) < 0.0) {
+      // If R(1) is negative, swap and invert.
+      std::swap(lower_clamp, upper_clamp);
+      lower_clamp *= -1.0;
+      upper_clamp *= -1.0;
     }
+
+    mutable_U(0, 0) = std::clamp(U(0, 0), lower_clamp, upper_clamp);
   }
 
  private:
@@ -112,7 +119,8 @@ double FlywheelController::current() const {
 
 void FlywheelController::Update(bool disabled) {
   loop_->mutable_R() = loop_->next_R();
-  if (loop_->R(1, 0) < 1.0) {
+
+  if (std::abs(loop_->R(1, 0)) < 1.0) {
     // Kill power at low angular velocities.
     disabled = true;
   }

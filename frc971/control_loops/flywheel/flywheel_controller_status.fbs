@@ -20,3 +20,5 @@ table FlywheelControllerStatus {
   // The angular velocity of the flywheel computed using delta x / delta t
   dt_angular_velocity:double (id: 5);
 }
+
+root_type FlywheelControllerStatus;
