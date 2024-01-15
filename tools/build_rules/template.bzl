@@ -8,7 +8,8 @@ def _jinja2_template_impl(ctx):
         tools = [ctx.executable._jinja2],
         progress_message = "Generating " + out.short_path,
         outputs = [out],
-        command = ctx.executable._jinja2.path + " " + ctx.files.src[0].path + " '" + str(parameters) + "' " + out.path,
+        # TODO(james): Is the genfiles_dir the correct thing?
+        command = ctx.executable._jinja2.path + " " + ctx.files.src[0].path + " '" + str(parameters) + "' " + out.path + " " + ctx.genfiles_dir.path,
     )
 
     return [DefaultInfo(files = depset([out])), OutputGroupInfo(out = depset([out]))]

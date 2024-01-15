@@ -19,11 +19,15 @@ def main():
         type=json.loads,
         help="Dictionary of parameters to replace in the template.")
     parser.add_argument("output", type=str, help="Output file to create.")
+    parser.add_argument(
+        "genfiles_dir",
+        type=str,
+        help="Directory where generated JSON files will be available.")
     args = parser.parse_args(sys.argv[1:])
 
     with open(args.template, 'r') as input_file:
-        template = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(".")).from_string(input_file.read())
+        template = jinja2.Environment(loader=jinja2.FileSystemLoader(
+            [".", args.genfiles_dir])).from_string(input_file.read())
 
     output = template.render(args.replacements)
     with open(args.output, 'w') as config_file:
