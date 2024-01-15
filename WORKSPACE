@@ -1655,3 +1655,17 @@ filegroup(
     sha256 = "b106b3b975d3cf3ad3fcd5e4be7409f6095e1d531346a90c4ad6bdb7da1d08a5",
     url = "https://software.frc971.org/Build-Dependencies/2023_calibrate_multi_cameras_data.tar.gz",
 )
+
+http_archive(
+    name = "com_github_tartanllama_expected",
+    build_file_content = """
+cc_library(
+  name = "com_github_tartanllama_expected",
+  srcs = ["include/tl/expected.hpp"],
+  includes = ["include"],
+  visibility = ["//visibility:public"],
+)""",
+    sha256 = "1db357f46dd2b24447156aaf970c4c40a793ef12a8a9c2ad9e096d9801368df6",
+    strip_prefix = "expected-1.1.0",
+    url = "https://github.com/TartanLlama/expected/archive/refs/tags/v1.1.0.tar.gz",
+)
