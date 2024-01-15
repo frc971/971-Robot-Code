@@ -1,7 +1,9 @@
 #ifndef FRC971_CONTROL_LOOPS_STATIC_ZEROING_SINGLE_DOF_PROFILED_SUBSYSTEM_H_
 #define FRC971_CONTROL_LOOPS_STATIC_ZEROING_SINGLE_DOF_PROFILED_SUBSYSTEM_H_
 
+#include "aos/flatbuffer_merge.h"
 #include "frc971/control_loops/profiled_subsystem.h"
+#include "frc971/control_loops/state_feedback_loop_converters.h"
 
 namespace frc971 {
 namespace control_loops {
@@ -28,7 +30,52 @@ struct StaticZeroingSingleDOFProfiledSubsystemParams {
   typename ZeroingEstimator::ZeroingConstants zeroing_constants;
 
   // Function that makes the integral loop for the subsystem
-  ::std::function<StateFeedbackLoop<3, 1, 1>()> make_integral_loop;
+  std::function<StateFeedbackLoop<3, 1, 1>()> make_integral_loop;
+
+  // Used by make_integral_loop when constructed from a flatbuffer.
+  std::shared_ptr<aos::FlatbufferDetachedBuffer<
+      StaticZeroingSingleDOFProfiledSubsystemCommonParams>>
+      loop_params;
+
+  StaticZeroingSingleDOFProfiledSubsystemParams(
+      double zeroing_voltage_in, double operating_voltage_in,
+      const ProfileParametersT &zeroing_profile_params_in,
+      const ProfileParametersT &default_profile_params_in,
+      const ::frc971::constants::Range &range_in,
+      const typename ZeroingEstimator::ZeroingConstants &zeroing_constants_in,
+      std::function<StateFeedbackLoop<3, 1, 1>()> make_integral_loop_in)
+      : zeroing_voltage(zeroing_voltage_in),
+        operating_voltage(operating_voltage_in),
+        zeroing_profile_params(zeroing_profile_params_in),
+        default_profile_params(default_profile_params_in),
+        range(range_in),
+        zeroing_constants(zeroing_constants_in),
+        make_integral_loop(make_integral_loop_in) {}
+
+  // Constructs the parameters from flatbuffer types.
+  StaticZeroingSingleDOFProfiledSubsystemParams(
+      const StaticZeroingSingleDOFProfiledSubsystemCommonParams *common,
+      const ZeroingEstimator::ZeroingConstants::TableType *zeroing)
+      : zeroing_voltage(common->zeroing_voltage()),
+        operating_voltage(common->operating_voltage()),
+        zeroing_profile_params(
+            aos::UnpackFlatbuffer(common->zeroing_profile_params())),
+        default_profile_params(
+            aos::UnpackFlatbuffer(common->default_profile_params())),
+        range(frc971::constants::Range::FromFlatbuffer(common->range())),
+        zeroing_constants(aos::UnpackFlatbuffer(zeroing)),
+        make_integral_loop([this]() {
+          return MakeStateFeedbackLoop<3, 1, 1>(
+              *CHECK_NOTNULL(loop_params->message().loop()));
+        }),
+        loop_params(std::make_shared<aos::FlatbufferDetachedBuffer<
+                        StaticZeroingSingleDOFProfiledSubsystemCommonParams>>(
+            aos::RecursiveCopyFlatBuffer(common))) {}
+  StaticZeroingSingleDOFProfiledSubsystemParams() = default;
+  StaticZeroingSingleDOFProfiledSubsystemParams(
+      const StaticZeroingSingleDOFProfiledSubsystemParams &) = default;
+  StaticZeroingSingleDOFProfiledSubsystemParams &operator=(
+      const StaticZeroingSingleDOFProfiledSubsystemParams &) = default;
 };
 
 // Class for controlling and motion profiling a single degree of freedom
@@ -37,9 +84,20 @@ template <typename TZeroingEstimator, typename TProfiledJointStatus,
           typename TSubsystemParams = TZeroingEstimator>
 class StaticZeroingSingleDOFProfiledSubsystem {
  public:
+  // Constructs the subsystem from flatbuffer types (appropriate when using the
+  // constants.h for the subsystem; the constants.json should be preferred for
+  // new subsystems).
   StaticZeroingSingleDOFProfiledSubsystem(
       const StaticZeroingSingleDOFProfiledSubsystemParams<TSubsystemParams>
           &params);
+  // Constructs the subsystem from flatbuffer types (appropriate when using a
+  // constants.json for the subsystem).
+  StaticZeroingSingleDOFProfiledSubsystem(
+      const StaticZeroingSingleDOFProfiledSubsystemCommonParams *common,
+      const TZeroingEstimator::ZeroingConstants::TableType *zeroing)
+      : StaticZeroingSingleDOFProfiledSubsystem(
+            StaticZeroingSingleDOFProfiledSubsystemParams<TSubsystemParams>{
+                common, zeroing}) {}
 
   using ZeroingEstimator = TZeroingEstimator;
   using ProfiledJointStatus = TProfiledJointStatus;
@@ -58,8 +116,8 @@ class StaticZeroingSingleDOFProfiledSubsystem {
 
   void set_max_position(double max_position) { max_position_ = max_position; }
 
-  // Sets a temporary acceleration limit.  No accelerations faster than this may
-  // be commanded.
+  // Sets a temporary acceleration limit.  No accelerations faster than this
+  // may be commanded.
   void set_max_acceleration(double max_acceleration) {
     max_acceleration_ = max_acceleration;
   }
@@ -111,9 +169,9 @@ class StaticZeroingSingleDOFProfiledSubsystem {
       const typename ZeroingEstimator::Position *position, double *output,
       flatbuffers::FlatBufferBuilder *status_fbb);
 
-  // Sets the current profile state to solve from.  Useful for when an external
-  // controller gives back control and we want the trajectory generator to
-  // take over control again.
+  // Sets the current profile state to solve from.  Useful for when an
+  // external controller gives back control and we want the trajectory
+  // generator to take over control again.
   void ForceGoal(double goal, double goal_velocity);
 
   // Resets the profiled subsystem and returns to uninitialized

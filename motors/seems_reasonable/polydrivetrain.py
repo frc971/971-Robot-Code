@@ -20,12 +20,12 @@ except gflags.DuplicateFlagError:
 def main(argv):
     if FLAGS.plot:
         polydrivetrain.PlotPolyDrivetrainMotions(drivetrain.kDrivetrain)
-    elif len(argv) != 7:
-        glog.fatal('Expected .h file name and .cc file name')
+    elif len(argv) != 10:
+        glog.fatal('Expected .h, .cc, and .json filenames')
     else:
-        polydrivetrain.WritePolyDrivetrain(argv[1:3],
-                                           argv[3:5],
-                                           argv[5:7],
+        polydrivetrain.WritePolyDrivetrain(argv[1:4],
+                                           argv[4:7],
+                                           argv[7:10],
                                            ['motors', 'seems_reasonable'],
                                            drivetrain.kDrivetrain,
                                            scalar_type='float')

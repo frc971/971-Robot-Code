@@ -26,12 +26,12 @@ def main(argv):
     argv = FLAGS(argv)
     glog.init()
 
-    if len(argv) != 5:
-        glog.error("Expected .h file name and .cc file name")
+    if len(argv) != 7:
+        glog.error("Expected .h, .cc, and .json filenames")
     else:
         # Write the generated constants out to a file.
-        drivetrain.WriteDrivetrain(argv[1:3],
-                                   argv[3:5], ['motors', 'seems_reasonable'],
+        drivetrain.WriteDrivetrain(argv[1:4],
+                                   argv[4:7], ['motors', 'seems_reasonable'],
                                    kDrivetrain,
                                    scalar_type='float')
 

@@ -38,13 +38,14 @@ def main(argv):
         linear_system.PlotMotion(kIntake, R)
 
     # Write the generated constants out to a file.
-    if len(argv) != 5:
-        glog.fatal('Expected .h file name and .cc file name for the \
+    if len(argv) != 7:
+        glog.fatal(
+            'Expected .h, .cc, and .json filenames and .json file name for the \
             static_zeroing_single_dof_profiled_subsystem_test and integral \
             static_zeroing_single_dof_profiled_subsystem_test.')
     else:
         namespaces = ['frc971', 'control_loops']
-        linear_system.WriteLinearSystem(kIntake, argv[1:3], argv[3:5],
+        linear_system.WriteLinearSystem(kIntake, argv[1:4], argv[4:7],
                                         namespaces)
 
 

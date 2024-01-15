@@ -1,8 +1,17 @@
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 
 static_flatbuffer(
     name = "matrix_fbs",
     srcs = ["matrix.fbs"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_ts_library(
+    name = "matrix_ts_fbs",
+    srcs = [
+        "matrix.fbs",
+    ],
     visibility = ["//visibility:public"],
 )
 

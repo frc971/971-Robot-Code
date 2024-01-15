@@ -36,11 +36,11 @@ def main(argv):
 
     if FLAGS.plot:
         drivetrain.PlotDrivetrainMotions(kDrivetrain)
-    elif len(argv) != 5:
-        print("Expected .h file name and .cc file name")
+    elif len(argv) != 7:
+        print("Expected .h, .cc, and .json filenames")
     else:
         # Write the generated constants out to a file.
-        drivetrain.WriteDrivetrain(argv[1:3], argv[3:5], 'y2022_bot3',
+        drivetrain.WriteDrivetrain(argv[1:4], argv[4:7], 'y2022_bot3',
                                    kDrivetrain)
 
 

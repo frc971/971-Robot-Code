@@ -422,8 +422,11 @@ def WriteLinearSystem(params, plant_files, controller_files, year_namespaces):
                               linear_systems[0].G * linear_systems[0].radius))
     loop_writer.AddConstant(
         control_loop.Constant('kRadius', '%f', linear_systems[0].radius))
-    loop_writer.Write(plant_files[0], plant_files[1])
+    loop_writer.Write(plant_files[0], plant_files[1],
+                      None if len(plant_files) < 3 else plant_files[2])
 
     integral_loop_writer = control_loop.ControlLoopWriter(
         'Integral' + name, integral_linear_systems, namespaces=year_namespaces)
-    integral_loop_writer.Write(controller_files[0], controller_files[1])
+    integral_loop_writer.Write(
+        controller_files[0], controller_files[1],
+        None if len(controller_files) < 3 else controller_files[2])

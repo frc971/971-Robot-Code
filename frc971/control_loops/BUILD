@@ -392,6 +392,7 @@ flatbuffer_ts_library(
     ],
     deps = [
         ":control_loops_ts_fbs",
+        ":state_feedback_loop_ts_fbs",
     ],
 )
 
@@ -403,6 +404,7 @@ static_flatbuffer(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":control_loops_fbs",
+        ":state_feedback_loop_fbs",
     ],
 )
 
@@ -420,6 +422,8 @@ cc_library(
         ":profiled_subsystem_fbs",
         ":simple_capped_state_feedback_loop",
         ":state_feedback_loop",
+        ":state_feedback_loop_converters",
+        "//aos:flatbuffer_merge",
         "//aos/util:trapezoid_profile",
         "//frc971/control_loops:control_loop",
         "//frc971/zeroing",
@@ -549,8 +553,10 @@ genrule(
     outs = [
         "static_zeroing_single_dof_profiled_subsystem_test_plant.h",
         "static_zeroing_single_dof_profiled_subsystem_test_plant.cc",
+        "static_zeroing_single_dof_profiled_subsystem_test_plant.json",
         "static_zeroing_single_dof_profiled_subsystem_test_integral_plant.h",
         "static_zeroing_single_dof_profiled_subsystem_test_integral_plant.cc",
+        "static_zeroing_single_dof_profiled_subsystem_test_integral_plant.json",
     ],
     cmd = "$(location //frc971/control_loops/python:static_zeroing_single_dof_profiled_subsystem_test) $(OUTS)",
     target_compatible_with = ["@platforms//os:linux"],
@@ -685,4 +691,37 @@ aos_config(
         ":static_zeroing_single_dof_profiled_subsystem_test_pot_and_absolute_position_fbs",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+)
+
+static_flatbuffer(
+    name = "state_feedback_loop_fbs",
+    srcs = ["state_feedback_loop.fbs"],
+    deps = ["//frc971/math:matrix_fbs"],
+)
+
+flatbuffer_ts_library(
+    name = "state_feedback_loop_ts_fbs",
+    srcs = ["state_feedback_loop.fbs"],
+    deps = ["//frc971/math:matrix_ts_fbs"],
+)
+
+cc_library(
+    name = "hybrid_state_feedback_loop_converters",
+    srcs = ["hybrid_state_feedback_loop_converters.h"],
+    deps = [
+        ":hybrid_state_feedback_loop",
+        ":state_feedback_loop_converters",
+        ":state_feedback_loop_fbs",
+        "//frc971/math:flatbuffers_matrix",
+    ],
+)
+
+cc_library(
+    name = "state_feedback_loop_converters",
+    srcs = ["state_feedback_loop_converters.h"],
+    deps = [
+        ":state_feedback_loop",
+        ":state_feedback_loop_fbs",
+        "//frc971/math:flatbuffers_matrix",
+    ],
 )
