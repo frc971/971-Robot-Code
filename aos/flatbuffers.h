@@ -529,6 +529,15 @@ class FlatbufferMMap : public NonSizePrefixedFlatbuffer<T> {
   std::shared_ptr<absl::Span<uint8_t>> span_;
 };
 
+// The regular flatbuffer API makes it surprisingly irritating to unpack an
+// Object into an ObjectT without a bunch of extra lines.
+template <typename T>
+T::NativeTableType UnpackFlatbuffer(const T *fbs) {
+  typename T::NativeTableType object;
+  fbs->UnPackTo(&object);
+  return object;
+}
+
 }  // namespace aos
 
 #endif  // AOS_FLATBUFFERS_H_

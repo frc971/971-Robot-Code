@@ -23,6 +23,16 @@ TEST(FlatbufferTest, Verify) {
   EXPECT_FALSE(empty.Verify());
 }
 
+// Test that the UnpackFlatbuffer builds & works.
+TEST(FlatbufferTest, UnpackFlatbuffer) {
+  const FlatbufferDetachedBuffer<Location> fb =
+      JsonToFlatbuffer<Location>("{\"name\": \"abc\", \"frequency\": 971}");
+
+  LocationT object = UnpackFlatbuffer(&fb.message());
+  EXPECT_EQ("abc", object.name);
+  EXPECT_EQ(971, object.frequency);
+}
+
 // Tests the ability to map a flatbuffer on disk to memory
 TEST(FlatbufferMMapTest, Verify) {
   FlatbufferDetachedBuffer<Configuration> fb =
