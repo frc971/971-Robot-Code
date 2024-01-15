@@ -50,7 +50,7 @@
 #include "y2016/control_loops/shooter/shooter_output_generated.h"
 #include "y2016/control_loops/shooter/shooter_position_generated.h"
 #include "y2016/control_loops/superstructure/superstructure_output_generated.h"
-#include "y2016/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2016/control_loops/superstructure/superstructure_position_static.h"
 #include "y2016/queues/ball_detector_generated.h"
 
 using ::frc971::wpilib::LoopOutputHandler;
@@ -156,7 +156,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
         shooter_position_sender_(
             event_loop->MakeSender<shooter::Position>("/shooter")),
         superstructure_position_sender_(
-            event_loop->MakeSender<superstructure::Position>(
+            event_loop->MakeSender<superstructure::PositionStatic>(
                 "/superstructure")),
         drivetrain_position_sender_(
             event_loop
@@ -294,34 +294,17 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     }
 
     {
-      auto builder = superstructure_position_sender_.MakeBuilder();
+      aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
+          superstructure_position_sender_.MakeStaticBuilder();
 
-      frc971::PotAndIndexPositionT intake;
-      CopyPosition(intake_encoder_, &intake, intake_translate,
+      CopyPosition(intake_encoder_, builder->add_intake(), intake_translate,
                    intake_pot_translate, false, values.intake.pot_offset);
-      flatbuffers::Offset<frc971::PotAndIndexPosition> intake_offset =
-          frc971::PotAndIndexPosition::Pack(*builder.fbb(), &intake);
-
-      frc971::PotAndIndexPositionT shoulder;
-      CopyPosition(shoulder_encoder_, &shoulder, shoulder_translate,
-                   shoulder_pot_translate, false, values.shoulder.pot_offset);
-      flatbuffers::Offset<frc971::PotAndIndexPosition> shoulder_offset =
-          frc971::PotAndIndexPosition::Pack(*builder.fbb(), &shoulder);
-
-      frc971::PotAndIndexPositionT wrist;
-      CopyPosition(wrist_encoder_, &wrist, wrist_translate, wrist_pot_translate,
-                   true, values.wrist.pot_offset);
-      flatbuffers::Offset<frc971::PotAndIndexPosition> wrist_offset =
-          frc971::PotAndIndexPosition::Pack(*builder.fbb(), &wrist);
-
-      superstructure::Position::Builder position_builder =
-          builder.MakeBuilder<superstructure::Position>();
-
-      position_builder.add_intake(intake_offset);
-      position_builder.add_shoulder(shoulder_offset);
-      position_builder.add_wrist(wrist_offset);
-
-      builder.CheckOk(builder.Send(position_builder.Finish()));
+      CopyPosition(shoulder_encoder_, builder->add_shoulder(),
+                   shoulder_translate, shoulder_pot_translate, false,
+                   values.shoulder.pot_offset);
+      CopyPosition(wrist_encoder_, builder->add_wrist(), wrist_translate,
+                   wrist_pot_translate, true, values.wrist.pot_offset);
+      builder.CheckOk(builder.Send());
     }
 
     {
@@ -351,7 +334,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   ::aos::Sender<::y2016::sensors::BallDetector> ball_detector_sender_;
   ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
   ::aos::Sender<shooter::Position> shooter_position_sender_;
-  ::aos::Sender<superstructure::Position> superstructure_position_sender_;
+  ::aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
   ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
 

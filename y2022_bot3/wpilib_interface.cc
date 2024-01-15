@@ -51,7 +51,7 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2022_bot3/constants.h"
 #include "y2022_bot3/control_loops/superstructure/superstructure_output_generated.h"
-#include "y2022_bot3/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2022_bot3/control_loops/superstructure/superstructure_position_static.h"
 
 using ::aos::monotonic_clock;
 using ::y2022_bot3::constants::Values;
@@ -112,7 +112,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
                 "/autonomous")),
         superstructure_position_sender_(
-            event_loop->MakeSender<superstructure::Position>(
+            event_loop->MakeSender<superstructure::PositionStatic>(
                 "/superstructure")),
         drivetrain_position_sender_(
             event_loop
@@ -195,11 +195,11 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   void RunIteration() override {
     {
-      auto builder = superstructure_position_sender_.MakeBuilder();
+      aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
+          superstructure_position_sender_.MakeStaticBuilder();
 
       // Climbers
-      frc971::PotAndAbsolutePositionT climber_right;
-      CopyPosition(climber_encoder_right_, &climber_right,
+      CopyPosition(climber_encoder_right_, builder->add_climber_right(),
                    Values::kClimberEncoderCountsPerRevolution(),
                    (Values::kClimberEncoderRatio() *
                     Values::kClimberEncoderCountsPerRevolution()) /
@@ -207,8 +207,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                    climber_pot_translate, true,
                    values_->climber_right.potentiometer_offset);
 
-      frc971::PotAndAbsolutePositionT climber_left;
-      CopyPosition(climber_encoder_left_, &climber_left,
+      CopyPosition(climber_encoder_left_, builder->add_climber_left(),
                    Values::kClimberEncoderCountsPerRevolution(),
                    (Values::kClimberEncoderRatio() *
                     Values::kClimberEncoderCountsPerRevolution()) /
@@ -217,25 +216,12 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                    values_->climber_left.potentiometer_offset);
 
       // Intake
-      frc971::PotAndAbsolutePositionT intake;
-      CopyPosition(intake_encoder_, &intake,
+      CopyPosition(intake_encoder_, builder->add_intake(),
                    Values::kIntakeEncoderCountsPerRevolution(),
                    Values::kIntakeEncoderRatio(), intake_pot_translate, true,
                    values_->intake.potentiometer_offset);
 
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> intake_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &intake);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> climber_offset_right =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &climber_right);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> climber_offset_left =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &climber_left);
-
-      superstructure::Position::Builder position_builder =
-          builder.MakeBuilder<superstructure::Position>();
-      position_builder.add_intake(intake_offset);
-      position_builder.add_climber_right(climber_offset_right);
-      position_builder.add_climber_left(climber_offset_left);
-      builder.CheckOk(builder.Send(position_builder.Finish()));
+      builder.CheckOk(builder.Send());
     }
 
     {
@@ -318,7 +304,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::shared_ptr<const Values> values_;
 
   aos::Sender<frc971::autonomous::AutonomousMode> auto_mode_sender_;
-  aos::Sender<superstructure::Position> superstructure_position_sender_;
+  aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
   aos::Sender<frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
   ::aos::Sender<::frc971::sensors::GyroReading> gyro_sender_;

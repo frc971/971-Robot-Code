@@ -55,7 +55,7 @@
 #include "y2022/control_loops/superstructure/led_indicator.h"
 #include "y2022/control_loops/superstructure/superstructure_can_position_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_output_generated.h"
-#include "y2022/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2022/control_loops/superstructure/superstructure_position_static.h"
 
 using ::aos::monotonic_clock;
 using ::y2022::constants::Values;
@@ -167,7 +167,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
                 "/autonomous")),
         superstructure_position_sender_(
-            event_loop->MakeSender<superstructure::Position>(
+            event_loop->MakeSender<superstructure::PositionStatic>(
                 "/superstructure")),
         drivetrain_position_sender_(
             event_loop
@@ -227,74 +227,44 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   void RunIteration() override {
     superstructure_reading_->Set(true);
     {
-      auto builder = superstructure_position_sender_.MakeBuilder();
+      aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
+          superstructure_position_sender_.MakeStaticBuilder();
 
-      frc971::PotAndAbsolutePositionT catapult;
-      CopyPosition(catapult_encoder_, &catapult,
+      CopyPosition(catapult_encoder_, builder->add_catapult(),
                    Values::kCatapultEncoderCountsPerRevolution(),
                    Values::kCatapultEncoderRatio(), catapult_pot_translate,
                    false, values_->catapult.potentiometer_offset);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> catapult_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &catapult);
 
-      frc971::RelativePositionT climber;
-      CopyPosition(*climber_potentiometer_, &climber, climber_pot_translate,
-                   false, values_->climber.potentiometer_offset);
-      flatbuffers::Offset<frc971::RelativePosition> climber_offset =
-          frc971::RelativePosition::Pack(*builder.fbb(), &climber);
+      CopyPosition(*climber_potentiometer_, builder->add_climber(),
+                   climber_pot_translate, false,
+                   values_->climber.potentiometer_offset);
 
-      frc971::RelativePositionT flipper_arm_left;
-      CopyPosition(*flipper_arm_left_potentiometer_, &flipper_arm_left,
-                   flipper_arms_pot_translate, false,
-                   values_->flipper_arm_left.potentiometer_offset);
+      CopyPosition(*flipper_arm_left_potentiometer_,
+                   builder->add_flipper_arm_left(), flipper_arms_pot_translate,
+                   false, values_->flipper_arm_left.potentiometer_offset);
 
-      frc971::RelativePositionT flipper_arm_right;
-      CopyPosition(*flipper_arm_right_potentiometer_, &flipper_arm_right,
-                   flipper_arms_pot_translate, true,
-                   values_->flipper_arm_right.potentiometer_offset);
+      CopyPosition(*flipper_arm_right_potentiometer_,
+                   builder->add_flipper_arm_right(), flipper_arms_pot_translate,
+                   true, values_->flipper_arm_right.potentiometer_offset);
 
       // Intake
-      frc971::PotAndAbsolutePositionT intake_front;
-      CopyPosition(intake_encoder_front_, &intake_front,
+      CopyPosition(intake_encoder_front_, builder->add_intake_front(),
                    Values::kIntakeEncoderCountsPerRevolution(),
                    Values::kIntakeEncoderRatio(), intake_pot_translate, true,
                    values_->intake_front.potentiometer_offset);
-      frc971::PotAndAbsolutePositionT intake_back;
-      CopyPosition(intake_encoder_back_, &intake_back,
+      CopyPosition(intake_encoder_back_, builder->add_intake_back(),
                    Values::kIntakeEncoderCountsPerRevolution(),
                    Values::kIntakeEncoderRatio(), intake_pot_translate, true,
                    values_->intake_back.potentiometer_offset);
-      frc971::PotAndAbsolutePositionT turret;
-      CopyPosition(turret_encoder_, &turret,
+      CopyPosition(turret_encoder_, builder->add_turret(),
                    Values::kTurretEncoderCountsPerRevolution(),
                    Values::kTurretEncoderRatio(), turret_pot_translate, false,
                    values_->turret.potentiometer_offset);
 
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> intake_offset_front =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &intake_front);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> intake_offset_back =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &intake_back);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> turret_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &turret);
-      flatbuffers::Offset<frc971::RelativePosition> flipper_arm_left_offset =
-          frc971::RelativePosition::Pack(*builder.fbb(), &flipper_arm_left);
-      flatbuffers::Offset<frc971::RelativePosition> flipper_arm_right_offset =
-          frc971::RelativePosition::Pack(*builder.fbb(), &flipper_arm_right);
-
-      superstructure::Position::Builder position_builder =
-          builder.MakeBuilder<superstructure::Position>();
-      position_builder.add_climber(climber_offset);
-      position_builder.add_flipper_arm_left(flipper_arm_left_offset);
-      position_builder.add_flipper_arm_right(flipper_arm_right_offset);
-      position_builder.add_intake_front(intake_offset_front);
-      position_builder.add_intake_back(intake_offset_back);
-      position_builder.add_turret(turret_offset);
-      position_builder.add_intake_beambreak_front(
-          intake_beambreak_front_->Get());
-      position_builder.add_intake_beambreak_back(intake_beambreak_back_->Get());
-      position_builder.add_turret_beambreak(turret_beambreak_->Get());
-      position_builder.add_catapult(catapult_offset);
-      builder.CheckOk(builder.Send(position_builder.Finish()));
+      builder->set_intake_beambreak_front(intake_beambreak_front_->Get());
+      builder->set_intake_beambreak_back(intake_beambreak_back_->Get());
+      builder->set_turret_beambreak(turret_beambreak_->Get());
+      builder.CheckOk(builder.Send());
     }
 
     {
@@ -454,7 +424,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::shared_ptr<const Values> values_;
 
   aos::Sender<frc971::autonomous::AutonomousMode> auto_mode_sender_;
-  aos::Sender<superstructure::Position> superstructure_position_sender_;
+  aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
   aos::Sender<frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
   ::aos::Sender<::frc971::sensors::GyroReading> gyro_sender_;

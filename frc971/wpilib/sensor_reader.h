@@ -8,7 +8,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "aos/stl_mutex/stl_mutex.h"
 #include "aos/time/time.h"
-#include "frc971/control_loops/control_loops_generated.h"
+#include "frc971/control_loops/control_loops_static.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_static.h"
 #include "frc971/input/robot_state_generated.h"
 #include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
@@ -65,149 +65,149 @@ class SensorReader {
   // Copies a DMAEncoder to a IndexPosition with the correct unit and direction
   // changes.
   void CopyPosition(const ::frc971::wpilib::DMAEncoder &encoder,
-                    ::frc971::IndexPositionT *position,
+                    ::frc971::IndexPositionStatic *position,
                     double encoder_counts_per_revolution, double encoder_ratio,
                     bool reverse) {
     const double multiplier = reverse ? -1.0 : 1.0;
-    position->encoder =
-        multiplier * encoder_translate(encoder.polled_encoder_value(),
-                                       encoder_counts_per_revolution,
-                                       encoder_ratio);
-    position->latched_encoder =
+    position->set_encoder(multiplier *
+                          encoder_translate(encoder.polled_encoder_value(),
+                                            encoder_counts_per_revolution,
+                                            encoder_ratio));
+    position->set_latched_encoder(
         multiplier * encoder_translate(encoder.last_encoder_value(),
                                        encoder_counts_per_revolution,
-                                       encoder_ratio);
-    position->index_pulses = encoder.index_posedge_count();
+                                       encoder_ratio));
+    position->set_index_pulses(encoder.index_posedge_count());
   }
 
   // Copies a AbsoluteEncoderAndPotentiometer to a PotAndAbsolutePosition with
   // the correct unit and direction changes.
   void CopyPosition(
       const ::frc971::wpilib::AbsoluteEncoderAndPotentiometer &encoder,
-      ::frc971::PotAndAbsolutePositionT *position,
+      ::frc971::PotAndAbsolutePositionStatic *position,
       double encoder_counts_per_revolution, double encoder_ratio,
       ::std::function<double(double)> potentiometer_translate, bool reverse,
       double pot_offset) {
     const double multiplier = reverse ? -1.0 : 1.0;
-    position->pot = multiplier * potentiometer_translate(
-                                     encoder.ReadPotentiometerVoltage()) +
-                    pot_offset;
-    position->encoder =
-        multiplier * encoder_translate(encoder.ReadRelativeEncoder(),
-                                       encoder_counts_per_revolution,
-                                       encoder_ratio);
+    position->set_pot(multiplier * potentiometer_translate(
+                                       encoder.ReadPotentiometerVoltage()) +
+                      pot_offset);
+    position->set_encoder(multiplier *
+                          encoder_translate(encoder.ReadRelativeEncoder(),
+                                            encoder_counts_per_revolution,
+                                            encoder_ratio));
 
-    position->absolute_encoder =
-        (reverse ? (1.0 - encoder.ReadAbsoluteEncoder())
-                 : encoder.ReadAbsoluteEncoder()) *
-        encoder_ratio * (2.0 * M_PI);
+    position->set_absolute_encoder((reverse
+                                        ? (1.0 - encoder.ReadAbsoluteEncoder())
+                                        : encoder.ReadAbsoluteEncoder()) *
+                                   encoder_ratio * (2.0 * M_PI));
   }
 
   // Copies an AbsoluteEncoderAndPotentiometer to an AbsoluteAndAbsolutePosition
   // with the correct unit and direction changes.
   void CopyPosition(const ::frc971::wpilib::AbsoluteAndAbsoluteEncoder &encoder,
-                    ::frc971::AbsoluteAndAbsolutePositionT *position,
+                    ::frc971::AbsoluteAndAbsolutePositionStatic *position,
                     double encoder_counts_per_revolution, double encoder_ratio,
                     double single_turn_encoder_ratio, bool reverse) {
     const double multiplier = reverse ? -1.0 : 1.0;
-    position->encoder =
-        multiplier * encoder_translate(encoder.ReadRelativeEncoder(),
-                                       encoder_counts_per_revolution,
-                                       encoder_ratio);
+    position->set_encoder(multiplier *
+                          encoder_translate(encoder.ReadRelativeEncoder(),
+                                            encoder_counts_per_revolution,
+                                            encoder_ratio));
 
-    position->absolute_encoder =
-        (reverse ? (1.0 - encoder.ReadAbsoluteEncoder())
-                 : encoder.ReadAbsoluteEncoder()) *
-        encoder_ratio * (2.0 * M_PI);
+    position->set_absolute_encoder((reverse
+                                        ? (1.0 - encoder.ReadAbsoluteEncoder())
+                                        : encoder.ReadAbsoluteEncoder()) *
+                                   encoder_ratio * (2.0 * M_PI));
 
-    position->single_turn_absolute_encoder =
+    position->set_single_turn_absolute_encoder(
         (reverse ? (1.0 - encoder.ReadSingleTurnAbsoluteEncoder())
                  : encoder.ReadSingleTurnAbsoluteEncoder()) *
-        single_turn_encoder_ratio * (2.0 * M_PI);
+        single_turn_encoder_ratio * (2.0 * M_PI));
   }
 
   // Copies a DMAEdgeCounter to a HallEffectAndPosition with the correct unit
   // and direction changes.
   void CopyPosition(const ::frc971::wpilib::DMAEdgeCounter &counter,
-                    ::frc971::HallEffectAndPositionT *position,
+                    ::frc971::HallEffectAndPositionStatic *position,
                     double encoder_counts_per_revolution, double encoder_ratio,
                     bool reverse) {
     const double multiplier = reverse ? -1.0 : 1.0;
-    position->encoder =
-        multiplier * encoder_translate(counter.polled_encoder(),
-                                       encoder_counts_per_revolution,
-                                       encoder_ratio);
-    position->current = !counter.polled_value();
-    position->posedge_count = counter.negative_count();
-    position->negedge_count = counter.positive_count();
-    position->posedge_value =
+    position->set_encoder(multiplier *
+                          encoder_translate(counter.polled_encoder(),
+                                            encoder_counts_per_revolution,
+                                            encoder_ratio));
+    position->set_current(!counter.polled_value());
+    position->set_posedge_count(counter.negative_count());
+    position->set_negedge_count(counter.positive_count());
+    position->set_posedge_value(
         multiplier * encoder_translate(counter.last_negative_encoder_value(),
                                        encoder_counts_per_revolution,
-                                       encoder_ratio);
-    position->negedge_value =
+                                       encoder_ratio));
+    position->set_negedge_value(
         multiplier * encoder_translate(counter.last_positive_encoder_value(),
                                        encoder_counts_per_revolution,
-                                       encoder_ratio);
+                                       encoder_ratio));
   }
 
   // Copies a Absolute Encoder with the correct unit
   // and direction changes.
   void CopyPosition(const ::frc971::wpilib::AbsoluteEncoder &encoder,
-                    ::frc971::AbsolutePositionT *position,
+                    ::frc971::AbsolutePositionStatic *position,
                     double encoder_counts_per_revolution, double encoder_ratio,
                     bool reverse) {
     const double multiplier = reverse ? -1.0 : 1.0;
-    position->encoder =
-        multiplier * encoder_translate(encoder.ReadRelativeEncoder(),
-                                       encoder_counts_per_revolution,
-                                       encoder_ratio);
+    position->set_encoder(multiplier *
+                          encoder_translate(encoder.ReadRelativeEncoder(),
+                                            encoder_counts_per_revolution,
+                                            encoder_ratio));
 
-    position->absolute_encoder =
-        (reverse ? (1.0 - encoder.ReadAbsoluteEncoder())
-                 : encoder.ReadAbsoluteEncoder()) *
-        encoder_ratio * (2.0 * M_PI);
+    position->set_absolute_encoder((reverse
+                                        ? (1.0 - encoder.ReadAbsoluteEncoder())
+                                        : encoder.ReadAbsoluteEncoder()) *
+                                   encoder_ratio * (2.0 * M_PI));
   }
 
   void CopyPosition(const ::frc971::wpilib::DMAEncoderAndPotentiometer &encoder,
-                    ::frc971::PotAndIndexPositionT *position,
+                    ::frc971::PotAndIndexPositionStatic *position,
                     ::std::function<double(int32_t)> encoder_translate,
                     ::std::function<double(double)> potentiometer_translate,
                     bool reverse, double pot_offset) {
     const double multiplier = reverse ? -1.0 : 1.0;
-    position->encoder =
-        multiplier * encoder_translate(encoder.polled_encoder_value());
-    position->pot = multiplier * potentiometer_translate(
-                                     encoder.polled_potentiometer_voltage()) +
-                    pot_offset;
-    position->latched_encoder =
-        multiplier * encoder_translate(encoder.last_encoder_value());
-    position->latched_pot =
+    position->set_encoder(multiplier *
+                          encoder_translate(encoder.polled_encoder_value()));
+    position->set_pot(multiplier * potentiometer_translate(
+                                       encoder.polled_potentiometer_voltage()) +
+                      pot_offset);
+    position->set_latched_encoder(
+        multiplier * encoder_translate(encoder.last_encoder_value()));
+    position->set_latched_pot(
         multiplier *
             potentiometer_translate(encoder.last_potentiometer_voltage()) +
-        pot_offset;
-    position->index_pulses = encoder.index_posedge_count();
+        pot_offset);
+    position->set_index_pulses(encoder.index_posedge_count());
   }
 
   // Copies a relative digital encoder.
   void CopyPosition(const ::frc::Encoder &encoder,
-                    ::frc971::RelativePositionT *position,
+                    ::frc971::RelativePositionStatic *position,
                     double encoder_counts_per_revolution, double encoder_ratio,
                     bool reverse) {
     const double multiplier = reverse ? -1.0 : 1.0;
-    position->encoder =
-        multiplier * encoder_translate(encoder.GetRaw(),
-                                       encoder_counts_per_revolution,
-                                       encoder_ratio);
+    position->set_encoder(multiplier *
+                          encoder_translate(encoder.GetRaw(),
+                                            encoder_counts_per_revolution,
+                                            encoder_ratio));
   }
 
   // Copies a potentiometer
   void CopyPosition(const ::frc::AnalogInput &input,
-                    ::frc971::RelativePositionT *position,
+                    ::frc971::RelativePositionStatic *position,
                     ::std::function<double(double)> potentiometer_translate,
                     bool reverse, double pot_offset) {
     const double multiplier = reverse ? -1.0 : 1.0;
-    position->encoder =
-        multiplier * potentiometer_translate(input.GetVoltage()) + pot_offset;
+    position->set_encoder(
+        multiplier * potentiometer_translate(input.GetVoltage()) + pot_offset);
   }
 
   double encoder_translate(int32_t value, double counts_per_revolution,

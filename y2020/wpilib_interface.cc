@@ -53,7 +53,7 @@
 #include "y2020/constants.h"
 #include "y2020/control_loops/superstructure/shooter/shooter_tuning_readings_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_output_generated.h"
-#include "y2020/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2020/control_loops/superstructure/superstructure_position_static.h"
 
 DEFINE_bool(shooter_tuning, true,
             "If true, reads from ball beambreak sensors and sends shooter "
@@ -161,7 +161,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
                 "/autonomous")),
         superstructure_position_sender_(
-            event_loop->MakeSender<superstructure::Position>(
+            event_loop->MakeSender<superstructure::PositionStatic>(
                 "/superstructure")),
         drivetrain_position_sender_(
             event_loop
@@ -288,65 +288,43 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     const constants::Values &values = constants::GetValues();
 
     {
-      auto builder = superstructure_position_sender_.MakeBuilder();
+      aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
+          superstructure_position_sender_.MakeStaticBuilder();
 
       // TODO(alex): check new absolute encoder api.
       // Hood
-      frc971::AbsoluteAndAbsolutePositionT hood;
-      CopyPosition(hood_encoder_, &hood,
+      CopyPosition(hood_encoder_, builder->add_hood(),
                    Values::kHoodEncoderCountsPerRevolution(),
                    Values::kHoodEncoderRatio(),
                    Values::kHoodSingleTurnEncoderRatio(), false);
-      flatbuffers::Offset<frc971::AbsoluteAndAbsolutePosition> hood_offset =
-          frc971::AbsoluteAndAbsolutePosition::Pack(*builder.fbb(), &hood);
-
       // Intake
-      frc971::AbsolutePositionT intake_joint;
-      CopyPosition(intake_joint_encoder_, &intake_joint,
+      CopyPosition(intake_joint_encoder_, builder->add_intake_joint(),
                    Values::kIntakeEncoderCountsPerRevolution(),
                    Values::kIntakeEncoderRatio(), false);
-      flatbuffers::Offset<frc971::AbsolutePosition> intake_joint_offset =
-          frc971::AbsolutePosition::Pack(*builder.fbb(), &intake_joint);
-
       // Turret
-      frc971::PotAndAbsolutePositionT turret;
-      CopyPosition(turret_encoder_, &turret,
+      CopyPosition(turret_encoder_, builder->add_turret(),
                    Values::kTurretEncoderCountsPerRevolution(),
                    Values::kTurretEncoderRatio(), turret_pot_translate, true,
                    values.turret.potentiometer_offset);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> turret_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &turret);
-
       // Shooter
-      y2020::control_loops::superstructure::ShooterPositionT shooter;
-      shooter.theta_finisher =
+      y2020::control_loops::superstructure::ShooterPositionStatic *shooter =
+          builder->add_shooter();
+      shooter->set_theta_finisher(
           encoder_translate(-finisher_encoder_->GetRaw(),
                             Values::kFinisherEncoderCountsPerRevolution(),
-                            Values::kFinisherEncoderRatio());
+                            Values::kFinisherEncoderRatio()));
 
-      shooter.theta_accelerator_left =
+      shooter->set_theta_accelerator_left(
           encoder_translate(-left_accelerator_encoder_->GetRaw(),
                             Values::kAcceleratorEncoderCountsPerRevolution(),
-                            Values::kAcceleratorEncoderRatio());
-      shooter.theta_accelerator_right =
+                            Values::kAcceleratorEncoderRatio()));
+      shooter->set_theta_accelerator_right(
           encoder_translate(right_accelerator_encoder_->GetRaw(),
                             Values::kAcceleratorEncoderCountsPerRevolution(),
-                            Values::kAcceleratorEncoderRatio());
-      flatbuffers::Offset<y2020::control_loops::superstructure::ShooterPosition>
-          shooter_offset =
-              y2020::control_loops::superstructure::ShooterPosition::Pack(
-                  *builder.fbb(), &shooter);
+                            Values::kAcceleratorEncoderRatio()));
+      builder->set_intake_beambreak_triggered(ball_intake_beambreak_->Get());
 
-      superstructure::Position::Builder position_builder =
-          builder.MakeBuilder<superstructure::Position>();
-      position_builder.add_hood(hood_offset);
-      position_builder.add_intake_joint(intake_joint_offset);
-      position_builder.add_turret(turret_offset);
-      position_builder.add_shooter(shooter_offset);
-      position_builder.add_intake_beambreak_triggered(
-          ball_intake_beambreak_->Get());
-
-      builder.CheckOk(builder.Send(position_builder.Finish()));
+      builder.CheckOk(builder.Send());
     }
 
     {
@@ -386,7 +364,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
  private:
   ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
-  ::aos::Sender<superstructure::Position> superstructure_position_sender_;
+  ::aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
   ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
   ::aos::Sender<superstructure::shooter::TuningReadings>
