@@ -40,6 +40,7 @@
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/can_configuration_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_can_position_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_can_position_static.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
 #include "frc971/queues/gyro_generated.h"
@@ -68,7 +69,7 @@ using ::aos::monotonic_clock;
 using ::frc971::CANConfiguration;
 using ::y2024_defense::constants::Values;
 
-using frc971::control_loops::drivetrain::CANPosition;
+using frc971::control_loops::drivetrain::CANPositionStatic;
 using frc971::wpilib::TalonFX;
 
 using std::make_unique;
@@ -312,44 +313,28 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
     can_sensor_reader_event_loop.set_name("CANSensorReader");
 
-    aos::Sender<CANPosition> can_position_sender =
-        can_sensor_reader_event_loop.MakeSender<CANPosition>("/drivetrain");
+    aos::Sender<CANPositionStatic> can_position_sender =
+        can_sensor_reader_event_loop.MakeSender<CANPositionStatic>(
+            "/drivetrain");
 
     frc971::wpilib::CANSensorReader can_sensor_reader(
         &can_sensor_reader_event_loop, std::move(signals_registry), falcons,
         [falcons, &can_position_sender](ctre::phoenix::StatusCode status) {
-          auto builder = can_position_sender.MakeBuilder();
-          aos::SizedArray<
-              flatbuffers::Offset<frc971::control_loops::CANTalonFX>, 6>
-              flatbuffer_falcons;
+          aos::Sender<CANPositionStatic>::StaticBuilder builder =
+              can_position_sender.MakeStaticBuilder();
+
+          auto falcon_vector = builder->add_talonfxs();
 
           for (auto falcon : falcons) {
             falcon->SerializePosition(
-                builder.fbb(), control_loops::drivetrain::kHighOutputRatio);
-            std::optional<
-                flatbuffers::Offset<frc971::control_loops::CANTalonFX>>
-                falcon_offset = falcon->TakeOffset();
-
-            CHECK(falcon_offset.has_value());
-
-            flatbuffer_falcons.push_back(falcon_offset.value());
+                falcon_vector->emplace_back(),
+                control_loops::drivetrain::kHighOutputRatio);
           }
 
-          auto falcons_list =
-              builder.fbb()
-                  ->CreateVector<
-                      flatbuffers::Offset<frc971::control_loops::CANTalonFX>>(
-                      flatbuffer_falcons);
+          builder->set_timestamp(falcons.front()->GetTimestamp());
+          builder->set_status(static_cast<int>(status));
 
-          frc971::control_loops::drivetrain::CANPosition::Builder
-              can_position_builder = builder.MakeBuilder<
-                  frc971::control_loops::drivetrain::CANPosition>();
-
-          can_position_builder.add_talonfxs(falcons_list);
-          can_position_builder.add_timestamp(falcons.front()->GetTimestamp());
-          can_position_builder.add_status(static_cast<int>(status));
-
-          builder.CheckOk(builder.Send(can_position_builder.Finish()));
+          builder.CheckOk(builder.Send());
         });
 
     AddLoop(&can_sensor_reader_event_loop);

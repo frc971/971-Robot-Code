@@ -10,7 +10,7 @@
 #include "frc971/wpilib/talonfx.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2023_bot4/constants.h"
-#include "y2023_bot4/drivetrain_can_position_generated.h"
+#include "y2023_bot4/drivetrain_can_position_static.h"
 #include "y2023_bot4/drivetrain_position_generated.h"
 
 DEFINE_bool(ctre_diag_server, false,
@@ -43,21 +43,13 @@ flatbuffers::Offset<frc971::AbsolutePosition> module_offset(
   return builder.Finish();
 }
 
-flatbuffers::Offset<SwerveModuleCANPosition> can_module_offset(
-    SwerveModuleCANPosition::Builder builder,
-    std::shared_ptr<SwerveModule> module) {
-  std::optional<flatbuffers::Offset<control_loops::CANTalonFX>>
-      rotation_offset = module->rotation->TakeOffset();
-  std::optional<flatbuffers::Offset<control_loops::CANTalonFX>>
-      translation_offset = module->translation->TakeOffset();
+void populate_can_module(SwerveModuleCANPositionStatic *can_position,
+                         std::shared_ptr<SwerveModule> module) {
+  auto rotation = can_position->add_rotation();
+  module->rotation->SerializePosition(rotation, 1.0);
 
-  CHECK(rotation_offset.has_value());
-  CHECK(translation_offset.has_value());
-
-  builder.add_rotation(rotation_offset.value());
-  builder.add_translation(translation_offset.value());
-
-  return builder.Finish();
+  auto translation = can_position->add_translation();
+  module->translation->SerializePosition(translation, 1.0);
 }
 
 constexpr double kMaxFastEncoderPulsesPerSecond = std::max({
@@ -225,8 +217,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     falcons.push_back(back_right->rotation);
     falcons.push_back(back_right->translation);
 
-    aos::Sender<AbsoluteCANPosition> can_position_sender =
-        can_sensor_reader_event_loop.MakeSender<AbsoluteCANPosition>(
+    aos::Sender<AbsoluteCANPositionStatic> can_position_sender =
+        can_sensor_reader_event_loop.MakeSender<AbsoluteCANPositionStatic>(
             "/drivetrain");
 
     CANSensorReader can_sensor_reader(
@@ -236,31 +228,24 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           // TODO(max): use status properly in the flatbuffer.
           (void)status;
 
-          auto builder = can_position_sender.MakeBuilder();
+          aos::Sender<AbsoluteCANPositionStatic>::StaticBuilder builder =
+              can_position_sender.MakeStaticBuilder();
 
           for (auto falcon : falcons) {
             falcon->RefreshNontimesyncedSignals();
-            falcon->SerializePosition(builder.fbb(), 1.0);
           }
 
-          auto front_left_offset = can_module_offset(
-              builder.MakeBuilder<SwerveModuleCANPosition>(), front_left);
-          auto front_right_offset = can_module_offset(
-              builder.MakeBuilder<SwerveModuleCANPosition>(), front_right);
-          auto back_left_offset = can_module_offset(
-              builder.MakeBuilder<SwerveModuleCANPosition>(), back_left);
-          auto back_right_offset = can_module_offset(
-              builder.MakeBuilder<SwerveModuleCANPosition>(), back_right);
+          auto front_left_flatbuffer = builder->add_front_left();
+          auto front_right_flatbuffer = builder->add_front_right();
+          auto back_left_flatbuffer = builder->add_back_left();
+          auto back_right_flatbuffer = builder->add_back_right();
 
-          AbsoluteCANPosition::Builder can_position_builder =
-              builder.MakeBuilder<AbsoluteCANPosition>();
+          populate_can_module(front_left_flatbuffer, front_left);
+          populate_can_module(front_right_flatbuffer, front_right);
+          populate_can_module(back_left_flatbuffer, back_left);
+          populate_can_module(back_right_flatbuffer, back_right);
 
-          can_position_builder.add_front_left(front_left_offset);
-          can_position_builder.add_front_right(front_right_offset);
-          can_position_builder.add_back_left(back_left_offset);
-          can_position_builder.add_back_right(back_right_offset);
-
-          builder.CheckOk(builder.Send(can_position_builder.Finish()));
+          builder.CheckOk(builder.Send());
         });
 
     AddLoop(&can_sensor_reader_event_loop);
