@@ -1,0 +1,39 @@
+namespace frc971.fbs;
+
+enum StorageOrder : ubyte {
+  // Column-major; i.e., for a matrix
+  // [1 2]
+  // [3 4]
+  // The memory layout will be 1 3 2 4.
+  ColMajor = 0,
+  // Row-major; i.e., for a matrix
+  // [1 2]
+  // [3 4]
+  // The memory layout will be 1 2 3 4.
+  RowMajor = 1,
+}
+
+// Represents a dynamically-sized 2-D matrix that is either row-major or column-major.
+table Matrix {
+  // rows and cols must both be greater than zero.
+  rows:uint (id: 0);
+  cols:uint (id: 1);
+  storage_order:StorageOrder = ColMajor (id: 2);
+  // data must be present and must have a length of rows * cols.
+  data:[double] (id: 3);
+}
+
+// The below enums are used in C++ code for communicating errors in parsing
+// the matrix; they are mostly only defined in the fbs file so that we get
+// pre-generated functions for converting the enum values to strings.
+enum MatrixField : ubyte {
+  kRows = 0,
+  kCols,
+  kStorageOrder,
+  kData,
+}
+
+enum FieldError : ubyte {
+  kInconsistentWithTemplate = 0,
+  kMissing,
+}
