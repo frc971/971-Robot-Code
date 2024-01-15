@@ -256,6 +256,13 @@ table ProfileParameters {
   max_acceleration:float (id: 1);
 }
 
+table Range {
+  lower_hard:double (id: 0);
+  upper_hard:double (id: 1);
+  lower:double (id: 2);
+  upper:double (id: 3);
+}
+
 enum ConstraintType : byte {
   CONSTRAINT_TYPE_UNDEFINED,
   LONGITUDINAL_ACCELERATION,

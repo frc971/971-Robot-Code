@@ -57,8 +57,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   // Hood constants.
   hood->zeroing_voltage = 2.0;
   hood->operating_voltage = 12.0;
-  hood->zeroing_profile_params = {0.5, 3.0};
-  hood->default_profile_params = {6.0, 30.0};
+  hood->zeroing_profile_params = {{}, 0.5, 3.0};
+  hood->default_profile_params = {{}, 6.0, 30.0};
   hood->range = Values::kHoodRange();
   hood->make_integral_loop =
       control_loops::superstructure::hood::MakeIntegralHoodLoop;
@@ -90,8 +90,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   // Intake constants.
   intake->zeroing_voltage = 3.0;
   intake->operating_voltage = 12.0;
-  intake->zeroing_profile_params = {0.5, 3.0};
-  intake->default_profile_params = {6.0, 30.0};
+  intake->zeroing_profile_params = {{}, 0.5, 3.0};
+  intake->default_profile_params = {{}, 6.0, 30.0};
   intake->range = Values::kIntakeRange();
   intake->make_integral_loop =
       control_loops::superstructure::intake::MakeIntegralIntakeLoop;
@@ -112,8 +112,8 @@ const Values *DoGetValuesForTeam(uint16_t team) {
   turret_params->zeroing_voltage = 4.0;
   turret_params->operating_voltage = 8.0;
   // TODO(austin): Tune these.
-  turret_params->zeroing_profile_params = {0.5, 2.0};
-  turret_params->default_profile_params = {15.0, 40.0};
+  turret_params->zeroing_profile_params = {{}, 0.5, 2.0};
+  turret_params->default_profile_params = {{}, 15.0, 40.0};
   turret_params->range = Values::kTurretRange();
   turret_params->make_integral_loop =
       &control_loops::superstructure::turret::MakeIntegralTurretLoop;

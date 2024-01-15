@@ -33,8 +33,8 @@ TEST_F(PotAndAbsoluteEncoderZeroingTest,
   double measured_absolute_position = 0.3 * index_diff;
 
   PotAndAbsoluteEncoderZeroingConstants constants{
-      kSampleSize, index_diff,        measured_absolute_position,
-      0.1,         kMovingBufferSize, kIndexErrorFraction};
+      {},  kSampleSize,       index_diff,         measured_absolute_position,
+      0.1, kMovingBufferSize, kIndexErrorFraction};
 
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
@@ -62,8 +62,8 @@ TEST_F(PotAndAbsoluteEncoderZeroingTest,
   double measured_absolute_position = 0.3 * index_diff;
 
   PotAndAbsoluteEncoderZeroingConstants constants{
-      kSampleSize, index_diff,        measured_absolute_position,
-      0.1,         kMovingBufferSize, kIndexErrorFraction};
+      {},  kSampleSize,       index_diff,         measured_absolute_position,
+      0.1, kMovingBufferSize, kIndexErrorFraction};
 
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
@@ -99,8 +99,8 @@ TEST_F(PotAndAbsoluteEncoderZeroingTest,
   double measured_absolute_position = 0.3 * index_diff;
 
   PotAndAbsoluteEncoderZeroingConstants constants{
-      kSampleSize, index_diff,        measured_absolute_position,
-      0.1,         kMovingBufferSize, kIndexErrorFraction};
+      {},  kSampleSize,       index_diff,         measured_absolute_position,
+      0.1, kMovingBufferSize, kIndexErrorFraction};
 
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
@@ -121,7 +121,7 @@ TEST_F(PotAndAbsoluteEncoderZeroingTest,
 TEST_F(PotAndAbsoluteEncoderZeroingTest,
        TestPotAndAbsoluteEncoderZeroingWithNaN) {
   PotAndAbsoluteEncoderZeroingConstants constants{
-      kSampleSize, 1, 0.3, 0.1, kMovingBufferSize, kIndexErrorFraction};
+      {}, kSampleSize, 1, 0.3, 0.1, kMovingBufferSize, kIndexErrorFraction};
 
   PotAndAbsoluteEncoderZeroingEstimator estimator(constants);
 

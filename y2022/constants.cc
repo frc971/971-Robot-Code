@@ -39,8 +39,8 @@ Values MakeValues(uint16_t team) {
 
   intake_params.zeroing_voltage = 3.0;
   intake_params.operating_voltage = 12.0;
-  intake_params.zeroing_profile_params = {0.5, 3.0};
-  intake_params.default_profile_params = {6.0, 30.0};
+  intake_params.zeroing_profile_params = {{}, 0.5, 3.0};
+  intake_params.default_profile_params = {{}, 6.0, 30.0};
   intake_params.range = Values::kIntakeRange();
   intake_params.make_integral_loop =
       control_loops::superstructure::intake::MakeIntegralIntakeLoop;
@@ -70,9 +70,9 @@ Values MakeValues(uint16_t team) {
 
   turret_params->zeroing_voltage = 4.0;
   turret_params->operating_voltage = 12.0;
-  turret_params->zeroing_profile_params = {0.5, 2.0};
-  turret_params->default_profile_params = {10.0, 20.0};
-  turret_params->default_profile_params = {15.0, 20.0};
+  turret_params->zeroing_profile_params = {{}, 0.5, 2.0};
+  turret_params->default_profile_params = {{}, 10.0, 20.0};
+  turret_params->default_profile_params = {{}, 15.0, 20.0};
   turret_params->range = *turret_range;
   turret_params->make_integral_loop =
       control_loops::superstructure::turret::MakeIntegralTurretLoop;
@@ -89,8 +89,8 @@ Values MakeValues(uint16_t team) {
   auto *const climber = &r.climber;
   climber->subsystem_params.zeroing_voltage = 3.0;
   climber->subsystem_params.operating_voltage = 12.0;
-  climber->subsystem_params.zeroing_profile_params = {0.5, 0.1};
-  climber->subsystem_params.default_profile_params = {5.0, 1.0};
+  climber->subsystem_params.zeroing_profile_params = {{}, 0.5, 0.1};
+  climber->subsystem_params.default_profile_params = {{}, 5.0, 1.0};
   climber->subsystem_params.range = Values::kClimberRange();
   climber->subsystem_params.make_integral_loop =
       control_loops::superstructure::climber::MakeIntegralClimberLoop;
@@ -99,8 +99,8 @@ Values MakeValues(uint16_t team) {
   Values::PotConstants flipper_arms;
   flipper_arms.subsystem_params.zeroing_voltage = 3.0;
   flipper_arms.subsystem_params.operating_voltage = 12.0;
-  flipper_arms.subsystem_params.zeroing_profile_params = {0.5, 0.1};
-  flipper_arms.subsystem_params.default_profile_params = {6.0, 1.0};
+  flipper_arms.subsystem_params.zeroing_profile_params = {{}, 0.5, 0.1};
+  flipper_arms.subsystem_params.default_profile_params = {{}, 6.0, 1.0};
   flipper_arms.subsystem_params.range = Values::kFlipperArmRange();
 
   auto *const flipper_arm_right = &r.flipper_arm_right;
@@ -119,8 +119,8 @@ Values MakeValues(uint16_t team) {
 
   catapult_params->zeroing_voltage = 4.0;
   catapult_params->operating_voltage = 12.0;
-  catapult_params->zeroing_profile_params = {0.5, 2.0};
-  catapult_params->default_profile_params = {15.0, 40.0};
+  catapult_params->zeroing_profile_params = {{}, 0.5, 2.0};
+  catapult_params->default_profile_params = {{}, 15.0, 40.0};
   catapult_params->range = Values::kCatapultRange();
   catapult_params->make_integral_loop =
       &control_loops::superstructure::catapult::MakeIntegralCatapultLoop;

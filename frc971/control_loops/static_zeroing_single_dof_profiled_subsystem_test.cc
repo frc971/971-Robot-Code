@@ -83,25 +83,26 @@ template <>
 const frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator::ZeroingConstants
     TestIntakeSystemValues<
         frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>::kZeroing{
-        kZeroingSampleSize, kEncoderIndexDifference, 0, 0.0005, 20, 1.9};
+        {}, kZeroingSampleSize, kEncoderIndexDifference, 0, 0.0005, 20, 1.9};
 
 template <>
 const frc971::zeroing::AbsoluteEncoderZeroingEstimator::ZeroingConstants
     TestIntakeSystemValues<
         frc971::zeroing::AbsoluteEncoderZeroingEstimator>::kZeroing{
-        kZeroingSampleSize, kEncoderIndexDifference, 0.0, 0.2, 0.0005, 20, 1.9};
+        {}, kZeroingSampleSize, kEncoderIndexDifference, 0.0, 0.2, 0.0005, 20,
+        1.9};
 
 template <typename ZeroingEstimator>
 const StaticZeroingSingleDOFProfiledSubsystemParams<ZeroingEstimator>
 TestIntakeSystemValues<ZeroingEstimator>::make_params() {
-  StaticZeroingSingleDOFProfiledSubsystemParams<ZeroingEstimator> params(
-      {kZeroingVoltage,
-       kOperatingVoltage,
-       {0.1, 1.0},
-       {0.3, 5.0},
-       kRange,
-       TestIntakeSystemValues::kZeroing,
-       &MakeIntegralTestIntakeSystemLoop});
+  StaticZeroingSingleDOFProfiledSubsystemParams<ZeroingEstimator> params{
+      kZeroingVoltage,
+      kOperatingVoltage,
+      {{}, 0.1, 1.0},
+      {{}, 0.3, 5.0},
+      kRange,
+      TestIntakeSystemValues::kZeroing,
+      &MakeIntegralTestIntakeSystemLoop};
   return params;
 }
 

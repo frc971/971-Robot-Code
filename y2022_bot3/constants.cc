@@ -44,8 +44,8 @@ Values MakeValues(uint16_t team) {
 
   intake_params.zeroing_voltage = 3.0;
   intake_params.operating_voltage = 12.0;
-  intake_params.zeroing_profile_params = {0.5, 3.0};
-  intake_params.default_profile_params = {6.0, 30.0};
+  intake_params.zeroing_profile_params = {{}, 0.5, 3.0};
+  intake_params.default_profile_params = {{}, 6.0, 30.0};
   intake_params.range = Values::kIntakeRange();
   intake_params.make_integral_loop =
       control_loops::superstructure::intake::MakeIntegralIntakeLoop;
@@ -66,8 +66,8 @@ Values MakeValues(uint16_t team) {
 
   climber_params.zeroing_voltage = 3.0;
   climber_params.operating_voltage = 12.0;
-  climber_params.zeroing_profile_params = {0.5, 0.1};
-  climber_params.default_profile_params = {5.0, 1.0};
+  climber_params.zeroing_profile_params = {{}, 0.5, 0.1};
+  climber_params.default_profile_params = {{}, 5.0, 1.0};
   climber_params.range = Values::kClimberRange();
   climber_params.make_integral_loop =
       control_loops::superstructure::climber::MakeIntegralClimberLoop;

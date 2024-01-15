@@ -31,10 +31,14 @@ TEST_F(AbsoluteEncoderZeroingTest, TestAbsoluteEncoderZeroingWithoutMovement) {
   const double start_pos = 2.1;
   double measured_absolute_position = 0.3 * index_diff;
 
-  AbsoluteEncoderZeroingConstants constants{
-      kSampleSize,        index_diff, measured_absolute_position,
-      kMiddlePosition,    0.1,        kMovingBufferSize,
-      kIndexErrorFraction};
+  AbsoluteEncoderZeroingConstants constants{{},
+                                            kSampleSize,
+                                            index_diff,
+                                            measured_absolute_position,
+                                            kMiddlePosition,
+                                            0.1,
+                                            kMovingBufferSize,
+                                            kIndexErrorFraction};
 
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
@@ -61,10 +65,14 @@ TEST_F(AbsoluteEncoderZeroingTest, TestAbsoluteEncoderZeroingIgnoresNAN) {
   double measured_absolute_position = 0.3 * index_diff;
   const double kMiddlePosition = 2.5;
 
-  AbsoluteEncoderZeroingConstants constants{
-      kSampleSize,        index_diff, measured_absolute_position,
-      kMiddlePosition,    0.1,        kMovingBufferSize,
-      kIndexErrorFraction};
+  AbsoluteEncoderZeroingConstants constants{{},
+                                            kSampleSize,
+                                            index_diff,
+                                            measured_absolute_position,
+                                            kMiddlePosition,
+                                            0.1,
+                                            kMovingBufferSize,
+                                            kIndexErrorFraction};
 
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
@@ -100,10 +108,14 @@ TEST_F(AbsoluteEncoderZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
   double measured_absolute_position = 0.3 * index_diff;
   const double kMiddlePosition = 2.5;
 
-  AbsoluteEncoderZeroingConstants constants{
-      kSampleSize,        index_diff, measured_absolute_position,
-      kMiddlePosition,    0.1,        kMovingBufferSize,
-      kIndexErrorFraction};
+  AbsoluteEncoderZeroingConstants constants{{},
+                                            kSampleSize,
+                                            index_diff,
+                                            measured_absolute_position,
+                                            kMiddlePosition,
+                                            0.1,
+                                            kMovingBufferSize,
+                                            kIndexErrorFraction};
 
   sim.Initialize(start_pos, index_diff / 3.0, 0.0,
                  constants.measured_absolute_position);
@@ -122,8 +134,14 @@ TEST_F(AbsoluteEncoderZeroingTest, TestAbsoluteEncoderZeroingWithMovement) {
 
 // Makes sure we detect an error if the ZeroingEstimator gets sent a NaN.
 TEST_F(AbsoluteEncoderZeroingTest, TestAbsoluteEncoderZeroingWithNaN) {
-  AbsoluteEncoderZeroingConstants constants{
-      kSampleSize, 1, 0.3, 1.0, 0.1, kMovingBufferSize, kIndexErrorFraction};
+  AbsoluteEncoderZeroingConstants constants{{},
+                                            kSampleSize,
+                                            1,
+                                            0.3,
+                                            1.0,
+                                            0.1,
+                                            kMovingBufferSize,
+                                            kIndexErrorFraction};
 
   AbsoluteEncoderZeroingEstimator estimator(constants);
 

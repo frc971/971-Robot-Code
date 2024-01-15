@@ -17,6 +17,10 @@ cc_library(
         "constants.h",
     ],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/zeroing:constants_fbs",
+    ],
 )
 
 py_library(
