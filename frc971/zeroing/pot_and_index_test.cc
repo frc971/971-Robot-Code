@@ -27,7 +27,7 @@ TEST_F(PotAndIndexZeroingTest, TestMovingAverageFilter) {
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.6 * index_diff, index_diff / 3.0);
   PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
-      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
+      {}, kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // The zeroing code is supposed to perform some filtering on the difference
   // between the potentiometer value and the encoder value. We assume that 300
@@ -51,7 +51,7 @@ TEST_F(PotAndIndexZeroingTest, NotZeroedBeforeEnoughSamplesCollected) {
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(position, index_diff / 3.0);
   PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
-      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
+      {}, kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // Make sure that the zeroing code does not consider itself zeroed until we
   // collect a good amount of samples. In this case we're waiting until the
@@ -70,7 +70,7 @@ TEST_F(PotAndIndexZeroingTest, TestLotsOfMovement) {
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.6, index_diff / 3.0);
   PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
-      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
+      {}, kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // The zeroing code is supposed to perform some filtering on the difference
   // between the potentiometer value and the encoder value. We assume that 300
@@ -104,7 +104,7 @@ TEST_F(PotAndIndexZeroingTest, TestDifferentIndexDiffs) {
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.5 * index_diff, index_diff / 3.0);
   PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
-      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
+      {}, kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // The zeroing code is supposed to perform some filtering on the difference
   // between the potentiometer value and the encoder value. We assume that 300
@@ -138,7 +138,7 @@ TEST_F(PotAndIndexZeroingTest, TestPercentage) {
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.5 * index_diff, index_diff / 3.0);
   PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
-      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
+      {}, kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   for (unsigned int i = 0; i < kSampleSize / 2; i++) {
     MoveTo(&sim, &estimator, 3.5 * index_diff);
@@ -158,7 +158,7 @@ TEST_F(PotAndIndexZeroingTest, TestOffset) {
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.1 * index_diff, index_diff / 3.0);
   PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
-      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
+      {}, kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   MoveTo(&sim, &estimator, 3.1 * index_diff);
 
@@ -174,7 +174,7 @@ TEST_F(PotAndIndexZeroingTest, WaitForIndexPulseAfterReset) {
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.1 * index_diff, index_diff / 3.0);
   PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
-      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
+      {}, kSampleSize, index_diff, 0.0, kIndexErrorFraction});
 
   // Make sure to fill up the averaging filter with samples.
   for (unsigned int i = 0; i < kSampleSize; i++) {
@@ -209,7 +209,7 @@ TEST_F(PotAndIndexZeroingTest, TestNonZeroIndexPulseOffsets) {
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(3.3 * index_diff, index_diff / 3.0, known_index_pos);
   PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
-      kSampleSize, index_diff, known_index_pos, kIndexErrorFraction});
+      {}, kSampleSize, index_diff, known_index_pos, kIndexErrorFraction});
 
   // Make sure to fill up the averaging filter with samples.
   for (unsigned int i = 0; i < kSampleSize; i++) {
@@ -234,7 +234,7 @@ TEST_F(PotAndIndexZeroingTest, TestNonZeroIndexPulseOffsets) {
 TEST_F(PotAndIndexZeroingTest, BasicErrorAPITest) {
   const double index_diff = 1.0;
   PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
-      kSampleSize, index_diff, 0.0, kIndexErrorFraction});
+      {}, kSampleSize, index_diff, 0.0, kIndexErrorFraction});
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(1.5 * index_diff, index_diff / 3.0, 0.0);
 
@@ -262,7 +262,7 @@ TEST_F(PotAndIndexZeroingTest, TestIndexOffsetError) {
   PositionSensorSimulator sim(index_diff);
   sim.Initialize(10 * index_diff, index_diff / 3.0, known_index_pos);
   PotAndIndexPulseZeroingEstimator estimator(PotAndIndexPulseZeroingConstants{
-      sample_size, index_diff, known_index_pos, kIndexErrorFraction});
+      {}, sample_size, index_diff, known_index_pos, kIndexErrorFraction});
 
   for (size_t i = 0; i < sample_size; i++) {
     MoveTo(&sim, &estimator, 13 * index_diff);

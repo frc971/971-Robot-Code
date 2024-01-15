@@ -42,6 +42,7 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
       0.4 * single_turn_distance_per_revolution;
 
   AbsoluteAndAbsoluteEncoderZeroingConstants constants{
+      {},
       kSampleSize,
       distance_per_revolution,
       measured_absolute_position,
@@ -89,6 +90,7 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
       0.4 * single_turn_distance_per_revolution;
 
   AbsoluteAndAbsoluteEncoderZeroingConstants constants{
+      {},
       kSampleSize,
       distance_per_revolution,
       measured_absolute_position,
@@ -144,6 +146,7 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
       0.4 * single_turn_distance_per_revolution;
 
   AbsoluteAndAbsoluteEncoderZeroingConstants constants{
+      {},
       kSampleSize,
       distance_per_revolution,
       measured_absolute_position,
@@ -175,9 +178,16 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
 // Makes sure we detect an error if the ZeroingEstimator gets sent a NaN.
 TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
        TestAbsoluteAndAbsoluteEncoderZeroingWithNaN) {
-  AbsoluteAndAbsoluteEncoderZeroingConstants constants{
-      kSampleSize,        1, 0.3, 1, 0.3, 2.5, 0.1, kMovingBufferSize,
-      kIndexErrorFraction};
+  AbsoluteAndAbsoluteEncoderZeroingConstants constants{{},
+                                                       kSampleSize,
+                                                       1,
+                                                       0.3,
+                                                       1,
+                                                       0.3,
+                                                       2.5,
+                                                       0.1,
+                                                       kMovingBufferSize,
+                                                       kIndexErrorFraction};
 
   AbsoluteAndAbsoluteEncoderZeroingEstimator estimator(constants);
 
@@ -215,6 +225,7 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
       0.4 * single_turn_distance_per_revolution;
 
   AbsoluteAndAbsoluteEncoderZeroingConstants constants{
+      {},
       kSampleSize,
       distance_per_revolution,
       measured_absolute_position,
@@ -276,6 +287,7 @@ TEST_F(AbsoluteAndAbsoluteEncoderZeroingTest,
       0.4 * single_turn_distance_per_revolution;
 
   AbsoluteAndAbsoluteEncoderZeroingConstants constants{
+      {},
       kSampleSize,
       distance_per_revolution,
       measured_absolute_position,

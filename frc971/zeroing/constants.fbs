@@ -1,0 +1,135 @@
+namespace frc971.zeroing;
+
+table HallEffectZeroingConstants {
+  // The absolute position of the lower edge of the hall effect sensor.
+  lower_hall_position:double (id: 0);
+  // The absolute position of the upper edge of the hall effect sensor.
+  upper_hall_position:double (id: 1);
+  // The difference in scaled units between two hall effect edges.  This is the
+  // number of units/cycle.
+  index_difference:double (id: 2);
+  // Number of cycles we need to see the hall effect high.
+  hall_trigger_zeroing_length:uint64 (id: 3);
+  // Direction the system must be moving in order to zero. True is positive,
+  // False is negative direction.
+  zeroing_move_direction:bool (id: 4);
+}
+
+table PotAndIndexPulseZeroingConstants {
+  // The number of samples in the moving average filter.
+  average_filter_size:uint64 (id: 0);
+  // The difference in scaled units between two index pulses.
+  index_difference:double (id: 1);
+  // The absolute position in scaled units of one of the index pulses.
+  measured_index_position:double (id: 2);
+  // Value between 0 and .5 which determines a fraction of the index_diff
+  // you want to use.
+  allowable_encoder_error:double (id: 3);
+}
+
+table EncoderPlusIndexZeroingConstants {
+  // The amount of index pulses in the joint's range of motion.
+  index_pulse_count:int (id: 0);
+  // The difference in scaled units between two index pulses.
+  index_difference:double (id: 1);
+  // The absolute position in scaled units of one of the index pulses.
+  measured_index_position:double (id: 2);
+  // The index pulse that is known, going from lowest in the range of motion to
+  // highest (Starting at 0).
+  known_index_pulse:int (id: 3);
+  // Value between 0 and 0.5 which determines a fraction of the index_diff
+  // you want to use. If an index pulse deviates by more than this amount from
+  // where we expect to see one then we flag an error.
+  allowable_encoder_error:double (id: 4);
+}
+
+table PotAndAbsoluteEncoderZeroingConstants {
+  // The number of samples in the moving average filter.
+  average_filter_size:uint64 (id: 0);
+  // The distance that the absolute encoder needs to complete a full rotation.
+  one_revolution_distance:double (id: 1);
+  // Measured absolute position of the encoder when at zero.
+  measured_absolute_position:double (id: 2);
+
+  // Treshold for deciding if we are moving. moving_buffer_size samples need to
+  // be within this distance of each other before we use the middle one to zero.
+  zeroing_threshold:double (id: 3);
+  // Buffer size for deciding if we are moving.
+  moving_buffer_size:uint64 (id: 4);
+
+  // Value between 0 and 1 indicating what fraction of one_revolution_distance
+  // it is acceptable for the offset to move.
+  allowable_encoder_error:double (id: 5);
+}
+
+table RelativeEncoderZeroingConstants {}
+
+table ContinuousAbsoluteEncoderZeroingConstants {
+  // The number of samples in the moving average filter.
+  average_filter_size:uint64 (id: 0);
+  // The distance that the absolute encoder needs to complete a full rotation.
+  // It is presumed that this will always be 2 * pi for any subsystem using this
+  // class, unless you have a continuous system that for some reason doesn't
+  // have a logical period of 1 revolution in radians.
+  one_revolution_distance:double (id: 1);
+  // Measured absolute position of the encoder when at zero.
+  measured_absolute_position:double (id: 2);
+
+  // Threshold for deciding if we are moving. moving_buffer_size samples need to
+  // be within this distance of each other before we use the middle one to zero.
+  zeroing_threshold:double (id: 3);
+  // Buffer size for deciding if we are moving.
+  moving_buffer_size:uint64 (id: 4);
+
+  // Value between 0 and 1 indicating what fraction of a revolution
+  // it is acceptable for the offset to move.
+  allowable_encoder_error:double (id: 5);
+}
+
+table AbsoluteEncoderZeroingConstants {
+  // The number of samples in the moving average filter.
+  average_filter_size:uint64 (id: 0);
+  // The distance that the absolute encoder needs to complete a full rotation.
+  one_revolution_distance:double (id: 1);
+  // Measured absolute position of the encoder when at zero.
+  measured_absolute_position:double (id: 2);
+  // Position of the middle of the range of motion in output coordinates.
+  middle_position:double (id: 3);
+
+  // Threshold for deciding if we are moving. moving_buffer_size samples need to
+  // be within this distance of each other before we use the middle one to zero.
+  zeroing_threshold:double (id: 4);
+  // Buffer size for deciding if we are moving.
+  moving_buffer_size:uint64 (id: 5);
+
+  // Value between 0 and 1 indicating what fraction of one_revolution_distance
+  // it is acceptable for the offset to move.
+  allowable_encoder_error:double (id: 6);
+}
+
+table AbsoluteAndAbsoluteEncoderZeroingConstants {
+  // The number of samples in the moving average filter.
+  average_filter_size:uint64 (id: 0);
+  // The distance that the absolute encoder needs to complete a full rotation.
+  one_revolution_distance:double (id: 1);
+  // Measured absolute position of the encoder when at zero.
+  measured_absolute_position:double (id: 2);
+
+  // The distance that the single turn absolute encoder needs to complete a full
+  // rotation.
+  single_turn_one_revolution_distance:double (id: 3);
+  // Measured absolute position of the single turn encoder when at zero.
+  single_turn_measured_absolute_position:double (id: 4);
+  // Position of the middle of the range of motion in output coordinates.
+  single_turn_middle_position:double (id: 5);
+
+  // Threshold for deciding if we are moving. moving_buffer_size samples need to
+  // be within this distance of each other before we use the middle one to zero.
+  zeroing_threshold:double (id: 6);
+  // Buffer size for deciding if we are moving.
+  moving_buffer_size:uint64 (id: 7);
+
+  // Value between 0 and 1 indicating what fraction of one_revolution_distance
+  // it is acceptable for the offset to move.
+  allowable_encoder_error:double (id: 8);
+}
