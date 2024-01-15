@@ -58,7 +58,7 @@
 #include "y2023/constants.h"
 #include "y2023/control_loops/superstructure/led_indicator.h"
 #include "y2023/control_loops/superstructure/superstructure_output_generated.h"
-#include "y2023/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2023/control_loops/superstructure/superstructure_position_static.h"
 
 DEFINE_bool(ctre_diag_server, false,
             "If true, enable the diagnostics server for interacting with "
@@ -408,7 +408,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
                 "/autonomous")),
         superstructure_position_sender_(
-            event_loop->MakeSender<superstructure::Position>(
+            event_loop->MakeSender<superstructure::PositionStatic>(
                 "/superstructure")),
         drivetrain_position_sender_(
             event_loop
@@ -441,62 +441,54 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   void RunIteration() override {
     superstructure_reading_->Set(true);
     {
-      auto builder = superstructure_position_sender_.MakeBuilder();
-      frc971::PotAndAbsolutePositionT proximal;
-      CopyPosition(proximal_encoder_, &proximal,
+      aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
+          superstructure_position_sender_.MakeStaticBuilder();
+
+      superstructure::ArmPositionStatic *arm = builder->add_arm();
+
+      CopyPosition(proximal_encoder_, arm->add_proximal(),
                    Values::kProximalEncoderCountsPerRevolution(),
                    Values::kProximalEncoderRatio(), proximal_pot_translate,
                    true, values_->arm_proximal.potentiometer_offset);
-      frc971::PotAndAbsolutePositionT distal;
       CopyPosition(
-          distal_encoder_, &distal, Values::kDistalEncoderCountsPerRevolution(),
+          distal_encoder_, arm->add_distal(),
+          Values::kDistalEncoderCountsPerRevolution(),
           values_->arm_distal.zeroing.one_revolution_distance / (M_PI * 2.0),
           distal_pot_translate, true, values_->arm_distal.potentiometer_offset);
-      frc971::PotAndAbsolutePositionT roll_joint;
-      CopyPosition(roll_joint_encoder_, &roll_joint,
+      CopyPosition(roll_joint_encoder_, arm->add_roll_joint(),
                    Values::kRollJointEncoderCountsPerRevolution(),
                    Values::kRollJointEncoderRatio(), roll_joint_pot_translate,
                    false, values_->roll_joint.potentiometer_offset);
-      frc971::AbsolutePositionT wrist;
-      CopyPosition(wrist_encoder_, &wrist,
+      CopyPosition(wrist_encoder_, builder->add_wrist(),
                    Values::kWristEncoderCountsPerRevolution(),
                    values_->wrist.subsystem_params.zeroing_constants
                            .one_revolution_distance /
                        (M_PI * 2.0),
                    values_->wrist_flipped);
 
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> proximal_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &proximal);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> distal_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &distal);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> roll_joint_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &roll_joint);
-      flatbuffers::Offset<superstructure::ArmPosition> arm_offset =
-          superstructure::CreateArmPosition(*builder.fbb(), proximal_offset,
-                                            distal_offset, roll_joint_offset);
-      flatbuffers::Offset<frc971::AbsolutePosition> wrist_offset =
-          frc971::AbsolutePosition::Pack(*builder.fbb(), &wrist);
-
       flatbuffers::Offset<superstructure::CANFalcon> roller_falcon_offset;
       auto optional_roller_falcon = can_sensor_reader_->roller_falcon_data();
       if (optional_roller_falcon.has_value()) {
-        roller_falcon_offset = superstructure::CANFalcon::Pack(
-            *builder.fbb(), &optional_roller_falcon.value());
+        superstructure::CANFalconT roller_falcon_buffer =
+            optional_roller_falcon.value();
+
+        superstructure::CANFalconStatic *roller_falcon =
+            builder->add_roller_falcon();
+        roller_falcon->set_id(roller_falcon_buffer.id);
+        roller_falcon->set_supply_current(roller_falcon_buffer.supply_current);
+        roller_falcon->set_torque_current(roller_falcon_buffer.torque_current);
+        roller_falcon->set_supply_voltage(roller_falcon_buffer.supply_voltage);
+        roller_falcon->set_device_temp(roller_falcon_buffer.device_temp);
+        roller_falcon->set_position(roller_falcon_buffer.position);
+        roller_falcon->set_duty_cycle(roller_falcon_buffer.duty_cycle);
       }
 
-      superstructure::Position::Builder position_builder =
-          builder.MakeBuilder<superstructure::Position>();
-
-      position_builder.add_arm(arm_offset);
-      position_builder.add_wrist(wrist_offset);
-      position_builder.add_end_effector_cube_beam_break(
+      builder->set_end_effector_cube_beam_break(
           end_effector_cube_beam_break_->Get());
-      position_builder.add_cone_position(cone_position_sensor_.last_width() /
-                                         cone_position_sensor_.last_period());
-      if (!roller_falcon_offset.IsNull()) {
-        position_builder.add_roller_falcon(roller_falcon_offset);
-      }
-      builder.CheckOk(builder.Send(position_builder.Finish()));
+      builder->set_cone_position(cone_position_sensor_.last_width() /
+                                 cone_position_sensor_.last_period());
+
+      builder.CheckOk(builder.Send());
     }
 
     {
@@ -643,7 +635,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::shared_ptr<const Values> values_;
 
   aos::Sender<frc971::autonomous::AutonomousMode> auto_mode_sender_;
-  aos::Sender<superstructure::Position> superstructure_position_sender_;
+  aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
   aos::Sender<frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
   ::aos::Sender<::frc971::sensors::GyroReading> gyro_sender_;

@@ -49,7 +49,7 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2018/constants.h"
 #include "y2018/control_loops/superstructure/superstructure_output_generated.h"
-#include "y2018/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2018/control_loops/superstructure/superstructure_position_static.h"
 #include "y2018/status_light_generated.h"
 #include "y2018/vision/vision_generated.h"
 
@@ -147,7 +147,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   SensorReader(::aos::ShmEventLoop *event_loop)
       : ::frc971::wpilib::SensorReader(event_loop),
         superstructure_position_sender_(
-            event_loop->MakeSender<superstructure::Position>(
+            event_loop->MakeSender<superstructure::PositionStatic>(
                 "/superstructure")),
         drivetrain_position_sender_(
             event_loop
@@ -302,107 +302,60 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     const auto values = constants::GetValues();
 
     {
-      auto builder = superstructure_position_sender_.MakeBuilder();
+      aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
+          superstructure_position_sender_.MakeStaticBuilder();
+
+      superstructure::ArmPositionStatic *arm_position = builder->add_arm();
 
       // Proximal arm
-      frc971::PotAndAbsolutePositionT arm_proximal;
-      CopyPosition(proximal_encoder_, &arm_proximal,
+      CopyPosition(proximal_encoder_, arm_position->add_proximal(),
                    Values::kProximalEncoderCountsPerRevolution(),
                    Values::kProximalEncoderRatio(), proximal_pot_translate,
                    true, values.arm_proximal.potentiometer_offset);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> arm_proximal_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &arm_proximal);
 
       // Distal arm
-      frc971::PotAndAbsolutePositionT arm_distal;
-      CopyPosition(distal_encoder_, &arm_distal,
+      CopyPosition(distal_encoder_, arm_position->add_distal(),
                    Values::kDistalEncoderCountsPerRevolution(),
                    Values::kDistalEncoderRatio(), distal_pot_translate, true,
                    values.arm_distal.potentiometer_offset);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> arm_distal_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &arm_distal);
-
-      superstructure::ArmPosition::Builder arm_position_builder =
-          builder.MakeBuilder<superstructure::ArmPosition>();
-      arm_position_builder.add_proximal(arm_proximal_offset);
-      arm_position_builder.add_distal(arm_distal_offset);
-
-      flatbuffers::Offset<superstructure::ArmPosition> arm_position_offset =
-          arm_position_builder.Finish();
 
       // Left intake
-      frc971::PotAndAbsolutePositionT left_intake_motor_position;
-      CopyPosition(left_intake_encoder_, &left_intake_motor_position,
+      superstructure::IntakeElasticSensorsStatic *left_intake =
+          builder->add_left_intake();
+
+      CopyPosition(left_intake_encoder_, left_intake->add_motor_position(),
                    Values::kIntakeMotorEncoderCountsPerRevolution(),
                    Values::kIntakeMotorEncoderRatio(), intake_pot_translate,
                    false, values.left_intake.potentiometer_offset);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition>
-          left_intake_motor_position_offset =
-              frc971::PotAndAbsolutePosition::Pack(*builder.fbb(),
-                                                   &left_intake_motor_position);
+
+      left_intake->set_spring_angle(
+          intake_spring_translate(left_intake_spring_angle_->GetVoltage()) +
+          values.left_intake.spring_offset);
+      left_intake->set_beam_break(!left_intake_cube_detector_->Get());
 
       // Right intake
-      frc971::PotAndAbsolutePositionT right_intake_motor_position;
-      CopyPosition(right_intake_encoder_, &right_intake_motor_position,
+      superstructure::IntakeElasticSensorsStatic *right_intake =
+          builder->add_right_intake();
+      CopyPosition(right_intake_encoder_, right_intake->add_motor_position(),
                    Values::kIntakeMotorEncoderCountsPerRevolution(),
                    Values::kIntakeMotorEncoderRatio(), intake_pot_translate,
                    true, values.right_intake.potentiometer_offset);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition>
-          right_intake_motor_position_offset =
-              frc971::PotAndAbsolutePosition::Pack(
-                  *builder.fbb(), &right_intake_motor_position);
-
-      superstructure::IntakeElasticSensors::Builder
-          left_intake_sensors_builder =
-              builder.MakeBuilder<superstructure::IntakeElasticSensors>();
-
-      left_intake_sensors_builder.add_motor_position(
-          left_intake_motor_position_offset);
-      left_intake_sensors_builder.add_spring_angle(
-          intake_spring_translate(left_intake_spring_angle_->GetVoltage()) +
-          values.left_intake.spring_offset);
-      left_intake_sensors_builder.add_beam_break(
-          !left_intake_cube_detector_->Get());
-
-      flatbuffers::Offset<superstructure::IntakeElasticSensors>
-          left_intake_offset = left_intake_sensors_builder.Finish();
-
-      superstructure::IntakeElasticSensors::Builder
-          right_intake_sensors_builder =
-              builder.MakeBuilder<superstructure::IntakeElasticSensors>();
-
-      right_intake_sensors_builder.add_motor_position(
-          right_intake_motor_position_offset);
-      right_intake_sensors_builder.add_spring_angle(
+      right_intake->set_spring_angle(
           -intake_spring_translate(right_intake_spring_angle_->GetVoltage()) +
           values.right_intake.spring_offset);
-      right_intake_sensors_builder.add_beam_break(
-          !right_intake_cube_detector_->Get());
+      right_intake->set_beam_break(!right_intake_cube_detector_->Get());
 
-      flatbuffers::Offset<control_loops::superstructure::IntakeElasticSensors>
-          right_intake_offset = right_intake_sensors_builder.Finish();
+      builder->set_claw_beambreak_triggered(!claw_beambreak_->Get());
+      builder->set_box_back_beambreak_triggered(!box_back_beambreak_->Get());
 
-      superstructure::Position::Builder superstructure_builder =
-          builder.MakeBuilder<superstructure::Position>();
+      builder->set_box_distance(lidar_lite_.last_width() / 0.00001 / 100.0 / 2);
 
-      superstructure_builder.add_left_intake(left_intake_offset);
-      superstructure_builder.add_right_intake(right_intake_offset);
-      superstructure_builder.add_arm(arm_position_offset);
-
-      superstructure_builder.add_claw_beambreak_triggered(
-          !claw_beambreak_->Get());
-      superstructure_builder.add_box_back_beambreak_triggered(
-          !box_back_beambreak_->Get());
-
-      superstructure_builder.add_box_distance(lidar_lite_.last_width() /
-                                              0.00001 / 100.0 / 2);
-
-      builder.CheckOk(builder.Send(superstructure_builder.Finish()));
+      builder.CheckOk(builder.Send());
     }
   }
 
  private:
-  ::aos::Sender<superstructure::Position> superstructure_position_sender_;
+  ::aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
   ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
 

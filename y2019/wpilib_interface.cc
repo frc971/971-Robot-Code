@@ -52,7 +52,7 @@
 #include "y2019/constants.h"
 #include "y2019/control_loops/drivetrain/camera_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_output_generated.h"
-#include "y2019/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2019/control_loops/superstructure/superstructure_position_static.h"
 #include "y2019/jevois/spi.h"
 #include "y2019/status_light_generated.h"
 
@@ -139,7 +139,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
                 "/autonomous")),
         superstructure_position_sender_(
-            event_loop->MakeSender<superstructure::Position>(
+            event_loop->MakeSender<superstructure::PositionStatic>(
                 "/superstructure")),
         drivetrain_position_sender_(
             event_loop
@@ -254,63 +254,40 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     const auto values = constants::GetValues();
 
     {
-      auto builder = superstructure_position_sender_.MakeBuilder();
+      aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
+          superstructure_position_sender_.MakeStaticBuilder();
 
       // Elevator
-      frc971::PotAndAbsolutePositionT elevator;
-      CopyPosition(elevator_encoder_, &elevator,
+      CopyPosition(elevator_encoder_, builder->add_elevator(),
                    Values::kElevatorEncoderCountsPerRevolution(),
                    Values::kElevatorEncoderRatio(), elevator_pot_translate,
                    false, values.elevator.potentiometer_offset);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> elevator_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &elevator);
-
       // Intake
-      frc971::AbsolutePositionT intake_joint;
-      CopyPosition(intake_encoder_, &intake_joint,
+      CopyPosition(intake_encoder_, builder->add_intake_joint(),
                    Values::kIntakeEncoderCountsPerRevolution(),
                    Values::kIntakeEncoderRatio(), false);
-      flatbuffers::Offset<frc971::AbsolutePosition> intake_joint_offset =
-          frc971::AbsolutePosition::Pack(*builder.fbb(), &intake_joint);
-
       // Wrist
-      frc971::PotAndAbsolutePositionT wrist;
-      CopyPosition(wrist_encoder_, &wrist,
+      CopyPosition(wrist_encoder_, builder->add_wrist(),
                    Values::kWristEncoderCountsPerRevolution(),
                    Values::kWristEncoderRatio(), wrist_pot_translate, false,
                    values.wrist.potentiometer_offset);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> wrist_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &wrist);
-
       // Stilts
-      frc971::PotAndAbsolutePositionT stilts;
-      CopyPosition(stilts_encoder_, &stilts,
+      CopyPosition(stilts_encoder_, builder->add_stilts(),
                    Values::kStiltsEncoderCountsPerRevolution(),
                    Values::kStiltsEncoderRatio(), stilts_pot_translate, false,
                    values.stilts.potentiometer_offset);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> stilts_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &stilts);
-
-      superstructure::Position::Builder position_builder =
-          builder.MakeBuilder<superstructure::Position>();
-
-      position_builder.add_elevator(elevator_offset);
-      position_builder.add_intake_joint(intake_joint_offset);
-      position_builder.add_wrist(wrist_offset);
-      position_builder.add_stilts(stilts_offset);
 
       // Suction
       constexpr float kMinVoltage = 0.5;
       constexpr float kMaxVoltage = 2.1;
-      position_builder.add_suction_pressure(
+      builder->set_suction_pressure(
           (vacuum_sensor_->GetVoltage() - kMinVoltage) /
           (kMaxVoltage - kMinVoltage));
 
-      position_builder.add_platform_left_detect(!platform_left_detect_->Get());
-      position_builder.add_platform_right_detect(
-          !platform_right_detect_->Get());
+      builder->set_platform_left_detect(!platform_left_detect_->Get());
+      builder->set_platform_right_detect(!platform_right_detect_->Get());
 
-      builder.CheckOk(builder.Send(position_builder.Finish()));
+      builder.CheckOk(builder.Send());
     }
 
     {
@@ -334,7 +311,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
  private:
   ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
-  ::aos::Sender<superstructure::Position> superstructure_position_sender_;
+  ::aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
   ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
 

@@ -54,7 +54,7 @@
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/superstructure_output_generated.h"
-#include "y2017/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2017/control_loops/superstructure/superstructure_position_static.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -132,7 +132,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
                 "/aos")),
         superstructure_position_sender_(
-            event_loop->MakeSender<superstructure::Position>(
+            event_loop->MakeSender<superstructure::PositionStatic>(
                 "/superstructure")),
         drivetrain_position_sender_(
             event_loop
@@ -230,55 +230,31 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     const auto values = constants::GetValues();
 
     {
-      auto builder = superstructure_position_sender_.MakeBuilder();
-      frc971::PotAndAbsolutePositionT intake;
-      CopyPosition(intake_encoder_, &intake,
+      aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
+          superstructure_position_sender_.MakeStaticBuilder();
+
+      CopyPosition(intake_encoder_, builder->add_intake(),
                    Values::kIntakeEncoderCountsPerRevolution,
                    Values::kIntakeEncoderRatio, intake_pot_translate, true,
                    values.intake.pot_offset);
-      flatbuffers::Offset<frc971::PotAndAbsolutePosition> intake_offset =
-          frc971::PotAndAbsolutePosition::Pack(*builder.fbb(), &intake);
-
-      frc971::HallEffectAndPositionT indexer;
-      CopyPosition(indexer_counter_, &indexer,
-                   Values::kIndexerEncoderCountsPerRevolution,
-                   Values::kIndexerEncoderRatio, true);
-      flatbuffers::Offset<frc971::HallEffectAndPosition> indexer_offset =
-          frc971::HallEffectAndPosition::Pack(*builder.fbb(), &indexer);
-
-      frc971::IndexPositionT hood;
-      CopyPosition(hood_encoder_, &hood,
+      CopyPosition(hood_encoder_, builder->add_hood(),
                    Values::kHoodEncoderCountsPerRevolution,
                    Values::kHoodEncoderRatio, true);
-      flatbuffers::Offset<frc971::IndexPosition> hood_offset =
-          frc971::IndexPosition::Pack(*builder.fbb(), &hood);
 
-      frc971::HallEffectAndPositionT turret;
-      CopyPosition(turret_counter_, &turret,
+      superstructure::ColumnPositionStatic *column = builder->add_column();
+      CopyPosition(turret_counter_, column->add_turret(),
                    Values::kTurretEncoderCountsPerRevolution,
                    Values::kTurretEncoderRatio, false);
-      flatbuffers::Offset<frc971::HallEffectAndPosition> turret_offset =
-          frc971::HallEffectAndPosition::Pack(*builder.fbb(), &turret);
+      CopyPosition(indexer_counter_, column->add_indexer(),
+                   Values::kIndexerEncoderCountsPerRevolution,
+                   Values::kIndexerEncoderRatio, true);
 
-      superstructure::ColumnPosition::Builder column_builder =
-          builder.MakeBuilder<superstructure::ColumnPosition>();
-      column_builder.add_indexer(indexer_offset);
-      column_builder.add_turret(turret_offset);
-      flatbuffers::Offset<superstructure::ColumnPosition> column_offset =
-          column_builder.Finish();
-
-      superstructure::Position::Builder position_builder =
-          builder.MakeBuilder<superstructure::Position>();
-
-      position_builder.add_column(column_offset);
-      position_builder.add_hood(hood_offset);
-      position_builder.add_intake(intake_offset);
-      position_builder.add_theta_shooter(
+      builder->set_theta_shooter(
           encoder_translate(shooter_encoder_->GetRaw(),
                             Values::kShooterEncoderCountsPerRevolution,
                             Values::kShooterEncoderRatio));
 
-      builder.CheckOk(builder.Send(position_builder.Finish()));
+      builder.CheckOk(builder.Send());
     }
 
     {
@@ -299,7 +275,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
  private:
   ::aos::Sender<::frc971::autonomous::AutonomousMode> auto_mode_sender_;
-  ::aos::Sender<superstructure::Position> superstructure_position_sender_;
+  ::aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
   ::aos::Sender<::frc971::control_loops::drivetrain::Position>
       drivetrain_position_sender_;
 
