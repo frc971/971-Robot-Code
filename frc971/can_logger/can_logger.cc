@@ -3,10 +3,11 @@
 namespace frc971 {
 namespace can_logger {
 
-CanLogger::CanLogger(aos::EventLoop *event_loop,
+CanLogger::CanLogger(aos::ShmEventLoop *event_loop,
+                     std::string_view channel_name,
                      std::string_view interface_name)
     : fd_(socket(PF_CAN, SOCK_RAW | SOCK_NONBLOCK, CAN_RAW)),
-      frames_sender_(event_loop->MakeSender<CanFrame>("/can")) {
+      frames_sender_(event_loop->MakeSender<CanFrame>(channel_name)) {
   struct ifreq ifr;
   strcpy(ifr.ifr_name, interface_name.data());
   PCHECK(ioctl(fd_.get(), SIOCGIFINDEX, &ifr) == 0)
@@ -32,9 +33,7 @@ CanLogger::CanLogger(aos::EventLoop *event_loop,
   CHECK_EQ(opt_size, sizeof(recieve_buffer_size));
   VLOG(0) << "CAN recieve bufffer is " << recieve_buffer_size << " bytes large";
 
-  aos::TimerHandler *timer_handler = event_loop->AddTimer([this]() { Poll(); });
-  timer_handler->set_name("CAN logging Loop");
-  timer_handler->Schedule(event_loop->monotonic_now(), kPollPeriod);
+  event_loop->epoll()->OnReadable(fd_, [this]() { Poll(); });
 }
 
 void CanLogger::Poll() {

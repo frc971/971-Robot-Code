@@ -117,6 +117,30 @@
       "max_size": 200
     },
     {
+      "name": "/can/cana",
+      "type": "frc971.can_logger.CanFrame",
+      "source_node": "imu",
+      "frequency": 6000,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/can/canb",
+      "type": "frc971.can_logger.CanFrame",
+      "source_node": "imu",
+      "frequency": 6000,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
+      "name": "/can/canc",
+      "type": "frc971.can_logger.CanFrame",
+      "source_node": "imu",
+      "frequency": 6000,
+      "num_senders": 2,
+      "max_size": 200
+    },
+    {
       "name": "/localizer",
       "type": "frc971.IMUValuesBatch",
       "source_node": "imu",
@@ -182,6 +206,13 @@
         "--rotate_every", "30.0"
       ],
       "user": "pi",
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "can_logger",
+      "executable_name": "can_logger",
       "nodes": [
         "imu"
       ]

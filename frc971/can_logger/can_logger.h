@@ -11,7 +11,7 @@
 
 #include <chrono>
 
-#include "aos/events/event_loop.h"
+#include "aos/events/shm_event_loop.h"
 #include "aos/realtime.h"
 #include "aos/scoped/scoped_fd.h"
 #include "frc971/can_logger/can_logging_generated.h"
@@ -27,7 +27,8 @@ class CanLogger {
   static constexpr std::chrono::milliseconds kPollPeriod =
       std::chrono::milliseconds(100);
 
-  CanLogger(aos::EventLoop *event_loop,
+  CanLogger(aos::ShmEventLoop *event_loop,
+            std::string_view channel_name = "/can",
             std::string_view interface_name = "can0");
 
   CanLogger(const CanLogger &) = delete;
