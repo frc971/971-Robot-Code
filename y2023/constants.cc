@@ -49,8 +49,8 @@ Values MakeValues(uint16_t team) {
 
   wrist->subsystem_params.zeroing_voltage = 3.0;
   wrist->subsystem_params.operating_voltage = 12.0;
-  wrist->subsystem_params.zeroing_profile_params = {0.5, 3.0};
-  wrist->subsystem_params.default_profile_params = {0.5, 5.0};
+  wrist->subsystem_params.zeroing_profile_params = {{}, 0.5, 3.0};
+  wrist->subsystem_params.default_profile_params = {{}, 0.5, 5.0};
   wrist->subsystem_params.range = Values::kCompWristRange();
   wrist->subsystem_params.make_integral_loop =
       control_loops::superstructure::wrist::MakeIntegralWristLoop;

@@ -95,14 +95,14 @@ const frc971::zeroing::AbsoluteEncoderZeroingEstimator::ZeroingConstants
 template <typename ZeroingEstimator>
 const StaticZeroingSingleDOFProfiledSubsystemParams<ZeroingEstimator>
 TestIntakeSystemValues<ZeroingEstimator>::make_params() {
-  StaticZeroingSingleDOFProfiledSubsystemParams<ZeroingEstimator> params(
-      {kZeroingVoltage,
-       kOperatingVoltage,
-       {0.1, 1.0},
-       {0.3, 5.0},
-       kRange,
-       TestIntakeSystemValues::kZeroing,
-       &MakeIntegralTestIntakeSystemLoop});
+  StaticZeroingSingleDOFProfiledSubsystemParams<ZeroingEstimator> params{
+      kZeroingVoltage,
+      kOperatingVoltage,
+      {{}, 0.1, 1.0},
+      {{}, 0.3, 5.0},
+      kRange,
+      TestIntakeSystemValues::kZeroing,
+      &MakeIntegralTestIntakeSystemLoop};
   return params;
 }
 

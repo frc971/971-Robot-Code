@@ -6,12 +6,6 @@
 namespace frc971 {
 namespace control_loops {
 
-// TODO(austin): Use ProfileParametersT...
-struct ProfileParametersStruct {
-  float max_velocity;
-  float max_acceleration;
-};
-
 template <typename ZeroingEstimator>
 struct StaticZeroingSingleDOFProfiledSubsystemParams {
   // Maximum voltage while the subsystem is zeroing
@@ -21,16 +15,16 @@ struct StaticZeroingSingleDOFProfiledSubsystemParams {
   double operating_voltage;
 
   // Maximum velocity (units/s) and acceleration while State::ZEROING
-  ProfileParametersStruct zeroing_profile_params;
+  ProfileParametersT zeroing_profile_params;
 
   // Maximum velocity (units/s) and acceleration while State::RUNNING if max
   // velocity or acceleration in goal profile_params is 0
-  ProfileParametersStruct default_profile_params;
+  ProfileParametersT default_profile_params;
 
   // Maximum range of the subsystem in meters
   ::frc971::constants::Range range;
 
-  // Zeroing constants for PotAndABsoluteEncoder estimator
+  // Zeroing constants for the estimator
   typename ZeroingEstimator::ZeroingConstants zeroing_constants;
 
   // Function that makes the integral loop for the subsystem
