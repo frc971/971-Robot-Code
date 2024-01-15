@@ -1,0 +1,22 @@
+[Unit]
+Description=Start up 971 robot code
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+User=root
+Group=root
+Type=simple
+WorkingDirectory=/home/pi/bin
+ExecStart=/home/pi/bin/starter.sh
+KillMode=mixed
+TimeoutStopSec=10
+LimitRTPRIO=60
+LimitNICE=-20
+LimitMEMLOCK=infinity
+
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

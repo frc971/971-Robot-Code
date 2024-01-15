@@ -9,6 +9,9 @@ function finish {
 }
 trap finish EXIT
 
+# Call sudo to get it started here, rather than waiting for after tar/cp's
+sudo echo "Flashing orin"
+
 # Assumes that the image has been copied into ./
 tar xf frc971-image-orin-nx-8g.tegraflash.tar.gz -C "${TMPDIR}"
 
