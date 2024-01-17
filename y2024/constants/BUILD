@@ -32,19 +32,10 @@ jinja2_template(
         "971.json",
         "9971.json",
         "common.json",
-        ":target_map",
         "//y2024/vision/maps",
     ],
     parameters = {},
     visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "target_map",
-    srcs = [
-        "target_map.json",
-    ],
-    visibility = ["//y2024:__subpackages__"],
 )
 
 static_flatbuffer(
