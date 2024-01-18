@@ -501,7 +501,8 @@ def WriteAngularSystemCurrent(params,
     loop_writer.AddConstant(
         control_loop.Constant('kFreeSpeed', '%f',
                               angular_systems[0].motor.free_speed))
-    loop_writer.Write(plant_files[0], plant_files[1])
+    loop_writer.Write(plant_files[0], plant_files[1],
+                      None if len(plant_files) < 3 else plant_files[2])
 
     integral_loop_writer = control_loop.ControlLoopWriter(
         'Integral' + name,
@@ -509,4 +510,6 @@ def WriteAngularSystemCurrent(params,
         namespaces=year_namespaces,
         plant_type=plant_type,
         observer_type=observer_type)
-    integral_loop_writer.Write(controller_files[0], controller_files[1])
+    integral_loop_writer.Write(
+        controller_files[0], controller_files[1],
+        None if len(controller_files) < 3 else controller_files[2])

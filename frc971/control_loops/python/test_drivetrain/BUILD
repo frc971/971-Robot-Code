@@ -1,4 +1,33 @@
-load("//aos:config.bzl", "aos_config")
+py_binary(
+    name = "drivetrain",
+    srcs = [
+        "drivetrain.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":python_init",
+        "//frc971/control_loops/python:drivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
+    ],
+)
+
+py_binary(
+    name = "polydrivetrain",
+    srcs = [
+        "drivetrain.py",
+        "polydrivetrain.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":python_init",
+        "//frc971/control_loops/python:polydrivetrain",
+        "@pip//glog",
+        "@pip//python_gflags",
+    ],
+)
 
 genrule(
     name = "genrule_drivetrain",
@@ -10,10 +39,10 @@ genrule(
         "kalman_drivetrain_motor_plant.cc",
         "kalman_drivetrain_motor_plant.json",
     ],
-    cmd = "$(location //y2024/control_loops/python:drivetrain) $(OUTS)",
+    cmd = "$(location :drivetrain) $(OUTS)",
     target_compatible_with = ["@platforms//os:linux"],
     tools = [
-        "//y2024/control_loops/python:drivetrain",
+        ":drivetrain",
     ],
 )
 
@@ -30,10 +59,10 @@ genrule(
         "hybrid_velocity_drivetrain.cc",
         "hybrid_velocity_drivetrain.json",
     ],
-    cmd = "$(location //y2024/control_loops/python:polydrivetrain) $(OUTS)",
+    cmd = "$(location :polydrivetrain) $(OUTS)",
     target_compatible_with = ["@platforms//os:linux"],
     tools = [
-        "//y2024/control_loops/python:polydrivetrain",
+        ":polydrivetrain",
     ],
 )
 
@@ -59,63 +88,30 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "drivetrain_base",
+cc_test(
+    name = "drivetrain_json_test",
     srcs = [
-        "drivetrain_base.cc",
+        "drivetrain_json_test.cc",
     ],
-    hdrs = [
-        "drivetrain_base.h",
+    data = [
+        "drivetrain_dog_motor_plant.json",
+        "hybrid_velocity_drivetrain.json",
+        "kalman_drivetrain_motor_plant.json",
+        "polydrivetrain_cim_plant.json",
+        "polydrivetrain_dog_motor_plant.json",
     ],
     target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
     deps = [
         ":polydrivetrain_plants",
-        "//frc971:shifter_hall_effect",
-        "//frc971/control_loops/drivetrain:drivetrain_config",
+        "//aos/testing:googletest",
+        "//frc971/control_loops:hybrid_state_feedback_loop_converters",
     ],
 )
 
-cc_binary(
-    name = "drivetrain",
-    srcs = [
-        "drivetrain_main.cc",
-    ],
+py_library(
+    name = "python_init",
+    srcs = ["__init__.py"],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
-    deps = [
-        ":drivetrain_base",
-        "//aos:init",
-        "//aos/events:shm_event_loop",
-        "//frc971/constants:constants_sender_lib",
-        "//frc971/control_loops/drivetrain:drivetrain_lib",
-        "//frc971/control_loops/drivetrain/localization:puppet_localizer",
-        "//y2024/constants:constants_fbs",
-    ],
-)
-
-aos_config(
-    name = "simulation_config",
-    src = "drivetrain_simulation_config.json",
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//frc971/control_loops/drivetrain:simulation_channels",
-        "//y2024:aos_config",
-    ],
-)
-
-cc_binary(
-    name = "trajectory_generator",
-    srcs = [
-        "trajectory_generator_main.cc",
-    ],
-    target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":drivetrain_base",
-        "//aos:init",
-        "//aos/events:shm_event_loop",
-        "//frc971/control_loops/drivetrain:trajectory_generator",
-    ],
+    deps = ["//y2018/control_loops:python_init"],
 )

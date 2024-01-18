@@ -1,4 +1,5 @@
 include "frc971/control_loops/control_loops.fbs";
+include "frc971/control_loops/state_feedback_loop.fbs";
 
 namespace frc971.control_loops;
 
@@ -286,4 +287,16 @@ table StaticZeroingSingleDOFProfiledSubsystemGoal {
   // If set to true, then we will ignore the profiling on this joint and pass
   // the goal + goal velocity directly to the control loop.
   ignore_profile:bool (id: 3);
+}
+
+// Stores everything but the zeroing information for a single-dof subsystem.
+// Because the subsystem will be templated on the zeroing information, it is
+// passed in separately (see types in //frc971/zeroing:constants.fbs).
+table StaticZeroingSingleDOFProfiledSubsystemCommonParams {
+  zeroing_voltage:double (id: 0);
+  operating_voltage:double (id: 1);
+  zeroing_profile_params:frc971.ProfileParameters (id: 2);
+  default_profile_params:frc971.ProfileParameters (id: 3);
+  range:frc971.Range (id: 4);
+  loop:[frc971.control_loops.fbs.StateFeedbackLoopCoefficients] (id: 5);
 }

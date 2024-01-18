@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import sys
-from y2022_bot3.control_loops.python import drivetrain
+from frc971.control_loops.python.test_drivetrain import drivetrain
 from frc971.control_loops.python import polydrivetrain
 
 import gflags
@@ -23,9 +23,10 @@ def main(argv):
     elif len(argv) != 10:
         glog.fatal('Expected .h, .cc, and .json filenames')
     else:
-        polydrivetrain.WritePolyDrivetrain(argv[1:4], argv[4:7], argv[7:10],
-                                           'y2022_bot3',
-                                           drivetrain.kDrivetrain)
+        polydrivetrain.WritePolyDrivetrain(
+            argv[1:4], argv[4:7], argv[7:10],
+            ['frc971', 'control_loops', 'python', 'test_drivetrain'],
+            drivetrain.kDrivetrain)
 
 
 if __name__ == '__main__':

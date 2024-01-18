@@ -525,7 +525,8 @@ def WriteDrivetrain(drivetrain_files,
             "kHighOutputRatio", "%f",
             drivetrain_high_high.G_high * drivetrain_high_high.r))
 
-    dog_loop_writer.Write(drivetrain_files[0], drivetrain_files[1])
+    dog_loop_writer.Write(drivetrain_files[0], drivetrain_files[1],
+                          drivetrain_files[2])
 
     kf_loop_writer = control_loop.ControlLoopWriter("KFDrivetrain", [
         kf_drivetrain_low_low, kf_drivetrain_low_high, kf_drivetrain_high_low,
@@ -533,7 +534,8 @@ def WriteDrivetrain(drivetrain_files,
     ],
                                                     namespaces=namespaces,
                                                     scalar_type=scalar_type)
-    kf_loop_writer.Write(kf_drivetrain_files[0], kf_drivetrain_files[1])
+    kf_loop_writer.Write(kf_drivetrain_files[0], kf_drivetrain_files[1],
+                         kf_drivetrain_files[2])
 
 
 def PlotDrivetrainSprint(drivetrain_params):

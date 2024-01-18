@@ -463,7 +463,8 @@ class StateFeedbackObserver {
 
  private:
   // Internal state estimate.
-  Eigen::Matrix<Scalar, number_of_states, 1> X_hat_;
+  Eigen::Matrix<Scalar, number_of_states, 1> X_hat_ =
+      Eigen::Matrix<Scalar, number_of_states, 1>::Zero();
   Eigen::Matrix<Scalar, number_of_inputs, Eigen::Dynamic> last_U_;
 
   int index_ = 0;
