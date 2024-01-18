@@ -1,4 +1,5 @@
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
+load("//tools/build_rules:template.bzl", "jinja2_template")
 load("//tools/build_rules:js.bzl", "ts_project")
 load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
 load("//aos:config.bzl", "aos_config")
@@ -849,4 +850,38 @@ static_flatbuffer(
     srcs = ["drivetrain_config.fbs"],
     visibility = ["//visibility:public"],
     deps = ["//frc971/control_loops:state_feedback_loop_fbs"],
+)
+
+cc_binary(
+    name = "drivetrain_config_merge",
+    srcs = ["drivetrain_config_merge.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":drivetrain_config_fbs",
+        "//aos:flatbuffer_merge",
+        "//aos:init",
+        "//aos:json_to_flatbuffer",
+    ],
+)
+
+cc_test(
+    name = "drivetrain_config_test",
+    srcs = ["drivetrain_config_test.cc"],
+    data = [":drivetrain_test_config.json"],
+    deps = [
+        ":drivetrain_config_fbs",
+        ":drivetrain_test_lib",
+        "//aos/testing:googletest",
+        "//aos/testing:path",
+    ],
+)
+
+jinja2_template(
+    name = "drivetrain_test_config.json",
+    src = "drivetrain_test_config.jinja2.json",
+    includes = [
+        "//y2016/control_loops/drivetrain:drivetrain_config",
+    ],
+    parameters = {},
+    visibility = ["//visibility:public"],
 )

@@ -487,7 +487,12 @@ def WriteDrivetrain(drivetrain_files,
                                                      namespaces=namespaces,
                                                      scalar_type=scalar_type)
     dog_loop_writer.AddConstant(
-        control_loop.Constant("kDt", "%f", drivetrain_low_low.dt))
+        control_loop.Constant("kDt",
+                              "%f",
+                              drivetrain_low_low.dt,
+                              json_name="dt",
+                              json_scale=1e9,
+                              json_type=int))
     dog_loop_writer.AddConstant(
         control_loop.Constant("kStallTorque", "%f",
                               drivetrain_low_low.stall_torque))
@@ -501,32 +506,51 @@ def WriteDrivetrain(drivetrain_files,
         control_loop.Constant("kFreeCurrent", "%f",
                               drivetrain_low_low.free_current))
     dog_loop_writer.AddConstant(
-        control_loop.Constant("kJ", "%f", drivetrain_low_low.J))
+        control_loop.Constant("kJ",
+                              "%f",
+                              drivetrain_low_low.J,
+                              json_name="moment_of_inertia"))
     dog_loop_writer.AddConstant(
-        control_loop.Constant("kMass", "%f", drivetrain_low_low.mass))
+        control_loop.Constant("kMass",
+                              "%f",
+                              drivetrain_low_low.mass,
+                              json_name="mass"))
     dog_loop_writer.AddConstant(
-        control_loop.Constant("kRobotRadius", "%f",
-                              drivetrain_low_low.robot_radius))
+        control_loop.Constant("kRobotRadius",
+                              "%f",
+                              drivetrain_low_low.robot_radius,
+                              json_name="robot_radius"))
     dog_loop_writer.AddConstant(
-        control_loop.Constant("kWheelRadius", "%f", drivetrain_low_low.r))
+        control_loop.Constant("kWheelRadius",
+                              "%f",
+                              drivetrain_low_low.r,
+                              json_name="wheel_radius"))
     dog_loop_writer.AddConstant(
         control_loop.Constant("kR", "%f", drivetrain_low_low.resistance))
     dog_loop_writer.AddConstant(
-        control_loop.Constant("kV", "%f", drivetrain_low_low.Kv))
+        control_loop.Constant("kV",
+                              "%f",
+                              drivetrain_low_low.Kv,
+                              json_name="motor_kv"))
     dog_loop_writer.AddConstant(
         control_loop.Constant("kT", "%f", drivetrain_low_low.Kt))
     dog_loop_writer.AddConstant(
-        control_loop.Constant("kLowGearRatio", "%f", drivetrain_low_low.G_low))
+        control_loop.Constant("kLowGearRatio",
+                              "%f",
+                              drivetrain_low_low.G_low,
+                              json_name="low_gear_ratio"))
     dog_loop_writer.AddConstant(
-        control_loop.Constant("kHighGearRatio", "%f",
-                              drivetrain_high_high.G_high))
+        control_loop.Constant("kHighGearRatio",
+                              "%f",
+                              drivetrain_high_high.G_high,
+                              json_name="high_gear_ratio"))
     dog_loop_writer.AddConstant(
         control_loop.Constant(
             "kHighOutputRatio", "%f",
             drivetrain_high_high.G_high * drivetrain_high_high.r))
 
     dog_loop_writer.Write(drivetrain_files[0], drivetrain_files[1],
-                          drivetrain_files[2])
+                          drivetrain_files[2], "drivetrain_loop")
 
     kf_loop_writer = control_loop.ControlLoopWriter("KFDrivetrain", [
         kf_drivetrain_low_low, kf_drivetrain_low_high, kf_drivetrain_high_low,
@@ -535,7 +559,7 @@ def WriteDrivetrain(drivetrain_files,
                                                     namespaces=namespaces,
                                                     scalar_type=scalar_type)
     kf_loop_writer.Write(kf_drivetrain_files[0], kf_drivetrain_files[1],
-                         kf_drivetrain_files[2])
+                         kf_drivetrain_files[2], "kalman_drivetrain_loop")
 
 
 def PlotDrivetrainSprint(drivetrain_params):

@@ -1,0 +1,32 @@
+{
+  "shifter_type": "kHallEffectShifter",
+  "loop_type": "kClosedLoop",
+  "gyro_type": "kImuZGyro",
+  "imu_type" : "kImuFlippedX",
+  "loop_config": {% include 'y2016/control_loops/drivetrain/drivetrain_config.json' %},
+  "left_drive": {
+    "low_gear_low": 0.0,
+    "high_gear_high": 0.0,
+    "clear_low": 0.25,
+    "clear_high": 0.75
+  },
+  "right_drive": {
+    "low_gear_low": 0.0,
+    "high_gear_high": 0.0,
+    "clear_low": 0.25,
+    "clear_high": 0.75
+  },
+  "default_high_gear": false,
+  "down_offset": 0.0,
+  "wheel_non_linearity": 0.25,
+  "quickturn_wheel_multiplier": 1.0,
+  "wheel_multiplier": 1.0,
+  "pistol_grip_shift_enables_line_follow": false,
+  "imu_transform":{
+    "rows": 3,
+    "cols": 3,
+    "data": [1, 0, 0, 0, 1, 0, 0, 0, 1]
+  },
+  "is_simulated": true,
+  "down_estimator_config": { }
+}

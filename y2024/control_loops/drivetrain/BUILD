@@ -1,4 +1,5 @@
 load("//aos:config.bzl", "aos_config")
+load("//frc971/control_loops/drivetrain:drivetrain_config.bzl", "drivetrain_config")
 
 genrule(
     name = "genrule_drivetrain",
@@ -118,4 +119,9 @@ cc_binary(
         "//aos/events:shm_event_loop",
         "//frc971/control_loops/drivetrain:trajectory_generator",
     ],
+)
+
+drivetrain_config(
+    name = "drivetrain_config",
+    out = "drivetrain_config.json",
 )
