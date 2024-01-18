@@ -13,28 +13,40 @@ steps:
     commands:
       - tools/ci/clean-disk.sh
       - tools/bazel ${STARTUP} --output_base=../k8_output_base run ${COMMON} --config=k8 //tools/lint:run-ci
+    agents:
+      queue: "build-no-gpu"
 
   - label: "x86_64"
     commands:
       - tools/ci/clean-disk.sh
       - tools/bazel ${STARTUP} --output_base=../k8_output_base test ${COMMON} --config=k8 --config=eigen ${TARGETS}
+    agents:
+      queue: "gpu"
 
   - label: "roborio"
     commands:
       - tools/ci/clean-disk.sh
       - tools/bazel ${STARTUP} --output_base=../common_output_base build ${COMMON} --config=roborio ${ROBORIO_TARGETS}
+    agents:
+      queue: "build-no-gpu"
 
   - label: "arm64"
     commands:
       - tools/ci/clean-disk.sh
       - tools/bazel ${STARTUP} --output_base=../common_output_base build ${COMMON} --config=arm64 ${TARGETS}
+    agents:
+      queue: "build-no-gpu"
 
   - label: "cortex-m4f"
     commands:
       - tools/ci/clean-disk.sh
       - tools/bazel ${STARTUP} --output_base=../common_output_base build ${COMMON} --config=cortex-m4f ${M4F_TARGETS}
+    agents:
+      queue: "build-no-gpu"
 
   - label: "rp2040"
     commands:
       - tools/ci/clean-disk.sh
       - tools/bazel ${STARTUP} --output_base=../common_output_base build ${COMMON} --config=rp2040 ${RP2040_TARGETS}
+    agents:
+      queue: "build-no-gpu"
