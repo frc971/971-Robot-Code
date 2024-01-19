@@ -21,9 +21,10 @@ cc_library(
         "can_logger.cc",
         "can_logger.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":can_logging_fbs",
-        "//aos/events:event_loop",
+        "//aos/events:shm_event_loop",
         "//aos/scoped:scoped_fd",
         "@com_github_google_glog//:glog",
     ],
