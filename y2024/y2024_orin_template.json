@@ -1,0 +1,317 @@
+{
+  "channels": [
+    {
+      "name": "/orin{{ NUM }}/aos",
+      "type": "aos.timing.Report",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 4096
+    },
+    {
+      "name": "/orin{{ NUM }}/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 200,
+      "num_senders": 20
+    },
+    {
+      "name": "/orin{{ NUM }}/aos",
+      "type": "aos.starter.Status",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 50,
+      "num_senders": 20,
+      "max_size": 2000
+    },
+    {
+      "name": "/orin{{ NUM }}/aos",
+      "type": "aos.starter.StarterRpc",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 10,
+      "num_senders": 2
+    },
+    {
+      "name": "/orin{{ NUM }}/aos",
+      "type": "aos.message_bridge.ServerStatistics",
+      "source_node": "orin{{ NUM }}",
+      "max_size": 2048,
+      "frequency": 10,
+      "num_senders": 2
+    },
+    {
+      "name": "/orin{{ NUM }}/aos",
+      "type": "aos.message_bridge.ClientStatistics",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 20,
+      "num_senders": 2
+    },
+    {
+      "name": "/orin{{ NUM }}/aos",
+      "type": "aos.logging.DynamicLogCommand",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 10,
+      "num_senders": 2
+    },
+    {
+      "name": "/orin{{ NUM }}/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 15,
+      "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
+      "max_size": 200,
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 1,
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "orin{{ NUM }}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/orin{{ NUM }}/aos/remote_timestamps/imu/orin{{ NUM }}/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "orin{{ NUM }}",
+      "max_size": 208
+    },
+    {
+      "name": "/imu/aos",
+      "type": "aos.message_bridge.Timestamp",
+      "source_node": "imu",
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "orin{{ NUM }}"
+      ],
+      "destination_nodes": [
+        {
+          "name": "orin{{ NUM }}",
+          "priority": 1,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/orin{{ NUM }}/imu/aos/aos-message_bridge-Timestamp",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 20,
+      "source_node": "imu",
+      "max_size": 208
+    },
+    {
+      "name": "/orin{{ NUM }}/camera",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 40,
+      "max_size": 1843456,
+      "num_readers": 6,
+      "read_method": "PIN",
+      "num_senders": 18
+    },
+    {
+      "name": "/orin{{ NUM }}/camera",
+      "type": "foxglove.CompressedImage",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 40,
+      "max_size": 622384
+    },
+    {
+      "name": "/orin{{ NUM }}/camera",
+      "type": "foxglove.ImageAnnotations",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 40,
+      "max_size": 50000
+    },
+    {
+      "name": "/orin{{ NUM }}/camera",
+      "type": "frc971.vision.TargetMap",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 40,
+      "num_senders": 2,
+      "max_size": 1024,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 4,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "orin{{ NUM }}"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
+    },
+    {
+      "name": "/orin{{ NUM }}/aos/remote_timestamps/imu/orin{{ NUM }}/camera/frc971-vision-TargetMap",
+      "type": "aos.message_bridge.RemoteMessage",
+      "frequency": 80,
+      "source_node": "orin{{ NUM }}",
+      "max_size": 208
+    },
+    {
+      "name": "/orin{{ NUM }}/constants",
+      "type": "y2024.Constants",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 1,
+      "num_senders": 2,
+      "max_size": 65536
+    }
+  ],
+  "applications": [
+    {
+      "name": "message_bridge_client",
+      "executable_name": "message_bridge_client",
+      "args": [
+        "--rt_priority=16",
+        "--sinit_max_init_timeout=5000"
+      ],
+      "user": "orin",
+      "nodes": [
+        "orin{{ NUM }}"
+      ]
+    },
+    {
+      "name": "irq_affinity",
+      "executable_name": "irq_affinity",
+      "user": "root",
+      "args": ["--user=orin"],
+      "nodes": [
+          "orin{{ NUM }}"
+      ]
+    },
+    {
+      "name": "message_bridge_server",
+      "executable_name": "message_bridge_server",
+      "user": "orin",
+      "nodes": [
+        "orin{{ NUM }}"
+      ]
+    },
+    {
+      "name": "web_proxy",
+      "executable_name": "web_proxy_main",
+      "user": "orin",
+      "args": [
+        "--min_ice_port=5800",
+        "--max_ice_port=5810"
+      ],
+      "nodes": [
+        "orin{{ NUM }}"
+      ]
+    },
+    {
+      "name": "image_logger",
+      "executable_name": "image_logger",
+      "args": [
+        "--logging_folder",
+        "",
+        "--rotate_every",
+        "30.0",
+        "--direct",
+        "--flush_size=4194304"
+      ],
+      "user": "orin",
+      "nodes": [
+        "orin{{ NUM }}"
+      ]
+    },
+    {
+      "name": "foxglove_websocket",
+      "user": "orin",
+      "nodes": [
+        "orin{{ NUM }}"
+      ]
+    },
+    {
+      "name": "foxglove_image_converter",
+      "user": "orin",
+      "nodes": [
+        "orin{{ NUM }}"
+      ]
+    },
+    {
+      "name": "constants_sender",
+      "autorestart": false,
+      "user": "orin",
+      "nodes": [
+        "orin{{ NUM }}"
+      ]
+    },
+    {
+      "name": "argus_camera",
+      "executable_name": "argus_camera",
+      "user": "orin",
+      "nodes": [
+        "orin{{ NUM }}"
+      ]
+    },
+    {
+      "name": "gpu_apriltag",
+      "executable_name": "gpu_apriltag",
+      "user": "orin",
+      "nodes": [
+        "orin{{ NUM }}"
+      ]
+    }
+  ],
+  "maps": [
+    {
+      "match": {
+        "name": "/aos*",
+        "source_node": "orin{{ NUM }}"
+      },
+      "rename": {
+        "name": "/orin{{ NUM }}/aos"
+      }
+    },
+    {
+      "match": {
+        "name": "/constants*",
+        "source_node": "orin{{ NUM }}"
+      },
+      "rename": {
+        "name": "/orin{{ NUM }}/constants"
+      }
+    },
+    {
+      "match": {
+        "name": "/camera*",
+        "source_node": "orin{{ NUM }}"
+      },
+      "rename": {
+        "name": "/orin{{ NUM }}/camera"
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "name": "orin{{ NUM }}",
+      "hostname": "orin{{ NUM }}",
+      "hostnames": [
+        "orin-971-{{ NUM }}",
+        "orin-7971-{{ NUM }}",
+        "orin-8971-{{ NUM }}",
+        "orin-9971-{{ NUM }}"
+      ],
+      "port": 9971
+    },
+    {
+      "name": "imu"
+    }
+  ]
+}

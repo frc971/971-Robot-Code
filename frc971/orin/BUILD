@@ -112,6 +112,7 @@ cc_binary(
         "argus_camera.cc",
     ],
     target_compatible_with = ["@platforms//cpu:arm64"],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos:init",
         "//aos/events:shm_event_loop",
@@ -130,6 +131,7 @@ cc_binary(
     name = "gpu_apriltag",
     srcs = ["gpu_apriltag.cc"],
     features = ["cuda"],
+    visibility = ["//visibility:public"],
     deps = [
         ":apriltag",
         "//aos:init",
