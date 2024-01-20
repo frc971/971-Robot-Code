@@ -3,7 +3,6 @@
 #include <array>
 #include <chrono>
 #include <cinttypes>
-#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <functional>
@@ -11,20 +10,14 @@
 #include <mutex>
 #include <thread>
 
-#include "ctre/phoenix/CANifier.h"
-
 #include "frc971/wpilib/ahal/AnalogInput.h"
-#include "frc971/wpilib/ahal/Counter.h"
-#include "frc971/wpilib/ahal/DigitalGlitchFilter.h"
 #include "frc971/wpilib/ahal/DriverStation.h"
 #include "frc971/wpilib/ahal/Encoder.h"
-#include "frc971/wpilib/ahal/Servo.h"
 #include "frc971/wpilib/ahal/TalonFX.h"
 #include "frc971/wpilib/ahal/VictorSP.h"
 #undef ERROR
 
 #include "ctre/phoenix/cci/Diagnostics_CCI.h"
-#include "ctre/phoenix6/TalonFX.hpp"
 
 #include "aos/commonmath.h"
 #include "aos/containers/sized_array.h"
@@ -39,21 +32,22 @@
 #include "aos/util/wrapping_counter.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/can_configuration_generated.h"
-#include "frc971/control_loops/drivetrain/drivetrain_can_position_generated.h"
+#include "frc971/control_loops/drivetrain/drivetrain_can_position_static.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
 #include "frc971/queues/gyro_generated.h"
-#include "frc971/wpilib/ADIS16448.h"
 #include "frc971/wpilib/buffered_pcm.h"
 #include "frc971/wpilib/buffered_solenoid.h"
+#include "frc971/wpilib/can_drivetrain_writer.h"
+#include "frc971/wpilib/can_sensor_reader.h"
 #include "frc971/wpilib/dma.h"
-#include "frc971/wpilib/drivetrain_writer.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/logging_generated.h"
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/pdp_fetcher.h"
 #include "frc971/wpilib/sensor_reader.h"
+#include "frc971/wpilib/talonfx.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2024/constants.h"
 #include "y2024/control_loops/superstructure/superstructure_output_generated.h"
@@ -65,6 +59,8 @@ DEFINE_bool(ctre_diag_server, false,
 
 using ::aos::monotonic_clock;
 using ::frc971::CANConfiguration;
+using ::frc971::control_loops::drivetrain::CANPositionStatic;
+using ::frc971::wpilib::TalonFX;
 using ::y2024::constants::Values;
 namespace superstructure = ::y2024::control_loops::superstructure;
 namespace drivetrain = ::y2024::control_loops::drivetrain;
@@ -96,9 +92,6 @@ static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
 
 }  // namespace
 
-static constexpr int kCANFalconCount = 6;
-static constexpr units::frequency::hertz_t kCANUpdateFreqHz = 200_Hz;
-
 // Class to send position messages with sensor readings to our loops.
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
@@ -113,9 +106,9 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
             event_loop->MakeSender<superstructure::Position>(
                 "/superstructure")),
         drivetrain_position_sender_(
-            event_loop
-                ->MakeSender<::frc971::control_loops::drivetrain::Position>(
-                    "/drivetrain")),
+            event_loop->MakeSender<
+                ::frc971::control_loops::drivetrain::PositionStatic>(
+                "/drivetrain")),
         gyro_sender_(event_loop->MakeSender<::frc971::sensors::GyroReading>(
             "/drivetrain")){};
   void Start() override { AddToDMA(&imu_yaw_rate_reader_); }
@@ -139,24 +132,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       builder.CheckOk(builder.Send(position_builder.Finish()));
     }
 
-    {
-      auto builder = drivetrain_position_sender_.MakeBuilder();
-      frc971::control_loops::drivetrain::Position::Builder drivetrain_builder =
-          builder.MakeBuilder<frc971::control_loops::drivetrain::Position>();
-      drivetrain_builder.add_left_encoder(
-          constants::Values::DrivetrainEncoderToMeters(
-              drivetrain_left_encoder_->GetRaw()));
-      drivetrain_builder.add_left_speed(
-          drivetrain_velocity_translate(drivetrain_left_encoder_->GetPeriod()));
-
-      drivetrain_builder.add_right_encoder(
-          -constants::Values::DrivetrainEncoderToMeters(
-              drivetrain_right_encoder_->GetRaw()));
-      drivetrain_builder.add_right_speed(-drivetrain_velocity_translate(
-          drivetrain_right_encoder_->GetPeriod()));
-
-      builder.CheckOk(builder.Send(drivetrain_builder.Finish()));
-    }
+    SendDrivetrainPosition(drivetrain_position_sender_.MakeStaticBuilder(),
+                           drivetrain_velocity_translate,
+                           constants::Values::DrivetrainEncoderToMeters, false,
+                           false);
 
     {
       auto builder = gyro_sender_.MakeBuilder();
@@ -212,7 +191,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   aos::Sender<frc971::autonomous::AutonomousMode> auto_mode_sender_;
   aos::Sender<superstructure::Position> superstructure_position_sender_;
-  aos::Sender<frc971::control_loops::drivetrain::Position>
+  aos::Sender<frc971::control_loops::drivetrain::PositionStatic>
       drivetrain_position_sender_;
   ::aos::Sender<::frc971::sensors::GyroReading> gyro_sender_;
 
@@ -265,20 +244,82 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       c_Phoenix_Diagnostics_Dispose();
     }
 
+    std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry;
+
+    std::shared_ptr<TalonFX> right_front = std::make_shared<TalonFX>(
+        0, false, "Drivetrain Bus", &signals_registry,
+        constants::Values::kDrivetrainStatorCurrentLimit(),
+        constants::Values::kDrivetrainSupplyCurrentLimit());
+    std::shared_ptr<TalonFX> right_back = std::make_shared<TalonFX>(
+        1, false, "Drivetrain Bus", &signals_registry,
+        constants::Values::kDrivetrainStatorCurrentLimit(),
+        constants::Values::kDrivetrainSupplyCurrentLimit());
+    std::shared_ptr<TalonFX> left_front = std::make_shared<TalonFX>(
+        2, false, "Drivetrain Bus", &signals_registry,
+        constants::Values::kDrivetrainStatorCurrentLimit(),
+        constants::Values::kDrivetrainSupplyCurrentLimit());
+    std::shared_ptr<TalonFX> left_back = std::make_shared<TalonFX>(
+        3, false, "Drivetrain Bus", &signals_registry,
+        constants::Values::kDrivetrainStatorCurrentLimit(),
+        constants::Values::kDrivetrainSupplyCurrentLimit());
+
     ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
         constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
     ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
         constants::Values::kDrivetrainTxPriority, true, "Drivetrain Bus");
 
+    ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
+    can_sensor_reader_event_loop.set_name("CANSensorReader");
+
+    // Creating list of talonfx for CANSensorReader
+    std::vector<std::shared_ptr<TalonFX>> talonfxs;
+    for (auto talonfx : {right_front, right_back, left_front, left_back}) {
+      talonfxs.push_back(talonfx);
+    }
+
+    aos::Sender<CANPositionStatic> can_position_sender =
+        can_sensor_reader_event_loop.MakeSender<CANPositionStatic>(
+            "/drivetrain");
+
+    frc971::wpilib::CANSensorReader can_sensor_reader(
+        &can_sensor_reader_event_loop, std::move(signals_registry), talonfxs,
+        [talonfxs, &can_position_sender](ctre::phoenix::StatusCode status) {
+          aos::Sender<CANPositionStatic>::StaticBuilder builder =
+              can_position_sender.MakeStaticBuilder();
+
+          auto falcon_vector = builder->add_talonfxs();
+
+          for (auto talonfx : talonfxs) {
+            talonfx->SerializePosition(
+                falcon_vector->emplace_back(),
+                control_loops::drivetrain::kHighOutputRatio);
+          }
+
+          builder->set_timestamp(talonfxs.front()->GetTimestamp());
+          builder->set_status(static_cast<int>(status));
+
+          builder.CheckOk(builder.Send());
+        });
+
+    AddLoop(&can_sensor_reader_event_loop);
+
+    // Thread 5.
     ::aos::ShmEventLoop can_output_event_loop(&config.message());
     can_output_event_loop.set_name("CANOutputWriter");
 
-    // Thread 5
-    // Set up superstructure output.
-    ::aos::ShmEventLoop output_event_loop(&config.message());
-    output_event_loop.set_name("PWMOutputWriter");
+    frc971::wpilib::CANDrivetrainWriter can_drivetrain_writer(
+        &can_output_event_loop);
 
-    AddLoop(&output_event_loop);
+    can_drivetrain_writer.set_talonfxs({right_front, right_back},
+                                       {left_front, left_back});
+
+    can_output_event_loop.MakeWatcher(
+        "/roborio", [&can_drivetrain_writer](
+                        const frc971::CANConfiguration &configuration) {
+          can_drivetrain_writer.HandleCANConfiguration(configuration);
+        });
+
+    AddLoop(&can_output_event_loop);
 
     // Thread 6
 
