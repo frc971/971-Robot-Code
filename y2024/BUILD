@@ -77,7 +77,7 @@ robot_downloader(
         "//frc971/orin:argus_camera",
     ],
     target_compatible_with = ["//tools/platforms/hardware:raspberry_pi"],
-    target_type = "orin",
+    target_type = "pi",
 )
 
 aos_config(
