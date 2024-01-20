@@ -4,9 +4,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "y2024/constants/constants_list_generated.h"
 
-namespace y2024 {
-namespace constants {
-namespace testing {
+namespace y2024::constants::testing {
 class ConstantsValidatorTest : public ::testing::Test {};
 
 TEST_F(ConstantsValidatorTest, CheckConstants) {
@@ -16,6 +14,4 @@ TEST_F(ConstantsValidatorTest, CheckConstants) {
                     .constants());
 }
 
-}  // namespace testing
-}  // namespace constants
-}  // namespace y2024
+}  // namespace y2024::constants::testing
