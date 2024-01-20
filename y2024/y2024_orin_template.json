@@ -6,7 +6,7 @@
       "source_node": "orin{{ NUM }}",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 4096
+      "max_size": 8192
     },
     {
       "name": "/orin{{ NUM }}/aos",
@@ -113,8 +113,8 @@
       "name": "/orin{{ NUM }}/camera",
       "type": "frc971.vision.CameraImage",
       "source_node": "orin{{ NUM }}",
-      "frequency": 40,
-      "max_size": 1843456,
+      "frequency": 65,
+      "max_size": 4752384,
       "num_readers": 6,
       "read_method": "PIN",
       "num_senders": 18
@@ -123,21 +123,21 @@
       "name": "/orin{{ NUM }}/camera",
       "type": "foxglove.CompressedImage",
       "source_node": "orin{{ NUM }}",
-      "frequency": 40,
+      "frequency": 65,
       "max_size": 622384
     },
     {
       "name": "/orin{{ NUM }}/camera",
       "type": "foxglove.ImageAnnotations",
       "source_node": "orin{{ NUM }}",
-      "frequency": 40,
+      "frequency": 65,
       "max_size": 50000
     },
     {
       "name": "/orin{{ NUM }}/camera",
       "type": "frc971.vision.TargetMap",
       "source_node": "orin{{ NUM }}",
-      "frequency": 40,
+      "frequency": 65,
       "num_senders": 2,
       "max_size": 1024,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
@@ -180,7 +180,7 @@
         "--rt_priority=16",
         "--sinit_max_init_timeout=5000"
       ],
-      "user": "orin",
+      "user": "pi",
       "nodes": [
         "orin{{ NUM }}"
       ]
@@ -189,7 +189,7 @@
       "name": "irq_affinity",
       "executable_name": "irq_affinity",
       "user": "root",
-      "args": ["--user=orin"],
+      "args": ["--user=pi"],
       "nodes": [
           "orin{{ NUM }}"
       ]
@@ -197,7 +197,7 @@
     {
       "name": "message_bridge_server",
       "executable_name": "message_bridge_server",
-      "user": "orin",
+      "user": "pi",
       "nodes": [
         "orin{{ NUM }}"
       ]
@@ -205,7 +205,7 @@
     {
       "name": "web_proxy",
       "executable_name": "web_proxy_main",
-      "user": "orin",
+      "user": "pi",
       "args": [
         "--min_ice_port=5800",
         "--max_ice_port=5810"
@@ -225,21 +225,21 @@
         "--direct",
         "--flush_size=4194304"
       ],
-      "user": "orin",
+      "user": "pi",
       "nodes": [
         "orin{{ NUM }}"
       ]
     },
     {
       "name": "foxglove_websocket",
-      "user": "orin",
+      "user": "pi",
       "nodes": [
         "orin{{ NUM }}"
       ]
     },
     {
       "name": "foxglove_image_converter",
-      "user": "orin",
+      "user": "pi",
       "nodes": [
         "orin{{ NUM }}"
       ]
@@ -247,7 +247,7 @@
     {
       "name": "constants_sender",
       "autorestart": false,
-      "user": "orin",
+      "user": "pi",
       "nodes": [
         "orin{{ NUM }}"
       ]
@@ -255,7 +255,11 @@
     {
       "name": "argus_camera",
       "executable_name": "argus_camera",
-      "user": "orin",
+      "args": [
+          "--enable_ftrace",
+          "--channel=0",
+      ],
+      "user": "pi",
       "nodes": [
         "orin{{ NUM }}"
       ]
@@ -263,7 +267,7 @@
     {
       "name": "gpu_apriltag",
       "executable_name": "gpu_apriltag",
-      "user": "orin",
+      "user": "pi",
       "nodes": [
         "orin{{ NUM }}"
       ]

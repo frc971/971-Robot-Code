@@ -37,7 +37,7 @@ def main(argv):
                         help="Target to deploy code to.")
     parser.add_argument("--type",
                         type=str,
-                        choices=["roborio", "pi"],
+                        choices=["roborio", "pi", "orin"],
                         required=True,
                         help="Target type for deployment")
     parser.add_argument("srcs",
@@ -64,7 +64,7 @@ def main(argv):
         target_dir = result.group(3)
 
     if user is None:
-        if args.type == "pi":
+        if args.type == "pi" or args.type == "orin":
             user = "pi"
         elif args.type == "roborio":
             user = "admin"
@@ -122,7 +122,7 @@ def main(argv):
         # permissions or the executables won't be visible to init.
         os.chmod(temp_dir, 0o775)
         # Starter needs to be SUID so we transition from lvuser to admin.
-        if args.type != "pi":
+        if args.type != "pi" and args.type != "orin":
             os.chmod(os.path.join(temp_dir, "starterd"), 0o775 | stat.S_ISUID)
 
         rsync_cmd = ([

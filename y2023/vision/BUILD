@@ -50,7 +50,10 @@ cc_binary(
         "viewer.cc",
     ],
     target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//y2023:__subpackages__"],
+    visibility = [
+        "//y2023:__subpackages__",
+        "//y2024:__subpackages__",
+    ],
     deps = [
         "//aos:init",
         "//aos:json_to_flatbuffer",
