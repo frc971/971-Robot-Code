@@ -1,1 +1,10 @@
-  "target_map": {% include 'y2024/vision/maps/target_map.json' %}
+"shooter_interpolation_table": [
+    {
+        "distance_from_goal": 0.0,
+        "shot_params": {
+            "shot_velocity": 0.0,
+            "shot_angle": 0.0
+        }
+    }
+],
+"target_map": {% include 'y2024/vision/maps/target_map.json' %}
