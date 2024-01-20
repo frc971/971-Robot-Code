@@ -225,8 +225,6 @@ struct Values {
   ArmJointConstants arm_distal;
   ArmJointConstants roll_joint;
 
-  AbsEncoderConstants wrist;
-
   bool wrist_flipped;
 };
 

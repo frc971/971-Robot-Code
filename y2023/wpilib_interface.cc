@@ -39,6 +39,7 @@
 #include "aos/util/wrapping_counter.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/can_configuration_generated.h"
+#include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/drivetrain/drivetrain_can_position_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
@@ -56,6 +57,7 @@
 #include "frc971/wpilib/sensor_reader.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2023/constants.h"
+#include "y2023/constants/constants_generated.h"
 #include "y2023/control_loops/superstructure/led_indicator.h"
 #include "y2023/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_position_static.h"
@@ -403,6 +405,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                CANSensorReader *can_sensor_reader)
       : ::frc971::wpilib::SensorReader(event_loop),
         values_(std::move(values)),
+        constants_fetcher_(event_loop),
         auto_mode_sender_(
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
                 "/autonomous")),
@@ -460,8 +463,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                    false, values_->roll_joint.potentiometer_offset);
       CopyPosition(wrist_encoder_, builder->add_wrist(),
                    Values::kWristEncoderCountsPerRevolution(),
-                   values_->wrist.subsystem_params.zeroing_constants
-                           .one_revolution_distance /
+                   constants_fetcher_.constants()
+                           .robot()
+                           ->wrist_zero()
+                           ->one_revolution_distance() /
                        (M_PI * 2.0),
                    values_->wrist_flipped);
 
@@ -632,6 +637,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
  private:
   std::shared_ptr<const Values> values_;
+  frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
 
   aos::Sender<frc971::autonomous::AutonomousMode> auto_mode_sender_;
   aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
@@ -918,6 +924,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     aos::FlatbufferDetachedBuffer<aos::Configuration> config =
         aos::configuration::ReadConfig("aos_config.json");
+
+    frc971::constants::WaitForConstants<y2023::Constants>(&config.message());
 
     // Thread 1.
     ::aos::ShmEventLoop joystick_sender_event_loop(&config.message());

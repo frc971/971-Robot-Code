@@ -34,7 +34,8 @@ Superstructure::Superstructure(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       arm_(values_, arm_trajectories.message()),
       end_effector_(),
-      wrist_(values->wrist.subsystem_params) {
+      wrist_(constants_fetcher_.constants().wrist(),
+             constants_fetcher_.constants().robot()->wrist_zero()) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 

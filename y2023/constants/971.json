@@ -25,6 +25,10 @@
           "lateral_position": -0.23
         }
       ]
+    },
+    "wrist_zero": {
+      {% include 'y2023/constants/wrist_common_zeroing.json' %},
+      "measured_absolute_position": 0.616272675539221
     }
   },
   {% include 'y2023/constants/common.json' %}
