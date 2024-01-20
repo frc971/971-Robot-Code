@@ -6,6 +6,15 @@ table Output {
 
     // Voltage of intake pivot
     intake_pivot_voltage:double (id: 1);
+
+    // Voltage of the turret
+    turret_voltage: double (id: 2);
+
+    // Voltage of the altitude
+    altitude_voltage: double (id: 3);
+
+    // Voltage of the catapult
+    catapult_voltage: double (id: 4);
 }
 
 root_type Output;
