@@ -12,7 +12,7 @@ steps:
   - label: "lint"
     commands:
       - tools/ci/clean-disk.sh
-      - tools/bazel ${STARTUP} --output_base=../lint_output_base run ${COMMON} --config=k8 //tools/lint:run-ci
+      - tools/bazel ${STARTUP} --output_base=../k8_output_base run ${COMMON} --config=k8 //tools/lint:run-ci
 
   - label: "x86_64"
     commands:
@@ -22,19 +22,19 @@ steps:
   - label: "roborio"
     commands:
       - tools/ci/clean-disk.sh
-      - tools/bazel ${STARTUP} --output_base=../roborio_output_base build ${COMMON} --config=roborio ${ROBORIO_TARGETS}
+      - tools/bazel ${STARTUP} --output_base=../common_output_base build ${COMMON} --config=roborio ${ROBORIO_TARGETS}
 
   - label: "arm64"
     commands:
       - tools/ci/clean-disk.sh
-      - tools/bazel ${STARTUP} --output_base=../arm64_output_base build ${COMMON} --config=arm64 ${TARGETS}
+      - tools/bazel ${STARTUP} --output_base=../common_output_base build ${COMMON} --config=arm64 ${TARGETS}
 
   - label: "cortex-m4f"
     commands:
       - tools/ci/clean-disk.sh
-      - tools/bazel ${STARTUP} --output_base=../cortex-m4f_output_base build ${COMMON} --config=cortex-m4f ${M4F_TARGETS}
+      - tools/bazel ${STARTUP} --output_base=../common_output_base build ${COMMON} --config=cortex-m4f ${M4F_TARGETS}
 
   - label: "rp2040"
     commands:
       - tools/ci/clean-disk.sh
-      - tools/bazel ${STARTUP} --output_base=../rp2040_output_base build ${COMMON} --config=rp2040 ${RP2040_TARGETS}
+      - tools/bazel ${STARTUP} --output_base=../common_output_base build ${COMMON} --config=rp2040 ${RP2040_TARGETS}
