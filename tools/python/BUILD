@@ -18,6 +18,19 @@ compile_pip_requirements(
     ],
 )
 
+# This binary is intended to run the `requirements.update` target in a Docker
+# container. This is primarily intended for reproducibility. See README.md.
+sh_binary(
+    name = "update_helper",
+    srcs = ["update_helper.sh"],
+    data = [
+        "update_helper_files/Dockerfile",
+    ],
+    deps = [
+        "@bazel_tools//tools/bash/runfiles",
+    ],
+)
+
 py_runtime(
     name = "python3_runtime",
     files = [
