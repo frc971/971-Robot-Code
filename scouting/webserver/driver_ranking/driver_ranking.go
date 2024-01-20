@@ -76,9 +76,9 @@ func GenerateFullDriverRanking(database Database, scriptPath string) {
 			// Most of the data is unused so we just fill in empty
 			// strings.
 			"", "", "", "",
-			strconv.Itoa(int(ranking.Rank1)),
-			strconv.Itoa(int(ranking.Rank2)),
-			strconv.Itoa(int(ranking.Rank3)),
+			ranking.Rank1,
+			ranking.Rank2,
+			ranking.Rank3,
 		})
 	}
 

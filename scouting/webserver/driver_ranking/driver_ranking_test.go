@@ -28,8 +28,8 @@ func (database *MockDatabase) AddParsedDriverRanking(data db.ParsedDriverRanking
 func TestDriverRankingRun(t *testing.T) {
 	var database MockDatabase
 	database.rawRankings = []db.DriverRankingData{
-		db.DriverRankingData{MatchNumber: 1, Rank1: 1234, Rank2: 1235, Rank3: 1236},
-		db.DriverRankingData{MatchNumber: 2, Rank1: 971, Rank2: 972, Rank3: 973},
+		db.DriverRankingData{MatchNumber: 1, Rank1: "1234", Rank2: "1235", Rank3: "1236"},
+		db.DriverRankingData{MatchNumber: 2, Rank1: "971", Rank2: "972", Rank3: "973"},
 	}
 
 	GenerateFullDriverRanking(&database, "./fake_driver_rank_script")

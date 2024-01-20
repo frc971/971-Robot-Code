@@ -114,12 +114,12 @@ func TestAddOrUpdateRankingsDB(t *testing.T) {
 
 	correct := []Ranking{
 		Ranking{
-			TeamNumber: 123,
+			TeamNumber: "123",
 			Losses:     1, Wins: 7, Ties: 0,
 			Rank: 2, Dq: 0,
 		},
 		Ranking{
-			TeamNumber: 125,
+			TeamNumber: "125",
 			Losses:     2, Wins: 4, Ties: 0,
 			Rank: 2, Dq: 0,
 		},
@@ -691,22 +691,22 @@ func TestQueryRankingsDB(t *testing.T) {
 
 	testDatabase := []Ranking{
 		Ranking{
-			TeamNumber: 123,
+			TeamNumber: "123",
 			Losses:     1, Wins: 7, Ties: 2,
 			Rank: 2, Dq: 0,
 		},
 		Ranking{
-			TeamNumber: 124,
+			TeamNumber: "124",
 			Losses:     3, Wins: 4, Ties: 0,
 			Rank: 4, Dq: 2,
 		},
 		Ranking{
-			TeamNumber: 125,
+			TeamNumber: "125",
 			Losses:     5, Wins: 2, Ties: 0,
 			Rank: 17, Dq: 0,
 		},
 		Ranking{
-			TeamNumber: 126,
+			TeamNumber: "126",
 			Losses:     0, Wins: 7, Ties: 0,
 			Rank: 5, Dq: 0,
 		},
@@ -719,13 +719,13 @@ func TestQueryRankingsDB(t *testing.T) {
 
 	correct := []Ranking{
 		Ranking{
-			TeamNumber: 126,
+			TeamNumber: "126",
 			Losses:     0, Wins: 7, Ties: 0,
 			Rank: 5, Dq: 0,
 		},
 	}
 
-	got, err := fixture.db.QueryRankings(126)
+	got, err := fixture.db.QueryRankings("126")
 	check(t, err, "Failed QueryRankings()")
 
 	if !reflect.DeepEqual(correct, got) {
@@ -830,22 +830,22 @@ func TestReturnRankingsDB(t *testing.T) {
 
 	correct := []Ranking{
 		Ranking{
-			TeamNumber: 123,
+			TeamNumber: "123",
 			Losses:     1, Wins: 7, Ties: 2,
 			Rank: 2, Dq: 0,
 		},
 		Ranking{
-			TeamNumber: 124,
+			TeamNumber: "124",
 			Losses:     3, Wins: 4, Ties: 0,
 			Rank: 4, Dq: 2,
 		},
 		Ranking{
-			TeamNumber: 125,
+			TeamNumber: "125",
 			Losses:     5, Wins: 2, Ties: 0,
 			Rank: 17, Dq: 0,
 		},
 		Ranking{
-			TeamNumber: 126,
+			TeamNumber: "126",
 			Losses:     0, Wins: 7, Ties: 0,
 			Rank: 5, Dq: 0,
 		},
@@ -1021,27 +1021,27 @@ func TestRankingsDbUpdate(t *testing.T) {
 
 	testDatabase := []Ranking{
 		Ranking{
-			TeamNumber: 123,
+			TeamNumber: "123",
 			Losses:     1, Wins: 7, Ties: 2,
 			Rank: 2, Dq: 0,
 		},
 		Ranking{
-			TeamNumber: 124,
+			TeamNumber: "124",
 			Losses:     3, Wins: 4, Ties: 0,
 			Rank: 4, Dq: 2,
 		},
 		Ranking{
-			TeamNumber: 125,
+			TeamNumber: "125",
 			Losses:     5, Wins: 2, Ties: 0,
 			Rank: 17, Dq: 0,
 		},
 		Ranking{
-			TeamNumber: 126,
+			TeamNumber: "126",
 			Losses:     0, Wins: 7, Ties: 0,
 			Rank: 5, Dq: 0,
 		},
 		Ranking{
-			TeamNumber: 125,
+			TeamNumber: "125",
 			Losses:     2, Wins: 4, Ties: 1,
 			Rank: 5, Dq: 0,
 		},
@@ -1054,13 +1054,13 @@ func TestRankingsDbUpdate(t *testing.T) {
 
 	correct := []Ranking{
 		Ranking{
-			TeamNumber: 125,
+			TeamNumber: "125",
 			Losses:     2, Wins: 4, Ties: 1,
 			Rank: 5, Dq: 0,
 		},
 	}
 
-	got, err := fixture.db.QueryRankings(125)
+	got, err := fixture.db.QueryRankings("125")
 	check(t, err, "Failed QueryRankings()")
 
 	checkDeepEqual(t, correct, got)
@@ -1072,14 +1072,14 @@ func TestNotes(t *testing.T) {
 
 	expected := []string{"Note 1", "Note 3"}
 
-	err := fixture.db.AddNotes(NotesData{TeamNumber: 1234, Notes: "Note 1", GoodDriving: true, BadDriving: false, SolidPlacing: false, SketchyPlacing: true, GoodDefense: false, BadDefense: true, EasilyDefended: true})
+	err := fixture.db.AddNotes(NotesData{TeamNumber: "1234", Notes: "Note 1", GoodDriving: true, BadDriving: false, SolidPlacing: false, SketchyPlacing: true, GoodDefense: false, BadDefense: true, EasilyDefended: true})
 	check(t, err, "Failed to add Note")
-	err = fixture.db.AddNotes(NotesData{TeamNumber: 1235, Notes: "Note 2", GoodDriving: false, BadDriving: true, SolidPlacing: false, SketchyPlacing: true, GoodDefense: false, BadDefense: false, EasilyDefended: false})
+	err = fixture.db.AddNotes(NotesData{TeamNumber: "1235", Notes: "Note 2", GoodDriving: false, BadDriving: true, SolidPlacing: false, SketchyPlacing: true, GoodDefense: false, BadDefense: false, EasilyDefended: false})
 	check(t, err, "Failed to add Note")
-	err = fixture.db.AddNotes(NotesData{TeamNumber: 1234, Notes: "Note 3", GoodDriving: true, BadDriving: false, SolidPlacing: false, SketchyPlacing: true, GoodDefense: true, BadDefense: false, EasilyDefended: true})
+	err = fixture.db.AddNotes(NotesData{TeamNumber: "1234", Notes: "Note 3", GoodDriving: true, BadDriving: false, SolidPlacing: false, SketchyPlacing: true, GoodDefense: true, BadDefense: false, EasilyDefended: true})
 	check(t, err, "Failed to add Note")
 
-	actual, err := fixture.db.QueryNotes(1234)
+	actual, err := fixture.db.QueryNotes("1234")
 	check(t, err, "Failed to get Notes")
 
 	if !reflect.DeepEqual(expected, actual) {
@@ -1092,20 +1092,20 @@ func TestDriverRanking(t *testing.T) {
 	defer fixture.TearDown()
 
 	expected := []DriverRankingData{
-		{ID: 1, MatchNumber: 12, Rank1: 1234, Rank2: 1235, Rank3: 1236},
-		{ID: 2, MatchNumber: 12, Rank1: 1236, Rank2: 1235, Rank3: 1234},
+		{ID: 1, MatchNumber: 12, Rank1: "1234", Rank2: "1235", Rank3: "1236"},
+		{ID: 2, MatchNumber: 12, Rank1: "1236", Rank2: "1235", Rank3: "1234"},
 	}
 
 	err := fixture.db.AddDriverRanking(
-		DriverRankingData{MatchNumber: 12, Rank1: 1234, Rank2: 1235, Rank3: 1236},
+		DriverRankingData{MatchNumber: 12, Rank1: "1234", Rank2: "1235", Rank3: "1236"},
 	)
 	check(t, err, "Failed to add Driver Ranking")
 	err = fixture.db.AddDriverRanking(
-		DriverRankingData{MatchNumber: 12, Rank1: 1236, Rank2: 1235, Rank3: 1234},
+		DriverRankingData{MatchNumber: 12, Rank1: "1236", Rank2: "1235", Rank3: "1234"},
 	)
 	check(t, err, "Failed to add Driver Ranking")
 	err = fixture.db.AddDriverRanking(
-		DriverRankingData{MatchNumber: 13, Rank1: 1235, Rank2: 1234, Rank3: 1236},
+		DriverRankingData{MatchNumber: 13, Rank1: "1235", Rank2: "1234", Rank3: "1236"},
 	)
 	check(t, err, "Failed to add Driver Ranking")
 

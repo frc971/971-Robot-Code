@@ -4,7 +4,6 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/scraping"
 	"log"
-	"strconv"
 	"strings"
 )
 
@@ -12,10 +11,10 @@ type Database interface {
 	AddOrUpdateRankings(db.Ranking) error
 }
 
-func parseTeamKey(teamKey string) (int, error) {
+func parseTeamKey(teamKey string) string {
 	// TBA prefixes teams with "frc". Not sure why. Get rid of that.
 	teamKey = strings.TrimPrefix(teamKey, "frc")
-	return strconv.Atoi(teamKey)
+	return teamKey
 }
 
 func GetRankings(database Database, year int32, eventCode string, blueAllianceConfig string) {
@@ -26,12 +25,7 @@ func GetRankings(database Database, year int32, eventCode string, blueAllianceCo
 	}
 
 	for _, rank := range rankings.Rankings {
-		teamKey, err := parseTeamKey(rank.TeamKey)
-
-		if err != nil {
-			log.Println("Failed to parse team key: ", err)
-			continue
-		}
+		teamKey := parseTeamKey(rank.TeamKey)
 
 		rankingInfo := db.Ranking{
 			TeamNumber: teamKey,

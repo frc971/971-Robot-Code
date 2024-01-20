@@ -1,10 +1,10 @@
 namespace scouting.webserver.requests;
 
 table Ranking {
-    matchNumber:int (id: 0);
-    rank1:int (id: 1);
-    rank2:int (id: 2);
-    rank3:int (id: 3);
+    match_number:int (id: 0);
+    rank1:string (id: 1);
+    rank2:string (id: 2);
+    rank3:string (id: 3);
 }
 
 table RequestAllDriverRankingsResponse {

@@ -6,7 +6,7 @@ import {SubmitPitImage} from '../../webserver/requests/messages/submit_pit_image
 type Section = 'TeamSelection' | 'Data';
 
 interface Input {
-  teamNumber: number;
+  teamNumber: string;
   pitImage: HTMLImageElement;
 }
 
@@ -19,7 +19,7 @@ export class PitScoutingComponent {
   section: Section = 'Data';
 
   errorMessage = '';
-  teamNumber: number = 971;
+  teamNumber: string = '971';
   pitImage: string = '';
 
   async readFile(file): Promise<ArrayBuffer> {
@@ -41,7 +41,7 @@ export class PitScoutingComponent {
 
   async submitData() {
     const builder = new Builder();
-    const teamNumber = builder.createString(this.teamNumber.toString());
+    const teamNumber = builder.createString(this.teamNumber);
     const pitImage = builder.createString(this.pitImage.toString());
     const imageData = SubmitPitImage.createImageDataVector(
       builder,

@@ -69,11 +69,19 @@ export class ViewComponent {
     this.ascendingSort = !this.ascendingSort;
     if (!this.ascendingSort) {
       this.driverRankingList.sort((a, b) => b.matchNumber() - a.matchNumber());
-      this.noteList.sort((a, b) => b.team() - a.team());
+      this.noteList.sort(function (a, b) {
+        return b[0]
+          .team()
+          .localeCompare(a[0].team(), undefined, {numeric: true});
+      });
       this.statList.sort((a, b) => b.matchNumber() - a.matchNumber());
     } else {
       this.driverRankingList.sort((a, b) => a.matchNumber() - b.matchNumber());
-      this.noteList.sort((a, b) => a.team() - b.team());
+      this.noteList.sort(function (a, b) {
+        return a[0]
+          .team()
+          .localeCompare(b[0].team(), undefined, {numeric: true});
+      });
       this.statList.sort((a, b) => a.matchNumber() - b.matchNumber());
     }
   }

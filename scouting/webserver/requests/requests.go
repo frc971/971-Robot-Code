@@ -84,7 +84,7 @@ type Database interface {
 	ReturnStats2023() ([]db.Stats2023, error)
 	ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]db.Stats2023, error)
 	QueryAllShifts(int) ([]db.Shift, error)
-	QueryNotes(int32) ([]string, error)
+	QueryNotes(string) ([]string, error)
 	QueryPitImages(string) ([]db.RequestedPitImage, error)
 	AddNotes(db.NotesData) error
 	AddPitImage(db.PitImage) error
@@ -367,7 +367,7 @@ func (handler submitNoteScoutingHandler) ServeHTTP(w http.ResponseWriter, req *h
 	}
 
 	err = handler.db.AddNotes(db.NotesData{
-		TeamNumber:     request.Team(),
+		TeamNumber:     string(request.Team()),
 		Notes:          string(request.Notes()),
 		GoodDriving:    bool(request.GoodDriving()),
 		BadDriving:     bool(request.BadDriving()),
@@ -671,7 +671,7 @@ func (handler requestNotesForTeamHandler) ServeHTTP(w http.ResponseWriter, req *
 		return
 	}
 
-	notes, err := handler.db.QueryNotes(request.Team())
+	notes, err := handler.db.QueryNotes(string(request.Team()))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to query notes: %v", err))
 		return
@@ -790,9 +790,9 @@ func (handler SubmitDriverRankingHandler) ServeHTTP(w http.ResponseWriter, req *
 
 	err = handler.db.AddDriverRanking(db.DriverRankingData{
 		MatchNumber: request.MatchNumber(),
-		Rank1:       request.Rank1(),
-		Rank2:       request.Rank2(),
-		Rank3:       request.Rank3(),
+		Rank1:       string(request.Rank1()),
+		Rank2:       string(request.Rank2()),
+		Rank3:       string(request.Rank3()),
 	})
 
 	if err != nil {

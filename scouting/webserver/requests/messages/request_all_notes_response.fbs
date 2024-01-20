@@ -1,7 +1,7 @@
 namespace scouting.webserver.requests;
 
 table Note {
-    team:int (id: 0);
+    team:string (id: 0);
     notes:string (id: 1);
     good_driving:bool (id: 2);
     bad_driving:bool (id: 3);

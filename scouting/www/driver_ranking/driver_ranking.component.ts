@@ -18,7 +18,7 @@ export class DriverRankingComponent {
   section: Section = 'TeamSelection';
 
   // Stores the team keys and rank (order of the array).
-  team_ranking: number[] = [971, 972, 973];
+  team_ranking: string[] = ['971', '972', '973'];
 
   match_number: number = 1;
 
@@ -58,13 +58,16 @@ export class DriverRankingComponent {
 
   async submitData() {
     const builder = new Builder();
+    const teamRanking1 = builder.createString(this.team_ranking[0]);
+    const teamRanking2 = builder.createString(this.team_ranking[1]);
+    const teamRanking3 = builder.createString(this.team_ranking[2]);
     builder.finish(
       SubmitDriverRanking.createSubmitDriverRanking(
         builder,
         this.match_number,
-        this.team_ranking[0],
-        this.team_ranking[1],
-        this.team_ranking[2]
+        teamRanking1,
+        teamRanking2,
+        teamRanking3
       )
     );
     const buffer = builder.asUint8Array();
@@ -88,6 +91,6 @@ export class DriverRankingComponent {
 
     // Reset Data.
     this.section = 'TeamSelection';
-    this.team_ranking = [971, 972, 973];
+    this.team_ranking = ['971', '972', '973'];
   }
 }
