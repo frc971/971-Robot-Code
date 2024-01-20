@@ -45,8 +45,7 @@ void PrintToStream(std::ostream &stream, chrono::nanoseconds duration) {
 
 #ifdef __linux__
 
-namespace std {
-namespace this_thread {
+namespace std::this_thread {
 template <>
 void sleep_until(const ::aos::monotonic_clock::time_point &end_time) {
   struct timespec end_time_timespec;
@@ -68,8 +67,7 @@ void sleep_until(const ::aos::monotonic_clock::time_point &end_time) {
   } while (returnval != 0);
 }
 
-}  // namespace this_thread
-}  // namespace std
+}  // namespace std::this_thread
 
 #endif  // __linux__
 

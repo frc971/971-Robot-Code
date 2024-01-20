@@ -4,9 +4,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace libc {
-namespace testing {
+namespace aos::libc::testing {
 
 // Tries a couple of easy ones.
 TEST(StrerrorTest, Basic) {
@@ -24,6 +22,4 @@ TEST(StrerrorTest, All) {
   }
 }
 
-}  // namespace testing
-}  // namespace libc
-}  // namespace aos
+}  // namespace aos::libc::testing

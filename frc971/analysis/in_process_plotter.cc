@@ -2,8 +2,7 @@
 
 #include "aos/configuration.h"
 
-namespace frc971 {
-namespace analysis {
+namespace frc971::analysis {
 
 namespace {
 const char *kDataPath = "frc971/analysis/cpp_plot";
@@ -168,5 +167,4 @@ void Plotter::Publish() {
   next_top_ = 0;
 }
 
-}  // namespace analysis
-}  // namespace frc971
+}  // namespace frc971::analysis

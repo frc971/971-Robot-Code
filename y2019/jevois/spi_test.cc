@@ -4,9 +4,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace jevois {
-namespace testing {
+namespace frc971::jevois::testing {
 
 // Tests packing and then unpacking an empty message.
 TEST(SpiToRoborioPackTest, Empty) {
@@ -228,6 +226,4 @@ TEST(SpiToTeensyPackTest, Full) {
   EXPECT_EQ(input_message, output_message.value());
 }
 
-}  // namespace testing
-}  // namespace jevois
-}  // namespace frc971
+}  // namespace frc971::jevois::testing

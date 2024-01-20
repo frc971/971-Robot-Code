@@ -2,9 +2,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace frc971 {
-namespace input {
-namespace driver_station {
+namespace frc971::input::driver_station {
 
 RedundantData::RedundantData(const Data &data) : joystick_map_(), data_(data) {
   // Start with a naive map.
@@ -98,6 +96,4 @@ float RedundantData::GetAxis(JoystickAxis axis) const {
   return data_.GetAxis(mapped_location);
 }
 
-}  // namespace driver_station
-}  // namespace input
-}  // namespace frc971
+}  // namespace frc971::input::driver_station

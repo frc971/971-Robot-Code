@@ -9,9 +9,7 @@
 #include "y2017/control_loops/superstructure/shooter/shooter.h"
 #include "y2017/vision/vision_generated.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
+namespace y2017::control_loops::superstructure {
 
 namespace {
 // The maximum voltage the intake roller will be allowed to use.
@@ -266,6 +264,4 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   (void)status->Send(status_builder.Finish());
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure

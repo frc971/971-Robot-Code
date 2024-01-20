@@ -12,8 +12,7 @@
 
 #include "glog/logging.h"
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 namespace {
 
 // Wrapper which propagates msan information.
@@ -118,5 +117,4 @@ signalfd_siginfo SignalFd::Read() {
   return result;
 }
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib

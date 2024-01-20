@@ -39,9 +39,7 @@ DEFINE_int32(thread_count,
 #endif
              "Number of threads to race");
 
-namespace aos {
-namespace ipc_lib {
-namespace testing {
+namespace aos::ipc_lib::testing {
 
 namespace chrono = ::std::chrono;
 
@@ -566,6 +564,4 @@ TEST_F(LocklessQueueTest, FetchEqFetchNext) {
 
 #endif
 
-}  // namespace testing
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib::testing

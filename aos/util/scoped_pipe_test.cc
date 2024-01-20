@@ -7,9 +7,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace util {
-namespace testing {
+namespace aos::util::testing {
 
 // Tests using uint32_t read/write methods on the ScopedPipe objects.
 TEST(ScopedPipeTest, IntegerPipe) {
@@ -67,6 +65,4 @@ TEST(ScopedPipeTest, SetCloexec) {
   ASSERT_NE(0, fcntl(pipe.read->fd(), F_GETFD) & FD_CLOEXEC);
 }
 
-}  // namespace testing
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util::testing

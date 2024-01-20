@@ -27,8 +27,7 @@
 DEFINE_bool(quiet_sorting, false,
             "If true, sort with minimal messages about truncated files.");
 
-namespace aos {
-namespace logger {
+namespace aos::logger {
 namespace {
 namespace chrono = std::chrono;
 
@@ -2381,5 +2380,4 @@ bool LogFilesContainer::HasTimestamps(std::string_view node_name) const {
   return false;
 }
 
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger

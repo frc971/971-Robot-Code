@@ -2,9 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace testing {
+namespace frc971::control_loops::testing {
 
 ::Eigen::Matrix<double, 4, 4> A = (::Eigen::Matrix<double, 4, 4>() << 1, 2, 4,
                                    1, 5, 2, 3, 4, 5, 1, 3, 2, 1, 1, 3, 7)
@@ -35,6 +33,4 @@ TEST(RungeKuttaTest, Bu) {
   EXPECT_TRUE(NewB.isApprox(B));
 }
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::testing

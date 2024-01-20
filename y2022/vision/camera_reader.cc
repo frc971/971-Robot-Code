@@ -17,8 +17,7 @@
 
 DEFINE_string(image_png, "", "A set of PNG images");
 
-namespace y2022 {
-namespace vision {
+namespace y2022::vision {
 
 using namespace frc971::vision;
 
@@ -235,5 +234,4 @@ void CameraReader::ReadImage() {
   }
 }
 
-}  // namespace vision
-}  // namespace y2022
+}  // namespace y2022::vision

@@ -2,8 +2,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 namespace {
 
 constexpr int kChunkSize = 8;
@@ -123,5 +122,4 @@ void FastYuyvYPooledThresholder::RunThread(int i) {
   }
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

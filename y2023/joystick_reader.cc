@@ -39,9 +39,7 @@ using y2023::control_loops::drivetrain::TargetSelectorHint;
 using y2023::control_loops::superstructure::RollerGoal;
 using Side = frc971::control_loops::drivetrain::RobotSide;
 
-namespace y2023 {
-namespace input {
-namespace joysticks {
+namespace y2023::input::joysticks {
 
 constexpr double kConeWrist = 0.4;
 constexpr double kCubeWrist = 1.0;
@@ -562,9 +560,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   const ArmSetpoint *current_setpoint_ = nullptr;
 };
 
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2023
+}  // namespace y2023::input::joysticks
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

@@ -19,9 +19,7 @@
 
 DEFINE_bool(plot, false, "If true, plot");
 
-namespace y2019 {
-namespace control_loops {
-namespace testing {
+namespace y2019::control_loops::testing {
 
 using ::y2019::constants::Field;
 
@@ -694,6 +692,4 @@ INSTANTIATE_TEST_SUITE_P(
             /*goal_tolerance=*/0.7,
         })));
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::testing

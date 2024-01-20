@@ -18,10 +18,7 @@
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2023::control_loops::superstructure::testing {
 namespace {
 constexpr double kNoiseScalar = 0.01;
 }  // namespace
@@ -926,7 +923,4 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
 INSTANTIATE_TEST_SUITE_P(EndEffectorGoal, SuperstructureBeambreakTest,
                          ::testing::Values(vision::Class::CUBE));
 
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure::testing

@@ -4,9 +4,7 @@
 #include "aos/testing/test_logging.h"
 #include "frc971/constants.h"
 
-namespace frc971 {
-namespace wpilib {
-namespace testing {
+namespace frc971::wpilib::testing {
 namespace {
 
 double climber_pot_translate_inverse_test(double position) {
@@ -153,6 +151,4 @@ TEST(WpilibUtilsTest, ReverseRange) {
 }
 
 }  // namespace
-}  // namespace testing
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib::testing

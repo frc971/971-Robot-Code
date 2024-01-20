@@ -8,8 +8,7 @@
 #include "aos/util/phased_loop.h"
 #include "y2017/control_loops/drivetrain/drivetrain_base.h"
 
-namespace y2017 {
-namespace actors {
+namespace y2017::actors {
 using ::aos::monotonic_clock;
 using ::frc971::ProfileParametersT;
 namespace chrono = ::std::chrono;
@@ -321,5 +320,4 @@ bool AutonomousActor::RunAction(
   return true;
 }
 
-}  // namespace actors
-}  // namespace y2017
+}  // namespace y2017::actors

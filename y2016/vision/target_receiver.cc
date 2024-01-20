@@ -22,8 +22,7 @@
 #include "y2016/vision/vision_data.pb.h"
 #include "y2016/vision/vision_generated.h"
 
-namespace y2016 {
-namespace vision {
+namespace y2016::vision {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -428,8 +427,7 @@ void Main() {
   }
 }
 
-}  // namespace vision
-}  // namespace y2016
+}  // namespace y2016::vision
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

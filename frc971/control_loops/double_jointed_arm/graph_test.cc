@@ -2,10 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
-namespace testing {
+namespace frc971::control_loops::arm::testing {
 
 class HeapTest {
  public:
@@ -65,7 +62,4 @@ TEST(GraphTest, Distances) {
   }
 }
 
-}  // namespace testing
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm::testing

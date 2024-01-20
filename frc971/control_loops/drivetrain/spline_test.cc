@@ -9,10 +9,7 @@
 
 DEFINE_bool(plot, false, "If true, plot");
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace frc971::control_loops::drivetrain::testing {
 
 std::string TestName() {
   const ::testing::TestInfo *info =
@@ -258,7 +255,4 @@ TEST_F(SplineTest, FourToSixSpline) {
   }
 }
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain::testing

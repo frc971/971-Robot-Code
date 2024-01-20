@@ -10,8 +10,7 @@
 #include "y2019/actors/auto_splines.h"
 #include "y2019/control_loops/drivetrain/drivetrain_base.h"
 
-namespace y2019 {
-namespace actors {
+namespace y2019::actors {
 
 using ::aos::monotonic_clock;
 using ::frc971::ProfileParametersT;
@@ -392,5 +391,4 @@ bool AutonomousActor::RunAction(
   return true;
 }
 
-}  // namespace actors
-}  // namespace y2019
+}  // namespace y2019::actors

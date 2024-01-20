@@ -10,9 +10,7 @@
 #include "aos/time/time.h"
 #include "frc971/wpilib/loop_output_handler_test_generated.h"
 
-namespace frc971 {
-namespace wpilib {
-namespace testing {
+namespace frc971::wpilib::testing {
 namespace {
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -118,6 +116,4 @@ TEST_F(LoopOutputHandlerTest, WatchdogTest) {
             loop_output.last_time() + chrono::milliseconds(100));
 }
 
-}  // namespace testing
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib::testing

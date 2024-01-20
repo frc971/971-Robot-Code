@@ -6,8 +6,7 @@
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/zeroing/constants_generated.h"
 
-namespace frc971 {
-namespace constants {
+namespace frc971::constants {
 
 typedef frc971::zeroing::HallEffectZeroingConstantsT HallEffectZeroingConstants;
 
@@ -53,7 +52,6 @@ struct Range {
   }
 };
 
-}  // namespace constants
-}  // namespace frc971
+}  // namespace frc971::constants
 
 #endif  // FRC971_CONSTANTS_H_

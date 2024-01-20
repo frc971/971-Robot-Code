@@ -10,10 +10,7 @@
 #include "osqp.h"
 #include "y2022/control_loops/superstructure/catapult/catapult_plant.h"
 
-namespace y2022 {
-namespace control_loops {
-namespace superstructure {
-namespace catapult {
+namespace y2022::control_loops::superstructure::catapult {
 namespace chrono = std::chrono;
 
 namespace {
@@ -453,7 +450,4 @@ Catapult::Iterate(const CatapultGoal *catapult_goal, const Position *position,
   return catapult_.MakeStatus(fbb);
 }
 
-}  // namespace catapult
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2022
+}  // namespace y2022::control_loops::superstructure::catapult

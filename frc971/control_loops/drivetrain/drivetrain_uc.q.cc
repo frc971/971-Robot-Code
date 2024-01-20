@@ -2,8 +2,7 @@
 
 #include <cinttypes>
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 GearLogging::GearLogging() { Zero(); }
 
@@ -104,5 +103,4 @@ void DrivetrainQueue_Status::Zero() {
 
 DrivetrainQueue_Status::DrivetrainQueue_Status() { Zero(); }
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops

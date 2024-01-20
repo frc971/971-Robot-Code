@@ -4,8 +4,7 @@
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 
-namespace y2023 {
-namespace vision {
+namespace y2023::vision {
 namespace {
 
 void GamePiecesDetectorMain() {
@@ -16,8 +15,7 @@ void GamePiecesDetectorMain() {
   event_loop.Run();
 }
 }  // namespace
-}  // namespace vision
-}  // namespace y2023
+}  // namespace y2023::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

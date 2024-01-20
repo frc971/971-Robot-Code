@@ -2,8 +2,7 @@
 
 #include <limits>
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 void VoltageCap(double max_voltage, double voltage_one, double voltage_two,
                 double *out_voltage_one, double *out_voltage_two) {
@@ -91,5 +90,4 @@ void VoltageCap(double voltage_one, double voltage_two, double *out_voltage_one,
   VoltageCap(12.0, voltage_one, voltage_two, out_voltage_one, out_voltage_two);
 }
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops

@@ -1,7 +1,6 @@
 #include "y2019/vision/constants.h"
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 static constexpr double kInchesToMeters = 0.0254;
 
@@ -320,5 +319,4 @@ const CameraCalibration *GetCamera(int camera_id) {
   }
 }
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision

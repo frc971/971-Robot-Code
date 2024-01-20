@@ -19,8 +19,7 @@
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
-namespace y2019 {
-namespace camera {
+namespace y2019::camera {
 
 using ::camera::xioctl;
 
@@ -296,5 +295,4 @@ void Reader::Start() {
   }
 }
 
-}  // namespace camera
-}  // namespace y2019
+}  // namespace y2019::camera

@@ -6,8 +6,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 void VisualizeRobot::SetDefaultViewpoint(int image_width, double focal_length) {
   // 10 meters above the origin, rotated so the camera faces straight down
@@ -106,5 +105,4 @@ void VisualizeRobot::DrawRobotOutline(Eigen::Affine3d H_world_robot,
   DrawLine(rr_corner, fr_corner, color);
 }
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision

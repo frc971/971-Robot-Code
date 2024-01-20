@@ -13,8 +13,7 @@
 #include "aos/network/timestamp_channel.h"
 #include "aos/sha256.h"
 
-namespace aos {
-namespace logger {
+namespace aos::logger {
 namespace {
 using message_bridge::RemoteMessage;
 namespace chrono = std::chrono;
@@ -921,5 +920,4 @@ void Logger::RecordCreateMessageTime(aos::monotonic_clock::time_point start,
   }
 }
 
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger

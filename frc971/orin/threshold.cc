@@ -4,8 +4,7 @@
 
 #include "frc971/orin/cuda.h"
 
-namespace frc971 {
-namespace apriltag {
+namespace frc971::apriltag {
 namespace {
 
 // 1280 -> 2 * 128 * 5
@@ -202,5 +201,4 @@ void CudaToGreyscaleAndDecimateHalide(
   }
 }
 
-}  // namespace apriltag
-}  // namespace frc971
+}  // namespace frc971::apriltag

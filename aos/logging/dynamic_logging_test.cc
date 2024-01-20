@@ -11,9 +11,7 @@
 
 using aos::testing::ArtifactPath;
 
-namespace aos {
-namespace logging {
-namespace testing {
+namespace aos::logging::testing {
 
 namespace chrono = std::chrono;
 
@@ -90,6 +88,4 @@ TEST_F(DynamicLoggingTest, TestVLog) {
   }
 }
 
-}  // namespace testing
-}  // namespace logging
-}  // namespace aos
+}  // namespace aos::logging::testing

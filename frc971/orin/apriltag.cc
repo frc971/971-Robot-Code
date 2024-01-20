@@ -22,8 +22,7 @@
 #include "frc971/orin/threshold.h"
 #include "frc971/orin/transform_output_iterator.h"
 
-namespace frc971 {
-namespace apriltag {
+namespace frc971::apriltag {
 namespace {
 
 typedef std::chrono::duration<float, std::milli> float_milli;
@@ -1151,5 +1150,4 @@ void GpuDetector::Detect(const uint8_t *image) {
   first_ = false;
 }
 
-}  // namespace apriltag
-}  // namespace frc971
+}  // namespace frc971::apriltag

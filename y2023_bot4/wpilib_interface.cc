@@ -24,8 +24,7 @@ using frc971::wpilib::swerve::SwerveModule;
 
 namespace drivetrain = frc971::control_loops::drivetrain;
 
-namespace y2023_bot4 {
-namespace wpilib {
+namespace y2023_bot4::wpilib {
 namespace {
 
 template <class T>
@@ -304,7 +303,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 };
 
-}  // namespace wpilib
-}  // namespace y2023_bot4
+}  // namespace y2023_bot4::wpilib
 
 AOS_ROBOT_CLASS(::y2023_bot4::wpilib::WPILibRobot)

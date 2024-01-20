@@ -16,10 +16,7 @@
 #include "aos/testing/path.h"
 #include "aos/util/file.h"
 
-namespace aos {
-
-namespace message_bridge {
-namespace testing {
+namespace aos::message_bridge::testing {
 
 // Note: All of these tests spin up ShmEventLoop's in separate threads to allow
 // us to run the "real" message bridge. This requires extra threading and timing
@@ -1440,6 +1437,4 @@ INSTANTIATE_TEST_SUITE_P(
               true},
         Param{"message_bridge_test_common_config.json", false}));
 
-}  // namespace testing
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge::testing

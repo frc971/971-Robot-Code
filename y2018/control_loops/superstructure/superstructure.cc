@@ -10,9 +10,7 @@
 #include "y2018/status_light_generated.h"
 #include "y2018/vision/vision_generated.h"
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
+namespace y2018::control_loops::superstructure {
 
 using ::aos::monotonic_clock;
 
@@ -350,6 +348,4 @@ void Superstructure::SendColors(float red, float green, float blue) {
   }
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure

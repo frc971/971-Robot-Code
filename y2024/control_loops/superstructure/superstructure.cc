@@ -9,9 +9,7 @@
 DEFINE_bool(ignore_distance, false,
             "If true, ignore distance when shooting and obay joystick_reader");
 
-namespace y2024 {
-namespace control_loops {
-namespace superstructure {
+namespace y2024::control_loops::superstructure {
 
 using ::aos::monotonic_clock;
 
@@ -73,6 +71,4 @@ double Superstructure::robot_velocity() const {
               : 0.0);
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2024
+}  // namespace y2024::control_loops::superstructure

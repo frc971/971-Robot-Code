@@ -22,8 +22,7 @@
 
 using ::frc971::control_loops::PositionSensorSimulator;
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 namespace {
 constexpr double kNoiseScalar = 0.01;
 
@@ -841,5 +840,4 @@ REGISTER_TYPED_TEST_SUITE_P(IntakeSystemTest, DoesNothing, ReachesGoal,
                             ZeroingErrorTest);
 INSTANTIATE_TYPED_TEST_SUITE_P(My, IntakeSystemTest, TestTypes);
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops

@@ -14,9 +14,7 @@ using ::testing::AssertionFailure;
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
 
-namespace aos {
-namespace logging {
-namespace testing {
+namespace aos::logging::testing {
 
 namespace chrono = ::std::chrono;
 
@@ -241,6 +239,4 @@ TEST(ScopedLogRestorerTest, RestoreTest) {
   ASSERT_EQ(curr_impl, GetImplementation().get());
 }
 
-}  // namespace testing
-}  // namespace logging
-}  // namespace aos
+}  // namespace aos::logging::testing

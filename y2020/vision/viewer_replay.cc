@@ -12,8 +12,7 @@ DEFINE_string(node, "pi1", "Node name to replay.");
 DEFINE_string(image_save_prefix, "/tmp/img",
               "Prefix to use for saving images from the logfile.");
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 namespace {
 
 void ViewerMain(int argc, char *argv[]) {
@@ -50,8 +49,7 @@ void ViewerMain(int argc, char *argv[]) {
 }
 
 }  // namespace
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 // Quick and lightweight grayscale viewer for images
 int main(int argc, char **argv) {

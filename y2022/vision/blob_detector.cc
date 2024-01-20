@@ -25,8 +25,7 @@ DEFINE_int32(outdoors_blue_delta, -10,
              "Required difference between green pixels vs. blue when using "
              "--use_outdoors");
 
-namespace y2022 {
-namespace vision {
+namespace y2022::vision {
 
 cv::Mat BlobDetector::ThresholdImage(cv::Mat bgr_image) {
   cv::Mat binarized_image(cv::Size(bgr_image.cols, bgr_image.rows), CV_8UC1);
@@ -266,5 +265,4 @@ void BlobDetector::ExtractBlobs(cv::Mat bgr_image,
           << " ms";
 }
 
-}  // namespace vision
-}  // namespace y2022
+}  // namespace y2022::vision

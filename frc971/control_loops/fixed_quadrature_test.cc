@@ -4,9 +4,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace testing {
+namespace frc971::control_loops::testing {
 
 // Tests that integrating y = cos(x) works.
 TEST(GaussianQuadratureTest, Cos) {
@@ -28,6 +26,4 @@ TEST(GaussianQuadratureTest, MatrixCos) {
       ::std::sin(0.5), -std::cos(0.5) + std::cos(0))));
 }
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::testing

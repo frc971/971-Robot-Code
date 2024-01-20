@@ -2,9 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace network {
-namespace testing {
+namespace aos::network::testing {
 
 using team_number_internal::ParsePiTeamNumber;
 using team_number_internal::ParseRoborioTeamNumber;
@@ -49,6 +47,4 @@ TEST(TeamNumberTest, ParsePiTeamNumber) {
   EXPECT_FALSE(ParsePiNumber("pi-971"));
 }
 
-}  // namespace testing
-}  // namespace network
-}  // namespace aos
+}  // namespace aos::network::testing

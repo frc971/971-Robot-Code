@@ -19,10 +19,7 @@
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
 
-namespace y2014 {
-namespace control_loops {
-namespace shooter {
-namespace testing {
+namespace y2014::control_loops::shooter::testing {
 
 using ::frc971::control_loops::testing::kTeamNumber;
 using ::y2014::control_loops::shooter::kMaxExtension;
@@ -808,7 +805,4 @@ INSTANTIATE_TEST_SUITE_P(
 
 // TODO(austin): Test all the timeouts...
 
-}  // namespace testing
-}  // namespace shooter
-}  // namespace control_loops
-}  // namespace y2014
+}  // namespace y2014::control_loops::shooter::testing

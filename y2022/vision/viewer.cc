@@ -36,8 +36,7 @@ DEFINE_bool(display_estimation, false,
             "If true, display the target estimation graphically");
 DEFINE_bool(sort_by_time, true, "If true, sort the images by time");
 
-namespace y2022 {
-namespace vision {
+namespace y2022::vision {
 namespace {
 
 using namespace frc971::vision;
@@ -273,8 +272,7 @@ void ViewerLocal() {
   }
 }
 }  // namespace
-}  // namespace vision
-}  // namespace y2022
+}  // namespace y2022::vision
 
 // Quick and lightweight viewer for images
 int main(int argc, char **argv) {

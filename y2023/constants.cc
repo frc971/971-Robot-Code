@@ -15,8 +15,7 @@
 #include "y2023/control_loops/superstructure/roll/integral_roll_plant.h"
 #include "y2023/control_loops/superstructure/wrist/integral_wrist_plant.h"
 
-namespace y2023 {
-namespace constants {
+namespace y2023::constants {
 
 Values MakeValues(uint16_t team) {
   LOG(INFO) << "creating a Constants for team: " << team;
@@ -179,5 +178,4 @@ Values MakeValues(uint16_t team) {
 
 Values MakeValues() { return MakeValues(aos::network::GetTeamNumber()); }
 
-}  // namespace constants
-}  // namespace y2023
+}  // namespace y2023::constants

@@ -6,8 +6,7 @@
 
 #include "frc971/control_loops/polytope.h"
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 namespace {
 
@@ -213,5 +212,4 @@ TEST_F(CoerceGoalTest, HorizontalLine) {
   EXPECT_EQ(result(1, 0), 0);
 }
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops

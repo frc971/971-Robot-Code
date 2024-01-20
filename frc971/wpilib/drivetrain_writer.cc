@@ -6,8 +6,7 @@
 #include "frc971/wpilib/ahal/PWM.h"
 #include "frc971/wpilib/loop_output_handler.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 void DrivetrainWriter::Write(
     const ::frc971::control_loops::drivetrain::Output &output) {
@@ -39,5 +38,4 @@ void DrivetrainWriter::Stop() {
   }
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

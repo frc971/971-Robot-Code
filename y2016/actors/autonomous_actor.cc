@@ -14,8 +14,7 @@
 #include "y2016/queues/ball_detector_generated.h"
 #include "y2016/vision/vision_generated.h"
 
-namespace y2016 {
-namespace actors {
+namespace y2016::actors {
 using ::aos::monotonic_clock;
 using ::frc971::ProfileParametersT;
 namespace superstructure = y2016::control_loops::superstructure;
@@ -985,5 +984,4 @@ bool AutonomousActor::RunAction(
   return true;
 }
 
-}  // namespace actors
-}  // namespace y2016
+}  // namespace y2016::actors

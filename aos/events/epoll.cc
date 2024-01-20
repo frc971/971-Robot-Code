@@ -15,8 +15,7 @@
 
 #include "aos/time/time.h"
 
-namespace aos {
-namespace internal {
+namespace aos::internal {
 
 TimerFd::TimerFd()
     : fd_(timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK)) {
@@ -298,5 +297,4 @@ void EPoll::DoEpollCtl(EventData *event_data, const uint32_t new_events) {
       << ": Failed to " << operation << " epoll fd: " << event_data->fd;
 }
 
-}  // namespace internal
-}  // namespace aos
+}  // namespace aos::internal

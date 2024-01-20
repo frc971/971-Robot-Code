@@ -17,10 +17,7 @@ DEFINE_double(start1, 0.0, "starting position on distal");
 DEFINE_double(goal0, 0.0, "goal position on proximal");
 DEFINE_double(goal1, 0.0, "goal position on distal");
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
-namespace arm {
+namespace y2023::control_loops::superstructure::arm {
 
 int Main() {
   frc971::analysis::Plotter plotter;
@@ -182,10 +179,7 @@ int Main() {
   return 0;
 }
 
-}  // namespace arm
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure::arm
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

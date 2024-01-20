@@ -52,8 +52,7 @@
 //   8. Read ADC0.RB and ADC1.RB
 //   9. Go back to step #3
 
-namespace frc971 {
-namespace teensy {
+namespace frc971::teensy {
 namespace {
 
 constexpr uint32_t pdb_sc(int pdb_input) {
@@ -275,5 +274,4 @@ void AdcDmaSampler::InitializePdbChannel(KINETIS_PDB_CHANNEL_t *channel) {
                 V_PDB_EN(3) /* Enable our two */;
 }
 
-}  // namespace teensy
-}  // namespace frc971
+}  // namespace frc971::teensy

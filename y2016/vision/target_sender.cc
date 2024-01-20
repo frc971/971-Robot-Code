@@ -18,8 +18,7 @@
 #include "y2016/vision/stereo_geometry.h"
 #include "y2016/vision/vision_data.pb.h"
 
-namespace y2016 {
-namespace vision {
+namespace y2016::vision {
 using aos::events::DataSocket;
 using aos::events::TCPServer;
 using aos::events::TXUdpSocket;
@@ -218,8 +217,7 @@ void RunCamera(int camera_index, aos::vision::CameraParams params,
   loop.Run();
 }
 
-}  // namespace vision
-}  // namespace y2016
+}  // namespace y2016::vision
 
 int main(int, char **) {
   using namespace y2016::vision;

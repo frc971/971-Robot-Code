@@ -12,9 +12,7 @@ DEFINE_double(proximal_voltage_error_uncertainty, 8.0,
 DEFINE_double(distal_voltage_error_uncertainty, 2.0,
               "Distal joint voltage error uncertainty.");
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
+namespace frc971::control_loops::arm {
 
 namespace {
 // TODO(austin): When tuning this, make sure to verify that you are waiting
@@ -108,6 +106,4 @@ void EKF::Correct(const ::Eigen::Matrix<double, 2, 1> &Y, double /*dt*/) {
        P_;
 }
 
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm

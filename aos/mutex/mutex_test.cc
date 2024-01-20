@@ -17,8 +17,7 @@
 #include "aos/time/time.h"
 #include "aos/util/death_test_log_implementation.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 namespace chrono = ::std::chrono;
 namespace this_thread = ::std::this_thread;
@@ -322,5 +321,4 @@ TEST_F(IPCMutexLockerTest, OwnerDied) {
   mutex->~Mutex();
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

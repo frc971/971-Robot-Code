@@ -11,9 +11,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_output_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 SplineDrivetrain::SplineDrivetrain(const DrivetrainConfig<double> &dt_config)
     : dt_config_(dt_config),
@@ -268,6 +266,4 @@ flatbuffers::Offset<TrajectoryLogging> SplineDrivetrain::MakeTrajectoryLogging(
   return MakeTrajectoryLogging(builder->fbb());
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain

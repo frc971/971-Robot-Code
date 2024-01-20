@@ -14,8 +14,7 @@
 #include "aos/time/time.h"
 #include "frc971/vision/visualize_robot.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 // Show / test the basics of visualizing the robot frames
 void Main(int /*argc*/, char ** /* argv */) {
@@ -45,8 +44,7 @@ void Main(int /*argc*/, char ** /* argv */) {
   cv::imshow("Display", image_mat);
   cv::waitKey();
 }
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

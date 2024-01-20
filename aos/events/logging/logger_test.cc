@@ -26,9 +26,7 @@
 #include "aos/events/logging/lzma_encoder.h"
 #endif
 
-namespace aos {
-namespace logger {
-namespace testing {
+namespace aos::logger::testing {
 
 namespace chrono = std::chrono;
 using aos::message_bridge::RemoteMessage;
@@ -579,6 +577,4 @@ TEST(SingleNodeLoggerNoFixtureTest, ReadTooFast) {
   EXPECT_EQ(replay_count, sent_messages);
 }
 
-}  // namespace testing
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger::testing

@@ -26,8 +26,7 @@ DEFINE_string(interface, "", "network interface");
 DEFINE_bool(disable_ipv6, false, "disable ipv6");
 DEFINE_int32(rmem, 0, "If nonzero, set rmem to this size.");
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 namespace {
 const char *sac_state_tbl[] = {"COMMUNICATION_UP", "COMMUNICATION_LOST",
@@ -788,5 +787,4 @@ size_t ReadWMemMax() {
   }
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

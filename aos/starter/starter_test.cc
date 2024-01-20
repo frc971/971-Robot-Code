@@ -17,8 +17,7 @@
 
 using aos::testing::ArtifactPath;
 
-namespace aos {
-namespace starter {
+namespace aos::starter {
 
 class ThreadedStarterRunner {
  public:
@@ -572,5 +571,4 @@ TEST_F(StarterdTest, StarterChainTest) {
   ASSERT_FALSE(starter.event_loop()->is_running());
 }
 
-}  // namespace starter
-}  // namespace aos
+}  // namespace aos::starter

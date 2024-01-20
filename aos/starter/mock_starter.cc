@@ -1,7 +1,6 @@
 #include "aos/starter/mock_starter.h"
 
-namespace aos {
-namespace starter {
+namespace aos::starter {
 
 MockStarter::MockStarter(aos::EventLoop *event_loop)
     : event_loop_(event_loop),
@@ -119,5 +118,4 @@ MockStarters::MockStarters(aos::SimulatedEventLoopFactory *event_loop_factory) {
   }
 }
 
-}  // namespace starter
-}  // namespace aos
+}  // namespace aos::starter

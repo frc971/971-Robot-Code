@@ -4,8 +4,7 @@
 
 #include "motors/core/kinetis.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 namespace {
 
 ::std::atomic<teensy::AcmTty *> global_stdout{nullptr};
@@ -62,5 +61,4 @@ void DedicatedUsbPrinting::Initialize() {
   global_stdout.store(&stdout_tty_, ::std::memory_order_release);
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

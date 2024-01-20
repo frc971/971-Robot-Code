@@ -1,8 +1,7 @@
 #ifndef FRC971_ZEROING_WRAP_H_
 #define FRC971_ZEROING_WRAP_H_
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 // UnwrapSensor takes in a sensor value from a sensor that loops in a certain
 // interval. ex(the sensor moves from 0 to 10 and back to 0 while moving the
@@ -50,7 +49,6 @@ inline float UnWrap(float nearest, float value, float period) {
   return Wrap(nearest, value, period);
 }
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing
 
 #endif  // FRC971_ZEROING_WRAP_H_

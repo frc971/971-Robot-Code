@@ -5,9 +5,7 @@
 #include "aos/events/simulated_event_loop.h"
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 
-namespace y2019 {
-namespace control_loops {
-namespace testing {
+namespace y2019::control_loops::testing {
 
 typedef ::frc971::control_loops::TypedPose<double> Pose;
 typedef ::Eigen::Matrix<double, 5, 1> State;
@@ -190,6 +188,4 @@ INSTANTIATE_TEST_SUITE_P(
                    true, CargoNearLeft(),
                    /*expected_radius=*/0.0}));
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::testing

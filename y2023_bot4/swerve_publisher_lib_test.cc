@@ -4,8 +4,7 @@
 
 #include "aos/events/simulated_event_loop.h"
 
-namespace y2023_bot4 {
-namespace testing {
+namespace y2023_bot4::testing {
 class SwervePublisherTest : public ::testing::Test {
  public:
   SwervePublisherTest()
@@ -50,5 +49,4 @@ TEST_F(SwervePublisherTest, CheckSentFb) {
   SendOutput();
   CheckOutput();
 }
-}  // namespace testing
-}  // namespace y2023_bot4
+}  // namespace y2023_bot4::testing

@@ -9,8 +9,7 @@
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/image/jpeg_routines.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Detect screen height on smaller monitors.
 int GetScreenHeight() {
@@ -176,5 +175,4 @@ void DebugFrameworkMain(int argc, char **argv, FilterHarness *filter,
   replay.Loop()->RunWithGtkMain();
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

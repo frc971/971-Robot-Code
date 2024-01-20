@@ -13,9 +13,7 @@ DEFINE_double(lqr_proximal_vel, 4.0, "Velocity LQR gain");
 DEFINE_double(lqr_distal_pos, 0.20, "Position LQR gain");
 DEFINE_double(lqr_distal_vel, 4.0, "Velocity LQR gain");
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
+namespace frc971::control_loops::arm {
 
 Path Path::Reversed(const Path &p) {
   ::std::vector<::std::array<double, 6>> list(p.distances().size());
@@ -621,6 +619,4 @@ void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 6, 1> &X,
   omega_ = trajectory_->OmegaT(goal_(0), goal_(1));
 }
 
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm

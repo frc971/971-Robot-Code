@@ -1,8 +1,6 @@
 #include "frc971/control_loops/drivetrain/spline.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 ::Eigen::Matrix<double, 2, 6> Spline4To6(
     const ::Eigen::Matrix<double, 2, 4> &control_points) {
@@ -36,6 +34,4 @@ namespace drivetrain {
   return new_control_points;
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain

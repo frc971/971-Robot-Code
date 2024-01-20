@@ -65,8 +65,7 @@ using std::make_unique;
 
 DEFINE_bool(can_catapult, false, "If true, use CAN to control the catapult.");
 
-namespace y2022 {
-namespace wpilib {
+namespace y2022::wpilib {
 namespace {
 
 constexpr double kMaxBringupPower = 12.0;
@@ -828,7 +827,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 };
 
-}  // namespace wpilib
-}  // namespace y2022
+}  // namespace y2022::wpilib
 
 AOS_ROBOT_CLASS(::y2022::wpilib::WPILibRobot);

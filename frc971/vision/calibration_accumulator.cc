@@ -21,8 +21,7 @@ DEFINE_string(save_path, "", "Where to store annotated images");
 DEFINE_bool(save_valid_only, false,
             "If true, only save images with valid pose estimates");
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 using aos::distributed_clock;
 using aos::monotonic_clock;
 namespace chrono = std::chrono;
@@ -278,5 +277,4 @@ void Calibration::HandleIMU(const frc971::IMUValues *imu) {
                 gyro, accel * kG);
 }
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision

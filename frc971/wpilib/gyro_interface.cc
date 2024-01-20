@@ -10,8 +10,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 GyroInterface::GyroInterface() : gyro_(new frc::SPI(frc::SPI::kOnboardCS0)) {
   // The gyro goes up to 8.08MHz.
@@ -146,5 +145,4 @@ uint32_t GyroInterface::GetReading() {
   return result;
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

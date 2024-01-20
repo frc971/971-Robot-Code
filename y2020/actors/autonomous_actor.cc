@@ -16,8 +16,7 @@ DEFINE_bool(spline_auto, false, "If true, define a spline autonomous mode");
 DEFINE_bool(just_shoot, false,
             "If true, run the autonomous that just shoots balls.");
 
-namespace y2020 {
-namespace actors {
+namespace y2020::actors {
 
 using ::aos::monotonic_clock;
 using ::frc971::ProfileParametersT;
@@ -462,5 +461,4 @@ bool AutonomousActor::WaitForBallsShot(int num_wanted) {
   return WaitUntilAbsoluteBallsShot(Balls() + num_wanted);
 }
 
-}  // namespace actors
-}  // namespace y2020
+}  // namespace y2020::actors

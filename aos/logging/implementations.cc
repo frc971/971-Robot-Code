@@ -8,8 +8,7 @@
 #include "aos/logging/printf_formats.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace logging {
+namespace aos::logging {
 namespace internal {
 namespace {
 
@@ -83,5 +82,4 @@ std::shared_ptr<LogImplementation> GetImplementation() {
   return context->implementation;
 }
 
-}  // namespace logging
-}  // namespace aos
+}  // namespace aos::logging

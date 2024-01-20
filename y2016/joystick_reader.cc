@@ -31,9 +31,7 @@ using ::frc971::input::driver_station::ControlBit;
 using ::frc971::input::driver_station::JoystickAxis;
 using ::frc971::input::driver_station::POVLocation;
 
-namespace y2016 {
-namespace input {
-namespace joysticks {
+namespace y2016::input::joysticks {
 
 namespace {
 
@@ -458,9 +456,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
                                      "no drivetrain status");
 };
 
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2016
+}  // namespace y2016::input::joysticks
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

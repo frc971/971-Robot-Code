@@ -2,8 +2,7 @@
 
 #include "glog/logging.h"
 
-namespace aos {
-namespace logging {
+namespace aos::logging {
 
 DynamicLogging::DynamicLogging(aos::EventLoop *event_loop)
     : application_name_(event_loop->name()) {
@@ -31,5 +30,4 @@ void DynamicLogging::HandleDynamicLogCommand(const DynamicLogCommand &command) {
   FLAGS_v = command.vlog_level();
 }
 
-}  // namespace logging
-}  // namespace aos
+}  // namespace aos::logging

@@ -21,8 +21,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-namespace y2017 {
-namespace constants {
+namespace y2017::constants {
 
 const int Values::kZeroingSampleSize;
 
@@ -194,5 +193,4 @@ Values::ShotParams Values::ShotParams::BlendY(double coefficient,
       Blend(coefficient, a1.indexer_velocity, a2.indexer_velocity)};
 }
 
-}  // namespace constants
-}  // namespace y2017
+}  // namespace y2017::constants

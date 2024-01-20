@@ -19,8 +19,7 @@
 
 DECLARE_int32(flush_size);
 
-namespace aos {
-namespace logger {
+namespace aos::logger {
 
 NewDataWriter::NewDataWriter(LogNamer *log_namer, const Node *node,
                              const Node *logger_node,
@@ -1192,5 +1191,4 @@ void MinimalFileMultiNodeLogNamer::OpenNodeWriter(const Node *source_node,
                      &data_writer->writer);
 }
 
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger

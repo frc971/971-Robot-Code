@@ -16,10 +16,7 @@
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
 
-namespace y2023_bot3 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2023_bot3::control_loops::superstructure::testing {
 namespace {}  // namespace
 namespace chrono = std::chrono;
 
@@ -260,7 +257,4 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   VerifyNearGoal();
 }
 
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023_bot3
+}  // namespace y2023_bot3::control_loops::superstructure::testing

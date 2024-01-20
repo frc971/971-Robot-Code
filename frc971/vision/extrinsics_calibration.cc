@@ -14,8 +14,7 @@
 #include "frc971/vision/charuco_lib.h"
 #include "frc971/vision/visualize_robot.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 namespace chrono = std::chrono;
 using aos::distributed_clock;
@@ -1008,5 +1007,4 @@ void Visualize(const CalibrationData &data,
   filter.Visualize(calibration_parameters);
 }
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision

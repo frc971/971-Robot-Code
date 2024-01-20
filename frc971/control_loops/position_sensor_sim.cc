@@ -2,8 +2,7 @@
 
 #include <cmath>
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 /* Index pulse/segment Explanation:
  *
@@ -237,5 +236,4 @@ PositionSensorSimulator::GetSensorValues<RelativePositionBuilder>(
   return builder->Finish();
 }
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops

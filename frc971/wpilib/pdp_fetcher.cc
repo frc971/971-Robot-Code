@@ -8,8 +8,7 @@
 #include "frc971/wpilib/ahal/PowerDistributionPanel.h"
 #include "frc971/wpilib/pdp_values_generated.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 namespace chrono = ::std::chrono;
 
@@ -50,5 +49,4 @@ void PDPFetcher::Loop(int iterations) {
   }
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

@@ -11,8 +11,7 @@
 #include "motors/usb/usb.h"
 #include "motors/util.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 namespace {
 
 struct Fet12AdcReadings {
@@ -347,5 +346,4 @@ extern "C" int main(void) {
   return 0;
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

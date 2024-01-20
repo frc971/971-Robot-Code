@@ -33,8 +33,7 @@ DEFINE_string(logging_folder,
               "The folder to log to.  If empty, search for the /media/sd*1/ "
               "folder and place logs there.");
 
-namespace aos {
-namespace logging {
+namespace aos::logging {
 namespace {
 void AllocateLogName(char **filename, const char *directory,
                      const char *basename) {
@@ -187,5 +186,4 @@ std::string GetLogName(const char *basename) {
   return log_base_name.value();
 }
 
-}  // namespace logging
-}  // namespace aos
+}  // namespace aos::logging

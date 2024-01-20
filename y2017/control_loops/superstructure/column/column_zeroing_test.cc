@@ -16,10 +16,7 @@
 #include "frc971/zeroing/zeroing.h"
 #include "y2017/constants.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace column {
+namespace y2017::control_loops::superstructure::column {
 
 using ::frc971::HallEffectAndPosition;
 using ::frc971::control_loops::PositionSensorSimulator;
@@ -136,7 +133,4 @@ TEST_F(ZeroingTest, TestMinusPiStartingPoint) {
   EXPECT_TRUE(column_zeroing_estimator_.zeroed());
 }
 
-}  // namespace column
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::column

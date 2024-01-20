@@ -7,8 +7,7 @@
 #include "aos/json_to_flatbuffer_generated.h"
 #include "aos/testing/path.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 class JsonToFlatbufferTest : public ::testing::Test {
  public:
@@ -402,5 +401,4 @@ TEST_F(JsonToFlatbufferTest, SpacedData) {
           ArtifactPath("aos/json_to_flatbuffer_test_spaces.json"))));
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

@@ -8,8 +8,7 @@
 
 using ::frc971::input::driver_station::ControlBit;
 
-namespace frc971 {
-namespace input {
+namespace frc971::input {
 
 void ActionJoystickInput::RunIteration(
     const ::frc971::input::driver_station::Data &unsorted_data) {
@@ -74,5 +73,4 @@ void ActionJoystickInput::StopAuto() {
   AutoEnded();
 }
 
-}  // namespace input
-}  // namespace frc971
+}  // namespace frc971::input

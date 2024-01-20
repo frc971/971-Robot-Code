@@ -40,9 +40,7 @@
 // If a claw runs up against a movable limit, move both claws outwards to get
 // out of the condition.
 
-namespace y2014 {
-namespace control_loops {
-namespace claw {
+namespace y2014::control_loops::claw {
 
 using ::frc971::HallEffectTracker;
 using ::frc971::control_loops::DoCoerceGoal;
@@ -1019,6 +1017,4 @@ void ClawMotor::RunIteration(const Goal *goal, const Position *position,
   was_enabled_ = enabled;
 }
 
-}  // namespace claw
-}  // namespace control_loops
-}  // namespace y2014
+}  // namespace y2014::control_loops::claw

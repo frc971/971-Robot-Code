@@ -8,8 +8,7 @@
 
 #include "aos/ipc_lib/event.h"
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 namespace {
 
 struct ThreadPlusCount {
@@ -428,5 +427,4 @@ void QueueRacer::CheckReads(bool race_reads, int write_wrap_count,
   }
 }
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib

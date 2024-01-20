@@ -5,8 +5,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Tests MaskOnes with small arguments.
 TEST(MaskOnesTest, Small) {
@@ -384,5 +383,4 @@ TEST(IntToFloatLinearTest, Values) {
   EXPECT_EQ(0.75f, (IntToFloatLinear<2>(-1.0f, 1.0f, 3)));
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

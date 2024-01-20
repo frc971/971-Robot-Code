@@ -8,10 +8,7 @@
 #include "y2018/control_loops/superstructure/intake/intake_delayed_plant.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
-namespace intake {
+namespace y2018::control_loops::superstructure::intake {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -179,7 +176,4 @@ flatbuffers::Offset<superstructure::IntakeSideStatus> IntakeSide::Iterate(
   return status_builder.Finish();
 }
 
-}  // namespace intake
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure::intake

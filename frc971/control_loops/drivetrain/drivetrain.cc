@@ -24,9 +24,7 @@
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 namespace {
 // Maximum variation to allow in the gyro when zeroing.
@@ -627,6 +625,4 @@ flatbuffers::Offset<Output> DrivetrainLoop::Zero(
   return builder.Finish();
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain

@@ -9,8 +9,7 @@
 #include "aos/flatbuffers.h"
 #include "aos/network/connect_generated.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
     const Configuration *config, const Node *my_node,
@@ -66,5 +65,4 @@ aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
   return fbb.Release();
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

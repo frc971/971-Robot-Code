@@ -55,8 +55,7 @@ namespace claw = ::y2014::control_loops::claw;
 namespace shooter = ::y2014::control_loops::shooter;
 using std::make_unique;
 
-namespace y2014 {
-namespace wpilib {
+namespace y2014::wpilib {
 
 // TODO(Brian): Fix the interpretation of the result of GetRaw here and in the
 // DMA stuff and then removing the * 2.0 in *_translate.
@@ -769,7 +768,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 };
 
-}  // namespace wpilib
-}  // namespace y2014
+}  // namespace y2014::wpilib
 
 AOS_ROBOT_CLASS(::y2014::wpilib::WPILibRobot);

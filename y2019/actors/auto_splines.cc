@@ -2,8 +2,7 @@
 
 #include "frc971/control_loops/control_loops_generated.h"
 
-namespace y2019 {
-namespace actors {
+namespace y2019::actors {
 
 void MaybeFlipSpline(
     aos::Sender<frc971::control_loops::drivetrain::SplineGoal>::Builder
@@ -806,5 +805,4 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
   return multispline_builder.Finish();
 }
 
-}  // namespace actors
-}  // namespace y2019
+}  // namespace y2019::actors

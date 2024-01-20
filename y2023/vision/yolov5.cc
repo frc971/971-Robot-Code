@@ -30,8 +30,7 @@ DEFINE_int32(nthreads, 6, "Number of threads to use during inference.");
 
 DEFINE_bool(visualize_detections, false, "Display inference output");
 
-namespace y2023 {
-namespace vision {
+namespace y2023::vision {
 
 class YOLOV5Impl : public YOLOV5 {
  public:
@@ -303,5 +302,4 @@ std::vector<Detection> YOLOV5Impl::ProcessImage(cv::Mat frame) {
   return filtered_detections;
 };
 
-}  // namespace vision
-}  // namespace y2023
+}  // namespace y2023::vision

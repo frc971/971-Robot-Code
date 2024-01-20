@@ -16,10 +16,7 @@
 
 using ::frc971::control_loops::testing::kTeamNumber;
 
-namespace y2016 {
-namespace control_loops {
-namespace shooter {
-namespace testing {
+namespace y2016::control_loops::shooter::testing {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -282,7 +279,4 @@ TEST_F(ShooterTest, Disabled) {
   VerifyNearGoal();
 }
 
-}  // namespace testing
-}  // namespace shooter
-}  // namespace control_loops
-}  // namespace y2016
+}  // namespace y2016::control_loops::shooter::testing

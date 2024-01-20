@@ -20,8 +20,7 @@ DEFINE_string(channel, "/camera", "Channel name for the image.");
 DEFINE_string(capture, "",
               "If set, capture a single image and save it to this filename.");
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 namespace {
 
 aos::Fetcher<CameraImage> image_fetcher;
@@ -170,8 +169,7 @@ void ViewerMain() {
 }
 
 }  // namespace
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 // Quick and lightweight grayscale viewer for images
 int main(int argc, char **argv) {

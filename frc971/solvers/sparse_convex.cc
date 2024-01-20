@@ -5,8 +5,7 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseLU>
 
-namespace frc971 {
-namespace solvers {
+namespace frc971::solvers {
 
 Eigen::VectorXd SparseSolver::Rt(const Derivatives &derivatives,
                                  Eigen::VectorXd y, double t_inverse) {
@@ -356,5 +355,4 @@ void SparseSolver::PrintDerivatives(const Derivatives &derivatives,
   }
 }
 
-}  // namespace solvers
-}  // namespace frc971
+}  // namespace frc971::solvers

@@ -6,8 +6,7 @@
 
 #include "glog/logging.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 HallEffectAndPositionZeroingEstimator::HallEffectAndPositionZeroingEstimator(
     const ZeroingConstants &constants)
@@ -123,5 +122,4 @@ HallEffectAndPositionZeroingEstimator::GetEstimatorState(
   return builder.Finish();
 }
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing

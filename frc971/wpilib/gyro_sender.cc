@@ -16,8 +16,7 @@
 #include "frc971/queues/gyro_uid_generated.h"
 #include "frc971/zeroing/averager.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -145,5 +144,4 @@ void GyroSender::Loop(const int iterations) {
   }
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

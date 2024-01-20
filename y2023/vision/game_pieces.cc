@@ -7,8 +7,7 @@
 #include "frc971/vision/vision_generated.h"
 #include "y2023/vision/yolov5.h"
 
-namespace y2023 {
-namespace vision {
+namespace y2023::vision {
 using aos::monotonic_clock;
 GamePiecesDetector::GamePiecesDetector(aos::EventLoop *event_loop)
     : game_pieces_sender_(event_loop->MakeSender<GamePieces>("/camera")) {
@@ -73,5 +72,4 @@ void GamePiecesDetector::ProcessImage(const CameraImage &image) {
   builder.CheckOk(builder.Send(game_pieces_builder.Finish()));
 }
 
-}  // namespace vision
-}  // namespace y2023
+}  // namespace y2023::vision

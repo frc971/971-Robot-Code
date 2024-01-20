@@ -4,9 +4,7 @@
 #include <initializer_list>
 #include <memory>
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
+namespace frc971::control_loops::arm {
 
 ::std::vector<::std::array<double, 6>> FlipPath(
     ::std::initializer_list<::std::array<double, 6>> list) {
@@ -210,6 +208,4 @@ namespace arm {
   return ::std::unique_ptr<Path>(new Path(Path::Reversed(*MakeDemoPath())));
 }
 
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm

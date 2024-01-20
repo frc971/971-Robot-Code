@@ -4,8 +4,7 @@
 
 #include "glog/logging.h"
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 TXUdpSocket::TXUdpSocket(const std::string &ip_addr, int port)
     : fd_(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) {
@@ -49,5 +48,4 @@ int RXUdpSocket::Recv(void *data, int size) {
   return result;
 }
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events

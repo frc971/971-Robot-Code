@@ -63,8 +63,7 @@ using ::y2018::constants::Values;
 namespace chrono = ::std::chrono;
 namespace superstructure = ::y2018::control_loops::superstructure;
 
-namespace y2018 {
-namespace wpilib {
+namespace y2018::wpilib {
 namespace {
 
 constexpr double kMaxBringupPower = 12.0;
@@ -779,7 +778,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 };
 
 }  // namespace
-}  // namespace wpilib
-}  // namespace y2018
+}  // namespace y2018::wpilib
 
 AOS_ROBOT_CLASS(::y2018::wpilib::WPILibRobot);

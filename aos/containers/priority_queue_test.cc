@@ -2,8 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Effectively copies the implementation of ::std::less just to demonstrate how
 // things work.
@@ -172,5 +171,4 @@ TEST(PriorityQueueMoveTest, MemberAccess) {
   EXPECT_EQ(11, it->a);
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

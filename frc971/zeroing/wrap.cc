@@ -2,8 +2,7 @@
 
 #include <cmath>
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 UnwrapSensor::UnwrapSensor(double sensor_offset, double sensor_range)
     : sensor_offset_(sensor_offset), sensor_range_(sensor_range) {
@@ -64,5 +63,4 @@ double Wrap(double nearest, double value, double period) {
   return remainder(value - nearest, period) + nearest;
 }
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing

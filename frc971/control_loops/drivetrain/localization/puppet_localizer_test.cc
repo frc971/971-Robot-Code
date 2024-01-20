@@ -18,10 +18,7 @@
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace frc971::control_loops::drivetrain::testing {
 
 using frc971::control_loops::drivetrain::DrivetrainConfig;
 using frc971::control_loops::drivetrain::Goal;
@@ -207,7 +204,4 @@ TEST_F(LocalizedDrivetrainTest, Nominal) {
   EXPECT_TRUE(VerifyEstimatorAccurate(5e-3));
 }
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain::testing

@@ -2,9 +2,7 @@
 
 DEFINE_bool(gravity, true, "If true, enable gravity.");
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
+namespace frc971::control_loops::arm {
 
 Dynamics::Dynamics(ArmConstants arm_constants)
     : arm_constants_(arm_constants),
@@ -32,6 +30,4 @@ Dynamics::Dynamics(ArmConstants arm_constants)
       beta_(arm_constants_.l0 * arm_constants_.r1 * arm_constants_.m1),
       gamma_(arm_constants_.j1 +
              arm_constants_.r1 * arm_constants_.r1 * arm_constants_.m1) {}
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm

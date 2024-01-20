@@ -6,8 +6,7 @@
 #include "aos/flatbuffer_merge.h"
 #include "aos/starter/starterd_lib.h"
 
-namespace aos {
-namespace starter {
+namespace aos::starter {
 
 namespace {
 State ExpectedStateForCommand(Command command) {
@@ -307,5 +306,4 @@ GetStarterStatus(const aos::Configuration *config, const aos::Node *node) {
                    status_fetcher.CopyFlatBuffer()));
 }
 
-}  // namespace starter
-}  // namespace aos
+}  // namespace aos::starter

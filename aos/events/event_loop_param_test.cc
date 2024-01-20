@@ -15,8 +15,7 @@
 #include "aos/logging/logging.h"
 #include "aos/realtime.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 namespace {
 namespace chrono = ::std::chrono;
 }  // namespace
@@ -3692,5 +3691,4 @@ TEST_P(AbstractEventLoopTest, SendingTooFastWithLongDuration) {
   EXPECT_EQ(SendTestMessage(sender1), RawSender::Error::kMessagesSentTooFast);
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

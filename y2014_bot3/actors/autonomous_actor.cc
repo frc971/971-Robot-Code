@@ -9,8 +9,7 @@
 #include "aos/util/phased_loop.h"
 #include "y2014_bot3/control_loops/drivetrain/drivetrain_base.h"
 
-namespace y2014_bot3 {
-namespace actors {
+namespace y2014_bot3::actors {
 using ::frc971::ProfileParametersT;
 
 using ::aos::monotonic_clock;
@@ -58,5 +57,4 @@ bool AutonomousActor::RunAction(
   return true;
 }
 
-}  // namespace actors
-}  // namespace y2014_bot3
+}  // namespace y2014_bot3::actors

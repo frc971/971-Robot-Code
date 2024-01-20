@@ -25,9 +25,7 @@ using ::frc971::input::driver_station::JoystickAxis;
 
 #define OLD_DS 0
 
-namespace y2014 {
-namespace input {
-namespace joysticks {
+namespace y2014::input::joysticks {
 
 const ButtonLocation kDriveControlLoopEnable1(1, 7),
     kDriveControlLoopEnable2(1, 11);
@@ -441,9 +439,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
                                      "no drivetrain status");
 };
 
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2014
+}  // namespace y2014::input::joysticks
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

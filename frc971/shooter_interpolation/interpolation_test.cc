@@ -8,8 +8,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace shooter_interpolation {
+namespace frc971::shooter_interpolation {
 
 struct TestShotParams {
   double angle;
@@ -72,5 +71,4 @@ TEST(InterpolationTable, OutOfScopeNumbers) {
   ASSERT_EQ(TestShotParams({10, 567.323}), interpolation.Get(5));
 }
 
-}  // namespace shooter_interpolation
-}  // namespace frc971
+}  // namespace frc971::shooter_interpolation

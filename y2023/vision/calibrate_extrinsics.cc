@@ -31,8 +31,7 @@ DEFINE_string(output_calibration, "",
               "Output json file to use for the resulting calibration "
               "(intrinsics and extrinsics).");
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 namespace chrono = std::chrono;
 using aos::distributed_clock;
 using aos::monotonic_clock;
@@ -306,8 +305,7 @@ void Main(int argc, char **argv) {
   }
 }  // namespace vision
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

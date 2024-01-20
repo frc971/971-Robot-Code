@@ -2,9 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace testing {
+namespace frc971::control_loops::testing {
 
 // Tests some factorials.
 TEST(BinomialTest, Factorial) {
@@ -39,6 +37,4 @@ TEST(BinomialTest, Quartic) {
   EXPECT_EQ(1.0, Binomial(4, 4));
 }
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::testing

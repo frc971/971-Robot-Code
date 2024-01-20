@@ -18,8 +18,7 @@ DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 DEFINE_int32(rate, 100, "Time in milliseconds to wait between images");
 DEFINE_double(scale, 1.0, "Scale factor for images being displayed");
 
-namespace y2023 {
-namespace vision {
+namespace y2023::vision {
 namespace {
 
 using frc971::vision::CameraImage;
@@ -108,8 +107,7 @@ void ViewerMain() {
 }
 
 }  // namespace
-}  // namespace vision
-}  // namespace y2023
+}  // namespace y2023::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

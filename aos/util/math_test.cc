@@ -2,9 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace math {
-namespace testing {
+namespace aos::math::testing {
 
 bool AngleEqual(double a1, double a2) {
   double diff = a1 - a2;
@@ -84,6 +82,4 @@ TEST(MathTest, CollinearPointsAreCCWTest) {
   EXPECT_FALSE(PointsAreCCW<double>(c, b, a));
 }
 
-}  // namespace testing
-}  // namespace math
-}  // namespace aos
+}  // namespace aos::math::testing

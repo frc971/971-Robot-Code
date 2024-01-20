@@ -4,9 +4,7 @@
 
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace testing {
+namespace frc971::control_loops::testing {
 
 StateFeedbackHybridPlantCoefficients<3, 1, 1>
 MakeIntegralShooterPlantCoefficients() {
@@ -199,6 +197,4 @@ TEST(StateFeedbackLoopTest, PythonMatch) {
   EXPECT_TRUE(R_discrete.isApprox(test_loop.observer().R(), 0.001));
 }
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::testing

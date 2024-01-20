@@ -2,8 +2,7 @@
 
 #include <cmath>
 
-namespace y2017 {
-namespace vision {
+namespace y2017::vision {
 
 // Blobs now come in three types:
 //  0) normal blob.
@@ -276,5 +275,4 @@ void TargetFinder::GetAngleDist(const aos::vision::Vector<2> &target,
   *angle = -std::atan2(px, pz);
 }
 
-}  // namespace vision
-}  // namespace y2017
+}  // namespace y2017::vision

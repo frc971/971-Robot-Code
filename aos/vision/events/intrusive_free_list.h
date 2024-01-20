@@ -1,8 +1,7 @@
 #ifndef _AOS_VISION_EVENTS_INTRUSIVE_FREE_LIST_H_
 #define _AOS_VISION_EVENTS_INTRUSIVE_FREE_LIST_H_
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 // Hey! Maybe you want a doubly linked list that frees things for you!
 // This allows the entry to delete itself, removing it from the list, or
@@ -75,7 +74,6 @@ class intrusive_free_list {
   T *begin_;
 };
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events
 
 #endif  // _AOS_VISION_EVENTS_INTRUSIVE_FREE_LIST_H_

@@ -15,10 +15,7 @@
 // drivetrain, will behave properly. The purpose of this test is to make sure
 // that all the pieces fit together, not to test the algorithms themselves.
 
-namespace y2019 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace y2019::control_loops::drivetrain::testing {
 
 using frc971::control_loops::drivetrain::DrivetrainConfig;
 using frc971::control_loops::drivetrain::Goal;
@@ -399,7 +396,4 @@ TEST_F(LocalizedDrivetrainTest, LineFollowToHPSlot) {
   EXPECT_NEAR(HPSlotLeft().abs_pos().y(), drivetrain_plant_.state().y(), 0.2);
 }
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::drivetrain::testing

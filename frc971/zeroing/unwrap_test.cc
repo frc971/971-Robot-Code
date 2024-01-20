@@ -2,9 +2,7 @@
 
 #include "frc971/zeroing/wrap.h"
 
-namespace frc971 {
-namespace zeroing {
-namespace testing {
+namespace frc971::zeroing::testing {
 
 TEST(SensorTest, UnwrapOnce) {
   // Test the sensor moving over the maximum range value and wrapping once
@@ -63,6 +61,4 @@ TEST(SensorTest, UnwrapInit) {
   EXPECT_EQ(sensor.Unwrap(0.2), 0.2);   // move = 1.0, wrap -1
 }
 
-}  // namespace testing
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing::testing

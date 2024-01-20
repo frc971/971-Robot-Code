@@ -8,8 +8,7 @@
 #include "y2018/vision.pb.h"
 #include "y2018/vision/vision_generated.h"
 
-namespace y2018 {
-namespace vision {
+namespace y2018::vision {
 
 using aos::monotonic_clock;
 
@@ -43,8 +42,7 @@ int Main() {
   }
 }
 
-}  // namespace vision
-}  // namespace y2018
+}  // namespace y2018::vision
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

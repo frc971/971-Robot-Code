@@ -21,8 +21,7 @@ using aos::vision::Vector;
 
 DEFINE_int32(camera, 10, "The camera to use the intrinsics for");
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 std::vector<PixelRef> GetNColors(size_t num_colors) {
   std::vector<PixelRef> colors;
@@ -358,8 +357,7 @@ class FilterHarness : public aos::vision::FilterHarness {
   bool draw_results_ = true;
 };
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision
 
 int main(int argc, char **argv) {
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

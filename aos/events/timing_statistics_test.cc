@@ -4,9 +4,7 @@
 
 #include "aos/flatbuffers.h"
 
-namespace aos {
-namespace internal {
-namespace testing {
+namespace aos::internal::testing {
 
 TEST(TimingStatistic, StatisticsTest) {
   flatbuffers::FlatBufferBuilder fbb;
@@ -67,6 +65,4 @@ TEST(TimingStatistic, StatisticsTest) {
   EXPECT_NEAR(statistic.message().standard_deviation(), 5.2372293656638, 1e-6);
 }
 
-}  // namespace testing
-}  // namespace internal
-}  // namespace aos
+}  // namespace aos::internal::testing

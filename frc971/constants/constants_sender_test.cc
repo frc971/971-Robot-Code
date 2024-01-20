@@ -11,8 +11,7 @@
 #include "frc971/constants/testdata/constants_data_generated.h"
 #include "frc971/constants/testdata/constants_list_generated.h"
 
-namespace frc971::constants {
-namespace testing {
+namespace frc971::constants::testing {
 
 using aos::testing::ArtifactPath;
 
@@ -121,5 +120,4 @@ TEST_F(ConstantSenderTest, SyntaxErrorDeath) {
       "Invalid field name");
 }
 
-}  // namespace testing
-}  // namespace frc971::constants
+}  // namespace frc971::constants::testing

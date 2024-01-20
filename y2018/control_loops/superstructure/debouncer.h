@@ -1,12 +1,10 @@
 #ifndef Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_DEBOUNCER_H_
 #define Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_DEBOUNCER_H_
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
+namespace y2018::control_loops::superstructure {
 
-// Ensures that a certain number of states of a certain type are recieved before
-// the actual state is changed.
+// Ensures that a certain number of states of a certain type are recieved
+// before the actual state is changed.
 class Debouncer {
  public:
   // Parameters:
@@ -37,8 +35,6 @@ class Debouncer {
   int consistent_count_ = 0;
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure
 
 #endif  // Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_DEBOUNCER_H_

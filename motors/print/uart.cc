@@ -4,8 +4,7 @@
 
 #include "motors/core/kinetis.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 namespace {
 
 ::std::atomic<teensy::InterruptBufferedUart *> global_stdout{nullptr};
@@ -65,5 +64,4 @@ extern "C" int _write(const int /*file*/, char *const ptr, const int len) {
   return len;
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

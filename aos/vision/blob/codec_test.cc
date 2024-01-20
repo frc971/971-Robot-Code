@@ -4,8 +4,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 TEST(CodecTest, WriteRead) {
   BlobList blobl;
@@ -34,5 +33,4 @@ TEST(CodecTest, WriteRead) {
   EXPECT_EQ(real_len, CalculateSize(blobl));
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

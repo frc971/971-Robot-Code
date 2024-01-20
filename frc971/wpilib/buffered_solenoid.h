@@ -1,8 +1,7 @@
 #ifndef FRC971_WPILIB_BUFFERED_SOLENOID_H_
 #define FRC971_WPILIB_BUFFERED_SOLENOID_H_
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 class BufferedPcm;
 
@@ -22,7 +21,6 @@ class BufferedSolenoid {
   friend class BufferedPcm;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_BUFFERED_SOLENOID_H_

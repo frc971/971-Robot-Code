@@ -15,8 +15,7 @@
 
 #include "aos/scoped/scoped_fd.h"
 
-namespace aos {
-namespace util {
+namespace aos::util {
 
 std::string ReadFileToStringOrDie(const std::string_view filename) {
   std::optional<std::string> r = MaybeReadFileToString(filename);
@@ -283,5 +282,4 @@ void FileWriter::WriteBytesOrDie(absl::Span<const uint8_t> bytes) {
       << ": Failed to write " << bytes.size() << " bytes.";
 }
 
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util

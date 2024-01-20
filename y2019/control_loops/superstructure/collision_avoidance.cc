@@ -7,9 +7,7 @@
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2019 {
-namespace control_loops {
-namespace superstructure {
+namespace y2019::control_loops::superstructure {
 
 constexpr double CollisionAvoidance::kElevatorClearHeight;
 constexpr double CollisionAvoidance::kElevatorClearWristDownHeight;
@@ -188,6 +186,4 @@ void CollisionAvoidance::UpdateGoal(const Status *status,
   }
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::superstructure

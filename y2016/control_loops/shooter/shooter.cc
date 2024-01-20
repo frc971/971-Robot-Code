@@ -5,9 +5,7 @@
 #include "aos/logging/logging.h"
 #include "y2016/control_loops/shooter/shooter_plant.h"
 
-namespace y2016 {
-namespace control_loops {
-namespace shooter {
+namespace y2016::control_loops::shooter {
 
 namespace chrono = ::std::chrono;
 using ::aos::monotonic_clock;
@@ -194,6 +192,4 @@ void Shooter::RunIteration(const Goal *goal, const Position *position,
   (void)status->Send(status_builder.Finish());
 }
 
-}  // namespace shooter
-}  // namespace control_loops
-}  // namespace y2016
+}  // namespace y2016::control_loops::shooter

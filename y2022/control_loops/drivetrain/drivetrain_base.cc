@@ -14,9 +14,7 @@ using ::frc971::control_loops::drivetrain::DrivetrainConfig;
 
 namespace chrono = ::std::chrono;
 
-namespace y2022 {
-namespace control_loops {
-namespace drivetrain {
+namespace y2022::control_loops::drivetrain {
 
 using ::frc971::constants::ShifterHallEffect;
 
@@ -66,6 +64,4 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
   return kDrivetrainConfig;
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace y2022
+}  // namespace y2022::control_loops::drivetrain

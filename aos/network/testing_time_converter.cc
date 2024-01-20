@@ -9,8 +9,7 @@
 #include "aos/network/multinode_timestamp_filter.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 namespace chrono = std::chrono;
 
@@ -125,5 +124,4 @@ TestingTimeConverter::NextTimestamp() {
   return result;
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

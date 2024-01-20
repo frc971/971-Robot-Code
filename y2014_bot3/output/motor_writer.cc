@@ -15,8 +15,7 @@
 
 using ::aos::util::SimpleLogInterval;
 
-namespace bot3 {
-namespace output {
+namespace bot3::output {
 
 class MotorWriter : public ::aos::MotorOutput {
   // Maximum age of an output packet before the motors get zeroed instead.
@@ -111,8 +110,7 @@ class MotorWriter : public ::aos::MotorOutput {
 
 constexpr chrono::milliseconds MotorWriter::kOldLogInterval;
 
-}  // namespace output
-}  // namespace bot3
+}  // namespace bot3::output
 
 int main() {
   ::aos::Init();

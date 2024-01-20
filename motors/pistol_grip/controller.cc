@@ -25,8 +25,7 @@ extern const float kWheelCoggingTorque1[4096];
 extern const float kTriggerCoggingTorque0[4096];
 extern const float kTriggerCoggingTorque1[4096];
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 namespace {
 
 ::std::atomic<const float *> trigger_cogging_torque{nullptr};
@@ -1154,5 +1153,4 @@ extern "C" int main() {
   return 0;
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

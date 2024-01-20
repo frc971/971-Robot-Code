@@ -6,8 +6,7 @@
 
 #include "glog/logging.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 namespace {
 
 void TerminateExitHandler() { _exit(EXIT_SUCCESS); }
@@ -16,5 +15,4 @@ void TerminateExitHandler() { _exit(EXIT_SUCCESS); }
 
 void PreventExit() { CHECK_EQ(atexit(TerminateExitHandler), 0); }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

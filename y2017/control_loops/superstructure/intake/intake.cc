@@ -3,10 +3,7 @@
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/intake/intake_integral_plant.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace intake {
+namespace y2017::control_loops::superstructure::intake {
 
 constexpr double Intake::kZeroingVoltage;
 constexpr double Intake::kOperatingVoltage;
@@ -146,7 +143,4 @@ Intake::Iterate(const IntakeGoal *unsafe_goal,
   return status_builder.Finish();
 }
 
-}  // namespace intake
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::intake

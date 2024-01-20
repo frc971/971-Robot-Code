@@ -2,8 +2,7 @@
 
 #include <cstdlib>
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 int RandomSeed() {
   const char *from_environment = getenv("TEST_RANDOM_SEED");
@@ -13,5 +12,4 @@ int RandomSeed() {
   return 1;
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

@@ -2,8 +2,7 @@
 
 #include "aos/vision/blob/disjoint_set.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 struct BlobBuilder {
   BlobBuilder(int i) : min_y(i) {}
@@ -173,5 +172,4 @@ BlobList FindBlobs(const RangeImage &input_image) {
   return blob_set.MoveBlobs();
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

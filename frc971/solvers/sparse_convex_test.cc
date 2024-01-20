@@ -2,9 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace solvers {
-namespace testing {
+namespace frc971::solvers::testing {
 
 const Eigen::IOFormat kHeavyFormat(Eigen::StreamPrecision, 0, ", ",
                                    ",\n                        "
@@ -98,6 +96,4 @@ TEST(SolverTest, ConstrainedFromSolution) {
   EXPECT_NEAR((result - Eigen::Vector2d(4.0, 4.0)).norm(), 0.0, 1e-6);
 }
 
-}  // namespace testing
-}  // namespace solvers
-}  // namespace frc971
+}  // namespace frc971::solvers::testing

@@ -1,7 +1,6 @@
 #include "aos/vision/blob/contour.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 namespace {
 // Half-loop of a contour.
@@ -191,5 +190,4 @@ ContourNode *RangeImgToContour(const RangeImage &rimg,
   return plst[0].st;
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

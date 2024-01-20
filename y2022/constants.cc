@@ -19,8 +19,7 @@
 #include "y2022/control_loops/superstructure/intake/integral_intake_plant.h"
 #include "y2022/control_loops/superstructure/turret/integral_turret_plant.h"
 
-namespace y2022 {
-namespace constants {
+namespace y2022::constants {
 
 const int Values::kZeroingSampleSize;
 
@@ -412,5 +411,4 @@ Values MakeValues(uint16_t team) {
 
 Values MakeValues() { return MakeValues(aos::network::GetTeamNumber()); }
 
-}  // namespace constants
-}  // namespace y2022
+}  // namespace y2022::constants

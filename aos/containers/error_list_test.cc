@@ -4,8 +4,7 @@
 
 #include "aos/json_to_flatbuffer_generated.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 enum class TestEnum : int8_t {
   FOO = 0,
@@ -112,5 +111,4 @@ TEST(ErrorListTest, Flatbuffers) {
   EXPECT_EQ(b.size(), 3);
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

@@ -53,14 +53,13 @@ using FLAG__namespace_do_not_use_directly_use_DECLARE_double_instead::
     FLAGS_tcmalloc_release_rate;
 
 namespace aos {
-namespace logging {
-namespace internal {
+
+namespace logging::internal {
 
 // Implemented in aos/logging/context.cc.
 void ReloadThreadName() __attribute__((weak));
 
-}  // namespace internal
-}  // namespace logging
+}  // namespace logging::internal
 
 namespace {
 

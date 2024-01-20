@@ -6,8 +6,7 @@
 
 #include "motors/core/itm.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 namespace {
 
 template <int kPort>
@@ -96,5 +95,4 @@ int ItmPrinting::WriteDebug(absl::Span<const char> buffer) {
   return buffer.size();
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

@@ -2,8 +2,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 bool DMAEdgeCounter::ExtractValue(const DMASample &sample) const {
   return sample.Get(input_);
@@ -101,5 +100,4 @@ void DMASynchronizer::CheckDMA() {
   }
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

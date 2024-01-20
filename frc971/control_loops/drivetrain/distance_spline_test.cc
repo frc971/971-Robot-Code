@@ -13,10 +13,7 @@
 
 DEFINE_bool(plot, false, "If true, plot");
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace frc971::control_loops::drivetrain::testing {
 
 // Test fixture with a spline from 0, 0 to 1, 1
 class ParameterizedDistanceSplineTest
@@ -187,7 +184,4 @@ INSTANTIATE_TEST_SUITE_P(
                                 1.5, 2.0, 1.0, 1.0, 0.0, 0.0)
                                    .finished()))})));
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain::testing

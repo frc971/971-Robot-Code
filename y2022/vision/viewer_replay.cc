@@ -26,8 +26,7 @@ DEFINE_bool(match_timestamps, false,
 DEFINE_string(logger_pi_log, "/tmp/logger_pi/", "Path to logger pi log");
 DEFINE_string(roborio_log, "/tmp/roborio/", "Path to roborio log");
 
-namespace y2022 {
-namespace vision {
+namespace y2022::vision {
 namespace {
 
 using aos::monotonic_clock;
@@ -257,8 +256,7 @@ void ViewerMain() {
 }
 
 }  // namespace
-}  // namespace vision
-}  // namespace y2022
+}  // namespace y2022::vision
 
 // Quick and lightweight viewer for image logs
 int main(int argc, char **argv) {

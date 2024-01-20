@@ -7,8 +7,7 @@
 #include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/image_stream.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 class CameraImageSource : public ImageSource {
  public:
@@ -63,5 +62,4 @@ class CameraImageSource : public ImageSource {
 
 REGISTER_IMAGE_SOURCE("camera", CameraImageSource);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

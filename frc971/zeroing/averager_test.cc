@@ -2,8 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 class AveragerTest : public ::testing::Test {
  protected:
@@ -57,5 +56,4 @@ TEST_F(AveragerTest, ResetAverager) {
   ASSERT_EQ(0.0, averager.GetAverage()(0, 0));
 }
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing

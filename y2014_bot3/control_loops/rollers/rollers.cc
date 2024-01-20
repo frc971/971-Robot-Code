@@ -6,9 +6,7 @@
 #include "y2014_bot3/control_loops/rollers/rollers_position_generated.h"
 #include "y2014_bot3/control_loops/rollers/rollers_status_generated.h"
 
-namespace y2014_bot3 {
-namespace control_loops {
-namespace rollers {
+namespace y2014_bot3::control_loops::rollers {
 
 Rollers::Rollers(::aos::EventLoop *event_loop, const ::std::string &name)
     : frc971::controls::ControlLoop<Goal, Position, Status, Output>(event_loop,
@@ -83,6 +81,4 @@ void Rollers::RunIteration(const Goal *goal, const Position * /*position*/,
   output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
 }
 
-}  //  namespace rollers
-}  //  namespace control_loops
-}  //  namespace y2014_bot3
+}  // namespace y2014_bot3::control_loops::rollers

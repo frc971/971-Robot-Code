@@ -19,10 +19,7 @@
 
 using ::frc971::control_loops::PositionSensorSimulator;
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2018::control_loops::superstructure::testing {
 namespace {
 constexpr double kNoiseScalar = 0.01;
 }  // namespace
@@ -786,7 +783,4 @@ TEST_F(SuperstructureTest, ArmMultistepMove) {
 // TODO(austin): Test multiple path segments.
 // TODO(austin): Disable in the middle and test recovery.
 
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure::testing

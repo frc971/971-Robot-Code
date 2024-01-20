@@ -12,9 +12,7 @@
 #include "frc971/control_loops/hybrid_state_feedback_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 namespace {
 float DefaultConstraint(ConstraintType type) {
@@ -906,6 +904,4 @@ const Eigen::Matrix<double, 5, 1> BaseTrajectory::GoalState(
   return result;
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain

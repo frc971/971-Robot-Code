@@ -3,8 +3,7 @@
 
 #include <stdint.h>
 
-namespace frc971 {
-namespace teensy {
+namespace frc971::teensy {
 
 enum class Direction : uint32_t {
   kTx = 1 << 1,
@@ -108,7 +107,6 @@ constexpr static inline Data01 Data01Inverse(Data01 toggle) {
                              static_cast<uint32_t>(Data01::kData1));
 }
 
-}  // namespace teensy
-}  // namespace frc971
+}  // namespace frc971::teensy
 
 #endif  // MOTORS_USB_CONSTANTS_H_

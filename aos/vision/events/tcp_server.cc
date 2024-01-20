@@ -16,8 +16,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 namespace {
 
@@ -108,5 +107,4 @@ void TCPServerBase::ReadEvent() {
   loop()->Add(Construct(infd));
 }
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events

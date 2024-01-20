@@ -2,9 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace vision {
-namespace testing {
+namespace aos::vision::testing {
 
 class VectorTest : public ::testing::Test {
  protected:
@@ -71,6 +69,4 @@ TEST_F(VectorTest, Angle) {
   EXPECT_NEAR(M_PI / 3, vec5.AngleToZero(), 0.0001);
 }
 
-}  // namespace testing
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision::testing

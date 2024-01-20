@@ -1,7 +1,6 @@
 #include "aos/vision/blob/test_utils.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 RangeImage LoadFromTestData(int mini, const char *data) {
   // Consume initial return.
@@ -39,5 +38,4 @@ RangeImage LoadFromTestData(int mini, const char *data) {
   return RangeImage(mini, std::move(rows));
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

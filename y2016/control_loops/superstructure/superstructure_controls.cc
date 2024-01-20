@@ -5,9 +5,7 @@
 #include "y2016/control_loops/superstructure/integral_arm_plant.h"
 #include "y2016/control_loops/superstructure/integral_intake_plant.h"
 
-namespace y2016 {
-namespace control_loops {
-namespace superstructure {
+namespace y2016::control_loops::superstructure {
 
 using ::frc971::PotAndIndexPosition;
 
@@ -254,6 +252,4 @@ void Arm::Update(bool disable) {
   }
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2016
+}  // namespace y2016::control_loops::superstructure

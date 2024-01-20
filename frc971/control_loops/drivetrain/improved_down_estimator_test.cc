@@ -11,9 +11,7 @@
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/control_loops/runge_kutta.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace testing {
+namespace frc971::control_loops::testing {
 
 namespace {
 // Check if two quaternions are logically equal, to within some reasonable
@@ -221,6 +219,4 @@ TEST(DownEstimatorTest, ClippedSigmaPoints) {
          "covariance.";
 }
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::testing

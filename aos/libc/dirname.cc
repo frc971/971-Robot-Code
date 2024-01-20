@@ -1,7 +1,6 @@
 #include "aos/libc/dirname.h"
 
-namespace aos {
-namespace libc {
+namespace aos::libc {
 namespace {
 
 ::std::string DoDirname(const ::std::string &path, size_t last_slash) {
@@ -35,5 +34,4 @@ namespace {
   return DoDirname(path, last_slash);
 }
 
-}  // namespace libc
-}  // namespace aos
+}  // namespace aos::libc

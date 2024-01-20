@@ -20,8 +20,7 @@ DEFINE_uint32(queue_initialization_threads, 0,
               "Number of threads to spin up to initialize the queue.  0 means "
               "use the main thread.");
 
-namespace aos {
-namespace starter {
+namespace aos::starter {
 
 const aos::Channel *StatusChannelForNode(const aos::Configuration *config,
                                          const aos::Node *node) {
@@ -315,5 +314,4 @@ void Starter::AddChannel(const aos::Channel *channel) {
           << shm_base_;
 }
 
-}  // namespace starter
-}  // namespace aos
+}  // namespace aos::starter

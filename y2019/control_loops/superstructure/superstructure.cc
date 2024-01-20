@@ -6,9 +6,7 @@
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2019/status_light_generated.h"
 
-namespace y2019 {
-namespace control_loops {
-namespace superstructure {
+namespace y2019::control_loops::superstructure {
 
 using frc971::control_loops::AbsoluteEncoderProfiledJointStatus;
 using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
@@ -214,6 +212,4 @@ void Superstructure::SendColors(float red, float green, float blue) {
   }
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::superstructure

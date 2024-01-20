@@ -72,8 +72,7 @@ namespace drivetrain = ::y2023::control_loops::drivetrain;
 namespace chrono = ::std::chrono;
 using std::make_unique;
 
-namespace y2023 {
-namespace wpilib {
+namespace y2023::wpilib {
 namespace {
 
 constexpr double kMaxBringupPower = 12.0;
@@ -1058,7 +1057,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 };
 
-}  // namespace wpilib
-}  // namespace y2023
+}  // namespace y2023::wpilib
 
 AOS_ROBOT_CLASS(::y2023::wpilib::WPILibRobot);

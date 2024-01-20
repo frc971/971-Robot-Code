@@ -10,8 +10,7 @@ DEFINE_bool(check_timestamp_channel_frequencies, true,
             "channels are configured to have at least as great a frequency as "
             "the corresponding data channel.");
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 ChannelTimestampFinder::ChannelTimestampFinder(
     const Configuration *configuration, const std::string_view name,
@@ -143,5 +142,4 @@ aos::Sender<RemoteMessage> *ChannelTimestampSender::SenderForChannel(
   return result.first->second.get();
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

@@ -67,8 +67,7 @@ DECLARE_int32(max_target_id);
 // estimation, and probably also include camera->imu extrinsics from all
 // cameras, not just pi1
 
-namespace y2023 {
-namespace vision {
+namespace y2023::vision {
 using frc971::vision::DataAdapter;
 using frc971::vision::ImageCallback;
 using frc971::vision::PoseUtils;
@@ -699,8 +698,7 @@ void ExtrinsicsMain(int argc, char *argv[]) {
     delete image_callbacks[i];
   }
 }
-}  // namespace vision
-}  // namespace y2023
+}  // namespace y2023::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

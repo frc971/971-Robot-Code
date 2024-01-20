@@ -31,8 +31,7 @@ void reconcile_detections(zarray_t *detections, zarray_t *poly0,
                           zarray_t *poly1);
 };
 
-namespace frc971 {
-namespace apriltag {
+namespace frc971::apriltag {
 namespace {
 
 void HostFitLine(LineFitMoments moments, double *lineparam01,
@@ -519,5 +518,4 @@ void GpuDetector::DecodeTags() {
   zarray_sort(detections_, detection_compare_function);
 }
 
-}  // namespace apriltag
-}  // namespace frc971
+}  // namespace frc971::apriltag

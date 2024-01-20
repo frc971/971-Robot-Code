@@ -2,8 +2,7 @@
 
 #include "frc971/control_loops/control_loops_generated.h"
 
-namespace y2022_bot3 {
-namespace actors {
+namespace y2022_bot3::actors {
 
 void MaybeFlipSpline(
     aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder,
@@ -50,5 +49,4 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::TestSpline(
       alliance);
 }
 
-}  // namespace actors
-}  // namespace y2022_bot3
+}  // namespace y2022_bot3::actors

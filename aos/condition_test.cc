@@ -21,8 +21,7 @@
 #include "aos/time/time.h"
 #include "aos/type_traits/type_traits.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 namespace chrono = ::std::chrono;
 
@@ -382,5 +381,4 @@ TEST_F(ConditionTest, Broadcast) {
   EXPECT_FALSE(child3.Hung());
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

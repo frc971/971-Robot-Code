@@ -14,8 +14,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 namespace {
 
@@ -248,5 +247,4 @@ bool ProcessJpeg(DataRef data, PixelRef *out) {
   return true;
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

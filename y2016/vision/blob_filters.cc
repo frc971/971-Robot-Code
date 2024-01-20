@@ -2,8 +2,7 @@
 
 #include <unistd.h>
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 double CornerFinder::LineScore(Vector<2> A, Vector<2> B, FittedLine line) {
   Vector<2> st(line.st.x, line.st.y);
@@ -390,5 +389,4 @@ void HistogramBlobFilter::MakeGoalHist(bool is_90) {
   }
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

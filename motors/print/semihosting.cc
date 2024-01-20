@@ -4,8 +4,7 @@
 
 #include "motors/core/semihosting.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 
 ::std::unique_ptr<PrintingImplementation> CreatePrinting(
     const PrintingParameters & /*parameters*/) {
@@ -23,5 +22,4 @@ int SemihostingPrinting::WriteStdout(absl::Span<const char> buffer) {
   return buffer.size() - operation.Execute();
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors

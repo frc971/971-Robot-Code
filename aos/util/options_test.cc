@@ -2,8 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 class OptionsTest : public ::testing::Test {
  public:
@@ -52,5 +51,4 @@ TEST_F(OptionsTest, AllSet) {
   EXPECT_FALSE(one_three.AllSet(kOne | kTwo | kThree | kFour));
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

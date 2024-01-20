@@ -15,10 +15,7 @@ DEFINE_double(lqr_proximal_vel, 5, "Velocity LQR gain");
 DEFINE_double(lqr_distal_pos, 0.5, "Position LQR gain");
 DEFINE_double(lqr_distal_vel, 5, "Velocity LQR gain");
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
-namespace arm {
+namespace y2023::control_loops::superstructure::arm {
 
 ::Eigen::Matrix<double, 3, 1> CosSpline::Theta(double alpha) const {
   ::Eigen::Matrix<double, 3, 1> result;
@@ -1005,7 +1002,4 @@ void TrajectoryFollower::Update(const ::Eigen::Matrix<double, 9, 1> &X,
   omega_ = trajectory_->OmegaT(goal_(0), goal_(1));
 }
 
-}  // namespace arm
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure::arm

@@ -5,9 +5,7 @@
 
 #include "aos/time/time.h"
 
-namespace aos {
-namespace time {
-namespace testing {
+namespace aos::time::testing {
 
 using ::std::chrono::milliseconds;
 using ::std::chrono::nanoseconds;
@@ -304,6 +302,4 @@ TEST_F(PhasedLoopTest, ChangingOffset) {
   EXPECT_EQ(4, loop.Iterate((last_time - kOffset) + (kInterval * 4)));
 }
 
-}  // namespace testing
-}  // namespace time
-}  // namespace aos
+}  // namespace aos::time::testing

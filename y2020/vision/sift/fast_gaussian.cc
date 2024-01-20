@@ -6,8 +6,7 @@
 
 #include "y2020/vision/sift/fast_gaussian_all.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 namespace {
 
 void CheckNonOverlapping(const cv::Mat &a, const cv::Mat &b) {
@@ -122,5 +121,4 @@ void FastGaussianAndSubtract(const cv::Mat &source, cv::Mat *blurred,
   cv::subtract(*blurred, source, *difference);
 }
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision

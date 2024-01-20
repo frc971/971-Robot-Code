@@ -22,8 +22,7 @@ DEFINE_double(exposure, 150, "Camera exposure");
 DEFINE_bool(send_downsized_images, false,
             "Whether to send downsized image for driver cam streaming.");
 
-namespace y2023 {
-namespace vision {
+namespace y2023::vision {
 namespace {
 
 using namespace frc971::vision;
@@ -202,8 +201,7 @@ void CameraReaderMain() {
 }
 
 }  // namespace
-}  // namespace vision
-}  // namespace y2023
+}  // namespace y2023::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

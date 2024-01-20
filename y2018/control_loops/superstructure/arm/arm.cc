@@ -10,10 +10,7 @@
 #include "y2018/control_loops/superstructure/arm/arm_constants.h"
 #include "y2018/control_loops/superstructure/arm/generated_graph.h"
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
-namespace arm {
+namespace y2018::control_loops::superstructure::arm {
 
 namespace {
 
@@ -432,7 +429,4 @@ flatbuffers::Offset<superstructure::ArmStatus> Arm::Iterate(
   return status_builder.Finish();
 }
 
-}  // namespace arm
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure::arm

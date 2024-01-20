@@ -13,8 +13,7 @@
 #define AOS_CHECK_GE(...)
 #endif
 
-namespace frc971 {
-namespace jevois {
+namespace frc971::jevois {
 
 UartToTeensyBuffer UartPackToTeensy(const CameraFrame &message) {
   std::array<char, uart_to_teensy_size()> buffer;
@@ -197,5 +196,4 @@ std::optional<CameraCalibration> UartUnpackToCamera(
   return message;
 }
 
-}  // namespace jevois
-}  // namespace frc971
+}  // namespace frc971::jevois

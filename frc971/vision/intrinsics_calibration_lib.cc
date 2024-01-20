@@ -1,7 +1,6 @@
 #include "frc971/vision/intrinsics_calibration_lib.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 IntrinsicsCalibration::IntrinsicsCalibration(
     aos::EventLoop *event_loop, std::string_view pi, std::string_view camera_id,
@@ -241,5 +240,4 @@ void IntrinsicsCalibration::MaybeCalibrate() {
     LOG(INFO) << "Skipping calibration due to not enough images.";
   }
 }
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision

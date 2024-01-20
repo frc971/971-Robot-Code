@@ -7,8 +7,7 @@
 
 #include "aos/vision/blob/test_utils.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 TEST(TransposeTest, Tranpspose) {
   RangeImage img = LoadFromTestData(20, R"(
@@ -27,5 +26,4 @@ TEST(TransposeTest, Tranpspose) {
   EXPECT_EQ(ShortDebugPrint({img}), ShortDebugPrint({c}));
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

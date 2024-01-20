@@ -8,8 +8,7 @@
 
 // #define DEBUG_BLOB_NUMBER 401
 
-namespace frc971 {
-namespace apriltag {
+namespace frc971::apriltag {
 
 static_assert(sizeof(LineFitPoint) == 40, "Size of LineFitPoint changed");
 static_assert(sizeof(int4) == 16, "Size of int4 changed");
@@ -1231,5 +1230,4 @@ std::ostream &operator<<(std::ostream &os,
   return os;
 }
 
-}  // namespace apriltag
-}  // namespace frc971
+}  // namespace frc971::apriltag

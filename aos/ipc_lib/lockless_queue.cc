@@ -22,8 +22,7 @@
 DEFINE_bool(dump_lockless_queue_data, false,
             "If true, print the data out when dumping the queue.");
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 namespace {
 
 class GrabQueueSetupLockOrDie {
@@ -1662,5 +1661,4 @@ void PrintLocklessQueueMemory(const LocklessQueueMemory *memory) {
   ::std::cout << "}" << ::std::endl;
 }
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib

@@ -6,9 +6,7 @@ DEFINE_bool(send_empty_debug, false,
             "If true, send LocalizerDebug messages on every tick, even if "
             "they would be empty.");
 
-namespace y2020 {
-namespace control_loops {
-namespace drivetrain {
+namespace y2020::control_loops::drivetrain {
 
 namespace {
 // Converts a flatbuffer TransformationMatrix to an Eigen matrix. Technically,
@@ -499,6 +497,4 @@ Localizer::Output Localizer::Corrector::H(const State &, const Input &) {
   return Zhat;
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::drivetrain

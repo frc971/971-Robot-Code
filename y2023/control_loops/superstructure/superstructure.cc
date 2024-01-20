@@ -10,9 +10,7 @@
 DEFINE_bool(ignore_distance, false,
             "If true, ignore distance when shooting and obay joystick_reader");
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
+namespace y2023::control_loops::superstructure {
 
 using ::aos::monotonic_clock;
 
@@ -148,6 +146,4 @@ std::optional<double> Superstructure::LateralOffsetForTimeOfFlight(
                                               y2);
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure

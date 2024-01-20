@@ -9,8 +9,7 @@
 //   --override_hostname pi-7971-1  --ignore_timestamps true
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 
-namespace y2022 {
-namespace vision {
+namespace y2022::vision {
 namespace {
 
 using namespace frc971::vision;
@@ -28,8 +27,7 @@ void BallColorDetectorMain() {
 }
 
 }  // namespace
-}  // namespace vision
-}  // namespace y2022
+}  // namespace y2022::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

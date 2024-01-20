@@ -2,8 +2,7 @@
 
 #include "frc971/control_loops/control_loops_generated.h"
 
-namespace y2020 {
-namespace actors {
+namespace y2020::actors {
 
 constexpr double kFieldLength = 16.4592;
 constexpr double kFieldWidth = 8.2296;
@@ -186,5 +185,4 @@ flatbuffers::Offset<frc971::MultiSpline> AutonomousSplines::StraightLine(
   return multispline_builder.Finish();
 }
 
-}  // namespace actors
-}  // namespace y2020
+}  // namespace y2020::actors

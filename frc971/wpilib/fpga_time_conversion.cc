@@ -2,8 +2,7 @@
 
 #include "aos/util/compiler_memory_barrier.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 std::optional<std::chrono::nanoseconds> CalculateFpgaOffset() {
   aos_compiler_memory_barrier();
@@ -32,5 +31,4 @@ std::optional<std::chrono::nanoseconds> CalculateFpgaOffset() {
   return monotonic_now.time_since_epoch() - fpga_average;
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

@@ -4,8 +4,7 @@
 
 #include "aos/events/event_loop_generated.h"
 
-namespace aos {
-namespace internal {
+namespace aos::internal {
 
 void RawFetcherTiming::set_timing_report(timing::Fetcher *new_fetcher) {
   fetcher = new_fetcher;
@@ -74,5 +73,4 @@ void TimerTiming::ResetTimingReport() {
   timer->mutate_count(0);
 }
 
-}  // namespace internal
-}  // namespace aos
+}  // namespace aos::internal

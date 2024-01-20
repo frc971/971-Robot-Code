@@ -2,14 +2,10 @@
 
 #include "aos/network/team_number.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace testing {
+namespace frc971::control_loops::testing {
 
 void TeamNumberEnvironment::SetUp() {
   ::aos::network::OverrideTeamNumber(kTeamNumber);
 }
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::testing

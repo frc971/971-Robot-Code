@@ -9,8 +9,7 @@
 #include "y2014/control_loops/shooter/shooter_goal_generated.h"
 #include "y2014/control_loops/shooter/shooter_status_generated.h"
 
-namespace y2014 {
-namespace actors {
+namespace y2014::actors {
 
 constexpr double ShootActor::kOffsetRadians;
 constexpr double ShootActor::kClawShootingSeparation;
@@ -199,5 +198,4 @@ bool ShootActor::DoneShot() {
   return false;
 }
 
-}  // namespace actors
-}  // namespace y2014
+}  // namespace y2014::actors

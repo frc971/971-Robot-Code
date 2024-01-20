@@ -2,8 +2,7 @@
 
 #include "aos/ipc_lib/lockless_queue.h"
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 
 ::std::string RobustOwnershipTracker::DebugString() const {
   ::std::stringstream s;
@@ -21,5 +20,4 @@ namespace ipc_lib {
   return s.str();
 }
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib

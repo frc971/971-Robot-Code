@@ -4,9 +4,7 @@
 
 #include "aos/flatbuffers.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
+namespace y2017::control_loops::superstructure {
 
 class VisionDistanceAverageTest : public ::testing::Test {
  public:
@@ -73,6 +71,4 @@ TEST_F(VisionDistanceAverageTest, AverageDropCount) {
   EXPECT_FALSE(average()->Valid());
 }
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure

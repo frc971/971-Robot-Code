@@ -1054,9 +1054,7 @@ int futex_unset(aos_futex *m) {
   return !__atomic_exchange_n(m, 0, __ATOMIC_SEQ_CST);
 }
 
-namespace aos {
-namespace linux_code {
-namespace ipc_lib {
+namespace aos::linux_code::ipc_lib {
 
 // Sets an extra offset between mutexes and the value we use for them in the
 // robust list (only the forward pointers). This is used to work around a kernel
@@ -1070,6 +1068,4 @@ void SetRobustListOffset(ptrdiff_t offset) {
 // This is mainly useful for testing.
 bool HaveLockedMutexes() { return my_robust_list::HaveLockedMutexes(); }
 
-}  // namespace ipc_lib
-}  // namespace linux_code
-}  // namespace aos
+}  // namespace aos::linux_code::ipc_lib

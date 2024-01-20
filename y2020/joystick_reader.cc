@@ -31,9 +31,7 @@ using frc971::CreateProfileParameters;
 using frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 
-namespace y2020 {
-namespace input {
-namespace joysticks {
+namespace y2020::input::joysticks {
 
 namespace superstructure = y2020::control_loops::superstructure;
 
@@ -332,9 +330,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   size_t unwinch_counter_ = 0;
 };
 
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2020
+}  // namespace y2020::input::joysticks
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

@@ -11,8 +11,7 @@
 
 using ::aos::logging::LogMessage;
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 namespace {
 
 class TestLogImplementation : public logging::HandleMessageLogImplementation {
@@ -138,5 +137,4 @@ void ForcePrintLogsDuringTests() {
   TestLogImplementation::GetInstance()->PrintMessagesAsTheyComeIn();
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

@@ -25,8 +25,7 @@ DEFINE_string(output_logs, "/tmp/calibration/",
 DEFINE_string(base_intrinsics, "",
               "Intrinsics to use for extrinsics calibration.");
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 namespace chrono = std::chrono;
 using aos::distributed_clock;
 using aos::monotonic_clock;
@@ -263,8 +262,7 @@ void Main(int argc, char **argv) {
   }
 }  // namespace vision
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 int main(int argc, char **argv) {
   aos::InitGoogle(&argc, &argv);

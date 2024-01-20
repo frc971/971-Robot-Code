@@ -34,8 +34,7 @@ DECLARE_bool(use_sctp_authentication);
 // To restore it, run:
 //   tc qdisc del dev eth0 root netem
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 namespace {
 namespace chrono = std::chrono;
 
@@ -541,5 +540,4 @@ void MessageBridgeClient::RequestAuthKey() {
   sender.CheckOk(sender.Send(builder.Finish()));
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

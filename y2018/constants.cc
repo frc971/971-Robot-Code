@@ -20,8 +20,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-namespace y2018 {
-namespace constants {
+namespace y2018::constants {
 namespace {
 
 const uint16_t kCompTeamNumber = 971;
@@ -163,5 +162,4 @@ const Values &GetValuesForTeam(uint16_t team_number) {
   return *values[team_number];
 }
 
-}  // namespace constants
-}  // namespace y2018
+}  // namespace y2018::constants

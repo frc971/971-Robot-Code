@@ -10,9 +10,7 @@
 #include "frc971/control_loops/jacobian.h"
 #include "frc971/control_loops/runge_kutta.h"
 
-namespace frc971 {
-namespace controls {
-namespace testing {
+namespace frc971::controls::testing {
 
 // Tests that small perturbations around a couple quaternions averaged out
 // return the original quaternion.
@@ -212,6 +210,4 @@ TEST(DownEstimatorTest, QuaternionIntegral) {
   EXPECT_NEAR(0.0, (uz - integral3 * uz).norm(), 5e-2);
 }
 
-}  // namespace testing
-}  // namespace controls
-}  // namespace frc971
+}  // namespace frc971::controls::testing

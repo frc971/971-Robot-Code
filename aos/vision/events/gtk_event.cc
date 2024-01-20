@@ -9,8 +9,7 @@
 #include "aos/logging/logging.h"
 #include "aos/vision/events/epoll_events.h"
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 void EpollLoop::RunWithGtkMain() {
   int timeout;
@@ -69,5 +68,4 @@ void EpollLoop::RunWithGtkMain() {
   exit(EXIT_SUCCESS);
 }
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events

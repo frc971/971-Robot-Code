@@ -18,8 +18,7 @@
 #include "aos/network/sctp_lib.h"
 #include "aos/unique_malloc_ptr.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 SctpServer::SctpServer(int streams, std::string_view local_host, int local_port,
                        SctpAuthMethod requested_authentication)
@@ -109,5 +108,4 @@ void SctpServer::SetStreamPriority([[maybe_unused]] sctp_assoc_t assoc_id,
 #endif
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

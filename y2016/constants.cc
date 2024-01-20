@@ -21,8 +21,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-namespace y2016 {
-namespace constants {
+namespace y2016::constants {
 
 // ///// Mutual constants between robots. /////
 const int Values::kZeroingSampleSize;
@@ -210,5 +209,4 @@ const Values &GetValuesForTeam(uint16_t team_number) {
   return *values[team_number];
 }
 
-}  // namespace constants
-}  // namespace y2016
+}  // namespace y2016::constants

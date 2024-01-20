@@ -13,8 +13,7 @@ DEFINE_string(
     "If set, this forces the hostname of this node to be the provided "
     "hostname.");
 
-namespace aos {
-namespace network {
+namespace aos::network {
 namespace team_number_internal {
 
 std::optional<uint16_t> ParseRoborioTeamNumber(
@@ -150,5 +149,4 @@ std::optional<uint16_t> ParsePiNumber(const std::string_view hostname) {
   return number;
 }
 
-}  // namespace network
-}  // namespace aos
+}  // namespace aos::network

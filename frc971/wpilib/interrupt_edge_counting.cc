@@ -5,8 +5,7 @@
 #include "aos/realtime.h"
 #include "aos/time/time.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 void EdgeCounter::GatherPolledValue() {
   shadow_values_.polled_value = input_->Get();
@@ -103,5 +102,4 @@ bool InterruptSynchronizer::TryFinishingIteration() {
   return true;
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

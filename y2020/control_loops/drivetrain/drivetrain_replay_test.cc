@@ -27,10 +27,7 @@ DEFINE_string(logfile, "external/drivetrain_replay/",
 DEFINE_string(config, "y2020/aos_config.json",
               "Name of the config file to replay using.");
 
-namespace y2020 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace y2020::control_loops::drivetrain::testing {
 
 class DrivetrainReplayTest : public ::testing::Test {
  public:
@@ -135,7 +132,4 @@ TEST_F(DrivetrainReplayTest, SpinningWheels) {
   EXPECT_LT(std::abs(status_fetcher_->theta()), 0.02);
 }
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::drivetrain::testing

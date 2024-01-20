@@ -4,8 +4,7 @@
 
 #include "aos/vision/image/image_types.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 namespace {
 std::string GetFileContents(const std::string &filename) {
@@ -82,5 +81,4 @@ std::vector<DatasetFrame> LoadDataset(const std::string &jpeg_list_filename) {
   return images;
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision

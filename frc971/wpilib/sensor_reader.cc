@@ -17,8 +17,7 @@
 DEFINE_int32(pwm_offset, 5050 / 2,
              "Offset of reading the sensors from the start of the PWM cycle");
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 SensorReader::SensorReader(::aos::ShmEventLoop *event_loop)
     : event_loop_(event_loop),
@@ -180,5 +179,4 @@ void SensorReader::Loop() {
   }
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

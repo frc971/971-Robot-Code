@@ -6,8 +6,7 @@
 
 #include "aos/uuid.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Tests that modest numbers of UUID::Random() calls cannot create UUID
 // collisions (to test that we have not *completely* messed up the random number
@@ -40,5 +39,4 @@ TEST(UUIDTest, SeedInitializationTest) {
     values.insert(value);
   }
 }
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

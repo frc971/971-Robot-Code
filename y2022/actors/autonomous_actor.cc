@@ -18,8 +18,7 @@ DEFINE_bool(rapid_react, true,
 DEFINE_bool(rapid_react_two, false,
             "If true, run the two ball rapid react autonomous mode");
 
-namespace y2022 {
-namespace actors {
+namespace y2022::actors {
 namespace {
 constexpr double kExtendIntakeGoal = -0.10;
 constexpr double kRetractIntakeGoal = 1.47;
@@ -491,5 +490,4 @@ void AutonomousActor::RetractBackIntake() {
   }
 }
 
-}  // namespace actors
-}  // namespace y2022
+}  // namespace y2022::actors

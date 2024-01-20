@@ -13,10 +13,7 @@
 DEFINE_string(output_folder, "",
               "If set, logs all channels to the provided logfile.");
 
-namespace y2021_bot3 {
-namespace control_loops {
-namespace superstructure {
-namespace testing {
+namespace y2021_bot3::control_loops::superstructure::testing {
 
 class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
  public:
@@ -202,7 +199,4 @@ TEST_F(SuperstructureTest, PlotterTest) {
   RunFor(std::chrono::seconds(10));
 }
 
-}  // namespace testing
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2021_bot3
+}  // namespace y2021_bot3::control_loops::superstructure::testing

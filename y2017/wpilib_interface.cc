@@ -67,8 +67,7 @@ namespace chrono = ::std::chrono;
 using namespace frc;
 using std::make_unique;
 
-namespace y2017 {
-namespace wpilib {
+namespace y2017::wpilib {
 namespace {
 
 constexpr double kMaxBringupPower = 12.0;
@@ -549,7 +548,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 };
 
 }  // namespace
-}  // namespace wpilib
-}  // namespace y2017
+}  // namespace y2017::wpilib
 
 AOS_ROBOT_CLASS(::y2017::wpilib::WPILibRobot);

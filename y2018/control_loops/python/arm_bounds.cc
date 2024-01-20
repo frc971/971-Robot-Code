@@ -7,8 +7,7 @@
 #include <cmath>
 #include <iostream>
 
-namespace y2018 {
-namespace control_loops {
+namespace y2018::control_loops {
 
 static BoundsCheck MakeArbitraryArmSpace(::std::vector<Point> points) {
   for (Point &point : points) {
@@ -534,5 +533,4 @@ BoundsCheck MakeClippedArmSpace() {
                                 {1.8577014383575772, -1.7353804562372057}});
 }
 
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops

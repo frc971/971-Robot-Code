@@ -13,8 +13,7 @@ using ::frc971::control_loops::drivetrain::DrivetrainConfig;
 
 namespace chrono = ::std::chrono;
 
-namespace y2014 {
-namespace control_loops {
+namespace y2014::control_loops {
 
 const DrivetrainConfig<double> &GetDrivetrainConfig() {
   // TODO(austin): Switch over to using the profile.
@@ -51,5 +50,4 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
   return kDrivetrainConfig;
 };
 
-}  // namespace control_loops
-}  // namespace y2014
+}  // namespace y2014::control_loops

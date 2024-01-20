@@ -3,8 +3,7 @@
 #include "aos/logging/logging.h"
 #include "aos/realtime.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 bool DMAEncoder::DoUpdateFromSample(const DMASample &sample) {
   if (index_last_value_) {
@@ -20,5 +19,4 @@ bool DMAEncoder::DoUpdateFromSample(const DMASample &sample) {
   return false;
 }
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

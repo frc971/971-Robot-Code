@@ -20,8 +20,7 @@
 #include "aos/scoped/scoped_fd.h"
 #include "aos/util/file.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 void Entity::Log() const {
   LOG(INFO) << "  { \"id\": " << id() << ",";
@@ -408,5 +407,4 @@ std::optional<MediaDevice> FindMediaDevice(std::string_view device) {
   }
 }
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision

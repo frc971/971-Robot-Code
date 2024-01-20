@@ -1,8 +1,6 @@
 #include "frc971/control_loops/drivetrain/trajectory_generator.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 TrajectoryGenerator::TrajectoryGenerator(aos::EventLoop *event_loop,
                                          const DrivetrainConfig<double> &config)
@@ -26,6 +24,4 @@ void TrajectoryGenerator::HandleSplineGoal(const SplineGoal &goal) {
            aos::RawSender::Error::kOk);
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain

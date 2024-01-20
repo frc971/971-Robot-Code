@@ -2,8 +2,7 @@
 
 #include "aos/json_to_flatbuffer.h"
 
-namespace y2019 {
-namespace control_loops {
+namespace y2019::control_loops {
 
 constexpr double TargetSelector::kFakeFov;
 
@@ -100,5 +99,4 @@ bool TargetSelector::UpdateSelection(const ::Eigen::Matrix<double, 5, 1> &state,
   return true;
 }
 
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops

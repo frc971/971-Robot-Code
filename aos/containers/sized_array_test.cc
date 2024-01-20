@@ -2,8 +2,7 @@
 
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Tests the various ways of accessing elements.
 TEST(SizedArrayTest, ElementAccess) {
@@ -240,5 +239,4 @@ TEST(SizedArrayTest, Erasing) {
   EXPECT_EQ(a.size(), 1);
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

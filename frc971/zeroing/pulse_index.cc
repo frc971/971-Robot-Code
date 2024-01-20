@@ -5,8 +5,7 @@
 
 #include "glog/logging.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 void PulseIndexZeroingEstimator::Reset() {
   max_index_position_ = ::std::numeric_limits<double>::lowest();
@@ -112,5 +111,4 @@ PulseIndexZeroingEstimator::GetEstimatorState(
   return builder.Finish();
 }
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing

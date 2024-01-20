@@ -25,8 +25,7 @@
 #include "aos/vision/image/reader.h"
 #include "aos/vision/math/vector.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 void DrawVLine(ImagePtr ptr, int x, PixelRef color = {255, 0, 0}) {
   for (int y = 0; y < ptr.fmt().h; ++y) {
@@ -108,8 +107,7 @@ class ChannelImageStream : public ImageStreamEvent {
   int dx = 0;
   int dy = 0;
 };
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 int main(int argc, char *argv[]) {
   ::aos::logging::Init();

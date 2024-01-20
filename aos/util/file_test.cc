@@ -10,9 +10,7 @@
 #include "aos/realtime.h"
 #include "aos/testing/tmpdir.h"
 
-namespace aos {
-namespace util {
-namespace testing {
+namespace aos::util::testing {
 
 using ::testing::ElementsAre;
 
@@ -144,6 +142,4 @@ TEST(FileTest, WriteFileError) {
   EXPECT_EQ("", ReadFileToStringOrDie(test_file));
 }
 
-}  // namespace testing
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util::testing

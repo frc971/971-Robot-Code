@@ -22,9 +22,7 @@ extern char *program_invocation_short_name;
 
 #include "aos/logging/implementations.h"
 
-namespace aos {
-namespace logging {
-namespace internal {
+namespace aos::logging::internal {
 namespace {
 
 // TODO(brians): Differentiate between threads with the same name in the same
@@ -114,6 +112,4 @@ void Context::DeleteNow() {
   delete_current_context = false;
 }
 
-}  // namespace internal
-}  // namespace logging
-}  // namespace aos
+}  // namespace aos::logging::internal

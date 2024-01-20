@@ -4,10 +4,7 @@
 #include "y2022/control_loops/superstructure/catapult/catapult.h"
 #include "y2022/control_loops/superstructure/catapult/catapult_plant.h"
 
-namespace y2022 {
-namespace control_loops {
-namespace superstructure {
-namespace catapult {
+namespace y2022::control_loops::superstructure::catapult {
 namespace chrono = std::chrono;
 
 void OSQPSolve() {
@@ -114,10 +111,7 @@ int Main(int /*argc*/, char ** /*argv*/) {
   return 0;
 }
 
-}  // namespace catapult
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2022
+}  // namespace y2022::control_loops::superstructure::catapult
 
 int main(int argc, char **argv) {
   ::aos::InitGoogle(&argc, &argv);

@@ -25,9 +25,7 @@ DEFINE_int32(plot_duration, 30,
 DEFINE_int32(start_offset, 0,
              "Time, in seconds, to start replay plot after the first enable.");
 
-namespace y2019 {
-namespace control_loops {
-namespace drivetrain {
+namespace y2019::control_loops::drivetrain {
 using ::y2019::constants::Field;
 
 typedef TypedLocalizer<constants::Values::kNumCameras, Field::kNumTargets,
@@ -386,9 +384,7 @@ class LocalizerReplayer {
   ::std::vector<double> long_accel_;
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::drivetrain
 
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, false);

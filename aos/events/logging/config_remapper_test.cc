@@ -14,8 +14,7 @@
 #include "aos/testing/tmpdir.h"
 #include "multinode_logger_test_lib.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 using namespace logger::testing;
 using namespace logger;
 namespace chrono = std::chrono;
@@ -97,5 +96,4 @@ TEST_P(ConfigRemapperTest, RenameOriginalChannelWithNode) {
   EXPECT_EQ(channel->type()->string_view(), "aos.timing.Report");
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

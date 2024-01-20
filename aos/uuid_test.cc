@@ -3,8 +3,7 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Tests that random UUIDs are actually random, and we can convert them to a
 // string.  Not very exhaustive, but it is a good smoke test.
@@ -52,5 +51,4 @@ TEST(UUIDTest, FromStringOrSpan) {
   EXPECT_EQ(u_span, u2);
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing

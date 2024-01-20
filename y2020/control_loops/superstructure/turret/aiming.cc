@@ -3,10 +3,7 @@
 #include "y2020/constants.h"
 #include "y2020/control_loops/drivetrain/drivetrain_base.h"
 
-namespace y2020 {
-namespace control_loops {
-namespace superstructure {
-namespace turret {
+namespace y2020::control_loops::superstructure::turret {
 
 using frc971::control_loops::Pose;
 using frc971::control_loops::aiming::RobotState;
@@ -197,7 +194,4 @@ flatbuffers::Offset<AimerStatus> Aimer::PopulateStatus(
   return builder.Finish();
 }
 
-}  // namespace turret
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::superstructure::turret

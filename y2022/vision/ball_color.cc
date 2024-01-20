@@ -13,8 +13,7 @@
 #include "frc971/input/joystick_state_generated.h"
 #include "frc971/vision/vision_generated.h"
 
-namespace y2022 {
-namespace vision {
+namespace y2022::vision {
 
 namespace {
 cv::Rect ArrayToRect(const std::array<int, 4> &values) {
@@ -144,5 +143,4 @@ double BallColorDetector::mean_hue(cv::Mat hsv_image) {
   return sum / num_pixels_selected;
 }
 
-}  // namespace vision
-}  // namespace y2022
+}  // namespace y2022::vision

@@ -9,10 +9,7 @@
 #include "y2020/control_loops/superstructure/finisher/finisher_plant.h"
 #include "y2020/control_loops/superstructure/finisher/integral_finisher_plant.h"
 
-namespace y2020 {
-namespace control_loops {
-namespace superstructure {
-namespace shooter {
+namespace y2020::control_loops::superstructure::shooter {
 
 Shooter::Shooter()
     : finisher_(
@@ -141,7 +138,4 @@ flatbuffers::Offset<ShooterStatus> Shooter::RunIteration(
   return status_builder.Finish();
 }
 
-}  // namespace shooter
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::superstructure::shooter

@@ -12,8 +12,7 @@
 #include "aos/network/timestamp_filter.h"
 #include "aos/network/timestamp_generated.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 namespace {
 
 namespace chrono = std::chrono;
@@ -507,5 +506,4 @@ void MessageBridgeServerStatus::EnableStatistics() {
                               kPingPeriod);
 }
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge

@@ -4,9 +4,7 @@
 
 #include "frc971/zeroing/zeroing_test.h"
 
-namespace frc971 {
-namespace zeroing {
-namespace testing {
+namespace frc971::zeroing::testing {
 
 using constants::EncoderPlusIndexZeroingConstants;
 
@@ -127,6 +125,4 @@ TEST_F(PulseIndexZeroingTest, TestRelativeEncoderSlipping) {
   }
 }
 
-}  // namespace testing
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing::testing

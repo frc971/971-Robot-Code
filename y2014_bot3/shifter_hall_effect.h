@@ -1,8 +1,7 @@
 #ifndef BOT3_SHIFTER_HALL_EFFECT_H_
 #define BOT3_SHIFTER_HALL_EFFECT_H_
 
-namespace bot3 {
-namespace constants {
+namespace bot3::constants {
 
 // Contains the voltages for an analog hall effect sensor on a shifter.
 struct ShifterHallEffect {
@@ -13,7 +12,6 @@ struct ShifterHallEffect {
   double clear_high, clear_low;
 };
 
-}  // namespace constants
-}  // namespace bot3
+}  // namespace bot3::constants
 
 #endif
