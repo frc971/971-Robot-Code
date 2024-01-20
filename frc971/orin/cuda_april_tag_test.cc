@@ -1198,6 +1198,7 @@ class CudaAprilTagDetector {
           // search through indixes j - a to j + a to see if they're swapped
           // also only doesn't count if the precision needed to differentiate is
           // less than max_allowed_imprecision
+          bool is_allowable = false;
           for (size_t k = j - allowable_swapped_indices;
                k <= j + allowable_swapped_indices; k++) {
             if (cuda_grouped_blob[j].x() == slope_sorted_points[k].x() &&
@@ -1205,8 +1206,11 @@ class CudaAprilTagDetector {
                 abs(ComputeTheta(slope_sorted_points[k]) -
                     ComputeTheta(slope_sorted_points[j])) <
                     max_allowed_imprecision) {
-              continue;
+              is_allowable = true;
             }
+          }
+          if (is_allowable) {
+            continue;
           }
           ++missmatched_points;
           ++missmatched_runs;
@@ -1699,8 +1703,25 @@ class CudaAprilTagDetector {
     }
   }
 
+  static inline int DetectionCompareFunction(const void *_a, const void *_b) {
+    apriltag_detection_t *a = *(apriltag_detection_t **)_a;
+    apriltag_detection_t *b = *(apriltag_detection_t **)_b;
+
+    if (a->id != b->id) {
+      return a->id - b->id;
+    } else if (a->hamming != b->hamming) {
+      return a->hamming - b->hamming;
+    } else {
+      return b->decision_margin - a->decision_margin;
+    }
+  }
+
   void CheckDetections(zarray_t *aprilrobotics_detections,
-                       const zarray_t *gpu_detections) {
+                       const zarray_t *_gpu_detections) {
+    zarray_t *gpu_detections = zarray_copy(_gpu_detections);
+    zarray_sort(gpu_detections, DetectionCompareFunction);
+    zarray_sort(aprilrobotics_detections, DetectionCompareFunction);
+
     CHECK_EQ(zarray_size(aprilrobotics_detections),
              zarray_size(gpu_detections));
     LOG(INFO) << "Found " << zarray_size(gpu_detections) << " tags";
