@@ -324,6 +324,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
           auto falcon_vector = builder->add_talonfxs();
 
+          CHECK(falcon_vector->reserve(falcons.size()));
+
           for (auto falcon : falcons) {
             falcon->SerializePosition(
                 falcon_vector->emplace_back(),

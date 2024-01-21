@@ -1,9 +1,10 @@
 include "frc971/control_loops/can_talonfx.fbs";
 namespace frc971.control_loops.drivetrain;
 
+attribute "static_length";
 // CAN readings from the CAN sensor reader loop
 table CANPosition {
-  talonfxs: [CANTalonFX] (id: 0);
+  talonfxs: [CANTalonFX] (id: 0, static_length: 6);
 
   // The timestamp of the measurement on the canivore clock in nanoseconds
   // This will have less jitter than the
