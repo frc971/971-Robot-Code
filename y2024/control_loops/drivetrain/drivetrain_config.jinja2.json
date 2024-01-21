@@ -1,0 +1,26 @@
+{
+  "shifter_type": "kSimpleShifter",
+  "loop_type": "kClosedLoop",
+  "gyro_type": "kSpartanGyro",
+  "imu_type" : "kImuX",
+  "loop_config": {% include 'y2024/control_loops/drivetrain/drivetrain_loop_config.json' %},
+  "default_high_gear": false,
+  "down_offset": 0.0,
+  "wheel_non_linearity": 0.7,
+  "quickturn_wheel_multiplier": 1.2,
+  "wheel_multiplier": 1.2,
+  "pistol_grip_shift_enables_line_follow": false,
+  "imu_transform":{
+    "rows": 3,
+    "cols": 3,
+    "data": [1, 0, 0, 0, 1, 0, 0, 0, 1]
+  },
+  "is_simulated": true,
+  "down_estimator_config": {
+    "gravity_threshold": 0.015,
+    "do_accel_corrections": 1000
+  },
+  "top_button_use": "kNone",
+  "second_button_use": "kTurn1",
+  "bottom_button_use": "kControlLoopDriving"
+}

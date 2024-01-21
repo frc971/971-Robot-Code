@@ -214,10 +214,14 @@ struct DrivetrainConfig {
           .high_gear_ratio = fbs.loop_config()->high_gear_ratio(),
           .low_gear_ratio = fbs.loop_config()->low_gear_ratio(),
           .J = fbs.loop_config()->moment_of_inertia(),
-          .mass = fbs.loop_config()->mass(), .left_drive = *fbs.left_drive(),
-          .right_drive = *fbs.right_drive(), ASSIGN(default_high_gear),
-          ASSIGN(down_offset), ASSIGN(wheel_non_linearity),
-          ASSIGN(quickturn_wheel_multiplier), ASSIGN(wheel_multiplier),
+          .mass = fbs.loop_config()->mass(),
+          .left_drive =
+              fbs.has_left_drive() ? *fbs.left_drive() : ShifterHallEffect{},
+          .right_drive =
+              fbs.has_right_drive() ? *fbs.right_drive() : ShifterHallEffect{},
+          ASSIGN(default_high_gear), ASSIGN(down_offset),
+          ASSIGN(wheel_non_linearity), ASSIGN(quickturn_wheel_multiplier),
+          ASSIGN(wheel_multiplier),
           ASSIGN(pistol_grip_shift_enables_line_follow),
           .imu_transform =
               ToEigenOrDie<3, 3>(*CHECK_NOTNULL(fbs.imu_transform())),

@@ -35,7 +35,6 @@
         "upper": 1.57
     },
     "loop": {% include 'y2024/control_loops/superstructure/intake_pivot/integral_intake_pivot_plant.json' %}
-  }
+  },
+  "drivetrain": {% include 'y2024/control_loops/drivetrain/drivetrain_config.json' %}
 }
-
-
