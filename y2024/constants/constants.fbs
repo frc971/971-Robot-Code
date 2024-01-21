@@ -2,6 +2,15 @@ include "frc971/vision/target_map.fbs";
 
 namespace y2024;
 
+table ShotParams {
+    shot_velocity: double (id: 0);
+    shot_angle: double (id: 1);
+}
+
+table InterpolationTablePoint {
+    distance_from_goal: double (id: 0);
+    shot_params: ShotParams (id: 1);
+}
 
 table RobotConstants {
 
@@ -10,6 +19,7 @@ table RobotConstants {
 table Constants {
   target_map:frc971.vision.TargetMap (id: 0);
   robot:RobotConstants (id: 1);
+  shooter_interpolation_table: [InterpolationTablePoint] (id: 2);
 }
 
 root_type Constants;
