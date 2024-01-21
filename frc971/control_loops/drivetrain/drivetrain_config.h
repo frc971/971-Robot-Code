@@ -3,73 +3,19 @@
 
 #include <functional>
 
+#include "aos/flatbuffer_merge.h"
 #if defined(__linux__)
 #include "frc971/control_loops/hybrid_state_feedback_loop.h"
+#include "frc971/control_loops/hybrid_state_feedback_loop_converters.h"
 #endif
+#include "frc971/control_loops/drivetrain/drivetrain_config_static.h"
 #include "frc971/control_loops/state_feedback_loop.h"
+#include "frc971/control_loops/state_feedback_loop_converters.h"
 #include "frc971/shifter_hall_effect.h"
 
 namespace frc971 {
 namespace control_loops {
 namespace drivetrain {
-
-// What to use the top two buttons for on the pistol grip.
-enum class PistolTopButtonUse {
-  // Normal shifting.
-  kShift,
-  // Line following (currently just uses top button).
-  kLineFollow,
-  // Don't use the top button
-  kNone,
-};
-
-enum class PistolSecondButtonUse {
-  kTurn1,
-  kShiftLow,
-  kNone,
-};
-
-enum class PistolBottomButtonUse {
-  kControlLoopDriving,
-  kSlowDown,
-  kNone,
-};
-
-enum class ShifterType : int32_t {
-  HALL_EFFECT_SHIFTER = 0,  // Detect when inbetween gears.
-  SIMPLE_SHIFTER = 1,       // Switch gears without speedmatch logic.
-  NO_SHIFTER = 2,           // Only one gear ratio.
-};
-
-enum class LoopType : int32_t {
-  OPEN_LOOP = 0,    // Only use open loop logic.
-  CLOSED_LOOP = 1,  // Add in closed loop calculation.
-};
-
-enum class GyroType : int32_t {
-  SPARTAN_GYRO = 0,          // Use the gyro on the spartan board.
-  IMU_X_GYRO = 1,            // Use the x-axis of the gyro on the IMU.
-  IMU_Y_GYRO = 2,            // Use the y-axis of the gyro on the IMU.
-  IMU_Z_GYRO = 3,            // Use the z-axis of the gyro on the IMU.
-  FLIPPED_SPARTAN_GYRO = 4,  // Use the gyro on the spartan board.
-  FLIPPED_IMU_Z_GYRO = 5,    // Use the flipped z-axis of the gyro on the IMU.
-};
-
-enum class IMUType : int32_t {
-  IMU_X = 0,          // Use the x-axis of the IMU.
-  IMU_Y = 1,          // Use the y-axis of the IMU.
-  IMU_FLIPPED_X = 2,  // Use the flipped x-axis of the IMU.
-  IMU_Z = 3,          // Use the z-axis of the IMU.
-};
-
-struct DownEstimatorConfig {
-  // Threshold, in g's, to use for detecting whether we are stopped in the down
-  // estimator.
-  double gravity_threshold = 0.025;
-  // Number of cycles of being still to require before taking accelerometer
-  // corrections.
-  int do_accel_corrections = 50;
-};
 
 // Configuration for line-following mode.
 struct LineFollowConfig {
@@ -94,6 +40,16 @@ struct LineFollowConfig {
   // place things laterally. This specifies how much range on either side of
   // zero we allow them, in meters.
   double max_controllable_offset = 0.1;
+
+  static LineFollowConfig FromFlatbuffer(const fbs::LineFollowConfig *fbs) {
+    if (fbs == nullptr) {
+      return {};
+    }
+    return LineFollowConfig{
+        .Q = ToEigenOrDie<3, 3>(*CHECK_NOTNULL(fbs->q())),
+        .R = ToEigenOrDie<2, 2>(*CHECK_NOTNULL(fbs->r())),
+        .max_controllable_offset = fbs->max_controllable_offset()};
+  }
 };
 
 template <typename Scalar = double>
@@ -108,7 +64,7 @@ struct DrivetrainConfig {
   GyroType gyro_type;
 
   // Type of IMU to use.
-  IMUType imu_type;
+  ImuType imu_type;
 
   // Polydrivetrain functions returning various controller loops with plants.
   ::std::function<StateFeedbackLoop<4, 2, 2, Scalar>()> make_drivetrain_loop;
@@ -135,8 +91,8 @@ struct DrivetrainConfig {
   Scalar mass;
 
   // Hall effect constants. Unused if not applicable to shifter type.
-  constants::ShifterHallEffect left_drive;
-  constants::ShifterHallEffect right_drive;
+  ShifterHallEffect left_drive;
+  ShifterHallEffect right_drive;
 
   // Variable that holds the default gear ratio. We use this in ZeroOutputs().
   // (ie. true means high gear is default).
@@ -163,7 +119,7 @@ struct DrivetrainConfig {
   // True if we are running a simulated drivetrain.
   bool is_simulated = false;
 
-  DownEstimatorConfig down_estimator_config{};
+  DownEstimatorConfigT down_estimator_config{};
 
   LineFollowConfig line_follow_config{};
 
@@ -212,6 +168,68 @@ struct DrivetrainConfig {
     state(2, 0) = linear(0, 0) + scaled_angle(0, 0);
     state(3, 0) = linear(1, 0) + scaled_angle(1, 0);
     return state;
+  }
+
+  static DrivetrainConfig FromFlatbuffer(const fbs::DrivetrainConfig &fbs) {
+    std::shared_ptr<aos::FlatbufferDetachedBuffer<fbs::DrivetrainConfig>>
+        fbs_copy = std::make_shared<
+            aos::FlatbufferDetachedBuffer<fbs::DrivetrainConfig>>(
+            aos::RecursiveCopyFlatBuffer(&fbs));
+    return {
+#define ASSIGN(field) .field = fbs.field()
+      ASSIGN(shifter_type), ASSIGN(loop_type), ASSIGN(gyro_type),
+          ASSIGN(imu_type),
+          .make_drivetrain_loop =
+              [fbs_copy]() {
+                return MakeStateFeedbackLoop<4, 2, 2>(*CHECK_NOTNULL(
+                    fbs_copy->message().loop_config()->drivetrain_loop()));
+              },
+          .make_v_drivetrain_loop =
+              [fbs_copy]() {
+                return MakeStateFeedbackLoop<2, 2, 2>(
+                    *CHECK_NOTNULL(fbs_copy->message()
+                                       .loop_config()
+                                       ->velocity_drivetrain_loop()));
+              },
+          .make_kf_drivetrain_loop =
+              [fbs_copy]() {
+                return MakeStateFeedbackLoop<7, 2, 4>(
+                    *CHECK_NOTNULL(fbs_copy->message()
+                                       .loop_config()
+                                       ->kalman_drivetrain_loop()));
+              },
+#if defined(__linux__)
+          .make_hybrid_drivetrain_velocity_loop =
+              [fbs_copy]() {
+                return MakeHybridStateFeedbackLoop<2, 2, 2>(
+                    *CHECK_NOTNULL(fbs_copy->message()
+                                       .loop_config()
+                                       ->hybrid_velocity_drivetrain_loop()));
+              },
+#endif
+          .dt = std::chrono::nanoseconds(fbs.loop_config()->dt()),
+          .robot_radius = fbs.loop_config()->robot_radius(),
+          .wheel_radius = fbs.loop_config()->wheel_radius(),
+          .v = fbs.loop_config()->motor_kv(),
+          .high_gear_ratio = fbs.loop_config()->high_gear_ratio(),
+          .low_gear_ratio = fbs.loop_config()->low_gear_ratio(),
+          .J = fbs.loop_config()->moment_of_inertia(),
+          .mass = fbs.loop_config()->mass(), .left_drive = *fbs.left_drive(),
+          .right_drive = *fbs.right_drive(), ASSIGN(default_high_gear),
+          ASSIGN(down_offset), ASSIGN(wheel_non_linearity),
+          ASSIGN(quickturn_wheel_multiplier), ASSIGN(wheel_multiplier),
+          ASSIGN(pistol_grip_shift_enables_line_follow),
+          .imu_transform =
+              ToEigenOrDie<3, 3>(*CHECK_NOTNULL(fbs.imu_transform())),
+          ASSIGN(is_simulated),
+          .down_estimator_config =
+              aos::UnpackFlatbuffer(fbs.down_estimator_config()),
+          .line_follow_config =
+              LineFollowConfig::FromFlatbuffer(fbs.line_follow_config()),
+          ASSIGN(top_button_use), ASSIGN(second_button_use),
+          ASSIGN(bottom_button_use)
+#undef ASSIGN
+    };
   }
 };
 }  // namespace drivetrain

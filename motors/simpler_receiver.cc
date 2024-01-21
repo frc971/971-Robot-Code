@@ -27,14 +27,14 @@ using ::frc971::control_loops::drivetrain::PolyDrivetrain;
 
 namespace chrono = ::std::chrono;
 
-const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
+const ShifterHallEffect kThreeStateDriveShifter{{}, 0.0, 0.0, 0.25, 0.75};
 
 const DrivetrainConfig<float> &GetDrivetrainConfig() {
   static DrivetrainConfig<float> kDrivetrainConfig{
-      ::frc971::control_loops::drivetrain::ShifterType::NO_SHIFTER,
-      ::frc971::control_loops::drivetrain::LoopType::OPEN_LOOP,
-      ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
-      ::frc971::control_loops::drivetrain::IMUType::IMU_X,
+      ::frc971::control_loops::drivetrain::ShifterType::kNoShifter,
+      ::frc971::control_loops::drivetrain::LoopType::kOpenLoop,
+      ::frc971::control_loops::drivetrain::GyroType::kSpartanGyro,
+      ::frc971::control_loops::drivetrain::ImuType::kImuX,
 
       ::motors::seems_reasonable::MakeDrivetrainLoop,
       ::motors::seems_reasonable::MakeVelocityDrivetrainLoop,

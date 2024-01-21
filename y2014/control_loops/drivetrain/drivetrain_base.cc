@@ -18,10 +18,10 @@ namespace y2014::control_loops {
 const DrivetrainConfig<double> &GetDrivetrainConfig() {
   // TODO(austin): Switch over to using the profile.
   static DrivetrainConfig<double> kDrivetrainConfig{
-      ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
-      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
-      ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
-      ::frc971::control_loops::drivetrain::IMUType::IMU_X,
+      ::frc971::control_loops::drivetrain::ShifterType::kHallEffectShifter,
+      ::frc971::control_loops::drivetrain::LoopType::kClosedLoop,
+      ::frc971::control_loops::drivetrain::GyroType::kSpartanGyro,
+      ::frc971::control_loops::drivetrain::ImuType::kImuX,
 
       drivetrain::MakeDrivetrainLoop,
       drivetrain::MakeVelocityDrivetrainLoop,
@@ -38,8 +38,8 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
       constants::GetValues().low_gear_ratio,
       drivetrain::kJ,
       drivetrain::kMass,
-      constants::GetValues().left_drive.shifter_hall_effect,
-      constants::GetValues().right_drive.shifter_hall_effect,
+      constants::GetValues().left_drive.shifter_hall_effect(),
+      constants::GetValues().right_drive.shifter_hall_effect(),
       true /* default_high_gear */,
       0,
       0.25 /* wheel_non_linearity */,

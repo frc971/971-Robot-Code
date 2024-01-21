@@ -1,0 +1,141 @@
+include "frc971/control_loops/state_feedback_loop.fbs";
+include "frc971/math/matrix.fbs";
+
+namespace frc971.control_loops.drivetrain;
+
+// Contains the constants for mapping the analog voltages that the shifter
+// sensors return to the shifter position.  The code which uses this is trying
+// to sort out if we are in low gear, high gear, or neutral.
+// The hall-effect messages are structs in order to enable an easier transition
+// from existing code; we will deal with compatibility issues if we do end
+// up needing to repurpose this in the future.
+struct ShifterHallEffect {
+  // low_gear_low is the voltage that the shifter position sensor reads when it
+  // is all the way in low gear.  high_gear_high is the voltage that the shifter
+  // position sensor reads when it is all the way in high gear.  These two
+  // values are used to calculate a position from 0 to 1, where we get 0 when
+  // the shifter is in low gear, and 1 when it is high gear.
+  low_gear_low:double (id: 0);
+  high_gear_high:double (id: 1);
+
+  // The numbers for when the dog is clear of each gear.
+  // We are in low gear when the position is less than clear_low, and in high
+  // gear when the shifter position is greater than clear_high.
+  clear_low:double (id: 2);
+  clear_high:double (id: 3);
+}
+
+struct DualHallShifterHallEffect {
+  shifter_hall_effect:ShifterHallEffect (id: 0);
+  low_gear_middle:double (id: 1);
+  high_gear_middle:double (id: 2);
+}
+
+// What to use the top two buttons for on the pistol grip.
+enum PistolTopButtonUse : ubyte {
+  // Normal shifting.
+  kShift = 0,
+  // Line following (currently just uses top button).
+  kLineFollow = 1,
+  // Don't use the top button
+  kNone = 2,
+}
+
+enum PistolSecondButtonUse : ubyte {
+  kTurn1 = 0,
+  kShiftLow = 1,
+  kNone = 2,
+}
+
+enum PistolBottomButtonUse : ubyte {
+  kControlLoopDriving = 0,
+  kSlowDown = 1,
+  kNone = 2,
+}
+
+enum ShifterType : int32 {
+  kHallEffectShifter = 0,  // Detect when inbetween gears.
+  kSimpleShifter = 1,       // Switch gears without speedmatch logic.
+  kNoShifter = 2,           // Only one gear ratio.
+}
+
+enum LoopType : int32 {
+  kOpenLoop = 0,    // Only use open loop logic.
+  kClosedLoop = 1,  // Add in closed loop calculation.
+}
+
+enum GyroType : int32 {
+  kSpartanGyro = 0,          // Use the gyro on the spartan board.
+  kImuXGyro = 1,            // Use the x-axis of the gyro on the IMU.
+  kImuYGyro = 2,            // Use the y-axis of the gyro on the IMU.
+  kImuZGyro = 3,            // Use the z-axis of the gyro on the IMU.
+  kFlippedSpartanGyro = 4,  // Use the gyro on the spartan board.
+  kFlippedImuZGyro = 5,    // Use the flipped z-axis of the gyro on the IMU.
+}
+
+enum ImuType : int32 {
+  kImuX = 0,          // Use the x-axis of the IMU.
+  kImuY = 1,          // Use the y-axis of the IMU.
+  kImuFlippedX = 2,  // Use the flipped x-axis of the IMU.
+  kImuZ = 3,          // Use the z-axis of the IMU.
+}
+
+table DownEstimatorConfig {
+  gravity_threshold:double = 0.025 (id: 0);
+  do_accel_corrections:int = 50 (id: 1);
+}
+
+// The below tables shadow C++ classes.
+namespace frc971.control_loops.drivetrain.fbs;
+
+table LineFollowConfig {
+  // Q should be a 3x3 positive-definite matrix; it is used as the state cost
+  // of the LQR controller for the line-following mode.
+  q:frc971.fbs.Matrix (id: 0);
+  // R should be a 2x2 positive-definite matrix; it is used as the input cost
+  // of the LQR controller for the line-following mode.
+  r:frc971.fbs.Matrix (id: 1);
+  max_controllable_offset:double = 0.1 (id: 2);
+}
+
+// These constants are all specified by the drivetrain python code, and
+// so are separated out for easy codegen.
+table DrivetrainLoopConfig {
+  drivetrain_loop:[frc971.control_loops.fbs.StateFeedbackLoopCoefficients] (id: 0);
+  velocity_drivetrain_loop:[frc971.control_loops.fbs.StateFeedbackLoopCoefficients] (id: 1);
+  kalman_drivetrain_loop:[frc971.control_loops.fbs.StateFeedbackLoopCoefficients] (id: 2);
+  hybrid_velocity_drivetrain_loop:[frc971.control_loops.fbs.StateFeedbackHybridLoopCoefficients] (id: 3);
+  // Nanoseconds
+  dt:uint64 (id: 4);
+  // meters
+  robot_radius:double (id: 5);
+  wheel_radius:double (id: 6);
+  motor_kv:double (id: 7);
+  high_gear_ratio:double (id: 8);
+  low_gear_ratio:double (id: 9);
+  moment_of_inertia:double (id: 10);
+  mass:double (id: 11);
+}
+
+table DrivetrainConfig {
+  shifter_type:ShifterType (id: 0);
+  loop_type:LoopType (id: 1);
+  gyro_type:GyroType (id: 2);
+  imu_type:ImuType (id: 3);
+  loop_config:DrivetrainLoopConfig (id: 4);
+  left_drive:ShifterHallEffect (id: 5);
+  right_drive:ShifterHallEffect (id: 6);
+  default_high_gear:bool (id: 7);
+  down_offset:double (id: 8);
+  wheel_non_linearity:double (id: 9);
+  quickturn_wheel_multiplier:double (id: 10);
+  wheel_multiplier:double (id: 11);
+  pistol_grip_shift_enables_line_follow:bool = false (id: 12);
+  imu_transform:frc971.fbs.Matrix (id: 13);
+  is_simulated:bool = false (id: 14);
+  down_estimator_config:DownEstimatorConfig (id: 15);
+  line_follow_config:LineFollowConfig (id: 16);
+  top_button_use:PistolTopButtonUse = kShift (id: 17);
+  second_button_use:PistolSecondButtonUse = kShiftLow (id: 18);
+  bottom_button_use:PistolBottomButtonUse = kSlowDown (id: 19);
+}

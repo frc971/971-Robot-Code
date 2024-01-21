@@ -48,10 +48,10 @@ namespace chrono = ::std::chrono;
 
 const DrivetrainConfig<double> &GetTestDrivetrainConfig() {
   static DrivetrainConfig<double> kDrivetrainConfig{
-      ::frc971::control_loops::drivetrain::ShifterType::HALL_EFFECT_SHIFTER,
-      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
-      ::frc971::control_loops::drivetrain::GyroType::IMU_Z_GYRO,
-      IMUType::IMU_FLIPPED_X,
+      ::frc971::control_loops::drivetrain::ShifterType::kHallEffectShifter,
+      ::frc971::control_loops::drivetrain::LoopType::kClosedLoop,
+      ::frc971::control_loops::drivetrain::GyroType::kImuZGyro,
+      ImuType::kImuFlippedX,
       ::y2016::control_loops::drivetrain::MakeDrivetrainLoop,
       ::y2016::control_loops::drivetrain::MakeVelocityDrivetrainLoop,
       ::y2016::control_loops::drivetrain::MakeKFDrivetrainLoop,

@@ -21,10 +21,10 @@ const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
 
 const DrivetrainConfig<double> &GetDrivetrainConfig() {
   static DrivetrainConfig<double> kDrivetrainConfig{
-      ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
-      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
-      ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
-      ::frc971::control_loops::drivetrain::IMUType::IMU_X,
+      ::frc971::control_loops::drivetrain::ShifterType::kSimpleShifter,
+      ::frc971::control_loops::drivetrain::LoopType::kClosedLoop,
+      ::frc971::control_loops::drivetrain::GyroType::kSpartanGyro,
+      ::frc971::control_loops::drivetrain::ImuType::kImuX,
 
       ::y2014_bot3::control_loops::drivetrain::MakeDrivetrainLoop,
       ::y2014_bot3::control_loops::drivetrain::MakeVelocityDrivetrainLoop,

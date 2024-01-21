@@ -182,8 +182,13 @@ cc_library(
     deps = [
         "//frc971:shifter_hall_effect",
         "//frc971/control_loops:state_feedback_loop",
+        "//frc971/control_loops:state_feedback_loop_converters",
+        ":drivetrain_config_fbs",
     ] + select({
-        "@platforms//os:linux": ["//frc971/control_loops:hybrid_state_feedback_loop"],
+        "@platforms//os:linux": [
+            "//frc971/control_loops:hybrid_state_feedback_loop",
+            "//frc971/control_loops:hybrid_state_feedback_loop_converters",
+        ],
         "//conditions:default": [],
     }),
 )
@@ -837,4 +842,11 @@ ts_project(
         "//aos/network/www:colors",
         "//aos/network/www:proxy",
     ],
+)
+
+static_flatbuffer(
+    name = "drivetrain_config_fbs",
+    srcs = ["drivetrain_config.fbs"],
+    visibility = ["//visibility:public"],
+    deps = ["//frc971/control_loops:state_feedback_loop_fbs"],
 )

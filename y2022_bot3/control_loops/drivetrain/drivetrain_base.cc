@@ -9,7 +9,7 @@
 #include "y2022_bot3/control_loops/drivetrain/kalman_drivetrain_motor_plant.h"
 #include "y2022_bot3/control_loops/drivetrain/polydrivetrain_dog_motor_plant.h"
 
-using ::frc971::control_loops::drivetrain::DownEstimatorConfig;
+using ::frc971::control_loops::drivetrain::DownEstimatorConfigT;
 using ::frc971::control_loops::drivetrain::DrivetrainConfig;
 
 namespace chrono = ::std::chrono;
@@ -24,10 +24,10 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
   // Yaw of the IMU relative to the robot frame.
   static constexpr double kImuYaw = 0.0;
   static DrivetrainConfig<double> kDrivetrainConfig{
-      ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
-      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
-      ::frc971::control_loops::drivetrain::GyroType::SPARTAN_GYRO,
-      ::frc971::control_loops::drivetrain::IMUType::IMU_FLIPPED_X,
+      ::frc971::control_loops::drivetrain::ShifterType::kSimpleShifter,
+      ::frc971::control_loops::drivetrain::LoopType::kClosedLoop,
+      ::frc971::control_loops::drivetrain::GyroType::kSpartanGyro,
+      ::frc971::control_loops::drivetrain::ImuType::kImuFlippedX,
 
       drivetrain::MakeDrivetrainLoop,
       drivetrain::MakeVelocityDrivetrainLoop,
@@ -58,8 +58,7 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
        0.0, std::sin(kImuYaw), std::cos(kImuYaw), 0.0, 0.0, 0.0, 1.0)
           .finished(),
       false /*is_simulated*/,
-      DownEstimatorConfig{.gravity_threshold = 0.015,
-                          .do_accel_corrections = 1000}};
+      DownEstimatorConfigT{{}, 0.015, 1000}};
 
   return kDrivetrainConfig;
 };

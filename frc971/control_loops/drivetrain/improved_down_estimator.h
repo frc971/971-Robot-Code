@@ -193,7 +193,7 @@ class QuaternionUkf {
   // The transformation from the IMU's frame to the robot frame.
   Eigen::Matrix<double, 3, 3> imu_transform_;
 
-  const DownEstimatorConfig config_;
+  const DownEstimatorConfigT config_;
 
   bool assume_perfect_gravity_ = false;
 };
