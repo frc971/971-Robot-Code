@@ -254,7 +254,7 @@ class ArgusCamera {
 
     output_stream_.reset(
         i_capture_session_->createOutputStream(stream_settings_.get()));
-    LOG(INFO) << "Got sream";
+    LOG(INFO) << "Got image stream";
 
     i_buffer_output_stream_ =
         Argus::interface_cast<Argus::IBufferOutputStream>(output_stream_);

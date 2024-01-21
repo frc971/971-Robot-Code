@@ -341,6 +341,7 @@ cc_binary(
         "//y2020:__subpackages__",
         "//y2022:__subpackages__",
         "//y2023:__subpackages__",
+        "//y2024:__subpackages__",
     ],
     deps = [
         ":intrinsics_calibration_lib",

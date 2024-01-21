@@ -257,7 +257,7 @@
       "executable_name": "argus_camera",
       "args": [
           "--enable_ftrace",
-          "--channel=0",
+          "--camera=0",
       ],
       "user": "pi",
       "nodes": [

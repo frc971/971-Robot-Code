@@ -5,6 +5,17 @@ filegroup(
 )
 
 cc_binary(
+    name = "foxglove_image_converter",
+    srcs = ["foxglove_image_converter.cc"],
+    visibility = ["//y2024:__subpackages__"],
+    deps = [
+        "//aos:init",
+        "//aos/events:shm_event_loop",
+        "//frc971/vision:foxglove_image_converter_lib",
+    ],
+)
+
+cc_binary(
     name = "image_logger",
     srcs = [
         "image_logger.cc",

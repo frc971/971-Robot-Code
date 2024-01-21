@@ -55,9 +55,11 @@ robot_downloader(
         "//frc971/image_streamer:image_streamer",
         "//y2023/vision:viewer",
         "//y2024/constants:constants_sender",
+        "//y2024/vision:foxglove_image_converter",
     ],
     data = [
         ":aos_config",
+        "//frc971/rockpi:rockpi_config.json",
         "//y2024/constants:constants.json",
         "//y2024/vision:image_streamer_start",
         "//y2024/www:www_files",
