@@ -35,7 +35,7 @@ void Main() {
   std::string hostname = FLAGS_pi;
   if (hostname == "") {
     hostname = aos::network::GetHostname();
-    LOG(INFO) << "Using pi name from hostname as " << hostname;
+    LOG(INFO) << "Using pi/orin name from hostname as " << hostname;
   }
   CHECK(!FLAGS_base_intrinsics.empty())
       << "Need a base intrinsics json to use to auto-capture images when the "

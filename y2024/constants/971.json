@@ -1,6 +1,11 @@
 {% from 'y2024/constants/common.jinja2' import intake_pivot_zero %}
 
 {
+  "cameras": [
+    {
+      "calibration": {% include 'y2024/constants/calib_files/calibration_orin-971-1_cam-24-00.json' %}
+    }
+  ],
   "robot": {
     "intake_constants": {
       {% set _ = intake_pivot_zero.update(

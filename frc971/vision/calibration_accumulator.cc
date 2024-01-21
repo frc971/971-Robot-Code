@@ -163,11 +163,13 @@ Calibration::Calibration(
             HandleCharuco(rgb_image, eof, charuco_ids, charuco_corners, valid,
                           rvecs_eigen, tvecs_eigen);
           }),
+      // TODO: Need to make this work for pi or orin
       image_callback_(
           image_event_loop_,
-          absl::StrCat("/pi",
-                       std::to_string(aos::network::ParsePiNumber(pi).value()),
-                       image_channel),
+          absl::StrCat(
+              "/pi",
+              std::to_string(aos::network::ParsePiOrOrinNumber(pi).value()),
+              image_channel),
           [this](cv::Mat rgb_image, const monotonic_clock::time_point eof) {
             charuco_extractor_.HandleImage(rgb_image, eof);
           }),

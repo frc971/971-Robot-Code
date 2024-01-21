@@ -27,15 +27,18 @@ uint16_t GetTeamNumber();
 // Guaranteed to be safe to call during static initialization time.
 void OverrideTeamNumber(uint16_t team);
 
-// Returns the pi number for a pi formated hostname.  pi-team#-pi# (pi-971-5)
-std::optional<uint16_t> ParsePiNumber(const std::string_view hostname);
+// Returns the number for a pi/orin formatted hostname.  pi-team#-pi# (e.g., 5
+// for pi-971-5 or 2 for orin-9971-2)
+std::optional<uint16_t> ParsePiOrOrinNumber(const std::string_view hostname);
 
 namespace team_number_internal {
 
 std::optional<uint16_t> ParseRoborioTeamNumber(const std::string_view hostname);
 
-// Returns the team number for a pi formated hostname.  pi-team#-pi#
-std::optional<uint16_t> ParsePiTeamNumber(const std::string_view hostname);
+// Returns the team number for a pi/orin formatted hostname.  pi-team#-pi#
+// (e.g., 971 for pi-971-5 or 9971 for orin-9971-2)
+std::optional<uint16_t> ParsePiOrOrinTeamNumber(
+    const std::string_view hostname);
 
 }  // namespace team_number_internal
 }  // namespace network

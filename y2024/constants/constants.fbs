@@ -1,9 +1,14 @@
+include "frc971/vision/calibration.fbs";
 include "frc971/vision/target_map.fbs";
 include "frc971/control_loops/profiled_subsystem.fbs";
 include "frc971/zeroing/constants.fbs";
 include "frc971/control_loops/drivetrain/drivetrain_config.fbs";
 
 namespace y2024;
+
+table CameraConfiguration {
+  calibration:frc971.vision.calibration.CameraCalibration (id: 0);
+}
 
 table ShotParams {
     shot_velocity: double (id: 0);
@@ -63,6 +68,7 @@ table Common {
 table Constants {
   robot:RobotConstants (id: 0);
   common:Common (id: 1);
+  cameras:[CameraConfiguration] (id: 2);
 }
 
 root_type Constants;
