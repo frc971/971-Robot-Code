@@ -11,8 +11,7 @@
 #include "y2024/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2024/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2024 {
-namespace autonomous {
+namespace y2024::autonomous {
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
@@ -60,7 +59,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   const ::std::vector<::Eigen::Matrix<double, 3, 1>> points_;
 };
 
-}  // namespace autonomous
-}  // namespace y2024
+}  // namespace y2024::autonomous
 
 #endif  // Y2024_AUTONOMOUS_AUTONOMOUS_ACTOR_H_

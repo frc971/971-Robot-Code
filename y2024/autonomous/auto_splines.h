@@ -13,8 +13,7 @@
 
 */
 
-namespace y2024 {
-namespace autonomous {
+namespace y2024::autonomous {
 
 class AutonomousSplines {
  public:
@@ -39,7 +38,6 @@ class AutonomousSplines {
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> test_spline_;
 };
 
-}  // namespace autonomous
-}  // namespace y2024
+}  // namespace y2024::autonomous
 
 #endif  // Y2024_AUTONOMOUS_AUTO_SPLINES_H_
