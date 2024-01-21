@@ -290,7 +290,7 @@ void DMA::Start(size_t queue_depth) {
     SET_SIZE(Enable_EncoderTimers_Low);
     SET_SIZE(Enable_EncoderTimers_High);
 #undef SET_SIZE
-    capture_size_ = accum_size + 1;
+    capture_size_ = accum_size + 2;
   }
 
   manager_.reset(
@@ -327,13 +327,14 @@ ssize_t DMASample::offset(int index) const {
 }
 
 void DMASample::CalculateTimestamp() {
-  uint32_t lower_sample = read_buffer_[dma_->capture_size_ - 1];
+  uint64_t upper_sample = read_buffer_[dma_->capture_size_ - 1];
+  uint64_t lower_sample = read_buffer_[dma_->capture_size_ - 2];
 #if WPILIB2018
   int32_t status = 0;
   fpga_timestamp_ = HAL_ExpandFPGATime(lower_sample, &status);
   assert(status == 0);
 #else
-  fpga_timestamp_ = lower_sample;
+  fpga_timestamp_ = (upper_sample << 32) + lower_sample;
 #endif
 }
 
