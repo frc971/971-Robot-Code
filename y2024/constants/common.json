@@ -1,4 +1,6 @@
-"shooter_interpolation_table": [
+"common": {
+  "target_map": {% include 'y2024/vision/maps/target_map.json' %},
+  "shooter_interpolation_table": [
     {
         "distance_from_goal": 0.0,
         "shot_params": {
@@ -6,5 +8,34 @@
             "shot_angle": 0.0
         }
     }
-],
-"target_map": {% include 'y2024/vision/maps/target_map.json' %}
+  ],
+  "intake_roller_voltages": {
+    "spitting": -12.0,
+    "intaking": 12.0
+  },
+  "intake_pivot_set_points": {
+    "extended": 0.0,
+    "retracted": 0.0
+  },
+  "intake_pivot": {
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 0.5,
+      "max_acceleration": 3.0
+    },
+    "default_profile_params":{
+      "max_velocity": 6.0,
+      "max_acceleration": 30.0
+    },
+    "range": {
+        "lower_hard": -0.85,
+        "upper_hard": 1.85,
+        "lower": -0.400,
+        "upper": 1.57
+    },
+    "loop": {% include 'y2024/control_loops/superstructure/intake_pivot/integral_intake_pivot_plant.json' %}
+  }
+}
+
+

@@ -36,8 +36,6 @@ Values MakeValues(uint16_t team) {
 
     default:
       LOG(FATAL) << "unknown team: " << team;
-
-      // TODO(milind): add pot range checks once we add ranges
   }
 
   return r;

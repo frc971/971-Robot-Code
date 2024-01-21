@@ -1,4 +1,6 @@
 include "frc971/vision/target_map.fbs";
+include "frc971/control_loops/profiled_subsystem.fbs";
+include "frc971/zeroing/constants.fbs";
 
 namespace y2024;
 
@@ -12,14 +14,44 @@ table InterpolationTablePoint {
     shot_params: ShotParams (id: 1);
 }
 
-table RobotConstants {
+// Amount of voltage to give to the intake rollers when:
+// spitting, which represents voltage when IntakeRollerGoal is SPITTING 
+// and intaking, which represents voltage when IntakeRollerGoal is INTAKING
+table IntakeRollerVoltages {
+  spitting:double (id: 0);
+  intaking:double (id: 1);
+}
 
+// Set points for the pivot in radians when:
+// extended, which represents radians for when IntakePivotGoal is EXTENDED
+// and retracted, which represents radians for when IntakePivotGoal is RETRACTED or NONE
+table IntakePivotSetPoints {
+  extended:double (id: 0);
+  retracted:double (id: 1);
+}
+
+// Intake Constants
+table IntakeConstants {
+  intake_pivot_zero:frc971.zeroing.PotAndAbsoluteEncoderZeroingConstants (id: 0);
+  potentiometer_offset:double (id: 1);
+}
+
+table RobotConstants {
+  intake_constants:IntakeConstants (id: 0);
+}
+
+// Common table for constants unrelated to the robot
+table Common {
+  target_map:frc971.vision.TargetMap (id: 0);
+  shooter_interpolation_table: [InterpolationTablePoint] (id: 1);
+  intake_roller_voltages:IntakeRollerVoltages (id : 2);
+  intake_pivot_set_points:IntakePivotSetPoints (id: 3);
+  intake_pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 4);
 }
 
 table Constants {
-  target_map:frc971.vision.TargetMap (id: 0);
-  robot:RobotConstants (id: 1);
-  shooter_interpolation_table: [InterpolationTablePoint] (id: 2);
+  robot:RobotConstants (id: 0);
+  common:Common (id: 1);
 }
 
 root_type Constants;

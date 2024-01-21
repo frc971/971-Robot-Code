@@ -45,6 +45,22 @@ py_library(
     ],
 )
 
+py_binary(
+    name = "intake_pivot",
+    srcs = [
+        "intake_pivot.py",
+    ],
+    legacy_create_init = False,
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":python_init",
+        "//frc971/control_loops/python:angular_system",
+        "//frc971/control_loops/python:controls",
+        "@pip//glog",
+        "@pip//python_gflags",
+    ],
+)
+
 py_library(
     name = "python_init",
     srcs = ["__init__.py"],

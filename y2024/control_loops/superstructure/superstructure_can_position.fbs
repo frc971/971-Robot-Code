@@ -3,8 +3,20 @@ include "frc971/control_loops/can_talonfx.fbs";
 namespace y2024.control_loops.superstructure;
 
 table CANPosition {
+    // The timestamp of the measurement on the canivore clock in nanoseconds
+    // This will have less jitter than the
+    // timestamp of the message being sent out.
+    timestamp:int64 (id: 0);
+
+    // The ctre::phoenix::StatusCode of the measurement
+    // Should be OK = 0
+    status:int (id: 1);
+
     // CAN Position of the roller falcon
-    intake_roller:frc971.control_loops.CANTalonFX (id: 0);
+    intake_roller:frc971.control_loops.CANTalonFX (id: 2);
+
+    // CAN Position of the intake pivot falcon
+    intake_pivot:frc971.control_loops.CANTalonFX (id: 3);
 }
 
 root_type CANPosition;
