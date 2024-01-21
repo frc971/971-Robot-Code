@@ -1,0 +1,10 @@
+[Unit]
+Description=Configure tracing to be available by everyone
+After=sys-kernel-tracing.mount
+
+[Service]
+Type=oneshot
+ExecStart=/root/bin/chrt.sh
+
+[Install]
+WantedBy=multi-user.target

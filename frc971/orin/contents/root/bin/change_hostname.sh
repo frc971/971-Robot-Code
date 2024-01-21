@@ -5,15 +5,15 @@ set -xeuo pipefail
 HOSTNAME="$1"
 
 # TODO<Jim>: Should probably add handling for imu hostname, too
-if [[ ! "${HOSTNAME}" =~ ^pi-[0-9]*-[0-9]$ ]]; then
-  echo "Invalid hostname ${HOSTNAME}, needs to be pi-[team#]-[pi#]"
+if [[ ! "${HOSTNAME}" =~ ^orin-[0-9]*-[0-9]$ ]]; then
+  echo "Invalid hostname ${HOSTNAME}, needs to be orin-[team#]-[orin#]"
   exit 1
 fi
 
-TEAM_NUMBER="$(echo ${HOSTNAME} | sed 's/pi-\(.*\)-.*/\1/')"
-PI_NUMBER="$(echo ${HOSTNAME} | sed 's/pi-.*-\(.*\)/\1/')"
+TEAM_NUMBER="$(echo ${HOSTNAME} | sed 's/orin-\(.*\)-.*/\1/')"
+ORIN_NUMBER="$(echo ${HOSTNAME} | sed 's/orin-.*-\(.*\)/\1/')"
 IP_BASE="$(echo ${TEAM_NUMBER} | sed 's/\(.*\)\(..\)/10.\1.\2/')"
-IP="${IP_BASE}.$(( 100 + ${PI_NUMBER}))"
+IP="${IP_BASE}.$(( 100 + ${ORIN_NUMBER}))"
 
 echo "Changing to team number ${TEAM_NUMBER}, IP ${IP}"
 
@@ -30,19 +30,19 @@ else
   echo -e "127.0.1.1\t${HOSTNAME}" >> /etc/hosts
 fi
 
-# Put corret team number in pi's IP addresses, or add them if needed
-if grep '^10\.[0-9]*\.[0-9]*\.[0-9]*\s*pi-[0-9]*-[0-9] pi[0-9]$' /etc/hosts >/dev/null ;
+# Put correct team number in orin's IP addresses, or add them if needed
+if grep '^10\.[0-9]*\.[0-9]*\.[0-9]*\s*orin-[0-9]*-[0-9] orin[0-9]$' /etc/hosts >/dev/null ;
 then
-  sed -i "s/^10\.[0-9]*\.[0-9]*\(\.[0-9]*\s*pi-\)[0-9]*\(-[0-9] pi[0-9]\)\(.*\)$/${IP_BASE}\1${TEAM_NUMBER}\2\3/" /etc/hosts
+  sed -i "s/^10\.[0-9]*\.[0-9]*\(\.[0-9]*\s*orin-\)[0-9]*\(-[0-9] orin[0-9]\)\(.*\)$/${IP_BASE}\1${TEAM_NUMBER}\2\3/" /etc/hosts
 else
-  for i in {1..6}; do
+  for i in {1..3}; do
       imu=""
-      # Add imu name to pi6.  Put space in this string, since extra
+      # Add imu name to orin3.  Put space in this string, since extra
       # spaces otherwise will make the above grep fail
-      if [[ ${i} == 6 ]]; then
+      if [[ ${i} == 3 ]]; then
           imu=" imu"
       fi
-    echo -e "${IP_BASE}.$(( i + 100 ))\tpi-${TEAM_NUMBER}-${i} pi${i}${imu}" >> /etc/hosts
+    echo -e "${IP_BASE}.$(( i + 100 ))\torin-${TEAM_NUMBER}-${i} orin${i}${imu}" >> /etc/hosts
   done
 fi
 

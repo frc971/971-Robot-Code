@@ -1172,15 +1172,18 @@ def main():
         copyfile("pi:pi", "600", "home/pi/.ssh/authorized_keys")
         target_mkdir("root:root", "700", "root/bin")
         copyfile("root:root", "644", "etc/systemd/system/grow-rootfs.service")
+        copyfile("root:root", "644", "etc/systemd/system/frc971.service")
+        copyfile("root:root", "644", "etc/systemd/system/frc971chrt.service")
         copyfile("root:root", "644",
                  "etc/systemd/system/jetson-clocks.service")
         copyfile("root:root", "500", "root/bin/change_hostname.sh")
+        copyfile("root:root", "500", "root/bin/chrt.sh")
         copyfile("root:root", "700", "root/trace.sh")
         copyfile("root:root", "440", "etc/sudoers")
         copyfile("root:root", "644", "etc/fstab")
         copyfile("root:root", "644",
                  "var/nvidia/nvcam/settings/camera_overrides.isp")
-        copyfile("root.root", "644", "/etc/ld.so.conf.d/yocto.conf")
+        copyfile("root:root", "644", "/etc/ld.so.conf.d/yocto.conf")
 
         target_mkdir("root:root", "755", "etc/systemd/network")
         copyfile("root:root", "644", "etc/systemd/network/eth0.network")
@@ -1189,11 +1192,13 @@ def main():
         copyfile("root:root", "644", "etc/systemd/network/80-canc.network")
         copyfile("root:root", "644", "etc/udev/rules.d/nvidia.rules")
         copyfile("root:root", "644", "etc/udev/rules.d/can.rules")
-        target(["/root/bin/change_hostname.sh", "pi-971-1"])
+        target(["/root/bin/change_hostname.sh", "orin-971-1"])
 
         target(["systemctl", "enable", "systemd-networkd"])
         target(["systemctl", "enable", "grow-rootfs"])
         target(["systemctl", "enable", "jetson-clocks"])
+        target(["systemctl", "enable", "frc971"])
+        target(["systemctl", "enable", "frc971chrt"])
 
         target(["apt-file", "update"])
 
