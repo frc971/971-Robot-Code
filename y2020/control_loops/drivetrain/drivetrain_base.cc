@@ -23,10 +23,10 @@ const ShifterHallEffect kThreeStateDriveShifter{0.0, 0.0, 0.25, 0.75};
 
 const DrivetrainConfig<double> &GetDrivetrainConfig() {
   static DrivetrainConfig<double> kDrivetrainConfig{
-      ::frc971::control_loops::drivetrain::ShifterType::SIMPLE_SHIFTER,
-      ::frc971::control_loops::drivetrain::LoopType::CLOSED_LOOP,
-      ::frc971::control_loops::drivetrain::GyroType::IMU_X_GYRO,
-      ::frc971::control_loops::drivetrain::IMUType::IMU_Z,
+      ::frc971::control_loops::drivetrain::ShifterType::kSimpleShifter,
+      ::frc971::control_loops::drivetrain::LoopType::kClosedLoop,
+      ::frc971::control_loops::drivetrain::GyroType::kImuXGyro,
+      ::frc971::control_loops::drivetrain::ImuType::kImuZ,
 
       drivetrain::MakeDrivetrainLoop,
       drivetrain::MakeVelocityDrivetrainLoop,
@@ -66,10 +66,10 @@ const DrivetrainConfig<double> &GetDrivetrainConfig() {
                                        0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
                                           .finished();
     kDrivetrainConfig.gyro_type =
-        ::frc971::control_loops::drivetrain::GyroType::IMU_Z_GYRO;
-    // TODO(james): CHECK IF THIS IS IMU_X or IMU_FLIPPED_X.
+        ::frc971::control_loops::drivetrain::GyroType::kImuZGyro;
+    // TODO(james): CHECK IF THIS IS kImuX or kImuFlippedX.
     kDrivetrainConfig.imu_type =
-        ::frc971::control_loops::drivetrain::IMUType::IMU_X;
+        ::frc971::control_loops::drivetrain::ImuType::kImuX;
   }
 
   return kDrivetrainConfig;

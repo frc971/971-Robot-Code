@@ -9,6 +9,7 @@ cc_library(
     hdrs = [
         "shifter_hall_effect.h",
     ],
+    deps = ["//frc971/control_loops/drivetrain:drivetrain_config_fbs"],
 )
 
 cc_library(

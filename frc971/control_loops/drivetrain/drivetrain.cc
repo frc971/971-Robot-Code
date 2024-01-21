@@ -98,7 +98,7 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
                                 const drivetrain::Position *position) {
   // TODO(austin): Put gear detection logic here.
   switch (dt_config_.shifter_type) {
-    case ShifterType::SIMPLE_SHIFTER:
+    case ShifterType::kSimpleShifter:
       // Force the right controller for simple shifters since we assume that
       // gear switching is instantaneous.
       if (left_high_requested_) {
@@ -112,13 +112,13 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
         right_gear_ = Gear::LOW;
       }
       break;
-    case ShifterType::HALL_EFFECT_SHIFTER:
+    case ShifterType::kHallEffectShifter:
       left_gear_ = ComputeGear(position->left_shifter_position(),
                                dt_config_.left_drive, left_high_requested_);
       right_gear_ = ComputeGear(position->right_shifter_position(),
                                 dt_config_.right_drive, right_high_requested_);
       break;
-    case ShifterType::NO_SHIFTER:
+    case ShifterType::kNoShifter:
       break;
   }
 
@@ -151,16 +151,16 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
       const IMUValues *value = imu_values_fetcher_->readings()->Get(
           imu_values_fetcher_->readings()->size() - 1);
       switch (dt_config_.imu_type) {
-        case IMUType::IMU_X:
+        case ImuType::kImuX:
           last_accel_ = -value->accelerometer_x();
           break;
-        case IMUType::IMU_FLIPPED_X:
+        case ImuType::kImuFlippedX:
           last_accel_ = value->accelerometer_x();
           break;
-        case IMUType::IMU_Y:
+        case ImuType::kImuY:
           last_accel_ = -value->accelerometer_y();
           break;
-        case IMUType::IMU_Z:
+        case ImuType::kImuZ:
           last_accel_ = value->accelerometer_z();
           break;
       }
@@ -171,37 +171,37 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
   bool imu_zeroer_zeroed = imu_zeroer_.Zeroed();
 
   switch (dt_config_.gyro_type) {
-    case GyroType::IMU_X_GYRO:
+    case GyroType::kImuXGyro:
       if (got_imu_reading) {
         last_gyro_rate_ =
             imu_zeroer_zeroed ? imu_zeroer_.ZeroedGyro().value().x() : 0.0;
       }
       break;
-    case GyroType::IMU_Y_GYRO:
+    case GyroType::kImuYGyro:
       if (got_imu_reading) {
         last_gyro_rate_ =
             imu_zeroer_zeroed ? imu_zeroer_.ZeroedGyro().value().y() : 0.0;
       }
       break;
-    case GyroType::IMU_Z_GYRO:
+    case GyroType::kImuZGyro:
       if (got_imu_reading) {
         last_gyro_rate_ =
             imu_zeroer_zeroed ? imu_zeroer_.ZeroedGyro().value().z() : 0.0;
       }
       break;
-    case GyroType::FLIPPED_IMU_Z_GYRO:
+    case GyroType::kFlippedImuZGyro:
       if (got_imu_reading) {
         last_gyro_rate_ =
             imu_zeroer_zeroed ? -imu_zeroer_.ZeroedGyro().value().z() : 0.0;
       }
       break;
-    case GyroType::SPARTAN_GYRO:
+    case GyroType::kSpartanGyro:
       if (gyro_reading_fetcher_.Fetch()) {
         last_gyro_rate_ = gyro_reading_fetcher_->velocity();
         last_gyro_time_ = monotonic_now;
       }
       break;
-    case GyroType::FLIPPED_SPARTAN_GYRO:
+    case GyroType::kFlippedSpartanGyro:
       if (gyro_reading_fetcher_.Fetch()) {
         last_gyro_rate_ = -gyro_reading_fetcher_->velocity();
         last_gyro_time_ = monotonic_now;
@@ -213,8 +213,8 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
   }
 
   switch (dt_config_.gyro_type) {
-    case GyroType::SPARTAN_GYRO:
-    case GyroType::FLIPPED_SPARTAN_GYRO:
+    case GyroType::kSpartanGyro:
+    case GyroType::kFlippedSpartanGyro:
       if (!yaw_gyro_zero_.has_value()) {
         yaw_gyro_zeroer_.AddData(last_gyro_rate_);
         if (yaw_gyro_zeroer_.full() &&
@@ -229,10 +229,10 @@ void DrivetrainFilters::Correct(aos::monotonic_clock::time_point monotonic_now,
         last_gyro_rate_ = last_gyro_rate_ - yaw_gyro_zero_.value();
       }
       break;
-    case GyroType::IMU_X_GYRO:
-    case GyroType::IMU_Y_GYRO:
-    case GyroType::IMU_Z_GYRO:
-    case GyroType::FLIPPED_IMU_Z_GYRO:
+    case GyroType::kImuXGyro:
+    case GyroType::kImuYGyro:
+    case GyroType::kImuZGyro:
+    case GyroType::kFlippedImuZGyro:
       ready_ = imu_zeroer_.Zeroed();
       break;
   }
@@ -326,9 +326,9 @@ flatbuffers::Offset<GearLogging> DrivetrainFilters::CreateGearLogging(
 Gear DrivetrainFilters::ComputeGear(
     double shifter_position, const constants::ShifterHallEffect &shifter_config,
     bool high_requested) const {
-  if (shifter_position < shifter_config.clear_low) {
+  if (shifter_position < shifter_config.clear_low()) {
     return Gear::LOW;
-  } else if (shifter_position > shifter_config.clear_high) {
+  } else if (shifter_position > shifter_config.clear_high()) {
     return Gear::HIGH;
   } else {
     if (high_requested) {

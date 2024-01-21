@@ -150,10 +150,10 @@ Scalar PolyDrivetrain<Scalar>::MotorSpeed(
       velocity /
       static_cast<Scalar>(dt_config_.low_gear_ratio / dt_config_.wheel_radius);
 
-  if (shifter_position < static_cast<Scalar>(hall_effect.clear_low)) {
+  if (shifter_position < static_cast<Scalar>(hall_effect.clear_low())) {
     // We're in low gear, so return speed for that gear.
     return low_gear_speed;
-  } else if (shifter_position > static_cast<Scalar>(hall_effect.clear_high)) {
+  } else if (shifter_position > static_cast<Scalar>(hall_effect.clear_high())) {
     // We're in high gear, so return speed for that gear.
     return high_gear_speed;
   }
@@ -175,11 +175,11 @@ template <typename Scalar>
 Gear PolyDrivetrain<Scalar>::UpdateSingleGear(Gear requested_gear,
                                               Gear current_gear) {
   const Gear shift_up =
-      (dt_config_.shifter_type == ShifterType::HALL_EFFECT_SHIFTER)
+      (dt_config_.shifter_type == ShifterType::kHallEffectShifter)
           ? Gear::SHIFTING_UP
           : Gear::HIGH;
   const Gear shift_down =
-      (dt_config_.shifter_type == ShifterType::HALL_EFFECT_SHIFTER)
+      (dt_config_.shifter_type == ShifterType::kHallEffectShifter)
           ? Gear::SHIFTING_DOWN
           : Gear::LOW;
   if (current_gear != requested_gear) {
@@ -294,7 +294,7 @@ Scalar PolyDrivetrain<Scalar>::MaxVelocity(
 
 template <typename Scalar>
 void PolyDrivetrain<Scalar>::Update(Scalar voltage_battery) {
-  if (dt_config_.loop_type == LoopType::CLOSED_LOOP) {
+  if (dt_config_.loop_type == LoopType::kClosedLoop) {
     loop_->mutable_X_hat()(0, 0) = kf_->X_hat()(kLeftVelocity);
     loop_->mutable_X_hat()(1, 0) = kf_->X_hat()(kRightVelocity);
   }
@@ -362,7 +362,7 @@ void PolyDrivetrain<Scalar>::Update(Scalar voltage_battery) {
       loop_->mutable_U()[i] = ::aos::Clip(U_ideal[i], -12, 12);
     }
 
-    if (dt_config_.loop_type == LoopType::OPEN_LOOP) {
+    if (dt_config_.loop_type == LoopType::kOpenLoop) {
       ff_volts_.setZero();
       loop_->mutable_X_hat() =
           loop_->plant().A() * loop_->X_hat() + loop_->plant().B() * loop_->U();
