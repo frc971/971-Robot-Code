@@ -9,6 +9,7 @@ import functools
 import jinja2
 import os
 import pathlib
+import platform
 import re
 import shlex
 import shutil
@@ -59,6 +60,15 @@ def scoped_mount(image):
         subprocess.run(["sudo", "umount", partition], check=True)
 
 
+def check_buildifier():
+    """Checks if buildifier is in the path"""
+    result = subprocess.run(["which", "buildifier"], stdout=subprocess.PIPE)
+    if result.stdout.decode('utf-8') == "":
+        return False
+    else:
+        return True
+
+
 def check_required_deps(deps):
     """Checks if the provided list of dependencies is installed."""
     missing_deps = []
@@ -78,7 +88,7 @@ def check_required_deps(deps):
 
 def make_image(image):
     """Makes an image and creates an xfs filesystem on it."""
-    print("Creating image ", f"{image}")
+    print("--> Creating NEW image ", f"{image}")
     result = subprocess.run([
         "dd", "if=/dev/zero", f"of={image}", "bs=1", "count=0",
         "seek=8589934592"
@@ -556,7 +566,10 @@ class Filesystem:
 
         # Print out all the libraries and where they live as known to ldconfig
         result = subprocess.run(
-            ['ldconfig', '-C', f'{self.partition}/etc/ld.so.cache', '-p'],
+            [
+                '/usr/sbin/ldconfig', '-C',
+                f'{self.partition}/etc/ld.so.cache', '-p'
+            ],
             check=True,
             stdout=subprocess.PIPE,
         )
@@ -913,8 +926,36 @@ def do_package(partition):
     subprocess.run(["sha256sum", tarball], check=True)
 
 
+def mount_and_bash():
+    """Helper function to just mount and open a bash interface
+    To run from the CLI, call
+    python3 -c "from build_rootfs import *; mount_and_bash()"
+    """
+    with scoped_mount(IMAGE) as partition:
+        subprocess.run([
+            "sudo", "cp", "/usr/bin/qemu-aarch64-static",
+            f"{partition}/usr/bin/"
+        ],
+                       check=True)
+
+        global PARTITION
+        PARTITION = partition
+        target(["/bin/bash"])
+
+
 def main():
     check_required_deps(REQUIRED_DEPS)
+
+    if not os.path.exists(YOCTO):
+        print("ERROR: Must have YOCTO directory properly specified to run")
+        print("See https://github.com/frc971/meta-frc971/tree/main for info")
+        exit()
+
+    if not check_buildifier():
+        print(
+            "ERROR: Need to have buildifier in the path.  Please resolve this."
+        )
+        exit()
 
     new_image = not os.path.exists(IMAGE)
     if new_image:
@@ -941,11 +982,10 @@ def main():
         if new_image:
             target(["/debootstrap/debootstrap", "--second-stage"])
 
-            target([
-                "useradd", "-m", "-p",
-                '$y$j9T$85lzhdky63CTj.two7Zj20$pVY53UR0VebErMlm8peyrEjmxeiRw/rfXfx..9.xet1',
-                '-s', '/bin/bash', 'pi'
-            ])
+            # Do this unescaped; otherwise, we get quotes in the password
+            target_unescaped(
+                "useradd -m -p \"\$y\$j9T\$85lzhdky63CTj.two7Zj20\$pVY53UR0VebErMlm8peyrEjmxeiRw/rfXfx..9.xet1\" -s /bin/bash pi"
+            )
             target(["addgroup", "debug"])
             target(["addgroup", "crypto"])
             target(["addgroup", "trusty"])
@@ -955,6 +995,10 @@ def main():
             copyfile("root:root", "644",
                      "etc/apt/sources.list.d/bullseye-backports.list")
             target(["apt-get", "update"])
+
+        # This is useful in recovering from a partial build, and shouldn't break
+        # anything otherwise
+        target(["apt", "--fix-broken", "install"])
 
         target([
             "apt-get", "-y", "install", "gnupg", "wget", "systemd",
@@ -966,8 +1010,23 @@ def main():
         target_mkdir("root:root", "755", "run/systemd")
         target_mkdir("systemd-resolve:systemd-resolve", "755",
                      "run/systemd/resolve")
-        copyfile("systemd-resolve:systemd-resolve", "644",
-                 "run/systemd/resolve/stub-resolv.conf")
+
+        # Need to use the machine's local resolv.conf when running this
+        # We put a generic file in place at the end when we're done
+        subprocess.run([
+            "sudo", "cp", f"/etc/resolv.conf",
+            f"{PARTITION}/run/systemd/resolve/stub-resolv.conf"
+        ],
+                       check=True)
+        subprocess.run([
+            "sudo", "chmod", "644",
+            f"{PARTITION}/run/systemd/resolve/stub-resolv.conf"
+        ],
+                       check=True)
+        target([
+            "chown", "systemd-resolve:systemd-resolve",
+            f"/run/systemd/resolve/stub-resolv.conf"
+        ])
         target(["systemctl", "enable", "systemd-resolved"])
 
         target([
@@ -1214,6 +1273,13 @@ def main():
                 "cd /root/ && git clone --separate-git-dir=/root/.dotfiles https://github.com/AustinSchuh/.dotfiles.git tmpdotfiles && rsync --recursive --verbose --exclude .git tmpdotfiles/ /root/ && rm -r tmpdotfiles && git --git-dir=/root/.dotfiles/ --work-tree=/root/ config --local status.showUntrackedFiles no"
             )
             target(["vim", "-c", "\":qa!\""])
+
+        # Do this after all the network needs are finished, since it won't
+        # allow us to find URL's from the build server (frc971)
+        target(["systemctl", "disable", "systemd-resolved"])
+        copyfile("systemd-resolve:systemd-resolve", "644",
+                 "run/systemd/resolve/stub-resolv.conf")
+        target(["systemctl", "enable", "systemd-resolved"])
 
         generate_build_file(partition)
 
