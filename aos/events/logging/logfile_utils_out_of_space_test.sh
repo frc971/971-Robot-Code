@@ -23,7 +23,7 @@ TMPFS="${TEST_TMPDIR}/small_tmpfs"
 rm -rf "${TMPFS}"
 mkdir "${TMPFS}"
 
-function test {
+function run_test {
   SIZE="$1"
   echo "Running test with ${SIZE}..." >&2
   unshare --mount --map-root-user bash <<END
@@ -37,10 +37,10 @@ END
 }
 
 # Run out of space exactly at the beginning of a block.
-test 81920
+run_test 81920
 
 # Run out of space 1 byte into a block.
-test 81921
+run_test 81921
 
 # Run out of space in the middle of a block.
-test 87040
+run_test 87040
