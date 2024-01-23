@@ -31,6 +31,9 @@ void OverrideTeamNumber(uint16_t team);
 // for pi-971-5 or 2 for orin-9971-2)
 std::optional<uint16_t> ParsePiOrOrinNumber(const std::string_view hostname);
 
+// Returns whether the device is a "pi" or an "orin" based on hostname
+std::optional<std::string_view> ParsePiOrOrin(const std::string_view hostname);
+
 namespace team_number_internal {
 
 std::optional<uint16_t> ParseRoborioTeamNumber(const std::string_view hostname);

@@ -107,7 +107,7 @@ class Calibration {
  public:
   Calibration(aos::SimulatedEventLoopFactory *event_loop_factory,
               aos::EventLoop *image_event_loop, aos::EventLoop *imu_event_loop,
-              std::string_view pi,
+              std::string_view hostname,
               const calibration::CameraCalibration *intrinsics_calibration,
               TargetType target_type, std::string_view image_channel,
               CalibrationData *data);

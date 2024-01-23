@@ -316,7 +316,6 @@ CharucoExtractor::CharucoExtractor(
 
   LOG(INFO) << "Camera matrix " << calibration_.CameraIntrinsics();
   LOG(INFO) << "Distortion Coefficients " << calibration_.CameraDistCoeffs();
-
   LOG(INFO) << "Connecting to channel " << image_channel_;
 }
 

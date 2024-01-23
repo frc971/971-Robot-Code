@@ -257,7 +257,7 @@
       "executable_name": "argus_camera",
       "args": [
           "--enable_ftrace",
-          "--camera=0",
+          "--camera=1",
       ],
       "user": "pi",
       "nodes": [
@@ -267,6 +267,9 @@
     {
       "name": "apriltag_detector",
       "executable_name": "apriltag_detector",
+      "args": [
+          "--channel=/camera",
+      ],
       "user": "pi",
       "nodes": [
         "orin{{ NUM }}"

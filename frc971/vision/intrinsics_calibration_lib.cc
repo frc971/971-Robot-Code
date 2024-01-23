@@ -3,11 +3,13 @@
 namespace frc971::vision {
 
 IntrinsicsCalibration::IntrinsicsCalibration(
-    aos::EventLoop *event_loop, std::string_view pi, std::string_view camera_id,
-    std::string_view base_intrinsics_file, bool display_undistorted,
-    std::string_view calibration_folder, aos::ExitHandle *exit_handle)
-    : pi_(pi),
-      pi_number_(aos::network::ParsePiOrOrinNumber(pi)),
+    aos::EventLoop *event_loop, std::string_view hostname,
+    std::string_view camera_id, std::string_view base_intrinsics_file,
+    bool display_undistorted, std::string_view calibration_folder,
+    aos::ExitHandle *exit_handle)
+    : hostname_(hostname),
+      cpu_type_(aos::network::ParsePiOrOrin(hostname_)),
+      cpu_number_(aos::network::ParsePiOrOrinNumber(hostname_)),
       camera_id_(camera_id),
       prev_H_camera_board_(Eigen::Affine3d()),
       prev_image_H_camera_board_(Eigen::Affine3d()),
@@ -25,13 +27,11 @@ IntrinsicsCalibration::IntrinsicsCalibration(
             HandleCharuco(rgb_image, eof, charuco_ids, charuco_corners, valid,
                           rvecs_eigen, tvecs_eigen);
           }),
-      // TODO: Need to make this work with /pi or /orin
       image_callback_(
           event_loop,
-          absl::StrCat(
-              "/pi",
-              std::to_string(aos::network::ParsePiOrOrinNumber(pi).value()),
-              "/camera"),
+          absl::StrCat("/", aos::network::ParsePiOrOrin(hostname_).value(),
+                       // TODO: Need to make this work with multiple cameras
+                       std::to_string(cpu_number_.value()), "/camera"),
           [this](cv::Mat rgb_image,
                  const aos::monotonic_clock::time_point eof) {
             charuco_extractor_.HandleImage(rgb_image, eof);
@@ -40,8 +40,9 @@ IntrinsicsCalibration::IntrinsicsCalibration(
       display_undistorted_(display_undistorted),
       calibration_folder_(calibration_folder),
       exit_handle_(exit_handle) {
-  CHECK(pi_number_) << ": Invalid pi number " << pi
-                    << ", failed to parse pi number";
+  LOG(INFO) << "Hostname is: " << hostname_;
+  CHECK(cpu_number_) << ": Invalid cpu number " << hostname_
+                     << ", failed to parse cpu number";
   std::regex re{"^[0-9][0-9]-[0-9][0-9]"};
   CHECK(std::regex_match(camera_id_, re))
       << ": Invalid camera_id '" << camera_id_ << "', should be of form YY-NN";
@@ -155,11 +156,11 @@ void IntrinsicsCalibration::HandleCharuco(
 aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>
 IntrinsicsCalibration::BuildCalibration(
     cv::Mat camera_matrix, cv::Mat dist_coeffs,
-    aos::realtime_clock::time_point realtime_now, int pi_number,
-    std::string_view camera_id, uint16_t team_number) {
+    aos::realtime_clock::time_point realtime_now, std::string_view cpu_type,
+    int cpu_number, std::string_view camera_id, uint16_t team_number) {
   flatbuffers::FlatBufferBuilder fbb;
   flatbuffers::Offset<flatbuffers::String> name_offset =
-      fbb.CreateString(absl::StrFormat("pi%d", pi_number));
+      fbb.CreateString(absl::StrFormat("%s%d", cpu_type, cpu_number));
   flatbuffers::Offset<flatbuffers::String> camera_id_offset =
       fbb.CreateString(camera_id);
   flatbuffers::Offset<flatbuffers::Vector<float>> intrinsics_offset =
@@ -215,21 +216,21 @@ void IntrinsicsCalibration::MaybeCalibrate() {
     const aos::realtime_clock::time_point realtime_now =
         aos::realtime_clock::now();
     std::optional<uint16_t> team_number =
-        aos::network::team_number_internal::ParsePiOrOrinTeamNumber(pi_);
-    CHECK(team_number) << ": Invalid pi hostname " << pi_
+        aos::network::team_number_internal::ParsePiOrOrinTeamNumber(hostname_);
+    CHECK(team_number) << ": Invalid hostname " << hostname_
                        << ", failed to parse team number";
     aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>
-        camera_calibration = BuildCalibration(camera_matrix, dist_coeffs,
-                                              realtime_now, pi_number_.value(),
-                                              camera_id_, team_number.value());
+        camera_calibration = BuildCalibration(
+            camera_matrix, dist_coeffs, realtime_now, cpu_type_.value(),
+            cpu_number_.value(), camera_id_, team_number.value());
     std::stringstream time_ss;
     time_ss << realtime_now;
 
     const std::string calibration_filename =
         calibration_folder_ +
-        absl::StrFormat("/calibration_pi-%d-%d_cam-%s_%s.json",
-                        team_number.value(), pi_number_.value(), camera_id_,
-                        time_ss.str());
+        absl::StrFormat("/calibration_%s-%d-%d_cam-%s_%s.json",
+                        cpu_type_.value(), team_number.value(),
+                        cpu_number_.value(), camera_id_, time_ss.str());
 
     LOG(INFO) << calibration_filename << " -> "
               << aos::FlatbufferToJson(camera_calibration,
