@@ -96,7 +96,7 @@ def _flatbuffer_library_compile_impl(ctx):
         mnemonic = "Flatc",
         progress_message = "Generating flatbuffer files for %{input}:",
     )
-    return [DefaultInfo(files = depset(outs), runfiles = ctx.runfiles(files = outs)), FlatbufferLibraryInfo(srcs = ctx.files.srcs)]
+    return [DefaultInfo(files = depset(outs)), FlatbufferLibraryInfo(srcs = ctx.files.srcs)]
 
 _flatbuffer_library_compile = rule(
     implementation = _flatbuffer_library_compile_impl,
