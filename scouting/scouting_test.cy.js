@@ -117,15 +117,27 @@ function submitDataScouting(
   clickButton('Submit');
   headerShouldBe(teamNumber + ' Success ');
 }
+function visit(path) {
+  cy.visit(path, {
+    onBeforeLoad(win) {
+      // The service worker seems to interfere with Cypress somehow. There
+      // doesn't seem to be a proper fix for this issue. Work around it with
+      // this hack that disables the service worker.
+      // https://github.com/cypress-io/cypress/issues/16192#issuecomment-870421667
+      // https://github.com/cypress-io/cypress/issues/702#issuecomment-587127275
+      delete win.navigator.__proto__.serviceWorker;
+    },
+  });
+}
 
 before(() => {
-  cy.visit('/');
+  visit('/');
   disableAlerts();
   cy.title().should('eq', 'FRC971 Scouting Application');
 });
 
 beforeEach(() => {
-  cy.visit('/');
+  visit('/');
   disableAlerts();
 });
 

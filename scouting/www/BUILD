@@ -1,9 +1,18 @@
 load("@aspect_bazel_lib//lib:copy_file.bzl", "copy_file")
+load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_run_binary")
+load("@npm//:@angular/service-worker/package_json.bzl", angular_service_worker = "bin")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("//tools/build_rules:js.bzl", "ng_application")
-load(":defs.bzl", "assemble_static_files")
+load(":defs.bzl", "assemble_service_worker_files", "assemble_static_files")
 
 npm_link_all_packages(name = "node_modules")
+
+assemble_service_worker_files(
+    name = "service_worker_files",
+    outs = [
+        "ngsw-worker.js",
+    ],
+)
 
 OPENCV_VERSION = "4.9.0"
 
@@ -16,6 +25,7 @@ copy_file(
 ng_application(
     name = "app",
     assets = [
+        "manifest.json",
         ":opencv.js",
     ],
     extra_srcs = [
@@ -23,9 +33,11 @@ ng_application(
     ],
     html_assets = [
         "favicon.ico",
+        "assets/971_144.png",
     ],
     deps = [
         "//:node_modules/@angular/animations",
+        "//:node_modules/@angular/service-worker",
         "//scouting/www/driver_ranking",
         "//scouting/www/entry",
         "//scouting/www/match_list",
@@ -42,6 +54,8 @@ assemble_static_files(
     app_files = ":app",
     pictures = [
         "//third_party/y2024/field:pictures",
+        ":ngsw-worker.js",
+        ":ngsw.json",
     ],
     replace_prefixes = {
         "prod": "",
@@ -59,4 +73,36 @@ copy_file(
     src = "common.css",
     out = "app/common.css",
     visibility = ["//scouting/www:__subpackages__"],
+)
+
+angular_service_worker.ngsw_config_binary(
+    name = "ngsw_config_binary",
+)
+
+js_binary(
+    name = "ngsw_config_wrapper",
+    data = [
+        ":ngsw_config_binary",
+    ],
+    entry_point = "ngsw_config_wrapper.js",
+)
+
+js_run_binary(
+    name = "ngsw_config",
+    srcs = [
+        "manifest.json",
+        "ngsw-config.json",
+        ":app",
+        ":ngsw_config_binary",
+    ],
+    outs = [
+        "ngsw.json",
+    ],
+    args = [
+        "$(rootpath :ngsw_config_binary)",
+        "$(rootpath :ngsw.json)",
+        "$(rootpath :prod)",
+        "$(rootpath ngsw-config.json)",
+    ],
+    tool = ":ngsw_config_wrapper",
 )

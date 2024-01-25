@@ -10,6 +10,7 @@ ng_pkg(
     ],
     generate_public_api = False,
     deps = [
+        "//:node_modules/dexie",
         "//scouting/webserver/requests/messages:error_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_2024_data_scouting_response_ts_fbs",
         "//scouting/webserver/requests/messages:request_2024_data_scouting_ts_fbs",

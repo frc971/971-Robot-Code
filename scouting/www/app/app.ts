@@ -1,4 +1,4 @@
-import {Component, ElementRef, ViewChild} from '@angular/core';
+import {Component, ElementRef, ViewChild, isDevMode} from '@angular/core';
 
 type Tab =
   | 'MatchList'
@@ -40,6 +40,8 @@ export class App {
   @ViewChild('block_alerts') block_alerts: ElementRef;
 
   constructor() {
+    console.log(`Using development mode: ${isDevMode()}`);
+
     window.addEventListener('beforeunload', (e) => {
       if (!unguardedTabs.includes(this.tab)) {
         if (!this.block_alerts.nativeElement.checked) {

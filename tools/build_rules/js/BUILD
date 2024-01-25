@@ -24,3 +24,11 @@ ts_project(
         "//:node_modules/@types/node",
     ],
 )
+
+py_binary(
+    name = "assemble_service_worker_files",
+    srcs = [
+        "assemble_service_worker_files.py",
+    ],
+    visibility = ["//visibility:public"],
+)
