@@ -118,6 +118,11 @@ class Flatbuffer {
   // make attempts to use it fail more obviously.
   void Wipe() { memset(span().data(), 0, span().size()); }
 
+  // Returns true if the flatbuffer is valid. Returns false if either:
+  // * The flatbuffer is incorrectly constructed (e.g., it points to memory
+  // locations outside of the current memory buffer).
+  // * The flatbuffer is too complex, and the flatbuffer verifier chosen to bail
+  // when attempting to traverse the tree of tables.
   bool Verify() const {
     if (span().size() < 4u) {
       return false;

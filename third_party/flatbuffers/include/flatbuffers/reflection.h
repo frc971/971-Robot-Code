@@ -508,14 +508,19 @@ Offset<const Table *> CopyTable(FlatBufferBuilder &fbb,
 // root should point to the root type for this flatbuffer.
 // buf should point to the start of flatbuffer data.
 // length specifies the size of the flatbuffer data.
+// Returns true if the flatbuffer is valid. Returns false if either:
+// * The flatbuffer is incorrectly constructed (e.g., it points to memory
+// locations outside of the current memory buffer).
+// * The flatbuffer is too complex, and the flatbuffer verifier chosen to bail
+// when attempting to traverse the tree of tables.
 bool Verify(const reflection::Schema &schema, const reflection::Object &root,
             const uint8_t *buf, size_t length, uoffset_t max_depth = 64,
-            uoffset_t max_tables = 1000000);
+            uoffset_t max_tables = 3000000);
 
 bool VerifySizePrefixed(const reflection::Schema &schema,
                         const reflection::Object &root, const uint8_t *buf,
                         size_t length, uoffset_t max_depth = 64,
-                        uoffset_t max_tables = 1000000);
+                        uoffset_t max_tables = 3000000);
 
 }  // namespace flatbuffers
 
