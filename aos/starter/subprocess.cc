@@ -266,6 +266,8 @@ Application::Application(const aos::Application *application,
   if (application->has_memory_limit() && application->memory_limit() > 0) {
     SetMemoryLimit(application->memory_limit());
   }
+
+  set_stop_grace_period(std::chrono::nanoseconds(application->stop_time()));
 }
 
 void Application::DoStart() {
@@ -496,8 +498,7 @@ void Application::DoStop(bool restart) {
 
       // Watchdog timer to SIGKILL application if it is still running 1 second
       // after SIGINT
-      stop_timer_->Schedule(event_loop_->monotonic_now() +
-                            std::chrono::seconds(1));
+      stop_timer_->Schedule(event_loop_->monotonic_now() + stop_grace_period_);
       queue_restart_ = restart;
       OnChange();
       break;

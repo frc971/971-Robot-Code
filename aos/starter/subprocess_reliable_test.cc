@@ -3,6 +3,7 @@
 
 #include <filesystem>
 
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 #include "aos/events/shm_event_loop.h"
@@ -122,6 +123,57 @@ TEST(SubprocessTest, CanKillAfterStartup) {
   PCHECK(kill(application->get_pid(), SIGTERM) == 0);
   Wait(application->get_pid());
   ASSERT_TRUE(std::filesystem::exists(shutdown_signal_file));
+}
+
+// Validates that a process that is known to take a while to stop can shut down
+// gracefully without being killed.
+TEST(SubprocessTest, CanSlowlyStopGracefully) {
+  const std::string config_file =
+      ::aos::testing::ArtifactPath("aos/events/pingpong_config.json");
+  aos::FlatbufferDetachedBuffer<aos::Configuration> config =
+      aos::configuration::ReadConfig(config_file);
+  aos::ShmEventLoop event_loop(&config.message());
+
+  // Use a file to signal that the subprocess has started up properly and that
+  // the exit handler has been installed. Otherwise we risk killing the process
+  // uncleanly before the signal handler got installed.
+  auto signal_dir = std::filesystem::path(aos::testing::TestTmpDir()) /
+                    "slow_death_startup_file_signals";
+  ASSERT_TRUE(std::filesystem::create_directory(signal_dir));
+  auto startup_signal_file = signal_dir / "startup";
+
+  // Create an application that should never get killed automatically. It should
+  // have plenty of time to shut down on its own. In this case, we use 2 seconds
+  // to mean "plenty of time".
+  auto application = std::make_unique<Application>("/bin/bash", "/bin/bash",
+                                                   &event_loop, [] {});
+  application->set_args(
+      {"-c",
+       absl::StrCat(
+           "trap 'echo got int; sleep 2; echo shutting down; exit 0' SIGINT; "
+           "while true; do sleep 0.1; touch ",
+           startup_signal_file.string(), "; done;")});
+  application->set_capture_stdout(true);
+  application->set_stop_grace_period(std::chrono::seconds(999));
+  application->AddOnChange([&] {
+    if (application->status() == aos::starter::State::STOPPED) {
+      event_loop.Exit();
+    }
+  });
+  application->Start();
+  event_loop
+      .AddTimer([&] {
+        if (std::filesystem::exists(startup_signal_file)) {
+          // Now that the subprocess has properly started up, let's kill it.
+          application->Stop();
+        }
+      })
+      ->Schedule(event_loop.monotonic_now(), std::chrono::milliseconds(100));
+  event_loop.Run();
+
+  EXPECT_EQ(application->exit_code(), 0);
+  EXPECT_THAT(application->GetStdout(), ::testing::HasSubstr("got int"));
+  EXPECT_THAT(application->GetStdout(), ::testing::HasSubstr("shutting down"));
 }
 
 }  // namespace aos::starter::testing

@@ -139,6 +139,14 @@ class Application {
   void set_capture_stderr(bool capture);
   void set_run_as_sudo(bool value) { run_as_sudo_ = value; }
 
+  // Sets the time for a process to stop gracefully. If an application is asked
+  // to stop, but doesn't stop within the specified time limit, then it is
+  // forcefully killed. Defaults to 1 second unless overridden by the
+  // aos::Application instance in the constructor.
+  void set_stop_grace_period(std::chrono::nanoseconds stop_grace_period) {
+    stop_grace_period_ = stop_grace_period;
+  }
+
   bool autostart() const { return autostart_; }
 
   bool autorestart() const { return autorestart_; }
@@ -222,6 +230,7 @@ class Application {
   std::optional<uid_t> user_;
   std::optional<gid_t> group_;
   bool run_as_sudo_ = false;
+  std::chrono::nanoseconds stop_grace_period_ = std::chrono::seconds(1);
 
   bool capture_stdout_ = false;
   PipePair stdout_pipes_;

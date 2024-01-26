@@ -169,6 +169,10 @@ table Application {
   // If set, this is the memory limit to enforce in bytes for the application
   // (and it's children)
   memory_limit:uint64 = 0 (id: 8);
+
+  // If set, this is the number of nanoseconds the application has to stop. If the application
+  // doesn't stop within the specified time, then it is killed.
+  stop_time:int64 = 1000000000 (id: 9);
 }
 
 // Per node data and connection information.
