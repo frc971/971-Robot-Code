@@ -1,5 +1,12 @@
 {
   "robot": {
+    "intake_constants": {
+      "intake_pivot_zero": {
+        "measured_absolute_position": 0.0,
+        {% include 'y2024/constants/intake_pivot_common_zeroing.json' %}
+      },
+      "potentiometer_offset": 0.0
+    }
   },
   {% include 'y2024/constants/common.json' %}
 }

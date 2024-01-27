@@ -11,6 +11,7 @@
 #include "frc971/zeroing/absolute_encoder.h"
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2024/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2024/control_loops/superstructure/intake_pivot/intake_pivot_plant.h"
 
 namespace y2024 {
 namespace constants {
@@ -54,6 +55,36 @@ struct Values {
     return (rotations * (2.0 * M_PI)) *
            control_loops::drivetrain::kHighOutputRatio;
   }
+  // TODO: (niko) add the gear ratios for the intake once we have them
+  static constexpr double kIntakePivotEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
+
+  static constexpr double kIntakePivotEncoderRatio() {
+    return (16.0 / 64.0) * (18.0 / 62.0);
+  }
+
+  static constexpr double kIntakePivotPotRatio() { return 16.0 / 64.0; }
+
+  static constexpr double kIntakePivotPotRadiansPerVolt() {
+    return kIntakePivotPotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
+
+  static constexpr double kMaxIntakePivotEncoderPulsesPerSecond() {
+    return control_loops::superstructure::intake_pivot::kFreeSpeed /
+           (2.0 * M_PI) *
+           control_loops::superstructure::intake_pivot::kOutputRatio /
+           kIntakePivotEncoderRatio() *
+           kIntakePivotEncoderCountsPerRevolution();
+  }
+
+  struct PotAndAbsEncoderConstants {
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
+        subsystem_params;
+    double potentiometer_offset;
+  };
 };
 
 // Creates and returns a Values instance for the constants.
