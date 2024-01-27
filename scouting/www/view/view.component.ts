@@ -9,6 +9,12 @@ import {
   Stats2023,
   Request2023DataScoutingResponse,
 } from '../../webserver/requests/messages/request_2023_data_scouting_response_generated';
+
+import {
+  PitImage,
+  RequestAllPitImagesResponse,
+} from '../../webserver/requests/messages/request_all_pit_images_response_generated';
+
 import {
   Note,
   RequestAllNotesResponse,
@@ -18,7 +24,7 @@ import {Delete2023DataScoutingResponse} from '../../webserver/requests/messages/
 
 import {ViewDataRequestor} from '../rpc';
 
-type Source = 'Notes' | 'Stats2023' | 'DriverRanking';
+type Source = 'Notes' | 'Stats2023' | 'PitImages' | 'DriverRanking';
 
 //TODO(Filip): Deduplicate
 const COMP_LEVEL_LABELS = {
@@ -56,6 +62,7 @@ export class ViewComponent {
   // Stores the corresponding data.
   noteList: Note[] = [];
   driverRankingList: Ranking[] = [];
+  pitImageList: PitImage[][] = [];
   statList: Stats2023[] = [];
 
   // Fetch notes on initialization.
@@ -74,13 +81,23 @@ export class ViewComponent {
           .team()
           .localeCompare(a[0].team(), undefined, {numeric: true});
       });
+      this.pitImageList.sort(function (a, b) {
+        return b[0]
+          .teamNumber()
+          .localeCompare(a[0].teamNumber(), undefined, {numeric: true});
+      });
       this.statList.sort((a, b) => b.matchNumber() - a.matchNumber());
     } else {
       this.driverRankingList.sort((a, b) => a.matchNumber() - b.matchNumber());
       this.noteList.sort(function (a, b) {
-        return a[0]
+        return b[0]
           .team()
-          .localeCompare(b[0].team(), undefined, {numeric: true});
+          .localeCompare(a[0].team(), undefined, {numeric: true});
+      });
+      this.pitImageList.sort(function (a, b) {
+        return a[0]
+          .teamNumber()
+          .localeCompare(b[0].teamNumber(), undefined, {numeric: true});
       });
       this.statList.sort((a, b) => a.matchNumber() - b.matchNumber());
     }
@@ -95,6 +112,7 @@ export class ViewComponent {
     this.noteList = [];
     this.driverRankingList = [];
     this.statList = [];
+    this.pitImageList = [];
     this.fetchCurrentSource();
   }
 
@@ -107,6 +125,10 @@ export class ViewComponent {
 
       case 'Stats2023': {
         this.fetchStats2023();
+      }
+
+      case 'PitImages': {
+        this.fetchPitImages();
       }
 
       case 'DriverRanking': {
@@ -205,6 +227,42 @@ export class ViewComponent {
       this.driverRankingList =
         await this.viewDataRequestor.fetchDriverRankingList();
       this.progressMessage = 'Successfully fetched driver ranking data.';
+    } catch (e) {
+      this.errorMessage = e;
+      this.progressMessage = '';
+    }
+  }
+
+  // Fetch all pit image data and store in pitImageList.
+  async fetchPitImages() {
+    this.progressMessage = 'Fetching pit image list. Please be patient.';
+    this.errorMessage = '';
+
+    try {
+      const initialPitImageList =
+        await this.viewDataRequestor.fetchPitImagesList();
+      let officialPitImageList = [];
+      // Use iteration to make an array of arrays containing pit image data for individual teams.
+      // Ex. [ [ {971PitImageData} , {971PitImage2Data} ], [ {432PitImageData} ] , [ {213PitImageData} ] ]
+      for (let pitImage of initialPitImageList) {
+        let found = false;
+        for (let arr of officialPitImageList) {
+          if (arr[0].teamNumber() == pitImage.teamNumber()) {
+            arr.push(pitImage);
+            found = true;
+          }
+        }
+        if (!found) {
+          officialPitImageList.push([pitImage]);
+        }
+      }
+      // Sort the arrays based on image file names so their order is predictable.
+      for (let arr of officialPitImageList) {
+        arr.sort((a, b) => (a.imagePath() > b.imagePath() ? 1 : -1));
+      }
+      this.pitImageList = officialPitImageList;
+      this.sortData();
+      this.progressMessage = 'Successfully fetched pit image list.';
     } catch (e) {
       this.errorMessage = e;
       this.progressMessage = '';

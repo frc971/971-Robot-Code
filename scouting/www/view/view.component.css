@@ -1,3 +1,23 @@
 * {
   padding: 10px;
 }
+
+.collapse-border {
+  border-collapse: collapse;
+  border-color: transparent;
+  border-width: 0;
+  overflow: auto;
+}
+
+.align-images {
+  word-wrap: break-word;
+  display: flex;
+  margin: 5px;
+  justify-content: center;
+  align-items: center;
+}
+
+.align-text {
+  text-align: center;
+  vertical-align: middle;
+}

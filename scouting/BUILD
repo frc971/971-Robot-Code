@@ -28,6 +28,8 @@ cypress_test(
     name = "scouting_test",
     data = [
         "scouting_test.cy.js",
+        "test_img_1.png",
+        "test_img_2.png",
         "//scouting/testing:scouting_test_servers",
     ],
     runner = "scouting_test_runner.js",
