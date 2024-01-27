@@ -54,7 +54,7 @@ robot_downloader(
         "//aos/util:foxglove_websocket",
         "//frc971/image_streamer:image_streamer",
         "//frc971/vision:intrinsics_calibration",
-        "//y2023/vision:viewer",
+        "//y2024/vision:viewer",
         "//y2024/constants:constants_sender",
         "//y2024/vision:foxglove_image_converter",
     ],

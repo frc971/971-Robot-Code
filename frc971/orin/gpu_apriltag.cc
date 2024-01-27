@@ -57,9 +57,9 @@ ApriltagDetector::ApriltagDetector(
           },
           kMaxImageAge),
       target_map_sender_(
-          event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
+          event_loop->MakeSender<frc971::vision::TargetMap>(channel_name)),
       image_annotations_sender_(
-          event_loop->MakeSender<foxglove::ImageAnnotations>("/camera")),
+          event_loop->MakeSender<foxglove::ImageAnnotations>(channel_name)),
       rejections_(0) {
   image_callback_.set_format(frc971::vision::ImageCallback::Format::YUYV2);
 
