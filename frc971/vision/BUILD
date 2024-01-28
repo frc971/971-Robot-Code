@@ -328,6 +328,7 @@ cc_library(
         "//frc971/control_loops/drivetrain:improved_down_estimator",
         "//frc971/vision:charuco_lib",
         "//frc971/vision:vision_fbs",
+        "//frc971/vision:vision_util_lib",
         "//frc971/wpilib:imu_batch_fbs",
         "//frc971/wpilib:imu_fbs",
         "//third_party:opencv",
@@ -371,6 +372,17 @@ cc_library(
     deps = [
         "//frc971/vision:calibration_fbs",
         "//third_party:opencv",
+        "@com_github_google_glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "vision_util_lib_test",
+    srcs = ["vision_util_lib_test.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/testing:googletest",
+        "//frc971/vision:vision_util_lib",
         "@com_github_google_glog//:glog",
     ],
 )
