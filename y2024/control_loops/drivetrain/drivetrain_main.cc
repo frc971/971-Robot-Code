@@ -22,10 +22,10 @@ int main(int argc, char **argv) {
       localizer = std::make_unique<
           ::frc971::control_loops::drivetrain::PuppetLocalizer>(
           &event_loop,
-          ::y2024::control_loops::drivetrain::GetDrivetrainConfig());
+          ::y2024::control_loops::drivetrain::GetDrivetrainConfig(&event_loop));
   std::unique_ptr<DrivetrainLoop> drivetrain = std::make_unique<DrivetrainLoop>(
-      y2024::control_loops::drivetrain::GetDrivetrainConfig(), &event_loop,
-      localizer.get());
+      y2024::control_loops::drivetrain::GetDrivetrainConfig(&event_loop),
+      &event_loop, localizer.get());
 
   event_loop.Run();
 

@@ -3,7 +3,9 @@
 
 #include "aos/events/shm_event_loop.h"
 #include "aos/init.h"
+#include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/drivetrain/trajectory_generator.h"
+#include "y2024/constants/constants_generated.h"
 #include "y2024/control_loops/drivetrain/drivetrain_base.h"
 
 using ::frc971::control_loops::drivetrain::TrajectoryGenerator;
@@ -17,9 +19,12 @@ int main(int argc, char *argv[]) {
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("aos_config.json");
 
+  frc971::constants::WaitForConstants<y2024::Constants>(&config.message());
+
   ::aos::ShmEventLoop event_loop(&config.message());
   TrajectoryGenerator generator(
-      &event_loop, ::y2024::control_loops::drivetrain::GetDrivetrainConfig());
+      &event_loop,
+      ::y2024::control_loops::drivetrain::GetDrivetrainConfig(&event_loop));
 
   event_loop.OnRun([]() {
     if (FLAGS_skip_renicing) {

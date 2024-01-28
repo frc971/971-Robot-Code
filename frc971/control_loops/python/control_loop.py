@@ -6,7 +6,14 @@ import json
 
 class Constant(object):
 
-    def __init__(self, name, formatt, value, comment=None):
+    def __init__(self,
+                 name,
+                 formatt,
+                 value,
+                 comment=None,
+                 json_name=None,
+                 json_scale=1.0,
+                 json_type=None):
         self.name = name
         self.formatt = formatt
         self.value = value
@@ -17,6 +24,9 @@ class Constant(object):
             self.comment = ""
         else:
             self.comment = comment + "\n"
+        self.json_name = json_name
+        self.json_scale = json_scale
+        self.json_type = json_type
 
     def Render(self, loop_type):
         typestring = self.formatToType[self.formatt]
@@ -24,6 +34,16 @@ class Constant(object):
             typestring = loop_type
         return str("\n%sstatic constexpr %s %s = "+ self.formatt +";\n") % \
             (self.comment, typestring, self.name, self.value)
+
+    def RenderJson(self, json_dict):
+        if self.json_name is None:
+            return
+        json_value = self.value * self.json_scale
+        json_dict[
+            self.
+            json_name] = json_value if self.json_type is None else self.json_type(
+                json_value)
+        return json_dict
 
 
 def MatrixToJson(matrix):
@@ -94,12 +114,12 @@ class ControlLoopWriter(object):
                 os.path.basename(header_file).upper().replace(
                     '.', '_').replace('/', '_') + '_')
 
-    def Write(self, header_file, cc_file, json_file=None):
+    def Write(self, header_file, cc_file, json_file=None, json_field=None):
         """Writes the loops to the specified files."""
         self.WriteHeader(header_file)
         self.WriteCC(os.path.basename(header_file), cc_file)
         if json_file is not None:
-            self.WriteJson(json_file)
+            self.WriteJson(json_file, json_field)
 
     def _GenericType(self, typename, extra_args=None):
         """Returns a loop template using typename for the type."""
@@ -275,7 +295,7 @@ class ControlLoopWriter(object):
             fd.write(self._namespace_end)
             fd.write('\n')
 
-    def WriteJson(self, json_file):
+    def WriteJson(self, json_file, json_field):
         """Writes a JSON file of the loop constants to the specified json_file."""
         loops = []
         for loop in self._loops:
@@ -285,8 +305,16 @@ class ControlLoopWriter(object):
             loop_json["observer"] = loop.DumbObserverJson(
                 self._ObserverCoeffType())
             loops.append(loop_json)
+        if json_field is None:
+            with open(json_file, 'w') as f:
+                f.write(json.dumps(loops))
+            return
+        loop_config = {}
+        loop_config[json_field] = loops
+        for const in self._constant_list:
+            const.RenderJson(loop_config)
         with open(json_file, 'w') as f:
-            f.write(json.dumps(loops))
+            f.write(json.dumps(loop_config))
 
 
 class ControlLoop(object):

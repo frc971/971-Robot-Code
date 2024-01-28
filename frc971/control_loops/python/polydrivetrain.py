@@ -491,7 +491,7 @@ def WritePolyDrivetrain(drivetrain_files,
                                                      scalar_type=scalar_type)
 
     dog_loop_writer.Write(drivetrain_files[0], drivetrain_files[1],
-                          drivetrain_files[2])
+                          drivetrain_files[2], "velocity_drivetrain_loop")
 
     hybrid_loop_writer = control_loop.ControlLoopWriter(
         "HybridVelocityDrivetrain", [
@@ -505,7 +505,8 @@ def WritePolyDrivetrain(drivetrain_files,
         plant_type='StateFeedbackHybridPlant',
         observer_type='HybridKalman')
 
-    hybrid_loop_writer.Write(hybrid_files[0], hybrid_files[1], hybrid_files[2])
+    hybrid_loop_writer.Write(hybrid_files[0], hybrid_files[1], hybrid_files[2],
+                             "hybrid_velocity_drivetrain_loop")
 
     cim_writer = control_loop.ControlLoopWriter("CIM", [CIM()],
                                                 scalar_type=scalar_type)

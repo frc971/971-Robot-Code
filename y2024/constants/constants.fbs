@@ -1,6 +1,7 @@
 include "frc971/vision/target_map.fbs";
 include "frc971/control_loops/profiled_subsystem.fbs";
 include "frc971/zeroing/constants.fbs";
+include "frc971/control_loops/drivetrain/drivetrain_config.fbs";
 
 namespace y2024;
 
@@ -15,7 +16,7 @@ table InterpolationTablePoint {
 }
 
 // Amount of voltage to give to the intake rollers when:
-// spitting, which represents voltage when IntakeRollerGoal is SPITTING 
+// spitting, which represents voltage when IntakeRollerGoal is SPITTING
 // and intaking, which represents voltage when IntakeRollerGoal is INTAKING
 table IntakeRollerVoltages {
   spitting:double (id: 0);
@@ -47,6 +48,7 @@ table Common {
   intake_roller_voltages:IntakeRollerVoltages (id : 2);
   intake_pivot_set_points:IntakePivotSetPoints (id: 3);
   intake_pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 4);
+  drivetrain:frc971.control_loops.drivetrain.fbs.DrivetrainConfig (id: 5);
 }
 
 table Constants {

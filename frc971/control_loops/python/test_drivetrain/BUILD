@@ -1,3 +1,5 @@
+load("//frc971/control_loops/drivetrain:drivetrain_config.bzl", "drivetrain_config")
+
 py_binary(
     name = "drivetrain",
     srcs = [
@@ -105,6 +107,7 @@ cc_test(
         ":polydrivetrain_plants",
         "//aos/testing:googletest",
         "//frc971/control_loops:hybrid_state_feedback_loop_converters",
+        "//frc971/control_loops/drivetrain:drivetrain_config_fbs",
     ],
 )
 
@@ -114,4 +117,9 @@ py_library(
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
     deps = ["//y2018/control_loops:python_init"],
+)
+
+drivetrain_config(
+    name = "drivetrain_config",
+    out = "drivetrain_config.json",
 )

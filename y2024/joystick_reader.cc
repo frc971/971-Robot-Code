@@ -10,6 +10,7 @@
 #include "aos/network/team_number.h"
 #include "aos/util/log_interval.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
+#include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "frc971/input/action_joystick_input.h"
@@ -18,6 +19,7 @@
 #include "frc971/input/joystick_input.h"
 #include "frc971/input/redundant_joystick_data.h"
 #include "frc971/zeroing/wrap.h"
+#include "y2024/constants/constants_generated.h"
 #include "y2024/control_loops/drivetrain/drivetrain_base.h"
 #include "y2024/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2024/control_loops/superstructure/superstructure_status_generated.h"
@@ -37,7 +39,7 @@ class Reader : public ::frc971::input::ActionJoystickInput {
   Reader(::aos::EventLoop *event_loop)
       : ::frc971::input::ActionJoystickInput(
             event_loop,
-            ::y2024::control_loops::drivetrain::GetDrivetrainConfig(),
+            ::y2024::control_loops::drivetrain::GetDrivetrainConfig(event_loop),
             ::frc971::input::DrivetrainInputReader::InputType::kPistol,
             {.use_redundant_joysticks = true}),
         superstructure_goal_sender_(
@@ -73,6 +75,7 @@ int main(int argc, char **argv) {
 
   aos::FlatbufferDetachedBuffer<aos::Configuration> config =
       aos::configuration::ReadConfig("aos_config.json");
+  frc971::constants::WaitForConstants<y2024::Constants>(&config.message());
 
   ::aos::ShmEventLoop event_loop(&config.message());
   ::y2024::input::joysticks::Reader reader(&event_loop);

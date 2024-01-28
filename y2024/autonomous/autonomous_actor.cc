@@ -35,7 +35,8 @@ namespace chrono = ::std::chrono;
 
 AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
     : frc971::autonomous::BaseAutonomousActor(
-          event_loop, control_loops::drivetrain::GetDrivetrainConfig()),
+          event_loop,
+          control_loops::drivetrain::GetDrivetrainConfig(event_loop)),
       localizer_control_sender_(
           event_loop->MakeSender<
               ::frc971::control_loops::drivetrain::LocalizerControl>(

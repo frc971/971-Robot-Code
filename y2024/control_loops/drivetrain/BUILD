@@ -1,4 +1,6 @@
 load("//aos:config.bzl", "aos_config")
+load("//tools/build_rules:template.bzl", "jinja2_template")
+load("//frc971/control_loops/drivetrain:drivetrain_config.bzl", "drivetrain_config")
 
 genrule(
     name = "genrule_drivetrain",
@@ -72,7 +74,9 @@ cc_library(
     deps = [
         ":polydrivetrain_plants",
         "//frc971:shifter_hall_effect",
+        "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops/drivetrain:drivetrain_config",
+        "//y2024/constants:constants_fbs",
     ],
 )
 
@@ -116,6 +120,23 @@ cc_binary(
         ":drivetrain_base",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "//frc971/constants:constants_sender_lib",
         "//frc971/control_loops/drivetrain:trajectory_generator",
+        "//y2024/constants:constants_fbs",
     ],
+)
+
+drivetrain_config(
+    name = "drivetrain_loop_config",
+    out = "drivetrain_loop_config.json",
+)
+
+jinja2_template(
+    name = "drivetrain_config.json",
+    src = "drivetrain_config.jinja2.json",
+    includes = [
+        ":drivetrain_loop_config.json",
+    ],
+    parameters = {},
+    visibility = ["//visibility:public"],
 )

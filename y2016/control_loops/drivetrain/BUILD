@@ -1,3 +1,5 @@
+load("//frc971/control_loops/drivetrain:drivetrain_config.bzl", "drivetrain_config")
+
 genrule(
     name = "genrule_drivetrain",
     outs = [
@@ -87,4 +89,9 @@ cc_binary(
         "//aos:init",
         "//frc971/control_loops/drivetrain:drivetrain_lib",
     ],
+)
+
+drivetrain_config(
+    name = "drivetrain_config",
+    out = "drivetrain_config.json",
 )
