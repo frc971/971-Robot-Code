@@ -180,8 +180,7 @@ uses), these caveats do not apply, and there is no loss of information.
 The below example constructs a table of the above example `TestTable`:
 
 ```cpp
-aos::FixedAllocator allocator(TestTableStatic::kUnalignedBufferSize);
-Builder<TestTableStatic> builder(&allocator);
+Builder<TestTableStatic> builder;
 TestTableStatic *object = builder.get();
 object->set_scalar(123);
 {
@@ -542,12 +541,25 @@ load("@org_frc971//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 # upgraded to static_flatbuffer rules.
 static_flatbuffer(
     name = "test_message_fbs",
-    src = "test_message.fbs",
+    srcs = ["test_message.fbs"],
 )
 ```
 
+Then you must update the `#include` to use a `test_message_static.h` instead of
+the standard `test_message_generated.h` (the `_static.h` will include the
+`_generated.h` itself). Any C++ code can then be updated, noting that any
+AOS Senders that need to use the new API need to have their definitions updated
+to use the `TestMessageStatic` and must call `MakeStaticBuilder` instead of
+`MakeBuilder`. There is currently no support for using static flatbuffers with
+the AOS Fetcher or Watcher interfaces, as these only present immutable objects
+and so do not benefit from the API additions (and attempting to convert them to
+the new API would require additional overhead associated with copying the
+serialized flatbuffer into the correct format).
+
 Before:
 ```cpp
+#include "aos/events/test_message_generated.h"
+...
   aos::Sender<TestMessage> sender = loop1->MakeSender<TestMessage>("/test");
 
   loop->OnRun([&]() {
@@ -560,6 +572,8 @@ Before:
 
 After:
 ```cpp
+#include "aos/events/test_message_static.h"
+...
   aos::Sender<TestMessageStatic> sender =
       loop1->MakeSender<TestMessageStatic>("/test");
 
