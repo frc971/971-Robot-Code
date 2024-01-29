@@ -21,8 +21,6 @@ constexpr uint16_t kPracticeTeamNumber = 9971;
 constexpr uint16_t kCodingRobotTeamNumber = 7971;
 
 struct Values {
-  static const int kZeroingSampleSize = 200;
-
   static const int kSuperstructureCANWriterPriority = 35;
   static const int kDrivetrainWriterPriority = 35;
   static const int kDrivetrainTxPriority = 36;

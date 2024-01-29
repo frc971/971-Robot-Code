@@ -1,5 +1,4 @@
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
-load("@aspect_bazel_lib//lib:run_binary.bzl", "run_binary")
 load("//tools/build_rules:template.bzl", "jinja2_template")
 
 cc_library(
@@ -23,10 +22,10 @@ jinja2_template(
     includes = glob([
         "test_data/*.json",
     ]) + [
-        ":intake_pivot_common_zeroing.json",
         "//y2024/control_loops/superstructure/intake_pivot:intake_pivot_json",
         "//y2024/control_loops/drivetrain:drivetrain_config.json",
         "common.json",
+        "common.jinja2",
         "//y2024/vision/maps",
     ],
     parameters = {},
@@ -40,8 +39,8 @@ jinja2_template(
         "7971.json",
         "971.json",
         "9971.json",
+        "common.jinja2",
         "common.json",
-        ":intake_pivot_common_zeroing.json",
         "//y2024/control_loops/drivetrain:drivetrain_config.json",
         "//y2024/control_loops/superstructure/intake_pivot:intake_pivot_json",
         "//y2024/vision/maps",
@@ -94,20 +93,4 @@ cc_test(
         "//aos/testing:googletest",
         "@com_github_google_glog//:glog",
     ],
-)
-
-cc_binary(
-    name = "intake_pivot_json_codegen",
-    srcs = ["intake_pivot_json_codegen.cc"],
-    deps = [
-        "//aos/util:file",
-        "//y2024:constants",
-    ],
-)
-
-run_binary(
-    name = "intake_pivot_codegen",
-    outs = ["intake_pivot_common_zeroing.json"],
-    args = ["$(location :intake_pivot_common_zeroing.json)"],
-    tool = ":intake_pivot_json_codegen",
 )
