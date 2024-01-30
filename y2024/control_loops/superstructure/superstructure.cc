@@ -24,11 +24,15 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
                                                                     name),
       values_(values),
       constants_fetcher_(event_loop),
+      robot_constants_(CHECK_NOTNULL(&constants_fetcher_.constants())),
       drivetrain_status_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),
       joystick_state_fetcher_(
-          event_loop->MakeFetcher<aos::JoystickState>("/aos")) {
+          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+      intake_pivot_(
+          robot_constants_->common()->intake_pivot(),
+          robot_constants_->robot()->intake_constants()->intake_pivot_zero()) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -40,27 +44,80 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       event_loop()->context().monotonic_event_time;
 
   (void)timestamp;
-  (void)unsafe_goal;
   (void)position;
 
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
+    intake_pivot_.Reset();
   }
 
   OutputT output_struct;
+
+  double intake_pivot_position =
+      robot_constants_->common()->intake_pivot_set_points()->retracted();
+
+  if (unsafe_goal != nullptr &&
+      unsafe_goal->intake_pivot_goal() == IntakePivotGoal::EXTENDED) {
+    intake_pivot_position =
+        robot_constants_->common()->intake_pivot_set_points()->extended();
+  }
+
+  IntakeRollerState intake_roller_state = IntakeRollerState::NONE;
+
+  switch (unsafe_goal != nullptr ? unsafe_goal->intake_roller_goal()
+                                 : IntakeRollerGoal::NONE) {
+    case IntakeRollerGoal::NONE:
+      output_struct.intake_roller_voltage = 0.0;
+      break;
+    case IntakeRollerGoal::SPIT:
+      intake_roller_state = IntakeRollerState::SPITTING;
+      output_struct.intake_roller_voltage =
+          robot_constants_->common()->intake_roller_voltages()->spitting();
+      break;
+    case IntakeRollerGoal::INTAKE:
+      intake_roller_state = IntakeRollerState::INTAKING;
+      output_struct.intake_roller_voltage =
+          robot_constants_->common()->intake_roller_voltages()->intaking();
+      break;
+  }
+
   if (joystick_state_fetcher_.Fetch() &&
       joystick_state_fetcher_->has_alliance()) {
     alliance_ = joystick_state_fetcher_->alliance();
   }
+
   drivetrain_status_fetcher_.Fetch();
+
+  aos::FlatbufferFixedAllocatorArray<
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
+      intake_pivot_goal_buffer;
+
+  intake_pivot_goal_buffer.Finish(
+      frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+          *intake_pivot_goal_buffer.fbb(), intake_pivot_position));
+
+  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+      *intake_pivot_goal = &intake_pivot_goal_buffer.message();
+
+  const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
+      intake_pivot_status_offset = intake_pivot_.Iterate(
+          intake_pivot_goal, position->intake_pivot(),
+          output != nullptr ? &output_struct.intake_pivot_voltage : nullptr,
+          status->fbb());
 
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
-  status_builder.add_zeroed(true);
-  status_builder.add_estopped(false);
+
+  const bool zeroed = intake_pivot_.zeroed();
+  const bool estopped = intake_pivot_.estopped();
+
+  status_builder.add_zeroed(zeroed);
+  status_builder.add_estopped(estopped);
+  status_builder.add_intake_roller_state(intake_roller_state);
+  status_builder.add_intake_pivot_state(intake_pivot_status_offset);
 
   (void)status->Send(status_builder.Finish());
 }

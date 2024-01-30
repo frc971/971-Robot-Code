@@ -14,8 +14,8 @@
     "intaking": 12.0
   },
   "intake_pivot_set_points": {
-    "extended": 0.0,
-    "retracted": 0.0
+    "extended": 1.5,
+    "retracted": 0.5
   },
   "intake_pivot": {
     "zeroing_voltage": 3.0,

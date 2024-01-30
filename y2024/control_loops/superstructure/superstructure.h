@@ -21,9 +21,18 @@ namespace y2024::control_loops::superstructure {
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
+  using PotAndAbsoluteEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
+          ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
+
   explicit Superstructure(::aos::EventLoop *event_loop,
                           std::shared_ptr<const constants::Values> values,
                           const ::std::string &name = "/superstructure");
+
+  inline const PotAndAbsoluteEncoderSubsystem &intake_pivot() const {
+    return intake_pivot_;
+  }
 
   double robot_velocity() const;
 
@@ -35,12 +44,14 @@ class Superstructure
  private:
   std::shared_ptr<const constants::Values> values_;
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
-
+  const Constants *robot_constants_;
   aos::Fetcher<frc971::control_loops::drivetrain::Status>
       drivetrain_status_fetcher_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
+
+  PotAndAbsoluteEncoderSubsystem intake_pivot_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
