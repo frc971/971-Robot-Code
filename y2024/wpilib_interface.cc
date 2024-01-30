@@ -32,6 +32,7 @@
 #include "aos/util/wrapping_counter.h"
 #include "frc971/autonomous/auto_mode_generated.h"
 #include "frc971/can_configuration_generated.h"
+#include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/drivetrain/drivetrain_can_position_static.h"
 #include "frc971/control_loops/drivetrain/drivetrain_position_generated.h"
 #include "frc971/input/robot_state_generated.h"
@@ -42,6 +43,7 @@
 #include "frc971/wpilib/can_sensor_reader.h"
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/encoder_and_potentiometer.h"
+#include "frc971/wpilib/generic_can_writer.h"
 #include "frc971/wpilib/joystick_sender.h"
 #include "frc971/wpilib/logging_generated.h"
 #include "frc971/wpilib/loop_output_handler.h"
@@ -50,8 +52,11 @@
 #include "frc971/wpilib/talonfx.h"
 #include "frc971/wpilib/wpilib_robot_base.h"
 #include "y2024/constants.h"
+#include "y2024/constants/constants_generated.h"
+#include "y2024/control_loops/superstructure/superstructure_can_position_static.h"
 #include "y2024/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2024/control_loops/superstructure/superstructure_position_generated.h"
+#include "y2024/control_loops/superstructure/superstructure_position_static.h"
 
 DEFINE_bool(ctre_diag_server, false,
             "If true, enable the diagnostics server for interacting with "
@@ -72,9 +77,9 @@ namespace {
 
 constexpr double kMaxBringupPower = 12.0;
 
-// TODO(Brian): Fix the interpretation of the result of GetRaw here and in the
-// DMA stuff and then removing the * 2.0 in *_translate.
-// The low bit is direction.
+double intake_pot_translate(double voltage) {
+  return voltage * Values::kIntakePivotPotRadiansPerVolt();
+}
 
 double drivetrain_velocity_translate(double in) {
   return (((1.0 / in) / Values::kDrivetrainCyclesPerRevolution()) *
@@ -95,14 +100,14 @@ static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
 class SensorReader : public ::frc971::wpilib::SensorReader {
  public:
   SensorReader(::aos::ShmEventLoop *event_loop,
-               std::shared_ptr<const Values> values)
+               const Constants *robot_constants)
       : ::frc971::wpilib::SensorReader(event_loop),
-        values_(std::move(values)),
+        robot_constants_(CHECK_NOTNULL(robot_constants)),
         auto_mode_sender_(
             event_loop->MakeSender<::frc971::autonomous::AutonomousMode>(
                 "/autonomous")),
         superstructure_position_sender_(
-            event_loop->MakeSender<superstructure::Position>(
+            event_loop->MakeSender<superstructure::PositionStatic>(
                 "/superstructure")),
         drivetrain_position_sender_(
             event_loop->MakeSender<
@@ -124,11 +129,18 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   void RunIteration() override {
     {
-      auto builder = superstructure_position_sender_.MakeBuilder();
+      aos::Sender<superstructure::PositionStatic>::StaticBuilder builder =
+          superstructure_position_sender_.MakeStaticBuilder();
 
-      superstructure::Position::Builder position_builder =
-          builder.MakeBuilder<superstructure::Position>();
-      builder.CheckOk(builder.Send(position_builder.Finish()));
+      CopyPosition(intake_pivot_encoder_, builder->add_intake_pivot(),
+                   Values::kIntakePivotEncoderCountsPerRevolution(),
+                   Values::kIntakePivotEncoderRatio(), intake_pot_translate,
+                   true,
+                   robot_constants_->robot()
+                       ->intake_constants()
+                       ->potentiometer_offset());
+
+      builder.CheckOk(builder.Send());
     }
 
     SendDrivetrainPosition(drivetrain_position_sender_.MakeStaticBuilder(),
@@ -185,11 +197,26 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     }
   }
 
+  void set_intake_pivot_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    fast_encoder_filter_.Add(encoder.get());
+    intake_pivot_encoder_.set_encoder(::std::move(encoder));
+  }
+
+  void set_intake_pivot_absolute_pwm(
+      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
+    intake_pivot_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+  }
+
+  void set_intake_pivot_potentiometer(
+      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    intake_pivot_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
  private:
-  std::shared_ptr<const Values> values_;
+  const Constants *robot_constants_;
 
   aos::Sender<frc971::autonomous::AutonomousMode> auto_mode_sender_;
-  aos::Sender<superstructure::Position> superstructure_position_sender_;
+  aos::Sender<superstructure::PositionStatic> superstructure_position_sender_;
   aos::Sender<frc971::control_loops::drivetrain::PositionStatic>
       drivetrain_position_sender_;
   ::aos::Sender<::frc971::sensors::GyroReading> gyro_sender_;
@@ -197,6 +224,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
   std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_;
+
+  frc971::wpilib::AbsoluteEncoderAndPotentiometer intake_pivot_encoder_;
 
   frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
 };
@@ -209,11 +238,15 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
   }
 
   void Run() override {
-    std::shared_ptr<const Values> values =
-        std::make_shared<const Values>(constants::MakeValues());
-
     aos::FlatbufferDetachedBuffer<aos::Configuration> config =
         aos::configuration::ReadConfig("aos_config.json");
+
+    frc971::constants::WaitForConstants<y2024::Constants>(&config.message());
+
+    ::aos::ShmEventLoop constant_fetcher_event_loop(&config.message());
+    frc971::constants::ConstantsFetcher<Constants> constants_fetcher(
+        &constant_fetcher_event_loop);
+    const Constants *robot_constants = &constants_fetcher.constants();
 
     // Thread 1.
     ::aos::ShmEventLoop joystick_sender_event_loop(&config.message());
@@ -228,11 +261,17 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     // Thread 3.
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
-    SensorReader sensor_reader(&sensor_reader_event_loop, values);
+    SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants);
     sensor_reader.set_pwm_trigger(true);
     sensor_reader.set_drivetrain_left_encoder(make_encoder(1));
     sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(0));
+    // TODO: (niko) change values once robot is wired
+    sensor_reader.set_intake_pivot_encoder(make_encoder(4));
+    sensor_reader.set_intake_pivot_absolute_pwm(
+        make_unique<frc::DigitalInput>(4));
+    sensor_reader.set_intake_pivot_potentiometer(
+        make_unique<frc::AnalogInput>(4));
 
     AddLoop(&sensor_reader_event_loop);
 
@@ -261,6 +300,22 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         3, false, "Drivetrain Bus", &signals_registry,
         constants::Values::kDrivetrainStatorCurrentLimit(),
         constants::Values::kDrivetrainSupplyCurrentLimit());
+    std::shared_ptr<TalonFX> intake_pivot =
+        std::make_shared<TalonFX>(4, false, "Drivetrain Bus", &signals_registry,
+                                  robot_constants->common()
+                                      ->current_limits()
+                                      ->intake_pivot_stator_current_limit(),
+                                  robot_constants->common()
+                                      ->current_limits()
+                                      ->intake_pivot_supply_current_limit());
+    std::shared_ptr<TalonFX> intake_roller =
+        std::make_shared<TalonFX>(5, false, "Drivetrain Bus", &signals_registry,
+                                  robot_constants->common()
+                                      ->current_limits()
+                                      ->intake_roller_stator_current_limit(),
+                                  robot_constants->common()
+                                      ->current_limits()
+                                      ->intake_roller_supply_current_limit());
 
     ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
         constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
@@ -271,33 +326,69 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     can_sensor_reader_event_loop.set_name("CANSensorReader");
 
     // Creating list of talonfx for CANSensorReader
+    std::vector<std::shared_ptr<TalonFX>> drivetrain_talonfxs;
     std::vector<std::shared_ptr<TalonFX>> talonfxs;
+
     for (auto talonfx : {right_front, right_back, left_front, left_back}) {
+      drivetrain_talonfxs.push_back(talonfx);
       talonfxs.push_back(talonfx);
     }
 
-    aos::Sender<CANPositionStatic> can_position_sender =
-        can_sensor_reader_event_loop.MakeSender<CANPositionStatic>(
-            "/drivetrain");
+    for (auto talonfx : {intake_pivot, intake_roller}) {
+      talonfxs.push_back(talonfx);
+    }
+
+    aos::Sender<frc971::control_loops::drivetrain::CANPositionStatic>
+        drivetrain_can_position_sender =
+            can_sensor_reader_event_loop.MakeSender<
+                frc971::control_loops::drivetrain::CANPositionStatic>(
+                "/drivetrain");
+
+    aos::Sender<y2024::control_loops::superstructure::CANPositionStatic>
+        superstructure_can_position_sender =
+            can_sensor_reader_event_loop.MakeSender<
+                y2024::control_loops::superstructure::CANPositionStatic>(
+                "/superstructure");
 
     frc971::wpilib::CANSensorReader can_sensor_reader(
         &can_sensor_reader_event_loop, std::move(signals_registry), talonfxs,
-        [talonfxs, &can_position_sender](ctre::phoenix::StatusCode status) {
-          aos::Sender<CANPositionStatic>::StaticBuilder builder =
-              can_position_sender.MakeStaticBuilder();
+        [drivetrain_talonfxs, &intake_pivot, &intake_roller,
+         &drivetrain_can_position_sender, &superstructure_can_position_sender](
+            ctre::phoenix::StatusCode status) {
+          aos::Sender<frc971::control_loops::drivetrain::CANPositionStatic>::
+              StaticBuilder drivetrain_can_builder =
+                  drivetrain_can_position_sender.MakeStaticBuilder();
 
-          auto falcon_vector = builder->add_talonfxs();
+          auto drivetrain_falcon_vector =
+              drivetrain_can_builder->add_talonfxs();
 
-          for (auto talonfx : talonfxs) {
+          for (auto talonfx : drivetrain_talonfxs) {
             talonfx->SerializePosition(
-                falcon_vector->emplace_back(),
+                drivetrain_falcon_vector->emplace_back(),
                 control_loops::drivetrain::kHighOutputRatio);
           }
 
-          builder->set_timestamp(talonfxs.front()->GetTimestamp());
-          builder->set_status(static_cast<int>(status));
+          drivetrain_can_builder->set_timestamp(
+              drivetrain_talonfxs.front()->GetTimestamp());
+          drivetrain_can_builder->set_status(static_cast<int>(status));
 
-          builder.CheckOk(builder.Send());
+          drivetrain_can_builder.CheckOk(drivetrain_can_builder.Send());
+
+          aos::Sender<y2024::control_loops::superstructure::CANPositionStatic>::
+              StaticBuilder superstructure_can_builder =
+                  superstructure_can_position_sender.MakeStaticBuilder();
+
+          intake_roller->SerializePosition(
+              superstructure_can_builder->add_intake_roller(),
+              control_loops::drivetrain::kHighOutputRatio);
+          intake_pivot->SerializePosition(
+              superstructure_can_builder->add_intake_pivot(),
+              control_loops::drivetrain::kHighOutputRatio);
+
+          superstructure_can_builder->set_timestamp(
+              intake_roller->GetTimestamp());
+          superstructure_can_builder->set_status(static_cast<int>(status));
+          superstructure_can_builder.CheckOk(superstructure_can_builder.Send());
         });
 
     AddLoop(&can_sensor_reader_event_loop);
@@ -309,13 +400,29 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     frc971::wpilib::CANDrivetrainWriter can_drivetrain_writer(
         &can_output_event_loop);
 
+    frc971::wpilib::GenericCANWriter<control_loops::superstructure::Output>
+        can_superstructure_writer(
+            &can_output_event_loop,
+            [](const control_loops::superstructure::Output &output,
+               const std::map<std::string_view, std::shared_ptr<TalonFX>>
+                   &talonfx_map) {
+              talonfx_map.find("intake_pivot")
+                  ->second->WriteVoltage(output.intake_pivot_voltage());
+              talonfx_map.find("intake_roller")
+                  ->second->WriteVoltage(output.intake_roller_voltage());
+            });
+
     can_drivetrain_writer.set_talonfxs({right_front, right_back},
                                        {left_front, left_back});
 
+    can_superstructure_writer.add_talonfx("intake_pivot", intake_pivot);
+    can_superstructure_writer.add_talonfx("intake_roller", intake_roller);
+
     can_output_event_loop.MakeWatcher(
-        "/roborio", [&can_drivetrain_writer](
+        "/roborio", [&can_drivetrain_writer, &can_superstructure_writer](
                         const frc971::CANConfiguration &configuration) {
           can_drivetrain_writer.HandleCANConfiguration(configuration);
+          can_superstructure_writer.HandleCANConfiguration(configuration);
         });
 
     AddLoop(&can_output_event_loop);

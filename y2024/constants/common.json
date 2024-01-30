@@ -36,5 +36,13 @@
     },
     "loop": {% include 'y2024/control_loops/superstructure/intake_pivot/integral_intake_pivot_plant.json' %}
   },
-  "drivetrain": {% include 'y2024/control_loops/drivetrain/drivetrain_config.json' %}
+  "drivetrain": {% include 'y2024/control_loops/drivetrain/drivetrain_config.json' %},
+  // TODO: (niko) update the stator and supply current limits for the intake
+  "current_limits": {
+    // Values in amps
+    "intake_pivot_supply_current_limit": 35,
+    "intake_pivot_stator_current_limit": 60,
+    "intake_roller_supply_current_limit": 35,
+    "intake_roller_stator_current_limit": 60
+  }
 }

@@ -15,9 +15,9 @@ class GenericCANWriter : public LoopOutputHandler<T> {
  public:
   GenericCANWriter(
       ::aos::EventLoop *event_loop,
-      std::function<void(
-          const T &output,
-          std::map<std::string_view, std::shared_ptr<TalonFX>> talonfx_map)>
+      std::function<void(const T &output,
+                         const std::map<std::string_view,
+                                        std::shared_ptr<TalonFX>> &talonfx_map)>
           write_callback)
       : LoopOutputHandler<T>(event_loop, "/superstructure"),
         write_callback_(write_callback) {
@@ -66,7 +66,7 @@ class GenericCANWriter : public LoopOutputHandler<T> {
 
   std::function<void(
       const T &output,
-      std::map<std::string_view, std::shared_ptr<TalonFX>> talonfx_map)>
+      const std::map<std::string_view, std::shared_ptr<TalonFX>> &talonfx_map)>
       write_callback_;
 };
 
