@@ -54,9 +54,9 @@
     "transfer_out": -12.0
   },
   "climber_set_points": {
-    "full_extend": 0.0,
-    "half_extend": 0.0,
-    "retract": 0.0
+    "full_extend": 0.8,
+    "half_extend": 0.6,
+    "retract": 0.2
   },
   "climber": {
     "zeroing_voltage": 3.0,
@@ -70,10 +70,10 @@
       "max_acceleration": 30.0
     },
     "range": {
-        "lower_hard": -0.01,
-        "upper_hard": 0.5,
-        "lower": 0.003,
-        "upper": 0.4
+        "lower_hard": 0.1,
+        "upper_hard": 2.01,
+        "lower": 0.2,
+        "upper": 2.0
     },
     "loop": {% include 'y2024/control_loops/superstructure/climber/integral_climber_plant.json' %}
   }

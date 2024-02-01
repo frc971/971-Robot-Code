@@ -33,7 +33,10 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       transfer_goal_(TransferRollerGoal::NONE),
       intake_pivot_(
           robot_constants_->common()->intake_pivot(),
-          robot_constants_->robot()->intake_constants()->zeroing_constants()) {
+          robot_constants_->robot()->intake_constants()->zeroing_constants()),
+      climber_(
+          robot_constants_->common()->climber(),
+          robot_constants_->robot()->climber_constants()->zeroing_constants()) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -50,6 +53,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     intake_pivot_.Reset();
+    climber_.Reset();
   }
 
   OutputT output_struct;
@@ -109,6 +113,28 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       break;
   }
 
+  double climber_position =
+      robot_constants_->common()->climber_set_points()->retract();
+
+  if (unsafe_goal != nullptr) {
+    switch (unsafe_goal->climber_goal()) {
+      case ClimberGoal::FULL_EXTEND:
+        climber_position =
+            robot_constants_->common()->climber_set_points()->full_extend();
+        break;
+      case ClimberGoal::HALF_EXTEND:
+        climber_position =
+            robot_constants_->common()->climber_set_points()->half_extend();
+        break;
+      case ClimberGoal::RETRACT:
+        climber_position =
+            robot_constants_->common()->climber_set_points()->retract();
+        break;
+      default:
+        break;
+    }
+  }
+
   if (joystick_state_fetcher_.Fetch() &&
       joystick_state_fetcher_->has_alliance()) {
     alliance_ = joystick_state_fetcher_->alliance();
@@ -133,20 +159,38 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &output_struct.intake_pivot_voltage : nullptr,
           status->fbb());
 
+  aos::FlatbufferFixedAllocatorArray<
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
+      climber_goal_buffer;
+
+  climber_goal_buffer.Finish(
+      frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+          *climber_goal_buffer.fbb(), climber_position));
+
+  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+      *climber_goal = &climber_goal_buffer.message();
+
+  const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
+      climber_status_offset = climber_.Iterate(
+          climber_goal, position->climber(),
+          output != nullptr ? &output_struct.climber_voltage : nullptr,
+          status->fbb());
+
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
 
-  const bool zeroed = intake_pivot_.zeroed();
-  const bool estopped = intake_pivot_.estopped();
+  const bool zeroed = intake_pivot_.zeroed() && climber_.zeroed();
+  const bool estopped = intake_pivot_.estopped() || climber_.estopped();
 
   status_builder.add_zeroed(zeroed);
   status_builder.add_estopped(estopped);
   status_builder.add_intake_roller_state(intake_roller_state);
   status_builder.add_intake_pivot_state(intake_pivot_status_offset);
   status_builder.add_transfer_roller_state(transfer_roller_state);
+  status_builder.add_climber_state(climber_status_offset);
 
   (void)status->Send(status_builder.Finish());
 }
