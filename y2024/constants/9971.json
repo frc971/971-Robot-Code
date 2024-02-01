@@ -1,10 +1,14 @@
+{% from 'y2024/constants/common.jinja2' import intake_pivot_zero %}
+
 {
   "robot": {
     "intake_constants": {
-      "intake_pivot_zero": {
-        "measured_absolute_position": 0.0,
-        {% include 'y2024/constants/intake_pivot_common_zeroing.json' %}
-      },
+      {% set _ = intake_pivot_zero.update(
+          {
+              "measured_absolute_position" : 0.0
+          }
+      ) %}
+      "intake_pivot_zero": {{ intake_pivot_zero | tojson(indent=2)}},
       "potentiometer_offset": 0.0
     }
   },
