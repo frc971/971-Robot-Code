@@ -67,4 +67,16 @@ platform(
     ],
 )
 
+platform(
+    name = "cortex-m4f-imu",
+    constraint_values = [
+        "@platforms//os:none",
+        "//tools/platforms/hardware:cortex-m4f-imu",
+        "//tools/platforms/go:lacks_support",
+        "//tools/platforms/rust:lacks_support",
+        "//tools/platforms/nodejs:lacks_support",
+        "//tools/platforms/gpu:none",
+    ],
+)
+
 # TODO(phil): Create something for "cortex-m4f-k22" builds.

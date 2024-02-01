@@ -9,6 +9,7 @@ all_cpus = [
     "arm64",
     "cortex-m",
     "cortex-m0plus",
+    "cortex-m4f-imu",
 ]
 
 """All of the CPUs we know about."""
@@ -33,6 +34,7 @@ def cpu_select(values):
         new_values["roborio"] = values["arm"]
         new_values["cortex-m"] = values["arm"]
         new_values["cortex-m0plus"] = values["arm"]
+        new_values["cortex-m4f-imu"] = values["arm"]
         values = new_values
     elif "arm32" in values:
         if "arm64" not in values:
@@ -44,6 +46,7 @@ def cpu_select(values):
         new_values["roborio"] = values["arm32"]
         new_values["cortex-m"] = values["arm32"]
         new_values["cortex-m0plus"] = values["arm32"]
+        new_values["cortex-m4f-imu"] = values["arm32"]
         values = new_values
     for cpu in all_cpus:
         if cpu not in values:
@@ -60,6 +63,7 @@ def cpu_select(values):
         "@//tools:cpu_arm64": values["arm64"],
         "@//tools:cpu_cortex_m4f": values["cortex-m"],
         "@//tools:cpu_cortex_m0plus": values["cortex-m0plus"],
+        "@//tools:cpu_cortex-m4f-imu": values["cortex-m4f-imu"],
         # TODO(phil): Support this properly.
         #"@//tools:cpu_cortex_m4f_k22": values["cortex-m"],
     })
@@ -82,6 +86,7 @@ def address_size_select(values):
         "@//tools:cpu_roborio": values["32"],
         "@//tools:cpu_cortex_m4f": values["32"],
         "@//tools:cpu_cortex_m0plus": values["32"],
+        "@//tools:cpu_cortex-m4f-imu": values["32"],
         # TODO(phil): Support this properly.
         #"@//tools:cpu_cortex_m4f_k22": values["32"],
     })

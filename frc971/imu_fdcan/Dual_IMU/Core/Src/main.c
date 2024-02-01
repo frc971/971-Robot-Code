@@ -118,7 +118,6 @@ static void ReadDataMurata(void);
 static void ReadDataTdk(void);
 static void ConvertDataMurata(void);
 static void ConvertDataTdk(void);
-static void ConstructCanfdPacket(uint8_t *tx);  // 64 bytes
 static void InitCan(FDCAN_TxHeaderTypeDef *tx_header, uint8_t id);
 
 /* USER CODE END PFP */
@@ -1051,15 +1050,6 @@ static void InitTdk(void) {
  * 	[60..63]	murata_acc_x	[0..31]
  *
  */
-
-static void ConstructCanfdPacket(uint8_t *tx) {
-  // Clear the CAN packet
-  memset(tx, 0, 64 * sizeof(*tx));
-
-  // Write in the struct data
-  memcpy(&tx[0], &data_murata, sizeof(data_murata));
-  memcpy(&tx[sizeof(data_murata)], &data_tdk, sizeof(data_tdk));
-}
 
 static void InitCan(FDCAN_TxHeaderTypeDef *tx_header, uint8_t id) {
   // Initialize the Header

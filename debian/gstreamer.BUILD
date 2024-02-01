@@ -235,6 +235,7 @@ cc_library(
         ],
         "arm64": [s % "aarch64-linux-gnu" if "%" in s else s for s in _common_srcs_list],
         "cortex-m": [],
+        "cortex-m4f-imu": [],
         "cortex-m0plus": [],
     }),
     hdrs = glob([
@@ -256,6 +257,7 @@ cc_library(
             "usr/lib/aarch64-linux-gnu/glib-2.0/include",
         ],
         "roborio": [],
+        "cortex-m4f-imu": [],
         "cortex-m": [],
         "cortex-m0plus": [],
     }) + [

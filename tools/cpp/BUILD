@@ -16,6 +16,7 @@ cc_toolchain_make_variables(name = "cc_toolchain_make_variables")
         "cortex-m4f",
         "cortex-m4f-k22",
         "rp2040",
+        "cortex-m4f-imu",
         "roborio",
     ]
 ]
@@ -32,6 +33,7 @@ cc_library(
         "//tools:has_asan": [],
         "//tools:has_tsan": [],
         "//tools:cpu_cortex_m4f": [],
+        "//tools:cpu_cortex-m4f-imu": [],
         "//tools:cpu_cortex_m0plus": [],
         # TODO(phil): Support this properly.
         #"//tools:cpu_cortex_m4f_k22": [],
@@ -161,6 +163,7 @@ filegroup(
 filegroup(
     name = "gcc_arm_none_eabi_linker_files",
     srcs = [
+        "//frc971/imu_fdcan/Dual_IMU:linker_scripts",
         "//motors/core:linkerscripts",
         "//tools/cpp/gcc_arm_none_eabi:ar",
         "//tools/cpp/gcc_arm_none_eabi:gcc",
@@ -202,6 +205,34 @@ toolchain(
         "//tools/platforms/hardware:cortex_m0plus",
     ],
     toolchain = ":cc-compiler-rp2040",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+cc_toolchain(
+    name = "cc-compiler-cortex-m4f-imu",
+    all_files = ":gcc_arm_none_eabi_none_files",
+    ar_files = ":gcc_arm_none_eabi_ar_files",
+    compiler_files = ":gcc_arm_none_eabi_compiler_files",
+    dwp_files = ":empty",
+    linker_files = ":gcc_arm_none_eabi_linker_files",
+    objcopy_files = "//tools/cpp/gcc_arm_none_eabi:objcopy",
+    strip_files = "//tools/cpp/gcc_arm_none_eabi:strip",
+    supports_param_files = 1,
+    toolchain_config = ":cortex-m4f-imu_toolchain_config",
+    toolchain_identifier = "cortex-m4f-imu",
+)
+
+toolchain(
+    name = "cc-toolchain-cortex-m4f-imu",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_compatible_with = [
+        "@platforms//os:none",
+        "//tools/platforms/hardware:cortex-m4f-imu",
+    ],
+    toolchain = ":cc-compiler-cortex-m4f-imu",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )
 
