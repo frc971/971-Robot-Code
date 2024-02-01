@@ -23,6 +23,7 @@ jinja2_template(
         "test_data/*.json",
     ]) + [
         "//y2024/control_loops/superstructure/intake_pivot:intake_pivot_json",
+        "//y2024/control_loops/superstructure/climber:climber_json",
         "//y2024/control_loops/drivetrain:drivetrain_config.json",
         "common.json",
         "common.jinja2",
@@ -43,6 +44,7 @@ jinja2_template(
         "common.json",
         "//y2024/constants/calib_files",
         "//y2024/control_loops/drivetrain:drivetrain_config.json",
+        "//y2024/control_loops/superstructure/climber:climber_json",
         "//y2024/control_loops/superstructure/intake_pivot:intake_pivot_json",
         "//y2024/vision/maps",
     ],

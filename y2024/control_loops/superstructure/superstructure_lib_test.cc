@@ -56,13 +56,13 @@ class SuperstructureSimulation {
             new CappedTestPlant(intake_pivot::MakeIntakePivotPlant()),
             PositionSensorSimulator(simulated_robot_constants->robot()
                                         ->intake_constants()
-                                        ->intake_pivot_zero()
+                                        ->zeroing_constants()
                                         ->one_revolution_distance()),
             {.subsystem_params =
                  {simulated_robot_constants->common()->intake_pivot(),
                   simulated_robot_constants->robot()
                       ->intake_constants()
-                      ->intake_pivot_zero()},
+                      ->zeroing_constants()},
              .potentiometer_offset = simulated_robot_constants->robot()
                                          ->intake_constants()
                                          ->potentiometer_offset()},
@@ -70,7 +70,7 @@ class SuperstructureSimulation {
                 simulated_robot_constants->common()->intake_pivot()->range()),
             simulated_robot_constants->robot()
                 ->intake_constants()
-                ->intake_pivot_zero()
+                ->zeroing_constants()
                 ->measured_absolute_position(),
             dt_) {
     intake_pivot_.InitializePosition(

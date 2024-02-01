@@ -1,4 +1,5 @@
 {% from 'y2024/constants/common.jinja2' import intake_pivot_zero %}
+{% from 'y2024/constants/common.jinja2' import climber_zero %}
 
 {
   "robot": {
@@ -8,7 +9,16 @@
               "measured_absolute_position" : 0.0
           }
       ) %}
-      "intake_pivot_zero": {{ intake_pivot_zero | tojson(indent=2)}},
+      "zeroing_constants": {{ intake_pivot_zero | tojson(indent=2)}},
+      "potentiometer_offset": 0.0
+    },
+    "climber_constants": {
+      {% set _ = climber_zero.update(
+          {
+              "measured_absolute_position" : 0.0
+          }
+      ) %}
+      "zeroing_constants": {{ climber_zero | tojson(indent=2)}},
       "potentiometer_offset": 0.0
     }
   },
