@@ -20,6 +20,11 @@ table Output {
     // Positive voltage is for transfering in
     // Negative voltage is for transfering out
     transfer_roller_voltage:double (id: 5);
+
+    // Voltage of climber
+    // Positive voltage is for climber up
+    // Negative voltage is for climber down
+    climber_voltage:double (id: 6);
 }
 
 root_type Output;

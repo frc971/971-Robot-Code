@@ -43,6 +43,9 @@ table Status {
 
   // State of transfer rollers
   transfer_roller_state:TransferRollerState (id: 4);
+
+  // Estimated angle and angular velocitiy of the climber.
+  climber_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 5);
 }
 
 root_type Status;
