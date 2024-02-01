@@ -1,0 +1,50 @@
+namespace frc971.imu;
+
+table ChipState {
+  // Counter indicating how many samples have been taken on this IMU.
+  // Note that because averaging occurs on the microcontroller, this
+  // number may increment by numbers greater than 1.
+  // The counter will wrap at max_counter, such that
+  // counter = "true" count % max_counter
+  counter:uint64 (id: 0);
+  max_counter:uint64 (id: 1);
+  // Currently reported temperature, in degrees Celsius.
+  temperature:float (id: 2);
+  // If true, the self test has succeeded.
+  self_test:bool (id: 3);
+}
+
+// IMU axes will be pre-aligned to be consistent with the board
+// axes for any chips that are rotated.
+table SingleImu {
+  // Gyro readings in radians/second.
+  gyro_x:double (id: 0);
+  gyro_y:double (id: 1);
+  gyro_z:double (id: 2);
+
+  // Accelerometer readings in Gs.
+  accelerometer_x:double (id: 3);
+  accelerometer_y:double (id: 4);
+  accelerometer_z:double (id: 5);
+
+  // State for the individual ASIC(s) for this IMU.
+  chip_states:[ChipState] (id: 6);
+}
+
+table DualImu {
+  // Timestamp from the board corresponding to these samples.
+  // Future changes may lead us to add per-chip timestamps, but for now
+  // we treat them as being sampled at the same time.
+  board_timestamp_us:uint32 (id: 0);
+  // Packet counter that should increment by 1 for every incoming packet.
+  packet_counter:uint64 (id: 1);
+  // Value at which the packet counter wraps, such that
+  // packet_counter = "true" count % max_packet_counter.
+  max_packet_counter:uint64 (id: 2);
+  // Readings associated with the Murata IMU. Should have two chips.
+  murata:SingleImu (id: 3);
+  // Readings associated with the TDK IMU.
+  tdk:SingleImu (id: 4);
+}
+
+root_type DualImu;
