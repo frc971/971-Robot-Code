@@ -1,0 +1,71 @@
+namespace scouting.webserver.requests;
+
+table StartMatchAction {
+    position:int (id:0);
+}
+
+enum ScoreType: short {
+    kAMP,
+    kAMP_AMPLIFIED,
+    kSPEAKER,
+    kSPEAKER_AMPLIFIED,
+}
+
+table MobilityAction {
+    mobility:bool (id:0);
+}
+
+table PenaltyAction {}
+
+table PickupNoteAction {
+    auto:bool (id:0);
+}
+
+table PlaceNoteAction {
+    score_type:ScoreType (id:0);
+    auto:bool (id:1);
+}
+
+table RobotDeathAction {
+    robot_dead:bool (id:0);
+}
+
+enum StageType: short {
+    kON_STAGE,
+    kPARK,
+    kHARMONY,
+    kMISSING,
+}
+
+table EndMatchAction {
+    stage_type:StageType (id:0);
+    trap_note:bool (id:1);
+}
+
+union ActionType {
+    MobilityAction,
+    StartMatchAction,
+    PickupNoteAction,
+    PlaceNoteAction,
+    PenaltyAction,
+    RobotDeathAction,
+    EndMatchAction
+}
+
+table Action {
+    timestamp:int64 (id:0);
+    action_taken:ActionType (id:2);
+}
+
+table Submit2024Actions {
+    team_number:string (id: 0);
+    match_number:int (id: 1);
+    set_number:int (id: 2);
+    comp_level:string (id: 3);
+    actions_list:[Action] (id:4);
+
+    // If this is for pre-scouting, then the server should accept this
+    // submission. I.e. checking that the match information exists in the match
+    // list should be skipped.
+    pre_scouting:bool (id: 5);
+}

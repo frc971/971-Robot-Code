@@ -68,6 +68,32 @@ type Stats2023 struct {
 	CollectedBy string
 }
 
+type Stats2024 struct {
+	// This is set to `true` for "pre-scouted" matches. This means that the
+	// match information is unlikely to correspond with an entry in the
+	// `TeamMatch` table.
+	PreScouting bool `gorm:"primaryKey"`
+
+	TeamNumber                                   string `gorm:"primaryKey"`
+	MatchNumber                                  int32  `gorm:"primaryKey"`
+	SetNumber                                    int32  `gorm:"primaryKey"`
+	CompLevel                                    string `gorm:"primaryKey"`
+	StartingQuadrant                             int32
+	SpeakerAuto, AmpAuto                         int32
+	NotesDroppedAuto                             int32
+	MobilityAuto                                 bool
+	Speaker, Amp, SpeakerAmplified, AmpAmplified int32
+	NotesDropped                                 int32
+	Penalties                                    int32
+	AvgCycle                                     int64
+	Park, OnStage, Harmony, TrapNote             bool
+
+	// The username of the person who collected these statistics.
+	// "unknown" if submitted without logging in.
+	// Empty if the stats have not yet been collected.
+	CollectedBy string
+}
+
 type Action struct {
 	PreScouting bool   `gorm:"primaryKey"`
 	TeamNumber  string `gorm:"primaryKey"`
@@ -139,7 +165,7 @@ func NewDatabase(user string, password string, port int) (*Database, error) {
 		return nil, errors.New(fmt.Sprint("Failed to connect to postgres: ", err))
 	}
 
-	err = database.AutoMigrate(&TeamMatch{}, &Shift{}, &Stats2023{}, &Action{}, &PitImage{}, &NotesData{}, &Ranking{}, &DriverRankingData{}, &ParsedDriverRankingData{})
+	err = database.AutoMigrate(&TeamMatch{}, &Shift{}, &Stats2023{}, &Stats2024{}, &Action{}, &PitImage{}, &NotesData{}, &Ranking{}, &DriverRankingData{}, &ParsedDriverRankingData{})
 	if err != nil {
 		database.Delete()
 		return nil, errors.New(fmt.Sprint("Failed to create/migrate tables: ", err))
@@ -210,11 +236,43 @@ func (database *Database) AddToStats2023(s Stats2023) error {
 	return result.Error
 }
 
+func (database *Database) AddToStats2024(s Stats2024) error {
+	if !s.PreScouting {
+		matches, err := database.QueryMatchesString(s.TeamNumber)
+		if err != nil {
+			return err
+		}
+		foundMatch := false
+		for _, match := range matches {
+			if match.MatchNumber == s.MatchNumber {
+				foundMatch = true
+				break
+			}
+		}
+		if !foundMatch {
+			return errors.New(fmt.Sprint(
+				"Failed to find team ", s.TeamNumber,
+				" in match ", s.MatchNumber, " in the schedule."))
+		}
+	}
+
+	result := database.Create(&s)
+	return result.Error
+}
+
 func (database *Database) DeleteFromStats(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
 	var stats2023 []Stats2023
 	result := database.
 		Where("comp_level = ? AND match_number = ? AND set_number = ? AND team_number = ?", compLevel_, matchNumber_, setNumber_, teamNumber_).
 		Delete(&stats2023)
+	return result.Error
+}
+
+func (database *Database) DeleteFromStats2024(compLevel_ string, matchNumber_ int32, setNumber_ int32, teamNumber_ string) error {
+	var stats2024 []Stats2024
+	result := database.
+		Where("comp_level = ? AND match_number = ? AND set_number = ? AND team_number = ?", compLevel_, matchNumber_, setNumber_, teamNumber_).
+		Delete(&stats2024)
 	return result.Error
 }
 
@@ -281,6 +339,12 @@ func (database *Database) ReturnStats2023() ([]Stats2023, error) {
 	return stats2023, result.Error
 }
 
+func (database *Database) ReturnStats2024() ([]Stats2024, error) {
+	var stats2024 []Stats2024
+	result := database.Find(&stats2024)
+	return stats2024, result.Error
+}
+
 func (database *Database) ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]Stats2023, error) {
 	var stats2023 []Stats2023
 	result := database.
@@ -288,6 +352,15 @@ func (database *Database) ReturnStats2023ForTeam(teamNumber string, matchNumber 
 			teamNumber, matchNumber, setNumber, compLevel, preScouting).
 		Find(&stats2023)
 	return stats2023, result.Error
+}
+
+func (database *Database) ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]Stats2024, error) {
+	var stats2024 []Stats2024
+	result := database.
+		Where("team_number = ? AND match_number = ? AND set_number = ? AND comp_level = ? AND pre_scouting = ?",
+			teamNumber, matchNumber, setNumber, compLevel, preScouting).
+		Find(&stats2024)
+	return stats2024, result.Error
 }
 
 func (database *Database) ReturnRankings() ([]Ranking, error) {

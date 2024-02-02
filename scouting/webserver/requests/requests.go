@@ -14,9 +14,13 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/db"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2023_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2023_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches"
@@ -31,6 +35,8 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2024_actions"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2024_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking"
@@ -53,6 +59,8 @@ type RequestAllNotes = request_all_notes.RequestAllNotes
 type RequestAllNotesResponseT = request_all_notes_response.RequestAllNotesResponseT
 type Request2023DataScouting = request_2023_data_scouting.Request2023DataScouting
 type Request2023DataScoutingResponseT = request_2023_data_scouting_response.Request2023DataScoutingResponseT
+type Request2024DataScouting = request_2024_data_scouting.Request2024DataScouting
+type Request2024DataScoutingResponseT = request_2024_data_scouting_response.Request2024DataScoutingResponseT
 type SubmitNotes = submit_notes.SubmitNotes
 type SubmitNotesResponseT = submit_notes_response.SubmitNotesResponseT
 type SubmitPitImage = submit_pit_image.SubmitPitImage
@@ -71,9 +79,14 @@ type SubmitDriverRanking = submit_driver_ranking.SubmitDriverRanking
 type SubmitDriverRankingResponseT = submit_driver_ranking_response.SubmitDriverRankingResponseT
 type SubmitActions = submit_actions.SubmitActions
 type Action = submit_actions.Action
+type Action2024 = submit_2024_actions.Action
 type SubmitActionsResponseT = submit_actions_response.SubmitActionsResponseT
+type Submit2024Actions = submit_2024_actions.Submit2024Actions
+type Submit2024ActionsResponseT = submit_2024_actions_response.Submit2024ActionsResponseT
 type Delete2023DataScouting = delete_2023_data_scouting.Delete2023DataScouting
 type Delete2023DataScoutingResponseT = delete_2023_data_scouting_response.Delete2023DataScoutingResponseT
+type Delete2024DataScouting = delete_2024_data_scouting.Delete2024DataScouting
+type Delete2024DataScoutingResponseT = delete_2024_data_scouting_response.Delete2024DataScoutingResponseT
 
 // The interface we expect the database abstraction to conform to.
 // We use an interface here because it makes unit testing easier.
@@ -81,12 +94,15 @@ type Database interface {
 	AddToMatch(db.TeamMatch) error
 	AddToShift(db.Shift) error
 	AddToStats2023(db.Stats2023) error
+	AddToStats2024(db.Stats2024) error
 	ReturnMatches() ([]db.TeamMatch, error)
 	ReturnAllNotes() ([]db.NotesData, error)
 	ReturnAllDriverRankings() ([]db.DriverRankingData, error)
 	ReturnAllShifts() ([]db.Shift, error)
 	ReturnStats2023() ([]db.Stats2023, error)
 	ReturnStats2023ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]db.Stats2023, error)
+	ReturnStats2024() ([]db.Stats2024, error)
+	ReturnStats2024ForTeam(teamNumber string, matchNumber int32, setNumber int32, compLevel string, preScouting bool) ([]db.Stats2024, error)
 	QueryAllShifts(int) ([]db.Shift, error)
 	QueryNotes(string) ([]string, error)
 	QueryPitImages(string) ([]db.RequestedPitImage, error)
@@ -96,6 +112,7 @@ type Database interface {
 	AddDriverRanking(db.DriverRankingData) error
 	AddAction(db.Action) error
 	DeleteFromStats(string, int32, int32, string) error
+	DeleteFromStats2024(string, int32, int32, string) error
 	DeleteFromActions(string, int32, int32, string) error
 }
 
@@ -182,6 +199,7 @@ func findIndexInList(list []string, comp_level string) (int, error) {
 }
 
 func (handler requestAllMatchesHandler) teamHasBeenDataScouted(key MatchAssemblyKey, teamNumber string) (bool, error) {
+	// TODO change this to reference 2024 stats
 	stats, err := handler.db.ReturnStats2023ForTeam(
 		teamNumber, key.MatchNumber, key.SetNumber, key.CompLevel, false)
 	if err != nil {
@@ -422,6 +440,165 @@ func (handler submitPitImageScoutingHandler) ServeHTTP(w http.ResponseWriter, re
 
 	var response SubmitPitImageResponseT
 	builder := flatbuffers.NewBuilder(10)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
+func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024Actions) (db.Stats2024, error) {
+	overall_time := int64(0)
+	cycles := int64(0)
+	picked_up := false
+	lastPlacedTime := int64(0)
+	stat := db.Stats2024{
+		PreScouting: submit2024Actions.PreScouting(), TeamNumber: string(submit2024Actions.TeamNumber()), MatchNumber: submit2024Actions.MatchNumber(), SetNumber: submit2024Actions.SetNumber(), CompLevel: string(submit2024Actions.CompLevel()),
+		StartingQuadrant: 0, SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
+		Speaker: 0, Amp: 0, SpeakerAmplified: 0, AmpAmplified: 0, NotesDropped: 0, Penalties: 0,
+		TrapNote: false, AvgCycle: 0, Park: false, OnStage: false, Harmony: false, CollectedBy: "",
+	}
+	// Loop over all actions.
+	for i := 0; i < submit2024Actions.ActionsListLength(); i++ {
+		var action submit_2024_actions.Action
+		if !submit2024Actions.ActionsList(&action, i) {
+			return db.Stats2024{}, errors.New(fmt.Sprintf("Failed to parse submit_2024_actions.Action"))
+		}
+		actionTable := new(flatbuffers.Table)
+		action_type := action.ActionTakenType()
+		if !action.ActionTaken(actionTable) {
+			return db.Stats2024{}, errors.New(fmt.Sprint("Failed to parse sub-action or sub-action was missing"))
+		}
+		if action_type == submit_2024_actions.ActionTypeStartMatchAction {
+			var startMatchAction submit_2024_actions.StartMatchAction
+			startMatchAction.Init(actionTable.Bytes, actionTable.Pos)
+			stat.StartingQuadrant = startMatchAction.Position()
+		} else if action_type == submit_2024_actions.ActionTypeMobilityAction {
+			var mobilityAction submit_2024_actions.MobilityAction
+			mobilityAction.Init(actionTable.Bytes, actionTable.Pos)
+			if mobilityAction.Mobility() {
+				stat.MobilityAuto = true
+			}
+
+		} else if action_type == submit_2024_actions.ActionTypePenaltyAction {
+			var penaltyAction submit_2024_actions.PenaltyAction
+			penaltyAction.Init(actionTable.Bytes, actionTable.Pos)
+			stat.Penalties += 1
+
+		} else if action_type == submit_2024_actions.ActionTypePickupNoteAction {
+			var pick_up_action submit_2024_actions.PickupNoteAction
+			pick_up_action.Init(actionTable.Bytes, actionTable.Pos)
+			if picked_up == true {
+				auto := pick_up_action.Auto()
+				if auto == false {
+					stat.NotesDropped += 1
+				} else {
+					stat.NotesDroppedAuto += 1
+				}
+			} else {
+				picked_up = true
+			}
+		} else if action_type == submit_2024_actions.ActionTypePlaceNoteAction {
+			var place_action submit_2024_actions.PlaceNoteAction
+			place_action.Init(actionTable.Bytes, actionTable.Pos)
+			if !picked_up {
+				return db.Stats2024{}, errors.New(fmt.Sprintf("Got PlaceNoteAction without corresponding PickupObjectAction"))
+			}
+			score_type := place_action.ScoreType()
+			auto := place_action.Auto()
+			if score_type == submit_2024_actions.ScoreTypekAMP && auto {
+				stat.AmpAuto += 1
+			} else if score_type == submit_2024_actions.ScoreTypekAMP && !auto {
+				stat.Amp += 1
+			} else if score_type == submit_2024_actions.ScoreTypekAMP_AMPLIFIED && !auto {
+				stat.AmpAmplified += 1
+			} else if score_type == submit_2024_actions.ScoreTypekSPEAKER && !auto {
+				stat.Speaker += 1
+			} else if score_type == submit_2024_actions.ScoreTypekSPEAKER && auto {
+				stat.SpeakerAuto += 1
+			} else if score_type == submit_2024_actions.ScoreTypekSPEAKER_AMPLIFIED && !auto {
+				stat.SpeakerAmplified += 1
+			} else {
+				return db.Stats2024{}, errors.New(fmt.Sprintf("Got unknown ObjectType/ScoreLevel/Auto combination"))
+			}
+			picked_up = false
+			if lastPlacedTime != int64(0) {
+				// If this is not the first time we place,
+				// start counting cycle time. We define cycle
+				// time as the time between placements.
+				overall_time += int64(action.Timestamp()) - lastPlacedTime
+				cycles += 1
+			}
+			lastPlacedTime = int64(action.Timestamp())
+		} else if action_type == submit_2024_actions.ActionTypeEndMatchAction {
+			var endMatchAction submit_2024_actions.EndMatchAction
+			endMatchAction.Init(actionTable.Bytes, actionTable.Pos)
+			if endMatchAction.StageType() == submit_2024_actions.StageTypekON_STAGE {
+				stat.OnStage = true
+			} else if endMatchAction.StageType() == submit_2024_actions.StageTypekPARK {
+				stat.Park = true
+			} else if endMatchAction.StageType() == submit_2024_actions.StageTypekHARMONY {
+				stat.Harmony = true
+			}
+			stat.TrapNote = endMatchAction.TrapNote()
+		}
+	}
+	if cycles != 0 {
+		stat.AvgCycle = overall_time / cycles
+	} else {
+		stat.AvgCycle = 0
+	}
+	return stat, nil
+}
+
+// Handles a Request2024DataScouting request.
+type request2024DataScoutingHandler struct {
+	db Database
+}
+
+func (handler request2024DataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	_, success := parseRequest(w, requestBytes, "Request2024DataScouting", request_2024_data_scouting.GetRootAsRequest2024DataScouting)
+	if !success {
+		return
+	}
+
+	stats, err := handler.db.ReturnStats2024()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to query database: ", err))
+		return
+	}
+
+	var response Request2024DataScoutingResponseT
+	for _, stat := range stats {
+		response.StatsList = append(response.StatsList, &request_2024_data_scouting_response.Stats2024T{
+			TeamNumber:       stat.TeamNumber,
+			MatchNumber:      stat.MatchNumber,
+			SetNumber:        stat.SetNumber,
+			CompLevel:        stat.CompLevel,
+			StartingQuadrant: stat.StartingQuadrant,
+			SpeakerAuto:      stat.SpeakerAuto,
+			AmpAuto:          stat.AmpAuto,
+			NotesDroppedAuto: stat.NotesDroppedAuto,
+			MobilityAuto:     stat.MobilityAuto,
+			Speaker:          stat.Speaker,
+			Amp:              stat.Amp,
+			SpeakerAmplified: stat.SpeakerAmplified,
+			AmpAmplified:     stat.AmpAmplified,
+			NotesDropped:     stat.NotesDropped,
+			Penalties:        stat.Penalties,
+			TrapNote:         stat.TrapNote,
+			AvgCycle:         stat.AvgCycle,
+			Park:             stat.Park,
+			OnStage:          stat.OnStage,
+			Harmony:          stat.Harmony,
+			CollectedBy:      stat.CollectedBy,
+		})
+	}
+
+	builder := flatbuffers.NewBuilder(50 * 1024)
 	builder.Finish((&response).Pack(builder))
 	w.Write(builder.FinishedBytes())
 }
@@ -926,6 +1103,77 @@ func (handler requestAllDriverRankingsHandler) ServeHTTP(w http.ResponseWriter, 
 	w.Write(builder.FinishedBytes())
 }
 
+type submit2024ActionsHandler struct {
+	db Database
+}
+
+func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// Get the username of the person submitting the data.
+	username := parseUsername(req)
+
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "Submit2024Actions", submit_2024_actions.GetRootAsSubmit2024Actions)
+	if !success {
+		return
+	}
+
+	log.Println("Got actions for match", request.MatchNumber(), "team", request.TeamNumber(), "from", username)
+
+	for i := 0; i < request.ActionsListLength(); i++ {
+
+		var action Action2024
+		request.ActionsList(&action, i)
+
+		dbAction := db.Action{
+			PreScouting: request.PreScouting(),
+			TeamNumber:  string(request.TeamNumber()),
+			MatchNumber: request.MatchNumber(),
+			SetNumber:   request.SetNumber(),
+			CompLevel:   string(request.CompLevel()),
+			//TODO: Serialize CompletedAction
+			CompletedAction: []byte{},
+			Timestamp:       action.Timestamp(),
+			CollectedBy:     username,
+		}
+
+		// Do some error checking.
+		if action.Timestamp() < 0 {
+			respondWithError(w, http.StatusBadRequest, fmt.Sprint(
+				"Invalid timestamp field value of ", action.Timestamp()))
+			return
+		}
+
+		err = handler.db.AddAction(dbAction)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to add action to database: ", err))
+			return
+		}
+	}
+
+	stats, err := ConvertActionsToStat2024(request)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to convert actions to stats: ", err))
+		return
+	}
+
+	stats.CollectedBy = username
+
+	err = handler.db.AddToStats2024(stats)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit stats: ", stats, ": ", err))
+		return
+	}
+
+	builder := flatbuffers.NewBuilder(50 * 1024)
+	builder.Finish((&SubmitActionsResponseT{}).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 type submitActionsHandler struct {
 	db Database
 }
@@ -997,6 +1245,50 @@ func (handler submitActionsHandler) ServeHTTP(w http.ResponseWriter, req *http.R
 	w.Write(builder.FinishedBytes())
 }
 
+type Delete2024DataScoutingHandler struct {
+	db Database
+}
+
+func (handler Delete2024DataScoutingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	requestBytes, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprint("Failed to read request bytes:", err))
+		return
+	}
+
+	request, success := parseRequest(w, requestBytes, "Delete2024DataScouting", delete_2024_data_scouting.GetRootAsDelete2024DataScouting)
+	if !success {
+		return
+	}
+
+	err = handler.db.DeleteFromStats2024(
+		string(request.CompLevel()),
+		request.MatchNumber(),
+		request.SetNumber(),
+		string(request.TeamNumber()))
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete from stats2024: %v", err))
+		return
+	}
+
+	err = handler.db.DeleteFromActions(
+		string(request.CompLevel()),
+		request.MatchNumber(),
+		request.SetNumber(),
+		string(request.TeamNumber()))
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete from actions: %v", err))
+		return
+	}
+
+	var response Delete2024DataScoutingResponseT
+	builder := flatbuffers.NewBuilder(10)
+	builder.Finish((&response).Pack(builder))
+	w.Write(builder.FinishedBytes())
+}
+
 type Delete2023DataScoutingHandler struct {
 	db Database
 }
@@ -1047,6 +1339,7 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.Handle("/requests/request/all_notes", requestAllNotesHandler{db})
 	scoutingServer.Handle("/requests/request/all_driver_rankings", requestAllDriverRankingsHandler{db})
 	scoutingServer.Handle("/requests/request/2023_data_scouting", request2023DataScoutingHandler{db})
+	scoutingServer.Handle("/requests/request/2024_data_scouting", request2024DataScoutingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_notes", submitNoteScoutingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_pit_image", submitPitImageScoutingHandler{db})
 	scoutingServer.Handle("/requests/request/pit_images", requestPitImagesHandler{db})
@@ -1056,5 +1349,7 @@ func HandleRequests(db Database, scoutingServer server.ScoutingServer) {
 	scoutingServer.Handle("/requests/request/shift_schedule", requestShiftScheduleHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_driver_ranking", SubmitDriverRankingHandler{db})
 	scoutingServer.Handle("/requests/submit/submit_actions", submitActionsHandler{db})
+	scoutingServer.Handle("/requests/submit/submit_2024_actions", submit2024ActionsHandler{db})
 	scoutingServer.Handle("/requests/delete/delete_2023_data_scouting", Delete2023DataScoutingHandler{db})
+	scoutingServer.Handle("/requests/delete/delete_2024_data_scouting", Delete2024DataScoutingHandler{db})
 }

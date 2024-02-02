@@ -138,6 +138,190 @@ func TestAddOrUpdateRankingsDB(t *testing.T) {
 	}
 }
 
+func TestAddToStats2024DB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	correct := []Stats2024{
+		Stats2024{
+			PreScouting: false, TeamNumber: "894",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
+			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+			Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			Park: true, OnStage: false, Harmony: false, CollectedBy: "emma",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "942",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+			SpeakerAuto: 2, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+			Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			Park: true, OnStage: false, Harmony: false, CollectedBy: "harry",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "432",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+			Speaker: 2, Amp: 1, SpeakerAmplified: 3, AmpAmplified: 0,
+			NotesDropped: 0, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			Park: false, OnStage: true, Harmony: false, CollectedBy: "henry",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "52A",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
+			Speaker: 0, Amp: 1, SpeakerAmplified: 2, AmpAmplified: 3,
+			NotesDropped: 2, Penalties: 0, TrapNote: true, AvgCycle: 0,
+			Park: true, OnStage: false, Harmony: false, CollectedBy: "jordan",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "745",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
+			Speaker: 5, Amp: 0, SpeakerAmplified: 2, AmpAmplified: 1,
+			NotesDropped: 1, Penalties: 1, TrapNote: true, AvgCycle: 0,
+			Park: true, OnStage: false, Harmony: false, CollectedBy: "taylor",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "934",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+			SpeakerAuto: 1, AmpAuto: 3, NotesDroppedAuto: 0, MobilityAuto: true,
+			Speaker: 0, Amp: 3, SpeakerAmplified: 2, AmpAmplified: 2,
+			NotesDropped: 0, Penalties: 3, TrapNote: true, AvgCycle: 0,
+			Park: false, OnStage: false, Harmony: true, CollectedBy: "katie",
+		},
+	}
+
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "894"},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "942"},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "432"},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "52A"},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "745"},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 3, TeamNumber: "934"},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+	}
+
+	for i := 0; i < len(correct); i++ {
+		err := fixture.db.AddToStats2024(correct[i])
+		check(t, err, "Failed to add 2024stats to DB")
+	}
+
+	got, err := fixture.db.ReturnStats2024()
+	check(t, err, "Failed ReturnStats2024()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
+func TestInsertPreScoutedStats2024(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	stats := Stats2024{
+		PreScouting: false, TeamNumber: "6344",
+		MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
+		SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+		Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
+		NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+		Park: true, OnStage: false, Harmony: false, CollectedBy: "emma",
+	}
+
+	// Attempt to insert the non-pre-scouted data and make sure it fails.
+	err := fixture.db.AddToStats2024(stats)
+	if err == nil {
+		t.Fatal("Expected error from inserting the stats.")
+	}
+	if err.Error() != "Failed to find team 6344 in match 3 in the schedule." {
+		t.Fatal("Got:", err.Error())
+	}
+
+	// Mark the data as pre-scouting data. It should now succeed.
+	stats.PreScouting = true
+	err = fixture.db.AddToStats2024(stats)
+	check(t, err, "Failed to add prescouted stats to DB")
+}
+
+func TestQueryingStats2024ByTeam(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	stats := []Stats2024{
+		Stats2024{
+			PreScouting: false, TeamNumber: "328A",
+			MatchNumber: 7, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
+			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+			Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			Park: false, OnStage: true, Harmony: false, CollectedBy: "emma",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "978",
+			MatchNumber: 2, SetNumber: 2, CompLevel: "qm", StartingQuadrant: 4,
+			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
+			Speaker: 1, Amp: 2, SpeakerAmplified: 0, AmpAmplified: 2,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			Park: true, OnStage: false, Harmony: false, CollectedBy: "emma",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "328A",
+			MatchNumber: 4, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 2,
+			SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 1, MobilityAuto: true,
+			Speaker: 0, Amp: 1, SpeakerAmplified: 1, AmpAmplified: 5,
+			NotesDropped: 1, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			Park: false, OnStage: false, Harmony: true, CollectedBy: "emma",
+		},
+	}
+
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 7, SetNumber: 1, CompLevel: "qm",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "328A"},
+		TeamMatch{MatchNumber: 2, SetNumber: 2, CompLevel: "qm",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "978"},
+		TeamMatch{MatchNumber: 4, SetNumber: 1, CompLevel: "qm",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "328A"},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+	}
+
+	for i := range stats {
+		err := fixture.db.AddToStats2024(stats[i])
+		check(t, err, "Failed to add 2024stats to DB")
+	}
+
+	// Validate that requesting status for a single team gets us the
+	// expected data.
+	statsFor328A, err := fixture.db.ReturnStats2024ForTeam("328A", 7, 1, "qm", false)
+	check(t, err, "Failed ReturnStats2024()")
+
+	if !reflect.DeepEqual([]Stats2024{stats[0]}, statsFor328A) {
+		t.Errorf("Got %#v,\nbut expected %#v.", statsFor328A, stats[0])
+	}
+	// Validate that requesting team data for a non-existent match returns
+	// nothing.
+	statsForMissing, err := fixture.db.ReturnStats2024ForTeam("6344", 9, 1, "qm", false)
+	check(t, err, "Failed ReturnStats2024()")
+
+	if !reflect.DeepEqual([]Stats2024{}, statsForMissing) {
+		t.Errorf("Got %#v,\nbut expected %#v.", statsForMissing, []Stats2024{})
+	}
+}
+
 func TestAddToStats2023DB(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
@@ -505,6 +689,101 @@ func TestDeleteFromStats(t *testing.T) {
 	}
 }
 
+func TestDeleteFromStats2024(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	startingStats := []Stats2024{
+		Stats2024{
+			PreScouting: false, TeamNumber: "345",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+			Speaker: 1, Amp: 3, SpeakerAmplified: 1, AmpAmplified: 3,
+			NotesDropped: 0, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			Park: false, OnStage: true, Harmony: false, CollectedBy: "bailey",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "645",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
+			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
+			Speaker: 1, Amp: 2, SpeakerAmplified: 0, AmpAmplified: 1,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			Park: true, OnStage: false, Harmony: false, CollectedBy: "kate",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "323",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+			SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 1, MobilityAuto: true,
+			Speaker: 0, Amp: 0, SpeakerAmplified: 2, AmpAmplified: 1,
+			NotesDropped: 1, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			Park: true, OnStage: false, Harmony: false, CollectedBy: "tyler",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "542",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 0, MobilityAuto: false,
+			Speaker: 1, Amp: 2, SpeakerAmplified: 2, AmpAmplified: 1,
+			NotesDropped: 1, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			Park: false, OnStage: false, Harmony: true, CollectedBy: "max",
+		},
+	}
+
+	correct := []Stats2024{
+		Stats2024{
+			PreScouting: false, TeamNumber: "345",
+			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+			Speaker: 1, Amp: 3, SpeakerAmplified: 1, AmpAmplified: 3,
+			NotesDropped: 0, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			Park: false, OnStage: true, Harmony: false, CollectedBy: "bailey",
+		},
+	}
+
+	originalMatches := []TeamMatch{
+		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "345"},
+		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "645"},
+		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "323"},
+		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 2, TeamNumber: "542"},
+	}
+
+	// Matches for which we want to delete the stats.
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
+			TeamNumber: "645"},
+		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
+			TeamNumber: "323"},
+		TeamMatch{MatchNumber: 5, SetNumber: 1, CompLevel: "quals",
+			TeamNumber: "542"},
+	}
+
+	for _, match := range originalMatches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+		fmt.Println("Match has been added : ", match.TeamNumber)
+	}
+
+	for _, stat := range startingStats {
+		err := fixture.db.AddToStats2024(stat)
+		check(t, err, "Failed to add stat")
+	}
+
+	for _, match := range matches {
+		err := fixture.db.DeleteFromStats2024(match.CompLevel, match.MatchNumber, match.SetNumber, match.TeamNumber)
+		check(t, err, "Failed to delete stat2024")
+	}
+
+	got, err := fixture.db.ReturnStats2024()
+	check(t, err, "Failed ReturnStats2024()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
 func TestDeleteFromActions(t *testing.T) {
 	fixture := createDatabase(t)
 	defer fixture.TearDown()
@@ -858,6 +1137,74 @@ func TestReturnRankingsDB(t *testing.T) {
 
 	got, err := fixture.db.ReturnRankings()
 	check(t, err, "Failed ReturnRankings()")
+
+	if !reflect.DeepEqual(correct, got) {
+		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
+	}
+}
+
+func TestReturnStats2024DB(t *testing.T) {
+	fixture := createDatabase(t)
+	defer fixture.TearDown()
+
+	correct := []Stats2024{
+		Stats2024{
+			PreScouting: false, TeamNumber: "894",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
+			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+			Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			Park: true, OnStage: false, Harmony: false, CollectedBy: "emma",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "942",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
+			SpeakerAuto: 2, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+			Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			Park: true, OnStage: false, Harmony: false, CollectedBy: "harry",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "432",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
+			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
+			Speaker: 2, Amp: 1, SpeakerAmplified: 3, AmpAmplified: 0,
+			NotesDropped: 0, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			Park: false, OnStage: true, Harmony: false, CollectedBy: "henry",
+		},
+		Stats2024{
+			PreScouting: false, TeamNumber: "52A",
+			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
+			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
+			Speaker: 0, Amp: 1, SpeakerAmplified: 2, AmpAmplified: 3,
+			NotesDropped: 2, Penalties: 0, TrapNote: true, AvgCycle: 0,
+			Park: true, OnStage: false, Harmony: false, CollectedBy: "jordan",
+		},
+	}
+
+	matches := []TeamMatch{
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 1, TeamNumber: "894"},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 2, TeamNumber: "942"},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "R", AlliancePosition: 3, TeamNumber: "432"},
+		TeamMatch{MatchNumber: 3, SetNumber: 1, CompLevel: "quals",
+			Alliance: "B", AlliancePosition: 1, TeamNumber: "52A"},
+	}
+
+	for _, match := range matches {
+		err := fixture.db.AddToMatch(match)
+		check(t, err, "Failed to add match")
+	}
+
+	for i := 0; i < len(correct); i++ {
+		err := fixture.db.AddToStats2024(correct[i])
+		check(t, err, fmt.Sprint("Failed to add stats ", i))
+	}
+
+	got, err := fixture.db.ReturnStats2024()
+	check(t, err, "Failed ReturnStats2024()")
 
 	if !reflect.DeepEqual(correct, got) {
 		t.Errorf("Got %#v,\nbut expected %#v.", got, correct)
