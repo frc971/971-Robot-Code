@@ -15,6 +15,9 @@ table Position {
 
     // Values of the encoder and potentiometer at the catapult
     catapult:frc971.PotAndAbsolutePosition (id: 3);
+
+    // True means there is a game piece in the transfer.
+    transfer_beambreak:bool (id: 4);
 }
 
 root_type Position;

@@ -15,6 +15,11 @@ table Output {
 
     // Voltage of the catapult
     catapult_voltage: double (id: 4);
+
+    // Voltage of transfer rollers
+    // Positive voltage is for transfering in
+    // Negative voltage is for transfering out
+    transfer_roller_voltage:double (id: 5);
 }
 
 root_type Output;

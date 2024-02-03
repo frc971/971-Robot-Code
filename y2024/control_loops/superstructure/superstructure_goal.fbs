@@ -16,11 +16,22 @@ enum IntakePivotGoal : ubyte {
     RETRACTED = 1, 
 }
 
+// Represents goal of transfer rollers
+// TRANSFER_IN is for transfering game piece in from the intake to the shooter
+// TRANSFER_OUT is for transfering game piece out to the intake for spitting
+enum TransferRollerGoal : ubyte {
+    NONE = 0,
+    TRANSFER_IN = 1,
+    TRANSFER_OUT = 2,
+}
+
 table Goal {
     intake_roller_goal:IntakeRollerGoal (id: 0);
     intake_pivot_goal:IntakePivotGoal (id: 1);
 
     catapult_goal:frc971.control_loops.catapult.CatapultGoal (id: 2);
+    
+    transfer_roller_goal:TransferRollerGoal (id: 3);
 }
 
 root_type Goal;

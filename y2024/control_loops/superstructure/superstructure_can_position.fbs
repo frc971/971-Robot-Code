@@ -17,6 +17,9 @@ table CANPosition {
 
     // CAN Position of the intake pivot falcon
     intake_pivot:frc971.control_loops.CANTalonFX (id: 3);
+
+    // CAN Position of the transfer roller falcon
+    transfer_roller:frc971.control_loops.CANTalonFX (id: 4);
 }
 
 root_type CANPosition;

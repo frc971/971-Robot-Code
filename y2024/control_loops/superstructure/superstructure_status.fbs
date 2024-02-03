@@ -21,6 +21,13 @@ table ShooterStatus {
   altitude_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
 }
 
+// Contains status of transfer rollers
+enum TransferRollerState : ubyte {
+    NONE = 0,
+    TRANSFERING_IN = 1,
+    TRANSFERING_OUT = 2,
+}
+
 table Status {
   // All subsystems know their location.
   zeroed:bool (id: 0);
@@ -33,6 +40,9 @@ table Status {
 
   // Estimated angle and angular velocitiy of the intake.
   intake_pivot_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 3);
+
+  // State of transfer rollers
+  transfer_roller_state:TransferRollerState (id: 4);
 }
 
 root_type Status;
