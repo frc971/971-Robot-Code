@@ -10,6 +10,15 @@ enum IntakeRollerState : ubyte {
   INTAKING = 2,
 }
 
+enum CatapultStatus: ubyte {
+    // Means we are waiting for a game piece
+    IDLE = 0,
+    // Means we have a game piece
+    LOADED = 1,
+    // Means we are firing a game piece
+    FIRING = 2,
+}
+
 table ShooterStatus {
   // Estimated angle and angular velocitiy of the turret.
   turret_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 0);
@@ -19,6 +28,8 @@ table ShooterStatus {
 
   // Estimated angle and angular velocitiy of the altitude.
   altitude_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
+
+  catapult_status: CatapultStatus (id: 3);
 }
 
 // Contains status of transfer rollers

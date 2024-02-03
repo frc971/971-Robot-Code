@@ -12,7 +12,15 @@ table CameraConfiguration {
 
 table ShotParams {
     shot_velocity: double (id: 0);
-    shot_angle: double (id: 1);
+
+    // Angle of the altitude
+    shot_altitude_angle: double (id: 1);
+
+    // Angle of the catapult
+    shot_catapult_angle: double (id: 2);
+
+    // Speed over ground to use for shooting on the fly
+    shot_speed_over_ground: double (id: 3);
 }
 
 table InterpolationTablePoint {
@@ -88,6 +96,8 @@ table Common {
   transfer_roller_voltages:TransferRollerVoltages (id: 7);
   climber:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 8);
   climber_set_points:ClimberSetPoints (id: 9);
+  turret_loading_position: double (id: 10);
+  catapult_return_position: double (id: 11);
 }
 
 table Constants {

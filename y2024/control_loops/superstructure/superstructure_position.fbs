@@ -22,6 +22,9 @@ table Position {
     // Values of the encoder and potentiometer at the climber.
     // Zero is fully retracted, positive is extended upward.
     climber:frc971.PotAndAbsolutePosition (id: 5);
+
+    // True if there is a game piece in the catapult
+    catapult_beam_break:bool (id: 6);
 }
 
 root_type Position;
