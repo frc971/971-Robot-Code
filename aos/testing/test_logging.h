@@ -3,8 +3,7 @@
 
 #include "aos/time/time.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Enables the logging framework for use during a gtest test.
 // It will print out all WARNING and above messages all of the time. It will
@@ -23,7 +22,6 @@ void SetLogFileName(const char *filename);
 // we want to use graphing tools to verify what's happening.
 void ForcePrintLogsDuringTests();
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing
 
 #endif  // AOS_TESTING_TEST_LOGGING_H_

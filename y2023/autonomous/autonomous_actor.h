@@ -11,8 +11,7 @@
 #include "y2023/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2023/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2023 {
-namespace autonomous {
+namespace y2023::autonomous {
 
 class AutonomousActor
     : public ::frc971::autonomous::UserButtonLocalizedAutonomousActor {
@@ -83,7 +82,6 @@ class AutonomousActor
   const ::std::vector<::Eigen::Matrix<double, 3, 1>> points_;
 };
 
-}  // namespace autonomous
-}  // namespace y2023
+}  // namespace y2023::autonomous
 
 #endif  // Y2023_AUTONOMOUS_AUTONOMOUS_ACTOR_H_

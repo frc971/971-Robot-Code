@@ -7,8 +7,7 @@
 #include "aos/vision/events/epoll_events.h"
 #include "aos/vision/events/intrusive_free_list.h"
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 // Non-templatized base class of TCP server.
 // TCPServer implements Construct which specializes the client connection
@@ -71,7 +70,6 @@ class TCPServer : public TCPServerBase {
   }
 };
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events
 
 #endif  // _AOS_VISION_EVENTS_TCP_SERVER_H_

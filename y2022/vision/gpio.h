@@ -14,8 +14,7 @@
 
 #include "aos/init.h"
 
-namespace y2022 {
-namespace vision {
+namespace y2022::vision {
 
 using namespace frc971::vision;
 
@@ -353,6 +352,5 @@ class GPIOSWPWMControl {
   aos::TimerHandler *const pwm_timer_;
 };
 
-}  // namespace vision
-}  // namespace y2022
+}  // namespace y2022::vision
 #endif  // Y2022_VISION_GPIO_H_

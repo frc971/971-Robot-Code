@@ -10,8 +10,7 @@
 #include "y2018/control_loops/superstructure/arm/arm_constants.h"
 #include "y2018/control_loops/superstructure/intake/intake_plant.h"
 
-namespace y2018 {
-namespace constants {
+namespace y2018::constants {
 
 // Has all of our "constants", except the ones that come from other places. The
 // ones which change between robots are put together with a workable way to
@@ -122,7 +121,6 @@ const Values &GetValues();
 // them.
 const Values &GetValuesForTeam(uint16_t team_number);
 
-}  // namespace constants
-}  // namespace y2018
+}  // namespace y2018::constants
 
 #endif  // Y2018_CONSTANTS_H_

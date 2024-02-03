@@ -9,9 +9,7 @@
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2019 {
-namespace control_loops {
-namespace superstructure {
+namespace y2019::control_loops::superstructure {
 
 // CollisionAvoidance computes the min and max allowable ranges for various
 // subsystems to avoid collisions.  It also shoves the elevator up to let the
@@ -108,8 +106,6 @@ class CollisionAvoidance {
   double max_intake_goal_;
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::superstructure
 
 #endif  // Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_COLLISION_AVOIDANCE_H_

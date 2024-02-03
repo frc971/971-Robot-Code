@@ -5,8 +5,7 @@
 
 #include <Eigen/Dense>
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 // Implements Gaussian Quadrature integration (5th order).  fn is the function
 // to integrate.  It must take 1 argument of type T.  The integration is between
@@ -57,7 +56,6 @@ Eigen::Matrix<double, N, 1> MatrixGaussianQuadrature5(const F &fn, double a,
   return answer;
 }
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif  // FRC971_CONTROL_LOOPS_FIXED_QUADRATURE_H_

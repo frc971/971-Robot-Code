@@ -3,9 +3,7 @@
 
 #include "frc971/input/driver_station_data.h"
 
-namespace frc971 {
-namespace input {
-namespace driver_station {
+namespace frc971::input::driver_station {
 
 // A class to wrap driver_station::Data and map logical joystick numbers to
 // their actual numbers in the order they are on the driverstation.
@@ -51,8 +49,6 @@ class RedundantData : public Data {
   const Data &data_;
 };
 
-}  // namespace driver_station
-}  // namespace input
-}  // namespace frc971
+}  // namespace frc971::input::driver_station
 
 #endif  // AOS_INPUT_REDUNDANT_JOYSTICK_DATA_H_

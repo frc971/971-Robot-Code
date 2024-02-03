@@ -5,8 +5,7 @@
 
 #include "frc971/zeroing/zeroing.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 // Estimates the position with an incremental encoder and a hall effect sensor.
 class HallEffectAndPositionZeroingEstimator
@@ -84,7 +83,6 @@ class HallEffectAndPositionZeroingEstimator
   double first_start_pos_;
 };
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing
 
 #endif  // FRC971_ZEROING_HALL_EFFECT_AND_POSITION_H_

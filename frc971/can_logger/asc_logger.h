@@ -10,8 +10,7 @@
 #include "aos/events/event_loop.h"
 #include "frc971/can_logger/can_logging_generated.h"
 
-namespace frc971 {
-namespace can_logger {
+namespace frc971::can_logger {
 
 class AscLogger {
  public:
@@ -33,7 +32,6 @@ class AscLogger {
   aos::EventLoop *event_loop_;
 };
 
-}  // namespace can_logger
-}  // namespace frc971
+}  // namespace frc971::can_logger
 
 #endif  // FRC971_CAN_LOGGER_ASC_LOGGER_H_

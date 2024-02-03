@@ -25,9 +25,7 @@
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "frc971/zeroing/imu_zeroer.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 namespace chrono = std::chrono;
 
@@ -195,8 +193,6 @@ class DrivetrainLoop
   aos::SendFailureCounter status_failure_counter_;
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_H_

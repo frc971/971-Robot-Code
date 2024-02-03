@@ -4,9 +4,7 @@
 #include "frc971/control_loops/position_sensor_sim.h"
 #include "frc971/zeroing/zeroing.h"
 
-namespace frc971 {
-namespace zeroing {
-namespace testing {
+namespace frc971::zeroing::testing {
 
 using control_loops::PositionSensorSimulator;
 using FBB = flatbuffers::FlatBufferBuilder;
@@ -27,6 +25,4 @@ class ZeroingTest : public ::testing::Test {
   }
 };
 
-}  // namespace testing
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing::testing

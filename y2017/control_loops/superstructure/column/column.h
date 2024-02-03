@@ -19,10 +19,7 @@
 #include "y2017/control_loops/superstructure/vision_time_adjuster.h"
 #include "y2017/vision/vision_generated.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace column {
+namespace y2017::control_loops::superstructure::column {
 
 class ColumnProfiledSubsystem
     : public ::frc971::control_loops::ProfiledSubsystem<
@@ -208,9 +205,6 @@ class Column {
   const double vision_error_;
 };
 
-}  // namespace column
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::column
 
 #endif  // Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_COLUMN_COLUMN_H_

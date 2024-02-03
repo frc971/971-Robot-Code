@@ -13,8 +13,7 @@
 // lot of formats. The only commonality across the "class" seems to be some
 // constants and a few descriptors.
 
-namespace frc971 {
-namespace teensy {
+namespace frc971::teensy {
 
 struct CdcLineCoding {
   static constexpr uint8_t stop_bits_1() { return 0; }
@@ -129,7 +128,6 @@ class AcmTty final : public UsbFunction {
   uint16_t control_line_state_ = 0;
 };
 
-}  // namespace teensy
-}  // namespace frc971
+}  // namespace frc971::teensy
 
 #endif  // MOTORS_USB_CDC_H_

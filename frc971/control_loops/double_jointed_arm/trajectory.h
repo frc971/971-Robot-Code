@@ -10,9 +10,7 @@
 
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
+namespace frc971::control_loops::arm {
 
 // This class represents a path in theta0, theta1 space.  It also returns the
 // position, velocity and acceleration of the path as a function of path
@@ -439,8 +437,6 @@ class TrajectoryFollower {
   int failed_solutions_ = 0;
 };
 
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm
 
 #endif  // FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_TRAJECTORY_H_

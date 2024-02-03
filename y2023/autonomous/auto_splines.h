@@ -13,8 +13,7 @@
 
 */
 
-namespace y2023 {
-namespace autonomous {
+namespace y2023::autonomous {
 
 class AutonomousSplines {
  public:
@@ -95,7 +94,6 @@ class AutonomousSplines {
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> splinecable_4_;
 };
 
-}  // namespace autonomous
-}  // namespace y2023
+}  // namespace y2023::autonomous
 
 #endif  // Y2023_AUTONOMOUS_AUTO_SPLINES_H_

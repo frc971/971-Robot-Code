@@ -7,8 +7,7 @@
 #include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/image_types.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 class BlobStreamViewer;
 
@@ -120,7 +119,6 @@ SETUP_FACTORY(ImageSource);
 void DebugFrameworkMain(int argc, char **argv, FilterHarness *filter,
                         CameraParams camera_params);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // _AOS_VISION_DEBUG_DEBUG_FRAMEWORK_H_

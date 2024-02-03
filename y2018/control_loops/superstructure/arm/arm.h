@@ -16,10 +16,7 @@
 using frc971::control_loops::arm::EKF;
 using frc971::control_loops::arm::TrajectoryFollower;
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
-namespace arm {
+namespace y2018::control_loops::superstructure::arm {
 
 class Arm {
  public:
@@ -141,9 +138,6 @@ class Arm {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
-}  // namespace arm
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure::arm
 
 #endif  // Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_ARM_H_

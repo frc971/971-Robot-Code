@@ -14,8 +14,7 @@
 //
 // Our SPI transfers are fixed-size to simplify everything.
 
-namespace frc971 {
-namespace jevois {
+namespace frc971::jevois {
 
 constexpr size_t spi_transfer_size() {
   // The teensy->RoboRIO side is way bigger, so just calculate that.
@@ -33,7 +32,6 @@ SpiTransfer SpiPackToTeensy(const RoborioToTeensy &message);
 std::optional<RoborioToTeensy> SpiUnpackToTeensy(
     absl::Span<const char> transfer);
 
-}  // namespace jevois
-}  // namespace frc971
+}  // namespace frc971::jevois
 
 #endif  // Y2019_JEVOIS_SPI_H_

@@ -17,8 +17,7 @@
 
 #include "aos/scoped/scoped_fd.h"
 
-namespace aos {
-namespace util {
+namespace aos::util {
 
 // Returns the complete contents of filename. LOG(FATAL)s if any errors are
 // encountered.
@@ -122,7 +121,6 @@ class FileWriter {
   aos::ScopedFD file_;
 };
 
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util
 
 #endif  // AOS_UTIL_FILE_H_

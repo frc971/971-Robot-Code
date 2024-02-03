@@ -8,8 +8,7 @@
 #include "aos/vision/math/segment.h"
 #include "aos/vision/math/vector.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Abstract away rendering to avoid compiling gtk for arm.
 // This should match a reduced cairo rendering api.
@@ -239,7 +238,6 @@ class CircleOverlay : public OverlayBase {
   std::vector<std::pair<Vector<2>, double>> circles_;
 };
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // _AOS_VISION_IMAGE_DEBUG_OVERLAY_H_

@@ -16,10 +16,7 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "y2023/control_loops/superstructure/arm/arm_trajectories_generated.h"
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
-namespace arm {
+namespace y2023::control_loops::superstructure::arm {
 
 using frc971::control_loops::Binomial;
 using frc971::control_loops::GaussianQuadrature5;
@@ -623,9 +620,6 @@ class TrajectoryFollower {
   int failed_solutions_ = 0;
 };
 
-}  // namespace arm
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure::arm
 
 #endif  // Y2023_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_TRAJECTORY_H_

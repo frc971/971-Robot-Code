@@ -15,8 +15,7 @@
 
 namespace control_loops = ::frc971::control_loops;
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 struct TalonFXParams {
   int device_id;
@@ -100,6 +99,5 @@ class TalonFX {
   double stator_current_limit_;
   double supply_current_limit_;
 };
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 #endif  // FRC971_WPILIB_TALONFX_MOTOR_H_

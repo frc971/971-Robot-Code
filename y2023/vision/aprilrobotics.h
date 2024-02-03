@@ -21,8 +21,7 @@
 #include "frc971/vision/visualize_robot.h"
 #include "y2023/constants/constants_generated.h"
 
-namespace y2023 {
-namespace vision {
+namespace y2023::vision {
 
 class AprilRoboticsDetector {
  public:
@@ -97,5 +96,4 @@ class AprilRoboticsDetector {
   frc971::vision::VisualizeRobot vis_robot_;
 };
 
-}  // namespace vision
-}  // namespace y2023
+}  // namespace y2023::vision

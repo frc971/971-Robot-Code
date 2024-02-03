@@ -9,8 +9,7 @@
 // and make changes to the log level of the current application based on that
 // message. Currently the only supported command is changing the global vlog
 // level.
-namespace aos {
-namespace logging {
+namespace aos::logging {
 
 class DynamicLogging {
  public:
@@ -23,5 +22,4 @@ class DynamicLogging {
   DISALLOW_COPY_AND_ASSIGN(DynamicLogging);
 };
 
-}  // namespace logging
-}  // namespace aos
+}  // namespace aos::logging

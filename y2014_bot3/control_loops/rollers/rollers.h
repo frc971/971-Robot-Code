@@ -7,9 +7,7 @@
 #include "y2014_bot3/control_loops/rollers/rollers_position_generated.h"
 #include "y2014_bot3/control_loops/rollers/rollers_status_generated.h"
 
-namespace y2014_bot3 {
-namespace control_loops {
-namespace rollers {
+namespace y2014_bot3::control_loops::rollers {
 
 class Rollers
     : public frc971::controls::ControlLoop<Goal, Position, Status, Output> {
@@ -26,8 +24,6 @@ class Rollers
                     aos::Sender<Status>::Builder *status) override;
 };
 
-}  // namespace rollers
-}  // namespace control_loops
-}  // namespace y2014_bot3
+}  // namespace y2014_bot3::control_loops::rollers
 
 #endif  // Y2014_BOT3_CONTROL_LOOPS_ROLLERS_H_

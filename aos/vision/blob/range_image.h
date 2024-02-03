@@ -5,8 +5,7 @@
 
 #include "aos/vision/image/image_types.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 struct Point {
   int x;
@@ -100,7 +99,6 @@ std::string ShortDebugPrint(const BlobList &blobl);
 // Debug print range image as ### for the ranges.
 void DebugPrint(const BlobList &blobl);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // _AOS_VISION_BLOB_RANGE_IMAGE_H_

@@ -5,8 +5,7 @@
 
 #include "Eigen/Dense"
 
-namespace aos {
-namespace math {
+namespace aos::math {
 
 // Normalizes an angle to be in (-M_PI, M_PI]
 template <typename Scalar>
@@ -64,7 +63,6 @@ constexpr bool PointsAreCCW(const Eigen::Ref<Eigen::Matrix<Scalar, 2, 1>> &A,
   return (C.y() - A.y()) * (B.x() - A.x()) > (B.y() - A.y()) * (C.x() - A.x());
 }
 
-}  // namespace math
-}  // namespace aos
+}  // namespace aos::math
 
 #endif  // AOS_UTIL_MATH_H_

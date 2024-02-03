@@ -25,9 +25,7 @@
 
 #ifdef SUPPORTS_SHM_ROBUSTNESS_TEST
 
-namespace aos {
-namespace ipc_lib {
-namespace testing {
+namespace aos::ipc_lib::testing {
 
 namespace {
 pid_t gettid() { return syscall(SYS_gettid); }
@@ -458,8 +456,6 @@ void SharedTid::Set() { *tid_ = gettid(); }
 
 pid_t SharedTid::Get() { return *tid_; }
 
-}  // namespace testing
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib::testing
 
 #endif  // SUPPORTS_SHM_ROBSTNESS_TEST

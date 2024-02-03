@@ -7,9 +7,7 @@
 #include "y2019/control_loops/drivetrain/localizer.h"
 #include "y2019/control_loops/drivetrain/target_selector.h"
 
-namespace y2019 {
-namespace control_loops {
-namespace drivetrain {
+namespace y2019::control_loops::drivetrain {
 
 // Wrap the localizer to allow it to fetch camera frames from the queues.
 // TODO(james): Provide a way of resetting the current position and
@@ -89,7 +87,5 @@ class EventLoopLocalizer
 ::std::array<EventLoopLocalizer::Camera, constants::Values::kNumCameras>
 MakeCameras(EventLoopLocalizer::Pose *pose);
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::drivetrain
 #endif  // Y2019_CONTROL_LOOPS_DRIVETRAIN_EVENT_LOOP_LOCALIZER_H_

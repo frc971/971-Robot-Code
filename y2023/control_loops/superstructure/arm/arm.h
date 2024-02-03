@@ -15,10 +15,7 @@
 
 using frc971::control_loops::arm::EKF;
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
-namespace arm {
+namespace y2023::control_loops::superstructure::arm {
 
 class Arm {
  public:
@@ -116,9 +113,6 @@ class Arm {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
-}  // namespace arm
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure::arm
 
 #endif  // Y2023_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_ARM_H_

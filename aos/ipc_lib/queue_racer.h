@@ -5,8 +5,7 @@
 
 #include "aos/ipc_lib/lockless_queue.h"
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 
 struct ThreadState;
 
@@ -97,7 +96,6 @@ class QueueRacer {
                         size_t) { return true; };
 };
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib
 
 #endif  // AOS_IPC_LIB_QUEUE_RACER_H_

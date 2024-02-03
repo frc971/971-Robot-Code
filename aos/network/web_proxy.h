@@ -19,8 +19,7 @@
 #include "seasocks/StringUtil.h"
 #include "seasocks/WebSocket.h"
 
-namespace aos {
-namespace web_proxy {
+namespace aos::web_proxy {
 
 class Connection;
 class Subscriber;
@@ -242,7 +241,6 @@ class ApplicationConnection {
   std::shared_ptr<ScopedDataChannel> channel_;
 };
 
-}  // namespace web_proxy
-}  // namespace aos
+}  // namespace aos::web_proxy
 
 #endif  // AOS_NETWORK_WEB_PROXY_H_

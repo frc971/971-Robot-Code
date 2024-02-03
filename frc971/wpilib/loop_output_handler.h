@@ -9,8 +9,7 @@
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 // Handles sending the output from a single control loop to the hardware.
 //
@@ -64,7 +63,6 @@ class LoopOutputHandler {
   ::aos::TimerHandler *timer_handler_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_LOOP_OUTPUT_HANDLER_H_

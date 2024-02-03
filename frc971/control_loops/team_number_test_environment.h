@@ -3,9 +3,7 @@
 
 #include "gtest/gtest.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace testing {
+namespace frc971::control_loops::testing {
 
 // The team number we use for tests.
 static const int kTeamNumber = 1;
@@ -23,8 +21,6 @@ class TeamNumberEnvironment : public ::testing::Environment {
 __attribute__((unused)) static ::testing::Environment *const team_number_env =
     ::testing::AddGlobalTestEnvironment(new TeamNumberEnvironment());
 
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::testing
 
 #endif  // FRC971_CONTROL_LOOPS_TEAM_NUMBER_TEST_ENVIRONMENT_H_

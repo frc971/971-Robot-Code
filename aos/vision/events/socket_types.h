@@ -12,8 +12,7 @@
 #include "aos/vision/events/tcp_server.h"
 #include "aos/vision/image/image_types.h"
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 // Simple TCP client connection that sends messages prefixed by length.
 // Useful to broadcast to a message all connected clients.
@@ -89,7 +88,6 @@ class DataSocket : public events::SocketConnection {
   }
 };
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events
 
 #endif  // _AOS_VISION_EVENTS_SOCKET_TYPES_H_

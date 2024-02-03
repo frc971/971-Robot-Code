@@ -9,8 +9,7 @@
 #include "aos/realtime.h"
 #include "frc971/wpilib/talonfx.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 class CANSensorReader {
  public:
   CANSensorReader(
@@ -37,6 +36,5 @@ class CANSensorReader {
   // Callback used to send the CANPosition flatbuffer
   std::function<void(ctre::phoenix::StatusCode status)> flatbuffer_callback_;
 };
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 #endif  // FRC971_WPILIB_CAN_SENSOR_READER_H_

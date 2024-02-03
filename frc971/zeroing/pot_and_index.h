@@ -7,8 +7,7 @@
 
 #include "frc971/zeroing/zeroing.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 // Estimates the position with an incremental encoder with an index pulse and a
 // potentiometer.
@@ -97,7 +96,6 @@ class PotAndIndexPulseZeroingEstimator
   double first_start_pos_;
 };
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing
 
 #endif  // FRC971_ZEROING_POT_AND_INDEX_H_

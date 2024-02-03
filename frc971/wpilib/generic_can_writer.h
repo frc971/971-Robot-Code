@@ -5,8 +5,7 @@
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/talonfx.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 /// This class uses a callback whenever it writes so that the caller can use any
 /// flatbuffer to write to the talonfx motor.
@@ -70,5 +69,4 @@ class GenericCANWriter : public LoopOutputHandler<T> {
       write_callback_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

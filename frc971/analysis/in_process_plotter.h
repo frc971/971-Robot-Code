@@ -7,8 +7,7 @@
 #include "aos/network/web_proxy.h"
 #include "frc971/analysis/plot_data_generated.h"
 
-namespace frc971 {
-namespace analysis {
+namespace frc971::analysis {
 
 // This class wraps the WebProxy class to provide a convenient C++ interface to
 // dynamically generate plots.
@@ -96,6 +95,5 @@ class Plotter {
   std::vector<ColorWheelColor> color_wheel_;
 };
 
-}  // namespace analysis
-}  // namespace frc971
+}  // namespace frc971::analysis
 #endif  // FRC971_ANALYSIS_IN_PROCESS_PLOTTER_H_

@@ -17,8 +17,7 @@
   LOG(FATAL) << "Check failed: " #condition " (" << cudaGetErrorString(c) \
              << ") "
 
-namespace frc971 {
-namespace apriltag {
+namespace frc971::apriltag {
 
 // Class to manage the lifetime of a Cuda stream.  This is used to provide
 // relative ordering between kernels on the same stream.
@@ -205,7 +204,6 @@ void CheckAndSynchronize(std::string_view message = "");
 void MaybeCheckAndSynchronize();
 void MaybeCheckAndSynchronize(std::string_view message);
 
-}  // namespace apriltag
-}  // namespace frc971
+}  // namespace frc971::apriltag
 
 #endif  // FRC971_ORIN_CUDA_H_

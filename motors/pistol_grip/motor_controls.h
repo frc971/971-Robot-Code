@@ -9,8 +9,7 @@
 #include "motors/math.h"
 #include "motors/motor.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 
 class LittleMotorControlsImplementation : public MotorControls {
  public:
@@ -68,7 +67,6 @@ class LittleMotorControlsImplementation : public MotorControls {
   int16_t debug_[9];
 };
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors
 
 #endif  // MOTORS_PISTOL_GRIP_MOTOR_CONTROLS_H_

@@ -15,10 +15,7 @@
 #include "y2018/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2018/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
-namespace intake {
+namespace y2018::control_loops::superstructure::intake {
 
 class IntakeController {
  public:
@@ -130,9 +127,6 @@ class IntakeSide {
   double intake_last_position_ = 0.0;
 };
 
-}  // namespace intake
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure::intake
 
 #endif  // Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_INTAKE_INTAKE_H_

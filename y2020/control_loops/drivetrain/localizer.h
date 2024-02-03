@@ -13,9 +13,7 @@
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2020/vision/sift/sift_generated.h"
 
-namespace y2020 {
-namespace control_loops {
-namespace drivetrain {
+namespace y2020::control_loops::drivetrain {
 
 // This class handles the localization for the 2020 robot. In order to handle
 // camera updates, we get the ImageMatchResult message from the cameras and then
@@ -164,8 +162,6 @@ class Localizer : public frc971::control_loops::drivetrain::LocalizerInterface {
   Statistics statistics_;
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::drivetrain
 
 #endif  // Y2020_CONTROL_LOOPS_DRIVETRAIN_LOCALIZER_H_

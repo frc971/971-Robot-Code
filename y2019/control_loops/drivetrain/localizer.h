@@ -17,8 +17,7 @@
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
-namespace y2019 {
-namespace control_loops {
+namespace y2019::control_loops {
 
 template <int num_cameras, int num_targets, int num_obstacles,
           int max_targets_per_frame, typename Scalar = double>
@@ -576,7 +575,6 @@ class TypedLocalizer
 #pragma GCC diagnostic pop
 #endif
 
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops
 
 #endif  // Y2019_CONTROL_LOOPS_DRIVETRAIN_LOCALIZATER_H_

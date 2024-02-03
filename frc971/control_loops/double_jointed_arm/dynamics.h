@@ -8,9 +8,7 @@
 
 DECLARE_bool(gravity);
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
+namespace frc971::control_loops::arm {
 
 struct ArmConstants {
   // Below, 0 refers to the proximal joint, and 1 refers to the distal joint.
@@ -242,8 +240,6 @@ class Dynamics {
   const double gamma_;
 };
 
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm
 
 #endif  // FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_DYNAMICS_H_

@@ -6,8 +6,7 @@
 #include "aos/logging/context.h"
 #include "aos/logging/implementations.h"
 
-namespace aos {
-namespace util {
+namespace aos::util {
 
 // Prints all FATAL messages to stderr and then abort(3)s before the regular
 // stuff can print out anything else. Ignores all other messages.
@@ -27,7 +26,6 @@ class DeathTestLogImplementation
   }
 };
 
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util
 
 #endif  // AOS_UTIL_DEATH_TEST_LOG_IMPLEMENTATION_H_

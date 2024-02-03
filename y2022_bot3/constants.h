@@ -16,8 +16,7 @@
 
 using ::frc971::shooter_interpolation::InterpolationTable;
 
-namespace y2022_bot3 {
-namespace constants {
+namespace y2022_bot3::constants {
 
 struct Values {
   static const int kZeroingSampleSize = 200;
@@ -119,7 +118,6 @@ Values MakeValues(uint16_t team);
 // Calls MakeValues with aos::network::GetTeamNumber()
 Values MakeValues();
 
-}  // namespace constants
-}  // namespace y2022_bot3
+}  // namespace y2022_bot3::constants
 
 #endif  // Y2022_BOT3_CONSTANTS_H_

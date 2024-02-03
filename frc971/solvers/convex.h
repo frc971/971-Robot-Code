@@ -10,8 +10,7 @@
 #include "glog/logging.h"
 #include <Eigen/Dense>
 
-namespace frc971 {
-namespace solvers {
+namespace frc971::solvers {
 
 // TODO(austin): Steal JET from Ceres to generate the derivatives easily and
 // quickly?
@@ -379,7 +378,6 @@ void Solver<States, M, N>::PrintDerivatives(
   }
 }
 
-};  // namespace solvers
-};  // namespace frc971
+}  // namespace frc971::solvers
 
 #endif  // FRC971_SOLVERS_CONVEX_H_

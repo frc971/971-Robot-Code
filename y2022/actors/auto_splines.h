@@ -13,8 +13,7 @@
 
 */
 
-namespace y2022 {
-namespace actors {
+namespace y2022::actors {
 
 class AutonomousSplines {
  public:
@@ -73,7 +72,6 @@ class AutonomousSplines {
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> spline_two2_;
 };
 
-}  // namespace actors
-}  // namespace y2022
+}  // namespace y2022::actors
 
 #endif  // Y2022_ACTORS_AUTO_SPLINES_H_

@@ -6,8 +6,7 @@
 #include "aos/events/event_loop.h"
 #include "frc971/input/driver_station_data.h"
 
-namespace frc971 {
-namespace input {
+namespace frc971::input {
 
 // A class for handling joystick packet values.
 // It will call RunIteration each time a new packet is received.
@@ -40,7 +39,6 @@ class JoystickInput {
   int mode_;
 };
 
-}  // namespace input
-}  // namespace frc971
+}  // namespace frc971::input
 
 #endif  // AOS_INPUT_JOYSTICK_INPUT_H_

@@ -21,8 +21,7 @@
 #include "y2016/queues/ball_detector_generated.h"
 #include "y2016/vision/vision_generated.h"
 
-namespace y2016 {
-namespace dashboard {
+namespace y2016::dashboard {
 
 // Dashboard is a webserver that opens a socket and stream data from the robot
 // to the client. It is divided between the DataCollector, which polls
@@ -105,7 +104,6 @@ class SeasocksLogger : public seasocks::PrintfLogger {
   void log(Level level, const char *message) override;
 };
 
-}  // namespace dashboard
-}  // namespace y2016
+}  // namespace y2016::dashboard
 
 #endif  // Y2016_DASHBOARD_DASHBOARD_H_

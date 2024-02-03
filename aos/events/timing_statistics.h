@@ -6,8 +6,7 @@
 #include "aos/events/event_loop_generated.h"
 #include "aos/util/error_counter.h"
 
-namespace aos {
-namespace internal {
+namespace aos::internal {
 
 // Class to compute statistics for the timing report.
 class TimingStatistic {
@@ -113,7 +112,6 @@ struct TimerTiming {
   timing::Timer *timer = nullptr;
 };
 
-}  // namespace internal
-}  // namespace aos
+}  // namespace aos::internal
 
 #endif  // AOS_EVENTS_TIMING_STATISTICS_H_

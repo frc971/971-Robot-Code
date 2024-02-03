@@ -9,8 +9,7 @@
 #include "motors/peripheral/configuration.h"
 #include "motors/util.h"
 
-namespace frc971 {
-namespace teensy {
+namespace frc971::teensy {
 
 // This class manages configuring the hardware to automatically capture various
 // sensor values periodically with tight timing. Currently it's only 4 samples
@@ -108,7 +107,6 @@ class AdcDmaSampler {
   ::std::array<volatile uint32_t *, 2> ftm_delays_{nullptr, nullptr};
 };
 
-}  // namespace teensy
-}  // namespace frc971
+}  // namespace frc971::teensy
 
 #endif  // MOTORS_PERIPHERAL_ADC_DMA_H_

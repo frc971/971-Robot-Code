@@ -17,8 +17,7 @@
 
 DECLARE_bool(visualize);
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 // Class to find extrinsics for a specified pi's camera using the provided
 // training data.
@@ -211,7 +210,6 @@ flatbuffers::Offset<foxglove::PointsAnnotation> BuildPointsAnnotation(
     const foxglove::PointsAnnotationType line_type =
         foxglove::PointsAnnotationType::POINTS);
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 #endif  // Y2020_VISION_CHARUCO_LIB_H_

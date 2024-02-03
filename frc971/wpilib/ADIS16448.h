@@ -17,8 +17,7 @@
 #include "frc971/wpilib/imu_generated.h"
 #include "frc971/wpilib/spi_rx_clearer.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 // Handles interfacing with an Analog Devices ADIS16448 Inertial Sensor over
 // SPI and sending values out on a queue.
@@ -100,7 +99,6 @@ class ADIS16448 {
   FpgaTimeConverter time_converter_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_ADIS16448_H_

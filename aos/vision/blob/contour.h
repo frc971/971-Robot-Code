@@ -4,8 +4,7 @@
 #include "aos/vision/blob/range_image.h"
 #include "aos/vision/blob/region_alloc.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Countour nodes are slingly linked list chains of pixels that go around
 // the boundary of a blob.
@@ -35,7 +34,6 @@ struct ContourNode {
 ContourNode *RangeImgToContour(const RangeImage &rimg,
                                AnalysisAllocator *alloc);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  //  _AOS_VIISON_BLOB_CONTOUR_H_

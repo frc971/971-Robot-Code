@@ -11,9 +11,7 @@
 #include "frc971/control_loops/drivetrain/trajectory_generated.h"
 #include "frc971/control_loops/fixed_quadrature.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 std::vector<Spline> FlatbufferToSplines(const MultiSpline *fb);
 
@@ -127,8 +125,6 @@ class FinishedDistanceSpline final : public DistanceSplineBase {
   absl::Span<const float> distances_;
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_DISTANCE_SPLINE_H_

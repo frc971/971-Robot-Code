@@ -6,8 +6,7 @@
 #include "aos/events/shm_event_loop.h"
 #include "frc971/input/joystick_state_generated.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 class JoystickSender {
  public:
@@ -19,7 +18,6 @@ class JoystickSender {
   const uint16_t team_id_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_JOYSTICK_SENDER_H_

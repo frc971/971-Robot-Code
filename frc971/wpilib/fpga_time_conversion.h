@@ -9,8 +9,7 @@
 #include "aos/time/time.h"
 #include "hal/cpp/fpga_clock.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 // Returns the offset from the monotonic clock to the FPGA time. This is defined
 // as `fpga_time - monotonic_time`.
@@ -51,7 +50,6 @@ class FpgaTimeConverter {
   std::chrono::nanoseconds offset_ = std::chrono::nanoseconds::min();
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_FPGA_TIME_CONVERSION_H_

@@ -13,8 +13,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-namespace y2023 {
-namespace vision {
+namespace y2023::vision {
 
 struct Detection {
   cv::Rect box;
@@ -36,7 +35,6 @@ class YOLOV5 {
 
 std::unique_ptr<YOLOV5> MakeYOLOV5();
 
-}  // namespace vision
-}  // namespace y2023
+}  // namespace y2023::vision
 
 #endif  // Y2023_VISION_YOLOV5_H_

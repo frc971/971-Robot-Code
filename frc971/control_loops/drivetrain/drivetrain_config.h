@@ -13,9 +13,7 @@
 #include "frc971/control_loops/state_feedback_loop_converters.h"
 #include "frc971/shifter_hall_effect.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 // Configuration for line-following mode.
 struct LineFollowConfig {
@@ -236,8 +234,6 @@ struct DrivetrainConfig {
     };
   }
 };
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_CONSTANTS_H_

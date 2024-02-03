@@ -5,9 +5,7 @@
 
 #include "frc971/control_loops/binomial.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 // Class to hold a spline as a function of alpha.  Alpha can only range between
 // 0.0 and 1.0.
@@ -190,8 +188,6 @@ template <int N>
   return ans;
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_SPLINE_H_

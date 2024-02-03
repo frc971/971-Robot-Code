@@ -12,8 +12,7 @@
 #include "frc971/vision/foxglove_image_converter_lib.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 // This class provides an interface for an application to be notified of all
 // camera and IMU samples in order with the correct timestamps.
@@ -143,7 +142,6 @@ class Calibration {
   frc971::IMUValuesT last_value_;
 };
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 #endif  // FRC971_VISION_CALIBRATION_ACCUMULATOR_H_

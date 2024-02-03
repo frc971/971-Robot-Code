@@ -3,8 +3,7 @@
 
 #include <cmath>
 
-namespace motors {
-namespace seems_reasonable {
+namespace motors::seems_reasonable {
 
 float NextGoal(float current_goal, float goal);
 float PreviousGoal(float current_goal, float goal);
@@ -104,7 +103,6 @@ class Spring {
   float last_error_ = 0.0f;
 };
 
-}  // namespace seems_reasonable
-}  // namespace motors
+}  // namespace motors::seems_reasonable
 
 #endif  //  MOTORS_SEEMS_REASONABLE_SPRING_H_

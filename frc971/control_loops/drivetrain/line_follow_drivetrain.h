@@ -12,9 +12,7 @@
 #include "frc971/control_loops/profiled_subsystem_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 namespace testing {
 class LineFollowDrivetrainTest;
@@ -93,8 +91,6 @@ class LineFollowDrivetrain {
   friend class testing::LineFollowDrivetrainTest;
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_LINE_FOLLOW_DRIVETRAIN_H_

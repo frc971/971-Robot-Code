@@ -6,8 +6,7 @@
 
 #include <initializer_list>
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 
 // Class to manage a signalfd.
 class SignalFd {
@@ -34,7 +33,6 @@ class SignalFd {
   sigset_t blocked_mask_;
 };
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib
 
 #endif  // AOS_IPC_LIB_SIGNALFD_H_

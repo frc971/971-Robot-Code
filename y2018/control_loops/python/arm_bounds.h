@@ -13,8 +13,7 @@
 
 // Prototype level code to find the nearest point and distance to a polygon.
 
-namespace y2018 {
-namespace control_loops {
+namespace y2018::control_loops {
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef K::Point_2 Point;
@@ -239,7 +238,6 @@ class BoundsCheck {
 BoundsCheck MakeClippedArmSpace();
 BoundsCheck MakeFullArmSpace();
 
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops
 
 #endif  // Y2018_CONTORL_LOOPS_PYTHON_ARM_BOUNDS_H_

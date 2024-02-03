@@ -13,8 +13,7 @@
 
 */
 
-namespace y2020 {
-namespace actors {
+namespace y2020::actors {
 
 class AutonomousSplines {
  public:
@@ -89,7 +88,6 @@ class AutonomousSplines {
   aos::FlatbufferDetachedBuffer<frc971::MultiSpline> far_side_fender_;
 };
 
-}  // namespace actors
-}  // namespace y2020
+}  // namespace y2020::actors
 
 #endif  // y2020_ACTORS_AUTO_SPLINES_H_

@@ -12,8 +12,7 @@
 #include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/Encoder.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 class InterruptSynchronizer;
 
@@ -226,7 +225,6 @@ class InterruptSynchronizer {
   DISALLOW_COPY_AND_ASSIGN(InterruptSynchronizer);
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_INTERRUPT_EDGE_COUNTING_H_

@@ -12,8 +12,7 @@
 #include "frc971/orin/line_fit_filter.h"
 #include "frc971/orin/points.h"
 
-namespace frc971 {
-namespace apriltag {
+namespace frc971::apriltag {
 
 // Class to find the blob index of a point in a point vector.
 class BlobExtentsIndexFinder {
@@ -326,7 +325,6 @@ class GpuDetector {
   zarray_t *detections_ = nullptr;
 };
 
-}  // namespace apriltag
-}  // namespace frc971
+}  // namespace frc971::apriltag
 
 #endif  // FRC971_ORIN_APRILTAG_H_

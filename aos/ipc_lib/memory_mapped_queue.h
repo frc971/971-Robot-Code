@@ -6,8 +6,7 @@
 #include "aos/configuration.h"
 #include "aos/ipc_lib/lockless_queue.h"
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 
 std::string ShmFolder(std::string_view shm_base, const Channel *channel);
 
@@ -58,7 +57,6 @@ class MemoryMappedQueue {
   const void *const_data_;
 };
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib
 
 #endif  //  AOS_IPC_LIB_MEMORY_MAPPED_QUEUE_H_

@@ -6,8 +6,7 @@
 
 #include "frc971/vision/calibration_accumulator.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 struct CalibrationParameters {
   Eigen::Quaternion<double> initial_orientation =
@@ -55,7 +54,6 @@ void Plot(const CalibrationData &data,
 void Visualize(const CalibrationData &data,
                const CalibrationParameters &calibration_parameters);
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 #endif  // FRC971_VISION_EXTRINSICS_CALIBRATION_H_

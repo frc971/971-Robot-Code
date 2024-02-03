@@ -13,8 +13,7 @@
 #include "aos/network/timestamp_generated.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 // This class encapsulates the server side of sending server statistics and
 // managing timestamp offsets.
@@ -158,7 +157,6 @@ class MessageBridgeServerStatus {
   std::vector<flatbuffers::Offset<ClientOffset>> client_offsets_;
 };
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 #endif  // AOS_NETWORK_MESSAGE_BRIDGE_SERVER_STATUS_H_

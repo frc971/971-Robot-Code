@@ -16,8 +16,7 @@
 #include "y2016/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2016/queues/ball_detector_generated.h"
 
-namespace y2016 {
-namespace actors {
+namespace y2016::actors {
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
@@ -100,7 +99,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
       superstructure_goal_sender_;
 };
 
-}  // namespace actors
-}  // namespace y2016
+}  // namespace y2016::actors
 
 #endif  // Y2016_ACTORS_AUTONOMOUS_ACTOR_H_

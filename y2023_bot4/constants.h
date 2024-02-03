@@ -9,8 +9,7 @@
 
 #include "frc971/constants.h"
 
-namespace y2023_bot4 {
-namespace constants {
+namespace y2023_bot4::constants {
 struct Values {
   static const int kZeroingSampleSize = 200;
 
@@ -49,7 +48,6 @@ Values MakeValues(uint16_t team);
 
 // Calls MakeValues with aos::network::GetTeamNumber()
 Values MakeValues();
-}  // namespace constants
-}  // namespace y2023_bot4
+}  // namespace y2023_bot4::constants
 
 #endif  // Y2023_BOT4_CONSTANTS_H

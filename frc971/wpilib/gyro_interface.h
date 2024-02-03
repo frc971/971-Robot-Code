@@ -6,8 +6,7 @@
 #include "frc971/wpilib/ahal/SPI.h"
 #undef ERROR
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 class GyroInterface {
  public:
@@ -50,7 +49,6 @@ class GyroInterface {
   ::std::unique_ptr<frc::SPI> gyro_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_GYRO_INTERFACE_H_

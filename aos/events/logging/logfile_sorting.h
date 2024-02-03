@@ -15,8 +15,7 @@
 #include "aos/time/time.h"
 #include "aos/uuid.h"
 
-namespace aos {
-namespace logger {
+namespace aos::logger {
 
 struct Boots {
   // Maps the boot UUID to the boot count.  Since boot UUIDs are unique, we
@@ -309,7 +308,6 @@ class LogFilesContainer {
   std::vector<std::string> logger_nodes_;
 };
 
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger
 
 #endif  // AOS_EVENTS_LOGGING_LOGFILE_SORTING_H_

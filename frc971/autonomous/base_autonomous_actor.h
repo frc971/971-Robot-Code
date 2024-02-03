@@ -13,8 +13,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2019/control_loops/drivetrain/target_selector_generated.h"
 
-namespace frc971 {
-namespace autonomous {
+namespace frc971::autonomous {
 
 class BaseAutonomousActor : public ::aos::common::actions::ActorBase<Goal> {
  public:
@@ -156,7 +155,6 @@ class BaseAutonomousActor : public ::aos::common::actions::ActorBase<Goal> {
   int32_t goal_spline_handle_ = 0;
 };
 
-}  // namespace autonomous
-}  // namespace frc971
+}  // namespace frc971::autonomous
 
 #endif  // FRC971_AUTONOMOUS_BASE_AUTONOMOUS_ACTOR_H_

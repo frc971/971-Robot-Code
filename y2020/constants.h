@@ -21,8 +21,7 @@
 
 using ::frc971::shooter_interpolation::InterpolationTable;
 
-namespace y2020 {
-namespace constants {
+namespace y2020::constants {
 
 struct Values {
   static const uint16_t kCompTeamNumber = 971;
@@ -241,7 +240,6 @@ void InitValues();
 // InitValues() before calling this.
 const Values &GetValues();
 
-}  // namespace constants
-}  // namespace y2020
+}  // namespace y2020::constants
 
 #endif  // y2020_CONSTANTS_H_

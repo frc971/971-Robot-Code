@@ -18,8 +18,7 @@
 #include "aos/time/time.h"
 #include "aos/uuid.h"
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 
 // Structure to hold the state required to wake a watcher.
 struct Watcher {
@@ -478,7 +477,6 @@ size_t LocklessQueueMessageDataSize(const LocklessQueueMemory *memory);
 // Prints to stdout the data inside the queue for debugging.
 void PrintLocklessQueueMemory(const LocklessQueueMemory *memory);
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib
 
 #endif  // AOS_IPC_LIB_LOCKLESS_QUEUE_H_

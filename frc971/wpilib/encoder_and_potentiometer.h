@@ -14,8 +14,7 @@
 #include "frc971/wpilib/dma.h"
 #include "frc971/wpilib/dma_edge_counting.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 // Latches values from an encoder on positive edges from another input using
 // DMA.
@@ -244,7 +243,6 @@ class AbsoluteEncoder {
   ::std::unique_ptr<frc::Encoder> encoder_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_ENCODER_AND_POTENTIOMETER_H_

@@ -21,8 +21,7 @@
 using ::aos::monotonic_clock;
 namespace chrono = ::std::chrono;
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 class SensorReader {
  public:
@@ -264,7 +263,6 @@ class SensorReader {
   chrono::microseconds period_ = chrono::microseconds(5000);
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_SENSOR_READER_H_

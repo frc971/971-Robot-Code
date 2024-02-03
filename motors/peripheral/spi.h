@@ -7,8 +7,7 @@
 #include "motors/peripheral/uart_buffer.h"
 #include "motors/util.h"
 
-namespace frc971 {
-namespace teensy {
+namespace frc971::teensy {
 
 // Simple synchronous interface to a SPI peripheral.
 class Spi {
@@ -112,7 +111,6 @@ class InterruptBufferedSpi {
   int frames_to_receive_ = 0;
 };
 
-}  // namespace teensy
-}  // namespace frc971
+}  // namespace frc971::teensy
 
 #endif  // MOTORS_PERIPHERAL_SPI_H_

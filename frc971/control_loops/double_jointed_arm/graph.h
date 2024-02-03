@@ -8,9 +8,7 @@
 #include <memory>
 #include <vector>
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
+namespace frc971::control_loops::arm {
 
 // Grr... normal priority queues don't allow modifying the node cost.
 // This relies on pointer stability for the passed in T.
@@ -181,8 +179,6 @@ class SearchGraph {
   size_t last_searched_vertex_ = std::numeric_limits<size_t>::max();
 };
 
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm
 
 #endif  // FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_GRAPH_H_

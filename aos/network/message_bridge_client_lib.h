@@ -14,8 +14,7 @@
 #include "aos/network/sctp_config_request_generated.h"
 #include "aos/network/sctp_lib.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 // Structure to hold per channel state.
 struct SctpClientChannelState {
@@ -165,7 +164,6 @@ class MessageBridgeClient {
   aos::Sender<SctpConfigRequest> sctp_config_request_;
 };
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 #endif  // AOS_NETWORK_MESSAGE_BRIDGE_CLIENT_LIB_H_

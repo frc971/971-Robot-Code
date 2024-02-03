@@ -7,8 +7,7 @@
 #include "aos/vision/math/vector.h"
 #include "y2019/vision/constants.h"
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 // This polynomial exists in transpose space.
 struct TargetComponent {
@@ -239,7 +238,6 @@ template <typename T, typename Extrinsics>
                                   240.0 - res.y() * scale);
 }
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision
 
 #endif

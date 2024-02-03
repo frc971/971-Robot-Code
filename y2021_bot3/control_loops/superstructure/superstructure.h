@@ -9,9 +9,7 @@
 #include "y2021_bot3/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2021_bot3/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2021_bot3 {
-namespace control_loops {
-namespace superstructure {
+namespace y2021_bot3::control_loops::superstructure {
 
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
@@ -28,8 +26,6 @@ class Superstructure
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2021_bot3
+}  // namespace y2021_bot3::control_loops::superstructure
 
 #endif  // Y2021_BOT3_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_

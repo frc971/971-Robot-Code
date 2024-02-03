@@ -118,15 +118,13 @@ struct timespec to_timespec(::aos::monotonic_clock::time_point time);
 
 #ifdef __linux__
 
-namespace std {
-namespace this_thread {
+namespace std::this_thread {
 // Template specialization for monotonic_clock, since we can use clock_nanosleep
 // with TIMER_ABSTIME and get very precise absolute time sleeps.
 template <>
 void sleep_until(const ::aos::monotonic_clock::time_point &end_time);
 
-}  // namespace this_thread
-}  // namespace std
+}  // namespace std::this_thread
 
 #endif  // __linux__
 

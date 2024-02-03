@@ -10,8 +10,7 @@
 // This file has some specialized math functions useful for implementing our
 // controls in a minimal number of cycles.
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 
 inline constexpr unsigned int Log2RoundUp(unsigned int x) {
   return (x < 2) ? x : (1 + Log2RoundUp(x / 2));
@@ -213,7 +212,6 @@ template <class Rotation>
 // This must be called before any of the other functions.
 void MathInit();
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors
 
 #endif  // MOTORS_MATH_H_

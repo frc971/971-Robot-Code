@@ -17,9 +17,7 @@
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2020/control_loops/superstructure/turret/aiming.h"
 
-namespace y2020 {
-namespace control_loops {
-namespace superstructure {
+namespace y2020::control_loops::superstructure {
 
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
@@ -88,8 +86,6 @@ class Superstructure
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::superstructure
 
 #endif  // y2020_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_

@@ -3,8 +3,7 @@
 
 #include <Eigen/Dense>
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 template <int num_states, int num_inputs, typename F>
 ::Eigen::Matrix<double, num_states, num_inputs> NumericalJacobian(
@@ -46,7 +45,6 @@ template <int num_states, int num_u, typename F, typename... Args>
       U);
 }
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif  // FRC971_CONTROL_LOOPS_JACOBIAN_H_

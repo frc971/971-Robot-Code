@@ -6,10 +6,7 @@
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace intake {
+namespace y2017::control_loops::superstructure::intake {
 
 class Intake {
  public:
@@ -64,9 +61,6 @@ class Intake {
       profiled_subsystem_;
 };
 
-}  // namespace intake
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::intake
 
 #endif  // Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_INTAKE_INTAKE_H_

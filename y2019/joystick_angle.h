@@ -6,9 +6,7 @@
 using ::frc971::input::driver_station::Data;
 using ::frc971::input::driver_station::JoystickAxis;
 
-namespace y2019 {
-namespace input {
-namespace joysticks {
+namespace y2019::input::joysticks {
 bool AngleCloseTo(double angle, double near, double range);
 
 enum class JoystickAngle {
@@ -25,8 +23,6 @@ JoystickAngle GetJoystickPosition(const JoystickAxis &x_axis,
                                   const JoystickAxis &y_axis, const Data &data);
 JoystickAngle GetJoystickPosition(float x_axis, float y_axis);
 
-}  // namespace joysticks
-}  // namespace input
-}  // namespace y2019
+}  // namespace y2019::input::joysticks
 
 #endif  // Y2019_JOYSTICK_ANGLE_H_

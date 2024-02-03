@@ -15,8 +15,7 @@
 #include "aos/events/logging/logger_generated.h"
 #include "aos/uuid.h"
 
-namespace aos {
-namespace logger {
+namespace aos::logger {
 
 class LogNamer;
 
@@ -650,7 +649,6 @@ class MinimalFileMultiNodeLogNamer : public MultiNodeFilesLogNamer {
   void OpenNodeWriter(const Node *source_node, NewDataWriter *data_writer);
 };
 
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger
 
 #endif  // AOS_EVENTS_LOGGING_LOG_NAMER_H_

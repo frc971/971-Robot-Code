@@ -5,8 +5,7 @@
 
 #include "aos/vision/blob/range_image.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 template <typename T>
 struct IntCodec {
@@ -45,7 +44,6 @@ inline void SerializeBlobTo(const BlobList &blob_list, std::string *out) {
 // Parses a blob from data (Advancing data pointer by the size of the image).
 const char *ParseBlobList(BlobList *blob_list, const char *data);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // _AOS_VISION_BLOB_CODEC_H_

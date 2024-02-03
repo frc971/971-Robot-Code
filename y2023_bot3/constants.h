@@ -10,8 +10,7 @@
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2023_bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
-namespace y2023_bot3 {
-namespace constants {
+namespace y2023_bot3::constants {
 
 constexpr uint16_t kThirdRobotTeamNumber = 9984;
 
@@ -66,7 +65,6 @@ Values MakeValues(uint16_t team);
 // Calls MakeValues with aos::network::GetTeamNumber()
 Values MakeValues();
 
-}  // namespace constants
-}  // namespace y2023_bot3
+}  // namespace y2023_bot3::constants
 
 #endif  // Y2023_BOT3_CONSTANTS_H_

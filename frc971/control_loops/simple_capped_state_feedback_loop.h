@@ -5,8 +5,7 @@
 
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 // A StateFeedbackLoop which implements CapU based on a simple set of maximum
 // absolute values for each element of U.
@@ -74,7 +73,6 @@ class SimpleCappedStateFeedbackLoop
   ::Eigen::Array<double, number_of_inputs, 1> max_voltages_;
 };
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif  // FRC971_CONTROL_LOOPS_SIMPLE_CAPPED_STATE_FEEDBACK_LOOP_H_

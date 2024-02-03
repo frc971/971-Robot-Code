@@ -12,8 +12,7 @@
 
 #include "aos/time/time.h"
 
-namespace aos {
-namespace internal {
+namespace aos::internal {
 
 // Class wrapping up timerfd.
 class TimerFd {
@@ -187,7 +186,6 @@ class EPoll {
   std::vector<std::function<void()>> before_epoll_wait_functions_;
 };
 
-}  // namespace internal
-}  // namespace aos
+}  // namespace aos::internal
 
 #endif  // AOS_EVENTS_EPOLL_H_

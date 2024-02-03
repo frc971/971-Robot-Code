@@ -15,9 +15,7 @@
 #include "frc971/control_loops/polytope.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 class DrivetrainMotorsSS {
  public:
@@ -70,8 +68,6 @@ class DrivetrainMotorsSS {
   LocalizerInterface *localizer_;
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_SSDRIVETRAIN_H_

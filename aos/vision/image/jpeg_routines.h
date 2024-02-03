@@ -8,8 +8,7 @@
 
 #include "aos/vision/image/image_types.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Returns true if successful false if an error was encountered.
 // Will decompress data into out. Out must be of the right size
@@ -32,7 +31,6 @@ inline bool DecodeJpeg(DataRef data, ImageValue *value) {
   return ProcessJpeg(data, value->data());
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // _AOS_VISION_IMAGE_JPEGROUTINES_H_

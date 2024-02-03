@@ -8,8 +8,7 @@
 #include "aos/containers/error_list.h"
 #include "frc971/zeroing/zeroing.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 // Estimates the position with an absolute encoder which also reports
 // incremental counts and an absolute encoder that's not allowed to turn more
@@ -113,7 +112,6 @@ class AbsoluteAndAbsoluteEncoderZeroingEstimator
   double position_ = 0.0;
 };
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing
 
 #endif  // FRC971_ZEROING_ABSOLUTE_AND_ABSOLUTE_ENCODER_H_

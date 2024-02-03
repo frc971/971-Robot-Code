@@ -3,10 +3,7 @@
 
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
-namespace testing {
+namespace frc971::control_loops::arm::testing {
 
 constexpr double kEfficiencyTweak = 0.95;
 constexpr double kStallTorque = 1.41 * kEfficiencyTweak;
@@ -44,9 +41,6 @@ constexpr ArmConstants kArmConstants = {
     .num_distal_motors = 2.0,
 };
 
-}  // namespace testing
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm::testing
 
 #endif  // FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_TEST_CONSTANTS_H_

@@ -4,8 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 struct DatasetFrame {
   // TODO: These should be V4L formats ideally.
@@ -17,7 +16,6 @@ std::vector<DatasetFrame> LoadDataset(const std::string &jpeg_list_filename);
 
 DatasetFrame LoadFile(const std::string &jpeg_filename);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // _AOS_VISION_IMAGE_IMAGE_DATASET_H_

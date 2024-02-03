@@ -7,8 +7,7 @@
 #include "aos/vision/image/camera_params.pb.h"
 #include "y2019/jevois/camera/reader.h"
 
-namespace y2019 {
-namespace camera {
+namespace y2019::camera {
 
 // Converts a camera reader into a virtual base class that calls ProcessImage
 // on each new image.
@@ -48,7 +47,6 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
   std::unique_ptr<Reader> reader_;
 };
 
-}  // namespace camera
-}  // namespace y2019
+}  // namespace y2019::camera
 
 #endif  // Y2019_JEVOIS_CAMERA_IMAGE_STREAM_H_

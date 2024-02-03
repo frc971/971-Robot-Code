@@ -8,8 +8,7 @@
 #include "aos/containers/error_list.h"
 #include "frc971/zeroing/zeroing.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 // Estimates the position with an absolute encoder which spins continuously. The
 // absolute encoder must have a 1:1 ratio to the output.
@@ -93,7 +92,6 @@ class ContinuousAbsoluteEncoderZeroingEstimator
   aos::ErrorList<ZeroingError> errors_;
 };
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing
 
 #endif  // FRC971_ZEROING_CONTINUOUS_ABSOLUTE_ENCODER_H_

@@ -6,8 +6,7 @@
 #include "aos/starter/starter_rpc_generated.h"
 #include "aos/starter/starterd_lib.h"
 
-namespace aos {
-namespace starter {
+namespace aos::starter {
 
 // Simple mock of starterd that updates the starter status message to act as
 // though applications are started and stopped when requested.
@@ -50,5 +49,4 @@ class MockStarters {
   std::vector<std::unique_ptr<MockStarter>> mock_starters_;
 };
 
-}  // namespace starter
-}  // namespace aos
+}  // namespace aos::starter

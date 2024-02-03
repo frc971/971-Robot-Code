@@ -8,8 +8,7 @@
 #include "aos/network/remote_message_generated.h"
 #include "aos/network/timestamp_channel.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 class RawMessageDelayer;
 
@@ -235,7 +234,6 @@ class SimulatedMessageBridge {
   std::vector<std::unique_ptr<DelayersVector>> delayers_list_;
 };
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 #endif  // AOS_EVENTS_SIMULATED_NETWORK_BRIDGE_H_

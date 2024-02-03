@@ -7,8 +7,7 @@
 #include "aos/vision/blob/range_image.h"
 #include "aos/vision/image/image_types.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Sums img into bbox. bbox is constructed empty and grows with each call
 // to GetBBox.
@@ -22,7 +21,6 @@ std::vector<RangeImage> MoveScale(const std::vector<RangeImage> &imgs, int dx,
 
 RangeImage MoveScale(const RangeImage &img, int dx, int dy, int scale);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // AOS_VISION_BLOB_MOVE_SCALE_H_

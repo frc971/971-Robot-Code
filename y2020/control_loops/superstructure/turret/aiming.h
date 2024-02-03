@@ -9,10 +9,7 @@
 #include "frc971/input/joystick_state_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2020 {
-namespace control_loops {
-namespace superstructure {
-namespace turret {
+namespace y2020::control_loops::superstructure::turret {
 
 // Returns the port that we want to score on given our current alliance. The yaw
 // of the port will be such that the positive x axis points out the back of the
@@ -68,8 +65,5 @@ class Aimer {
   Eigen::Matrix<double, 2, 2> Tlr_to_la_;
 };
 
-}  // namespace turret
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::superstructure::turret
 #endif  // y2020_CONTROL_LOOPS_SUPERSTRUCTURE_TURRET_AIMING_H_

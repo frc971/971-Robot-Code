@@ -16,8 +16,7 @@
 #include "aos/network/timestamp_filter.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 // Problem description for NewtonSolver.
 class Problem {
@@ -667,7 +666,6 @@ class MultiNodeNoncausalOffsetEstimator final
   std::vector<size_t> source_node_index_;
 };
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 #endif  // AOS_NETWORK_MULTINODE_TIMESTAMP_FILTER_H_

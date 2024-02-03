@@ -16,8 +16,7 @@
 #include "aos/util/file.h"
 #include "frc971/vision/charuco_lib.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 class IntrinsicsCalibration {
  public:
@@ -76,6 +75,5 @@ class IntrinsicsCalibration {
   aos::ExitHandle *exit_handle_;
 };
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 #endif  // FRC971_VISION_CALIBRATION_LIB_H_

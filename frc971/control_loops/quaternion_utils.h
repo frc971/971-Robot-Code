@@ -5,8 +5,7 @@
 #include "Eigen/Geometry"
 #include "glog/logging.h"
 
-namespace frc971 {
-namespace controls {
+namespace frc971::controls {
 
 // Function to compute the quaternion average of a bunch of quaternions. Each
 // column in the input matrix is a quaternion (optionally scaled by it's
@@ -93,7 +92,6 @@ inline Eigen::Matrix<double, 4, 3> QuaternionDerivativeDerivitive(
   return QuaternionDerivativeDerivitive(q.coeffs());
 }
 
-}  // namespace controls
-}  // namespace frc971
+}  // namespace frc971::controls
 
 #endif  // AOS_CONTROLS_QUATERNION_UTILS_H_

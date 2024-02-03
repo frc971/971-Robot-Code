@@ -20,8 +20,7 @@
 #include "y2022/vision/target_estimate_generated.h"
 #include "y2022/vision/target_estimator.h"
 
-namespace y2022 {
-namespace vision {
+namespace y2022::vision {
 
 using namespace frc971::vision;
 using frc971::controls::LedOutput;
@@ -163,6 +162,5 @@ class CameraReader {
   GPIOControl gpio_disable_control_;
 };
 
-}  // namespace vision
-}  // namespace y2022
+}  // namespace y2022::vision
 #endif  // Y2022_VISION_CAMERA_READER_H_

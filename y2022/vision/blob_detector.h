@@ -4,8 +4,7 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/imgproc.hpp>
 
-namespace y2022 {
-namespace vision {
+namespace y2022::vision {
 
 class BlobDetector {
  public:
@@ -52,7 +51,6 @@ class BlobDetector {
 
   static void ExtractBlobs(cv::Mat bgr_image, BlobResult *blob_result);
 };
-}  // namespace vision
-}  // namespace y2022
+}  // namespace y2022::vision
 
 #endif  // Y2022_BLOB_DETECTOR_H_

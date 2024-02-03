@@ -7,9 +7,7 @@
 #include "aos/ipc_lib/lockless_queue.h"
 #include "aos/ipc_lib/lockless_queue_memory.h"
 
-namespace aos {
-namespace ipc_lib {
-namespace testing {
+namespace aos::ipc_lib::testing {
 
 #if defined(__ARM_EABI__)
 // There are various reasons why we might not actually be able to do this
@@ -142,8 +140,6 @@ class SharedTid {
 
 #endif
 
-}  // namespace testing
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib::testing
 
 #endif  // AOS_IPC_LIB_LOCKLESS_QUEUE_STEPPING_H_

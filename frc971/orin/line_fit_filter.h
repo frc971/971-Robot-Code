@@ -8,8 +8,7 @@
 #include "device_launch_parameters.h"
 #include "frc971/orin/cuda.h"
 
-namespace frc971 {
-namespace apriltag {
+namespace frc971::apriltag {
 
 // Class to hold the extents of a blob of points.
 struct MinMaxExtents {
@@ -160,7 +159,6 @@ __host__ __device__ std::tuple<uint, uint, uint, uint> Unrank(uint i);
 // The max number of work elements for a max maxes of 10.
 constexpr size_t MaxRankedIndex() { return 210; }
 
-}  // namespace apriltag
-}  // namespace frc971
+}  // namespace frc971::apriltag
 
 #endif  // FRC971_ORIN_LINE_FIT_FILTER_H_

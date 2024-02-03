@@ -11,8 +11,7 @@
 #include "aos/starter/starter_generated.h"
 #include "aos/starter/starter_rpc_generated.h"
 
-namespace aos {
-namespace starter {
+namespace aos::starter {
 
 // Data required to command that starter start/stop/restart a given application.
 struct ApplicationCommand {
@@ -119,7 +118,6 @@ std::optional<std::pair<aos::monotonic_clock::time_point,
                         const aos::FlatbufferVector<aos::starter::Status>>>
 GetStarterStatus(const aos::Configuration *config, const aos::Node *node);
 
-}  // namespace starter
-}  // namespace aos
+}  // namespace aos::starter
 
 #endif  // AOS_STARTER_STARTER_RPC_LIB_H_

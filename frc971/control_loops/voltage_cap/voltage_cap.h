@@ -3,8 +3,7 @@
 
 #include <cstdio>
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 // This function maintains the difference of power between two voltages passed
 // in that are outside of our range of possible voltage output.
@@ -27,7 +26,6 @@ void VoltageCap(double max_voltage, double voltage_one, double voltage_two,
 void VoltageCap(double voltage_one, double voltage_two, double *out_voltage_one,
                 double *out_voltage_two);
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif  // FRC971_CONTROL_LOOPS_VOLTAGE_CAP_VOLTAGE_CAP_H_

@@ -3,9 +3,7 @@
 
 #include "frc971/control_loops/flywheel/flywheel_controller.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace flywheel {
+namespace frc971::control_loops::flywheel {
 
 class FlywheelPlant : public StateFeedbackPlant<2, 1, 1> {
  public:
@@ -40,8 +38,6 @@ class FlywheelPlant : public StateFeedbackPlant<2, 1, 1> {
   double resistance_;
 };
 
-}  // namespace flywheel
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::flywheel
 
 #endif  // FRC971_CONTROL_LOOPS_FLYWHEEL_FLYWHEEL_TEST_PLANT_H_

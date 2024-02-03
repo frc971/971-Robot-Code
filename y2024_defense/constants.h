@@ -12,8 +12,7 @@
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2024_defense/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 
-namespace y2024_defense {
-namespace constants {
+namespace y2024_defense::constants {
 
 constexpr uint16_t kTeamNumber = 9972;
 
@@ -60,7 +59,6 @@ Values MakeValues(uint16_t team);
 // Calls MakeValues with aos::network::GetTeamNumber()
 Values MakeValues();
 
-}  // namespace constants
-}  // namespace y2024_defense
+}  // namespace y2024_defense::constants
 
 #endif  // Y2023_CONSTANTS_H_

@@ -14,8 +14,7 @@
 #include "glog/logging.h"
 #endif  // __linux__
 
-namespace frc971 {
-namespace controls {
+namespace frc971::controls {
 
 // A number_of_dimensions dimensional polytope.
 // This represents the region consisting of all points X such that H * X <= k.
@@ -238,7 +237,6 @@ HPolytope<number_of_dimensions>::CalculateVertices(
 }
 #endif  // __linux__
 
-}  // namespace controls
-}  // namespace frc971
+}  // namespace frc971::controls
 
 #endif  // AOS_CONTROLS_POLYTOPE_H_

@@ -12,9 +12,7 @@
 #include "aos/util/phased_loop.h"
 #include "frc971/control_loops/control_loop.h"
 
-namespace aos {
-namespace common {
-namespace actions {
+namespace aos::common::actions {
 
 template <class T>
 class ActorBase {
@@ -229,8 +227,6 @@ bool ActorBase<T>::ShouldCancel() {
   return ans;
 }
 
-}  // namespace actions
-}  // namespace common
-}  // namespace aos
+}  // namespace aos::common::actions
 
 #endif  // AOS_ACTIONS_ACTOR_H_

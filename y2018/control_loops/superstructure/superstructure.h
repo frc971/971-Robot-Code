@@ -17,9 +17,7 @@
 #include "y2018/status_light_generated.h"
 #include "y2018/vision/vision_generated.h"
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
+namespace y2018::control_loops::superstructure {
 
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
@@ -75,8 +73,6 @@ class Superstructure
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure
 
 #endif  // Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_

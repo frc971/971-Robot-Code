@@ -6,8 +6,7 @@
 #include "frc971/control_loops/state_feedback_loop.h"
 #include "frc971/shifter_hall_effect.h"
 
-namespace y2014 {
-namespace constants {
+namespace y2014::constants {
 
 using ::frc971::constants::DualHallShifterHallEffect;
 
@@ -138,7 +137,6 @@ const Values &GetValues();
 // them.
 const Values &GetValuesForTeam(uint16_t team_number);
 
-}  // namespace constants
-}  // namespace y2014
+}  // namespace y2014::constants
 
 #endif  // Y2014_CONSTANTS_H_

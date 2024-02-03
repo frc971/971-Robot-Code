@@ -6,8 +6,7 @@
 #include "aos/containers/sized_array.h"
 #include "frc971/control_loops/pose.h"
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 // Represents a target on the field. Currently just consists of a pose and a
 // indicator for whether it is occluded (occlusion is only used by the simulator
@@ -366,7 +365,6 @@ void TypedCamera<num_targets, num_obstacles, Scalar>::AddTargetIfVisible(
   views->push_back(view);
 }
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif  // Y2019_CONTROL_LOOPS_DRIVETRAIN_CAMERA_H_

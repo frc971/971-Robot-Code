@@ -16,8 +16,7 @@
 #include "frc971/input/joystick_state_generated.h"
 #include "frc971/input/robot_state_generated.h"
 
-namespace frc971 {
-namespace testing {
+namespace frc971::testing {
 
 // Handles setting up the environment that all control loops need to actually
 // run.
@@ -219,7 +218,6 @@ template <typename TestBaseClass>
 constexpr ::std::chrono::milliseconds
     ControlLoopTestTemplated<TestBaseClass>::kDSPacketTime;
 
-}  // namespace testing
-}  // namespace frc971
+}  // namespace frc971::testing
 
 #endif  // AOS_CONTROLS_CONTROL_LOOP_TEST_H_

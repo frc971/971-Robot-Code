@@ -7,8 +7,7 @@
 
 #include "frc971/wpilib/buffered_solenoid.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 // Manages setting values for all solenoids for a single PCM in a single CAN
 // message.
@@ -43,7 +42,6 @@ class BufferedPcm {
   friend class BufferedSolenoid;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_BUFFERED_PCM_H_

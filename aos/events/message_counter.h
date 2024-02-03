@@ -3,8 +3,7 @@
 
 #include "aos/events/event_loop.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Simple class to count messages on a channel easily.  This only counts
 // messages published while running.
@@ -22,7 +21,6 @@ class MessageCounter {
   size_t count_ = 0;
 };
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing
 
 #endif  // AOS_EVENTS_MESSAGE_COUNTER_H_

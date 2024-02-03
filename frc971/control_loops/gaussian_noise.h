@@ -6,8 +6,7 @@
 #include <memory>
 #include <random>
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 class GaussianNoise {
  public:
@@ -28,7 +27,6 @@ class GaussianNoise {
   std::normal_distribution<double> distribution_;
 };
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif  // FRC971_CONTROL_LOOPS_GAUSSIAN_NOISE_H_

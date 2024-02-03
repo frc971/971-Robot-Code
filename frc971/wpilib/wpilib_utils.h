@@ -5,8 +5,7 @@
 
 #include "frc971/constants.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 // Convert min and max angle positions from range to voltage and compare to
 // min and max potentiometer voltage to check if in range.
@@ -22,7 +21,6 @@ bool SafePotVoltageRange(::frc971::constants::Range subsystem_range,
                          ::std::function<double(double)> pot_translate_inverse,
                          bool reverse, double limit_buffer = 0.05);
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_WPILIB_UTILS_H_

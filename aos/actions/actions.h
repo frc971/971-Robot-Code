@@ -14,9 +14,7 @@
 #include "aos/json_to_flatbuffer.h"
 #include "aos/logging/logging.h"
 
-namespace aos {
-namespace common {
-namespace actions {
+namespace aos::common::actions {
 
 class Action;
 
@@ -407,8 +405,6 @@ void TypedAction<T>::DoStart() {
   }
 }
 
-}  // namespace actions
-}  // namespace common
-}  // namespace aos
+}  // namespace aos::common::actions
 
 #endif  // AOS_ACTIONS_ACTIONS_H_

@@ -9,9 +9,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2017/vision/vision_generated.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
+namespace y2017::control_loops::superstructure {
 
 class VisionTimeAdjuster {
  public:
@@ -74,8 +72,6 @@ class VisionTimeAdjuster {
   bool valid_ = false;
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure
 
 #endif  // Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_VISION_TIME_ADJUSTER_H_

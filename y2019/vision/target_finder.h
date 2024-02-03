@@ -16,8 +16,7 @@ namespace ceres {
 class Context;
 
 }  // namespace ceres
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 using aos::vision::BlobList;
 using aos::vision::ContourNode;
@@ -115,7 +114,6 @@ class TargetFinder {
   int current_exposure_ = 0;
 };
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision
 
 #endif

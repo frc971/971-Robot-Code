@@ -10,8 +10,7 @@
 #include "aos/ipc_lib/lockless_queue.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 
 struct LocklessQueueMemory {
   // This is held during initialization. Cleanup after dead processes happens
@@ -194,7 +193,6 @@ struct LocklessQueueMemory {
   }
 };
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib
 
 #endif  // AOS_IPC_LIB_LOCKLESS_QUEUE_MEMORY_H_

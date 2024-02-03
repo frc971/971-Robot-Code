@@ -14,8 +14,7 @@
 #include "y2018/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2018/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2018 {
-namespace actors {
+namespace y2018::actors {
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
@@ -226,7 +225,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 };
 
-}  // namespace actors
-}  // namespace y2018
+}  // namespace y2018::actors
 
 #endif  // Y2018_ACTORS_AUTONOMOUS_ACTOR_H_

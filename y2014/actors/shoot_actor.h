@@ -10,8 +10,7 @@
 #include "y2014/control_loops/shooter/shooter_goal_generated.h"
 #include "y2014/control_loops/shooter/shooter_status_generated.h"
 
-namespace y2014 {
-namespace actors {
+namespace y2014::actors {
 
 class ShootActor
     : public ::aos::common::actions::ActorBase<aos::common::actions::Goal> {
@@ -62,7 +61,6 @@ class ShootActor
   int previous_shots_;
 };
 
-}  // namespace actors
-}  // namespace y2014
+}  // namespace y2014::actors
 
 #endif  // Y2014_ACTORS_SHOOT_ACTOR_H_

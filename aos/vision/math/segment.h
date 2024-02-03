@@ -5,8 +5,7 @@
 
 #include "aos/vision/math/vector.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 template <int Size>
 class Segment {
@@ -76,7 +75,6 @@ class Segment {
   Vector<Size> B_;
 };
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // AOS_VISION_COMP_GEO_VECTOR_H_

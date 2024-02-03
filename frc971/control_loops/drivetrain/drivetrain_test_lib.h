@@ -15,10 +15,7 @@
 #include "frc971/queues/gyro_generated.h"
 #include "frc971/wpilib/imu_batch_generated.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
-namespace testing {
+namespace frc971::control_loops::drivetrain::testing {
 
 const DrivetrainConfig<double> &GetTestDrivetrainConfig();
 
@@ -174,9 +171,6 @@ class DrivetrainSimulation {
   double accel_sin_wave_magnitude_ = 0.0;
 };
 
-}  // namespace testing
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain::testing
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_TEST_LIB_H_

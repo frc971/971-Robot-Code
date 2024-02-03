@@ -11,8 +11,7 @@
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2022 {
-namespace actors {
+namespace y2022::actors {
 
 using control_loops::superstructure::RequestedIntake;
 using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
@@ -106,7 +105,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   std::optional<Eigen::Vector3d> starting_position_;
 };
 
-}  // namespace actors
-}  // namespace y2022
+}  // namespace y2022::actors
 
 #endif  // Y2022_ACTORS_AUTONOMOUS_ACTOR_H_

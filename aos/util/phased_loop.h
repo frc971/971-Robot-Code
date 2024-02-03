@@ -5,8 +5,7 @@
 
 #include "aos/time/time.h"
 
-namespace aos {
-namespace time {
+namespace aos::time {
 
 // Handles sleeping until a fixed offset from some time interval.
 class PhasedLoop {
@@ -88,7 +87,6 @@ class PhasedLoop {
   monotonic_clock::time_point last_time_ = monotonic_clock::epoch();
 };
 
-}  // namespace time
-}  // namespace aos
+}  // namespace aos::time
 
 #endif  // AOS_UTIL_PHASED_LOOP_H_

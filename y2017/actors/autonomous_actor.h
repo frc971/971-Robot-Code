@@ -11,8 +11,7 @@
 #include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2017/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2017 {
-namespace actors {
+namespace y2017::actors {
 using ::frc971::ProfileParameters;
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
@@ -169,7 +168,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 };
 
-}  // namespace actors
-}  // namespace y2017
+}  // namespace y2017::actors
 
 #endif  // Y2017_ACTORS_AUTONOMOUS_ACTOR_H_

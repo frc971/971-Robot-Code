@@ -5,8 +5,7 @@
 
 #include "motors/print/print.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 
 // A printing implementation via the SWO (trace output) pin. This requires an
 // attached debugger which is in SWD (Single Wire Debug) mode, has the SWO
@@ -28,7 +27,6 @@ class ItmPrinting final : public PrintingImplementation {
   int WriteDebug(absl::Span<const char> buffer) override;
 };
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors
 
 #endif  // MOTORS_PRINT_ITM_

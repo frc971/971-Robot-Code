@@ -18,8 +18,7 @@
 #include "aos/network/message_bridge_server_schema.h"
 #include "aos/network/timestamp_schema.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 class EventLoopTestFactory {
  public:
@@ -398,7 +397,6 @@ int TestChannelQueueSize(EventLoop *event_loop);
 // Sends a test message with value 0 with the given sender
 RawSender::Error SendTestMessage(aos::Sender<TestMessage> &sender);
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing
 
 #endif  // _AOS_EVENTS_EVENT_LOOP_PARAM_TEST_H_

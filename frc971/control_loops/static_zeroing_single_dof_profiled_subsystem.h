@@ -5,8 +5,7 @@
 #include "frc971/control_loops/profiled_subsystem.h"
 #include "frc971/control_loops/state_feedback_loop_converters.h"
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 template <typename ZeroingEstimator>
 struct StaticZeroingSingleDOFProfiledSubsystemParams {
@@ -426,7 +425,6 @@ StaticZeroingSingleDOFProfiledSubsystem<
   return status_builder.Finish();
 }
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif  // FRC971_CONTROL_LOOPS_STATIC_ZEROING_SINGLE_DOF_PROFILED_SUBSYSTEM_H_

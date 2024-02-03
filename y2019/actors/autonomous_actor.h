@@ -13,8 +13,7 @@
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2019 {
-namespace actors {
+namespace y2019::actors {
 
 using ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 
@@ -250,7 +249,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
       superstructure_status_fetcher_;
 };
 
-}  // namespace actors
-}  // namespace y2019
+}  // namespace y2019::actors
 
 #endif  // Y2019_ACTORS_AUTONOMOUS_ACTOR_H_

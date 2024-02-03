@@ -13,8 +13,7 @@
 #include "motors/print/print.h"
 #include "motors/util.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 
 class MotorControls {
  public:
@@ -189,7 +188,6 @@ class Motor final {
   PrintingImplementation *printing_implementation_ = nullptr;
 };
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors
 
 #endif  // MOTORS_MOTOR_H_

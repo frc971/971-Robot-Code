@@ -15,8 +15,7 @@
 #include "y2023/control_loops/superstructure/roll/roll_plant.h"
 #include "y2023/control_loops/superstructure/wrist/wrist_plant.h"
 
-namespace y2023 {
-namespace constants {
+namespace y2023::constants {
 
 constexpr uint16_t kCompTeamNumber = 971;
 constexpr uint16_t kPracticeTeamNumber = 9971;
@@ -236,7 +235,6 @@ Values MakeValues(uint16_t team);
 // Calls MakeValues with aos::network::GetTeamNumber()
 Values MakeValues();
 
-}  // namespace constants
-}  // namespace y2023
+}  // namespace y2023::constants
 
 #endif  // Y2023_CONSTANTS_H_

@@ -9,9 +9,7 @@
 #include "y2023/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2023/vision/game_pieces_generated.h"
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
+namespace y2023::control_loops::superstructure {
 
 class EndEffector {
  public:
@@ -39,8 +37,6 @@ class EndEffector {
   bool beambreak_;
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure
 
 #endif  // Y2023_CONTROL_LOOPS_SUPERSTRUCTURE_END_EFFECTOR_H_
