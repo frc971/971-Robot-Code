@@ -139,7 +139,7 @@ void CameraReaderMain() {
 
     LOG(INFO) << "Opening " << rkisp1_params->device();
     aos::ScopedFD fd(open(rkisp1_params->device().c_str(), O_RDWR));
-    PCHECK(fd >= 0);
+    PCHECK(fd.get() >= 0);
 
     struct v4l2_capability capability;
     memset(&capability, 0, sizeof(capability));

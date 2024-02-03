@@ -35,7 +35,7 @@ class ScopedFD {
       fd_ = new_fd;
     }
   }
-  operator bool() const { return fd_ != -1; }
+  explicit operator bool() const { return fd_ != -1; }
 
  private:
   int fd_;
