@@ -51,6 +51,7 @@ class SuperstructureSimulation {
             event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
             event_loop_->MakeFetcher<Output>("/superstructure")),
+        transfer_beambreak_(false),
         intake_pivot_(
             new CappedTestPlant(intake_pivot::MakeIntakePivotPlant()),
             PositionSensorSimulator(simulated_robot_constants->robot()
@@ -105,10 +106,15 @@ class SuperstructureSimulation {
 
     Position::Builder position_builder = builder.MakeBuilder<Position>();
 
+    position_builder.add_transfer_beambreak(transfer_beambreak_);
     position_builder.add_intake_pivot(intake_pivot_offset);
 
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
+  }
+
+  void set_transfer_beambreak(bool triggered) {
+    transfer_beambreak_ = triggered;
   }
 
   PotAndAbsoluteEncoderSimulator *intake_pivot() { return &intake_pivot_; }
@@ -121,6 +127,8 @@ class SuperstructureSimulation {
   ::aos::Sender<Position> superstructure_position_sender_;
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
+
+  bool transfer_beambreak_;
 
   PotAndAbsoluteEncoderSimulator intake_pivot_;
   bool first_ = true;
@@ -375,7 +383,7 @@ TEST_F(SuperstructureTest, DisableTest) {
   CheckIfZeroed();
 }
 
-// Tests Intake in multiple scenarios
+// Tests intake and transfer in multiple scenarios
 TEST_F(SuperstructureTest, IntakeGoal) {
   SetEnabled(true);
   WaitUntilZeroed();
@@ -398,6 +406,8 @@ TEST_F(SuperstructureTest, IntakeGoal) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
+  superstructure_plant_.set_transfer_beambreak(false);
+
   RunFor(chrono::seconds(5));
 
   VerifyNearGoal();
@@ -415,9 +425,16 @@ TEST_F(SuperstructureTest, IntakeGoal) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
+  superstructure_plant_.set_transfer_beambreak(false);
+
   RunFor(chrono::seconds(5));
 
   VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(),
+            simulated_robot_constants_->common()
+                ->transfer_roller_voltages()
+                ->transfer_out());
 
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
@@ -430,8 +447,39 @@ TEST_F(SuperstructureTest, IntakeGoal) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
+  superstructure_plant_.set_transfer_beambreak(false);
+
   RunFor(chrono::seconds(5));
 
   VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_roller_goal(IntakeRollerGoal::INTAKE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  superstructure_plant_.set_transfer_beambreak(false);
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(),
+            simulated_robot_constants_->common()
+                ->transfer_roller_voltages()
+                ->transfer_in());
+
+  superstructure_plant_.set_transfer_beambreak(true);
+
+  RunFor(chrono::seconds(2));
+
+  VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
 }
 }  // namespace y2024::control_loops::superstructure::testing

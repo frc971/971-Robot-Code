@@ -51,6 +51,7 @@ class Superstructure
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
 
+  TransferRollerGoal transfer_goal_;
   PotAndAbsoluteEncoderSubsystem intake_pivot_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);

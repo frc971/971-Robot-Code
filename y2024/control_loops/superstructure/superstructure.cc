@@ -30,6 +30,7 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
               "/drivetrain")),
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
+      transfer_goal_(TransferRollerGoal::NONE),
       intake_pivot_(
           robot_constants_->common()->intake_pivot(),
           robot_constants_->robot()->intake_constants()->intake_pivot_zero()) {
@@ -70,14 +71,41 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       output_struct.intake_roller_voltage = 0.0;
       break;
     case IntakeRollerGoal::SPIT:
+      transfer_goal_ = TransferRollerGoal::TRANSFER_OUT;
       intake_roller_state = IntakeRollerState::SPITTING;
       output_struct.intake_roller_voltage =
           robot_constants_->common()->intake_roller_voltages()->spitting();
       break;
     case IntakeRollerGoal::INTAKE:
+      transfer_goal_ = TransferRollerGoal::TRANSFER_IN;
       intake_roller_state = IntakeRollerState::INTAKING;
       output_struct.intake_roller_voltage =
           robot_constants_->common()->intake_roller_voltages()->intaking();
+      break;
+  }
+
+  TransferRollerState transfer_roller_state = TransferRollerState::NONE;
+
+  switch (unsafe_goal != nullptr ? transfer_goal_ : TransferRollerGoal::NONE) {
+    case TransferRollerGoal::NONE:
+      output_struct.transfer_roller_voltage = 0.0;
+      break;
+    case TransferRollerGoal::TRANSFER_IN:
+      if (position->transfer_beambreak()) {
+        transfer_goal_ = TransferRollerGoal::NONE;
+        transfer_roller_state = TransferRollerState::NONE;
+        output_struct.transfer_roller_voltage = 0.0;
+        break;
+      }
+      transfer_roller_state = TransferRollerState::TRANSFERING_IN;
+      output_struct.transfer_roller_voltage =
+          robot_constants_->common()->transfer_roller_voltages()->transfer_in();
+      break;
+    case TransferRollerGoal::TRANSFER_OUT:
+      transfer_roller_state = TransferRollerState::TRANSFERING_OUT;
+      output_struct.transfer_roller_voltage = robot_constants_->common()
+                                                  ->transfer_roller_voltages()
+                                                  ->transfer_out();
       break;
   }
 
@@ -118,6 +146,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_estopped(estopped);
   status_builder.add_intake_roller_state(intake_roller_state);
   status_builder.add_intake_pivot_state(intake_pivot_status_offset);
+  status_builder.add_transfer_roller_state(transfer_roller_state);
 
   (void)status->Send(status_builder.Finish());
 }
