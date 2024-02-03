@@ -24,10 +24,10 @@
       <a
         class="dropdown-item"
         href="#"
-        (click)="switchDataSource('Stats2023')"
+        (click)="switchDataSource('Stats2024')"
         id="stats_source_dropdown"
       >
-        Stats
+        Stats2024
       </a>
     </li>
     <li>
@@ -93,8 +93,8 @@
       </tbody>
     </table>
   </div>
-  <!-- Stats Data Display. -->
-  <div *ngSwitchCase="'Stats2023'">
+  <!-- Stats2024 Data Display. -->
+  <div *ngSwitchCase="'Stats2024'">
     <table class="table">
       <thead>
         <tr>
@@ -114,17 +114,17 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let stat2023 of statList; index as i;">
-          <th scope="row">{{stat2023.matchNumber()}}</th>
-          <td>{{stat2023.teamNumber()}}</td>
-          <td>{{COMP_LEVEL_LABELS[stat2023.compLevel()]}}</td>
-          <td>{{stat2023.collectedBy()}}</td>
+        <tr *ngFor="let stat2024 of statList; index as i;">
+          <th scope="row">{{stat2024.matchNumber()}}</th>
+          <td>{{stat2024.teamNumber()}}</td>
+          <td>{{COMP_LEVEL_LABELS[stat2024.compLevel()]}}</td>
+          <td>{{stat2024.collectedBy()}}</td>
           <!-- Delete Icon. -->
           <td>
             <button
               class="btn btn-danger"
               id="delete_button_{{i}}"
-              (click)="deleteDataScouting(stat2023.compLevel(), stat2023.matchNumber(), stat2023.setNumber(), stat2023.teamNumber())"
+              (click)="delete2024DataScouting(stat2024.compLevel(), stat2024.matchNumber(), stat2024.setNumber(), stat2024.teamNumber())"
             >
               <i class="bi bi-trash"></i>
             </button>

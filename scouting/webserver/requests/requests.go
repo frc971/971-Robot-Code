@@ -199,8 +199,7 @@ func findIndexInList(list []string, comp_level string) (int, error) {
 }
 
 func (handler requestAllMatchesHandler) teamHasBeenDataScouted(key MatchAssemblyKey, teamNumber string) (bool, error) {
-	// TODO change this to reference 2024 stats
-	stats, err := handler.db.ReturnStats2023ForTeam(
+	stats, err := handler.db.ReturnStats2024ForTeam(
 		teamNumber, key.MatchNumber, key.SetNumber, key.CompLevel, false)
 	if err != nil {
 		return false, err
@@ -480,7 +479,7 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 		} else if action_type == submit_2024_actions.ActionTypePenaltyAction {
 			var penaltyAction submit_2024_actions.PenaltyAction
 			penaltyAction.Init(actionTable.Bytes, actionTable.Pos)
-			stat.Penalties += 1
+			stat.Penalties += penaltyAction.Penalties()
 
 		} else if action_type == submit_2024_actions.ActionTypePickupNoteAction {
 			var pick_up_action submit_2024_actions.PickupNoteAction
@@ -1165,12 +1164,12 @@ func (handler submit2024ActionsHandler) ServeHTTP(w http.ResponseWriter, req *ht
 
 	err = handler.db.AddToStats2024(stats)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit stats: ", stats, ": ", err))
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprint("Failed to submit stats2024: ", stats, ": ", err))
 		return
 	}
 
 	builder := flatbuffers.NewBuilder(50 * 1024)
-	builder.Finish((&SubmitActionsResponseT{}).Pack(builder))
+	builder.Finish((&Submit2024ActionsResponseT{}).Pack(builder))
 	w.Write(builder.FinishedBytes())
 }
 

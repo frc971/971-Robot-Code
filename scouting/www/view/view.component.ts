@@ -6,9 +6,9 @@ import {
   RequestAllDriverRankingsResponse,
 } from '../../webserver/requests/messages/request_all_driver_rankings_response_generated';
 import {
-  Stats2023,
-  Request2023DataScoutingResponse,
-} from '../../webserver/requests/messages/request_2023_data_scouting_response_generated';
+  Stats2024,
+  Request2024DataScoutingResponse,
+} from '../../webserver/requests/messages/request_2024_data_scouting_response_generated';
 
 import {
   PitImage,
@@ -19,12 +19,12 @@ import {
   Note,
   RequestAllNotesResponse,
 } from '../../webserver/requests/messages/request_all_notes_response_generated';
-import {Delete2023DataScouting} from '../../webserver/requests/messages/delete_2023_data_scouting_generated';
-import {Delete2023DataScoutingResponse} from '../../webserver/requests/messages/delete_2023_data_scouting_response_generated';
+import {Delete2024DataScouting} from '../../webserver/requests/messages/delete_2024_data_scouting_generated';
+import {Delete2024DataScoutingResponse} from '../../webserver/requests/messages/delete_2024_data_scouting_response_generated';
 
 import {ViewDataRequestor} from '../rpc';
 
-type Source = 'Notes' | 'Stats2023' | 'PitImages' | 'DriverRanking';
+type Source = 'Notes' | 'Stats2024' | 'PitImages' | 'DriverRanking';
 
 //TODO(Filip): Deduplicate
 const COMP_LEVEL_LABELS = {
@@ -63,7 +63,7 @@ export class ViewComponent {
   noteList: Note[] = [];
   driverRankingList: Ranking[] = [];
   pitImageList: PitImage[][] = [];
-  statList: Stats2023[] = [];
+  statList: Stats2024[] = [];
 
   // Fetch notes on initialization.
   ngOnInit() {
@@ -123,8 +123,8 @@ export class ViewComponent {
         this.fetchNotes();
       }
 
-      case 'Stats2023': {
-        this.fetchStats2023();
+      case 'Stats2024': {
+        this.fetchStats2024();
       }
 
       case 'PitImages': {
@@ -162,7 +162,7 @@ export class ViewComponent {
   }
 
   // Gets called when a user clicks the delete icon.
-  async deleteDataScouting(
+  async delete2024DataScouting(
     compLevel: string,
     matchNumber: number,
     setNumber: number,
@@ -172,17 +172,17 @@ export class ViewComponent {
       'block_alerts'
     ) as HTMLInputElement;
     if (block_alerts.checked || window.confirm('Actually delete data?')) {
-      await this.requestDeleteDataScouting(
+      await this.requestDelete2024DataScouting(
         compLevel,
         matchNumber,
         setNumber,
         teamNumber
       );
-      await this.fetchStats2023();
+      await this.fetchStats2024();
     }
   }
 
-  async requestDeleteDataScouting(
+  async requestDelete2024DataScouting(
     compLevel: string,
     matchNumber: number,
     setNumber: number,
@@ -194,7 +194,7 @@ export class ViewComponent {
     const teamNumberData = builder.createString(teamNumber);
 
     builder.finish(
-      Delete2023DataScouting.createDelete2023DataScouting(
+      Delete2024DataScouting.createDelete2024DataScouting(
         builder,
         compLevelData,
         matchNumber,
@@ -204,7 +204,7 @@ export class ViewComponent {
     );
 
     const buffer = builder.asUint8Array();
-    const res = await fetch('/requests/delete/delete_2023_data_scouting', {
+    const res = await fetch('/requests/delete/delete_2024_data_scouting', {
       method: 'POST',
       body: buffer,
     });
@@ -270,12 +270,12 @@ export class ViewComponent {
   }
 
   // Fetch all data scouting (stats) data and store in statList.
-  async fetchStats2023() {
+  async fetchStats2024() {
     this.progressMessage = 'Fetching stats list. Please be patient.';
     this.errorMessage = '';
 
     try {
-      this.statList = await this.viewDataRequestor.fetchStats2023List();
+      this.statList = await this.viewDataRequestor.fetchStats2024List();
       this.progressMessage = 'Successfully fetched stats list.';
     } catch (e) {
       this.errorMessage = e;

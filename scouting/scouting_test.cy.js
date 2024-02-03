@@ -84,14 +84,14 @@ function submitDataScouting(
   cy.get('[type="radio"]').first().check();
   clickButton('Start Match');
 
-  // Pick and Place Cone in Auto.
-  clickButton('CONE');
-  clickButton('HIGH');
+  // Pick and Place Note in Auto.
+  clickButton('NOTE');
+  clickButton('AMP');
 
   // Pick and Place Cube in Teleop.
   clickButton('Start Teleop');
-  clickButton('CUBE');
-  clickButton('LOW');
+  clickButton('NOTE');
+  clickButton('AMP AMPLIFIED');
 
   // Robot dead and revive.
   clickButton('DEAD');
@@ -99,19 +99,19 @@ function submitDataScouting(
 
   // Endgame.
   clickButton('Endgame');
-  cy.contains(/Docked & Engaged/).click();
+  cy.contains(/Harmony/).click();
 
   clickButton('End Match');
   headerShouldBe(teamNumber + ' Review and Submit ');
   cy.get('#review_data li')
     .eq(0)
     .should('have.text', ' Started match at position 1 ');
-  cy.get('#review_data li').eq(1).should('have.text', ' Picked up kCone ');
+  cy.get('#review_data li').eq(1).should('have.text', 'Picked up Note');
   cy.get('#review_data li')
     .last()
     .should(
       'have.text',
-      ' Ended Match; docked: false, engaged: true, attempted to dock and engage: false '
+      ' Ended Match; park: false, onStage: false, harmony: true, trapNote: false '
     );
 
   clickButton('Submit');
@@ -264,8 +264,8 @@ describe('Scouting app tests', () => {
     cy.get('[type="radio"]').first().check();
     clickButton('Start Match');
 
-    // Pick up cone.
-    clickButton('CONE');
+    // Pick up note.
+    clickButton('NOTE');
 
     // Undo that pick up.
     clickButton('UNDO');
@@ -274,8 +274,8 @@ describe('Scouting app tests', () => {
     headerShouldBe('3990 Pickup ');
 
     // Check the same thing but for undoing place.
-    clickButton('CUBE');
-    clickButton('MID');
+    clickButton('NOTE');
+    clickButton('AMP');
     clickButton('UNDO');
     headerShouldBe('3990 Place ');
   });
