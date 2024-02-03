@@ -1,26 +1,29 @@
 #include "aos/init.h"
 #include "aos/realtime.h"
 #include "aos/time/time.h"
-#include "y2022/control_loops/superstructure/catapult/catapult.h"
+#include "frc971/control_loops/catapult/catapult.h"
 #include "y2022/control_loops/superstructure/catapult/catapult_plant.h"
 
 namespace y2022::control_loops::superstructure::catapult {
 namespace chrono = std::chrono;
+using CatapultProblemGenerator =
+    frc971::control_loops::catapult::CatapultProblemGenerator;
+using MPCProblem = frc971::control_loops::catapult::MPCProblem;
 
 void OSQPSolve() {
   Eigen::Matrix<double, 2, 1> X_initial(0.0, 0.0);
   Eigen::Matrix<double, 2, 1> X_final(2.0, 25.0);
 
   LOG(INFO) << "Starting a dynamic OSQP solve";
-  CatapultProblemGenerator g(35);
   const StateFeedbackPlant<2, 1, 1> plant = MakeCatapultPlant();
+  CatapultProblemGenerator g(MakeCatapultPlant(), 35);
 
   constexpr int kHorizon = 35;
 
   // TODO(austin): This is a good unit test!  Make sure computing the problem
   // different ways comes out the same.
   {
-    CatapultProblemGenerator g2(10);
+    CatapultProblemGenerator g2(MakeCatapultPlant(), 10);
     constexpr int kTestHorizon = 10;
     CHECK(g2.P(kTestHorizon) == g.P(kTestHorizon))
         << g2.P(kTestHorizon) - g.P(kTestHorizon);

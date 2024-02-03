@@ -256,8 +256,12 @@ class StateFeedbackPlant {
   static const int kNumInputs = number_of_inputs;
 
  private:
-  Eigen::Matrix<Scalar, number_of_states, 1> X_;
-  Eigen::Matrix<Scalar, number_of_outputs, 1> Y_;
+  // X_ and Y_ must be explicitly initialized to avoid having gcc complain about
+  // uninitialized values when using the move constructor.
+  Eigen::Matrix<Scalar, number_of_states, 1> X_ =
+      Eigen::Matrix<Scalar, number_of_states, 1>::Zero();
+  Eigen::Matrix<Scalar, number_of_outputs, 1> Y_ =
+      Eigen::Matrix<Scalar, number_of_outputs, 1>::Zero();
   Eigen::Matrix<Scalar, number_of_inputs, Eigen::Dynamic> last_U_;
 
   ::std::vector<::std::unique_ptr<StateFeedbackPlantCoefficients<

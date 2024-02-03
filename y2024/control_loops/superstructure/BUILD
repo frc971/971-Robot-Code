@@ -12,6 +12,7 @@ static_flatbuffer(
     deps = [
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/catapult:catapult_goal_fbs",
     ],
 )
 

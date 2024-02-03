@@ -1,4 +1,5 @@
 include "frc971/control_loops/profiled_subsystem.fbs";
+include "frc971/control_loops/catapult/catapult_goal.fbs";
 
 namespace y2022.control_loops.superstructure;
 
@@ -6,20 +7,6 @@ namespace y2022.control_loops.superstructure;
 enum RequestedIntake : ubyte {
   kFront = 0,
   kBack = 1,
-}
-
-table CatapultGoal {
-  // Old fire flag, only kept for backwards-compatability with logs.
-  // Use the fire flag in the root Goal instead
-  fire:bool (id: 0, deprecated);
-
-  // The target shot position and velocity.  If these are provided before fire
-  // is called, the optimizer can pre-compute the trajectory.
-  shot_position:double (id: 1);
-  shot_velocity:double (id: 2);
-
-  // The target position to return the catapult to when not shooting.
-  return_position:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 3);
 }
 
 table Goal {
@@ -52,7 +39,7 @@ table Goal {
   turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 7);
 
   // Catapult goal state.
-  catapult:CatapultGoal (id: 8);
+  catapult:frc971.control_loops.catapult.CatapultGoal (id: 8);
 
   // If true, fire!  The robot will only fire when ready.
   fire:bool (id: 9);

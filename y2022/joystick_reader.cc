@@ -26,6 +26,7 @@
 using frc971::CreateProfileParameters;
 using frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
+using frc971::control_loops::catapult::CatapultGoal;
 using frc971::input::driver_station::ButtonLocation;
 using frc971::input::driver_station::ControlBit;
 using frc971::input::driver_station::JoystickAxis;
@@ -320,12 +321,12 @@ class Reader : public ::frc971::input::ActionJoystickInput {
               *builder.fbb(), climber_position,
               frc971::CreateProfileParameters(*builder.fbb(), 1.0, 1.0));
 
-      superstructure::CatapultGoal::Builder catapult_builder =
-          builder.MakeBuilder<superstructure::CatapultGoal>();
+      CatapultGoal::Builder catapult_builder =
+          builder.MakeBuilder<CatapultGoal>();
       catapult_builder.add_return_position(catapult_return_offset);
       catapult_builder.add_shot_position(catapult_pos);
       catapult_builder.add_shot_velocity(catapult_speed);
-      flatbuffers::Offset<superstructure::CatapultGoal> catapult_offset =
+      flatbuffers::Offset<CatapultGoal> catapult_offset =
           catapult_builder.Finish();
 
       superstructure::Goal::Builder superstructure_goal_builder =

@@ -691,7 +691,8 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     const auto catapult_return_offset =
         CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
             *builder.fbb(), kCatapultReturnPosition);
-    auto catapult_builder = builder.MakeBuilder<CatapultGoal>();
+    auto catapult_builder =
+        builder.MakeBuilder<frc971::control_loops::catapult::CatapultGoal>();
     catapult_builder.add_return_position(catapult_return_offset);
     const auto catapult_offset = catapult_builder.Finish();
 
@@ -853,7 +854,8 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     const auto catapult_return_offset =
         CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
             *builder.fbb(), kCatapultReturnPosition);
-    auto catapult_builder = builder.MakeBuilder<CatapultGoal>();
+    auto catapult_builder =
+        builder.MakeBuilder<frc971::control_loops::catapult::CatapultGoal>();
     catapult_builder.add_shot_position(0.3);
     catapult_builder.add_shot_velocity(15.0);
     catapult_builder.add_return_position(catapult_return_offset);
@@ -1040,14 +1042,16 @@ TEST_F(SuperstructureTest, ShootCatapult) {
                 *builder.fbb(), constants::Values::kCatapultRange().lower,
                 CreateProfileParameters(*builder.fbb(), 4.0, 20.0));
 
-    CatapultGoal::Builder catapult_goal_builder =
-        builder.MakeBuilder<CatapultGoal>();
+    frc971::control_loops::catapult::CatapultGoal::Builder
+        catapult_goal_builder =
+            builder
+                .MakeBuilder<frc971::control_loops::catapult::CatapultGoal>();
 
     catapult_goal_builder.add_shot_position(0.3);
     catapult_goal_builder.add_shot_velocity(15.0);
     catapult_goal_builder.add_return_position(catapult_return_position_offset);
-    flatbuffers::Offset<CatapultGoal> catapult_goal_offset =
-        catapult_goal_builder.Finish();
+    flatbuffers::Offset<frc971::control_loops::catapult::CatapultGoal>
+        catapult_goal_offset = catapult_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_fire(false);
@@ -1075,14 +1079,16 @@ TEST_F(SuperstructureTest, ShootCatapult) {
                 *builder.fbb(), constants::Values::kCatapultRange().lower,
                 CreateProfileParameters(*builder.fbb(), 4.0, 20.0));
 
-    CatapultGoal::Builder catapult_goal_builder =
-        builder.MakeBuilder<CatapultGoal>();
+    frc971::control_loops::catapult::CatapultGoal::Builder
+        catapult_goal_builder =
+            builder
+                .MakeBuilder<frc971::control_loops::catapult::CatapultGoal>();
 
     catapult_goal_builder.add_shot_position(0.5);
     catapult_goal_builder.add_shot_velocity(20.0);
     catapult_goal_builder.add_return_position(catapult_return_position_offset);
-    flatbuffers::Offset<CatapultGoal> catapult_goal_offset =
-        catapult_goal_builder.Finish();
+    flatbuffers::Offset<frc971::control_loops::catapult::CatapultGoal>
+        catapult_goal_offset = catapult_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 

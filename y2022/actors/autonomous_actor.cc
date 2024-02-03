@@ -32,6 +32,7 @@ using frc971::CreateProfileParameters;
 using ::frc971::ProfileParametersT;
 using frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal;
 using frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
+using frc971::control_loops::catapult::CatapultGoal;
 using frc971::control_loops::drivetrain::LocalizerControl;
 
 namespace chrono = ::std::chrono;
@@ -401,11 +402,11 @@ void AutonomousActor::SendSuperstructureGoal() {
               *builder.fbb(), kCatapultReturnPosition,
               CreateProfileParameters(*builder.fbb(), 9.0, 50.0));
 
-  superstructure::CatapultGoal::Builder catapult_goal_builder(*builder.fbb());
+  CatapultGoal::Builder catapult_goal_builder(*builder.fbb());
   catapult_goal_builder.add_shot_position(0.03);
   catapult_goal_builder.add_shot_velocity(18.0);
   catapult_goal_builder.add_return_position(catapult_return_position_offset);
-  flatbuffers::Offset<superstructure::CatapultGoal> catapult_goal_offset =
+  flatbuffers::Offset<CatapultGoal> catapult_goal_offset =
       catapult_goal_builder.Finish();
 
   superstructure::Goal::Builder superstructure_builder =
