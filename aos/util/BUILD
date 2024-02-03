@@ -53,7 +53,6 @@ cc_binary(
         "//aos:configuration",
         "//aos:init",
         "//aos/events/logging:log_reader",
-        "//frc971/control_loops:control_loops_fbs",
     ],
 )
 
