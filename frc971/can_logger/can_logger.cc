@@ -32,7 +32,7 @@ CanLogger::CanLogger(aos::ShmEventLoop *event_loop,
   CHECK_EQ(opt_size, sizeof(recieve_buffer_size));
   VLOG(0) << "CAN recieve bufffer is " << recieve_buffer_size << " bytes large";
 
-  event_loop->epoll()->OnReadable(fd_, [this]() { Poll(); });
+  event_loop->epoll()->OnReadable(fd_.get(), [this]() { Poll(); });
 }
 
 void CanLogger::Poll() {
