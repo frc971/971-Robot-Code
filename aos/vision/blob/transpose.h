@@ -1,5 +1,5 @@
-#ifndef _y2017_VISION_BLOB_TRANSPOSE_H_
-#define _y2017_VISION_BLOB_TRANSPOSE_H_
+#ifndef AOS_VISION_BLOB_TRANSPOSE_H_
+#define AOS_VISION_BLOB_TRANSPOSE_H_
 
 #include "aos/vision/blob/range_image.h"
 
@@ -17,4 +17,4 @@ inline std::vector<RangeImage> Transpose(const std::vector<RangeImage> &imgs) {
 }  // namespace vision
 }  // namespace aos
 
-#endif  // _y2017_VISION_ROT90_H_
+#endif  // AOS_VISION_BLOB_TRANSPOSE_H_
