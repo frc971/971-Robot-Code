@@ -12,6 +12,7 @@
 #include "frc971/zeroing/absolute_encoder.h"
 #include "y2024/constants/simulated_constants_sender.h"
 #include "y2024/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2024/control_loops/superstructure/intake_pivot/intake_pivot_plant.h"
 #include "y2024/control_loops/superstructure/superstructure.h"
 
 DEFINE_string(output_folder, "",
@@ -29,10 +30,19 @@ using ::frc971::control_loops::
 using ::frc971::control_loops::PositionSensorSimulator;
 using ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 using DrivetrainStatus = ::frc971::control_loops::drivetrain::Status;
+typedef Superstructure::PotAndAbsoluteEncoderSubsystem
+    PotAndAbsoluteEncoderSubsystem;
+using PotAndAbsoluteEncoderSimulator =
+    frc971::control_loops::SubsystemSimulator<
+        frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus,
+        PotAndAbsoluteEncoderSubsystem::State,
+        constants::Values::PotAndAbsEncoderConstants>;
 
 class SuperstructureSimulation {
  public:
-  SuperstructureSimulation(::aos::EventLoop *event_loop, chrono::nanoseconds dt)
+  SuperstructureSimulation(::aos::EventLoop *event_loop,
+                           const Constants *simulated_robot_constants,
+                           chrono::nanoseconds dt)
       : event_loop_(event_loop),
         dt_(dt),
         superstructure_position_sender_(
@@ -40,14 +50,42 @@ class SuperstructureSimulation {
         superstructure_status_fetcher_(
             event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
-            event_loop_->MakeFetcher<Output>("/superstructure")) {
-    (void)dt_;
+            event_loop_->MakeFetcher<Output>("/superstructure")),
+        intake_pivot_(
+            new CappedTestPlant(intake_pivot::MakeIntakePivotPlant()),
+            PositionSensorSimulator(simulated_robot_constants->robot()
+                                        ->intake_constants()
+                                        ->intake_pivot_zero()
+                                        ->one_revolution_distance()),
+            {.subsystem_params =
+                 {simulated_robot_constants->common()->intake_pivot(),
+                  simulated_robot_constants->robot()
+                      ->intake_constants()
+                      ->intake_pivot_zero()},
+             .potentiometer_offset = simulated_robot_constants->robot()
+                                         ->intake_constants()
+                                         ->potentiometer_offset()},
+            frc971::constants::Range::FromFlatbuffer(
+                simulated_robot_constants->common()->intake_pivot()->range()),
+            simulated_robot_constants->robot()
+                ->intake_constants()
+                ->intake_pivot_zero()
+                ->measured_absolute_position(),
+            dt_) {
+    intake_pivot_.InitializePosition(
+        frc971::constants::Range::FromFlatbuffer(
+            simulated_robot_constants->common()->intake_pivot()->range())
+            .middle());
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
           // Skip this the first time.
           if (!first_) {
             EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
             EXPECT_TRUE(superstructure_status_fetcher_.Fetch());
+
+            intake_pivot_.Simulate(
+                superstructure_output_fetcher_->intake_pivot_voltage(),
+                superstructure_status_fetcher_->intake_pivot_state());
           }
           first_ = false;
           SendPositionMessage();
@@ -60,10 +98,20 @@ class SuperstructureSimulation {
     ::aos::Sender<Position>::Builder builder =
         superstructure_position_sender_.MakeBuilder();
 
+    frc971::PotAndAbsolutePosition::Builder intake_pivot_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> intake_pivot_offset =
+        intake_pivot_.encoder()->GetSensorValues(&intake_pivot_builder);
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
+
+    position_builder.add_intake_pivot(intake_pivot_offset);
+
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
   }
+
+  PotAndAbsoluteEncoderSimulator *intake_pivot() { return &intake_pivot_; }
 
  private:
   ::aos::EventLoop *event_loop_;
@@ -74,6 +122,7 @@ class SuperstructureSimulation {
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
 
+  PotAndAbsoluteEncoderSimulator intake_pivot_;
   bool first_ = true;
 };
 
@@ -91,6 +140,9 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         superstructure_event_loop(MakeEventLoop("Superstructure", roborio_)),
         superstructure_(superstructure_event_loop.get(), (values_)),
         test_event_loop_(MakeEventLoop("test", roborio_)),
+        constants_fetcher_(test_event_loop_.get()),
+        simulated_robot_constants_(
+            CHECK_NOTNULL(&constants_fetcher_.constants())),
         superstructure_goal_fetcher_(
             test_event_loop_->MakeFetcher<Goal>("/superstructure")),
         superstructure_goal_sender_(
@@ -106,8 +158,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         drivetrain_status_sender_(
             test_event_loop_->MakeSender<DrivetrainStatus>("/drivetrain")),
         superstructure_plant_event_loop_(MakeEventLoop("plant", roborio_)),
-        superstructure_plant_(superstructure_plant_event_loop_.get(), dt()) {
-    (void)values_;
+        superstructure_plant_(superstructure_plant_event_loop_.get(),
+                              simulated_robot_constants_, dt()) {
     set_team_id(frc971::control_loops::testing::kTeamNumber);
 
     SetEnabled(true);
@@ -123,10 +175,34 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   void VerifyNearGoal() {
     superstructure_goal_fetcher_.Fetch();
     superstructure_status_fetcher_.Fetch();
+    superstructure_output_fetcher_.Fetch();
 
     ASSERT_TRUE(superstructure_goal_fetcher_.get() != nullptr) << ": No goal";
     ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr)
         << ": No status";
+    ASSERT_TRUE(superstructure_output_fetcher_.get() != nullptr)
+        << ": No output";
+
+    double set_point = simulated_robot_constants_->common()
+                           ->intake_pivot_set_points()
+                           ->retracted();
+
+    if (superstructure_goal_fetcher_->intake_pivot_goal() ==
+        IntakePivotGoal::EXTENDED) {
+      set_point = simulated_robot_constants_->common()
+                      ->intake_pivot_set_points()
+                      ->extended();
+    }
+
+    EXPECT_NEAR(
+        set_point,
+        superstructure_status_fetcher_->intake_pivot_state()->position(),
+        0.001);
+
+    if (superstructure_status_fetcher_->intake_roller_state() ==
+        IntakeRollerState::NONE) {
+      EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage(), 0.0);
+    }
   }
 
   void CheckIfZeroed() {
@@ -179,6 +255,9 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
   ::std::unique_ptr<::aos::EventLoop> test_event_loop_;
   ::aos::PhasedLoopHandler *phased_loop_handle_ = nullptr;
 
+  frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
+  const Constants *simulated_robot_constants_;
+
   ::aos::Fetcher<Goal> superstructure_goal_fetcher_;
   ::aos::Sender<Goal> superstructure_goal_sender_;
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
@@ -208,22 +287,32 @@ TEST_F(SuperstructureTest, DoesNothing) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
+    goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
+
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
+
   RunFor(chrono::seconds(10));
-  VerifyNearGoal();
 
   EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
+
+  VerifyNearGoal();
 }
 
 // Tests that loops can reach a goal.
 TEST_F(SuperstructureTest, ReachesGoal) {
   SetEnabled(true);
+  superstructure_plant_.intake_pivot()->InitializePosition(
+      frc971::constants::Range::FromFlatbuffer(
+          simulated_robot_constants_->common()->intake_pivot()->range())
+          .middle());
   WaitUntilZeroed();
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_pivot_goal(IntakePivotGoal::EXTENDED);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -247,6 +336,8 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
+    goal_builder.add_intake_pivot_goal(IntakePivotGoal::EXTENDED);
+
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(20));
@@ -258,11 +349,13 @@ TEST_F(SuperstructureTest, SaturationTest) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
+
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  // TODO(Milo): Make this a sane time
-  RunFor(chrono::seconds(20));
+  RunFor(chrono::seconds(10));
   VerifyNearGoal();
 }
 
@@ -271,11 +364,74 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
   SetEnabled(true);
   WaitUntilZeroed();
   RunFor(chrono::seconds(2));
+
+  EXPECT_EQ(PotAndAbsoluteEncoderSubsystem::State::RUNNING,
+            superstructure_.intake_pivot().state());
 }
 
 // Tests that running disabled works
 TEST_F(SuperstructureTest, DisableTest) {
   RunFor(chrono::seconds(2));
   CheckIfZeroed();
+}
+
+// Tests Intake in multiple scenarios
+TEST_F(SuperstructureTest, IntakeGoal) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  superstructure_plant_.intake_pivot()->InitializePosition(
+      frc971::constants::Range::FromFlatbuffer(
+          simulated_robot_constants_->common()->intake_pivot()->range())
+          .middle());
+
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
+    goal_builder.add_intake_roller_goal(IntakeRollerGoal::NONE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_pivot_goal(IntakePivotGoal::EXTENDED);
+    goal_builder.add_intake_roller_goal(IntakeRollerGoal::SPIT);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_pivot_goal(IntakePivotGoal::EXTENDED);
+    goal_builder.add_intake_roller_goal(IntakeRollerGoal::INTAKE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
 }
 }  // namespace y2024::control_loops::superstructure::testing
