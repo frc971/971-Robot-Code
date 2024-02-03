@@ -61,3 +61,46 @@ cc_binary(
 uf2_from_elf(
     name = "ADIS16505",
 )
+
+cc_library(
+    name = "imu_calibrator",
+    srcs = ["imu_calibrator.cc"],
+    hdrs = [
+        "imu_calibrator.h",
+        "imu_calibrator-tmpl.h",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "//aos/time",
+        "//frc971/math:interpolate",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_ceres_solver//:ceres",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_library(
+    name = "imu_calibrator_solver",
+    srcs = [
+        "imu_calibrator_solver.cc",
+    ],
+    hdrs = [
+        "imu_calibrator_solver.h",
+    ],
+    deps = [
+        ":imu_calibrator",
+        "@com_google_ceres_solver//:ceres",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
+
+cc_test(
+    name = "imu_calibrator_test",
+    srcs = ["imu_calibrator_test.cc"],
+    shard_count = 3,
+    deps = [
+        ":imu_calibrator",
+        ":imu_calibrator_solver",
+        "//aos/testing:googletest",
+    ],
+)
