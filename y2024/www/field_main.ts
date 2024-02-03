@@ -8,4 +8,4 @@ conn.connect();
 
 const fieldHandler = new FieldHandler(conn);
 
-
+fieldHandler.draw();
