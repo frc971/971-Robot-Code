@@ -205,7 +205,7 @@ void AutonomousActor::Shoot() {
 
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ActorBase::kLoopOffset);
+                                      aos::common::actions::kLoopOffset);
   while (true) {
     if (ShouldCancel()) return;
 
@@ -223,7 +223,7 @@ void AutonomousActor::Shoot() {
 void AutonomousActor::WaitForShooterSpeed() {
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ActorBase::kLoopOffset);
+                                      aos::common::actions::kLoopOffset);
   while (true) {
     if (ShouldCancel()) return;
 
@@ -252,7 +252,7 @@ void AutonomousActor::WaitForAlignedWithVision(
 
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ActorBase::kLoopOffset);
+                                      aos::common::actions::kLoopOffset);
   const monotonic_clock::time_point end_time = monotonic_now() + align_duration;
   while (end_time > monotonic_now()) {
     if (ShouldCancel()) break;
@@ -590,7 +590,7 @@ void AutonomousActor::CloseIfBall() {
 void AutonomousActor::WaitForBallOrDriveDone() {
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ActorBase::kLoopOffset);
+                                      aos::common::actions::kLoopOffset);
   while (true) {
     if (ShouldCancel()) {
       return;
@@ -974,7 +974,8 @@ bool AutonomousActor::RunAction(
           ::aos::time::DurationInSeconds(monotonic_now() - start_time));
 
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
-                                      monotonic_now(), ActorBase::kLoopOffset);
+                                      monotonic_now(),
+                                      aos::common::actions::kLoopOffset);
 
   while (!ShouldCancel()) {
     phased_loop.SleepUntilNext();

@@ -360,7 +360,7 @@ void AutonomousActor::RapidReactTwo() {
 
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ActorBase::kLoopOffset);
+                                      aos::common::actions::kLoopOffset);
 
   bool loaded = false;
   while (!loaded) {
@@ -469,7 +469,7 @@ void AutonomousActor::RetractBackIntake() {
 
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ActorBase::kLoopOffset);
+                                      aos::common::actions::kLoopOffset);
   superstructure_status_fetcher_.Fetch();
   CHECK(superstructure_status_fetcher_.get() != nullptr);
 

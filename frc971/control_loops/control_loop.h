@@ -4,6 +4,7 @@
 #include <atomic>
 #include <cstring>
 
+#include "aos/actions/actor.h"
 #include "aos/events/event_loop.h"
 #include "aos/time/time.h"
 #include "aos/util/log_interval.h"
@@ -15,7 +16,7 @@ namespace controls {
 
 // Control loops run this often, "starting" at time 0.
 constexpr ::std::chrono::nanoseconds kLoopFrequency =
-    ::std::chrono::milliseconds(5);
+    aos::common::actions::kLoopFrequency;
 
 // Provides helper methods to assist in writing control loops.
 // It will then call the RunIteration method every cycle that it has enough

@@ -521,7 +521,7 @@ void AutonomousActor::SendSuperstructureGoal() {
 
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ActorBase::kLoopOffset);
+                                      aos::common::actions::kLoopOffset);
 
   bool loaded = false;
   while (!loaded) {
@@ -604,7 +604,7 @@ void AutonomousActor::IntakeCube() {
 
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ActorBase::kLoopOffset);
+                                      aos::common::actions::kLoopOffset);
 
   bool at_goal = false;
   while (!at_goal) {
