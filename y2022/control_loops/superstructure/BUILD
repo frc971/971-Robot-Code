@@ -12,6 +12,7 @@ static_flatbuffer(
     deps = [
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops/catapult:catapult_goal_fbs",
     ],
 )
 
@@ -80,10 +81,10 @@ cc_library(
         "//aos:flatbuffer_merge",
         "//aos/events:event_loop",
         "//frc971/control_loops:control_loop",
+        "//frc971/control_loops/catapult",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
         "//frc971/zeroing:pot_and_absolute_encoder",
         "//y2022:constants",
-        "//y2022/control_loops/superstructure/catapult",
         "//y2022/control_loops/superstructure/turret:aiming",
         "//y2022/vision:ball_color_fbs",
     ],

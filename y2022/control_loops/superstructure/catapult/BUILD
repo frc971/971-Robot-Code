@@ -29,35 +29,15 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "catapult",
-    srcs = [
-        "catapult.cc",
-    ],
-    hdrs = [
-        "catapult.h",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":catapult_plants",
-        "//aos:realtime",
-        "//frc971/zeroing:pot_and_absolute_encoder",
-        "//third_party/osqp-cpp",
-        "//y2022:constants",
-        "//y2022/control_loops/superstructure:superstructure_goal_fbs",
-        "//y2022/control_loops/superstructure:superstructure_position_fbs",
-        "//y2022/control_loops/superstructure:superstructure_status_fbs",
-    ],
-)
-
 cc_test(
     name = "catapult_test",
     srcs = [
         "catapult_test.cc",
     ],
     deps = [
-        ":catapult",
+        ":catapult_plants",
         "//aos/testing:googletest",
+        "//frc971/control_loops/catapult",
     ],
 )
 
@@ -67,7 +47,8 @@ cc_binary(
         "catapult_main.cc",
     ],
     deps = [
-        ":catapult",
+        ":catapult_plants",
         "//aos:init",
+        "//frc971/control_loops/catapult",
     ],
 )

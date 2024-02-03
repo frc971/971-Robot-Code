@@ -1,4 +1,5 @@
 include "frc971/control_loops/profiled_subsystem.fbs";
+include "frc971/control_loops/catapult/catapult_goal.fbs";
 
 namespace y2024.control_loops.superstructure;
 
@@ -15,21 +16,11 @@ enum IntakePivotGoal : ubyte {
     RETRACTED = 1, 
 }
 
-table CatapultGoal {
-    // The target shot position and velocity.  If these are provided before fire
-    // is called, the optimizer can pre-compute the trajectory.
-    shot_position: double (id: 0);
-    shot_velocity: double (id: 1);
-
-    // Return position of the catapult
-    return_position: double (id: 2);
-}
-
 table Goal {
     intake_roller_goal:IntakeRollerGoal (id: 0);
     intake_pivot_goal:IntakePivotGoal (id: 1);
 
-    catapult_goal:CatapultGoal (id: 2);
+    catapult_goal:frc971.control_loops.catapult.CatapultGoal (id: 2);
 }
 
 root_type Goal;

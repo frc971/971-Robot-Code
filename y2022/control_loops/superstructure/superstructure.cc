@@ -25,7 +25,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       intake_front_(values_->intake_front.subsystem_params),
       intake_back_(values_->intake_back.subsystem_params),
       turret_(values_->turret.subsystem_params),
-      catapult_(*values_),
+      catapult_(values_->catapult.subsystem_params,
+                catapult::MakeCatapultPlant()),
       drivetrain_status_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),
@@ -57,8 +58,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   aos::FlatbufferFixedAllocatorArray<
       frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
       turret_loading_goal_buffer;
-  aos::FlatbufferFixedAllocatorArray<CatapultGoal, 512> catapult_goal_buffer;
-  aos::FlatbufferFixedAllocatorArray<CatapultGoal, 512>
+  aos::FlatbufferFixedAllocatorArray<
+      frc971::control_loops::catapult::CatapultGoal, 512>
+      catapult_goal_buffer;
+  aos::FlatbufferFixedAllocatorArray<
+      frc971::control_loops::catapult::CatapultGoal, 512>
       catapult_discarding_goal_buffer;
 
   const aos::monotonic_clock::time_point timestamp =
@@ -107,7 +111,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *turret_goal = nullptr;
-  const CatapultGoal *catapult_goal = nullptr;
+  const frc971::control_loops::catapult::CatapultGoal *catapult_goal = nullptr;
   double roller_speed_compensated_front = 0.0;
   double roller_speed_compensated_back = 0.0;
   double transfer_roller_speed = 0.0;
@@ -149,7 +153,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         return_position_offset = {aos::CopyFlatBuffer(
             unsafe_goal->catapult()->return_position(), catapult_goal_fbb)};
       }
-      CatapultGoal::Builder builder(*catapult_goal_fbb);
+      frc971::control_loops::catapult::CatapultGoal::Builder builder(
+          *catapult_goal_fbb);
       builder.add_shot_position(shot_params.shot_angle);
       builder.add_shot_velocity(shot_params.shot_velocity);
       if (return_position_offset.has_value()) {
@@ -170,7 +175,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         return_position_offset = {aos::CopyFlatBuffer(
             unsafe_goal->catapult()->return_position(), catapult_goal_fbb)};
       }
-      CatapultGoal::Builder builder(*catapult_goal_fbb);
+      frc971::control_loops::catapult::CatapultGoal::Builder builder(
+          *catapult_goal_fbb);
       builder.add_shot_position(kDiscardingPosition);
       builder.add_shot_velocity(kDiscardingVelocity);
       if (return_position_offset.has_value()) {
@@ -538,7 +544,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   // flippers
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
       catapult_status_offset = catapult_.Iterate(
-          catapult_goal, position, robot_state().voltage_battery(),
+          catapult_goal, position->catapult(), robot_state().voltage_battery(),
           output != nullptr && !catapult_.estopped()
               ? &(output_struct.catapult_voltage)
               : nullptr,

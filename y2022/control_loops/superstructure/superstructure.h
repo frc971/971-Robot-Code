@@ -2,11 +2,13 @@
 #define Y2022_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_
 
 #include "aos/events/event_loop.h"
+#include "frc971/control_loops/catapult/catapult.h"
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2022/constants.h"
-#include "y2022/control_loops/superstructure/catapult/catapult.h"
+#include "y2022/control_loops/superstructure/catapult/catapult_plant.h"
+#include "y2022/control_loops/superstructure/catapult/integral_catapult_plant.h"
 #include "y2022/control_loops/superstructure/collision_avoidance.h"
 #include "y2022/control_loops/superstructure/superstructure_can_position_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
@@ -70,7 +72,7 @@ class Superstructure
   PotAndAbsoluteEncoderSubsystem intake_front_;
   PotAndAbsoluteEncoderSubsystem intake_back_;
   PotAndAbsoluteEncoderSubsystem turret_;
-  catapult::Catapult catapult_;
+  ::frc971::control_loops::catapult::Catapult catapult_;
 
   CollisionAvoidance collision_avoidance_;
 

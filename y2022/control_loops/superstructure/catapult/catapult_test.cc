@@ -1,4 +1,4 @@
-#include "y2022/control_loops/superstructure/catapult/catapult.h"
+#include "frc971/control_loops/catapult/catapult.h"
 
 #include "glog/logging.h"
 #include "gtest/gtest.h"
@@ -6,15 +6,17 @@
 #include "y2022/control_loops/superstructure/catapult/catapult_plant.h"
 
 namespace y2022::control_loops::superstructure::catapult::testing {
-
+using CatapultProblemGenerator =
+    frc971::control_loops::catapult::CatapultProblemGenerator;
+using MPCProblem = frc971::control_loops::catapult::MPCProblem;
 // Tests that computing P and q with 2 different horizons comes out the same.
 TEST(MPCTest, HorizonTest) {
   Eigen::Matrix<double, 2, 1> X_initial(0.0, 0.0);
   Eigen::Matrix<double, 2, 1> X_final(2.0, 25.0);
 
-  CatapultProblemGenerator g(35);
+  CatapultProblemGenerator g(MakeCatapultPlant(), 35);
 
-  CatapultProblemGenerator g2(10);
+  CatapultProblemGenerator g2(MakeCatapultPlant(), 10);
   constexpr int kTestHorizon = 10;
   EXPECT_TRUE(g2.P(kTestHorizon) == g.P(kTestHorizon))
       << g2.P(kTestHorizon) - g.P(kTestHorizon);
@@ -29,8 +31,8 @@ TEST(MPCTest, NearGoal) {
   Eigen::Matrix<double, 2, 1> X_initial(0.0, 0.0);
   Eigen::Matrix<double, 2, 1> X_final(2.0, 25.0);
 
-  CatapultProblemGenerator g(35);
   const StateFeedbackPlant<2, 1, 1> plant = MakeCatapultPlant();
+  CatapultProblemGenerator g(MakeCatapultPlant(), 35);
 
   std::vector<std::unique_ptr<MPCProblem>> problems;
   for (size_t i = g.horizon(); i > 0; --i) {
