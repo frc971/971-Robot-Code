@@ -11,6 +11,7 @@
 #include "frc971/zeroing/absolute_encoder.h"
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2024/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2024/control_loops/superstructure/climber/climber_plant.h"
 #include "y2024/control_loops/superstructure/intake_pivot/intake_pivot_plant.h"
 
 namespace y2024::constants {
@@ -71,6 +72,28 @@ struct Values {
            control_loops::superstructure::intake_pivot::kOutputRatio /
            kIntakePivotEncoderRatio() *
            kIntakePivotEncoderCountsPerRevolution();
+  }
+
+  // TODO(Filip): Update climber values once we have them.
+  static constexpr double kClimberEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
+
+  static constexpr double kClimberEncoderRatio() {
+    return (16.0 / 64.0) * (18.0 / 62.0);
+  }
+
+  static constexpr double kClimberPotRatio() { return 16.0 / 64.0; }
+
+  static constexpr double kClimberPotRadiansPerVolt() {
+    return kClimberPotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
+
+  static constexpr double kMaxClimberEncoderPulsesPerSecond() {
+    return control_loops::superstructure::climber::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::climber::kOutputRatio /
+           kClimberEncoderRatio() * kClimberEncoderCountsPerRevolution();
   }
 
   struct PotAndAbsEncoderConstants {
