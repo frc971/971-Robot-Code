@@ -21,6 +21,11 @@ namespace y2024::control_loops::superstructure {
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
  public:
+  using AbsoluteEncoderSubsystem =
+      ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
+          ::frc971::zeroing::AbsoluteEncoderZeroingEstimator,
+          ::frc971::control_loops::AbsoluteEncoderProfiledJointStatus>;
+
   using PotAndAbsoluteEncoderSubsystem =
       ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystem<
           ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator,
@@ -30,7 +35,7 @@ class Superstructure
                           std::shared_ptr<const constants::Values> values,
                           const ::std::string &name = "/superstructure");
 
-  inline const PotAndAbsoluteEncoderSubsystem &intake_pivot() const {
+  inline const AbsoluteEncoderSubsystem &intake_pivot() const {
     return intake_pivot_;
   }
 
@@ -56,8 +61,9 @@ class Superstructure
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
 
   TransferRollerGoal transfer_goal_;
-  PotAndAbsoluteEncoderSubsystem intake_pivot_;
+  AbsoluteEncoderSubsystem intake_pivot_;
   PotAndAbsoluteEncoderSubsystem climber_;
+
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 

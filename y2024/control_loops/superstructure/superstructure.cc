@@ -31,9 +31,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       joystick_state_fetcher_(
           event_loop->MakeFetcher<aos::JoystickState>("/aos")),
       transfer_goal_(TransferRollerGoal::NONE),
-      intake_pivot_(
-          robot_constants_->common()->intake_pivot(),
-          robot_constants_->robot()->intake_constants()->zeroing_constants()),
+      intake_pivot_(robot_constants_->common()->intake_pivot(),
+                    robot_constants_->robot()->intake_constants()),
       climber_(
           robot_constants_->common()->climber(),
           robot_constants_->robot()->climber_constants()->zeroing_constants()) {
@@ -153,7 +152,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *intake_pivot_goal = &intake_pivot_goal_buffer.message();
 
-  const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
+  const flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus>
       intake_pivot_status_offset = intake_pivot_.Iterate(
           intake_pivot_goal, position->intake_pivot(),
           output != nullptr ? &output_struct.intake_pivot_voltage : nullptr,

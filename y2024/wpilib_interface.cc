@@ -77,10 +77,6 @@ namespace {
 
 constexpr double kMaxBringupPower = 12.0;
 
-double intake_pot_translate(double voltage) {
-  return voltage * Values::kIntakePivotPotRadiansPerVolt();
-}
-
 double climber_pot_translate(double voltage) {
   return voltage * Values::kClimberPotRadiansPerVolt();
 }
@@ -140,11 +136,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       CopyPosition(intake_pivot_encoder_, builder->add_intake_pivot(),
                    Values::kIntakePivotEncoderCountsPerRevolution(),
-                   Values::kIntakePivotEncoderRatio(), intake_pot_translate,
-                   true,
-                   robot_constants_->robot()
-                       ->intake_constants()
-                       ->potentiometer_offset());
+                   Values::kIntakePivotEncoderRatio(), /* reversed: */ false);
 
       CopyPosition(climber_encoder_, builder->add_climber(),
                    Values::kClimberEncoderCountsPerRevolution(),
@@ -212,12 +204,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   }
 
   void set_intake_pivot(::std::unique_ptr<frc::Encoder> encoder,
-                        ::std::unique_ptr<frc::DigitalInput> absolute_pwm,
-                        ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+                        ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
     fast_encoder_filter_.Add(encoder.get());
     intake_pivot_encoder_.set_encoder(::std::move(encoder));
     intake_pivot_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
-    intake_pivot_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
   void set_transfer_beambreak(::std::unique_ptr<frc::DigitalInput> sensor) {
@@ -246,7 +236,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_, transfer_beam_break_;
 
-  frc971::wpilib::AbsoluteEncoderAndPotentiometer intake_pivot_encoder_;
+  frc971::wpilib::AbsoluteEncoder intake_pivot_encoder_;
   frc971::wpilib::AbsoluteEncoderAndPotentiometer climber_encoder_;
 
   frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
@@ -290,8 +280,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(0));
     // TODO: (niko) change values once robot is wired
     sensor_reader.set_intake_pivot(make_encoder(4),
-                                   make_unique<frc::DigitalInput>(4),
-                                   make_unique<frc::AnalogInput>(4));
+                                   make_unique<frc::DigitalInput>(4));
     sensor_reader.set_transfer_beambreak(make_unique<frc::DigitalInput>(7));
 
     sensor_reader.set_climber(make_encoder(5),
