@@ -3,6 +3,7 @@
 #include "frc971/vision/foxglove_image_converter_lib.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
+DEFINE_string(channel, "/camera", "Input/Output channel to use.");
 
 int main(int argc, char *argv[]) {
   aos::InitGoogle(&argc, &argv);
@@ -13,7 +14,7 @@ int main(int argc, char *argv[]) {
   aos::ShmEventLoop event_loop(&config.message());
 
   frc971::vision::FoxgloveImageConverter converter(
-      &event_loop, "/camera", "/camera",
+      &event_loop, FLAGS_channel, FLAGS_channel,
       frc971::vision::ImageCompression::kJpeg);
 
   event_loop.Run();
