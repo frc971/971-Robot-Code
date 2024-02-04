@@ -36,3 +36,19 @@ cc_test(
         "//aos/testing:googletest",
     ],
 )
+
+cc_library(
+    name = "interpolate",
+    hdrs = ["interpolate.h"],
+    visibility = ["//visibility:public"],
+)
+
+cc_test(
+    name = "interpolate_test",
+    srcs = ["interpolate_test.cc"],
+    deps = [
+        ":interpolate",
+        "//aos/testing:googletest",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)
