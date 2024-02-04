@@ -22,6 +22,11 @@ sed -i "s/^Gateway=.*$/Gateway=${IP_BASE}.13/" /etc/systemd/network/eth0.network
 
 echo "${HOSTNAME}" > /etc/hostname
 
+# If the file doesn't exist, create it and add an localhost entry
+if [[ ! -f /etc/hosts ]]; then
+  echo -e "127.0.0.1\tlocalhost" > /etc/hosts
+fi
+
 # Make sure a 127.0.* entry exists to make things looking up localhost happy.
 if grep '^127.0.1.1' /etc/hosts > /dev/null;
 then

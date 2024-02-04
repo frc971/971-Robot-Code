@@ -143,7 +143,7 @@ CalibrationFoxgloveVisualizer::AddVisualizationChannels(
 Calibration::Calibration(
     aos::SimulatedEventLoopFactory *event_loop_factory,
     aos::EventLoop *image_event_loop, aos::EventLoop *imu_event_loop,
-    std::string_view pi,
+    std::string_view hostname,
     const calibration::CameraCalibration *intrinsics_calibration,
     TargetType target_type, std::string_view image_channel,
     CalibrationData *data)
@@ -166,10 +166,10 @@ Calibration::Calibration(
       // TODO: Need to make this work for pi or orin
       image_callback_(
           image_event_loop_,
-          absl::StrCat(
-              "/pi",
-              std::to_string(aos::network::ParsePiOrOrinNumber(pi).value()),
-              image_channel),
+          absl::StrCat("/", aos::network::ParsePiOrOrin(hostname).value(),
+                       std::to_string(
+                           aos::network::ParsePiOrOrinNumber(hostname).value()),
+                       image_channel),
           [this](cv::Mat rgb_image, const monotonic_clock::time_point eof) {
             charuco_extractor_.HandleImage(rgb_image, eof);
           }),

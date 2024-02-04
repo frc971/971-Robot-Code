@@ -123,6 +123,15 @@ uint16_t GetTeamNumber() {
 
 void OverrideTeamNumber(uint16_t team) { override_team = team; }
 
+std::optional<std::string_view> ParsePiOrOrin(const std::string_view hostname) {
+  if (hostname.substr(0, 3) == "pi-") {
+    return std::string_view("pi");
+  } else if (hostname.substr(0, 5) == "orin-") {
+    return std::string_view("orin");
+  } else
+    return std::nullopt;
+}
+
 std::optional<uint16_t> ParsePiOrOrinNumber(const std::string_view hostname) {
   if ((hostname.substr(0, 3) != "pi-") && (hostname.substr(0, 5) != "orin-")) {
     return std::nullopt;
