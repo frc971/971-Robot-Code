@@ -22,4 +22,9 @@ This unit runs on the [STM32G4](https://www.st.com/resource/en/datasheet/stm32g4
 2)  To change code:
     * The main code lives in [`Dual_IMU/Core/Src`](/Dual_IMU/Core/Src/). Make sure your changes happen inside sections marked `/* USER CODE BEGIN ... */` `/* USER CODE END ... */`. Code outside these markers will be overwritten by CubeIDE when generating code after changes to the `.ioc` file.
 3) Build + Run:
-    * Open CubeIDE GUI to build, debug, or run.
+    * Option 1: Open CubeIDE GUI to build, debug, or run.
+    * Option 2: 
+        1) SSH onto the build server. 
+        2) Run `bazel build -c opt --config=cortex-m4f-imu //frc971/imu_fdcan/Dual_IMU/Core:main.elf`. The output .elf file should be in bazel-bin/frc971/imu_fdcan/Dual_IMU/Core.
+        3) (If deploying code locally) Move file to local directory. For example: `scp <username>@build.frc971.org:<path/to/main.elf> <local/path/to/save/file/`. A good spot to put this locally is ./Dual_IMU/Debug/.
+        3) Open CubeProgrammer. Click the + tab next to "Device memory". Select the generated elf file. Click "Download".

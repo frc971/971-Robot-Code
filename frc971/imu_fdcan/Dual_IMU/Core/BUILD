@@ -43,6 +43,9 @@ cc_binary(
         "-Wno-unused-but-set-variable",
     ],
     includes = ["Inc"],
+    linkopts = [
+        "-u _printf_float",
+    ],
     deps = [
         ":startup",
         "//frc971/imu_fdcan/Dual_IMU/Drivers/STM32G4xx_HAL_Driver:hal_driver",
