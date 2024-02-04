@@ -3,10 +3,26 @@
 
 #include "aos/flatbuffer_merge.h"
 #include "frc971/control_loops/profiled_subsystem.h"
+#include "frc971/control_loops/profiled_subsystem_static.h"
 #include "frc971/control_loops/state_feedback_loop_converters.h"
 
 namespace frc971 {
 namespace control_loops {
+
+inline void PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
+    StaticZeroingSingleDOFProfiledSubsystemGoalStatic *goal_table,
+    double unsafe_goal = 0.0, float max_velocity = 0.0,
+    float max_acceleration = 0.0, double goal_velocity = 0.0,
+    bool ignore_profile = false) {
+  goal_table->set_unsafe_goal(unsafe_goal);
+  goal_table->set_goal_velocity(goal_velocity);
+  goal_table->set_ignore_profile(ignore_profile);
+
+  frc971::ProfileParametersStatic *profile_parameters =
+      goal_table->add_profile_params();
+  profile_parameters->set_max_velocity(max_velocity);
+  profile_parameters->set_max_acceleration(max_acceleration);
+}
 
 template <typename ZeroingEstimator>
 struct StaticZeroingSingleDOFProfiledSubsystemParams {
