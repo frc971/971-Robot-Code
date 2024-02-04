@@ -43,7 +43,9 @@
     "intake_pivot_supply_current_limit": 35,
     "intake_pivot_stator_current_limit": 60,
     "intake_roller_supply_current_limit": 35,
-    "intake_roller_stator_current_limit": 60
+    "intake_roller_stator_current_limit": 60,
+    "transfer_roller_supply_current_limit": 35,
+    "transfer_roller_stator_current_limit": 60
   },
   "transfer_roller_voltages": {
     "transfer_in": 12.0,

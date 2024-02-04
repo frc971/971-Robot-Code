@@ -43,6 +43,8 @@ table CurrentLimits {
   intake_pivot_stator_current_limit:double (id: 1);
   intake_roller_supply_current_limit:double (id: 2);
   intake_roller_stator_current_limit:double (id: 3);
+  transfer_roller_supply_current_limit:double (id: 4);
+  transfer_roller_stator_current_limit:double (id: 5);
 }
 
 table TransferRollerVoltages {

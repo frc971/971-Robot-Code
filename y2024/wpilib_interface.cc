@@ -140,6 +140,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                        ->intake_constants()
                        ->potentiometer_offset());
 
+      builder->set_transfer_beambreak(transfer_beam_break_->Get());
       builder.CheckOk(builder.Send());
     }
 
@@ -212,6 +213,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     intake_pivot_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
+  void set_transfer_beambreak(::std::unique_ptr<frc::DigitalInput> sensor) {
+    transfer_beam_break_ = ::std::move(sensor);
+  }
+
  private:
   const Constants *robot_constants_;
 
@@ -223,7 +228,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
-  std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_;
+  std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_, transfer_beam_break_;
 
   frc971::wpilib::AbsoluteEncoderAndPotentiometer intake_pivot_encoder_;
 
@@ -272,6 +277,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         make_unique<frc::DigitalInput>(4));
     sensor_reader.set_intake_pivot_potentiometer(
         make_unique<frc::AnalogInput>(4));
+    sensor_reader.set_transfer_beambreak(make_unique<frc::DigitalInput>(7));
 
     AddLoop(&sensor_reader_event_loop);
 
@@ -316,7 +322,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                                   robot_constants->common()
                                       ->current_limits()
                                       ->intake_roller_supply_current_limit());
-
+    std::shared_ptr<TalonFX> transfer_roller =
+        std::make_shared<TalonFX>(6, false, "Drivetrain Bus", &signals_registry,
+                                  robot_constants->common()
+                                      ->current_limits()
+                                      ->transfer_roller_stator_current_limit(),
+                                  robot_constants->common()
+                                      ->current_limits()
+                                      ->transfer_roller_supply_current_limit());
     ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
         constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
     ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
@@ -334,7 +347,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       talonfxs.push_back(talonfx);
     }
 
-    for (auto talonfx : {intake_pivot, intake_roller}) {
+    for (auto talonfx : {intake_pivot, intake_roller, transfer_roller}) {
       talonfxs.push_back(talonfx);
     }
 
@@ -352,7 +365,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     frc971::wpilib::CANSensorReader can_sensor_reader(
         &can_sensor_reader_event_loop, std::move(signals_registry), talonfxs,
-        [drivetrain_talonfxs, &intake_pivot, &intake_roller,
+        [drivetrain_talonfxs, &intake_pivot, &intake_roller, &transfer_roller,
          &drivetrain_can_position_sender, &superstructure_can_position_sender](
             ctre::phoenix::StatusCode status) {
           aos::Sender<frc971::control_loops::drivetrain::CANPositionStatic>::
@@ -384,6 +397,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           intake_pivot->SerializePosition(
               superstructure_can_builder->add_intake_pivot(),
               control_loops::drivetrain::kHighOutputRatio);
+          transfer_roller->SerializePosition(
+              superstructure_can_builder->add_transfer_roller(),
+              control_loops::drivetrain::kHighOutputRatio);
 
           superstructure_can_builder->set_timestamp(
               intake_roller->GetTimestamp());
@@ -410,6 +426,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                   ->second->WriteVoltage(output.intake_pivot_voltage());
               talonfx_map.find("intake_roller")
                   ->second->WriteVoltage(output.intake_roller_voltage());
+              talonfx_map.find("transfer_roller")
+                  ->second->WriteVoltage(output.transfer_roller_voltage());
             });
 
     can_drivetrain_writer.set_talonfxs({right_front, right_back},
@@ -417,6 +435,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     can_superstructure_writer.add_talonfx("intake_pivot", intake_pivot);
     can_superstructure_writer.add_talonfx("intake_roller", intake_roller);
+    can_superstructure_writer.add_talonfx("transfer_roller", transfer_roller);
 
     can_output_event_loop.MakeWatcher(
         "/roborio", [&can_drivetrain_writer, &can_superstructure_writer](
