@@ -45,6 +45,11 @@ table CurrentLimits {
   intake_roller_stator_current_limit:double (id: 3);
 }
 
+table TransferRollerVoltages {
+  transfer_in:double (id: 0);
+  transfer_out:double (id: 1);
+}
+
 table RobotConstants {
   intake_constants:IntakeConstants (id: 0);
 }
@@ -58,6 +63,7 @@ table Common {
   intake_pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 4);
   drivetrain:frc971.control_loops.drivetrain.fbs.DrivetrainConfig (id: 5);
   current_limits:CurrentLimits (id: 6);
+  transfer_roller_voltages:TransferRollerVoltages (id: 7);
 }
 
 table Constants {
