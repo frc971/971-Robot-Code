@@ -41,6 +41,7 @@ jinja2_template(
         "9971.json",
         "common.jinja2",
         "common.json",
+        "//y2024/constants/calib_files",
         "//y2024/control_loops/drivetrain:drivetrain_config.json",
         "//y2024/control_loops/superstructure/intake_pivot:intake_pivot_json",
         "//y2024/vision/maps",
@@ -56,6 +57,7 @@ static_flatbuffer(
     deps = [
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_config_fbs",
+        "//frc971/vision:calibration_fbs",
         "//frc971/vision:target_map_fbs",
         "//frc971/zeroing:constants_fbs",
     ],

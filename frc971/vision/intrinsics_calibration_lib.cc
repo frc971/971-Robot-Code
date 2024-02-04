@@ -7,7 +7,7 @@ IntrinsicsCalibration::IntrinsicsCalibration(
     std::string_view base_intrinsics_file, bool display_undistorted,
     std::string_view calibration_folder, aos::ExitHandle *exit_handle)
     : pi_(pi),
-      pi_number_(aos::network::ParsePiNumber(pi)),
+      pi_number_(aos::network::ParsePiOrOrinNumber(pi)),
       camera_id_(camera_id),
       prev_H_camera_board_(Eigen::Affine3d()),
       prev_image_H_camera_board_(Eigen::Affine3d()),
@@ -25,11 +25,13 @@ IntrinsicsCalibration::IntrinsicsCalibration(
             HandleCharuco(rgb_image, eof, charuco_ids, charuco_corners, valid,
                           rvecs_eigen, tvecs_eigen);
           }),
+      // TODO: Need to make this work with /pi or /orin
       image_callback_(
           event_loop,
-          absl::StrCat("/pi",
-                       std::to_string(aos::network::ParsePiNumber(pi).value()),
-                       "/camera"),
+          absl::StrCat(
+              "/pi",
+              std::to_string(aos::network::ParsePiOrOrinNumber(pi).value()),
+              "/camera"),
           [this](cv::Mat rgb_image,
                  const aos::monotonic_clock::time_point eof) {
             charuco_extractor_.HandleImage(rgb_image, eof);
@@ -213,7 +215,7 @@ void IntrinsicsCalibration::MaybeCalibrate() {
     const aos::realtime_clock::time_point realtime_now =
         aos::realtime_clock::now();
     std::optional<uint16_t> team_number =
-        aos::network::team_number_internal::ParsePiTeamNumber(pi_);
+        aos::network::team_number_internal::ParsePiOrOrinTeamNumber(pi_);
     CHECK(team_number) << ": Invalid pi hostname " << pi_
                        << ", failed to parse team number";
     aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>

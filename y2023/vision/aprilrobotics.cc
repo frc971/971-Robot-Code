@@ -24,6 +24,11 @@ namespace y2023::vision {
 
 namespace chrono = std::chrono;
 
+// Set max age on image for processing at 20 ms.  For 60Hz, we should be
+// processing at least every 16.7ms
+constexpr aos::monotonic_clock::duration kMaxImageAge =
+    std::chrono::milliseconds(20);
+
 AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
                                              std::string_view channel_name,
                                              bool flip_image)
@@ -34,11 +39,11 @@ AprilRoboticsDetector::AprilRoboticsDetector(aos::EventLoop *event_loop,
       ftrace_(),
       image_callback_(
           event_loop, channel_name,
-          [&](cv::Mat image_color_mat,
-              const aos::monotonic_clock::time_point eof) {
+          [this](cv::Mat image_color_mat,
+                 const aos::monotonic_clock::time_point eof) {
             HandleImage(image_color_mat, eof);
           },
-          chrono::milliseconds(5)),
+          kMaxImageAge),
       target_map_sender_(
           event_loop->MakeSender<frc971::vision::TargetMap>("/camera")),
       image_annotations_sender_(

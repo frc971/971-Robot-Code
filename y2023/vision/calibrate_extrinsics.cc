@@ -74,7 +74,8 @@ struct CalibrationAccumulatorState {
 
 void Main(int argc, char **argv) {
   CalibrationData data;
-  std::optional<uint16_t> pi_number = aos::network::ParsePiNumber(FLAGS_pi);
+  std::optional<uint16_t> pi_number =
+      aos::network::ParsePiOrOrinNumber(FLAGS_pi);
   CHECK(pi_number);
   const std::string pi_name = absl::StrCat("pi", *pi_number);
 

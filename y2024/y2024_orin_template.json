@@ -265,8 +265,8 @@
       ]
     },
     {
-      "name": "gpu_apriltag",
-      "executable_name": "gpu_apriltag",
+      "name": "apriltag_detector",
+      "executable_name": "apriltag_detector",
       "user": "pi",
       "nodes": [
         "orin{{ NUM }}"

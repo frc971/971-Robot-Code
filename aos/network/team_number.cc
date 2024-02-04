@@ -39,8 +39,9 @@ std::optional<uint16_t> ParseRoborioTeamNumber(
   return std::nullopt;
 }
 
-std::optional<uint16_t> ParsePiTeamNumber(const std::string_view hostname) {
-  if (hostname.substr(0, 3) != "pi-") {
+std::optional<uint16_t> ParsePiOrOrinTeamNumber(
+    const std::string_view hostname) {
+  if ((hostname.substr(0, 3) != "pi-") && (hostname.substr(0, 5) != "orin-")) {
     return std::nullopt;
   }
   size_t first_separator = hostname.find('-');
@@ -93,9 +94,9 @@ uint16_t DoGetTeamNumber() {
     }
   }
   {
-    const auto result = team_number_internal::ParsePiTeamNumber(hostname);
+    const auto result = team_number_internal::ParsePiOrOrinTeamNumber(hostname);
     if (result) {
-      LOG(INFO) << "Pi hostname team number is: " << *result;
+      LOG(INFO) << "Pi/Orin hostname team number is: " << *result;
       return *result;
     }
   }
@@ -122,8 +123,8 @@ uint16_t GetTeamNumber() {
 
 void OverrideTeamNumber(uint16_t team) { override_team = team; }
 
-std::optional<uint16_t> ParsePiNumber(const std::string_view hostname) {
-  if (hostname.substr(0, 3) != "pi-") {
+std::optional<uint16_t> ParsePiOrOrinNumber(const std::string_view hostname) {
+  if ((hostname.substr(0, 3) != "pi-") && (hostname.substr(0, 5) != "orin-")) {
     return std::nullopt;
   }
   size_t first_separator = hostname.find('-');

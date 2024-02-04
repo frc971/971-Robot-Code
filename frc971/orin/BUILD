@@ -43,6 +43,7 @@ cc_library(
         #"-DDEBUG=1",
     ],
     features = ["cuda"],
+    visibility = ["//visibility:public"],
     deps = [
         "//aos/time",
         "//third_party:cudart",
@@ -127,16 +128,21 @@ cc_binary(
     ],
 )
 
-cc_binary(
-    name = "gpu_apriltag",
+cc_library(
+    name = "gpu_apriltag_lib",
     srcs = ["gpu_apriltag.cc"],
+    hdrs = ["gpu_apriltag.h"],
     features = ["cuda"],
     visibility = ["//visibility:public"],
     deps = [
         ":apriltag",
         "//aos:init",
         "//aos/events:shm_event_loop",
+        "//frc971/constants:constants_sender_lib",
+        "//frc971/vision:calibration_fbs",
         "//frc971/vision:charuco_lib",
+        "//frc971/vision:target_mapper",
+        "//frc971/vision:vision_util_lib",
         "//third_party:opencv",
     ],
 )

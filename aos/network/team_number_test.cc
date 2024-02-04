@@ -4,7 +4,7 @@
 
 namespace aos::network::testing {
 
-using team_number_internal::ParsePiTeamNumber;
+using team_number_internal::ParsePiOrOrinTeamNumber;
 using team_number_internal::ParseRoborioTeamNumber;
 
 TEST(TeamNumberTest, Parse2015TeamNumber) {
@@ -28,23 +28,35 @@ TEST(TeamNumberTest, Parse2016TeamNumber) {
   EXPECT_FALSE(ParseRoborioTeamNumber("roboRIO--FRC"));
 }
 
-TEST(TeamNumberTest, ParsePiTeamNumber) {
-  EXPECT_EQ(971u, *ParsePiTeamNumber("pi-971-1"));
-  EXPECT_EQ(8971u, *ParsePiTeamNumber("pi-8971-22"));
-  EXPECT_EQ(8971u, *ParsePiTeamNumber("pi-8971-"));
+TEST(TeamNumberTest, ParsePiOrOrinTeamNumber) {
+  EXPECT_EQ(971u, *ParsePiOrOrinTeamNumber("pi-971-1"));
+  EXPECT_EQ(8971u, *ParsePiOrOrinTeamNumber("pi-8971-22"));
+  EXPECT_EQ(8971u, *ParsePiOrOrinTeamNumber("pi-8971-"));
+
+  EXPECT_EQ(971u, *ParsePiOrOrinTeamNumber("orin-971-1"));
+  EXPECT_EQ(8971u, *ParsePiOrOrinTeamNumber("orin-8971-22"));
+  EXPECT_EQ(8971u, *ParsePiOrOrinTeamNumber("orin-8971-"));
 
   EXPECT_FALSE(ParseRoborioTeamNumber("pi"));
   EXPECT_FALSE(ParseRoborioTeamNumber("pi-"));
   EXPECT_FALSE(ParseRoborioTeamNumber("pi-971"));
   EXPECT_FALSE(ParseRoborioTeamNumber("pi-971a-1"));
+  EXPECT_FALSE(ParseRoborioTeamNumber("orin-971-1"));
 
-  EXPECT_EQ(1u, *ParsePiNumber("pi-971-1"));
-  EXPECT_EQ(22u, *ParsePiNumber("pi-8971-22"));
+  EXPECT_EQ(1u, *ParsePiOrOrinNumber("pi-971-1"));
+  EXPECT_EQ(22u, *ParsePiOrOrinNumber("pi-8971-22"));
+  EXPECT_EQ(1u, *ParsePiOrOrinNumber("orin-971-1"));
+  EXPECT_EQ(22u, *ParsePiOrOrinNumber("orin-8971-22"));
 
-  EXPECT_FALSE(ParsePiNumber("pi-8971-"));
-  EXPECT_FALSE(ParsePiNumber("pi"));
-  EXPECT_FALSE(ParsePiNumber("pi-"));
-  EXPECT_FALSE(ParsePiNumber("pi-971"));
+  EXPECT_FALSE(ParsePiOrOrinNumber("pi-8971-"));
+  EXPECT_FALSE(ParsePiOrOrinNumber("pi"));
+  EXPECT_FALSE(ParsePiOrOrinNumber("pi-"));
+  EXPECT_FALSE(ParsePiOrOrinNumber("pi-971"));
+
+  EXPECT_FALSE(ParsePiOrOrinNumber("orin-8971-"));
+  EXPECT_FALSE(ParsePiOrOrinNumber("orin"));
+  EXPECT_FALSE(ParsePiOrOrinNumber("orin-"));
+  EXPECT_FALSE(ParsePiOrOrinNumber("orin-971"));
 }
 
 }  // namespace aos::network::testing

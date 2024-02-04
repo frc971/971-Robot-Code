@@ -357,3 +357,15 @@ cc_binary(
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
+
+cc_library(
+    name = "vision_util_lib",
+    srcs = ["vision_util_lib.cc"],
+    hdrs = ["vision_util_lib.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/vision:calibration_fbs",
+        "//third_party:opencv",
+        "@com_github_google_glog//:glog",
+    ],
+)

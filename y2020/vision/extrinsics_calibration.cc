@@ -45,7 +45,8 @@ void Main(int argc, char **argv) {
     const aos::Node *const roborio_node =
         aos::configuration::GetNode(factory.configuration(), "roborio");
 
-    std::optional<uint16_t> pi_number = aos::network::ParsePiNumber(FLAGS_pi);
+    std::optional<uint16_t> pi_number =
+        aos::network::ParsePiOrOrinNumber(FLAGS_pi);
     CHECK(pi_number);
     LOG(INFO) << "Pi " << *pi_number;
     const aos::Node *const pi_node = aos::configuration::GetNode(
