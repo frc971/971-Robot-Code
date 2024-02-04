@@ -84,6 +84,7 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
+        "//aos/actions:action_lib",
         "//aos/events:event_loop",
         "//aos/events:shm_event_loop",
         "//aos/logging",

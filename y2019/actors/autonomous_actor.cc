@@ -36,7 +36,7 @@ bool AutonomousActor::WaitForDriveXGreater(double x) {
   AOS_LOG(INFO, "Waiting until x > %f\n", x);
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ActorBase::kLoopOffset);
+                                      aos::common::actions::kLoopOffset);
 
   while (true) {
     if (ShouldCancel()) {
@@ -55,7 +55,7 @@ bool AutonomousActor::WaitForDriveYCloseToZero(double y) {
   AOS_LOG(INFO, "Waiting until |y| < %f\n", y);
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ActorBase::kLoopOffset);
+                                      aos::common::actions::kLoopOffset);
 
   while (true) {
     if (ShouldCancel()) {

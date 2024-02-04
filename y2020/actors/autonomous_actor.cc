@@ -429,7 +429,7 @@ int AutonomousActor::Balls() {
 bool AutonomousActor::WaitUntilAbsoluteBallsShot(int absolute_balls) {
   ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
                                       event_loop()->monotonic_now(),
-                                      ActorBase::kLoopOffset);
+                                      aos::common::actions::kLoopOffset);
   superstructure_status_fetcher_.Fetch();
   CHECK(superstructure_status_fetcher_.get() != nullptr);
   int last_balls = superstructure_status_fetcher_->shooter()->balls_shot();

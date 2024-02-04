@@ -7,14 +7,18 @@
 #include <functional>
 
 #include "aos/actions/actions_generated.h"
+#include "aos/events/event_loop.h"
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
-#include "frc971/control_loops/control_loop.h"
 
 namespace aos {
 namespace common {
 namespace actions {
+
+constexpr monotonic_clock::duration kLoopFrequency =
+    std::chrono::milliseconds(5);
+constexpr monotonic_clock::duration kLoopOffset = kLoopFrequency / 2;
 
 template <class T>
 class ActorBase {
@@ -22,10 +26,6 @@ class ActorBase {
   typedef T GoalType;
   typedef typename std::remove_pointer<typename std::invoke_result<
       decltype(&GoalType::params), const GoalType *>::type>::type ParamType;
-
-  // Commonly used offset for autonomous phased loops
-  static constexpr monotonic_clock::duration kLoopOffset =
-      frc971::controls::kLoopFrequency / 2;
 
   ActorBase(::aos::EventLoop *event_loop, const ::std::string &name)
       : event_loop_(event_loop),
@@ -80,7 +80,6 @@ class ActorBase {
   // Done condition are defined as functions that return true when done
   // end_time is when to stop and return true. Time(0, 0) (the default) means
   // never time out.
-  // This will be polled at ::frc971::controls::kLoopFrequency
   bool WaitUntil(::std::function<bool(void)> done_condition,
                  ::aos::monotonic_clock::time_point end_time =
                      ::aos::monotonic_clock::min_time);
@@ -191,9 +190,8 @@ void ActorBase<T>::HandleGoal(const GoalType &goal) {
 template <class T>
 bool ActorBase<T>::WaitUntil(::std::function<bool(void)> done_condition,
                              ::aos::monotonic_clock::time_point end_time) {
-  ::aos::time::PhasedLoop phased_loop(::frc971::controls::kLoopFrequency,
-                                      event_loop_->monotonic_now(),
-                                      kLoopOffset);
+  ::aos::time::PhasedLoop phased_loop(
+      kLoopFrequency, event_loop_->monotonic_now(), kLoopOffset);
 
   while (!done_condition()) {
     if (ShouldCancel() || abort_) {
