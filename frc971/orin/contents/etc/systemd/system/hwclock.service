@@ -1,0 +1,8 @@
+[Unit]
+Description=Hardware clock synchronization
+[Service]
+Type=oneshot
+ExecStart=/sbin/hwclock --hctosys --utc --noadjfile
+ExecStop=/sbin/hwclock --systohc --utc --noadjfile
+[Install]
+WantedBy=multi-user.target
