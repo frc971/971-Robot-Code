@@ -73,7 +73,7 @@ cc_binary(
     deps = [
         ":arm_constants",
         ":generated_graph",
-        "//frc971/analysis:in_process_plotter",
+        "//aos/analysis:in_process_plotter",
         "//frc971/control_loops/double_jointed_arm:ekf",
         "//frc971/control_loops/double_jointed_arm:trajectory",
         "@com_github_gflags_gflags//:gflags",

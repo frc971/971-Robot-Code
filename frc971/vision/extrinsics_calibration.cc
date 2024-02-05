@@ -7,8 +7,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include "aos/analysis/in_process_plotter.h"
 #include "aos/time/time.h"
-#include "frc971/analysis/in_process_plotter.h"
 #include "frc971/control_loops/runge_kutta.h"
 #include "frc971/vision/calibration_accumulator.h"
 #include "frc971/vision/charuco_lib.h"

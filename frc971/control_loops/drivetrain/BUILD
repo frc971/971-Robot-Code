@@ -606,8 +606,8 @@ cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":spline",
+        "//aos/analysis:in_process_plotter",
         "//aos/testing:googletest",
-        "//frc971/analysis:in_process_plotter",
         "@com_github_gflags_gflags//:gflags",
     ],
 )

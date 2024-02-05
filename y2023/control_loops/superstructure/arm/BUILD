@@ -119,7 +119,7 @@ cc_binary(
     deps = [
         ":arm_constants",
         "//aos:init",
-        "//frc971/analysis:in_process_plotter",
+        "//aos/analysis:in_process_plotter",
         "//frc971/control_loops:dlqr",
         "//frc971/control_loops:jacobian",
         "//frc971/control_loops/double_jointed_arm:dynamics",
@@ -166,7 +166,7 @@ cc_binary(
         ":arm_constants",
         ":generated_graph",
         ":trajectory",
-        "//frc971/analysis:in_process_plotter",
+        "//aos/analysis:in_process_plotter",
         "//frc971/control_loops:binomial",
         "//frc971/control_loops:fixed_quadrature",
         "//frc971/control_loops/double_jointed_arm:ekf",

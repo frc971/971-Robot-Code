@@ -3,9 +3,9 @@
 
 #include <vector>
 
+#include "aos/analysis/plot_data_generated.h"
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/web_proxy.h"
-#include "frc971/analysis/plot_data_generated.h"
 
 namespace frc971::analysis {
 

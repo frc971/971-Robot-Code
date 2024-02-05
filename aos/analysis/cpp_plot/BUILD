@@ -8,8 +8,8 @@ ts_project(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//aos:configuration_ts_fbs",
+        "//aos/analysis:plot_data_utils",
         "//aos/network/www:proxy",
-        "//frc971/analysis:plot_data_utils",
     ],
 )
 

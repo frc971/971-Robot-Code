@@ -131,7 +131,6 @@ cc_library(
         ":foxglove_image_converter_lib",
         "//aos:init",
         "//aos/events/logging:log_reader",
-        "//frc971/analysis:in_process_plotter",
         "//frc971/control_loops/drivetrain:improved_down_estimator",
         "//frc971/vision:visualize_robot",
         "//frc971/wpilib:imu_batch_fbs",
@@ -142,6 +141,12 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@com_google_ceres_solver//:ceres",
         "@org_tuxfamily_eigen//:eigen",
+    ] + [
+        # TODO(Stephan):  This is a whacky hack.  If we include this
+        # in the proper spot above (alphabetically), then we get a
+        # linker error: duplicate symbol: crc32.
+        # It's part of both @zlib and @com_github_rawrtc_re.
+        "//aos/analysis:in_process_plotter",
     ],
 )
 

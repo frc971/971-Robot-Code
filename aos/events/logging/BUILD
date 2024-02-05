@@ -965,7 +965,7 @@ cc_binary(
     srcs = ["timestamp_plot.cc"],
     deps = [
         "//aos:init",
-        "//frc971/analysis:in_process_plotter",
+        "//aos/analysis:in_process_plotter",
         "@com_google_absl//absl/strings",
     ],
 )

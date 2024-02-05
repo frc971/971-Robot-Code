@@ -1,9 +1,9 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 
+#include "aos/analysis/in_process_plotter.h"
 #include "aos/init.h"
 #include "aos/util/file.h"
-#include "frc971/analysis/in_process_plotter.h"
 
 using frc971::analysis::Plotter;
 

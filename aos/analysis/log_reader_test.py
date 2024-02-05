@@ -2,7 +2,7 @@
 import json
 import unittest
 
-from frc971.analysis.py_log_reader import LogReader
+from aos.analysis.py_log_reader import LogReader
 
 
 class LogReaderTest(unittest.TestCase):
