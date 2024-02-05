@@ -148,7 +148,6 @@ ts_project(
         "//aos:configuration_ts_fbs",
         "//aos/network:connect_ts_fbs",
         "//aos/network:web_proxy_ts_fbs",
-        "//frc971/wpilib:imu_batch_ts_fbs",
         "@com_github_google_flatbuffers//ts:flatbuffers_ts",
     ],
 )
