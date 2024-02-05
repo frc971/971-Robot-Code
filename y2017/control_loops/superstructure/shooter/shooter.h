@@ -13,10 +13,7 @@
 #include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2017/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace shooter {
+namespace y2017::control_loops::superstructure::shooter {
 
 class ShooterController {
  public:
@@ -109,9 +106,6 @@ class Shooter {
   DISALLOW_COPY_AND_ASSIGN(Shooter);
 };
 
-}  // namespace shooter
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::shooter
 
 #endif  // Y2017_CONTROL_LOOPS_SHOOTER_SHOOTER_H_

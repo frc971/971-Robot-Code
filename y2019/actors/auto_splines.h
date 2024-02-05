@@ -11,8 +11,7 @@
 
 */
 
-namespace y2019 {
-namespace actors {
+namespace y2019::actors {
 
 class AutonomousSplines {
  public:
@@ -88,7 +87,6 @@ class AutonomousSplines {
           *builder);
 };
 
-}  // namespace actors
-}  // namespace y2019
+}  // namespace y2019::actors
 
 #endif  // Y2019_ACTORS_AUTO_SPLINES_H_

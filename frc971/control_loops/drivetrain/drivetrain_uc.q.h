@@ -4,8 +4,7 @@
 
 #include "aos/macros.h"
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 struct GearLogging {
   GearLogging();
@@ -111,7 +110,6 @@ class DrivetrainQueue {
   DrivetrainQueue_Status status;
 };
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_DRIVETRAIN_Q_H_

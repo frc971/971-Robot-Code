@@ -7,8 +7,7 @@
 #include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/reader.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Converts a camera reader into a virtual base class that calls ProcessImage
 // on each new image.
@@ -45,7 +44,6 @@ class ImageStreamEvent : public ::aos::events::EpollEvent {
   std::unique_ptr<::camera::Reader> reader_;
 };
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // AOS_VISION_IMAGE_IMAGE_STREAM_H_

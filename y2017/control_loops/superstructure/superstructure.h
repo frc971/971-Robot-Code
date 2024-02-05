@@ -16,9 +16,7 @@
 #include "y2017/control_loops/superstructure/superstructure_status_generated.h"
 #include "y2017/control_loops/superstructure/vision_distance_average.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
+namespace y2017::control_loops::superstructure {
 
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
@@ -63,8 +61,6 @@ class Superstructure
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure
 
 #endif  // Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_

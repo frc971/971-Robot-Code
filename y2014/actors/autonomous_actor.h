@@ -13,8 +13,7 @@
 #include "y2014/queues/auto_mode_generated.h"
 #include "y2014/queues/hot_goal_generated.h"
 
-namespace y2014 {
-namespace actors {
+namespace y2014::actors {
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
@@ -48,7 +47,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   actors::ShootActor::Factory shoot_action_factory_;
 };
 
-}  // namespace actors
-}  // namespace y2014
+}  // namespace y2014::actors
 
 #endif  // Y2014_ACTORS_AUTONOMOUS_ACTOR_H_

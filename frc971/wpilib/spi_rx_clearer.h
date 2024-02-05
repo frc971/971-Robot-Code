@@ -3,8 +3,7 @@
 
 #include <cstdint>
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 // Allows clearing the RX FIFO of the roboRIO's SPI peripheral on demand. This
 // is necessary to work around a driver bug. See
@@ -35,7 +34,6 @@ class SpiRxClearer {
   bool RxFifoIsEmpty() { return !(ReadRegister(4) & (1 << 4)); }
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_SPI_RX_CLEARER_H_

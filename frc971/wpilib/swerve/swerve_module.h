@@ -3,9 +3,7 @@
 
 #include "frc971/wpilib/talonfx.h"
 
-namespace frc971 {
-namespace wpilib {
-namespace swerve {
+namespace frc971::wpilib::swerve {
 
 struct SwerveModule {
   SwerveModule(TalonFXParams rotation_params, TalonFXParams translation_params,
@@ -39,7 +37,5 @@ struct SwerveModule {
   std::shared_ptr<TalonFX> translation;
 };
 
-}  // namespace swerve
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib::swerve
 #endif  // FRC971_WPILIB_SWERVE_SWERVE_MODULE_H_

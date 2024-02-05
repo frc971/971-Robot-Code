@@ -7,8 +7,7 @@
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 
-namespace y2021_bot3 {
-namespace actors {
+namespace y2021_bot3::actors {
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
@@ -21,7 +20,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   void Reset();
 };
 
-}  // namespace actors
-}  // namespace y2021_bot3
+}  // namespace y2021_bot3::actors
 
 #endif  // Y2021_BOT3_ACTORS_AUTONOMOUS_ACTOR_H_

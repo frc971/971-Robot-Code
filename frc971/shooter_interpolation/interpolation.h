@@ -5,8 +5,7 @@
 #include <utility>
 #include <vector>
 
-namespace frc971 {
-namespace shooter_interpolation {
+namespace frc971::shooter_interpolation {
 
 double Blend(double coefficient, double a1, double a2);
 
@@ -79,7 +78,6 @@ bool InterpolationTable<YValue>::GetInRange(double x, YValue *result) const {
   }
 }
 
-}  // namespace shooter_interpolation
-}  // namespace frc971
+}  // namespace frc971::shooter_interpolation
 
 #endif  // FRC971_SHOOTER_INTERPOLATION_INTERPOLATION_H_

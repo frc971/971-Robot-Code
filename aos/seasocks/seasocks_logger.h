@@ -3,8 +3,7 @@
 
 #include "seasocks/PrintfLogger.h"
 
-namespace aos {
-namespace seasocks {
+namespace aos::seasocks {
 
 class SeasocksLogger : public ::seasocks::PrintfLogger {
  public:
@@ -13,7 +12,6 @@ class SeasocksLogger : public ::seasocks::PrintfLogger {
   void log(::seasocks::Logger::Level level, const char *message) override;
 };
 
-}  // namespace seasocks
-}  // namespace aos
+}  // namespace aos::seasocks
 
 #endif  // AOS_SEASOCKS_SEASOCKS_LOGGER_H_

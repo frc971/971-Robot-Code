@@ -39,8 +39,7 @@
 #include "Eigen/Core"
 #include "Eigen/Geometry"
 
-namespace ceres {
-namespace examples {
+namespace ceres::examples {
 
 struct Pose3d {
   Eigen::Vector3d p;
@@ -104,7 +103,6 @@ inline std::istream &operator>>(std::istream &input, Constraint3d &constraint) {
 typedef std::vector<Constraint3d, Eigen::aligned_allocator<Constraint3d>>
     VectorOfConstraints;
 
-}  // namespace examples
-}  // namespace ceres
+}  // namespace ceres::examples
 
 #endif  // EXAMPLES_CERES_TYPES_H_

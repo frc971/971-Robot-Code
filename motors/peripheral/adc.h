@@ -5,8 +5,7 @@
 
 #include "motors/util.h"
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 
 enum class AdcChannels {
   kA,
@@ -15,7 +14,6 @@ enum class AdcChannels {
 void AdcInitCommon(AdcChannels adc0_channels = AdcChannels::kB,
                    AdcChannels adc1_channels = AdcChannels::kB);
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors
 
 #endif  // MOTORS_PERIPHERAL_ADC_H_

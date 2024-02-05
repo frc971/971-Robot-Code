@@ -8,8 +8,7 @@
 #include <sstream>
 #include <string_view>
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Bounding box for a RangeImage.
 struct ImageBBox {
@@ -106,7 +105,6 @@ class ValueArray2d {
 using ImagePtr = Array2dPtr<PixelRef>;
 using ImageValue = ValueArray2d<PixelRef>;
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // _AOS_VISION_IMAGE_IMAGE_TYPES_H_

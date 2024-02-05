@@ -17,9 +17,7 @@
 #include "aos/events/logging/lzma_encoder.h"
 #endif
 
-namespace aos {
-namespace logger {
-namespace testing {
+namespace aos::logger::testing {
 
 struct CompressionParams {
   std::string_view extension;
@@ -196,8 +194,6 @@ class MultinodeLoggerTest : public ::testing::TestWithParam<
 
 typedef MultinodeLoggerTest MultinodeLoggerDeathTest;
 
-}  // namespace testing
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger::testing
 
 #endif  //  AOS_EVENTS_LOGGING_MULTINODE_LOGGER_TEST_LIB_H

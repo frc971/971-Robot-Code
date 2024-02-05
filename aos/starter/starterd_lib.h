@@ -19,8 +19,7 @@
 #include "aos/starter/subprocess.h"
 #include "aos/util/top.h"
 
-namespace aos {
-namespace starter {
+namespace aos::starter {
 
 const aos::Channel *StatusChannelForNode(const aos::Configuration *config,
                                          const aos::Node *node);
@@ -107,7 +106,6 @@ class Starter {
   DISALLOW_COPY_AND_ASSIGN(Starter);
 };
 
-}  // namespace starter
-}  // namespace aos
+}  // namespace aos::starter
 
 #endif  // AOS_STARTER_STARTERD_LIB_H_

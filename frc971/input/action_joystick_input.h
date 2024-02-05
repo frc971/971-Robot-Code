@@ -8,8 +8,7 @@
 #include "frc971/input/drivetrain_input.h"
 #include "frc971/input/joystick_input.h"
 
-namespace frc971 {
-namespace input {
+namespace frc971::input {
 
 // Class to abstract out managing actions, autonomous mode, and drivetrains.
 // Turns out we do the same thing every year, so let's stop copying it.
@@ -139,7 +138,6 @@ class ActionJoystickInput : public ::frc971::input::JoystickInput {
   ::aos::Fetcher<::frc971::autonomous::AutonomousMode> autonomous_mode_fetcher_;
 };
 
-}  // namespace input
-}  // namespace frc971
+}  // namespace frc971::input
 
 #endif  // AOS_INPUT_ACTION_JOYSTICK_INPUT_H_

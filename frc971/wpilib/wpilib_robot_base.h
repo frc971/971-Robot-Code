@@ -6,8 +6,7 @@
 #include "aos/logging/logging.h"
 #include "frc971/wpilib/ahal/RobotBase.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 class WPILibRobotBase {
  public:
@@ -81,7 +80,6 @@ class WPILibAdapterRobot : public frc::RobotBase {
   T robot_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_NEWROBOTBASE_H_

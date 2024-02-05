@@ -16,9 +16,7 @@
 #include "y2019/control_loops/superstructure/vacuum.h"
 #include "y2019/status_light_generated.h"
 
-namespace y2019 {
-namespace control_loops {
-namespace superstructure {
+namespace y2019::control_loops::superstructure {
 
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
@@ -68,8 +66,6 @@ class Superstructure
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::superstructure
 
 #endif  // Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_

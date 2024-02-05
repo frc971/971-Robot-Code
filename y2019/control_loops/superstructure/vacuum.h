@@ -7,9 +7,7 @@
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_output_generated.h"
 
-namespace y2019 {
-namespace control_loops {
-namespace superstructure {
+namespace y2019::control_loops::superstructure {
 
 class Vacuum {
  public:
@@ -55,8 +53,6 @@ class Vacuum {
   DISALLOW_COPY_AND_ASSIGN(Vacuum);
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::superstructure
 
 #endif  // Y2019_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_

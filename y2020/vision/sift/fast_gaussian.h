@@ -8,8 +8,7 @@
 
 #include "HalideBuffer.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 // Returns a Halide buffer representing the data in mat.
 template <typename T>
@@ -39,7 +38,6 @@ void FastSubtract(const cv::Mat &a, const cv::Mat &b, cv::Mat *destination);
 void FastGaussianAndSubtract(const cv::Mat &source, cv::Mat *blurred,
                              cv::Mat *difference, double sigma);
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 #endif  // Y2020_VISION_SIFT_FAST_GAUSSIAN_H_

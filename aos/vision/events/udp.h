@@ -12,8 +12,7 @@
 #include "aos/macros.h"
 #include "aos/scoped/scoped_fd.h"
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 // Simple wrapper around a transmitting UDP socket.
 //
@@ -67,7 +66,6 @@ class RXUdpSocket {
   DISALLOW_COPY_AND_ASSIGN(RXUdpSocket);
 };
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events
 
 #endif  // AOS_VISION_EVENTS_UDP_H_

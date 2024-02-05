@@ -9,9 +9,7 @@
 
 #include "frc971/input/joystick_state_generated.h"
 
-namespace frc971 {
-namespace input {
-namespace driver_station {
+namespace frc971::input::driver_station {
 
 // Represents a feature of a joystick (a button or an axis).
 // All indices are 1-based.
@@ -126,8 +124,6 @@ class Data {
   SavedJoystickState current_values_, old_values_;
 };
 
-}  // namespace driver_station
-}  // namespace input
-}  // namespace frc971
+}  // namespace frc971::input::driver_station
 
 #endif  // AOS_INPUT_DRIVER_STATION_DATA_H_

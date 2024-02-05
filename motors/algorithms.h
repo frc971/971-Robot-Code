@@ -5,8 +5,7 @@
 
 #include <array>
 
-namespace frc971 {
-namespace motors {
+namespace frc971::motors {
 
 struct ReadingsToBalance {
   // Adds a single reading at index.
@@ -57,7 +56,6 @@ inline BalancedReadings BalanceSimpleReadings(const uint16_t readings[3]) {
   return r;
 }
 
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors
 
 #endif  // MOTORS_ALGORITHMS_H_

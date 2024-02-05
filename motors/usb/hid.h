@@ -9,8 +9,7 @@
 #include "motors/usb/usb.h"
 #include "motors/util.h"
 
-namespace frc971 {
-namespace teensy {
+namespace frc971::teensy {
 
 // Implements an HID class device.
 // TODO(Brian): Make this way more generic.
@@ -95,7 +94,6 @@ class HidFunction final : public UsbFunction {
   UsbDescriptorList hid_descriptor_list_;
 };
 
-}  // namespace teensy
-}  // namespace frc971
+}  // namespace frc971::teensy
 
 #endif  // MOTORS_USB_HID_H_

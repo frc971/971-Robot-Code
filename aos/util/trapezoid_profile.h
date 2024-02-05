@@ -6,8 +6,7 @@
 #include "aos/macros.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace util {
+namespace aos::util {
 
 // Calculates a trapezoidal motion profile (like for a control loop's goals).
 // Supports having the end speed and position changed in the middle.
@@ -63,7 +62,6 @@ class TrapezoidProfile {
   DISALLOW_COPY_AND_ASSIGN(TrapezoidProfile);
 };
 
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util
 
 #endif  // AOS_UTIL_TRAPEZOID_PROFILE_H_

@@ -11,8 +11,7 @@
 #include "aos/containers/sized_array.h"
 #include "aos/time/time.h"
 
-namespace frc971 {
-namespace jevois {
+namespace frc971::jevois {
 
 // The overall flow to get data to the roboRIO consists of:
 //  1.  Camera captures a frame and grabs an absolute timestamp.
@@ -233,7 +232,6 @@ struct RoborioToTeensy {
   CameraCommand camera_command;
 };
 
-}  // namespace jevois
-}  // namespace frc971
+}  // namespace frc971::jevois
 
 #endif  // Y2019_JEVOIS_STRUCTURES_H_

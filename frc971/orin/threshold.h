@@ -5,8 +5,7 @@
 
 #include "frc971/orin/cuda.h"
 
-namespace frc971 {
-namespace apriltag {
+namespace frc971::apriltag {
 
 // Converts to grayscale, decimates, and thresholds an image on the provided
 // stream.
@@ -16,7 +15,6 @@ void CudaToGreyscaleAndDecimateHalide(
     uint8_t *thresholded_image, size_t width, size_t height,
     size_t min_white_black_diff, CudaStream *stream);
 
-}  // namespace apriltag
-}  // namespace frc971
+}  // namespace frc971::apriltag
 
 #endif  // FRC971_ORIN_THRESHOLD_H_

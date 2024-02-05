@@ -8,8 +8,7 @@
 #include "aos/network/message_bridge_client_generated.h"
 #include "aos/network/timestamp_filter.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 // This class is responsible for publishing the (filtered) client side
 // statistics periodically.
@@ -88,7 +87,6 @@ class MessageBridgeClientStatus {
   bool send_ = true;
 };
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 #endif  // AOS_NETWORK_MESSAGE_BRIDGE_CLIENT_STATUS_H_

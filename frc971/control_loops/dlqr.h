@@ -3,8 +3,7 @@
 
 #include <Eigen/Dense>
 
-namespace frc971 {
-namespace controls {
+namespace frc971::controls {
 
 template <int num_states, int num_inputs>
 int Controllability(const ::Eigen::Matrix<double, num_states, num_states> &A,
@@ -114,7 +113,6 @@ int dlqr(::Eigen::Matrix<double, kN, kN> A, ::Eigen::Matrix<double, kN, kM> B,
   return INFO;
 }
 
-}  // namespace controls
-}  // namespace frc971
+}  // namespace frc971::controls
 
 #endif  // FRC971_CONTROL_LOOPS_DLQR_H_

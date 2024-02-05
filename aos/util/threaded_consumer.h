@@ -10,8 +10,7 @@
 #include "aos/mutex/mutex.h"
 #include "aos/realtime.h"
 
-namespace aos {
-namespace util {
+namespace aos::util {
 
 // This class implements a threadpool of a single worker that accepts work
 // from the main thread through a queue and executes it at a different realtime
@@ -96,7 +95,6 @@ class ThreadedConsumer {
   std::thread worker_thread_;
 };
 
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util
 
 #endif  // AOS_UTIL_THREADWORKER_H_

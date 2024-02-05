@@ -11,8 +11,7 @@
 #include "frc971/input/joystick_state_generated.h"
 #include "frc971/input/robot_state_generated.h"
 
-namespace frc971 {
-namespace controls {
+namespace frc971::controls {
 
 // Control loops run this often, "starting" at time 0.
 constexpr ::std::chrono::nanoseconds kLoopFrequency =
@@ -133,8 +132,7 @@ class ControlLoop {
       SimpleLogInterval(kStaleLogInterval, ERROR, "no goal");
 };
 
-}  // namespace controls
-}  // namespace frc971
+}  // namespace frc971::controls
 
 #include "frc971/control_loops/control_loop-tmpl.h"  // IWYU pragma: export
 

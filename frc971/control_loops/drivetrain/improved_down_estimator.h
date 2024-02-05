@@ -12,9 +12,7 @@
 #include "frc971/control_loops/quaternion_utils.h"
 #include "frc971/control_loops/runge_kutta.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 // Generates the sigma points to use in the UKF given the current estimate and
 // covariance.
@@ -256,8 +254,6 @@ class DrivetrainUkf : public QuaternionUkf {
       aos::monotonic_clock::time_point now);
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_IMPROVED_DOWN_ESTIMATOR_H_

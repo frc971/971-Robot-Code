@@ -13,8 +13,7 @@
 #include "y2024/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2024/control_loops/superstructure/intake_pivot/intake_pivot_plant.h"
 
-namespace y2024 {
-namespace constants {
+namespace y2024::constants {
 
 constexpr uint16_t kCompTeamNumber = 971;
 constexpr uint16_t kPracticeTeamNumber = 9971;
@@ -93,7 +92,6 @@ constants::Values MakeValues(uint16_t team);
 // Calls MakeValues with aos::network::GetTeamNumber()
 constants::Values MakeValues();
 
-}  // namespace constants
-}  // namespace y2024
+}  // namespace y2024::constants
 
 #endif  // Y2024_CONSTANTS_H_

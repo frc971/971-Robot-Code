@@ -11,8 +11,7 @@
 #include "y2023_bot3/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2023_bot3/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2023_bot3 {
-namespace autonomous {
+namespace y2023_bot3::autonomous {
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
@@ -59,7 +58,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   std::optional<std::array<SplineHandle, 1>> charged_up_middle_splines_;
 };
 
-}  // namespace autonomous
-}  // namespace y2023_bot3
+}  // namespace y2023_bot3::autonomous
 
 #endif  // Y2023_AUTONOMOUS_AUTONOMOUS_ACTOR_H_

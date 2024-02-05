@@ -11,8 +11,7 @@
 
 */
 
-namespace y2021_bot3 {
-namespace actors {
+namespace y2021_bot3::actors {
 
 class AutonomousSplines {
  public:
@@ -22,7 +21,6 @@ class AutonomousSplines {
       aos::Sender<frc971::control_loops::drivetrain::Goal>::Builder *builder);
 };
 
-}  // namespace actors
-}  // namespace y2021_bot3
+}  // namespace y2021_bot3::actors
 
 #endif  // Y2021_BOT3_ACTORS_AUTO_SPLINES_H_

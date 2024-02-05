@@ -12,8 +12,7 @@
 #include "frc971/wpilib/gyro_interface.h"
 #include "frc971/zeroing/averager.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 // Handles reading the gyro over SPI and sending out angles on a queue.
 //
@@ -56,7 +55,6 @@ class GyroSender {
   bool zeroed_ = false;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_GYRO_H_

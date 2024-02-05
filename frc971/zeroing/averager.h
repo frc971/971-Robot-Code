@@ -8,8 +8,7 @@
 #include "Eigen/Dense"
 #include "glog/logging.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 // Averages a set of given numbers. Numbers are given one at a time. Once full
 // the average may be requested.
@@ -89,7 +88,6 @@ class Averager {
   size_t num_data_points_ = 0;
 };
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing
 
 #endif  // FRC971_ZEROING_AVERAGER_H_

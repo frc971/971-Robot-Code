@@ -6,8 +6,7 @@
 #include "aos/vision/blob/contour.h"
 #include "aos/vision/blob/range_image.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 struct FittedLine {
   Point st;
@@ -19,7 +18,6 @@ struct FittedLine {
 void HierarchicalMerge(ContourNode *stval, std::vector<FittedLine> *fit_lines,
                        float merge_rate = 4.0, int min_len = 15);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // _AOS_VISION_BLOB_HIERARCHICAL_CONTOUR_MERGE_H_

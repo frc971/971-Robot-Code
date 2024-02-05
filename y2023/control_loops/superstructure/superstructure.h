@@ -22,9 +22,7 @@
 using y2023::control_loops::superstructure::arm::ArmTrajectories;
 using y2023::control_loops::superstructure::arm::TrajectoryAndParams;
 
-namespace y2023 {
-namespace control_loops {
-namespace superstructure {
+namespace y2023::control_loops::superstructure {
 
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
@@ -86,8 +84,6 @@ class Superstructure
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2023
+}  // namespace y2023::control_loops::superstructure
 
 #endif  // Y2023_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_

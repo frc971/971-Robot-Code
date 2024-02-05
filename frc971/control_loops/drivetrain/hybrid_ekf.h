@@ -12,17 +12,11 @@
 #include "frc971/control_loops/drivetrain/drivetrain_config.h"
 #include "frc971/control_loops/runge_kutta.h"
 
-namespace y2019 {
-namespace control_loops {
-namespace testing {
+namespace y2019::control_loops::testing {
 class ParameterizedLocalizerTest;
-}  // namespace testing
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops::testing
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 namespace testing {
 class HybridEkfTest;
@@ -934,8 +928,6 @@ void HybridEkf<Scalar>::InitializeMatrices() {
   P_.setZero();
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_HYBRID_EKF_H_

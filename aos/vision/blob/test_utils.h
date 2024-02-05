@@ -3,8 +3,7 @@
 
 #include "aos/vision/blob/range_image.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // For tests. Loads a RangeImage from a constant string.
 //
@@ -18,7 +17,6 @@ namespace vision {
 // )"
 RangeImage LoadFromTestData(int mini, const char *data);
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // AOS_VISION_BLOB_TEST_UTILS_H_

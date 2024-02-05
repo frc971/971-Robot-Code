@@ -23,8 +23,7 @@
 #endif
 #endif
 
-namespace aos {
-namespace ipc_lib {
+namespace aos::ipc_lib {
 
 struct AtomicQueueIndex;
 class AtomicIndex;
@@ -305,7 +304,6 @@ class AtomicIndex {
   ::std::atomic<Index::IndexType> index_;
 };
 
-}  // namespace ipc_lib
-}  // namespace aos
+}  // namespace aos::ipc_lib
 
 #endif  // AOS_IPC_LIB_INDEX_H_

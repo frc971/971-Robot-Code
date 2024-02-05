@@ -10,8 +10,7 @@
 #include "aos/vision/image/camera_params.pb.h"
 #include "aos/vision/image/image_types.h"
 
-namespace y2019 {
-namespace camera {
+namespace y2019::camera {
 
 aos::vision::CameraParams MakeCameraParams(int32_t width, int32_t height,
                                            int32_t exposure, int32_t brightness,
@@ -65,7 +64,6 @@ class Reader {
   aos::vision::CameraParams params_;
 };
 
-}  // namespace camera
-}  // namespace y2019
+}  // namespace y2019::camera
 
 #endif  // AOS_VISION_IMAGE_READER_H_

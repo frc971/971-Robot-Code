@@ -14,8 +14,7 @@
 #include "aos/events/logging/boot_timestamp.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 // Max velocity to clamp the filter to in seconds/second.
 typedef std::ratio<1, 1000> MaxVelocityRatio;
@@ -951,7 +950,6 @@ class NoncausalOffsetEstimator {
   const Node *node_b_;
 };
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 #endif  // AOS_EVENTS_LOGGING_TIMESTAMP_FILTER_H_

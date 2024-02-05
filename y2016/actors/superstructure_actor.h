@@ -9,8 +9,7 @@
 #include "y2016/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2016/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2016 {
-namespace actors {
+namespace y2016::actors {
 
 class SuperstructureActor
     : public ::aos::common::actions::ActorBase<superstructure_action::Goal> {
@@ -46,7 +45,6 @@ class SuperstructureActor
   bool SuperstructureDone();
 };
 
-}  // namespace actors
-}  // namespace y2016
+}  // namespace y2016::actors
 
 #endif  // Y2016_ACTORS_SUPERSTRUCTURE_ACTOR_H_

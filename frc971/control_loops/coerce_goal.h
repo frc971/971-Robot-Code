@@ -5,8 +5,7 @@
 
 #include "frc971/control_loops/polytope.h"
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 template <typename Scalar = double>
 Eigen::Matrix<Scalar, 2, 1> DoCoerceGoal(
@@ -127,7 +126,6 @@ Eigen::Matrix<Scalar, 2, 1> DoCoerceGoal(
   }
 }
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif  // FRC971_CONTROL_LOOPS_COERCE_GOAL_H_

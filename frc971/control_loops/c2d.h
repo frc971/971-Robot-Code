@@ -9,8 +9,7 @@
 // We need to include MatrixFunctions for the matrix exponential.
 #include "unsupported/Eigen/MatrixFunctions"
 
-namespace frc971 {
-namespace controls {
+namespace frc971::controls {
 
 template <typename Scalar, int num_states, int num_inputs>
 void C2D(const ::Eigen::Matrix<Scalar, num_states, num_states> &A_continuous,
@@ -116,7 +115,6 @@ void DiscretizeQAFast(
   *A_d = phi22t;
 }
 
-}  // namespace controls
-}  // namespace frc971
+}  // namespace frc971::controls
 
 #endif  // FRC971_CONTROL_LOOPS_C2D_H_

@@ -5,8 +5,7 @@
 
 #include "frc971/zeroing/zeroing.h"
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 // Zeros by seeing all the index pulses in the range of motion of the mechanism
 // and using that to figure out which index pulse is which.
@@ -78,7 +77,6 @@ class PulseIndexZeroingEstimator
   double position_;
 };
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing
 
 #endif  // FRC971_ZEROING_PULSE_INDEX_H_

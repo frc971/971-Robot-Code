@@ -3,8 +3,7 @@
 
 #include <cstdint>
 
-namespace aos {
-namespace util {
+namespace aos::util {
 
 // Deals correctly with 1-byte counters which wrap.
 // This is only possible if the counter never wraps twice between Update calls.
@@ -28,7 +27,6 @@ class WrappingCounter {
   uint8_t last_count_;
 };
 
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util
 
 #endif  // AOS_UTIL_WRAPPING_COUNTER_H_

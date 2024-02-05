@@ -9,9 +9,7 @@
 #include "frc971/wpilib/swerve/swerve_module.h"
 #include "frc971/wpilib/talonfx.h"
 
-namespace frc971 {
-namespace wpilib {
-namespace swerve {
+namespace frc971::wpilib::swerve {
 
 // Reads from the swerve output flatbuffer and uses wpilib to set the current
 // for each motor.
@@ -45,8 +43,6 @@ class DrivetrainWriter
   double max_voltage_;
 };
 
-}  // namespace swerve
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib::swerve
 
 #endif  // FRC971_WPILIB_SWERVE_DRIVETRAIN_WRITER_H_

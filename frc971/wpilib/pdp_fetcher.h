@@ -12,8 +12,7 @@ namespace frc {
 class PowerDistributionPanel;
 }  // namespace frc
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 // Handles fetching values from the PDP.
 class PDPFetcher {
@@ -32,7 +31,6 @@ class PDPFetcher {
   ::std::unique_ptr<::frc::PowerDistributionPanel> pdp_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_PDP_FETCHER_H_

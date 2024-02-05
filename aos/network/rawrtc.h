@@ -13,8 +13,7 @@ extern "C" {
 #include "flatbuffers/flatbuffers.h"
 #include "glog/logging.h"
 
-namespace aos {
-namespace web_proxy {
+namespace aos::web_proxy {
 
 // TODO(austin): This doesn't allow streaming data in.
 #define CHECK_RAWRTC(x)                                                     \
@@ -215,7 +214,6 @@ class RawRTCConnection {
   std::function<void(std::shared_ptr<ScopedDataChannel>)> on_data_channel_;
 };
 
-}  // namespace web_proxy
-}  // namespace aos
+}  // namespace aos::web_proxy
 
 #endif  // AOS_NETWORK_RAWRTC_H_

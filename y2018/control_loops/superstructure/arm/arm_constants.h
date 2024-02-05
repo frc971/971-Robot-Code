@@ -3,10 +3,7 @@
 
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 
-namespace y2018 {
-namespace control_loops {
-namespace superstructure {
-namespace arm {
+namespace y2018::control_loops::superstructure::arm {
 
 constexpr double kEfficiencyTweak = 0.95;
 constexpr double kStallTorque = 1.41 * kEfficiencyTweak;
@@ -44,9 +41,6 @@ constexpr ::frc971::control_loops::arm::ArmConstants kArmConstants = {
     .num_distal_motors = 2.0,
 };
 
-}  // namespace arm
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2018
+}  // namespace y2018::control_loops::superstructure::arm
 
 #endif  // Y2018_CONTROL_LOOPS_SUPERSTRUCTURE_ARM_ARM_CONSTANTS_H_

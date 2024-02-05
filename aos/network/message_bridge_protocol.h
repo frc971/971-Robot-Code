@@ -7,8 +7,7 @@
 #include "aos/network/connect_generated.h"
 #include "aos/uuid.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 // The protocol between the message_bridge_client and server is pretty simple.
 // The overarching design philosophy is that the server sends data to the
@@ -41,7 +40,6 @@ aos::FlatbufferDetachedBuffer<aos::message_bridge::Connect> MakeConnectMessage(
     std::string_view remote_name, const UUID &boot_uuid,
     std::string_view config_sha256);
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 #endif  // AOS_NETWORK_MESSAGE_BRIDGE_PROTOCOL_H_

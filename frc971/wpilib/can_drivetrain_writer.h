@@ -3,8 +3,7 @@
 #include "frc971/wpilib/loop_output_handler.h"
 #include "frc971/wpilib/talonfx.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 class CANDrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
                                 ::frc971::control_loops::drivetrain::Output> {
@@ -30,5 +29,4 @@ class CANDrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
   std::vector<std::shared_ptr<TalonFX>> left_talonfxs_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib

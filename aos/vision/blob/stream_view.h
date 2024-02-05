@@ -7,8 +7,7 @@
 #include "aos/vision/debug/debug_window.h"
 #include "aos/vision/image/image_types.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 class BlobStreamViewer : public DebugWindow {
  public:
@@ -85,7 +84,6 @@ class BlobStreamViewer : public DebugWindow {
   ImageValue image_;
 };
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // _AOS_VISION_BLOB_STREAM_VIEW_H_

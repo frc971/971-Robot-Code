@@ -19,8 +19,7 @@
 #include "aos/network/sctp_lib.h"
 #include "aos/unique_malloc_ptr.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 class SctpServer {
  public:
@@ -74,7 +73,6 @@ class SctpServer {
   SctpReadWrite sctp_;
 };
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 #endif  // AOS_NETWORK_SCTP_SERVER_H_

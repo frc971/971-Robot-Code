@@ -4,8 +4,7 @@
 #include <optional>
 #include <string>
 
-namespace aos {
-namespace logging {
+namespace aos::logging {
 // Returns the correct filename to log to, blocking until the usb drive
 // filesystem mounts, incrementing the number on the end of the filename, and
 // setting up a symlink at basename-current.
@@ -19,7 +18,6 @@ std::string GetLogName(const char *basename);
 // the usb drive.
 std::optional<std::string> MaybeGetLogName(const char *basename);
 
-}  // namespace logging
-}  // namespace aos
+}  // namespace aos::logging
 
 #endif  // AOS_LOGGING_LOG_NAMER_H_

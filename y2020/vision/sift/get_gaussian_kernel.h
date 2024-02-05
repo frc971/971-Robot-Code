@@ -4,8 +4,7 @@
 #include <cmath>
 #include <vector>
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 // A reimplementation of cv::getGaussianKernel for CV_32F without external
 // dependencies. See fast_gaussian_halide_generator.sh for details why we want
@@ -24,7 +23,6 @@ inline std::vector<float> GetGaussianKernel(int ksize, double sigma) {
   return result;
 }
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 #endif  // Y2020_VISION_SIFT_GET_GAUSSIAN_KERNEL_H_

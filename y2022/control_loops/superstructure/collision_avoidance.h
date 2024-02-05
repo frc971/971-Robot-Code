@@ -8,9 +8,7 @@
 #include "y2022/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2022/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2022 {
-namespace control_loops {
-namespace superstructure {
+namespace y2022::control_loops::superstructure {
 
 // Returns the wrapped angle as well as number of wraps (positive or negative).
 // The returned angle will be inside [0.0, 2 * M_PI).
@@ -146,8 +144,6 @@ class CollisionAvoidance {
   double max_turret_goal_;
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2022
+}  // namespace y2022::control_loops::superstructure
 
 #endif

@@ -16,8 +16,7 @@
 #include "aos/scoped/scoped_fd.h"
 #include "frc971/can_logger/can_logging_generated.h"
 
-namespace frc971 {
-namespace can_logger {
+namespace frc971::can_logger {
 
 // This class listens to all the traffic on a SocketCAN interface and sends it
 // on the aos event loop so it can be logged with the aos logging
@@ -45,7 +44,6 @@ class CanLogger {
   aos::Sender<CanFrame> frames_sender_;
 };
 
-}  // namespace can_logger
-}  // namespace frc971
+}  // namespace frc971::can_logger
 
 #endif  // FRC971_CAN_LOGGER_CAN_LOGGER_H_

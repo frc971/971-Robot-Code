@@ -16,8 +16,7 @@
 #include "aos/util/threaded_consumer.h"
 #include "frc971/vision/vision_generated.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 // Reads images from a V4L2 capture device (aka camera).
 class V4L2ReaderBase {
@@ -199,7 +198,6 @@ class RockchipV4L2Reader : public V4L2ReaderBase {
   aos::util::ThreadedConsumer<int, kNumberBuffers> buffer_requeuer_;
 };
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 #endif  // FRC971_VISION_V4L2_READER_H_

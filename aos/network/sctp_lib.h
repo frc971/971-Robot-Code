@@ -19,8 +19,7 @@
 
 #define HAS_SCTP_AUTH LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 constexpr bool HasSctpAuth() { return HAS_SCTP_AUTH; }
 
@@ -202,7 +201,6 @@ size_t ReadRMemMax();
 // Returns the max network buffer available for writing for a socket.
 size_t ReadWMemMax();
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 #endif  // AOS_NETWORK_SCTP_LIB_H_

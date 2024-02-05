@@ -10,8 +10,7 @@
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
 #include "y2021_bot3/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 
-namespace y2021_bot3 {
-namespace constants {
+namespace y2021_bot3::constants {
 
 struct Values {
   static const int kZeroingSampleSize = 200;
@@ -42,7 +41,6 @@ const Values &GetValues();
 // them.
 const Values &GetValuesForTeam(uint16_t team_number);
 
-}  // namespace constants
-}  // namespace y2021_bot3
+}  // namespace y2021_bot3::constants
 
 #endif  // Y2021_BOT3_CONSTANTS_H_

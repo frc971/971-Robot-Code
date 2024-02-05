@@ -18,8 +18,7 @@
 
 using ::frc971::shooter_interpolation::InterpolationTable;
 
-namespace y2022 {
-namespace constants {
+namespace y2022::constants {
 
 constexpr uint16_t kCompTeamNumber = 971;
 constexpr uint16_t kPracticeTeamNumber = 9971;
@@ -276,7 +275,6 @@ Values MakeValues(uint16_t team);
 // Calls MakeValues with aos::network::GetTeamNumber()
 Values MakeValues();
 
-}  // namespace constants
-}  // namespace y2022
+}  // namespace y2022::constants
 
 #endif  // Y2022_CONSTANTS_H_

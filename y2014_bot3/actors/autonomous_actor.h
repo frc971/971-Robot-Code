@@ -9,8 +9,7 @@
 #include "aos/events/event_loop.h"
 #include "frc971/autonomous/base_autonomous_actor.h"
 
-namespace y2014_bot3 {
-namespace actors {
+namespace y2014_bot3::actors {
 
 class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
  public:
@@ -26,7 +25,6 @@ class AutonomousActor : public ::frc971::autonomous::BaseAutonomousActor {
   }
 };
 
-}  // namespace actors
-}  // namespace y2014_bot3
+}  // namespace y2014_bot3::actors
 
 #endif  // Y2014_BOT3_ACTORS_AUTONOMOUS_ACTOR_H_

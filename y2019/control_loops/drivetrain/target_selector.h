@@ -8,8 +8,7 @@
 #include "y2019/control_loops/drivetrain/target_selector_generated.h"
 #include "y2019/control_loops/superstructure/superstructure_goal_generated.h"
 
-namespace y2019 {
-namespace control_loops {
+namespace y2019::control_loops {
 
 // A class to identify which target the driver is currently driving towards so
 // that we can guide them into the target.
@@ -75,7 +74,6 @@ class TargetSelector
   drivetrain::SelectionHint target_hint_ = drivetrain::SelectionHint::NONE;
 };
 
-}  // namespace control_loops
-}  // namespace y2019
+}  // namespace y2019::control_loops
 
 #endif  // Y2019_CONTROL_LOOPS_DRIVETRAIN_TARGET_SELECTOR_H_

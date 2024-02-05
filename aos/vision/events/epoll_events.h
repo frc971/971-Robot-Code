@@ -11,8 +11,7 @@
 #include "aos/scoped/scoped_fd.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 class EpollLoop;
 
@@ -129,7 +128,6 @@ class EpollLoop {
   ::std::vector<EpollWait *> waits_;
 };
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events
 
 #endif  // AOS_VISION_EVENTS_EPOLL_EVENTS_H_

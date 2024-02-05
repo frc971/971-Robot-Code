@@ -5,9 +5,7 @@
 
 #include "absl/types/span.h"
 
-namespace frc971 {
-namespace motors {
-namespace semihosting {
+namespace frc971::motors::semihosting {
 
 inline uint32_t integer_operation(const uint32_t operation, void *const block) {
   register uint32_t operation_register asm("r0") = operation;
@@ -165,8 +163,6 @@ struct WriteDebug {
   }
 };
 
-}  // namespace semihosting
-}  // namespace motors
-}  // namespace frc971
+}  // namespace frc971::motors::semihosting
 
 #endif  // MOTORS_CORE_SEMIHOSTING_H_

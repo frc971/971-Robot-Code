@@ -14,8 +14,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "y2019/control_loops/drivetrain/target_selector_generated.h"
 
-namespace frc971 {
-namespace autonomous {
+namespace frc971::autonomous {
 
 class UserButtonLocalizedAutonomousActor : public BaseAutonomousActor {
  public:
@@ -54,7 +53,6 @@ class UserButtonLocalizedAutonomousActor : public BaseAutonomousActor {
   bool user_indicated_safe_to_reset_ = false;
 };
 
-}  // namespace autonomous
-}  // namespace frc971
+}  // namespace frc971::autonomous
 
 #endif  // FRC971_AUTONOMOUS_EXTENDED_AUTONOMOUS_ACTOR_H_

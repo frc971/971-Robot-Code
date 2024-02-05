@@ -6,8 +6,7 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/features2d.hpp>
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 /*!
  SIFT implementation.
@@ -66,7 +65,6 @@ class SIFT971_Impl : public cv::Feature2D {
   bool use_fast_pyramid_difference_ = true;
 };
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 #endif  // Y2020_VISION_SIFT_SIFT971_H_

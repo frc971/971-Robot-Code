@@ -9,10 +9,7 @@
 #include "y2020/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2020/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2020 {
-namespace control_loops {
-namespace superstructure {
-namespace shooter {
+namespace y2020::control_loops::superstructure::shooter {
 
 // Handles all flywheels together.
 class Shooter {
@@ -60,9 +57,6 @@ class Shooter {
   DISALLOW_COPY_AND_ASSIGN(Shooter);
 };
 
-}  // namespace shooter
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2020
+}  // namespace y2020::control_loops::superstructure::shooter
 
 #endif  // Y2020_CONTROL_LOOPS_SHOOTER_SHOOTER_H_

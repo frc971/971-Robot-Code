@@ -3,8 +3,7 @@
 
 #include <string>
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Returns a usable temporary directory.
 std::string TestTmpDir();
@@ -13,7 +12,6 @@ std::string TestTmpDir();
 // otherwise.
 void SetTestShmBase();
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing
 
 #endif  // AOS_TESTING_TMPDIR_H_

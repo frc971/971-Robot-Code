@@ -3,8 +3,7 @@
 
 #include "aos/ipc_lib/shared_mem.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Manages creating and cleaning up "shared memory" which works within this
 // process and any that it fork(2)s.
@@ -18,7 +17,6 @@ class TestSharedMemory {
   struct aos_core global_core_data_;
 };
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing
 
 #endif  // AOS_TESTING_TEST_SHM_H_

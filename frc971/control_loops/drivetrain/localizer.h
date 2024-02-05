@@ -7,9 +7,7 @@
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
 #include "frc971/control_loops/pose.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 // An interface for target selection. This provides an object that will take in
 // state updates and then determine what poes we should be driving to.
@@ -214,8 +212,6 @@ class DeadReckonEkf : public LocalizerInterface {
   TrivialTargetSelector target_selector_;
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_FIELD_ESTIMATOR_H_

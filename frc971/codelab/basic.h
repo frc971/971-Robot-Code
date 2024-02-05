@@ -8,8 +8,7 @@
 #include "frc971/codelab/basic_status_generated.h"
 #include "frc971/control_loops/control_loop.h"
 
-namespace frc971 {
-namespace codelab {
+namespace frc971::codelab {
 
 class Basic
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
@@ -23,7 +22,6 @@ class Basic
                     aos::Sender<Status>::Builder *status) override;
 };
 
-}  // namespace codelab
-}  // namespace frc971
+}  // namespace frc971::codelab
 
 #endif  // FRC971_CODELAB_BASIC_H_

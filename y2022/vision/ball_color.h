@@ -9,8 +9,7 @@
 #include "y2022/constants.h"
 #include "y2022/vision/ball_color_generated.h"
 
-namespace y2022 {
-namespace vision {
+namespace y2022::vision {
 
 using namespace frc971::vision;
 
@@ -62,6 +61,5 @@ class BallColorDetector {
   const cv::Rect reference_blue_;
   const cv::Rect ball_location_;
 };
-}  // namespace vision
-}  // namespace y2022
+}  // namespace y2022::vision
 #endif

@@ -6,8 +6,7 @@
 #include "frc971/wpilib/ahal/PWM.h"
 #include "frc971/wpilib/loop_output_handler.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
                              ::frc971::control_loops::drivetrain::Output> {
@@ -56,7 +55,6 @@ class DrivetrainWriter : public ::frc971::wpilib::LoopOutputHandler<
   bool reversed_right0_, reversed_left0_, reversed_right1_, reversed_left1_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_DRIVETRAIN_WRITER_H_

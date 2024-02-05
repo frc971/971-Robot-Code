@@ -32,8 +32,7 @@
 #include "aos/util/threaded_queue.h"
 #include "aos/uuid.h"
 
-namespace aos {
-namespace logger {
+namespace aos::logger {
 
 class EventNotifier;
 
@@ -950,7 +949,6 @@ class LogReader {
   ConfigRemapper config_remapper_;
 };
 
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger
 
 #endif  // AOS_EVENTS_LOGGING_LOG_READER_H_

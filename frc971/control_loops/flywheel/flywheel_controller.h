@@ -9,9 +9,7 @@
 #include "frc971/control_loops/hybrid_state_feedback_loop.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace flywheel {
+namespace frc971::control_loops::flywheel {
 
 class CurrentLimitedStateFeedbackController;
 
@@ -73,8 +71,6 @@ class FlywheelController {
   DISALLOW_COPY_AND_ASSIGN(FlywheelController);
 };
 
-}  // namespace flywheel
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::flywheel
 
 #endif  // FRC971_CONTROL_LOOPS_SHOOTER_FLYWHEEL_CONTROLLER_H_

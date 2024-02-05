@@ -11,8 +11,7 @@
 // Stuffing data. <http://www.stuartcheshire.org/papers/cobsforton.pdf> has
 // details on what this entails and why it's a good idea.
 
-namespace frc971 {
-namespace jevois {
+namespace frc971::jevois {
 
 constexpr size_t CobsMaxEncodedSize(size_t decoded_size) {
   return decoded_size + ((decoded_size + 253) / 254);
@@ -213,7 +212,6 @@ void CobsPacketizer<max_decoded_size>::ParseData(
   }
 }
 
-}  // namespace jevois
-}  // namespace frc971
+}  // namespace frc971::jevois
 
 #endif  // Y2019_JEVOIS_COBS_H_

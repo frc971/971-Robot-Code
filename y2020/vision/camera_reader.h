@@ -17,8 +17,7 @@
 #include "y2020/vision/sift/sift_training_generated.h"
 #include "y2020/vision/tools/python_code/sift_training_data.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 class CameraReader {
  public:
@@ -170,6 +169,5 @@ class CameraReader {
       new frc971::vision::SIFT971_Impl()};
 };
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 #endif  // Y2020_VISION_CAMERA_READER_H_

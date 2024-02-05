@@ -11,8 +11,7 @@ using aos::vision::ImageRange;
 using aos::vision::RangeImage;
 using aos::vision::Vector;
 
-namespace y2017 {
-namespace vision {
+namespace y2017::vision {
 
 // This polynomial exists in transpose space.
 struct TargetComponent {
@@ -84,7 +83,6 @@ class TargetFinder {
   aos::vision::PixelLinesOverlay overlay_;
 };
 
-}  // namespace vision
-}  // namespace y2017
+}  // namespace y2017::vision
 
 #endif  // _Y2017_VISION_TARGET_FINDER_H_

@@ -3,8 +3,7 @@
 
 #include "aos/logging/logging.h"
 
-namespace frc971 {
-namespace controls {
+namespace frc971::controls {
 
 // TODO(aschuh): Tests.
 
@@ -91,5 +90,4 @@ void ControlLoop<GoalType, PositionType, StatusType,
   status.CheckSent();
 }
 
-}  // namespace controls
-}  // namespace frc971
+}  // namespace frc971::controls

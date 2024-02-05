@@ -3,8 +3,7 @@
 
 #include <vector>
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Disjoint set algorithm, which is similar to what this class does:
 // https://en.wikipedia.org/wiki/Disjoint-set_data_structure
@@ -40,7 +39,6 @@ class DisjointSet {
   std::vector<int> nodes_;
 };
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // _AOS_VISION_BLOB_DISJOINT_SET_H_

@@ -6,10 +6,7 @@
 #include "y2017/constants.h"
 #include "y2017/control_loops/superstructure/superstructure_goal_generated.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace hood {
+namespace y2017::control_loops::superstructure::hood {
 
 // Profiled subsystem class with significantly relaxed limits while zeroing.  We
 // need relaxed limits, because if you start at the top of the range, you need
@@ -75,9 +72,6 @@ class Hood {
       ::aos::monotonic_clock::min_time;
 };
 
-}  // namespace hood
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::hood
 
 #endif  // Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_HOOD_HOOD_H_

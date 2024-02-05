@@ -14,9 +14,7 @@
 #include "frc971/control_loops/runge_kutta.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 template <typename F>
 double IntegrateAccelForDistance(const F &fn, double v, double x, double dx) {
@@ -423,8 +421,6 @@ inline Eigen::Matrix<double, 5, 1> ContinuousDynamics(
       .finished();
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_TRAJECTORY_H_

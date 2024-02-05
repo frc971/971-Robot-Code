@@ -10,8 +10,7 @@
 #include "aos/vision/math/segment.h"
 #include "aos/vision/math/vector.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 struct SelectedBlob {
   SelectedBlob(const RangeImage &blob_inp) : blob(blob_inp) {}
@@ -196,7 +195,6 @@ class HistogramBlobFilter : public BlobFilterBase {
   ImagePtr *image_ = NULL;
 };
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // Y2016_VISION_BLOB_FILTERS_H_

@@ -6,8 +6,7 @@
 #include "aos/logging/logging.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace util {
+namespace aos::util {
 
 // A class to help with logging things that happen a lot only occasionally.
 //
@@ -91,7 +90,6 @@ class SimpleLogInterval {
   const char *context_ = NULL;
 };
 
-}  // namespace util
-}  // namespace aos
+}  // namespace aos::util
 
 #endif  // AOS_UTIL_LOG_INTERVAL_H_

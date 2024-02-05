@@ -18,9 +18,7 @@
 #include "y2022/control_loops/superstructure/turret/aiming.h"
 #include "y2022/vision/ball_color_generated.h"
 
-namespace y2022 {
-namespace control_loops {
-namespace superstructure {
+namespace y2022::control_loops::superstructure {
 
 class Superstructure
     : public ::frc971::controls::ControlLoop<Goal, Position, Status, Output> {
@@ -113,8 +111,6 @@ class Superstructure
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2022
+}  // namespace y2022::control_loops::superstructure
 
 #endif  // Y2022_CONTROL_LOOPS_SUPERSTRUCTURE_SUPERSTRUCTURE_H_

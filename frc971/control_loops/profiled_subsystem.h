@@ -18,8 +18,7 @@
 #include "frc971/zeroing/pot_and_index.h"
 #include "frc971/zeroing/zeroing.h"
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 // TODO(Brian): Use a tuple instead of an array to support heterogeneous zeroing
 // styles.
@@ -466,7 +465,6 @@ void SingleDOFProfiledSubsystem<ZeroingEstimator>::AdjustProfile(
       internal::UseUnlessZero(max_angular_acceleration, default_acceleration_));
 }
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif  // FRC971_CONTROL_LOOPS_PROFILED_SUBSYSTEM_H_

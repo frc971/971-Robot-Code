@@ -10,8 +10,7 @@
 #include "y2016/actors/vision_align_action_generated.h"
 #include "y2016/vision/vision_generated.h"
 
-namespace y2016 {
-namespace actors {
+namespace y2016::actors {
 
 class VisionAlignActor
     : public ::aos::common::actions::ActorBase<vision_align_action::Goal> {
@@ -34,7 +33,6 @@ class VisionAlignActor
       drivetrain_goal_sender_;
 };
 
-}  // namespace actors
-}  // namespace y2016
+}  // namespace y2016::actors
 
 #endif

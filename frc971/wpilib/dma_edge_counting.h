@@ -14,8 +14,7 @@
 #include "frc971/wpilib/dma.h"
 #undef ERROR
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 // Generic interface for classes that do something with DMA samples and also
 // poll current sensor values.
@@ -280,7 +279,6 @@ class DMASynchronizer {
   DISALLOW_COPY_AND_ASSIGN(DMASynchronizer);
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_DMA_EDGE_COUNTING_H_

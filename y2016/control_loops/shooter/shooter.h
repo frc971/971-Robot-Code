@@ -13,9 +13,7 @@
 #include "y2016/control_loops/shooter/shooter_position_generated.h"
 #include "y2016/control_loops/shooter/shooter_status_generated.h"
 
-namespace y2016 {
-namespace control_loops {
-namespace shooter {
+namespace y2016::control_loops::shooter {
 
 namespace {
 constexpr double kTolerance = 10.0;
@@ -94,8 +92,6 @@ class Shooter
   DISALLOW_COPY_AND_ASSIGN(Shooter);
 };
 
-}  // namespace shooter
-}  // namespace control_loops
-}  // namespace y2016
+}  // namespace y2016::control_loops::shooter
 
 #endif  // Y2016_CONTROL_LOOPS_SHOOTER_SHOOTER_H_

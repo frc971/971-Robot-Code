@@ -4,12 +4,10 @@
 #include <string>
 #include <vector>
 
-namespace aos {
-namespace logger {
+namespace aos::logger {
 // Vector of pair of name and type of the channel
 using ReplayChannels = std::vector<std::pair<std::string, std::string>>;
 // Vector of channel indices
 using ReplayChannelIndices = std::vector<size_t>;
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger
 #endif  // AOS_EVENTS_LOGGING_REPLAY_CHANNELS_H_

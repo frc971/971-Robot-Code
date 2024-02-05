@@ -6,9 +6,7 @@
 #include "frc971/control_loops/drivetrain/spline_goal_generated.h"
 #include "frc971/control_loops/drivetrain/trajectory.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 class TrajectoryGenerator {
  public:
@@ -22,8 +20,6 @@ class TrajectoryGenerator {
   aos::Sender<fb::Trajectory> trajectory_sender_;
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_TRAJECTORY_GENERATOR_H_

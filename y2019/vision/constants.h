@@ -6,8 +6,7 @@
 #include <cstdint>
 #include <string>
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 // Position of the idealized camera in 3d space.
 struct CameraGeometry {
@@ -107,7 +106,6 @@ inline ::std::array<int, 5> CameraSerialNumbers(uint32_t processor_id) {
 void DumpCameraConstants(const char *fname, int camera_id,
                          const CameraCalibration &value);
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision
 
 #endif  // _Y2019_VISION_CONSTANTS_H_

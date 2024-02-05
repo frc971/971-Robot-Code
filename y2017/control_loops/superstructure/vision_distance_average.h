@@ -8,9 +8,7 @@
 #include "aos/time/time.h"
 #include "y2017/vision/vision_generated.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
+namespace y2017::control_loops::superstructure {
 
 namespace chrono = ::std::chrono;
 
@@ -61,8 +59,6 @@ class VisionDistanceAverage {
   ::aos::RingBuffer<DistanceEvent, 25> data_;
 };
 
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure
 
 #endif  // Y2017_CONTROL_LOOPS_SUPERSTRUCTURE_VISION_DISTANCE_AVERAGE_H_

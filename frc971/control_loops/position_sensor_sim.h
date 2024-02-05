@@ -7,8 +7,7 @@
 #include "frc971/control_loops/control_loops_generated.h"
 #include "frc971/control_loops/gaussian_noise.h"
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 // NOTE: All potentiometer and encoder values in this class are assumed to be in
 // translated SI units.
@@ -211,7 +210,6 @@ class PositionSensorSimulator {
   double negedge_value_;
 };
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif /* FRC971_CONTROL_LOOPS_POSITION_SENSOR_SIM_H_ */

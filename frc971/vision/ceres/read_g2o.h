@@ -38,8 +38,7 @@
 
 #include "glog/logging.h"
 
-namespace ceres {
-namespace examples {
+namespace ceres::examples {
 
 // Reads a single pose from the input and inserts it into the map. Returns false
 // if there is a duplicate entry.
@@ -136,7 +135,6 @@ bool ReadG2oFile(const std::string &filename,
   return true;
 }
 
-}  // namespace examples
-}  // namespace ceres
+}  // namespace ceres::examples
 
 #endif  // EXAMPLES_CERES_READ_G2O_H_

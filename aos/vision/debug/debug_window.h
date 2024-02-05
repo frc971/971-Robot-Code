@@ -8,8 +8,7 @@
 #include "aos/vision/debug/overlay.h"
 #include "aos/vision/image/image_types.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Implement Cairo version of RenderInterface.
 class CairoRender : public RenderInterface {
@@ -84,7 +83,6 @@ class DebugWindow {
   std::unique_ptr<Internals> self;
 };
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // AOS_VISION_DEBUG_DEBUG_WINDOW_H_

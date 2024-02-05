@@ -13,8 +13,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_status_generated.h"
 #include "frc971/input/driver_station_data.h"
 
-namespace frc971 {
-namespace input {
+namespace frc971::input {
 
 using control_loops::drivetrain::PistolBottomButtonUse;
 using control_loops::drivetrain::PistolSecondButtonUse;
@@ -271,7 +270,6 @@ class XboxDrivetrainInputReader : public DrivetrainInputReader {
       const ::frc971::input::driver_station::Data &data) override;
 };
 
-}  // namespace input
-}  // namespace frc971
+}  // namespace frc971::input
 
 #endif  // AOS_INPUT_DRIVETRAIN_INPUT_H_

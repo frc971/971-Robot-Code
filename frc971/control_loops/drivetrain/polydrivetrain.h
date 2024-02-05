@@ -23,9 +23,7 @@
 #include "frc971/control_loops/drivetrain/drivetrain_states.h"
 #include "frc971/control_loops/state_feedback_loop.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 template <typename Scalar = double>
 class PolyDrivetrain {
@@ -457,8 +455,6 @@ flatbuffers::Offset<CIMLogging> PolyDrivetrain<Scalar>::PopulateShiftingStatus(
   return builder.Finish();
 }
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_POLYDRIVETRAIN_H_

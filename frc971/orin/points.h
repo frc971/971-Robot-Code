@@ -11,8 +11,7 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-namespace frc971 {
-namespace apriltag {
+namespace frc971::apriltag {
 
 // Class to hold the 2 adjacent blob IDs, a point in decimated image space, the
 // half pixel offset, and the gradient.
@@ -297,7 +296,6 @@ struct QuadIndexPointDecomposer {
   }
 };
 
-}  // namespace apriltag
-}  // namespace frc971
+}  // namespace frc971::apriltag
 
 #endif  // FRC971_ORIN_POINTS_H_

@@ -5,8 +5,7 @@
 
 #include "aos/vision/image/image_types.h"
 
-namespace y2019 {
-namespace vision {
+namespace y2019::vision {
 
 class ImageWriter {
  public:
@@ -23,7 +22,6 @@ class ImageWriter {
   unsigned int image_count_ = 0;
 };
 
-}  // namespace vision
-}  // namespace y2019
+}  // namespace y2019::vision
 
 #endif  // Y2019_VISION_IMAGE_WRITER_H_

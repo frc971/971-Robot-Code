@@ -12,8 +12,7 @@
 #include "frc971/wpilib/imu_batch_generated.h"
 #include "frc971/wpilib/imu_generated.h"
 
-namespace frc971 {
-namespace wpilib {
+namespace frc971::wpilib {
 
 // Handles interfacing with an Analog Devices ADIS16470 over SPI and sending the
 // resulting values out on a channel.
@@ -93,7 +92,6 @@ class ADIS16470 {
   FpgaTimeConverter time_converter_;
 };
 
-}  // namespace wpilib
-}  // namespace frc971
+}  // namespace frc971::wpilib
 
 #endif  // FRC971_WPILIB_ADIS16470_H_

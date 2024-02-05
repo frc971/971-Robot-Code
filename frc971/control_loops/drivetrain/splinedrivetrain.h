@@ -17,9 +17,7 @@
 #include "frc971/control_loops/drivetrain/spline.h"
 #include "frc971/control_loops/drivetrain/trajectory.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 class SplineDrivetrain {
  public:
@@ -111,8 +109,6 @@ class SplineDrivetrain {
   bool output_was_capped_ = false;
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_SPLINEDRIVETRAIN_H_

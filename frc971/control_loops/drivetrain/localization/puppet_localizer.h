@@ -9,9 +9,7 @@
 #include "frc971/control_loops/drivetrain/localization/localizer_output_generated.h"
 #include "frc971/control_loops/drivetrain/localizer.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace drivetrain {
+namespace frc971::control_loops::drivetrain {
 
 // This class handles the localization for the 2022/2023 robots. Rather than
 // actually doing any work on the roborio, we farm all the localization out to a
@@ -104,8 +102,6 @@ class PuppetLocalizer
       target_selector_;
 };
 
-}  // namespace drivetrain
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::drivetrain
 
 #endif  // FRC971_CONTROL_LOOPS_DRIVETRAIN_LOCALIZATION_PUPPET_LOCALIZER_H_

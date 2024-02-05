@@ -13,8 +13,7 @@
 #include "motors/usb/constants.h"
 #include "motors/util.h"
 
-namespace frc971 {
-namespace teensy {
+namespace frc971::teensy {
 
 // A sufficient memory barrier between writing some data and telling the USB
 // hardware to read it or having the USB hardware say some data is readable and
@@ -584,7 +583,6 @@ class UsbFunction {
   friend class UsbDevice;
 };
 
-}  // namespace teensy
-}  // namespace frc971
+}  // namespace frc971::teensy
 
 #endif  // MOTORS_USB_USB_H_

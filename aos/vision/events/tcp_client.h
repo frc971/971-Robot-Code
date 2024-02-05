@@ -6,8 +6,7 @@
 
 #include "aos/vision/events/epoll_events.h"
 
-namespace aos {
-namespace events {
+namespace aos::events {
 
 // Handles the client connection logic to hostname:portno
 class TcpClient : public EpollEvent {
@@ -17,7 +16,6 @@ class TcpClient : public EpollEvent {
   // Implement ReadEvent from EpollEvent to use this class.
 };
 
-}  // namespace events
-}  // namespace aos
+}  // namespace aos::events
 
 #endif  // _AOS_VISION_DEBUG_TCP_CLIENT_H_

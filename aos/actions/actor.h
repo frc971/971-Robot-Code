@@ -12,9 +12,7 @@
 #include "aos/time/time.h"
 #include "aos/util/phased_loop.h"
 
-namespace aos {
-namespace common {
-namespace actions {
+namespace aos::common::actions {
 
 constexpr monotonic_clock::duration kLoopFrequency =
     std::chrono::milliseconds(5);
@@ -227,8 +225,6 @@ bool ActorBase<T>::ShouldCancel() {
   return ans;
 }
 
-}  // namespace actions
-}  // namespace common
-}  // namespace aos
+}  // namespace aos::common::actions
 
 #endif  // AOS_ACTIONS_ACTOR_H_

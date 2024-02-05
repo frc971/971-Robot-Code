@@ -9,8 +9,7 @@
 #include <utility>
 #include <vector>
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Region based allocator. Used for arena allocations in vision code.
 // Example use: Storing contour nodes.
@@ -52,7 +51,6 @@ class AnalysisAllocator {
   size_t used_size_ = 0;
 };
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // _AOS_VISION_IMAGE_REGION_ALLOC_H_

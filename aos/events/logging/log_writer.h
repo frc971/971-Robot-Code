@@ -17,8 +17,7 @@
 #include "aos/time/time.h"
 #include "aos/uuid.h"
 
-namespace aos {
-namespace logger {
+namespace aos::logger {
 
 // Packs the provided configuration into the separate config LogFileHeader
 // container.
@@ -377,7 +376,6 @@ class Logger {
   std::chrono::nanoseconds logging_delay_ = std::chrono::nanoseconds(0);
 };
 
-}  // namespace logger
-}  // namespace aos
+}  // namespace aos::logger
 
 #endif  // AOS_EVENTS_LOGGING_LOG_WRITER_H_

@@ -12,8 +12,7 @@
 // This file manages serializing and deserializing the various structures for
 // transport via UART.
 
-namespace frc971 {
-namespace jevois {
+namespace frc971::jevois {
 
 constexpr size_t uart_to_teensy_size() {
   return 1 /* number of targets */ +
@@ -38,7 +37,6 @@ UartToCameraBuffer UartPackToCamera(const CameraCalibration &message);
 std::optional<CameraCalibration> UartUnpackToCamera(
     absl::Span<const char> buffer);
 
-}  // namespace jevois
-}  // namespace frc971
+}  // namespace frc971::jevois
 
 #endif  // Y2019_JEVOIS_UART_H_

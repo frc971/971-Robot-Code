@@ -7,8 +7,7 @@
 #include "aos/flatbuffers.h"
 #include "aos/json_to_flatbuffer.h"
 
-namespace aos {
-namespace testing {
+namespace aos::testing {
 
 // Use FlatbufferUnwrapped to instantiate this.
 template <typename T>
@@ -85,7 +84,6 @@ inline auto FlatbufferEq(const aos::NonSizePrefixedFlatbuffer<T> &expected) {
       new FlatbufferEqMatcher(aos::FlatbufferVector<T>(expected))));
 }
 
-}  // namespace testing
-}  // namespace aos
+}  // namespace aos::testing
 
 #endif  // AOS_TESTING_FLATBUFFER_EQ_H_

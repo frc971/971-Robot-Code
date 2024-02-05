@@ -16,8 +16,7 @@
 
 #include "aos/scoped/scoped_fd.h"
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 class MediaDevice;
 class Pad;
@@ -254,7 +253,6 @@ class MediaDevice {
 // nullopt otherwise.
 std::optional<MediaDevice> FindMediaDevice(std::string_view device);
 
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 #endif  // FRC971_VISION_MEDIA_DEVICE_H_

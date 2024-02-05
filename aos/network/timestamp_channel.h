@@ -11,8 +11,7 @@
 #include "aos/events/event_loop.h"
 #include "aos/network/remote_message_generated.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 // Class to find the corresponding channel where timestamps for a specified data
 // channel and connection will be logged.
@@ -89,7 +88,6 @@ class ChannelTimestampSender {
       timestamp_loggers_;
 };
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 #endif  // AOS_NETWORK_TIMESTAMP_CHANNEL_

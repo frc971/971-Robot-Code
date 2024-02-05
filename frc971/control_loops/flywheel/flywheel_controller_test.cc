@@ -9,10 +9,7 @@
 #include "frc971/control_loops/flywheel/flywheel_test_plant.h"
 #include "frc971/control_loops/flywheel/integral_flywheel_controller_test_plant.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace flywheel {
-namespace testing {
+namespace frc971::control_loops::flywheel::testing {
 class FlywheelTest : public ::frc971::testing::ControlLoopTest {
  public:
   FlywheelTest()
@@ -97,7 +94,4 @@ TEST_F(FlywheelTest, NegativeTest) {
   RunFor(std::chrono::seconds(8));
   VerifyNearGoal();
 }
-}  // namespace testing
-}  // namespace flywheel
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::flywheel::testing

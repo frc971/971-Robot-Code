@@ -3,8 +3,7 @@
 
 #include "aos/vision/blob/range_image.h"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 RangeImage Transpose(const RangeImage &img);
 inline std::vector<RangeImage> Transpose(const std::vector<RangeImage> &imgs) {
@@ -14,7 +13,6 @@ inline std::vector<RangeImage> Transpose(const std::vector<RangeImage> &imgs) {
   return out;
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // AOS_VISION_BLOB_TRANSPOSE_H_

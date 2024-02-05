@@ -7,8 +7,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-namespace frc971 {
-namespace vision {
+namespace frc971::vision {
 
 // Helper class to visualize the coordinate frames associated with
 // the robot Based on a virtual camera viewpoint, and camera model,
@@ -80,7 +79,6 @@ class VisualizeRobot {
                            // DrawFrameAxes
   cv::Size default_size_;  // Default image size
 };
-}  // namespace vision
-}  // namespace frc971
+}  // namespace frc971::vision
 
 #endif  // FRC971_VISION_VISUALIZE_ROBOT_H_

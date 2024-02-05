@@ -7,8 +7,7 @@
 #include "aos/vision/math/vector.h"
 #include "y2016/vision/calibration.pb.h"
 
-namespace y2016 {
-namespace vision {
+namespace y2016::vision {
 
 // Returns the contents of the calibration file which are embedded into the
 // code.
@@ -61,7 +60,6 @@ class StereoGeometry {
   Calibration calibration_;
 };
 
-}  // namespace vision
-}  // namespace y2016
+}  // namespace y2016::vision
 
 #endif  // Y2016_VISION_STEREO_GEOMETRY_H_

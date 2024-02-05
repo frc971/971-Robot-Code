@@ -20,8 +20,7 @@
 // TODO(pschrader): Watch the offset over long periods of time and flag if it
 // gets too far away from the initial value.
 
-namespace frc971 {
-namespace zeroing {
+namespace frc971::zeroing {
 
 template <typename TPosition, typename TZeroingConstants, typename TState>
 class ZeroingEstimator {
@@ -169,7 +168,6 @@ class RelativeEncoderZeroingEstimator
   bool error_ = false;
 };
 
-}  // namespace zeroing
-}  // namespace frc971
+}  // namespace frc971::zeroing
 
 #endif  // FRC971_ZEROING_ZEROING_H_

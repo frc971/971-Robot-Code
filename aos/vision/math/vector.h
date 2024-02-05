@@ -5,8 +5,7 @@
 
 #include "Eigen/Dense"
 
-namespace aos {
-namespace vision {
+namespace aos::vision {
 
 // Represents an n-dimensional vector of doubles with various convenient
 // shortcuts for common operations.
@@ -222,7 +221,6 @@ inline Vector<Size> operator*(const double &lhs, Vector<Size> &rhs) {
   return nv;
 }
 
-}  // namespace vision
-}  // namespace aos
+}  // namespace aos::vision
 
 #endif  // AOS_VISION_MATH_VECTOR_H_

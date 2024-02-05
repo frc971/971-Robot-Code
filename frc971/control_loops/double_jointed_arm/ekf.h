@@ -5,9 +5,7 @@
 
 #include "frc971/control_loops/double_jointed_arm/dynamics.h"
 
-namespace frc971 {
-namespace control_loops {
-namespace arm {
+namespace frc971::control_loops::arm {
 
 // An extended kalman filter for the Arm.
 // Our states are:
@@ -48,8 +46,6 @@ class EKF {
   const Dynamics *dynamics_;
 };
 
-}  // namespace arm
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops::arm
 
 #endif  // FRC971_CONTROL_LOOPS_DOUBLE_JOINTED_ARM_EKF_H_

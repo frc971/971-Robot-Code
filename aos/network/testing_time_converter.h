@@ -10,8 +10,7 @@
 #include "aos/network/multinode_timestamp_filter.h"
 #include "aos/time/time.h"
 
-namespace aos {
-namespace message_bridge {
+namespace aos::message_bridge {
 
 // Simple class to which uses InterpolatedTimeConverter to produce an
 // interpolated timeline.  Should only be used for testing.
@@ -77,7 +76,6 @@ class TestingTimeConverter final : public InterpolatedTimeConverter {
   std::map<std::pair<size_t, size_t>, UUID> boot_uuids_;
 };
 
-}  // namespace message_bridge
-}  // namespace aos
+}  // namespace aos::message_bridge
 
 #endif  // AOS_NETWORK_TESTING_TIME_CONVERTER_H_

@@ -9,8 +9,7 @@
 #include "glog/logging.h"
 #include <Eigen/Sparse>
 
-namespace frc971 {
-namespace solvers {
+namespace frc971::solvers {
 
 // TODO(austin): Steal JET from Ceres to generate the derivatives easily and
 // quickly?
@@ -118,7 +117,6 @@ class SparseSolver {
                         std::string_view prefix, int verbosity);
 };
 
-}  // namespace solvers
-}  // namespace frc971
+}  // namespace frc971::solvers
 
 #endif  // FRC971_SOLVERS_SPARSE_CONVEX_H_

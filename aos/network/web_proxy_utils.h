@@ -4,8 +4,7 @@
 #include "aos/flatbuffers.h"
 #include "aos/network/web_proxy_generated.h"
 
-namespace aos {
-namespace web_proxy {
+namespace aos::web_proxy {
 
 int GetPacketCount(const Context &context);
 
@@ -24,5 +23,4 @@ size_t PackedMessageSize(const Context &context, int packet_index);
 std::vector<FlatbufferDetachedBuffer<MessageHeader>> PackBuffer(
     absl::Span<const uint8_t> span);
 
-}  // namespace web_proxy
-}  // namespace aos
+}  // namespace aos::web_proxy

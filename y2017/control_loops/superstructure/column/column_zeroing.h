@@ -8,10 +8,7 @@
 #include "y2017/control_loops/superstructure/superstructure_position_generated.h"
 #include "y2017/control_loops/superstructure/superstructure_status_generated.h"
 
-namespace y2017 {
-namespace control_loops {
-namespace superstructure {
-namespace column {
+namespace y2017::control_loops::superstructure::column {
 
 class ColumnZeroingEstimator {
  public:
@@ -66,9 +63,6 @@ class ColumnZeroingEstimator {
   const double turret_zeroed_distance_;
 };
 
-}  // namespace column
-}  // namespace superstructure
-}  // namespace control_loops
-}  // namespace y2017
+}  // namespace y2017::control_loops::superstructure::column
 
 #endif  // y2017_CONTROL_LOOPS_SUPERSTRUCTURE_COLUMN_H_

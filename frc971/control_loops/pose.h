@@ -7,8 +7,7 @@
 
 #include "aos/util/math.h"
 
-namespace frc971 {
-namespace control_loops {
+namespace frc971::control_loops {
 
 // Constructs a homogeneous transformation matrix for rotating about the Z axis.
 template <typename Scalar>
@@ -231,7 +230,6 @@ class TypedLineSegment {
 
 typedef TypedLineSegment<double> LineSegment;
 
-}  // namespace control_loops
-}  // namespace frc971
+}  // namespace frc971::control_loops
 
 #endif  // FRC971_CONTROL_LOOPS_POSE_H_
