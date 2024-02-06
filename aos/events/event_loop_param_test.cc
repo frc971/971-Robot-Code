@@ -3553,6 +3553,7 @@ RawSender::Error SendTestMessage(aos::Sender<TestMessage> &sender) {
 // RawSender::Error::kMessagesSentTooFast.
 TEST_P(AbstractEventLoopTest, SendingMessagesTooFast) {
   auto event_loop = MakePrimary();
+  event_loop->SetRuntimeRealtimePriority(5);
 
   auto sender = event_loop->MakeSender<TestMessage>("/test");
 
@@ -3567,21 +3568,29 @@ TEST_P(AbstractEventLoopTest, SendingMessagesTooFast) {
   int msgs_sent = 1;
   const int queue_size = TestChannelQueueSize(event_loop.get());
 
+  const int messages_per_ms = 2;
+  const auto kRepeatOffset = std::chrono::milliseconds(10);
+  const auto base_offset =
+      configuration::ChannelStorageDuration(event_loop->configuration(),
+                                            sender.channel()) -
+      (std::chrono::milliseconds(1) * (queue_size / 2) / messages_per_ms);
+
   const auto timer = event_loop->AddTimer([&]() {
-    const bool done = (msgs_sent == queue_size + 1);
-    ASSERT_EQ(
-        SendTestMessage(sender),
-        done ? RawSender::Error::kMessagesSentTooFast : RawSender::Error::kOk);
-    msgs_sent++;
-    if (done) {
-      Exit();
+    // Send in bursts to reduce scheduler load to make the test more
+    // reproducible.
+    for (int i = 0; i < messages_per_ms * kRepeatOffset.count(); ++i) {
+      const bool done = (msgs_sent == queue_size + 1);
+      ASSERT_EQ(SendTestMessage(sender),
+                done ? RawSender::Error::kMessagesSentTooFast
+                     : RawSender::Error::kOk);
+      msgs_sent++;
+      if (done) {
+        Exit();
+        return;
+      }
     }
   });
 
-  const auto kRepeatOffset = std::chrono::milliseconds(1);
-  const auto base_offset = configuration::ChannelStorageDuration(
-                               event_loop->configuration(), sender.channel()) -
-                           (kRepeatOffset * (queue_size / 2));
   event_loop->OnRun([&event_loop, &timer, &base_offset, &kRepeatOffset]() {
     timer->Schedule(event_loop->monotonic_now() + base_offset, kRepeatOffset);
   });
@@ -3595,6 +3604,7 @@ TEST_P(AbstractEventLoopTest, SendingMessagesTooFast) {
 // situation
 TEST_P(AbstractEventLoopTest, SendingAfterSendingTooFast) {
   auto event_loop = MakePrimary();
+  event_loop->SetRuntimeRealtimePriority(5);
 
   auto sender = event_loop->MakeSender<TestMessage>("/test");
 
