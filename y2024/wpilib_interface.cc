@@ -290,46 +290,38 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry;
 
+    const CurrentLimits *current_limits =
+        robot_constants->common()->current_limits();
+
     std::shared_ptr<TalonFX> right_front = std::make_shared<TalonFX>(
         0, false, "Drivetrain Bus", &signals_registry,
-        constants::Values::kDrivetrainStatorCurrentLimit(),
-        constants::Values::kDrivetrainSupplyCurrentLimit());
+        current_limits->drivetrain_supply_current_limit(),
+        current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> right_back = std::make_shared<TalonFX>(
         1, false, "Drivetrain Bus", &signals_registry,
-        constants::Values::kDrivetrainStatorCurrentLimit(),
-        constants::Values::kDrivetrainSupplyCurrentLimit());
+        current_limits->drivetrain_supply_current_limit(),
+        current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> left_front = std::make_shared<TalonFX>(
         2, false, "Drivetrain Bus", &signals_registry,
-        constants::Values::kDrivetrainStatorCurrentLimit(),
-        constants::Values::kDrivetrainSupplyCurrentLimit());
+        current_limits->drivetrain_supply_current_limit(),
+        current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> left_back = std::make_shared<TalonFX>(
         3, false, "Drivetrain Bus", &signals_registry,
-        constants::Values::kDrivetrainStatorCurrentLimit(),
-        constants::Values::kDrivetrainSupplyCurrentLimit());
-    std::shared_ptr<TalonFX> intake_pivot =
-        std::make_shared<TalonFX>(4, false, "Drivetrain Bus", &signals_registry,
-                                  robot_constants->common()
-                                      ->current_limits()
-                                      ->intake_pivot_stator_current_limit(),
-                                  robot_constants->common()
-                                      ->current_limits()
-                                      ->intake_pivot_supply_current_limit());
-    std::shared_ptr<TalonFX> intake_roller =
-        std::make_shared<TalonFX>(5, false, "Drivetrain Bus", &signals_registry,
-                                  robot_constants->common()
-                                      ->current_limits()
-                                      ->intake_roller_stator_current_limit(),
-                                  robot_constants->common()
-                                      ->current_limits()
-                                      ->intake_roller_supply_current_limit());
-    std::shared_ptr<TalonFX> transfer_roller =
-        std::make_shared<TalonFX>(6, false, "Drivetrain Bus", &signals_registry,
-                                  robot_constants->common()
-                                      ->current_limits()
-                                      ->transfer_roller_stator_current_limit(),
-                                  robot_constants->common()
-                                      ->current_limits()
-                                      ->transfer_roller_supply_current_limit());
+        current_limits->drivetrain_supply_current_limit(),
+        current_limits->drivetrain_stator_current_limit());
+    std::shared_ptr<TalonFX> intake_pivot = std::make_shared<TalonFX>(
+        4, false, "Drivetrain Bus", &signals_registry,
+        current_limits->intake_pivot_stator_current_limit(),
+        current_limits->intake_pivot_supply_current_limit());
+    std::shared_ptr<TalonFX> intake_roller = std::make_shared<TalonFX>(
+        5, false, "Drivetrain Bus", &signals_registry,
+        current_limits->intake_roller_stator_current_limit(),
+        current_limits->intake_roller_supply_current_limit());
+    std::shared_ptr<TalonFX> transfer_roller = std::make_shared<TalonFX>(
+        6, false, "Drivetrain Bus", &signals_registry,
+        current_limits->transfer_roller_stator_current_limit(),
+        current_limits->transfer_roller_supply_current_limit());
+
     ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
         constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
     ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
