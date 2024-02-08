@@ -375,6 +375,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           auto drivetrain_falcon_vector =
               drivetrain_can_builder->add_talonfxs();
 
+          CHECK(drivetrain_falcon_vector->reserve(drivetrain_talonfxs.size()));
+
           for (auto talonfx : drivetrain_talonfxs) {
             talonfx->SerializePosition(
                 drivetrain_falcon_vector->emplace_back(),
