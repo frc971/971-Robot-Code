@@ -198,18 +198,12 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     }
   }
 
-  void set_intake_pivot_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+  void set_intake_pivot(::std::unique_ptr<frc::Encoder> encoder,
+                        ::std::unique_ptr<frc::DigitalInput> absolute_pwm,
+                        ::std::unique_ptr<frc::AnalogInput> potentiometer) {
     fast_encoder_filter_.Add(encoder.get());
     intake_pivot_encoder_.set_encoder(::std::move(encoder));
-  }
-
-  void set_intake_pivot_absolute_pwm(
-      ::std::unique_ptr<frc::DigitalInput> absolute_pwm) {
     intake_pivot_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
-  }
-
-  void set_intake_pivot_potentiometer(
-      ::std::unique_ptr<frc::AnalogInput> potentiometer) {
     intake_pivot_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
@@ -272,11 +266,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(0));
     // TODO: (niko) change values once robot is wired
-    sensor_reader.set_intake_pivot_encoder(make_encoder(4));
-    sensor_reader.set_intake_pivot_absolute_pwm(
-        make_unique<frc::DigitalInput>(4));
-    sensor_reader.set_intake_pivot_potentiometer(
-        make_unique<frc::AnalogInput>(4));
+    sensor_reader.set_intake_pivot(make_encoder(4),
+                                   make_unique<frc::DigitalInput>(4),
+                                   make_unique<frc::AnalogInput>(4));
     sensor_reader.set_transfer_beambreak(make_unique<frc::DigitalInput>(7));
 
     AddLoop(&sensor_reader_event_loop);
