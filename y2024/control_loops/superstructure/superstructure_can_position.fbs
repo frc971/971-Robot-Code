@@ -23,6 +23,9 @@ table CANPosition {
 
     // CAN Position of the climber falcon
     climber:frc971.control_loops.CANTalonFX (id: 5);
+
+    // CAN Position of the retention roller falcon
+    retention_roller:frc971.control_loops.CANTalonFX (id: 6);
 }
 
 root_type CANPosition;
