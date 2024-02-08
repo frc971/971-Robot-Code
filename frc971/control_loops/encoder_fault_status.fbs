@@ -1,0 +1,11 @@
+namespace frc971.control_loops;
+
+// EncoderFaultStatus table contains boolean for when subsystem is faulted
+
+// TODO (niko): Add a boolean representing whether new date is "stale"
+// meaning that it is currently being ignored due to it
+// coming in slower than the 10 millisecond timeframe
+
+table EncoderFaultStatus {
+  faulted:bool (id : 0);
+}
