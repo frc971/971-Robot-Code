@@ -27,7 +27,7 @@
 #include "aos/init.h"
 #include "aos/json_to_flatbuffer.h"
 
-namespace frc971::analysis {
+namespace aos::analysis {
 namespace {
 
 // All the data corresponding to a single message.
@@ -299,8 +299,8 @@ PyObject *InitModule() {
 }
 
 }  // namespace
-}  // namespace frc971::analysis
+}  // namespace aos::analysis
 
 PyMODINIT_FUNC PyInit_py_log_reader(void) {
-  return frc971::analysis::InitModule();
+  return aos::analysis::InitModule();
 }

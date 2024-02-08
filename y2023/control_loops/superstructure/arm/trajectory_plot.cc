@@ -396,7 +396,7 @@ void Main() {
   }
 
   if (FLAGS_plot) {
-    frc971::analysis::Plotter plotter;
+    aos::analysis::Plotter plotter;
 
     plotter.AddFigure();
     plotter.Title("Input spline");

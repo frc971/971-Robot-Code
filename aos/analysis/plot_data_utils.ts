@@ -1,5 +1,5 @@
 // Provides a plot which handles plotting the plot defined by a
-// frc971.analysis.Plot message.
+// aos.analysis.Plot message.
 import {Plot as PlotFb} from './plot_data_generated';
 import {MessageHandler, TimestampedMessage} from '../../aos/network/www/aos_plotter';
 import {ByteBuffer} from 'flatbuffers';
@@ -28,7 +28,7 @@ export function plotData(conn: Connection, parentDiv: Element) {
   parentDiv.appendChild(plotDiv);
 
   conn.addReliableHandler(
-      '/analysis', 'frc971.analysis.Plot', (data: Uint8Array, time: number) => {
+      '/analysis', 'aos.analysis.Plot', (data: Uint8Array, time: number) => {
         const plotFb = PlotFb.getRootAsPlot(new ByteBuffer(data));
         const name = (!plotFb.title()) ? 'Plot ' + plots.size : plotFb.title();
         const div = document.createElement('div');

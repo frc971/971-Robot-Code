@@ -3,7 +3,7 @@
 // the data to plot is all packaged within a single Plot message. Each Plot
 // message will correspond to a single view/tab on the web-page, and can have
 // multiple figures, each of which can have multiple lines.
-namespace frc971.analysis;
+namespace aos.analysis;
 
 // Position within the web-page to plot a figure at. [0, 0] will be the upper
 // left corner of the allowable places where plots can be put, and should

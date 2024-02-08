@@ -2,11 +2,11 @@
 
 #include "aos/configuration.h"
 
-namespace frc971::analysis {
+namespace aos::analysis {
 
 namespace {
-const char *kDataPath = "frc971/analysis/cpp_plot";
-const char *kConfigPath = "frc971/analysis/plotter.json";
+const char *kDataPath = "aos/analysis/cpp_plot";
+const char *kConfigPath = "aos/analysis/plotter.json";
 }  // namespace
 
 Plotter::Plotter()
@@ -167,4 +167,4 @@ void Plotter::Publish() {
   next_top_ = 0;
 }
 
-}  // namespace frc971::analysis
+}  // namespace aos::analysis

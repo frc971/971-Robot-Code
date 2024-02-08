@@ -5,7 +5,7 @@
 #include "aos/init.h"
 #include "aos/util/file.h"
 
-using frc971::analysis::Plotter;
+using aos::analysis::Plotter;
 
 DEFINE_bool(all, false, "If true, plot *all* the nodes at once");
 DEFINE_bool(bounds, false, "If true, plot the noncausal bounds too.");

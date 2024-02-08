@@ -393,7 +393,7 @@ class PoseFilter : public CeresPoseFilter<double> {
 
     // TODO<Jim>: Could probably still do a bit more work on naming
     // conventions and what is being shown here
-    frc971::analysis::Plotter plotter;
+    aos::analysis::Plotter plotter;
     plotter.AddFigure("bot (imu) position");
     plotter.AddLine(times_, x, "x_hat(0)");
     plotter.AddLine(times_, y, "x_hat(1)");

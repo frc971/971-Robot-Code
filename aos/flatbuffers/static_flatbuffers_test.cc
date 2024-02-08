@@ -796,17 +796,17 @@ TEST_F(StaticFlatbuffersTest, ClearFields) {
 // Try to cover ~all supported scalar/flatbuffer types using JSON convenience
 // functions.
 TEST_F(StaticFlatbuffersTest, FlatbufferTypeCoverage) {
-  VerifyJson<frc971::testing::ConfigurationStatic>("{\n\n}");
+  VerifyJson<aos::testing::ConfigurationStatic>("{\n\n}");
   std::string populated_config =
       aos::util::ReadFileToStringOrDie(aos::testing::ArtifactPath(
           "aos/flatbuffers/test_dir/type_coverage.json"));
   // Get rid of a pesky new line.
   populated_config = populated_config.substr(0, populated_config.size() - 1);
-  VerifyJson<frc971::testing::ConfigurationStatic>(populated_config);
+  VerifyJson<aos::testing::ConfigurationStatic>(populated_config);
 
   // And now play around with mutating the buffer.
-  Builder<frc971::testing::ConfigurationStatic> builder =
-      aos::JsonToStaticFlatbuffer<frc971::testing::ConfigurationStatic>(
+  Builder<aos::testing::ConfigurationStatic> builder =
+      aos::JsonToStaticFlatbuffer<aos::testing::ConfigurationStatic>(
           populated_config);
   ASSERT_TRUE(builder.Verify());
   builder.get()->clear_foo_float();

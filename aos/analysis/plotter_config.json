@@ -2,7 +2,7 @@
   "channels": [
     {
       "name": "/analysis",
-      "type": "frc971.analysis.Plot",
+      "type": "aos.analysis.Plot",
       "max_size": 1000000000
     }
   ],

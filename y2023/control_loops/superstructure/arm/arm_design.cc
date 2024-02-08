@@ -20,7 +20,7 @@ DEFINE_double(goal1, 0.0, "goal position on distal");
 namespace y2023::control_loops::superstructure::arm {
 
 int Main() {
-  frc971::analysis::Plotter plotter;
+  aos::analysis::Plotter plotter;
 
   frc971::control_loops::arm::Dynamics dynamics(kArmConstants);
 
