@@ -90,6 +90,7 @@ double drivetrain_velocity_translate(double in) {
 
 constexpr double kMaxFastEncoderPulsesPerSecond = std::max({
     Values::kMaxDrivetrainEncoderPulsesPerSecond(),
+    Values::kMaxIntakePivotEncoderPulsesPerSecond(),
 });
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
