@@ -61,7 +61,7 @@ void IntToString(int64_t val, reflection::BaseType type, FastStringBuilder *out,
 void FloatToString(double val, reflection::BaseType type,
                    FastStringBuilder *out) {
   if (std::isnan(val)) {
-    out->Append("null");
+    out->Append(std::signbit(val) ? "-nan" : "nan");
     return;
   }
   switch (type) {
@@ -228,6 +228,9 @@ void FieldToString(
         }
 
         out->AppendChar('[');
+        if (!wrap) {
+          out->AppendChar(' ');
+        }
         for (flatbuffers::uoffset_t i = 0; i < vector->size(); ++i) {
           if (i != 0) {
             if (wrap) {
@@ -271,6 +274,8 @@ void FieldToString(
         }
         if (wrap) {
           AddWrapping(out, tree_depth);
+        } else {
+          out->AppendChar(' ');
         }
         out->AppendChar(']');
       } else {
@@ -327,6 +332,9 @@ void ObjectToString(
   }
 
   out->AppendChar('{');
+  if (!wrap) {
+    out->AppendChar(' ');
+  }
   for (const reflection::Field *field : *obj->fields()) {
     // Check whether this object has the field populated (even for structs,
     // which should have all fields populated)
@@ -355,6 +363,8 @@ void ObjectToString(
 
   if (wrap) {
     AddWrapping(out, tree_depth);
+  } else {
+    out->AppendChar(' ');
   }
 
   out->AppendChar('}');

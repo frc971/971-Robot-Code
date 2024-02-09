@@ -11,6 +11,8 @@ namespace aos::testing {
 
 class JsonToFlatbufferTest : public ::testing::Test {
  public:
+  enum class TestReflection { kYes, kNo };
+
   JsonToFlatbufferTest() {}
 
   FlatbufferVector<reflection::Schema> Schema() {
@@ -18,14 +20,23 @@ class JsonToFlatbufferTest : public ::testing::Test {
         ArtifactPath("aos/json_to_flatbuffer.bfbs"));
   }
 
-  bool JsonAndBack(const ::std::string str) { return JsonAndBack(str, str); }
+  // JsonAndBack tests using both the reflection::Schema* as well as the
+  // minireflect tables for both parsing and outputting JSON. However, there are
+  // currently minor discrepencies between how the JSON output works for the two
+  // modes, so some tests must manually disable testing of the
+  // FlatbufferToJson() overload that takes a reflection::Schema*.
+  bool JsonAndBack(const char *str, TestReflection test_reflection_to_json =
+                                        TestReflection::kYes) {
+    return JsonAndBack(str, str, test_reflection_to_json);
+  }
 
-  bool JsonAndBack(const ::std::string in, const ::std::string out) {
-    printf("Testing: %s\n", in.c_str());
+  bool JsonAndBack(
+      const char *in, const char *out,
+      TestReflection test_reflection_to_json = TestReflection::kYes) {
     FlatbufferDetachedBuffer<Configuration> fb_typetable =
-        JsonToFlatbuffer<Configuration>(in.data());
+        JsonToFlatbuffer<Configuration>(in);
     FlatbufferDetachedBuffer<Configuration> fb_reflection =
-        JsonToFlatbuffer(in.data(), FlatbufferType(&Schema().message()));
+        JsonToFlatbuffer(in, FlatbufferType(&Schema().message()));
 
     if (fb_typetable.span().size() == 0) {
       return false;
@@ -36,13 +47,24 @@ class JsonToFlatbufferTest : public ::testing::Test {
 
     const ::std::string back_typetable = FlatbufferToJson(fb_typetable);
     const ::std::string back_reflection = FlatbufferToJson(fb_reflection);
+    const ::std::string back_reflection_reflection =
+        FlatbufferToJson(&Schema().message(), fb_reflection.span().data());
 
-    printf("Back to string via TypeTable: %s\n", back_typetable.c_str());
-    printf("Back to string via reflection: %s\n", back_reflection.c_str());
+    printf("Back to table via TypeTable and to string via TypeTable: %s\n",
+           back_typetable.c_str());
+    printf("Back to table via reflection and to string via TypeTable: %s\n",
+           back_reflection.c_str());
+    if (test_reflection_to_json == TestReflection::kYes) {
+      printf("Back to table via reflection and to string via reflection: %s\n",
+             back_reflection_reflection.c_str());
+    }
 
-    const bool as_expected = back_typetable == out && back_reflection == out;
+    const bool as_expected =
+        back_typetable == out && back_reflection == out &&
+        ((test_reflection_to_json == TestReflection::kNo) ||
+         (back_reflection_reflection == out));
     if (!as_expected) {
-      printf("But expected: %s\n", out.c_str());
+      printf("But expected: %s\n", out);
     }
     return as_expected;
   }
@@ -71,8 +93,10 @@ TEST_F(JsonToFlatbufferTest, Basic) {
   EXPECT_TRUE(JsonAndBack("{ \"foo_long\": 5 }"));
   EXPECT_TRUE(JsonAndBack("{ \"foo_ulong\": 5 }"));
 
-  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 5.0 }"));
-  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 5.0 }"));
+  // TODO(james): Make FlatbufferToJson() always print out integer
+  // floating-point numbers identically.
+  EXPECT_TRUE(JsonAndBack("{ \"foo_float\": 5.0 }", TestReflection::kNo));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_double\": 5.0 }", TestReflection::kNo));
 
   EXPECT_TRUE(JsonAndBack("{ \"foo_enum\": \"None\" }"));
   EXPECT_TRUE(JsonAndBack("{ \"foo_enum\": \"UType\" }"));
@@ -93,7 +117,8 @@ TEST_F(JsonToFlatbufferTest, Structs) {
   EXPECT_TRUE(JsonAndBack(
       "{ \"foo_struct_scalars\": { \"foo_float\": 1.234, \"foo_double\": "
       "4.567, \"foo_int32\": -971, \"foo_uint32\": 4294967294, \"foo_int64\": "
-      "-1030, \"foo_uint64\": 18446744073709551614 } }"));
+      "-1030, \"foo_uint64\": 18446744073709551614 } }",
+      TestReflection::kNo));
   // Confirm that we parse integers into floating point fields correctly.
   EXPECT_TRUE(JsonAndBack(
       "{ \"foo_struct_scalars\": { \"foo_float\": 1, \"foo_double\": "
@@ -101,13 +126,15 @@ TEST_F(JsonToFlatbufferTest, Structs) {
       "5, \"foo_uint64\": 6 } }",
       "{ \"foo_struct_scalars\": { \"foo_float\": 1.0, \"foo_double\": "
       "2.0, \"foo_int32\": 3, \"foo_uint32\": 4, \"foo_int64\": "
-      "5, \"foo_uint64\": 6 } }"));
+      "5, \"foo_uint64\": 6 } }",
+      TestReflection::kNo));
   EXPECT_TRUE(JsonAndBack(
       "{ \"vector_foo_struct_scalars\": [ { \"foo_float\": 1.234, "
       "\"foo_double\": 4.567, \"foo_int32\": -971, \"foo_uint32\": 4294967294, "
       "\"foo_int64\": -1030, \"foo_uint64\": 18446744073709551614 }, { "
       "\"foo_float\": 2.0, \"foo_double\": 4.1, \"foo_int32\": 10, "
-      "\"foo_uint32\": 13, \"foo_int64\": 15, \"foo_uint64\": 18 } ] }"));
+      "\"foo_uint32\": 13, \"foo_int64\": 15, \"foo_uint64\": 18 } ] }",
+      TestReflection::kNo));
   EXPECT_TRUE(
       JsonAndBack("{ \"foo_struct_enum\": { \"foo_enum\": \"UByte\" } }"));
   EXPECT_TRUE(
@@ -160,14 +187,24 @@ TEST_F(JsonToFlatbufferTest, Nan) {
 
 // Tests that unicode is handled correctly
 TEST_F(JsonToFlatbufferTest, Unicode) {
-  EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"\\uF672\" }"));
-  EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"\\uEFEF\" }"));
-  EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"helloworld\\uD83E\\uDE94\" }"));
-  EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"\\uD83C\\uDF32\" }"));
-  EXPECT_FALSE(JsonAndBack("{ \"foo_string\": \"\\uP890\" }"));
-  EXPECT_FALSE(JsonAndBack("{ \"foo_string\": \"\\u!FA8\" }"));
-  EXPECT_FALSE(JsonAndBack("{ \"foo_string\": \"\\uF89\" }"));
-  EXPECT_FALSE(JsonAndBack("{ \"foo_string\": \"\\uD83C\" }"));
+  // The reflection-based FlatbufferToJson outputs actual unicode rather than
+  // escaped code-points.
+  EXPECT_TRUE(
+      JsonAndBack("{ \"foo_string\": \"\\uF672\" }", TestReflection::kNo));
+  EXPECT_TRUE(
+      JsonAndBack("{ \"foo_string\": \"\\uEFEF\" }", TestReflection::kNo));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"helloworld\\uD83E\\uDE94\" }",
+                          TestReflection::kNo));
+  EXPECT_TRUE(JsonAndBack("{ \"foo_string\": \"\\uD83C\\uDF32\" }",
+                          TestReflection::kNo));
+  EXPECT_FALSE(
+      JsonAndBack("{ \"foo_string\": \"\\uP890\" }", TestReflection::kNo));
+  EXPECT_FALSE(
+      JsonAndBack("{ \"foo_string\": \"\\u!FA8\" }", TestReflection::kNo));
+  EXPECT_FALSE(
+      JsonAndBack("{ \"foo_string\": \"\\uF89\" }", TestReflection::kNo));
+  EXPECT_FALSE(
+      JsonAndBack("{ \"foo_string\": \"\\uD83C\" }", TestReflection::kNo));
 }
 
 // Tests that we can handle decimal points.
@@ -246,15 +283,19 @@ TEST_F(JsonToFlatbufferTest, Array) {
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_ulong\": [ 9, 7, 1 ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_ulong\": [  ] }"));
 
-  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ] }",
+                          TestReflection::kNo));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [  ] }"));
-  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+  EXPECT_TRUE(JsonAndBack("{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
+                          TestReflection::kNo));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_double\": [  ] }"));
 
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_float\": [ 9, 7, 1 ] }",
-                          "{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ] }"));
+                          "{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ] }",
+                          TestReflection::kNo));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_double\": [ 9, 7, 1 ] }",
-                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
+                          TestReflection::kNo));
 
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_string\": [ \"bar\", \"baz\" ] }"));
   EXPECT_TRUE(JsonAndBack("{ \"vector_foo_string\": [  ] }"));
@@ -295,7 +336,8 @@ TEST_F(JsonToFlatbufferTest, CStyleComments) {
   /* foo */
   "vector_foo_double": [ 9, 7, 1 ] /* foo */
 } /* foo */)",
-                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
+                          TestReflection::kNo));
 }
 
 // Tests that C++ style comments get stripped.
@@ -304,7 +346,8 @@ TEST_F(JsonToFlatbufferTest, CppStyleComments) {
   // foo
   "vector_foo_double": [ 9, 7, 1 ] // foo
 } // foo)",
-                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
+                          TestReflection::kNo));
 }
 
 // Tests that mixed style comments get stripped.
@@ -316,7 +359,8 @@ TEST_F(JsonToFlatbufferTest, MixedStyleComments) {
 }
 // foo
 /* foo */)",
-                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+                          "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
+                          TestReflection::kNo));
 }
 
 // Tests that multiple arrays get properly handled.
@@ -325,7 +369,8 @@ TEST_F(JsonToFlatbufferTest, MultipleArrays) {
       JsonAndBack("{ \"vector_foo_float\": [ 9, 7, 1 ], \"vector_foo_double\": "
                   "[ 9, 7, 1 ] }",
                   "{ \"vector_foo_float\": [ 9.0, 7.0, 1.0 ], "
-                  "\"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }"));
+                  "\"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
+                  TestReflection::kNo));
 }
 
 // Tests that multiple arrays get properly handled.
