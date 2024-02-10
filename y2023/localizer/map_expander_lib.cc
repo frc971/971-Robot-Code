@@ -1,6 +1,6 @@
 #include "y2023/localizer/map_expander_lib.h"
 
-#include "y2023/localizer/utils.h"
+#include "frc971/vision/target_map_utils.h"
 
 namespace y2023::localizer {
 namespace {
