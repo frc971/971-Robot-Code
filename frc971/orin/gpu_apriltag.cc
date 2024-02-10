@@ -36,7 +36,7 @@ namespace frc971::apriltag {
 // Set max age on image for processing at 20 ms.  For 60Hz, we should be
 // processing at least every 16.7ms
 constexpr aos::monotonic_clock::duration kMaxImageAge =
-    std::chrono::milliseconds(20);
+    std::chrono::milliseconds(50);
 
 namespace chrono = std::chrono;
 
@@ -66,6 +66,10 @@ ApriltagDetector::ApriltagDetector(
   extrinsics_ = frc971::vision::CameraExtrinsics(calibration_);
   intrinsics_ = frc971::vision::CameraIntrinsics(calibration_);
   dist_coeffs_ = frc971::vision::CameraDistCoeffs(calibration_);
+
+  projection_matrix_ = cv::Mat::zeros(3, 4, CV_64F);
+  intrinsics_.rowRange(0, 3).colRange(0, 3).copyTo(
+      projection_matrix_.rowRange(0, 3).colRange(0, 3));
 }
 
 ApriltagDetector::~ApriltagDetector() {
