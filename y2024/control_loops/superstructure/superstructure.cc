@@ -33,7 +33,7 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
       transfer_goal_(TransferRollerGoal::NONE),
       intake_pivot_(
           robot_constants_->common()->intake_pivot(),
-          robot_constants_->robot()->intake_constants()->intake_pivot_zero()) {
+          robot_constants_->robot()->intake_constants()->zeroing_constants()) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 

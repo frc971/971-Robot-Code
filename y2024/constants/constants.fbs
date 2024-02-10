@@ -36,9 +36,18 @@ table IntakePivotSetPoints {
   retracted:double (id: 1);
 }
 
-// Intake Constants
-table IntakeConstants {
-  intake_pivot_zero:frc971.zeroing.PotAndAbsoluteEncoderZeroingConstants (id: 0);
+// Set points for the climber in meters when:
+// fully extended, which represents meters for when ClimberGoal is FULL_EXTEND
+// partially extended, which represents meters for when ClimberGoal is HALF_EXTEND
+// and retracted, which represents meters for when ClimberGoal is RETRACT
+table ClimberSetPoints {
+  full_extend:double (id: 0);
+  half_extend:double (id: 1);
+  retract:double (id: 2);
+}
+
+table PotAndAbsEncoderConstants {
+  zeroing_constants:frc971.zeroing.PotAndAbsoluteEncoderZeroingConstants (id: 0);
   potentiometer_offset:double (id: 1);
 }
 
@@ -60,7 +69,9 @@ table TransferRollerVoltages {
 }
 
 table RobotConstants {
-  intake_constants:IntakeConstants (id: 0);
+  intake_constants:PotAndAbsEncoderConstants (id: 0);
+  climber_constants:PotAndAbsEncoderConstants (id: 1);
+
 }
 
 // Common table for constants unrelated to the robot
@@ -73,6 +84,8 @@ table Common {
   drivetrain:frc971.control_loops.drivetrain.fbs.DrivetrainConfig (id: 5);
   current_limits:CurrentLimits (id: 6);
   transfer_roller_voltages:TransferRollerVoltages (id: 7);
+  climber:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 8);
+  climber_set_points:ClimberSetPoints (id: 9);
 }
 
 table Constants {
