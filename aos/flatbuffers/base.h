@@ -277,6 +277,19 @@ class SpanAllocator : public Allocator {
   size_t allocated_size_ = 0;
 };
 
+// Allocates and owns a fixed-size memory buffer on the stack.
+//
+// This provides a convenient Allocator for use with the aos::fbs::Builder
+// in realtime code instead of trying to use the VectorAllocator.
+template <std::size_t N>
+class FixedStackAllocator : public SpanAllocator {
+ public:
+  FixedStackAllocator() : SpanAllocator({buffer_, sizeof(buffer_)}) {}
+
+ private:
+  uint8_t buffer_[N];
+};
+
 namespace internal {
 std::ostream &DebugBytes(std::span<const uint8_t> span, std::ostream &os);
 inline void ClearSpan(std::span<uint8_t> span) {
