@@ -22,7 +22,7 @@ class SplineTest : public ::testing::Test {
  public:
   static void SetUpTestSuite() {
     if (FLAGS_plot) {
-      plotter_ = std::make_unique<analysis::Plotter>();
+      plotter_ = std::make_unique<aos::analysis::Plotter>();
     }
   }
 
@@ -52,14 +52,14 @@ class SplineTest : public ::testing::Test {
     }
   }
 
-  static std::unique_ptr<analysis::Plotter> plotter_;
+  static std::unique_ptr<aos::analysis::Plotter> plotter_;
 
   ::Eigen::Matrix<double, 2, 4> control_points_;
   NSpline<4> spline4_;
   NSpline<6> spline6_;
 };
 
-std::unique_ptr<analysis::Plotter> SplineTest::plotter_;
+std::unique_ptr<aos::analysis::Plotter> SplineTest::plotter_;
 
 // Tests that the derivitives of xy integrate back up to the position.
 TEST_F(SplineTest, XYIntegral) {

@@ -8,7 +8,7 @@
 // each plot.
 int main(int argc, char *argv[]) {
   aos::InitGoogle(&argc, &argv);
-  frc971::analysis::Plotter plotter;
+  aos::analysis::Plotter plotter;
   plotter.Title("TITLE!");
   plotter.AddFigure("Fig Foo");
   plotter.ShareXAxis(true);

@@ -1,5 +1,5 @@
-#ifndef FRC971_ANALYSIS_IN_PROCESS_PLOTTER_H_
-#define FRC971_ANALYSIS_IN_PROCESS_PLOTTER_H_
+#ifndef AOS_ANALYSIS_IN_PROCESS_PLOTTER_H_
+#define AOS_ANALYSIS_IN_PROCESS_PLOTTER_H_
 
 #include <vector>
 
@@ -7,7 +7,7 @@
 #include "aos/events/simulated_event_loop.h"
 #include "aos/network/web_proxy.h"
 
-namespace frc971::analysis {
+namespace aos::analysis {
 
 // This class wraps the WebProxy class to provide a convenient C++ interface to
 // dynamically generate plots.
@@ -95,5 +95,5 @@ class Plotter {
   std::vector<ColorWheelColor> color_wheel_;
 };
 
-}  // namespace frc971::analysis
-#endif  // FRC971_ANALYSIS_IN_PROCESS_PLOTTER_H_
+}  // namespace aos::analysis
+#endif  // AOS_ANALYSIS_IN_PROCESS_PLOTTER_H_

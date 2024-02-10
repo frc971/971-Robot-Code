@@ -3,7 +3,7 @@
 // other sources.
 
 // Use a namespace that has no overlap with the aos::fbs namespace of the underlying code.
-namespace frc971.testing;
+namespace aos.testing;
 
 enum BaseType : byte {
     None,
