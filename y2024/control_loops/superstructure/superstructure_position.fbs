@@ -18,6 +18,10 @@ table Position {
 
     // True means there is a game piece in the transfer.
     transfer_beambreak:bool (id: 4);
+
+    // Values of the encoder and potentiometer at the climber.
+    // Zero is fully retracted, positive is extended upward.
+    climber:frc971.PotAndAbsolutePosition (id: 5);
 }
 
 root_type Position;

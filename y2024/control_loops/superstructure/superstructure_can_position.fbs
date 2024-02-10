@@ -20,6 +20,9 @@ table CANPosition {
 
     // CAN Position of the transfer roller falcon
     transfer_roller:frc971.control_loops.CANTalonFX (id: 4);
+
+    // CAN Position of the climber falcon
+    climber:frc971.control_loops.CANTalonFX (id: 5);
 }
 
 root_type CANPosition;

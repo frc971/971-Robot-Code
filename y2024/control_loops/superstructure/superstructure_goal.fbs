@@ -25,13 +25,21 @@ enum TransferRollerGoal : ubyte {
     TRANSFER_OUT = 2,
 }
 
+// Represents goal for climber
+// FULL_EXTEND is for fully extending the climber
+// HALF_EXTEND is for partially extending the climber
+// RETRACT is for retracting the climber
+enum ClimberGoal : ubyte {
+    FULL_EXTEND = 0,
+    HALF_EXTEND = 1,
+    RETRACT = 2,
+}
+
 table Goal {
     intake_roller_goal:IntakeRollerGoal (id: 0);
     intake_pivot_goal:IntakePivotGoal (id: 1);
-
     catapult_goal:frc971.control_loops.catapult.CatapultGoal (id: 2);
-    
     transfer_roller_goal:TransferRollerGoal (id: 3);
+    climber_goal:ClimberGoal (id: 4);
 }
-
 root_type Goal;
