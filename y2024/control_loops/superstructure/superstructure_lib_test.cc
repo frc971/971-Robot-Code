@@ -12,6 +12,7 @@
 #include "frc971/zeroing/absolute_encoder.h"
 #include "y2024/constants/simulated_constants_sender.h"
 #include "y2024/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2024/control_loops/superstructure/climber/climber_plant.h"
 #include "y2024/control_loops/superstructure/intake_pivot/intake_pivot_plant.h"
 #include "y2024/control_loops/superstructure/superstructure.h"
 
@@ -72,10 +73,34 @@ class SuperstructureSimulation {
                 ->intake_constants()
                 ->zeroing_constants()
                 ->measured_absolute_position(),
-            dt_) {
+            dt_),
+        climber_(new CappedTestPlant(climber::MakeClimberPlant()),
+                 PositionSensorSimulator(simulated_robot_constants->robot()
+                                             ->climber_constants()
+                                             ->zeroing_constants()
+                                             ->one_revolution_distance()),
+                 {.subsystem_params =
+                      {simulated_robot_constants->common()->climber(),
+                       simulated_robot_constants->robot()
+                           ->climber_constants()
+                           ->zeroing_constants()},
+                  .potentiometer_offset = simulated_robot_constants->robot()
+                                              ->climber_constants()
+                                              ->potentiometer_offset()},
+                 frc971::constants::Range::FromFlatbuffer(
+                     simulated_robot_constants->common()->climber()->range()),
+                 simulated_robot_constants->robot()
+                     ->climber_constants()
+                     ->zeroing_constants()
+                     ->measured_absolute_position(),
+                 dt_) {
     intake_pivot_.InitializePosition(
         frc971::constants::Range::FromFlatbuffer(
             simulated_robot_constants->common()->intake_pivot()->range())
+            .middle());
+    climber_.InitializePosition(
+        frc971::constants::Range::FromFlatbuffer(
+            simulated_robot_constants->common()->climber()->range())
             .middle());
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
@@ -87,6 +112,9 @@ class SuperstructureSimulation {
             intake_pivot_.Simulate(
                 superstructure_output_fetcher_->intake_pivot_voltage(),
                 superstructure_status_fetcher_->intake_pivot_state());
+
+            climber_.Simulate(superstructure_output_fetcher_->climber_voltage(),
+                              superstructure_status_fetcher_->climber_state());
           }
           first_ = false;
           SendPositionMessage();
@@ -104,11 +132,17 @@ class SuperstructureSimulation {
     flatbuffers::Offset<frc971::PotAndAbsolutePosition> intake_pivot_offset =
         intake_pivot_.encoder()->GetSensorValues(&intake_pivot_builder);
 
+    frc971::PotAndAbsolutePosition::Builder climber_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> climber_offset =
+        climber_.encoder()->GetSensorValues(&climber_builder);
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
 
     position_builder.add_transfer_beambreak(transfer_beambreak_);
     position_builder.add_intake_pivot(intake_pivot_offset);
 
+    position_builder.add_climber(climber_offset);
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
   }
@@ -118,6 +152,8 @@ class SuperstructureSimulation {
   }
 
   PotAndAbsoluteEncoderSimulator *intake_pivot() { return &intake_pivot_; }
+
+  PotAndAbsoluteEncoderSimulator *climber() { return &climber_; }
 
  private:
   ::aos::EventLoop *event_loop_;
@@ -131,6 +167,8 @@ class SuperstructureSimulation {
   bool transfer_beambreak_;
 
   PotAndAbsoluteEncoderSimulator intake_pivot_;
+  PotAndAbsoluteEncoderSimulator climber_;
+
   bool first_ = true;
 };
 
@@ -210,6 +248,27 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     if (superstructure_status_fetcher_->intake_roller_state() ==
         IntakeRollerState::NONE) {
       EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage(), 0.0);
+    }
+
+    if (superstructure_goal_fetcher_->has_climber_goal()) {
+      double set_point =
+          simulated_robot_constants_->common()->climber_set_points()->retract();
+
+      if (superstructure_goal_fetcher_->climber_goal() ==
+          ClimberGoal::FULL_EXTEND) {
+        set_point = simulated_robot_constants_->common()
+                        ->climber_set_points()
+                        ->full_extend();
+      } else if (superstructure_goal_fetcher_->climber_goal() ==
+                 ClimberGoal::HALF_EXTEND) {
+        set_point = simulated_robot_constants_->common()
+                        ->climber_set_points()
+                        ->half_extend();
+      }
+
+      EXPECT_NEAR(set_point,
+                  superstructure_status_fetcher_->climber_state()->position(),
+                  0.001);
     }
   }
 
@@ -294,12 +353,11 @@ TEST_F(SuperstructureTest, DoesNothing) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-
     goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
+    goal_builder.add_climber_goal(ClimberGoal::RETRACT);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
-
   RunFor(chrono::seconds(10));
 
   EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
@@ -314,13 +372,17 @@ TEST_F(SuperstructureTest, ReachesGoal) {
       frc971::constants::Range::FromFlatbuffer(
           simulated_robot_constants_->common()->intake_pivot()->range())
           .middle());
+  superstructure_plant_.climber()->InitializePosition(
+      frc971::constants::Range::FromFlatbuffer(
+          simulated_robot_constants_->common()->climber()->range())
+          .lower);
   WaitUntilZeroed();
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-
     goal_builder.add_intake_pivot_goal(IntakePivotGoal::EXTENDED);
+    goal_builder.add_climber_goal(ClimberGoal::FULL_EXTEND);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -343,8 +405,8 @@ TEST_F(SuperstructureTest, SaturationTest) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-
     goal_builder.add_intake_pivot_goal(IntakePivotGoal::EXTENDED);
+    goal_builder.add_climber_goal(ClimberGoal::FULL_EXTEND);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -357,8 +419,8 @@ TEST_F(SuperstructureTest, SaturationTest) {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-
     goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
+    goal_builder.add_climber_goal(ClimberGoal::RETRACT);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -375,12 +437,74 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 
   EXPECT_EQ(PotAndAbsoluteEncoderSubsystem::State::RUNNING,
             superstructure_.intake_pivot().state());
+
+  EXPECT_EQ(PotAndAbsoluteEncoderSubsystem::State::RUNNING,
+            superstructure_.climber().state());
 }
 
 // Tests that running disabled works
 TEST_F(SuperstructureTest, DisableTest) {
   RunFor(chrono::seconds(2));
   CheckIfZeroed();
+}
+
+// Tests Climber in multiple scenarios
+TEST_F(SuperstructureTest, ClimberTest) {
+  SetEnabled(true);
+  WaitUntilZeroed();
+
+  superstructure_plant_.climber()->InitializePosition(
+      frc971::constants::Range::FromFlatbuffer(
+          simulated_robot_constants_->common()->climber()->range())
+          .middle());
+
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_climber_goal(ClimberGoal::FULL_EXTEND);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_climber_goal(ClimberGoal::HALF_EXTEND);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_climber_goal(ClimberGoal::RETRACT);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
 }
 
 // Tests intake and transfer in multiple scenarios

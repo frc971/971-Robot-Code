@@ -34,6 +34,10 @@ class Superstructure
     return intake_pivot_;
   }
 
+  inline const PotAndAbsoluteEncoderSubsystem &climber() const {
+    return climber_;
+  }
+
   double robot_velocity() const;
 
  protected:
@@ -53,7 +57,7 @@ class Superstructure
 
   TransferRollerGoal transfer_goal_;
   PotAndAbsoluteEncoderSubsystem intake_pivot_;
-
+  PotAndAbsoluteEncoderSubsystem climber_;
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 
