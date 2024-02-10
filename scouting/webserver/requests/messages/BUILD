@@ -11,6 +11,8 @@ FILE_NAMES = (
     "request_all_notes_response",
     "request_2023_data_scouting",
     "request_2023_data_scouting_response",
+    "request_2024_data_scouting",
+    "request_2024_data_scouting_response",
     "submit_notes",
     "submit_notes_response",
     "request_notes_for_team",
@@ -29,8 +31,12 @@ FILE_NAMES = (
     "submit_driver_ranking_response",
     "submit_actions",
     "submit_actions_response",
+    "submit_2024_actions",
+    "submit_2024_actions_response",
     "delete_2023_data_scouting",
     "delete_2023_data_scouting_response",
+    "delete_2024_data_scouting",
+    "delete_2024_data_scouting_response",
 )
 
 filegroup(

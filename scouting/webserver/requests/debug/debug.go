@@ -10,8 +10,10 @@ import (
 	"net/http"
 
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2023_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/delete_2024_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/error_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2023_data_scouting_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_2024_data_scouting_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_driver_rankings_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_matches_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_all_notes_response"
@@ -19,6 +21,7 @@ import (
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_notes_for_team_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_pit_images_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/request_shift_schedule_response"
+	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_2024_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_actions_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_driver_ranking_response"
 	"github.com/frc971/971-Robot-Code/scouting/webserver/requests/messages/submit_notes_response"
@@ -127,6 +130,12 @@ func Request2023DataScouting(server string, requestBytes []byte) (*request_2023_
 		request_2023_data_scouting_response.GetRootAsRequest2023DataScoutingResponse)
 }
 
+func Request2024DataScouting(server string, requestBytes []byte) (*request_2024_data_scouting_response.Request2024DataScoutingResponseT, error) {
+	return sendMessage[request_2024_data_scouting_response.Request2024DataScoutingResponseT](
+		server+"/requests/request/2024_data_scouting", requestBytes,
+		request_2024_data_scouting_response.GetRootAsRequest2024DataScoutingResponse)
+}
+
 func SubmitNotes(server string, requestBytes []byte) (*submit_notes_response.SubmitNotesResponseT, error) {
 	return sendMessage[submit_notes_response.SubmitNotesResponseT](
 		server+"/requests/submit/submit_notes", requestBytes,
@@ -175,6 +184,12 @@ func SubmitDriverRanking(server string, requestBytes []byte) (*submit_driver_ran
 		submit_driver_ranking_response.GetRootAsSubmitDriverRankingResponse)
 }
 
+func Submit2024Actions(server string, requestBytes []byte) (*submit_2024_actions_response.Submit2024ActionsResponseT, error) {
+	return sendMessage[submit_2024_actions_response.Submit2024ActionsResponseT](
+		server+"/requests/submit/submit_2024_actions", requestBytes,
+		submit_2024_actions_response.GetRootAsSubmit2024ActionsResponse)
+}
+
 func SubmitActions(server string, requestBytes []byte) (*submit_actions_response.SubmitActionsResponseT, error) {
 	return sendMessage[submit_actions_response.SubmitActionsResponseT](
 		server+"/requests/submit/submit_actions", requestBytes,
@@ -191,4 +206,10 @@ func Delete2023DataScouting(server string, requestBytes []byte) (*delete_2023_da
 	return sendMessage[delete_2023_data_scouting_response.Delete2023DataScoutingResponseT](
 		server+"/requests/delete/delete_2023_data_scouting", requestBytes,
 		delete_2023_data_scouting_response.GetRootAsDelete2023DataScoutingResponse)
+}
+
+func Delete2024DataScouting(server string, requestBytes []byte) (*delete_2024_data_scouting_response.Delete2024DataScoutingResponseT, error) {
+	return sendMessage[delete_2024_data_scouting_response.Delete2024DataScoutingResponseT](
+		server+"/requests/delete/delete_2024_data_scouting", requestBytes,
+		delete_2024_data_scouting_response.GetRootAsDelete2024DataScoutingResponse)
 }
