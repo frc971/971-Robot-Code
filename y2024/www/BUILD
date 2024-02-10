@@ -11,12 +11,11 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-#Need to add 2024 field png
 genrule(
     name = "2024_field_png",
-    srcs = ["//third_party/y2023/field:pictures"],
+    srcs = ["//third_party/y2024/field:pictures"],
     outs = ["2024.png"],
-    cmd = "cp third_party/y2023/field/2023.png $@",
+    cmd = "cp third_party/y2024/field/2024.png $@",
 )
 
 ts_project(

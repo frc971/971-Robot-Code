@@ -322,6 +322,7 @@ sh_binary(
     data = [
         ":aos_config",
         "//aos/network:log_web_proxy_main",
+        "//y2024/www:field_main_bundle.min.js",
         "//y2024/www:files",
     ],
     target_compatible_with = ["@platforms//os:linux"],
