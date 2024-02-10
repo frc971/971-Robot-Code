@@ -20,16 +20,15 @@ except gflags.DuplicateFlagError:
 kIntakePivot = angular_system.AngularSystemParams(
     name='IntakePivot',
     motor=control_loop.KrakenFOC(),
-    # TODO(Niko): Change gear ratios when we have all of them
-    G=0.02,
-    J=0.34,
+    G=(16.0 / 60.0) * (18.0 / 62.0) * (18.0 / 62.0) * (15.0 / 24.0),
+    J=0.34,  # Borrowed from 2022, 0.035 seems too low
     q_pos=0.40,
     q_vel=20.0,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
     kalman_q_voltage=4.0,
     kalman_r_position=0.05,
-    radius=13 * 0.0254)
+    radius=6.85 * 0.0254)
 
 
 def main(argv):
