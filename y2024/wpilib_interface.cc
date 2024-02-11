@@ -81,6 +81,10 @@ double climber_pot_translate(double voltage) {
   return voltage * Values::kClimberPotMetersPerVolt();
 }
 
+double extend_pot_translate(double voltage) {
+  return voltage * Values::kExtendPotMetersPerVolt();
+}
+
 double drivetrain_velocity_translate(double in) {
   return (((1.0 / in) / Values::kDrivetrainCyclesPerRevolution()) *
           (2.0 * M_PI)) *
@@ -92,6 +96,7 @@ constexpr double kMaxFastEncoderPulsesPerSecond = std::max({
     Values::kMaxDrivetrainEncoderPulsesPerSecond(),
     Values::kMaxIntakePivotEncoderPulsesPerSecond(),
     Values::kMaxClimberEncoderPulsesPerSecond(),
+    Values::kMaxExtendEncoderPulsesPerSecond(),
 });
 static_assert(kMaxFastEncoderPulsesPerSecond <= 1300000,
               "fast encoders are too fast");
@@ -144,6 +149,14 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                    climber_pot_translate, true,
                    robot_constants_->robot()
                        ->climber_constants()
+                       ->potentiometer_offset());
+
+      CopyPosition(extend_encoder_, builder->add_extend(),
+                   Values::kClimberEncoderCountsPerRevolution(),
+                   Values::kClimberEncoderMetersPerRevolution(),
+                   extend_pot_translate, true,
+                   robot_constants_->robot()
+                       ->extend_constants()
                        ->potentiometer_offset());
 
       builder->set_transfer_beambreak(transfer_beam_break_->Get());
@@ -224,6 +237,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     climber_encoder_.set_potentiometer(::std::move(potentiometer));
   }
 
+  void set_extend(::std::unique_ptr<frc::Encoder> encoder,
+                  ::std::unique_ptr<frc::DigitalInput> absolute_pwm,
+                  ::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    fast_encoder_filter_.Add(encoder.get());
+    extend_encoder_.set_encoder(::std::move(encoder));
+    extend_encoder_.set_absolute_pwm(::std::move(absolute_pwm));
+    extend_encoder_.set_potentiometer(::std::move(potentiometer));
+  }
+
  private:
   const Constants *robot_constants_;
 
@@ -239,6 +261,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   frc971::wpilib::AbsoluteEncoder intake_pivot_encoder_;
   frc971::wpilib::AbsoluteEncoderAndPotentiometer climber_encoder_;
+  frc971::wpilib::AbsoluteEncoderAndPotentiometer extend_encoder_;
 
   frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
 };
@@ -288,6 +311,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                               make_unique<frc::DigitalInput>(5),
                               make_unique<frc::AnalogInput>(5));
 
+    sensor_reader.set_extend(make_encoder(6), make_unique<frc::DigitalInput>(6),
+                             make_unique<frc::AnalogInput>(6));
+
     AddLoop(&sensor_reader_event_loop);
 
     // Thread 4.
@@ -336,6 +362,16 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->climber_stator_current_limit(),
         current_limits->climber_supply_current_limit());
 
+    std::shared_ptr<TalonFX> extend = std::make_shared<TalonFX>(
+        8, false, "Drivetrain Bus", &rio_signal_registry,
+        current_limits->extend_stator_current_limit(),
+        current_limits->extend_supply_current_limit());
+
+    std::shared_ptr<TalonFX> extend_roller = std::make_shared<TalonFX>(
+        9, false, "Drivetrain Bus", &rio_signal_registry,
+        current_limits->extend_roller_stator_current_limit(),
+        current_limits->extend_roller_supply_current_limit());
+
     ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
         constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
     ctre::phoenix::platform::can::CANComm_SetTxSchedPriority(
@@ -361,7 +397,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       canivore_talonfxs.push_back(talonfx);
     }
 
-    for (auto talonfx : {intake_roller, transfer_roller, climber}) {
+    for (auto talonfx :
+         {intake_roller, transfer_roller, climber, extend, extend_roller}) {
       rio_talonfxs.push_back(talonfx);
     }
 
@@ -427,7 +464,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     frc971::wpilib::CANSensorReader rio_can_sensor_reader(
         &rio_sensor_reader_event_loop, std::move(rio_signal_registry),
         rio_talonfxs,
-        [&intake_roller, &transfer_roller, &climber,
+        [&intake_roller, &transfer_roller, &climber, &extend, &extend_roller,
          &superstructure_rio_position_sender](
             ctre::phoenix::StatusCode status) {
           aos::Sender<y2024::control_loops::superstructure::CANPositionStatic>::
@@ -442,6 +479,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
               control_loops::drivetrain::kHighOutputRatio);
           climber->SerializePosition(
               superstructure_can_builder->add_climber(),
+              control_loops::drivetrain::kHighOutputRatio);
+          extend->SerializePosition(superstructure_can_builder->add_extend(),
+                                    superstructure::extend::kOutputRatio);
+          extend_roller->SerializePosition(
+              superstructure_can_builder->add_extend_roller(),
               control_loops::drivetrain::kHighOutputRatio);
 
           superstructure_can_builder->set_timestamp(
@@ -474,6 +516,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                   ->second->WriteVoltage(output.transfer_roller_voltage());
               talonfx_map.find("climber")->second->WriteVoltage(
                   output.climber_voltage());
+              talonfx_map.find("extend")->second->WriteVoltage(
+                  output.extend_voltage());
+              talonfx_map.find("extend_roller")
+                  ->second->WriteVoltage(output.extend_roller_voltage());
             });
 
     can_drivetrain_writer.set_talonfxs({right_front, right_back},
@@ -483,6 +529,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     can_superstructure_writer.add_talonfx("intake_roller", intake_roller);
     can_superstructure_writer.add_talonfx("transfer_roller", transfer_roller);
     can_superstructure_writer.add_talonfx("climber", climber);
+    can_superstructure_writer.add_talonfx("extend", extend);
+    can_superstructure_writer.add_talonfx("extend_roller", extend_roller);
 
     can_output_event_loop.MakeWatcher(
         "/roborio", [&can_drivetrain_writer, &can_superstructure_writer](

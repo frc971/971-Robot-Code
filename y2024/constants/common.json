@@ -51,7 +51,11 @@
     "drivetrain_supply_current_limit": 35,
     "drivetrain_stator_current_limit": 60,
     "climber_supply_current_limit": 35,
-    "climber_stator_current_limit": 60
+    "climber_stator_current_limit": 300,
+    "extend_supply_current_limit": 35,
+    "extend_stator_current_limit": 300,
+    "extend_roller_supply_current_limit": 35,
+    "extend_roller_stator_current_limit": 60
   },
   "transfer_roller_voltages": {
     "transfer_in": 12.0,

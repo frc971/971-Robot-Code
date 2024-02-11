@@ -71,6 +71,10 @@ table CurrentLimits {
   drivetrain_stator_current_limit:double (id: 7);
   climber_supply_current_limit:double (id: 8);
   climber_stator_current_limit:double (id: 9);
+  extend_supply_current_limit:double (id: 10);
+  extend_stator_current_limit:double (id: 11);
+  extend_roller_supply_current_limit:double (id: 12);
+  extend_roller_stator_current_limit:double (id: 13);
 }
 
 table TransferRollerVoltages {
