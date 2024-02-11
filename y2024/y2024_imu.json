@@ -160,6 +160,22 @@
       "max_size": 200
     },
     {
+      "name": "/imu",
+      "type": "frc971.imu.DualImu",
+      "source_node": "imu",
+      "frequency": 1100,
+      "num_senders": 1,
+      "max_size": 496
+    },
+    {
+      "name": "/imu",
+      "type": "frc971.imu.CanTranslatorStatus",
+      "source_node": "imu",
+      "frequency": 1000,
+      "num_senders": 1,
+      "max_size": 200
+    },
+    {
       "name": "/can/cana",
       "type": "frc971.can_logger.CanFrame",
       "source_node": "imu",
@@ -256,6 +272,17 @@
     {
       "name": "can_logger",
       "executable_name": "can_logger",
+      "nodes": [
+        "imu"
+      ]
+    },
+    // TODO(max): Update the channel value with whatever channel the IMU is on.
+    {
+      "name": "can_translator",
+      "executable_name": "can_translator",
+      "args": [
+          "--channel=/can/canb"
+      ],
       "nodes": [
         "imu"
       ]
