@@ -51,6 +51,9 @@ table CameraCalibration {
 
   // The camera number.  This may be empty, "0", or "1".
   camera_number:int (id: 8);
+
+  // The reprojection error associated with the camera calibration.
+  reprojection_error:float (id: 9);
 }
 
 // Calibration information for all the cameras we know about.

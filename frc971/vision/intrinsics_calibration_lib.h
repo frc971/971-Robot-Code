@@ -43,7 +43,7 @@ class IntrinsicsCalibration {
                    aos::realtime_clock::time_point realtime_now,
                    std::string_view cpu_type, uint16_t cpu_number,
                    std::string_view camera_channel, std::string_view camera_id,
-                   uint16_t team_number);
+                   uint16_t team_number, double reprojection_error);
 
  private:
   static constexpr double kDeltaRThreshold = M_PI / 6.0;
