@@ -117,6 +117,6 @@ constants_json(
 
 constants_json(
     name = "test_constants_json",
-    src = ":constants_unvalidated.json",
+    src = ":test_constants_unvalidated.json",
     out = "test_constants.json",
 )

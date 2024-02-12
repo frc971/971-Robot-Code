@@ -246,6 +246,14 @@
       "max_size": 200
     },
     {
+      "name": "/localizer",
+      "type": "y2024.localizer.Status",
+      "source_node": "imu",
+      "frequency": 1600,
+      "max_size": 1600,
+      "num_senders": 2
+    },
+    {
       "name": "/imu/constants",
       "type": "y2024.Constants",
       "source_node": "imu",
@@ -280,6 +288,14 @@
       "args": [
         "--rt_priority=16"
       ],
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "localizer",
+      "executable_name": "localizer_main",
+      "user": "pi",
       "nodes": [
         "imu"
       ]

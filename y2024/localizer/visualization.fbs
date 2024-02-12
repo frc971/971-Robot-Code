@@ -1,0 +1,47 @@
+include "y2024/localizer/status.fbs";
+
+namespace y2024.localizer;
+
+attribute "static_length";
+
+table Measurement {
+  heading:double (id: 0);
+  distance:double (id: 1);
+  skew:double (id: 2);
+}
+
+table TargetEstimateDebug {
+  camera:uint8 (id: 0);
+  camera_x:double (id: 1);
+  camera_y:double (id: 2);
+  camera_theta:double (id: 3);
+  implied_robot_x:double (id: 4);
+  implied_robot_y:double (id: 5);
+  implied_robot_theta:double (id: 6);
+  accepted:bool (id: 7);
+  rejection_reason:RejectionReason  (id: 8);
+  // Image age (more human-readable than trying to interpret raw nanosecond
+  // values).
+  image_age_sec:double (id: 9);
+  // Time at which the image was captured.
+  image_monotonic_timestamp_ns:uint64 (id: 10);
+  // April tag ID used for this image detection.
+  april_tag:uint (id: 11);
+  // If the image was accepted, the total correction that occurred as a result.
+  // These numbers will be equal to the value after the correction - the value
+  // before.
+  correction_x: double (id: 12);
+  correction_y: double (id: 13);
+  correction_theta: double (id: 14);
+  // The expected observation given the current estimate of the robot pose.
+  expected_observation:Measurement (id: 15);
+  actual_observation:Measurement (id: 16);
+  modeled_noise:Measurement (id: 17);
+}
+
+table Visualization {
+  targets:[TargetEstimateDebug] (id: 0, static_length: 20);
+  statistics:CumulativeStatistics (id: 1);
+}
+
+root_type Visualization;

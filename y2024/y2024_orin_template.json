@@ -163,6 +163,20 @@
     },
     {
       "name": "/orin{{ NUM }}/camera0",
+      "type": "y2024.localizer.Visualization",
+      "source_node": "imu",
+      "frequency": 65,
+      "max_size": 50000
+    },
+    {
+      "name": "/orin{{ NUM }}/camera1",
+      "type": "y2024.localizer.Visualization",
+      "source_node": "imu",
+      "frequency": 65,
+      "max_size": 50000
+    },
+    {
+      "name": "/orin{{ NUM }}/camera0",
       "type": "frc971.vision.TargetMap",
       "source_node": "orin{{ NUM }}",
       "frequency": 65,

@@ -757,8 +757,9 @@ void HybridEkf<Scalar>::Correct(
     aos::monotonic_clock::time_point t) {
   CHECK(!observations_.empty());
   if (!observations_.full() && t < observations_.begin()->t) {
-    LOG(ERROR) << "Dropped an observation that was received before we "
-                  "initialized.\n";
+    AOS_LOG(ERROR,
+            "Dropped an observation that was received before we "
+            "initialized.\n");
     return;
   }
   auto cur_it = observations_.PushFromBottom(

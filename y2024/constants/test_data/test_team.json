@@ -8,7 +8,16 @@
 {
   "cameras": [
     {
-      "calibration": {% include 'y2024/constants/calib_files/calibration_orin-971-1_cam-24-00.json' %}
+      "calibration": {% include 'y2024/constants/test_data/calibration_cam-1.json' %}
+    },
+    {
+      "calibration": {% include 'y2024/constants/test_data/calibration_cam-2.json' %}
+    },
+    {
+      "calibration": {% include 'y2024/constants/test_data/calibration_cam-3.json' %}
+    },
+    {
+      "calibration": {% include 'y2024/constants/test_data/calibration_cam-4.json' %}
     }
   ],
   "robot": {

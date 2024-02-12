@@ -221,7 +221,18 @@
       "source_node": "roborio",
       "frequency": 400,
       "max_size": 128,
-      "num_senders": 2
+      "num_senders": 2,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 5,
+          "time_to_live": 5000000
+        }
+      ]
     },
     {
       "name": "/drivetrain",
