@@ -12,7 +12,7 @@ class CANTranslatorTest : public ::testing::Test {
  public:
   CANTranslatorTest()
       : config_(aos::configuration::ReadConfig(
-            "frc971/imu_fdcan/can_translator_test_config.json")),
+            "frc971/imu_fdcan/dual_imu_test_config.json")),
         event_loop_factory_(&config_.message()),
         can_translator_event_loop_(
             event_loop_factory_.MakeEventLoop("can_translator")),

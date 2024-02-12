@@ -1,0 +1,19 @@
+namespace frc971.imu;
+
+enum ImuType : ubyte {
+  MURATA = 0,
+  TDK = 1,
+}
+
+table DualImuBlenderStatus {
+  // These values explain if we're using the tdk or the murata for our accelerometers and gyro.
+  gyro_x: ImuType (id: 0);
+  gyro_y: ImuType (id: 1);
+  gyro_z: ImuType (id: 2);
+
+  accelerometer_x: ImuType (id: 3);
+  accelerometer_y: ImuType (id: 4);
+  accelerometer_z: ImuType (id: 5);
+}
+
+root_type DualImuBlenderStatus;

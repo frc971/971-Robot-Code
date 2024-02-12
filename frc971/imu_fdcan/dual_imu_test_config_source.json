@@ -20,8 +20,18 @@
       "frequency": 200
     },
     {
+      "name": "/localizer",
+      "type": "frc971.IMUValuesBatch",
+      "frequency": 1100
+    },
+    {
       "name": "/imu",
       "type": "frc971.imu.CanTranslatorStatus",
+      "frequency": 100
+    },
+    {
+      "name": "/imu",
+      "type": "frc971.imu.DualImuBlenderStatus",
       "frequency": 100
     },
   ]

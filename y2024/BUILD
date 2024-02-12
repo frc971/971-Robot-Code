@@ -74,6 +74,7 @@ robot_downloader(
     start_binaries = [
         "//aos/events/logging:logger_main",
         "//frc971/imu_fdcan:can_translator",
+        "//frc971/imu_fdcan:dual_imu_blender",
         "//aos/network:message_bridge_client",
         "//aos/network:message_bridge_server",
         "//aos/network:web_proxy_main",
@@ -116,6 +117,7 @@ aos_config(
         "//aos/network:message_bridge_server_fbs",
         "//frc971/imu_fdcan:dual_imu_fbs",
         "//frc971/imu_fdcan:can_translator_status_fbs",
+        "//frc971/imu_fdcan:dual_imu_blender_status_fbs",
         "//y2024/constants:constants_fbs",
         "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
         "//frc971/can_logger:can_logging_fbs",

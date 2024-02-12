@@ -238,6 +238,14 @@
       "num_senders": 2
     },
     {
+      "name": "/imu",
+      "type": "frc971.imu.DualImuBlenderStatus",
+      "source_node": "imu",
+      "frequency": 1100,
+      "num_senders": 1,
+      "max_size": 200
+    },
+    {
       "name": "/imu/constants",
       "type": "y2024.Constants",
       "source_node": "imu",
@@ -305,6 +313,13 @@
       "args": [
           "--channel=/can/canb"
       ],
+      "nodes": [
+        "imu"
+      ]
+    },
+    {
+      "name": "dual_imu_blender",
+      "executable_name": "dual_imu_blender",
       "nodes": [
         "imu"
       ]
