@@ -33,6 +33,8 @@ class CanLogger {
   CanLogger(const CanLogger &) = delete;
   CanLogger &operator=(const CanLogger &) = delete;
 
+  ~CanLogger() { shm_event_loop_->epoll()->DeleteFd(fd_.get()); }
+
  private:
   void Poll();
 
@@ -40,6 +42,7 @@ class CanLogger {
   // Returns true if successful and false if the recieve buffer is empty.
   bool ReadFrame();
 
+  aos::ShmEventLoop *shm_event_loop_;
   aos::ScopedFD fd_;
   aos::Sender<CanFrame> frames_sender_;
 };
