@@ -41,23 +41,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
   // from the channel index that the event loop uses to the channel index in
   // the config in the log file.
   event_loop_to_logged_channel_index_.resize(
-      event_loop->configuration()->channels()->size(), -1);
-  for (size_t event_loop_channel_index = 0;
-       event_loop_channel_index <
-       event_loop->configuration()->channels()->size();
-       ++event_loop_channel_index) {
-    const Channel *event_loop_channel =
-        event_loop->configuration()->channels()->Get(event_loop_channel_index);
-
-    const Channel *logged_channel = aos::configuration::GetChannel(
-        configuration_, event_loop_channel->name()->string_view(),
-        event_loop_channel->type()->string_view(), "", node_);
-
-    if (logged_channel != nullptr) {
-      event_loop_to_logged_channel_index_[event_loop_channel_index] =
-          configuration::ChannelIndex(configuration_, logged_channel);
-    }
-  }
+      event_loop->configuration()->channels()->size());
 
   // Map to match source channels with the timestamp logger, if the contents
   // should be reliable, and a list of all channels logged on it to be treated
@@ -92,6 +76,18 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
         const Channel *const timestamp_logger_channel =
             finder.ForChannel(channel, connection);
 
+        const Channel *logged_channel = aos::configuration::GetChannel(
+            configuration_, channel->name()->string_view(),
+            channel->type()->string_view(), "", node_);
+        if (logged_channel == nullptr) {
+          // The channel doesn't exist in configuration_, so don't log it.
+          continue;
+        }
+        if (!should_log(logged_channel)) {
+          // The channel didn't pass our `should_log` check, so don't log it.
+          continue;
+        }
+
         auto it = timestamp_logger_channels.find(timestamp_logger_channel);
         if (it != timestamp_logger_channels.end()) {
           CHECK(!is_split);
@@ -120,26 +116,40 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
     }
   }
 
-  for (size_t channel_index = 0;
-       channel_index < configuration_->channels()->size(); ++channel_index) {
-    const Channel *const config_channel =
-        configuration_->channels()->Get(channel_index);
+  for (size_t event_loop_channel_index = 0;
+       event_loop_channel_index <
+       event_loop->configuration()->channels()->size();
+       ++event_loop_channel_index) {
+    const Channel *channel =
+        event_loop->configuration()->channels()->Get(event_loop_channel_index);
+
     // The MakeRawFetcher method needs a channel which is in the event loop
     // configuration() object, not the configuration_ object.  Go look that up
     // from the config.
-    const Channel *channel = aos::configuration::GetChannel(
-        event_loop_->configuration(), config_channel->name()->string_view(),
-        config_channel->type()->string_view(), "", event_loop_->node());
-    CHECK(channel != nullptr)
-        << ": Failed to look up channel "
-        << aos::configuration::CleanedChannelToString(config_channel);
-    if (!should_log(config_channel)) {
+    const Channel *config_channel = aos::configuration::GetChannel(
+        configuration_, channel->name()->string_view(),
+        channel->type()->string_view(), "", node_);
+
+    if (config_channel == nullptr) {
+      // The channel doesn't exist in configuration_, so don't log the
+      // timestamps.
       continue;
     }
+    if (!should_log(config_channel)) {
+      // The channel didn't pass our `should_log` check, so don't log the
+      // timestamps.
+      continue;
+    }
+
+    const uint32_t channel_index =
+        configuration::ChannelIndex(configuration_, config_channel);
 
     FetcherStruct fs;
     fs.channel_index = channel_index;
     fs.channel = channel;
+
+    event_loop_to_logged_channel_index_[event_loop_channel_index] =
+        channel_index;
 
     const bool is_local =
         configuration::ChannelIsSendableOnNode(config_channel, node_);
@@ -759,8 +769,10 @@ void Logger::WriteContent(NewDataWriter *contents_writer,
     CHECK(msg->has_boot_uuid()) << ": " << aos::FlatbufferToJson(msg);
     // Translate from the channel index that the event loop uses to the
     // channel index in the log file.
-    const int channel_index =
+    const std::optional<uint32_t> channel_index =
         event_loop_to_logged_channel_index_[msg->channel_index()];
+
+    CHECK(channel_index.has_value());
 
     const aos::monotonic_clock::time_point monotonic_timestamp_time =
         f.fetcher->context().monotonic_event_time;
@@ -784,8 +796,8 @@ void Logger::WriteContent(NewDataWriter *contents_writer,
             chrono::nanoseconds(msg->monotonic_sent_time())),
         reliable, monotonic_timestamp_time);
 
-    RemoteMessageCopier coppier(msg, channel_index, monotonic_timestamp_time,
-                                event_loop_);
+    RemoteMessageCopier coppier(msg, channel_index.value(),
+                                monotonic_timestamp_time, event_loop_);
 
     contents_writer->CopyRemoteTimestampMessage(
         &coppier, UUID::FromVector(msg->boot_uuid()), start,

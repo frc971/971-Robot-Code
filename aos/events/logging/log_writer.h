@@ -203,9 +203,13 @@ class Logger {
     std::unique_ptr<RawFetcher> fetcher;
     bool written = false;
 
-    // Channel index to log to.
+    // Index of the channel in the logged configuration (not necessarily the
+    // event loop configuration).
     int channel_index = -1;
+
+    // Channel from the event_loop configuration.
     const Channel *channel = nullptr;
+
     const Node *timestamp_node = nullptr;
 
     LogType log_type = LogType::kLogMessage;
@@ -245,7 +249,13 @@ class Logger {
 
   // Vector mapping from the channel index from the event loop to the logged
   // channel index.
-  std::vector<int> event_loop_to_logged_channel_index_;
+  // When using the constructor that allows manually specifying the
+  // configuration, that configuration may have different channels than the
+  // event loop's configuration. When there is a channel that is included in the
+  // event loop configuration but not in the specified configuration, the value
+  // in this mapping will be nullopt for that channel. Nullopt will result in
+  // that channel not being included in the output log's configuration or data.
+  std::vector<std::optional<uint32_t>> event_loop_to_logged_channel_index_;
 
   // Start/Restart write configuration into LogNamer space.
   std::string WriteConfiguration(LogNamer *log_namer);

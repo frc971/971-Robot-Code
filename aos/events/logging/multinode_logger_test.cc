@@ -3124,6 +3124,107 @@ TEST_P(MultinodeLoggerTest, LogDifferentConfig) {
   }
 }
 
+// Tests that we can relog with a subset of the original config. This is useful
+// for excluding obsolete or deprecated channels, so they don't appear in the
+// configuration when reading the log.
+TEST_P(MultinodeLoggerTest, LogPartialConfig) {
+  time_converter_.StartEqual();
+  {
+    LoggerState pi1_logger = MakeLogger(pi1_);
+    LoggerState pi2_logger = MakeLogger(pi2_);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(95));
+
+    StartLogger(&pi1_logger);
+    StartLogger(&pi2_logger);
+
+    event_loop_factory_.RunFor(chrono::milliseconds(20000));
+  }
+
+  auto sorted_parts = SortParts(logfiles_);
+  EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
+  LogReader reader(sorted_parts);
+  reader.RemapLoggedChannel<aos::examples::Ping>("/test", "/original");
+
+  SimulatedEventLoopFactory log_reader_factory(reader.configuration());
+  log_reader_factory.set_send_delay(chrono::microseconds(0));
+
+  // This sends out the fetched messages and advances time to the start of the
+  // log file.
+  reader.Register(&log_reader_factory);
+
+  const Node *pi1 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi1");
+  const Node *pi2 =
+      configuration::GetNode(log_reader_factory.configuration(), "pi2");
+
+  LOG(INFO) << "Start time " << reader.monotonic_start_time(pi1) << " pi1";
+  LOG(INFO) << "Start time " << reader.monotonic_start_time(pi2) << " pi2";
+  LOG(INFO) << "now pi1 "
+            << log_reader_factory.GetNodeEventLoopFactory(pi1)->monotonic_now();
+  LOG(INFO) << "now pi2 "
+            << log_reader_factory.GetNodeEventLoopFactory(pi2)->monotonic_now();
+
+  EXPECT_THAT(reader.LoggedNodes(),
+              ::testing::ElementsAre(
+                  configuration::GetNode(reader.logged_configuration(), pi1),
+                  configuration::GetNode(reader.logged_configuration(), pi2)));
+
+  reader.event_loop_factory()->set_send_delay(chrono::microseconds(0));
+
+  const FlatbufferDetachedBuffer<Configuration> partial_configuration_buffer =
+      configuration::GetPartialConfiguration(
+          *reader.event_loop_factory()->configuration(),
+          [](const Channel &channel) {
+            if (channel.name()->string_view().starts_with("/original/")) {
+              LOG(INFO) << "Omitting channel from save_log, channel: "
+                        << channel.name()->string_view() << ", "
+                        << channel.type()->string_view();
+              return false;
+            }
+            return true;
+          });
+
+  // And confirm we can re-create a log again, while checking the contents.
+  std::vector<std::string> log_files;
+  {
+    const Configuration *partial_configuration =
+        &(partial_configuration_buffer.message());
+
+    LoggerState pi1_logger =
+        MakeLogger(log_reader_factory.GetNodeEventLoopFactory("pi1"),
+                   &log_reader_factory, partial_configuration);
+    LoggerState pi2_logger =
+        MakeLogger(log_reader_factory.GetNodeEventLoopFactory("pi2"),
+                   &log_reader_factory, partial_configuration);
+
+    pi1_logger.StartLogger(tmp_dir_ + "/logs/relogged1");
+    pi2_logger.StartLogger(tmp_dir_ + "/logs/relogged2");
+
+    log_reader_factory.Run();
+
+    for (auto &x : pi1_logger.log_namer->all_filenames()) {
+      log_files.emplace_back(absl::StrCat(tmp_dir_, "/logs/relogged1_", x));
+    }
+    for (auto &x : pi2_logger.log_namer->all_filenames()) {
+      log_files.emplace_back(absl::StrCat(tmp_dir_, "/logs/relogged2_", x));
+    }
+  }
+
+  reader.Deregister();
+
+  // And verify that we can run the LogReader over the relogged files without
+  // hitting any fatal errors.
+  {
+    auto sorted_parts = SortParts(log_files);
+    EXPECT_TRUE(AllPartsMatchOutOfOrderDuration(sorted_parts));
+    LogReader relogged_reader(sorted_parts);
+    relogged_reader.Register();
+
+    relogged_reader.event_loop_factory()->Run();
+  }
+}
+
 // Tests that we properly replay a log where the start time for a node is
 // before any data on the node.  This can happen if the logger starts before
 // data is published.  While the scenario below is a bit convoluted, we have

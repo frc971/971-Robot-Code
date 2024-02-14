@@ -1824,6 +1824,7 @@ const Message *MessageSorter::Front() {
       size_t monotonic_remote_boot = 0xffffff;
 
       if (msg->monotonic_remote_time.has_value()) {
+        CHECK_LT(msg->channel_index, source_node_index_.size());
         const Node *node = parts().config->nodes()->Get(
             source_node_index_[msg->channel_index]);
 

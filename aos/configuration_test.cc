@@ -1166,4 +1166,68 @@ TEST_F(ConfigurationTest, AddChannelToConfigMultiNode) {
   ASSERT_EQ(971, channel->frequency());
 }
 
+// Create a new configuration with the specified channel removed.
+// Initially there must be exactly one channel in the base_config that matches
+// the criteria. Check to make sure the new configuration has one less channel,
+// and that channel is the specified channel.
+void TestGetPartialConfiguration(const Configuration &base_config,
+                                 std::string_view test_channel_name,
+                                 std::string_view test_channel_type) {
+  const Channel *channel_from_base_config = GetChannel(
+      &base_config, test_channel_name, test_channel_type, "", nullptr);
+  ASSERT_TRUE(channel_from_base_config != nullptr);
+
+  const FlatbufferDetachedBuffer<Configuration> new_config =
+      configuration::GetPartialConfiguration(
+          base_config,
+          // should_include_channel function
+          [test_channel_name, test_channel_type](const Channel &channel) {
+            if (channel.name()->string_view() == test_channel_name &&
+                channel.type()->string_view() == test_channel_type) {
+              LOG(INFO) << "Omitting channel from save_log, channel: "
+                        << channel.name()->string_view() << ", "
+                        << channel.type()->string_view();
+              return false;
+            }
+            return true;
+          });
+
+  EXPECT_EQ(new_config.message().channels()->size(),
+            base_config.channels()->size() - 1);
+
+  channel_from_base_config = GetChannel(&base_config, test_channel_name,
+                                        test_channel_type, "", nullptr);
+  EXPECT_TRUE(channel_from_base_config != nullptr);
+
+  const Channel *channel_from_new_config =
+      GetChannel(new_config, test_channel_name, test_channel_type, "", nullptr);
+  EXPECT_TRUE(channel_from_new_config == nullptr);
+}
+
+// Tests that we can use a utility to remove individual channels from a
+// single-node config.
+TEST_F(ConfigurationTest, RemoveChannelsFromConfigSingleNode) {
+  FlatbufferDetachedBuffer<Configuration> base_config =
+      ReadConfig(ArtifactPath("aos/testdata/config1.json"));
+
+  constexpr std::string_view test_channel_name = "/foo2";
+  constexpr std::string_view test_channel_type = ".aos.bar";
+
+  TestGetPartialConfiguration(base_config.message(), test_channel_name,
+                              test_channel_type);
+}
+
+// Tests that we can use a utility to remove individual channels from a
+// multi-node config.
+TEST_F(ConfigurationTest, RemoveChannelsFromConfigMultiNode) {
+  FlatbufferDetachedBuffer<Configuration> base_config =
+      ReadConfig(ArtifactPath("aos/testdata/good_multinode.json"));
+
+  constexpr std::string_view test_channel_name = "/batman";
+  constexpr std::string_view test_channel_type = ".aos.baz";
+
+  TestGetPartialConfiguration(base_config.message(), test_channel_name,
+                              test_channel_type);
+}
+
 }  // namespace aos::configuration::testing
