@@ -4490,6 +4490,7 @@ fn test_cycle_up_of_vec() {
 fn test_typedef_to_std() {
     let hdr = indoc! {"
         #include <string>
+        #include <cstdint>
         typedef std::string my_string;
         inline uint32_t take_str(my_string a) {
             return a.size();
@@ -4523,6 +4524,7 @@ fn test_typedef_to_up_in_fn_call() {
 fn test_typedef_in_pod_struct() {
     let hdr = indoc! {"
         #include <string>
+        #include <cstdint>
         typedef uint32_t my_int;
         struct A {
             my_int a;
@@ -4544,6 +4546,7 @@ fn test_typedef_in_pod_struct() {
 fn test_cint_in_pod_struct() {
     let hdr = indoc! {"
         #include <string>
+        #include <cstdint>
         struct A {
             int a;
         };
@@ -4613,6 +4616,7 @@ fn test_up_in_struct() {
 fn test_typedef_to_std_in_struct() {
     let hdr = indoc! {"
         #include <string>
+        #include <cstdint>
         typedef std::string my_string;
         struct A {
             my_string a;
@@ -4995,6 +4999,43 @@ fn test_take_array_in_struct() {
         assert_eq!(ffi::take_array(c), 40);
     };
     run_test("", hdr, rs, &["take_array"], &["data"]);
+}
+
+#[test]
+fn test_take_struct_built_array_in_function() {
+    let hdr = indoc! {"
+    #include <cstdint>
+    struct data {
+        char a[4];
+    };
+    uint32_t take_array(char a[4]) {
+        return a[0] + a[2];
+    }
+    "};
+    let rs = quote! {
+        let mut c = ffi::data { a: [ 10, 20, 30, 40 ] };
+        unsafe {
+            assert_eq!(ffi::take_array(c.a.as_mut_ptr()), 40);
+        }
+    };
+    run_test("", hdr, rs, &["take_array"], &["data"]);
+}
+
+#[test]
+fn test_take_array_in_function() {
+    let hdr = indoc! {"
+    #include <cstdint>
+    uint32_t take_array(char a[4]) {
+        return a[0] + a[2];
+    }
+    "};
+    let rs = quote! {
+        let mut a: [i8; 4] = [ 10, 20, 30, 40 ];
+        unsafe {
+            assert_eq!(ffi::take_array(a.as_mut_ptr()), 40);
+        }
+    };
+    run_test("", hdr, rs, &["take_array"], &[]);
 }
 
 #[test]
@@ -7765,6 +7806,58 @@ fn test_pv_subclass_ptr_param() {
                 unsafe fn foo(&self, a: *const ffi::A) {
                     use ffi::Observer_supers;
                     self.foo_super(a)
+                }
+            }
+        }),
+    );
+}
+
+#[test]
+fn test_pv_subclass_opaque_param() {
+    let hdr = indoc! {"
+    #include <cstdint>
+
+    typedef uint32_t MyUnsupportedType[4];
+
+    struct MySupportedType {
+        uint32_t a;
+    };
+
+    class MySuperType {
+    public:
+        virtual void foo(const MyUnsupportedType* foo, const MySupportedType* bar) const = 0;
+        virtual ~MySuperType() = default;
+    };
+    "};
+    run_test_ex(
+        "",
+        hdr,
+        quote! {
+            MySubType::new_rust_owned(MySubType { a: 3, cpp_peer: Default::default() });
+        },
+        quote! {
+            subclass!("MySuperType",MySubType)
+            extern_cpp_opaque_type!("MyUnsupportedType", crate::ffi2::MyUnsupportedType)
+        },
+        None,
+        None,
+        Some(quote! {
+
+            #[cxx::bridge]
+            pub mod ffi2 {
+                unsafe extern "C++" {
+                    include!("input.h");
+                    type MyUnsupportedType;
+                }
+            }
+            use autocxx::subclass::CppSubclass;
+            use ffi::MySuperType_methods;
+            #[autocxx::subclass::subclass]
+            pub struct MySubType {
+                a: u32
+            }
+            impl MySuperType_methods for MySubType {
+                unsafe fn foo(&self, _foo: *const ffi2::MyUnsupportedType, _bar: *const ffi::MySupportedType) {
                 }
             }
         }),
@@ -12239,6 +12332,58 @@ fn test_ignore_va_list() {
     "};
     let rs = quote! {};
     run_test("", hdr, rs, &["A"], &[]);
+}
+
+#[test]
+fn test_badly_named_alloc() {
+    let hdr = indoc! {"
+        #include <stdarg.h>
+        class A {
+        public:
+            void alloc();
+        };
+    "};
+    let rs = quote! {};
+    run_test("", hdr, rs, &["A"], &[]);
+}
+
+#[test]
+fn test_cpp_union_pod() {
+    let hdr = indoc! {"
+        typedef unsigned long long UInt64_t;
+        struct ManagedPtr_t_;
+        typedef struct ManagedPtr_t_ ManagedPtr_t;
+        
+        typedef int (*ManagedPtr_ManagerFunction_t)(
+                ManagedPtr_t *managedPtr,
+                const ManagedPtr_t *srcPtr,
+                int operation);
+        
+        typedef union {
+            int intValue;
+            void *ptr;
+        } ManagedPtr_t_data_;
+        
+        struct ManagedPtr_t_ {
+            void *pointer;
+            ManagedPtr_t_data_ userData[4];
+            ManagedPtr_ManagerFunction_t manager;
+        };
+        
+        typedef struct CorrelationId_t_ {
+            unsigned int size : 8;
+            unsigned int valueType : 4;
+            unsigned int classId : 16;
+            unsigned int reserved : 4;
+        
+            union {
+                UInt64_t intValue;
+                ManagedPtr_t ptrValue;
+            } value;
+        } CorrelationId_t;
+    "};
+    run_test("", hdr, quote! {}, &["CorrelationId_t_"], &[]);
+    run_test_expect_fail("", hdr, quote! {}, &[], &["CorrelationId_t_"]);
 }
 
 // Yet to test:
