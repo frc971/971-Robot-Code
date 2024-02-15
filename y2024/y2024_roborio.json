@@ -139,6 +139,22 @@
       "max_size": 448
     },
     {
+      "name": "/superstructure/canivore",
+      "type": "y2024.control_loops.superstructure.CANPosition",
+      "source_node": "roborio",
+      "frequency": 220,
+      "num_senders": 2,
+      "max_size": 400
+    },
+    {
+      "name": "/superstructure/rio",
+      "type": "y2024.control_loops.superstructure.CANPosition",
+      "source_node": "roborio",
+      "frequency": 220,
+      "num_senders": 2,
+      "max_size": 400
+    },
+    {
       "name": "/can",
       "type": "frc971.can_logger.CanFrame",
       "source_node": "roborio",

@@ -307,42 +307,42 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       c_Phoenix_Diagnostics_Dispose();
     }
 
-    std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry;
+    std::vector<ctre::phoenix6::BaseStatusSignal *> canivore_signal_registry;
+    std::vector<ctre::phoenix6::BaseStatusSignal *> rio_signal_registry;
 
     const CurrentLimits *current_limits =
         robot_constants->common()->current_limits();
 
     std::shared_ptr<TalonFX> right_front = std::make_shared<TalonFX>(
-        0, false, "Drivetrain Bus", &signals_registry,
+        0, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->drivetrain_supply_current_limit(),
         current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> right_back = std::make_shared<TalonFX>(
-        1, false, "Drivetrain Bus", &signals_registry,
+        1, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->drivetrain_supply_current_limit(),
         current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> left_front = std::make_shared<TalonFX>(
-        2, false, "Drivetrain Bus", &signals_registry,
+        2, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->drivetrain_supply_current_limit(),
         current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> left_back = std::make_shared<TalonFX>(
-        3, false, "Drivetrain Bus", &signals_registry,
+        3, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->drivetrain_supply_current_limit(),
         current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> intake_pivot = std::make_shared<TalonFX>(
-        4, false, "Drivetrain Bus", &signals_registry,
+        4, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->intake_pivot_stator_current_limit(),
         current_limits->intake_pivot_supply_current_limit());
     std::shared_ptr<TalonFX> intake_roller = std::make_shared<TalonFX>(
-        5, false, "Drivetrain Bus", &signals_registry,
+        5, false, "rio", &rio_signal_registry,
         current_limits->intake_roller_stator_current_limit(),
         current_limits->intake_roller_supply_current_limit());
     std::shared_ptr<TalonFX> transfer_roller = std::make_shared<TalonFX>(
-        6, false, "Drivetrain Bus", &signals_registry,
+        6, false, "rio", &rio_signal_registry,
         current_limits->transfer_roller_stator_current_limit(),
         current_limits->transfer_roller_supply_current_limit());
-
     std::shared_ptr<TalonFX> climber = std::make_shared<TalonFX>(
-        7, false, "Drivetrain Bus", &signals_registry,
+        7, false, "rio", &rio_signal_registry,
         current_limits->climber_stator_current_limit(),
         current_limits->climber_supply_current_limit());
 
@@ -354,18 +354,25 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::ShmEventLoop can_sensor_reader_event_loop(&config.message());
     can_sensor_reader_event_loop.set_name("CANSensorReader");
 
+    ::aos::ShmEventLoop rio_sensor_reader_event_loop(&config.message());
+    rio_sensor_reader_event_loop.set_name("RioSensorReader");
+
     // Creating list of talonfx for CANSensorReader
     std::vector<std::shared_ptr<TalonFX>> drivetrain_talonfxs;
-    std::vector<std::shared_ptr<TalonFX>> talonfxs;
+    std::vector<std::shared_ptr<TalonFX>> canivore_talonfxs;
+    std::vector<std::shared_ptr<TalonFX>> rio_talonfxs;
 
     for (auto talonfx : {right_front, right_back, left_front, left_back}) {
       drivetrain_talonfxs.push_back(talonfx);
-      talonfxs.push_back(talonfx);
+      canivore_talonfxs.push_back(talonfx);
     }
 
-    for (auto talonfx :
-         {intake_pivot, intake_roller, transfer_roller, climber}) {
-      talonfxs.push_back(talonfx);
+    for (auto talonfx : {intake_pivot}) {
+      canivore_talonfxs.push_back(talonfx);
+    }
+
+    for (auto talonfx : {intake_roller, transfer_roller, climber}) {
+      rio_talonfxs.push_back(talonfx);
     }
 
     aos::Sender<frc971::control_loops::drivetrain::CANPositionStatic>
@@ -378,12 +385,12 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         superstructure_can_position_sender =
             can_sensor_reader_event_loop.MakeSender<
                 y2024::control_loops::superstructure::CANPositionStatic>(
-                "/superstructure");
+                "/superstructure/canivore");
 
-    frc971::wpilib::CANSensorReader can_sensor_reader(
-        &can_sensor_reader_event_loop, std::move(signals_registry), talonfxs,
-        [drivetrain_talonfxs, &intake_pivot, &intake_roller, &transfer_roller,
-         &climber, &drivetrain_can_position_sender,
+    frc971::wpilib::CANSensorReader canivore_can_sensor_reader(
+        &can_sensor_reader_event_loop, std::move(canivore_signal_registry),
+        canivore_talonfxs,
+        [drivetrain_talonfxs, &intake_pivot, &drivetrain_can_position_sender,
          &superstructure_can_position_sender](
             ctre::phoenix::StatusCode status) {
           aos::Sender<frc971::control_loops::drivetrain::CANPositionStatic>::
@@ -411,11 +418,34 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
               StaticBuilder superstructure_can_builder =
                   superstructure_can_position_sender.MakeStaticBuilder();
 
-          intake_roller->SerializePosition(
-              superstructure_can_builder->add_intake_roller(),
-              control_loops::drivetrain::kHighOutputRatio);
           intake_pivot->SerializePosition(
               superstructure_can_builder->add_intake_pivot(),
+              control_loops::drivetrain::kHighOutputRatio);
+
+          superstructure_can_builder->set_timestamp(
+              intake_pivot->GetTimestamp());
+          superstructure_can_builder->set_status(static_cast<int>(status));
+          superstructure_can_builder.CheckOk(superstructure_can_builder.Send());
+        });
+
+    aos::Sender<y2024::control_loops::superstructure::CANPositionStatic>
+        superstructure_rio_position_sender =
+            rio_sensor_reader_event_loop.MakeSender<
+                y2024::control_loops::superstructure::CANPositionStatic>(
+                "/superstructure/rio");
+
+    frc971::wpilib::CANSensorReader rio_can_sensor_reader(
+        &rio_sensor_reader_event_loop, std::move(rio_signal_registry),
+        rio_talonfxs,
+        [&intake_roller, &transfer_roller, &climber,
+         &superstructure_rio_position_sender](
+            ctre::phoenix::StatusCode status) {
+          aos::Sender<y2024::control_loops::superstructure::CANPositionStatic>::
+              StaticBuilder superstructure_can_builder =
+                  superstructure_rio_position_sender.MakeStaticBuilder();
+
+          intake_roller->SerializePosition(
+              superstructure_can_builder->add_intake_roller(),
               control_loops::drivetrain::kHighOutputRatio);
           transfer_roller->SerializePosition(
               superstructure_can_builder->add_transfer_roller(),
@@ -431,6 +461,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         });
 
     AddLoop(&can_sensor_reader_event_loop);
+    AddLoop(&rio_sensor_reader_event_loop);
 
     // Thread 5.
     ::aos::ShmEventLoop can_output_event_loop(&config.message());
