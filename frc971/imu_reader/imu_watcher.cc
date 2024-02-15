@@ -37,13 +37,15 @@ ImuWatcher::ImuWatcher(
       if (zeroer_.Faulted()) {
         if (value->checksum_failed()) {
           imu_fault_tracker_.pico_to_pi_checksum_mismatch++;
-        } else if (value->previous_reading_diag_stat()->checksum_mismatch()) {
+        } else if (value->has_previous_reading_diag_stat() &&
+                   value->previous_reading_diag_stat()->checksum_mismatch()) {
           imu_fault_tracker_.imu_to_pico_checksum_mismatch++;
         } else {
           imu_fault_tracker_.other_zeroing_faults++;
         }
       } else {
-        if (!first_valid_data_counter_.has_value()) {
+        if (!first_valid_data_counter_.has_value() &&
+            value->has_data_counter()) {
           first_valid_data_counter_ = value->data_counter();
         }
       }
@@ -68,12 +70,14 @@ ImuWatcher::ImuWatcher(
       }
       // Set encoders to nullopt if we are faulted at all (faults may include
       // checksum mismatches).
+      const bool have_encoders = !zeroer_.Faulted() &&
+                                 value->has_left_encoder() &&
+                                 value->has_right_encoder();
       const std::optional<Eigen::Vector2d> encoders =
-          zeroer_.Faulted()
-              ? std::nullopt
-              : std::make_optional(Eigen::Vector2d{
-                    left_encoder_.Unwrap(value->left_encoder()),
-                    right_encoder_.Unwrap(value->right_encoder())});
+          have_encoders ? std::make_optional(Eigen::Vector2d{
+                              left_encoder_.Unwrap(value->left_encoder()),
+                              right_encoder_.Unwrap(value->right_encoder())})
+                        : std::nullopt;
       {
         const aos::monotonic_clock::time_point pi_read_timestamp =
             aos::monotonic_clock::time_point(
