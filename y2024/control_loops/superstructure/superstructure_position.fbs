@@ -5,15 +5,20 @@ namespace y2024.control_loops.superstructure;
 
 table Position {
     // Values of the encoder and potentiometer at the intake pivot
+    // Zero is extended outwards and level, positive is retracted inward.
     intake_pivot:frc971.AbsolutePosition (id: 0);
 
     // Values of the encoder and potentiometer at the turret
+    // Zero is facing forward, positive is rotated right.
     turret:frc971.PotAndAbsolutePosition (id: 1);
 
     // Values of the encoder and potentiometer at the altitude
+    // Zero is level with the ground, positive is raised upward.
     altitude:frc971.PotAndAbsolutePosition (id: 2);
 
     // Values of the encoder and potentiometer at the catapult
+    // Zero is edge of pivot plate parallel to edge of gusset.
+    // Positive is rotated counter-clockwise, to launch game piece.
     catapult:frc971.PotAndAbsolutePosition (id: 3);
 
     // True means there is a game piece in the transfer.

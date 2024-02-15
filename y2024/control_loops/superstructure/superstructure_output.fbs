@@ -5,15 +5,20 @@ table Output {
     intake_roller_voltage:double (id: 0);
 
     // Voltage of intake pivot
+    // Positive voltage causes pivot to retract.
     intake_pivot_voltage:double (id: 1);
 
     // Voltage of the turret
+    // Positive voltage is for rotating the turret clockwise.
     turret_voltage: double (id: 2);
 
     // Voltage of the altitude
+    // Positive voltage is for raising it upward.
     altitude_voltage: double (id: 3);
 
     // Voltage of the catapult
+    // Positive voltage is for shooting the game piece,
+    // rotating the catapult counter-clockwise.
     catapult_voltage: double (id: 4);
 
     // Voltage of transfer rollers
