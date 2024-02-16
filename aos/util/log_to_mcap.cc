@@ -72,6 +72,10 @@ int main(int argc, char *argv[]) {
   if (FLAGS_include_clocks) {
     aos::logger::LogReader config_reader(logfiles);
 
+    if (aos::configuration::MultiNode(config_reader.configuration())) {
+      CHECK(!replay_node.empty()) << ": Must supply a --node.";
+    }
+
     const aos::Configuration *raw_config = config_reader.logged_configuration();
     config = aos::configuration::AddChannelToConfiguration(
         raw_config, "/clocks",
@@ -86,9 +90,12 @@ int main(int argc, char *argv[]) {
   aos::SimulatedEventLoopFactory factory(reader.configuration());
   reader.RegisterWithoutStarting(&factory);
 
+  if (aos::configuration::MultiNode(reader.configuration())) {
+    CHECK(!replay_node.empty()) << ": Must supply a --node.";
+  }
+
   const aos::Node *node =
-      (replay_node.empty() ||
-       !aos::configuration::MultiNode(reader.configuration()))
+      !aos::configuration::MultiNode(reader.configuration())
           ? nullptr
           : aos::configuration::GetNode(reader.configuration(), replay_node);
 
