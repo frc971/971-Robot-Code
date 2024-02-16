@@ -447,7 +447,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
           intake_pivot->SerializePosition(
               superstructure_can_builder->add_intake_pivot(),
-              control_loops::drivetrain::kHighOutputRatio);
+              superstructure::intake_pivot::kOutputRatio);
 
           superstructure_can_builder->set_timestamp(
               intake_pivot->GetTimestamp());
@@ -473,18 +473,17 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
           intake_roller->SerializePosition(
               superstructure_can_builder->add_intake_roller(),
-              control_loops::drivetrain::kHighOutputRatio);
+              constants::Values::kIntakeRollerOutputRatio);
           transfer_roller->SerializePosition(
               superstructure_can_builder->add_transfer_roller(),
-              control_loops::drivetrain::kHighOutputRatio);
-          climber->SerializePosition(
-              superstructure_can_builder->add_climber(),
-              control_loops::drivetrain::kHighOutputRatio);
+              constants::Values::kIntakeRollerOutputRatio);
+          climber->SerializePosition(superstructure_can_builder->add_climber(),
+                                     superstructure::climber::kOutputRatio);
           extend->SerializePosition(superstructure_can_builder->add_extend(),
                                     superstructure::extend::kOutputRatio);
           extend_roller->SerializePosition(
               superstructure_can_builder->add_extend_roller(),
-              control_loops::drivetrain::kHighOutputRatio);
+              constants::Values::kExtendRollerOutputRatio);
 
           superstructure_can_builder->set_timestamp(
               intake_roller->GetTimestamp());

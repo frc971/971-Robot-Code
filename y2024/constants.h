@@ -108,6 +108,14 @@ struct Values {
            control_loops::superstructure::extend::kOutputRatio /
            kExtendEncoderRatio() * kExtendEncoderCountsPerRevolution();
   }
+
+  // 20 -> 28 reduction to a 0.5" radius roller
+  static constexpr double kTransferRollerOutputRatio = (20.0 / 28.0) * 0.0127;
+  // 20 -> 34 reduction, and the 34 is on a 0.625" radius roller
+  static constexpr double kIntakeRollerOutputRatio = (20.0 / 34.0) * 0.015875;
+  // 20 -> 28 reduction to a 0.5" radius roller
+  static constexpr double kExtendRollerOutputRatio = (20.0 / 28.0) * 0.0127;
+
   struct PotAndAbsEncoderConstants {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
         ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
