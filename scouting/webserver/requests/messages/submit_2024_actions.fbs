@@ -15,7 +15,9 @@ table MobilityAction {
     mobility:bool (id:0);
 }
 
-table PenaltyAction {}
+table PenaltyAction {
+    penalties: int (id:0);
+}
 
 table PickupNoteAction {
     auto:bool (id:0);

@@ -11,19 +11,19 @@ import {FormsModule} from '@angular/forms';
 import {Builder, ByteBuffer} from 'flatbuffers';
 import {ErrorResponse} from '../../webserver/requests/messages/error_response_generated';
 import {
-  ObjectType,
-  ScoreLevel,
-  SubmitActions,
   StartMatchAction,
+  ScoreType,
+  StageType,
+  Submit2024Actions,
   MobilityAction,
-  AutoBalanceAction,
-  PickupObjectAction,
-  PlaceObjectAction,
+  PenaltyAction,
+  PickupNoteAction,
+  PlaceNoteAction,
   RobotDeathAction,
   EndMatchAction,
   ActionType,
   Action,
-} from '../../webserver/requests/messages/submit_actions_generated';
+} from '../../webserver/requests/messages/submit_2024_actions_generated';
 import {Match} from '../../webserver/requests/messages/request_all_matches_response_generated';
 import {MatchListRequestor} from '@org_frc971/scouting/www/rpc';
 
@@ -62,23 +62,14 @@ type ActionT =
       mobility: boolean;
     }
   | {
-      type: 'autoBalanceAction';
+      type: 'pickupNoteAction';
       timestamp?: number;
-      docked: boolean;
-      engaged: boolean;
-      balanceAttempt: boolean;
-    }
-  | {
-      type: 'pickupObjectAction';
-      timestamp?: number;
-      objectType: ObjectType;
       auto?: boolean;
     }
   | {
-      type: 'placeObjectAction';
+      type: 'placeNoteAction';
       timestamp?: number;
-      objectType?: ObjectType;
-      scoreLevel: ScoreLevel;
+      scoreType: ScoreType;
       auto?: boolean;
     }
   | {
@@ -87,16 +78,26 @@ type ActionT =
       robotOn: boolean;
     }
   | {
+      type: 'penaltyAction';
+      timestamp?: number;
+      penalties: number;
+    }
+  | {
       type: 'endMatchAction';
-      docked: boolean;
-      engaged: boolean;
-      balanceAttempt: boolean;
+      stageType: StageType;
+      trapNote: boolean;
       timestamp?: number;
     }
   | {
       // This is not a action that is submitted,
       // It is used for undoing purposes.
       type: 'endAutoPhase';
+      timestamp?: number;
+    }
+  | {
+      // This is not a action that is submitted,
+      // It is used for undoing purposes.
+      type: 'endTeleopPhase';
       timestamp?: number;
     };
 
@@ -110,8 +111,7 @@ export class EntryComponent implements OnInit {
   // of radio buttons.
   readonly COMP_LEVELS = COMP_LEVELS;
   readonly COMP_LEVEL_LABELS = COMP_LEVEL_LABELS;
-  readonly ObjectType = ObjectType;
-  readonly ScoreLevel = ScoreLevel;
+  readonly ScoreType = ScoreType;
 
   section: Section = 'Team Selection';
   @Input() matchNumber: number = 1;
@@ -127,10 +127,10 @@ export class EntryComponent implements OnInit {
   errorMessage: string = '';
   autoPhase: boolean = true;
   mobilityCompleted: boolean = false;
-  lastObject: ObjectType = null;
 
   preScouting: boolean = false;
   matchStartTimestamp: number = 0;
+  penalties: number = 0;
 
   teamSelectionIsValid = false;
 
@@ -192,6 +192,20 @@ export class EntryComponent implements OnInit {
     return false;
   }
 
+  addPenalty(): void {
+    this.penalties += 1;
+  }
+
+  removePenalty(): void {
+    if (this.penalties > 0) {
+      this.penalties -= 1;
+    }
+  }
+
+  addPenalties(): void {
+    this.addAction({type: 'penaltyAction', penalties: this.penalties});
+  }
+
   addAction(action: ActionT): void {
     if (action.type == 'startMatchAction') {
       // Unix nanosecond timestamp.
@@ -202,27 +216,17 @@ export class EntryComponent implements OnInit {
       action.timestamp = Date.now() * 1e6 - this.matchStartTimestamp;
     }
 
+    if (action.type == 'endMatchAction') {
+      // endMatchAction occurs at the same time as penaltyAction so add to its timestamp to make it unique.
+      action.timestamp += 1;
+    }
+
     if (action.type == 'mobilityAction') {
       this.mobilityCompleted = true;
     }
 
-    if (action.type == 'autoBalanceAction') {
-      // Timestamp is a unique index in the database so
-      // adding one makes sure it dosen't overlap with the
-      // start teleop action that is added at the same time.
-      action.timestamp += 1;
-    }
-
-    if (
-      action.type == 'pickupObjectAction' ||
-      action.type == 'placeObjectAction'
-    ) {
+    if (action.type == 'pickupNoteAction' || action.type == 'placeNoteAction') {
       action.auto = this.autoPhase;
-      if (action.type == 'pickupObjectAction') {
-        this.lastObject = action.objectType;
-      } else if (action.type == 'placeObjectAction') {
-        action.objectType = this.lastObject;
-      }
     }
     this.actionList.push(action);
   }
@@ -233,14 +237,23 @@ export class EntryComponent implements OnInit {
       switch (lastAction?.type) {
         case 'endAutoPhase':
           this.autoPhase = true;
-        case 'pickupObjectAction':
+          this.section = 'Pickup';
+        case 'pickupNoteAction':
           this.section = 'Pickup';
           break;
-        case 'placeObjectAction':
+        case 'endTeleopPhase':
+          this.section = 'Pickup';
+          break;
+        case 'placeNoteAction':
           this.section = 'Place';
           break;
         case 'endMatchAction':
-          this.section = 'Pickup';
+          this.section = 'Endgame';
+        case 'mobilityAction':
+          this.mobilityCompleted = false;
+          break;
+        case 'startMatchAction':
+          this.section = 'Init';
           break;
         case 'robotDeathAction':
           // TODO(FILIP): Return user to the screen they
@@ -254,12 +267,12 @@ export class EntryComponent implements OnInit {
     }
   }
 
-  stringifyObjectType(objectType: ObjectType): String {
-    return ObjectType[objectType];
+  stringifyScoreType(scoreType: ScoreType): String {
+    return ScoreType[scoreType];
   }
 
-  stringifyScoreLevel(scoreLevel: ScoreLevel): String {
-    return ScoreLevel[scoreLevel];
+  stringifyStageType(stageType: StageType): String {
+    return StageType[stageType];
   }
 
   changeSectionTo(target: Section) {
@@ -276,7 +289,7 @@ export class EntryComponent implements OnInit {
     this.header.nativeElement.scrollIntoView();
   }
 
-  async submitActions() {
+  async submit2024Actions() {
     const builder = new Builder();
     const actionOffsets: number[] = [];
 
@@ -307,49 +320,42 @@ export class EntryComponent implements OnInit {
             mobilityActionOffset
           );
           break;
-        case 'autoBalanceAction':
-          const autoBalanceActionOffset =
-            AutoBalanceAction.createAutoBalanceAction(
-              builder,
-              action.docked,
-              action.engaged,
-              action.balanceAttempt
-            );
+        case 'penaltyAction':
+          const penaltyActionOffset = PenaltyAction.createPenaltyAction(
+            builder,
+            action.penalties
+          );
           actionOffset = Action.createAction(
             builder,
             BigInt(action.timestamp || 0),
-            ActionType.AutoBalanceAction,
-            autoBalanceActionOffset
+            ActionType.PenaltyAction,
+            penaltyActionOffset
           );
           break;
-
-        case 'pickupObjectAction':
-          const pickupObjectActionOffset =
-            PickupObjectAction.createPickupObjectAction(
+        case 'pickupNoteAction':
+          const pickupNoteActionOffset =
+            PickupNoteAction.createPickupNoteAction(
               builder,
-              action.objectType,
               action.auto || false
             );
           actionOffset = Action.createAction(
             builder,
             BigInt(action.timestamp || 0),
-            ActionType.PickupObjectAction,
-            pickupObjectActionOffset
+            ActionType.PickupNoteAction,
+            pickupNoteActionOffset
           );
           break;
-        case 'placeObjectAction':
-          const placeObjectActionOffset =
-            PlaceObjectAction.createPlaceObjectAction(
-              builder,
-              action.objectType,
-              action.scoreLevel,
-              action.auto || false
-            );
+        case 'placeNoteAction':
+          const placeNoteActionOffset = PlaceNoteAction.createPlaceNoteAction(
+            builder,
+            action.scoreType,
+            action.auto || false
+          );
           actionOffset = Action.createAction(
             builder,
             BigInt(action.timestamp || 0),
-            ActionType.PlaceObjectAction,
-            placeObjectActionOffset
+            ActionType.PlaceNoteAction,
+            placeNoteActionOffset
           );
           break;
 
@@ -367,9 +373,8 @@ export class EntryComponent implements OnInit {
         case 'endMatchAction':
           const endMatchActionOffset = EndMatchAction.createEndMatchAction(
             builder,
-            action.docked,
-            action.engaged,
-            action.balanceAttempt
+            action.stageType,
+            action.trapNote
           );
           actionOffset = Action.createAction(
             builder,
@@ -380,6 +385,10 @@ export class EntryComponent implements OnInit {
           break;
 
         case 'endAutoPhase':
+          // Not important action.
+          break;
+
+        case 'endTeleopPhase':
           // Not important action.
           break;
 
@@ -394,21 +403,21 @@ export class EntryComponent implements OnInit {
     const teamNumberFb = builder.createString(this.teamNumber);
     const compLevelFb = builder.createString(this.compLevel);
 
-    const actionsVector = SubmitActions.createActionsListVector(
+    const actionsVector = Submit2024Actions.createActionsListVector(
       builder,
       actionOffsets
     );
-    SubmitActions.startSubmitActions(builder);
-    SubmitActions.addTeamNumber(builder, teamNumberFb);
-    SubmitActions.addMatchNumber(builder, this.matchNumber);
-    SubmitActions.addSetNumber(builder, this.setNumber);
-    SubmitActions.addCompLevel(builder, compLevelFb);
-    SubmitActions.addActionsList(builder, actionsVector);
-    SubmitActions.addPreScouting(builder, this.preScouting);
-    builder.finish(SubmitActions.endSubmitActions(builder));
+    Submit2024Actions.startSubmit2024Actions(builder);
+    Submit2024Actions.addTeamNumber(builder, teamNumberFb);
+    Submit2024Actions.addMatchNumber(builder, this.matchNumber);
+    Submit2024Actions.addSetNumber(builder, this.setNumber);
+    Submit2024Actions.addCompLevel(builder, compLevelFb);
+    Submit2024Actions.addActionsList(builder, actionsVector);
+    Submit2024Actions.addPreScouting(builder, this.preScouting);
+    builder.finish(Submit2024Actions.endSubmit2024Actions(builder));
 
     const buffer = builder.asUint8Array();
-    const res = await fetch('/requests/submit/submit_actions', {
+    const res = await fetch('/requests/submit/submit_2024_actions', {
       method: 'POST',
       body: buffer,
     });

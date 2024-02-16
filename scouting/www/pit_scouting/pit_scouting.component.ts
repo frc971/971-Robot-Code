@@ -57,6 +57,8 @@ export class PitScoutingComponent {
     const builder = new Builder();
     const teamNumber = builder.createString(this.teamNumber);
     const pitImage = builder.createString(
+      // Remove anything between /s in order to end up with only the file name.
+      // Example : path/to/file.txt -> file.txt
       this.pitImage.toString().replace(/^.*[\\\/]/, '')
     );
     const imageData = SubmitPitImage.createImageDataVector(

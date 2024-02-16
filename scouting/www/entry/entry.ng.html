@@ -81,7 +81,7 @@
     <h2>Select Starting Position</h2>
     <img
       id="field_starting_positions_image"
-      src="/sha256/b71def525fb78486617a8b350c0ba6907e8ea25f78d4084a932cba8ae922528c/pictures/field/field.jpg"
+      src="/sha256/bb83d2c976c1496bb470371821d1d1882d6baf31178009a6f6cba579880c6a03/pictures/field/2024_field.png"
       alt="Starting Positions Image"
       class="img-fluid"
     />
@@ -129,15 +129,9 @@
       </button>
       <button
         class="btn btn-warning"
-        (click)="changeSectionTo('Place'); addAction({type: 'pickupObjectAction', objectType: ObjectType.kCone});"
+        (click)="changeSectionTo('Place'); addAction({type: 'pickupNoteAction'});"
       >
-        CONE
-      </button>
-      <button
-        class="btn btn-primary"
-        (click)="changeSectionTo('Place'); addAction({type: 'pickupObjectAction', objectType: ObjectType.kCube});"
-      >
-        CUBE
+        NOTE
       </button>
       <button
         *ngIf="autoPhase && !mobilityCompleted"
@@ -146,49 +140,35 @@
       >
         Mobility
       </button>
-      <!-- 'Balancing' during auto. -->
-      <div *ngIf="autoPhase" class="d-grid gap-2">
-        <label>
-          <input
-            #docked
-            type="radio"
-            id="option1"
-            name="docked_engaged"
-            value="docked"
-          />
-          Docked (on the charging station)
-        </label>
-        <label>
-          <input
-            #engaged
-            type="radio"
-            id="option2"
-            name="docked_engaged"
-            value="dockedengaged"
-          />
-          Docked &amp; Engaged (level &amp; station lights on)
-        </label>
-        <label>
-          <input
-            #attempted
-            type="radio"
-            id="option3"
-            name="docked_engaged"
-            value="failed"
-          />
-          Attempted to dock and engage but failed
-        </label>
+      <div style="display: flex">
+        <h5>Penalties :</h5>
         <button
-          class="btn btn-dark"
-          (click)="autoPhase = false; addAction({type: 'endAutoPhase'}); addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
+          class="btn-light"
+          style="width: 40px; margin-right: 15px"
+          (click)="removePenalty()"
         >
-          Start Teleop
+          -
+        </button>
+        <p>{{this.penalties}}</p>
+        <button
+          class="btn-light"
+          style="width: 40px; margin-left: 15px"
+          (click)="addPenalty()"
+        >
+          +
         </button>
       </div>
       <button
+        *ngIf="autoPhase"
+        class="btn btn-dark"
+        (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
+      >
+        Start Teleop
+      </button>
+      <button
         *ngIf="!autoPhase"
         class="btn btn-info"
-        (click)="changeSectionTo('Endgame')"
+        (click)="changeSectionTo('Endgame'); addAction({type: 'endTeleopPhase'});"
       >
         Endgame
       </button>
@@ -212,23 +192,62 @@
       >
         DEAD
       </button>
+      <div *ngIf="!autoPhase" class="d-grid gap-1" style="padding: 0">
+        <div
+          style="
+            display: flex-wrap;
+            padding: 0;
+            justify-content: center;
+            text-align: center;
+            align-content: center;
+            margin: 0;
+          "
+        >
+          <button
+            class="btn btn-success"
+            (click)="changeSectionTo('Pickup'); addAction({type: 'placeNoteAction', scoreType: ScoreType.kAMP});"
+            style="width: 48%; height: 12vh; margin: 0px 10px 10px 0px"
+          >
+            AMP
+          </button>
+
+          <button
+            class="btn btn-warning"
+            (click)="changeSectionTo('Pickup');  addAction({type: 'placeNoteAction', scoreType: ScoreType.kAMP_AMPLIFIED});"
+            style="width: 48%; height: 12vh; margin: 0px 0px 10px 0px"
+          >
+            AMP AMPLIFIED
+          </button>
+          <button
+            class="btn btn-success"
+            (click)="changeSectionTo('Pickup'); addAction({type: 'placeNoteAction', scoreType: ScoreType.kSPEAKER});"
+            style="width: 48%; height: 12vh; margin: 0px 10px 0px 0px"
+          >
+            SPEAKER
+          </button>
+          <button
+            class="btn btn-warning"
+            (click)="changeSectionTo('Pickup');  addAction({type: 'placeNoteAction', scoreType: ScoreType.kSPEAKER_AMPLIFIED});"
+            style="width: 48%; height: 12vh; margin: 0px 0px 0px 0px"
+          >
+            SPEAKER AMPLIFIED
+          </button>
+        </div>
+      </div>
+
       <button
+        *ngIf="autoPhase"
         class="btn btn-success"
-        (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kHigh});"
+        (click)="changeSectionTo('Pickup'); addAction({type: 'placeNoteAction', scoreType: ScoreType.kAMP});"
       >
-        HIGH
+        AMP
       </button>
       <button
+        *ngIf="autoPhase"
         class="btn btn-warning"
-        (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kMiddle});"
+        (click)="changeSectionTo('Pickup'); addAction({type: 'placeNoteAction', scoreType: ScoreType.kSPEAKER});"
       >
-        MID
-      </button>
-      <button
-        class="btn btn-danger"
-        (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kLow});"
-      >
-        LOW
+        SPEAKER
       </button>
       <button
         *ngIf="autoPhase && !mobilityCompleted"
@@ -237,58 +256,35 @@
       >
         Mobility
       </button>
-      <!-- Impossible to place supercharged pieces in auto. -->
-      <div *ngIf="autoPhase == false" class="d-grid gap-2">
+      <div style="display: flex">
+        <h5>Penalties :</h5>
         <button
-          class="btn btn-dark"
-          (click)="changeSectionTo('Pickup'); addAction({type: 'placeObjectAction', scoreLevel: ScoreLevel.kSupercharged});"
+          class="btn-light"
+          style="width: 40px; margin-right: 15px"
+          (click)="removePenalty()"
         >
-          SUPERCHARGED
+          -
         </button>
-      </div>
-      <!-- 'Balancing' during auto. -->
-      <div *ngIf="autoPhase" class="d-grid gap-1">
-        <label>
-          <input
-            #docked
-            type="radio"
-            id="option1"
-            name="docked_engaged"
-            value="docked"
-          />
-          Docked (on the charging station)
-        </label>
-        <label>
-          <input
-            #engaged
-            type="radio"
-            id="option2"
-            name="docked_engaged"
-            value="dockedengaged"
-          />
-          Docked &amp; Engaged (level &amp; station lights on)
-        </label>
-        <label>
-          <input
-            #attempted
-            type="radio"
-            id="option3"
-            name="docked_engaged"
-            value="failed"
-          />
-          Attempted to dock and engage but failed
-        </label>
+        <p>{{this.penalties}}</p>
         <button
-          class="btn btn-dark"
-          (click)="autoPhase = false; addAction({type: 'endAutoPhase'}); addAction({type: 'autoBalanceAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
+          class="btn-light"
+          style="width: 40px; margin-left: 15px"
+          (click)="addPenalty()"
         >
-          Start Teleop
+          +
         </button>
       </div>
       <button
+        class="btn btn-dark"
+        *ngIf="autoPhase"
+        (click)="autoPhase = false; addAction({type: 'endAutoPhase'});"
+      >
+        Start Teleop
+      </button>
+      <button
         *ngIf="!autoPhase"
         class="btn btn-info"
-        (click)="changeSectionTo('Endgame')"
+        (click)="changeSectionTo('Endgame'); addAction({type: 'endTeleopPhase'});"
       >
         Endgame
       </button>
@@ -298,7 +294,7 @@
     <h6 class="text-muted">
       Last Action: {{actionList[actionList.length - 1].type}}
     </h6>
-    <div class="d-grid gap-5">
+    <div class="d-grid gap-4">
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
@@ -306,40 +302,68 @@
       >
         DEAD
       </button>
-      <label>
+      <label style="padding: 0">
         <input
-          #docked
+          #park
           type="radio"
           id="option1"
-          name="docked_engaged"
-          value="docked"
+          name="endgameaction"
+          value="park"
         />
-        Docked (on the charging station)
+        Park
       </label>
-      <label>
+      <label style="padding: 0">
         <input
-          #engaged
+          #onStage
           type="radio"
           id="option2"
-          name="docked_engaged"
-          value="dockedengaged"
+          name="endgameaction"
+          value="onStage"
         />
-        Docked &amp; Engaged (level &amp; station lights on)
+        On Stage
       </label>
-      <label>
+      <label style="padding: 0">
         <input
-          #attempted
+          #harmony
           type="radio"
           id="option3"
-          name="docked_engaged"
-          value="failed"
+          name="endgameaction"
+          value="harmony"
         />
-        Attempted to dock and engage but failed
+        Harmony
       </label>
+      <label style="padding: 0">
+        <input
+          #trapNote
+          type="checkbox"
+          id="trapnote"
+          name="trapnote"
+          value="trapNote"
+        />
+        Trap Note
+      </label>
+      <div style="display: flex">
+        <h5>Penalties :</h5>
+        <button
+          class="btn-light"
+          style="width: 40px; margin-right: 15px"
+          (click)="removePenalty()"
+        >
+          -
+        </button>
+        <p>{{this.penalties}}</p>
+        <button
+          class="btn-light"
+          style="width: 40px; margin-left: 15px"
+          (click)="addPenalty()"
+        >
+          +
+        </button>
+      </div>
       <button
         *ngIf="!autoPhase"
         class="btn btn-info"
-        (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: docked.checked, engaged: engaged.checked, balanceAttempt: attempted.checked});"
+        (click)="changeSectionTo('Review and Submit');  addPenalties(); addAction({type: 'endMatchAction', park: park.checked, onStage: onStage.checked, harmony: harmony.checked, trapNote: trapNote.checked});"
       >
         End Match
       </button>
@@ -353,12 +377,6 @@
         (click)="changeSectionTo('Pickup'); addAction({type: 'robotDeathAction', robotOn: true}); "
       >
         Revive
-      </button>
-      <button
-        class="btn btn-info"
-        (click)="changeSectionTo('Review and Submit'); addAction({type: 'endMatchAction', docked: docked.checked, engaged: engaged.checked});"
-      >
-        End Match
       </button>
     </div>
   </div>
@@ -374,21 +392,14 @@
             <span *ngSwitchCase="'startMatchAction'">
               Started match at position {{action.position}}
             </span>
-            <span *ngSwitchCase="'pickupObjectAction'">
-              Picked up {{stringifyObjectType(action.objectType)}}
-            </span>
-            <span *ngSwitchCase="'placeObjectAction'">
-              Placed at {{stringifyScoreLevel(action.scoreLevel)}}
-            </span>
-            <span *ngSwitchCase="'autoBalanceAction'">
-              Docked: {{action.docked}}, engaged: {{action.engaged}}, attempted
-              to balance and engage: {{action.balanceAttempt}}
+            <span *ngSwitchCase="'pickupNoteAction'">Picked up Note</span>
+            <span *ngSwitchCase="'placeNoteAction'">
+              Placed at {{stringifyScoreType(action.scoreType)}}
             </span>
             <span *ngSwitchCase="'endAutoPhase'">Ended auto phase</span>
             <span *ngSwitchCase="'endMatchAction'">
-              Ended Match; docked: {{action.docked}}, engaged:
-              {{action.engaged}}, attempted to dock and engage:
-              {{action.balanceAttempt}}
+              Ended Match; park: {{action.park}}, onStage: {{action.onStage}},
+              harmony: {{action.harmony}}, trapNote: {{action.trapNote}}
             </span>
             <span *ngSwitchCase="'robotDeathAction'">
               Robot on: {{action.robotOn}}
@@ -397,13 +408,18 @@
               Mobility: {{action.mobility}}
             </span>
             <span *ngSwitchDefault>{{action.type}}</span>
+            <span *ngSwitchCase="'penaltyAction'">
+              Penalties: {{action.penalties}}
+            </span>
           </div>
         </li>
       </ul>
     </div>
     <div class="d-grid gap-5">
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
-      <button class="btn btn-warning" (click)="submitActions();">Submit</button>
+      <button class="btn btn-warning" (click)="submit2024Actions();">
+        Submit
+      </button>
     </div>
   </div>
   <div *ngSwitchCase="'Success'" id="Success" class="container-fluid">

@@ -131,30 +131,22 @@ func TestRequestAllMatches(t *testing.T) {
 			},
 		},
 		// Pretend that we have some data scouting data.
-		stats2023: []db.Stats2023{
+		stats2024: []db.Stats2024{
 			{
-				TeamNumber: "5", MatchNumber: 1, SetNumber: 1,
-				CompLevel: "qm", StartingQuadrant: 3, LowCubesAuto: 10,
-				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 0,
-				LowConesAuto: 1, MiddleConesAuto: 2, HighConesAuto: 1,
-				ConesDroppedAuto: 0, LowCubes: 1, MiddleCubes: 1,
-				HighCubes: 2, CubesDropped: 1, LowCones: 1,
-				MiddleCones: 2, HighCones: 0, ConesDropped: 1, SuperchargedPieces: 0,
-				AvgCycle: 34, Mobility: false, DockedAuto: true, EngagedAuto: true,
-				BalanceAttemptAuto: false, Docked: false, Engaged: false,
-				BalanceAttempt: false, CollectedBy: "alex",
+				PreScouting: false, TeamNumber: "5",
+				MatchNumber: 1, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 3,
+				SpeakerAuto: 2, AmpAuto: 4, NotesDroppedAuto: 1, MobilityAuto: true,
+				Speaker: 0, Amp: 1, SpeakerAmplified: 2, AmpAmplified: 1,
+				NotesDropped: 0, Penalties: 01, TrapNote: true, AvgCycle: 233,
+				Park: false, OnStage: true, Harmony: false, CollectedBy: "alex",
 			},
 			{
-				TeamNumber: "973", MatchNumber: 3, SetNumber: 1,
-				CompLevel: "qm", StartingQuadrant: 1, LowCubesAuto: 0,
-				MiddleCubesAuto: 1, HighCubesAuto: 1, CubesDroppedAuto: 2,
-				LowConesAuto: 0, MiddleConesAuto: 0, HighConesAuto: 0,
-				ConesDroppedAuto: 1, LowCubes: 0, MiddleCubes: 0,
-				HighCubes: 1, CubesDropped: 0, LowCones: 0,
-				MiddleCones: 2, HighCones: 1, ConesDropped: 1, SuperchargedPieces: 0,
-				AvgCycle: 53, Mobility: true, DockedAuto: true, EngagedAuto: false,
-				BalanceAttemptAuto: false, Docked: false, Engaged: false,
-				BalanceAttempt: true, CollectedBy: "bob",
+				PreScouting: false, TeamNumber: "973",
+				MatchNumber: 3, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
+				SpeakerAuto: 0, AmpAuto: 2, NotesDroppedAuto: 0, MobilityAuto: false,
+				Speaker: 0, Amp: 4, SpeakerAmplified: 3, AmpAmplified: 1,
+				NotesDropped: 0, Penalties: 1, TrapNote: true, AvgCycle: 120,
+				Park: true, OnStage: false, Harmony: false, CollectedBy: "bob",
 			},
 		},
 	}
@@ -416,8 +408,10 @@ func TestConvertActionsToStat2024(t *testing.T) {
 			},
 			{
 				ActionTaken: &submit_2024_actions.ActionTypeT{
-					Type:  submit_2024_actions.ActionTypePenaltyAction,
-					Value: &submit_2024_actions.PenaltyActionT{},
+					Type: submit_2024_actions.ActionTypePenaltyAction,
+					Value: &submit_2024_actions.PenaltyActionT{
+						Penalties: 5,
+					},
 				},
 				Timestamp: 2400,
 			},
@@ -485,7 +479,7 @@ func TestConvertActionsToStat2024(t *testing.T) {
 		MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
 		SpeakerAuto: 0, AmpAuto: 1, NotesDroppedAuto: 1, MobilityAuto: true,
 		Speaker: 0, Amp: 0, SpeakerAmplified: 1, AmpAmplified: 1,
-		NotesDropped: 0, Penalties: 1, TrapNote: false, AvgCycle: 950,
+		NotesDropped: 0, Penalties: 5, TrapNote: false, AvgCycle: 950,
 		Park: false, OnStage: false, Harmony: true, CollectedBy: "",
 	}
 
