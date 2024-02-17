@@ -1433,6 +1433,14 @@ http_archive(
 )
 
 http_archive(
+    name = "com_github_nghttp2_nghttp2",
+    build_file = "//debian:BUILD.nghttp2.bazel",
+    sha256 = "7da19947b33a07ddcf97b9791331bfee8a8545e6b394275a9971f43cae9d636b",
+    strip_prefix = "nghttp2-1.58.0",
+    url = "https://github.com/nghttp2/nghttp2/archive/refs/tags/v1.58.0.tar.gz",
+)
+
+http_archive(
     # No official name exists.  Names used in our external dependencies include
     # zlib, madler_zlib, com_github_madler_zlib.
     name = "zlib",

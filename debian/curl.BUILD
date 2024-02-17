@@ -422,6 +422,7 @@ cc_library(
             "-DCURL_DISABLE_NTLM",  # turning it off in configure is not enough
             "-DHAVE_LIBZ",
             "-DHAVE_ZLIB_H",
+            "-DUSE_NGHTTP2",
             "-Wno-string-plus-int",
             "-Wno-cast-qual",
             "-Wno-format-nonliteral",
@@ -466,6 +467,7 @@ cc_library(
         # Use the same version of zlib that gRPC does.
         "@zlib",
         ":define-ca-bundle-location",
+        "@com_github_nghttp2_nghttp2//:nghttp2",
     ] + select({
         ":windows": [],
         "//conditions:default": [
