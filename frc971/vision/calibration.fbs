@@ -48,6 +48,9 @@ table CameraCalibration {
   // ID for the physical camera hardware (typically will be a string of the form
   // YY-NN, with a two-digit year and an index).
   camera_id:string (id: 7);
+
+  // The camera number.  This may be empty, "0", or "1".
+  camera_number:int (id: 8);
 }
 
 // Calibration information for all the cameras we know about.

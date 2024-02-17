@@ -15,12 +15,14 @@
 #include "aos/time/time.h"
 #include "aos/util/file.h"
 #include "frc971/vision/charuco_lib.h"
+#include "frc971/vision/vision_util_lib.h"
 
 namespace frc971::vision {
 
 class IntrinsicsCalibration {
  public:
   IntrinsicsCalibration(aos::EventLoop *event_loop, std::string_view hostname,
+                        std::string_view camera_channel,
                         std::string_view camera_id,
                         std::string_view base_intrinsics_file,
                         bool display_undistorted,
@@ -39,8 +41,9 @@ class IntrinsicsCalibration {
   static aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>
   BuildCalibration(cv::Mat camera_matrix, cv::Mat dist_coeffs,
                    aos::realtime_clock::time_point realtime_now,
-                   std::string_view cpu_type, int cpu_number,
-                   std::string_view camera_id, uint16_t team_number);
+                   std::string_view cpu_type, uint16_t cpu_number,
+                   std::string_view camera_channel, std::string_view camera_id,
+                   uint16_t team_number);
 
  private:
   static constexpr double kDeltaRThreshold = M_PI / 6.0;
@@ -52,6 +55,7 @@ class IntrinsicsCalibration {
   std::string hostname_;
   const std::optional<std::string_view> cpu_type_;
   const std::optional<uint16_t> cpu_number_;
+  const std::string camera_channel_;
   const std::string camera_id_;
 
   std::vector<std::vector<int>> all_charuco_ids_;

@@ -110,18 +110,7 @@
       "max_size": 208
     },
     {
-      "name": "/orin{{ NUM }}/camera1",
-      "type": "frc971.vision.CameraImage",
-      "source_node": "orin{{ NUM }}",
-      "channel_storage_duration": 1000000000,
-      "frequency": 65,
-      "max_size": 4752384,
-      "num_readers": 6,
-      "read_method": "PIN",
-      "num_senders": 18
-    },
-    {
-      "name": "/orin{{ NUM }}/camera2",
+      "name": "/orin{{ NUM }}/camera0",
       "type": "frc971.vision.CameraImage",
       "source_node": "orin{{ NUM }}",
       "channel_storage_duration": 1000000000,
@@ -133,6 +122,17 @@
     },
     {
       "name": "/orin{{ NUM }}/camera1",
+      "type": "frc971.vision.CameraImage",
+      "source_node": "orin{{ NUM }}",
+      "channel_storage_duration": 1000000000,
+      "frequency": 65,
+      "max_size": 4752384,
+      "num_readers": 6,
+      "read_method": "PIN",
+      "num_senders": 18
+    },
+    {
+      "name": "/orin{{ NUM }}/camera0",
       "type": "foxglove.CompressedImage",
       "source_node": "orin{{ NUM }}",
       "channel_storage_duration": 1000000000,
@@ -140,12 +140,19 @@
       "max_size": 622384
     },
     {
-      "name": "/orin{{ NUM }}/camera2",
+      "name": "/orin{{ NUM }}/camera1",
       "type": "foxglove.CompressedImage",
       "source_node": "orin{{ NUM }}",
       "channel_storage_duration": 1000000000,
       "frequency": 65,
       "max_size": 622384
+    },
+    {
+      "name": "/orin{{ NUM }}/camera0",
+      "type": "foxglove.ImageAnnotations",
+      "source_node": "orin{{ NUM }}",
+      "frequency": 65,
+      "max_size": 50000
     },
     {
       "name": "/orin{{ NUM }}/camera1",
@@ -155,11 +162,27 @@
       "max_size": 50000
     },
     {
-      "name": "/orin{{ NUM }}/camera2",
-      "type": "foxglove.ImageAnnotations",
+      "name": "/orin{{ NUM }}/camera0",
+      "type": "frc971.vision.TargetMap",
       "source_node": "orin{{ NUM }}",
       "frequency": 65,
-      "max_size": 50000
+      "num_senders": 2,
+      "max_size": 1024,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "imu"
+      ],
+      "destination_nodes": [
+        {
+          "name": "imu",
+          "priority": 4,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "orin{{ NUM }}"
+          ],
+          "time_to_live": 5000000
+        }
+      ]
     },
     {
       "name": "/orin{{ NUM }}/camera1",
@@ -185,37 +208,14 @@
       ]
     },
     {
-      "name": "/orin{{ NUM }}/camera2",
-      "type": "frc971.vision.TargetMap",
-      "source_node": "orin{{ NUM }}",
-      "frequency": 65,
-      "num_senders": 2,
-      "max_size": 1024,
-      "logger": "LOCAL_AND_REMOTE_LOGGER",
-      "logger_nodes": [
-        "imu"
-      ],
-      "destination_nodes": [
-        {
-          "name": "imu",
-          "priority": 4,
-          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
-          "timestamp_logger_nodes": [
-            "orin{{ NUM }}"
-          ],
-          "time_to_live": 5000000
-        }
-      ]
-    },
-    {
-      "name": "/orin{{ NUM }}/aos/remote_timestamps/imu/orin{{ NUM }}/camera1/frc971-vision-TargetMap",
+      "name": "/orin{{ NUM }}/aos/remote_timestamps/imu/orin{{ NUM }}/camera0/frc971-vision-TargetMap",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 80,
       "source_node": "orin{{ NUM }}",
       "max_size": 208
     },
     {
-      "name": "/orin{{ NUM }}/aos/remote_timestamps/imu/orin{{ NUM }}/camera2/frc971-vision-TargetMap",
+      "name": "/orin{{ NUM }}/aos/remote_timestamps/imu/orin{{ NUM }}/camera1/frc971-vision-TargetMap",
       "type": "aos.message_bridge.RemoteMessage",
       "frequency": 80,
       "source_node": "orin{{ NUM }}",
@@ -296,22 +296,22 @@
       ]
     },
     {
-      "name": "foxglove_image_converter1",
+      "name": "foxglove_image_converter0",
       "executable_name": "foxglove_image_converter",
       "user": "pi",
       "args": [
-          "--channel", "/camera1"
+          "--channel", "/camera0"
       ],
       "nodes": [
         "orin{{ NUM }}"
       ]
     },
     {
-      "name": "foxglove_image_converter2",
+      "name": "foxglove_image_converter1",
       "executable_name": "foxglove_image_converter",
       "user": "pi",
       "args": [
-          "--channel", "/camera2"
+          "--channel", "/camera1"
       ],
       "nodes": [
         "orin{{ NUM }}"
@@ -326,11 +326,24 @@
       ]
     },
     {
-      "name": "argus_camera1",
+      "name": "argus_camera0",
       "executable_name": "argus_camera",
       "args": [
           "--enable_ftrace",
           "--camera=0",
+          "--channel=/camera0",
+      ],
+      "user": "pi",
+      "nodes": [
+        "orin{{ NUM }}"
+      ]
+    },
+    {
+      "name": "argus_camera1",
+      "executable_name": "argus_camera",
+      "args": [
+          "--enable_ftrace",
+          "--camera=1",
           "--channel=/camera1",
       ],
       "user": "pi",
@@ -339,12 +352,10 @@
       ]
     },
     {
-      "name": "argus_camera2",
-      "executable_name": "argus_camera",
+      "name": "apriltag_detector0",
+      "executable_name": "apriltag_detector",
       "args": [
-          "--enable_ftrace",
-          "--camera=1",
-          "--channel=/camera2",
+          "--channel=/camera0",
       ],
       "user": "pi",
       "nodes": [
@@ -356,17 +367,6 @@
       "executable_name": "apriltag_detector",
       "args": [
           "--channel=/camera1",
-      ],
-      "user": "pi",
-      "nodes": [
-        "orin{{ NUM }}"
-      ]
-    },
-    {
-      "name": "apriltag_detector2",
-      "executable_name": "apriltag_detector",
-      "args": [
-          "--channel=/camera2",
       ],
       "user": "pi",
       "nodes": [

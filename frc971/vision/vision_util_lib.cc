@@ -43,4 +43,19 @@ cv::Mat CameraDistCoeffs(
   return result;
 }
 
+std::optional<uint16_t> CameraNumberFromChannel(std::string camera_channel) {
+  if (camera_channel.find("/camera") == std::string::npos) {
+    return std::nullopt;
+  }
+  // If the string doesn't end in /camera#, return nullopt
+  uint16_t cam_len = std::string("/camera").length();
+  if (camera_channel.length() != camera_channel.find("/camera") + cam_len + 1) {
+    return std::nullopt;
+  }
+
+  uint16_t camera_number = std::stoi(
+      camera_channel.substr(camera_channel.find("/camera") + cam_len, 1));
+  return camera_number;
+}
+
 }  // namespace frc971::vision

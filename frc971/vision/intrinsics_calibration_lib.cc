@@ -1,15 +1,23 @@
 #include "frc971/vision/intrinsics_calibration_lib.h"
 
+DECLARE_bool(visualize);
+
 namespace frc971::vision {
+
+// Found that under 50 ms would fail image too often on intrinsics with
+// visualize on
+constexpr aos::monotonic_clock::duration kMaxImageAge =
+    aos::monotonic_clock::duration(std::chrono::milliseconds(50));
 
 IntrinsicsCalibration::IntrinsicsCalibration(
     aos::EventLoop *event_loop, std::string_view hostname,
-    std::string_view camera_id, std::string_view base_intrinsics_file,
-    bool display_undistorted, std::string_view calibration_folder,
-    aos::ExitHandle *exit_handle)
+    std::string_view camera_channel, std::string_view camera_id,
+    std::string_view base_intrinsics_file, bool display_undistorted,
+    std::string_view calibration_folder, aos::ExitHandle *exit_handle)
     : hostname_(hostname),
       cpu_type_(aos::network::ParsePiOrOrin(hostname_)),
       cpu_number_(aos::network::ParsePiOrOrinNumber(hostname_)),
+      camera_channel_(camera_channel),
       camera_id_(camera_id),
       prev_H_camera_board_(Eigen::Affine3d()),
       prev_image_H_camera_board_(Eigen::Affine3d()),
@@ -18,7 +26,7 @@ IntrinsicsCalibration::IntrinsicsCalibration(
               base_intrinsics_file)),
       charuco_extractor_(
           event_loop, &base_intrinsics_.message(), TargetType::kCharuco,
-          "/camera",
+          camera_channel_,
           [this](cv::Mat rgb_image, const aos::monotonic_clock::time_point eof,
                  std::vector<cv::Vec4i> charuco_ids,
                  std::vector<std::vector<cv::Point2f>> charuco_corners,
@@ -30,17 +38,18 @@ IntrinsicsCalibration::IntrinsicsCalibration(
       image_callback_(
           event_loop,
           absl::StrCat("/", aos::network::ParsePiOrOrin(hostname_).value(),
-                       // TODO: Need to make this work with multiple cameras
-                       std::to_string(cpu_number_.value()), "/camera"),
+                       std::to_string(cpu_number_.value()), camera_channel_),
           [this](cv::Mat rgb_image,
                  const aos::monotonic_clock::time_point eof) {
             charuco_extractor_.HandleImage(rgb_image, eof);
           },
-          std::chrono::milliseconds(5)),
+          kMaxImageAge),
       display_undistorted_(display_undistorted),
       calibration_folder_(calibration_folder),
       exit_handle_(exit_handle) {
-  LOG(INFO) << "Hostname is: " << hostname_;
+  LOG(INFO) << "Hostname is: " << hostname_ << " and camera channel is "
+            << camera_channel_;
+
   CHECK(cpu_number_) << ": Invalid cpu number " << hostname_
                      << ", failed to parse cpu number";
   std::regex re{"^[0-9][0-9]-[0-9][0-9]"};
@@ -54,25 +63,28 @@ void IntrinsicsCalibration::HandleCharuco(
     std::vector<std::vector<cv::Point2f>> charuco_corners, bool valid,
     std::vector<Eigen::Vector3d> rvecs_eigen,
     std::vector<Eigen::Vector3d> tvecs_eigen) {
-  // Reduce resolution displayed on remote viewer to prevent lag
-  cv::resize(rgb_image, rgb_image,
-             cv::Size(rgb_image.cols / 2, rgb_image.rows / 2));
-  cv::imshow("Display", rgb_image);
+  if (FLAGS_visualize) {
+    // Reduce resolution displayed on remote viewer to prevent lag
+    cv::resize(rgb_image, rgb_image,
+               cv::Size(rgb_image.cols / 2, rgb_image.rows / 2));
+    cv::imshow("Display", rgb_image);
 
-  if (display_undistorted_) {
-    const cv::Size image_size(rgb_image.cols, rgb_image.rows);
-    cv::Mat undistorted_rgb_image(image_size, CV_8UC3);
-    cv::undistort(rgb_image, undistorted_rgb_image,
-                  charuco_extractor_.camera_matrix(),
-                  charuco_extractor_.dist_coeffs());
+    if (display_undistorted_) {
+      const cv::Size image_size(rgb_image.cols, rgb_image.rows);
+      cv::Mat undistorted_rgb_image(image_size, CV_8UC3);
+      cv::undistort(rgb_image, undistorted_rgb_image,
+                    charuco_extractor_.camera_matrix(),
+                    charuco_extractor_.dist_coeffs());
 
-    cv::imshow("Display undist", undistorted_rgb_image);
+      cv::imshow("Display undist", undistorted_rgb_image);
+    }
   }
 
   int keystroke = cv::waitKey(1);
 
   // If we haven't got a valid pose estimate, don't use these points
   if (!valid) {
+    LOG(INFO) << "Skipping because pose is not valid";
     return;
   }
   CHECK(tvecs_eigen.size() == 1)
@@ -99,8 +111,8 @@ void IntrinsicsCalibration::HandleCharuco(
   bool store_image = false;
   double percent_motion =
       std::max<double>(r_norm / kDeltaRThreshold, t_norm / kDeltaTThreshold);
-  LOG(INFO) << "Captured: " << all_charuco_ids_.size() << " points; Moved "
-            << percent_motion << "% of what's needed";
+  LOG(INFO) << "Captured: " << all_charuco_ids_.size() << " points; \nMoved "
+            << static_cast<int>(percent_motion * 100) << "% of what's needed";
   // Verify that camera has moved enough from last stored image
   if (r_norm > kDeltaRThreshold || t_norm > kDeltaTThreshold) {
     // frame_ refers to deltas between current and last captured image
@@ -120,9 +132,11 @@ void IntrinsicsCalibration::HandleCharuco(
     double percent_stop = std::max<double>(frame_r_norm / kFrameDeltaRLimit,
                                            frame_t_norm / kFrameDeltaTLimit);
     LOG(INFO) << "Captured: " << all_charuco_ids_.size()
-              << "points; Moved enough (" << percent_motion
-              << "%); Need to stop (last motion was " << percent_stop
-              << "% of limit; needs to be < 1 to capture)";
+              << "points; \nMoved enough ("
+              << static_cast<int>(percent_motion * 100)
+              << "%); Need to stop (last motion was "
+              << static_cast<int>(percent_stop * 100)
+              << "% of limit; needs to be < 1% to capture)";
   }
   prev_image_H_camera_board_ = H_camera_board_;
 
@@ -157,7 +171,8 @@ aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>
 IntrinsicsCalibration::BuildCalibration(
     cv::Mat camera_matrix, cv::Mat dist_coeffs,
     aos::realtime_clock::time_point realtime_now, std::string_view cpu_type,
-    int cpu_number, std::string_view camera_id, uint16_t team_number) {
+    uint16_t cpu_number, std::string_view camera_channel,
+    std::string_view camera_id, uint16_t team_number) {
   flatbuffers::FlatBufferBuilder fbb;
   flatbuffers::Offset<flatbuffers::String> name_offset =
       fbb.CreateString(absl::StrFormat("%s%d", cpu_type, cpu_number));
@@ -168,6 +183,9 @@ IntrinsicsCalibration::BuildCalibration(
         return static_cast<float>(
             reinterpret_cast<double *>(camera_matrix.data)[i]);
       });
+
+  std::optional<uint16_t> camera_number =
+      frc971::vision::CameraNumberFromChannel(std::string(camera_channel));
 
   flatbuffers::Offset<flatbuffers::Vector<float>>
       distortion_coefficients_offset =
@@ -180,6 +198,7 @@ IntrinsicsCalibration::BuildCalibration(
 
   camera_calibration_builder.add_node_name(name_offset);
   camera_calibration_builder.add_team_number(team_number);
+  camera_calibration_builder.add_camera_number(camera_number.value());
   camera_calibration_builder.add_camera_id(camera_id_offset);
   camera_calibration_builder.add_calibration_timestamp(
       realtime_now.time_since_epoch().count());
@@ -220,17 +239,25 @@ void IntrinsicsCalibration::MaybeCalibrate() {
     CHECK(team_number) << ": Invalid hostname " << hostname_
                        << ", failed to parse team number";
     aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>
-        camera_calibration = BuildCalibration(
-            camera_matrix, dist_coeffs, realtime_now, cpu_type_.value(),
-            cpu_number_.value(), camera_id_, team_number.value());
+        camera_calibration =
+            BuildCalibration(camera_matrix, dist_coeffs, realtime_now,
+                             cpu_type_.value(), cpu_number_.value(),
+                             camera_channel_, camera_id_, team_number.value());
     std::stringstream time_ss;
     time_ss << realtime_now;
 
+    std::string camera_number_optional = "";
+    std::optional<uint16_t> camera_number =
+        frc971::vision::CameraNumberFromChannel(camera_channel_);
+    if (camera_number != std::nullopt) {
+      camera_number_optional = "-" + std::to_string(camera_number.value());
+    }
     const std::string calibration_filename =
         calibration_folder_ +
-        absl::StrFormat("/calibration_%s-%d-%d_cam-%s_%s.json",
+        absl::StrFormat("/calibration_%s-%d-%d%s_cam-%s_%s.json",
                         cpu_type_.value(), team_number.value(),
-                        cpu_number_.value(), camera_id_, time_ss.str());
+                        cpu_number_.value(), camera_number_optional, camera_id_,
+                        time_ss.str());
 
     LOG(INFO) << calibration_filename << " -> "
               << aos::FlatbufferToJson(camera_calibration,
