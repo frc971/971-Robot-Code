@@ -50,7 +50,7 @@ table Status {
   intake_roller_state:IntakeRollerState (id: 2);
 
   // Estimated angle and angular velocitiy of the intake.
-  intake_pivot_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 3);
+  intake_pivot_state:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 3);
 
   // State of transfer rollers
   transfer_roller_state:TransferRollerState (id: 4);

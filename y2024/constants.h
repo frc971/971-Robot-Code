@@ -59,13 +59,6 @@ struct Values {
     return (16.0 / 64.0) * (18.0 / 62.0);
   }
 
-  static constexpr double kIntakePivotPotRatio() { return 16.0 / 64.0; }
-
-  static constexpr double kIntakePivotPotRadiansPerVolt() {
-    return kIntakePivotPotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
-           (2 * M_PI /*radians*/);
-  }
-
   static constexpr double kMaxIntakePivotEncoderPulsesPerSecond() {
     return control_loops::superstructure::intake_pivot::kFreeSpeed /
            (2.0 * M_PI) *
@@ -101,6 +94,12 @@ struct Values {
         ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>
         subsystem_params;
     double potentiometer_offset;
+  };
+
+  struct AbsoluteEncoderConstants {
+    ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
+        ::frc971::zeroing::AbsoluteEncoderZeroingEstimator>
+        subsystem_params;
   };
 };
 

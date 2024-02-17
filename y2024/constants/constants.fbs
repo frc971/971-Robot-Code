@@ -79,9 +79,8 @@ table TransferRollerVoltages {
 }
 
 table RobotConstants {
-  intake_constants:PotAndAbsEncoderConstants (id: 0);
+  intake_constants:frc971.zeroing.AbsoluteEncoderZeroingConstants (id: 0);
   climber_constants:PotAndAbsEncoderConstants (id: 1);
-
 }
 
 // Common table for constants unrelated to the robot

@@ -3,15 +3,12 @@
 
 {
   "robot": {
-    "intake_constants": {
-      {% set _ = intake_pivot_zero.update(
-          {
-              "measured_absolute_position" : 0.0
-          }
-      ) %}
-      "zeroing_constants": {{ intake_pivot_zero | tojson(indent=2)}},
-      "potentiometer_offset": 0.0
-    },
+    {% set _ = intake_pivot_zero.update(
+      {
+          "measured_absolute_position" : 0.0
+      }
+    ) %}
+    "intake_constants":  {{ intake_pivot_zero | tojson(indent=2)}},
     "climber_constants": {
       {% set _ = climber_zero.update(
           {

@@ -33,11 +33,16 @@ using ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal;
 using DrivetrainStatus = ::frc971::control_loops::drivetrain::Status;
 typedef Superstructure::PotAndAbsoluteEncoderSubsystem
     PotAndAbsoluteEncoderSubsystem;
+typedef Superstructure::AbsoluteEncoderSubsystem AbsoluteEncoderSubsystem;
 using PotAndAbsoluteEncoderSimulator =
     frc971::control_loops::SubsystemSimulator<
         frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus,
         PotAndAbsoluteEncoderSubsystem::State,
         constants::Values::PotAndAbsEncoderConstants>;
+using AbsoluteEncoderSimulator = frc971::control_loops::SubsystemSimulator<
+    frc971::control_loops::AbsoluteEncoderProfiledJointStatus,
+    AbsoluteEncoderSubsystem::State,
+    constants::Values::AbsoluteEncoderConstants>;
 
 class SuperstructureSimulation {
  public:
@@ -57,21 +62,14 @@ class SuperstructureSimulation {
             new CappedTestPlant(intake_pivot::MakeIntakePivotPlant()),
             PositionSensorSimulator(simulated_robot_constants->robot()
                                         ->intake_constants()
-                                        ->zeroing_constants()
                                         ->one_revolution_distance()),
             {.subsystem_params =
                  {simulated_robot_constants->common()->intake_pivot(),
-                  simulated_robot_constants->robot()
-                      ->intake_constants()
-                      ->zeroing_constants()},
-             .potentiometer_offset = simulated_robot_constants->robot()
-                                         ->intake_constants()
-                                         ->potentiometer_offset()},
+                  simulated_robot_constants->robot()->intake_constants()}},
             frc971::constants::Range::FromFlatbuffer(
                 simulated_robot_constants->common()->intake_pivot()->range()),
             simulated_robot_constants->robot()
                 ->intake_constants()
-                ->zeroing_constants()
                 ->measured_absolute_position(),
             dt_),
         climber_(new CappedTestPlant(climber::MakeClimberPlant()),
@@ -127,9 +125,9 @@ class SuperstructureSimulation {
     ::aos::Sender<Position>::Builder builder =
         superstructure_position_sender_.MakeBuilder();
 
-    frc971::PotAndAbsolutePosition::Builder intake_pivot_builder =
-        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
-    flatbuffers::Offset<frc971::PotAndAbsolutePosition> intake_pivot_offset =
+    frc971::AbsolutePosition::Builder intake_pivot_builder =
+        builder.MakeBuilder<frc971::AbsolutePosition>();
+    flatbuffers::Offset<frc971::AbsolutePosition> intake_pivot_offset =
         intake_pivot_.encoder()->GetSensorValues(&intake_pivot_builder);
 
     frc971::PotAndAbsolutePosition::Builder climber_builder =
@@ -151,7 +149,7 @@ class SuperstructureSimulation {
     transfer_beambreak_ = triggered;
   }
 
-  PotAndAbsoluteEncoderSimulator *intake_pivot() { return &intake_pivot_; }
+  AbsoluteEncoderSimulator *intake_pivot() { return &intake_pivot_; }
 
   PotAndAbsoluteEncoderSimulator *climber() { return &climber_; }
 
@@ -166,7 +164,7 @@ class SuperstructureSimulation {
 
   bool transfer_beambreak_;
 
-  PotAndAbsoluteEncoderSimulator intake_pivot_;
+  AbsoluteEncoderSimulator intake_pivot_;
   PotAndAbsoluteEncoderSimulator climber_;
 
   bool first_ = true;
@@ -222,6 +220,8 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     superstructure_goal_fetcher_.Fetch();
     superstructure_status_fetcher_.Fetch();
     superstructure_output_fetcher_.Fetch();
+
+    ASSERT_FALSE(superstructure_status_fetcher_->estopped());
 
     ASSERT_TRUE(superstructure_goal_fetcher_.get() != nullptr) << ": No goal";
     ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr)
@@ -389,7 +389,6 @@ TEST_F(SuperstructureTest, ReachesGoal) {
 
   // Give it a lot of time to get there.
   RunFor(chrono::seconds(15));
-
   VerifyNearGoal();
 }
 
@@ -435,7 +434,7 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
   WaitUntilZeroed();
   RunFor(chrono::seconds(2));
 
-  EXPECT_EQ(PotAndAbsoluteEncoderSubsystem::State::RUNNING,
+  EXPECT_EQ(AbsoluteEncoderSubsystem::State::RUNNING,
             superstructure_.intake_pivot().state());
 
   EXPECT_EQ(PotAndAbsoluteEncoderSubsystem::State::RUNNING,

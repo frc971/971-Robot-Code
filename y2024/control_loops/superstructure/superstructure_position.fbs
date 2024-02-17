@@ -5,7 +5,7 @@ namespace y2024.control_loops.superstructure;
 
 table Position {
     // Values of the encoder and potentiometer at the intake pivot
-    intake_pivot:frc971.PotAndAbsolutePosition (id: 0);
+    intake_pivot:frc971.AbsolutePosition (id: 0);
 
     // Values of the encoder and potentiometer at the turret
     turret:frc971.PotAndAbsolutePosition (id: 1);
