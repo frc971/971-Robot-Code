@@ -4,6 +4,7 @@
 #include <linux/sctp.h>
 #include <net/if.h>
 #include <netdb.h>
+#include <netinet/ip.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -25,6 +26,25 @@
 DEFINE_string(interface, "", "network interface");
 DEFINE_bool(disable_ipv6, false, "disable ipv6");
 DEFINE_int32(rmem, 0, "If nonzero, set rmem to this size.");
+
+// The Type of Service.
+// https://www.tucny.com/Home/dscp-tos
+//
+// We want to set the highest precedence (i.e. critical) with minimal delay.  We
+// also want to be able to stuff the packets into bucket 0 for queue
+// disciplining. Experiments show that 176 works for this. Other values (e.g.
+// DSCP class EF) cannot be stuffed into bucket 0 (for unknown reasons).
+//
+// Note that the two least significant bits are reserved and should always set
+// to zero. Those two bits are the "Explicit Congestion Notification" bits. They
+// are controlled by the IP stack itself (and used by the router). We don't
+// control that via the TOS value we set here.
+DEFINE_int32(
+    sctp_tos, 176,
+    "The Type-Of-Service value to use. Defaults to a critical priority. "
+    "Always set values here whose two least significant bits are set to zero. "
+    "When using tcpdump, the `tos` field may show the least significant two "
+    "bits set to something other than zero.");
 
 namespace aos::message_bridge {
 
@@ -271,6 +291,13 @@ void SctpReadWrite::OpenSocket(const struct sockaddr_storage &sockaddr_local) {
   PCHECK(fd_ != -1);
   LOG(INFO) << "socket(" << Family(sockaddr_local)
             << ", SOCK_SEQPACKET, IPPROTOSCTP) = " << fd_;
+  {
+    // Set up Type-Of-Service.
+    //
+    // See comments for the --sctp_tos flag for more information.
+    int tos = IPTOS_DSCP(FLAGS_sctp_tos);
+    PCHECK(setsockopt(fd_, IPPROTO_IP, IP_TOS, &tos, sizeof(tos)) == 0);
+  }
   {
     // Per https://tools.ietf.org/html/rfc6458
     // Setting this to !0 allows event notifications to be interleaved
