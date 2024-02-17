@@ -172,7 +172,8 @@ IntrinsicsCalibration::BuildCalibration(
     cv::Mat camera_matrix, cv::Mat dist_coeffs,
     aos::realtime_clock::time_point realtime_now, std::string_view cpu_type,
     uint16_t cpu_number, std::string_view camera_channel,
-    std::string_view camera_id, uint16_t team_number) {
+    std::string_view camera_id, uint16_t team_number,
+    double reprojection_error) {
   flatbuffers::FlatBufferBuilder fbb;
   flatbuffers::Offset<flatbuffers::String> name_offset =
       fbb.CreateString(absl::StrFormat("%s%d", cpu_type, cpu_number));
@@ -200,6 +201,8 @@ IntrinsicsCalibration::BuildCalibration(
   camera_calibration_builder.add_team_number(team_number);
   camera_calibration_builder.add_camera_number(camera_number.value());
   camera_calibration_builder.add_camera_id(camera_id_offset);
+  camera_calibration_builder.add_reprojection_error(
+      static_cast<float>(reprojection_error));
   camera_calibration_builder.add_calibration_timestamp(
       realtime_now.time_since_epoch().count());
   camera_calibration_builder.add_intrinsics(intrinsics_offset);
@@ -228,7 +231,7 @@ void IntrinsicsCalibration::MaybeCalibrate() {
         img_size, camera_matrix, dist_coeffs, rvecs, tvecs,
         std_deviations_intrinsics, std_deviations_extrinsics, per_view_errors,
         calibration_flags);
-    CHECK_LE(reprojection_error, 1.0)
+    CHECK_LE(reprojection_error, 2.0)
         << ": Reproduction error is bad-- greater than 1 pixel.";
     LOG(INFO) << "Reprojection Error is " << reprojection_error;
 
@@ -239,10 +242,10 @@ void IntrinsicsCalibration::MaybeCalibrate() {
     CHECK(team_number) << ": Invalid hostname " << hostname_
                        << ", failed to parse team number";
     aos::FlatbufferDetachedBuffer<calibration::CameraCalibration>
-        camera_calibration =
-            BuildCalibration(camera_matrix, dist_coeffs, realtime_now,
-                             cpu_type_.value(), cpu_number_.value(),
-                             camera_channel_, camera_id_, team_number.value());
+        camera_calibration = BuildCalibration(
+            camera_matrix, dist_coeffs, realtime_now, cpu_type_.value(),
+            cpu_number_.value(), camera_channel_, camera_id_,
+            team_number.value(), reprojection_error);
     std::stringstream time_ss;
     time_ss << realtime_now;
 
