@@ -25,6 +25,10 @@ table Output {
     // Positive voltage is for climber up
     // Negative voltage is for climber down
     climber_voltage:double (id: 6);
+
+    // Voltage of the retention rollers
+    // Positive voltage will hold the game piece in the catapult.
+    retention_roller_voltage: double (id: 7);
 }
 
 root_type Output;
