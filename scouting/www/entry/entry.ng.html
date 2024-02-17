@@ -294,7 +294,7 @@
     <h6 class="text-muted">
       Last Action: {{actionList[actionList.length - 1].type}}
     </h6>
-    <div class="d-grid gap-4">
+    <div class="d-grid gap-2">
       <button class="btn btn-secondary" (click)="undoLastAction()">UNDO</button>
       <button
         class="btn btn-danger"
@@ -302,7 +302,7 @@
       >
         DEAD
       </button>
-      <label style="padding: 0">
+      <label>
         <input
           #park
           type="radio"
@@ -312,7 +312,7 @@
         />
         Park
       </label>
-      <label style="padding: 0">
+      <label>
         <input
           #onStage
           type="radio"
@@ -322,7 +322,7 @@
         />
         On Stage
       </label>
-      <label style="padding: 0">
+      <label>
         <input
           #harmony
           type="radio"
@@ -332,7 +332,7 @@
         />
         Harmony
       </label>
-      <label style="padding: 0">
+      <label>
         <input
           #trapNote
           type="checkbox"
@@ -341,6 +341,16 @@
           value="trapNote"
         />
         Trap Note
+      </label>
+      <label>
+        <input
+          #spotlight
+          type="checkbox"
+          id="spotlight"
+          name="spotlight"
+          value="spotlight"
+        />
+        Spotlight
       </label>
       <div style="display: flex">
         <h5>Penalties :</h5>
@@ -363,7 +373,7 @@
       <button
         *ngIf="!autoPhase"
         class="btn btn-info"
-        (click)="changeSectionTo('Review and Submit');  addPenalties(); addAction({type: 'endMatchAction', park: park.checked, onStage: onStage.checked, harmony: harmony.checked, trapNote: trapNote.checked});"
+        (click)="changeSectionTo('Review and Submit');  addPenalties(); addAction({type: 'endMatchAction', stageType: (park.checked ? StageType.kPARK : onStage.checked ? StageType.kON_STAGE : harmony.checked ? StageType.kHARMONY : StageType.kMISSING), trapNote: trapNote.checked, spotlight: spotlight.checked});"
       >
         End Match
       </button>
@@ -398,8 +408,10 @@
             </span>
             <span *ngSwitchCase="'endAutoPhase'">Ended auto phase</span>
             <span *ngSwitchCase="'endMatchAction'">
-              Ended Match; park: {{action.park}}, onStage: {{action.onStage}},
-              harmony: {{action.harmony}}, trapNote: {{action.trapNote}}
+              Ended Match; stageType: {{(action.stageType === 0 ? "kON_STAGE" :
+              action.stageType === 1 ? "kPARK" : action.stageType === 2 ?
+              "kHARMONY" : "kMISSING")}}, trapNote: {{action.trapNote}},
+              spotlight: {{action.spotlight}}
             </span>
             <span *ngSwitchCase="'robotDeathAction'">
               Robot on: {{action.robotOn}}

@@ -111,7 +111,7 @@ function submitDataScouting(
     .last()
     .should(
       'have.text',
-      ' Ended Match; park: false, onStage: false, harmony: true, trapNote: false '
+      ' Ended Match; stageType: kHARMONY, trapNote: false, spotlight: false '
     );
 
   clickButton('Submit');

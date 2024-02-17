@@ -18,3 +18,7 @@ button {
 input label {
   padding: 0px;
 }
+
+#EndGame > div > label {
+  padding: 0;
+}
