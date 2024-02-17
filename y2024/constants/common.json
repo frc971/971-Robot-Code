@@ -5,7 +5,9 @@
         "distance_from_goal": 0.0,
         "shot_params": {
             "shot_velocity": 0.0,
-            "shot_angle": 0.0
+            "shot_altitude_angle": 0.0,
+            "shot_catapult_angle": 0.0,
+            "shot_speed_over_ground": 0.0
         }
     }
   ],
@@ -78,5 +80,7 @@
         "upper": 2.0
     },
     "loop": {% include 'y2024/control_loops/superstructure/climber/integral_climber_plant.json' %}
-  }
+  },
+  "turret_loading_position": 0.0,
+  "catapult_return_position": 0.0
 }

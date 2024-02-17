@@ -35,11 +35,25 @@ enum ClimberGoal : ubyte {
     RETRACT = 2,
 }
 
+table ShooterGoal {
+    catapult_goal:frc971.control_loops.catapult.CatapultGoal (id: 0);
+    fire: bool (id: 1);
+    // If true we ignore the other provided positions
+    auto_aim: bool (id: 2);
+
+    // Position for the turret when we aren't auto aiming
+    turret_position: frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 3);
+
+    // Position for the altitude when we aren't auto aiming
+    altitude_position: frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 4);
+}
+
 table Goal {
     intake_roller_goal:IntakeRollerGoal (id: 0);
     intake_pivot_goal:IntakePivotGoal (id: 1);
     catapult_goal:frc971.control_loops.catapult.CatapultGoal (id: 2);
     transfer_roller_goal:TransferRollerGoal (id: 3);
     climber_goal:ClimberGoal (id: 4);
+    shooter_goal:ShooterGoal (id: 5);
 }
 root_type Goal;
