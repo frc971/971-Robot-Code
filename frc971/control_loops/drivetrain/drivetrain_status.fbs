@@ -1,4 +1,5 @@
 include "frc971/control_loops/control_loops.fbs";
+include "frc971/control_loops/encoder_fault_status.fbs";
 
 namespace frc971.control_loops.drivetrain;
 
@@ -210,6 +211,11 @@ table ImuZeroerState {
   accel_z_average:float (id: 8);
 }
 
+table Faults {
+  right_faulted:EncoderFaultStatus (id: 0);
+  left_faulted:EncoderFaultStatus (id: 1);
+}
+
 table Status {
   // Estimated speed of the center of the robot in m/s (positive forwards).
   robot_speed:double (id: 0);
@@ -271,6 +277,8 @@ table Status {
 
   // Total number of status send failures.
   send_failures:uint64 (id: 28);
+
+  encoder_faults:Faults (id: 29);
 }
 
 root_type Status;

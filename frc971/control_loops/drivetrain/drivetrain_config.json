@@ -43,6 +43,11 @@
     },
     {
       "name": "/drivetrain",
+      "type": "frc971.control_loops.drivetrain.CANPosition",
+      "frequency": 200
+    },
+    {
+      "name": "/drivetrain",
       "type": "frc971.control_loops.drivetrain.Status",
       "frequency": 200,
       "max_size": 2000
