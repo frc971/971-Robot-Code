@@ -7,3 +7,6 @@ DataBitRate=8M
 RestartSec=1000ms
 BusErrorReporting=yes
 FDMode=yes
+
+[Link]
+RequiredForOnline=no
