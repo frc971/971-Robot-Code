@@ -9,7 +9,10 @@ cc_library(
     deps = [
         "//aos/events:event_loop",
         "//aos/network:message_bridge_server_fbs",
+        "//frc971/control_loops:pose",
         "//frc971/control_loops/drivetrain:drivetrain_output_fbs",
+        "//frc971/control_loops/drivetrain:drivetrain_position_fbs",
+        "//frc971/control_loops/drivetrain:hybrid_ekf",
         "//frc971/input:joystick_state_fbs",
         "//frc971/vision:calibration_fbs",
         "@org_tuxfamily_eigen//:eigen",

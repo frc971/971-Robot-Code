@@ -4,6 +4,7 @@ namespace frc971::control_loops::drivetrain {
 
 LocalizationUtils::LocalizationUtils(aos::EventLoop *event_loop)
     : output_fetcher_(event_loop->MakeFetcher<Output>("/drivetrain")),
+      position_fetcher_(event_loop->TryMakeFetcher<Position>("/drivetrain")),
       clock_offset_fetcher_(
           event_loop->MakeFetcher<aos::message_bridge::ServerStatistics>(
               "/aos")),
@@ -21,6 +22,20 @@ Eigen::Vector2d LocalizationUtils::VoltageOrZero(
   return disabled ? Eigen::Vector2d::Zero()
                   : Eigen::Vector2d{output_fetcher_->left_voltage(),
                                     output_fetcher_->right_voltage()};
+}
+
+std::optional<Eigen::Vector2d> LocalizationUtils::Encoders(
+    aos::monotonic_clock::time_point now) {
+  CHECK(position_fetcher_.valid());
+  position_fetcher_.Fetch();
+  const bool stale = (position_fetcher_.get() == nullptr) ||
+                     (position_fetcher_.context().monotonic_event_time +
+                          std::chrono::milliseconds(10) <
+                      now);
+  return stale ? std::nullopt
+               : std::make_optional<Eigen::Vector2d>(
+                     position_fetcher_->left_encoder(),
+                     position_fetcher_->right_encoder());
 }
 
 bool LocalizationUtils::MaybeInAutonomous() {

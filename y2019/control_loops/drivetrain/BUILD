@@ -133,6 +133,7 @@ cc_library(
         "//frc971/control_loops:pose",
         "//frc971/control_loops/drivetrain:camera",
         "//frc971/control_loops/drivetrain:hybrid_ekf",
+        "//frc971/control_loops/drivetrain/localization:utils",
     ],
 )
 
