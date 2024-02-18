@@ -295,11 +295,79 @@ struct QuadDecodeTaskStruct {
   zarray_t *detections;
 
   image_u8_t *im_samples;
+
+  CameraMatrix *camera_matrix;
+  DistCoeffs *distortion_coefficients;
 };
+
+// Dewarps points from the image based on various constants
+// Algorithm mainly taken from
+// https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
+void ReDistort(double *x, double *y, CameraMatrix *camera_matrix,
+               DistCoeffs *distortion_coefficients) {
+  double k1 = distortion_coefficients->k1;
+  double k2 = distortion_coefficients->k2;
+  double p1 = distortion_coefficients->p1;
+  double p2 = distortion_coefficients->p2;
+  double k3 = distortion_coefficients->k3;
+
+  double fx = camera_matrix->fx;
+  double cx = camera_matrix->cx;
+  double fy = camera_matrix->fy;
+  double cy = camera_matrix->cy;
+
+  double xP = (*x - cx) / fx;
+  double yP = (*y - cy) / fy;
+
+  double rSq = xP * xP + yP * yP;
+
+  double linCoef = 1 + k1 * rSq + k2 * rSq * rSq + k3 * rSq * rSq * rSq;
+  double xPP = xP * linCoef + 2 * p1 * xP * yP + p2 * (rSq + 2 * xP * xP);
+  double yPP = yP * linCoef + p1 * (rSq + 2 * yP * yP) + 2 * p2 * xP * yP;
+
+  *x = xPP * fx + cx;
+  *y = yPP * fy + cy;
+}
+
+// We're undistorting using math found from this github page
+// https://yangyushi.github.io/code/2020/03/04/opencv-undistort.html
+void UnDistort(double *x, double *y, CameraMatrix *camera_matrix,
+               DistCoeffs *distortion_coefficients) {
+  double k1 = distortion_coefficients->k1;
+  double k2 = distortion_coefficients->k2;
+  double p1 = distortion_coefficients->p1;
+  double p2 = distortion_coefficients->p2;
+  double k3 = distortion_coefficients->k3;
+
+  double fx = camera_matrix->fx;
+  double cx = camera_matrix->cx;
+  double fy = camera_matrix->fy;
+  double cy = camera_matrix->cy;
+
+  double xP = (*x - cx) / fx;
+  double yP = (*y - cy) / fy;
+
+  double x0 = xP;
+  double y0 = yP;
+
+  for (int i = 0; i < 3; i++) {
+    double rSq = xP * xP + yP * yP;
+    double linCoef = 1 + k1 * rSq + k2 * rSq * rSq + k3 * rSq * rSq * rSq;
+    double kInv = 1 / linCoef;
+    double dx = 2 * p1 * xP * yP + p2 * (rSq + k3 * rSq * rSq * rSq);
+    double dy = p1 * (rSq + 2 * yP * yP) + 2 * p2 * xP * yP;
+    xP = (x0 - dx) * kInv;
+    yP = (y0 - dy) * kInv;
+  }
+
+  *x = xP * fx + cx;
+  *y = yP * fy + cy;
+}
 
 // Mostly stolen from aprilrobotics, but modified to implement the dewarp.
 void RefineEdges(apriltag_detector_t *td, image_u8_t *im_orig,
-                 struct quad *quad) {
+                 struct quad *quad, CameraMatrix *camera_matrix,
+                 DistCoeffs *distortion_coefficients) {
   double lines[4][4];  // for each line, [Ex Ey nx ny]
 
   for (int edge = 0; edge < 4; edge++) {
@@ -395,6 +463,8 @@ void RefineEdges(apriltag_detector_t *td, image_u8_t *im_orig,
       double bestx = x0 + n0 * nx;
       double besty = y0 + n0 * ny;
 
+      UnDistort(&bestx, &besty, camera_matrix, distortion_coefficients);
+
       // update our line fit statistics
       Mx += bestx;
       My += besty;
@@ -440,8 +510,12 @@ void RefineEdges(apriltag_detector_t *td, image_u8_t *im_orig,
       // Compute intersection. Note that line i represents the line from corner
       // i to (i+1)&3, so the intersection of line i with line (i+1)&3
       // represents corner (i+1)&3.
-      quad->p[(i + 1) & 3][0] = lines[i][0] + L0 * A00;
-      quad->p[(i + 1) & 3][1] = lines[i][1] + L0 * A10;
+      double px = lines[i][0] + L0 * A00;
+      double py = lines[i][1] + L0 * A10;
+
+      ReDistort(&px, &py, camera_matrix, distortion_coefficients);
+      quad->p[(i + 1) & 3][0] = px;
+      quad->p[(i + 1) & 3][1] = py;
     } else {
       // this is a bad sign. We'll just keep the corner we had.
       //            debug_print("bad det: %15f %15f %15f %15f %15f\n", A00, A11,
@@ -465,7 +539,36 @@ void GpuDetector::QuadDecodeTask(void *_u) {
     quad_original.Hinv = nullptr;
 
     if (td->refine_edges) {
-      RefineEdges(td, im, &quad_original);
+      RefineEdges(td, im, &quad_original, task->camera_matrix,
+                  task->distortion_coefficients);
+    }
+
+    if (td->debug) {
+      image_u8_t *im_quads = image_u8_copy(im);
+      image_u8_darken(im_quads);
+      image_u8_darken(im_quads);
+
+      srandom(0);
+
+      const int bias = 100;
+      int color = bias + (random() % (255 - bias));
+
+      image_u8_draw_line(im_quads, quad_original.p[0][0], quad_original.p[0][1],
+                         quad_original.p[1][0], quad_original.p[1][1], color,
+                         1);
+      image_u8_draw_line(im_quads, quad_original.p[1][0], quad_original.p[1][1],
+                         quad_original.p[2][0], quad_original.p[2][1], color,
+                         1);
+      image_u8_draw_line(im_quads, quad_original.p[2][0], quad_original.p[2][1],
+                         quad_original.p[3][0], quad_original.p[3][1], color,
+                         1);
+      image_u8_draw_line(im_quads, quad_original.p[3][0], quad_original.p[3][1],
+                         quad_original.p[0][0], quad_original.p[0][1], color,
+                         1);
+
+      image_u8_write_pnm(
+          im_quads,
+          std::string("/tmp/quad" + std::to_string(quadidx) + ".pnm").c_str());
     }
 
     quad_decode_index(td, &quad_original, im, task->im_samples,
@@ -504,6 +607,8 @@ void GpuDetector::DecodeTags() {
     tasks[ntasks].td = tag_detector_;
     tasks[ntasks].im = &im_orig;
     tasks[ntasks].detections = detections_;
+    tasks[ntasks].camera_matrix = &camera_matrix_;
+    tasks[ntasks].distortion_coefficients = &distortion_coefficients_;
 
     tasks[ntasks].im_samples = nullptr;
 

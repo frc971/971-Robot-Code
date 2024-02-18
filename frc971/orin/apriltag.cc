@@ -113,7 +113,9 @@ static size_t DeviceScanInclusiveScanByKeyScratchSpace(size_t elements) {
 }  // namespace
 
 GpuDetector::GpuDetector(size_t width, size_t height,
-                         apriltag_detector_t *tag_detector)
+                         apriltag_detector_t *tag_detector,
+                         CameraMatrix camera_matrix,
+                         DistCoeffs distortion_coefficients)
     : width_(width),
       height_(height),
       tag_detector_(tag_detector),
@@ -141,6 +143,8 @@ GpuDetector::GpuDetector(size_t width, size_t height,
       compressed_peaks_device_(line_fit_points_device_.size()),
       sorted_compressed_peaks_device_(line_fit_points_device_.size()),
       peak_extents_device_(kMaxBlobs),
+      camera_matrix_(camera_matrix),
+      distortion_coefficients_(distortion_coefficients),
       fit_quads_device_(kMaxBlobs),
       radix_sort_tmpstorage_device_(RadixSortScratchSpace<QuadBoundaryPoint>(
           sorted_union_marker_pair_device_.size())),

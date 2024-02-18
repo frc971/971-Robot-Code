@@ -40,15 +40,42 @@ constexpr aos::monotonic_clock::duration kMaxImageAge =
 
 namespace chrono = std::chrono;
 
+CameraMatrix GetCameraMatrix(
+    const frc971::vision::calibration::CameraCalibration *calibration) {
+  auto intrinsics = calibration->intrinsics();
+  return CameraMatrix{
+      .fx = intrinsics->Get(0),
+      .cx = intrinsics->Get(2),
+      .fy = intrinsics->Get(4),
+      .cy = intrinsics->Get(5),
+  };
+}
+
+DistCoeffs GetDistCoeffs(
+    const frc971::vision::calibration::CameraCalibration *calibration) {
+  auto dist_coeffs = calibration->dist_coeffs();
+  return DistCoeffs{
+      .k1 = dist_coeffs->Get(0),
+      .k2 = dist_coeffs->Get(1),
+      .p1 = dist_coeffs->Get(2),
+      .p2 = dist_coeffs->Get(3),
+      .k3 = dist_coeffs->Get(4),
+  };
+}
+
 ApriltagDetector::ApriltagDetector(
     aos::EventLoop *event_loop, std::string_view channel_name,
     const frc971::vision::calibration::CameraCalibration *calibration,
     size_t width, size_t height)
     : tag_family_(tag36h11_create()),
       tag_detector_(MakeTagDetector(tag_family_)),
-      gpu_detector_(width, height, tag_detector_),
       node_name_(event_loop->node()->name()->string_view()),
       calibration_(calibration),
+      intrinsics_(frc971::vision::CameraIntrinsics(calibration_)),
+      extrinsics_(frc971::vision::CameraExtrinsics(calibration_)),
+      dist_coeffs_(frc971::vision::CameraDistCoeffs(calibration_)),
+      gpu_detector_(width, height, tag_detector_, GetCameraMatrix(calibration_),
+                    GetDistCoeffs(calibration_)),
       image_callback_(
           event_loop, channel_name,
           [this](cv::Mat image_color_mat,
@@ -62,10 +89,6 @@ ApriltagDetector::ApriltagDetector(
           event_loop->MakeSender<foxglove::ImageAnnotations>(channel_name)),
       rejections_(0) {
   image_callback_.set_format(frc971::vision::ImageCallback::Format::YUYV2);
-
-  extrinsics_ = frc971::vision::CameraExtrinsics(calibration_);
-  intrinsics_ = frc971::vision::CameraIntrinsics(calibration_);
-  dist_coeffs_ = frc971::vision::CameraDistCoeffs(calibration_);
 
   projection_matrix_ = cv::Mat::zeros(3, 4, CV_64F);
   intrinsics_.rowRange(0, 3).colRange(0, 3).copyTo(

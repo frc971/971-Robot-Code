@@ -1585,6 +1585,20 @@ http_file(
     url = "https://software.frc971.org/Build-Dependencies/orin_large_gs_apriltag.bfbs",
 )
 
+http_file(
+    name = "orin_capture_24_04",
+    downloaded_file_path = "orin_capture_24_04.bfbs",
+    sha256 = "719edb1d1394c13c1b55d02cf35c277e1d4c2111f4eb4220b28addc08634488a",
+    url = "https://software.frc971.org/Build-Dependencies/orin-capture-24-04-2024.02.14.bfbs",
+)
+
+http_file(
+    name = "orin_capture_24_04_side",
+    downloaded_file_path = "orin_capture_24_04_side.bfbs",
+    sha256 = "4747cc98f8794d6570cb12a3171d7984e358581914a28b43fb6bb8b9bd7a10ac",
+    url = "https://software.frc971.org/Build-Dependencies/orin-capture-24-04-side-2024.02.17.bfbs",
+)
+
 http_archive(
     name = "libedgetpu",
     build_file = "//third_party:libedgetpu/libedgetpu.BUILD",

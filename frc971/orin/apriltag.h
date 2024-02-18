@@ -59,6 +59,21 @@ struct QuadCorners {
   uint32_t blob_index;
 };
 
+struct CameraMatrix {
+  double fx;
+  double cx;
+  double fy;
+  double cy;
+};
+
+struct DistCoeffs {
+  double k1;
+  double k2;
+  double p1;
+  double p2;
+  double k3;
+};
+
 // GPU based april tag detector.
 class GpuDetector {
  public:
@@ -67,8 +82,8 @@ class GpuDetector {
 
   // Constructs a detector, reserving space for detecting tags of the provided
   // with and height, using the provided detector options.
-  GpuDetector(size_t width, size_t height, apriltag_detector_t *tag_detector);
-
+  GpuDetector(size_t width, size_t height, apriltag_detector_t *tag_detector,
+              CameraMatrix camera_matrix, DistCoeffs distortion_coefficients);
   virtual ~GpuDetector();
 
   // Detects april tags in the provided image.
@@ -167,6 +182,16 @@ class GpuDetector {
   }
 
   void AdjustCenter(float corners[4][2]) const;
+
+  // TODO(max): We probably don't want to use these after our test images are
+  // just orin images
+  void SetCameraMatrix(CameraMatrix camera_matrix) {
+    camera_matrix_ = camera_matrix;
+  }
+
+  void SetDistortionCoefficients(DistCoeffs distortion_coefficients) {
+    distortion_coefficients_ = distortion_coefficients;
+  }
 
  private:
   void UpdateFitQuads();
@@ -291,6 +316,9 @@ class GpuDetector {
 
   GpuMemory<int> num_quad_peaked_quads_device_{/* allocate 1 integer...*/ 1};
   GpuMemory<PeakExtents> peak_extents_device_;
+
+  CameraMatrix camera_matrix_;
+  DistCoeffs distortion_coefficients_;
 
   GpuMemory<FitQuad> fit_quads_device_;
 
