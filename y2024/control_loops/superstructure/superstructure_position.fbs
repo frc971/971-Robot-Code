@@ -25,6 +25,13 @@ table Position {
 
     // True if there is a game piece in the catapult
     catapult_beam_break:bool (id: 6);
+
+    // Values of the encoder and potentiometer at the extend motor
+    // Zero is fully retracted, positive is extended outward.
+    extend:frc971.PotAndAbsolutePosition (id: 7);
+
+    // True means there is a game piece in the extend.
+    extend_beambreak:bool (id: 8);
 }
 
 root_type Position;

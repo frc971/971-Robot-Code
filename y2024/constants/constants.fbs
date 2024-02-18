@@ -78,6 +78,11 @@ table TransferRollerVoltages {
   transfer_out:double (id: 1);
 }
 
+table ExtendRollerVoltages {
+  scoring:double (id: 0);
+  reversing:double (id: 1);
+}
+
 // Extend positions
 table ExtendSetPoints {
   extended:double (id: 0);
@@ -113,6 +118,7 @@ table Common {
   turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 14);
   extend:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 15);
   extend_setpoints:ExtendSetPoints (id: 16);
+  extend_roller_voltages:ExtendRollerVoltages (id: 17);
 }
 
 table Constants {

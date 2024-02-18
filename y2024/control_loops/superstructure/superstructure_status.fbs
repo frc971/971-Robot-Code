@@ -4,7 +4,7 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 namespace y2024.control_loops.superstructure;
 
 // Contains if intake is intaking
-enum IntakeRollerState : ubyte {
+enum IntakeRollerStatus : ubyte {
   NONE = 0,
   SPITTING = 1,
   INTAKING = 2,
@@ -21,22 +21,30 @@ enum CatapultStatus: ubyte {
 
 table ShooterStatus {
   // Estimated angle and angular velocitiy of the turret.
-  turret_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 0);
+  turret:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 0);
 
   // Estimated angle and angular velocitiy of the catapult.
-  catapult_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 1);
+  catapult:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 1);
 
   // Estimated angle and angular velocitiy of the altitude.
-  altitude_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
+  altitude:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
 
-  catapult_status: CatapultStatus (id: 3);
+  catapult_state: CatapultStatus (id: 3);
 }
 
 // Contains status of transfer rollers
-enum TransferRollerState : ubyte {
+enum TransferRollerStatus : ubyte {
     NONE = 0,
     TRANSFERING_IN = 1,
     TRANSFERING_OUT = 2,
+}
+
+// Contains status of extend rollers
+// HAS_GAME_PIECE means we have a game piece
+// EMPTY means we don't have a game piece
+enum ExtendRollerStatus: ubyte {
+  HAS_GAME_PIECE = 0,
+  EMPTY = 1
 }
 
 table Status {
@@ -46,20 +54,26 @@ table Status {
   // If true, we have aborted. This is the or of all subsystem estops.
   estopped:bool (id: 1);
 
-  // State of the rollers
-  intake_roller_state:IntakeRollerState (id: 2);
+  // Status of the rollers
+  intake_roller:IntakeRollerStatus (id: 2);
 
   // Estimated angle and angular velocitiy of the intake.
-  intake_pivot_state:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 3);
+  intake_pivot:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 3);
 
-  // State of transfer rollers
-  transfer_roller_state:TransferRollerState (id: 4);
+  // Status of transfer rollers
+  transfer_roller:TransferRollerStatus (id: 4);
 
   // Estimated angle and angular velocitiy of the climber.
-  climber_state:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 5);
+  climber:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 5);
 
   // Status of the subsytems involved in the shooter
-  shooter_status:ShooterStatus (id: 6);
+  shooter:ShooterStatus (id: 6);
+
+  // Estimated angle and angular velocitiy of the extend.
+  extend:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 7);
+
+  // State of the extender rollers
+  extend_roller:ExtendRollerStatus (id: 8);
 }
 
 root_type Status;

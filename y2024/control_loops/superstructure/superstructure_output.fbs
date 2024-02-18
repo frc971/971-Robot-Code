@@ -29,6 +29,16 @@ table Output {
     // Voltage of the retention rollers
     // Positive voltage will hold the game piece in the catapult.
     retention_roller_voltage: double (id: 7);
+
+    // Voltage of extend
+    // Positive voltage extends the extend
+    // Negative voltage retracts the extend
+    extend_voltage:double (id: 8);
+
+    // Voltage of the extend rollers
+    // Positive voltage rolls the game piece up towards the scoring mechanisms,
+    // either the catapult or amp/trap mechanism
+    extend_roller_voltage:double (id: 9);
 }
 
 root_type Output;

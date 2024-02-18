@@ -109,10 +109,10 @@ class SuperstructureSimulation {
 
             intake_pivot_.Simulate(
                 superstructure_output_fetcher_->intake_pivot_voltage(),
-                superstructure_status_fetcher_->intake_pivot_state());
+                superstructure_status_fetcher_->intake_pivot());
 
             climber_.Simulate(superstructure_output_fetcher_->climber_voltage(),
-                              superstructure_status_fetcher_->climber_state());
+                              superstructure_status_fetcher_->climber());
           }
           first_ = false;
           SendPositionMessage();
@@ -240,13 +240,12 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                       ->extended();
     }
 
-    EXPECT_NEAR(
-        set_point,
-        superstructure_status_fetcher_->intake_pivot_state()->position(),
-        0.001);
+    EXPECT_NEAR(set_point,
+                superstructure_status_fetcher_->intake_pivot()->position(),
+                0.001);
 
-    if (superstructure_status_fetcher_->intake_roller_state() ==
-        IntakeRollerState::NONE) {
+    if (superstructure_status_fetcher_->intake_roller() ==
+        IntakeRollerStatus::NONE) {
       EXPECT_EQ(superstructure_output_fetcher_->intake_roller_voltage(), 0.0);
     }
 
@@ -267,8 +266,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       }
 
       EXPECT_NEAR(set_point,
-                  superstructure_status_fetcher_->climber_state()->position(),
-                  0.001);
+                  superstructure_status_fetcher_->climber()->position(), 0.001);
     }
   }
 

@@ -48,6 +48,23 @@ table ShooterGoal {
     altitude_position: frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 4);
 }
 
+// Represents goal for extend
+// RETRACT is for retracting the extender to stowed position
+// In the retracted position, the game piece may be transfered to the catapult
+// AMP is for extending the extender to the AMP scoring position
+// TRAP is for extending the extender to the TRAP scoring position
+enum ExtendGoal : ubyte {
+    RETRACT = 0,
+    AMP = 1,
+    TRAP = 2,
+}
+
+enum ExtendRollerGoal : ubyte {
+    NONE = 0,
+    SCORING = 1,
+    REVERSING = 2,
+}
+
 table Goal {
     intake_roller_goal:IntakeRollerGoal (id: 0);
     intake_pivot_goal:IntakePivotGoal (id: 1);
@@ -55,5 +72,7 @@ table Goal {
     transfer_roller_goal:TransferRollerGoal (id: 3);
     climber_goal:ClimberGoal (id: 4);
     shooter_goal:ShooterGoal (id: 5);
+    extend_goal:ExtendGoal (id: 6);
+    extend_roller_goal:ExtendRollerGoal (id: 7);
 }
 root_type Goal;

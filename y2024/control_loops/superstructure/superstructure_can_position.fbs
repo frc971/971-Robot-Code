@@ -32,6 +32,12 @@ table CANPosition {
 
     // CAN Position of the shooter altitude falcon
     altitude:frc971.control_loops.CANTalonFX (id: 8);
+
+    // CAN Position of the extend falcon
+    extend:frc971.control_loops.CANTalonFX (id: 9);
+
+    // CAN Position of the extend roller fancon
+    extend_roller:frc971.control_loops.CANTalonFX (id: 10);
 }
 
 root_type CANPosition;
