@@ -3,9 +3,9 @@
 #include "aos/init.h"
 #include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/drivetrain/localization/localizer_output_generated.h"
+#include "frc971/vision/target_map_utils.h"
 #include "frc971/vision/vision_generated.h"
 #include "y2023/localizer/localizer.h"
-#include "y2023/localizer/utils.h"
 
 DEFINE_string(config, "aos_config.json", "Path to the config file to use.");
 
@@ -49,7 +49,7 @@ void HandleDetections(
     }
 
     const Localizer::Transform H_camera_target =
-        localizer::PoseToTransform(target_pose);
+        frc971::vision::PoseToTransform(target_pose);
     const Localizer::Transform H_field_robot =
         LocalizerOutputToTransform(*localizer_fetcher->get());
 

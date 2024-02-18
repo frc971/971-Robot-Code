@@ -386,3 +386,14 @@ cc_test(
         "@com_github_google_glog//:glog",
     ],
 )
+
+cc_library(
+    name = "target_map_utils",
+    srcs = ["target_map_utils.cc"],
+    hdrs = ["target_map_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//frc971/vision:target_map_fbs",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)

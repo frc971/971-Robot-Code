@@ -81,26 +81,15 @@ static_flatbuffer(
 )
 
 cc_library(
-    name = "utils",
-    srcs = ["utils.cc"],
-    hdrs = ["utils.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//frc971/vision:target_map_fbs",
-        "@org_tuxfamily_eigen//:eigen",
-    ],
-)
-
-cc_library(
     name = "map_expander_lib",
     srcs = ["map_expander_lib.cc"],
     hdrs = ["map_expander_lib.h"],
     deps = [
         ":relative_scoring_map_fbs",
         ":scoring_map_fbs",
-        ":utils",
         "//aos:flatbuffers",
         "//aos:json_to_flatbuffer",
+        "//frc971/vision:target_map_utils",
     ],
 )
 
@@ -138,7 +127,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":status_fbs",
-        ":utils",
         ":visualization_fbs",
         "//aos/containers:sized_array",
         "//aos/events:event_loop",
@@ -152,6 +140,7 @@ cc_library(
         "//frc971/control_loops/drivetrain/localization:utils",
         "//frc971/imu_reader:imu_watcher",
         "//frc971/vision:target_map_fbs",
+        "//frc971/vision:target_map_utils",
         "//y2023:constants",
         "//y2023/constants:constants_fbs",
     ],
@@ -164,12 +153,12 @@ cc_test(
     deps = [
         ":localizer",
         ":status_fbs",
-        ":utils",
         "//aos/events:simulated_event_loop",
         "//aos/events/logging:log_writer",
         "//aos/testing:googletest",
         "//frc971/control_loops/drivetrain:drivetrain_test_lib",
         "//frc971/control_loops/drivetrain:localizer_fbs",
+        "//frc971/vision:target_map_utils",
         "//y2023/constants:simulated_constants_sender",
         "//y2023/control_loops/drivetrain:drivetrain_base",
     ],

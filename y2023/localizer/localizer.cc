@@ -5,8 +5,8 @@
 #include "aos/containers/sized_array.h"
 #include "frc971/control_loops/drivetrain/localizer_generated.h"
 #include "frc971/control_loops/pose.h"
+#include "frc971/vision/target_map_utils.h"
 #include "y2023/constants.h"
-#include "y2023/localizer/utils.h"
 
 DEFINE_double(max_pose_error, 1e-6,
               "Throw out target poses with a higher pose error than this");
