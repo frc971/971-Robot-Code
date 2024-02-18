@@ -1259,6 +1259,14 @@ def main():
         target(["systemctl", "enable", "frc971"])
         target(["systemctl", "enable", "frc971chrt"])
 
+        # Set up HW clock to use /dev/rtc0 and install hwclock service
+        target(["ln", "-sf", "/dev/rtc0", "/dev/rtc"])
+        target_unescaped(
+            "sed -i s/ATTR{hctosys}==\\\"1\\\"/ATTR{hctosys}==\\\"0\\\"/ /lib/udev/rules.d/50-udev-default.rules"
+        )
+        copyfile("root:root", "644", "etc/systemd/system/hwclock.service")
+        target(["systemctl", "enable", "hwclock"])
+
         target(["apt-file", "update"])
 
         target(["ldconfig"])
