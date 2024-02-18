@@ -14,19 +14,19 @@ try:
 except gflags.DuplicateFlagError:
     pass
 
-# TODO(Filip): Update information the climber when design is finalized.
 kClimber = linear_system.LinearSystemParams(
     name='Climber',
-    motor=control_loop.Falcon(),
-    G=(1.0 / 4.0) * (1.0 / 3.0) * (1.0 / 3.0),
-    radius=22 * 0.25 / numpy.pi / 2.0 * 0.0254,
-    mass=2.0,
+    motor=control_loop.KrakenFOC(),
+    G=(8. / 60.) * (16. / 60.),
+    radius=16 * 0.25 / numpy.pi / 2.0 * 0.0254,
+    mass=1.0,
     q_pos=0.10,
     q_vel=1.35,
     kalman_q_pos=0.12,
     kalman_q_vel=2.00,
     kalman_q_voltage=35.0,
-    kalman_r_position=0.05)
+    kalman_r_position=0.05,
+)
 
 
 def main(argv):
