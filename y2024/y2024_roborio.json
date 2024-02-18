@@ -19,6 +19,13 @@
     },
     {
       "name": "/roborio/aos",
+      "type": "frc971.PDPValues",
+      "source_node": "roborio",
+      "frequency": 55,
+      "max_size": 368
+    },
+    {
+      "name": "/roborio/aos",
       "type": "aos.RobotState",
       "source_node": "roborio",
       "frequency": 250
@@ -144,7 +151,7 @@
       "source_node": "roborio",
       "frequency": 220,
       "num_senders": 2,
-      "max_size": 400
+      "max_size": 608
     },
     {
       "name": "/superstructure/rio",
@@ -152,7 +159,7 @@
       "source_node": "roborio",
       "frequency": 220,
       "num_senders": 2,
-      "max_size": 400
+      "max_size": 608
     },
     {
       "name": "/can",
@@ -168,7 +175,7 @@
       "source_node": "roborio",
       "frequency": 220,
       "num_senders": 2,
-      "max_size": 400
+      "max_size": 424
     },
     {
       "name": "/drivetrain",
@@ -213,7 +220,7 @@
       "type": "frc971.control_loops.drivetrain.Position",
       "source_node": "roborio",
       "frequency": 400,
-      "max_size": 112,
+      "max_size": 128,
       "num_senders": 2
     },
     {

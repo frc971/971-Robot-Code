@@ -150,6 +150,36 @@
         }
       ]
     },
+        {
+      "name": "/localizer",
+      "type": "frc971.controls.LocalizerOutput",
+      "source_node": "imu",
+      "frequency": 52,
+      "logger": "LOCAL_AND_REMOTE_LOGGER",
+      "logger_nodes": [
+        "roborio"
+      ],
+      "destination_nodes": [
+        {
+          "name": "roborio",
+          "priority": 5,
+          "time_to_live": 5000000,
+          "timestamp_logger": "LOCAL_AND_REMOTE_LOGGER",
+          "timestamp_logger_nodes": [
+            "imu"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "/imu/aos/remote_timestamps/roborio/localizer/frc971-controls-LocalizerOutput",
+      "type": "aos.message_bridge.RemoteMessage",
+      "source_node": "imu",
+      "logger": "NOT_LOGGED",
+      "frequency": 52,
+      "num_senders": 2,
+      "max_size": 200
+    },
     {
       "name": "/roborio/aos/remote_timestamps/imu/roborio/aos/aos-starter-StarterRpc",
       "type": "aos.message_bridge.RemoteMessage",
