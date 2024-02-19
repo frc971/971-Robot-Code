@@ -3,6 +3,7 @@
 {% from 'y2024/constants/common.jinja2' import catapult_zero %}
 {% from 'y2024/constants/common.jinja2' import altitude_zero %}
 {% from 'y2024/constants/common.jinja2' import turret_zero %}
+{% from 'y2024/constants/common.jinja2' import extend_zero %}
 
 {
   "cameras": [
@@ -51,6 +52,15 @@
           }
       ) %}
       "zeroing_constants": {{ turret_zero | tojson(indent=2)}},
+      "potentiometer_offset": 0.0
+    },
+    "extend_constants": {
+      {% set _ = extend_zero.update(
+          {
+              "measured_absolute_position" : 0.0
+          }
+      ) %}
+      "zeroing_constants": {{ extend_zero | tojson(indent=2)}},
       "potentiometer_offset": 0.0
     }
   },
