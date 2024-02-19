@@ -8,10 +8,11 @@ namespace y2024::constants::testing {
 class ConstantsValidatorTest : public ::testing::Test {};
 
 TEST_F(ConstantsValidatorTest, CheckConstants) {
-  CHECK_NOTNULL(aos::JsonFileToFlatbuffer<y2024::ConstantsList>(
-                    "y2024/constants/constants.json")
-                    .message()
-                    .constants());
+  ASSERT_TRUE(aos::JsonFileToFlatbuffer<y2024::ConstantsList>(
+                  "y2024/constants/constants.json")
+                  .message()
+                  .constants() != nullptr)
+      << ": Failed to parse y2024/constants/constants.json";
 }
 
 }  // namespace y2024::constants::testing

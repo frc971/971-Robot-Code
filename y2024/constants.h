@@ -12,6 +12,7 @@
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2024/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2024/control_loops/superstructure/climber/climber_plant.h"
+#include "y2024/control_loops/superstructure/extend/extend_plant.h"
 #include "y2024/control_loops/superstructure/intake_pivot/intake_pivot_plant.h"
 
 namespace y2024::constants {
@@ -89,6 +90,24 @@ struct Values {
            kClimberEncoderRatio() * kClimberEncoderCountsPerRevolution();
   }
 
+  static constexpr double kExtendEncoderCountsPerRevolution() { return 4096.0; }
+
+  static constexpr double kExtendEncoderRatio() { return 1.0; }
+
+  static constexpr double kExtendPotMetersPerRevolution() {
+    return 36 * 0.005 * kExtendEncoderRatio();
+  }
+  static constexpr double kExtendEncoderMetersPerRevolution() {
+    return kExtendPotMetersPerRevolution();
+  }
+  static constexpr double kExtendPotMetersPerVolt() {
+    return kExtendPotMetersPerRevolution() * (5.0 /*turns*/ / 5.0 /*volts*/);
+  }
+  static constexpr double kMaxExtendEncoderPulsesPerSecond() {
+    return control_loops::superstructure::extend::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::extend::kOutputRatio /
+           kExtendEncoderRatio() * kExtendEncoderCountsPerRevolution();
+  }
   struct PotAndAbsEncoderConstants {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<
         ::frc971::zeroing::PotAndAbsoluteEncoderZeroingEstimator>

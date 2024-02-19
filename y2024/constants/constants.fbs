@@ -78,12 +78,19 @@ table TransferRollerVoltages {
   transfer_out:double (id: 1);
 }
 
+// Extend positions
+table ExtendSetPoints {
+  extended:double (id: 0);
+  retracted:double (id: 1);
+}
+
 table RobotConstants {
   intake_constants:frc971.zeroing.AbsoluteEncoderZeroingConstants (id: 0);
   climber_constants:PotAndAbsEncoderConstants (id: 1);
   catapult_constants:PotAndAbsEncoderConstants (id: 2);
   altitude_constants:PotAndAbsEncoderConstants (id: 3);
   turret_constants:PotAndAbsEncoderConstants (id: 4);
+  extend_constants:PotAndAbsEncoderConstants (id: 5);
 }
 
 // Common table for constants unrelated to the robot
@@ -104,6 +111,8 @@ table Common {
   catapult:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 12);
   altitude:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 13);
   turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 14);
+  extend:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 15);
+  extend_setpoints:ExtendSetPoints (id: 16);
 }
 
 table Constants {

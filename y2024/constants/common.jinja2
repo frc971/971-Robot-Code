@@ -16,6 +16,18 @@ set intake_pivot_zero = {
 }
 %}
 
+{% set extend_encoder_ratio = (1.0 / 1.0) %}
+{% set extend_radius = 36.0 * 0.005 / 2.0 / pi %}
+{%
+set extend_zero = {
+    "average_filter_size": zeroing_sample_size,
+    "one_revolution_distance": pi * 2.0 * extend_encoder_ratio * extend_radius,
+    "zeroing_threshold": 0.0005,
+    "moving_buffer_size": 20,
+    "allowable_encoder_error": 0.9
+}
+%}
+
 {% set climber_encoder_ratio = (16.0 / 60.0) %}
 {% set climber_radius = 16.0 * 0.25 / 2.0 / pi %}
 {%
