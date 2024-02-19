@@ -81,6 +81,9 @@ table TransferRollerVoltages {
 table RobotConstants {
   intake_constants:frc971.zeroing.AbsoluteEncoderZeroingConstants (id: 0);
   climber_constants:PotAndAbsEncoderConstants (id: 1);
+  catapult_constants:PotAndAbsEncoderConstants (id: 2);
+  altitude_constants:PotAndAbsEncoderConstants (id: 3);
+  turret_constants:PotAndAbsEncoderConstants (id: 4);
 }
 
 // Common table for constants unrelated to the robot
@@ -90,6 +93,7 @@ table Common {
   intake_roller_voltages:IntakeRollerVoltages (id : 2);
   intake_pivot_set_points:IntakePivotSetPoints (id: 3);
   intake_pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 4);
+
   drivetrain:frc971.control_loops.drivetrain.fbs.DrivetrainConfig (id: 5);
   current_limits:CurrentLimits (id: 6);
   transfer_roller_voltages:TransferRollerVoltages (id: 7);
@@ -97,6 +101,9 @@ table Common {
   climber_set_points:ClimberSetPoints (id: 9);
   turret_loading_position: double (id: 10);
   catapult_return_position: double (id: 11);
+  catapult:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 12);
+  altitude:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 13);
+  turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 14);
 }
 
 table Constants {

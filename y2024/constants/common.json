@@ -82,5 +82,63 @@
     "loop": {% include 'y2024/control_loops/superstructure/climber/integral_climber_plant.json' %}
   },
   "turret_loading_position": 0.0,
-  "catapult_return_position": 0.0
+  "catapult_return_position": 0.0,
+  "catapult": {
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 0.5,
+      "max_acceleration": 3.0
+    },
+    "default_profile_params":{
+      "max_velocity": 6.0,
+      "max_acceleration": 30.0
+    },
+    "range": {
+        "lower_hard": -0.85,
+        "upper_hard": 1.85,
+        "lower": -0.400,
+        "upper": 1.57
+    },
+    "loop": {% include 'y2024/control_loops/superstructure/catapult/integral_catapult_plant.json' %}
+  },
+  // TODO: (max) update the constants for the shooter subsystems
+  "altitude": {
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 0.5,
+      "max_acceleration": 3.0
+    },
+    "default_profile_params":{
+      "max_velocity": 6.0,
+      "max_acceleration": 30.0
+    },
+    "range": {
+        "lower_hard": -0.85,
+        "upper_hard": 1.85,
+        "lower": -0.400,
+        "upper": 1.57
+    },
+    "loop": {% include 'y2024/control_loops/superstructure/altitude/integral_altitude_plant.json' %}
+  },
+  "turret": {
+    "zeroing_voltage": 3.0,
+    "operating_voltage": 12.0,
+    "zeroing_profile_params": {
+      "max_velocity": 0.5,
+      "max_acceleration": 3.0
+    },
+    "default_profile_params":{
+      "max_velocity": 6.0,
+      "max_acceleration": 30.0
+    },
+    "range": {
+        "lower_hard": -0.85,
+        "upper_hard": 1.85,
+        "lower": -0.400,
+        "upper": 1.57
+    },
+    "loop": {% include 'y2024/control_loops/superstructure/turret/integral_turret_plant.json' %}
+  }
 }
