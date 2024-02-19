@@ -6,6 +6,7 @@
 
 #include "frc971/control_loops/drivetrain/camera.h"
 #include "frc971/control_loops/drivetrain/hybrid_ekf.h"
+#include "frc971/control_loops/drivetrain/localization/utils.h"
 #include "frc971/control_loops/pose.h"
 
 #if !defined(__clang__) && defined(__GNUC__)
@@ -437,37 +438,8 @@ class TypedLocalizer
 
   Eigen::Matrix<Scalar, kNOutputs, kNStates> HMatrix(const Target &target,
                                                      const Pose &camera_pose) {
-    // To calculate dheading/d{x,y,theta}:
-    // heading = arctan2(target_pos - camera_pos) - camera_theta
-    Eigen::Matrix<Scalar, 3, 1> target_pos = target.pose().abs_pos();
-    Eigen::Matrix<Scalar, 3, 1> camera_pos = camera_pose.abs_pos();
-    Scalar diffx = target_pos.x() - camera_pos.x();
-    Scalar diffy = target_pos.y() - camera_pos.y();
-    Scalar norm2 = diffx * diffx + diffy * diffy;
-    Scalar dheadingdx = diffy / norm2;
-    Scalar dheadingdy = -diffx / norm2;
-    Scalar dheadingdtheta = -1.0;
-
-    // To calculate ddistance/d{x,y}:
-    // distance = sqrt(diffx^2 + diffy^2)
-    Scalar distance = ::std::sqrt(norm2);
-    Scalar ddistdx = -diffx / distance;
-    Scalar ddistdy = -diffy / distance;
-
-    // Skew = target.theta - camera.theta - heading
-    //      = target.theta - arctan2(target_pos - camera_pos)
-    Scalar dskewdx = -dheadingdx;
-    Scalar dskewdy = -dheadingdy;
-    Eigen::Matrix<Scalar, kNOutputs, kNStates> H;
-    H.setZero();
-    H(0, 0) = dheadingdx;
-    H(0, 1) = dheadingdy;
-    H(0, 2) = dheadingdtheta;
-    H(1, 0) = ddistdx;
-    H(1, 1) = ddistdy;
-    H(2, 0) = dskewdx;
-    H(2, 1) = dskewdy;
-    return H;
+    return frc971::control_loops::drivetrain::
+        HMatrixForCameraHeadingDistanceSkew(target.pose(), camera_pose);
   }
 
   // A helper function for the fuller version of MatchFrames; this just
