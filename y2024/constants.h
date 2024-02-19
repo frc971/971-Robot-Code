@@ -73,11 +73,11 @@ struct Values {
   static constexpr double kClimberEncoderRatio() { return (16.0 / 60.0); }
 
   static constexpr double kClimberPotMetersPerRevolution() {
-    return 16 * 0.25 * 0.0254 * kClimberEncoderRatio();
+    return 16 * 0.25 * 0.0254;
   }
 
   static constexpr double kClimberEncoderMetersPerRevolution() {
-    return kClimberPotMetersPerRevolution();
+    return kClimberEncoderRatio() * kClimberPotMetersPerRevolution();
   }
 
   static constexpr double kClimberPotMetersPerVolt() {
