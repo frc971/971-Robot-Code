@@ -1,9 +1,10 @@
 {% set pi = 3.14159265 %}
 
+{%set zeroing_sample_size = 200 %}
+
+{# Intake #}
 {# we do this here so we keep the encoder ratio in plaintext and also keep the math we're using. #}
 {% set intake_pivot_encoder_ratio = (24.0 / 15.0) %}
-
-{%set zeroing_sample_size = 200 %}
 
 {%
 set intake_pivot_zero = {
@@ -22,6 +23,45 @@ set intake_pivot_zero = {
 set climber_zero = {
     "average_filter_size": zeroing_sample_size,
     "one_revolution_distance": pi * 2.0 * climber_encoder_ratio * climber_radius,
+    "zeroing_threshold": 0.0005,
+    "moving_buffer_size": 20,
+    "allowable_encoder_error": 0.9
+}
+%}
+
+{# Catapult #}
+{% set catapult_encoder_ratio = (12.0 / 24.0) %}
+
+{%
+set catapult_zero = {
+    "average_filter_size": zeroing_sample_size,
+    "one_revolution_distance": pi * 2.0 * catapult_encoder_ratio,
+    "zeroing_threshold": 0.0005,
+    "moving_buffer_size": 20,
+    "allowable_encoder_error": 0.9
+}
+%}
+
+{# Altitude #}
+{% set altitude_encoder_ratio = (16.0 / 162.0) %}
+
+{%
+set altitude_zero = {
+    "average_filter_size": zeroing_sample_size,
+    "one_revolution_distance": pi * 2.0 * altitude_encoder_ratio,
+    "zeroing_threshold": 0.0005,
+    "moving_buffer_size": 20,
+    "allowable_encoder_error": 0.9
+}
+%}
+
+{# Turret #}
+{% set turret_encoder_ratio = (22.0 / 100.0) %}
+
+{%
+set turret_zero = {
+    "average_filter_size": zeroing_sample_size,
+    "one_revolution_distance": pi * 2.0 * turret_encoder_ratio,
     "zeroing_threshold": 0.0005,
     "moving_buffer_size": 20,
     "allowable_encoder_error": 0.9

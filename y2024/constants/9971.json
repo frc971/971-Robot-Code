@@ -1,7 +1,15 @@
 {% from 'y2024/constants/common.jinja2' import intake_pivot_zero %}
 {% from 'y2024/constants/common.jinja2' import climber_zero %}
+{% from 'y2024/constants/common.jinja2' import catapult_zero %}
+{% from 'y2024/constants/common.jinja2' import altitude_zero %}
+{% from 'y2024/constants/common.jinja2' import turret_zero %}
 
 {
+  "cameras": [
+    {
+      "calibration": {% include 'y2024/constants/calib_files/calibration_orin-971-1_cam-24-00.json' %}
+    }
+  ],
   "robot": {
     {% set _ = intake_pivot_zero.update(
       {
@@ -17,7 +25,35 @@
       ) %}
       "zeroing_constants": {{ climber_zero | tojson(indent=2)}},
       "potentiometer_offset": 0.0
+    },
+    "catapult_constants": {
+      {% set _ = catapult_zero.update(
+          {
+              "measured_absolute_position" : 0.0
+          }
+      ) %}
+      "zeroing_constants": {{ catapult_zero | tojson(indent=2)}},
+      "potentiometer_offset": 0.0
+    },
+    "altitude_constants": {
+      {% set _ = altitude_zero.update(
+          {
+              "measured_absolute_position" : 0.0
+          }
+      ) %}
+      "zeroing_constants": {{ altitude_zero | tojson(indent=2)}},
+      "potentiometer_offset": 0.0
+    },
+    "turret_constants": {
+      {% set _ = turret_zero.update(
+          {
+              "measured_absolute_position" : 0.0
+          }
+      ) %}
+      "zeroing_constants": {{ turret_zero | tojson(indent=2)}},
+      "potentiometer_offset": 0.0
     }
   },
   {% include 'y2024/constants/common.json' %}
 }
+
