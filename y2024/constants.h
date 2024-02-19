@@ -55,9 +55,7 @@ struct Values {
     return 4096.0;
   }
 
-  static constexpr double kIntakePivotEncoderRatio() {
-    return (16.0 / 64.0) * (18.0 / 62.0);
-  }
+  static constexpr double kIntakePivotEncoderRatio() { return (15.0 / 24.0); }
 
   static constexpr double kMaxIntakePivotEncoderPulsesPerSecond() {
     return control_loops::superstructure::intake_pivot::kFreeSpeed /
@@ -67,20 +65,22 @@ struct Values {
            kIntakePivotEncoderCountsPerRevolution();
   }
 
-  // TODO(Filip): Update climber values once we have them.
   static constexpr double kClimberEncoderCountsPerRevolution() {
     return 4096.0;
   }
 
-  static constexpr double kClimberEncoderRatio() {
-    return (16.0 / 64.0) * (18.0 / 62.0);
+  static constexpr double kClimberEncoderRatio() { return (16.0 / 60.0); }
+
+  static constexpr double kClimberPotMetersPerRevolution() {
+    return 16 * 0.25 * 0.0254 * kClimberEncoderRatio();
   }
 
-  static constexpr double kClimberPotRatio() { return 16.0 / 64.0; }
+  static constexpr double kClimberEncoderMetersPerRevolution() {
+    return kClimberPotMetersPerRevolution();
+  }
 
-  static constexpr double kClimberPotRadiansPerVolt() {
-    return kClimberPotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
-           (2 * M_PI /*radians*/);
+  static constexpr double kClimberPotMetersPerVolt() {
+    return kClimberPotMetersPerRevolution() * (10.0 /*turns*/ / 5.0 /*volts*/);
   }
 
   static constexpr double kMaxClimberEncoderPulsesPerSecond() {

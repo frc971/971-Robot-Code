@@ -78,7 +78,7 @@ namespace {
 constexpr double kMaxBringupPower = 12.0;
 
 double climber_pot_translate(double voltage) {
-  return voltage * Values::kClimberPotRadiansPerVolt();
+  return voltage * Values::kClimberPotMetersPerVolt();
 }
 
 double drivetrain_velocity_translate(double in) {
@@ -140,7 +140,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       CopyPosition(climber_encoder_, builder->add_climber(),
                    Values::kClimberEncoderCountsPerRevolution(),
-                   Values::kClimberEncoderRatio(), climber_pot_translate, true,
+                   Values::kClimberEncoderMetersPerRevolution(),
+                   climber_pot_translate, true,
                    robot_constants_->robot()
                        ->climber_constants()
                        ->potentiometer_offset());

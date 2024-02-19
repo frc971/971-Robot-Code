@@ -16,9 +16,8 @@ set intake_pivot_zero = {
 }
 %}
 
-{# TODO(Filip): Update climber values #}
-{% set climber_encoder_ratio = (1.0 / 1.0) %}
-{% set climber_radius = 0.436496 %}
+{% set climber_encoder_ratio = (16.0 / 60.0) %}
+{% set climber_radius = 16.0 * 0.25 / 2.0 / pi %}
 {%
 set climber_zero = {
     "average_filter_size": zeroing_sample_size,
