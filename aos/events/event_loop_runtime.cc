@@ -2,13 +2,15 @@
 
 namespace aos {
 
-OnRunForRust::OnRunForRust(EventLoopRuntime *runtime) : runtime_(runtime) {
+OnRunForRust::OnRunForRust(const EventLoopRuntime *runtime)
+    : runtime_(runtime) {
   ++runtime->child_count_;
 }
 OnRunForRust::~OnRunForRust() { --runtime_->child_count_; }
 bool OnRunForRust::is_running() const { return runtime_->is_running(); }
 
-std::unique_ptr<TimerForRust> TimerForRust::Make(EventLoopRuntime *runtime) {
+std::unique_ptr<TimerForRust> TimerForRust::Make(
+    const EventLoopRuntime *runtime) {
   auto handler = std::unique_ptr<TimerForRust>(new TimerForRust());
   TimerForRust *inner = handler.get();
   handler->timer_ = runtime->event_loop()->AddTimer([inner, runtime] {
