@@ -208,22 +208,6 @@
       ]
     },
     {
-      "name": "localizer",
-      "executable_name": "localizer_main",
-      "user": "pi",
-      "nodes": [
-        "imu"
-      ]
-    },
-    {
-      "name": "imu",
-      "executable_name": "imu_main",
-      "user": "pi",
-      "nodes": [
-        "imu"
-      ]
-    },
-    {
       "name": "joystick_republish",
       "executable_name": "joystick_republish",
       "user": "pi",
