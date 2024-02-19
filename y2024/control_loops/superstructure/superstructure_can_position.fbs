@@ -26,6 +26,12 @@ table CANPosition {
 
     // CAN Position of the retention roller falcon
     retention_roller:frc971.control_loops.CANTalonFX (id: 6);
+
+    // CAN Position of the shooter turret falcon
+    turret:frc971.control_loops.CANTalonFX (id: 7);
+
+    // CAN Position of the shooter altitude falcon
+    altitude:frc971.control_loops.CANTalonFX (id: 8);
 }
 
 root_type CANPosition;
