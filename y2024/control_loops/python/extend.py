@@ -25,20 +25,23 @@ kExtend = linear_system.LinearSystemParams(
     G=(14. / 60.) * (32. / 48.),
     radius=36 * 0.005 / numpy.pi / 2.0,
     mass=5.0,
-    q_pos=0.40,
-    q_vel=3.0,
+    q_pos=0.20,
+    q_vel=80.0,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
-    kalman_q_voltage=4.0,
+    kalman_q_voltage=8.0,
     kalman_r_position=0.05,
 )
 
 
 def main(argv):
     if FLAGS.plot:
-        R = numpy.matrix([[numpy.pi / 2.0], [0.0]])
+        R = numpy.matrix([[0.4], [0.0]])
         linear_system.PlotKick(kExtend, R)
-        linear_system.PlotMotion(kExtend, R)
+        linear_system.PlotMotion(kExtend,
+                                 R,
+                                 max_velocity=2.0,
+                                 max_acceleration=15.0)
         return
 
     # Write the generated constants out to a file.
