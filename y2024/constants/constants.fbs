@@ -75,6 +75,10 @@ table CurrentLimits {
   extend_stator_current_limit:double (id: 11);
   extend_roller_supply_current_limit:double (id: 12);
   extend_roller_stator_current_limit:double (id: 13);
+  turret_supply_current_limit:double (id: 14);
+  turret_stator_current_limit:double (id: 15);
+  altitude_supply_current_limit:double (id: 16);
+  altitude_stator_current_limit:double (id: 17);
 }
 
 table TransferRollerVoltages {
