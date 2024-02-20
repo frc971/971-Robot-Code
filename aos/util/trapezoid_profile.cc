@@ -98,11 +98,14 @@ void TrapezoidProfile::CalculateTimes(double distance_to_target,
   if (top_velocity > maximum_velocity_) {
     acceleration_time_ =
         (maximum_velocity_ - output_(1)) / maximum_acceleration_;
-    constant_time_ =
-        (distance_to_target + (goal_velocity * goal_velocity -
-                               maximum_velocity_ * maximum_velocity_) /
-                                  (2.0 * maximum_acceleration_)) /
-        maximum_velocity_;
+    constant_time_ = ((-0.5 * maximum_acceleration_ * acceleration_time_ *
+                           acceleration_time_ -
+                       output_(1) * acceleration_time_) +
+                      distance_to_target +
+                      (goal_velocity * goal_velocity -
+                       maximum_velocity_ * maximum_velocity_) /
+                          (2.0 * maximum_acceleration_)) /
+                     maximum_velocity_;
   } else {
     acceleration_time_ = (top_velocity - output_(1)) / acceleration_;
   }
@@ -114,7 +117,12 @@ void TrapezoidProfile::CalculateTimes(double distance_to_target,
     acceleration_time_ = 0;
   }
 
-  deceleration_time_ = (goal_velocity - top_velocity) / deceleration_;
+  deceleration_time_ =
+      (goal_velocity - ::std::min(top_velocity, maximum_velocity_)) /
+      deceleration_;
+  if (constant_time_ <= 0) constant_time_ = 0;
+  if (deceleration_time_ <= 0) deceleration_time_ = 0;
+  if (acceleration_time_ <= 0) acceleration_time_ = 0;
 }
 
 }  // namespace aos::util
