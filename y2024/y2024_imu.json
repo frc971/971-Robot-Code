@@ -203,6 +203,10 @@
   "applications": [
     {
       "name": "message_bridge_client",
+      "args": [
+        "--rt_priority=16",
+        "--sinit_max_init_timeout=5000"
+      ],
       "nodes": [
         "imu"
       ]
@@ -219,6 +223,10 @@
       "name": "message_bridge_server",
       "executable_name": "message_bridge_server",
       "user": "pi",
+      "args": [
+        "--rt_priority=16",
+        "--sinit_max_init_timeout=5000"
+      ],
       "nodes": [
         "imu"
       ]
