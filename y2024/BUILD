@@ -19,7 +19,9 @@ robot_downloader(
         ":aos_config",
         "//aos/starter:roborio_irq_config.json",
         "//y2024/constants:constants.json",
+        "@ctre_phoenix6_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix6_tools_athena//:shared_libraries",
+        "@ctre_phoenix_api_cpp_athena//:shared_libraries",
         "@ctre_phoenix_cci_athena//:shared_libraries",
     ],
     dirs = [
