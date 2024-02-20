@@ -22,7 +22,8 @@ class AngularSystemParams(object):
                  kalman_q_voltage,
                  kalman_r_position,
                  radius=None,
-                 dt=0.00505):
+                 dt=0.00505,
+                 delayed_u=0):
         """Constructs an AngularSystemParams object.
 
         Args:
@@ -42,6 +43,7 @@ class AngularSystemParams(object):
         self.kalman_r_position = kalman_r_position
         self.radius = radius
         self.dt = dt
+        self.delayed_u = delayed_u
 
 
 class AngularSystem(control_loop.ControlLoop):

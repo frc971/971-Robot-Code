@@ -23,11 +23,11 @@ kTurret = angular_system.AngularSystemParams(
     G=(14.0 / 60.0) * (28.0 / 48.0) * (22.0 / 100.0),
     # 1305 in^2 lb
     J=0.4,
-    q_pos=0.40,
-    q_vel=20.0,
+    q_pos=0.60,
+    q_vel=10.0,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
-    kalman_q_voltage=4.0,
+    kalman_q_voltage=2.0,
     kalman_r_position=0.05,
     radius=24 * 0.0254)
 

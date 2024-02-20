@@ -23,10 +23,10 @@ kIntakePivot = angular_system.AngularSystemParams(
     G=(16. / 60.) * (18. / 62.) * (18. / 62.) * (15. / 24.),
     J=0.25,
     q_pos=0.40,
-    q_vel=20.0,
+    q_vel=60.0,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
-    kalman_q_voltage=4.0,
+    kalman_q_voltage=2.0,
     kalman_r_position=0.05,
     radius=6.85 * 0.0254)
 
