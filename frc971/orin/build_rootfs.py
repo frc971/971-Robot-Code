@@ -1240,6 +1240,8 @@ def main():
         copyfile("root:root", "700", "root/trace.sh")
         copyfile("root:root", "440", "etc/sudoers")
         copyfile("root:root", "644", "etc/fstab")
+        copyfile("root:root", "644", "etc/modprobe.d/audio.conf")
+        copyfile("root:root", "644", "etc/modprobe.d/can.conf")
         copyfile("root:root", "644",
                  "var/nvidia/nvcam/settings/camera_overrides.isp")
         copyfile("root:root", "644", "/etc/ld.so.conf.d/yocto.conf")
