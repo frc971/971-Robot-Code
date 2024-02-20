@@ -56,7 +56,8 @@ class AngularSystem(control_loop.ControlLoop):
         self.G = params.G
 
         # Moment of inertia in kg m^2
-        self.J = params.J + self.motor.motor_inertia / (self.G**2.0)
+        self.J_motor = self.motor.motor_inertia / (self.G**2.0)
+        self.J = params.J + self.J_motor
 
         # Control loop time step
         self.dt = params.dt
@@ -225,6 +226,10 @@ def RunTest(plant,
     v_goal_plot = []
     x_hat_plot = []
     u_plot = []
+    power_rotor_plot = []
+    power_mechanism_plot = []
+    power_overall_plot = []
+    power_electrical_plot = []
     offset_plot = []
 
     if controller is None:
@@ -273,8 +278,18 @@ def RunTest(plant,
         motor_current = (U[0, 0] - plant.X[1, 0] / plant.G /
                          plant.motor.Kv) / plant.motor.resistance
         motor_current_plot.append(motor_current)
-        battery_current = U[0, 0] * motor_current / 12.0
+        battery_current = U[0, 0] * motor_current / vbat
+        power_electrical_plot.append(battery_current * vbat)
         battery_current_plot.append(battery_current)
+
+        # Instantaneous acceleration.
+        X_dot = plant.A_continuous * plant.X + plant.B_continuous * U
+        # Torque = J * alpha (accel).
+        power_rotor_plot.append(X_dot[1, 0] * plant.J_motor * plant.X[1, 0])
+        power_mechanism_plot.append(X_dot[1, 0] * plant.params.J *
+                                    plant.X[1, 0])
+        power_overall_plot.append(X_dot[1, 0] * plant.J * plant.X[1, 0])
+
         x_plot.append(plant.X[0, 0])
 
         if v_plot:
@@ -306,21 +321,34 @@ def RunTest(plant,
     glog.debug('goal_error %s', repr(end_goal - goal))
     glog.debug('error %s', repr(observer.X_hat - end_goal))
 
-    pylab.subplot(3, 1, 1)
-    pylab.plot(t_plot, x_plot, label='x')
-    pylab.plot(t_plot, x_hat_plot, label='x_hat')
-    pylab.plot(t_plot, x_goal_plot, label='x_goal')
-    pylab.legend()
+    pylab.suptitle(f'Gear ratio {plant.G}')
+    position_ax1 = pylab.subplot(3, 1, 1)
+    position_ax1.plot(t_plot, x_plot, label='x')
+    position_ax1.plot(t_plot, x_hat_plot, label='x_hat')
+    position_ax1.plot(t_plot, x_goal_plot, label='x_goal')
 
-    pylab.subplot(3, 1, 2)
-    pylab.plot(t_plot, u_plot, label='u')
-    pylab.plot(t_plot, offset_plot, label='voltage_offset')
-    pylab.legend()
+    power_ax2 = position_ax1.twinx()
+    power_ax2.set_xlabel("time(s)")
+    power_ax2.set_ylabel("Power (W)")
+    power_ax2.plot(t_plot, power_rotor_plot, label='Rotor power')
+    power_ax2.plot(t_plot, power_mechanism_plot, label='Mechanism power')
+    power_ax2.plot(t_plot,
+                   power_overall_plot,
+                   label='Overall mechanical power')
+    power_ax2.plot(t_plot, power_electrical_plot, label='Electrical power')
+
+    position_ax1.legend()
+    power_ax2.legend(loc='lower right')
+
+    voltage_ax1 = pylab.subplot(3, 1, 2)
+    voltage_ax1.plot(t_plot, u_plot, label='u')
+    voltage_ax1.plot(t_plot, offset_plot, label='voltage_offset')
+    voltage_ax1.legend()
 
     ax1 = pylab.subplot(3, 1, 3)
     ax1.set_xlabel("time(s)")
     ax1.set_ylabel("rad/s^2")
-    ax1.plot(t_plot, a_plot, label='a')
+    ax1.plot(t_plot, a_plot, label='acceleration')
 
     ax2 = ax1.twinx()
     ax2.set_xlabel("time(s)")

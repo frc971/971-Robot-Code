@@ -50,8 +50,9 @@ class LinearSystem(control_loop.ControlLoop):
         self.radius = params.radius
 
         # Mass in kg
-        self.mass = params.mass + self.motor.motor_inertia / (
+        self.mass_motor = self.motor.motor_inertia / (
             (self.G * self.radius)**2.0)
+        self.mass = params.mass + self.mass_motor
 
         # Control loop time step
         self.dt = params.dt
@@ -80,13 +81,22 @@ class LinearSystem(control_loop.ControlLoop):
         controllability = controls.ctrb(self.A, self.B)
         glog.debug('Controllability of %d',
                    numpy.linalg.matrix_rank(controllability))
-        glog.debug('Mass: %f', self.mass)
-        glog.debug('Stall force: %f',
+        glog.debug('Mass: %f kg', self.mass)
+        glog.debug('Stall force: %f N',
                    self.motor.stall_torque / self.G / self.radius)
-        glog.debug('Stall acceleration: %f',
+        glog.debug('Stall acceleration: %f m/s^2',
                    self.motor.stall_torque / self.G / self.radius / self.mass)
 
-        glog.debug('Free speed is %f',
+        holding_force = 500
+
+        holding_current = holding_force * self.radius * self.G / self.motor.Kt
+        glog.debug('Motor current to hold %f N: %f A', holding_force,
+                   holding_current)
+        glog.debug(
+            'Battery current to hold %f N: %f A', holding_force,
+            holding_current * holding_current * self.motor.resistance / 12.0)
+
+        glog.debug('Free speed is %f m/s',
                    -self.B_continuous[1, 0] / self.A_continuous[1, 1] * 12.0)
 
         self.Q = numpy.matrix([[(1.0 / (self.params.q_pos**2.0)), 0.0],
@@ -202,10 +212,16 @@ def RunTest(plant,
     x_plot = []
     v_plot = []
     a_plot = []
+    motor_current_plot = []
+    battery_current_plot = []
     x_goal_plot = []
     v_goal_plot = []
     x_hat_plot = []
     u_plot = []
+    power_rotor_plot = []
+    power_mechanism_plot = []
+    power_overall_plot = []
+    power_electrical_plot = []
     offset_plot = []
 
     if controller is None:
@@ -249,6 +265,22 @@ def RunTest(plant,
 
         U = U_uncapped.copy()
         U[0, 0] = numpy.clip(U[0, 0], -vbat, vbat)
+
+        motor_current = (U[0, 0] - plant.X[1, 0] / plant.radius / plant.G /
+                         plant.motor.Kv) / plant.motor.resistance
+        motor_current_plot.append(motor_current)
+        battery_current = U[0, 0] * motor_current / vbat
+        power_electrical_plot.append(battery_current * vbat)
+        battery_current_plot.append(battery_current)
+
+        # Instantaneous acceleration.
+        X_dot = plant.A_continuous * plant.X + plant.B_continuous * U
+        # Torque = J * alpha (accel).
+        power_rotor_plot.append(X_dot[1, 0] * plant.mass_motor * plant.X[1, 0])
+        power_mechanism_plot.append(X_dot[1, 0] * plant.params.mass *
+                                    plant.X[1, 0])
+        power_overall_plot.append(X_dot[1, 0] * plant.mass * plant.X[1, 0])
+
         x_plot.append(plant.X[0, 0])
 
         if v_plot:
@@ -280,20 +312,42 @@ def RunTest(plant,
     glog.debug('goal_error %s', repr(end_goal - goal))
     glog.debug('error %s', repr(observer.X_hat - end_goal))
 
-    pylab.subplot(3, 1, 1)
-    pylab.plot(t_plot, x_plot, label='x')
-    pylab.plot(t_plot, x_hat_plot, label='x_hat')
-    pylab.plot(t_plot, x_goal_plot, label='x_goal')
-    pylab.legend()
+    pylab.suptitle(f'Gear ratio {plant.G}')
+    position_ax1 = pylab.subplot(3, 1, 1)
+    position_ax1.plot(t_plot, x_plot, label='x')
+    position_ax1.plot(t_plot, x_hat_plot, label='x_hat')
+    position_ax1.plot(t_plot, x_goal_plot, label='x_goal')
 
-    pylab.subplot(3, 1, 2)
-    pylab.plot(t_plot, u_plot, label='u')
-    pylab.plot(t_plot, offset_plot, label='voltage_offset')
-    pylab.legend()
+    power_ax2 = position_ax1.twinx()
+    power_ax2.set_xlabel("time(s)")
+    power_ax2.set_ylabel("Power (W)")
+    power_ax2.plot(t_plot, power_rotor_plot, label='Rotor power')
+    power_ax2.plot(t_plot, power_mechanism_plot, label='Mechanism power')
+    power_ax2.plot(t_plot,
+                   power_overall_plot,
+                   label='Overall mechanical power')
+    power_ax2.plot(t_plot, power_electrical_plot, label='Electrical power')
 
-    pylab.subplot(3, 1, 3)
-    pylab.plot(t_plot, a_plot, label='a')
-    pylab.legend()
+    position_ax1.legend()
+    power_ax2.legend(loc='lower right')
+
+    voltage_ax1 = pylab.subplot(3, 1, 2)
+    voltage_ax1.plot(t_plot, u_plot, label='u')
+    voltage_ax1.plot(t_plot, offset_plot, label='voltage_offset')
+    voltage_ax1.legend()
+
+    ax1 = pylab.subplot(3, 1, 3)
+    ax1.set_xlabel("time(s)")
+    ax1.set_ylabel("m/s^2")
+    ax1.plot(t_plot, a_plot, label='acceleration')
+
+    ax2 = ax1.twinx()
+    ax2.set_xlabel("time(s)")
+    ax2.set_ylabel("Amps")
+    ax2.plot(t_plot, battery_current_plot, 'g', label='battery')
+    ax2.plot(t_plot, motor_current_plot, 'r', label='motor')
+    ax2.legend()
+    ax1.legend(loc='lower left')
 
     pylab.show()
 
@@ -377,7 +431,7 @@ def PlotMotion(params,
             end_goal=augmented_R,
             controller=controller,
             observer=observer,
-            duration=2.0,
+            duration=1.0,
             use_profile=True,
             max_velocity=max_velocity,
             max_acceleration=max_acceleration)
