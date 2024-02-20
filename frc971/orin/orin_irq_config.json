@@ -1,0 +1,413 @@
+{
+  "irqs": [
+    {
+      /* Control BackBone */
+      "name": "13a00000.cbb-fabric",
+      "affinity": [0]
+    },
+    {
+      /* AON controller */
+      "name": "c600000.aon-fabric",
+      "affinity": [0]
+    },
+    {
+      /* Boot and Power Management Processor */
+      "name": "d600000.bpmp-fabric",
+      "affinity": [0]
+    },
+    {
+      /* Display Controller Engine */
+      "name": "d600000.bpmp-fabric",
+      "affinity": [0]
+    },
+    {
+      /* RCE is related to tracing */
+      "name": "be00000.rce-fabric",
+      "affinity": [0]
+    },
+    {
+      "name": "b600000.sce-fabric",
+      "affinity": [0]
+    },
+    {
+      /* PIPE to UPHY */
+      "name": "tegra-p2u-intr",
+      "affinity": [0]
+    },
+    {
+      "name": "peak_pciefd",
+      "affinity": [5]
+    },
+    {
+      "name": "cana",
+      "affinity": [4]
+    },
+    {
+      "name": "uart-pl011",
+      "affinity": [0]
+    },
+    {
+      /* Hardware mailboxes for IPC */
+      "name": "3c00000.tegra-hsp",
+      "affinity": [2, 3]
+    },
+    {
+      "name": "3210000.spi",
+      "affinity": [0, 1]
+    },
+    {
+      "name": "3230000.spi",
+      "affinity": [0, 1]
+    },
+    {
+      "name": "3160000.i2c",
+      "affinity": [2, 3]
+    },
+    {
+      "name": "c240000.i2c",
+      "affinity": [2, 3]
+    },
+    {
+      "name": "3180000.i2c",
+      "affinity": [2, 3]
+    },
+    {
+      "name": "3190000.i2c",
+      "affinity": [2, 3]
+    },
+    {
+      "name": "31b0000.i2c",
+      "affinity": [2, 3]
+    },
+    {
+      "name": "31c0000.i2c",
+      "affinity": [2, 3]
+    },
+    {
+      "name": "c250000.i2c",
+      "affinity": [2, 3]
+    },
+    {
+      "name": "31e0000.i2c",
+      "affinity": [2, 3]
+    },
+    {
+      /* General Purpose Central DMA controller */
+      "name": "gpcdma.0",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.1",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.2",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.3",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.4",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.5",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.6",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.7",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.8",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.9",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.10",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.11",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.12",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.13",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.14",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.15",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.16",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.17",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.18",
+      "affinity": [0]
+    },
+    {
+      "name": "gpcdma.19",
+      "affinity": [0]
+    },
+    {
+      "name": "bc00000.rtcpu",
+      "affinity": [0]
+    },
+    {
+      "name": "d230000.actmon",
+      "affinity": [0]
+    },
+    {
+      "name": "e860000.psc",
+      "affinity": [0]
+    },
+    {
+      "name": "host_syncpt",
+      "affinity": [2, 3]
+    },
+    {
+      "name": "c150000.tegra-hsp",
+      "affinity": [3]
+    },
+    {
+      "name": "3c00000.tegra-hsp",
+      "affinity": [3]
+    },
+    {
+      "name": "3d00000.tegra-hsp",
+      "affinity": [3]
+    },
+    {
+      "name": "b950000.tegra-hsp",
+      "affinity": [3]
+    },
+    {
+      "name": "2190000.watchdog",
+      "affinity": [0]
+    },
+    {
+      "name": "3610000.xhci",
+      "affinity": [0]
+    },
+    {
+      "name": "3550000.xudc",
+      "affinity": [0]
+    },
+    {
+      "name": "xhci-hcd:usb1",
+      "affinity": [0]
+    },
+    {
+      "name": "3610000.xhci",
+      "affinity": [0]
+    },
+    {
+      "name": "gk20a_stall",
+      "affinity": [2, 3]
+    },
+    {
+      "name": "eth0",
+      "affinity": [1]
+    }
+  ],
+  "kthreads": [
+    {
+      "name": "irq/*nvme0q0",
+      "scheduler": "SCHEDULER_OTHER"
+    },
+    {
+      "name": "irq/*nvme0q1",
+      "scheduler": "SCHEDULER_OTHER"
+    },
+    {
+      "name": "irq/*nvme0q2",
+      "scheduler": "SCHEDULER_OTHER"
+    },
+    {
+      "name": "irq/*nvme0q3",
+      "scheduler": "SCHEDULER_OTHER"
+    },
+    {
+      "name": "irq/*nvme0q4",
+      "scheduler": "SCHEDULER_OTHER"
+    },
+    {
+      "name": "irq/*nvme0q5",
+      "scheduler": "SCHEDULER_OTHER"
+    },
+    {
+      "name": "irq/*nvme0q6",
+      "scheduler": "SCHEDULER_OTHER"
+    },
+    {
+      "name": "irq/*-uart-pl0",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": -20
+    },
+    {
+      "name": "irq/*-eth0",
+      "scheduler": "SCHEDULER_FIFO",
+      "priority": 51,
+      "affinity": [1]
+    },
+    {
+      "name": "irq/*-cana",
+      "scheduler": "SCHEDULER_FIFO",
+      "priority": 51,
+      "affinity": [4]
+    },
+    {
+      "name": "irq/*-peak_pcie",
+      "scheduler": "SCHEDULER_FIFO",
+      "priority": 51,
+      "affinity": [5]
+    },
+    {
+      "name": "irq/*-PCIe PME",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": -20
+    },
+    {
+      "name": "irq/*-tegra-pc",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": -20
+    },
+    {
+      "name": "irq/*-s-tegra-",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": -20
+    },
+    {
+      "name": "irq/*-s-aerdrv",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": -20
+    },
+    {
+      "name": "irq/*-aerdrv",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": -20
+    },
+    {
+      "name": "irq/*-tegra-p2",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": -20
+    },
+    {
+      "name": "irq/*-host_sy",
+      "scheduler": "SCHEDULER_FIFO",
+      "affinity": [2, 3],
+      "priority": 51
+    },
+    {
+      "name": "irq/*-b950000",
+      "scheduler": "SCHEDULER_FIFO",
+      "affinity": [2, 3],
+      "priority": 51
+    },
+    {
+      "name": "ivc/*.rtc",
+      "scheduler": "SCHEDULER_FIFO",
+      "nice": 49
+    },
+    {
+      "name": "nvgpu_nvs_ga10b",
+      "scheduler": "SCHEDULER_OTHER",
+      "affinity": [2, 3],
+      "nice": 0
+    },
+    {
+      "name": "irq/*-gpcdma.0",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "irq/*-gpcdma.1",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "irq/*-gpcdma.2",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "irq/*-gpcdma.3",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "irq/*-gpcdma.4",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "irq/*-gpcdma.5",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "irq/*-gpcdma.6",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "irq/*-gpcdma.7",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "irq/*-gpcdma.8",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "irq/*-gpcdma.9",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "irq/*-s-gk20a",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "irq/*-gk20a_n",
+      "scheduler": "SCHEDULER_OTHER",
+      "nice": 0
+    },
+    {
+      "name": "nvmap-bz*",
+      "scheduler": "SCHEDULER_FIFO",
+      "priority": 50
+    },
+    {
+      "name": "nvgpu_channel_p",
+      "scheduler": "SCHEDULER_OTHER",
+      "affinity": [2, 3],
+      "nice": 0
+    }
+  ]
+}
