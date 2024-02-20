@@ -506,6 +506,16 @@ class Sender {
   // the buffer the caller can fill out.
   int buffer_index() const { return CHECK_NOTNULL(sender_)->buffer_index(); }
 
+  // Convenience function to build and send a message created from JSON
+  // representation.
+  RawSender::Error SendJson(std::string_view json) {
+    auto builder = MakeBuilder();
+    flatbuffers::Offset<T> json_offset =
+        aos::JsonToFlatbuffer<T>(json, builder.fbb());
+    CHECK(!json_offset.IsNull()) << ": Invalid JSON";
+    return builder.Send(json_offset);
+  }
+
  private:
   friend class EventLoop;
   Sender(std::unique_ptr<RawSender> sender) : sender_(std::move(sender)) {}

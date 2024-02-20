@@ -162,6 +162,29 @@ TEST_P(AbstractEventLoopTest, BasicSendDetached) {
   EXPECT_EQ(fetcher->value(), 200);
 }
 
+// Tests that fetcher can receive messages from a sender, sent via SendJson.
+TEST_P(AbstractEventLoopTest, BasicSendJson) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  aos::Sender<TestMessage> sender = loop1->MakeSender<TestMessage>("/test");
+  sender.CheckOk(sender.SendJson(R"json({"value":201})json"));
+
+  auto fetcher = loop2->MakeFetcher<TestMessage>("/test");
+  ASSERT_TRUE(fetcher.Fetch());
+  EXPECT_EQ(fetcher->value(), 201);
+}
+
+// Tests that invalid JSON isn't sent.
+TEST_P(AbstractEventLoopDeathTest, InvalidSendJson) {
+  auto loop1 = Make();
+  auto loop2 = MakePrimary();
+
+  aos::Sender<TestMessage> sender = loop1->MakeSender<TestMessage>("/test");
+  EXPECT_DEATH({ sender.CheckOk(sender.SendJson(R"json({"val)json")); },
+               "Invalid JSON");
+}
+
 // Verifies that a no-arg watcher will not have a data pointer.
 TEST_P(AbstractEventLoopTest, NoArgNoData) {
   auto loop1 = Make();
