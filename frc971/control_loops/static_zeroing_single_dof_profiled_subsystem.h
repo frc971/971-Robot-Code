@@ -149,6 +149,10 @@ class StaticZeroingSingleDOFProfiledSubsystem {
   // Sets the unprofiled goal which UpdateController will go to.
   void set_unprofiled_goal(double position, double velocity);
 
+  double unprofiled_goal(int row, int col) const {
+    return profiled_subsystem_.unprofiled_goal(row, col);
+  }
+
   // Returns the current position
   double position() const { return profiled_subsystem_.position(); }
 

@@ -2,13 +2,22 @@
   "target_map": {% include 'y2024/vision/maps/target_map.json' %},
   "shooter_interpolation_table": [
     {
-        "distance_from_goal": 0.0,
+        "distance_from_goal": 5.0,
         "shot_params": {
             "shot_velocity": 0.0,
             "shot_altitude_angle": 0.0,
             "shot_catapult_angle": 0.0,
-            "shot_speed_over_ground": 0.0
+            "shot_speed_over_ground": 2.0
         }
+    },
+    {
+      "distance_from_goal": 10.0,
+      "shot_params": {
+          "shot_velocity": 0.0,
+          "shot_altitude_angle": 0.0,
+          "shot_catapult_angle": 0.0,
+          "shot_speed_over_ground": 4.0
+      }
     }
   ],
   "intake_roller_voltages": {
@@ -93,24 +102,22 @@
     },
     "loop": {% include 'y2024/control_loops/superstructure/climber/integral_climber_plant.json' %}
   },
-  "turret_loading_position": 0.0,
-  "catapult_return_position": 0.0,
   "catapult": {
     "zeroing_voltage": 3.0,
     "operating_voltage": 12.0,
     "zeroing_profile_params": {
-      "max_velocity": 0.5,
-      "max_acceleration": 3.0
+      "max_velocity": 1.0,
+      "max_acceleration": 6.0
     },
     "default_profile_params":{
       "max_velocity": 6.0,
       "max_acceleration": 30.0
     },
     "range": {
-        "lower_hard": -0.85,
-        "upper_hard": 1.85,
-        "lower": -0.400,
-        "upper": 1.57
+        "lower_hard": -0.15971,
+        "upper_hard": 2.85,
+        "lower": -0.020,
+        "upper": 2.5
     },
     "loop": {% include 'y2024/control_loops/superstructure/catapult/integral_catapult_plant.json' %}
   },
@@ -146,10 +153,10 @@
       "max_acceleration": 30.0
     },
     "range": {
-        "lower_hard": -0.85,
-        "upper_hard": 1.85,
-        "lower": -0.400,
-        "upper": 1.57
+        "lower_hard": -2.36,
+        "upper_hard": 2.36,
+        "lower": -2.16,
+        "upper": 2.16
     },
     "loop": {% include 'y2024/control_loops/superstructure/turret/integral_turret_plant.json' %}
   },
@@ -171,5 +178,37 @@
         "upper": 1.57
     },
     "loop": {% include 'y2024/control_loops/superstructure/extend/integral_extend_plant.json' %}
+  },
+  "shooter_targets": {
+    "red_alliance": {
+        "pos": {
+            "rows": 3,
+            "cols": 1,
+            "storage_order": "ColMajor",
+            // The data field contains the x, y and z
+            // coordinates of the speaker on the red alliance
+            "data": [-8.0645, -1.4435, 2.0705]
+        },
+        "theta": 0.0
+    },
+    "blue_alliance": {
+        "pos": {
+            "rows": 3,
+            "cols": 1,
+            "storage_order": "ColMajor",
+            // The data field contains the x, y and z
+            // coordinates of the speaker on the blue alliance
+            "data": [8.0645, -1.4435, 2.0705]
+        },
+        "theta": 0.0
+    }
+  },
+  "altitude_loading_position": 0.0,
+  "turret_loading_position": 0.0,
+  "catapult_return_position": 0.0,
+  "min_altitude_shooting_angle": 0.3,
+  "retention_roller_voltages": {
+    "retaining": 1.5,
+    "spitting": -6.0
   }
 }

@@ -10,13 +10,27 @@ enum IntakeRollerStatus : ubyte {
   INTAKING = 2,
 }
 
-enum CatapultStatus: ubyte {
+enum CatapultState: ubyte {
     // Means we are waiting for a game piece
-    IDLE = 0,
+    READY = 0,
     // Means we have a game piece
     LOADED = 1,
     // Means we are firing a game piece
     FIRING = 2,
+    // We are retracting the bucket to do it again.
+    RETRACTING = 3,
+}
+
+table AimerStatus {
+  // The current goal angle for the turret auto-tracking, in radians.
+  turret_position:double (id: 0);
+  // The current goal velocity for the turret, in radians / sec.
+  turret_velocity:double (id: 1);
+  // The current distance to the target, in meters.
+  target_distance:double (id: 2);
+  // The current "shot distance." When shooting on the fly, this may be
+  // different from the static distance to the target.
+  shot_distance:double (id: 3);
 }
 
 table ShooterStatus {
@@ -29,7 +43,10 @@ table ShooterStatus {
   // Estimated angle and angular velocitiy of the altitude.
   altitude:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 2);
 
-  catapult_state: CatapultStatus (id: 3);
+  catapult_state: CatapultState (id: 3);
+
+  // Status of the aimer
+  aimer:AimerStatus (id: 4);
 }
 
 // Contains status of transfer rollers

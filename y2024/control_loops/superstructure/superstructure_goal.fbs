@@ -46,6 +46,9 @@ table ShooterGoal {
 
     // Position for the altitude when we aren't auto aiming
     altitude_position: frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 4);
+
+     // If true, we started with the ball loaded and should proceed to that state.
+    preloaded:bool = false (id: 5);
 }
 
 // Represents goal for extend

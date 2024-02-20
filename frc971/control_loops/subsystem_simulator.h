@@ -79,6 +79,9 @@ class SubsystemSimulator {
 
   PositionSensorSimulator *encoder() { return &encoder_; }
 
+  double position() const { return plant_->X(0, 0); }
+  double velocity() const { return plant_->X(1, 0); }
+
  private:
   std::unique_ptr<CappedTestPlant> plant_;
   PositionSensorSimulator encoder_;

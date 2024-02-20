@@ -81,6 +81,7 @@ cc_library(
     data = [
     ],
     deps = [
+        ":shooter",
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
         ":superstructure_position_fbs",
@@ -137,6 +138,52 @@ cc_test(
         "//frc971/control_loops:subsystem_simulator",
         "//frc971/control_loops:team_number_test_environment",
         "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+    ],
+)
+
+cc_library(
+    name = "shooter",
+    srcs = [
+        "shooter.cc",
+    ],
+    hdrs = [
+        "shooter.h",
+    ],
+    deps = [
+        ":aiming",
+        ":superstructure_can_position_fbs",
+        ":superstructure_goal_fbs",
+        ":superstructure_position_fbs",
+        ":superstructure_status_fbs",
+        "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
+        "//frc971/control_loops/catapult",
+        "//frc971/control_loops/catapult:catapult_goal_fbs",
+        "//frc971/shooter_interpolation:interpolation",
+        "//frc971/zeroing:pot_and_absolute_encoder",
+        "//y2024:constants",
+        "//y2024/constants:constants_fbs",
+        "//y2024/control_loops/superstructure/altitude:altitude_plants",
+        "//y2024/control_loops/superstructure/catapult:catapult_plants",
+        "//y2024/control_loops/superstructure/turret:turret_plants",
+    ],
+)
+
+cc_library(
+    name = "aiming",
+    srcs = [
+        "aiming.cc",
+    ],
+    hdrs = [
+        "aiming.h",
+    ],
+    deps = [
+        ":superstructure_status_fbs",
+        "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
+        "//frc971/control_loops/aiming",
+        "//frc971/control_loops/drivetrain:drivetrain_status_fbs",
+        "//y2024:constants",
+        "//y2024/constants:constants_fbs",
+        "//y2024/control_loops/drivetrain:drivetrain_base",
     ],
 )
 

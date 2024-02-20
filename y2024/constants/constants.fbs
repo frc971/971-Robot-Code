@@ -2,6 +2,7 @@ include "frc971/vision/calibration.fbs";
 include "frc971/vision/target_map.fbs";
 include "frc971/control_loops/profiled_subsystem.fbs";
 include "frc971/zeroing/constants.fbs";
+include "frc971/math/matrix.fbs";
 include "frc971/control_loops/drivetrain/drivetrain_config.fbs";
 
 namespace y2024;
@@ -106,6 +107,23 @@ table RobotConstants {
   extend_constants:PotAndAbsEncoderConstants (id: 5);
 }
 
+table Pose {
+  // Pos is a 3x1 matrix which contains the (x, y, z) component of the Pose.
+  pos: frc971.fbs.Matrix (id: 0);
+  theta: double (id: 1);
+}
+
+table ShooterTargets {
+  // The Pose of the red and blue alliance speakers we are aiming at.
+  red_alliance: Pose (id: 0);
+  blue_alliance: Pose (id: 1);
+}
+
+table RetentionRollerVoltages {
+  retaining:double (id: 0);
+  spitting:double (id: 1);
+}
+
 // Common table for constants unrelated to the robot
 table Common {
   target_map:frc971.vision.TargetMap (id: 0);
@@ -113,7 +131,6 @@ table Common {
   intake_roller_voltages:IntakeRollerVoltages (id : 2);
   intake_pivot_set_points:IntakePivotSetPoints (id: 3);
   intake_pivot:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 4);
-
   drivetrain:frc971.control_loops.drivetrain.fbs.DrivetrainConfig (id: 5);
   current_limits:CurrentLimits (id: 6);
   transfer_roller_voltages:TransferRollerVoltages (id: 7);
@@ -127,12 +144,17 @@ table Common {
   extend:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 15);
   extend_setpoints:ExtendSetPoints (id: 16);
   extend_roller_voltages:ExtendRollerVoltages (id: 17);
+  shooter_targets:ShooterTargets (id: 18);
+  altitude_loading_position: double (id: 19);
+  retention_roller_voltages:RetentionRollerVoltages (id: 20);
+
+  min_altitude_shooting_angle: double (id: 21);
 }
 
 table Constants {
-  robot:RobotConstants (id: 0);
-  common:Common (id: 1);
-  cameras:[CameraConfiguration] (id: 2);
+  cameras:[CameraConfiguration] (id: 0);
+  robot:RobotConstants (id: 1);
+  common:Common (id: 2);
 }
 
 root_type Constants;

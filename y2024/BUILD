@@ -210,6 +210,7 @@ cc_library(
         "//frc971/shooter_interpolation:interpolation",
         "//frc971/zeroing:absolute_encoder",
         "//frc971/zeroing:pot_and_absolute_encoder",
+        "//y2024/constants:constants_fbs",
         "//y2024/control_loops/drivetrain:polydrivetrain_plants",
         "//y2024/control_loops/superstructure/altitude:altitude_plants",
         "//y2024/control_loops/superstructure/catapult:catapult_plants",
