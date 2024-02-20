@@ -158,4 +158,17 @@ TEST(AimerTest, WrapWhenOutOfRange) {
   EXPECT_FLOAT_EQ(0.0, goal.velocity);
 }
 
+// Tests that we fail if the ballspeed is zero.  Can't hit anything if the ball
+// isn't moving.
+TEST(AimerDeathTest, ZeroBallSpeed) {
+  const Pose target({0.0, 0.0, 0.0}, 0.0);
+  Pose robot_pose({1.0, 1.0, 1.0}, 0.0);
+  const constants::Range range{-2.36, 2.36, -2.16, 2.16};
+  const double kBallSpeed = 0.0;
+  EXPECT_DEATH(AimerGoal(ShotConfig{target, ShotMode::kShootOnTheFly, range,
+                                    kBallSpeed, 0.0, 0.0},
+                         RobotState{robot_pose, {0.0, 0.0}, 0.0, 0.0}),
+               "Ball speed must be positive.");
+}
+
 }  // namespace frc971::control_loops::aiming::testing

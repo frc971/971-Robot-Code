@@ -54,6 +54,8 @@ Pose IterateVirtualGoal(const Pose &robot_pose,
 }  // namespace
 
 TurretGoal AimerGoal(const ShotConfig &config, const RobotState &state) {
+  CHECK(config.ball_speed_over_ground > 0.0)
+      << ": Ball speed must be positive.";
   TurretGoal result;
   // This code manages compensating the goal turret heading for the robot's
   // current velocity, to allow for shooting on-the-fly.
