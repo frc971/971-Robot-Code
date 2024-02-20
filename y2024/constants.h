@@ -11,9 +11,12 @@
 #include "frc971/zeroing/absolute_encoder.h"
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2024/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
+#include "y2024/control_loops/superstructure/altitude/altitude_plant.h"
+#include "y2024/control_loops/superstructure/catapult/catapult_plant.h"
 #include "y2024/control_loops/superstructure/climber/climber_plant.h"
 #include "y2024/control_loops/superstructure/extend/extend_plant.h"
 #include "y2024/control_loops/superstructure/intake_pivot/intake_pivot_plant.h"
+#include "y2024/control_loops/superstructure/turret/turret_plant.h"
 
 namespace y2024::constants {
 
@@ -91,6 +94,25 @@ struct Values {
   }
 
   static constexpr double kExtendEncoderCountsPerRevolution() { return 4096.0; }
+  // TODO: (niko) add the gear ratios for the intake once we have them
+  static constexpr double kCatapultEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
+
+  static constexpr double kCatapultEncoderRatio() { return 12.0 / 24.0; }
+
+  static constexpr double kCatapultPotRatio() { return 12.0 / 24.0; }
+
+  static constexpr double kCatapultPotRadiansPerVolt() {
+    return kCatapultPotRatio() * (3.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
+
+  static constexpr double kMaxCatapultEncoderPulsesPerSecond() {
+    return control_loops::superstructure::catapult::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::catapult::kOutputRatio /
+           kCatapultEncoderRatio() * kCatapultEncoderCountsPerRevolution();
+  }
 
   static constexpr double kExtendEncoderRatio() { return 1.0; }
 
@@ -107,6 +129,42 @@ struct Values {
     return control_loops::superstructure::extend::kFreeSpeed / (2.0 * M_PI) *
            control_loops::superstructure::extend::kOutputRatio /
            kExtendEncoderRatio() * kExtendEncoderCountsPerRevolution();
+  }
+
+  static constexpr double kTurretEncoderCountsPerRevolution() { return 4096.0; }
+
+  static constexpr double kTurretPotRatio() {
+    return (22.0 / 100.0) * (28.0 / 48.0) * (36.0 / 24.0);
+  }
+
+  static constexpr double kTurretEncoderRatio() { return 22.0 / 100.0; }
+
+  static constexpr double kTurretPotRadiansPerVolt() {
+    return kTurretPotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
+  static constexpr double kMaxTurretEncoderPulsesPerSecond() {
+    return control_loops::superstructure::turret::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::turret::kOutputRatio /
+           kTurretEncoderRatio() * kTurretEncoderCountsPerRevolution();
+  }
+
+  static constexpr double kAltitudeEncoderCountsPerRevolution() {
+    return 4096.0;
+  }
+
+  static constexpr double kAltitudeEncoderRatio() { return 16.0 / 162.0; }
+
+  static constexpr double kAltitudePotRatio() { return 16.0 / 162.0; }
+
+  static constexpr double kAltitudePotRadiansPerVolt() {
+    return kAltitudePotRatio() * (10.0 /*turns*/ / 5.0 /*volts*/) *
+           (2 * M_PI /*radians*/);
+  }
+  static constexpr double kMaxAltitudeEncoderPulsesPerSecond() {
+    return control_loops::superstructure::altitude::kFreeSpeed / (2.0 * M_PI) *
+           control_loops::superstructure::altitude::kOutputRatio /
+           kAltitudeEncoderRatio() * kAltitudeEncoderCountsPerRevolution();
   }
 
   // 20 -> 28 reduction to a 0.5" radius roller
