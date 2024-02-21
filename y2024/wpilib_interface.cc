@@ -78,7 +78,7 @@ namespace {
 constexpr double kMaxBringupPower = 12.0;
 
 double climber_pot_translate(double voltage) {
-  return voltage * Values::kClimberPotMetersPerVolt();
+  return -1 * voltage * Values::kClimberPotMetersPerVolt();
 }
 
 double extend_pot_translate(double voltage) {
