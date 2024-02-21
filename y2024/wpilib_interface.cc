@@ -135,8 +135,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                 ::frc971::control_loops::drivetrain::PositionStatic>(
                 "/drivetrain")),
         gyro_sender_(event_loop->MakeSender<::frc971::sensors::GyroReading>(
-            "/drivetrain")){};
-  void Start() override { AddToDMA(&imu_yaw_rate_reader_); }
+            "/drivetrain")) {
+    UpdateFastEncoderFilterHz(kMaxFastEncoderPulsesPerSecond);
+    event_loop->SetRuntimeAffinity(aos::MakeCpusetFromCpus({0}));
+  };
+  void Start() override {
+    AddToDMA(&imu_yaw_rate_reader_);
+    AddToDMA(&turret_encoder_.reader());
+    AddToDMA(&altitude_encoder_.reader());
+  }
 
   // Auto mode switches.
   void set_autonomous_mode(int i, ::std::unique_ptr<frc::DigitalInput> sensor) {
@@ -325,9 +332,12 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   frc971::wpilib::AbsoluteEncoder intake_pivot_encoder_;
   frc971::wpilib::AbsoluteEncoderAndPotentiometer climber_encoder_,
-      catapult_encoder_, turret_encoder_, altitude_encoder_, extend_encoder_;
+      catapult_encoder_, extend_encoder_;
 
   frc971::wpilib::DMAPulseWidthReader imu_yaw_rate_reader_;
+
+  frc971::wpilib::DMAAbsoluteEncoderAndPotentiometer turret_encoder_,
+      altitude_encoder_;
 };
 
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
