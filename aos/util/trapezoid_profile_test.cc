@@ -10,7 +10,7 @@ class TrapezoidProfileTest : public ::testing::Test {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
  protected:
-  TrapezoidProfileTest() : profile_(delta_time) {
+  TrapezoidProfileTest() : profile_(kDeltaTime) {
     position_.setZero();
     profile_.set_maximum_acceleration(0.75);
     profile_.set_maximum_velocity(1.75);
@@ -19,6 +19,16 @@ class TrapezoidProfileTest : public ::testing::Test {
   // Runs an iteration.
   void RunIteration(double goal_position, double goal_velocity) {
     position_ = profile_.Update(goal_position, goal_velocity);
+  }
+
+  void RunFor(double goal_position, double goal_velocity,
+              std::chrono::nanoseconds duration) {
+    while (duration > std::chrono::nanoseconds(0)) {
+      position_ = profile_.Update(goal_position, goal_velocity);
+      duration -= kDeltaTime;
+    }
+
+    ASSERT_EQ(duration.count(), 0);
   }
 
   const Eigen::Matrix<double, 2, 1> &position() { return position_; }
@@ -40,13 +50,13 @@ class TrapezoidProfileTest : public ::testing::Test {
   }
 
  private:
-  static constexpr ::std::chrono::nanoseconds delta_time =
+  static constexpr ::std::chrono::nanoseconds kDeltaTime =
       ::std::chrono::milliseconds(10);
 
   Eigen::Matrix<double, 2, 1> position_;
 };
 
-constexpr ::std::chrono::nanoseconds TrapezoidProfileTest::delta_time;
+constexpr ::std::chrono::nanoseconds TrapezoidProfileTest::kDeltaTime;
 
 TEST_F(TrapezoidProfileTest, ReachesGoal) {
   for (int i = 0; i < 450; ++i) {
@@ -55,7 +65,7 @@ TEST_F(TrapezoidProfileTest, ReachesGoal) {
   EXPECT_TRUE(At(3, 0));
 }
 
-// Tests that decresing the maximum velocity in the middle when it is already
+// Tests that decreasing the maximum velocity in the middle when it is already
 // moving faster than the new max is handled correctly.
 TEST_F(TrapezoidProfileTest, ContinousUnderVelChange) {
   profile_.set_maximum_velocity(1.75);
@@ -116,6 +126,21 @@ TEST_F(TrapezoidProfileTest, ExactlyReachesGoal) {
   }
   EXPECT_EQ(position()(1), 0.0);
   EXPECT_EQ(position()(0), 1.0);
+}
+
+// Tests that we can move a goal without the trajectory teleporting.
+TEST_F(TrapezoidProfileTest, MoveGoal) {
+  profile_.set_maximum_acceleration(2.0);
+  profile_.set_maximum_velocity(2.0);
+
+  RunFor(5.0, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(1.0, 2.0));
+  RunFor(5.0, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(3.0, 2.0));
+  RunFor(3.5, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(4.0, 0.0));
+  RunFor(3.5, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(3.5, 0.0));
 }
 
 }  // namespace aos::util::testing
