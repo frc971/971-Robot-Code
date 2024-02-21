@@ -112,6 +112,7 @@ aos_config(
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
         "//y2024/constants:constants_fbs",
+        "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
         "//frc971/can_logger:can_logging_fbs",
         "//aos/network:timestamp_fbs",
         "//aos/network:remote_message_fbs",
@@ -132,6 +133,7 @@ aos_config(
         "//aos/network:remote_message_fbs",
         "//aos/network:message_bridge_client_fbs",
         "//aos/network:message_bridge_server_fbs",
+        "//frc971/wpilib:pdp_values_fbs",
         #y2019 stuff shouldn't be here (e.g. target selector)
         "//y2024/constants:constants_fbs",
         "//aos/network:timestamp_fbs",
