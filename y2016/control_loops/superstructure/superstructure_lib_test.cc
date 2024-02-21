@@ -208,26 +208,26 @@ class SuperstructureSimulation {
     if (superstructure_status_fetcher_->state() == Superstructure::RUNNING ||
         superstructure_status_fetcher_->state() ==
             Superstructure::LANDING_RUNNING) {
-      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake()),
-                   Superstructure::kOperatingVoltage);
-      AOS_CHECK_LE(
-          ::std::abs(superstructure_output_fetcher_->voltage_shoulder()),
-          Superstructure::kOperatingVoltage);
-      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_wrist()),
-                   Superstructure::kOperatingVoltage);
+      CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake()),
+               Superstructure::kOperatingVoltage);
+      CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_shoulder()),
+               Superstructure::kOperatingVoltage);
+      CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_wrist()),
+               Superstructure::kOperatingVoltage);
     } else {
-      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake()),
-                   Superstructure::kZeroingVoltage);
-      AOS_CHECK_LE(
-          ::std::abs(superstructure_output_fetcher_->voltage_shoulder()),
-          Superstructure::kZeroingVoltage);
-      AOS_CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_wrist()),
-                   Superstructure::kZeroingVoltage);
+      CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_intake()),
+               Superstructure::kZeroingVoltage);
+      CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_shoulder()),
+               Superstructure::kZeroingVoltage);
+      CHECK_LE(::std::abs(superstructure_output_fetcher_->voltage_wrist()),
+               Superstructure::kZeroingVoltage);
     }
     if (arm_plant_->X(0, 0) <=
-        Superstructure::kShoulderTransitionToLanded + 1e-4) {
-      AOS_CHECK_GE(superstructure_output_fetcher_->voltage_shoulder(),
-                   Superstructure::kLandingShoulderDownVoltage - 0.00001);
+        Superstructure::kShoulderTransitionToLanded - 1e-4) {
+      CHECK_GE(superstructure_output_fetcher_->voltage_shoulder(),
+               Superstructure::kLandingShoulderDownVoltage - 0.00001)
+          << ": Arm at " << arm_plant_->X(0, 0) << " and transition at "
+          << Superstructure::kShoulderTransitionToLanded;
     }
 
     // Use the plant to generate the next physical state given the voltages to

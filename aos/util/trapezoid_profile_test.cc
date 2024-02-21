@@ -1,6 +1,7 @@
 #include "aos/util/trapezoid_profile.h"
 
 #include "Eigen/Dense"
+#include "glog/logging.h"
 #include "gtest/gtest.h"
 
 namespace aos::util::testing {
@@ -13,6 +14,7 @@ class TrapezoidProfileTest : public ::testing::Test {
   TrapezoidProfileTest() : profile_(kDeltaTime) {
     position_.setZero();
     profile_.set_maximum_acceleration(0.75);
+    profile_.set_maximum_deceleration(0.75);
     profile_.set_maximum_velocity(1.75);
   }
 
@@ -33,7 +35,7 @@ class TrapezoidProfileTest : public ::testing::Test {
 
   const Eigen::Matrix<double, 2, 1> &position() { return position_; }
 
-  TrapezoidProfile profile_;
+  AsymmetricTrapezoidProfile profile_;
 
   ::testing::AssertionResult At(double position, double velocity) {
     static const double kDoubleNear = 0.00001;
@@ -59,9 +61,7 @@ class TrapezoidProfileTest : public ::testing::Test {
 constexpr ::std::chrono::nanoseconds TrapezoidProfileTest::kDeltaTime;
 
 TEST_F(TrapezoidProfileTest, ReachesGoal) {
-  for (int i = 0; i < 450; ++i) {
-    RunIteration(3, 0);
-  }
+  RunFor(3, 0, std::chrono::milliseconds(4500));
   EXPECT_TRUE(At(3, 0));
 }
 
@@ -69,14 +69,14 @@ TEST_F(TrapezoidProfileTest, ReachesGoal) {
 // moving faster than the new max is handled correctly.
 TEST_F(TrapezoidProfileTest, ContinousUnderVelChange) {
   profile_.set_maximum_velocity(1.75);
-  RunIteration(12.0, 0);
+  RunFor(12.0, 0, std::chrono::milliseconds(10));
   double last_pos = position()(0);
   double last_vel = 1.75;
   for (int i = 0; i < 1600; ++i) {
     if (i == 400) {
       profile_.set_maximum_velocity(0.75);
     }
-    RunIteration(12.0, 0);
+    RunFor(12.0, 0, std::chrono::milliseconds(10));
     if (i >= 400) {
       EXPECT_TRUE(::std::abs(last_pos - position()(0)) <= 1.75 * 0.01);
       EXPECT_NEAR(last_vel, ::std::abs(last_pos - position()(0)), 0.0001);
@@ -89,48 +89,38 @@ TEST_F(TrapezoidProfileTest, ContinousUnderVelChange) {
 
 // There is some somewhat tricky code for dealing with going backwards.
 TEST_F(TrapezoidProfileTest, Backwards) {
-  for (int i = 0; i < 400; ++i) {
-    RunIteration(-2, 0);
-  }
+  RunFor(-2, 0, std::chrono::milliseconds(4000));
   EXPECT_TRUE(At(-2, 0));
 }
 
 TEST_F(TrapezoidProfileTest, SwitchGoalInMiddle) {
-  for (int i = 0; i < 200; ++i) {
-    RunIteration(-2, 0);
-  }
+  RunFor(-2, 0, std::chrono::milliseconds(2000));
   EXPECT_FALSE(At(-2, 0));
-  for (int i = 0; i < 550; ++i) {
-    RunIteration(0, 0);
-  }
+  RunFor(0, 0, std::chrono::milliseconds(5500));
   EXPECT_TRUE(At(0, 0));
 }
 
 // Checks to make sure that it hits top speed.
 TEST_F(TrapezoidProfileTest, TopSpeed) {
-  for (int i = 0; i < 200; ++i) {
-    RunIteration(4, 0);
-  }
+  RunFor(4, 0, std::chrono::milliseconds(2000));
   EXPECT_NEAR(1.5, position()(1), 10e-5);
-  for (int i = 0; i < 2000; ++i) {
-    RunIteration(4, 0);
-  }
+  RunFor(4, 0, std::chrono::milliseconds(20000));
   EXPECT_TRUE(At(4, 0));
 }
 
 // Tests that the position and velocity exactly match at the end.  Some code we
 // have assumes this to be true as a simplification.
 TEST_F(TrapezoidProfileTest, ExactlyReachesGoal) {
-  for (int i = 0; i < 450; ++i) {
-    RunIteration(1, 0);
-  }
+  RunFor(1, 0, std::chrono::milliseconds(4500));
   EXPECT_EQ(position()(1), 0.0);
   EXPECT_EQ(position()(0), 1.0);
 }
 
-// Tests that we can move a goal without the trajectory teleporting.
+// Tests that we can move a goal without the trajectory teleporting.  The goal
+// needs to move to something we haven't already passed, but will blow by.
 TEST_F(TrapezoidProfileTest, MoveGoal) {
   profile_.set_maximum_acceleration(2.0);
+  profile_.set_maximum_deceleration(2.0);
   profile_.set_maximum_velocity(2.0);
 
   RunFor(5.0, 0, std::chrono::seconds(1));
@@ -141,6 +131,170 @@ TEST_F(TrapezoidProfileTest, MoveGoal) {
   EXPECT_TRUE(At(4.0, 0.0));
   RunFor(3.5, 0, std::chrono::seconds(1));
   EXPECT_TRUE(At(3.5, 0.0));
+}
+
+// Tests that we can move a goal back before where we currently are without
+// teleporting.
+TEST_F(TrapezoidProfileTest, MoveGoalFar) {
+  profile_.set_maximum_acceleration(2.0);
+  profile_.set_maximum_deceleration(2.0);
+  profile_.set_maximum_velocity(2.0);
+
+  RunFor(5.0, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(1.0, 2.0));
+  RunFor(5.0, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(3.0, 2.0));
+  RunFor(2.5, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(4.0, 0.0));
+  RunFor(2.5, 0, std::chrono::seconds(2));
+  EXPECT_TRUE(At(2.5, 0.0));
+}
+
+// Tests that we can move a goal without the trajectory teleporting.  The goal
+// needs to move to something we haven't already passed, but will blow by.  Do
+// this one in the negative direction.
+TEST_F(TrapezoidProfileTest, MoveGoalNegative) {
+  profile_.set_maximum_acceleration(2.0);
+  profile_.set_maximum_deceleration(2.0);
+  profile_.set_maximum_velocity(2.0);
+
+  RunFor(-5.0, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(-1.0, -2.0));
+  RunFor(-5.0, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(-3.0, -2.0));
+  RunFor(-3.5, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(-4.0, 0.0));
+  RunFor(-3.5, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(-3.5, 0.0));
+}
+
+// Tests that we can move a goal back before where we currently are without
+// teleporting.  Do this one in the negative direction.
+TEST_F(TrapezoidProfileTest, MoveGoalNegativeFar) {
+  profile_.set_maximum_acceleration(2.0);
+  profile_.set_maximum_deceleration(2.0);
+  profile_.set_maximum_velocity(2.0);
+
+  RunFor(-5.0, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(-1.0, -2.0));
+  RunFor(-5.0, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(-3.0, -2.0));
+  RunFor(-2.5, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(-4.0, 0.0));
+  RunFor(-2.5, 0, std::chrono::seconds(2));
+  EXPECT_TRUE(At(-2.5, 0.0));
+}
+
+// Tests that we can execute a profile with acceleration and deceleration not
+// matching in magnitude.
+TEST_F(TrapezoidProfileTest, AsymmetricAccelDecel) {
+  // Accelerates up until t=1.  Will be at x=0.5
+  profile_.set_maximum_acceleration(1.0);
+  // Decelerates in t=0.5  Will take x=0.25
+  profile_.set_maximum_deceleration(2.0);
+  profile_.set_maximum_velocity(1.0);
+
+  RunFor(1.75, 0, std::chrono::seconds(1));
+
+  EXPECT_TRUE(At(0.5, 1.0));
+
+  RunFor(1.75, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(1.5, 1.0));
+  RunFor(1.75, 0, std::chrono::milliseconds(500));
+  EXPECT_TRUE(At(1.75, 0.0));
+}
+
+// Tests that we can execute a profile with acceleration and deceleration not
+// matching in magnitude, and hitting saturation.
+TEST_F(TrapezoidProfileTest, AsymmetricAccelDecelUnconstrained) {
+  // Accelerates up until t=1.  Will be at x=0.5
+  profile_.set_maximum_acceleration(1.0);
+  // Decelerates in t=0.5  Will take x=0.25
+  profile_.set_maximum_deceleration(2.0);
+  profile_.set_maximum_velocity(2.0);
+
+  RunFor(0.75, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(0.5, 1.0));
+
+  RunFor(0.75, 0, std::chrono::milliseconds(500));
+  EXPECT_TRUE(At(0.75, 0.0));
+}
+
+// Tests that we can execute a profile with acceleration and deceleration not
+// matching in magnitude, and hitting saturation.
+TEST_F(TrapezoidProfileTest, AsymmetricAccelDecelUnconstrainedNegative) {
+  // Accelerates up until t=1.  Will be at x=0.5
+  profile_.set_maximum_acceleration(1.0);
+  // Decelerates in t=0.5  Will take x=0.25
+  profile_.set_maximum_deceleration(2.0);
+  profile_.set_maximum_velocity(2.0);
+
+  RunFor(-0.75, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(-0.5, -1.0));
+
+  RunFor(-0.75, 0, std::chrono::milliseconds(500));
+  EXPECT_TRUE(At(-0.75, 0.0));
+}
+
+// Tests that we can execute a profile with acceleration and deceleration not
+// matching in magnitude when going in the negative direction.
+TEST_F(TrapezoidProfileTest, AsymmetricAccelDecelNegative) {
+  // Accelerates up until t=1.  Will be at x=0.5
+  profile_.set_maximum_acceleration(1.0);
+  // Decelerates in t=0.5  Will take x=0.25
+  profile_.set_maximum_deceleration(2.0);
+  profile_.set_maximum_velocity(1.0);
+
+  RunFor(-1.75, 0, std::chrono::seconds(1));
+
+  EXPECT_TRUE(At(-0.5, -1.0));
+
+  RunFor(-1.75, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(-1.5, -1.0));
+  RunFor(-1.75, 0, std::chrono::milliseconds(500));
+  EXPECT_TRUE(At(-1.75, 0.0));
+}
+
+// Tests that we can move the goal when an asymmetric profile is executing.
+TEST_F(TrapezoidProfileTest, AsymmetricAccelDecelMoveGoal) {
+  // Accelerates up until t=1.  Will be at x=0.5
+  profile_.set_maximum_acceleration(1.0);
+  // Decelerates in t=0.5  Will take x=0.25
+  profile_.set_maximum_deceleration(2.0);
+  profile_.set_maximum_velocity(1.0);
+
+  RunFor(1.75, 0, std::chrono::seconds(1));
+
+  EXPECT_TRUE(At(0.5, 1.0));
+
+  RunFor(1.75, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(1.5, 1.0));
+  RunFor(1.6, 0, std::chrono::milliseconds(500));
+  EXPECT_TRUE(At(1.75, 0.0));
+  RunFor(1.6, 0, std::chrono::milliseconds(520));
+  RunFor(1.6, 0, std::chrono::milliseconds(2500));
+  EXPECT_TRUE(At(1.6, 0.0));
+}
+
+// Tests that we can move the goal when an asymmetric profile is executing in
+// the negative direction.
+TEST_F(TrapezoidProfileTest, AsymmetricAccelDecelMoveGoalFar) {
+  // Accelerates up until t=1.  Will be at x=0.5
+  profile_.set_maximum_acceleration(1.0);
+  // Decelerates in t=0.5  Will take x=0.25
+  profile_.set_maximum_deceleration(2.0);
+  profile_.set_maximum_velocity(1.0);
+
+  RunFor(1.75, 0, std::chrono::seconds(1));
+
+  EXPECT_TRUE(At(0.5, 1.0));
+
+  RunFor(1.75, 0, std::chrono::seconds(1));
+  EXPECT_TRUE(At(1.5, 1.0));
+  RunFor(1.0, 0, std::chrono::milliseconds(500));
+  EXPECT_TRUE(At(1.75, 0.0));
+  RunFor(1.0, 0, std::chrono::milliseconds(2500));
+  EXPECT_TRUE(At(1.0, 0.0));
 }
 
 }  // namespace aos::util::testing
