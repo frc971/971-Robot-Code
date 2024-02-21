@@ -14,7 +14,7 @@
   "robot": {
     {% set _ = intake_pivot_zero.update(
       {
-          "measured_absolute_position" : 0.0
+          "measured_absolute_position" : 2.99648178674155
       }
     ) %}
     "intake_constants":  {{ intake_pivot_zero | tojson(indent=2)}},

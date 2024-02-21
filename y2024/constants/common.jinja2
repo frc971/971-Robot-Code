@@ -4,12 +4,16 @@
 
 {# Intake #}
 {# we do this here so we keep the encoder ratio in plaintext and also keep the math we're using. #}
-{% set intake_pivot_encoder_ratio = (24.0 / 15.0) %}
+{% set intake_pivot_encoder_ratio = (15.0 / 24.0) %}
+
+{% set intake_upper = 2.1 %}
+{% set intake_lower = 0.1 %}
 
 {%
 set intake_pivot_zero = {
     "average_filter_size": zeroing_sample_size,
     "one_revolution_distance": pi * 2.0 * intake_pivot_encoder_ratio,
+    "middle_position": (intake_upper + intake_lower) / 2,
     "zeroing_threshold": 0.0005,
     "moving_buffer_size": 20,
     "allowable_encoder_error": 0.9

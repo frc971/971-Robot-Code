@@ -392,6 +392,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         &constant_fetcher_event_loop);
     const Constants *robot_constants = &constants_fetcher.constants();
 
+    AddLoop(&constant_fetcher_event_loop);
+
     // Thread 1.
     ::aos::ShmEventLoop joystick_sender_event_loop(&config.message());
     ::frc971::wpilib::JoystickSender joystick_sender(
