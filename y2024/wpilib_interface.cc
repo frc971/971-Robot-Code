@@ -401,7 +401,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         robot_constants->common()->current_limits();
 
     std::shared_ptr<TalonFX> right_front = std::make_shared<TalonFX>(
-        0, false, "Drivetrain Bus", &canivore_signal_registry,
+        2, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->drivetrain_supply_current_limit(),
         current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> right_back = std::make_shared<TalonFX>(
@@ -409,35 +409,36 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->drivetrain_supply_current_limit(),
         current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> left_front = std::make_shared<TalonFX>(
-        2, false, "Drivetrain Bus", &canivore_signal_registry,
+        4, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->drivetrain_supply_current_limit(),
         current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> left_back = std::make_shared<TalonFX>(
-        3, false, "Drivetrain Bus", &canivore_signal_registry,
+        5, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->drivetrain_supply_current_limit(),
         current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> intake_pivot = std::make_shared<TalonFX>(
-        4, false, "Drivetrain Bus", &canivore_signal_registry,
+        3, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->intake_pivot_stator_current_limit(),
         current_limits->intake_pivot_supply_current_limit());
+    // TODO(max): Assign these proper ids
     std::shared_ptr<TalonFX> altitude = std::make_shared<TalonFX>(
-        5, false, "Drivetrain Bus", &canivore_signal_registry,
+        6, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->altitude_stator_current_limit(),
         current_limits->altitude_supply_current_limit());
     std::shared_ptr<TalonFX> turret = std::make_shared<TalonFX>(
-        6, false, "Drivetrain Bus", &canivore_signal_registry,
+        7, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->turret_stator_current_limit(),
         current_limits->turret_supply_current_limit());
     std::shared_ptr<TalonFX> intake_roller = std::make_shared<TalonFX>(
-        7, false, "rio", &rio_signal_registry,
+        8, false, "rio", &rio_signal_registry,
         current_limits->intake_roller_stator_current_limit(),
         current_limits->intake_roller_supply_current_limit());
     std::shared_ptr<TalonFX> transfer_roller = std::make_shared<TalonFX>(
-        8, false, "rio", &rio_signal_registry,
+        9, false, "rio", &rio_signal_registry,
         current_limits->transfer_roller_stator_current_limit(),
         current_limits->transfer_roller_supply_current_limit());
     std::shared_ptr<TalonFX> climber = std::make_shared<TalonFX>(
-        9, false, "rio", &rio_signal_registry,
+        10, false, "rio", &rio_signal_registry,
         current_limits->climber_stator_current_limit(),
         current_limits->climber_supply_current_limit());
 
