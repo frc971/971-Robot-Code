@@ -9,6 +9,7 @@
 #include "aos/time/time.h"
 #include "frc971/wpilib/ahal/AnalogInput.h"
 #include "frc971/wpilib/ahal/Counter.h"
+#include "frc971/wpilib/ahal/DigitalInput.h"
 #include "frc971/wpilib/ahal/DigitalSource.h"
 #include "frc971/wpilib/ahal/Encoder.h"
 #include "frc971/wpilib/dma.h"
@@ -166,6 +167,38 @@ class DutyCycleReader {
 
   ::std::unique_ptr<::frc::Counter> high_counter_, period_length_counter_;
   ::std::unique_ptr<::frc::DigitalInput> input_;
+};
+
+class DMAAbsoluteEncoderAndPotentiometer {
+ public:
+  void set_absolute_pwm(::std::unique_ptr<frc::DigitalInput> input) {
+    duty_cycle_input_ = ::std::move(input);
+    duty_cycle_reader_.set_input(duty_cycle_input_.get());
+  }
+
+  void set_encoder(::std::unique_ptr<frc::Encoder> encoder) {
+    encoder_ = ::std::move(encoder);
+  }
+
+  void set_potentiometer(::std::unique_ptr<frc::AnalogInput> potentiometer) {
+    potentiometer_ = ::std::move(potentiometer);
+  }
+
+  double ReadAbsoluteEncoder() const {
+    return duty_cycle_reader_.last_width() / duty_cycle_reader_.last_period();
+  }
+  int32_t ReadRelativeEncoder() const { return encoder_->GetRaw(); }
+  double ReadPotentiometerVoltage() const {
+    return potentiometer_->GetVoltage();
+  }
+
+  DMAPulseWidthReader &reader() { return duty_cycle_reader_; }
+
+ private:
+  DMAPulseWidthReader duty_cycle_reader_;
+  ::std::unique_ptr<::frc::DigitalInput> duty_cycle_input_;
+  ::std::unique_ptr<frc::Encoder> encoder_;
+  ::std::unique_ptr<frc::AnalogInput> potentiometer_;
 };
 
 // Class to hold a CTRE encoder with absolute angle pwm and potentiometer pair.
