@@ -25,7 +25,7 @@ import {
   Action,
 } from '../../webserver/requests/messages/submit_2024_actions_generated';
 import {Match} from '../../webserver/requests/messages/request_all_matches_response_generated';
-import {MatchListRequestor} from '@org_frc971/scouting/www/rpc';
+import {MatchListRequestor} from '../rpc';
 
 type Section =
   | 'Team Selection'
