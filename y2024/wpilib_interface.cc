@@ -363,7 +363,7 @@ class SuperstructurePWMWriter
 
   void Write(const superstructure::Output &output) override {
     WritePwm(output.catapult_voltage(), catapult_kraken_one_.get());
-    WritePwm(output.catapult_voltage(), catapult_kraken_one_.get());
+    WritePwm(output.catapult_voltage(), catapult_kraken_two_.get());
   }
 
   template <typename T>
@@ -681,7 +681,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SuperstructurePWMWriter superstructure_pwm_writer(&pwm_event_loop);
     superstructure_pwm_writer.set_catapult_kraken_one(
         make_unique<frc::TalonFX>(0));
-    superstructure_pwm_writer.set_catapult_kraken_one(
+    superstructure_pwm_writer.set_catapult_kraken_two(
         make_unique<frc::TalonFX>(1));
 
     AddLoop(&pwm_event_loop);
