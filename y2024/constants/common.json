@@ -187,7 +187,7 @@
             "storage_order": "ColMajor",
             // The data field contains the x, y and z
             // coordinates of the speaker on the red alliance
-            "data": [-8.0645, -1.4435, 2.0705]
+            "data": [8.0645, 1.4435, 2.0705]
         },
         "theta": 0.0
     },
@@ -198,7 +198,7 @@
             "storage_order": "ColMajor",
             // The data field contains the x, y and z
             // coordinates of the speaker on the blue alliance
-            "data": [8.0645, -1.4435, 2.0705]
+            "data": [-8.0645, 1.4435, 2.0705]
         },
         "theta": 0.0
     }
