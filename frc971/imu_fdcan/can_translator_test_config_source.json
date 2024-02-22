@@ -1,0 +1,28 @@
+{
+  "channels": [
+    {
+      "name": "/aos",
+      "type": "aos.timing.Report"
+    },
+    {
+      "name": "/aos",
+      "type": "aos.logging.LogMessageFbs",
+      "frequency": 400
+    },
+    {
+      "name": "/imu",
+      "type": "frc971.imu.DualImu",
+      "frequency": 200
+    },
+    {
+      "name": "/can",
+      "type": "frc971.can_logger.CanFrame",
+      "frequency": 200
+    },
+    {
+      "name": "/imu",
+      "type": "frc971.imu.CanTranslatorStatus",
+      "frequency": 100
+    },
+  ]
+}

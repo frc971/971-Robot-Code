@@ -1,0 +1,12 @@
+namespace frc971.imu;
+
+table CanTranslatorStatus {
+  // Number of times we've gotten valid packets at 64 bytes
+  valid_packet_count: uint64 (id: 0);
+  // Number of times we've gotten packets under 64 bytes
+  invalid_packet_count: uint64 (id: 1);
+  // Number of times we've gotten an invalid can id
+  invalid_can_id_count: uint64 (id: 2);
+}
+
+root_type CanTranslatorStatus;
