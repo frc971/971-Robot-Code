@@ -11,6 +11,7 @@
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
 #include "y2024/constants.h"
 #include "y2024/constants/constants_generated.h"
+#include "y2024/control_loops/superstructure/shooter.h"
 #include "y2024/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2024/control_loops/superstructure/superstructure_output_generated.h"
 #include "y2024/control_loops/superstructure/superstructure_position_generated.h"
@@ -43,6 +44,8 @@ class Superstructure
     return climber_;
   }
 
+  inline const Shooter &shooter() const { return shooter_; }
+
   double robot_velocity() const;
 
  protected:
@@ -63,6 +66,8 @@ class Superstructure
   TransferRollerGoal transfer_goal_;
   AbsoluteEncoderSubsystem intake_pivot_;
   PotAndAbsoluteEncoderSubsystem climber_;
+
+  Shooter shooter_;
 
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };

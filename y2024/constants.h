@@ -8,8 +8,10 @@
 #include "frc971/constants.h"
 #include "frc971/control_loops/pose.h"
 #include "frc971/control_loops/static_zeroing_single_dof_profiled_subsystem.h"
+#include "frc971/shooter_interpolation/interpolation.h"
 #include "frc971/zeroing/absolute_encoder.h"
 #include "frc971/zeroing/pot_and_absolute_encoder.h"
+#include "y2024/constants/constants_generated.h"
 #include "y2024/control_loops/drivetrain/drivetrain_dog_motor_plant.h"
 #include "y2024/control_loops/superstructure/altitude/altitude_plant.h"
 #include "y2024/control_loops/superstructure/catapult/catapult_plant.h"
@@ -173,6 +175,58 @@ struct Values {
   static constexpr double kIntakeRollerOutputRatio = (20.0 / 34.0) * 0.015875;
   // 20 -> 28 reduction to a 0.5" radius roller
   static constexpr double kExtendRollerOutputRatio = (20.0 / 28.0) * 0.0127;
+
+  struct ShotParams {
+    // Measured in radians
+    double shot_altitude_angle = 0.0;
+    double shot_catapult_angle = 0.0;
+
+    // Muzzle velocity (m/s) of the game piece as it is released from the
+    // catapult.
+    double shot_velocity = 0.0;
+
+    // Speed over ground to use for shooting on the fly
+    double shot_speed_over_ground = 0.0;
+
+    static ShotParams BlendY(double coefficient, ShotParams a1, ShotParams a2) {
+      using ::frc971::shooter_interpolation::Blend;
+      return ShotParams{
+          .shot_altitude_angle = Blend(coefficient, a1.shot_altitude_angle,
+                                       a2.shot_altitude_angle),
+          .shot_catapult_angle = Blend(coefficient, a1.shot_catapult_angle,
+                                       a2.shot_catapult_angle),
+          .shot_velocity =
+              Blend(coefficient, a1.shot_velocity, a2.shot_velocity),
+          .shot_speed_over_ground =
+              Blend(coefficient, a1.shot_speed_over_ground,
+                    a2.shot_speed_over_ground),
+      };
+    }
+
+    static ShotParams FromFlatbuffer(const y2024::ShotParams *shot_params) {
+      return ShotParams{
+          .shot_altitude_angle = shot_params->shot_altitude_angle(),
+          .shot_catapult_angle = shot_params->shot_catapult_angle(),
+          .shot_velocity = shot_params->shot_velocity(),
+          .shot_speed_over_ground = shot_params->shot_speed_over_ground()};
+    }
+  };
+
+  static frc971::shooter_interpolation::InterpolationTable<ShotParams>
+  InterpolationTableFromFlatbuffer(
+      const flatbuffers::Vector<
+          flatbuffers::Offset<y2024::InterpolationTablePoint>> *table) {
+    std::vector<std::pair<double, ShotParams>> interpolation_table;
+
+    for (const InterpolationTablePoint *point : *table) {
+      interpolation_table.emplace_back(
+          point->distance_from_goal(),
+          ShotParams::FromFlatbuffer(point->shot_params()));
+    }
+
+    return frc971::shooter_interpolation::InterpolationTable<ShotParams>(
+        interpolation_table);
+  }
 
   struct PotAndAbsEncoderConstants {
     ::frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemParams<

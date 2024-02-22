@@ -35,7 +35,8 @@ Superstructure::Superstructure(::aos::EventLoop *event_loop,
                     robot_constants_->robot()->intake_constants()),
       climber_(
           robot_constants_->common()->climber(),
-          robot_constants_->robot()->climber_constants()->zeroing_constants()) {
+          robot_constants_->robot()->climber_constants()->zeroing_constants()),
+      shooter_(event_loop, robot_constants_) {
   event_loop->SetRuntimeRealtimePriority(30);
 }
 
@@ -46,13 +47,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   const monotonic_clock::time_point timestamp =
       event_loop()->context().monotonic_event_time;
 
-  (void)timestamp;
-  (void)position;
-
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     intake_pivot_.Reset();
     climber_.Reset();
+    shooter_.Reset();
   }
 
   OutputT output_struct;
@@ -175,14 +174,26 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &output_struct.climber_voltage : nullptr,
           status->fbb());
 
+  const flatbuffers::Offset<ShooterStatus> shooter_status_offset =
+      shooter_.Iterate(
+          position,
+          unsafe_goal != nullptr ? unsafe_goal->shooter_goal() : nullptr,
+          output != nullptr ? &output_struct.catapult_voltage : nullptr,
+          output != nullptr ? &output_struct.altitude_voltage : nullptr,
+          output != nullptr ? &output_struct.turret_voltage : nullptr,
+          output != nullptr ? &output_struct.retention_roller_voltage : nullptr,
+          robot_state().voltage_battery(), timestamp, status->fbb());
+
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
   }
 
   Status::Builder status_builder = status->MakeBuilder<Status>();
 
-  const bool zeroed = intake_pivot_.zeroed() && climber_.zeroed();
-  const bool estopped = intake_pivot_.estopped() || climber_.estopped();
+  const bool zeroed =
+      intake_pivot_.zeroed() && climber_.zeroed() && shooter_.zeroed();
+  const bool estopped =
+      intake_pivot_.estopped() || climber_.estopped() || shooter_.estopped();
 
   status_builder.add_zeroed(zeroed);
   status_builder.add_estopped(estopped);
@@ -190,6 +201,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_intake_pivot(intake_pivot_status_offset);
   status_builder.add_transfer_roller(transfer_roller_state);
   status_builder.add_climber(climber_status_offset);
+  status_builder.add_shooter(shooter_status_offset);
 
   (void)status->Send(status_builder.Finish());
 }
