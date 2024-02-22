@@ -41,6 +41,16 @@ class ErrorCounter {
     return offset;
   }
 
+  template <typename Static>
+  static void InitializeStaticFbs(Static *builder) {
+    CHECK(builder->reserve(kNumErrors));
+    for (size_t ii = 0; ii < kNumErrors; ++ii) {
+      auto element = CHECK_NOTNULL(builder->emplace_back());
+      element->set_error(static_cast<Error>(ii));
+      element->set_count(0);
+    }
+  }
+
   void set_mutable_vector(
       flatbuffers::Vector<flatbuffers::Offset<Count>> *vector) {
     vector_ = vector;
@@ -89,6 +99,14 @@ class ArrayErrorCounter {
       vector->GetMutableObject(ii)->mutate_count(error_counts_.at(ii));
     }
     return offset;
+  }
+
+  template <typename Static>
+  void PopulateCountsStaticFbs(Static *builder) const {
+    ErrorCounter<Error, Count>::InitializeStaticFbs(builder);
+    for (size_t ii = 0; ii < kNumErrors; ++ii) {
+      builder->at(ii).set_count(error_counts_.at(ii));
+    }
   }
 
   void IncrementError(Error error) {
