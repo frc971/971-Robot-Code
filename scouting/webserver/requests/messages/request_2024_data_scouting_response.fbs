@@ -25,6 +25,7 @@ table Stats2024 {
   park: bool (id:15);
   on_stage: bool (id:16);
   harmony: bool (id:17);
+  spotlight: bool (id:22);
 
   pre_scouting:bool (id:20);
   collected_by:string (id:21);

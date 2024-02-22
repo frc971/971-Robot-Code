@@ -148,7 +148,7 @@ func TestAddToStats2024DB(t *testing.T) {
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
-			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, Spotlight: false, AvgCycle: 0,
 			Park: true, OnStage: false, Harmony: false, CollectedBy: "emma",
 		},
 		Stats2024{
@@ -156,7 +156,7 @@ func TestAddToStats2024DB(t *testing.T) {
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
 			SpeakerAuto: 2, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
-			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, Spotlight: false, AvgCycle: 0,
 			Park: true, OnStage: false, Harmony: false, CollectedBy: "harry",
 		},
 		Stats2024{
@@ -164,7 +164,7 @@ func TestAddToStats2024DB(t *testing.T) {
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
 			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 2, Amp: 1, SpeakerAmplified: 3, AmpAmplified: 0,
-			NotesDropped: 0, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
 			Park: false, OnStage: true, Harmony: false, CollectedBy: "henry",
 		},
 		Stats2024{
@@ -172,7 +172,7 @@ func TestAddToStats2024DB(t *testing.T) {
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 0, Amp: 1, SpeakerAmplified: 2, AmpAmplified: 3,
-			NotesDropped: 2, Penalties: 0, TrapNote: true, AvgCycle: 0,
+			NotesDropped: 2, Penalties: 0, TrapNote: true, Spotlight: false, AvgCycle: 0,
 			Park: true, OnStage: false, Harmony: false, CollectedBy: "jordan",
 		},
 		Stats2024{
@@ -180,7 +180,7 @@ func TestAddToStats2024DB(t *testing.T) {
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
 			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 5, Amp: 0, SpeakerAmplified: 2, AmpAmplified: 1,
-			NotesDropped: 1, Penalties: 1, TrapNote: true, AvgCycle: 0,
+			NotesDropped: 1, Penalties: 1, TrapNote: true, Spotlight: true, AvgCycle: 0,
 			Park: true, OnStage: false, Harmony: false, CollectedBy: "taylor",
 		},
 		Stats2024{
@@ -188,7 +188,7 @@ func TestAddToStats2024DB(t *testing.T) {
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
 			SpeakerAuto: 1, AmpAuto: 3, NotesDroppedAuto: 0, MobilityAuto: true,
 			Speaker: 0, Amp: 3, SpeakerAmplified: 2, AmpAmplified: 2,
-			NotesDropped: 0, Penalties: 3, TrapNote: true, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 3, TrapNote: true, Spotlight: false, AvgCycle: 0,
 			Park: false, OnStage: false, Harmony: true, CollectedBy: "katie",
 		},
 	}
@@ -235,7 +235,7 @@ func TestInsertPreScoutedStats2024(t *testing.T) {
 		MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
 		SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 		Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
-		NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+		NotesDropped: 0, Penalties: 2, TrapNote: true, Spotlight: true, AvgCycle: 0,
 		Park: true, OnStage: false, Harmony: false, CollectedBy: "emma",
 	}
 
@@ -264,7 +264,7 @@ func TestQueryingStats2024ByTeam(t *testing.T) {
 			MatchNumber: 7, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
-			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, Spotlight: true, AvgCycle: 0,
 			Park: false, OnStage: true, Harmony: false, CollectedBy: "emma",
 		},
 		Stats2024{
@@ -272,7 +272,7 @@ func TestQueryingStats2024ByTeam(t *testing.T) {
 			MatchNumber: 2, SetNumber: 2, CompLevel: "qm", StartingQuadrant: 4,
 			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 1, Amp: 2, SpeakerAmplified: 0, AmpAmplified: 2,
-			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, Spotlight: true, AvgCycle: 0,
 			Park: true, OnStage: false, Harmony: false, CollectedBy: "emma",
 		},
 		Stats2024{
@@ -280,7 +280,7 @@ func TestQueryingStats2024ByTeam(t *testing.T) {
 			MatchNumber: 4, SetNumber: 1, CompLevel: "qm", StartingQuadrant: 2,
 			SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 1, MobilityAuto: true,
 			Speaker: 0, Amp: 1, SpeakerAmplified: 1, AmpAmplified: 5,
-			NotesDropped: 1, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			NotesDropped: 1, Penalties: 0, TrapNote: false, Spotlight: true, AvgCycle: 0,
 			Park: false, OnStage: false, Harmony: true, CollectedBy: "emma",
 		},
 	}
@@ -699,7 +699,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 1, Amp: 3, SpeakerAmplified: 1, AmpAmplified: 3,
-			NotesDropped: 0, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
 			Park: false, OnStage: true, Harmony: false, CollectedBy: "bailey",
 		},
 		Stats2024{
@@ -707,7 +707,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 1, Amp: 2, SpeakerAmplified: 0, AmpAmplified: 1,
-			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, Spotlight: true, AvgCycle: 0,
 			Park: true, OnStage: false, Harmony: false, CollectedBy: "kate",
 		},
 		Stats2024{
@@ -715,7 +715,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
 			SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 1, MobilityAuto: true,
 			Speaker: 0, Amp: 0, SpeakerAmplified: 2, AmpAmplified: 1,
-			NotesDropped: 1, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			NotesDropped: 1, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
 			Park: true, OnStage: false, Harmony: false, CollectedBy: "tyler",
 		},
 		Stats2024{
@@ -723,7 +723,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 1, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 1, Amp: 2, SpeakerAmplified: 2, AmpAmplified: 1,
-			NotesDropped: 1, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			NotesDropped: 1, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
 			Park: false, OnStage: false, Harmony: true, CollectedBy: "max",
 		},
 	}
@@ -734,7 +734,7 @@ func TestDeleteFromStats2024(t *testing.T) {
 			MatchNumber: 5, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 1, Amp: 3, SpeakerAmplified: 1, AmpAmplified: 3,
-			NotesDropped: 0, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
 			Park: false, OnStage: true, Harmony: false, CollectedBy: "bailey",
 		},
 	}
@@ -1153,7 +1153,7 @@ func TestReturnStats2024DB(t *testing.T) {
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 4,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
-			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, Spotlight: false, AvgCycle: 0,
 			Park: true, OnStage: false, Harmony: false, CollectedBy: "emma",
 		},
 		Stats2024{
@@ -1161,7 +1161,7 @@ func TestReturnStats2024DB(t *testing.T) {
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 2,
 			SpeakerAuto: 2, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 0, Amp: 5, SpeakerAmplified: 1, AmpAmplified: 0,
-			NotesDropped: 0, Penalties: 2, TrapNote: true, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 2, TrapNote: true, Spotlight: false, AvgCycle: 0,
 			Park: true, OnStage: false, Harmony: false, CollectedBy: "harry",
 		},
 		Stats2024{
@@ -1169,7 +1169,7 @@ func TestReturnStats2024DB(t *testing.T) {
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 3,
 			SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 2, MobilityAuto: true,
 			Speaker: 2, Amp: 1, SpeakerAmplified: 3, AmpAmplified: 0,
-			NotesDropped: 0, Penalties: 0, TrapNote: false, AvgCycle: 0,
+			NotesDropped: 0, Penalties: 0, TrapNote: false, Spotlight: false, AvgCycle: 0,
 			Park: false, OnStage: true, Harmony: false, CollectedBy: "henry",
 		},
 		Stats2024{
@@ -1177,7 +1177,7 @@ func TestReturnStats2024DB(t *testing.T) {
 			MatchNumber: 3, SetNumber: 1, CompLevel: "quals", StartingQuadrant: 1,
 			SpeakerAuto: 1, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 			Speaker: 0, Amp: 1, SpeakerAmplified: 2, AmpAmplified: 3,
-			NotesDropped: 2, Penalties: 0, TrapNote: true, AvgCycle: 0,
+			NotesDropped: 2, Penalties: 0, TrapNote: true, Spotlight: true, AvgCycle: 0,
 			Park: true, OnStage: false, Harmony: false, CollectedBy: "jordan",
 		},
 	}

@@ -86,6 +86,7 @@ type ActionT =
       type: 'endMatchAction';
       stageType: StageType;
       trapNote: boolean;
+      spotlight: boolean;
       timestamp?: number;
     }
   | {
@@ -112,6 +113,7 @@ export class EntryComponent implements OnInit {
   readonly COMP_LEVELS = COMP_LEVELS;
   readonly COMP_LEVEL_LABELS = COMP_LEVEL_LABELS;
   readonly ScoreType = ScoreType;
+  readonly StageType = StageType;
 
   section: Section = 'Team Selection';
   @Input() matchNumber: number = 1;
@@ -374,7 +376,8 @@ export class EntryComponent implements OnInit {
           const endMatchActionOffset = EndMatchAction.createEndMatchAction(
             builder,
             action.stageType,
-            action.trapNote
+            action.trapNote,
+            action.spotlight
           );
           actionOffset = Action.createAction(
             builder,

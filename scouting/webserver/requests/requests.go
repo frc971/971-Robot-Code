@@ -452,7 +452,7 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 		PreScouting: submit2024Actions.PreScouting(), TeamNumber: string(submit2024Actions.TeamNumber()), MatchNumber: submit2024Actions.MatchNumber(), SetNumber: submit2024Actions.SetNumber(), CompLevel: string(submit2024Actions.CompLevel()),
 		StartingQuadrant: 0, SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 		Speaker: 0, Amp: 0, SpeakerAmplified: 0, AmpAmplified: 0, NotesDropped: 0, Penalties: 0,
-		TrapNote: false, AvgCycle: 0, Park: false, OnStage: false, Harmony: false, CollectedBy: "",
+		TrapNote: false, Spotlight: false, AvgCycle: 0, Park: false, OnStage: false, Harmony: false, CollectedBy: "",
 	}
 	// Loop over all actions.
 	for i := 0; i < submit2024Actions.ActionsListLength(); i++ {
@@ -537,6 +537,7 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 				stat.Harmony = true
 			}
 			stat.TrapNote = endMatchAction.TrapNote()
+			stat.Spotlight = endMatchAction.Spotlight()
 		}
 	}
 	if cycles != 0 {
@@ -589,6 +590,7 @@ func (handler request2024DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 			NotesDropped:     stat.NotesDropped,
 			Penalties:        stat.Penalties,
 			TrapNote:         stat.TrapNote,
+			Spotlight:        stat.Spotlight,
 			AvgCycle:         stat.AvgCycle,
 			Park:             stat.Park,
 			OnStage:          stat.OnStage,

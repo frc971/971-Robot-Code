@@ -42,6 +42,7 @@ enum StageType: short {
 table EndMatchAction {
     stage_type:StageType (id:0);
     trap_note:bool (id:1);
+    spotlight:bool (id:2);
 }
 
 union ActionType {
