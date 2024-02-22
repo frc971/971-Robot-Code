@@ -1,3 +1,5 @@
+{% from 'y2024/constants/common.jinja2' import intake_upper, intake_lower %}
+
 "common": {
   "target_map": {% include 'y2024/vision/maps/target_map.json' %},
   "shooter_interpolation_table": [
@@ -25,8 +27,8 @@
     "intaking": 12.0
   },
   "intake_pivot_set_points": {
-    "extended": 1.5,
-    "retracted": 0.5
+    "extended": 0.1,
+    "retracted": 2.0
   },
   "intake_pivot": {
     "zeroing_voltage": 3.0,
@@ -40,10 +42,10 @@
       "max_acceleration": 30.0
     },
     "range": {
-        "lower_hard": -0.85,
-        "upper_hard": 1.85,
-        "lower": -0.400,
-        "upper": 1.57
+        "lower_hard": 0.0,
+        "upper_hard": 2.1,
+        "lower": {{ intake_lower }},
+        "upper": {{ intake_upper }}
     },
     "loop": {% include 'y2024/control_loops/superstructure/intake_pivot/integral_intake_pivot_plant.json' %}
   },

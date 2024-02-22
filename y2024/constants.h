@@ -81,8 +81,9 @@ struct Values {
     return 16 * 0.25 * 0.0254;
   }
 
-  static constexpr double kClimberEncoderMetersPerRevolution() {
-    return kClimberEncoderRatio() * kClimberPotMetersPerRevolution();
+  static constexpr double kClimberEncoderMetersPerRadian() {
+    return kClimberEncoderRatio() * kClimberPotMetersPerRevolution() / 2.0 /
+           M_PI;
   }
 
   static constexpr double kClimberPotMetersPerVolt() {
@@ -121,8 +122,8 @@ struct Values {
   static constexpr double kExtendPotMetersPerRevolution() {
     return 36 * 0.005 * kExtendEncoderRatio();
   }
-  static constexpr double kExtendEncoderMetersPerRevolution() {
-    return kExtendPotMetersPerRevolution();
+  static constexpr double kExtendEncoderMetersPerRadian() {
+    return kExtendPotMetersPerRevolution() / 2.0 / M_PI;
   }
   static constexpr double kExtendPotMetersPerVolt() {
     return kExtendPotMetersPerRevolution() * (5.0 /*turns*/ / 5.0 /*volts*/);

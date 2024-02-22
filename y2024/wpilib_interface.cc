@@ -78,7 +78,7 @@ namespace {
 constexpr double kMaxBringupPower = 12.0;
 
 double climber_pot_translate(double voltage) {
-  return voltage * Values::kClimberPotMetersPerVolt();
+  return -1 * voltage * Values::kClimberPotMetersPerVolt();
 }
 
 double extend_pot_translate(double voltage) {
@@ -166,15 +166,15 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
       CopyPosition(climber_encoder_, builder->add_climber(),
                    Values::kClimberEncoderCountsPerRevolution(),
-                   Values::kClimberEncoderMetersPerRevolution(),
-                   climber_pot_translate, true,
+                   Values::kClimberEncoderMetersPerRadian(),
+                   climber_pot_translate, false,
                    robot_constants_->robot()
                        ->climber_constants()
                        ->potentiometer_offset());
 
       CopyPosition(extend_encoder_, builder->add_extend(),
-                   Values::kClimberEncoderCountsPerRevolution(),
-                   Values::kClimberEncoderMetersPerRevolution(),
+                   Values::kExtendEncoderCountsPerRevolution(),
+                   Values::kExtendEncoderMetersPerRadian(),
                    extend_pot_translate, true,
                    robot_constants_->robot()
                        ->extend_constants()
@@ -209,7 +209,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
     SendDrivetrainPosition(drivetrain_position_sender_.MakeStaticBuilder(),
                            drivetrain_velocity_translate,
-                           constants::Values::DrivetrainEncoderToMeters, false,
+                           constants::Values::DrivetrainEncoderToMeters, true,
                            false);
 
     {
@@ -363,7 +363,7 @@ class SuperstructurePWMWriter
 
   void Write(const superstructure::Output &output) override {
     WritePwm(output.catapult_voltage(), catapult_kraken_one_.get());
-    WritePwm(output.catapult_voltage(), catapult_kraken_one_.get());
+    WritePwm(output.catapult_voltage(), catapult_kraken_two_.get());
   }
 
   template <typename T>
@@ -392,6 +392,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         &constant_fetcher_event_loop);
     const Constants *robot_constants = &constants_fetcher.constants();
 
+    AddLoop(&constant_fetcher_event_loop);
+
     // Thread 1.
     ::aos::ShmEventLoop joystick_sender_event_loop(&config.message());
     ::frc971::wpilib::JoystickSender joystick_sender(
@@ -407,27 +409,28 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     ::aos::ShmEventLoop sensor_reader_event_loop(&config.message());
     SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants);
     sensor_reader.set_pwm_trigger(true);
-    sensor_reader.set_drivetrain_left_encoder(make_encoder(1));
-    sensor_reader.set_drivetrain_right_encoder(make_encoder(0));
-    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(0));
-    // TODO: (niko) change values once robot is wired
-    sensor_reader.set_intake_pivot(make_encoder(4),
-                                   make_unique<frc::DigitalInput>(4));
-    sensor_reader.set_transfer_beambreak(make_unique<frc::DigitalInput>(7));
+    sensor_reader.set_drivetrain_left_encoder(
+        std::make_unique<frc::Encoder>(6, 7));
+    sensor_reader.set_drivetrain_right_encoder(
+        std::make_unique<frc::Encoder>(8, 9));
+    sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(25));
+    sensor_reader.set_intake_pivot(make_encoder(3),
+                                   make_unique<frc::DigitalInput>(3));
+    sensor_reader.set_transfer_beambreak(make_unique<frc::DigitalInput>(23));
 
     sensor_reader.set_climber(make_encoder(5),
                               make_unique<frc::DigitalInput>(5),
                               make_unique<frc::AnalogInput>(5));
-    sensor_reader.set_extend(make_encoder(7), make_unique<frc::DigitalInput>(7),
-                             make_unique<frc::AnalogInput>(7));
-    sensor_reader.set_catapult(make_encoder(2),
-                               make_unique<frc::DigitalInput>(2),
-                               make_unique<frc::AnalogInput>(2));
-    sensor_reader.set_turret(make_encoder(3), make_unique<frc::DigitalInput>(3),
-                             make_unique<frc::AnalogInput>(3));
-    sensor_reader.set_altitude(make_encoder(6),
-                               make_unique<frc::DigitalInput>(6),
-                               make_unique<frc::AnalogInput>(6));
+    sensor_reader.set_extend(make_encoder(4), make_unique<frc::DigitalInput>(4),
+                             make_unique<frc::AnalogInput>(4));
+    sensor_reader.set_catapult(make_encoder(0),
+                               make_unique<frc::DigitalInput>(0),
+                               make_unique<frc::AnalogInput>(0));
+    sensor_reader.set_turret(make_encoder(2), make_unique<frc::DigitalInput>(2),
+                             make_unique<frc::AnalogInput>(2));
+    sensor_reader.set_altitude(make_encoder(1),
+                               make_unique<frc::DigitalInput>(1),
+                               make_unique<frc::AnalogInput>(1));
 
     AddLoop(&sensor_reader_event_loop);
 
@@ -678,7 +681,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SuperstructurePWMWriter superstructure_pwm_writer(&pwm_event_loop);
     superstructure_pwm_writer.set_catapult_kraken_one(
         make_unique<frc::TalonFX>(0));
-    superstructure_pwm_writer.set_catapult_kraken_one(
+    superstructure_pwm_writer.set_catapult_kraken_two(
         make_unique<frc::TalonFX>(1));
 
     AddLoop(&pwm_event_loop);

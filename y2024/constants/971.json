@@ -14,18 +14,18 @@
   "robot": {
     {% set _ = intake_pivot_zero.update(
       {
-          "measured_absolute_position" : 0.0
+          "measured_absolute_position" : 2.99648178674155
       }
     ) %}
     "intake_constants":  {{ intake_pivot_zero | tojson(indent=2)}},
     "climber_constants": {
       {% set _ = climber_zero.update(
           {
-              "measured_absolute_position" : 0.0
+              "measured_absolute_position" : 0.0102739460232857
           }
       ) %}
       "zeroing_constants": {{ climber_zero | tojson(indent=2)}},
-      "potentiometer_offset": 0.0
+      "potentiometer_offset": {{ -0.935529777248618 + 1.83632555414775 }}
     },
     "catapult_constants": {
       {% set _ = catapult_zero.update(

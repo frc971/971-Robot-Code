@@ -35,7 +35,7 @@
       "type": "aos.timing.Report",
       "source_node": "roborio",
       "frequency": 50,
-      "num_senders": 20,
+      "num_senders": 30,
       "max_size": 8192
     },
     {
