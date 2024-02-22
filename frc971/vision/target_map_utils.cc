@@ -8,7 +8,8 @@ Eigen::Matrix<double, 4, 4> PoseToTransform(
   return (Eigen::Translation3d(
               Eigen::Vector3d(position->x(), position->y(), position->z())) *
           Eigen::Quaterniond(quaternion->w(), quaternion->x(), quaternion->y(),
-                             quaternion->z()))
+                             quaternion->z())
+              .normalized())
       .matrix();
 }
 }  // namespace frc971::vision

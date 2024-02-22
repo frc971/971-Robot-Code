@@ -104,7 +104,8 @@ TargetMapper::TargetPose PoseUtils::TargetPoseFromFbs(
               Eigen::Quaterniond(target_pose_fbs.orientation()->w(),
                                  target_pose_fbs.orientation()->x(),
                                  target_pose_fbs.orientation()->y(),
-                                 target_pose_fbs.orientation()->z())}};
+                                 target_pose_fbs.orientation()->z())
+                  .normalized()}};
 }
 
 ceres::examples::VectorOfConstraints DataAdapter::MatchTargetDetections(
