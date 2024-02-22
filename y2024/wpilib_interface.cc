@@ -340,6 +340,40 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       altitude_encoder_;
 };
 
+class SuperstructurePWMWriter
+    : public ::frc971::wpilib::LoopOutputHandler<superstructure::Output> {
+ public:
+  SuperstructurePWMWriter(aos::EventLoop *event_loop)
+      : frc971::wpilib::LoopOutputHandler<superstructure::Output>(
+            event_loop, "/superstructure") {}
+
+  void set_catapult_kraken_one(::std::unique_ptr<::frc::TalonFX> t) {
+    catapult_kraken_one_ = ::std::move(t);
+  }
+  void set_catapult_kraken_two(::std::unique_ptr<::frc::TalonFX> t) {
+    catapult_kraken_two_ = ::std::move(t);
+  }
+
+ private:
+  void Stop() override {
+    AOS_LOG(WARNING, "Superstructure output too old.\n");
+    catapult_kraken_one_->SetDisabled();
+    catapult_kraken_two_->SetDisabled();
+  }
+
+  void Write(const superstructure::Output &output) override {
+    WritePwm(output.catapult_voltage(), catapult_kraken_one_.get());
+    WritePwm(output.catapult_voltage(), catapult_kraken_one_.get());
+  }
+
+  template <typename T>
+  static void WritePwm(const double voltage, T *motor) {
+    motor->SetSpeed(std::clamp(voltage, -kMaxBringupPower, kMaxBringupPower) /
+                    12.0);
+  }
+  ::std::unique_ptr<::frc::TalonFX> catapult_kraken_one_, catapult_kraken_two_;
+};
+
 class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
  public:
   ::std::unique_ptr<frc::Encoder> make_encoder(int index) {
@@ -640,6 +674,14 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
     AddLoop(&can_output_event_loop);
 
+    ::aos::ShmEventLoop pwm_event_loop(&config.message());
+    SuperstructurePWMWriter superstructure_pwm_writer(&pwm_event_loop);
+    superstructure_pwm_writer.set_catapult_kraken_one(
+        make_unique<frc::TalonFX>(0));
+    superstructure_pwm_writer.set_catapult_kraken_one(
+        make_unique<frc::TalonFX>(1));
+
+    AddLoop(&pwm_event_loop);
     // Thread 6
 
     RunLoops();
