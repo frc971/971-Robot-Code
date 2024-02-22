@@ -1546,8 +1546,8 @@ http_archive(
 
 # This contains the *compiled* foxglove studio. This can be reproduced by:
 # 1. Cloning https://github.com/foxglove/studio
-# 2. Building the code (yarn web:build:prod)
-# 3. tar'ing the web/.webpack folder
+# 2. Building the code (yarn install; yarn web:build:prod)
+# 3. tar'ing the web/.webpack folder (e.g., tar czvf foxglove-1456f4a4cb6f4c6c7e50e020ba9918dba9e04b96.tar.gz --directory=web/.webpack/ .)
 # These files can be hosted locally to provide an offline foxglove server.
 # Foxglove may be served on any port and may be nested at a subpath
 # (e.g., at hostname:8000/foxglove behind a proxy).
@@ -1559,9 +1559,9 @@ filegroup(
     srcs = glob(["**"]),
     visibility = ["//visibility:public"],
 )""",
-    sha256 = "68513024efb60dcdfc9b130d3e0466d194a8599fbd85f8e99d01c148d03e5887",
+    sha256 = "d02f4ca629e6dcf2b65557a0353871ce0025e70715214de4e6ec7e9f862de420",
     url =
-        "https://software.frc971.org/Build-Dependencies/foxglove-9857d637e90dfeecd63ad47fa760046791f8d43c.tar.gz",
+        "https://software.frc971.org/Build-Dependencies/foxglove-1456f4a4cb6f4c6c7e50e020ba9918dba9e04b96.tar.gz",
 )
 
 #
