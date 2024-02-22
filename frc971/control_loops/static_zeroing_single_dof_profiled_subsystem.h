@@ -96,7 +96,8 @@ struct StaticZeroingSingleDOFProfiledSubsystemParams {
 // Class for controlling and motion profiling a single degree of freedom
 // subsystem with a zeroing strategy of not moving.
 template <typename TZeroingEstimator, typename TProfiledJointStatus,
-          typename TSubsystemParams = TZeroingEstimator>
+          typename TSubsystemParams = TZeroingEstimator,
+          typename TProfile = aos::util::TrapezoidProfile>
 class StaticZeroingSingleDOFProfiledSubsystem {
  public:
   // Constructs the subsystem from flatbuffer types (appropriate when using the
@@ -147,8 +148,6 @@ class StaticZeroingSingleDOFProfiledSubsystem {
 
   // Sets the unprofiled goal which UpdateController will go to.
   void set_unprofiled_goal(double position, double velocity);
-  // Changes the profile parameters for UpdateController to track.
-  void AdjustProfile(double velocity, double acceleration);
 
   // Returns the current position
   double position() const { return profiled_subsystem_.position(); }
@@ -177,6 +176,12 @@ class StaticZeroingSingleDOFProfiledSubsystem {
   // Returns the current status.
   flatbuffers::Offset<ProfiledJointStatus> MakeStatus(
       flatbuffers::FlatBufferBuilder *status_fbb);
+
+  // Sets whether to use the trapezoidal profiler or whether to just bypass it
+  // and pass the unprofiled goal through directly.
+  void set_enable_profile(bool enable) {
+    profiled_subsystem_.set_enable_profile(enable);
+  }
 
   // Iterates the controller with the provided goal.
   flatbuffers::Offset<ProfiledJointStatus> Iterate(
@@ -220,6 +225,9 @@ class StaticZeroingSingleDOFProfiledSubsystem {
     return profiled_subsystem_.controller();
   }
 
+  // Returns a pointer to the profile in use.
+  TProfile *mutable_profile() { return profiled_subsystem_.mutable_profile(); }
+
  private:
   State state_ = State::UNINITIALIZED;
   double min_position_, max_position_;
@@ -227,14 +235,15 @@ class StaticZeroingSingleDOFProfiledSubsystem {
 
   const StaticZeroingSingleDOFProfiledSubsystemParams<TSubsystemParams> params_;
 
-  ::frc971::control_loops::SingleDOFProfiledSubsystem<ZeroingEstimator>
+  ::frc971::control_loops::SingleDOFProfiledSubsystem<ZeroingEstimator,
+                                                      TProfile>
       profiled_subsystem_;
 };
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus,
-          typename SubsystemParams>
+          typename SubsystemParams, typename Profile>
 StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus,
-                                        SubsystemParams>::
+                                        SubsystemParams, Profile>::
     StaticZeroingSingleDOFProfiledSubsystem(
         const StaticZeroingSingleDOFProfiledSubsystemParams<SubsystemParams>
             &params)
@@ -251,9 +260,9 @@ StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus,
 };
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus,
-          typename SubsystemParams>
+          typename SubsystemParams, typename Profile>
 void StaticZeroingSingleDOFProfiledSubsystem<
-    ZeroingEstimator, ProfiledJointStatus, SubsystemParams>::Reset() {
+    ZeroingEstimator, ProfiledJointStatus, SubsystemParams, Profile>::Reset() {
   state_ = State::UNINITIALIZED;
   clear_min_position();
   clear_max_position();
@@ -261,12 +270,12 @@ void StaticZeroingSingleDOFProfiledSubsystem<
 }
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus,
-          typename SubsystemParams>
+          typename SubsystemParams, typename Profile>
 bool StaticZeroingSingleDOFProfiledSubsystem<
-    ZeroingEstimator, ProfiledJointStatus, SubsystemParams>::
-    Correct(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
-            const typename ZeroingEstimator::Position *position,
-            bool disabled) {
+    ZeroingEstimator, ProfiledJointStatus, SubsystemParams,
+    Profile>::Correct(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
+                      const typename ZeroingEstimator::Position *position,
+                      bool disabled) {
   CHECK_NOTNULL(position);
   profiled_subsystem_.Correct(*position);
 
@@ -296,8 +305,9 @@ bool StaticZeroingSingleDOFProfiledSubsystem<
       // jump.
       profiled_subsystem_.ForceGoal(profiled_subsystem_.position());
       // Set up the profile to be the zeroing profile.
-      profiled_subsystem_.AdjustProfile(
-          params_.zeroing_profile_params.max_velocity,
+      mutable_profile()->set_maximum_velocity(
+          params_.zeroing_profile_params.max_velocity);
+      mutable_profile()->set_maximum_acceleration(
           params_.zeroing_profile_params.max_acceleration);
 
       // We are not ready to start doing anything yet.
@@ -321,11 +331,20 @@ bool StaticZeroingSingleDOFProfiledSubsystem<
 
       if (goal) {
         if (goal->profile_params()) {
-          AdjustProfile(goal->profile_params()->max_velocity(),
-                        goal->profile_params()->max_acceleration());
+          mutable_profile()->set_maximum_velocity(
+              internal::UseUnlessZero(goal->profile_params()->max_velocity(),
+                                      profiled_subsystem_.default_velocity()));
+          mutable_profile()->set_maximum_acceleration(
+              std::min(static_cast<double>(max_acceleration_),
+                       internal::UseUnlessZero(
+                           goal->profile_params()->max_acceleration(),
+                           profiled_subsystem_.default_acceleration())));
         } else {
-          AdjustProfile(profiled_subsystem_.default_velocity(),
-                        profiled_subsystem_.default_acceleration());
+          mutable_profile()->set_maximum_velocity(
+              profiled_subsystem_.default_velocity());
+          mutable_profile()->set_maximum_acceleration(
+              std::min(static_cast<double>(max_acceleration_),
+                       profiled_subsystem_.default_acceleration()));
         }
 
         if (goal->has_ignore_profile()) {
@@ -352,10 +371,10 @@ bool StaticZeroingSingleDOFProfiledSubsystem<
 }
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus,
-          typename SubsystemParams>
+          typename SubsystemParams, typename Profile>
 void StaticZeroingSingleDOFProfiledSubsystem<
-    ZeroingEstimator, ProfiledJointStatus,
-    SubsystemParams>::set_unprofiled_goal(double goal, double goal_velocity) {
+    ZeroingEstimator, ProfiledJointStatus, SubsystemParams,
+    Profile>::set_unprofiled_goal(double goal, double goal_velocity) {
   if (goal < min_position_) {
     VLOG(1) << "Limiting to " << min_position_ << " from " << goal;
     goal = min_position_;
@@ -368,22 +387,14 @@ void StaticZeroingSingleDOFProfiledSubsystem<
 }
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus,
-          typename SubsystemParams>
-void StaticZeroingSingleDOFProfiledSubsystem<
-    ZeroingEstimator, ProfiledJointStatus,
-    SubsystemParams>::AdjustProfile(double velocity, double acceleration) {
-  profiled_subsystem_.AdjustProfile(
-      velocity, std::min(acceleration, static_cast<double>(max_acceleration_)));
-}
-
-template <typename ZeroingEstimator, typename ProfiledJointStatus,
-          typename SubsystemParams>
+          typename SubsystemParams, typename Profile>
 flatbuffers::Offset<ProfiledJointStatus>
-StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus,
-                                        SubsystemParams>::
-    Iterate(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
-            const typename ZeroingEstimator::Position *position, double *output,
-            flatbuffers::FlatBufferBuilder *status_fbb) {
+StaticZeroingSingleDOFProfiledSubsystem<
+    ZeroingEstimator, ProfiledJointStatus, SubsystemParams,
+    Profile>::Iterate(const StaticZeroingSingleDOFProfiledSubsystemGoal *goal,
+                      const typename ZeroingEstimator::Position *position,
+                      double *output,
+                      flatbuffers::FlatBufferBuilder *status_fbb) {
   const bool disabled = Correct(goal, position, output == nullptr);
 
   // Calculate the loops for a cycle.
@@ -400,35 +411,35 @@ StaticZeroingSingleDOFProfiledSubsystem<ZeroingEstimator, ProfiledJointStatus,
 }
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus,
-          typename SubsystemParams>
+          typename SubsystemParams, typename Profile>
 double StaticZeroingSingleDOFProfiledSubsystem<
-    ZeroingEstimator, ProfiledJointStatus,
-    SubsystemParams>::UpdateController(bool disabled) {
+    ZeroingEstimator, ProfiledJointStatus, SubsystemParams,
+    Profile>::UpdateController(bool disabled) {
   return profiled_subsystem_.UpdateController(disabled);
 }
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus,
-          typename SubsystemParams>
+          typename SubsystemParams, typename Profile>
 void StaticZeroingSingleDOFProfiledSubsystem<
-    ZeroingEstimator, ProfiledJointStatus,
-    SubsystemParams>::UpdateObserver(double voltage) {
+    ZeroingEstimator, ProfiledJointStatus, SubsystemParams,
+    Profile>::UpdateObserver(double voltage) {
   profiled_subsystem_.UpdateObserver(voltage);
 }
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus,
-          typename SubsystemParams>
+          typename SubsystemParams, typename Profile>
 void StaticZeroingSingleDOFProfiledSubsystem<
-    ZeroingEstimator, ProfiledJointStatus,
-    SubsystemParams>::ForceGoal(double goal, double goal_velocity) {
+    ZeroingEstimator, ProfiledJointStatus, SubsystemParams,
+    Profile>::ForceGoal(double goal, double goal_velocity) {
   profiled_subsystem_.ForceGoal(goal, goal_velocity);
 }
 
 template <typename ZeroingEstimator, typename ProfiledJointStatus,
-          typename SubsystemParams>
+          typename SubsystemParams, typename Profile>
 flatbuffers::Offset<ProfiledJointStatus>
 StaticZeroingSingleDOFProfiledSubsystem<
-    ZeroingEstimator, ProfiledJointStatus,
-    SubsystemParams>::MakeStatus(flatbuffers::FlatBufferBuilder *status_fbb) {
+    ZeroingEstimator, ProfiledJointStatus, SubsystemParams,
+    Profile>::MakeStatus(flatbuffers::FlatBufferBuilder *status_fbb) {
   CHECK_NOTNULL(status_fbb);
 
   typename ProfiledJointStatus::Builder status_builder =

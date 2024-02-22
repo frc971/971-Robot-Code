@@ -102,9 +102,11 @@ Catapult::Iterate(const CatapultGoal *catapult_goal,
 
     case CatapultState::RESETTING:
       if (catapult_.controller().R(1, 0) > 7.0) {
-        catapult_.AdjustProfile(7.0, 2000.0);
+        catapult_.mutable_profile()->set_maximum_velocity(7.0);
+        catapult_.mutable_profile()->set_maximum_acceleration(2000.0);
       } else if (catapult_.controller().R(1, 0) > 0.0) {
-        catapult_.AdjustProfile(7.0, 1000.0);
+        catapult_.mutable_profile()->set_maximum_velocity(7.0);
+        catapult_.mutable_profile()->set_maximum_acceleration(1000.0);
       } else {
         catapult_state_ = CatapultState::PROFILE;
       }
