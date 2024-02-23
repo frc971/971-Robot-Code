@@ -268,7 +268,7 @@ void ApriltagDetector::HandleImage(cv::Mat color_image,
       // parameters.
       apriltag_detection_info_t info;
       info.det = gpu_detection;
-      info.tagsize = 0.1524;
+      info.tagsize = 6.5 * 0.0254;
 
       info.fx = intrinsics_.at<double>(0, 0);
       info.fy = intrinsics_.at<double>(1, 1);
