@@ -3,6 +3,7 @@
 
 #include "aos/events/event_loop.h"
 #include "aos/json_to_flatbuffer.h"
+#include "aos/time/time.h"
 #include "frc971/constants/constants_sender_lib.h"
 #include "frc971/control_loops/control_loop.h"
 #include "frc971/control_loops/drivetrain/drivetrain_can_position_generated.h"
@@ -33,7 +34,6 @@ class Superstructure
           ::frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus>;
 
   explicit Superstructure(::aos::EventLoop *event_loop,
-                          std::shared_ptr<const constants::Values> values,
                           const ::std::string &name = "/superstructure");
 
   inline const AbsoluteEncoderSubsystem &intake_pivot() const {
@@ -45,6 +45,9 @@ class Superstructure
   }
 
   inline const Shooter &shooter() const { return shooter_; }
+  inline const PotAndAbsoluteEncoderSubsystem &extend() const {
+    return extend_;
+  }
 
   double robot_velocity() const;
 
@@ -54,7 +57,6 @@ class Superstructure
                             aos::Sender<Status>::Builder *status) override;
 
  private:
-  std::shared_ptr<const constants::Values> values_;
   frc971::constants::ConstantsFetcher<Constants> constants_fetcher_;
   const Constants *robot_constants_;
   aos::Fetcher<frc971::control_loops::drivetrain::Status>
@@ -65,12 +67,19 @@ class Superstructure
 
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
 
-  TransferRollerGoal transfer_goal_;
+  bool catapult_requested_ = false;
+
+  SuperstructureState state_ = SuperstructureState::IDLE;
+
+  aos::monotonic_clock::time_point transfer_start_time_ =
+      aos::monotonic_clock::time_point::min();
+
   AbsoluteEncoderSubsystem intake_pivot_;
   PotAndAbsoluteEncoderSubsystem climber_;
 
   Shooter shooter_;
 
+  PotAndAbsoluteEncoderSubsystem extend_;
   DISALLOW_COPY_AND_ASSIGN(Superstructure);
 };
 

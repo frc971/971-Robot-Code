@@ -64,14 +64,16 @@ class Shooter {
   }
 
   flatbuffers::Offset<ShooterStatus> Iterate(
-      const Position *position, const ShooterGoal *shooter_goal,
+      const Position *position, const ShooterGoal *shooter_goal, bool fire,
       double *catapult_output, double *altitude_output, double *turret_output,
       double *retention_roller_output,
       double *retention_roller_stator_current_limit, double battery_voltage,
       /* Hacky way to use collision avoidance in this class */
       CollisionAvoidance *collision_avoidance,
       const double intake_pivot_position, double *max_turret_intake_position,
-      double *min_intake_pivot_position, flatbuffers::FlatBufferBuilder *fbb);
+      double *min_intake_pivot_position,
+      /* If true, go to extend collision avoidance position */ bool standby,
+      flatbuffers::FlatBufferBuilder *fbb);
 
  private:
   CatapultState state_ = CatapultState::RETRACTING;

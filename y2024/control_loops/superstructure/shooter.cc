@@ -35,12 +35,12 @@ flatbuffers::Offset<y2024::control_loops::superstructure::ShooterStatus>
 Shooter::Iterate(
     const y2024::control_loops::superstructure::Position *position,
     const y2024::control_loops::superstructure::ShooterGoal *shooter_goal,
-    double *catapult_output, double *altitude_output, double *turret_output,
-    double *retention_roller_output,
+    bool fire, double *catapult_output, double *altitude_output,
+    double *turret_output, double *retention_roller_output,
     double *retention_roller_stator_current_limit, double /*battery_voltage*/,
     CollisionAvoidance *collision_avoidance, const double intake_pivot_position,
     double *max_intake_pivot_position, double *min_intake_pivot_position,
-    flatbuffers::FlatBufferBuilder *fbb) {
+    bool standby, flatbuffers::FlatBufferBuilder *fbb) {
   drivetrain_status_fetcher_.Fetch();
 
   // If our current is over the minimum current and our velocity is under our
@@ -91,9 +91,19 @@ Shooter::Iterate(
 
   bool aiming = false;
 
-  // We don't have the note so we should be ready to intake it.
-  if (shooter_goal == nullptr || !shooter_goal->auto_aim() ||
-      (!piece_loaded && state_ == CatapultState::READY)) {
+  if (standby) {
+    // Note is going to AMP or TRAP, move turret to extend
+    // collision avoidance position.
+    PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
+        turret_goal_builder.get(),
+        robot_constants_->common()->turret_avoid_extend_collision_position());
+
+    PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
+        altitude_goal_builder.get(),
+        robot_constants_->common()->altitude_loading_position());
+  } else if (shooter_goal == nullptr || !shooter_goal->auto_aim() ||
+             (!piece_loaded && state_ == CatapultState::READY)) {
+    // We don't have the note so we should be ready to intake it.
     PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
         turret_goal_builder.get(),
         robot_constants_->common()->turret_loading_position());
@@ -101,6 +111,7 @@ Shooter::Iterate(
     PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
         altitude_goal_builder.get(),
         robot_constants_->common()->altitude_loading_position());
+
   } else {
     // We have a game piece, lets start aiming.
     if (drivetrain_status_fetcher_.get() != nullptr) {
@@ -121,11 +132,13 @@ Shooter::Iterate(
 
   // The builder will contain either the auto-aim goal, or the loading goal. Use
   // it if we have no goal, or no subsystem goal, or if we are auto-aiming.
+
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *turret_goal = (shooter_goal != nullptr && !shooter_goal->auto_aim() &&
-                      shooter_goal->has_turret_position())
+                      !standby && shooter_goal->has_turret_position())
                          ? shooter_goal->turret_position()
                          : &turret_goal_builder->AsFlatbuffer();
+
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *altitude_goal = (shooter_goal != nullptr && !shooter_goal->auto_aim() &&
                         shooter_goal->has_altitude_position())
@@ -203,6 +216,7 @@ Shooter::Iterate(
 
     switch (state_) {
       case CatapultState::READY:
+        [[fallthrough]];
       case CatapultState::LOADED: {
         if (piece_loaded) {
           state_ = CatapultState::LOADED;
@@ -212,8 +226,8 @@ Shooter::Iterate(
 
         const bool catapult_close = CatapultClose();
 
-        if (subsystems_in_range && shooter_goal != nullptr &&
-            shooter_goal->fire() && catapult_close && piece_loaded) {
+        if (subsystems_in_range && shooter_goal != nullptr && fire &&
+            catapult_close && piece_loaded) {
           state_ = CatapultState::FIRING;
         } else {
           catapult_.set_controller_index(0);
