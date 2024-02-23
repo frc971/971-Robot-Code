@@ -467,7 +467,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         6, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->intake_pivot_stator_current_limit(),
         current_limits->intake_pivot_supply_current_limit());
-    // TODO(max): Assign these proper ids
     std::shared_ptr<TalonFX> altitude = std::make_shared<TalonFX>(
         9, false, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->altitude_stator_current_limit(),
@@ -478,6 +477,10 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->turret_supply_current_limit());
     std::shared_ptr<TalonFX> intake_roller = std::make_shared<TalonFX>(
         8, false, "rio", &rio_signal_registry,
+        current_limits->intake_roller_stator_current_limit(),
+        current_limits->intake_roller_supply_current_limit());
+    std::shared_ptr<TalonFX> retention_roller = std::make_shared<TalonFX>(
+        10, false, "rio", &rio_signal_registry,
         current_limits->intake_roller_stator_current_limit(),
         current_limits->intake_roller_supply_current_limit());
     std::shared_ptr<TalonFX> transfer_roller = std::make_shared<TalonFX>(
@@ -493,7 +496,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->extend_stator_current_limit(),
         current_limits->extend_supply_current_limit());
     std::shared_ptr<TalonFX> extend_roller = std::make_shared<TalonFX>(
-        10, false, "rio", &rio_signal_registry,
+        12, false, "rio", &rio_signal_registry,
         current_limits->extend_roller_stator_current_limit(),
         current_limits->extend_roller_supply_current_limit());
 
@@ -522,8 +525,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       canivore_talonfxs.push_back(talonfx);
     }
 
-    for (auto talonfx :
-         {intake_roller, transfer_roller, climber, extend, extend_roller}) {
+    for (auto talonfx : {intake_roller, transfer_roller, climber, extend,
+                         extend_roller, retention_roller}) {
       rio_talonfxs.push_back(talonfx);
     }
 
@@ -594,7 +597,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         &rio_sensor_reader_event_loop, std::move(rio_signal_registry),
         rio_talonfxs,
         [&intake_roller, &transfer_roller, &climber, &extend, &extend_roller,
-         &superstructure_rio_position_sender](
+         &retention_roller, &superstructure_rio_position_sender](
             ctre::phoenix::StatusCode status) {
           aos::Sender<y2024::control_loops::superstructure::CANPositionStatic>::
               StaticBuilder superstructure_can_builder =
@@ -613,6 +616,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
           extend_roller->SerializePosition(
               superstructure_can_builder->add_extend_roller(),
               constants::Values::kExtendRollerOutputRatio);
+          retention_roller->SerializePosition(
+              superstructure_can_builder->add_retention_roller(), 1.0);
 
           superstructure_can_builder->set_timestamp(
               intake_roller->GetTimestamp());
@@ -652,6 +657,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                   ->second->WriteVoltage(output.altitude_voltage());
               talonfx_map.find("turret")->second->WriteVoltage(
                   output.turret_voltage());
+              talonfx_map.find("retention_roller")
+                  ->second->WriteVoltage(output.retention_roller_voltage());
             });
 
     can_drivetrain_writer.set_talonfxs({right_front, right_back},
@@ -665,6 +672,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     can_superstructure_writer.add_talonfx("extend_roller", extend_roller);
     can_superstructure_writer.add_talonfx("altitude", altitude);
     can_superstructure_writer.add_talonfx("turret", turret);
+    can_superstructure_writer.add_talonfx("retention_roller", retention_roller);
 
     can_output_event_loop.MakeWatcher(
         "/roborio", [&can_drivetrain_writer, &can_superstructure_writer](
