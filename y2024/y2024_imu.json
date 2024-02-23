@@ -278,8 +278,7 @@
       "executable_name": "message_bridge_server",
       "user": "pi",
       "args": [
-        "--rt_priority=16",
-        "--sinit_max_init_timeout=5000"
+        "--rt_priority=16"
       ],
       "nodes": [
         "imu"
