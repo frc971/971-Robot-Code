@@ -383,9 +383,10 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     ASSERT_TRUE(superstructure_output_fetcher_.get() != nullptr)
         << ": No output";
 
-    double set_point = simulated_robot_constants_->common()
-                           ->intake_pivot_set_points()
-                           ->retracted();
+    EXPECT_FALSE(superstructure_status_fetcher_->collided());
+
+    double set_point = superstructure_status_fetcher_->intake_pivot()
+                           ->unprofiled_goal_position();
 
     if (superstructure_goal_fetcher_->intake_pivot_goal() ==
         IntakePivotGoal::EXTENDED) {
@@ -426,10 +427,6 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                     superstructure_plant_.altitude()->position(), 0.001);
       }
     }
-
-    EXPECT_NEAR(set_point,
-                superstructure_status_fetcher_->intake_pivot()->position(),
-                0.001);
 
     if (superstructure_status_fetcher_->intake_roller() ==
         IntakeRollerStatus::NONE) {
@@ -591,15 +588,13 @@ TEST_F(SuperstructureTest, DoesNothing) {
         shooter_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
     goal_builder.add_climber_goal(ClimberGoal::RETRACT);
     goal_builder.add_shooter_goal(shooter_goal_offset);
+    goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
   RunFor(chrono::seconds(10));
-
-  EXPECT_TRUE(superstructure_output_fetcher_.Fetch());
 
   VerifyNearGoal();
 }

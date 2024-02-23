@@ -9,6 +9,7 @@
 #include "y2024/constants.h"
 #include "y2024/constants/constants_generated.h"
 #include "y2024/control_loops/superstructure/aiming.h"
+#include "y2024/control_loops/superstructure/collision_avoidance.h"
 #include "y2024/control_loops/superstructure/superstructure_can_position_generated.h"
 #include "y2024/control_loops/superstructure/superstructure_goal_generated.h"
 #include "y2024/control_loops/superstructure/superstructure_position_generated.h"
@@ -67,7 +68,10 @@ class Shooter {
       double *catapult_output, double *altitude_output, double *turret_output,
       double *retention_roller_output, double battery_voltage,
       aos::monotonic_clock::time_point current_timestamp,
-      flatbuffers::FlatBufferBuilder *fbb);
+      /* Hacky way to use collision avoidance in this class */
+      CollisionAvoidance *collision_avoidance,
+      const double intake_pivot_position, double *max_turret_intake_position,
+      double *min_intake_pivot_position, flatbuffers::FlatBufferBuilder *fbb);
 
  private:
   CatapultState state_ = CatapultState::RETRACTING;

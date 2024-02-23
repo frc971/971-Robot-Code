@@ -140,22 +140,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   drivetrain_status_fetcher_.Fetch();
 
-  aos::FlatbufferFixedAllocatorArray<
-      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
-      intake_pivot_goal_buffer;
-
-  intake_pivot_goal_buffer.Finish(
-      frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-          *intake_pivot_goal_buffer.fbb(), intake_pivot_position));
-
-  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
-      *intake_pivot_goal = &intake_pivot_goal_buffer.message();
-
-  const flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus>
-      intake_pivot_status_offset = intake_pivot_.Iterate(
-          intake_pivot_goal, position->intake_pivot(),
-          output != nullptr ? &output_struct.intake_pivot_voltage : nullptr,
-          status->fbb());
+  const bool collided = collision_avoidance_.IsCollided(
+      {.intake_pivot_position = intake_pivot_.estimated_position(),
+       .turret_position = shooter_.turret().estimated_position()});
 
   aos::FlatbufferFixedAllocatorArray<
       frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
@@ -174,6 +161,28 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &output_struct.climber_voltage : nullptr,
           status->fbb());
 
+  double max_intake_pivot_position = 0;
+  double min_intake_pivot_position = 0;
+
+  aos::FlatbufferFixedAllocatorArray<
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
+      intake_pivot_goal_buffer;
+
+  intake_pivot_goal_buffer.Finish(
+      frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+          *intake_pivot_goal_buffer.fbb(), intake_pivot_position));
+
+  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+      *intake_pivot_goal = &intake_pivot_goal_buffer.message();
+
+  double *intake_output =
+      (output != nullptr ? &output_struct.intake_pivot_voltage : nullptr);
+
+  const bool disabled = intake_pivot_.Correct(
+      intake_pivot_goal, position->intake_pivot(), intake_output == nullptr);
+
+  // TODO(max): Change how we handle the collision with the turret and intake to
+  // be clearer
   const flatbuffers::Offset<ShooterStatus> shooter_status_offset =
       shooter_.Iterate(
           position,
@@ -182,7 +191,25 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &output_struct.altitude_voltage : nullptr,
           output != nullptr ? &output_struct.turret_voltage : nullptr,
           output != nullptr ? &output_struct.retention_roller_voltage : nullptr,
-          robot_state().voltage_battery(), timestamp, status->fbb());
+          robot_state().voltage_battery(), timestamp, &collision_avoidance_,
+          intake_pivot_.estimated_position(), &max_intake_pivot_position,
+          &min_intake_pivot_position, status->fbb());
+
+  intake_pivot_.set_min_position(min_intake_pivot_position);
+  intake_pivot_.set_max_position(max_intake_pivot_position);
+
+  // Calculate the loops for a cycle.
+  const double voltage = intake_pivot_.UpdateController(disabled);
+
+  intake_pivot_.UpdateObserver(voltage);
+
+  // Write out all the voltages.
+  if (intake_output) {
+    *intake_output = voltage;
+  }
+
+  const flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus>
+      intake_pivot_status_offset = intake_pivot_.MakeStatus(status->fbb());
 
   if (output) {
     output->CheckOk(output->Send(Output::Pack(*output->fbb(), &output_struct)));
@@ -202,6 +229,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_transfer_roller(transfer_roller_state);
   status_builder.add_climber(climber_status_offset);
   status_builder.add_shooter(shooter_status_offset);
+  status_builder.add_collided(collided);
 
   (void)status->Send(status_builder.Finish());
 }

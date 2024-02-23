@@ -4,6 +4,7 @@
 #include "aos/flatbuffers/base.h"
 #include "frc971/control_loops/aiming/aiming.h"
 #include "y2024/control_loops/superstructure/catapult/catapult_plant.h"
+#include "y2024/control_loops/superstructure/collision_avoidance.h"
 
 namespace y2024::control_loops::superstructure {
 
@@ -43,6 +44,8 @@ Shooter::Iterate(
     double *catapult_output, double *altitude_output, double *turret_output,
     double *retention_roller_output, double /*battery_voltage*/,
     aos::monotonic_clock::time_point current_timestamp,
+    CollisionAvoidance *collision_avoidance, const double intake_pivot_position,
+    double *max_intake_pivot_position, double *min_intake_pivot_position,
     flatbuffers::FlatBufferBuilder *fbb) {
   superstructure_can_position_fetcher_.Fetch();
   drivetrain_status_fetcher_.Fetch();
@@ -146,9 +149,32 @@ Shooter::Iterate(
        altitude_.estimated_position() >
            robot_constants_->common()->min_altitude_shooting_angle());
 
+  const bool disabled = turret_.Correct(turret_goal, position->turret(),
+                                        turret_output == nullptr);
+
+  collision_avoidance->UpdateGoal(
+      {.intake_pivot_position = intake_pivot_position,
+       .turret_position = turret_.estimated_position()},
+      turret_goal->unsafe_goal());
+
+  turret_.set_min_position(collision_avoidance->min_turret_goal());
+  turret_.set_max_position(collision_avoidance->max_turret_goal());
+
+  *max_intake_pivot_position = collision_avoidance->max_intake_pivot_goal();
+  *min_intake_pivot_position = collision_avoidance->min_intake_pivot_goal();
+
+  // Calculate the loops for a cycle.
+  const double voltage = turret_.UpdateController(disabled);
+
+  turret_.UpdateObserver(voltage);
+
+  // Write out all the voltages.
+  if (turret_output) {
+    *turret_output = voltage;
+  }
+
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
-      turret_status_offset =
-          turret_.Iterate(turret_goal, position->turret(), turret_output, fbb);
+      turret_status_offset = turret_.MakeStatus(fbb);
 
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
       altitude_status_offset = altitude_.Iterate(
