@@ -31,14 +31,16 @@ bazel_skylib_workspace()
 
 http_archive(
     name = "aspect_bazel_lib",
-    sha256 = "80897b673c2b506d21f861ae316689aa8abcc3e56947580a41bf9e68ff13af58",
-    strip_prefix = "bazel-lib-1.27.1",
-    url = "https://github.com/aspect-build/bazel-lib/releases/download/v1.27.1/bazel-lib-v1.27.1.tar.gz",
+    sha256 = "979667bb7276ee8fcf2c114c9be9932b9a3052a64a647e0dcaacfb9c0016f0a3",
+    strip_prefix = "bazel-lib-2.4.1",
+    url = "https://github.com/aspect-build/bazel-lib/releases/download/v2.4.1/bazel-lib-v2.4.1.tar.gz",
 )
 
-load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies", "register_jq_toolchains")
+load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies", "aspect_bazel_lib_register_toolchains", "register_jq_toolchains")
 
 aspect_bazel_lib_dependencies()
+
+aspect_bazel_lib_register_toolchains()
 
 register_jq_toolchains()
 
@@ -870,25 +872,28 @@ cc_library(
 
 http_archive(
     name = "aspect_rules_js",
-    sha256 = "9fadde0ae6e0101755b8aedabf7d80b166491a8de297c60f6a5179cd0d0fea58",
-    strip_prefix = "rules_js-1.20.0",
-    url = "https://github.com/aspect-build/rules_js/releases/download/v1.20.0/rules_js-v1.20.0.tar.gz",
+    sha256 = "630a71aba66c4023a5b16ab3efafaeed8b1a2865ccd168a34611eb73876b3fc4",
+    strip_prefix = "rules_js-1.37.1",
+    url = "https://github.com/aspect-build/rules_js/releases/download/v1.37.1/rules_js-v1.37.1.tar.gz",
 )
-
-load("@aspect_rules_js//npm:npm_import.bzl", "npm_translate_lock", "pnpm_repository")
-
-pnpm_repository(name = "pnpm")
 
 load("@aspect_rules_js//js:repositories.bzl", "rules_js_dependencies")
 
 rules_js_dependencies()
 
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
+
+load("@aspect_rules_js//npm:npm_import.bzl", "npm_translate_lock", "pnpm_repository")
+
+pnpm_repository(name = "pnpm")
+
 http_archive(
     name = "aspect_rules_esbuild",
-    sha256 = "b98cde83e9e6a006d8300e88e2f09da56b5a6c18166465a224cfe36bdcbc03e0",
-    strip_prefix = "aspect-build-rules_esbuild-110b94c",
-    type = "tar.gz",
-    url = "https://github.com/aspect-build/rules_esbuild/tarball/110b94c7f16f328a0eab8aa0b862030055b86564",
+    sha256 = "999349afef62875301f45ec8515189ceaf2e85b1e67a17e2d28b95b30e1d6c0b",
+    strip_prefix = "rules_esbuild-0.18.0",
+    url = "https://github.com/aspect-build/rules_esbuild/releases/download/v0.18.0/rules_esbuild-v0.18.0.tar.gz",
 )
 
 load("@aspect_rules_esbuild//esbuild:dependencies.bzl", "rules_esbuild_dependencies")
@@ -933,7 +938,7 @@ npm_translate_lock(
     verify_node_modules_ignored = "//:.bazelignore",
 )
 
-load("@aspect_rules_esbuild//esbuild:repositories.bzl", "esbuild_register_toolchains", LATEST_ESBUILD_VERSION = "LATEST_VERSION")
+load("@aspect_rules_esbuild//esbuild:repositories.bzl", "LATEST_ESBUILD_VERSION", "esbuild_register_toolchains")
 
 esbuild_register_toolchains(
     name = "esbuild",
@@ -948,65 +953,34 @@ http_archive(
     patches = [
         "//third_party:rules_rollup/0001-Fix-resolving-files.patch",
     ],
-    sha256 = "4c43d20ce377b93cd43a3553e6159a17b85ce80c36a564b55051c2320d32b777",
-    strip_prefix = "rules_rollup-0.13.1",
-    url = "https://github.com/aspect-build/rules_rollup/releases/download/v0.13.1/rules_rollup-v0.13.1.tar.gz",
+    sha256 = "a0433a0b0206a45d362749d71bc1e4e0dacf5ca2a572b059328f9753392bca80",
+    strip_prefix = "rules_rollup-1.0.0",
+    url = "https://github.com/aspect-build/rules_rollup/releases/download/v1.0.0/rules_rollup-v1.0.0.tar.gz",
 )
-
-load("@aspect_rules_rollup//rollup:dependencies.bzl", "rules_rollup_dependencies")
-
-# Fetches the rules_rollup dependencies.
-# If you want to have a different version of some dependency,
-# you should fetch it *before* calling this.
-# Alternatively, you can skip calling this function, so long as you've
-# already fetched all the dependencies.
-rules_rollup_dependencies()
-
-load("@aspect_rules_rollup//rollup:repositories.bzl", "rollup_repositories")
-
-rollup_repositories(name = "rollup")
-
-load("@rollup//:npm_repositories.bzl", rollup_npm_repositories = "npm_repositories")
-
-rollup_npm_repositories()
 
 http_archive(
     name = "aspect_rules_terser",
-    sha256 = "918e7ac036eca1402cae4d4ddba75ecdcdd886ac35bc0624d9f1ebc7527e369b",
-    strip_prefix = "rules_terser-0.13.0",
-    url = "https://github.com/aspect-build/rules_terser/archive/refs/tags/v0.13.0.tar.gz",
+    sha256 = "8424b4c064d0e490e5b6f215b993712ef641b77e03b68fdc64221edf48d14add",
+    strip_prefix = "rules_terser-1.0.0",
+    url = "https://github.com/aspect-build/rules_terser/releases/download/v1.0.0/rules_terser-v1.0.0.tar.gz",
 )
 
 load("@aspect_rules_terser//terser:dependencies.bzl", "rules_terser_dependencies")
 
 rules_terser_dependencies()
 
-# Fetch and register a nodejs interpreter, if you haven't already
-
-nodejs_register_toolchains(
-    name = "node",
-    node_version = DEFAULT_NODE_VERSION,
-)
-
-# Fetch and register the terser tool
-load("@aspect_rules_terser//terser:repositories.bzl", "terser_repositories")
-
-terser_repositories(name = "terser")
-
-load("@terser//:npm_repositories.bzl", terser_npm_repositories = "npm_repositories")
-
-terser_npm_repositories()
-
 http_archive(
     name = "aspect_rules_ts",
-    sha256 = "db77d904284d21121ae63dbaaadfd8c75ff6d21ad229f92038b415c1ad5019cc",
-    strip_prefix = "rules_ts-1.3.0",
-    url = "https://github.com/aspect-build/rules_ts/releases/download/v1.3.0/rules_ts-v1.3.0.tar.gz",
+    sha256 = "6ad28b5bac2bb5a74e737925fbc3f62ce1edabe5a48d61a9980c491ef4cedfb7",
+    strip_prefix = "rules_ts-2.1.1",
+    url = "https://github.com/aspect-build/rules_ts/releases/download/v2.1.1/rules_ts-v2.1.1.tar.gz",
 )
 
 load("@aspect_rules_ts//ts:repositories.bzl", "rules_ts_dependencies")
 
-rules_ts_dependencies(ts_version_from = "//:package.json")
+rules_ts_dependencies(
+    ts_version_from = "//:package.json",
+)
 
 load("@npm//:repositories.bzl", "npm_repositories")
 
@@ -1014,11 +988,10 @@ npm_repositories()
 
 http_archive(
     name = "aspect_rules_cypress",
-    sha256 = "06d70a2960108607d2e70f9bc6863af6b82317fdfcf7a5a30fd226a5abc46782",
-    strip_prefix = "aspect-build-rules_cypress-3db1b74",
-    type = "tar.gz",
+    sha256 = "76947778d8e855eee3c15931e1fcdc1c2a25d56d6c0edd110b2227c05b794d08",
+    strip_prefix = "rules_cypress-0.3.2",
     urls = [
-        "https://github.com/aspect-build/rules_cypress/tarball/3db1b74818ac4ce1b9d489a6e0065b36c1076761",
+        "https://github.com/aspect-build/rules_cypress/archive/refs/tags/v0.3.2.tar.gz",
     ],
 )
 

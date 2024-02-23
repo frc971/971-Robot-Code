@@ -2,6 +2,6 @@
 	"name": "@org_frc971/scouting/www/pit_scouting",
 	"private": true,
 	"dependencies": {
-			"@angular/forms": "15.1.5"
+			"@angular/forms": "v16-lts"
 	}
 }

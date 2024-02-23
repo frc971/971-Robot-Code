@@ -8,8 +8,8 @@ load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
 load("@npm//:html-insert-assets/package_json.bzl", html_insert_assets_bin = "bin")
 load("//tools/build_rules/js:ng.bzl", "ng_esbuild", "ng_project")
 load("//tools/build_rules/js:ts.bzl", _ts_project = "ts_project")
-load("@aspect_rules_rollup//rollup:defs.bzl", upstream_rollup_bundle = "rollup_bundle")
-load("@aspect_rules_terser//terser:defs.bzl", "terser_minified")
+load("@aspect_rules_rollup//rollup:defs.bzl", upstream_rollup_bundle = "rollup")
+load("@aspect_rules_terser//terser:defs.bzl", terser_minified = "terser")
 load("@aspect_rules_cypress//cypress:defs.bzl", "cypress_module_test")
 
 ts_project = _ts_project
@@ -283,7 +283,7 @@ def ng_pkg(name, generate_public_api = True, extra_srcs = [], deps = [], visibil
         **kwargs
     )
 
-def rollup_bundle(name, entry_point, deps = [], visibility = None, **kwargs):
+def rollup_bundle(name, entry_point, node_modules = "//:node_modules", deps = [], visibility = None, **kwargs):
     """Calls the upstream rollup_bundle() and exposes a .min.js file.
 
     Legacy version of rollup_bundle() used to provide the .min.js file. This
@@ -301,6 +301,7 @@ def rollup_bundle(name, entry_point, deps = [], visibility = None, **kwargs):
         deps = deps + [
             "//:node_modules/@rollup/plugin-node-resolve",
         ],
+        node_modules = node_modules,
         sourcemap = "false",
         config_file = ":%s__rollup_config.js" % name,
         entry_point = entry_point,
@@ -310,6 +311,7 @@ def rollup_bundle(name, entry_point, deps = [], visibility = None, **kwargs):
     terser_minified(
         name = name + "__min",
         srcs = [name + ".js"],
+        node_modules = node_modules,
         tags = [
             "no-remote-cache",
         ],
@@ -354,7 +356,7 @@ _expose_file_with_suffix = rule(
     },
 )
 
-def cypress_test(runner, data = None, **kwargs):
+def cypress_test(name, runner, data = None, **kwargs):
     """Runs a cypress test with the specified runner.
 
     Args:
@@ -373,16 +375,24 @@ def cypress_test(runner, data = None, **kwargs):
     # Chrome is located at the runfiles root. So we need to go up one more
     # directory than the workspace root.
     chrome_location = "../" * (package_depth + 1) + "chrome_linux/chrome"
-    config_location = "../" * package_depth + "tools/build_rules/js/cypress.config.js"
+
+    copy_file(
+        name = name + "_config",
+        out = "cypress.config.js",
+        src = "//tools/build_rules/js:cypress.config.js",
+        visibility = ["//visibility:private"],
+    )
 
     data = data or []
-    data.append("//tools/build_rules/js:cypress.config.js")
+    data.append(":%s_config" % name)
     data.append("@xvfb_amd64//:wrapped_bin/Xvfb")
+    data.append("//:node_modules")
 
     cypress_module_test(
+        name = name,
         args = [
             "run",
-            "--config-file=" + config_location,
+            "--config-file=cypress.config.js",
             "--browser=" + chrome_location,
         ],
         browsers = ["@chrome_linux//:all"],

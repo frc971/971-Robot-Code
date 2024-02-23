@@ -15,6 +15,6 @@ def ts_project(name, **kwargs):
 
         # TODO(phil): Is this a good idea? I don't _actually_ know what this
         # does.
-        supports_workers = False,
+        supports_workers = 0,
         **kwargs
     )

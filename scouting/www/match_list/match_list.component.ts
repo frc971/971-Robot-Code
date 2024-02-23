@@ -7,7 +7,7 @@ import {
   RequestAllMatchesResponse,
 } from '../../webserver/requests/messages/request_all_matches_response_generated';
 
-import {MatchListRequestor} from '@org_frc971/scouting/www/rpc';
+import {MatchListRequestor} from '../rpc';
 
 type TeamInMatch = {
   teamNumber: string;

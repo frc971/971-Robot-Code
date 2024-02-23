@@ -93,7 +93,7 @@ def flatbuffer_ts_library(
         compatible_with = compatible_with,
         restricted_to = restricted_to,
         target_compatible_with = target_compatible_with,
-        supports_workers = False,
+        supports_workers = 0,
         tsconfig = {
             "compilerOptions": {
                 "declaration": True,

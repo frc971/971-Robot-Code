@@ -101,6 +101,19 @@ build --strategy=TsProject=sandboxed
 build --strategy=CopyFile=standalone
 build --strategy=CopyDirectory=standalone
 
+# Honor the setting of `skipLibCheck` in the tsconfig.json file.
+# https://www.typescriptlang.org/tsconfig#skipLibCheck
+build --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+fetch --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+query --@aspect_rules_ts//ts:skipLibCheck=honor_tsconfig
+
+# Use "tsc" as the transpiler when ts_project has no `transpiler` set.
+# For now this is an acceptable default, but it would be nice to switch to swc in the future.
+# https://docs.aspect.build/rulesets/aspect_rules_ts/docs/transpiler/
+build --@aspect_rules_ts//ts:default_to_tsc_transpiler
+fetch --@aspect_rules_ts//ts:default_to_tsc_transpiler
+query --@aspect_rules_ts//ts:default_to_tsc_transpiler
+
 # Use our hermetic JDK.
 # Note that this doesn't quite work fully, but it should. See
 # https://github.com/bazelbuild/bazel/issues/6341 for ongoing discussion with
