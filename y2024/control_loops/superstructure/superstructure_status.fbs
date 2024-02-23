@@ -91,6 +91,9 @@ table Status {
 
   // State of the extender rollers
   extend_roller:ExtendRollerStatus (id: 8);
+
+  // The status of if the turret and intake is colliding
+  collided: bool (id: 9);
 }
 
 root_type Status;

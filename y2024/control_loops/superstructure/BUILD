@@ -81,6 +81,7 @@ cc_library(
     data = [
     ],
     deps = [
+        ":collision_avoidance_lib",
         ":shooter",
         ":superstructure_goal_fbs",
         ":superstructure_output_fbs",
@@ -110,6 +111,36 @@ cc_binary(
         ":superstructure_lib",
         "//aos:init",
         "//aos/events:shm_event_loop",
+    ],
+)
+
+cc_library(
+    name = "collision_avoidance_lib",
+    srcs = ["collision_avoidance.cc"],
+    hdrs = ["collision_avoidance.h"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":superstructure_goal_fbs",
+        ":superstructure_status_fbs",
+        "//frc971/control_loops:control_loops_fbs",
+        "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
+        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/functional:bind_front",
+    ],
+)
+
+cc_test(
+    name = "collision_avoidance_test",
+    srcs = ["collision_avoidance_test.cc"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":collision_avoidance_lib",
+        ":superstructure_goal_fbs",
+        ":superstructure_status_fbs",
+        "//aos:flatbuffers",
+        "//aos:math",
+        "//aos/testing:googletest",
     ],
 )
 
@@ -151,6 +182,7 @@ cc_library(
     ],
     deps = [
         ":aiming",
+        ":collision_avoidance_lib",
         ":superstructure_can_position_fbs",
         ":superstructure_goal_fbs",
         ":superstructure_position_fbs",

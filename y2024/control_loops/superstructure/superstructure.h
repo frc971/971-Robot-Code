@@ -61,6 +61,8 @@ class Superstructure
       drivetrain_status_fetcher_;
   aos::Fetcher<aos::JoystickState> joystick_state_fetcher_;
 
+  CollisionAvoidance collision_avoidance_;
+
   aos::Alliance alliance_ = aos::Alliance::kInvalid;
 
   TransferRollerGoal transfer_goal_;

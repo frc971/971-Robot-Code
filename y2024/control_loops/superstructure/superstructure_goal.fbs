@@ -12,8 +12,8 @@ enum IntakeRollerGoal : ubyte {
 
 // Represents goal for pivot on intake
 enum IntakePivotGoal : ubyte {
-    EXTENDED = 0,
-    RETRACTED = 1, 
+    RETRACTED = 0,
+    EXTENDED = 1,
 }
 
 // Represents goal of transfer rollers
