@@ -44,6 +44,9 @@ table Output {
     // Positive voltage rolls the game piece up towards the scoring mechanisms,
     // either the catapult or amp/trap mechanism
     extend_roller_voltage:double (id: 9);
+
+    // Dynamically sets the stator current limit for the retention_rollers
+    retention_roller_stator_current_limit: double (id: 10);
 }
 
 root_type Output;
