@@ -25,7 +25,7 @@ class AscLogger {
   static void WriteHeader(std::ostream &file,
                           aos::realtime_clock::time_point start_time);
 
-  std::optional<aos::monotonic_clock::time_point> first_frame_monotonic_;
+  std::optional<aos::realtime_clock::time_point> first_frame_realtime_;
 
   std::ofstream output_;
 

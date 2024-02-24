@@ -17,6 +17,7 @@ class CANTranslator {
  private:
   void HandleFrame(const can_logger::CanFrame *can_frame);
 
+  aos::EventLoop *event_loop_;
   aos::Sender<imu::DualImuStatic> dual_imu_sender_;
   aos::Sender<imu::CanTranslatorStatusStatic> can_translator_status_sender_;
 
