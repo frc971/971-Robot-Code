@@ -47,6 +47,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   const monotonic_clock::time_point timestamp =
       event_loop()->context().monotonic_event_time;
 
+  (void)timestamp;
+
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
     intake_pivot_.Reset();
@@ -191,7 +193,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &output_struct.altitude_voltage : nullptr,
           output != nullptr ? &output_struct.turret_voltage : nullptr,
           output != nullptr ? &output_struct.retention_roller_voltage : nullptr,
-          robot_state().voltage_battery(), timestamp, &collision_avoidance_,
+          robot_state().voltage_battery(), &collision_avoidance_,
           intake_pivot_.estimated_position(), &max_intake_pivot_position,
           &min_intake_pivot_position, status->fbb());
 
