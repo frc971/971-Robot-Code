@@ -659,6 +659,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                   output.turret_voltage());
               talonfx_map.find("retention_roller")
                   ->second->WriteVoltage(output.retention_roller_voltage());
+              if (output.has_retention_roller_stator_current_limit()) {
+                talonfx_map.find("retention_roller")
+                    ->second->set_stator_current_limit(
+                        output.retention_roller_stator_current_limit());
+              }
             });
 
     can_drivetrain_writer.set_talonfxs({right_front, right_back},

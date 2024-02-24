@@ -70,7 +70,9 @@
     "turret_supply_current_limit": 35,
     "turret_stator_current_limit": 60,
     "altitude_supply_current_limit": 35,
-    "altitude_stator_current_limit": 60
+    "altitude_stator_current_limit": 60,
+    "retention_roller_stator_current_limit": 5,
+    "retention_roller_supply_current_limit": 60
   },
   "transfer_roller_voltages": {
     "transfer_in": 12.0,
