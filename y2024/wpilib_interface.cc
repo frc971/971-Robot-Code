@@ -204,6 +204,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                        ->potentiometer_offset());
 
       builder->set_transfer_beambreak(transfer_beam_break_->Get());
+      builder->set_catapult_beambreak(catapult_beam_break_->Get());
       builder.CheckOk(builder.Send());
     }
 
@@ -272,6 +273,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     transfer_beam_break_ = ::std::move(sensor);
   }
 
+  void set_catapult_beambreak(::std::unique_ptr<frc::DigitalInput> sensor) {
+    catapult_beam_break_ = ::std::move(sensor);
+  }
+
   void set_climber(::std::unique_ptr<frc::Encoder> encoder,
                    ::std::unique_ptr<frc::DigitalInput> absolute_pwm,
                    ::std::unique_ptr<frc::AnalogInput> potentiometer) {
@@ -328,7 +333,8 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
 
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
-  std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_, transfer_beam_break_;
+  std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_, transfer_beam_break_,
+      catapult_beam_break_;
 
   frc971::wpilib::AbsoluteEncoder intake_pivot_encoder_;
   frc971::wpilib::AbsoluteEncoderAndPotentiometer climber_encoder_,
@@ -417,6 +423,7 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     sensor_reader.set_intake_pivot(make_encoder(3),
                                    make_unique<frc::DigitalInput>(3));
     sensor_reader.set_transfer_beambreak(make_unique<frc::DigitalInput>(23));
+    sensor_reader.set_catapult_beambreak(make_unique<frc::DigitalInput>(24));
 
     sensor_reader.set_climber(make_encoder(5),
                               make_unique<frc::DigitalInput>(5),
