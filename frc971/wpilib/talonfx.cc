@@ -8,6 +8,7 @@ TalonFX::TalonFX(int device_id, bool inverted, std::string canbus,
                  double stator_current_limit, double supply_current_limit)
     : talon_(device_id, canbus),
       device_id_(device_id),
+      neutral_mode_(ctre::phoenix6::signals::NeutralModeValue::Brake),
       inverted_(inverted),
       device_temp_(talon_.GetDeviceTemp()),
       supply_voltage_(talon_.GetSupplyVoltage()),
@@ -63,7 +64,7 @@ void TalonFX::WriteConfigs() {
   current_limits.SupplyCurrentLimitEnable = true;
 
   ctre::phoenix6::configs::MotorOutputConfigs output_configs;
-  output_configs.NeutralMode = ctre::phoenix6::signals::NeutralModeValue::Brake;
+  output_configs.NeutralMode = neutral_mode_;
   output_configs.DutyCycleNeutralDeadband = 0;
 
   output_configs.Inverted = inverted_;

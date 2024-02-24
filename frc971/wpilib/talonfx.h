@@ -79,6 +79,10 @@ class TalonFX {
     supply_current_limit_ = supply_current_limit;
   }
 
+  void set_neutral_mode(ctre::phoenix6::signals::NeutralModeValue value) {
+    neutral_mode_ = value;
+  }
+
   static double SafeSpeed(double voltage) {
     return (::aos::Clip(voltage, -kMaxBringupPower, kMaxBringupPower) / 12.0);
   }
@@ -87,6 +91,7 @@ class TalonFX {
   ctre::phoenix6::hardware::TalonFX talon_;
   int device_id_;
 
+  ctre::phoenix6::signals::NeutralModeValue neutral_mode_;
   ctre::phoenix6::signals::InvertedValue inverted_;
 
   ctre::phoenix6::StatusSignal<units::temperature::celsius_t> device_temp_;
