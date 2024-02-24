@@ -279,8 +279,6 @@
       "name": "image_logger",
       "executable_name": "image_logger",
       "args": [
-        "--logging_folder",
-        "",
         "--rotate_every",
         "30.0",
         "--direct",
