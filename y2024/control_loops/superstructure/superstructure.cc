@@ -193,6 +193,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           output != nullptr ? &output_struct.altitude_voltage : nullptr,
           output != nullptr ? &output_struct.turret_voltage : nullptr,
           output != nullptr ? &output_struct.retention_roller_voltage : nullptr,
+          output != nullptr
+              ? &output_struct.retention_roller_stator_current_limit
+              : nullptr,
           robot_state().voltage_battery(), &collision_avoidance_,
           intake_pivot_.estimated_position(), &max_intake_pivot_position,
           &min_intake_pivot_position, status->fbb());
