@@ -488,8 +488,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->intake_roller_supply_current_limit());
     std::shared_ptr<TalonFX> retention_roller = std::make_shared<TalonFX>(
         10, true, "rio", &rio_signal_registry,
-        current_limits->intake_roller_stator_current_limit(),
-        current_limits->intake_roller_supply_current_limit());
+        current_limits->retention_roller_stator_current_limit(),
+        current_limits->retention_roller_supply_current_limit());
     std::shared_ptr<TalonFX> transfer_roller = std::make_shared<TalonFX>(
         9, true, "rio", &rio_signal_registry,
         current_limits->transfer_roller_stator_current_limit(),
