@@ -94,7 +94,7 @@ double turret_pot_translate(double voltage) {
 }
 
 double altitude_pot_translate(double voltage) {
-  return voltage * Values::kAltitudePotRadiansPerVolt();
+  return -1 * voltage * Values::kAltitudePotRadiansPerVolt();
 }
 
 double drivetrain_velocity_translate(double in) {
