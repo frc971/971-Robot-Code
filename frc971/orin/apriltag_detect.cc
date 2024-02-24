@@ -350,7 +350,7 @@ void UnDistort(double *x, double *y, CameraMatrix *camera_matrix,
   double x0 = xP;
   double y0 = yP;
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 10; i++) {
     double rSq = xP * xP + yP * yP;
     double linCoef = 1 + k1 * rSq + k2 * rSq * rSq + k3 * rSq * rSq * rSq;
     double kInv = 1 / linCoef;

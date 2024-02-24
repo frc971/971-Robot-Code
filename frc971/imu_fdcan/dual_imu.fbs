@@ -37,7 +37,7 @@ table DualImu {
   // Timestamp from the board corresponding to these samples in nanoseconds.
   // Future changes may lead us to add per-chip timestamps, but for now
   // we treat them as being sampled at the same time.
-  kernel_timestamp:uint64 (id: 0);
+  kernel_timestamp:int64 (id: 0);
   // Packet counter that should increment by 1 for every incoming packet.
   packet_counter:uint64 (id: 1);
   // Value at which the packet counter wraps, such that

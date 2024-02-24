@@ -7,7 +7,7 @@ table CanFrame {
   // The body of the CAN frame up to 64 bytes long.
   data:[ubyte] (id: 1);
   // The hardware timestamp of when the frame came in
-  monotonic_timestamp_ns:uint64 (id: 2);
+  realtime_timestamp_ns:uint64 (id: 2);
   // Additional flags for CAN FD
   flags: ubyte (id: 3);
 }

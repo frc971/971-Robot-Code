@@ -44,12 +44,16 @@ class CANTranslatorTest : public ::testing::Test {
 };
 
 TEST_F(CANTranslatorTest, CheckValidFrame) {
+  event_loop_factory_.GetNodeEventLoopFactory(can_frame_event_loop_->node())
+      ->SetRealtimeOffset(
+          aos::monotonic_clock::epoch() + std::chrono::seconds(0),
+          aos::realtime_clock::epoch() + std::chrono::seconds(100));
   can_frame_event_loop_->OnRun([this] {
     aos::Sender<frc971::can_logger::CanFrameStatic>::StaticBuilder
         can_frame_builder = can_frame_sender_.MakeStaticBuilder();
 
     can_frame_builder->set_can_id(1);
-    can_frame_builder->set_monotonic_timestamp_ns(100);
+    can_frame_builder->set_realtime_timestamp_ns(100e9 + 971);
     auto can_data = can_frame_builder->add_data();
     CHECK(can_data->reserve(sizeof(uint8_t) * 64));
 
@@ -164,6 +168,8 @@ TEST_F(CANTranslatorTest, CheckValidFrame) {
 
   EXPECT_EQ(dual_imu_fetcher_->tdk()->chip_states()->Get(0)->counter(), 31178);
   EXPECT_EQ(dual_imu_fetcher_->tdk()->chip_states()->Get(0)->temperature(), 29);
+
+  EXPECT_EQ(dual_imu_fetcher_->kernel_timestamp(), 971);
 }
 
 TEST_F(CANTranslatorTest, CheckInvalidFrame) {
@@ -172,7 +178,7 @@ TEST_F(CANTranslatorTest, CheckInvalidFrame) {
         can_frame_builder = can_frame_sender_.MakeStaticBuilder();
 
     can_frame_builder->set_can_id(2);
-    can_frame_builder->set_monotonic_timestamp_ns(100);
+    can_frame_builder->set_realtime_timestamp_ns(100);
     auto can_data = can_frame_builder->add_data();
     CHECK(can_data->reserve(sizeof(uint8_t) * 1));
 

@@ -7,7 +7,8 @@ constexpr int kImuCanId = 1;
 
 CANTranslator::CANTranslator(aos::EventLoop *event_loop,
                              std::string_view canframe_channel)
-    : dual_imu_sender_(
+    : event_loop_(event_loop),
+      dual_imu_sender_(
           event_loop->MakeSender<frc971::imu::DualImuStatic>("/imu")),
       can_translator_status_sender_(
           event_loop->MakeSender<frc971::imu::CanTranslatorStatusStatic>(
@@ -119,7 +120,19 @@ void CANTranslator::HandleFrame(const frc971::can_logger::CanFrame *can_frame) {
   dual_imu_builder->set_max_packet_counter(
       std::numeric_limits<uint16_t>::max());
 
-  dual_imu_builder->set_kernel_timestamp(can_frame->monotonic_timestamp_ns());
+  // The timestamp coming from the CanFrame is a realtime timestamp. Calculate
+  // the offset into a monotonic time based on the clock samples from when the
+  // CanFrame was sent (this may not be ultra principled, as there are no strict
+  // bounds on how much time can pass between the clock samples we are using; in
+  // practice, the differences should be negligible).
+  const int64_t realtime_offset =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+          event_loop_->context().monotonic_event_time.time_since_epoch() -
+          event_loop_->context().realtime_event_time.time_since_epoch())
+          .count();
+
+  dual_imu_builder->set_kernel_timestamp(can_frame->realtime_timestamp_ns() +
+                                         realtime_offset);
 
   dual_imu_builder.CheckOk(dual_imu_builder.Send());
 }

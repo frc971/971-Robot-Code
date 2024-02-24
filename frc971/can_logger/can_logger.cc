@@ -75,8 +75,8 @@ bool CanLogger::ReadFrame() {
   can_frame_builder.add_can_id(frame.can_id);
   can_frame_builder.add_flags(frame.flags);
   can_frame_builder.add_data(frame_data);
-  can_frame_builder.add_monotonic_timestamp_ns(
-      static_cast<std::chrono::nanoseconds>(
+  can_frame_builder.add_realtime_timestamp_ns(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
           std::chrono::seconds(tv.tv_sec) +
           std::chrono::microseconds(tv.tv_usec))
           .count());

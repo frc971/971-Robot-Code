@@ -288,8 +288,6 @@
       "name": "localizer_logger",
       "executable_name": "logger_main",
       "args": [
-        "--logging_folder",
-        "",
         "--snappy_compress",
         "--rotate_every", "30.0"
       ],

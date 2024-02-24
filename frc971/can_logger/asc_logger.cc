@@ -12,11 +12,11 @@ AscLogger::AscLogger(aos::EventLoop *event_loop, const std::string &filename)
 }
 
 void AscLogger::HandleFrame(const CanFrame &frame) {
-  if (!first_frame_monotonic_) {
-    aos::monotonic_clock::time_point time(
-        std::chrono::nanoseconds(frame.monotonic_timestamp_ns()));
+  if (!first_frame_realtime_) {
+    aos::realtime_clock::time_point time(
+        std::chrono::nanoseconds(frame.realtime_timestamp_ns()));
 
-    first_frame_monotonic_ = time;
+    first_frame_realtime_ = time;
 
     WriteHeader(output_, event_loop_->realtime_now());
   }
@@ -60,11 +60,11 @@ unsigned char can_fd_len2dlc(unsigned char len) {
 }  // namespace
 
 void AscLogger::WriteFrame(std::ostream &file, const CanFrame &frame) {
-  aos::monotonic_clock::time_point frame_timestamp(
-      std::chrono::nanoseconds(frame.monotonic_timestamp_ns()));
+  aos::realtime_clock::time_point frame_timestamp(
+      std::chrono::nanoseconds(frame.realtime_timestamp_ns()));
 
   std::chrono::duration<double> time(frame_timestamp -
-                                     first_frame_monotonic_.value());
+                                     first_frame_realtime_.value());
 
   // TODO: maybe this should not be hardcoded
   const int device_id = 1;
