@@ -31,6 +31,7 @@ ts_project(
         "//y2023/control_loops/superstructure:superstructure_plotter",
         "//y2023/localizer:corrections_plotter",
         "//y2023/localizer:localizer_plotter",
+        "//y2024/control_loops/superstructure:superstructure_plotter",
         "//y2024/localizer:corrections_plotter",
         "//y2024/localizer:localizer_plotter",
     ],

@@ -21,50 +21,32 @@
 // using JSON rather than requiring people to write a script just to create
 // a plot.
 import {Configuration} from '../../aos/configuration_generated';
-import {Connection} from '../../aos/network/www/proxy';
-import {plotImu} from '../wpilib/imu_plotter';
-import {plotDrivetrain} from '../control_loops/drivetrain/drivetrain_plotter';
-import {plotSpline} from '../control_loops/drivetrain/spline_plotter';
-import {plotDownEstimator} from '../control_loops/drivetrain/down_estimator_plotter';
-import {plotRobotState} from
-    '../control_loops/drivetrain/robot_state_plotter'
-import {plotFinisher as plot2020Finisher} from
-    '../../y2020/control_loops/superstructure/finisher_plotter'
-import {plotTurret as plot2020Turret} from
-    '../../y2020/control_loops/superstructure/turret_plotter'
-import {plotLocalizer as plot2020Localizer} from
-    '../../y2020/control_loops/drivetrain/localizer_plotter'
-import {plotAccelerator as plot2020Accelerator} from
-    '../../y2020/control_loops/superstructure/accelerator_plotter'
-import {plotHood as plot2020Hood} from
-    '../../y2020/control_loops/superstructure/hood_plotter'
-import {plotSuperstructure as plot2021Superstructure} from
-    '../../y2021_bot3/control_loops/superstructure/superstructure_plotter';
-import {plotTurret as plot2022Turret} from
-    '../../y2022/control_loops/superstructure/turret_plotter'
-import {plotSuperstructure as plot2022Superstructure} from
-    '../../y2022/control_loops/superstructure/superstructure_plotter'
-import {plotSuperstructure as plot2023Superstructure} from
-    '../../y2023/control_loops/superstructure/superstructure_plotter'
-import {plotCatapult as plot2022Catapult} from
-    '../../y2022/control_loops/superstructure/catapult_plotter'
-import {plotIntakeFront as plot2022IntakeFront, plotIntakeBack as plot2022IntakeBack} from
-    '../../y2022/control_loops/superstructure/intake_plotter'
-import {plotClimber as plot2022Climber} from
-    '../../y2022/control_loops/superstructure/climber_plotter'
-import {plotLocalizer as plot2022Localizer} from
-    '../../y2022/localizer/localizer_plotter'
-import {plotLocalizer as plot2023Localizer} from
-    '../../y2023/localizer/localizer_plotter'
-import {plotLocalizer as plot2024Localizer} from
-    '../../y2024/localizer/localizer_plotter'
-import {plotVision as plot2022Vision} from
-    '../../y2022/vision/vision_plotter'
-import {plotVision as plot2023Corrections} from
-    '../../y2023/localizer/corrections_plotter'
-import {plotVision as plot2024Corrections} from
-    '../../y2024/localizer/corrections_plotter'
 import {plotDemo} from '../../aos/network/www/demo_plot';
+import {Connection} from '../../aos/network/www/proxy';
+import {plotLocalizer as plot2020Localizer} from '../../y2020/control_loops/drivetrain/localizer_plotter'
+import {plotAccelerator as plot2020Accelerator} from '../../y2020/control_loops/superstructure/accelerator_plotter'
+import {plotFinisher as plot2020Finisher} from '../../y2020/control_loops/superstructure/finisher_plotter'
+import {plotHood as plot2020Hood} from '../../y2020/control_loops/superstructure/hood_plotter'
+import {plotTurret as plot2020Turret} from '../../y2020/control_loops/superstructure/turret_plotter'
+import {plotSuperstructure as plot2021Superstructure} from '../../y2021_bot3/control_loops/superstructure/superstructure_plotter';
+import {plotCatapult as plot2022Catapult} from '../../y2022/control_loops/superstructure/catapult_plotter'
+import {plotClimber as plot2022Climber} from '../../y2022/control_loops/superstructure/climber_plotter'
+import {plotIntakeBack as plot2022IntakeBack, plotIntakeFront as plot2022IntakeFront} from '../../y2022/control_loops/superstructure/intake_plotter'
+import {plotSuperstructure as plot2022Superstructure} from '../../y2022/control_loops/superstructure/superstructure_plotter'
+import {plotTurret as plot2022Turret} from '../../y2022/control_loops/superstructure/turret_plotter'
+import {plotLocalizer as plot2022Localizer} from '../../y2022/localizer/localizer_plotter'
+import {plotVision as plot2022Vision} from '../../y2022/vision/vision_plotter'
+import {plotSuperstructure as plot2023Superstructure} from '../../y2023/control_loops/superstructure/superstructure_plotter'
+import {plotVision as plot2023Corrections} from '../../y2023/localizer/corrections_plotter'
+import {plotLocalizer as plot2023Localizer} from '../../y2023/localizer/localizer_plotter'
+import {plotClimber as plot2024Climber, plotIntake as plot2024Intake, plotSuperstructure as plot2024Superstructure} from '../../y2024/control_loops/superstructure/superstructure_plotter'
+import {plotVision as plot2024Corrections} from '../../y2024/localizer/corrections_plotter'
+import {plotLocalizer as plot2024Localizer} from '../../y2024/localizer/localizer_plotter'
+import {plotDownEstimator} from '../control_loops/drivetrain/down_estimator_plotter';
+import {plotDrivetrain} from '../control_loops/drivetrain/drivetrain_plotter';
+import {plotRobotState} from '../control_loops/drivetrain/robot_state_plotter'
+import {plotSpline} from '../control_loops/drivetrain/spline_plotter';
+import {plotImu} from '../wpilib/imu_plotter';
 
 const rootDiv = document.createElement('div');
 rootDiv.style.width = '100%';
@@ -124,6 +106,9 @@ const plotIndex = new Map<string, PlotState>([
   ['Robot State', new PlotState(plotDiv, plotRobotState)],
   ['2024 Vision', new PlotState(plotDiv, plot2024Corrections)],
   ['2024 Localizer', new PlotState(plotDiv, plot2024Localizer)],
+  ['2024 Superstructure', new PlotState(plotDiv, plot2024Superstructure)],
+  ['2024 Climber', new PlotState(plotDiv, plot2024Climber)],
+  ['2024 Intake', new PlotState(plotDiv, plot2024Intake)],
   ['2023 Vision', new PlotState(plotDiv, plot2023Corrections)],
   ['2023 Localizer', new PlotState(plotDiv, plot2023Localizer)],
   ['2023 Superstructure', new PlotState(plotDiv, plot2023Superstructure)],
