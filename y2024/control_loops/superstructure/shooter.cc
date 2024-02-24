@@ -36,7 +36,8 @@ Shooter::Iterate(
     const y2024::control_loops::superstructure::Position *position,
     const y2024::control_loops::superstructure::ShooterGoal *shooter_goal,
     double *catapult_output, double *altitude_output, double *turret_output,
-    double *retention_roller_output, double /*battery_voltage*/,
+    double *retention_roller_output,
+    double *retention_roller_stator_current_limit, double /*battery_voltage*/,
     CollisionAvoidance *collision_avoidance, const double intake_pivot_position,
     double *max_intake_pivot_position, double *min_intake_pivot_position,
     flatbuffers::FlatBufferBuilder *fbb) {
@@ -74,6 +75,18 @@ Shooter::Iterate(
   if (retention_roller_output != nullptr) {
     *retention_roller_output =
         robot_constants_->common()->retention_roller_voltages()->retaining();
+
+    if (piece_loaded) {
+      *retention_roller_stator_current_limit =
+          robot_constants_->common()
+              ->current_limits()
+              ->slower_retention_roller_stator_current_limit();
+    } else {
+      *retention_roller_stator_current_limit =
+          robot_constants_->common()
+              ->current_limits()
+              ->retention_roller_stator_current_limit();
+    }
   }
 
   bool aiming = false;
