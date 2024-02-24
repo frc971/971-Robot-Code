@@ -64,6 +64,7 @@ class SuperstructureSimulation {
         superstructure_output_fetcher_(
             event_loop_->MakeFetcher<Output>("/superstructure")),
         transfer_beambreak_(false),
+        catapult_beambreak_(false),
         intake_pivot_(
             new CappedTestPlant(intake_pivot::MakeIntakePivotPlant()),
             PositionSensorSimulator(simulated_robot_constants->robot()
@@ -205,7 +206,6 @@ class SuperstructureSimulation {
           }
           first_ = false;
           SendPositionMessage();
-          SendCANPositionMessage();
         },
         dt);
   }
@@ -244,6 +244,7 @@ class SuperstructureSimulation {
     Position::Builder position_builder = builder.MakeBuilder<Position>();
 
     position_builder.add_transfer_beambreak(transfer_beambreak_);
+    position_builder.add_catapult_beambreak(catapult_beambreak_);
     position_builder.add_intake_pivot(intake_pivot_offset);
     position_builder.add_catapult(catapult_offset);
     position_builder.add_altitude(altitude_offset);
@@ -254,41 +255,12 @@ class SuperstructureSimulation {
              aos::RawSender::Error::kOk);
   }
 
-  void SendCANPositionMessage() {
-    retention_position_ =
-        retention_velocity_ * std::chrono::duration<double>(dt_).count() +
-        retention_position_;
-
-    auto builder = superstructure_can_position_sender_.MakeBuilder();
-
-    frc971::control_loops::CANTalonFX::Builder retention_builder =
-        builder.MakeBuilder<frc971::control_loops::CANTalonFX>();
-
-    retention_builder.add_torque_current(retention_torque_current_);
-    retention_builder.add_position(retention_position_);
-
-    flatbuffers::Offset<frc971::control_loops::CANTalonFX> retention_offset =
-        retention_builder.Finish();
-
-    CANPosition::Builder can_position_builder =
-        builder.MakeBuilder<CANPosition>();
-
-    can_position_builder.add_retention_roller(retention_offset);
-
-    CHECK_EQ(builder.Send(can_position_builder.Finish()),
-             aos::RawSender::Error::kOk);
-  }
-
   void set_transfer_beambreak(bool triggered) {
     transfer_beambreak_ = triggered;
   }
 
-  void set_retention_velocity(double velocity) {
-    retention_velocity_ = velocity;
-  }
-
-  void set_retention_torque_current(double torque_current) {
-    retention_torque_current_ = torque_current;
+  void set_catapult_beambreak(bool triggered) {
+    catapult_beambreak_ = triggered;
   }
 
   AbsoluteEncoderSimulator *intake_pivot() { return &intake_pivot_; }
@@ -308,6 +280,7 @@ class SuperstructureSimulation {
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
 
   bool transfer_beambreak_;
+  bool catapult_beambreak_;
 
   AbsoluteEncoderSimulator intake_pivot_;
   PotAndAbsoluteEncoderSimulator climber_;
@@ -316,10 +289,6 @@ class SuperstructureSimulation {
   PotAndAbsoluteEncoderSimulator turret_;
 
   bool first_ = true;
-
-  double retention_velocity_;
-  double retention_position_;
-  double retention_torque_current_;
 };
 
 class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
@@ -970,8 +939,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  superstructure_plant_.set_retention_velocity(5);
-  superstructure_plant_.set_retention_torque_current(1);
+  superstructure_plant_.set_catapult_beambreak(false);
   superstructure_plant_.set_transfer_beambreak(false);
 
   RunFor(chrono::seconds(5));
@@ -1046,9 +1014,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::READY);
 
-  // Set retention roller to show that we are loaded.
-  superstructure_plant_.set_retention_velocity(0.1);
-  superstructure_plant_.set_retention_torque_current(45);
+  superstructure_plant_.set_catapult_beambreak(true);
   superstructure_plant_.set_transfer_beambreak(true);
 
   RunFor(chrono::seconds(5));
@@ -1115,8 +1081,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
             CatapultState::FIRING);
 
   // Wheel should spin free again.
-  superstructure_plant_.set_retention_velocity(5);
-  superstructure_plant_.set_retention_torque_current(1);
+  superstructure_plant_.set_catapult_beambreak(false);
 
   RunFor(chrono::seconds(5));
 
@@ -1152,8 +1117,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  superstructure_plant_.set_retention_velocity(5);
-  superstructure_plant_.set_retention_torque_current(45);
+  superstructure_plant_.set_catapult_beambreak(false);
   superstructure_plant_.set_transfer_beambreak(false);
 
   RunFor(chrono::seconds(5));
@@ -1267,8 +1231,7 @@ TEST_F(SuperstructureTest, AutoAim) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  superstructure_plant_.set_retention_velocity(0);
-  superstructure_plant_.set_retention_torque_current(45);
+  superstructure_plant_.set_catapult_beambreak(true);
 
   RunFor(chrono::seconds(5));
 
@@ -1281,8 +1244,6 @@ TEST_F(SuperstructureTest, AutoAim) {
   EXPECT_NEAR(-M_PI_2,
               superstructure_status_fetcher_->shooter()->turret()->position(),
               5e-4);
-  LOG(INFO) << aos::FlatbufferToJson(superstructure_status_fetcher_.get(),
-                                     {.multi_line = true});
 
   EXPECT_EQ(
       kDistanceFromSpeaker,
@@ -1311,8 +1272,7 @@ TEST_F(SuperstructureTest, AutoAim) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  superstructure_plant_.set_retention_velocity(0);
-  superstructure_plant_.set_retention_torque_current(45);
+  superstructure_plant_.set_catapult_beambreak(true);
 
   RunFor(chrono::seconds(5));
 

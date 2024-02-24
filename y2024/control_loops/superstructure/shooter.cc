@@ -10,18 +10,12 @@ namespace y2024::control_loops::superstructure {
 
 using frc971::control_loops::PotAndAbsoluteEncoderProfiledJointStatus;
 
-constexpr double kMinCurrent = 20.0;
-constexpr double kMaxVelocity = 1.0;
 constexpr double kCatapultActivationThreshold = 0.01;
 
 Shooter::Shooter(aos::EventLoop *event_loop, const Constants *robot_constants)
     : drivetrain_status_fetcher_(
           event_loop->MakeFetcher<frc971::control_loops::drivetrain::Status>(
               "/drivetrain")),
-      superstructure_can_position_fetcher_(
-          event_loop
-              ->MakeFetcher<y2024::control_loops::superstructure::CANPosition>(
-                  "/superstructure/rio")),
       robot_constants_(robot_constants),
       catapult_(
           robot_constants->common()->catapult(),
@@ -43,34 +37,18 @@ Shooter::Iterate(
     const y2024::control_loops::superstructure::ShooterGoal *shooter_goal,
     double *catapult_output, double *altitude_output, double *turret_output,
     double *retention_roller_output, double /*battery_voltage*/,
-    aos::monotonic_clock::time_point current_timestamp,
     CollisionAvoidance *collision_avoidance, const double intake_pivot_position,
     double *max_intake_pivot_position, double *min_intake_pivot_position,
     flatbuffers::FlatBufferBuilder *fbb) {
-  superstructure_can_position_fetcher_.Fetch();
   drivetrain_status_fetcher_.Fetch();
-  CHECK(superstructure_can_position_fetcher_.get() != nullptr);
-
-  double current_retention_position =
-      superstructure_can_position_fetcher_->retention_roller()->position();
-
-  double torque_current =
-      superstructure_can_position_fetcher_->retention_roller()
-          ->torque_current();
-
-  double retention_velocity =
-      (current_retention_position - last_retention_position_) /
-      std::chrono::duration<double>(current_timestamp - last_timestamp_)
-          .count();
 
   // If our current is over the minimum current and our velocity is under our
   // maximum velocity, then set loaded to true. If we are preloaded set it to
   // true as well.
   //
   // TODO(austin): Debounce piece_loaded?
-  bool piece_loaded =
-      (torque_current > kMinCurrent && retention_velocity < kMaxVelocity) ||
-      (shooter_goal != nullptr && shooter_goal->preloaded());
+  bool piece_loaded = position->catapult_beambreak() ||
+                      (shooter_goal != nullptr && shooter_goal->preloaded());
 
   aos::fbs::FixedStackAllocator<aos::fbs::Builder<
       frc971::control_loops::
@@ -289,8 +267,6 @@ Shooter::Iterate(
     status_builder.add_aimer(aimer_offset);
   }
 
-  last_retention_position_ = current_retention_position;
-  last_timestamp_ = current_timestamp;
   return status_builder.Finish();
 }
 

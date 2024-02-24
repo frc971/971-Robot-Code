@@ -67,7 +67,6 @@ class Shooter {
       const Position *position, const ShooterGoal *shooter_goal,
       double *catapult_output, double *altitude_output, double *turret_output,
       double *retention_roller_output, double battery_voltage,
-      aos::monotonic_clock::time_point current_timestamp,
       /* Hacky way to use collision avoidance in this class */
       CollisionAvoidance *collision_avoidance,
       const double intake_pivot_position, double *max_turret_intake_position,
@@ -100,11 +99,6 @@ class Shooter {
   frc971::shooter_interpolation::InterpolationTable<
       y2024::constants::Values::ShotParams>
       interpolation_table_;
-
-  double last_retention_position_;
-
-  aos::monotonic_clock::time_point last_timestamp_{
-      aos::monotonic_clock::min_time};
 };
 
 }  // namespace y2024::control_loops::superstructure
