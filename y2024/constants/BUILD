@@ -1,5 +1,6 @@
 load("//aos/flatbuffers:generate.bzl", "static_flatbuffer")
 load("//tools/build_rules:template.bzl", "jinja2_template")
+load("//y2024/constants:validator.bzl", "constants_json")
 
 cc_library(
     name = "simulated_constants_sender",
@@ -17,7 +18,7 @@ cc_library(
 )
 
 jinja2_template(
-    name = "test_constants.json",
+    name = "test_constants_unvalidated.json",
     src = "test_constants.jinja2.json",
     includes = glob([
         "test_data/*.json",
@@ -39,7 +40,7 @@ jinja2_template(
 )
 
 jinja2_template(
-    name = "constants.json",
+    name = "constants_unvalidated.json",
     src = "constants.jinja2.json",
     includes = [
         "7971.json",
@@ -95,15 +96,27 @@ cc_binary(
     ],
 )
 
-cc_test(
-    name = "constants_validator_test",
-    srcs = ["constants_validator_test.cc"],
-    data = [":constants.json"],
+cc_binary(
+    name = "constants_formatter",
+    srcs = ["constants_formatter.cc"],
+    data = [":constants_unvalidated.json"],
     visibility = ["//visibility:public"],
     deps = [
         ":constants_list_fbs",
+        "//aos:init",
         "//aos:json_to_flatbuffer",
-        "//aos/testing:googletest",
         "@com_github_google_glog//:glog",
     ],
+)
+
+constants_json(
+    name = "constants_json",
+    src = ":constants_unvalidated.json",
+    out = "constants.json",
+)
+
+constants_json(
+    name = "test_constants_json",
+    src = ":constants_unvalidated.json",
+    out = "test_constants.json",
 )
