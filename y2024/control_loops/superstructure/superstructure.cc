@@ -175,6 +175,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           extend_at_retracted) {
         state_ = SuperstructureState::INTAKING;
       }
+
       extend_goal = ExtendStatus::RETRACTED;
       catapult_requested_ = false;
       break;
@@ -197,6 +198,10 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
       break;
     case SuperstructureState::LOADED:
+      if (!position->extend_beambreak() && !position->catapult_beambreak()) {
+        state_ = SuperstructureState::IDLE;
+      }
+
       if (catapult_requested_ == true) {
         state_ = SuperstructureState::MOVING;
         break;
