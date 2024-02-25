@@ -454,13 +454,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
         set_point = simulated_robot_constants_->common()
                         ->climber_set_points()
                         ->full_extend();
-      } else if (superstructure_goal_fetcher_->climber_goal() ==
-                 ClimberGoal::HALF_EXTEND) {
-        set_point = simulated_robot_constants_->common()
-                        ->climber_set_points()
-                        ->half_extend();
       }
-
       EXPECT_NEAR(set_point,
                   superstructure_status_fetcher_->climber()->position(), 0.001);
     }
@@ -844,22 +838,6 @@ TEST_F(SuperstructureTest, ClimberTest) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_climber_goal(ClimberGoal::FULL_EXTEND);
-
-    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
-  }
-
-  RunFor(chrono::seconds(5));
-
-  VerifyNearGoal();
-
-  WaitUntilZeroed();
-
-  {
-    auto builder = superstructure_goal_sender_.MakeBuilder();
-
-    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-
-    goal_builder.add_climber_goal(ClimberGoal::HALF_EXTEND);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }

@@ -296,6 +296,7 @@ cc_binary(
         "//frc971/autonomous:auto_fbs",
         "//frc971/autonomous:base_autonomous_actor",
         "//frc971/control_loops:profiled_subsystem_fbs",
+        "//frc971/control_loops:static_zeroing_single_dof_profiled_subsystem",
         "//frc971/input:action_joystick_input",
         "//frc971/input:drivetrain_input",
         "//frc971/input:joystick_input",

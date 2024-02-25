@@ -83,10 +83,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         climber_position =
             robot_constants_->common()->climber_set_points()->full_extend();
         break;
-      case ClimberGoal::HALF_EXTEND:
-        climber_position =
-            robot_constants_->common()->climber_set_points()->half_extend();
-        break;
       case ClimberGoal::RETRACT:
         climber_position =
             robot_constants_->common()->climber_set_points()->retract();
