@@ -8,6 +8,9 @@ using frc971::control_loops::aiming::ShotConfig;
 using frc971::control_loops::aiming::ShotMode;
 using y2024::control_loops::superstructure::Aimer;
 
+// When the turret is at 0 the note will be leaving the robot at PI.
+static constexpr double kTurretZeroOffset = M_PI;
+
 Aimer::Aimer(aos::EventLoop *event_loop,
              const y2024::Constants *robot_constants)
     : event_loop_(event_loop),
@@ -65,7 +68,7 @@ void Aimer::Update(
                      robot_constants_->common()->turret()->range()),
                  interpolation_table_.Get(current_goal_.target_distance)
                      .shot_speed_over_ground,
-                 /*wrap_mode=*/0.0, /*turret_zero_offset*/ 0.0},
+                 /*wrap_mode=*/0.0, kTurretZeroOffset},
       RobotState{
           robot_pose, {xdot, ydot}, linear_angular(1), current_goal_.position});
 

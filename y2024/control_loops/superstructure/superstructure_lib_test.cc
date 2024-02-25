@@ -1239,11 +1239,13 @@ TEST_F(SuperstructureTest, AutoAim) {
 
   EXPECT_NEAR(
       -M_PI_2,
-      superstructure_status_fetcher_->shooter()->aimer()->turret_position(),
+      superstructure_status_fetcher_->shooter()->aimer()->turret_position() -
+          M_PI,
       5e-4);
-  EXPECT_NEAR(-M_PI_2,
-              superstructure_status_fetcher_->shooter()->turret()->position(),
-              5e-4);
+  EXPECT_NEAR(
+      -M_PI_2,
+      superstructure_status_fetcher_->shooter()->turret()->position() - M_PI,
+      5e-4);
 
   EXPECT_EQ(
       kDistanceFromSpeaker,
@@ -1280,11 +1282,13 @@ TEST_F(SuperstructureTest, AutoAim) {
 
   EXPECT_NEAR(
       M_PI_2,
-      superstructure_status_fetcher_->shooter()->aimer()->turret_position(),
+      superstructure_status_fetcher_->shooter()->aimer()->turret_position() +
+          M_PI,
       5e-4);
-  EXPECT_NEAR(M_PI_2,
-              superstructure_status_fetcher_->shooter()->turret()->position(),
-              5e-4);
+  EXPECT_NEAR(
+      M_PI_2,
+      superstructure_status_fetcher_->shooter()->turret()->position() + M_PI,
+      5e-4);
   EXPECT_EQ(
       kDistanceFromSpeaker,
       superstructure_status_fetcher_->shooter()->aimer()->target_distance());
