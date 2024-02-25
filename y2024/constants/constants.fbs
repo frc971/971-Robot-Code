@@ -116,6 +116,12 @@ table RobotConstants {
   extend_constants:PotAndAbsEncoderConstants (id: 5);
 }
 
+table ShooterSetPoint {
+  turret_position: double (id: 0);
+  altitude_position: double (id: 1);
+  shot_velocity:double (id: 2);
+}
+
 table Pose {
   // Pos is a 3x1 matrix which contains the (x, y, z) component of the Pose.
   pos: frc971.fbs.Matrix (id: 0);
@@ -151,15 +157,17 @@ table Common {
   altitude:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 13);
   turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 14);
   extend:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 15);
-  extend_set_points:ExtendSetPoints (id: 16);
-  extend_roller_voltages:ExtendRollerVoltages (id: 17);
-  shooter_targets:ShooterTargets (id: 18);
-  altitude_loading_position: double (id: 19);
-  retention_roller_voltages:RetentionRollerVoltages (id: 20);
-  min_altitude_shooting_angle: double (id: 21);
+  extend_roller_voltages:ExtendRollerVoltages (id: 16);
+  shooter_targets:ShooterTargets (id: 17);
+  altitude_loading_position: double (id: 18);
+  retention_roller_voltages:RetentionRollerVoltages (id: 19);
+  min_altitude_shooting_angle: double (id: 20);
+  shooter_speaker_set_point: ShooterSetPoint (id: 21);
+  shooter_podium_set_point: ShooterSetPoint (id: 22);
+    extend_set_points:ExtendSetPoints (id: 23);
   // The position to move the turret to when avoiding collision
   // with the extend when the extend is moving to amp/trap position.
-  turret_avoid_extend_collision_position: double (id: 22);
+  turret_avoid_extend_collision_position: double (id: 24);
 }
 
 table Constants {

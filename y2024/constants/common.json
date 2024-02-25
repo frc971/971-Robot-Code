@@ -216,6 +216,17 @@
     "retaining": 1.5,
     "spitting": -6.0
   },
+  // TODO(Filip): Update the speaker and amp shooter setpoints
+  "shooter_speaker_set_point": {
+    "turret_position": 0.0,
+    "altitude_position": 0.0,
+    "shot_velocity": 0.0
+  },
+  "shooter_podium_set_point":{
+    "turret_position": 0.0,
+    "altitude_position": 0.0,
+    "shot_velocity": 0.0
+  },
   "extend_set_points": {
     "trap": 0.2,
     "amp": 0.3,
