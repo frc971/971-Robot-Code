@@ -7,8 +7,10 @@ CANSensorReader::CANSensorReader(
     aos::EventLoop *event_loop,
     std::vector<ctre::phoenix6::BaseStatusSignal *> signals_registry,
     std::vector<std::shared_ptr<TalonFX>> talonfxs,
-    std::function<void(ctre::phoenix::StatusCode status)> flatbuffer_callback)
+    std::function<void(ctre::phoenix::StatusCode status)> flatbuffer_callback,
+    SignalSync sync)
     : event_loop_(event_loop),
+      sync_(sync),
       signals_(signals_registry.begin(), signals_registry.end()),
       talonfxs_(talonfxs),
       flatbuffer_callback_(flatbuffer_callback) {
@@ -28,8 +30,12 @@ CANSensorReader::CANSensorReader(
 }
 
 void CANSensorReader::Loop() {
-  ctre::phoenix::StatusCode status =
-      ctre::phoenix6::BaseStatusSignal::WaitForAll(20_ms, signals_);
+  ctre::phoenix::StatusCode status;
+  if (sync_ == SignalSync::kDoSync) {
+    status = ctre::phoenix6::BaseStatusSignal::WaitForAll(20_ms, signals_);
+  } else {
+    status = ctre::phoenix6::BaseStatusSignal::RefreshAll(signals_);
+  }
 
   if (!status.IsOK()) {
     AOS_LOG(ERROR, "Failed to read signals from talonfx motors: %s: %s",

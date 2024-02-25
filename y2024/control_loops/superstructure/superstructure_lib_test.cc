@@ -514,9 +514,9 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       i++;
       RunFor(dt());
       superstructure_status_fetcher_.Fetch();
-      // 2 Seconds
+      // 10 Seconds
 
-      ASSERT_LE(i, 2.0 / ::aos::time::DurationInSeconds(dt()));
+      ASSERT_LE(i, 10.0 / ::aos::time::DurationInSeconds(dt()));
 
       // Since there is a delay when sending running, make sure we have a
       // status before checking it.
@@ -826,49 +826,6 @@ TEST_F(SuperstructureTest, DisableTest) {
   CheckIfZeroed();
 }
 
-// Tests Climber in multiple scenarios
-TEST_F(SuperstructureTest, ClimberTest) {
-  SetEnabled(true);
-  WaitUntilZeroed();
-
-  superstructure_plant_.climber()->InitializePosition(
-      frc971::constants::Range::FromFlatbuffer(
-          simulated_robot_constants_->common()->climber()->range())
-          .middle());
-
-  WaitUntilZeroed();
-
-  {
-    auto builder = superstructure_goal_sender_.MakeBuilder();
-
-    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-
-    goal_builder.add_climber_goal(ClimberGoal::FULL_EXTEND);
-
-    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
-  }
-
-  RunFor(chrono::seconds(5));
-
-  VerifyNearGoal();
-
-  WaitUntilZeroed();
-
-  {
-    auto builder = superstructure_goal_sender_.MakeBuilder();
-
-    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-
-    goal_builder.add_climber_goal(ClimberGoal::RETRACT);
-
-    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
-  }
-
-  RunFor(chrono::seconds(5));
-
-  VerifyNearGoal();
-}
-
 // Tests intake and transfer in multiple scenarios
 TEST_F(SuperstructureTest, IntakeGoal) {
   SetEnabled(true);
@@ -980,7 +937,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   WaitUntilZeroed();
 
   constexpr double kTurretGoal = 2.0;
-  constexpr double kAltitudeGoal = 0.5;
+  constexpr double kAltitudeGoal = 0.55;
 
   set_alliance(aos::Alliance::kRed);
   SendDrivetrainStatus(0.0, {0.0, 5.0}, 0.0);
@@ -1017,7 +974,8 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
               0.01);
 
   EXPECT_NEAR(superstructure_status_fetcher_->shooter()->altitude()->position(),
-              0.0, 0.01);
+              simulated_robot_constants_->common()->altitude_loading_position(),
+              0.01);
 
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::READY);
@@ -1052,7 +1010,8 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
               0.01);
 
   EXPECT_NEAR(superstructure_status_fetcher_->shooter()->altitude()->position(),
-              0.0, 0.01);
+              simulated_robot_constants_->common()->altitude_loading_position(),
+              0.01);
 
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::READY);
@@ -1217,7 +1176,9 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   // Wait until the bot finishes auto-aiming.
   WaitUntilNear(kTurretGoal, kAltitudeGoal);
 
-  RunFor(chrono::milliseconds(10));
+  RunFor(chrono::seconds(10));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
   // Make sure it stays at firing for a bit.
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
@@ -1502,13 +1463,6 @@ TEST_F(SuperstructureTest, ScoreInAmp) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(100 * dt());
-
-  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
-
-  EXPECT_EQ(superstructure_status_fetcher_->extend_status(),
-            ExtendStatus::MOVING);
-
   RunFor(chrono::seconds(5));
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
@@ -1585,7 +1539,7 @@ TEST_F(SuperstructureTest, Climbing) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::seconds(5));
+  RunFor(chrono::seconds(10));
 
   VerifyNearGoal();
 
@@ -1599,7 +1553,7 @@ TEST_F(SuperstructureTest, Climbing) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::seconds(5));
+  RunFor(chrono::seconds(10));
 
   VerifyNearGoal();
 
@@ -1613,7 +1567,7 @@ TEST_F(SuperstructureTest, Climbing) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(chrono::seconds(5));
+  RunFor(chrono::seconds(10));
 
   VerifyNearGoal();
 

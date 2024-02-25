@@ -2,6 +2,7 @@ namespace y2024.control_loops.superstructure;
 
 table Output {
     // Voltage of rollers on intake
+    // Positive means intaking a game piece.
     intake_roller_voltage:double (id: 0);
 
     // Voltage of intake pivot

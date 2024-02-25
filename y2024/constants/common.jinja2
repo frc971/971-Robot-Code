@@ -6,8 +6,8 @@
 {# we do this here so we keep the encoder ratio in plaintext and also keep the math we're using. #}
 {% set intake_pivot_encoder_ratio = (15.0 / 24.0) %}
 
-{% set intake_upper = 2.1 %}
-{% set intake_lower = 0.1 %}
+{% set intake_upper = 1.75 %}
+{% set intake_lower = -0.195 %}
 
 {%
 set intake_pivot_zero = {
@@ -33,7 +33,7 @@ set extend_zero = {
 %}
 
 {% set climber_encoder_ratio = (16.0 / 60.0) %}
-{% set climber_circumference = 16.0 * 0.25 / 2.0 / pi * 0.0254 %}
+{% set climber_circumference = 16.0 * 0.25 * 0.0254 %}
 {%
 set climber_zero = {
     "average_filter_size": zeroing_sample_size,

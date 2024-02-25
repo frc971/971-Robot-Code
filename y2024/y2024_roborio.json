@@ -151,7 +151,7 @@
       "source_node": "roborio",
       "frequency": 220,
       "num_senders": 2,
-      "max_size": 608
+      "max_size": 1024
     },
     {
       "name": "/superstructure/rio",
@@ -159,7 +159,7 @@
       "source_node": "roborio",
       "frequency": 220,
       "num_senders": 2,
-      "max_size": 608
+      "max_size": 1024
     },
     {
       "name": "/can",

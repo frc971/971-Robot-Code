@@ -83,6 +83,8 @@ table CurrentLimits {
   retention_roller_supply_current_limit:double (id: 18);
   retention_roller_stator_current_limit:double (id: 19);
   slower_retention_roller_stator_current_limit:double (id: 20);
+  catapult_supply_current_limit:double (id: 21);
+  catapult_stator_current_limit:double (id: 22);
 }
 
 table TransferRollerVoltages {
@@ -162,6 +164,7 @@ table Common {
   altitude_loading_position: double (id: 18);
   retention_roller_voltages:RetentionRollerVoltages (id: 19);
   min_altitude_shooting_angle: double (id: 20);
+  max_altitude_shooting_angle: double (id: 25);
   shooter_speaker_set_point: ShooterSetPoint (id: 21);
   shooter_podium_set_point: ShooterSetPoint (id: 22);
     extend_set_points:ExtendSetPoints (id: 23);

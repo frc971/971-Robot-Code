@@ -31,12 +31,9 @@ class CollisionAvoidance {
     bool operator!=(const Status &s) const { return !(*this == s); }
   };
 
-  // Reference angles between which the turret will be careful
-  static constexpr double kCollisionZoneTurret = M_PI * 7.0 / 18.0;
-
   // For the turret, 0 rad is pointing straight forwards
-  static constexpr double kMinCollisionZoneTurret = 0.07;
-  static constexpr double kMaxCollisionZoneTurret = 2.1;
+  static constexpr double kMinCollisionZoneTurret = 0.15;
+  static constexpr double kMaxCollisionZoneTurret = 1.15;
 
   // Maximum position of the intake to avoid collisions
   static constexpr double kCollisionZoneIntake = 1.6;
