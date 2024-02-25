@@ -25,11 +25,18 @@ table, th, td {
   border-collapse: collapse;
   padding: 5px;
   margin: 10px;
+  table-layout: fixed;
+  width: 450px;
+  overflow: hidden;
 }
 
 th, td {
-  text-align: right;
+  text-align: left;
   width: 70px;
+}
+
+table:first-child {
+  text-align: center;
 }
 
 td:first-child {

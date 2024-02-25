@@ -9,7 +9,7 @@
     <div id="readouts">
       <table>
         <tr>
-          <th colspan="2">Robot State</th>
+          <th colspan="2" style="text-align: center;">Robot State</th>
         </tr>
         <tr>
           <td>X</td>
@@ -27,7 +27,7 @@
 
       <table>
         <tr>
-          <th colspan="2">Images</th>
+          <th colspan="2" style="text-align: center;">Images</th>
         </tr>
         <tr>
           <td> Images Accepted </td>
@@ -35,25 +35,141 @@
         </tr>
       </table>
 
-      <table>
-        <tr>
-          <th colspan="2">Superstructure</th>
-    </tr>
-    <!-- TODO: Add superstructure state -->
-  </table>
-  <table>
+    <table>
     <tr>
-      <th colspan="2">Game Piece</th>
+      <th colspan="2" style="text-align: center;">Superstructure</th>
     </tr>
     <tr>
-      <td>Game Piece Held</td>
-      <td id="game_piece"> NA </td>
+      <td>Superstructure State</td>
+      <td id="superstructure_state"> NA </td>
     </tr>
     <tr>
-      <td>Game Piece Position (+ = left, 0 = empty)</td>
-      <td id="game_piece_position"> NA </td>
+      <td>Intake Roller State</td>
+      <td id="intake_roller_state"> NA </td>
     </tr>
-  </table>
+    <tr>
+      <td>Transfer Roller State</td>
+      <td id="transfer_roller_state"> NA </td>
+    </tr>
+    <tr>
+      <td>Extend State</td>
+      <td id="extend_state"> NA </td>
+    </tr>
+    <tr>
+      <td>Extend Roller State</td>
+      <td id="extend_roller_state"> NA </td>
+    </tr>
+    <tr>
+      <th colspan="2">Intake Pivot</th>
+    </tr>
+    <tr>
+      <td>Position</td>
+      <td id="intake_pivot"> NA </td>
+    </tr>
+    <tr>
+      <td>Absolute Position</td>
+      <td id="intake_pivot_abs"> NA </td>
+    </tr>
+    <tr>
+      <th colspan="2">Climber</th>
+    </tr>
+    <tr>
+      <td>Position</td>
+      <td id="climber"> NA </td>
+    </tr>
+    <tr>
+      <td>Absolute Position</td>
+      <td id="climber_abs"> NA </td>
+    </tr>
+    <tr>
+      <td>Pot Position</td>
+      <td id="climber_pot"> NA </td>
+    </tr>
+    <tr>
+      <th colspan="2">Extend</th>
+    </tr>
+    <tr>
+      <td>Position</td>
+      <td id="extend"> NA </td>
+    </tr>
+    <tr>
+      <td>Absolute Position</td>
+      <td id="extend_abs"> NA </td>
+    </tr>
+    <tr>
+      <td>Pot Position</td>
+      <td id="extend_pot"> NA </td>
+    </tr>
+    <tr>
+      <th colspan="2">Turret</th>
+    </tr>
+    <tr>
+      <td>Position</td>
+      <td id="turret"> NA </td>
+    </tr>
+    <tr>
+      <td>Absolute Position</td>
+      <td id="turret_abs"> NA </td>
+    </tr>
+    <tr>
+      <td>Pot Position</td>
+      <td id="turret_pot"> NA </td>
+    </tr>
+      <th colspan="2">Catapult</th>
+    </tr>
+    <tr>
+      <td>Catapult State</td>
+      <td id="catapult_state"> NA </td>
+    </tr>
+    <tr>
+      <td>Position</td>
+      <td id="catapult"> NA </td>
+    </tr>
+    <tr>
+      <td>Absolute Position</td>
+      <td id="catapult_abs"> NA </td>
+    </tr>
+    <tr>
+      <td>Pot Position</td>
+      <td id="catapult_pot"> NA </td>
+    </tr>
+    <tr>
+      <th colspan="2">Altitude</th>
+    </tr>
+    <tr>
+      <td>Position</td>
+      <td id="altitude"> NA </td>
+    </tr>
+    <tr>
+      <td>Absolute Position</td>
+      <td id="altitude_abs"> NA </td>
+    </tr>
+    <tr>
+      <td>Pot Position</td>
+      <td id="altitude_pot"> NA </td>
+    </tr>
+    </table>
+    <table>
+    <tr>
+      <th colspan="2" style="text-align: center;">Aimer</th>
+    </tr>
+    <tr>
+      <td>Turret Position</td>
+      <td id="turret_position"> NA </td>
+    </tr>
+    <tr>
+      <td>Turret Velocity </td>
+      <td id="turret_velocity"> NA </td>
+    </tr>
+    <tr>
+      <td>Target Distance</td>
+      <td id="target_distance"> NA </td>
+    </tr>
+    <tr>
+      <td>Shot Distance</td>
+      <td id="shot_distance"> NA </td>
+    </tr>
+  </table> 
 
   <h3>Zeroing Faults:</h3>
   <p id="zeroing_faults"> NA </p>
@@ -71,7 +187,7 @@
   </div>
   <table>
       <tr>
-        <th colspan="2"> Drivetrain Encoder Positions </th>
+        <th colspan="2" style="text-align: center;"> Drivetrain Encoder Positions </th>
       </tr>
       <tr>
         <td> Left Encoder Position</td>

@@ -6,6 +6,7 @@ import {ZeroingError} from '../../frc971/control_loops/control_loops_generated'
 import {Position as DrivetrainPosition} from '../../frc971/control_loops/drivetrain/drivetrain_position_generated'
 import {CANPosition as DrivetrainCANPosition} from '../../frc971/control_loops/drivetrain/drivetrain_can_position_generated'
 import {Status as DrivetrainStatus} from '../../frc971/control_loops/drivetrain/drivetrain_status_generated'
+import {SuperstructureState, IntakeRollerStatus, CatapultState, TransferRollerStatus, ExtendRollerStatus, ExtendStatus, Status as SuperstructureStatus} from '../control_loops/superstructure/superstructure_status_generated'
 import {LocalizerOutput} from '../../frc971/control_loops/drivetrain/localization/localizer_output_generated'
 import {TargetMap} from '../../frc971/vision/target_map_generated'
 
@@ -25,6 +26,7 @@ export class FieldHandler {
   private drivetrainStatus: DrivetrainStatus|null = null;
   private drivetrainPosition: DrivetrainPosition|null = null;
   private drivetrainCANPosition: DrivetrainCANPosition|null = null;
+  private superstructureStatus: SuperstructureStatus|null = null;
 
   private x: HTMLElement = (document.getElementById('x') as HTMLElement);
   private y: HTMLElement = (document.getElementById('y') as HTMLElement);
@@ -32,6 +34,72 @@ export class FieldHandler {
       (document.getElementById('theta') as HTMLElement);
 
   private fieldImage: HTMLImageElement = new Image();
+
+  private zeroingFaults: HTMLElement =
+      (document.getElementById('zeroing_faults') as HTMLElement);
+
+  private superstructureState: HTMLElement =
+    (document.getElementById('superstructure_state') as HTMLElement);
+
+  private intakeRollerState: HTMLElement =
+    (document.getElementById('intake_roller_state') as HTMLElement);
+  private transferRollerState: HTMLElement =
+    (document.getElementById('transfer_roller_state') as HTMLElement);
+  private extendState: HTMLElement =
+    (document.getElementById('extend_state') as HTMLElement);
+  private extendRollerState: HTMLElement =
+    (document.getElementById('extend_roller_state') as HTMLElement);
+  private catapultState: HTMLElement =
+    (document.getElementById('catapult_state') as HTMLElement);
+
+  private intakePivot: HTMLElement =
+    (document.getElementById('intake_pivot') as HTMLElement);
+  private intakePivotAbs: HTMLElement =
+    (document.getElementById('intake_pivot_abs') as HTMLElement);
+
+  private climber: HTMLElement =
+    (document.getElementById('climber') as HTMLElement);
+  private climberAbs: HTMLElement =
+    (document.getElementById('climber_abs') as HTMLElement);
+  private climberPot: HTMLElement =
+    (document.getElementById('climber_pot') as HTMLElement);
+
+  private extend: HTMLElement =
+    (document.getElementById('extend') as HTMLElement);
+  private extendAbs: HTMLElement =
+    (document.getElementById('extend_abs') as HTMLElement);
+  private extendPot: HTMLElement =
+    (document.getElementById('extend_pot') as HTMLElement);
+
+  private turret: HTMLElement =
+    (document.getElementById('turret') as HTMLElement);
+  private turretAbs: HTMLElement =
+    (document.getElementById('turret_abs') as HTMLElement);
+  private turretPot: HTMLElement =
+    (document.getElementById('turret_pot') as HTMLElement);
+
+  private catapult: HTMLElement =
+    (document.getElementById('catapult') as HTMLElement);
+  private catapultAbs: HTMLElement =
+    (document.getElementById('turret_abs') as HTMLElement);
+  private catapultPot: HTMLElement =
+    (document.getElementById('catapult_pot') as HTMLElement);
+
+  private altitude: HTMLElement =
+    (document.getElementById('altitude') as HTMLElement);
+  private altitudeAbs: HTMLElement =
+    (document.getElementById('altitude_abs') as HTMLElement);
+  private altitudePot: HTMLElement =
+    (document.getElementById('altitude_pot') as HTMLElement);
+
+  private turret_position: HTMLElement =
+    (document.getElementById('turret_position') as HTMLElement);
+  private turret_velocity: HTMLElement =
+    (document.getElementById('turret_velocity') as HTMLElement);
+  private target_distance: HTMLElement =
+    (document.getElementById('target_distance') as HTMLElement);
+  private shot_distance: HTMLElement =
+    (document.getElementById('shot_distance') as HTMLElement);
 
   private leftDrivetrainEncoder: HTMLElement =
       (document.getElementById('left_drivetrain_encoder') as HTMLElement);
@@ -69,6 +137,11 @@ export class FieldHandler {
         '/localizer', 'frc971.controls.LocalizerOutput', (data) => {
           this.handleLocalizerOutput(data);
         });
+      this.connection.addHandler(
+        '/superstructure', "y2024.control_loops.superstructure.Status",
+        (data) => {
+          this.handleSuperstructureStatus(data)
+          });
       });
   }
 
@@ -92,6 +165,11 @@ export class FieldHandler {
     this.localizerOutput = LocalizerOutput.getRootAsLocalizerOutput(fbBuffer);
   }
 
+  private handleSuperstructureStatus(data: Uint8Array): void {
+	  const fbBuffer = new ByteBuffer(data);
+	  this.superstructureStatus = SuperstructureStatus.getRootAsStatus(fbBuffer);
+  }
+
   drawField(): void {
     const ctx = this.canvas.getContext('2d');
     ctx.save();
@@ -99,6 +177,24 @@ export class FieldHandler {
     ctx.drawImage(
         this.fieldImage, 0, 0, this.fieldImage.width, this.fieldImage.height,
         -FIELD_EDGE_X, -FIELD_SIDE_Y, FIELD_LENGTH, FIELD_WIDTH);
+    ctx.restore();
+  }
+
+  drawCamera(x: number, y: number, theta: number, color: string = 'blue'):
+  void {
+    const ctx = this.canvas.getContext('2d');
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(theta);
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0.5, 0.5);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(0.5, -0.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 0.25, -Math.PI / 4, Math.PI / 4);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -134,24 +230,212 @@ export class FieldHandler {
     div.classList.remove('faulted');
     div.classList.add('zeroing');
     div.classList.remove('near');
-}
+  }
+
+  setEstopped(div: HTMLElement): void {
+    div.innerHTML = 'estopped';
+    div.classList.add('faulted');
+    div.classList.remove('zeroing');
+    div.classList.remove('near');
+  }
+
+  setTargetValue(
+      div: HTMLElement, target: number, val: number, tolerance: number): void {
+    div.innerHTML = val.toFixed(4);
+    div.classList.remove('faulted');
+    div.classList.remove('zeroing');
+    if (Math.abs(target - val) < tolerance) {
+      div.classList.add('near');
+    } else {
+      div.classList.remove('near');
+    }
+  }
 
   setValue(div: HTMLElement, val: number): void {
     div.innerHTML = val.toFixed(4);
     div.classList.remove('faulted');
     div.classList.remove('zeroing');
     div.classList.remove('near');
-}
+  }
   draw(): void {
     this.reset();
     this.drawField();
 
-    if (this.drivetrainPosition) {
-        this.leftDrivetrainEncoder.innerHTML =
-        this.drivetrainPosition.leftEncoder().toString();
+    if (this.superstructureStatus) {
+      this.superstructureState.innerHTML =
+        SuperstructureState[this.superstructureStatus.state()];
 
-        this.rightDrivetrainEncoder.innerHTML =
-        this.drivetrainPosition.rightEncoder().toString();
+      this.intakeRollerState.innerHTML =
+        IntakeRollerStatus[this.superstructureStatus.intakeRoller()];
+      this.transferRollerState.innerHTML =
+        TransferRollerStatus[this.superstructureStatus.transferRoller()];
+      this.extendState.innerHTML =
+        ExtendStatus[this.superstructureStatus.extendStatus()];
+      this.extendRollerState.innerHTML =
+        ExtendRollerStatus[this.superstructureStatus.extendRoller()];
+      this.catapultState.innerHTML =
+        CatapultState[this.superstructureStatus.shooter().catapultState()];
+
+      this.turret_position.innerHTML = this.superstructureStatus.shooter().aimer().turretPosition().toString();
+      this.turret_velocity.innerHTML = this.superstructureStatus.shooter().aimer().turretVelocity().toString();
+      this.target_distance.innerHTML = this.superstructureStatus.shooter().aimer().targetDistance().toString();
+      this.shot_distance.innerHTML = this.superstructureStatus.shooter().aimer().shotDistance().toString();
+
+      if (!this.superstructureStatus.intakePivot() ||
+          !this.superstructureStatus.intakePivot().zeroed()) {
+        this.setZeroing(this.intakePivot);
+      } else if (this.superstructureStatus.intakePivot().estopped()) {
+        this.setEstopped(this.intakePivot);
+      } else {
+        this.setTargetValue(
+            this.intakePivot,
+            this.superstructureStatus.intakePivot().unprofiledGoalPosition(),
+            this.superstructureStatus.intakePivot().estimatorState().position(),
+            1e-3);
+      }
+
+      this.intakePivotAbs.innerHTML = this.superstructureStatus.intakePivot().estimatorState().absolutePosition().toString();
+
+      if (!this.superstructureStatus.climber() ||
+          !this.superstructureStatus.climber().zeroed()) {
+        this.setZeroing(this.climber);
+      } else if (this.superstructureStatus.climber().estopped()) {
+        this.setEstopped(this.climber);
+      } else {
+        this.setTargetValue(
+            this.climber,
+            this.superstructureStatus.climber().unprofiledGoalPosition(),
+            this.superstructureStatus.climber().estimatorState().position(),
+            1e-3);
+      }
+
+      this.climberAbs.innerHTML = this.superstructureStatus.climber().estimatorState().absolutePosition().toString();
+      this.climberPot.innerHTML = this.superstructureStatus.climber().estimatorState().potPosition().toString();
+
+      if (!this.superstructureStatus.extend() ||
+          !this.superstructureStatus.extend().zeroed()) {
+        this.setZeroing(this.extend);
+      } else if (this.superstructureStatus.extend().estopped()) {
+        this.setEstopped(this.extend);
+      } else {
+        this.setTargetValue(
+            this.climber,
+            this.superstructureStatus.extend().unprofiledGoalPosition(),
+            this.superstructureStatus.extend().estimatorState().position(),
+            1e-3);
+      }
+
+      this.extendAbs.innerHTML = this.superstructureStatus.extend().estimatorState().absolutePosition().toString();
+      this.extendPot.innerHTML = this.superstructureStatus.extend().estimatorState().potPosition().toString();
+
+      if (!this.superstructureStatus.shooter().turret() ||
+          !this.superstructureStatus.shooter().turret().zeroed()) {
+        this.setZeroing(this.turret);
+      } else if (this.superstructureStatus.shooter().turret().estopped()) {
+        this.setEstopped(this.turret);
+      } else {
+        this.setTargetValue(
+            this.turret,
+            this.superstructureStatus.shooter().turret().unprofiledGoalPosition(),
+            this.superstructureStatus.shooter().turret().estimatorState().position(),
+            1e-3);
+      }
+
+      this.turretAbs.innerHTML = this.superstructureStatus.shooter().turret().estimatorState().absolutePosition().toString();
+      this.turretPot.innerHTML = this.superstructureStatus.shooter().turret().estimatorState().potPosition().toString();
+
+      if (!this.superstructureStatus.shooter().catapult() ||
+          !this.superstructureStatus.shooter().catapult().zeroed()) {
+        this.setZeroing(this.catapult);
+      } else if (this.superstructureStatus.shooter().catapult().estopped()) {
+        this.setEstopped(this.catapult);
+      } else {
+        this.setTargetValue(
+            this.catapult,
+            this.superstructureStatus.shooter().catapult().unprofiledGoalPosition(),
+            this.superstructureStatus.shooter().catapult().estimatorState().position(),
+            1e-3);
+      }
+
+      this.catapultAbs.innerHTML = this.superstructureStatus.shooter().catapult().estimatorState().absolutePosition().toString();
+      this.catapultPot.innerHTML = this.superstructureStatus.shooter().catapult().estimatorState().potPosition().toString();
+
+      if (!this.superstructureStatus.shooter().altitude() ||
+          !this.superstructureStatus.shooter().altitude().zeroed()) {
+        this.setZeroing(this.altitude);
+      } else if (this.superstructureStatus.shooter().altitude().estopped()) {
+        this.setEstopped(this.altitude);
+      } else {
+        this.setTargetValue(
+            this.altitude,
+            this.superstructureStatus.shooter().altitude().unprofiledGoalPosition(),
+            this.superstructureStatus.shooter().altitude().estimatorState().position(),
+            1e-3);
+      }
+
+      this.altitudeAbs.innerHTML = this.superstructureStatus.shooter().altitude().estimatorState().absolutePosition().toString();
+      this.altitudePot.innerHTML = this.superstructureStatus.shooter().altitude().estimatorState().potPosition().toString();
+
+      let zeroingErrors: string = 'Intake Pivot Errors:' +
+          '<br/>';
+      for (let i = 0; i < this.superstructureStatus.intakePivot()
+                              .estimatorState()
+                              .errorsLength();
+           i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.intakePivot()
+                                          .estimatorState()
+                                          .errors(i)] +
+            '<br/>';
+      }
+      zeroingErrors += '<br/>' +
+          'Climber Errors:' +
+          '<br/>';
+      for (let i = 0; i < this.superstructureStatus.climber().estimatorState().errorsLength();
+           i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.climber().estimatorState().errors(i)] +
+            '<br/>';
+      }
+      zeroingErrors += '<br/>' +
+          'Extend Errors:' +
+          '<br/>';
+      for (let i = 0; i < this.superstructureStatus.extend().estimatorState().errorsLength();
+           i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.extend().estimatorState().errors(i)] +
+            '<br/>';
+      }
+      zeroingErrors += '<br/>' +
+          'Turret Errors:' +
+          '<br/>';
+      for (let i = 0; i < this.superstructureStatus.shooter().turret().estimatorState().errorsLength();
+           i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.shooter().turret().estimatorState().errors(i)] +
+            '<br/>';
+      }
+      zeroingErrors += '<br/>' +
+          'Catapult Errors:' +
+          '<br/>';
+      for (let i = 0; i < this.superstructureStatus.shooter().catapult().estimatorState().errorsLength();
+           i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.shooter().catapult().estimatorState().errors(i)] +
+            '<br/>';
+      }
+      zeroingErrors += '<br/>' +
+          'Altitude Errors:' +
+          '<br/>';
+      for (let i = 0; i < this.superstructureStatus.shooter().altitude().estimatorState().errorsLength();
+           i++) {
+        zeroingErrors += ZeroingError[this.superstructureStatus.shooter().altitude().estimatorState().errors(i)] +
+            '<br/>';
+      }
+      this.zeroingFaults.innerHTML = zeroingErrors;
+    }
+
+    if (this.drivetrainPosition) {
+      this.leftDrivetrainEncoder.innerHTML =
+      this.drivetrainPosition.leftEncoder().toString();
+
+      this.rightDrivetrainEncoder.innerHTML =
+      this.drivetrainPosition.rightEncoder().toString();
     }
 
     if (this.drivetrainCANPosition) {
@@ -191,6 +475,7 @@ export class FieldHandler {
           this.localizerOutput.x(), this.localizerOutput.y(),
           this.localizerOutput.theta());
     }
+
     window.requestAnimationFrame(() => this.draw());
   }
 
