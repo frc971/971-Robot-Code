@@ -51,7 +51,7 @@ table IntakePivotSetPoints {
 // and retracted, which represents meters for when ClimberGoal is RETRACT
 table ClimberSetPoints {
   full_extend:double (id: 0);
-  half_extend:double (id: 1);
+  stowed:double (id: 1);
   retract:double (id: 2);
 }
 

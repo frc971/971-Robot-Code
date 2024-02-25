@@ -455,6 +455,12 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
                         ->climber_set_points()
                         ->full_extend();
       }
+
+      if (superstructure_goal_fetcher_->climber_goal() == ClimberGoal::STOWED) {
+        set_point = simulated_robot_constants_->common()
+                        ->climber_set_points()
+                        ->stowed();
+      }
       EXPECT_NEAR(set_point,
                   superstructure_status_fetcher_->climber()->position(), 0.001);
     }
@@ -1562,5 +1568,56 @@ TEST_F(SuperstructureTest, ScoreInAmp) {
   EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
             ExtendRollerStatus::IDLE);
   EXPECT_EQ(superstructure_output_fetcher_->extend_roller_voltage(), 0.0);
+}
+
+TEST_F(SuperstructureTest, Climbing) {
+  SetEnabled(true);
+
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_climber_goal(ClimberGoal::STOWED);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_climber_goal(ClimberGoal::FULL_EXTEND);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_climber_goal(ClimberGoal::RETRACT);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  // TODO(max): Fill this with the logic to move the altitude and turret on the
+  // chain.
 }
 }  // namespace y2024::control_loops::superstructure::testing

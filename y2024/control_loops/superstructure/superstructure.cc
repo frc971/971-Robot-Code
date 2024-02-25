@@ -87,8 +87,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         climber_position =
             robot_constants_->common()->climber_set_points()->retract();
         break;
-      default:
-        break;
+      case ClimberGoal::STOWED:
+        climber_position =
+            robot_constants_->common()->climber_set_points()->stowed();
     }
   }
 

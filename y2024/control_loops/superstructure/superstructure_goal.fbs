@@ -18,6 +18,7 @@ enum IntakeGoal : ubyte {
 enum ClimberGoal : ubyte {
     FULL_EXTEND = 0,
     RETRACT = 1,
+    STOWED = 2,
 }
 
 table ShooterGoal {
