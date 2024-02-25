@@ -16,6 +16,7 @@
 #include "y2024/control_loops/superstructure/altitude/altitude_plant.h"
 #include "y2024/control_loops/superstructure/catapult/catapult_plant.h"
 #include "y2024/control_loops/superstructure/climber/climber_plant.h"
+#include "y2024/control_loops/superstructure/extend/extend_plant.h"
 #include "y2024/control_loops/superstructure/intake_pivot/intake_pivot_plant.h"
 #include "y2024/control_loops/superstructure/superstructure.h"
 #include "y2024/control_loops/superstructure/turret/turret_plant.h"
@@ -63,7 +64,7 @@ class SuperstructureSimulation {
             event_loop_->MakeFetcher<Status>("/superstructure")),
         superstructure_output_fetcher_(
             event_loop_->MakeFetcher<Output>("/superstructure")),
-        transfer_beambreak_(false),
+        extend_beambreak_(false),
         catapult_beambreak_(false),
         intake_pivot_(
             new CappedTestPlant(intake_pivot::MakeIntakePivotPlant()),
@@ -158,6 +159,26 @@ class SuperstructureSimulation {
                 ->turret_constants()
                 ->zeroing_constants()
                 ->measured_absolute_position(),
+            dt_),
+        extend_(
+            new CappedTestPlant(extend::MakeExtendPlant()),
+            PositionSensorSimulator(simulated_robot_constants->robot()
+                                        ->extend_constants()
+                                        ->zeroing_constants()
+                                        ->one_revolution_distance()),
+            {.subsystem_params = {simulated_robot_constants->common()->extend(),
+                                  simulated_robot_constants->robot()
+                                      ->extend_constants()
+                                      ->zeroing_constants()},
+             .potentiometer_offset = simulated_robot_constants->robot()
+                                         ->extend_constants()
+                                         ->potentiometer_offset()},
+            frc971::constants::Range::FromFlatbuffer(
+                simulated_robot_constants->common()->extend()->range()),
+            simulated_robot_constants->robot()
+                ->extend_constants()
+                ->zeroing_constants()
+                ->measured_absolute_position(),
             dt_) {
     intake_pivot_.InitializePosition(
         frc971::constants::Range::FromFlatbuffer(
@@ -179,6 +200,11 @@ class SuperstructureSimulation {
         frc971::constants::Range::FromFlatbuffer(
             simulated_robot_constants->common()->turret()->range())
             .middle());
+    extend_.InitializePosition(
+        frc971::constants::Range::FromFlatbuffer(
+            simulated_robot_constants->common()->extend()->range())
+            .middle());
+
     phased_loop_handle_ = event_loop_->AddPhasedLoop(
         [this](int) {
           // Skip this the first time.
@@ -203,6 +229,9 @@ class SuperstructureSimulation {
             turret_.Simulate(
                 superstructure_output_fetcher_->turret_voltage(),
                 superstructure_status_fetcher_->shooter()->turret());
+
+            extend_.Simulate(superstructure_output_fetcher_->extend_voltage(),
+                             superstructure_status_fetcher_->extend());
           }
           first_ = false;
           SendPositionMessage();
@@ -241,23 +270,27 @@ class SuperstructureSimulation {
     flatbuffers::Offset<frc971::PotAndAbsolutePosition> turret_offset =
         turret_.encoder()->GetSensorValues(&turret_builder);
 
+    frc971::PotAndAbsolutePosition::Builder extend_builder =
+        builder.MakeBuilder<frc971::PotAndAbsolutePosition>();
+    flatbuffers::Offset<frc971::PotAndAbsolutePosition> extend_offset =
+        extend_.encoder()->GetSensorValues(&extend_builder);
+
     Position::Builder position_builder = builder.MakeBuilder<Position>();
 
-    position_builder.add_transfer_beambreak(transfer_beambreak_);
+    position_builder.add_extend_beambreak(extend_beambreak_);
     position_builder.add_catapult_beambreak(catapult_beambreak_);
     position_builder.add_intake_pivot(intake_pivot_offset);
     position_builder.add_catapult(catapult_offset);
     position_builder.add_altitude(altitude_offset);
     position_builder.add_turret(turret_offset);
-
     position_builder.add_climber(climber_offset);
+    position_builder.add_extend(extend_offset);
+
     CHECK_EQ(builder.Send(position_builder.Finish()),
              aos::RawSender::Error::kOk);
   }
 
-  void set_transfer_beambreak(bool triggered) {
-    transfer_beambreak_ = triggered;
-  }
+  void set_extend_beambreak(bool triggered) { extend_beambreak_ = triggered; }
 
   void set_catapult_beambreak(bool triggered) {
     catapult_beambreak_ = triggered;
@@ -269,6 +302,8 @@ class SuperstructureSimulation {
   PotAndAbsoluteEncoderSimulator *turret() { return &turret_; }
   PotAndAbsoluteEncoderSimulator *climber() { return &climber_; }
 
+  PotAndAbsoluteEncoderSimulator *extend() { return &extend_; }
+
  private:
   ::aos::EventLoop *event_loop_;
   const chrono::nanoseconds dt_;
@@ -279,7 +314,7 @@ class SuperstructureSimulation {
   ::aos::Fetcher<Status> superstructure_status_fetcher_;
   ::aos::Fetcher<Output> superstructure_output_fetcher_;
 
-  bool transfer_beambreak_;
+  bool extend_beambreak_;
   bool catapult_beambreak_;
 
   AbsoluteEncoderSimulator intake_pivot_;
@@ -287,6 +322,7 @@ class SuperstructureSimulation {
   PotAndAbsoluteEncoderSimulator catapult_;
   PotAndAbsoluteEncoderSimulator altitude_;
   PotAndAbsoluteEncoderSimulator turret_;
+  PotAndAbsoluteEncoderSimulator extend_;
 
   bool first_ = true;
 };
@@ -297,13 +333,12 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
       : ::frc971::testing::ControlLoopTest(
             aos::configuration::ReadConfig("y2024/aos_config.json"),
             std::chrono::microseconds(5050)),
-        values_(std::make_shared<constants::Values>(constants::MakeValues())),
         simulated_constants_dummy_(SendSimulationConstants(
             event_loop_factory(), 7971, "y2024/constants/test_constants.json")),
         roborio_(aos::configuration::GetNode(configuration(), "roborio")),
         logger_pi_(aos::configuration::GetNode(configuration(), "logger")),
         superstructure_event_loop(MakeEventLoop("Superstructure", roborio_)),
-        superstructure_(superstructure_event_loop.get(), (values_)),
+        superstructure_(superstructure_event_loop.get()),
         test_event_loop_(MakeEventLoop("test", roborio_)),
         constants_fetcher_(test_event_loop_.get()),
         simulated_robot_constants_(
@@ -354,11 +389,10 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
     EXPECT_FALSE(superstructure_status_fetcher_->collided());
 
-    double set_point = superstructure_status_fetcher_->intake_pivot()
-                           ->unprofiled_goal_position();
+    double set_point =
+        superstructure_status_fetcher_->intake_pivot()->goal_position();
 
-    if (superstructure_goal_fetcher_->intake_pivot_goal() ==
-        IntakePivotGoal::EXTENDED) {
+    if (superstructure_goal_fetcher_->intake_goal() == IntakeGoal::INTAKE) {
       set_point = simulated_robot_constants_->common()
                       ->intake_pivot_set_points()
                       ->extended();
@@ -366,9 +400,11 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
     EXPECT_NEAR(set_point,
                 superstructure_status_fetcher_->intake_pivot()->position(),
-                0.001);
+                0.01);
 
-    if (superstructure_goal_fetcher_->has_shooter_goal()) {
+    if (superstructure_goal_fetcher_->has_shooter_goal() &&
+        superstructure_goal_fetcher_->note_goal() != NoteGoal::AMP &&
+        superstructure_goal_fetcher_->note_goal() != NoteGoal::TRAP) {
       if (superstructure_goal_fetcher_->shooter_goal()->has_turret_position() &&
           !superstructure_goal_fetcher_->shooter_goal()->auto_aim()) {
         EXPECT_NEAR(
@@ -378,6 +414,13 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
             superstructure_status_fetcher_->shooter()->turret()->position(),
             0.001);
       }
+    } else if (superstructure_goal_fetcher_->note_goal() == NoteGoal::AMP ||
+               superstructure_goal_fetcher_->note_goal() == NoteGoal::TRAP) {
+      EXPECT_NEAR(
+          simulated_robot_constants_->common()
+              ->turret_avoid_extend_collision_position(),
+          superstructure_status_fetcher_->shooter()->turret()->position(),
+          0.001);
     }
 
     if (superstructure_goal_fetcher_->has_shooter_goal()) {
@@ -420,6 +463,27 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
       EXPECT_NEAR(set_point,
                   superstructure_status_fetcher_->climber()->position(), 0.001);
+    }
+
+    if (superstructure_goal_fetcher_->has_note_goal()) {
+      double set_point = simulated_robot_constants_->common()
+                             ->extend_set_points()
+                             ->retracted();
+      if (superstructure_goal_fetcher_->note_goal() == NoteGoal::TRAP) {
+        set_point =
+            simulated_robot_constants_->common()->extend_set_points()->trap();
+      } else if (superstructure_goal_fetcher_->note_goal() == NoteGoal::AMP) {
+        set_point =
+            simulated_robot_constants_->common()->extend_set_points()->amp();
+      } else if (superstructure_goal_fetcher_->note_goal() ==
+                 NoteGoal::CATAPULT) {
+        set_point = simulated_robot_constants_->common()
+                        ->extend_set_points()
+                        ->catapult();
+      }
+
+      EXPECT_NEAR(set_point,
+                  superstructure_status_fetcher_->extend()->position(), 0.001);
     }
   }
 
@@ -481,7 +545,6 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
     builder.CheckOk(builder.Send(drivetrain_status_builder.Finish()));
   }
 
-  std::shared_ptr<const constants::Values> values_;
   const bool simulated_constants_dummy_;
 
   const aos::Node *const roborio_;
@@ -559,7 +622,8 @@ TEST_F(SuperstructureTest, DoesNothing) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
     goal_builder.add_climber_goal(ClimberGoal::RETRACT);
     goal_builder.add_shooter_goal(shooter_goal_offset);
-    goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
+    goal_builder.add_intake_goal(IntakeGoal::NONE);
+    goal_builder.add_note_goal(NoteGoal::NONE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -591,6 +655,10 @@ TEST_F(SuperstructureTest, ReachesGoal) {
           simulated_robot_constants_->common()->climber()->range())
           .lower);
 
+  superstructure_plant_.extend()->InitializePosition(
+      frc971::constants::Range::FromFlatbuffer(
+          simulated_robot_constants_->common()->extend()->range())
+          .lower);
   WaitUntilZeroed();
 
   {
@@ -621,15 +689,19 @@ TEST_F(SuperstructureTest, ReachesGoal) {
         shooter_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_intake_pivot_goal(IntakePivotGoal::EXTENDED);
+    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
     goal_builder.add_climber_goal(ClimberGoal::FULL_EXTEND);
     goal_builder.add_shooter_goal(shooter_goal_offset);
+    goal_builder.add_note_goal(NoteGoal::NONE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
+  superstructure_plant_.set_extend_beambreak(true);
+
   // Give it a lot of time to get there.
   RunFor(chrono::seconds(15));
+
   VerifyNearGoal();
 }
 
@@ -669,12 +741,15 @@ TEST_F(SuperstructureTest, SaturationTest) {
         shooter_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_intake_pivot_goal(IntakePivotGoal::EXTENDED);
+    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
     goal_builder.add_climber_goal(ClimberGoal::FULL_EXTEND);
     goal_builder.add_shooter_goal(shooter_goal_offset);
+    goal_builder.add_note_goal(NoteGoal::AMP);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
+  superstructure_plant_.set_extend_beambreak(true);
+
   RunFor(chrono::seconds(20));
   VerifyNearGoal();
 
@@ -710,12 +785,15 @@ TEST_F(SuperstructureTest, SaturationTest) {
         shooter_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-    goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
+    goal_builder.add_intake_goal(IntakeGoal::NONE);
     goal_builder.add_climber_goal(ClimberGoal::RETRACT);
     goal_builder.add_shooter_goal(shooter_goal_offset);
+    goal_builder.add_note_goal(NoteGoal::NONE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
+
+  superstructure_plant_.set_extend_beambreak(false);
 
   RunFor(chrono::seconds(10));
   VerifyNearGoal();
@@ -738,6 +816,8 @@ TEST_F(SuperstructureTest, ZeroNoGoal) {
 
   EXPECT_EQ(PotAndAbsoluteEncoderSubsystem::State::RUNNING,
             superstructure_.shooter().altitude().state());
+  EXPECT_EQ(PotAndAbsoluteEncoderSubsystem::State::RUNNING,
+            superstructure_.extend().state());
 }
 
 // Tests that running disabled works
@@ -822,13 +902,11 @@ TEST_F(SuperstructureTest, IntakeGoal) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
-    goal_builder.add_intake_roller_goal(IntakeRollerGoal::NONE);
+    goal_builder.add_intake_goal(IntakeGoal::NONE);
+    goal_builder.add_note_goal(NoteGoal::NONE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
-
-  superstructure_plant_.set_transfer_beambreak(false);
 
   RunFor(chrono::seconds(5));
 
@@ -841,13 +919,11 @@ TEST_F(SuperstructureTest, IntakeGoal) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_intake_pivot_goal(IntakePivotGoal::EXTENDED);
-    goal_builder.add_intake_roller_goal(IntakeRollerGoal::SPIT);
+    goal_builder.add_intake_goal(IntakeGoal::SPIT);
+    goal_builder.add_note_goal(NoteGoal::NONE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
-
-  superstructure_plant_.set_transfer_beambreak(false);
 
   RunFor(chrono::seconds(5));
 
@@ -863,13 +939,11 @@ TEST_F(SuperstructureTest, IntakeGoal) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_intake_pivot_goal(IntakePivotGoal::EXTENDED);
-    goal_builder.add_intake_roller_goal(IntakeRollerGoal::INTAKE);
+    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
+    goal_builder.add_note_goal(NoteGoal::NONE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
-
-  superstructure_plant_.set_transfer_beambreak(false);
 
   RunFor(chrono::seconds(5));
 
@@ -880,12 +954,11 @@ TEST_F(SuperstructureTest, IntakeGoal) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_intake_roller_goal(IntakeRollerGoal::INTAKE);
+    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
+    goal_builder.add_note_goal(NoteGoal::NONE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
-
-  superstructure_plant_.set_transfer_beambreak(false);
 
   RunFor(chrono::seconds(5));
 
@@ -896,7 +969,17 @@ TEST_F(SuperstructureTest, IntakeGoal) {
                 ->transfer_roller_voltages()
                 ->transfer_in());
 
-  superstructure_plant_.set_transfer_beambreak(true);
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  superstructure_plant_.set_extend_beambreak(true);
 
   RunFor(chrono::seconds(2));
 
@@ -926,21 +1009,20 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
         builder.MakeBuilder<ShooterGoal>();
 
     shooter_goal_builder.add_auto_aim(true);
-    shooter_goal_builder.add_fire(false);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
+    goal_builder.add_intake_goal(IntakeGoal::NONE);
     goal_builder.add_shooter_goal(shooter_goal_offset);
+    goal_builder.add_fire(false);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   superstructure_plant_.set_catapult_beambreak(false);
-  superstructure_plant_.set_transfer_beambreak(false);
 
   RunFor(chrono::seconds(5));
 
@@ -964,21 +1046,18 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
         builder.MakeBuilder<ShooterGoal>();
 
     shooter_goal_builder.add_auto_aim(true);
-    shooter_goal_builder.add_fire(false);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_intake_pivot_goal(IntakePivotGoal::EXTENDED);
-    goal_builder.add_intake_roller_goal(IntakeRollerGoal::INTAKE);
+    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
     goal_builder.add_shooter_goal(shooter_goal_offset);
+    goal_builder.add_fire(false);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
-
-  superstructure_plant_.set_transfer_beambreak(false);
 
   RunFor(chrono::seconds(5));
 
@@ -994,32 +1073,114 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::READY);
 
-  // Signal through the transfer roller that we got it.
-  superstructure_plant_.set_transfer_beambreak(true);
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-  RunFor(chrono::seconds(5));
+    ShooterGoal::Builder shooter_goal_builder =
+        builder.MakeBuilder<ShooterGoal>();
+
+    shooter_goal_builder.add_auto_aim(true);
+
+    flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
+        shooter_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
+    goal_builder.add_shooter_goal(shooter_goal_offset);
+    goal_builder.add_note_goal(NoteGoal::NONE);
+    goal_builder.add_fire(false);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  superstructure_plant_.set_extend_beambreak(false);
+
+  RunFor(10 * dt());
 
   VerifyNearGoal();
 
+  EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
+            CatapultState::READY);
+
+  EXPECT_EQ(superstructure_status_fetcher_->extend_status(),
+            ExtendStatus::RETRACTED);
+  EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
+            ExtendRollerStatus::TRANSFERING_TO_EXTEND);
+
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 12.0);
+  EXPECT_EQ(superstructure_output_fetcher_->extend_roller_voltage(), 12.0);
+
+  superstructure_plant_.set_extend_beambreak(true);
+
+  RunFor(chrono::milliseconds(750));
+
+  VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
+            CatapultState::READY);
+
+  EXPECT_EQ(superstructure_status_fetcher_->extend_status(),
+            ExtendStatus::RETRACTED);
+  EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
+            ExtendRollerStatus::IDLE);
+
   EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
+  EXPECT_EQ(superstructure_output_fetcher_->extend_roller_voltage(), 0.0);
 
   // Verify we are in the loading position.
   EXPECT_NEAR(superstructure_status_fetcher_->shooter()->turret()->position(),
               simulated_robot_constants_->common()->turret_loading_position(),
               0.01);
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
 
-  EXPECT_NEAR(superstructure_status_fetcher_->shooter()->altitude()->position(),
-              0.0, 0.01);
+    ShooterGoal::Builder shooter_goal_builder =
+        builder.MakeBuilder<ShooterGoal>();
+
+    shooter_goal_builder.add_auto_aim(true);
+
+    flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
+        shooter_goal_builder.Finish();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_shooter_goal(shooter_goal_offset);
+    goal_builder.add_note_goal(NoteGoal::CATAPULT);
+    goal_builder.add_fire(false);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  superstructure_plant_.set_extend_beambreak(true);
+
+  RunFor(chrono::milliseconds(500));
+
+  VerifyNearGoal();
 
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::READY);
 
   superstructure_plant_.set_catapult_beambreak(true);
-  superstructure_plant_.set_transfer_beambreak(true);
+  // Set retention roller to show that we are loaded.
+  EXPECT_EQ(superstructure_status_fetcher_->extend_status(),
+            ExtendStatus::CATAPULT);
+  EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
+            ExtendRollerStatus::TRANSFERING_TO_CATAPULT);
 
-  RunFor(chrono::seconds(5));
+  superstructure_plant_.set_extend_beambreak(false);
 
-  VerifyNearGoal();
+  RunFor(chrono::seconds(10));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
+            CatapultState::LOADED);
+
+  EXPECT_EQ(superstructure_status_fetcher_->extend_status(),
+            ExtendStatus::CATAPULT);
+  EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
+            ExtendRollerStatus::IDLE);
 
   // Should now be loaded.
   EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
@@ -1053,7 +1214,6 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
         builder.MakeBuilder<ShooterGoal>();
 
     shooter_goal_builder.add_auto_aim(false);
-    shooter_goal_builder.add_fire(true);
     shooter_goal_builder.add_catapult_goal(catapult_offset);
     shooter_goal_builder.add_altitude_position(altitude_offset);
     shooter_goal_builder.add_turret_position(turret_offset);
@@ -1063,13 +1223,12 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
 
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
-    goal_builder.add_intake_pivot_goal(IntakePivotGoal::RETRACTED);
+    goal_builder.add_intake_goal(IntakeGoal::NONE);
     goal_builder.add_shooter_goal(shooter_goal_offset);
+    goal_builder.add_fire(true);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
-
-  superstructure_plant_.set_transfer_beambreak(false);
 
   // Wait until the bot finishes auto-aiming.
   WaitUntilNear(kTurretGoal, kAltitudeGoal);
@@ -1105,7 +1264,6 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
         builder.MakeBuilder<ShooterGoal>();
 
     shooter_goal_builder.add_auto_aim(false);
-    shooter_goal_builder.add_fire(false);
 
     flatbuffers::Offset<ShooterGoal> shooter_goal_offset =
         shooter_goal_builder.Finish();
@@ -1113,16 +1271,18 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_shooter_goal(shooter_goal_offset);
+    goal_builder.add_fire(false);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
   superstructure_plant_.set_catapult_beambreak(false);
-  superstructure_plant_.set_transfer_beambreak(false);
 
   RunFor(chrono::seconds(5));
 
   VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
 
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::READY);
@@ -1290,4 +1450,139 @@ TEST_F(SuperstructureTest, AutoAim) {
       superstructure_status_fetcher_->shooter()->aimer()->target_distance());
 }
 
+// Test entire sequence of loading, transfering, and scoring at amp position.
+TEST_F(SuperstructureTest, ScoreInAmp) {
+  SetEnabled(true);
+
+  WaitUntilZeroed();
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
+    goal_builder.add_note_goal(NoteGoal::NONE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::seconds(5));
+
+  VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(),
+            simulated_robot_constants_->common()
+                ->transfer_roller_voltages()
+                ->transfer_in());
+
+  EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
+            ExtendRollerStatus::TRANSFERING_TO_EXTEND);
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::INTAKING);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
+    goal_builder.add_note_goal(NoteGoal::NONE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  superstructure_plant_.set_extend_beambreak(true);
+
+  RunFor(chrono::milliseconds(10));
+
+  VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
+
+  EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
+            ExtendRollerStatus::IDLE);
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADED);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_goal(IntakeGoal::NONE);
+    goal_builder.add_note_goal(NoteGoal::AMP);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(100 * dt());
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_status_fetcher_->extend_status(),
+            ExtendStatus::MOVING);
+
+  RunFor(chrono::seconds(5));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_NEAR(superstructure_status_fetcher_->extend()->position(),
+              simulated_robot_constants_->common()->extend_set_points()->amp(),
+              0.01);
+  EXPECT_EQ(superstructure_status_fetcher_->extend_status(), ExtendStatus::AMP);
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::READY);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_goal(IntakeGoal::NONE);
+    goal_builder.add_note_goal(NoteGoal::AMP);
+    goal_builder.add_fire(true);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  superstructure_plant_.set_extend_beambreak(true);
+
+  RunFor(chrono::milliseconds(10));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
+            ExtendRollerStatus::SCORING_IN_AMP);
+  EXPECT_EQ(superstructure_output_fetcher_->extend_roller_voltage(), 12.0);
+
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_goal(IntakeGoal::NONE);
+    goal_builder.add_note_goal(NoteGoal::AMP);
+    goal_builder.add_fire(false);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  superstructure_plant_.set_extend_beambreak(false);
+
+  RunFor(chrono::milliseconds(100));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+  ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
+
+  EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
+            ExtendRollerStatus::IDLE);
+  EXPECT_EQ(superstructure_output_fetcher_->extend_roller_voltage(), 0.0);
+}
 }  // namespace y2024::control_loops::superstructure::testing

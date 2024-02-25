@@ -3,6 +3,27 @@ include "frc971/control_loops/profiled_subsystem.fbs";
 
 namespace y2024.control_loops.superstructure;
 
+enum SuperstructureState : ubyte {
+  // Before a note has been intaked, the extend should be retracted.
+  IDLE = 0,
+  // Intaking a note and transferring it to the extned through the 
+  // intake, transfer, and extend rollers.
+  INTAKING = 1,
+  // The note is in the extend and the extend is not moving.
+  LOADED = 2,
+  // The note is in the extend and the extend is moving towards a goal, 
+  // either the catapult, amp, or trap.
+  MOVING = 3,
+  // For Catapult Path, the note is being transferred between the extend and the catapult.
+  LOADING_CATAPULT = 4,
+  // The note is either:
+  // 1. Loaded in the catapult and ready to fire
+  // 2. In the extend and the extend is at the amp or trap scoring position.
+  READY = 5,
+  // Fire goal recieved and the note is being fired from the catapult or being scored in the amp or trap.
+  FIRING = 6,
+}
+
 // Contains if intake is intaking
 enum IntakeRollerStatus : ubyte {
   NONE = 0,
@@ -57,11 +78,30 @@ enum TransferRollerStatus : ubyte {
 }
 
 // Contains status of extend rollers
-// HAS_GAME_PIECE means we have a game piece
-// EMPTY means we don't have a game piece
 enum ExtendRollerStatus: ubyte {
-  HAS_GAME_PIECE = 0,
-  EMPTY = 1
+  // Means the rollers are not moving.
+  IDLE = 0,
+  // Means we're transfer from the transfer rollers into the extend rollers.
+  TRANSFERING_TO_EXTEND = 1,
+  // Means we are transfering from the extend to the catapult.
+  TRANSFERING_TO_CATAPULT = 2,
+  // Means we're trying to score in the amp/trap
+  SCORING_IN_AMP = 3,
+  SCORING_IN_TRAP = 4,
+}
+
+// Contains the status of the extend subsystem
+enum ExtendStatus : ubyte  {
+  // Means we are near 0 and ready to transfer a game piece.
+  RETRACTED = 0,
+  // Means we are moving to some goal.
+  MOVING = 1,
+  // Means we are currently at the catapult.
+  CATAPULT = 2,
+  // Means we are at the amp position.
+  AMP = 3,
+  // Means we are at the trap positon.
+  TRAP = 4,
 }
 
 table Status {
@@ -71,29 +111,33 @@ table Status {
   // If true, we have aborted. This is the or of all subsystem estops.
   estopped:bool (id: 1);
 
+  state : SuperstructureState (id: 2);
+
   // Status of the rollers
-  intake_roller:IntakeRollerStatus (id: 2);
+  intake_roller:IntakeRollerStatus (id: 3);
 
   // Estimated angle and angular velocitiy of the intake.
-  intake_pivot:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 3);
+  intake_pivot:frc971.control_loops.AbsoluteEncoderProfiledJointStatus (id: 4);
 
   // Status of transfer rollers
-  transfer_roller:TransferRollerStatus (id: 4);
+  transfer_roller:TransferRollerStatus (id: 5);
 
   // Estimated angle and angular velocitiy of the climber.
-  climber:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 5);
+  climber:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 6);
 
   // Status of the subsytems involved in the shooter
-  shooter:ShooterStatus (id: 6);
+  shooter:ShooterStatus (id: 7);
 
   // Estimated angle and angular velocitiy of the extend.
-  extend:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 7);
+  extend:frc971.control_loops.PotAndAbsoluteEncoderProfiledJointStatus (id: 8);
 
   // State of the extender rollers
-  extend_roller:ExtendRollerStatus (id: 8);
+  extend_roller:ExtendRollerStatus (id: 9);
 
   // The status of if the turret and intake is colliding
-  collided: bool (id: 9);
+  collided: bool (id: 10);
+
+  extend_status:ExtendStatus (id: 11);
 }
 
 root_type Status;

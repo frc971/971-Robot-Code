@@ -48,8 +48,7 @@ int main(int argc, char **argv) {
 
   roborio->OnStartup([roborio]() {
     roborio->AlwaysStart<y2024::control_loops::superstructure::Superstructure>(
-        "superstructure", std::make_shared<y2024::constants::Values>(
-                              y2024::constants::MakeValues()));
+        "superstructure");
   });
 
   std::unique_ptr<aos::EventLoop> print_loop = roborio->MakeEventLoop("print");

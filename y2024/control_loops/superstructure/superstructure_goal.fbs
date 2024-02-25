@@ -3,26 +3,13 @@ include "frc971/control_loops/catapult/catapult_goal.fbs";
 
 namespace y2024.control_loops.superstructure;
 
-// Represents goal for intake rollers
-enum IntakeRollerGoal : ubyte {
+// Represents goal for the intake pivot and rollers
+// INTAKE will extend the pivot and turn on the rollers to intake the note.
+// SPIT will extend the pivot and turn on the rollers (in reverse) to spit out the note.
+enum IntakeGoal : ubyte {
     NONE = 0,
-    SPIT = 1,
-    INTAKE = 2,
-}
-
-// Represents goal for pivot on intake
-enum IntakePivotGoal : ubyte {
-    RETRACTED = 0,
-    EXTENDED = 1,
-}
-
-// Represents goal of transfer rollers
-// TRANSFER_IN is for transfering game piece in from the intake to the shooter
-// TRANSFER_OUT is for transfering game piece out to the intake for spitting
-enum TransferRollerGoal : ubyte {
-    NONE = 0,
-    TRANSFER_IN = 1,
-    TRANSFER_OUT = 2,
+    INTAKE = 1,
+    SPIT = 2,
 }
 
 // Represents goal for climber
@@ -37,45 +24,39 @@ enum ClimberGoal : ubyte {
 
 table ShooterGoal {
     catapult_goal:frc971.control_loops.catapult.CatapultGoal (id: 0);
-    fire: bool (id: 1);
-    // If true we ignore the other provided positions
-    auto_aim: bool (id: 2);
+    auto_aim: bool (id: 1);
 
     // Position for the turret when we aren't auto aiming
-    turret_position: frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 3);
+    turret_position: frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 2);
 
     // Position for the altitude when we aren't auto aiming
-    altitude_position: frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 4);
+    altitude_position: frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemGoal (id: 3);
 
      // If true, we started with the ball loaded and should proceed to that state.
-    preloaded:bool = false (id: 5);
+    preloaded:bool = false (id: 4);
 }
 
-// Represents goal for extend
-// RETRACT is for retracting the extender to stowed position
-// In the retracted position, the game piece may be transfered to the catapult
-// AMP is for extending the extender to the AMP scoring position
-// TRAP is for extending the extender to the TRAP scoring position
-enum ExtendGoal : ubyte {
-    RETRACT = 0,
+// Represents goal for the note movement through the robot 
+// to various scoring positions
+// NONE represents no goal for the note
+// AMP represents the goal to move the note and the extend to the AMP scoring position
+// TRAP represents the goal to move the note and the extend to the TRAP scoring position
+// CATAPULT represents the goal to load the note in the catapult.
+// It will complete the catapult goal before accepting new goals.
+enum NoteGoal : ubyte {
+    NONE = 0,
     AMP = 1,
     TRAP = 2,
+    CATAPULT = 3,
 }
 
-enum ExtendRollerGoal : ubyte {
-    NONE = 0,
-    SCORING = 1,
-    REVERSING = 2,
-}
 
 table Goal {
-    intake_roller_goal:IntakeRollerGoal (id: 0);
-    intake_pivot_goal:IntakePivotGoal (id: 1);
-    catapult_goal:frc971.control_loops.catapult.CatapultGoal (id: 2);
-    transfer_roller_goal:TransferRollerGoal (id: 3);
-    climber_goal:ClimberGoal (id: 4);
-    shooter_goal:ShooterGoal (id: 5);
-    extend_goal:ExtendGoal (id: 6);
-    extend_roller_goal:ExtendRollerGoal (id: 7);
+    intake_goal:IntakeGoal = NONE (id: 0);
+    catapult_goal:frc971.control_loops.catapult.CatapultGoal (id: 1);
+    climber_goal:ClimberGoal (id: 2);
+    shooter_goal:ShooterGoal (id: 3);
+    note_goal:NoteGoal (id: 4);
+    fire: bool (id: 5);
 }
 root_type Goal;

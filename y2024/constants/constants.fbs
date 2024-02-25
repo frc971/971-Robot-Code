@@ -97,8 +97,14 @@ table ExtendRollerVoltages {
 
 // Extend positions
 table ExtendSetPoints {
-  extended:double (id: 0);
-  retracted:double (id: 1);
+  // The position which lets us score on the trap.
+  trap:double (id: 0);
+  // The position which lets us score on the amp.
+  amp:double (id: 1);
+  // The position which lets us transfer into the catapult.
+  catapult:double (id: 2);
+  // The position near 0 where we are ready to intake a note.
+  retracted:double (id: 3);
 }
 
 table RobotConstants {
@@ -145,13 +151,15 @@ table Common {
   altitude:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 13);
   turret:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 14);
   extend:frc971.control_loops.StaticZeroingSingleDOFProfiledSubsystemCommonParams (id: 15);
-  extend_setpoints:ExtendSetPoints (id: 16);
+  extend_set_points:ExtendSetPoints (id: 16);
   extend_roller_voltages:ExtendRollerVoltages (id: 17);
   shooter_targets:ShooterTargets (id: 18);
   altitude_loading_position: double (id: 19);
   retention_roller_voltages:RetentionRollerVoltages (id: 20);
-
   min_altitude_shooting_angle: double (id: 21);
+  // The position to move the turret to when avoiding collision
+  // with the extend when the extend is moving to amp/trap position.
+  turret_avoid_extend_collision_position: double (id: 22);
 }
 
 table Constants {

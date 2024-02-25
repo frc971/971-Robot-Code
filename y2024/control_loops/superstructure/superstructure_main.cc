@@ -17,10 +17,7 @@ int main(int argc, char **argv) {
 
   frc971::constants::WaitForConstants<y2024::Constants>(&config.message());
 
-  std::shared_ptr<const y2024::constants::Values> values =
-      std::make_shared<const y2024::constants::Values>(
-          y2024::constants::MakeValues());
-  Superstructure superstructure(&event_loop, values);
+  Superstructure superstructure(&event_loop);
 
   event_loop.Run();
 

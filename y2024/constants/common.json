@@ -215,5 +215,12 @@
   "retention_roller_voltages": {
     "retaining": 1.5,
     "spitting": -6.0
-  }
+  },
+  "extend_set_points": {
+    "trap": 0.2,
+    "amp": 0.3,
+    "catapult": 0.1,
+    "retracted": 0.0
+  },
+  "turret_avoid_extend_collision_position": 1.0
 }
