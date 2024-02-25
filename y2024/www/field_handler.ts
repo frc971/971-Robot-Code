@@ -276,10 +276,25 @@ export class FieldHandler {
       this.catapultState.innerHTML =
         CatapultState[this.superstructureStatus.shooter().catapultState()];
 
-      this.turret_position.innerHTML = this.superstructureStatus.shooter().aimer().turretPosition().toString();
-      this.turret_velocity.innerHTML = this.superstructureStatus.shooter().aimer().turretVelocity().toString();
-      this.target_distance.innerHTML = this.superstructureStatus.shooter().aimer().targetDistance().toString();
-      this.shot_distance.innerHTML = this.superstructureStatus.shooter().aimer().shotDistance().toString();
+      if (this.superstructureStatus.shooter() &&
+          this.superstructureStatus.shooter().aimer()) {
+        this.turret_position.innerHTML = this.superstructureStatus.shooter()
+                                             .aimer()
+                                             .turretPosition()
+                                             .toString();
+        this.turret_velocity.innerHTML = this.superstructureStatus.shooter()
+                                             .aimer()
+                                             .turretVelocity()
+                                             .toString();
+        this.target_distance.innerHTML = this.superstructureStatus.shooter()
+                                             .aimer()
+                                             .targetDistance()
+                                             .toString();
+        this.shot_distance.innerHTML = this.superstructureStatus.shooter()
+                                           .aimer()
+                                           .shotDistance()
+                                           .toString();
+      }
 
       if (!this.superstructureStatus.intakePivot() ||
           !this.superstructureStatus.intakePivot().zeroed()) {
@@ -319,7 +334,7 @@ export class FieldHandler {
         this.setEstopped(this.extend);
       } else {
         this.setTargetValue(
-            this.climber,
+            this.extend,
             this.superstructureStatus.extend().unprofiledGoalPosition(),
             this.superstructureStatus.extend().estimatorState().position(),
             1e-3);
