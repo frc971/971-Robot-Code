@@ -99,6 +99,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     if (state_ != SuperstructureState::READY &&
         state_ != SuperstructureState::FIRING) {
       state_ = SuperstructureState::READY;
+      catapult_requested_ = true;
     }
   }
 
@@ -137,7 +138,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   // Checks if the extend is close enough to the retracted position to be
   // considered ready to accept note from the transfer rollers.
-  const bool extend_ready_for_transfer = PositionNear(
+  const bool extend_at_retracted = PositionNear(
       extend_.position(), extend_set_points->retracted(), kExtendThreshold);
 
   // If true, the turret should be moved to the position to avoid collision with
@@ -171,7 +172,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
     case SuperstructureState::IDLE:
       if (unsafe_goal != nullptr &&
           unsafe_goal->intake_goal() == IntakeGoal::INTAKE &&
-          extend_ready_for_transfer) {
+          extend_at_retracted) {
         state_ = SuperstructureState::INTAKING;
       }
       extend_goal = ExtendStatus::RETRACTED;
@@ -282,7 +283,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
             case NoteGoal::NONE:
               extend_goal = ExtendStatus::RETRACTED;
               move_turret_to_standby = true;
-              if (extend_ready_for_transfer) {
+              if (extend_at_retracted) {
                 state_ = SuperstructureState::LOADED;
               }
               break;

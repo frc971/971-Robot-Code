@@ -630,6 +630,10 @@ TEST_F(SuperstructureTest, DoesNothing) {
   RunFor(chrono::seconds(10));
 
   VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
+  EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
+            CatapultState::READY);
 }
 
 // Tests that loops can reach a goal.
@@ -703,6 +707,9 @@ TEST_F(SuperstructureTest, ReachesGoal) {
   RunFor(chrono::seconds(15));
 
   VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADED);
 }
 
 // Makes sure that the voltage on a motor is properly pulled back after
@@ -753,6 +760,9 @@ TEST_F(SuperstructureTest, SaturationTest) {
   RunFor(chrono::seconds(20));
   VerifyNearGoal();
 
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::READY);
+
   // Try a low acceleration move with a high max velocity and verify the
   // acceleration is capped like expected.
   {
@@ -797,6 +807,9 @@ TEST_F(SuperstructureTest, SaturationTest) {
 
   RunFor(chrono::seconds(10));
   VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADED);
 }
 
 // Tests that the loop zeroes when run for a while without a goal.
@@ -896,6 +909,8 @@ TEST_F(SuperstructureTest, IntakeGoal) {
 
   VerifyNearGoal();
 
+  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
+
   WaitUntilZeroed();
 
   {
@@ -933,20 +948,8 @@ TEST_F(SuperstructureTest, IntakeGoal) {
 
   VerifyNearGoal();
 
-  {
-    auto builder = superstructure_goal_sender_.MakeBuilder();
-
-    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
-
-    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
-    goal_builder.add_note_goal(NoteGoal::NONE);
-
-    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
-  }
-
-  RunFor(chrono::seconds(5));
-
-  VerifyNearGoal();
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::INTAKING);
 
   EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(),
             simulated_robot_constants_->common()
@@ -959,6 +962,7 @@ TEST_F(SuperstructureTest, IntakeGoal) {
     Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
 
     goal_builder.add_intake_goal(IntakeGoal::INTAKE);
+    goal_builder.add_note_goal(NoteGoal::NONE);
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
@@ -968,6 +972,9 @@ TEST_F(SuperstructureTest, IntakeGoal) {
   RunFor(chrono::seconds(2));
 
   VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADED);
 
   EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 0.0);
 }
@@ -1012,6 +1019,8 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
 
   VerifyNearGoal();
 
+  EXPECT_EQ(superstructure_status_fetcher_->state(), SuperstructureState::IDLE);
+
   EXPECT_NEAR(superstructure_status_fetcher_->shooter()->turret()->position(),
               simulated_robot_constants_->common()->turret_loading_position(),
               0.01);
@@ -1046,6 +1055,9 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   RunFor(chrono::seconds(5));
 
   VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::INTAKING);
 
   EXPECT_NEAR(superstructure_status_fetcher_->shooter()->turret()->position(),
               simulated_robot_constants_->common()->turret_loading_position(),
@@ -1084,11 +1096,15 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
 
   VerifyNearGoal();
 
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::INTAKING);
+
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::READY);
 
   EXPECT_EQ(superstructure_status_fetcher_->extend_status(),
             ExtendStatus::RETRACTED);
+
   EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
             ExtendRollerStatus::TRANSFERING_TO_EXTEND);
 
@@ -1100,6 +1116,9 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   RunFor(chrono::milliseconds(750));
 
   VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADED);
 
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::READY);
@@ -1142,6 +1161,9 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
 
   VerifyNearGoal();
 
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::LOADING_CATAPULT);
+
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::READY);
 
@@ -1158,6 +1180,9 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::READY);
+
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::LOADED);
 
@@ -1172,9 +1197,6 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_NEAR(superstructure_status_fetcher_->shooter()->altitude()->position(),
               simulated_robot_constants_->common()->altitude_loading_position(),
               0.01);
-
-  EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
-            CatapultState::LOADED);
 
   // Fire.  Start by triggering a motion and then firing all in 1 go.
   {
@@ -1219,21 +1241,12 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
 
   RunFor(chrono::milliseconds(10));
 
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::FIRING);
+
   // Make sure it stays at firing for a bit.
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::FIRING);
-
-  // Wheel should spin free again.
-  superstructure_plant_.set_catapult_beambreak(false);
-
-  RunFor(chrono::seconds(5));
-
-  // And we should be back to ready.
-  CHECK(superstructure_status_fetcher_.Fetch());
-  EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
-            CatapultState::READY);
-
-  VerifyNearGoal();
 
   EXPECT_NEAR(superstructure_status_fetcher_->shooter()->turret()->position(),
               kTurretGoal, 0.001);
@@ -1312,6 +1325,9 @@ TEST_F(SuperstructureTest, Preloaded) {
   superstructure_status_fetcher_.Fetch();
   ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
 
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::READY);
+
   EXPECT_EQ(superstructure_status_fetcher_->shooter()->catapult_state(),
             CatapultState::LOADED);
 }
@@ -1381,6 +1397,9 @@ TEST_F(SuperstructureTest, AutoAim) {
 
   VerifyNearGoal();
 
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::READY);
+
   EXPECT_NEAR(
       -M_PI_2,
       superstructure_status_fetcher_->shooter()->aimer()->turret_position() -
@@ -1423,6 +1442,9 @@ TEST_F(SuperstructureTest, AutoAim) {
   RunFor(chrono::seconds(5));
 
   VerifyNearGoal();
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::READY);
 
   EXPECT_NEAR(
       M_PI_2,
@@ -1543,6 +1565,9 @@ TEST_F(SuperstructureTest, ScoreInAmp) {
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
   ASSERT_TRUE(superstructure_output_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::FIRING);
 
   EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
             ExtendRollerStatus::SCORING_IN_AMP);
