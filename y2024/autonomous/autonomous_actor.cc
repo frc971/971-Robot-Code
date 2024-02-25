@@ -34,74 +34,24 @@ using frc971::control_loops::drivetrain::LocalizerControl;
 namespace chrono = ::std::chrono;
 
 AutonomousActor::AutonomousActor(::aos::EventLoop *event_loop)
-    : frc971::autonomous::BaseAutonomousActor(
+    : frc971::autonomous::UserButtonLocalizedAutonomousActor(
           event_loop,
           control_loops::drivetrain::GetDrivetrainConfig(event_loop)),
       localizer_control_sender_(
           event_loop->MakeSender<
               ::frc971::control_loops::drivetrain::LocalizerControl>(
               "/drivetrain")),
-      joystick_state_fetcher_(
-          event_loop->MakeFetcher<aos::JoystickState>("/aos")),
-      robot_state_fetcher_(event_loop->MakeFetcher<aos::RobotState>("/aos")),
-      auto_splines_(),
       superstructure_goal_sender_(
-          event_loop->MakeSender<::y2024::control_loops::superstructure::Goal>(
-              "/superstructure")),
+          event_loop
+              ->MakeSender<::y2024::control_loops::superstructure::GoalStatic>(
+                  "/superstructure")),
       superstructure_status_fetcher_(
           event_loop
               ->MakeFetcher<::y2024::control_loops::superstructure::Status>(
-                  "/superstructure")) {
-  drivetrain_status_fetcher_.Fetch();
-  replan_timer_ = event_loop->AddTimer([this]() { Replan(); });
-
-  event_loop->OnRun([this, event_loop]() {
-    replan_timer_->Schedule(event_loop->monotonic_now());
-    button_poll_->Schedule(event_loop->monotonic_now(),
-                           chrono::milliseconds(50));
-  });
-
-  // TODO(james): Really need to refactor this code since we keep using it.
-  button_poll_ = event_loop->AddTimer([this]() {
-    const aos::monotonic_clock::time_point now =
-        this->event_loop()->context().monotonic_event_time;
-    if (robot_state_fetcher_.Fetch()) {
-      if (robot_state_fetcher_->user_button()) {
-        user_indicated_safe_to_reset_ = true;
-        MaybeSendStartingPosition();
-      }
-    }
-    if (joystick_state_fetcher_.Fetch()) {
-      if (joystick_state_fetcher_->has_alliance() &&
-          (joystick_state_fetcher_->alliance() != alliance_)) {
-        alliance_ = joystick_state_fetcher_->alliance();
-        is_planned_ = false;
-        // Only kick the planning out by 2 seconds. If we end up enabled in
-        // that second, then we will kick it out further based on the code
-        // below.
-        replan_timer_->Schedule(now + std::chrono::seconds(2));
-      }
-      if (joystick_state_fetcher_->enabled()) {
-        if (!is_planned_) {
-          // Only replan once we've been disabled for 5 seconds.
-          replan_timer_->Schedule(now + std::chrono::seconds(5));
-        }
-      }
-    }
-  });
-}
+                  "/superstructure")),
+      auto_splines_() {}
 
 void AutonomousActor::Replan() {
-  if (!drivetrain_status_fetcher_.Fetch()) {
-    replan_timer_->Schedule(event_loop()->monotonic_now() + chrono::seconds(1));
-    AOS_LOG(INFO, "Drivetrain not up, replanning in 1 second");
-    return;
-  }
-
-  if (alliance_ == aos::Alliance::kInvalid) {
-    return;
-  }
-  sent_starting_position_ = false;
   if (FLAGS_spline_auto) {
     test_spline_ =
         PlanSpline(std::bind(&AutonomousSplines::TestSpline, &auto_splines_,
@@ -116,42 +66,8 @@ void AutonomousActor::Replan() {
   MaybeSendStartingPosition();
 }
 
-void AutonomousActor::MaybeSendStartingPosition() {
-  if (is_planned_ && user_indicated_safe_to_reset_ &&
-      !sent_starting_position_) {
-    CHECK(starting_position_);
-    SendStartingPosition(starting_position_.value());
-  }
-}
-
-void AutonomousActor::Reset() {
-  InitializeEncoders();
-  ResetDrivetrain();
-
-  joystick_state_fetcher_.Fetch();
-  CHECK(joystick_state_fetcher_.get() != nullptr)
-      << "Expect at least one JoystickState message before running auto...";
-  alliance_ = joystick_state_fetcher_->alliance();
-  preloaded_ = false;
-}
-
-bool AutonomousActor::RunAction(
+bool AutonomousActor::Run(
     const ::frc971::autonomous::AutonomousActionParams *params) {
-  Reset();
-
-  AOS_LOG(INFO, "Params are %d\n", params->mode());
-
-  if (!user_indicated_safe_to_reset_) {
-    AOS_LOG(WARNING, "Didn't send starting position prior to starting auto.");
-    CHECK(starting_position_);
-    SendStartingPosition(starting_position_.value());
-  }
-  // Clear this so that we don't accidentally resend things as soon as we
-  // replan later.
-  user_indicated_safe_to_reset_ = false;
-  is_planned_ = false;
-  starting_position_.reset();
-
   AOS_LOG(INFO, "Params are %d\n", params->mode());
   if (alliance_ == aos::Alliance::kInvalid) {
     AOS_LOG(INFO, "Aborting autonomous due to invalid alliance selection.");
@@ -163,15 +79,6 @@ bool AutonomousActor::RunAction(
     AOS_LOG(WARNING, "No auto mode selected.");
   }
   return true;
-}
-
-void AutonomousActor::SplineAuto() {
-  CHECK(test_spline_);
-
-  if (!test_spline_->WaitForPlan()) return;
-  test_spline_->Start();
-
-  if (!test_spline_->WaitForSplineDistanceRemaining(0.02)) return;
 }
 
 void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
@@ -192,4 +99,84 @@ void AutonomousActor::SendStartingPosition(const Eigen::Vector3d &start) {
     AOS_LOG(ERROR, "Failed to reset localizer.\n");
   }
 }
+
+void AutonomousActor::Reset() {
+  set_intake_goal(control_loops::superstructure::IntakeGoal::NONE);
+  set_note_goal(control_loops::superstructure::NoteGoal::NONE);
+  set_auto_aim(false);
+  set_fire(false);
+  set_preloaded(false);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::SplineAuto() {
+  CHECK(test_spline_);
+
+  if (!test_spline_->WaitForPlan()) return;
+  test_spline_->Start();
+
+  if (!test_spline_->WaitForSplineDistanceRemaining(0.02)) return;
+}
+
+void AutonomousActor::SendSuperstructureGoal() {
+  aos::Sender<control_loops::superstructure::GoalStatic>::StaticBuilder
+      goal_builder = superstructure_goal_sender_.MakeStaticBuilder();
+
+  goal_builder->set_intake_goal(intake_goal_);
+  goal_builder->set_note_goal(note_goal_);
+  goal_builder->set_fire(fire_);
+
+  control_loops::superstructure::ShooterGoalStatic *shooter_goal =
+      goal_builder->add_shooter_goal();
+
+  shooter_goal->set_auto_aim(auto_aim_);
+  shooter_goal->set_preloaded(preloaded_);
+
+  goal_builder.CheckOk(goal_builder.Send());
+}
+
+void AutonomousActor::Intake() {
+  set_intake_goal(control_loops::superstructure::IntakeGoal::INTAKE);
+  set_note_goal(control_loops::superstructure::NoteGoal::CATAPULT);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::Aim() {
+  set_auto_aim(true);
+  SendSuperstructureGoal();
+}
+
+void AutonomousActor::Shoot() {
+  set_fire(true);
+  SendSuperstructureGoal();
+}
+
+[[nodiscard]] bool AutonomousActor::WaitForPreloaded() {
+  set_preloaded(true);
+  SendSuperstructureGoal();
+
+  ::aos::time::PhasedLoop phased_loop(frc971::controls::kLoopFrequency,
+                                      event_loop()->monotonic_now(),
+                                      aos::common::actions::kLoopOffset);
+
+  bool loaded = false;
+  while (!loaded) {
+    if (ShouldCancel()) {
+      return false;
+    }
+
+    phased_loop.SleepUntilNext();
+    superstructure_status_fetcher_.Fetch();
+    CHECK(superstructure_status_fetcher_.get() != nullptr);
+
+    loaded = (superstructure_status_fetcher_->shooter()->catapult_state() ==
+              control_loops::superstructure::CatapultState::LOADED);
+  }
+
+  set_preloaded(false);
+  SendSuperstructureGoal();
+
+  return true;
+}
+
 }  // namespace y2024::autonomous

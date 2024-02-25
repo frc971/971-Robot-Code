@@ -49,6 +49,7 @@ cc_library(
         "//aos/logging",
         "//aos/util:phased_loop",
         "//frc971/autonomous:base_autonomous_actor",
+        "//frc971/autonomous:user_button_localized_autonomous_actor",
         "//frc971/control_loops:control_loops_fbs",
         "//frc971/control_loops:profiled_subsystem_fbs",
         "//frc971/control_loops/drivetrain:drivetrain_config",
