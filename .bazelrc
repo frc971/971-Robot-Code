@@ -96,6 +96,7 @@ startup --host_jvm_args=-Dbazel.DigestFunction=SHA256
 
 build --spawn_strategy=sandboxed
 build --sandbox_default_allow_network=false
+build --incompatible_exclusive_test_sandboxed
 
 build --strategy=TsProject=sandboxed
 build --strategy=CopyFile=standalone
