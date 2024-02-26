@@ -35,6 +35,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//aos:configuration",
+        "//aos/time",
         "@com_github_google_glog//:glog",
     ],
 )
