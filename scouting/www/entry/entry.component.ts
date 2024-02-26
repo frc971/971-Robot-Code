@@ -26,6 +26,7 @@ import {
 } from '../../webserver/requests/messages/submit_2024_actions_generated';
 import {Match} from '../../webserver/requests/messages/request_all_matches_response_generated';
 import {MatchListRequestor} from '../rpc';
+import * as pako from 'pako';
 
 type Section =
   | 'Team Selection'
@@ -35,6 +36,7 @@ type Section =
   | 'Endgame'
   | 'Dead'
   | 'Review and Submit'
+  | 'QR Code'
   | 'Success';
 
 // TODO(phil): Deduplicate with match_list.component.ts.
@@ -49,6 +51,13 @@ const COMP_LEVEL_LABELS: Record<CompLevel, string> = {
   sf: 'Semi Finals',
   f: 'Finals',
 };
+
+// The maximum number of bytes per QR code. The user can adjust this value to
+// make the QR code contain less information, but easier to scan.
+const QR_CODE_PIECE_SIZES = [150, 300, 450, 600, 750, 900];
+
+// The default index into QR_CODE_PIECE_SIZES.
+const DEFAULT_QR_CODE_PIECE_SIZE_INDEX = QR_CODE_PIECE_SIZES.indexOf(750);
 
 type ActionT =
   | {
@@ -112,6 +121,7 @@ export class EntryComponent implements OnInit {
   // of radio buttons.
   readonly COMP_LEVELS = COMP_LEVELS;
   readonly COMP_LEVEL_LABELS = COMP_LEVEL_LABELS;
+  readonly QR_CODE_PIECE_SIZES = QR_CODE_PIECE_SIZES;
   readonly ScoreType = ScoreType;
   readonly StageType = StageType;
 
@@ -135,6 +145,16 @@ export class EntryComponent implements OnInit {
   penalties: number = 0;
 
   teamSelectionIsValid = false;
+
+  // When the user chooses to generate QR codes, we convert the flatbuffer into
+  // a long string. Since we frequently have more data than we can display in a
+  // single QR code, we break the data into multiple QR codes. The data for
+  // each QR code ("pieces") is stored in the `qrCodeValuePieces` list below.
+  // The `qrCodeValueIndex` keeps track of which QR code we're currently
+  // displaying.
+  qrCodeValuePieceSize = QR_CODE_PIECE_SIZES[DEFAULT_QR_CODE_PIECE_SIZE_INDEX];
+  qrCodeValuePieces: string[] = [];
+  qrCodeValueIndex: number = 0;
 
   constructor(private readonly matchListRequestor: MatchListRequestor) {}
 
@@ -219,7 +239,8 @@ export class EntryComponent implements OnInit {
     }
 
     if (action.type == 'endMatchAction') {
-      // endMatchAction occurs at the same time as penaltyAction so add to its timestamp to make it unique.
+      // endMatchAction occurs at the same time as penaltyAction so add to its
+      // timestamp to make it unique.
       action.timestamp += 1;
     }
 
@@ -282,6 +303,11 @@ export class EntryComponent implements OnInit {
     this.errorMessage = '';
     this.progressMessage = '';
 
+    // For the QR code screen, we need to make the value to encode available.
+    if (target == 'QR Code') {
+      this.updateQrCodeValuePieceSize();
+    }
+
     this.section = target;
   }
 
@@ -291,7 +317,7 @@ export class EntryComponent implements OnInit {
     this.header.nativeElement.scrollIntoView();
   }
 
-  async submit2024Actions() {
+  createActionsBuffer() {
     const builder = new Builder();
     const actionOffsets: number[] = [];
 
@@ -419,10 +445,44 @@ export class EntryComponent implements OnInit {
     Submit2024Actions.addPreScouting(builder, this.preScouting);
     builder.finish(Submit2024Actions.endSubmit2024Actions(builder));
 
-    const buffer = builder.asUint8Array();
+    return builder.asUint8Array();
+  }
+
+  // Same as createActionsBuffer, but encoded as Base64. It's also split into
+  // a number of pieces so that each piece is roughly limited to
+  // `qrCodeValuePieceSize` bytes.
+  createBase64ActionsBuffers(): string[] {
+    const originalBuffer = this.createActionsBuffer();
+    const deflatedData = pako.deflate(originalBuffer, {level: 9});
+
+    const pieceSize = this.qrCodeValuePieceSize;
+    const fullValue = btoa(String.fromCharCode(...deflatedData));
+    const numPieces = Math.ceil(fullValue.length / pieceSize);
+
+    let splitData: string[] = [];
+    for (let i = 0; i < numPieces; i++) {
+      const splitPiece = fullValue.slice(i * pieceSize, (i + 1) * pieceSize);
+      splitData.push(`${i}_${numPieces}_${pieceSize}_${splitPiece}`);
+    }
+    return splitData;
+  }
+
+  setQrCodeValueIndex(index: number) {
+    this.qrCodeValueIndex = Math.max(
+      0,
+      Math.min(index, this.qrCodeValuePieces.length - 1)
+    );
+  }
+
+  updateQrCodeValuePieceSize() {
+    this.qrCodeValuePieces = this.createBase64ActionsBuffers();
+    this.qrCodeValueIndex = 0;
+  }
+
+  async submit2024Actions() {
     const res = await fetch('/requests/submit/submit_2024_actions', {
       method: 'POST',
-      body: buffer,
+      body: this.createActionsBuffer(),
     });
 
     if (res.ok) {

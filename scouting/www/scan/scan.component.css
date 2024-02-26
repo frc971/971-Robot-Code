@@ -1,0 +1,20 @@
+video {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+canvas {
+  /* We don't want to show the frames that we are scanning for QR codes. It's
+   * nicer to just see the video stream. */
+  display: none;
+}
+
+ul {
+  margin: 0px;
+}
+
+li > a.active {
+  /* Set the scanned QR codes to a green color. */
+  background-color: #198754;
+  border-color: #005700;
+}

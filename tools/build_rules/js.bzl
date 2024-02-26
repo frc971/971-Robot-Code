@@ -378,7 +378,7 @@ def cypress_test(name, runner, data = None, **kwargs):
 
     copy_file(
         name = name + "_config",
-        out = "cypress.config.js",
+        out = name + "_cypress.config.js",
         src = "//tools/build_rules/js:cypress.config.js",
         visibility = ["//visibility:private"],
     )
@@ -392,7 +392,7 @@ def cypress_test(name, runner, data = None, **kwargs):
         name = name,
         args = [
             "run",
-            "--config-file=cypress.config.js",
+            "--config-file=%s_cypress.config.js" % name,
             "--browser=" + chrome_location,
         ],
         browsers = ["@chrome_linux//:all"],

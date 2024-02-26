@@ -1,0 +1,21 @@
+<h1>Scan</h1>
+<span class="progress_message" role="alert">{{ progressMessage }}</span>
+<span class="error_message" role="alert">{{ errorMessage }}</span>
+<nav class="qrcode-progress" *ngIf="!scanComplete">
+  <ul class="pagination pagination-lg justify-content-center">
+    <li *ngFor="let piece of qrCodeValuePieces" class="page-item">
+      <a class="page-link" href="#" [class.active]="piece">
+        <i *ngIf="piece" class="bi bi-check">
+          <span class="visually-hidden">&check;</span>
+        </i>
+        <i *ngIf="!piece" class="bi bi-camera">
+          <span class="visually-hidden">&#9746;</span>
+        </i>
+      </a>
+    </li>
+  </ul>
+</nav>
+<div *ngIf="!scanComplete">
+  <video #video id="video"></video>
+</div>
+<canvas #canvas id="canvas"></canvas>

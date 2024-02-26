@@ -16,6 +16,12 @@
       integrity="d8824f7067cdfea38afec7e9ffaf072125266824206d69ef1f112d72153a505e"
     />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // In order to hook into WASM's "finished loading" event, we interact
+      // with the global Module variable.  Maybe some day there'll be a better
+      // way to interact with it.
+      var Module = {};
+    </script>
   </head>
   <body>
     <my-app></my-app>

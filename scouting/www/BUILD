@@ -5,8 +5,19 @@ load(":defs.bzl", "assemble_static_files")
 
 npm_link_all_packages(name = "node_modules")
 
+OPENCV_VERSION = "4.9.0"
+
+copy_file(
+    name = "opencv.js",
+    src = "@opencv_wasm//file",
+    out = "assets/opencv_{}/opencv.js".format(OPENCV_VERSION),
+)
+
 ng_application(
     name = "app",
+    assets = [
+        ":opencv.js",
+    ],
     extra_srcs = [
         "app/common.css",
     ],
@@ -20,6 +31,7 @@ ng_application(
         "//scouting/www/match_list",
         "//scouting/www/notes",
         "//scouting/www/pit_scouting",
+        "//scouting/www/scan",
         "//scouting/www/shift_schedule",
         "//scouting/www/view",
     ],

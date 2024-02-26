@@ -73,6 +73,15 @@
       Pit
     </a>
   </li>
+  <li class="nav-item">
+    <a
+      class="nav-link"
+      [class.active]="tabIs('Scan')"
+      (click)="switchTabToGuarded('Scan')"
+    >
+      Scan
+    </a>
+  </li>
 </ul>
 
 <ng-container [ngSwitch]="tab">
@@ -93,4 +102,5 @@
   <shift-schedule *ngSwitchCase="'ShiftSchedule'"></shift-schedule>
   <app-view *ngSwitchCase="'View'"></app-view>
   <app-pit-scouting *ngSwitchCase="'Pit'"></app-pit-scouting>
+  <app-scan *ngSwitchCase="'Scan'"></app-scan>
 </ng-container>

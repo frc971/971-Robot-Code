@@ -28,3 +28,43 @@ input label {
   width: 90vw;
   justify-content: space-between;
 }
+
+.qr-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0px;
+}
+
+.qrcode-buttons > li.page-item {
+  padding: 0px;
+}
+
+/* Using deprecated ::ng-deep here, but couldn't find a better way to do it.
+ * The qrcode container generates a canvas without any style markers or
+ * classes. Angular's view encapsulation prevents this style from applying.
+ * Maybe https://developer.mozilla.org/en-US/docs/Web/CSS/::slotted ? */
+:host ::ng-deep .qr-container canvas {
+  /* Make the QR code take up as much space as possible. Can't take up more
+   * than the screen size, however, because you can't scan a QR code while
+   * scrolling. It needs to be fully visibile. */
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 1 / 1;
+}
+
+/* Make the UI a little more compact. The QR code itself already has a good
+ * amount of margin. */
+
+.qrcode-nav {
+  padding: 0px;
+}
+
+.qrcode-buttons {
+  padding: 0px;
+  margin: 0px;
+}
+
+.qrcode {
+  padding: 0px;
+}

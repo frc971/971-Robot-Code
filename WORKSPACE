@@ -919,6 +919,7 @@ npm_translate_lock(
         "@//scouting/www/match_list:package.json",
         "@//scouting/www/notes:package.json",
         "@//scouting/www/rpc:package.json",
+        "@//scouting/www/scan:package.json",
         "@//scouting/www/shift_schedule:package.json",
         "@//scouting/www/view:package.json",
     ],
@@ -1210,6 +1211,14 @@ filegroup(
     """,
     sha256 = "2b9a3ecc83f2aba89a1909ae38fe51e6718a5b4d0e7c131846dfb2845df9cd19",
     url = "https://software.frc971.org/Build-Dependencies/2021-10-03_superstructure_shoot_balls.tar.gz",
+)
+
+http_file(
+    name = "opencv_wasm",
+    sha256 = "447244d0e67e411f91e7c225c07f104437104e3e753085248a0c527a25bd8807",
+    urls = [
+        "https://docs.opencv.org/4.9.0/opencv.js",
+    ],
 )
 
 http_archive(
