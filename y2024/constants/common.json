@@ -23,12 +23,12 @@
     }
   ],
   "intake_roller_voltages": {
-    "spitting": -12.0,
-    "intaking": 12.0
+    "spitting": -4.0,
+    "intaking": 6.0
   },
   "intake_pivot_set_points": {
-    "extended": 0.0,
-    "retracted": 1.0
+    "extended": -0.03,
+    "retracted": 1.73
   },
   "intake_pivot": {
     "zeroing_voltage": 3.0,
@@ -55,18 +55,18 @@
     // Values in amps
     "intake_pivot_supply_current_limit": 5,
     "intake_pivot_stator_current_limit": 40,
-    "intake_roller_supply_current_limit": 24,
-    "intake_roller_stator_current_limit": 55,
-    "transfer_roller_supply_current_limit": 25,
-    "transfer_roller_stator_current_limit": 66,
+    "intake_roller_supply_current_limit": 20,
+    "intake_roller_stator_current_limit": 50,
+    "transfer_roller_supply_current_limit": 20,
+    "transfer_roller_stator_current_limit": 50,
     "drivetrain_supply_current_limit": 35,
     "drivetrain_stator_current_limit": 60,
     "climber_supply_current_limit": 30,
     "climber_stator_current_limit": 100,
     "extend_supply_current_limit": 20,
     "extend_stator_current_limit": 100,
-    "extend_roller_supply_current_limit": 23,
-    "extend_roller_stator_current_limit": 118,
+    "extend_roller_supply_current_limit": 60,
+    "extend_roller_stator_current_limit": 200,
     "turret_supply_current_limit": 20,
     "turret_stator_current_limit": 40,
     "altitude_supply_current_limit": 10,
@@ -78,17 +78,17 @@
     "retention_roller_supply_current_limit": 10
   },
   "transfer_roller_voltages": {
-    "transfer_in": 12.0,
-    "transfer_out": -12.0
+    "transfer_in": 6.0,
+    "transfer_out": -4.0
   },
   "extend_roller_voltages": {
-    "scoring": 12.0,
-    "reversing": -12.0
+    "scoring": 6.0,
+    "reversing": -4.0
   },
   "climber_set_points": {
     "full_extend": -0.005,
     "stowed": -0.35,
-    "retract": -0.44
+    "retract": -0.478
   },
   "climber": {
     "zeroing_voltage": 3.0,
@@ -222,7 +222,7 @@
   // TODO(Filip): Update the speaker and amp shooter setpoints
   "shooter_speaker_set_point": {
     "turret_position": 0.0,
-    "altitude_position": 0.0,
+    "altitude_position": 0.75,
     "shot_velocity": 0.0
   },
   "shooter_podium_set_point":{

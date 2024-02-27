@@ -6,12 +6,12 @@ namespace y2024.control_loops.superstructure;
 enum SuperstructureState : ubyte {
   // Before a note has been intaked, the extend should be retracted.
   IDLE = 0,
-  // Intaking a note and transferring it to the extned through the 
+  // Intaking a note and transferring it to the extned through the
   // intake, transfer, and extend rollers.
   INTAKING = 1,
   // The note is in the extend and the extend is not moving.
   LOADED = 2,
-  // The note is in the extend and the extend is moving towards a goal, 
+  // The note is in the extend and the extend is moving towards a goal,
   // either the catapult, amp, or trap.
   MOVING = 3,
   // For Catapult Path, the note is being transferred between the extend and the catapult.
@@ -138,6 +138,13 @@ table Status {
   collided: bool (id: 10);
 
   extend_status:ExtendStatus (id: 11);
+
+  // Indicates that the extend is in position to allow a game piece to
+  // be transfered into it.
+  extend_ready_for_transfer:bool (id: 12);
+
+  // Indicates that the turret is in position to avoid the extend.
+  turret_ready_for_extend_move:bool (id: 13);
 }
 
 root_type Status;

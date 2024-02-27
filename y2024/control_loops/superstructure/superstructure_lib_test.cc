@@ -1067,8 +1067,8 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
             ExtendRollerStatus::TRANSFERING_TO_EXTEND);
 
-  EXPECT_EQ(superstructure_output_fetcher_->transfer_roller_voltage(), 12.0);
-  EXPECT_EQ(superstructure_output_fetcher_->extend_roller_voltage(), 12.0);
+  EXPECT_LT(4.0, superstructure_output_fetcher_->transfer_roller_voltage());
+  EXPECT_LT(4.0, superstructure_output_fetcher_->extend_roller_voltage());
 
   superstructure_plant_.set_extend_beambreak(true);
 
@@ -1525,7 +1525,7 @@ TEST_F(SuperstructureTest, ScoreInAmp) {
 
   EXPECT_EQ(superstructure_status_fetcher_->extend_roller(),
             ExtendRollerStatus::SCORING_IN_AMP);
-  EXPECT_EQ(superstructure_output_fetcher_->extend_roller_voltage(), 12.0);
+  EXPECT_LT(4.0, superstructure_output_fetcher_->extend_roller_voltage());
 
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();

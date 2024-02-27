@@ -168,6 +168,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   // 7. FIRING. The note is being fired, either from the extend or the catapult.
   // Switch state back to IDLE when the note is fired.
 
+  std::optional<bool> turret_ready_for_extend_move;
   switch (state_) {
     case SuperstructureState::IDLE:
       if (unsafe_goal != nullptr &&
@@ -208,13 +209,14 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         // avoid collision when the extend moves.
         if (unsafe_goal->note_goal() == NoteGoal::AMP ||
             unsafe_goal->note_goal() == NoteGoal::TRAP) {
-          bool turret_ready_for_extend_move =
+          turret_ready_for_extend_move =
               PositionNear(shooter_.turret().estimated_position(),
                            robot_constants_->common()
                                ->turret_avoid_extend_collision_position(),
                            kTurretLoadingThreshold);
+          transfer_roller_status = TransferRollerStatus::TRANSFERING_IN;
 
-          if (turret_ready_for_extend_move) {
+          if (turret_ready_for_extend_move.value()) {
             state_ = SuperstructureState::MOVING;
           } else {
             move_turret_to_standby = true;
@@ -231,6 +233,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       }
       break;
     case SuperstructureState::MOVING:
+      transfer_roller_status = TransferRollerStatus::TRANSFERING_IN;
 
       if (catapult_requested_) {
         extend_goal = ExtendStatus::CATAPULT;
@@ -345,6 +348,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           state_ = SuperstructureState::IDLE;
         }
       } else {
+        move_turret_to_standby = true;
         if (unsafe_goal != nullptr &&
             unsafe_goal->note_goal() == NoteGoal::AMP) {
           extend_roller_status = ExtendRollerStatus::SCORING_IN_AMP;
@@ -428,6 +432,17 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   }
 
   double extend_position = 0.0;
+
+  if (unsafe_goal != nullptr && unsafe_goal->note_goal() == NoteGoal::TRAP) {
+    extend_goal = ExtendStatus::TRAP;
+    move_turret_to_standby = true;
+  }
+
+  // In lieu of having full collision avoidance ready, move the turret out of
+  // the way whenever the extend is raised too much.
+  if (extend_.position() > 0.05) {
+    move_turret_to_standby = true;
+  }
 
   // Set the extend position based on the state machine output
   switch (extend_goal) {
@@ -576,6 +591,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   status_builder.add_extend_status(extend_status);
   status_builder.add_extend(extend_status_offset);
   status_builder.add_state(state_);
+  status_builder.add_extend_ready_for_transfer(extend_at_retracted);
+  if (turret_ready_for_extend_move) {
+    status_builder.add_turret_ready_for_extend_move(
+        turret_ready_for_extend_move.value());
+  }
 
   (void)status->Send(status_builder.Finish());
 }

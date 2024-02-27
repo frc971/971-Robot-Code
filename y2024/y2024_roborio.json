@@ -127,6 +127,7 @@
       "type": "y2024.control_loops.superstructure.Status",
       "source_node": "roborio",
       "frequency": 400,
+      "max_size": 2048,
       "num_senders": 2
     },
     {

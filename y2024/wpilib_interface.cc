@@ -492,7 +492,6 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         7, true, "rio", &rio_signal_registry,
         current_limits->climber_stator_current_limit(),
         current_limits->climber_supply_current_limit());
-    climber->set_neutral_mode(ctre::phoenix6::signals::NeutralModeValue::Coast);
     std::shared_ptr<TalonFX> extend = std::make_shared<TalonFX>(
         12, false, "rio", &rio_signal_registry,
         current_limits->extend_stator_current_limit(),

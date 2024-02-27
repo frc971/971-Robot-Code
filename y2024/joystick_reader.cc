@@ -36,17 +36,21 @@ namespace y2024::input::joysticks {
 
 namespace superstructure = y2024::control_loops::superstructure;
 
-// TODO(Xander): add x,y location from physical wiring
-const ButtonLocation kIntake(0, 0);
+// TODO(Xander): add button location from physical wiring
+// Note: Due to use_redundant_joysticks, the AOS_LOG statements
+// for the internal joystick code will give offset joystick numbering.
+const ButtonLocation kIntake(2, 8);
 const ButtonLocation kSpit(0, 0);
-const ButtonLocation kCatapultLoad(0, 0);
-const ButtonLocation kAmp(0, 0);
-const ButtonLocation kTrap(0, 0);
+const ButtonLocation kCatapultLoad(1, 7);
+const ButtonLocation kAmp(2, 7);
+const ButtonLocation kFire(2, 6);
+const ButtonLocation kTrap(2, 5);
 const ButtonLocation kAutoAim(0, 0);
-const ButtonLocation kAimSpeaker(0, 0);
+const ButtonLocation kAimSpeaker(1, 6);
 const ButtonLocation kAimPodium(0, 0);
 const ButtonLocation kShoot(0, 0);
-const ButtonLocation kClimb(0, 0);
+const ButtonLocation kRaiseClimber(3, 2);
+const ButtonLocation kRetractClimber(2, 4);
 const ButtonLocation kExtraButtonOne(0, 0);
 const ButtonLocation kExtraButtonTwo(0, 0);
 const ButtonLocation kExtraButtonThree(0, 0);
@@ -72,7 +76,6 @@ class Reader : public ::frc971::input::ActionJoystickInput {
 
   void HandleTeleop(
       const ::frc971::input::driver_station::Data &data) override {
-    (void)data;
     superstructure_status_fetcher_.Fetch();
     if (!superstructure_status_fetcher_.get()) {
       AOS_LOG(ERROR, "Got no superstructure status message.\n");
@@ -87,37 +90,28 @@ class Reader : public ::frc971::input::ActionJoystickInput {
       // Intake is pressed
       superstructure_goal_builder->set_intake_goal(
           superstructure::IntakeGoal::INTAKE);
-    } else if (data.IsPressed(kSpit)) {
-      // If Intake not pressed and spit pressed, spit
+    } else {
       superstructure_goal_builder->set_intake_goal(
-          superstructure::IntakeGoal::SPIT);
+          superstructure::IntakeGoal::NONE);
     }
-
-    // Set note goal for the robot. Loading the catapult will always be
-    // preferred over scoring in the Amp or Trap.
-    if (data.IsPressed(kCatapultLoad)) {
-      superstructure_goal_builder->set_note_goal(
-          superstructure::NoteGoal::CATAPULT);
-    } else if (data.IsPressed(kAmp)) {
+    if (data.IsPressed(kAmp)) {
       superstructure_goal_builder->set_note_goal(superstructure::NoteGoal::AMP);
     } else if (data.IsPressed(kTrap)) {
       superstructure_goal_builder->set_note_goal(
           superstructure::NoteGoal::TRAP);
+    } else if (data.IsPressed(kCatapultLoad)) {
+      superstructure_goal_builder->set_note_goal(
+          superstructure::NoteGoal::CATAPULT);
+    } else {
+      superstructure_goal_builder->set_note_goal(
+          superstructure::NoteGoal::NONE);
     }
-
-    // Firing note when requested
-    superstructure_goal_builder->set_fire(data.IsPressed(kShoot));
-
-    // Shooter goal contains all speaker-related goals
     auto shooter_goal = superstructure_goal_builder->add_shooter_goal();
-
-    shooter_goal->set_auto_aim(data.IsPressed(kAimSpeaker));
+    shooter_goal->set_auto_aim(false);
 
     // Updating aiming for shooter goal, only one type of aim should be possible
     // at a time, auto-aiming is preferred over the setpoints.
-    if (data.IsPressed(kAutoAim)) {
-      shooter_goal->set_auto_aim(true);
-    } else if (data.IsPressed(kAimSpeaker)) {
+    if (data.IsPressed(kAimSpeaker)) {
       auto catapult_goal = shooter_goal->add_catapult_goal();
       catapult_goal->set_shot_velocity(robot_constants_->common()
                                            ->shooter_speaker_set_point()
@@ -131,29 +125,18 @@ class Reader : public ::frc971::input::ActionJoystickInput {
           shooter_goal->add_turret_position(), robot_constants_->common()
                                                    ->shooter_speaker_set_point()
                                                    ->turret_position());
-    } else if (data.IsPressed(kAimPodium)) {
-      auto catapult_goal = shooter_goal->add_catapult_goal();
-      catapult_goal->set_shot_velocity(robot_constants_->common()
-                                           ->shooter_podium_set_point()
-                                           ->shot_velocity());
-      PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
-          shooter_goal->add_altitude_position(),
-          robot_constants_->common()
-              ->shooter_podium_set_point()
-              ->altitude_position());
-      PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
-          shooter_goal->add_turret_position(), robot_constants_->common()
-                                                   ->shooter_podium_set_point()
-                                                   ->turret_position());
     }
+    superstructure_goal_builder->set_fire(data.IsPressed(kFire));
 
-    // Extend climbers if pressed, retract otherwise
-    if (data.IsPressed(kClimb)) {
+    if (data.IsPressed(kRaiseClimber)) {
       superstructure_goal_builder->set_climber_goal(
           superstructure::ClimberGoal::FULL_EXTEND);
-    } else {
+    } else if (data.IsPressed(kRetractClimber)) {
       superstructure_goal_builder->set_climber_goal(
           superstructure::ClimberGoal::RETRACT);
+    } else {
+      superstructure_goal_builder->set_climber_goal(
+          superstructure::ClimberGoal::STOWED);
     }
 
     superstructure_goal_builder.CheckOk(superstructure_goal_builder.Send());
