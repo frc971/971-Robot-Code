@@ -5,11 +5,14 @@ namespace y2024.control_loops.superstructure;
 
 table Position {
     // Values of the encoder and potentiometer at the intake pivot
-    // Zero is extended outwards and level, positive is retracted inward.
+    // Zero is when the lowest extent of the lexan is level with the
+    // bellypan, positive is retracted inward.
     intake_pivot:frc971.AbsolutePosition (id: 0);
 
     // Values of the encoder and potentiometer at the turret
-    // Zero is facing forward, positive is rotated right.
+    // Zero is facing backwards, positive is rotated counter-clockwise.
+    // I.e., zero is at approximately the loading position for getting
+    // the game piece from the extend into the catapult.
     turret:frc971.PotAndAbsolutePosition (id: 1);
 
     // Values of the encoder and potentiometer at the altitude
@@ -17,22 +20,25 @@ table Position {
     altitude:frc971.PotAndAbsolutePosition (id: 2);
 
     // Values of the encoder and potentiometer at the catapult
-    // Zero is edge of pivot plate parallel to edge of gusset.
-    // Positive is rotated counter-clockwise, to launch game piece.
+    // Zero is when the note is fully seated in the catapult and the catapult
+    // arm is just touching the note. Positive is rotated counter-clockwise, to
+    // launch game piece.
     catapult:frc971.PotAndAbsolutePosition (id: 3);
 
     // True means there is a game piece in the transfer.
     transfer_beambreak:bool (id: 4);
 
     // Values of the encoder and potentiometer at the climber.
-    // Zero is fully retracted, positive is extended upward.
+    // Zero is fully extended, with top of the highest slider aligned with the
+    // caps on the tubes for the climber.
+    // Positive is more extended.
     climber:frc971.PotAndAbsolutePosition (id: 5);
 
     // True if there is a game piece in the catapult
     catapult_beambreak:bool (id: 6);
 
     // Values of the encoder and potentiometer at the extend motor
-    // Zero is fully retracted, positive is extended outward.
+    // Zero is fully retracted, positive is extended upward.
     extend:frc971.PotAndAbsolutePosition (id: 7);
 
     // True means there is a game piece in the extend.

@@ -38,6 +38,8 @@ table CANPosition {
 
     // CAN Position of the extend roller fancon
     extend_roller:frc971.control_loops.CANTalonFX (id: 10);
+    catapult_one:frc971.control_loops.CANTalonFX (id: 11);
+    catapult_two:frc971.control_loops.CANTalonFX (id: 12);
 }
 
 root_type CANPosition;

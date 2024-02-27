@@ -192,7 +192,7 @@ Shooter::Iterate(
     //
     // Correct handles resetting our state when disabled.
     const bool disabled = catapult_.Correct(nullptr, position->catapult(),
-                                            shooter_goal == nullptr);
+                                            catapult_output == nullptr);
 
     catapult_.set_enable_profile(true);
     // We want a trajectory which accelerates up over the first portion of the

@@ -90,7 +90,7 @@ double catapult_pot_translate(double voltage) {
 }
 
 double turret_pot_translate(double voltage) {
-  return voltage * Values::kTurretPotRadiansPerVolt();
+  return -1 * voltage * Values::kTurretPotRadiansPerVolt();
 }
 
 double altitude_pot_translate(double voltage) {
@@ -175,7 +175,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
       CopyPosition(extend_encoder_, builder->add_extend(),
                    Values::kExtendEncoderCountsPerRevolution(),
                    Values::kExtendEncoderMetersPerRadian(),
-                   extend_pot_translate, true,
+                   extend_pot_translate, false,
                    robot_constants_->robot()
                        ->extend_constants()
                        ->potentiometer_offset());
@@ -204,6 +204,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
                        ->potentiometer_offset());
 
       builder->set_transfer_beambreak(transfer_beam_break_->Get());
+      builder->set_extend_beambreak(extend_beam_break_->Get());
       builder->set_catapult_beambreak(catapult_beam_break_->Get());
       builder.CheckOk(builder.Send());
     }
@@ -273,6 +274,10 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
     transfer_beam_break_ = ::std::move(sensor);
   }
 
+  void set_extend_beambreak(::std::unique_ptr<frc::DigitalInput> sensor) {
+    extend_beam_break_ = ::std::move(sensor);
+  }
+
   void set_catapult_beambreak(::std::unique_ptr<frc::DigitalInput> sensor) {
     catapult_beam_break_ = ::std::move(sensor);
   }
@@ -334,7 +339,7 @@ class SensorReader : public ::frc971::wpilib::SensorReader {
   std::array<std::unique_ptr<frc::DigitalInput>, 2> autonomous_modes_;
 
   std::unique_ptr<frc::DigitalInput> imu_yaw_rate_input_, transfer_beam_break_,
-      catapult_beam_break_;
+      extend_beam_break_, catapult_beam_break_;
 
   frc971::wpilib::AbsoluteEncoder intake_pivot_encoder_;
   frc971::wpilib::AbsoluteEncoderAndPotentiometer climber_encoder_,
@@ -416,20 +421,21 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     SensorReader sensor_reader(&sensor_reader_event_loop, robot_constants);
     sensor_reader.set_pwm_trigger(true);
     sensor_reader.set_drivetrain_left_encoder(
-        std::make_unique<frc::Encoder>(6, 7));
-    sensor_reader.set_drivetrain_right_encoder(
         std::make_unique<frc::Encoder>(8, 9));
+    sensor_reader.set_drivetrain_right_encoder(
+        std::make_unique<frc::Encoder>(6, 7));
     sensor_reader.set_yaw_rate_input(make_unique<frc::DigitalInput>(25));
     sensor_reader.set_intake_pivot(make_encoder(3),
                                    make_unique<frc::DigitalInput>(3));
     sensor_reader.set_transfer_beambreak(make_unique<frc::DigitalInput>(23));
-    sensor_reader.set_catapult_beambreak(make_unique<frc::DigitalInput>(24));
+    sensor_reader.set_extend_beambreak(make_unique<frc::DigitalInput>(24));
+    sensor_reader.set_catapult_beambreak(make_unique<frc::DigitalInput>(22));
 
-    sensor_reader.set_climber(make_encoder(5),
-                              make_unique<frc::DigitalInput>(5),
-                              make_unique<frc::AnalogInput>(5));
-    sensor_reader.set_extend(make_encoder(4), make_unique<frc::DigitalInput>(4),
-                             make_unique<frc::AnalogInput>(4));
+    sensor_reader.set_climber(make_encoder(4),
+                              make_unique<frc::DigitalInput>(4),
+                              make_unique<frc::AnalogInput>(4));
+    sensor_reader.set_extend(make_encoder(5), make_unique<frc::DigitalInput>(5),
+                             make_unique<frc::AnalogInput>(5));
     sensor_reader.set_catapult(make_encoder(0),
                                make_unique<frc::DigitalInput>(0),
                                make_unique<frc::AnalogInput>(0));
@@ -455,11 +461,11 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         robot_constants->common()->current_limits();
 
     std::shared_ptr<TalonFX> right_front = std::make_shared<TalonFX>(
-        2, false, "Drivetrain Bus", &canivore_signal_registry,
+        2, true, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->drivetrain_supply_current_limit(),
         current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> right_back = std::make_shared<TalonFX>(
-        1, false, "Drivetrain Bus", &canivore_signal_registry,
+        1, true, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->drivetrain_supply_current_limit(),
         current_limits->drivetrain_stator_current_limit());
     std::shared_ptr<TalonFX> left_front = std::make_shared<TalonFX>(
@@ -479,9 +485,18 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->altitude_stator_current_limit(),
         current_limits->altitude_supply_current_limit());
     std::shared_ptr<TalonFX> turret = std::make_shared<TalonFX>(
-        3, false, "Drivetrain Bus", &canivore_signal_registry,
+        3, true, "Drivetrain Bus", &canivore_signal_registry,
         current_limits->turret_stator_current_limit(),
         current_limits->turret_supply_current_limit());
+    std::shared_ptr<TalonFX> climber = std::make_shared<TalonFX>(
+        7, true, "rio", &rio_signal_registry,
+        current_limits->climber_stator_current_limit(),
+        current_limits->climber_supply_current_limit());
+    climber->set_neutral_mode(ctre::phoenix6::signals::NeutralModeValue::Coast);
+    std::shared_ptr<TalonFX> extend = std::make_shared<TalonFX>(
+        12, false, "rio", &rio_signal_registry,
+        current_limits->extend_stator_current_limit(),
+        current_limits->extend_supply_current_limit());
     std::shared_ptr<TalonFX> intake_roller = std::make_shared<TalonFX>(
         8, false, "rio", &rio_signal_registry,
         current_limits->intake_roller_stator_current_limit(),
@@ -491,21 +506,21 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
         current_limits->retention_roller_stator_current_limit(),
         current_limits->retention_roller_supply_current_limit());
     std::shared_ptr<TalonFX> transfer_roller = std::make_shared<TalonFX>(
-        9, true, "rio", &rio_signal_registry,
+        11, true, "rio", &rio_signal_registry,
         current_limits->transfer_roller_stator_current_limit(),
         current_limits->transfer_roller_supply_current_limit());
-    std::shared_ptr<TalonFX> climber = std::make_shared<TalonFX>(
-        7, false, "rio", &rio_signal_registry,
-        current_limits->climber_stator_current_limit(),
-        current_limits->climber_supply_current_limit());
-    std::shared_ptr<TalonFX> extend = std::make_shared<TalonFX>(
-        11, false, "rio", &rio_signal_registry,
-        current_limits->extend_stator_current_limit(),
-        current_limits->extend_supply_current_limit());
     std::shared_ptr<TalonFX> extend_roller = std::make_shared<TalonFX>(
-        12, true, "rio", &rio_signal_registry,
+        13, true, "rio", &rio_signal_registry,
         current_limits->extend_roller_stator_current_limit(),
         current_limits->extend_roller_supply_current_limit());
+    std::shared_ptr<TalonFX> catapult_one = std::make_shared<TalonFX>(
+        14, false, "Drivetrain Bus", &canivore_signal_registry,
+        current_limits->catapult_stator_current_limit(),
+        current_limits->catapult_supply_current_limit());
+    std::shared_ptr<TalonFX> catapult_two = std::make_shared<TalonFX>(
+        15, false, "Drivetrain Bus", &canivore_signal_registry,
+        current_limits->catapult_stator_current_limit(),
+        current_limits->catapult_supply_current_limit());
 
     ctre::phoenix::platform::can::CANComm_SetRxSchedPriority(
         constants::Values::kDrivetrainRxPriority, true, "Drivetrain Bus");
@@ -528,7 +543,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
       canivore_talonfxs.push_back(talonfx);
     }
 
-    for (auto talonfx : {intake_pivot, altitude, turret}) {
+    for (auto talonfx :
+         {intake_pivot, turret, altitude, catapult_one, catapult_two}) {
       canivore_talonfxs.push_back(talonfx);
     }
 
@@ -552,8 +568,9 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
     frc971::wpilib::CANSensorReader canivore_can_sensor_reader(
         &can_sensor_reader_event_loop, std::move(canivore_signal_registry),
         canivore_talonfxs,
-        [drivetrain_talonfxs, &intake_pivot, &altitude, &turret,
-         &drivetrain_can_position_sender, &superstructure_can_position_sender](
+        [drivetrain_talonfxs, &intake_pivot, &turret, &altitude, &catapult_one,
+         &catapult_two, &drivetrain_can_position_sender,
+         &superstructure_can_position_sender](
             ctre::phoenix::StatusCode status) {
           aos::Sender<frc971::control_loops::drivetrain::CANPositionStatic>::
               StaticBuilder drivetrain_can_builder =
@@ -580,13 +597,19 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
 
           intake_pivot->SerializePosition(
               superstructure_can_builder->add_intake_pivot(),
-              control_loops::drivetrain::kHighOutputRatio);
-          altitude->SerializePosition(
-              superstructure_can_builder->add_altitude(),
-              control_loops::drivetrain::kHighOutputRatio);
+              control_loops::superstructure::intake_pivot::kOutputRatio);
           turret->SerializePosition(
               superstructure_can_builder->add_turret(),
-              control_loops::drivetrain::kHighOutputRatio);
+              control_loops::superstructure::turret::kOutputRatio);
+          altitude->SerializePosition(
+              superstructure_can_builder->add_altitude(),
+              control_loops::superstructure::altitude::kOutputRatio);
+          catapult_one->SerializePosition(
+              superstructure_can_builder->add_catapult_one(),
+              control_loops::superstructure::catapult::kOutputRatio);
+          catapult_two->SerializePosition(
+              superstructure_can_builder->add_catapult_two(),
+              control_loops::superstructure::catapult::kOutputRatio);
 
           superstructure_can_builder->set_timestamp(
               intake_pivot->GetTimestamp());
@@ -630,7 +653,8 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
               intake_roller->GetTimestamp());
           superstructure_can_builder->set_status(static_cast<int>(status));
           superstructure_can_builder.CheckOk(superstructure_can_builder.Send());
-        });
+        },
+        frc971::wpilib::CANSensorReader::SignalSync::kNoSync);
 
     AddLoop(&can_sensor_reader_event_loop);
     AddLoop(&rio_sensor_reader_event_loop);
@@ -650,40 +674,43 @@ class WPILibRobot : public ::frc971::wpilib::WPILibRobotBase {
                    &talonfx_map) {
               talonfx_map.find("intake_pivot")
                   ->second->WriteVoltage(output.intake_pivot_voltage());
-              talonfx_map.find("intake_roller")
-                  ->second->WriteVoltage(output.intake_roller_voltage());
-              talonfx_map.find("transfer_roller")
-                  ->second->WriteVoltage(output.transfer_roller_voltage());
+              talonfx_map.find("altitude")
+                  ->second->WriteVoltage(output.altitude_voltage());
+              talonfx_map.find("catapult_one")
+                  ->second->WriteVoltage(output.catapult_voltage());
+              talonfx_map.find("catapult_two")
+                  ->second->WriteVoltage(output.catapult_voltage());
+              talonfx_map.find("turret")->second->WriteVoltage(
+                  output.turret_voltage());
               talonfx_map.find("climber")->second->WriteVoltage(
                   output.climber_voltage());
               talonfx_map.find("extend")->second->WriteVoltage(
                   output.extend_voltage());
+              talonfx_map.find("intake_roller")
+                  ->second->WriteVoltage(output.intake_roller_voltage());
+              talonfx_map.find("transfer_roller")
+                  ->second->WriteVoltage(output.transfer_roller_voltage());
               talonfx_map.find("extend_roller")
                   ->second->WriteVoltage(output.extend_roller_voltage());
-              talonfx_map.find("altitude")
-                  ->second->WriteVoltage(output.altitude_voltage());
-              talonfx_map.find("turret")->second->WriteVoltage(
-                  output.turret_voltage());
               talonfx_map.find("retention_roller")
-                  ->second->WriteVoltage(output.retention_roller_voltage());
-              if (output.has_retention_roller_stator_current_limit()) {
-                talonfx_map.find("retention_roller")
-                    ->second->set_stator_current_limit(
-                        output.retention_roller_stator_current_limit());
-              }
+                  ->second->WriteCurrent(
+                      output.retention_roller_stator_current_limit(),
+                      output.retention_roller_voltage());
             });
 
     can_drivetrain_writer.set_talonfxs({right_front, right_back},
                                        {left_front, left_back});
 
     can_superstructure_writer.add_talonfx("intake_pivot", intake_pivot);
-    can_superstructure_writer.add_talonfx("intake_roller", intake_roller);
-    can_superstructure_writer.add_talonfx("transfer_roller", transfer_roller);
+    can_superstructure_writer.add_talonfx("altitude", altitude);
+    can_superstructure_writer.add_talonfx("catapult_one", catapult_one);
+    can_superstructure_writer.add_talonfx("catapult_two", catapult_two);
+    can_superstructure_writer.add_talonfx("turret", turret);
     can_superstructure_writer.add_talonfx("climber", climber);
     can_superstructure_writer.add_talonfx("extend", extend);
+    can_superstructure_writer.add_talonfx("intake_roller", intake_roller);
+    can_superstructure_writer.add_talonfx("transfer_roller", transfer_roller);
     can_superstructure_writer.add_talonfx("extend_roller", extend_roller);
-    can_superstructure_writer.add_talonfx("altitude", altitude);
-    can_superstructure_writer.add_talonfx("turret", turret);
     can_superstructure_writer.add_talonfx("retention_roller", retention_roller);
 
     can_output_event_loop.MakeWatcher(
