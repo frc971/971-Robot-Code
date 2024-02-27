@@ -452,7 +452,7 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 		PreScouting: submit2024Actions.PreScouting(), TeamNumber: string(submit2024Actions.TeamNumber()), MatchNumber: submit2024Actions.MatchNumber(), SetNumber: submit2024Actions.SetNumber(), CompLevel: string(submit2024Actions.CompLevel()),
 		StartingQuadrant: 0, SpeakerAuto: 0, AmpAuto: 0, NotesDroppedAuto: 0, MobilityAuto: false,
 		Speaker: 0, Amp: 0, SpeakerAmplified: 0, AmpAmplified: 0, NotesDropped: 0, Penalties: 0,
-		TrapNote: false, Spotlight: false, AvgCycle: 0, Park: false, OnStage: false, Harmony: false, CollectedBy: "",
+		TrapNote: false, Spotlight: false, AvgCycle: 0, Park: false, OnStage: false, Harmony: false, RobotDied: false, CollectedBy: "",
 	}
 	// Loop over all actions.
 	for i := 0; i < submit2024Actions.ActionsListLength(); i++ {
@@ -481,19 +481,15 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 			penaltyAction.Init(actionTable.Bytes, actionTable.Pos)
 			stat.Penalties += penaltyAction.Penalties()
 
+		} else if action_type == submit_2024_actions.ActionTypeRobotDeathAction {
+			var robotDeathAction submit_2024_actions.RobotDeathAction
+			robotDeathAction.Init(actionTable.Bytes, actionTable.Pos)
+			stat.RobotDied = true
+
 		} else if action_type == submit_2024_actions.ActionTypePickupNoteAction {
 			var pick_up_action submit_2024_actions.PickupNoteAction
 			pick_up_action.Init(actionTable.Bytes, actionTable.Pos)
-			if picked_up == true {
-				auto := pick_up_action.Auto()
-				if auto == false {
-					stat.NotesDropped += 1
-				} else {
-					stat.NotesDroppedAuto += 1
-				}
-			} else {
-				picked_up = true
-			}
+			picked_up = true
 		} else if action_type == submit_2024_actions.ActionTypePlaceNoteAction {
 			var place_action submit_2024_actions.PlaceNoteAction
 			place_action.Init(actionTable.Bytes, actionTable.Pos)
@@ -514,6 +510,10 @@ func ConvertActionsToStat2024(submit2024Actions *submit_2024_actions.Submit2024A
 				stat.SpeakerAuto += 1
 			} else if score_type == submit_2024_actions.ScoreTypekSPEAKER_AMPLIFIED && !auto {
 				stat.SpeakerAmplified += 1
+			} else if score_type == submit_2024_actions.ScoreTypekDROPPED && auto {
+				stat.NotesDroppedAuto += 1
+			} else if score_type == submit_2024_actions.ScoreTypekDROPPED && !auto {
+				stat.NotesDropped += 1
 			} else {
 				return db.Stats2024{}, errors.New(fmt.Sprintf("Got unknown ObjectType/ScoreLevel/Auto combination"))
 			}
@@ -595,6 +595,7 @@ func (handler request2024DataScoutingHandler) ServeHTTP(w http.ResponseWriter, r
 			Park:             stat.Park,
 			OnStage:          stat.OnStage,
 			Harmony:          stat.Harmony,
+			RobotDied:        stat.RobotDied,
 			CollectedBy:      stat.CollectedBy,
 		})
 	}

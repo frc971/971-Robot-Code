@@ -9,6 +9,7 @@ enum ScoreType: short {
     kAMP_AMPLIFIED,
     kSPEAKER,
     kSPEAKER_AMPLIFIED,
+    kDROPPED,
 }
 
 table MobilityAction {
