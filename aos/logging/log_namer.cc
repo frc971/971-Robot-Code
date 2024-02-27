@@ -76,7 +76,7 @@ void AllocateLogName(char **filename, const char *directory,
     PLOG(FATAL) << "couldn't create final name";
   }
   // Fix basename formatting.
-  LOG(INFO) << "Created log file (" << filename << "). Previous file was ("
+  LOG(INFO) << "Created log file (" << *filename << "). Previous file was ("
             << directory << "/" << previous << ").";
 }
 
