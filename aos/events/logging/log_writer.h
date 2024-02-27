@@ -205,10 +205,10 @@ class Logger {
 
     // Index of the channel in the logged configuration (not necessarily the
     // event loop configuration).
-    int channel_index = -1;
+    int logged_channel_index = -1;
 
     // Channel from the event_loop configuration.
-    const Channel *channel = nullptr;
+    const Channel *event_loop_channel = nullptr;
 
     const Node *timestamp_node = nullptr;
 

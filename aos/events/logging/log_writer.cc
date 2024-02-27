@@ -120,57 +120,57 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
        event_loop_channel_index <
        event_loop->configuration()->channels()->size();
        ++event_loop_channel_index) {
-    const Channel *channel =
+    const Channel *event_loop_channel =
         event_loop->configuration()->channels()->Get(event_loop_channel_index);
 
     // The MakeRawFetcher method needs a channel which is in the event loop
     // configuration() object, not the configuration_ object.  Go look that up
     // from the config.
-    const Channel *config_channel = aos::configuration::GetChannel(
-        configuration_, channel->name()->string_view(),
-        channel->type()->string_view(), "", node_);
+    const Channel *logged_channel = aos::configuration::GetChannel(
+        configuration_, event_loop_channel->name()->string_view(),
+        event_loop_channel->type()->string_view(), "", node_);
 
-    if (config_channel == nullptr) {
+    if (logged_channel == nullptr) {
       // The channel doesn't exist in configuration_, so don't log the
       // timestamps.
       continue;
     }
-    if (!should_log(config_channel)) {
+    if (!should_log(logged_channel)) {
       // The channel didn't pass our `should_log` check, so don't log the
       // timestamps.
       continue;
     }
 
-    const uint32_t channel_index =
-        configuration::ChannelIndex(configuration_, config_channel);
+    const uint32_t logged_channel_index =
+        configuration::ChannelIndex(configuration_, logged_channel);
 
     FetcherStruct fs;
-    fs.channel_index = channel_index;
-    fs.channel = channel;
+    fs.logged_channel_index = logged_channel_index;
+    fs.event_loop_channel = event_loop_channel;
 
     event_loop_to_logged_channel_index_[event_loop_channel_index] =
-        channel_index;
+        logged_channel_index;
 
     const bool is_local =
-        configuration::ChannelIsSendableOnNode(config_channel, node_);
+        configuration::ChannelIsSendableOnNode(logged_channel, node_);
 
     const bool is_readable =
-        configuration::ChannelIsReadableOnNode(config_channel, node_);
+        configuration::ChannelIsReadableOnNode(logged_channel, node_);
     const bool is_logged =
-        configuration::ChannelMessageIsLoggedOnNode(config_channel, node_);
+        configuration::ChannelMessageIsLoggedOnNode(logged_channel, node_);
     const bool log_message = is_logged && is_readable;
 
     bool log_delivery_times = false;
     if (configuration::NodesCount(configuration_) > 1u) {
       const aos::Connection *connection =
-          configuration::ConnectionToNode(config_channel, node_);
+          configuration::ConnectionToNode(logged_channel, node_);
 
       log_delivery_times = configuration::ConnectionDeliveryTimeIsLoggedOnNode(
           connection, event_loop_->node());
 
       CHECK_EQ(log_delivery_times,
                configuration::ConnectionDeliveryTimeIsLoggedOnNode(
-                   config_channel, node_, node_));
+                   logged_channel, node_, node_));
 
       if (connection) {
         fs.reliable_forwarding = (connection->time_to_live() == 0);
@@ -179,13 +179,14 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
 
     // Now, detect a RemoteMessage timestamp logger where we should just log
     // the contents to a file directly.
-    const bool log_contents = timestamp_logger_channels.find(channel) !=
-                              timestamp_logger_channels.end();
+    const bool log_contents =
+        timestamp_logger_channels.find(event_loop_channel) !=
+        timestamp_logger_channels.end();
 
     if (log_message || log_delivery_times || log_contents) {
-      fs.fetcher = event_loop->MakeRawFetcher(channel);
+      fs.fetcher = event_loop->MakeRawFetcher(event_loop_channel);
       VLOG(1) << "Logging channel "
-              << configuration::CleanedChannelToString(channel);
+              << configuration::CleanedChannelToString(event_loop_channel);
 
       if (log_delivery_times) {
         VLOG(1) << "  Delivery times";
@@ -197,7 +198,7 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
       if (log_message || log_delivery_times) {
         if (!is_local) {
           const Node *source_node = configuration::GetNode(
-              configuration_, channel->source_node()->string_view());
+              configuration_, event_loop_channel->source_node()->string_view());
           fs.data_node_index =
               configuration::GetNodeIndex(configuration_, source_node);
         }
@@ -213,9 +214,9 @@ Logger::Logger(EventLoop *event_loop, const Configuration *configuration,
       }
       if (log_contents) {
         VLOG(1) << "Timestamp logger channel "
-                << configuration::CleanedChannelToString(channel);
+                << configuration::CleanedChannelToString(event_loop_channel);
         auto timestamp_logger_channel_info =
-            timestamp_logger_channels.find(channel);
+            timestamp_logger_channels.find(event_loop_channel);
         CHECK(timestamp_logger_channel_info != timestamp_logger_channels.end());
         fs.timestamp_node = std::get<0>(timestamp_logger_channel_info->second);
         fs.reliable_contents =
@@ -286,14 +287,15 @@ void Logger::StartLogging(std::unique_ptr<LogNamer> log_namer,
 
   for (FetcherStruct &f : fetchers_) {
     if (f.wants_writer) {
-      f.writer = log_namer_->MakeWriter(f.channel);
+      f.writer = log_namer_->MakeWriter(f.event_loop_channel);
     }
     if (f.wants_timestamp_writer) {
-      f.timestamp_writer = log_namer_->MakeTimestampWriter(f.channel);
+      f.timestamp_writer =
+          log_namer_->MakeTimestampWriter(f.event_loop_channel);
     }
     if (f.wants_contents_writer) {
       f.contents_writer = log_namer_->MakeForwardedTimestampWriter(
-          f.channel, CHECK_NOTNULL(f.timestamp_node));
+          f.event_loop_channel, CHECK_NOTNULL(f.timestamp_node));
     }
   }
 
@@ -414,14 +416,15 @@ std::unique_ptr<LogNamer> Logger::RestartLogging(
     // Create writers from the new namer
 
     if (f.wants_writer) {
-      f.writer = log_namer_->MakeWriter(f.channel);
+      f.writer = log_namer_->MakeWriter(f.event_loop_channel);
     }
     if (f.wants_timestamp_writer) {
-      f.timestamp_writer = log_namer_->MakeTimestampWriter(f.channel);
+      f.timestamp_writer =
+          log_namer_->MakeTimestampWriter(f.event_loop_channel);
     }
     if (f.wants_contents_writer) {
       f.contents_writer = log_namer_->MakeForwardedTimestampWriter(
-          f.channel, CHECK_NOTNULL(f.timestamp_node));
+          f.event_loop_channel, CHECK_NOTNULL(f.timestamp_node));
     }
 
     // Mark each channel with data as not written.  That triggers each channel
@@ -712,8 +715,8 @@ void Logger::WriteData(NewDataWriter *writer, const FetcherStruct &f) {
     // Write!
     const auto start = event_loop_->monotonic_now();
 
-    ContextDataCopier coppier(f.fetcher->context(), f.channel_index, f.log_type,
-                              event_loop_);
+    ContextDataCopier coppier(f.fetcher->context(), f.logged_channel_index,
+                              f.log_type, event_loop_);
 
     aos::monotonic_clock::time_point message_time =
         static_cast<int>(node_index_) != f.data_node_index
@@ -742,7 +745,7 @@ void Logger::WriteTimestamps(NewDataWriter *timestamp_writer,
         f.fetcher->context().monotonic_event_time, f.reliable_forwarding);
 
     const auto start = event_loop_->monotonic_now();
-    ContextDataCopier coppier(f.fetcher->context(), f.channel_index,
+    ContextDataCopier coppier(f.fetcher->context(), f.logged_channel_index,
                               LogType::kLogDeliveryTimeOnly, event_loop_);
 
     timestamp_writer->CopyTimestampMessage(
@@ -908,7 +911,7 @@ void Logger::RecordFetchResult(aos::monotonic_clock::time_point start,
   total_message_fetch_time_ += duration;
   if (duration > max_message_fetch_time_) {
     max_message_fetch_time_ = duration;
-    max_message_fetch_time_channel_ = fetcher->channel_index;
+    max_message_fetch_time_channel_ = fetcher->logged_channel_index;
     max_message_fetch_time_size_ = fetcher->fetcher->context().size;
   }
 }
@@ -922,13 +925,13 @@ void Logger::RecordCreateMessageTime(aos::monotonic_clock::time_point start,
   total_copy_bytes_ += fetcher.fetcher->context().size;
   if (duration > max_copy_time_) {
     max_copy_time_ = duration;
-    max_copy_time_channel_ = fetcher.channel_index;
+    max_copy_time_channel_ = fetcher.logged_channel_index;
     max_copy_time_size_ = fetcher.fetcher->context().size;
   }
   const auto log_delay = end - fetcher.fetcher->context().monotonic_event_time;
   if (log_delay > max_log_delay_) {
     max_log_delay_ = log_delay;
-    max_log_delay_channel_ = fetcher.channel_index;
+    max_log_delay_channel_ = fetcher.logged_channel_index;
   }
 }
 
