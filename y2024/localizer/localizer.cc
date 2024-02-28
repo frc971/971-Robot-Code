@@ -195,7 +195,7 @@ Localizer::Localizer(aos::EventLoop *event_loop)
         const double theta = control.keep_current_theta()
                                  ? ekf_.X_hat(StateIdx::kTheta)
                                  : control.theta();
-        // Ecnoder values need to be reset based on the current values to ensure
+        // Encoder values need to be reset based on the current values to ensure
         // that we don't get weird corrections on the next encoder update.
         const double left_encoder = ekf_.X_hat(StateIdx::kLeftEncoder);
         const double right_encoder = ekf_.X_hat(StateIdx::kRightEncoder);
