@@ -1,6 +1,5 @@
 load("//frc971:downloader.bzl", "robot_downloader")
 load("//aos:config.bzl", "aos_config")
-load("//tools/build_rules:template.bzl", "jinja2_template")
 load("//aos/util:config_validator_macro.bzl", "config_validator_test")
 
 config_validator_test(
@@ -106,7 +105,6 @@ aos_config(
     deps = [
         ":config_imu",
         ":config_orin1",
-        ":config_orin2",
         ":config_roborio",
     ],
 )
@@ -127,6 +125,10 @@ aos_config(
         "//y2024/localizer:visualization_fbs",
         "//aos/network:timestamp_fbs",
         "//aos/network:remote_message_fbs",
+        "//frc971/vision:calibration_fbs",
+        "//frc971/vision:target_map_fbs",
+        "//frc971/vision:vision_fbs",
+        "@com_github_foxglove_schemas//:schemas",
     ],
     target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
@@ -166,46 +168,30 @@ aos_config(
     ],
 )
 
-[
-    aos_config(
-        name = "config_" + orin,
-        src = "y2024_" + orin + ".json",
-        flatbuffers = [
-            "//aos/network:message_bridge_client_fbs",
-            "//aos/network:message_bridge_server_fbs",
-            "//aos/network:timestamp_fbs",
-            "//aos/network:remote_message_fbs",
-            "//y2024/constants:constants_fbs",
-            "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
-            "//frc971/vision:calibration_fbs",
-            "//frc971/vision:target_map_fbs",
-            "//frc971/vision:vision_fbs",
-            "//y2024/localizer:visualization_fbs",
-            "@com_github_foxglove_schemas//:schemas",
-        ],
-        target_compatible_with = ["@platforms//os:linux"],
-        visibility = ["//visibility:public"],
-        deps = [
-            "//aos/events:aos_config",
-            "//frc971/control_loops/drivetrain:aos_config",
-            "//frc971/input:aos_config",
-        ],
-    )
-    for orin in [
-        "orin1",
-        "orin2",
-    ]
-]
-
-[
-    jinja2_template(
-        name = "y2024_orin" + str(num) + ".json",
-        src = "y2024_orin_template.json",
-        parameters = {"NUM": str(num)},
-        target_compatible_with = ["@platforms//os:linux"],
-    )
-    for num in range(1, 3)
-]
+aos_config(
+    name = "config_orin1",
+    src = "y2024_orin1.json",
+    flatbuffers = [
+        "//aos/network:message_bridge_client_fbs",
+        "//aos/network:message_bridge_server_fbs",
+        "//aos/network:timestamp_fbs",
+        "//aos/network:remote_message_fbs",
+        "//y2024/constants:constants_fbs",
+        "//frc971/control_loops/drivetrain/localization:localizer_output_fbs",
+        "//frc971/vision:calibration_fbs",
+        "//y2024/localizer:visualization_fbs",
+        "//frc971/vision:target_map_fbs",
+        "//frc971/vision:vision_fbs",
+        "@com_github_foxglove_schemas//:schemas",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//aos/events:aos_config",
+        "//frc971/control_loops/drivetrain:aos_config",
+        "//frc971/input:aos_config",
+    ],
+)
 
 cc_library(
     name = "constants",
