@@ -25,7 +25,7 @@ DEFINE_bool(direct, false,
 std::unique_ptr<aos::logger::MultiNodeFilesLogNamer> MakeLogNamer(
     aos::EventLoop *event_loop) {
   std::optional<std::string> log_name =
-      aos::logging::MaybeGetLogName("fbs_log");
+      aos::logging::MaybeGetLogName("image_log");
 
   if (!log_name.has_value()) {
     return nullptr;

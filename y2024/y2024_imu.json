@@ -302,11 +302,7 @@
     },
     {
       "name": "localizer_logger",
-      "executable_name": "logger_main",
-      "args": [
-        "--snappy_compress",
-        "--rotate_every", "30.0"
-      ],
+      "executable_name": "localizer_logger",
       "user": "pi",
       "nodes": [
         "imu"
