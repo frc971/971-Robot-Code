@@ -803,7 +803,7 @@ TEST_F(SuperstructureTest, SaturationTest) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  superstructure_plant_.set_extend_beambreak(false);
+  superstructure_plant_.set_extend_beambreak(true);
 
   RunFor(chrono::seconds(10));
   VerifyNearGoal();
@@ -1129,6 +1129,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   EXPECT_NEAR(superstructure_status_fetcher_->shooter()->turret()->position(),
               simulated_robot_constants_->common()->turret_loading_position(),
               0.01);
+
   {
     auto builder = superstructure_goal_sender_.MakeBuilder();
 
