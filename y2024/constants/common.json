@@ -38,8 +38,8 @@
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 0.5,
-      "max_acceleration": 3.0
+      "max_velocity": 2.0,
+      "max_acceleration": 5.0
     },
     "range": {
         "lower_hard": -0.2,
@@ -71,10 +71,11 @@
     "turret_stator_current_limit": 40,
     "altitude_supply_current_limit": 10,
     "altitude_stator_current_limit": 60,
-    "catapult_supply_current_limit": 10,
-    "catapult_stator_current_limit": 30,
-    "retention_roller_stator_current_limit": 5,
+    "catapult_supply_current_limit": 60,
+    "catapult_stator_current_limit": 250,
+    "retention_roller_stator_current_limit": 20,
     "slower_retention_roller_stator_current_limit": 2,
+    "shooting_retention_roller_stator_current_limit": -20,
     "retention_roller_supply_current_limit": 10
   },
   "transfer_roller_voltages": {
@@ -111,7 +112,7 @@
   },
   "catapult": {
     "zeroing_voltage": 3.0,
-    "operating_voltage": 3.0,
+    "operating_voltage": 12.0,
     "zeroing_profile_params": {
       "max_velocity": 1.0,
       "max_acceleration": 6.0
@@ -137,8 +138,8 @@
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 0.25,
-      "max_acceleration": 0.25
+      "max_velocity": 3.0,
+      "max_acceleration": 5.0
     },
     "range": {
         "lower_hard": -0.01,
@@ -156,8 +157,8 @@
       "max_acceleration": 3.0
     },
     "default_profile_params":{
-      "max_velocity": 1.00,
-      "max_acceleration": 1.5
+      "max_velocity": 2.0,
+      "max_acceleration": 5.0
     },
     "range": {
         "lower_hard": -4.8,
@@ -217,7 +218,7 @@
   "max_altitude_shooting_angle": 0.89,
   "retention_roller_voltages": {
     "retaining": 1.5,
-    "spitting": -6.0
+    "spitting": 6.0
   },
   // TODO(Filip): Update the speaker and amp shooter setpoints
   "shooter_speaker_set_point": {

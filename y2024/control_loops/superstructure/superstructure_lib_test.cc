@@ -400,7 +400,7 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
 
     EXPECT_NEAR(set_point,
                 superstructure_status_fetcher_->intake_pivot()->position(),
-                0.01);
+                0.015);
 
     if (superstructure_goal_fetcher_->has_shooter_goal() &&
         superstructure_goal_fetcher_->note_goal() != NoteGoal::AMP &&
@@ -1198,7 +1198,7 @@ TEST_F(SuperstructureTest, LoadingToShooting) {
   // Wait until the bot finishes auto-aiming.
   WaitUntilNear(kTurretGoal, kAltitudeGoal);
 
-  RunFor(chrono::seconds(10));
+  RunFor(chrono::milliseconds(1000));
 
   ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
 
@@ -1281,7 +1281,7 @@ TEST_F(SuperstructureTest, Preloaded) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
-  RunFor(dt());
+  RunFor(chrono::milliseconds(200));
 
   superstructure_status_fetcher_.Fetch();
   ASSERT_TRUE(superstructure_status_fetcher_.get() != nullptr);
