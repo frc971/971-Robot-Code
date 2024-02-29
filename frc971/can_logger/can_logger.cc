@@ -12,8 +12,10 @@ CanLogger::CanLogger(aos::ShmEventLoop *event_loop,
     : shm_event_loop_(event_loop),
       fd_(socket(PF_CAN, SOCK_RAW | SOCK_NONBLOCK, CAN_RAW)),
       frames_sender_(shm_event_loop_->MakeSender<CanFrame>(channel_name)) {
-  // TOOD(max): Figure out a proper priority
-  shm_event_loop_->SetRuntimeRealtimePriority(10);
+  // TODO(max): Figure out a proper priority
+  if (!FLAGS_poll) {
+    shm_event_loop_->SetRuntimeRealtimePriority(10);
+  }
   struct ifreq ifr;
   strcpy(ifr.ifr_name, interface_name.data());
   PCHECK(ioctl(fd_.get(), SIOCGIFINDEX, &ifr) == 0)
