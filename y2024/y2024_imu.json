@@ -7,7 +7,7 @@
       "frequency": 100,
       "logger": "LOCAL_AND_REMOTE_LOGGER",
       "logger_nodes": [
-        "orin1",
+        "orin1"
       ],
       "destination_nodes": [
         {
@@ -18,7 +18,7 @@
           "timestamp_logger_nodes": [
             "imu"
           ]
-        },
+        }
       ]
     },
     {
@@ -374,7 +374,7 @@
       ]
     },
     {
-      "name": "can_logger",
+      "name": "imu_can_logger",
       "executable_name": "can_logger",
       "nodes": [
         "imu"
@@ -482,7 +482,7 @@
       "args": [
           "--enable_ftrace",
           "--camera=0",
-          "--channel=/camera0",
+          "--channel=/camera0"
       ],
       "user": "pi",
       "nodes": [
@@ -495,7 +495,7 @@
       "args": [
           "--enable_ftrace",
           "--camera=1",
-          "--channel=/camera1",
+          "--channel=/camera1"
       ],
       "user": "pi",
       "nodes": [
@@ -506,7 +506,7 @@
       "name": "apriltag_detector0",
       "executable_name": "apriltag_detector",
       "args": [
-          "--channel=/camera0",
+          "--channel=/camera0"
       ],
       "user": "pi",
       "nodes": [
@@ -517,7 +517,7 @@
       "name": "apriltag_detector1",
       "executable_name": "apriltag_detector",
       "args": [
-          "--channel=/camera1",
+          "--channel=/camera1"
       ],
       "user": "pi",
       "nodes": [
@@ -571,6 +571,6 @@
     },
     {
       "name": "orin1"
-    },
+    }
   ]
 }
