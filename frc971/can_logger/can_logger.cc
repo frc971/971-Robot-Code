@@ -1,5 +1,9 @@
 #include "frc971/can_logger/can_logger.h"
 
+DEFINE_bool(poll, false,
+            "If true, poll the CAN bus every 100ms.  If false, wake up for "
+            "each frame and publish it.");
+
 namespace frc971::can_logger {
 
 CanLogger::CanLogger(aos::ShmEventLoop *event_loop,
@@ -35,7 +39,14 @@ CanLogger::CanLogger(aos::ShmEventLoop *event_loop,
   CHECK_EQ(opt_size, sizeof(recieve_buffer_size));
   VLOG(0) << "CAN recieve bufffer is " << recieve_buffer_size << " bytes large";
 
-  shm_event_loop_->epoll()->OnReadable(fd_.get(), [this]() { Poll(); });
+  if (FLAGS_poll) {
+    aos::TimerHandler *timer_handler =
+        shm_event_loop_->AddTimer([this]() { Poll(); });
+    timer_handler->set_name("CAN logging Loop");
+    timer_handler->Schedule(event_loop->monotonic_now(), kPollPeriod);
+  } else {
+    shm_event_loop_->epoll()->OnReadable(fd_.get(), [this]() { Poll(); });
+  }
 }
 
 void CanLogger::Poll() {

@@ -441,8 +441,11 @@
       ]
     },
     {
-      "name": "can_logger",
+      "name": "roborio_can_logger",
       "executable_name": "can_logger",
+      "args": [
+        "--poll"
+      ],
       "nodes": [
         "roborio"
       ]
