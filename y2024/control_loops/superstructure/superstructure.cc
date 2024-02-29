@@ -19,6 +19,9 @@ constexpr double kExtendThreshold = 0.01;
 constexpr double kTurretLoadingThreshold = 0.01;
 constexpr double kAltitudeLoadingThreshold = 0.01;
 
+constexpr std::chrono::milliseconds kExtraIntakingTime =
+    std::chrono::milliseconds(500);
+
 namespace y2024::control_loops::superstructure {
 
 using ::aos::monotonic_clock;
@@ -60,8 +63,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                                   aos::Sender<Status>::Builder *status) {
   const monotonic_clock::time_point timestamp =
       event_loop()->context().monotonic_event_time;
-
-  (void)timestamp;
 
   if (WasReset()) {
     AOS_LOG(ERROR, "WPILib reset, restarting\n");
@@ -113,6 +114,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       case IntakeGoal::INTAKE:
         intake_pivot_position =
             robot_constants_->common()->intake_pivot_set_points()->extended();
+        intake_end_time_ = timestamp;
         break;
       case IntakeGoal::SPIT:
         intake_pivot_position =
@@ -180,7 +182,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       catapult_requested_ = false;
       break;
     case SuperstructureState::INTAKING:
-
       // Switch to LOADED state when the extend beambreak is triggered
       // meaning the note is loaded in the extend
       if (position->extend_beambreak()) {
@@ -194,6 +195,14 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       if (!catapult_requested_ && unsafe_goal != nullptr &&
           unsafe_goal->note_goal() == NoteGoal::CATAPULT) {
         catapult_requested_ = true;
+      }
+
+      // If we are no longer requesting INTAKE or we are no longer requesting
+      // an INTAKE goal, wait 0.5 seconds then go back to IDLE.
+      if (!(unsafe_goal != nullptr &&
+            unsafe_goal->intake_goal() == IntakeGoal::INTAKE) &&
+          timestamp > intake_end_time_ + kExtraIntakingTime) {
+        state_ = SuperstructureState::IDLE;
       }
 
       break;

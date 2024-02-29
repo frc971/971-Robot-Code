@@ -924,6 +924,41 @@ TEST_F(SuperstructureTest, IntakeGoal) {
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
 
+  RunFor(chrono::milliseconds(500));
+
+  // Make sure we're still intaking for 500 ms after we stop giving it an
+  // intaking goal.
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_note_goal(NoteGoal::NONE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
+  RunFor(chrono::milliseconds(200));
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_status_fetcher_->state(),
+            SuperstructureState::INTAKING);
+  EXPECT_EQ(superstructure_status_fetcher_->intake_roller(),
+            IntakeRollerStatus::INTAKING);
+
+  // Make sure we stop when loaded
+  {
+    auto builder = superstructure_goal_sender_.MakeBuilder();
+
+    Goal::Builder goal_builder = builder.MakeBuilder<Goal>();
+
+    goal_builder.add_intake_goal(IntakeGoal::INTAKE);
+    goal_builder.add_note_goal(NoteGoal::NONE);
+
+    ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
+  }
+
   superstructure_plant_.set_extend_beambreak(true);
 
   RunFor(chrono::seconds(2));

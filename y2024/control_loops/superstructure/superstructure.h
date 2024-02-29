@@ -74,6 +74,9 @@ class Superstructure
   aos::monotonic_clock::time_point transfer_start_time_ =
       aos::monotonic_clock::time_point::min();
 
+  aos::monotonic_clock::time_point intake_end_time_ =
+      aos::monotonic_clock::time_point::min();
+
   AbsoluteEncoderSubsystem intake_pivot_;
   PotAndAbsoluteEncoderSubsystem climber_;
 
