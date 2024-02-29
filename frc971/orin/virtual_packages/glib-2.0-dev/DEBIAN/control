@@ -1,0 +1,7 @@
+Package: glib-2.0-dev
+Version: 2.74.6-2
+Architecture: arm64
+Depends: libglib2.0-dev
+Maintainer: Jim Ostrowski <yimmy13@gmail.com>
+Provides: glib-2.0-dev
+Description: Adapter for glib-2.0-dev

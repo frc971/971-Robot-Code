@@ -29587,6 +29587,100 @@ cc_library(
 )
 
 cc_library(
+    name = "usr_lib_aarch64-linux-gnu_libpanelw.so.6.4",
+    srcs = ["usr/lib/aarch64-linux-gnu/libpanelw.so.6.4"],
+    deps = [
+        ":usr_lib_aarch64-linux-gnu_libc.so.6",
+        ":usr_lib_aarch64-linux-gnu_libncursesw.so.6.4",
+        ":usr_lib_aarch64-linux-gnu_libtinfo.so.6.4",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_aarch64-linux-gnu_libc.so.6",
+    srcs = ["usr/lib/aarch64-linux-gnu/libc.so.6"],
+    deps = [
+        ":usr_lib_aarch64-linux-gnu_ld-linux-aarch64.so.1",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_aarch64-linux-gnu_ld-linux-aarch64.so.1",
+    srcs = ["usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1"],
+    deps = [
+    ],
+)
+
+cc_library(
+    name = "usr_lib_aarch64-linux-gnu_libtinfo.so.6.4",
+    srcs = ["usr/lib/aarch64-linux-gnu/libtinfo.so.6.4"],
+    deps = [
+        ":usr_lib_aarch64-linux-gnu_ld-linux-aarch64.so.1",
+        ":usr_lib_aarch64-linux-gnu_libc.so.6",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_aarch64-linux-gnu_libncursesw.so.6.4",
+    srcs = ["usr/lib/aarch64-linux-gnu/libncursesw.so.6.4"],
+    deps = [
+        ":usr_lib_aarch64-linux-gnu_ld-linux-aarch64.so.1",
+        ":usr_lib_aarch64-linux-gnu_libc.so.6",
+        ":usr_lib_aarch64-linux-gnu_libtinfo.so.6.4",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_aarch64-linux-gnu_libmenuw.so.6.4",
+    srcs = ["usr/lib/aarch64-linux-gnu/libmenuw.so.6.4"],
+    deps = [
+        ":usr_lib_aarch64-linux-gnu_ld-linux-aarch64.so.1",
+        ":usr_lib_aarch64-linux-gnu_libc.so.6",
+        ":usr_lib_aarch64-linux-gnu_libncursesw.so.6.4",
+        ":usr_lib_aarch64-linux-gnu_libtinfo.so.6.4",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_aarch64-linux-gnu_libformw.so.6.4",
+    srcs = ["usr/lib/aarch64-linux-gnu/libformw.so.6.4"],
+    deps = [
+        ":usr_lib_aarch64-linux-gnu_ld-linux-aarch64.so.1",
+        ":usr_lib_aarch64-linux-gnu_libc.so.6",
+        ":usr_lib_aarch64-linux-gnu_libncursesw.so.6.4",
+        ":usr_lib_aarch64-linux-gnu_libtinfo.so.6.4",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_aarch64-linux-gnu_libpcre2-32.so.0.11.2",
+    srcs = ["usr/lib/aarch64-linux-gnu/libpcre2-32.so.0.11.2"],
+    deps = [
+        ":usr_lib_aarch64-linux-gnu_ld-linux-aarch64.so.1",
+        ":usr_lib_aarch64-linux-gnu_libc.so.6",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_aarch64-linux-gnu_libpcre2-posix.so.3.0.4",
+    srcs = ["usr/lib/aarch64-linux-gnu/libpcre2-posix.so.3.0.4"],
+    deps = [
+        ":usr_lib_aarch64-linux-gnu_ld-linux-aarch64.so.1",
+        ":usr_lib_aarch64-linux-gnu_libc.so.6",
+        ":usr_lib_aarch64-linux-gnu_libpcre2-8.so.0.11.2",
+    ],
+)
+
+cc_library(
+    name = "usr_lib_aarch64-linux-gnu_libpcre2-8.so.0.11.2",
+    srcs = ["usr/lib/aarch64-linux-gnu/libpcre2-8.so.0.11.2"],
+    deps = [
+        ":usr_lib_aarch64-linux-gnu_ld-linux-aarch64.so.1",
+        ":usr_lib_aarch64-linux-gnu_libc.so.6",
+    ],
+)
+
+cc_library(
     name = "usr_lib_aarch64-linux-gnu_libopencv_shape.so.4.6.0-lib",
     srcs = ["usr/lib/aarch64-linux-gnu/libopencv_shape.so.4.6.0"],
     deps = [
