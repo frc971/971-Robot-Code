@@ -114,12 +114,13 @@ void CalibrationData::ReviewData(CalibrationDataObserver *observer) const {
 }
 
 CalibrationFoxgloveVisualizer::CalibrationFoxgloveVisualizer(
-    aos::EventLoop *event_loop)
+    aos::EventLoop *event_loop, std::string_view camera_channel)
     : event_loop_(event_loop),
-      image_converter_(event_loop_, "/camera", "/camera",
+      image_converter_(event_loop_, camera_channel, camera_channel,
                        ImageCompression::kJpeg),
       annotations_sender_(
-          event_loop_->MakeSender<foxglove::ImageAnnotations>("/camera")) {}
+          event_loop_->MakeSender<foxglove::ImageAnnotations>(camera_channel)) {
+}
 
 aos::FlatbufferDetachedBuffer<aos::Configuration>
 CalibrationFoxgloveVisualizer::AddVisualizationChannels(
@@ -175,7 +176,7 @@ Calibration::Calibration(
           }),
       data_(data),
       visualizer_event_loop_(image_factory_->MakeEventLoop("visualization")),
-      visualizer_(visualizer_event_loop_.get()) {
+      visualizer_(visualizer_event_loop_.get(), image_channel) {
   imu_factory_->OnShutdown([]() { cv::destroyAllWindows(); });
 
   // Check for IMUValuesBatch topic on both /localizer and /drivetrain channels,

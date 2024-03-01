@@ -79,7 +79,8 @@ class CalibrationData {
 
 class CalibrationFoxgloveVisualizer {
  public:
-  CalibrationFoxgloveVisualizer(aos::EventLoop *event_loop);
+  CalibrationFoxgloveVisualizer(aos::EventLoop *event_loop,
+                                std::string_view camera_channel = "/camera");
 
   static aos::FlatbufferDetachedBuffer<aos::Configuration>
   AddVisualizationChannels(const aos::Configuration *config,
