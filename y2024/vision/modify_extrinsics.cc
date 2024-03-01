@@ -26,7 +26,8 @@ DEFINE_string(orig_calib_file, "",
               "Intrinsics to use for estimating board pose prior to solving "
               "for the new intrinsics.");
 DEFINE_string(calibration_folder, "/tmp", "Folder to place calibration files.");
-DEFINE_int32(orin_number, -1, "Orin number to use; unchanged if -1");
+DEFINE_string(node_name, "",
+              "Node name to use, e.g. orin1, imu; unchanged if blank");
 DEFINE_int32(team_number, -1, "Team number to use; unchanged if -1");
 DEFINE_int32(camera_number, -1, "Camera number to use; unchanged if -1");
 
@@ -134,19 +135,9 @@ void Main(std::string orig_calib_filename) {
               orig_calib_filename);
 
   // Populate the new variables from command-line or from base_calibration
-  CHECK(base_calibration.message().node_name()->str().find("orin") == 0)
-      << "This code is only available for calibrations on the orin (2024+)";
-  int cpu_number =
-      (FLAGS_orin_number == -1 ? std::atoi(base_calibration.message()
-                                               .node_name()
-                                               ->str()
-                                               .substr(4, 1)
-                                               .c_str())
-                               : FLAGS_orin_number);
   std::string node_name =
-      (FLAGS_orin_number == -1
-           ? base_calibration.message().node_name()->str()
-           : std::string("orin") + std::to_string(FLAGS_orin_number));
+      (FLAGS_node_name == "" ? base_calibration.message().node_name()->str()
+                             : FLAGS_node_name);
   int team_number =
       (FLAGS_team_number == -1 ? base_calibration.message().team_number()
                                : FLAGS_team_number);
@@ -171,8 +162,8 @@ void Main(std::string orig_calib_filename) {
            : FLAGS_calibration_folder);
   const std::string new_calib_filename =
       dirname + "/" +
-      absl::StrFormat("calibration_orin-%d-%d-%d_cam-%s_%s.json", team_number,
-                      cpu_number, camera_number, camera_id.c_str(),
+      absl::StrFormat("calibration_%s-%d-%d_cam-%s_%s.json", node_name.c_str(),
+                      team_number, camera_number, camera_id.c_str(),
                       time_ss.str());
 
   VLOG(1) << "From: " << orig_calib_filename << " -> "
