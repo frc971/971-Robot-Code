@@ -36,7 +36,7 @@
       "source_node": "imu",
       "frequency": 50,
       "num_senders": 20,
-      "max_size": 4096
+      "max_size": 6184
     },
     {
       "name": "/imu/aos",
