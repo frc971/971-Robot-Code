@@ -441,10 +441,8 @@ void ExtrinsicsMain(int argc, char *argv[]) {
 
   VLOG(1) << "Using target type " << FLAGS_target_type;
   std::vector<std::string> node_list;
-  node_list.push_back("pi1");
-  node_list.push_back("pi2");
-  node_list.push_back("pi3");
-  node_list.push_back("pi4");
+  node_list.push_back("orin1");
+  node_list.push_back("imu");
   std::vector<const calibration::CameraCalibration *> calibration_list;
 
   std::vector<std::unique_ptr<aos::EventLoop>> detection_event_loops;

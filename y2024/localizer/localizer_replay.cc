@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
   aos::logger::LogReader reader(logfiles, &config.message());
 
   reader.RemapLoggedChannel("/localizer", "y2024.localizer.Status");
-  for (const auto orin : {"orin1", "orin2"}) {
+  for (const auto orin : {"orin1", "imu"}) {
     for (const auto camera : {"camera0", "camera1"}) {
       reader.RemapLoggedChannel(absl::StrCat("/", orin, "/", camera),
                                 "y2024.localizer.Visualization");

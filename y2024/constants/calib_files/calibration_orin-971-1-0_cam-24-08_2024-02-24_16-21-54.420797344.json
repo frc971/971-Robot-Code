@@ -1,5 +1,5 @@
 {
- "node_name": "orin1",
+ "node_name": "imu",
  "team_number": 971,
  "intrinsics": [
   645.963562,

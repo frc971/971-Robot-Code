@@ -171,7 +171,7 @@
       "max_size": 200
     },
     {
-      "name": "/orin2/camera0",
+      "name": "/imu/camera0",
       "type": "frc971.vision.CameraImage",
       "source_node": "imu",
       "channel_storage_duration": 1000000000,
@@ -182,7 +182,7 @@
       "num_senders": 18
     },
     {
-      "name": "/orin2/camera1",
+      "name": "/imu/camera1",
       "type": "frc971.vision.CameraImage",
       "source_node": "imu",
       "channel_storage_duration": 1000000000,
@@ -193,7 +193,7 @@
       "num_senders": 18
     },
     {
-      "name": "/orin2/camera0",
+      "name": "/imu/camera0",
       "type": "foxglove.CompressedImage",
       "source_node": "imu",
       "logger": "NOT_LOGGED",
@@ -202,7 +202,7 @@
       "max_size": 622384
     },
     {
-      "name": "/orin2/camera1",
+      "name": "/imu/camera1",
       "type": "foxglove.CompressedImage",
       "source_node": "imu",
       "logger": "NOT_LOGGED",
@@ -211,35 +211,35 @@
       "max_size": 622384
     },
     {
-      "name": "/orin2/camera0",
+      "name": "/imu/camera0",
       "type": "foxglove.ImageAnnotations",
       "source_node": "imu",
       "frequency": 65,
       "max_size": 50000
     },
     {
-      "name": "/orin2/camera1",
+      "name": "/imu/camera1",
       "type": "foxglove.ImageAnnotations",
       "source_node": "imu",
       "frequency": 65,
       "max_size": 50000
     },
     {
-      "name": "/orin2/camera0",
+      "name": "/imu/camera0",
       "type": "y2024.localizer.Visualization",
       "source_node": "imu",
       "frequency": 65,
       "max_size": 50000
     },
     {
-      "name": "/orin2/camera1",
+      "name": "/imu/camera1",
       "type": "y2024.localizer.Visualization",
       "source_node": "imu",
       "frequency": 65,
       "max_size": 50000
     },
     {
-      "name": "/orin2/camera0",
+      "name": "/imu/camera0",
       "type": "frc971.vision.TargetMap",
       "source_node": "imu",
       "frequency": 65,
@@ -247,7 +247,7 @@
       "max_size": 1024
     },
     {
-      "name": "/orin2/camera1",
+      "name": "/imu/camera1",
       "type": "frc971.vision.TargetMap",
       "source_node": "imu",
       "frequency": 65,
@@ -550,7 +550,7 @@
         "source_node": "imu"
       },
       "rename": {
-        "name": "/orin2/camera"
+        "name": "/imu/camera"
       }
     }
   ],

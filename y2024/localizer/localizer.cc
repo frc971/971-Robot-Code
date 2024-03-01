@@ -34,8 +34,8 @@ DEFINE_double(max_auto_image_robot_speed, 2.0,
 namespace y2024::localizer {
 namespace {
 constexpr std::array<std::string_view, Localizer::kNumCameras>
-    kDetectionChannels{"/orin1/camera0", "/orin1/camera1", "/orin2/camera0",
-                       "/orin2/camera1"};
+    kDetectionChannels{"/orin1/camera0", "/orin1/camera1", "/imu/camera0",
+                       "/imu/camera1"};
 
 size_t CameraIndexForName(std::string_view name) {
   for (size_t index = 0; index < kDetectionChannels.size(); ++index) {

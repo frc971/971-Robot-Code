@@ -42,7 +42,7 @@ export function plotVision(conn: Connection, element: Element): void {
 
   const targets = [];
   const targetLabels = [];
-  for (const orin of ['orin1', 'orin2']) {
+  for (const orin of ['orin1', 'imu']) {
     for (const camera of ['camera0', 'camera1']) {
       targetLabels.push(orin + ' ' + camera);
       targets.push(aosPlotter.addRawMessageSource(
