@@ -9,7 +9,8 @@
 namespace y2024::vision {
 
 const frc971::vision::calibration::CameraCalibration *FindCameraCalibration(
-    const y2024::Constants &calibration_data, std::string_view node_name);
+    const y2024::Constants &calibration_data, std::string_view node_name,
+    int camera_number);
 
 }  // namespace y2024::vision
 

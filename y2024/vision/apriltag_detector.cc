@@ -20,10 +20,12 @@ void GpuApriltagDetector() {
   const frc971::constants::ConstantsFetcher<y2024::Constants> calibration_data(
       &event_loop);
 
+  CHECK(FLAGS_channel.length() == 8);
+  int camera_id = std::stoi(FLAGS_channel.substr(7, 1));
   const frc971::vision::calibration::CameraCalibration *calibration =
       y2024::vision::FindCameraCalibration(
           calibration_data.constants(),
-          event_loop.node()->name()->string_view());
+          event_loop.node()->name()->string_view(), camera_id);
 
   frc971::apriltag::ApriltagDetector detector(&event_loop, FLAGS_channel,
                                               calibration);

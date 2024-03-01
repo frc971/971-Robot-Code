@@ -85,8 +85,11 @@ void ViewerMain() {
 
   frc971::constants::ConstantsFetcher<y2024::Constants> constants_fetcher(
       &event_loop);
+  CHECK(FLAGS_channel.length() == 8);
+  int camera_id = std::stoi(FLAGS_channel.substr(7, 1));
   const auto *calibration_data = FindCameraCalibration(
-      constants_fetcher.constants(), event_loop.node()->name()->string_view());
+      constants_fetcher.constants(), event_loop.node()->name()->string_view(),
+      camera_id);
   const cv::Mat intrinsics = frc971::vision::CameraIntrinsics(calibration_data);
   const cv::Mat dist_coeffs =
       frc971::vision::CameraDistCoeffs(calibration_data);
