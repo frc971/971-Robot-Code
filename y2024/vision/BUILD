@@ -115,3 +115,22 @@ cc_binary(
         "@org_tuxfamily_eigen//:eigen",
     ],
 )
+
+cc_binary(
+    name = "modify_extrinsics",
+    srcs = [
+        "modify_extrinsics.cc",
+    ],
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//y2024:__subpackages__"],
+    deps = [
+        "//aos:configuration",
+        "//aos:init",
+        "//aos/events:event_loop",
+        "//frc971/vision:calibration_fbs",
+        "//frc971/vision:vision_util_lib",
+        "//y2024/constants:constants_fbs",
+        "@com_google_absl//absl/strings:str_format",
+        "@org_tuxfamily_eigen//:eigen",
+    ],
+)

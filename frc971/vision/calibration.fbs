@@ -8,7 +8,7 @@ table TransformationMatrix {
 
 // Calibration information for a given camera on a given robot.
 table CameraCalibration {
-  // The name of the camera node which this calibration data applies to.
+  // The name of the compute node which this calibration data applies to.
   node_name:string (id: 0);
   // The team number of the robot which this calibration data applies to.
   team_number:int (id: 1);
