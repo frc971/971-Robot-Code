@@ -348,6 +348,36 @@ TEST_F(JsonToFlatbufferTest, CppStyleComments) {
 } // foo)",
                           "{ \"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
                           TestReflection::kNo));
+
+  // Test empty comment on its own line doesn't remove the next line.
+  EXPECT_TRUE(JsonAndBack(R"({
+  //
+  "vector_foo_double": [ 9, 7, 1 ], // foo
+  "vector_foo_float": [ 3, 1, 4 ]
+} // foo)",
+                          "{ \"vector_foo_float\": [ 3.0, 1.0, 4.0 ], "
+                          "\"vector_foo_double\": [ 9.0, 7.0, 1.0 ] }",
+                          TestReflection::kNo));
+
+  // Test empty comment at end of line doesn't remove the next line.
+  EXPECT_TRUE(JsonAndBack(R"({
+  // foo
+  "vector_foo_double": [ 2, 7, 1 ], //
+  "vector_foo_float": [ 3, 1, 4 ]
+} // foo)",
+                          "{ \"vector_foo_float\": [ 3.0, 1.0, 4.0 ], "
+                          "\"vector_foo_double\": [ 2.0, 7.0, 1.0 ] }",
+                          TestReflection::kNo));
+
+  // Test empty comment at end of document doesn't cause error.
+  EXPECT_TRUE(JsonAndBack(R"({
+  // foo
+  "vector_foo_double": [ 5, 6, 7 ], // foo
+  "vector_foo_float": [ 7, 8, 9 ]
+} //)",
+                          "{ \"vector_foo_float\": [ 7.0, 8.0, 9.0 ], "
+                          "\"vector_foo_double\": [ 5.0, 6.0, 7.0 ] }",
+                          TestReflection::kNo));
 }
 
 // Tests that mixed style comments get stripped.

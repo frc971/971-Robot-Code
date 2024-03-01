@@ -27,14 +27,17 @@ void Tokenizer::ConsumeWhitespace() {
       // C++ style comment.  Keep consuming chars until newline, or until the
       // end of the file if this is the last line (no newline at end of file).
       while (true) {
-        ConsumeChar();
+        // First check if we are at the end of the file.
         if (AtEnd()) {
           return;
         }
+        // Then check if we are at the end of the line.
         if (Char() == '\n') {
           ++linenumber_;
           break;
         }
+        // Advance to next character and repeat.
+        ConsumeChar();
       }
     } else {
       // There is no fail.  Once we are out of whitespace (including 0 of it),
