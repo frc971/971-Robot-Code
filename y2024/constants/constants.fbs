@@ -83,6 +83,7 @@ table CurrentLimits {
   retention_roller_supply_current_limit:double (id: 18);
   retention_roller_stator_current_limit:double (id: 19);
   slower_retention_roller_stator_current_limit:double (id: 20);
+  shooting_retention_roller_stator_current_limit:double (id: 23);
   catapult_supply_current_limit:double (id: 21);
   catapult_stator_current_limit:double (id: 22);
 }

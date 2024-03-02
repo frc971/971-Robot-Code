@@ -29,10 +29,10 @@ kCatapultWithGamePiece = angular_system.AngularSystemParams(
     name='Catapult',
     # Add the battery series resistance to make it better match.
     motor=AddResistance(control_loop.NMotor(control_loop.KrakenFOC(), 2),
-                        0.03),
+                        0.00),
     G=(14.0 / 60.0) * (12.0 / 24.0),
     # 208.7328 in^2 lb
-    J=0.065,
+    J=0.065 + 0.04,
     q_pos=0.80,
     q_vel=15.0,
     kalman_q_pos=0.12,
@@ -46,10 +46,10 @@ kCatapultWithoutGamePiece = angular_system.AngularSystemParams(
     name='Catapult',
     # Add the battery series resistance to make it better match.
     motor=AddResistance(control_loop.NMotor(control_loop.KrakenFOC(), 2),
-                        0.03),
+                        0.00),
     G=(14.0 / 60.0) * (12.0 / 24.0),
     # 135.2928 in^2 lb
-    J=0.04,
+    J=0.06,
     q_pos=0.80,
     q_vel=15.0,
     kalman_q_pos=0.12,
@@ -75,7 +75,7 @@ def main(argv):
     else:
         namespaces = ['y2024', 'control_loops', 'superstructure', 'catapult']
         angular_system.WriteAngularSystem(
-            [kCatapultWithGamePiece, kCatapultWithoutGamePiece], argv[1:4],
+            [kCatapultWithoutGamePiece, kCatapultWithGamePiece], argv[1:4],
             argv[4:7], namespaces)
 
 

@@ -21,12 +21,12 @@ kIntakePivot = angular_system.AngularSystemParams(
     name='IntakePivot',
     motor=control_loop.KrakenFOC(),
     G=(16. / 60.) * (18. / 62.) * (18. / 62.) * (15. / 24.),
-    J=0.25,
-    q_pos=0.80,
-    q_vel=30.0,
+    J=0.4,
+    q_pos=1.0,
+    q_vel=800.0,
     kalman_q_pos=0.12,
     kalman_q_vel=2.0,
-    kalman_q_voltage=2.0,
+    kalman_q_voltage=1.5,
     kalman_r_position=0.05,
     radius=6.85 * 0.0254)
 

@@ -547,7 +547,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
               : nullptr,
           robot_state().voltage_battery(), &collision_avoidance_,
           intake_pivot_.estimated_position(), &max_intake_pivot_position,
-          &min_intake_pivot_position, move_turret_to_standby, status->fbb());
+          &min_intake_pivot_position, move_turret_to_standby, status->fbb(),
+          timestamp);
 
   intake_pivot_.set_min_position(min_intake_pivot_position);
   intake_pivot_.set_max_position(max_intake_pivot_position);

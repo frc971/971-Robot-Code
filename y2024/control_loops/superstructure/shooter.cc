@@ -29,7 +29,9 @@ Shooter::Shooter(aos::EventLoop *event_loop, const Constants *robot_constants)
       aimer_(event_loop, robot_constants_),
       interpolation_table_(
           y2024::constants::Values::InterpolationTableFromFlatbuffer(
-              robot_constants_->common()->shooter_interpolation_table())) {}
+              robot_constants_->common()->shooter_interpolation_table())),
+      debouncer_(std::chrono::milliseconds(100), std::chrono::milliseconds(8)) {
+}
 
 flatbuffers::Offset<y2024::control_loops::superstructure::ShooterStatus>
 Shooter::Iterate(
@@ -40,16 +42,17 @@ Shooter::Iterate(
     double *retention_roller_stator_current_limit, double /*battery_voltage*/,
     CollisionAvoidance *collision_avoidance, const double intake_pivot_position,
     double *max_intake_pivot_position, double *min_intake_pivot_position,
-    bool standby, flatbuffers::FlatBufferBuilder *fbb) {
+    bool standby, flatbuffers::FlatBufferBuilder *fbb,
+    aos::monotonic_clock::time_point monotonic_now) {
   drivetrain_status_fetcher_.Fetch();
 
   // If our current is over the minimum current and our velocity is under our
   // maximum velocity, then set loaded to true. If we are preloaded set it to
   // true as well.
-  //
-  // TODO(austin): Debounce piece_loaded?
-  bool piece_loaded = position->catapult_beambreak() ||
-                      (shooter_goal != nullptr && shooter_goal->preloaded());
+  debouncer_.Update(position->catapult_beambreak() ||
+                        (shooter_goal != nullptr && shooter_goal->preloaded()),
+                    monotonic_now);
+  const bool piece_loaded = debouncer_.state();
 
   aos::fbs::FixedStackAllocator<aos::fbs::Builder<
       frc971::control_loops::
@@ -214,6 +217,9 @@ Shooter::Iterate(
       state_ = CatapultState::RETRACTING;
     }
 
+    constexpr double kLoadingAcceleration = 20.0;
+    constexpr double kLoadingDeceleration = 10.0;
+
     switch (state_) {
       case CatapultState::READY:
         [[fallthrough]];
@@ -231,8 +237,10 @@ Shooter::Iterate(
           state_ = CatapultState::FIRING;
         } else {
           catapult_.set_controller_index(0);
-          catapult_.mutable_profile()->set_maximum_acceleration(100.0);
-          catapult_.mutable_profile()->set_maximum_deceleration(50.0);
+          catapult_.mutable_profile()->set_maximum_acceleration(
+              kLoadingAcceleration);
+          catapult_.mutable_profile()->set_maximum_deceleration(
+              kLoadingDeceleration);
           catapult_.set_unprofiled_goal(0.0, 0.0);
 
           if (!catapult_close) {
@@ -245,9 +253,13 @@ Shooter::Iterate(
       case CatapultState::FIRING:
         *retention_roller_output =
             robot_constants_->common()->retention_roller_voltages()->spitting();
-        catapult_.set_controller_index(0);
+        *retention_roller_stator_current_limit =
+            robot_constants_->common()
+                ->current_limits()
+                ->shooting_retention_roller_stator_current_limit();
+        catapult_.set_controller_index(1);
         catapult_.mutable_profile()->set_maximum_acceleration(400.0);
-        catapult_.mutable_profile()->set_maximum_deceleration(600.0);
+        catapult_.mutable_profile()->set_maximum_deceleration(500.0);
         catapult_.set_unprofiled_goal(2.0, 0.0);
         if (CatapultClose()) {
           state_ = CatapultState::RETRACTING;
@@ -257,8 +269,11 @@ Shooter::Iterate(
         [[fallthrough]];
       case CatapultState::RETRACTING:
         catapult_.set_controller_index(0);
-        catapult_.mutable_profile()->set_maximum_acceleration(100.0);
-        catapult_.mutable_profile()->set_maximum_deceleration(50.0);
+        catapult_.mutable_profile()->set_maximum_acceleration(
+            kLoadingAcceleration);
+        catapult_.mutable_profile()->set_maximum_deceleration(
+            kLoadingDeceleration);
+        // TODO: catapult_return_position
         catapult_.set_unprofiled_goal(0.0, 0.0);
 
         if (CatapultClose()) {

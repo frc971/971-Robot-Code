@@ -17,6 +17,39 @@
 
 namespace y2024::control_loops::superstructure {
 
+class Debouncer {
+ public:
+  Debouncer(std::chrono::nanoseconds rising_delay,
+            std::chrono::nanoseconds falling_delay)
+      : rising_delay_(rising_delay), falling_delay_(falling_delay) {}
+
+  void Update(bool state, aos::monotonic_clock::time_point now) {
+    if (state_transition_ != state) {
+      transition_time_ = now;
+      state_transition_ = state;
+    }
+
+    if (state != output_state_) {
+      if (state) {
+        output_state_ = now > transition_time_ + rising_delay_;
+      } else {
+        output_state_ = !(now > transition_time_ + falling_delay_);
+      }
+    }
+  }
+
+  bool state() const { return output_state_; }
+
+ private:
+  const std::chrono::nanoseconds rising_delay_;
+  const std::chrono::nanoseconds falling_delay_;
+
+  bool state_transition_ = false;
+  bool output_state_ = false;
+  aos::monotonic_clock::time_point transition_time_ =
+      aos::monotonic_clock::min_time;
+};
+
 // The shooter class will control the various subsystems involved in the
 // shooter- the turret, altitude, and catapult.
 class Shooter {
@@ -73,7 +106,8 @@ class Shooter {
       const double intake_pivot_position, double *max_turret_intake_position,
       double *min_intake_pivot_position,
       /* If true, go to extend collision avoidance position */ bool standby,
-      flatbuffers::FlatBufferBuilder *fbb);
+      flatbuffers::FlatBufferBuilder *fbb,
+      aos::monotonic_clock::time_point monotonic_now);
 
  private:
   CatapultState state_ = CatapultState::RETRACTING;
@@ -102,6 +136,8 @@ class Shooter {
   frc971::shooter_interpolation::InterpolationTable<
       y2024::constants::Values::ShotParams>
       interpolation_table_;
+
+  Debouncer debouncer_;
 };
 
 }  // namespace y2024::control_loops::superstructure
