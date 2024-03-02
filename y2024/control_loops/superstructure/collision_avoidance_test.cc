@@ -20,29 +20,45 @@ enum class TurretState {
   kSafe,
   kUnsafe,
 };
-enum class CatapultState { kIdle, kShooting };
+enum class ExtendState {
+  kSafe,
+  kUnsafe,
+};
 
 class CollisionAvoidanceTest : public ::testing::Test {
  public:
   CollisionAvoidanceTest()
       : intake_goal_(0),
         turret_goal_(0),
-        status_({0.0, 0.0}),
-        prev_status_({0.0, 0.0}) {}
+        extend_goal_(0),
+        status_({0.0, 0.0, 0.0}),
+        prev_status_({0.0, 0.0, 0.0}) {}
 
   void Simulate() {
     double safe_intake_goal = 0;
     double safe_turret_goal = 0;
+    double safe_extend_goal = 0;
     bool was_collided = avoidance_.IsCollided(status_);
+
+    VLOG(1) << "Simulation of intake " << status_.intake_pivot_position
+            << ", intake_goal " << intake_goal_ << ", turret "
+            << status_.turret_position << ", turret_goal " << turret_goal_
+            << ", extend " << status_.extend_position << ", extend goal "
+            << extend_goal_;
 
     bool moving = true;
     while (moving) {
       // Compute the safe goal
-      avoidance_.UpdateGoal(status_, turret_goal_);
+      avoidance_.UpdateGoal(status_, turret_goal_, extend_goal_);
 
       if (!was_collided) {
         // The system should never be collided if it didn't start off collided
-        EXPECT_FALSE(avoidance_.IsCollided(status_));
+        EXPECT_FALSE(avoidance_.IsCollided(status_))
+            << ": Now collided at intake " << status_.intake_pivot_position
+            << ", intake_goal " << intake_goal_ << ", turret "
+            << status_.turret_position << ", turret_goal " << turret_goal_
+            << ", extend " << status_.extend_position << ", extend goal "
+            << extend_goal_;
       } else {
         was_collided = avoidance_.IsCollided(status_);
       }
@@ -54,11 +70,16 @@ class CollisionAvoidanceTest : public ::testing::Test {
       safe_turret_goal = ::aos::Clip(turret_goal_, avoidance_.min_turret_goal(),
                                      avoidance_.max_turret_goal());
 
+      safe_extend_goal = ::aos::Clip(extend_goal_, avoidance_.min_extend_goal(),
+                                     avoidance_.max_extend_goal());
+
       // Move each subsystem towards their goals a bit
       status_.intake_pivot_position =
           LimitedMove(status_.intake_pivot_position, safe_intake_goal);
       status_.turret_position =
           LimitedMove(status_.turret_position, safe_turret_goal);
+      status_.extend_position =
+          LimitedMove(status_.extend_position, safe_extend_goal);
 
       // If it stopped moving, we're done
       if (!IsMoving()) {
@@ -109,15 +130,35 @@ class CollisionAvoidanceTest : public ::testing::Test {
     return turret_angle;
   }
 
+  double ComputeExtendPosition(ExtendState extend_state) {
+    double extend_position = 0.0;
+
+    switch (extend_state) {
+      case ExtendState::kSafe:
+        extend_position = CollisionAvoidance::kMinCollisionZoneExtend -
+                          CollisionAvoidance::kEpsExtend;
+        break;
+      case ExtendState::kUnsafe:
+        extend_position = CollisionAvoidance::kMinCollisionZoneExtend +
+                          CollisionAvoidance::kEpsTurret;
+        break;
+    }
+
+    return extend_position;
+  }
+
   void Test(IntakeState intake_front_pos_state, TurretState turret_pos_state,
-            IntakeState intake_front_goal_state,
-            TurretState turret_goal_state) {
+            ExtendState extend_pos_state, IntakeState intake_front_goal_state,
+            TurretState turret_goal_state, ExtendState extend_goal_state) {
     status_ = {ComputeIntakeAngle(intake_front_pos_state),
-               ComputeTurretAngle(turret_pos_state)};
+               ComputeTurretAngle(turret_pos_state),
+               ComputeExtendPosition(extend_pos_state)};
 
     intake_goal_ = ComputeIntakeAngle(intake_front_goal_state);
 
     turret_goal_ = ComputeTurretAngle(turret_goal_state);
+
+    extend_goal_ = ComputeExtendPosition(extend_goal_state);
 
     Simulate();
   }
@@ -125,6 +166,7 @@ class CollisionAvoidanceTest : public ::testing::Test {
   // Provide goals and status messages
   double intake_goal_;
   double turret_goal_;
+  double extend_goal_;
   CollisionAvoidance::Status status_;
 
  private:
@@ -133,19 +175,24 @@ class CollisionAvoidanceTest : public ::testing::Test {
   void CheckGoals() {
     // Check to see if we reached the goals
     // Turret is highest priority and should always reach the unsafe goal
-    EXPECT_NEAR(turret_goal_, status_.turret_position, kIterationMove);
+    EXPECT_NEAR(extend_goal_, status_.extend_position, kIterationMove);
 
-    // If the unsafe goal had an intake colliding with the turret the intake
-    // position should be at least the collision zone angle. Otherwise, the
-    // intake should be at the unsafe goal
-    if (avoidance_.TurretCollided(
-            intake_goal_, turret_goal_,
-            CollisionAvoidance::kMinCollisionZoneTurret,
-            CollisionAvoidance::kMaxCollisionZoneTurret)) {
-      EXPECT_LE(status_.intake_pivot_position,
-                CollisionAvoidance::kCollisionZoneIntake);
+    if (avoidance_.ExtendCollided(intake_goal_, turret_goal_, extend_goal_)) {
+      EXPECT_EQ(status_.turret_position,
+                CollisionAvoidance::kSafeTurretExtendedPosition);
+      // If the unsafe goal had an intake colliding with the turret the intake
+      // position should be at least the collision zone angle. Otherwise, the
+      // intake should be at the unsafe goal
+      if (avoidance_.TurretCollided(intake_goal_, status_.turret_position,
+                                    extend_goal_)) {
+        EXPECT_LE(status_.intake_pivot_position,
+                  CollisionAvoidance::kCollisionZoneIntake);
+      } else {
+        EXPECT_NEAR(intake_goal_, status_.intake_pivot_position,
+                    kIterationMove);
+      }
     } else {
-      EXPECT_NEAR(intake_goal_, status_.intake_pivot_position, kIterationMove);
+      EXPECT_NEAR(turret_goal_, status_.turret_position, kIterationMove);
     }
   }
 
@@ -161,7 +208,7 @@ class CollisionAvoidanceTest : public ::testing::Test {
 
   CollisionAvoidance avoidance_;
   CollisionAvoidance::Status prev_status_;
-};
+};  // namespace y2024::control_loops::superstructure::testing
 
 // Just to be safe, brute force ALL the possible position-goal combinations
 // and make sure we never collide and the correct goals are reached
@@ -171,13 +218,20 @@ TEST_F(CollisionAvoidanceTest, BruteForce) {
        {IntakeState::kSafe, IntakeState::kUnsafe}) {
     // Turret back position
     for (TurretState turret_pos : {TurretState::kSafe, TurretState::kUnsafe}) {
-      // Intake front goal
-      for (IntakeState intake_front_goal :
-           {IntakeState::kSafe, IntakeState::kUnsafe}) {
-        // Turret goal
-        for (TurretState turret_goal :
-             {TurretState::kSafe, TurretState::kUnsafe}) {
-          Test(intake_front_pos, turret_pos, intake_front_goal, turret_goal);
+      for (ExtendState extend_pos :
+           {ExtendState::kSafe, ExtendState::kUnsafe}) {
+        // Intake front goal
+        for (IntakeState intake_front_goal :
+             {IntakeState::kSafe, IntakeState::kUnsafe}) {
+          // Turret goal
+          for (TurretState turret_goal :
+               {TurretState::kSafe, TurretState::kUnsafe}) {
+            for (ExtendState extend_goal :
+                 {ExtendState::kSafe, ExtendState::kUnsafe}) {
+              Test(intake_front_pos, turret_pos, extend_pos, intake_front_goal,
+                   turret_goal, extend_goal);
+            }
+          }
         }
       }
     }

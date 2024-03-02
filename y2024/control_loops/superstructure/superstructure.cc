@@ -128,7 +128,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   }
 
   ExtendRollerStatus extend_roller_status = ExtendRollerStatus::IDLE;
-  ExtendStatus extend_goal = ExtendStatus::RETRACTED;
+  ExtendStatus extend_goal_location = ExtendStatus::RETRACTED;
 
   // True if the extend is moving towards a goal
   bool extend_moving = false;
@@ -149,12 +149,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
                    robot_constants_->common()->turret_loading_position(),
                    kTurretLoadingThreshold);
 
-  // Check if turret is at the right position for the extend to extend.
-  const bool turret_ready_for_extend_move = PositionNear(
-      shooter_.turret().estimated_position(),
-      robot_constants_->common()->turret_avoid_extend_collision_position(),
-      kTurretLoadingThreshold);
-
   // Check if the altitude is at the position to accept the note from
   // extend
   const bool altitude_ready_for_load =
@@ -165,10 +159,6 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   // Check if the extend is at the position to load the catapult
   const bool extend_ready_for_catapult_transfer = PositionNear(
       extend_.position(), extend_set_points->catapult(), kExtendThreshold);
-
-  // If true, the turret should be moved to the position to avoid collision with
-  // the extend.
-  bool move_turret_to_standby = false;
 
   // Only update the reuested note goal to the first goal that is requested by
   // the manipulator
@@ -210,7 +200,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
         state_ = SuperstructureState::INTAKING;
       }
 
-      extend_goal = ExtendStatus::RETRACTED;
+      extend_goal_location = ExtendStatus::RETRACTED;
       catapult_requested_ = false;
       break;
     case SuperstructureState::INTAKING:
@@ -222,7 +212,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       intake_roller_state = IntakeRollerStatus::INTAKING;
       transfer_roller_status = TransferRollerStatus::TRANSFERING_IN;
       extend_roller_status = ExtendRollerStatus::TRANSFERING_TO_EXTEND;
-      extend_goal = ExtendStatus::RETRACTED;
+      extend_goal_location = ExtendStatus::RETRACTED;
 
       if (!catapult_requested_ && unsafe_goal != nullptr &&
           unsafe_goal->note_goal() == NoteGoal::CATAPULT) {
@@ -254,35 +244,29 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           [[fallthrough]];
         case NoteGoal::AMP:
           transfer_roller_status = TransferRollerStatus::EXTEND_MOVING;
-          if (turret_ready_for_extend_move) {
-            state_ = SuperstructureState::MOVING;
-          } else {
-            move_turret_to_standby = true;
-          }
+          state_ = SuperstructureState::MOVING;
           break;
       }
-      extend_goal = ExtendStatus::RETRACTED;
+      extend_goal_location = ExtendStatus::RETRACTED;
       break;
     case SuperstructureState::MOVING:
       transfer_roller_status = TransferRollerStatus::EXTEND_MOVING;
       switch (requested_note_goal_) {
         case NoteGoal::NONE:
-          extend_goal = ExtendStatus::RETRACTED;
-          move_turret_to_standby = true;
+          extend_goal_location = ExtendStatus::RETRACTED;
           if (extend_at_retracted) {
             state_ = SuperstructureState::LOADED;
           }
           break;
         case NoteGoal::CATAPULT:
-          extend_goal = ExtendStatus::CATAPULT;
+          extend_goal_location = ExtendStatus::CATAPULT;
           if (extend_ready_for_catapult_transfer && turret_ready_for_load &&
               altitude_ready_for_load) {
             state_ = SuperstructureState::LOADING_CATAPULT;
           }
           break;
         case NoteGoal::TRAP:
-          extend_goal = ExtendStatus::TRAP;
-          move_turret_to_standby = true;
+          extend_goal_location = ExtendStatus::TRAP;
           // Check if the extend is at the TRAP position and if it is
           // switch to READY state
           if (PositionNear(extend_.position(), extend_set_points->trap(),
@@ -291,8 +275,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           }
           break;
         case NoteGoal::AMP:
-          extend_goal = ExtendStatus::AMP;
-          move_turret_to_standby = true;
+          extend_goal_location = ExtendStatus::AMP;
           // Check if the extend is at the AMP position and if it is
           // switch to READY state
           if (PositionNear(extend_.position(), extend_set_points->amp(),
@@ -306,7 +289,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       break;
     case SuperstructureState::LOADING_CATAPULT:
       extend_moving = false;
-      extend_goal = ExtendStatus::CATAPULT;
+      extend_goal_location = ExtendStatus::CATAPULT;
       extend_roller_status = ExtendRollerStatus::TRANSFERING_TO_CATAPULT;
 
       // Switch to READY state when the catapult beambreak is triggered
@@ -324,20 +307,18 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
       switch (requested_note_goal_) {
         case NoteGoal::NONE:
-          extend_goal = ExtendStatus::RETRACTED;
+          extend_goal_location = ExtendStatus::RETRACTED;
           extend_moving = true;
           state_ = SuperstructureState::MOVING;
           break;
         case NoteGoal::CATAPULT:
-          extend_goal = ExtendStatus::CATAPULT;
+          extend_goal_location = ExtendStatus::CATAPULT;
           break;
         case NoteGoal::TRAP:
-          extend_goal = ExtendStatus::TRAP;
-          move_turret_to_standby = true;
+          extend_goal_location = ExtendStatus::TRAP;
           break;
         case NoteGoal::AMP:
-          extend_goal = ExtendStatus::AMP;
-          move_turret_to_standby = true;
+          extend_goal_location = ExtendStatus::AMP;
           break;
       }
       break;
@@ -347,7 +328,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
           break;
         case NoteGoal::CATAPULT:
-          extend_goal = ExtendStatus::CATAPULT;
+          extend_goal_location = ExtendStatus::CATAPULT;
           // Reset the state to IDLE when the game piece is fired from the
           // catapult. We consider the game piece to be fired from the catapult
           // when the catapultbeambreak is no longer triggered.
@@ -357,7 +338,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           break;
         case NoteGoal::TRAP:
           extend_roller_status = ExtendRollerStatus::SCORING_IN_TRAP;
-          extend_goal = ExtendStatus::TRAP;
+          extend_goal_location = ExtendStatus::TRAP;
           if (!position->extend_beambreak() && unsafe_goal != nullptr &&
               !unsafe_goal->fire()) {
             state_ = SuperstructureState::IDLE;
@@ -365,7 +346,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
           break;
         case NoteGoal::AMP:
           extend_roller_status = ExtendRollerStatus::SCORING_IN_AMP;
-          extend_goal = ExtendStatus::AMP;
+          extend_goal_location = ExtendStatus::AMP;
           if (!position->extend_beambreak() && unsafe_goal != nullptr &&
               !unsafe_goal->fire()) {
             state_ = SuperstructureState::IDLE;
@@ -440,32 +421,25 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
       break;
   }
 
-  double extend_position = 0.0;
+  double extend_goal_position = 0.0;
 
   if (unsafe_goal != nullptr && unsafe_goal->note_goal() == NoteGoal::TRAP) {
-    extend_goal = ExtendStatus::TRAP;
-    move_turret_to_standby = true;
-  }
-
-  // In lieu of having full collision avoidance ready, move the turret out of
-  // the way whenever the extend is raised too much.
-  if (extend_.position() > 0.05) {
-    move_turret_to_standby = true;
+    extend_goal_location = ExtendStatus::TRAP;
   }
 
   // Set the extend position based on the state machine output
-  switch (extend_goal) {
+  switch (extend_goal_location) {
     case ExtendStatus::RETRACTED:
-      extend_position = extend_set_points->retracted();
+      extend_goal_position = extend_set_points->retracted();
       break;
     case ExtendStatus::AMP:
-      extend_position = extend_set_points->amp();
+      extend_goal_position = extend_set_points->amp();
       break;
     case ExtendStatus::TRAP:
-      extend_position = extend_set_points->trap();
+      extend_goal_position = extend_set_points->trap();
       break;
     case ExtendStatus::CATAPULT:
-      extend_position = extend_set_points->catapult();
+      extend_goal_position = extend_set_points->catapult();
       break;
     case ExtendStatus::MOVING:
       // Should never happen
@@ -493,7 +467,7 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   // If the extend is moving, the status is MOVING, otherwise it is the same
   // as extend_status
   ExtendStatus extend_status =
-      (extend_moving ? ExtendStatus::MOVING : extend_goal);
+      (extend_moving ? ExtendStatus::MOVING : extend_goal_location);
 
   if (joystick_state_fetcher_.Fetch() &&
       joystick_state_fetcher_->has_alliance()) {
@@ -502,9 +476,11 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   drivetrain_status_fetcher_.Fetch();
 
-  const bool collided = collision_avoidance_.IsCollided(
-      {.intake_pivot_position = intake_pivot_.estimated_position(),
-       .turret_position = shooter_.turret().estimated_position()});
+  const bool collided = collision_avoidance_.IsCollided({
+      .intake_pivot_position = intake_pivot_.estimated_position(),
+      .turret_position = shooter_.turret().estimated_position(),
+      .extend_position = extend_.estimated_position(),
+  });
 
   aos::FlatbufferFixedAllocatorArray<
       frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
@@ -525,6 +501,8 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
 
   double max_intake_pivot_position = 0;
   double min_intake_pivot_position = 0;
+  double max_extend_position = 0;
+  double min_extend_position = 0;
 
   aos::FlatbufferFixedAllocatorArray<
       frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
@@ -543,6 +521,17 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   const bool disabled = intake_pivot_.Correct(
       intake_pivot_goal, position->intake_pivot(), intake_output == nullptr);
 
+  aos::FlatbufferFixedAllocatorArray<
+      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
+      extend_goal_buffer;
+
+  extend_goal_buffer.Finish(
+      frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
+          *extend_goal_buffer.fbb(), extend_goal_position));
+
+  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
+      *extend_goal = &extend_goal_buffer.message();
+
   // TODO(max): Change how we handle the collision with the turret and
   // intake to be clearer
   const flatbuffers::Offset<ShooterStatus> shooter_status_offset =
@@ -558,12 +547,16 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
               ? &output_struct.retention_roller_stator_current_limit
               : nullptr,
           robot_state().voltage_battery(), &collision_avoidance_,
+          extend_goal_position, extend_.estimated_position(),
+          &max_extend_position, &min_extend_position,
           intake_pivot_.estimated_position(), &max_intake_pivot_position,
-          &min_intake_pivot_position, move_turret_to_standby, status->fbb(),
-          timestamp);
+          &min_intake_pivot_position, status->fbb(), timestamp);
 
   intake_pivot_.set_min_position(min_intake_pivot_position);
   intake_pivot_.set_max_position(max_intake_pivot_position);
+
+  extend_.set_min_position(min_extend_position);
+  extend_.set_max_position(max_extend_position);
 
   // Calculate the loops for a cycle.
   const double voltage = intake_pivot_.UpdateController(disabled);
@@ -578,20 +571,9 @@ void Superstructure::RunIteration(const Goal *unsafe_goal,
   const flatbuffers::Offset<AbsoluteEncoderProfiledJointStatus>
       intake_pivot_status_offset = intake_pivot_.MakeStatus(status->fbb());
 
-  aos::FlatbufferFixedAllocatorArray<
-      frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal, 512>
-      note_goal_buffer;
-
-  note_goal_buffer.Finish(
-      frc971::control_loops::CreateStaticZeroingSingleDOFProfiledSubsystemGoal(
-          *note_goal_buffer.fbb(), extend_position));
-
-  const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
-      *note_goal = &note_goal_buffer.message();
-
   const flatbuffers::Offset<PotAndAbsoluteEncoderProfiledJointStatus>
       extend_status_offset = extend_.Iterate(
-          note_goal, position->extend(),
+          extend_goal, position->extend(),
           output != nullptr ? &output_struct.extend_voltage : nullptr,
           status->fbb());
 

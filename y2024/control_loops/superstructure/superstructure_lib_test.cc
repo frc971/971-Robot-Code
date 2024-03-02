@@ -416,15 +416,6 @@ class SuperstructureTest : public ::frc971::testing::ControlLoopTest {
             superstructure_status_fetcher_->shooter()->turret()->position(),
             0.001);
       }
-    } else if (superstructure_status_fetcher_->uncompleted_note_goal() ==
-                   NoteStatus::AMP ||
-               superstructure_status_fetcher_->uncompleted_note_goal() ==
-                   NoteStatus::TRAP) {
-      EXPECT_NEAR(
-          simulated_robot_constants_->common()
-              ->turret_avoid_extend_collision_position(),
-          superstructure_status_fetcher_->shooter()->turret()->position(),
-          0.001);
     }
 
     if (superstructure_goal_fetcher_->has_shooter_goal()) {
@@ -1533,6 +1524,13 @@ TEST_F(SuperstructureTest, ScoreInAmp) {
 
     ASSERT_EQ(builder.Send(goal_builder.Finish()), aos::RawSender::Error::kOk);
   }
+
+  RunFor(10 * dt());
+
+  ASSERT_TRUE(superstructure_status_fetcher_.Fetch());
+
+  EXPECT_EQ(superstructure_status_fetcher_->extend_status(),
+            ExtendStatus::MOVING);
 
   RunFor(chrono::seconds(5));
 
