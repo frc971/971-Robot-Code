@@ -14,6 +14,7 @@
 #include "aos/time/time.h"
 #include "aos/util/file.h"
 #include "frc971/vision/calibration_generated.h"
+#include "frc971/vision/vision_util_lib.h"
 
 // This is a helper program to build and rename calibration files
 // You can:
@@ -160,11 +161,9 @@ void Main(std::string orig_calib_filename) {
       (FLAGS_calibration_folder == ""
            ? std::filesystem::path(orig_calib_filename).parent_path().string()
            : FLAGS_calibration_folder);
-  const std::string new_calib_filename =
-      dirname + "/" +
-      absl::StrFormat("calibration_%s-%d-%d_cam-%s_%s.json", node_name.c_str(),
-                      team_number, camera_number, camera_id.c_str(),
-                      time_ss.str());
+  const std::string new_calib_filename = frc971::vision::CalibrationFilename(
+      dirname, node_name.c_str(), team_number, camera_number, camera_id.c_str(),
+      time_ss.str());
 
   VLOG(1) << "From: " << orig_calib_filename << " -> "
           << aos::FlatbufferToJson(base_calibration, {.multi_line = true});

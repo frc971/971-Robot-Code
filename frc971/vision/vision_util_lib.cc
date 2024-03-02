@@ -1,5 +1,6 @@
 #include "frc971/vision/vision_util_lib.h"
 
+#include "absl/strings/str_format.h"
 #include "glog/logging.h"
 
 namespace frc971::vision {
@@ -56,6 +57,21 @@ std::optional<uint16_t> CameraNumberFromChannel(std::string camera_channel) {
   uint16_t camera_number = std::stoi(
       camera_channel.substr(camera_channel.find("/camera") + cam_len, 1));
   return camera_number;
+}
+
+std::string CalibrationFilename(std::string calibration_folder,
+                                std::string node_name, int team_number,
+                                int camera_number, std::string camera_id,
+                                std::string timestamp) {
+  // Get rid of any fractional seconds-- we shouldn't need those and it makes
+  // the string unnecessarily longer
+  timestamp = timestamp.substr(0, timestamp.find("."));
+  std::string calibration_filename =
+      calibration_folder +
+      absl::StrFormat("/calibration_%s-%d-%d_cam-%s_%s.json", node_name.c_str(),
+                      team_number, camera_number, camera_id.c_str(),
+                      timestamp.c_str());
+  return calibration_filename;
 }
 
 }  // namespace frc971::vision

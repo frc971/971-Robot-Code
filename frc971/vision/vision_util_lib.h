@@ -25,6 +25,12 @@ cv::Mat CameraDistCoeffs(
 // not have a number
 std::optional<uint16_t> CameraNumberFromChannel(std::string camera_channel);
 
+// Return a calibration filename to save to based on the given data
+std::string CalibrationFilename(std::string calibration_folder,
+                                std::string node_name, int team_number,
+                                int camera_number, std::string camera_id,
+                                std::string timestamp);
+
 }  // namespace frc971::vision
 
 #endif  // FRC971_VISION_VISION_UTIL_LIB_H_

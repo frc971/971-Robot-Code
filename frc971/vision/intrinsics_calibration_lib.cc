@@ -249,18 +249,12 @@ void IntrinsicsCalibration::MaybeCalibrate() {
     std::stringstream time_ss;
     time_ss << realtime_now;
 
-    std::string camera_number_optional = "";
     std::optional<uint16_t> camera_number =
         frc971::vision::CameraNumberFromChannel(camera_channel_);
-    if (camera_number != std::nullopt) {
-      camera_number_optional = "-" + std::to_string(camera_number.value());
-    }
-    const std::string calibration_filename =
-        calibration_folder_ +
-        absl::StrFormat("/calibration_%s-%d-%d%s_cam-%s_%s.json",
-                        cpu_type_.value(), team_number.value(),
-                        cpu_number_.value(), camera_number_optional, camera_id_,
-                        time_ss.str());
+    CHECK(camera_number.has_value());
+    std::string calibration_filename =
+        CalibrationFilename(calibration_folder_, hostname_, team_number.value(),
+                            camera_number.value(), camera_id_, time_ss.str());
 
     LOG(INFO) << calibration_filename << " -> "
               << aos::FlatbufferToJson(camera_calibration,
