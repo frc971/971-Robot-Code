@@ -3,7 +3,8 @@
 namespace frc971::control_loops::drivetrain {
 
 LocalizationUtils::LocalizationUtils(aos::EventLoop *event_loop)
-    : output_fetcher_(event_loop->MakeFetcher<Output>("/drivetrain")),
+    : event_loop_(event_loop),
+      output_fetcher_(event_loop->MakeFetcher<Output>("/drivetrain")),
       position_fetcher_(event_loop->TryMakeFetcher<Position>("/drivetrain")),
       clock_offset_fetcher_(
           event_loop->MakeFetcher<aos::message_bridge::ServerStatistics>(
@@ -54,6 +55,9 @@ aos::Alliance LocalizationUtils::Alliance() {
 
 std::optional<aos::monotonic_clock::duration> LocalizationUtils::ClockOffset(
     std::string_view node) {
+  if (node == event_loop_->node()->name()->string_view()) {
+    return std::chrono::seconds(0);
+  }
   std::optional<aos::monotonic_clock::duration> monotonic_offset;
   clock_offset_fetcher_.Fetch();
   if (clock_offset_fetcher_.get() != nullptr) {

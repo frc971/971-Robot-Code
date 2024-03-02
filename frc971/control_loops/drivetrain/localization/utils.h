@@ -47,6 +47,7 @@ class LocalizationUtils {
       std::string_view node);
 
  private:
+  aos::EventLoop *const event_loop_;
   aos::Fetcher<frc971::control_loops::drivetrain::Output> output_fetcher_;
   aos::Fetcher<frc971::control_loops::drivetrain::Position> position_fetcher_;
   aos::Fetcher<aos::message_bridge::ServerStatistics> clock_offset_fetcher_;
