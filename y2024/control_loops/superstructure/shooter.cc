@@ -40,9 +40,11 @@ Shooter::Iterate(
     bool fire, double *catapult_output, double *altitude_output,
     double *turret_output, double *retention_roller_output,
     double *retention_roller_stator_current_limit, double /*battery_voltage*/,
-    CollisionAvoidance *collision_avoidance, const double intake_pivot_position,
+    CollisionAvoidance *collision_avoidance, const double extend_position,
+    const double extend_goal, double *max_extend_position,
+    double *min_extend_position, const double intake_pivot_position,
     double *max_intake_pivot_position, double *min_intake_pivot_position,
-    bool standby, flatbuffers::FlatBufferBuilder *fbb,
+    flatbuffers::FlatBufferBuilder *fbb,
     aos::monotonic_clock::time_point monotonic_now) {
   drivetrain_status_fetcher_.Fetch();
 
@@ -94,18 +96,8 @@ Shooter::Iterate(
 
   bool aiming = false;
 
-  if (standby) {
-    // Note is going to AMP or TRAP, move turret to extend
-    // collision avoidance position.
-    PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
-        turret_goal_builder.get(),
-        robot_constants_->common()->turret_avoid_extend_collision_position());
-
-    PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
-        altitude_goal_builder.get(),
-        robot_constants_->common()->altitude_loading_position());
-  } else if (shooter_goal == nullptr || !shooter_goal->auto_aim() ||
-             (!piece_loaded && state_ == CatapultState::READY)) {
+  if (shooter_goal == nullptr || !shooter_goal->auto_aim() ||
+      (!piece_loaded && state_ == CatapultState::READY)) {
     // We don't have the note so we should be ready to intake it.
     PopulateStaticZeroingSingleDOFProfiledSubsystemGoal(
         turret_goal_builder.get(),
@@ -138,7 +130,7 @@ Shooter::Iterate(
 
   const frc971::control_loops::StaticZeroingSingleDOFProfiledSubsystemGoal
       *turret_goal = (shooter_goal != nullptr && !shooter_goal->auto_aim() &&
-                      !standby && shooter_goal->has_turret_position())
+                      shooter_goal->has_turret_position())
                          ? shooter_goal->turret_position()
                          : &turret_goal_builder->AsFlatbuffer();
 
@@ -161,14 +153,18 @@ Shooter::Iterate(
 
   collision_avoidance->UpdateGoal(
       {.intake_pivot_position = intake_pivot_position,
-       .turret_position = turret_.estimated_position()},
-      turret_goal->unsafe_goal());
+       .turret_position = turret_.estimated_position(),
+       .extend_position = extend_position},
+      turret_goal->unsafe_goal(), extend_goal);
 
   turret_.set_min_position(collision_avoidance->min_turret_goal());
   turret_.set_max_position(collision_avoidance->max_turret_goal());
 
   *max_intake_pivot_position = collision_avoidance->max_intake_pivot_goal();
   *min_intake_pivot_position = collision_avoidance->min_intake_pivot_goal();
+
+  *max_extend_position = collision_avoidance->max_extend_goal();
+  *min_extend_position = collision_avoidance->min_extend_goal();
 
   // Calculate the loops for a cycle.
   const double voltage = turret_.UpdateController(disabled);

@@ -102,10 +102,10 @@ class Shooter {
       double *retention_roller_output,
       double *retention_roller_stator_current_limit, double battery_voltage,
       /* Hacky way to use collision avoidance in this class */
-      CollisionAvoidance *collision_avoidance,
-      const double intake_pivot_position, double *max_turret_intake_position,
-      double *min_intake_pivot_position,
-      /* If true, go to extend collision avoidance position */ bool standby,
+      CollisionAvoidance *collision_avoidance, const double extend_position,
+      const double extend_goal, double *max_extend_position,
+      double *min_extend_position, const double intake_pivot_position,
+      double *max_turret_intake_position, double *min_intake_pivot_position,
       flatbuffers::FlatBufferBuilder *fbb,
       aos::monotonic_clock::time_point monotonic_now);
 
